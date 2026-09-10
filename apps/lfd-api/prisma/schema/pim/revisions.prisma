@@ -1,0 +1,144 @@
+/// **Un point d'ancrage de publication** — le catalogue, photographié et nommé.
+///
+/// `version` est monotone et unique : elle donne un ordre lisible ("la 12") là
+/// où un ULID ne donne qu'un tri. `hash` couvre l'en-tête ET la liste des
+/// articles, si bien que « rien n'a changé depuis la dernière » se répond par
+/// une seule comparaison.
+model CatalogRevision {
+  id String @id
+
+  /// La référence LISIBLE — `R-7WT4NA`. Ce qu'on cite dans une conversation ou
+  /// dans un document, comme `P-` pour un produit et `C-` pour une société.
+  ///
+  /// Elle a remplacé un `version Int` monotone, et pas seulement par cohérence :
+  /// « le numéro suivant » se calcule en LISANT le dernier, ce qui est une
+  /// course. Deux publications simultanées calculaient le même numéro, et
+  /// l'index unique en faisait échouer une — un push perdu pour une raison
+  /// étrangère au catalogue. Une référence dérivée de l'identifiant n'a pas de
+  /// prédécesseur à lire.
+  reference String  @unique
+  /// Le nom que quelqu'un lui donne ("catalogue de la rentrée"). `NULL` = pas nommée.
+  ///
+  /// Il se pose au PUSH, avec les changements sous les yeux, et il ne se
+  /// renomme pas : il dit avec quelle intention un catalogue est parti chez des
+  /// clients. Les ancres d'avant cette règle sont `NULL` et se réparent une par
+  /// une — aucune n'a été nommée d'office.
+  label     String?
+  /// Le POURQUOI, en clair — `NULL` = personne n'en a écrit.
+  ///
+  /// À part de `label`, parce que ce sont deux lectures : le nom se lit dans une
+  /// liste à côté de quinze autres, la note se lit quand on ouvre. Allonger le
+  /// nom ferait qu'une liste afficherait des paragraphes.
+  note      String?
+
+  /// L'empreinte du catalogue figé — et l'IDENTITÉ de l'ancre.
+  ///
+  /// `@unique` parce qu'une ancre répond à « le catalogue **était** ceci » :
+  /// c'est un contenu, pas un moment. Deux lignes de même empreinte seraient
+  /// deux réponses identiques à la même question, que rien ne distinguerait —
+  /// et le « quand » est de toute façon porté par les publications, qui ont
+  /// chacune leur date.
+  ///
+  /// Ce que la contrainte ferme, et que le code seul ne fermait pas : deux pushs
+  /// simultanés lisent tous deux « cette ancre n'existe pas », calculent la même
+  /// empreinte et écrivent tous deux. La garde applicative lit hors transaction ;
+  /// elle ne peut pas gagner cette course, et elle n'a plus à la gagner.
+  hash String @unique
+
+  /// Ce qui change tout sans qu'aucune ligne d'article ne bouge — le rapport
+  /// prix pro / prix public. Sans lui, une remise passée de 10 % à 12 % ne se
+  /// verrait dans AUCUN diff pendant que toutes les factures pro changent.
+  header Json
+
+  takenAt DateTime @map("taken_at")
+  takenBy String   @map("taken_by")
+
+  items        CatalogRevisionItem[]
+  publications CatalogRevisionPublication[]
+
+  /// L'ordre de lecture : la plus récente d'abord. Il était porté par `version`,
+  /// qui n'existe plus — et une ancre se lit par sa DATE, pas par son rang.
+  @@index([takenAt])
+  @@map("catalog_revision")
+  @@schema("pim")
+}
+
+/// **Où une révision est partie, et ce que la destination en a fait.**
+///
+/// Une révision n'est pas une photographie qu'on prend pour soi : c'est ce
+/// qu'on s'apprête à publier. Le geste de publication l'inscrit ici avec sa
+/// destination et son issue — sans quoi l'ancre dirait ce que le catalogue
+/// ÉTAIT sans dire s'il est parti, ni où.
+///
+/// Une révision sans aucune ligne ici est **préparée, jamais envoyée**. C'est un
+/// état lisible et voulu : on fige avant d'envoyer, et l'envoi peut échouer.
+model CatalogRevisionPublication {
+  id String @id
+
+  revisionId String          @map("revision_id")
+  revision   CatalogRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  /// La destination : `b2b`, `shopify`. Une chaîne et non un enum — un canal de
+  /// plus ne doit pas demander une migration d'enum, et le registre des canaux
+  /// vit dans le code qui les pousse.
+  channel String
+
+  /// `live` ou `dry-run` : une simulation s'enregistre aussi, sinon on ne
+  /// saurait pas distinguer « jamais tenté » de « tenté à blanc ».
+  mode String
+
+  /// `sent` | `failed`. L'échec s'inscrit : une publication qui ne laisse une
+  /// trace que quand elle réussit ne raconte que les bons jours.
+  outcome String
+
+  /// Ce que la destination a répondu — compteurs, SKU retirés. `NULL` en échec.
+  report Json?
+
+  /// **L'empreinte de la PROJECTION** partie sur ce canal — pas celle de l'ancre.
+  ///
+  /// C'est la seule valeur qui permette de répondre à « le canal a-t-il reçu ce
+  /// que le référentiel produirait aujourd'hui ? ». L'empreinte de l'ancre ne le
+  /// peut pas : l'ancre archive le catalogue, la projection est ce qu'un canal
+  /// en tire — deux catalogues distincts peuvent projeter la même chose, et un
+  /// même catalogue projette différemment selon le canal.
+  ///
+  /// Elle vit ICI plutôt que sur `b2b_channel_binding`, qui est une ligne **par
+  /// produit** : y ranger une empreinte de canal écrirait N fois la même valeur.
+  ///
+  /// 🔴 **Toute lecture « quelle empreinte ce canal a-t-il reçue » filtre
+  /// `mode = 'live' AND outcome = 'sent'`.** Une ligne existe aussi pour une
+  /// simulation et pour un échec ; sans le filtre, un dry-run devient la
+  /// référence — et `@@index([channel, publishedAt])` ne rattrape rien, il ne
+  /// porte ni le mode ni l'issue.
+  ///
+  /// `NULL` n'a qu'un sens : « écrite avant que la colonne existe ». Une ligne
+  /// n'existe que parce qu'un envoi a été tenté, et un envoi tenté a toujours
+  /// projeté quelque chose.
+  projectionFingerprint String? @map("projection_fingerprint")
+
+  publishedAt DateTime @map("published_at")
+  publishedBy String?  @map("published_by")
+
+  @@index([revisionId])
+  @@index([channel, publishedAt])
+  @@map("catalog_revision_publication")
+  @@schema("pim")
+}
+
+/// L'appartenance d'un contenu à une révision. La table qui rend le partage
+/// possible : elle porte la clé de l'article, pas son contenu.
+model CatalogRevisionItem {
+  revisionId String          @map("revision_id")
+  revision   CatalogRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  /// Le SKU de la DÉCLINAISON — l'unité tarifée, celle qui a un prix propre.
+  sku String
+
+  contentHash String         @map("content_hash")
+  content     CatalogContent @relation(fields: [contentHash], references: [hash])
+
+  @@id([revisionId, sku])
+  @@index([contentHash])
+  @@map("catalog_revision_item")
+  @@schema("pim")
+}

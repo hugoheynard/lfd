@@ -24,10 +24,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { PRISMA_SCHEMA_DIR, prismaSchemaSource } from "./lib/prisma-schema.mjs";
+
 const ROOT = process.cwd();
 const SRC = "apps/lfd-api/src";
-
-const SCHEMA_FILE = "apps/lfd-api/prisma/schema.prisma";
 
 /**
  * Les schémas surveillés, **lus dans le `datasource`** au lieu d'être recopiés.
@@ -43,10 +43,12 @@ const SCHEMA_FILE = "apps/lfd-api/prisma/schema.prisma";
  * un schéma retiré cesse de l'être sans que personne y pense.
  */
 function declaredSchemas() {
-  const source = readFileSync(join(ROOT, SCHEMA_FILE), "utf8");
+  const source = prismaSchemaSource(ROOT);
   const line = /^\s*schemas\s*=\s*\[([^\]]*)\]/m.exec(source);
   if (line === null) {
-    console.error(`\n❌ Aucun \`schemas = [...]\` dans ${SCHEMA_FILE} — la porte ne sait plus`);
+    console.error(
+      `\n❌ Aucun \`schemas = [...]\` dans ${PRISMA_SCHEMA_DIR} — la porte ne sait plus`,
+    );
     console.error("   ce qu'elle surveille, et une porte qui l'ignore ne garde rien.\n");
     process.exit(1);
   }

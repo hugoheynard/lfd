@@ -1,0 +1,151 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCTION — ce que le fournil fabrique, et ce qu'il en garde.
+//
+// 🔴 Schéma À PART, et c'est tout le sujet. La production lisait les tables du
+// commerce en direct : un renommage côté commande cassait un écran d'atelier,
+// sans que rien ne le dise avant l'exécution. Elle tient désormais sa propre
+// écriture, et ne connaît une commande que par un identifiant OPAQUE + un
+// snapshot — exactement la règle que `b2b` applique déjà à `pim`.
+//
+// ⚠️ Aucune clé étrangère vers `public.orders`, et c'est délibéré. Une FK serait
+// une jointure que quelqu'un finirait par écrire, et `lint:cross-schema-join`
+// refuse déjà les requêtes qui mêlent deux schémas. Ce que la copie perd en
+// intégrité référentielle, elle le gagne en indépendance : une commande annulée
+// ne fait pas disparaître ce qu'on a fabriqué.
+//
+// Doc : `documentation/production/architecture-contexte-production.md`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Une JOURNÉE de fabrication. L'agrégat ; tout le reste lui appartient.
+model ProductionDay {
+  /// Le jour de service `AAAA-MM-JJ` — clé naturelle, et il n'y en a qu'une par
+  /// jour. Un `id` technique aurait permis deux journées du même jour.
+  ///
+  /// 🔴 **Du TEXTE, et pas un `date` Postgres.** C'est une divergence assumée
+  /// avec `orders.requested_delivery_date`, qui est un `@db.Date` converti à
+  /// chaque lecture par `toIsoDate`. Cette conversion est exactement l'endroit
+  /// où une journée de fournil peut reculer d'un cran : Prisma rend un `Date` à
+  /// minuit UTC, et une machine en UTC−5 le relit la veille.
+  ///
+  /// Une journée de production n'a ni heure ni fuseau — c'est un mot sur un
+  /// planning. Le stocker tel quel supprime la conversion au lieu de la
+  /// surveiller. Le tri lexicographique d'un jour ISO est le tri chronologique.
+  serviceDay String @id @map("service_day") @db.VarChar(10)
+
+  /// `null` = ouverte. L'instant vient du port d'horloge, jamais du mur.
+  closedAt DateTime? @map("closed_at")
+
+  orders ProductionOrder[]
+  counts ProductionCount[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("production_day")
+  @@schema("production")
+}
+
+/// Une commande, RECOPIÉE dans la journée où elle se fabrique.
+model ProductionOrder {
+  id String @id @default(cuid())
+
+  serviceDay String        @map("service_day") @db.VarChar(10)
+  day        ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Cascade)
+
+  /// L'identifiant de la commande côté COMMERCE. Opaque : on le garde pour
+  /// pouvoir en reparler, jamais pour aller lire à côté.
+  orderId   String @map("order_id")
+  reference String
+
+  /// De quoi poser la feuille sur la bonne pile, et charger le bon véhicule.
+  customerLabel     String @map("customer_label")
+  fulfillmentMethod String @map("fulfillment_method")
+  destination       String
+
+  /// Le COLISAGE, tel que le fournil le constate. `null` = pas encore fermé.
+  ///
+  /// C'est le fait de la PRODUCTION : le bac est fait. Le commerce en tire le
+  /// sien — `orders.status = ready`, « prête pour le client » — par un
+  /// événement. Deux faits distincts, chacun chez celui qui l'observe.
+  packedAt DateTime? @map("packed_at")
+  /// L'identité staff qui a scanné, figée. Elle ne vient jamais de la charge.
+  packedBy String?   @map("packed_by")
+
+  lines ProductionOrderLine[]
+
+  /// Une commande n'entre qu'UNE fois dans une journée. Refusé en base plutôt
+  /// que vérifié : une clôture rejouée ne doit pas doubler ce qu'on fabrique.
+  @@unique([serviceDay, orderId])
+  @@index([serviceDay, packedAt])
+  @@map("production_order")
+  @@schema("production")
+}
+
+/// La REMISE d'une commande, telle que le fournil la constate.
+///
+/// ## Pourquoi elle n'est pas sur `ProductionOrder`
+///
+/// Une `ProductionOrder` n'existe que si une clôture l'a inscrite ; une commande
+/// passée après la clôture de sa journée est pourtant remettable — la règle de
+/// remise laisse passer `placed` exprès, pour ne pas renvoyer un client qui est
+/// là avec son colis prêt. L'y accrocher obligerait à créer une ligne de plan à
+/// la volée, ce qui fausserait le compte à produire.
+///
+/// ## Ce que les deux uniques rendent impossible
+///
+/// Une seconde remise ne s'écrit pas. Ce n'est pas une condition dans un `WHERE`
+/// qu'on peut oublier de recopier : c'est la base qui refuse, par le chemin du
+/// scan (`orderId`) comme par celui de la saisie (`reference`).
+model OrderHandover {
+  id String @id @default(cuid())
+
+  /// L'identifiant de la commande côté COMMERCE. Opaque : on le garde pour
+  /// pouvoir en reparler, jamais pour aller lire à côté.
+  orderId   String @unique @map("order_id")
+  /// Le numéro lisible, `ORD-…` — celui qu'on saisit quand le code manque.
+  reference String @unique
+
+  handedOverAt  DateTime @map("handed_over_at")
+  /// L'identité staff qui a constaté, figée. Une preuve sans auteur n'en est pas.
+  handedOverBy  String   @map("handed_over_by")
+  /// `scan` (les deux parties étaient là) ou `manual` (l'équipe a saisi).
+  handedOverVia String   @map("handed_over_via")
+
+  @@map("order_handover")
+  @@schema("production")
+}
+
+/// Une ligne à fabriquer. **Aucun montant** — le fournil ne facture pas.
+model ProductionOrderLine {
+  id String @id @default(cuid())
+
+  orderId String          @map("production_order_id")
+  order   ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  sku         String
+  productName String @map("product_name")
+  quantity    Int
+
+  @@index([orderId])
+  @@map("production_order_line")
+  @@schema("production")
+}
+
+/// Le COMPTE À PRODUIRE : un article, une quantité, tous clients confondus.
+///
+/// C'est un instantané arrêté à la clôture, et la seule pièce de ce dossier qui
+/// ne se refabrique pas — les commandes bougent après.
+model ProductionCount {
+  id String @id @default(cuid())
+
+  serviceDay String        @map("service_day") @db.VarChar(10)
+  day        ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Cascade)
+
+  sku         String
+  productName String @map("product_name")
+  quantity    Int
+
+  @@unique([serviceDay, sku])
+  @@map("production_count")
+  @@schema("production")
+}

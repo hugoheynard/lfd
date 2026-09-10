@@ -1,0 +1,160 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// CompanyContact — un interlocuteur ADDITIONNEL de l'entreprise
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Les contacts en plus du contact principal (qui, lui, vit aplati sur `Company`
+/// et n'est jamais supprimable). Carnet d'adresses de l'entreprise : ce sont des
+/// personnes à joindre, PAS des utilisateurs du logiciel — aucun `auth0_sub`,
+/// aucun accès. Inviter un collègue à se connecter est un autre flux (membership).
+///
+/// Wallé par `company_id` comme tout ce qui appartient à un client.
+/// État d'un **mandat de prélèvement SEPA**. `active` seul autorise un
+/// prélèvement ; `revoked` est notre geste (retrait du client, ou remplacement),
+/// `failed` vient de la banque. Un mandat ne s'efface jamais, il se date.
+enum MandateStatus {
+  pending
+  active
+  revoked
+  failed
+
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LegalEntity — l'entité qui ÉMET : notre identité légale, notre ICS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Une **entité juridique émettrice** — nous, pas un client.
+///
+/// `Company` désigne le client professionnel dans tout le bloc `b2b` ; confondre
+/// les deux ferait d'un contexte entier un piège de vocabulaire, d'où un nom qui
+/// ne peut pas se lire de travers.
+///
+/// Plusieurs lignes sont prévues dès maintenant : LFC peut émettre sous deux
+/// entités, et une seconde doit rester **une ligne**, pas un déploiement.
+///
+/// ⚠️ **`creditor_iban` est la première coordonnée bancaire à entrer en base**,
+/// et c'est le nôtre — celui qui reçoit, pas celui qu'on débite. Il n'est jamais
+/// rendu par une API : la vue n'en montre que les quatre derniers caractères.
+/// L'IBAN des DÉBITEURS, lui, n'est pas ici et n'y sera jamais : il aura son
+/// coffre, avec son chiffrement et sa trace de lecture (T2).
+///
+/// L'invariant qui compte n'est PAS exprimable en base : `ics` ne se remplace
+/// pas une fois posé, parce qu'il est imprimé sur chaque mandat signé. Un
+/// `CHECK` ne sait pas comparer une valeur à son ancienne ; c'est
+/// `LegalEntity.assignCreditorIdentifier` qui refuse, et le refus est éprouvé.
+model LegalEntity {
+  id String @id
+
+  // Identité légale, telle qu'elle s'imprime sur les mentions. Tout est
+  // corrigible : les documents émis en ont pris une COPIE (`CreditorSnapshot`),
+  // donc corriger ici ne réécrit rien de ce qui est parti.
+  name      String
+  legalForm String @map("legal_form")
+  siren     String @unique
+  rcs       String @default("")
+  vatNumber String @default("") @map("vat_number")
+
+  // Le capital s'imprime sur les mentions légales : entier, en centimes.
+  shareCapitalCents Int @default(0) @map("share_capital_cents")
+
+  addressLine1 String @map("address_line1")
+  addressLine2 String @default("") @map("address_line2")
+  postalCode   String @map("postal_code")
+  city         String
+  countryCode  String @default("FR") @map("country_code")
+
+  // `null` = pas encore attribué par la Banque de France. C'est un état normal
+  // et durable : on prépare le dossier des semaines avant de recevoir l'ICS.
+  ics String? @unique
+
+  // Le compte où l'argent arrive. Il change — on peut changer de banque — et
+  // c'est ce qui le distingue de l'ICS.
+  creditorIban String? @map("creditor_iban")
+
+  // Le délai annoncé au débiteur entre la pré-notification et le débit. Négocié
+  // avec la banque, donc DE LA DONNÉE : le renégocier est une saisie, pas un
+  // déploiement, et deux entités peuvent ne pas avoir le même.
+  preNotificationDays Int @default(14) @map("pre_notification_days")
+
+  // La clé de l'objet qui porte le LOGO de l'entité, dans le stockage objet.
+  // `null` = pas de logo, et c'est un état parfaitement vivable : le mandat sort
+  // alors avec sa cellule vide. Le logo ne conditionne PAS l'encaissement.
+  //
+  // Une clé, pas les octets : aucun fichier ne vit en base. Et elle ne sort par
+  // aucune API — la vue ne dit que `hasLogo`, parce qu'une clé qui sort est une
+  // clé qu'on finit par accepter en entrée.
+  logoKey String? @map("logo_key")
+
+  // Archivée : elle n'émet plus rien, et ses documents passés restent. Pas de
+  // DELETE physique — une entité citée par un mandat signé ne s'efface pas.
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("legal_entities")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PaymentMandate — l'autorisation de prélever, PAS les coordonnées bancaires
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Un **mandat de prélèvement SEPA** rattaché à une société.
+///
+/// Agrégat à part, et non des colonnes sur `Company` : un mandat a un cycle de
+/// vie propre (accepté, révoqué, remplacé) et on veut en garder l'historique —
+/// pouvoir répondre, deux ans plus tard, « sur quelle autorisation avez-vous
+/// prélevé le 12 mars ? ». Un mandat révoqué reste donc en base, daté.
+///
+/// **Aucune coordonnée bancaire ici.** L'IBAN est saisi dans l'iframe Stripe et
+/// ne traverse jamais ce backend : on ne garde que des identifiants Stripe, la
+/// référence opposable (RUM) et de quoi *reconnaître* le compte (4 derniers
+/// chiffres, code banque). Ce qu'on achète à Stripe, c'est précisément de ne pas
+/// détenir la donnée bancaire.
+model PaymentMandate {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Rattachement Stripe. Le `customerId` est réutilisé d'un mandat au suivant
+  // pour la même société : un client Stripe par société, pas par autorisation.
+  stripeCustomerId String @map("stripe_customer_id")
+  paymentMethodId  String @map("payment_method_id")
+
+  // Référence opposable du mandat (RUM), rendue par Stripe. C'est elle qu'on
+  // dicte en contestation — pas l'id technique.
+  reference String
+
+  // De quoi reconnaître le compte à l'écran, et rien de plus : ces trois champs
+  // ne suffisent à débiter personne.
+  last4    String @default("")
+  bankCode String @default("") @map("bank_code")
+  country  String @default("")
+
+  status MandateStatus @default(pending)
+
+  // Date du consentement **déclaré** — celle du mandat papier déjà signé, donc
+  // souvent bien antérieure à la saisie (reprise de portefeuille).
+  acceptedAt DateTime  @map("accepted_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  // Le **mandat signé scanné** : la seule pièce qui prouve le consentement (le
+  // RIB ne prouve rien). Rangé dans le stockage objet comme le KBIS ; ici, sa
+  // clé et son nom. `null` = mandat sans filet, et la fiche doit le dire.
+  proofStorageKey String? @map("proof_storage_key")
+  proofFileName   String? @map("proof_file_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Un seul mandat ACTIF par société : index PARTIEL (`status = 'active'`), donc
+  // invisible du schéma Prisma — il vit dans la migration
+  // `20260811200000_mandat_prelevement`. Les mandats révoqués s'empilent sans
+  // se gêner ; c'est tout l'intérêt de garder l'historique.
+  @@index([companyId, status])
+  @@map("payment_mandates")
+  @@schema("public")
+}

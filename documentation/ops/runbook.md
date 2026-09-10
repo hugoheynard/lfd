@@ -393,7 +393,7 @@ DROP TABLE pim.allergen_entry;
 DROP TABLE pim.allergen_category;
 ```
 
-Puis **retirer les trois modèles de `prisma/schema.prisma`**
+Puis **retirer les trois modèles de `prisma/schema/pim/regulatory-sheet.prisma`**
 (`AllergenCategory`, `AllergenEntry`, `IngredientAllergen`), leurs trois lignes
 de `src/platform/database/schema-ops.counter.ts`, et régénérer le client.
 
@@ -408,7 +408,7 @@ allergen_entry_category_id_fkey … depends on table` : le `RESTRICT` impose de
   descendre des enfants vers les parents.
 - **`allergen_entry` avant `ingredient_allergen`** — même refus, par
   `ingredient_allergen_entry_id_fkey`.
-- **Modèles laissés dans `schema.prisma`** — le client reste généré contre des
+- **Modèles laissés dans `prisma/schema/pim/regulatory-sheet.prisma`** — le client reste généré contre des
   tables disparues : `prisma.allergenEntry` existe encore côté types et échoue
   au premier appel, en `42P01` (relation inexistante), c'est-à-dire au pire
   moment et loin de la cause.

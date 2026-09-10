@@ -1,0 +1,400 @@
+/// Les crédits qu'on ACCORDE : régler plus tard, et sous quel délai.
+///
+/// Payer à la commande n'y figure pas — ce n'est pas un terme, c'est l'absence
+/// de crédit, et c'est offert à tout le monde. Les mettre dans la même
+/// énumération faisait du déblocage un remplacement.
+enum DeferredTerm {
+  monthly
+
+  @@schema("public")
+}
+
+/// Cycle de vie d'un compte client (établissement).
+///
+/// `pending` = société déclarée par le client depuis « Mes entreprises », pas
+/// encore validée commercialement (défaut à la création). L'activation reste
+/// **manuelle côté commercial** — décision verrouillée dans
+/// `documentation/b2b/architecture-compte-client-cycle-de-vie.md`.
+///
+/// `suspended` ≠ `terminated` : `suspended` coupe l'accès **temporairement**
+/// (impayé, litige) et se lève ; `terminated` acte la **fin de la relation
+/// commerciale** — définitif du point de vue métier, l'historique est conservé.
+/// Ce qui a coupé l'accès — cf. `Company.suspensionCause`.
+enum SuspensionCause {
+  /// Décision humaine (impayé, litige) : seul un humain la lève.
+  staff
+  /// Conséquence du retrait de la vérification du KBIS : se lève à la re-vérification.
+  kbis_revoked
+
+  @@schema("public")
+}
+
+enum CompanyStatus {
+  pending
+  active
+  suspended
+  terminated
+
+  @@schema("public")
+}
+
+/// Rôle d'une personne AU SEIN d'une société donnée — porté par le `Membership`,
+/// donc variable d'une société à l'autre pour la même personne.
+/// `company_admin` = gère les users/commandes de cette société (le
+/// « gestionnaire », rôle du créateur) ; `member` = passe des commandes.
+/// Ce qu'une personne peut faire **dans cette société-là**.
+///
+/// `owner` n'est pas attribué, il est CONSTATÉ : c'est le détenteur, celui dont
+/// l'adresse a servi à ouvrir le compte. Le proposer dans un menu laisserait
+/// croire qu'on peut en avoir deux, ou zéro.
+enum CustomerRole {
+  owner
+  admin
+  orders
+  billing
+
+  @@schema("public")
+}
+
+/// Cycle de vie d'une identité customer (provisioning → actif).
+enum UserStatus {
+  invited
+  active
+  disabled
+
+  @@schema("public")
+}
+
+/// À quoi sert une adresse.
+///
+/// Deux valeurs, en anglais comme le reste du code. Elles ont été
+/// `facturation`/`livraison` jusqu'au 2026-08-25 : la bascule s'est faite en
+/// trois déploiements — étendre, basculer, resserrer — parce qu'une valeur
+/// d'enum est une DONNÉE écrite en base, pas un nom
+/// (`documentation/langue-du-code.md` §4 quater).
+enum AddressKind {
+  billing
+  delivery
+
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Company — le TENANT (établissement client pro)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Company {
+  id String @id @default(cuid())
+
+  // Référence humaine courte (`C-XXXXXX`), lisible et dictable au téléphone —
+  // pour que le client donne sa référence en cas de panne de service. Générée à
+  // la création, jamais l'`id` technique (cuid, imprononçable).
+  reference String @unique
+
+  // Identité légale (cf. Etablissement, front)
+  raisonSociale  String @map("raison_sociale")
+  enseigne       String @default("") // nom commercial si différent
+  formeJuridique String @map("forme_juridique") // SAS, SARL, EI…
+  siret          String
+  vatNumber      String @default("") @map("tva_intracom")
+
+  // Code NAF (activité principale) résolu depuis le SIRET via l'API entreprises —
+  // vide tant qu'inconnu. Dimension d'analyse commerciale (segmenter l'acquisition
+  // par secteur) : cf. documentation/b2b/commercial-data-analytics.md.
+  nafCode String @default("") @map("naf_code")
+
+  // Contact PRINCIPAL de l'entreprise (value object aplati). Semé du profil du
+  // créateur ; c'est la carte « Admin du compte entreprise ». Contact unique et
+  // obligatoire — les autres interlocuteurs sont des `CompanyContact` (0..N).
+  contactPrenom    String @map("contact_prenom")
+  contactNom       String @map("contact_nom")
+  contactFonction  String @default("") @map("contact_fonction")
+  contactEmail     String @map("contact_email")
+  contactTelephone String @default("") @map("contact_telephone")
+
+  // Facturation (un seul champ pour l'instant → sur Company ; extraire un
+  // BillingProfile le jour où ça grossit : plafond crédit, email de facturation…).
+  //
+  // `grantedTerms` = les crédits ACCORDÉS, cumulatifs et possiblement vides.
+  // Vide = la société paie à la commande, ce que tout le monde peut faire de
+  // toute façon. Écrit **uniquement par le staff** : le client ne s'accorde pas
+  // un délai de règlement. Sa demande atterrit dans `requestedTerm` (`null` =
+  // aucune), pour ne pas confondre « souhaité » et « accordé ».
+  grantedTerms  DeferredTerm[] @map("granted_terms")
+  requestedTerm DeferredTerm?  @map("requested_term")
+
+  // Défaut `pending` : une société n'est jamais cliente parce qu'elle a été
+  // saisie — elle le devient par une activation commerciale explicite.
+  status CompanyStatus @default(pending)
+
+  // POURQUOI le compte est suspendu. Ce n'est pas de la décoration : la reprise
+  // automatique en dépend. Une suspension déclenchée par le retrait de la
+  // vérification du KBIS se lève d'elle-même quand un extrait est vérifié à
+  // nouveau — c'est la même règle lue à l'endroit. Une suspension décidée par le
+  // staff (impayé, litige) ne se lève JAMAIS toute seule : sans cette colonne,
+  // certifier un KBIS rouvrirait le robinet d'un client en recouvrement.
+  // `null` hors suspension.
+  suspensionCause SuspensionCause? @map("suspension_cause")
+
+  // KBIS — l'extrait déposé par le client, demandé pour la validation. Le fichier
+  // vit dans le stockage objet (R2) ; on ne garde ici que ses métadonnées et sa
+  // CLÉ de stockage. Tous null = aucun KBIS déposé. La **certification** est
+  // propre au fichier : `kbisCertifiedAt` est posé par le staff quand l'extrait
+  // est validé, et **remis à null à chaque (re)dépôt** — remplacer le KBIS
+  // invalide la certification précédente. Découplé de `status` : un fichier
+  // remplacé sur une société active ne reste pas « certifié » à tort.
+  kbisStorageKey  String?   @map("kbis_storage_key")
+  kbisFileName    String?   @map("kbis_file_name")
+  kbisContentType String?   @map("kbis_content_type")
+  kbisSize        Int?      @map("kbis_size")
+  kbisUploadedAt  DateTime? @map("kbis_uploaded_at")
+  kbisCertifiedAt DateTime? @map("kbis_certified_at")
+
+  // QUI a certifié. Le `sub` du token staff est l'identifiant qui reste
+  // résolvable après un changement de nom ; le nom et le périmètre sont un
+  // INSTANTANÉ de ce qui était vrai ce jour-là. C'est l'objet même d'une trace
+  // d'audit : « qui a engagé sa parole, à quel titre, à cette date » — pas « qui
+  // porte ce rôle aujourd'hui ». Nuls quand le sub n'est rattaché à aucune fiche
+  // de l'annuaire staff (compte non provisionné) : on n'invente pas un nom.
+  kbisCertifiedBySub  String? @map("kbis_certified_by_sub")
+  kbisCertifiedByName String? @map("kbis_certified_by_name")
+  kbisCertifiedByRole String? @map("kbis_certified_by_role")
+
+  // Préférence d'ACHEMINEMENT : comment ce client est servi d'habitude. Ce n'est
+  // pas une contrainte — la commande s'ouvre dessus, le client peut en changer
+  // au panier. `null` = aucune préférence posée, ce qui n'est PAS « retrait » :
+  // c'est l'état de tout le portefeuille existant, et il doit rester lisible.
+  //
+  // Les deux pointeurs sont facultatifs même quand la méthode est posée : `null`
+  // renvoie au DÉFAUT du moment (celui de la plateforme pour le retrait, celui
+  // de la société pour la livraison). Pointer explicitement sur l'adresse par
+  // défaut la figerait — le jour où elle change, la préférence désignerait
+  // encore l'ancienne. Les deux FK sont en `SetNull` : supprimer un point de
+  // retrait ou archiver une adresse fait retomber la préférence sur le défaut,
+  // jamais sur un pointeur mort.
+  preferredFulfillmentMethod FulfillmentMethod? @map("preferred_fulfillment_method")
+
+  preferredPickupAddressId String?        @map("preferred_pickup_address_id")
+  preferredPickupAddress   PickupAddress? @relation(fields: [preferredPickupAddressId], references: [id], onDelete: SetNull)
+
+  preferredDeliveryAddressId String?  @map("preferred_delivery_address_id")
+  preferredDeliveryAddress   Address? @relation("PreferredDelivery", fields: [preferredDeliveryAddressId], references: [id], onDelete: SetNull)
+
+  /// Exige-t-on une signature à la remise ? Le **socle** de la société : chaque
+  /// adresse peut le redéfinir (`delivery_specs.signatureRequired`, `null` =
+  /// elle hérite), et chaque commande après elle.
+  ///
+  /// Une exigence de la SOCIÉTÉ, pas du lieu — « on signe toujours » se décide
+  /// une fois. Posée par adresse, comme avant, il fallait y penser N fois puis
+  /// se souvenir de la N+1ᵉ.
+  deliverySignatureRequired Boolean @default(false) @map("delivery_signature_required")
+
+  // Posé au passage `pending → active` par l'activation commerciale explicite
+  // (ancre d'ancienneté commerciale, distincte de `createdAt`). `null` = jamais activé.
+  activatedAt DateTime? @map("activated_at")
+
+  // QUI a activé, à quel titre — même patron que la certification du KBIS, et
+  // pour la même raison : ouvrir la commande à un client est un ENGAGEMENT, pas
+  // un changement de colonne. Le `sub` survit aux changements de nom ; le nom et
+  // le périmètre sont un instantané de ce qui était vrai ce jour-là. Nuls pour
+  // les comptes activés avant cette trace, et pour un sub hors annuaire staff.
+  activatedBySub  String? @map("activated_by_sub")
+  activatedByName String? @map("activated_by_name")
+  activatedByRole String? @map("activated_by_role")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships        Membership[]
+  contacts           CompanyContact[]
+  addresses          Address[]
+  orders             Order[]
+  /// Les dérogations d'heure limite accordées à ce client.
+  orderCutoffWaivers OrderCutoffWaiver[]
+  orderDraft         OrderDraft?
+  supportRequests    SupportRequest[]
+  mandates           PaymentMandate[]
+
+  /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
+  alertOverrides AccountAlertOverride[]
+
+  /// Alertes déclenchées sur ce compte (cf. alerts/).
+  alerts AccountAlert[]
+
+  // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
+  // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.
+  // Le SIRET est facultatif à l'ouverture ; les chaînes vides sont des absences,
+  // pas des doublons.
+  @@index([siret])
+  @@map("companies")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User — la PERSONNE qui possède le compte (son profil), sans société propre
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id String @id @default(cuid())
+
+  // Identité Auth0 (aucun mot de passe stocké ici). `email` est la clé humaine ;
+  // Auth0 en reste propriétaire, on le synchronise (cf. CustomerIdentityPort).
+  auth0Sub String @unique @map("auth0_sub")
+  email    String
+
+  // Profil de la personne — DISTINCT du contact de la société. Chaîne vide et
+  // non `null` pour l'absence, comme partout ailleurs dans ce schéma.
+  firstName String @default("") @map("first_name")
+  lastName  String @default("") @map("last_name")
+  phone     String @default("")
+
+  status UserStatus @default(invited)
+
+  // L'adresse a-t-elle été PROUVÉE ? Fait qui vit chez le fournisseur d'identité
+  // (Auth0) : on le recopie ici plutôt que de l'interroger à chaque affichage —
+  // une fiche client ne doit pas dépendre d'un aller-retour réseau externe.
+  // Rafraîchi à la connexion et quand on émet un lien de mot de passe.
+  emailVerified Boolean @default(false) @map("email_verified")
+
+  // Préférences de navigation/affichage de la personne (bag JSON, extensible).
+  // Aujourd'hui : `catalogueView` (grille/rayons/liste). Absent = pas de choix
+  // explicite → le front applique son défaut. Sac plutôt qu'une colonne par
+  // préf : ces réglages purement UI n'ont pas d'invariant et grossiront.
+  navPrefs Json? @map("nav_prefs")
+
+  // Traçabilité : id du STAFF (autre db) qui a provisionné ce client.
+  // Pas de FK cross-db → simple identifiant.
+  invitedBy String? @map("invited_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships      Membership[]
+  ordersPlaced     Order[]
+  subscriptions    Subscription[]
+  supportRequests  SupportRequest[]
+  shopCart         ShopCart?
+  orderIdempotency OrderIdempotency[]
+
+  @@map("users")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Membership — le RATTACHEMENT d'une personne à une société cliente
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Une personne peut n'appartenir à aucune société (elle vient de créer son
+/// compte : « Mes entreprises » est vide et propose d'en créer une), à une, ou à
+/// plusieurs. C'est pourquoi le rattachement est une table à part et non une
+/// colonne `company_id` sur `users` : cette colonne imposait exactement une
+/// société, et rendait l'état « aucune » impossible à représenter.
+///
+/// Le `role` vit ICI, pas sur `users` : on peut être gestionnaire d'une société
+/// et simple membre d'une autre.
+///
+/// ⚠️ Tenancy : le mur reste `company_id`, mais la société d'une requête ne se
+/// déduit plus de l'utilisateur — elle doit être **choisie explicitement** et
+/// vérifiée contre les memberships du demandeur. Aucun endpoint métier n'est
+/// encore muré ; le premier (commandes, adresses) devra porter ce choix.
+model Membership {
+  id String @id @default(cuid())
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  role CustomerRole
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Une personne n'est rattachée qu'une fois à une société donnée.
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@map("memberships")
+  @@schema("public")
+}
+
+model CompanyContact {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  prenom    String
+  nom       String
+  fonction  String @default("")
+  email     String
+  telephone String @default("")
+
+  // Ce que cette personne fait pour la société. NULL sur les contacts créés
+  // avant que le rôle existe : « à préciser » à l'écran. Le deviner (« sûrement
+  // commandes ») propagerait une valeur inventée qu'on ne saurait plus
+  // distinguer d'une vraie.
+  role CustomerRole?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Une adresse = un interlocuteur par société. Index unique sur
+  // (company_id, lower(email)), posé en SQL dans la même migration : Prisma ne
+  // sait pas exprimer d'index sur expression.
+  @@index([companyId])
+  @@map("company_contacts")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Address — 1 facturation + N livraison, 1 livraison par défaut
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Address {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  /// Sociétés qui ont fait de cette adresse leur livraison préférée.
+  preferredBy Company[] @relation("PreferredDelivery")
+
+  kind  AddressKind
+  label String // « Siège », « Boutique Bastille »…
+
+  ligne1     String
+  ligne2     String @default("")
+  codePostal String @map("code_postal")
+  ville      String
+  pays       String
+
+  // Adresse de livraison par défaut.
+  //
+  // « **Au plus une** livraison à `true` par société » est tenu par un index
+  // unique PARTIEL, posé en SQL brut (`20260903190000_un_seul_defaut_de_livraison`)
+  // parce que Prisma ne sait pas décrire un index à prédicat. Ne pas le chercher
+  // ici : il existe en base, et un `migrate diff` ne propose pas de le retirer.
+  //
+  // « **Au moins une** » ne s'exprime pas par un index — c'est `DeliveryAddressBook`
+  // qui le tient, et lui seul. La règle vit donc à deux endroits, faute de mieux.
+  isDefault Boolean @default(false) @map("is_default")
+
+  // Consignes de LIVRAISON (note livreurs, créneaux préférés, contact sur place,
+  // point GPS) — la forme est le `DeliverySpecs` de `@lfd/contracts`, stockée en
+  // JSON car on ne requête jamais par créneau. `null` sur une facturation, et sur
+  // une livraison tant qu'aucune consigne n'a été saisie.
+  deliverySpecs Json? @map("delivery_specs")
+
+  // Pas de DELETE physique : on archive.
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  deliveredOrders Order[] @relation("OrderDeliveryAddress")
+
+  @@index([companyId, kind])
+  @@map("addresses")
+  @@schema("public")
+}

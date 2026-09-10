@@ -1,0 +1,395 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// ActivityEvent — le JOURNAL d'événements (schéma `growth`, isolé)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Journal **append-only** du module croissance : une ligne = un fait métier
+/// observé (`order.placed`, `company.declared`…). C'est de l'**event streaming**
+/// (projection analytique/audit), **PAS de l'event sourcing** : la vérité métier
+/// reste transactionnelle (schéma `public`), on ne reconstruit JAMAIS l'état
+/// depuis ce journal. Ce n'est **pas un agrégat** — de l'infrastructure, un seul
+/// invariant : l'immuabilité (jamais d'UPDATE/DELETE).
+///
+/// Volontairement dans son **propre schéma Postgres `growth`** dès maintenant :
+/// le déménagement vers un store dédié (trip-wire (b) du design) est ainsi
+/// trivial, et `growth/` ne touche jamais les tables de `public` — il ne consomme
+/// que ce contrat d'événements. Partitionnement mensuel + rétention = affaire
+/// d'une migration SQL brute ultérieure (non exprimable en Prisma déclaratif).
+model ActivityEvent {
+  /// ULID (fourni par l'`IdGenerator`, pas de `@default`) : triable par le temps
+  /// → pagination stable sur un flux append-only.
+  id String @id
+
+  /// Type de l'événement, ex. `order.placed`. Le `payload` en dépend.
+  type String
+
+  /// Le `payload` évolue → on le versionne pour lire les vieilles lignes.
+  schemaVersion Int @default(1) @map("schema_version")
+
+  /// Temps de l'ÉVÉNEMENT (métier, autorité = `Clock` backend).
+  occurredAt DateTime @map("occurred_at")
+
+  /// Temps d'INGESTION (écriture au journal) — ≠ `occurredAt` si tardif/rejoué.
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  /// Sujet de l'événement : `user` | `company` | `lead`.
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  /// Établissement rattaché — posé maintenant (nullable), rempli plus tard par
+  /// l'identity resolution (Phase 3). Indexé dès aujourd'hui.
+  establishmentId String? @map("establishment_id")
+
+  /// Nature de l'acteur : `customer` | `staff` | `system` (lu du RequestContext).
+  actorType String @map("actor_type")
+
+  /// QUI, précisément. `actor_id` est le `sub` staff ou l'id client (nul pour
+  /// `system`) ; `actor_name` est un INSTANTANÉ du nom au moment de l'acte —
+  /// figé, comme toute trace, parce qu'un journal doit dire ce qui était vrai ce
+  /// jour-là. Nuls pour les événements antérieurs à cette trace, et quand
+  /// l'annuaire ne connaît pas l'acteur : le journal affiche alors sa nature
+  /// (« un membre du staff »), et n'invente pas un nom.
+  actorId   String? @map("actor_id")
+  actorName String? @map("actor_name")
+  /// La FONCTION de l'acteur, en clair (« Commercial »), figée avec son nom et
+  /// pour la même raison. Elle ne coûte aucune lecture de plus : c'est une
+  /// colonne de la fiche qu'on lisait déjà pour le nom.
+  actorRole String? @map("actor_role")
+
+  /// Corrélation bout-en-bout (le `traceId` W3C de la requête).
+  traceId String @map("trace_id")
+
+  /// Anti double-comptage : une émission rejouée porte la même clé → refusée.
+  idempotencyKey String @unique @map("idempotency_key")
+
+  /// Charge utile typée par `type` (montants en CENTIMES entiers, jamais de float).
+  payload Json
+
+  @@index([subjectType, subjectId, occurredAt])
+  @@index([type, occurredAt])
+  @@index([establishmentId, occurredAt])
+  @@map("activity_events")
+  @@schema("growth")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LeadScore — le READ-MODEL matérialisé du cockpit (schéma `growth`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Read-model **matérialisé** de la queue « 5 meilleurs coups du jour » : un lead
+/// scoré (0..100) et typé par play. **Dérivé du journal** par un `derive*` pur,
+/// **recalculé par cron 3×/jour** (04h/12h/20h, heures creuses) via
+/// `POST /admin/recompute` — **jamais** temps réel, **jamais** on-read (rejouer
+/// tout le journal à chaque affichage = fondu). Le cockpit **lit ce read-model**,
+/// jamais le journal brut.
+///
+/// Ce n'est **pas un agrégat** (zéro invariant réfutable) : une **projection**
+/// intégralement remplacée à chaque recompute (`replaceAll` = wipe + insert). La
+/// clé métier est le couple (sujet-type, sujet-id) → une seule ligne par lead.
+model LeadScore {
+  /// Sujet du lead : `user` (personne) | `company` (dossier d'activation).
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  /// Libellé lisible figé au recompute (e-mail connu, sinon l'identifiant).
+  label String
+
+  /// Play recommandée : `lock_in` | `rescue` | `upgrade` | `win_back`.
+  play String
+
+  /// Score de priorité, entier 0..100 (fonction pure auditable).
+  score Int
+
+  /// Justification courte du score/play, rendue telle quelle au commercial.
+  reason String
+
+  /// Trajectoire du rythme si connue (`null` pour un dossier société).
+  momentum String?
+
+  /// Total commandé rattaché au lead, en centimes.
+  monetaryCents Int @map("monetary_cents")
+
+  /// Jours depuis la dernière activité.
+  recencyDays Int @map("recency_days")
+
+  /// Instant du recompute qui a produit cette ligne (fraîcheur de la reco).
+  computedAt DateTime @map("computed_at")
+
+  @@id([subjectType, subjectId])
+  @@index([score(sort: Desc)])
+  @@map("lead_scores")
+  @@schema("growth")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lead — l'AGRÉGAT de démarchage (cold), schéma `growth`
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Lead **cold** : un prospect **saisi** par un commercial (sortant), avec un
+/// **état de suivi**. Contrairement à hot/mid (projections du journal, zéro
+/// invariant), le cold est un **agrégat** : le `status` suit un pipeline explicite
+/// qui **ne recule jamais** (converted/lost terminaux). Vit dans le schéma `growth`
+/// (donnée owned par le module croissance), pas dans `public`.
+///
+/// `linkedUserId` porte le **rapprochement** : quand le prospect démarché s'inscrit
+/// (match e-mail), le lead est rattaché à son compte et converti. Indexé sur
+/// `email` (clé du rapprochement) et `status` (filtrage de la file active).
+model Lead {
+  /// ULID préfixé `lead_` (fourni par l'IdGenerator).
+  id String @id
+
+  /// Raison sociale / nom de l'établissement démarché (seul champ obligatoire).
+  businessName String @map("business_name")
+
+  /// Contact chez le prospect, vide si non renseigné.
+  contactName String @default("") @map("contact_name")
+
+  /// E-mail du prospect — **clé de rapprochement** à l'inscription. Vide si inconnu.
+  email String @default("")
+
+  phone String @default("")
+
+  /// SIRET si connu (identité business), vide sinon.
+  siret String @default("")
+
+  /// Étape du pipeline : new | contacted | qualified | negotiating | converted | lost.
+  status String @default("new")
+
+  /// Notes libres du commercial.
+  notes String @default("")
+
+  /// Compte rapproché (le prospect s'est inscrit), ou null. Pas de FK dure : le
+  /// lead vit dans `growth` et ne dépend pas de la table `users` de `public`.
+  linkedUserId String? @map("linked_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Dernier contact enregistré, ou null si jamais contacté.
+  lastContactedAt DateTime? @map("last_contacted_at")
+
+  @@index([email])
+  @@index([status])
+  @@map("leads")
+  @@schema("growth")
+}
+
+// NB — Volontairement HORS de ce schéma :
+// - ProductionPlan (« qtés à produire demain ») : c'est de la donnée PRODUCTION
+//   (contexte interne/labo), pas du commerce customer-facing. Elle vit côté admin,
+//   comme une projection dérivée des Order de ce schéma (calculée par le cron).
+// - Cart : reste côté client (localStorage) jusqu'à la validation ; seule la
+//   commande (Order) est persistée.
+// - Stock : décision « source de vérité » reportée (Shopify vs nous).
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Marché ciblé — pénétration par territoire (config commerciale staff)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Un code NAF ciblé (catégorie d'acteurs professionnels visés). Config globale
+/// staff, appliquée à toutes les zones lors du comptage via l'API entreprises.
+model MarketNafCode {
+  code      String   @id
+  label     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("market_naf_codes")
+  @@schema("growth")
+}
+
+/// Une zone ciblée (code postal) avec le nombre d'acteurs visés STOCKÉ. `addressable`
+/// = somme des comptages sur les NAF ciblés au dernier rafraîchissement ; `perNaf` =
+/// le détail par code NAF ; `fetchedAt` = null tant qu'on n'a pas redemandé l'API.
+model MarketZone {
+  codePostal  String    @id @map("code_postal")
+  addressable Int       @default(0)
+  perNaf      Json      @default("[]") @map("per_naf")
+  fetchedAt   DateTime? @map("fetched_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("market_zones")
+  @@schema("growth")
+}
+
+/// Une **terminaison** de compte (churn), enregistrée à la clôture par le client ou
+/// le commercial. `reason` = la catégorie de départ ; `outcome` distingue une
+/// **tentative rattrapée** (`recovered`, le compte est resté) d'une **résiliation
+/// confirmée** (`confirmed`). Sert au camembert des raisons (confirmées) et au taux
+/// de rattrapage (recovered / tentatives), global et par catégorie.
+model CompanyTermination {
+  id           String    @id
+  companyId    String    @map("company_id")
+  /// price | competitor | closure | quality | no_need | unresponsive | other.
+  reason       String
+  /// Sous-raison précise (ex. `delivery_cost`, `catalog_price`), vide si non précisée.
+  subReason    String    @default("") @map("sub_reason")
+  /// 3ᵉ niveau optionnel (ex. catégorie produit sous `better_price`), vide sinon.
+  detail       String    @default("") @map("detail")
+  /// client | commercial (qui a enregistré la terminaison).
+  initiatedBy  String    @map("initiated_by")
+  /// confirmed (résilié) | recovered (rattrapé, compte conservé).
+  outcome      String
+  /// Pour un `recovered` : `auto` (plateforme) | `sales` (commercial), vide sinon.
+  recoveredVia String    @default("") @map("recovered_via")
+  /// Instant de l'action qui a rattrapé (délai de réaction), null si non rattrapée.
+  resolvedAt   DateTime? @map("resolved_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([outcome, reason])
+  @@map("company_terminations")
+  @@schema("growth")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Prise de rendez-vous — disponibilité déclarée + rendez-vous, schéma `growth`
+// Doc : documentation/b2b/architecture-prise-de-rendez-vous.md
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Règle hebdomadaire** de disponibilité commerciale : « le mardi, 09:00–12:00 ».
+///
+/// Une règle n'est PAS une liste de créneaux : les créneaux en sont **dérivés au
+/// calcul** (`slotsFor`). Deux conséquences voulues — changer un horaire est un
+/// `UPDATE` sur une ligne (pas une régénération), et il n'existe aucun créneau
+/// persisté qui puisse diverger de l'horaire réel.
+///
+/// Les heures sont en **heure locale d'Europe/Paris** (`HH:MM`) : c'est ce que le
+/// commercial saisit et pense, et la résolution en instant se fait au calcul —
+/// donc le changement d'heure ne décale rien.
+///
+/// Pas de `staff_user_id` : la v1 porte **un agenda d'équipe**. L'identité staff
+/// n'est pas dans le jeton aujourd'hui, une colonne qu'on ne saurait pas remplir
+/// serait une dette. Extension prévue : la colonne nullable (null = équipe).
+model AvailabilityRule {
+  /// ULID préfixé `avrule_`.
+  id String @id
+
+  /// Jour de la semaine, convention `Date.getDay()` : 0 = dimanche … 6 = samedi.
+  weekday Int
+
+  /// Bornes locales `HH:MM`, `start` strictement avant `end` (garanti au contrat).
+  startTime String @map("start_time")
+  endTime   String @map("end_time")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([weekday])
+  @@map("availability_rules")
+  @@schema("growth")
+}
+
+/// **Exception** datée à la grille hebdomadaire : une fermeture (congés, férié) ou
+/// une ouverture ponctuelle (un samedi de salon). Sans bornes, une fermeture ferme
+/// la journée entière.
+model AvailabilityException {
+  /// ULID préfixé `avexc_`.
+  id String @id
+
+  /// Jour concerné, `AAAA-MM-JJ` en heure locale — un jour de calendrier, pas un
+  /// instant : stocké en `DATE` pour qu'aucun fuseau ne puisse le décaler.
+  day DateTime @db.Date
+
+  /// `closed` (fermeture) | `open` (ouverture hors grille).
+  kind String
+
+  /// Bornes locales `HH:MM`, ou null pour une fermeture de journée entière.
+  startTime String? @map("start_time")
+  endTime   String? @map("end_time")
+
+  /// Motif libre, affiché au commercial (« congés », « salon »).
+  reason String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([day])
+  @@map("availability_exceptions")
+  @@schema("growth")
+}
+
+/// Un **rendez-vous** commercial posé sur un créneau.
+///
+/// `status` suit une machine à états à terminaux **définitifs** (`honored`,
+/// `no_show`, `cancelled`) : reprogrammer, c'est annuler puis créer, avec
+/// `rescheduled_from_id` pour garder le fil.
+///
+/// ⚠️ L'**exclusivité du créneau** ne tient pas en code applicatif (deux requêtes
+/// concurrentes passeraient la même vérification avant qu'une seule n'écrive).
+/// Elle est garantie par un **index unique partiel** posé en SQL brut dans la
+/// migration — Prisma ne sait pas modéliser un index conditionnel :
+///     CREATE UNIQUE INDEX appointments_slot_unique
+///       ON growth.appointments (start_at) WHERE status <> 'cancelled';
+/// Un rendez-vous annulé libère donc son créneau ; un rendez-vous actif le
+/// verrouille. La violation se traduit en 409, jamais en 500.
+///
+/// Le **sujet est discriminé et non muré par la société** : un prospect froid
+/// (`lead`) ou une personne sans société (`user`) doit pouvoir être reçu — c'est
+/// justement la population qu'on cherche à capter. Pas de FK dure pour la même
+/// raison que `Lead.linked_user_id` : `growth` ne dépend pas des tables de `public`.
+model Appointment {
+  /// ULID préfixé `appt_`.
+  id String @id
+
+  /// Bornes du rendez-vous, en **UTC** (la vérité ; la lecture locale se dérive).
+  startAt DateTime @map("start_at")
+  endAt   DateTime @map("end_at")
+
+  /// requested | confirmed | honored | no_show | cancelled.
+  status String @default("requested")
+
+  /// phone | visio | onsite.
+  channel String
+
+  /// Motif — discover | quote | order | recurring | billing | other.
+  purpose String @default("other")
+
+  /// company | lead | user.
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  contactName  String @default("") @map("contact_name")
+  contactEmail String @default("") @map("contact_email")
+  contactPhone String @default("") @map("contact_phone")
+
+  /// Message libre du demandeur.
+  message String @default("")
+
+  /// Motif d'annulation — exigé par l'agrégat quand on annule, vide sinon.
+  cancelReason String @default("") @map("cancel_reason")
+
+  /// Rendez-vous d'origine si celui-ci le reprogramme, null sinon.
+  rescheduledFromId String? @map("rescheduled_from_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([startAt])
+  @@index([status])
+  @@index([subjectType, subjectId])
+  @@map("appointments")
+  @@schema("growth")
+}
+
+/// **Politique de réservation** — les bornes que le commercial pose autour de sa
+/// grille. Singleton (une constante fixe en `id` garantit l'unicité), et rangée
+/// dans `growth` plutôt que dans `b2b_platform_settings` : `growth` ne doit
+/// dépendre d'aucune table de `public`, c'est ce qui rend son extraction possible
+/// le jour venu.
+model BookingPolicySettings {
+  id String @id
+
+  /// Durée d'un rendez-vous, en minutes — aussi le pas de découpe des plages.
+  slotMinutes Int @default(30) @map("slot_minutes")
+
+  /// On ne réserve pas dans les N heures qui viennent (délai de prévenance).
+  leadTimeHours Int @default(24) @map("lead_time_hours")
+
+  /// On ne réserve pas au-delà de N jours (horizon).
+  horizonDays Int @default(30) @map("horizon_days")
+
+  /// Canaux proposés au client : phone | visio | onsite (au moins un).
+  channels String[] @default(["phone"])
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("booking_policy_settings")
+  @@schema("growth")
+}

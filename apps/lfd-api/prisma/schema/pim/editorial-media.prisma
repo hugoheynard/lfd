@@ -1,0 +1,129 @@
+// ---------------------------------------------------------------------------
+// Couche éditoriale (doc 01). Rythme de vie propre : change à chaque saison,
+// là où l'identité ne bouge jamais. D'où une table séparée, pas des colonnes.
+// ---------------------------------------------------------------------------
+
+enum MediaRole {
+  hero
+  gallery
+  lifestyle
+  thumbnail
+  print
+
+  @@schema("pim")
+}
+
+model ProductEditorial {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  descriptionShort Json?   @map("description_short")
+  descriptionLong  Json?   @map("description_long")
+  story            Json?
+  pairing          Json?
+  brand            String?
+  seoTitle         Json?   @map("seo_title")
+  seoDescription   Json?   @map("seo_description")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("product_editorial")
+  @@schema("pim")
+}
+
+/// **Un contenu, adressé par son empreinte.** Le magasin partagé des révisions.
+///
+/// Deux révisions qui partagent quatre-vingt-dix articles inchangés partagent
+/// quatre-vingt-dix lignes ICI : une ancre posée sur un catalogue stable ne
+/// coûte presque rien, et un diff se calcule en comparant des empreintes avant
+/// de lire un seul payload. C'est le mécanisme de git, pour la même raison — et
+/// c'est lui qui rend une révision du catalogue COMPLET abordable.
+///
+/// Jamais purgé avec une révision : un contenu peut être référencé par
+/// plusieurs. C'est ce que la clé étrangère de `CatalogRevisionItem` garantit.
+model CatalogContent {
+  /// SHA-256 du payload canonique (clés triées). L'empreinte EST l'identité.
+  hash String @id
+
+  /// L'article figé — la fiche entière moins les octets des visuels, qui vivent
+  /// dans le bucket et voyagent par leur URL.
+  payload Json
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  items CatalogRevisionItem[]
+
+  @@map("catalog_content")
+  @@schema("pim")
+}
+
+/// Agrégat propre : un visuel a son cycle de vie (upload, CDN) et peut servir
+/// plusieurs produits. On stocke le **master** + un point focal ; les tailles
+/// dérivées sont calculées par chaque canal, jamais ressaisies.
+/// Un visuel. `url` est ce que consomment le front et les canaux ; le reste
+/// décrit l'objet, et n'est renseigné que pour ce que NOUS hébergeons.
+///
+/// Les colonnes techniques sont toutes nullables, et c'est le modèle : une URL
+/// saisie à la main (tout ce qui existait avant le stockage média) n'a ni clé,
+/// ni type constaté, ni dimensions. `null` veut dire « pas mesuré », jamais
+/// « zéro » — un consommateur ne doit pas le coercer en taille.
+model MediaAsset {
+  id  String @id
+  url String
+  alt Json
+
+  /// L'étiquette de la bibliothèque — courte, non traduite, faite pour
+  /// RETROUVER. Distincte du texte alternatif, qui décrit l'image à qui ne la
+  /// voit pas : deux informations, deux publics. Vide tant que personne n'a
+  /// nommé le fichier.
+  name   String @default("")
+  focalX Float? @map("focal_x")
+  focalY Float? @map("focal_y")
+
+  /// La clé dans le bucket média — `products/{sha256}.{ext}`. `null` ⇒ l'octet
+  /// n'est pas chez nous. C'est par elle qu'un ramassage d'orphelins saura un
+  /// jour quel objet R2 plus aucune fiche ne référence.
+  storageKey  String? @map("storage_key")
+  /// Type MIME **constaté dans les octets** au dépôt, jamais annoncé.
+  contentType String? @map("content_type")
+  /// Taille intrinsèque, lue dans l'en-tête au dépôt. Sans elle, une galerie ne
+  /// peut pas réserver sa place et la fiche saute au chargement des images.
+  width       Int?
+  height      Int?
+  bytes       Int?
+
+  products ProductMedia[]
+
+  /// Les FAMILLES qui portent ce visuel. Sa présence change une règle
+  /// d'exploitation : le ramassage d'orphelins ne peut plus conclure d'un
+  /// `products: none` qu'un objet ne sert plus — il servirait encore ici.
+  categories CategoryMedia[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([url])
+  @@map("media_asset")
+  @@schema("pim")
+}
+
+/// Table de liaison dédiée — **pas** de FK polymorphe (`owner_type`/`owner_id`),
+/// qui priverait Postgres de toute intégrité référentielle (doc 01).
+model ProductMedia {
+  productId String     @map("product_id")
+  mediaId   String     @map("media_id")
+  product   Product    @relation(fields: [productId], references: [id])
+  media     MediaAsset @relation(fields: [mediaId], references: [id])
+  role      MediaRole
+  position  Int        @default(0)
+
+  /// Quand ce rattachement a bougé. Il n'était pas daté, et c'était sans
+  /// conséquence tant que personne ne demandait « la fiche a-t-elle changé
+  /// depuis ? » — `ProductReadiness` le demande, et une déclaration qui
+  /// ignorerait les visuels se dirait à jour après un changement de photo.
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@id([productId, mediaId])
+  @@index([productId])
+  @@map("product_media")
+  @@schema("pim")
+}

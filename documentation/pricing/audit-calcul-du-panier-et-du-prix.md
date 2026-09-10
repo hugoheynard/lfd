@@ -586,7 +586,7 @@ Affiché **deux fois**, par `formatCents` (donc `/100`) :
 `barre-panier/barre-panier.ts:37` et `panier-commande/panier-commande.ts:169`.
 
 **La chaîne est en millicentimes de bout en bout**, vérifiée fichier par
-fichier : `catalog_items.price_millicents` (`schema.prisma:2143`) →
+fichier : `catalog_items.price_millicents` (`public/staff.prisma:202`) →
 `ResolvedCatalogItem.unitPriceMillicents` (`prisma-catalog.reader.ts:165`) →
 `CatalogItemView.unitPriceMillicents` (`list-catalog.handler.ts:23`) →
 `CartLine.unitPriceMillicents`. Dix croissants à 2,00 € HT s'affichent donc
@@ -1078,7 +1078,7 @@ specificity.ts, floor-policy.ts, volume-ladder.ts, scope-index.ts}`,
   `pricing/domain/pricing-context.ts`
 - `apps/lfd-api/src/b2b/catalog/{application/queries/read-shop-catalogue.ts,
 infrastructure/prisma-catalog.reader.ts, domain/ports/catalog.reader.ts}`
-- `apps/lfd-api/prisma/schema.prisma` (colonnes `price_millicents`)
+- `apps/lfd-api/prisma/schema/public/orders.prisma` (colonnes `price_millicents`)
 - `apps/lfc-B2B-platform-frontend/src/app/client/{cart/cart-total.ts,
 cart/client-cart.service.ts, order-context.store.ts, mock-station.ts,
 shop/mock-order.ts}`, `legacy/data/{vat.ts,cart.service.ts}`

@@ -40,10 +40,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { prismaSchemaSource } from "./lib/prisma-schema.mjs";
+
 const ROOT = process.cwd();
 const SRC = "apps/lfd-api/src";
-const SCHEMA = "apps/lfd-api/prisma/schema.prisma";
-
 /** Le client Prisma généré n'est pas du code écrit ici — ses exemples de JSDoc non plus. */
 const SKIP = new Set(["node_modules", "dist", "client", "coverage"]);
 
@@ -88,7 +88,7 @@ for (const file of walk(join(ROOT, SRC))) {
  * rien. On la vérifie plutôt que de la supposer — c'est une ligne de schéma, et
  * elle se supprime aussi facilement qu'elle s'ajoute.
  */
-const schema = readFileSync(join(ROOT, SCHEMA), "utf8");
+const schema = prismaSchemaSource(ROOT);
 const missingUnique = [];
 for (const model of ["Product", "ProductVariant"]) {
   const block = schema.match(new RegExp(String.raw`^model ${model} \{[\s\S]*?^\}`, "mu"));

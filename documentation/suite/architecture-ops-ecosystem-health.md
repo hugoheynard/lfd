@@ -748,7 +748,7 @@ fournit donc le client **compté** sous `PrismaService`, et deux tests e2e
 **La table modèle → schéma est écrite à la main**, faute de DMMF exploitable au
 runtime en Prisma 7. Un modèle ajouté dans `growth` serait compté sous `public`,
 la répartition serait fausse, et **le total resterait juste** — donc rien ne le
-dirait. Un test relit `schema.prisma` et compare.
+dirait. Un test relit `prisma/schema/datasource.prisma` et compare.
 
 ### Le trou connu
 

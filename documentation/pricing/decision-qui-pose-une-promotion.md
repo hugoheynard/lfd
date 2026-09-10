@@ -239,25 +239,25 @@ client sous mercuriale la voit.
 
 ## 9. Ce qui a été vérifié, et où
 
-| Affirmation                                              | Vérifiée par                                                    |
-| -------------------------------------------------------- | --------------------------------------------------------------- |
-| `promotion` est un étage servi                           | `pricing/domain/price-rule.ts:21` (`PRICE_STAGES`)              |
-| Le moteur compose et scelle                              | `pricing/domain/resolve-price.ts:25-80`                         |
-| La non-superposition est une contrainte d'exclusion GiST | `schema.prisma`, modèle `PriceRule` (`price_rules_no_overlap`)  |
-| `stacksOverMercuriale` existe et vaut `false` par défaut | `schema.prisma`, modèle `PriceRule`                             |
-| La route de création existe                              | `pricing/http/admin-pricing.controller.ts:221`                  |
-| L'écran de saisie existe                                 | `lfc-B2B-admin-frontend/src/app/b2b/tarification/rule-panel/`   |
-| Le prix poussé est pré-altération                        | `packages/catalog-sync/src/snapshot.ts`, `syncVariantSchema`    |
-| Le référentiel ne connaît pas les sociétés               | `CLAUDE.md` §3, matrice `pim → b2b` = ✗                         |
-| Cinq rôles, aucun « communication »                      | `packages/contracts/src/staff-access.ts:170-174`                |
-| `commercial` = `b2b_pricing: write`, `pim_catalog: read` | `packages/contracts/src/staff-access.ts:275-303`                |
-| `isFeatured` existe déjà sur le miroir                   | `schema.prisma`, modèle `CatalogItemOverride`                   |
-| Le back-office est une seule app                         | `lfc-B2B-admin-frontend/src/app/{pim,b2b}/`                     |
-| `PriceRule` n'a **aucune** dimension canal               | `pricing/domain/price-rule.ts` — aucune occurrence de `channel` |
-| `PricingContext` non plus                                | `pricing/domain/price-rule.ts:184-209`                          |
-| Le canal Shopify pousse des prix (canonique seul)        | `pim/channels/shopify/products/projection.ts:119`               |
-| Le noyau de résolution est pur                           | `pricing/domain/{resolve-price,specificity,floor-policy}.ts`    |
-| `PricingContext` porte du commerce                       | `companyId`, `segmentId`, `cumulativeQuantity` (mêmes lignes)   |
+| Affirmation                                              | Vérifiée par                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `promotion` est un étage servi                           | `pricing/domain/price-rule.ts:21` (`PRICE_STAGES`)                                   |
+| Le moteur compose et scelle                              | `pricing/domain/resolve-price.ts:25-80`                                              |
+| La non-superposition est une contrainte d'exclusion GiST | `prisma/schema/public/pricing.prisma`, modèle `PriceRule` (`price_rules_no_overlap`) |
+| `stacksOverMercuriale` existe et vaut `false` par défaut | `prisma/schema/public/pricing.prisma`, modèle `PriceRule`                            |
+| La route de création existe                              | `pricing/http/admin-pricing.controller.ts:221`                                       |
+| L'écran de saisie existe                                 | `lfc-B2B-admin-frontend/src/app/b2b/tarification/rule-panel/`                        |
+| Le prix poussé est pré-altération                        | `packages/catalog-sync/src/snapshot.ts`, `syncVariantSchema`                         |
+| Le référentiel ne connaît pas les sociétés               | `CLAUDE.md` §3, matrice `pim → b2b` = ✗                                              |
+| Cinq rôles, aucun « communication »                      | `packages/contracts/src/staff-access.ts:170-174`                                     |
+| `commercial` = `b2b_pricing: write`, `pim_catalog: read` | `packages/contracts/src/staff-access.ts:275-303`                                     |
+| `isFeatured` existe déjà sur le miroir                   | `prisma/schema/public/catalog.prisma`, modèle `CatalogItemOverride`                  |
+| Le back-office est une seule app                         | `lfc-B2B-admin-frontend/src/app/{pim,b2b}/`                                          |
+| `PriceRule` n'a **aucune** dimension canal               | `pricing/domain/price-rule.ts` — aucune occurrence de `channel`                      |
+| `PricingContext` non plus                                | `pricing/domain/price-rule.ts:184-209`                                               |
+| Le canal Shopify pousse des prix (canonique seul)        | `pim/channels/shopify/products/projection.ts:119`                                    |
+| Le noyau de résolution est pur                           | `pricing/domain/{resolve-price,specificity,floor-policy}.ts`                         |
+| `PricingContext` porte du commerce                       | `companyId`, `segmentId`, `cumulativeQuantity` (mêmes lignes)                        |
 
 ⚠️ **Ce document n'a pas été soumis à un contradicteur.** `CLAUDE.md` §9 bis le
 demande pour tout plan qui touche l'argent ou une frontière de sécurité — et

@@ -149,7 +149,7 @@ bord.
 | Un gabarit posait **une règle par palier** (⚠️ jusqu'au 2026-09-08) | `price-template.handlers.ts` — il écrit désormais **une** `CompanyMercuriale`      |
 | `price_floors_one_per_scope` : une ligne par portée, sans temps     | migration `20260817160000_plancher_de_prix`                                        |
 | `ScopedPriceFloor` ne porte aucun cycle de vie                      | `price-rule.ts`                                                                    |
-| `price_floors` n'a ni `pausedAt` ni `pausedBy`                      | `schema.prisma`, modèle `PriceFloor`                                               |
+| `price_floors` n'a ni `pausedAt` ni `pausedBy`                      | `prisma/schema/public/pricing.prisma`, modèle `PriceFloor`                         |
 | Re-poser un plancher remet `archivedAt` à `null`                    | `prisma-pricing-floor.repository.ts`                                               |
 | `VolumeLadder` replie `archivedAt`, et `ladderAsRule` le recopie    | `volume-ladder-rows.ts` ; `volume-ladder.ts`                                       |
 | `resolveScopedFloor` a trois appelants                              | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts`      |

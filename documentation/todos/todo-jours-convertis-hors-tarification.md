@@ -29,7 +29,7 @@ qu'elle comprenne** — `IsoDate.toUtcDate()` le dit dans son propre JSDoc.
 
 ## 1. Structurellement conformes — colonnes `@db.Date`
 
-**Vérifié dans `schema.prisma`.** Ces colonnes n'ont pas d'heure ; la question
+**Vérifié dans `prisma/schema/public/orders.prisma`.** Ces colonnes n'ont pas d'heure ; la question
 du fuseau ne s'y pose pas.
 
 | Colonne                                            | Sites                                                                                                                    | Symétrie                                   |

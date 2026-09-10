@@ -1,0 +1,140 @@
+// ---------------------------------------------------------------------------
+// Canal Shopify — tables possédées par l'ADAPTATEUR (ADR-13).
+// Non event-sourçables : ce sont des états de synchro re-dérivables, pas des
+// faits métier. Elles peuvent être perdues et reconstruites par un re-push.
+// ---------------------------------------------------------------------------
+
+enum ShopifySyncStatus {
+  never_pushed
+  up_to_date
+  drifted
+  failed
+
+  @@schema("pim")
+}
+
+/// Le mode du canal au moment d'une poussée — figé dans le snapshot pour qu'on
+/// sache *comment* il a été produit (une simulation n'est pas une poussée réelle).
+enum ShopifyChannelMode {
+  live
+  dry_run
+
+  @@schema("pim")
+}
+
+/// L'issue d'une poussée telle qu'inscrite dans l'historique.
+enum ShopifyPushOutcome {
+  pushed
+  failed
+
+  @@schema("pim")
+}
+
+/// Réglages de l'intégration — ligne unique.
+/// ⚠️ Aucun secret ici : le jeton d'API vit dans l'environnement (`AppConfig`).
+model ShopifySettings {
+  id         String   @id
+  shopDomain String   @map("shop_domain")
+  apiVersion String   @map("api_version")
+  isEnabled  Boolean  @default(false) @map("is_enabled")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("shopify_settings")
+  @@schema("pim")
+}
+
+/// État de synchro d'un **produit** — Shopify pousse un produit et ses variantes
+/// ensemble, donc l'empreinte et le statut vivent à ce niveau. Les *références*,
+/// elles, restent sur la déclinaison (R4) : ce sont deux choses différentes.
+model ShopifyProductBinding {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  shopifyProductGid String?           @map("shopify_product_gid")
+  lastPushedHash    String?           @map("last_pushed_hash")
+  lastPushedAt      DateTime?         @map("last_pushed_at")
+  syncStatus        ShopifySyncStatus @default(never_pushed) @map("sync_status")
+  lastError         String?           @map("last_error")
+
+  /// Le snapshot **head** = le BASE de la réconciliation (la dernière poussée réelle).
+  /// `NULL` tant que rien n'a été poussé en `live`.
+  headSnapshotId String? @map("head_snapshot_id")
+
+  @@map("shopify_product_binding")
+  @@schema("pim")
+}
+
+/// Historique **append-only** des poussées réelles d'un `handle` — l'ancêtre commun
+/// (BASE) de la réconciliation à trois voies et la matière du rollback. Voir
+/// [`publication-reconciliation-3way.md`](../../../documentation/pim/publication-reconciliation-3way.md).
+///
+/// Contrairement aux bindings (états de synchro re-dérivables), ceci est un **journal** :
+/// le perdre efface l'historique et le retour arrière. Jamais muté après écriture — un
+/// rollback ré-écrit une **nouvelle** ligne (une copie d'une version antérieure).
+model ShopifyPushSnapshot {
+  id        String             @id @default(uuid())
+  /// L'unité de réconciliation (identité Shopify) — survit à la bascule fiche×mode.
+  handle    String             @map("handle")
+  /// Le produit PIM d'où venait la projection (peut projeter N handles à terme).
+  productId String             @map("product_id")
+  /// Numéro de version monotone par handle (1..n).
+  version   Int                @map("version")
+  hash      String             @map("hash")
+  /// `ShopifyProductPayload` rejouable tel quel — document figé, pas relationnel.
+  payload   Json               @map("payload")
+  mode      ShopifyChannelMode @map("mode")
+  outcome   ShopifyPushOutcome @map("outcome")
+  pushedAt  DateTime           @default(now()) @map("pushed_at")
+
+  @@unique([handle, version])
+  @@index([handle])
+  @@map("shopify_push_snapshot")
+  @@schema("pim")
+}
+
+/// Ce que Shopify sait d'une **déclinaison** — l'unité réellement vendue (R4).
+model ShopifyVariantBinding {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  /// Référence propre au canal. `NULL` = le SKU interne est poussé tel quel.
+  /// L'index unique **est** l'unicité par canal : la table étant le canal, aucun
+  /// discriminant n'est nécessaire.
+  channelReference  String? @unique @map("channel_reference")
+  shopifyVariantGid String? @map("shopify_variant_gid")
+
+  @@map("shopify_variant_binding")
+  @@schema("pim")
+}
+
+// ---------------------------------------------------------------------------
+// Canal **plateforme B2B** — table possédée par l'ADAPTATEUR (ADR-13). Le socle
+// ne pointe jamais vers un canal : la clé étrangère est portée ici.
+// Re-dérivable par un re-push ; ce n'est pas un fait métier, c'est un état de
+// synchro — SAUF la décision de publication elle-même, qui n'existe qu'ici.
+// ---------------------------------------------------------------------------
+
+/// L'**appartenance d'un produit au canal B2B** : sa présence dit « vendu aux
+/// pros », son absence dit le contraire. Un état de publication (`published`)
+/// ne suffirait pas — il confondrait « publié chez Shopify » et « vendu aux
+/// pros », et les deux catalogues ne pourraient jamais diverger.
+///
+/// Dépublier **supprime la ligne**. Le produit disparaîtra du prochain snapshot,
+/// et le récepteur le nommera dans son rapport (`removedSkus`) : la nouvelle est
+/// portée par le push, pas par un drapeau qu'il faudrait penser à relire.
+model B2bChannelBinding {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Quand ce produit a rejoint le canal, et par qui. La question posée six mois
+  /// plus tard est toujours « qui a mis ça en vente ».
+  publishedAt DateTime @default(now()) @map("published_at")
+  publishedBy String?  @map("published_by")
+
+  /// Dernière poussée **réellement acceptée** par la plateforme. `NULL` = publié
+  /// mais jamais parti — l'écart que l'écran doit montrer.
+  lastPushedAt DateTime? @map("last_pushed_at")
+
+  @@map("b2b_channel_binding")
+  @@schema("pim")
+}

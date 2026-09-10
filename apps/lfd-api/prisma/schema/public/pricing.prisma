@@ -1,0 +1,519 @@
+// ---------------------------------------------------------------------------
+// Règles tarifaires — cf. documentation/pricing/architecture-resolution-de-prix.md
+// ---------------------------------------------------------------------------
+
+/// Une **règle tarifaire** : un étage, une portée, une audience, une fenêtre.
+///
+/// Les discriminants (`stage`, `scopeType`, `nature`…) sont des `String` et non
+/// des enums Prisma, et c'est délibéré : ils entrent dans une contrainte
+/// d'EXCLUSION GiST, où un type énuméré ajoute une dépendance à la classe
+/// d'opérateurs de `btree_gist` sans rien apporter. L'union est validée au bord
+/// par zod, comme `recurrence` et `status` ailleurs dans ce schéma.
+///
+/// ⚠️ La garantie qui compte n'est PAS dans ce modèle : c'est la contrainte
+/// `price_rules_no_overlap`, posée en SQL par la migration. Deux règles
+/// également spécifiques valides au même instant deviennent **impossibles à
+/// insérer** — sans elle, le prix dépendrait de l'ordre de tri, donc du hasard.
+model PriceRule {
+  id String @id @default(cuid())
+
+  /// `mercuriale` | `volume` | `promotion` | `geste` — l'ordre d'application
+  /// est déclaré dans le domaine, jamais ici.
+  stage String
+
+  /// `replace` pose un prix (engagement en euros) ; `alter` modifie l'entrant.
+  nature String
+
+  /// `global` | `category` | `product` | `variant`. `scopeId` est `NULL` **si et
+  /// seulement si** `scopeType = 'global'`.
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  /// `all` | `segment` | `company`. Même règle de nullité.
+  audienceType String  @map("audience_type")
+  audienceId   String? @map("audience_id")
+
+  /// Palier de quantité de l'étage volume. `NULL` = aucun seuil.
+  minQuantity Int? @map("min_quantity")
+
+  /// `nature = 'replace'` : le prix posé, HT en **millicentimes** — un PRIX
+  /// UNITAIRE, comme tous les prix unitaires de ce schéma.
+  amountMillicents Int? @map("amount_millicents")
+
+  /// `nature = 'alter'` : sens, unité, grandeur. La grandeur est **toujours
+  /// positive** — le sens vit dans `direction`.
+  direction String? // increase | decrease
+  mode      String? // percent | amount
+  value     Int? // bp si percent, MILLICENTIMES si amount
+
+  /// Plancher propre à la règle. `NULL` = celui de la plateforme s'applique.
+  floorMode  String? @map("floor_mode") // percent | amount
+  floorValue Int?    @map("floor_value") // bp du canonique, ou MILLICENTIMES
+
+  /// Borne basse **incluse**, borne haute **exclue** : deux règles qui se
+  /// succèdent au même instant ne se chevauchent jamais.
+  ///
+  /// `Timestamptz` et non `timestamp` : sans fuseau, `tstzrange()` dépend du
+  /// réglage de session, donc n'est pas `IMMUTABLE`, donc **ne peut pas entrer
+  /// dans la contrainte d'exclusion** — Postgres refuse la migration. C'est
+  /// aussi le type juste : une fenêtre tarifaire est un fait daté absolu.
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  /// Ce que la trace affichera au client et au service client.
+  label String
+
+  /// **Cette règle agit-elle malgré une mercuriale ?**
+  ///
+  /// Une mercuriale scelle la chaîne : les étages suivants sont transparents.
+  /// Ce drapeau est la porte de sortie, et elle est explicite — « oui, cette
+  /// promotion vise aussi les comptes au tarif négocié ». `false` par défaut,
+  /// y compris sur les règles antérieures au scellement : c'est le comportement
+  /// que la maison a décidé, pas celui qu'elle subissait.
+  stacksOverMercuriale Boolean @default(false) @map("stacks_over_mercuriale")
+
+  /// Qui a posé cette règle. Sur un tarif négocié, la question posée six mois
+  /// plus tard est toujours « qui a accordé ça ».
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// **Suspendue.** Elle cesse d'agir et GARDE sa place : la contrainte
+  /// d'exclusion la voit toujours, donc personne ne peut poser une jumelle qui
+  /// rendrait la reprise impossible.
+  pausedAt DateTime? @map("paused_at") @db.Timestamptz(3)
+  pausedBy String?   @map("paused_by")
+
+  /// **Archivée.** Terminal : elle cesse d'agir et REND sa place — la contrainte
+  /// d'exclusion est partielle, `WHERE archived_at IS NULL`.
+  ///
+  /// Jamais de `DELETE` : une règle a facturé, elle a fait un prix, et l'effacer
+  /// effacerait la réponse à « pourquoi ce prix » alors que la facture, elle,
+  /// reste. Le motif est demandé ici et pas à la pause, parce que c'est le geste
+  /// qui ne se défait pas.
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  @@index([stage])
+  @@index([archivedAt])
+  @@index([audienceId])
+  @@map("price_rules")
+  @@schema("public")
+}
+
+/// Le **plancher** posé sur une portée : la limite que l'empilement des règles
+/// ne franchit pas.
+///
+/// Il n'a ni étage, ni audience, ni fenêtre — cf. `ScopedPriceFloor` dans le
+/// domaine, où chacune de ces trois absences est une décision et non un manque.
+/// Reste la portée, résolue comme celle des règles : le plus spécifique gagne,
+/// et un plancher d'article **remplace** celui de sa famille.
+///
+/// ⚠️ Comme pour les règles, l'unicité réelle n'est PAS dans ce modèle :
+/// `@@unique([scopeType, scopeId])` laisserait passer deux planchers globaux,
+/// Postgres tenant deux `NULL` pour distincts. C'est l'index unique
+/// `price_floors_one_per_scope` sur `coalesce(scope_id, '')`, posé en SQL par la
+/// migration, qui porte la garantie — même leçon que `coalesce` dans la
+/// contrainte d'exclusion des règles.
+model PriceFloor {
+  id String @id @default(cuid())
+
+  /// `global` | `category` | `product` | `variant`. `scopeId` est `NULL` **si et
+  /// seulement si** `scopeType = 'global'`.
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  /// **Le mur** — jamais franchi, quoi qu'il arrive.
+  ///
+  /// `percent` : une fraction du prix canonique, en points de base — elle suit
+  /// le tarif quand le PIM augmente. `amount` : une limite absolue en
+  /// **millicentimes** — un plancher borne un prix unitaire.
+  mode  String
+  value Int
+
+  /// **La porte** : un plancher plus bas, que le volume déverrouille. `NULL` =
+  /// il n'y en a pas, et le mur est la seule limite.
+  ///
+  /// Les deux conditions ci-dessous doivent être remplies pour l'ouvrir — la
+  /// plus stricte gagne. Une condition `NULL` est réputée remplie ; les deux
+  /// `NULL` feraient de la porte un mur, ce que l'agrégat refuse.
+  dynamicMode            String? @map("dynamic_mode")
+  dynamicValue           Int?    @map("dynamic_value")
+  /// Quantité minimale **sur la commande** — déterministe au checkout.
+  unlockMinQuantity      Int?    @map("unlock_min_quantity")
+  /// Ratio de volume **observé** requis, en points de base (`12500` = ×1,25).
+  unlockMinVolumeRatioBp Int?    @map("unlock_min_volume_ratio_bp")
+
+  /// Le tarif **représentatif des articles visés**, figé au moment où la limite a
+  /// été posée — la médiane de leurs prix canoniques.
+  ///
+  /// C'est la seule chose qui permette de dire, six mois plus tard, que
+  /// l'intention a vieilli : sans référence, on ne peut comparer le tarif
+  /// d'aujourd'hui à rien. Médiane et non moyenne — une limite de famille ne doit
+  /// pas se juger déplacée parce qu'une pièce montée y côtoie des croissants.
+  ///
+  /// `NULL` = limite posée avant que cette référence n'existe. L'écran se tait
+  /// alors plutôt que d'annoncer « 0 % d'écart », qui ferait passer une absence
+  /// de mesure pour une confirmation.
+  referenceCanonicalMillicents Int? @map("reference_canonical_millicents")
+
+  /// Qui a posé cette limite. Même raison que sur une règle : la question posée
+  /// six mois plus tard est toujours « qui a autorisé de descendre si bas ».
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// **Depuis quand cette limite arbitre**, borne basse incluse.
+  ///
+  /// Ajoutée le 2026-09-09. Un plancher n'avait aucune fenêtre — la résolution
+  /// filtrait sur la portée, « jamais sur la date » — et re-poser RÉÉCRIVAIT la
+  /// ligne. Une lecture datée appliquait donc les valeurs d'aujourd'hui à une
+  /// période où la limite disait autre chose ; un plancher **relève** un prix,
+  /// si bien que le mode de défaillance était un prix historique gonflé.
+  validFrom DateTime @map("valid_from") @db.Timestamptz(3)
+
+  /// Borne haute **exclue**. `NULL` = elle arbitre encore.
+  ///
+  /// Écrite en re-posant : la précédente s'arrête là où la nouvelle commence.
+  /// Rien n'est détruit, et la référence de dérive de chacune reste la sienne —
+  /// ce que la réécriture en place effaçait.
+  validTo DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  /// **Archivée.** Une limite ne se supprime pas davantage qu'une règle : elle a
+  /// arbitré des prix, et savoir qu'elle existait explique des factures.
+  ///
+  /// ⚠️ **Ce commentaire a dit « pas de versionnage ici » jusqu'au 2026-09-09**,
+  /// et s'en servait pour justifier un identifiant DÉRIVÉ de la portée — donc
+  /// une seule ligne par cible, et un `upsert` atomique sans lecture préalable.
+  /// C'était vrai, et c'est exactement ce qui rendait le passé illisible. Il y a
+  /// désormais N lignes par portée, une par période ; la course que l'identifiant
+  /// dérivé évitait est rattrapée par la contrainte d'exclusion, comme pour les
+  /// quatre autres familles.
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  @@map("price_floors")
+  @@schema("public")
+}
+
+/// **Le barème de volume** — une échelle, pas N règles.
+///
+/// « 50+ à −10 % » et « 100+ à −5 % » sont deux règles parfaitement valides
+/// prises séparément, et forment ensemble un barème que personne n'a voulu : un
+/// client qui passe de 90 à 100 pièces y verrait sa remise fondre. Réunis en
+/// échelle, les paliers deviennent UNE décision, et l'agrégat peut refuser ce
+/// qu'aucune règle isolée ne pouvait voir.
+model VolumeLadder {
+  /// ULID opaque : deux barèmes SUCCESSIFS sur la même cible coexistent (celui
+  /// d'aujourd'hui, celui de septembre), donc l'identifiant ne peut pas dériver
+  /// de la cible. C'est la contrainte d'exclusion qui garantit l'unicité — pas
+  /// dans l'absolu, mais À UN INSTANT DONNÉ.
+  id String @id
+
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  audienceType String  @map("audience_type")
+  audienceId   String? @map("audience_id")
+
+  /// `percent` | `amount` — l'unité de TOUTE l'échelle. Un seul champ pour tous
+  /// les paliers : le mélange devient impossible, pas interdit. C'est ce qui rend
+  /// la progression vérifiable, deux points de base se comparant sans connaître
+  /// l'article.
+  unit String
+
+  /// Les paliers, triés par quantité croissante : `[{ minQuantity, value }]`.
+  ///
+  /// En JSON et non dans une table fille, délibérément : une échelle s'écrit
+  /// **entière** ou pas du tout. Une table fille permettrait d'insérer un palier
+  /// sans les autres — exactement ce que cet agrégat existe pour empêcher.
+  tiers Json
+
+  /// Ce que la trace affichera au client et au service client.
+  label String
+
+  /// Borne basse **incluse**, borne haute **exclue** — la convention de tout le
+  /// modèle. `Timestamptz` pour la même raison que sur les règles : sans fuseau,
+  /// `tstzrange()` dépend du réglage de session, donc n'est pas IMMUTABLE, donc
+  /// ne peut pas entrer dans la contrainte d'exclusion.
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Même cycle de vie qu'une règle : suspendre garde la cible, archiver la rend.
+  pausedAt      DateTime? @map("paused_at") @db.Timestamptz(3)
+  pausedBy      String?   @map("paused_by")
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  @@index([archivedAt])
+  @@map("volume_ladders")
+  @@schema("public")
+}
+
+/// **La mercuriale d'un client** — son tarif négocié, en un seul objet.
+///
+/// Elle a été N règles indépendantes : une par article et par palier, que rien
+/// ne reliait. « Mercuriale 2027 » n'existait alors que comme une déduction —
+/// les règles qui partagent un libellé et une fenêtre — avec ce que ça implique :
+/// clore, c'était archiver N lignes ; renommer, en réécrire N ; et deux
+/// mercuriales homonymes se confondaient à la lecture.
+///
+/// Réunies en un objet, elles deviennent UNE décision, et l'agrégat peut refuser
+/// ce qu'aucune règle isolée ne pouvait voir : une grille où commander plus
+/// coûte plus cher.
+///
+/// Elle se prend **en bloc** : posée entière, close entière, jamais retouchée
+/// article par article. Un prix faux se clôt et se repose, ce qui laisse les
+/// deux décisions côte à côte plutôt que de réécrire l'explication d'une facture
+/// déjà payée.
+model CompanyMercuriale {
+  /// ULID opaque : deux mercuriales SUCCESSIVES coexistent chez le même client
+  /// (celle de cette année, celle de janvier prochain), donc l'identifiant ne
+  /// peut pas dériver de la société. C'est la contrainte d'exclusion qui
+  /// garantit l'unicité — pas dans l'absolu, mais À UN INSTANT DONNÉ.
+  id String @id
+
+  /// Identifiant **opaque** de la société. Aucune clé étrangère : un tarif
+  /// négocié survit à la fiche, comme une commande survit au catalogue.
+  companyId String @map("company_id")
+
+  /// Ce que le client lira dans la trace de son prix.
+  label String
+
+  /// La grille : `[{ sku, tiers: [{ minQuantity, unitPriceMillicents }] }]`.
+  ///
+  /// En JSON et non dans une table fille, pour la raison écrite sur
+  /// `VolumeLadder.tiers` : une grille s'écrit **entière** ou pas du tout. Une
+  /// table fille permettrait d'insérer une ligne sans les autres — exactement ce
+  /// que cet agrégat existe pour empêcher.
+  ///
+  /// Des PALIERS, même quand il n'y en a qu'un : le « prix fixe » est la grille
+  /// à un seul palier, à partir de 1. Deux façons de saisir, une seule chose
+  /// stockée — comme pour le gabarit.
+  lines Json
+
+  /// Borne basse **incluse**, borne haute **exclue** — la convention de tout le
+  /// modèle. `Timestamptz` pour la même raison que sur les règles : sans fuseau,
+  /// `tstzrange()` dépend du réglage de session, donc n'est pas IMMUTABLE, donc
+  /// ne peut pas entrer dans la contrainte d'exclusion.
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Même cycle de vie qu'une règle : suspendre garde la place, clore la rend.
+  pausedAt      DateTime? @map("paused_at") @db.Timestamptz(3)
+  pausedBy      String?   @map("paused_by")
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  /// La lecture qui facture : « la mercuriale vivante de ce client ».
+  @@index([companyId, archivedAt])
+  @@map("company_mercuriales")
+  @@schema("public")
+}
+
+/// **Un gabarit tarifaire** — la grille qu'un commercial prépare une fois et
+/// repose chez plusieurs clients.
+///
+/// Une seule forme : une liste de paliers portant des PRIX en euros. Le « prix
+/// fixe » n'est pas une seconde forme, c'est le gabarit à un seul palier, à
+/// partir de 1. Les deux façons de saisir ne changent que la manière d'arriver
+/// au prix, jamais ce qui est stocké.
+///
+/// Posé chez un client, un gabarit devient N règles de l'étage mercuriale à des
+/// seuils différents — une forme que le moteur résout déjà, et dont l'unicité
+/// est déjà garantie (la contrainte d'exclusion porte sur `min_quantity`).
+/// **Le brouillon de mercuriale d'un client** — une négociation en cours.
+///
+/// ## Pourquoi une table, et pas un gabarit
+///
+/// Un gabarit est un MODÈLE : une grille qu'on prépare une fois et qu'on repose
+/// chez plusieurs clients. Un brouillon est l'inverse — il ne vise qu'une
+/// maison, et il n'a de sens que tant qu'il n'est pas posé. Les ranger ensemble
+/// aurait rempli la liste des gabarits de grilles nominatives, et « gabarit »
+/// aurait cessé de vouloir dire quelque chose.
+///
+/// ## Pourquoi un seul par société
+///
+/// `company_id` est la CLÉ. Une négociation se reprend, elle ne se collectionne
+/// pas : deux brouillons ouverts sur le même compte poseraient la question de
+/// savoir lequel fait foi, à laquelle personne n'aurait de réponse. Enregistrer
+/// remplace.
+///
+/// ## Ce qu'il n'est pas
+///
+/// Il ne tarife RIEN. Aucune lecture de prix ne le regarde, et le supprimer ne
+/// change aucune facture : c'est du texte en attente, pas une décision. Ce qui
+/// engage est la règle posée, et elle vit dans `price_rules`.
+model MercurialeDraft {
+  /// La société, et l'identifiant : un brouillon par compte.
+  companyId String @id @map("company_id")
+
+  /// Ce que le client lira dans la trace de son prix, une fois posé.
+  label String
+
+  /// Les bornes envisagées. Nullables : on écrit la grille avant de dater.
+  validFrom DateTime? @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  /// Les lignes, `[{ sku, unitPriceMillicents }]`.
+  ///
+  /// En JSON comme celles d'un gabarit, et pour la même raison : une grille
+  /// s'écrit entière ou pas du tout. Une table fille permettrait d'en
+  /// enregistrer la moitié, et personne ne le verrait.
+  lines Json
+
+  /// Qui l'a touché en dernier — la négociation se reprend souvent à deux.
+  updatedBy String   @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("mercuriale_drafts")
+  @@schema("public")
+}
+
+model PriceTemplate {
+  id String @id
+
+  /// `mercuriale` | `devis`. Même contenu, deux usages : l'un se POSE chez un
+  /// client, l'autre alimente une estimation sans rien poser.
+  kind String
+
+  label String
+
+  /// Les lignes, `[{ sku, tiers: [{ minQuantity, unitPriceCents }] }]`.
+  ///
+  /// En JSON et non en table fille, pour la même raison que les paliers d'un
+  /// barème : une grille s'écrit ENTIÈRE ou pas du tout. Une table fille
+  /// permettrait d'insérer une ligne sans les autres, et un gabarit à moitié
+  /// enregistré serait posé chez un client sans que personne ne le voie.
+  ///
+  /// Le tarif catalogue n'y est PAS recopié : il est lu à l'affichage. Un
+  /// canonique figé vieillirait en silence et l'écart comparatif serait faux.
+  lines Json
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Archivé, jamais supprimé : un gabarit a produit des mercuriales, et les
+  /// retrouver six mois plus tard suppose qu'il existe encore.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(3)
+
+  @@index([kind, archivedAt])
+  @@map("price_templates")
+  @@schema("public")
+}
+
+/// **L'engagement de volume** — un client vise un volume sur une période, et le
+/// barème se juge alors sur le CUMUL de la période plutôt que sur la quantité de
+/// chaque commande.
+///
+/// Retenu contre le prix fixe daté, et le motif est dans les conditions de
+/// sortie : au volume promis les deux formes donnent le même prix, mais quand la
+/// promesse n'est pas tenue, seul le cumul a une réponse arithmétique — le client
+/// reste au palier qu'il a réellement atteint, et aucune facture n'est révisée.
+///
+/// Ce n'est PAS une réservation : rien n'est bloqué, rien n'est dû. Le prix ne
+/// dépend que de ce qui a été commandé.
+model VolumeCommitment {
+  /// ULID opaque, comme le barème : deux engagements successifs sur la même
+  /// cible coexistent, donc l'identifiant ne peut pas dériver de la cible.
+  id String @id
+
+  /// Un engagement vise TOUJOURS un client nommé : c'est une négociation, pas
+  /// une offre. D'où l'absence d'axe « audience » — il n'y a qu'un cas.
+  companyId String @map("company_id")
+
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  /// Le volume visé. Il **fait le prix** : le palier se juge sur
+  /// `max(promis, livré)`, donc la promesse ouvre le palier dès la première
+  /// commande et le livré reprend la main s'il dépasse.
+  ///
+  /// ⚠️ Ce commentaire a dit l'inverse — « il sert au SUIVI, jamais au calcul »
+  /// — jusqu'au 2026-09-09. C'était vrai à la première écriture et faux depuis
+  /// la correction du **2026-08-19** (`volume-commitment.ts`, `retainedQuantity`) :
+  /// un client qui annonce sa saison et paie le tarif d'entrée pendant trois
+  /// mois n'a rien obtenu de ce qu'il a négocié. La remise EST accordée sur une
+  /// intention, et c'est la décision — pas un effet de bord.
+  promisedQuantity Int @map("promised_quantity")
+
+  /// Borne basse incluse, borne haute exclue — et la haute est OBLIGATOIRE : un
+  /// engagement sans terme est une mercuriale, qui a son propre étage.
+  validFrom DateTime @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime @map("valid_to") @db.Timestamptz(3)
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// Archivé, jamais suspendu — un engagement ne se met pas en pause : il court
+  /// ou il est clos. Le suspendre laisserait une période où le cumul continue
+  /// sans que le palier suive, donc un prix que personne n'a décidé.
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  @@index([companyId, archivedAt])
+  @@map("volume_commitments")
+  @@schema("public")
+}
+
+/// **Le journal des actes tarifaires** — append-only.
+///
+/// Sur un prix négocié, la question posée six mois plus tard n'est jamais
+/// « quelle était la règle » mais « qui a décidé ça, et qui l'a arrêté ». L'état
+/// courant ne peut pas y répondre : il est précisément ce qui a remplacé la
+/// réponse.
+///
+/// Aucune colonne mutable, aucun `updatedAt`, et aucun port qui expose une mise à
+/// jour ou un effacement. Un journal réinscriptible ne prouve rien — le premier
+/// jour où il servirait vraiment serait celui où quelqu'un aurait intérêt à le
+/// corriger.
+model PricingEvent {
+  /// ULID : triable par le temps, donc paginable de façon stable sur un flux
+  /// qui ne fait que grandir.
+  id String @id
+
+  /// `rule` | `floor`. Pas de clé étrangère, volontairement : l'acte doit
+  /// survivre à son sujet, et une cascade de suppression emporterait justement
+  /// la trace qu'on cherchait à garder.
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  /// `posed` | `paused` | `resumed` | `archived` | `confirmed` | `replaced`.
+  act String
+
+  /// Le `sub` du membre du staff, ou `system`.
+  ///
+  /// Le NOM n'est pas figé ici, à la différence des traces client : l'annuaire
+  /// staff est à nous et un `sub` est stable. Afficher le nom d'aujourd'hui est
+  /// même la réponse utile — on cherche qui aller voir, pas comment il
+  /// s'appelait à l'époque.
+  actor String
+
+  /// L'instant de l'acte, autorité = l'horloge du backend.
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  /// Ce que l'auteur a écrit quand l'écran le lui a demandé. `NULL` = rien.
+  reason String?
+
+  /// **Ce que la décision disait**, en une phrase FIGÉE à l'écriture. Recalculée
+  /// à la lecture, elle raconterait l'histoire à l'envers.
+  summary String
+
+  @@index([subjectType, subjectId, occurredAt])
+  @@index([occurredAt])
+  @@map("pricing_events")
+  @@schema("public")
+}

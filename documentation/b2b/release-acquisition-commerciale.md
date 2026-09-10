@@ -310,7 +310,7 @@ explicite, pas par oubli.
 | Sujet                                   | Où                                                                                                 |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Demande de support (écriture client)    | `account/http/support.controller.ts`, `application/commands/request-activation-support.handler.ts` |
-| Modèle `SupportRequest`                 | `prisma/schema.prisma` (~l.322)                                                                    |
+| Modèle `SupportRequest`                 | `prisma/schema/public/support.prisma` (~l.322)                                                     |
 | Contrat de la demande                   | `packages/contracts/src/support.ts`                                                                |
 | Lecture admin des sociétés (le booléen) | `account/infrastructure/prisma-admin-company.reader.ts`                                            |
 | Agrégat `Lead` + pipeline               | `growth/domain/entities/lead.ts`                                                                   |

@@ -1,0 +1,320 @@
+enum ProductKind {
+  daily
+  made_to_order
+  resale
+
+  @@schema("pim")
+}
+
+enum ProductStatus {
+  draft
+  published
+  archived
+
+  @@schema("pim")
+}
+
+enum SkuOwnerType {
+  product
+  variant
+
+  @@schema("pim")
+}
+
+/// Registre des références — garantit l'unicité du SKU dans un espace de noms
+/// GLOBAL (produits et déclinaisons confondus, doc 06 invariant 1).
+/// Une contrainte d'unicité ne pouvant pas s'étendre à deux tables, c'est ce
+/// registre qui porte la garantie : la violation de sa clé primaire est le
+/// `23505` traduit en `SkuAlreadyUsedError` par l'adaptateur de dépôt.
+model SkuRegistry {
+  value     String       @id
+  ownerType SkuOwnerType @map("owner_type")
+  ownerId   String       @map("owner_id")
+
+  @@index([ownerId])
+  @@map("sku_registry")
+  @@schema("pim")
+}
+
+/// **La dérogation de canaux d'une fiche EXISTE** — sa présence est la donnée.
+///
+/// Sans cette ligne parente, « déroge et ne vend nulle part » et « hérite de sa
+/// famille » seraient tous deux zéro ligne, donc indistinguables. Un booléen sur
+/// le produit aurait laissé atteignable l'état impossible « pas de dérogation,
+/// mais des cellules » ; ici la cascade le rend inatteignable.
+model ProductChannelOverride {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  cells ProductChannel[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("product_channel_override")
+  @@schema("pim")
+}
+
+/// ⚠️ Idem : `product_channel_unique` vit en SQL.
+
+/// Une cellule de la dérogation d'une fiche. Elle **cascade** depuis
+/// `ProductChannelOverride` : elle ne peut pas exister sans elle.
+model ProductChannel {
+  id        String                 @id @default(cuid())
+  productId String                 @map("product_id")
+  override  ProductChannelOverride @relation(fields: [productId], references: [productId], onDelete: Cascade)
+
+  /// Idem `CategoryChannel.pointOfSaleId`.
+  pointOfSaleId String      @map("point_of_sale_id")
+  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id])
+
+  contextKey String       @map("context_key")
+  context    SalesContext @relation(fields: [contextKey], references: [key])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([pointOfSaleId])
+  @@index([contextKey])
+  @@map("product_channel")
+  @@schema("pim")
+}
+
+model Product {
+  id         String        @id
+  sku        String        @unique
+  slug       Json
+  kind       ProductKind
+  name       Json
+  categoryId String        @map("category_id")
+  category   Category      @relation(fields: [categoryId], references: [id])
+  status     ProductStatus @default(draft)
+
+  /// ⚠️ **AUCUN LECTEUR, AUCUN ÉCRIVAIN** — constaté le 2026-09-02 sur tout le
+  /// dépôt : backend, les deux fronts, `packages/*`, le seed. La colonne existe
+  /// depuis sa migration de création (20260820160000) et vaut `{}` partout.
+  ///
+  /// Elle n'est pas signalée pour être supprimée mais pour **cesser de mentir** :
+  /// un champ nommé `attributes` sur `Product` laisse croire à des attributs
+  /// libres, c'est-à-dire à la seule capacité de PIM générique que ce référentiel
+  /// n'a pas. Le modèle est **fixe** ; ajouter un attribut est une migration.
+  ///
+  /// Deux sorties, et c'est une décision produit, pas technique : l'assumer comme
+  /// l'amorce des attributs libres — alors elle mérite un plan —, ou la retirer
+  /// en trois déploiements. La laisser sans mot est la seule mauvaise réponse.
+  attributes Json             @default("{}")
+  variants   ProductVariant[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  /// Couche éditoriale — satellite **optionnel** (PK = FK, ADR-13) : la ligne
+  /// n'existe que si quelqu'un a écrit quelque chose.
+  editorial ProductEditorial?
+  media     ProductMedia[]
+
+  /// La déclaration « publiable », si quelqu'un s'est prononcé.
+  readiness ProductReadiness?
+
+  /// Les taux propres à CE produit, par contexte. Absence = il hérite.
+  contextVat ProductContextVat[]
+
+  /// Ce que la fiche cite comme provenance — facultatif, et sans rapport avec
+  /// la liste réglementaire d'ingrédients (voir `ProductIngredient`).
+  ingredients ProductIngredient[]
+
+  /// La dérogation en TABLE — voir `ProductChannelOverride`. Seule source depuis
+  /// d-2 ; la colonne `jsonb` qui la précédait est tombée en d-3.
+  channelOverrideRows ProductChannelOverride?
+
+  /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).
+  shopifyBinding ShopifyProductBinding?
+  b2bBinding     B2bChannelBinding?
+
+  @@index([categoryId])
+  @@map("product")
+  @@schema("pim")
+}
+
+/// Le taux qu'un **produit** vise pour un contexte — la dérogation à sa famille.
+///
+/// Même forme que `category_context_tva`, un cran plus bas, et la même règle :
+/// **l'absence de ligne est la donnée**. Pas de ligne = le produit hérite ; une
+/// ligne = il déroge, et c'est un fait qu'on peut dater et retirer.
+///
+/// Ce n'est PAS une colonne sur `product` : trois colonnes fixes sont
+/// exactement ce que la famille vient de perdre.
+model ProductContextVat {
+  productId String       @map("product_id")
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  contextId String       @map("context_id")
+  context   SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  vatRateId String       @map("tva_rate_id")
+  /// `Restrict` : un taux visé par un produit ne disparaît pas sous lui.
+  vatRate   VatRate      @relation(fields: [vatRateId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([productId, contextId])
+  @@index([vatRateId])
+  @@map("product_context_tva")
+  @@schema("pim")
+}
+
+model ProductVariant {
+  id             String  @id
+  productId      String  @map("product_id")
+  product        Product @relation(fields: [productId], references: [id])
+  sku            String  @unique
+  name           Json
+  options        Json    @default("{}")
+  isDefault      Boolean @default(false) @map("is_default")
+  isDiscontinued Boolean @default(false) @map("is_discontinued")
+  position       Int     @default(0)
+  attributes     Json    @default("{}")
+
+  /// Prix **canonique** de l'unité réellement vendue (R4) — tarif de référence,
+  /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
+  /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
+  /// ici (cf. documentation/pricing/architecture-conditionnements-pricing.md).
+  priceCents  Int? @map("price_cents")
+  /// **Ce que `price_cents` veut dire.** `ht` par défaut : la colonne portait un
+  /// prix hors taxe depuis toujours, et un défaut qui change le sens des lignes
+  /// existantes serait une reprise de données déguisée en migration.
+  ///
+  /// Non-nullable, donc pas de troisième état : une déclinaison sans assiette
+  /// n'existe pas, alors qu'une déclinaison sans PRIX, si (`price_cents` reste
+  /// nullable — « pas encore tarifé »).
+  /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
+  weightGrams Int? @map("weight_grams")
+
+  /// Cette déclinaison **suit la fiche réglementaire de celle par défaut**.
+  ///
+  /// Une colonne plutôt que l'absence de `nutrition` : cette absence dit déjà
+  /// « rien n'a été déclaré », l'état qui bloque la mise en vente (invariant 7).
+  /// Lui faire dire aussi « hérite » ferait dire deux choses au même silence,
+  /// dont l'une autoriserait la vente d'un article non étiqueté.
+  ///
+  /// Un `CHECK` interdit à la déclinaison par défaut de se suivre elle-même.
+  regulatoryFollowsDefault Boolean @default(false) @map("regulatory_follows_default")
+
+  /// Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids.
+  ///
+  /// `false` par défaut, y compris pour l'existant : une seconde déclinaison
+  /// existe le plus souvent parce qu'elle se vend à un autre prix, et basculer
+  /// l'existant vers l'héritage ferait facturer le prix du défaut sur des
+  /// articles qui portaient le leur.
+  pricingFollowsDefault Boolean @default(false) @map("pricing_follows_default")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  /// Conditionnements — les unités de vente en VOLUME qui emballent cette
+  /// déclinaison. Rattachés ici et non au produit : « carton de 20 » ne veut
+  /// rien dire tant qu'on ne sait pas de quoi (des parts, ou des tartes 6
+  /// parts ?). La relation EST l'information — cf. la révision du 2026-08-23
+  /// de `documentation/pricing/architecture-conditionnements-pricing.md`, qui
+  /// renverse le choix initial de les modéliser en déclinaisons plates.
+  packagings ProductPackaging[]
+
+  /// Fiche réglementaire — **optionnelle** (`o|`) : son absence signifie
+  /// « pas encore renseigné ». Un 1:1 obligatoire forcerait une ligne vide à la
+  /// création, donc affirmerait « aucun allergène » sans vérification. La garde
+  /// est ailleurs : pas de publication sans fiche (doc 03).
+  nutrition NutritionDeclaration?
+
+  /// Relation **virtuelle** : aucune colonne n'est ajoutée ici. La clé étrangère
+  /// physique est portée par `shopify_variant_binding` — le sens imposé par ADR-13
+  /// (le socle ne pointe jamais vers un canal). Prisma exige seulement de déclarer
+  /// l'autre extrémité.
+  shopifyBinding ShopifyVariantBinding?
+
+  @@index([productId])
+  @@map("product_variant")
+  @@schema("pim")
+}
+
+/// Les formes d'emballage vendues en volume.
+enum PackagingType {
+  carton
+  sac
+  plateau
+
+  @@schema("pim")
+}
+
+/// Le **conditionnement** — une unité de vente en volume qui emballe une
+/// déclinaison. Trois faits lui sont propres, et c'est ce qui en fait une
+/// entité plutôt qu'un attribut :
+///
+///  · le poids **BRUT**, emballage inclus. Il ne se déduit PAS du poids net de
+///    la déclaration nutritionnelle : un carton de 20 parts pèse 20 × le net,
+///    plus le carton, les intercalaires et le film. Sans lui, pas d'expédition.
+///  · le **prix canonique**. Un carton de 20 ne vaut pas 20 × l'unité — c'est le
+///    principe même de la vente en volume, et un prix dérivé ne saurait pas
+///    exprimer la remise de gros qui justifie le conditionnement.
+///  · les **canaux**. Un plateau de 6 se vend à emporter ; hériter de la famille
+///    rendrait ce cas inexprimable.
+///
+/// Le libellé n'est PAS stocké : il se dérive de `type` × `quantity`. Le
+/// stocker rouvrirait la porte à « Carton 20 » et « carton de 20 » pour la
+/// même chose.
+model ProductPackaging {
+  id        String         @id
+  variantId String         @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  /// Le pro commande par référence — elle est donc unique, comme celle d'une
+  /// déclinaison.
+  sku       String         @unique
+  type      PackagingType
+  /// Nombre d'unités emballées. Entier > 0 : zéro n'emballe rien (l'invariant
+  /// vit dans l'entité, la base ne sait pas l'exprimer).
+  quantity  Int
+
+  /// Poids BRUT en grammes, emballage inclus. `NULL` = non renseigné, et donc
+  /// non expédiable.
+  grossWeightGrams Int?     @map("gross_weight_grams")
+  /// Prix canonique HT en centimes, **pré-altération** : le dégressif de volume
+  /// et les remises vivent dans la couche pricing B2B, jamais ici.
+  priceCents       Int?     @map("price_cents")
+  /// Canaux de vente propres. `[]` = aucun, donc invendable.
+  channels         String[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@index([variantId])
+  @@map("product_packaging")
+  @@schema("pim")
+}
+
+/// **La déclaration qu'une fiche est publiable** — un fait humain, daté et signé.
+///
+/// Satellite optionnel (PK = FK, ADR-13) : l'absence de ligne dit « personne ne
+/// s'est prononcé ». Ce n'est PAS une valeur de `ProductStatus` : le statut dit
+/// ce que le catalogue fait du produit (brouillon, en vente, archivé), la
+/// déclaration dit ce qu'une PERSONNE affirme de son contenu. Les mêler
+/// obligerait à repasser par « brouillon » pour retirer une signature.
+///
+/// Rien ne la périme en écriture, et c'est délibéré : une déclaration est un
+/// fait daté, pas une garantie perpétuelle. On la compare en LECTURE à la date
+/// de dernière modification de la fiche (`product`, `product_variant`,
+/// `product_editorial`, `product_media`) — si la fiche a bougé après, la
+/// déclaration est périmée et l'écran le dit. Une invalidation écrite à la main
+/// dans chaque verbe se serait oubliée quelque part, en silence, et une
+/// vignette « publiable » périmée est pire que pas de vignette du tout.
+model ProductReadiness {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Quand la déclaration a été faite. La ligne n'existe pas sans elle.
+  readyAt DateTime @map("ready_at")
+  /// Qui l'a faite — l'identifiant de l'agent staff, jamais `null` : une
+  /// déclaration anonyme n'engagerait personne, et c'est tout son objet.
+  readyBy String   @map("ready_by")
+
+  @@map("product_readiness")
+  @@schema("pim")
+}

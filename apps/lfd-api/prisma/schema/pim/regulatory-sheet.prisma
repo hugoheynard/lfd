@@ -1,0 +1,246 @@
+/// Fiche réglementaire d'une **déclinaison** — c'est elle qui est mise sur le
+/// marché (doc 03). `variant_id` est PK **et** FK (*shared primary key*) : pas
+/// d'identifiant de substitution, donc deux fiches sont structurellement
+/// impossibles pour une même déclinaison.
+model NutritionDeclaration {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  /// Codes GS1 canoniques. `[]` = déclaration positive « aucun allergène »,
+  /// à ne pas confondre avec l'absence de ligne (= non renseigné).
+  allergens     Json
+  mayContain    Json   @default("[]") @map("may_contain")
+  /// Ordre de l'annexe XV : énergie, matières grasses (dont saturés), glucides
+  /// (dont sucres), protéines, sel. `null` = non renseigné, jamais zéro.
+  energyKcal    Float? @map("energy_kcal")
+  fatG          Float? @map("fat_g")
+  saturatedFatG Float? @map("saturated_fat_g")
+  carbsG        Float? @map("carbs_g")
+  sugarsG       Float? @map("sugars_g")
+  proteinG      Float? @map("protein_g")
+  saltG         Float? @map("salt_g")
+  /// Hors annexe XV — un renseignement produit, pas une mention obligatoire.
+  glycemicIndex Float? @map("glycemic_index")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("nutrition_declaration")
+  @@schema("pim")
+}
+
+/// **Un signe officiel de qualité** — AOP, IGP, Label Rouge, AB.
+///
+/// Une TABLE et non un champ libre sur l'ingrédient, parce qu'une appellation
+/// est une affirmation réglementée : en champ libre, le même signe s'écrirait
+/// « AOP Beaufort », « A.O.P. Beaufort », « aop beaufort », et le badge
+/// deviendrait soit faux, soit impossible à poser sans une normalisation à la
+/// lecture — c'est-à-dire une table implicite, non déclarée et jamais relue.
+///
+/// La citer plutôt que la ré-écrire, c'est aussi pouvoir en corriger le libellé
+/// — ou le traduire — à un seul endroit.
+model Appellation {
+  id     String  @id
+  /// Identité stable, celle que le code cite quand il doit citer (`aop-beaufort`).
+  code   String  @unique
+  /// Ce qu'un humain lit — localisé.
+  label  Json
+  /// Le signe lui-même (« AOP »). Une chaîne, pas une énumération : reconnaître
+  /// un signe de plus doit être une ligne, jamais un déploiement.
+  scheme String  @default("")
+  /// En service. Une appellation retirée ne se propose plus à la saisie, mais
+  /// les ingrédients qui la portent déjà la gardent — la retirer n'est pas
+  /// l'effacer.
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ingredients Ingredient[]
+
+  @@map("appellation")
+  @@schema("pim")
+}
+
+/// **D'où vient ce qu'il y a dedans** — le beurre de Savoie AOP, la farine du
+/// moulin d'à côté.
+///
+/// ⚠️ Ce n'est PAS la liste réglementaire d'ingrédients (règlement UE
+/// 1169/2011). Celle-là est ordonnée par masse décroissante, porte des
+/// quantités, décrit une recette — elle appartient donc à la DÉCLINAISON, avec
+/// les allergènes (`NutritionDeclaration`). Ce référentiel-ci est une matière
+/// éditoriale et commerciale : il nourrit un badge et un argument de vente, et
+/// rien ici ne garantit ni l'exhaustivité ni l'ordre. Le jour où une mention
+/// obligatoire serait tirée d'ici, elle serait fausse.
+model Ingredient {
+  id          String @id
+  /// Identité stable — le libellé se traduit et se corrige, elle jamais.
+  key         String @unique
+  /// Le nom, localisé. C'est lui qu'on lit sur la fiche.
+  name        Json
+  /// Le propos, localisé. `null` = personne n'a écrit — jamais une chaîne vide.
+  description Json?
+  /// L'origine géographique — « Savoie, France ». Une chaîne, pas une table de
+  /// lieux : rien ne la calcule, ne la filtre ni ne la géocode. Le jour où l'on
+  /// voudra « tout ce qui vient d'un rayon de 50 km », ce sera une autre donnée,
+  /// et elle descendra de celle-ci.
+  origin      String @default("")
+
+  /// Le signe officiel, s'il y en a un. `Restrict` : une appellation citée ne
+  /// disparaît pas sous l'ingrédient qui l'affirme.
+  appellationId String?      @map("appellation_id")
+  appellation   Appellation? @relation(fields: [appellationId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  products  ProductIngredient[]
+  /// Ce que cet ingrédient CONTIENT, en codes GS1 — la source de l'ensemble
+  /// dérivé proposé à la fiche produit.
+  allergens IngredientAllergen[]
+
+  @@index([appellationId])
+  @@map("ingredient")
+  @@schema("pim")
+}
+
+/// Ce qu'une fiche **cite**, dans l'ordre où elle l'affiche.
+///
+/// Une table de liaison et non un tableau `Json` sur le produit : un `Json` ne
+/// peut pas porter de clé étrangère, si bien qu'effacer un ingrédient
+/// laisserait des références mortes dans les fiches sans que rien ne le dise.
+/// Ici, la base refuse d'effacer un ingrédient encore cité — c'est exactement
+/// le comportement voulu.
+///
+/// `position` est une décision ÉDITORIALE (« le beurre AOP en premier, c'est
+/// l'argument »), et non l'ordre réglementaire par masse, qui appartient à la
+/// déclaration nutritionnelle de la déclinaison.
+model ProductIngredient {
+  productId String  @map("product_id")
+  /// `Cascade` : les citations d'une fiche effacée n'ont plus d'objet.
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  ingredientId String     @map("ingredient_id")
+  /// `Restrict` : l'ingrédient, lui, est un référentiel — il ne s'efface pas
+  /// sous les fiches qui le citent.
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  position Int @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([productId, ingredientId])
+  @@index([ingredientId])
+  @@map("product_ingredient")
+  @@schema("pim")
+}
+
+/// **Une famille d'allergènes** — la maille à laquelle une étiquette parle.
+///
+/// Les 14 de l'annexe II (règlement UE 1169/2011) y sont semées par migration
+/// avec leur `incoCategory` ; s'y ajoute `non_eu`, qui accueille les codes GS1
+/// sans obligation de déclaration européenne. Le staff peut en créer d'autres
+/// pour organiser son catalogue — jamais pour étendre l'annexe II.
+///
+/// ⚠️ `official` et `incoCategory` disent DEUX choses différentes : la première
+/// « semé par migration, donc verrouillé en base », la seconde « c'est une
+/// catégorie de l'annexe II ». `non_eu` est officielle sans être INCO.
+model AllergenCategory {
+  id           String    @id
+  /// Identité stable — « tree_nuts », « fruits-coque-exotiques ». C'est une
+  /// VALEUR de donnée : elle ne se traduit pas.
+  key          String    @unique
+  /// La mention d'étiquette si la catégorie est réglementaire, localisée.
+  name         Json
+  /// La catégorie de l'annexe II, si c'en est une. `null` = hors annexe II, et
+  /// donc jamais dans une projection INCO — ce qui vaut aussi bien pour `non_eu`
+  /// que pour une catégorie maison.
+  incoCategory String?   @map("inco_category")
+  /// Semée par migration. Ni renommable, ni supprimable, ni détachable : un
+  /// trigger le tient EN BASE, pas seulement dans l'agrégat.
+  official     Boolean   @default(false)
+  /// Jamais de DELETE physique : une catégorie maison retirée s'archive — et la
+  /// FK `Restrict` d'`AllergenEntry` refuserait de toute façon d'effacer une
+  /// catégorie encore citée.
+  /// ⚠️ Une catégorie OFFICIELLE ne s'archive pas : le trigger gèle cette
+  /// colonne avec les autres, parce qu'ici l'archivage est la suppression et
+  /// que retirer une mention de l'annexe II n'en est qu'une forme polie.
+  archivedAt   DateTime? @map("archived_at")
+  /// Ordre d'affichage — sans portée réglementaire, et le seul champ qu'une
+  /// catégorie officielle laisse modifier.
+  position     Int       @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  entries AllergenEntry[]
+
+  @@map("allergen_category")
+  @@schema("pim")
+}
+
+/// **Un allergène nommé** — la maille à laquelle on déclare.
+///
+/// Le mapping vers la catégorie est n:1 : blé, seigle, orge, avoine, épeautre,
+/// khorasan et triticale retombent tous sur `gluten`, les huit fruits à coque
+/// sur `tree_nuts`. C'est la raison d'être du modèle — l'étiquette affiche la
+/// catégorie, le B2B garde le détail.
+model AllergenEntry {
+  id   String @id
+  /// Code de stockage canonique — GS1 T4078 pour l'officiel, libre ensuite.
+  /// VALEUR de donnée, casse d'origine comprise.
+  code String @unique
+  /// Libellé granulaire (« Noisettes »), localisé — pas la mention d'étiquette,
+  /// qui est celle de la catégorie.
+  name Json
+
+  categoryId String           @map("category_id")
+  /// `Restrict` : une catégorie citée par une entrée ne s'efface pas. C'est ce
+  /// qui rend l'orphelin impossible plutôt que détectable après coup.
+  category   AllergenCategory @relation(fields: [categoryId], references: [id])
+
+  /// Semée par migration, donc verrouillée par le trigger (cf. `AllergenCategory`).
+  official   Boolean   @default(false)
+  /// Jamais de DELETE physique : une entrée maison retirée s'archive.
+  /// ⚠️ Une entrée OFFICIELLE ne s'archive pas — le trigger gèle cette colonne
+  /// avec les autres : ici l'archivage est la suppression, et retirer de la
+  /// saisie un allergène que le règlement impose de proposer n'en est qu'une
+  /// forme polie.
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ingredients IngredientAllergen[]
+
+  @@index([categoryId])
+  @@map("allergen_entry")
+  @@schema("pim")
+}
+
+/// **Ce qu'un ingrédient contient**, en codes GS1.
+///
+/// Une table de liaison et non un `Json` : on voudra l'index inverse (« quels
+/// produits contiennent du gluten »), et un `Json` ne peut pas porter de clé
+/// étrangère — effacer un allergène y laisserait des références mortes sans que
+/// rien ne le dise.
+///
+/// ⚠️ Ce lien ne DÉCIDE de rien : il alimente un ensemble dérivé, affiché à côté
+/// de la déclaration de la déclinaison. La déclaration reste ce qui fait foi ;
+/// la reprise est un geste explicite du staff.
+model IngredientAllergen {
+  ingredientId String     @map("ingredient_id")
+  /// `Cascade` : les déclarations d'un ingrédient effacé n'ont plus d'objet.
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  entryId String        @map("entry_id")
+  /// `Restrict` : un allergène cité par un ingrédient ne s'efface pas.
+  entry   AllergenEntry @relation(fields: [entryId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([ingredientId, entryId])
+  @@index([entryId])
+  @@map("ingredient_allergen")
+  @@schema("pim")
+}

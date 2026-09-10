@@ -1,0 +1,71 @@
+// La racine du schéma — le generator, le datasource, et les conventions.
+//
+// ⚠️ Le schéma est DÉCOUPÉ depuis le 2026-09-10 : ce dossier remplace le fichier
+// unique `prisma/schema.prisma`, qui faisait 4846 lignes et 129 blocs. Prisma
+// fusionne tous les `.prisma` du dossier, sous-dossiers compris, en un seul
+// modèle — la découpe est typographique, `migrate diff` ne voit aucune
+// différence.
+//
+// Le rangement : UN DOSSIER PAR SCHÉMA POSTGRES quand il est gros (`public/`,
+// `pim/`), UN FICHIER quand il tient (`growth`, `ops`, `production`). À
+// l'intérieur, un fichier par contexte — `public/orders.prisma`,
+// `public/pricing.prisma` — parce qu'un schéma Postgres dit où la table VIT, pas
+// de quoi elle parle.
+//
+// 🔴 Le nom du dossier ne prouve RIEN à Prisma : `@@schema("…")` reste
+// obligatoire sur chaque bloc, et un modèle rangé dans `pim/` qui déclarerait
+// `@@schema("public")` compilerait sans un mot. C'est `pnpm lint:prisma-schema-
+// layout` qui tient la correspondance — sans elle, l'arborescence serait une
+// affirmation que personne ne vérifie.
+//
+// Contexte : clients pros (customers) qui commandent à La Folie Coffee.
+// Doc d'archi : documentation/b2b/architecture-identite-auth-tenancy.md
+//              documentation/order/architecture-flux-commande-prod.md
+//
+// Conventions (alignées sur le PIM) :
+// - `User` ICI = une PERSONNE côté client (customer), avec son profil : nom,
+//   prénom, e-mail, téléphone. Le staff/back-office vit dans une db SÉPARÉE
+//   (bounded context distinct) ; pas de table staff ici.
+// - Une personne et une société sont deux choses : le rattachement passe par
+//   `memberships` (0..N sociétés par personne, cf. le modèle Membership).
+// - Tenancy : chaque table possédée par un client porte `company_id` (le « mur »).
+//   On filtre TOUJOURS par ce company_id ; il ne se déduit PLUS du jeton, il est
+//   choisi par la requête et vérifié contre les memberships du demandeur.
+//   Le staff (autre db) n'est pas muré.
+// - Auth : aucune credential stockée. Auth0 possède l'auth ; on ne garde que
+//   `auth0_sub` (clé stable) + `email` (clé humaine / secours migration).
+// - Pas de DELETE physique : archivage par drapeau (`archived_at`) ou statut.
+// - `created_at` / `updated_at` = colonnes SYSTÈME, hors-domaine.
+// - Argent : entiers en CENTIMES (`*_cents`), jamais de float. Devise = EUR.
+//
+// 🔴 LES DEUX PREMIÈRES CONVENTIONS AFFIRMENT UNE BASE SÉPARÉE POUR LE STAFF.
+// C'est FAUX depuis la fusion des bases (B4), et le découpage le rend visible :
+// il y a un `public/staff.prisma`, avec `StaffUser`, `StaffRoleDefinition`,
+// `StaffPermissionOverride`, `StaffNotification` et `StaffPushSubscription` —
+// cinq tables du schéma `public`, dans cette base-ci (vérifié le 2026-09-10).
+// Le texte d'origine est gardé plutôt que réécrit : il date d'une époque à
+// plusieurs bases, et savoir ce qu'on croyait vaut mieux qu'une phrase lissée.
+// Ce qui reste vrai de la seconde : le staff n'est pas muré par `company_id`.
+//
+// ⚠️ Décisions à confirmer :
+// - IDs : `@default(cuid())` ici pour démarrer vite. Le PIM assigne les IDs par la
+//   commande (préfixés, sans default). À aligner si tu veux la parité monorepo.
+// - `runtime = "nodejs"` : à passer en driver-adapter si le back devient Workers (Hono).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../../src/platform/database/client"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+  runtime             = "nodejs"
+}
+
+// Prisma 7 : plus d'`url` ici. La connexion est fournie par `prisma.config.ts`
+// (Migrate) + l'adapter au constructeur de PrismaClient (runtime).
+//
+// ⚠️ « db distincte du PIM/admin » disait la version d'avant : le PIM a rejoint
+// cette base, et ses tables sont dans le schéma `pim` — cf. `pim/`.
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "growth", "ops", "pim", "production"]
+}

@@ -50,7 +50,7 @@ distincts. App unique, plusieurs db.
 
 ## 3. Tables (esquisse)
 
-**DB admin / back-office** (`schema.prisma` dédié) :
+**DB admin / back-office** (`prisma/schema/public/staff.prisma` dédié) :
 
 ```
 User           -- = membre interne (staff)
@@ -59,7 +59,7 @@ Role / Permission   -- rôles internes (PIM / commandes / prod), à affiner
 AuditLog       -- qui a fait quoi (obligatoire pour du privilégié)
 ```
 
-**DB B2B commerce** (`schema.prisma` dédié) :
+**DB B2B commerce** (`prisma/schema/public/account.prisma` dédié) :
 
 ```
 Company        -- le tenant (établissement client pro)

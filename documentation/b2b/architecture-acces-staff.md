@@ -25,7 +25,7 @@ La moitié du chemin est faite, et c'est la moitié structurante :
 
 | Pièce                                                                    | Où                                              | État |
 | ------------------------------------------------------------------------ | ----------------------------------------------- | ---- |
-| Table `staff_users` — identité, `scopes[]`, `auth0Id` nullable           | `prisma/schema.prisma`                          | ✅   |
+| Table `staff_users` — identité, `scopes[]`, `auth0Id` nullable           | `prisma/schema/public/staff.prisma`             | ✅   |
 | Module DDD/CQRS complet — port, repo Prisma, commandes, contrôleur admin | `src/staff/`                                    | ✅   |
 | **Admin racine ineffaçable**, semé au boot, non rétrogradable            | `src/staff/directory/domain/bootstrap-admin.ts` | ✅   |
 | Porte staff — audience Auth0 dédiée, fail-closed sans elle               | `src/platform/auth/admin-auth.guard.ts`         | ✅   |

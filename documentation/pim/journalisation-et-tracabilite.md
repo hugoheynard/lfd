@@ -582,6 +582,6 @@ ORDER BY occurred_at DESC;
 | Diff `avant → après`             | `pim/journal/changes.ts`                                                 |
 | Branchement ports → journal réel | `appBootstrap/journal.module.ts`                                         |
 | Journal réel (append)            | `b2b/growth/infrastructure/prisma-activity-recorder.ts`                  |
-| Table                            | `prisma/schema.prisma` → `model ActivityEvent`                           |
+| Table                            | `prisma/schema/growth.prisma` → `model ActivityEvent`                    |
 | Porte CI                         | `dev-toolbox/gates/journal-tracked.mjs`                                  |
 | Preuve d'atomicité               | `apps/lfd-api/test/pim-journal-atomicity.e2e-spec.ts`                    |

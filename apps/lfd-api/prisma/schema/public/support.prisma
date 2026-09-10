@@ -1,0 +1,55 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// SupportRequest — une demande de rappel/contact à l'activation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Canal de contact souhaité (aligné sur `SupportChannel`, front).
+enum SupportChannel {
+  phone
+  email
+
+  @@schema("public")
+}
+
+/// Demi-journée d'un créneau de rappel.
+enum SupportSlot {
+  morning
+  afternoon
+
+  @@schema("public")
+}
+
+/// Une demande de support à l'activation : le client veut être contacté par
+/// l'équipe commerciale. Wallée par `company_id`. Lue par le commercial (la
+/// notification e-mail viendra avec l'infra mailer) ; `handled_at` marque le
+/// traitement.
+model SupportRequest {
+  id String @id @default(cuid())
+
+  /// Société concernée, ou NULL : un prospect sans entreprise déclarée doit
+  /// pouvoir demander un rappel — la demande porte alors sur la personne.
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  requestedByUserId String @map("requested_by_user_id")
+  requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
+
+  channel     SupportChannel
+  /// Motif — même vocabulaire que les rendez-vous ; objet du mail si `channel = email`.
+  purpose     String         @default("other")
+  phoneNumber String         @default("") @map("phone_number")
+  asap        Boolean        @default(true)
+
+  // Créneau daté si `asap = false`.
+  scheduledDate DateTime?    @map("scheduled_date") @db.Date
+  slot          SupportSlot?
+
+  message String @default("")
+
+  handledAt DateTime? @map("handled_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@index([requestedByUserId])
+  @@map("support_requests")
+  @@schema("public")
+}

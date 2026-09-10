@@ -96,7 +96,7 @@ commande la porte déjà :
 | --------------------------- | ---------------------------------------- | -------------------------------------------------- |
 | passée au compte            | `payment_status = 'not_required'`        | `Order.deferPayment()`, appelé sur `!requiresCard` |
 | **et d'un montant non nul** | `total_cents > 0`                        | `place-order.handler.ts:233` — voir ⟲ ci-dessous   |
-| dans la fenêtre du cycle    | `created_at` (commentée « = passée le ») | `prisma/schema.prisma`                             |
+| dans la fenêtre du cycle    | `created_at` (commentée « = passée le ») | `prisma/schema/public/orders.prisma`               |
 | pas annulée                 | statut dans la liste blanche ci-dessous  | —                                                  |
 
 ⟲ **`total_cents > 0` n'était pas dans la V1, et son absence était une faute.**

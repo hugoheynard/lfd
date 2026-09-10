@@ -1,6 +1,4 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
+import { prismaSchemaSource } from "../prisma-schema-source.js";
 import { DECLARED_NON_PUBLIC_MODELS } from "../schema-ops.counter.js";
 
 /**
@@ -15,7 +13,7 @@ import { DECLARED_NON_PUBLIC_MODELS } from "../schema-ops.counter.js";
  * `public`, la répartition serait fausse, et **rien ne le dirait** puisque le
  * total, lui, resterait juste. Ce test relit la source de vérité et compare.
  */
-describe("la table des schémas ne ment pas sur `schema.prisma`", () => {
+describe("la table des schémas ne ment pas sur les sources Prisma", () => {
   it("déclare exactement les modèles qui ne sont pas dans `public`", () => {
     expect(nonPublicModelsFromPrismaSchema()).toEqual(DECLARED_NON_PUBLIC_MODELS);
   });
@@ -24,9 +22,17 @@ describe("la table des schémas ne ment pas sur `schema.prisma`", () => {
 const MODEL = /^model\s+(\w+)\s*\{/;
 const SCHEMA = /^\s*@@schema\("(\w+)"\)/;
 
-/** Les couples modèle → schéma déclarés hors `public`, lus dans le fichier Prisma. */
+/**
+ * Les couples modèle → schéma déclarés hors `public`, lus dans les sources.
+ *
+ * ⚠️ Le parcours est LIGNE À LIGNE et suppose qu'un `@@schema` suit le `model`
+ * qu'il qualifie. C'est vrai à l'intérieur d'un fichier, et le concaténateur
+ * garde les fichiers entiers — mais un `model` dont le `@@schema` manquerait
+ * happerait celui du modèle suivant. Prisma refuse ce cas (`validate` échoue),
+ * donc la porte est ailleurs ; on ne la redouble pas ici.
+ */
 function nonPublicModelsFromPrismaSchema(): Record<string, string> {
-  const source = readFileSync(join(process.cwd(), "prisma", "schema.prisma"), "utf8");
+  const source = prismaSchemaSource();
   const found: Record<string, string> = {};
   let current: string | undefined;
   for (const line of source.split("\n")) {
