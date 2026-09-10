@@ -29,6 +29,8 @@ export class PushB2bCatalogCommand {
     readonly dryRun: boolean,
     readonly fingerprint: string | undefined,
     readonly label: string | null = null,
+    /** Le POURQUOI, en clair. Facultatif : un envoi de routine n'a rien de plus à dire. */
+    readonly note: string | null = null,
   ) {}
 }
 
@@ -67,7 +69,12 @@ export class PushB2bCatalogHandler implements ICommandHandler<
   ) {}
 
   async execute(command: PushB2bCatalogCommand): Promise<B2bPushSummary> {
-    const summary = await this.pushService.push(command.dryRun, command.fingerprint, command.label);
+    const summary = await this.pushService.push(
+      command.dryRun,
+      command.fingerprint,
+      command.label,
+      command.note,
+    );
 
     // Rien n'est parti, rien n'a été figé : il n'y a pas de fait à inscrire.
     // Un « push de zéro article » raconterait une intention, pas un acte.

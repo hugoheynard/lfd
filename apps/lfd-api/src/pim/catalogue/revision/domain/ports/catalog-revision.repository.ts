@@ -34,6 +34,14 @@ export interface RevisionRecord {
   /** La référence lisible — `R-7WT4NA`. C'est par elle qu'on cite une ancre. */
   readonly reference: string;
   readonly label: string | null;
+  /**
+   * Le POURQUOI, en clair — `null` = personne n'en a écrit.
+   *
+   * À part du nom parce que ce sont deux lectures : le nom se lit dans une
+   * liste à côté de quinze autres, la note se lit quand on ouvre. Allonger le
+   * nom ferait qu'une liste afficherait des paragraphes.
+   */
+  readonly note: string | null;
   readonly hash: string;
   readonly takenAt: Date;
   readonly takenBy: string;
@@ -121,7 +129,7 @@ export abstract class CatalogRevisionRepository {
    * cas d'usage, pas ici, parce qu'elle n'est pas la même selon qu'on répare à
    * la main ou qu'on nomme au passage d'un push.
    */
-  abstract rename(revisionId: string, label: string): Promise<void>;
+  abstract rename(revisionId: string, label: string, note: string | null): Promise<void>;
 
   abstract list(limit: number): Promise<readonly RevisionRecord[]>;
 

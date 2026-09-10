@@ -110,6 +110,7 @@ export function summaryOf(record: RevisionRecord): CatalogRevisionSummaryView {
     id: record.id,
     reference: record.reference,
     label: record.label,
+    note: record.note,
     hash: record.hash,
     takenAt: record.takenAt.toISOString(),
     takenBy: record.takenBy,

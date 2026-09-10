@@ -41,6 +41,15 @@ const pushPayload = z.object({
    * obligatoire au troisième temps, comme `fingerprint` avant lui.
    */
   label: z.string().trim().min(1).max(120).nullish(),
+  /**
+   * Le POURQUOI, en clair — ce qu'on relira dans six mois devant un client.
+   *
+   * Facultatif même quand le nom deviendra obligatoire : un envoi de routine se
+   * nomme en cinq mots et n'a rien de plus à dire. Forcer une note ferait
+   * écrire « RAS » quatre-vingt-dix fois, et une note qu'on remplit par
+   * obligation ne se relit pas.
+   */
+  note: z.string().trim().min(1).max(2_000).nullish(),
 });
 
 /**
@@ -61,7 +70,12 @@ export class B2bPushController {
   @Post()
   push(@Body(new ZodBody(pushPayload)) body: z.infer<typeof pushPayload>): Promise<B2bPushSummary> {
     return this.commands.execute<PushB2bCatalogCommand, B2bPushSummary>(
-      new PushB2bCatalogCommand(body.dryRun, body.fingerprint, body.label ?? null),
+      new PushB2bCatalogCommand(
+        body.dryRun,
+        body.fingerprint,
+        body.label ?? null,
+        body.note ?? null,
+      ),
     );
   }
 }

@@ -88,6 +88,7 @@ export class B2bCatalogPushService {
     dryRunRequested: boolean,
     expectedFingerprint?: string,
     label: string | null = null,
+    note: string | null = null,
   ): Promise<B2bPushSummary> {
     const driver: B2bCatalogDriver = dryRunRequested ? this.dryRun : this.live;
     const { snapshot, candidates, excluded, fingerprint } = await this.feed.preview(
@@ -151,7 +152,7 @@ export class B2bCatalogPushService {
       // 🔴 Le nom vient de l'APPELANT, il ne s'invente plus ici. Ce `null` en
       // dur est ce qui a produit toutes les révisions sans intention : le push
       // posait une ancre anonyme sans jamais interroger personne.
-      new TakeCatalogRevisionCommand(label),
+      new TakeCatalogRevisionCommand(label, note),
     );
 
     const report = await driver

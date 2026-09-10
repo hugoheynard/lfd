@@ -31,6 +31,14 @@ export interface CatalogRevisionSummaryView {
   readonly reference: string;
   /** `null` = personne ne l'a nommée. */
   readonly label: string | null;
+  /**
+   * Le POURQUOI, en clair — `null` = personne n'en a écrit.
+   *
+   * À part du nom parce que ce sont deux lectures : le nom se lit dans une
+   * liste à côté de quinze autres, la note se lit quand on ouvre — devant un
+   * client qui conteste un prix, six mois plus tard.
+   */
+  readonly note: string | null;
   readonly hash: string;
   readonly takenAt: string;
   readonly takenBy: string;

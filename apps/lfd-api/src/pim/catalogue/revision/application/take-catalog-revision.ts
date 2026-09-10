@@ -15,7 +15,11 @@ import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.j
 export type TakenRevision = CatalogRevisionTakenView;
 
 export class TakeCatalogRevisionCommand {
-  constructor(readonly label: string | null) {}
+  constructor(
+    readonly label: string | null,
+    /** Le POURQUOI, en clair. `null` = on n'en écrit pas. */
+    readonly note: string | null = null,
+  ) {}
 }
 
 /**
@@ -99,7 +103,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
       // sans que personne ne l'ait demandé.
       const named = existing.label ?? command.label;
       if (existing.label === null && command.label !== null) {
-        await this.revisions.rename(existing.id, command.label);
+        await this.revisions.rename(existing.id, command.label, command.note);
         await this.journal.trace({
           type: PIM_EVENTS.catalogRevisionNamed,
           subjectType: "catalog_revision",
@@ -121,7 +125,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     // Le fait et l'ancre dans la MÊME transaction. Une ancre est une lecture
     // qu'on enregistre, mais elle s'enregistre : si la trace passait et l'ancre
     // non, l'historique affirmerait une révision que la base ne porte pas.
-    const posed = await this.pose(command.label, revision, takenAt, takenBy).catch(
+    const posed = await this.pose(command, revision, takenAt, takenBy).catch(
       async (error: unknown) => {
         // Course perdue : un autre push vient de poser exactement cette ancre.
         // On la rattrape plutôt que de rendre une erreur pour un résultat qui
@@ -147,7 +151,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
 
   /** La trace et l'ancre, dans la même transaction. */
   private async pose(
-    label: string | null,
+    command: TakeCatalogRevisionCommand,
     revision: ReturnType<typeof buildRevision>,
     takenAt: Date,
     takenBy: string,
@@ -161,12 +165,12 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
         // l'écriture par construction. L'empreinte désigne la même chose et ne
         // dépend de personne.
         subjectId: revision.hash,
-        payload: { hash: revision.hash, label },
+        payload: { hash: revision.hash, label: command.label, note: command.note },
         // La portée d'une ancre : combien d'articles elle fige.
         blast: { articles: revision.items.length },
       });
       return this.revisions.save(
-        { label, hash: revision.hash, takenAt, takenBy },
+        { label: command.label, note: command.note, hash: revision.hash, takenAt, takenBy },
         revision,
         ticket,
       );

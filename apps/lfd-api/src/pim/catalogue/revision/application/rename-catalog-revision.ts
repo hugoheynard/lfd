@@ -12,6 +12,8 @@ export class RenameCatalogRevisionCommand {
   constructor(
     readonly reference: string,
     readonly label: string,
+    /** Le POURQUOI. `null` = on ne fait que nommer. */
+    readonly note: string | null = null,
   ) {}
 }
 
@@ -76,9 +78,9 @@ export class RenameCatalogRevisionHandler implements ICommandHandler<
         // ancre sans dire comment, et il faudrait relire la ligne pour le
         // savoir — donc lire l'état d'aujourd'hui pour comprendre un geste
         // d'hier.
-        payload: { reference: revision.reference, label: command.label },
+        payload: { reference: revision.reference, label: command.label, note: command.note },
       });
-      await this.revisions.rename(revision.id, command.label);
+      await this.revisions.rename(revision.id, command.label, command.note);
     });
   }
 }

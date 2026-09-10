@@ -90,8 +90,13 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     return row === null ? null : toRecord(row);
   }
 
-  async rename(revisionId: string, label: string): Promise<void> {
-    await this.prisma.catalogRevision.update({ where: { id: revisionId }, data: { label } });
+  async rename(revisionId: string, label: string, note: string | null): Promise<void> {
+    // La note n'est écrite que si on en apporte une : nommer une ancre sans
+    // rien dire de plus ne doit pas effacer ce qu'une autre main y avait mis.
+    await this.prisma.catalogRevision.update({
+      where: { id: revisionId },
+      data: { label, ...(note === null ? {} : { note }) },
+    });
   }
 
   async list(limit: number): Promise<readonly RevisionRecord[]> {
@@ -238,12 +243,14 @@ function toRecord(row: {
   hash: string;
   takenAt: Date;
   takenBy: string;
+  note: string | null;
   _count: { items: number };
 }): RevisionRecord {
   return {
     id: row.id,
     reference: row.reference,
     label: row.label,
+    note: row.note,
     hash: row.hash,
     takenAt: row.takenAt,
     takenBy: row.takenBy,

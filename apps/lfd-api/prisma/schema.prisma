@@ -4358,7 +4358,18 @@ model CatalogRevision {
   /// prédécesseur à lire.
   reference String  @unique
   /// Le nom que quelqu'un lui donne ("catalogue de la rentrée"). `NULL` = pas nommée.
+  ///
+  /// Il se pose au PUSH, avec les changements sous les yeux, et il ne se
+  /// renomme pas : il dit avec quelle intention un catalogue est parti chez des
+  /// clients. Les ancres d'avant cette règle sont `NULL` et se réparent une par
+  /// une — aucune n'a été nommée d'office.
   label     String?
+  /// Le POURQUOI, en clair — `NULL` = personne n'en a écrit.
+  ///
+  /// À part de `label`, parce que ce sont deux lectures : le nom se lit dans une
+  /// liste à côté de quinze autres, la note se lit quand on ouvre. Allonger le
+  /// nom ferait qu'une liste afficherait des paragraphes.
+  note      String?
 
   /// L'empreinte du catalogue figé — et l'IDENTITÉ de l'ancre.
   ///

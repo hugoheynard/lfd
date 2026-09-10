@@ -32,11 +32,14 @@ import {
  */
 const nameRevisionPayloadSchema = z.object({
   label: z.string().trim().min(1).max(120),
+  /** Le POURQUOI. Facultatif : on peut nommer sans avoir plus à dire. */
+  note: z.string().trim().min(1).max(2_000).nullish(),
 });
 type NameRevisionPayload = z.infer<typeof nameRevisionPayloadSchema>;
 
 const takeRevisionPayloadSchema = z.object({
   label: z.string().trim().min(1).max(120).nullish(),
+  note: z.string().trim().min(1).max(2_000).nullish(),
 });
 type TakeRevisionPayload = z.infer<typeof takeRevisionPayloadSchema>;
 
@@ -133,7 +136,7 @@ export class CatalogRevisionController {
     @Body(new ZodBody(nameRevisionPayloadSchema)) body: NameRevisionPayload,
   ): Promise<void> {
     await this.commands.execute<RenameCatalogRevisionCommand, void>(
-      new RenameCatalogRevisionCommand(reference, body.label),
+      new RenameCatalogRevisionCommand(reference, body.label, body.note ?? null),
     );
   }
 
@@ -146,7 +149,7 @@ export class CatalogRevisionController {
     @Body(new ZodBody(takeRevisionPayloadSchema)) body: TakeRevisionPayload,
   ): Promise<TakenRevision> {
     return this.commands.execute<TakeCatalogRevisionCommand, TakenRevision>(
-      new TakeCatalogRevisionCommand(body.label ?? null),
+      new TakeCatalogRevisionCommand(body.label ?? null, body.note ?? null),
     );
   }
 }
