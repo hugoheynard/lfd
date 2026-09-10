@@ -11,120 +11,117 @@
     @if (total() === 0) {
       <fold-empty-state
         title="Aucun article reçu"
-        description="Le catalogue arrive du PIM. Publiez-y des produits sur le canal B2B, puis lancez un push."
+        subtitle="Le catalogue arrive du PIM. Publiez-y des produits sur le canal B2B, puis lancez un push."
       />
     } @else {
       <!--
-        Le compteur de non-vendables est en TÊTE et non en pied de page : c'est le
-        chiffre qui change ce qu'on fait de l'écran. Le reléguer en bas donnerait
-        une liste rassurante dont une partie n'est achetable par personne.
+        **Le corps de la page est un `fold-page-layout`.** C'est lui qui porte la
+        gouttière et le rythme vertical — et non des marges posées bloc par bloc,
+        qui se désynchronisent du premier point de rupture venu. Le bandeau de
+        tête, lui, `bleed` : il annule EXACTEMENT cette gouttière, donc il saigne
+        jusqu'aux bords sans rien à resynchroniser.
+
+        Pas de `title` sur le layout : la page porte son `<h1>` dans la bande, et
+        deux titres de premier niveau sur un écran n'en font aucun.
       -->
-      <div class="toolbar">
-        <input
-          class="search"
-          type="search"
-          placeholder="Rechercher un article ou une référence…"
-          aria-label="Rechercher dans le catalogue"
-          [value]="query()"
-          (input)="onSearch($event)"
-        />
-        <p class="counts">
-          <strong>{{ shown() }}</strong> / {{ total() }} articles ·
-          <strong>{{ alteredCount() }}</strong> à prix B2B
-        </p>
-      </div>
+      <fold-page-layout>
+        <!--
+          **Le bandeau de tête.** Tout ce qui répond à « où en est-on, et que
+          cherche-t-on ? » y vit : ce que l'écran décide, le compte, la
+          recherche et les quatre lectures.
 
-      @if (untaxedCount() > 0) {
-        <fold-callout variant="warning">
-          <h3 class="callout-title">Des articles ne sont pas vendables</h3>
-          <p>
-            <strong>{{ untaxedCount() }}</strong> article(s) sur {{ total() }} n'ont pas de taux de
-            TVA. Ils sont bien reçus et leur prix canonique est là, mais la boutique ne peut pas les
-            vendre : sans taux, rien ne saurait les facturer.
-          </p>
-          <!-- 🔴 « n'ont pas de taux » et non plus « appartiennent à une famille
-               sans taux » : depuis le retrait du repli (2026-09-06), ce compteur
-               voit DEUX causes. La famille non réglée dans le PIM, qui est le
-               cas courant et que le paragraphe suivant traite ; et une ligne de
-               miroir d'avant que le taux descende sur les articles, qui n'a
-               jamais été repoussée depuis. La seconde se règle par un push, la
-               première par un réglage PUIS un push. -->
-          <!-- Le contexte PROFESSIONNEL, et pas un autre : la projection du canal
-               lit `vatByContext["b2b"]`. Cet encart disait « à emporter » —
-               régler ce taux-là n'aurait rien débloqué, et l'article serait
-               resté écarté en `variant_sans_taux`. L'écran qui explique
-               pourquoi un article ne se vend pas envoyait au mauvais endroit. -->
-          <p>
-            Réglez le taux du contexte <strong>professionnel</strong> de ces familles dans le PIM —
-            celui de la plateforme B2B, pas celui du comptoir — puis relancez un push. Si la famille
-            en porte déjà un, un push suffit : la ligne du miroir date d'avant.
-          </p>
-        </fold-callout>
-      }
-
-      @if (shown() === 0) {
-        <fold-empty-state
-          title="Aucun article ne correspond"
-          description="Essayez un autre nom ou une autre référence."
-        />
-      }
-
-      @for (shelf of shelves(); track shelf.id) {
-        <fold-card>
-          <div cardHeader class="head">
-            <h2 class="section-title">{{ shelf.name }}</h2>
-            <div class="head-meta">
-              <fold-badge [content]="shelf.items.length + ' articles'" variant="neutral" />
-              @if (shelf.untaxed) {
-                <fold-badge content="sans TVA" variant="warning" />
-              }
+          Posé sur le CHROME, pleine largeur, comme sur l'écran de tarification :
+          le verdict sur le chrome, l'établi sur le papier. Rien ne s'y modifie —
+          on y choisit ce qu'on regarde.
+        -->
+        <fold-page-section bleed stack class="masthead" foldSurface="chrome">
+          <div class="masthead-head">
+            <div class="masthead-identity">
+              <h1 class="masthead-title">Catalogue B2B</h1>
+              <fold-badge [content]="total() + ' articles'" variant="neutral" />
             </div>
           </div>
 
-          @for (item of shelf.items; track item.sku) {
-            <lfd-catalog-row
-              [sku]="item.sku"
-              [name]="item.name"
-              [category]="item.categoryName"
-              [originMillicents]="item.pimPriceMillicents"
-              [alteredMillicents]="item.b2bPriceMillicents"
-              [dimmed]="item.isHidden"
-            >
-              @if (item.vatRatePercent !== null) {
-                <span class="vat">TVA {{ item.vatRatePercent }} %</span>
-              } @else {
-                <fold-badge content="sans TVA" variant="warning" />
-              }
-              <!-- La fiche réglementaire, telle que la BOUTIQUE la connaît.
-                   Trois états distincts : rien de déclaré, déclaré sans
-                   allergène, ou la liste — le premier n'est pas le second. -->
-              @if (item.allergens === null) {
-                <fold-badge content="sans fiche" variant="warning" />
-              } @else if (item.allergens.length > 0) {
-                <span class="allergens">{{ allergenLabels(item) }}</span>
-              } @else if (!item.allergensIncomplete) {
-                <span class="allergens">Sans allergène</span>
-              }
-              @if (item.allergensIncomplete) {
-                <fold-badge content="fiche incomplète" variant="alert" />
-              }
-              <lfd-price-editor
-                [originMillicents]="item.pimPriceMillicents"
-                [alteredMillicents]="item.b2bPriceMillicents"
-                [label]="item.name"
-                (save)="setPrice(item, $event)"
-                (reset)="alignOnPim(item)"
-              />
-              @if (item.isHidden) {
-                <fold-badge content="masqué" variant="neutral" />
-              }
-              <button foldButton size="sm" variant="ghost" (click)="toggleVisibility(item)">
-                {{ item.isHidden ? 'Réafficher' : 'Masquer' }}
-              </button>
-            </lfd-catalog-row>
-          }
-        </fold-card>
-      }
+          <!--
+            La phrase dit ce que la colonne « Prix B2B » FAIT, parce que rien
+            d'autre sur l'écran ne peut le dire : un prix posé ici ne s'ajoute
+            pas aux altérations de la tarification, il remplace le nombre sur
+            lequel elles s'appliquent. C'est la seule chose qu'un commercial doit
+            savoir avant de taper un montant, et elle ne se devine pas.
+          -->
+          <p class="masthead-lead">
+            Le tarif du PIM est le socle. Un <strong>prix B2B</strong> le
+            <strong>remplace</strong> — mercuriale, paliers et promotions s'appliqueront ensuite sur
+            lui, et il survit à tous les pushs suivants.
+          </p>
+
+          <div class="masthead-tools">
+            <fold-search
+              class="search"
+              placeholder="Rechercher un article ou une référence…"
+              (searchChange)="query.set($event)"
+            />
+            <fold-view-toggle
+              ariaLabel="Filtrer le catalogue"
+              size="sm"
+              activeStyle="accent"
+              [options]="filters()"
+              [value]="filter()"
+              (valueChange)="filter.set($event)"
+            />
+          </div>
+        </fold-page-section>
+
+        <!--
+          Le compteur de non-vendables est en TÊTE et non en pied de page : c'est
+          le chiffre qui change ce qu'on fait de l'écran. Le reléguer en bas
+          donnerait une liste rassurante dont une partie n'est achetable par
+          personne.
+        -->
+        @if (untaxedCount() > 0) {
+          <fold-callout variant="warning">
+            <h2 class="callout-title">Des articles ne sont pas vendables</h2>
+            <p>
+              <strong>{{ untaxedCount() }}</strong> article(s) sur {{ total() }} n'ont pas de taux
+              de TVA. Ils sont bien reçus et leur prix canonique est là, mais la boutique ne peut
+              pas les vendre : sans taux, rien ne saurait les facturer.
+            </p>
+            <!-- 🔴 « n'ont pas de taux » et non plus « appartiennent à une famille
+                 sans taux » : depuis le retrait du repli (2026-09-06), ce compteur
+                 voit DEUX causes. La famille non réglée dans le PIM, qui est le
+                 cas courant et que le paragraphe suivant traite ; et une ligne de
+                 miroir d'avant que le taux descende sur les articles, qui n'a
+                 jamais été repoussée depuis. La seconde se règle par un push, la
+                 première par un réglage PUIS un push. -->
+            <!-- Le contexte PROFESSIONNEL, et pas un autre : la projection du canal
+                 lit `vatByContext["b2b"]`. Cet encart disait « à emporter » —
+                 régler ce taux-là n'aurait rien débloqué, et l'article serait
+                 resté écarté en `variant_sans_taux`. L'écran qui explique
+                 pourquoi un article ne se vend pas envoyait au mauvais endroit. -->
+            <p>
+              Réglez le taux du contexte <strong>professionnel</strong> de ces familles dans le PIM
+              — celui de la plateforme B2B, pas celui du comptoir — puis relancez un push. Si la
+              famille en porte déjà un, un push suffit : la ligne du miroir date d'avant.
+            </p>
+          </fold-callout>
+        }
+
+        @if (shown() === 0) {
+          <fold-empty-state
+            title="Aucun article ne correspond"
+            subtitle="Essayez un autre nom, une autre référence, ou revenez à « Tous »."
+          />
+        }
+
+        @for (shelf of shelves(); track shelf.id) {
+          <app-shelf-catalogue
+            [shelf]="shelf"
+            (priceSet)="setPrice($event)"
+            (priceAligned)="alignOnPim($event)"
+            (visibilityToggled)="toggleVisibility($event)"
+          />
+        }
+      </fold-page-layout>
     }
   }
 }

@@ -36,9 +36,16 @@ import { formatEuros } from "./format-euros";
       font-weight: 600;
     }
     /* Un prix décidé ici se voit : sans marque, l'écran laisse croire que tout
-       vient du PIM, et personne ne sait plus ce qu'il a négocié. */
+       vient du PIM, et personne ne sait plus ce qu'il a négocié.
+
+       🔴 --fold-color-primary-text, et surtout PAS --fold-color-on-primary :
+       ce dernier a tenu ici jusqu'au 2026-09-10, et c'est l'encre qu'on pose SUR
+       un aplat de marque, donc du blanc. Un prix négocié s'affichait blanc sur
+       la carte blanche — invisible, et invisible sans que rien ne rougisse,
+       puisqu'un token existant vaut toujours une couleur valide. Le seul témoin
+       possible est le rendu. */
     .altered {
-      color: var(--fold-color-on-primary, currentColor);
+      color: var(--fold-color-primary-text, currentColor);
     }
     .origin {
       color: var(--fold-color-text-muted, #6b7280);

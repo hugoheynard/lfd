@@ -1,34 +1,57 @@
-:host {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-2xl);
+/* **La bande de tête, collante.** C'est la seule zone qui ne change pas quand on
+   descend : le compte, la recherche et les quatre lectures doivent rester sous
+   les yeux pendant qu'on parcourt cinq rayons — sinon filtrer demande de
+   remonter, et on filtre moins.
+
+   Au-dessus des en-têtes collants des tables, qui montent à 1. Même partition
+   que l'écran de tarification : le verdict sur le chrome, l'établi sur le
+   papier. */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  /* `stack` fait espacer les blocs par la section elle-même ; un `gap` posé ici
+     viserait l'hôte, dont le corps est un `display:block`. */
+  --fold-page-section-gap: var(--fold-space-md);
+  /* `bleed` avale le padding du layout — c'est ce qui colle la bande au chrome
+     de l'app. Il avale du même coup l'espace SOUS elle, d'où la marge, et
+     l'espace INTÉRIEUR, d'où le padding : sans lui le titre passe sous
+     l'en-tête de l'application. */
+  margin-bottom: var(--fold-page-gap, 1.5rem);
+  padding: var(--fold-space-lg) var(--fold-page-gutter, 1.25rem) var(--fold-space-xl);
+  background: var(--fold-color-bg-rail-secondary);
 }
 
-.head {
+.masthead-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-md);
+  flex-wrap: wrap;
 }
 
-.head-meta {
+.masthead-identity {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
 }
 
-.section-title {
+.masthead-title {
   margin: 0;
-  font-size: var(--fold-text-lg);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-semibold);
 }
 
-.callout-title {
-  margin: 0 0 var(--fold-space-sm);
-  font-size: var(--fold-text-base);
-  font-weight: 600;
+/* La phrase qui dit ce que la colonne « Prix B2B » fait. Bornée en largeur :
+   au-delà d'une soixantaine de caractères, une ligne de prose se relit mal, et
+   celle-ci est faite pour être relue. */
+.masthead-lead {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--fold-color-text-secondary);
 }
 
-.toolbar {
+.masthead-tools {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -37,30 +60,12 @@
 }
 
 .search {
-  flex: 1 1 18rem;
-  padding: var(--fold-space-sm) var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-  font: inherit;
+  flex: 1 1 20rem;
+  max-width: 28rem;
 }
 
-.counts {
-  margin: 0;
-  color: var(--fold-color-text-muted);
+.callout-title {
+  margin: 0 0 var(--fold-space-sm);
   font-size: var(--fold-text-base);
-  font-variant-numeric: tabular-nums;
-}
-
-.vat {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-base);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* La fiche réglementaire, en note discrète : elle informe, elle n'appelle pas
-   à l'action — contrairement au badge « sans fiche », qui est un manque. */
-.allergens {
-  font-size: 0.85rem;
-  color: var(--fold-color-text-muted);
+  font-weight: var(--fold-weight-semibold);
 }

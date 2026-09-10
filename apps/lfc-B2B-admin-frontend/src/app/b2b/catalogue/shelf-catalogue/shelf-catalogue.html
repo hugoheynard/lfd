@@ -1,0 +1,135 @@
+<fold-page-section [title]="shelf().name" titleVariant="heading" separator>
+  <div class="tool" sectionActions>
+    <fold-badge [content]="items().length + ' articles'" variant="neutral" />
+    @if (shelf().untaxed) {
+      <fold-badge content="famille sans TVA" variant="warning" />
+    }
+  </div>
+
+  <fold-data-table
+    [caption]="'Catalogue B2B — ' + shelf().name"
+    hover
+    stickyFirst
+    density="compact"
+    mobileLayout="auto-cards"
+    [columns]="columns"
+    [rows]="items()"
+    [rowKey]="rowKey"
+    [rowTone]="rowTone"
+    [empty]="empty"
+  >
+    <ng-template foldCell="article" let-row>
+      <span class="identity" [class.is-hidden]="row.isHidden">
+        <span class="name">{{ row.name }}</span>
+        <span class="sku">{{ row.sku }}</span>
+      </span>
+    </ng-template>
+
+    <!-- Ce que le référentiel a envoyé. Il ne se modifie pas ici : c'est le
+         socle, et la colonne d'à côté est ce qu'on en fait. -->
+    <ng-template foldCell="pim" let-row>
+      {{ euros(row.pimPriceMillicents) }}
+    </ng-template>
+
+    <!--
+      **La colonne qui écrit.** Le prix effectif y est affiché avec sa
+      provenance — le tarif du PIM barré quand on l'a remplacé —, et le geste
+      est juste en dessous.
+
+      Elle est à DROITE du tarif reçu et pas ailleurs : c'est l'ordre dans
+      lequel le prix se fabrique, et c'est aussi la seule disposition où le
+      remplacement se lit d'un coup d'œil.
+    -->
+    <ng-template foldCell="b2b" let-row>
+      <div class="decision">
+        @if (row.b2bPriceMillicents !== null) {
+          <lfd-price-origin
+            [originMillicents]="row.pimPriceMillicents"
+            [alteredMillicents]="row.b2bPriceMillicents"
+          />
+          @if (decidedOn(row); as day) {
+            <span class="decided">posé le {{ day }}</span>
+          }
+        } @else {
+          <span class="follows">suit le PIM</span>
+        }
+        <lfd-price-editor
+          [originMillicents]="row.pimPriceMillicents"
+          [alteredMillicents]="row.b2bPriceMillicents"
+          [label]="row.name"
+          (save)="priceSet.emit({ item: row, priceMillicents: $event })"
+          (reset)="priceAligned.emit(row)"
+        />
+      </div>
+    </ng-template>
+
+    <!-- Sans taux, la boutique ne sait pas facturer : l'article est reçu et
+         invendable. Le dire par un mot, pas seulement par la teinte de ligne. -->
+    <ng-template foldCell="vat" let-row>
+      @if (row.vatRatePercent !== null) {
+        {{ row.vatRatePercent }} %
+      } @else {
+        <fold-badge content="sans taux" variant="warning" />
+      }
+    </ng-template>
+
+    <!-- La fiche réglementaire, telle que la BOUTIQUE la connaît. Trois états
+         distincts : rien de déclaré, déclaré sans allergène, ou la liste — le
+         premier n'est pas le second. -->
+    <ng-template foldCell="sheet" let-row>
+      @if (row.allergens === null) {
+        <fold-badge content="sans fiche" variant="warning" />
+      } @else if (row.allergens.length > 0) {
+        <span class="allergens" [attr.title]="allergenLabels(row)">{{ allergenLabels(row) }}</span>
+      } @else if (!row.allergensIncomplete) {
+        <span class="allergens">Sans allergène</span>
+      }
+      @if (row.allergensIncomplete) {
+        <fold-badge content="incomplète" variant="alert" />
+      }
+    </ng-template>
+
+    <!--
+      **La visibilité se confirme sur place**, exactement comme la pose d'un
+      prix : le contrôle s'ouvre DANS la cellule, dit ce qu'il va faire, et se
+      referme. Rien ne saute, rien ne recouvre l'écran, et on ne perd pas de vue
+      la ligne dont il est question.
+
+      Les DEUX sens se confirment, et pas seulement le retrait. Masquer coupe la
+      commande ; réafficher la rouvre — donc remet en vente un article que
+      quelqu'un avait retiré pour une raison qui ne se lit pas ici. Les deux se
+      voient depuis la boutique par un client.
+    -->
+    <ng-template foldCell="shop" let-row>
+      <div class="shop">
+        @if (row.isHidden) {
+          <fold-badge content="masqué" variant="neutral" />
+        }
+        <fold-inline-confirm
+          size="sm"
+          [intent]="row.isHidden ? 'primary' : 'warning'"
+          [message]="
+            row.isHidden
+              ? 'L’article revient dans la boutique : les clients pourront de nouveau le commander, au prix de cette ligne.'
+              : 'L’article disparaît de la boutique et plus aucun client ne pourra le commander. Son prix B2B est conservé.'
+          "
+          [labels]="{ confirm: row.isHidden ? 'Réafficher' : 'Masquer' }"
+          (confirmed)="visibilityToggled.emit(row)"
+        >
+          <button
+            foldButton
+            size="sm"
+            type="button"
+            emphasis="outline"
+            intent="neutral"
+            [attr.aria-label]="
+              (row.isHidden ? 'Réafficher ' : 'Masquer ') + row.name + ' dans la boutique'
+            "
+          >
+            {{ row.isHidden ? 'Réafficher' : 'Masquer' }}
+          </button>
+        </fold-inline-confirm>
+      </div>
+    </ng-template>
+  </fold-data-table>
+</fold-page-section>
