@@ -15,11 +15,12 @@
 | 1   | Les quatre phrases fausses sur le jeton        | ✅ fait       | `T1`   |
 | 2   | Éprouver la vue sur Accelerate                 | 🔴 **bloqué** | —      |
 | 3   | `src/handover/` — déplacement et recomposition | ✅ fait       | `T3`   |
+| 3+  | La file — port, lecture, route, écran          | ✅ fait       | `T5`   |
 | 4   | Les portes — `BLOCK_OF` d'abord                | ✅ fait       | `T3`   |
-| 5   | L'URL, avec alias déprécié                     | ⏸ à faire     | —      |
+| 5   | L'URL, avec alias déprécié                     | ✅ fait       | `T5`   |
 | 6   | `SELECT count(*)` puis la migration à la main  | ⏸ dépend de 2 | —      |
 | 7   | `DROP VIEW`, puis retrait de l'alias           | ⏸ dépend de 6 | —      |
-| 8   | La doc                                         | ⏸ à faire     | —      |
+| 8   | La doc                                         | ⏳ en cours   | —      |
 
 🔴 **La tranche 2 est bloquée et ce n'est pas technique.** Éprouver la vue sur
 Accelerate demande un **projet Prisma Postgres jetable** — donc une décision et
@@ -171,3 +172,82 @@ c'est de l'alimentaire, donc ce qui est cuit est facturé, donc le contenu gèle
 démarrage du four. La remise servant après, elle peut lire vif sans risque. Aucun
 raisonnement technique ne pouvait produire cette conclusion — il fallait
 connaître le métier.
+
+---
+
+## Tranche 5 — l'URL, et la file qui n'était dans aucune tranche
+
+### L'alias déprécié tient en une ligne
+
+`@Controller` accepte un **tableau** de préfixes. `/admin/handover` et
+`/admin/production/handover` servent donc les mêmes handlers, sans contrôleur en
+double et sans rien à maintenir des deux côtés. C'est ce qui rend la
+dépréciation tenable plutôt que théorique — un alias qu'il faut entretenir finit
+par diverger, puis par être retiré trop tôt.
+
+Un e2e le couvre explicitement (« sert encore l'ANCIEN chemin »). Sans lui, la
+tranche 7 retirerait le préfixe sans que rien ne rougisse.
+
+### Les codes d'erreur ont suivi, et pas par symétrie
+
+`production.handover.*` → `handover.*`. Les faire diverger de l'URL aurait laissé
+une route `admin/handover` répondre `production.handover.refused`.
+
+🔴 Renommés **sans dépréciation**, contrairement à l'URL — et c'est une décision,
+pas un oubli : rien ne les lit. Les deux fronts matchent sur le chemin, jamais
+sur le code (vérifié par `grep` sur `apps/` et `packages/`). Le jour où un client
+s'y accrocherait, la même dépréciation s'appliquerait.
+
+### La file : deux lectures, deux propriétaires
+
+`HandoverQueueReader` est **déclaré par la remise**, implémenté par le commerce.
+Le handler croise sa réponse avec les attestations lues chez soi. C'est le seul
+endroit du contexte où les deux se rencontrent, et il fallait que ce soit un
+**handler** plutôt qu'un port : fusionner les deux lectures dans un adaptateur
+aurait obligé le commerce à connaître les attestations, ou la remise à joindre
+`orders`.
+
+Les attestations passent par un port de **lecture** distinct du port d'écriture,
+et **par lot** : une file de quarante lignes qui demanderait l'attestation de
+chacune ferait quarante requêtes pour peindre un écran.
+
+## 🔴 Ce que les tests ont trouvé, et qui ne venait pas de la remise
+
+### Un doublé qui mentait sur son contrat depuis toujours
+
+Mon test « sépare les points de retrait » plaçait **deux** commandes et prenait
+un `409 persistence.duplicate`. Après avoir éliminé l'idempotence, le numéro de
+commande, le journal et les alertes, la cause était ailleurs :
+
+```ts
+createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", … })
+```
+
+`orders.stripe_payment_intent_id` est `@unique`. Un identifiant **constant** rend
+donc la seconde commande payable impossible — et le message ne nomme rien.
+
+**Ce n'est pas un bug de produit** : le vrai Stripe rend un identifiant neuf à
+chaque appel. C'est un doublé qui ne respectait pas le contrat qu'il joue. Le
+prix réel : **aucun cas de ce fichier n'avait jamais placé deux commandes à
+régler**, donc la contrainte d'unicité n'avait jamais été éprouvée honnêtement.
+
+Un compteur suffit. La leçon est celle du §6 du `CLAUDE.md` sur les casts, vue
+sous un autre angle : un doublé qui dérive du contrat ne fait rougir personne.
+
+### Le port `OrderReader` est trop gros, et ça se mesure
+
+Ajouter **une** méthode a fait cesser de compiler **cinq** doublés qui ne s'y
+intéressent pas. C'est la définition opérationnelle d'une violation de l'ISP.
+Complétés ici, dégraissage ouvert en tâche à part — le faire dans cette tranche
+aurait mêlé un refactor de port à un déménagement de contexte.
+
+## Ce qui reste, et pourquoi
+
+| Tranche | Bloqué par                                                     |
+| ------- | -------------------------------------------------------------- |
+| 2       | 🔴 **Hugo** — éprouver la vue sur un projet Accelerate jetable |
+| 6       | la tranche 2, et le `SELECT count(*)` à reprendre juste avant  |
+| 7       | un déploiement (retrait de la vue, puis de l'alias d'URL)      |
+
+⚠️ La clé Prisma Accelerate fuitée n'est **toujours pas révoquée**. La tranche 2
+ne se fait pas avec elle.
