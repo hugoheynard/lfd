@@ -15,7 +15,7 @@
  * Une seule frontière doublée : le verifier staff. Tout le reste est réel — le
  * SQL, les contraintes, le filtre d'erreurs, la résolution d'accès.
  */
-import type { LegalEntityView } from "@lfd/contracts";
+import type { BillingCycleView, LegalEntityView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -265,6 +265,24 @@ describe("Entité juridique — la fiche de mandat SEPA", () => {
     // 🔴 Ce que seul un e2e prouve : ce que le SERVEUR envoie réellement sur le
     // fil. Le test unitaire ne voit que ce que la fonction rend.
     expect(pdf.includes(Buffer.from(IBAN))).toBe(false);
+  });
+});
+
+describe("Le cycle de prélèvement", () => {
+  it("rend une fenêtre bornée à minuit LOCAL, et deux appels rendent la même", async () => {
+    const first = await staff().get("/admin/accounting/billing-cycle/current").expect(200);
+    const cycle = jsonBody<BillingCycleView>(first);
+
+    expect(new Date(cycle.closesAt).getTime()).toBeGreaterThan(new Date(cycle.startsAt).getTime());
+    // 🔴 Minuit à Paris n'est jamais minuit UTC : l'écart vaut une heure en
+    // hiver, deux en été. Une borne à `T00:00:00.000Z` signalerait que la
+    // conversion de fuseau a sauté quelque part entre le domaine et le fil.
+    expect(cycle.closesAt.endsWith("T00:00:00.000Z")).toBe(false);
+    expect(cycle.closesAt).toMatch(/T2[23]:00:00\.000Z$/u);
+
+    // Une lecture ne clôture rien : la fenêtre ne bouge pas.
+    const second = await staff().get("/admin/accounting/billing-cycle/current").expect(200);
+    expect(jsonBody<BillingCycleView>(second)).toEqual(cycle);
   });
 });
 

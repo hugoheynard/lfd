@@ -110,6 +110,7 @@ export {
   PRE_NOTIFICATION_MAX_DAYS,
   PRE_NOTIFICATION_MIN_DAYS,
 } from "./legal-entity.js";
+export type { BillingCycleView } from "./billing-cycle.js";
 export type {
   AssignCreditorIdentifierPayload,
   CorrectLegalEntityPayload,

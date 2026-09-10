@@ -139,3 +139,23 @@ export class EntityLogoUnreadableError extends TechnicalError {
     );
   }
 }
+
+/**
+ * La borne d'un cycle tombe sur une heure locale qui n'existe pas.
+ *
+ * Inatteignable aujourd'hui — la clôture est à minuit, et minuit n'est sauté par
+ * aucun passage à l'heure d'été en Europe de l'Ouest. Le refus existe pour le
+ * jour où l'heure de clôture deviendrait un réglage : rendre un instant faux en
+ * silence coûterait un cycle entier décalé, découvert au relevé bancaire.
+ */
+export class BillingCycleBoundaryError extends TechnicalError {
+  constructor(
+    readonly day: string,
+    readonly time: string,
+  ) {
+    super(
+      "accounting.billing_cycle.impossible_boundary",
+      `Le ${day} à ${time} n'existe pas dans le fuseau des affaires (passage à l'heure d'été).`,
+    );
+  }
+}
