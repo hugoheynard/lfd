@@ -208,6 +208,50 @@ describe("Entité juridique — le compte créancier", () => {
   });
 });
 
+describe("Le brouillon de fichier de prélèvement", () => {
+  it("REFUSE de le rendre pour une entité qui ne peut pas encaisser", async () => {
+    const id = await declare();
+    await staff().get(`/admin/accounting/billing-cycle/draft.xml?legalEntityId=${id}`).expect(409);
+  });
+
+  /**
+   * 🔴 Ce que seul un e2e prouve : ce que le SERVEUR envoie sur le fil. Le bloc
+   * créancier doit être RÉEL — c'est la moitié qu'on vient vérifier — et le bloc
+   * débiteur doit être INDÉPOSABLE, parce qu'un lot incomplet qui ressemble à un
+   * lot valide est ce qui finit déposé un vendredi soir.
+   */
+  it("rend un XML dont le créancier est vrai et le débiteur impossible", async () => {
+    const id = await declare();
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-identifier`)
+      .send({ ics: ICS })
+      .expect(204);
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+      .send({ iban: IBAN })
+      .expect(204);
+
+    const response = await staff()
+      .get(`/admin/accounting/billing-cycle/draft.xml?legalEntityId=${id}`)
+      .expect(200);
+
+    expect(response.headers["content-type"]).toContain("application/xml");
+    // L'avertissement voyage avec le fichier : dans son nom ET dans son corps.
+    expect(response.headers["content-disposition"]).toContain("BROUILLON");
+    expect(response.text).toContain("CE FICHIER NE PEUT PAS ETRE DEPOSE");
+
+    // Notre côté, réel.
+    expect(response.text).toContain(`<Id>${ICS}</Id>`);
+    expect(response.text).toContain(`<IBAN>${IBAN}</IBAN>`);
+
+    // Le côté débiteur, impossible — et surtout : AUCUN IBAN plausible ailleurs
+    // que le nôtre. C'est l'assertion qui empêcherait une régression où un
+    // gabarit inventerait des coordonnées pour « faire propre ».
+    const ibans = [...response.text.matchAll(/<IBAN>([^<]*)</gu)].map((m) => m[1] ?? "");
+    expect(ibans.filter((value) => /^[A-Z]{2}\d{2}[A-Za-z0-9]+$/u.test(value))).toEqual([IBAN]);
+  });
+});
+
 describe("Entité juridique — la fiche de mandat SEPA", () => {
   it("REFUSE de la rendre à une entité qui ne peut pas encaisser, en nommant ce qui manque", async () => {
     const id = await declare();

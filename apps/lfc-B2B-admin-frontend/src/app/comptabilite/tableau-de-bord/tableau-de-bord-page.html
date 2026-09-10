@@ -187,13 +187,31 @@
             </fold-callout>
           }
 
+          <!--
+            ⚠️ Cette phrase disait « il suppose des factures à prélever ». C'est
+            devenu FAUX le 2026-09-10 : nous n'émettons pas de factures, et
+            l'assiette se somme depuis les commandes passées au compte. Une
+            consigne périmée dans un écran gèle un chantier — voir §0 quater.
+          -->
           <p class="tb-said">
-            L'export lui-même n'est <strong>pas encore construit</strong>&nbsp;: il suppose des
-            factures à prélever, et le lot qui les porte. C'est la tranche 9 de la conception du
-            prélèvement direct.
+            Un <strong>brouillon</strong> se télécharge dès maintenant&nbsp;: notre bloc créancier
+            et les montants y sont réels. Le bloc débiteur, lui, ne peut pas l'être — ni son IBAN ni
+            la référence de son mandat n'existent encore dans le système.
           </p>
 
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Ce fichier ne peut pas être déposé.</strong> À la place des coordonnées du
+            débiteur, il porte des marqueurs qu'aucune banque n'accepte&nbsp;: un lot incomplet qui
+            ressemblerait à un lot valide serait bien plus dangereux qu'un fichier refusé. Il sert à
+            relire notre bloc créancier, avec un conseiller.
+          </fold-callout>
+
           <div class="tb-actions">
+            @if (issuer(); as ready) {
+              <button foldButton icon="download" [loading]="busy()" (click)="downloadDraft(ready)">
+                Télécharger le brouillon
+              </button>
+            }
             <a
               foldButton
               emphasis="outline"
@@ -209,18 +227,27 @@
       <!-- ═══ FACTURATION — pas encore ═══ -->
       <fold-card class="tb-card">
         <fold-page-section title="Facturation">
-          <span sectionSubtitle>Ce qu'il reste à collecter, et sur quelles commandes.</span>
+          <span sectionSubtitle>Qui l'émet, et à partir de quoi.</span>
 
           <!--
-            Aucun chiffre ici, et c'est le sujet de cette carte. « 0 facture à
-            collecter » dirait « rien à encaisser » ; la phrase vraie est « on ne
-            sait pas encore compter ». Le zéro est réservé à ce qui se calcule.
+            ⚠️ Cette carte annonçait « les tranches 4 et 5 — l'agrégat facture,
+            puis sa numérotation sans trou ». Les deux ont été SUPPRIMÉES le
+            2026-09-10 : nous n'émettons pas de factures. Une carte qui promet un
+            chantier abandonné fait attendre quelque chose qui ne viendra pas.
           -->
           <fold-callout appearance="inset" variant="info">
-            <strong>La facturation n'est pas encore construite.</strong> Aucune facture n'existe
-            dans le système&nbsp;: les règlements se réclament aujourd'hui hors outil. Ce sont les
-            tranches 4 et 5 de la conception — l'agrégat facture, puis sa numérotation sans trou.
+            <strong>Nous n'émettons pas de factures, et c'est une décision.</strong> Le comptable
+            importe nos commandes dans son logiciel et sort la facture mensuelle&nbsp;; nous
+            produisons la somme et le fichier de prélèvement. Bâtir un émetteur de factures
+            aujourd'hui, ce serait bâtir contre un régime de facturation électronique qui n'est pas
+            stabilisé.
           </fold-callout>
+
+          <p class="tb-said">
+            Ce qui manque encore ici, c'est <strong>l'export des commandes du cycle</strong>, par
+            société — l'entrée du logiciel du comptable. Sa forme dépend de ce que ce logiciel sait
+            lire, ce qui est une question à lui poser avant de l'écrire.
+          </p>
         </fold-page-section>
       </fold-card>
     </div>

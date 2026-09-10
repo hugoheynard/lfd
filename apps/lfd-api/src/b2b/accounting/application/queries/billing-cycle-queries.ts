@@ -6,3 +6,17 @@
  * enregistrées, c'est le handler qui les lira, pas cette classe qui changera.
  */
 export class GetCurrentBillingCycleQuery {}
+
+/**
+ * Le **brouillon** de fichier de prélèvement pour le cycle en cours.
+ *
+ * Une lecture : rien n'est clôturé, aucun lot n'est créé, aucune commande n'est
+ * marquée. Deux appels rendent le même fichier — c'est ce qui permet de le
+ * relire avec un conseiller sans rien engager.
+ *
+ * L'entité émettrice est **demandée**, jamais devinée : le jour où il y en a
+ * deux, choisir en silence prélèverait sous le mauvais ICS.
+ */
+export class ExportCycleDraftQuery {
+  constructor(readonly legalEntityId: string) {}
+}

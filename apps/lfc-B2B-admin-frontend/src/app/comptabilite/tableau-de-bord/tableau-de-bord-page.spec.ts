@@ -126,7 +126,9 @@ describe('TableauDeBordPage', () => {
   it('🔴 ne montre AUCUN chiffre de facturation — il dit que la brique manque', async () => {
     const { fixture } = await render();
 
-    expect(text(fixture)).toContain("La facturation n'est pas encore construite");
+    // La carte dit désormais une DÉCISION, plus une attente : nous n'émettons
+    // pas de factures, le comptable les sort de nos commandes (2026-09-10).
+    expect(text(fixture)).toContain("Nous n'émettons pas de factures");
     // Le mot « facture » ne doit jamais côtoyer un nombre sur cet écran.
     expect(text(fixture)).not.toMatch(/\d+\s*factures?\b/u);
   });

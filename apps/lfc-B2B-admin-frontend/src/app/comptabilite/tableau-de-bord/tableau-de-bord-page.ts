@@ -212,6 +212,23 @@ export class TableauDeBordPage {
    * pas de fichier, rien. Sans ce message, l'utilisateur reclique, et conclut
    * que le bouton ne marche pas.
    */
+  /**
+   * Le brouillon de prélèvement, pour l'émetteur prêt.
+   *
+   * L'entité est passée EXPLICITEMENT, jamais devinée côté serveur : le jour où
+   * il y en a deux, choisir en silence prélèverait sous le mauvais ICS.
+   *
+   * Le nom du fichier vient du serveur, qui le fait dériver du cycle — le
+   * recalculer ici donnerait une seconde définition de « quel mois », et ce
+   * serait celle que l'utilisateur lit sur son bureau qui dériverait.
+   */
+  protected async downloadDraft(issuer: LegalEntityView): Promise<void> {
+    await this.download(
+      () => this.api.cycleDraft(issuer.id),
+      `BROUILLON-prelevement-${issuer.siren}.xml`,
+    );
+  }
+
   private async download(load: () => Promise<Blob>, fileName: string): Promise<void> {
     this.busy.set(true);
     this.error.set(null);

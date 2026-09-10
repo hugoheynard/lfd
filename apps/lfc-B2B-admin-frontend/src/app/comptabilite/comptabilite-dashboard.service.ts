@@ -75,4 +75,20 @@ export class ComptabiliteDashboardService {
       this.http.get(`${B2B_API_BASE}/admin/catalog/export.csv`, { responseType: 'blob' }),
     );
   }
+
+  /**
+   * Le **brouillon** de fichier de prélèvement du cycle en cours.
+   *
+   * `responseType: 'blob'` : c'est un fichier, pas un objet. Et il part avec son
+   * avertissement dans son nom comme dans son corps — l'écran n'a pas à le
+   * rajouter.
+   */
+  async cycleDraft(legalEntityId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${B2B_API_BASE}/admin/accounting/billing-cycle/draft.xml`, {
+        params: { legalEntityId },
+        responseType: 'blob',
+      }),
+    );
+  }
 }

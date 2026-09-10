@@ -8,17 +8,20 @@ import { SetCreditorAccountHandler } from "./application/commands/set-creditor-a
 import { SetLegalEntityArchivedHandler } from "./application/commands/set-legal-entity-archived.handler.js";
 import { SetLegalEntityLogoHandler } from "./application/commands/set-legal-entity-logo.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
+import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draft.handler.js";
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
 import { ExportSampleMandateHandler } from "./application/queries/export-sample-mandate.handler.js";
 import { GetLegalEntityLogoHandler } from "./application/queries/get-legal-entity-logo.handler.js";
 import { GetLegalEntityHandler } from "./application/queries/get-legal-entity.handler.js";
 import { ListLegalEntitiesHandler } from "./application/queries/list-legal-entities.handler.js";
+import { BillableOrdersReader } from "./domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "./domain/ports/creditor.reader.js";
 import { LegalEntityLogoReader } from "./domain/ports/legal-entity-logo.reader.js";
 import { LegalEntityReader } from "./domain/ports/legal-entity.reader.js";
 import { LegalEntityRepository } from "./domain/ports/legal-entity.repository.js";
 import { AdminBillingCycleController } from "./http/admin-billing-cycle.controller.js";
 import { AdminLegalEntitiesController } from "./http/admin-legal-entities.controller.js";
+import { PrismaBillableOrdersReader } from "./infrastructure/prisma-billable-orders.reader.js";
 import { PrismaCreditorReader } from "./infrastructure/prisma-creditor.reader.js";
 import { PrismaLegalEntityLogoReader } from "./infrastructure/prisma-legal-entity-logo.reader.js";
 import { PrismaLegalEntityReader } from "./infrastructure/prisma-legal-entity.reader.js";
@@ -48,6 +51,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
     { provide: LegalEntityReader, useClass: PrismaLegalEntityReader },
     { provide: CreditorReader, useClass: PrismaCreditorReader },
+    { provide: BillableOrdersReader, useClass: PrismaBillableOrdersReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
     DeclareLegalEntityHandler,
     CorrectLegalEntityHandler,
@@ -61,6 +65,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     GetLegalEntityHandler,
     ExportSampleMandateHandler,
     GetCurrentBillingCycleHandler,
+    ExportCycleDraftHandler,
     GetLegalEntityLogoHandler,
   ],
   exports: [CreditorReader],
