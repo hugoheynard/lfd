@@ -148,6 +148,13 @@ class OneOrderReader extends OrderReader {
     return Promise.reject(new Error("non utilisé"));
   }
 
+  // Ce doublé REFUSE tout ce qu'il n'attend pas, plutôt que de rendre vide :
+  // c'est sa discipline, et la file du comptoir la suit. Un appel inattendu
+  // doit tomber ici, pas produire un résultat plausible.
+  override expectedForHandoverOn() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
   override listPersonal() {
     return Promise.reject(new Error("non utilisé"));
   }

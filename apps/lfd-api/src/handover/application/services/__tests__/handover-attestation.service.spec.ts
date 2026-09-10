@@ -4,7 +4,7 @@ import type { HandoverSubject } from "../../../channels/commerce/handover-subjec
 import { OrderHandedOverEvent } from "../../../channels/commerce/order-handed-over.event.js";
 import { OrderHandover } from "../../../domain/entities/order-handover.js";
 import { HandoverRefusedError } from "../../../domain/errors/handover-errors.js";
-import type { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
+import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { HandoverAttestation } from "../handover-attestation.service.js";
 
 /**
@@ -73,6 +73,32 @@ function attestationOf(existing: OrderHandover | null, won: boolean) {
   const events = new CollectingPublisher();
   const service = new HandoverAttestation(repository, new FixedClock(), events);
   return { service, written, events };
+}
+
+/**
+ * Un dépôt qui rend une réponse DIFFÉRENTE à chaque lecture — hérite du port,
+ * pas un littéral castable : c'est la seule façon d'éprouver que le perdant
+ * RELIT après avoir perdu, au lieu de réutiliser sa lecture d'avant la course.
+ */
+class SequentialOrderHandoverRepository extends OrderHandoverRepository {
+  private nextRead = 0;
+
+  constructor(
+    private readonly reads: readonly (OrderHandover | null)[],
+    private readonly won: boolean,
+  ) {
+    super();
+  }
+
+  findByOrderId(): Promise<OrderHandover | null> {
+    const value = this.reads[this.nextRead] ?? null;
+    this.nextRead += 1;
+    return Promise.resolve(value);
+  }
+
+  attest(): Promise<boolean> {
+    return Promise.resolve(this.won);
+  }
 }
 
 describe("HandoverAttestation", () => {
@@ -168,5 +194,37 @@ describe("HandoverAttestation", () => {
     ).rejects.toThrow(/annulée/u);
 
     expect(events.published).toEqual([]);
+  });
+
+  it("RELIT après avoir perdu la course — le fait republié est celui du GAGNANT, pas la lecture d'avant", async () => {
+    // 🔴 Ce que l'arbitrage laisse ouvert si on ne le fixe pas : au moment de
+    // notre première lecture, personne n'avait encore attesté (`existing`
+    // était `null`). Entre cette lecture et notre écriture, un autre poste
+    // gagne. Si le perdant republiait sa lecture PÉRIMÉE, il republierait...
+    // rien — exactement le silence que le rattrapage devait combler. Le
+    // service doit donc RELIRE après avoir perdu, pas réutiliser `existing`.
+    const winner = OrderHandover.rehydrate(
+      "ord_1",
+      "ORD-ABCD-1234",
+      new Date("2026-09-07T16:29:00.000Z"),
+      "staff-winner",
+      "scan",
+    );
+    const repository = new SequentialOrderHandoverRepository([null, winner], false);
+    const events = new CollectingPublisher();
+    const service = new HandoverAttestation(repository, new FixedClock(), events);
+
+    await expect(service.attest(subject(), "staff-2", "manual")).rejects.toBeInstanceOf(
+      HandoverRefusedError,
+    );
+
+    expect(events.published).toEqual([
+      new OrderHandedOverEvent(
+        "ORD-ABCD-1234",
+        new Date("2026-09-07T16:29:00.000Z"),
+        "staff-winner",
+        "scan",
+      ),
+    ]);
   });
 });

@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
  * carnet, et personne ne l'aurait vu avant qu'un client change son contact
  * entre la commande et la livraison.
  */
-import type { ProductionBatchView } from "@lfd/contracts";
+import type { HandoverQueueView, ProductionBatchView } from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -42,8 +42,29 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
+/**
+ * La passerelle de paiement, doublée.
+ *
+ * 🔴 **`paymentIntentId` était CONSTANT (`"pi_e2e"`) jusqu'au 2026-09-10**, et
+ * `orders.stripe_payment_intent_id` est `@unique`. Deux commandes payables ne
+ * pouvaient donc pas coexister dans une même suite : la seconde échouait en
+ * `persistence.duplicate`, avec un message qui ne nomme rien.
+ *
+ * Ce n'était pas un bug de produit — le vrai Stripe rend un identifiant neuf à
+ * chaque appel. C'était un doublé qui MENTAIT sur son contrat, et le prix a été
+ * qu'aucun cas de ce fichier n'a jamais placé deux commandes à régler. La
+ * contrainte d'unicité n'avait donc jamais été éprouvée honnêtement.
+ *
+ * Un compteur suffit : il rend l'unicité vraie sans rendre l'identifiant
+ * imprévisible, ce dont aucun test n'a besoin ici.
+ */
+let intentCount = 0;
 const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
+  createIntent: () => {
+    intentCount += 1;
+    const id = `pi_e2e_${String(intentCount)}`;
+    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
+  },
   publishableKey: () => "pk_e2e",
   parseWebhook: () => ({ kind: "ignored" as const }),
 };
@@ -999,5 +1020,167 @@ describe("la remise en livraison", () => {
 
   it("répond 404 sur un numéro inconnu, sans dire s'il a existé", async () => {
     await ctx.asSub("staff-e2e").post(`/admin/handover/manual/ORD-INCONNUE`).expect(404);
+  });
+});
+
+/**
+ * **La file du comptoir**, et l'alias déprécié qui la précède.
+ *
+ * Ces cas traversent une frontière que rien d'autre n'éprouve : la file est
+ * composée par la REMISE à partir de deux lectures — ce que le commerce attend,
+ * et ce qu'elle a elle-même attesté. Un doublé ne le montrerait pas, parce que
+ * c'est justement l'assemblage de deux propriétaires qui est en jeu.
+ */
+describe("la file de remise", () => {
+  /**
+   * Le point de retrait est OBLIGATOIRE sur une commande `pickup` — le contrat
+   * le refuse sinon. Deux points, parce que la file les sépare en onglets et
+   * qu'un seul ne prouverait rien de ce découpage.
+   */
+  let leLabo = "";
+  let leVillage = "";
+
+  async function placePickup(quantity: number, pickupAddressId = leLabo): Promise<string> {
+    const placed = jsonBody<{ orderNumber: string }>(
+      await ctx
+        .asSub(MEMBER)
+        .post(`/orders`)
+        .send({
+          idempotencyKey: randomUUID(),
+          companyId: null,
+          requestedDeliveryDate: SERVICE_DAY,
+          fulfillmentMethod: "pickup",
+          pickupAddressId,
+          note: "",
+          lines: [{ sku: "VIE-001", quantity }],
+        })
+        .expect(201),
+    );
+    return placed.orderNumber;
+  }
+
+  async function file(): Promise<HandoverQueueView> {
+    return jsonBody<HandoverQueueView>(
+      await ctx.asSub("staff-e2e").get(`/admin/handover/file?jour=${SERVICE_DAY}`).expect(200),
+    );
+  }
+
+  beforeEach(async () => {
+    await createUser(ctx.prisma, { auth0Sub: MEMBER, email: "camille@halles.test" });
+    const labo = await ctx.prisma.pickupAddress.create({
+      data: {
+        label: "Le Labo",
+        ligne1: "1 rue du Four",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "FR",
+        isDefault: true,
+      },
+      select: { id: true },
+    });
+    const village = await ctx.prisma.pickupAddress.create({
+      data: {
+        label: "Le Village",
+        ligne1: "2 place du Marché",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "FR",
+      },
+      select: { id: true },
+    });
+    leLabo = labo.id;
+    leVillage = village.id;
+  });
+
+  it("sépare les points de retrait — c'est ce que les onglets de l'écran lisent", async () => {
+    const auLabo = await placePickup(1);
+    const auVillage = await placePickup(1, leVillage);
+
+    const view = await file();
+
+    const labels = new Map(view.entries.map((row) => [row.reference, row.pickupLabel]));
+    expect(labels.get(auLabo)).toBe("Le Labo");
+    expect(labels.get(auVillage)).toBe("Le Village");
+  });
+
+  it("rend le jour demandé et les commandes attendues, avec leur total en pièces", async () => {
+    const reference = await placePickup(3);
+
+    const view = await file();
+
+    expect(view.day).toBe(SERVICE_DAY);
+    const entry = view.entries.find((row) => row.reference === reference);
+    expect(entry?.totalUnits).toBe(3);
+    // Jamais colisée : elle attend, et elle reste remettable. C'est la
+    // permissivité de `handoverBlocker`, vue depuis l'écran.
+    expect(entry?.state).toBe("expected");
+    expect(entry?.handedOverAt).toBeNull();
+  });
+
+  it("🔴 bascule en `handed_over` en lisant SA table, pas le statut du commerce", async () => {
+    const reference = await placePickup(1);
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { handoverToken: true },
+    });
+    await ctx
+      .asSub("staff-e2e")
+      .post(`/admin/handover/${row.handoverToken ?? ""}`)
+      .expect(201);
+
+    // Pas de `drain()` : la bascule du commerce vers `fulfilled` est ASYNCHRONE,
+    // et la file ne l'attend pas. Si elle lisait le statut du commerce, ce cas
+    // rendrait encore « expected » — c'est précisément ce qu'on vérifie.
+    const entry = (await file()).entries.find((line) => line.reference === reference);
+
+    expect(entry?.state).toBe("handed_over");
+    expect(entry?.handedOverVia).toBe("scan");
+    expect(entry?.handedOverAt).not.toBeNull();
+  });
+
+  it("garde une commande ANNULÉE dans la file, pour qu'on sache quoi dire au client", async () => {
+    const reference = await placePickup(2);
+    await ctx.prisma.order.update({
+      where: { orderNumber: reference },
+      data: { status: "cancelled" },
+    });
+
+    const entry = (await file()).entries.find((line) => line.reference === reference);
+
+    // La masquer laisserait quelqu'un chercher une commande « disparue » devant
+    // un client qui, lui, est bien là.
+    expect(entry?.state).toBe("cancelled");
+  });
+
+  it("n'affiche PAS un brouillon — il n'attend personne", async () => {
+    const reference = await placePickup(1);
+    await ctx.prisma.order.update({ where: { orderNumber: reference }, data: { status: "draft" } });
+
+    expect((await file()).entries.some((line) => line.reference === reference)).toBe(false);
+  });
+
+  it("rend une file VIDE sur un jour sans commande, et non une erreur", async () => {
+    const view = jsonBody<HandoverQueueView>(
+      await ctx.asSub("staff-e2e").get(`/admin/handover/file?jour=2019-01-01`).expect(200),
+    );
+
+    expect(view.entries).toEqual([]);
+    expect(view.day).toBe("2019-01-01");
+  });
+
+  it("🔴 sert encore l'ANCIEN chemin, qui est déprécié et non supprimé", async () => {
+    // Le back-office est une SPA déployée par son propre workflow : un onglet
+    // resté ouvert garde son bundle et appelle encore ce préfixe. Ce test est ce
+    // qui empêche de le retirer par mégarde avant le déploiement prévu.
+    const reference = await placePickup(1);
+
+    const view = jsonBody<HandoverQueueView>(
+      await ctx
+        .asSub("staff-e2e")
+        .get(`/admin/production/handover/file?jour=${SERVICE_DAY}`)
+        .expect(200),
+    );
+
+    expect(view.entries.some((line) => line.reference === reference)).toBe(true);
   });
 });

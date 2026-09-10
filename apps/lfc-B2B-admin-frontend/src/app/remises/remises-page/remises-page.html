@@ -1,0 +1,101 @@
+<fold-page-layout title="File de remise" separator>
+  <p description>
+    Qui attend au comptoir, ce jour-là. La file est ordonnée par créneau, puis par heure de
+    commande&nbsp;; une commande <strong>annulée</strong> y reste, pour qu'on puisse dire à qui se
+    présente pourquoi rien ne lui sera remis.
+  </p>
+
+  <fold-date
+    class="rm-day"
+    label="Journée de service"
+    [value]="day()"
+    (valueChange)="onDay($event)"
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la file…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="File illisible"
+        subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (total() === 0) {
+        <fold-empty-state
+          icon="package-check"
+          title="Personne n'attend ce jour-là"
+          subtitle="Aucune commande n'est attendue au comptoir à cette date."
+        />
+      } @else {
+        <!-- Les onglets sont DÉRIVÉS des points de retrait reçus : aucun nom
+             n'est écrit ici, et un comptoir ouvert demain apparaît seul. -->
+        <fold-tabs
+          #tabBar="foldTabs"
+          direction="horizontal"
+          [tabs]="tabs()"
+          [activeKey]="activeTab()"
+          (activeKeyChange)="onTab($event)"
+        />
+
+        <fold-tab-panel [tabs]="tabBar" [key]="activeTab()">
+          <fold-card>
+            <fold-data-table
+              caption="File de remise du comptoir"
+              narrowLayout="cards"
+              hover
+              zebra
+              clickable
+              [columns]="columns"
+              [rows]="rows()"
+              [rowKey]="rowKey"
+              [rowTone]="toneOf"
+              (rowClick)="openDetail($event)"
+            >
+              <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne
+                   sans `foldCell` rend une cellule vide. Chaque `key` a donc
+                   son gabarit ici. -->
+
+              <!--
+                🔴 Une commande SANS créneau le dit, et ne se voit pas prêter
+                une heure. « En retard » n'apparaît que sur une tranche
+                réellement demandée — cf. `isLate`.
+              -->
+              <ng-template foldCell="window" let-row>
+                @if (windowLabel(row); as slot) {
+                  <span class="rm-slot">{{ slot }}</span>
+                } @else {
+                  <span class="rm-muted">Sans créneau</span>
+                }
+                @if (late(row)) {
+                  <span class="rm-late">En retard</span>
+                }
+              </ng-template>
+
+              <ng-template foldCell="customer" let-row>
+                <span class="rm-strong">{{ row.customerLabel }}</span>
+              </ng-template>
+
+              <ng-template foldCell="reference" let-row>
+                <span class="rm-ref">{{ row.reference }}</span>
+              </ng-template>
+
+              <ng-template foldCell="units" let-row>
+                {{ row.totalUnits }}
+              </ng-template>
+
+              <ng-template foldCell="state" let-row>
+                <fold-badge [variant]="variant(row)" [content]="label(row)" />
+              </ng-template>
+            </fold-data-table>
+          </fold-card>
+        </fold-tab-panel>
+      }
+    }
+  }
+</fold-page-layout>

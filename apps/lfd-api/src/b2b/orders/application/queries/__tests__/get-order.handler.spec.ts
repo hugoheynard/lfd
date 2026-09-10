@@ -15,6 +15,7 @@ function reader(owned: OwnedOrder | null): OrderReader {
   return {
     findByHandoverToken: () => Promise.resolve(null),
     findHandoverByReference: () => Promise.resolve(null),
+    expectedForHandoverOn: () => Promise.resolve([]),
     findForPacking: () => Promise.reject(new Error("non utilisé")),
     listForProduction: () => Promise.resolve([]),
     listByCompany: () => Promise.resolve([]),

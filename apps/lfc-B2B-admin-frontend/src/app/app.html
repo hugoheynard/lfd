@@ -54,6 +54,22 @@
       }
 
       @if (canSeeProduction()) {
+        <!-- LA FILE DE REMISE — qui attend au comptoir. Juste après la
+             production parce que c'est la suite du même flux : on fabrique, on
+             remet. Même droit, c'est la même commande vue plus tard. -->
+        <a
+          fold-menu-item
+          icon="package-check"
+          label="Remises"
+          routerLink="/remises"
+          routerLinkActive
+          #remisesRla="routerLinkActive"
+          [active]="remisesRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      @if (canSeeProduction()) {
         <!-- LIVRAISON — la place réservée. Le module n'existe pas encore ;
              l'entrée si, pour que personne ne range ses premiers écrans dans
              « Production » en attendant. Même droit : c'est la même commande,
@@ -406,6 +422,21 @@
           routerLinkActive
           #prodTile="routerLinkActive"
           [active]="prodTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeProduction()) {
+        <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
+             deux arbres ne partagent pas leur modèle, et une entrée d'un seul
+             côté est invisible de l'autre. -->
+        <a
+          fold-nav-tile
+          icon="package-check"
+          label="Remises"
+          routerLink="/remises"
+          routerLinkActive
+          #remisesTile="routerLinkActive"
+          [active]="remisesTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }

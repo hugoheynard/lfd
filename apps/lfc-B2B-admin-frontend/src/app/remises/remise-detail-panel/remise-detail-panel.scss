@@ -1,0 +1,43 @@
+/* L'hôte EST la colonne du panneau : en-tête, corps qui défile, pied. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.rd-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* La quantité, le nom, le SKU. On recompte à voix haute : la quantité tient sa
+   propre colonne pour que l'œil descende le long des chiffres. */
+.rd-line {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  padding-block: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.rd-qty {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.rd-name {
+  color: var(--fold-color-text);
+}
+
+.rd-sku {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+}

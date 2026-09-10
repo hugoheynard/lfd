@@ -238,6 +238,19 @@ export const routes: Routes = [
       import('./app-mobile/app-mobile-page/app-mobile-page').then((m) => m.AppMobilePage),
   },
   {
+    // LA FILE DE REMISE — qui attend au comptoir aujourd'hui. Route de premier
+    // niveau, à côté de « production » et « livraison » : c'est le même flux de
+    // commandes, vu à un troisième moment.
+    //
+    // ⚠️ Elle ne remplace PAS `retrait/:token`, et ne peut pas : ce chemin-là
+    // est ce que les QR déjà partis en courriel encodent. Celui-ci est la file
+    // qu'on ouvre le matin ; l'autre est la cible d'un scan.
+    path: 'remises',
+    canActivate: [permissionGuard('b2b_orders:read')],
+    title: 'File de remise — LFC B2B admin',
+    loadComponent: () => import('./remises/remises-page/remises-page').then((m) => m.RemisesPage),
+  },
+  {
     path: 'production',
     // Les commandes en lecture : c'est la même donnée que la liste staff, vue
     // par le fournil. Le garde est ici parce qu'une URL tapée ou un favori ne
