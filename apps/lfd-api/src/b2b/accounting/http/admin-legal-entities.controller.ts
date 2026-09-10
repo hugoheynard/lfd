@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -10,7 +11,10 @@ import {
   Query,
   Res,
   StreamableFile,
+  UploadedFile,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   contentDispositionAttachment,
@@ -40,15 +44,23 @@ import {
   CorrectLegalEntityCommand,
   DeclareLegalEntityCommand,
   SetCreditorAccountCommand,
+  RemoveLegalEntityLogoCommand,
   SetLegalEntityArchivedCommand,
+  SetLegalEntityLogoCommand,
   SetPreNotificationCommand,
 } from "../application/commands/legal-entity-commands.js";
+import type { LegalEntityLogo } from "../application/queries/get-legal-entity-logo.handler.js";
 import type { SampleMandatePdf } from "../application/queries/export-sample-mandate.handler.js";
 import {
   ExportSampleMandateQuery,
+  GetLegalEntityLogoQuery,
   GetLegalEntityQuery,
   ListLegalEntitiesQuery,
 } from "../application/queries/legal-entity-queries.js";
+import {
+  EntityLogoNotFoundError,
+  InvalidEntityLogoError,
+} from "../domain/errors/accounting-errors.js";
 
 /**
  * Surface **staff** des entités juridiques émettrices.
@@ -64,6 +76,19 @@ import {
  * poser par mégarde.** L'ICS ne se remplace pas ; le compte décide d'où l'argent
  * arrive ; le délai est une clause négociée avec la banque.
  */
+/**
+ * Backstop DoS du multipart, aligné sur le dépôt du KBIS : le domaine tranche
+ * bien plus bas (2 Mo), et c'est lui qui porte la règle. Cette borne-ci ne
+ * protège que le processus contre un corps qu'on n'a aucune raison de lire.
+ */
+const LOGO_UPLOAD_HARD_LIMIT = 8 * 1024 * 1024;
+
+/** Le peu qu'on lit du fichier Multer — nom + octets ; le domaine valide le reste. */
+interface UploadedFilePart {
+  readonly originalname: string;
+  readonly buffer: Buffer;
+}
+
 @Controller("admin/accounting/legal-entities")
 @AdminSurface("b2b_accounting")
 export class AdminLegalEntitiesController {
@@ -124,6 +149,69 @@ export class AdminLegalEntitiesController {
       inline === "1" ? contentDispositionInline(fileName) : contentDispositionAttachment(fileName),
     );
     return new StreamableFile(pdf.bytes);
+  }
+
+  /**
+   * Sert le **logo courant** de l'entité, pour que l'écran l'affiche.
+   *
+   * `inline`, et c'est ici que le helper met en garde : « jamais sur du contenu
+   * téléversé », parce qu'un `.svg` ou un `.html` rendu dans notre origine est un
+   * XSS stocké. La garde n'est pas un jugement sur la provenance, c'est le
+   * `Content-Type` : il est **relu dans les octets** par le domaine, et seuls
+   * `image/png` et `image/jpeg` peuvent en sortir. Un navigateur ne script ni
+   * l'un ni l'autre. Servir en `attachment` ferait télécharger un fichier là où
+   * on veut une vignette dans une fiche.
+   */
+  @Get(":id/logo")
+  async logo(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const logo = await this.queries.execute<GetLegalEntityLogoQuery, LegalEntityLogo | null>(
+      new GetLegalEntityLogoQuery(id),
+    );
+    if (logo === null) {
+      throw new EntityLogoNotFoundError(id);
+    }
+    response.setHeader("Content-Type", logo.contentType);
+    // Un nom CONSTANT, jamais celui du dépôt : il n'est pas gardé en base, et le
+    // faire circuler pour un affichage en vignette n'apporterait qu'une saisie
+    // de plus à assainir.
+    response.setHeader("Content-Disposition", contentDispositionInline("logo"));
+    return new StreamableFile(logo.bytes);
+  }
+
+  /**
+   * Dépose (ou remplace) le logo. Multipart `file` ; **le domaine valide les
+   * octets** — format reconnu à la tête du fichier, taille, côté minimum,
+   * quasi-quadrature.
+   *
+   * Le contrôleur ne revalide rien de tout cela : il constate seulement qu'un
+   * fichier est arrivé. Le `mimetype` annoncé par le navigateur n'est même pas
+   * lu — il se falsifie d'un champ de formulaire.
+   */
+  @Post(":id/logo")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: LOGO_UPLOAD_HARD_LIMIT } }))
+  async setLogo(
+    @Param("id") id: string,
+    @UploadedFile() file: UploadedFilePart | undefined,
+  ): Promise<void> {
+    if (file === undefined) {
+      throw new InvalidEntityLogoError("aucun fichier reçu. Choisissez une image puis réessayez.");
+    }
+    await this.commands.execute<SetLegalEntityLogoCommand, void>(
+      new SetLegalEntityLogoCommand(id, file.originalname, file.buffer),
+    );
+  }
+
+  /** Retire le logo. Le mandat ressort avec sa cellule vide, et reste valide. */
+  @Delete(":id/logo")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeLogo(@Param("id") id: string): Promise<void> {
+    await this.commands.execute<RemoveLegalEntityLogoCommand, void>(
+      new RemoveLegalEntityLogoCommand(id),
+    );
   }
 
   /**

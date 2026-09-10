@@ -45,6 +45,7 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
       ics: snapshot.ics,
       creditorIban: snapshot.creditorIban,
       preNotificationDays: snapshot.preNotificationDays,
+      logoKey: snapshot.logoKey,
       archivedAt: snapshot.archivedAt,
     };
     await this.prisma.legalEntity.upsert({

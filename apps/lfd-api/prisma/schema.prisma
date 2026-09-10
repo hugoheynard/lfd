@@ -633,6 +633,15 @@ model LegalEntity {
   // déploiement, et deux entités peuvent ne pas avoir le même.
   preNotificationDays Int @default(14) @map("pre_notification_days")
 
+  // La clé de l'objet qui porte le LOGO de l'entité, dans le stockage objet.
+  // `null` = pas de logo, et c'est un état parfaitement vivable : le mandat sort
+  // alors avec sa cellule vide. Le logo ne conditionne PAS l'encaissement.
+  //
+  // Une clé, pas les octets : aucun fichier ne vit en base. Et elle ne sort par
+  // aucune API — la vue ne dit que `hasLogo`, parce qu'une clé qui sort est une
+  // clé qu'on finit par accepter en entrée.
+  logoKey String? @map("logo_key")
+
   // Archivée : elle n'émet plus rien, et ses documents passés restent. Pas de
   // DELETE physique — une entité citée par un mandat signé ne s'efface pas.
   archivedAt DateTime? @map("archived_at")

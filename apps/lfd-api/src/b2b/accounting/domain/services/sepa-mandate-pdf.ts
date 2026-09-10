@@ -2,8 +2,6 @@ import { Buffer } from "node:buffer";
 
 import PDFDocument from "pdfkit";
 
-import { BRAND_LOGO_BW } from "../../../../platform/shared/documents/brand-logo.js";
-
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
 
 /**
@@ -318,7 +316,7 @@ function title(doc: Doc): number {
  * La ligne d'en-tête : trois cellules. La RUM reste **vide** — elle est frappée
  * à la création du mandat, donc elle n'existe pas sur un exemplaire vierge.
  */
-function header(doc: Doc, top: number): number {
+function header(doc: Doc, top: number, logo: Buffer | null): number {
   const bottom = top + 19 * MM;
   vline(doc, HEAD_SPLIT_LEFT, top, bottom, HAIRLINE);
   vline(doc, HEAD_SPLIT_RIGHT, top, bottom, HAIRLINE);
@@ -332,15 +330,22 @@ function header(doc: Doc, top: number): number {
   // la page — en zone 7, et dans le texte d'autorisation — et une troisième
   // occurrence à trois centimètres de la deuxième n'apprend rien.
   //
-  // En NOIR ET BLANC : ces fiches se tirent sur les imprimantes du bureau,
-  // souvent monochromes, et un bleu désaturé par le pilote ressort en gris pâle
-  // où le rond se perd.
-  const cellWidth = BOX_RIGHT - HEAD_SPLIT_RIGHT;
-  const logoSide = 14 * MM;
-  doc.image(BRAND_LOGO_BW, HEAD_SPLIT_RIGHT + (cellWidth - logoSide) / 2, top + 2.5 * MM, {
-    width: logoSide,
-    height: logoSide,
-  });
+  // 🔴 **Sans logo, la cellule reste VIDE** — ni cadre, ni « logo manquant », ni
+  // texte de remplacement. Une cellule vide sur un formulaire se lit comme une
+  // cellule à remplir ; un « logo manquant » IMPRIMÉ se lit comme un défaut du
+  // document, et c'est le client qui le lit. Le mandat reste valide sans rond :
+  // la norme n'exige pas de logo.
+  if (logo !== null) {
+    const cellWidth = BOX_RIGHT - HEAD_SPLIT_RIGHT;
+    const logoSide = 14 * MM;
+    // `width` ET `height` : le VO garantit une image sensiblement carrée, donc
+    // la case n'écrase rien de perceptible. C'est cette garantie-là qui autorise
+    // à forcer les deux, et c'est pour ça qu'elle est portée par le domaine.
+    doc.image(logo, HEAD_SPLIT_RIGHT + (cellWidth - logoSide) / 2, top + 2.5 * MM, {
+      width: logoSide,
+      height: logoSide,
+    });
+  }
 
   line(doc, BOX_LEFT, bottom, BOX_RIGHT, RULE);
   return bottom;
@@ -646,10 +651,10 @@ function splitAddress(lines: readonly string[]): {
   };
 }
 
-function draw(doc: Doc, creditor: CreditorSnapshot): void {
+function draw(doc: Doc, creditor: CreditorSnapshot, logo: Buffer | null): void {
   watermark(doc);
   const top = title(doc);
-  let y = header(doc, top);
+  let y = header(doc, top, logo);
   y = authorization(doc, y, creditor.name);
   y = debtorZones(doc, y);
   y = creditorZones(doc, y, creditor);
@@ -672,8 +677,17 @@ function draw(doc: Doc, creditor: CreditorSnapshot): void {
  * Prend le snapshot plutôt que l'agrégat, et c'est ce qui rend l'incomplétude
  * inexprimable : `creditorSnapshot()` refuse de rendre une copie à qui n'a pas
  * d'ICS, donc aucune fiche ne peut sortir avec une zone 8 vide.
+ *
+ * `logo` est le logo de **l'entité qui émet**, et non plus une constante du
+ * produit : une seconde entité émettrice aurait le sien, et un logo de marque
+ * figé dans un rendu générique était la singularité que la table
+ * `legal_entities` avait justement évitée en base. `null` laisse la cellule
+ * vide, sans placeholder — voir {@link header}.
  */
-export async function renderSepaMandatePdf(creditor: CreditorSnapshot): Promise<Buffer> {
+export async function renderSepaMandatePdf(
+  creditor: CreditorSnapshot,
+  logo: Buffer | null,
+): Promise<Buffer> {
   const doc = new PDFDocument({
     size: "A4",
     margin: 0,
@@ -696,7 +710,7 @@ export async function renderSepaMandatePdf(creditor: CreditorSnapshot): Promise<
       resolve();
     });
   });
-  draw(doc, creditor);
+  draw(doc, creditor, logo);
   doc.end();
   await done;
   return Buffer.concat(chunks);

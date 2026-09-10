@@ -94,20 +94,20 @@ function decodeStrings(stream: string): string {
 
 describe("renderSepaMandatePdf", () => {
   it("rend un PDF", async () => {
-    const pdf = await renderSepaMandatePdf(CREDITOR);
+    const pdf = await renderSepaMandatePdf(CREDITOR, null);
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
   it("rend les MÊMES octets deux fois — sans quoi rien ne serait comparable", async () => {
     const [first, second] = await Promise.all([
-      renderSepaMandatePdf(CREDITOR),
-      renderSepaMandatePdf(CREDITOR),
+      renderSepaMandatePdf(CREDITOR, null),
+      renderSepaMandatePdf(CREDITOR, null),
     ]);
     expect(first.equals(second)).toBe(true);
   });
 
   it("imprime l'ICS, le nom et l'adresse du créancier", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     expect(text).toContain("FR00ZZZ900001");
     expect(text).toContain("Crazeativity");
     expect(text).toContain("Route de la Balme");
@@ -123,13 +123,13 @@ describe("renderSepaMandatePdf", () => {
    * elle prouve que `drawnText` lit vraiment ce qui est dessiné.
    */
   it("n'imprime JAMAIS l'IBAN du créancier", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     expect(text).not.toContain("FR7630006000011234567890189");
     expect(text).not.toContain("FR76 3000 6000 0112 3456 7890 189");
   });
 
   it("laisse le bloc du débiteur et la signature vides", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     // Les légendes sont là — donc les zones sont dessinées — mais rien n'y est
     // écrit : la fiche est un exemplaire vierge, pas un mandat prérempli.
     expect(text).toContain("Nom / Pr\u00e9noms du d\u00e9biteur");
@@ -142,7 +142,7 @@ describe("renderSepaMandatePdf", () => {
    * légendes sont ce qu'un chargé de clientèle et un banquier citent.
    */
   it("porte les zones indicatives 14 à 20, dessinées et vides", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     expect(text).toContain("Informations relatives au contrat");
     expect(text).toContain("Code identifiant du tiers d\u00e9biteur");
     expect(text).toContain("Description du contrat");
@@ -153,14 +153,14 @@ describe("renderSepaMandatePdf", () => {
    * qu'à nous identifier : elle dit au client où poster la fiche signée.
    */
   it("prérempli l'adresse de retour, et rappelle la borne des 35 caractères", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     expect(text).toContain("A retourner \u00e0 :");
     expect(text).toContain("Zone r\u00e9serv\u00e9e \u00e0 l'usage exclusif du cr\u00e9ancier");
     expect(text).toContain("longueur maximum de 35 caract\u00e8res");
   });
 
   it("porte la mention EXEMPLE, pour qu'une signature apposée dessus ne trompe personne", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     expect(text).toContain("EXEMPLE");
   });
 });

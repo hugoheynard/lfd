@@ -1,11 +1,13 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { LegalEntityView } from '@lfd/contracts';
 
 import { LegalEntitiesService } from '../../legal-entities.service';
 import { LegalEntityDetailPage } from './legal-entity-detail-page';
+import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
 
 /**
  * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
@@ -13,9 +15,11 @@ import { LegalEntityDetailPage } from './legal-entity-detail-page';
  * - 🔴 **les DEUX boutons du mandat sont inactifs tant que l'entité ne peut pas
  *   encaisser.** Le serveur répond 409, et un bouton actif dont la seule issue
  *   est une erreur est une affordance qui ment ;
- * - 🔴 **« Voir » demande la variante `inline`**, « Télécharger » non. C'est ce
- *   paramètre qui décide entre un onglet et un fichier de plus dans un dossier
- *   de téléchargements, et rien dans les types ne le dirait ;
+ * - 🔴 **« Voir » ouvre le panneau AVEC les octets reçus**, et « Télécharger »
+ *   ne l'ouvre pas. C'est ce qui distingue les deux gestes depuis que le
+ *   document se regarde dans la page, et rien dans les types ne le dirait ;
+ * - **« Voir » demande encore la variante `inline`** au serveur : c'est la
+ *   seule chose qui distingue les deux requêtes côté back ;
  * - **le champ ICS disparaît une fois l'ICS posé**, pour la même raison ;
  * - 🔴 **aucun IBAN ne s'affiche.** Le champ est vide même compte enregistré :
  *   l'IBAN ne revient d'aucune route.
@@ -40,6 +44,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     preNotificationDays: 14,
     archivedAt: null,
     canCollect: false,
+    hasLogo: false,
     missingToCollect: ["l'identifiant créancier (ICS)", "le compte bancaire de l'entité"],
     ...over,
   };
@@ -67,12 +72,36 @@ class FakeLegalEntities {
   }
 }
 
-async function render(api: FakeLegalEntities): Promise<ComponentFixture<LegalEntityDetailPage>> {
+/**
+ * Double de l'hôte de panneaux : il ENREGISTRE l'ouverture au lieu de la jouer.
+ *
+ * Substitué plutôt qu'espionné parce que `open()` est surchargée — un espion en
+ * prend la dernière signature, celle SANS `data`, et c'est précisément `data`
+ * qu'on veut lire. Le remplacer évite aussi de laisser un panneau ouvert dans
+ * un service `providedIn: 'root'` d'un cas à l'autre.
+ */
+class FakePanels {
+  readonly opened: { readonly component: unknown; readonly data: MandatePanelData }[] = [];
+
+  open(component: unknown, config: { readonly data: MandatePanelData }): FoldPanelRef {
+    this.opened.push({ component, data: config.data });
+    return new FoldPanelRef(1, () => undefined);
+  }
+}
+
+async function render(
+  api: FakeLegalEntities,
+  panels: FakePanels = new FakePanels(),
+): Promise<ComponentFixture<LegalEntityDetailPage>> {
   TestBed.configureTestingModule({
     imports: [LegalEntityDetailPage],
     // `fold-back-link` porte un `routerLink` : sans routeur, son injection de
     // `ActivatedRoute` fait échouer la page entière.
-    providers: [{ provide: LegalEntitiesService, useValue: api }, provideRouter([])],
+    providers: [
+      { provide: LegalEntitiesService, useValue: api },
+      { provide: FoldPanelHostService, useValue: panels },
+      provideRouter([]),
+    ],
   });
   const fixture: ComponentFixture<LegalEntityDetailPage> =
     TestBed.createComponent(LegalEntityDetailPage);
@@ -128,13 +157,31 @@ describe('LegalEntityDetailPage', () => {
     expect(text(fixture)).toContain('Peut encaisser');
   });
 
-  it('« Voir » demande la variante inline, « Télécharger » ne la demande pas', async () => {
+  it('« Voir » ouvre le panneau du mandat avec le document reçu', async () => {
     const api = new FakeLegalEntities();
     api.row = entity(COMPLETE);
-    // `window.open` n'est pas implémenté dans jsdom : sans ce double, l'appel
-    // écrirait une erreur « not implemented » et la page se croirait bloquée.
-    const open = vi.spyOn(window, 'open').mockReturnValue(window);
-    const fixture = await render(api);
+    const panels = new FakePanels();
+    const fixture = await render(api, panels);
+
+    mandateButtons(fixture).view.click();
+    await fixture.whenStable();
+
+    expect(panels.opened).toHaveLength(1);
+    expect(panels.opened[0]?.component).toBe(MandatePanel);
+    expect(panels.opened[0]?.data).toMatchObject({
+      entityName: 'La Folie Douce',
+      fileName: 'mandat-sepa-exemple.pdf',
+    });
+    // Les octets passés au panneau sont CEUX que le serveur vient de rendre :
+    // le panneau ne refait aucune requête, et fabrique son URL d'objet dessus.
+    expect(panels.opened[0]?.data.blob).toBeInstanceOf(Blob);
+  });
+
+  it('« Télécharger » n’ouvre aucun panneau, et seul « Voir » demande la variante inline', async () => {
+    const api = new FakeLegalEntities();
+    api.row = entity(COMPLETE);
+    const panels = new FakePanels();
+    const fixture = await render(api, panels);
     const buttons = mandateButtons(fixture);
 
     buttons.view.click();
@@ -143,7 +190,7 @@ describe('LegalEntityDetailPage', () => {
     await fixture.whenStable();
 
     expect(api.mandateCalls).toEqual([{ inline: true }, { inline: false }]);
-    expect(open).toHaveBeenCalledTimes(1);
+    expect(panels.opened).toHaveLength(1);
   });
 
   it('l’état ne se lit qu’une fois : le badge est dans l’en-tête, pas dans la section', async () => {

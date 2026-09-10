@@ -41,6 +41,10 @@ export function toView(entity: LegalEntity): LegalEntityView {
     archivedAt: snapshot.archivedAt?.toISOString() ?? null,
     canCollect: entity.canCollect(),
     missingToCollect: entity.missingToCollect(),
+    // 🔴 Un booléen, jamais `snapshot.logoKey`. La clé de stockage est un détail
+    // interne du bucket, et une clé qui SORT d'une API est une clé qu'on finit
+    // par accepter en ENTRÉE. Un e2e le tient.
+    hasLogo: entity.hasLogo,
   };
 }
 
@@ -62,6 +66,7 @@ function toSnapshot(row: LegalEntityRow): LegalEntitySnapshot {
     ics: row.ics,
     creditorIban: row.creditorIban,
     preNotificationDays: row.preNotificationDays,
+    logoKey: row.logoKey,
     archivedAt: row.archivedAt,
   };
 }

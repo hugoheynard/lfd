@@ -1,0 +1,29 @@
+-- Le **logo de l'entité émettrice** devient une DONNÉE, et cesse d'être une
+-- constante du produit.
+--
+-- Le mandat SEPA imprimait jusqu'ici un logo embarqué en base64 dans le code.
+-- C'était un raccourci tenable tant qu'il n'y avait qu'une entité qui émet ; il
+-- ne l'est plus dès la seconde, qui aurait le sien. Un logo de marque figé dans
+-- un rendu générique est exactement la singularité que la table `legal_entities`
+-- avait évitée en base.
+--
+-- La colonne ne porte pas les octets : elle porte la **clé** de l'objet dans le
+-- stockage (R2/S3), comme toutes les pièces du dépôt. Aucun fichier ne vit en
+-- base.
+--
+-- `NULL` est un état normal et durable, pas une donnée manquante : une entité
+-- sans logo prélève, son mandat sort seulement sans rond. Le logo n'entre donc
+-- ni dans `canCollect()`, ni dans `missingToCollect()`.
+--
+-- **Purement ADDITIVE.** Une colonne nullable de plus, aucune donnée convertie,
+-- aucune contrainte resserrée, aucune valeur par défaut à écrire sur les lignes
+-- existantes — l'unique ligne de production reprendra son logo par l'écran.
+--
+-- Retour arrière : `ALTER TABLE "public"."legal_entities" DROP COLUMN
+-- "logo_key";`. Il est complet côté base, et il ne l'est PAS côté stockage — les
+-- objets déjà rangés sous `legal-entities/{id}/logo` resteraient dans le bucket,
+-- orphelins et invisibles. Ils ne coûtent rien et ne fuient rien (le bucket
+-- n'est pas public) ; les retirer se fait à la main, après coup, et n'a pas à
+-- retarder un recul.
+
+ALTER TABLE "public"."legal_entities" ADD COLUMN "logo_key" TEXT;

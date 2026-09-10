@@ -42,6 +42,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     preNotificationDays: 14,
     archivedAt: null,
     canCollect: false,
+    hasLogo: false,
     missingToCollect: ["l'identifiant créancier (ICS)", "le compte bancaire de l'entité"],
     ...over,
   };

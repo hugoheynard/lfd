@@ -201,3 +201,48 @@ describe("LegalEntity — relecture", () => {
     expect(entity.canCollect()).toBe(true);
   });
 });
+
+describe("LegalEntity — le logo", () => {
+  it("est absent à la déclaration, et l'absence est un état normal", () => {
+    const entity = collecting();
+    expect(entity.hasLogo).toBe(false);
+    expect(entity.logoKey).toBeNull();
+  });
+
+  it("s'attache, se remplace et se retire par des méthodes MÉTIER", () => {
+    const entity = collecting();
+
+    entity.attachLogo("legal-entities/le1/logo");
+    expect(entity.hasLogo).toBe(true);
+    expect(entity.logoKey).toBe("legal-entities/le1/logo");
+
+    entity.attachLogo("legal-entities/le1/logo-2");
+    expect(entity.logoKey).toBe("legal-entities/le1/logo-2");
+
+    entity.detachLogo();
+    expect(entity.hasLogo).toBe(false);
+    expect(entity.logoKey).toBeNull();
+  });
+
+  it("refuse une clé vide — une clé blanche pointerait vers le bucket entier", () => {
+    expect(() => collecting().attachLogo("   ")).toThrow(/Clé de stockage du logo/u);
+  });
+
+  /**
+   * 🔴 Le logo ne conditionne RIEN. Une entité sans logo prélève : son mandat
+   * sort seulement sans rond. Le ranger dans `missingToCollect()` bloquerait
+   * l'encaissement sur un défaut décoratif.
+   */
+  it("ne conditionne ni canCollect ni missingToCollect", () => {
+    const entity = collecting();
+    expect(entity.hasLogo).toBe(false);
+    expect(entity.canCollect()).toBe(true);
+    expect(entity.missingToCollect()).toEqual([]);
+  });
+
+  it("s'attache même sur une entité archivée — remettre un rond n'est pas une émission", () => {
+    const entity = collecting();
+    entity.archive(new Date("2026-09-01T10:00:00.000Z"));
+    expect(() => entity.attachLogo("legal-entities/le1/logo")).not.toThrow();
+  });
+});

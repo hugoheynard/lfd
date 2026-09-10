@@ -104,6 +104,9 @@ export {
   legalAddressPayloadSchema,
   setCreditorAccountPayloadSchema,
   setPreNotificationPayloadSchema,
+  LEGAL_ENTITY_LOGO_ACCEPTED_TYPES,
+  LEGAL_ENTITY_LOGO_MAX_BYTES,
+  LEGAL_ENTITY_LOGO_MIN_SIDE,
   PRE_NOTIFICATION_MAX_DAYS,
   PRE_NOTIFICATION_MIN_DAYS,
 } from "./legal-entity.js";

@@ -54,7 +54,46 @@ export interface LegalEntityView {
    * `canCollect` est vrai.
    */
   readonly missingToCollect: readonly string[];
+  /**
+   * L'entité a-t-elle un logo ?
+   *
+   * 🔴 **Un booléen, jamais la clé de stockage.** La clé est un détail interne du
+   * bucket, et une clé qui SORT d'une API est une clé qu'on finit par accepter en
+   * ENTRÉE — c'est-à-dire un appelant qui choisit l'objet qu'il fait servir. Ce
+   * que l'écran a besoin de savoir tient dans « il y en a un ou non » ; les
+   * octets se demandent par la route dédiée.
+   *
+   * ⚠️ Le logo ne conditionne PAS `canCollect` : une entité sans logo prélève,
+   * son mandat sort seulement sans rond. Il n'apparaît donc pas dans
+   * `missingToCollect`.
+   */
+  readonly hasLogo: boolean;
 }
+
+/**
+ * Les bornes du **logo de l'entité**, exportées pour que l'écran les énonce sans
+ * les réinventer.
+ *
+ * Le domaine reste l'autorité — `EntityLogo.create` refuse, et c'est lui qu'un
+ * test éprouve. Ce qui est ici sert au champ de dépôt et au message d'aide :
+ * deux définitions de « format accepté » divergeraient, et celle que
+ * l'utilisateur lit serait la moins surveillée.
+ */
+export const LEGAL_ENTITY_LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * En deçà, le logo est flou à l'impression — et c'est à l'impression qu'on s'en
+ * aperçoit, c'est-à-dire sur un document déjà parti chez un client.
+ */
+export const LEGAL_ENTITY_LOGO_MIN_SIDE = 256;
+
+/**
+ * Les types acceptés. Liste d'**acceptation** : ce qui n'y est pas est refusé.
+ *
+ * Ni PDF (ce n'est pas une image), ni HEIC : `pdfkit` ne sait pas les dessiner,
+ * et les accepter produirait un mandat sans logo sans que rien ne le dise.
+ */
+export const LEGAL_ENTITY_LOGO_ACCEPTED_TYPES = ["image/png", "image/jpeg"] as const;
 
 /** L'adresse du siège, telle qu'elle s'imprime sur un mandat et une facture. */
 export const legalAddressPayloadSchema = z.object({

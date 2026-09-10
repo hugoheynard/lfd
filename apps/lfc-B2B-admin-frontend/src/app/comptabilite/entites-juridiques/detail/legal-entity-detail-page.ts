@@ -14,6 +14,7 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCardComponent,
   FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
@@ -23,16 +24,20 @@ import {
   FoldNumberInputComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
   FoldToastService,
   type FoldBadgeVariant,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { openBlob } from '../../../shared/download/open-blob';
 import { saveBlob } from '../../../shared/download/save-blob';
 import { LegalEntitiesService } from '../../legal-entities.service';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
+import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
+
+/** Le nom du fichier, écrit UNE fois : la fiche le donne au panneau qui l'enregistre. */
+const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
 
 /**
  * **La fiche d'une entité juridique** — tout ce qui se règle sur un émetteur.
@@ -59,11 +64,11 @@ import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-enti
  * fiche dit ce qui manque — un bouton actif dont la seule issue est une erreur
  * est une affordance qui ment, exactement comme le champ ICS rouvert.
  *
- * **Deux gestes, pas un.** « Voir » ouvre la fiche dans un onglet (le
- * `Content-Disposition` du serveur bascule en `inline`), « Télécharger »
- * l'enregistre. Contrôler une adresse ou un ICS à l'écran est le geste courant,
- * accumuler des PDF dans un dossier de téléchargements en est le contraire —
- * d'où l'ordre, « Voir » en premier et en emphase.
+ * **Deux gestes, pas un.** « Voir » ouvre la fiche **dans un panneau modal de
+ * la page**, « Télécharger » l'enregistre. Contrôler une adresse ou un ICS à
+ * l'écran est le geste courant, accumuler des PDF dans un dossier de
+ * téléchargements en est le contraire — d'où l'ordre, « Voir » en premier et en
+ * emphase.
  */
 @Component({
   selector: 'app-legal-entity-detail-page',
@@ -73,6 +78,7 @@ import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-enti
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldCardComponent,
     FoldEmptyStateComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
@@ -89,6 +95,7 @@ import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-enti
 export class LegalEntityDetailPage {
   private readonly api = inject(LegalEntitiesService);
   private readonly toasts = inject(FoldToastService);
+  private readonly panels = inject(FoldPanelHostService);
 
   /** L'identifiant de la route (`withComponentInputBinding`). */
   readonly id = input.required<string>();
@@ -203,26 +210,37 @@ export class LegalEntityDetailPage {
    */
   protected async downloadMandate(entity: LegalEntityView): Promise<void> {
     await this.withMandate(entity, { inline: false }, (blob) => {
-      saveBlob(blob, 'mandat-sepa-exemple.pdf');
+      saveBlob(blob, MANDATE_FILE_NAME);
       return null;
     });
   }
 
   /**
-   * Le même mandat, REGARDÉ — en `inline`, dans un onglet.
+   * Le même mandat, REGARDÉ — dans un panneau modal, sans quitter la fiche.
    *
    * Pas de `<a href>` sur la route : elle est derrière le jeton staff, et une
    * navigation nue rendrait un 401 en page blanche. Les octets viennent donc
-   * par `HttpClient`, et `openBlob` les donne au navigateur (sa révocation
-   * différée y est expliquée — la supprimer casserait l'onglet qui vient de
-   * s'ouvrir).
+   * par `HttpClient`, et le panneau les affiche à partir d'une URL d'objet
+   * qu'il révoque en se fermant.
+   *
+   * `inline` reste demandé au serveur, mais il ne décide plus du rendu : un
+   * `blob:` n'a pas de `Content-Disposition`, c'est le type MIME du blob qui
+   * fait afficher le PDF. Le paramètre ne dit donc plus que l'intention de la
+   * requête — et il est la seule chose qui distingue encore les deux appels
+   * côté serveur.
    */
   protected async viewMandate(entity: LegalEntityView): Promise<void> {
-    await this.withMandate(entity, { inline: true }, (blob) =>
-      openBlob(blob)
-        ? null
-        : 'L’onglet n’a pas pu s’ouvrir : le navigateur bloque les fenêtres de ce site.',
-    );
+    await this.withMandate(entity, { inline: true }, (blob) => {
+      const data: MandatePanelData = {
+        blob,
+        entityName: entity.name,
+        fileName: MANDATE_FILE_NAME,
+      };
+      // La largeur et la surface opaque sont déclarées par le panneau lui-même
+      // (`MandatePanel.foldPanel`) : un A4 est large et opaque partout.
+      this.panels.open<MandatePanelData>(MandatePanel, { data });
+      return null;
+    });
   }
 
   /** Le va-et-vient commun aux deux gestes : occupé, échec DIT, repos. */

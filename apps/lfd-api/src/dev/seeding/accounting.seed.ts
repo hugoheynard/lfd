@@ -5,8 +5,11 @@ import {
   AssignCreditorIdentifierCommand,
   DeclareLegalEntityCommand,
   SetCreditorAccountCommand,
+  SetLegalEntityLogoCommand,
 } from "../../b2b/accounting/application/commands/legal-entity-commands.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
+import { DocumentStorageUnavailableError } from "../../platform/shared/errors/storage-errors.js";
+import { BRAND_LOGO_BW, BRAND_LOGO_FILE_NAME } from "./brand-logo.js";
 
 /**
  * **L'entité émettrice de développement** — celle au nom de qui les mandats SEPA
@@ -152,5 +155,55 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
   } else {
     await commands.execute(new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_IBAN));
     console.log("✓ Compte créancier posé — l'entité peut désormais prélever.");
+  }
+
+  if (existing?.logoKey) {
+    console.log("· Logo déjà attaché — inchangé.");
+  } else {
+    await seedLogo(entityId, commands);
+  }
+}
+
+/**
+ * Attache le logo — **sans faire échouer le semis si le stockage manque**.
+ *
+ * ## 🔴 Le jugement, et sa raison
+ *
+ * C'est la seule étape du semis qui sorte de Postgres : elle écrit dans MinIO.
+ * Sur un poste où `pnpm dev:infra` n'a pas démarré le conteneur de stockage,
+ * elle échoue — et la question est ce qu'on fait alors du reste.
+ *
+ * **On continue.** Le logo est décoratif : sans lui, l'entité prélève et son
+ * mandat sort avec une cellule vide, ce qui est un document valide. Le reste du
+ * semis, lui, ne l'est pas — la station, l'entité, le client, ses commandes sont
+ * ce sur quoi on travaille. Faire tomber tout un jeu de données parce qu'un rond
+ * manque sur un PDF de développement échangerait une gêne visible contre un
+ * poste inutilisable, et l'échange est mauvais dans ce sens-là.
+ *
+ * ⚠️ Ce qui est rattrapé est **exactement** `DocumentStorageUnavailableError`, et
+ * rien d'autre. Un `catch` large avalerait aussi le refus du domaine (logo trop
+ * petit, format inattendu) : le jour où la constante embarquée cesserait de
+ * passer les bornes, le semis se tairait, et on chercherait pourquoi les mandats
+ * de développement n'ont plus de rond. Le refus métier, lui, doit faire tomber
+ * le semis — il signale que le jeu de données ne correspond plus au produit.
+ *
+ * L'avertissement nomme la commande qui répare : un message qui dit seulement
+ * « échec » se lit deux fois et n'apprend rien.
+ */
+async function seedLogo(entityId: string, commands: CommandBus): Promise<void> {
+  try {
+    await commands.execute(
+      new SetLegalEntityLogoCommand(entityId, BRAND_LOGO_FILE_NAME, BRAND_LOGO_BW),
+    );
+    console.log("✓ Logo attaché — les mandats de ce poste porteront le rond.");
+  } catch (error) {
+    if (!(error instanceof DocumentStorageUnavailableError)) {
+      throw error;
+    }
+    console.warn(
+      "⚠ Logo non attaché : le stockage objet est indisponible. Le semis continue — " +
+        "un mandat sans logo reste valide. Pour l'attacher, démarrez le stockage " +
+        "(pnpm dev:infra à la racine) puis relancez le semis.",
+    );
   }
 }

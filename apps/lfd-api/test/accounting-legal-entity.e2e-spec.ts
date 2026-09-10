@@ -19,6 +19,7 @@ import type { LegalEntityView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { storageKeys } from "./storage.js";
 
 /** SIREN dont la clé de Luhn est bonne : un SIREN inventé se fait refuser. */
 const SIREN = "552100554";
@@ -330,3 +331,233 @@ describe("Entité juridique — archivage et corrections", () => {
     await staff().get("/admin/accounting/legal-entities/inexistante").expect(404);
   });
 });
+
+/**
+ * Un PNG **réel** aux dimensions demandées : signature, IHDR qui les porte,
+ * IEND. Fabriqué plutôt que chargé d'un fichier — les dimensions sont le sujet
+ * de la moitié de ces cas, et un fichier d'appoint les rendrait invisibles.
+ */
+function png(width: number, height: number): Buffer {
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  return Buffer.concat([signature, chunk("IHDR", header), chunk("IEND", Buffer.alloc(0))]);
+}
+
+function chunk(type: string, data: Buffer): Buffer {
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+  return Buffer.concat([length, Buffer.from(type, "latin1"), data, Buffer.alloc(4)]);
+}
+
+/** Un JPEG réel : `SOI`, un `SOF0` qui porte les dimensions, `EOI`. */
+function jpeg(width: number, height: number): Buffer {
+  const frame = Buffer.alloc(11);
+  frame.writeUInt16BE(11, 0);
+  frame[2] = 8;
+  frame.writeUInt16BE(height, 3);
+  frame.writeUInt16BE(width, 5);
+  frame[7] = 1;
+  return Buffer.concat([
+    Buffer.from([0xff, 0xd8]),
+    Buffer.from([0xff, 0xc0]),
+    frame,
+    Buffer.from([0xff, 0xd9]),
+  ]);
+}
+
+/**
+ * E2E du **logo de l'entité émettrice**.
+ *
+ * Le stockage objet est RÉEL (MinIO, qui parle S3 comme R2) : le fichier part
+ * vraiment et revient vraiment. Un magasin en mémoire prouverait le contrat HTTP
+ * et rien de la chaîne — or c'est la chaîne qui casse en ligne.
+ */
+describe("Entité juridique — le logo", () => {
+  it("un PNG carré monte, redescend, et bascule hasLogo", async () => {
+    const id = await declare();
+
+    const before = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    expect(jsonBody<LegalEntityView>(before).hasLogo).toBe(false);
+
+    const bytes = png(256, 256);
+    await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", bytes, "logo.png")
+      .expect(204);
+
+    const after = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    expect(jsonBody<LegalEntityView>(after).hasLogo).toBe(true);
+    // Le logo ne conditionne RIEN : l'entité n'a toujours ni ICS ni compte.
+    expect(jsonBody<LegalEntityView>(after).canCollect).toBe(false);
+
+    const served = await staff()
+      .get(`/admin/accounting/legal-entities/${id}/logo`)
+      .buffer()
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (part: Buffer) => chunks.push(part));
+        res.on("end", () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+
+    expect(served.headers["content-type"]).toContain("image/png");
+    // `inline` : l'écran affiche une vignette, il ne remplit pas un dossier de
+    // téléchargements. Légitime ICI parce que le type est relu dans les octets
+    // et ne peut valoir que `image/png` ou `image/jpeg`.
+    expect(served.headers["content-disposition"]).toContain("inline");
+    expect((served.body as Buffer).equals(bytes)).toBe(true);
+  });
+
+  it("refuse un JPEG 4000 × 100 en 400, en nommant les dimensions reçues", async () => {
+    const id = await declare();
+
+    const refusal = await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", jpeg(4000, 100), "banniere.jpg")
+      .expect(400);
+
+    // Le message est lu par du personnel sans le code sous les yeux : il nomme
+    // ce qu'on a envoyé, et le geste (recadrer au carré).
+    expect(JSON.stringify(refusal.body)).toContain("4000");
+    expect(JSON.stringify(refusal.body)).toContain("100");
+
+    const view = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    expect(jsonBody<LegalEntityView>(view).hasLogo).toBe(false);
+    // Rien n'est parti au stockage : on ne range jamais un fichier refusé.
+    expect(await storageKeys()).toEqual([]);
+  });
+
+  it("refuse un PDF déguisé en .png — le mimetype annoncé ne décide de rien", async () => {
+    const id = await declare();
+
+    await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", Buffer.from("%PDF-1.4\nrien d'une image", "latin1"), {
+        filename: "logo.png",
+        contentType: "image/png",
+      })
+      .expect(400);
+
+    expect(await storageKeys()).toEqual([]);
+  });
+
+  it("refuse un PNG de 220 px de côté — sous 256, le rond est flou à l'impression", async () => {
+    const id = await declare();
+
+    const refusal = await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", png(220, 220), "logo.png")
+      .expect(400);
+
+    expect(JSON.stringify(refusal.body)).toContain("256");
+  });
+
+  /**
+   * 🔴 **La clé de stockage ne doit apparaître dans AUCUNE réponse.** Une clé qui
+   * sort d'une API est une clé qu'on finit par accepter en ENTRÉE — c'est-à-dire
+   * un appelant qui choisit l'objet qu'on lui sert. Ce test est le seul qui
+   * rougira le jour où quelqu'un ajoutera un champ à `LegalEntityView` en
+   * recopiant `toPersistence()`.
+   */
+  it("ne laisse la clé de stockage sortir par AUCUNE route", async () => {
+    const id = await declare();
+    await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", png(256, 256), "logo.png")
+      .expect(204);
+
+    // La clé telle qu'elle est vraiment rangée, lue dans le bucket — pas une
+    // constante recopiée qui pourrait diverger de ce que le code compose.
+    const [key] = await storageKeys();
+    expect(key).toBe(`legal-entities/${id}/logo`);
+
+    const one = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    const all = await staff().get("/admin/accounting/legal-entities").expect(200);
+
+    expect(JSON.stringify(one.body)).not.toContain(key);
+    expect(JSON.stringify(all.body)).not.toContain(key);
+    expect(JSON.stringify(one.body)).not.toContain("logoKey");
+    expect(JSON.stringify(all.body)).not.toContain("legal-entities/");
+  });
+
+  it("remplace à la même clé plutôt que d'accumuler des orphelins", async () => {
+    const id = await declare();
+
+    await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", png(256, 256), "logo.png")
+      .expect(204);
+    await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", png(400, 400), "autre.png")
+      .expect(204);
+
+    expect(await storageKeys()).toHaveLength(1);
+  });
+
+  it("retire le logo ; la route de service répond alors 404", async () => {
+    const id = await declare();
+    await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", png(256, 256), "logo.png")
+      .expect(204);
+
+    await staff().delete(`/admin/accounting/legal-entities/${id}/logo`).expect(204);
+
+    const view = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    expect(jsonBody<LegalEntityView>(view).hasLogo).toBe(false);
+    await staff().get(`/admin/accounting/legal-entities/${id}/logo`).expect(404);
+  });
+
+  it("404 quand aucun logo n'a jamais été déposé", async () => {
+    const id = await declare();
+    await staff().get(`/admin/accounting/legal-entities/${id}/logo`).expect(404);
+  });
+
+  /**
+   * Une entité sans logo rend un mandat **valide** : la cellule d'en-tête reste
+   * vide, sans placeholder. C'est le formulaire de la norme, sans notre rond.
+   */
+  it("rend un mandat valide avec ET sans logo, et les deux diffèrent", async () => {
+    const id = await declare();
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-identifier`)
+      .send({ ics: ICS })
+      .expect(204);
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+      .send({ iban: IBAN })
+      .expect(204);
+
+    const withoutLogo = await mandate(id);
+    expect(withoutLogo.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+
+    await staff()
+      .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .attach("file", png(256, 256), "logo.png")
+      .expect(204);
+
+    const withLogo = await mandate(id);
+    expect(withLogo.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+    // Le logo est vraiment DESSINÉ : sans cette assertion, un rendu qui
+    // ignorerait le second paramètre passerait les deux cas précédents.
+    expect(withLogo.equals(withoutLogo)).toBe(false);
+  });
+});
+
+/** Les octets de la fiche de mandat — supertest ne les rend pas sans parseur. */
+async function mandate(id: string): Promise<Buffer> {
+  const response = await staff()
+    .get(`/admin/accounting/legal-entities/${id}/mandat-sepa-exemple.pdf`)
+    .buffer()
+    .parse((res, callback) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (part: Buffer) => chunks.push(part));
+      res.on("end", () => callback(null, Buffer.concat(chunks)));
+    })
+    .expect(200);
+  return response.body as Buffer;
+}

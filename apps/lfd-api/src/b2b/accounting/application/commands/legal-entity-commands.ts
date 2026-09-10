@@ -55,3 +55,24 @@ export class SetLegalEntityArchivedCommand {
     readonly archived: boolean,
   ) {}
 }
+
+/**
+ * Dépose (ou remplace) le **logo** de l'entité.
+ *
+ * Les octets traversent la commande, comme pour un KBIS : c'est le domaine qui
+ * décide s'ils sont dessinables, pas le contrôleur, et il ne peut le faire qu'en
+ * les voyant. Le `fileName` n'est pas rangé — il sert au refus, qui doit nommer
+ * le fichier que la personne a sous la main.
+ */
+export class SetLegalEntityLogoCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly fileName: string,
+    readonly bytes: Buffer,
+  ) {}
+}
+
+/** Retire le logo. Le mandat ressort alors avec sa cellule vide, et c'est valide. */
+export class RemoveLegalEntityLogoCommand {
+  constructor(readonly legalEntityId: string) {}
+}
