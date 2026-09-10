@@ -78,18 +78,27 @@ d'un éditeur de prix invisible.
 > propre ligne. C'est la deuxième fois dans la même journée qu'un contrôle rend
 > un chiffre rassurant sans avoir regardé — c'est le genre de vérification qu'il faut mécaniser.
 >
-> 🔴 **Six autres familles restent**, vérifiées contre les entrées déclarées par
-> les types publiés de fold-ng : `fold-callout title=` (8, l'entrée n'existe pas
-> — ça rend une infobulle native au lieu d'un titre) et `tone=` (1, c'est
-> `variant`), `fold-input inputmode=` (7, le clavier mobile est donc perdu),
-> `fold-inline-confirm confirmLabel=` / `label=` / `tone=` (6, c'est `labels` et
-> `intent`), `fold-badge size=` (2), `fold-element-title eyebrow=` (1, c'est
-> `variant="eyebrow"`). Elles ne se corrigent pas mécaniquement : un titre de
-> callout devient du contenu projeté, ce qui est une décision par site.
+> 🔴 **La porte existe depuis le même jour** : `lint:fold-unknown-attributes`,
+> la 34ᵉ. Elle lit les entrées déclarées dans les **types publiés** de fold —
+> jamais une liste écrite à la main, qui serait la faute même qu'elle empêche —
+> et refuse tout attribut statique qu'aucun contrat ne déclare.
 >
-> **Une porte CI est le seul remède durable** : lire les entrées déclarées dans
-> les types publiés de fold et refuser tout attribut statique inconnu sur un sélecteur
-> `fold-*` ou sur `foldButton`. Elle reste à écrire.
+> Elle juge à deux régimes, parce qu'elle ne connaît que fold. Sur un **élément**
+> `fold-*`, fold possède la balise : tout est jugé, y compris un attribut natif
+> posé là par erreur (`inputmode` sur `fold-input` reste sur l'hôte et n'atteint
+> jamais le champ). Sur une balise native qui porte seulement une **directive**
+> fold (`<a foldButton routerLink=…>`), elle ne retient que les noms que fold
+> emploie ailleurs — `variant` est une entrée de `fold-badge`, donc l'écrire sur
+> un `foldButton` est une confusion de contrat. Le reste appartient à des
+> directives qu'elle ne lit pas, et le lui reprocher serait un mensonge.
+>
+> Sa dette de départ est de **27 attributs inertes dans 16 fichiers**, inscrits
+> un par un et décroissants seulement : `fold-callout title=` (7, une infobulle
+> native au lieu d'un titre) et `tone=` (1), `fold-input inputmode=` (9) et
+> `readonly=` (1, c'est `readOnly`), `fold-inline-confirm confirmLabel=` /
+> `label=` / `tone=` (6), `fold-badge size=` (2), `fold-element-title eyebrow=`
+> (1). Elles ne se corrigent pas mécaniquement : un titre de callout devient du
+> contenu projeté, ce qui est une décision par site.
 
 ---
 
@@ -103,9 +112,9 @@ d'un éditeur de prix invisible.
   tarif du PIM en indice, et deux `foldButton`. Le contrôle ne peut plus être
   peint hors du système, donc ne peut plus disparaître de la même façon.
 - **Une bande de tête collante** portant le compte, la recherche
-  (`fold-search`) et **quatre lectures** (`fold-view-toggle`) qui portent leur
-  chiffre : `Tous`, `À prix B2B`, `Sans TVA`, `Masqués`. Les compteurs étaient
-  du texte mort ; ce sont maintenant des filtres.
+  (`fold-search`) et **cinq lectures** (`fold-view-toggle`) qui portent leur
+  chiffre : `Tous`, `À prix B2B`, `En avant`, `Sans TVA`, `Masqués`. Les
+  compteurs étaient du texte mort ; ce sont maintenant des filtres.
 - **`lfd-catalog-row` est supprimé** de `@lfd/catalog-ui`. Son JSDoc décrivait
   « ce que les deux hôtes ont réellement en commun » : il n'en avait qu'un.
 - **Retirer de la vente se confirme**, `fold-inline-confirm` dans la cellule —

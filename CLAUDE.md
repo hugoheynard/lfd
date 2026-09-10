@@ -23,9 +23,14 @@
 >   `lint:catalogue-authority`, `lint:price-door`), puis **33** avec
 >   `lint:dated-decisions` : toute décision qui entre dans la résolution du prix
 >   porte une fenêtre, sans quoi une lecture datée lui applique les valeurs
->   d'aujourd'hui — ce que le plancher faisait en silence. C'est la **seule**
->   correction faite dans le corps, parce qu'un chiffre faux se vérifie en une
->   commande et trompe tout de suite ;
+>   d'aujourd'hui — ce que le plancher faisait en silence. Et **34** depuis le
+>   2026-09-10 avec `lint:fold-unknown-attributes` : un attribut statique inconnu
+>   sur un composant fold est du HTML valide, Angular l'ignore en silence, et le
+>   composant rend son défaut — ni le typecheck, ni ESLint, ni le build AOT, ni
+>   les tests ne peuvent le dire, seul l'écran le peut. Vingt-et-un cas
+>   corrigés ce jour-là, vingt-sept inscrits en dette décroissante. C'est la
+>   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
+>   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
 >   **`documentation/order/`** (ouvert le 2026-09-07) n'y figurent pas ;
 > - rien de ce qui a été livré depuis n'y est décrit : le règlement Stripe côté
@@ -963,7 +968,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 33 portes du dépôt, d'un coup
+pnpm lint:gates         # les 34 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
