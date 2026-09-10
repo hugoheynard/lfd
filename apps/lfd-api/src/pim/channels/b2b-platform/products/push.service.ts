@@ -78,9 +78,17 @@ export class B2bCatalogPushService {
    *   dans le même déploiement. Elle devient obligatoire au troisième temps,
    *   quand le front l'enverra.
    *
+   * @param label **l'intention de cet envoi**, qui devient le nom de l'ancre si
+   *   elle n'en a pas. Une ancre déjà nommée garde le sien — cf.
+   *   `TakeCatalogRevisionHandler`.
+   *
    * @throws {ProjectionDriftError} le catalogue a bougé depuis la relecture.
    */
-  async push(dryRunRequested: boolean, expectedFingerprint?: string): Promise<B2bPushSummary> {
+  async push(
+    dryRunRequested: boolean,
+    expectedFingerprint?: string,
+    label: string | null = null,
+  ): Promise<B2bPushSummary> {
     const driver: B2bCatalogDriver = dryRunRequested ? this.dryRun : this.live;
     const { snapshot, candidates, excluded, fingerprint } = await this.feed.preview(
       this.clock.now().toISOString(),
@@ -140,7 +148,10 @@ export class B2bCatalogPushService {
     // même catalogue sont donc deux publications d'UNE révision, ce qui est
     // exactement ce qu'ils sont.
     const revision = await this.commands.execute<TakeCatalogRevisionCommand, TakenRevision>(
-      new TakeCatalogRevisionCommand(null),
+      // 🔴 Le nom vient de l'APPELANT, il ne s'invente plus ici. Ce `null` en
+      // dur est ce qui a produit toutes les révisions sans intention : le push
+      // posait une ancre anonyme sans jamais interroger personne.
+      new TakeCatalogRevisionCommand(label),
     );
 
     const report = await driver

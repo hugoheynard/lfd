@@ -90,6 +90,10 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     return row === null ? null : toRecord(row);
   }
 
+  async rename(revisionId: string, label: string): Promise<void> {
+    await this.prisma.catalogRevision.update({ where: { id: revisionId }, data: { label } });
+  }
+
   async list(limit: number): Promise<readonly RevisionRecord[]> {
     const rows = await this.prisma.catalogRevision.findMany({
       orderBy: { takenAt: "desc" },

@@ -108,6 +108,21 @@ export abstract class CatalogRevisionRepository {
   ): Promise<{ readonly id: string; readonly reference: string }>;
 
   /** Les ancres, de la plus récente à la plus ancienne. */
+  /**
+   * **Nomme une ancre qui ne l'était pas.**
+   *
+   * Une écriture NUE, et sa justification est écrite ici plutôt que sur un
+   * agrégat qui n'existe pas : une révision n'a ni transition ni invariant —
+   * c'est une photographie immuable. Le seul champ qui puisse bouger est le nom
+   * qu'on lui donne, et il ne peut rien refuser. Lui bâtir un agrégat serait de
+   * la cérémonie (cf. §3.1 de `CLAUDE.md`, « où NE PAS mettre d'agrégat »).
+   *
+   * ⚠️ Elle ne s'applique qu'à une ancre **sans nom** : la garde vit dans le
+   * cas d'usage, pas ici, parce qu'elle n'est pas la même selon qu'on répare à
+   * la main ou qu'on nomme au passage d'un push.
+   */
+  abstract rename(revisionId: string, label: string): Promise<void>;
+
   abstract list(limit: number): Promise<readonly RevisionRecord[]>;
 
   /** Une ancre par sa référence. `null` = elle n'existe pas. */

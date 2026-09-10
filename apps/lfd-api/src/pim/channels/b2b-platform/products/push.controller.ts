@@ -28,6 +28,19 @@ const pushPayload = z.object({
    * pas dans le même déploiement. Elle passe obligatoire au troisième temps.
    */
   fingerprint: z.string().min(1).optional(),
+  /**
+   * **L'intention de cet envoi** — ce que l'ancre s'appellera.
+   *
+   * Le push posait une ancre ANONYME à chaque fois : c'est la cause directe des
+   * révisions sans intention, et le seul endroit où l'on puisse la demander est
+   * ici, au moment où quelqu'un décide de publier.
+   *
+   * ⚠️ **Optionnel**, et c'est une étape : le front en ligne appelle déjà cette
+   * route sans lui, et une API resserrée avant qu'il n'envoie le nom
+   * empêcherait toute publication le temps du décalage de déploiement. Il passe
+   * obligatoire au troisième temps, comme `fingerprint` avant lui.
+   */
+  label: z.string().trim().min(1).max(120).nullish(),
 });
 
 /**
@@ -48,7 +61,7 @@ export class B2bPushController {
   @Post()
   push(@Body(new ZodBody(pushPayload)) body: z.infer<typeof pushPayload>): Promise<B2bPushSummary> {
     return this.commands.execute<PushB2bCatalogCommand, B2bPushSummary>(
-      new PushB2bCatalogCommand(body.dryRun, body.fingerprint),
+      new PushB2bCatalogCommand(body.dryRun, body.fingerprint, body.label ?? null),
     );
   }
 }

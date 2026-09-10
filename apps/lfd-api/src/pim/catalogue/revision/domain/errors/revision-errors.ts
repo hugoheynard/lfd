@@ -11,6 +11,29 @@ export class RevisionNotFoundError extends ResourceNotFoundError {
 }
 
 /**
+ * **Une ancre déjà nommée ne se renomme pas.**
+ *
+ * Le nom dit l'intention avec laquelle un catalogue est parti chez des clients.
+ * Le réécrire ne corrige pas le passé — il le raconte autrement, et l'écran qui
+ * relit une publication d'il y a trois mois lirait alors une intention que
+ * personne n'avait ce jour-là.
+ *
+ * Le geste offert est donc étroit : **nommer ce qui ne l'était pas**. Les
+ * ancres muettes d'avant la règle se réparent ; les autres sont acquises.
+ */
+export class RevisionAlreadyNamedError extends BusinessError {
+  constructor(
+    readonly reference: string,
+    readonly label: string,
+  ) {
+    super(
+      "catalogue.revision.already_named",
+      `La révision « ${reference} » s'appelle déjà « ${label} ». Une ancre ne se renomme pas : elle dit avec quelle intention un catalogue est parti.`,
+    );
+  }
+}
+
+/**
  * La base a refusé une ancre : une autre porte déjà cette empreinte.
  *
  * ⚠️ Ce n'est **pas** une erreur d'appelant, et elle ne doit normalement jamais

@@ -966,3 +966,102 @@ describe("Diff vivant — depuis la dernière ancre publiée", () => {
     expect(view.added.length + view.changed.length).toBeGreaterThan(1);
   });
 });
+
+/**
+ * **Le nom d'une ancre.**
+ *
+ * Ce que seul ce niveau prouve : que le nom traverse le push jusqu'à la ligne,
+ * et que le refus de renommer sort en 409 plutôt qu'en 500. Un `BusinessError`
+ * mal catégorisé rendrait une panne là où il y a une règle.
+ */
+describe("Le nom d'une ancre", () => {
+  it("prend le nom que le push lui donne", async () => {
+    await aSoldProduct();
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: false, label: "catalogue de la rentrée" })
+      .expect(201);
+    await ctx.drain();
+
+    const [reference] = await twoLatest();
+    const rows = jsonBody<{ reference: string; label: string | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+    expect(rows.find((row) => row.reference === reference)?.label).toBe("catalogue de la rentrée");
+  });
+
+  /**
+   * 🔴 **Une ancre MUETTE prend le nom qu'on lui apporte.** Le cas est banal :
+   * un « préparer » sans nom, puis un push qui, lui, a une intention. Refuser
+   * laisserait une ancre anonyme partir une fois de plus — ce qu'on veut
+   * précisément faire cesser.
+   */
+  it("nomme au passage une ancre posée sans nom", async () => {
+    await aSoldProduct();
+    const posed = await take(null);
+    expect(posed.created).toBe(true);
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: false, label: "mise en ligne de la rentrée" })
+      .expect(201);
+    await ctx.drain();
+
+    const rows = jsonBody<{ reference: string; label: string | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.label).toBe("mise en ligne de la rentrée");
+  });
+
+  /**
+   * Le PREMIER nom gagne. Le nom dit avec quelle intention un catalogue est
+   * parti chez des clients ; le réécrire au passage d'un push le raconterait
+   * autrement, sans que personne ne l'ait demandé.
+   */
+  it("laisse son nom à une ancre qui en a déjà un", async () => {
+    await aSoldProduct();
+    await take("le vrai nom");
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: false, label: "un autre nom" })
+      .expect(201);
+    await ctx.drain();
+
+    const rows = jsonBody<{ label: string | null }[]>(await staff().get(REVISIONS).expect(200));
+    expect(rows[0]?.label).toBe("le vrai nom");
+  });
+
+  it("nomme après coup une ancre restée muette", async () => {
+    await aProduct("Croissant");
+    const posed = await take(null);
+
+    await staff()
+      .patch(`${REVISIONS}/${posed.reference}/label`)
+      .send({ label: "la correction des allergènes" })
+      .expect(204);
+    await ctx.drain();
+
+    const rows = jsonBody<{ label: string | null }[]>(await staff().get(REVISIONS).expect(200));
+    expect(rows[0]?.label).toBe("la correction des allergènes");
+  });
+
+  it("refuse de renommer une ancre déjà nommée, en 409", async () => {
+    await aProduct("Croissant");
+    const posed = await take("son nom");
+
+    await staff()
+      .patch(`${REVISIONS}/${posed.reference}/label`)
+      .send({ label: "un autre" })
+      .expect(409);
+
+    const rows = jsonBody<{ label: string | null }[]>(await staff().get(REVISIONS).expect(200));
+    expect(rows[0]?.label).toBe("son nom");
+  });
+
+  it("refuse de nommer une ancre qui n'existe pas, en 404", async () => {
+    await staff().patch(`${REVISIONS}/R-INCONNU/label`).send({ label: "peu importe" }).expect(404);
+  });
+});

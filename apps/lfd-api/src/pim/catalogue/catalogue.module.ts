@@ -50,6 +50,7 @@ import { CatalogRevisionSource } from "./revision/domain/ports/catalog-revision.
 import { DiffCatalogRevisionsHandler } from "./revision/application/diff-catalog-revisions.js";
 import { DiffCatalogSinceLastHandler } from "./revision/application/diff-catalog-since-last.js";
 import { GetCatalogOverviewHandler } from "./revision/application/get-catalog-overview.js";
+import { RenameCatalogRevisionHandler } from "./revision/application/rename-catalog-revision.js";
 import { ListCatalogRevisionsHandler } from "./revision/application/list-catalog-revisions.js";
 import { TakeCatalogRevisionHandler } from "./revision/application/take-catalog-revision.js";
 import { CatalogRevisionController } from "./revision/http/catalog-revision.controller.js";
@@ -162,6 +163,7 @@ import {
     DiffCatalogRevisionsHandler,
     DiffCatalogSinceLastHandler,
     GetCatalogOverviewHandler,
+    RenameCatalogRevisionHandler,
     { provide: ReadinessRepository, useClass: PrismaReadinessRepository },
     { provide: CategoryEditorialReader, useClass: PrismaCategoryEditorialReader },
     { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },

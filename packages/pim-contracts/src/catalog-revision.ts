@@ -173,5 +173,14 @@ export interface CatalogRevisionTakenView {
   readonly id: string;
   readonly reference: string;
   readonly hash: string;
+  /**
+   * Comment l'ancre s'appelle **après** ce geste. `null` = toujours muette.
+   *
+   * Rendu parce que l'appelant ne peut pas le déduire : une ancre retrouvée
+   * peut porter un nom qu'il n'a pas donné, et une ancre muette peut venir de
+   * prendre le sien. Sans ce champ, l'écran devrait relire pour savoir ce qu'il
+   * vient de faire.
+   */
+  readonly label: string | null;
   readonly created: boolean;
 }

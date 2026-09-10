@@ -86,10 +86,32 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     // pose la bonne question.
     const existing = await this.revisions.byHash(revision.hash);
     if (existing !== null) {
+      // 🔴 **Une ancre muette prend le nom qu'on lui apporte.**
+      //
+      // Le cas est celui d'un push : l'ancre existe déjà — un envoi précédent
+      // l'a posée, ou un « préparer » sans nom — et l'appelant, lui, arrive
+      // avec une intention. La lui refuser laisserait une ancre anonyme partir
+      // une fois de plus, ce qui est exactement ce qu'on veut faire cesser.
+      //
+      // Le PREMIER nom gagne, en revanche : une ancre déjà nommée garde le
+      // sien. Le nom dit avec quelle intention un catalogue est parti chez des
+      // clients ; le réécrire au passage d'un push le raconterait autrement,
+      // sans que personne ne l'ait demandé.
+      const named = existing.label ?? command.label;
+      if (existing.label === null && command.label !== null) {
+        await this.revisions.rename(existing.id, command.label);
+        await this.journal.trace({
+          type: PIM_EVENTS.catalogRevisionNamed,
+          subjectType: "catalog_revision",
+          subjectId: existing.id,
+          payload: { reference: existing.reference, label: command.label },
+        });
+      }
       return {
         id: existing.id,
         reference: existing.reference,
         hash: existing.hash,
+        label: named,
         created: false,
       };
     }
@@ -118,6 +140,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
       id: posed.id,
       reference: posed.reference,
       hash: revision.hash,
+      label: command.label,
       created: !("adopted" in posed),
     };
   }

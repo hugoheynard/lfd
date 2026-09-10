@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
@@ -15,6 +15,7 @@ import type {
 import { DiffCatalogRevisionsQuery } from "../application/diff-catalog-revisions.js";
 import { DiffCatalogSinceLastQuery } from "../application/diff-catalog-since-last.js";
 import { GetCatalogOverviewQuery } from "../application/get-catalog-overview.js";
+import { RenameCatalogRevisionCommand } from "../application/rename-catalog-revision.js";
 import { ListCatalogRevisionsQuery } from "../application/list-catalog-revisions.js";
 import {
   TakeCatalogRevisionCommand,
@@ -25,6 +26,15 @@ import {
  * Le libellé qu'on donne à une ancre. Facultatif : la plupart des captures sont
  * des repères, et forcer un nom ferait écrire « test » quatre-vingt-dix fois.
  */
+/**
+ * Le nom qu'on donne à une ancre muette. **Obligatoire** ici, contrairement à
+ * la pose : on ne vient sur cette route que pour nommer.
+ */
+const nameRevisionPayloadSchema = z.object({
+  label: z.string().trim().min(1).max(120),
+});
+type NameRevisionPayload = z.infer<typeof nameRevisionPayloadSchema>;
+
 const takeRevisionPayloadSchema = z.object({
   label: z.string().trim().min(1).max(120).nullish(),
 });
@@ -101,6 +111,29 @@ export class CatalogRevisionController {
   diff(@Param("from") from: string, @Param("to") to: string): Promise<CatalogRevisionDiffView> {
     return this.queries.execute<DiffCatalogRevisionsQuery, CatalogRevisionDiffView>(
       new DiffCatalogRevisionsQuery(from, to),
+    );
+  }
+
+  /**
+   * **Nommer une ancre qui ne l'était pas.**
+   *
+   * `PATCH` et non `PUT` : on ne remplace pas l'ancre, on comble le seul champ
+   * qu'elle ait laissé vide. Et le serveur REFUSE une ancre déjà nommée — le
+   * nom dit avec quelle intention un catalogue est parti chez des clients, le
+   * réécrire raconterait le passé autrement.
+   *
+   * Le geste existe parce que le push a longtemps posé des ancres anonymes :
+   * il répare à la main, quand on se souvient. Rien ne les nomme d'office —
+   * une intention fabriquée ment mieux qu'une absence.
+   */
+  @Patch(":reference/label")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async name(
+    @Param("reference") reference: string,
+    @Body(new ZodBody(nameRevisionPayloadSchema)) body: NameRevisionPayload,
+  ): Promise<void> {
+    await this.commands.execute<RenameCatalogRevisionCommand, void>(
+      new RenameCatalogRevisionCommand(reference, body.label),
     );
   }
 

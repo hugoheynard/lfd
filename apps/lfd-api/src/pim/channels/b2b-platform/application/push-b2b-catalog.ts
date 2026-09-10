@@ -9,11 +9,26 @@ import { B2bCatalogPushService, type B2bPushSummary } from "../products/push.ser
  * @param dryRun simuler plutôt qu'envoyer.
  * @param fingerprint l'empreinte rendue par la simulation qu'on vient de relire.
  *   Fournie, elle est exigée : si le catalogue a bougé depuis, rien ne part.
+ * @param label **l'intention de cet envoi**, qui devient le nom de l'ancre.
+ *
+ *   Le push posait une ancre ANONYME à chaque fois, sans jamais interroger
+ *   personne : c'est la cause directe des révisions sans intention. Le nom
+ *   remonte donc depuis l'écran, avec les changements sous les yeux.
+ *
+ *   ⚠️ **Optionnel**, et c'est une étape, pas un état final : le front en ligne
+ *   appelle déjà cette route sans lui, et un contrat servi ne se casse pas dans
+ *   le même déploiement — une API resserrée avant que le front n'envoie le nom
+ *   empêcherait toute publication le temps du décalage. Il passe obligatoire au
+ *   troisième temps, exactement comme `fingerprint` avant lui.
+ *
+ *   Il ne s'applique qu'à une ancre **muette** : une ancre déjà nommée garde
+ *   son nom, parce qu'il dit avec quelle intention un catalogue est parti.
  */
 export class PushB2bCatalogCommand {
   constructor(
     readonly dryRun: boolean,
     readonly fingerprint: string | undefined,
+    readonly label: string | null = null,
   ) {}
 }
 
@@ -52,7 +67,7 @@ export class PushB2bCatalogHandler implements ICommandHandler<
   ) {}
 
   async execute(command: PushB2bCatalogCommand): Promise<B2bPushSummary> {
-    const summary = await this.pushService.push(command.dryRun, command.fingerprint);
+    const summary = await this.pushService.push(command.dryRun, command.fingerprint, command.label);
 
     // Rien n'est parti, rien n'a été figé : il n'y a pas de fait à inscrire.
     // Un « push de zéro article » raconterait une intention, pas un acte.
