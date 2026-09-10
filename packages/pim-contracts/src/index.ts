@@ -191,6 +191,7 @@ export type {
 
 export type {
   CatalogRevisionSummaryView,
+  CatalogRevisionRowView,
   CatalogRevisionItemDiffView,
   CatalogRevisionDiffView,
   CatalogPendingDiffView,

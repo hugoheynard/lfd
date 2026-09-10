@@ -47,6 +47,31 @@ export interface CatalogRevisionSummaryView {
 }
 
 /**
+ * Une ancre **dans une liste** — le résumé, plus ce qui la sépare de la
+ * précédente.
+ *
+ * 🔴 Un type à part et non un champ optionnel sur le résumé, pour que `null`
+ * n'ait qu'un seul sens. Partout ailleurs — l'état du catalogue, les bornes
+ * d'un diff — on rend un résumé sans écart, parce qu'aucun écart n'y est
+ * calculé ; y mettre `null` ferait dire « rien avant elle » d'une ancre qui a
+ * une devancière.
+ */
+export interface CatalogRevisionRowView extends CatalogRevisionSummaryView {
+  /**
+   * **Combien d'articles la séparent de l'ancre précédente** — entrés, retirés
+   * et modifiés confondus.
+   *
+   * `null` sur la plus ancienne du dépôt : il n'y a rien avant elle, et un `0`
+   * dirait « rien n'a changé » alors que tout était nouveau.
+   *
+   * Un seul nombre et non trois : la liste répond à « laquelle a bougé », pas à
+   * « comment ». Le détail a son écran. Et il ne se déduit PAS d'`articles` —
+   * deux ancres de 97 articles peuvent différer d'une ligne ou de quarante.
+   */
+  readonly changes: number | null;
+}
+
+/**
  * Un champ qui a bougé, **et qui l'a fait bouger**.
  *
  * L'auteur ne vient pas de la révision — elle sait seulement qui l'a POSÉE —

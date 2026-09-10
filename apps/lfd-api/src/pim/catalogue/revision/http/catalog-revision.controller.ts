@@ -9,7 +9,7 @@ import type {
   CatalogOverviewView,
   CatalogRevisionDiffView,
   CatalogPendingDiffView,
-  CatalogRevisionSummaryView,
+  CatalogRevisionRowView,
 } from "@lfd/pim-contracts";
 
 import { DiffCatalogRevisionsQuery } from "../application/diff-catalog-revisions.js";
@@ -93,8 +93,8 @@ export class CatalogRevisionController {
 
   /** Les ancres, de la plus récente à la plus ancienne. */
   @Get()
-  list(): Promise<readonly CatalogRevisionSummaryView[]> {
-    return this.queries.execute<ListCatalogRevisionsQuery, readonly CatalogRevisionSummaryView[]>(
+  list(): Promise<readonly CatalogRevisionRowView[]> {
+    return this.queries.execute<ListCatalogRevisionsQuery, readonly CatalogRevisionRowView[]>(
       new ListCatalogRevisionsQuery(),
     );
   }

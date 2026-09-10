@@ -147,6 +147,19 @@ export abstract class CatalogRevisionRepository {
   abstract indexOf(revisionId: string): Promise<RevisionIndex>;
 
   /**
+   * Les index de PLUSIEURS ancres, en une requête.
+   *
+   * Existe pour la liste des révisions, qui veut dire combien d'articles
+   * séparent chaque ancre de la précédente. Boucler sur `indexOf` ferait
+   * cinquante allers-retours pour afficher un écran — et c'est exactement le
+   * genre de boucle qu'on ne voit pas venir : chacun est rapide, leur somme ne
+   * l'est pas.
+   *
+   * Les ancres absentes ne sont pas dans la carte rendue.
+   */
+  abstract indexesOf(revisionIds: readonly string[]): Promise<ReadonlyMap<string, RevisionIndex>>;
+
+  /**
    * Inscrit une publication SUR une révision : où elle est partie, et l'issue.
    *
    * Séparé de `save` parce que les deux actes sont séparés dans le temps : on

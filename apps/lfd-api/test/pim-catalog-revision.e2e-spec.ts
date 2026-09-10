@@ -1065,3 +1065,56 @@ describe("Le nom d'une ancre", () => {
     await staff().patch(`${REVISIONS}/R-INCONNU/label`).send({ label: "peu importe" }).expect(404);
   });
 });
+
+/**
+ * **Ce qui sépare deux ancres, dans la liste.**
+ *
+ * Ce que seul ce niveau prouve : que le compte rendu par la liste est celui que
+ * le diff détaillé trouverait. Ils passent tous deux par `planDiff`, mais la
+ * liste le fait sur des index chargés en lot — une requête pour toute la page
+ * au lieu d'une par ancre. Une boucle qu'on aurait laissée passer serait restée
+ * invisible : chaque requête est rapide, leur somme ne l'est pas.
+ */
+describe("L'écart entre deux ancres, dans la liste", () => {
+  it("compte les articles qui séparent chaque ancre de la précédente", async () => {
+    const { id, variantId } = await aProduct("Croissant");
+    await take("la première");
+    await staff()
+      .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
+      .send({ priceCents: 1_200, weightGrams: null })
+      .expect(200);
+    await take("le prix");
+
+    const rows = jsonBody<{ reference: string; changes: number | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.changes).toBe(1);
+    // 🔴 `null` et non `0` sur la plus ancienne : il n'y a rien avant elle, et
+    // un zéro dirait « rien n'a changé » alors que tout était nouveau.
+    expect(rows[1]?.changes).toBeNull();
+  });
+
+  it("dit la même chose que le diff détaillé des deux mêmes ancres", async () => {
+    const { id, variantId } = await aProduct("Croissant");
+    await take();
+    await aProduct("Pain au chocolat");
+    await staff()
+      .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
+      .send({ priceCents: 1_200, weightGrams: null })
+      .expect(200);
+    await take();
+
+    const [to, from] = await twoLatest();
+    const diff = jsonBody<{ added: string[]; removed: string[]; changed: unknown[] }>(
+      await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200),
+    );
+    const rows = jsonBody<{ changes: number | null }[]>(await staff().get(REVISIONS).expect(200));
+
+    expect(rows[0]?.changes).toBe(diff.added.length + diff.removed.length + diff.changed.length);
+    // Le cas ne vaut que s'il y a de quoi compter : un produit entré, un prix
+    // changé.
+    expect(rows[0]?.changes).toBeGreaterThan(1);
+  });
+});

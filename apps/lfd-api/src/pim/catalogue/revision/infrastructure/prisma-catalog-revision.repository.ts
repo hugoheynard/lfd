@@ -140,6 +140,39 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     };
   }
 
+  async indexesOf(revisionIds: readonly string[]): Promise<ReadonlyMap<string, RevisionIndex>> {
+    if (revisionIds.length === 0) {
+      return new Map();
+    }
+    // DEUX requêtes pour N ancres, et pas deux par ancre : c'est toute la
+    // raison d'être de cette méthode.
+    const [items, revisions] = await Promise.all([
+      this.prisma.catalogRevisionItem.findMany({
+        where: { revisionId: { in: [...revisionIds] } },
+        select: { revisionId: true, sku: true, contentHash: true },
+      }),
+      this.prisma.catalogRevision.findMany({
+        where: { id: { in: [...revisionIds] } },
+        select: { id: true, header: true },
+      }),
+    ]);
+    const hashes = new Map<string, Map<string, string>>();
+    for (const item of items) {
+      const bucket = hashes.get(item.revisionId) ?? new Map<string, string>();
+      bucket.set(item.sku, item.contentHash);
+      hashes.set(item.revisionId, bucket);
+    }
+    return new Map(
+      revisions.map((revision) => [
+        revision.id,
+        {
+          hashBySku: hashes.get(revision.id) ?? new Map<string, string>(),
+          proRatioBp: ratioOf(revision.header),
+        },
+      ]),
+    );
+  }
+
   async recordPublication(publication: RevisionPublication): Promise<void> {
     await this.prisma.catalogRevisionPublication.create({
       data: {
