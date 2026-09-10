@@ -259,8 +259,14 @@ export class LegalEntity {
     };
   }
 
-  /** Ce qui manque pour encaisser, nommé — le message d'erreur en dépend. */
-  private missingToCollect(): readonly string[] {
+  /**
+   * Ce qui manque pour encaisser, nommé.
+   *
+   * Public, et pas seulement pour le message d'erreur : la fiche l'affiche telle
+   * quelle. Le rédiger une seconde fois côté écran ferait deux définitions de
+   * « complète », dont celle que l'utilisateur lit serait la moins surveillée.
+   */
+  missingToCollect(): readonly string[] {
     const missing: string[] = [];
     if (this.icsValue === null) {
       missing.push("l'identifiant créancier (ICS)");

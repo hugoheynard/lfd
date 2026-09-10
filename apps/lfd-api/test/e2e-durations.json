@@ -1,6 +1,7 @@
 {
   "test/account-alerts.e2e-spec.ts": 8096,
   "test/account.e2e-spec.ts": 8297,
+  "test/accounting-legal-entity.e2e-spec.ts": 5338,
   "test/activations.e2e-spec.ts": 3646,
   "test/activity-events.e2e-spec.ts": 9437,
   "test/addresses.e2e-spec.ts": 7835,

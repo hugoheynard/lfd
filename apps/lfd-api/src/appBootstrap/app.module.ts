@@ -11,6 +11,7 @@ import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricerModule } from "../b2b/pricing/pricer.module.js";
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
 import { OrderPricingModule } from "../b2b/orders/order-pricing.module.js";
+import { AccountingModule } from "../b2b/accounting/accounting.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
 import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
@@ -103,6 +104,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     AccountModule,
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
     PaymentsModule,
+    AccountingModule,
     OrdersModule,
     ProductionModule,
     ProductionFeedModule,

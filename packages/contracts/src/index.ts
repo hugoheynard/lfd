@@ -96,6 +96,24 @@ export type {
   MandateSectionView,
 } from "./payment-mandate.js";
 export {
+  assignCreditorIdentifierPayloadSchema,
+  correctLegalEntityPayloadSchema,
+  declareLegalEntityPayloadSchema,
+  legalAddressPayloadSchema,
+  setCreditorAccountPayloadSchema,
+  setPreNotificationPayloadSchema,
+  PRE_NOTIFICATION_MAX_DAYS,
+  PRE_NOTIFICATION_MIN_DAYS,
+} from "./legal-entity.js";
+export type {
+  AssignCreditorIdentifierPayload,
+  CorrectLegalEntityPayload,
+  DeclareLegalEntityPayload,
+  LegalEntityView,
+  SetCreditorAccountPayload,
+  SetPreNotificationPayload,
+} from "./legal-entity.js";
+export {
   fulfillmentPreferencePayloadSchema,
   NO_FULFILLMENT_PREFERENCE,
 } from "./fulfillment-preference.js";

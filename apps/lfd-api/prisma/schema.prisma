@@ -227,6 +227,7 @@ enum StaffResource {
   b2b_appointments
   b2b_support
   b2b_payments
+  b2b_accounting
   b2b_alerts
   b2b_order_waivers
   b2b_settings
@@ -576,6 +577,74 @@ enum MandateStatus {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// LegalEntity — l'entité qui ÉMET : notre identité légale, notre ICS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Une **entité juridique émettrice** — nous, pas un client.
+///
+/// `Company` désigne le client professionnel dans tout le bloc `b2b` ; confondre
+/// les deux ferait d'un contexte entier un piège de vocabulaire, d'où un nom qui
+/// ne peut pas se lire de travers.
+///
+/// Plusieurs lignes sont prévues dès maintenant : LFC peut émettre sous deux
+/// entités, et une seconde doit rester **une ligne**, pas un déploiement.
+///
+/// ⚠️ **`creditor_iban` est la première coordonnée bancaire à entrer en base**,
+/// et c'est le nôtre — celui qui reçoit, pas celui qu'on débite. Il n'est jamais
+/// rendu par une API : la vue n'en montre que les quatre derniers caractères.
+/// L'IBAN des DÉBITEURS, lui, n'est pas ici et n'y sera jamais : il aura son
+/// coffre, avec son chiffrement et sa trace de lecture (T2).
+///
+/// L'invariant qui compte n'est PAS exprimable en base : `ics` ne se remplace
+/// pas une fois posé, parce qu'il est imprimé sur chaque mandat signé. Un
+/// `CHECK` ne sait pas comparer une valeur à son ancienne ; c'est
+/// `LegalEntity.assignCreditorIdentifier` qui refuse, et le refus est éprouvé.
+model LegalEntity {
+  id String @id
+
+  // Identité légale, telle qu'elle s'imprime sur les mentions. Tout est
+  // corrigible : les documents émis en ont pris une COPIE (`CreditorSnapshot`),
+  // donc corriger ici ne réécrit rien de ce qui est parti.
+  name      String
+  legalForm String @map("legal_form")
+  siren     String @unique
+  rcs       String @default("")
+  vatNumber String @default("") @map("vat_number")
+
+  // Le capital s'imprime sur les mentions légales : entier, en centimes.
+  shareCapitalCents Int @default(0) @map("share_capital_cents")
+
+  addressLine1 String @map("address_line1")
+  addressLine2 String @default("") @map("address_line2")
+  postalCode   String @map("postal_code")
+  city         String
+  countryCode  String @default("FR") @map("country_code")
+
+  // `null` = pas encore attribué par la Banque de France. C'est un état normal
+  // et durable : on prépare le dossier des semaines avant de recevoir l'ICS.
+  ics String? @unique
+
+  // Le compte où l'argent arrive. Il change — on peut changer de banque — et
+  // c'est ce qui le distingue de l'ICS.
+  creditorIban String? @map("creditor_iban")
+
+  // Le délai annoncé au débiteur entre la pré-notification et le débit. Négocié
+  // avec la banque, donc DE LA DONNÉE : le renégocier est une saisie, pas un
+  // déploiement, et deux entités peuvent ne pas avoir le même.
+  preNotificationDays Int @default(14) @map("pre_notification_days")
+
+  // Archivée : elle n'émet plus rien, et ses documents passés restent. Pas de
+  // DELETE physique — une entité citée par un mandat signé ne s'efface pas.
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("legal_entities")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PaymentMandate — l'autorisation de prélever, PAS les coordonnées bancaires
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -821,12 +890,12 @@ model Order {
   // La définition vit dans `ventilateVat` (`@lfd/money`), et nulle part
   // ailleurs. Pour ajouter un terme à ce panier :
   // `documentation/pricing/ajouter-un-terme-au-panier.md`.
-  subtotalCents      Int    @map("subtotal_cents")
-  discountCents      Int    @default(0) @map("discount_cents")
+  subtotalCents         Int    @map("subtotal_cents")
+  discountCents         Int    @default(0) @map("discount_cents")
   // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
   // prix : sans lui un document ne peut nommer la remise, seulement la chiffrer.
-  discountAdjustment Json?  @map("discount_adjustment")
-  deliveryFeeCents   Int    @default(0) @map("delivery_fee_cents")
+  discountAdjustment    Json?  @map("discount_adjustment")
+  deliveryFeeCents      Int    @default(0) @map("delivery_fee_cents")
   /// L'ajustement (%, ou € fixe) de la ZONE qui a produit `deliveryFeeCents`,
   /// figé comme la remise et la surtaxe. C'était le dernier terme du panier à
   /// n'avoir que son montant : `delivery_zones.fee_value` est mutable, donc une
@@ -834,8 +903,8 @@ model Order {
   ///
   /// `NULL` = retrait (aucun frais) ou commande antérieure au 2026-09-09 ; les
   /// deux se distinguent par `delivery_fee_cents`, nul dans le premier cas.
-  deliveryFeeAdjustment Json? @map("delivery_fee_adjustment")
-  vatCents           Int    @default(0) @map("vat_cents")
+  deliveryFeeAdjustment Json?  @map("delivery_fee_adjustment")
+  vatCents              Int    @default(0) @map("vat_cents")
   /// La TVA **par taux**, figée à la passation — `[{ rate, amountCents }]`.
   ///
   /// `vatCents` est le total ; celle-ci en est le DÉTAIL, et elle est figée pour
@@ -845,9 +914,9 @@ model Order {
   ///
   /// `null` = commande antérieure au 2026-09-07. Non rétro-remplie volontairement :
   /// le bon n'affiche alors qu'une ligne « dont TVA », ce qui est vrai.
-  vatShares          Json?  @map("vat_shares")
-  totalCents         Int    @map("total_cents")
-  currency           String @default("EUR")
+  vatShares             Json?  @map("vat_shares")
+  totalCents            Int    @map("total_cents")
+  currency              String @default("EUR")
 
   // Règlement. `paymentStatus` est fixé à la passation d'après le terme de la
   // société (cf. enum PaymentStatus). `stripePaymentIntentId` relie la commande
@@ -950,16 +1019,16 @@ model OrderLine {
   /// `NULL` avoue « on ne sait pas ». Un défaut à `[]` aurait transformé une
   /// ignorance en affirmation, sur les seules commandes qu'on ne peut plus
   /// vérifier.
-  basePriceMillicents Int?     @map("base_price_millicents")
-  pricingSteps        Json?    @map("pricing_steps")
+  basePriceMillicents  Int?     @map("base_price_millicents")
+  pricingSteps         Json?    @map("pricing_steps")
   /// Quel étage de plancher a mordu, et sur quelles preuves — figé avec le prix.
   /// C'est ce qui rend le plancher DYNAMIQUE tenable : sans la mesure consignée,
   /// un prix qui dépend de l'historique cesse d'être explicable dès que
   /// l'historique bouge. Ne se relit jamais.
-  pricingFloor        Json?    @map("pricing_floor")
+  pricingFloor         Json?    @map("pricing_floor")
   /// Le plancher a-t-il relevé ce prix ? Consigné plutôt qu'avalé : un prix
   /// relevé est un prix dont une règle n'a pas produit son effet.
-  pricingFloored      Boolean? @map("pricing_floored")
+  pricingFloored       Boolean? @map("pricing_floored")
   /// La chaîne est-elle passée SOUS ZÉRO, et le prix ramené à zéro ? Même
   /// raison que `pricingFloored` : un prix qu'aucune règle n'a produit tel quel.
   ///
