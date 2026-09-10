@@ -1,12 +1,14 @@
 import "dotenv/config";
 
+import { seedAccounting } from "../src/dev/seeding/accounting.seed.js";
 import { CLIENT_ENSEIGNE, DEFAULT_IDENTITY, seedClient } from "../src/dev/seeding/client.seed.js";
 import { seedStation } from "../src/dev/seeding/station.seed.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 import { bootstrapHarness } from "./seed-growth/harness.js";
 
 /**
- * **Le seed de développement** — la station, puis le client de référence.
+ * **Le seed de développement** — la station, l'entité émettrice, puis le client
+ * de référence.
  *
  * ```bash
  * pnpm --filter lfd-api db:seed         # la station et le client
@@ -46,6 +48,10 @@ async function main(): Promise<void> {
     // son propre instant, et `src/` n'a pas le droit d'y toucher (`clock-port`).
     const context = { prisma: harness.prisma, commands: harness.commands, now: new Date() };
     await seedStation(context);
+    // Après la station, avant le client : une entité émettrice ne dépend de rien,
+    // mais la lire dans le journal juste après la station dit qu'elle appartient
+    // au décor, pas au dossier d'un client.
+    await seedAccounting(context);
     // L'identité se lit ICI, pas dans le module : `src/` n'a pas le droit de
     // toucher `process.env`, et c'est la ligne de commande qui connaît le poste.
     const client = await seedClient(context, {
