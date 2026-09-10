@@ -324,6 +324,30 @@ parti chez des clients. Le réécrire ne corrige pas le passé : il le raconte
 autrement, et l'écran qui relit une publication d'il y a trois mois lirait une
 intention que personne n'avait ce jour-là.
 
+### L'historique dit enfin laquelle a bougé
+
+La liste des ancres affichait « 97 articles » et rien d'autre. C'est la
+**taille** d'une ancre, jamais son intérêt : deux ancres consécutives de 97
+articles peuvent différer d'une ligne ou de quarante, et c'est pourtant la
+première question devant un historique.
+
+`CatalogRevisionRowView.changes` porte donc l'écart avec l'ancre précédente —
+entrés, retirés et modifiés confondus. Un seul nombre : la liste répond à
+« laquelle a bougé », le diff a son écran pour « comment ».
+
+Trois précautions valent d'être dites :
+
+- il est calculé sur des index chargés **en lot** — deux requêtes pour toute la
+  page, pas deux par ancre. La boucle qu'on aurait laissée passer serait restée
+  invisible : chaque requête est rapide, leur somme ne l'est pas ;
+- la liste lit **une ancre de plus** que ce qu'elle rend, pour que la dernière
+  ligne ait sa devancière. Sans ça, son `null` dirait « rien avant elle » alors
+  qu'il dirait « la page s'arrêtait là » ;
+- `changes` vit sur un type de LIGNE (`CatalogRevisionRowView`) et non sur le
+  résumé, pour que son `null` n'ait qu'un seul sens. Le résumé sert aussi de
+  borne à un diff et d'en-tête à l'état du catalogue, où aucun écart n'est
+  calculé.
+
 ⚠️ Le nommage après coup ne demande que le **nom** : une zone de texte dans une
 ligne de liste rendrait l'historique illisible pour un geste rare. La route
 accepte une note ; l'écran ne la propose pas encore.
