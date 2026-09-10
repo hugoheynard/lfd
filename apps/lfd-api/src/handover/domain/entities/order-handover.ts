@@ -1,4 +1,4 @@
-import { HandoverRefusedError } from "../errors/production-errors.js";
+import { HandoverRefusedError } from "../errors/handover-errors.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { handoverBlocker, type HandoverVia } from "../services/handover.js";
 

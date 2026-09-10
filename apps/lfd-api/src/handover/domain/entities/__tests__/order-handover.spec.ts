@@ -1,5 +1,5 @@
 import type { HandoverSubject } from "../../../channels/commerce/handover-subject.reader.js";
-import { HandoverRefusedError } from "../../errors/production-errors.js";
+import { HandoverRefusedError } from "../../errors/handover-errors.js";
 import { OrderHandover } from "../order-handover.js";
 
 /**

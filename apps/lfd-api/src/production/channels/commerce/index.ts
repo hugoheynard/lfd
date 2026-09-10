@@ -8,16 +8,15 @@
  *
  * Ce que le commerce y trouve : une classe abstraite à implémenter, et les faits
  * qu'elle rend. Aucune classe concrète, aucun accès aux tables.
+ *
+ * ⚠️ **La remise n'est plus ici** depuis le 2026-09-10. `HandoverSubjectReader`,
+ * `OrderHandedOverEvent` et `HandoverVia` ont suivi leur contexte dans
+ * `handover/channels/commerce/`. Ce fichier publiait deux surfaces sous un seul
+ * nom, ce qui rendait la frontière illisible : le commerce importait « la
+ * production » pour parler à la remise.
  */
 export { DayOrdersReader, type ProducibleLine, type ProducibleOrder } from "./day-orders.reader.js";
 export { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 export { ProductionDayClosedEvent } from "./production-day-closed.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
 export { OrderPackedEvent } from "./order-packed.event.js";
-export {
-  HandoverSubjectReader,
-  type HandoverSubject,
-  type HandoverSubjectLine,
-} from "./handover-subject.reader.js";
-export { OrderHandedOverEvent } from "./order-handed-over.event.js";
-export type { HandoverVia } from "../../domain/services/handover.js";

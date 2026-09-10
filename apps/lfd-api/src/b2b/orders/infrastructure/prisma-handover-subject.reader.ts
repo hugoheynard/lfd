@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   HandoverSubjectReader,
   type HandoverSubject,
-} from "../../../production/channels/commerce/index.js";
+} from "../../../handover/channels/commerce/index.js";
 import { OrderReader } from "../domain/ports/order.reader.js";
 
 /**

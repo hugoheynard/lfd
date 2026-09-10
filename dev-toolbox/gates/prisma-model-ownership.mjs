@@ -60,7 +60,7 @@ const SKIP_DIRS = new Set([
  * sur eux, et cette porte aussi : deux contextes d'un même bloc qui partagent
  * une table sont un sujet de découpe interne, pas de frontière.
  */
-const BLOCKS = new Set(["staff", "pim", "b2b", "production", "platform"]);
+const BLOCKS = new Set(["staff", "pim", "b2b", "production", "handover", "platform"]);
 
 /**
  * **Ce qui n'est pas un bloc**, et pourquoi chacun est hors sujet.

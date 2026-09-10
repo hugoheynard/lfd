@@ -2,7 +2,7 @@ import type { OrderHandoverView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.reader.js";
-import { HandoverReferenceNotFoundError } from "../../domain/errors/production-errors.js";
+import { HandoverReferenceNotFoundError } from "../../domain/errors/handover-errors.js";
 import { HandoverAttestation } from "../services/handover-attestation.service.js";
 import { ConfirmManualHandoverCommand } from "./confirm-manual-handover.command.js";
 

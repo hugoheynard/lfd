@@ -6,7 +6,12 @@ import { OrderHandoverRepository } from "../domain/ports/order-handover.reposito
 import type { HandoverVia } from "../domain/services/handover.js";
 
 /**
- * Les attestations de remise, dans le schéma `production`.
+ * Les attestations de remise.
+ *
+ * ⚠️ La table est encore dans le schéma `production` : le déménagement du CODE
+ * (2026-09-10) et celui de la TABLE sont deux tranches, et cette séparation est
+ * le seul point d'arrêt propre du chantier — l'une ne touche pas la base,
+ * l'autre ne touche pas le code.
  *
  * Aucun type `Prisma.*` ne sort d'ici : `toDomain` rend l'agrégat, et c'est lui
  * qui circule au-dessus.
@@ -52,14 +57,6 @@ export class PrismaOrderHandoverRepository extends OrderHandoverRepository {
       }
       throw error;
     }
-  }
-
-  async referencesAttestedSince(since: Date): Promise<readonly string[]> {
-    const rows = await this.prisma.orderHandover.findMany({
-      where: { handedOverAt: { gte: since } },
-      select: { reference: true },
-    });
-    return rows.map((row) => row.reference);
   }
 }
 

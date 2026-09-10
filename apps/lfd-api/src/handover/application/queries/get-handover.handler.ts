@@ -4,7 +4,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.reader.js";
 import type { OrderHandover } from "../../domain/entities/order-handover.js";
-import { HandoverTokenNotFoundError } from "../../domain/errors/production-errors.js";
+import { HandoverTokenNotFoundError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import { handoverBlocker } from "../../domain/services/handover.js";
 import { GetHandoverQuery } from "./get-handover.query.js";

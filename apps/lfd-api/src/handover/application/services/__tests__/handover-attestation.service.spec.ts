@@ -3,7 +3,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import type { HandoverSubject } from "../../../channels/commerce/handover-subject.reader.js";
 import { OrderHandedOverEvent } from "../../../channels/commerce/order-handed-over.event.js";
 import { OrderHandover } from "../../../domain/entities/order-handover.js";
-import { HandoverRefusedError } from "../../../domain/errors/production-errors.js";
+import { HandoverRefusedError } from "../../../domain/errors/handover-errors.js";
 import type { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { HandoverAttestation } from "../handover-attestation.service.js";
 
@@ -42,7 +42,6 @@ function repositoryOf(existing: OrderHandover | null, won: boolean) {
       written.push(handover);
       return Promise.resolve(won);
     },
-    referencesAttestedSince: () => Promise.resolve([]),
   };
   return { repository, written };
 }

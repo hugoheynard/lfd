@@ -6,7 +6,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { OrderHandedOverEvent } from "../../channels/commerce/order-handed-over.event.js";
 import { OrderHandover } from "../../domain/entities/order-handover.js";
-import { HandoverRefusedError } from "../../domain/errors/production-errors.js";
+import { HandoverRefusedError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import type { HandoverVia } from "../../domain/services/handover.js";
 import { toHandoverView } from "../queries/get-handover.handler.js";

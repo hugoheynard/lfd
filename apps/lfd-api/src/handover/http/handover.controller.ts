@@ -44,7 +44,7 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
  */
 @Controller("admin/production/handover")
 @AdminSurface("b2b_orders")
-export class ProductionHandoverController {
+export class HandoverController {
   constructor(
     private readonly queries: QueryBus,
     private readonly commands: CommandBus,

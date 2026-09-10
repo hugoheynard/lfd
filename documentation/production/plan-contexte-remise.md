@@ -36,7 +36,7 @@ Tout ce paragraphe a été ouvert, pas rappelé de mémoire.
 | La table `order_handover` est dans le schéma **`production`** — 6 colonnes            | [`prisma/schema/production.prisma`](../../apps/lfd-api/prisma/schema/production.prisma)                                             |
 | Elle n'a **aucune clé étrangère**, ni vers `production_order`, ni vers `orders`       | [migration `20260907240000_remise_au_fournil`](../../apps/lfd-api/prisma/migrations/20260907240000_remise_au_fournil/migration.sql) |
 | `order_id` et `reference` sont **tous deux `@unique`**                                | idem                                                                                                                                |
-| La règle (`handoverBlocker`) vit au fournil depuis le 2026-09-07                      | [`production/domain/services/handover.ts`](../../apps/lfd-api/src/production/domain/services/handover.ts)                           |
+| La règle (`handoverBlocker`) vit au fournil depuis le 2026-09-07                      | [`handover/domain/services/handover.ts`](../../apps/lfd-api/src/handover/domain/services/handover.ts)                               |
 | L'agrégat, son dépôt, son service d'attestation et son contrôleur aussi               | `production/{domain,application,http}/`                                                                                             |
 | Le fournil déclare **trois ports** vers le commerce, dont `HandoverSubjectReader`     | [`production/channels/commerce/`](../../apps/lfd-api/src/production/channels/commerce/index.ts)                                     |
 | Le commerce garde un **snapshot** de la remise : `handed_over_at/by/via` sur `orders` | [`prisma/schema/public/orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma)                                       |
@@ -215,7 +215,7 @@ remise ». 🔴 **C'est le mauvais moment, et le code dit pourquoi** :
 > « Volontairement permissif sur l'avancement : tout état autre que `draft` et
 > `cancelled` passe. Refuser une commande encore `placed` reviendrait à renvoyer
 > un client qui est physiquement là, colis prêt, parce qu'un écran d'atelier n'a
-> pas été cliqué. » — [`handover.ts`](../../apps/lfd-api/src/production/domain/services/handover.ts)
+> pas été cliqué. » — [`handover.ts`](../../apps/lfd-api/src/handover/domain/services/handover.ts)
 
 Une file alimentée au colisage n'aurait **pas de ligne** pour une commande jamais
 colisée. Le scan d'un client debout au comptoir échouerait — exactement le cas
@@ -482,11 +482,11 @@ plus** — le `DROP` est passé — et l'ancienne image la vise encore.
 pas une écriture perdue, c'est un `undefined_table` en **500** sur trois routes
 ouvertes :
 
-| Route                             | Pourquoi elle touche la table                                                                                                                       |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /admin/…/handover/:token`    | [`get-handover.handler.ts:39`](../../apps/lfd-api/src/production/application/queries/get-handover.handler.ts) — `findByOrderId` **même en lecture** |
-| `POST /admin/…/handover/:token`   | `handover-attestation.service.ts` — la lecture précède l'attestation                                                                                |
-| `GET /admin/production/day/:jour` | `get-production-day-status.handler.ts:66` — `referencesAttestedSince`                                                                               |
+| Route                             | Pourquoi elle touche la table                                                                                                                     |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /admin/…/handover/:token`    | [`get-handover.handler.ts:39`](../../apps/lfd-api/src/handover/application/queries/get-handover.handler.ts) — `findByOrderId` **même en lecture** |
+| `POST /admin/…/handover/:token`   | `handover-attestation.service.ts` — la lecture précède l'attestation                                                                              |
+| `GET /admin/production/day/:jour` | `get-production-day-status.handler.ts:66` — `referencesAttestedSince`                                                                             |
 
 Un client au comptoir prend donc un 500 pendant une à deux minutes, **que la
 table ait été vide ou non**. La vue règle ça :

@@ -2,7 +2,7 @@ import type { ProductionDayStatus } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { PendingCommerceOrdersReader } from "../../channels/commerce/pending-orders.reader.js";
-import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
+import { AttestedHandoversReader } from "../../channels/handover/index.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { GetProductionDayStatusQuery } from "./get-production-day-status.query.js";
@@ -43,7 +43,7 @@ export class GetProductionDayStatusHandler implements IQueryHandler<
   constructor(
     private readonly days: ProductionDayRepository,
     private readonly pending: PendingCommerceOrdersReader,
-    private readonly handovers: OrderHandoverRepository,
+    private readonly handovers: AttestedHandoversReader,
   ) {}
 
   async execute(query: GetProductionDayStatusQuery): Promise<ProductionDayStatus> {

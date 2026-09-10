@@ -22,14 +22,10 @@ export abstract class OrderHandoverRepository {
    */
   abstract attest(handover: OrderHandover): Promise<boolean>;
 
-  /**
-   * Les références attestées **depuis** cet instant — la matière du contrepoids.
-   *
-   * Bornée dans le temps plutôt que globale : la table ne se purge jamais, et
-   * compter la divergence sur toute l'histoire ferait grossir une lecture
-   * d'écran sans rien apprendre. L'instant fourni est la clôture de la journée
-   * regardée, ce qui donne une fenêtre qui a un sens métier plutôt qu'un nombre
-   * de jours choisi au hasard.
-   */
-  abstract referencesAttestedSince(since: Date): Promise<readonly string[]>;
+  // ⚠️ `referencesAttestedSince` VIVAIT ICI, et le fournil l'appelait en direct.
+  // Elle est partie dans `production/channels/handover/` le 2026-09-10 : c'est
+  // la production qui déclare ce dont elle a besoin, et l'adaptateur de la
+  // remise l'implémente. Un dépôt d'écriture n'est pas une surface de lecture
+  // pour un autre contexte — et le lui prêter donnait au fournil bien plus que
+  // la question qu'il pose.
 }

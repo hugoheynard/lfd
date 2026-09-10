@@ -19,7 +19,9 @@ import { OrderWaiversModule } from "../b2b/order-waivers/order-waivers.module.js
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { OpsModule } from "../ops/ops.module.js";
 import { PimModule } from "../pim/pim.module.js";
+import { HandoverModule } from "../handover/handover.module.js";
 import { ProductionModule } from "../production/production.module.js";
+import { HandoverFeedModule } from "./handover-feed.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
@@ -108,6 +110,8 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     OrdersModule,
     ProductionModule,
     ProductionFeedModule,
+    HandoverModule,
+    HandoverFeedModule,
     PricingAdminModule,
     OrderPricingModule,
     // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.
