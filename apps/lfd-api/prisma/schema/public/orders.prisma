@@ -209,13 +209,24 @@ model Order {
   readyAt DateTime? @map("ready_at")
   readyBy String?   @map("ready_by")
 
-  // Remise en main propre (retrait au labo). `handoverToken` est un secret
-  // ALÉATOIRE, pas le numéro de commande : celui-ci est imprimé sur le bon de
-  // commande, donc public, donc sans valeur de preuve. Émis à la passation pour
-  // les seules commandes `pickup`. `@unique` = c'est la clé de lecture du scan.
-  // Les deux autres colonnes SONT l'attestation : quand, et par qui (le claim
-  // `sub` du jeton staff, figé — un annuaire réécrit ne doit pas réécrire une
-  // preuve, et le `sub` reste résolvable même après un changement de nom).
+  // Remise en main propre. `handoverToken` est un secret ALÉATOIRE, pas le
+  // numéro de commande : celui-ci est imprimé sur le bon, donc public, donc sans
+  // valeur de preuve. Émis à la passation pour les DEUX acheminements.
+  // `@unique` = c'est la clé de lecture du scan.
+  //
+  // ⚠️ Ce commentaire disait « pour les seules commandes `pickup` » jusqu'au
+  // 2026-09-10, et c'était faux depuis le 2026-09-07 : `issuesHandoverToken()` a
+  // perdu son paramètre et rend `true` sans condition, parce qu'en livraison le
+  // destinataire montre le code de son courriel et le coursier scanne.
+  //
+  // ⚠️ Il disait aussi que les deux colonnes ci-dessous « SONT l'attestation ».
+  // Elles ne le sont plus : l'attestation vit dans `production.order_handover`
+  // depuis le 2026-09-07, et ces colonnes en sont le SNAPSHOT — le commerce
+  // recopie ce que le fournil lui annonce, il ne le lui rend jamais. Les lire
+  // comme la source rouvrirait les deux vérités que la table a fermées.
+  //
+  // Le `sub` staff y est figé : un annuaire réécrit ne doit pas réécrire une
+  // preuve, et le `sub` reste résolvable même après un changement de nom.
   handoverToken String?   @unique @map("handover_token")
   handedOverAt  DateTime? @map("handed_over_at")
   handedOverBy  String?   @map("handed_over_by")
