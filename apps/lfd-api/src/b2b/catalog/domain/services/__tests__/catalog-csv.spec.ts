@@ -2,6 +2,9 @@ import type { CatalogAdminItemView } from "@lfd/contracts";
 
 import { catalogCsv } from "../catalog-csv.js";
 
+/** « Le PIM a envoyé ces faits ce matin » — une intention, jamais un jour du calendrier. */
+const RECEIVED_AT = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+
 /**
  * Un CSV se lit par un tableur, jamais par nous — donc rien de ce qui casse ici
  * ne remonte en erreur. Ces cas visent les quatre pannes silencieuses connues :
@@ -25,6 +28,12 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     isFeatured: false,
     decidedBy: null,
     decidedAt: null,
+    // Rien de ce qui est testé ici ne LIT cette date — mais le contrat l'exige,
+    // et une date en dur dans une fixture est une bombe à retardement même
+    // quand personne ne la regarde : le jour où quelqu'un ajoutera une colonne
+    // « reçu le », elle serait déjà périmée. Relative, donc, comme le §5 le
+    // demande.
+    receivedAt: RECEIVED_AT,
     ...over,
   };
 }
@@ -36,6 +45,22 @@ function bodyLines(csv: string): string[] {
     .trimEnd()
     .split("\r\n")
     .slice(1);
+}
+
+/**
+ * **La première ligne de corps, ou un échec qui se lit.**
+ *
+ * `bodyLines(csv)[0]` rend `string | undefined` : un CSV sans corps donnerait
+ * `undefined.endsWith(…)`, c'est-à-dire une pile qui accuse le test au lieu du
+ * générateur. Refuser ici nomme la vraie panne — le CSV n'a produit aucune
+ * ligne — et c'est toujours celle-là qu'on cherche.
+ */
+function firstBodyLine(csv: string): string {
+  const [line] = bodyLines(csv);
+  if (line === undefined) {
+    throw new Error("le CSV ne porte aucune ligne de corps");
+  }
+  return line;
 }
 
 describe("catalogCsv", () => {
@@ -66,13 +91,13 @@ describe("catalogCsv", () => {
   it("laisse le prix B2B VIDE quand aucune décision n'a été posée", () => {
     // Un « 0,00 » dirait « négocié à zéro euro ». La colonne d'à côté porte déjà
     // ce qui sera facturé.
-    const [line] = bodyLines(catalogCsv([item({ b2bPriceMillicents: null })]));
+    const line = firstBodyLine(catalogCsv([item({ b2bPriceMillicents: null })]));
 
     expect(line).toContain(";;");
   });
 
   it("porte les TROIS prix, dont celui qui sera facturé", () => {
-    const [line] = bodyLines(
+    const line = firstBodyLine(
       catalogCsv([
         item({
           pimPriceMillicents: 240_000,
@@ -88,14 +113,14 @@ describe("catalogCsv", () => {
   });
 
   it("échappe un point-virgule dans un nom — sinon la ligne entière se décale", () => {
-    const [line] = bodyLines(catalogCsv([item({ name: "Tarte citron ; meringuée" })]));
+    const line = firstBodyLine(catalogCsv([item({ name: "Tarte citron ; meringuée" })]));
 
     expect(line).toContain('"Tarte citron ; meringuée"');
     expect(line.split(";").length).toBe(9);
   });
 
   it("double les guillemets, comme le RFC le demande", () => {
-    const [line] = bodyLines(catalogCsv([item({ name: 'Pain "spécial"' })]));
+    const line = firstBodyLine(catalogCsv([item({ name: 'Pain "spécial"' })]));
 
     expect(line).toContain('"Pain ""spécial"""');
   });
@@ -103,7 +128,7 @@ describe("catalogCsv", () => {
   it("🔴 dit « Sans taux de TVA » et non « En vente » — l'article n'est pas vendable", () => {
     // Régression de conception : `isHidden` est faux, donc une lecture naïve
     // aurait écrit « En vente » sur un article que la boutique écarte.
-    const [line] = bodyLines(catalogCsv([item({ vatRatePercent: null, isHidden: false })]));
+    const line = firstBodyLine(catalogCsv([item({ vatRatePercent: null, isHidden: false })]));
 
     expect(line).toContain("Sans taux de TVA");
     expect(line).not.toContain("En vente");

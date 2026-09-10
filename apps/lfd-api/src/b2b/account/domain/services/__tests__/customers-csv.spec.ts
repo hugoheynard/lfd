@@ -47,11 +47,27 @@ function bodyLines(csv: string): string[] {
     .slice(1);
 }
 
+/**
+ * **La première ligne de corps, ou un échec qui se lit.**
+ *
+ * `bodyLines(csv)[0]` rend `string | undefined` : un CSV sans corps donnerait
+ * `undefined.endsWith(…)`, c'est-à-dire une pile qui accuse le test au lieu du
+ * générateur. Refuser ici nomme la vraie panne — le CSV n'a produit aucune
+ * ligne — et c'est toujours celle-là qu'on cherche.
+ */
+function firstBodyLine(csv: string): string {
+  const [line] = bodyLines(csv);
+  if (line === undefined) {
+    throw new Error("le CSV ne porte aucune ligne de corps");
+  }
+  return line;
+}
+
 describe("customersCsv", () => {
   it("🔴 met le SIRET entre guillemets — sans quoi le tableur en fait 8,12457E+13", () => {
     // La panne la plus courante d'un CSV, et la plus silencieuse : le fichier
     // s'ouvre, la colonne est là, et le numéro est faux.
-    const [line] = bodyLines(customersCsv([company()]));
+    const line = firstBodyLine(customersCsv([company()]));
 
     expect(line).toContain('"81245678900021"');
   });
@@ -66,7 +82,7 @@ describe("customersCsv", () => {
 
   it("laisse la date d'activation VIDE pour un compte jamais activé", () => {
     // Y recopier la création ferait compter des clients qui n'en sont pas.
-    const [line] = bodyLines(customersCsv([company({ status: "pending", activatedAt: null })]));
+    const line = firstBodyLine(customersCsv([company({ status: "pending", activatedAt: null })]));
 
     expect(line.endsWith(";")).toBe(true);
     expect(line).toContain("En attente");
@@ -76,7 +92,7 @@ describe("customersCsv", () => {
     // Le fichier sert à retrouver un dossier, pas à dater une écriture à
     // l'heure près : convertir ferait basculer d'un jour les comptes ouverts
     // après 22 h, et personne ne verrait pourquoi.
-    const [line] = bodyLines(customersCsv([company()]));
+    const line = firstBodyLine(customersCsv([company()]));
 
     expect(line).toContain("2026-06-02");
     expect(line).toContain("2026-09-01");
@@ -84,7 +100,7 @@ describe("customersCsv", () => {
   });
 
   it("dit les statuts et les délais en français", () => {
-    const [line] = bodyLines(
+    const line = firstBodyLine(
       customersCsv([company({ status: "suspended", grantedTerms: ["monthly"] })]),
     );
 
@@ -93,7 +109,7 @@ describe("customersCsv", () => {
   });
 
   it("échappe un point-virgule dans une raison sociale", () => {
-    const [line] = bodyLines(customersCsv([company({ raisonSociale: "Dupont ; Fils" })]));
+    const line = firstBodyLine(customersCsv([company({ raisonSociale: "Dupont ; Fils" })]));
 
     expect(line).toContain('"Dupont ; Fils"');
   });

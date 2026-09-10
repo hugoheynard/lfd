@@ -2,7 +2,9 @@ import type { CatalogAdminItemView } from "@lfd/contracts";
 
 import { CatalogAdminReader } from "../../../domain/ports/catalog-admin.reader.js";
 import { GetCatalogSummaryHandler } from "../get-catalog-summary.handler.js";
-import { GetCatalogSummaryQuery } from "../get-catalog-summary.query.js";
+
+/** « Le PIM a envoyé ces faits ce matin » — une intention, jamais un jour du calendrier. */
+const RECEIVED_AT = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
 function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
   return {
@@ -21,6 +23,12 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     isFeatured: false,
     decidedBy: null,
     decidedAt: null,
+    // Rien de ce qui est testé ici ne LIT cette date — mais le contrat l'exige,
+    // et une date en dur dans une fixture est une bombe à retardement même
+    // quand personne ne la regarde : le jour où quelqu'un ajoutera une colonne
+    // « reçu le », elle serait déjà périmée. Relative, donc, comme le §5 le
+    // demande.
+    receivedAt: RECEIVED_AT,
     ...over,
   };
 }
@@ -42,7 +50,7 @@ describe("GetCatalogSummaryHandler", () => {
     // catalogue plus grand que celui que les clients voient.
     const view = await new GetCatalogSummaryHandler(
       new FakeCatalog([item({ vatRatePercent: null })]),
-    ).execute(new GetCatalogSummaryQuery());
+    ).execute();
 
     expect(view).toEqual({ onSale: 0, withoutVatRate: 1, hidden: 0 });
   });
@@ -51,7 +59,7 @@ describe("GetCatalogSummaryHandler", () => {
     // Les deux nombres répondent à deux questions ; ils ne partitionnent pas.
     const view = await new GetCatalogSummaryHandler(
       new FakeCatalog([item({ isHidden: true, vatRatePercent: null })]),
-    ).execute(new GetCatalogSummaryQuery());
+    ).execute();
 
     expect(view).toEqual({ onSale: 0, withoutVatRate: 1, hidden: 1 });
   });
@@ -64,15 +72,13 @@ describe("GetCatalogSummaryHandler", () => {
         item({ sku: "C", isHidden: true }),
         item({ sku: "D", vatRatePercent: null }),
       ]),
-    ).execute(new GetCatalogSummaryQuery());
+    ).execute();
 
     expect(view).toEqual({ onSale: 2, withoutVatRate: 1, hidden: 1 });
   });
 
   it("rend des zéros sur un catalogue vide, jamais un vide", async () => {
-    const view = await new GetCatalogSummaryHandler(new FakeCatalog([])).execute(
-      new GetCatalogSummaryQuery(),
-    );
+    const view = await new GetCatalogSummaryHandler(new FakeCatalog([])).execute();
 
     expect(view).toEqual({ onSale: 0, withoutVatRate: 0, hidden: 0 });
   });

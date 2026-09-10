@@ -3,7 +3,6 @@ import type { AdminCompanyDetailView, AdminCompanyView } from "@lfd/contracts";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { AdminCompanyReader } from "../../../domain/ports/admin-company.reader.js";
 import { GetCustomerPortfolioHandler } from "../get-customer-portfolio.handler.js";
-import { GetCustomerPortfolioQuery } from "../get-customer-portfolio.query.js";
 
 const NOW = new Date("2026-09-10T09:00:00.000Z");
 
@@ -76,7 +75,7 @@ describe("GetCustomerPortfolioHandler", () => {
     // c'est un client de cette semaine, parce que c'est cette semaine qu'il
     // commence à facturer.
     return handler([company({ createdAt: daysAgo(180), activatedAt: daysAgo(7) })])
-      .execute(new GetCustomerPortfolioQuery())
+      .execute()
       .then((view) => {
         expect(view.newlyActive).toBe(1);
       });
@@ -85,7 +84,7 @@ describe("GetCustomerPortfolioHandler", () => {
   it("n'invente pas d'activation pour un compte qui n'en a pas", async () => {
     const view = await handler([
       company({ status: "pending", createdAt: daysAgo(2), activatedAt: null }),
-    ]).execute(new GetCustomerPortfolioQuery());
+    ]).execute();
 
     expect(view.newlyActive).toBe(0);
     expect(view.pending).toBe(1);
@@ -95,7 +94,7 @@ describe("GetCustomerPortfolioHandler", () => {
     const view = await handler([
       company({ activatedAt: daysAgo(29) }),
       company({ activatedAt: daysAgo(31) }),
-    ]).execute(new GetCustomerPortfolioQuery());
+    ]).execute();
 
     expect(view.newlyActive).toBe(1);
   });
@@ -103,9 +102,9 @@ describe("GetCustomerPortfolioHandler", () => {
   it("garde un compte activé PUIS suspendu dans les arrivées récentes", async () => {
     // Sinon le compteur baisserait rétroactivement, et ne se rapprocherait plus
     // d'un relevé le mois suivant.
-    const view = await handler([company({ status: "suspended", activatedAt: daysAgo(5) })]).execute(
-      new GetCustomerPortfolioQuery(),
-    );
+    const view = await handler([
+      company({ status: "suspended", activatedAt: daysAgo(5) }),
+    ]).execute();
 
     expect(view.newlyActive).toBe(1);
     expect(view.suspended).toBe(1);
@@ -118,7 +117,7 @@ describe("GetCustomerPortfolioHandler", () => {
       company({ status: "active" }),
       company({ status: "pending" }),
       company({ status: "suspended" }),
-    ]).execute(new GetCustomerPortfolioQuery());
+    ]).execute();
 
     expect(view).toMatchObject({ active: 2, pending: 1, suspended: 1 });
   });
