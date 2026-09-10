@@ -13,7 +13,7 @@ export function toDomain(row: LegalEntityRow): LegalEntity {
 }
 
 /** Agrégat → vue d'écran. */
-export function toView(entity: LegalEntity): LegalEntityView {
+export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityView {
   const snapshot = entity.toPersistence();
   return {
     id: snapshot.id,
@@ -45,6 +45,10 @@ export function toView(entity: LegalEntity): LegalEntityView {
     // interne du bucket, et une clé qui SORT d'une API est une clé qu'on finit
     // par accepter en ENTRÉE. Un e2e le tient.
     hasLogo: entity.hasLogo,
+    // Passé plutôt que déduit : le mapper voit UNE entité, et « la dernière »
+    // est une propriété de l'ensemble. Le lui faire calculer supposerait de lui
+    // donner un dépôt, c'est-à-dire d'en faire autre chose qu'un mapper.
+    isLastActive,
   };
 }
 

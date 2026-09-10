@@ -7,7 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { LegalEntityView } from '@lfd/contracts';
+import type { DeclareLegalEntityPayload, LegalEntityView } from '@lfd/contracts';
 import { PRE_NOTIFICATION_MAX_DAYS, PRE_NOTIFICATION_MIN_DAYS } from '@lfd/contracts';
 import {
   FoldBackLinkComponent,
@@ -15,6 +15,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldDangerZoneComponent,
   FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
@@ -32,6 +33,7 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { saveBlob } from '../../../shared/download/save-blob';
+import { DeclarePanel } from '../declare-panel/declare-panel';
 import { LegalEntitiesService } from '../../legal-entities.service';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
@@ -64,6 +66,18 @@ const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
  * fiche dit ce qui manque — un bouton actif dont la seule issue est une erreur
  * est une affordance qui ment, exactement comme le champ ICS rouvert.
  *
+ * ## L'archivage est la zone de danger de cette fiche
+ *
+ * Il est le seul geste de l'écran qui RETIRE quelque chose, d'où le cadre
+ * `fold-danger-zone` : sa destructivité se lit avant le clic, pas dans la boîte
+ * de confirmation. La remise en service, elle, ne peut qu'ajouter un émetteur —
+ * elle garde une carte ordinaire.
+ *
+ * 🔴 **Inactif quand l'entité est la dernière en service** (`isLastActive`) : le
+ * serveur refuse en 409, et l'écran nomme la sortie — déclarer la remplaçante,
+ * qui s'ouvre depuis le même endroit. Un bouton dont la seule issue est une
+ * erreur est une affordance qui ment, exactement comme le champ ICS refermé.
+ *
  * **Deux gestes, pas un.** « Voir » ouvre la fiche **dans un panneau modal de
  * la page**, « Télécharger » l'enregistre. Contrôler une adresse ou un ICS à
  * l'écran est le geste courant, accumuler des PDF dans un dossier de
@@ -79,6 +93,7 @@ const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldDangerZoneComponent,
     FoldEmptyStateComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
@@ -192,6 +207,28 @@ export class LegalEntityDetailPage {
       () => this.api.setPreNotification(entity.id, { days }),
       'Délai de pré-notification enregistré.',
     );
+  }
+
+  /**
+   * Déclarer une entité **sans quitter la fiche** — la sortie de l'impasse.
+   *
+   * Le geste vit aussi sur la liste ; il est repris ici parce que c'est ici
+   * qu'on découvre qu'il manque une remplaçante. Renvoyer vers la liste
+   * demanderait de retrouver le bouton, puis de revenir : trois écrans pour un
+   * blocage énoncé en une phrase.
+   *
+   * La relecture qui suit (`run`) est ce qui fait tomber `isLastActive` et
+   * rouvre l'archivage — le serveur seul sait combien d'entités sont en
+   * service.
+   */
+  protected async declare(): Promise<void> {
+    const payload = await this.panels.open<DeclareLegalEntityPayload | null>(DeclarePanel, {
+      width: 'md',
+    }).closed;
+    if (payload === undefined || payload === null) {
+      return;
+    }
+    await this.run(() => this.api.declare(payload), 'Entité déclarée.');
   }
 
   protected async setArchived(entity: LegalEntityView, archived: boolean): Promise<void> {

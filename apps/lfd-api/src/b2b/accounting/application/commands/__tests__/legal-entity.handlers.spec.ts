@@ -24,6 +24,7 @@ import {
   SetLegalEntityArchivedCommand,
 } from "../legal-entity-commands.js";
 import { SetCreditorAccountHandler } from "../set-creditor-account.handler.js";
+import { LastActiveLegalEntityError } from "../../../domain/errors/accounting-errors.js";
 import { SetLegalEntityArchivedHandler } from "../set-legal-entity-archived.handler.js";
 
 const NOW = new Date("2026-09-10T09:00:00.000Z");
@@ -44,6 +45,17 @@ class InMemoryEntities extends LegalEntityRepository {
   save(entity: LegalEntity): Promise<void> {
     this.rows.set(entity.id, entity);
     return Promise.resolve();
+  }
+
+  /**
+   * Le doublé calcule la réponse au lieu de la simuler : un doublé qui rendrait
+   * `true` en dur laisserait la règle « on n'archive pas la dernière » verte
+   * quoi qu'il arrive, ce qui est la façon habituelle de tester un garde-fou
+   * sans jamais l'éprouver.
+   */
+  hasAnotherActive(exceptId: string): Promise<boolean> {
+    const other = [...this.rows.values()].some((e) => e.id !== exceptId && !e.archived);
+    return Promise.resolve(other);
   }
 }
 
@@ -258,12 +270,56 @@ describe("SetCreditorAccountHandler", () => {
 });
 
 describe("SetLegalEntityArchivedHandler", () => {
+  /**
+   * La règle porte sur l'ENSEMBLE, pas sur l'instance : `archive()` ne peut pas
+   * la tenir, un agrégat ne voyant pas ses frères. Elle vit donc dans le
+   * handler, et c'est ici qu'elle s'éprouve — l'e2e la reprend sur le fil.
+   */
+  it("REFUSE d'archiver la dernière entité en service, et n'écrit rien", async () => {
+    const entities = new InMemoryEntities();
+    entities.rows.set("le1", sampleEntity());
+    const events = new RecordingPublisher();
+    const handler = new SetLegalEntityArchivedHandler(
+      entities,
+      new FixedClock(NOW),
+      events,
+      new DirectUnitOfWork(),
+    );
+
+    await expect(handler.execute(new SetLegalEntityArchivedCommand("le1", true))).rejects.toThrow(
+      LastActiveLegalEntityError,
+    );
+    expect(entities.rows.get("le1")?.archived).toBe(false);
+    // Aucun fait publié : un refus qui aurait journalisé ferait croire à un
+    // archivage qui n'a pas eu lieu.
+    expect(events.published).toHaveLength(0);
+  });
+
+  it("laisse TOUJOURS remettre en service — ça ne peut qu'ajouter un émetteur", async () => {
+    const entities = new InMemoryEntities();
+    const entity = sampleEntity();
+    entity.archive(NOW);
+    entities.rows.set("le1", entity);
+    const handler = new SetLegalEntityArchivedHandler(
+      entities,
+      new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+    );
+
+    await handler.execute(new SetLegalEntityArchivedCommand("le1", false));
+    expect(entities.rows.get("le1")?.archived).toBe(false);
+  });
+
   it("archive sans rien effacer, et l'entité archivée n'encaisse plus", async () => {
     const entities = new InMemoryEntities();
     const entity = sampleEntity();
     entity.assignCreditorIdentifier(CreditorIdentifier.create(ICS));
     entity.setCreditorAccount(Iban.create(IBAN));
     entities.rows.set("le1", entity);
+    // Une seconde entité, sans quoi le handler refuse : on n'archive pas la
+    // dernière en service.
+    entities.rows.set("le2", sampleEntity("le2"));
     const events = new RecordingPublisher();
     const handler = new SetLegalEntityArchivedHandler(
       entities,

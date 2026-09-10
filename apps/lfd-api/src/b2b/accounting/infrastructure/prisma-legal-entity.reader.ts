@@ -27,11 +27,27 @@ export class PrismaLegalEntityReader extends LegalEntityReader {
       // pour les documents qui la citent, pas une fiche qu'on vient consulter.
       orderBy: [{ archivedAt: { sort: "asc", nulls: "first" } }, { name: "asc" }],
     });
-    return rows.map((row) => toView(toDomain(row)));
+    // La liste porte déjà l'ensemble : « la dernière en service » se lit sans
+    // seconde requête, et sans que la définition existe à deux endroits.
+    const actives = rows.filter((row) => row.archivedAt === null);
+    return rows.map((row) =>
+      toView(toDomain(row), row.archivedAt === null && actives.length === 1),
+    );
   }
 
   async byId(id: string): Promise<LegalEntityView | null> {
     const row = await this.prisma.legalEntity.findUnique({ where: { id } });
-    return row === null ? null : toView(toDomain(row));
+    if (row === null) {
+      return null;
+    }
+    // Une seconde lecture, et elle est le prix de la fiche : contrairement à la
+    // liste, une vue d'entité seule ne peut pas savoir combien il en reste.
+    // `findFirst` s'arrête au premier trouvé — on demande l'existence, pas un
+    // total.
+    const another = await this.prisma.legalEntity.findFirst({
+      where: { id: { not: id }, archivedAt: null },
+      select: { id: true },
+    });
+    return toView(toDomain(row), row.archivedAt === null && another === null);
   }
 }

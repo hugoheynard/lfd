@@ -68,6 +68,20 @@ export interface LegalEntityView {
    * `missingToCollect`.
    */
   readonly hasLogo: boolean;
+
+  /**
+   * Cette entité est-elle la **seule en service** ?
+   *
+   * Un fait sur l'ENSEMBLE, posé sur la vue d'une instance — ce qui se défend
+   * pour la même raison que `canCollect` et `missingToCollect` : ce que l'écran
+   * doit savoir arrive déjà répondu, et le recalculer côté front ferait une
+   * seconde définition de « la dernière », celle que l'utilisateur lit.
+   *
+   * L'écran s'en sert pour **désactiver** l'archivage : le serveur le refuse en
+   * 409, et un bouton dont la seule issue est une erreur est une affordance qui
+   * ment.
+   */
+  readonly isLastActive: boolean;
 }
 
 /**

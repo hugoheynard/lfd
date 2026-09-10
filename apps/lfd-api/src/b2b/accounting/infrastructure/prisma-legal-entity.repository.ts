@@ -54,4 +54,19 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
       update: columns,
     });
   }
+
+  /**
+   * `findFirst` plutôt que `count` : la question est « en existe-t-il une ? »,
+   * et Postgres s'arrête au premier enregistrement au lieu de parcourir la
+   * table. Sur deux lignes l'écart est nul ; c'est la REQUÊTE qui doit dire ce
+   * qu'on cherche, sans quoi le prochain lecteur croit qu'un total sert
+   * quelque part.
+   */
+  async hasAnotherActive(exceptId: string): Promise<boolean> {
+    const other = await this.prisma.legalEntity.findFirst({
+      where: { id: { not: exceptId }, archivedAt: null },
+      select: { id: true },
+    });
+    return other !== null;
+  }
 }

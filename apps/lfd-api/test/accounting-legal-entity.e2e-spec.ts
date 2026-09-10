@@ -23,6 +23,8 @@ import { storageKeys } from "./storage.js";
 
 /** SIREN dont la clé de Luhn est bonne : un SIREN inventé se fait refuser. */
 const SIREN = "552100554";
+/** Second SIREN à clé de Luhn valide — les cas d'archivage exigent deux entités. */
+const SIREN_BIS = "552081317";
 const ICS = "FR72ZZZ123456";
 /** IBAN d'exemple de la documentation EPC — clé mod-97 valide. */
 const IBAN = "FR1420041010050500013M02606";
@@ -286,9 +288,86 @@ describe("Le cycle de prélèvement", () => {
   });
 });
 
+describe("Entité juridique — on n'archive pas la dernière", () => {
+  /**
+   * Rien ne se corromprait : les documents déjà émis citent l'entité par son
+   * identifiant, et archiver n'efface rien. Ce qui se casse est plus sournois —
+   * plus rien ne peut être émis ni prélevé, et l'écran qui le dirait est celui
+   * qu'on vient de vider. C'est un accident à un clic dont le symptôme
+   * n'apparaît qu'au prochain cycle.
+   */
+  it("REFUSE en 409, et nomme le geste de sortie", async () => {
+    const id = await declare();
+
+    const response = await staff()
+      .put(`/admin/accounting/legal-entities/${id}/archived`)
+      .send({ archived: true })
+      .expect(409);
+    expect(JSON.stringify(response.body)).toContain("Déclarez d'abord");
+
+    // Et rien n'a bougé : un refus qui aurait déjà écrit serait pire qu'aucun.
+    const after = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    expect(jsonBody<LegalEntityView>(after).archivedAt).toBeNull();
+  });
+
+  it("l'autorise dès qu'une seconde entité existe", async () => {
+    const id = await declare();
+    await declare(SIREN_BIS);
+
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/archived`)
+      .send({ archived: true })
+      .expect(204);
+  });
+
+  /**
+   * La vue porte le fait, pour que l'écran désactive le bouton. Un bouton dont
+   * la seule issue est un 409 est une affordance qui ment — la règle déjà
+   * appliquée au champ ICS refermé.
+   */
+  it("dit dans la vue qu'elle est la dernière, et cesse de le dire ensuite", async () => {
+    const id = await declare();
+
+    const seule = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    expect(jsonBody<LegalEntityView>(seule).isLastActive).toBe(true);
+
+    await declare(SIREN_BIS);
+    const accompagnee = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+    expect(jsonBody<LegalEntityView>(accompagnee).isLastActive).toBe(false);
+
+    // La LISTE dit la même chose que la fiche : deux définitions de « la
+    // dernière » divergeraient, et c'est celle que l'utilisateur lit qui
+    // dériverait.
+    const liste = await staff().get("/admin/accounting/legal-entities").expect(200);
+    expect(jsonBody<readonly LegalEntityView[]>(liste).every((e) => !e.isLastActive)).toBe(true);
+  });
+
+  /** Remettre en service ne peut qu'augmenter le nombre d'entités disponibles. */
+  it("ne bloque JAMAIS la remise en service", async () => {
+    const id = await declare();
+    const autre = await declare(SIREN_BIS);
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/archived`)
+      .send({ archived: true })
+      .expect(204);
+    await staff()
+      .put(`/admin/accounting/legal-entities/${autre}/archived`)
+      .send({ archived: true })
+      .expect(409);
+
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/archived`)
+      .send({ archived: false })
+      .expect(204);
+  });
+});
+
 describe("Entité juridique — archivage et corrections", () => {
   it("archiver n'efface rien, et retire la capacité d'encaisser", async () => {
     const id = await declare();
+    // Une remplaçante, sans quoi le serveur refuse : on n'archive pas la
+    // dernière entité en service.
+    await declare(SIREN_BIS);
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-identifier`)
       .send({ ics: ICS })

@@ -50,6 +50,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     archivedAt: null,
     canCollect: false,
     hasLogo: false,
+    isLastActive: false,
     missingToCollect: ["l'identifiant créancier (ICS)"],
     ...over,
   };

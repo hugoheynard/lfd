@@ -214,30 +214,82 @@
       </fold-page-section>
     </fold-card>
 
-    <fold-card>
-      <fold-page-section title="Mise en service">
-        @if (entity.archivedAt === null) {
-          <p class="ej-said">
-            Archiver n'efface rien&nbsp;: l'entité reste lisible pour les documents qui la citent,
-            elle cesse simplement d'émettre.
-          </p>
+    <!-- 🔴 La ZONE DE DANGER de cette fiche, et elle se voit AVANT le clic :
+         `fold-danger-zone` pose un cadre d'alerte et son propre titre, ce qui
+         distingue cette carte des quatre autres au premier coup d'œil. Le
+         `fold-card` a disparu ici à dessein — la zone EST le cadre, et
+         l'emboîter dans une carte poserait deux sols l'un sur l'autre.
+
+         Sans `actionLabel` : l'action de la zone ne sait pas être INACTIVE, et
+         c'est justement ce qu'il faut quand l'entité est la dernière en
+         service. La confirmation est donc projetée, avec le même
+         `fold-inline-confirm intent="danger"` que la zone ouvre elle-même. -->
+    @if (entity.archivedAt === null) {
+      <fold-danger-zone appearance="section" title="Archiver cette entité">
+        <p class="ej-said">
+          Archiver n'efface rien&nbsp;: l'entité reste lisible pour les documents qui la citent, et
+          les mandats déjà signés gardent leur valeur. Elle cesse simplement d'émettre&nbsp;— plus
+          aucune facture, plus aucun lot de prélèvement ne partira sous son nom.
+        </p>
+
+        @if (entity.isLastActive) {
+          <!-- Le serveur refuse en 409. Le bouton reste VISIBLE mais inactif :
+               le faire disparaître cacherait où vit le geste, et la sortie est
+               écrite juste à côté plutôt que découverte après un refus. -->
+          <fold-callout appearance="inset" variant="warning">
+            <strong>C'est la seule entité en service.</strong> L'archiver laisserait la comptabilité
+            sans émetteur&nbsp;: plus rien ne pourrait être facturé ni prélevé. Déclarez d'abord
+            celle qui la remplace&nbsp;; l'archivage s'ouvrira ensuite.
+          </fold-callout>
+        }
+
+        <div class="ej-row">
           <fold-inline-confirm
+            intent="danger"
+            confirmIcon="archive"
+            message="Archiver cette entité ? Elle cessera d'émettre immédiatement."
             [labels]="{ confirm: 'Archiver' }"
             (confirmed)="setArchived(entity, true)"
           >
-            <button foldButton emphasis="outline" intent="neutral" [disabled]="busy()">
-              Archiver
+            <button
+              foldButton
+              intent="danger"
+              icon="archive"
+              [disabled]="entity.isLastActive || busy()"
+            >
+              Archiver l'entité
             </button>
           </fold-inline-confirm>
-        } @else {
+
+          @if (entity.isLastActive) {
+            <button foldButton emphasis="outline" [loading]="busy()" (click)="declare()">
+              Déclarer une entité
+            </button>
+          }
+        </div>
+      </fold-danger-zone>
+    } @else {
+      <fold-card>
+        <fold-page-section title="Mise en service">
+          <p class="ej-said">
+            La remettre en service ne fait qu'AJOUTER un émetteur&nbsp;: rien de ce qui a été émis
+            ne change, et son ICS comme ses mandats sont ceux qu'elle avait.
+          </p>
+          <!-- `intent="primary"` EXPLICITE, parce que le défaut de
+               `fold-inline-confirm` est `danger` : sans cette ligne, la
+               confirmation sortait rouge pour un geste qui ne fait qu'ajouter un
+               émetteur. Un rouge posé sur ce qui ne détruit rien use le rouge —
+               et c'est celui de l'archivage, deux cartes plus haut, qui perd de
+               sa force (vérifié le 2026-09-10 dans `fold-ng.d.ts`). -->
           <fold-inline-confirm
+            intent="primary"
             [labels]="{ confirm: 'Remettre en service' }"
             (confirmed)="setArchived(entity, false)"
           >
             <button foldButton emphasis="outline" [disabled]="busy()">Remettre en service</button>
           </fold-inline-confirm>
-        }
-      </fold-page-section>
-    </fold-card>
+        </fold-page-section>
+      </fold-card>
+    }
   }
 </fold-page-layout>

@@ -102,6 +102,28 @@ export class EntityCannotCollectError extends BusinessError {
   }
 }
 
+/**
+ * On n'archive pas la dernière entité en service.
+ *
+ * Rien ne se corromprait : les documents déjà émis citent l'entité par son
+ * identifiant, et archiver n'efface rien. Ce qui se casse est plus sournois —
+ * **plus rien ne peut être émis ni prélevé**, et l'écran qui le dirait est
+ * justement celui qu'on vient de vider. Le refus existe pour ça : c'est un
+ * accident à un clic, dont le symptôme n'apparaît qu'au prochain cycle.
+ *
+ * Le message nomme le geste de sortie, parce qu'il est lu par quelqu'un qui n'a
+ * pas le code sous les yeux : déclarer la remplaçante d'abord.
+ */
+export class LastActiveLegalEntityError extends BusinessError {
+  constructor(readonly legalEntityId: string) {
+    super(
+      "accounting.legal_entity.last_active",
+      "Cette entité est la seule en service : l'archiver empêcherait toute " +
+        "émission et tout prélèvement. Déclarez d'abord celle qui la remplace.",
+    );
+  }
+}
+
 export class LegalEntityNotFoundError extends ResourceNotFoundError {
   constructor(readonly id: string) {
     super("accounting.legal_entity.not_found", `Aucune entité juridique « ${id} ».`);
