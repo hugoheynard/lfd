@@ -117,10 +117,33 @@ describe("renderSepaMandatePdf", () => {
 
   it("laisse le bloc du débiteur et la signature vides", async () => {
     const text = drawnText(await renderSepaMandatePdf(CREDITOR));
-    // Les libellés sont là — donc les zones sont dessinées — mais rien n'y est
+    // Les légendes sont là — donc les zones sont dessinées — mais rien n'y est
     // écrit : la fiche est un exemplaire vierge, pas un mandat prérempli.
-    expect(text).toContain("Nom / pr");
+    expect(text).toContain("Nom / Pr\u00e9noms du d\u00e9biteur");
     expect(text).toContain("Veuillez signer ici");
+  });
+
+  /**
+   * Le formulaire de la norme, pas une mise en page arrangée. Un mandat
+   * redessiné « en plus propre » est un mandat qu'on relit deux fois : ces
+   * légendes sont ce qu'un chargé de clientèle et un banquier citent.
+   */
+  it("porte les zones indicatives 14 à 20, dessinées et vides", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    expect(text).toContain("Informations relatives au contrat");
+    expect(text).toContain("Code identifiant du tiers d\u00e9biteur");
+    expect(text).toContain("Description du contrat");
+  });
+
+  /**
+   * L'adresse de retour est le seul endroit où notre adresse sert à autre chose
+   * qu'à nous identifier : elle dit au client où poster la fiche signée.
+   */
+  it("prérempli l'adresse de retour, et rappelle la borne des 35 caractères", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR));
+    expect(text).toContain("A retourner \u00e0 :");
+    expect(text).toContain("Zone r\u00e9serv\u00e9e \u00e0 l'usage exclusif du cr\u00e9ancier");
+    expect(text).toContain("longueur maximum de 35 caract\u00e8res");
   });
 
   it("porte la mention EXEMPLE, pour qu'une signature apposée dessus ne trompe personne", async () => {
