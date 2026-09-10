@@ -1,4 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { LegalEntityView } from '@lfd/contracts';
@@ -9,13 +10,14 @@ import { EntitesJuridiquesPage } from './entites-juridiques-page';
 /**
  * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
  *
- * - **le champ ICS disparaît une fois l'ICS posé.** C'est la règle des
- *   affordances qui mentent : le serveur refuserait en 409, et laisser un champ
- *   ouvert promet un geste impossible ;
+ * - **chaque colonne rend quelque chose.** `fold-data-table` n'a aucun rendu par
+ *   défaut : une colonne sans `foldCell` rend une cellule VIDE, sans que rien ne
+ *   rougisse. Les cas lisent donc le texte réellement produit ;
  * - **l'écran ne recalcule pas la complétude.** Il affiche ce que le serveur a
- *   rédigé — un test qui passerait `canCollect: true` avec une liste de manques
- *   doit montrer « peut encaisser », parce que c'est l'agrégat qui décide ;
- * - 🔴 **aucun IBAN ne s'affiche.** Le champ est vide même compte enregistré.
+ *   rédigé — `canCollect: true` doit montrer « Peut encaisser », parce que c'est
+ *   l'agrégat qui décide ;
+ * - **le bouton de déclaration ne se trouve qu'à UN endroit à la fois** — dans
+ *   l'empty state quand il n'y a rien, dans les actions de page sinon.
  *
  * On passe par le DOM : les membres sont `protected`, et c'est le gabarit qui
  * câble les branches — ce que le typecheck ne lit pas.
@@ -56,7 +58,7 @@ class FakeLegalEntities {
 async function render(api: FakeLegalEntities): Promise<ComponentFixture<EntitesJuridiquesPage>> {
   TestBed.configureTestingModule({
     imports: [EntitesJuridiquesPage],
-    providers: [{ provide: LegalEntitiesService, useValue: api }],
+    providers: [{ provide: LegalEntitiesService, useValue: api }, provideRouter([])],
   });
   const fixture: ComponentFixture<EntitesJuridiquesPage> =
     TestBed.createComponent(EntitesJuridiquesPage);
@@ -69,40 +71,25 @@ const text = (fixture: ComponentFixture<EntitesJuridiquesPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 describe('EntitesJuridiquesPage', () => {
-  it('dit ce qui manque, avec les mots du serveur', async () => {
+  it('rend chaque colonne, y compris les plus bêtes', async () => {
+    const api = new FakeLegalEntities();
+    api.rows = [entity({ ics: 'FR72ZZZ123456', creditorAccountLast4: '2606' })];
+
+    const fixture = await render(api);
+    const body = text(fixture);
+
+    expect(body).toContain('La Folie Douce');
+    expect(body).toContain('552100554');
+    expect(body).toContain('FR72ZZZ123456');
+    expect(body).toContain('•••• 2606');
+  });
+
+  it('dit ce qui manque avec les mots du serveur, et prévient en tête', async () => {
     const fixture = await render(new FakeLegalEntities());
 
     expect(text(fixture)).toContain('Incomplète');
-    expect(text(fixture)).toContain("l'identifiant créancier (ICS)");
     // L'avertissement de tête : rien ne peut être prélevé aujourd'hui.
     expect(text(fixture)).toContain("Aucun prélèvement n'est possible");
-  });
-
-  it("n'offre PLUS de champ ICS une fois l'ICS posé", async () => {
-    const api = new FakeLegalEntities();
-    api.rows = [entity({ ics: 'FR72ZZZ123456' })];
-
-    const fixture = await render(api);
-    const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll('fold-input');
-
-    expect(text(fixture)).toContain('FR72ZZZ123456');
-    // Le seul champ texte restant est celui de l'IBAN : un champ ICS ouvert
-    // promettrait un geste que le serveur refuse en 409.
-    expect(inputs).toHaveLength(1);
-    expect(text(fixture)).toContain('Il ne se remplace pas');
-  });
-
-  it('ne montre jamais un IBAN, seulement ses quatre derniers caractères', async () => {
-    const api = new FakeLegalEntities();
-    api.rows = [entity({ creditorAccountLast4: '2606' })];
-
-    const fixture = await render(api);
-
-    expect(text(fixture)).toContain('•••• 2606');
-    // Le champ reste vide : l'IBAN ne revient d'aucune route, et le préremplir
-    // demanderait de le faire redescendre.
-    const iban = (fixture.nativeElement as HTMLElement).querySelector('input[type="text"]');
-    expect((iban as HTMLInputElement | null)?.value ?? '').toBe('');
   });
 
   it('une entité capable ne déclenche pas l’avertissement de tête', async () => {
@@ -137,17 +124,37 @@ describe('EntitesJuridiquesPage', () => {
     const fixture = await render(api);
 
     expect(text(fixture)).toContain('Archivée');
-    expect(text(fixture)).toContain('Remettre en service');
     expect(text(fixture)).not.toContain('Peut encaisser');
   });
 
-  it('sans entité, explique pourquoi rien ne peut être facturé', async () => {
+  it('chaque ligne mène à sa fiche', async () => {
+    const fixture = await render(new FakeLegalEntities());
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a[href]');
+
+    expect(link?.getAttribute('href')).toContain('le1');
+  });
+
+  it("sans entité, explique pourquoi rien ne peut être facturé et n'offre qu'un geste", async () => {
     const api = new FakeLegalEntities();
     api.rows = [];
 
     const fixture = await render(api);
+    const host = fixture.nativeElement as HTMLElement;
 
     expect(text(fixture)).toContain('Aucune entité déclarée');
+    // 🔴 `subtitle`, pas `description` : un attribut inconnu ne lève rien et
+    // n'affiche rien. Seul le texte rendu l'atteste.
     expect(text(fixture)).toContain("a besoin d'un émetteur");
+    // Le bouton est DANS l'empty state, et nulle part ailleurs.
+    expect(host.querySelectorAll('button')).toHaveLength(1);
+    expect(host.querySelector('[pageActions]')).toBeNull();
+  });
+
+  it('avec des entités, le geste remonte dans les actions de page', async () => {
+    const fixture = await render(new FakeLegalEntities());
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('[pageActions]')?.textContent).toContain('Déclarer une entité');
+    expect(text(fixture)).not.toContain('Aucune entité déclarée');
   });
 });

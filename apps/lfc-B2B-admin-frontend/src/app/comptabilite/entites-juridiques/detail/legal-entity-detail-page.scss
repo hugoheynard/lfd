@@ -1,0 +1,44 @@
+.ej-state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  margin-block-end: var(--fold-space-md);
+}
+
+/* La prose explicative des trois réglages : elle porte le POURQUOI, qui se lit
+   une fois puis s'ignore. Encre secondaire, donc, pour qu'elle ne dispute pas
+   la lecture aux valeurs. */
+.ej-said {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  margin: 0 0 var(--fold-space-md);
+}
+
+/* L'ICS posé : c'est une référence qu'on dicte et qu'on recopie, jamais une
+   phrase. Chasse fixe pour que deux caractères voisins ne se confondent pas. */
+.ej-ics {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-lg);
+  margin: 0 0 var(--fold-space-sm);
+}
+
+.ej-account {
+  font-family: var(--fold-font-mono);
+  margin: 0 0 var(--fold-space-md);
+}
+
+/* Un champ et son action sur une ligne : le champ prend la place, le bouton la
+   sienne. En dessous de 40rem, ils s'empilent — un IBAN à taper au pouce sur un
+   champ de six centimètres ne se relit pas. */
+.ej-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.ej-row fold-input,
+.ej-row fold-number-input {
+  flex: 1 1 18rem;
+}

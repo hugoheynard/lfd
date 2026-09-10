@@ -35,6 +35,31 @@ export class LegalEntitiesService {
     return firstValueFrom(this.http.get<readonly LegalEntityView[]>(this.base));
   }
 
+  /**
+   * Une entité, lue seule.
+   *
+   * L'écran de détail passe par ici plutôt que de filtrer `list()` : une fiche
+   * ouverte par son URL doit pouvoir répondre « cette entité n'existe pas »,
+   * ce qu'un filtre sur une liste ne distingue pas d'une liste vide.
+   */
+  async one(id: string): Promise<LegalEntityView> {
+    return firstValueFrom(this.http.get<LegalEntityView>(`${this.base}/${id}`));
+  }
+
+  /**
+   * La fiche de mandat SEPA préremplie de notre bloc créancier — un exemple,
+   * sans débiteur ni RUM.
+   *
+   * Le serveur répond **409** quand l'entité ne peut pas encaisser : l'appelant
+   * ne propose donc le geste que sur une entité complète, plutôt que d'offrir
+   * un bouton dont la seule issue serait un message d'erreur.
+   */
+  async sampleMandate(id: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.base}/${id}/mandat-sepa-exemple.pdf`, { responseType: 'blob' }),
+    );
+  }
+
   async declare(payload: DeclareLegalEntityPayload): Promise<string> {
     const created = await firstValueFrom(this.http.post<CreatedIdResponse>(this.base, payload));
     return created.id;

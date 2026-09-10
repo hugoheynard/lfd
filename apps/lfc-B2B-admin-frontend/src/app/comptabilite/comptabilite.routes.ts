@@ -38,6 +38,17 @@ export const comptabiliteRoutes: Routes = [
             (m) => m.EntitesJuridiquesPage,
           ),
       },
+      {
+        // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle
+        // n'a pas de garde propre pour la raison écrite en tête de fichier :
+        // elle parle de la même ressource que la liste dont elle vient.
+        path: 'entites-juridiques/:id',
+        title: 'Entité juridique — LFC B2B admin',
+        loadComponent: () =>
+          import('./entites-juridiques/detail/legal-entity-detail-page').then(
+            (m) => m.LegalEntityDetailPage,
+          ),
+      },
     ],
   },
 ];
