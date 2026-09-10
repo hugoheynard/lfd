@@ -125,6 +125,44 @@ export interface CatalogRevisionDiffView {
 }
 
 /**
+ * **Ce qui a bougé depuis la dernière ancre publiée, sans en poser une.**
+ *
+ * Le même corps qu'un diff entre deux ancres, parce que c'est le même geste :
+ * le côté « après » est simplement le catalogue tel qu'il est, construit en
+ * mémoire par la MÊME mécanique que la pose. Un écran ne peut donc pas annoncer
+ * un changement qu'une capture ignorerait, ni l'inverse.
+ *
+ * 🔴 Il a longtemps existé sous la forme de **trois nombres** — ajoutés,
+ * retirés, changés (`CatalogOverviewView.sinceLastRevision`). On savait qu'il y
+ * avait trois changements depuis `R-7WT4NA`, jamais lesquels : de quoi
+ * s'inquiéter, jamais de quoi écrire une intention. Le compteur reste, pour les
+ * écrans qui n'ont besoin que du chiffre.
+ */
+export interface CatalogPendingDiffView {
+  /**
+   * L'ancre de référence — la dernière **publiée**, pas la dernière posée.
+   *
+   * `null` quand rien n'est jamais parti : il n'y a alors rien à quoi se
+   * comparer, et les listes vides ne veulent PAS dire « rien n'a changé ». Un
+   * écran doit distinguer les deux.
+   */
+  readonly from: CatalogRevisionSummaryView | null;
+  /**
+   * L'instant de la lecture.
+   *
+   * Le côté « après » n'a pas de date de pose — il n'est pas figé. C'est cet
+   * instant qui borne l'intervalle d'attribution, et le dire permet à un écran
+   * de savoir de quand date ce qu'il montre.
+   */
+  readonly at: string;
+  readonly causes: readonly CatalogRevisionCauseView[];
+  readonly header: readonly FieldDiffView[];
+  readonly added: readonly string[];
+  readonly removed: readonly string[];
+  readonly changed: readonly CatalogRevisionItemDiffView[];
+}
+
+/**
  * Ce que la pose d'une ancre rend.
  *
  * `created: false` dit que le catalogue n'avait pas bougé : l'ancre rendue est

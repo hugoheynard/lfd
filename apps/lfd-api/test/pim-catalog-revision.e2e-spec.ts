@@ -874,3 +874,95 @@ describe("Le push pose et inscrit sa révision", () => {
     expect(await ctx.prisma.catalogRevision.count()).toBe(0);
   });
 });
+
+/**
+ * **Le diff VIVANT** — ce qui a bougé depuis la dernière ancre publiée, sans en
+ * poser une nouvelle.
+ *
+ * Ce que seul ce niveau prouve, et qui est tout l'intérêt de la lecture : que le
+ * détail vivant et le COMPTEUR de l'état du catalogue disent la même chose du
+ * même changement. Ils traversent le même `planDiff`, mais par deux chemins
+ * différents — l'un compte, l'autre charge les payloads et interroge le journal.
+ * Les faire diverger est exactement la panne qu'on veut rendre impossible, et
+ * elle ne se voit qu'en les comparant sur une vraie base.
+ */
+describe("Diff vivant — depuis la dernière ancre publiée", () => {
+  it("n'a AUCUNE référence tant que rien n'est parti", async () => {
+    await aProduct("Croissant");
+    // Une ancre POSÉE ne suffit pas : la référence est la dernière PUBLIÉE.
+    await take("un repère");
+
+    const view = jsonBody<{ from: unknown; changed: unknown[] }>(
+      await staff().get(`${REVISIONS}/since-last`).expect(200),
+    );
+
+    expect(view.from).toBeNull();
+    // 🔴 Et les listes vides ne veulent PAS dire « rien n'a changé » : elles
+    // disent qu'il n'y a rien à quoi se comparer. C'est `from` qui tranche.
+    expect(view.changed).toEqual([]);
+  });
+
+  it("montre le champ qui a bougé depuis la publication, avec son auteur", async () => {
+    const id = await aSoldProduct();
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await ctx.drain();
+
+    await staff()
+      .put(`${PRODUCTS}/${id}/identity`)
+      .send({ name: { fr: "Pain au chocolat" }, kind: "daily", categoryId: await aCategory() })
+      .expect(200);
+    await ctx.drain();
+
+    const view = jsonBody<{
+      from: { reference: string } | null;
+      changed: {
+        sku: string;
+        fields: { field: string; attributed: boolean; by: string | null }[];
+      }[];
+    }>(await staff().get(`${REVISIONS}/since-last`).expect(200));
+
+    expect(view.from).not.toBeNull();
+    expect(view.changed).toHaveLength(1);
+    const name = view.changed[0]?.fields.find((field) => field.field === "name");
+    expect(name?.attributed).toBe(true);
+    expect(name?.by).not.toBeNull();
+  });
+
+  /**
+   * 🔴 **Le détail et le compteur ne peuvent pas diverger.**
+   *
+   * L'état du catalogue rend trois nombres, le diff vivant rend les lignes. Ils
+   * répondent à la même question par deux chemins ; si l'un se met à voir un
+   * changement que l'autre ignore, l'écran qui affiche « 3 changements » puis
+   * n'en montre que deux devient impossible à croire — sur tout le reste aussi.
+   */
+  it("dit exactement ce que le compteur de l'état du catalogue annonce", async () => {
+    const id = await aSoldProduct();
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await ctx.drain();
+
+    const { variantId } = await aProduct("Chausson");
+    await staff()
+      .put(`${PRODUCTS}/${id}/identity`)
+      .send({ name: { fr: "Pain au chocolat" }, kind: "daily", categoryId: await aCategory() })
+      .expect(200);
+    await ctx.drain();
+
+    const overview = jsonBody<{
+      sinceLastRevision: { added: number; removed: number; changed: number } | null;
+    }>(await staff().get(`${REVISIONS}/overview`).expect(200));
+    const view = jsonBody<{
+      added: string[];
+      removed: string[];
+      changed: unknown[];
+    }>(await staff().get(`${REVISIONS}/since-last`).expect(200));
+
+    expect(typeof variantId).toBe("string");
+    expect(view.added).toHaveLength(overview.sinceLastRevision?.added ?? -1);
+    expect(view.removed).toHaveLength(overview.sinceLastRevision?.removed ?? -1);
+    expect(view.changed).toHaveLength(overview.sinceLastRevision?.changed ?? -1);
+    // Le cas ne vaut que s'il y a quelque chose à comparer : un produit entré,
+    // un produit renommé.
+    expect(view.added.length + view.changed.length).toBeGreaterThan(1);
+  });
+});

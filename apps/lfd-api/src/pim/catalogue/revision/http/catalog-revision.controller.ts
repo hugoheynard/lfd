@@ -8,10 +8,12 @@ import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import type {
   CatalogOverviewView,
   CatalogRevisionDiffView,
+  CatalogPendingDiffView,
   CatalogRevisionSummaryView,
 } from "@lfd/pim-contracts";
 
 import { DiffCatalogRevisionsQuery } from "../application/diff-catalog-revisions.js";
+import { DiffCatalogSinceLastQuery } from "../application/diff-catalog-since-last.js";
 import { GetCatalogOverviewQuery } from "../application/get-catalog-overview.js";
 import { ListCatalogRevisionsQuery } from "../application/list-catalog-revisions.js";
 import {
@@ -54,6 +56,25 @@ export class CatalogRevisionController {
   overview(): Promise<CatalogOverviewView> {
     return this.queries.execute<GetCatalogOverviewQuery, CatalogOverviewView>(
       new GetCatalogOverviewQuery(),
+    );
+  }
+
+  /**
+   * **Ce qui a bougé depuis la dernière ancre publiée**, en détail.
+   *
+   * Une lecture À PART d'`overview`, et non un champ de plus : la synthèse ne
+   * lit aucun payload et s'affiche à chaque ouverture d'écran ; le détail
+   * charge un payload par article modifié et interroge le journal produit par
+   * produit. Les fondre ferait payer ce prix à tous les affichages de
+   * l'en-tête.
+   *
+   * Le chemin est FIXE et vient avant `:from/diff/:to` : sans quoi Nest lirait
+   * « since-last » comme une référence d'ancre.
+   */
+  @Get("since-last")
+  sinceLast(): Promise<CatalogPendingDiffView> {
+    return this.queries.execute<DiffCatalogSinceLastQuery, CatalogPendingDiffView>(
+      new DiffCatalogSinceLastQuery(),
     );
   }
 

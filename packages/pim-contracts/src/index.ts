@@ -193,6 +193,7 @@ export type {
   CatalogRevisionSummaryView,
   CatalogRevisionItemDiffView,
   CatalogRevisionDiffView,
+  CatalogPendingDiffView,
   CatalogRevisionTakenView,
   AttributedFieldDiffView,
   CatalogRevisionCauseView,

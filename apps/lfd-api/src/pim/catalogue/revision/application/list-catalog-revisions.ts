@@ -2,7 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { CatalogRevisionSummaryView } from "@lfd/pim-contracts";
 
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
-import { summaryOf } from "./diff-catalog-revisions.js";
+import { summaryOf } from "./revision-diff-support.js";
 
 /** Au-delà, un écran pagine — il ne déroule pas trois ans d'ancres. */
 const MAX = 50;
