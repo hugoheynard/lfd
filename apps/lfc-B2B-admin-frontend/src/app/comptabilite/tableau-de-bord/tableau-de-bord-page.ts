@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CatalogSummaryView, CustomerPortfolioView, LegalEntityView } from '@lfd/contracts';
+import type {
+  BillingCycleView,
+  CatalogSummaryView,
+  CustomerPortfolioView,
+  LegalEntityView,
+} from '@lfd/contracts';
 import { NEW_CUSTOMER_WINDOW_DAYS } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -10,12 +15,14 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldSurfaceDirective,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { saveBlob } from '../../shared/download/save-blob';
 import { ComptabiliteDashboardService } from '../comptabilite-dashboard.service';
+import { CycleBar } from '../cycle-bar/cycle-bar';
 import { LegalEntitiesService } from '../legal-entities.service';
 
 /**
@@ -42,17 +49,28 @@ import { LegalEntitiesService } from '../legal-entities.service';
  * donc à ce qu'elle sait — « l'émetteur est prêt » ou « il lui manque ceci » —
  * plutôt que d'attendre passivement sa tranche.
  *
- * ## Trois lectures, jamais une par ligne
+ * ## La bande de tête, sur le chrome
  *
- * Portefeuille, catalogue, entités : trois requêtes au chargement, lancées
- * ensemble. Aucune ne dépend d'une autre, et aucune ne se répète par élément
- * affiché — c'est le facteur qu'un tableau de bord attrape le plus facilement.
+ * Titre, chiffres et cycle de prélèvement vivent dans une `fold-page-section`
+ * `bleed` posée sur `foldSurface="chrome"` — la même partition que la
+ * tarification et le catalogue : le **verdict** sur le fond sombre, l'**établi**
+ * sur le papier. Aucun fond n'est peint à la main : c'est le thème `navi` qui
+ * donne au chrome sa polarité, et la section qui annule la gouttière.
+ *
+ * ## Quatre lectures, jamais une par ligne
+ *
+ * Portefeuille, catalogue, entités, cycle : quatre requêtes au chargement,
+ * lancées ensemble. Aucune ne dépend d'une autre, et aucune ne se répète par
+ * élément affiché — c'est le facteur qu'un tableau de bord attrape le plus
+ * facilement. Le cycle est le seul dont l'échec est **partiel** : il coûte sa
+ * bande, pas la page.
  */
 @Component({
   selector: 'app-tableau-de-bord-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
+    CycleBar,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -60,6 +78,7 @@ import { LegalEntitiesService } from '../legal-entities.service';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
+    FoldSurfaceDirective,
   ],
   templateUrl: './tableau-de-bord-page.html',
   styleUrl: './tableau-de-bord-page.scss',
@@ -71,9 +90,16 @@ export class TableauDeBordPage {
   protected readonly customers = signal<CustomerPortfolioView | null>(null);
   protected readonly catalog = signal<CatalogSummaryView | null>(null);
   protected readonly entities = signal<readonly LegalEntityView[]>([]);
+  protected readonly cycle = signal<BillingCycleView | null>(null);
   protected readonly loading = signal(true);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
+  /**
+   * L'échec du cycle a son propre message, et il est **partiel** : la barre
+   * disparaît, le reste du tableau de bord tient. Le fondre dans `error` aurait
+   * fait passer une bande manquante pour un tableau de bord illisible.
+   */
+  protected readonly cycleError = signal<string | null>(null);
 
   protected readonly windowDays = NEW_CUSTOMER_WINDOW_DAYS;
 
@@ -137,6 +163,19 @@ export class TableauDeBordPage {
   protected async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
+    this.cycleError.set(null);
+    // Lancé avec les trois autres, mais **hors** du `Promise.all` : le cycle
+    // n'est pas une condition du tableau de bord, et une 500 sur lui ne doit pas
+    // effacer le portefeuille et le catalogue.
+    const cycle = this.api.billingCycle().then(
+      (view) => {
+        this.cycle.set(view);
+      },
+      (caught: unknown) => {
+        this.cycle.set(null);
+        this.cycleError.set(httpErrorMessage(caught, 'Cycle de prélèvement illisible.'));
+      },
+    );
     try {
       // Ensemble : aucune ne dépend d'une autre, et les enchaîner tripleraient
       // l'attente pour rien.
@@ -151,6 +190,9 @@ export class TableauDeBordPage {
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Tableau de bord illisible.'));
     } finally {
+      // Attendu ici plutôt qu'ignoré : la page ne quitte son état de chargement
+      // qu'une fois la bande fixée, sinon elle apparaît puis se complète.
+      await cycle;
       this.loading.set(false);
     }
   }

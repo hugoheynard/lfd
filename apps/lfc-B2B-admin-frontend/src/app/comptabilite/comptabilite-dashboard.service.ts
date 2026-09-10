@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CatalogSummaryView, CustomerPortfolioView } from '@lfd/contracts';
+import type { BillingCycleView, CatalogSummaryView, CustomerPortfolioView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -35,6 +35,24 @@ export class ComptabiliteDashboardService {
   async catalog(): Promise<CatalogSummaryView> {
     return firstValueFrom(
       this.http.get<CatalogSummaryView>(`${B2B_API_BASE}/admin/catalog/summary`),
+    );
+  }
+
+  /**
+   * Le cycle de prélèvement en cours — **deux instants**, et rien d'autre.
+   *
+   * Ni progression, ni jours restants, ni montant : le premier couple est un
+   * calcul de présentation que l'écran refait avec son horloge (`CycleBar`), et
+   * le montant n'existe pas au niveau du cycle — il se reconstitue par tentative
+   * de prélèvement.
+   *
+   * Une troisième lecture pour le tableau de bord, et elle ne rejoint pas les
+   * deux autres dans un `Promise.all` : une panne du cycle ne doit pas emporter
+   * le portefeuille et le catalogue, qui n'en dépendent pas.
+   */
+  async billingCycle(): Promise<BillingCycleView> {
+    return firstValueFrom(
+      this.http.get<BillingCycleView>(`${B2B_API_BASE}/admin/accounting/billing-cycle/current`),
     );
   }
 

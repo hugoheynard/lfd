@@ -1,0 +1,52 @@
+<!--
+  La barre du cycle. Deux bornes, un curseur, et ce qu'il reste — aucun montant :
+  un cycle n'a pas un total, il a un montant par tentative de prélèvement.
+-->
+<section class="cycle" aria-label="Cycle de prélèvement en cours">
+  <div class="cycle-head">
+    <span class="cycle-eyebrow">Cycle de prélèvement</span>
+    <span class="cycle-left">{{ remainingLabel() }}</span>
+  </div>
+
+  <!--
+    `role="img"` et non `progressbar` : rien ne progresse ici au sens d'une tâche
+    qu'on attend, c'est une fenêtre de temps qu'on situe. Le résumé porte les
+    deux bornes ET le reste, parce qu'un lecteur d'écran ne voit pas le curseur.
+  -->
+  <div class="cycle-track" role="img" [attr.aria-label]="summary()">
+    <div class="cycle-weeks" aria-hidden="true">
+      @for (week of weeks(); track week.at) {
+        <span class="cycle-week" [style.left.%]="week.percent">
+          <span class="cycle-week-day">{{ week.label }}</span>
+        </span>
+      }
+    </div>
+
+    <span class="cycle-fill" [style.width.%]="progressPercent()" aria-hidden="true"></span>
+
+    <span class="cycle-cursor" [style.left.%]="progressPercent()" aria-hidden="true">
+      <span class="cycle-cursor-head"></span>
+    </span>
+  </div>
+
+  <!--
+    🔴 « clôture le … à 00h00 », jamais « jusqu'au … inclus » : `closesAt` est
+    EXCLUSIF, et la nuance décide de quel mois relève une commande de fin de
+    soirée.
+  -->
+  <div class="cycle-bounds">
+    <span class="cycle-bound">
+      <strong>{{ startLabel() }}</strong>
+      <span class="cycle-bound-note">ouverture, 00h00</span>
+    </span>
+    <span class="cycle-bound is-end">
+      <strong>{{ closeLabel() }}</strong>
+      <span class="cycle-bound-note">clôture à 00h00, exclue</span>
+    </span>
+  </div>
+
+  <p class="cycle-note">
+    Une commande passée à l'instant de clôture relève du <strong>cycle suivant</strong>. Les deux
+    bornes sont des minuits de Paris.
+  </p>
+</section>

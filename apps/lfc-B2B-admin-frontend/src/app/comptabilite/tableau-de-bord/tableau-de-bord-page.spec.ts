@@ -2,7 +2,12 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
-import type { CatalogSummaryView, CustomerPortfolioView, LegalEntityView } from '@lfd/contracts';
+import type {
+  BillingCycleView,
+  CatalogSummaryView,
+  CustomerPortfolioView,
+  LegalEntityView,
+} from '@lfd/contracts';
 
 import { ComptabiliteDashboardService } from '../comptabilite-dashboard.service';
 import { LegalEntitiesService } from '../legal-entities.service';
@@ -50,10 +55,25 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
   };
 }
 
+/**
+ * Un cycle d'été : minuit à Paris s'écrit `T22:00:00Z`. Ces instants sont le
+ * sujet du test et ne sont comparés qu'entre eux — jamais à l'horloge.
+ */
+function cycle(): BillingCycleView {
+  return { startsAt: '2026-08-31T22:00:00.000Z', closesAt: '2026-09-30T22:00:00.000Z' };
+}
+
 class FakeDashboard {
   customersValue = portfolio();
   catalogValue = catalog();
+  cycleValue: BillingCycleView | null = cycle();
   readonly downloaded: string[] = [];
+
+  billingCycle(): Promise<BillingCycleView> {
+    return this.cycleValue === null
+      ? Promise.reject(new Error('cycle indisponible'))
+      : Promise.resolve(this.cycleValue);
+  }
 
   customers(): Promise<CustomerPortfolioView> {
     return Promise.resolve(this.customersValue);
@@ -110,6 +130,27 @@ describe('TableauDeBordPage', () => {
     expect(text(fixture)).not.toMatch(/\d+\s*factures?\b/u);
   });
 
+  /**
+   * 🔴 **Régression : la bande de tête a été sombre sans que les encres le
+   * sachent.** `foldSurface="chrome"` était écrit dans le gabarit, mais
+   * `FoldSurfaceDirective` manquait aux `imports` du composant — l'attribut
+   * restait donc du HTML inerte qu'Angular ignore. Le fond, peint à la main en
+   * SCSS, devenait sombre ; la polarité du texte ne basculait jamais. Le titre
+   * tombait à **1,18 de contraste** là où il en faut 3.
+   *
+   * Rien ne pouvait le dire : le typecheck ne lit pas les gabarits, l'AOT
+   * accepte un attribut inconnu sur un élément connu (c'est du HTML valide), et
+   * `lint:fold-tokens` passait puisque le token employé était le bon. Seul
+   * l'écran le disait — d'où ce test, qui regarde ce que la directive STAMPE
+   * plutôt que ce que le gabarit déclare (constaté le 2026-09-10).
+   */
+  it('déclare la bande de tête comme surface de chrome, encres comprises', async () => {
+    const { fixture } = await render();
+
+    const masthead = (fixture.nativeElement as HTMLElement).querySelector('.masthead');
+    expect(masthead?.getAttribute('data-surface')).toBe('chrome');
+  });
+
   it('porte les quatre chiffres du bandeau', async () => {
     const { fixture } = await render();
     const body = text(fixture);
@@ -164,6 +205,30 @@ describe('TableauDeBordPage', () => {
     expect(text(fixture)).toContain('Émetteur prêt');
     expect(text(fixture)).toContain('FR72ZZZ123456');
     expect(text(fixture)).not.toContain('Aucun émetteur');
+  });
+
+  it('porte la barre du cycle, bornes rendues en heure locale', async () => {
+    const { fixture } = await render();
+    const body = text(fixture);
+
+    expect(body).toContain('Cycle de prélèvement');
+    // Les bornes du cycle d'été : minuit à Paris, jamais les composantes UTC.
+    expect(body).toContain('1 septembre 2026');
+    expect(body).toContain('1 octobre 2026');
+    expect(body).not.toContain('30 septembre 2026');
+  });
+
+  it('🔴 un cycle illisible coûte sa bande, pas le tableau de bord', async () => {
+    const api = new FakeDashboard();
+    api.cycleValue = null;
+
+    const { fixture } = await render(api);
+    const body = text(fixture);
+
+    expect(body).toContain('Cycle de prélèvement illisible.');
+    // Le reste tient : c'est tout l'objet d'un échec PARTIEL.
+    expect(body).toContain('Clients actifs');
+    expect(body).toContain('Comptes clients');
   });
 
   it('télécharge les deux CSV depuis leurs boutons', async () => {

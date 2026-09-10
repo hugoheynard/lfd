@@ -1,5 +1,76 @@
-/* Le bandeau chiffré. Recopié du gabarit de la publication B2B — mêmes paires
-   terme/valeur, même intention : les nombres d'abord, le détail après. */
+/* ── LA BANDE DE TÊTE ───────────────────────────────────────────────────────
+   Reprise de la tarification et du catalogue, à l'identique : le verdict sur le
+   chrome, l'établi sur le papier. Aucune couleur n'est écrite ici —
+   `foldSurface="chrome"` repointe la polarité entière du sous-arbre, et le fond
+   pris est celui que le chrome déclare pour ses rails.
+
+   Pas de `position: sticky`, contrairement à la tarification : cet écran ne
+   défile pas sous une grille qu'on lit ligne à ligne, et une bande collante y
+   volerait un tiers de la hauteur pour rien. */
+.masthead {
+  // `stack` fait espacer les blocs par la section elle-même ; un `gap` posé ici
+  // viserait l'hôte, dont le corps est un `display: block`.
+  --fold-page-section-gap: var(--fold-space-md);
+
+  // `bleed` avale le padding HAUT du layout — c'est ce qui colle la bande au
+  // chrome de l'app. Il avale du même coup l'espace SOUS elle : sans cette
+  // marge, la première carte viendrait toucher la bande et les deux supports se
+  // liraient comme un seul.
+  margin-bottom: var(--fold-page-gap);
+  padding: var(--fold-space-lg) var(--fold-page-gutter) var(--fold-space-xl);
+
+  // 🔴 **Deux gestes, et il en faut DEUX.** `foldSurface="chrome"` bascule la
+  // POLARITÉ du sous-arbre — dans la bande, `--fold-color-text` passe de l'encre
+  // sombre à `#f2f5fb`. Mais fold ne peint pas le fond pour autant : c'est à
+  // l'élément qui possède la surface de le poser.
+  //
+  // ⚠️ Une première version n'avait que la moitié : le fond était peint ici, et
+  // `FoldSurfaceDirective` manquait aux `imports` du composant. L'attribut
+  // `foldSurface` restait alors du HTML inerte qu'Angular ignore — fond sombre,
+  // encres claires jamais activées, titre à **1,18 de contraste** là où il en
+  // faut 3. Ni le typecheck, ni l'AOT, ni `lint:fold-tokens` (le token était
+  // bon !) ne pouvaient le dire : un attribut inconnu sur un élément connu est
+  // du HTML valide. Seul l'écran le disait (vérifié le 2026-09-10).
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+/* Le titre à gauche, les sorties à droite : une sortie n'est pas une action sur
+   le tableau de bord, donc elle n'a rien à faire sur le chemin de l'œil qui
+   descend du titre vers les chiffres. */
+.masthead-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md) var(--fold-space-lg);
+}
+
+.masthead-title {
+  margin: 0;
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-tight);
+  letter-spacing: var(--fold-tracking-tight);
+}
+
+.masthead-exits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.masthead-lead {
+  max-width: 62ch;
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--fold-leading-relaxed);
+  color: var(--fold-color-text-secondary);
+}
+
+/* ── LE BANDEAU CHIFFRÉ ─────────────────────────────────────────────────────
+   Il vit sur le chrome : ses fonds sont ceux que la polarité sombre déclare,
+   sans qu'une seule teinte soit écrite ici. */
 .tb-figures {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -12,19 +83,25 @@
   flex-direction: column;
   gap: var(--fold-space-xs);
   padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-sunken);
+  background: var(--fold-color-surface-subtle);
 }
 
 .tb-figures dt {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
 }
 
 .tb-figures dd {
   margin: 0;
   font-size: var(--fold-text-2xl);
   font-weight: var(--fold-weight-semibold);
+  line-height: var(--fold-leading-none);
   font-variant-numeric: tabular-nums;
 }
 
@@ -37,6 +114,22 @@
 /* Le seul chiffre dont une valeur non nulle est une mauvaise nouvelle. */
 .tb-figures .is-warning dd {
   color: var(--fold-color-warning-text);
+}
+
+/* ── LES QUATRE CARTES ──────────────────────────────────────────────────────
+   En grille : quatre questions indépendantes, et une colonne unique en faisait
+   une liste où la dernière se lisait comme la suite de la première. */
+.tb-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+  gap: var(--fold-page-gap);
+}
+
+/* Les cartes d'une même rangée s'alignent en bas : deux hauteurs différentes
+   pour deux fonctions de même rang se lisent comme une hiérarchie qui n'existe
+   pas. Aucune ombre au survol — ces cartes ne se cliquent pas. */
+.tb-card {
+  height: 100%;
 }
 
 .tb-line {
