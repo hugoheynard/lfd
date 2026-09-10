@@ -104,78 +104,113 @@
 
   <fold-card>
     <fold-page-section title="Historique" separator>
-      @if (store.revisions().length === 0) {
-        <p class="rp-said">Aucune révision posée.</p>
-      } @else {
-        <ul class="rp-list">
-          @for (revision of store.revisions(); track revision.id) {
-            <li class="rp-row">
-              <span class="rp-version">{{ revision.reference }}</span>
-              @if (revision.label; as label) {
-                <span class="rp-label">{{ label }}</span>
-              } @else if (naming() === revision.reference) {
-                <!-- Nommer sur place : une ancre muette se répare là où on la
-                     lit, pas dans un écran de plus. -->
-                <span class="rp-naming">
-                  <fold-input
-                    label="Ce que cette révision changeait"
-                    hideLabel
-                    size="sm"
-                    placeholder="hausse de la rentrée…"
-                    [value]="draftLabel()"
-                    (valueChange)="draftLabel.set($event)"
-                  />
-                  <button
-                    foldButton
-                    size="sm"
-                    [disabled]="draftLabel().trim() === '' || store.busy()"
-                    (click)="confirmName(revision.reference)"
-                  >
-                    Nommer
-                  </button>
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="outline"
-                    intent="neutral"
-                    (click)="naming.set(null)"
-                  >
-                    Annuler
-                  </button>
-                </span>
-              } @else {
-                <!-- 🔴 « sans nom » n'est PAS un blanc : le push a longtemps posé
-                     des ancres anonymes, et le dire est la seule façon de savoir
-                     lesquelles restent à réparer. Rien ne leur invente un nom —
-                     une intention fabriquée ment mieux qu'une absence. -->
-                <span class="rp-label">
-                  <span class="rp-unnamed">sans nom</span>
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="outline"
-                    intent="neutral"
-                    [attr.aria-label]="'Nommer la révision ' + revision.reference"
-                    (click)="startNaming(revision.reference)"
-                  >
-                    Nommer
-                  </button>
-                </span>
+      <!--
+        **Une table, pas une liste.** Six colonnes qui se comparent d'une ligne
+        à l'autre : la référence qu'on cite, le nom qui dit l'intention, la
+        taille de l'ancre, ce qui la sépare de la précédente, quand, et par qui.
+
+        🔴 « Modifications » est la colonne qui manquait. « 97 articles » dit la
+        TAILLE d'une ancre, jamais son intérêt : deux ancres consécutives de 97
+        articles peuvent différer d'une ligne ou de quarante, et rien ne le
+        disait. C'est pourtant la première question devant un historique —
+        laquelle a bougé.
+      -->
+      <fold-data-table
+        caption="Les révisions du catalogue, de la plus récente à la plus ancienne"
+        hover
+        stickyFirst
+        density="compact"
+        mobileLayout="auto-cards"
+        [columns]="columns"
+        [rows]="store.revisions()"
+        [rowKey]="rowKey"
+        [empty]="empty"
+      >
+        <ng-template foldCell="reference" let-row>
+          <span class="rp-version">{{ row.reference }}</span>
+        </ng-template>
+
+        <!--
+          Le nom, et le crayon qui l'ouvre — sur les ancres MUETTES seulement.
+          Une ancre nommée ne se renomme pas : le nom dit avec quelle intention
+          un catalogue est parti chez des clients. Offrir un crayon qui rendrait
+          409 serait une affordance qui ment.
+        -->
+        <ng-template foldCell="label" let-row>
+          @if (naming() === row.reference) {
+            <span class="rp-naming">
+              <fold-input
+                label="Ce que cette révision changeait"
+                hideLabel
+                size="sm"
+                placeholder="hausse de la rentrée…"
+                [value]="draftLabel()"
+                (valueChange)="draftLabel.set($event)"
+              />
+              <button
+                foldButton
+                size="sm"
+                [disabled]="draftLabel().trim() === '' || store.busy()"
+                (click)="confirmName(row.reference)"
+              >
+                Nommer
+              </button>
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                (click)="naming.set(null)"
+              >
+                Annuler
+              </button>
+            </span>
+          } @else if (row.label) {
+            <span class="rp-named">
+              <span class="rp-label">{{ row.label }}</span>
+              @if (row.note) {
+                <!-- La note se lit quand on ouvre, et cet écran EST l'endroit
+                     où l'on ouvre : elle prend sa ligne, sous le nom qu'elle
+                     détaille, en encre secondaire. -->
+                <span class="rp-note">{{ row.note }}</span>
               }
-              <span class="rp-meta">{{ revision.articles }} articles</span>
-              <span class="rp-meta">{{ when(revision.takenAt) }}</span>
-              <span class="rp-meta">{{ revision.takenBy }}</span>
-              @if (revision.note; as note) {
-                <!-- La note se lit quand on ouvre, pas dans la liste — mais
-                     l'écran des révisions EST l'endroit où l'on ouvre. Elle
-                     prend donc sa ligne, en retrait, sous le nom qu'elle
-                     détaille. -->
-                <p class="rp-note">{{ note }}</p>
-              }
-            </li>
+            </span>
+          } @else {
+            <!-- 🔴 « sans nom » n'est PAS un blanc : le push a longtemps posé
+                 des ancres anonymes, et le dire est la seule façon de savoir
+                 lesquelles restent à réparer. Rien ne leur invente un nom. -->
+            <span class="rp-unnamed-row">
+              <span class="rp-unnamed">sans nom</span>
+              <fold-button-icon
+                icon="edit"
+                size="sm"
+                [tooltip]="'Nommer la révision ' + row.reference"
+                (clicked)="startNaming(row.reference)"
+              />
+            </span>
           }
-        </ul>
-      }
+        </ng-template>
+
+        <ng-template foldCell="articles" let-row>{{ row.articles }}</ng-template>
+
+        <!-- `null` n'est pas zéro : la plus ancienne n'a rien avant elle, et un
+             « 0 » dirait « rien n'a changé » alors que tout était nouveau. -->
+        <ng-template foldCell="changes" let-row>
+          @if (row.changes === null) {
+            <span class="rp-meta">—</span>
+          } @else {
+            {{ row.changes }}
+          }
+        </ng-template>
+
+        <ng-template foldCell="takenAt" let-row>
+          <span class="rp-meta">{{ when(row.takenAt) }}</span>
+        </ng-template>
+
+        <ng-template foldCell="takenBy" let-row>
+          <span class="rp-meta">{{ row.takenBy }}</span>
+        </ng-template>
+      </fold-data-table>
     </fold-page-section>
   </fold-card>
 </fold-page-layout>

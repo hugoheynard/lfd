@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import type {
   CatalogPendingDiffView,
   CatalogRevisionDiffView,
-  CatalogRevisionSummaryView,
+  CatalogRevisionRowView,
   CatalogRevisionTakenView,
 } from '@lfd/pim-contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,7 +21,7 @@ import { RevisionsPage } from '../revisions-page/revisions-page';
  * L'API est doublée ; le store est le vrai. C'est lui qui porte la règle du
  * message, et le doubler ferait tester le doublon.
  */
-function revision(over: Partial<CatalogRevisionSummaryView> = {}): CatalogRevisionSummaryView {
+function revision(over: Partial<CatalogRevisionRowView> = {}): CatalogRevisionRowView {
   return {
     id: 'rev_2',
     reference: 'R-TEST2',
@@ -31,6 +31,7 @@ function revision(over: Partial<CatalogRevisionSummaryView> = {}): CatalogRevisi
     takenAt: '2026-08-31T09:00:00.000Z',
     takenBy: 'staff_hugo',
     articles: 12,
+    changes: 3,
     ...over,
   };
 }
@@ -56,7 +57,7 @@ const NO_PENDING: CatalogPendingDiffView = {
 };
 
 function setup(options: {
-  readonly list?: readonly CatalogRevisionSummaryView[];
+  readonly list?: readonly CatalogRevisionRowView[];
   readonly take?: CatalogRevisionTakenView;
   readonly diff?: CatalogRevisionDiffView;
   readonly pending?: CatalogPendingDiffView;
@@ -118,7 +119,10 @@ describe('RevisionsPage', () => {
 
     const host = fixture.nativeElement as HTMLElement;
     expect(text(host)).toContain('rentrée');
-    expect(text(host)).toContain('12 articles');
+    // La colonne « Articles » porte le nombre nu : l'unité est dans l'en-tête,
+    // et la répéter sur chaque ligne rendrait une colonne de chiffres illisible.
+    expect(text(host)).toContain('Articles');
+    expect(text(host)).toContain('12');
     // Une ancre sans nom se DIT sans nom : un blanc se lirait comme une erreur
     // d'affichage.
     expect(text(host)).toContain('sans nom');
@@ -244,5 +248,30 @@ describe('RevisionsPage', () => {
     await fixture.whenStable();
 
     expect(api.name).toHaveBeenCalledWith('R-MUETTE', 'correction des allergènes');
+  });
+
+  /**
+   * 🔴 **« 97 articles » dit la TAILLE d'une ancre, jamais son intérêt.** Deux
+   * ancres consécutives de 97 articles peuvent différer d'une ligne ou de
+   * quarante. C'est la première question devant un historique — laquelle a
+   * bougé — et rien ne la disait.
+   */
+  it('montre ce qui sépare chaque ancre de la précédente', async () => {
+    setup({
+      list: [
+        revision({ reference: 'R-RECENTE', changes: 22 }),
+        revision({ id: 'rev_1', reference: 'R-PREMIERE', changes: null }),
+      ],
+    });
+    const fixture = TestBed.createComponent(RevisionsPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const shown = text(fixture.nativeElement as HTMLElement);
+    expect(shown).toContain('Modifications');
+    expect(shown).toContain('22');
+    // `null` n'est pas zéro : la plus ancienne n'a rien avant elle, et « 0 »
+    // dirait « rien n'a changé » alors que tout était nouveau.
+    expect(shown).toContain('—');
   });
 });

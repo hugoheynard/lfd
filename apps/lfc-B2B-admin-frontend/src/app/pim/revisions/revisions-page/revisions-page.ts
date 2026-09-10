@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import type { CatalogRevisionRowView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldInputComponent,
@@ -9,6 +13,8 @@ import {
   FoldOptionComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  type FoldTableColumn,
+  type FoldTableEmpty,
 } from 'fold-ng';
 
 import { RevisionDiff } from '../revision-diff/revision-diff';
@@ -37,6 +43,9 @@ const WHEN = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldButtonIconComponent,
+    FoldDataTableComponent,
+    FoldDataTableCellDirective,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldInputComponent,
@@ -56,6 +65,29 @@ export class RevisionsPage {
   protected readonly capabilities = inject(PimCapabilitiesStore);
 
   protected readonly label = signal('');
+
+  /**
+   * Les colonnes de l'historique.
+   *
+   * Aucune n'est `sortable` : l'ordre est CHRONOLOGIQUE et c'est le seul qui ait
+   * un sens ici — la colonne « Modifications » compare chaque ancre à celle qui
+   * la précède, et trier par ce nombre casserait la relation qu'il mesure.
+   */
+  protected readonly columns: readonly FoldTableColumn<CatalogRevisionRowView>[] = [
+    { key: 'reference', label: 'Référence', width: '9rem' },
+    { key: 'label', label: 'Nom' },
+    { key: 'articles', label: 'Articles', width: '7rem', numeric: true },
+    { key: 'changes', label: 'Modifications', width: '9rem', numeric: true },
+    { key: 'takenAt', label: 'Posée le', width: '12rem' },
+    { key: 'takenBy', label: 'Par', width: '10rem' },
+  ];
+
+  protected readonly empty: FoldTableEmpty = {
+    title: 'Aucune révision posée',
+    subtitle: "La première apparaîtra au premier envoi vers un canal, ou dès qu'on en prépare une.",
+  };
+
+  protected readonly rowKey = (row: CatalogRevisionRowView): string => row.id;
 
   /**
    * L'ancre qu'on est en train de nommer, ou `null`.

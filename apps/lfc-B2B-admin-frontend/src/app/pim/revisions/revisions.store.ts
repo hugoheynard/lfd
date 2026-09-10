@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import type {
   CatalogPendingDiffView,
   CatalogRevisionDiffView,
-  CatalogRevisionSummaryView,
+  CatalogRevisionRowView,
 } from '@lfd/pim-contracts';
 
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -21,7 +21,7 @@ import { RevisionsHttpApi } from './revisions-http-api';
 export class RevisionsStore {
   private readonly api = inject(RevisionsHttpApi);
 
-  private readonly items = signal<readonly CatalogRevisionSummaryView[]>([]);
+  private readonly items = signal<readonly CatalogRevisionRowView[]>([]);
   readonly revisions = this.items.asReadonly();
 
   private readonly busyValue = signal(false);

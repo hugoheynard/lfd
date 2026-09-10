@@ -81,3 +81,25 @@
   font-size: var(--fold-text-sm);
   max-inline-size: 70ch;
 }
+
+/* Le nom et sa note, empilés dans la même cellule : la note DÉTAILLE le nom,
+   elle ne vit pas à côté. */
+.rp-named {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* La table pose `white-space: nowrap` sur ses cellules — juste pour une date ou
+   un compte, faux pour une note. */
+.rp-named,
+.rp-unnamed-row,
+.rp-naming {
+  white-space: normal;
+}
+
+.rp-unnamed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}

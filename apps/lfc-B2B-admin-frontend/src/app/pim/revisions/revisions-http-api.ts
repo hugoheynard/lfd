@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import type {
   CatalogPendingDiffView,
   CatalogRevisionDiffView,
-  CatalogRevisionSummaryView,
+  CatalogRevisionRowView,
   CatalogRevisionTakenView,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
@@ -21,8 +21,8 @@ export class RevisionsHttpApi {
   private readonly http = inject(HttpClient);
   private readonly base = inject(API_BASE_URL);
 
-  list(): Promise<readonly CatalogRevisionSummaryView[]> {
-    return firstValueFrom(this.http.get<readonly CatalogRevisionSummaryView[]>(this.url()));
+  list(): Promise<readonly CatalogRevisionRowView[]> {
+    return firstValueFrom(this.http.get<readonly CatalogRevisionRowView[]>(this.url()));
   }
 
   take(label: string | null): Promise<CatalogRevisionTakenView> {
