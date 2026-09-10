@@ -17,67 +17,120 @@ Décisions figées avant d'écrire le schéma. Contexte : LaFolieDouce B2B, ~20 
   **`auth0_sub`** (id stable du JWT). L'email est stocké **en plus** (clé humaine +
   clé de secours pour une future migration d'IdP).
 
-## 2. Séparation staff / client = frontière de contexte (db séparées)
+## 2. Séparation staff / client = frontière de contexte
 
-Deux **bounded contexts** → **deux db distinctes**, chacune avec son propre `User` :
+> 🔴 **CE PARAGRAPHE A DÉCRIT DEUX BASES JUSQU'AU 2026-09-10, ET C'ÉTAIT FAUX
+> DEPUIS B4.** Il y a **une seule base**, **une seule URL**, **un seul client
+> Prisma**. Le référentiel produit avait la sienne ; il l'a rejointe, et le staff
+> n'en a jamais eu une à lui.
+>
+> Ce qui existe à la place : **cinq schémas Postgres dans une base** —
+> `public`, `growth`, `ops`, `pim`, `production` — déclarés par le `datasource`
+> de [`prisma/schema/datasource.prisma`](../../apps/lfd-api/prisma/schema/datasource.prisma).
+> Les tables du staff sont dans `public`, avec le commerce
+> ([`public/staff.prisma`](../../apps/lfd-api/prisma/schema/public/staff.prisma)).
+>
+> Le texte d'origine est conservé plus bas parce que son RAISONNEMENT reste
+> juste — la frontière est réelle, et pour les raisons qu'il donne. Seul son
+> mécanisme a changé : elle n'est plus tenue par la physique.
 
-- **DB admin / back-office** — les différents back-offices (PIM, B2B, prod) **fusionnés
-  en un seul** back-office ; sa db héberge le **staff**. Ici `User` = **membre interne**
-  (équipe, labo, admin). Non tenant-scoped (voit à travers les tenants, selon rôle).
-  Privilégié.
-- **DB B2B commerce** — bloc commerce ; ici `User` = **customer** (client pro).
-  Tenant-scoped par `company_id`. Provisionné par un commercial.
-- **DB PIM catalog** — existe déjà.
+Deux **bounded contexts**, chacun avec son propre modèle d'identité :
 
-Comme ce sont des **db/schemas séparés**, les deux tables peuvent s'appeler `User`
-sans collision : **le contexte désambigüise** (admin `User` = staff ; B2B `User` =
-customer).
+- **Le staff / back-office** — les back-offices (PIM, B2B, prod) **fusionnés en un
+  seul**. L'identité s'appelle **`StaffUser`**, et non `User` : le nom a été
+  désambigüisé dans le code le jour où la séparation physique a disparu. Non
+  tenant-scoped (voit à travers les tenants, selon rôle). Privilégié.
+- **Le commerce B2B** — ici `User` = **customer** (client pro), tenant-scoped par
+  `company_id`.
+- **Le référentiel produit (PIM)** — schéma `pim` de la même base.
 
-**Pourquoi séparer physiquement (et pas un flag `type` dans une table unique) :**
+⚠️ **Les deux tables ne peuvent PLUS s'appeler `User`.** L'ancienne rédaction s'en
+remettait au contexte pour désambigüiser (« admin `User` = staff ; B2B
+`User` = customer ») : c'est ce que permettaient deux bases. Dans un schéma
+partagé, il a fallu trancher — `StaffUser` et `User`.
 
-1. **Blast radius** — les identités staff privilégiées sont **physiquement isolées**
-   des données clients ; escalade de privilège structurellement impossible.
+**Pourquoi la frontière existe** (le raisonnement d'origine, toujours valable) :
+
+1. **Blast radius** — les identités staff privilégiées sont isolées des données
+   clients.
 2. **Formes différentes** — client = company_id/adresses/facturation/commandes ;
    staff = rôle interne, MFA, pas de tenancy.
-3. **Politiques différentes** — RLS/tenancy sur les clients, aucune sur le staff ;
+3. **Politiques différentes** — tenancy sur les clients, aucune sur le staff ;
    MFA obligatoire staff ; provisioning différent.
 4. **Découpe logicielle** — la séparation **découle de la frontière de contexte**
    (back-office interne vs commerce), pas d'une optimisation.
 
-**Le back-office unifié est une app** qui possède sa **DB admin** (identité staff +
-rôles + audit) et **lit/écrit les db métier** (commerce, PIM) via des clients Prisma
-distincts. App unique, plusieurs db.
+🔴 **Mais le point 1 ne dit plus « physiquement ».** Une jointure entre le staff et
+le commerce **marcherait** : même base, même client Prisma. L'isolation est tenue
+par la **discipline**, et une discipline se perd là où une impossibilité tenait
+toute seule. C'est pourquoi elle est adossée à des portes CI plutôt qu'à une
+promesse — `lint:context-boundaries`, `lint:cross-schema-join`,
+`lint:prisma-model-ownership` — et pourquoi le CLAUDE.md racine (§1) note que
+deux franchissements ont déjà eu lieu, en SQL direct, sans qu'aucun import ne les
+trahisse.
 
-## 3. Tables (esquisse)
+**Le back-office unifié est une app** qui lit et écrit les tables métier via **un
+seul** client Prisma. App unique, base unique, cinq schémas.
 
-**DB admin / back-office** (`prisma/schema/public/staff.prisma` dédié) :
+## 3. Tables
+
+**Le staff** ([`public/staff.prisma`](../../apps/lfd-api/prisma/schema/public/staff.prisma)) :
 
 ```
-User           -- = membre interne (staff)
-  id · auth0_sub (unique) · email · role interne · status · timestamps
-Role / Permission   -- rôles internes (PIM / commandes / prod), à affiner
-AuditLog       -- qui a fait quoi (obligatoire pour du privilégié)
+StaffUser                 -- le membre interne
+  id · auth0_id (unique, NULLABLE) · email (unique) · first_name · last_name
+     · phone · job_title · role (StaffRole) · status (StaffStatus)
+     · invited_at · timestamps
+StaffRoleDefinition       -- ce que chaque rôle ouvre
+StaffPermissionOverride   -- les dérogations, personne par personne
+StaffNotification · StaffPushSubscription
 ```
 
-**DB B2B commerce** (`prisma/schema/public/account.prisma` dédié) :
+⚠️ **`auth0_id` est NULLABLE**, et ce n'est pas un relâchement : une fiche existe
+dans l'annuaire **avant** la première connexion (elle est invitée). C'est
+l'**e-mail** qui fait le premier rapprochement, puis le `sub` qui relie pour de
+bon.
+
+⚠️ **Il n'y a pas de table `AuditLog`.** L'esquisse en promettait une ; le journal
+qui existe est **`ActivityEvent`**, dans le schéma `growth`
+([`growth.prisma`](../../apps/lfd-api/prisma/schema/growth.prisma)) — il porte
+`actor_type` / `actor_id` / `actor_name` / `actor_role`, donc il couvre bien
+« qui a fait quoi », mais il est commun au staff et aux clients.
+
+**Le commerce** ([`public/account.prisma`](../../apps/lfd-api/prisma/schema/public/account.prisma)) :
 
 ```
 Company        -- le tenant (établissement client pro)
-  id · raison sociale · SIRET · contact pro · représentant? · timestamps
-User           -- = customer (client pro), tenant-scoped
-  id · auth0_sub (unique) · email · company_id (FK) · role client
-     · status (INVITED|ACTIVE|DISABLED) · invited_by · timestamps
--- + Address, BillingProfile, Order, OrderLine, ProductionPlan (à venir)
+User           -- = customer, avec auth0_sub (unique) et email_verified
+Membership     -- le RATTACHEMENT d'une personne à une société (0..N)
+Address · CompanyContact
 ```
 
-Garde-fou : un même `auth0_sub`/email ne doit exister **ni** dans la db admin **ni**
-dans la db commerce en double (pas de double-rôle chez nous : personne n'est à la
-fois boulanger interne et client pro). La connexion Auth0 d'origine (staff vs
-client) indique dans **quelle db** résoudre l'identité.
+🔴 **Une personne n'a pas de `company_id`.** L'esquisse posait `company_id (FK)`
+sur `User` : c'est faux, et l'écart n'est pas cosmétique. Le rattachement passe
+par **`Membership`**, une personne peut appartenir à **plusieurs** sociétés, et
+c'est toute la raison d'être de `resolveCompany`
+([`resolve-company.ts`](../../apps/lfd-api/src/platform/auth/resolve-company.ts)) —
+qui refuse de deviner quand il y en a plusieurs.
+
+Garde-fou : un même `auth0_sub`/email ne doit exister ni côté staff ni côté
+commerce en double (pas de double-rôle : personne n'est à la fois boulanger
+interne et client pro). ⚠️ **Aucune contrainte de base ne le tient** — les deux
+colonnes sont dans deux tables, chacune `@unique` chez elle. C'est la connexion
+Auth0 d'origine (staff vs client), donc l'**audience** du jeton, qui décide où
+résoudre l'identité — cf. §6.
 
 ## 4. Provisioning d'un client par un commercial
 
-Le client ne s'auto-inscrit pas. Flux (option retenue : création via Management API) :
+⚠️ **« Le client ne s'auto-inscrit pas » n'est plus vrai**, et l'en-tête de ce
+document le dit déjà en renvoyant à « self-signup + porte commerciale ». Une
+société déclarée par le client depuis « Mes entreprises » entre en statut
+`pending` (cf. l'énumération `CompanyStatus`). Le flux ci-dessous décrit la
+création PAR UN COMMERCIAL, qui existe toujours et reste l'un des deux chemins ;
+l'autre vit dans [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md).
+Non réécrit ici : ce document n'est pas celui du cycle de vie.
+
+Flux (création via Management API) :
 
 ```
 1. Commercial : choisit/crée la Company + saisit email + rôle du client
@@ -99,9 +152,24 @@ Le client ne s'auto-inscrit pas. Flux (option retenue : création via Management
 - **Staff = non muré** (voit tout, selon rôle).
 - **Renfort optionnel** : Postgres **RLS** pour bloquer l'isolation au niveau db
   (utile si des Workers requêtent en direct). Pas obligatoire au départ.
-- Le **JWT porte la tenancy** : via une **Auth0 Action** (custom claims), le token
-  porte `company_id`, `type` (staff|customer), `role`. Chaque requête est
-  scoping-ready.
+  🔴 **LE JWT NE PORTE PAS LA TENANCY, ET NE DOIT PAS LA PORTER.** Ce paragraphe
+  affirmait le contraire — « via une Auth0 Action (custom claims), le token porte
+  `company_id`, `type` (staff|customer), `role` ; chaque requête est
+  scoping-ready » — et c'est **faux** (vérifié le 2026-09-10 dans
+  [`access-token.verifier.ts`](../../apps/lfd-api/src/platform/auth/access-token.verifier.ts)) :
+  le jeton n'atteste que le `sub`, les `scopes` et `email_verified`.
+
+C'est la correction la plus importante de ce document, parce que c'est la seule
+dont l'application ouvrirait une faille : **la base est autoritaire**. Le
+`company_id`, le rôle et le statut sont relus en base à chaque requête, contre
+les `Membership` du demandeur. Un compte désactivé est donc bloqué
+immédiatement, sans attendre l'expiration du jeton, et **aucun claim forgé ne
+peut élargir la portée**.
+
+Quand une personne appartient à plusieurs sociétés, la requête **déclare** dans
+laquelle elle travaille (un en-tête), et la déclaration est **vérifiée** contre
+ses rattachements — cf. `resolveCompany`. Une société déclarée à laquelle elle
+n'appartient pas est ignorée, jamais servie.
 
 ## 6. Back-office admin (privilégié) — 2 portes + pas de backdoor
 
@@ -109,7 +177,15 @@ Le client ne s'auto-inscrit pas. Flux (option retenue : création via Management
   publiquement, un mur SSO/OTP passe **avant** le chargement. Gratuit ≤ 50 users.
 - **Porte 2 — Auth0** avec **connexion staff durcie** : **MFA obligatoire** +
   **allowlist** de nos emails. Même tenant Auth0, connexion différente.
-- **Sessions courtes** admin + **audit log** (qui a fait quoi).
+- **Sessions courtes** admin + **journal d'activité** (qui a fait quoi) — c'est
+  `ActivityEvent`, pas une table `AuditLog` ; cf. §3.
+- **Porte 3, celle qui tient réellement dans le code** : la surface `/admin/*` est
+  vérifiée contre une **audience Auth0 distincte** (`AUTH0_ADMIN_AUDIENCE`) de
+  celle du client, et elle est **fail-closed** — audience non configurée, aucun
+  jeton accepté (vérifié le 2026-09-10 dans
+  [`admin-token.verifier.ts`](../../apps/lfd-api/src/platform/auth/admin-token.verifier.ts)).
+  Puis un second guard résout le périmètre depuis l'annuaire. Les deux « portes »
+  ci-dessus sont de l'infrastructure ; celle-ci est dans le backend.
 - **PAS de break-glass backdoor** (compte local qui bypass Auth0) : backdoor
   permanent ultra-privilégié = blast radius pire qu'une panne Auth0 rare. **Escape
   d'urgence = `psql` direct**, pas un backdoor.
