@@ -20,3 +20,14 @@ export class GetCurrentBillingCycleQuery {}
 export class ExportCycleDraftQuery {
   constructor(readonly legalEntityId: string) {}
 }
+
+/**
+ * Le **contrôle** du brouillon : un CSV lu depuis le XML, pas à côté.
+ *
+ * Une seconde requête plutôt qu'un champ de la première : on télécharge l'un OU
+ * l'autre, et rendre les deux ensemble ferait fabriquer un CSV à chaque
+ * téléchargement de XML.
+ */
+export class ExportCycleAuditQuery {
+  constructor(readonly legalEntityId: string) {}
+}

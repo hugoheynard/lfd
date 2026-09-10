@@ -1,11 +1,9 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
+import { buildCycleDraft } from "../cycle-draft-support.js";
 import { BillableOrdersReader } from "../../domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
-import { cycleAt } from "../../domain/services/billing-cycle.js";
-import { cycleTagOf, renderPain008 } from "../../domain/services/pain008.js";
 import { ExportCycleDraftQuery } from "./billing-cycle-queries.js";
 
 /** Le fichier et le nom qu'on propose au navigateur. */
@@ -42,32 +40,15 @@ export class ExportCycleDraftHandler implements IQueryHandler<
   ) {}
 
   async execute(query: ExportCycleDraftQuery): Promise<CycleDraftFile> {
-    const creditor = await this.creditors.snapshot(query.legalEntityId);
-    if (creditor === null) {
-      throw new LegalEntityNotFoundError(query.legalEntityId);
-    }
-
-    const now = this.clock.now();
-    const cycle = cycleAt(now, null);
-    const lines = await this.billable.billableBetween(cycle.startsAt, cycle.closesAt);
-
+    const draft = await buildCycleDraft(
+      { creditors: this.creditors, billable: this.billable, clock: this.clock },
+      query.legalEntityId,
+    );
     return {
-      xml: renderPain008({
-        creditor,
-        cycleStart: cycle.startsAt,
-        cycleEnd: cycle.closesAt,
-        createdAt: now,
-        lines,
-      }),
+      xml: draft.xml,
       // Le nom porte l'avertissement : un fichier rangé sur un bureau perd son
       // contexte, jamais son nom.
-      //
-      // 🔴 L'étiquette vient du DOMAINE, pas d'un `toISOString()` sur la clôture.
-      // Deux raisons : la borne haute est exclusive — un cycle clos le 1er
-      // octobre est celui de septembre — et `toISOString()` est en UTC, alors
-      // que la borne est posée à minuit LOCAL. Les deux erreurs se composaient
-      // et donnaient un nom de fichier en désaccord avec le `MsgId` qu'il porte.
-      fileName: `BROUILLON-prelevement-${cycleTagOf(cycle.closesAt)}.xml`,
+      fileName: `BROUILLON-prelevement-${draft.cycleTag}.xml`,
     };
   }
 }

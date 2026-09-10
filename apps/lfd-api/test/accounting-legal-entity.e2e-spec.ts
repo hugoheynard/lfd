@@ -250,6 +250,43 @@ describe("Le brouillon de fichier de prélèvement", () => {
     const ibans = [...response.text.matchAll(/<IBAN>([^<]*)</gu)].map((m) => m[1] ?? "");
     expect(ibans.filter((value) => /^[A-Z]{2}\d{2}[A-Za-z0-9]+$/u.test(value))).toEqual([IBAN]);
   });
+
+  /**
+   * 🔴 Le contrôle vaut par le fait qu'il RELIT le fichier téléchargé, pas par
+   * ce qu'il calcule. Cet e2e le vérifie sur le fil : le CSV et le XML sortent
+   * du même chemin, et le verdict porte sur le second.
+   */
+  it("rend un CSV de contrôle qui atteste le XML téléchargé", async () => {
+    const id = await declare();
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-identifier`)
+      .send({ ics: ICS })
+      .expect(204);
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+      .send({ iban: IBAN })
+      .expect(204);
+
+    const xml = await staff()
+      .get(`/admin/accounting/billing-cycle/draft.xml?legalEntityId=${id}`)
+      .expect(200);
+    const csv = await staff()
+      .get(`/admin/accounting/billing-cycle/draft-audit.csv?legalEntityId=${id}`)
+      .expect(200);
+
+    expect(csv.headers["content-type"]).toContain("text/csv");
+    expect(csv.headers["content-disposition"]).toContain("CONTROLE");
+    // Le BOM, sans quoi le tableur du comptable lit l'UTF-8 en Latin-1.
+    expect(csv.text.startsWith("\uFEFF")).toBe(true);
+
+    // Le verdict porte sur le fichier qu'on vient de télécharger.
+    expect(csv.text).toContain("COHÉRENT");
+    expect(csv.text).not.toContain("INCOHÉRENT");
+
+    // Et le total qu'il rapporte est bien celui que le XML DÉCLARE.
+    const declared = /<CtrlSum>([^<]*)</u.exec(xml.text)?.[1] ?? "";
+    expect(csv.text).toContain(declared.replace(".", ","));
+  });
 });
 
 describe("Entité juridique — la fiche de mandat SEPA", () => {

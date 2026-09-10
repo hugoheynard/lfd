@@ -91,4 +91,20 @@ export class ComptabiliteDashboardService {
       }),
     );
   }
+
+  /**
+   * Le **contrôle** du brouillon, en CSV.
+   *
+   * Une seconde requête, et non un champ de la première : le serveur relit le
+   * XML pour le produire, et le fabriquer à chaque téléchargement de XML
+   * coûterait un travail que personne n'a demandé.
+   */
+  async cycleDraftAudit(legalEntityId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${B2B_API_BASE}/admin/accounting/billing-cycle/draft-audit.csv`, {
+        params: { legalEntityId },
+        responseType: 'blob',
+      }),
+    );
+  }
 }

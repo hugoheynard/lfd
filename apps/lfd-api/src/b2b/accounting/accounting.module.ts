@@ -8,6 +8,7 @@ import { SetCreditorAccountHandler } from "./application/commands/set-creditor-a
 import { SetLegalEntityArchivedHandler } from "./application/commands/set-legal-entity-archived.handler.js";
 import { SetLegalEntityLogoHandler } from "./application/commands/set-legal-entity-logo.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
+import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
 import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draft.handler.js";
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
 import { ExportSampleMandateHandler } from "./application/queries/export-sample-mandate.handler.js";
@@ -66,6 +67,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     ExportSampleMandateHandler,
     GetCurrentBillingCycleHandler,
     ExportCycleDraftHandler,
+    ExportCycleAuditHandler,
     GetLegalEntityLogoHandler,
   ],
   exports: [CreditorReader],

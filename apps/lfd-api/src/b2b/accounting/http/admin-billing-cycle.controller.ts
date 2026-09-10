@@ -5,8 +5,10 @@ import type { Response } from "express";
 import { QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import type { CycleAuditFile } from "../application/queries/export-cycle-audit.handler.js";
 import type { CycleDraftFile } from "../application/queries/export-cycle-draft.handler.js";
 import {
+  ExportCycleAuditQuery,
   ExportCycleDraftQuery,
   GetCurrentBillingCycleQuery,
 } from "../application/queries/billing-cycle-queries.js";
@@ -61,5 +63,33 @@ export class AdminBillingCycleController {
       contentDispositionAttachment(sanitiseFileName(file.fileName, "BROUILLON-prelevement.xml")),
     );
     return file.xml;
+  }
+
+  /**
+   * Le **contrôle** du brouillon, en CSV — lu depuis le XML, jamais à côté.
+   *
+   * 🔴 C'est ce qui lui donne sa valeur : il atteste ce que le fichier CONTIENT.
+   * Un CSV recalculé depuis l'assiette pourrait porter le même défaut que le XML
+   * et les deux s'accorderaient — le contrôle attesterait alors l'erreur au lieu
+   * de la trouver.
+   *
+   * Il confronte les deux totaux que le fichier DÉCLARE — `NbOfTxs` et
+   * `CtrlSum` — à ce qu'on obtient en comptant et sommant ses lignes. Ce sont
+   * les deux champs dont un centime d'écart fait rejeter le message entier.
+   */
+  @Get("draft-audit.csv")
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  async draftAudit(
+    @Query("legalEntityId") legalEntityId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<string> {
+    const file = await this.queries.execute<ExportCycleAuditQuery, CycleAuditFile>(
+      new ExportCycleAuditQuery(legalEntityId),
+    );
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(file.fileName, "CONTROLE-prelevement.csv")),
+    );
+    return file.csv;
   }
 }

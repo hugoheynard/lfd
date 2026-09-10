@@ -229,6 +229,20 @@ export class TableauDeBordPage {
     );
   }
 
+  /**
+   * Le contrôle du brouillon — un CSV **relu depuis le XML**, pas recalculé.
+   *
+   * C'est ce qui lui donne sa valeur : il atteste ce que le fichier contient. Un
+   * CSV produit en parallèle pourrait porter le même défaut que le XML, et les
+   * deux s'accorderaient.
+   */
+  protected async downloadDraftAudit(issuer: LegalEntityView): Promise<void> {
+    await this.download(
+      () => this.api.cycleDraftAudit(issuer.id),
+      `CONTROLE-prelevement-${issuer.siren}.csv`,
+    );
+  }
+
   private async download(load: () => Promise<Blob>, fileName: string): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
