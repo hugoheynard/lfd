@@ -105,6 +105,26 @@
         @if (row.isHidden) {
           <fold-badge content="masqué" variant="neutral" />
         }
+        <!--
+          **La mise en avant est une bascule, pas une confirmation.** Elle ne
+          retire rien : au pire elle met en tête un article qui n'y avait rien à
+          faire, et le second clic le range. Lui demander de confirmer
+          apprendrait à confirmer sans lire, ce qui coûterait au voisin — qui,
+          lui, coupe la commande.
+
+          Désactivée sur un article masqué : l'agrégat REFUSE d'y poser la mise
+          en avant, parce que « ne pas le montrer » et « le montrer en premier »
+          ne se disent pas ensemble. Le front désamorce, le serveur refuse — le
+          geste n'est donc jamais un 409 qu'on découvre après coup.
+        -->
+        <fold-toggle-icon
+          icon="star"
+          size="sm"
+          [active]="row.isFeatured"
+          [disabled]="row.isHidden"
+          [tooltip]="featureTooltip(row)"
+          (toggled)="featuredToggled.emit(row)"
+        />
         <fold-inline-confirm
           size="sm"
           [intent]="row.isHidden ? 'primary' : 'warning'"

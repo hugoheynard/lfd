@@ -61,6 +61,12 @@ class FakeCatalogue {
     this.aligned.push(sku);
     return Promise.resolve();
   }
+  readonly featured: { sku: string; featured: boolean }[] = [];
+  setFeatured(sku: string, featured: boolean): Promise<void> {
+    this.featured.push({ sku, featured });
+    return Promise.resolve();
+  }
+
   readonly visibility: { sku: string; hidden: boolean }[] = [];
   setVisibility(sku: string, hidden: boolean): Promise<void> {
     this.visibility.push({ sku, hidden });
@@ -167,7 +173,7 @@ describe('CataloguePage — les quatre lectures', () => {
     api.items = [
       item(),
       item({ sku: 'VIE-002-1', name: 'Pain au chocolat', b2bPriceMillicents: 145_000 }),
-      item({ sku: 'VIE-003-1', name: "Patte d'ours", vatRatePercent: null }),
+      item({ sku: 'VIE-003-1', name: "Patte d'ours", vatRatePercent: null, isFeatured: true }),
       item({ sku: 'VIE-004-1', name: 'Chausson', isHidden: true }),
     ];
     const fixture = await render(api);
@@ -175,6 +181,7 @@ describe('CataloguePage — les quatre lectures', () => {
     const shown = text(fixture);
     expect(shown).toContain('Tous (4)');
     expect(shown).toContain('À prix B2B (1)');
+    expect(shown).toContain('En avant (1)');
     expect(shown).toContain('Sans TVA (1)');
     expect(shown).toContain('Masqués (1)');
   });
@@ -249,4 +256,62 @@ function confirmNamed(fixture: ComponentFixture<CataloguePage>, label: string): 
     throw new Error(`confirmation « ${label} » absente`);
   }
   found.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+describe('CataloguePage — la mise en avant', () => {
+  /** Rien n'est retiré : le second clic défait le premier, donc pas de garde. */
+  it('bascule sans demander confirmation', async () => {
+    const api = new FakeCatalogue();
+    const fixture = await render(api);
+
+    star(fixture).click();
+    await fixture.whenStable();
+
+    expect(api.featured).toEqual([{ sku: 'VIE-001-1', featured: true }]);
+  });
+
+  it('retire la mise en avant du même geste', async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ isFeatured: true })];
+    const fixture = await render(api);
+
+    star(fixture).click();
+    await fixture.whenStable();
+
+    expect(api.featured).toEqual([{ sku: 'VIE-001-1', featured: false }]);
+  });
+
+  /**
+   * 🔴 L'agrégat REFUSE de mettre en avant un article masqué : les deux états
+   * ensemble diraient « ne pas le montrer » et « le montrer en premier ». Le
+   * front désamorce plutôt que de laisser partir un 409 qu'on découvre après.
+   *
+   * Le bouton éteint porte SA RAISON : un bouton éteint sans raison écrite se
+   * lit comme une panne.
+   */
+  it('éteint le geste sur un article masqué, et dit pourquoi', async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ isHidden: true })];
+    const fixture = await render(api);
+
+    const control = star(fixture);
+    expect(control.disabled).toBe(true);
+    expect(control.getAttribute('aria-label')).toContain("qu'on ne montre pas");
+
+    control.click();
+    await fixture.whenStable();
+
+    expect(api.featured).toEqual([]);
+  });
+});
+
+/** L'étoile de mise en avant de la première ligne. */
+function star(fixture: ComponentFixture<CataloguePage>): HTMLButtonElement {
+  const found = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+    'fold-toggle-icon button',
+  );
+  if (found === null) {
+    throw new Error("l'étoile de mise en avant est absente de la ligne");
+  }
+  return found;
 }

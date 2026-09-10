@@ -27,6 +27,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 const ALL = 'all';
 const WITH_B2B_PRICE = 'b2b';
+const FEATURED = 'featured';
 const UNTAXED = 'untaxed';
 const HIDDEN = 'hidden';
 
@@ -109,6 +110,11 @@ export class CataloguePage {
     () => this.items().filter((item) => item.isHidden).length,
   );
 
+  /** Combien passent devant les autres dans la boutique. */
+  protected readonly featuredCount = computed(
+    () => this.items().filter((item) => item.isFeatured).length,
+  );
+
   protected readonly total = computed(() => this.items().length);
 
   /**
@@ -122,6 +128,7 @@ export class CataloguePage {
   protected readonly filters = computed<readonly FoldViewToggleOption[]>(() => [
     { value: ALL, label: `Tous (${String(this.total())})` },
     { value: WITH_B2B_PRICE, label: `À prix B2B (${String(this.alteredCount())})` },
+    { value: FEATURED, label: `En avant (${String(this.featuredCount())})` },
     { value: UNTAXED, label: `Sans TVA (${String(this.untaxedCount())})` },
     { value: HIDDEN, label: `Masqués (${String(this.hiddenCount())})` },
   ]);
@@ -202,6 +209,29 @@ export class CataloguePage {
     }
   }
 
+  /**
+   * **Met en avant, ou retire la mise en avant.**
+   *
+   * Pas de confirmation : rien n'est retiré de la vente, et le second clic
+   * défait le premier. Le refus possible reste celui du serveur — un article
+   * masqué —, et l'écran l'a déjà désamorcé en éteignant le bouton.
+   */
+  protected async toggleFeatured(item: CatalogAdminItemView): Promise<void> {
+    try {
+      await this.catalogue.setFeatured(item.sku, !item.isFeatured);
+      this.notify.success(
+        item.isFeatured
+          ? `${item.name} n'est plus mis en avant.`
+          : `${item.name} passe en avant dans la boutique.`,
+      );
+      await this.load();
+    } catch (error) {
+      // `refused` : le seul échec attendu est « l'article est masqué », une
+      // règle qui se comprend en une lecture.
+      this.notify.refused(error, "La mise en avant n'a pas pu être changée.");
+    }
+  }
+
   /** Masque ou réaffiche un article, puis recharge : le serveur reste l'autorité. */
   protected async toggleVisibility(item: CatalogAdminItemView): Promise<void> {
     try {
@@ -235,6 +265,8 @@ function kept(item: CatalogAdminItemView, filter: string): boolean {
   switch (filter) {
     case WITH_B2B_PRICE:
       return item.b2bPriceMillicents !== null;
+    case FEATURED:
+      return item.isFeatured;
     case UNTAXED:
       return item.vatRatePercent === null;
     case HIDDEN:

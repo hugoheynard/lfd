@@ -8,6 +8,7 @@ import {
   FoldDataTableComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
+  FoldToggleIconComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldTableTone,
@@ -56,6 +57,7 @@ export interface CatalogueShelf {
     FoldDataTableCellDirective,
     FoldInlineConfirmComponent,
     FoldPageSectionComponent,
+    FoldToggleIconComponent,
     PriceEditor,
     PriceOrigin,
   ],
@@ -68,6 +70,7 @@ export class ShelfCatalogue {
   readonly priceSet = output<{ item: CatalogAdminItemView; priceMillicents: number }>();
   readonly priceAligned = output<CatalogAdminItemView>();
   readonly visibilityToggled = output<CatalogAdminItemView>();
+  readonly featuredToggled = output<CatalogAdminItemView>();
 
   protected readonly euros = formatEuros;
 
@@ -91,7 +94,7 @@ export class ShelfCatalogue {
     { key: 'sheet', label: 'Fiche', width: '13rem' },
     // Assez large pour tenir la confirmation qui s'y ouvre. À `9rem`, la
     // phrase qui dit ce que « Masquer » va faire tombait sur cinq lignes.
-    { key: 'shop', label: 'Boutique', width: '17rem' },
+    { key: 'shop', label: 'Boutique', width: '18rem' },
   ];
 
   protected readonly empty: FoldTableEmpty = {
@@ -124,6 +127,21 @@ export class ShelfCatalogue {
    */
   protected allergenLabels(item: CatalogAdminItemView): string {
     return (item.allergens ?? []).map((allergen) => allergen.label).join(' · ');
+  }
+
+  /**
+   * Ce que l'étoile fera, dit en toutes lettres — c'est son seul libellé.
+   *
+   * Trois phrases et non deux : sur un article masqué, le bouton est éteint, et
+   * un bouton éteint sans raison écrite se lit comme une panne.
+   */
+  protected featureTooltip(item: CatalogAdminItemView): string {
+    if (item.isHidden) {
+      return `${item.name} est masqué : un article qu'on ne montre pas ne se met pas en avant.`;
+    }
+    return item.isFeatured
+      ? `Retirer ${item.name} de la mise en avant`
+      : `Mettre ${item.name} en avant dans la boutique`;
   }
 
   /**
