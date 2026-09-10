@@ -159,6 +159,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/produits/:id': null,
   'pim/produits': null,
   production: 'b2b_orders:read',
+  // La file du comptoir : la MÊME commande, vue au moment où on la remet. En
+  // lecture — attester une remise passe par `retrait/:token`, qui exige
+  // l'écriture.
+  remises: 'b2b_orders:read',
   livraison: 'b2b_orders:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,

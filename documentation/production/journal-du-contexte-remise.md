@@ -15,12 +15,13 @@
 | 1   | Les quatre phrases fausses sur le jeton        | ✅ fait       | `T1`   |
 | 2   | Éprouver la vue sur Accelerate                 | 🔴 **bloqué** | —      |
 | 3   | `src/handover/` — déplacement et recomposition | ✅ fait       | `T3`   |
-| 3+  | La file — port, lecture, route, écran          | ✅ fait       | `T5`   |
+| 3+  | La file — port, lecture, route                 | ✅ fait       | `T5`   |
+| 3++ | L'écran de file, back-office                   | ✅ fait       | `T5`   |
 | 4   | Les portes — `BLOCK_OF` d'abord                | ✅ fait       | `T3`   |
 | 5   | L'URL, avec alias déprécié                     | ✅ fait       | `T5`   |
 | 6   | `SELECT count(*)` puis la migration à la main  | ⏸ dépend de 2 | —      |
 | 7   | `DROP VIEW`, puis retrait de l'alias           | ⏸ dépend de 6 | —      |
-| 8   | La doc                                         | ⏳ en cours   | —      |
+| 8   | La doc — synthèse, journal, index              | ✅ fait       | `T8`   |
 
 🔴 **La tranche 2 est bloquée et ce n'est pas technique.** Éprouver la vue sur
 Accelerate demande un **projet Prisma Postgres jetable** — donc une décision et
@@ -251,3 +252,53 @@ aurait mêlé un refactor de port à un déménagement de contexte.
 
 ⚠️ La clé Prisma Accelerate fuitée n'est **toujours pas révoquée**. La tranche 2
 ne se fait pas avec elle.
+
+---
+
+## L'écran — et une erreur de ma part sur les commits
+
+### Ce qu'il fait, vérifié à l'écran et non seulement en test
+
+Ouvert sur `localhost:7317/remises` contre la vraie base de dev : la file
+s'affiche, l'onglet « Le Labo » porte son compteur, le panneau s'ouvre sur une
+ligne et rend le point, le créneau, les articles et le lien vers le bon. Console
+sans erreur.
+
+Le cas `window: null` — celui de MASSE en base — s'affiche « Aucune tranche
+demandée » plutôt que de disparaître ou d'inventer une heure. C'est le piège
+principal du contrat, et il est tenu.
+
+### Quatre points que le plan ne tranchait pas
+
+Ils sont remontés ici plutôt que tus, parce qu'ils sont des décisions :
+
+1. **Les lignes sans point de retrait** — livraison coursier, ou commandes
+   antérieures aux points. Des onglets dérivés des seuls `pickupLabel` présents
+   les auraient laissées **hors de tout onglet**, donc invisibles. Un onglet
+   « Sans point de retrait » les recueille, et un test tient l'invariant :
+   aucune ligne hors de tous les onglets.
+2. **La référence du retard** : `window.end`, sur le jour affiché, en heure
+   locale — et jamais sur une commande remise ou annulée, où l'heure ne promet
+   plus rien.
+3. **La journée par défaut** : aujourd'hui. La page Production ouvre sur demain,
+   parce qu'on l'imprime à la clôture ; le comptoir, non.
+4. ⚠️ **`window.source` est typé `string`** dans le contrat, alors que le port
+   back le type `"default" | "override"`. L'écran compare donc à une constante.
+   Resserrer le contrat rendrait une source inconnue **impossible à écrire** au
+   lieu de la faire retomber en silence sur « pas de retard ». Non fait — c'est
+   un chantier `contracts`.
+
+### 🔴 Mon erreur : un commit qui mêle deux sujets
+
+`eafc822a`, intitulé `test(handover): la file éprouvée de bout en bout`, contient
+**aussi tout l'écran** — sept fichiers de `remises/`. Cause : j'ai lancé un
+`git add -A` pendant que l'écran s'écrivait encore.
+
+Le §9 demande des commits atomiques, un seul sujet chacun. Celui-là en porte
+deux, et son message n'en annonce qu'un. Rien n'est poussé, donc l'historique
+serait réécrivable ; je ne l'ai pas fait — trois commits à reconstruire de nuit
+pour un gain cosmétique, contre le risque de perdre du contenu.
+
+**Ce qui compte est que ce soit écrit ici** : quelqu'un qui cherchera d'où vient
+l'écran ne le trouvera pas dans un commit `feat(front)`, et cette ligne est ce
+qui l'empêchera de conclure qu'il n'existe pas.
