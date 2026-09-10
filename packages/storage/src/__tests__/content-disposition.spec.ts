@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { contentDispositionAttachment } from "../content-disposition.js";
+import { contentDispositionAttachment, contentDispositionInline } from "../content-disposition.js";
 
 /** Pull the quoted ASCII fallback out of the header. */
 function asciiPart(header: string): string | undefined {
@@ -144,5 +144,32 @@ describe("contentDispositionAttachment", () => {
       expect(asciiPart(contentDispositionAttachment("   "))).toBe("   ");
       expect(extPart(contentDispositionAttachment(".."))).toBe("..");
     });
+  });
+});
+
+describe("contentDispositionInline", () => {
+  it("says inline, not attachment — that is the whole difference", () => {
+    expect(contentDispositionInline("mandat.pdf").startsWith("inline;")).toBe(true);
+    expect(contentDispositionInline()).toBe("inline");
+  });
+
+  /**
+   * The escaping is SHARED with the attachment form. Two implementations would
+   * drift apart on exactly the case that matters — the hostile name — and the
+   * one that drifted would be the one nobody reads.
+   */
+  it("escapes a hostile name identically to the attachment form", () => {
+    const hostile = 'a"b\\c\r\nX-Injected: 1.pdf';
+    const inline = contentDispositionInline(hostile);
+    const attachment = contentDispositionAttachment(hostile);
+    expect(inline.replace(/^inline/, "attachment")).toBe(attachment);
+    expect(inline).not.toContain("\r");
+    expect(inline).not.toContain("\n");
+  });
+
+  it("survives a non-ascii name like the attachment form", () => {
+    const header = contentDispositionInline("mandat-sepa-exemple-émile.pdf");
+    expect(asciiPart(header)).toBe("mandat-sepa-exemple-_mile.pdf");
+    expect(extPart(header)).toBe("mandat-sepa-exemple-%C3%A9mile.pdf");
   });
 });

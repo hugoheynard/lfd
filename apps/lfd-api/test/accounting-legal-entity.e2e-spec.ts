@@ -240,6 +240,16 @@ describe("Entité juridique — la fiche de mandat SEPA", () => {
 
     expect(response.headers["content-type"]).toContain("application/pdf");
     expect(response.headers["content-disposition"]).toContain("mandat-sepa-exemple");
+    // Sans `?inline`, le navigateur ENREGISTRE. C'est le défaut, et il l'est
+    // pour la raison écrite dans `contentDispositionAttachment`.
+    expect(response.headers["content-disposition"]).toContain("attachment");
+
+    const shown = await staff()
+      .get(`/admin/accounting/legal-entities/${id}/mandat-sepa-exemple.pdf?inline=1`)
+      .expect(200);
+    // Avec `?inline`, il AFFICHE — le bouton « Voir » de l'écran ne doit pas
+    // remplir un dossier de téléchargements pour vérifier une adresse.
+    expect(shown.headers["content-disposition"]).toContain("inline");
 
     const pdf = response.body as Buffer;
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");

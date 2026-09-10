@@ -7,11 +7,16 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Res,
   StreamableFile,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
-import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import {
+  contentDispositionAttachment,
+  contentDispositionInline,
+  sanitiseFileName,
+} from "@lfd/storage";
 import type { Response } from "express";
 import {
   assignCreditorIdentifierPayloadSchema,
@@ -95,14 +100,26 @@ export class AdminLegalEntitiesController {
   async sampleMandate(
     @Param("id") id: string,
     @Res({ passthrough: true }) response: Response,
+    @Query("inline") inline?: string,
   ): Promise<StreamableFile> {
     const pdf = await this.queries.execute<ExportSampleMandateQuery, SampleMandatePdf>(
       new ExportSampleMandateQuery(id),
     );
+    const fileName = sanitiseFileName(pdf.fileName, "mandat-sepa-exemple.pdf");
     response.setHeader("Content-Type", "application/pdf");
+    // Deux gestes, une seule route : l'écran veut REGARDER la fiche avant de
+    // l'imprimer, et accumuler des PDF dans un dossier de téléchargements pour
+    // vérifier une adresse est le contraire d'un contrôle.
+    //
+    // 🔴 `inline` n'est légitime que parce que ces octets sont fabriqués ICI :
+    // un PDF rendu par un service de domaine, dont nous choisissons le type. Le
+    // helper le dit — jamais sur du contenu téléversé, où « inline » rend un
+    // `.svg` dans notre origine, c'est-à-dire un XSS stocké.
     response.setHeader(
       "Content-Disposition",
-      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "mandat-sepa-exemple.pdf")),
+      inline === undefined
+        ? contentDispositionAttachment(fileName)
+        : contentDispositionInline(fileName),
     );
     return new StreamableFile(pdf.bytes);
   }
