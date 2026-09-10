@@ -18,13 +18,21 @@
 > (tranches 3 et 4) n'existe pas encore. Les points ⚠️ restants sont signalés
 > tranche par tranche au §7.
 
-> **⏸️ 2026-09-01 — l'alternative a été conçue, chiffrée et mise en pause.**
-> Sortir de Stripe pour émettre nous-mêmes sous notre propre ICS (schéma SDD
-> B2B) a fait l'objet d'une conception complète, contredite deux fois :
-> [`architecture-prelevement-sepa-direct.md`](architecture-prelevement-sepa-direct.md).
-> **Le prélèvement reste ici, chez Stripe.** Avant de rouvrir la question, lire
-> la §0 bis de ce document-là : quatre objections bloquantes y sont ouvertes, et
-> le motif d'origine — les frais — n'a jamais été chiffré.
+> **▶️ 2026-09-10 — ce document décrit un système qu'on quitte.**
+> La question mise en pause le 2026-09-01 a été rouverte et tranchée : **Stripe
+> ne garde que la carte**, et le prélèvement passe à la Caisse d'Épargne sous
+> notre propre ICS, en schéma SDD B2B. La conception qui s'applique désormais
+> est [`architecture-prelevement-sepa-direct.md`](architecture-prelevement-sepa-direct.md).
+>
+> **Ce document reste la description exacte de ce qui tourne**, et le restera
+> tant que sa tranche 2 sera le seul chemin d'enregistrement d'un mandat en
+> service. Il ne décrit plus ce vers quoi on va — en particulier sa **décision
+> B** (aucune coordonnée bancaire chez nous), que la reprise retourne
+> délibérément : émettre nous-mêmes suppose détenir l'IBAN, et le prix de ce
+> retournement est écrit en §4 du document d'à côté.
+>
+> Les mandats déjà enregistrés chez Stripe ne sont pas repris de force : ils
+> sont **gelés**, et le discriminant `origin` du nouveau modèle existe pour ça.
 
 ---
 

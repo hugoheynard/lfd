@@ -14,13 +14,22 @@
 > [`architecture-facturation.md`](architecture-facturation.md) (dont ce document
 > périme la tranche 7 et la §6).
 >
-> ## ⏸️ CHANTIER EN PAUSE — décidé le 2026-09-01
+> ## ▶️ CHANTIER REPRIS — décidé le 2026-09-10
 >
-> **Le prélèvement SEPA reste chez Stripe.** Rien de ce document n'est en cours
-> d'implémentation, et personne ne doit s'y mettre sans une reprise explicite.
-> Ce qui suit reste écrit parce que la conception, elle, a coûté cher : la
-> §0 bis dit exactement où on s'est arrêté, ce qui a été bâti, et ce qu'il
-> faudra relire avant de reprendre.
+> **Stripe ne sert plus qu'à la carte. Le prélèvement passe à la Caisse
+> d'Épargne, sous notre propre ICS.** C'est la reprise explicite que la mise en
+> pause du 2026-09-01 exigeait ; ce document redevient la conception de
+> référence, et la §0 ter dit ce qui reste à corriger dedans avant de coder les
+> tranches concernées.
+>
+> Une précision de la reprise, qui confirme la §6 : la transmission à la banque
+> est **manuelle et mensuelle** — un export XML au dernier jour du mois, déposé
+> par un humain dans le portail Caisse d'Épargne. Aucune connexion directe n'est
+> prévue, et ce n'est pas un provisoire honteux : le lot est le geste le plus
+> conséquent du système, et le premier passe sous les yeux de quelqu'un.
+>
+> Ce qui a été bâti pendant la conception vit toujours et n'a pas bougé : la
+> §0 bis en garde l'inventaire.
 >
 > **V2** — la V1 a été contredite avant d'être soumise, et n'a pas survécu :
 > sept objections bloquantes. Les corrections sont marquées ⟲ dans le texte.
@@ -43,7 +52,7 @@ lot, avaler des retours.
 
 ---
 
-## 0 bis. La mise en pause — 2026-09-01
+## 0 bis. La mise en pause — 2026-09-01, levée le 2026-09-10
 
 **La décision.** Le prélèvement continue de passer par Stripe. Le chantier
 d'émission directe est arrêté le jour même où il a été conçu, avant toute
@@ -79,10 +88,24 @@ livré.
 Ce qui manque pour qu'il serve : le modèle Prisma et sa migration, l'adaptateur,
 les commandes CQRS, le contrôleur, et l'écran Comptabilité › Entités juridiques.
 
-### Ce qui reste FAUX dans ce document
+## 0 ter. Ce qui reste FAUX — et ce que ça bloque vraiment
 
 La V2 a été contredite et n'a pas été corrigée depuis. **Quatre objections
-bloquantes sont ouvertes** — les écrire ici est le seul intérêt de la pause :
+bloquantes sont ouvertes.** La reprise du 2026-09-10 ne les résout pas : elle
+les **situe**, ce qui est la question qu'on se pose en reprenant.
+
+| Objection                                        | Tranche qu'elle bloque         |
+| ------------------------------------------------ | ------------------------------ |
+| 1 — l'index de libération ne libère pas assez    | **T9** (le lot et ses retours) |
+| 2 — `(company_id, creditor_id)` vide l'invariant | **T2** (le mandat direct)      |
+| 3 — la porte du crédit est circulaire            | **T12**                        |
+| 4 — le fait publié désigne le mauvais mécanisme  | **T9**                         |
+
+🔴 **Aucune ne touche T1.** L'entité juridique, sa persistance et son écran ne
+lisent ni index de mandat, ni instruction, ni octroi de crédit — c'est pour ça
+que la reprise commence par là, et pas parce que c'est le plus facile.
+
+Les quatre, dans leur formulation d'origine :
 
 1. **L'index `UNIQUE (invoice_id) WHERE status <> 'returned'` (§3) ne libère pas
    assez.** Un rejet avant règlement (`pain.002` `RJCT`), un lot rejeté en bloc,
@@ -123,14 +146,21 @@ la donnée, et ce chemin tombe dès la tranche 2.
   garantie éventuelle, temps humain du dépôt manuel des lots). Une reprise devrait
   commencer par là, pas par le code.
 
-### Ce qui redevient vrai
+### Ce qui redevenait vrai pendant la pause, et redevient faux
 
-Le §12 « ce que ce document périme » est **suspendu** : tant que le prélèvement
-reste chez Stripe, la §6 de la facturation (le risque SEPA Core à 8 semaines) et
-la décision B du doc précédent (aucune coordonnée bancaire chez nous) sont de
-nouveau la description exacte du système. Seule la tranche 7 de la facturation
-reste fausse, et elle l'était avant ce chantier :
-`MandateGateway.charge(...)` n'existe pas.
+Pendant la pause, le §12 « ce que ce document périme » était **suspendu** : le
+prélèvement restant chez Stripe, la §6 de la facturation (le risque SEPA Core à
+8 semaines) et la décision B du doc précédent (aucune coordonnée bancaire chez
+nous) redécrivaient exactement le système.
+
+**La reprise du 2026-09-10 rend le §12 de nouveau opposable**, et ces deux
+phrases redeviennent fausses au fur et à mesure des tranches — pas d'un coup.
+Le repère qui vaut, tant que T2 n'est pas livrée : **aucune coordonnée bancaire
+n'est en base aujourd'hui**, et le doc Stripe reste la description du système en
+service. Ce qui change ce jour-là est écrit en §4.
+
+Seule la tranche 7 de la facturation reste fausse indépendamment de tout ça, et
+elle l'était avant ce chantier : `MandateGateway.charge(...)` n'existe pas.
 
 ## 1. Le schéma retenu : SDD B2B
 
@@ -415,6 +445,20 @@ en retour : le fichier de retour s'importe par un écran.
 Ce n'est pas un pis-aller — c'est ce qui permet d'encaisser avant que la banque
 nous ait ouvert un canal automatisé, et l'automatisation devient un second
 adaptateur derrière un port déjà éprouvé.
+
+**La banque est la Caisse d'Épargne, et la cadence est mensuelle** (décidé le
+2026-09-10) : un export XML au dernier jour du mois, déposé à la main dans leur
+portail. Deux conséquences que le reste du document doit respecter.
+
+- **Le lot n'est pas un fichier téléchargé, c'est un fait daté.** Ce qui part
+  chez la banque est archivé tel quel : le jour où une ligne est contestée, la
+  question est « qu'avons-nous déposé le 31 », pas « que recalculerions-nous
+  aujourd'hui ». Même propriété que le bon de commande — les octets sont écrits
+  une fois, pas régénérés.
+- **Un dépôt manuel se manque.** Le geste dépend d'un humain un jour donné, et
+  la §5 doit donc pouvoir dire « le lot de ce mois n'est jamais parti » sans
+  que ça ressemble à un lot en cours. C'est l'objection 1 de la §0 ter, vue par
+  l'autre bout : un statut « morte sans règlement » manque.
 
 ## 7. Les faits à journaliser
 
