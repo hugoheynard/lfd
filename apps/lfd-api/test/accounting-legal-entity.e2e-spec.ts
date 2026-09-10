@@ -205,6 +205,50 @@ describe("Entité juridique — le compte créancier", () => {
   });
 });
 
+describe("Entité juridique — la fiche de mandat SEPA", () => {
+  it("REFUSE de la rendre à une entité qui ne peut pas encaisser, en nommant ce qui manque", async () => {
+    const id = await declare();
+
+    // 409 et non 404 : l'entité existe. Les deux cas n'appellent pas le même
+    // geste — l'un est un identifiant faux, l'autre une fiche à compléter.
+    const response = await staff()
+      .get(`/admin/accounting/legal-entities/${id}/mandat-sepa-exemple.pdf`)
+      .expect(409);
+    expect(JSON.stringify(response.body)).toContain("ICS");
+  });
+
+  it("la rend en PDF une fois l'ICS et le compte posés, sans l'IBAN du créancier", async () => {
+    const id = await declare();
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-identifier`)
+      .send({ ics: ICS })
+      .expect(204);
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+      .send({ iban: IBAN })
+      .expect(204);
+
+    const response = await staff()
+      .get(`/admin/accounting/legal-entities/${id}/mandat-sepa-exemple.pdf`)
+      .buffer()
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+
+    expect(response.headers["content-type"]).toContain("application/pdf");
+    expect(response.headers["content-disposition"]).toContain("mandat-sepa-exemple");
+
+    const pdf = response.body as Buffer;
+    expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+    // 🔴 Ce que seul un e2e prouve : ce que le SERVEUR envoie réellement sur le
+    // fil. Le test unitaire ne voit que ce que la fonction rend.
+    expect(pdf.includes(Buffer.from(IBAN))).toBe(false);
+  });
+});
+
 describe("Entité juridique — archivage et corrections", () => {
   it("archiver n'efface rien, et retire la capacité d'encaisser", async () => {
     const id = await declare();

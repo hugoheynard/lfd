@@ -1,5 +1,18 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Res,
+  StreamableFile,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import type { Response } from "express";
 import {
   assignCreditorIdentifierPayloadSchema,
   correctLegalEntityPayloadSchema,
@@ -25,7 +38,9 @@ import {
   SetLegalEntityArchivedCommand,
   SetPreNotificationCommand,
 } from "../application/commands/legal-entity-commands.js";
+import type { SampleMandatePdf } from "../application/queries/export-sample-mandate.handler.js";
 import {
+  ExportSampleMandateQuery,
   GetLegalEntityQuery,
   ListLegalEntitiesQuery,
 } from "../application/queries/legal-entity-queries.js";
@@ -62,6 +77,34 @@ export class AdminLegalEntitiesController {
   @Get(":id")
   async one(@Param("id") id: string): Promise<LegalEntityView> {
     return this.queries.execute<GetLegalEntityQuery, LegalEntityView>(new GetLegalEntityQuery(id));
+  }
+
+  /**
+   * La fiche de mandat SEPA préremplie de notre bloc créancier — un **exemple**,
+   * sans débiteur ni RUM.
+   *
+   * `GET` et non `POST` : rien n'est créé. Deux appels rendent le même fichier au
+   * bit près, et aucun mandat n'existe à l'issue. Le jour où un mandat nominatif
+   * sera émis, ce sera une commande — frapper une RUM est un fait qu'on garde.
+   *
+   * Répond **409** si l'entité ne peut pas encaisser, en nommant ce qui manque :
+   * c'est `creditorSnapshot()` qui refuse, et il refuse plutôt que de rendre des
+   * chaînes vides qu'un gabarit imprimerait sans broncher.
+   */
+  @Get(":id/mandat-sepa-exemple.pdf")
+  async sampleMandate(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<ExportSampleMandateQuery, SampleMandatePdf>(
+      new ExportSampleMandateQuery(id),
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "mandat-sepa-exemple.pdf")),
+    );
+    return new StreamableFile(pdf.bytes);
   }
 
   /**

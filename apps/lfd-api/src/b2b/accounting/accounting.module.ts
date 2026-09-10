@@ -6,6 +6,7 @@ import { DeclareLegalEntityHandler } from "./application/commands/declare-legal-
 import { SetCreditorAccountHandler } from "./application/commands/set-creditor-account.handler.js";
 import { SetLegalEntityArchivedHandler } from "./application/commands/set-legal-entity-archived.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
+import { ExportSampleMandateHandler } from "./application/queries/export-sample-mandate.handler.js";
 import { GetLegalEntityHandler } from "./application/queries/get-legal-entity.handler.js";
 import { ListLegalEntitiesHandler } from "./application/queries/list-legal-entities.handler.js";
 import { CreditorReader } from "./domain/ports/creditor.reader.js";
@@ -39,6 +40,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     SetLegalEntityArchivedHandler,
     ListLegalEntitiesHandler,
     GetLegalEntityHandler,
+    ExportSampleMandateHandler,
   ],
   exports: [CreditorReader],
 })
