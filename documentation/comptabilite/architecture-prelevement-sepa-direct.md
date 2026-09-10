@@ -183,6 +183,35 @@ representent **jamais**. Il ne manque pas un statut, il en manque **deux** :
 | `dead_retryable` — à reprendre     | l'**exclut** : la commande revient     |
 | `dead_final` — ne jamais reprendre | l'**inclut** : la commande reste prise |
 
+🔴 **Et un rejet ne porte pas sur une commande : il porte sur TOUT le cycle de
+ce client.**
+
+C'est la conséquence directe du débit collectif, et elle change la nature du
+geste. Sous le modèle par facture, un retour rendait une facture impayée : un
+objet, une décision. Ici, un seul `RJCT` remet en question **les trente
+commandes du mois**, d'un coup.
+
+Trois choses en découlent, et aucune n'est un détail :
+
+- **La décision humaine n'est pas « represse-t-on cette commande ? »** mais
+  « que fait-on du mois de ce client ? ». L'écran doit poser cette question-là,
+  parce que c'est celle qu'on se pose : relancer tout, relancer une partie,
+  passer au recouvrement.
+- **La reprise doit pouvoir être PARTIELLE.** Une re-présentation SEPA est une
+  nouvelle instruction, rien n'oblige à reprendre le même périmètre. Un client
+  qui conteste trois commandes sur trente doit pouvoir être redébité des
+  vingt-sept autres — sans quoi le litige sur 3 % du montant gèle 100 % de
+  l'encaissement.
+- **La jonction doit donc laisser une commande CHANGER d'instruction.**
+  `UNIQUE (order_id)` sur une jonction figée l'interdirait. Ce qui doit être
+  unique, c'est « une commande dans **au plus une instruction vivante** » — la
+  même forme d'index partiel que l'objection 1 de la §0 ter réclame, et pour la
+  même raison.
+
+⚠️ Le montant du débit devient donc une **somme reconstituée à chaque
+présentation**, jamais un total figé sur le cycle. Un cycle n'a pas « un
+montant » : il a un montant _par tentative_.
+
 **Décision (2026-09-10) : aucune reprise automatique, quel que soit le motif.**
 Tout retour met les commandes en attente d'une décision humaine. Nous n'avons
 jamais vu un seul code motif de la Caisse d'Épargne, et faire confiance à un
