@@ -38,6 +38,203 @@
 
 ---
 
+## 0 quater. 🔴 Nous n'émettons PAS de facture — décidé le 2026-09-10
+
+**Le comptable importe nos commandes dans son logiciel de facturation et sort la
+facture mensuelle. Nous produisons la SOMME par société et le FICHIER de
+prélèvement.**
+
+La facture existe donc — elle n'est pas émise par ce système. La raison est la
+**facturation électronique** : bâtir un émetteur aujourd'hui, c'est bâtir contre
+un régime qui n'est pas stabilisé, et le refaire ensuite.
+
+> **V2 de cette section.** La V1 a été contredite avant d'être soumise et n'a pas
+> survécu : six objections bloquantes, dont **trois affirmations fausses sur
+> l'existant**, chacune recopiée d'un commentaire au lieu d'être lue dans le
+> chemin d'écriture. Le motif exact du 2026-08-31. Les corrections sont marquées
+> ⟲.
+
+### 🔴 Ce que ça inverse, et il faut le dire en face
+
+Le §2 de ce document pose : « **Émettre avant d'encaisser, jamais l'inverse** —
+un échec entre les deux laisserait de l'argent prélevé sans document en face. »
+
+**Cette section fait exactement l'inverse, par construction.** Le débit part, la
+facture vient après, produite ailleurs. Ce n'est pas un détail d'ordonnancement
+qu'on relâche : c'est un invariant nommé qu'on retourne.
+
+Ce qu'on accepte en échange du gain :
+
+- le pire cas devient **« argent prélevé, aucun document en face »** ;
+- le geste de réparation n'est **plus le nôtre** — il passe par le comptable ;
+- le client qui conteste se voit opposer un relevé **sans numéro de facture**.
+
+⚠️ **Un mécanisme manque, et il n'est pas technique** : rien n'atteste que le
+comptable a émis. Et parce que c'est LFC qui vend, c'est LFC qui doit émettre —
+qu'un tiers le fasse en son nom s'appelle un **mandat de facturation** et se
+contractualise. À obtenir par écrit avant le premier cycle.
+
+### ⟲ L'assiette — sur la COMMANDE, jamais sur la société
+
+**V1 : « la société a le terme mensuel ». Faux et coûteux.** `Company.grantTerms`
+(`account/domain/entities/company.ts:417`) fait `[...new Set(terms)]` : c'est un
+**remplacement**, pas un ajout — l'écran montre des interrupteurs. Retirer le
+mensuel est un clic. Évaluer le critère sur la société **au moment de la
+clôture** faisait donc disparaître de l'assiette toutes les commandes livrées du
+mois dès qu'on coupait le crédit d'un client : elles n'entraient dans aucun
+cycle, jamais, et rien ne les signalait. Le client qu'on venait de couper
+repartait avec un mois de marchandise.
+
+**Décision (Hugo, 2026-09-10) : une commande passée au compte se prélève, même si
+le crédit est retiré ensuite.** Retirer le mensuel n'agit que sur les commandes
+à venir.
+
+Ce qui la rend prélevable est donc **la décision prise à sa passation**, et la
+commande la porte déjà :
+
+| Critère                     | Colonne                                  | Vérifié le 2026-09-10 dans                         |
+| --------------------------- | ---------------------------------------- | -------------------------------------------------- |
+| passée au compte            | `payment_status = 'not_required'`        | `Order.deferPayment()`, appelé sur `!requiresCard` |
+| **et d'un montant non nul** | `total_cents > 0`                        | `place-order.handler.ts:233` — voir ⟲ ci-dessous   |
+| dans la fenêtre du cycle    | `created_at` (commentée « = passée le ») | `prisma/schema.prisma`                             |
+| pas annulée                 | statut dans la liste blanche ci-dessous  | —                                                  |
+
+⟲ **`total_cents > 0` n'était pas dans la V1, et son absence était une faute.**
+`requiresCard = (…) && order.totalCents > 0` : **toute commande à 0 € devient
+`not_required`**, terme ou pas. Sans cette borne, des commandes gratuites
+entraient dans la jonction, dans le relevé du client et dans le CSV du comptable.
+
+Avec elle, l'équivalence est exacte : `not_required ∧ total > 0` **si et
+seulement si** la commande a été passée au compte. `company_id IS NOT NULL` en
+découle (le compte se refuse à qui n'a pas de société) — ce n'est pas une
+seconde règle, c'est une conséquence, et l'écrire dans la requête serait laisser
+croire qu'on la vérifie.
+
+Montant = **TTC** (`total_cents`), qui inclut les frais de livraison et la
+surtaxe de retard. Le relevé devra les détailler, sinon la somme prélevée ne se
+recompose pas depuis les commandes que le client connaît.
+
+### ⟲ Le périmètre des statuts — liste BLANCHE, et une divergence à trancher
+
+La V1 disait `status <> 'cancelled'`. Une liste noire laisse entrer ce qu'on
+n'a pas prévu. Le dépôt a déjà `REVENUE_ORDER_STATUSES`
+(`b2b/growth/domain/revenue-scope.ts`), liste blanche « partagée par tous les
+lecteurs de CA **pour qu'ils comptent exactement la même chose** ».
+
+🔴 **Elle omet `ready`**, qui est pourtant écrit. L'assiette prélevée et le CA
+affiché divergeraient donc, sans que personne ne sache lequel croire. L'assiette
+fait autorité — c'est elle qui déplace de l'argent — et `revenue-scope.ts` est à
+corriger dans le même mouvement, ou à déclarer volontairement différente.
+
+### ⟲ Le cycle — borné par la clôture PRÉCÉDENTE, pas par le calendrier
+
+La V1 ne donnait qu'un plafond. Deux définitions étaient possibles, et elles ne
+diffèrent que dans le cas qui nous intéresse.
+
+**Un cycle va d'une clôture à la suivante.** Pas « le mois M ». C'est la seule
+définition qui survit à une clôture anticipée : sinon la commande du 21 est dans
+deux cycles ou dans aucun.
+
+Conséquence à assumer : **le cycle n'est pas calendaire**, et « clôture
+mensuelle » (T8) est un mauvais nom. En échange, la **clôture anticipée cesse
+d'être un cas particulier** — c'est le cas général, et le 1er à 00h00 n'est plus
+qu'une clôture par défaut.
+
+⚠️ **Ni minuit UTC, ni `new Date()`.** « Le 1er à 00h00 » est un jour local, et
+le geste du dépôt est `localToInstant(day, "00:00")` sur `BUSINESS_TIME_ZONE`.
+Minuit UTC ferait basculer une à deux heures de commandes dans le mauvais cycle,
+différemment selon la saison. `lint:business-day` **ne le verra pas** : sa portée
+est limitée à quatre dossiers de tarification.
+
+⚠️ Et `orders.created_at` est `@default(now())`, donc écrit par **Postgres**, pas
+par le port `Clock` — et `now()` y est l'heure de **début de transaction**. Une
+transaction longue peut committer après la clôture une ligne datée d'avant.
+Borné par la clôture précédente, ça se rattrape au cycle suivant ; c'est une
+raison de plus de ne pas borner par le calendrier.
+
+### ⟲ L'unité du débit, et l'idempotence
+
+**Décision (Hugo, 2026-09-10) : UN prélèvement par société et par cycle.** Un
+client à trente commandes voit une ligne sur son relevé, et nous payons un frais
+d'opération.
+
+**Rien ne marque une commande comme prélevée.** `payment_status` reste
+`not_required` pour toujours : c'est un état de MODE de règlement, pas
+d'encaissement. Sans marque, un second passage prélève deux fois. C'est la seule
+chose que ce modèle rend plus difficile que le modèle par facture, où la facture
+portait la marque.
+
+L'instruction étant collective, la marque ne peut pas vivre sur elle : il faut
+une **table de jonction commande ↔ instruction, avec `UNIQUE (order_id)`** — celle
+que la §3 prévoyait pour les factures, reportée sur les commandes. Sans elle,
+tout le reste est indéfendable.
+
+### ⟲ Les retours — DEUX morts, et rien d'automatique
+
+La V1 disait « libérer ce qui n'a pas abouti ». Elle re-débitait une opération
+contestée.
+
+Les R-transactions ne se valent pas : une provision insuffisante se represente,
+une **opposition** ou une contestation d'opération non autorisée ne se
+representent **jamais**. Il ne manque pas un statut, il en manque **deux** :
+
+| État                               | L'index partiel                        |
+| ---------------------------------- | -------------------------------------- |
+| `dead_retryable` — à reprendre     | l'**exclut** : la commande revient     |
+| `dead_final` — ne jamais reprendre | l'**inclut** : la commande reste prise |
+
+**Décision (2026-09-10) : aucune reprise automatique, quel que soit le motif.**
+Tout retour met les commandes en attente d'une décision humaine. Nous n'avons
+jamais vu un seul code motif de la Caisse d'Épargne, et faire confiance à un
+code qu'on n'a jamais reçu est un pari. Ajouter l'automatisme plus tard est
+additif ; défaire une re-présentation abusive ne l'est pas.
+
+### ⟲ Ce que la suppression emporte, et que la V1 ne nommait pas
+
+| Tranche                           | Devient                                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **T4** agrégat facture            | **supprimée**                                                                                         |
+| **T5** persistance + numérotation | **supprimée** — la numérotation appartient au comptable                                               |
+| **T6** rendu Factur-X             | **supprimée**                                                                                         |
+| **T7** régime « à la commande »   | ⟲ **supprimée par ricochet** — elle ÉMET une facture, donc elle avait besoin de T4, T5 et T6          |
+| **T11** écrans                    | ⟲ **amputée** — « Mes factures » côté client n'a plus d'objet ; l'onglet devient « Mes prélèvements » |
+| **T1 bis** `tva_intracom` exigé   | ⟲ **à rejustifier** — c'est une mention obligatoire de FACTURE ; sa preuve n'a plus de fondement ici  |
+| **T8** clôture mensuelle          | conservée, renommée : elle clôt un **cycle**, et le mot « mensuelle » est faux                        |
+
+⚠️ **Irréversibilité.** Sur le papier rien n'est codé, donc tout se défait. Ce
+qui ne se défait pas : **la série de numéros part chez le comptable.** Le jour où
+LFC voudra émettre — réforme, PDP, changement de comptable — il faudra reprendre
+une série qui n'est pas la nôtre, ou en ouvrir une seconde : ce que cette section
+appelle elle-même « une seconde vérité ». La décision se paie au moment où on la
+défait.
+
+### Les deux choses que ça nous oblige à produire
+
+1. **L'avis de prélèvement** — le SDD B2B exige d'annoncer montant et date avant
+   de débiter (`preNotificationDays`, déjà porté par l'entité). Sans facture, le
+   client reçoit un **relevé des commandes du cycle**, frais et surtaxes
+   détaillés. Ce n'est pas une facture et ça ne doit pas y ressembler.
+2. **L'export pour le comptable** — les commandes du cycle, par société. Il doit
+   porter `total_cents`, `vat_cents` et les parts de TVA **figées** : l'arrondi
+   est fait une fois, dans `ventilateVat`, « et nulle part ailleurs ». Un CSV de
+   lignes à resommer garantit la divergence dès le premier mois.
+
+### ⚠️ Ce qui reste ouvert
+
+- **La cohérence des trois dates.** La §6 dit « un export au dernier jour du
+  mois », Hugo veut la clôture le 1er, et la §5 impose un débit au plus tôt à
+  J + `preNotificationDays`. Ces trois phrases ne sont pas compatibles deux à
+  deux. À arbitrer avec la banque, pas ici.
+- **L'écart entre le montant prélevé et la facture du comptable.** Les deux
+  sortent de la même assiette ; l'écart ne peut donc venir que d'un décalage de
+  date. ⟲ La V1 invoquait aussi « un avoir » — il n'existe nulle part
+  (`PaymentStatus.refunded` n'a **aucun écrivain**), et le seul endroit où il
+  était conçu est T4, que cette section supprime.
+- **Le format d'import du logiciel du comptable.** Inconnu. Il décide de la forme
+  du CSV, donc il se demande avant de l'écrire.
+
+---
+
 ## 0. Ce qui change, en une phrase
 
 Avec Stripe, encaisser était **N appels indépendants**, chacun idempotent,
