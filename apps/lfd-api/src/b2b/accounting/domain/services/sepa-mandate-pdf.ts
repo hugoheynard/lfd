@@ -2,6 +2,8 @@ import { Buffer } from "node:buffer";
 
 import PDFDocument from "pdfkit";
 
+import { BRAND_LOGO_BW } from "../../../../platform/shared/documents/brand-logo.js";
+
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
 
 /**
@@ -316,8 +318,8 @@ function title(doc: Doc): number {
  * La ligne d'en-tête : trois cellules. La RUM reste **vide** — elle est frappée
  * à la création du mandat, donc elle n'existe pas sur un exemplaire vierge.
  */
-function header(doc: Doc, top: number, creditor: CreditorSnapshot): number {
-  const bottom = top + 15 * MM;
+function header(doc: Doc, top: number): number {
+  const bottom = top + 19 * MM;
   vline(doc, HEAD_SPLIT_LEFT, top, bottom, HAIRLINE);
   vline(doc, HEAD_SPLIT_RIGHT, top, bottom, HAIRLINE);
 
@@ -325,14 +327,19 @@ function header(doc: Doc, top: number, creditor: CreditorSnapshot): number {
   comb(doc, FIELD_X + 1 * MM, top + 7 * MM, [26]);
   caption(doc, "Référence unique du mandat", FIELD_X + 1 * MM, top + 12 * MM);
 
-  // La cellule de droite porte « Nom du créancier et logo » sur le modèle vierge.
-  // Le nom, nous l'avons — la mention disparaît donc, elle ne servait qu'à dire
-  // quoi écrire. Le logo viendra quand le document sera émis pour de bon.
-  put(doc, creditor.name, HEAD_SPLIT_RIGHT + 2 * MM, top + 6 * MM, {
-    size: 10,
-    font: BOLD,
-    width: BOX_RIGHT - HEAD_SPLIT_RIGHT - 4 * MM,
-    align: "center",
+  // La cellule de droite porte « Nom du créancier et logo » sur le modèle
+  // vierge. Nous n'y mettons que le LOGO : le nom est déjà écrit deux fois sur
+  // la page — en zone 7, et dans le texte d'autorisation — et une troisième
+  // occurrence à trois centimètres de la deuxième n'apprend rien.
+  //
+  // En NOIR ET BLANC : ces fiches se tirent sur les imprimantes du bureau,
+  // souvent monochromes, et un bleu désaturé par le pilote ressort en gris pâle
+  // où le rond se perd.
+  const cellWidth = BOX_RIGHT - HEAD_SPLIT_RIGHT;
+  const logoSide = 14 * MM;
+  doc.image(BRAND_LOGO_BW, HEAD_SPLIT_RIGHT + (cellWidth - logoSide) / 2, top + 2.5 * MM, {
+    width: logoSide,
+    height: logoSide,
   });
 
   line(doc, BOX_LEFT, bottom, BOX_RIGHT, RULE);
@@ -642,7 +649,7 @@ function splitAddress(lines: readonly string[]): {
 function draw(doc: Doc, creditor: CreditorSnapshot): void {
   watermark(doc);
   const top = title(doc);
-  let y = header(doc, top, creditor);
+  let y = header(doc, top);
   y = authorization(doc, y, creditor.name);
   y = debtorZones(doc, y);
   y = creditorZones(doc, y, creditor);

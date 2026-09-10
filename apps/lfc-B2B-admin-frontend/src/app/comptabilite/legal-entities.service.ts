@@ -53,10 +53,18 @@ export class LegalEntitiesService {
    * Le serveur répond **409** quand l'entité ne peut pas encaisser : l'appelant
    * ne propose donc le geste que sur une entité complète, plutôt que d'offrir
    * un bouton dont la seule issue serait un message d'erreur.
+   *
+   * `inline` bascule le `Content-Disposition` du serveur : c'est la différence
+   * entre REGARDER la fiche dans un onglet et l'accumuler dans un dossier de
+   * téléchargements. Un seul point d'appel plutôt que deux méthodes — l'URL
+   * n'est écrite qu'une fois.
    */
-  async sampleMandate(id: string): Promise<Blob> {
+  async sampleMandate(id: string, options: { readonly inline?: boolean } = {}): Promise<Blob> {
     return firstValueFrom(
-      this.http.get(`${this.base}/${id}/mandat-sepa-exemple.pdf`, { responseType: 'blob' }),
+      this.http.get(`${this.base}/${id}/mandat-sepa-exemple.pdf`, {
+        responseType: 'blob',
+        params: options.inline === true ? { inline: '1' } : {},
+      }),
     );
   }
 

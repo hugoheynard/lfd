@@ -46,6 +46,14 @@ function drawnText(pdf: Buffer): string {
     if (start === -1) {
       break;
     }
+    // 🔴 `endstream` CONTIENT « stream ». Sans cette garde, la recherche
+    // repartait du mot de fin, reparsait un faux flux, et avalait tout jusqu'au
+    // suivant — c'est-à-dire le texte qu'on cherchait. Le défaut est resté
+    // invisible jusqu'à ce qu'une image embarquée déplace les décalages.
+    if (pdf.subarray(start - 3, start).toString("latin1") === "end") {
+      from = start + 6;
+      continue;
+    }
     const end = pdf.indexOf("endstream", start);
     if (end === -1) {
       break;
@@ -56,11 +64,16 @@ function drawnText(pdf: Buffer): string {
     try {
       inflated = inflateSync(body).toString("latin1");
     } catch {
-      // Un flux non déflaté (police embarquée, table de références) : on passe.
+      // Un flux non déflaté (table de références, police embarquée) : on passe.
       inflated = body.toString("latin1");
     }
-    parts.push(decodeStrings(inflated));
-    from = end + 1;
+    from = end + 9;
+    // Seuls les flux de CONTENU nous intéressent : `BT` ouvre un bloc de texte.
+    // Sans ce tri, les octets d'une image inflatée passent dans le décodeur de
+    // chaînes et rendent des kilo-octets de bruit qui noient le vrai texte.
+    if (inflated.includes("BT")) {
+      parts.push(decodeStrings(inflated));
+    }
   }
   return parts.join("\n");
 }

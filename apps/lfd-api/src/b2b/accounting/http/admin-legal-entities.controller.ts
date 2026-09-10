@@ -111,15 +111,17 @@ export class AdminLegalEntitiesController {
     // l'imprimer, et accumuler des PDF dans un dossier de téléchargements pour
     // vérifier une adresse est le contraire d'un contrôle.
     //
+    // La bascule attend `1` EXACTEMENT, et le défaut est l'enregistrement. Tester
+    // la seule présence du paramètre ferait de `?inline=0` un affichage — un
+    // drapeau qui dit oui quand on écrit non est pire que pas de drapeau.
+    //
     // 🔴 `inline` n'est légitime que parce que ces octets sont fabriqués ICI :
     // un PDF rendu par un service de domaine, dont nous choisissons le type. Le
     // helper le dit — jamais sur du contenu téléversé, où « inline » rend un
     // `.svg` dans notre origine, c'est-à-dire un XSS stocké.
     response.setHeader(
       "Content-Disposition",
-      inline === undefined
-        ? contentDispositionAttachment(fileName)
-        : contentDispositionInline(fileName),
+      inline === "1" ? contentDispositionInline(fileName) : contentDispositionAttachment(fileName),
     );
     return new StreamableFile(pdf.bytes);
   }

@@ -251,6 +251,14 @@ describe("Entité juridique — la fiche de mandat SEPA", () => {
     // remplir un dossier de téléchargements pour vérifier une adresse.
     expect(shown.headers["content-disposition"]).toContain("inline");
 
+    // Régression par anticipation : la première version testait la seule
+    // PRÉSENCE du paramètre, donc `?inline=0` affichait. Un drapeau qui dit oui
+    // quand on écrit non est pire que pas de drapeau.
+    const refused = await staff()
+      .get(`/admin/accounting/legal-entities/${id}/mandat-sepa-exemple.pdf?inline=0`)
+      .expect(200);
+    expect(refused.headers["content-disposition"]).toContain("attachment");
+
     const pdf = response.body as Buffer;
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     // 🔴 Ce que seul un e2e prouve : ce que le SERVEUR envoie réellement sur le

@@ -10,13 +10,13 @@ import {
 import type { LegalEntityView } from '@lfd/contracts';
 import { PRE_NOTIFICATION_MAX_DAYS, PRE_NOTIFICATION_MIN_DAYS } from '@lfd/contracts';
 import {
+  FoldBackLinkComponent,
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
-  FoldInfoComponent,
   FoldInlineConfirmComponent,
   FoldInputComponent,
   FoldLoadingStateComponent,
@@ -24,12 +24,15 @@ import {
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldToastService,
+  type FoldBadgeVariant,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { openBlob } from '../../../shared/download/open-blob';
 import { saveBlob } from '../../../shared/download/save-blob';
 import { LegalEntitiesService } from '../../legal-entities.service';
+import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 
 /**
  * **La fiche d'une entité juridique** — tout ce qui se règle sur un émetteur.
@@ -51,22 +54,28 @@ import { LegalEntitiesService } from '../../legal-entities.service';
  * ## Le mandat d'exemple suit `canCollect`, jamais l'envie
  *
  * Le serveur refuse en **409** de rendre un mandat sans ICS ni compte : il
- * imprimerait des cases vides sur un document qu'on fait signer. Le bouton est
- * donc inactif tant que l'entité ne peut pas encaisser, et dit ce qui manque —
- * un bouton actif dont la seule issue est une erreur est une affordance qui
- * ment, exactement comme le champ ICS rouvert.
+ * imprimerait des cases vides sur un document qu'on fait signer. Les deux
+ * boutons sont donc inactifs tant que l'entité ne peut pas encaisser, et la
+ * fiche dit ce qui manque — un bouton actif dont la seule issue est une erreur
+ * est une affordance qui ment, exactement comme le champ ICS rouvert.
+ *
+ * **Deux gestes, pas un.** « Voir » ouvre la fiche dans un onglet (le
+ * `Content-Disposition` du serveur bascule en `inline`), « Télécharger »
+ * l'enregistre. Contrôler une adresse ou un ICS à l'écran est le geste courant,
+ * accumuler des PDF dans un dossier de téléchargements en est le contraire —
+ * d'où l'ordre, « Voir » en premier et en emphase.
  */
 @Component({
   selector: 'app-legal-entity-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBackLinkComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
-    FoldInfoComponent,
     FoldInlineConfirmComponent,
     FoldInputComponent,
     FoldLoadingStateComponent,
@@ -103,13 +112,18 @@ export class LegalEntityDetailPage {
     () => this.daysDraft() ?? this.entity()?.preNotificationDays ?? null,
   );
 
-  /** Ce qui manque pour encaisser, avec les mots du serveur. */
-  protected readonly mandateHint = computed(() => {
+  /**
+   * L'état affiché à côté du titre — la MÊME formulation que la colonne « État »
+   * de la liste, parce qu'elle vient du même endroit.
+   */
+  protected readonly stateLabel = computed(() => {
     const entity = this.entity();
-    if (entity === null || entity.canCollect) {
-      return '';
-    }
-    return `Le mandat ne peut pas être rempli : il manque ${entity.missingToCollect.join(', ')}.`;
+    return entity === null ? '' : legalEntityStateLabel(entity);
+  });
+
+  protected readonly stateVariant = computed<FoldBadgeVariant>(() => {
+    const entity = this.entity();
+    return entity === null ? 'neutral' : legalEntityStateVariant(entity);
   });
 
   constructor() {
@@ -188,10 +202,39 @@ export class LegalEntityDetailPage {
    * que le bouton ne marche pas.
    */
   protected async downloadMandate(entity: LegalEntityView): Promise<void> {
+    await this.withMandate(entity, { inline: false }, (blob) => {
+      saveBlob(blob, 'mandat-sepa-exemple.pdf');
+      return null;
+    });
+  }
+
+  /**
+   * Le même mandat, REGARDÉ — en `inline`, dans un onglet.
+   *
+   * Pas de `<a href>` sur la route : elle est derrière le jeton staff, et une
+   * navigation nue rendrait un 401 en page blanche. Les octets viennent donc
+   * par `HttpClient`, et `openBlob` les donne au navigateur (sa révocation
+   * différée y est expliquée — la supprimer casserait l'onglet qui vient de
+   * s'ouvrir).
+   */
+  protected async viewMandate(entity: LegalEntityView): Promise<void> {
+    await this.withMandate(entity, { inline: true }, (blob) =>
+      openBlob(blob)
+        ? null
+        : 'L’onglet n’a pas pu s’ouvrir : le navigateur bloque les fenêtres de ce site.',
+    );
+  }
+
+  /** Le va-et-vient commun aux deux gestes : occupé, échec DIT, repos. */
+  private async withMandate(
+    entity: LegalEntityView,
+    options: { readonly inline: boolean },
+    hand: (blob: Blob) => string | null,
+  ): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
     try {
-      saveBlob(await this.api.sampleMandate(entity.id), 'mandat-sepa-exemple.pdf');
+      this.error.set(hand(await this.api.sampleMandate(entity.id, options)));
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Mandat d’exemple indisponible.'));
     } finally {

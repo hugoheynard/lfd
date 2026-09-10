@@ -1,30 +1,61 @@
-<fold-page-layout [title]="entity()?.name ?? 'Entité juridique'" separator>
-  <!-- Trois blocs plutôt qu'un : un `@if` qui porte plusieurs nœuds à sa
+<!-- `headerBleed` + `separator` : l'en-tête va bord à bord, donc son filet
+     aussi — comme la fiche produit. PAS de `headerBand` : les sections de cette
+     page sont posées à même le fond, une bande derrière l'en-tête y ajouterait
+     un second sol qui se disputerait le rôle du premier. -->
+<fold-page-layout [title]="entity()?.name ?? 'Entité juridique'" headerBleed separator>
+  <!-- Un bloc de projection par `@if` : un `@if` qui porte plusieurs nœuds à sa
        racine ne projette dans aucun emplacement, et l'AOT le refuse. -->
-  @if (entity(); as entity) {
-    <p description>{{ entity.legalForm }} · SIREN {{ entity.siren }}</p>
+  <fold-back-link
+    pageEyebrow
+    icon="arrow-back"
+    label="Entités juridiques"
+    routerLink="/comptabilite/entites-juridiques"
+  />
+
+  @if (entity() !== null) {
+    <!-- L'état À CÔTÉ DU TITRE, et une seule fois sur la page : c'est la
+         première question qu'on pose à une entité (« peut-elle encaisser ? »),
+         et la section « Identité » n'a plus à la reposer. -->
+    <fold-badge titleBadge [content]="stateLabel()" [variant]="stateVariant()" radius="pill" />
   }
 
   @if (entity(); as entity) {
-    <!-- 🔴 Inactif tant que l'entité ne peut pas encaisser : le serveur refuse
+    <span pageSubtitle class="ident">
+      <span>{{ entity.legalForm }}</span>
+      <span class="ident-sep" aria-hidden="true">·</span>
+      <span class="ident-siren">SIREN {{ entity.siren }}</span>
+    </span>
+  }
+
+  @if (entity(); as entity) {
+    <!-- 🔴 Inactifs tant que l'entité ne peut pas encaisser : le serveur refuse
          en 409 plutôt que d'imprimer des cases vides sur un document qu'on fait
          signer. Un bouton actif dont la seule issue est une erreur est une
-         affordance qui ment — la même règle que le champ ICS refermé. -->
-    <button
-      pageActions
-      foldButton
-      emphasis="outline"
-      icon="download"
-      [disabled]="!entity.canCollect"
-      [loading]="busy()"
-      (click)="downloadMandate(entity)"
-    >
-      Mandat SEPA exemple
-    </button>
-  }
+         affordance qui ment — la même règle que le champ ICS refermé.
 
-  @if (mandateHint(); as hint) {
-    <fold-info pageActions label="Pourquoi le mandat est indisponible" [text]="hint" />
+         « Voir » d'abord, et en emphase : le geste courant est de CONTRÔLER la
+         fiche à l'écran, pas d'accumuler des PDF. -->
+    <div pageActions class="ej-mandate-actions">
+      <button
+        foldButton
+        icon="eye"
+        [disabled]="!entity.canCollect"
+        [loading]="busy()"
+        (click)="viewMandate(entity)"
+      >
+        Voir le mandat SEPA
+      </button>
+      <button
+        foldButton
+        emphasis="outline"
+        icon="download"
+        [disabled]="!entity.canCollect"
+        [loading]="busy()"
+        (click)="downloadMandate(entity)"
+      >
+        Télécharger
+      </button>
+    </div>
   }
 
   @if (error(); as message) {
@@ -39,22 +70,17 @@
     </fold-empty-state>
   } @else if (entity(); as entity) {
     <fold-page-section title="Identité" separator>
-      <!-- L'état, RÉDIGÉ PAR LE SERVEUR. `missingToCollect` arrive en clair et
-           déjà formulé : le récrire ici ferait une seconde définition de
-           « complète », et c'est celle que l'utilisateur lit qui dériverait. -->
-      <div class="ej-state">
-        @if (entity.archivedAt !== null) {
-          <fold-badge variant="neutral" content="Archivée" />
-          <span class="ej-said">
-            Elle n'émet plus rien. Les documents qui la citent restent lisibles.
-          </span>
-        } @else if (entity.canCollect) {
-          <fold-badge variant="success" content="Peut encaisser" />
-        } @else {
-          <fold-badge variant="warning" content="Incomplète" />
-          <span class="ej-said">Il manque {{ entity.missingToCollect.join(', ') }}.</span>
-        }
-      </div>
+      <!-- Plus de badge ici : il est à côté du titre, et le répéter à trois
+           centimètres ferait lire deux états là où il n'y en a qu'un. Ce qui
+           reste est ce que le badge NE DIT PAS — ce qui manque, ou ce qu'un
+           archivage laisse lisible. Les deux phrases sont RÉDIGÉES PAR LE
+           SERVEUR (`missingToCollect`) : les récrire ici ferait une seconde
+           définition de « complète ». -->
+      @if (entity.archivedAt !== null) {
+        <p class="ej-said">Elle n'émet plus rien. Les documents qui la citent restent lisibles.</p>
+      } @else if (!entity.canCollect) {
+        <p class="ej-said">Il manque {{ entity.missingToCollect.join(', ') }}.</p>
+      }
 
       <fold-field-list>
         <fold-field label="Siège">

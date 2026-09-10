@@ -1,9 +1,27 @@
-.ej-state {
-  display: flex;
+/* La ligne d'identité sous le titre : des FAITS qu'on lit d'un coup d'œil, pas
+   de la prose — même patron que la fiche produit. */
+.ident {
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--fold-space-sm);
-  margin-block-end: var(--fold-space-md);
+}
+
+.ident-sep {
+  color: var(--fold-color-text-faded);
+}
+
+/* Le SIREN est un NUMÉRO qu'on dicte et qu'on recopie : jamais coupé sur deux
+   lignes, sans quoi il ne se relit pas. */
+.ident-siren {
+  white-space: nowrap;
+}
+
+/* Voir, puis télécharger — deux gestes sur une ligne, dans l'en-tête. */
+.ej-mandate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
 }
 
 /* La prose explicative des trois réglages : elle porte le POURQUOI, qui se lit

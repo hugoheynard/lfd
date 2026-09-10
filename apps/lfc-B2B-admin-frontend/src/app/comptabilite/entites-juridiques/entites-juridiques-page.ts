@@ -12,12 +12,14 @@ import {
   FoldPageLayoutComponent,
   FoldPanelHostService,
   FoldToastService,
+  type FoldBadgeVariant,
   type FoldTableColumn,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { LegalEntitiesService } from '../legal-entities.service';
+import { legalEntityStateLabel, legalEntityStateVariant } from '../legal-entity-state';
 import { DeclarePanel } from './declare-panel/declare-panel';
 
 /**
@@ -114,18 +116,14 @@ export class EntitesJuridiquesPage {
 
   // Le contexte d'un `foldCell` n'est pas typé : on entre par une méthode, qui
   // rend la ligne typée au passage — plutôt que d'indexer un Record avec `any`.
-  protected stateVariant(entity: LegalEntityView): 'neutral' | 'success' | 'warning' {
-    if (entity.archivedAt !== null) {
-      return 'neutral';
-    }
-    return entity.canCollect ? 'success' : 'warning';
+  // La formulation, elle, est PARTAGÉE avec la fiche de détail : deux
+  // définitions de « peut encaisser » finiraient par diverger.
+  protected stateVariant(entity: LegalEntityView): FoldBadgeVariant {
+    return legalEntityStateVariant(entity);
   }
 
   protected stateLabel(entity: LegalEntityView): string {
-    if (entity.archivedAt !== null) {
-      return 'Archivée';
-    }
-    return entity.canCollect ? 'Peut encaisser' : 'Incomplète';
+    return legalEntityStateLabel(entity);
   }
 
   protected async declare(): Promise<void> {
