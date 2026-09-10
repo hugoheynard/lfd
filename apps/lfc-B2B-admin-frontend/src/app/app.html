@@ -105,6 +105,24 @@
         ></a>
       }
 
+      @if (canSeeAccounting()) {
+        <!-- COMPTABILITÉ — qui encaisse, sous quelle identité. Juste après le
+             B2B, et avant l'Admin : on descend de ce qu'on vend vers qui
+             l'encaisse, puis vers qui tient l'outil. Son droit lui est propre —
+             l'ICS et le compte créancier ne se règlent pas avec les heures de
+             retrait. -->
+        <a
+          fold-menu-item
+          icon="receipt"
+          label="Comptabilité"
+          routerLink="/comptabilite"
+          routerLinkActive
+          #comptaRla="routerLinkActive"
+          [active]="comptaRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeAdmin()) {
         <!-- ADMIN — ce qui se règle sur les GENS : qui entre (les accès à
              remettre) et qui tient l'outil (l'annuaire de l'équipe). Une
@@ -406,6 +424,22 @@
       @if (canSeePim()) {
         <fold-nav-group icon="catalog" label="PIM" [entryCountLabel]="entriesLabel">
           @for (view of pimViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #rla="routerLinkActive"
+              [active]="rla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
+      }
+      @if (canSeeAccounting()) {
+        <fold-nav-group icon="receipt" label="Comptabilité" [entryCountLabel]="entriesLabel">
+          @for (view of comptabiliteViews(); track view.key) {
             <a
               fold-nav-tile
               [icon]="view.icon"

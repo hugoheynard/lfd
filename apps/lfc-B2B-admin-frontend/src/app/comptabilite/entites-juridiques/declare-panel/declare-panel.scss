@@ -1,0 +1,25 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* Code postal et ville sur une ligne : ils se lisent et se dictent ensemble, et
+   les empiler ferait descendre le pied du panneau d'un champ pour rien. Le code
+   postal est borné, la ville prend ce qui reste. */
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+  gap: var(--fold-space-md);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-block-start: var(--fold-space-xl);
+}
+
+.spacer {
+  flex: 1;
+}

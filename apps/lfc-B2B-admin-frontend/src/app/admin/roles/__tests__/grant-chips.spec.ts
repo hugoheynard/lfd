@@ -42,9 +42,11 @@ describe('grantGroups', () => {
    * Un compte, et c'est son intérêt : ajouter une ressource sans y penser fait
    * rougir ce test. `b2b_order_waivers` l'a fait passer de 19 à 20 le
    * 2026-09-04 — accorder une dérogation d'heure limite est un droit à part de
-   * la prise de commande.
+   * la prise de commande. `b2b_accounting` l'a fait passer de 20 à 21 le
+   * 2026-09-10 : enregistrer le mandat d'un client et changer le compte qui
+   * reçoit l'argent de l'entreprise ne peuvent pas s'ouvrir ensemble.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(20);
+    expect(RESOURCE_COUNT).toBe(21);
   });
 });

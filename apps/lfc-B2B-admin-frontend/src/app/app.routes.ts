@@ -6,6 +6,7 @@ import { adminRoutes } from './admin/admin.routes';
 import { commercialRoutes } from './commercial/commercial.routes';
 import { ficheClientRoutes, nouveauCompteRoutes } from './fiche-client/fiche-client.routes';
 import { b2bRoutes } from './b2b/b2b.routes';
+import { comptabiliteRoutes } from './comptabilite/comptabilite.routes';
 import { pimRoutes } from './pim/pim.routes';
 import { reglagesRoutes } from './reglages/reglages.routes';
 
@@ -131,6 +132,7 @@ export const routes: Routes = [
   },
   ...pimRoutes,
   ...b2bRoutes,
+  ...comptabiliteRoutes,
 
   {
     // LA DOCUMENTATION — au pied du menu, avec les Réglages : on ne l'ouvre pas

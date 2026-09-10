@@ -1,0 +1,113 @@
+<fold-panel-header
+  title="Déclarer une entité émettrice"
+  subtitle="La personne morale qui encaisse"
+/>
+
+<div class="body">
+  <!--
+    🔴 Dit AVANT les champs, pas après : sans cette phrase, le premier réflexe
+    devant un formulaire d'entité émettrice est de chercher où taper l'ICS, et
+    de conclure que l'écran est incomplet. Il ne l'est pas — c'est la Banque de
+    France qui n'a pas encore répondu.
+  -->
+  <fold-callout appearance="inset" variant="info">
+    Ni identifiant créancier ni compte bancaire ici&nbsp;: ils s'ajoutent
+    <strong>ensuite</strong>, sur la fiche. L'ICS arrive de la Banque de France plusieurs semaines
+    après la déclaration, et l'entité s'utilise en attendant.
+  </fold-callout>
+
+  <fold-input
+    label="Raison sociale"
+    placeholder="La Folie Douce"
+    hint="Telle qu'elle s'imprimera sur les mandats et les factures."
+    required
+    [value]="name()"
+    (valueChange)="name.set($event)"
+  />
+
+  <fold-input
+    label="Forme juridique"
+    placeholder="SAS"
+    required
+    [value]="legalForm()"
+    (valueChange)="legalForm.set($event)"
+  />
+
+  <!-- SIREN et non SIRET : l'entité émettrice est la personne morale, pas
+       l'établissement. Neuf chiffres, dont le dernier est une clé — le serveur
+       la vérifie et refuse en nommant la faute. -->
+  <fold-input
+    label="SIREN"
+    placeholder="552 100 554"
+    hint="Neuf chiffres — la personne morale, pas l'établissement."
+    required
+    [value]="siren()"
+    (valueChange)="siren.set($event)"
+  />
+
+  <fold-input
+    label="RCS"
+    optional
+    placeholder="Chambéry B 552 100 554"
+    [value]="rcs()"
+    (valueChange)="rcs.set($event)"
+  />
+
+  <fold-input
+    label="TVA intracommunautaire"
+    optional
+    placeholder="FR89552100554"
+    hint="Obligatoire sur une facture. Elle peut s'ajouter plus tard."
+    [value]="vatNumber()"
+    (valueChange)="vatNumber.set($event)"
+  />
+
+  <fold-number-input
+    label="Capital social"
+    optional
+    suffix="€"
+    [min]="0"
+    [step]="1000"
+    [value]="shareCapital()"
+    (valueChange)="shareCapital.set($event)"
+  />
+
+  <fold-input
+    label="Adresse du siège"
+    placeholder="12 rue du Fournil"
+    required
+    [value]="line1()"
+    (valueChange)="line1.set($event)"
+  />
+
+  <fold-input
+    label="Complément d'adresse"
+    optional
+    placeholder="Zone artisanale du Lac"
+    [value]="line2()"
+    (valueChange)="line2.set($event)"
+  />
+
+  <div class="pair">
+    <fold-input
+      label="Code postal"
+      placeholder="73000"
+      required
+      [value]="postalCode()"
+      (valueChange)="postalCode.set($event)"
+    />
+    <fold-input
+      label="Ville"
+      placeholder="Chambéry"
+      required
+      [value]="city()"
+      (valueChange)="city.set($event)"
+    />
+  </div>
+</div>
+
+<footer class="foot">
+  <span class="spacer"></span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canDeclare()" (click)="confirm()">Déclarer</button>
+</footer>

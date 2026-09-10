@@ -45,6 +45,13 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'colisage/:reference': 'b2b_orders:write',
   'retrait/:token': 'b2b_orders:write',
 
+  // COMPTABILITÉ — l'entité qui ÉMET : notre ICS, notre compte créancier. Le
+  // droit lui est propre et n'est PAS `b2b_settings` : un commercial a
+  // `b2b_settings: "read"`, et cet écran décide de la destination des virements.
+  // La coquille porte le mur ; la vue hérite, comme dans l'espace B2B.
+  comptabilite: 'b2b_accounting:read',
+  'comptabilite/entites-juridiques': null,
+
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,

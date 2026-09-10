@@ -137,6 +137,7 @@ export class App {
   protected readonly commercialViews = this.catalogue.views('commercial');
   protected readonly pimViews = this.catalogue.views('pim');
   protected readonly adminViews = this.catalogue.views('admin');
+  protected readonly comptabiliteViews = this.catalogue.views('comptabilite');
   protected readonly documentationViews = this.catalogue.views('documentation');
 
   /** « 7 entrées » — le lanceur de fold parle anglais par défaut. */
@@ -205,6 +206,16 @@ export class App {
     () => this.permissions.can('b2b_companies:read') || this.permissions.can('staff_access:read'),
   );
   protected readonly canSeeSettings = computed(() => this.permissions.can('b2b_settings:read'));
+  /**
+   * **Comptabilité** — son propre droit, et surtout pas `b2b_settings`.
+   *
+   * Ce qui vit derrière cette entrée est notre identité d'émetteur : l'ICS
+   * imprimé sur chaque mandat signé, et le compte où l'argent arrive. Un
+   * commercial a `b2b_settings: "read"` ; l'accrocher là lui ouvrirait l'écran
+   * qui décide de la destination des virements. Seuls l'administrateur et la
+   * comptabilité l'ont.
+   */
+  protected readonly canSeeAccounting = computed(() => this.permissions.can('b2b_accounting:read'));
   /**
    * La carte de santé. Son propre périmètre (`ops:read`), et pas celui des
    * réglages : regarder la flotte n'est pas la régler, et le jour où l'un
