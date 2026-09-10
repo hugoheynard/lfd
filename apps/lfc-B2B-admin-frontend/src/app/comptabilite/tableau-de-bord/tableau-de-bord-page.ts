@@ -170,11 +170,11 @@ export class TableauDeBordPage {
    * pas de fichier, rien. Sans ce message, l'utilisateur reclique, et conclut
    * que le bouton ne marche pas.
    */
-  private async download(fetch: () => Promise<Blob>, fileName: string): Promise<void> {
+  private async download(load: () => Promise<Blob>, fileName: string): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
     try {
-      saveBlob(await fetch(), fileName);
+      saveBlob(await load(), fileName);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Export impossible.'));
     } finally {
