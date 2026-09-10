@@ -288,7 +288,29 @@ par une et que le journal porte les faits : un aller-retour se comprend sans que
 le nom ait à le raconter. Si les retours arrière deviennent courants, la note
 sur l'envoi s'ajoutera — c'est additif.
 
-Les règles qui en découlent :
+### Deux champs, deux lectures
+
+Le **nom** (`label`) se lit dans une liste, à côté de quinze autres : une
+phrase courte. La **note** (`note`, ajoutée le 2026-09-10) se lit quand on
+ouvre, six mois plus tard, devant un client qui conteste un prix.
+
+Deux colonnes et non une, parce que ce sont deux **lectures** et non deux
+niveaux de détail du même texte : allonger le nom ferait qu'une liste
+afficherait des paragraphes, et le tronquer à l'affichage cacherait ce qu'on est
+venu chercher en ouvrant.
+
+⚠️ **La note reste facultative même quand le nom ne l'est pas.** Un envoi de
+routine se nomme en cinq mots et n'a rien de plus à dire ; la rendre obligatoire
+ferait écrire « RAS » quatre-vingt-dix fois, et une note remplie par obligation
+ne se relit pas.
+
+Les deux se demandent dans un **panneau modal**, au push — pas dans un champ de
+plus sur l'écran. Envoyer le catalogue chez des clients est le geste le plus
+conséquent du référentiel : il mérite un moment où l'on ne fait que ça, et où
+renoncer est gratuit. Un panneau et non un dialogue centré parce que fold n'a
+pas de dialogue et le dit lui-même.
+
+### Les règles qui en découlent
 
 | Situation                                        | Ce qui se passe           |
 | ------------------------------------------------ | ------------------------- |
@@ -301,6 +323,10 @@ Renommer est refusé parce que le nom dit avec quelle intention un catalogue est
 parti chez des clients. Le réécrire ne corrige pas le passé : il le raconte
 autrement, et l'écran qui relit une publication d'il y a trois mois lirait une
 intention que personne n'avait ce jour-là.
+
+⚠️ Le nommage après coup ne demande que le **nom** : une zone de texte dans une
+ligne de liste rendrait l'historique illisible pour un geste rare. La route
+accepte une note ; l'écran ne la propose pas encore.
 
 **Les ancres muettes existantes ne sont pas nommées d'office.** Elles restent
 « sans nom » — ce qui est vrai — et l'écran des révisions offre de les réparer à
