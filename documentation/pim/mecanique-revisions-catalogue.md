@@ -255,12 +255,16 @@ quelqu'un doit relire et accepter, SKU par SKU s'il le faut.
 
 ## 8. Les quatre points flous, nommés
 
-1. **Le push fabrique une ancre anonyme.** `TakeCatalogRevisionCommand(null)`,
-   sans que personne soit interrogé. C'est la cause directe des révisions sans
-   intention.
-2. **Rien n'oblige à nommer.** `label` est `String?` en base, `nullish()` dans le
-   schéma de la route, et aucune règle ne lit ce champ. Un envoi part aussi bien
-   avec qu'il ne partirait sans.
+1. ~~**Le push fabrique une ancre anonyme.**~~ **Tranché le 2026-09-10** : le
+   nom remonte de l'écran de publication, à l'endroit et au moment où quelqu'un
+   décide de publier — avec « Ce que cet envoi changerait » sous les yeux. Le
+   `null` en dur de `push.service.ts` a disparu.
+2. **La règle est tenue par l'ÉCRAN, pas encore par le serveur.** `label` reste
+   optionnel côté API, et c'est une étape, pas un état final : le front en ligne
+   appelle la route sans lui, et une API resserrée avant ce déploiement
+   empêcherait toute publication le temps du décalage. Le bouton « Envoyer » est
+   désarmé sans intention ; le serveur reprendra la règle au **troisième temps**,
+   exactement comme `fingerprint` avant lui.
 3. ~~**Le diff vivant est un compteur.**~~ **Réglé le 2026-09-10** : le détail se
    lit sur `catalogue/revisions/since-last` et s'ouvre sur `/pim/revisions/en-attente`,
    filtrable par nature, par champ et par auteur. Reste que rien ne l'impose au
@@ -268,11 +272,45 @@ quelqu'un doit relire et accepter, SKU par SKU s'il le faut.
 4. **La fiche produit est muette sur les révisions.** L'écran où l'on fabrique le
    changement est le seul qui ne dit rien de son sort.
 
-⚠️ **Une contrainte de modèle à garder en tête pour la suite** : une révision est
-**catalogue-large**. Nommer depuis une fiche produit ferait couvrir les
-modifications de tout le monde par l'intention du premier qui a édité. Le moment
-où une intention est à la fois _fraîche_ et _de bonne portée_ n'est pas évident,
-et c'est exactement la décision à prendre.
+---
+
+## 9. Ce que la décision du 2026-09-10 a tranché
+
+**Le nom vit sur la RÉVISION**, pas sur la publication. Une révision est
+catalogue-large et s'identifie par son empreinte : le nom désigne donc un
+**contenu**, et non un geste.
+
+La réserve était réelle et elle a été pesée : republier un contenu déjà nommé
+réutilise son nom. Juste pour un retry — c'est bien la même intention — et muet
+pour un retour arrière assumé, où l'on aimerait écrire « la TVA d'hier était
+fausse ». Ce silence est **accepté**, parce que les publications sont datées une
+par une et que le journal porte les faits : un aller-retour se comprend sans que
+le nom ait à le raconter. Si les retours arrière deviennent courants, la note
+sur l'envoi s'ajoutera — c'est additif.
+
+Les règles qui en découlent :
+
+| Situation                                        | Ce qui se passe           |
+| ------------------------------------------------ | ------------------------- |
+| Le push apporte un nom, l'ancre est **muette**   | l'ancre prend ce nom      |
+| Le push apporte un nom, l'ancre en a **déjà un** | le **premier** gagne      |
+| On nomme après coup une ancre muette             | accepté (`PATCH …/label`) |
+| On veut **renommer** une ancre nommée            | **refusé**, en 409        |
+
+Renommer est refusé parce que le nom dit avec quelle intention un catalogue est
+parti chez des clients. Le réécrire ne corrige pas le passé : il le raconte
+autrement, et l'écran qui relit une publication d'il y a trois mois lirait une
+intention que personne n'avait ce jour-là.
+
+**Les ancres muettes existantes ne sont pas nommées d'office.** Elles restent
+« sans nom » — ce qui est vrai — et l'écran des révisions offre de les réparer à
+la main, une par une. Leur générer un nom (« Publication du 5 septembre »)
+inventerait une intention que personne n'a eue, et une intention fabriquée ment
+mieux qu'une absence.
+
+⚠️ **La contrainte de modèle demeure** : nommer depuis une fiche produit ferait
+couvrir les modifications de tout le monde par l'intention du premier qui a
+édité. C'est pourquoi la question se pose au **push**, jamais à l'édition.
 
 ---
 
