@@ -30,6 +30,19 @@ export const routes: Routes = [
   // un identifiant de société, et la page afficherait « Société introuvable ».
   ...nouveauCompteRoutes,
   {
+    // **Outils agent** — l'écran est l'interrupteur : les outils WebMCP du
+    // référentiel ne sont déclarés que par ce composant, donc ils n'existent
+    // que tant qu'on est dessus. Route de premier niveau, hors de `pim/` : ce
+    // n'est pas un écran du référentiel, c'est un atelier qui le pilote.
+    //
+    // Le garde demande l'ÉCRITURE, pas la lecture : ces outils écrivent.
+    path: 'outils-agent',
+    canActivate: [permissionGuard('pim_catalog:write')],
+    title: 'Outils agent — LFC B2B admin',
+    loadComponent: () =>
+      import('./agent/agent-tools-page/agent-tools-page').then((m) => m.AgentToolsPage),
+  },
+  {
     // Le détail d'une commande vit HORS de la fiche client : une commande « zéro
     // friction » n'a pas d'entreprise, donc pas de fiche où la loger. Une route
     // de premier niveau les couvre toutes les deux.

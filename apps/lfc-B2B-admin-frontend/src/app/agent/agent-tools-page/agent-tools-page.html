@@ -1,0 +1,38 @@
+<fold-page-layout icon="wrench" title="Outils agent">
+  <p description>
+    Ce que l'assistant peut faire sur le <strong>référentiel</strong> sans passer par le clic. Les
+    outils visent les mêmes routes que les écrans&nbsp;: mêmes validations, même authentification,
+    et chaque écriture est portée par <strong>votre compte</strong>.
+  </p>
+
+  @if (bridged()) {
+    <fold-callout variant="alert">
+      <strong>Outils armés.</strong> Un agent est branché sur cette page et peut appeler les outils
+      ci-dessous. Ils écrivent dans le référentiel réel de cet environnement&nbsp;: il n'y a pas de
+      bac à sable. Quitter cette page les retire.
+    </fold-callout>
+  } @else {
+    <fold-callout variant="info">
+      <strong>Aucun agent branché.</strong> Les outils sont déclarés mais inertes&nbsp;: ce
+      navigateur n'expose pas l'interface WebMCP, donc personne ne peut les appeler. Ils
+      s'activeront si un agent la fournit, et seulement tant que cette page reste ouverte.
+    </fold-callout>
+  }
+
+  <section class="tools">
+    <h2>Ce qui est déclaré</h2>
+    <ul>
+      @for (tool of tools(); track tool) {
+        <li>
+          <code>{{ tool }}</code>
+        </li>
+      }
+    </ul>
+    <p class="excluded">
+      <strong>Ce qui n'est délibérément pas là&nbsp;:</strong> le prix et la TVA — l'argent ne
+      s'écrit pas par un outil au premier jour&nbsp;; la mise en vente, l'archivage et la
+      déclaration «&nbsp;prête&nbsp;» — publier est une décision&nbsp;; les allergènes — tant qu'on
+      n'a pas constaté ce que le serveur fait d'une liste en doublon.
+    </p>
+  </section>
+</fold-page-layout>

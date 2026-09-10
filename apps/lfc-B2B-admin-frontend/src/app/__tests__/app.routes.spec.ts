@@ -108,6 +108,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/tarification/frise': null,
   'b2b/tarification/simulateur': null,
 
+  // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
+  // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
+  // ne peut donc pas hériter, sinon un lecteur du catalogue armerait des outils
+  // d'écriture et récolterait des 403 — ce que la table existe pour empêcher.
+  'outils-agent': 'pim_catalog:write',
+
   pim: 'pim_catalog:read',
   // La SEULE vue du PIM à ne pas hériter : poser un taux de TVA est une
   // décision comptable, et `catalog:write` est réservé à l'admin. La ressource
