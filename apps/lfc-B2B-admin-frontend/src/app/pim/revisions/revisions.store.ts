@@ -94,6 +94,20 @@ export class RevisionsStore {
     });
   }
 
+  /**
+   * Nomme une ancre muette, puis relit la liste.
+   *
+   * Relire plutôt que muter la ligne en mémoire : le serveur peut refuser — une
+   * ancre déjà nommée —, et une liste qu'on aurait mutée d'avance affirmerait
+   * alors un nom que la base ne porte pas.
+   */
+  async name(reference: string, label: string): Promise<void> {
+    await this.run(async () => {
+      await this.api.name(reference, label.trim());
+      this.items.set(await this.api.list());
+    });
+  }
+
   async compare(from: string, to: string): Promise<void> {
     await this.run(async () => {
       this.diffValue.set(await this.api.diff(from, to));

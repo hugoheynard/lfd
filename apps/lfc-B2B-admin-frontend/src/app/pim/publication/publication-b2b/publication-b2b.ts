@@ -6,6 +6,7 @@ import {
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
@@ -73,6 +74,7 @@ const CHANGES: Readonly<Record<string, string>> = {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
+    FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPageSectionComponent,
   ],
@@ -182,19 +184,44 @@ export class PublicationB2b {
    * que ce qui a été relu. Le geste de sortie est de recharger, et c'est ce que
    * fait le rechargement en fin de méthode — y compris après un refus.
    */
+  /**
+   * **L'intention de cet envoi**, qui devient le nom de l'ancre.
+   *
+   * 🔴 Elle se demande ICI et nulle part ailleurs : c'est le seul moment où
+   * quelqu'un décide de publier, et le seul où les changements sont sous les
+   * yeux — « Ce que cet envoi changerait » est juste en dessous. Le push posait
+   * une ancre anonyme à chaque fois, et cinq révisions sur neuf n'avaient
+   * aucune intention lisible.
+   *
+   * ⚠️ Le SERVEUR ne l'exige pas encore : le front en ligne appelle la route
+   * sans elle, et une API resserrée avant ce déploiement empêcherait toute
+   * publication le temps du décalage. C'est donc l'écran qui tient la règle
+   * pour l'instant — le serveur la reprendra au troisième temps.
+   */
+  protected readonly intent = signal('');
+
+  /** Rien ne part sans intention : elle est ce qui rend l'ancre relisible. */
+  protected readonly canSend = computed(
+    () => !this.busy() && !this.settled() && this.intent().trim() !== '',
+  );
+
   protected async send(): Promise<void> {
     const fingerprint = this.preview()?.fingerprint;
-    if (fingerprint === undefined) {
+    const label = this.intent().trim();
+    if (fingerprint === undefined || label === '') {
       return;
     }
     this.busy.set(true);
     this.error.set(null);
     try {
-      this.sent.set(await this.api.push(false, fingerprint));
+      this.sent.set(await this.api.push(false, fingerprint, label));
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Envoi impossible.'));
     } finally {
       this.busy.set(false);
+      // L'intention appartient à l'envoi qui vient d'avoir lieu : la garder
+      // ferait repartir le suivant sous un nom écrit pour un autre catalogue.
+      this.intent.set('');
       // Après un envoi comme après un refus, ce qui est à l'écran est périmé :
       // le canal a changé, ou le catalogue avait déjà changé. Le relire est la
       // seule façon d'en sortir.

@@ -66,7 +66,7 @@ function summary(over: Partial<B2bPushSummaryView> = {}): B2bPushSummaryView {
 /** Note ce que l'écran a demandé — c'est tout le sujet. */
 class FakeApi {
   readonly calls: string[] = [];
-  readonly pushes: { dryRun: boolean; fingerprint?: string }[] = [];
+  readonly pushes: { dryRun: boolean; fingerprint?: string; label?: string }[] = [];
   next: B2bPushPreviewView = preview();
   rejectPush: Error | null = null;
 
@@ -75,9 +75,13 @@ class FakeApi {
     return Promise.resolve(this.next);
   }
 
-  push(dryRun: boolean, fingerprint?: string): Promise<B2bPushSummaryView> {
+  push(dryRun: boolean, fingerprint?: string, label?: string): Promise<B2bPushSummaryView> {
     this.calls.push('push');
-    this.pushes.push(fingerprint === undefined ? { dryRun } : { dryRun, fingerprint });
+    this.pushes.push({
+      dryRun,
+      ...(fingerprint === undefined ? {} : { fingerprint }),
+      ...(label === undefined ? {} : { label }),
+    });
     return this.rejectPush === null ? Promise.resolve(summary()) : Promise.reject(this.rejectPush);
   }
 }
@@ -111,7 +115,24 @@ async function make(api: FakeApi) {
     fixture.detectChanges();
   };
 
-  return { fixture, click, buttonNamed };
+  /**
+   * Écrit l'intention de l'envoi.
+   *
+   * Presque tous les cas passent par là depuis que rien ne part sans elle :
+   * c'est le geste réel, et le sauter testerait un écran qu'on n'a pas.
+   */
+  const intend = async (what: string): Promise<void> => {
+    const input = fixture.nativeElement.querySelector('.intent input');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("Le champ d'intention est absent de l'écran.");
+    }
+    input.value = what;
+    input.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+
+  return { fixture, click, buttonNamed, intend };
 }
 
 describe('la publication B2B lit son aperçu toute seule', () => {
@@ -124,8 +145,9 @@ describe('la publication B2B lit son aperçu toute seule', () => {
 
   it('ne demande JAMAIS de simulation — regarder ne doit rien écrire', async () => {
     const api = new FakeApi();
-    const { click } = await make(api);
+    const { click, intend } = await make(api);
 
+    await intend('hausse de la rentrée');
     await click('Envoyer');
 
     expect(api.pushes.every((call) => !call.dryRun)).toBe(true);
@@ -133,11 +155,14 @@ describe('la publication B2B lit son aperçu toute seule', () => {
 
   it('redonne à l’envoi l’empreinte de l’aperçu affiché', async () => {
     const api = new FakeApi();
-    const { click } = await make(api);
+    const { click, intend } = await make(api);
 
+    await intend('hausse de la rentrée');
     await click('Envoyer');
 
-    expect(api.pushes).toEqual([{ dryRun: false, fingerprint: 'empreinte-A' }]);
+    expect(api.pushes).toEqual([
+      { dryRun: false, fingerprint: 'empreinte-A', label: 'hausse de la rentrée' },
+    ]);
   });
 
   /**
@@ -149,15 +174,24 @@ describe('la publication B2B lit son aperçu toute seule', () => {
   it('relit après un refus, et repart avec la NOUVELLE empreinte', async () => {
     const api = new FakeApi();
     api.rejectPush = new Error('Le catalogue a changé depuis votre relecture');
-    const { click } = await make(api);
+    const { click, intend } = await make(api);
 
+    await intend('hausse de la rentrée');
     await click('Envoyer');
     api.rejectPush = null;
     api.next = preview({ fingerprint: 'empreinte-B' });
+    // 🔴 L'intention est repartie avec l'envoi précédent : il faut la réécrire.
+    // La garder ferait repartir le suivant sous un nom écrit pour un autre
+    // catalogue — et ce catalogue-ci a justement changé, c'est le motif du refus.
+    await intend('nouvelle tentative');
     await click('Envoyer');
 
     expect(api.calls).toEqual(['preview', 'push', 'preview', 'push', 'preview']);
-    expect(api.pushes.at(-1)).toEqual({ dryRun: false, fingerprint: 'empreinte-A' });
+    expect(api.pushes.at(-1)).toEqual({
+      dryRun: false,
+      fingerprint: 'empreinte-A',
+      label: 'nouvelle tentative',
+    });
   });
 
   /**
@@ -246,5 +280,48 @@ describe('la publication B2B lit son aperçu toute seule', () => {
     const text: string = fixture.nativeElement.textContent;
     expect(text).toContain('PAI-014');
     expect(text).toContain('PAI-015');
+  });
+
+  /**
+   * 🔴 **Rien ne part sans intention.**
+   *
+   * Le push posait une ancre ANONYME à chaque envoi, sans jamais interroger
+   * personne : cinq révisions sur neuf n'avaient aucune intention lisible. Le
+   * serveur ne l'exige pas encore — le front en ligne appelle la route sans
+   * elle, et une API resserrée avant ce déploiement empêcherait toute
+   * publication le temps du décalage. C'est donc l'écran qui tient la règle, et
+   * c'est ce cas qui la tient.
+   */
+  it("n'envoie rien tant que l'intention n'est pas écrite", async () => {
+    const api = new FakeApi();
+    const { buttonNamed, click } = await make(api);
+
+    expect(buttonNamed('Envoyer').disabled).toBe(true);
+    await click('Envoyer');
+
+    expect(api.pushes).toEqual([]);
+  });
+
+  it("refuse une intention faite d'espaces", async () => {
+    const api = new FakeApi();
+    const { buttonNamed, intend } = await make(api);
+
+    await intend('   ');
+
+    expect(buttonNamed('Envoyer').disabled).toBe(true);
+  });
+
+  /**
+   * L'intention appartient à l'envoi qui vient d'avoir lieu. La garder ferait
+   * repartir le suivant sous un nom écrit pour un autre catalogue.
+   */
+  it("oublie l'intention une fois l'envoi parti", async () => {
+    const api = new FakeApi();
+    const { buttonNamed, click, intend } = await make(api);
+
+    await intend('hausse de la rentrée');
+    await click('Envoyer');
+
+    expect(buttonNamed('Envoyer').disabled).toBe(true);
   });
 });

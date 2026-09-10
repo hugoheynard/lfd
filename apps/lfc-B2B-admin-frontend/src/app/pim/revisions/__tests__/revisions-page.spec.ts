@@ -65,9 +65,10 @@ function setup(options: {
     take: vi
       .fn()
       .mockResolvedValue(
-        options.take ?? { id: 'r', reference: 'R-TEST1', hash: 'h', created: true },
+        options.take ?? { id: 'r', reference: 'R-TEST1', hash: 'h', label: null, created: true },
       ),
     diff: vi.fn().mockResolvedValue(options.diff ?? EMPTY_DIFF),
+    name: vi.fn().mockResolvedValue(undefined),
     sinceLast: vi.fn().mockResolvedValue(options.pending ?? NO_PENDING),
   };
   TestBed.configureTestingModule({
@@ -127,7 +128,7 @@ describe('RevisionsPage', () => {
    * n'a pas bougé ; afficher « posée » ferait croire à une version de plus.
    */
   it('dit que rien n’a été posé quand le catalogue n’a pas bougé', async () => {
-    setup({ take: { id: 'rev_2', reference: 'R-TEST2', hash: 'h2', created: false } });
+    setup({ take: { id: 'rev_2', reference: 'R-TEST2', hash: 'h2', label: null, created: false } });
 
     await TestBed.inject(RevisionsStore).take('peu importe');
 
@@ -137,7 +138,7 @@ describe('RevisionsPage', () => {
   });
 
   it('annonce la révision posée quand il y en a une', async () => {
-    setup({ take: { id: 'rev_3', reference: 'R-TEST3', hash: 'h3', created: true } });
+    setup({ take: { id: 'rev_3', reference: 'R-TEST3', hash: 'h3', label: null, created: true } });
 
     await TestBed.inject(RevisionsStore).take('rentrée');
 
@@ -187,5 +188,60 @@ describe('RevisionsPage', () => {
     );
     expect(link?.getAttribute('href')).toBe('/pim/revisions/en-attente');
     expect(api.sinceLast).not.toHaveBeenCalled();
+  });
+
+  /**
+   * 🔴 **Une ancre muette se répare sur sa ligne**, et rien ne lui invente un
+   * nom. Le push a longtemps posé des ancres anonymes ; « sans nom » est donc
+   * un fait à afficher, et le geste de réparation doit être là où on le lit.
+   */
+  it('offre de nommer une ancre restée muette, et pas les autres', async () => {
+    setup({
+      list: [
+        revision({ reference: 'R-NOMMEE' }),
+        revision({ id: 'rev_1', reference: 'R-MUETTE', label: null }),
+      ],
+    });
+    const fixture = TestBed.createComponent(RevisionsPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const boutons = [...host.querySelectorAll('button')].filter((candidate) =>
+      (candidate.getAttribute('aria-label') ?? '').startsWith('Nommer la révision'),
+    );
+    expect(boutons).toHaveLength(1);
+    expect(boutons[0]?.getAttribute('aria-label')).toContain('R-MUETTE');
+    expect(text(host)).toContain('sans nom');
+  });
+
+  it("envoie le nom saisi, sur l'ancre qu'on nomme", async () => {
+    const api = setup({ list: [revision({ id: 'rev_1', reference: 'R-MUETTE', label: null })] });
+    const fixture = TestBed.createComponent(RevisionsPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const ouvrir = [...host.querySelectorAll('button')].find((candidate) =>
+      (candidate.getAttribute('aria-label') ?? '').startsWith('Nommer la révision'),
+    );
+    ouvrir?.click();
+    fixture.detectChanges();
+
+    const champ = host.querySelector('.rp-naming input');
+    if (!(champ instanceof HTMLInputElement)) {
+      throw new Error("Le champ de nom ne s'est pas ouvert.");
+    }
+    champ.value = 'correction des allergènes';
+    champ.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const valider = [...host.querySelectorAll('.rp-naming button')].find(
+      (candidate) => candidate.textContent?.trim() === 'Nommer',
+    );
+    (valider as HTMLButtonElement | undefined)?.click();
+    await fixture.whenStable();
+
+    expect(api.name).toHaveBeenCalledWith('R-MUETTE', 'correction des allergènes');
   });
 });

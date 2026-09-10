@@ -56,3 +56,18 @@
 .rp-meta {
   color: var(--fold-color-text-secondary);
 }
+
+/* Le nom en cours de saisie tient sur la ligne qu’il répare : ouvrir un écran
+   pour un champ ferait perdre de vue l’ancre dont il est question. */
+.rp-naming {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+/* « sans nom » se DIT, en retrait : c’est un fait, pas un blanc d’affichage. */
+.rp-unnamed {
+  color: var(--fold-color-text-muted);
+  font-style: italic;
+}

@@ -58,6 +58,34 @@ export class RevisionsPage {
   protected readonly label = signal('');
 
   /**
+   * L'ancre qu'on est en train de nommer, ou `null`.
+   *
+   * Une SEULE à la fois : deux champs ouverts feraient hésiter sur celui qu'on
+   * remplit, et le geste est rare — on répare une ancre muette quand on se
+   * souvient de ce qu'elle portait.
+   */
+  protected readonly naming = signal<string | null>(null);
+  protected readonly draftLabel = signal('');
+
+  protected startNaming(reference: string): void {
+    this.naming.set(reference);
+    this.draftLabel.set('');
+  }
+
+  /**
+   * Le serveur REFUSE une ancre déjà nommée : on ferme le champ seulement s'il
+   * a accepté. Le fermer d'avance ferait disparaître ce qu'on venait d'écrire
+   * sur un refus qu'on n'aurait pas lu.
+   */
+  protected async confirmName(reference: string): Promise<void> {
+    await this.store.name(reference, this.draftLabel());
+    if (this.store.error() === null) {
+      this.naming.set(null);
+      this.draftLabel.set('');
+    }
+  }
+
+  /**
    * Les deux bornes de la comparaison, par RÉFÉRENCE.
    *
    * `null` tant que la liste n'est pas là. Elles se posent d'elles-mêmes sur les

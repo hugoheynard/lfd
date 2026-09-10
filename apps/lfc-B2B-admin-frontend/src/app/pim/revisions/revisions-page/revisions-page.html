@@ -111,7 +111,57 @@
           @for (revision of store.revisions(); track revision.id) {
             <li class="rp-row">
               <span class="rp-version">{{ revision.reference }}</span>
-              <span class="rp-label">{{ revision.label ?? 'sans nom' }}</span>
+              @if (revision.label; as label) {
+                <span class="rp-label">{{ label }}</span>
+              } @else if (naming() === revision.reference) {
+                <!-- Nommer sur place : une ancre muette se répare là où on la
+                     lit, pas dans un écran de plus. -->
+                <span class="rp-naming">
+                  <fold-input
+                    label="Ce que cette révision changeait"
+                    hideLabel
+                    size="sm"
+                    placeholder="hausse de la rentrée…"
+                    [value]="draftLabel()"
+                    (valueChange)="draftLabel.set($event)"
+                  />
+                  <button
+                    foldButton
+                    size="sm"
+                    [disabled]="draftLabel().trim() === '' || store.busy()"
+                    (click)="confirmName(revision.reference)"
+                  >
+                    Nommer
+                  </button>
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    (click)="naming.set(null)"
+                  >
+                    Annuler
+                  </button>
+                </span>
+              } @else {
+                <!-- 🔴 « sans nom » n'est PAS un blanc : le push a longtemps posé
+                     des ancres anonymes, et le dire est la seule façon de savoir
+                     lesquelles restent à réparer. Rien ne leur invente un nom —
+                     une intention fabriquée ment mieux qu'une absence. -->
+                <span class="rp-label">
+                  <span class="rp-unnamed">sans nom</span>
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    [attr.aria-label]="'Nommer la révision ' + revision.reference"
+                    (click)="startNaming(revision.reference)"
+                  >
+                    Nommer
+                  </button>
+                </span>
+              }
               <span class="rp-meta">{{ revision.articles }} articles</span>
               <span class="rp-meta">{{ when(revision.takenAt) }}</span>
               <span class="rp-meta">{{ revision.takenBy }}</span>
