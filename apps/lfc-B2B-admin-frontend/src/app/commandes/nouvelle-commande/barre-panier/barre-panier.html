@@ -1,4 +1,4 @@
-<button foldButton variant="ghost" [disabled]="saving()" (click)="save.emit()">
+<button foldButton emphasis="outline" intent="neutral" [disabled]="saving()" (click)="save.emit()">
   {{ saving() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
 </button>
 

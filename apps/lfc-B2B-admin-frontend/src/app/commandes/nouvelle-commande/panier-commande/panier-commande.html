@@ -106,7 +106,7 @@
 
   @if (blockers().length === 0) {
     @if (!confirming()) {
-      <button foldButton variant="solid" [disabled]="submitting()" (click)="confirming.set(true)">
+      <button foldButton [disabled]="submitting()" (click)="confirming.set(true)">
         Valider la commande
       </button>
     } @else {
@@ -120,12 +120,13 @@
         }
       </fold-callout>
       <div class="pan-confirm">
-        <button foldButton variant="solid" [disabled]="!canPlace()" (click)="submit()">
+        <button foldButton [disabled]="!canPlace()" (click)="submit()">
           {{ submitting() ? 'Envoi…' : 'Confirmer' }}
         </button>
         <button
           foldButton
-          variant="ghost"
+          emphasis="outline"
+          intent="neutral"
           [disabled]="submitting()"
           (click)="confirming.set(false)"
         >

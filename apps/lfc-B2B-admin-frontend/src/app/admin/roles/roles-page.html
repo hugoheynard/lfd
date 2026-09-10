@@ -60,7 +60,13 @@
           @if (!card.locked) {
             <span class="role-actions" *appCan="'staff_access:write'">
               @if (card.role.archivedAt !== null) {
-                <button foldButton size="sm" variant="ghost" (click)="restore(card.role)">
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  (click)="restore(card.role)"
+                >
                   Remettre en service
                 </button>
               } @else if (confirmingKey() === card.role.key) {
@@ -77,7 +83,8 @@
                 <button
                   foldButton
                   size="sm"
-                  variant="ghost"
+                  emphasis="outline"
+                  intent="neutral"
                   (click)="confirmingKey.set(card.role.key)"
                 >
                   Archiver
@@ -85,7 +92,7 @@
                 <a
                   foldButton
                   size="sm"
-                  variant="secondary"
+                  emphasis="outline"
                   [routerLink]="['/admin/roles', card.role.key]"
                 >
                   Modifier
@@ -96,7 +103,7 @@
         </footer>
       </fold-card>
     } @empty {
-      <fold-empty-state title="Aucun rôle" description="Le premier rôle défini apparaîtra ici." />
+      <fold-empty-state title="Aucun rôle" subtitle="Le premier rôle défini apparaîtra ici." />
     }
   </div>
 }

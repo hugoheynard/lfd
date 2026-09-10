@@ -7,7 +7,7 @@
       Cette commande est déjà réglée, ou elle est portée au compte de votre société et sera
       facturée. Vous n'avez rien à faire.
     </fold-callout>
-    <a foldButton variant="solid" [routerLink]="['/commandes', id()]">Voir la commande</a>
+    <a foldButton [routerLink]="['/commandes', id()]">Voir la commande</a>
   }
   @case ('error') {
     <fold-empty-state

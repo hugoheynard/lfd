@@ -20,7 +20,13 @@
       <div class="nc-titles">
         <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
         @if (!narrow()) {
-          <button foldButton variant="ghost" [disabled]="savingDraft()" (click)="onSaveDraft()">
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            [disabled]="savingDraft()"
+            (click)="onSaveDraft()"
+          >
             {{ savingDraft() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
           </button>
         }
@@ -30,7 +36,9 @@
     @if (resumedAt(); as at) {
       <fold-callout variant="accent" title="Brouillon repris">
         Saisie mise de côté le {{ at }}. Les prix ont été rafraîchis au catalogue du jour.
-        <button foldButton variant="ghost" (click)="onDropDraft()">Repartir de zéro</button>
+        <button foldButton emphasis="outline" intent="neutral" (click)="onDropDraft()">
+          Repartir de zéro
+        </button>
       </fold-callout>
     }
 
