@@ -104,6 +104,22 @@ d'un éditeur de prix invisible.
   détruit rien, et réserver le rouge à ce qui ne revient pas est ce qui lui
   garde son sens.
 
+- **La mise en avant est une bascule**, une étoile dans la même cellule —
+  `fold-toggle-icon`, donc un vrai `aria-pressed`. Pas de confirmation : elle ne
+  retire rien, et le second clic défait le premier. Demander de confirmer ici
+  apprendrait à confirmer sans lire, ce qui coûterait au voisin — qui, lui,
+  coupe la commande.
+
+  Elle est **éteinte sur un article masqué**, parce que l'agrégat y refuse la
+  mise en avant : « ne pas le montrer » et « le montrer en premier » ne se
+  disent pas ensemble. Le front désamorce, le serveur refuse — le geste n'est
+  jamais un 409 découvert après coup. Le bouton éteint porte sa raison en
+  infobulle : sans elle, il se lirait comme une panne.
+
+  ⚠️ L'inverse est vrai aussi et n'est pas symétrique : **masquer éteint la mise
+  en avant** (`CatalogItem.hide` le fait, plutôt que de refuser). L'écran le
+  montre parce qu'il relit le serveur après chaque geste.
+
   ⚠️ Une modale **centrée** a été écrite d'abord, puis retirée : fold n'a pas de
   dialogue (« No modal dialog yet », `llms.txt` 0.25.0), il aurait fallu un
   `<dialog>` natif habillé à la main, et une question posée au milieu de l'écran
@@ -135,9 +151,6 @@ correctif de lecture.
 
 ## 5. Ce que l'écran ne fait toujours pas
 
-- **La mise en avant.** `PUT /admin/catalog/:sku/featured` existe côté serveur,
-  l'agrégat refuse de mettre en avant un article masqué, et aucun bouton ne
-  l'appelle. Le contrat `isFeatured` est lu et jamais montré.
 - **L'auteur de la décision.** `decidedBy` porte un `sub` Auth0, pas un nom :
   l'afficher demanderait de résoudre l'annuaire staff depuis cet écran. Seule la
   **date** est montrée.
