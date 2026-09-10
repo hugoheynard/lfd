@@ -43,6 +43,17 @@ class InMemoryEntities extends LegalEntityRepository {
     this.rows.set(entity.id, entity);
     return Promise.resolve();
   }
+
+  /**
+   * La vraie question du port, sur les lignes qu'on porte — pas un `true` de
+   * complaisance. Un doublé qui répondrait toujours oui rendrait la règle
+   * « on n'archive pas la dernière entité » intestable partout ailleurs.
+   */
+  hasAnotherActive(exceptId: string): Promise<boolean> {
+    return Promise.resolve(
+      [...this.rows.values()].some((entity) => entity.id !== exceptId && !entity.archived),
+    );
+  }
 }
 
 /**
