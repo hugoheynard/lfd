@@ -33,7 +33,9 @@
 }
 
 @if (d.added.length === 0 && d.removed.length === 0 && d.changed.length === 0) {
-  <p class="rd-empty">Aucun article n'a changé entre ces deux révisions.</p>
+  @if (emptyMessage(); as message) {
+    <p class="rd-empty">{{ message }}</p>
+  }
 }
 
 @if (d.added.length > 0) {
@@ -69,7 +71,10 @@
              lecteur d'écran, qui perdrait le lien entre un champ et sa valeur. -->
         <dl class="rd-fields">
           @for (field of item.fields; track field.field) {
-            <dt>{{ field.field }}</dt>
+            <!-- Le nom LISIBLE, et la clé brute en infobulle : devant cinquante
+                 lignes on cherche ce qui a bougé, pas le nom d'une propriété.
+                 La clé reste atteignable pour qui débogue. -->
+            <dt [attr.title]="field.field">{{ fieldLabel(field.field) }}</dt>
             <dd>
               <span class="rd-before">{{ field.before }}</span>
               <span class="rd-arrow" aria-hidden="true">→</span>

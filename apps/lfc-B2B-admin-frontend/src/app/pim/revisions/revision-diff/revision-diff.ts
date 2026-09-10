@@ -6,6 +6,8 @@ import type {
 } from '@lfd/pim-contracts';
 import { FoldCalloutComponent, FoldElementTitleComponent } from 'fold-ng';
 
+import { fieldLabel } from './field-label';
+
 /**
  * **Ce qui a changé entre deux révisions.**
  *
@@ -28,7 +30,42 @@ import { FoldCalloutComponent, FoldElementTitleComponent } from 'fold-ng';
   styleUrl: './revision-diff.scss',
 })
 export class RevisionDiff {
-  readonly diff = input.required<CatalogRevisionDiffView>();
+  /** Le nom lisible d'un champ — la clé brute quand on ne la connaît pas. */
+  protected readonly fieldLabel = fieldLabel;
+
+  /**
+   * Le corps d'un diff, **sans ses bornes**.
+   *
+   * Le type ne demande que les cinq champs que ce composant rend — et c'est
+   * délibéré : le diff entre deux ancres et le diff depuis la dernière
+   * publication ont le même corps et des bornes différentes (l'un a deux
+   * ancres, l'autre a une ancre et un instant). Les faire tenir dans le même
+   * type nommé aurait obligé le second à inventer une seconde ancre ; exiger
+   * les bornes ici aurait obligé à dupliquer le rendu.
+   *
+   * Ce composant ne les affiche pas de toute façon : il dit ce qui a changé,
+   * l'écran dit entre quoi et quoi.
+   */
+  readonly diff =
+    input.required<
+      Pick<CatalogRevisionDiffView, 'header' | 'causes' | 'added' | 'removed' | 'changed'>
+    >();
+
+  /**
+   * Ce qu'on dit quand il n'y a rien à montrer — `null` pour ne rien dire.
+   *
+   * 🔴 La phrase était en dur, et elle disait « entre ces deux révisions ».
+   * Fausse dès que le composant a servi au diff VIVANT, qui n'en compare
+   * qu'une à un catalogue. Et sur une page qui filtre, elle s'affichait SOUS
+   * l'état vide de l'hôte : deux messages contradictoires pour un seul fait,
+   * « aucun changement ne correspond » puis « aucun article n'a changé ».
+   *
+   * L'hôte sait laquelle des deux phrases est vraie ; ce composant ne le sait
+   * pas. Il la reçoit donc, ou se tait.
+   */
+  readonly emptyMessage = input<string | null>(
+    "Aucun article n'a changé entre ces deux révisions.",
+  );
 
   /**
    * Qui a fait ce changement, en une phrase.

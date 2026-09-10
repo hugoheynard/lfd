@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
+  CatalogPendingDiffView,
   CatalogRevisionDiffView,
   CatalogRevisionSummaryView,
   CatalogRevisionTakenView,
@@ -43,10 +44,21 @@ const EMPTY_DIFF: CatalogRevisionDiffView = {
   changed: [],
 };
 
+const NO_PENDING: CatalogPendingDiffView = {
+  from: null,
+  at: '2026-08-31T10:00:00.000Z',
+  header: [],
+  causes: [],
+  added: [],
+  removed: [],
+  changed: [],
+};
+
 function setup(options: {
   readonly list?: readonly CatalogRevisionSummaryView[];
   readonly take?: CatalogRevisionTakenView;
   readonly diff?: CatalogRevisionDiffView;
+  readonly pending?: CatalogPendingDiffView;
 }) {
   const api = {
     list: vi.fn().mockResolvedValue(options.list ?? []),
@@ -56,6 +68,7 @@ function setup(options: {
         options.take ?? { id: 'r', reference: 'R-TEST1', hash: 'h', created: true },
       ),
     diff: vi.fn().mockResolvedValue(options.diff ?? EMPTY_DIFF),
+    sinceLast: vi.fn().mockResolvedValue(options.pending ?? NO_PENDING),
   };
   TestBed.configureTestingModule({
     providers: [
@@ -138,5 +151,41 @@ describe('RevisionsPage', () => {
     await TestBed.inject(RevisionsStore).take('   ');
 
     expect(api.take).toHaveBeenCalledWith(null);
+  });
+
+  /**
+   * 🔴 **Le détail se demande, il ne s'affiche pas d'office.**
+   *
+   * Il charge un payload par article modifié et interroge le journal produit
+   * par produit ; la liste des ancres ne coûte qu'une requête. Le faire au
+   * chargement ferait payer ce prix à qui vient seulement comparer deux ancres.
+   */
+  it("ne demande PAS le détail vivant tant qu'on ne l'a pas réclamé", async () => {
+    const api = setup({ list: [revision()] });
+    const fixture = TestBed.createComponent(RevisionsPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.sinceLast).not.toHaveBeenCalled();
+    expect(text(fixture.nativeElement as HTMLElement)).toContain('Voir ce qui a changé');
+  });
+
+  /**
+   * Le détail vivant a sa PROPRE page depuis qu'il porte des filtres : ici on
+   * ne tient plus que le chemin qui y mène. Ce qu'il montre est éprouvé dans
+   * `pending-page.spec.ts`.
+   */
+  it('mène au détail vivant sans le charger', async () => {
+    const api = setup({ list: [revision()] });
+    const fixture = TestBed.createComponent(RevisionsPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const link = [...host.querySelectorAll('a')].find((candidate) =>
+      (candidate.textContent ?? '').includes('Voir ce qui a changé'),
+    );
+    expect(link?.getAttribute('href')).toBe('/pim/revisions/en-attente');
+    expect(api.sinceLast).not.toHaveBeenCalled();
   });
 });

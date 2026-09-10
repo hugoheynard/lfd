@@ -8,6 +8,36 @@
     <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
   }
 
+  <!--
+    **CE QUI A BOUGÉ DEPUIS LA DERNIÈRE PUBLICATION**, en premier.
+
+    C'est la question qu'on se pose en arrivant : « qu'est-ce qui attend de
+    partir ? ». L'état du catalogue l'annonce en trois nombres — entré, retiré,
+    modifié — et cet écran est le seul endroit où l'on peut voir LESQUELS.
+
+    Le détail se demande, il ne s'affiche pas d'office : il charge un payload
+    par article modifié et interroge le journal produit par produit, là où la
+    liste des ancres ne coûte qu'une requête. Qui vient comparer deux ancres
+    n'a pas à payer ça.
+  -->
+  <fold-card>
+    <fold-page-section title="Depuis la dernière publication" separator>
+      <span sectionSubtitle>
+        Le catalogue tel qu'il est, comparé à la dernière ancre <strong>publiée</strong>. Rien n'est
+        figé par cette lecture&nbsp;: c'est la même mécanique qu'une capture, jouée sans en poser
+        une.
+      </span>
+
+      <!-- Un LIEN, pas un chargement en ligne : un diff de cinquante lignes
+           écraserait la préparation et la comparaison qui suivent, et il a
+           besoin de ses propres filtres. La page qui le porte a une adresse,
+           donc se colle dans une conversation. -->
+      <a foldButton emphasis="outline" routerLink="/pim/revisions/en-attente">
+        Voir ce qui a changé
+      </a>
+    </fold-page-section>
+  </fold-card>
+
   <!-- Le bloc de PRÉPARATION disparaît quand le déploiement ferme la
        publication : une ancre n'existe que pour précéder un envoi. La
        comparaison, elle, reste — un historique se relit toujours. -->

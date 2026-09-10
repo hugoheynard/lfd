@@ -124,6 +124,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/regles-comptables': 'pim_tax:read',
   'pim/catalogue': null,
   'pim/revisions': null,
+  // Le diff vivant : même mur que les ancres elles-mêmes — c'est une LECTURE du
+  // catalogue, elle ne pose rien et ne publie rien.
+  'pim/revisions/en-attente': null,
   'pim/collections': null,
   'pim/publication': null,
   // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle

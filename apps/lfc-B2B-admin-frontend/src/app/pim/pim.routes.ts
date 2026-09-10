@@ -71,6 +71,17 @@ export const pimRoutes: Routes = [
           import('./revisions/revisions-page/revisions-page').then((m) => m.RevisionsPage),
       },
       {
+        // LE DIFF VIVANT, en page à part. Il vivait en tête de l'écran des
+        // révisions, sous un bouton : ça allait pour trois lignes et pas pour
+        // cinquante, où il écrasait la préparation et la comparaison. Une route
+        // propre lui donne une adresse — donc un lien qu'on colle dans une
+        // conversation — et la place de porter ses filtres.
+        path: 'revisions/en-attente',
+        title: 'Depuis la dernière publication — LFC B2B admin',
+        loadComponent: () =>
+          import('./revisions/pending-page/pending-page').then((m) => m.PendingDiffPage),
+      },
+      {
         // Le registre décide de ce qu'on peut VENDRE, mais il ne porte aucun
         // taux : `catalog:read` suffit, `tax:read` serait un mur pour rien.
         path: 'contextes',

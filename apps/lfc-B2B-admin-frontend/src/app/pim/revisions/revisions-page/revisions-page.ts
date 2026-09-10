@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -43,6 +44,7 @@ const WHEN = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 
     FoldOptionComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
+    RouterLink,
     RevisionDiff,
   ],
   templateUrl: './revisions-page.html',

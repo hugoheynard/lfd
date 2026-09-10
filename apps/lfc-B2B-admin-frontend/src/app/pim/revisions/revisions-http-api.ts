@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
+  CatalogPendingDiffView,
   CatalogRevisionDiffView,
   CatalogRevisionSummaryView,
   CatalogRevisionTakenView,
@@ -26,6 +27,17 @@ export class RevisionsHttpApi {
 
   take(label: string | null): Promise<CatalogRevisionTakenView> {
     return firstValueFrom(this.http.post<CatalogRevisionTakenView>(this.url(), { label }));
+  }
+
+  /**
+   * Ce qui a bougé depuis la dernière ancre **publiée**, en détail.
+   *
+   * Distinct de l'état du catalogue, qui n'en rend que le compte : celui-ci
+   * charge un payload par article modifié et interroge le journal. On ne le
+   * demande donc que quand on veut voir, pas à chaque ouverture d'écran.
+   */
+  sinceLast(): Promise<CatalogPendingDiffView> {
+    return firstValueFrom(this.http.get<CatalogPendingDiffView>(`${this.url()}/since-last`));
   }
 
   diff(from: string, to: string): Promise<CatalogRevisionDiffView> {
