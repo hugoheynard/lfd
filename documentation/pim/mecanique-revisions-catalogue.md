@@ -146,7 +146,7 @@ montrer qu'une fiche est passée en ligne entre deux versions.
 ```mermaid
 flowchart LR
     A["Ancre R-A"] -- "GET :from/diff/:to<br/>détaillé, champ par champ" --> B["Ancre R-B"]
-    C["Catalogue vivant"] -- "GET overview<br/>COMPTEUR seulement" --> D["Dernière ancre PUBLIÉE"]
+    C["Catalogue vivant"] -- "GET overview — le compte<br/>GET since-last — le DÉTAIL" --> D["Dernière ancre PUBLIÉE"]
     E["Projection b2b"] -- "GET admin/catalog/push-preview<br/>détaillé" --> F["Miroir de la plateforme"]
 
     style C fill:#fef7e0,stroke:#f9ab00
@@ -157,17 +157,52 @@ flowchart LR
 | ------------------------------------ | ------------------------------------------------------- | --------------------------------------------- |
 | `catalogue/revisions/:from/diff/:to` | deux ancres figées                                      | le détail, champ par champ, avec attribution  |
 | `catalogue/revisions/overview`       | **le catalogue vivant** ↔ la dernière ancre **publiée** | **trois nombres** : ajoutés, retirés, changés |
+| `catalogue/revisions/since-last`     | **le catalogue vivant** ↔ la dernière ancre **publiée** | le détail, champ par champ, avec attribution  |
 | `admin/catalog/push-preview`         | la projection ↔ le miroir B2B                           | le détail de ce que l'envoi changerait        |
 
-🔴 **Le diff vivant existe déjà**, et c'est important : `GetCatalogOverviewHandler`
-construit en mémoire la révision du catalogue tel qu'il est (`buildRevision`,
-exactement la même mécanique que la pose) et la compare à la dernière ancre
-publiée. Il ne peut donc pas annoncer un changement que la capture ignorerait.
+🔴 **Le diff vivant construit en mémoire la révision du catalogue tel qu'il
+est** (`buildRevision`, exactement la même mécanique que la pose) et la compare
+à la dernière ancre publiée. Il ne peut donc pas annoncer un changement que la
+capture ignorerait.
 
-**Mais il est réduit à un compteur.** `countChanges` ne rend que trois nombres ;
-le plan sait pourtant quels SKU sont concernés, et `DiffCatalogRevisionsHandler`
-sait déjà charger paresseusement le détail des seuls articles dont l'empreinte
-diffère. La matière est là ; ce qui manque est de la rendre.
+Il a longtemps été **réduit à un compteur** : `countChanges` ne rendait que trois
+nombres, et on savait qu'il y avait trois changements depuis `R-7WT4NA` sans
+jamais savoir lesquels. De quoi s'inquiéter, jamais de quoi écrire une intention.
+
+**Depuis le 2026-09-10, le détail existe** — `GET catalogue/revisions/since-last`,
+`DiffCatalogSinceLastHandler`. Il rend le même corps qu'un diff entre deux
+ancres : les champs modifiés un par un, leur auteur lu dans le journal, et les
+causes globales qui expliquent ce que personne ne revendique.
+
+Il s'ouvre sur sa propre page, `/pim/revisions/en-attente`, avec un retour vers
+les révisions. Trois filtres, qui ne changent **rien au calcul** — le serveur
+rend le diff entier, la page en cache une partie :
+
+| Filtre    | Ce qu'il sert                                                             |
+| --------- | ------------------------------------------------------------------------- |
+| Recherche | un article, ou un champ — « prix » trouve les lignes de prix              |
+| Nature    | tout · modifiés · entrés · retirés, **avec les comptes totaux**           |
+| Auteur    | déduit du diff, pas de l'annuaire — la question est « qui a touché à ça » |
+
+⚠️ Les segments portent les comptes **totaux**, pas ceux du filtre courant : un
+chiffre qui bougerait sous les doigts ne dirait plus combien il y a, il dirait
+combien il en reste. Et l'en-tête et les causes traversent le filtre intacts :
+ils expliquent les lignes qu'on regarde.
+
+Les noms de champs sont **traduits** (`priceCents` → « Prix public TTC »), la
+clé brute restant en infobulle pour qui débogue. Un champ inconnu de la table
+retombe sur sa clé plutôt que sur un libellé vague : un nom technique qu'on ne
+comprend pas se cherche, « champ » ne se cherche pas.
+
+Deux lectures et non une, délibérément : la synthèse est l'en-tête d'un écran
+qu'on ouvre tout le temps et ne lit **aucun** payload ; le détail charge un
+payload par article modifié et interroge le journal produit par produit. Les
+fondre ferait payer ce prix à chaque affichage de l'en-tête. Elles traversent le
+même `planDiff`, et un e2e tient qu'elles ne peuvent pas diverger.
+
+⚠️ La paresse ne joue que d'un côté : côté vivant, les payloads viennent d'être
+construits et sont en mémoire. Le diff vivant coûte donc **moins** qu'un diff
+entre deux ancres, pas plus.
 
 ⚠️ **La référence est la dernière ancre PUBLIÉE, pas la dernière posée.** Un
 catalogue qu'on n'a jamais fait que simuler n'a donc aucune référence, et l'écran
@@ -226,8 +261,10 @@ quelqu'un doit relire et accepter, SKU par SKU s'il le faut.
 2. **Rien n'oblige à nommer.** `label` est `String?` en base, `nullish()` dans le
    schéma de la route, et aucune règle ne lit ce champ. Un envoi part aussi bien
    avec qu'il ne partirait sans.
-3. **Le diff vivant est un compteur.** On sait qu'il y a « 3 changements depuis
-   R-7WT4NA », jamais lesquels — donc jamais de quoi écrire une intention.
+3. ~~**Le diff vivant est un compteur.**~~ **Réglé le 2026-09-10** : le détail se
+   lit sur `catalogue/revisions/since-last` et s'ouvre sur `/pim/revisions/en-attente`,
+   filtrable par nature, par champ et par auteur. Reste que rien ne l'impose au
+   moment de publier.
 4. **La fiche produit est muette sur les révisions.** L'écran où l'on fabrique le
    changement est le seul qui ne dit rien de son sort.
 
