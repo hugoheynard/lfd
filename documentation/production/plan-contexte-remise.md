@@ -7,7 +7,7 @@
 > ce document — il s'appelle `/admin/…/handover` avant comme après. Les deux
 > chantiers sont volontairement séparés (§8).
 >
-> **V4, 2026-09-10.** Le plan a été démoli trois fois. Ce qu'il en reste tient
+> **V5, 2026-09-10.** Le plan a été démoli quatre fois. Ce qu'il en reste tient
 > parce qu'il a perdu à chaque passe, pas parce qu'il a convaincu.
 >
 > **V2** — `vitruve` : le §4 (le sens des frontières) était **littéralement
@@ -23,6 +23,15 @@
 > renversent une décision de la V3 — 🔴 **« pas en service » ne veut pas dire
 > « pas déployé »**, et la vue de transition revient, pour une raison que la V2
 > n'avait pas trouvée.
+>
+> **V5** — Hugo encore, et c'est l'argument le plus fort reçu par ce document :
+> **c'est de l'alimentaire, donc ce qui est cuit est facturé**. Le contenu d'une
+> commande gèle quand le four démarre, et la remise a lieu après. J'avais posé
+> deux règles trop larges — « recopier à la passation », puis « ne rien
+> stocker » — et la bonne se déduit de ce fait métier : on instantané quand la
+> copie devient un **fait distinct**, jamais pour aller plus vite. Le §3 bis est
+> réécrit là-dessus, et il donne au passage sa raison d'être au découpage : le
+> jour où la remise devient un worker, seul un **adaptateur** change.
 >
 > Ce qui a été démoli est nommé là où ça l'a été : une objection qu'on efface se
 > represente.
@@ -199,79 +208,104 @@ la passation.
 seconde vérité : c'est la figure du SKU du PIM recopié dans une `OrderLine`. Le
 commerce recopie ce qu'on lui annonce ; il ne le rend jamais.
 
-## 3 bis. 🔴 La file de la remise — ce que le plan ne disait pas
+## 3 bis. Ce que la remise STOCKE, et ce qu'elle DEMANDE
 
-La V3 déménageait du **code** et ne donnait aucune **donnée** à la remise : elle
-serait restée un contrôleur au-dessus des tables des autres, obligé de demander
-au commerce chaque champ que son écran affiche. Ce n'est pas un contexte, c'est
-une façade — et ça ne ressemble en rien à l'indépendance de `production`, qui a
-sa journée, ses lignes et son compte.
+> **Réécrit le 2026-09-10, après trois versions fausses.** La V4 proposait une
+> file recopiée à la **passation** ; la V5 disait « ne stocke rien, demande
+> tout ». Les deux appliquaient une règle trop large. Ce qui suit est la règle
+> juste, et elle vient d'un argument métier, pas technique.
 
-### Le moment de création : à la PASSATION, pas à « prête »
+### La règle
 
-L'intuition naturelle est « quand la production dit prête, on envoie à la
-remise ». 🔴 **C'est le mauvais moment, et le code dit pourquoi** :
+> **On ne copie pas pour aller plus vite. On instantané quand la copie devient un
+> fait distinct.**
+>
+> Le test : _cette copie peut-elle diverger de la source, et cet écart veut-il
+> dire quelque chose ?_
+> Oui → c'est un **fait**, il lui faut sa table. Non → c'est un **cache**, on lit
+> vif.
 
-> « Volontairement permissif sur l'avancement : tout état autre que `draft` et
-> `cancelled` passe. Refuser une commande encore `placed` reviendrait à renvoyer
-> un client qui est physiquement là, colis prêt, parce qu'un écran d'atelier n'a
-> pas été cliqué. » — [`handover.ts`](../../apps/lfd-api/src/handover/domain/services/handover.ts)
+Un cache espère que rien n'a bougé. Un instantané enregistre le moment où plus
+rien ne **peut** bouger. Ce n'est pas la même chose, et c'est ce qui distingue
+une bonne copie d'un passif.
 
-Une file alimentée au colisage n'aurait **pas de ligne** pour une commande jamais
-colisée. Le scan d'un client debout au comptoir échouerait — exactement le cas
-que cette permissivité existe pour couvrir, et exactement le cas qui a déjà
-imposé une table sans clé de journée.
+### La règle appliquée, ligne par ligne
 
-**La ligne naît donc à la passation**, au même instant que le jeton, et les faits
-suivants ne font qu'**avancer son état**. La remise sait ce qu'elle attend avant
-que le fournil ait commencé.
+| Donnée                                               | Peut-elle diverger ?                        | Verdict     |
+| ---------------------------------------------------- | ------------------------------------------- | ----------- |
+| `production_order` — ce qu'on s'est engagé à faire   | **oui** — substitution, casse               | **fait** ✅ |
+| l'attestation de remise                              | **oui** — elle survit à l'annulation        | **fait** ✅ |
+| « cette commande est attendue à 7 h au Labo »        | non — c'est la donnée du commerce, verbatim | cache ❌    |
+| le contenu du sac, ses lignes, ses quantités         | non — gelé, voir ci-dessous                 | cache ❌    |
+| « le client a appelé, il passera à 9 h »             | **oui** — ça naît au comptoir               | **fait** ✅ |
+| « mis au frais », « sac préparé », « client appelé » | **oui** — personne d'autre ne le sait       | **fait** ✅ |
 
-### Ce que la file porte, et le précédent qui l'autorise
+🔴 **La deuxième ligne est celle qui a fait comprendre la règle.** `production_order`
+n'est pas une copie de la commande : c'est le seul endroit où existe « le matin
+du 12, on s'est engagé à fabriquer ceci ». Le doc du fournil le dit —
+« Un écart entre les deux est un fait à lire, **jamais à réconcilier** » —, et
+une commande annulée après coup ne doit pas effacer ce qu'on a cuit.
 
-Une ligne par commande à remettre : `order_id`, `reference`, le libellé du
-client, le **point de retrait**, le **créneau** (`start`/`end`, cf. §8), l'état,
-et les lignes de marchandise.
+### 🔴 Pourquoi le contenu peut être lu vif, sans risque
 
-Le précédent est dans le même dossier : `production_order` recopie déjà
-`customer_label`, `destination` et **ses propres lignes**, avec la doctrine que
-[`architecture-contexte-production.md`](architecture-contexte-production.md)
-énonce — « Qui fait autorité en cas d'écart ? **Le commerce, toujours** : c'est
-lui qui a encaissé. » La copie documente ce qu'on **attend**, pas ce qu'on a
-vendu.
+**C'est de l'alimentaire.** Ce qui est cuit est facturé. Le contenu d'une
+commande **gèle donc quand le four démarre** — pas par convention, par la
+physique et la facturation. Et la remise a lieu **après**.
 
-C'est cette copie qui répond à la question restée sans réponse : **qui donne à la
-remise sa colonne d'horaires ?** Le fait de passation la lui porte, figée, comme
-le bon de commande la fige déjà.
+Au moment où le comptoir sert, le contenu ne peut plus changer. Une lecture vive
+et un instantané pris à la clôture donnent **la même réponse** — donc
+l'instantané n'achète rien, et il coûte : suivre les annulations, les avenants,
+et survivre à un événement manqué sur un bus **ni persisté ni rejoué**, dans un
+dépôt qui a déjà vu un abonné échouer.
 
-### 🔴 Ce que l'indépendance coûte, et où elle doit s'arrêter
+⚠️ **Ce qui bouge encore après le four : pas le _quoi_, mais le _où_ et le
+_quand_.** Un client qui appelle pour passer plus tard, ou à l'autre point.
+C'est de la logistique, ça naît au comptoir, et **ça, la remise le stocke** —
+c'est la cinquième ligne du tableau.
 
-Le bus est **en processus, ni persisté ni rejoué** — chaque événement du dossier
-le dit. Et ce dépôt a **déjà observé** un abonné qui échoue : c'est la raison
-d'être de `HandoverAttestation.republish`, dont le commentaire dit qu'« un abonné
-qui a échoué laissait la commande en arrière **pour toujours** ».
+### Ce que l'écran lit, et d'où
 
-Une file locale qui déciderait des **refus** hériterait donc de ce risque au pire
-endroit : un `cancelled` manqué, et le comptoir remet une commande annulée. La
-copie serait devenue une seconde vérité — précisément ce que le §3 refuse.
+| Ce qu'il affiche                            | Source                                 |
+| ------------------------------------------- | -------------------------------------- |
+| la file du jour, les créneaux, les points   | **lecture vive** du commerce           |
+| le prévisionnel de demain, de la semaine    | la même, filtrée par date              |
+| le retardataire — commandé après la clôture | la même ; aucun instantané ne l'aurait |
+| le contenu du sac, au moment du scan        | la même, déjà en place                 |
+| « au frais », « appelé », « passera à 9 h » | **sa table à elle**                    |
+| l'attestation                               | **sa table à elle**                    |
 
-**D'où la règle, et c'est elle qui fait la qualité du montage :**
+Le port qui sert les quatre premières lignes est **déclaré par la remise** et
+implémenté par le commerce — `HandoverQueueReader.forDay(jour, point)`, voisin de
+`HandoverSubjectReader` qui existe déjà pour une commande. Le créneau vient avec,
+sans être recopié nulle part : c'est la réponse à « qui donne à la remise sa
+colonne d'horaires ». **Le commerce, quand on la lui demande.**
 
-| Ce qu'on affiche                                         | Ce qu'on atteste                             |
-| -------------------------------------------------------- | -------------------------------------------- |
-| la **file** — points, créneaux, ordre, états attendus    | le **geste** — cette commande, maintenant    |
-| lue **localement**, dans la table de la remise           | décidé sur une lecture **vive** du commerce  |
-| tolère d'être en retard d'un événement                   | ne tolère rien                               |
-| c'est ce qui rend l'écran rapide et le contexte autonome | c'est ce qui empêche de remettre une annulée |
+### 🔴 Le jour où la remise devient un worker à part
 
-`HandoverSubjectReader.byToken` **reste**, et ce n'est pas un vestige : c'est
-**un** appel, pour **une** commande, au moment exact où se tromper coûte le plus.
-La file, elle, n'appelle personne — c'est là qu'était le couplage insupportable
-(200 commandes à demander pour peindre un écran), et c'est là qu'il disparaît.
+C'est l'argument qui justifie de faire ce travail maintenant, et il faut dire
+exactement ce qu'il achète — parce que ce n'est pas ce qu'on croit.
 
-⚠️ **Un avenant** (doc-first, non codé) devra publier un fait que la file
-consomme, sinon elle annoncera d'anciennes quantités. Le panneau, lui, sera juste
-sans rien faire — il lit vif. C'est la même réponse que la production donne pour
-sa feuille d'atelier.
+**Ce n'est pas la copie qui rend indépendant. C'est le port.**
+
+Aujourd'hui, `HandoverQueueReader` est une classe abstraite résolue en processus.
+Le jour où la remise part dans son propre Worker, avec sa base :
+
+| Ce qui change                                                    | Ce qui ne change pas                                |
+| ---------------------------------------------------------------- | --------------------------------------------------- |
+| l'**adaptateur** du port : appel HTTP au lieu d'un appel direct  | le port, son contrat, ses appelants                 |
+| la lecture vive devient trop chère → **instantané à la clôture** | la table des faits propres, qui voyage telle quelle |
+| `AttestedHandoversReader` devient un appel réseau                | le sens des flèches, déjà tenu par la matrice       |
+
+Autrement dit : **le seul travail restant sera de remplacer un adaptateur.** La
+règle du tableau gagne alors un second déclencheur — _on instantané aussi quand
+la source devient distante_ —, et ce jour-là l'instantané à la clôture aura une
+raison qu'il n'a pas aujourd'hui.
+
+⚠️ **On ne le fait donc pas maintenant.** Payer aujourd'hui la synchronisation
+d'une copie pour un découpage qui n'existe pas est de la généralité spéculative :
+on prend le coût tout de suite et le bénéfice peut-être jamais. Le port, lui,
+coûte une classe abstraite et rend le futur bon marché — c'est le bon moment pour
+lui, et le mauvais pour la copie.
 
 ## 4. Les frontières — dans le sens que la PORTE lit
 

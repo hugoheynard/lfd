@@ -140,3 +140,34 @@ qui nomme un fichier disparu gèle le chantier de celui qui le lit.
 
 **Verdict** : 35 portes vertes, typecheck (production **et** specs) vert, 26
 suites unitaires / 239 tests, 4 suites e2e / 77 tests contre le vrai Postgres.
+
+---
+
+## Hors tranche — la conception du stockage, tranchée le 2026-09-10
+
+Le §3 bis du plan a été écrit **trois fois** avant d'être juste, et les trois
+erreurs sont instructives parce qu'aucune n'était technique.
+
+| Version                              | Ce qu'elle disait                         | Pourquoi c'était faux                                                       |
+| ------------------------------------ | ----------------------------------------- | --------------------------------------------------------------------------- |
+| V3 — rien                            | le plan déménageait du code, sans donnée  | la remise aurait été une façade sur les tables des autres                   |
+| V4 — recopier à la passation         | une file alimentée par `OrderPlacedEvent` | entre la commande et le four, le contenu bouge encore                       |
+| V5a — ne rien stocker, tout demander | une lecture vive intégrale                | trop large dans l'autre sens : certains faits n'existent QUE chez la remise |
+
+**La règle qui en sort**, et elle vaut au-delà de ce chantier :
+
+> On ne copie pas pour aller plus vite. On instantané quand la copie devient un
+> **fait distinct** — c'est-à-dire quand elle peut diverger de la source, et que
+> cet écart veut dire quelque chose.
+
+🔴 **C'est cette règle qui donne raison à la production**, ce que ma formulation
+précédente lui refusait à tort. `production_order` n'est pas une copie de la
+commande : c'est le seul endroit où existe « ce qu'on s'est engagé à fabriquer »,
+et il **doit** pouvoir diverger — une substitution, une casse, une commande
+annulée après cuisson.
+
+**Ce qui a débloqué la réflexion est un fait métier, pas un motif d'architecture** :
+c'est de l'alimentaire, donc ce qui est cuit est facturé, donc le contenu gèle au
+démarrage du four. La remise servant après, elle peut lire vif sans risque. Aucun
+raisonnement technique ne pouvait produire cette conclusion — il fallait
+connaître le métier.
