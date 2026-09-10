@@ -76,6 +76,23 @@ export abstract class OrderReader {
   abstract findHandoverByReference(reference: string): Promise<HandoverOrder | null>;
 
   /**
+   * **Ce que le comptoir attend un jour donné** — la file, avant tout scan.
+   *
+   * Voisine de `listForProduction`, et volontairement DISTINCTE : le fournil
+   * veut ce qu'il doit fabriquer, le comptoir veut ce qu'il doit rendre. Les
+   * deux lisent la même journée et ne portent pas les mêmes champs — l'un a
+   * besoin des lignes et des allergènes, l'autre du créneau et du total en
+   * pièces. Les fondre ferait grossir l'une pour servir l'autre.
+   *
+   * ⚠️ Elle rend AUSSI les commandes annulées : c'est la remise qui décide quoi
+   * en faire (`handoverBlocker`), et une file qui les cacherait laisserait un
+   * client se présenter sans que l'écran sache dire pourquoi on refuse.
+   *
+   * @param day `AAAA-MM-JJ` — la colonne est un `@db.Date`, sans heure.
+   */
+  abstract expectedForHandoverOn(day: string): Promise<readonly HandoverQueueOrder[]>;
+
+  /**
    * La commande derrière un **numéro** — ce que le QR de la fiche d'atelier
    * encode.
    *
@@ -131,6 +148,43 @@ export interface PackingOrder {
  * qui restent sur `orders` sont un **snapshot** qu'il lui annonce. Les rendre
  * ici ferait de la copie la source.
  */
+/**
+ * Une ligne de la file du comptoir. **Aucun montant** : on ne facture pas à la
+ * remise, et un total affiché là se lirait comme une somme à encaisser.
+ *
+ * Elle ne porte pas non plus les LIGNES de la commande : la file en affiche des
+ * dizaines, et charger le détail de chacune pour n'en ouvrir qu'une est le
+ * gaspillage que `HandoverSubjectReader` évite déjà, commande par commande.
+ */
+export interface HandoverQueueOrder {
+  readonly orderId: string;
+  readonly reference: string;
+  readonly customerLabel: string;
+  readonly pickupLabel: string | null;
+  readonly fulfillmentMethod: "pickup" | "delivery";
+  /** Le créneau convenu AVEC sa provenance — cf. `HandoverQueueWindow`. */
+  readonly window: HandoverQueueWindow | null;
+  /** Somme des quantités, calculée en base : on ne rapatrie pas les lignes. */
+  readonly totalUnits: number;
+  readonly status: string;
+  readonly readyAt: Date | null;
+  readonly placedAt: Date;
+}
+
+/**
+ * 🔴 **La provenance n'est pas un détail.** `source: "default"` veut dire que
+ * l'heure vient du réglage du point, recopiée à la commande — une heure
+ * d'OUVERTURE, pas une promesse. Le backfill du 2026-08-15 en a posé une sur
+ * l'intégralité des commandes antérieures : calculer un retard dessus
+ * déclencherait une alarme sur tout le portefeuille d'un coup.
+ */
+export interface HandoverQueueWindow {
+  /** `null` = aucune borne basse, c'est-à-dire « avant `end` ». */
+  readonly start: string | null;
+  readonly end: string;
+  readonly source: "default" | "override";
+}
+
 export interface HandoverOrder {
   readonly orderId: string;
   readonly orderNumber: string;

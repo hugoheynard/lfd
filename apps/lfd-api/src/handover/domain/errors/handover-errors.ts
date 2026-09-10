@@ -3,14 +3,17 @@ import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/e
 /**
  * Les refus propres à la **remise**.
  *
- * 🔴 **Les trois codes gardent leur préfixe `production.`**, et c'est
- * délibéré : ils partent dans l'enveloppe d'erreur servie aux clients, et cette
- * tranche ne doit changer **aucun comportement observable** — c'est ce qui
- * permet de la relire comme un déplacement et non comme une modification.
+ * ⚠️ **Les trois codes portaient le préfixe `production.` jusqu'au 2026-09-10.**
+ * Ils l'ont perdu avec l'URL, dans la même tranche et pour la même raison : les
+ * deux sont de la **surface publique**, et les faire diverger aurait laissé une
+ * route `admin/handover` répondre `production.handover.refused`.
  *
- * Ils seront renommés en même temps que l'URL, avec le reste de la surface
- * publique. Aujourd'hui rien ne les lit : le front de retrait matche sur le
- * chemin, jamais sur le code (vérifié le 2026-09-10).
+ * 🔴 Un code d'erreur est un contrat servi, et celui-ci a été renommé sans
+ * dépréciation — contrairement à l'URL. C'est justifié par une vérification, pas
+ * par une préférence : **rien ne les lit**. Le front de retrait matche sur le
+ * chemin, jamais sur le code (vérifié le 2026-09-10, `grep` sur les deux fronts
+ * et sur `packages/`). Le jour où un client s'y accrocherait, la même
+ * dépréciation que l'URL s'appliquerait.
  */
 
 /**
@@ -22,14 +25,14 @@ import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/e
  */
 export class HandoverTokenNotFoundError extends ResourceNotFoundError {
   constructor() {
-    super("production.handover.not_found", "Ce code de retrait ne correspond à aucune commande.");
+    super("handover.not_found", "Ce code de retrait ne correspond à aucune commande.");
   }
 }
 
 /** Aucune commande sous ce **numéro** — le chemin de la remise saisie. */
 export class HandoverReferenceNotFoundError extends ResourceNotFoundError {
   constructor(reference: string) {
-    super("production.handover.reference_not_found", `Aucune commande au numéro ${reference}.`);
+    super("handover.reference_not_found", `Aucune commande au numéro ${reference}.`);
   }
 }
 
@@ -41,6 +44,6 @@ export class HandoverReferenceNotFoundError extends ResourceNotFoundError {
  */
 export class HandoverRefusedError extends BusinessError {
   constructor(reason: string) {
-    super("production.handover.refused", reason);
+    super("handover.refused", reason);
   }
 }

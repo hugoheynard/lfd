@@ -304,7 +304,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_companies: "write",
     // `write` depuis la saisie assistée : le commercial prend les commandes au
     // téléphone, c'est son métier. Ce droit couvre aussi l'attestation de remise
-    // au comptoir (`POST /admin/production/handover/:token`, déplacée au fournil le
+    // au comptoir (`POST /admin/handover/:token`, déplacée au fournil le
     // 2026-09-07 sans changer de ressource) — élargissement assumé : celui
     // qui prend la commande est souvent celui qui remet le sac.
     // Il ne couvre TOUJOURS PAS la modification d'une commande passée : aucune

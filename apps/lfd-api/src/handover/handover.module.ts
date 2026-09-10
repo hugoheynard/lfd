@@ -2,10 +2,13 @@ import { Module } from "@nestjs/common";
 
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
+import { GetHandoverQueueHandler } from "./application/queries/get-handover-queue.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
+import { HandoverAttestationsReader } from "./domain/ports/handover-attestations.reader.js";
 import { OrderHandoverRepository } from "./domain/ports/order-handover.repository.js";
 import { HandoverController } from "./http/handover.controller.js";
+import { PrismaHandoverAttestationsReader } from "./infrastructure/prisma-handover-attestations.reader.js";
 import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-handover.repository.js";
 
 /**
@@ -28,8 +31,10 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
     ConfirmHandoverHandler,
     ConfirmManualHandoverHandler,
     GetHandoverHandler,
+    GetHandoverQueueHandler,
     HandoverAttestation,
     { provide: OrderHandoverRepository, useClass: PrismaOrderHandoverRepository },
+    { provide: HandoverAttestationsReader, useClass: PrismaHandoverAttestationsReader },
   ],
 })
 export class HandoverModule {}

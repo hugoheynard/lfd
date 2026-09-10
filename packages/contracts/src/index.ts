@@ -541,7 +541,14 @@ export type {
   OrderDraftResponse,
   OrderDraftView,
 } from "./admin-order.js";
-export type { OrderHandoverLine, OrderHandoverView } from "./order-handover.js";
+export type {
+  HandoverQueueEntryView,
+  HandoverQueueState,
+  HandoverQueueView,
+  HandoverQueueWindowView,
+  OrderHandoverLine,
+  OrderHandoverView,
+} from "./order-handover.js";
 export {
   recurrenceSchema,
   subscriptionStatusSchema,

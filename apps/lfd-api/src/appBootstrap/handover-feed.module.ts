@@ -1,8 +1,9 @@
 import { Global, Module } from "@nestjs/common";
 
 import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { PrismaHandoverQueueReader } from "../b2b/orders/infrastructure/prisma-handover-queue.reader.js";
 import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
-import { HandoverSubjectReader } from "../handover/channels/commerce/index.js";
+import { HandoverQueueReader, HandoverSubjectReader } from "../handover/channels/commerce/index.js";
 import { PrismaAttestedHandoversReader } from "../handover/infrastructure/prisma-attested-handovers.reader.js";
 import { AttestedHandoversReader } from "../production/channels/handover/index.js";
 
@@ -12,8 +13,9 @@ import { AttestedHandoversReader } from "../production/channels/handover/index.j
  * Ce module est le seul du dossier à brancher un port **dans chaque sens**, et
  * c'est ce qui le rend instructif :
  *
- * - `HandoverSubjectReader` — la **remise déclare**, le commerce implémente. Le
- *   comptoir a besoin de la commande derrière un jeton ; il ne va pas la lire.
+ * - `HandoverSubjectReader` et `HandoverQueueReader` — la **remise déclare**, le
+ *   commerce implémente. Le comptoir a besoin de la commande derrière un jeton,
+ *   et de la file du jour ; il ne va lire ni l'une ni l'autre.
  * - `AttestedHandoversReader` — la **production déclare**, la remise implémente.
  *   Le fournil a besoin de savoir ce qui a été attesté depuis sa clôture ; il ne
  *   va pas le lire non plus.
@@ -33,8 +35,9 @@ import { AttestedHandoversReader } from "../production/channels/handover/index.j
   imports: [OrdersModule],
   providers: [
     { provide: HandoverSubjectReader, useClass: PrismaHandoverSubjectReader },
+    { provide: HandoverQueueReader, useClass: PrismaHandoverQueueReader },
     { provide: AttestedHandoversReader, useClass: PrismaAttestedHandoversReader },
   ],
-  exports: [HandoverSubjectReader, AttestedHandoversReader],
+  exports: [HandoverSubjectReader, HandoverQueueReader, AttestedHandoversReader],
 })
 export class HandoverFeedModule {}

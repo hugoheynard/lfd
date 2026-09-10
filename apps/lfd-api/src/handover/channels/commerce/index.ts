@@ -16,6 +16,11 @@
  * `lint:context-boundaries` n'autorise `b2b → handover` que par ce chemin.
  */
 export {
+  HandoverQueueReader,
+  type HandoverQueueEntry,
+  type HandoverWindow,
+} from "./handover-queue.reader.js";
+export {
   HandoverSubjectReader,
   type HandoverSubject,
   type HandoverSubjectLine,

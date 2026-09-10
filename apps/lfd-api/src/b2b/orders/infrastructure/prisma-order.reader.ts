@@ -33,6 +33,8 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   OrderReader,
   type HandoverOrder,
+  type HandoverQueueOrder,
+  type HandoverQueueWindow,
   type OwnedOrder,
   type PackingOrder,
 } from "../domain/ports/order.reader.js";
@@ -334,6 +336,63 @@ export class PrismaOrderReader extends OrderReader {
   }
 
   /**
+   * **La file du comptoir**, pour un jour de service.
+   *
+   * Trois choix, et chacun se paie s'il est fait autrement :
+   *
+   * - **le total en pièces est calculé EN BASE** (`_sum` sur les lignes) plutôt
+   *   que rapatrié : une matinée fait des dizaines de commandes, et charger
+   *   toutes leurs lignes pour n'en ouvrir qu'une est exactement le gaspillage
+   *   que `HandoverSubjectReader` évite déjà commande par commande ;
+   * - **les annulées sont RENDUES**, contrairement à `listForProduction` qui les
+   *   écarte. Le fournil n'a rien à cuire pour elles ; le comptoir, lui, peut
+   *   voir le client se présenter, et c'est `handoverBlocker` qui doit refuser
+   *   avec la phrase à lire — pas une liste qui les cache ;
+   * - **les brouillons sont écartés** : une commande jamais passée n'attend
+   *   personne, et l'afficher ferait promettre un sac qui n'existe pas.
+   *
+   * ⚠️ L'ordre vient de la base (`created_at`), pas du créneau : trier par heure
+   * demanderait de lire un JSON, donc de tout rapatrier pour trier. L'écran
+   * ordonne ce qu'il affiche — c'est le seul endroit qui sait quel onglet il
+   * peint.
+   */
+  async expectedForHandoverOn(day: string): Promise<readonly HandoverQueueOrder[]> {
+    const rows = await this.prisma.order.findMany({
+      where: {
+        requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
+        status: { not: "draft" },
+      },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        fulfillmentMethod: true,
+        pickupAddress: true,
+        fulfillment: true,
+        readyAt: true,
+        createdAt: true,
+        companyId: true,
+        company: { select: { raisonSociale: true } },
+        placedBy: { select: { email: true, firstName: true, lastName: true } },
+        lines: { select: { quantity: true } },
+      },
+    });
+    return rows.map((row) => ({
+      orderId: row.id,
+      reference: row.orderNumber,
+      customerLabel: customerLabelOf(row),
+      pickupLabel: pickupLabelOf(row.pickupAddress),
+      fulfillmentMethod: row.fulfillmentMethod,
+      window: windowOf(fulfillmentOf(row.fulfillment)),
+      totalUnits: row.lines.reduce((sum, line) => sum + line.quantity, 0),
+      status: row.status,
+      readyAt: row.readyAt,
+      placedAt: row.createdAt,
+    }));
+  }
+
+  /**
    * Le lot d'une journée. La colonne est `@db.Date` : **égalité stricte** sur le
    * jour, pas d'intervalle à composer, et l'index posé sur elle sert.
    */
@@ -437,6 +496,22 @@ export class PrismaOrderReader extends OrderReader {
 function fulfillmentOf(value: Prisma.JsonValue | null): OrderFulfillment {
   const parsed = orderFulfillmentSchema.safeParse(value);
   return parsed.success ? parsed.data : NOTHING_AGREED;
+}
+
+/**
+ * Le créneau convenu, **avec sa provenance**, ou `null` s'il n'y en a pas.
+ *
+ * 🔴 La provenance traverse le port au lieu d'être aplatie. Un `end` en
+ * `source: "default"` est une heure d'ouverture recopiée à la passation, pas une
+ * promesse — et le backfill du 2026-08-15 en a posé une sur TOUTES les commandes
+ * antérieures. Un écran qui ne verrait que l'heure calculerait un retard sur
+ * l'intégralité du portefeuille d'un coup.
+ */
+function windowOf(agreed: OrderFulfillment): HandoverQueueWindow | null {
+  const window = agreed.window.value;
+  return window === null
+    ? null
+    : { start: window.start, end: window.end, source: agreed.window.source };
 }
 
 /** Ce que dit une commande qui n'a jamais rien convenu : rien, et par défaut. */

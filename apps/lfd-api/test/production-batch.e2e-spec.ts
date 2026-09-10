@@ -576,7 +576,7 @@ describe("le journal d'une commande", () => {
     });
     await ctx
       .asSub("staff-e2e")
-      .post(`/admin/production/handover/${order.handoverToken ?? ""}`)
+      .post(`/admin/handover/${order.handoverToken ?? ""}`)
       .expect(201);
 
     expect(await journalTypes()).toContain("order.handed_over");
@@ -593,7 +593,7 @@ describe("le journal d'une commande", () => {
     });
     await ctx
       .asSub("staff-e2e")
-      .post(`/admin/production/handover/${order.handoverToken ?? ""}`)
+      .post(`/admin/handover/${order.handoverToken ?? ""}`)
       .expect(201);
     await ctx.drain();
 
@@ -803,7 +803,7 @@ describe("le plan du soir", () => {
       select: { handoverToken: true },
     });
     const token = order.handoverToken ?? "";
-    await ctx.asSub("staff-e2e").post(`/admin/production/handover/${token}`).expect(201);
+    await ctx.asSub("staff-e2e").post(`/admin/handover/${token}`).expect(201);
     await eventuallyStatus(reference, "fulfilled");
     expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(0);
 
@@ -814,7 +814,7 @@ describe("le plan du soir", () => {
     expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(1);
 
     // Le refus part — et le fait est republié dans le même mouvement.
-    await ctx.asSub("staff-e2e").post(`/admin/production/handover/${token}`).expect(409);
+    await ctx.asSub("staff-e2e").post(`/admin/handover/${token}`).expect(409);
 
     expect(await eventuallyStatus(reference, "fulfilled")).toBe("fulfilled");
     expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(0);
@@ -945,7 +945,7 @@ describe("la remise en livraison", () => {
     const view = jsonBody<{ handedOverVia: string | null }>(
       await ctx
         .asSub("staff-e2e")
-        .post(`/admin/production/handover/${row.handoverToken ?? ""}`)
+        .post(`/admin/handover/${row.handoverToken ?? ""}`)
         .expect(201),
     );
 
@@ -969,10 +969,7 @@ describe("la remise en livraison", () => {
     const reference = await placeDelivery();
 
     const view = jsonBody<{ handedOverVia: string | null; handedOverBy: string | null }>(
-      await ctx
-        .asSub("staff-e2e")
-        .post(`/admin/production/handover/manual/${reference}`)
-        .expect(201),
+      await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201),
     );
 
     expect(view.handedOverVia).toBe("manual");
@@ -983,7 +980,7 @@ describe("la remise en livraison", () => {
     // Une attestation faible et honnête vaut mieux qu'une attestation forte et
     // fausse — encore faut-il pouvoir les distinguer, y compris au journal.
     const reference = await placeDelivery();
-    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/${reference}`).expect(201);
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201);
     await ctx.drain();
 
     const [fact] = await ctx.prisma.activityEvent.findMany({
@@ -995,12 +992,12 @@ describe("la remise en livraison", () => {
 
   it("REFUSE une seconde remise, quelle que soit la porte empruntée", async () => {
     const reference = await placeDelivery();
-    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/${reference}`).expect(201);
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(201);
 
-    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/${reference}`).expect(409);
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/${reference}`).expect(409);
   });
 
   it("répond 404 sur un numéro inconnu, sans dire s'il a existé", async () => {
-    await ctx.asSub("staff-e2e").post(`/admin/production/handover/manual/ORD-INCONNUE`).expect(404);
+    await ctx.asSub("staff-e2e").post(`/admin/handover/manual/ORD-INCONNUE`).expect(404);
   });
 });

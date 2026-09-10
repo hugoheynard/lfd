@@ -1,12 +1,29 @@
-import { type OrderHandoverView } from "@lfd/contracts";
-import { Controller, Get, Param, Post, Req, UnauthorizedException } from "@nestjs/common";
+import { type HandoverQueueView, type OrderHandoverView } from "@lfd/contracts";
+import { Controller, Get, Param, Post, Query, Req, UnauthorizedException } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
 import { ConfirmHandoverCommand } from "../application/commands/confirm-handover.command.js";
 import { ConfirmManualHandoverCommand } from "../application/commands/confirm-manual-handover.command.js";
+import { GetHandoverQueueQuery } from "../application/queries/get-handover-queue.query.js";
 import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
+
+/**
+ * **Les deux chemins de cette surface**, et pourquoi il y en a deux.
+ *
+ * 🔴 `admin/production/handover` est **déprécié**, pas mort. Le back-office est
+ * une SPA déployée par SON PROPRE workflow, indépendant de celui de l'API : un
+ * onglet resté ouvert garde son bundle, et le QR d'un client peut l'ouvrir à
+ * tout moment. Le `CLAUDE.md` §0 est explicite — « Un contrat déjà servi ne se
+ * casse pas. […] il se déprécie, il ne disparaît pas dans le même déploiement. »
+ *
+ * Le retrait de l'ancien chemin est une tranche à part, au déploiement suivant.
+ * Nest accepte un tableau de préfixes : les deux servent les mêmes handlers,
+ * donc il n'y a **rien à maintenir en double** — c'est ce qui rend la
+ * dépréciation gratuite, et donc tenable.
+ */
+const HANDOVER_ROUTES = ["admin/handover", "admin/production/handover"];
 
 /**
  * La **remise** — la surface que le QR d'un client ouvre, et son chemin de
@@ -17,8 +34,8 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
  * le sac et confirme. Aucun lecteur de code-barres, aucune app à installer —
  * un QR qui encode une URL est déjà scannable par tous les téléphones du monde.
  *
- * 🔴 **Cette surface vivait sous `/admin/handover`, chez le commerce, jusqu'au
- * 2026-09-07.** C'est au labo qu'on retire — le client s'y présente, le coursier
+ * 🔴 **Cette surface a déjà déménagé deux fois** : du commerce vers le fournil le
+ * 2026-09-07, puis du fournil vers son propre contexte le 2026-09-10. C'est au labo qu'on retire — le client s'y présente, le coursier
  * y charge —, et le fournil enregistre maintenant la remise chez lui. Le
  * commerce l'apprend par un fait et en tire `fulfilled`.
  *
@@ -42,13 +59,32 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
  * le commercial qui prend la commande est souvent celui qui remet le sac, et
  * c'est un droit qu'on lui a donné explicitement.
  */
-@Controller("admin/production/handover")
+@Controller(HANDOVER_ROUTES)
 @AdminSurface("b2b_orders")
 export class HandoverController {
   constructor(
     private readonly queries: QueryBus,
     private readonly commands: CommandBus,
   ) {}
+
+  /**
+   * **La file du comptoir** pour un jour de service.
+   *
+   * Déclarée **avant** `:token`, et ce n'est pas cosmétique : `file` est un
+   * segment unique, donc `@Get(":token")` l'avalerait et chercherait un jeton
+   * nommé « file ». L'ordre de déclaration est ce qui décide chez Nest.
+   *
+   * Le jour est **obligatoire** et arrive du client. Le serveur ne le déduit pas
+   * de son horloge : un comptoir ouvert à cheval sur minuit, ou un écran laissé
+   * ouvert toute la nuit, montreraient alors la mauvaise journée sans que
+   * personne comprenne pourquoi.
+   */
+  @Get("file")
+  async queue(@Query("jour") day: string): Promise<HandoverQueueView> {
+    return this.queries.execute<GetHandoverQueueQuery, HandoverQueueView>(
+      new GetHandoverQueueQuery(day),
+    );
+  }
 
   /**
    * **La remise SAISIE À LA MAIN**, par le numéro de commande.
