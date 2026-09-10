@@ -153,10 +153,11 @@
             technique, et deux entités peuvent ne pas avoir le même.
           </p>
           <div class="ej-row">
+            <!-- Libellé VISIBLE et unité dedans : `fold-number-input` n'a ni
+                 `hideLabel` ni `suffix`. Un « 14 » nu ne dit pas s'il s'agit de
+                 jours, de semaines ou d'un pourcentage. -->
             <fold-number-input
-              label="Délai"
-              hideLabel
-              suffix="jours"
+              label="Délai (jours)"
               [min]="minDays"
               [max]="maxDays"
               [value]="daysOf(entity)"

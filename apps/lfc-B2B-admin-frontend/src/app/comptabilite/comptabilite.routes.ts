@@ -19,7 +19,17 @@ export const comptabiliteRoutes: Routes = [
     loadComponent: () =>
       import('./comptabilite-page/comptabilite-page').then((m) => m.ComptabilitePage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'entites-juridiques' },
+      { path: '', pathMatch: 'full', redirectTo: 'tableau-de-bord' },
+      {
+        // LA PORTE DE L'ESPACE. Elle ouvrait sur les entités juridiques — un
+        // écran de RÉGLAGE, qu'on visite trois fois dans une vie. Arriver là
+        // chaque matin donnait à l'espace l'allure d'un panneau de
+        // configuration.
+        path: 'tableau-de-bord',
+        title: 'Comptabilité — LFC B2B admin',
+        loadComponent: () =>
+          import('./tableau-de-bord/tableau-de-bord-page').then((m) => m.TableauDeBordPage),
+      },
       {
         path: 'entites-juridiques',
         title: 'Entités juridiques — LFC B2B admin',

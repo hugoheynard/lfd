@@ -50,6 +50,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // `b2b_settings: "read"`, et cet écran décide de la destination des virements.
   // La coquille porte le mur ; la vue hérite, comme dans l'espace B2B.
   comptabilite: 'b2b_accounting:read',
+  'comptabilite/tableau-de-bord': null,
   'comptabilite/entites-juridiques': null,
 
   'comptes-clients/:id': 'b2b_companies:read',

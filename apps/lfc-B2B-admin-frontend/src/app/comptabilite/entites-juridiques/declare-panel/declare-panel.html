@@ -62,10 +62,12 @@
     (valueChange)="vatNumber.set($event)"
   />
 
+  <!-- L'unité dans le LIBELLÉ : `fold-number-input` n'a pas de `suffix`, et un
+       attribut inventé serait ignoré en silence — le champ afficherait un
+       nombre nu, et personne ne saurait s'il s'agit d'euros ou de centimes. -->
   <fold-number-input
-    label="Capital social"
+    label="Capital social (€)"
     optional
-    suffix="€"
     [min]="0"
     [step]="1000"
     [value]="shareCapital()"

@@ -369,6 +369,15 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
  */
 export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
   {
+    // En TÊTE : c'est la vue qu'on ouvre tous les jours, quand les entités
+    // juridiques se règlent trois fois dans une vie.
+    key: 'tableau-de-bord',
+    label: 'Tableau de bord',
+    link: '/comptabilite/tableau-de-bord',
+    icon: 'dashboard',
+    needs: 'b2b_accounting:read',
+  },
+  {
     key: 'entites-juridiques',
     label: 'Entités juridiques',
     link: '/comptabilite/entites-juridiques',

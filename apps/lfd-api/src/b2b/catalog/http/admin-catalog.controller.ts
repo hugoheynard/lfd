@@ -3,12 +3,23 @@ import {
   setCatalogFeaturedPayloadSchema,
   setCatalogVisibilityPayloadSchema,
   type CatalogAdminItemView,
+  type CatalogSummaryView,
   type SetB2bPricePayload,
   type SetCatalogFeaturedPayload,
   type SetCatalogVisibilityPayload,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Put,
+} from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffSub } from "../../../platform/auth/staff.decorator.js";
@@ -19,7 +30,9 @@ import {
   SetCatalogFeaturedCommand,
   SetCatalogVisibilityCommand,
 } from "../application/commands/catalog-decision.commands.js";
-import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
+import { ExportCatalogCsvQuery } from "../application/queries/export-catalog-csv.query.js";
+import { GetCatalogSummaryQuery } from "../application/queries/get-catalog-summary.query.js";
+import { ListCatalogQuery } from "../application/queries/list-catalog.query.js";
 
 /**
  * **Le paramétrage du catalogue** : ce que la plateforme décide par-dessus le
@@ -41,14 +54,47 @@ import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
 @AdminSurface("b2b_catalog")
 export class AdminCatalogController {
   constructor(
-    private readonly reader: CatalogAdminReader,
     private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
   ) {}
 
   /** Tout le catalogue, **masqués compris** : le back-office doit les voir pour les rouvrir. */
   @Get()
   list(): Promise<CatalogAdminItemView[]> {
-    return this.reader.list();
+    return this.queries.execute<ListCatalogQuery, CatalogAdminItemView[]>(new ListCatalogQuery());
+  }
+
+  /**
+   * Les trois nombres du tableau de bord de la comptabilité.
+   *
+   * Une route à part plutôt qu'un calcul sur `GET /` : le tableau de bord veut
+   * trois entiers, pas quatre cents lignes avec leurs allergènes. Faire compter
+   * l'écran lui ferait télécharger le catalogue entier pour afficher « 312 ».
+   */
+  @Get("summary")
+  summary(): Promise<CatalogSummaryView> {
+    return this.queries.execute<GetCatalogSummaryQuery, CatalogSummaryView>(
+      new GetCatalogSummaryQuery(),
+    );
+  }
+
+  /**
+   * Le catalogue en CSV, tel qu'on l'ouvre dans un tableur.
+   *
+   * `text/csv; charset=utf-8` **et** un BOM dans le corps : l'en-tête suffit à
+   * un navigateur, pas à Excel, qui lit le fichier depuis le disque une fois
+   * téléchargé et n'a plus l'en-tête sous les yeux. Les deux, donc, et ce n'est
+   * pas une ceinture avec bretelles — ce sont deux lecteurs différents.
+   *
+   * Le nom de fichier est posé ici et pas côté écran : un navigateur qui suit
+   * un lien ne sait rien nommer, et « export.csv » dans un dossier de
+   * téléchargements ne se retrouve pas.
+   */
+  @Get("export.csv")
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", 'attachment; filename="catalogue-b2b.csv"')
+  csv(): Promise<string> {
+    return this.queries.execute<ExportCatalogCsvQuery, string>(new ExportCatalogCsvQuery());
   }
 
   @Put(":sku/price")

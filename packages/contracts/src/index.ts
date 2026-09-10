@@ -1,4 +1,6 @@
+export { NEW_CUSTOMER_WINDOW_DAYS } from "./admin-company.js";
 export type {
+  CustomerPortfolioView,
   CompanyOwnerView,
   AdminCompanyView,
   AdminCompanyDetailView,
@@ -518,6 +520,7 @@ export type {
   PendingDeliveryView,
   CatalogHealthVersionView,
   CatalogHealthView,
+  CatalogSummaryView,
 } from "./catalog-admin.js";
 export {
   staffSettlementSchema,

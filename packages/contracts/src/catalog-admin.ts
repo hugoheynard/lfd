@@ -206,3 +206,29 @@ export interface CatalogHealthView {
    */
   readonly drift: CatalogParityView | null;
 }
+
+/**
+ * Ce que le tableau de bord de la comptabilité doit savoir du catalogue, en une
+ * lecture.
+ *
+ * Trois nombres et une date, choisis pour répondre à trois questions
+ * différentes — pas pour faire un joli triptyque :
+ *
+ * - `onSale` : ce qu'un client peut commander aujourd'hui ;
+ * - `withoutVatRate` : ce qui est **bloqué**, et le seul chiffre de cet écran
+ *   qui appelle un geste. Un article sans régime de TVA n'est pas masqué et
+ *   n'est pas vendable pour autant ; il disparaît de la boutique sans que rien
+ *   ne le dise ;
+ * - `hidden` : ce qu'on a retiré de la vente exprès, à ne pas confondre avec le
+ *   précédent.
+ *
+ * Ce qu'elle NE porte pas : l'arrivée en attente. `GET admin/catalog/delivery`
+ * la rend déjà, et l'écran la lit par le magasin qui existe. La recopier ici
+ * ferait deux réponses à la même question, dont l'une finirait par vieillir —
+ * et c'est celle du tableau de bord qu'on croirait.
+ */
+export interface CatalogSummaryView {
+  readonly onSale: number;
+  readonly withoutVatRate: number;
+  readonly hidden: number;
+}

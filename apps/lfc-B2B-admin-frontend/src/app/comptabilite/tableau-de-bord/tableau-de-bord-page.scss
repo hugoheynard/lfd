@@ -1,0 +1,66 @@
+/* Le bandeau chiffré. Recopié du gabarit de la publication B2B — mêmes paires
+   terme/valeur, même intention : les nombres d'abord, le détail après. */
+.tb-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--fold-space-md);
+  margin: 0;
+}
+
+.tb-figures div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-md);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+}
+
+.tb-figures dt {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.tb-figures dd {
+  margin: 0;
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un zéro reste lisible mais cesse de crier : il veut dire « rien dans cette
+   catégorie », ce qui est rarement la nouvelle du jour. */
+.tb-figures .is-zero dd {
+  color: var(--fold-color-text-muted);
+}
+
+/* Le seul chiffre dont une valeur non nulle est une mauvaise nouvelle. */
+.tb-figures .is-warning dd {
+  color: var(--fold-color-warning-text);
+}
+
+.tb-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  margin: 0 0 var(--fold-space-sm);
+}
+
+.tb-said {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  margin: 0 0 var(--fold-space-md);
+}
+
+.tb-issuer {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+}
+
+.tb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  margin-block-start: var(--fold-space-md);
+}

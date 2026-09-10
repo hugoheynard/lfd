@@ -41,6 +41,9 @@ import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.servi
 import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
 import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
 import { CheckCatalogHealthHandler } from "./application/queries/check-catalog-health.handler.js";
+import { ExportCatalogCsvHandler } from "./application/queries/export-catalog-csv.handler.js";
+import { GetCatalogSummaryHandler } from "./application/queries/get-catalog-summary.handler.js";
+import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { CheckCatalogParityHandler } from "./application/queries/check-catalog-parity.handler.js";
 import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog-push.handler.js";
 
@@ -100,6 +103,9 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     CheckCatalogParityHandler,
     PreviewCatalogPushHandler,
     CheckCatalogHealthHandler,
+    ListCatalogHandler,
+    GetCatalogSummaryHandler,
+    ExportCatalogCsvHandler,
     ReadShopCatalogueHandler,
     // 🔴 LA logique de prix de la vitrine, pour les DEUX routes. Exportée plus
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec

@@ -11,22 +11,20 @@
    la lecture aux valeurs. */
 .ej-said {
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm);
-  line-height: var(--fold-line-height-normal);
+  font-size: var(--fold-text-sm);
   margin: 0 0 var(--fold-space-md);
 }
 
 /* L'ICS posé : c'est une référence qu'on dicte et qu'on recopie, jamais une
    phrase. Chasse fixe pour que deux caractères voisins ne se confondent pas. */
 .ej-ics {
-  font-family: var(--fold-font-family-mono);
-  font-size: var(--fold-font-size-lg);
-  letter-spacing: var(--fold-letter-spacing-wide);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-lg);
   margin: 0 0 var(--fold-space-sm);
 }
 
 .ej-account {
-  font-family: var(--fold-font-family-mono);
+  font-family: var(--fold-font-mono);
   margin: 0 0 var(--fold-space-md);
 }
 

@@ -197,6 +197,7 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
     status: company.status,
     grantedTerms: company.grantedTerms,
     requestedTerm: company.requestedTerm,
+    activatedAt: company.activatedAt?.toISOString() ?? null,
     primaryContact: {
       id: null,
       role: null,

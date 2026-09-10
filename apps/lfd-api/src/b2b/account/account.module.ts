@@ -39,6 +39,8 @@ import { DownloadKbisForStaffHandler } from "./application/queries/download-kbis
 import { DownloadKbisHandler } from "./application/queries/download-kbis.handler.js";
 import { GetMyAccountHandler } from "./application/queries/get-my-account.handler.js";
 import { GetCompanyForStaffHandler } from "./application/queries/get-company-for-staff.handler.js";
+import { ExportCustomersCsvHandler } from "./application/queries/export-customers-csv.handler.js";
+import { GetCustomerPortfolioHandler } from "./application/queries/get-customer-portfolio.handler.js";
 import { ListAllCompaniesHandler } from "./application/queries/list-all-companies.handler.js";
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
@@ -197,6 +199,8 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     HandleSupportRequestHandler,
     ListSupportRequestsHandler,
     ListAllCompaniesHandler,
+    GetCustomerPortfolioHandler,
+    ExportCustomersCsvHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: NavPreferencesRepository, useClass: PrismaNavPreferencesRepository },
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
