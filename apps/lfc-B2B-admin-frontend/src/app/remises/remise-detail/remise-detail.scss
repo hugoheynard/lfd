@@ -35,10 +35,15 @@
 /* ── L'IDENTITÉ ─────────────────────────────────────────────────────────────
    Le numéro en grand, parce que c'est ce qu'on épelle au téléphone et ce qu'on
    compare à l'écran d'un client. Le reste l'entoure sans lui disputer la place. */
+/* 🔴 L'écart est tenu par le SEUL `gap`, et il est large. Quatre lignes
+   collées — lieu, nom, numéro, date — se lisent comme un bloc de texte alors
+   que ce sont quatre faits qu'on vérifie l'un après l'autre, debout, pendant
+   qu'une personne attend. Aucune marge par élément ici : deux réglages qui
+   s'additionnent rendent l'interligne impossible à corriger d'un endroit. */
 .rd-identity {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-sm);
 }
 
 /* Le sur-titre et la fermeture sur la même ligne : le bouton n'a pas de place à
@@ -76,7 +81,6 @@
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-tight);
   line-height: var(--fold-leading-tight);
-  margin-block: var(--fold-space-3xs) 0;
   /* Une référence ne se coupe pas n'importe où : elle se lit d'un bloc ou pas
      du tout. Elle déborde donc en défilant plutôt qu'en se brisant. */
   overflow-x: auto;
@@ -84,7 +88,7 @@
 }
 
 .rd-meta {
-  margin: var(--fold-space-2xs) 0 0;
+  margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
