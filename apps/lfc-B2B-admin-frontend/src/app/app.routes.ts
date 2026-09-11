@@ -254,25 +254,37 @@ export const routes: Routes = [
       ),
   },
   {
-    // LE PRÉVISIONNEL — la matrice `produits × jours`. Route ENFANT de
-    // « production » et non de premier niveau : c'est la même donnée que le lot
-    // du jour, vue sur sept jours. Déclarée AVANT la route sans segment pour
-    // qu'elle soit atteignable ; l'ordre compte, `production` vide l'avalerait
-    // sinon.
-    path: 'production/previsionnel',
-    canActivate: [permissionGuard('b2b_orders:read')],
-    title: 'Prévisionnel — LFC B2B admin',
-    loadComponent: () =>
-      import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
-  },
-  {
+    // LA PRODUCTION — un ESPACE de travail, et non plus une page. Deux vues, et
+    // ce sont deux questions : la journée dit ce qu'on fabrique maintenant, le
+    // prévisionnel dit quand ça tombe. La coquille ne dessine rien ; elle
+    // publie le rail secondaire, et chaque vue garde son propre sommet.
+    //
+    // Le garde est ICI, sur la coquille : une URL tapée ou un favori ne passent
+    // pas par le rail, et un poste du labo ouvrira exactement ça. Les deux vues
+    // en héritent — elles lisent la même donnée, vue à deux distances.
     path: 'production',
-    // Les commandes en lecture : c'est la même donnée que la liste staff, vue
-    // par le fournil. Le garde est ici parce qu'une URL tapée ou un favori ne
-    // passent pas par le rail — et un poste du labo ouvrira exactement ça.
     canActivate: [permissionGuard('b2b_orders:read')],
-    title: 'Production — LFC B2B admin',
-    loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
+    loadComponent: () =>
+      import('./production/production-workspace/production-workspace-page').then(
+        (m) => m.ProductionWorkspacePage,
+      ),
+    children: [
+      // `/production` reste une adresse valide — c'est un favori de poste de
+      // labo, et une section ne casse pas les liens de ceux qui l'ouvraient
+      // avant qu'elle existe.
+      { path: '', pathMatch: 'full', redirectTo: 'journee' },
+      {
+        path: 'journee',
+        title: 'Production — LFC B2B admin',
+        loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
+      },
+      {
+        path: 'previsionnel',
+        title: 'Prévisionnel — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
+      },
+    ],
   },
   ...commercialRoutes,
   // 🔴 **VIDE dans un build de production.** `dev-tools.ts` n'y déclare aucune

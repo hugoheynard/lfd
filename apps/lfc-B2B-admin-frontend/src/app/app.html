@@ -48,24 +48,7 @@
           routerLink="/production"
           routerLinkActive
           #prodRla="routerLinkActive"
-          [routerLinkActiveOptions]="{ exact: true }"
           [active]="prodRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
-      @if (canSeeProduction()) {
-        <!-- LE PRÉVISIONNEL — le mur qui arrive, sur sept jours. Juste après la
-             production parce que c'est la même donnée vue plus loin : on ouvre
-             le lot du jour, puis on regarde ce qui tombe après. -->
-        <a
-          fold-menu-item
-          icon="calendar"
-          label="Prévisionnel"
-          routerLink="/production/previsionnel"
-          routerLinkActive
-          #previsionnelRla="routerLinkActive"
-          [active]="previsionnelRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -437,31 +420,25 @@
         </fold-nav-group>
       }
       @if (canSeeProduction()) {
-        <a
-          fold-nav-tile
-          icon="production"
-          label="Production"
-          routerLink="/production"
-          routerLinkActive
-          #prodTile="routerLinkActive"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [active]="prodTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-      @if (canSeeProduction()) {
-        <!-- La MÊME entrée qu'au rail, posée deux fois pour la même raison que
-             celle d'en dessous : les deux arbres ne partagent pas leur modèle. -->
-        <a
-          fold-nav-tile
-          icon="calendar"
-          label="Prévisionnel"
-          routerLink="/production/previsionnel"
-          routerLinkActive
-          #previsionnelTile="routerLinkActive"
-          [active]="previsionnelTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+        <!-- La production est un ESPACE depuis qu'elle a deux vues : une tuile
+             qui contient des tuiles, comme le Commercial. Ses vues viennent du
+             MÊME catalogue que le rail secondaire — le lanceur les montre
+             toutes, le rail seulement celles de l'espace ouvert, mais aucune ne
+             se déclare deux fois. -->
+        <fold-nav-group icon="production" label="Production" [entryCountLabel]="entriesLabel">
+          @for (view of productionViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #prodRla="routerLinkActive"
+              [active]="prodRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
       }
       @if (canSeeProduction()) {
         <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les

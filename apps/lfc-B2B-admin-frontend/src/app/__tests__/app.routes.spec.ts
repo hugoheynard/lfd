@@ -158,11 +158,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,
   'pim/produits': null,
+  // LA PRODUCTION est un ESPACE : la coquille porte le garde, ses deux vues en
+  // héritent. C'est la même donnée — le lot du jour et le mur qui arrive —, et
+  // lui poser deux fois le même droit serait une condition toujours vraie.
   production: 'b2b_orders:read',
-  // Le prévisionnel : la même donnée que le lot du jour, vue sur sept jours,
-  // donc le même droit. Il porte le sien plutôt que d'hériter — ce n'est pas un
-  // enfant de `production`, c'est une route voisine sous le même préfixe.
-  'production/previsionnel': 'b2b_orders:read',
+  'production/journee': null,
+  'production/previsionnel': null,
   // La file du comptoir : la MÊME commande, vue au moment où on la remet. En
   // lecture — attester une remise passe par `retrait/:token`, qui exige
   // l'écriture.
