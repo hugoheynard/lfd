@@ -65,19 +65,12 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
 }
 
 /**
- * **Comment** une remise a été constatée.
+ * **Comment** une remise a été constatée — repris du contrat, pas redéfini.
  *
- * `scan` — les deux parties étaient là : l'une a présenté, l'autre a scanné.
- * C'est l'attestation forte, et la seule qui exige un secret.
- *
- * `manual` — le scan était impossible et l'équipe a saisi la remise. Le
- * destinataire n'avait pas son courriel : un magasinier, quelqu'un d'autre à
- * l'accueil, un téléphone déchargé.
- *
- * 🔴 **Les deux ne se confondent pas, et c'est tout l'objet de ce type.** Sans
- * lui, quelqu'un finirait par imprimer le code sur le colis « pour les
- * livraisons difficiles » — et un coursier scannerait son propre carton. Une
- * attestation **faible et honnête** vaut mieux qu'une attestation forte et
- * fausse ; encore faut-il pouvoir les distinguer.
+ * 🔴 Il était déclaré ici, et le contrat portait `string` à sa place : deux
+ * définitions du même ensemble, dont une qui ne définissait rien. C'est le
+ * contrat qui le porte depuis le 2026-09-11, parce que c'est lui que les deux
+ * côtés lisent. Le domaine le réexporte pour que ses lecteurs n'aient pas à
+ * savoir d'où il vient.
  */
-export type HandoverVia = "scan" | "manual";
+export type { HandoverVia } from "@lfd/contracts";

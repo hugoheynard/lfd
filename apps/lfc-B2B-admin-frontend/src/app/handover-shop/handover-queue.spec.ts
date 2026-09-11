@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import type { HandoverQueueEntryView, HandoverQueueWindowView } from '@lfd/contracts';
+import type {
+  FulfillmentMethod,
+  FulfillmentSource,
+  HandoverQueueEntryView,
+  HandoverQueueWindowView,
+  HandoverVia,
+} from '@lfd/contracts';
 
 import {
   atTheCounter,
@@ -336,5 +342,57 @@ describe('matchingQueue', () => {
     const rows = [entry({ orderId: 'ord_secret_42' })];
 
     expect(matchingQueue(rows, 'secret')).toHaveLength(0);
+  });
+});
+
+/**
+ * **`true` seulement si `TValue` n'appartient PAS à `TUnion`.**
+ *
+ * 🔴 Le seul moyen d'éprouver un rétrécissement de type sans directive : la
+ * porte `no-type-escapes` refuse `@ts-expect-error` comme les autres, et elle a
+ * raison — une directive se relit mal et s'oublie. Ici le compilateur fait le
+ * travail : si le champ redevenait `string`, `'overide' extends string` serait
+ * vrai, le type vaudrait `false`, et `const … : false = true` refuserait de
+ * compiler. Le cas échoue alors AVANT de tourner.
+ */
+type Rejects<TUnion, TValue> = TValue extends TUnion ? false : true;
+
+describe("le type ferme ce qu'une chaîne laissait ouvert", () => {
+  /**
+   * 🔴 Ces cas n'éprouvent pas un comportement, ils éprouvent le COMPILATEUR.
+   *
+   * `source` et `fulfillmentMethod` traversaient le contrat en `string` alors
+   * que leurs unions existaient déjà dans le même paquet, trois fichiers plus
+   * loin. Ce que ça coûtait : `isLate` compare `source` au littéral
+   * `'override'`, et une faute de frappe inversait la condition sur toute la
+   * file — le backfill du 2026-08-15 ayant posé un `default` sur l'intégralité
+   * des commandes antérieures, l'écran aurait annoncé « en retard » sur tout le
+   * portefeuille.
+   *
+   * Aucun test de comportement ne l'aurait vue : les fixtures écrivent le même
+   * littéral que le code, donc une faute des DEUX côtés reste verte. Seul le
+   * type ne peut pas se tromper des deux côtés.
+   */
+  it('🔴 une provenance inventée ne compile pas', () => {
+    const rejected: Rejects<FulfillmentSource, 'overide'> = true;
+    const accepted: Rejects<FulfillmentSource, 'override'> = false;
+
+    expect([rejected, accepted]).toEqual([true, false]);
+  });
+
+  it('🔴 un acheminement inventé ne compile pas', () => {
+    // `atTheCounter` écarte `'delivery'` ; une troisième valeur passerait
+    // silencieusement au comptoir.
+    const rejected: Rejects<FulfillmentMethod, 'coursier'> = true;
+
+    expect(rejected).toBe(true);
+  });
+
+  it('🔴 une attestation inventée ne compile pas', () => {
+    // Une remise saisie présentée comme autre chose que `manual` serait fausse,
+    // pas faible. Le type l'interdit.
+    const rejected: Rejects<HandoverVia, 'presume'> = true;
+
+    expect(rejected).toBe(true);
   });
 });

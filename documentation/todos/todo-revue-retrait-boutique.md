@@ -99,7 +99,7 @@ client a reçu, et le bouton dit qu'il est tarifé.
 
 ---
 
-## 2. 🔴 L'alarme de retard de tout le portefeuille tient à une chaîne
+## 2. ✅ L'alarme de retard tenait à une chaîne — clos le 2026-09-11
 
 ### Le fait
 
@@ -160,6 +160,40 @@ ajout : `string` → union refuse des valeurs qu'un client pouvait envoyer. Ici 
 champ est en LECTURE seule (le serveur l'écrit, le front le lit), donc le
 resserrement ne peut casser que notre propre front — mais la règle des trois
 déploiements s'applique si un jour il entre dans une écriture.
+
+### ✅ Ce qui a été fait
+
+**Quatre** champs, pas deux : `source` et `fulfillmentMethod` portent désormais
+`FulfillmentSource` et `FulfillmentMethod` — qui existaient **déjà dans ce
+paquet**, trois fichiers plus loin —, et les deux `handedOverVia` portent
+`HandoverVia`.
+
+🔴 Ce dernier vivait dans le domaine du SERVEUR pendant que le contrat disait
+`string` : deux définitions du même ensemble, dont une qui ne définissait rien.
+Il a déménagé dans `@lfd/contracts`, et le domaine le réexporte — un seul
+endroit dit ce qu'une attestation peut valoir.
+
+La même correction est descendue d'un cran : `AttestedHandover.via`, le port qui
+ALIMENTE la vue, disait `string` lui aussi. La colonne est un `text`, donc
+l'adaptateur la referme explicitement — et du côté sûr : tout ce qui n'est pas
+exactement `scan` devient `manual`, jamais l'inverse. Une ligne écrite à la main
+hors du domaine ne doit pas passer pour l'attestation forte.
+
+**Ce qui tient la règle maintenant**, et c'est le point : trois cas éprouvent le
+COMPILATEUR, pas un comportement.
+
+```ts
+type Rejects<TUnion, TValue> = TValue extends TUnion ? false : true;
+const rejected: Rejects<FulfillmentSource, "overide"> = true;
+```
+
+Si le champ redevenait `string`, `'overide' extends string` serait vrai, le type
+vaudrait `false`, et `const … : false = true` refuserait de compiler. Vérifié en
+isolation : avec l'union la ligne compile, avec `string` elle rend `TS2322`.
+
+⚠️ Écrit ainsi et non avec `@ts-expect-error` parce que `lint:no-type-escapes`
+refuse cette directive comme les autres — et elle a raison : une directive se
+relit mal et s'oublie. La règle ne s'élargit pas, on trouve l'autre chemin.
 
 ---
 
@@ -330,12 +364,9 @@ fichier.
 
 ~~**1**~~ ✅ **clos le 2026-09-11.**
 
-**2** ensuite, et c'est maintenant le plus cher : il fait dépendre une alarme de
-masse d'un caractère. La moitié en est déjà faite — `fulfillmentMethod` est typé
-sur la vue de remise — mais `source` reste un `string` sur la file, et c'est lui
-qui décide du retard.
+~~**2**~~ ✅ **clos le 2026-09-11.**
 
-**3** après, parce qu'il se règle par une phrase à l'écran. **4** au premier
+**3** ensuite, parce qu'il se règle par une phrase à l'écran. **4** au premier
 changement d'état. ~~**5**~~ ✅ **clos le 2026-09-11**, et pas comme il était
 écrit : l'objection d'Hugo — « un contexte devient connaisseur des besoins des
 autres » — a retourné le plan. Le port ne devait pas être découpé, il devait

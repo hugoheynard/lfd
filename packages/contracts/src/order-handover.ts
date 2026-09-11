@@ -12,7 +12,29 @@
  * aléatoire et n'apparaît que dans l'écran du client.
  */
 
-import type { FulfillmentMethod } from "./order.js";
+import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
+
+/**
+ * **Comment** une remise a été constatée.
+ *
+ * `scan` — les deux parties étaient là : l'une a présenté, l'autre a scanné.
+ * C'est l'attestation forte, et la seule qui exige un secret.
+ *
+ * `manual` — le scan était impossible et l'équipe a saisi la remise. Le
+ * destinataire n'avait pas son courriel : un magasinier, quelqu'un d'autre à
+ * l'accueil, un téléphone déchargé.
+ *
+ * 🔴 **Les deux ne se confondent pas, et c'est tout l'objet de ce type.** Sans
+ * lui, quelqu'un finirait par imprimer le code sur le colis « pour les
+ * livraisons difficiles » — et un coursier scannerait son propre carton. Une
+ * attestation **faible et honnête** vaut mieux qu'une forte et fausse ; encore
+ * faut-il pouvoir les distinguer.
+ *
+ * ⚠️ Il vit ICI et non dans le domaine du serveur depuis le 2026-09-11. Il y
+ * était, et le contrat portait `string` à sa place : deux définitions du même
+ * ensemble, dont une qui ne définissait rien.
+ */
+export type HandoverVia = "scan" | "manual";
 
 /** Une ligne à vérifier au comptoir : ce qu'on compte, pas ce qu'on facture. */
 export interface OrderHandoverLine {
@@ -59,7 +81,7 @@ export interface OrderHandoverView {
    * L'écran l'affiche : une remise saisie est une attestation **plus faible**,
    * et la présenter comme un scan la rendrait fausse plutôt que faible.
    */
-  readonly handedOverVia: string | null;
+  readonly handedOverVia: HandoverVia | null;
   /** `null` = la remise est possible ; sinon la raison du refus, en clair. */
   readonly blockedReason: string | null;
   /**
@@ -116,7 +138,7 @@ export interface HandoverQueueEntryView {
   readonly tradeName: string | null;
   /** Le point de retrait figé à la commande, ou `null` en livraison. */
   readonly pickupLabel: string | null;
-  readonly fulfillmentMethod: string;
+  readonly fulfillmentMethod: FulfillmentMethod;
   /** Le créneau convenu, ou `null` si aucune tranche n'a été demandée. */
   readonly window: HandoverQueueWindowView | null;
   /** Somme des quantités — le chiffre qu'on recompte à voix haute. */
@@ -134,7 +156,7 @@ export interface HandoverQueueEntryView {
   /** ISO de la remise, ou `null`. */
   readonly handedOverAt: string | null;
   /** `scan` ou `manual`, ou `null` si elle reste à faire. */
-  readonly handedOverVia: string | null;
+  readonly handedOverVia: HandoverVia | null;
   /** ISO du moment où le fournil l'a déclarée prête, ou `null`. */
   readonly readyAt: string | null;
 }
@@ -162,5 +184,16 @@ export interface HandoverQueueWindowView {
   /** `null` = aucune borne basse, c'est-à-dire « avant `end` ». */
   readonly start: string | null;
   readonly end: string;
-  readonly source: string;
+  /**
+   * 🔴 L'union, et non `string`. Elle portait `string` jusqu'au 2026-09-11
+   * alors que `FulfillmentSource` existait déjà dans ce paquet, trois fichiers
+   * plus loin, et que le port du serveur la portait.
+   *
+   * Ce que ça coûtait : l'écran compare cette valeur au littéral `'override'`
+   * pour décider s'il parle de retard. Une faute de frappe — `'overide'`,
+   * `'override '` — compilait, passait le lint, et inversait la condition sur
+   * TOUTE la file. Les tests ne l'auraient pas vue : leurs fixtures écrivent le
+   * même littéral que le code, donc une faute des deux côtés reste verte.
+   */
+  readonly source: FulfillmentSource;
 }

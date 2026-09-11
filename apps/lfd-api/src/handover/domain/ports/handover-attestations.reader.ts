@@ -25,11 +25,21 @@ export abstract class HandoverAttestationsReader {
   abstract forOrders(orderIds: readonly string[]): Promise<ReadonlyMap<string, AttestedHandover>>;
 }
 
+import type { HandoverVia } from "@lfd/contracts";
+
 /** Ce qu'on sait d'une remise déjà faite, pour l'afficher — pas pour la rejouer. */
 export interface AttestedHandover {
   readonly handedOverAt: Date;
   /** L'identité staff figée (claim `sub`). Une preuve sans auteur n'en est pas. */
   readonly handedOverBy: string;
-  /** `scan` ou `manual` — l'écran les distingue, cf. `HandoverVia`. */
-  readonly via: string;
+  /**
+   * `scan` ou `manual` — l'écran les distingue, et le TYPE le garantit.
+   *
+   * 🔴 Ce champ portait `string` jusqu'au 2026-09-11, et la vue aussi : la
+   * distinction entre une attestation forte et une attestation faible reposait
+   * sur deux chaînes que rien ne contraignait. C'est celle qu'il ne faut pas
+   * confondre — une remise saisie présentée comme un scan est fausse, pas
+   * faible.
+   */
+  readonly via: HandoverVia;
 }

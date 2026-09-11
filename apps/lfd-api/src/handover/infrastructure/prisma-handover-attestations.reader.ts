@@ -28,7 +28,17 @@ export class PrismaHandoverAttestationsReader extends HandoverAttestationsReader
     return new Map(
       rows.map((row) => [
         row.orderId,
-        { handedOverAt: row.handedOverAt, handedOverBy: row.handedOverBy, via: row.handedOverVia },
+        {
+          handedOverAt: row.handedOverAt,
+          handedOverBy: row.handedOverBy,
+          // 🔴 La colonne est un `text` : c'est ICI qu'on la referme sur les
+          // deux valeurs du domaine, comme le fait déjà le dépôt qui réhydrate
+          // une attestation. Une ligne écrite à la main hors du domaine ne doit
+          // pas devenir un `via` inconnu à l'écran — et surtout pas passer pour
+          // un `scan`, qui est l'attestation forte. Tout ce qui n'est pas
+          // exactement « scan » est donc faible.
+          via: row.handedOverVia === "scan" ? ("scan" as const) : ("manual" as const),
+        },
       ]),
     );
   }

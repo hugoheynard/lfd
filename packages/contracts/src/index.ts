@@ -544,6 +544,7 @@ export type {
 export type {
   HandoverQueueEntryView,
   HandoverQueueState,
+  HandoverVia,
   HandoverQueueView,
   HandoverQueueWindowView,
   OrderHandoverLine,

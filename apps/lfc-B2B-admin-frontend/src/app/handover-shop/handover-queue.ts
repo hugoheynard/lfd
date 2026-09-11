@@ -1,4 +1,5 @@
 import type {
+  FulfillmentSource,
   HandoverQueueEntryView,
   HandoverQueueState,
   HandoverQueueWindowView,
@@ -51,8 +52,18 @@ export const NO_PICKUP = '__none__';
  */
 const WITHOUT_WINDOW_RANK = '99:99';
 
-/** Seul un créneau `override` est une tranche réellement demandée. */
-const REQUESTED_SOURCE = 'override';
+/**
+ * Seul un créneau `override` est une tranche réellement demandée.
+ *
+ * 🔴 **Annoté**, et c'est tout le sujet de cette constante depuis le
+ * 2026-09-11. `source` traversait le contrat en `string` alors que
+ * `FulfillmentSource` existait déjà : une faute de frappe ici — `'overide'`,
+ * `'override '` — compilait, passait le lint, et inversait la condition sur
+ * TOUTE la file. Les tests ne l'auraient pas vue, puisque leurs fixtures
+ * écrivent le même littéral que le code. Le type ne peut pas se tromper des
+ * deux côtés.
+ */
+const REQUESTED_SOURCE: FulfillmentSource = 'override';
 
 /**
  * Plié pour la comparaison : sans casse, sans accent, et **sans variété
