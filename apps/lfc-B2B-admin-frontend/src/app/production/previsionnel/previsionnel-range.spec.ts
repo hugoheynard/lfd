@@ -25,9 +25,9 @@ describe('la plage du prévisionnel', () => {
   it('dit la distance plutôt que la date — c’est la vraie question', () => {
     const headers = forecastHeaders(
       [
-        { date: '2026-09-03', totalUnits: 100, closed: true },
-        { date: '2026-09-04', totalUnits: 200, closed: false },
-        { date: '2026-09-05', totalUnits: 900, closed: false },
+        { date: '2026-09-03', totalUnits: 100, orderCount: 12, closed: true },
+        { date: '2026-09-04', totalUnits: 200, orderCount: 9, closed: false },
+        { date: '2026-09-05', totalUnits: 900, orderCount: 47, closed: false },
       ],
       '2026-09-05',
       '2026-09-03',
@@ -35,11 +35,14 @@ describe('la plage du prévisionnel', () => {
     expect(headers.map((header) => header.offset)).toEqual(['aujourd’hui', 'J+1', 'J+2']);
     expect(headers.map((header) => header.today)).toEqual([true, false, false]);
     expect(headers.map((header) => header.closed)).toEqual([true, false, false]);
+    // Le compte de commandes traverse sans être retouché : c'est le pied de la
+    // table qui le lit, et il vient de la même source que les pièces.
+    expect(headers.map((header) => header.orderCount)).toEqual([12, 9, 47]);
   });
 
   it('compte à rebours sur une fenêtre déjà passée', () => {
     const headers = forecastHeaders(
-      [{ date: '2026-09-01', totalUnits: 0, closed: true }],
+      [{ date: '2026-09-01', totalUnits: 0, orderCount: 0, closed: true }],
       null,
       '2026-09-03',
     );
@@ -53,8 +56,8 @@ describe('la plage du prévisionnel', () => {
   it('marque le pic que le serveur a désigné, même si ce n’est pas le maximum affiché', () => {
     const headers = forecastHeaders(
       [
-        { date: '2026-09-03', totalUnits: 100, closed: false },
-        { date: '2026-09-04', totalUnits: 900, closed: false },
+        { date: '2026-09-03', totalUnits: 100, orderCount: 3, closed: false },
+        { date: '2026-09-04', totalUnits: 900, orderCount: 21, closed: false },
       ],
       '2026-09-03',
       '2026-09-03',
@@ -64,7 +67,7 @@ describe('la plage du prévisionnel', () => {
 
   it('ne marque aucun pic quand le serveur n’en désigne pas', () => {
     const headers = forecastHeaders(
-      [{ date: '2026-09-03', totalUnits: 0, closed: false }],
+      [{ date: '2026-09-03', totalUnits: 0, orderCount: 0, closed: false }],
       null,
       '2026-09-03',
     );
@@ -73,7 +76,7 @@ describe('la plage du prévisionnel', () => {
 
   it('abrège le jour et la date en français', () => {
     const headers = forecastHeaders(
-      [{ date: '2026-09-03', totalUnits: 0, closed: false }],
+      [{ date: '2026-09-03', totalUnits: 0, orderCount: 0, closed: false }],
       null,
       '2026-09-03',
     );

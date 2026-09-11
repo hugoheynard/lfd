@@ -7,14 +7,15 @@ const DAYS = ['2026-09-03', '2026-09-04', '2026-09-05'];
 
 function view(
   lines: readonly { sku: string; productName: string; quantities: readonly number[] }[],
+  peakDate: string | null = null,
 ): ProductionForecastView {
   return {
-    days: DAYS.map((date) => ({ date, totalUnits: 0, closed: false })),
+    days: DAYS.map((date) => ({ date, totalUnits: 0, orderCount: 0, closed: false })),
     lines: lines.map((line) => ({
       ...line,
       totalUnits: line.quantities.reduce((sum, quantity) => sum + quantity, 0),
     })),
-    peakDate: null,
+    peakDate,
     totalUnits: 0,
   };
 }
@@ -106,6 +107,20 @@ describe('forecastRayons', () => {
    * serait sinon « exceptionnel » chaque semaine, et la pastille deviendrait du
    * bruit qu'on cesse de lire.
    */
+  /**
+   * Trouvé en REGARDANT la grille : sur la colonne du pic, presque chaque
+   * produit dépasse deux fois sa moyenne — c'est la définition d'un pic. La
+   * mention s'y répétait ligne après ligne, à côté d'une colonne déjà teintée
+   * et déjà nommée « pic », et cessait donc d'être un signal.
+   */
+  it('ne pastille rien sur la colonne du pic, qui est déjà annoncée', () => {
+    const rayons = forecastRayons(
+      view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [10, 10, 400] }], DAYS[2]),
+      [item('VIE-1', 'viennoiserie')],
+    );
+    expect(rayons[0]?.lines[0]?.cells.every((cell) => !cell.exceptional)).toBe(true);
+  });
+
   it("ne pastille pas un produit qui ne sort qu'un jour", () => {
     const rayons = forecastRayons(
       view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [0, 0, 400] }]),

@@ -76,12 +76,13 @@ export function forecastRayons(
 ): readonly ForecastRayon[] {
   const categoryOf = new Map(catalogue.map((item) => [item.sku, item.category]));
   const width = view.days.length;
+  const peakColumn = view.days.findIndex((day) => day.date === view.peakDate);
   const buckets = new Map<CatalogCategory | null, ForecastProduct[]>();
 
   for (const line of view.lines) {
     const category = categoryOf.get(line.sku) ?? null;
     const lines = buckets.get(category) ?? [];
-    lines.push(productOf(line, width));
+    lines.push(productOf(line, width, peakColumn));
     buckets.set(category, lines);
   }
 
@@ -117,7 +118,11 @@ export function totalOfRayons(rayons: readonly ForecastRayon[]): number {
  * moyenne sept fois trop basse, et ses 400 pièces habituelles passeraient pour
  * une commande exceptionnelle chaque semaine.
  */
-function productOf(line: ProductionForecastLine, width: number): ForecastProduct {
+function productOf(
+  line: ProductionForecastLine,
+  width: number,
+  peakColumn: number,
+): ForecastProduct {
   const active = line.quantities.filter((quantity) => quantity > 0);
   const average =
     active.length === 0 ? 0 : active.reduce((sum, quantity) => sum + quantity, 0) / active.length;
@@ -128,9 +133,18 @@ function productOf(line: ProductionForecastLine, width: number): ForecastProduct
       const quantity = line.quantities[column] ?? 0;
       return {
         quantity,
-        // Un produit qui ne sort qu'un jour n'a rien d'exceptionnel : sa
-        // moyenne EST sa seule valeur, et tout l'écran se pastillerait.
-        exceptional: active.length > 1 && quantity > average * EXCEPTIONAL_FACTOR,
+        // Deux silences, et le second a été trouvé en REGARDANT la grille :
+        //
+        // - un produit qui ne sort qu'un jour n'a rien d'exceptionnel : sa
+        //   moyenne EST sa seule valeur, et tout l'écran se pastillerait ;
+        // - la colonne du PIC est déjà annoncée, en tête, en couleur et en
+        //   toutes lettres. Presque chaque produit y dépasse deux fois sa
+        //   moyenne — c'est la définition d'un pic —, donc la mention s'y
+        //   répétait ligne après ligne et cessait d'être un signal. Ce qu'on
+        //   veut voir, c'est la commande qui double une ligne un jour où
+        //   PERSONNE ne s'y attend.
+        exceptional:
+          active.length > 1 && column !== peakColumn && quantity > average * EXCEPTIONAL_FACTOR,
       };
     }),
     totalUnits: line.totalUnits,

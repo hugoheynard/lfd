@@ -83,22 +83,33 @@
   background: var(--fold-color-warning);
 }
 
-/* ── LA GRILLE ──────────────────────────────────────────────────────────────
+/* ── LA TABLE ───────────────────────────────────────────────────────────────
    Sept colonnes ÉGALES (`minmax(0, 1fr)`), et une colonne de produit fixe. Le
    jour courant est marqué d'un filet, pas élargi : privilégier aujourd'hui
    répondrait à la question de l'autre écran.
 
+   La section est `bleed` : la table tient toute la largeur, sans le plafond que
+   la page pose à ses sections. Une matrice n'est pas un document — la mesure
+   typographique ne lui rend aucun service.
+
    `overflow-x` sur le conteneur et non sur la page : une matrice trop large se
-   fait défiler chez elle, la page ne part jamais de travers. */
+   fait défiler chez elle, la page ne part jamais de travers. Et il n'y a QU'UN
+   conteneur défilant — tête, corps et pied dedans —, sans quoi l'en-tête
+   glisserait sans ses colonnes. */
+.pv-board {
+  padding: 0;
+}
+
 .pv-grid {
   overflow-x: auto;
   background: var(--fold-color-surface-card);
-  border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-md);
 }
 
+/* Le gabarit de colonnes vient de la grille et n'est écrit qu'une fois : toutes
+   les lignes le lisent, donc aucune ne peut diverger. */
 .pv-row {
   display: grid;
+  grid-template-columns: var(--pv-columns);
   align-items: center;
   min-width: 60rem;
 }
@@ -107,26 +118,38 @@
   border-bottom: 1px solid var(--fold-color-border-subtle);
 }
 
-/* Un SEUL niveau de zébrage : la ligne de rayon porte le fond, les lignes
-   produit restent claires. Deux systèmes de rayure se combattent. */
+/* ── LES TROIS LIGNES SOMBRES ───────────────────────────────────────────────
+   La tête, les rayons, le pied. `foldSurface="chrome"` bascule la POLARITÉ du
+   sous-arbre — il ne peint pas le fond, c'est à l'élément qui possède la
+   surface de le poser. Sans ces deux gestes ensemble, l'encre claire s'écrirait
+   sur le papier.
+
+   Un SEUL niveau de zébrage : ces lignes-là portent le sombre, les lignes
+   produit restent sur le papier. Deux systèmes de rayure se combattent. */
+.pv-row--head,
+.pv-row--rayon,
+.pv-row--total,
+.pv-row--orders {
+  background: var(--fold-color-bg-header);
+}
+
 .pv-row--rayon {
   width: 100%;
   padding: 0;
   border: 0;
-  border-bottom: 1px solid var(--fold-color-border-subtle);
-  background: var(--fold-color-surface-sunken);
   font: inherit;
   text-align: inherit;
   cursor: pointer;
 }
 
-.pv-row--head,
-.pv-row--foot {
-  background: var(--fold-color-surface-subtle);
+/* Le pied est une seule pièce en deux lignes : un filet ténu les sépare, jamais
+   un blanc — ce sont deux lectures du même bord de table. */
+.pv-row--total {
+  border-top: 1px solid var(--fold-color-border);
 }
 
-.pv-row--foot {
-  border-top: 1px solid var(--fold-color-border);
+.pv-row--orders {
+  border-top: 1px solid var(--fold-color-glass-border);
 }
 
 .pv-cell {
@@ -158,8 +181,12 @@
   gap: 2px;
 }
 
-.pv-day.is-today {
-  border-left: 2px solid var(--fold-color-primary);
+/* Le jour courant est MARQUÉ, pas privilégié : un filet, sur la tête et sur
+   toute la hauteur de la colonne. Pas de teinte et pas d'encre de couleur — la
+   grille n'a qu'une couleur signifiante, et c'est le pic. */
+.pv-day.is-today,
+.pv-qty.is-today {
+  box-shadow: inset 2px 0 0 var(--fold-color-primary);
 }
 
 /* La SEULE colonne teintée. Le jour courant, lui, n'a qu'un filet — teinter les
@@ -223,12 +250,35 @@
   color: var(--fold-color-text-muted);
 }
 
-.pv-rayon-sum,
-.pv-foot-total {
+.pv-rayon-sum {
   font-size: var(--fold-text-md);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text);
+}
+
+/* ── LE PIED ────────────────────────────────────────────────────────────────
+   Deux questions, deux poids typographiques. Les PIÈCES dominent — c'est le
+   chiffre du verdict ; les COMMANDES sont dessous, en petit, parce qu'elles
+   qualifient ce chiffre au lieu de le concurrencer. */
+.pv-foot-total {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tighter);
+  line-height: var(--fold-leading-none);
+  color: var(--fold-color-text);
+}
+
+.pv-row--total .pv-cell,
+.pv-row--orders .pv-cell {
+  padding-block: var(--fold-space-xs);
+}
+
+.pv-foot-orders {
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-secondary);
 }
 
 /* ── LA CELLULE ─────────────────────────────────────────────────────────────
@@ -259,10 +309,6 @@
   letter-spacing: var(--fold-tracking-tighter);
   line-height: var(--fold-leading-none);
   color: var(--fold-color-text);
-}
-
-.pv-qty.is-today .pv-qty-value {
-  color: var(--fold-color-primary-text);
 }
 
 /* La commande qui double une ligne : une mention DISCRÈTE sous le chiffre, et

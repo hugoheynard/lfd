@@ -33,6 +33,8 @@ export interface ForecastHeader {
   /** `aujourd'hui`, `J+1`, … — la distance, qui est la vraie question. */
   readonly offset: string;
   readonly totalUnits: number;
+  /** En combien de commandes ces pièces se répartissent — le pied de la table. */
+  readonly orderCount: number;
   /** La journée est arrêtée : son chiffre est un fait, pas une prévision. */
   readonly closed: boolean;
   readonly today: boolean;
@@ -89,6 +91,7 @@ export function forecastHeaders(
       dayMonth: DAY_MONTH.format(date),
       offset: offsetLabel(today, day.date),
       totalUnits: day.totalUnits,
+      orderCount: day.orderCount,
       closed: day.closed,
       today: day.date === today,
       peak: day.date === peakDate,
