@@ -4,6 +4,7 @@ import type {
   FulfillmentMethod,
   FulfillmentSource,
   HandoverQueueEntryView,
+  HandoverQueueState,
   HandoverQueueWindowView,
   HandoverVia,
   OrderHandoverView,
@@ -25,6 +26,7 @@ import {
   queueCounters,
   rowTone,
   sortedQueue,
+  stillRemittable,
 } from './handover-queue';
 
 /**
@@ -452,5 +454,39 @@ describe('outsideTheCounter', () => {
 
   it('signale une commande à point sous l’onglet des sans-point', () => {
     expect(outsideTheCounter(subject(), NO_PICKUP)).toContain('Le Labo');
+  });
+});
+describe('stillRemittable', () => {
+  it('un sac déjà parti ne se retend pas, une commande annulée non plus', () => {
+    expect(stillRemittable('handed_over')).toBe(false);
+    expect(stillRemittable('cancelled')).toBe(false);
+  });
+
+  it('🔴 une commande que le fournil n’a pas déclarée prête reste remettable', () => {
+    // Même permissivité que `handoverBlocker` côté serveur, et pour la même
+    // raison : renvoyer un client physiquement là, colis prêt, parce qu'un
+    // écran d'atelier n'a pas été cliqué serait pire que tout.
+    expect(stillRemittable('expected')).toBe(true);
+    expect(stillRemittable('ready')).toBe(true);
+  });
+
+  /**
+   * 🔴 **Le cas qui justifie que la règle ait déménagé** (revue du 2026-09-11,
+   * point 4). Elle était écrite à l'identique dans `queue-table.ts` et
+   * `handover-detail.ts` ; le coût n'était pas la duplication mais le jour où
+   * un CINQUIÈME état apparaît et où un seul des deux fichiers est touché — la
+   * file offrirait alors un geste que le rail refuse, sur la même ligne.
+   *
+   * Ce cas ne teste pas un comportement : il fait constater l'élargissement de
+   * l'ensemble au COMPILATEUR. Un membre de plus rend `[HandoverQueueState]
+   * extends [les quatre]` faux, donc `false` n'est plus assignable à `true`, et
+   * `tsc` refuse (TS2322) — ce qu'aucun `default:` silencieux n'aurait dit.
+   */
+  it('🔴 un cinquième état ne s’ajoute pas sans qu’on relise cette règle', () => {
+    type Covers<TUnion, TKnown> = [TUnion] extends [TKnown] ? true : false;
+    const covered: Covers<HandoverQueueState, 'handed_over' | 'ready' | 'expected' | 'cancelled'> =
+      true;
+
+    expect(covered).toBe(true);
   });
 });

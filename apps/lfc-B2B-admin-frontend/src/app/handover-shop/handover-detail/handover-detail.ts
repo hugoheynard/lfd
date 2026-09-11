@@ -23,7 +23,7 @@ import {
 import { NotifyService } from '../../notify.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
-import { formatWindow } from '../handover-queue';
+import { formatWindow, stillRemittable } from '../handover-queue';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -205,10 +205,10 @@ export class HandoverDetail {
       : 'check';
   });
 
-  /** Peut-on encore tendre ce sac ? Même règle que le serveur, dite pour l'œil. */
+  /** Peut-on encore tendre ce sac ? La règle vit dans `handover-queue.ts`. */
   protected readonly remittable = computed<boolean>(() => {
     const entry = this.entry();
-    return entry !== null && entry.state !== 'handed_over' && entry.state !== 'cancelled';
+    return entry !== null && stillRemittable(entry.state);
   });
 
   protected readonly placedAt = computed<string>(() => {

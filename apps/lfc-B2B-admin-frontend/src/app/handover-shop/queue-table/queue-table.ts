@@ -24,6 +24,7 @@ import {
   rowTone,
   sortedQueue,
   stateLabel,
+  stillRemittable,
   stateVariant,
 } from '../handover-queue';
 
@@ -199,18 +200,13 @@ export class QueueTable {
     return stateVariant(entry.state);
   }
 
-  /** Peut-on encore tendre ce sac ? Même règle que le serveur, dite pour l'œil. */
-  protected remittable(entry: HandoverQueueEntryView): boolean {
-    return entry.state !== 'handed_over' && entry.state !== 'cancelled';
-  }
-
   /**
    * Le rappel n'a de sens que sur une commande **déclarée prête**. Le serveur le
    * refuse aussi — la règle vit là-bas ; ici on évite d'armer un bouton dont on
    * connaît déjà la réponse.
    */
   protected remindable(entry: HandoverQueueEntryView): boolean {
-    return this.remittable(entry) && entry.readyAt !== null && !this.reminderSent(entry);
+    return stillRemittable(entry.state) && entry.readyAt !== null && !this.reminderSent(entry);
   }
 
   protected reminderSent(entry: HandoverQueueEntryView): boolean {

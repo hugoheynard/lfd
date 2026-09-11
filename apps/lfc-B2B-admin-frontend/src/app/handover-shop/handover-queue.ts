@@ -360,6 +360,31 @@ export function clockOf(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+/**
+ * **Peut-on encore tendre ce sac ?** — la règle du serveur, dite pour l'œil.
+ *
+ * 🔴 Elle était écrite à l'identique dans `queue-table.ts` ET
+ * `handover-detail.ts` (revue du 2026-09-11, point 4). Deux copies d'une règle
+ * métier ne divergent pas le jour où on les écrit : elles divergent le jour où
+ * un cinquième état apparaît et où **un seul des deux fichiers** est touché —
+ * la file offrirait alors un geste que le rail refuse, sur la même ligne.
+ *
+ * ⚠️ **Le serveur reste l'autorité.** `handoverBlocker` décide, et il rend une
+ * phrase ; cette fonction ne fait qu'éviter d'armer un bouton dont on connaît
+ * déjà la réponse. Elle est donc permissive de la même façon : tout état qui
+ * n'est ni « remise » ni « annulée » passe, y compris une commande que le
+ * fournil n'a pas encore déclarée prête — renvoyer un client physiquement là,
+ * colis prêt, parce qu'un écran d'atelier n'a pas été cliqué serait pire.
+ *
+ * Un cinquième membre de l'union passerait donc ici, comme il passe là-bas.
+ * C'est voulu, et `handover-queue.spec.ts` le fait constater en refusant de
+ * compiler quand l'ensemble s'élargit, plutôt que de laisser un `default`
+ * silencieux en décider.
+ */
+export function stillRemittable(state: HandoverQueueState): boolean {
+  return state !== 'handed_over' && state !== 'cancelled';
+}
+
 /** L'état, dans les mots du comptoir. */
 export function stateLabel(state: HandoverQueueState): string {
   switch (state) {
