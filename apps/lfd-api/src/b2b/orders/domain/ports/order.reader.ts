@@ -58,50 +58,6 @@ export abstract class OrderReader {
   abstract listForAdmin(query: AdminOrdersQuery): Promise<readonly AdminOrderRow[]>;
 
   /**
-   * La commande derrière un **jeton de remise**, ou `null` si le jeton n'est
-   * attribué à aucune. Aucune règle appliquée ici : le port rend l'état, c'est
-   * `handoverBlocker` qui dit si la remise est possible — une seule voix pour
-   * une seule règle.
-   */
-  abstract findByHandoverToken(token: string): Promise<HandoverOrder | null>;
-
-  /**
-   * La même commande, trouvée par son **numéro** — le chemin de la remise
-   * saisie, quand le code n'est pas présentable.
-   *
-   * Le numéro n'est pas un secret : il est imprimé sur le bon. Ce qui protège
-   * cette porte est la session staff, comme le colisage — et c'est suffisant,
-   * parce que saisir une remise est un acte dont l'auteur est enregistré.
-   */
-  abstract findHandoverByReference(reference: string): Promise<HandoverOrder | null>;
-
-  /**
-   * La même commande, par son **identifiant** — le chemin du rail de la file.
-   *
-   * 🔴 Il existe pour que le comptoir cesse de lire une commande par
-   * `findById`, qui rend l'`OrderView` du client — prix, TVA, totaux, trace de
-   * négociation — là où il n'a besoin que des lignes à recompter.
-   */
-  abstract findHandoverByOrderId(orderId: string): Promise<HandoverOrder | null>;
-
-  /**
-   * **Ce que le comptoir attend un jour donné** — la file, avant tout scan.
-   *
-   * Voisine de `listForProduction`, et volontairement DISTINCTE : le fournil
-   * veut ce qu'il doit fabriquer, le comptoir veut ce qu'il doit rendre. Les
-   * deux lisent la même journée et ne portent pas les mêmes champs — l'un a
-   * besoin des lignes et des allergènes, l'autre du créneau et du total en
-   * pièces. Les fondre ferait grossir l'une pour servir l'autre.
-   *
-   * ⚠️ Elle rend AUSSI les commandes annulées : c'est la remise qui décide quoi
-   * en faire (`handoverBlocker`), et une file qui les cacherait laisserait un
-   * client se présenter sans que l'écran sache dire pourquoi on refuse.
-   *
-   * @param day `AAAA-MM-JJ` — la colonne est un `@db.Date`, sans heure.
-   */
-  abstract expectedForHandoverOn(day: string): Promise<readonly HandoverQueueOrder[]>;
-
-  /**
    * La commande derrière un **numéro** — ce que le QR de la fiche d'atelier
    * encode.
    *
@@ -110,6 +66,21 @@ export abstract class OrderReader {
    * protège est la porte staff, pas l'ignorance du code — lequel est de toute
    * façon imprimé en clair sur la même feuille.
    */
+  /**
+   * **Qui a passé cette commande**, par son numéro — trois champs, pas un de
+   * plus.
+   *
+   * 🔴 Le seul appelant est `MarkOrderFulfilledHandler`, qui réagit à la remise
+   * pour publier le fait. Il appelait `findHandoverByReference`, c'est-à-dire la
+   * lecture COMPLÈTE que la remise fait pour peindre son écran — lignes
+   * comprises — alors qu'il n'a besoin que d'un identifiant, d'un numéro et
+   * d'un destinataire.
+   *
+   * ⚠️ C'est ce qui m'avait fait croire que ce verbe n'avait aucun appelant
+   * dans le commerce (2026-09-11). Il en avait un, et il lisait trop.
+   */
+  abstract findAuthorByReference(reference: string): Promise<OrderAuthor | null>;
+
   abstract findForPacking(reference: string): Promise<PackingOrder | null>;
 
   /**
@@ -203,6 +174,14 @@ export interface HandoverQueueWindow {
   readonly start: string | null;
   readonly end: string;
   readonly source: "default" | "override";
+}
+
+/** Qui a passé une commande — ce que la publication d'un fait a besoin de citer. */
+export interface OrderAuthor {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  /** Le client à qui elle appartient — le sujet du fait publié. */
+  readonly placedByUserId: string;
 }
 
 export interface HandoverOrder {

@@ -32,9 +32,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   OrderReader,
-  type HandoverOrder,
-  type HandoverQueueOrder,
-  type HandoverQueueWindow,
+  type OrderAuthor,
   type OwnedOrder,
   type PackingOrder,
 } from "../domain/ports/order.reader.js";
@@ -239,6 +237,16 @@ export class PrismaOrderReader extends OrderReader {
     };
   }
 
+  async findAuthorByReference(reference: string): Promise<OrderAuthor | null> {
+    const row = await this.prisma.order.findUnique({
+      where: { orderNumber: reference },
+      select: { id: true, orderNumber: true, placedByUserId: true },
+    });
+    return row === null
+      ? null
+      : { orderId: row.id, orderNumber: row.orderNumber, placedByUserId: row.placedByUserId };
+  }
+
   async findForPacking(reference: string): Promise<PackingOrder | null> {
     const row = await this.prisma.order.findUnique({
       where: { orderNumber: reference },
@@ -274,133 +282,6 @@ export class PrismaOrderReader extends OrderReader {
         quantity: line.quantity,
       })),
     };
-  }
-
-  async findByHandoverToken(token: string): Promise<HandoverOrder | null> {
-    return this.oneHandover({ handoverToken: token });
-  }
-
-  async findHandoverByReference(reference: string): Promise<HandoverOrder | null> {
-    return this.oneHandover({ orderNumber: reference });
-  }
-
-  async findHandoverByOrderId(orderId: string): Promise<HandoverOrder | null> {
-    return this.oneHandover({ id: orderId });
-  }
-
-  /**
-   * La même lecture, trois clés. Le scan la trouve par un **secret**, la remise
-   * saisie par le **numéro**, le rail de la file par l'**identifiant** qu'elle
-   * vient de rendre — mais ce qu'on lit ensuite est identique, et le dupliquer
-   * ferait diverger les écrans du comptoir au premier champ ajouté.
-   *
-   * ⚠️ Elle ne lit plus `handed_over_*` depuis le 2026-09-07 : ces colonnes sont
-   * devenues le **snapshot** de ce que le fournil annonce, et c'est lui qui les
-   * détient. Les relire pour les lui rendre ferait de la copie la source.
-   */
-  private async oneHandover(
-    where:
-      | { readonly handoverToken: string }
-      | { readonly orderNumber: string }
-      | { readonly id: string },
-  ): Promise<HandoverOrder | null> {
-    const row = await this.prisma.order.findUnique({
-      where,
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        fulfillmentMethod: true,
-        requestedDeliveryDate: true,
-        pickupAddress: true,
-        createdAt: true,
-        companyId: true,
-        placedByUserId: true,
-        // La note est sur le bon qu'on coche : « sans sésame », « par la cour ».
-        note: true,
-        company: { select: { raisonSociale: true } },
-        placedBy: { select: { email: true, firstName: true, lastName: true } },
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
-      },
-    });
-    if (row === null) {
-      return null;
-    }
-    return {
-      orderId: row.id,
-      orderNumber: row.orderNumber,
-      placedByUserId: row.placedByUserId,
-      customerLabel: customerLabelOf(row),
-      placedAt: row.createdAt,
-      requestedDeliveryDate: row.requestedDeliveryDate,
-      pickupLabel: pickupLabelOf(row.pickupAddress),
-      status: row.status,
-      fulfillmentMethod: row.fulfillmentMethod,
-      note: row.note,
-      lines: row.lines.map((line) => ({
-        sku: line.sku,
-        productName: line.productNameSnapshot,
-        quantity: line.quantity,
-      })),
-    };
-  }
-
-  /**
-   * **La file du comptoir**, pour un jour de service.
-   *
-   * Trois choix, et chacun se paie s'il est fait autrement :
-   *
-   * - **le total en pièces est calculé EN BASE** (`_sum` sur les lignes) plutôt
-   *   que rapatrié : une matinée fait des dizaines de commandes, et charger
-   *   toutes leurs lignes pour n'en ouvrir qu'une est exactement le gaspillage
-   *   que `HandoverSubjectReader` évite déjà commande par commande ;
-   * - **les annulées sont RENDUES**, contrairement à `listForProduction` qui les
-   *   écarte. Le fournil n'a rien à cuire pour elles ; le comptoir, lui, peut
-   *   voir le client se présenter, et c'est `handoverBlocker` qui doit refuser
-   *   avec la phrase à lire — pas une liste qui les cache ;
-   * - **les brouillons sont écartés** : une commande jamais passée n'attend
-   *   personne, et l'afficher ferait promettre un sac qui n'existe pas.
-   *
-   * ⚠️ L'ordre vient de la base (`created_at`), pas du créneau : trier par heure
-   * demanderait de lire un JSON, donc de tout rapatrier pour trier. L'écran
-   * ordonne ce qu'il affiche — c'est le seul endroit qui sait quel onglet il
-   * peint.
-   */
-  async expectedForHandoverOn(day: string): Promise<readonly HandoverQueueOrder[]> {
-    const rows = await this.prisma.order.findMany({
-      where: {
-        requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
-        status: { not: "draft" },
-      },
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        fulfillmentMethod: true,
-        pickupAddress: true,
-        fulfillment: true,
-        readyAt: true,
-        createdAt: true,
-        companyId: true,
-        company: { select: { raisonSociale: true, enseigne: true } },
-        placedBy: { select: { email: true, firstName: true, lastName: true } },
-        lines: { select: { quantity: true } },
-      },
-    });
-    return rows.map((row) => ({
-      orderId: row.id,
-      reference: row.orderNumber,
-      customerLabel: customerLabelOf(row),
-      tradeName: tradeNameOf(row.company, customerLabelOf(row)),
-      pickupLabel: pickupLabelOf(row.pickupAddress),
-      fulfillmentMethod: row.fulfillmentMethod,
-      window: windowOf(fulfillmentOf(row.fulfillment)),
-      totalUnits: row.lines.reduce((sum, line) => sum + line.quantity, 0),
-      status: row.status,
-      readyAt: row.readyAt,
-      placedAt: row.createdAt,
-    }));
   }
 
   /**
@@ -507,22 +388,6 @@ export class PrismaOrderReader extends OrderReader {
 function fulfillmentOf(value: Prisma.JsonValue | null): OrderFulfillment {
   const parsed = orderFulfillmentSchema.safeParse(value);
   return parsed.success ? parsed.data : NOTHING_AGREED;
-}
-
-/**
- * Le créneau convenu, **avec sa provenance**, ou `null` s'il n'y en a pas.
- *
- * 🔴 La provenance traverse le port au lieu d'être aplatie. Un `end` en
- * `source: "default"` est une heure d'ouverture recopiée à la passation, pas une
- * promesse — et le backfill du 2026-08-15 en a posé une sur TOUTES les commandes
- * antérieures. Un écran qui ne verrait que l'heure calculerait un retard sur
- * l'intégralité du portefeuille d'un coup.
- */
-function windowOf(agreed: OrderFulfillment): HandoverQueueWindow | null {
-  const window = agreed.window.value;
-  return window === null
-    ? null
-    : { start: window.start, end: window.end, source: agreed.window.source };
 }
 
 /** Ce que dit une commande qui n'a jamais rien convenu : rien, et par défaut. */
@@ -673,27 +538,6 @@ function customerLabelOf(row: NameableRow): string {
   }
   const fullName = `${row.placedBy.firstName} ${row.placedBy.lastName}`.trim();
   return fullName === "" ? row.placedBy.email : fullName;
-}
-
-/**
- * **L'enseigne, quand elle dit quelque chose de plus.**
- *
- * 🔴 Deux absences se confondent dans cette colonne, et une seule réponse les
- * couvre : `enseigne` vaut `""` par défaut sur toute société qui n'en a jamais
- * déclaré (`account.prisma`), et une maison peut aussi avoir recopié sa raison
- * sociale dans les deux champs. Dans les deux cas le comptoir n'a qu'UN nom à
- * lire, et le rendre deux fois est pire que de ne pas le rendre : on croit à
- * deux clients homonymes le temps d'un regard.
- *
- * La comparaison est faite ici, au seul endroit qui lit la colonne. Laissée à
- * l'écran, elle serait refaite par chaque écran, et oubliée par un.
- */
-function tradeNameOf(
-  company: { readonly enseigne: string } | null,
-  customerLabel: string,
-): string | null {
-  const trade = company?.enseigne.trim() ?? "";
-  return trade === "" || trade === customerLabel ? null : trade;
 }
 
 /**

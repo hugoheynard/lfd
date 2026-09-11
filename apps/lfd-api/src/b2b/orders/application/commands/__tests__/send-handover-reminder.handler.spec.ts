@@ -104,20 +104,8 @@ class OneOrderReader extends OrderReader {
     return unused("listForAdmin");
   }
 
-  override findByHandoverToken(): Promise<never> {
-    return unused("findByHandoverToken");
-  }
-
-  override findHandoverByReference(): Promise<never> {
-    return unused("findHandoverByReference");
-  }
-
-  override findHandoverByOrderId(): Promise<never> {
-    return unused("findHandoverByOrderId");
-  }
-
-  override expectedForHandoverOn(): Promise<never> {
-    return unused("expectedForHandoverOn");
+  override findAuthorByReference() {
+    return Promise.reject(new Error("non utilisé"));
   }
 
   override findForPacking(): Promise<never> {

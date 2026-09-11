@@ -42,7 +42,7 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
   ) {}
 
   async execute(command: MarkOrderFulfilledCommand): Promise<void> {
-    const order = await this.orders.findHandoverByReference(command.reference);
+    const order = await this.orders.findAuthorByReference(command.reference);
     if (order === null) {
       throw new OrderReferenceNotFoundError(command.reference);
     }

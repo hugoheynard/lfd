@@ -13,10 +13,7 @@ const VIEW = { id: "ord_1", orderNumber: "CMD-0001" } as unknown as OrderView;
 /** Lecteur doublé : rend la commande demandée (ou rien), et compte ses appels. */
 function reader(owned: OwnedOrder | null): OrderReader {
   return {
-    findByHandoverToken: () => Promise.resolve(null),
-    findHandoverByReference: () => Promise.resolve(null),
-    findHandoverByOrderId: () => Promise.resolve(null),
-    expectedForHandoverOn: () => Promise.resolve([]),
+    findAuthorByReference: () => Promise.resolve(null),
     findForPacking: () => Promise.reject(new Error("non utilisé")),
     listForProduction: () => Promise.resolve([]),
     listByCompany: () => Promise.resolve([]),
