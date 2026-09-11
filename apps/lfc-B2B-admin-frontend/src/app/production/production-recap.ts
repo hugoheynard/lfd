@@ -41,8 +41,26 @@ export interface ProductionRecapGroup {
   readonly lines: readonly ProductionRecapLine[];
 }
 
-/** Le groupe des produits que le catalogue ne connaît plus — jamais silencieux. */
+/**
+ * Le groupe des produits que le catalogue ne connaît plus — jamais silencieux.
+ *
+ * ⚠️ En exploitation normale, **il n'apparaît pas** : le catalogue du
+ * back-office rend les articles vendables sous le SKU du PRODUIT, celui que
+ * portent les lignes de commande, et un groupe vide n'est jamais rendu. Il ne
+ * se remplit qu'avec un article **retiré** depuis la commande.
+ */
 const OFF_CATALOG_LABEL = 'Hors catalogue';
+
+/**
+ * Le même groupe quand le catalogue n'a **pas pu être lu**.
+ *
+ * 🔴 Sans cette distinction, une lecture en échec range TOUT sous « Hors
+ * catalogue » — et la feuille affirme que le fournil fabrique des produits
+ * retirés de la vente. Un mensonge plausible est le pire des deux : rien à
+ * l'écran ne dit que la phrase vient d'une panne. Corrigé le 2026-09-11, en
+ * même temps que le prévisionnel, qui portait le défaut recopié d'ici.
+ */
+const UNKNOWN_SHELF_LABEL = 'Rayon inconnu';
 
 interface Tally {
   productName: string;
@@ -63,6 +81,12 @@ interface Tally {
 export function productionRecap(
   sheets: readonly AtelierSheet[],
   catalogue: readonly CatalogItemView[],
+  /**
+   * Le catalogue a-t-il été LU ? `false` = la lecture a échoué, et l'absence
+   * d'un SKU ne prouve alors rien sur lui. Un défaut à `true` : l'appelant
+   * normal a son catalogue, et c'est la panne qui doit se déclarer.
+   */
+  shelvesKnown = true,
 ): readonly ProductionRecapGroup[] {
   const categoryOf = new Map(catalogue.map((item) => [item.sku, item.category]));
   const bySku = new Map<string, Tally>();
@@ -100,11 +124,19 @@ export function productionRecap(
       );
       return {
         category,
-        label: category === null ? OFF_CATALOG_LABEL : CATALOG_CATEGORY_LABELS[category],
+        label: labelOf(category, shelvesKnown),
         quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
         lines,
       };
     });
+}
+
+/** Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas. */
+function labelOf(category: CatalogCategory | null, shelvesKnown: boolean): string {
+  if (category !== null) {
+    return CATALOG_CATEGORY_LABELS[category];
+  }
+  return shelvesKnown ? OFF_CATALOG_LABEL : UNKNOWN_SHELF_LABEL;
 }
 
 /** Le total de pièces du lot — le chiffre qu'on annonce au fournil en une phrase. */

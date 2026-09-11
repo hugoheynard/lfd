@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldViewToggleComponent,
@@ -77,6 +78,7 @@ function defaultDate(): string {
   imports: [
     FicheProduction,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldViewToggleComponent,
@@ -97,7 +99,19 @@ export class ProductionPage {
   private readonly catalogue = signal<readonly CatalogItemView[]>([]);
 
   protected readonly sheets = computed(() => this.batch()?.sheets ?? []);
-  protected readonly recap = computed(() => productionRecap(this.sheets(), this.catalogue()));
+  /**
+   * 🔴 La lecture du catalogue a-t-elle échoué ?
+   *
+   * Elle ne fait pas tomber l'écran — le lot reste juste sans elle — mais elle
+   * ne peut pas passer en silence : sans catalogue, chaque SKU tombe dans le
+   * groupe des produits absents, et la feuille affirmerait que le fournil
+   * fabrique des articles retirés de la vente.
+   */
+  protected readonly shelvesLost = signal(false);
+
+  protected readonly recap = computed(() =>
+    productionRecap(this.sheets(), this.catalogue(), !this.shelvesLost()),
+  );
   protected readonly pieces = computed(() => totalPieces(this.recap()));
 
   /** « samedi 16 août » — l'en-tête de chaque feuille. */
@@ -121,14 +135,17 @@ export class ProductionPage {
     this.state.set('loading');
     try {
       // Le catalogue part avec le lot : sans lui, le récapitulatif n'a pas de
-      // rayons. Une lecture ratée du catalogue ne doit pas faire disparaître la
-      // production — les produits tombent alors « hors catalogue ».
+      // rayons. Une lecture ratée ne doit pas faire disparaître la production —
+      // mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
+      // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
+      // deux est une panne.
       const [batch, catalogue] = await Promise.all([
         this.production.batch(date),
-        this.catalog.list().catch(() => []),
+        this.catalog.list().catch(() => null),
       ]);
       this.batch.set(batch);
-      this.catalogue.set(catalogue);
+      this.shelvesLost.set(catalogue === null);
+      this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
     } catch {
       this.state.set('error');

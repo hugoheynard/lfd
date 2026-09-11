@@ -110,6 +110,19 @@ describe('le récapitulatif de production', () => {
     expect(totalPieces(recap)).toBe(15);
   });
 
+  /**
+   * 🔴 Une lecture de catalogue en échec rangeait TOUT sous « Hors catalogue »,
+   * c'est-à-dire affirmait que le fournil fabrique des produits retirés de la
+   * vente — jusque sur le papier qui part au fournil. Un mensonge plausible est
+   * le pire : rien ne disait qu'il venait d'une panne (corrigé le 2026-09-11).
+   */
+  it("ne dit pas « hors catalogue » quand le catalogue n'a pas pu être lu", () => {
+    const recap = productionRecap([sheet('C-1', [['CRO', 'Croissant', 10]])], [], false);
+
+    expect(recap.map((group) => group.label)).toEqual(['Rayon inconnu']);
+    expect(totalPieces(recap)).toBe(10);
+  });
+
   it('rend une liste vide pour un lot vide', () => {
     expect(productionRecap([], CATALOGUE)).toEqual([]);
     expect(totalPieces([])).toBe(0);

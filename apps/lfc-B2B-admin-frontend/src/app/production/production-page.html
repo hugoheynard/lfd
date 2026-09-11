@@ -31,6 +31,23 @@
   }
 </header>
 
+<!--
+  🔴 Le catalogue n'a pas répondu. Le lot reste juste — les commandes et leurs
+  quantités viennent du serveur de production, pas de lui — mais ses rayons sont
+  perdus, et un groupe « Hors catalogue » dirait alors que tout est retiré de la
+  vente. Un échec partiel laisse le contenu à l'écran et se DIT.
+
+  `pr-no-print` : le papier part au fournil, et un encadré qui commente une
+  panne d'écran n'a rien à y faire. Le récapitulatif imprimé, lui, porte
+  « Rayon inconnu » — il dit donc la même chose, dans la langue du papier.
+-->
+@if (shelvesLost() && state() === 'ready') {
+  <fold-callout variant="warning" class="pr-no-print">
+    Les rayons n'ont pas pu être lus — le lot est juste, mais ses produits ne sont pas rangés.
+    Rechargez pour les retrouver.
+  </fold-callout>
+}
+
 @switch (state()) {
   @case ('loading') {
     <fold-loading message="Lecture du lot…" />
