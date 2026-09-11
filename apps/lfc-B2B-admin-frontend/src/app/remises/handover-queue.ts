@@ -172,6 +172,97 @@ export function isLate(entry: HandoverQueueEntryView, day: string, now: Date): b
   return !Number.isNaN(deadline.getTime()) && now.getTime() > deadline.getTime();
 }
 
+/**
+ * **De combien de minutes cette ligne est-elle en retard ?** `null` si elle ne
+ * l'est pas.
+ *
+ * 🔴 C'est `isLate` qui décide, et non une seconde comparaison écrite ici : les
+ * deux finiraient par diverger, et celle qui dérive est toujours celle qui
+ * affiche — donc celle qu'on croit. Cette fonction ne fait que **chiffrer** une
+ * décision déjà prise.
+ */
+export function lateMinutes(entry: HandoverQueueEntryView, day: string, now: Date): number | null {
+  if (!isLate(entry, day, now)) {
+    return null;
+  }
+  const window = entry.window;
+  if (window === null) {
+    // Inatteignable : `isLate` a déjà refusé une ligne sans créneau. On le dit
+    // au typeur plutôt qu'à coups de `!`.
+    return null;
+  }
+  const deadline = new Date(`${day}T${window.end}:00`);
+  return Math.floor((now.getTime() - deadline.getTime()) / MINUTE_MS);
+}
+
+const MINUTE_MS = 60_000;
+
+/**
+ * « 56 min de retard », puis « 1 h 20 de retard ».
+ *
+ * ⚠️ Les espaces sont INSÉCABLES, et écrites `\u00a0` plutôt qu'insérées : un
+ * caractère invisible dans une chaîne se fait « corriger » au premier passage
+ * de quelqu'un qui le prend pour une faute de frappe. Même raison que dans
+ * {@link formatHour} — une durée coupée en fin de ligne se relit deux fois.
+ *
+ * Le basculement à l'heure n'est pas cosmétique : passé soixante, les minutes
+ * cessent d'être une durée qu'on se représente. « 143 min » se convertit de
+ * tête au comptoir, ce qui est exactement le travail qu'un écran doit prendre.
+ */
+export function lateLabel(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}\u00a0min de retard`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0
+    ? `${hours}\u00a0h de retard`
+    : `${hours}\u00a0h\u00a0${String(rest).padStart(2, '0')} de retard`;
+}
+
+/** Ce que la bande de tête annonce : l'état de la matinée en trois nombres. */
+export interface QueueCounters {
+  readonly total: number;
+  readonly handedOver: number;
+  readonly late: number;
+  /** Ni remises, ni annulées — ce qu'il reste réellement à tendre. */
+  readonly waiting: number;
+}
+
+/**
+ * Les compteurs de la journée, **tous points confondus**.
+ *
+ * Sur la file entière et non sur l'onglet actif : le nombre qu'on vient
+ * chercher en levant les yeux est « combien reste-t-il ce matin », pas
+ * « combien en reste-t-il dans l'onglet que je regarde ». Les compteurs par
+ * point, eux, sont déjà sur les onglets.
+ */
+export function queueCounters(
+  entries: readonly HandoverQueueEntryView[],
+  day: string,
+  now: Date,
+): QueueCounters {
+  let handedOver = 0;
+  let late = 0;
+  let waiting = 0;
+  for (const entry of entries) {
+    if (entry.state === 'handed_over') {
+      handedOver += 1;
+    } else if (entry.state !== 'cancelled') {
+      waiting += 1;
+    }
+    if (isLate(entry, day, now)) {
+      late += 1;
+    }
+  }
+  return { total: entries.length, handedOver, late, waiting };
+}
+
+/** `06:41` d'un instant, en heure locale — de quoi nourrir {@link formatHour}. */
+export function clockOf(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 /** L'état, dans les mots du comptoir. */
 export function stateLabel(state: HandoverQueueState): string {
   switch (state) {

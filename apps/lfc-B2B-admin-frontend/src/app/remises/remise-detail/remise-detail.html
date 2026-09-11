@@ -1,0 +1,127 @@
+<!--
+  **Le rail est sur le CHROME**, pas sur le papier.
+
+  Ce n'est pas une préférence de teinte : c'est ce qu'on lit debout, à un mètre,
+  pendant qu'une personne attend en face. Le contraste inversé sort le sac de la
+  file — et c'est la seule chose à lire à ce moment-là. La bande de tête de
+  l'écran fait le même choix, pour la même raison.
+
+  🔴 `foldSurface` ET un fond peint : la directive bascule la polarité, elle ne
+  peint rien.
+-->
+<section class="rd-sheet" foldSurface="chrome">
+  @if (entry(); as row) {
+    <!-- L'identité, en tête et en grand : le numéro est ce qu'on épelle au
+         téléphone, et la ligne sous lui dit quand la commande a été passée,
+         comment elle s'achemine et où — les faits qui tranchent « est-ce bien
+         celle-là ». -->
+    <header class="rd-identity">
+      <p class="rd-eyebrow">{{ row.customerLabel }}</p>
+      <div class="rd-headline">
+        <p class="rd-reference">{{ row.reference }}</p>
+        <fold-badge [variant]="stateTone()" [content]="stateText()" />
+      </div>
+      <p class="rd-meta">
+        <span>Passée le {{ placedAt() }}</span>
+        @if (window(); as slot) {
+          <span>{{ methodLabel() }} {{ slot }}</span>
+        } @else {
+          <!-- 🔴 Aucune heure inventée : sans tranche demandée on le dit,
+               plutôt que d'afficher l'ouverture du point. -->
+          <span>{{ methodLabel() }}, aucune tranche demandée</span>
+        }
+        @if (row.pickupLabel; as point) {
+          <span>{{ point }}</span>
+        }
+      </p>
+    </header>
+
+    <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne
+         sera remis : c'est ce qu'on lit à voix haute au comptoir. -->
+    @if (row.state === 'cancelled') {
+      <fold-callout appearance="inset" variant="alert">
+        <strong>Cette commande est annulée.</strong> Rien ne doit être remis&nbsp;: le sac ne sera
+        pas préparé, et le client n'a rien à régler.
+      </fold-callout>
+    } @else {
+      <!-- Le verdict du fournil, et rien de plus que ce qu'il a dit. Il n'y a
+           ni rupture ni avoir dans le modèle : une phrase qui affirmerait
+           « complète » inventerait une vérification que personne n'a faite. -->
+      <fold-callout appearance="inset" [variant]="readyTone()" [icon]="readyIcon()">
+        {{ readyText() }}
+      </fold-callout>
+    }
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture du contenu…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Contenu illisible"
+          subtitle="La commande n'a pas pu être relue — le bon de commande, lui, reste disponible."
+        >
+          <button foldButton (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (lines().length === 0) {
+          <fold-empty-state
+            icon="basket"
+            title="Aucun article"
+            subtitle="Cette commande ne porte aucune ligne de marchandise."
+          />
+        } @else {
+          <section class="rd-bag">
+            <header class="rd-bag-head">
+              <h3 class="rd-bag-title">Ce qu'on tend</h3>
+              <p class="rd-bag-total">
+                <strong>{{ row.totalUnits }}</strong> pièce{{ row.totalUnits > 1 ? 's' : '' }}
+              </p>
+            </header>
+
+            <ul class="rd-lines">
+              @for (line of lines(); track line.sku) {
+                <li class="rd-line">
+                  <span class="rd-qty">{{ line.quantity }}</span>
+                  <span class="rd-name">{{ line.productName }}</span>
+                  <span class="rd-sku">{{ line.sku }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+    }
+
+    <footer class="rd-actions">
+      <!-- 🔴 **La remise saisie, et elle le dit.** Le client n'a pas présenté
+           de code : l'attestation sera gravée `manual`, donc faible et honnête.
+           La maquiller en scan est exactement ce qui fait imprimer le code sur
+           le colis « pour les cas difficiles » — et un coursier scanne alors
+           son propre carton. -->
+      @if (remittable()) {
+        <button foldButton icon="check" [loading]="remitting()" (click)="remit()">
+          Remettre sans code
+        </button>
+      }
+      <button foldButton emphasis="outline" icon="download" [loading]="busy()" (click)="download()">
+        Voir le bon
+      </button>
+
+      <!-- Ce qu'on ne fait PAS ici, dit là où quelqu'un pourrait le chercher.
+           La file ne porte aucun montant, par construction : un total affiché
+           au comptoir se lirait comme une somme à encaisser. -->
+      <p class="rd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</p>
+    </footer>
+  } @else {
+    <!-- Le rail existe même vide, et c'est le sujet : sa place est réservée, la
+         file ne se réorganise pas sous les doigts au premier clic. -->
+    <fold-empty-state
+      icon="package"
+      title="Aucune commande choisie"
+      subtitle="Touchez une ligne de la file pour voir ce qu'il y a dans le sac."
+    />
+  }
+</section>

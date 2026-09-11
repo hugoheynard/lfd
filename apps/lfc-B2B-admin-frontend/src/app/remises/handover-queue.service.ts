@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { HandoverQueueView } from '@lfd/contracts';
+import type { HandoverQueueView, OrderHandoverView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -34,6 +34,26 @@ export class HandoverQueueService {
     return firstValueFrom(
       this.http.get<HandoverQueueView>(
         `${B2B_API_BASE}/admin/handover/file?jour=${encodeURIComponent(day)}`,
+      ),
+    );
+  }
+
+  /**
+   * **La remise saisie**, par le numéro de commande — le chemin sans QR.
+   *
+   * 🔴 Elle grave `manual`, et c'est tout ce qui la distingue du scan côté
+   * serveur. Une remise saisie n'a eu qu'**une** partie : l'équipe. La présenter
+   * comme un scan la rendrait fausse plutôt que faible — c'est pour cela que le
+   * serveur porte deux verbes, et que l'écran écrit « sans code » à côté.
+   *
+   * Elle vit ici et non dans `HandoverService` (`retrait/`) parce qu'elle ne
+   * touche aucun jeton : ce service est celui des gestes qui partent de la file.
+   */
+  async confirmManually(reference: string): Promise<OrderHandoverView> {
+    return firstValueFrom(
+      this.http.post<OrderHandoverView>(
+        `${B2B_API_BASE}/admin/handover/manual/${encodeURIComponent(reference)}`,
+        {},
       ),
     );
   }

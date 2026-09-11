@@ -6,10 +6,14 @@ import {
   ALL_PICKUPS,
   NO_PICKUP,
   entriesForTab,
+  clockOf,
   formatHour,
   formatWindow,
   isLate,
+  lateLabel,
+  lateMinutes,
   pickupTabs,
+  queueCounters,
   rowTone,
   sortedQueue,
 } from './handover-queue';
@@ -193,5 +197,72 @@ describe('rowTone', () => {
 
   it('une ligne ordinaire ne porte aucun ton', () => {
     expect(rowTone(entry({ window: null }), DAY, new Date(`${DAY}T09:00:00`))).toBeNull();
+  });
+});
+
+describe('lateMinutes', () => {
+  it('chiffre le dépassement de la borne haute', () => {
+    const line = entry({ window: window({ source: 'override', end: '08:00' }) });
+
+    expect(lateMinutes(line, DAY, new Date(`${DAY}T08:56:00`))).toBe(56);
+  });
+
+  it('🔴 se tait partout où `isLate` se tait — il ne rejuge rien', () => {
+    const byDefault = entry({ window: window({ source: 'default', end: '08:00' }) });
+    const done = entry({ state: 'handed_over', window: window({ source: 'override' }) });
+
+    expect(lateMinutes(byDefault, DAY, new Date(`${DAY}T23:00:00`))).toBeNull();
+    expect(lateMinutes(done, DAY, new Date(`${DAY}T23:00:00`))).toBeNull();
+    expect(lateMinutes(entry({ window: null }), DAY, new Date(`${DAY}T23:00:00`))).toBeNull();
+  });
+});
+
+describe('lateLabel', () => {
+  it('compte en minutes sous l’heure', () => {
+    expect(lateLabel(1)).toBe('1\u00a0min de retard');
+    expect(lateLabel(59)).toBe('59\u00a0min de retard');
+  });
+
+  /**
+   * 🔴 Au-delà de soixante, les minutes cessent d'être une durée qu'on se
+   * représente : « 143 min » se convertit de tête au comptoir, et c'est
+   * exactement le travail qu'un écran doit prendre.
+   */
+  it('bascule à l’heure dès soixante', () => {
+    expect(lateLabel(60)).toBe('1\u00a0h de retard');
+    expect(lateLabel(80)).toBe('1\u00a0h\u00a020 de retard');
+    expect(lateLabel(125)).toBe('2\u00a0h\u00a005 de retard');
+  });
+});
+
+describe('queueCounters', () => {
+  const at = new Date(`${DAY}T09:00:00`);
+
+  it('sépare ce qui est parti, ce qui attend, et ce qui est en retard', () => {
+    const lines = [
+      entry({ orderId: 'a', state: 'handed_over' }),
+      entry({ orderId: 'b', state: 'cancelled' }),
+      entry({ orderId: 'c', state: 'ready', window: window({ source: 'override', end: '08:00' }) }),
+      entry({ orderId: 'd', state: 'expected', window: null }),
+    ];
+
+    expect(queueCounters(lines, DAY, at)).toEqual({
+      total: 4,
+      handedOver: 1,
+      late: 1,
+      // 🔴 Ni les remises, ni les annulées : « en attente » est ce qu'il reste
+      // à TENDRE, pas ce qui reste dans la liste.
+      waiting: 2,
+    });
+  });
+
+  it('une journée vide compte zéro partout', () => {
+    expect(queueCounters([], DAY, at)).toEqual({ total: 0, handedOver: 0, late: 0, waiting: 0 });
+  });
+});
+
+describe('clockOf', () => {
+  it('rend l’heure LOCALE, sur deux chiffres', () => {
+    expect(clockOf(new Date(`${DAY}T06:41:00`))).toBe('06:41');
   });
 });

@@ -1,0 +1,179 @@
+/* ── LE RAIL, SUR LE CHROME ─────────────────────────────────────────────────
+   Aucune couleur n'est écrite ici : `foldSurface="chrome"` repointe la polarité
+   entière du sous-arbre, et la feuille ne fait que poser le fond que la
+   directive, elle, ne peint pas.
+
+   `fold-aside-layout` rend déjà la colonne collante et lui donne sa largeur ;
+   le rail n'a donc ni position ni largeur à lui — il remplit ce qu'on lui
+   donne. */
+:host {
+  display: block;
+}
+
+.rd-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-bg-rail-secondary);
+
+  /* Une hauteur plancher, pour que le rail reste une COLONNE même vide : un
+     bloc sombre de trois lignes à côté d'une file de dix se lirait comme une
+     bulle d'aide, et on chercherait comment le fermer. */
+  min-height: 20rem;
+}
+
+/* La référence et son état sur la même ligne : l'un identifie, l'autre dit
+   quoi en faire, et on les lit ensemble ou pas du tout. */
+.rd-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-2xs) var(--fold-space-sm);
+}
+
+/* Les deux gestes du rail, puis la mise au point sur ce qu'il ne fait pas.
+   `column` et non une barre : la colonne est étroite, deux boutons côte à côte
+   y seraient tronqués avant d'être lus. */
+.rd-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs);
+  margin-top: auto;
+}
+
+/* ── L'IDENTITÉ ─────────────────────────────────────────────────────────────
+   Le numéro en grand, parce que c'est ce qu'on épelle au téléphone et ce qu'on
+   compare à l'écran d'un client. Le reste l'entoure sans lui disputer la place. */
+.rd-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3xs);
+}
+
+.rd-eyebrow {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-transform: uppercase;
+}
+
+.rd-reference {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tight);
+  line-height: var(--fold-leading-tight);
+  /* Une référence ne se coupe pas n'importe où : elle se lit d'un bloc ou pas
+     du tout. Elle déborde donc en défilant plutôt qu'en se brisant. */
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Les trois faits qui tranchent « est-ce bien celle-là » : quand, comment, où.
+   Séparés par des points médians, portés par la feuille — un séparateur écrit
+   dans le gabarit se retrouverait lu à voix haute par un lecteur d'écran. */
+.rd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-2xs) var(--fold-space-sm);
+  margin: var(--fold-space-2xs) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.rd-meta span + span::before {
+  content: '·';
+  margin-right: var(--fold-space-sm);
+}
+
+/* ── LE SAC ─────────────────────────────────────────────────────────────────
+   Le titre à gauche, le total à droite : c'est le nombre qu'on recompte à voix
+   haute, et il doit se lire sans parcourir la liste. */
+.rd-bag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs);
+}
+
+.rd-bag-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.rd-bag-title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-transform: uppercase;
+}
+
+.rd-bag-total {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.rd-bag-total strong {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.rd-lines {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La quantité d'abord, en chiffres tabulaires alignés : la colonne se parcourt
+   du haut vers le bas pendant qu'on remplit le sac, sans relire les noms. */
+.rd-line {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-2xs) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.rd-line:last-child {
+  border-bottom: 0;
+}
+
+.rd-qty {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rd-name {
+  /* Un nom long revient à la ligne plutôt que d'être coupé : on le lit pour
+     trouver le produit sur une étagère, pas pour le reconnaître d'un préfixe. */
+  overflow-wrap: anywhere;
+}
+
+.rd-sku {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  white-space: nowrap;
+}
+
+/* Ce que l'écran ne fait PAS, dit là où quelqu'un pourrait le chercher. */
+.rd-note {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}

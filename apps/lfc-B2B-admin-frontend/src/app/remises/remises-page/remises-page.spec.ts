@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { HandoverQueueEntryView, HandoverQueueView } from '@lfd/contracts';
 
+import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { RemisesPage } from './remises-page';
 
@@ -16,10 +17,20 @@ import { RemisesPage } from './remises-page';
  *   d'heure — c'est le cas de masse depuis le backfill du 2026-08-15 ;
  * - 🔴 **une commande annulée reste dans la file** : la masquer laisserait
  *   quelqu'un chercher une commande disparue ;
- * - **les onglets portent leur compteur** et sont dérivés des points reçus.
+ * - **les onglets portent leur compteur** et sont dérivés des points reçus ;
+ * - 🔴 **le rail de droite est là même sans sélection**, et se remplit au clic.
  *
  * On passe par le DOM : les membres sont `protected`, et c'est le gabarit qui
  * câble les branches — ce que le typecheck ne lit pas.
+ *
+ * ⚠️ **Le LIBELLÉ du retard n'est pas éprouvé ici**, et c'est délibéré : la page
+ * juge contre l'horloge réelle, donc un cas qui fabriquerait une tranche échue
+ * devrait dériver son heure de `Date.now()` — et se casserait au passage de
+ * minuit, exactement la bombe à retardement que le dépôt interdit dans une
+ * fixture. Les minutes et leur formulation sont éprouvées sur `lateMinutes` et
+ * `lateLabel`, où l'instant est un PARAMÈTRE. Ici on tient la règle inverse,
+ * celle qui coûte cher si elle lâche : sur un créneau `default`, aucun retard,
+ * jamais.
  */
 
 const DAY = '2026-09-10';
@@ -54,10 +65,24 @@ class FakeQueue {
   }
 }
 
+/**
+ * Le rail de droite lit la commande choisie. Il vit dans CETTE page depuis
+ * qu'il a cessé d'être un panneau modal : sans ce doublé, chaque cas partirait
+ * chercher une commande par HTTP.
+ */
+class FakeOrders {
+  byId(id: string): Promise<{ readonly id: string; readonly lines: readonly never[] }> {
+    return Promise.resolve({ id, lines: [] });
+  }
+}
+
 async function render(api: FakeQueue): Promise<ComponentFixture<RemisesPage>> {
   TestBed.configureTestingModule({
     imports: [RemisesPage],
-    providers: [{ provide: HandoverQueueService, useValue: api }],
+    providers: [
+      { provide: HandoverQueueService, useValue: api },
+      { provide: AdminOrdersService, useValue: new FakeOrders() },
+    ],
   });
   const fixture: ComponentFixture<RemisesPage> = TestBed.createComponent(RemisesPage);
   await fixture.whenStable();
@@ -97,13 +122,63 @@ describe('RemisesPage', () => {
 
   it('🔴 ne parle pas de retard sur un créneau `default`, même largement dépassé', async () => {
     const api = new FakeQueue();
-    // Une heure d'ouverture recopiée à la commande, un jour depuis longtemps
-    // passé : l'écran ne doit pas allumer une alarme que personne n'a promise.
-    api.entries = [entry({ window: { start: '06:00', end: '08:00', source: 'default' } })];
+    // Une heure d'ouverture recopiée à la commande : l'écran ne doit pas
+    // allumer une alarme que personne n'a promise. Le backfill du 2026-08-15 en
+    // a posé une sur l'intégralité des commandes antérieures — la règle qui
+    // saute allume le portefeuille entier d'un coup, un matin.
+    api.entries = [entry({ window: { start: '00:00', end: '00:01', source: 'default' } })];
 
     const fixture = await render(api);
 
-    expect(text(fixture)).not.toContain('En retard');
+    expect(text(fixture)).not.toContain('de retard');
+    expect(text(fixture)).toContain('Attendue');
+  });
+
+  it('la bande annonce les remises faites, au singulier comme au pluriel', async () => {
+    const api = new FakeQueue();
+    api.entries = [
+      entry({ orderId: 'a', state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z` }),
+      entry({ orderId: 'b' }),
+    ];
+
+    const fixture = await render(api);
+
+    expect(text(fixture)).toContain('1 remise');
+    expect(text(fixture)).not.toContain('1 remises');
+    expect(text(fixture)).toContain('1 en attente');
+  });
+
+  it('🔴 une remise porte son heure sous le nom, à la place du numéro', async () => {
+    const api = new FakeQueue();
+    api.entries = [
+      entry({
+        state: 'handed_over',
+        handedOverAt: `${DAY}T04:41:00.000Z`,
+        handedOverVia: 'manual',
+      }),
+    ];
+
+    const fixture = await render(api);
+    const row = rowTexts(fixture)[0] ?? '';
+
+    expect(row).toContain('remise');
+    expect(row).not.toContain('CMD-1042');
+    expect(row).toContain('Remise');
+  });
+
+  it('🔴 le rail est là sans sélection, et se remplit au clic', async () => {
+    const fixture = await render(new FakeQueue());
+
+    expect(text(fixture)).toContain('Aucune commande choisie');
+
+    const row = (fixture.nativeElement as HTMLElement).querySelector('tbody tr');
+    (row as HTMLElement | null)?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(text(fixture)).not.toContain('Aucune commande choisie');
+    expect(text(fixture)).toContain('Boulangerie Marin');
   });
 
   it('🔴 une commande annulée reste dans la file', async () => {
