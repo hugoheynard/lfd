@@ -197,7 +197,7 @@ relit mal et s'oublie. La règle ne s'élargit pas, on trouve l'autre chemin.
 
 ---
 
-## 3. 🔴 Le scanner de la barre ignore le point ouvert
+## 3. ✅ Le scanner de la barre ignorait le point ouvert — clos le 2026-09-11
 
 ### Le fait
 
@@ -225,6 +225,31 @@ Ne pas interdire — **nommer**. Le dialogue sait déjà refuser en nommant deux
 commandes quand le code ne correspond pas à celle qu'on a ouverte ; il lui
 manque de dire « cette commande est au Village » ou « c'est une livraison »
 avant d'attester. Le refus existe ; c'est l'avertissement qui manque.
+
+### ✅ Ce qui a été fait
+
+`ScanDialogData` porte `openTab`, et `outsideTheCounter` — dans
+`handover-queue.ts`, avec les autres règles pures — rend la phrase ou `null`.
+Le dialogue l'affiche **au-dessus** de l'accusé, en `warning`, et **laisse la
+confirmation offerte** : `mismatch` barre le bouton, cet avertissement non.
+
+🔴 **Ce que la phrase sert vraiment** n'est pas d'empêcher une fausse remise.
+Si le client s'est trompé de point, la marchandise est à l'autre bout : le sac
+n'est pas dans le rack, l'opérateur cherche, et sans cette phrase il ne sait pas
+s'il cherche mal ou si le sac n'a jamais existé. Elle lui donne la réponse et ce
+qu'il dit au client — d'où les DEUX points nommés, comme les deux numéros du
+refus de code.
+
+Et elle n'interdit pas parce qu'un sac transporté d'un point à l'autre, un
+client redirigé par téléphone, une livraison rattrapée au comptoir sont des
+remises **légitimes**. Même permissivité que `handoverBlocker`, même raison : le
+monde réel prime sur la machine à états.
+
+Sept cas dans `handover-queue.spec.ts`, dont deux où **ne rien dire est la
+bonne réponse** : sous l'onglet « Sans point de retrait », une commande sans
+point est chez elle — ces commandes sont antérieures aux points et se remettent
+bien en boutique, c'est tout l'objet de cet onglet ; et quand l'écran n'affirme
+aucun périmètre (`openTab` vide), il n'y a rien à démentir.
 
 ---
 
@@ -481,8 +506,8 @@ fichier.
 
 ~~**2**~~ ✅ **clos le 2026-09-11.**
 
-**3** ensuite, parce qu'il se règle par une phrase à l'écran. **4** au premier
-changement d'état. ~~**5**~~ ✅ **clos le 2026-09-11**, et pas comme il était
+~~**3**~~ ✅ **clos le 2026-09-11**, par une phrase à l'écran, comme prévu.
+**4** au premier changement d'état. ~~**5**~~ ✅ **clos le 2026-09-11**, et pas comme il était
 écrit : l'objection d'Hugo — « un contexte devient connaisseur des besoins des
 autres » — a retourné le plan. Le port ne devait pas être découpé, il devait
 rétrécir.
