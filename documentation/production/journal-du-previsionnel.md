@@ -162,7 +162,76 @@ Le repli « automatique des rayons terminés » reste possible le jour où
 l'avancement existera ; il n'est pas dans le chemin critique, et l'y mettre
 aurait attaché cet écran à un autre qui n'est pas écrit.
 
-## Tranche 7 — le mode mural, reporté
+## Tranche 7 — la production devient un espace de travail
+
+Elle était **une page** ; elle a désormais **deux vues**, et ce sont deux
+questions — la journée dit ce qu'on fabrique maintenant, le prévisionnel dit
+quand ça tombe. Le dépôt a déjà un mécanisme pour ça (`WorkspaceCatalogue`,
+`provideWorkspaceRail`) : une table de vues, lue **deux fois** — par le rail
+secondaire et par le lanceur mobile — et déclarée **une** seule.
+
+La coquille `ProductionWorkspacePage` ne dessine rien, et c'est une différence
+assumée avec celle du Commercial, qui porte l'en-tête commun à ses cinq vues :
+ici les deux sommets n'ont rien en commun — l'une choisit une date et imprime un
+dossier, l'autre déplace une fenêtre de sept jours. Un en-tête partagé aurait dû
+être vidé de tout ce qui les distingue pour n'être qu'un mot déjà écrit dans le
+rail.
+
+⚠️ **`/production` reste une adresse valide** : elle redirige vers
+`/production/journee`. C'est un favori de poste de labo, et une section ne casse
+pas les liens de ceux qui l'ouvraient avant qu'elle existe.
+
+🔴 **Et l'entrée « Prévisionnel » du rail PRIMAIRE a été retirée** — celle que la
+tranche 5 y avait posée. Une vue qui vit dans le rail secondaire **et** dans le
+rail primaire se déclare deux fois ; le dépôt a déjà payé cette leçon avec
+« Comptes clients », retirée du lanceur pour la même raison. Le
+`routerLinkActiveOptions` exact posé en tranche 5 disparaît avec elle : l'entrée
+d'un espace s'allume sur toutes ses vues, comme les cinq autres.
+
+## Tranche 8 — le design de la référence, et ce que l'écran a appris en se montrant
+
+La table prend la **pleine largeur** (`fold-page-section bleed`) : une matrice
+n'est pas un document, la mesure typographique ne lui rend aucun service, et
+chaque centimètre gagné est une colonne qui respire.
+
+Trois lignes sombres encadrent le papier — la **tête**, les **rayons**, le
+**pied** —, sur `foldSurface="chrome"`. ⚠️ Deux gestes, et il en faut deux : la
+directive bascule la POLARITÉ du sous-arbre, elle ne peint pas le fond. Sans le
+`background`, l'encre claire s'écrirait sur l'ivoire.
+
+🔴 **Tout tient dans UN seul conteneur défilant**, tête et pied compris. Les
+séparer en trois sections aurait laissé trois zones défiler indépendamment — et
+une grille dont l'en-tête ne suit pas ses colonnes ment sur chaque chiffre
+qu'elle affiche. Même raison pour le gabarit de colonnes, posé une fois sur la
+grille (`--pv-columns`) et hérité par chaque ligne.
+
+Le pied porte **deux** lignes, et ce sont deux questions : combien de **pièces**,
+et en combien de **commandes** elles se répartissent. 1 240 pièces en 12
+commandes et 1 240 en 90 ne se préparent pas de la même façon — la seconde
+journée se passe à répartir, pas à pétrir. Le compte vient du serveur, de la
+**même source** que les pièces (plan arrêté ou demande ouverte), et il ne se
+déduit pas des articles : le compte à produire les a justement fusionnés par
+SKU, donc les recompter rendrait des RÉFÉRENCES.
+
+**Deux défauts n'ont été vus qu'en regardant l'écran**, et c'est la leçon de la
+tranche :
+
+- la mention « exceptionnel » se déclenchait sur **presque toute la colonne du
+  pic** — c'est la définition d'un pic que d'y dépasser deux fois sa moyenne. À
+  côté d'une colonne déjà teintée et déjà nommée « pic », la mention se répétait
+  ligne après ligne et cessait d'être un signal. Elle est désormais muette sur
+  cette colonne : ce qu'on veut voir, c'est la commande qui double une ligne un
+  jour où personne ne s'y attend ;
+- le jour courant portait une **encre bleue** sur ses quantités, qui concurrençait
+  la seule couleur signifiante de la grille. Il ne porte plus qu'un filet, sur la
+  tête et sur toute la hauteur de sa colonne : marqué, pas privilégié.
+
+⚠️ **Comment ils ont été vus** : par un aperçu STATIQUE de la table, monté dans
+le bac à sable avec les jetons fold et des données plausibles, pas par l'écran
+réel — qui demande un jeton staff et l'API. Ce que cet aperçu ne prouve pas est
+en fin de document.
+
+## Tranche 9 — le mode mural, reporté
 
 Inchangé par rapport à la spec §6, et pour sa raison : **sept colonnes de jours
 ne tiennent pas sur une dalle verticale**, et la taille réelle de l'écran mural
@@ -176,9 +245,11 @@ il se spécifiera quand la dalle sera choisie.
 - **Le volume réel.** Le seuil de densité (24 références) et la borne de 31 jours
   sont des jugements, pas des mesures : personne n'a compté combien de références
   distinctes sort une semaine de fournil.
-- **La lecture sur un poste du labo.** La grille a été construite et éprouvée en
-  test, pas regardée sur l'écran d'atelier, qui est le seul juge de « est-ce que
-  la semaine tient d'un coup d'œil ».
+- **La lecture sur un poste du labo.** La grille a été regardée sur un aperçu
+  statique à 1440 px, pas sur l'écran d'atelier — qui est le seul juge de « est-ce
+  que la semaine tient d'un coup d'œil ». Et jamais sur l'écran RÉEL, monté dans
+  la coquille, avec de vraies données : ni le rail secondaire, ni le défilement
+  horizontal, ni les états de chargement n'ont été vus en place.
 - **Le tirage papier.** La maquette porte un bouton « Imprimer » ; il n'est pas
   livré. Le prévisionnel se regarde, il ne part pas au fournil — c'est la feuille
   d'atelier qui y va. Ce sera un ajout s'il est demandé, pas une correction.
