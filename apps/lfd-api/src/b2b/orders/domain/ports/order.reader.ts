@@ -163,11 +163,30 @@ export interface HandoverQueueOrder {
 }
 
 /**
- * 🔴 **La provenance n'est pas un détail.** `source: "default"` veut dire que
- * l'heure vient du réglage du point, recopiée à la commande — une heure
- * d'OUVERTURE, pas une promesse. Le backfill du 2026-08-15 en a posé une sur
- * l'intégralité des commandes antérieures : calculer un retard dessus
- * déclencherait une alarme sur tout le portefeuille d'un coup.
+ * 🔴 **La provenance n'est pas un détail** — mais pas pour la raison qui était
+ * écrite ici jusqu'au 2026-09-11.
+ *
+ * `source: "override"` veut dire que quelqu'un a **demandé** cette tranche ;
+ * `"default"` qu'elle vient d'un réglage, donc d'une disponibilité et non d'une
+ * promesse. Juger un retard sur la seconde reprocherait à un client une heure
+ * qu'il n'a jamais donnée.
+ *
+ * ⚠️ **Au comptoir, aujourd'hui, elle vaut TOUJOURS `"override"`** (vérifié le
+ * 2026-09-11). Un retrait ne prend aucun défaut — `OrderDraftingService.
+ * defaultsFor` le refuse explicitement, parce que les heures d'un point sont
+ * une contrainte d'ouverture partagée et non la préférence d'un client —, donc
+ * une fenêtre qui existe sur un retrait a forcément été demandée. Les seules
+ * fenêtres `"default"` non nulles viennent du carnet d'une LIVRAISON, et la
+ * file du comptoir les écarte (`atTheCounter`).
+ *
+ * La garde côté écran reste juste et se garde : elle redeviendra vivante le
+ * jour où la saisie staff gagnera un créneau, ou où les livraisons auront leur
+ * file. Ce qui est retiré est sa justification, qui était **fausse** : elle
+ * disait que le backfill du 2026-08-15 avait posé une heure sur toutes les
+ * commandes antérieures. Il a posé l'inverse, et l'écrit dans son propre
+ * en-tête — « l'heure convenue reste `null` […] en inventer une ferait
+ * promettre un créneau que personne n'a arrêté ». Une provenance sans heure
+ * n'est pas un créneau : `windowOf` la rend `null`.
  */
 export interface HandoverQueueWindow {
   /** `null` = aucune borne basse, c'est-à-dire « avant `end` ». */

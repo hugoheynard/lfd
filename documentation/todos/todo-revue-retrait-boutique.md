@@ -143,6 +143,23 @@ return entry.fulfillmentMethod === 'delivery' ? 'Livraison' : 'Retrait';
 > l'intégralité des commandes antérieures : calculer un retard dessus
 > déclencherait une alarme sur tout le portefeuille d'un coup.
 
+⚠️ **Cet avertissement était lui-même FAUX**, et ne l'a été découvert que le
+2026-09-11, en cherchant pourquoi le semis porte une commande sans créneau. Le
+backfill du 2026-08-15 a posé une provenance avec `value: null` — aucun créneau
+— et l'écrit dans son propre en-tête : « en inventer une ferait promettre un
+créneau que personne n'a arrêté ». Aucune alarme n'était possible.
+
+Ce qui est vrai est plus étroit et plus utile : un **retrait ne prend aucun
+défaut** (le serveur le refuse, les heures d'un point étant une contrainte
+d'ouverture partagée), donc au comptoir `source` vaut toujours `"override"`. La
+garde de `isLate` ne filtre rien aujourd'hui ; elle se garde pour le jour où la
+saisie staff aura un créneau. Les deux JSDoc sont corrigés et datés.
+
+⚠️ **Le raisonnement du point 2 tient malgré tout** : il ne dépendait pas de
+l'alarme mais de la faute de frappe, qui inverse la condition dans les deux
+sens. Une raison fausse peut soutenir une bonne décision — c'est ce qui la rend
+difficile à repérer.
+
 Une faute de frappe dans ce littéral — `'overide'`, `'override '` — compile,
 passe le lint, et **allume l'alarme sur tout le portefeuille**. Les tests ne la
 voient pas : ils construisent leurs fixtures avec le même littéral, donc ils

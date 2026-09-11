@@ -238,11 +238,24 @@ export function formatHour(value: string): string {
 /**
  * **Peut-on dire que cette ligne est en retard ?**
  *
- * 🔴 Non sur un créneau `default` : c'est une heure d'ouverture du point,
- * recopiée à la commande, pas une promesse faite à quelqu'un. Le backfill du
- * 2026-08-15 en a posé une sur l'intégralité des commandes antérieures — un
- * retard calculé dessus allumerait le portefeuille entier d'un coup, un matin,
- * sans qu'aucune commande n'ait bougé.
+ * 🔴 Non sur un créneau `default` : il vient d'un réglage, donc d'une
+ * disponibilité, pas d'une promesse faite à quelqu'un. Reprocher un retard sur
+ * une heure que personne n'a demandée est un reproche adressé à la mauvaise
+ * partie.
+ *
+ * ⚠️ **Cette garde ne filtre rien aujourd'hui, et se garde quand même**
+ * (vérifié le 2026-09-11). Un retrait ne prend aucun défaut — le serveur le
+ * refuse explicitement, les heures d'un point étant une contrainte d'ouverture
+ * partagée —, donc toute fenêtre qui arrive ici a été demandée. Elle
+ * redeviendra vivante le jour où la saisie staff gagnera un créneau, ou où les
+ * livraisons auront leur file ; d'ici là elle coûte une comparaison et évite
+ * qu'on redécouvre la règle par une alarme.
+ *
+ * ⚠️ Sa justification a été **fausse** jusqu'à cette date : elle invoquait un
+ * backfill du 2026-08-15 qui aurait posé une heure sur toutes les commandes
+ * antérieures. Il a posé l'inverse — une provenance avec `value: null`, c'est-
+ * à-dire aucun créneau — et le disait dans son propre en-tête. Une garde
+ * défendue par un danger qui n'existe pas se fait retirer au premier ménage.
  *
  * Non plus sur une commande **remise** (le sac est parti) ni **annulée** (rien
  * ne partira) : dans les deux cas l'heure ne promet plus rien.
