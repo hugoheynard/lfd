@@ -23,6 +23,8 @@ import { RemiseDetail } from './remise-detail';
  * - 🔴 **une annulation est annoncée**, pour qu'on puisse l'expliquer à qui se
  *   présente, et le geste de remise disparaît ;
  * - 🔴 **aucune heure n'est inventée** quand aucune tranche n'a été demandée ;
+ * - 🔴 **le scan part du rail mais ne s'y ouvre pas** : il nomme la commande
+ *   visée et laisse l'écran ouvrir le panneau ;
  * - 🔴 **la remise saisie dit qu'elle est saisie** — « sans code », parce
  *   qu'une attestation faible et honnête vaut mieux qu'une forte et fausse.
  */
@@ -181,6 +183,28 @@ describe('RemiseDetail', () => {
 
     expect(text(fixture)).toContain('Le sac est parti');
     expect(buttonSaying(fixture, 'Remettre')).toBeNull();
+  });
+
+  it('🔴 le scan sort du rail sans l’ouvrir, et nomme la commande visée', async () => {
+    // Le rail dit sur QUI on veut lire, l'écran ouvre : deux surfaces qui
+    // ouvriraient chacune leur panneau en donneraient deux au double-clic, et
+    // seule celle du dessus relirait la file en se fermant.
+    const fixture = await render(entry());
+    const asked: HandoverQueueEntryView[] = [];
+    fixture.componentInstance.scanned.subscribe((row) => asked.push(row));
+
+    buttonSaying(fixture, 'Scanner')?.click();
+    await fixture.whenStable();
+
+    expect(asked.map((row) => row.reference)).toEqual(['CMD-1042']);
+  });
+
+  it('🔴 une commande déjà remise n’offre plus de scan non plus', async () => {
+    const fixture = await render(
+      entry({ state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z`, handedOverVia: 'scan' }),
+    );
+
+    expect(buttonSaying(fixture, 'Scanner')).toBeNull();
   });
 
   it('🔴 la remise saisie dit qu’elle est SANS CODE, et part sur le numéro', async () => {

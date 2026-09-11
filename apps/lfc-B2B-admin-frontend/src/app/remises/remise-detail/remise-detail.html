@@ -99,7 +99,20 @@
            le colis « pour les cas difficiles » — et un coursier scanne alors
            son propre carton. -->
       @if (remittable()) {
-        <button foldButton block size="lg" icon="check" [loading]="remitting()" (click)="remit()">
+        <!-- Le scan EN PREMIER, et c'est l'ordre qui le dit : on tend le
+             lecteur, et la saisie n'est que le repli quand le code manque. -->
+        <button foldButton class="rd-scan" block size="lg" icon="qr-code" (click)="scan()">
+          Scanner le code
+        </button>
+        <button
+          foldButton
+          emphasis="outline"
+          block
+          size="lg"
+          icon="check"
+          [loading]="remitting()"
+          (click)="remit()"
+        >
           Remettre sans code
         </button>
       }

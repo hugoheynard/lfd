@@ -93,6 +93,16 @@ export class RemiseDetail {
   /** L'équipe referme le rail. La file reste, et rien n'est sélectionné. */
   readonly cleared = output<void>();
 
+  /**
+   * On veut lire le code de cette personne.
+   *
+   * 🔴 Le rail n'ouvre pas le scanner lui-même : il dit sur QUI on veut le
+   * lire, et l'écran ouvre. C'est déjà le contrat de la file — deux surfaces
+   * qui ouvriraient chacune leur panneau en donneraient deux au premier
+   * double-clic, et seule celle du dessus relirait la file en se fermant.
+   */
+  readonly scanned = output<HandoverQueueEntryView>();
+
   private readonly api = inject(AdminOrdersService);
   private readonly handovers = inject(HandoverQueueService);
   private readonly notify = inject(NotifyService);
@@ -245,6 +255,20 @@ export class RemiseDetail {
       customerLabel: entry.customerLabel,
     };
     this.panels.open<BonPanelData>(BonPanel, { data });
+  }
+
+  /**
+   * **Le scan, depuis le rail** — l'attestation forte, sur la commande ouverte.
+   *
+   * Il est au-dessus de la remise saisie, et l'ordre est le message : on tend
+   * le lecteur d'abord, et on se rabat sur la saisie quand le code manque. Le
+   * panneau vérifiera que le code lu désigne bien CETTE commande.
+   */
+  protected scan(): void {
+    const entry = this.entry();
+    if (entry !== null) {
+      this.scanned.emit(entry);
+    }
   }
 
   /** **La remise saisie**, depuis le rail — le chemin sans QR. */

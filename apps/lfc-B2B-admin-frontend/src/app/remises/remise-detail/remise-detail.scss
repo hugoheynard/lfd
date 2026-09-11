@@ -237,7 +237,11 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
+
+  /* Trois gestes distincts, pas une pile : le scan, la remise saisie, et la
+     ligne du bas qui n'en est pas un. Collés, les deux boutons se lisaient
+     comme un seul bloc à deux étages, et on cliquait le mauvais. */
+  gap: var(--fold-space-md);
 
   /* 🔴 Collée au BAS du rail. Le sac s'arrête où sa liste s'arrête, donc la
      remise suivait la dernière ligne et changeait de hauteur d'une commande à
@@ -247,6 +251,31 @@
      et il est moins cher que la recherche. */
   margin-top: auto;
   padding-top: var(--fold-space-3xs);
+}
+
+/* 🔴 **Le bleu de la PAGE, dans une colonne de chrome.** Sur le rail,
+   `foldSurface="chrome"` repointe tout le couple de marque vers sa polarité
+   sombre : `primary` y devient un bleu pâle à encre foncée, juste pour un
+   comptoir. Le geste central de l'écran doit porter le même bleu que le
+   « Scanner » de la file, sinon deux boutons qui font la même chose ne se
+   ressemblent pas.
+
+   `--fold-color-brand` est précisément ce qui reste : le bloc chrome de navi
+   redéclare `primary`, `on-primary` et leurs dérivés, mais JAMAIS la paire
+   `brand` / `on-brand` (vérifié dans `tokens/semantic.css` le 2026-09-11). On
+   repointe donc les rôles du bouton dessus — aucune couleur écrite ici.
+
+   Le survol est un mélange avec le fond de la barre de l'app, faute d'un
+   `brand-strong` : la page descend d'un cran (600 → 700), et sans lui le survol
+   serait allé chercher le bleu pâle du chrome — c'est-à-dire s'éclaircir. */
+.rd-scan {
+  --fold-color-primary: var(--fold-color-brand);
+  --fold-color-on-primary: var(--fold-color-on-brand);
+  --fold-color-primary-strong: color-mix(
+    in srgb,
+    var(--fold-color-brand) 82%,
+    var(--fold-color-bg-header)
+  );
 }
 
 .rd-foot {

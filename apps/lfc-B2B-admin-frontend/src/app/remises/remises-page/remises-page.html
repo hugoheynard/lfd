@@ -120,6 +120,7 @@
       asideRight
       [entry]="selected()"
       (remitted)="load()"
+      (scanned)="scan($event)"
       (cleared)="clearSelection()"
     />
   </fold-aside-layout>
