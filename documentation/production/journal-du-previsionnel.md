@@ -1,0 +1,184 @@
+# Journal du prévisionnel — ce qui est fait, et ce qu'on a trouvé en le faisant
+
+> **Le ledger du chantier « calendrier J → J+6 »**, demandé par le dossier
+> `handoff-calendrier-production/` (SPEC du 2026-09-11) et livré le même jour
+> sous le nom que l'écran porte réellement : **le prévisionnel**.
+>
+> Une ligne par tranche, tenue **pendant** le travail et non après : ce qu'on a
+> touché, ce qu'on a vérifié, et ce que la spec n'avait pas vu.
+>
+> Un journal n'est pas un compte rendu. Il porte les **surprises**, parce que ce
+> sont elles qui coûtent, et parce qu'une tranche qui s'est bien passée n'apprend
+> rien à celle d'après.
+
+## L'état, d'un coup d'œil
+
+| #   | Tranche                                                 | État      |
+| --- | ------------------------------------------------------- | --------- |
+| 1   | Le contrat — `ProductionForecastView`                   | ✅ fait   |
+| 2   | Le domaine — `ServiceRange` et la matrice pure          | ✅ fait   |
+| 3   | Les deux ports — le plan arrêté, la demande attendue    | ✅ fait   |
+| 4   | La lecture et sa route `GET /admin/production/forecast` | ✅ fait   |
+| 5   | L'écran `/production/previsionnel`                      | ✅ fait   |
+| 6   | Le débordement — repli des rayons + densité             | ✅ fait   |
+| 7   | Le mode mural                                           | ⏸ reporté |
+
+---
+
+## La surprise principale : une journée close affiche ZÉRO
+
+🔴 **C'est le défaut que la spec ne pouvait pas voir**, parce qu'il naît de ce
+que le dépôt a construit après elle.
+
+La spec dit : « réutiliser l'agrégation de `production-page.ts`, étendue à une
+plage ». Cette agrégation lit les commandes du **commerce**. Or la clôture du
+plan du soir fait quitter `placed` aux commandes de la journée — c'est
+exactement ce que `PrismaDayOrdersReader` documente, et ce que l'abonné du
+commerce écrit en réponse à `ProductionDayClosedEvent`.
+
+Conséquence : la journée du jour est close **la veille au soir**. Une matrice
+qui n'irait lire que la demande du commerce afficherait donc **zéro pour
+aujourd'hui, tous les matins** — c'est-à-dire le contraire de ce que l'écran
+existe pour montrer, sur la colonne qu'on regarde en premier.
+
+**La règle retenue**, portée par `forecastMatrix` et éprouvée en e2e :
+
+- journée **close** → le **compte à produire arrêté** (`production_count`), un
+  fait, celui sur lequel les fournées sont parties ;
+- journée **ouverte** → la demande du commerce, qui bougera encore ;
+- et la colonne **dit laquelle des deux** (`closed`), parce qu'un chiffre dont on
+  ignore la nature se lit comme une prévision alors que c'est un fait — ou
+  l'inverse.
+
+⚠️ **Ce qu'on a refusé d'additionner.** Sur une journée close, il reste parfois
+des commandes `placed` : une commande **tardive**, ou une commande qu'un abonné
+défaillant a laissée derrière. **Rien ne les distingue à cet endroit.** Les
+additionner ferait fabriquer deux fois dans le second cas ; ne pas le faire fait
+manquer quelques pièces dans le premier, que la feuille d'atelier du jour montre
+de toute façon. On a choisi l'erreur la moins chère, et la divergence a déjà son
+compteur ailleurs : `pendingInCommerce`, sur l'état de la journée.
+
+---
+
+## Tranche 1 — le contrat
+
+`packages/contracts/src/production-forecast.ts`. Deux promesses y sont portées
+par le TYPE plutôt que par une convention :
+
+- `quantities` a **toujours** la longueur de `days` — un trou vaut `0`. Sans ça,
+  l'alignement des colonnes dépendrait du rendu ;
+- **aucun montant**, comme la fiche d'atelier : il n'y a pas de champ à laisser
+  vide, donc rien à remplir par distraction.
+
+⚠️ **Écart assumé avec la spec §3 : la vue ne porte pas les rayons.** La spec
+imbrique `categories[].lines[]`. Le rayon est une propriété du **catalogue
+d'aujourd'hui** — c'est déjà écrit dans `production-recap.ts`, qui fait la
+jointure côté écran pour la journée. Le porter côté serveur aurait demandé à la
+production de connaître le référentiel, ce que la matrice des frontières lui
+interdit (`production: new Set(["staff", "platform"])`), et aurait de surcroît
+fait **mentir l'historique** : un produit qui change de rayon réécrirait les
+journées déjà arrêtées. Le groupement vit donc dans `previsionnel-matrix.ts`,
+avec les mêmes règles d'ordre que la récapitulation du jour — dont le groupe
+« Hors catalogue » pour un SKU que le catalogue ne connaît plus.
+
+`peakDate`, en revanche, **vient bien du serveur**, comme la spec l'exige : le
+déduire de ce qui est affiché donnerait un pic différent selon la plage ouverte,
+donc un pic qui bouge quand on navigue.
+
+## Tranche 2 — le domaine
+
+`ServiceRange` est un value object, et pas deux `string` qui voyagent ensemble :
+« la fin précède le début » est une donnée qui **ne doit pas exister**, pas une
+erreur à rattraper plus loin. Il porte aussi la borne des 31 jours — une borne
+de LISIBILITÉ, pas de performance : au-delà, la matrice cesse de répondre à la
+question qui la justifie.
+
+🔴 **L'arithmétique se fait en UTC, à minuit, des deux côtés.** Un `setDate()` en
+heure locale redouble un jour au passage à l'heure d'hiver : une colonne
+fantôme, et un écran qui demanderait sept jours pour en recevoir huit. Les deux
+suites le tiennent explicitement (`ne redouble aucun jour au changement
+d'heure`).
+
+`forecastMatrix` est une **fonction pure** : c'est ce qui rend la règle
+d'arbitrage testable sans Nest, sans base et sans doublé. Douze cas.
+
+## Tranche 3 — deux ports, et pourquoi pas un
+
+- `ProductionPlanReader` (interne) lit les comptes **arrêtés** sur une plage. Il
+  ne passe pas par `ProductionDayRepository`, qui prend et rend l'agrégat : sept
+  journées entières — commandes, lignes, colisages — chargées pour n'en lire que
+  le compte. C'est le §4 (les lectures ne mutent jamais) et l'ISP à la lettre.
+- `ExpectedProductionReader` (canal commerce) rend des **pièces par produit et
+  par jour**, là où `DayOrdersReader` rend des **commandes**. Deux questions,
+  deux interfaces : le prévisionnel n'a que faire de savoir qui commande quoi, et
+  le jour où il changera, la clôture ne bougera pas.
+
+Le second vit dans `production/channels/commerce/`, **et l'emplacement est la
+frontière** : `lint:context-boundaries` n'autorise `b2b → production` que par ce
+chemin. Le port est déclaré par le fournil, implémenté par le commerce, relié
+dans `ProductionFeedModule`. Le gate est resté vert sans qu'aucune table ne soit
+touchée — la voie était déjà tracée par `DayOrdersReader`.
+
+## Tranche 4 — la route
+
+`GET /admin/production/forecast?from=&to=`, sur le contrôleur du fournil, qui
+n'injecte que des bus. La **forme** est validée par Zod ; la **règle** (l'ordre
+des bornes, la largeur) est refusée par le domaine, et le message nomme le cas :
+« le 2026-09-03 précède le 2026-09-09 ».
+
+⚠️ **Le chemin est en anglais, l'écran est en français.** `forecast` à côté de
+`batch`, `packing` et `status` ; `/production/previsionnel` à côté de `remises`
+et `livraison`. Chaque surface garde sa langue — c'est déjà le partage du dépôt,
+et le mélanger aurait fait de l'URL d'API une exception à expliquer.
+
+## Tranche 5 — l'écran
+
+`/production/previsionnel`, route voisine de `production` sous le même préfixe.
+
+⚠️ **Deux arbres de navigation, et la dette est connue** (`CLAUDE.md` du front) :
+l'entrée a été posée au rail `fold-menu-item` **et** aux tuiles
+`fold-nav-launcher`. Une entrée d'un seul côté est invisible de l'autre.
+
+🔴 **Et une trouvaille hors périmètre, corrigée :** `routerLinkActive` sans
+`{ exact: true }` allume « Production » dès qu'on ouvre un écran dont l'URL
+commence par `/production`. Sans le drapeau, **deux entrées du rail** se
+seraient allumées ensemble à chaque ouverture du prévisionnel. Le défaut
+n'existait pas avant, faute d'enfant ; il serait apparu avec le premier.
+
+La plage vit dans l'URL (`?from=`) pour qu'un lien soit partageable, et la
+navigation remplace l'entrée d'historique plutôt que d'en empiler dix — sans
+quoi « précédent » deviendrait un défilement à rebours dont on ne sort plus.
+
+## Tranche 6 — le débordement (spec §5)
+
+La spec proposait trois options et recommandait « replier les rayons terminés »,
+en notant que ça suppose de connaître l'**avancement** — donc une dépendance à
+un écran qui n'existe pas.
+
+Ce qui est livré évite cette dépendance : **le repli est un geste de l'équipe**,
+rayon par rayon (la ligne de rayon est un bouton), et la **densité réduite**
+s'enclenche seule au-delà de 24 références pour que le premier affichage tienne.
+Le repli « automatique des rayons terminés » reste possible le jour où
+l'avancement existera ; il n'est pas dans le chemin critique, et l'y mettre
+aurait attaché cet écran à un autre qui n'est pas écrit.
+
+## Tranche 7 — le mode mural, reporté
+
+Inchangé par rapport à la spec §6, et pour sa raison : **sept colonnes de jours
+ne tiennent pas sur une dalle verticale**, et la taille réelle de l'écran mural
+n'est pas connue. Ce n'est pas un écran de plus, c'est une classe sur celui-ci ;
+il se spécifiera quand la dalle sera choisie.
+
+---
+
+## Ce que ce document n'a PAS vérifié
+
+- **Le volume réel.** Le seuil de densité (24 références) et la borne de 31 jours
+  sont des jugements, pas des mesures : personne n'a compté combien de références
+  distinctes sort une semaine de fournil.
+- **La lecture sur un poste du labo.** La grille a été construite et éprouvée en
+  test, pas regardée sur l'écran d'atelier, qui est le seul juge de « est-ce que
+  la semaine tient d'un coup d'œil ».
+- **Le tirage papier.** La maquette porte un bouton « Imprimer » ; il n'est pas
+  livré. Le prévisionnel se regarde, il ne part pas au fournil — c'est la feuille
+  d'atelier qui y va. Ce sera un ajout s'il est demandé, pas une correction.
