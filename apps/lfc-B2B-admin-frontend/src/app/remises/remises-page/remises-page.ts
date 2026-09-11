@@ -14,6 +14,7 @@ import {
   FoldDateComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldSearchComponent,
   FoldLoadingStateComponent,
   FoldAsideLayoutComponent,
   FoldPageLayoutComponent,
@@ -28,7 +29,8 @@ import {
 import { NotifyService } from '../../notify.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import {
-  ALL_PICKUPS,
+  atTheCounter,
+  matchingQueue,
   clockOf,
   entriesForTab,
   formatHour,
@@ -98,6 +100,7 @@ const TICK_MS = 30_000;
     FoldButtonComponent,
     FoldDateComponent,
     FoldElementTitleComponent,
+    FoldSearchComponent,
     FoldAsideLayoutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -130,6 +133,13 @@ export class RemisesPage {
    * panneau vit dans une autre branche du `@switch`.
    */
   protected readonly tabBar = viewChild(FoldTabsComponent);
+
+  /**
+   * Le terme cherché. Il vit ICI parce que la barre le porte, et il descend à
+   * la file qui, elle, filtre — les compteurs de la journée doivent rester
+   * ceux de la journée.
+   */
+  protected readonly query = signal<string>('');
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly day = signal<string>(isoDay(new Date()));
@@ -208,6 +218,18 @@ export class RemisesPage {
 
   protected readonly total = computed(() => this.entries().length);
 
+  /**
+   * Combien de lignes le terme laisse — ce que la boîte annonce à voix haute.
+   *
+   * 🔴 Calculé ici par la MÊME fonction que la file, et non demandé à la file :
+   * une requête de vue résout l'instance avant que ses entrées soient liées, et
+   * Angular levait `NG0950` sur `entries`. Deux appels d'une fonction pure ne
+   * peuvent pas diverger ; une barre qui interroge sa table, si.
+   */
+  protected readonly matches = computed<number | null>(() =>
+    this.query() === '' ? null : matchingQueue(this.rows(), this.query()).length,
+  );
+
   /** Ce que le rail montre — la ligne choisie, relue dans la file courante. */
   protected readonly selected = computed<HandoverQueueEntryView | null>(() => {
     const id = this.selectedId();
@@ -229,8 +251,8 @@ export class RemisesPage {
    */
   protected readonly eyebrow = computed<string>(() => {
     const active = this.activeTab();
-    if (active === '' || active === ALL_PICKUPS) {
-      return 'La file · tous les points';
+    if (active === '') {
+      return 'La file';
     }
     const tab = this.tabs().find((item) => item.key === active);
     return `La file · ${tab?.label ?? active}`;
@@ -252,7 +274,11 @@ export class RemisesPage {
     this.state.set('loading');
     try {
       const view = await this.api.forDay(day);
-      this.entries.set(view.entries);
+      // 🔴 La coupe est faite UNE fois, à la lecture : les onglets, les
+      // compteurs, la file et la sélection en dérivent tous. Filtrée plus bas,
+      // elle aurait manqué l'un d'eux — et c'est le compteur qu'elle aurait
+      // manqué, puisqu'il lit `entries` en direct.
+      this.entries.set(atTheCounter(view.entries));
       this.now.set(new Date());
       this.state.set('ready');
     } catch {
@@ -264,11 +290,21 @@ export class RemisesPage {
   protected onDay(value: string): void {
     if (value !== '') {
       this.day.set(value);
+      this.query.set('');
     }
   }
 
+  /**
+   * 🔴 Changer d'onglet ou de jour VIDE la recherche.
+   *
+   * Un terme qui survit à ce geste laisse une file amputée sous un onglet qu'on
+   * vient d'ouvrir pour tout voir : on lit « Le Village 2 » et on n'a qu'une
+   * ligne devant soi. C'est exactement ce que `[(value)]` permet — une boîte à
+   * sens unique garderait un terme que les résultats n'honorent plus.
+   */
   protected onTab(key: string): void {
     this.requestedTab.set(key);
+    this.query.set('');
   }
 
   /**

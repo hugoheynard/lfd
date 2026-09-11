@@ -136,9 +136,12 @@ const VILLAGE = "Le Village";
  * L'écran de remise dérive ses onglets des `pickupLabel` **présents dans la
  * réponse** : un seul point semé ne produit qu'un onglet, et l'onglet « Tous les
  * points » — qui n'apparaît qu'à partir de deux groupes — restait invisible sur
- * tout poste de développement. La ligne sans point de retrait (une livraison)
- * est là pour la même raison : c'est l'onglet qui existe pour que ces
- * commandes-là ne disparaissent pas, et rien ne le peignait.
+ * tout poste de développement.
+ *
+ * ⚠️ La ligne en LIVRAISON y était pour la même raison, et ne l'est plus :
+ * l'écran de remise ne montre que les retraits depuis le 2026-09-11. Elle est
+ * gardée parce qu'une journée de service en comporte, et parce que l'écran qui
+ * les portera en aura besoin.
  *
  * ## Les états sont ATTEINTS, jamais écrits
  *
@@ -179,7 +182,10 @@ const COUNTER: readonly CounterOrder[] = [
   // Le Village — deux tranches, donc un onglet avec son propre compteur.
   { point: VILLAGE, window: VILLAGE_MORNING, outcome: "ready", step: 3 },
   { point: VILLAGE, window: VILLAGE_AFTERNOON, outcome: "expected", step: 4 },
-  // La livraison : elle n'a pas de point, et c'est l'onglet qu'elle peuple.
+  // 🔴 Une LIVRAISON du même jour. Elle ne paraît plus dans la file de remise
+  // depuis le 2026-09-11 — le comptoir ne tend pas un sac qu'un coursier
+  // emporte, et la livraison aura son propre écran. Elle reste semée pour lui,
+  // et parce qu'une journée sans elle ne ressemblerait à aucune vraie journée.
   { point: null, window: null, outcome: "ready", step: 5 },
   // 🔴 Le SAC LONG. Toutes les autres tiennent en six références ou moins, donc
   // aucun poste de développement ne voyait ce que fait le rail quand la liste

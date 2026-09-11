@@ -103,15 +103,40 @@
                 Rendue au nom du client, qui est ce qu'on y cherche.
               -->
               <div class="file-head">
-                <fold-element-title variant="eyebrow" [title]="eyebrow()" />
-                <p class="file-hint">par créneau, le plus ancien en tête</p>
-                <button class="file-scan" foldButton icon="qr-code" (click)="scan(null)">
-                  Scanner un code
-                </button>
+                <div class="file-said">
+                  <fold-element-title variant="eyebrow" [title]="eyebrow()" />
+                  <p class="file-hint">par créneau, le plus ancien en tête</p>
+                </div>
+
+                <!-- Les deux gestes ensemble : ils passent à la ligne EN BLOC
+                     quand la colonne se resserre, au lieu de laisser le bouton
+                     descendre seul sous une boîte qui reste en haut. -->
+                <div class="file-tools">
+                  <!-- 🔴 `[(value)]` et non `(searchChange)` : la file est DÉJÀ
+                     en mémoire, et un délai n'ajouterait ici que de la latence
+                     entre la frappe et ce qu'on voit. Le compte annoncé vient
+                     de la file elle-même — c'est elle qui filtre, donc elle
+                     seule sait combien il reste. -->
+                  <fold-search
+                    class="file-search"
+                    placeholder="Client, référence, créneau…"
+                    ariaLabel="Filtrer la file"
+                    size="sm"
+                    [(value)]="query"
+                    [resultCount]="matches()"
+                    [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
+                    placement="end"
+                  />
+
+                  <button class="file-scan" foldButton icon="qr-code" (click)="scan(null)">
+                    Scanner un code
+                  </button>
+                </div>
               </div>
 
               <app-file-remise
                 [entries]="rows()"
+                [query]="query()"
                 [day]="day()"
                 [now]="now()"
                 [busyId]="remindingId()"

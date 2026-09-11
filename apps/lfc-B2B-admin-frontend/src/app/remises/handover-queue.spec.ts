@@ -3,15 +3,16 @@ import { describe, expect, it } from 'vitest';
 import type { HandoverQueueEntryView, HandoverQueueWindowView } from '@lfd/contracts';
 
 import {
-  ALL_PICKUPS,
-  NO_PICKUP,
-  entriesForTab,
+  atTheCounter,
   clockOf,
+  entriesForTab,
   formatHour,
   formatWindow,
   isLate,
   lateLabel,
   lateMinutes,
+  matchingQueue,
+  NO_PICKUP,
   pickupTabs,
   queueCounters,
   rowTone,
@@ -66,14 +67,20 @@ describe('pickupTabs', () => {
       entry({ orderId: 'c', pickupLabel: 'Laboratoire' }),
     ]);
 
-    expect(tabs.map((tab) => tab.key)).toEqual([ALL_PICKUPS, 'Laboratoire', 'Val Thorens']);
-    expect(tabs.map((tab) => tab.count)).toEqual([3, 2, 1]);
+    expect(tabs.map((tab) => tab.key)).toEqual(['Laboratoire', 'Val Thorens']);
+    expect(tabs.map((tab) => tab.count)).toEqual([2, 1]);
   });
 
-  it('un seul point ne fabrique pas un onglet « Tous » qui ferait doublon', () => {
-    const tabs = pickupTabs([entry({ orderId: 'a' }), entry({ orderId: 'b' })]);
+  it('🔴 aucun onglet fourre-tout au-dessus des points', () => {
+    // On ne tend pas un sac depuis deux comptoirs à la fois : la personne qui
+    // lit cet écran est DANS un point, et la file des autres ne fait
+    // qu'allonger la sienne. Le compte de la journée reste dans la bande.
+    const tabs = pickupTabs([
+      entry({ orderId: 'a', pickupLabel: 'Val Thorens' }),
+      entry({ orderId: 'b', pickupLabel: 'Laboratoire' }),
+    ]);
 
-    expect(tabs).toEqual([{ key: 'Laboratoire', label: 'Laboratoire', count: 2 }]);
+    expect(tabs.map((tab) => tab.label)).not.toContain('Tous les points');
   });
 
   it('les lignes sans point de retrait ont leur onglet — sinon elles seraient hors de tous', () => {
@@ -82,7 +89,7 @@ describe('pickupTabs', () => {
       entry({ orderId: 'b', pickupLabel: null, fulfillmentMethod: 'delivery' }),
     ]);
 
-    expect(tabs.map((tab) => tab.key)).toEqual([ALL_PICKUPS, 'Laboratoire', NO_PICKUP]);
+    expect(tabs.map((tab) => tab.key)).toEqual(['Laboratoire', NO_PICKUP]);
     expect(entriesForTab([entry({ orderId: 'b', pickupLabel: null })], NO_PICKUP)).toHaveLength(1);
   });
 
@@ -92,7 +99,7 @@ describe('pickupTabs', () => {
       entry({ orderId: 'b', pickupLabel: null }),
       entry({ orderId: 'c', pickupLabel: '   ' }),
     ];
-    const tabs = pickupTabs(entries).filter((tab) => tab.key !== ALL_PICKUPS);
+    const tabs = pickupTabs(entries);
 
     const seen = new Set(
       tabs.flatMap((tab) => entriesForTab(entries, tab.key).map((row) => row.orderId)),
@@ -265,5 +272,69 @@ describe('queueCounters', () => {
 describe('clockOf', () => {
   it('rend l’heure LOCALE, sur deux chiffres', () => {
     expect(clockOf(new Date(`${DAY}T06:41:00`))).toBe('06:41');
+  });
+});
+
+describe('atTheCounter', () => {
+  it('🔴 écarte les LIVRAISONS, et elles seules', () => {
+    const kept = atTheCounter([
+      entry({ orderId: 'a', fulfillmentMethod: 'pickup' }),
+      entry({ orderId: 'b', fulfillmentMethod: 'delivery' }),
+    ]);
+
+    expect(kept.map((row) => row.orderId)).toEqual(['a']);
+  });
+
+  it('🔴 un RETRAIT sans point de retrait reste dans la file', () => {
+    // Régression de conception : le critère a failli être `pickupLabel === null`,
+    // qui confond deux choses — une livraison n'a pas de point, mais une
+    // commande antérieure aux points de retrait non plus, et elle se remet bien
+    // en boutique. Couper là l'aurait fait disparaître de TOUS les écrans.
+    const kept = atTheCounter([entry({ fulfillmentMethod: 'pickup', pickupLabel: null })]);
+
+    expect(kept).toHaveLength(1);
+  });
+});
+
+describe('matchingQueue', () => {
+  it('un terme vide ne filtre rien', () => {
+    const all = [entry({ orderId: 'a' }), entry({ orderId: 'b' })];
+
+    expect(matchingQueue(all, '   ')).toHaveLength(2);
+  });
+
+  it('trouve par le client, la référence et l’enseigne', () => {
+    const rows = [
+      entry({ orderId: 'a', customerLabel: 'Boulangerie Marin' }),
+      entry({ orderId: 'b', customerLabel: 'Hôtel des Cimes', reference: 'ORD-ZZZ' }),
+      entry({ orderId: 'c', customerLabel: 'SAS Tommeuses', tradeName: 'La Folie Douce' }),
+    ];
+
+    expect(matchingQueue(rows, 'marin').map((row) => row.orderId)).toEqual(['a']);
+    expect(matchingQueue(rows, 'ord-zzz').map((row) => row.orderId)).toEqual(['b']);
+    expect(matchingQueue(rows, 'folie').map((row) => row.orderId)).toEqual(['c']);
+  });
+
+  it('🔴 ignore la casse ET les accents : le comptoir tape vite', () => {
+    const rows = [entry({ customerLabel: 'Hôtel des Cimes' })];
+
+    expect(matchingQueue(rows, 'hotel')).toHaveLength(1);
+  });
+
+  it('🔴 trouve un CRÉNEAU tapé avec des espaces ordinaires', () => {
+    // Régression vue à l'écran (2026-09-11) : `formatWindow` compose ses heures
+    // avec des espaces INSÉCABLES — « 14 h 00 » — et personne n'en tape une.
+    // Sans le pli des espaces, chercher un créneau ne rendait jamais rien, et
+    // la file paraissait vide au lieu de paraître mal cherchée.
+    const rows = [entry({ window: { start: '14:00', end: '15:00', source: 'override' } })];
+
+    expect(matchingQueue(rows, '14 h')).toHaveLength(1);
+  });
+
+  it('ne cherche PAS dans l’identifiant technique', () => {
+    // Une correspondance que rien à l'écran n'explique est pire qu'aucune.
+    const rows = [entry({ orderId: 'ord_secret_42' })];
+
+    expect(matchingQueue(rows, 'secret')).toHaveLength(0);
   });
 });

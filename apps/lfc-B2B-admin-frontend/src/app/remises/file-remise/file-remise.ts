@@ -9,6 +9,7 @@ import {
   FoldDataTableRowNoteDirective,
   type FoldBadgeVariant,
   type FoldTableColumn,
+  type FoldTableEmpty,
   type FoldTableTone,
 } from 'fold-ng';
 
@@ -19,6 +20,7 @@ import {
   isLate,
   lateLabel,
   lateMinutes,
+  matchingQueue,
   rowTone,
   sortedQueue,
   stateLabel,
@@ -91,28 +93,64 @@ export class FileRemise {
   /** Les rappels déjà partis, pour ne pas les réarmer à l'identique. */
   readonly reminded = input<ReadonlySet<string>>(new Set());
 
+  /**
+   * Le terme cherché, ou `''` — un **filtre de ce qui est affiché**, jamais une
+   * requête.
+   *
+   * 🔴 Il vit ici et non chez l'appelant, pour la raison qui a déjà fait
+   * descendre le tri : la page dérive ses compteurs de la journée entière — « 6
+   * en attente, 3 en retard ». Filtrer en amont les ferait mentir au premier
+   * caractère tapé, et un comptoir qui lit « 1 en retard » parce qu'on cherche
+   * un nom prend une décision sur un chiffre faux.
+   */
+  readonly query = input<string>('');
+
   /** On a touché la ligne : elle s'ouvre dans le rail. */
   readonly opened = output<HandoverQueueEntryView>();
 
   /** On renvoie le courriel de retrait à ce client. */
   readonly reminder = output<HandoverQueueEntryView>();
 
-  /** La file, par créneau puis par heure de commande. */
+  /**
+   * La file : ordonnée d'abord, filtrée ensuite.
+   *
+   * L'ordre avant le filtre, et l'inverse serait un piège : le tri est stable
+   * par créneau puis par heure de commande, donc filtrer d'abord donnerait le
+   * même résultat — aujourd'hui. Le jour où le tri regarde le rang d'une ligne
+   * dans la file, il le regarderait dans une file amputée.
+   */
   protected readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
-    sortedQueue(this.entries()),
+    matchingQueue(sortedQueue(this.entries()), this.query()),
   );
 
   protected readonly columns: readonly FoldTableColumn<HandoverQueueEntryView>[] = [
     // Le créneau en tête : c'est l'ordre de la file, et donc l'ordre dans
     // lequel on la parcourt des yeux au comptoir.
     { key: 'window', label: 'Créneau', width: '8rem' },
-    // La référence n'a pas sa colonne : elle vit sous le nom du client, où on
-    // la lit en même temps que lui. Une colonne pour un identifiant qu'on ne
-    // trie ni ne compare prendrait la place du seul champ qu'on cherche.
     { key: 'customer', label: 'Client' },
+    // 🔴 La référence A sa colonne depuis le 2026-09-11. Elle vivait sous le
+    // nom du client, et l'argument tenait tant que la file était serrée : une
+    // colonne pour un identifiant qu'on ne trie ni ne compare prenait la place
+    // du seul champ qu'on cherche. Le scan par ligne est parti avec ses 8,5 rem
+    // — la place existe —, et une référence alignée en colonne se compare d'un
+    // coup d'œil avec l'écran d'un client, ce qu'une ligne d'appoint sous un
+    // nom de longueur variable ne permet pas.
+    { key: 'reference', label: 'Commande', width: '10rem' },
     { key: 'units', label: 'Pièces', numeric: true, width: '5.5rem' },
     { key: 'state', label: 'État', width: '8rem' },
   ];
+
+  /**
+   * Ce que dit la table quand le terme ne laisse rien.
+   *
+   * ⚠️ Elle ne dit PAS « aucune commande » : la journée en a, c'est le filtre
+   * qui les cache. Confondre les deux ferait chercher un bug de lecture là où
+   * il suffit de vider la boîte — et la page a son propre vide, pour le vrai.
+   */
+  protected readonly nothingFound: FoldTableEmpty = {
+    title: 'Aucune ligne ne correspond',
+    subtitle: 'Videz la recherche pour retrouver toute la file du jour.',
+  };
 
   protected readonly rowKey = (entry: HandoverQueueEntryView): string => entry.orderId;
 

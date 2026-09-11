@@ -108,14 +108,18 @@ describe('FileRemise', () => {
     expect(text(fixture)).toContain('Annulée');
   });
 
-  it('🔴 une remise porte son heure sous le nom, à la place du numéro', () => {
+  it('🔴 une remise porte son heure sous le nom, SANS perdre son numéro', () => {
+    // Le numéro cédait sa place à l'heure tant qu'ils partageaient une case.
+    // Depuis que la référence a sa colonne (2026-09-11), les deux tiennent — et
+    // il le faut : une contestation se règle avec l'heure ET le numéro sous les
+    // yeux, pas en rouvrant la commande pour retrouver l'un des deux.
     const row =
       rowTexts(
         render([entry({ state: 'handed_over', handedOverAt: `${DAY}T04:41:00.000Z` })]),
       )[0] ?? '';
 
     expect(row).toContain('remise');
-    expect(row).not.toContain('CMD-1042');
+    expect(row).toContain('CMD-1042');
     expect(row).toContain('Remise');
   });
 

@@ -121,10 +121,38 @@
   font-size: var(--fold-text-xs);
 }
 
-/* Le seul geste de la barre, poussé au bout : la marge automatique plutôt
-   qu'un `space-between`, qui aurait écarté l'eyebrow de son indication. */
-.file-scan {
+/* Ce que la file DIT d'elle-même : l'onglet ouvert, et son ordre de lecture. */
+.file-said {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+  min-width: 0;
+}
+
+/* Les deux gestes, poussés au bout ENSEMBLE : la marge automatique plutôt qu'un
+   `space-between`, qui aurait écarté l'eyebrow de son indication. Groupés, ils
+   passent à la ligne en bloc — séparés, le bouton descendait seul sous une
+   boîte restée en haut (vu à l'écran le 2026-09-11, à 1440 px : le rail de
+   28 rem ne laisse que ~390 px à cette barre). */
+.file-tools {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--fold-space-sm);
   margin-left: auto;
+}
+
+/* Elle se contracte, et ne s'étire pas : une boîte de recherche qui prend la
+   moitié de la barre promet une recherche large. Celle-ci filtre ce qui est
+   déjà à l'écran, et sa taille doit le dire. */
+.file-search {
+  flex: 0 1 15rem;
+  min-width: 0;
+}
+
+.file-scan {
+  flex: 0 0 auto;
 }
 
 /* ── LA GRILLE : la file, et le sac à côté ──────────────────────────────────

@@ -14,8 +14,25 @@ import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
  * éprouvables une par une, alors qu'un gabarit ne se teste qu'en le rendant.
  */
 
-/** L'onglet qui ne filtre rien — la file entière, tous points confondus. */
-export const ALL_PICKUPS = '__all__';
+/**
+ * **Ce qui se remet AU COMPTOIR** — les retraits, et rien d'autre.
+ *
+ * 🔴 Le critère est l'acheminement, pas l'absence de point. Les deux se
+ * confondaient : une livraison n'a pas de point de retrait, mais une commande
+ * antérieure aux points de retrait n'en a pas non plus, et elle se remet bien
+ * en boutique. Couper sur `pickupLabel === null` ferait disparaître la seconde
+ * de tous les écrans — exactement ce que l'onglet « Sans point de retrait »
+ * avait été créé pour empêcher.
+ *
+ * Une livraison part par coursier : personne ne l'attend devant ce comptoir, et
+ * elle aura son propre écran. La laisser ici faisait compter « en attente » des
+ * sacs que le comptoir ne tendra jamais.
+ */
+export function atTheCounter(
+  entries: readonly HandoverQueueEntryView[],
+): readonly HandoverQueueEntryView[] {
+  return entries.filter((entry) => entry.fulfillmentMethod !== 'delivery');
+}
 
 /**
  * L'onglet des lignes **sans point de retrait** : une livraison par coursier,
@@ -37,6 +54,66 @@ const WITHOUT_WINDOW_RANK = '99:99';
 /** Seul un créneau `override` est une tranche réellement demandée. */
 const REQUESTED_SOURCE = 'override';
 
+/**
+ * Plié pour la comparaison : sans casse, sans accent, et **sans variété
+ * d'espaces**.
+ *
+ * 🔴 L'insécable est le piège, et il a été vu à l'écran : `formatWindow` écrit
+ * « 14 h 00 » avec des espaces INSÉCABLES, parce que c'est ainsi qu'une heure
+ * se compose en français. Personne n'en tape une. Sans ce pli, chercher un
+ * créneau ne rendait jamais rien — et la file paraissait vide au lieu de
+ * paraître mal cherchée.
+ *
+ * Les accents suivent la même logique : le comptoir tape vite et sans
+ * diacritiques, et « boulangerie marin » doit trouver « Boulangerie Marín ».
+ */
+function normalize(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/gu, ' ')
+    .toLowerCase()
+    .trim();
+}
+
+/** Ce dans quoi on cherche : tout ce que la ligne MONTRE, et rien de plus. */
+function haystack(entry: HandoverQueueEntryView): string {
+  // 🔴 Pas l'identifiant technique : on ne cherche pas une commande par son
+  // `orderId`, et l'y inclure ferait correspondre des lignes sans que rien à
+  // l'écran n'explique pourquoi.
+  return normalize(
+    [
+      entry.customerLabel,
+      entry.tradeName ?? '',
+      entry.reference,
+      formatWindow(entry.window) ?? '',
+      entry.pickupLabel ?? '',
+    ].join(' '),
+  );
+}
+
+/**
+ * **Les lignes que le terme laisse** — un filtre de ce qui est affiché, jamais
+ * une requête.
+ *
+ * 🔴 Une fonction pure, et c'est tout le sujet : la barre doit ANNONCER combien
+ * il reste, la table doit les PEINDRE. La première version demandait le compte
+ * à la seconde par une requête de vue, et Angular levait `NG0950` — l'instance
+ * existe avant que ses entrées soient liées, donc la barre lisait une file qui
+ * n'avait pas encore de lignes. Deux appels d'une même fonction pure n'ont pas
+ * ce problème, et ne peuvent pas diverger.
+ */
+export function matchingQueue(
+  entries: readonly HandoverQueueEntryView[],
+  query: string,
+): readonly HandoverQueueEntryView[] {
+  const needle = normalize(query);
+  if (needle === '') {
+    return entries;
+  }
+  return entries.filter((entry) => haystack(entry).includes(needle));
+}
+
 /** Un onglet de point de retrait, avec le nombre de lignes qu'il porte. */
 export interface HandoverTab {
   readonly key: string;
@@ -49,8 +126,14 @@ export interface HandoverTab {
  * nom de point n'est écrit ici, et c'est volontaire : un point ouvert demain
  * apparaîtrait sinon nulle part.
  *
- * L'onglet « Tous les points » n'est ajouté qu'à partir de deux groupes : sur
- * un comptoir unique, il ferait deux onglets qui montrent la même file.
+ * 🔴 **Un onglet par point, et RIEN au-dessus.** Il y avait un « Tous les
+ * points » en tête ; il est parti le 2026-09-11. On ne tend pas un sac depuis
+ * deux comptoirs à la fois : la personne qui lit cet écran est DANS un point,
+ * et la file des autres ne lui sert qu'à allonger la sienne. L'onglet fourre-
+ * tout était la vue d'un gérant sur un écran d'exécutant.
+ *
+ * Les compteurs de la bande, eux, restent ceux de la JOURNÉE entière — c'est là
+ * qu'on lève les yeux pour savoir combien il reste, tous points confondus.
  */
 export function pickupTabs(entries: readonly HandoverQueueEntryView[]): readonly HandoverTab[] {
   const counts = new Map<string, number>();
@@ -70,10 +153,7 @@ export function pickupTabs(entries: readonly HandoverQueueEntryView[]): readonly
   if (withoutPickup > 0) {
     groups.push({ key: NO_PICKUP, label: 'Sans point de retrait', count: withoutPickup });
   }
-  if (groups.length < 2) {
-    return groups;
-  }
-  return [{ key: ALL_PICKUPS, label: 'Tous les points', count: entries.length }, ...groups];
+  return groups;
 }
 
 /** Les lignes d'un onglet. Une clé inconnue ne filtre rien plutôt que de vider. */
@@ -83,9 +163,6 @@ export function entriesForTab(
 ): readonly HandoverQueueEntryView[] {
   if (key === NO_PICKUP) {
     return entries.filter((entry) => entry.pickupLabel === null || entry.pickupLabel.trim() === '');
-  }
-  if (key === ALL_PICKUPS) {
-    return entries;
   }
   const known = entries.some((entry) => entry.pickupLabel === key);
   return known ? entries.filter((entry) => entry.pickupLabel === key) : entries;

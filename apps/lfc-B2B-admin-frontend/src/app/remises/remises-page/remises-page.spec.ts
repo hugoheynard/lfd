@@ -140,11 +140,15 @@ describe('RemisesPage', () => {
       (tab) => tab.textContent ?? '',
     );
 
-    expect(tabs).toHaveLength(3);
-    expect(tabs[0]).toContain('Tous les points');
-    expect(tabs[0]).toContain('3');
-    expect(tabs[2]).toContain('Val Thorens');
-    expect(tabs[2]).toContain('2');
+    // 🔴 Un onglet par point, et rien au-dessus : le « Tous les points » est
+    // parti le 2026-09-11. On ne tend pas un sac depuis deux comptoirs à la
+    // fois, et la file des autres ne fait qu'allonger la sienne.
+    expect(tabs).toHaveLength(2);
+    expect(tabs.join(' ')).not.toContain('Tous les points');
+    expect(tabs[0]).toContain('Laboratoire');
+    expect(tabs[0]).toContain('1');
+    expect(tabs[1]).toContain('Val Thorens');
+    expect(tabs[1]).toContain('2');
   });
 
   it('un jour sans personne le dit, sans table vide', async () => {

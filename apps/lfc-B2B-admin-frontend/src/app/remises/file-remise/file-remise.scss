@@ -50,8 +50,13 @@
   font-size: var(--fold-text-xs);
 }
 
+/* En chasse fixe et sans césure : une référence se lit d'un bloc, et deux
+   numéros voisins ne doivent pas se confondre d'un caractère. */
 .fr-ref {
+  display: block;
   font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  white-space: nowrap;
 }
 
 .fr-muted {
