@@ -147,18 +147,12 @@
                     <span class="rm-units">{{ row.totalUnits }}</span>
                   </ng-template>
 
-                  <!-- Le retard prend la place de « attendue », qu'il dit déjà —
-                     mais jamais celle de « prête » : le sac fait et le client en
-                     retard sont deux faits, et le second n'efface pas le premier. -->
+                  <!-- 🔴 L'état SEUL. Le retard vivait ici aussi, en pastille ambre, et
+                       le tiroir la répétait deux lignes plus bas — la même minute écrite
+                       deux fois, dans deux tons, sur la même ligne. Il n'est plus qu'à un
+                       endroit : sous la ligne, là où il vient avec le geste qui y répond. -->
                   <ng-template foldCell="state" let-row>
-                    <span class="rm-states">
-                      @if (lateText(row); as delay) {
-                        <fold-badge variant="warning" [content]="delay" />
-                      }
-                      @if (showsState(row)) {
-                        <fold-badge [variant]="variant(row)" [content]="label(row)" />
-                      }
-                    </span>
+                    <fold-badge [variant]="variant(row)" [content]="label(row)" />
                   </ng-template>
 
                   <!-- ⚠️ `$event.stopPropagation()` : la ligne entière ouvre le
@@ -223,16 +217,6 @@
                   </ng-template>
                 </fold-data-table>
               </fold-card>
-
-              <!-- L'encadré dit le chemin sans QR plutôt que de le cacher. Un
-                 contournement qu'on tait finit par s'improviser ; celui-ci est le
-                 cas de tous les matins, et il est gravé « sans code ». -->
-              <fold-callout appearance="inset" variant="info" icon="info">
-                <strong>Sans QR.</strong> Un client sans téléphone reste un client&nbsp;:
-                <strong>Remettre</strong> atteste la remise à la main, avec la mention «&nbsp;sans
-                code&nbsp;». Ce n'est pas un contournement à cacher — mais une remise saisie n'a eu
-                qu'une partie, et l'attestation le dit.
-              </fold-callout>
             </fold-tab-panel>
           }
         }

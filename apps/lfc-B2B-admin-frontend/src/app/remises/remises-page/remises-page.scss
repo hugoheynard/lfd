@@ -171,15 +171,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Deux pastilles au plus, empilées : le retard d'abord — c'est lui qui décide
-   de ce qu'on fait de la ligne dans la minute qui vient. */
-.rm-states {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--fold-space-3xs);
-}
-
 /* ── LA GRILLE : la file, et le sac à côté ──────────────────────────────────
    Le rail par défaut fait 300 px — la largeur d'un sommaire, pas celle d'une
    liste d'articles avec ses quantités et ses SKU. On l'élargit d'un tiers ;
@@ -187,7 +178,7 @@
 
    Et le plafond de 1240 px saute : cf. l'en-tête de cette feuille. */
 .board {
-  --fold-aside-layout-side-width: 26rem;
+  --fold-aside-layout-side-width: 28rem;
   --fold-aside-layout-max: none;
 
   // La grille pose sa propre gouttière par-dessus celle de la page : deux

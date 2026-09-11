@@ -160,6 +160,23 @@ describe('RemisesPage', () => {
     expect(text(fixture)).toContain('Attendue');
   });
 
+  it('🔴 la colonne ÉTAT ne porte QUE l’état — le retard vit sous la ligne', async () => {
+    // Régression : le retard était écrit deux fois sur la même ligne — une
+    // pastille ambre dans cette colonne, et la même minute dans le tiroir deux
+    // lignes plus bas. Deux tons pour un fait fait chercher la différence.
+    //
+    // Le cas ne peut pas fabriquer un retard (la page juge contre l'horloge
+    // réelle, cf. l'en-tête) : il tient la forme de la cellule, qui est ce qui
+    // a dérivé.
+    const fixture = await render(new FakeQueue());
+    const cells = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.folddt-row td'),
+    ];
+    const state = cells.find((cell) => (cell.textContent ?? '').includes('Attendue'));
+
+    expect((state?.textContent ?? '').trim()).toBe('Attendue');
+  });
+
   it('la bande annonce les remises faites, au singulier comme au pluriel', async () => {
     const api = new FakeQueue();
     api.entries = [

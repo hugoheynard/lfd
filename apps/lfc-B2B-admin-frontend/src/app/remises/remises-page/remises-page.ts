@@ -260,14 +260,17 @@ export class RemisesPage {
   protected readonly columns: readonly FoldTableColumn<HandoverQueueEntryView>[] = [
     // Le créneau en tête : c'est l'ordre de la file, et donc l'ordre dans
     // lequel on la parcourt des yeux au comptoir.
-    { key: 'window', label: 'Créneau', width: '9rem' },
+    { key: 'window', label: 'Créneau', width: '8rem' },
     // La référence n'a plus sa colonne : elle vit sous le nom du client, où on
     // la lit en même temps que lui. Une colonne pour un identifiant qu'on ne
     // trie ni ne compare prenait la place du seul champ qu'on cherche.
     { key: 'customer', label: 'Client' },
-    { key: 'units', label: 'Pièces', numeric: true, width: '7rem' },
-    { key: 'state', label: 'État', width: '13rem' },
-    { key: 'action', label: '', align: 'right', width: '11rem' },
+    { key: 'units', label: 'Pièces', numeric: true, width: '5.5rem' },
+    { key: 'state', label: 'État', width: '8rem' },
+    // Assez pour « Scanner » et son icône, pas un pouce de plus : depuis que le
+    // rail occupe trente rem, chaque rem repris à une colonne est une colonne
+    // que le nom du client ne perd pas.
+    { key: 'action', label: '', align: 'right', width: '8.5rem' },
   ];
 
   protected readonly rowKey = (entry: HandoverQueueEntryView): string => entry.orderId;
@@ -334,17 +337,6 @@ export class RemisesPage {
   protected lateText(entry: HandoverQueueEntryView): string | null {
     const minutes = lateMinutes(entry, this.day(), this.now());
     return minutes === null ? null : lateLabel(minutes);
-  }
-
-  /**
-   * L'état, **sauf quand le retard le dit déjà**.
-   *
-   * Une ligne en retard est forcément attendue ou prête (`isLate` refuse les
-   * deux autres). « Attendue » à côté de « 56 min de retard » ne dit rien de
-   * plus ; « Prête », si — le sac est fait, c'est le client qui manque.
-   */
-  protected showsState(entry: HandoverQueueEntryView): boolean {
-    return !this.late(entry) || entry.state === 'ready';
   }
 
   /** « remise 6 h 41 » — l'heure sous le nom, à la place de la référence. */

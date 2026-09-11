@@ -1,27 +1,30 @@
 /* ── LE RAIL, SUR LE CHROME ─────────────────────────────────────────────────
    Aucune couleur n'est écrite ici : `foldSurface="chrome"` repointe la polarité
    entière du sous-arbre, et la feuille ne fait que poser le fond que la
-   directive, elle, ne peint pas.
-
-   `fold-aside-layout` rend déjà la colonne collante et lui donne sa largeur ;
-   le rail n'a donc ni position ni largeur à lui — il remplit ce qu'on lui
-   donne. */
+   directive, elle, ne peint pas. */
 :host {
   display: block;
 }
 
+/* 🔴 **Le rail descend jusqu'en bas.** Un bloc sombre de six lignes à côté d'une
+   file de dix se lit comme une bulle d'aide, et on cherche comment le fermer ;
+   une colonne pleine hauteur se lit comme un plan de travail. La hauteur est
+   celle de la fenêtre moins ce qui la surplombe — la barre de l'app, la bande
+   de tête, le sur-titre de la file — et le contenu défile à l'intérieur quand
+   le sac est long, plutôt que d'être coupé par le `position: sticky` du rail. */
 .rd-sheet {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
-  padding: var(--fold-space-md);
+  height: calc(100dvh - var(--rd-above));
+  padding: var(--fold-space-lg);
+  overflow-y: auto;
   border-radius: var(--fold-radius-lg);
   background: var(--fold-color-bg-rail-secondary);
 
-  /* Une hauteur plancher, pour que le rail reste une COLONNE même vide : un
-     bloc sombre de trois lignes à côté d'une file de dix se lirait comme une
-     bulle d'aide, et on chercherait comment le fermer. */
-  min-height: 20rem;
+  /* Ce qui surplombe le rail, mesuré à l'écran : la barre de l'app (56), la
+     bande de tête (60), le sur-titre de la file et les gouttières. */
+  --rd-above: 10.5rem;
 }
 
 /* ── L'IDENTITÉ ─────────────────────────────────────────────────────────────
@@ -71,21 +74,35 @@
 }
 
 .rd-meta {
-  margin: 0;
+  margin: var(--fold-space-3xs) 0 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
 
 /* ── LE SAC ─────────────────────────────────────────────────────────────────
-   Dans sa propre carte, un cran plus sombre que le rail : c'est la seule chose
-   qu'on lit en tendant les mains, et elle doit se détacher du reste. */
+   Dans sa propre carte, un cran plus sombre que le rail et cerclée d'un trait :
+   c'est la seule chose qu'on lit en tendant les mains, et elle doit se détacher
+   du reste.
+
+   `flex: 0 1 auto` et non `1 1 auto` : la carte prend la hauteur de SON contenu
+   et n'en réclame pas plus. Avec `1`, elle s'étirait sur toute la colonne et
+   laissait un trou entre la dernière ligne et le compte du reste — l'œil y
+   lisait une liste interrompue. Elle se contracte en revanche, et la liste
+   défile dedans, plutôt que de pousser la remise hors de l'écran. */
 .rd-bag {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: var(--fold-space-2xs);
-  padding: var(--fold-space-sm);
+  min-height: 0;
+  padding: var(--fold-space-sm) var(--fold-space-md) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-bg-sunken);
+
+  /* Une carte POSÉE sur le rail, pas creusée dedans. `surface-sunken` la
+     confondait avec le fond : on lisait une liste flottante au lieu d'un objet
+     qu'on tient. */
+  background: var(--fold-color-surface-card);
 }
 
 /* Le titre à gauche, le total à droite : c'est le nombre qu'on recompte à voix
@@ -95,59 +112,75 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--fold-space-sm);
+  padding-bottom: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
 }
 
+/* 🔴 En bas de casse, à la taille du texte courant. La capitale espacée est le
+   ton d'une ÉTIQUETTE — elle nomme une zone d'interface. Ici la phrase nomme un
+   geste, celui qu'on est en train de faire, et elle se lit comme telle. */
 .rd-bag-title {
   margin: 0;
+  color: var(--fold-color-text);
   font-size: var(--fold-text-sm);
   font-weight: var(--fold-weight-semibold);
-  letter-spacing: var(--fold-tracking-wide);
-  text-transform: uppercase;
 }
 
 .rd-bag-total {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-3xs);
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
 }
 
 .rd-bag-total strong {
   color: var(--fold-color-text);
-  font-size: var(--fold-text-xl);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tight);
+  line-height: 1;
 }
 
+/* La liste défile DANS la carte : un sac de vingt références ne doit pas
+   repousser le bouton de remise, celui qu'on cherche en tenant le sac. */
 .rd-lines {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
-  margin: 0;
+  min-height: 0;
+  margin: var(--fold-space-3xs) 0 0;
   padding: 0;
+  overflow-y: auto;
   list-style: none;
 }
 
 /* La quantité d'abord, en chiffres tabulaires alignés : la colonne se parcourt
    du haut vers le bas pendant qu'on remplit le sac, sans relire les noms. */
+/* 🔴 **Aucun trait entre les lignes.** Une liste de six articles n'a pas besoin
+   qu'on sépare ses rangs : l'espace le fait, et il le fait mieux. Les traits
+   ajoutaient six lignes horizontales dans une colonne qui en a déjà deux, et
+   l'œil les comptait avant de lire les quantités. C'est l'air qui range ici. */
 .rd-line {
   display: grid;
-  grid-template-columns: 2.5rem 1fr auto;
+  grid-template-columns: 2.75rem 1fr auto;
   align-items: baseline;
   gap: var(--fold-space-sm);
-  padding: var(--fold-space-2xs) 0;
-  border-bottom: 1px solid var(--fold-color-border-subtle);
-}
-
-.rd-line:last-child {
-  border-bottom: 0;
+  padding: var(--fold-space-xs) 0;
 }
 
 .rd-qty {
   font-size: var(--fold-text-lg);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tight);
   text-align: right;
 }
 
 .rd-name {
+  font-size: var(--fold-text-sm);
   /* Un nom long revient à la ligne plutôt que d'être coupé : on le lit pour
      trouver le produit sur une étagère, pas pour le reconnaître d'un préfixe. */
   overflow-wrap: anywhere;
@@ -156,12 +189,14 @@
 .rd-sku {
   color: var(--fold-color-text-muted);
   font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-xs);
+  font-size: var(--fold-text-2xs);
+  letter-spacing: var(--fold-tracking-wide);
   white-space: nowrap;
 }
 
 .rd-more {
   align-self: flex-start;
+  margin-top: var(--fold-space-2xs);
 }
 
 /* ── LES GESTES ─────────────────────────────────────────────────────────────
@@ -169,13 +204,11 @@
    cherche en tenant un sac d'une main. Le reste est en dessous, en petit. */
 .rd-actions {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
-  gap: var(--fold-space-sm);
+  gap: var(--fold-space-2xs);
   margin-top: auto;
-}
-
-.rd-cta {
-  width: 100%;
+  padding-top: var(--fold-space-2xs);
 }
 
 .rd-foot {
@@ -183,7 +216,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--fold-space-2xs) var(--fold-space-sm);
+  gap: var(--fold-space-3xs) var(--fold-space-sm);
 }
 
 .rd-note {
