@@ -182,7 +182,13 @@ const COUNTER: readonly CounterOrder[] = [
   // Le Labo — le créneau pro, celui d'avant le four.
   { point: LABO, window: PICKUP_WINDOW, outcome: "handed_over", step: 0 },
   { point: LABO, window: PICKUP_WINDOW, outcome: "ready", step: 1 },
-  // Sans tranche : la file la descend en fin de liste sans lui inventer d'heure.
+  // 🔴 **Sans tranche, et c'est un cas RÉEL** — pas une lacune du semis. Le
+  // commercial qui saisit au téléphone répond « aucune heure convenue » quand le
+  // client ne s'engage pas, et l'écran de saisie pose la question depuis le
+  // 2026-09-11 (avant, il ne l'envoyait jamais : TOUTE commande prise au
+  // téléphone arrivait ici sans créneau). La file la descend en fin de liste
+  // sans lui inventer d'heure, et ne parle pas de son retard — on ne reproche
+  // pas une heure que personne n'a donnée.
   { point: LABO, window: null, outcome: "expected", step: 2 },
   // Le Village — deux tranches, donc un onglet avec son propre compteur.
   { point: VILLAGE, window: VILLAGE_MORNING, outcome: "ready", step: 3 },

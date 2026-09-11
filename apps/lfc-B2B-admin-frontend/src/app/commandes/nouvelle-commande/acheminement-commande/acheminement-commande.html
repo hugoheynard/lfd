@@ -76,4 +76,22 @@
       {{ only.codePostal }} {{ only.ville }}
     </p>
   }
+
+  <!-- 🔴 La question est POSÉE, jamais préremplie : une heure qu'on suggère
+       devient une heure qu'on promet, et le comptoir la lira comme un
+       engagement du client. « Aucune heure convenue » est une réponse. -->
+  @if (slots().length > 0) {
+    <fold-listbox
+      label="Créneau de retrait"
+      placeholder="Quand le client passe-t-il ?"
+      [options]="slotOptions()"
+      [value]="slotId()"
+      (selectionChange)="onSlot($event)"
+    />
+  } @else if (pickup() !== null) {
+    <p class="ach-line">
+      Ce point n’a aucune heure d’ouverture déclarée — la commande partira sans créneau (Réglages →
+      Livraisons &amp; retraits).
+    </p>
+  }
 }

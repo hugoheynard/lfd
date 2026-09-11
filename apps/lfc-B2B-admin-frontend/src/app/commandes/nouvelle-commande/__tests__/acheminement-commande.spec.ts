@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type { DeliveryAddressView, DeliveryZoneView, PickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -46,6 +46,17 @@ const ZONE_92: DeliveryZoneView = {
   postalPrefixes: ['92'],
   fee: { mode: 'amount', cents: 800 },
 };
+
+/** Monte le sélecteur sur ces points, sans rien toucher d'autre. */
+function mount(pickups: readonly PickupAddressView[]): ComponentFixture<AcheminementCommande> {
+  const fixture = TestBed.createComponent(AcheminementCommande);
+  fixture.componentRef.setInput('draft', new DraftStore());
+  fixture.componentRef.setInput('pickups', pickups);
+  fixture.componentRef.setInput('addresses', [ADRESSE]);
+  fixture.componentRef.setInput('zones', [ZONE_92]);
+  fixture.detectChanges();
+  return fixture;
+}
 
 /** Monte le sélecteur et rend le dernier choix émis. */
 function choiceOf(options: {
@@ -111,6 +122,10 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       pickupAddressId: 'pick_1',
       deliveryAddress: null,
       saveToBook: false,
+      // Ce point n'a aucune heure déclarée : aucun créneau à proposer, donc
+      // rien à réclamer. Un appel en cours ne se bloque pas sur un réglage que
+      // le commercial n'a pas sous la main.
+      window: null,
       issue: null,
     });
   });
@@ -185,5 +200,90 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     // La case n'est pas rendue dans ce cas ; le choix le redit, pour que le jour
     // où le gabarit changerait, le carnet ne se duplique pas en silence.
     expect(choiceOf({ courier: true, keep: true }).saveToBook).toBe(false);
+  });
+
+  /**
+   * 🔴 **Le créneau de retrait, ajouté le 2026-09-11.** L'écran n'en proposait
+   * aucun, donc toute commande prise au téléphone arrivait au comptoir sans
+   * heure : la file ne pouvait pas juger son retard, et l'équipe ne savait pas
+   * quand attendre le client.
+   */
+  describe('le créneau de retrait', () => {
+    const OUVERT: PickupAddressView = {
+      ...LABO,
+      opening: {
+        proPickup: { start: '05:00', end: '06:30' },
+        publicOpening: { start: '07:00', end: '09:00' },
+      },
+    };
+
+    it('🔴 réclame une réponse tant que rien n’est choisi', () => {
+      const choice = choiceOf({ pickups: [OUVERT] });
+
+      expect(choice.window).toBeNull();
+      expect(choice.issue).toContain('Créneau de retrait');
+    });
+
+    it('🔴 n’invente AUCUNE heure de départ', () => {
+      // Préremplir avec la première ouverture ferait promettre un engagement
+      // que personne n'a pris — et le comptoir le lirait comme tel.
+      const fixture = mount([OUVERT]);
+
+      expect(fixture.componentInstance['slotId']()).toBe('');
+    });
+
+    it('retient la tranche choisie, bornes comprises', () => {
+      const fixture = mount([OUVERT]);
+      fixture.componentInstance['onSlot']('05:00-06:00');
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['choice']().window).toEqual({
+        start: '05:00',
+        end: '06:00',
+      });
+      expect(fixture.componentInstance['choice']().issue).toBeNull();
+    });
+
+    it('🔴 « aucune heure convenue » est une RÉPONSE, pas un oubli', () => {
+      // Les deux valent `null` dans le brouillon ; seule la réponse lève ce qui
+      // empêche de passer la commande.
+      const fixture = mount([OUVERT]);
+      fixture.componentInstance['onSlot']('__none__');
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['choice']().window).toBeNull();
+      expect(fixture.componentInstance['choice']().issue).toBeNull();
+    });
+
+    it('🔴 changer de point EFFACE la tranche et rouvre la question', () => {
+      // Les créneaux d'un point ne valent pas pour un autre : garder l'heure
+      // promettrait une porte close, et le serveur refuserait à la passation —
+      // une fois le client raccroché.
+      const village: PickupAddressView = {
+        ...OUVERT,
+        id: 'pick_2',
+        label: 'Village',
+        isDefault: false,
+      };
+      const fixture = mount([OUVERT, village]);
+      fixture.componentInstance['onSlot']('05:00-06:00');
+      fixture.detectChanges();
+
+      fixture.componentInstance['onPickup']('pick_2');
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['choice']().window).toBeNull();
+      expect(fixture.componentInstance['choice']().issue).toContain('Créneau de retrait');
+    });
+
+    it('🔴 le coursier n’en porte JAMAIS', () => {
+      // La fenêtre qui vaut en livraison est celle du CARNET, que le serveur
+      // lit à partir de l'adresse. En poser une ici l'écraserait.
+      expect(choiceOf({ pickups: [OUVERT], courier: true }).window).toBeNull();
+    });
+
+    it('ne réclame rien quand le point n’a déclaré aucune heure', () => {
+      expect(choiceOf({ pickups: [LABO] }).issue).toBeNull();
+    });
   });
 });

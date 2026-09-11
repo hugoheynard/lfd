@@ -53,6 +53,9 @@ export function draftPayloadOf(
     pickupAddressId: draft.pickupId === '' ? null : draft.pickupId,
     deliveryAddress: deliveryAddressOf(draft, addresses),
     requestedDeliveryDate: draft.requestedDate === '' ? null : draft.requestedDate,
+    // La tranche convenue voyage telle quelle : le brouillon garde un fait
+    // arrêté, pas une requête que le serveur devrait encore interpréter.
+    requestedWindow: draft.window,
     note: draft.note,
     settlement: draft.settlement,
     // Des SKU et des quantités, **jamais de prix** : c'est le catalogue serveur
@@ -98,6 +101,7 @@ export function draftSnapshotOf(
     // mais elle ne l'est pas non plus. On repart donc décoché : c'est un geste
     // explicite, et le brouillon ne doit pas le prendre à la place de l'humain.
     keepAddress: false,
+    window: view.requestedWindow,
     requestedDate: view.requestedDeliveryDate ?? '',
     note: view.note,
     settlement: view.settlement,

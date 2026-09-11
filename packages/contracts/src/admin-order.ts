@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { billingAddressPayloadSchema } from "./address.js";
+import { billingAddressPayloadSchema, fulfillmentWindowSchema } from "./address.js";
 import {
   deliveryAddressIssue,
   fulfillmentMethodSchema,
@@ -139,6 +139,28 @@ export const orderDraftPayloadSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ")
     .nullable()
     .default(null),
+  /**
+   * La tranche convenue au téléphone, ou `null` — **aucune heure convenue**.
+   *
+   * 🔴 Ici, et à la différence de `requestedWindow` sur une PASSATION, `null`
+   * n'est pas ambigu et l'absence non plus : un brouillon conserve un **fait**
+   * déjà arrêté, pas une requête à interpréter. La distinction « absent = je ne
+   * me prononce pas » n'a de sens qu'au moment où un réglage peut encore
+   * s'appliquer ; un brouillon relu ne rejoue pas les défauts, il rend ce que le
+   * commercial avait sous les yeux.
+   *
+   * Ajouté le 2026-09-11 : la saisie staff n'envoyait AUCUNE tranche, donc toute
+   * commande prise au téléphone arrivait au comptoir sans créneau — la file ne
+   * pouvait pas juger son retard, et l'équipe ne savait pas quand attendre le
+   * client. L'écran pose maintenant la question ; le brouillon doit s'en
+   * souvenir, sans quoi la réponse se perdrait au premier appel interrompu.
+   *
+   * ⚠️ **Additif et rétrocompatible** : les brouillons déjà stockés ne portent
+   * pas la clé, et le `default(null)` la leur donne à la relecture. Le payload
+   * est une colonne `Json` revalidée à l'entrée comme à la sortie — il n'y a
+   * donc rien à migrer.
+   */
+  requestedWindow: fulfillmentWindowSchema.nullable().default(null),
   note: z.string().default(""),
   settlement: staffSettlementSchema.default("link"),
   lines: z.array(orderLineInputSchema).default([]),

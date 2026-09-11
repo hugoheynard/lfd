@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 
-import type { FulfillmentMethod, StaffSettlement } from '@lfd/contracts';
+import type { FulfillmentMethod, FulfillmentWindow, StaffSettlement } from '@lfd/contracts';
 
 /** Le choix « une autre adresse » — sentinelle, jamais un identifiant. */
 export const NEW_ADDRESS = '__new__';
@@ -28,6 +28,8 @@ export interface DraftSnapshot {
   readonly addressId: string;
   readonly address: DraftAddress;
   readonly keepAddress: boolean;
+  /** La tranche convenue, ou `null` — « aucune heure convenue ». */
+  readonly window: FulfillmentWindow | null;
   readonly requestedDate: string;
   readonly note: string;
   readonly settlement: StaffSettlement;
@@ -59,6 +61,16 @@ export class DraftStore {
   readonly addressId = signal('');
   readonly address = signal<DraftAddress>(EMPTY_ADDRESS);
   readonly keepAddress = signal(false);
+  /**
+   * La tranche de retrait convenue, ou `null`.
+   *
+   * 🔴 **Aucune valeur de départ, et c'est le sujet.** Préremplir avec la
+   * première heure d'ouverture du point inventerait un engagement que personne
+   * n'a pris — c'est exactement ce que le backfill du 2026-08-15 s'était refusé
+   * à faire. Le sélecteur pose donc la question, et « aucune heure convenue »
+   * est une réponse explicite, pas un oubli.
+   */
+  readonly window = signal<FulfillmentWindow | null>(null);
   readonly requestedDate = signal(tomorrowIso());
   readonly note = signal('');
   readonly settlement = signal<StaffSettlement>('link');
@@ -76,6 +88,7 @@ export class DraftStore {
       addressId: this.addressId(),
       address: this.address(),
       keepAddress: this.keepAddress(),
+      window: this.window(),
       requestedDate: this.requestedDate(),
       note: this.note(),
       settlement: this.settlement(),
@@ -89,6 +102,7 @@ export class DraftStore {
     this.addressId.set(snapshot.addressId);
     this.address.set(snapshot.address);
     this.keepAddress.set(snapshot.keepAddress);
+    this.window.set(snapshot.window);
     this.requestedDate.set(snapshot.requestedDate);
     this.note.set(snapshot.note);
     this.settlement.set(snapshot.settlement);
@@ -102,6 +116,7 @@ export class DraftStore {
       addressId: '',
       address: EMPTY_ADDRESS,
       keepAddress: false,
+      window: null,
       requestedDate: tomorrowIso(),
       note: '',
       settlement: 'link',
