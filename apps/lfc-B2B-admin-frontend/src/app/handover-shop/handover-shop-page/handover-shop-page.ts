@@ -368,11 +368,21 @@ export class HandoverShopPage {
    * pas ce qu'on a cliqué — sans ce contrôle, un bouton par ligne remettrait la
    * commande du voisin un matin de coup de feu. Depuis la bande, il vaut
    * `null` : on prend ce qui se présente, comme un comptoir.
+   *
+   * ⚠️ L'onglet ouvert l'accompagne dans les deux cas. Prendre ce qui se
+   * présente ne veut pas dire le prendre en silence : l'écran affirme un point
+   * de retrait, et le dialogue doit pouvoir dire quand le code n'en est pas.
    */
   protected scan(entry: HandoverQueueEntryView | null): void {
     const data: ScanDialogData = {
       expected:
         entry === null ? null : { reference: entry.reference, customerLabel: entry.customerLabel },
+      // 🔴 L'onglet voyage avec le geste. Depuis la bande, `expected` est
+      // `null` — on prend ce qui se présente — mais l'écran, lui, affirme un
+      // point de retrait dans son titre et dans ses trois compteurs. Sans cette
+      // clé, le scan remettait un sac du Village sans qu'une ligne ne l'ait
+      // jamais montré (revue du 2026-09-11, point 3).
+      openTab: this.activeTab(),
     };
     const ref = this.panels.open<ScanDialogData, string>(ScanDialog, { data });
     void ref.closed.then((result) => {

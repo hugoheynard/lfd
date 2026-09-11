@@ -26,6 +26,7 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { HandoverService } from '../../retrait/handover.service';
+import { outsideTheCounter } from '../handover-queue';
 import { readQrCode, scannerAvailable, tokenOf } from './qr-reader';
 
 /**
@@ -38,6 +39,17 @@ import { readQrCode, scannerAvailable, tokenOf } from './qr-reader';
  */
 export interface ScanDialogData {
   readonly expected: { readonly reference: string; readonly customerLabel: string } | null;
+  /**
+   * **La clé de l'onglet ouvert**, pour que le scan sache de quel comptoir il
+   * parle — `''` quand l'écran n'affirme aucun périmètre.
+   *
+   * 🔴 Sans elle, le dialogue atteste une commande de l'autre point sans qu'une
+   * seule ligne de l'écran ne l'ait annoncée : l'en-tête dit « Le Labo », les
+   * trois compteurs disent « Le Labo », et le sac part. L'écran affirmait un
+   * périmètre que son geste principal ne respectait pas (revue du 2026-09-11,
+   * point 3).
+   */
+  readonly openTab: string;
 }
 
 /** Ce que le panneau rend à la file : une remise a été gravée. */
@@ -65,6 +77,19 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  *
  * Ouvert depuis la barre de la file, il vaut `null` : on prend ce qui se
  * présente, comme un comptoir.
+ *
+ * ## 🔴 Il NOMME le dépaysement, il ne l'interdit pas
+ *
+ * L'écran est mono-point depuis le 2026-09-11 : l'en-tête et les trois
+ * compteurs disent un point de retrait. Le scan, lui, atteste ce que le code
+ * désigne — y compris un sac de l'autre point, y compris une livraison que la
+ * file ne montre plus. `openTab` lui donne de quoi le DIRE avant d'attester.
+ *
+ * La phrase sert moins à empêcher une fausse remise qu'à expliquer pourquoi le
+ * sac n'est pas dans le rack : l'opérateur cherche, ne trouve rien, et sans
+ * elle il ne sait pas s'il cherche mal. Elle ne barre donc pas la confirmation
+ * — un sac transporté, un client redirigé, une livraison rattrapée au comptoir
+ * sont des remises légitimes. La règle vit dans `outsideTheCounter`.
  *
  * ⚠️ Ce paragraphe a justifié le contrôle par une comparaison entre « un bouton
  * de scan par ligne » et « un scanner global » jusqu'au 2026-09-11. Le bouton
@@ -136,6 +161,15 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
   protected readonly stage = signal<Stage>('starting');
   protected readonly busy = signal(false);
   protected readonly mismatch = signal<string | null>(null);
+  /**
+   * Ce que le code a de dépaysant au regard de l'onglet ouvert, ou `null`.
+   *
+   * ⚠️ Un **avertissement**, pas un refus : `mismatch` barre la confirmation,
+   * celui-ci la laisse passer. Un sac transporté, un client redirigé, une
+   * livraison rattrapée au comptoir — la remise y est légitime, et ce qui
+   * manquait n'était pas une interdiction mais une phrase.
+   */
+  protected readonly elsewhere = signal<string | null>(null);
   protected readonly subject = signal<OrderHandoverView | null>(null);
 
   /** La commande qu'on croit avoir en face, quand le scan part d'une ligne. */
@@ -215,6 +249,7 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
         this.stage.set('found');
         return;
       }
+      this.elsewhere.set(outsideTheCounter(view, this.data()?.openTab ?? ''));
       this.subject.set(view);
       this.stage.set('found');
       this.token = token;

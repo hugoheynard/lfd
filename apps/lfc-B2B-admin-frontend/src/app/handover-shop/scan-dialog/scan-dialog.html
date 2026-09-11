@@ -34,6 +34,14 @@
           >, pas {{ expected()?.reference }}. Rien n’a été remis.
         </fold-callout>
       } @else if (subject(); as found) {
+        @if (elsewhere(); as notice) {
+          <!-- 🔴 AU-DESSUS de l'accusé, et la confirmation reste offerte. Ce
+               n'est pas un refus : c'est la phrase qui explique pourquoi le sac
+               n'est pas dans le rack, et ce qu'on dit au client. -->
+          <fold-callout appearance="inset" variant="warning" icon="info">
+            {{ notice }}
+          </fold-callout>
+        }
         <fold-callout appearance="inset" variant="success" icon="check">
           <strong>{{ found.customerLabel }}</strong> — {{ found.orderNumber }},
           {{ found.totalUnits }} pièce{{ found.totalUnits > 1 ? 's' : '' }}.

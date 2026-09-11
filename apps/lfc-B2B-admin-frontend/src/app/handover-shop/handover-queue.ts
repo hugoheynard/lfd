@@ -3,6 +3,7 @@ import type {
   HandoverQueueEntryView,
   HandoverQueueState,
   HandoverQueueWindowView,
+  OrderHandoverView,
 } from '@lfd/contracts';
 import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
 
@@ -397,4 +398,57 @@ export function rowTone(entry: HandoverQueueEntryView, day: string, now: Date): 
     return 'alert';
   }
   return isLate(entry, day, now) ? 'warning' : null;
+}
+
+/**
+ * **Ce que le code scanné a de dépaysant**, en clair — ou `null` si rien.
+ *
+ * ## Pourquoi ça n'interdit pas
+ *
+ * Un comptoir prend ce qui se présente, et le code résout la commande tout
+ * seul : refuser renverrait quelqu'un qui est physiquement là, sac compris.
+ * Un sac transporté d'un point à l'autre, un client redirigé par téléphone, une
+ * livraison rattrapée au comptoir — les trois existent, et la remise y est
+ * légitime. Même permissivité que `handoverBlocker` côté serveur, et pour la
+ * même raison : le monde réel prime sur la machine à états.
+ *
+ * ## Ce que la phrase sert VRAIMENT
+ *
+ * 🔴 Moins à empêcher une fausse remise qu'à **expliquer pourquoi le sac n'est
+ * pas là**. Si le client s'est trompé de point, la marchandise est à l'autre
+ * bout : l'opérateur cherche dans son rack, ne trouve rien, et sans cette
+ * phrase il ne sait pas s'il cherche mal ou si le sac n'a jamais existé. Elle
+ * lui donne la réponse, et ce qu'il dit au client.
+ *
+ * Les DEUX points sont nommés, comme les deux numéros du refus de code : sans
+ * eux on ne sait pas si c'est le client ou l'onglet qui est au mauvais endroit.
+ *
+ * @param subject ce que le code a désigné, tel que le serveur le rend.
+ * @param openTab la clé de l'onglet ouvert — `''` quand l'écran n'affirme aucun
+ *   périmètre, et il n'y a alors rien à signaler.
+ */
+export function outsideTheCounter(
+  subject: Pick<OrderHandoverView, 'fulfillmentMethod' | 'pickupLabel'>,
+  openTab: string,
+): string | null {
+  if (subject.fulfillmentMethod === 'delivery') {
+    // La file ne montre plus aucune livraison depuis `atTheCounter` : ce code
+    // n'a donc AUCUNE ligne à l'écran, quel que soit l'onglet ouvert.
+    return 'Cette commande part en livraison — elle n’est dans aucune file de comptoir.';
+  }
+  if (openTab === '') {
+    return null;
+  }
+  const nowhere = subject.pickupLabel === null || subject.pickupLabel.trim() === '';
+  if (openTab === NO_PICKUP) {
+    return nowhere
+      ? null
+      : `Cette commande est rattachée à « ${subject.pickupLabel ?? ''} », pas à « Sans point de retrait ».`;
+  }
+  if (nowhere) {
+    return `Cette commande ne porte aucun point de retrait, et l’onglet ouvert est « ${openTab} ».`;
+  }
+  return subject.pickupLabel === openTab
+    ? null
+    : `Cette commande est rattachée à « ${subject.pickupLabel ?? ''} », pas à « ${openTab} ».`;
 }

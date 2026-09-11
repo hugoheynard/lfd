@@ -6,6 +6,7 @@ import type {
   HandoverQueueEntryView,
   HandoverQueueWindowView,
   HandoverVia,
+  OrderHandoverView,
 } from '@lfd/contracts';
 
 import {
@@ -19,6 +20,7 @@ import {
   lateMinutes,
   matchingQueue,
   NO_PICKUP,
+  outsideTheCounter,
   pickupTabs,
   queueCounters,
   rowTone,
@@ -394,5 +396,61 @@ describe("le type ferme ce qu'une chaîne laissait ouvert", () => {
     const rejected: Rejects<HandoverVia, 'presume'> = true;
 
     expect(rejected).toBe(true);
+  });
+});
+
+describe('outsideTheCounter', () => {
+  const subject = (
+    over: Partial<Pick<OrderHandoverView, 'fulfillmentMethod' | 'pickupLabel'>> = {},
+  ): Pick<OrderHandoverView, 'fulfillmentMethod' | 'pickupLabel'> => ({
+    fulfillmentMethod: 'pickup',
+    pickupLabel: 'Le Labo',
+    ...over,
+  });
+
+  it('ne dit rien quand le code désigne une commande du point ouvert', () => {
+    expect(outsideTheCounter(subject(), 'Le Labo')).toBeNull();
+  });
+
+  it('🔴 nomme les DEUX points quand le client s’est trompé d’adresse', () => {
+    // Le cas de flux que la revue a relevé : l'en-tête dit « Le Labo », les
+    // trois compteurs disent « Le Labo », et le scan remettait un sac du
+    // Village sans qu'une ligne de l'écran ne l'ait jamais montré.
+    const notice = outsideTheCounter(subject({ pickupLabel: 'Le Village' }), 'Le Labo');
+
+    expect(notice).toContain('Le Village');
+    expect(notice).toContain('Le Labo');
+  });
+
+  it('🔴 annonce une livraison, quel que soit l’onglet ouvert', () => {
+    // `atTheCounter` les a retirées de la file : ce code n'a AUCUNE ligne à
+    // l'écran, et c'est la seule façon de le dire à qui se présente.
+    for (const tab of ['Le Labo', NO_PICKUP, '']) {
+      expect(outsideTheCounter(subject({ fulfillmentMethod: 'delivery' }), tab)).toContain(
+        'livraison',
+      );
+    }
+  });
+
+  it('🔴 se tait quand l’écran n’affirme AUCUN périmètre', () => {
+    // Pas d'onglet, pas de promesse : il n'y a rien à démentir, et une phrase
+    // ici se lirait comme un reproche sans objet.
+    expect(outsideTheCounter(subject({ pickupLabel: 'Le Village' }), '')).toBeNull();
+  });
+
+  it('🔴 une commande SANS point est chez elle sous l’onglet qui les rassemble', () => {
+    // Régression de conception : ces commandes sont antérieures aux points de
+    // retrait et se remettent bien en boutique — c'est tout l'objet de
+    // l'onglet « Sans point de retrait ». Les signaler l'aurait contredit.
+    expect(outsideTheCounter(subject({ pickupLabel: null }), NO_PICKUP)).toBeNull();
+    expect(outsideTheCounter(subject({ pickupLabel: '  ' }), NO_PICKUP)).toBeNull();
+  });
+
+  it('nomme l’onglet ouvert quand la commande ne porte aucun point', () => {
+    expect(outsideTheCounter(subject({ pickupLabel: null }), 'Le Labo')).toContain('Le Labo');
+  });
+
+  it('signale une commande à point sous l’onglet des sans-point', () => {
+    expect(outsideTheCounter(subject(), NO_PICKUP)).toContain('Le Labo');
   });
 });
