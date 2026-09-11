@@ -51,6 +51,10 @@
         [value]="day()"
         (valueChange)="onDay($event)"
       />
+
+      <!-- Le scan SANS cible : on prend ce qui se présente, comme un comptoir.
+           Celui des lignes, lui, vérifie qu'il s'agit bien de la bonne. -->
+      <button foldButton icon="qr-code" class="masthead-scan" (click)="scan(null)">Scanner</button>
     </div>
   </fold-page-section>
 
@@ -107,6 +111,7 @@
                   [rows]="rows()"
                   [rowKey]="rowKey"
                   [rowTone]="toneOf"
+                  [(expanded)]="opened"
                   (rowClick)="select($event)"
                 >
                   <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne
@@ -163,15 +168,57 @@
                     @if (remittable(row)) {
                       <button
                         foldButton
-                        emphasis="outline"
-                        icon="check"
-                        [loading]="busy(row)"
-                        (click)="remit(row); $event.stopPropagation()"
+                        icon="qr-code"
+                        (click)="scan(row); $event.stopPropagation()"
                       >
-                        Remettre
+                        Scanner
                       </button>
                     } @else {
                       <span class="rm-muted" aria-hidden="true">—</span>
+                    }
+                  </ng-template>
+
+                  <!--
+                    **Le retard s'annonce SOUS la ligne**, et pas dans une colonne.
+
+                    🔴 Parce qu'il vient avec un geste. Une pastille dit un état ; ici il
+                    faut dire l'état ET proposer d'y répondre, ce qui ne tient pas dans une
+                    cellule. Le tiroir est ouvert d'emblée sur les lignes en retard — un
+                    retard qu'il faudrait cliquer pour découvrir n'alerte personne — et
+                    l'équipe peut le refermer une fois traité.
+                  -->
+                  <ng-template foldRowDetail let-row>
+                    @if (lateText(row); as delay) {
+                      <fold-callout appearance="inset" variant="warning" icon="info">
+                        <strong>{{ delay }}</strong> sur la tranche convenue.
+                        @if (!remindable(row) && !reminderSent(row)) {
+                          Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir
+                          le client pour rien.
+                        }
+                        <div actions>
+                          @if (reminderSent(row)) {
+                            <span class="rm-muted">Rappel envoyé</span>
+                          } @else {
+                            <button
+                              foldButton
+                              emphasis="outline"
+                              icon="mail"
+                              [disabled]="!remindable(row)"
+                              [loading]="busy(row)"
+                              (click)="remind(row); $event.stopPropagation()"
+                            >
+                              Envoyer un rappel
+                            </button>
+                          }
+                        </div>
+                      </fold-callout>
+                    } @else {
+                      <!-- 🔴 Le tiroir n'est JAMAIS vide. Une ligne ordinaire y trouve ce que
+                           la table ne montre pas : son point de retrait — invisible dans
+                           l'onglet « tous les points » — et, pour une remise, l'attestation
+                           qu'on relit en cas de contestation. Un chevron qui n'ouvre rien est
+                           une porte peinte sur un mur. -->
+                      <p class="rm-drawer">{{ drawerLine(row) }}</p>
                     }
                   </ng-template>
                 </fold-data-table>
@@ -192,6 +239,11 @@
       }
     }
 
-    <app-remise-detail asideRight [entry]="selected()" (remitted)="load()" />
+    <app-remise-detail
+      asideRight
+      [entry]="selected()"
+      (remitted)="load()"
+      (cleared)="clearSelection()"
+    />
   </fold-aside-layout>
 </fold-page-layout>

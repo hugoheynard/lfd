@@ -10,13 +10,11 @@ import {
 } from '@angular/core';
 import type { HandoverQueueEntryView, OrderLineView } from '@lfd/contracts';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldSurfaceDirective,
-  type FoldBadgeVariant,
   type FoldCalloutVariant,
   type FoldIconName,
 } from 'fold-ng';
@@ -25,9 +23,15 @@ import { NotifyService } from '../../notify.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { saveBlob } from '../../shared/download/save-blob';
-import { formatWindow, stateLabel, stateVariant } from '../handover-queue';
+import { formatWindow } from '../handover-queue';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
+
+/**
+ * Combien de lignes avant de replier. Cinq : de quoi reconnaître un sac d'un
+ * coup d'œil sans que le bouton de remise sorte de l'écran.
+ */
+const SHOWN_LINES = 5;
 
 const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
@@ -70,7 +74,6 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   selector: 'app-remise-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -92,6 +95,9 @@ export class RemiseDetail {
    */
   readonly remitted = output<void>();
 
+  /** L'équipe referme le rail. La file reste, et rien n'est sélectionné. */
+  readonly cleared = output<void>();
+
   private readonly api = inject(AdminOrdersService);
   private readonly handovers = inject(HandoverQueueService);
   private readonly notify = inject(NotifyService);
@@ -101,20 +107,60 @@ export class RemiseDetail {
   protected readonly busy = signal(false);
   protected readonly remitting = signal(false);
 
+  /**
+   * La liste est-elle dépliée ?
+   *
+   * 🔴 Repliée par défaut au-delà de {@link SHOWN_LINES}. Un sac de vingt
+   * références pousserait le bouton de remise hors de l'écran — celui qu'on
+   * cherche justement en tenant le sac. Ce qui reste est **compté**, jamais
+   * caché en silence : une liste tronquée sans le dire fait tendre un sac
+   * incomplet.
+   */
+  private readonly expanded = signal(false);
+
+  /** Les lignes montrées — les premières, puis toutes une fois dépliées. */
+  protected readonly shownLines = computed<readonly OrderLineView[]>(() => {
+    const lines = this.lines();
+    return this.expanded() ? lines : lines.slice(0, SHOWN_LINES);
+  });
+
+  /** Ce que la troncature retient, en références ET en pièces. Ou `null`. */
+  protected readonly hiddenLines = computed<{
+    readonly references: number;
+    readonly units: number;
+  } | null>(() => {
+    const rest = this.lines().slice(this.shownLines().length);
+    if (rest.length === 0) {
+      return null;
+    }
+    return {
+      references: rest.length,
+      units: rest.reduce((sum, line) => sum + line.quantity, 0),
+    };
+  });
+
+  /**
+   * Le sur-titre : **où** et **quand**, les deux faits qui tranchent « est-ce
+   * bien celle-là » avant même qu'on lise le numéro.
+   */
+  protected readonly contextLine = computed<string>(() => {
+    const entry = this.entry();
+    if (entry === null) {
+      return '';
+    }
+    const where = entry.pickupLabel ?? this.methodLabel();
+    const slot = formatWindow(entry.window);
+    // 🔴 L'absence se DIT. Ne montrer que le point laisserait croire qu'aucune
+    // heure n'a été convenue faute de place à l'écran, alors que c'est un fait
+    // de la commande — et c'est le cas de masse depuis le backfill du
+    // 2026-08-15.
+    return slot === null ? `${where} · aucune tranche demandée` : `${where} · ${slot}`;
+  });
+
   /** Le créneau écrit, ou `null` — aucune heure n'est inventée ici non plus. */
   protected readonly window = computed<string | null>(() => {
     const entry = this.entry();
     return entry === null ? null : formatWindow(entry.window);
-  });
-
-  protected readonly stateText = computed<string>(() => {
-    const entry = this.entry();
-    return entry === null ? '' : stateLabel(entry.state);
-  });
-
-  protected readonly stateTone = computed<FoldBadgeVariant>(() => {
-    const entry = this.entry();
-    return entry === null ? 'neutral' : stateVariant(entry.state);
   });
 
   /** « Retrait » ou « Livraison » — le mot qui précède l'heure convenue. */
@@ -184,8 +230,17 @@ export class RemiseDetail {
         this.state.set('idle');
         return;
       }
+      this.expanded.set(false);
       void this.load();
     });
+  }
+
+  protected showAll(): void {
+    this.expanded.set(true);
+  }
+
+  protected clear(): void {
+    this.cleared.emit();
   }
 
   protected async load(): Promise<void> {

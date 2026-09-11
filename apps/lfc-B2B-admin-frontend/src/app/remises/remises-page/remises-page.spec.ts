@@ -93,10 +93,36 @@ async function render(api: FakeQueue): Promise<ComponentFixture<RemisesPage>> {
 const text = (fixture: ComponentFixture<RemisesPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
+/**
+ * Les lignes de la FILE, tiroirs exclus.
+ *
+ * ⚠️ `tbody tr` seul ne suffit plus : depuis que le retard s'annonce sous sa
+ * ligne, `fold-data-table` intercale une `.folddt-detail-row` entre deux
+ * lignes. Les compter ferait passer un tri pour cassé alors qu'il est juste —
+ * c'est ce qui est arrivé en écrivant ce fichier.
+ */
 const rowTexts = (fixture: ComponentFixture<RemisesPage>): readonly string[] =>
-  [...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr')].map(
+  [...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.folddt-row')].map(
     (row) => row.textContent ?? '',
   );
+
+/**
+ * Le contenu du tiroir de la PREMIÈRE ligne, après l'avoir ouvert.
+ *
+ * ⚠️ La `.folddt-detail-row` existe toujours dans le DOM ; son contenu, non —
+ * il n'est rendu qu'à l'ouverture. Lire la rangée fermée rendait une chaîne
+ * vide, ce qui se lit comme « le tiroir ne dit rien » alors qu'il n'est pas
+ * encore ouvert.
+ */
+async function openedDrawer(fixture: ComponentFixture<RemisesPage>): Promise<string> {
+  const host = fixture.nativeElement as HTMLElement;
+  const toggle = host.querySelector('tbody tr.folddt-row button[aria-expanded]');
+  (toggle as HTMLElement | null)?.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  return host.querySelector('tbody tr.folddt-detail-row')?.textContent ?? '';
+}
 
 describe('RemisesPage', () => {
   it('rend chaque colonne de la ligne', async () => {
@@ -164,6 +190,52 @@ describe('RemisesPage', () => {
     expect(row).toContain('remise');
     expect(row).not.toContain('CMD-1042');
     expect(row).toContain('Remise');
+  });
+
+  it('🔴 le tiroir d’une ligne ordinaire n’est JAMAIS vide', async () => {
+    // Un chevron qui n'ouvre rien est une porte peinte sur un mur. Le tiroir
+    // d'une ligne sans retard dit ce que la table ne montre pas : son point de
+    // retrait, invisible dans l'onglet « tous les points ».
+    const api = new FakeQueue();
+    api.entries = [entry({ pickupLabel: 'Val Thorens' })];
+
+    const fixture = await render(api);
+
+    expect(await openedDrawer(fixture)).toContain('Val Thorens');
+  });
+
+  it('🔴 une remise rappelle son heure et SA NATURE dans le tiroir', async () => {
+    // « saisie sans code » et non « scannée » : c'est ce qu'on relit quand
+    // quelqu'un conteste, et les deux n'ont pas la même force.
+    const api = new FakeQueue();
+    api.entries = [
+      entry({
+        state: 'handed_over',
+        handedOverAt: `${DAY}T04:41:00.000Z`,
+        handedOverVia: 'manual',
+      }),
+    ];
+
+    const fixture = await render(api);
+
+    expect(await openedDrawer(fixture)).toContain('saisie sans code');
+  });
+
+  it('un sac encore à tendre propose le SCAN, pas une remise à l’aveugle', async () => {
+    const fixture = await render(new FakeQueue());
+    const row = (fixture.nativeElement as HTMLElement).querySelector('tbody tr.folddt-row');
+
+    expect(row?.textContent ?? '').toContain('Scanner');
+  });
+
+  it('🔴 une commande déjà remise n’offre plus aucun geste', async () => {
+    const api = new FakeQueue();
+    api.entries = [entry({ state: 'handed_over', handedOverAt: `${DAY}T04:41:00.000Z` })];
+
+    const fixture = await render(api);
+    const row = (fixture.nativeElement as HTMLElement).querySelector('tbody tr.folddt-row');
+
+    expect(row?.textContent ?? '').not.toContain('Scanner');
   });
 
   it('🔴 le rail est là sans sélection, et se remplit au clic', async () => {

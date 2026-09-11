@@ -21,8 +21,10 @@ import {
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldAsideLayoutComponent,
+  FoldDataTableRowDetailDirective,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
   FoldSurfaceDirective,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -52,6 +54,8 @@ import {
   type QueueCounters,
 } from '../handover-queue';
 import { RemiseDetail } from '../remise-detail/remise-detail';
+import { SCANNED, ScanPanel, type ScanPanelData } from '../scan-panel/scan-panel';
+import { AdminOrdersService } from '../../commandes/orders.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -113,6 +117,7 @@ const TICK_MS = 30_000;
     FoldCardComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
+    FoldDataTableRowDetailDirective,
     FoldDateComponent,
     FoldElementTitleComponent,
     FoldAsideLayoutComponent,
@@ -134,6 +139,8 @@ const TICK_MS = 30_000;
 })
 export class RemisesPage {
   private readonly api = inject(HandoverQueueService);
+  private readonly orders = inject(AdminOrdersService);
+  private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
 
   /**
@@ -156,8 +163,29 @@ export class RemisesPage {
    */
   private readonly now = signal<Date>(new Date());
 
-  /** La commande en cours de remise — au plus une, et le bouton le dit. */
-  private readonly remitting = signal<string | null>(null);
+  /** La commande dont on envoie le rappel — au plus une, et le bouton le dit. */
+  private readonly reminding = signal<string | null>(null);
+
+  /**
+   * Les rappels déjà partis, dans cette session d'écran.
+   *
+   * ⚠️ **Local, et assumé comme tel.** Le serveur ne garde pas trace d'un
+   * rappel dans la file ; sans ce jeu, le bouton se réarmerait à l'identique et
+   * on enverrait trois courriels à la même personne en trois minutes. Rechargé,
+   * l'écran oublie — c'est le prix, et il est plus honnête qu'un compteur
+   * inventé côté client.
+   */
+  private readonly reminded = signal<ReadonlySet<string>>(new Set());
+
+  /**
+   * Les tiroirs ouverts, par clé de ligne.
+   *
+   * 🔴 Bidirectionnel, et amorcé aux lignes EN RETARD : le retard s'annonce
+   * tout seul, sinon il faudrait cliquer pour découvrir ce qui presse. Mais
+   * l'équipe peut refermer celui qu'elle vient de traiter — un tiroir qu'un
+   * `[expanded]` à sens unique rouvrirait aussitôt serait une porte qui claque.
+   */
+  protected readonly opened = signal<ReadonlySet<string>>(new Set());
 
   /**
    * La commande ouverte dans le rail, **par identifiant et non par objet**.
@@ -247,6 +275,15 @@ export class RemisesPage {
   protected readonly toneOf = (entry: HandoverQueueEntryView): FoldTableTone =>
     rowTone(entry, this.day(), this.now());
 
+  /** Les lignes en retard à l'instant de la lecture — l'amorce des tiroirs. */
+  private lateKeys(entries: readonly HandoverQueueEntryView[]): ReadonlySet<string> {
+    return new Set(
+      entries
+        .filter((entry) => isLate(entry, this.day(), this.now()))
+        .map((entry) => entry.orderId),
+    );
+  }
+
   constructor() {
     effect(() => {
       void this.load(this.day());
@@ -265,6 +302,7 @@ export class RemisesPage {
       const view = await this.api.forDay(day);
       this.entries.set(view.entries);
       this.now.set(new Date());
+      this.opened.set(this.lateKeys(view.entries));
       this.state.set('ready');
     } catch {
       this.entries.set([]);
@@ -330,32 +368,86 @@ export class RemisesPage {
     return entry.state !== 'handed_over' && entry.state !== 'cancelled';
   }
 
+  /**
+   * Le rappel n'a de sens que sur une commande **déclarée prête**. Le serveur
+   * le refuse aussi — la règle vit là-bas, ici on évite d'armer un bouton dont
+   * on connaît déjà la réponse.
+   */
+  protected remindable(entry: HandoverQueueEntryView): boolean {
+    return this.remittable(entry) && entry.readyAt !== null && !this.reminded().has(entry.orderId);
+  }
+
+  protected reminderSent(entry: HandoverQueueEntryView): boolean {
+    return this.reminded().has(entry.orderId);
+  }
+
   protected busy(entry: HandoverQueueEntryView): boolean {
-    return this.remitting() === entry.orderId;
+    return this.reminding() === entry.orderId;
   }
 
   /**
-   * **La remise saisie**, depuis la file — le chemin sans QR.
-   *
-   * 🔴 Elle grave `manual` côté serveur, et l'écran ne prétend pas autre chose :
-   * le client n'a pas présenté de code, l'équipe atteste seule. C'est une
-   * attestation **faible et honnête** ; la maquiller en scan serait la rendre
-   * fausse, et c'est exactement ce jour-là que quelqu'un imprime le code sur le
-   * colis « pour les cas difficiles ».
-   *
-   * La file est relue après coup plutôt que repeinte de mémoire : le serveur
-   * arbitre la course entre deux comptoirs, et lui seul sait qui a gagné.
+   * Ce que le tiroir dit d'une ligne **sans retard** : d'abord ce que la table
+   * ne montre pas — le point de retrait, invisible dans l'onglet « tous les
+   * points » —, puis l'attestation quand le sac est parti.
    */
-  protected async remit(entry: HandoverQueueEntryView): Promise<void> {
-    this.remitting.set(entry.orderId);
-    try {
-      await this.api.confirmManually(entry.reference);
-      await this.load();
-    } catch (caught) {
-      this.notify.error(caught, "Cette remise n'a pas pu être enregistrée.");
-    } finally {
-      this.remitting.set(null);
+  protected drawerLine(entry: HandoverQueueEntryView): string {
+    const where =
+      entry.pickupLabel ??
+      (entry.fulfillmentMethod === 'delivery' ? 'Livraison par coursier' : 'Sans point de retrait');
+    if (entry.state !== 'handed_over' || entry.handedOverAt === null) {
+      return where;
     }
+    const at = formatHour(clockOf(new Date(entry.handedOverAt)));
+    const how = entry.handedOverVia === 'manual' ? 'saisie sans code' : 'code scanné';
+    return `${where} · remise à ${at}, ${how}`;
+  }
+
+  /**
+   * **Ouvre le scanner**, avec ou sans commande attendue.
+   *
+   * 🔴 Depuis une ligne, il porte la référence : un code qui en désigne une
+   * autre est refusé au lieu d'être honoré. Un scan lit ce qu'on lui présente,
+   * pas ce qu'on a cliqué — sans ce contrôle, un bouton par ligne remettrait la
+   * commande du voisin un matin de coup de feu. Depuis la bande, il vaut
+   * `null` : on prend ce qui se présente, comme un comptoir.
+   */
+  protected scan(entry: HandoverQueueEntryView | null): void {
+    const data: ScanPanelData = {
+      expected:
+        entry === null ? null : { reference: entry.reference, customerLabel: entry.customerLabel },
+    };
+    const ref = this.panels.open<ScanPanelData, string>(ScanPanel, { data });
+    void ref.closed.then((result) => {
+      if (result === SCANNED) {
+        void this.load();
+      }
+    });
+  }
+
+  /**
+   * **Renvoie au client le courriel de retrait.**
+   *
+   * Le geste du comptoir quand personne n'est venu : le message dit « votre
+   * commande vous attend » et reporte le QR. Le serveur REFUSE sur une commande
+   * que le fournil n'a pas colisée — un rappel qui ferait venir quelqu'un
+   * devant un comptoir vide est pire que pas de rappel.
+   */
+  protected async remind(entry: HandoverQueueEntryView): Promise<void> {
+    this.reminding.set(entry.orderId);
+    try {
+      await this.orders.remindHandover(entry.orderId);
+      this.reminded.update((sent) => new Set([...sent, entry.orderId]));
+      this.notify.success(`Rappel envoyé pour ${entry.reference}.`);
+    } catch (caught) {
+      this.notify.error(caught, "Le rappel n'a pas pu être envoyé.");
+    } finally {
+      this.reminding.set(null);
+    }
+  }
+
+  /** Referme le rail. Il reste à l'écran, vide — rien ne disparaît. */
+  protected clearSelection(): void {
+    this.selectedId.set(null);
   }
 
   /** Ouvre la ligne dans le rail. Rien ne s'ouvre ni ne se ferme : il est là. */

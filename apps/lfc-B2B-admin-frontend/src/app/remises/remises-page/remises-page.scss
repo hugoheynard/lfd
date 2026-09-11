@@ -195,3 +195,11 @@
   --fold-aside-layout-pad: 0;
   --fold-aside-layout-pad-sm: 0;
 }
+
+/* Le tiroir d'une ligne ordinaire : une phrase, pas un encadré. L'alerte a son
+   ton ; ce qui ne presse pas ne doit pas lui ressembler. */
+.rm-drawer {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

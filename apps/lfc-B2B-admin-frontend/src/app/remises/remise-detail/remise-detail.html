@@ -11,29 +11,23 @@
 -->
 <section class="rd-sheet" foldSurface="chrome">
   @if (entry(); as row) {
-    <!-- L'identité, en tête et en grand : le numéro est ce qu'on épelle au
-         téléphone, et la ligne sous lui dit quand la commande a été passée,
-         comment elle s'achemine et où — les faits qui tranchent « est-ce bien
-         celle-là ». -->
+    <!-- L'identité, en tête et en grand. Le sur-titre dit OÙ et QUAND : ce sont
+         les deux faits qui tranchent « est-ce bien celle-là » avant même de
+         lire le numéro. -->
     <header class="rd-identity">
-      <p class="rd-eyebrow">{{ row.customerLabel }}</p>
-      <div class="rd-headline">
-        <p class="rd-reference">{{ row.reference }}</p>
-        <fold-badge [variant]="stateTone()" [content]="stateText()" />
+      <div class="rd-top">
+        <p class="rd-eyebrow">{{ contextLine() }}</p>
+        <button
+          foldButton
+          emphasis="outline"
+          icon="x"
+          aria-label="Refermer le détail"
+          (click)="clear()"
+        ></button>
       </div>
-      <p class="rd-meta">
-        <span>Passée le {{ placedAt() }}</span>
-        @if (window(); as slot) {
-          <span>{{ methodLabel() }} {{ slot }}</span>
-        } @else {
-          <!-- 🔴 Aucune heure inventée : sans tranche demandée on le dit,
-               plutôt que d'afficher l'ouverture du point. -->
-          <span>{{ methodLabel() }}, aucune tranche demandée</span>
-        }
-        @if (row.pickupLabel; as point) {
-          <span>{{ point }}</span>
-        }
-      </p>
+      <p class="rd-customer">{{ row.customerLabel }}</p>
+      <p class="rd-reference">{{ row.reference }}</p>
+      <p class="rd-meta">Commandée le {{ placedAt() }}</p>
     </header>
 
     <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne
@@ -73,6 +67,8 @@
             subtitle="Cette commande ne porte aucune ligne de marchandise."
           />
         } @else {
+          <!-- Le sac dans sa propre carte : c'est la seule chose qu'on lit en
+               tendant les mains, et elle doit se détacher du reste du rail. -->
           <section class="rd-bag">
             <header class="rd-bag-head">
               <h3 class="rd-bag-title">Ce qu'on tend</h3>
@@ -82,7 +78,7 @@
             </header>
 
             <ul class="rd-lines">
-              @for (line of lines(); track line.sku) {
+              @for (line of shownLines(); track line.sku) {
                 <li class="rd-line">
                   <span class="rd-qty">{{ line.quantity }}</span>
                   <span class="rd-name">{{ line.productName }}</span>
@@ -90,6 +86,16 @@
                 </li>
               }
             </ul>
+
+            <!-- 🔴 Le reste est COMPTÉ, pas caché. Une liste tronquée en
+                 silence fait tendre un sac incomplet ; celle-ci dit combien de
+                 références et combien de pièces manquent à l'écran. -->
+            @if (hiddenLines(); as rest) {
+              <button foldButton emphasis="outline" class="rd-more" (click)="showAll()">
+                + {{ rest.references }} référence{{ rest.references > 1 ? 's' : '' }} ·
+                {{ rest.units }} pièce{{ rest.units > 1 ? 's' : '' }}
+              </button>
+            }
           </section>
         }
       }
@@ -102,18 +108,20 @@
            le colis « pour les cas difficiles » — et un coursier scanne alors
            son propre carton. -->
       @if (remittable()) {
-        <button foldButton icon="check" [loading]="remitting()" (click)="remit()">
+        <button foldButton class="rd-cta" icon="check" [loading]="remitting()" (click)="remit()">
           Remettre sans code
         </button>
       }
-      <button foldButton emphasis="outline" icon="download" [loading]="busy()" (click)="download()">
-        Voir le bon
-      </button>
 
-      <!-- Ce qu'on ne fait PAS ici, dit là où quelqu'un pourrait le chercher.
-           La file ne porte aucun montant, par construction : un total affiché
-           au comptoir se lirait comme une somme à encaisser. -->
-      <p class="rd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</p>
+      <div class="rd-foot">
+        <!-- Ce qu'on ne fait PAS ici, dit là où quelqu'un pourrait le chercher.
+             La file ne porte aucun montant, par construction : un total affiché
+             au comptoir se lirait comme une somme à encaisser. -->
+        <span class="rd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</span>
+        <button foldButton emphasis="outline" [loading]="busy()" (click)="download()">
+          Voir le bon
+        </button>
+      </div>
     </footer>
   } @else {
     <!-- Le rail existe même vide, et c'est le sujet : sa place est réservée, la

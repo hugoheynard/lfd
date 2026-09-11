@@ -162,14 +162,13 @@ describe('RemiseDetail', () => {
     const fixture = await render(entry({ window: null }));
 
     expect(text(fixture)).toContain('aucune tranche demandée');
-    expect(text(fixture)).not.toContain('h 00');
+    expect(text(fixture)).not.toContain('h\u00a000');
   });
 
   it('🔴 une annulation est annoncée, et rien ne peut être remis', async () => {
     const fixture = await render(entry({ state: 'cancelled' }));
 
     expect(text(fixture)).toContain('Cette commande est annulée');
-    expect(text(fixture)).toContain('Annulée');
     expect(buttonSaying(fixture, 'Remettre')).toBeNull();
   });
 

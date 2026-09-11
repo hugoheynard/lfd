@@ -24,26 +24,6 @@
   min-height: 20rem;
 }
 
-/* La référence et son état sur la même ligne : l'un identifie, l'autre dit
-   quoi en faire, et on les lit ensemble ou pas du tout. */
-.rd-headline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-2xs) var(--fold-space-sm);
-}
-
-/* Les deux gestes du rail, puis la mise au point sur ce qu'il ne fait pas.
-   `column` et non une barre : la colonne est étroite, deux boutons côte à côte
-   y seraient tronqués avant d'être lus. */
-.rd-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-2xs);
-  margin-top: auto;
-}
-
 /* ── L'IDENTITÉ ─────────────────────────────────────────────────────────────
    Le numéro en grand, parce que c'est ce qu'on épelle au téléphone et ce qu'on
    compare à l'écran d'un client. Le reste l'entoure sans lui disputer la place. */
@@ -51,6 +31,15 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-3xs);
+}
+
+/* Le sur-titre et la fermeture sur la même ligne : le bouton n'a pas de place à
+   lui, il occupe celle que le texte laisse. */
+.rd-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
 }
 
 .rd-eyebrow {
@@ -62,10 +51,16 @@
   text-transform: uppercase;
 }
 
+.rd-customer {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
 .rd-reference {
   margin: 0;
   font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-xl);
+  font-size: var(--fold-text-2xl);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-tight);
   line-height: var(--fold-leading-tight);
@@ -75,32 +70,26 @@
   white-space: nowrap;
 }
 
-/* Les trois faits qui tranchent « est-ce bien celle-là » : quand, comment, où.
-   Séparés par des points médians, portés par la feuille — un séparateur écrit
-   dans le gabarit se retrouverait lu à voix haute par un lecteur d'écran. */
 .rd-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-2xs) var(--fold-space-sm);
-  margin: var(--fold-space-2xs) 0 0;
+  margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
 
-.rd-meta span + span::before {
-  content: '·';
-  margin-right: var(--fold-space-sm);
-}
-
 /* ── LE SAC ─────────────────────────────────────────────────────────────────
-   Le titre à gauche, le total à droite : c'est le nombre qu'on recompte à voix
-   haute, et il doit se lire sans parcourir la liste. */
+   Dans sa propre carte, un cran plus sombre que le rail : c'est la seule chose
+   qu'on lit en tendant les mains, et elle doit se détacher du reste. */
 .rd-bag {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-2xs);
+  padding: var(--fold-space-sm);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-bg-sunken);
 }
 
+/* Le titre à gauche, le total à droite : c'est le nombre qu'on recompte à voix
+   haute, et il doit se lire sans parcourir la liste. */
 .rd-bag-head {
   display: flex;
   align-items: baseline;
@@ -171,9 +160,33 @@
   white-space: nowrap;
 }
 
-/* Ce que l'écran ne fait PAS, dit là où quelqu'un pourrait le chercher. */
+.rd-more {
+  align-self: flex-start;
+}
+
+/* ── LES GESTES ─────────────────────────────────────────────────────────────
+   La remise prend toute la largeur : c'est LE geste de cet écran, et on le
+   cherche en tenant un sac d'une main. Le reste est en dessous, en petit. */
+.rd-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin-top: auto;
+}
+
+.rd-cta {
+  width: 100%;
+}
+
+.rd-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-2xs) var(--fold-space-sm);
+}
+
 .rd-note {
-  margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
 }

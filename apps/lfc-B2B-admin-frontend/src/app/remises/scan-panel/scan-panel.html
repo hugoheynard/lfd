@@ -1,0 +1,96 @@
+<fold-panel-header
+  title="Scanner un code"
+  [subtitle]="expected()?.customerLabel ?? 'Le code du client, tel qu’il l’a reçu par courriel'"
+/>
+
+<fold-panel-body>
+  <!-- 🔴 Ouvert depuis une ligne, le scanner sait ce qu'on croit avoir en face.
+       Le dire ici n'est pas décoratif : c'est l'annonce du contrôle qui suit. -->
+  @if (expected(); as target) {
+    <fold-callout appearance="inset" variant="info" icon="info">
+      Le code doit désigner <strong>{{ target.reference }}</strong
+      >. Un autre sera refusé plutôt que remis.
+    </fold-callout>
+  }
+
+  @switch (stage()) {
+    @case ('unsupported') {
+      <fold-empty-state
+        icon="package"
+        title="Ce navigateur ne sait pas lire un code"
+        subtitle="La lecture de QR n’existe pas partout. Le numéro de commande, lui, marche toujours."
+      />
+    }
+    @case ('denied') {
+      <fold-empty-state
+        icon="package"
+        title="Pas d’accès à la caméra"
+        subtitle="L’autorisation a été refusée, ou aucune caméra n’est disponible sur ce poste."
+      />
+    }
+    @case ('found') {
+      @if (mismatch(); as other) {
+        <!-- 🔴 Le refus qui justifie le bouton par ligne. Les DEUX numéros sont
+             nommés : sans eux, l'équipe ne sait pas si elle s'est trompée de
+             ligne ou de client. -->
+        <fold-callout appearance="inset" variant="alert" icon="info">
+          <strong>Ce code désigne {{ other }}</strong
+          >, pas {{ expected()?.reference }}. Rien n’a été remis.
+        </fold-callout>
+      } @else if (subject(); as found) {
+        <fold-callout appearance="inset" variant="success" icon="check">
+          <strong>{{ found.customerLabel }}</strong> — {{ found.orderNumber }},
+          {{ found.totalUnits }} pièce{{ found.totalUnits > 1 ? 's' : '' }}.
+        </fold-callout>
+        @if (found.blockedReason; as blocked) {
+          <fold-callout appearance="inset" variant="alert" icon="info">
+            {{ blocked }}
+          </fold-callout>
+        }
+      }
+    }
+    @default {
+      <!-- La caméra vit dans TOUS les états où elle peut servir : l'attacher
+           seulement à `scanning` la détruirait entre deux rendus, et le flux
+           serait redemandé — donc une seconde invite d'autorisation. -->
+      <div class="sp-stage">
+        <video #preview class="sp-preview" muted playsinline></video>
+        @if (stage() === 'starting') {
+          <fold-loading message="Ouverture de la caméra…" />
+        } @else {
+          <p class="sp-hint">Présentez le code devant la caméra.</p>
+        }
+      </div>
+    }
+  }
+
+  <!-- Le chemin de secours est TOUJOURS là, pas seulement quand la caméra
+       échoue : un téléphone déchargé se présente aussi devant un poste qui
+       scanne très bien. -->
+  <div class="sp-fallback">
+    <fold-input
+      label="Numéro de commande"
+      placeholder="ORD-…"
+      [value]="typed()"
+      (valueChange)="typed.set($event)"
+    />
+    <p class="sp-note">
+      Saisir le numéro grave la remise <strong>sans code</strong> : une remise saisie n’a eu qu’une
+      partie, et l’attestation le dit.
+    </p>
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="between">
+  <button foldButton emphasis="outline" (click)="close()">Fermer</button>
+
+  @if (subject() !== null && mismatch() === null) {
+    <button foldButton icon="check" [loading]="busy()" (click)="confirm()">
+      Remettre la commande
+    </button>
+  } @else {
+    <button foldButton [disabled]="typed().trim() === ''" [loading]="busy()" (click)="remitTyped()">
+      Remettre sans code
+    </button>
+  }
+</fold-panel-footer>

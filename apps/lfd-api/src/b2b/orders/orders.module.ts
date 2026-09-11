@@ -12,6 +12,8 @@ import { MarkOrderFulfilledHandler } from "./application/commands/mark-order-ful
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
+import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
+import { SendHandoverReminderHandler } from "./application/commands/send-handover-reminder.handler.js";
 import { AppConfig } from "../../platform/config/app-config.js";
 import { OrderMailOrigins } from "./domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "./domain/ports/order-recipient.reader.js";
@@ -147,6 +149,10 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     GetPackingHandler,
     SendOrderPlacedMail,
     SendOrderReadyMail,
+    // Le composeur du courriel de retrait, partagé par le colisage (qui
+    // l'annonce) et par le rappel du comptoir (qui le renvoie).
+    OrderReadyMail,
+    SendHandoverReminderHandler,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
     {
       // Les deux origines, extraites de la configuration à la racine de

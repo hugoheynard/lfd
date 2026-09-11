@@ -11,6 +11,7 @@ import {
   type OrderRecipient,
 } from "../../../domain/ports/order-recipient.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
 import { SendOrderReadyMail } from "../send-order-ready-mail.handler.js";
 
 /**
@@ -211,15 +212,22 @@ function handler(options: {
   admin?: string | null;
 }): { readonly run: SendOrderReadyMail; readonly mailer: RecordingMailer } {
   const mailer = new RecordingMailer();
+  // 🔴 L'abonné est monté SUR le composeur réel, pas sur un doublé de celui-ci.
+  // Ce que ces cas tiennent — à qui on écrit, ce que le message emporte, la clé
+  // — se joue dans `OrderReadyMail` depuis que le rappel du comptoir partage le
+  // même gabarit ; les vérifier à travers un double du composeur ne prouverait
+  // plus que l'abonné appelle une fonction.
   const run = new SendOrderReadyMail(
-    readerOf(options.order === undefined ? view() : options.order),
-    recipientOf(options.email === undefined ? "camille@halles.test" : options.email),
-    new FixedOrigins(
-      options.client === undefined ? "https://app.lfc.test" : options.client,
-      options.admin === undefined ? "https://admin.lfc.test" : options.admin,
+    new OrderReadyMail(
+      readerOf(options.order === undefined ? view() : options.order),
+      recipientOf(options.email === undefined ? "camille@halles.test" : options.email),
+      new FixedOrigins(
+        options.client === undefined ? "https://app.lfc.test" : options.client,
+        options.admin === undefined ? "https://admin.lfc.test" : options.admin,
+      ),
+      mailer,
     ),
     work,
-    mailer,
   );
   return { run, mailer };
 }
