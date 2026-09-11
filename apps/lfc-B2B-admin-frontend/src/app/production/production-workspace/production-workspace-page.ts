@@ -27,6 +27,24 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet],
   template: '<router-outlet />',
+  /**
+   * 🔴 **Une coquille qui ne dessine rien doit quand même laisser passer la
+   * HAUTEUR.** fold chaîne des colonnes flex depuis la boîte de défilement de
+   * l'application jusqu'à `fold-page-layout` ; un hôte resté en `display: block`
+   * au milieu rompt la chaîne, et une page qui voulait descendre jusqu'au bas de
+   * la fenêtre s'arrête alors à la hauteur de son contenu.
+   *
+   * Le défaut ne se voit sur AUCUNE des deux vues prise isolément — il naît de
+   * ce composant-ci, qui n'existait pas quand elles ont été écrites.
+   */
+  styles: `
+    :host {
+      display: flex;
+      flex-direction: column;
+      flex: 1 0 auto;
+      min-height: 0;
+    }
+  `,
 })
 export class ProductionWorkspacePage {
   constructor() {

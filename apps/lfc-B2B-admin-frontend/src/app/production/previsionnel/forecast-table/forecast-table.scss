@@ -1,0 +1,346 @@
+/* ── LA TABLE ───────────────────────────────────────────────────────────────
+   Sept colonnes ÉGALES (`minmax(0, 1fr)`), et une colonne de produit fixe.
+
+   L'hôte ne pose AUCUNE marge : ce qui l'entoure appartient à la page qui
+   l'emploie. Il se contente de prendre la hauteur qu'on lui laisse, et de la
+   rendre défilante — `min-height: 0` est ce qui l'autorise à devenir plus petit
+   que son contenu, sans quoi c'est la page qui défilerait, et la tête comme le
+   pied s'en iraient avec elle. */
+:host {
+  /* L'épaisseur de la barre d'état, écrite UNE fois : la tête et le pied la
+     portent tous les deux, et deux valeurs qui dérivent d'un pixel se voient
+     comme un défaut d'alignement. */
+  --pv-bar: 3px;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pv-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--fold-color-bg-page);
+}
+
+/* Le gabarit de colonnes vient de la grille et n'est écrit qu'une fois : toutes
+   les lignes le lisent, donc aucune ne peut diverger.
+
+   `flex: 0 0 auto` : dans une colonne flex qui défile, une ligne plus large que
+   la boîte se ferait sinon comprimer au lieu de la faire défiler — et sept
+   colonnes écrasées ne se lisent plus. */
+.pv-row {
+  display: grid;
+  grid-template-columns: var(--pv-columns);
+  align-items: center;
+  min-width: 60rem;
+  flex: 0 0 auto;
+}
+
+/* ── CE QUI TIENT LA TABLE EN BAS ───────────────────────────────────────────
+   Deux gestes, et il faut les deux :
+
+   - le **ressort** pousse le pied au bas de la fenêtre quand la grille est
+     courte. Sans lui, trois rayons laisseraient un aplat vide sous le pied ;
+   - le **collage** le retient quand elle est longue. Sans lui, le total partirait
+     hors de l'écran au premier défilement, et c'est le chiffre qu'on vient
+     chercher.
+
+   Aucun des deux ne remplace l'autre : ils couvrent les deux cas opposés. */
+.pv-spring {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pv-row--head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.pv-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+.pv-row--line {
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+/* ── LES TROIS LIGNES SOMBRES ───────────────────────────────────────────────
+   La tête, les rayons, le pied. `foldSurface="chrome"` bascule la POLARITÉ du
+   sous-arbre — il ne peint pas le fond, c'est à l'élément qui possède la
+   surface de le poser. Sans ces deux gestes ensemble, l'encre claire s'écrirait
+   sur le papier.
+
+   Un SEUL niveau de zébrage : ces lignes-là portent le sombre, les lignes
+   produit restent sur le papier. Deux systèmes de rayure se combattent.
+
+   **Trois fonds, et ils disent une hiérarchie**, celle-là même que les rails de
+   l'app emploient : le pied prend le `primary`, le plus profond, parce que
+   c'est le verdict ; les rayons prennent le `secondary`, un cran au-dessus,
+   parce qu'ils regroupent sans conclure ; la tête garde le fond du bandeau,
+   qu'elle prolonge vers le bas. Emprunter les fonds des rails plutôt que d'en
+   inventer trois est ce qui fait que la table reste juste si le thème change. */
+.pv-row--head {
+  background: var(--fold-color-bg-header);
+}
+
+.pv-row--rayon {
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+.pv-row--total,
+.pv-row--orders {
+  background: var(--fold-color-bg-rail-primary);
+}
+
+.pv-row--rayon {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+/* Le pied est une seule pièce en deux lignes : un filet ténu les sépare, jamais
+   un blanc — ce sont deux lectures du même bord de table. */
+.pv-row--total {
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.pv-row--orders {
+  border-top: 1px solid var(--fold-color-glass-border);
+}
+
+.pv-cell {
+  padding: var(--fold-space-sm) var(--fold-space-xs);
+  text-align: center;
+  min-width: 0;
+}
+
+.pv-cell--label {
+  padding-left: var(--fold-space-md);
+  text-align: left;
+}
+
+.pv-col-label {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* ── L'EN-TÊTE DE COLONNE ───────────────────────────────────────────────────
+   La distance d'abord (« J+2 »), la date ensuite, le total en dernier : c'est
+   l'ordre dans lequel la question se pose. */
+.pv-day {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  /* 🔴 **La barre de la légende, sous le chiffre.** C'est le même vocabulaire
+     que les trois clés du bandeau, et c'est ce qui les rend utiles : une
+     légende dont les couleurs n'apparaissent nulle part n'explique rien. Trois
+     états, trois couleurs — arrêtée, encore ouverte, le pic — et elles se
+     répètent sous le total du pied, en haut comme en bas de la colonne. */
+  border-bottom: var(--pv-bar) solid var(--fold-color-primary);
+}
+
+/* 🔴 **Aucun filet vertical pour le jour courant.** Il y en a eu un ; il est
+   parti. Une colonne porte déjà deux repères horizontaux — la barre d'état en
+   tête et la même au pied — et un trait vertical par-dessus faisait un
+   troisième système de marquage sur la même case. Le jour courant se dit en
+   toutes lettres dans son en-tête (« aujourd'hui ») : c'est plus clair qu'une
+   couleur, et ça ne consomme aucun des repères que la grille garde pour le
+   pic. */
+
+/* La SEULE colonne teintée. Le jour courant, lui, n'a qu'un filet — teinter les
+   deux rendrait la grille illisible, et c'est le pic qu'on vient chercher. */
+/* 🔴 **Les DEUX lignes du pied**, et toutes les lignes du corps. Un repère de
+   colonne qui s'arrête en route n'est pas un repère : l'œil descend la colonne
+   du pic, la perd sur la dernière ligne, et doit revenir en haut vérifier
+   laquelle il suivait. « Commandes » manquait à cette liste. */
+.pv-day.is-peak,
+.pv-qty.is-peak,
+.pv-rayon-sum.is-peak,
+.pv-foot-total.is-peak,
+.pv-foot-orders.is-peak {
+  background: var(--fold-color-warning-surface);
+}
+
+.pv-day-offset {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.pv-day.is-peak .pv-day-offset,
+.pv-day.is-peak .pv-day-total {
+  color: var(--fold-color-warning-text);
+}
+
+.pv-day-date {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+/* Une journée encore ouverte porte son chiffre en encre atténuée ET une barre
+   éteinte : il bougera. Le mot reste dans la légende — la couleur ne dit rien
+   toute seule. */
+.pv-day.is-open {
+  border-bottom-color: var(--fold-color-border);
+}
+
+.pv-day.is-open .pv-day-date,
+.pv-day.is-open .pv-day-total {
+  color: var(--fold-color-text-secondary);
+}
+
+/* Le pic l'emporte sur les deux autres états : c'est l'information qu'on vient
+   chercher, et une colonne ne porte qu'une couleur. */
+.pv-day.is-peak,
+.pv-foot-total.is-peak {
+  border-bottom-color: var(--fold-color-warning);
+}
+
+.pv-day-total {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+/* ── LE RAYON ───────────────────────────────────────────────────────────────
+   Sa ligne est un bouton : la replier est l'issue du débordement. */
+.pv-rayon-name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.pv-rayon-count {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+  color: var(--fold-color-text-muted);
+}
+
+.pv-rayon-sum {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+/* ── LE PIED ────────────────────────────────────────────────────────────────
+   Deux questions, deux poids typographiques. Les PIÈCES dominent — c'est le
+   chiffre du verdict ; les COMMANDES sont dessous, en petit, parce qu'elles
+   qualifient ce chiffre au lieu de le concurrencer. */
+.pv-foot-total {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tighter);
+  line-height: var(--fold-leading-none);
+  color: var(--fold-color-text);
+
+  /* La MÊME barre qu'en tête, au bas de la colonne. Sur une grille qu'on lit
+     par le bas — c'est là qu'est le total —, l'état de la journée doit être
+     lisible sans remonter. */
+  border-bottom: var(--pv-bar) solid var(--fold-color-primary);
+}
+
+.pv-foot-total.is-open {
+  border-bottom-color: var(--fold-color-border);
+}
+
+.pv-row--total .pv-cell,
+.pv-row--orders .pv-cell {
+  padding-block: var(--fold-space-xs);
+}
+
+.pv-foot-orders {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-secondary);
+}
+
+/* ── LA CELLULE ─────────────────────────────────────────────────────────────
+   La quantité DOMINE : on lit la grille par ses chiffres, le nom du produit
+   n'est là que pour dire de quoi il s'agit. */
+.pv-product {
+  display: block;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv-sku {
+  display: block;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}
+
+.pv-qty-value {
+  display: block;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tighter);
+  line-height: var(--fold-leading-none);
+  color: var(--fold-color-text);
+}
+
+/* La commande qui double une ligne : une mention DISCRÈTE sous le chiffre, et
+   pas un fond de plus. Un second fond entrerait en concurrence avec le pic, et
+   la grille perdrait sa seule couleur signifiante. */
+.pv-exceptional {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-warning-text);
+}
+
+/* ── DENSITÉ RÉDUITE ────────────────────────────────────────────────────────
+   Au-delà d'une vingtaine de références, la matrice déborde en hauteur et
+   l'écran perd sa raison d'être. La grille se resserre alors d'elle-même : le
+   repli des rayons reste le geste, ceci est le filet. */
+.pv-grid.is-dense .pv-cell {
+  padding: var(--fold-space-xs);
+}
+
+.pv-grid.is-dense .pv-qty-value {
+  font-size: var(--fold-text-lg);
+}
+
+.pv-grid.is-dense .pv-sku {
+  display: none;
+}

@@ -20,20 +20,11 @@ import {
 
 import { AdminCatalogService } from '../../commandes/catalog.service';
 import { ProductionService } from '../production.service';
+import { ForecastTable } from './forecast-table/forecast-table';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
 import { FORECAST_DAYS, forecastHeaders, isoDay, shiftDay, windowEnd } from './previsionnel-range';
 
 type LoadState = 'loading' | 'ready' | 'error';
-
-/**
- * Au-delà de ce nombre de références, la grille passe en **densité réduite**.
- *
- * La maquette tient à 22 lignes ; vers la quarantaine, la matrice déborde en
- * hauteur et l'écran perd sa raison d'être — on ne voit plus la période d'un
- * coup. Replier les rayons reste le geste principal ; ce seuil-ci est ce qui
- * agit **sans qu'on demande rien**, pour que le premier affichage tienne.
- */
-const DENSE_ABOVE = 24;
 
 /**
  * **Le prévisionnel** — la matrice `produits × jours` du fournil.
@@ -68,6 +59,7 @@ const DENSE_ABOVE = 24;
   selector: 'app-previsionnel-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ForecastTable,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -111,26 +103,12 @@ export class PrevisionnelPage {
     return view === null ? [] : forecastRayons(view, this.catalogue(), !this.shelvesLost());
   });
 
-  /** Les rayons repliés — l'issue du débordement, et un geste de l'équipe. */
-  private readonly folded = signal<ReadonlySet<string>>(new Set());
-
   protected readonly headers = computed(() => {
     const view = this.view();
     return view === null ? [] : forecastHeaders(view.days, view.peakDate, this.today);
   });
 
   protected readonly pieces = computed(() => totalOfRayons(this.rayons()));
-  protected readonly references = computed(() =>
-    this.rayons().reduce((sum, rayon) => sum + rayon.lines.length, 0),
-  );
-
-  /** La grille se resserre d'elle-même quand elle devient trop haute. */
-  protected readonly dense = computed(() => this.references() > DENSE_ABOVE);
-
-  /** `230px` pour le produit, puis des colonnes strictement égales. */
-  protected readonly columns = computed(
-    () => `230px repeat(${String(this.headers().length)}, minmax(0, 1fr))`,
-  );
 
   /** « du 3 au 9 septembre » — la plage, dite comme on la dit. */
   protected readonly windowLabel = computed(() => {
@@ -146,20 +124,6 @@ export class PrevisionnelPage {
     effect(() => {
       void this.load(this.from());
     });
-  }
-
-  protected isFolded(label: string): boolean {
-    return this.folded().has(label);
-  }
-
-  /** Replie ou déplie un rayon. Le geste est par rayon, pas global : on garde
-   *  celui qu'on travaille et on range les autres. */
-  protected toggleRayon(label: string): void {
-    const folded = new Set(this.folded());
-    if (!folded.delete(label)) {
-      folded.add(label);
-    }
-    this.folded.set(folded);
   }
 
   /** Une fenêtre en avant ou en arrière — sept jours, pas une semaine calendaire. */
