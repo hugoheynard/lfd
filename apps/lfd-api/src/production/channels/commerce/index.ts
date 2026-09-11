@@ -17,6 +17,12 @@
  */
 export { DayOrdersReader, type ProducibleLine, type ProducibleOrder } from "./day-orders.reader.js";
 export { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+export { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
+export {
+  ExpectedProductionReader,
+  type ExpectedDayProduction,
+  type ExpectedItem,
+} from "./expected-production.reader.js";
 export { ProductionDayClosedEvent } from "./production-day-closed.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
 export { OrderPackedEvent } from "./order-packed.event.js";

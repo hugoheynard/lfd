@@ -3,14 +3,17 @@ import { Module } from "@nestjs/common";
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
 import { PackOrderHandler } from "./application/commands/pack-order.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
+import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
 import {
   GetAtelierSheetPdfHandler,
   GetProductionCountPdfHandler,
 } from "./application/queries/get-production-paper.handler.js";
 import { ProductionPapers } from "./application/services/production-paper.service.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
+import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
 import { PrismaProductionDayRepository } from "./infrastructure/prisma-production-day.repository.js";
+import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
 
 /**
  * **Le fournil.**
@@ -32,10 +35,14 @@ import { PrismaProductionDayRepository } from "./infrastructure/prisma-productio
     CloseProductionDayHandler,
     PackOrderHandler,
     GetProductionDayStatusHandler,
+    GetProductionForecastHandler,
     GetProductionCountPdfHandler,
     GetAtelierSheetPdfHandler,
     ProductionPapers,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
+    // La lecture du plan arrêté est un port À PART du dépôt d'écriture, et son
+    // adaptateur vit chez la production : c'est SON schéma qu'il interroge.
+    { provide: ProductionPlanReader, useClass: PrismaProductionPlanReader },
   ],
 })
 export class ProductionModule {}

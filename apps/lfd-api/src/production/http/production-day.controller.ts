@@ -1,14 +1,18 @@
 import {
   type ProductionDayStatus,
+  type ProductionForecastQuery,
+  type ProductionForecastView,
   type ProductionPackingAck,
   type ProductionPlanClosure,
   productionBatchQuerySchema,
+  productionForecastQuerySchema,
 } from "@lfd/contracts";
 import {
   Controller,
   Get,
   Param,
   Post,
+  Query,
   Req,
   Res,
   StreamableFile,
@@ -19,10 +23,12 @@ import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
 import { PackOrderCommand } from "../application/commands/pack-order.command.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
+import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
 import {
   GetAtelierSheetPdfQuery,
   GetProductionCountPdfQuery,
@@ -154,6 +160,30 @@ export class ProductionDayController {
       contentDispositionAttachment(sanitiseFileName(paper.fileName, "document.pdf")),
     );
     return new StreamableFile(paper.bytes);
+  }
+
+  /**
+   * **Le prévisionnel** — la matrice `produits × jours` d'une plage.
+   *
+   * Ce n'est pas le lot d'une journée servi sept fois : la question n'est pas
+   * « que fabrique-t-on », mais « quand est-ce que ça tombe ». Une seule lecture
+   * donc, et deux sources arbitrées côté domaine — le compte à produire arrêté
+   * quand la journée est close, la demande du commerce sinon.
+   *
+   * Les bornes viennent de l'URL pour qu'un lien soit partageable : un fournil
+   * qui dit « regarde la semaine du 3 » envoie une adresse, pas un mode d'emploi.
+   *
+   * ⚠️ Le chemin est en anglais comme ses voisins (`batch`, `packing`,
+   * `status`) ; l'écran, lui, s'ouvre sur `/production/previsionnel`. Les deux
+   * surfaces ont chacune leur langue, et c'est déjà le partage du dépôt.
+   */
+  @Get("forecast")
+  async forecast(
+    @Query(new ZodQuery(productionForecastQuerySchema)) query: ProductionForecastQuery,
+  ): Promise<ProductionForecastView> {
+    return this.queries.execute<GetProductionForecastQuery, ProductionForecastView>(
+      new GetProductionForecastQuery(query.from, query.to),
+    );
   }
 
   @Get("batch/:date/status")

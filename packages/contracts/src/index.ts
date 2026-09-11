@@ -393,6 +393,13 @@ export {
   weekdayOf,
 } from "./paris-time.js";
 export type { LocalMoment } from "./paris-time.js";
+export { productionForecastQuerySchema } from "./production-forecast.js";
+export type {
+  ProductionForecastDay,
+  ProductionForecastLine,
+  ProductionForecastQuery,
+  ProductionForecastView,
+} from "./production-forecast.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
 export type {
   ProductionBatchQuery,

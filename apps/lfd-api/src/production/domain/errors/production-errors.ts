@@ -98,3 +98,18 @@ export class InvalidServiceDayError extends DomainError {
     );
   }
 }
+
+/**
+ * La plage demandée n'en est pas une.
+ *
+ * Deux cas, un seul refus : la fin précède le début, ou la plage dépasse ce
+ * qu'un écran peut montrer d'un coup. Le second n'est pas une garde de
+ * performance — c'est la raison d'être de l'écran : une matrice de quatre-vingts
+ * colonnes ne répond plus à « quand est-ce que ça me tombe dessus », elle
+ * demande de faire défiler pour le savoir.
+ */
+export class InvalidServiceRangeError extends DomainError {
+  constructor(reason: string) {
+    super("production.service_range.invalid", `Plage de production invalide : ${reason}.`);
+  }
+}

@@ -2,9 +2,11 @@ import { Global, Module } from "@nestjs/common";
 
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PrismaDayOrdersReader } from "../b2b/orders/infrastructure/prisma-day-orders.reader.js";
+import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
 import {
   DayOrdersReader,
+  ExpectedProductionReader,
   PendingCommerceOrdersReader,
 } from "../production/channels/commerce/index.js";
 
@@ -42,7 +44,12 @@ import {
     // demande « qu'est-ce que le commerce n'a pas basculé ? », le commerce seul
     // sait y répondre.
     { provide: PendingCommerceOrdersReader, useClass: PrismaPendingOrdersReader },
+    // Le prévisionnel demande des PIÈCES par produit et par jour, là où la
+    // clôture demande des commandes : deux questions, deux ports, reliés au
+    // même endroit. Les confondre aurait fait porter à la clôture le poids
+    // d'une plage, et au planning la connaissance d'un client.
+    { provide: ExpectedProductionReader, useClass: PrismaExpectedProductionReader },
   ],
-  exports: [DayOrdersReader, PendingCommerceOrdersReader],
+  exports: [DayOrdersReader, ExpectedProductionReader, PendingCommerceOrdersReader],
 })
 export class ProductionFeedModule {}
