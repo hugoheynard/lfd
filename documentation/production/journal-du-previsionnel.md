@@ -231,6 +231,36 @@ le bac à sable avec les jetons fold et des données plausibles, pas par l'écra
 réel — qui demande un jeton staff et l'API. Ce que cet aperçu ne prouve pas est
 en fin de document.
 
+## Tranche 8 bis — « rien ne devrait être hors catalogue », et il a raison
+
+La question posée après coup : _si la seed catalogue est bien faite, rien ne
+devrait tomber hors catalogue._ Vérifié plutôt que supposé, et c'est exact :
+
+- le catalogue du back-office (`/admin/catalog`) rend les articles **vendables
+  et par défaut**, sous le **SKU du PRODUIT** (`VIE-001`) — celui-là même que
+  portent les lignes de commande. La boutique n'a jamais vendu la déclinaison du
+  PIM (`VIE-001-1`) ;
+- le groupe « Hors catalogue » n'est **créé que s'il se remplit** : un groupe
+  vide n'est jamais rendu. En exploitation normale, il n'apparaît pas ;
+- il ne se remplit qu'avec un article **retiré depuis la commande**
+  (`withdrawnAt`, cf. `sellable-filter.ts`) — ce qui est exactement son rôle :
+  un produit retiré ne doit pas disparaître des totaux du fournil.
+
+🔴 **Mais la question a découvert un trou**, et il n'était pas dans la seed.
+L'écran lisait le catalogue en `.catch(() => [])` — recopié de l'écran du jour,
+qui fait pareil. Une lecture de catalogue **en échec** rangeait donc TOUT sous
+« Hors catalogue » : la grille affirmait que le fournil fabrique des produits
+retirés de la vente, et rien à l'écran ne disait que la phrase venait d'une
+panne. Un mensonge plausible est le pire des deux.
+
+Le `null` distingue désormais l'absence de la panne : un groupe « Rayon
+inconnu » et un `fold-callout` qui le dit — un échec partiel laisse le contenu à
+l'écran et **se déclare**.
+
+⚠️ **L'écran de la JOURNÉE porte encore ce défaut** (`production-page.ts`,
+`.catch(() => [])`). Hors périmètre de ce chantier, noté ici pour ne pas le
+perdre.
+
 ## Tranche 9 — le mode mural, reporté
 
 Inchangé par rapport à la spec §6, et pour sa raison : **sept colonnes de jours
