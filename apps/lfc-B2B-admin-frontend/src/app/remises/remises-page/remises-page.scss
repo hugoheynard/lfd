@@ -198,3 +198,16 @@
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
+
+/* ── LA NOTE DE RETARD, PLEINE LARGEUR ──────────────────────────────────────
+   Par défaut, fold retire la note des bords de la rangée : un encadré posé
+   DANS la ligne, ce qui est juste quand il commente un détail. Ici il annonce
+   un retard et porte le geste qui y répond — il tient la largeur de la ligne
+   entière, et les deux se lisent comme un seul bloc plutôt que comme une
+   remarque glissée dessous.
+
+   Le jeton est celui que fold publie pour ça ; aucune règle ne vise l'intérieur
+   du composant. */
+.rm-table {
+  --fold-data-table-note-padding: 0;
+}
