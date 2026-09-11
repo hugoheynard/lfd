@@ -82,6 +82,21 @@ describe('forecastRayons', () => {
     expect(totalOfRayons(rayons)).toBe(13);
   });
 
+  /**
+   * 🔴 Une lecture de catalogue en échec rangeait TOUT sous « Hors catalogue »,
+   * c'est-à-dire affirmait que le fournil fabrique des produits retirés de la
+   * vente. Un mensonge plausible est le pire : rien à l'écran ne disait qu'il
+   * venait d'une panne.
+   */
+  it("ne dit pas « hors catalogue » quand le catalogue n'a pas pu être lu", () => {
+    const rayons = forecastRayons(
+      view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 0] }]),
+      [],
+      false,
+    );
+    expect(rayons.map((rayon) => rayon.label)).toEqual(['Rayon inconnu']);
+  });
+
   it('donne à chaque ligne autant de cases que de jours, quoi que dise la ligne', () => {
     const rayons = forecastRayons(
       view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 0] }]),

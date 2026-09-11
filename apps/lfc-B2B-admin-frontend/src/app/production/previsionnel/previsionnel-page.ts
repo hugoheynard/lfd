@@ -10,6 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type { CatalogItemView, ProductionForecastView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
@@ -68,6 +69,7 @@ const DENSE_ABOVE = 24;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
@@ -94,9 +96,19 @@ export class PrevisionnelPage {
   private readonly view = signal<ProductionForecastView | null>(null);
   private readonly catalogue = signal<readonly CatalogItemView[]>([]);
 
+  /**
+   * 🔴 La lecture du catalogue a-t-elle échoué ?
+   *
+   * Elle ne fait pas tomber l'écran — le prévisionnel reste juste sans elle —
+   * mais elle ne peut pas passer en silence : sans catalogue, chaque SKU tombe
+   * dans le groupe des produits absents, et la grille affirmerait que le
+   * fournil fabrique des articles retirés de la vente.
+   */
+  protected readonly shelvesLost = signal(false);
+
   protected readonly rayons = computed(() => {
     const view = this.view();
-    return view === null ? [] : forecastRayons(view, this.catalogue());
+    return view === null ? [] : forecastRayons(view, this.catalogue(), !this.shelvesLost());
   });
 
   /** Les rayons repliés — l'issue du débordement, et un geste de l'équipe. */
@@ -184,14 +196,17 @@ export class PrevisionnelPage {
     this.state.set('loading');
     try {
       // Le catalogue part avec la matrice : sans lui, la grille n'a pas de
-      // rayons. Une lecture ratée du catalogue ne doit pas faire disparaître le
-      // prévisionnel — les produits tombent alors « hors catalogue ».
+      // rayons. Une lecture ratée ne doit pas faire disparaître le prévisionnel
+      // — mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
+      // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
+      // deux est une panne.
       const [view, catalogue] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
-        this.catalog.list().catch(() => []),
+        this.catalog.list().catch(() => null),
       ]);
       this.view.set(view);
-      this.catalogue.set(catalogue);
+      this.shelvesLost.set(catalogue === null);
+      this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
     } catch {
       this.state.set('error');

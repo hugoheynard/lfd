@@ -27,8 +27,27 @@ import {
  * — il tombe dans un groupe à part, en fin de liste.
  */
 
-/** Le groupe des produits que le catalogue ne connaît plus — jamais silencieux. */
+/**
+ * Le groupe des produits que le catalogue ne connaît plus — jamais silencieux.
+ *
+ * ⚠️ En exploitation normale, **il n'apparaît pas** : un SKU vendu aujourd'hui
+ * est dans le catalogue vendable, et c'est le même identifiant des deux côtés
+ * (`VIE-001`, le SKU du PRODUIT, pas la déclinaison du PIM). Il ne se remplit
+ * qu'avec un article **retiré** depuis la commande — `withdrawnAt` le sort des
+ * lectures vendables sans effacer ce qui a été vendu. Un groupe vide n'est
+ * jamais rendu.
+ */
 const OFF_CATALOG_LABEL = 'Hors catalogue';
+
+/**
+ * Le même groupe quand le catalogue n'a **pas pu être lu**.
+ *
+ * 🔴 Sans cette distinction, une lecture de catalogue en échec range TOUT sous
+ * « Hors catalogue » — et l'écran affirme alors que le fournil fabrique des
+ * produits retirés de la vente. C'est un mensonge plausible, donc du pire
+ * genre : rien à l'écran ne dit que la phrase vient d'une panne.
+ */
+const UNKNOWN_SHELF_LABEL = 'Rayon inconnu';
 
 /**
  * Le facteur au-delà duquel une quantité est **exceptionnelle** : deux fois la
@@ -73,6 +92,12 @@ export interface ForecastRayon {
 export function forecastRayons(
   view: ProductionForecastView,
   catalogue: readonly CatalogItemView[],
+  /**
+   * Le catalogue a-t-il été LU ? `false` = la lecture a échoué, et l'absence
+   * d'un SKU ne prouve alors rien sur lui. Un défaut à `true` : l'appelant
+   * normal a son catalogue, et c'est la panne qui doit se déclarer.
+   */
+  shelvesKnown = true,
 ): readonly ForecastRayon[] {
   const categoryOf = new Map(catalogue.map((item) => [item.sku, item.category]));
   const width = view.days.length;
@@ -95,7 +120,7 @@ export function forecastRayons(
       );
       return {
         category,
-        label: category === null ? OFF_CATALOG_LABEL : CATALOG_CATEGORY_LABELS[category],
+        label: labelOf(category, shelvesKnown),
         quantities: Array.from({ length: width }, (_unused, column) =>
           lines.reduce((sum, line) => sum + (line.cells[column]?.quantity ?? 0), 0),
         ),
@@ -103,6 +128,14 @@ export function forecastRayons(
         lines,
       };
     });
+}
+
+/** Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas. */
+function labelOf(category: CatalogCategory | null, shelvesKnown: boolean): string {
+  if (category !== null) {
+    return CATALOG_CATEGORY_LABELS[category];
+  }
+  return shelvesKnown ? OFF_CATALOG_LABEL : UNKNOWN_SHELF_LABEL;
 }
 
 /** Le total de pièces de la plage — le chiffre qu'on annonce en une phrase. */

@@ -85,6 +85,20 @@
             subtitle="Aucune commande n'est à retirer ni à livrer sur ces jours-là."
           />
         } @else {
+          <!--
+            🔴 Le catalogue n'a pas répondu. La grille reste juste — les pièces
+            et les jours viennent du fournil, pas de lui — mais ses rayons sont
+            perdus, et un groupe « Hors catalogue » dirait alors que tout est
+            retiré de la vente. Un échec partiel laisse le contenu à l'écran et
+            se DIT : c'est le seul cas où un callout est le bon état.
+          -->
+          @if (shelvesLost()) {
+            <fold-callout variant="warning" class="pv-lost">
+              Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
+              rangés. Réessayez pour les retrouver.
+            </fold-callout>
+          }
+
           <!-- La largeur des colonnes est posée UNE fois, sur la grille, et
                héritée par chaque ligne : sept en-têtes, N lignes produit et
                deux pieds qui recopieraient le même gabarit finiraient par
