@@ -111,7 +111,7 @@
                   [rows]="rows()"
                   [rowKey]="rowKey"
                   [rowTone]="toneOf"
-                  [(expanded)]="opened"
+                  [rowNote]="hasNote"
                   (rowClick)="select($event)"
                 >
                   <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne
@@ -173,47 +173,40 @@
                   </ng-template>
 
                   <!--
-                    **Le retard s'annonce SOUS la ligne**, et pas dans une colonne.
+                    **Le retard s'annonce SOUS la ligne**, et pas dans une colonne : il
+                    vient avec un geste. Une pastille dit un état ; ici il faut dire l'état
+                    ET proposer d'y répondre, ce qui ne tient pas dans une cellule.
 
-                    🔴 Parce qu'il vient avec un geste. Une pastille dit un état ; ici il
-                    faut dire l'état ET proposer d'y répondre, ce qui ne tient pas dans une
-                    cellule. Le tiroir est ouvert d'emblée sur les lignes en retard — un
-                    retard qu'il faudrait cliquer pour découvrir n'alerte personne — et
-                    l'équipe peut le refermer une fois traité.
+                    🔴 Une NOTE et non un tiroir (`foldRowNote`, fold 0.26). Le tiroir fait
+                    pousser un chevron sur CHAQUE ligne, parce qu'il cache quelque chose ;
+                    un retard ne se cache pas — un avertissement qu'il faut déplier
+                    n'alerte personne. La note est simplement là, sur les lignes que
+                    `hasNote` désigne, et sur aucune autre.
                   -->
-                  <ng-template foldRowDetail let-row>
-                    @if (lateText(row); as delay) {
-                      <fold-callout appearance="inset" variant="warning" icon="info">
-                        <strong>{{ delay }}</strong> sur la tranche convenue.
-                        @if (!remindable(row) && !reminderSent(row)) {
-                          Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir
-                          le client pour rien.
+                  <ng-template foldRowNote let-row>
+                    <fold-callout appearance="inset" variant="warning" icon="info">
+                      <strong>{{ lateText(row) }}</strong> sur la tranche convenue.
+                      @if (!remindable(row) && !reminderSent(row)) {
+                        Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir le
+                        client pour rien.
+                      }
+                      <div actions>
+                        @if (reminderSent(row)) {
+                          <span class="rm-muted">Rappel envoyé</span>
+                        } @else {
+                          <button
+                            foldButton
+                            emphasis="outline"
+                            icon="mail"
+                            [disabled]="!remindable(row)"
+                            [loading]="busy(row)"
+                            (click)="remind(row); $event.stopPropagation()"
+                          >
+                            Envoyer un rappel
+                          </button>
                         }
-                        <div actions>
-                          @if (reminderSent(row)) {
-                            <span class="rm-muted">Rappel envoyé</span>
-                          } @else {
-                            <button
-                              foldButton
-                              emphasis="outline"
-                              icon="mail"
-                              [disabled]="!remindable(row)"
-                              [loading]="busy(row)"
-                              (click)="remind(row); $event.stopPropagation()"
-                            >
-                              Envoyer un rappel
-                            </button>
-                          }
-                        </div>
-                      </fold-callout>
-                    } @else {
-                      <!-- 🔴 Le tiroir n'est JAMAIS vide. Une ligne ordinaire y trouve ce que
-                           la table ne montre pas : son point de retrait — invisible dans
-                           l'onglet « tous les points » — et, pour une remise, l'attestation
-                           qu'on relit en cas de contestation. Un chevron qui n'ouvre rien est
-                           une porte peinte sur un mur. -->
-                      <p class="rm-drawer">{{ drawerLine(row) }}</p>
-                    }
+                      </div>
+                    </fold-callout>
                   </ng-template>
                 </fold-data-table>
               </fold-card>

@@ -30,7 +30,11 @@
   // 🔴 **Deux gestes, et il en faut DEUX.** `foldSurface="chrome"` bascule la
   // polarité ; il ne peint pas le fond. C'est à l'élément qui possède la
   // surface de le poser — sans quoi l'encre claire s'écrit sur l'ivoire.
-  background: var(--fold-color-bg-rail-secondary);
+  //
+  // La teinte est celle de la barre de l'app : la bande la prolonge vers le
+  // bas, et l'écran n'a plus qu'UN sombre au lieu de deux gris voisins qu'on
+  // prend pour un défaut de rendu.
+  background: var(--fold-color-bg-header);
 }
 
 /* Une seule ligne : les onglets à gauche, le verdict et la journée à droite.

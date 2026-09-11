@@ -20,7 +20,12 @@
   padding: var(--fold-space-lg);
   overflow-y: auto;
   border-radius: var(--fold-radius-lg);
-  background: var(--fold-color-bg-rail-secondary);
+
+  /* 🔴 La teinte de la BARRE DE L'APP, et non celle du rail secondaire. Les
+     deux sont sombres, mais la barre est d'un cran plus profond : le rail s'y
+     accorde, et la file sur son papier gagne le relief que deux gris voisins ne
+     donnaient pas. Un seul jeton à changer — aucune couleur n'est écrite ici. */
+  background: var(--fold-color-bg-header);
 
   /* Ce qui surplombe le rail, mesuré à l'écran : la barre de l'app (56), la
      bande de tête (60), le sur-titre de la file et les gouttières. */

@@ -18,7 +18,9 @@ import { RemisesPage } from './remises-page';
  * - 🔴 **une commande annulée reste dans la file** : la masquer laisserait
  *   quelqu'un chercher une commande disparue ;
  * - **les onglets portent leur compteur** et sont dérivés des points reçus ;
- * - 🔴 **le rail de droite est là même sans sélection**, et se remplit au clic.
+ * - 🔴 **le rail de droite est là même sans sélection**, et se remplit au clic ;
+ * - 🔴 **le retard est une NOTE, pas un tiroir** : il est là sans qu'on clique,
+ *   et aucune ligne ne porte de chevron.
  *
  * On passe par le DOM : les membres sont `protected`, et c'est le gabarit qui
  * câble les branches — ce que le typecheck ne lit pas.
@@ -106,24 +108,6 @@ const rowTexts = (fixture: ComponentFixture<RemisesPage>): readonly string[] =>
     (row) => row.textContent ?? '',
   );
 
-/**
- * Le contenu du tiroir de la PREMIÈRE ligne, après l'avoir ouvert.
- *
- * ⚠️ La `.folddt-detail-row` existe toujours dans le DOM ; son contenu, non —
- * il n'est rendu qu'à l'ouverture. Lire la rangée fermée rendait une chaîne
- * vide, ce qui se lit comme « le tiroir ne dit rien » alors qu'il n'est pas
- * encore ouvert.
- */
-async function openedDrawer(fixture: ComponentFixture<RemisesPage>): Promise<string> {
-  const host = fixture.nativeElement as HTMLElement;
-  const toggle = host.querySelector('tbody tr.folddt-row button[aria-expanded]');
-  (toggle as HTMLElement | null)?.click();
-  fixture.detectChanges();
-  await fixture.whenStable();
-  fixture.detectChanges();
-  return host.querySelector('tbody tr.folddt-detail-row')?.textContent ?? '';
-}
-
 describe('RemisesPage', () => {
   it('rend chaque colonne de la ligne', async () => {
     const fixture = await render(new FakeQueue());
@@ -209,33 +193,25 @@ describe('RemisesPage', () => {
     expect(row).toContain('Remise');
   });
 
-  it('🔴 le tiroir d’une ligne ordinaire n’est JAMAIS vide', async () => {
-    // Un chevron qui n'ouvre rien est une porte peinte sur un mur. Le tiroir
-    // d'une ligne sans retard dit ce que la table ne montre pas : son point de
-    // retrait, invisible dans l'onglet « tous les points ».
-    const api = new FakeQueue();
-    api.entries = [entry({ pickupLabel: 'Val Thorens' })];
+  it('🔴 une ligne sans retard n’émet AUCUNE rangée de note', async () => {
+    // Une rangée vide n'est pas invisible : un lecteur d'écran y entre et
+    // annonce une ligne blanche par commande. C'est le prédicat `rowNote` qui
+    // l'empêche — pas le gabarit, qui ne saurait pas se taire.
+    const fixture = await render(new FakeQueue());
+    const el = fixture.nativeElement as HTMLElement;
 
-    const fixture = await render(api);
-
-    expect(await openedDrawer(fixture)).toContain('Val Thorens');
+    expect(el.querySelector('.folddt-note-row')).toBeNull();
   });
 
-  it('🔴 une remise rappelle son heure et SA NATURE dans le tiroir', async () => {
-    // « saisie sans code » et non « scannée » : c'est ce qu'on relit quand
-    // quelqu'un conteste, et les deux n'ont pas la même force.
-    const api = new FakeQueue();
-    api.entries = [
-      entry({
-        state: 'handed_over',
-        handedOverAt: `${DAY}T04:41:00.000Z`,
-        handedOverVia: 'manual',
-      }),
-    ];
+  it('🔴 AUCUN chevron dans la file : rien n’est caché, rien n’est à déplier', async () => {
+    // Régression : le retard vivait dans un tiroir `foldRowDetail`, qui fait
+    // pousser une bascule sur CHAQUE ligne — y compris celles qui n'ont rien à
+    // ouvrir. Un avertissement qu'il faut déplier n'alerte personne.
+    const fixture = await render(new FakeQueue());
+    const el = fixture.nativeElement as HTMLElement;
 
-    const fixture = await render(api);
-
-    expect(await openedDrawer(fixture)).toContain('saisie sans code');
+    expect(el.querySelector('button.folddt-expand')).toBeNull();
+    expect(el.querySelector('tbody [aria-expanded]')).toBeNull();
   });
 
   it('un sac encore à tendre propose le SCAN, pas une remise à l’aveugle', async () => {

@@ -21,7 +21,7 @@ import {
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldAsideLayoutComponent,
-  FoldDataTableRowDetailDirective,
+  FoldDataTableRowNoteDirective,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldPanelHostService,
@@ -117,7 +117,7 @@ const TICK_MS = 30_000;
     FoldCardComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
-    FoldDataTableRowDetailDirective,
+    FoldDataTableRowNoteDirective,
     FoldDateComponent,
     FoldElementTitleComponent,
     FoldAsideLayoutComponent,
@@ -176,16 +176,6 @@ export class RemisesPage {
    * inventé côté client.
    */
   private readonly reminded = signal<ReadonlySet<string>>(new Set());
-
-  /**
-   * Les tiroirs ouverts, par clé de ligne.
-   *
-   * 🔴 Bidirectionnel, et amorcé aux lignes EN RETARD : le retard s'annonce
-   * tout seul, sinon il faudrait cliquer pour découvrir ce qui presse. Mais
-   * l'équipe peut refermer celui qu'elle vient de traiter — un tiroir qu'un
-   * `[expanded]` à sens unique rouvrirait aussitôt serait une porte qui claque.
-   */
-  protected readonly opened = signal<ReadonlySet<string>>(new Set());
 
   /**
    * La commande ouverte dans le rail, **par identifiant et non par objet**.
@@ -278,15 +268,6 @@ export class RemisesPage {
   protected readonly toneOf = (entry: HandoverQueueEntryView): FoldTableTone =>
     rowTone(entry, this.day(), this.now());
 
-  /** Les lignes en retard à l'instant de la lecture — l'amorce des tiroirs. */
-  private lateKeys(entries: readonly HandoverQueueEntryView[]): ReadonlySet<string> {
-    return new Set(
-      entries
-        .filter((entry) => isLate(entry, this.day(), this.now()))
-        .map((entry) => entry.orderId),
-    );
-  }
-
   constructor() {
     effect(() => {
       void this.load(this.day());
@@ -305,7 +286,6 @@ export class RemisesPage {
       const view = await this.api.forDay(day);
       this.entries.set(view.entries);
       this.now.set(new Date());
-      this.opened.set(this.lateKeys(view.entries));
       this.state.set('ready');
     } catch {
       this.entries.set([]);
@@ -378,21 +358,14 @@ export class RemisesPage {
   }
 
   /**
-   * Ce que le tiroir dit d'une ligne **sans retard** : d'abord ce que la table
-   * ne montre pas — le point de retrait, invisible dans l'onglet « tous les
-   * points » —, puis l'attestation quand le sac est parti.
+   * **Quelles lignes portent une note.** L'autre moitié du câblage : le gabarit
+   * dit à quoi une note ressemble, ceci dit qui en a une.
+   *
+   * 🔴 Une propriété-flèche et non une méthode : `fold-data-table` la reçoit
+   * comme une entrée, donc elle doit garder son `this`. Une méthode passée par
+   * référence perdrait le composant et lèverait au premier rendu.
    */
-  protected drawerLine(entry: HandoverQueueEntryView): string {
-    const where =
-      entry.pickupLabel ??
-      (entry.fulfillmentMethod === 'delivery' ? 'Livraison par coursier' : 'Sans point de retrait');
-    if (entry.state !== 'handed_over' || entry.handedOverAt === null) {
-      return where;
-    }
-    const at = formatHour(clockOf(new Date(entry.handedOverAt)));
-    const how = entry.handedOverVia === 'manual' ? 'saisie sans code' : 'code scanné';
-    return `${where} · remise à ${at}, ${how}`;
-  }
+  protected readonly hasNote = (entry: HandoverQueueEntryView): boolean => this.late(entry);
 
   /**
    * **Ouvre le scanner**, avec ou sans commande attendue.
