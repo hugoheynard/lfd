@@ -267,6 +267,86 @@ rien à faire sur le papier qui part au fournil — mais le récapitulatif impri
 lui, porte bien « Rayon inconnu ». Les deux disent la même chose, chacun dans sa
 langue.
 
+## Tranche 8 ter — l'écran vu en vrai, et ce qu'il a fallu défaire
+
+Regardé dans l'application, pas seulement dans l'aperçu. Cinq corrections, et
+aucune ne se déduisait du code :
+
+- **la table descend jusqu'au bas de la fenêtre.** Sans nombre magique : la
+  chaîne existait déjà chez fold — la coquille est une grille dont la rangée de
+  contenu vaut `1fr`, sa boîte de défilement et `content-flow` sont des colonnes
+  flex, et `fold-page-layout` y est `flex: 1 0 auto`. Il ne manquait que l'hôte
+  de la page, resté un bloc, qui rompait la chaîne. Un `calc(100dvh - …)` aurait
+  marché le jour où on l'écrit et menti au premier changement de hauteur du
+  bandeau ;
+- **le pied tient en bas dans les deux cas opposés** — un ressort le pousse
+  quand la grille est courte, un collage le retient quand elle est longue.
+  Aucun des deux ne remplace l'autre ;
+- **la table est sortie de sa `fold-page-section`.** Une section pose son propre
+  rythme, et c'est ce qu'on ne voulait pas : la table PROLONGE la bande de
+  l'espace, elle ne se pose pas dessous. Elle reprend la gouttière à la main par
+  `--fold-page-gutter-effective`, la variable que fold publie pour ça ;
+- **trois fonds empruntés aux rails** : le pied en `rail-primary` (le verdict),
+  les rayons en `rail-secondary` (ils regroupent sans conclure), la bande en
+  `rail-secondary` (elle prolonge le rail de l'espace). Le corps prend le fond
+  de la PAGE — les lignes produit ne sont pas des cartes posées sur un papier,
+  elles SONT le papier ;
+- 🔴 **la ligne « Commandes » ne portait ni la teinte du pic, ni le filet
+  d'aujourd'hui.** Un repère de colonne qui s'arrête en route n'est pas un
+  repère : l'œil descend la colonne, la perd sur la dernière ligne, et doit
+  remonter vérifier laquelle il suivait.
+
+🔴 **Et le maillon manquant était ailleurs que là où on le cherchait.** La
+coquille de l'espace (`ProductionWorkspacePage`) ne dessine rien, mais son hôte
+restait en `display: block` — et c'est lui qui rompait la chaîne de hauteurs
+entre la boîte de défilement de l'application et la page. Le défaut ne se voit
+sur AUCUNE des deux vues prise isolément : il naît du composant qui n'existait
+pas quand elles ont été écrites. Une coquille qui ne dessine rien doit quand
+même laisser passer la hauteur.
+
+**Et une dernière passe sur les repères**, après un aller-retour devant
+l'écran : les chiffres passent tous en **chasse fixe** — une matrice se lit en
+colonnes de nombres, et une chasse variable fait danser les unités d'une ligne à
+l'autre ; la **barre d'état** de la légende (arrêtée · encore ouverte · le pic)
+apparaît en **bordure épaisse** sous le total de la tête ET sous celui du pied,
+parce qu'une légende dont les couleurs n'apparaissent nulle part n'explique
+rien ; et le **filet vertical du jour courant a été supprimé** — il faisait un
+troisième système de marquage sur la même case, alors que l'en-tête dit
+« aujourd'hui » en toutes lettres, ce qui est plus clair qu'une couleur et ne
+consomme aucun des repères que la grille garde pour le pic.
+
+⚠️ **Un autre piège, refusé par une porte** : la table lisait
+`--fold-page-gutter-effective`, la variable que `fold-page-layout` dérive du
+jeton. `lint:fold-tokens` l'a refusée, et il a raison — lire l'intérieur d'un
+composant est un couplage qu'aucune version ne garantit. Le jeton
+`--fold-page-gutter` dit la même chose et se laisse tenir.
+
+⚠️ **Et un piège CSS qui a failli passer** : `padding: X var(--fold-page-gutter)
+Y` devient **entièrement** invalide si la variable n'est pas définie — la
+gouttière absente aurait emporté avec elle l'espace du HAUT, qui n'a rien à voir
+avec elle. Deux propriétés (`padding-block`, `padding-inline`) plutôt qu'une, et
+chacune tombe seule. Le même raccourci dort dans `handover-shop-page.scss`, où
+il est inoffensif parce que la valeur y est `0`.
+
+## Tranche 8 quater — la table devient un composant
+
+`ForecastTable` : la matrice, dessinée, et rien d'autre. Elle ne charge rien,
+n'appelle aucun service, ne connaît ni la plage ouverte, ni l'URL, ni le
+catalogue — elle reçoit des colonnes et des rayons déjà rangés. C'est ce qui la
+rend éprouvable **au DOM** : cinq cas la montent avec trois lignes et lisent ce
+qu'elle produit, dont les deux que ni `tsc` ni le build AOT ne peuvent dire —
+qu'un zéro est une cellule VIDE, et que **toutes** les lignes portent le même
+nombre de cellules.
+
+Ce qu'elle décide, en revanche : le **repli d'un rayon** et la **densité**. Ce
+sont des états d'affichage de la grille, sans effet ailleurs ; les faire remonter
+aurait obligé la page à tenir un état dont elle ne fait rien.
+
+⚠️ **Le `margin-inline` négatif reste dans la PAGE.** Un composant ne pose jamais
+sa propre marge : ce négatif décrit la place de la table dans cet écran-ci, et
+un autre qui la réemploierait la voudrait autrement. L'hôte, lui, ne fait que
+prendre la hauteur qu'on lui laisse.
+
 ## Tranche 9 — le mode mural, reporté
 
 Inchangé par rapport à la spec §6, et pour sa raison : **sept colonnes de jours
