@@ -6,8 +6,19 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+  type ActivatedRouteSnapshot,
+} from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
+
 import { NavCountsService } from './nav-counts.service';
+import { pageNameOf } from './page-name';
 import {
   FoldAppShellComponent,
   FoldAvatarDetailComponent,
@@ -270,6 +281,25 @@ export class App {
 
   private readonly router = inject(Router);
 
+  /**
+   * **Le nom de l'écran ouvert**, pour le fil de la barre.
+   *
+   * Lu sur la route plutôt que tenu à la main : le titre est déjà déclaré une
+   * fois par écran (c'est ce que porte l'onglet du navigateur), et une seconde
+   * liste de noms dériverait de la première au premier renommage.
+   *
+   * 🔴 L'instantané est relu à chaque `NavigationEnd` et non observé en
+   * continu : `routerState` n'est pas un signal, donc seul cet événement dit
+   * qu'il a changé. Le lire ailleurs rendrait un nom périmé d'une navigation.
+   */
+  protected readonly pageName = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map(() => pageNameOf(deepest(this.router.routerState.snapshot.root).title)),
+    ),
+    { initialValue: null },
+  );
+
   constructor() {
     // La lecture ne peut pas partir avant la session : sans jeton, `/admin/me`
     // rendrait 401 et on conclurait « aucun accès » à tort.
@@ -317,4 +347,19 @@ export class App {
     }
     void this.router.navigateByUrl('/');
   }
+}
+
+/**
+ * La route la plus PROFONDE de l'arbre activé — celle qui nomme l'écran.
+ *
+ * Une route enfant hérite du titre de son parent quand elle n'en déclare pas,
+ * mais l'inverse n'est pas vrai : lire la racine rendrait le nom de la
+ * coquille, jamais celui de la vue qu'on regarde.
+ */
+function deepest(route: ActivatedRouteSnapshot): ActivatedRouteSnapshot {
+  let current = route;
+  while (current.firstChild !== null) {
+    current = current.firstChild;
+  }
+  return current;
 }

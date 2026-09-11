@@ -247,7 +247,7 @@ export const routes: Routes = [
     // qu'on ouvre le matin ; l'autre est la cible d'un scan.
     path: 'remises',
     canActivate: [permissionGuard('b2b_orders:read')],
-    title: 'File de remise — LFC B2B admin',
+    title: 'Retrait boutique — LFC B2B admin',
     loadComponent: () => import('./remises/remises-page/remises-page').then((m) => m.RemisesPage),
   },
   {

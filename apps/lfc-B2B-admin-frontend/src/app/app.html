@@ -60,7 +60,7 @@
         <a
           fold-menu-item
           icon="package-check"
-          label="Remises"
+          label="Retrait boutique"
           routerLink="/remises"
           routerLinkActive
           #remisesRla="routerLinkActive"
@@ -334,9 +334,15 @@
         (clicked)="mobileNavOpen.set(!mobileNavOpen())"
       />
 
-      <a class="app-wordmark" routerLink="/" aria-label="LFC B2B Admin — accueil">
-        LFC B2B <span class="app-wordmark-admin">Admin</span>
-      </a>
+      <!-- La marque, puis l'écran ouvert. Le séparateur est porté par la
+           feuille et non écrit ici : un « / » dans le texte serait lu à voix
+           haute entre deux mots par un lecteur d'écran. -->
+      <p class="app-wordmark">
+        <a class="app-brand" routerLink="/" aria-label="LFC Pro — accueil">LFC PRO</a>
+        @if (pageName(); as page) {
+          <span class="app-page">{{ page }}</span>
+        }
+      </p>
 
       <div class="app-header-actions">
         @if (email(); as who) {
@@ -432,7 +438,7 @@
         <a
           fold-nav-tile
           icon="package-check"
-          label="Remises"
+          label="Retrait boutique"
           routerLink="/remises"
           routerLinkActive
           #remisesTile="routerLinkActive"
