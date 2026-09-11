@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { OrderView } from '@lfd/contracts';
+import type { HandoverQueueWindowView, OrderHandoverView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldPanelBodyComponent,
@@ -15,12 +15,29 @@ import { AdminOrdersService } from '../../commandes/orders.service';
 import { saveBlob } from '../../shared/download/save-blob';
 import { formatWindow } from '../handover-queue';
 
-/** Ce que la file remet au bon : la commande déjà lue par le rail. */
+/**
+ * Ce que la file remet au bon : la commande déjà lue par le rail, **dans la vue
+ * de la remise**, plus ce que la ligne de file sait et que cette vue n'a pas.
+ *
+ * 🔴 `order` était une `OrderView` jusqu'au 2026-09-11 — celle du client, avec
+ * ses prix et sa trace de négociation. Ce panneau jure ne montrer aucun montant
+ * et il tenait ce serment par son gabarit seul ; il le tient maintenant par sa
+ * forme, comme les deux autres surfaces de remise.
+ */
 export interface SheetPanelData {
-  readonly order: OrderView;
+  readonly order: OrderHandoverView;
   /** Le point de retrait tel que la commande l'a figé, ou `null`. */
   readonly pickupLabel: string | null;
   readonly customerLabel: string;
+  /**
+   * Le créneau convenu, **repris de la ligne de file** et non relu.
+   *
+   * La vue de remise ne le porte pas : elle sert d'abord l'écran du scan, qui
+   * n'a pas de file derrière lui. Le rail, lui, a la ligne sous la main — la
+   * redemander au serveur ferait un aller-retour pour une donnée déjà à
+   * l'écran, et ouvrirait la porte à deux heures différentes sur le même bon.
+   */
+  readonly window: HandoverQueueWindowView | null;
 }
 
 const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
@@ -73,7 +90,7 @@ export class SheetPanel implements FoldPanelContent<SheetPanelData> {
 
   protected readonly busy = signal(false);
 
-  protected readonly order = computed<OrderView | null>(() => this.data()?.order ?? null);
+  protected readonly order = computed<OrderHandoverView | null>(() => this.data()?.order ?? null);
 
   protected readonly customerLabel = computed<string>(() => this.data()?.customerLabel ?? '');
 
@@ -84,22 +101,18 @@ export class SheetPanel implements FoldPanelContent<SheetPanelData> {
       return '';
     }
     const how = order.fulfillmentMethod === 'delivery' ? 'Livraison' : 'Retrait';
-    const where = this.data()?.pickupLabel ?? order.deliveryAddress?.ville ?? null;
+    // ⚠️ Plus de repli sur la ville de livraison : elle vivait sur l'`OrderView`
+    // du client, et la file ne montre plus que des retraits. Une commande de
+    // retrait sans point figé — il en reste d'avant les points — dit « Retrait »
+    // et rien de plus, ce qui est vrai.
+    const where = this.data()?.pickupLabel ?? null;
     return where === null ? how : `${how} · ${where}`;
   });
 
   /** Le créneau convenu, ou `null` — aucune heure n'est inventée ici non plus. */
-  protected readonly window = computed<string | null>(() => {
-    const agreed = this.order()?.fulfillment.window;
-    if (agreed === undefined || agreed.value === null) {
-      return null;
-    }
-    return formatWindow({
-      start: agreed.value.start,
-      end: agreed.value.end,
-      source: agreed.source,
-    });
-  });
+  protected readonly window = computed<string | null>(() =>
+    formatWindow(this.data()?.window ?? null),
+  );
 
   protected readonly day = computed<string>(() => {
     const date = this.order()?.requestedDeliveryDate;
@@ -121,7 +134,7 @@ export class SheetPanel implements FoldPanelContent<SheetPanelData> {
     }
     this.busy.set(true);
     try {
-      const pdf = await this.api.sheetPdf(order.id);
+      const pdf = await this.api.sheetPdf(order.orderId);
       saveBlob(pdf, `bon-de-commande-${order.orderNumber}.pdf`);
     } catch (caught) {
       this.notify.error(caught, "Le bon de commande n'a pas pu être téléchargé.");

@@ -165,6 +165,10 @@ class OneOrderReader extends OrderReader {
     return Promise.reject(new Error("non utilisé"));
   }
 
+  override findHandoverByOrderId() {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
   override findForPacking() {
     return Promise.reject(new Error("non utilisé"));
   }

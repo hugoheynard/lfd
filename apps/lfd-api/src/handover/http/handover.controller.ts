@@ -6,6 +6,7 @@ import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
 import { ConfirmHandoverCommand } from "../application/commands/confirm-handover.command.js";
 import { ConfirmManualHandoverCommand } from "../application/commands/confirm-manual-handover.command.js";
+import { GetHandoverByOrderQuery } from "../application/queries/get-handover-by-order.query.js";
 import { GetHandoverQueueQuery } from "../application/queries/get-handover-queue.query.js";
 import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
 
@@ -99,6 +100,24 @@ export class HandoverController {
   ): Promise<OrderHandoverView> {
     return this.commands.execute<ConfirmManualHandoverCommand, OrderHandoverView>(
       new ConfirmManualHandoverCommand(reference, staffSubjectOf(request)),
+    );
+  }
+
+  /**
+   * **Ce qu'il y a dans le sac d'une commande de la file** — mêmes octets que
+   * l'écran du scan, atteints par l'identifiant que la file vient de rendre.
+   *
+   * Déclarée **avant** `:token` : deux segments, donc `:token` ne l'avalerait
+   * pas — mais l'ordre rend l'intention lisible sans y réfléchir.
+   *
+   * 🔴 Elle existe pour que le rail cesse d'appeler `admin/orders/:id`, qui rend
+   * l'`OrderView` du client — prix, TVA, totaux, trace de négociation — sur un
+   * poste où quelqu'un attend en face.
+   */
+  @Get("order/:id")
+  async byOrder(@Param("id") orderId: string): Promise<OrderHandoverView> {
+    return this.queries.execute<GetHandoverByOrderQuery, OrderHandoverView>(
+      new GetHandoverByOrderQuery(orderId),
     );
   }
 

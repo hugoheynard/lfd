@@ -76,6 +76,15 @@ export abstract class OrderReader {
   abstract findHandoverByReference(reference: string): Promise<HandoverOrder | null>;
 
   /**
+   * La même commande, par son **identifiant** — le chemin du rail de la file.
+   *
+   * 🔴 Il existe pour que le comptoir cesse de lire une commande par
+   * `findById`, qui rend l'`OrderView` du client — prix, TVA, totaux, trace de
+   * négociation — là où il n'a besoin que des lignes à recompter.
+   */
+  abstract findHandoverByOrderId(orderId: string): Promise<HandoverOrder | null>;
+
+  /**
    * **Ce que le comptoir attend un jour donné** — la file, avant tout scan.
    *
    * Voisine de `listForProduction`, et volontairement DISTINCTE : le fournil
@@ -209,5 +218,7 @@ export interface HandoverOrder {
   readonly pickupLabel: string | null;
   readonly status: OrderStatus;
   readonly fulfillmentMethod: FulfillmentMethod;
+  /** La note du client — elle est sur le bon qu'on coche au comptoir. */
+  readonly note: string;
   readonly lines: readonly OrderHandoverLine[];
 }

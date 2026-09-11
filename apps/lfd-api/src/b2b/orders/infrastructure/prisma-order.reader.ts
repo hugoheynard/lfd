@@ -284,18 +284,25 @@ export class PrismaOrderReader extends OrderReader {
     return this.oneHandover({ orderNumber: reference });
   }
 
+  async findHandoverByOrderId(orderId: string): Promise<HandoverOrder | null> {
+    return this.oneHandover({ id: orderId });
+  }
+
   /**
-   * La même lecture, deux clés. Le scan la trouve par un **secret**, la remise
-   * saisie par le **numéro** — mais ce qu'on lit ensuite est identique, et le
-   * dupliquer ferait diverger les deux écrans du comptoir au premier champ
-   * ajouté.
+   * La même lecture, trois clés. Le scan la trouve par un **secret**, la remise
+   * saisie par le **numéro**, le rail de la file par l'**identifiant** qu'elle
+   * vient de rendre — mais ce qu'on lit ensuite est identique, et le dupliquer
+   * ferait diverger les écrans du comptoir au premier champ ajouté.
    *
    * ⚠️ Elle ne lit plus `handed_over_*` depuis le 2026-09-07 : ces colonnes sont
    * devenues le **snapshot** de ce que le fournil annonce, et c'est lui qui les
    * détient. Les relire pour les lui rendre ferait de la copie la source.
    */
   private async oneHandover(
-    where: { readonly handoverToken: string } | { readonly orderNumber: string },
+    where:
+      | { readonly handoverToken: string }
+      | { readonly orderNumber: string }
+      | { readonly id: string },
   ): Promise<HandoverOrder | null> {
     const row = await this.prisma.order.findUnique({
       where,
@@ -309,6 +316,8 @@ export class PrismaOrderReader extends OrderReader {
         createdAt: true,
         companyId: true,
         placedByUserId: true,
+        // La note est sur le bon qu'on coche : « sans sésame », « par la cour ».
+        note: true,
         company: { select: { raisonSociale: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
@@ -327,6 +336,7 @@ export class PrismaOrderReader extends OrderReader {
       pickupLabel: pickupLabelOf(row.pickupAddress),
       status: row.status,
       fulfillmentMethod: row.fulfillmentMethod,
+      note: row.note,
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,

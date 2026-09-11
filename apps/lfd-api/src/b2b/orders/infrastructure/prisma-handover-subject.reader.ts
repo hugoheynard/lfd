@@ -38,4 +38,8 @@ export class PrismaHandoverSubjectReader extends HandoverSubjectReader {
   async byReference(reference: string): Promise<HandoverSubject | null> {
     return this.orders.findHandoverByReference(reference);
   }
+
+  async byOrderId(orderId: string): Promise<HandoverSubject | null> {
+    return this.orders.findHandoverByOrderId(orderId);
+  }
 }

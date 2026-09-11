@@ -15,9 +15,9 @@ la remise, `packages/contracts/src/order-handover.ts`.
 
 ---
 
-## 1. 🔴 Les montants traversent le comptoir
+## 1. ✅ Les montants traversaient le comptoir — clos le 2026-09-11
 
-### Le fait
+### Le fait, tel qu'il était
 
 Tout le contexte tient la même règle, et l'écrit trois fois :
 
@@ -59,6 +59,43 @@ comptoir.
 ⚠️ Ne pas « corriger » en masquant côté écran. Masquer laisserait la donnée
 voyager, et la prochaine surface la réafficherait pour la même raison que
 celle-ci l'a chargée : parce qu'elle était disponible.
+
+### ✅ Ce qui a été fait
+
+`GET admin/handover/order/:id` rend l'`OrderHandoverView` — la vue du scan,
+atteinte par une **troisième clé**. Le port du commerce publie `byOrderId` à
+côté de `byToken` et `byReference`, et les trois restent distinctes : le scan
+trouve par un **secret**, la saisie par un **numéro imprimé**, le rail par un
+**identifiant que la file vient de rendre**. Les fondre ferait accepter un
+identifiant là où le secret est la protection.
+
+Deux champs ont dû rejoindre la vue, tous deux sans montant : `note` (elle est
+sur le bon qu'on coche — « sans sésame », « par la cour ») et
+`fulfillmentMethod`, **typé** `FulfillmentMethod` dès l'entrée, ce qui règle au
+passage la moitié du point 2 pour cette vue-là.
+
+Le créneau, lui, ne l'a pas rejointe : il vient de la **ligne de file**, que le
+rail a déjà sous la main. La vue de remise sert d'abord l'écran du scan, qui n'a
+pas de file derrière lui — l'y ajouter l'aurait fait grossir pour un seul de ses
+deux lecteurs.
+
+**Ce qui tient la promesse maintenant :**
+
+- la **forme** : il n'y a plus de montant à ne pas afficher ;
+- un **e2e** (`production-batch.e2e-spec.ts`) qui lit les octets réellement
+  servis et échoue si `Cents`, `Millicents`, `vatRate`, `vatShares`, `pricing`
+  ou `currency` y reparaît un jour ;
+- un **cas front** qui ne fournit plus `AdminOrdersService` au rail : un rail
+  qui recommencerait à le demander échoue à l'injection au lieu de repartir
+  chercher des montants en silence.
+
+⚠️ Le premier jet de l'e2e interdisait aussi « total » — et il a échoué, sur le
+bon champ : `totalUnits` est un compte de PIÈCES, précisément ce que le comptoir
+recompte à voix haute. Le mot est resté dans la liste des exclusions commentées.
+
+⚠️ Ce qui reste attaché au commerce : le **PDF** du bon (`sheetPdf`). C'est
+juste — ce sont des octets que le serveur compose, le document complet que le
+client a reçu, et le bouton dit qu'il est tarifé.
 
 ---
 
@@ -252,7 +289,15 @@ fichier.
 
 ## Ordre de traitement
 
-**1** et **2** d'abord : l'un met des prix négociés sur un écran de comptoir,
-l'autre fait dépendre une alarme de masse d'un caractère. **3** ensuite, parce
-qu'il se règle par une phrase à l'écran. **4** au premier changement d'état.
-**5** avec la dette d'ISP, pas avant — la remise n'en est qu'un symptôme.
+~~**1**~~ ✅ **clos le 2026-09-11.**
+
+**2** ensuite, et c'est maintenant le plus cher : il fait dépendre une alarme de
+masse d'un caractère. La moitié en est déjà faite — `fulfillmentMethod` est typé
+sur la vue de remise — mais `source` reste un `string` sur la file, et c'est lui
+qui décide du retard.
+
+**3** après, parce qu'il se règle par une phrase à l'écran. **4** au premier
+changement d'état. **5** avec la dette d'ISP, pas avant — la remise n'en est
+qu'un symptôme, et elle vient d'en payer une part de plus : ouvrir `byOrderId` a
+obligé **huit doublés** de `OrderReader` à déclarer un verbe qu'aucun d'eux
+n'appelle.

@@ -112,6 +112,10 @@ class OneOrderReader extends OrderReader {
     return unused("findHandoverByReference");
   }
 
+  override findHandoverByOrderId(): Promise<never> {
+    return unused("findHandoverByOrderId");
+  }
+
   override expectedForHandoverOn(): Promise<never> {
     return unused("expectedForHandoverOn");
   }

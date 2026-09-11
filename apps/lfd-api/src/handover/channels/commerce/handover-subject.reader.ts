@@ -29,6 +29,8 @@ export interface HandoverSubject {
   /** L'état côté COMMERCE — la règle de remise le lit, elle ne l'écrit pas. */
   readonly status: OrderStatus;
   readonly fulfillmentMethod: FulfillmentMethod;
+  /** La note du client — elle est sur le bon, donc elle traverse. */
+  readonly note: string;
   readonly lines: readonly HandoverSubjectLine[];
 }
 
@@ -42,10 +44,10 @@ export interface HandoverSubjectLine {
 /**
  * **Le port de lecture des commandes à remettre**, publié par la production.
  *
- * Deux chemins d'accès parce qu'il y a deux gestes, et un seul serait un piège :
- * le scan trouve par un **secret**, la saisie par un **numéro imprimé**. Les
- * fondre en une seule méthode ferait accepter le numéro là où le secret est la
- * protection.
+ * Trois chemins d'accès parce qu'il y a trois gestes, et un seul serait un
+ * piège : le scan trouve par un **secret**, la saisie par un **numéro imprimé**,
+ * la file par un **identifiant qu'elle vient de rendre**. Les fondre en une
+ * seule méthode ferait accepter le numéro là où le secret est la protection.
  *
  * Aucune règle n'est appliquée ici — le port rend l'état, `handoverBlocker` dit
  * si le geste est possible. Une seule voix pour une seule règle.
@@ -68,4 +70,21 @@ export abstract class HandoverSubjectReader {
    * remise est un acte dont l'auteur est enregistré.
    */
   abstract byReference(reference: string): Promise<HandoverSubject | null>;
+
+  /**
+   * La même commande, par son **identifiant opaque** — le chemin du rail de la
+   * file, quand on ouvre une ligne pour voir ce qu'il y a dans le sac.
+   *
+   * 🔴 Elle existe pour que le comptoir cesse de lire la commande par la porte
+   * du COMMERCE. Le rail appelait `admin/orders/:id`, qui rend l'`OrderView` du
+   * client : prix unitaires, TVA, totaux, et la trace de négociation étage par
+   * étage — sur un poste où quelqu'un attend en face. Les trois vues de remise
+   * promettent « aucun montant » ; deux le tenaient par leur forme, la
+   * troisième par la discrétion d'un gabarit.
+   *
+   * L'identifiant n'est pas un secret — c'est la file qui vient de le rendre,
+   * dans la même session. Ce qui protège cette porte est donc la session staff,
+   * exactement comme pour le numéro.
+   */
+  abstract byOrderId(orderId: string): Promise<HandoverSubject | null>;
 }

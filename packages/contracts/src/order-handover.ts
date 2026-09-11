@@ -12,6 +12,8 @@
  * aléatoire et n'apparaît que dans l'écran du client.
  */
 
+import type { FulfillmentMethod } from "./order.js";
+
 /** Une ligne à vérifier au comptoir : ce qu'on compte, pas ce qu'on facture. */
 export interface OrderHandoverLine {
   readonly sku: string;
@@ -60,6 +62,19 @@ export interface OrderHandoverView {
   readonly handedOverVia: string | null;
   /** `null` = la remise est possible ; sinon la raison du refus, en clair. */
   readonly blockedReason: string | null;
+  /**
+   * La note du client, telle qu'elle a été passée — ou `""`.
+   *
+   * Elle est sur le bon qu'on coche au comptoir : « sans sésame », « livrer par
+   * la cour ». La lire est la seule façon de ne pas tendre un sac qui ignore ce
+   * qu'on a demandé.
+   */
+  readonly note: string;
+  /**
+   * Retrait ou livraison, **typé** — c'est le même ensemble fermé que le port
+   * du serveur porte déjà, et il ne se perd plus en traversant le contrat.
+   */
+  readonly fulfillmentMethod: FulfillmentMethod;
 }
 
 /**

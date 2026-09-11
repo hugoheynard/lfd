@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
  * carnet, et personne ne l'aurait vu avant qu'un client change son contact
  * entre la commande et la livraison.
  */
-import type { HandoverQueueView, ProductionBatchView } from "@lfd/contracts";
+import type { HandoverQueueView, OrderHandoverView, ProductionBatchView } from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -1157,6 +1157,45 @@ describe("la file de remise", () => {
     await ctx.prisma.order.update({ where: { orderNumber: reference }, data: { status: "draft" } });
 
     expect((await file()).entries.some((line) => line.reference === reference)).toBe(false);
+  });
+
+  it("🔴 le sac d'une ligne se lit par son ID, et ne porte AUCUN montant", async () => {
+    // Le rail de la file lisait sa commande par `admin/orders/:id`, qui rend
+    // l'OrderView du CLIENT : prix unitaires, TVA, totaux, et la trace de
+    // négociation étage par étage — sur un poste de comptoir, quelqu'un en
+    // face. Les surfaces de remise promettent « aucun montant » ; deux le
+    // tenaient par leur forme, le rail par la discrétion de son gabarit.
+    //
+    // Ce cas éprouve la promesse sur les OCTETS RÉELS, pas sur un type : il lit
+    // le corps servi par le vrai contrôleur et cherche tout ce qui ressemble à
+    // de l'argent. Un champ rouvert un jour le fera échouer ici.
+    const reference = await placePickup(3);
+    const entry = (await file()).entries.find((line) => line.reference === reference);
+    const bag = jsonBody<OrderHandoverView>(
+      await ctx
+        .asSub("staff-e2e")
+        .get(`/admin/handover/order/${entry?.orderId ?? ""}`)
+        .expect(200),
+    );
+
+    expect(bag.orderNumber).toBe(reference);
+    expect(bag.totalUnits).toBe(3);
+    expect(bag.lines.map((line) => line.sku)).toEqual(["VIE-001"]);
+
+    // Jest n'a pas le second argument de message de Vitest : on nomme le champ
+    // fautif dans l'assertion elle-même, sinon un échec dirait seulement
+    // « la chaîne contient une sous-chaîne ».
+    //
+    // ⚠️ Pas de « total » nu dans cette liste : `totalUnits` est un compte de
+    // PIÈCES, et c'est précisément ce que le comptoir recompte à voix haute.
+    // Le premier jet l'interdisait et le cas a échoué — sur le bon champ.
+    const body = JSON.stringify(bag);
+    const money = ["Cents", "Millicents", "vatRate", "vatShares", "pricing", "currency"];
+    expect(money.filter((field) => body.includes(field))).toEqual([]);
+  });
+
+  it("refuse un identifiant qui n'ouvre rien, plutôt que de rendre un sac vide", async () => {
+    await ctx.asSub("staff-e2e").get(`/admin/handover/order/ord_inexistante`).expect(404);
   });
 
   it("rend une file VIDE sur un jour sans commande, et non une erreur", async () => {

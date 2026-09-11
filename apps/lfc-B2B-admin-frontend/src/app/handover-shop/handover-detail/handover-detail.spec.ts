@@ -1,9 +1,8 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import type { HandoverQueueEntryView, OrderHandoverView, OrderLineView } from '@lfd/contracts';
+import type { HandoverQueueEntryView, OrderHandoverLine, OrderHandoverView } from '@lfd/contracts';
 
-import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverDetail } from './handover-detail';
 
@@ -50,47 +49,52 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
   };
 }
 
-function line(over: Partial<OrderLineView> = {}): OrderLineView {
+function line(over: Partial<OrderHandoverLine> = {}): OrderHandoverLine {
   return {
     sku: 'CROI-NAT',
     productName: 'Croissant nature',
-    unitPriceMillicents: 95_000,
-    vatRate: 5.5,
     quantity: 12,
-    lineTotalCents: 1_140,
-    pricing: null,
-    allergens: null,
     ...over,
   };
 }
 
-class FakeOrders {
-  lines: readonly OrderLineView[] = [line()];
+/**
+ * **Un seul doublé depuis le 2026-09-11**, et c'est le sujet du changement.
+ *
+ * 🔴 Le rail lisait sa commande par `AdminOrdersService.byId()`, qui rend
+ * l'`OrderView` du CLIENT — prix unitaires, TVA, totaux, trace de négociation.
+ * Il la lit maintenant dans la vue de la remise, où aucun montant n'existe. Le
+ * doublé de commerce n'a donc plus de raison d'être ici : le rail ne parle plus
+ * qu'au service de la file.
+ *
+ * Le fixture le montre au passage — il n'y a plus un prix à écrire dedans.
+ */
+class FakeHandovers {
+  lines: readonly OrderHandoverLine[] = [line()];
   fails = false;
-  readonly downloaded: string[] = [];
+  readonly remitted: string[] = [];
 
-  /**
-   * Seules les LIGNES sont lues par le rail. Le doublé rend donc ce qu'il rend
-   * vraiment, et n'annonce pas une `OrderView` : un `as unknown as` ici
-   * laisserait le doublé dériver de la vraie signature sans que rien ne
-   * rougisse — et la porte `no-type-escapes` le refuse pour cette raison.
-   */
-  byId(id: string): Promise<{ readonly id: string; readonly lines: readonly OrderLineView[] }> {
+  byOrderId(orderId: string): Promise<OrderHandoverView> {
     if (this.fails) {
       return Promise.reject(new Error('injoignable'));
     }
-    return Promise.resolve({ id, lines: this.lines });
+    return Promise.resolve({
+      orderId,
+      orderNumber: 'CMD-1042',
+      customerLabel: 'Boulangerie Marin',
+      placedAt: `${DAY}T05:00:00.000Z`,
+      requestedDeliveryDate: DAY,
+      pickupLabel: 'Laboratoire',
+      fulfillmentMethod: 'pickup',
+      note: '',
+      totalUnits: this.lines.reduce((sum, row) => sum + row.quantity, 0),
+      lines: this.lines,
+      handedOverAt: null,
+      handedOverBy: null,
+      handedOverVia: null,
+      blockedReason: null,
+    });
   }
-
-  sheetPdf(id: string): Promise<Blob> {
-    this.downloaded.push(id);
-    return Promise.resolve(new Blob(['%PDF-1.7'], { type: 'application/pdf' }));
-  }
-}
-
-/** Le seul verbe que le rail appelle : la remise SAISIE, par le numéro. */
-class FakeHandovers {
-  readonly remitted: string[] = [];
 
   confirmManually(reference: string): Promise<Pick<OrderHandoverView, 'orderNumber'>> {
     this.remitted.push(reference);
@@ -99,20 +103,16 @@ class FakeHandovers {
 }
 
 interface Doubles {
-  readonly orders: FakeOrders;
   readonly handovers: FakeHandovers;
 }
 
 async function render(
   selected: HandoverQueueEntryView | null,
-  doubles: Doubles = { orders: new FakeOrders(), handovers: new FakeHandovers() },
+  doubles: Doubles = { handovers: new FakeHandovers() },
 ): Promise<ComponentFixture<HandoverDetail>> {
   TestBed.configureTestingModule({
     imports: [HandoverDetail],
-    providers: [
-      { provide: AdminOrdersService, useValue: doubles.orders },
-      { provide: HandoverQueueService, useValue: doubles.handovers },
-    ],
+    providers: [{ provide: HandoverQueueService, useValue: doubles.handovers }],
   });
   const fixture: ComponentFixture<HandoverDetail> = TestBed.createComponent(HandoverDetail);
   fixture.componentRef.setInput('entry', selected);
@@ -152,11 +152,11 @@ describe('HandoverDetail', () => {
   });
 
   it('🔴 changer de ligne n’emporte pas les articles de la précédente', async () => {
-    const orders = new FakeOrders();
-    const fixture = await render(entry(), { orders, handovers: new FakeHandovers() });
+    const handovers = new FakeHandovers();
+    const fixture = await render(entry(), { handovers });
     expect(text(fixture)).toContain('Croissant nature');
 
-    orders.lines = [line({ sku: 'PAIN-COMP', productName: 'Pain complet' })];
+    handovers.lines = [line({ sku: 'PAIN-COMP', productName: 'Pain complet' })];
     fixture.componentRef.setInput('entry', entry({ orderId: 'ord_2', reference: 'CMD-1043' }));
     fixture.detectChanges();
     await fixture.whenStable();
@@ -231,7 +231,7 @@ describe('HandoverDetail', () => {
 
   it('🔴 la remise saisie dit qu’elle est SANS CODE, et part sur le numéro', async () => {
     const handovers = new FakeHandovers();
-    const fixture = await render(entry(), { orders: new FakeOrders(), handovers });
+    const fixture = await render(entry(), { handovers });
 
     const remit = buttonSaying(fixture, 'Remettre sans code');
     expect(remit).not.toBeNull();
@@ -245,8 +245,8 @@ describe('HandoverDetail', () => {
     // Régression : la liste se repliait au-delà de cinq lignes derrière un
     // « + N références ». Un clic pour voir ce qu'on est en train de tendre est
     // un clic de trop, et il repoussait la remise à chaque ouverture.
-    const orders = new FakeOrders();
-    orders.lines = [
+    const handovers = new FakeHandovers();
+    handovers.lines = [
       line({ sku: 'A', productName: 'Un' }),
       line({ sku: 'B', productName: 'Deux' }),
       line({ sku: 'C', productName: 'Trois' }),
@@ -255,33 +255,32 @@ describe('HandoverDetail', () => {
       line({ sku: 'F', productName: 'Six' }),
     ];
 
-    const fixture = await render(entry(), { orders, handovers: new FakeHandovers() });
+    const fixture = await render(entry(), { handovers });
 
     expect(text(fixture)).toContain('Six');
     expect(text(fixture)).not.toContain('référence');
   });
 
   it('une lecture ratée le dit et laisse le bon accessible', async () => {
-    const orders = new FakeOrders();
-    orders.fails = true;
+    const handovers = new FakeHandovers();
+    handovers.fails = true;
 
-    const fixture = await render(entry(), { orders, handovers: new FakeHandovers() });
+    const fixture = await render(entry(), { handovers });
 
     expect(text(fixture)).toContain('Contenu illisible');
     expect(buttonSaying(fixture, 'Voir le bon')).not.toBeNull();
   });
 
-  it('🔴 « Voir le bon » OUVRE le bon, il ne télécharge plus un fichier', async () => {
-    // Sur un poste de comptoir, un PDF qui atterrit dans un dossier n'est pas
-    // une lecture : on veut la liste tout de suite, à côté du sac. Le rail ne
-    // sait donc plus télécharger — c'est le panneau du bon qui le propose,
-    // avec un libellé qui dit que ce document-là, lui, porte les prix.
-    const orders = new FakeOrders();
-    const fixture = await render(entry(), { orders, handovers: new FakeHandovers() });
+  it('🔴 le rail ne parle QU’AU service de la file', async () => {
+    // Régression de conception (2026-09-11) : il lisait sa commande par
+    // `AdminOrdersService.byId()`, donc l'`OrderView` du CLIENT — prix, TVA,
+    // totaux, trace de négociation — sur un poste de comptoir. Ce cas tient la
+    // frontière par l'INJECTION : `render` ne fournit pas le service de
+    // commerce, donc un rail qui recommencerait à le demander échouerait ici
+    // au lieu de repartir chercher des montants en silence.
+    const fixture = await render(entry());
 
-    buttonSaying(fixture, 'Voir le bon')?.click();
-    await fixture.whenStable();
-
-    expect(orders.downloaded).toEqual([]);
+    expect(text(fixture)).toContain('Croissant nature');
+    expect(buttonSaying(fixture, 'Voir le bon')).not.toBeNull();
   });
 });

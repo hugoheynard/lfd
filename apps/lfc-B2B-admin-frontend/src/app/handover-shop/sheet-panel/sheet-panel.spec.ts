@@ -2,7 +2,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
-import type { OrderLineView, OrderView } from '@lfd/contracts';
+import type { OrderHandoverLine, OrderHandoverView } from '@lfd/contracts';
 
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { SheetPanel, type SheetPanelData } from './sheet-panel';
@@ -17,55 +17,43 @@ import { SheetPanel, type SheetPanelData } from './sheet-panel';
  *
  * Et l'absence est **dite** : quelqu'un qui cherche un total doit savoir qu'il
  * n'y en a pas ici, plutôt que de croire à un oubli d'affichage.
+ *
+ * 🔴 Depuis le 2026-09-11, ces cas ne sont plus la seule chose qui tient la
+ * promesse : le panneau reçoit une `OrderHandoverView`, où **aucun montant
+ * n'existe**. Le gabarit ne peut plus en afficher un, même par accident. Ces
+ * cas gardent leur valeur pour l'autre moitié — que l'absence soit DITE — et
+ * comme garde-fou le jour où quelqu'un voudrait réélargir la vue.
+ *
+ * Le fixture le montre au passage : il n'y a plus un seul prix à écrire dedans.
  */
 
-function line(over: Partial<OrderLineView> = {}): OrderLineView {
+function line(over: Partial<OrderHandoverLine> = {}): OrderHandoverLine {
   return {
     sku: 'CROI-NAT',
     productName: 'Croissant nature',
-    unitPriceMillicents: 95_000,
-    vatRate: 5.5,
     quantity: 12,
-    lineTotalCents: 1_140,
-    pricing: null,
-    allergens: null,
     ...over,
   };
 }
 
-function order(over: Partial<OrderView> = {}): OrderView {
+function order(over: Partial<OrderHandoverView> = {}): OrderHandoverView {
   return {
-    id: 'ord_1',
+    orderId: 'ord_1',
     orderNumber: 'CMD-1042',
-    status: 'placed',
-    paymentStatus: 'paid',
+    customerLabel: 'Boulangerie Marin',
+    placedAt: '2026-09-10T08:00:00.000Z',
     requestedDeliveryDate: '2026-09-11',
+    pickupLabel: 'Le Labo',
     fulfillmentMethod: 'pickup',
-    deliveryAddressId: null,
-    deliveryAddress: null,
-    pickupAddress: null,
-    fulfillment: {
-      window: { value: { start: '06:00', end: '08:00' }, source: 'override' },
-      contact: { value: null, source: 'default' },
-      signatureRequired: { value: false, source: 'default' },
-    },
     note: '',
-    subtotalCents: 1_140,
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    totalCents: 1_140,
-    vatShares: [],
+    totalUnits: 12,
     lines: [line()],
-    createdAt: '2026-09-10T08:00:00.000Z',
-    readyAt: null,
     handedOverAt: null,
-    handoverToken: null,
+    handedOverBy: null,
+    handedOverVia: null,
+    blockedReason: null,
     ...over,
-  } as OrderView;
+  };
 }
 
 class FakeOrders {
@@ -100,6 +88,7 @@ const data = (over: Partial<SheetPanelData> = {}): SheetPanelData => ({
   order: order(),
   pickupLabel: 'Le Labo',
   customerLabel: 'Boulangerie Marin',
+  window: { start: '06:00', end: '08:00', source: 'override' },
   ...over,
 });
 
@@ -127,16 +116,7 @@ describe('SheetPanel', () => {
   });
 
   it('🔴 sans tranche demandée, n’invente aucune heure', async () => {
-    const fixture = await render({
-      ...data(),
-      order: order({
-        fulfillment: {
-          window: { value: null, source: 'default' },
-          contact: { value: null, source: 'default' },
-          signatureRequired: { value: false, source: 'default' },
-        },
-      }),
-    });
+    const fixture = await render({ ...data(), window: null });
 
     expect(text(fixture)).toContain('Aucune tranche demandée');
   });

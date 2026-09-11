@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
+import { GetHandoverByOrderHandler } from "./application/queries/get-handover-by-order.handler.js";
 import { GetHandoverQueueHandler } from "./application/queries/get-handover-queue.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
@@ -30,6 +31,7 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
   providers: [
     ConfirmHandoverHandler,
     ConfirmManualHandoverHandler,
+    GetHandoverByOrderHandler,
     GetHandoverHandler,
     GetHandoverQueueHandler,
     HandoverAttestation,

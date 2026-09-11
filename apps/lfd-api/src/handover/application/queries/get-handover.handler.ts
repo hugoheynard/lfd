@@ -55,6 +55,8 @@ export function toHandoverView(
         ? null
         : subject.requestedDeliveryDate.toISOString().slice(0, 10),
     pickupLabel: subject.pickupLabel,
+    fulfillmentMethod: subject.fulfillmentMethod,
+    note: subject.note,
     totalUnits: subject.lines.reduce((sum, line) => sum + line.quantity, 0),
     lines: subject.lines,
     handedOverAt: handover === null ? null : handover.handedOverAt.toISOString(),

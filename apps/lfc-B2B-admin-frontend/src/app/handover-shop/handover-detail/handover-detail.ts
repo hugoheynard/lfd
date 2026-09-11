@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { HandoverQueueEntryView, OrderLineView, OrderView } from '@lfd/contracts';
+import type { HandoverQueueEntryView, OrderHandoverLine, OrderHandoverView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -21,7 +21,6 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
 import { formatWindow } from '../handover-queue';
@@ -103,7 +102,6 @@ export class HandoverDetail {
    */
   readonly scanned = output<HandoverQueueEntryView>();
 
-  private readonly api = inject(AdminOrdersService);
   private readonly handovers = inject(HandoverQueueService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
@@ -111,15 +109,24 @@ export class HandoverDetail {
   protected readonly state = signal<LoadState>('idle');
 
   /**
-   * La commande relue, **entière**.
+   * La commande relue **dans la vue de la remise**, et pas dans celle du client.
    *
-   * 🔴 Pas seulement ses lignes : le bon s'ouvre à partir d'elle, sans second
-   * aller-retour. Le redemander ferait afficher au bon un état plus récent que
-   * la ligne d'où il sort — deux vérités à l'écran en même temps.
+   * 🔴 C'était une `OrderView` jusqu'au 2026-09-11 — prix unitaires, TVA,
+   * totaux, trace de négociation étage par étage. Elle arrivait sur un poste de
+   * comptoir avec quelqu'un en face, et seul l'absence d'un `@for` empêchait de
+   * l'afficher : ni le typecheck, ni une porte, ni un test ne regardent ce qui
+   * n'est pas rendu. `OrderHandoverView` ne porte aucun montant, donc il n'y a
+   * plus rien à ne pas afficher.
+   *
+   * Entière quand même, et pour la raison d'avant : le bon s'ouvre à partir
+   * d'elle, sans second aller-retour. Le redemander ferait afficher au bon un
+   * état plus récent que la ligne d'où il sort — deux vérités à l'écran.
    */
-  protected readonly order = signal<OrderView | null>(null);
+  protected readonly order = signal<OrderHandoverView | null>(null);
 
-  protected readonly lines = computed<readonly OrderLineView[]>(() => this.order()?.lines ?? []);
+  protected readonly lines = computed<readonly OrderHandoverLine[]>(
+    () => this.order()?.lines ?? [],
+  );
   protected readonly remitting = signal(false);
 
   /**
@@ -236,7 +243,7 @@ export class HandoverDetail {
     }
     this.state.set('loading');
     try {
-      this.order.set(await this.api.byId(entry.orderId));
+      this.order.set(await this.handovers.byOrderId(entry.orderId));
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -261,6 +268,9 @@ export class HandoverDetail {
       order,
       pickupLabel: entry.pickupLabel,
       customerLabel: entry.customerLabel,
+      // Le créneau vient de la LIGNE : la vue de remise sert d'abord l'écran du
+      // scan, qui n'a pas de file derrière lui, et ne le porte donc pas.
+      window: entry.window,
     };
     this.panels.open<SheetPanelData>(SheetPanel, { data });
   }

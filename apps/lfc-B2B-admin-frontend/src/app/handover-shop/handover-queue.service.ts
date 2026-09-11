@@ -39,6 +39,27 @@ export class HandoverQueueService {
   }
 
   /**
+   * **Ce qu'il y a dans le sac** d'une commande de la file, par son identifiant.
+   *
+   * 🔴 Elle remplace `AdminOrdersService.byId()` depuis le 2026-09-11, et ce
+   * n'est pas un rangement : cette route-là rendait l'`OrderView` du CLIENT —
+   * prix unitaires, TVA, totaux, et la trace de négociation étage par étage —
+   * sur un poste de comptoir, avec quelqu'un en face. Les trois surfaces de
+   * remise promettent « aucun montant » ; deux le tenaient par leur forme, le
+   * rail par la seule discrétion de son gabarit.
+   *
+   * `OrderHandoverView` n'en porte aucun. La promesse est redevenue
+   * structurelle : ce qui n'est pas dans la vue ne traverse pas le réseau.
+   */
+  async byOrderId(orderId: string): Promise<OrderHandoverView> {
+    return firstValueFrom(
+      this.http.get<OrderHandoverView>(
+        `${B2B_API_BASE}/admin/handover/order/${encodeURIComponent(orderId)}`,
+      ),
+    );
+  }
+
+  /**
    * **La remise saisie**, par le numéro de commande — le chemin sans QR.
    *
    * 🔴 Elle grave `manual`, et c'est tout ce qui la distingue du scan côté
