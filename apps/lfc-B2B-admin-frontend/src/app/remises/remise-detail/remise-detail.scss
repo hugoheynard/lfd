@@ -4,6 +4,19 @@
    directive, elle, ne peint pas. */
 :host {
   display: block;
+
+  /* Ce qui surplombe le rail, mesuré à l'écran : la barre de l'app (56), la
+     bande de tête (60), le sur-titre de la file et les gouttières. */
+  --rd-above: 10.5rem;
+
+  /* 🔴 Deux réglages OUVERTS, sur l'hôte et non sur `.rd-sheet` : une feuille
+     d'app ne peut pas atteindre l'intérieur d'un composant encapsulé, mais une
+     propriété personnalisée, elle, y descend. C'est par eux que l'écran de
+     comptoir fait du rail une feuille qui monte sur la file quand la colonne
+     n'existe plus. Posés sur `.rd-sheet`, ils auraient gagné contre ce que
+     l'appelant écrit sur l'élément — et rien n'aurait bougé. */
+  --rd-height: calc(100dvh - var(--rd-above));
+  --rd-radius: var(--fold-radius-lg);
 }
 
 /* 🔴 **Le rail descend jusqu'en bas.** Un bloc sombre de six lignes à côté d'une
@@ -15,21 +28,17 @@
 .rd-sheet {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-md);
-  height: calc(100dvh - var(--rd-above));
+  gap: var(--fold-space-lg);
+  height: var(--rd-height);
   padding: var(--fold-space-lg);
   overflow-y: auto;
-  border-radius: var(--fold-radius-lg);
+  border-radius: var(--rd-radius);
 
   /* 🔴 La teinte de la BARRE DE L'APP, et non celle du rail secondaire. Les
      deux sont sombres, mais la barre est d'un cran plus profond : le rail s'y
      accorde, et la file sur son papier gagne le relief que deux gris voisins ne
      donnaient pas. Un seul jeton à changer — aucune couleur n'est écrite ici. */
   background: var(--fold-color-bg-header);
-
-  /* Ce qui surplombe le rail, mesuré à l'écran : la barre de l'app (56), la
-     bande de tête (60), le sur-titre de la file et les gouttières. */
-  --rd-above: 10.5rem;
 }
 
 /* ── L'IDENTITÉ ─────────────────────────────────────────────────────────────

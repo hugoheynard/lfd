@@ -7,7 +7,7 @@ import { DestroyRef, inject, signal, type Signal } from '@angular/core';
 const NARROW = '(max-width: 640px)';
 
 /**
- * L'écran est-il étroit, **en direct** ?
+ * L'écran répond-il à cette media query, **en direct** ?
  *
  * Certains réglages ne sont pas du CSS et ne peuvent donc pas vivre dans une
  * media query : la densité d'une barre `fold-view-nav` est une *entrée* du
@@ -21,14 +21,18 @@ const NARROW = '(max-width: 640px)';
  *
  * Sans `matchMedia` — rendu serveur, environnement de test — on répond **non** :
  * le rendu large est le défaut, et l'hydratation corrige.
-
+ *
+ * @param media La question posée. Par défaut {@link NARROW}, le seuil commun du
+ *   back-office. Un écran dont la bascule se joue à une AUTRE largeur passe la
+ *   sienne plutôt que d'ouvrir une seconde fonction — et la déclare chez lui,
+ *   avec la raison de ce seuil-là.
  */
-export function narrowViewport(): Signal<boolean> {
+export function narrowViewport(media: string = NARROW): Signal<boolean> {
   const narrow = signal(false);
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return narrow.asReadonly();
   }
-  const query = window.matchMedia(NARROW);
+  const query = window.matchMedia(media);
   narrow.set(query.matches);
   const onChange = (event: MediaQueryListEvent): void => narrow.set(event.matches);
   query.addEventListener('change', onChange);

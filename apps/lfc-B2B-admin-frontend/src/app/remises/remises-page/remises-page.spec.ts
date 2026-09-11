@@ -67,6 +67,35 @@ class FakeOrders {
   }
 }
 
+/**
+ * Rend l'écran en faisant croire à une fenêtre ÉTROITE.
+ *
+ * ⚠️ Le doublé est posé avant `createComponent` et retiré juste après : la page
+ * interroge `matchMedia` à sa construction, une seule fois, et le laisser en
+ * place déborderait sur les cas suivants.
+ */
+async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<RemisesPage>> {
+  const original = window.matchMedia;
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: () => ({
+      matches: true,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }),
+  });
+  try {
+    return await render(api);
+  } finally {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: original,
+    });
+  }
+}
+
 async function render(api: FakeQueue): Promise<ComponentFixture<RemisesPage>> {
   TestBed.configureTestingModule({
     imports: [RemisesPage],
@@ -169,5 +198,38 @@ describe('RemisesPage', () => {
 
     expect(text(fixture)).toContain('File illisible');
     expect(text(fixture)).toContain('Réessayer');
+  });
+
+  it('🔴 sur écran étroit, choisir une ligne fait MONTER le sac sur la file', async () => {
+    const api = new FakeQueue();
+    api.entries = [entry({ orderId: 'a' })];
+    const fixture = await renderNarrow(api);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.board')?.classList.contains('is-stacked')).toBe(true);
+    expect(el.querySelector('.board')?.classList.contains('has-selection')).toBe(false);
+
+    el.querySelector<HTMLElement>('tr.folddt-row')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.board')?.classList.contains('has-selection')).toBe(true);
+    // 🔴 La feuille RECOUVRE la file : un clavier qui continuerait de la
+    // parcourir derrière tabulerait dans le vide.
+    expect(el.querySelector<HTMLElement>('.board-queue')?.inert).toBe(true);
+  });
+
+  it('sur écran large, la file reste atteignable pendant la lecture du sac', async () => {
+    const api = new FakeQueue();
+    api.entries = [entry({ orderId: 'a' })];
+    const fixture = await render(api);
+    const el = fixture.nativeElement as HTMLElement;
+
+    el.querySelector<HTMLElement>('tr.folddt-row')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.board')?.classList.contains('is-stacked')).toBe(false);
+    expect(el.querySelector<HTMLElement>('.board-queue')?.inert).toBe(false);
   });
 });

@@ -155,6 +155,60 @@
   flex: 0 0 auto;
 }
 
+/* ── SUR ÉCRAN ÉTROIT : LE SAC MONTE SUR LA FILE ────────────────────────────
+   Aucune media query ici, et c'est voulu : le seuil est déclaré UNE fois, en
+   TypeScript, parce qu'il sert aussi à poser `inert` — et deux définitions de
+   la même largeur font basculer un écran en deux temps. La feuille suit donc
+   la classe que le signal allume.
+
+   `fold-aside-layout` range sa colonne SOUS le centre en dessous de 1040 px.
+   Là, toucher une ligne posait le sac hors de l'écran, sous une file de dix
+   lignes : rien ne bougeait sous le doigt. On le sort du flux et on le fait
+   monter — le geste d'un téléphone. */
+.board.is-stacked app-remise-detail {
+  position: fixed;
+
+  /* 🔴 201, et le chiffre a une raison. À 40, les entrées du rail de l'app
+     passaient AU-DESSUS de la feuille : leur infobulle porte `z-index: 100` et
+     son ancre, en `position: relative` sans `z-index`, ne fait pas de contexte
+     d'empilement — le 100 remonte donc jusqu'à la racine. 201 est le plus haut
+     échelon que fold emploie hors de son `9999` de secours (relevé dans son
+     bundle le 2026-09-11). Une feuille qu'on voit à travers est pire qu'une
+     feuille absente : on lit deux écrans superposés. */
+  z-index: 201;
+  inset: auto 0 0;
+
+  /* Pas 100 % : la file reste visible en haut, et c'est ce qui dit d'où la
+     feuille sort et où l'on revient en la refermant. */
+  height: 88dvh;
+
+  /* Hors écran tant que rien n'est choisi. `translate` et non `display: none` :
+     le retour se voit, donc on comprend où le sac est parti. */
+  transform: translateY(101%);
+  transition: transform 0.22s ease;
+}
+
+.board.is-stacked.has-selection app-remise-detail {
+  transform: none;
+}
+
+/* Le mouvement se coupe pour qui l'a demandé — la feuille arrive, sans glisser. */
+@media (prefers-reduced-motion: reduce) {
+  .board.is-stacked app-remise-detail {
+    transition: none;
+  }
+}
+
+/* 🔴 Par les deux réglages que le rail OUVRE, et non par un sélecteur qui
+   viserait son intérieur : l'encapsulation de vue rend `.rd-sheet` inatteignable
+   depuis ici, tandis qu'une propriété personnalisée y descend. Dans la feuille,
+   rien ne surplombe le rail — il la prend entière — et seuls ses deux coins du
+   haut s'arrondissent, puisqu'elle sort du bas de l'écran. */
+.board.is-stacked app-remise-detail {
+  --rd-height: 100%;
+  --rd-radius: var(--fold-radius-lg) var(--fold-radius-lg) 0 0;
+}
+
 /* ── LA GRILLE : la file, et le sac à côté ──────────────────────────────────
    Le rail par défaut fait 300 px — la largeur d'un sommaire, pas celle d'une
    liste d'articles avec ses quantités et ses SKU. On l'élargit d'un tiers ;

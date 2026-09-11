@@ -26,6 +26,7 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { NotifyService } from '../../notify.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import {
@@ -140,6 +141,23 @@ export class RemisesPage {
    * ceux de la journée.
    */
   protected readonly query = signal<string>('');
+
+  /**
+   * **La file et le sac ne tiennent plus côte à côte.**
+   *
+   * 🔴 1040 px est le seuil auquel `fold-aside-layout` laisse tomber sa
+   * deuxième colonne — lu dans son CSS compilé le 2026-09-11, et c'est une
+   * valeur qu'il tient pour lui. On la redit ici parce qu'il n'en publie pas le
+   * jeton, et on la redit UNE fois : la feuille de cet écran ne pose pas de
+   * media query, elle suit la classe que ce signal allume. Deux définitions
+   * dériveraient, et l'écran basculerait en deux temps.
+   *
+   * ⚠️ Approximation assumée : fold interroge la largeur de son CONTENEUR,
+   * nous celle de la fenêtre. Elles ne diffèrent que si un jour cet écran est
+   * posé dans une colonne étroite d'une page large — ce qu'un poste de comptoir
+   * ne fait pas.
+   */
+  protected readonly stacked = narrowViewport('(max-width: 1040px)');
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly day = signal<string>(isoDay(new Date()));
