@@ -182,17 +182,26 @@
 }
 
 /* La quantité d'abord, en chiffres tabulaires alignés : la colonne se parcourt
-   du haut vers le bas pendant qu'on remplit le sac, sans relire les noms. */
-/* 🔴 **Aucun trait entre les lignes.** Une liste de six articles n'a pas besoin
-   qu'on sépare ses rangs : l'espace le fait, et il le fait mieux. Les traits
-   ajoutaient six lignes horizontales dans une colonne qui en a déjà deux, et
-   l'œil les comptait avant de lire les quantités. C'est l'air qui range ici. */
+   du haut vers le bas pendant qu'on remplit le sac, sans relire les noms.
+
+   Un trait ENTRE les rangs, et seulement entre eux : c'est une liste qu'on
+   parcourt du doigt en comptant à voix haute, et le filet donne au doigt une
+   ligne à suivre que l'air seul ne donne pas. Le trait le plus clair de fold et
+   un seul pixel — assez pour guider, trop peu pour qu'on le compte avant de
+   lire les quantités. */
 .rd-line {
   display: grid;
   grid-template-columns: 2.25rem 1fr auto;
   align-items: baseline;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) 0;
+}
+
+/* 🔴 Sur le rang SUIVANT, jamais sur chacun : un filet posé sur tous les rangs
+   en dessine un de plus sous le dernier article, à un cheveu du bord de la
+   carte — deux traits parallèles qu'on lit comme une erreur d'alignement. */
+.rd-line + .rd-line {
+  border-top: 1px solid var(--fold-color-border-subtle);
 }
 
 .rd-qty {
@@ -230,9 +239,13 @@
   flex-direction: column;
   gap: var(--fold-space-2xs);
 
-  /* Plus de `margin-top: auto` : la carte occupe désormais la hauteur libre, et
-     la remise vient juste sous elle. Poussée en bas, elle laissait un vide au
-     milieu du rail — et la main allait la chercher loin de ce qu'elle lit. */
+  /* 🔴 Collée au BAS du rail. Le sac s'arrête où sa liste s'arrête, donc la
+     remise suivait la dernière ligne et changeait de hauteur d'une commande à
+     l'autre — trois articles la posaient en haut, vingt la posaient en bas. Un
+     geste qu'on cherche en tenant un sac d'une main doit se trouver au même
+     endroit à chaque fois ; le vide au-dessus est le prix de cette constance,
+     et il est moins cher que la recherche. */
+  margin-top: auto;
   padding-top: var(--fold-space-3xs);
 }
 
