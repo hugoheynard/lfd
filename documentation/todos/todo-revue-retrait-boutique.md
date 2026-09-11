@@ -253,7 +253,7 @@ aucun périmètre (`openTab` vide), il n'y a rien à démentir.
 
 ---
 
-## 4. 🟠 Une règle métier écrite trois fois
+## 4. ✅ Une règle métier écrite trois fois — clos le 2026-09-11
 
 `handoverBlocker` (`handover/domain/services/handover.ts`) dit ce qui empêche
 une remise. La même règle est réécrite deux fois côté front :
@@ -271,6 +271,32 @@ par une, alors qu'un gabarit ne se teste qu'en le rendant ».
 
 Coût si on ne le fait pas : le jour où un troisième état apparaît, deux fichiers
 doivent changer et un seul le sera.
+
+### ✅ Ce qui a été fait
+
+`stillRemittable(state)` vit dans `handover-queue.ts` ; les deux composants
+l'appellent. La raison de sa **permissivité** est écrite au-dessus d'elle et non
+laissée à deviner : elle laisse passer une commande que le fournil n'a pas
+déclarée prête, exactement comme `handoverBlocker`, parce que renvoyer un client
+physiquement là — colis prêt — au motif qu'un écran d'atelier n'a pas été cliqué
+serait pire. Sans cette phrase, le prochain lecteur la « corrigera » en exigeant
+`ready`.
+
+🔴 **Et le cinquième état ne passera plus en silence.** Un `default:` aurait
+choisi à la place du lecteur ; un cas de spec fait constater l'élargissement au
+COMPILATEUR :
+
+```ts
+type Covers<TUnion, TKnown> = [TUnion] extends [TKnown] ? true : false;
+const covered: Covers<HandoverQueueState, "handed_over" | "ready" | "expected" | "cancelled"> =
+  true;
+```
+
+Un membre de plus rend la condition fausse, donc `false` n'est plus assignable à
+`true`, et `tsc` refuse (TS2322). Vérifié en isolation : la ligne exacte
+compile, la ligne élargie échoue — le contrôle porte bien sur l'ensemble et non
+sur la forme de l'écriture. Même device que le point 2, et même raison : aucun
+test de comportement ne voit une union grandir.
 
 ---
 
@@ -507,7 +533,9 @@ fichier.
 ~~**2**~~ ✅ **clos le 2026-09-11.**
 
 ~~**3**~~ ✅ **clos le 2026-09-11**, par une phrase à l'écran, comme prévu.
-**4** au premier changement d'état. ~~**5**~~ ✅ **clos le 2026-09-11**, et pas comme il était
+~~**4**~~ ✅ **clos le 2026-09-11** — il était prévu « au premier changement
+d'état », et c'était le mauvais moment : ce changement-là est justement celui où
+on ne relit pas les deux fichiers. ~~**5**~~ ✅ **clos le 2026-09-11**, et pas comme il était
 écrit : l'objection d'Hugo — « un contexte devient connaisseur des besoins des
 autres » — a retourné le plan. Le port ne devait pas être découpé, il devait
 rétrécir.
