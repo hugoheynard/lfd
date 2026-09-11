@@ -29,14 +29,10 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
   }
 
   async arrestedBetween(range: ServiceRange): Promise<readonly DayDemand[]> {
-    const rows = await this.prisma.productionCount.findMany({
-      where: {
-        serviceDay: { gte: range.from.value, lte: range.to.value },
-        day: { closedAt: { not: null } },
-      },
-      orderBy: [{ serviceDay: "asc" }, { sku: "asc" }],
-      select: { serviceDay: true, sku: true, productName: true, quantity: true },
-    });
+    const [rows, orders] = await Promise.all([
+      this.countsBetween(range),
+      this.ordersBetween(range),
+    ]);
 
     const byDay = new Map<string, { sku: string; productName: string; quantity: number }[]>();
     for (const row of rows) {
@@ -44,6 +40,39 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
       items.push({ sku: row.sku, productName: row.productName, quantity: row.quantity });
       byDay.set(row.serviceDay, items);
     }
-    return [...byDay.entries()].map(([day, items]) => ({ day, items }));
+    return [...byDay.entries()].map(([day, items]) => ({
+      day,
+      items,
+      orderCount: orders.get(day) ?? 0,
+    }));
+  }
+
+  /** Le compte à produire, ligne par ligne. */
+  private async countsBetween(range: ServiceRange) {
+    return this.prisma.productionCount.findMany({
+      where: {
+        serviceDay: { gte: range.from.value, lte: range.to.value },
+        day: { closedAt: { not: null } },
+      },
+      orderBy: [{ serviceDay: "asc" }, { sku: "asc" }],
+      select: { serviceDay: true, sku: true, productName: true, quantity: true },
+    });
+  }
+
+  /**
+   * Combien de commandes le plan de chaque journée porte.
+   *
+   * Une seconde lecture, et pas une somme des articles : deux commandes peuvent
+   * porter le même SKU, que le compte à produire a justement fusionné. Ce qu'on
+   * compte ici, ce sont les feuilles d'atelier — la question « combien de piles
+   * à répartir ».
+   */
+  private async ordersBetween(range: ServiceRange): Promise<ReadonlyMap<string, number>> {
+    const rows = await this.prisma.productionOrder.groupBy({
+      by: ["serviceDay"],
+      where: { serviceDay: { gte: range.from.value, lte: range.to.value } },
+      _count: { _all: true },
+    });
+    return new Map(rows.map((row) => [row.serviceDay, row._count._all]));
   }
 }

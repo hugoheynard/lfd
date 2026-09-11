@@ -13,12 +13,22 @@ export interface DayDemand {
   /** `AAAA-MM-JJ`. */
   readonly day: string;
   readonly items: readonly ProducedItemSnapshot[];
+  /**
+   * Combien de **commandes** composent cette journée.
+   *
+   * Il vient de la source, il ne se déduit pas des articles : deux commandes
+   * peuvent porter le même SKU, et le compte à produire les a justement
+   * fusionnées. Le recalculer ici rendrait toujours le nombre de RÉFÉRENCES,
+   * qui est une autre question.
+   */
+  readonly orderCount: number;
 }
 
 /** Une colonne de la matrice. */
 export interface ForecastColumn {
   readonly date: string;
   readonly totalUnits: number;
+  readonly orderCount: number;
   readonly closed: boolean;
 }
 
@@ -80,21 +90,21 @@ export function forecastMatrix(
   expected: readonly DayDemand[],
 ): ForecastMatrix {
   const closed = new Set(arrested.map((day) => day.day));
-  const demandOf = new Map<string, readonly ProducedItemSnapshot[]>();
+  const demandOf = new Map<string, DayDemand>();
   for (const day of expected) {
     if (!closed.has(day.day)) {
-      demandOf.set(day.day, day.items);
+      demandOf.set(day.day, day);
     }
   }
   for (const day of arrested) {
-    demandOf.set(day.day, day.items);
+    demandOf.set(day.day, day);
   }
 
   const rows = new Map<string, { productName: string; quantities: number[] }>();
   const totals = Array.from({ length: range.length }, () => 0);
 
   range.days.forEach((day, column) => {
-    for (const item of demandOf.get(day.value) ?? []) {
+    for (const item of demandOf.get(day.value)?.items ?? []) {
       const row = rows.get(item.sku) ?? {
         productName: item.productName,
         quantities: Array.from({ length: range.length }, () => 0),
@@ -108,6 +118,7 @@ export function forecastMatrix(
   const columns = range.days.map((day, index) => ({
     date: day.value,
     totalUnits: totals[index] ?? 0,
+    orderCount: demandOf.get(day.value)?.orderCount ?? 0,
     closed: closed.has(day.value),
   }));
 

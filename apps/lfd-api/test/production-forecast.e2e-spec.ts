@@ -130,6 +130,9 @@ describe("le prévisionnel du fournil", () => {
 
     expect(view.days.map((day) => day.date)).toEqual([DAY_1, DAY_2, DAY_3]);
     expect(view.days.map((day) => day.totalUnits)).toEqual([2, 0, 5]);
+    // Le nombre de COMMANDES, à côté des pièces : 1 240 en 12 commandes et
+    // 1 240 en 90 ne se préparent pas de la même façon.
+    expect(view.days.map((day) => day.orderCount)).toEqual([1, 0, 1]);
     expect(view.days.every((day) => !day.closed)).toBe(true);
     expect(view.lines).toHaveLength(1);
     expect(view.lines[0]?.sku).toBe("VIE-001");
@@ -148,6 +151,7 @@ describe("le prévisionnel du fournil", () => {
 
     expect(view.lines).toHaveLength(1);
     expect(view.lines[0]?.quantities).toEqual([7]);
+    expect(view.days[0]?.orderCount).toBe(2);
   });
 
   /**
@@ -161,12 +165,17 @@ describe("le prévisionnel du fournil", () => {
     await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 6 }]);
 
     const before = await forecast(DAY_1, DAY_1);
-    expect(before.days[0]).toEqual({ date: DAY_1, totalUnits: 6, closed: false });
+    expect(before.days[0]).toEqual({
+      date: DAY_1,
+      totalUnits: 6,
+      orderCount: 1,
+      closed: false,
+    });
 
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${DAY_1}/close`).expect(201);
 
     const after = await forecast(DAY_1, DAY_1);
-    expect(after.days[0]).toEqual({ date: DAY_1, totalUnits: 6, closed: true });
+    expect(after.days[0]).toEqual({ date: DAY_1, totalUnits: 6, orderCount: 1, closed: true });
     expect(after.lines[0]?.quantities).toEqual([6]);
   });
 

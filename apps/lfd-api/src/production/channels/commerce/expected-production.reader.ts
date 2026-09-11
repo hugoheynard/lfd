@@ -11,6 +11,12 @@ export interface ExpectedItem {
 export interface ExpectedDayProduction {
   readonly day: string;
   readonly items: readonly ExpectedItem[];
+  /**
+   * Combien de **commandes** composent cette journée — un fait du commerce, que
+   * la production ne saurait pas reconstituer : ses articles sont déjà
+   * fusionnés par SKU, et les recompter rendrait des références, pas des piles.
+   */
+  readonly orderCount: number;
 }
 
 /**

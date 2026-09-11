@@ -37,10 +37,18 @@ class ExpectedStub extends ExpectedProductionReader {
 describe("GetProductionForecastHandler", () => {
   it("sert la matrice de la plage demandée, les deux sources arbitrées", async () => {
     const plan = new PlanStub([
-      { day: "2026-09-03", items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 186 }] },
+      {
+        day: "2026-09-03",
+        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 186 }],
+        orderCount: 12,
+      },
     ]);
     const expected = new ExpectedStub([
-      { day: "2026-09-05", items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 410 }] },
+      {
+        day: "2026-09-05",
+        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 410 }],
+        orderCount: 47,
+      },
     ]);
 
     const view = await new GetProductionForecastHandler(plan, expected).execute(
@@ -48,9 +56,9 @@ describe("GetProductionForecastHandler", () => {
     );
 
     expect(view.days).toEqual([
-      { date: "2026-09-03", totalUnits: 186, closed: true },
-      { date: "2026-09-04", totalUnits: 0, closed: false },
-      { date: "2026-09-05", totalUnits: 410, closed: false },
+      { date: "2026-09-03", totalUnits: 186, orderCount: 12, closed: true },
+      { date: "2026-09-04", totalUnits: 0, orderCount: 0, closed: false },
+      { date: "2026-09-05", totalUnits: 410, orderCount: 47, closed: false },
     ]);
     expect(view.lines).toEqual([
       { sku: "PAI-BAG", productName: "Baguette", quantities: [186, 0, 410], totalUnits: 596 },

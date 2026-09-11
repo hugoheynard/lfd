@@ -50,6 +50,15 @@ export interface ProductionForecastDay {
   /** Toutes références confondues — le chiffre de l'en-tête de colonne. */
   readonly totalUnits: number;
   /**
+   * Combien de **commandes** composent ce total.
+   *
+   * Ce n'est pas un doublon du nombre de pièces, et c'est même la seule chose
+   * qui le rend lisible : 1 240 pièces en 12 commandes et 1 240 pièces en 90
+   * ne se préparent pas de la même façon — la seconde journée se passe à
+   * répartir, pas à pétrir.
+   */
+  readonly orderCount: number;
+  /**
    * `true` = la journée est **close**, et sa colonne est le compte à produire
    * arrêté à la clôture — un fait, pas une prévision.
    *

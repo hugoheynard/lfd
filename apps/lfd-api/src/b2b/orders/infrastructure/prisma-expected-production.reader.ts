@@ -60,11 +60,13 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
     });
 
     const byDay = new Map<string, Map<string, { productName: string; quantity: number }>>();
+    const orderCounts = new Map<string, number>();
     for (const row of rows) {
       if (row.requestedDeliveryDate === null) {
         continue;
       }
       const day = row.requestedDeliveryDate.toISOString().slice(0, 10);
+      orderCounts.set(day, (orderCounts.get(day) ?? 0) + 1);
       const items = byDay.get(day) ?? new Map<string, { productName: string; quantity: number }>();
       for (const line of row.lines) {
         const known = items.get(line.sku);
@@ -83,6 +85,10 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
         productName: item.productName,
         quantity: item.quantity,
       })),
+      // Compté sur les LIGNES de commande lues, et non par une requête de plus :
+      // une commande sans ligne ne pèse rien au fournil, et n'a rien à faire
+      // dans un compte qu'on lit comme « combien de piles à répartir ».
+      orderCount: orderCounts.get(day) ?? 0,
     }));
   }
 }

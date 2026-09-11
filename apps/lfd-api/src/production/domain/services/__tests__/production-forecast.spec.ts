@@ -3,10 +3,13 @@ import { ServiceRange } from "../../value-objects/service-range.value-object.js"
 
 const WEEK = ServiceRange.of("2026-09-03", "2026-09-09");
 
-function demand(day: string, items: readonly [string, string, number][]): DayDemand {
+/** Une journée de demande. `orders` par défaut à 1 : le compte n'est le sujet
+ *  que de deux cas, et l'écrire partout noierait ce qu'ils éprouvent. */
+function demand(day: string, items: readonly [string, string, number][], orders = 1): DayDemand {
   return {
     day,
     items: items.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
+    orderCount: orders,
   };
 }
 
@@ -62,7 +65,12 @@ describe("forecastMatrix", () => {
    */
   it("lit le compte ARRÊTÉ sur une journée close, et l'annonce", () => {
     const matrix = forecastMatrix(WEEK, [demand("2026-09-03", [["PAI-BAG", "Baguette", 186]])], []);
-    expect(matrix.columns[0]).toEqual({ date: "2026-09-03", totalUnits: 186, closed: true });
+    expect(matrix.columns[0]).toEqual({
+      date: "2026-09-03",
+      totalUnits: 186,
+      orderCount: 1,
+      closed: true,
+    });
     expect(matrix.rows[0]?.quantities[0]).toBe(186);
   });
 
@@ -80,6 +88,30 @@ describe("forecastMatrix", () => {
     );
     expect(matrix.columns[0]?.totalUnits).toBe(186);
     expect(matrix.rows[0]?.quantities[0]).toBe(186);
+  });
+
+  /**
+   * Le compte de commandes suit la MÊME source que les pièces : sur une journée
+   * close, c'est le plan arrêté qui dit combien de piles il y a — pas ce que le
+   * commerce porte encore.
+   */
+  it("prend le nombre de commandes à la source qui a gagné", () => {
+    const matrix = forecastMatrix(
+      WEEK,
+      [demand("2026-09-03", [["PAI-BAG", "Baguette", 186]], 12)],
+      [
+        demand("2026-09-03", [["PAI-BAG", "Baguette", 40]], 3),
+        demand("2026-09-04", [["PAI-BAG", "Baguette", 204]], 47),
+      ],
+    );
+    expect(matrix.columns[0]?.orderCount).toBe(12);
+    expect(matrix.columns[1]?.orderCount).toBe(47);
+  });
+
+  it("ne compte aucune commande sur un jour que personne n'annonce", () => {
+    expect(forecastMatrix(WEEK, [], []).columns.map((column) => column.orderCount)).toEqual([
+      0, 0, 0, 0, 0, 0, 0,
+    ]);
   });
 
   it("mélange une journée close et une journée ouverte sur la même ligne", () => {
