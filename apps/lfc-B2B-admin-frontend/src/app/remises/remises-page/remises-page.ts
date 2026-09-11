@@ -10,28 +10,19 @@ import {
 } from '@angular/core';
 import type { HandoverQueueEntryView } from '@lfd/contracts';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldCardComponent,
-  FoldDataTableCellDirective,
-  FoldDataTableComponent,
   FoldDateComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldAsideLayoutComponent,
-  FoldDataTableRowNoteDirective,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldPanelHostService,
   FoldSurfaceDirective,
   FoldTabPanelComponent,
   FoldTabsComponent,
-  type FoldBadgeVariant,
   type FoldTabItem,
-  type FoldTableColumn,
-  type FoldTableTone,
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
@@ -41,18 +32,11 @@ import {
   clockOf,
   entriesForTab,
   formatHour,
-  formatWindow,
-  isLate,
-  lateLabel,
-  lateMinutes,
   pickupTabs,
   queueCounters,
-  rowTone,
-  sortedQueue,
-  stateLabel,
-  stateVariant,
   type QueueCounters,
 } from '../handover-queue';
+import { FileRemise } from '../file-remise/file-remise';
 import { RemiseDetail } from '../remise-detail/remise-detail';
 import { SCANNED, ScanPanel, type ScanPanelData } from '../scan-panel/scan-panel';
 import { AdminOrdersService } from '../../commandes/orders.service';
@@ -111,13 +95,7 @@ const TICK_MS = 30_000;
   selector: 'app-remises-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
-    FoldCardComponent,
-    FoldDataTableCellDirective,
-    FoldDataTableComponent,
-    FoldDataTableRowNoteDirective,
     FoldDateComponent,
     FoldElementTitleComponent,
     FoldAsideLayoutComponent,
@@ -132,6 +110,7 @@ const TICK_MS = 30_000;
     FoldSurfaceDirective,
     FoldTabPanelComponent,
     FoldTabsComponent,
+    FileRemise,
     RemiseDetail,
   ],
   templateUrl: './remises-page.html',
@@ -161,10 +140,13 @@ export class RemisesPage {
    * plutôt que lu au rendu : le lire au rendu ferait dépendre l'affichage du
    * moment où Angular repeint, et rendrait l'écran intestable.
    */
-  private readonly now = signal<Date>(new Date());
+  protected readonly now = signal<Date>(new Date());
 
   /** La commande dont on envoie le rappel — au plus une, et le bouton le dit. */
   private readonly reminding = signal<string | null>(null);
+
+  /** Ce que la file a besoin de savoir des rappels : lequel est en vol… */
+  protected readonly remindingId = this.reminding.asReadonly();
 
   /**
    * Les rappels déjà partis, dans cette session d'écran.
@@ -176,6 +158,9 @@ export class RemisesPage {
    * inventé côté client.
    */
   private readonly reminded = signal<ReadonlySet<string>>(new Set());
+
+  /** …et lesquels sont déjà partis. */
+  protected readonly remindedIds = this.reminded.asReadonly();
 
   /**
    * La commande ouverte dans le rail, **par identifiant et non par objet**.
@@ -212,9 +197,13 @@ export class RemisesPage {
     return tabs[0]?.key ?? '';
   });
 
-  /** La file de l'onglet, ordonnée par créneau puis par heure de commande. */
+  /**
+   * Les lignes de l'onglet ouvert. **Pas ordonnées ici** : l'ordre de la file
+   * appartient à la file, et `app-file-remise` le pose — un appelant qui
+   * oublierait de trier obtiendrait une liste juste et illisible.
+   */
   protected readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
-    sortedQueue(entriesForTab(this.entries(), this.activeTab())),
+    entriesForTab(this.entries(), this.activeTab()),
   );
 
   protected readonly total = computed(() => this.entries().length);
@@ -246,27 +235,6 @@ export class RemisesPage {
     const tab = this.tabs().find((item) => item.key === active);
     return `La file · ${tab?.label ?? active}`;
   });
-
-  protected readonly columns: readonly FoldTableColumn<HandoverQueueEntryView>[] = [
-    // Le créneau en tête : c'est l'ordre de la file, et donc l'ordre dans
-    // lequel on la parcourt des yeux au comptoir.
-    { key: 'window', label: 'Créneau', width: '8rem' },
-    // La référence n'a plus sa colonne : elle vit sous le nom du client, où on
-    // la lit en même temps que lui. Une colonne pour un identifiant qu'on ne
-    // trie ni ne compare prenait la place du seul champ qu'on cherche.
-    { key: 'customer', label: 'Client' },
-    { key: 'units', label: 'Pièces', numeric: true, width: '5.5rem' },
-    { key: 'state', label: 'État', width: '8rem' },
-    // Assez pour « Scanner » et son icône, pas un pouce de plus : depuis que le
-    // rail occupe trente rem, chaque rem repris à une colonne est une colonne
-    // que le nom du client ne perd pas.
-    { key: 'action', label: '', align: 'right', width: '8.5rem' },
-  ];
-
-  protected readonly rowKey = (entry: HandoverQueueEntryView): string => entry.orderId;
-
-  protected readonly toneOf = (entry: HandoverQueueEntryView): FoldTableTone =>
-    rowTone(entry, this.day(), this.now());
 
   constructor() {
     effect(() => {
@@ -302,70 +270,6 @@ export class RemisesPage {
   protected onTab(key: string): void {
     this.requestedTab.set(key);
   }
-
-  // Le contexte d'un `foldCell` n'est pas typé (`let-row` est `any`) : on entre
-  // par des méthodes, qui rendent la ligne typée au passage.
-  protected windowLabel(entry: HandoverQueueEntryView): string | null {
-    return formatWindow(entry.window);
-  }
-
-  protected late(entry: HandoverQueueEntryView): boolean {
-    return isLate(entry, this.day(), this.now());
-  }
-
-  /** « 56 min de retard », ou `null`. */
-  protected lateText(entry: HandoverQueueEntryView): string | null {
-    const minutes = lateMinutes(entry, this.day(), this.now());
-    return minutes === null ? null : lateLabel(minutes);
-  }
-
-  /** « remise 6 h 41 » — l'heure sous le nom, à la place de la référence. */
-  protected handedOverAt(entry: HandoverQueueEntryView): string | null {
-    if (entry.handedOverAt === null) {
-      return null;
-    }
-    return `remise ${formatHour(clockOf(new Date(entry.handedOverAt)))}`;
-  }
-
-  protected label(entry: HandoverQueueEntryView): string {
-    return stateLabel(entry.state);
-  }
-
-  protected variant(entry: HandoverQueueEntryView): FoldBadgeVariant {
-    return stateVariant(entry.state);
-  }
-
-  /** Peut-on encore tendre ce sac ? Même règle que le serveur, dite ici pour l'œil. */
-  protected remittable(entry: HandoverQueueEntryView): boolean {
-    return entry.state !== 'handed_over' && entry.state !== 'cancelled';
-  }
-
-  /**
-   * Le rappel n'a de sens que sur une commande **déclarée prête**. Le serveur
-   * le refuse aussi — la règle vit là-bas, ici on évite d'armer un bouton dont
-   * on connaît déjà la réponse.
-   */
-  protected remindable(entry: HandoverQueueEntryView): boolean {
-    return this.remittable(entry) && entry.readyAt !== null && !this.reminded().has(entry.orderId);
-  }
-
-  protected reminderSent(entry: HandoverQueueEntryView): boolean {
-    return this.reminded().has(entry.orderId);
-  }
-
-  protected busy(entry: HandoverQueueEntryView): boolean {
-    return this.reminding() === entry.orderId;
-  }
-
-  /**
-   * **Quelles lignes portent une note.** L'autre moitié du câblage : le gabarit
-   * dit à quoi une note ressemble, ceci dit qui en a une.
-   *
-   * 🔴 Une propriété-flèche et non une méthode : `fold-data-table` la reçoit
-   * comme une entrée, donc elle doit garder son `this`. Une méthode passée par
-   * référence perdrait le composant et lèverait au premier rendu.
-   */
-  protected readonly hasNote = (entry: HandoverQueueEntryView): boolean => this.late(entry);
 
   /**
    * **Ouvre le scanner**, avec ou sans commande attendue.

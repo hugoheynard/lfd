@@ -8,31 +8,19 @@ import { HandoverQueueService } from '../handover-queue.service';
 import { RemisesPage } from './remises-page';
 
 /**
- * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
+ * Ce que ces cas tiennent — **l'ÉCRAN, pas la file**.
  *
- * - **chaque colonne rend quelque chose.** `fold-data-table` n'a aucun rendu par
- *   défaut : une colonne sans `foldCell` rend une cellule VIDE sans que rien ne
- *   rougisse. Les cas lisent donc le texte réellement produit ;
- * - 🔴 **une commande sans créneau reste à l'écran** et ne se voit pas prêter
- *   d'heure — c'est le cas de masse depuis le backfill du 2026-08-15 ;
- * - 🔴 **une commande annulée reste dans la file** : la masquer laisserait
- *   quelqu'un chercher une commande disparue ;
+ * Le dessin des lignes est parti dans `app-file-remise` avec ses propres cas :
+ * les colonnes, l'ordre, la note de retard, les gestes émis. Ce qui reste ici
+ * est ce que la page seule décide :
+ *
  * - **les onglets portent leur compteur** et sont dérivés des points reçus ;
+ * - **la bande compte la journée entière**, pas l'onglet ouvert ;
  * - 🔴 **le rail de droite est là même sans sélection**, et se remplit au clic ;
- * - 🔴 **le retard est une NOTE, pas un tiroir** : il est là sans qu'on clique,
- *   et aucune ligne ne porte de chevron.
+ * - les trois états de la lecture — chargement, échec, journée vide.
  *
  * On passe par le DOM : les membres sont `protected`, et c'est le gabarit qui
  * câble les branches — ce que le typecheck ne lit pas.
- *
- * ⚠️ **Le LIBELLÉ du retard n'est pas éprouvé ici**, et c'est délibéré : la page
- * juge contre l'horloge réelle, donc un cas qui fabriquerait une tranche échue
- * devrait dériver son heure de `Date.now()` — et se casserait au passage de
- * minuit, exactement la bombe à retardement que le dépôt interdit dans une
- * fixture. Les minutes et leur formulation sont éprouvées sur `lateMinutes` et
- * `lateLabel`, où l'instant est un PARAMÈTRE. Ici on tient la règle inverse,
- * celle qui coûte cher si elle lâche : sur un créneau `default`, aucun retard,
- * jamais.
  */
 
 const DAY = '2026-09-10';
@@ -109,58 +97,6 @@ const rowTexts = (fixture: ComponentFixture<RemisesPage>): readonly string[] =>
   );
 
 describe('RemisesPage', () => {
-  it('rend chaque colonne de la ligne', async () => {
-    const fixture = await render(new FakeQueue());
-    const body = text(fixture);
-
-    expect(body).toContain('Boulangerie Marin');
-    expect(body).toContain('CMD-1042');
-    expect(body).toContain('12');
-    expect(body).toContain('Attendue');
-    expect(body).toContain('6\u00a0h\u00a000 – 8\u00a0h\u00a000');
-  });
-
-  it('🔴 une commande sans créneau reste à l’écran et le DIT', async () => {
-    const api = new FakeQueue();
-    api.entries = [entry({ window: null })];
-
-    const fixture = await render(api);
-
-    expect(text(fixture)).toContain('Sans créneau');
-    expect(text(fixture)).toContain('Boulangerie Marin');
-  });
-
-  it('🔴 ne parle pas de retard sur un créneau `default`, même largement dépassé', async () => {
-    const api = new FakeQueue();
-    // Une heure d'ouverture recopiée à la commande : l'écran ne doit pas
-    // allumer une alarme que personne n'a promise. Le backfill du 2026-08-15 en
-    // a posé une sur l'intégralité des commandes antérieures — la règle qui
-    // saute allume le portefeuille entier d'un coup, un matin.
-    api.entries = [entry({ window: { start: '00:00', end: '00:01', source: 'default' } })];
-
-    const fixture = await render(api);
-
-    expect(text(fixture)).not.toContain('de retard');
-    expect(text(fixture)).toContain('Attendue');
-  });
-
-  it('🔴 la colonne ÉTAT ne porte QUE l’état — le retard vit sous la ligne', async () => {
-    // Régression : le retard était écrit deux fois sur la même ligne — une
-    // pastille ambre dans cette colonne, et la même minute dans le tiroir deux
-    // lignes plus bas. Deux tons pour un fait fait chercher la différence.
-    //
-    // Le cas ne peut pas fabriquer un retard (la page juge contre l'horloge
-    // réelle, cf. l'en-tête) : il tient la forme de la cellule, qui est ce qui
-    // a dérivé.
-    const fixture = await render(new FakeQueue());
-    const cells = [
-      ...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.folddt-row td'),
-    ];
-    const state = cells.find((cell) => (cell.textContent ?? '').includes('Attendue'));
-
-    expect((state?.textContent ?? '').trim()).toBe('Attendue');
-  });
-
   it('la bande annonce les remises faites, au singulier comme au pluriel', async () => {
     const api = new FakeQueue();
     api.entries = [
@@ -173,62 +109,6 @@ describe('RemisesPage', () => {
     expect(text(fixture)).toContain('1 remise');
     expect(text(fixture)).not.toContain('1 remises');
     expect(text(fixture)).toContain('1 en attente');
-  });
-
-  it('🔴 une remise porte son heure sous le nom, à la place du numéro', async () => {
-    const api = new FakeQueue();
-    api.entries = [
-      entry({
-        state: 'handed_over',
-        handedOverAt: `${DAY}T04:41:00.000Z`,
-        handedOverVia: 'manual',
-      }),
-    ];
-
-    const fixture = await render(api);
-    const row = rowTexts(fixture)[0] ?? '';
-
-    expect(row).toContain('remise');
-    expect(row).not.toContain('CMD-1042');
-    expect(row).toContain('Remise');
-  });
-
-  it('🔴 une ligne sans retard n’émet AUCUNE rangée de note', async () => {
-    // Une rangée vide n'est pas invisible : un lecteur d'écran y entre et
-    // annonce une ligne blanche par commande. C'est le prédicat `rowNote` qui
-    // l'empêche — pas le gabarit, qui ne saurait pas se taire.
-    const fixture = await render(new FakeQueue());
-    const el = fixture.nativeElement as HTMLElement;
-
-    expect(el.querySelector('.folddt-note-row')).toBeNull();
-  });
-
-  it('🔴 AUCUN chevron dans la file : rien n’est caché, rien n’est à déplier', async () => {
-    // Régression : le retard vivait dans un tiroir `foldRowDetail`, qui fait
-    // pousser une bascule sur CHAQUE ligne — y compris celles qui n'ont rien à
-    // ouvrir. Un avertissement qu'il faut déplier n'alerte personne.
-    const fixture = await render(new FakeQueue());
-    const el = fixture.nativeElement as HTMLElement;
-
-    expect(el.querySelector('button.folddt-expand')).toBeNull();
-    expect(el.querySelector('tbody [aria-expanded]')).toBeNull();
-  });
-
-  it('un sac encore à tendre propose le SCAN, pas une remise à l’aveugle', async () => {
-    const fixture = await render(new FakeQueue());
-    const row = (fixture.nativeElement as HTMLElement).querySelector('tbody tr.folddt-row');
-
-    expect(row?.textContent ?? '').toContain('Scanner');
-  });
-
-  it('🔴 une commande déjà remise n’offre plus aucun geste', async () => {
-    const api = new FakeQueue();
-    api.entries = [entry({ state: 'handed_over', handedOverAt: `${DAY}T04:41:00.000Z` })];
-
-    const fixture = await render(api);
-    const row = (fixture.nativeElement as HTMLElement).querySelector('tbody tr.folddt-row');
-
-    expect(row?.textContent ?? '').not.toContain('Scanner');
   });
 
   it('🔴 le rail est là sans sélection, et se remplit au clic', async () => {
@@ -244,40 +124,6 @@ describe('RemisesPage', () => {
 
     expect(text(fixture)).not.toContain('Aucune commande choisie');
     expect(text(fixture)).toContain('Boulangerie Marin');
-  });
-
-  it('🔴 une commande annulée reste dans la file', async () => {
-    const api = new FakeQueue();
-    api.entries = [entry({ state: 'cancelled' })];
-
-    const fixture = await render(api);
-
-    expect(rowTexts(fixture)).toHaveLength(1);
-    expect(text(fixture)).toContain('Annulée');
-  });
-
-  it('ordonne la file par créneau, la ligne sans créneau en dernier', async () => {
-    const api = new FakeQueue();
-    api.entries = [
-      entry({ orderId: 'c', reference: 'CMD-C', window: null }),
-      entry({
-        orderId: 'b',
-        reference: 'CMD-B',
-        window: { start: '09:00', end: '10:00', source: 'override' },
-      }),
-      entry({
-        orderId: 'a',
-        reference: 'CMD-A',
-        window: { start: '06:00', end: '07:00', source: 'override' },
-      }),
-    ];
-
-    const fixture = await render(api);
-    const rows = rowTexts(fixture);
-
-    expect(rows[0]).toContain('CMD-A');
-    expect(rows[1]).toContain('CMD-B');
-    expect(rows[2]).toContain('CMD-C');
   });
 
   it('dérive un onglet par point de retrait, avec son compteur', async () => {
