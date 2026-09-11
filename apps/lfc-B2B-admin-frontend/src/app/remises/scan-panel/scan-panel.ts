@@ -15,7 +15,6 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
-  FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPanelBodyComponent,
   FoldPanelFooterComponent,
@@ -27,7 +26,6 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { HandoverService } from '../../retrait/handover.service';
-import { HandoverQueueService } from '../handover-queue.service';
 import { readQrCode, scannerAvailable, tokenOf } from './qr-reader';
 
 /**
@@ -70,10 +68,15 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  *
  * ## Quand le navigateur ne sait pas lire
  *
- * `BarcodeDetector` n'existe pas partout. Le panneau le dit et bascule sur la
- * saisie du numéro — le même chemin de secours que la file, gravé `manual`.
- * Une surface qui échouerait en silence enverrait quelqu'un chercher une
- * caméra cassée.
+ * `BarcodeDetector` n'existe pas partout. Le dialogue le DIT, et s'arrête là.
+ * Une surface qui échouerait en silence enverrait quelqu'un chercher une caméra
+ * cassée.
+ *
+ * 🔴 Il ne propose PAS la saisie du numéro, et c'est un retrait délibéré du
+ * 2026-09-11. Ce dialogue ne sait faire qu'une chose : lire un code. La remise
+ * saisie existe toujours — sur le rail, à côté du sac qu'on regarde, où elle a
+ * un sujet. Offrir les deux ici, dont l'un sous une caméra allumée, revenait à
+ * mettre le chemin faible à portée du geste pressé.
  */
 @Component({
   selector: 'app-scan-panel',
@@ -82,7 +85,6 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
-    FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
@@ -92,12 +94,34 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
   styleUrl: './scan-panel.scss',
 })
 export class ScanPanel implements FoldPanelContent<ScanPanelData> {
-  static readonly foldPanel: FoldPanelDefaults = { width: 'md' };
+  /**
+   * **Un dialogue, pas une feuille latérale** (fold 0.27).
+   *
+   * 🔴 Le côté n'est pas un goût : une feuille latérale travaille À CÔTÉ de la
+   * page — on lit l'une en gardant l'autre — et c'est exactement ce que le scan
+   * ne fait pas. Il suspend tout : on lève un code devant une caméra, le client
+   * en face, et il n'y a rien d'autre à lire pendant ce temps.
+   *
+   * Et une raison de mécanique : sur écran étroit, le rail de cette page monte
+   * en feuille `fixed`. Un panneau latéral s'ancre DANS la région de contenu,
+   * donc il passait dessous — on ouvrait le scanner et on ne le voyait pas.
+   * `center` est le seul côté qui quitte cette région.
+   */
+  static readonly foldPanel: FoldPanelDefaults = {
+    width: 'sm',
+    side: 'center',
+    // 🔴 Opaque, pas du verre dépoli. Le dialogue est déjà posé sur un scrim
+    // qui floute la page sur un téléphone : deux transparences l'une sur
+    // l'autre donnent un gris de vitre sale, et le contenu y perd le contraste
+    // d'une surface qui se tient toute seule. Une feuille latérale peut être en
+    // verre — elle borde une page qu'on lit encore ; un dialogue, non : ce
+    // qu'il montre est la seule chose à lire.
+    surface: 'solid',
+  };
 
   readonly data = input<ScanPanelData | undefined>();
 
   private readonly handovers = inject(HandoverService);
-  private readonly queue = inject(HandoverQueueService);
   private readonly notify = inject(NotifyService);
   private readonly panel = inject(FoldPanelRef);
 
@@ -105,7 +129,6 @@ export class ScanPanel implements FoldPanelContent<ScanPanelData> {
 
   protected readonly stage = signal<Stage>('starting');
   protected readonly busy = signal(false);
-  protected readonly typed = signal('');
   protected readonly mismatch = signal<string | null>(null);
   protected readonly subject = signal<OrderHandoverView | null>(null);
 
@@ -215,30 +238,6 @@ export class ScanPanel implements FoldPanelContent<ScanPanelData> {
     } finally {
       this.busy.set(false);
     }
-  }
-
-  /**
-   * Le chemin de secours : le NUMÉRO, saisi. Il grave `manual`, et l'écran le
-   * dit — une remise saisie n'a eu qu'une partie.
-   */
-  protected async remitTyped(): Promise<void> {
-    const reference = this.typed().trim();
-    if (reference === '') {
-      return;
-    }
-    this.busy.set(true);
-    try {
-      await this.queue.confirmManually(reference);
-      this.panel.close(SCANNED);
-    } catch (caught) {
-      this.notify.error(caught, "Cette remise n'a pas pu être enregistrée.");
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  protected close(): void {
-    this.panel.close();
   }
 
   /** Coupe la caméra. Appelé au premier code lu ET à la fermeture. */

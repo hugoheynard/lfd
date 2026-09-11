@@ -6,29 +6,23 @@
   gap: var(--fold-space-xs);
 }
 
-/* 16/9 posé par le ratio et non par une hauteur : un flux de caméra change de
-   dimensions entre deux postes, et une hauteur fixe le recadre au hasard. */
+/* 🔴 **Carré**, et posé par le ratio — jamais par une hauteur. Un flux de
+   caméra change de dimensions d'un poste à l'autre, et une hauteur fixe le
+   recadre au hasard.
+
+   Carré parce qu'un QR l'est : sur un aperçu 4/3 on cadre le code dans la
+   moitié de l'image, et on recule le téléphone jusqu'à ce qu'il tienne en
+   largeur. Un cadre carré demande le geste que le code attend. */
 .sp-preview {
   width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: var(--fold-radius-lg);
+  aspect-ratio: 1 / 1;
+  border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-sunken);
   object-fit: cover;
 }
 
-.sp-hint,
-.sp-note {
+.sp-hint {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
-}
-
-/* Le chemin de secours est en bas, visible, et séparé par un trait : il n'est
-   pas caché, et il n'est pas non plus le geste principal. */
-.sp-fallback {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  padding-top: var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border-subtle);
 }

@@ -4,15 +4,11 @@
 />
 
 <fold-panel-body>
-  <!-- 🔴 Ouvert depuis une ligne, le scanner sait ce qu'on croit avoir en face.
-       Le dire ici n'est pas décoratif : c'est l'annonce du contrôle qui suit. -->
-  @if (expected(); as target) {
-    <fold-callout appearance="inset" variant="info" icon="info">
-      Le code doit désigner <strong>{{ target.reference }}</strong
-      >. Un autre sera refusé plutôt que remis.
-    </fold-callout>
-  }
-
+  <!-- 🔴 Le contrôle ne s'ANNONCE pas. Il a existé ici, en encadré : « le code
+       doit désigner ORD-… ». C'était dire à l'opérateur une règle qu'il n'a pas
+       à appliquer — le code résout la commande tout seul, et le refus, lui, se
+       dit au moment où il arrive, avec les deux numéros sous les yeux. Une
+       consigne affichée avant l'erreur se lit comme un travail à faire. -->
   @switch (stage()) {
     @case ('unsupported') {
       <fold-empty-state
@@ -63,34 +59,20 @@
       </div>
     }
   }
-
-  <!-- Le chemin de secours est TOUJOURS là, pas seulement quand la caméra
-       échoue : un téléphone déchargé se présente aussi devant un poste qui
-       scanne très bien. -->
-  <div class="sp-fallback">
-    <fold-input
-      label="Numéro de commande"
-      placeholder="ORD-…"
-      [value]="typed()"
-      (valueChange)="typed.set($event)"
-    />
-    <p class="sp-note">
-      Saisir le numéro grave la remise <strong>sans code</strong> : une remise saisie n’a eu qu’une
-      partie, et l’attestation le dit.
-    </p>
-  </div>
 </fold-panel-body>
 
-<fold-panel-footer align="between">
-  <button foldButton emphasis="outline" (click)="close()">Fermer</button>
-
-  @if (subject() !== null && mismatch() === null) {
+<!--
+  🔴 **Un seul geste, et seulement quand il existe.** Le pied portait « Fermer »
+  — que la croix du bandeau fait déjà — et « Remettre sans code », qui remettait
+  une commande DEPUIS le scanner, sans l'avoir scannée. Ce dialogue ne sert qu'à
+  lire un code ; la remise saisie vit sur le rail, à côté du sac qu'on regarde,
+  et c'est là qu'elle a du sens. Deux chemins pour un même acte, dont l'un sous
+  une caméra allumée, c'est celui-là qu'on prend quand ça presse.
+-->
+@if (subject() !== null && mismatch() === null) {
+  <fold-panel-footer align="end">
     <button foldButton icon="check" [loading]="busy()" (click)="confirm()">
       Remettre la commande
     </button>
-  } @else {
-    <button foldButton [disabled]="typed().trim() === ''" [loading]="busy()" (click)="remitTyped()">
-      Remettre sans code
-    </button>
-  }
-</fold-panel-footer>
+  </fold-panel-footer>
+}
