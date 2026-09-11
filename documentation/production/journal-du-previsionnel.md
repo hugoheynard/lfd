@@ -347,6 +347,46 @@ sa propre marge : ce négatif décrit la place de la table dans cet écran-ci, e
 un autre qui la réemploierait la voudrait autrement. L'hôte, lui, ne fait que
 prendre la hauteur qu'on lui laisse.
 
+## Tranche 8 quinquies — pourquoi le pied ne tenait toujours pas en bas
+
+🔴 **Le défaut n'était ni dans la page, ni dans la table : il est dans
+`fold-page-layout`.** Son enveloppe de contenu, `.page-body`, est une colonne
+flex en `flex: 0 1 auto` — elle ne s'étire **pas** à la hauteur du layout. Tout
+ce qu'on y pose plafonne donc à la hauteur de son propre contenu, quel que soit
+le `flex: 1` qu'on lui écrit, et le pied se retrouve à la fin du contenu au lieu
+du bas de l'écran. Aucune règle de la page ne pouvait le corriger : le style
+appartient à un autre composant (`scroll="own"` ne change que l'hôte).
+
+La table est donc devenue une **sœur** du layout et non son enfant : le layout
+porte la bande et s'arrête là (`flex: 0 0 auto`), la table prend tout le reste.
+Elle n'a besoin d'aucune gouttière — la région de contenu de la coquille est
+pleine largeur par construction — et le `margin-inline` négatif disparaît avec
+le problème qu'il contournait.
+
+⚠️ **Deux tentatives avant celle-là**, et elles ont échoué pour la même raison :
+je raisonnais sur une chaîne d'ancêtres que je n'avais pas lue. Le correctif
+n'est venu qu'après avoir ouvert le CSS compilé de `fold-ng` et suivi
+`.content` → `.content-scroll` → `.content-flow` → l'hôte du layout →
+`.page-body`, où la chaîne s'arrête.
+
+**Et cette fois c'est MESURÉ, pas supposé.** Un harnais qui recopie ces cinq
+règles à l'identique rend `footBottom = 800 = hauteur de la fenêtre`, et la page
+ne défile pas.
+
+### La même passe a corrigé trois autres choses vues à l'écran
+
+- les chiffres **baissent d'un cran** (24 → 20 px, et 16 → 14 dans les
+  en-têtes) : la chasse fixe élargit les nombres, et sept colonnes à quatre
+  chiffres commençaient à se toucher ;
+- 🔴 la barre d'une journée **encore ouverte** était un fantôme
+  (`--fold-color-border` vaut 10 % d'opacité sur un fond de chrome). Une légende
+  à trois clés dont l'une est invisible ne dit pas « c'est ténu », elle dit « il
+  n'y a rien » — et c'est justement l'état qu'on surveille. La barre et sa clé
+  prennent l'encre atténuée ;
+- **deux filets parasites** tombaient sous le total, à un pixel l'un de l'autre
+  et sous une barre de trois : trois traits pour une seule frontière, dont deux
+  que personne n'avait décidés.
+
 ## Tranche 9 — le mode mural, reporté
 
 Inchangé par rapport à la spec §6, et pour sa raison : **sept colonnes de jours
