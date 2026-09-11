@@ -117,8 +117,13 @@
 
   /* Une carte POSÉE sur le rail, pas creusée dedans. `surface-sunken` la
      confondait avec le fond : on lisait une liste flottante au lieu d'un objet
-     qu'on tient. */
-  background: var(--fold-color-surface-card);
+     qu'on tient.
+
+     La teinte est celle du RAIL SECONDAIRE, pas une surface de papier : le rail
+     est peint du chrome de la barre de l'app, et c'est dans cette famille-là
+     qu'un cran d'écart se lit comme un objet posé plutôt que comme une
+     seconde polarité. */
+  background: var(--fold-color-bg-rail-secondary);
 }
 
 /* Le titre à gauche, le total à droite : c'est le nombre qu'on recompte à voix
