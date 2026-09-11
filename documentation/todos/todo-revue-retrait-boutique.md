@@ -306,6 +306,121 @@ urgente, et sans le défaut que cette tranche vient de corriger.
 
 ---
 
+## 6. 🔵 Le double scan au comptoir — décidé, pas encore bâti
+
+**Conçu avec Hugo le 2026-09-11.** Ce n'est pas un défaut relevé par la revue :
+c'est une tranche à venir, écrite ici parce qu'elle change la nature de la
+preuve de remise et qu'elle touche le point 3 par le même bout.
+
+### Le fait physique, et il décide de tout
+
+🔴 **La feuille d'atelier part avec le sac, agrafée dessus.** Sans ça, rien de
+ce qui suit n'existe : il n'y aurait au comptoir aucun objet à lire, et il
+faudrait inventer une étiquette de sac.
+
+### Il y a DÉJÀ deux QR, et ils ne sont pas de même nature
+
+|                     | QR **client**                           | QR **atelier**                                         |
+| ------------------- | --------------------------------------- | ------------------------------------------------------ |
+| Où                  | dans le courriel du destinataire        | imprimé sur la feuille (`atelier-sheet-pdf.ts`)        |
+| Encode              | `{admin}/retrait/{token}`               | `/colisage/{référence}`                                |
+| Nature              | un **secret** (`orders.handover_token`) | un **nom** — la référence est en clair juste au-dessus |
+| Atteste aujourd'hui | la remise, `handedOverVia: "scan"`      | le **colisage** : `packed_at` / `packed_by`, au labo   |
+
+Les deux existent, mais ils sont lus à deux moments différents par deux
+personnes différentes. **Personne ne lit le QR de l'atelier au comptoir.**
+
+### Le trou : le sac n'est prouvé par rien
+
+Le jeton prouve la **présence du client** — il faut avoir été deux pour
+l'obtenir, et c'est ce qui fait du scan la seule attestation forte du système.
+Il ne prouve **rien sur le sac**. Le lien « ce sac-ci est cette commande-là »
+tient à l'œil de l'opérateur qui lit une référence sur un papier.
+
+Deux commandes du même client le même jour, deux enseignes voisines dans la même
+tranche horaire, et cet œil est le seul contrôle. Le scénario que le double scan
+ferme n'est pas « la mauvaise personne » — celui-là est déjà fermé — c'est **le
+mauvais sac à la bonne personne**.
+
+### L'ordre des deux gestes est imposé par le métier
+
+🔴 Le QR client n'est **pas** un second facteur qu'on ajouterait à la fin : c'est
+lui qui **désigne la commande**. Sans lui on ne sait pas quel sac aller chercher.
+L'ordre ne peut donc pas s'inverser.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Staff (comptoir)
+    participant API as API
+
+    C->>S: présente son QR (courriel)
+    S->>API: GET handover/{token}
+    API-->>S: QUELLE commande — lignes, quantités, point, client
+    Note over S: va chercher le sac,<br/>la feuille agrafée dessus
+    S->>API: scan du QR de la feuille → /colisage/{référence}
+    Note over S,API: comparaison : même commande ?
+    S->>API: POST handover/{token} + la référence LUE
+    API-->>S: remise attestée, et ce qui a été lu est gravé
+```
+
+Le mécanisme de comparaison **existe déjà** : c'est `expected` de `ScanDialog`,
+qui refuse aujourd'hui en nommant les deux commandes quand le rail en avait
+ouvert une autre. La seule différence est d'où vient `expected` — de la ligne du
+rail hier, du **premier scan** demain.
+
+### Trois degrés d'attestation, pas deux
+
+Le double scan ne peut **pas** être obligatoire, et la raison est déjà dans le
+dossier : une commande passée après la clôture n'a pas de `ProductionOrder`,
+donc pas de feuille, donc pas de QR — et elle est remettable exprès. C'est ce
+cas qui a décidé de la forme de `order_handover`. Un geste obligatoire casserait
+à la première semaine.
+
+| ce qui a été lu         | ce qui est prouvé                                |
+| ----------------------- | ------------------------------------------------ |
+| les deux codes          | la présence du client **et** l'identité du sac   |
+| le code client seul     | la présence du client ; le sac vérifié à l'œil   |
+| rien (saisie à la main) | ni l'un ni l'autre — l'équipe atteste, et le dit |
+
+### ⚠️ Ce que le second scan ne prouve PAS
+
+**Le QR de l'atelier n'est pas un secret.** Il encode une référence imprimée en
+toutes lettres à un centimètre de lui. Comme facteur d'**authenticité** il ne
+vaut rien : quiconque voit le papier peut saisir la référence. Comme facteur
+d'**identité de l'objet**, il vaut tout ce qu'on lui demande ici.
+
+Les deux codes ne sont donc pas redondants, et l'un ne peut pas remplacer
+l'autre : **l'un prouve la personne, l'autre l'objet.** Il faut que ce soit
+écrit, sans quoi quelqu'un « renforcera » un jour la remise en n'exigeant que le
+bon — ce qui la rendrait strictement plus faible qu'aujourd'hui.
+
+### Les trois décisions de mise en œuvre
+
+1. **Un fait, pas un bouton.** Si le second scan ne fait que débloquer la
+   confirmation, une remise double-scannée et une remise simple s'écrivent à
+   l'identique, et la traçabilité visée n'existe nulle part une seconde après le
+   geste. Il doit laisser une trace.
+2. **Enregistrer ce qui a été LU, pas un résumé.** `handedOverVia` est un
+   ensemble fermé, tout juste refermé par le point 2. Lui ajouter un membre à
+   chaque geste nouveau en fait un discriminant qui grossit — la branche de plus
+   que l'OCP refuse. Deux instants nullables (le code client, le code de la
+   feuille) disent le fait ; `via` s'en dérive. Migration additive.
+3. 🔴 **Le serveur doit être informé de la référence lue.** Une comparaison faite
+   par l'écran est une commodité ; si elle ne traverse pas, la trace est une
+   histoire que le front raconte. Le `POST` porte la référence, et c'est le
+   domaine qui décide ce qu'il grave.
+
+### Ce que ça fait au point 3
+
+Le défaut du point 3 est que le scan de la barre n'attend **aucune** commande
+(`expected: null`) sur un écran qui affirme un point de retrait. Le double scan
+ne le corrige pas — il déplace `expected` d'un cran, il ne dit toujours rien du
+point ouvert. Les deux tranches restent distinctes : **3 nomme le périmètre**,
+**6 prouve le sac**. Faire 3 d'abord, il est d'une phrase.
+
+---
+
 ## Ce qui tient, et qu'on ne touche pas
 
 Noté parce qu'une revue qui ne liste que des défauts fait réécrire ce qui est
@@ -371,3 +486,7 @@ changement d'état. ~~**5**~~ ✅ **clos le 2026-09-11**, et pas comme il était
 écrit : l'objection d'Hugo — « un contexte devient connaisseur des besoins des
 autres » — a retourné le plan. Le port ne devait pas être découpé, il devait
 rétrécir.
+
+**6** est une tranche, pas un correctif : elle porte une migration et un
+changement de contrat, et elle se conçoit après **3** — dont la phrase manquante
+vit dans le dialogue que **6** retouchera.
