@@ -55,16 +55,22 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  * seule attestation forte du système. La saisie à la main existe à côté, et
  * elle grave `manual` — faible, et honnête à ce sujet.
  *
- * ## 🔴 Ouvert depuis une ligne, il VÉRIFIE la ligne
+ * ## 🔴 Ouvert sur une commande, il VÉRIFIE cette commande
  *
- * Un scan lit ce qu'on lui présente, pas ce qu'on a cliqué. Un bouton par ligne
- * pourrait donc remettre la commande du voisin sans que personne ne le voie —
- * et c'est précisément ce qui arrive un matin de coup de feu. Le panneau relit
- * donc le sujet du code AVANT d'attester, et refuse en nommant les deux
- * commandes quand elles diffèrent.
+ * Un scan lit ce qu'on lui présente, pas ce qu'on a ouvert. Quand le dialogue
+ * part du RAIL, une commande est sous les yeux de l'équipe — elle vient de lire
+ * le sac, ligne par ligne — et un code qui en désigne une autre serait honoré
+ * en silence. Le dialogue relit donc le sujet du code AVANT d'attester, et
+ * refuse en nommant les deux commandes quand elles diffèrent.
  *
- * C'est ce contrôle qui rend le bouton par ligne meilleur qu'un scanner global,
- * et non l'inverse.
+ * Ouvert depuis la barre de la file, il vaut `null` : on prend ce qui se
+ * présente, comme un comptoir.
+ *
+ * ⚠️ Ce paragraphe a justifié le contrôle par une comparaison entre « un bouton
+ * de scan par ligne » et « un scanner global » jusqu'au 2026-09-11. Le bouton
+ * par ligne a été supprimé le même jour : la comparaison n'a plus de second
+ * terme, et laisser l'ancienne raison ferait juger ce garde-fou périmé alors
+ * qu'il sert un cas qui existe toujours — celui du rail.
  *
  * ## Quand le navigateur ne sait pas lire
  *

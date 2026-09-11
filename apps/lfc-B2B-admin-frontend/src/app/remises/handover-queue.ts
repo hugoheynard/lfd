@@ -308,12 +308,19 @@ export interface QueueCounters {
 }
 
 /**
- * Les compteurs de la journée, **tous points confondus**.
+ * Les trois compteurs, **sur les lignes qu'on lui donne**.
  *
- * Sur la file entière et non sur l'onglet actif : le nombre qu'on vient
- * chercher en levant les yeux est « combien reste-t-il ce matin », pas
- * « combien en reste-t-il dans l'onglet que je regarde ». Les compteurs par
- * point, eux, sont déjà sur les onglets.
+ * 🔴 Elle ne décide PAS du périmètre, et c'est délibéré : elle compte ce qu'on
+ * lui passe. L'écran lui passe l'onglet ouvert depuis le 2026-09-11 — qui lit
+ * cet écran est DANS un point, et « 3 en retard » dont deux ailleurs le fait
+ * chercher des sacs qui ne sont pas chez lui.
+ *
+ * ⚠️ Ce JSDoc a affirmé l'inverse — « la journée, tous points confondus » — et
+ * il l'a affirmé APRÈS que l'appelant eut changé, le même jour. C'est le
+ * commentaire dangereux par excellence : il décrit non pas cette fonction, qui
+ * n'a jamais rien décidé, mais la façon dont un AUTRE fichier l'appelle. Un
+ * lecteur qui « corrigeait » l'appelant pour honorer cette phrase rouvrait le
+ * défaut qu'on venait de fermer.
  */
 export function queueCounters(
   entries: readonly HandoverQueueEntryView[],

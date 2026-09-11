@@ -134,9 +134,14 @@ const VILLAGE = "Le Village";
  * ## Pourquoi cette table, et pas trois commandes de plus
  *
  * L'écran de remise dérive ses onglets des `pickupLabel` **présents dans la
- * réponse** : un seul point semé ne produit qu'un onglet, et l'onglet « Tous les
- * points » — qui n'apparaît qu'à partir de deux groupes — restait invisible sur
- * tout poste de développement.
+ * réponse**, et ses trois compteurs de l'onglet ouvert. Un seul point semé ne
+ * produit qu'un onglet : on ne verrait jamais la bascule d'un point à l'autre,
+ * ni que les compteurs la suivent.
+ *
+ * ⚠️ Cette phrase a justifié les deux points par l'onglet « Tous les points »,
+ * qui n'existe plus depuis le 2026-09-11 — supprimé par le commit qui a
+ * justement retouché ce bloc, sans toucher à cette ligne-là. La raison de semer
+ * deux points, elle, tient toujours ; c'était son énoncé qui était périmé.
  *
  * ⚠️ La ligne en LIVRAISON y était pour la même raison, et ne l'est plus :
  * l'écran de remise ne montre que les retraits depuis le 2026-09-11. Elle est

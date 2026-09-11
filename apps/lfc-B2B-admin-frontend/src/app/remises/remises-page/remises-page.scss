@@ -93,13 +93,6 @@
   font-family: var(--fold-font-mono);
 }
 
-/* La date ne prend pas toute la largeur : c'est une date, elle se lit en une
-   fois — et elle est le seul contrôle de la bande. */
-.masthead-day {
-  flex: 0 0 auto;
-  width: 11rem;
-}
-
 /* ── LA BARRE DE LA FILE ────────────────────────────────────────────────────
    L'onglet ouvert à gauche, l'ordre de lecture à côté, le geste au bout : la
    file est triée d'une façon qui n'est pas évidente (créneau, puis heure de

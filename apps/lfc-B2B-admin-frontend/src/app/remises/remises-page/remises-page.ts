@@ -11,7 +11,6 @@ import {
 import type { HandoverQueueEntryView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldDateComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldSearchComponent,
@@ -99,7 +98,6 @@ const TICK_MS = 30_000;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldDateComponent,
     FoldElementTitleComponent,
     FoldSearchComponent,
     FoldAsideLayoutComponent,
@@ -160,6 +158,21 @@ export class RemisesPage {
   protected readonly stacked = narrowViewport('(max-width: 1040px)');
 
   protected readonly state = signal<LoadState>('loading');
+  /**
+   * Le jour de service — **aujourd'hui, et rien d'autre**.
+   *
+   * 🔴 Un sélecteur de date vivait dans la bande jusqu'au 2026-09-11. Il a été
+   * retiré : un comptoir travaille sur le jour qu'il est en train de vivre, et
+   * l'offrir en tête d'écran mettait à portée du doigt le seul geste qui peut
+   * faire tendre un sac en croyant être un autre jour.
+   *
+   * ⚠️ Ce qui part avec lui, et qui n'est PAS remplacé : relire la file d'hier
+   * pour régler une contestation. Le besoin est réel — il est écrit dans cette
+   * page — mais il appartient à une recherche de commande, pas à une file de
+   * service. Un signal plutôt qu'une constante parce que la journée bascule sur
+   * un poste qui reste ouvert la nuit, et parce que l'écran qui rendra ce jour
+   * lira une route.
+   */
   protected readonly day = signal<string>(isoDay(new Date()));
   private readonly entries = signal<readonly HandoverQueueEntryView[]>([]);
 
@@ -299,7 +312,21 @@ export class RemisesPage {
     // L'horloge de comptoir. `window.setInterval` et non `setInterval` : le
     // premier rend un `number`, le second un `Timeout` sous les types Node —
     // et cette app n'a pas de rendu serveur (`ssr: false`), donc rien à garder.
-    const tick = window.setInterval(() => this.now.set(new Date()), TICK_MS);
+    //
+    // 🔴 Elle fait AUSSI basculer la journée. Sans cela, un poste laissé ouvert
+    // la nuit garderait la file de la veille pour toujours — et depuis que le
+    // sélecteur de date a disparu (2026-09-11), plus rien ne permettrait d'en
+    // sortir sans recharger la page. L'écran montrerait alors, au petit matin,
+    // une file vide et des retards de douze heures.
+    const tick = window.setInterval(() => {
+      const instant = new Date();
+      this.now.set(instant);
+      const today = isoDay(instant);
+      if (today !== this.day()) {
+        this.day.set(today);
+        this.clearSelection();
+      }
+    }, TICK_MS);
     inject(DestroyRef).onDestroy(() => window.clearInterval(tick));
   }
 
@@ -317,13 +344,6 @@ export class RemisesPage {
     } catch {
       this.entries.set([]);
       this.state.set('error');
-    }
-  }
-
-  protected onDay(value: string): void {
-    if (value !== '') {
-      this.day.set(value);
-      this.query.set('');
     }
   }
 

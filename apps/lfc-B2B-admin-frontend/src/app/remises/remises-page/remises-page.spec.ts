@@ -1,5 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { HandoverQueueEntryView, HandoverQueueView } from '@lfd/contracts';
 
@@ -47,8 +47,11 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
 class FakeQueue {
   entries: readonly HandoverQueueEntryView[] = [entry()];
   fails = false;
+  /** Les jours demandés, dans l'ordre — c'est par eux qu'on voit une bascule. */
+  readonly days: string[] = [];
 
   forDay(day: string): Promise<HandoverQueueView> {
+    this.days.push(day);
     if (this.fails) {
       return Promise.reject(new Error('injoignable'));
     }
@@ -283,5 +286,34 @@ describe('RemisesPage', () => {
 
     expect(el.querySelector('.board')?.classList.contains('is-stacked')).toBe(false);
     expect(el.querySelector<HTMLElement>('.board-queue')?.inert).toBe(false);
+  });
+
+  it('🔴 à minuit, la file bascule sur le nouveau jour de service', async () => {
+    // Régression de conception : le battement ne touchait que l'HEURE. Un poste
+    // laissé ouvert la nuit gardait la file de la veille — et depuis que le
+    // sélecteur de date a disparu, plus rien ne permettait d'en sortir sans
+    // recharger. L'écran montrait au petit matin une file vide et des retards
+    // de douze heures.
+    // 🔴 Seulement `setInterval` et `Date`. Tout figer prendrait aussi les
+    // `setTimeout` dont `whenStable` dépend, et le rendu n'aboutirait jamais —
+    // le cas mourait alors sur un délai d'attente, pas sur ce qu'il éprouve.
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    try {
+      const api = new FakeQueue();
+      api.entries = [entry({ orderId: 'a' })];
+      const fixture = await render(api);
+      const asked = api.days.length;
+
+      // Assez pour franchir plusieurs battements ET un changement de date.
+      vi.setSystemTime(new Date(Date.now() + 26 * 60 * 60 * 1000));
+      vi.advanceTimersByTime(31_000);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(api.days.length).toBeGreaterThan(asked);
+      expect(api.days.at(-1)).not.toBe(api.days[0]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
