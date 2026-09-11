@@ -79,7 +79,7 @@
             </header>
 
             <ul class="rd-lines">
-              @for (line of shownLines(); track line.sku) {
+              @for (line of lines(); track line.sku) {
                 <li class="rd-line">
                   <span class="rd-qty">{{ line.quantity }}</span>
                   <span class="rd-name">{{ line.productName }}</span>
@@ -87,16 +87,6 @@
                 </li>
               }
             </ul>
-
-            <!-- 🔴 Le reste est COMPTÉ, pas caché. Une liste tronquée en
-                 silence fait tendre un sac incomplet ; celle-ci dit combien de
-                 références et combien de pièces manquent à l'écran. -->
-            @if (hiddenLines(); as rest) {
-              <button foldButton emphasis="soft" size="sm" class="rd-more" (click)="showAll()">
-                + {{ rest.references }} référence{{ rest.references > 1 ? 's' : '' }} ·
-                {{ rest.units }} pièce{{ rest.units > 1 ? 's' : '' }}
-              </button>
-            }
           </section>
         }
       }
@@ -119,7 +109,7 @@
              La file ne porte aucun montant, par construction : un total affiché
              au comptoir se lirait comme une somme à encaisser. -->
         <span class="rd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</span>
-        <button foldButton emphasis="soft" size="sm" [loading]="busy()" (click)="download()">
+        <button foldButton emphasis="soft" size="sm" iconTrailing="arrow-right" (click)="openBon()">
           Voir le bon
         </button>
       </div>

@@ -8,12 +8,13 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { HandoverQueueEntryView, OrderLineView } from '@lfd/contracts';
+import type { HandoverQueueEntryView, OrderLineView, OrderView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
   FoldSurfaceDirective,
   type FoldCalloutVariant,
   type FoldIconName,
@@ -22,16 +23,10 @@ import {
 import { NotifyService } from '../../notify.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
-import { saveBlob } from '../../shared/download/save-blob';
+import { BonPanel, type BonPanelData } from '../bon-panel/bon-panel';
 import { formatWindow } from '../handover-queue';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
-
-/**
- * Combien de lignes avant de replier. Cinq : de quoi reconnaître un sac d'un
- * coup d'œil sans que le bouton de remise sorte de l'écran.
- */
-const SHOWN_LINES = 5;
 
 const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
@@ -101,43 +96,21 @@ export class RemiseDetail {
   private readonly api = inject(AdminOrdersService);
   private readonly handovers = inject(HandoverQueueService);
   private readonly notify = inject(NotifyService);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('idle');
-  protected readonly lines = signal<readonly OrderLineView[]>([]);
-  protected readonly busy = signal(false);
-  protected readonly remitting = signal(false);
 
   /**
-   * La liste est-elle dépliée ?
+   * La commande relue, **entière**.
    *
-   * 🔴 Repliée par défaut au-delà de {@link SHOWN_LINES}. Un sac de vingt
-   * références pousserait le bouton de remise hors de l'écran — celui qu'on
-   * cherche justement en tenant le sac. Ce qui reste est **compté**, jamais
-   * caché en silence : une liste tronquée sans le dire fait tendre un sac
-   * incomplet.
+   * 🔴 Pas seulement ses lignes : le bon s'ouvre à partir d'elle, sans second
+   * aller-retour. Le redemander ferait afficher au bon un état plus récent que
+   * la ligne d'où il sort — deux vérités à l'écran en même temps.
    */
-  private readonly expanded = signal(false);
+  protected readonly order = signal<OrderView | null>(null);
 
-  /** Les lignes montrées — les premières, puis toutes une fois dépliées. */
-  protected readonly shownLines = computed<readonly OrderLineView[]>(() => {
-    const lines = this.lines();
-    return this.expanded() ? lines : lines.slice(0, SHOWN_LINES);
-  });
-
-  /** Ce que la troncature retient, en références ET en pièces. Ou `null`. */
-  protected readonly hiddenLines = computed<{
-    readonly references: number;
-    readonly units: number;
-  } | null>(() => {
-    const rest = this.lines().slice(this.shownLines().length);
-    if (rest.length === 0) {
-      return null;
-    }
-    return {
-      references: rest.length,
-      units: rest.reduce((sum, line) => sum + line.quantity, 0),
-    };
-  });
+  protected readonly lines = computed<readonly OrderLineView[]>(() => this.order()?.lines ?? []);
+  protected readonly remitting = signal(false);
 
   /**
    * Le sur-titre : **où** et **quand**, les deux faits qui tranchent « est-ce
@@ -226,17 +199,12 @@ export class RemiseDetail {
     effect(() => {
       const entry = this.entry();
       if (entry === null) {
-        this.lines.set([]);
+        this.order.set(null);
         this.state.set('idle');
         return;
       }
-      this.expanded.set(false);
       void this.load();
     });
-  }
-
-  protected showAll(): void {
-    this.expanded.set(true);
   }
 
   protected clear(): void {
@@ -250,8 +218,7 @@ export class RemiseDetail {
     }
     this.state.set('loading');
     try {
-      const order = await this.api.byId(entry.orderId);
-      this.lines.set(order.lines);
+      this.order.set(await this.api.byId(entry.orderId));
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -259,23 +226,25 @@ export class RemiseDetail {
   }
 
   /**
-   * Le bon de commande, tel que le client l'a. Le même document sous la même
-   * clé d'archive — c'est ce qui permet d'en discuter au comptoir.
+   * **Ouvre le bon**, tel qu'on le coche au comptoir — et sans montant.
+   *
+   * Il s'ouvrait en téléchargeant un PDF. Sur un poste de comptoir, un fichier
+   * qui atterrit dans un dossier n'est pas une lecture : on veut voir la liste,
+   * tout de suite, à côté du sac. Le PDF reste à un clic dans le panneau, pour
+   * quand on tire vraiment un papier.
    */
-  protected async download(): Promise<void> {
+  protected openBon(): void {
+    const order = this.order();
     const entry = this.entry();
-    if (entry === null) {
+    if (order === null || entry === null) {
       return;
     }
-    this.busy.set(true);
-    try {
-      const pdf = await this.api.sheetPdf(entry.orderId);
-      saveBlob(pdf, `bon-de-commande-${entry.reference}.pdf`);
-    } catch (caught) {
-      this.notify.error(caught, "Le bon de commande n'a pas pu être téléchargé.");
-    } finally {
-      this.busy.set(false);
-    }
+    const data: BonPanelData = {
+      order,
+      pickupLabel: entry.pickupLabel,
+      customerLabel: entry.customerLabel,
+    };
+    this.panels.open<BonPanelData>(BonPanel, { data });
   }
 
   /** **La remise saisie**, depuis le rail — le chemin sans QR. */

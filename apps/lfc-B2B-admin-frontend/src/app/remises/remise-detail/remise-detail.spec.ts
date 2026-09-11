@@ -16,8 +16,10 @@ import { RemiseDetail } from './remise-detail';
  *   permanent : la file ne se réorganise pas sous les doigts au premier clic ;
  * - 🔴 **changer de ligne ne garde pas les articles de la précédente** — la
  *   façon la plus simple de tendre le mauvais sac ;
- * - **une lecture ratée n'emporte pas le bon de commande** : il reste
- *   téléchargeable, et le rail le dit ;
+ * - **une lecture ratée n'emporte pas le bon de commande** : le rail le dit, et
+ *   le bon reste atteignable ;
+ * - 🔴 **la liste n'a plus de dépliage** : tout ce qu'on tend est à l'écran,
+ *   d'un coup — un « + 2 références » demandait un clic pour voir le sac ;
  * - 🔴 **une annulation est annoncée**, pour qu'on puisse l'expliquer à qui se
  *   présente, et le geste de remise disparaît ;
  * - 🔴 **aucune heure n'est inventée** quand aucune tranche n'a été demandée ;
@@ -193,6 +195,26 @@ describe('RemiseDetail', () => {
     expect(handovers.remitted).toEqual(['CMD-1042']);
   });
 
+  it('🔴 toute la liste est à l’écran, sans dépliage à cliquer', async () => {
+    // Régression : la liste se repliait au-delà de cinq lignes derrière un
+    // « + N références ». Un clic pour voir ce qu'on est en train de tendre est
+    // un clic de trop, et il repoussait la remise à chaque ouverture.
+    const orders = new FakeOrders();
+    orders.lines = [
+      line({ sku: 'A', productName: 'Un' }),
+      line({ sku: 'B', productName: 'Deux' }),
+      line({ sku: 'C', productName: 'Trois' }),
+      line({ sku: 'D', productName: 'Quatre' }),
+      line({ sku: 'E', productName: 'Cinq' }),
+      line({ sku: 'F', productName: 'Six' }),
+    ];
+
+    const fixture = await render(entry(), { orders, handovers: new FakeHandovers() });
+
+    expect(text(fixture)).toContain('Six');
+    expect(text(fixture)).not.toContain('référence');
+  });
+
   it('une lecture ratée le dit et laisse le bon accessible', async () => {
     const orders = new FakeOrders();
     orders.fails = true;
@@ -203,24 +225,17 @@ describe('RemiseDetail', () => {
     expect(buttonSaying(fixture, 'Voir le bon')).not.toBeNull();
   });
 
-  it('le bon de commande se demande sur l’identifiant de la ligne', async () => {
+  it('🔴 « Voir le bon » OUVRE le bon, il ne télécharge plus un fichier', async () => {
+    // Sur un poste de comptoir, un PDF qui atterrit dans un dossier n'est pas
+    // une lecture : on veut la liste tout de suite, à côté du sac. Le rail ne
+    // sait donc plus télécharger — c'est le panneau du bon qui le propose,
+    // avec un libellé qui dit que ce document-là, lui, porte les prix.
     const orders = new FakeOrders();
-    // jsdom n'implémente pas les URL d'objet : on les pose le temps du cas,
-    // plutôt que d'espionner une propriété qui n'existe pas.
-    const previousCreate = URL.createObjectURL;
-    const previousRevoke = URL.revokeObjectURL;
-    URL.createObjectURL = () => 'blob:remise';
-    URL.revokeObjectURL = () => undefined;
+    const fixture = await render(entry(), { orders, handovers: new FakeHandovers() });
 
-    try {
-      const fixture = await render(entry(), { orders, handovers: new FakeHandovers() });
-      buttonSaying(fixture, 'Voir le bon')?.click();
-      await fixture.whenStable();
+    buttonSaying(fixture, 'Voir le bon')?.click();
+    await fixture.whenStable();
 
-      expect(orders.downloaded).toEqual(['ord_1']);
-    } finally {
-      URL.createObjectURL = previousCreate;
-      URL.revokeObjectURL = previousRevoke;
-    }
+    expect(orders.downloaded).toEqual([]);
   });
 });
