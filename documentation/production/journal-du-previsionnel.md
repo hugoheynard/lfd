@@ -257,9 +257,15 @@ Le `null` distingue désormais l'absence de la panne : un groupe « Rayon
 inconnu » et un `fold-callout` qui le dit — un échec partiel laisse le contenu à
 l'écran et **se déclare**.
 
-⚠️ **L'écran de la JOURNÉE porte encore ce défaut** (`production-page.ts`,
-`.catch(() => [])`). Hors périmètre de ce chantier, noté ici pour ne pas le
-perdre.
+✅ **L'écran de la JOURNÉE portait le même défaut** — c'est même de lui que le
+prévisionnel l'avait recopié — et il est fermé pareillement : `null` plutôt
+qu'un tableau vide, groupe « Rayon inconnu », callout qui le dit.
+
+⚠️ Avec une nuance que le prévisionnel n'a pas : **ce lot s'imprime**. Le
+callout porte donc `pr-no-print` — un encadré qui commente une panne d'écran n'a
+rien à faire sur le papier qui part au fournil — mais le récapitulatif imprimé,
+lui, porte bien « Rayon inconnu ». Les deux disent la même chose, chacun dans sa
+langue.
 
 ## Tranche 9 — le mode mural, reporté
 
