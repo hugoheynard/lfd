@@ -107,8 +107,12 @@
   background: var(--fold-color-primary);
 }
 
+/* La MÊME encre que la barre qu'elle explique. Elle lisait `--fold-color-border`
+   — 10 % d'opacité sur un fond de chrome, donc une clé invisible dans une
+   légende à trois : elle ne disait pas « c'est ténu », elle disait « il n'y a
+   rien ». */
 .pv-key--open {
-  background: var(--fold-color-border);
+  background: var(--fold-color-text-muted);
 }
 
 .pv-key--peak {
@@ -116,17 +120,29 @@
 }
 
 /* ── LA PLACE DE LA TABLE ───────────────────────────────────────────────────
-   La table prend tout ce qui reste sous la bande, et la gouttière est reprise
-   à la main faute de section : c'est exactement ce que `fold-page-layout`
-   applique en `padding-inline`, donc exactement ce qu'il faut annuler.
+   Le layout porte la bande et s'arrête là : `flex: 0 0 auto`, il prend ce que
+   son contenu mesure. Tout le reste de la hauteur est à la table.
 
-   🔴 Le négatif est posé ICI et pas dans le composant : un composant ne pose
-   jamais sa propre marge — celle-ci décrit sa place dans CETTE page, et un
-   autre écran qui réemploierait la table la voudrait autrement. */
-.pv-board {
+   🔴 C'est ce partage qui a été manqué deux fois. `fold-page-layout` enveloppe
+   son contenu dans un `.page-body` en `flex: 0 1 auto` — une boîte qui ne
+   s'étire pas —, si bien qu'une table posée DEDANS plafonne à la hauteur de son
+   propre contenu, quel que soit le `flex: 1` qu'on lui écrit. Le style
+   appartient à un autre composant : rien d'ici ne pouvait le corriger. La table
+   est donc une sœur du layout, pas son enfant.
+
+   Les états (chargement, erreur, vide) sont dehors avec elle : ils prennent la
+   place de la table, donc ils ont sa place. */
+fold-page-layout {
+  flex: 0 0 auto;
+}
+
+app-forecast-table {
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  margin-inline: calc(var(--fold-page-gutter) * -1);
+}
+
+/* Le callout, lui, n'est pas pleine largeur : c'est de la prose, et elle se lit
+   dans la gouttière comme le reste de la page. */
+.pv-lost {
+  margin-inline: var(--fold-page-gutter);
 }

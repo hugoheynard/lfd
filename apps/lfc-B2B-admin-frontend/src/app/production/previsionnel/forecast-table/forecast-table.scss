@@ -14,7 +14,6 @@
 
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
   min-height: 0;
 }
 
@@ -109,14 +108,15 @@
   cursor: pointer;
 }
 
-/* Le pied est une seule pièce en deux lignes : un filet ténu les sépare, jamais
-   un blanc — ce sont deux lectures du même bord de table. */
+/* Le pied est une seule pièce en deux lignes, et **rien ne les sépare**.
+
+   🔴 Il y avait deux filets ici, et ils tombaient tous les deux sous le total :
+   l'un fermait sa ligne, l'autre ouvrait celle des commandes — à un pixel l'un
+   de l'autre, sous une barre d'état de trois. Trois traits pour une seule
+   frontière, dont deux que personne n'avait décidés. La barre d'état suffit :
+   elle ferme la ligne des pièces ET sépare les deux lectures. */
 .pv-row--total {
   border-top: 1px solid var(--fold-color-border);
-}
-
-.pv-row--orders {
-  border-top: 1px solid var(--fold-color-glass-border);
 }
 
 .pv-cell {
@@ -200,8 +200,13 @@
 /* Une journée encore ouverte porte son chiffre en encre atténuée ET une barre
    éteinte : il bougera. Le mot reste dans la légende — la couleur ne dit rien
    toute seule. */
+/* 🔴 La barre d'une journée encore ouverte doit **se voir**. Elle lisait
+   `--fold-color-border`, qui vaut 10 % d'opacité sur un fond de chrome : un
+   fantôme. Une légende à trois clés dont l'une est invisible ne dit pas « c'est
+   ténu », elle dit « il n'y a rien » — et l'état qu'elle décrit, une journée
+   que le commerce peut encore charger, est justement celui qu'on surveille. */
 .pv-day.is-open {
-  border-bottom-color: var(--fold-color-border);
+  border-bottom-color: var(--fold-color-text-muted);
 }
 
 .pv-day.is-open .pv-day-date,
@@ -218,7 +223,7 @@
 
 .pv-day-total {
   font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-lg);
+  font-size: var(--fold-text-base);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--fold-tracking-tighter);
@@ -256,7 +261,7 @@
    qualifient ce chiffre au lieu de le concurrencer. */
 .pv-foot-total {
   font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-lg);
+  font-size: var(--fold-text-base);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--fold-tracking-tighter);
@@ -270,7 +275,7 @@
 }
 
 .pv-foot-total.is-open {
-  border-bottom-color: var(--fold-color-border);
+  border-bottom-color: var(--fold-color-text-muted);
 }
 
 .pv-row--total .pv-cell,
@@ -308,7 +313,11 @@
 .pv-qty-value {
   display: block;
   font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-2xl);
+  /* Un cran sous la référence (24 px) : la chasse fixe élargit les chiffres, et
+     à 24 px sept colonnes de nombres à quatre chiffres commencent à se toucher.
+     Ils dominent toujours le nom du produit, qui est tout ce qu'on leur
+     demande. */
+  font-size: var(--fold-text-xl);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--fold-tracking-tighter);

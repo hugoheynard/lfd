@@ -51,63 +51,64 @@
       </p>
     }
   </fold-page-section>
-
-  <!--
-    **La table, pleine largeur et COLLÉE à la bande.**
-
-    Ce n'est plus une `fold-page-section` : une section pose son propre rythme —
-    une gouttière, un écart avec ce qui la précède —, et c'est exactement ce
-    qu'on ne veut pas ici. La table prolonge le bandeau de l'espace, elle ne se
-    pose pas dessous ; un filet de page entre les deux les aurait fait lire
-    comme deux objets, alors que la tête de colonnes appartient à la même
-    pièce que le titre qui la surplombe.
-
-    Elle reprend donc la gouttière à la main — un `margin-inline` négatif de
-    `--fold-page-gutter-effective`, la variable que fold publie POUR ça.
-
-    🔴 **Tout tient dans UN seul conteneur défilant** : tête, corps et pied. Les
-    séparer aurait laissé trois zones défiler indépendamment, et une grille dont
-    l'en-tête ne suit pas ses colonnes ment sur chaque chiffre qu'elle affiche.
-  -->
-  <div class="pv-board">
-    @switch (state()) {
-      @case ('loading') {
-        <fold-loading message="Lecture du prévisionnel…" />
-      }
-      @case ('error') {
-        <fold-empty-state
-          tone="alert"
-          title="Prévisionnel illisible"
-          subtitle="La lecture a échoué — les commandes, elles, sont intactes."
-        >
-          <button foldButton (click)="load()">Réessayer</button>
-        </fold-empty-state>
-      }
-      @default {
-        @if (pieces() === 0) {
-          <fold-empty-state
-            icon="production"
-            title="Rien à produire sur cette période"
-            subtitle="Aucune commande n'est à retirer ni à livrer sur ces jours-là."
-          />
-        } @else {
-          <!--
-            🔴 Le catalogue n'a pas répondu. La grille reste juste — les pièces
-            et les jours viennent du fournil, pas de lui — mais ses rayons sont
-            perdus, et un groupe « Hors catalogue » dirait alors que tout est
-            retiré de la vente. Un échec partiel laisse le contenu à l'écran et
-            se DIT : c'est le seul cas où un callout est le bon état.
-          -->
-          @if (shelvesLost()) {
-            <fold-callout variant="warning" class="pv-lost">
-              Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
-              rangés. Réessayez pour les retrouver.
-            </fold-callout>
-          }
-
-          <app-forecast-table [headers]="headers()" [rayons]="rayons()" />
-        }
-      }
-    }
-  </div>
 </fold-page-layout>
+
+<!--
+  **La table vit HORS du `fold-page-layout`, et c'est une contrainte, pas un
+  goût.**
+
+  🔴 `.page-body` — l'enveloppe que le layout pose autour de son contenu — est
+  une colonne flex en `flex: 0 1 auto`. Elle ne s'étire donc PAS à la hauteur du
+  layout : tout ce qu'on y met plafonne à la hauteur de son propre contenu, quel
+  que soit le `flex: 1` qu'on lui donne. C'est ce qui tenait les deux lignes de
+  totaux à la fin du contenu au lieu du bas de l'écran, et aucune règle écrite
+  ici ne pouvait le corriger — le style appartient à un autre composant.
+
+  Le layout garde donc ce pour quoi il est fait : l'en-tête de page et ses
+  gouttières, autour de la bande. La table, elle, est une sœur, et prend la
+  hauteur que l'hôte lui laisse. Elle n'a besoin d'aucune gouttière : la région
+  de contenu de la coquille est pleine largeur par construction.
+
+  (Vérifié le 2026-09-11 en lisant le CSS compilé de `fold-ng` : `.page-body`
+  n'y porte ni `flex: 1` ni `min-height: 0`, et `scroll="own"` ne change que
+  l'hôte.)
+-->
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture du prévisionnel…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Prévisionnel illisible"
+      subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (pieces() === 0) {
+      <fold-empty-state
+        icon="production"
+        title="Rien à produire sur cette période"
+        subtitle="Aucune commande n'est à retirer ni à livrer sur ces jours-là."
+      />
+    } @else {
+      <!--
+        🔴 Le catalogue n'a pas répondu. La grille reste juste — les pièces
+        et les jours viennent du fournil, pas de lui — mais ses rayons sont
+        perdus, et un groupe « Hors catalogue » dirait alors que tout est
+        retiré de la vente. Un échec partiel laisse le contenu à l'écran et
+        se DIT : c'est le seul cas où un callout est le bon état.
+      -->
+      @if (shelvesLost()) {
+        <fold-callout variant="warning" class="pv-lost">
+          Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
+          rangés. Réessayez pour les retrouver.
+        </fold-callout>
+      }
+
+      <app-forecast-table [headers]="headers()" [rayons]="rayons()" />
+    }
+  }
+}
