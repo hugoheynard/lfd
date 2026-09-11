@@ -215,21 +215,60 @@ doivent changer et un seul le sera.
 
 ---
 
-## 5. 🟡 `OrderReader` : neuf verbes, et la remise en a payé le prix
+## 5. ✅ `OrderReader` publiait les besoins de ses voisins — clos le 2026-09-11
 
-Le port porte `listByCompany`, `listPersonal`, `listForAdmin`,
-`findByHandoverToken`, `findHandoverByReference`, `expectedForHandoverOn`,
-`findForPacking`, `listForProduction`, `findById`. Le manquement à l'ISP est
-déjà inventorié ailleurs ; ce qui est neuf, c'est qu'il a **coûté quelque chose
-de visible** ce jour-ci.
+### Le fait, tel qu'il était
 
-Le doublé du spec de `SendHandoverReminderHandler` n'implémentait que `findById`
-— la seule méthode que le handler appelle. La classe était donc incomplète,
-`tsc` la refusait (TS2655), et `ts-jest` le taisait : la suite était verte
-depuis sa création. Un port étroit n'aurait pas eu de doublé à faire dériver.
+Dix verbes sur un seul port, et vingt-et-un fichiers qui en dépendaient sans
+jamais en appeler plus de deux. Chaque ajout obligeait **huit doublés** à
+déclarer une méthode qu'aucun n'appelle.
 
-Réparé en déclarant les huit méthodes manquantes, qui lèvent en nommant le verbe
-appelé. C'est un pansement : la racine est la largeur du port.
+Le coût dangereux était ailleurs : le doublé du spec du rappel n'implémentait
+que `findById`, donc la classe était invalide — `tsc` la refusait (TS2655) — et
+**la suite était verte depuis sa création**, parce que `ts-jest` transpile sans
+typechecker. Un doublé pouvait dériver de son port sans que rien ne rougisse.
+
+### 🔴 Ce que le premier plan faisait de travers
+
+J'avais proposé de DÉCOUPER le port en ports par usager — `HandoverOrders`,
+`ProductionOrders`, `AdminOrders` — publiés par `b2b/orders`. Hugo a objecté que
+le commerce deviendrait alors « connaisseur des besoins des autres contextes ».
+
+Il avait raison, et l'objection invalide le plan. Un contexte qui publie un port
+par consommateur **connaît ses consommateurs** : c'est la dépendance qui revient
+par l'autre bout, celle que le §3 interdit pour `production → b2b`.
+
+Pire : les besoins étaient **déjà déclarés au bon endroit**.
+`handover/channels/commerce/` porte `HandoverSubjectReader` et
+`HandoverQueueReader` ; `production/channels/commerce/` porte `DayOrdersReader`.
+Les quatre verbes du commerce étaient une **seconde déclaration du même besoin,
+du mauvais côté**.
+
+### ✅ Ce qui a été fait
+
+Le port n'a pas été découpé, il a **rétréci** : dix verbes → six, tous des
+lectures que `b2b` fait pour lui-même.
+
+Les deux adaptateurs interrogent Prisma eux-mêmes — ce que
+`PrismaDayOrdersReader` faisait déjà, sans rien ajouter à `OrderReader`. Le
+`select` reste partagé dans `handover-order.query.ts`, **interne à
+`infrastructure/`** : aucun port ne le nomme, aucun contexte ne l'importe. Ce
+que la délégation protégeait — « le dupliquer ferait diverger les écrans du
+comptoir au premier champ ajouté » — demandait un `select` partagé, pas une
+surface publique.
+
+🔴 **Et la revue se trompait sur un point.** Elle affirmait que ces verbes
+n'avaient aucun appelant dans le commerce. `MarkOrderFulfilledHandler` appelait
+`findHandoverByReference` — la lecture COMPLÈTE que fait la remise, lignes
+comprises — pour n'en tirer qu'un identifiant, un numéro et un destinataire. Il
+a maintenant `findAuthorByReference`, qui lit trois colonnes. Le verbe large
+lisait quinze fois trop, et personne ne l'avait vu parce qu'il « marchait ».
+
+### Ce qui reste
+
+Les six verbes restants sont tous des lectures propres à `b2b`. Les découper
+serait une question **intra-contexte**, sans connaissance d'autrui — moins
+urgente, et sans le défaut que cette tranche vient de corriger.
 
 ---
 
@@ -297,7 +336,7 @@ sur la vue de remise — mais `source` reste un `string` sur la file, et c'est l
 qui décide du retard.
 
 **3** après, parce qu'il se règle par une phrase à l'écran. **4** au premier
-changement d'état. **5** avec la dette d'ISP, pas avant — la remise n'en est
-qu'un symptôme, et elle vient d'en payer une part de plus : ouvrir `byOrderId` a
-obligé **huit doublés** de `OrderReader` à déclarer un verbe qu'aucun d'eux
-n'appelle.
+changement d'état. ~~**5**~~ ✅ **clos le 2026-09-11**, et pas comme il était
+écrit : l'objection d'Hugo — « un contexte devient connaisseur des besoins des
+autres » — a retourné le plan. Le port ne devait pas être découpé, il devait
+rétrécir.
