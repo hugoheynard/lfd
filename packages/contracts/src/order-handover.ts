@@ -88,6 +88,17 @@ export interface HandoverQueueEntryView {
   readonly orderId: string;
   readonly reference: string;
   readonly customerLabel: string;
+  /**
+   * L'**enseigne** — le nom peint sur la devanture —, ou `null` quand elle ne
+   * dirait rien de plus que la raison sociale.
+   *
+   * 🔴 `null` et non la chaîne vide, et `null` AUSSI quand les deux noms sont
+   * identiques : la colonne vaut `""` par défaut sur toute société qui n'en a
+   * pas déclaré, et une maison qui a rempli les deux champs à l'identique n'a
+   * pas voulu voir son nom deux fois. Le choix est fait ICI, une seule fois —
+   * laissé à l'écran, chaque écran le referait, et un seul l'oublierait.
+   */
+  readonly tradeName: string | null;
   /** Le point de retrait figé à la commande, ou `null` en livraison. */
   readonly pickupLabel: string | null;
   readonly fulfillmentMethod: string;

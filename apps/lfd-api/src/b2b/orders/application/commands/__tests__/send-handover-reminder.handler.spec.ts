@@ -63,6 +63,19 @@ function view(over: Partial<OrderView> = {}): OrderView {
   } as OrderView;
 }
 
+/**
+ * Ce doublé ne connaît qu'UN verbe, et déclare les huit autres pour le dire.
+ *
+ * 🔴 Les déclarer en levant plutôt que de laisser la classe incomplète : sans
+ * elles, `tsc` refuse le fichier (TS2655) et seul `ts-jest`, qui ne typecheck
+ * pas, le laissait passer — donc rien ne rougissait. Un appel imprévu meurt
+ * maintenant en nommant la méthode, ce qui est la seule réponse utile : le
+ * rappel ne lit QUE la commande, et un doublé qui rendrait `[]` au reste
+ * laisserait passer une lecture que personne n'a voulue.
+ *
+ * C'est aussi le symptôme de la dette déjà notée sur `OrderReader` : neuf
+ * verbes pour un port, c'est un manquement à l'ISP, et il se paie ici.
+ */
 class OneOrderReader extends OrderReader {
   constructor(private readonly order: OrderView | null) {
     super();
@@ -78,6 +91,43 @@ class OneOrderReader extends OrderReader {
       view: { ...this.order, id },
     } as OwnedOrder);
   }
+
+  override listByCompany(): Promise<readonly OrderView[]> {
+    return unused("listByCompany");
+  }
+
+  override listPersonal(): Promise<readonly OrderView[]> {
+    return unused("listPersonal");
+  }
+
+  override listForAdmin(): Promise<never> {
+    return unused("listForAdmin");
+  }
+
+  override findByHandoverToken(): Promise<never> {
+    return unused("findByHandoverToken");
+  }
+
+  override findHandoverByReference(): Promise<never> {
+    return unused("findHandoverByReference");
+  }
+
+  override expectedForHandoverOn(): Promise<never> {
+    return unused("expectedForHandoverOn");
+  }
+
+  override findForPacking(): Promise<never> {
+    return unused("findForPacking");
+  }
+
+  override listForProduction(): Promise<never> {
+    return unused("listForProduction");
+  }
+}
+
+/** Le rappel ne lit que la commande : tout autre verbe est un bug du handler. */
+function unused(method: string): Promise<never> {
+  return Promise.reject(new Error(`Le rappel n'a pas à appeler ${method}.`));
 }
 
 class OneRecipientReader extends OrderRecipientReader {
@@ -102,12 +152,21 @@ class FixedOrigins extends OrderMailOrigins {
   }
 }
 
+/**
+ * Le mailer, doublé au plus près de sa vraie forme.
+ *
+ * ⚠️ `enabled` et `providerId` ne sont pas décoratifs : sans eux la classe
+ * n'était pas un `B2bMailer` et le reçu n'était pas un `MailReceipt` — deux
+ * erreurs que `tsc` voyait et que `ts-jest` taisait. Un doublé qui dérive du
+ * port qu'il prétend jouer est précisément ce que §6 refuse.
+ */
 class RecordingMailer {
+  readonly enabled = false;
   sent: SendMailArgs<never, never> | null = null;
 
   send(args: unknown): Promise<MailReceipt> {
     this.sent = args as SendMailArgs<never, never>;
-    return Promise.resolve({ id: "msg_1", mailSent: true } as MailReceipt);
+    return Promise.resolve({ providerId: "msg_1" });
   }
 }
 

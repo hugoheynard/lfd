@@ -30,6 +30,7 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
     orderId: 'ord_1',
     reference: 'CMD-1042',
     customerLabel: 'Boulangerie Marin',
+    tradeName: null,
     pickupLabel: 'Laboratoire',
     fulfillmentMethod: 'pickup',
     window: { start: '06:00', end: '08:00', source: 'default' },

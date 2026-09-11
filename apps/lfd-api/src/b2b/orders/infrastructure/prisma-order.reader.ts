@@ -373,7 +373,7 @@ export class PrismaOrderReader extends OrderReader {
         readyAt: true,
         createdAt: true,
         companyId: true,
-        company: { select: { raisonSociale: true } },
+        company: { select: { raisonSociale: true, enseigne: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
         lines: { select: { quantity: true } },
       },
@@ -382,6 +382,7 @@ export class PrismaOrderReader extends OrderReader {
       orderId: row.id,
       reference: row.orderNumber,
       customerLabel: customerLabelOf(row),
+      tradeName: tradeNameOf(row.company, customerLabelOf(row)),
       pickupLabel: pickupLabelOf(row.pickupAddress),
       fulfillmentMethod: row.fulfillmentMethod,
       window: windowOf(fulfillmentOf(row.fulfillment)),
@@ -662,6 +663,27 @@ function customerLabelOf(row: NameableRow): string {
   }
   const fullName = `${row.placedBy.firstName} ${row.placedBy.lastName}`.trim();
   return fullName === "" ? row.placedBy.email : fullName;
+}
+
+/**
+ * **L'enseigne, quand elle dit quelque chose de plus.**
+ *
+ * 🔴 Deux absences se confondent dans cette colonne, et une seule réponse les
+ * couvre : `enseigne` vaut `""` par défaut sur toute société qui n'en a jamais
+ * déclaré (`account.prisma`), et une maison peut aussi avoir recopié sa raison
+ * sociale dans les deux champs. Dans les deux cas le comptoir n'a qu'UN nom à
+ * lire, et le rendre deux fois est pire que de ne pas le rendre : on croit à
+ * deux clients homonymes le temps d'un regard.
+ *
+ * La comparaison est faite ici, au seul endroit qui lit la colonne. Laissée à
+ * l'écran, elle serait refaite par chaque écran, et oubliée par un.
+ */
+function tradeNameOf(
+  company: { readonly enseigne: string } | null,
+  customerLabel: string,
+): string | null {
+  const trade = company?.enseigne.trim() ?? "";
+  return trade === "" || trade === customerLabel ? null : trade;
 }
 
 /**

@@ -140,6 +140,14 @@ export class RemiseDetail {
     return slot === null ? `${where} · aucune tranche demandée` : `${where} · ${slot}`;
   });
 
+  /**
+   * L'**enseigne**, ou `null` quand elle ne dirait rien de plus que la raison
+   * sociale — le serveur a déjà tranché, cf. `tradeNameOf`. On ne refait pas
+   * la comparaison ici : deux écrans qui la referaient finiraient par en
+   * répondre deux choses.
+   */
+  protected readonly tradeName = computed<string | null>(() => this.entry()?.tradeName ?? null);
+
   /** Le créneau écrit, ou `null` — aucune heure n'est inventée ici non plus. */
   protected readonly window = computed<string | null>(() => {
     const entry = this.entry();

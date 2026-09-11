@@ -59,6 +59,7 @@ function toEntryView(
     orderId: entry.orderId,
     reference: entry.reference,
     customerLabel: entry.customerLabel,
+    tradeName: entry.tradeName,
     pickupLabel: entry.pickupLabel,
     fulfillmentMethod: entry.fulfillmentMethod,
     window: entry.window,

@@ -163,6 +163,11 @@ interface CounterOrder {
   readonly outcome: "expected" | "ready" | "handed_over";
   /** L'échéance dont on reprend les lignes — cf. {@link linesFor}. */
   readonly step: number;
+  /**
+   * Prend le catalogue au large plutôt que les habitudes de la maison — cf.
+   * {@link wideLines}. `step` est alors ignoré.
+   */
+  readonly wide?: boolean;
 }
 
 const COUNTER: readonly CounterOrder[] = [
@@ -176,6 +181,12 @@ const COUNTER: readonly CounterOrder[] = [
   { point: VILLAGE, window: VILLAGE_AFTERNOON, outcome: "expected", step: 4 },
   // La livraison : elle n'a pas de point, et c'est l'onglet qu'elle peuple.
   { point: null, window: null, outcome: "ready", step: 5 },
+  // 🔴 Le SAC LONG. Toutes les autres tiennent en six références ou moins, donc
+  // aucun poste de développement ne voyait ce que fait le rail quand la liste
+  // dépasse la place : elle défile DANS sa carte, sans repousser le bouton de
+  // remise. Un comportement qu'on ne peut pas voir est un comportement qu'on
+  // casse sans s'en apercevoir.
+  { point: LABO, window: PICKUP_WINDOW, outcome: "ready", step: 1, wide: true },
 ];
 
 /** L'heure du colisage, et celle de la remise. Le sac sort avant de partir. */
@@ -339,7 +350,7 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
       method: entry.point === null ? "delivery" : "pickup",
       point: entry.point,
       window: entry.window,
-      lines: linesFor(entry.step),
+      lines: entry.wide === true ? await wideLines(context) : linesFor(entry.step),
       paid: false,
     });
     if (entry.outcome === "expected") {
@@ -528,6 +539,51 @@ async function place(
     select: { orderNumber: true },
   });
   return row.orderNumber;
+}
+
+/**
+ * Combien de références dans le sac long. Dix-huit : assez pour déborder la
+ * carte sur un écran de portable comme sur un 27 pouces, et pas au point de
+ * rendre la commande invraisemblable pour une maison qui en prend six.
+ */
+const WIDE_LINE_COUNT = 18;
+
+/**
+ * **Le sac long** — les lignes prises AU CATALOGUE, et non aux habitudes.
+ *
+ * 🔴 Lues en base plutôt qu'écrites ici : une liste de dix-huit SKU en dur se
+ * périmerait au premier retrait d'article, et le semis échouerait alors sur une
+ * référence que le catalogue ne vend plus — une panne du jeu de données pour un
+ * changement qui n'a rien à voir avec lui. `STILL_SOLD` nomme la condition du
+ * retrait une seule fois, et la porte `withdrawn-filter` refuse qu'on la
+ * recopie.
+ *
+ * L'ordre est celui du SKU, pas celui que la base rend : `findMany` n'en promet
+ * aucun, et deux exécutions poseraient sinon deux sacs différents.
+ */
+async function wideLines(
+  context: SeedContext,
+): Promise<{ readonly sku: string; readonly quantity: number }[]> {
+  const items = await context.prisma.catalogItem.findMany({
+    where: { isDefault: true, ...STILL_SOLD },
+    select: { productSku: true },
+    orderBy: { productSku: "asc" },
+    take: WIDE_LINE_COUNT,
+  });
+  if (items.length < WIDE_LINE_COUNT) {
+    throw new Error(
+      `Catalogue trop court pour le sac long : ${items.length} article(s) vendables, ` +
+        `${WIDE_LINE_COUNT} attendus. Le miroir n'a peut-être jamais été poussé — ` +
+        "lancer : pnpm --filter lfd-api seed:pim",
+    );
+  }
+  // Des quantités qui varient sans hasard : deux exécutions du semis ne se
+  // contredisent pas, et la colonne de gauche montre des nombres à une et à
+  // deux chiffres — c'est là que se voit l'alignement tabulaire.
+  return items.map((item, index) => ({
+    sku: item.productSku,
+    quantity: 2 + ((index * 7) % 23),
+  }));
 }
 
 /**

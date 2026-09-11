@@ -36,6 +36,7 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
     orderId: 'ord_1',
     reference: 'CMD-1042',
     customerLabel: 'Boulangerie Marin',
+    tradeName: null,
     pickupLabel: 'Laboratoire',
     fulfillmentMethod: 'pickup',
     window: { start: '06:00', end: '08:00', source: 'default' },
@@ -160,6 +161,24 @@ describe('RemiseDetail', () => {
 
     expect(text(fixture)).toContain('Pain complet');
     expect(text(fixture)).not.toContain('Croissant nature');
+  });
+
+  it('🔴 l’enseigne passe DEVANT la raison sociale, et les deux sont là', async () => {
+    const fixture = await render(entry({ tradeName: 'La Folie Douce' }));
+
+    expect(text(fixture)).toContain('La Folie Douce');
+    expect(text(fixture)).toContain('Boulangerie Marin');
+  });
+
+  it('🔴 sans enseigne, le nom n’est écrit QU’UNE fois', async () => {
+    // Régression de conception : deux noms identiques l'un sous l'autre se
+    // lisent comme deux clients homonymes le temps d'un regard. Le serveur rend
+    // `null` quand l'enseigne ne dirait rien de plus — l'écran ne recompose pas
+    // la règle, il compte sur elle.
+    const fixture = await render(entry());
+
+    const shown = text(fixture).split('Boulangerie Marin').length - 1;
+    expect(shown).toBe(1);
   });
 
   it('🔴 sans tranche demandée, ne montre AUCUNE heure', async () => {

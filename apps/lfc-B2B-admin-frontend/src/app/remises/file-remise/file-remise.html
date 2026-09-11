@@ -1,102 +1,100 @@
-<fold-card>
-  <fold-data-table
-    class="fr-table"
-    caption="File de remise du comptoir"
-    narrowLayout="cards"
-    hover
-    clickable
-    [columns]="columns"
-    [rows]="rows()"
-    [rowKey]="rowKey"
-    [rowTone]="toneOf"
-    [rowNote]="hasNote"
-    (rowClick)="opened.emit($event)"
-  >
-    <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
-         `foldCell` rend une cellule vide. Chaque `key` a donc son gabarit. -->
+<fold-data-table
+  class="fr-table"
+  caption="File de remise du comptoir"
+  narrowLayout="cards"
+  hover
+  clickable
+  [columns]="columns"
+  [rows]="rows()"
+  [rowKey]="rowKey"
+  [rowTone]="toneOf"
+  [rowNote]="hasNote"
+  (rowClick)="opened.emit($event)"
+>
+  <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
+       `foldCell` rend une cellule vide. Chaque `key` a donc son gabarit. -->
 
-    <!-- 🔴 Une commande SANS créneau le dit, et ne se voit pas prêter une heure. -->
-    <ng-template foldCell="window" let-row>
-      @if (windowLabel(row); as slot) {
-        <span class="fr-slot" [class.fr-slot-late]="late(row)">{{ slot }}</span>
-      } @else {
-        <span class="fr-muted">Sans créneau</span>
+  <!-- 🔴 Une commande SANS créneau le dit, et ne se voit pas prêter une heure. -->
+  <ng-template foldCell="window" let-row>
+    @if (windowLabel(row); as slot) {
+      <span class="fr-slot" [class.fr-slot-late]="late(row)">{{ slot }}</span>
+    } @else {
+      <span class="fr-muted">Sans créneau</span>
+    }
+  </ng-template>
+
+  <!-- Le nom, et sous lui ce qui l'identifie : le numéro tant qu'on attend,
+       l'heure de la remise une fois le sac parti. Une ligne barrée reste DANS
+       la file — une contestation se règle avec l'heure sous les yeux, pas en
+       cherchant ailleurs. -->
+  <ng-template foldCell="customer" let-row>
+    <span class="fr-name" [class.fr-struck]="row.state === 'handed_over'">
+      {{ row.customerLabel }}
+    </span>
+    @if (handedOverAt(row); as done) {
+      <span class="fr-sub">{{ done }}</span>
+    } @else {
+      <span class="fr-sub fr-ref">{{ row.reference }}</span>
+    }
+  </ng-template>
+
+  <ng-template foldCell="units" let-row>
+    <span class="fr-units">{{ row.totalUnits }}</span>
+  </ng-template>
+
+  <!-- 🔴 L'état SEUL. Le retard a vécu ici aussi, en pastille ambre, pendant
+       que la note le répétait deux lignes plus bas — la même minute écrite
+       deux fois, dans deux tons, sur la même ligne. -->
+  <ng-template foldCell="state" let-row>
+    <fold-badge [variant]="variant(row)" [content]="label(row)" />
+  </ng-template>
+
+  <!-- ⚠️ `$event.stopPropagation()` : la ligne entière ouvre le rail, et sans
+       cela scanner un sac ouvrirait aussi le détail derrière le panneau. -->
+  <ng-template foldCell="action" let-row>
+    @if (remittable(row)) {
+      <button foldButton icon="qr-code" (click)="scanned.emit(row); $event.stopPropagation()">
+        Scanner
+      </button>
+    } @else {
+      <span class="fr-muted" aria-hidden="true">—</span>
+    }
+  </ng-template>
+
+  <!--
+    **Le retard s'annonce SOUS la ligne**, et pas dans une colonne : il vient
+    avec un geste. Une pastille dit un état ; ici il faut dire l'état ET
+    proposer d'y répondre, ce qui ne tient pas dans une cellule.
+
+    🔴 Une NOTE et non un tiroir (`foldRowNote`, fold 0.26). Le tiroir fait
+    pousser un chevron sur CHAQUE ligne, parce qu'il cache quelque chose ; un
+    retard ne se cache pas — un avertissement qu'il faut déplier n'alerte
+    personne. La note est là sur les lignes que `hasNote` désigne, et sur
+    aucune autre.
+  -->
+  <ng-template foldRowNote let-row>
+    <fold-callout appearance="inset" variant="warning" icon="info">
+      <strong>{{ lateText(row) }}</strong> sur la tranche convenue.
+      @if (!remindable(row) && !reminderSent(row)) {
+        Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir le client pour
+        rien.
       }
-    </ng-template>
-
-    <!-- Le nom, et sous lui ce qui l'identifie : le numéro tant qu'on attend,
-         l'heure de la remise une fois le sac parti. Une ligne barrée reste DANS
-         la file — une contestation se règle avec l'heure sous les yeux, pas en
-         cherchant ailleurs. -->
-    <ng-template foldCell="customer" let-row>
-      <span class="fr-name" [class.fr-struck]="row.state === 'handed_over'">
-        {{ row.customerLabel }}
-      </span>
-      @if (handedOverAt(row); as done) {
-        <span class="fr-sub">{{ done }}</span>
-      } @else {
-        <span class="fr-sub fr-ref">{{ row.reference }}</span>
-      }
-    </ng-template>
-
-    <ng-template foldCell="units" let-row>
-      <span class="fr-units">{{ row.totalUnits }}</span>
-    </ng-template>
-
-    <!-- 🔴 L'état SEUL. Le retard a vécu ici aussi, en pastille ambre, pendant
-         que la note le répétait deux lignes plus bas — la même minute écrite
-         deux fois, dans deux tons, sur la même ligne. -->
-    <ng-template foldCell="state" let-row>
-      <fold-badge [variant]="variant(row)" [content]="label(row)" />
-    </ng-template>
-
-    <!-- ⚠️ `$event.stopPropagation()` : la ligne entière ouvre le rail, et sans
-         cela scanner un sac ouvrirait aussi le détail derrière le panneau. -->
-    <ng-template foldCell="action" let-row>
-      @if (remittable(row)) {
-        <button foldButton icon="qr-code" (click)="scanned.emit(row); $event.stopPropagation()">
-          Scanner
-        </button>
-      } @else {
-        <span class="fr-muted" aria-hidden="true">—</span>
-      }
-    </ng-template>
-
-    <!--
-      **Le retard s'annonce SOUS la ligne**, et pas dans une colonne : il vient
-      avec un geste. Une pastille dit un état ; ici il faut dire l'état ET
-      proposer d'y répondre, ce qui ne tient pas dans une cellule.
-
-      🔴 Une NOTE et non un tiroir (`foldRowNote`, fold 0.26). Le tiroir fait
-      pousser un chevron sur CHAQUE ligne, parce qu'il cache quelque chose ; un
-      retard ne se cache pas — un avertissement qu'il faut déplier n'alerte
-      personne. La note est là sur les lignes que `hasNote` désigne, et sur
-      aucune autre.
-    -->
-    <ng-template foldRowNote let-row>
-      <fold-callout appearance="inset" variant="warning" icon="info">
-        <strong>{{ lateText(row) }}</strong> sur la tranche convenue.
-        @if (!remindable(row) && !reminderSent(row)) {
-          Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir le client pour
-          rien.
+      <div actions>
+        @if (reminderSent(row)) {
+          <span class="fr-muted">Rappel envoyé</span>
+        } @else {
+          <button
+            foldButton
+            emphasis="outline"
+            icon="mail"
+            [disabled]="!remindable(row)"
+            [loading]="busy(row)"
+            (click)="reminder.emit(row); $event.stopPropagation()"
+          >
+            Envoyer un rappel
+          </button>
         }
-        <div actions>
-          @if (reminderSent(row)) {
-            <span class="fr-muted">Rappel envoyé</span>
-          } @else {
-            <button
-              foldButton
-              emphasis="outline"
-              icon="mail"
-              [disabled]="!remindable(row)"
-              [loading]="busy(row)"
-              (click)="reminder.emit(row); $event.stopPropagation()"
-            >
-              Envoyer un rappel
-            </button>
-          }
-        </div>
-      </fold-callout>
-    </ng-template>
-  </fold-data-table>
-</fold-card>
+      </div>
+    </fold-callout>
+  </ng-template>
+</fold-data-table>

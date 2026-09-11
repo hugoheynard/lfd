@@ -25,26 +25,41 @@
           (click)="clear()"
         ></button>
       </div>
-      <p class="rd-customer">{{ row.customerLabel }}</p>
-      <p class="rd-reference">{{ row.reference }}</p>
-      <p class="rd-meta">Commandée le {{ placedAt() }}</p>
-    </header>
+      <!-- Les trois lignes en UN bloc : nom, numéro, date ne sont pas trois
+           faits à peser l'un après l'autre, c'est une seule identité qu'on lit
+           d'un regard. Elles se serrent donc entre elles, et c'est le rail qui
+           les tient à distance du sur-titre. -->
+      <div class="rd-who">
+        <!-- L'enseigne d'abord quand elle existe : c'est le nom peint sur la
+             devanture, celui qu'on prononce au comptoir. La raison sociale
+             suit, en plus discret — elle sert à lever un doute entre deux
+             voisines, pas à appeler quelqu'un. -->
+        <p class="rd-customer">
+          <span class="rd-trade">{{ tradeName() ?? row.customerLabel }}</span>
+          @if (tradeName() !== null) {
+            <span class="rd-legal">{{ row.customerLabel }}</span>
+          }
+        </p>
+        <p class="rd-reference">{{ row.reference }}</p>
+        <p class="rd-meta">Commandée le {{ placedAt() }}</p>
+      </div>
 
-    <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne
+      <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne
          sera remis : c'est ce qu'on lit à voix haute au comptoir. -->
-    @if (row.state === 'cancelled') {
-      <fold-callout appearance="inset" variant="alert">
-        <strong>Cette commande est annulée.</strong> Rien ne doit être remis&nbsp;: le sac ne sera
-        pas préparé, et le client n'a rien à régler.
-      </fold-callout>
-    } @else {
-      <!-- Le verdict du fournil, et rien de plus que ce qu'il a dit. Il n'y a
-           ni rupture ni avoir dans le modèle : une phrase qui affirmerait
-           « complète » inventerait une vérification que personne n'a faite. -->
-      <fold-callout appearance="inset" [variant]="readyTone()" [icon]="readyIcon()">
-        {{ readyText() }}
-      </fold-callout>
-    }
+      @if (row.state === 'cancelled') {
+        <fold-callout appearance="inset" variant="alert">
+          <strong>Cette commande est annulée.</strong> Rien ne doit être remis&nbsp;: le sac ne sera
+          pas préparé, et le client n'a rien à régler.
+        </fold-callout>
+      } @else {
+        <!-- Le verdict du fournil, et rien de plus que ce qu'il a dit. Il n'y a
+               ni rupture ni avoir dans le modèle : une phrase qui affirmerait
+               « complète » inventerait une vérification que personne n'a faite. -->
+        <fold-callout appearance="inset" [variant]="readyTone()" [icon]="readyIcon()">
+          {{ readyText() }}
+        </fold-callout>
+      }
+    </header>
 
     @switch (state()) {
       @case ('loading') {

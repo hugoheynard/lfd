@@ -43,7 +43,7 @@
 .rd-identity {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-sm);
+  gap: var(--fold-space-2xl);
 }
 
 /* Le sur-titre et la fermeture sur la même ligne : le bouton n'a pas de place à
@@ -65,13 +65,42 @@
   text-transform: uppercase;
 }
 
+/* Les trois lignes en UN bloc : nom, numéro et date ne sont pas trois faits à
+   peser l'un après l'autre, c'est une seule identité qu'on lit d'un regard.
+   Elles se serrent entre elles, et c'est le rail qui les tient à distance du
+   sur-titre. */
+.rd-who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
 /* 🔴 En gras, à l'inverse de la maquette. Le numéro sert à VÉRIFIER ; le nom
    sert à APPELER — c'est lui qu'on prononce à voix haute au-dessus d'un
-   comptoir, et il doit se trouver sans être cherché. */
+   comptoir, et il doit se trouver sans être cherché.
+
+   En chasse fixe, comme la référence sous lui : les trois lignes deviennent un
+   seul bloc d'identité au lieu d'une phrase suivie d'un code. C'est ce que la
+   mono dit — ceci se compare caractère par caractère. */
 .rd-customer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
   margin: 0;
+  font-family: var(--fold-font-mono);
   font-size: var(--fold-text-sm);
+}
+
+.rd-trade {
   font-weight: var(--fold-weight-semibold);
+}
+
+/* La raison sociale ne répond pas à la même question : elle lève un doute, elle
+   n'appelle personne. Elle recule d'un ton sans quitter la ligne. */
+.rd-legal {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
 }
 
 .rd-reference {
@@ -109,7 +138,7 @@
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
   min-height: 0;
   padding: var(--fold-space-sm) var(--fold-space-md) var(--fold-space-md);
   border: 1px solid var(--fold-color-border-subtle);
@@ -153,7 +182,7 @@
   /* 🔴 Un écart franc entre le nombre et son unité. Collés, « 128pièces » se
      lit comme un seul mot et le chiffre perd ce qui le rend lisible d'un
      mètre : d'être seul. */
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
@@ -175,7 +204,7 @@
   flex: 0 1 auto;
   flex-direction: column;
   min-height: 0;
-  margin: var(--fold-space-3xs) 0 0;
+  margin: var(--fold-space-xs) 0 0;
   padding: 0;
   overflow-y: auto;
   list-style: none;
@@ -250,7 +279,7 @@
      endroit à chaque fois ; le vide au-dessus est le prix de cette constance,
      et il est moins cher que la recherche. */
   margin-top: auto;
-  padding-top: var(--fold-space-3xs);
+  padding-top: var(--fold-space-xs);
 }
 
 /* 🔴 **Le bleu de la PAGE, dans une colonne de chrome.** Sur le rail,
@@ -283,7 +312,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--fold-space-3xs) var(--fold-space-sm);
+  gap: var(--fold-space-xs) var(--fold-space-sm);
 }
 
 .rd-note {

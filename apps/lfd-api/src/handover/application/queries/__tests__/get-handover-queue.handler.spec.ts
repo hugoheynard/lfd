@@ -25,6 +25,7 @@ function entry(overrides: Partial<HandoverQueueEntry> = {}): HandoverQueueEntry 
     orderId: "ord_1",
     reference: "ORD-ABCD-1234",
     customerLabel: "Les Halles",
+    tradeName: null,
     pickupLabel: "Le labo",
     fulfillmentMethod: "pickup",
     window: null,
