@@ -49,18 +49,6 @@
     <fold-badge [variant]="variant(row)" [content]="label(row)" />
   </ng-template>
 
-  <!-- ⚠️ `$event.stopPropagation()` : la ligne entière ouvre le rail, et sans
-       cela scanner un sac ouvrirait aussi le détail derrière le panneau. -->
-  <ng-template foldCell="action" let-row>
-    @if (remittable(row)) {
-      <button foldButton icon="qr-code" (click)="scanned.emit(row); $event.stopPropagation()">
-        Scanner
-      </button>
-    } @else {
-      <span class="fr-muted" aria-hidden="true">—</span>
-    }
-  </ng-template>
-
   <!--
     **Le retard s'annonce SOUS la ligne**, et pas dans une colonne : il vient
     avec un geste. Une pastille dit un état ; ici il faut dire l'état ET

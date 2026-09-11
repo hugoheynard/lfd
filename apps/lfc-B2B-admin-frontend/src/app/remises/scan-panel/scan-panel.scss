@@ -3,7 +3,7 @@
 .sp-stage {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
 }
 
 /* 16/9 posé par le ratio et non par une hauteur : un flux de caméra change de
@@ -28,7 +28,7 @@
 .sp-fallback {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
   padding-top: var(--fold-space-md);
   border-top: 1px solid var(--fold-color-border-subtle);
 }

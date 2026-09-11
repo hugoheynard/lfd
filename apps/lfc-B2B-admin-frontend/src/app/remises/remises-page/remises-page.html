@@ -51,10 +51,6 @@
         [value]="day()"
         (valueChange)="onDay($event)"
       />
-
-      <!-- Le scan SANS cible : on prend ce qui se présente, comme un comptoir.
-           Celui des lignes, lui, vérifie qu'il s'agit bien de la bonne. -->
-      <button foldButton icon="qr-code" class="masthead-scan" (click)="scan(null)">Scanner</button>
     </div>
   </fold-page-section>
 
@@ -95,9 +91,23 @@
                d'où le `@if` qui attend qu'elle se résolve, une passe plus tard. -->
           @if (tabBar(); as bar) {
             <fold-tab-panel [tabs]="bar" [key]="activeTab()">
+              <!--
+                **La barre de la file.** Le scan est ici et nulle part ailleurs
+                depuis le 2026-09-11 : il y en avait un par ligne ET un dans la
+                bande, et ils faisaient le MÊME appel. Le code lu résout la
+                commande à lui seul — la ligne cliquée n'apportait qu'une
+                contradiction possible, et elle n'existait que parce qu'on avait
+                cliqué quelque part d'abord.
+
+                🔴 Le scan par ligne a coûté une colonne de 8,5 rem à la file.
+                Rendue au nom du client, qui est ce qu'on y cherche.
+              -->
               <div class="file-head">
                 <fold-element-title variant="eyebrow" [title]="eyebrow()" />
                 <p class="file-hint">par créneau, le plus ancien en tête</p>
+                <button class="file-scan" foldButton icon="qr-code" (click)="scan(null)">
+                  Scanner un code
+                </button>
               </div>
 
               <app-file-remise
@@ -107,7 +117,6 @@
                 [busyId]="remindingId()"
                 [reminded]="remindedIds()"
                 (opened)="select($event)"
-                (scanned)="scan($event)"
                 (reminder)="remind($event)"
               />
             </fold-tab-panel>

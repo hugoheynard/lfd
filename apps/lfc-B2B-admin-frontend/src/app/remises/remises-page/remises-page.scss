@@ -100,23 +100,31 @@
   width: 11rem;
 }
 
-/* ── LE SUR-TITRE DE LA FILE ────────────────────────────────────────────────
-   L'onglet ouvert à gauche, l'ordre de lecture à droite : la file est triée
-   d'une façon qui n'est pas évidente (créneau, puis heure de commande), et
-   personne ne devine un tri. */
+/* ── LA BARRE DE LA FILE ────────────────────────────────────────────────────
+   L'onglet ouvert à gauche, l'ordre de lecture à côté, le geste au bout : la
+   file est triée d'une façon qui n'est pas évidente (créneau, puis heure de
+   commande), et personne ne devine un tri.
+
+   Alignée sur la LIGNE DE BASE du texte, et non centrée : un bouton centré sur
+   un eyebrow de dix pixels tire la barre vers le haut et décolle la table. */
 .file-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-2xs) var(--fold-space-md);
-  margin-bottom: var(--fold-space-2xs);
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin-bottom: var(--fold-space-sm);
 }
 
 .file-hint {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
+}
+
+/* Le seul geste de la barre, poussé au bout : la marge automatique plutôt
+   qu'un `space-between`, qui aurait écarté l'eyebrow de son indication. */
+.file-scan {
+  margin-left: auto;
 }
 
 /* ── LA GRILLE : la file, et le sac à côté ──────────────────────────────────

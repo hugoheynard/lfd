@@ -210,8 +210,13 @@ describe('FileRemise', () => {
     ).toBeNull();
   });
 
-  it('un sac encore à tendre propose le SCAN', () => {
-    expect(rowTexts(render([entry()]))[0] ?? '').toContain('Scanner');
+  it('🔴 aucune ligne ne porte de scan : il est UNIQUE, au-dessus de la table', () => {
+    // Régression de conception (2026-09-11) : il y avait un scan par ligne ET
+    // un dans la bande, pour le MÊME appel. Le code lu résout la commande à lui
+    // seul ; la ligne cliquée n'apportait qu'une contradiction possible, et
+    // elle n'existait que parce qu'on avait cliqué quelque part d'abord. La
+    // colonne coûtait 8,5 rem, prises au nom du client.
+    expect(rowTexts(render([entry()]))[0] ?? '').not.toContain('Scanner');
   });
 
   it('🔴 une commande déjà remise n’offre plus aucun geste', () => {
@@ -219,23 +224,21 @@ describe('FileRemise', () => {
       render([entry({ state: 'handed_over', handedOverAt: `${DAY}T04:41:00.000Z` })]),
     );
 
-    expect(rows[0] ?? '').not.toContain('Scanner');
+    expect(rows[0] ?? '').not.toContain('Envoyer un rappel');
   });
 
-  it('émet les intentions plutôt que d’agir : ouvrir, scanner, rappeler', () => {
+  it('émet les intentions plutôt que d’agir : ouvrir, rappeler', () => {
     const fixture = render([entry({ window: LATE, readyAt: `${DAY}T05:00:00.000Z` })], {
       now: new Date(`${DAY}T09:00:00`),
     });
     const seen: string[] = [];
     fixture.componentInstance.opened.subscribe(() => seen.push('opened'));
-    fixture.componentInstance.scanned.subscribe(() => seen.push('scanned'));
     fixture.componentInstance.reminder.subscribe(() => seen.push('reminder'));
 
     const el = fixture.nativeElement as HTMLElement;
     el.querySelector<HTMLElement>('tr.folddt-note-row button')?.click();
-    el.querySelector<HTMLElement>('tr.folddt-row button')?.click();
     el.querySelector<HTMLElement>('tr.folddt-row')?.click();
 
-    expect(seen).toEqual(['reminder', 'scanned', 'opened']);
+    expect(seen).toEqual(['reminder', 'opened']);
   });
 });

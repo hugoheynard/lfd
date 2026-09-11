@@ -94,9 +94,6 @@ export class FileRemise {
   /** On a touché la ligne : elle s'ouvre dans le rail. */
   readonly opened = output<HandoverQueueEntryView>();
 
-  /** On veut lire le code de ce client — le scan vérifiera que c'est le bon. */
-  readonly scanned = output<HandoverQueueEntryView>();
-
   /** On renvoie le courriel de retrait à ce client. */
   readonly reminder = output<HandoverQueueEntryView>();
 
@@ -115,9 +112,6 @@ export class FileRemise {
     { key: 'customer', label: 'Client' },
     { key: 'units', label: 'Pièces', numeric: true, width: '5.5rem' },
     { key: 'state', label: 'État', width: '8rem' },
-    // Assez pour « Scanner » et son icône, pas un pouce de plus : chaque rem
-    // repris à une colonne est une colonne que le nom du client ne perd pas.
-    { key: 'action', label: '', align: 'right', width: '8.5rem' },
   ];
 
   protected readonly rowKey = (entry: HandoverQueueEntryView): string => entry.orderId;
