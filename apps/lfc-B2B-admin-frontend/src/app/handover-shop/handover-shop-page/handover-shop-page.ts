@@ -38,9 +38,9 @@ import {
   queueCounters,
   type QueueCounters,
 } from '../handover-queue';
-import { FileRemise } from '../file-remise/file-remise';
-import { RemiseDetail } from '../remise-detail/remise-detail';
-import { SCANNED, ScanPanel, type ScanPanelData } from '../scan-panel/scan-panel';
+import { QueueTable } from '../queue-table/queue-table';
+import { HandoverDetail } from '../handover-detail/handover-detail';
+import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-dialog';
 import { AdminOrdersService } from '../../commandes/orders.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -94,7 +94,7 @@ const TICK_MS = 30_000;
  * comptoir ouvert demain apparaît sans qu'on y touche.
  */
 @Component({
-  selector: 'app-remises-page',
+  selector: 'app-handover-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
@@ -112,13 +112,13 @@ const TICK_MS = 30_000;
     FoldSurfaceDirective,
     FoldTabPanelComponent,
     FoldTabsComponent,
-    FileRemise,
-    RemiseDetail,
+    QueueTable,
+    HandoverDetail,
   ],
-  templateUrl: './remises-page.html',
-  styleUrl: './remises-page.scss',
+  templateUrl: './handover-shop-page.html',
+  styleUrl: './handover-shop-page.scss',
 })
-export class RemisesPage {
+export class HandoverShopPage {
   private readonly api = inject(HandoverQueueService);
   private readonly orders = inject(AdminOrdersService);
   private readonly panels = inject(FoldPanelHostService);
@@ -240,7 +240,7 @@ export class RemisesPage {
 
   /**
    * Les lignes de l'onglet ouvert. **Pas ordonnées ici** : l'ordre de la file
-   * appartient à la file, et `app-file-remise` le pose — un appelant qui
+   * appartient à la file, et `app-queue-table` le pose — un appelant qui
    * oublierait de trier obtiendrait une liste juste et illisible.
    */
   protected readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
@@ -370,11 +370,11 @@ export class RemisesPage {
    * `null` : on prend ce qui se présente, comme un comptoir.
    */
   protected scan(entry: HandoverQueueEntryView | null): void {
-    const data: ScanPanelData = {
+    const data: ScanDialogData = {
       expected:
         entry === null ? null : { reference: entry.reference, customerLabel: entry.customerLabel },
     };
-    const ref = this.panels.open<ScanPanelData, string>(ScanPanel, { data });
+    const ref = this.panels.open<ScanDialogData, string>(ScanDialog, { data });
     void ref.closed.then((result) => {
       if (result === SCANNED) {
         void this.load();

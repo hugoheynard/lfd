@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { HandoverQueueEntryView } from '@lfd/contracts';
 
-import { FileRemise } from './file-remise';
+import { QueueTable } from './queue-table';
 
 /**
  * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
@@ -56,9 +56,9 @@ interface Options {
 function render(
   entries: readonly HandoverQueueEntryView[],
   options: Options = {},
-): ComponentFixture<FileRemise> {
-  TestBed.configureTestingModule({ imports: [FileRemise] });
-  const fixture: ComponentFixture<FileRemise> = TestBed.createComponent(FileRemise);
+): ComponentFixture<QueueTable> {
+  TestBed.configureTestingModule({ imports: [QueueTable] });
+  const fixture: ComponentFixture<QueueTable> = TestBed.createComponent(QueueTable);
   fixture.componentRef.setInput('entries', entries);
   fixture.componentRef.setInput('day', DAY);
   fixture.componentRef.setInput('now', options.now ?? new Date(`${DAY}T07:00:00`));
@@ -68,22 +68,22 @@ function render(
   return fixture;
 }
 
-const text = (fixture: ComponentFixture<FileRemise>): string =>
+const text = (fixture: ComponentFixture<QueueTable>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-const rowTexts = (fixture: ComponentFixture<FileRemise>): readonly string[] =>
+const rowTexts = (fixture: ComponentFixture<QueueTable>): readonly string[] =>
   [...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.folddt-row')].map(
     (row) => row.textContent ?? '',
   );
 
-const note = (fixture: ComponentFixture<FileRemise>): string =>
+const note = (fixture: ComponentFixture<QueueTable>): string =>
   (fixture.nativeElement as HTMLElement).querySelector('tbody tr.folddt-note-row')?.textContent ??
   '';
 
 /** Une tranche demandée et dépassée, jugée à une heure que le cas choisit. */
 const LATE = { start: '06:00', end: '06:30', source: 'override' } as const;
 
-describe('FileRemise', () => {
+describe('QueueTable', () => {
   it('rend chaque colonne de la ligne', () => {
     const body = text(render([entry()]));
 

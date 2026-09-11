@@ -4,11 +4,11 @@
   <fold-panel-body>
     <!-- Le papier, tel qu'on le coche : une en-tête, une liste, un compte. La
          feuille n'a ni fond ni ombre — c'est un document, pas une carte. -->
-    <article class="bp-sheet">
-      <header class="bp-head">
-        <p class="bp-customer">{{ customerLabel() }}</p>
-        <p class="bp-reference">{{ order.orderNumber }}</p>
-        <dl class="bp-facts">
+    <article class="sh-sheet">
+      <header class="sh-head">
+        <p class="sh-customer">{{ customerLabel() }}</p>
+        <p class="sh-reference">{{ order.orderNumber }}</p>
+        <dl class="sh-facts">
           <div>
             <dt>Journée</dt>
             <dd>{{ day() }}</dd>
@@ -25,8 +25,8 @@
         </dl>
       </header>
 
-      <table class="bp-lines">
-        <caption class="bp-caption">
+      <table class="sh-lines">
+        <caption class="sh-caption">
           Articles de la commande
           {{
             order.orderNumber
@@ -34,37 +34,37 @@
         </caption>
         <thead>
           <tr>
-            <th scope="col" class="bp-col-qty">Qté</th>
+            <th scope="col" class="sh-col-qty">Qté</th>
             <th scope="col">Article</th>
-            <th scope="col" class="bp-col-sku">Référence</th>
+            <th scope="col" class="sh-col-sku">Référence</th>
             <!-- La case à cocher est le POINT de ce papier : on le tient d'une
                  main et on coche de l'autre. -->
-            <th scope="col" class="bp-col-tick"><span class="bp-sr">Coché</span></th>
+            <th scope="col" class="sh-col-tick"><span class="sh-sr">Coché</span></th>
           </tr>
         </thead>
         <tbody>
           @for (line of order.lines; track line.sku) {
             <tr>
-              <td class="bp-qty">{{ line.quantity }}</td>
+              <td class="sh-qty">{{ line.quantity }}</td>
               <td>{{ line.productName }}</td>
-              <td class="bp-sku">{{ line.sku }}</td>
-              <td class="bp-tick" aria-hidden="true"></td>
+              <td class="sh-sku">{{ line.sku }}</td>
+              <td class="sh-tick" aria-hidden="true"></td>
             </tr>
           }
         </tbody>
       </table>
 
-      <p class="bp-total">
+      <p class="sh-total">
         <strong>{{ totalUnits() }}</strong> pièce{{ totalUnits() > 1 ? 's' : '' }} au total.
       </p>
 
       @if (order.note !== '') {
-        <p class="bp-note"><strong>Note</strong> — {{ order.note }}</p>
+        <p class="sh-note"><strong>Note</strong> — {{ order.note }}</p>
       }
 
       <!-- 🔴 Dit, et pas seulement absent. Quelqu'un qui cherche un total doit
            savoir qu'il n'y en a pas ici, plutôt que de croire à un oubli. -->
-      <p class="bp-money">Aucun montant&nbsp;: on ne facture pas au comptoir.</p>
+      <p class="sh-money">Aucun montant&nbsp;: on ne facture pas au comptoir.</p>
     </article>
   </fold-panel-body>
 

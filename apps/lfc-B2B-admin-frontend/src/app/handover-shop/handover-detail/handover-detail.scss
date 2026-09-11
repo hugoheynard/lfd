@@ -7,16 +7,16 @@
 
   /* Ce qui surplombe le rail, mesuré à l'écran : la barre de l'app (56), la
      bande de tête (60), le sur-titre de la file et les gouttières. */
-  --rd-above: 10.5rem;
+  --hd-above: 10.5rem;
 
-  /* 🔴 Deux réglages OUVERTS, sur l'hôte et non sur `.rd-sheet` : une feuille
+  /* 🔴 Deux réglages OUVERTS, sur l'hôte et non sur `.hd-sheet` : une feuille
      d'app ne peut pas atteindre l'intérieur d'un composant encapsulé, mais une
      propriété personnalisée, elle, y descend. C'est par eux que l'écran de
      comptoir fait du rail une feuille qui monte sur la file quand la colonne
-     n'existe plus. Posés sur `.rd-sheet`, ils auraient gagné contre ce que
+     n'existe plus. Posés sur `.hd-sheet`, ils auraient gagné contre ce que
      l'appelant écrit sur l'élément — et rien n'aurait bougé. */
-  --rd-height: calc(100dvh - var(--rd-above));
-  --rd-radius: var(--fold-radius-lg);
+  --hd-height: calc(100dvh - var(--hd-above));
+  --hd-radius: var(--fold-radius-lg);
 }
 
 /* 🔴 **Le rail descend jusqu'en bas.** Un bloc sombre de six lignes à côté d'une
@@ -25,14 +25,14 @@
    celle de la fenêtre moins ce qui la surplombe — la barre de l'app, la bande
    de tête, le sur-titre de la file — et le contenu défile à l'intérieur quand
    le sac est long, plutôt que d'être coupé par le `position: sticky` du rail. */
-.rd-sheet {
+.hd-sheet {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
-  height: var(--rd-height);
+  height: var(--hd-height);
   padding: var(--fold-space-lg);
   overflow-y: auto;
-  border-radius: var(--rd-radius);
+  border-radius: var(--hd-radius);
 
   /* 🔴 La teinte de la BARRE DE L'APP, et non celle du rail secondaire. Les
      deux sont sombres, mais la barre est d'un cran plus profond : le rail s'y
@@ -49,7 +49,7 @@
    que ce sont quatre faits qu'on vérifie l'un après l'autre, debout, pendant
    qu'une personne attend. Aucune marge par élément ici : deux réglages qui
    s'additionnent rendent l'interligne impossible à corriger d'un endroit. */
-.rd-identity {
+.hd-identity {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-2xl);
@@ -57,7 +57,7 @@
 
 /* Le sur-titre et la fermeture sur la même ligne : le bouton n'a pas de place à
    lui, il occupe celle que le texte laisse. */
-.rd-top {
+.hd-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -65,7 +65,7 @@
   min-height: 2rem;
 }
 
-.rd-eyebrow {
+.hd-eyebrow {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
@@ -78,7 +78,7 @@
    peser l'un après l'autre, c'est une seule identité qu'on lit d'un regard.
    Elles se serrent entre elles, et c'est le rail qui les tient à distance du
    sur-titre. */
-.rd-who {
+.hd-who {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
@@ -91,7 +91,7 @@
    En chasse fixe, comme la référence sous lui : les trois lignes deviennent un
    seul bloc d'identité au lieu d'une phrase suivie d'un code. C'est ce que la
    mono dit — ceci se compare caractère par caractère. */
-.rd-customer {
+.hd-customer {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -101,18 +101,18 @@
   font-size: var(--fold-text-sm);
 }
 
-.rd-trade {
+.hd-trade {
   font-weight: var(--fold-weight-semibold);
 }
 
 /* La raison sociale ne répond pas à la même question : elle lève un doute, elle
    n'appelle personne. Elle recule d'un ton sans quitter la ligne. */
-.rd-legal {
+.hd-legal {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
 }
 
-.rd-reference {
+.hd-reference {
   margin: 0;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-2xl);
@@ -125,7 +125,7 @@
   white-space: nowrap;
 }
 
-.rd-meta {
+.hd-meta {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
@@ -143,7 +143,7 @@
    c'est seulement quand le sac dépasse la place disponible que la liste se met
    à défiler. C'est ce qui remplace le dépliage : un « + 2 références »
    demandait un clic pour voir ce qu'on est en train de tendre. */
-.rd-bag {
+.hd-bag {
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
@@ -166,7 +166,7 @@
 
 /* Le titre à gauche, le total à droite : c'est le nombre qu'on recompte à voix
    haute, et il doit se lire sans parcourir la liste. */
-.rd-bag-head {
+.hd-bag-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -178,14 +178,14 @@
 /* 🔴 En bas de casse, à la taille du texte courant. La capitale espacée est le
    ton d'une ÉTIQUETTE — elle nomme une zone d'interface. Ici la phrase nomme un
    geste, celui qu'on est en train de faire, et elle se lit comme telle. */
-.rd-bag-title {
+.hd-bag-title {
   margin: 0;
   color: var(--fold-color-text);
   font-size: var(--fold-text-sm);
   font-weight: var(--fold-weight-semibold);
 }
 
-.rd-bag-total {
+.hd-bag-total {
   display: flex;
   align-items: baseline;
   /* 🔴 Un écart franc entre le nombre et son unité. Collés, « 128pièces » se
@@ -197,7 +197,7 @@
   font-size: var(--fold-text-xs);
 }
 
-.rd-bag-total strong {
+.hd-bag-total strong {
   color: var(--fold-color-text);
   font-size: var(--fold-text-2xl);
   font-weight: var(--fold-weight-bold);
@@ -208,7 +208,7 @@
 
 /* La liste défile DANS la carte : un sac de vingt références ne doit pas
    repousser le bouton de remise, celui qu'on cherche en tenant le sac. */
-.rd-lines {
+.hd-lines {
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
@@ -227,7 +227,7 @@
    ligne à suivre que l'air seul ne donne pas. Le trait le plus clair de fold et
    un seul pixel — assez pour guider, trop peu pour qu'on le compte avant de
    lire les quantités. */
-.rd-line {
+.hd-line {
   display: grid;
   grid-template-columns: 2.25rem 1fr auto;
   align-items: baseline;
@@ -238,11 +238,11 @@
 /* 🔴 Sur le rang SUIVANT, jamais sur chacun : un filet posé sur tous les rangs
    en dessine un de plus sous le dernier article, à un cheveu du bord de la
    carte — deux traits parallèles qu'on lit comme une erreur d'alignement. */
-.rd-line + .rd-line {
+.hd-line + .hd-line {
   border-top: 1px solid var(--fold-color-border-subtle);
 }
 
-.rd-qty {
+.hd-qty {
   font-size: var(--fold-text-lg);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
@@ -253,14 +253,14 @@
   text-align: left;
 }
 
-.rd-name {
+.hd-name {
   font-size: var(--fold-text-sm);
   /* Un nom long revient à la ligne plutôt que d'être coupé : on le lit pour
      trouver le produit sur une étagère, pas pour le reconnaître d'un préfixe. */
   overflow-wrap: anywhere;
 }
 
-.rd-sku {
+.hd-sku {
   color: var(--fold-color-text-muted);
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-2xs);
@@ -271,7 +271,7 @@
 /* ── LES GESTES ─────────────────────────────────────────────────────────────
    La remise prend toute la largeur : c'est LE geste de cet écran, et on le
    cherche en tenant un sac d'une main. Le reste est en dessous, en petit. */
-.rd-actions {
+.hd-actions {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -306,7 +306,7 @@
    Le survol est un mélange avec le fond de la barre de l'app, faute d'un
    `brand-strong` : la page descend d'un cran (600 → 700), et sans lui le survol
    serait allé chercher le bleu pâle du chrome — c'est-à-dire s'éclaircir. */
-.rd-scan {
+.hd-scan {
   --fold-color-primary: var(--fold-color-brand);
   --fold-color-on-primary: var(--fold-color-on-brand);
   --fold-color-primary-strong: color-mix(
@@ -316,7 +316,7 @@
   );
 }
 
-.rd-foot {
+.hd-foot {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -324,7 +324,7 @@
   gap: var(--fold-space-xs) var(--fold-space-sm);
 }
 
-.rd-note {
+.hd-note {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
 }

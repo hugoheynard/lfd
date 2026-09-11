@@ -36,7 +36,7 @@ import { readQrCode, scannerAvailable, tokenOf } from './qr-reader';
  * une autre est alors **refusé au lieu d'être honoré**. Ouvert depuis la bande
  * de tête, il vaut `null` : on prend ce qui se présente, comme un comptoir.
  */
-export interface ScanPanelData {
+export interface ScanDialogData {
   readonly expected: { readonly reference: string; readonly customerLabel: string } | null;
 }
 
@@ -85,7 +85,7 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  * mettre le chemin faible à portée du geste pressé.
  */
 @Component({
-  selector: 'app-scan-panel',
+  selector: 'app-scan-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
@@ -96,10 +96,10 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
   ],
-  templateUrl: './scan-panel.html',
-  styleUrl: './scan-panel.scss',
+  templateUrl: './scan-dialog.html',
+  styleUrl: './scan-dialog.scss',
 })
-export class ScanPanel implements FoldPanelContent<ScanPanelData> {
+export class ScanDialog implements FoldPanelContent<ScanDialogData> {
   /**
    * **Un dialogue, pas une feuille latérale** (fold 0.27).
    *
@@ -125,7 +125,7 @@ export class ScanPanel implements FoldPanelContent<ScanPanelData> {
     surface: 'solid',
   };
 
-  readonly data = input<ScanPanelData | undefined>();
+  readonly data = input<ScanDialogData | undefined>();
 
   private readonly handovers = inject(HandoverService);
   private readonly notify = inject(NotifyService);

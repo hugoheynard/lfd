@@ -16,7 +16,7 @@ import { saveBlob } from '../../shared/download/save-blob';
 import { formatWindow } from '../handover-queue';
 
 /** Ce que la file remet au bon : la commande déjà lue par le rail. */
-export interface BonPanelData {
+export interface SheetPanelData {
   readonly order: OrderView;
   /** Le point de retrait tel que la commande l'a figé, ou `null`. */
   readonly pickupLabel: string | null;
@@ -51,7 +51,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
  * l'écran en même temps.
  */
 @Component({
-  selector: 'app-bon-panel',
+  selector: 'app-sheet-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
@@ -59,13 +59,13 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
   ],
-  templateUrl: './bon-panel.html',
-  styleUrl: './bon-panel.scss',
+  templateUrl: './sheet-panel.html',
+  styleUrl: './sheet-panel.scss',
 })
-export class BonPanel implements FoldPanelContent<BonPanelData> {
+export class SheetPanel implements FoldPanelContent<SheetPanelData> {
   static readonly foldPanel: FoldPanelDefaults = { width: 'md' };
 
-  readonly data = input<BonPanelData | undefined>();
+  readonly data = input<SheetPanelData | undefined>();
 
   private readonly api = inject(AdminOrdersService);
   private readonly notify = inject(NotifyService);

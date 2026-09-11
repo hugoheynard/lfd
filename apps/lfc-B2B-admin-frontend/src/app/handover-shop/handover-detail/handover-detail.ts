@@ -23,7 +23,7 @@ import {
 import { NotifyService } from '../../notify.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
-import { BonPanel, type BonPanelData } from '../bon-panel/bon-panel';
+import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
 import { formatWindow } from '../handover-queue';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -66,7 +66,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
  * matins — un client sans téléphone — vers un contournement que rien ne trace.
  */
 @Component({
-  selector: 'app-remise-detail',
+  selector: 'app-handover-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
@@ -77,10 +77,10 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
     // du HTML inerte, le fond sombre est peint et l'encre reste sombre.
     FoldSurfaceDirective,
   ],
-  templateUrl: './remise-detail.html',
-  styleUrl: './remise-detail.scss',
+  templateUrl: './handover-detail.html',
+  styleUrl: './handover-detail.scss',
 })
-export class RemiseDetail {
+export class HandoverDetail {
   /** La ligne choisie dans la file, ou `null` — le rail existe dans les deux cas. */
   readonly entry = input<HandoverQueueEntryView | null>(null);
 
@@ -257,12 +257,12 @@ export class RemiseDetail {
     if (order === null || entry === null) {
       return;
     }
-    const data: BonPanelData = {
+    const data: SheetPanelData = {
       order,
       pickupLabel: entry.pickupLabel,
       customerLabel: entry.customerLabel,
     };
-    this.panels.open<BonPanelData>(BonPanel, { data });
+    this.panels.open<SheetPanelData>(SheetPanel, { data });
   }
 
   /**

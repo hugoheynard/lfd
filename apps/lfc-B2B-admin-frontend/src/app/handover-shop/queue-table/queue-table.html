@@ -1,5 +1,5 @@
 <fold-data-table
-  class="fr-table"
+  class="qt-table"
   caption="File de remise du comptoir"
   narrowLayout="cards"
   hover
@@ -18,9 +18,9 @@
   <!-- 🔴 Une commande SANS créneau le dit, et ne se voit pas prêter une heure. -->
   <ng-template foldCell="window" let-row>
     @if (windowLabel(row); as slot) {
-      <span class="fr-slot" [class.fr-slot-late]="late(row)">{{ slot }}</span>
+      <span class="qt-slot" [class.qt-slot-late]="late(row)">{{ slot }}</span>
     } @else {
-      <span class="fr-muted">Sans créneau</span>
+      <span class="qt-muted">Sans créneau</span>
     }
   </ng-template>
 
@@ -28,11 +28,11 @@
        barrée reste DANS la file — une contestation se règle avec l'heure sous
        les yeux, pas en cherchant ailleurs. -->
   <ng-template foldCell="customer" let-row>
-    <span class="fr-name" [class.fr-struck]="row.state === 'handed_over'">
+    <span class="qt-name" [class.qt-struck]="row.state === 'handed_over'">
       {{ row.customerLabel }}
     </span>
     @if (handedOverAt(row); as done) {
-      <span class="fr-sub">{{ done }}</span>
+      <span class="qt-sub">{{ done }}</span>
     }
   </ng-template>
 
@@ -40,11 +40,11 @@
        ou à ce qu'il épelle au téléphone, et une colonne alignée se compare
        caractère par caractère. -->
   <ng-template foldCell="reference" let-row>
-    <span class="fr-ref">{{ row.reference }}</span>
+    <span class="qt-ref">{{ row.reference }}</span>
   </ng-template>
 
   <ng-template foldCell="units" let-row>
-    <span class="fr-units">{{ row.totalUnits }}</span>
+    <span class="qt-units">{{ row.totalUnits }}</span>
   </ng-template>
 
   <!-- 🔴 L'état SEUL. Le retard a vécu ici aussi, en pastille ambre, pendant
@@ -74,7 +74,7 @@
       }
       <div actions>
         @if (reminderSent(row)) {
-          <span class="fr-muted">Rappel envoyé</span>
+          <span class="qt-muted">Rappel envoyé</span>
         } @else {
           <button
             foldButton

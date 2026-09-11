@@ -7,14 +7,14 @@
 
    Le jeton est celui que fold publie pour ça ; aucune règle ne vise l'intérieur
    du composant. */
-.fr-table {
+.qt-table {
   --fold-data-table-note-padding: 0;
 }
 
 /* Le créneau se dicte au téléphone : chasse fixe, pour que deux caractères
    voisins ne se confondent pas. Et plus gros que le reste — c'est par lui qu'on
    entre dans la ligne. */
-.fr-slot {
+.qt-slot {
   display: block;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-sm);
@@ -26,11 +26,11 @@
 /* Le créneau d'une ligne en retard prend l'encre de l'alerte. La couleur ne
    porte JAMAIS l'information seule : la note l'écrit en toutes lettres sous la
    ligne, avec ses minutes. */
-.fr-slot-late {
+.qt-slot-late {
   color: var(--fold-color-warning-text);
 }
 
-.fr-name {
+.qt-name {
   display: block;
   color: var(--fold-color-text);
   font-weight: var(--fold-weight-semibold);
@@ -39,12 +39,12 @@
 /* Une commande remise reste dans la file, barrée. Ce n'est pas une suppression
    déguisée : le sac est parti, et la ligne doit pouvoir se relire — une
    contestation se règle avec l'heure sous les yeux. */
-.fr-struck {
+.qt-struck {
   color: var(--fold-color-text-muted);
   text-decoration: line-through;
 }
 
-.fr-sub {
+.qt-sub {
   display: block;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
@@ -52,20 +52,20 @@
 
 /* En chasse fixe et sans césure : une référence se lit d'un bloc, et deux
    numéros voisins ne doivent pas se confondre d'un caractère. */
-.fr-ref {
+.qt-ref {
   display: block;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
   white-space: nowrap;
 }
 
-.fr-muted {
+.qt-muted {
   color: var(--fold-color-text-muted);
 }
 
 /* Le compte de pièces est le chiffre qu'on recompte à voix haute au comptoir :
    il se lit d'un mètre, sans chercher. */
-.fr-units {
+.qt-units {
   font-size: var(--fold-text-lg);
   font-weight: var(--fold-weight-semibold);
   font-variant-numeric: tabular-nums;

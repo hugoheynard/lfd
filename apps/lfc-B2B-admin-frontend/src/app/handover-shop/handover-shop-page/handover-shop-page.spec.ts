@@ -5,12 +5,12 @@ import type { HandoverQueueEntryView, HandoverQueueView } from '@lfd/contracts';
 
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
-import { RemisesPage } from './remises-page';
+import { HandoverShopPage } from './handover-shop-page';
 
 /**
  * Ce que ces cas tiennent — **l'ÉCRAN, pas la file**.
  *
- * Le dessin des lignes est parti dans `app-file-remise` avec ses propres cas :
+ * Le dessin des lignes est parti dans `app-queue-table` avec ses propres cas :
  * les colonnes, l'ordre, la note de retard, les gestes émis. Ce qui reste ici
  * est ce que la page seule décide :
  *
@@ -77,7 +77,7 @@ class FakeOrders {
  * interroge `matchMedia` à sa construction, une seule fois, et le laisser en
  * place déborderait sur les cas suivants.
  */
-async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<RemisesPage>> {
+async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<HandoverShopPage>> {
   const original = window.matchMedia;
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
@@ -99,21 +99,21 @@ async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<RemisesPag
   }
 }
 
-async function render(api: FakeQueue): Promise<ComponentFixture<RemisesPage>> {
+async function render(api: FakeQueue): Promise<ComponentFixture<HandoverShopPage>> {
   TestBed.configureTestingModule({
-    imports: [RemisesPage],
+    imports: [HandoverShopPage],
     providers: [
       { provide: HandoverQueueService, useValue: api },
       { provide: AdminOrdersService, useValue: new FakeOrders() },
     ],
   });
-  const fixture: ComponentFixture<RemisesPage> = TestBed.createComponent(RemisesPage);
+  const fixture: ComponentFixture<HandoverShopPage> = TestBed.createComponent(HandoverShopPage);
   await fixture.whenStable();
   fixture.detectChanges();
   return fixture;
 }
 
-const text = (fixture: ComponentFixture<RemisesPage>): string =>
+const text = (fixture: ComponentFixture<HandoverShopPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 /**
@@ -124,12 +124,12 @@ const text = (fixture: ComponentFixture<RemisesPage>): string =>
  * lignes. Les compter ferait passer un tri pour cassé alors qu'il est juste —
  * c'est ce qui est arrivé en écrivant ce fichier.
  */
-const rowTexts = (fixture: ComponentFixture<RemisesPage>): readonly string[] =>
+const rowTexts = (fixture: ComponentFixture<HandoverShopPage>): readonly string[] =>
   [...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.folddt-row')].map(
     (row) => row.textContent ?? '',
   );
 
-describe('RemisesPage', () => {
+describe('HandoverShopPage', () => {
   it('la bande annonce les remises faites, au singulier comme au pluriel', async () => {
     const api = new FakeQueue();
     api.entries = [

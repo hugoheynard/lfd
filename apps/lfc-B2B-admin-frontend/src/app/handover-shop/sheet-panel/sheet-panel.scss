@@ -1,24 +1,24 @@
 /* ── LE PAPIER ──────────────────────────────────────────────────────────────
    Ni fond, ni ombre, ni coins arrondis : c'est un document, pas une carte. La
    feuille se lit comme ce qu'on tiendrait entre les mains. */
-.bp-sheet {
+.sh-sheet {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
 }
 
-.bp-head {
+.sh-head {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
 }
 
-.bp-customer {
+.sh-customer {
   margin: 0;
   font-weight: var(--fold-weight-semibold);
 }
 
-.bp-reference {
+.sh-reference {
   margin: 0;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xl);
@@ -28,33 +28,33 @@
 
 /* Les trois faits d'en-tête, en colonnes : on les compare d'un coup d'œil à ce
    qu'on a devant soi, on ne les lit pas en phrase. */
-.bp-facts {
+.sh-facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--fold-space-xs) var(--fold-space-md);
   margin: var(--fold-space-xs) 0 0;
 }
 
-.bp-facts dt {
+.sh-facts dt {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-2xs);
   letter-spacing: var(--fold-tracking-wide);
   text-transform: uppercase;
 }
 
-.bp-facts dd {
+.sh-facts dd {
   margin: 0;
   font-size: var(--fold-text-sm);
 }
 
-.bp-lines {
+.sh-lines {
   width: 100%;
   border-collapse: collapse;
 }
 
 /* La légende nomme le tableau pour un lecteur d'écran sans encombrer l'œil. */
-.bp-caption,
-.bp-sr {
+.sh-caption,
+.sh-sr {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -63,7 +63,7 @@
   white-space: nowrap;
 }
 
-.bp-lines th {
+.sh-lines th {
   padding: 0 var(--fold-space-xs) var(--fold-space-xs);
   border-bottom: 1px solid var(--fold-color-border);
   color: var(--fold-color-text-muted);
@@ -74,31 +74,31 @@
   text-transform: uppercase;
 }
 
-.bp-lines td {
+.sh-lines td {
   padding: var(--fold-space-xs);
   border-bottom: 1px solid var(--fold-color-border-subtle);
   font-size: var(--fold-text-sm);
   vertical-align: baseline;
 }
 
-.bp-col-qty {
+.sh-col-qty {
   width: 3rem;
 }
 
-.bp-col-sku {
+.sh-col-sku {
   width: 7rem;
 }
 
-.bp-col-tick {
+.sh-col-tick {
   width: 2.5rem;
 }
 
-.bp-qty {
+.sh-qty {
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
 }
 
-.bp-sku {
+.sh-sku {
   color: var(--fold-color-text-muted);
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
@@ -107,7 +107,7 @@
 
 /* La case à cocher : un carré vide, dessiné par une bordure. Rien d'interactif
    — le geste se fait au stylo sur le papier imprimé. */
-.bp-tick::after {
+.sh-tick::after {
   display: block;
   width: 1rem;
   height: 1rem;
@@ -116,18 +116,18 @@
   content: '';
 }
 
-.bp-total {
+.sh-total {
   margin: 0;
   font-size: var(--fold-text-sm);
 }
 
-.bp-total strong {
+.sh-total strong {
   font-size: var(--fold-text-lg);
   font-variant-numeric: tabular-nums;
 }
 
-.bp-note,
-.bp-money {
+.sh-note,
+.sh-money {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);

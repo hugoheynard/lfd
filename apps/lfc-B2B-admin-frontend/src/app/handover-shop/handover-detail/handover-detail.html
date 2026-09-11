@@ -9,13 +9,13 @@
   🔴 `foldSurface` ET un fond peint : la directive bascule la polarité, elle ne
   peint rien.
 -->
-<section class="rd-sheet" foldSurface="chrome">
+<section class="hd-sheet" foldSurface="chrome">
   @if (entry(); as row) {
     <!-- L'identité. Le sur-titre dit OÙ et QUAND : les deux faits qui tranchent
          « est-ce bien celle-là » avant même qu'on lise le numéro. -->
-    <header class="rd-identity">
-      <div class="rd-top">
-        <p class="rd-eyebrow">{{ contextLine() }}</p>
+    <header class="hd-identity">
+      <div class="hd-top">
+        <p class="hd-eyebrow">{{ contextLine() }}</p>
         <button
           foldButton
           emphasis="soft"
@@ -29,19 +29,19 @@
            faits à peser l'un après l'autre, c'est une seule identité qu'on lit
            d'un regard. Elles se serrent donc entre elles, et c'est le rail qui
            les tient à distance du sur-titre. -->
-      <div class="rd-who">
+      <div class="hd-who">
         <!-- L'enseigne d'abord quand elle existe : c'est le nom peint sur la
              devanture, celui qu'on prononce au comptoir. La raison sociale
              suit, en plus discret — elle sert à lever un doute entre deux
              voisines, pas à appeler quelqu'un. -->
-        <p class="rd-customer">
-          <span class="rd-trade">{{ tradeName() ?? row.customerLabel }}</span>
+        <p class="hd-customer">
+          <span class="hd-trade">{{ tradeName() ?? row.customerLabel }}</span>
           @if (tradeName() !== null) {
-            <span class="rd-legal">{{ row.customerLabel }}</span>
+            <span class="hd-legal">{{ row.customerLabel }}</span>
           }
         </p>
-        <p class="rd-reference">{{ row.reference }}</p>
-        <p class="rd-meta">Commandée le {{ placedAt() }}</p>
+        <p class="hd-reference">{{ row.reference }}</p>
+        <p class="hd-meta">Commandée le {{ placedAt() }}</p>
       </div>
 
       <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne
@@ -84,21 +84,21 @@
         } @else {
           <!-- Le sac dans sa propre carte : c'est la seule chose qu'on lit en
                tendant les mains, et elle doit se détacher du reste du rail. -->
-          <section class="rd-bag">
-            <header class="rd-bag-head">
-              <h3 class="rd-bag-title">Ce qu'on tend</h3>
-              <p class="rd-bag-total">
+          <section class="hd-bag">
+            <header class="hd-bag-head">
+              <h3 class="hd-bag-title">Ce qu'on tend</h3>
+              <p class="hd-bag-total">
                 <strong>{{ row.totalUnits }}</strong>
                 <span>pièce{{ row.totalUnits > 1 ? 's' : '' }}</span>
               </p>
             </header>
 
-            <ul class="rd-lines">
+            <ul class="hd-lines">
               @for (line of lines(); track line.sku) {
-                <li class="rd-line">
-                  <span class="rd-qty">{{ line.quantity }}</span>
-                  <span class="rd-name">{{ line.productName }}</span>
-                  <span class="rd-sku">{{ line.sku }}</span>
+                <li class="hd-line">
+                  <span class="hd-qty">{{ line.quantity }}</span>
+                  <span class="hd-name">{{ line.productName }}</span>
+                  <span class="hd-sku">{{ line.sku }}</span>
                 </li>
               }
             </ul>
@@ -107,7 +107,7 @@
       }
     }
 
-    <footer class="rd-actions">
+    <footer class="hd-actions">
       <!-- 🔴 **La remise saisie, et elle le dit.** Le client n'a pas présenté
            de code : l'attestation sera gravée `manual`, donc faible et honnête.
            La maquiller en scan est exactement ce qui fait imprimer le code sur
@@ -116,7 +116,7 @@
       @if (remittable()) {
         <!-- Le scan EN PREMIER, et c'est l'ordre qui le dit : on tend le
              lecteur, et la saisie n'est que le repli quand le code manque. -->
-        <button foldButton class="rd-scan" block size="lg" icon="qr-code" (click)="scan()">
+        <button foldButton class="hd-scan" block size="lg" icon="qr-code" (click)="scan()">
           Scanner le code
         </button>
         <button
@@ -132,11 +132,11 @@
         </button>
       }
 
-      <div class="rd-foot">
+      <div class="hd-foot">
         <!-- Ce qu'on ne fait PAS ici, dit là où quelqu'un pourrait le chercher.
              La file ne porte aucun montant, par construction : un total affiché
              au comptoir se lirait comme une somme à encaisser. -->
-        <span class="rd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</span>
+        <span class="hd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</span>
         <button foldButton emphasis="soft" size="sm" iconTrailing="arrow-right" (click)="openBon()">
           Voir le bon
         </button>

@@ -57,7 +57,7 @@ import {
  * un avertissement qu'il faut déplier n'alerte personne.
  */
 @Component({
-  selector: 'app-file-remise',
+  selector: 'app-queue-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
@@ -67,10 +67,10 @@ import {
     FoldDataTableComponent,
     FoldDataTableRowNoteDirective,
   ],
-  templateUrl: './file-remise.html',
-  styleUrl: './file-remise.scss',
+  templateUrl: './queue-table.html',
+  styleUrl: './queue-table.scss',
 })
-export class FileRemise {
+export class QueueTable {
   /** Les lignes à peindre — déjà filtrées par onglet, pas encore ordonnées. */
   readonly entries = input.required<readonly HandoverQueueEntryView[]>();
 

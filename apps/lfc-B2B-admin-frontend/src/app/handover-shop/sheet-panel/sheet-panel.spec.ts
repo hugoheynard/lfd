@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { OrderLineView, OrderView } from '@lfd/contracts';
 
 import { AdminOrdersService } from '../../commandes/orders.service';
-import { BonPanel, type BonPanelData } from './bon-panel';
+import { SheetPanel, type SheetPanelData } from './sheet-panel';
 
 /**
  * 🔴 **Ce que ces cas tiennent, c'est l'ABSENCE de montant.**
@@ -77,15 +77,15 @@ class FakeOrders {
   }
 }
 
-async function render(data: BonPanelData): Promise<ComponentFixture<BonPanel>> {
+async function render(data: SheetPanelData): Promise<ComponentFixture<SheetPanel>> {
   TestBed.configureTestingModule({
-    imports: [BonPanel],
+    imports: [SheetPanel],
     providers: [
       { provide: AdminOrdersService, useValue: new FakeOrders() },
       { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
     ],
   });
-  const fixture: ComponentFixture<BonPanel> = TestBed.createComponent(BonPanel);
+  const fixture: ComponentFixture<SheetPanel> = TestBed.createComponent(SheetPanel);
   fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -93,17 +93,17 @@ async function render(data: BonPanelData): Promise<ComponentFixture<BonPanel>> {
   return fixture;
 }
 
-const text = (fixture: ComponentFixture<BonPanel>): string =>
+const text = (fixture: ComponentFixture<SheetPanel>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-const data = (over: Partial<BonPanelData> = {}): BonPanelData => ({
+const data = (over: Partial<SheetPanelData> = {}): SheetPanelData => ({
   order: order(),
   pickupLabel: 'Le Labo',
   customerLabel: 'Boulangerie Marin',
   ...over,
 });
 
-describe('BonPanel', () => {
+describe('SheetPanel', () => {
   it('porte ce qu’on coche : quantités, articles, références', async () => {
     const fixture = await render(data());
 

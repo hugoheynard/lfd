@@ -26,7 +26,7 @@ Tout le contexte tient la même règle, et l'écrit trois fois :
 - `OrderHandoverView` — « Aucun montant, délibérément — même raison que sur le
   bon de livraison : celui qui remet un colis coche des articles, il n'a pas à
   faire apparaître un prix négocié devant la personne qui attend » ;
-- `bon-panel` — « Aucun montant : on ne facture pas au comptoir. »
+- `sheet-panel` — « Aucun montant : on ne facture pas au comptoir. »
 
 Les deux vues de remise tiennent la promesse : ni l'une ni l'autre ne porte de
 prix. **Le rail, lui, ne passe par aucune des deux.** Il appelle
@@ -92,7 +92,7 @@ Le front compare ces chaînes à des littéraux :
 const REQUESTED_SOURCE = 'override';
 if (window === null || window.source !== REQUESTED_SOURCE) { … }   // pas de retard
 
-// remise-detail.ts
+// handover-detail.ts
 return entry.fulfillmentMethod === 'delivery' ? 'Livraison' : 'Retrait';
 ```
 
@@ -163,7 +163,7 @@ avant d'attester. Le refus existe ; c'est l'avertissement qui manque.
 une remise. La même règle est réécrite deux fois côté front :
 
 ```ts
-// file-remise.ts  ET  remise-detail.ts, à l'identique
+// queue-table.ts  ET  handover-detail.ts, à l'identique
 return entry.state !== "handed_over" && entry.state !== "cancelled";
 ```
 

@@ -1,6 +1,6 @@
 /* La scène du scan : une image, et une phrase sous elle. Rien d'autre — c'est
    un geste qu'on fait en regardant ailleurs, le client en face. */
-.sp-stage {
+.sd-stage {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
@@ -13,7 +13,7 @@
    Carré parce qu'un QR l'est : sur un aperçu 4/3 on cadre le code dans la
    moitié de l'image, et on recule le téléphone jusqu'à ce qu'il tienne en
    largeur. Un cadre carré demande le geste que le code attend. */
-.sp-preview {
+.sd-preview {
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: var(--fold-radius-md);
@@ -21,7 +21,7 @@
   object-fit: cover;
 }
 
-.sp-hint {
+.sd-hint {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);

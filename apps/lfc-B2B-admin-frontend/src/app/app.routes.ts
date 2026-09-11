@@ -249,7 +249,9 @@ export const routes: Routes = [
     canActivate: [permissionGuard('b2b_orders:read')],
     title: 'Retrait boutique — LFC B2B admin',
     loadComponent: () =>
-      import('./handover-shop/remises-page/remises-page').then((m) => m.RemisesPage),
+      import('./handover-shop/handover-shop-page/handover-shop-page').then(
+        (m) => m.HandoverShopPage,
+      ),
   },
   {
     path: 'production',

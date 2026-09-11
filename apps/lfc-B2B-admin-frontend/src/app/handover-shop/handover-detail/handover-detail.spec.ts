@@ -5,7 +5,7 @@ import type { HandoverQueueEntryView, OrderHandoverView, OrderLineView } from '@
 
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { HandoverQueueService } from '../handover-queue.service';
-import { RemiseDetail } from './remise-detail';
+import { HandoverDetail } from './handover-detail';
 
 /**
  * Ce que ces cas tiennent :
@@ -106,15 +106,15 @@ interface Doubles {
 async function render(
   selected: HandoverQueueEntryView | null,
   doubles: Doubles = { orders: new FakeOrders(), handovers: new FakeHandovers() },
-): Promise<ComponentFixture<RemiseDetail>> {
+): Promise<ComponentFixture<HandoverDetail>> {
   TestBed.configureTestingModule({
-    imports: [RemiseDetail],
+    imports: [HandoverDetail],
     providers: [
       { provide: AdminOrdersService, useValue: doubles.orders },
       { provide: HandoverQueueService, useValue: doubles.handovers },
     ],
   });
-  const fixture: ComponentFixture<RemiseDetail> = TestBed.createComponent(RemiseDetail);
+  const fixture: ComponentFixture<HandoverDetail> = TestBed.createComponent(HandoverDetail);
   fixture.componentRef.setInput('entry', selected);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -122,15 +122,18 @@ async function render(
   return fixture;
 }
 
-const text = (fixture: ComponentFixture<RemiseDetail>): string =>
+const text = (fixture: ComponentFixture<HandoverDetail>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-const buttonSaying = (fixture: ComponentFixture<RemiseDetail>, label: string): HTMLElement | null =>
+const buttonSaying = (
+  fixture: ComponentFixture<HandoverDetail>,
+  label: string,
+): HTMLElement | null =>
   [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find((button) =>
     (button.textContent ?? '').includes(label),
   ) ?? null;
 
-describe('RemiseDetail', () => {
+describe('HandoverDetail', () => {
   it('montre ce qu’il y a dans le sac', async () => {
     const fixture = await render(entry());
 

@@ -49,12 +49,12 @@
       <!-- La caméra vit dans TOUS les états où elle peut servir : l'attacher
            seulement à `scanning` la détruirait entre deux rendus, et le flux
            serait redemandé — donc une seconde invite d'autorisation. -->
-      <div class="sp-stage">
-        <video #preview class="sp-preview" muted playsinline></video>
+      <div class="sd-stage">
+        <video #preview class="sd-preview" muted playsinline></video>
         @if (stage() === 'starting') {
           <fold-loading message="Ouverture de la caméra…" />
         } @else {
-          <p class="sp-hint">Présentez le code devant la caméra.</p>
+          <p class="sd-hint">Présentez le code devant la caméra.</p>
         }
       </div>
     }
