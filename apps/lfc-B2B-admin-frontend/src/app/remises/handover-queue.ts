@@ -132,8 +132,9 @@ export interface HandoverTab {
  * et la file des autres ne lui sert qu'à allonger la sienne. L'onglet fourre-
  * tout était la vue d'un gérant sur un écran d'exécutant.
  *
- * Les compteurs de la bande, eux, restent ceux de la JOURNÉE entière — c'est là
- * qu'on lève les yeux pour savoir combien il reste, tous points confondus.
+ * Les compteurs de la bande suivent le même raisonnement depuis le même jour :
+ * ils portent sur le point ouvert, et non sur la journée. Les laisser à la
+ * journée aurait gardé, en chiffres, la vue qu'on venait de retirer en onglets.
  */
 export function pickupTabs(entries: readonly HandoverQueueEntryView[]): readonly HandoverTab[] {
   const counts = new Map<string, number>();

@@ -30,9 +30,11 @@
           (activeKeyChange)="onTab($event)"
         />
 
-        <!-- Les compteurs portent sur la JOURNÉE, pas sur l'onglet ouvert : le
-             nombre qu'on cherche en levant les yeux est « combien reste-t-il ce
-             matin ». Les compteurs par point sont déjà sur les onglets. -->
+        <!-- Les compteurs portent sur le POINT OUVERT. Qui lit cet écran est
+             DANS un point : « 3 en retard » dont deux ailleurs le ferait
+             chercher des sacs qui ne sont pas chez lui. Les onglets, eux,
+             gardent le compte de chaque point pour qu'on voie d'un coup où ça
+             s'accumule. -->
         <p class="masthead-counters">
           <span class="mc-done"
             >{{ counters().handedOver }} remise{{ counters().handedOver > 1 ? 's' : '' }}</span

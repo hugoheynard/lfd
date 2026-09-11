@@ -254,9 +254,24 @@ export class RemisesPage {
     return id === null ? null : (this.entries().find((entry) => entry.orderId === id) ?? null);
   });
 
-  /** Les trois nombres de la bande : sur la JOURNÉE, pas sur l'onglet ouvert. */
+  /**
+   * Les trois nombres de la bande : sur le POINT OUVERT, pas sur la journée.
+   *
+   * 🔴 Ils portaient sur la journée entière jusqu'au 2026-09-11, et l'argument
+   * — « combien reste-t-il ce matin » — était celui d'un gérant. Personne ne
+   * tient ce comptoir-là : qui lit cet écran est DANS un point, et « 3 en
+   * retard » dont deux au Village le fait chercher deux sacs qui ne sont pas
+   * chez lui. C'est le même raisonnement qui a fait tomber l'onglet « Tous les
+   * points » ; laisser les compteurs derrière aurait gardé la vue qu'on venait
+   * de retirer.
+   *
+   * ⚠️ Depuis `rows()` et non depuis la file peinte : `rows` suit l'onglet,
+   * jamais la RECHERCHE, qui vit plus bas. Un comptoir qui cherche un nom ne
+   * doit pas voir son nombre de retards tomber à zéro sous ses yeux — il
+   * lirait que le problème est réglé.
+   */
   protected readonly counters = computed<QueueCounters>(() =>
-    queueCounters(this.entries(), this.day(), this.now()),
+    queueCounters(this.rows(), this.day(), this.now()),
   );
 
   /** L'heure, telle qu'on la dit — « 7 h 26 ». */

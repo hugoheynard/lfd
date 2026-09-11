@@ -141,6 +141,58 @@ describe('RemisesPage', () => {
     expect(text(fixture)).toContain('1 en attente');
   });
 
+  it('🔴 les trois nombres portent sur le POINT OUVERT, pas sur la journée', async () => {
+    // Ils portaient sur la journée entière, et c'était la vue d'un gérant :
+    // qui lit cet écran est DANS un point, et « 2 en attente » dont un ailleurs
+    // le fait chercher un sac qui n'est pas chez lui.
+    const api = new FakeQueue();
+    api.entries = [
+      entry({ orderId: 'a', pickupLabel: 'Laboratoire' }),
+      entry({ orderId: 'b', pickupLabel: 'Val Thorens' }),
+      entry({ orderId: 'c', pickupLabel: 'Val Thorens' }),
+    ];
+
+    const fixture = await render(api);
+    const el = fixture.nativeElement as HTMLElement;
+
+    // Premier onglet ouvert : Laboratoire, une seule ligne.
+    expect(el.querySelector('.mc-waiting')?.textContent).toContain('1 en attente');
+
+    const tabs = [...el.querySelectorAll<HTMLElement>('[role="tab"]')];
+    tabs.find((tab) => (tab.textContent ?? '').includes('Val Thorens'))?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.mc-waiting')?.textContent).toContain('2 en attente');
+  });
+
+  it('🔴 chercher un nom ne fait pas tomber les compteurs', async () => {
+    // Sans quoi un comptoir qui filtre lirait que ses retards sont réglés. Les
+    // compteurs suivent l'ONGLET ; la recherche vit sous eux, dans la file.
+    const api = new FakeQueue();
+    api.entries = [
+      entry({ orderId: 'a', customerLabel: 'Boulangerie Marin' }),
+      entry({ orderId: 'b', customerLabel: 'Hôtel des Cimes' }),
+    ];
+
+    const fixture = await render(api);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.mc-waiting')?.textContent).toContain('2 en attente');
+
+    const box = el.querySelector<HTMLInputElement>('.file-search input');
+    if (box !== null) {
+      box.value = 'marin';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(rowTexts(fixture)).toHaveLength(1);
+    expect(el.querySelector('.mc-waiting')?.textContent).toContain('2 en attente');
+  });
+
   it('🔴 le rail est là sans sélection, et se remplit au clic', async () => {
     const fixture = await render(new FakeQueue());
 
