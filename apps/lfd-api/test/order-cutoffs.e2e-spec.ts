@@ -593,6 +593,11 @@ describe("la dérogation, seul chemin de sortie", () => {
         requestedDeliveryDate: day,
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
+        // ⚠️ La tranche est obligatoire sur cette route depuis le 2026-09-11
+        // (`hasWindowWhenPickedUp`). Sans elle, ce cas recevrait 400 et
+        // prouverait la VALIDATION au lieu de l'heure limite — un test qui passe
+        // en ayant changé de sujet est pire qu'un test rouge.
+        requestedWindow: { start: "07:00", end: "08:00" },
         lines: [{ sku: "VIE-001", quantity: 12 }],
       })
       .expect(409);

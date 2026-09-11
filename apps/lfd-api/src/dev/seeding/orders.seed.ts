@@ -182,13 +182,17 @@ const COUNTER: readonly CounterOrder[] = [
   // Le Labo — le créneau pro, celui d'avant le four.
   { point: LABO, window: PICKUP_WINDOW, outcome: "handed_over", step: 0 },
   { point: LABO, window: PICKUP_WINDOW, outcome: "ready", step: 1 },
-  // 🔴 **Sans tranche, et c'est un cas RÉEL** — pas une lacune du semis. Le
-  // commercial qui saisit au téléphone répond « aucune heure convenue » quand le
-  // client ne s'engage pas, et l'écran de saisie pose la question depuis le
-  // 2026-09-11 (avant, il ne l'envoyait jamais : TOUTE commande prise au
-  // téléphone arrivait ici sans créneau). La file la descend en fin de liste
-  // sans lui inventer d'heure, et ne parle pas de son retard — on ne reproche
-  // pas une heure que personne n'a donnée.
+  // 🔴 **Sans tranche, et c'est de l'HISTORIQUE** — pas une lacune du semis.
+  // Jusqu'au 2026-09-11, l'écran de saisie staff n'envoyait aucune tranche et un
+  // retrait ne prend aucun défaut : TOUTE commande prise au téléphone arrivait
+  // ici sans créneau. Le créneau y est désormais obligatoire, donc ce cas ne se
+  // crée plus — mais il vit dans les données, et la file doit continuer de le
+  // montrer. Elle le descend en fin de liste sans lui inventer d'heure, et ne
+  // parle pas de son retard : on ne reproche pas une heure que personne n'a
+  // donnée.
+  //
+  // ⚠️ Le retirer du semis ferait disparaître des postes de développement le
+  // seul exemplaire d'un cas que le comptoir rencontrera pendant des mois.
   { point: LABO, window: null, outcome: "expected", step: 2 },
   // Le Village — deux tranches, donc un onglet avec son propre compteur.
   { point: VILLAGE, window: VILLAGE_MORNING, outcome: "ready", step: 3 },

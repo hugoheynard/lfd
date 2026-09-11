@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output } from '@angular/core';
 import { FoldListboxComponent, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 import { formatAdjustment, resolveZoneForPostalCode } from '@lfd/b2b-ui/order';
 import { NEW_ADDRESS, type DraftAddress, type DraftStore } from '../draft.store';
@@ -21,9 +13,6 @@ import type {
   PickupSlot,
 } from '@lfd/contracts';
 
-/** La réponse « le client ne s'est engagé sur aucune heure ». Jamais un créneau. */
-const NO_WINDOW = '__none__';
-
 /** L'acheminement d'une commande en cours de saisie, tel que le panier l'enverra. */
 export interface FulfillmentChoice {
   readonly method: FulfillmentMethod;
@@ -35,7 +24,8 @@ export interface FulfillmentChoice {
    */
   readonly saveToBook: boolean;
   /**
-   * La tranche de retrait convenue, ou `null` — « aucune heure convenue ».
+   * La tranche de retrait convenue. `null` = **pas encore choisie**, et
+   * `issue` le dit alors — le créneau est obligatoire en retrait.
    *
    * ⚠️ **En retrait seulement.** En coursier elle reste `null` : la fenêtre
    * légitime d'une livraison est celle du CARNET, que le serveur lit à partir
@@ -180,58 +170,60 @@ export class AcheminementCommande {
     return point === null ? [] : pickupSlots(point.opening);
   });
 
-  /**
-   * Les options : les créneaux, puis « aucune heure convenue » — **en dernier**,
-   * parce que c'est une réponse, pas un défaut.
-   */
-  protected readonly slotOptions = computed(() => [
-    ...this.slots().map((slot) => ({
+  /** Les créneaux du point, et rien d'autre : il n'y a pas d'option « aucune ». */
+  protected readonly slotOptions = computed(() =>
+    this.slots().map((slot) => ({
       value: slot.id,
       label: `${slotLabel(slot)}${slot.access === 'pro' ? ' · réservé aux pros' : ''}`,
     })),
-    { value: NO_WINDOW, label: 'Aucune heure convenue' },
-  ]);
+  );
 
-  /** Ce que le commercial a répondu, ou `''` tant qu'il n'a rien répondu. */
+  /** Le créneau retenu, ou `''` tant qu'aucun ne l'est. */
   protected readonly slotId = computed<string>(() => {
     const chosen = this.draft().window();
-    if (chosen === null) {
-      return this.answered() ? NO_WINDOW : '';
-    }
-    return idOf(chosen);
+    return chosen === null ? '' : idOf(chosen);
   });
-
-  /**
-   * 🔴 « Aucune heure » et « pas encore répondu » sont **deux états**, et rien
-   * dans le brouillon ne les distingue : les deux valent `null`. Ce drapeau
-   * porte la différence, et il vit ici parce qu'il ne décrit pas la commande —
-   * il décrit ce que l'écran a demandé. Le confondre avec la valeur ferait
-   * rouvrir un brouillon en réclamant une réponse déjà donnée.
-   */
-  private readonly answered = signal(false);
 
   private chosenWindow(): FulfillmentWindow | null {
     return this.draft().window();
   }
 
   /**
-   * Ce qui manque tant que la question n'a pas de réponse.
+   * **Le créneau est OBLIGATOIRE**, et il n'y a pas d'échappatoire.
    *
-   * ⚠️ Seulement quand il Y A des créneaux : un point sans heure déclarée ne
-   * doit pas bloquer un appel en cours pour un réglage que le commercial n'a
-   * pas sous la main.
+   * 🔴 Une option « aucune heure convenue » a existé une heure, le 2026-09-11,
+   * et elle a été retirée : elle rendait l'absence de créneau _acceptable_ alors
+   * que c'est précisément ce qu'on cherchait à faire disparaître. Un retard se
+   * gère — la file le montre, l'équipe rappelle — ; une commande sans heure ne
+   * se gère pas : elle n'a pas de rang dans la file, personne ne sait quand
+   * attendre le client, et rien ne peut être en retard.
+   *
+   * ⚠️ **L'écran n'est pas seul à le tenir** : `adminPlaceOrderPayloadSchema`
+   * refuse un retrait sans tranche (`hasWindowWhenPickedUp`). Ce qui se passe
+   * ici est un service rendu au commercial — dire la règle avant l'envoi —, pas
+   * la règle elle-même.
+   *
+   * ⚠️ **Un point sans heure déclarée bloque aussi**, et ce n'est pas un
+   * durcissement : le parcours CLIENT le bloque déjà. Son dialogue de retrait
+   * n'émet que si une tranche est choisie, et `pickupSlots` d'un point sans
+   * ouverture ne rend rien — personne ne peut commander sur un tel point
+   * (vérifié le 2026-09-11). Laisser passer la saisie staff ferait de l'écran
+   * du commercial la seule porte d'entrée de la donnée qu'on vient de bannir.
+   * Le message nomme le réglage qui débloque.
    */
   private windowIssue(): string | null {
-    if (this.slots().length === 0 || this.slotId() !== '') {
-      return null;
+    if (this.slots().length === 0) {
+      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Livraisons & retraits).';
     }
-    return 'Créneau de retrait à renseigner — ou « aucune heure convenue ».';
+    return this.slotId() === '' ? 'Créneau de retrait à choisir.' : null;
   }
 
   protected onSlot(value: string): void {
-    this.answered.set(true);
-    const slot = this.slots().find((entry) => entry.id === value) ?? null;
-    this.draft().window.set(slot === null ? null : { start: slot.start, end: slot.end });
+    const slot = this.slots().find((entry) => entry.id === value);
+    if (slot === undefined) {
+      return;
+    }
+    this.draft().window.set({ start: slot.start, end: slot.end });
   }
 
   protected readonly choice = computed<FulfillmentChoice>(() =>
@@ -313,7 +305,6 @@ export class AcheminementCommande {
   protected onPickup(id: string): void {
     this.draft().pickupId.set(id);
     this.draft().window.set(null);
-    this.answered.set(false);
   }
 
   protected onAddress(id: string): void {

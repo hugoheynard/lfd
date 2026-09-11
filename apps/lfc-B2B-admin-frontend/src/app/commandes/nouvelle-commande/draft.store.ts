@@ -28,7 +28,7 @@ export interface DraftSnapshot {
   readonly addressId: string;
   readonly address: DraftAddress;
   readonly keepAddress: boolean;
-  /** La tranche convenue, ou `null` — « aucune heure convenue ». */
+  /** La tranche convenue, ou `null` — le commercial n'a pas encore choisi. */
   readonly window: FulfillmentWindow | null;
   readonly requestedDate: string;
   readonly note: string;
@@ -62,13 +62,15 @@ export class DraftStore {
   readonly address = signal<DraftAddress>(EMPTY_ADDRESS);
   readonly keepAddress = signal(false);
   /**
-   * La tranche de retrait convenue, ou `null`.
+   * La tranche de retrait convenue. `null` = **pas encore choisie**, et le
+   * panier refuse de partir tant qu'elle l'est.
    *
    * 🔴 **Aucune valeur de départ, et c'est le sujet.** Préremplir avec la
    * première heure d'ouverture du point inventerait un engagement que personne
    * n'a pris — c'est exactement ce que le backfill du 2026-08-15 s'était refusé
-   * à faire. Le sélecteur pose donc la question, et « aucune heure convenue »
-   * est une réponse explicite, pas un oubli.
+   * à faire. Le créneau est obligatoire ET non suggéré : les deux tiennent
+   * ensemble, sans quoi on obtient une heure par défaut que le comptoir lira
+   * comme une promesse du client.
    */
   readonly window = signal<FulfillmentWindow | null>(null);
   readonly requestedDate = signal(tomorrowIso());

@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { billingAddressPayloadSchema, fulfillmentWindowSchema } from "./address.js";
+import {
+  billingAddressPayloadSchema,
+  fulfillmentWindowSchema,
+  type FulfillmentWindow,
+} from "./address.js";
 import {
   deliveryAddressIssue,
   fulfillmentMethodSchema,
@@ -9,6 +13,7 @@ import {
   pickupPointIssue,
   orderContentShape,
   orderLineInputSchema,
+  type FulfillmentMethod,
 } from "./order.js";
 
 /**
@@ -45,6 +50,59 @@ export const STAFF_SETTLEMENT_LABELS: Readonly<Record<StaffSettlement, string>> 
 };
 
 /**
+ * **Une commande de RETRAIT saisie par l'équipe porte une tranche horaire.**
+ *
+ * 🔴 Jusqu'au 2026-09-11, l'écran de saisie n'en envoyait aucune et un retrait
+ * ne prend **aucun défaut** (les heures d'un point sont une contrainte
+ * d'ouverture partagée, pas la préférence d'un client) : toute commande prise au
+ * téléphone arrivait au comptoir sans créneau. Elle n'avait alors aucun rang
+ * dans la file, personne ne savait quand attendre le client, et rien ne pouvait
+ * être « en retard ». Un retard se gère ; une absence d'heure, non.
+ *
+ * ⚠️ **Le refus vit ICI et pas seulement à l'écran**, et c'est un choix
+ * d'Hugo contre ma réserve : un onglet de back-office resté ouvert garde son
+ * bundle et postera sans tranche jusqu'au rechargement, donc ce resserrement
+ * REFUSE des requêtes qu'un client déployé peut encore émettre (CLAUDE.md §0).
+ * Le refus est explicite et nomme le geste — il coûte un rechargement au
+ * commercial, là où la règle laissée à l'écran laissait entrer indéfiniment la
+ * donnée qu'on bannit. Le message est lu par du personnel sans le code sous les
+ * yeux : il dit quoi faire, pas ce qui manque.
+ *
+ * ⚠️ **En coursier, rien n'est exigé** : la fenêtre légitime d'une livraison est
+ * celle du CARNET, que le serveur lit à partir de l'adresse. L'exiger dans la
+ * charge utile ferait écraser par l'écran ce que le compte a déclaré.
+ *
+ * 🔴 **Et seulement sur la saisie STAFF.** `placeOrderPayloadSchema`, le
+ * parcours client, n'est pas touché : son dialogue de retrait n'émet déjà que
+ * si une tranche est choisie, et resserrer un contrat servi à une app cliente
+ * installée est une autre affaire que le back-office.
+ *
+ * ⚠️ **Le refus est au RUNTIME, pas au type.** Un `refine` ne narrowe rien :
+ * `AdminPlaceOrderPayload` laisse toujours `requestedWindow` facultatif, donc
+ * un appelant qui l'omet compile et échoue à l'exécution. Rendre la chose
+ * inexprimable demanderait deux variantes du payload discriminées par
+ * l'acheminement — plus cher que ce que ça achète tant qu'il n'y a qu'un
+ * appelant. Ne pas compter sur `tsc` pour l'attraper.
+ */
+export function hasWindowWhenPickedUp(content: {
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly requestedWindow?: FulfillmentWindow | null | undefined;
+}): boolean {
+  return (
+    content.fulfillmentMethod !== "pickup" ||
+    (content.requestedWindow !== null && content.requestedWindow !== undefined)
+  );
+}
+
+/** Le message et le chemin du refus ci-dessus — cf. `pickupPointIssue`. */
+export function pickupWindowIssue(): { message: string; path: PropertyKey[] } {
+  return {
+    message: "choisissez un créneau de retrait — il est convenu avec le client, pas facultatif",
+    path: ["requestedWindow"],
+  };
+}
+
+/**
  * Ce que le back-office envoie pour passer une commande au nom d'un client.
  *
  * Trois champs de plus que le panier ordinaire, et aucun de moins :
@@ -65,7 +123,8 @@ export const adminPlaceOrderPayloadSchema = z
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
-  .refine(hasPickupPointWhenPickedUp, pickupPointIssue());
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
+  .refine(hasWindowWhenPickedUp, pickupWindowIssue());
 export type AdminPlaceOrderPayload = z.infer<typeof adminPlaceOrderPayloadSchema>;
 
 /**
@@ -140,20 +199,25 @@ export const orderDraftPayloadSchema = z.object({
     .nullable()
     .default(null),
   /**
-   * La tranche convenue au téléphone, ou `null` — **aucune heure convenue**.
+   * La tranche convenue au téléphone. `null` = **pas encore choisie**.
    *
-   * 🔴 Ici, et à la différence de `requestedWindow` sur une PASSATION, `null`
-   * n'est pas ambigu et l'absence non plus : un brouillon conserve un **fait**
-   * déjà arrêté, pas une requête à interpréter. La distinction « absent = je ne
-   * me prononce pas » n'a de sens qu'au moment où un réglage peut encore
-   * s'appliquer ; un brouillon relu ne rejoue pas les défauts, il rend ce que le
-   * commercial avait sous les yeux.
+   * ⚠️ Un brouillon est une saisie INTERROMPUE : il a le droit de ne rien
+   * porter, comme il a le droit de n'avoir ni acheteur ni ligne. L'exiger ici
+   * refuserait d'enregistrer un appel coupé au milieu, c'est-à-dire exactement
+   * ce pour quoi le brouillon existe.
+   *
+   * 🔴 **Le créneau est obligatoire à la PASSATION**, et c'est
+   * `adminPlaceOrderPayloadSchema` qui le refuse — cf.
+   * {@link hasWindowWhenPickedUp}. Pas l'écran seul : une règle tenue par un
+   * écran est le degré le plus faible de la hiérarchie du dossier, et il reste
+   * toujours une porte de derrière (un onglet ancien, un `curl`, une reprise de
+   * brouillon mal branchée).
    *
    * Ajouté le 2026-09-11 : la saisie staff n'envoyait AUCUNE tranche, donc toute
    * commande prise au téléphone arrivait au comptoir sans créneau — la file ne
    * pouvait pas juger son retard, et l'équipe ne savait pas quand attendre le
-   * client. L'écran pose maintenant la question ; le brouillon doit s'en
-   * souvenir, sans quoi la réponse se perdrait au premier appel interrompu.
+   * client. L'écran le demande maintenant ; le brouillon doit s'en souvenir,
+   * sans quoi la réponse se perdrait au premier appel interrompu.
    *
    * ⚠️ **Additif et rétrocompatible** : les brouillons déjà stockés ne portent
    * pas la clé, et le `default(null)` la leur donne à la relecture. Le payload

@@ -122,11 +122,12 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       pickupAddressId: 'pick_1',
       deliveryAddress: null,
       saveToBook: false,
-      // Ce point n'a aucune heure déclarée : aucun créneau à proposer, donc
-      // rien à réclamer. Un appel en cours ne se bloque pas sur un réglage que
-      // le commercial n'a pas sous la main.
+      // Ce point n'a aucune heure déclarée : aucun créneau ne peut être
+      // convenu, et le créneau est obligatoire — donc l'acheminement refuse, en
+      // nommant le réglage. Le parcours CLIENT refuse déjà sur un tel point.
       window: null,
-      issue: null,
+      issue:
+        'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Livraisons & retraits).',
     });
   });
 
@@ -244,15 +245,30 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       expect(fixture.componentInstance['choice']().issue).toBeNull();
     });
 
-    it('🔴 « aucune heure convenue » est une RÉPONSE, pas un oubli', () => {
-      // Les deux valent `null` dans le brouillon ; seule la réponse lève ce qui
-      // empêche de passer la commande.
+    it('🔴 il n’existe AUCUNE option « aucune heure convenue »', () => {
+      // Elle a existé une heure le 2026-09-11, et elle rendait acceptable
+      // précisément ce qu'on voulait faire disparaître. Un retard se gère ; une
+      // commande sans heure n'a pas de rang dans la file et ne peut être en
+      // retard de rien.
       const fixture = mount([OUVERT]);
+
+      const values = fixture.componentInstance['slotOptions']().map((option) => option.value);
+      expect(values).toEqual(['05:00-06:00', '06:00-06:30', '07:00-08:00', '08:00-09:00']);
+    });
+
+    it('🔴 une valeur qui n’est pas un créneau du point ne s’écrit pas', () => {
+      // La sentinelle disparue traînerait dans un gabarit ou un brouillon ; la
+      // laisser remettre la tranche à `null` rouvrirait l'échappatoire.
+      const fixture = mount([OUVERT]);
+      fixture.componentInstance['onSlot']('05:00-06:00');
+      fixture.detectChanges();
       fixture.componentInstance['onSlot']('__none__');
       fixture.detectChanges();
 
-      expect(fixture.componentInstance['choice']().window).toBeNull();
-      expect(fixture.componentInstance['choice']().issue).toBeNull();
+      expect(fixture.componentInstance['choice']().window).toEqual({
+        start: '05:00',
+        end: '06:00',
+      });
     });
 
     it('🔴 changer de point EFFACE la tranche et rouvre la question', () => {
@@ -282,8 +298,13 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       expect(choiceOf({ pickups: [OUVERT], courier: true }).window).toBeNull();
     });
 
-    it('ne réclame rien quand le point n’a déclaré aucune heure', () => {
-      expect(choiceOf({ pickups: [LABO] }).issue).toBeNull();
+    it('🔴 un point sans heure déclarée REFUSE, et nomme le réglage', () => {
+      // Ce n'est pas un durcissement : le dialogue du parcours client n'émet
+      // que si une tranche est choisie, et un point sans ouverture n'en offre
+      // aucune — personne ne peut y commander. Laisser passer la saisie staff
+      // ferait de l'écran du commercial la seule porte d'entrée de la donnée
+      // qu'on vient de bannir.
+      expect(choiceOf({ pickups: [LABO] }).issue).toContain('Réglages');
     });
   });
 });

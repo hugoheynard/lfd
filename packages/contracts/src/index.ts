@@ -530,7 +530,9 @@ export {
   staffSettlementSchema,
   STAFF_SETTLEMENT_LABELS,
   adminPlaceOrderPayloadSchema,
+  hasWindowWhenPickedUp,
   orderDraftPayloadSchema,
+  pickupWindowIssue,
 } from "./admin-order.js";
 export type {
   StaffSettlement,

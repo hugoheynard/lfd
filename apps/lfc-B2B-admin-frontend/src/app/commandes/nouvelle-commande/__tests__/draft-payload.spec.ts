@@ -136,7 +136,10 @@ describe('la traduction écran ↔ brouillon', () => {
     expect(reopened.window).toEqual({ start: '05:00', end: '06:00' });
   });
 
-  it('« aucune heure convenue » se conserve comme telle', () => {
+  it('un brouillon interrompu avant le créneau se rouvre sans créneau', () => {
+    // Le créneau est obligatoire à la PASSATION, pas dans un brouillon : exiger
+    // ici refuserait d'enregistrer l'appel coupé au milieu, ce pour quoi le
+    // brouillon existe.
     expect(draftSnapshotOf(viewOf({ requestedWindow: null }), [SHOP]).window).toBeNull();
   });
 });

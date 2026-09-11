@@ -31,7 +31,7 @@ export interface OrderDraft {
   readonly saveAddressToBook: boolean;
   /** Jour de retrait/livraison. Obligatoire : c'est la journée de production. */
   readonly requestedDeliveryDate: string;
-  /** La tranche convenue, ou `null` — « aucune heure convenue », en retrait seul. */
+  /** La tranche convenue — en retrait seul, et le panier ne part pas sans elle. */
   readonly requestedWindow: FulfillmentWindow | null;
   readonly note: string;
   readonly settlement: StaffSettlement;

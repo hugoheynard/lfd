@@ -131,6 +131,11 @@ function payload(over: Record<string, unknown> = {}): Record<string, unknown> {
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
     pickupAddressId: pickupId,
+    // 🔴 Et QUAND, à l'heure près : depuis le 2026-09-11 une commande de retrait
+    // saisie par l'équipe porte sa tranche. Elle ne se déduit d'aucun défaut —
+    // les heures d'un point sont une contrainte d'ouverture partagée, pas la
+    // préférence d'un client.
+    requestedWindow: { start: "07:00", end: "08:00" },
     lines: [{ sku: "VIE-001", quantity: 12 }],
     ...over,
   };
@@ -170,6 +175,76 @@ describe("POST /admin/orders — le mur", () => {
       .post("/admin/orders")
       .send({ ...payload({ companyId, buyerUserId: buyerId }), settlement: undefined })
       .expect(400);
+  });
+
+  /**
+   * 🔴 **Le créneau de retrait, exigé par le SCHÉMA** (2026-09-11).
+   *
+   * La règle a d'abord vécu dans l'écran de saisie seul, et c'était le degré le
+   * plus faible : un onglet resté ouvert, un appel `curl`, une reprise de
+   * brouillon mal branchée, et la donnée qu'on bannit rentrait par la porte de
+   * derrière. Un retrait ne prend AUCUN défaut d'heure — c'est cette absence de
+   * défaut qui rendait le champ silencieusement facultatif.
+   *
+   * Une commande sans créneau n'a pas de rang dans la file du comptoir,
+   * personne ne sait quand attendre le client, et rien ne peut être en retard.
+   * Un retard, lui, se gère.
+   */
+  it("🔴 refuse un RETRAIT sans créneau, et le dit en clair", async () => {
+    const { companyId, buyerId } = await seedCompany(true);
+
+    const refused = await staff()
+      .post("/admin/orders")
+      .send({ ...payload({ companyId, buyerUserId: buyerId }), requestedWindow: undefined })
+      .expect(400);
+
+    // Le message est lu par du personnel sans le code sous les yeux : il dit le
+    // geste, pas le champ manquant.
+    expect(JSON.stringify(refused.body)).toContain("créneau de retrait");
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  it("🔴 refuse aussi un créneau explicitement NUL", async () => {
+    // `null` disait « le client n'en veut aucune » — c'était l'échappatoire, et
+    // elle doit tomber par le même chemin que l'absence.
+    const { companyId, buyerId } = await seedCompany(true);
+
+    await staff()
+      .post("/admin/orders")
+      .send({ ...payload({ companyId, buyerUserId: buyerId }), requestedWindow: null })
+      .expect(400);
+  });
+
+  it("🔴 n'exige AUCUN créneau en coursier — celui qui vaut est au carnet", async () => {
+    // La fenêtre légitime d'une livraison vient de l'adresse du carnet, que le
+    // serveur lit lui-même. L'exiger dans la charge utile ferait écraser par
+    // l'écran ce que le compte a déclaré.
+    //
+    // ⚠️ On éprouve « la VALIDATION ne refuse pas », pas « la commande passe » :
+    // aucune tournée n'est semée dans cette suite, donc la règle métier des
+    // zones répond 409 juste après. Exiger 201 obligerait à semer une zone pour
+    // prouver une question de schéma, et ferait dépendre ce cas d'un sujet qui
+    // n'est pas le sien. La forme pure est éprouvée dans `@lfd/contracts`.
+    const { companyId, buyerId } = await seedCompany(true);
+
+    const answer = await staff()
+      .post("/admin/orders")
+      .send({
+        ...payload({ companyId, buyerUserId: buyerId }),
+        fulfillmentMethod: "delivery",
+        pickupAddressId: null,
+        requestedWindow: undefined,
+        deliveryAddress: {
+          label: "",
+          ligne1: "2 rue Neuve",
+          ligne2: "",
+          codePostal: "73150",
+          ville: "Val d'Isère",
+          pays: "France",
+        },
+      });
+
+    expect(answer.status).not.toBe(400);
   });
 });
 
