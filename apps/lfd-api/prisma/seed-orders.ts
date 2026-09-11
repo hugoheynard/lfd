@@ -30,7 +30,8 @@ async function main(): Promise<void> {
       `· ${report.removed} commande(s) effacée(s) — reposées.\n` +
         `· fournil vidé : ${report.production.days} plan(s), ` +
         `${report.production.handovers} attestation(s) de remise.\n` +
-        `✔ ${report.placed} commande(s) posées, dont 1 pour hier (${report.yesterday}) ` +
+        `✔ ${report.placed} commande(s) posées, dont 1 pour hier (${report.yesterday}), ` +
+        `${report.counterToday} au comptoir aujourd'hui (${report.today}, Le Labo + Le Village) ` +
         `et 2 en attente pour demain (${report.tomorrow}, livraison + retrait).`,
     );
   } finally {
