@@ -1,0 +1,169 @@
+<!--
+  **Le mur qui arrive.** Sept colonnes égales, une matrice `produits × jours`.
+
+  Pas de `title` sur le layout : la page porte sa phrase dans la bande, et deux
+  titres de premier niveau sur un écran n'en font aucun.
+-->
+<fold-page-layout>
+  <!--
+    **La bande de tête.** Ce qu'on vient y chercher en levant les yeux : la
+    période, ce qu'elle pèse, et de quoi la déplacer. Rien d'autre — chaque
+    ligne prise par de la prose est une référence de moins visible sans faire
+    défiler.
+  -->
+  <fold-page-section bleed class="pv-masthead" foldSurface="chrome">
+    <div class="pv-masthead-bar">
+      <div class="pv-said">
+        <p class="pv-eyebrow">Semaine {{ windowLabel() }}</p>
+        @if (state() === 'ready') {
+          <h1 class="pv-title">
+            {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }} à produire sur
+            {{ headers().length }} jours.
+          </h1>
+        }
+      </div>
+
+      <div class="pv-nav">
+        @if (!atToday) {
+          <button foldButton emphasis="outline" size="sm" (click)="backToToday()">
+            Aujourd’hui
+          </button>
+        }
+        <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
+          Semaine précédente
+        </button>
+        <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
+          Semaine suivante
+        </button>
+      </div>
+    </div>
+
+    <!--
+      La légende dit d'où vient un chiffre. Une journée ARRÊTÉE porte le compte
+      à produire figé à la clôture — un fait ; une journée ouverte porte ce que
+      le commerce a reçu à cette heure-ci, et qui bougera encore.
+    -->
+    @if (state() === 'ready' && pieces() > 0) {
+      <p class="pv-legend">
+        <span class="pv-key pv-key--closed"></span> journée arrêtée
+        <span class="pv-key pv-key--open"></span> encore ouverte
+        <span class="pv-key pv-key--peak"></span> le pic
+      </p>
+    }
+  </fold-page-section>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture du prévisionnel…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Prévisionnel illisible"
+        subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (pieces() === 0) {
+        <fold-empty-state
+          icon="production"
+          title="Rien à produire sur cette période"
+          subtitle="Aucune commande n'est à retirer ni à livrer sur ces jours-là."
+        />
+      } @else {
+        <section class="pv-grid" [class.is-dense]="dense()" aria-label="Prévisionnel de production">
+          <!-- L'en-tête : chaque colonne dit sa distance, son jour, et ce qu'il
+               pèse. La distance d'abord — c'est la vraie question. -->
+          <div class="pv-row pv-row--head" [style.grid-template-columns]="columns()">
+            <div class="pv-cell pv-cell--label">
+              <span class="pv-col-label">Produit</span>
+            </div>
+            @for (day of headers(); track day.date) {
+              <div
+                class="pv-cell pv-day"
+                [class.is-today]="day.today"
+                [class.is-peak]="day.peak"
+                [class.is-open]="!day.closed"
+              >
+                <span class="pv-day-offset">{{ day.offset }}{{ day.peak ? ' · pic' : '' }}</span>
+                <span class="pv-day-date">{{ day.weekday }} {{ day.dayMonth }}</span>
+                <span class="pv-day-total">{{ day.totalUnits }}</span>
+              </div>
+            }
+          </div>
+
+          @for (rayon of rayons(); track rayon.label) {
+            <!-- La ligne de rayon est le seul zébrage de la grille, et elle
+                 REPLIE son groupe : c'est l'issue du débordement, et c'est un
+                 geste de l'équipe plutôt qu'un seuil qui décide pour elle. -->
+            <button
+              type="button"
+              class="pv-row pv-row--rayon"
+              [style.grid-template-columns]="columns()"
+              [attr.aria-expanded]="!isFolded(rayon.label)"
+              (click)="toggleRayon(rayon.label)"
+            >
+              <span class="pv-cell pv-cell--label pv-rayon-name">
+                {{ rayon.label }}
+                <span class="pv-rayon-count"
+                  >{{ rayon.lines.length }} réf.{{ isFolded(rayon.label) ? ' · replié' : '' }}</span
+                >
+              </span>
+              @for (day of headers(); track day.date; let column = $index) {
+                <span class="pv-cell pv-rayon-sum" [class.is-peak]="day.peak">
+                  {{ rayon.quantities[column] || '' }}
+                </span>
+              }
+            </button>
+
+            @if (!isFolded(rayon.label)) {
+              @for (line of rayon.lines; track line.sku) {
+                <div class="pv-row pv-row--line" [style.grid-template-columns]="columns()">
+                  <div class="pv-cell pv-cell--label">
+                    <span class="pv-product">{{ line.productName }}</span>
+                    <span class="pv-sku">{{ line.sku }}</span>
+                  </div>
+                  @for (cell of line.cells; track $index; let column = $index) {
+                    <!-- Un zéro est une cellule VIDE, pas un « 0 » : une grille
+                         de zéros se lit comme une grille pleine. -->
+                    <div
+                      class="pv-cell pv-qty"
+                      [class.is-peak]="headers()[column]?.peak"
+                      [class.is-today]="headers()[column]?.today"
+                    >
+                      @if (cell.quantity > 0) {
+                        <span class="pv-qty-value">{{ cell.quantity }}</span>
+                        @if (cell.exceptional) {
+                          <span
+                            class="pv-exceptional"
+                            title="Bien au-delà de l’ordinaire pour ce produit"
+                            >exceptionnel</span
+                          >
+                        }
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            }
+          }
+
+          <!-- Le pied reprend les totaux de colonne : en bas d'une longue
+               grille, on ne remonte pas les chercher. -->
+          <div class="pv-row pv-row--foot" [style.grid-template-columns]="columns()">
+            <div class="pv-cell pv-cell--label">
+              <span class="pv-col-label">Total · {{ references() }} réf.</span>
+            </div>
+            @for (day of headers(); track day.date) {
+              <div class="pv-cell pv-foot-total" [class.is-peak]="day.peak">
+                {{ day.totalUnits || '' }}
+              </div>
+            }
+          </div>
+        </section>
+      }
+    }
+  }
+</fold-page-layout>

@@ -48,7 +48,24 @@
           routerLink="/production"
           routerLinkActive
           #prodRla="routerLinkActive"
+          [routerLinkActiveOptions]="{ exact: true }"
           [active]="prodRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      @if (canSeeProduction()) {
+        <!-- LE PRÉVISIONNEL — le mur qui arrive, sur sept jours. Juste après la
+             production parce que c'est la même donnée vue plus loin : on ouvre
+             le lot du jour, puis on regarde ce qui tombe après. -->
+        <a
+          fold-menu-item
+          icon="calendar"
+          label="Prévisionnel"
+          routerLink="/production/previsionnel"
+          routerLinkActive
+          #previsionnelRla="routerLinkActive"
+          [active]="previsionnelRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -427,7 +444,22 @@
           routerLink="/production"
           routerLinkActive
           #prodTile="routerLinkActive"
+          [routerLinkActiveOptions]="{ exact: true }"
           [active]="prodTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeProduction()) {
+        <!-- La MÊME entrée qu'au rail, posée deux fois pour la même raison que
+             celle d'en dessous : les deux arbres ne partagent pas leur modèle. -->
+        <a
+          fold-nav-tile
+          icon="calendar"
+          label="Prévisionnel"
+          routerLink="/production/previsionnel"
+          routerLinkActive
+          #previsionnelTile="routerLinkActive"
+          [active]="previsionnelTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }

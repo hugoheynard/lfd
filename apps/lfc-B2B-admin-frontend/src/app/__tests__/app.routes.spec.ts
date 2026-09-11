@@ -159,6 +159,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/produits/:id': null,
   'pim/produits': null,
   production: 'b2b_orders:read',
+  // Le prévisionnel : la même donnée que le lot du jour, vue sur sept jours,
+  // donc le même droit. Il porte le sien plutôt que d'hériter — ce n'est pas un
+  // enfant de `production`, c'est une route voisine sous le même préfixe.
+  'production/previsionnel': 'b2b_orders:read',
   // La file du comptoir : la MÊME commande, vue au moment où on la remet. En
   // lecture — attester une remise passe par `retrait/:token`, qui exige
   // l'écriture.

@@ -254,6 +254,18 @@ export const routes: Routes = [
       ),
   },
   {
+    // LE PRÉVISIONNEL — la matrice `produits × jours`. Route ENFANT de
+    // « production » et non de premier niveau : c'est la même donnée que le lot
+    // du jour, vue sur sept jours. Déclarée AVANT la route sans segment pour
+    // qu'elle soit atteignable ; l'ordre compte, `production` vide l'avalerait
+    // sinon.
+    path: 'production/previsionnel',
+    canActivate: [permissionGuard('b2b_orders:read')],
+    title: 'Prévisionnel — LFC B2B admin',
+    loadComponent: () =>
+      import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
+  },
+  {
     path: 'production',
     // Les commandes en lecture : c'est la même donnée que la liste staff, vue
     // par le fournil. Le garde est ici parce qu'une URL tapée ou un favori ne

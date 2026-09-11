@@ -1,0 +1,295 @@
+/* ── PLEINE PAGE ────────────────────────────────────────────────────────────
+   Une matrice n'est pas un document : il n'y a rien à lire d'un bout à l'autre,
+   et la mesure typographique — la raison d'être des colonnes bornées — n'a
+   aucun sens sur une grille dont la question est « est-ce que la semaine tient
+   à l'écran ». On lève le plafond ; les gouttières restent. */
+:host {
+  --fold-page-gap: var(--fold-space-sm);
+  --fold-page-pad-top: 0;
+}
+
+/* ── LA BANDE DE TÊTE ───────────────────────────────────────────────────────
+   Même partition que le comptoir et la tarification : le verdict sur le
+   chrome, la grille sur le papier. Aucune couleur n'est écrite ici —
+   `foldSurface="chrome"` repointe la polarité du sous-arbre, et c'est à
+   l'élément qui possède la surface de poser le fond. */
+.pv-masthead {
+  margin-bottom: var(--fold-page-gap);
+  padding: 0 var(--fold-page-gutter);
+  background: var(--fold-color-bg-header);
+}
+
+.pv-masthead-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.pv-eyebrow {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* La phrase qu'on lit en levant les yeux. Elle porte un CHIFFRE, pas un titre
+   d'écran : le rail nomme déjà la page. */
+.pv-title {
+  margin: var(--fold-space-xs) 0 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+.pv-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+/* La légende dit d'où vient un chiffre — un fait arrêté, ou une prévision qui
+   bougera. La couleur ne porte jamais l'information seule : chaque clé est
+   suivie de son mot. */
+.pv-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: var(--fold-space-sm) 0 0;
+  padding-bottom: var(--fold-space-sm);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.pv-key {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-primary);
+}
+
+.pv-key--open {
+  background: var(--fold-color-border);
+}
+
+.pv-key--peak {
+  background: var(--fold-color-warning);
+}
+
+/* ── LA GRILLE ──────────────────────────────────────────────────────────────
+   Sept colonnes ÉGALES (`minmax(0, 1fr)`), et une colonne de produit fixe. Le
+   jour courant est marqué d'un filet, pas élargi : privilégier aujourd'hui
+   répondrait à la question de l'autre écran.
+
+   `overflow-x` sur le conteneur et non sur la page : une matrice trop large se
+   fait défiler chez elle, la page ne part jamais de travers. */
+.pv-grid {
+  overflow-x: auto;
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+}
+
+.pv-row {
+  display: grid;
+  align-items: center;
+  min-width: 60rem;
+}
+
+.pv-row--line {
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+/* Un SEUL niveau de zébrage : la ligne de rayon porte le fond, les lignes
+   produit restent claires. Deux systèmes de rayure se combattent. */
+.pv-row--rayon {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  background: var(--fold-color-surface-sunken);
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.pv-row--head,
+.pv-row--foot {
+  background: var(--fold-color-surface-subtle);
+}
+
+.pv-row--foot {
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.pv-cell {
+  padding: var(--fold-space-sm) var(--fold-space-xs);
+  text-align: center;
+  min-width: 0;
+}
+
+.pv-cell--label {
+  padding-left: var(--fold-space-md);
+  text-align: left;
+}
+
+.pv-col-label {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* ── L'EN-TÊTE DE COLONNE ───────────────────────────────────────────────────
+   La distance d'abord (« J+2 »), la date ensuite, le total en dernier : c'est
+   l'ordre dans lequel la question se pose. */
+.pv-day {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pv-day.is-today {
+  border-left: 2px solid var(--fold-color-primary);
+}
+
+/* La SEULE colonne teintée. Le jour courant, lui, n'a qu'un filet — teinter les
+   deux rendrait la grille illisible, et c'est le pic qu'on vient chercher. */
+.pv-day.is-peak,
+.pv-qty.is-peak,
+.pv-rayon-sum.is-peak,
+.pv-foot-total.is-peak {
+  background: var(--fold-color-warning-surface);
+}
+
+.pv-day-offset {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.pv-day.is-peak .pv-day-offset,
+.pv-day.is-peak .pv-day-total {
+  color: var(--fold-color-warning-text);
+}
+
+.pv-day-date {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+/* Une journée encore ouverte porte son chiffre en encre atténuée : il bougera.
+   Le mot est dans la légende — la couleur ne dit rien toute seule. */
+.pv-day.is-open .pv-day-date,
+.pv-day.is-open .pv-day-total {
+  color: var(--fold-color-text-secondary);
+}
+
+.pv-day-total {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+/* ── LE RAYON ───────────────────────────────────────────────────────────────
+   Sa ligne est un bouton : la replier est l'issue du débordement. */
+.pv-rayon-name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.pv-rayon-count {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+  color: var(--fold-color-text-muted);
+}
+
+.pv-rayon-sum,
+.pv-foot-total {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+/* ── LA CELLULE ─────────────────────────────────────────────────────────────
+   La quantité DOMINE : on lit la grille par ses chiffres, le nom du produit
+   n'est là que pour dire de quoi il s'agit. */
+.pv-product {
+  display: block;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv-sku {
+  display: block;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}
+
+.pv-qty-value {
+  display: block;
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tighter);
+  line-height: var(--fold-leading-none);
+  color: var(--fold-color-text);
+}
+
+.pv-qty.is-today .pv-qty-value {
+  color: var(--fold-color-primary-text);
+}
+
+/* La commande qui double une ligne : une mention DISCRÈTE sous le chiffre, et
+   pas un fond de plus. Un second fond entrerait en concurrence avec le pic, et
+   la grille perdrait sa seule couleur signifiante. */
+.pv-exceptional {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-warning-text);
+}
+
+/* ── DENSITÉ RÉDUITE ────────────────────────────────────────────────────────
+   Au-delà d'une vingtaine de références, la matrice déborde en hauteur et
+   l'écran perd sa raison d'être. La grille se resserre alors d'elle-même : le
+   repli des rayons reste le geste, ceci est le filet. */
+.pv-grid.is-dense .pv-cell {
+  padding: var(--fold-space-xs);
+}
+
+.pv-grid.is-dense .pv-qty-value {
+  font-size: var(--fold-text-lg);
+}
+
+.pv-grid.is-dense .pv-sku {
+  display: none;
+}
