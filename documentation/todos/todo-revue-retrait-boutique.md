@@ -489,6 +489,47 @@ point ouvert. Les deux tranches restent distinctes : **3 nomme le périmètre**,
 
 ---
 
+## 7. 🕓 Reporté — l'affichage du bon, APRÈS le chantier production
+
+**Noté le 2026-09-11, à la demande d'Hugo.** À rouvrir une fois le contexte
+**production** terminé, pas avant : ce qu'on déciderait aujourd'hui serait
+décidé sur un fournil à moitié écrit.
+
+### Ce qui est en place, et qui sent le provisoire
+
+Le bon que le comptoir ouvre (`sheet-panel`) est composé côté écran, sans aucun
+montant — il le tient par sa forme depuis le point 1. Mais le bouton « Voir le
+bon » tire un **PDF du COMMERCE** (`AdminOrdersService.sheetPdf`), c'est-à-dire
+le document complet que le client a reçu, **prix compris**. Le bouton le dit, et
+c'est juste aujourd'hui : quand on tire un papier, c'est ce papier-là qu'on veut.
+
+⚠️ C'est pourtant la dernière dépendance du comptoir vers le commerce, et elle
+survit à une tranche qui a justement coupé toutes les autres.
+
+### Ce que production change à la question
+
+Le fournil imprime déjà **sa** feuille — `atelier-sheet-pdf.ts`, sans montant,
+avec son QR de colisage — et cette feuille part agrafée sur le sac (cf. point 6).
+Il y aura donc, à la fin du chantier, **deux papiers** pour une même commande, et
+la question ouverte est laquelle le comptoir montre, imprime et rejoue :
+
+- la feuille d'atelier, qui décrit ce qu'il y a dans le sac et qu'on a sous la
+  main ;
+- le bon de commande du client, qui est tarifé et opposable.
+
+🔴 **Ne pas trancher par élimination.** « Aucun montant au comptoir » ne suffit
+pas à choisir : le client qui demande son bon a droit au document tarifé, et le
+lui refuser au guichet serait un recul. Le partage est probablement entre
+**afficher** et **remettre**, pas entre les deux documents.
+
+### Pourquoi attendre
+
+La forme de la feuille d'atelier bouge encore avec le fournil, et le double scan
+(point 6) peut lui ajouter ce qu'il faut lire. Décider l'affichage avant que ces
+deux-là soient arrêtés, c'est refaire l'écran deux fois.
+
+---
+
 ## Ce qui tient, et qu'on ne touche pas
 
 Noté parce qu'une revue qui ne liste que des défauts fait réécrire ce qui est
@@ -560,3 +601,7 @@ rétrécir.
 **6** est une tranche, pas un correctif : elle porte une migration et un
 changement de contrat, et elle se conçoit après **3** — dont la phrase manquante
 vit dans le dialogue que **6** retouchera.
+
+**7** ne s'ouvre qu'APRÈS le chantier production, et c'est une condition, pas une
+priorité : la feuille d'atelier bouge encore, et **6** peut lui ajouter ce qu'il
+faut lire.
