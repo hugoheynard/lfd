@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 import { Injectable } from "@nestjs/common";
@@ -15,6 +16,12 @@ const FORMAT = "v1";
 const FINGERPRINT_LENGTH = 8;
 /** `v1`, empreinte, IV, tag, chiffré. */
 const PART_COUNT = 5;
+/** L'en-tête binaire : `LFD1`, puis l'empreinte de clé en clair. */
+const BYTES_MAGIC = Buffer.from("LFD1", "ascii");
+/** Le tag GCM fait 16 octets, toujours. */
+const TAG_BYTES = 16;
+/** L'empreinte, telle qu'elle est écrite dans l'en-tête binaire. */
+const FINGERPRINT_BYTES = FINGERPRINT_LENGTH;
 
 /**
  * Coffre de champ en **AES-256-GCM**.
@@ -108,6 +115,65 @@ export class AesGcmFieldCipher extends FieldCipher {
       ]).toString("utf8");
     } catch {
       // La cause n'est pas propagée : elle porterait des octets du scellé.
+      throw new SealedValueUnreadableError("authentification refusée — contenu altéré");
+    }
+  }
+
+  /**
+   * Le pendant binaire de {@link seal} — même algorithme, disposition
+   * différente.
+   *
+   * ```
+   * LFD1 | empreinte (8) | IV (12) | tag (16) | chiffré
+   * ```
+   *
+   * Tout est **concaténé** plutôt que séparé par un délimiteur : les longueurs
+   * sont fixes et connues, donc un séparateur n'ajouterait qu'un octet à
+   * échapper. Et rien n'est base64 : sur un PDF gardé dix ans, l'encodage
+   * coûterait un tiers du volume pour une lisibilité que personne n'utilise.
+   */
+  sealBytes(plaintext: Buffer): Buffer {
+    const iv = randomBytes(IV_BYTES);
+    const cipher = createCipheriv("aes-256-gcm", this.key, iv);
+    const body = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+    return Buffer.concat([
+      BYTES_MAGIC,
+      Buffer.from(this.fingerprint, "ascii"),
+      iv,
+      cipher.getAuthTag(),
+      body,
+    ]);
+  }
+
+  openBytes(sealed: Buffer): Buffer {
+    const headerLength = BYTES_MAGIC.length + FINGERPRINT_BYTES + IV_BYTES + TAG_BYTES;
+    if (
+      sealed.length < headerLength ||
+      !sealed.subarray(0, BYTES_MAGIC.length).equals(BYTES_MAGIC)
+    ) {
+      // Un objet déposé AVANT la bascule n'a pas cet en-tête. Le dire ainsi
+      // plutôt que « altéré » envoie chercher la bonne chose : une pièce
+      // ancienne, pas une pièce abîmée.
+      throw new SealedValueUnreadableError("en-tête absent — pièce déposée avant le scellement");
+    }
+
+    let offset = BYTES_MAGIC.length;
+    const fingerprint = sealed.subarray(offset, offset + FINGERPRINT_BYTES).toString("ascii");
+    offset += FINGERPRINT_BYTES;
+    if (fingerprint !== this.fingerprint) {
+      throw new SealedValueUnreadableError("scellée sous une autre clé");
+    }
+
+    const iv = sealed.subarray(offset, offset + IV_BYTES);
+    offset += IV_BYTES;
+    const tag = sealed.subarray(offset, offset + TAG_BYTES);
+    offset += TAG_BYTES;
+
+    try {
+      const decipher = createDecipheriv("aes-256-gcm", this.key, iv);
+      decipher.setAuthTag(tag);
+      return Buffer.concat([decipher.update(sealed.subarray(offset)), decipher.final()]);
+    } catch {
       throw new SealedValueUnreadableError("authentification refusée — contenu altéré");
     }
   }

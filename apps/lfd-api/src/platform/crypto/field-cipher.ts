@@ -1,3 +1,5 @@
+import type { Buffer } from "node:buffer";
+
 /**
  * Port **FieldCipher** — le coffre d'un CHAMP, pas d'une base.
  *
@@ -36,4 +38,33 @@ export abstract class FieldCipher {
    *   sous une autre clé.
    */
   abstract open(sealed: string): string;
+
+  /**
+   * Scelle des **octets** — une pièce jointe, pas une valeur de colonne.
+   *
+   * ## Pourquoi pas `seal(base64)`
+   *
+   * Parce qu'un PDF de mandat se garde dix ans. Passer par une chaîne base64
+   * coûterait **33 % de volume** sur chaque pièce, et le stockage objet n'a
+   * aucune raison de porter cette taxe : il accepte des octets.
+   *
+   * Le format est le même que celui de {@link seal} — marqueur de version,
+   * empreinte de clé, IV, tag — mais **binaire et concaténé** plutôt que
+   * base64url séparé par des points. Ce qu'on gagne en texte (lisible dans un
+   * journal, sans échappement) n'a aucune valeur pour un objet qu'on ne lit
+   * jamais à l'œil.
+   *
+   * 🔴 **Le marqueur de version est en tête, en clair.** C'est lui qui permet de
+   * reconnaître un objet scellé d'un objet déposé avant la bascule, sans tenir
+   * de drapeau en base — le même raisonnement que pour les colonnes.
+   */
+  abstract sealBytes(plaintext: Buffer): Buffer;
+
+  /**
+   * Rouvre des octets scellés.
+   *
+   * @throws {SealedValueUnreadableError} en-tête inconnu, objet tronqué, ou
+   *   scellé sous une autre clé.
+   */
+  abstract openBytes(sealed: Buffer): Buffer;
 }

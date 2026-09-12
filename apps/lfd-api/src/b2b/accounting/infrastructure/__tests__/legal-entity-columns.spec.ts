@@ -1,7 +1,14 @@
 import { LegalEntity } from "../../domain/entities/legal-entity.js";
+import { Bic } from "../../domain/value-objects/bic.js";
+import { CreditorAccount } from "../../domain/value-objects/creditor-account.js";
+import { Iban } from "../../domain/value-objects/iban.js";
 import { LegalAddress } from "../../domain/value-objects/legal-address.js";
 import { Siren } from "../../domain/value-objects/siren.js";
+import { AesGcmFieldCipher } from "../../../../platform/crypto/aes-gcm-field-cipher.js";
 import { legalEntityColumns } from "../legal-entity.mapper.js";
+
+/** Une clé de test — 32 octets, la seule contrainte du coffre. */
+const CIPHER = new AesGcmFieldCipher(Buffer.alloc(32, 7));
 
 function declared(): LegalEntity {
   return LegalEntity.declare({
@@ -39,20 +46,60 @@ describe("legalEntityColumns", () => {
    */
   it("écrit TOUT l'état, sauf l'identité", () => {
     const snapshot = declared().toPersistence();
-    const written = Object.keys(legalEntityColumns(snapshot)).sort();
+    const written = Object.keys(legalEntityColumns(snapshot, CIPHER)).sort();
+    // `creditorIban` sort de la liste et `creditorIbanSealed` y entre : c'est la
+    // bascule du 2026-09-12, où la colonne claire cesse d'être alimentée pour
+    // ne plus servir que de retour arrière. Le test dit la substitution plutôt
+    // que de la subir — sans quoi il suffirait de retirer une colonne pour le
+    // faire passer.
     const expected = Object.keys(snapshot)
-      .filter((key) => key !== "id")
+      .filter((key) => key !== "id" && key !== "creditorIban")
+      .concat("creditorIbanSealed")
       .sort();
 
     expect(written).toEqual(expected);
   });
 
   it("n'écrit PAS l'identifiant — il n'a rien à faire dans un update", () => {
-    expect(Object.keys(legalEntityColumns(declared().toPersistence()))).not.toContain("id");
+    expect(Object.keys(legalEntityColumns(declared().toPersistence(), CIPHER))).not.toContain("id");
+  });
+
+  /**
+   * 🔴 Régression : notre IBAN créancier dormait EN CLAIR pendant que celui du
+   * client était scellé. Personne n'avait décidé l'asymétrie — le coffre a été
+   * bâti pour le compte qu'on débite, et celui où l'argent arrive est resté où
+   * il était.
+   */
+  it("scelle l'IBAN créancier — il ne part jamais en clair en base", () => {
+    const entity = declared();
+    entity.setCreditorAccount(
+      CreditorAccount.create({
+        holder: "CRAZEATIVITY",
+        iban: Iban.create("FR7630006000011234567890189"),
+        bic: Bic.create("CEPAFRPP751"),
+        address: LegalAddress.create({
+          line1: "Route de la Balme",
+          line2: "",
+          postalCode: "73150",
+          city: "Val d'Isère",
+          countryCode: "FR",
+        }),
+      }),
+    );
+
+    const columns = legalEntityColumns(entity.toPersistence(), CIPHER);
+
+    expect(columns.creditorIbanSealed).not.toContain("FR7630006000011234567890189");
+    expect(columns.creditorIbanSealed?.startsWith("v1.")).toBe(true);
+    expect(CIPHER.open(columns.creditorIbanSealed!)).toBe("FR7630006000011234567890189");
+  });
+
+  it("laisse le scellé à null quand aucun IBAN n'est renseigné", () => {
+    expect(legalEntityColumns(declared().toPersistence(), CIPHER).creditorIbanSealed).toBeNull();
   });
 
   it("porte les réglages de mandat, qui manquaient", () => {
-    const columns = legalEntityColumns(declared().toPersistence());
+    const columns = legalEntityColumns(declared().toPersistence(), CIPHER);
     expect(columns.mandateContractDescription).toBe("");
     expect(columns.mandatePaymentType).toBe("recurrent");
   });

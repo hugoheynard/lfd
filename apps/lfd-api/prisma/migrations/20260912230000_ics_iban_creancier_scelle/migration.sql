@@ -1,0 +1,34 @@
+-- **Notre propre IBAN créancier passe au coffre.**
+--
+-- L'asymétrie qu'on corrige : depuis le 2026-09-12, le RIB d'un CLIENT est
+-- scellé en AES-256-GCM (`company_bank_accounts.iban_sealed`), pendant que le
+-- nôtre dormait en clair dans `legal_entities.creditor_iban`. Personne ne l'avait
+-- décidé — le coffre a été bâti pour le compte qu'on débite, et celui où l'argent
+-- arrive est simplement resté où il était.
+--
+-- Ce n'est pas le compte d'un tiers, et le risque n'est donc pas le même. Mais
+-- c'est une coordonnée bancaire dans un dump, et le coffre existe.
+--
+-- ─── Palier 1 sur 3 : ÉTENDRE ────────────────────────────────────────────────
+--
+-- Purement additive. La colonne claire n'est ni vidée, ni supprimée : elle EST
+-- le retour arrière, et elle le reste jusqu'au palier 3.
+--
+-- Le code écrit désormais dans la colonne scellée et lit « scellé d'abord,
+-- clair sinon ». La distinction ne demande aucun drapeau : un scellé commence
+-- par `v1.`, et rien d'autre ne le peut — le format est celui de
+-- `AesGcmFieldCipher`, qui porte son marqueur de version en tête exactement
+-- pour qu'un changement se LISE au lieu de se deviner.
+--
+-- ⚠️ **Le palier 2 n'est pas une migration.** L'IBAN existant ne se convertit
+-- pas en SQL : la clé vit dans l'application, et un script de conversion
+-- demanderait `FIELD_ENCRYPTION_KEY` et l'URL de production dans un
+-- environnement d'exécution — c'est-à-dire, aucun step de CI ne les ayant, sur
+-- un poste. Une seule entité porte un IBAN créancier : **il se ressaisit par
+-- l'écran**, et repart scellé par le chemin normal. Le geste coûte trente
+-- secondes et ne déplace aucune frontière de sécurité.
+--
+-- Palier 3, plus tard et **irréversible** : `DROP COLUMN "creditor_iban"`. Après
+-- lui, un retour arrière du code ne lit plus rien. Il attend que la colonne
+-- scellée soit renseignée pour toutes les entités qui encaissent.
+ALTER TABLE "public"."legal_entities" ADD COLUMN "creditor_iban_sealed" TEXT;

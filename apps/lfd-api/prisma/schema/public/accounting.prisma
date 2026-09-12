@@ -102,7 +102,18 @@ model LegalEntity {
 
   // Le compte où l'argent arrive. Il change — on peut changer de banque — et
   // c'est ce qui le distingue de l'ICS.
-  creditorIban String? @map("creditor_iban")
+  // 🔴 DEUX colonnes pour un seul IBAN, le temps d'une bascule (palier 1 sur 3,
+  // 2026-09-12). `creditor_iban_sealed` porte un scellé AES-256-GCM ;
+  // `creditor_iban` garde la valeur claire d'avant, et n'existe plus que comme
+  // retour arrière. Le code écrit le scellé et lit « scellé d'abord, clair
+  // sinon » — un scellé commence par `v1.`, rien d'autre ne le peut.
+  //
+  // La valeur existante NE SE CONVERTIT PAS en SQL : la clé vit dans
+  // l'application. Elle se ressaisit par l'écran, ce qui évite d'avoir à sortir
+  // la clé de production sur un poste. Palier 3, plus tard et irréversible :
+  // supprimer `creditor_iban`.
+  creditorIban       String? @map("creditor_iban")
+  creditorIbanSealed String? @map("creditor_iban_sealed")
 
   /// Le BIC de la banque du compte ci-dessus — `CdtrAgt` du `pain.008`.
   ///

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { LegalEntityView } from "@lfd/contracts";
 
+import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { LegalEntityReader } from "../domain/ports/legal-entity.reader.js";
 import { toDomain, toView } from "./legal-entity.mapper.js";
@@ -17,7 +18,10 @@ import { toDomain, toView } from "./legal-entity.mapper.js";
  */
 @Injectable()
 export class PrismaLegalEntityReader extends LegalEntityReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cipher: FieldCipher,
+  ) {
     super();
   }
 
@@ -31,7 +35,7 @@ export class PrismaLegalEntityReader extends LegalEntityReader {
     // seconde requête, et sans que la définition existe à deux endroits.
     const actives = rows.filter((row) => row.archivedAt === null);
     return rows.map((row) =>
-      toView(toDomain(row), row.archivedAt === null && actives.length === 1),
+      toView(toDomain(row, this.cipher), row.archivedAt === null && actives.length === 1),
     );
   }
 
@@ -48,6 +52,6 @@ export class PrismaLegalEntityReader extends LegalEntityReader {
       where: { id: { not: id }, archivedAt: null },
       select: { id: true },
     });
-    return toView(toDomain(row), row.archivedAt === null && another === null);
+    return toView(toDomain(row, this.cipher), row.archivedAt === null && another === null);
   }
 }

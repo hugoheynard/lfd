@@ -5,6 +5,7 @@ import {
   type MandateToCreate,
   type RegisteredMandate,
 } from "../../domain/entities/payment-mandate.js";
+import { AesGcmFieldCipher } from "../../../../platform/crypto/aes-gcm-field-cipher.js";
 import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
 import { MandateGateway, type MandateToRegister } from "../../domain/mandate-gateway.js";
 import {
@@ -97,6 +98,13 @@ function activeMandate(): PaymentMandate {
   });
 }
 
+/**
+ * Un vrai coffre plutôt qu'un doublé : le scellement est déterministe dans son
+ * effet (aller-retour) et son coût est nul. Un doublé qui rendrait les octets
+ * tels quels laisserait passer un handler qui oublie de sceller.
+ */
+const CIPHER = new AesGcmFieldCipher(Buffer.alloc(32, 5));
+
 describe("RevokeMandateHandler", () => {
   it("détache chez le PRESTATAIRE avant de marquer révoqué", async () => {
     // Ordre inverse de l'enregistrement, même raison : tant que le moyen est
@@ -136,7 +144,7 @@ describe("AttachMandateProofHandler", () => {
       // lecture doit dire « pas encore » plutôt que rendre une pièce.
       readIfPresent: () => Promise.resolve(null),
     };
-    const handler = new AttachMandateProofHandler(repo, store);
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
@@ -158,12 +166,40 @@ describe("AttachMandateProofHandler", () => {
       // lecture doit dire « pas encore » plutôt que rendre une pièce.
       readIfPresent: () => Promise.resolve(null),
     };
-    const handler = new AttachMandateProofHandler(repo, store);
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
     expect(trace.stored?.key).toBe("companies/cmp_1/mandates/mdt_1/mandat-signe");
-    expect(trace.stored?.document.contentType).toBe("application/pdf");
+    // 🔴 `octet-stream` et non `application/pdf` depuis le 2026-09-12 : ce qui
+    // est rangé n'EST plus un PDF. Annoncer le type réel ferait croire, à qui
+    // ouvre le bucket, que la pièce est lisible — et un outil de stockage
+    // tenterait de la prévisualiser.
+    expect(trace.stored?.document.contentType).toBe("application/octet-stream");
+  });
+
+  /**
+   * 🔴 Régression : le scan du mandat SIGNÉ partait en clair dans le bucket,
+   * alors que les mêmes données — nom, banque, IBAN — étaient scellées en
+   * colonne. C'est la pièce qui porte en plus une signature manuscrite.
+   */
+  it("scelle les octets — le bucket ne voit jamais la pièce", async () => {
+    const { repo, trace } = doubles({ current: activeMandate() });
+    const store: DocumentStore = {
+      save: (key, document) => {
+        trace.stored = { key, document };
+        return Promise.resolve(key);
+      },
+      read: () => Promise.resolve(Buffer.alloc(0)),
+      readIfPresent: () => Promise.resolve(null),
+    };
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
+
+    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+
+    const stored = trace.stored?.document.bytes;
+    expect(stored?.equals(PDF)).toBe(false);
+    expect(CIPHER.openBytes(stored!).equals(PDF)).toBe(true);
   });
 
   it("refuse une pièce dont les octets ne sont pas une pièce", async () => {
@@ -175,7 +211,7 @@ describe("AttachMandateProofHandler", () => {
       // lecture doit dire « pas encore » plutôt que rendre une pièce.
       readIfPresent: () => Promise.resolve(null),
     };
-    const handler = new AttachMandateProofHandler(repo, store);
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
 
     await expect(
       handler.execute(

@@ -6,6 +6,7 @@ import {
 } from "@nestjs/cqrs";
 import type { PaymentMandateView } from "@lfd/contracts";
 
+import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ScannedDocument } from "../../../platform/shared/documents/scanned-document.js";
@@ -66,6 +67,7 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
   constructor(
     private readonly mandates: PaymentMandateRepository,
     private readonly store: DocumentStore,
+    private readonly cipher: FieldCipher,
   ) {}
 
   async execute(command: AttachMandateProofCommand): Promise<void> {
@@ -73,10 +75,22 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
     if (mandate === null) {
       throw new MandateNotFoundError(command.companyId);
     }
+    // Le domaine valide le fichier EN CLAIR — type réel, taille, nom. Sceller
+    // avant validerait des octets chiffrés, c'est-à-dire rien.
     const document = ScannedDocument.create(command.fileName, command.bytes);
+
+    // 🔴 Scellé depuis le 2026-09-12. Le scan du mandat signé porte le nom du
+    // client, sa banque, son IBAN et sa signature manuscrite — c'est la pièce la
+    // plus lourde du dépôt, et elle partait en clair dans le bucket pendant que
+    // les MÊMES données étaient scellées en colonne.
+    //
+    // `application/octet-stream` et non le vrai type : ce qui est rangé n'est
+    // plus un PDF. Annoncer `application/pdf` sur des octets chiffrés ferait
+    // qu'un outil de stockage tenterait de les prévisualiser, et surtout ferait
+    // croire, à qui ouvre le bucket, que la pièce est lisible.
     const storageKey = await this.store.save(proofKeyFor(command.companyId, mandate.id), {
-      bytes: document.bytes,
-      contentType: document.contentType,
+      bytes: this.cipher.sealBytes(document.bytes),
+      contentType: "application/octet-stream",
     });
     mandate.attachProof({ storageKey, fileName: document.fileName });
     await this.mandates.save(mandate);

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
 import { SeveralIssuersError } from "../domain/errors/accounting-errors.js";
@@ -17,13 +18,16 @@ import { toDomain } from "./legal-entity.mapper.js";
  */
 @Injectable()
 export class PrismaCreditorReader extends CreditorReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cipher: FieldCipher,
+  ) {
     super();
   }
 
   async snapshot(legalEntityId: string): Promise<CreditorSnapshot | null> {
     const row = await this.prisma.legalEntity.findUnique({ where: { id: legalEntityId } });
-    return row === null ? null : toDomain(row).creditorSnapshot();
+    return row === null ? null : toDomain(row, this.cipher).creditorSnapshot();
   }
 
   async soleIssuer(): Promise<CreditorSnapshot | null> {
@@ -41,6 +45,6 @@ export class PrismaCreditorReader extends CreditorReader {
     if (rows.length > 1) {
       throw new SeveralIssuersError(rows.length);
     }
-    return toDomain(rows[0]!).creditorSnapshot();
+    return toDomain(rows[0]!, this.cipher).creditorSnapshot();
   }
 }

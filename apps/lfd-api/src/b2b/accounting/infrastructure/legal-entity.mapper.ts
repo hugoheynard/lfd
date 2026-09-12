@@ -1,5 +1,6 @@
 import type { LegalEntityView } from "@lfd/contracts";
 
+import type { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import type { LegalEntity as LegalEntityRow } from "../../../platform/database/client/client.js";
 import { LegalEntity, type LegalEntitySnapshot } from "../domain/entities/legal-entity.js";
 
@@ -8,8 +9,30 @@ import { LegalEntity, type LegalEntitySnapshot } from "../domain/entities/legal-
  * par une main tierce (script, correction en SQL) est refusée à la relecture
  * plutôt que promenée dans le domaine.
  */
-export function toDomain(row: LegalEntityRow): LegalEntity {
-  return LegalEntity.reconstitute(toSnapshot(row));
+export function toDomain(row: LegalEntityRow, cipher: FieldCipher): LegalEntity {
+  return LegalEntity.reconstitute(toSnapshot(row, cipher));
+}
+
+/**
+ * L'IBAN créancier, **d'où qu'il vienne** — scellé de préférence, clair sinon.
+ *
+ * 🔴 La bascule du 2026-09-12, palier 2 sur 3. Une entité enregistrée avant ce
+ * jour porte sa valeur en clair dans `creditor_iban` ; toute écriture depuis
+ * remplit `creditor_iban_sealed`. Lire le scellé D'ABORD fait que la valeur
+ * ressaisie par l'écran gagne, sans qu'aucun drapeau ne soit à tenir.
+ *
+ * L'ordre n'est pas indifférent : l'inverse ferait gagner la vieille valeur
+ * claire sur la neuve, et le retour arrière ressusciterait un IBAN périmé — sur
+ * le compte où l'argent arrive.
+ *
+ * Aucun rattrapage n'est écrit ici : la colonne claire disparaîtra au palier 3,
+ * et ce jour-là cette fonction se réduira à une lecture.
+ */
+function creditorIbanOf(row: LegalEntityRow, cipher: FieldCipher): string | null {
+  if (row.creditorIbanSealed !== null && row.creditorIbanSealed !== "") {
+    return cipher.open(row.creditorIbanSealed);
+  }
+  return row.creditorIban;
 }
 
 /** Agrégat → vue d'écran. */
@@ -66,7 +89,7 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityV
 }
 
 /** Ligne → état complet, sans reconstruire l'agrégat. */
-function toSnapshot(row: LegalEntityRow): LegalEntitySnapshot {
+function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapshot {
   return {
     id: row.id,
     name: row.name,
@@ -81,7 +104,7 @@ function toSnapshot(row: LegalEntityRow): LegalEntitySnapshot {
     shareCapitalCents: row.shareCapitalCents,
     vatNumber: row.vatNumber,
     ics: row.ics,
-    creditorIban: row.creditorIban,
+    creditorIban: creditorIbanOf(row, cipher),
     creditorBic: row.creditorBic,
     creditorAccountHolder: row.creditorAccountHolder,
     creditorAccountLine1: row.creditorAccountLine1,
@@ -111,7 +134,21 @@ function toSnapshot(row: LegalEntityRow): LegalEntitySnapshot {
  * prochain champ ajouté à l'agrégat sans l'être ici. C'est la seule façon de
  * transformer un oubli silencieux en rouge.
  */
-export function legalEntityColumns(snapshot: LegalEntitySnapshot): Omit<LegalEntitySnapshot, "id"> {
+/**
+ * Agrégat → colonnes.
+ *
+ * ⚠️ **N'écrit plus la colonne claire.** `creditor_iban` garde ce qu'elle avait
+ * et n'est plus alimentée : c'est ce qui fait d'elle un retour arrière plutôt
+ * qu'une seconde vérité qui dériverait. Une entité corrigée après le
+ * 2026-09-12 laisse donc derrière elle une valeur claire PÉRIMÉE — inoffensive,
+ * puisque la lecture prend le scellé d'abord, et supprimée au palier 3.
+ */
+export function legalEntityColumns(
+  snapshot: LegalEntitySnapshot,
+  cipher: FieldCipher,
+): Omit<LegalEntitySnapshot, "id" | "creditorIban"> & {
+  readonly creditorIbanSealed: string | null;
+} {
   return {
     name: snapshot.name,
     legalForm: snapshot.legalForm,
@@ -125,7 +162,10 @@ export function legalEntityColumns(snapshot: LegalEntitySnapshot): Omit<LegalEnt
     city: snapshot.city,
     countryCode: snapshot.countryCode,
     ics: snapshot.ics,
-    creditorIban: snapshot.creditorIban,
+    creditorIbanSealed:
+      snapshot.creditorIban === null || snapshot.creditorIban === ""
+        ? null
+        : cipher.seal(snapshot.creditorIban),
     creditorBic: snapshot.creditorBic,
     creditorAccountHolder: snapshot.creditorAccountHolder,
     creditorAccountLine1: snapshot.creditorAccountLine1,

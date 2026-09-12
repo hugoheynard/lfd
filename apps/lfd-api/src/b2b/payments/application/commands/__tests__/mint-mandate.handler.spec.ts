@@ -21,7 +21,31 @@ import { MintMandateHandler } from "../mint-mandate.handler.js";
 
 const NOW = new Date("2026-09-12T09:00:00.000Z");
 
-const CREDITOR = { legalEntityId: "ent_1" } as CreditorSnapshot;
+/** Un émetteur complet : le doublé implémente le port, il ne le mime pas. */
+const CREDITOR: CreditorSnapshot = {
+  legalEntityId: "ent_1",
+  name: "Crazeativity",
+  legalForm: "SAS",
+  siren: "900000001",
+  vatNumber: "",
+  rcs: "Chambéry",
+  shareCapitalCents: 1_000_000,
+  addressLines: ["Route de la Balme", "73150 Val d'Isère", "France"],
+  ics: "FR00ZZZ900001",
+  creditorIban: "FR7630006000011234567890189",
+  creditorBic: "CEPAFRPP751",
+  accountHolder: "CRAZEATIVITY",
+  accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],
+  preNotificationDays: 14,
+  mandateContractDescription: "Fourniture de pains et viennoiseries",
+  mandatePaymentType: "recurrent",
+};
+
+const HOLDER: MandateHolder = {
+  companyName: "SAS Les Tommeuses",
+  email: "x@y.fr",
+  reference: "C-9P2X4B",
+};
 
 function build(
   options: {
@@ -32,26 +56,29 @@ function build(
 ) {
   const written: MandateToCreate[] = [];
 
-  const mandates = {
-    findHolder: () =>
-      Promise.resolve(
-        options.holder === undefined
-          ? { companyName: "SAS Les Tommeuses", email: "x@y.fr", reference: "C-9P2X4B" }
-          : options.holder,
-      ),
+  // 🔴 Les deux doublés implémentent le port EN ENTIER, sans cast. Un
+  // `as unknown as` laisserait la signature changer sans que rien ne rougisse —
+  // le test resterait vert en éprouvant un port qui n'existe plus.
+  const mandates: PaymentMandateRepository = {
+    findHolder: () => Promise.resolve(options.holder === undefined ? HOLDER : options.holder),
     findDraft: () => Promise.resolve(options.draft ?? null),
+    findCurrent: () => Promise.resolve(null),
+    findById: () => Promise.resolve(null),
     create: (snapshot: MandateToCreate) => {
       written.push(snapshot);
       return Promise.resolve("mdt_neuf");
     },
-  } as unknown as PaymentMandateRepository;
+    save: () => Promise.resolve(),
+    findStripeCustomerId: () => Promise.resolve(null),
+  };
 
-  const creditors = {
+  const creditors: CreditorReader = {
+    snapshot: () => Promise.resolve(options.issuer === undefined ? CREDITOR : options.issuer),
     soleIssuer: () => Promise.resolve(options.issuer === undefined ? CREDITOR : options.issuer),
-  } as unknown as CreditorReader;
+  };
 
-  const clock = { now: () => NOW } as Clock;
-  const secrets = { next: () => "K7M3QT9Z" } as SecretGenerator;
+  const clock: Clock = { now: () => NOW };
+  const secrets: SecretGenerator = { next: () => "K7M3QT9Z" };
 
   return { handler: new MintMandateHandler(mandates, creditors, clock, secrets), written };
 }

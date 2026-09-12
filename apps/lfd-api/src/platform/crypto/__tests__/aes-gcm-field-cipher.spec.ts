@@ -96,3 +96,66 @@ describe("AesGcmFieldCipher", () => {
     expect(sealed).not.toContain(KEY.toString("hex"));
   });
 });
+
+describe("AesGcmFieldCipher — les octets d'une pièce jointe", () => {
+  const cipher = new AesGcmFieldCipher(Buffer.alloc(32, 3));
+
+  it("rend les mêmes octets après un aller-retour", () => {
+    const pdf = Buffer.from("%PDF-1.7\n... un mandat signé ...", "utf8");
+
+    expect(cipher.openBytes(cipher.sealBytes(pdf))).toEqual(pdf);
+  });
+
+  it("ne laisse RIEN du clair dans le scellé", () => {
+    const pdf = Buffer.from("IBAN FR7630006000011234567890189 signature", "utf8");
+
+    const sealed = cipher.sealBytes(pdf);
+
+    expect(sealed.toString("latin1")).not.toContain("FR7630006000011234567890189");
+  });
+
+  /**
+   * Le même IV deux fois en GCM ne dégrade pas la sécurité, il la détruit : deux
+   * messages sous le même couple (clé, IV) livrent leur XOR.
+   */
+  it("tire un IV neuf à chaque scellement", () => {
+    const pdf = Buffer.from("identique", "utf8");
+
+    expect(cipher.sealBytes(pdf).equals(cipher.sealBytes(pdf))).toBe(false);
+  });
+
+  it("refuse un octet modifié — GCM authentifie", () => {
+    const sealed = cipher.sealBytes(Buffer.from("un mandat", "utf8"));
+    // `writeUInt8` plutôt qu'un `^=` sur l'index : l'accès indexé d'un Buffer
+    // est typé `number | undefined`, et le cast qu'il faudrait sinon est
+    // précisément ce que `lint:no-type-escapes` refuse dans un test.
+    sealed.writeUInt8(sealed.readUInt8(sealed.length - 1) ^ 0xff, sealed.length - 1);
+
+    expect(() => cipher.openBytes(sealed)).toThrow(SealedValueUnreadableError);
+  });
+
+  /**
+   * 🔴 Le message compte autant que le refus : une pièce déposée AVANT la
+   * bascule n'a pas d'en-tête, et ce n'est pas une corruption. Dire « altéré »
+   * enverrait chercher un disque abîmé là où il n'y a qu'un fichier ancien.
+   */
+  it("distingue une pièce d'avant le scellement d'une pièce abîmée", () => {
+    const clair = Buffer.from("%PDF-1.7 déposé avant la bascule", "utf8");
+
+    expect(() => cipher.openBytes(clair)).toThrow(/déposée avant le scellement/u);
+  });
+
+  it("refuse ce qui a été scellé sous une autre clé", () => {
+    const autre = new AesGcmFieldCipher(Buffer.alloc(32, 9));
+
+    expect(() => cipher.openBytes(autre.sealBytes(Buffer.from("x", "utf8")))).toThrow(/autre clé/u);
+  });
+
+  it("ne paie pas la taxe base64 — le scellé ne gonfle que de son en-tête", () => {
+    // 4 (magie) + 8 (empreinte) + 12 (IV) + 16 (tag) = 40 octets, quelle que
+    // soit la taille de la pièce. Un base64 aurait coûté 33 % du fichier.
+    const pdf = Buffer.alloc(100_000, 1);
+
+    expect(cipher.sealBytes(pdf).length).toBe(pdf.length + 40);
+  });
+});
