@@ -33,6 +33,50 @@ describe("Iban", () => {
     expect(() => Iban.create("FR1420041010")).toThrow(/longueur hors bornes/u);
   });
 
+  /**
+   * Régression : le message portait `IBAN « ${raw} » : …`, et `AppErrorFilter`
+   * rend le `message` d'une `DomainError` **tel quel** au client. Un IBAN
+   * refusé est un IBAN mal saisi, donc à un caractère du vrai — il repartait
+   * dans la réponse HTTP, et de là dans les journaux d'accès (fix 2026-09-12).
+   */
+  describe("ne fait jamais repartir l'IBAN refusé", () => {
+    // Un compte reconnaissable : si un fragment survit quelque part, on le voit.
+    const MISTYPED = "FR7630006000011234567890188";
+
+    it("garde la valeur hors du message, quelle que soit la raison du refus", () => {
+      for (const bad of [MISTYPED, "1234567890189", "FR7630006000"]) {
+        let caught: unknown;
+        try {
+          Iban.create(bad);
+        } catch (error) {
+          caught = error;
+        }
+
+        expect(caught).toBeInstanceOf(InvalidIbanError);
+        const message = (caught as InvalidIbanError).message;
+        expect(message).not.toContain(bad);
+        // Ni la forme normalisée, que l'espacement aurait pu masquer.
+        expect(message).not.toContain(bad.replace(/[\s-]/gu, "").toUpperCase());
+      }
+    });
+
+    it("dit quand même quoi corriger — l'écran est lu sans le code sous les yeux", () => {
+      expect(() => Iban.create(MISTYPED)).toThrow(/clé de contrôle invalide/u);
+    });
+
+    it("ne porte plus la valeur en propriété, pour qu'aucun log ne la retrouve", () => {
+      // La fuite est INEXPRIMABLE, pas seulement évitée : `raw` n'existe plus.
+      let caught: unknown;
+      try {
+        Iban.create(MISTYPED);
+      } catch (error) {
+        caught = error;
+      }
+      expect(Object.values(caught as object)).not.toContain(MISTYPED);
+      expect(JSON.stringify(caught)).not.toContain("1234567890188");
+    });
+  });
+
   it("ne laisse sortir que de quoi reconnaître le compte", () => {
     const iban = Iban.create(VALID_FR);
     expect(iban.last4()).toBe("2606");

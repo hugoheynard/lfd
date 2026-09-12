@@ -32,18 +32,16 @@ export class Iban {
 
     if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/u.test(normalized)) {
       throw new InvalidIbanError(
-        raw,
         "attendu : deux lettres de pays, deux chiffres de clé, puis le compte",
       );
     }
     if (normalized.length < IBAN_MIN_LENGTH || normalized.length > IBAN_MAX_LENGTH) {
       throw new InvalidIbanError(
-        raw,
-        `longueur hors bornes (${normalized.length} caractères, attendu ${IBAN_MIN_LENGTH} à ${IBAN_MAX_LENGTH})`,
+        `longueur hors bornes (${String(normalized.length)} caractères, attendu ${String(IBAN_MIN_LENGTH)} à ${String(IBAN_MAX_LENGTH)})`,
       );
     }
     if (mod97(normalized) !== 1) {
-      throw new InvalidIbanError(raw, "clé de contrôle invalide (vérifiez la saisie)");
+      throw new InvalidIbanError("clé de contrôle invalide (vérifiez la saisie)");
     }
 
     return new Iban(normalized);

@@ -16,12 +16,31 @@ export class InvalidSirenError extends DomainError {
   }
 }
 
+/**
+ * 🔴 **Cette erreur ne porte PAS l'IBAN refusé, et c'est tout son sujet.**
+ *
+ * Ses sœurs ci-dessus recopient la valeur fautive dans leur message ; celle-ci
+ * ne le peut pas, parce que ce message **repart au client**. `AppErrorFilter`
+ * ne neutralise que les erreurs `technical` — une `DomainError` voit son
+ * `message` rendu tel quel dans la réponse HTTP (vérifié le 2026-09-12,
+ * `platform/shared/http/app-error.filter.ts`).
+ *
+ * Un IBAN refusé est un IBAN **mal saisi**, donc à un caractère du vrai. Le
+ * renvoyer ferait voyager un compte bancaire — le nôtre pour le créancier, celui
+ * d'un client pour le débiteur — dans une réponse, un journal d'accès, un
+ * rapport d'erreur de navigateur.
+ *
+ * ⚠️ Le champ `raw` a été **retiré**, pas seulement omis du message. Le garder
+ * laisserait la fuite à un `console.log` de distance : ce qu'on ne peut pas
+ * écrire vaut mieux que ce qu'il faut penser à ne pas écrire.
+ *
+ * La `reason`, elle, reste entière — elle dit quoi corriger sans rien révéler,
+ * et c'est ce dont a besoin le personnel qui lit l'écran sans le code sous les
+ * yeux.
+ */
 export class InvalidIbanError extends DomainError {
-  constructor(
-    readonly raw: string,
-    readonly reason: string,
-  ) {
-    super("accounting.iban.invalid", `IBAN « ${raw} » : ${reason}`);
+  constructor(readonly reason: string) {
+    super("accounting.iban.invalid", `IBAN invalide — ${reason}`);
   }
 }
 
