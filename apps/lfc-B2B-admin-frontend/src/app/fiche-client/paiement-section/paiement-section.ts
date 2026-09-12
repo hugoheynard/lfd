@@ -314,6 +314,41 @@ export class PaiementSection {
     await this.run(id, () => this.mandates.uploadProof(id, file), 'Mandat signé déposé.');
   }
 
+  /**
+   * Frappe le mandat, puis recharge.
+   *
+   * `run` rend le trio muter / annoncer / relire, et le `void` du retour suffit
+   * ici : l'identifiant rendu par le serveur ne sert à rien à l'écran, qui
+   * relit la section de toute façon. Le garder pour l'afficher ferait une
+   * seconde source de vérité sur ce qu'est le mandat courant.
+   */
+  protected async mint(): Promise<void> {
+    const id = this.companyId();
+    if (id === null) {
+      return;
+    }
+    await this.run(
+      id,
+      async () => {
+        await this.mandates.mint(id);
+      },
+      "Mandat frappé. Il reste à l'imprimer et à le faire signer.",
+    );
+  }
+
+  /**
+   * Peut-on frapper un mandat ? Seulement quand il n'y en a aucun, ou que le
+   * dernier est mort.
+   *
+   * ⚠️ Un mandat `draft` fait dire NON : le serveur refuserait en 409, et un
+   * bouton dont la seule issue est un message d'erreur vaut moins que pas de
+   * bouton du tout.
+   */
+  protected readonly mintable = computed(() => {
+    const status = this.mandate()?.status;
+    return status === undefined || status === 'revoked' || status === 'failed';
+  });
+
   private async revoke(): Promise<void> {
     const id = this.companyId();
     if (id === null) {

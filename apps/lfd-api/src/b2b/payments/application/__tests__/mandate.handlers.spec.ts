@@ -50,6 +50,7 @@ function doubles(options: {
   const repo: PaymentMandateRepository = {
     findCurrent: () => Promise.resolve(options.current ?? null),
     findById: () => Promise.resolve(null),
+    findDraft: () => Promise.resolve(null),
     create: (mandate) => {
       trace.steps.push("write");
       trace.written = mandate;
@@ -63,7 +64,11 @@ function doubles(options: {
     findHolder: () =>
       Promise.resolve(
         options.holder === undefined
-          ? { companyName: "Café des Halles SAS", email: "camille@halles.fr" }
+          ? {
+              companyName: "Café des Halles SAS",
+              email: "camille@halles.fr",
+              reference: "C-7K2M4P",
+            }
           : options.holder,
       ),
     findStripeCustomerId: () => Promise.resolve(options.customerId ?? null),

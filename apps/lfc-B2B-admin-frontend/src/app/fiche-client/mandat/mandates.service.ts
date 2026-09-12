@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { MandateSectionView } from '@lfd/contracts';
+import type { CreatedIdResponse, MandateSectionView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
@@ -25,6 +25,22 @@ export class MandatesService {
     return firstValueFrom(
       this.http.get<MandateSectionView>(`${B2B_API_BASE}/admin/companies/${companyId}/mandate`),
     );
+  }
+
+  /**
+   * **Frappe** le mandat : une RUM neuve, un papier à imprimer, rien de signé.
+   *
+   * Le serveur répond **409** quand un brouillon attend déjà sa signature, et le
+   * message nomme sa référence — c'est le comportement utile derrière un double
+   * clic, et la raison pour laquelle l'appelant n'a pas à se garder lui-même.
+   *
+   * Rend l'identifiant et rien d'autre : l'écran relit la section ensuite.
+   */
+  async mint(companyId: string): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(`${B2B_API_BASE}/admin/companies/${companyId}/mandate`, {}),
+    );
+    return created.id;
   }
 
   /** Dépose (ou remplace) le scan du mandat signé. */

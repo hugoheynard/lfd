@@ -1,5 +1,9 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { type MandateSectionView, type PaymentMandateView } from "@lfd/contracts";
+import {
+  type CreatedIdResponse,
+  type MandateSectionView,
+  type PaymentMandateView,
+} from "@lfd/contracts";
 import {
   Controller,
   Delete,
@@ -7,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Put,
   UploadedFile,
   UseInterceptors,
@@ -19,6 +24,7 @@ import {
   AttachMandateProofCommand,
   RevokeMandateCommand,
 } from "../application/mandate-commands.js";
+import { MintMandateCommand } from "../application/commands/mint-mandate.command.js";
 import { GetCompanyMandateQuery } from "../application/mandate-queries.js";
 import { PaymentGateway } from "../domain/payment-gateway.js";
 
@@ -67,6 +73,27 @@ export class AdminMandatesController {
   }
 
   /** Dépose (ou remplace) le **mandat signé scanné**. Multipart `file`. */
+  /**
+   * **Frappe** le mandat : une RUM neuve, un papier à imprimer, rien de signé.
+   *
+   * `POST` et non `PUT` : le geste n'est pas idempotent au sens HTTP — il crée
+   * une ressource et rend son identité. Le rejouer ne refrappe pas, il refuse
+   * en 409 et nomme le brouillon existant, ce qui est le comportement utile
+   * derrière un double clic.
+   *
+   * Rend l'identifiant du mandat et rien d'autre : c'est une écriture, et
+   * l'écran relit. Un handler d'écriture qui rendrait la vue ferait croire que
+   * la lecture est gratuite, et deux définitions de « ce qu'est un mandat »
+   * finiraient par diverger.
+   */
+  @Post(":companyId/mandate")
+  async mint(@Param("companyId") companyId: string): Promise<CreatedIdResponse> {
+    const id = await this.commands.execute<MintMandateCommand, string>(
+      new MintMandateCommand(companyId),
+    );
+    return { id };
+  }
+
   @Put(":companyId/mandate/proof")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: PROOF_UPLOAD_HARD_LIMIT } }))

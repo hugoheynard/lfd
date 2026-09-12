@@ -59,6 +59,13 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
     return row === null ? null : PaymentMandate.reconstitute(toSnapshot(row));
   }
 
+  async findDraft(companyId: string): Promise<PaymentMandate | null> {
+    const row = await this.prisma.paymentMandate.findFirst({
+      where: { companyId, status: "draft" },
+    });
+    return row === null ? null : PaymentMandate.reconstitute(toSnapshot(row));
+  }
+
   async create(snapshot: MandateToCreate): Promise<string> {
     const created = await this.prisma.paymentMandate.create({
       data: {
@@ -116,9 +123,11 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   async findHolder(companyId: string): Promise<MandateHolder | null> {
     const row = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { raisonSociale: true, contactEmail: true },
+      select: { raisonSociale: true, contactEmail: true, reference: true },
     });
-    return row === null ? null : { companyName: row.raisonSociale, email: row.contactEmail };
+    return row === null
+      ? null
+      : { companyName: row.raisonSociale, email: row.contactEmail, reference: row.reference };
   }
 
   async findStripeCustomerId(companyId: string): Promise<string | null> {

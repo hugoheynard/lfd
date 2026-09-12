@@ -136,6 +136,23 @@
             </div>
           </div>
 
+          @if (mintable()) {
+            <div class="pm-row">
+              <div class="pm-what">
+                <span class="pm-label">Frapper un nouveau mandat</span>
+                <span class="pm-note">
+                  Le mandat ci-dessus ne prélève plus. Le suivant portera une RUM neuve&nbsp;: une
+                  référence ne se réutilise pas, sans quoi deux papiers diraient la même chose.
+                </span>
+              </div>
+              <div class="pm-state">
+                <button foldButton type="button" [loading]="busy()" (click)="mint()">
+                  Frapper un mandat
+                </button>
+              </div>
+            </div>
+          }
+
           @if (unproven()) {
             <fold-callout appearance="inset" variant="warning">
               <strong>Mandat sans pièce justificative.</strong> Nous prélevons sur une acceptation
@@ -148,16 +165,24 @@
             <span class="pm-label">Aucun mandat enregistré.</span>
           </div>
 
-          <!-- 🔴 Le geste a disparu le 2026-09-12 avec le canal Stripe. Dire
-                 POURQUOI, plutôt que de laisser l'étape sans bouton : une absence
-                 muette se lit comme une panne, et c'est le commercial devant son
-                 client qui en fait les frais. -->
-          <fold-callout appearance="inset" variant="info">
-            <strong>La génération du mandat n'est pas encore ouverte.</strong> Elle passait par
-            Stripe&nbsp;; le prélèvement se fait désormais sous notre propre identifiant créancier,
-            et le parcours — mandat prérempli, signé par le client, scan déposé — est en cours de
-            construction. En attendant, l'aperçu ci-dessous montre ce que ce client recevra.
-          </fold-callout>
+          <!-- Le geste, rouvert le 2026-09-12 sous notre propre ICS. Il avait
+                 disparu avec le canal Stripe, et l'étape est restée sans bouton
+                 le temps que la RUM existe. -->
+          <div class="pm-row">
+            <div class="pm-what">
+              <span class="pm-label">Frapper le mandat</span>
+              <span class="pm-note">
+                Attribue une référence (RUM) sous notre identifiant créancier et prépare le document
+                à imprimer. Rien n'est signé&nbsp;: la signature du client, puis le dépôt de son
+                scan, restent à faire.
+              </span>
+            </div>
+            <div class="pm-state">
+              <button foldButton type="button" intent="primary" [loading]="busy()" (click)="mint()">
+                Frapper le mandat
+              </button>
+            </div>
+          </div>
         }
 
         <app-mandate-options-section

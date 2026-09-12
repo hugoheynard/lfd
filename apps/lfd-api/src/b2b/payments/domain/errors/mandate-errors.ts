@@ -47,6 +47,27 @@ export class MandateNotRevocableError extends BusinessError {
 }
 
 /**
+ * Un brouillon de mandat existe déjà pour cette société — **409**.
+ *
+ * La règle est tenue en base par un index partiel ; cette erreur n'existe que
+ * pour la **dire**. Sans elle, deux clics rapides rendent une violation de
+ * contrainte, c'est-à-dire « erreur inattendue » à quelqu'un qui a simplement
+ * cliqué deux fois.
+ *
+ * Le message porte la référence existante : le geste de sortie est d'ouvrir ce
+ * brouillon-là — ou de l'abandonner — pas de recommencer.
+ */
+export class MandateDraftAlreadyExistsError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "payments.mandate.draft_already_exists",
+      `Un mandat est déjà frappé et attend sa signature (${reference}). ` +
+        "L'imprimer à nouveau, ou l'abandonner avant d'en frapper un autre.",
+    );
+  }
+}
+
+/**
  * On a voulu signer un mandat qui n'est pas un brouillon — **409**.
  *
  * Signer, c'est faire passer une autorisation de « imprimée » à « opposable ».
