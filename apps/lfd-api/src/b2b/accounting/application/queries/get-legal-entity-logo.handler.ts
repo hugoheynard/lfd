@@ -6,6 +6,7 @@ import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { EntityLogoUnreadableError } from "../../domain/errors/accounting-errors.js";
 import { LegalEntityLogoReader } from "../../domain/ports/legal-entity-logo.reader.js";
 import { entityLogoContentType } from "../../domain/value-objects/entity-logo.js";
+import { readEntityLogo } from "../legal-entity-support.js";
 import { GetLegalEntityLogoQuery } from "./legal-entity-queries.js";
 
 /** Les octets du logo et ce qu'ils sont, prêts à partir sur le fil. */
@@ -44,16 +45,12 @@ export class GetLegalEntityLogoHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetLegalEntityLogoQuery): Promise<LegalEntityLogo | null> {
-    const key = await this.logos.logoKeyOf(query.legalEntityId);
-    if (key === null) {
-      return null;
-    }
-    const bytes = await this.store.readIfPresent(key);
+    // L'absence — pas de clé, ou une clé que le bucket ne sert pas — se rend
+    // comme une absence plutôt que comme une panne : le geste de sortie est le
+    // même (redéposer), et `readEntityLogo` a déjà tiré la sonnette pour le
+    // second cas, qui n'est pas censé exister.
+    const bytes = await readEntityLogo(this.logos, this.store, query.legalEntityId);
     if (bytes === null) {
-      // La base promet un logo que le bucket n'a pas. Ce n'est pas une panne du
-      // canal — il a répondu —, et ce n'est pas non plus un état que le produit
-      // sait produire : on le sert comme une absence plutôt que d'échouer, et le
-      // geste de sortie (redéposer) est le même.
       return null;
     }
     const contentType = entityLogoContentType(bytes);

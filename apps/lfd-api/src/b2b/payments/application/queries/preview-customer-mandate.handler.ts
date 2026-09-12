@@ -9,6 +9,7 @@ import { renderSepaMandatePdf } from "../../../accounting/domain/services/sepa-m
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { CompanyBankAccountNotFoundError } from "../../domain/errors/mandate-errors.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
+import { readEntityLogo } from "../../../accounting/application/legal-entity-support.js";
 import { PreviewCustomerMandateQuery } from "./preview-customer-mandate.query.js";
 
 /** Le fichier et le nom qu'on propose au navigateur. */
@@ -62,8 +63,7 @@ export class PreviewCustomerMandateHandler implements IQueryHandler<
       throw new NoIssuerError();
     }
 
-    const logoKey = await this.logos.logoKeyOf(creditor.legalEntityId);
-    const logo = logoKey === null ? null : await this.store.readIfPresent(logoKey);
+    const logo = await readEntityLogo(this.logos, this.store, creditor.legalEntityId);
 
     const { holder, address, iban, bic } = account.account;
     const options = account.options;

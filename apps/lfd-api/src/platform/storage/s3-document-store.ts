@@ -70,7 +70,13 @@ export class S3DocumentStore extends DocumentStore {
       // confondre avec « pas encore rangé » ferait refabriquer en silence pour
       // toujours devant un stockage cassé.
       if (isMissingObject(error)) {
-        this.logger.debug(`Stockage des pièces — « ${key} » n'existe pas encore.`);
+        // ⚠️ Le message dit ce que l'adaptateur SAIT — le stockage a répondu, il
+        // n'a rien à cette clé — et pas ce que ça signifie, qu'il ignore. Il a
+        // dit « n'existe pas encore » jusqu'au 2026-09-12 : vrai pour les
+        // archives, qui se refabriquent, et rassurant à tort pour les pièces
+        // dont une colonne annonce la présence. C'est à l'appelant, seul à
+        // savoir s'il avait une promesse, de hausser le ton.
+        this.logger.debug(`Stockage des pièces — aucun objet à la clé « ${key} ».`);
         return null;
       }
       throw this.refuse("lecture", key, error);
