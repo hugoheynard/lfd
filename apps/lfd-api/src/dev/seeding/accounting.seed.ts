@@ -82,9 +82,14 @@ const SEEDED_ICS = "FR00ZZZ900001";
  * (`1234567890189`) le désigne comme factice à quiconque le lit.
  *
  * 🔴 Il n'est ici que parce que c'est le compte du **créancier** — le nôtre,
- * celui où l'argent arrive, et qui s'imprime sur un mandat. Un IBAN de
- * **débiteur** ne se sèmerait pas ainsi : il ne se stocke pas en clair
- * (`prelevement-sepa.md` §4).
+ * celui où l'argent arrive, et qui s'imprime sur un mandat.
+ *
+ * ⚠️ Ce paragraphe ajoutait jusqu'au 2026-09-12 qu'« un IBAN de débiteur ne se
+ * sèmerait pas ainsi, il ne se stocke pas en clair ». La prémisse a changé : il
+ * se stocke désormais, **scellé** (AES-256-GCM), et `client.seed.ts` en sème un
+ * — justement pour que le coffre travaille sur un poste de développement au lieu
+ * de rester inéprouvé jusqu'à la production. Ce qui reste vrai, et qui est le
+ * fond de la phrase : les deux IBAN ne se traitent PAS pareil en base.
  */
 const SEEDED_CREDITOR_IBAN = "FR7630006000011234567890189";
 /** Caisse d'Épargne — la banque retenue pour le prélèvement direct. */

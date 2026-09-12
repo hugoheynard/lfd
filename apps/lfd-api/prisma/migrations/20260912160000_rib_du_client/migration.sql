@@ -1,3 +1,8 @@
+-- ⚠️ Le schéma est QUALIFIÉ partout (`"public"."…"`). La base porte cinq schémas
+-- (`public`, `growth`, `ops`, `pim`, `production`) : un `search_path` différent
+-- au moment du déploiement poserait la table ailleurs, silencieusement. Les
+-- migrations voisines le font déjà ; celle-ci l'oubliait.
+--
 -- Le RIB d'une société CLIENTE — celui que nous débitons.
 --
 -- Purement ADDITIVE : une table neuve, aucune colonne touchée ailleurs. Rien à
@@ -16,7 +21,7 @@
 -- (`AmdmntInd`) peut changer le compte d'un mandat en gardant sa RUM, et tant
 -- que la banque n'a pas répondu, lier les deux répondrait par la structure à
 -- une question ouverte.
-CREATE TABLE "company_bank_accounts" (
+CREATE TABLE "public"."company_bank_accounts" (
     "id" TEXT NOT NULL,
     "company_id" TEXT NOT NULL,
     "holder" TEXT NOT NULL,
@@ -34,11 +39,11 @@ CREATE TABLE "company_bank_accounts" (
     CONSTRAINT "company_bank_accounts_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "company_bank_accounts_company_id_key" ON "company_bank_accounts"("company_id");
+CREATE UNIQUE INDEX "company_bank_accounts_company_id_key" ON "public"."company_bank_accounts"("company_id");
 
 -- `ON DELETE CASCADE` : un RIB n'a aucun sens sans sa société. Ce n'est pas de
 -- la donnée qu'on archive — c'est une coordonnée, et la garder après le départ
 -- du client serait conserver une donnée personnelle sans finalité.
-ALTER TABLE "company_bank_accounts"
+ALTER TABLE "public"."company_bank_accounts"
   ADD CONSTRAINT "company_bank_accounts_company_id_fkey"
-  FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

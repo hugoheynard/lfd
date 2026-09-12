@@ -22,9 +22,16 @@ export const MANDATE_STATUS_LABELS: Readonly<Record<MandateStatus, string>> = {
 /**
  * Ce que le back-office montre d'un mandat.
  *
- * **Aucune coordonnée bancaire n'y figure** — ni ici, ni en base, ni jamais dans
- * une réponse d'API. `last4` et `bankCode` ne servent qu'à *reconnaître* le
- * compte (« ••••3000 »), pas à le débiter : ils ne suffisent à rien seuls.
+ * **Aucune coordonnée bancaire n'y figure**, et jamais dans une réponse d'API.
+ * `last4` et `bankCode` ne servent qu'à *reconnaître* le compte (« ••••3000 »),
+ * pas à le débiter : ils ne suffisent à rien seuls.
+ *
+ * ⚠️ Cette phrase disait aussi « ni en base » jusqu'au 2026-09-12. Elle reste
+ * vraie de la table `payment_mandates`, qui ne porte toujours aucun IBAN — mais
+ * elle ne l'est plus du dépôt : `company_bank_accounts` stocke désormais le RIB
+ * du client, **scellé** (AES-256-GCM). La généraliser ferait croire qu'aucun
+ * IBAN de débiteur n'existe nulle part, ce qui enverrait chercher au mauvais
+ * endroit le jour où il faudra en répondre.
  */
 export interface PaymentMandateView {
   readonly id: string;

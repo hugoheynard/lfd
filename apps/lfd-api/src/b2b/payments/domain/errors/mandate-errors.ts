@@ -106,3 +106,22 @@ export class InvalidDebtorAccountError extends DomainError {
     super("payments.debtor_account.invalid", `${field} : ${reason}`);
   }
 }
+
+/**
+ * Le RIB vise une société qui n'existe pas.
+ *
+ * Levée par l'adaptateur à partir de la violation de clé étrangère, et pas par
+ * une lecture préalable : une lecture « la société existe-t-elle ? » suivie
+ * d'une écriture laisse une fenêtre entre les deux, et fait une requête de plus
+ * sur le chemin normal pour attraper un cas qui n'arrive qu'en se trompant
+ * d'URL. La base tranche déjà ; on se contente de traduire son refus en une
+ * phrase que le personnel peut lire.
+ */
+export class CompanyNotFoundForBankAccountError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.bank_account.company_unknown",
+      `Aucune société ne porte l'identifiant « ${companyId} » : le RIB n'a pas été enregistré.`,
+    );
+  }
+}

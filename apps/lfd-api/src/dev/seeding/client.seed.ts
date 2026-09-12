@@ -10,6 +10,7 @@ import { PreferFulfillmentCommand } from "../../b2b/account/application/commands
 import { AddCompanyContactCommand } from "../../b2b/account/application/commands/contact-commands.js";
 import { CreateCompanyCommand } from "../../b2b/account/application/commands/create-company.command.js";
 import { UpdateMyProfileCommand } from "../../b2b/account/application/commands/update-my-profile.command.js";
+import { SetCompanyBankAccountCommand } from "../../b2b/payments/application/commands/set-company-bank-account.command.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import {
@@ -146,6 +147,11 @@ export async function seedClient(
       );
     }
     console.log(`· Société « ${CLIENT_RAISON_SOCIALE} » déjà présente — inchangée.`);
+    // Complétant, pas seulement idempotent — même discipline que le semis
+    // comptable : un poste qui porte déjà la société mais pas son RIB le
+    // reçoit. Passer son tour sur la seule existence de la société laisserait
+    // les postes semés avant cette version définitivement incomplets.
+    await seedBankAccount(context, existing.id);
     return { userId: owner, companyId: existing.id, reference: existing.reference };
   }
 
@@ -169,6 +175,7 @@ export async function seedClient(
   await seedContact(context, userId, companyId);
   await seedTerms(context, companyId);
   await seedHabit(context, userId, companyId);
+  await seedBankAccount(context, companyId);
   await activate(context, companyId);
 
   const company = await context.prisma.company.findUniqueOrThrow({
@@ -408,4 +415,78 @@ function asStaff<T>(now: Date, run: () => Promise<T>): Promise<T> {
     { now, traceId: newTraceId(), actor: { type: "staff", id: SEED_STAFF_SUB } },
     run,
   );
+}
+
+/**
+ * ⚠️ **IBAN de remplissage — celui du DÉBITEUR, pas le nôtre.**
+ *
+ * Sa clé mod-97 est valide, donc `Iban.create` l'accepte. Son code banque et
+ * son code guichet sont `00000` : **aucun établissement réel ne les porte**, ce
+ * qui le rend reconnaissable comme factice à qui sait lire un RIB.
+ *
+ * 🔴 Il ne ressemble délibérément pas à l'IBAN créancier du semis comptable.
+ * Les deux vont s'imprimer sur le même mandat, aux zones 5-6 et au bloc
+ * créancier : deux valeurs qu'on pourrait confondre sur un document de
+ * développement feraient exactement l'erreur qu'un mandat ne pardonne pas.
+ */
+const SEEDED_DEBTOR_IBAN = "FR1100000000000123456789000";
+
+/**
+ * ⚠️ **BIC de remplissage.** `BANQ` n'est l'identifiant d'aucune banque : il
+ * passe la forme ISO 9362 sans emprunter le code de personne.
+ */
+const SEEDED_DEBTOR_BIC = "BANQFRPPXXX";
+
+/**
+ * Le RIB du client — ce sans quoi aucun mandat ne peut être prérempli.
+ *
+ * ## Pourquoi un IBAN de DÉBITEUR se sème, alors que le commentaire voisin
+ * disait le contraire
+ *
+ * `accounting.seed.ts` affirmait qu'un IBAN de débiteur « ne se sèmerait pas
+ * ainsi : il ne se stocke pas en clair ». La prémisse a changé le 2026-09-12 :
+ * il se stocke, **scellé** (AES-256-GCM), et c'est précisément ce chemin qu'on
+ * veut exercer sur un poste de développement. Passer par la commande fait
+ * travailler le coffre pour de vrai — le scellement à l'écriture, l'ouverture à
+ * la relecture — au lieu de le laisser inéprouvé jusqu'à la production.
+ *
+ * ## Le titulaire n'est PAS l'enseigne, et c'est le sujet
+ *
+ * La banque connaît « SAS Les Tommeuses », pas « La Folie Douce Val d'Isère ».
+ * Un semis qui les ferait coïncider rendrait invisible la divergence que le
+ * modèle existe pour porter — et c'est ce nom-là que le débiteur lira sur le
+ * papier qu'il signe.
+ *
+ * ## Reposé seulement s'il manque
+ *
+ * Comme le compte créancier : ne pas écraser un RIB saisi à la main sur le
+ * poste, qu'on est peut-être en train de regarder.
+ */
+async function seedBankAccount(
+  { prisma, commands }: ClientContext,
+  companyId: string,
+): Promise<void> {
+  const existing = await prisma.companyBankAccount.findUnique({
+    where: { companyId },
+    select: { ibanLast4: true },
+  });
+  if (existing) {
+    console.log(`· RIB client déjà posé (••••${existing.ibanLast4}) — inchangé.`);
+    return;
+  }
+
+  await commands.execute(
+    new SetCompanyBankAccountCommand(companyId, {
+      iban: SEEDED_DEBTOR_IBAN,
+      bic: SEEDED_DEBTOR_BIC,
+      // La raison sociale, pas l'enseigne : c'est ce que la banque connaît.
+      holder: CLIENT_RAISON_SOCIALE,
+      line1: "1145 route de la Balme",
+      line2: "",
+      postalCode: "73150",
+      city: "Val d'Isère",
+      countryCode: "FR",
+    }),
+  );
+  console.log("✓ RIB client posé — scellé en base, factice, jamais un vrai compte.");
 }

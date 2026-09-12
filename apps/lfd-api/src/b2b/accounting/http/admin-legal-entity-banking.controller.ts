@@ -60,10 +60,16 @@ export class AdminLegalEntityBankingController {
   /**
    * Enregistre le compte où l'argent arrive.
    *
-   * L'IBAN monte ici en clair — le seul endroit du système — et ne redescend
-   * par aucune route : `LegalEntityView` n'en porte que quatre caractères. Le
-   * **BIC** monte par la même route et redescend en entier : il désigne une
-   * banque, pas un compte.
+   * L'IBAN monte ici en clair et ne redescend par aucune route :
+   * `LegalEntityView` n'en porte que quatre caractères. Le **BIC** monte par la
+   * même route et redescend en entier : il désigne une banque, pas un compte.
+   *
+   * ⚠️ Cette phrase disait « le seul endroit du système » jusqu'au 2026-09-12.
+   * Elle ne l'est plus : `PUT /admin/companies/:id/bank-account` reçoit l'IBAN
+   * d'un CLIENT. Les deux routes ne se traitent d'ailleurs pas pareil en base —
+   * celui-ci est stocké en clair, celui du client est scellé. Croire cette route
+   * unique ferait chercher au mauvais endroit le jour où il faudra répondre de
+   * ce qu'on détient.
    *
    * Les deux sont exigés **ensemble**, parce qu'ils se lisent sur le même RIB.
    */

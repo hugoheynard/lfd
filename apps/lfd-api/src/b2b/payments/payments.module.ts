@@ -4,6 +4,8 @@ import { MandateGateway } from "./domain/mandate-gateway.js";
 import { PaymentGateway } from "./domain/payment-gateway.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
 import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
+import { SetCompanyBankAccountHandler } from "./application/commands/set-company-bank-account.handler.js";
+import { GetCompanyBankAccountHandler } from "./application/queries/get-company-bank-account.handler.js";
 import {
   AttachMandateProofHandler,
   GetCompanyMandateHandler,
@@ -13,6 +15,7 @@ import { PrismaCompanyBankAccountRepository } from "./infrastructure/prisma-comp
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";
 import { StripeMandateGateway } from "./infrastructure/stripe-mandate-gateway.js";
 import { StripePaymentGateway } from "./infrastructure/stripe-payment-gateway.js";
+import { AdminCompanyBankAccountController } from "./http/admin-company-bank-account.controller.js";
 import { AdminMandatesController } from "./http/admin-mandates.controller.js";
 import { PaymentsWebhookController } from "./http/payments-webhook.controller.js";
 
@@ -29,7 +32,11 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
  * par un import.
  */
 @Module({
-  controllers: [PaymentsWebhookController, AdminMandatesController],
+  controllers: [
+    PaymentsWebhookController,
+    AdminMandatesController,
+    AdminCompanyBankAccountController,
+  ],
   providers: [
     { provide: PaymentGateway, useClass: StripePaymentGateway },
     { provide: MandateGateway, useClass: StripeMandateGateway },
@@ -41,6 +48,8 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     RevokeMandateHandler,
     AttachMandateProofHandler,
     GetCompanyMandateHandler,
+    SetCompanyBankAccountHandler,
+    GetCompanyBankAccountHandler,
   ],
   exports: [PaymentGateway],
 })
