@@ -47,6 +47,24 @@ export class MandateNotRevocableError extends BusinessError {
 }
 
 /**
+ * On a voulu signer un mandat qui n'est pas un brouillon — **409**.
+ *
+ * Signer, c'est faire passer une autorisation de « imprimée » à « opposable ».
+ * Rejouer le geste sur un mandat déjà actif écraserait la date qui fait foi ;
+ * le jouer sur un mandat révoqué ressusciterait une autorisation retirée. Le
+ * message nomme l'état réel parce qu'il est lu par du personnel qui n'a pas le
+ * code sous les yeux, et que le geste de sortie diffère selon le cas.
+ */
+export class MandateNotSignableError extends BusinessError {
+  constructor(status: string) {
+    super(
+      "payments.mandate.not_signable",
+      `Un mandat « ${status} » ne peut pas être signé : seul un brouillon attend une signature.`,
+    );
+  }
+}
+
+/**
  * La **date de consentement** déclarée est dans le futur — **400**.
  *
  * Un mandat papier se signe avant d'être saisi. Une date à venir est une faute

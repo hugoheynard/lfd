@@ -93,7 +93,12 @@
             <div class="pm-what">
               <span class="pm-label">Prélèvement SEPA — ••••{{ m.last4 }}</span>
               <span class="pm-note">
-                Mandat {{ m.reference }}, signé le {{ m.acceptedAt | date: 'dd/MM/yyyy' }}
+                Mandat {{ m.reference }}
+                @if (m.acceptedAt) {
+                  , signé le {{ m.acceptedAt | date: 'dd/MM/yyyy' }}
+                } @else {
+                  , pas encore signé
+                }
                 @if (m.revokedAt) {
                   · révoqué le {{ m.revokedAt | date: 'dd/MM/yyyy' }}
                 }

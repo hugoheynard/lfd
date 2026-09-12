@@ -36,7 +36,19 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
     if (mandate === null) {
       throw new MandateNotFoundError(command.companyId);
     }
-    await this.gateway.revokeMandate(mandate.toSnapshot().paymentMethodId);
+    // 🔴 Conditionnel depuis le 2026-09-12. L'appel était inconditionnel, et
+    // c'était tenable tant que TOUT mandat venait de Stripe. Un mandat que nous
+    // frappons n'a pas de moyen de paiement chez un tiers : le détacher
+    // reviendrait à demander à Stripe d'oublier quelque chose qu'il n'a jamais
+    // eu — au mieux un aller-retour réseau pour rien, au pire une erreur du
+    // prestataire qui ferait échouer une révocation parfaitement légitime.
+    //
+    // L'ordre, lui, ne change pas : tant que le moyen de paiement est attaché,
+    // un prélèvement peut partir. On détache d'abord quand il y a de quoi.
+    const paymentMethodId = mandate.paymentMethodId;
+    if (paymentMethodId !== null) {
+      await this.gateway.revokeMandate(paymentMethodId);
+    }
     mandate.revoke(this.clock.now());
     await this.mandates.save(mandate);
   }

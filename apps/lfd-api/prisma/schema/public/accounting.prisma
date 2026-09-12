@@ -27,6 +27,9 @@ enum MandatePaymentType {
 }
 
 enum MandateStatus {
+  // Frappé et imprimé, pas encore signé. Le seul état que NOUS produisons —
+  // les quatre autres viennent du prestataire ou de la banque.
+  draft
   pending
   active
   revoked
@@ -145,6 +148,11 @@ model LegalEntity {
   // Archivée : elle n'émet plus rien, et ses documents passés restent. Pas de
   // DELETE physique — une entité citée par un mandat signé ne s'efface pas.
   archivedAt DateTime? @map("archived_at")
+
+  // Les mandats émis sous cette entité. Côté inverse obligatoire pour Prisma ;
+  // personne ne lit une entité PAR ses mandats — c'est le mandat qui nomme son
+  // émetteur, et le FK empêche d'effacer une entité qu'un papier signé cite.
+  mandates PaymentMandate[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -274,8 +282,11 @@ model PaymentMandate {
 
   // Rattachement Stripe. Le `customerId` est réutilisé d'un mandat au suivant
   // pour la même société : un client Stripe par société, pas par autorisation.
-  stripeCustomerId String @map("stripe_customer_id")
-  paymentMethodId  String @map("payment_method_id")
+  // Nullable depuis le 2026-09-12 : un mandat que NOUS frappons n'a pas de
+  // client Stripe. Un lecteur qui suppose ces champs pleins est un appelant à
+  // corriger, pas un `!` à poser.
+  stripeCustomerId String? @map("stripe_customer_id")
+  paymentMethodId  String? @map("payment_method_id")
 
   // Référence opposable du mandat (RUM), rendue par Stripe. C'est elle qu'on
   // dicte en contestation — pas l'id technique.
@@ -291,7 +302,9 @@ model PaymentMandate {
 
   // Date du consentement **déclaré** — celle du mandat papier déjà signé, donc
   // souvent bien antérieure à la saisie (reprise de portefeuille).
-  acceptedAt DateTime  @map("accepted_at")
+  // `null` tant que le papier n'est pas revenu signé. Inventer une date à la
+  // frappe serait dater le consentement du jour où on l'a demandé.
+  acceptedAt DateTime? @map("accepted_at")
   revokedAt  DateTime? @map("revoked_at")
 
   // Le **mandat signé scanné** : la seule pièce qui prouve le consentement (le
@@ -303,10 +316,21 @@ model PaymentMandate {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Un seul mandat ACTIF par société : index PARTIEL (`status = 'active'`), donc
-  // invisible du schéma Prisma — il vit dans la migration
-  // `20260811200000_mandat_prelevement`. Les mandats révoqués s'empilent sans
-  // se gêner ; c'est tout l'intérêt de garder l'historique.
+  // Laquelle de NOS entités a émis ce mandat. `null` pour une RUM reprise d'un
+  // autre créancier, émise sous son ICS — pas pour d'anciens mandats Stripe :
+  // il n'y en a aucun (table vide, aucune route de création).
+  creditorId String?       @map("creditor_id")
+  creditor   LegalEntity?  @relation(fields: [creditorId], references: [id])
+
+  // 🔴 TROIS index partiels ou d'expression vivent dans les migrations et sont
+  // INVISIBLES ici — Prisma ne sait pas les exprimer. Les chercher dans ce
+  // fichier et conclure qu'ils n'existent pas est l'erreur que ce commentaire
+  // existe pour empêcher (migration `20260912221000_mandat_maison_frappe`) :
+  //   · un seul ACTIF par (société, créancier)   — `COALESCE(creditor_id,'LEGACY')`
+  //   · un seul BROUILLON par société
+  //   · une RUM unique par créancier
+  // Le `COALESCE` n'est pas décoratif : `NULL` étant distinct de `NULL` dans un
+  // index d'unicité, la colonne nue laisserait les mandats hérités sans garantie.
   @@index([companyId, status])
   @@map("payment_mandates")
   @@schema("public")

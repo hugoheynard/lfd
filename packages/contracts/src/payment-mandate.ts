@@ -3,16 +3,27 @@ import { z } from "zod";
 /**
  * État d'un **mandat de prélèvement SEPA**.
  *
+ * `draft` est le mandat que NOUS frappons : la RUM existe, le papier est
+ * imprimé, la signature n'est pas revenue. Il ne prélève rien.
+ *
+ * 🔴 **Cette valeur est partie avant d'exister en base (2026-09-12)**, et
+ * l'ordre est la seule chose qui compte ici. Le back-office fait
+ * `MANDATE_STATUS_LABELS[status].toLowerCase()` : servir une valeur qu'un
+ * bundle déjà chargé ne connaît pas rend `undefined.toLowerCase()`, et la
+ * section paiement meurt chez quelqu'un qui n'a rien demandé. Le libellé doit
+ * donc être en ligne AVANT que la base puisse produire l'état.
+ *
  * `active` seul autorise un prélèvement. `pending` existe parce que Stripe peut
  * rendre un mandat non encore actif ; `revoked` est notre geste (le client
  * retire son autorisation, ou on remplace le mandat) ; `failed` vient de la
  * banque. Un mandat ne s'efface jamais : il se date — c'est ce qui permet de
  * répondre, deux ans plus tard, à « sur quelle autorisation avez-vous prélevé ? ».
  */
-export const mandateStatusSchema = z.enum(["pending", "active", "revoked", "failed"]);
+export const mandateStatusSchema = z.enum(["draft", "pending", "active", "revoked", "failed"]);
 export type MandateStatus = z.infer<typeof mandateStatusSchema>;
 
 export const MANDATE_STATUS_LABELS: Readonly<Record<MandateStatus, string>> = {
+  draft: "En attente de signature",
   pending: "En cours d'activation",
   active: "Actif",
   revoked: "Révoqué",
@@ -44,8 +55,18 @@ export interface PaymentMandateView {
   readonly bankCode: string;
   /** Pays du compte (ISO 2 lettres), vide si inconnu. */
   readonly country: string;
-  /** Date du consentement déclaré, ISO. */
-  readonly acceptedAt: string;
+  /**
+   * Date du consentement déclaré, ISO — **`null` tant que le mandat n'est pas
+   * signé**.
+   *
+   * ⚠️ Ce champ était non nullable jusqu'au 2026-09-12, et il est SERVI : un
+   * front en ligne l'affiche en « signé le … ». Il se nullabilise plutôt que de
+   * porter une date inventée le jour de la frappe — la date de frappe n'est pas
+   * celle de la signature, et c'est cette dernière qu'on oppose en
+   * contestation. Un écran qui ne teste pas le `null` affichera « signé le »
+   * suivi de rien : dégradé, jamais faux.
+   */
+  readonly acceptedAt: string | null;
   /** ISO, ou `null` tant que le mandat n'a pas été révoqué. */
   readonly revokedAt: string | null;
   /**

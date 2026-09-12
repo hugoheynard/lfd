@@ -88,6 +88,7 @@ function activeMandate(): PaymentMandate {
     revokedAt: null,
     proofStorageKey: null,
     proofFileName: null,
+    creditorId: null,
   });
 }
 

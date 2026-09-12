@@ -1,9 +1,11 @@
 import {
   MandateAcceptanceInFutureError,
   MandateNotRevocableError,
+  MandateNotSignableError,
 } from "../../errors/mandate-errors.js";
 import {
   draftMandate,
+  mintMandate,
   PaymentMandate,
   type MandateSnapshot,
   type RegisteredMandate,
@@ -30,6 +32,7 @@ function snapshot(overrides: Partial<MandateSnapshot> = {}): MandateSnapshot {
     revokedAt: null,
     proofStorageKey: null,
     proofFileName: null,
+    creditorId: null,
     ...overrides,
   };
 }
@@ -45,7 +48,7 @@ describe("draftMandate — la date qu'on opposera", () => {
       now: NOW,
     });
 
-    expect(draft.acceptedAt.getFullYear()).toBe(2024);
+    expect(draft.acceptedAt?.getFullYear()).toBe(2024);
     expect(draft.proofStorageKey).toBeNull();
   });
 
@@ -119,5 +122,110 @@ describe("PaymentMandate — ce qui sort vers l'écran", () => {
     expect(JSON.stringify(view)).not.toContain("pm_1");
     expect(JSON.stringify(view)).not.toContain("cus_1");
     expect(view.reference).toBe("RUM-123");
+  });
+});
+
+describe("mintMandate — le mandat qu'on frappe soi-même", () => {
+  it("naît SANS date de signature — le consentement n'a pas encore été donné", () => {
+    // L'invariant du lot. Poser la date de frappe ici daterait l'autorisation
+    // du jour où on l'a DEMANDÉE, et c'est cette date qu'un débiteur conteste.
+    const draft = mintMandate({
+      companyId: "cmp_1",
+      creditorId: "ent_1",
+      reference: "LFC-9P2X4B-260912-K7M3QT",
+    });
+
+    expect(draft.acceptedAt).toBeNull();
+    expect(draft.status).toBe("draft");
+  });
+
+  it("ne porte aucun rattachement au prestataire", () => {
+    const draft = mintMandate({ companyId: "cmp_1", creditorId: "ent_1", reference: "LFC-X" });
+
+    expect(draft.stripeCustomerId).toBeNull();
+    expect(draft.paymentMethodId).toBeNull();
+  });
+
+  it("nomme son émetteur — sans lui, le papier ne peut pas être imprimé", () => {
+    const draft = mintMandate({ companyId: "cmp_1", creditorId: "ent_1", reference: "LFC-X" });
+
+    expect(draft.creditorId).toBe("ent_1");
+  });
+});
+
+describe("PaymentMandate.sign — le papier revient signé", () => {
+  function draftSnapshot(): MandateSnapshot {
+    return snapshot({
+      status: "draft",
+      acceptedAt: null,
+      stripeCustomerId: null,
+      paymentMethodId: null,
+      creditorId: "ent_1",
+    });
+  }
+
+  it("porte la date du PAPIER, pas celle de la saisie", () => {
+    const mandate = PaymentMandate.reconstitute(draftSnapshot());
+    // Neuf jours avant la saisie : le cas ordinaire, un papier posté. Relative à
+    // `NOW` et non écrite en dur — c'est la même constante que la comparaison.
+    const onPaper = new Date(NOW.getTime() - 9 * 86_400_000);
+
+    mandate.sign(onPaper, NOW);
+
+    expect(mandate.acceptedAt).toEqual(onPaper);
+    expect(mandate.status).toBe("active");
+  });
+
+  it("refuse une date à venir — la même faute de frappe que sur le chemin Stripe", () => {
+    const mandate = PaymentMandate.reconstitute(draftSnapshot());
+    const tomorrow = new Date(NOW.getTime() + 86_400_000);
+
+    expect(() => {
+      mandate.sign(tomorrow, NOW);
+    }).toThrow(MandateAcceptanceInFutureError);
+  });
+
+  it("refuse de signer deux fois — la seconde écraserait la date qui fait foi", () => {
+    const mandate = PaymentMandate.reconstitute(snapshot({ status: "active" }));
+
+    expect(() => {
+      mandate.sign(new Date(NOW.getTime() - 9 * 86_400_000), NOW);
+    }).toThrow(MandateNotSignableError);
+  });
+
+  it("refuse de ressusciter un mandat révoqué", () => {
+    const mandate = PaymentMandate.reconstitute(snapshot({ status: "revoked" }));
+
+    expect(() => {
+      mandate.sign(new Date(NOW.getTime() - 9 * 86_400_000), NOW);
+    }).toThrow(MandateNotSignableError);
+  });
+
+  it("un brouillon ne prélève pas, et ne prouve rien", () => {
+    const mandate = PaymentMandate.reconstitute(draftSnapshot());
+
+    expect(mandate.debitable()).toBe(false);
+    expect(mandate.signed()).toBe(false);
+  });
+
+  it("se révoque — un brouillon abandonné doit libérer la place du brouillon unique", () => {
+    const mandate = PaymentMandate.reconstitute(draftSnapshot());
+
+    mandate.revoke(NOW);
+
+    expect(mandate.status).toBe("revoked");
+  });
+});
+
+describe("PaymentMandate — ce que la vue dit d'un brouillon", () => {
+  it("rend `acceptedAt` à null plutôt qu'une date inventée", () => {
+    // Régression : le champ était non nullable dans le contrat, et le front
+    // affichait « signé le … ». Un brouillon n'a rien signé.
+    const view = PaymentMandate.reconstitute(
+      snapshot({ status: "draft", acceptedAt: null }),
+    ).toView();
+
+    expect(view.acceptedAt).toBeNull();
+    expect(view.status).toBe("draft");
   });
 });
