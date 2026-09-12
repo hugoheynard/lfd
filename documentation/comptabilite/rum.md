@@ -162,18 +162,40 @@ un fait accompli au nom d'une règle qui ne s'applique qu'à ce qu'on écrit.
 
 ## 5. Les références qui ne viennent pas de nous
 
-`Rum.create` relit une référence venue d'un **import** ou d'un **fichier de
-retour**. C'est par là qu'entrent les RUM **tierces** — une reprise de
-portefeuille en apporte, et elles peuvent se heurter entre elles.
+⚠️ **Cette section décrit une INTENTION, pas un mécanisme** — corrigé le
+2026-09-12 au soir. Elle était écrite au présent de l'indicatif, et se lisait
+donc comme un état des lieux.
 
-🔴 **C'est ce qui justifie l'index d'unicité**, et pas la méfiance envers notre
-propre frappe. Une garantie qui ne couvre que ce qu'on fabrique ne couvre pas ce
+`Rum.create` est **plus permissif que `mint`** pour pouvoir relire une référence
+qui ne vient pas de notre frappe : une reprise de portefeuille, un fichier de
+retour. Ces RUM **tierces** peuvent se heurter entre elles, là où notre propre
+frappe ne se heurte qu'à elle-même.
+
+🔴 **C'est ce qui justifierait l'index d'unicité**, et pas la méfiance envers
+notre frappe : une garantie qui ne couvre que ce qu'on fabrique ne couvre pas ce
 qu'on reçoit.
 
-⚠️ **Cet index n'existe pas encore.** La colonne `reference` de
-`payment_mandates` ne porte aujourd'hui **aucune contrainte d'unicité**, et la
-colonne `creditor_id` que ce document invoque n'existe pas non plus _(vérifié le
-2026-09-12)_. L'unicité que la RUM exige est à créer ; elle n'est pas acquise.
+**Ce qui est vérifié, et ce qui ne l'est pas** _(tout au 2026-09-12)_ :
+
+| Affirmation                                      | État                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `Rum.create` accepte 35 caractères, `mint` 26    | ✅ `rum.ts` — `RUM_EPC_MAX_LENGTH`, `RUM_PRINTED_MAX_LENGTH` |
+| `Rum.create` relit des références importées      | ❌ **aucun appelant** — seul `rum.spec.ts` importe `rum.ts`  |
+| un import de portefeuille existe                 | ❌ rien dans le dépôt                                        |
+| un fichier de retour est lu (`camt`, `pain.002`) | ❌ rien dans le dépôt                                        |
+| `payment_mandates.reference` est unique          | ❌ aucune contrainte                                         |
+| la colonne `creditor_id` existe                  | ❌ elle n'existe pas                                         |
+
+🔴 **L'absence d'index n'est pas une table encore nue.** `payment_mandates`
+porte déjà un index partiel — `UNIQUE (company_id) WHERE status = 'active'` —
+donc l'unicité y a été pensée une fois, pour une autre question. C'est un trou
+dans un mur bâti, pas un mur qui reste à bâtir : la nuance dit à quel point il
+est facile de croire le sujet traité.
+
+La conséquence pratique tient en une ligne : **la permissivité de `create` ne
+protège rien aujourd'hui**, parce que rien ne l'appelle. Elle sera juste le jour
+où un import existera — et c'est ce jour-là, pas avant, que l'index devient
+bloquant.
 
 ---
 
