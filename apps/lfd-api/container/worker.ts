@@ -129,6 +129,17 @@ const RUNTIME_KEYS = [
   // et RIEN ne le dirait — c'est le mode de panne que ce test existe pour
   // fermer.
   "B2B_DELIVERY_INBOX",
+  // 🔴 La clé du coffre de champs, qui scelle les IBAN de nos clients au repos.
+  //
+  // Sans elle dans cette liste, le container ne la recevrait JAMAIS — et comme
+  // `AppConfig` refuse de démarrer en production sans clé, le déploiement
+  // tomberait au boot. C'est le seul réglage de cette liste dont l'absence
+  // empêche de servir : les autres dégradent, celui-là arrête.
+  //
+  // Le sens de la garde est voulu. Un backend qui booterait sans clé écrirait
+  // des coordonnées bancaires en clair dans une colonne que tout le monde croit
+  // scellée, et personne ne le saurait avant de lire la base.
+  "FIELD_ENCRYPTION_KEY",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];

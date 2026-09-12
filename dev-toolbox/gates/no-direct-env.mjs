@@ -48,6 +48,7 @@ const ALLOWED_SUFFIXES = [
   // La passerelle elle-même, son test, et le harnais qui sème l'env des tests.
   "src/platform/config/app-config.ts",
   "src/platform/config/__tests__/app-config.spec.ts",
+  "src/platform/config/__tests__/app-config-field-key.spec.ts",
   "test/setup-env.ts",
   // CLI Prisma : tourne hors du runtime Nest, AppConfig n'y est pas disponible.
   // Deux configs depuis que le référentiel a rejoint le processus : une par

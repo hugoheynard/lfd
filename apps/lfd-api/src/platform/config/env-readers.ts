@@ -509,3 +509,35 @@ export function optionalPublicationEnabled(): boolean {
 export function optionalDeliveryInboxEnabled(): boolean {
   return process.env["B2B_DELIVERY_INBOX"]?.trim().toLowerCase() === "true";
 }
+
+/** AES-256 : la clé fait 32 octets, ni plus ni moins. */
+const FIELD_ENCRYPTION_KEY_BYTES = 32;
+
+/**
+ * La clé du coffre de champs — `FIELD_ENCRYPTION_KEY`, en base64.
+ *
+ * Elle chiffre les coordonnées bancaires de nos clients au repos. Absente, la
+ * décision de ce qu'il faut faire N'EST PAS ici : ce lecteur rend `null`, et
+ * c'est `AppConfig` qui refuse de démarrer en production ou retombe sur la clé
+ * de développement. La raison de ce partage est que le repli dépend de
+ * `NODE_ENV`, que seul `AppConfig` a le droit de lire.
+ *
+ * ⚠️ Une clé mal dimensionnée échoue **ici, au démarrage**, et pas au premier
+ * IBAN saisi : une moitié de configuration se découvre à l'usage, ce qui est
+ * précisément ce qu'on ne veut pas d'un coffre.
+ */
+export function optionalFieldEncryptionKey(): Buffer | null {
+  const raw = optionalString("FIELD_ENCRYPTION_KEY");
+  if (raw === null) {
+    return null;
+  }
+
+  const key = Buffer.from(raw, "base64");
+  if (key.length !== FIELD_ENCRYPTION_KEY_BYTES) {
+    throw new Error(
+      `FIELD_ENCRYPTION_KEY : ${String(FIELD_ENCRYPTION_KEY_BYTES)} octets attendus en base64, ` +
+        `${String(key.length)} reçus. Générez-en une avec : openssl rand -base64 32`,
+    );
+  }
+  return key;
+}

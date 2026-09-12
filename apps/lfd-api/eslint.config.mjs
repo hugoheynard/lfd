@@ -19,6 +19,7 @@ const ENV_ALLOWLIST = [
   // Même discipline, même dossier — mais listé à la main, comme le reste.
   "src/platform/config/env-readers.ts",
   "src/platform/config/__tests__/app-config.spec.ts",
+  "src/platform/config/__tests__/app-config-field-key.spec.ts",
   // Même raison : ils vérifient le LECTEUR qui a le monopole de `process.env`.
   "src/platform/config/__tests__/env-readers-r2.spec.ts",
   "src/platform/config/__tests__/env-readers-media-url.spec.ts",

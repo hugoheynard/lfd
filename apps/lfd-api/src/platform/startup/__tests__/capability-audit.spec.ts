@@ -14,6 +14,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasMailerKey: true,
   hasMailerWebhookSecret: true,
   hasWebPushKeys: true,
+  hasOwnFieldEncryptionKey: true,
   hasStorage: true,
   hasMediaStorage: true,
   hasCustomerStorage: true,
