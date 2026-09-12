@@ -4,6 +4,7 @@ import { InvalidIbanError } from "../../../../accounting/domain/errors/accountin
 import type { IdGenerator } from "../../../../../platform/id/id-generator.js";
 import type { CompanyBankAccount } from "../../../domain/entities/company-bank-account.js";
 import type { CompanyBankAccountRepository } from "../../../domain/ports/company-bank-account.repository.js";
+import { MandateOptions } from "../../../domain/value-objects/mandate-options.js";
 import { SetCompanyBankAccountCommand } from "../set-company-bank-account.command.js";
 import { SetCompanyBankAccountHandler } from "../set-company-bank-account.handler.js";
 
@@ -124,6 +125,37 @@ describe("SetCompanyBankAccountHandler", () => {
 
     expect(caught).toBeInstanceOf(InvalidIbanError);
     expect((caught as InvalidIbanError).message).not.toContain(bad);
+  });
+
+  it("crée le RIB avec des zones facultatives VIDES — elles ont leur route", async () => {
+    const { handler, repo } = build();
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+
+    expect(repo.stored?.options.isEmpty).toBe(true);
+  });
+
+  /**
+   * 🔴 Changer de banque ne change ni le contrat ni sa description. Les remettre
+   * à zéro ferait perdre une saisie que personne n'a demandé à effacer — et
+   * l'écran ne le dirait pas.
+   */
+  it("ne touche PAS aux zones facultatives en remplaçant le RIB", async () => {
+    const { handler, repo } = build();
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+    repo.stored?.setOptions(
+      MandateOptions.create({
+        debtorReference: "C-9P2X4B",
+        contractNumber: "CT-42",
+        contractDescription: "Fourniture de café",
+      }),
+    );
+
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, iban: OTHER_IBAN }),
+    );
+
+    expect(repo.stored?.options.contractNumber).toBe("CT-42");
+    expect(repo.stored?.account.iban.value).toBe(OTHER_IBAN);
   });
 
   it("ne rend rien — CQRS, le client relit", async () => {

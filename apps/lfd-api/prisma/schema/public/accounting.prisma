@@ -132,7 +132,12 @@ model LegalEntity {
 // CompanyBankAccount — le RIB d'un CLIENT, celui qu'on débite
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Le **compte bancaire d'une société cliente** — celui que nous débitons.
+/// Le **côté client d'un mandat SEPA** — son compte, et ce qu'on imprimera avec.
+///
+/// ⚠️ Le nom de la table dit « bank accounts » et c'est exact mais étroit : elle
+/// porte aussi les zones facultatives du contrat (14, 19, 20). Les deux vont
+/// ensemble parce qu'ils remplissent le même papier et se saisissent au même
+/// moment ; les séparer ferait deux tables pour un seul formulaire.
 ///
 /// ## 🔴 Pourquoi il est AUTONOME, sans lien vers un mandat
 ///
@@ -193,6 +198,21 @@ model CompanyBankAccount {
   /// Le BIC n'est PAS scellé : il désigne un établissement, pas un compte, et il
   /// figure sur tout virement. Le sceller coûterait sans rien protéger.
   bic String
+
+  /// Les zones **facultatives** du mandat qui nous appartiennent — 14, 19 et 20
+  /// du modèle EPC. Elles ne conditionnent pas la validité du mandat, et elles
+  /// vivent ici parce que cette table porte tout le **côté client du mandat** :
+  /// les zones 1 à 6 sont le RIB ci-dessus, celles-ci le contrat.
+  ///
+  /// Les zones 15 à 18 n'y sont PAS : les deux premières sont au signataire (un
+  /// tiers débiteur, que nous ne pouvons pas deviner), les deux autres ne nous
+  /// concernent pas tant que nous n'encaissons pour personne.
+  ///
+  /// `""` et non `null` : une zone facultative non renseignée est un état
+  /// normal et durable, pas une donnée manquante à signaler.
+  debtorReference     String @default("") @map("debtor_reference")
+  contractNumber      String @default("") @map("contract_number")
+  contractDescription String @default("") @map("contract_description")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

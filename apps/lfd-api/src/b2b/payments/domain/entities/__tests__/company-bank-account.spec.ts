@@ -2,6 +2,7 @@ import { Bic } from "../../../../accounting/domain/value-objects/bic.js";
 import { Iban } from "../../../../accounting/domain/value-objects/iban.js";
 import { LegalAddress } from "../../../../accounting/domain/value-objects/legal-address.js";
 import { DebtorAccount } from "../../value-objects/debtor-account.js";
+import { MandateOptions } from "../../value-objects/mandate-options.js";
 import { CompanyBankAccount, type CompanyBankAccountSnapshot } from "../company-bank-account.js";
 
 const IBAN = "FR1420041010050500013M02606";
@@ -31,6 +32,7 @@ function declared(): CompanyBankAccount {
     id: "cba_1",
     companyId: "cmp_1",
     account: debtor(),
+    options: MandateOptions.empty(),
   });
 }
 
@@ -99,6 +101,9 @@ describe("CompanyBankAccount", () => {
       countryCode: "FR",
       iban: IBAN,
       bic: "CEPAFRPP751",
+      debtorReference: "C-9P2X4B",
+      contractNumber: "",
+      contractDescription: "Fourniture de café",
     };
 
     it("fait l'aller-retour sans rien perdre", () => {
@@ -116,5 +121,40 @@ describe("CompanyBankAccount", () => {
     it("refuse une ligne au titulaire vidé", () => {
       expect(() => CompanyBankAccount.reconstitute({ ...row, holder: "" })).toThrow();
     });
+  });
+});
+
+describe("CompanyBankAccount — les zones facultatives du mandat", () => {
+  it("part vide, ce qui est le cas ordinaire", () => {
+    expect(declared().options.isEmpty).toBe(true);
+  });
+
+  it("se réécrit SANS toucher au compte", () => {
+    // Corriger la description d'un contrat ne remet aucun mandat en cause,
+    // alors que changer d'IBAN, si. Les confondre ferait refaire signer pour
+    // une ligne de texte.
+    const account = declared();
+    account.setOptions(
+      MandateOptions.create({
+        debtorReference: "C-9P2X4B",
+        contractNumber: "CT-42",
+        contractDescription: "Fourniture de café",
+      }),
+    );
+
+    expect(account.account.iban.value).toBe(IBAN);
+    expect(account.toPersistence().contractNumber).toBe("CT-42");
+  });
+
+  it("rogne les espaces plutôt que de les imprimer", () => {
+    // Une espace de fin devant un pointillé décale le texte imprimé, et deux
+    // valeurs qui n'en diffèrent que feraient croire à un changement.
+    const options = MandateOptions.create({
+      debtorReference: "  C-9P2X4B ",
+      contractNumber: " ",
+      contractDescription: "",
+    });
+    expect(options.debtorReference).toBe("C-9P2X4B");
+    expect(options.contractNumber).toBe("");
   });
 });

@@ -7,6 +7,7 @@ import { AesGcmFieldCipher } from "../../../../platform/crypto/aes-gcm-field-cip
 import type { CompanyBankAccount as CompanyBankAccountRow } from "../../../../platform/database/client/client.js";
 import { CompanyBankAccount } from "../../domain/entities/company-bank-account.js";
 import { DebtorAccount } from "../../domain/value-objects/debtor-account.js";
+import { MandateOptions } from "../../domain/value-objects/mandate-options.js";
 import { toColumns, toDomain } from "../company-bank-account.mapper.js";
 
 const IBAN = "FR1420041010050500013M02606";
@@ -29,6 +30,11 @@ function aggregate(): CompanyBankAccount {
       }),
       iban: Iban.create(IBAN),
       bic: Bic.create("CEPAFRPP751"),
+    }),
+    options: MandateOptions.create({
+      debtorReference: "C-9P2X4B",
+      contractNumber: "CT-42",
+      contractDescription: "Fourniture de café",
     }),
   });
 }
@@ -73,6 +79,13 @@ describe("company-bank-account.mapper", () => {
 
     it("ne scelle PAS le BIC : il désigne un établissement, pas un compte", () => {
       expect(toColumns(aggregate().toPersistence(), cipher).bic).toBe("CEPAFRPP751");
+    });
+
+    it("ne scelle PAS les zones facultatives : elles ne désignent aucun compte", () => {
+      const columns = toColumns(aggregate().toPersistence(), cipher);
+      expect(columns.debtorReference).toBe("C-9P2X4B");
+      expect(columns.contractNumber).toBe("CT-42");
+      expect(columns.contractDescription).toBe("Fourniture de café");
     });
 
     it("scelle différemment deux fois la même valeur", () => {

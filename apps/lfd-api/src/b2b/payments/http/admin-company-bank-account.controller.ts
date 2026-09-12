@@ -3,14 +3,36 @@ import {
   type CompanyBankAccountView,
   type SetCompanyBankAccountPayload,
   setCompanyBankAccountPayloadSchema,
+  type SetMandateOptionsPayload,
+  setMandateOptionsPayloadSchema,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Put,
+  Query,
+  Res,
+  StreamableFile,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import {
+  contentDispositionAttachment,
+  contentDispositionInline,
+  sanitiseFileName,
+} from "@lfd/storage";
+import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SetCompanyBankAccountCommand } from "../application/commands/set-company-bank-account.command.js";
+import { SetMandateOptionsCommand } from "../application/commands/set-mandate-options.command.js";
 import { GetCompanyBankAccountQuery } from "../application/queries/get-company-bank-account.query.js";
+import type { CustomerMandatePdf } from "../application/queries/preview-customer-mandate.handler.js";
+import { PreviewCustomerMandateQuery } from "../application/queries/preview-customer-mandate.query.js";
 
 /**
  * Surface **staff** du RIB d'une société cliente.
@@ -70,5 +92,66 @@ export class AdminCompanyBankAccountController {
     await this.commands.execute<SetCompanyBankAccountCommand, void>(
       new SetCompanyBankAccountCommand(companyId, payload),
     );
+  }
+
+  /**
+   * Réécrit les **zones facultatives** du mandat — 14, 19 et 20.
+   *
+   * Route à part du RIB, et pas par commodité : le `PUT` du RIB exige l'IBAN,
+   * qui ne redescend jamais. Passer par lui pour corriger une description de
+   * contrat obligerait à ressaisir un IBAN à chaque fois — et ressaisir un IBAN
+   * pour changer une ligne de texte est exactement le geste qui finit par une
+   * faute de frappe sur un compte bancaire.
+   *
+   * Refuse **404** si le client n'a pas de RIB : ces zones vivent sur la même
+   * ligne, et il n'y en a pas encore.
+   */
+  @Put(":companyId/mandate-options")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setOptions(
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(setMandateOptionsPayloadSchema)) payload: SetMandateOptionsPayload,
+  ): Promise<void> {
+    await this.commands.execute<SetMandateOptionsCommand, void>(
+      new SetMandateOptionsCommand(companyId, payload),
+    );
+  }
+
+  /**
+   * **L'aperçu du mandat de ce client**, les deux côtés remplis.
+   *
+   * 🔴 Il porte toujours la mention « EXEMPLE » en travers de la page, et ce
+   * n'est pas un oubli : aucune RUM n'est frappée, donc une signature apposée
+   * dessus créerait un mandat sans référence — inutilisable, mais que le client
+   * croirait avoir donné. L'aperçu sert à **relire les informations** avant de
+   * les faire imprimer, pas à produire la pièce.
+   *
+   * `GET` : rien n'est créé, et deux appels rendent le même fichier. Le jour où
+   * un mandat nominatif sera émis, ce sera une commande — frapper une RUM est un
+   * fait qu'on garde.
+   *
+   * Refus possibles, tous nommés : pas de RIB (404), aucune entité émettrice ou
+   * plusieurs (409), entité sans ICS (409).
+   */
+  @Get(":companyId/mandate/preview.pdf")
+  async previewMandate(
+    @Param("companyId") companyId: string,
+    @Res({ passthrough: true }) response: Response,
+    @Query("inline") inline?: string,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<PreviewCustomerMandateQuery, CustomerMandatePdf>(
+      new PreviewCustomerMandateQuery(companyId),
+    );
+    const fileName = sanitiseFileName(pdf.fileName, "apercu-mandat-sepa.pdf");
+    response.setHeader("Content-Type", "application/pdf");
+    // Même bascule que la fiche d'exemple, et pour la même raison : l'écran veut
+    // REGARDER avant d'imprimer, et accumuler des PDF dans un dossier de
+    // téléchargements pour vérifier une adresse est le contraire d'un contrôle.
+    // `1` exactement, défaut à l'enregistrement.
+    response.setHeader(
+      "Content-Disposition",
+      inline === "1" ? contentDispositionInline(fileName) : contentDispositionAttachment(fileName),
+    );
+    return new StreamableFile(pdf.bytes);
   }
 }

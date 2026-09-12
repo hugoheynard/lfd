@@ -7,6 +7,7 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CompanyBankAccount } from "../../domain/entities/company-bank-account.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { DebtorAccount } from "../../domain/value-objects/debtor-account.js";
+import { MandateOptions } from "../../domain/value-objects/mandate-options.js";
 import { SetCompanyBankAccountCommand } from "./set-company-bank-account.command.js";
 
 /**
@@ -58,11 +59,21 @@ export class SetCompanyBankAccountHandler implements ICommandHandler<
     const existing = await this.accounts.findByCompany(companyId);
     if (existing === null) {
       await this.accounts.save(
-        CompanyBankAccount.declare({ id: this.ids.next(), companyId, account }),
+        CompanyBankAccount.declare({
+          id: this.ids.next(),
+          companyId,
+          account,
+          // Vides à la création : les zones facultatives ont leur propre route,
+          // et un RIB tout juste saisi n'en porte aucune.
+          options: MandateOptions.empty(),
+        }),
       );
       return;
     }
 
+    // 🔴 Les zones facultatives ne sont PAS touchées. Changer de banque ne
+    // change ni le contrat ni sa description : les remettre à zéro ici ferait
+    // perdre une saisie que personne n'a demandé à effacer.
     existing.replaceWith(account);
     await this.accounts.save(existing);
   }

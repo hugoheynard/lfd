@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import { inflateSync } from "node:zlib";
 
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
+import type { DebtorSnapshot } from "../../debtor-snapshot.js";
 import { renderSepaMandatePdf, sampleMandateFileName } from "../sepa-mandate-pdf.js";
 
 const CREDITOR: CreditorSnapshot = {
@@ -282,5 +283,88 @@ describe("renderSepaMandatePdf — l'ICS en cases", () => {
 
     expect(veryLong).toHaveLength(35);
     expect(text).toContain(veryLong);
+  });
+});
+
+/** Le RIB d'un client, tel que l'aperçu le remplit. */
+const DEBTOR: DebtorSnapshot = {
+  holder: "Refuge du Col SARL",
+  addressLine1: "12 rue des Alpages",
+  addressLine2: "",
+  postalCode: "73150",
+  city: "Val d'Isere",
+  countryCode: "FR",
+  iban: "FR1420041010050500013M02606",
+  bic: "CEPAFRPP751",
+  debtorReference: "C-9P2X4B",
+  contractNumber: "CT-42",
+  contractDescription: "Fourniture de cafe",
+};
+
+describe("renderSepaMandatePdf — le côté du débiteur", () => {
+  it("laisse les zones 1 à 6 VIERGES sans débiteur : c'est la fiche d'exemple", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    expect(text).not.toContain("Refuge du Col");
+  });
+
+  it("imprime le titulaire, son adresse et son pays", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    expect(text).toContain("Refuge du Col SARL");
+    expect(text).toContain("12 rue des Alpages");
+    expect(text).toContain("Val d'Isere");
+  });
+
+  it("recolle le complément d'adresse plutôt que de le perdre", async () => {
+    // « Bâtiment B » perdu, le courrier de la banque n'arrive pas — et le
+    // formulaire n'a qu'UNE ligne d'adresse.
+    const text = drawnText(
+      await renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, addressLine2: "Batiment B" }),
+    );
+    expect(text).toContain("12 rue des Alpages, Batiment B");
+  });
+
+  it("remplit les trois zones facultatives qui nous appartiennent", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    expect(text).toContain("C-9P2X4B");
+    expect(text).toContain("CT-42");
+    expect(text).toContain("Fourniture de cafe");
+  });
+
+  it("garde la mention EXEMPLE même avec un débiteur", async () => {
+    // 🔴 Aucune RUM n'est frappée : une signature apposée sur cet aperçu
+    // créerait un mandat sans référence, inutilisable, mais que le client
+    // croirait avoir donné.
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    expect(text).toContain("EXEMPLE");
+  });
+
+  /**
+   * 🔴 Régression : `comb` remplissait case par case et ignorait SILENCIEUSEMENT
+   * tout caractère au-delà de la dernière. Le peigne de l'IBAN compte 27 cases ;
+   * un IBAN maltais en fait 31. Il sortait amputé sur le papier signé pendant
+   * que la base en gardait la forme entière (fix 2026-09-12).
+   */
+  it("REFUSE un IBAN plus long que le peigne, au lieu de le tronquer", async () => {
+    const tooLong = "MT84MALT011000012345MTLCAST001S";
+    expect(tooLong.length).toBeGreaterThan(27);
+
+    await expect(
+      renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, iban: tooLong }),
+    ).rejects.toThrow(/27/u);
+  });
+
+  it("accepte un IBAN plus court que le peigne", async () => {
+    // La Norvège en a 15 : le peigne garde ses cases vides à droite, ce qui est
+    // le rendu normal d'un formulaire à cases.
+    const text = drawnText(
+      await renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, iban: "NO9386011117947" }),
+    );
+    expect(text).toContain("Refuge du Col SARL");
+  });
+
+  it("REFUSE un BIC plus long que ses 11 cases", async () => {
+    await expect(
+      renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, bic: "CEPAFRPP751XXXX" }),
+    ).rejects.toThrow(/11/u);
   });
 });

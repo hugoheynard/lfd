@@ -3,6 +3,8 @@ import { Buffer } from "node:buffer";
 import PDFDocument from "pdfkit";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
+import type { DebtorSnapshot } from "../debtor-snapshot.js";
+import { MandateFieldTooLongError } from "../errors/accounting-errors.js";
 
 /**
  * **La fiche de mandat SEPA, préremplie de NOTRE côté** — l'exemplaire vierge
@@ -33,17 +35,25 @@ import type { CreditorSnapshot } from "../creditor-snapshot.js";
  * circuler chez chaque client. Ce fichier ne lit donc jamais
  * `creditor.creditorIban`, et un test le tient.
  *
- * ## Les zones 14 à 20 sont absentes, et c'est un choix
+ * ## Les zones 14 à 20 sont DESSINÉES, et trois d'entre elles se remplissent
+ *
+ * ⚠️ Ce paragraphe affirmait le contraire — « les zones 14 à 20 sont absentes,
+ * et c'est un choix » — jusqu'au 2026-09-12, pendant que `contractZones` les
+ * dessinait juste en dessous. Deux justifications opposées dans le même
+ * fichier : celle-ci décrivait une intention abandonnée, et elle aurait fait
+ * « restaurer » des zones déjà là.
  *
  * La norme les range sous « informations relatives au contrat entre le créancier
- * et le débiteur — fournies seulement à titre indicatif » : code identifiant du
- * débiteur, tiers débiteur, tiers créancier, numéro de contrat. Aucune ne
- * conditionne la validité du mandat, et nous n'encaissons ni pour un tiers ni
- * via un tiers. Les imprimer vides ferait une page de zones que personne ne
- * remplit — et une zone vide sur un formulaire se lit comme un oubli.
+ * et le débiteur — fournies seulement à titre indicatif ». Aucune ne conditionne
+ * la validité du mandat. Elles se répartissent en trois camps :
  *
- * À rouvrir le jour où nous prélèverions pour le compte d'un tiers : c'est la
- * zone 17 qui deviendrait obligatoire.
+ * - **14, 19, 20** — le code que le débiteur veut voir revenir sur son relevé,
+ *   le numéro et la description du contrat. Ce sont les nôtres à proposer, et
+ *   ils se saisissent sur la fiche du client ;
+ * - **15, 16** — le tiers débiteur. C'est au signataire de les remplir s'il
+ *   paie pour quelqu'un d'autre ; nous ne pouvons pas le deviner ;
+ * - **17, 18** — le tiers créancier. Vides parce que nous n'encaissons pour
+ *   personne. À rouvrir le jour où ce serait le cas : la 17 devient obligatoire.
  *
  * ## La mention « EXEMPLE », et pourquoi elle est dans le dessin
  *
@@ -195,8 +205,31 @@ function leader(doc: Doc, x1: number, y: number, x2: number): void {
  *
  * `groups` décrit le découpage (`[4, 4, 4, 3]`) ; `filled` pose éventuellement
  * une valeur, un caractère par case.
+ *
+ * 🔴 **Il REFUSE ce qui déborde, depuis le 2026-09-12.** Il remplissait case par
+ * case et ignorait tout caractère au-delà de la dernière : aucune erreur, aucun
+ * débordement visible. Un IBAN de 31 caractères — Malte en a 31, la France 27 —
+ * sortait donc amputé sur le papier que le client signe, pendant que la base en
+ * gardait la forme entière. L'écart ne se serait vu qu'en contestation.
+ *
+ * Le refus vaut pour TOUS les peignes, pas seulement l'IBAN : la RUM, le BIC, le
+ * code postal. C'est la même erreur, et elle devient inexprimable partout d'un
+ * coup plutôt que gardée à chaque appel — où il aurait suffi d'en oublier un.
+ *
+ * @throws {MandateFieldTooLongError} la valeur dépasse le nombre de cases.
  */
-function comb(doc: Doc, x: number, y: number, groups: readonly number[], filled = ""): number {
+function comb(
+  doc: Doc,
+  x: number,
+  y: number,
+  groups: readonly number[],
+  filled = "",
+  field = "Cette valeur",
+): number {
+  const capacity = groups.reduce((total, size) => total + size, 0);
+  if (filled.length > capacity) {
+    throw new MandateFieldTooLongError(field, filled.length, capacity);
+  }
   const cell = 4.1 * MM;
   const gap = 1.6 * MM;
   const height = 4.3 * MM;
@@ -400,30 +433,42 @@ function authorization(doc: Doc, top: number, creditorName: string): number {
 }
 
 /** Les zones 1 à 6 : tout ce que le débiteur remplit lui-même. */
-function debtorZones(doc: Doc, top: number): number {
+function debtorZones(doc: Doc, top: number, debtor: DebtorSnapshot | null): number {
   let y = top + 3 * MM;
+  // `null` laisse les six zones vierges : c'est la fiche que le client remplit
+  // à la main. Un `??` par champ plutôt qu'une seconde fonction — le dessin est
+  // le MÊME, seuls les remplissages changent, et deux dessins jumeaux
+  // divergeraient au premier ajustement de mise en page.
+  const at = (value: string): string => (debtor === null ? "" : value);
 
   label(doc, "Votre Nom", y);
-  dottedRow(doc, y, "Nom / Prénoms du débiteur", 1);
+  dottedRow(doc, y, "Nom / Prénoms du débiteur", 1, at(debtor?.holder ?? ""));
   y += ROW;
 
   label(doc, "Votre adresse", y);
-  dottedRow(doc, y, "Numéro et nom de la rue", 2);
+  dottedRow(doc, y, "Numéro et nom de la rue", 2, at(addressLineOf(debtor)));
   y += ROW;
 
   star(doc, FIELD_X - 4 * MM, y);
-  comb(doc, FIELD_X, y + 0.4 * MM, [5]);
+  comb(doc, FIELD_X, y + 0.4 * MM, [5], at(debtor?.postalCode ?? ""), "Le code postal");
   caption(doc, "Code Postal", FIELD_X, y + 5.2 * MM);
-  dottedRow(doc, y, "Ville", 3, "", CITY_X, FIELD_RIGHT);
+  dottedRow(doc, y, "Ville", 3, at(debtor?.city ?? ""), CITY_X, FIELD_RIGHT);
   star(doc, CITY_STAR_X, y);
   y += ROW;
 
-  dottedRow(doc, y, "Pays", 4);
+  dottedRow(doc, y, "Pays", 4, at(debtor?.countryCode ?? ""));
   y += ROW;
 
   label(doc, "Les coordonnées\nde votre compte", y);
   star(doc, FIELD_X - 4 * MM, y);
-  comb(doc, FIELD_X, y + 0.4 * MM, [4, 4, 4, 4, 4, 4, 3]);
+  comb(
+    doc,
+    FIELD_X,
+    y + 0.4 * MM,
+    [4, 4, 4, 4, 4, 4, 3],
+    at(debtor?.iban ?? ""),
+    "L'IBAN de ce compte",
+  );
   caption(
     doc,
     "Numéro d'identification international du compte bancaire - IBAN (International Bank Account Number)",
@@ -434,7 +479,7 @@ function debtorZones(doc: Doc, top: number): number {
   y += ROW;
 
   star(doc, FIELD_X - 4 * MM, y);
-  comb(doc, FIELD_X, y + 0.4 * MM, [11]);
+  comb(doc, FIELD_X, y + 0.4 * MM, [11], at(debtor?.bic ?? ""), "Le BIC de cette banque");
   caption(
     doc,
     "Code international d'identification de votre banque - BIC (Bank Identifier Code)",
@@ -443,6 +488,23 @@ function debtorZones(doc: Doc, top: number): number {
   );
   zone(doc, 6, y);
   return y + ROW;
+}
+
+/**
+ * L'adresse du débiteur sur UNE ligne — le formulaire n'en a qu'une.
+ *
+ * Le complément est recollé derrière plutôt qu'abandonné : « Bâtiment B » perdu,
+ * le courrier de la banque n'arrive pas. La ligne est pointillée et non
+ * découpée en cases, donc un dépassement ne tronque rien — il déborde
+ * visiblement, ce qui se corrige en regardant la prévisualisation.
+ */
+function addressLineOf(debtor: DebtorSnapshot | null): string {
+  if (debtor === null) {
+    return "";
+  }
+  return debtor.addressLine2 === ""
+    ? debtor.addressLine1
+    : `${debtor.addressLine1}, ${debtor.addressLine2}`;
 }
 
 /**
@@ -523,14 +585,19 @@ function signatureZones(doc: Doc, top: number): number {
 }
 
 /**
- * Les zones 14 à 20 — indicatives, et laissées vides.
+ * Les zones 14 à 20 — indicatives, et remplies pour trois d'entre elles.
  *
- * La norme les range sous « fournies seulement à titre indicatif » : aucune ne
- * conditionne la validité du mandat. Elles sont **dessinées** parce que le
- * formulaire les porte et qu'une fiche amputée ne se reconnaît plus ; elles
- * restent vides parce que nous n'encaissons ni pour un tiers ni via un tiers.
+ * Dessinées parce que le formulaire les porte et qu'une fiche amputée ne se
+ * reconnaît plus. Les zones du **tiers** (15 à 18) restent vides : les deux
+ * premières sont au signataire, les deux autres ne nous concernent pas tant que
+ * nous n'encaissons pour personne.
  */
-function contractZones(doc: Doc, top: number, creditorName: string): number {
+function contractZones(
+  doc: Doc,
+  top: number,
+  creditorName: string,
+  debtor: DebtorSnapshot | null,
+): number {
   put(doc, CONTRACT_HEADING, BOX_LEFT + 2 * MM, top + 1.5 * MM, { size: 7.6, font: BOLD });
   let y = top + 6 * MM;
 
@@ -540,7 +607,7 @@ function contractZones(doc: Doc, top: number, creditorName: string): number {
     y,
     "Indiquer ici tout code que vous souhaitez voir restitué par votre banque",
     14,
-    "",
+    debtor?.debtorReference ?? "",
     FIELD_X,
     FIELD_RIGHT,
     false,
@@ -589,10 +656,28 @@ function contractZones(doc: Doc, top: number, creditorName: string): number {
   y += ROW;
 
   label(doc, "Contrat concerné", y, 9);
-  dottedRow(doc, y, "Numéro d'identification du contrat", 19, "", FIELD_X, FIELD_RIGHT, false);
+  dottedRow(
+    doc,
+    y,
+    "Numéro d'identification du contrat",
+    19,
+    debtor?.contractNumber ?? "",
+    FIELD_X,
+    FIELD_RIGHT,
+    false,
+  );
   y += ROW;
 
-  dottedRow(doc, y, "Description du contrat", 20, "", FIELD_X, FIELD_RIGHT, false);
+  dottedRow(
+    doc,
+    y,
+    "Description du contrat",
+    20,
+    debtor?.contractDescription ?? "",
+    FIELD_X,
+    FIELD_RIGHT,
+    false,
+  );
   const bottom = y + ROW;
   line(doc, BOX_LEFT, bottom, BOX_RIGHT, RULE);
   return bottom;
@@ -657,15 +742,20 @@ function splitAddress(lines: readonly string[]): {
   };
 }
 
-function draw(doc: Doc, creditor: CreditorSnapshot, logo: Buffer | null): void {
+function draw(
+  doc: Doc,
+  creditor: CreditorSnapshot,
+  logo: Buffer | null,
+  debtor: DebtorSnapshot | null,
+): void {
   watermark(doc);
   const top = title(doc);
   let y = header(doc, top, logo);
   y = authorization(doc, y, creditorNameOn(creditor));
-  y = debtorZones(doc, y);
+  y = debtorZones(doc, y, debtor);
   y = creditorZones(doc, y, creditor);
   y = signatureZones(doc, y);
-  y = contractZones(doc, y, creditorNameOn(creditor));
+  y = contractZones(doc, y, creditorNameOn(creditor), debtor);
   y = footer(doc, y, creditor);
 
   // Le cadre général en dernier : dessiné avant, les remplissages de cases le
@@ -693,6 +783,7 @@ function draw(doc: Doc, creditor: CreditorSnapshot, logo: Buffer | null): void {
 export async function renderSepaMandatePdf(
   creditor: CreditorSnapshot,
   logo: Buffer | null,
+  debtor: DebtorSnapshot | null = null,
 ): Promise<Buffer> {
   const doc = new PDFDocument({
     size: "A4",
@@ -716,7 +807,7 @@ export async function renderSepaMandatePdf(
       resolve();
     });
   });
-  draw(doc, creditor, logo);
+  draw(doc, creditor, logo, debtor);
   doc.end();
   await done;
   return Buffer.concat(chunks);

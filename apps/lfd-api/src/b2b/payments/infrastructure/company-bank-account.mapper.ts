@@ -19,6 +19,9 @@ export interface CompanyBankAccountColumns {
   readonly ibanSealed: string;
   readonly ibanLast4: string;
   readonly bic: string;
+  readonly debtorReference: string;
+  readonly contractNumber: string;
+  readonly contractDescription: string;
 }
 
 /**
@@ -49,6 +52,11 @@ export function toColumns(
     ibanSealed: cipher.seal(snapshot.iban),
     ibanLast4: snapshot.iban.slice(-LAST4_LENGTH),
     bic: snapshot.bic,
+    // Les zones facultatives du mandat ne sont PAS scellées : elles ne
+    // désignent aucun compte, et l'écran les relit telles quelles.
+    debtorReference: snapshot.debtorReference,
+    contractNumber: snapshot.contractNumber,
+    contractDescription: snapshot.contractDescription,
   };
 }
 
@@ -70,5 +78,8 @@ export function toDomain(row: CompanyBankAccountRow, cipher: FieldCipher): Compa
     countryCode: row.countryCode,
     iban: cipher.open(row.ibanSealed),
     bic: row.bic,
+    debtorReference: row.debtorReference,
+    contractNumber: row.contractNumber,
+    contractDescription: row.contractDescription,
   });
 }

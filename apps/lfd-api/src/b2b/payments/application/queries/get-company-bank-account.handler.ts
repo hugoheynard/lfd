@@ -28,6 +28,7 @@ export class GetCompanyBankAccountHandler implements IQueryHandler<
     }
 
     const { holder, address, bic } = found.account;
+    const options = found.options;
     return {
       holder,
       addressLine1: address.line1,
@@ -37,6 +38,9 @@ export class GetCompanyBankAccountHandler implements IQueryHandler<
       countryCode: address.countryCode,
       bic: bic.value,
       last4: found.account.last4(),
+      debtorReference: options.debtorReference,
+      contractNumber: options.contractNumber,
+      contractDescription: options.contractDescription,
     };
   }
 }

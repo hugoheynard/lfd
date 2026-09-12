@@ -14,6 +14,8 @@
  * Une seule frontière doublée : le verifier staff. Le chiffrement est le VRAI —
  * la clé de repli hors production est une vraie clé AES-256.
  */
+import { Buffer } from "node:buffer";
+
 import type { CompanyBankAccountSectionView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -185,5 +187,159 @@ describe("GET /admin/companies/:id/bank-account", () => {
 
   it("refuse un appel sans jeton", async () => {
     await ctx.http().get(`/admin/companies/${companyId}/bank-account`).expect(401);
+  });
+});
+
+describe("GET /admin/companies/:id/mandate/preview.pdf", () => {
+  /** Une entité émettrice complète : identité, ICS, compte créancier. */
+  async function declareIssuer(): Promise<void> {
+    const response = await staff()
+      .post("/admin/accounting/legal-entities")
+      .send({
+        name: "Crazeativity",
+        legalForm: "SAS",
+        siren: "900000001",
+        rcs: "Chambéry",
+        shareCapitalCents: 1_000_000,
+        vatNumber: "",
+        address: {
+          line1: "Route de la Balme",
+          line2: "",
+          postalCode: "73150",
+          city: "Val d'Isère",
+          countryCode: "FR",
+        },
+      })
+      .expect(201);
+    const id = jsonBody<{ id: string }>(response).id;
+
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-identifier`)
+      .send({ ics: "FR00ZZZ900001" })
+      .expect(204);
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+      .send({
+        iban: "FR7630006000011234567890189",
+        bic: "CEPAFRPP751",
+        holder: "Crazeativity",
+        line1: "Route de la Balme",
+        line2: "",
+        postalCode: "73150",
+        city: "Val d'Isère",
+        countryCode: "FR",
+      })
+      .expect(204);
+  }
+
+  it("rend un PDF quand le client a un RIB et qu'une entité émet", async () => {
+    await declareIssuer();
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+
+    const response = await staff()
+      .get(`/admin/companies/${companyId}/mandate/preview.pdf`)
+      .expect(200)
+      .expect("Content-Type", /application\/pdf/u);
+
+    expect(
+      Buffer.from(response.body as Buffer)
+        .subarray(0, 5)
+        .toString("latin1"),
+    ).toBe("%PDF-");
+  });
+
+  it("nomme le fichier « apercu » — une liste de fichiers ne montre pas le filigrane", async () => {
+    await declareIssuer();
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+
+    const response = await staff()
+      .get(`/admin/companies/${companyId}/mandate/preview.pdf`)
+      .expect(200);
+
+    expect(response.headers["content-disposition"]).toContain("apercu-mandat-sepa");
+  });
+
+  it("s'affiche dans l'onglet avec ?inline=1, se télécharge sans", async () => {
+    await declareIssuer();
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+
+    const inline = await staff()
+      .get(`/admin/companies/${companyId}/mandate/preview.pdf?inline=1`)
+      .expect(200);
+    expect(inline.headers["content-disposition"]).toContain("inline");
+
+    const attached = await staff()
+      .get(`/admin/companies/${companyId}/mandate/preview.pdf?inline=0`)
+      .expect(200);
+    expect(attached.headers["content-disposition"]).toContain("attachment");
+  });
+
+  /**
+   * Refuser plutôt que rendre un formulaire aux zones 5 et 6 vides : ce
+   * document existe déjà, c'est le mandat d'EXEMPLE. En rendre un second, nommé
+   * d'après un client, ferait croire qu'il lui est propre.
+   */
+  it("refuse quand le client n'a pas de RIB", async () => {
+    await declareIssuer();
+    await staff().get(`/admin/companies/${companyId}/mandate/preview.pdf`).expect(404);
+  });
+
+  it("refuse quand aucune entité n'émet", async () => {
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await staff().get(`/admin/companies/${companyId}/mandate/preview.pdf`).expect(409);
+  });
+
+  it("refuse un appel sans jeton", async () => {
+    await ctx.http().get(`/admin/companies/${companyId}/mandate/preview.pdf`).expect(401);
+  });
+});
+
+describe("PUT /admin/companies/:id/mandate-options", () => {
+  const OPTIONS = {
+    debtorReference: "C-9P2X4B",
+    contractNumber: "CT-42",
+    contractDescription: "Fourniture de café",
+  };
+
+  it("pose les zones facultatives et les rend à la relecture", async () => {
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await staff().put(`/admin/companies/${companyId}/mandate-options`).send(OPTIONS).expect(204);
+
+    const response = await staff().get(`/admin/companies/${companyId}/bank-account`).expect(200);
+    expect(jsonBody<CompanyBankAccountSectionView>(response).account).toMatchObject(OPTIONS);
+  });
+
+  it("les accepte toutes vides — la norme les dit indicatives", async () => {
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate-options`)
+      .send({ debtorReference: "", contractNumber: "", contractDescription: "" })
+      .expect(204);
+  });
+
+  /**
+   * 🔴 Changer de banque ne change ni le contrat ni sa description. Les remettre
+   * à zéro ferait perdre une saisie que personne n'a demandé à effacer.
+   */
+  it("survit au remplacement du RIB", async () => {
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await staff().put(`/admin/companies/${companyId}/mandate-options`).send(OPTIONS).expect(204);
+    await staff()
+      .put(`/admin/companies/${companyId}/bank-account`)
+      .send({ ...RIB, iban: OTHER_IBAN })
+      .expect(204);
+
+    const response = await staff().get(`/admin/companies/${companyId}/bank-account`).expect(200);
+    const account = jsonBody<CompanyBankAccountSectionView>(response).account;
+    expect(account?.contractNumber).toBe("CT-42");
+    expect(account?.last4).toBe("3000");
+  });
+
+  it("refuse tant que le client n'a pas de RIB — ces zones vivent sur sa ligne", async () => {
+    await staff().put(`/admin/companies/${companyId}/mandate-options`).send(OPTIONS).expect(404);
+  });
+
+  it("refuse un appel sans jeton", async () => {
+    await ctx.http().put(`/admin/companies/${companyId}/mandate-options`).send(OPTIONS).expect(401);
   });
 });

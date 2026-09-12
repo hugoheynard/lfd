@@ -1,11 +1,15 @@
 import { Module } from "@nestjs/common";
 
+import { AccountingModule } from "../accounting/accounting.module.js";
+
 import { MandateGateway } from "./domain/mandate-gateway.js";
 import { PaymentGateway } from "./domain/payment-gateway.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
 import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
 import { SetCompanyBankAccountHandler } from "./application/commands/set-company-bank-account.handler.js";
+import { SetMandateOptionsHandler } from "./application/commands/set-mandate-options.handler.js";
 import { GetCompanyBankAccountHandler } from "./application/queries/get-company-bank-account.handler.js";
+import { PreviewCustomerMandateHandler } from "./application/queries/preview-customer-mandate.handler.js";
 import {
   AttachMandateProofHandler,
   GetCompanyMandateHandler,
@@ -32,6 +36,10 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
  * par un import.
  */
 @Module({
+  // 🔴 `payments` importe `accounting`, et jamais l'inverse. Le mandat est le
+  // document de l'émetteur ; ce contexte-ci y ajoute le côté client. Le sens de
+  // la flèche est ce qui empêche les deux de se tenir l'un l'autre.
+  imports: [AccountingModule],
   controllers: [
     PaymentsWebhookController,
     AdminMandatesController,
@@ -49,7 +57,9 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     AttachMandateProofHandler,
     GetCompanyMandateHandler,
     SetCompanyBankAccountHandler,
+    SetMandateOptionsHandler,
     GetCompanyBankAccountHandler,
+    PreviewCustomerMandateHandler,
   ],
   exports: [PaymentGateway],
 })

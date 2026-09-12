@@ -86,11 +86,15 @@ export type {
   StaffRoleView,
   UpdateStaffRolePayload,
 } from "./staff-role.js";
-export { setCompanyBankAccountPayloadSchema } from "./company-bank-account.js";
+export {
+  setCompanyBankAccountPayloadSchema,
+  setMandateOptionsPayloadSchema,
+} from "./company-bank-account.js";
 export type {
   SetCompanyBankAccountPayload,
   CompanyBankAccountView,
   CompanyBankAccountSectionView,
+  SetMandateOptionsPayload,
 } from "./company-bank-account.js";
 export { mandateStatusSchema, MANDATE_STATUS_LABELS } from "./payment-mandate.js";
 export type { MandateStatus, PaymentMandateView, MandateSectionView } from "./payment-mandate.js";

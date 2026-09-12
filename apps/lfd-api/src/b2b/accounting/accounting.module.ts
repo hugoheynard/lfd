@@ -80,6 +80,10 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     ExportCycleAuditHandler,
     GetLegalEntityLogoHandler,
   ],
-  exports: [CreditorReader],
+  // `LegalEntityLogoReader` sort avec `CreditorReader`, et pas seul : le seul
+  // consommateur extérieur est l'aperçu de mandat d'un client (`payments`), qui
+  // a besoin des deux pour dessiner le MÊME document que la fiche d'exemple.
+  // Exporter le lecteur de logo sans l'émetteur n'aurait aucun usage.
+  exports: [CreditorReader, LegalEntityLogoReader],
 })
 export class AccountingModule {}

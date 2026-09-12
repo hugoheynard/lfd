@@ -2,6 +2,7 @@ import { Bic } from "../../../accounting/domain/value-objects/bic.js";
 import { Iban } from "../../../accounting/domain/value-objects/iban.js";
 import { LegalAddress } from "../../../accounting/domain/value-objects/legal-address.js";
 import { DebtorAccount } from "../value-objects/debtor-account.js";
+import { MandateOptions } from "../value-objects/mandate-options.js";
 
 /**
  * L'état complet du compte, **IBAN en clair**.
@@ -24,6 +25,10 @@ export interface CompanyBankAccountSnapshot {
   readonly countryCode: string;
   readonly iban: string;
   readonly bic: string;
+  /** Zones 14, 19 et 20 du mandat — facultatives, `""` quand non renseignées. */
+  readonly debtorReference: string;
+  readonly contractNumber: string;
+  readonly contractDescription: string;
 }
 
 /** Ce qu'il faut pour déclarer le RIB d'un client. */
@@ -31,6 +36,7 @@ export interface CompanyBankAccountDeclaration {
   readonly id: string;
   readonly companyId: string;
   readonly account: DebtorAccount;
+  readonly options: MandateOptions;
 }
 
 /**
@@ -57,11 +63,17 @@ export class CompanyBankAccount {
     readonly id: string,
     readonly companyId: string,
     private accountValue: DebtorAccount,
+    private optionsValue: MandateOptions,
   ) {}
 
   /** Le premier RIB d'un client. */
-  static declare({ id, companyId, account }: CompanyBankAccountDeclaration): CompanyBankAccount {
-    return new CompanyBankAccount(id, companyId, account);
+  static declare({
+    id,
+    companyId,
+    account,
+    options,
+  }: CompanyBankAccountDeclaration): CompanyBankAccount {
+    return new CompanyBankAccount(id, companyId, account, options);
   }
 
   /**
@@ -85,11 +97,32 @@ export class CompanyBankAccount {
         iban: Iban.create(snapshot.iban),
         bic: Bic.create(snapshot.bic),
       }),
+      MandateOptions.create({
+        debtorReference: snapshot.debtorReference,
+        contractNumber: snapshot.contractNumber,
+        contractDescription: snapshot.contractDescription,
+      }),
     );
   }
 
   get account(): DebtorAccount {
     return this.accountValue;
+  }
+
+  get options(): MandateOptions {
+    return this.optionsValue;
+  }
+
+  /**
+   * Réécrit les zones facultatives du mandat.
+   *
+   * Geste séparé de {@link replaceWith}, et ce n'est pas de la symétrie : rien
+   * ici ne touche à ce que le débiteur a autorisé. Corriger la description d'un
+   * contrat ne remet pas un mandat en cause, alors que changer d'IBAN, si — les
+   * confondre ferait refaire signer pour une ligne de texte.
+   */
+  setOptions(options: MandateOptions): void {
+    this.optionsValue = options;
   }
 
   /**
@@ -126,6 +159,9 @@ export class CompanyBankAccount {
       countryCode: address.countryCode,
       iban: iban.value,
       bic: bic.value,
+      debtorReference: this.optionsValue.debtorReference,
+      contractNumber: this.optionsValue.contractNumber,
+      contractDescription: this.optionsValue.contractDescription,
     };
   }
 }

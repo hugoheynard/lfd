@@ -125,3 +125,21 @@ export class CompanyNotFoundForBankAccountError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * Ce client n'a pas de RIB, et le document demandé en exige un.
+ *
+ * ⚠️ Refuser plutôt que rendre un formulaire aux zones 5 et 6 vides : ce
+ * document-là existe déjà, c'est le mandat d'EXEMPLE d'une entité émettrice. En
+ * rendre un second, identique mais nommé d'après un client, ferait croire qu'il
+ * lui est propre — et le premier client à le signer donnerait une autorisation
+ * sur un compte que personne n'a écrit.
+ */
+export class CompanyBankAccountNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.bank_account.missing",
+      "Ce client n'a pas de RIB enregistré : renseignez-le avant de prévisualiser son mandat.",
+    );
+  }
+}

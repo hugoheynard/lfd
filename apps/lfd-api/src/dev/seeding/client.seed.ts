@@ -11,6 +11,7 @@ import { AddCompanyContactCommand } from "../../b2b/account/application/commands
 import { CreateCompanyCommand } from "../../b2b/account/application/commands/create-company.command.js";
 import { UpdateMyProfileCommand } from "../../b2b/account/application/commands/update-my-profile.command.js";
 import { SetCompanyBankAccountCommand } from "../../b2b/payments/application/commands/set-company-bank-account.command.js";
+import { SetMandateOptionsCommand } from "../../b2b/payments/application/commands/set-mandate-options.command.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import {
@@ -151,7 +152,7 @@ export async function seedClient(
     // comptable : un poste qui porte déjà la société mais pas son RIB le
     // reçoit. Passer son tour sur la seule existence de la société laisserait
     // les postes semés avant cette version définitivement incomplets.
-    await seedBankAccount(context, existing.id);
+    await seedBankAccount(context, existing.id, existing.reference);
     return { userId: owner, companyId: existing.id, reference: existing.reference };
   }
 
@@ -175,13 +176,17 @@ export async function seedClient(
   await seedContact(context, userId, companyId);
   await seedTerms(context, companyId);
   await seedHabit(context, userId, companyId);
-  await seedBankAccount(context, companyId);
-  await activate(context, companyId);
 
+  // La référence est relue AVANT le RIB : la zone 14 du mandat la porte, et
+  // elle est frappée par le domaine à la création — donc inconnue d'ici.
   const company = await context.prisma.company.findUniqueOrThrow({
     where: { id: companyId },
     select: { reference: true },
   });
+
+  await seedBankAccount(context, companyId, company.reference);
+  await activate(context, companyId);
+
   return { userId, companyId, reference: company.reference };
 }
 
@@ -465,6 +470,7 @@ const SEEDED_DEBTOR_BIC = "BANQFRPPXXX";
 async function seedBankAccount(
   { prisma, commands }: ClientContext,
   companyId: string,
+  reference: string,
 ): Promise<void> {
   const existing = await prisma.companyBankAccount.findUnique({
     where: { companyId },
@@ -489,4 +495,20 @@ async function seedBankAccount(
     }),
   );
   console.log("✓ RIB client posé — scellé en base, factice, jamais un vrai compte.");
+
+  // Les zones FACULTATIVES du mandat, par leur propre commande. Semées remplies
+  // à dessein : ce sont les seules du document dont on ne voit qu'à l'impression
+  // si elles tiennent sur leur ligne pointillée, et un poste où elles seraient
+  // vides ne montrerait jamais le cas qui déborde.
+  //
+  // La référence société en zone 14, parce que c'est exactement ce qu'elle sert
+  // à faire : rapprocher une ligne de relevé bancaire d'un dossier chez nous.
+  await commands.execute(
+    new SetMandateOptionsCommand(companyId, {
+      debtorReference: reference,
+      contractNumber: "",
+      contractDescription: "Fourniture de café et de viennoiseries",
+    }),
+  );
+  console.log("✓ Zones facultatives du mandat posées.");
 }

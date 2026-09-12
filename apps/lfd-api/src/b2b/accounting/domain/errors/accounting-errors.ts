@@ -235,3 +235,65 @@ export class BillingCycleBoundaryError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Une valeur ne tient pas dans le peigne de cases que le formulaire EPC lui
+ * réserve.
+ *
+ * 🔴 **Elle existe parce que le dessin tronquait en SILENCE.** `comb` remplit
+ * case par case et ignore tout caractère au-delà de la dernière : un IBAN de 31
+ * caractères — la Norvège en a 15, Malte 31 — sortait amputé sur le papier
+ * signé pendant que la base en gardait la forme entière. L'écart ne se serait
+ * vu qu'en contestation, c'est-à-dire au pire moment.
+ *
+ * `BusinessError` et non `TechnicalError` : ce n'est pas une panne, c'est un
+ * fait opposable — **ce client ne peut pas être mandaté sur ce formulaire**. Le
+ * message le dit en toutes lettres, parce qu'il est lu par quelqu'un qui n'a
+ * pas le code sous les yeux et qui doit décider quoi faire du dossier.
+ */
+export class MandateFieldTooLongError extends BusinessError {
+  constructor(
+    readonly field: string,
+    readonly length: number,
+    readonly capacity: number,
+  ) {
+    super(
+      "accounting.mandate.field_too_long",
+      `${field} fait ${String(length)} caractères, et le formulaire SEPA n'en imprime que ` +
+        `${String(capacity)}. Le mandat ne peut pas être édité tel quel pour ce compte.`,
+    );
+  }
+}
+
+/**
+ * Plusieurs entités émettrices actives, et rien pour choisir.
+ *
+ * Levée seulement là où un document doit nommer UN créancier sans qu'on lui ait
+ * dit lequel. Refuser est la seule issue honnête : un mandat émis au nom de la
+ * mauvaise entité est un papier signé pour quelqu'un d'autre, et l'erreur ne se
+ * verrait qu'en contestation.
+ */
+export class SeveralIssuersError extends BusinessError {
+  constructor(readonly count: number) {
+    super(
+      "accounting.issuer.ambiguous",
+      `${String(count)} entités émettrices sont actives : impossible de savoir laquelle doit ` +
+        `figurer sur ce mandat. Archivez celles qui n'émettent plus.`,
+    );
+  }
+}
+
+/**
+ * Aucune entité émettrice active, alors qu'un document doit en nommer une.
+ *
+ * Distinct de {@link SeveralIssuersError} : l'un se répare en archivant, l'autre
+ * en déclarant. Les confondre enverrait chercher le mauvais geste.
+ */
+export class NoIssuerError extends BusinessError {
+  constructor() {
+    super(
+      "accounting.issuer.missing",
+      "Aucune entité émettrice active : déclarez-en une avant d'éditer un mandat.",
+    );
+  }
+}
