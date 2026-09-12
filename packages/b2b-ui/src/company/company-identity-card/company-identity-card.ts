@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
   FoldBadgeComponent,
@@ -9,9 +17,11 @@ import {
   FoldFieldListComponent,
   FoldIconComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import type { CompanyIdentityView } from '../company-identity.view-model';
+import { KbisCapturePanel } from '../kbis-capture-panel/kbis-capture-panel';
 
 /**
  * Carte **Identité légale** d'une société — présentation pure.
@@ -93,6 +103,8 @@ export class CompanyIdentityCard {
    */
   protected readonly handheld = isHandheld();
 
+  private readonly panels = inject(FoldPanelHostService);
+
   /** Ce qui manque à l'identité légale, en une phrase lisible. */
   protected readonly missingLegalLabel = computed(() => this.identity().missingLegal.join(', '));
 
@@ -114,6 +126,25 @@ export class CompanyIdentityCard {
   protected confirmReplace(input: HTMLInputElement): void {
     this.replacing.set(false);
     input.click();
+  }
+
+  /**
+   * Ouvre la prise de vue, et dépose ce qu'elle rend.
+   *
+   * Le panneau ne téléverse PAS : il rend un `File`, qui repart par le même
+   * `kbisSelected` que le sélecteur de fichiers. Deux téléversements pour une
+   * même pièce donneraient deux endroits où traiter l'échec, et un seul serait
+   * corrigé.
+   *
+   * Fermé sans photo, il rend `undefined` : on ne dépose rien, et on ne dit
+   * rien non plus — renoncer n'est pas une erreur.
+   */
+  protected async capture(): Promise<void> {
+    this.replacing.set(false);
+    const file = await this.panels.open<File>(KbisCapturePanel).closed;
+    if (file !== undefined) {
+      this.kbisSelected.emit(file);
+    }
   }
 
   protected onKbisSelected(event: Event): void {

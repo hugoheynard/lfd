@@ -1,0 +1,27 @@
+.kc-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  align-items: center;
+}
+
+/* Le flux et la photo partagent la même boîte : passer du cadrage à la
+   relecture ne doit pas faire sauter le pied de page sous le doigt. */
+.kc-preview,
+.kc-shot {
+  inline-size: 100%;
+  /* Un document est plus haut que large : on lui laisse la hauteur d'un
+     portrait plutôt que la boîte 16/9 d'une caméra, sinon on cadre en
+     devinant. */
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-bg-page);
+}
+
+.kc-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  text-align: center;
+}

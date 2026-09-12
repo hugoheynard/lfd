@@ -78,18 +78,6 @@
       (change)="onKbisSelected($event)"
     />
 
-    <!-- `capture` ouvre l'appareil photo au lieu du sélecteur : une entrée à
-         part, sinon on retirerait le choix du fichier à ceux qui ont le PDF. -->
-    <input
-      #kbisCamera
-      type="file"
-      accept="image/*"
-      capture="environment"
-      hidden
-      [disabled]="busy()"
-      (change)="onKbisSelected($event)"
-    />
-
     <div class="kbis-head">
       <div class="kbis-title">
         <fold-icon name="contracts" [size]="18" />
@@ -122,6 +110,14 @@
           <button foldButton size="sm" (click)="confirmReplace(kbisInput)">
             Choisir le nouvel extrait
           </button>
+          <!-- 🔴 La photo manquait ICI, et c'est le cas où elle sert le plus :
+               un extrait périmé se remplace chez le client, l'extrait neuf sur
+               le comptoir. Sans elle, il fallait repartir et revenir. -->
+          @if (handheld) {
+            <button foldButton emphasis="outline" size="sm" (click)="capture()">
+              Photographier
+            </button>
+          }
           <button foldButton emphasis="outline" size="sm" (click)="replacing.set(false)">
             Annuler
           </button>
@@ -217,9 +213,11 @@
               {{ busy() ? 'Dépôt…' : 'Déposer le KBIS' }}
             </button>
             <!-- Secours : l'extrait est sur le comptoir et le scanner au bureau.
-                 Sur un poste fixe le bouton n'apparaît pas — il y ouvrirait le
-                 même sélecteur de fichiers, et ce serait deux façons de faire
-                 un seul geste. -->
+                 Sur un poste fixe le bouton n'apparaît pas — une webcam de
+                 portable qui photographie un document posé à plat rend une
+                 pièce qu'on ne peut pas certifier, et le scanner y est meilleur.
+                 La capacité se constate (`pointer: coarse`), elle ne se suppose
+                 pas : au doute, pas de bouton. -->
             @if (handheld) {
               <button
                 foldButton
@@ -227,7 +225,7 @@
                 size="sm"
                 icon="eye"
                 [disabled]="busy()"
-                (click)="kbisCamera.click()"
+                (click)="capture()"
               >
                 Prendre en photo
               </button>
