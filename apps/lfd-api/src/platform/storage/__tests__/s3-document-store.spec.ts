@@ -99,3 +99,67 @@ describe("S3DocumentStore — le canal en ÉCHEC", () => {
     );
   });
 });
+
+/**
+ * Régression : `readIfPresent` ne rendait `null` POUR RIEN AU MONDE.
+ *
+ * `attempt` emballait l'erreur du SDK dans une `DocumentStorageUnavailableError`
+ * avant que le `isMissingObject` de `readIfPresent` ne s'exécute : le test
+ * portait sur l'emballage, jamais sur l'erreur S3. Le symptôme se lisait dans le
+ * journal — un `DEBUG « n'existe pas (NoSuchKey) »` suivi d'une ERREUR sur la
+ * même pièce, deux lignes qui se contredisaient — et le mandat d'exemple, dont
+ * le logo « a le droit de manquer », ne s'affichait plus du tout (fix 2026-09-12).
+ *
+ * Aucun test ne couvrait cette méthode : c'est ce qui a laissé passer le défaut.
+ */
+describe("S3DocumentStore — l'ABSENCE n'est pas une panne", () => {
+  function storeThatRejects(error: Error): S3DocumentStore {
+    const store = new S3DocumentStore(configWith(CONFIGURED), "kbis");
+    Reflect.set(store, "cached", {
+      upload: () => Promise.reject(error),
+      downloadToBuffer: () => Promise.reject(error),
+    });
+    return store;
+  }
+
+  /** Le nom diffère selon l'implémenteur : S3 dit `NoSuchKey`, MinIO `NotFound`. */
+  it.each(["NoSuchKey", "NotFound"])("rend `null` sur %s, au lieu de lever", async (name) => {
+    await expect(
+      storeThatRejects(s3Error(name)).readIfPresent("legal-entities/1/logo"),
+    ).resolves.toBeNull();
+  });
+
+  it("rend `null` sur un 404 dont le nom n'est pas reconnu", async () => {
+    const error = s3Error("SomeVendorSpecificName");
+    Reflect.set(error, "$metadata", { httpStatusCode: 404 });
+
+    await expect(
+      storeThatRejects(error).readIfPresent("legal-entities/1/logo"),
+    ).resolves.toBeNull();
+  });
+
+  it.each(["NoSuchBucket", "InvalidAccessKeyId", "SignatureDoesNotMatch"])(
+    "lève quand même sur %s — une panne n'est pas une absence",
+    async (name) => {
+      await expect(
+        storeThatRejects(s3Error(name)).readIfPresent("legal-entities/1/logo"),
+      ).rejects.toBeInstanceOf(DocumentStorageUnavailableError);
+    },
+  );
+
+  it("laisse `read` traiter l'absence en panne — son contrat le dit", async () => {
+    await expect(
+      storeThatRejects(s3Error("NoSuchKey")).read("companies/1/kbis"),
+    ).rejects.toBeInstanceOf(DocumentStorageUnavailableError);
+  });
+
+  it("refuse toujours clairement quand le canal n'est pas configuré", async () => {
+    // `readIfPresent` ne passe plus par `attempt` : le refus « non configuré »
+    // vient de `service()` et doit continuer de traverser sans devenir `null`.
+    const store = new S3DocumentStore(configWith(null), "kbis");
+
+    await expect(store.readIfPresent("legal-entities/1/logo")).rejects.toBeInstanceOf(
+      DocumentStorageUnavailableError,
+    );
+  });
+});
