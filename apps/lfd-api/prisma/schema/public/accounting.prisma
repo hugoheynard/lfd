@@ -72,6 +72,14 @@ model LegalEntity {
   // c'est ce qui le distingue de l'ICS.
   creditorIban String? @map("creditor_iban")
 
+  /// Le BIC de la banque du compte ci-dessus — `CdtrAgt` du `pain.008`.
+  ///
+  /// ⚠️ Il n'est PAS soumis au régime de `creditor_iban` : un BIC désigne un
+  /// établissement, pas un compte, il figure sur tout virement reçu et se rend
+  /// donc en entier par l'API. Nullable parce qu'il est arrivé après (2026-09-12)
+  /// et qu'une entité renseignée avant lui reste capable d'émettre un mandat.
+  creditorBic String? @map("creditor_bic")
+
   // Le délai annoncé au débiteur entre la pré-notification et le débit. Négocié
   // avec la banque, donc DE LA DONNÉE : le renégocier est une saisie, pas un
   // déploiement, et deux entités peuvent ne pas avoir le même.

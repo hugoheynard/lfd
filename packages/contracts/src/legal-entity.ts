@@ -40,6 +40,15 @@ export interface LegalEntityView {
   readonly ics: string;
   /** 4 derniers caractères de l'IBAN créancier, `""` si aucun compte n'est saisi. */
   readonly creditorAccountLast4: string;
+  /**
+   * Le BIC de notre banque, ou `""`.
+   *
+   * ⚠️ **Rendu en entier, contrairement à l'IBAN**, et ce n'est pas une entorse :
+   * un BIC désigne un établissement, pas un compte. Il figure sur tout virement
+   * reçu et s'interroge publiquement — le masquer donnerait l'illusion d'un
+   * secret là où il n'y en a pas, et empêcherait de relire une saisie.
+   */
+  readonly creditorBic: string;
   readonly preNotificationDays: number;
   /** ISO, ou `null` si l'entité est vivante. */
   readonly archivedAt: string | null;
@@ -164,10 +173,16 @@ export type AssignCreditorIdentifierPayload = z.infer<typeof assignCreditorIdent
  * ce qui le distingue de l'ICS.
  *
  * L'IBAN monte en clair sur une route staff murée, et **ne redescend jamais** :
- * la vue n'en rend que les quatre derniers caractères.
+ * la vue n'en rend que les quatre derniers caractères. Le BIC, lui, redescend
+ * en entier — il désigne une banque, pas un compte.
+ *
+ * **Les deux sont exigés ensemble** (2026-09-12) : ils se lisent sur le même
+ * RIB, et un compte qui n'aurait que l'un des deux ne se découvrirait qu'au
+ * rejet du lot, cinq jours après l'envoi.
  */
 export const setCreditorAccountPayloadSchema = z.object({
   iban: z.string().trim().min(1),
+  bic: z.string().trim().min(1),
 });
 export type SetCreditorAccountPayload = z.infer<typeof setCreditorAccountPayloadSchema>;
 

@@ -87,6 +87,8 @@ const SEEDED_ICS = "FR00ZZZ900001";
  * (`prelevement-sepa.md` §4).
  */
 const SEEDED_CREDITOR_IBAN = "FR7630006000011234567890189";
+/** Caisse d'Épargne — la banque retenue pour le prélèvement direct. */
+const SEEDED_CREDITOR_BIC = "CEPAFRPP751";
 
 const ENTITY: DeclareLegalEntityPayload = {
   name: SEEDED_LEGAL_ENTITY_NAME,
@@ -153,7 +155,9 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
   if (existing?.creditorIban) {
     console.log("· Compte créancier déjà posé — inchangé.");
   } else {
-    await commands.execute(new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_IBAN));
+    await commands.execute(
+      new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_IBAN, SEEDED_CREDITOR_BIC),
+    );
     console.log("✓ Compte créancier posé — l'entité peut désormais prélever.");
   }
 

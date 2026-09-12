@@ -162,14 +162,18 @@
         <p class="ej-account">
           @if (entity.creditorAccountLast4 !== '') {
             Compte enregistré&nbsp;: •••• {{ entity.creditorAccountLast4 }}
+            @if (entity.creditorBic !== '') {
+              · BIC {{ entity.creditorBic }}
+            }
           } @else {
             Aucun compte enregistré.
           }
         </p>
+        <!-- 🔴 L'IBAN est toujours vide à l'ouverture, même quand un compte
+           existe : il ne revient d'aucune route. Le BIC, LUI, se réaffiche —
+           il désigne une banque, pas un compte. La ligne ci-dessus est ce qui
+           rend l'absence du premier lisible plutôt qu'inquiétante. -->
         <div class="ej-row">
-          <!-- 🔴 Toujours vide à l'ouverture, même quand un compte existe :
-             l'IBAN ne revient d'aucune route. La ligne ci-dessus est ce qui
-             rend cette absence lisible plutôt qu'inquiétante. -->
           <fold-input
             label="IBAN"
             hideLabel
@@ -178,14 +182,27 @@
             [value]="ibanDraft()"
             (valueChange)="ibanDraft.set($event)"
           />
+          <fold-input
+            label="BIC"
+            hideLabel
+            placeholder="CEPAFRPP751"
+            hint="Sur le même RIB que l'IBAN."
+            [value]="bicDraft()"
+            (valueChange)="bicDraft.set($event)"
+          />
           <button
             foldButton
-            [disabled]="ibanDraft().trim() === '' || busy()"
+            [disabled]="ibanDraft().trim() === '' || bicDraft().trim() === '' || busy()"
             (click)="setAccount(entity)"
           >
             Enregistrer
           </button>
         </div>
+        <p class="ej-said">
+          Les deux se saisissent <strong>ensemble</strong> : ils se lisent sur le même RIB, et un
+          compte qui n'aurait que l'un des deux ne se découvrirait qu'au rejet du lot, cinq jours
+          après l'envoi.
+        </p>
       </fold-page-section>
     </fold-card>
 

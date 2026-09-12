@@ -37,6 +37,7 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityV
     // une fiche — et c'est la seule question à laquelle une réponse d'API a le
     // droit de répondre.
     creditorAccountLast4: snapshot.creditorIban?.slice(-4) ?? "",
+    creditorBic: snapshot.creditorBic ?? "",
     preNotificationDays: snapshot.preNotificationDays,
     archivedAt: snapshot.archivedAt?.toISOString() ?? null,
     canCollect: entity.canCollect(),
@@ -69,6 +70,7 @@ function toSnapshot(row: LegalEntityRow): LegalEntitySnapshot {
     vatNumber: row.vatNumber,
     ics: row.ics,
     creditorIban: row.creditorIban,
+    creditorBic: row.creditorBic,
     preNotificationDays: row.preNotificationDays,
     logoKey: row.logoKey,
     archivedAt: row.archivedAt,

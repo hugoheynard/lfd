@@ -1,0 +1,17 @@
+-- Le BIC de la banque du compte créancier — `CdtrAgt/FinInstnId/BIC` du pain.008.
+--
+-- ADDITIVE et NULLABLE, pour deux raisons distinctes :
+--
+--  1. la colonne arrive après les entités déjà déclarées. Les rendre invalides
+--     d'un coup ferait qu'aucune ne « peut encaisser » tant que personne n'est
+--     repassé dessus — et l'écran qui le dirait est justement celui qu'on vient
+--     de casser ;
+--  2. le BIC n'est exigé que par le LOT de prélèvement, pas par le mandat. Une
+--     entité sans BIC émet un mandat parfaitement valide. C'est donc au lot de
+--     refuser, en nommant l'entité à compléter, pas à la colonne.
+--
+-- ⚠️ Elle ne relève PAS du régime de `creditor_iban`. Un BIC désigne un
+-- établissement, pas un compte : il figure sur tout virement reçu, s'interroge
+-- publiquement, et se rend en entier par l'API. Le chiffrer donnerait l'illusion
+-- d'un secret là où il n'y en a pas.
+ALTER TABLE "public"."legal_entities" ADD COLUMN "creditor_bic" TEXT;

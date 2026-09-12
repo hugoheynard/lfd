@@ -44,6 +44,7 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
       countryCode: snapshot.countryCode,
       ics: snapshot.ics,
       creditorIban: snapshot.creditorIban,
+      creditorBic: snapshot.creditorBic,
       preNotificationDays: snapshot.preNotificationDays,
       logoKey: snapshot.logoKey,
       archivedAt: snapshot.archivedAt,

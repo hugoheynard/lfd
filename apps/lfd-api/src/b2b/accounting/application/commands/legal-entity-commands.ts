@@ -38,6 +38,7 @@ export class SetCreditorAccountCommand {
   constructor(
     readonly legalEntityId: string,
     readonly iban: string,
+    readonly bic: string,
   ) {}
 }
 

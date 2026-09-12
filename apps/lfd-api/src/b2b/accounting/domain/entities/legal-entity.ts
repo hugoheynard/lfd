@@ -5,6 +5,7 @@ import {
   InvalidLegalEntityError,
 } from "../errors/accounting-errors.js";
 import { CreditorIdentifier } from "../value-objects/creditor-identifier.js";
+import { Bic } from "../value-objects/bic.js";
 import { Iban } from "../value-objects/iban.js";
 import { LegalAddress } from "../value-objects/legal-address.js";
 import { Siren } from "../value-objects/siren.js";
@@ -45,6 +46,8 @@ export interface LegalEntitySnapshot {
   readonly vatNumber: string;
   readonly ics: string | null;
   readonly creditorIban: string | null;
+  /** Le BIC de la banque du compte ci-dessus. Public, contrairement à l'IBAN. */
+  readonly creditorBic: string | null;
   readonly preNotificationDays: number;
   /**
    * La clé de l'objet de stockage qui porte le logo, ou `null`. 🔴 Elle ne sort
@@ -87,6 +90,7 @@ export class LegalEntity {
     private vatNumberValue: string,
     private icsValue: CreditorIdentifier | null,
     private creditorIbanValue: Iban | null,
+    private creditorBicValue: Bic | null,
     private preNotificationDaysValue: number,
     private logoKeyValue: string | null,
     private archivedAtValue: Date | null,
@@ -107,6 +111,8 @@ export class LegalEntity {
       declaration.rcs.trim(),
       requireCapital(declaration.shareCapitalCents),
       declaration.vatNumber.trim().toUpperCase(),
+      // ICS, IBAN, BIC : tous trois absents à la déclaration.
+      null,
       null,
       null,
       PRE_NOTIFICATION_DEFAULT_DAYS,
@@ -134,6 +140,7 @@ export class LegalEntity {
       snapshot.vatNumber,
       snapshot.ics === null ? null : CreditorIdentifier.create(snapshot.ics),
       snapshot.creditorIban === null ? null : Iban.create(snapshot.creditorIban),
+      snapshot.creditorBic === null ? null : Bic.create(snapshot.creditorBic),
       snapshot.preNotificationDays,
       snapshot.logoKey,
       snapshot.archivedAt,
@@ -214,9 +221,22 @@ export class LegalEntity {
     this.icsValue = ics;
   }
 
-  /** Le compte où l'argent arrive. Il change : on peut changer de banque. */
-  setCreditorAccount(iban: Iban): void {
+  /**
+   * Le compte où l'argent arrive. Il change : on peut changer de banque.
+   *
+   * **L'IBAN et le BIC se posent ENSEMBLE**, et ce n'est pas une commodité de
+   * formulaire : les deux se lisent sur le même RIB, et un compte qui n'aurait
+   * que l'un des deux ne se découvrirait qu'au rejet du lot, cinq jours après
+   * l'envoi. Les séparer en deux gestes ferait exister l'état à moitié rempli.
+   */
+  setCreditorAccount(iban: Iban, bic: Bic): void {
     this.creditorIbanValue = iban;
+    this.creditorBicValue = bic;
+  }
+
+  /** Le BIC de notre banque — il a le droit d'être lu, l'IBAN non. */
+  get creditorBic(): string | null {
+    return this.creditorBicValue?.value ?? null;
   }
 
   /**
@@ -274,6 +294,7 @@ export class LegalEntity {
       // `canCollect()` vient de prouver les deux non nuls.
       ics: String(this.icsValue),
       creditorIban: String(this.creditorIbanValue),
+      creditorBic: this.creditorBicValue?.value ?? null,
       preNotificationDays: this.preNotificationDaysValue,
     };
   }
@@ -295,6 +316,7 @@ export class LegalEntity {
       vatNumber: this.vatNumberValue,
       ics: this.icsValue?.value ?? null,
       creditorIban: this.creditorIbanValue?.value ?? null,
+      creditorBic: this.creditorBicValue?.value ?? null,
       preNotificationDays: this.preNotificationDaysValue,
       logoKey: this.logoKeyValue,
       archivedAt: this.archivedAtValue,

@@ -4,6 +4,7 @@ import {
   InvalidLegalEntityError,
 } from "../../errors/accounting-errors.js";
 import { CreditorIdentifier } from "../../value-objects/creditor-identifier.js";
+import { Bic } from "../../value-objects/bic.js";
 import { Iban } from "../../value-objects/iban.js";
 import { LegalAddress } from "../../value-objects/legal-address.js";
 import { Siren } from "../../value-objects/siren.js";
@@ -16,6 +17,7 @@ import {
 
 const ICS = CreditorIdentifier.create("FR72ZZZ123456");
 const ACCOUNT = Iban.create("FR1420041010050500013M02606");
+const BIC = Bic.create("CEPAFRPP751");
 
 function declaration(overrides: Partial<LegalEntityDeclaration> = {}): LegalEntityDeclaration {
   return {
@@ -40,7 +42,7 @@ function declaration(overrides: Partial<LegalEntityDeclaration> = {}): LegalEnti
 function collecting(): LegalEntity {
   const entity = LegalEntity.declare(declaration());
   entity.assignCreditorIdentifier(ICS);
-  entity.setCreditorAccount(ACCOUNT);
+  entity.setCreditorAccount(ACCOUNT, BIC);
   return entity;
 }
 
@@ -100,7 +102,7 @@ describe("LegalEntity — l'ICS ne se remplace pas", () => {
 
   it("laisse en revanche changer de banque", () => {
     const entity = collecting();
-    entity.setCreditorAccount(Iban.create("FR7630006000011234567890189"));
+    entity.setCreditorAccount(Iban.create("FR7630006000011234567890189"), BIC);
     expect(entity.toPersistence().creditorIban).toBe("FR7630006000011234567890189");
   });
 });
@@ -108,7 +110,7 @@ describe("LegalEntity — l'ICS ne se remplace pas", () => {
 describe("LegalEntity — encaisser demande tout", () => {
   it("refuse le snapshot tant que l'ICS manque, en le nommant", () => {
     const entity = LegalEntity.declare(declaration());
-    entity.setCreditorAccount(ACCOUNT);
+    entity.setCreditorAccount(ACCOUNT, BIC);
     expect(() => entity.creditorSnapshot()).toThrow(EntityCannotCollectError);
     expect(() => entity.creditorSnapshot()).toThrow(/identifiant créancier/u);
   });
@@ -137,6 +139,7 @@ describe("LegalEntity — encaisser demande tout", () => {
       shareCapitalCents: 1_000_000,
       addressLines: ["12 rue des Lilas", "75011 Paris", "FR"],
       ics: "FR72ZZZ123456",
+      creditorBic: "CEPAFRPP751",
       creditorIban: "FR1420041010050500013M02606",
       preNotificationDays: PRE_NOTIFICATION_DEFAULT_DAYS,
     });

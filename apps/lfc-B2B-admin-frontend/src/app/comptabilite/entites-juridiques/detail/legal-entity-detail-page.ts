@@ -127,6 +127,7 @@ export class LegalEntityDetailPage {
 
   protected readonly icsDraft = signal('');
   protected readonly ibanDraft = signal('');
+  protected readonly bicDraft = signal('');
   protected readonly daysDraft = signal<number | null>(null);
 
   /** Le délai en cours d'édition, ou celui que porte l'entité. */
@@ -189,13 +190,19 @@ export class LegalEntityDetailPage {
 
   protected async setAccount(entity: LegalEntityView): Promise<void> {
     const iban = this.ibanDraft().trim();
-    if (iban === '') {
+    const bic = this.bicDraft().trim();
+    if (iban === '' || bic === '') {
       return;
     }
-    await this.run(() => this.api.setCreditorAccount(entity.id, { iban }), 'Compte enregistré.');
+    await this.run(
+      () => this.api.setCreditorAccount(entity.id, { iban, bic }),
+      'Compte enregistré.',
+    );
     // Le champ se vide même en cas d'échec : un IBAN reste à l'écran tant qu'on
-    // ne l'efface pas, et un écran de back-office reste ouvert des heures.
+    // ne l'efface pas, et un écran de back-office reste ouvert des heures. Le
+    // BIC part avec lui — le laisser seul suggérerait un compte à moitié saisi.
     this.ibanDraft.set('');
+    this.bicDraft.set('');
   }
 
   protected async savePreNotification(entity: LegalEntityView): Promise<void> {

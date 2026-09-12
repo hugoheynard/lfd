@@ -26,6 +26,15 @@ export interface CreditorSnapshot {
   readonly ics: string;
   /** Le compte où l'argent arrive — sur la facture, pas sur le mandat. */
   readonly creditorIban: string;
+  /**
+   * Le BIC de notre banque — `CdtrAgt/FinInstnId/BIC` du `pain.008`.
+   *
+   * **Nullable, et l'IBAN ne l'est pas** : le BIC est arrivé après (2026-09-12),
+   * et une entité renseignée avant lui reste parfaitement capable d'émettre un
+   * mandat — ce document-là ne le porte pas. C'est le LOT qui en aura besoin, et
+   * c'est donc le lot qui devra refuser, en nommant l'entité à compléter.
+   */
+  readonly creditorBic: string | null;
   /** Le délai annoncé entre la notification et le débit, en jours. */
   readonly preNotificationDays: number;
 }

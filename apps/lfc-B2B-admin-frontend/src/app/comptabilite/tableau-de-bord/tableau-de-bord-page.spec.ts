@@ -45,6 +45,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     city: 'Chambéry',
     countryCode: 'FR',
     ics: '',
+    creditorBic: '',
     creditorAccountLast4: '',
     preNotificationDays: 14,
     archivedAt: null,

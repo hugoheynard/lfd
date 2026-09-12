@@ -43,6 +43,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     city: 'Chambéry',
     countryCode: 'FR',
     ics: '',
+    creditorBic: '',
     creditorAccountLast4: '',
     preNotificationDays: 14,
     archivedAt: null,
@@ -245,10 +246,34 @@ describe('LegalEntityDetailPage', () => {
     const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll('fold-input');
 
     expect(text(fixture)).toContain('FR72ZZZ123456');
-    // Le seul champ texte restant est celui de l'IBAN : un champ ICS ouvert
-    // promettrait un geste que le serveur refuse en 409.
-    expect(inputs).toHaveLength(1);
+    // Les seuls champs restants sont ceux du COMPTE — IBAN et BIC. Un champ ICS
+    // ouvert promettrait un geste que le serveur refuse en 409.
+    expect([...inputs].map((field) => field.getAttribute('label'))).toEqual(['IBAN', 'BIC']);
     expect(text(fixture)).toContain('Il ne se remplace pas');
+  });
+
+  /**
+   * Régression : l'IBAN se saisissait seul. Un compte sans BIC ne se découvre
+   * qu'au rejet du lot, cinq jours après l'envoi — l'écran refuse donc tant que
+   * les deux ne sont pas là (fix 2026-09-12).
+   *
+   * ⚠️ Le test porte sur l'état AU REPOS, pas sur une frappe : `fold-input`
+   * n'émet pas sur un `CustomEvent` dispatché à la main, et le piloter
+   * autrement demanderait de tricher avec le composant. La garde qui compte est
+   * de toute façon celle du serveur — `bic` est exigé par le schéma Zod.
+   */
+  it('n’enregistre pas un compte tant que les deux champs sont vides', async () => {
+    const api = new FakeLegalEntities();
+    api.row = entity({ ics: 'FR72ZZZ123456' });
+
+    const fixture = await render(api);
+    const host = fixture.nativeElement as HTMLElement;
+    const save = [...host.querySelectorAll('button')].find((button) =>
+      (button.textContent ?? '').includes('Enregistrer'),
+    );
+
+    expect(save?.hasAttribute('disabled')).toBe(true);
+    expect(text(fixture)).toContain('Les deux se saisissent');
   });
 
   it('ne montre jamais un IBAN, seulement ses quatre derniers caractères', async () => {

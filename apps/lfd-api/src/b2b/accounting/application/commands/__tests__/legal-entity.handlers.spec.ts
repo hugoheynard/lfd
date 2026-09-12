@@ -12,6 +12,7 @@ import {
 } from "../../../domain/errors/accounting-errors.js";
 import { LegalEntityRepository } from "../../../domain/ports/legal-entity.repository.js";
 import { CreditorIdentifier } from "../../../domain/value-objects/creditor-identifier.js";
+import { Bic } from "../../../domain/value-objects/bic.js";
 import { Iban } from "../../../domain/value-objects/iban.js";
 import { LegalAddress } from "../../../domain/value-objects/legal-address.js";
 import { Siren } from "../../../domain/value-objects/siren.js";
@@ -234,7 +235,7 @@ describe("SetCreditorAccountHandler", () => {
   it("enregistre le compte, et le compte SEUL sort en quatre caractères", async () => {
     const { handler, entities, events } = doubles();
 
-    await handler.execute(new SetCreditorAccountCommand("le1", IBAN));
+    await handler.execute(new SetCreditorAccountCommand("le1", IBAN, "CEPAFRPP751"));
 
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBe(IBAN);
     const fact = events.traced[0]?.journalFact();
@@ -252,7 +253,9 @@ describe("SetCreditorAccountHandler", () => {
 
     await expect(
       // Deux chiffres intervertis dans la clé.
-      handler.execute(new SetCreditorAccountCommand("le1", "FR4120041010050500013M02606")),
+      handler.execute(
+        new SetCreditorAccountCommand("le1", "FR4120041010050500013M02606", "CEPAFRPP751"),
+      ),
     ).rejects.toBeInstanceOf(InvalidIbanError);
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBeNull();
   });
@@ -260,8 +263,10 @@ describe("SetCreditorAccountHandler", () => {
   it("le compte change librement — on peut changer de banque, contrairement à l'ICS", async () => {
     const { handler, entities } = doubles();
 
-    await handler.execute(new SetCreditorAccountCommand("le1", IBAN));
-    await handler.execute(new SetCreditorAccountCommand("le1", "FR7630006000011234567890189"));
+    await handler.execute(new SetCreditorAccountCommand("le1", IBAN, "CEPAFRPP751"));
+    await handler.execute(
+      new SetCreditorAccountCommand("le1", "FR7630006000011234567890189", "CEPAFRPP751"),
+    );
 
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBe(
       "FR7630006000011234567890189",
@@ -315,7 +320,7 @@ describe("SetLegalEntityArchivedHandler", () => {
     const entities = new InMemoryEntities();
     const entity = sampleEntity();
     entity.assignCreditorIdentifier(CreditorIdentifier.create(ICS));
-    entity.setCreditorAccount(Iban.create(IBAN));
+    entity.setCreditorAccount(Iban.create(IBAN), Bic.create("CEPAFRPP751"));
     entities.rows.set("le1", entity);
     // Une seconde entité, sans quoi le handler refuse : on n'archive pas la
     // dernière en service.

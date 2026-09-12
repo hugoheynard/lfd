@@ -25,6 +25,15 @@ export class InvalidIbanError extends DomainError {
   }
 }
 
+export class InvalidBicError extends DomainError {
+  constructor(
+    readonly raw: string,
+    readonly reason: string,
+  ) {
+    super("accounting.bic.invalid", `BIC « ${raw} » : ${reason}`);
+  }
+}
+
 export class InvalidCreditorIdentifierError extends DomainError {
   constructor(
     readonly raw: string,
