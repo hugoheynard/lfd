@@ -47,7 +47,7 @@
 
         @if (justConfirmed()) {
           <fold-callout variant="success" class="rt-verdict">
-            Remise enregistrée{{ handedOverAt() ? ' — ' + handedOverAt() : '' }}.
+            Retrait enregistré{{ handedOverAt() ? ' — ' + handedOverAt() : '' }}.
           </fold-callout>
         } @else if (h.blockedReason; as reason) {
           <!-- Le refus vient du serveur, en clair, et s'affiche tel quel : c'est
@@ -55,7 +55,7 @@
           <fold-callout variant="warning" class="rt-verdict">
             {{ reason }}
             @if (handedOverAt(); as at) {
-              <br />Remise le {{ at }}.
+              <br />Retrait le {{ at }}.
             }
           </fold-callout>
         }
@@ -73,7 +73,7 @@
             [disabled]="confirming()"
             (click)="confirm()"
           >
-            {{ confirming() ? 'Enregistrement…' : 'Confirmer la remise' }}
+            {{ confirming() ? 'Enregistrement…' : 'Confirmer le retrait' }}
           </button>
         }
 

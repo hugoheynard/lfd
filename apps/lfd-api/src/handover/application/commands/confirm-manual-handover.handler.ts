@@ -7,12 +7,12 @@ import { HandoverAttestation } from "../services/handover-attestation.service.js
 import { ConfirmManualHandoverCommand } from "./confirm-manual-handover.command.js";
 
 /**
- * **La remise saisie à la main** — le chemin de secours, et la raison pour
+ * **Le retrait saisi à la main** — le chemin de secours, et la raison pour
  * laquelle la règle de l'autoscan tient.
  *
- * ## Pourquoi elle existe
+ * ## Pourquoi il existe
  *
- * Le code de remise voyage dans le courriel du destinataire, et jamais sur un
+ * Le code de retrait voyage dans le courriel du destinataire, et jamais sur un
  * papier : le bon d'une livraison est dans le carton, où un coursier scannerait
  * son propre colis. Mais le destinataire n'a pas toujours son courriel — un
  * magasinier, quelqu'un d'autre à l'accueil, un téléphone déchargé.
@@ -21,10 +21,10 @@ import { ConfirmManualHandoverCommand } from "./confirm-manual-handover.command.
  * pour les livraisons difficiles ». La règle saute par la porte de service. Elle
  * ne tient que parce que **le cas difficile a déjà sa réponse**.
  *
- * ## Ce qui la distingue du scan
+ * ## Ce qui le distingue du scan
  *
- * Un seul mot : elle grave `manual`. Une remise saisie n'a eu qu'**une** partie ;
- * la présenter comme un scan la rendrait **fausse** plutôt que faible.
+ * Un seul mot : il grave `manual`. Un retrait saisi n'a eu qu'**une** partie ;
+ * le présenter comme un scan le rendrait **faux** plutôt que faible.
  */
 @CommandHandler(ConfirmManualHandoverCommand)
 export class ConfirmManualHandoverHandler implements ICommandHandler<

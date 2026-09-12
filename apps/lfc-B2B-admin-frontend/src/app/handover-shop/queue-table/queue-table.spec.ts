@@ -108,7 +108,7 @@ describe('QueueTable', () => {
     expect(text(fixture)).toContain('Annulée');
   });
 
-  it('🔴 une remise porte son heure sous le nom, SANS perdre son numéro', () => {
+  it('🔴 un retrait porte son heure sous le nom, SANS perdre son numéro', () => {
     // Le numéro cédait sa place à l'heure tant qu'ils partageaient une case.
     // Depuis que la référence a sa colonne (2026-09-11), les deux tiennent — et
     // il le faut : une contestation se règle avec l'heure ET le numéro sous les
@@ -118,9 +118,9 @@ describe('QueueTable', () => {
         render([entry({ state: 'handed_over', handedOverAt: `${DAY}T04:41:00.000Z` })]),
       )[0] ?? '';
 
-    expect(row).toContain('remise');
+    expect(row).toContain('retirée');
     expect(row).toContain('CMD-1042');
-    expect(row).toContain('Remise');
+    expect(row).toContain('Retirée');
   });
 
   it('ordonne la file par créneau, la ligne sans créneau en dernier', () => {
@@ -223,7 +223,7 @@ describe('QueueTable', () => {
     expect(rowTexts(render([entry()]))[0] ?? '').not.toContain('Scanner');
   });
 
-  it('🔴 une commande déjà remise n’offre plus aucun geste', () => {
+  it('🔴 une commande déjà retirée n’offre plus aucun geste', () => {
     const rows = rowTexts(
       render([entry({ state: 'handed_over', handedOverAt: `${DAY}T04:41:00.000Z` })]),
     );

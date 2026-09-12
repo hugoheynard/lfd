@@ -130,7 +130,7 @@ const rowTexts = (fixture: ComponentFixture<HandoverShopPage>): readonly string[
   );
 
 describe('HandoverShopPage', () => {
-  it('la bande annonce les remises faites, au singulier comme au pluriel', async () => {
+  it('la bande annonce les retraits faits, au singulier comme au pluriel', async () => {
     const api = new FakeQueue();
     api.entries = [
       entry({ orderId: 'a', state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z` }),
@@ -139,8 +139,8 @@ describe('HandoverShopPage', () => {
 
     const fixture = await render(api);
 
-    expect(text(fixture)).toContain('1 remise');
-    expect(text(fixture)).not.toContain('1 remises');
+    expect(text(fixture)).toContain('1 retrait');
+    expect(text(fixture)).not.toContain('1 retraits');
     expect(text(fixture)).toContain('1 en attente');
   });
 

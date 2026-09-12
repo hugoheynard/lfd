@@ -1,6 +1,6 @@
-# Journal du contexte remise — ce qui est fait, et ce qu'on a trouvé en le faisant
+# Journal du contexte retrait — ce qui est fait, et ce qu'on a trouvé en le faisant
 
-> **Le ledger du chantier décrit par [`plan-contexte-remise.md`](plan-contexte-remise.md).**
+> **Le ledger du chantier décrit par [`plan-contexte-retrait.md`](plan-contexte-retrait.md).**
 > Une ligne par tranche, tenue **pendant** le travail et non après : ce qu'on a
 > touché, ce qu'on a vérifié, et ce que le plan n'avait pas vu.
 >
@@ -107,23 +107,23 @@ n'est pas, mais ce qu'elle doit **valoir**.
 
 **Le fournil tenait un dépôt d'écriture pour poser une question.**
 `referencesAttestedSince` vivait sur `OrderHandoverRepository`, le port d'écriture
-de la remise, et `get-production-day-status` l'appelait en direct. Ça marchait
+de le retrait, et `get-production-day-status` l'appelait en direct. Ça marchait
 parce que les deux étaient dans le même bloc.
 
 Elle est devenue `AttestedHandoversReader`, **déclarée par la production** dans
-`channels/handover/` et implémentée par un adaptateur dédié de la remise. Deux
+`channels/handover/` et implémentée par un adaptateur dédié de le retrait. Deux
 adaptateurs pour une même table, et ce n'est pas de la cérémonie : l'un sert
-l'agrégat de la remise, l'autre sert une question posée par un autre contexte.
+l'agrégat de le retrait, l'autre sert une question posée par un autre contexte.
 Les fondre ferait qu'élargir l'un élargirait l'autre.
 
 **`ProductionFeedModule` câblait un fil qui ne le traversait pas.** Il portait
 les trois ports sous le nom du fournil, alors que `HandoverSubjectReader` est
-déclaré par la remise. D'où `HandoverFeedModule` — 🔴 **le seul module du dossier
+déclaré par le retrait. D'où `HandoverFeedModule` — 🔴 **le seul module du dossier
 qui branche un port dans chaque sens**, et c'est ce qui le rend instructif :
 aucun des trois contextes ne connaît les deux autres.
 
 **`channels/commerce/index.ts` publiait deux surfaces sous un seul nom.** Le
-commerce importait « la production » pour parler à la remise. Scindé.
+commerce importait « la production » pour parler à le retrait. Scindé.
 
 ### Deux erreurs à moi, et ce qui les a attrapées
 
@@ -150,11 +150,11 @@ suites unitaires / 239 tests, 4 suites e2e / 77 tests contre le vrai Postgres.
 Le §3 bis du plan a été écrit **trois fois** avant d'être juste, et les trois
 erreurs sont instructives parce qu'aucune n'était technique.
 
-| Version                              | Ce qu'elle disait                         | Pourquoi c'était faux                                                       |
-| ------------------------------------ | ----------------------------------------- | --------------------------------------------------------------------------- |
-| V3 — rien                            | le plan déménageait du code, sans donnée  | la remise aurait été une façade sur les tables des autres                   |
-| V4 — recopier à la passation         | une file alimentée par `OrderPlacedEvent` | entre la commande et le four, le contenu bouge encore                       |
-| V5a — ne rien stocker, tout demander | une lecture vive intégrale                | trop large dans l'autre sens : certains faits n'existent QUE chez la remise |
+| Version                              | Ce qu'elle disait                         | Pourquoi c'était faux                                                        |
+| ------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| V3 — rien                            | le plan déménageait du code, sans donnée  | le retrait aurait été une façade sur les tables des autres                   |
+| V4 — recopier à la passation         | une file alimentée par `OrderPlacedEvent` | entre la commande et le four, le contenu bouge encore                        |
+| V5a — ne rien stocker, tout demander | une lecture vive intégrale                | trop large dans l'autre sens : certains faits n'existent QUE chez le retrait |
 
 **La règle qui en sort**, et elle vaut au-delà de ce chantier :
 
@@ -170,7 +170,7 @@ annulée après cuisson.
 
 **Ce qui a débloqué la réflexion est un fait métier, pas un motif d'architecture** :
 c'est de l'alimentaire, donc ce qui est cuit est facturé, donc le contenu gèle au
-démarrage du four. La remise servant après, elle peut lire vif sans risque. Aucun
+démarrage du four. Le retrait servant après, elle peut lire vif sans risque. Aucun
 raisonnement technique ne pouvait produire cette conclusion — il fallait
 connaître le métier.
 
@@ -201,18 +201,18 @@ s'y accrocherait, la même dépréciation s'appliquerait.
 
 ### La file : deux lectures, deux propriétaires
 
-`HandoverQueueReader` est **déclaré par la remise**, implémenté par le commerce.
+`HandoverQueueReader` est **déclaré par le retrait**, implémenté par le commerce.
 Le handler croise sa réponse avec les attestations lues chez soi. C'est le seul
 endroit du contexte où les deux se rencontrent, et il fallait que ce soit un
 **handler** plutôt qu'un port : fusionner les deux lectures dans un adaptateur
-aurait obligé le commerce à connaître les attestations, ou la remise à joindre
+aurait obligé le commerce à connaître les attestations, ou le retrait à joindre
 `orders`.
 
 Les attestations passent par un port de **lecture** distinct du port d'écriture,
 et **par lot** : une file de quarante lignes qui demanderait l'attestation de
 chacune ferait quarante requêtes pour peindre un écran.
 
-## 🔴 Ce que les tests ont trouvé, et qui ne venait pas de la remise
+## 🔴 Ce que les tests ont trouvé, et qui ne venait pas de le retrait
 
 ### Un doublé qui mentait sur son contrat depuis toujours
 
@@ -278,7 +278,7 @@ Ils sont remontés ici plutôt que tus, parce qu'ils sont des décisions :
    « Sans point de retrait » les recueille, et un test tient l'invariant :
    aucune ligne hors de tous les onglets.
 2. **La référence du retard** : `window.end`, sur le jour affiché, en heure
-   locale — et jamais sur une commande remise ou annulée, où l'heure ne promet
+   locale — et jamais sur une commande retirée ou annulée, où l'heure ne promet
    plus rien.
 3. **La journée par défaut** : aujourd'hui. La page Production ouvre sur demain,
    parce qu'on l'imprime à la clôture ; le comptoir, non.
@@ -291,7 +291,8 @@ Ils sont remontés ici plutôt que tus, parce qu'ils sont des décisions :
 ### 🔴 Mon erreur : un commit qui mêle deux sujets
 
 `eafc822a`, intitulé `test(handover): la file éprouvée de bout en bout`, contient
-**aussi tout l'écran** — sept fichiers de `remises/`. Cause : j'ai lancé un
+**aussi tout l'écran** — sept fichiers de `remises/` (le dossier portait
+encore ce nom-là). Cause : j'ai lancé un
 `git add -A` pendant que l'écran s'écrivait encore.
 
 Le §9 demande des commits atomiques, un seul sujet chacun. Celui-là en porte

@@ -238,9 +238,12 @@ export const routes: Routes = [
       import('./app-mobile/app-mobile-page/app-mobile-page').then((m) => m.AppMobilePage),
   },
   {
-    // LA FILE DE REMISE — qui attend au comptoir aujourd'hui. Route de premier
+    // LA FILE DE RETRAIT — qui attend au comptoir aujourd'hui. Route de premier
     // niveau, à côté de « production » et « livraison » : c'est le même flux de
     // commandes, vu à un troisième moment.
+    //
+    // ⚠️ Le chemin `remises` est une VALEUR : le renommer romprait les
+    // signets du personnel, et une valeur n'est pas un nom (CLAUDE.md §8).
     //
     // ⚠️ Elle ne remplace PAS `retrait/:token`, et ne peut pas : ce chemin-là
     // est ce que les QR déjà partis en courriel encodent. Celui-ci est la file

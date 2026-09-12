@@ -197,7 +197,7 @@ describe('isLate', () => {
     expect(isLate(entry({ window: null }), DAY, passed)).toBe(false);
   });
 
-  it('se tait sur une commande remise ou annulée : l’heure ne promet plus rien', () => {
+  it('se tait sur une commande retirée ou annulée : l’heure ne promet plus rien', () => {
     expect(isLate(entry({ state: 'handed_over' }), DAY, passed)).toBe(false);
     expect(isLate(entry({ state: 'cancelled' }), DAY, passed)).toBe(false);
   });
@@ -268,7 +268,7 @@ describe('queueCounters', () => {
       total: 4,
       handedOver: 1,
       late: 1,
-      // 🔴 Ni les remises, ni les annulées : « en attente » est ce qu'il reste
+      // 🔴 Ni les retirées, ni les annulées : « en attente » est ce qu'il reste
       // à TENDRE, pas ce qui reste dans la liste.
       waiting: 2,
     });
@@ -393,7 +393,7 @@ describe("le type ferme ce qu'une chaîne laissait ouvert", () => {
   });
 
   it('🔴 une attestation inventée ne compile pas', () => {
-    // Une remise saisie présentée comme autre chose que `manual` serait fausse,
+    // Un retrait saisi présenté comme autre chose que `manual` serait faux,
     // pas faible. Le type l'interdit.
     const rejected: Rejects<HandoverVia, 'presume'> = true;
 

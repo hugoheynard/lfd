@@ -13,15 +13,15 @@ import { PrismaHandoverAttestationsReader } from "./infrastructure/prisma-handov
 import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-handover.repository.js";
 
 /**
- * **La remise.**
+ * **Le retrait.**
  *
- * Elle ne déclare PAS `HandoverSubjectReader` : c'est le port qu'elle publie et
+ * Il ne déclare PAS `HandoverSubjectReader` : c'est le port qu'il publie et
  * que le commerce implémente, relié dans la racine de composition. Le brancher
  * ici obligerait ce module à connaître `b2b`, ce que la matrice interdit — et ce
  * serait franchir la frontière par la porte de service.
  *
- * ⚠️ Elle ne déclare pas non plus `AttestedHandoversReader`, pour la raison
- * INVERSE : ce port-là est déclaré par la **production**, et c'est la remise qui
+ * ⚠️ Il ne déclare pas non plus `AttestedHandoversReader`, pour la raison
+ * INVERSE : ce port-là est déclaré par la **production**, et c'est le retrait qui
  * l'implémente. L'adaptateur est donc fourni ailleurs, dans le module de
  * composition qui relie les deux — un contexte ne s'enregistre pas lui-même
  * comme implémentation du port d'un autre.

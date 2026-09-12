@@ -16,7 +16,7 @@ import { toHandoverView } from "./get-handover.handler.js";
  * 🔴 Le rail de la file lisait la commande par `admin/orders/:id`, c'est-à-dire
  * l'`OrderView` du CLIENT : prix unitaires, TVA, totaux, et la trace de
  * négociation étage par étage. Sur un poste de comptoir, avec quelqu'un en
- * face. Les trois surfaces de remise promettent « aucun montant » — deux le
+ * face. Les trois surfaces de retrait promettent « aucun montant » — deux le
  * tenaient par leur forme, la troisième par la seule discrétion d'un gabarit.
  *
  * La règle est redevenue **structurelle** : ce qui n'est pas dans

@@ -60,7 +60,7 @@ function isoDay(date: Date): string {
 const TICK_MS = 30_000;
 
 /**
- * **La file de remise** — qui attend au comptoir, ce jour-là.
+ * **La file de retrait** — qui attend au comptoir, ce jour-là.
  *
  * ## Ce que l'écran refuse de faire
  *
@@ -206,7 +206,7 @@ export class HandoverShopPage {
   /**
    * La commande ouverte dans le rail, **par identifiant et non par objet**.
    *
-   * 🔴 Garder la ligne elle-même la figerait : après une remise, la file est
+   * 🔴 Garder la ligne elle-même la figerait : après un retrait, la file est
    * relue et toutes ses lignes sont de nouveaux objets — le rail continuerait
    * d'afficher « attendue » sur un sac parti. L'identifiant, lui, retrouve la
    * ligne à jour, ou `null` si elle a quitté la journée affichée.

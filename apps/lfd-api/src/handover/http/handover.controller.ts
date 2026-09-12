@@ -27,7 +27,7 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
 const HANDOVER_ROUTES = ["admin/handover", "admin/production/handover"];
 
 /**
- * La **remise** — la surface que le QR d'un client ouvre, et son chemin de
+ * Le **retrait** — la surface que le QR d'un client ouvre, et son chemin de
  * secours.
  *
  * Le parcours physique : le client présente son écran, le staff scanne avec
@@ -37,7 +37,7 @@ const HANDOVER_ROUTES = ["admin/handover", "admin/production/handover"];
  *
  * 🔴 **Cette surface a déjà déménagé deux fois** : du commerce vers le fournil le
  * 2026-09-07, puis du fournil vers son propre contexte le 2026-09-10. C'est au labo qu'on retire — le client s'y présente, le coursier
- * y charge —, et le fournil enregistre maintenant la remise chez lui. Le
+ * y charge —, et le fournil enregistre maintenant le retrait chez lui. Le
  * commerce l'apprend par un fait et en tire `fulfilled`.
  *
  * ⚠️ **Le QR déjà parti dans les courriels continue de fonctionner.** Il encode
@@ -52,8 +52,8 @@ const HANDOVER_ROUTES = ["admin/handover", "admin/production/handover"];
  *
  * **Porte staff**, comme les autres surfaces `/admin/*`. C'est essentiel ici et
  * pas seulement conventionnel — c'est cette porte qui fait du scan une preuve.
- * Sans elle, quiconque a vu un QR par-dessus une épaule pourrait attester sa
- * propre remise.
+ * Sans elle, quiconque a vu un QR par-dessus une épaule pourrait attester son
+ * propre retrait.
  *
  * `b2b_orders` reste la ressource, inchangée : le fournil partage celle du
  * contrôleur de journée. Déplacer le code ne doit retirer le geste à personne —
@@ -88,7 +88,7 @@ export class HandoverController {
   }
 
   /**
-   * **La remise SAISIE À LA MAIN**, par le numéro de commande.
+   * **Le retrait SAISI À LA MAIN**, par le numéro de commande.
    *
    * Déclarée **avant** `:token` : deux segments, donc `:token` ne l'avalerait
    * pas — mais l'ordre rend l'intention lisible sans avoir à y réfléchir.
@@ -128,7 +128,7 @@ export class HandoverController {
   }
 
   /**
-   * Atteste la remise. Rend l'attestation obtenue (qui, quand) plutôt qu'un
+   * Atteste le retrait. Rend l'attestation obtenue (qui, quand) plutôt qu'un
    * corps vide : au comptoir, la confirmation doit s'afficher dans la seconde,
    * sans second aller-retour.
    */

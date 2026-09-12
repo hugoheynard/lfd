@@ -184,12 +184,12 @@ export class QueueTable {
     return minutes === null ? null : lateLabel(minutes);
   }
 
-  /** « remise 6 h 41 » — l'heure sous le nom, à la place de la référence. */
+  /** « retirée 6 h 41 » — l'heure sous le nom, à la place de la référence. */
   protected handedOverAt(entry: HandoverQueueEntryView): string | null {
     if (entry.handedOverAt === null) {
       return null;
     }
-    return `remise ${formatHour(clockOf(new Date(entry.handedOverAt)))}`;
+    return `retirée ${formatHour(clockOf(new Date(entry.handedOverAt)))}`;
   }
 
   protected label(entry: HandoverQueueEntryView): string {

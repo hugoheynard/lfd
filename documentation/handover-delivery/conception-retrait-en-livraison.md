@@ -1,4 +1,4 @@
-# Remise en livraison — conception v1
+# Retrait en livraison — conception v1
 
 **Ouvert le 2026-09-11. Aucune ligne n'est écrite.**
 
@@ -7,9 +7,9 @@
 > toutes vérifiées depuis, fichier ouvert. Trois d'entre elles ont changé la
 > conception, pas sa rédaction :
 >
-> 1. le code de remise **n'atteint pas la personne qui réceptionne** ;
+> 1. le code de retrait **n'atteint pas la personne qui réceptionne** ;
 > 2. le lecteur de QR **refuse** le code de la feuille d'atelier ;
-> 3. la remise en livraison **appartient déjà** au bloc `handover`, dont la
+> 3. le retrait en livraison **appartient déjà** au bloc `handover`, dont la
 >    déclaration dit « au comptoir **comme sur le pas d'une porte** ».
 >
 > Ce qui suit intègre ces trois-là. Les objections non résolues sont au §12,
@@ -22,10 +22,10 @@
 - **Un jeton par commande**, `orders.handover_token`, `@unique`
   ([`orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma)). Il
   est émis **sans condition d'acheminement** depuis le 2026-09-07.
-- **Les colonnes de remise du commerce sont un SNAPSHOT**, pas la source :
+- **Les colonnes de retrait du commerce sont un SNAPSHOT**, pas la source :
   l'attestation vit dans `production.order_handover`, et `orderId`/`reference` y
-  sont `@unique` — une seconde remise est refusée **en base**.
-- **La règle de remise ne bloque plus la livraison**
+  sont `@unique` — une seconde retrait est refusée **en base**.
+- **La règle de retrait ne bloque plus la livraison**
   ([`handover.ts`](../../apps/lfd-api/src/handover/domain/services/handover.ts)).
 - **Le fournil prépare déjà le chargement** : `ProductionOrder` recopie
   `fulfillmentMethod` et `destination` — « de quoi poser la feuille sur la bonne
@@ -197,7 +197,7 @@ lecteur de statut à connaître la logistique.
 premier jet. L'argument « ça fausserait le compte à produire » ne porte pas :
 `packed_at` y vit déjà, et le retardataire n'y est pas non plus. La **vraie**
 raison est celle que le gate écrit : la clé d'identité de la production est la
-**journée**, celle de la remise est la **commande**. Un sac chargé est indexé par
+**journée**, celle de le retrait est la **commande**. Un sac chargé est indexé par
 commande et par véhicule, jamais par plan de fabrication.
 
 ---
@@ -208,20 +208,20 @@ Au comptoir, si personne ne vient, il ne se passe rien. En livraison, le coursie
 est **devant une porte** et doit repartir avec une réponse : absent, tiers qui
 réceptionne, laissé en lieu convenu, adresse fausse.
 
-🔴 **Un échec n'est pas une remise et ne doit pas s'écrire dans
+🔴 **Un échec n'est pas un retrait et ne doit pas s'écrire dans
 `OrderHandover`.** Cette table dit « le sac est parti, voici qui l'atteste » ; y
 loger une tentative ratée ferait mentir la seule preuve du système.
 
 ⚠️ **Et un échec n'a aujourd'hui aucun chemin de retour.**
 [`prisma-handover-queue.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-handover-queue.reader.ts)
-filtre sur `requestedDeliveryDate = jour`. Une commande non remise ne reparaît
+filtre sur `requestedDeliveryDate = jour`. Une commande non retrait ne reparaît
 donc dans aucune file du lendemain : il faudrait réécrire une date figée à la
 passation, qui a déjà alimenté un plan de production. **Le §12 en fait une
 question, parce que c'est une décision métier, pas un correctif.**
 
 ⚠️ **`signatureRequired` n'est imprimé nulle part** — ni sur le bon client, ni
 sur la feuille d'atelier (vérifié le 2026-09-11). Il est convenu, figé, affiché
-dans un réglage, et c'est tout. Ce n'est pas « personne ne le lit à la remise »,
+dans un réglage, et c'est tout. Ce n'est pas « personne ne le lit à le retrait »,
 c'est **personne, nulle part**. Soit on l'honore, soit on cesse de le promettre.
 
 ⚠️ **Le hors-ligne.** Toute l'attestation est un `POST` synchrone. C'est la
@@ -297,7 +297,7 @@ règles une par une.
   Un coursier qui l'utiliserait tel quel **ne saurait pas où aller**.
 
 🔴 **Ne PAS dupliquer le lecteur de file serveur.** `get-handover-queue` est le
-seul endroit où le commerce et la remise se rencontrent ; en écrire un second
+seul endroit où le commerce et le retrait se rencontrent ; en écrire un second
 rouvrirait les deux vérités que le chantier vient de fermer. La livraison
 **étend** ce port, elle n'en crée pas un jumeau.
 
@@ -305,7 +305,7 @@ rouvrirait les deux vérités que le chantier vient de fermer. La livraison
 
 ## 9. Où ça vit — 🔴 corrigé
 
-Le premier jet créait un contexte `delivery/` pour la remise en livraison.
+Le premier jet créait un contexte `delivery/` pour le retrait en livraison.
 **C'était faux**, et le gate le dit depuis le 2026-09-10
 ([`context-boundaries.mjs`](../../dev-toolbox/gates/context-boundaries.mjs)) : le
 bloc `handover` est « **LE TRANSFERT DE GARDE, au comptoir comme sur le pas d'une
@@ -342,7 +342,7 @@ vit déjà dans le schéma `production` alors que son code est dans `src/handove
 
 ## 10. 🔴 Les droits : il n'existe pas de coursier
 
-La remise est gardée par `@AdminSurface("b2b_orders")`, et les cinq rôles staff
+Le retrait est gardée par `@AdminSurface("b2b_orders")`, et les cinq rôles staff
 ne comprennent aucun livreur. **Donner le scan à un coursier aujourd'hui revient
 à lui donner `commercial`** — prise de commande, tarification négociée, carnet
 clients.

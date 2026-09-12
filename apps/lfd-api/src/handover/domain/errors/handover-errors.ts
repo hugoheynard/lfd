@@ -1,7 +1,7 @@
 import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus propres à la **remise**.
+ * Les refus propres au **retrait**.
  *
  * ⚠️ **Les trois codes portaient le préfixe `production.` jusqu'au 2026-09-10.**
  * Ils l'ont perdu avec l'URL, dans la même tranche et pour la même raison : les
@@ -29,7 +29,7 @@ export class HandoverTokenNotFoundError extends ResourceNotFoundError {
   }
 }
 
-/** Aucune commande sous ce **numéro** — le chemin de la remise saisie. */
+/** Aucune commande sous ce **numéro** — le chemin du retrait saisi. */
 export class HandoverReferenceNotFoundError extends ResourceNotFoundError {
   constructor(reference: string) {
     super("handover.reference_not_found", `Aucune commande au numéro ${reference}.`);
@@ -37,7 +37,7 @@ export class HandoverReferenceNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * **L'état interdit la remise**, et le refus porte la phrase à lire au comptoir.
+ * **L'état interdit le retrait**, et le refus porte la phrase à lire au comptoir.
  *
  * La raison est construite par `handoverBlocker` et traverse telle quelle :
  * quelqu'un attend en face, et « conflit » ne lui dit pas quoi faire.

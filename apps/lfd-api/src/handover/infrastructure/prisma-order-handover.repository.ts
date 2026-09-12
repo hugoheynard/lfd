@@ -6,7 +6,7 @@ import { OrderHandoverRepository } from "../domain/ports/order-handover.reposito
 import type { HandoverVia } from "../domain/services/handover.js";
 
 /**
- * Les attestations de remise.
+ * Les attestations de retrait.
  *
  * ⚠️ La table est encore dans le schéma `production` : le déménagement du CODE
  * (2026-09-10) et celui de la TABLE sont deux tranches, et cette séparation est

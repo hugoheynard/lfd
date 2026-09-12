@@ -35,7 +35,7 @@ export const orderStatusSchema = z.enum([
   "confirmed",
   "in_production",
   /**
-   * **La fabrication est finie**, la commande attend d'être remise.
+   * **La fabrication est finie**, la commande attend d'être retirée.
    *
    * C'est l'atelier qui l'écrit, en scannant le QR de colisage de sa fiche —
    * le geste qui existait déjà sur le papier (cocher les lignes) et qui n'avait
@@ -681,13 +681,13 @@ export interface OrderView {
   readonly placedAt: string;
   readonly lines: readonly OrderLineView[];
   /**
-   * Le **jeton de remise** — ce que le QR du client encode, et rien d'autre.
+   * Le **jeton de retrait** — ce que le QR du client encode, et rien d'autre.
    * Émis à la passation pour les seules commandes en **retrait** ; `null` en
    * coursier (il n'y a pas de comptoir) et sur les commandes antérieures.
    *
    * Il descend jusqu'au client parce que c'est lui qui doit le présenter. Ça n'en
    * fait pas une faille : le jeton n'ouvre qu'une porte **staff**, qui exige une
-   * session admin. Le connaître ne permet pas d'attester sa propre remise.
+   * session admin. Le connaître ne permet pas d'attester son propre retrait.
    */
   readonly handoverToken: string | null;
   /**
@@ -707,7 +707,7 @@ export interface OrderView {
    * venir : c'est celle où son sac a été fait.
    */
   readonly readyAt: string | null;
-  /** ISO de la remise en main propre, ou `null` — la commande attend encore. */
+  /** ISO du retrait en main propre, ou `null` — la commande attend encore. */
   readonly handedOverAt: string | null;
 }
 

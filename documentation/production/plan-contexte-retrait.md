@@ -1,9 +1,9 @@
-# La remise quitte le fournil — un contexte à elle, son schéma, sa table
+# Le retrait quitte le fournil — un contexte à elle, son schéma, sa table
 
 > **État : doc-first.** Rien de ce document n'est bâti. Il décrit une cible et le
 > chemin pour y aller ; le §7 dit ce qui reste à trancher avant la première ligne.
 >
-> **Portée** : `apps/lfd-api`. L'écran de remise du back-office ne dépend pas de
+> **Portée** : `apps/lfd-api`. L'écran de retrait du back-office ne dépend pas de
 > ce document — il s'appelle `/admin/…/handover` avant comme après. Les deux
 > chantiers sont volontairement séparés (§8).
 >
@@ -17,8 +17,8 @@
 > EXISTE**, contrairement à ce que les deux versions précédentes affirmaient —
 > l'erreur venait d'avoir cherché une colonne au lieu d'ouvrir le bon de commande.
 >
-> **V4** — Hugo à nouveau (« qui donne à la remise sa colonne ? ») : le plan
-> déménageait du **code sans donner aucune donnée** à la remise, d'où le §3 bis.
+> **V4** — Hugo à nouveau (« qui donne à le retrait sa colonne ? ») : le plan
+> déménageait du **code sans donner aucune donnée** à le retrait, d'où le §3 bis.
 > Puis `vitruve`, seconde passe : quatre bloquants de plus, dont deux qui
 > renversent une décision de la V3 — 🔴 **« pas en service » ne veut pas dire
 > « pas déployé »**, et la vue de transition revient, pour une raison que la V2
@@ -26,12 +26,12 @@
 >
 > **V5** — Hugo encore, et c'est l'argument le plus fort reçu par ce document :
 > **c'est de l'alimentaire, donc ce qui est cuit est facturé**. Le contenu d'une
-> commande gèle quand le four démarre, et la remise a lieu après. J'avais posé
+> commande gèle quand le four démarre, et le retrait a lieu après. J'avais posé
 > deux règles trop larges — « recopier à la passation », puis « ne rien
 > stocker » — et la bonne se déduit de ce fait métier : on instantané quand la
 > copie devient un **fait distinct**, jamais pour aller plus vite. Le §3 bis est
 > réécrit là-dessus, et il donne au passage sa raison d'être au découpage : le
-> jour où la remise devient un worker, seul un **adaptateur** change.
+> jour où le retrait devient un worker, seul un **adaptateur** change.
 >
 > Ce qui a été démoli est nommé là où ça l'a été : une objection qu'on efface se
 > represente.
@@ -40,22 +40,22 @@
 
 Tout ce paragraphe a été ouvert, pas rappelé de mémoire.
 
-| Fait                                                                                  | Où                                                                                                                                  |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| La table `order_handover` est dans le schéma **`production`** — 6 colonnes            | [`prisma/schema/production.prisma`](../../apps/lfd-api/prisma/schema/production.prisma)                                             |
-| Elle n'a **aucune clé étrangère**, ni vers `production_order`, ni vers `orders`       | [migration `20260907240000_remise_au_fournil`](../../apps/lfd-api/prisma/migrations/20260907240000_remise_au_fournil/migration.sql) |
-| `order_id` et `reference` sont **tous deux `@unique`**                                | idem                                                                                                                                |
-| La règle (`handoverBlocker`) vit au fournil depuis le 2026-09-07                      | [`handover/domain/services/handover.ts`](../../apps/lfd-api/src/handover/domain/services/handover.ts)                               |
-| L'agrégat, son dépôt, son service d'attestation et son contrôleur aussi               | `production/{domain,application,http}/`                                                                                             |
-| Le fournil déclare **trois ports** vers le commerce, dont `HandoverSubjectReader`     | [`production/channels/commerce/`](../../apps/lfd-api/src/production/channels/commerce/index.ts)                                     |
-| Le commerce garde un **snapshot** de la remise : `handed_over_at/by/via` sur `orders` | [`prisma/schema/public/orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma)                                       |
-| Le **jeton** (`handover_token`) est sur `orders`, émis à la passation                 | idem, et [`prisma-order.repository.ts:49`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)             |
-| Le back-office est **en service depuis le 2026-08-17**                                | `CLAUDE.md` §0                                                                                                                      |
-| 🔴 **La remise est DÉPLOYÉE** — `c4dbee9a`, `2c25c5ec`, `67700893` sont dans `main`   | vérifié par `git branch --contains`, 2026-09-10                                                                                     |
+| Fait                                                                                   | Où                                                                                                                                  |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| La table `order_handover` est dans le schéma **`production`** — 6 colonnes             | [`prisma/schema/production.prisma`](../../apps/lfd-api/prisma/schema/production.prisma)                                             |
+| Elle n'a **aucune clé étrangère**, ni vers `production_order`, ni vers `orders`        | [migration `20260907240000_remise_au_fournil`](../../apps/lfd-api/prisma/migrations/20260907240000_remise_au_fournil/migration.sql) |
+| `order_id` et `reference` sont **tous deux `@unique`**                                 | idem                                                                                                                                |
+| La règle (`handoverBlocker`) vit au fournil depuis le 2026-09-07                       | [`handover/domain/services/handover.ts`](../../apps/lfd-api/src/handover/domain/services/handover.ts)                               |
+| L'agrégat, son dépôt, son service d'attestation et son contrôleur aussi                | `production/{domain,application,http}/`                                                                                             |
+| Le fournil déclare **trois ports** vers le commerce, dont `HandoverSubjectReader`      | [`production/channels/commerce/`](../../apps/lfd-api/src/production/channels/commerce/index.ts)                                     |
+| Le commerce garde un **snapshot** de le retrait : `handed_over_at/by/via` sur `orders` | [`prisma/schema/public/orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma)                                       |
+| Le **jeton** (`handover_token`) est sur `orders`, émis à la passation                  | idem, et [`prisma-order.repository.ts:49`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)             |
+| Le back-office est **en service depuis le 2026-08-17**                                 | `CLAUDE.md` §0                                                                                                                      |
+| 🔴 **Le retrait est DÉPLOYÉE** — `c4dbee9a`, `2c25c5ec`, `67700893` sont dans `main`   | vérifié par `git branch --contains`, 2026-09-10                                                                                     |
 
 ### 🔴 « Pas en service » ≠ « pas déployé »
 
-Hugo a indiqué que la remise n'est pas en service. **C'est une affirmation
+Hugo a indiqué que le retrait n'est pas en service. **C'est une affirmation
 d'usage, pas de structure**, et les deux ne se confondent pas — la V3 les avait
 confondues, et son §0 contredisait alors son §6 dans le même document.
 
@@ -84,7 +84,7 @@ consommateurs. Il y en a **trois**, et le troisième est une écriture destructr
 | Qui                                                                                                                                     | Quoi                                |
 | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | [`get-production-day-status.handler.ts:66`](../../apps/lfd-api/src/production/application/queries/get-production-day-status.handler.ts) | `referencesAttestedSince(closedAt)` |
-| Le contexte remise lui-même                                                                                                             | `findByOrderId`, `attest`           |
+| Le contexte retrait lui-même                                                                                                            | `findByOrderId`, `attest`           |
 | [`dev/seeding/production.seed.ts:69`](../../apps/lfd-api/src/dev/seeding/production.seed.ts)                                            | 🔴 `orderHandover.deleteMany()`     |
 
 Le troisième contredit déjà le JSDoc du port — « rien à supprimer : une
@@ -130,7 +130,7 @@ La production est un contexte **en forme de journée** : son agrégat racine est
 clôture, et ses deux pièces — feuille d'atelier, compte à produire — sont des
 instantanés d'un jour.
 
-La remise est **en forme de commande, et sans jour**. Elle est identifiée par
+Le retrait est **en forme de commande, et sans jour**. Elle est identifiée par
 `order_id`, elle n'a ni date de service ni clôture, et
 [`architecture-contexte-production.md`](architecture-contexte-production.md) dit
 déjà pourquoi, en toutes lettres :
@@ -140,7 +140,7 @@ déjà pourquoi, en toutes lettres :
 > créer sa ligne de plan à la volée, ce qui fausserait le compte à produire. »
 
 🔴 **C'est la migration du 2026-09-07 elle-même qui a refusé le mariage.** Le
-jour où la remise est entrée chez le fournil, on lui a donné une table
+jour où le retrait est entrée chez le fournil, on lui a donné une table
 **indépendante de la journée de production**, sans clé étrangère, parce
 qu'aucune autre forme ne marchait. Deux agrégats dont les clés d'identité
 diffèrent et qui ne partagent jamais une transaction sont deux contextes ; le
@@ -148,7 +148,7 @@ schéma commun était le vestige.
 
 ### L'objection, et ce qu'elle vaut vraiment
 
-**La remise a déménagé dans `production` il y a trois jours**, avec une raison
+**Le retrait a déménagé dans `production` il y a trois jours**, avec une raison
 écrite : « C'est au labo qu'on retire — le client s'y présente, le coursier y
 charge. »
 
@@ -165,7 +165,7 @@ table dayless du 07 est le fait neuf, et il n'existait pas quand la phrase a ét
 de `ProductionOrder`, dont la clé est `@@unique([serviceDay, orderId])` et qui n'a
 elle non plus aucune clé étrangère vers `orders`. Ce qui distingue vraiment les
 deux est le **`serviceDay`** : la ligne de production appartient à une journée, la
-remise à aucune.
+retrait à aucune.
 
 ⚠️ Et le test de falsification que la V3 proposait — « `order_handover` a-t-elle
 gagné une clé de journée ? » — est un test qu'aucun état du monde ne fera
@@ -173,42 +173,52 @@ gagné une clé de journée ? » — est un test qu'aucun état du monde ne fera
 
 **Ce qui reste vrai, et c'est plus modeste** : c'est le troisième emplacement de
 cette table en un mois, et aucune phrase de ce document n'empêchera un quatrième.
-Ce qui en tiendra lieu est le §3 bis — le jour où la remise aura sa file, ses
+Ce qui en tiendra lieu est le §3 bis — le jour où le retrait aura sa file, ses
 faits et son schéma, la refusionner coûtera une migration, pas un `git mv`. **La
 structure est le seul garde-fou qui tienne.**
 
 ## 2. 🔴 Le nom : `handover`, pas `remise`
 
-Le lexique du dépôt (`CLAUDE.md` §8) traduit **`remise` par `discount`**, et le
-dossier s'en sert : `PickupAddress.discountMode`, `discountValue`,
-`CartAdjustmentMode`. Un schéma Postgres nommé `remise` porterait donc, dans le
-vocabulaire du dépôt, le sens « rabais ».
+> **Mise à jour du 2026-09-12.** Ce paragraphe a été écrit quand le geste
+> s'appelait « remise » en français. Il ne l'est plus : « remise » ne désigne
+> que la **réduction de prix**, et le geste se dit **retrait** (`CLAUDE.md` §8).
+> Le raisonnement ci-dessous garde sa valeur — c'est lui qui a évité de graver
+> l'ambiguïté dans un schéma Postgres — mais son exemple a changé de camp.
+
+Le lexique du dépôt traduisait **`remise` par `discount`**, et le dossier s'en
+sert toujours : `PickupAddress.discountMode`, `discountValue`,
+`CartAdjustmentMode`. Un schéma Postgres nommé `remise` aurait donc porté, dans
+le vocabulaire du dépôt, le sens « rabais ».
 
 Le bloc, le schéma et le dossier s'appellent **`handover`**. Les libellés
-d'écran disent « remise » — c'est du français destiné à des humains, et le §8 le
+d'écran disent « retrait » — c'est du français destiné à des humains, et le §8 le
 prévoit explicitement.
 
-## 3. Ce que la remise possède — et ce qu'elle ne possède pas
+⚠️ La décision de 2026-09-12 ne change rien ici, et c'est le signe qu'elle était
+bonne : l'anglais distinguait déjà `pickup` (le mode) de `handover` (le geste).
+C'est le français qui rattrape son retard, pas le code.
 
-**Elle possède le FAIT** : quand, par qui, comment. C'est ce qu'elle grave et ce
+## 3. Ce que le retrait possède — et ce qu'il ne possède pas
+
+**Il possède le FAIT** : quand, par qui, comment. C'est ce qu'il grave et ce
 que personne d'autre ne peut attester.
 
-**Elle ne possède pas le jeton.** Il naît à la passation, voyage dans le courriel
+**Il ne possède pas le jeton.** Il naît à la passation, voyage dans le courriel
 du client, et le JSDoc de `issuesHandoverToken` a déjà tranché : « Le fournil
 s'en sert pour retrouver la commande, il ne le fabrique pas. » Le déplacer
 obligerait le commerce à demander un secret à un autre contexte au moment
 d'écrire une commande — un couplage synchrone à l'écriture, pour rien.
 
 ⚠️ **La question sera reposée**, parce qu'elle est légitime : un secret dont la
-seule fonction est d'ouvrir une porte de remise ressemble à une propriété de la
-remise. La réponse est que le **moment** décide, pas l'usage — et le moment est
+seule fonction est d'ouvrir une porte de retrait ressemble à une propriété du
+retrait. La réponse est que le **moment** décide, pas l'usage — et le moment est
 la passation.
 
 **Le commerce garde son snapshot** (`orders.handed_over_*`). Ce n'est pas une
 seconde vérité : c'est la figure du SKU du PIM recopié dans une `OrderLine`. Le
 commerce recopie ce qu'on lui annonce ; il ne le rend jamais.
 
-## 3 bis. Ce que la remise STOCKE, et ce qu'elle DEMANDE
+## 3 bis. Ce que le retrait STOCKE, et ce qu'il DEMANDE
 
 > **Réécrit le 2026-09-10, après trois versions fausses.** La V4 proposait une
 > file recopiée à la **passation** ; la V5 disait « ne stocke rien, demande
@@ -234,7 +244,7 @@ une bonne copie d'un passif.
 | Donnée                                               | Peut-elle diverger ?                        | Verdict     |
 | ---------------------------------------------------- | ------------------------------------------- | ----------- |
 | `production_order` — ce qu'on s'est engagé à faire   | **oui** — substitution, casse               | **fait** ✅ |
-| l'attestation de remise                              | **oui** — elle survit à l'annulation        | **fait** ✅ |
+| l'attestation de retrait                             | **oui** — elle survit à l'annulation        | **fait** ✅ |
 | « cette commande est attendue à 7 h au Labo »        | non — c'est la donnée du commerce, verbatim | cache ❌    |
 | le contenu du sac, ses lignes, ses quantités         | non — gelé, voir ci-dessous                 | cache ❌    |
 | « le client a appelé, il passera à 9 h »             | **oui** — ça naît au comptoir               | **fait** ✅ |
@@ -250,7 +260,7 @@ une commande annulée après coup ne doit pas effacer ce qu'on a cuit.
 
 **C'est de l'alimentaire.** Ce qui est cuit est facturé. Le contenu d'une
 commande **gèle donc quand le four démarre** — pas par convention, par la
-physique et la facturation. Et la remise a lieu **après**.
+physique et la facturation. Et le retrait a lieu **après**.
 
 Au moment où le comptoir sert, le contenu ne peut plus changer. Une lecture vive
 et un instantané pris à la clôture donnent **la même réponse** — donc
@@ -260,7 +270,7 @@ dépôt qui a déjà vu un abonné échouer.
 
 ⚠️ **Ce qui bouge encore après le four : pas le _quoi_, mais le _où_ et le
 _quand_.** Un client qui appelle pour passer plus tard, ou à l'autre point.
-C'est de la logistique, ça naît au comptoir, et **ça, la remise le stocke** —
+C'est de la logistique, ça naît au comptoir, et **ça, le retrait le stocke** —
 c'est la cinquième ligne du tableau.
 
 ### Ce que l'écran lit, et d'où
@@ -274,13 +284,13 @@ c'est la cinquième ligne du tableau.
 | « au frais », « appelé », « passera à 9 h » | **sa table à elle**                    |
 | l'attestation                               | **sa table à elle**                    |
 
-Le port qui sert les quatre premières lignes est **déclaré par la remise** et
+Le port qui sert les quatre premières lignes est **déclaré par le retrait** et
 implémenté par le commerce — `HandoverQueueReader.forDay(jour, point)`, voisin de
 `HandoverSubjectReader` qui existe déjà pour une commande. Le créneau vient avec,
-sans être recopié nulle part : c'est la réponse à « qui donne à la remise sa
+sans être recopié nulle part : c'est la réponse à « qui donne à le retrait sa
 colonne d'horaires ». **Le commerce, quand on la lui demande.**
 
-### 🔴 Le jour où la remise devient un worker à part
+### 🔴 Le jour où le retrait devient un worker à part
 
 C'est l'argument qui justifie de faire ce travail maintenant, et il faut dire
 exactement ce qu'il achète — parce que ce n'est pas ce qu'on croit.
@@ -288,7 +298,7 @@ exactement ce qu'il achète — parce que ce n'est pas ce qu'on croit.
 **Ce n'est pas la copie qui rend indépendant. C'est le port.**
 
 Aujourd'hui, `HandoverQueueReader` est une classe abstraite résolue en processus.
-Le jour où la remise part dans son propre Worker, avec sa base :
+Le jour où le retrait part dans son propre Worker, avec sa base :
 
 | Ce qui change                                                    | Ce qui ne change pas                                |
 | ---------------------------------------------------------------- | --------------------------------------------------- |
@@ -340,23 +350,23 @@ Et les deux surfaces à ajouter :
 ```
 
 **Pourquoi `b2b → handover` et non l'inverse** : après la coupe, deux fichiers du
-commerce importent la surface de la remise — `prisma-handover-subject.reader.ts`
+commerce importent la surface de le retrait — `prisma-handover-subject.reader.ts`
 (qui implémente `HandoverSubjectReader`) et `on-order-handed-over.handler.ts`
-(qui consomme l'événement). La remise, elle, ne lit **rien** du commerce : elle
+(qui consomme l'événement). Le retrait, lui, ne lit **rien** du commerce : il
 déclare, on lui fournit.
 
 **Pourquoi `handover → production`** : le compteur `handedOverBehind` du statut de
 journée a besoin des attestations. La production déclare
-`AttestedHandoversReader` dans `production/channels/handover/`, et **la remise
+`AttestedHandoversReader` dans `production/channels/handover/`, et **le retrait
 l'implémente** — donc c'est elle qui importe. `production → handover` reste `✗` :
-le fournil ne sait pas que la remise existe.
+le fournil ne sait pas que le retrait existe.
 
 ```mermaid
 flowchart LR
   subgraph B2B["b2b — le commerce"]
     ORD[(public.orders)]
   end
-  subgraph HAND["handover — la remise"]
+  subgraph HAND["handover — le retrait"]
     OH[(handover.order_handover)]
   end
   subgraph PROD["production — le fournil"]
@@ -383,7 +393,7 @@ sequenceDiagram
   actor C as Client
   participant B as b2b — le commerce
   participant P as production — le fournil
-  participant H as handover — la remise
+  participant H as handover — le retrait
   actor S as Staff
 
   Note over B: 1 · À LA PASSATION
@@ -412,7 +422,7 @@ sequenceDiagram
   H->>H: écrit handover.order_handover (UNIQUE tranche la course)
   H-)B: OrderHandedOverEvent
   B->>B: markFulfilled + recopie handed_over_at/by/via
-  H-->>S: « remise ✓ », dans la seconde
+  H-->>S: « retrait ✓ », dans la seconde
 
   Note over P: 5 · LE CONTREPOIDS, À LA LECTURE
   P->>H: AttestedHandoversReader.referencesAttestedSince(clôture)
@@ -423,18 +433,18 @@ sequenceDiagram
 
 **Trois choses que ce diagramme rend visibles, et qu'aucune prose ne rendait :**
 
-🔴 **Le fournil n'est nulle part dans l'étape 4.** Le colisage (3) et la remise
+🔴 **Le fournil n'est nulle part dans l'étape 4.** Le colisage (3) et le retrait
 (4) ne se touchent pas : entre les deux, il n'y a qu'un courriel au client. C'est
 l'argument du §1 sous une autre forme — et c'est aussi pourquoi une commande
 `placed` jamais colisée reste remettable.
 
-⚠️ **Les traits pleins vers `b2b` sont des APPELS SYNCHRONES** (la remise lit),
+⚠️ **Les traits pleins vers `b2b` sont des APPELS SYNCHRONES** (le retrait lit),
 les traits pointillés `-)` sont des **faits publiés** sur le bus en processus.
 Les seconds ne sont ni persistés ni rejoués : l'abonné doit être idempotent, et
 c'est pourquoi le service d'attestation republie sur ses chemins de refus.
 
 **Le secret change de main trois fois** (1 → courriel, 3 → courriel, 4 → scan) et
-n'est jamais fabriqué par la remise. C'est le §3 : le moment décide, et le moment
+n'est jamais fabriqué par le retrait. C'est le §3 : le moment décide, et le moment
 est la passation.
 
 ## 5. Le schéma et la table
@@ -445,13 +455,13 @@ exige alors un fichier **handover.prisma** — à créer, **un seul bloc** (c'es
 
 La table ne change **ni de forme, ni de nom, ni de colonne** : un déménagement de
 schéma, rien d'autre. Les deux `UNIQUE` la suivent — ce sont eux qui rendent la
-seconde remise _inexprimable_ plutôt que refusée par un `WHERE`, et le doc de
+seconde retrait _inexprimable_ plutôt que refusée par un `WHERE`, et le doc de
 production note que c'est « le seul endroit du dossier où le déménagement a rendu
 une garantie plus forte ». Elle ne doit pas s'affaiblir en déménageant.
 
 ## 6. La migration — et la condition qui la rend simple
 
-> **Décision d'Hugo, 2026-09-10 : la remise n'est pas en service.** Pas de
+> **Décision d'Hugo, 2026-09-10 : le retrait n'est pas en service.** Pas de
 > contrainte horaire, pas de contrainte de base. Ce §6 était, en V2, la partie la
 > plus lourde du plan — une vue Postgres de transition, un tableau de retour
 > arrière, une vérification sur Accelerate. **Tout cela disparaît**, et il faut
@@ -462,7 +472,7 @@ une garantie plus forte ». Elle ne doit pas s'affaiblir en déménageant.
 
 Tout ce qui suit suppose que **`production.order_handover` est vide en
 production**. Le back-office est en service depuis le 2026-08-17
-(`CLAUDE.md` §0), mais la remise n'a jamais été ouverte à l'usage.
+(`CLAUDE.md` §0), mais le retrait n'a jamais été ouverte à l'usage.
 
 🔴 **À vérifier avant d'appliquer la tranche 5**, et pas de mémoire :
 
@@ -564,9 +574,9 @@ rend 500 pendant une à deux minutes, vide ou non. Cf. §6 bis.
 
 **b. `handedOverBehind` reste-t-il au fournil ?** ⚠️ La V1 disait que le
 déplacer « supprimerait un port ». **Faux** : ce compteur croise `AttestedHandovers`
-(remise) **et** `PendingCommerceOrdersReader.behindOnHandover` — un port déclaré
+(retrait) **et** `PendingCommerceOrdersReader.behindOnHandover` — un port déclaré
 par la production et implémenté par le commerce. Le déplacer sur l'écran de
-remise ferait consommer à `handover` un port de `production` : on remplacerait
+retrait ferait consommer à `handover` un port de `production` : on remplacerait
 `handover → production` par… `handover → production`. Le gain est nul côté
 frontières ; la question redevient « où ce chiffre se lit-il le mieux ? », ce qui
 est un choix d'écran. **Ne bloque plus la tranche 3.**
@@ -602,7 +612,7 @@ geste à personne.
 
 ## 8. Ce que ce plan ne fait PAS
 
-**L'écran de remise du back-office.** Il se bâtit avant, après ou pendant, et
+**L'écran de retrait du back-office.** Il se bâtit avant, après ou pendant, et
 n'en dépend pas : il appelle une route HTTP. Les mélanger ferait dépendre un
 écran attendu d'une migration de schéma.
 
@@ -629,7 +639,7 @@ d'une adresse, ses heures ou son exigence de signature peuvent changer demain, e
 un bon déjà imprimé ne doit pas se mettre à dire autre chose que le papier parti
 en tournée. »
 
-**Trois conséquences pour l'écran de remise** — aucune ne relève de ce plan, mais
+**Trois conséquences pour l'écran de retrait** — aucune ne relève de ce plan, mais
 elles n'ont plus à être inventées :
 
 - la colonne de gauche de la file (`7 h – 8 h`) a sa donnée ;
@@ -686,15 +696,15 @@ fiche complète quand le comptoir ne suffit pas ». Le bon se sert en PDF sur
 | 5   | L'URL : **alias déprécié**, deux `@Controller` sur le même handler. Le service front, `traffic.ts`, `staff-access.ts`.                                                                 | oui                        |
 | 6   | `SELECT count(*)`, puis la migration **écrite à la main** : `CREATE SCHEMA` + `SET SCHEMA` + vue. `datasource`, **handover.prisma**, `schema-ops.counter.ts`, `schema-parity.spec.ts`. | oui — `SET SCHEMA` inverse |
 | 7   | Déploiements suivants : `DROP VIEW`, puis retrait de l'alias d'URL.                                                                                                                    | oui                        |
-| 8   | Doc : ce fichier passe à « implémenté », le doc de production perd son §remise, et sa ligne d'index (périmée) est reprise.                                                             | —                          |
+| 8   | Doc : ce fichier passe à « implémenté », le doc de production perd son §retrait, et sa ligne d'index (périmée) est reprise.                                                            | —                          |
 
 ### ⚠️ La tranche 3 n'est pas un `git mv`, et la V3 la chiffrait à zéro
 
 Ce qu'elle contient réellement, en plus du déplacement :
 
-- **scinder `production-errors.ts`** — 3 classes de remise sur 9 ;
+- **scinder `production-errors.ts`** — 3 classes de retrait sur 9 ;
 - **scinder `channels/commerce/index.ts`**, qui exporte aujourd'hui les cinq
-  pièces de la production **et** les trois de la remise, `HandoverVia` compris ;
+  pièces de la production **et** les trois de le retrait, `HandoverVia` compris ;
 - **créer `production/channels/handover/AttestedHandoversReader`** et **retirer
   `referencesAttestedSince` de `OrderHandoverRepository`** — le §4 la décrit
   comme acquise, elle n'existe pas ;

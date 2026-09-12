@@ -12,7 +12,7 @@ import type { HandoverVia } from "../../domain/services/handover.js";
 import { toHandoverView } from "../queries/get-handover.handler.js";
 
 /**
- * **Graver une remise** — le geste commun au scan et à la saisie.
+ * **Graver un retrait** — le geste commun au scan et à la saisie.
  *
  * ## Pourquoi un service, et pas deux handlers qui se ressemblent
  *
@@ -52,7 +52,7 @@ export class HandoverAttestation {
 
     let handover: OrderHandover;
     try {
-      // L'agrégat refuse ici — commande annulée, pas encore passée, déjà remise.
+      // L'agrégat refuse ici — commande annulée, pas encore passée, déjà retirée.
       handover = OrderHandover.attest(
         subject,
         existing === null ? null : existing.handedOverAt,
@@ -69,7 +69,7 @@ export class HandoverAttestation {
       // répéter le refus.
       //
       // On republie donc l'attestation EXISTANTE, jamais la nôtre — l'heure et
-      // l'auteur sont ceux de la vraie remise —, puis on laisse le refus partir
+      // l'auteur sont ceux du vrai retrait —, puis on laisse le refus partir
       // tel quel : c'est l'agrégat qui choisit le mot, et « annulée » explique
       // la situation mieux que « déjà remise » quand les deux sont vraies.
       this.republish(existing);
@@ -83,11 +83,11 @@ export class HandoverAttestation {
       // seule vraie, et elle est peut-être la FORTE —, mais on la RELIT pour la
       // réannoncer : le perdant est justement celui qui peut réparer.
       this.republish(await this.handovers.findByOrderId(subject.orderId));
-      throw new HandoverRefusedError("Cette commande vient d'être remise à un autre poste.");
+      throw new HandoverRefusedError("Cette commande vient d'être retirée à un autre poste.");
     }
 
     // Publié APRÈS l'écriture, et seulement par le GAGNANT : le perdant a levé
-    // plus haut. Le commerce reçoit donc exactement un fait par remise, comme la
+    // plus haut. Le commerce reçoit donc exactement un fait par retrait, comme la
     // base en porte exactement une.
     this.events.publish(new OrderHandedOverEvent(handover.reference, at, by, via));
 

@@ -51,7 +51,7 @@ describe("OrderHandover.attest", () => {
     // garde amont, qui rend un refus lisible au lieu d'une violation d'index.
     expect(() =>
       OrderHandover.attest(subject(), new Date("2026-09-07T15:00:00.000Z"), AT, "staff-1", "scan"),
-    ).toThrow(/déjà été remise/u);
+    ).toThrow(/déjà été retirée/u);
   });
 
   it("refuse une attestation SANS AUTEUR", () => {
@@ -64,7 +64,7 @@ describe("OrderHandover.attest", () => {
 
   it("n'applique AUCUNE règle en réhydratant une attestation déjà gravée", () => {
     // La règle dit ce qu'on a le droit de faire, pas ce qui a eu lieu. Une
-    // commande annulée après sa remise doit rester lisible — c'est précisément
+    // commande annulée après son retrait doit rester lisible — c'est précisément
     // le jour où on va relire l'attestation qui prouve qu'elle est partie.
     const rehydrated = OrderHandover.rehydrate("ord_1", "ORD-ABCD-1234", AT, "staff-1", "manual");
 

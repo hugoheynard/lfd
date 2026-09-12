@@ -49,7 +49,7 @@ export abstract class PendingCommerceOrdersReader {
   abstract behindOnPacking(references: readonly string[]): Promise<number>;
 
   /**
-   * La même question pour la **remise** : parmi ces commandes attestées remises
+   * La même question pour le **retrait** : parmi ces commandes attestées retirées
    * au comptoir du fournil, combien le commerce n'a-t-il pas encore closes ?
    *
    * Les références viennent de la table des attestations, pas du plan : une

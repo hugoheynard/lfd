@@ -17,12 +17,12 @@ import { formatWindow } from '../handover-queue';
 
 /**
  * Ce que la file remet au bon : la commande déjà lue par le rail, **dans la vue
- * de la remise**, plus ce que la ligne de file sait et que cette vue n'a pas.
+ * du retrait**, plus ce que la ligne de file sait et que cette vue n'a pas.
  *
  * 🔴 `order` était une `OrderView` jusqu'au 2026-09-11 — celle du client, avec
  * ses prix et sa trace de négociation. Ce panneau jure ne montrer aucun montant
  * et il tenait ce serment par son gabarit seul ; il le tient maintenant par sa
- * forme, comme les deux autres surfaces de remise.
+ * forme, comme les deux autres surfaces de retrait.
  */
 export interface SheetPanelData {
   readonly order: OrderHandoverView;
@@ -32,7 +32,7 @@ export interface SheetPanelData {
   /**
    * Le créneau convenu, **repris de la ligne de file** et non relu.
    *
-   * La vue de remise ne le porte pas : elle sert d'abord l'écran du scan, qui
+   * La vue de retrait ne le porte pas : elle sert d'abord l'écran du scan, qui
    * n'a pas de file derrière lui. Le rail, lui, a la ligne sous la main — la
    * redemander au serveur ferait un aller-retour pour une donnée déjà à
    * l'écran, et ouvrirait la porte à deux heures différentes sur le même bon.

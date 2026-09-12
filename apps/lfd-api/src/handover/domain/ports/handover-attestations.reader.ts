@@ -20,14 +20,14 @@ export abstract class HandoverAttestationsReader {
    * Rend une **table** plutôt qu'une liste : l'appelant croise avec sa file, et
    * une recherche linéaire par ligne redonnerait le coût qu'on vient d'éviter.
    * Les commandes sans attestation en sont simplement absentes — `undefined`
-   * dit « pas encore remise » sans qu'on ait à porter un drapeau.
+   * dit « pas encore retirée » sans qu'on ait à porter un drapeau.
    */
   abstract forOrders(orderIds: readonly string[]): Promise<ReadonlyMap<string, AttestedHandover>>;
 }
 
 import type { HandoverVia } from "@lfd/contracts";
 
-/** Ce qu'on sait d'une remise déjà faite, pour l'afficher — pas pour la rejouer. */
+/** Ce qu'on sait d'un retrait déjà fait, pour l'afficher — pas pour le rejouer. */
 export interface AttestedHandover {
   readonly handedOverAt: Date;
   /** L'identité staff figée (claim `sub`). Une preuve sans auteur n'en est pas. */
@@ -38,7 +38,7 @@ export interface AttestedHandover {
    * 🔴 Ce champ portait `string` jusqu'au 2026-09-11, et la vue aussi : la
    * distinction entre une attestation forte et une attestation faible reposait
    * sur deux chaînes que rien ne contraignait. C'est celle qu'il ne faut pas
-   * confondre — une remise saisie présentée comme un scan est fausse, pas
+   * confondre — un retrait saisi présenté comme un scan est faux, pas
    * faible.
    */
   readonly via: HandoverVia;

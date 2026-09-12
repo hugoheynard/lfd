@@ -1,5 +1,5 @@
 /**
- * **La remise saisie**, par le numéro de commande — le chemin de secours.
+ * **Le retrait saisi**, par le numéro de commande — le chemin de secours.
  *
  * Le numéro n'est pas un secret : ce qui protège cette porte est la session
  * staff, dont l'identité est gravée avec l'attestation.

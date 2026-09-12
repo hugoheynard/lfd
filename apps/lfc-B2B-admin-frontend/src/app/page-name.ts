@@ -1,7 +1,7 @@
 /**
  * **Le nom de l'écran**, tiré du titre de sa route.
  *
- * Les routes déclarent un titre de DOCUMENT — « File de remise — LFC B2B
+ * Les routes déclarent un titre de DOCUMENT — « Retrait boutique — LFC B2B
  * admin » — parce que c'est ce qu'un onglet de navigateur doit porter : le nom
  * de l'écran ET celui de l'application, dans cet ordre, pour qu'une rangée
  * d'onglets reste lisible. La barre de l'app, elle, dit déjà de quelle
@@ -35,7 +35,7 @@ export function pageNameOf(title: string | undefined): string | null {
  * jamais dire qu'on était dans le Commercial — alors que c'est précisément ce
  * que le fil d'en-tête doit porter : le général, puis le particulier.
  *
- * Hors espace (une page de premier niveau, comme la file de remise), il n'y a
+ * Hors espace (une page de premier niveau, comme le retrait boutique), il n'y a
  * pas de général : l'écran EST le niveau, et c'est son nom qui s'affiche.
  */
 export function headerNameOf(workspace: string | undefined, page: string | null): string | null {

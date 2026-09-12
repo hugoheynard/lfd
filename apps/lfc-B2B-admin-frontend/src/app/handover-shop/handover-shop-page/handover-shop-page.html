@@ -37,7 +37,7 @@
              s'accumule. -->
         <p class="masthead-counters">
           <span class="mc-done"
-            >{{ counters().handedOver }} remise{{ counters().handedOver > 1 ? 's' : '' }}</span
+            >{{ counters().handedOver }} retrait{{ counters().handedOver > 1 ? 's' : '' }}</span
           >
           <span class="mc-waiting">{{ counters().waiting }} en attente</span>
           @if (counters().late > 0) {
@@ -71,7 +71,7 @@
   -->
   <fold-aside-layout
     class="board"
-    asideRightLabel="Détail de la remise"
+    asideRightLabel="Détail du retrait"
     [class.is-stacked]="stacked()"
     [class.has-selection]="selected() !== null"
   >

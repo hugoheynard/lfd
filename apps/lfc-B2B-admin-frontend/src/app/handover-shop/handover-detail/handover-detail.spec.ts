@@ -20,11 +20,11 @@ import { HandoverDetail } from './handover-detail';
  * - 🔴 **la liste n'a plus de dépliage** : tout ce qu'on tend est à l'écran,
  *   d'un coup — un « + 2 références » demandait un clic pour voir le sac ;
  * - 🔴 **une annulation est annoncée**, pour qu'on puisse l'expliquer à qui se
- *   présente, et le geste de remise disparaît ;
+ *   présente, et le geste de retrait disparaît ;
  * - 🔴 **aucune heure n'est inventée** quand aucune tranche n'a été demandée ;
  * - 🔴 **le scan part du rail mais ne s'y ouvre pas** : il nomme la commande
  *   visée et laisse l'écran ouvrir le panneau ;
- * - 🔴 **la remise saisie dit qu'elle est saisie** — « sans code », parce
+ * - 🔴 **le retrait saisi dit qu'il est saisi** — « sans code », parce
  *   qu'une attestation faible et honnête vaut mieux qu'une forte et fausse.
  */
 
@@ -63,7 +63,7 @@ function line(over: Partial<OrderHandoverLine> = {}): OrderHandoverLine {
  *
  * 🔴 Le rail lisait sa commande par `AdminOrdersService.byId()`, qui rend
  * l'`OrderView` du CLIENT — prix unitaires, TVA, totaux, trace de négociation.
- * Il la lit maintenant dans la vue de la remise, où aucun montant n'existe. Le
+ * Il la lit maintenant dans la vue du retrait, où aucun montant n'existe. Le
  * doublé de commerce n'a donc plus de raison d'être ici : le rail ne parle plus
  * qu'au service de la file.
  *
@@ -198,7 +198,7 @@ describe('HandoverDetail', () => {
     expect(buttonSaying(fixture, 'Remettre')).toBeNull();
   });
 
-  it('🔴 une commande déjà remise ne se remet pas une seconde fois', async () => {
+  it('🔴 une commande déjà retirée ne se remet pas une seconde fois', async () => {
     const fixture = await render(
       entry({ state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z`, handedOverVia: 'scan' }),
     );
@@ -221,7 +221,7 @@ describe('HandoverDetail', () => {
     expect(asked.map((row) => row.reference)).toEqual(['CMD-1042']);
   });
 
-  it('🔴 une commande déjà remise n’offre plus de scan non plus', async () => {
+  it('🔴 une commande déjà retirée n’offre plus de scan non plus', async () => {
     const fixture = await render(
       entry({ state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z`, handedOverVia: 'scan' }),
     );
@@ -229,7 +229,7 @@ describe('HandoverDetail', () => {
     expect(buttonSaying(fixture, 'Scanner')).toBeNull();
   });
 
-  it('🔴 la remise saisie dit qu’elle est SANS CODE, et part sur le numéro', async () => {
+  it('🔴 le retrait saisi dit qu’il est SANS CODE, et part sur le numéro', async () => {
     const handovers = new FakeHandovers();
     const fixture = await render(entry(), { handovers });
 
@@ -244,7 +244,7 @@ describe('HandoverDetail', () => {
   it('🔴 toute la liste est à l’écran, sans dépliage à cliquer', async () => {
     // Régression : la liste se repliait au-delà de cinq lignes derrière un
     // « + N références ». Un clic pour voir ce qu'on est en train de tendre est
-    // un clic de trop, et il repoussait la remise à chaque ouverture.
+    // un clic de trop, et il repoussait le retrait à chaque ouverture.
     const handovers = new FakeHandovers();
     handovers.lines = [
       line({ sku: 'A', productName: 'Un' }),

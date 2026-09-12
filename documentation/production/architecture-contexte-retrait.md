@@ -1,26 +1,26 @@
-# La remise — le contexte, ce qu'il possède, et ce qu'il demande
+# Le retrait — le contexte, ce qu'il possède, et ce qu'il demande
 
 > **État : 🟡 partiellement implémenté.** Le bloc, ses ports, sa file et son écran
 > existent et tournent. **La table vit encore dans le schéma `production`** — la
 > migration est la dernière tranche, et elle est bloquée (§6).
 >
 > Ce document décrit **ce qui est**. Le chemin qui y mène et les décisions prises
-> sont dans [`plan-contexte-remise.md`](plan-contexte-remise.md) ; ce qu'on a
-> trouvé en le parcourant est dans [`journal-du-contexte-remise.md`](journal-du-contexte-remise.md).
+> sont dans [`plan-contexte-retrait.md`](plan-contexte-retrait.md) ; ce qu'on a
+> trouvé en le parcourant est dans [`journal-du-contexte-retrait.md`](journal-du-contexte-retrait.md).
 >
 > ⚠️ **Ces trois documents vivent dans `documentation/production/`** alors que la
-> remise n'est plus la production. C'est une incohérence assumée le temps du
+> retrait n'est plus la production. C'est une incohérence assumée le temps du
 > chantier : les déplacer casserait les références croisées pour un gain de
 > rangement. À trancher quand la migration sera passée.
 
-## 1. Ce que la remise est
+## 1. Ce que le retrait est
 
 **Le transfert de garde** — le moment où un sac change de mains, au comptoir ou
-sur le pas d'une porte. Elle grave qui a remis, quand, et **comment**.
+sur le pas d'une porte. Il grave qui a remis, quand, et **comment**.
 
-Elle est sortie du fournil le 2026-09-10, et le critère est la **clé
+Il est sorti du fournil le 2026-09-10, et le critère est la **clé
 d'identité** : la production est en forme de **journée** (`ProductionDay`, clé
-`service_day`, un événement de clôture, des instantanés figés) ; la remise est en
+`service_day`, un événement de clôture, des instantanés figés) ; le retrait est en
 forme de **commande**, sans jour ni clôture.
 
 🔴 Ce n'est pas une vue de l'esprit : c'est la migration du 2026-09-07 qui l'a
@@ -42,15 +42,15 @@ src/handover/
 │   ├── commands/   confirm-handover · confirm-manual-handover
 │   ├── queries/    get-handover · get-handover-queue
 │   └── services/handover-attestation.service.ts   le geste commun aux deux portes
-├── channels/commerce/                    CE QU'ELLE PUBLIE
+├── channels/commerce/                    CE QU'IL PUBLIE
 │   ├── handover-subject.reader.ts        une commande, par jeton ou par numéro
 │   ├── handover-queue.reader.ts          la file d'un jour
-│   └── order-handed-over.event.ts        le fait qu'elle annonce
+│   └── order-handed-over.event.ts        le fait qu'il annonce
 ├── infrastructure/                       deux adaptateurs Prisma + celui du fournil
 └── http/handover.controller.ts           `/admin/handover` (+ l'ancien, déprécié)
 ```
 
-## 3. Ce qu'elle possède, et ce qu'elle demande
+## 3. Ce qu'il possède, et ce qu'il demande
 
 La règle du dossier, et elle vaut au-delà de ce contexte :
 
@@ -67,7 +67,7 @@ La règle du dossier, et elle vaut au-delà de ce contexte :
 
 🔴 **Pourquoi la lecture vive est sans risque, et c'est du métier** : c'est de
 l'alimentaire, donc ce qui est cuit est facturé, donc le contenu d'une commande
-**gèle au démarrage du four**. La remise a lieu après. Une copie et une lecture
+**gèle au démarrage du four**. Le retrait a lieu après. Une copie et une lecture
 vive donneraient la même réponse — et la copie coûterait de suivre annulations
 et avenants sur un bus **ni persisté ni rejoué**.
 
@@ -109,7 +109,7 @@ bus en processus. Les seconds ne sont ni persistés ni rejoués : l'abonné doit
 être idempotent, et c'est pourquoi le service d'attestation **republie** sur ses
 chemins de refus.
 
-**Le fournil n'est nulle part dans la remise.** Entre le colisage et le scan, il
+**Le fournil n'est nulle part dans le retrait.** Entre le colisage et le scan, il
 n'y a qu'un courriel au client.
 
 ## 5. Les invariants, et où ils sont tenus
@@ -117,14 +117,14 @@ n'y a qu'un courriel au client.
 | Invariant                                               | Tenu par                                             |
 | ------------------------------------------------------- | ---------------------------------------------------- |
 | une commande ne se remet **qu'une fois**                | 🔴 **la base** — `order_id` et `reference` `@unique` |
-| une remise a toujours un **auteur**                     | l'agrégat, `OrderHandover.attest`                    |
+| un retrait a toujours un **auteur**                     | l'agrégat, `OrderHandover.attest`                    |
 | annulée ou brouillon ⇒ refus, **avec la phrase à lire** | `handoverBlocker`, pur                               |
 | `scan` ne se confond jamais avec `manual`               | `HandoverVia`, et le fait publié le porte            |
-| une remise **survit** à l'annulation de la commande     | `rehydrate` ne repasse pas la règle                  |
+| un retrait **survit** à l'annulation de la commande     | `rehydrate` ne repasse pas la règle                  |
 | la file dit `handed_over` même sur une annulée          | `stateOf`, et l'ordre de ses tests **est** la règle  |
 
 🔴 **L'unicité est en base, pas dans une condition.** Deux postes qui scannent le
-même QR à la seconde près produisent exactement une remise ; le perdant l'apprend
+même QR à la seconde près produisent exactement un retrait ; le perdant l'apprend
 par `P2002`, relit l'attestation du gagnant et la **republie** — parce que le
 perdant est justement celui qui peut réparer une propagation manquée.
 
@@ -147,10 +147,10 @@ un **500 au comptoir**, que la table ait été vide ou non.
 déploiement à part, et un e2e l'atteste pour qu'on ne le retire pas trop tôt.
 
 **Les états de comptoir** — « au frais », « client appelé », « passera à 9 h » —
-n'existent pas encore. Ce sont les premiers **faits propres** que la remise
+n'existent pas encore. Ce sont les premiers **faits propres** que le retrait
 devrait porter, et le §3 dit pourquoi ils lui reviennent.
 
-## 7. Le jour où la remise devient un worker
+## 7. Le jour où le retrait devient un worker
 
 C'est **le port** qui rend ce découpage bon marché, pas une copie de données.
 

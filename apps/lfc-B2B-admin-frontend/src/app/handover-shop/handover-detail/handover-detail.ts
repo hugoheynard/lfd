@@ -55,7 +55,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
  *
  * ## Ce qu'il atteste, et comment il le dit
  *
- * 🔴 **Il atteste une remise SAISIE, jamais un scan.** Le scan
+ * 🔴 **Il atteste un retrait SAISI, jamais un scan.** Le scan
  * (`/retrait/:token`) prouve la présence ; un clic non. Le serveur porte donc
  * deux verbes, et celui-ci grave `manual` — une attestation **faible et
  * honnête**. Le bouton l'écrit en toutes lettres : « Remettre sans code ».
@@ -109,7 +109,7 @@ export class HandoverDetail {
   protected readonly state = signal<LoadState>('idle');
 
   /**
-   * La commande relue **dans la vue de la remise**, et pas dans celle du client.
+   * La commande relue **dans la vue du retrait**, et pas dans celle du client.
    *
    * 🔴 C'était une `OrderView` jusqu'au 2026-09-11 — prix unitaires, TVA,
    * totaux, trace de négociation étage par étage. Elle arrivait sur un poste de
@@ -183,7 +183,7 @@ export class HandoverDetail {
       return '';
     }
     if (entry.state === 'handed_over') {
-      return 'Déjà remise. Le sac est parti.';
+      return 'Déjà retirée. Le sac est parti.';
     }
     return entry.readyAt === null
       ? 'Pas encore déclarée prête par le fournil.'
@@ -268,7 +268,7 @@ export class HandoverDetail {
       order,
       pickupLabel: entry.pickupLabel,
       customerLabel: entry.customerLabel,
-      // Le créneau vient de la LIGNE : la vue de remise sert d'abord l'écran du
+      // Le créneau vient de la LIGNE : la vue de retrait sert d'abord l'écran du
       // scan, qui n'a pas de file derrière lui, et ne le porte donc pas.
       window: entry.window,
     };
@@ -278,7 +278,7 @@ export class HandoverDetail {
   /**
    * **Le scan, depuis le rail** — l'attestation forte, sur la commande ouverte.
    *
-   * Il est au-dessus de la remise saisie, et l'ordre est le message : on tend
+   * Il est au-dessus du retrait saisi, et l'ordre est le message : on tend
    * le lecteur d'abord, et on se rabat sur la saisie quand le code manque. Le
    * panneau vérifiera que le code lu désigne bien CETTE commande.
    */
@@ -289,7 +289,7 @@ export class HandoverDetail {
     }
   }
 
-  /** **La remise saisie**, depuis le rail — le chemin sans QR. */
+  /** **Le retrait saisi**, depuis le rail — le chemin sans QR. */
   protected async remit(): Promise<void> {
     const entry = this.entry();
     if (entry === null) {
@@ -300,7 +300,7 @@ export class HandoverDetail {
       await this.handovers.confirmManually(entry.reference);
       this.remitted.emit();
     } catch (caught) {
-      this.notify.error(caught, "Cette remise n'a pas pu être enregistrée.");
+      this.notify.error(caught, "Ce retrait n'a pas pu être enregistré.");
     } finally {
       this.remitting.set(false);
     }
