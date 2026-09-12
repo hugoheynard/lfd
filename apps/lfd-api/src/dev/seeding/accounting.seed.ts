@@ -84,7 +84,7 @@ const SEEDED_ICS = "FR00ZZZ900001";
  * 🔴 Il n'est ici que parce que c'est le compte du **créancier** — le nôtre,
  * celui où l'argent arrive, et qui s'imprime sur un mandat. Un IBAN de
  * **débiteur** ne se sèmerait pas ainsi : il ne se stocke pas en clair
- * (`architecture-prelevement-sepa-direct.md` §4).
+ * (`prelevement-sepa.md` §4).
  */
 const SEEDED_CREDITOR_IBAN = "FR7630006000011234567890189";
 

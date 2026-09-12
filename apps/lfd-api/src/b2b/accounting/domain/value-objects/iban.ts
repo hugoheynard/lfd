@@ -22,7 +22,7 @@ const LETTER_OFFSET = 55;
  *
  * ⚠️ Cette classe valide et normalise. Elle ne dit **rien** de la protection de
  * la valeur : un IBAN de débiteur ne se stocke pas en clair et ne ressort jamais
- * d'une API de lecture (cf. `architecture-prelevement-sepa-direct.md` §4).
+ * d'une API de lecture (cf. `prelevement-sepa.md` §4).
  */
 export class Iban {
   private constructor(readonly value: string) {}

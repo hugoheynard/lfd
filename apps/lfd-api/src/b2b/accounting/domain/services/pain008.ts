@@ -9,7 +9,7 @@ import type { BillableCompany } from "../ports/billable-orders.reader.js";
  * C'est le fichier qu'on dépose au portail de la banque, et la seule pièce du
  * système dont une erreur se paie en argent réel plutôt qu'en écran faux. Le
  * format, ses pièges et les questions encore ouvertes vivent dans
- * [`format-pain-008.md`](../../../../../../documentation/comptabilite/format-pain-008.md).
+ * [`prelevement-sepa.md`](../../../../../../documentation/comptabilite/prelevement-sepa.md).
  *
  * ## 🔴 CE FICHIER EST UN BROUILLON, ET IL DOIT LE RESTER
  *
@@ -126,7 +126,7 @@ function transaction(
   // ⚠️ Il n'est stable que tant que la composition du lot ne change pas. Le vrai
   // `EndToEndId` devra porter le numéro de TENTATIVE pour rester traçable après
   // une re-présentation — c'est la tranche 9, et le budget de 35 caractères y
-  // sera serré (voir `format-pain-008.md`).
+  // sera serré (voir `prelevement-sepa.md`).
   const endToEndId = `${cycleTag}-${String(rank + 1).padStart(3, "0")}`;
   return [
     `      <DrctDbtTxInf>`,
@@ -157,7 +157,7 @@ function draftBanner(): string {
     `  n'accepte, plutot que d'inventer des valeurs plausibles.`,
     ``,
     `  Il sert a relire notre bloc creancier et la forme du lot, avec un`,
-    `  conseiller bancaire. Voir documentation/comptabilite/format-pain-008.md.`,
+    `  conseiller bancaire. Voir documentation/comptabilite/prelevement-sepa.md.`,
     `-->`,
   ].join("\n");
 }
@@ -183,7 +183,7 @@ export function cycleTagOf(cycleEnd: Date): string {
  * annoncé au débiteur.
  *
  * ⚠️ Elle ne tient pas compte des jours ouvrés ni du délai de présentation de la
- * banque — deux inconnues de `format-pain-008.md` (questions 3 et 8). C'est une
+ * banque — deux inconnues de `prelevement-sepa.md` (questions 3 et 8). C'est une
  * raison de plus pour que ce fichier reste un brouillon.
  */
 function requestedCollectionDay(cycleEnd: Date, preNotificationDays: number): string {

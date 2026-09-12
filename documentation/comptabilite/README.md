@@ -11,29 +11,24 @@ propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 
 ## Par où entrer
 
-| Doc                                                                                  | Quand l'ouvrir                                                                                                        |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| [`architecture-prelevement-sepa-direct.md`](architecture-prelevement-sepa-direct.md) | **Le document de référence.** Ce qu'on construit : notre ICS, la RUM frappée chez nous, le lot `pain.008`, la reprise |
-| [`architecture-prelevement-sepa.md`](architecture-prelevement-sepa.md)               | Ce qui **tourne** et qu'on quitte : les mandats Stripe. À lire pour comprendre l'existant, pas pour l'étendre         |
+| Doc                                          | Quand l'ouvrir                                                                                                                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`prelevement-sepa.md`](prelevement-sepa.md) | **Toujours.** C'est le document unique du sujet : l'objectif, l'état des lieux vérifié, le mandat, l'IBAN, le fichier `pain.008`, les objections ouvertes et le découpage. |
 
-⚠️ **Les deux se contredisent, et c'est voulu.** Le second décrit un système
-qu'on abandonne ; sa décision B — « Stripe frappe la référence » — a été
-délibérément renversée le 2026-09-10. Chacun porte un bandeau qui le dit. Ne pas
-« harmoniser ».
+> **Fusion du 2026-09-12.** Trois documents se partageaient le prélèvement — le
+> socle Stripe, la conception directe, et le format du fichier. Ils se
+> contredisaient **volontairement** (le premier décrivait un système qu'on
+> quitte), et chacun portait un bandeau pour le dire. Ça marche tant qu'on sait
+> lequel lire en premier ; ce savoir-là ne se transmet pas. Les trois sont
+> supprimés, leur contenu est dans le document unique, et les contradictions y
+> sont racontées **au passé** plutôt que mises en vis-à-vis.
 
-## Où trouver quoi
+## Ce qu'il faut savoir avant d'y toucher
 
-### L'entité juridique émettrice (`LegalEntity`)
+### L'entité juridique émettrice (`LegalEntity`) — en service
 
-Sa conception est la **tranche 1** du document de référence, et la section
-« T1, livrée le 2026-09-10 — ce qu'elle contient vraiment » dit ce qui a
-réellement été construit, y compris ce qui a été livré en plus du périmètre
-annoncé.
-
-Elle est **en service**. Le code : `apps/lfd-api/src/b2b/accounting/`, l'écran :
-Comptabilité › Entités juridiques.
-
-Ce qu'il faut savoir avant d'y toucher :
+Code : `apps/lfd-api/src/b2b/accounting/`. Écran : Comptabilité › Entités
+juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 
 - **Trois ports sur une seule table**, et un seul est exporté. `CreditorReader`
   rend une **copie figée** ; exporter le port d'écriture laisserait un autre
@@ -42,57 +37,44 @@ Ce qu'il faut savoir avant d'y toucher :
 - **L'ICS ne se remplace pas.** Chaque mandat signé le porte imprimé.
 - **L'IBAN créancier entre par une seule route et ne ressort par aucune.** La
   vue n'en rend que quatre caractères. Un e2e le tient sur ce que le serveur
-  sérialise, pas sur ce qu'un mapper prétend.
-- Le **logo** de l'entité est une donnée, pas une constante du produit : une
-  seconde entité aurait le sien.
+  **sérialise**, pas sur ce qu'un mapper prétend.
+- Le **logo** est une donnée, pas une constante du produit : une seconde entité
+  aurait le sien.
+- La surface HTTP est en **trois contrôleurs** depuis le 2026-09-12 — le
+  registre, ce qui décide de l'encaissement (ICS, compte, pré-notification), et
+  ce qui sort en octets (logo, fiche de mandat). Même adresse de base.
 
-### Le mandat SEPA
+### Le mandat SEPA — trois choses portent ce nom
 
-Deux choses portent ce nom, et les confondre coûte cher :
+| Ce qui existe                     | Où                                               | État                                                                                              |
+| --------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Le mandat **Stripe**              | `src/b2b/payments/`                              | **gelé** — plus aucun n'est créé depuis le 2026-09-10                                             |
+| La **fiche vierge** au modèle EPC | `accounting/domain/services/sepa-mandate-pdf.ts` | **livrée** — préremplie de notre bloc créancier, marquée EXEMPLE, donc **non signable à dessein** |
+| Le mandat **direct**, nominatif   | —                                                | **à faire** : c'est lui qui débloque tout le reste                                                |
 
-| Ce qui existe                     | Où                                                       | État                                                                                |
-| --------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Le mandat **Stripe**              | `src/b2b/payments/`                                      | **en service** — enregistre, prouve, révoque. La référence vient d'EUX              |
-| La **fiche vierge** au modèle EPC | `src/b2b/accounting/domain/services/sepa-mandate-pdf.ts` | **livrée** le 2026-09-10 — préremplie de notre bloc créancier, sans débiteur ni RUM |
-| Le mandat **direct**, nominatif   | —                                                        | **tranche 2, bloquée** par l'objection 2 de la §0 ter                               |
+### La RUM — écrite, branchée à rien
 
-La fiche vierge est un **fragment de la tranche 3, livré en avance sur la 2** :
-la section « T3, fragment livré le 2026-09-10 » du document de référence dit
-pourquoi, et ce que T3 doit encore livrer.
-
-### La RUM
-
-🔴 **Le value object existe déjà et n'est branché à rien** —
-`src/b2b/payments/domain/value-objects/rum.ts`, complet, neuf tests, aucun
-consommateur en production. Il est né avec le socle du prélèvement direct, puis
-le chantier a été mis en pause. Le document de référence l'inventorie comme
-orphelin ; ne pas le réécrire en croyant qu'il manque.
-
-Il dérive la référence de l'identifiant du mandat (`LFC` + ULID, 29 caractères
-sous la borne EPC de 35), ce qui rend la collision **impossible par
-construction** au lieu de surveillée — et permet de retrouver un mandat depuis
-sa seule référence, ce qui compte le jour où un client appelle avec pour toute
-information la ligne de son relevé.
-
-⚠️ Cette garantie ne couvre que la RUM **que nous frappons**. `Rum.create` relit
-aussi des références venues d'un import ou d'un fichier de retour, et une reprise
-de portefeuille en apporte de tiers, qui peuvent se heurter entre elles. C'est là
-que l'index `UNIQUE (creditor_id, rum)` prévu en tranche 2 gagne sa place — pas
-sur le chemin de la frappe. _(vérifié le 2026-09-10)_
+🔴 `src/b2b/payments/domain/value-objects/rum.ts` est complet et testé, et
+**aucun fichier du dépôt ne l'importe** _(vérifié le 2026-09-12)_. Né avec le
+socle direct, puis le chantier a été mis en pause. **Ne pas le réécrire en
+croyant qu'il manque.**
 
 ## Ce qui n'est pas ici
 
-- **La facturation** — [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md).
-  Elle est le sujet voisin, ses tranches 4 à 6 sont ordonnancées dans le document
-  de référence, et son code est appelé à rejoindre `b2b/accounting/`. Elle
-  déménagera le jour où ce sera fait, pas avant : un doc qu'on range d'après un
-  plan décrit un dépôt qui n'existe pas.
+- **La facturation** — [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md),
+  dont le document unique périme la tranche 7 et la §6. Elle déménagera ici le
+  jour où son code rejoindra `b2b/accounting/`, pas avant : un doc qu'on range
+  d'après un plan décrit un dépôt qui n'existe pas.
 - **Les alertes de compte client**, la **commande**, le **catalogue** — dans
   `../b2b/` et `../order/`.
 
 ## L'état d'esprit
 
-Quatre **objections bloquantes** sont ouvertes sur le document de référence, et
-la §0 ter dit laquelle bloque quelle tranche. Aucune ne touche la tranche 1 —
-c'est pour ça que la reprise a commencé par l'entité juridique, et pas parce que
-c'était le plus facile.
+Quatre **objections bloquantes** restent ouvertes, et le document unique dit
+laquelle bloque quelle tranche. **Aucune ne touche l'entité juridique** — c'est
+pour ça que la reprise a commencé par elle, et pas parce que c'était le plus
+facile.
+
+Et une question qui n'est pas technique : **le calcul des frais**, motif
+d'origine de tout le chantier, n'a jamais été chiffré contre le coût d'un
+émetteur direct. Une reprise devrait commencer par là.

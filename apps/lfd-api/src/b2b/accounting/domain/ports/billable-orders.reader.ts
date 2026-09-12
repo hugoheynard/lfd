@@ -4,7 +4,7 @@
  * ## L'assiette, et pourquoi elle vit ici
  *
  * Le montant prélevé n'est pas une facture — nous n'en émettons pas (§0 quater
- * de `architecture-prelevement-sepa-direct.md`). C'est la **somme des commandes
+ * de `prelevement-sepa.md`). C'est la **somme des commandes
  * passées au compte** pendant le cycle, et son critère est une règle
  * d'ARGENT : le poser au mauvais endroit se paie en prélèvements manquants ou
  * en double.
