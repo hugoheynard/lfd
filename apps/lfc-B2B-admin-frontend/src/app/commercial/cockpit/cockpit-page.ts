@@ -2,9 +2,11 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  TemplateRef,
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -21,13 +23,21 @@ import type {
   GrowthStatsView,
   LeadScoreView,
   OrderMetricsView,
+  PortfolioMetricsView,
+  ProductionForecastView,
 } from '@lfd/contracts';
 import type { SupportRequestView } from '@lfd/contracts';
 
 import type { AdminCompany } from '../../comptes-clients/admin-company';
 import { NotifyService } from '../../notify.service';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
-import { Chart, type ChartOption } from '../../shared/chart/chart';
+import { PortfolioMetricsService } from '../../comptes-clients/portfolio-metrics.service';
+import { ProductionService } from '../../production/production.service';
+import { isoDay, shiftDay } from '../../production/previsionnel/previsionnel-range';
+import { providePageHeader } from '../page-header.store';
+import { CockpitBar, type CockpitKpi } from './cockpit-bar/cockpit-bar';
+import { tomorrowOrders, type TomorrowOrders } from './cockpit-bar/tomorrow-orders';
+import { type ChartOption } from '../../shared/chart/chart';
 import { AvailabilityService } from '../availability/availability.service';
 import { buildAppointmentEvents, type AppointmentEvent } from '../calendrier/appointment-events';
 import { sparklineOption } from '../../analytics/croissance/growth-charts';
@@ -42,12 +52,6 @@ import { PlayQueue } from './play-queue/play-queue';
 import { RevenuePaceCard } from './revenue-pace/revenue-pace';
 
 type LoadState = 'loading' | 'ready' | 'error';
-
-/** Une tuile de l'en-tête : un chiffre, ce qu'il compte. */
-interface Kpi {
-  readonly label: string;
-  readonly value: string;
-}
 
 /**
  * **Tableau de bord commercial** — ce qu'il faut avoir sous les yeux en arrivant :
@@ -71,7 +75,7 @@ interface Kpi {
   selector: 'app-cockpit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    Chart,
+    CockpitBar,
     FoldButtonComponent,
     FoldCalendarDayComponent,
     PinnedAccounts,
@@ -92,6 +96,8 @@ export class CockpitPage {
   private readonly appointmentsApi = inject(AvailabilityService);
   private readonly supportApi = inject(SupportService);
   private readonly companiesApi = inject(AdminCompaniesService);
+  private readonly portfolioApi = inject(PortfolioMetricsService);
+  private readonly productionApi = inject(ProductionService);
   private readonly pins = inject(PinnedAccountsStore);
   private readonly sheetsApi = inject(CustomerSheetService);
   private readonly notify = inject(NotifyService);
@@ -102,6 +108,10 @@ export class CockpitPage {
   protected readonly stats = signal<GrowthStatsView | null>(null);
   protected readonly requests = signal<readonly SupportRequestView[]>([]);
   protected readonly orderMetrics = signal<OrderMetricsView | null>(null);
+  /** L'état du parc — la MÊME lecture que la bande des Comptes clients. */
+  protected readonly portfolio = signal<PortfolioMetricsView | null>(null);
+  /** Le prévisionnel du fournil, réduit à J+1 — `null` si la lecture a échoué. */
+  private readonly forecast = signal<ProductionForecastView | null>(null);
   private readonly appointments = signal<readonly AppointmentView[]>([]);
   private readonly companies = signal<readonly AdminCompany[]>([]);
   /** Les fiches des comptes suivis QUI demandent un indicateur — pas les autres. */
@@ -132,7 +142,7 @@ export class CockpitPage {
       .filter((company): company is AdminCompany => company !== undefined);
   });
 
-  protected readonly kpis = computed<readonly Kpi[]>(() => {
+  protected readonly kpis = computed<readonly CockpitKpi[]>(() => {
     const stats = this.stats();
     if (stats === null) {
       return [];
@@ -146,6 +156,17 @@ export class CockpitPage {
     ];
   });
 
+  /**
+   * Ce qui est déjà commandé **pour demain**.
+   *
+   * La maison prend les commandes à J pour J+1 : c'est donc le seul chiffre de
+   * la bande sur lequel on peut encore agir dans la journée. Le parc se
+   * constate, la croissance s'analyse ; demain se rattrape.
+   */
+  protected readonly tomorrow = computed<TomorrowOrders | null>(() =>
+    tomorrowOrders(this.forecast(), this.tomorrowDay()),
+  );
+
   protected readonly spark = computed<ChartOption | null>(() => {
     const stats = this.stats();
     return stats === null ? null : sparklineOption(stats.acquisition);
@@ -156,7 +177,26 @@ export class CockpitPage {
     () => this.leads()[0]?.computedAt ?? null,
   );
 
+  /** Le gabarit de la bande, posé dans l'en-tête de la coquille commerciale. */
+  private readonly figuresTemplate = viewChild<TemplateRef<unknown>>('figures');
+  /** `undefined` avant résolution du `viewChild` ; le magasin, lui, parle en `null`. */
+  private readonly headerFigures = computed<TemplateRef<unknown> | null>(
+    () => this.figuresTemplate() ?? null,
+  );
+
+  /**
+   * Le jour de service de demain, `AAAA-MM-JJ`.
+   *
+   * Calculé depuis la date LOCALE puis décalé en UTC : « demain » est le jour
+   * tel que l'équipe le dit, et le déduire de l'UTC ferait basculer le repère à
+   * une heure du matin — l'écran annoncerait alors le surlendemain.
+   */
+  private tomorrowDay(): string {
+    return shiftDay(isoDay(new Date()), 1);
+  }
+
   constructor() {
+    providePageHeader({ figures: this.headerFigures });
     afterNextRender(() => {
       this.today.set(foldToday());
       this.now.set(new Date());
@@ -181,8 +221,22 @@ export class CockpitPage {
       this.loadInto(this.requests, () => this.supportApi.list(), []),
       this.loadInto(this.appointments, () => this.dayAppointments(), []),
       this.loadInto(this.companies, () => this.companiesApi.list(), []),
+      this.loadInto(this.portfolio, () => this.portfolioApi.load(), null),
+      this.loadForecast(),
       this.loadSheets(),
     ]);
+  }
+
+  /**
+   * Le prévisionnel, sur la SEULE journée de demain.
+   *
+   * Une plage d'un jour, et non la semaine du fournil : la bande n'affiche que
+   * J+1, et demander sept colonnes pour en lire une ferait payer six matrices
+   * de produits à chaque ouverture du tableau de bord.
+   */
+  private async loadForecast(): Promise<void> {
+    const day = this.tomorrowDay();
+    this.forecast.set(await this.safe(() => this.productionApi.forecast(day, day), null));
   }
 
   /** Clôt une demande, puis la retire de la file — optimiste, rechargé ensuite. */

@@ -1,0 +1,186 @@
+:host {
+  display: block;
+}
+
+/**
+ * Colonnes ÉCRITES, et non `auto-fit` : la carte de croissance est plus large
+ * que les deux autres, et un nombre de colonnes qui dépend de la largeur la
+ * ferait tantôt tenir sur la ligne, tantôt passer à la suivante en laissant un
+ * trou à côté d'elle.
+ */
+.cb {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(280px, 1.6fr);
+  gap: var(--fold-space-md);
+}
+
+/**
+ * Le bandeau est SOMBRE : les cartes sont posées sur le chrome de la coquille,
+ * pas sur le papier. Le filet de 5 % (`border-subtle`) y passe sous le seuil de
+ * l'œil — on prend celui de 10 %, et l'ombre portée tombe : une carte claire
+ * projette une ombre, un support sombre n'en projette pas.
+ *
+ * Quatre rangées : intitulé, mesure, note, lien. Le `1fr` sur la mesure pousse
+ * les liens au bas de chaque carte, alignés entre eux même quand la carte du
+ * milieu porte une note plus longue.
+ */
+.cb-card {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+}
+
+/* Petites capitales espacées : un intitulé de mesure ne se lit pas comme une
+   phrase, il s'identifie d'un coup d'œil. */
+.cb-label {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.cb-value {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Le tiret d'une lecture manquante ne doit pas peser autant qu'un chiffre :
+   sinon l'absence se lit comme une mesure. */
+.cb-unknown {
+  color: var(--fold-color-text-muted);
+}
+
+.cb-note {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: 1.4;
+  color: var(--fold-color-text-muted);
+}
+
+.cb-up {
+  color: var(--fold-color-success-text);
+  font-weight: 700;
+}
+
+/* Le lien, au pied de la carte et séparé d'un filet : il ferme la carte au lieu
+   de flotter sous la note, qu'il aurait sinon l'air de commenter. */
+.cb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin-top: var(--fold-space-md);
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border);
+  color: var(--fold-color-primary);
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cb-link:hover {
+  text-decoration: underline;
+}
+
+.cb-link:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--fold-radius-sm);
+}
+
+/* La flèche avance au survol : le seul mouvement de la bande, et il dit la
+   direction plutôt que d'attirer l'œil pour rien. */
+.cb-arrow {
+  transition: transform 120ms ease;
+}
+
+.cb-link:hover .cb-arrow {
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-arrow {
+    transition: none;
+  }
+  .cb-link:hover .cb-arrow {
+    transform: none;
+  }
+}
+
+.cb-kpis {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-lg);
+  margin-top: var(--fold-space-sm);
+}
+
+.cb-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cb-kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.cb-kpi-label {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  white-space: nowrap;
+}
+
+.cb-spark {
+  display: block;
+  margin-top: var(--fold-space-sm);
+}
+
+/**
+ * Sous 900px, les deux chiffres d'exploitation gardent la première ligne et la
+ * croissance prend la seconde, entière : quatre mesures et une courbe sur un
+ * tiers de la largeur ne se lisent plus, elles s'entassent.
+ */
+@media (max-width: 900px) {
+  .cb {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cb-card--growth {
+    grid-column: 1 / -1;
+  }
+
+  .cb-kpis {
+    gap: var(--fold-space-md);
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .cb {
+    gap: var(--fold-space-sm);
+  }
+
+  .cb-card {
+    padding: var(--fold-space-md);
+  }
+
+  .cb-value {
+    font-size: 1.5rem;
+  }
+
+  /* La courbe tombe la première : c'est une tendance, et on ne lit pas une
+     tendance sur 120 px de large. Les quatre chiffres, eux, restent. */
+  .cb-spark {
+    display: none;
+  }
+}
