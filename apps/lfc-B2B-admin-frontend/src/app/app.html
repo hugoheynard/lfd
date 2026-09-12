@@ -334,13 +334,19 @@
         (clicked)="mobileNavOpen.set(!mobileNavOpen())"
       />
 
-      <!-- La marque, puis l'écran ouvert. Le séparateur est porté par la
-           feuille et non écrit ici : un « / » dans le texte serait lu à voix
-           haute entre deux mots par un lecteur d'écran. -->
+      <!-- La marque, puis l'ESPACE de travail ouvert — à défaut l'écran. Dans
+           le Commercial, le nom de la vue est déjà en tête du rail secondaire
+           et dans le bandeau de la page : l'écrire ici une troisième fois
+           laissait « LFC PRO / Tableau de bord » sans jamais dire dans quel
+           espace on se trouvait.
+
+           Le séparateur est porté par la feuille et non écrit ici : un « / »
+           dans le texte serait lu à voix haute entre deux mots par un lecteur
+           d'écran. -->
       <p class="app-wordmark">
         <a class="app-brand" routerLink="/" aria-label="LFC Pro — accueil">LFC PRO</a>
-        @if (pageName(); as page) {
-          <span class="app-page">{{ page }}</span>
+        @if (headerName(); as name) {
+          <span class="app-page">{{ name }}</span>
         }
       </p>
 

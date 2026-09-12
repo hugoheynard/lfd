@@ -18,7 +18,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 
 import { NavCountsService } from './nav-counts.service';
-import { pageNameOf } from './page-name';
+import { headerNameOf, pageNameOf } from './page-name';
 import {
   FoldAppShellComponent,
   FoldAvatarDetailComponent,
@@ -299,6 +299,15 @@ export class App {
       map(() => pageNameOf(deepest(this.router.routerState.snapshot.root).title)),
     ),
     { initialValue: null },
+  );
+
+  /**
+   * Le second membre du fil d'en-tête : l'espace de travail ouvert, sinon
+   * l'écran. Un espace nomme déjà sa vue en tête de rail et dans son bandeau —
+   * l'en-tête, lui, doit dire OÙ l'on est, pas redire ce qu'on regarde.
+   */
+  protected readonly headerName = computed<string | null>(() =>
+    headerNameOf(this.workspace()?.title, this.pageName()),
   );
 
   constructor() {
