@@ -112,7 +112,8 @@ describe("renderSepaMandatePdf", () => {
   it("imprime l'ICS, le nom et l'adresse du créancier", async () => {
     const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     expect(text).toContain("FR00ZZZ900001");
-    expect(text).toContain("Crazeativity");
+    // Le TITULAIRE du compte, pas la raison sociale — cf. le describe dédié.
+    expect(text).toContain("CRAZEATIVITY");
     expect(text).toContain("Route de la Balme");
   });
 
@@ -178,5 +179,68 @@ describe("sampleMandateFileName", () => {
     expect(sampleMandateFileName(named)).toBe(
       "mandat-sepa-exemple-boulangerie-emile-fils-val-d-isere.pdf",
     );
+  });
+});
+
+/**
+ * 🔴 Le mandat imprime le créancier **tel que la banque le connaît** — le
+ * titulaire du compte —, pas la raison sociale du registre. Les deux coïncident
+ * presque toujours, et c'est « presque » qui décide : le débiteur rapproche le
+ * papier de sa ligne de relevé, et cette ligne vient du titulaire du compte
+ * (branché le 2026-09-12).
+ */
+describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
+  it("imprime le TITULAIRE du compte, et PAS la raison sociale, quand ils diffèrent", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf(
+        { ...CREDITOR, name: "Ancienne Raison Sociale", accountHolder: "CRAZEATIVITY SAS" },
+        null,
+      ),
+    );
+
+    expect(text).toContain("CRAZEATIVITY SAS");
+    expect(text).not.toContain("Ancienne Raison Sociale");
+  });
+
+  it("imprime l'adresse DU RIB, et pas celle du siège, quand elles diffèrent", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf(
+        {
+          ...CREDITOR,
+          addressLines: ["Siège social", "75001 Paris", "FR"],
+          accountAddressLines: ["Agence de la Balme", "73150 Val d'Isère", "FR"],
+        },
+        null,
+      ),
+    );
+
+    expect(text).toContain("Agence de la Balme");
+    expect(text).not.toContain("Siège social");
+  });
+
+  /**
+   * Le nom imprimé est repris DANS le texte d'autorisation (« vous autorisez
+   * (A) … »), pas seulement dans la zone 7. Un mandat qui autoriserait un nom et
+   * en nommerait un autre plus bas serait contestable.
+   */
+  it("emploie le MÊME nom dans l'autorisation et dans la zone du créancier", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf({ ...CREDITOR, accountHolder: "TITULAIRE UNIQUE" }, null),
+    );
+
+    expect(text.split("TITULAIRE UNIQUE").length - 1).toBeGreaterThan(1);
+  });
+
+  /** Repli pour les entités renseignées avant que le bloc du RIB existe. */
+  it("retombe sur la raison sociale et le siège quand aucun RIB n'est recopié", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf(
+        { ...CREDITOR, accountHolder: null, accountAddressLines: [] },
+        null,
+      ),
+    );
+
+    expect(text).toContain("Crazeativity");
+    expect(text).toContain("Route de la Balme");
   });
 });

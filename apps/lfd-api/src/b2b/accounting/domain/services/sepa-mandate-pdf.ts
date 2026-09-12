@@ -460,13 +460,13 @@ function creditorZones(doc: Doc, top: number, creditor: CreditorSnapshot): numbe
   let y = top;
 
   label(doc, "Nom du créancier", y);
-  dottedRow(doc, y, "Nom du créancier", 7, creditor.name);
+  dottedRow(doc, y, "Nom du créancier", 7, creditorNameOn(creditor));
   y += ROW;
 
   dottedRow(doc, y, "Identifiant du créancier", 8, creditor.ics);
   y += ROW;
 
-  const address = splitAddress(creditor.addressLines);
+  const address = splitAddress(creditorAddressOn(creditor));
   dottedRow(doc, y, "Numéro et nom de la rue", 9, address.street);
   y += ROW;
 
@@ -615,10 +615,16 @@ function footer(doc: Doc, top: number, creditor: CreditorSnapshot): number {
   vline(doc, split, top, bottom, HAIRLINE);
 
   put(doc, "A retourner à :", LABEL_X, top + 2 * MM, { size: 9.5 });
-  put(doc, [creditor.name, ...creditor.addressLines].join("\n"), LABEL_X, top + 6.5 * MM, {
-    size: 7.5,
-    width: split - LABEL_X - 4 * MM,
-  });
+  put(
+    doc,
+    [creditorNameOn(creditor), ...creditorAddressOn(creditor)].join("\n"),
+    LABEL_X,
+    top + 6.5 * MM,
+    {
+      size: 7.5,
+      width: split - LABEL_X - 4 * MM,
+    },
+  );
 
   put(doc, "Zone réservée à l'usage exclusif du créancier", split + 2 * MM, top + 2 * MM, {
     size: 8,
@@ -655,11 +661,11 @@ function draw(doc: Doc, creditor: CreditorSnapshot, logo: Buffer | null): void {
   watermark(doc);
   const top = title(doc);
   let y = header(doc, top, logo);
-  y = authorization(doc, y, creditor.name);
+  y = authorization(doc, y, creditorNameOn(creditor));
   y = debtorZones(doc, y);
   y = creditorZones(doc, y, creditor);
   y = signatureZones(doc, y);
-  y = contractZones(doc, y, creditor.name);
+  y = contractZones(doc, y, creditorNameOn(creditor));
   y = footer(doc, y, creditor);
 
   // Le cadre général en dernier : dessiné avant, les remplissages de cases le
@@ -725,4 +731,29 @@ export function sampleMandateFileName(creditor: CreditorSnapshot): string {
     .replace(/^-|-$/gu, "")
     .toLowerCase();
   return `mandat-sepa-exemple-${slug}.pdf`;
+}
+
+/**
+ * Le nom du créancier **tel que la banque le connaît** — le titulaire du compte.
+ *
+ * 🔴 Et pas la raison sociale du registre, alors que les deux coïncident presque
+ * toujours (branché le 2026-09-12). C'est « presque » qui décide : le débiteur
+ * verra sur son relevé le libellé que SA banque tire du nôtre, et c'est le
+ * titulaire du compte qui le produit. Imprimer un autre nom sur le mandat ferait
+ * un papier que le client ne rapproche pas de sa ligne de relevé — et un mandat
+ * qu'on ne reconnaît pas est un mandat qu'on conteste.
+ *
+ * Le repli sur la raison sociale ne sert que les entités renseignées avant que
+ * le bloc du RIB existe : `creditorSnapshot()` ne se rend que si un compte est
+ * posé, donc `accountHolder` est en pratique toujours là.
+ */
+function creditorNameOn(creditor: CreditorSnapshot): string {
+  return creditor.accountHolder ?? creditor.name;
+}
+
+/** Même raisonnement que {@link creditorNameOn}, pour l'adresse imprimée. */
+function creditorAddressOn(creditor: CreditorSnapshot): readonly string[] {
+  return creditor.accountAddressLines.length > 0
+    ? creditor.accountAddressLines
+    : creditor.addressLines;
 }
