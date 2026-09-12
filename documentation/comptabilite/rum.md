@@ -34,12 +34,12 @@ existe **avant** l'impression — et c'est elle qui transforme une fiche marqué
 
 ## 2. Les contraintes, et d'où elles viennent
 
-| Contrainte          | Valeur                                                 | Source                      |
-| ------------------- | ------------------------------------------------------ | --------------------------- |
-| Longueur maximale   | **35 caractères**                                      | la norme EPC                |
-| Longueur **réelle** | **26 caractères**                                      | 🔴 le peigne du formulaire  |
-| Jeu de caractères   | lettres non accentuées, chiffres, quelques séparateurs | le jeu **SEPA restreint**   |
-| Unicité             | une RUM par créancier                                  | `UNIQUE (creditor_id, rum)` |
+| Contrainte          | Valeur                                                 | Source                     |
+| ------------------- | ------------------------------------------------------ | -------------------------- |
+| Longueur maximale   | **35 caractères**                                      | la norme EPC               |
+| Longueur **réelle** | **26 caractères**                                      | 🔴 le peigne du formulaire |
+| Jeu de caractères   | lettres non accentuées, chiffres, quelques séparateurs | le jeu **SEPA restreint**  |
+| Unicité             | une RUM par créancier                                  | 🔴 **à créer** — voir §5   |
 
 ### 🔴 La vraie borne est 26, pas 35 — et elle vient du papier
 
@@ -67,77 +67,91 @@ qui transforme « Val d'Isère » en « Val d Isere » dans un `pain.008`.
 
 ## 3. 🔴 Comment elle est frappée — décidé le 2026-09-12
 
-**`LFC` + 23 caractères tirés du `SecretGenerator`** de `platform`.
+**`LFC` + le code du client + la date de frappe + six symboles tirés au sort.**
 
-|          | valeur                                                           |
-| -------- | ---------------------------------------------------------------- |
-| longueur | **26**, exactement le nombre de cases du formulaire              |
-| alphabet | Crockford base32 sans `I`, `L`, `O` ni `U`                       |
-| entropie | **115 bits**, sans composante temporelle                         |
-| préfixe  | `LFC`, pour reconnaître une de nos références au milieu d'autres |
+```
+LFC-9P2X4B-260912-K7M3QT
+ │     │       │      └── 6 symboles du `SecretGenerator` — la part imprévisible
+ │     │       └───────── YYMMDD, à Europe/Paris — la date de FRAPPE
+ │     └───────────────── le code de `Company.reference`, sans son `C-`
+ └─────────────────────── notre préfixe
+```
 
-⚠️ **23 et pas 26**, parce que le préfixe entre dans les mêmes cases. Le
-`SecretGenerator` rend 26 caractères : on en prend les 23 premiers, ce qui reste
-un tirage uniforme — chaque caractère est indépendant.
+|          | valeur                                                  |
+| -------- | ------------------------------------------------------- |
+| longueur | **24**, sous les 26 cases du formulaire                 |
+| alphabet | Crockford base32 sans `I`, `L`, `O` ni `U`, plus le `-` |
+| entropie | **~60 bits** — 30 du code client, 30 du tirage          |
 
-115 bits au lieu de 130 : l'écart est sans conséquence. Il faudrait de l'ordre de
-10¹⁷ mandats pour qu'une collision devienne probable, et l'index d'unicité
-l'attraperait de toute façon.
+### Pourquoi une forme lisible plutôt qu'un tirage opaque
 
-Le préfixe n'a aucune valeur technique. Il sert au moment où un client appelle
-avec, pour seule information, la ligne de son relevé.
+Une première version rendait `LFC` + 23 symboles du `SecretGenerator` : 115 bits,
+aucune structure. Elle a été écartée pour une raison qui ne se voit qu'au
+téléphone — **un client appelle avec, pour seule information, la ligne de son
+relevé bancaire.** Une référence structurée dit tout de suite qui et quand ; une
+référence opaque impose une recherche en base avant de pouvoir répondre.
 
-### Pourquoi plus l'identifiant du mandat
+### 🔴 La fuite de métadonnées est ASSUMÉE — décidé le 2026-09-12
 
-La première version dérivait la RUM de l'ULID du mandat. Un ULID porte **48 bits
-d'horodatage** puis 80 bits d'aléa.
+Deux RUM comparées révèlent l'ordre et l'écart de leurs dates de frappe. C'est
+**exactement** ce qui avait fait écarter une dérivation par l'ULID du mandat, et
+la contradiction est délibérée, pas un oubli :
 
-**Ce que ça n'ouvrait pas** : une énumération. 80 bits d'aléa ne se parcourent
-pas — l'attaque « deviner la RUM d'un autre client » était déjà fermée.
+- l'horodatage d'un ULID ne s'achetait **rien** — il était gratuit à retirer,
+  donc retiré ;
+- `YYMMDD` paie la lisibilité au support, tous les jours.
 
-**Ce que ça ouvrait** : deux RUM révélaient l'**ordre de création et l'écart de
-temps**, et deux mandats du même jour partageaient leurs huit premiers
-caractères. C'est une fuite de métadonnées — quand on a signé qui, à quel
-rythme. Gratuite à retirer, donc retirée.
+Et son audience est quasi nulle : un client ne voit jamais que **sa propre** RUM.
+Comparer deux RUM suppose une collusion entre deux clients, pour apprendre le
+jour où l'autre a signé.
 
-### Pourquoi pas un UUID
+⚠️ Ne pas « corriger » l'un des deux passages en croyant qu'ils se contredisent
+par accident.
 
-Deux raisons dirimantes, et une troisième qui suffirait :
+### 🔴 `YYMMDD` est la date de FRAPPE, jamais celle de la signature
 
-- sans tirets il fait **32 caractères**, soit **six de trop** pour les 26 cases
-  du formulaire. Ce n'était même pas la vraie raison quand elle a été écrite : on
-  croyait la borne à 35, et un UUID y tenait tout juste. La borne est 26 ;
-- il ne porte que **122 bits** en 32 caractères, là où la base32 en met **115 en 23** — soit une densité bien supérieure, ce qui est tout ce qui compte quand les cases sont comptées ;
-- l'UUID **v7** est horodaté : il réintroduirait exactement ce qu'on retire.
+La RUM existe **avant** l'impression ; le client signe et renvoie le scan des
+jours plus tard. Les deux dates diffèrent toujours, et c'est celle de la
+**signature** — pas celle-ci — qui alimente le `DtOfSgntr` obligatoire d'un
+`pain.008`.
 
-### Pourquoi le `SecretGenerator` et pas un tirage local
+Lire cette estampille comme une date de consentement serait la même faute que
+celle qu'`accepted_at` commet aujourd'hui en étant NOT NULL : un champ qui nomme
+autre chose que ce qu'il contient.
 
-Le port existe, avec son adaptateur `randomBytes` et son doublé déterministe
-pour les tests. Son alphabet a été choisi pour être **dicté au téléphone** — les
-quatre lettres écartées sont celles qu'on confond avec `1` et `0`. C'est
-exactement l'usage que la RUM invoque.
+### Pourquoi reprendre la référence client ne l'affaiblit pas
 
-🔴 Et il tire de `node:crypto`, **jamais `Math.random()`** : le `CLAUDE.md` §3.2
-l'interdit pour fabriquer un identifiant, et `lint:clock-port` le tient.
+Parce que `Company.reference` **n'est pas un compteur**. `platform/id/reference.ts`
+la dérive de la **queue** d'un ULID — soit 30 bits d'aléa, dans un alphabet sans
+caractères ambigus _(vérifié le 2026-09-12)_. Elle ne révèle donc ni notre nombre
+de clients, ni leur ordre d'arrivée, et la RUM reste hors de portée d'une
+énumération : 60 bits en tout.
+
+🔴 **C'est la seule hypothèse que la frappe fait sur un autre contexte.** Le jour
+où cette référence deviendrait séquentielle, ce paragraphe serait faux et la
+forme serait à revoir.
+
+### Le fuseau, et pourquoi il est écrit
+
+L'estampille se lit à **`Europe/Paris`**, jamais en UTC ni au fuseau du serveur.
+Un mandat frappé à 00h30 à Paris tombe la veille en UTC : la référence imprimée
+contredirait la date affichée à l'écran le même soir, et l'écart ne se verrait
+que sur un papier déjà signé. Deux tests le tiennent, un par saison.
 
 ---
 
-## 4. Ce qu'on perd, et pourquoi c'est acceptable
+## 4. Les deux bornes, et pourquoi elles diffèrent
 
-La dérivation par l'ULID se défendait par deux arguments, et ils étaient bons
-quand ils ont été écrits.
+| Méthode      | Borne  | Raison                                          |
+| ------------ | ------ | ----------------------------------------------- |
+| `Rum.mint`   | **26** | le peigne du formulaire, qui tronque en silence |
+| `Rum.create` | **35** | la norme EPC                                    |
 
-**« Collision impossible par construction »** devient « improbable, plus index
-unique ». Mais la tranche qui frappe la RUM pose de toute façon
-`UNIQUE (creditor_id, rum)` — la base l'attrape. Et à 130 bits, l'événement
-n'arrive pas.
-
-**« Retrouver le mandat depuis sa seule référence, sans table de
-correspondance »** — cet argument **tient toujours**, par ce même index.
-
-Les deux étaient plus forts avant que l'index existe. ⚠️ Le JSDoc de `Rum` les
-invoque encore : il doit être réécrit dans le **même commit** que la bascule,
-sans quoi il défendra un mécanisme disparu.
+La relecture est **volontairement plus permissive que la frappe**. Une référence
+déjà en base n'a pas forcément été frappée ici — l'ère Stripe en a posé, et une
+reprise de portefeuille en apportera d'autres. Resserrer `create` sur 26 ferait
+échouer la **rehydratation** d'un mandat parfaitement valide : ce serait refuser
+un fait accompli au nom d'une règle qui ne s'applique qu'à ce qu'on écrit.
 
 ---
 
@@ -151,15 +165,26 @@ portefeuille en apporte, et elles peuvent se heurter entre elles.
 propre frappe. Une garantie qui ne couvre que ce qu'on fabrique ne couvre pas ce
 qu'on reçoit.
 
+⚠️ **Cet index n'existe pas encore.** La colonne `reference` de
+`payment_mandates` ne porte aujourd'hui **aucune contrainte d'unicité**, et la
+colonne `creditor_id` que ce document invoque n'existe pas non plus _(vérifié le
+2026-09-12)_. L'unicité que la RUM exige est à créer ; elle n'est pas acquise.
+
 ---
 
 ## 6. État
 
-**Le value object existe, complet et testé** —
-`apps/lfd-api/src/b2b/payments/domain/value-objects/rum.ts` — et **aucun fichier
-du dépôt ne l'importe** _(vérifié le 2026-09-12)_. Il est né avec le socle du
-prélèvement direct, puis le chantier a été mis en pause.
+**Le value object est frappé et testé** —
+[`rum.ts`](../../apps/lfd-api/src/b2b/payments/domain/value-objects/rum.ts), 16
+tests — et **aucun fichier du dépôt ne l'importe encore** _(au 2026-09-12)_.
 
-**Ne pas le réécrire en croyant qu'il manque.** Ce qui reste à faire sur lui est
-étroit : remplacer `forMandate` par une frappe aléatoire, et réécrire le JSDoc
-qui défend l'ancienne.
+Ce qui reste, et qui ne dépend plus de la RUM elle-même :
+
+1. **l'état brouillon** — `accepted_at` est NOT NULL, donc un mandat frappé mais
+   pas encore signé n'a pas de place dans le modèle ;
+2. **le port d'écriture** — `save()` n'écrit que quatre colonnes, donc rien ne
+   persisterait une RUM ni un état de brouillon ;
+3. **l'unicité** — l'index du §5, qui n'existe pas ;
+4. **le brouillon unique par société** — deux brouillons peuvent coexister, et
+   `findCurrent` rend le plus récent : le scan reviendrait sur un mandat dont la
+   RUM diffère de celle imprimée.
