@@ -44,7 +44,10 @@ services:
   # jamais déposer de pièce. MinIO rend le flux RÉEL en local — mêmes octets,
   # même SDK, même chemin de code que la prod.
   minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # quay.io : Docker Hub a fermé l'accès public à `minio/minio` le
+    # 2026-09-12. Le tag est le même, le registre change — sans quoi un poste
+    # neuf ne monte plus son stockage objet du tout.
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: lfd-dev-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -108,7 +111,8 @@ services:
   # Miroir prod : en R2 le bucket média est servi par `media.lafoliecoffee.info`,
   # le bucket des pièces par personne.
   minio-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    # Même fermeture que l'image serveur, même report vers quay.io.
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     container_name: lfd-dev-minio-init
     depends_on:
       minio:
