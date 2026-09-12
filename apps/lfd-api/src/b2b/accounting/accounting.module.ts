@@ -22,6 +22,8 @@ import { LegalEntityReader } from "./domain/ports/legal-entity.reader.js";
 import { LegalEntityRepository } from "./domain/ports/legal-entity.repository.js";
 import { AdminBillingCycleController } from "./http/admin-billing-cycle.controller.js";
 import { AdminLegalEntitiesController } from "./http/admin-legal-entities.controller.js";
+import { AdminLegalEntityBankingController } from "./http/admin-legal-entity-banking.controller.js";
+import { AdminLegalEntityDocumentsController } from "./http/admin-legal-entity-documents.controller.js";
 import { PrismaBillableOrdersReader } from "./infrastructure/prisma-billable-orders.reader.js";
 import { PrismaCreditorReader } from "./infrastructure/prisma-creditor.reader.js";
 import { PrismaLegalEntityLogoReader } from "./infrastructure/prisma-legal-entity-logo.reader.js";
@@ -47,7 +49,15 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
  * ne choisit pas le bucket dans lequel il écrit.
  */
 @Module({
-  controllers: [AdminLegalEntitiesController, AdminBillingCycleController],
+  controllers: [
+    // Trois surfaces sur la même adresse de base : le registre, ce qui décide
+    // de l'encaissement, et ce qui sort en octets. Les chemins ne se recouvrent
+    // pas, donc l'ordre ci-dessous ne décide de rien.
+    AdminLegalEntitiesController,
+    AdminLegalEntityBankingController,
+    AdminLegalEntityDocumentsController,
+    AdminBillingCycleController,
+  ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
     { provide: LegalEntityReader, useClass: PrismaLegalEntityReader },
