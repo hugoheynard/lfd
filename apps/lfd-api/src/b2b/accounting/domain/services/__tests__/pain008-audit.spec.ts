@@ -58,6 +58,28 @@ describe("auditCsv — ce qu'il lit dans le fichier", () => {
     expect(csv).not.toContain(CREDITOR.creditorIban);
   });
 
+  /**
+   * Régression : le CSV sortait l'IBAN du débiteur EN CLAIR jusqu'au
+   * 2026-09-12, alors que la même donnée est scellée en base. Un fichier qui
+   * recompose ce que le coffre scelle le défait par la porte de service.
+   */
+  it("masque l'IBAN du débiteur — jamais en clair dans un fichier qui circule", () => {
+    const csv = auditCsv(
+      XML.replace(/<IBAN>IBAN-INCONNU<\/IBAN>/, "<IBAN>FR7630006000011234567890189</IBAN>"),
+    );
+    expect(csv).not.toContain("FR7630006000011234567890189");
+    expect(csv).toContain("••••0189");
+  });
+
+  /**
+   * Le pendant du précédent : une sentinelle masquée deviendrait `••••ONNU`,
+   * c'est-à-dire un compte d'apparence normale là où le fichier dit qu'il n'en
+   * a pas. Le masque ne s'applique qu'à ce qui a la forme d'un IBAN.
+   */
+  it("ne masque PAS la sentinelle du lot non branché", () => {
+    expect(auditCsv(XML)).toContain('"IBAN-INCONNU"');
+  });
+
   it("s'ouvre par un BOM et se termine par des CRLF — sinon le tableur ment", () => {
     const csv = auditCsv(XML);
     expect(csv.startsWith("﻿")).toBe(true);
