@@ -48,6 +48,8 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     creditorIdentityFrozen: false,
     creditorAccountLast4: '',
     preNotificationDays: 14,
+    mandateContractDescription: '',
+    mandatePaymentType: 'recurrent',
     archivedAt: null,
     canCollect: false,
     hasLogo: false,

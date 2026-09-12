@@ -72,6 +72,10 @@ export interface LegalEntityView {
    */
   readonly creditorIdentityFrozen: boolean;
   readonly preNotificationDays: number;
+  /** Zone 20 du mandat — ce que le contrat couvre, en une ligne. */
+  readonly mandateContractDescription: string;
+  /** Zone 12 du mandat — récurrent, ou ponctuel. */
+  readonly mandatePaymentType: MandatePaymentType;
   /** ISO, ou `null` si l'entité est vivante. */
   readonly archivedAt: string | null;
   /**
@@ -219,6 +223,36 @@ export const setCreditorAccountPayloadSchema = z.object({
 export type SetCreditorAccountPayload = z.infer<typeof setCreditorAccountPayloadSchema>;
 
 /** Le délai annoncé au débiteur entre la notification et le débit, négocié avec la banque. */
+/**
+ * Les **réglages de mandat** d'une entité — zones 20 et 12 du modèle EPC.
+ *
+ * 🔴 Sur l'entité et non sur le compte d'un client : ils décrivent **ce que nous
+ * vendons**, pas ce que tel client a acheté. La même phrase et le même régime
+ * partent sur tous les mandats qu'elle émet — les ressaisir par dossier ferait
+ * circuler deux formulations chez des clients voisins, qui se parlent.
+ *
+ * Ce qui reste par client : le **numéro** de contrat (zone 19) et le code du
+ * débiteur (zone 14), qui désignent un dossier précis.
+ */
+export const mandatePaymentTypeSchema = z.enum(["recurrent", "one_off"]);
+export type MandatePaymentType = z.infer<typeof mandatePaymentTypeSchema>;
+
+export const MANDATE_PAYMENT_TYPE_LABELS: Readonly<Record<MandatePaymentType, string>> = {
+  recurrent: "Paiement récurrent / répétitif",
+  one_off: "Paiement ponctuel",
+};
+
+export const setMandateDefaultsPayloadSchema = z.object({
+  /**
+   * Zone 20. Bornée parce qu'elle s'imprime sur **une** ligne pointillée : un
+   * dépassement ne tronque rien, il sort du cadre — et une phrase qui déborde
+   * sur un document qu'on fait signer se lit comme un formulaire mal imprimé.
+   */
+  contractDescription: z.string().trim().max(90).default(""),
+  paymentType: mandatePaymentTypeSchema.default("recurrent"),
+});
+export type SetMandateDefaultsPayload = z.infer<typeof setMandateDefaultsPayloadSchema>;
+
 export const setPreNotificationPayloadSchema = z.object({
   days: z.int().min(PRE_NOTIFICATION_MIN_DAYS).max(PRE_NOTIFICATION_MAX_DAYS),
 });

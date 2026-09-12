@@ -40,7 +40,6 @@ export class GetCompanyBankAccountHandler implements IQueryHandler<
       last4: found.account.last4(),
       debtorReference: options.debtorReference,
       contractNumber: options.contractNumber,
-      contractDescription: options.contractDescription,
     };
   }
 }

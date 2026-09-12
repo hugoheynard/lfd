@@ -2,7 +2,6 @@
 export interface MandateOptionsInput {
   readonly debtorReference: string;
   readonly contractNumber: string;
-  readonly contractDescription: string;
 }
 
 /**
@@ -14,7 +13,11 @@ export interface MandateOptionsInput {
  * - **14** — le code que le débiteur veut voir revenir sur son relevé bancaire.
  *   C'est ce qui lui permet de rapprocher une ligne d'un dossier chez nous ;
  * - **19** — le numéro du contrat que ce mandat sert à régler ;
- * - **20** — ce que ce contrat couvre, en une ligne.
+ *
+ * ⚠️ La **zone 20** (description du contrat) a vécu ici jusqu'au 2026-09-12 et
+ * est remontée sur l'entité émettrice : elle décrit ce que NOUS vendons, pas ce
+ * que ce client-là a acheté, et la ressaisir par dossier aurait fait circuler
+ * deux formulations chez des clients voisins.
  *
  * 🔴 **Aucune ne conditionne la validité du mandat.** La norme les range sous
  * « fournies seulement à titre indicatif ». Un objet vide est donc un état
@@ -30,12 +33,11 @@ export class MandateOptions {
   private constructor(
     readonly debtorReference: string,
     readonly contractNumber: string,
-    readonly contractDescription: string,
   ) {}
 
   /** Aucune zone facultative renseignée — le cas ordinaire. */
   static empty(): MandateOptions {
-    return new MandateOptions("", "", "");
+    return new MandateOptions("", "");
   }
 
   /**
@@ -46,17 +48,11 @@ export class MandateOptions {
    * feraient croire à un changement là où il n'y en a pas.
    */
   static create(input: MandateOptionsInput): MandateOptions {
-    return new MandateOptions(
-      input.debtorReference.trim(),
-      input.contractNumber.trim(),
-      input.contractDescription.trim(),
-    );
+    return new MandateOptions(input.debtorReference.trim(), input.contractNumber.trim());
   }
 
   /** Y a-t-il quoi que ce soit à imprimer dans la dernière section ? */
   get isEmpty(): boolean {
-    return (
-      this.debtorReference === "" && this.contractNumber === "" && this.contractDescription === ""
-    );
+    return this.debtorReference === "" && this.contractNumber === "";
   }
 }

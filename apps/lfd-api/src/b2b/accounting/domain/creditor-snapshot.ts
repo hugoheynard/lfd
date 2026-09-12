@@ -1,3 +1,5 @@
+import type { MandatePaymentType } from "./value-objects/mandate-defaults.js";
+
 /**
  * L'émetteur, **figé au jour où le document a été produit**.
  *
@@ -47,4 +49,15 @@ export interface CreditorSnapshot {
   readonly accountAddressLines: readonly string[];
   /** Le délai annoncé entre la notification et le débit, en jours. */
   readonly preNotificationDays: number;
+
+  /**
+   * **Zone 20** du mandat — ce que le contrat couvre, en une ligne.
+   *
+   * Sur l'ÉMETTEUR et non sur le client : elle décrit ce que nous vendons, et
+   * la même phrase part sur tous les mandats de cette entité.
+   */
+  readonly mandateContractDescription: string;
+
+  /** **Zone 12** du mandat — récurrent, ou ponctuel. */
+  readonly mandatePaymentType: MandatePaymentType;
 }

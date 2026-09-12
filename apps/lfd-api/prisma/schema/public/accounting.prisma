@@ -11,6 +11,21 @@
 /// État d'un **mandat de prélèvement SEPA**. `active` seul autorise un
 /// prélèvement ; `revoked` est notre geste (retrait du client, ou remplacement),
 /// `failed` vient de la banque. Un mandat ne s'efface jamais, il se date.
+/// Le **type de paiement** d'un mandat — zone 12 du modèle EPC.
+///
+/// Binaire, et c'est la norme qui le veut : le formulaire porte deux cases à
+/// cocher, pas une liste. `recurrent` autorise une série de prélèvements ;
+/// `one_off` n'en autorise qu'un, après quoi le mandat est mort.
+///
+/// ⚠️ Ce n'est PAS le `SeqTp` d'un `pain.008` (`FRST`/`RCUR`/`OOFF`/`FNAL`),
+/// qui décrit une échéance dans une série. Celui-ci décrit l'autorisation.
+enum MandatePaymentType {
+  recurrent
+  one_off
+
+  @@schema("public")
+}
+
 enum MandateStatus {
   pending
   active
@@ -63,6 +78,20 @@ model LegalEntity {
   postalCode   String @map("postal_code")
   city         String
   countryCode  String @default("FR") @map("country_code")
+
+  /// Ce que nos mandats disent du contrat qu'ils servent — zone 20, et le type
+  /// de paiement de la zone 12.
+  ///
+  /// 🔴 Ils vivent ICI et non sur le compte d'un client, parce qu'ils décrivent
+  /// **ce que nous vendons**, pas ce que ce client-là a acheté : la même phrase
+  /// et le même régime sur tous les mandats que cette entité émet. Les poser par
+  /// client ferait ressaisir la même chose à chaque dossier, et deux
+  /// formulations concurrentes finiraient par circuler chez des clients voisins.
+  ///
+  /// Ce qui reste par client, et pourquoi : le **numéro** de contrat (zone 19)
+  /// et le code du débiteur (zone 14) désignent un dossier précis.
+  mandateContractDescription String             @default("") @map("mandate_contract_description")
+  mandatePaymentType         MandatePaymentType @default(recurrent) @map("mandate_payment_type")
 
   // `null` = pas encore attribué par la Banque de France. C'est un état normal
   // et durable : on prépare le dossier des semaines avant de recevoir l'ICS.
@@ -199,8 +228,13 @@ model CompanyBankAccount {
   /// figure sur tout virement. Le sceller coûterait sans rien protéger.
   bic String
 
-  /// Les zones **facultatives** du mandat qui nous appartiennent — 14, 19 et 20
-  /// du modèle EPC. Elles ne conditionnent pas la validité du mandat, et elles
+  /// Les zones **facultatives** du mandat propres à CE client — 14 et 19 du
+  /// modèle EPC.
+  ///
+  /// ⚠️ La zone 20 (description du contrat) a vécu ici jusqu'au 2026-09-12 et
+  /// est remontée sur `legal_entities` : elle décrit ce que nous vendons, pas
+  /// ce que ce client-là a acheté. La colonne n'a jamais atteint la production
+  /// — sa migration de création n'était pas déployée (vérifié). Elles ne conditionnent pas la validité du mandat, et elles
   /// vivent ici parce que cette table porte tout le **côté client du mandat** :
   /// les zones 1 à 6 sont le RIB ci-dessus, celles-ci le contrat.
   ///
@@ -210,9 +244,8 @@ model CompanyBankAccount {
   ///
   /// `""` et non `null` : une zone facultative non renseignée est un état
   /// normal et durable, pas une donnée manquante à signaler.
-  debtorReference     String @default("") @map("debtor_reference")
-  contractNumber      String @default("") @map("contract_number")
-  contractDescription String @default("") @map("contract_description")
+  debtorReference String @default("") @map("debtor_reference")
+  contractNumber  String @default("") @map("contract_number")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

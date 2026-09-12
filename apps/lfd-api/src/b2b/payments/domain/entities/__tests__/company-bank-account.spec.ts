@@ -103,7 +103,6 @@ describe("CompanyBankAccount", () => {
       bic: "CEPAFRPP751",
       debtorReference: "C-9P2X4B",
       contractNumber: "",
-      contractDescription: "Fourniture de café",
     };
 
     it("fait l'aller-retour sans rien perdre", () => {
@@ -138,7 +137,6 @@ describe("CompanyBankAccount — les zones facultatives du mandat", () => {
       MandateOptions.create({
         debtorReference: "C-9P2X4B",
         contractNumber: "CT-42",
-        contractDescription: "Fourniture de café",
       }),
     );
 
@@ -152,7 +150,6 @@ describe("CompanyBankAccount — les zones facultatives du mandat", () => {
     const options = MandateOptions.create({
       debtorReference: "  C-9P2X4B ",
       contractNumber: " ",
-      contractDescription: "",
     });
     expect(options.debtorReference).toBe("C-9P2X4B");
     expect(options.contractNumber).toBe("");

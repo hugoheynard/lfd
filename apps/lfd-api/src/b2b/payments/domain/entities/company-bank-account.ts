@@ -25,10 +25,9 @@ export interface CompanyBankAccountSnapshot {
   readonly countryCode: string;
   readonly iban: string;
   readonly bic: string;
-  /** Zones 14, 19 et 20 du mandat — facultatives, `""` quand non renseignées. */
+  /** Zones 14 et 19 du mandat — facultatives, `""` quand non renseignées. */
   readonly debtorReference: string;
   readonly contractNumber: string;
-  readonly contractDescription: string;
 }
 
 /** Ce qu'il faut pour déclarer le RIB d'un client. */
@@ -100,7 +99,6 @@ export class CompanyBankAccount {
       MandateOptions.create({
         debtorReference: snapshot.debtorReference,
         contractNumber: snapshot.contractNumber,
-        contractDescription: snapshot.contractDescription,
       }),
     );
   }
@@ -161,7 +159,6 @@ export class CompanyBankAccount {
       bic: bic.value,
       debtorReference: this.optionsValue.debtorReference,
       contractNumber: this.optionsValue.contractNumber,
-      contractDescription: this.optionsValue.contractDescription,
     };
   }
 }

@@ -104,7 +104,10 @@ export {
   declareLegalEntityPayloadSchema,
   legalAddressPayloadSchema,
   setCreditorAccountPayloadSchema,
+  setMandateDefaultsPayloadSchema,
   setPreNotificationPayloadSchema,
+  mandatePaymentTypeSchema,
+  MANDATE_PAYMENT_TYPE_LABELS,
   LEGAL_ENTITY_LOGO_ACCEPTED_TYPES,
   LEGAL_ENTITY_LOGO_MAX_BYTES,
   LEGAL_ENTITY_LOGO_MIN_SIDE,
@@ -117,7 +120,9 @@ export type {
   CorrectLegalEntityPayload,
   DeclareLegalEntityPayload,
   LegalEntityView,
+  MandatePaymentType,
   SetCreditorAccountPayload,
+  SetMandateDefaultsPayload,
   SetPreNotificationPayload,
 } from "./legal-entity.js";
 export {

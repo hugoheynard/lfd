@@ -5,6 +5,7 @@ import {
   EntityCannotCollectError,
   InvalidLegalEntityError,
 } from "../errors/accounting-errors.js";
+import { MandateDefaults, type MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import { CreditorIdentifier } from "../value-objects/creditor-identifier.js";
 import { Bic } from "../value-objects/bic.js";
 import { CreditorAccount } from "../value-objects/creditor-account.js";
@@ -70,6 +71,8 @@ export interface LegalEntitySnapshot {
    */
   readonly firstMandateIssuedAt: Date | null;
   readonly preNotificationDays: number;
+  readonly mandateContractDescription: string;
+  readonly mandatePaymentType: MandatePaymentType;
   /**
    * La clé de l'objet de stockage qui porte le logo, ou `null`. 🔴 Elle ne sort
    * d'aucune API — une clé qui sort finit par être acceptée en entrée.
@@ -113,6 +116,7 @@ export class LegalEntity {
     private creditorAccountValue: CreditorAccount | null,
     private firstMandateIssuedAtValue: Date | null,
     private preNotificationDaysValue: number,
+    private mandateDefaultsValue: MandateDefaults,
     private logoKeyValue: string | null,
     private archivedAtValue: Date | null,
   ) {}
@@ -137,6 +141,9 @@ export class LegalEntity {
       null,
       null,
       PRE_NOTIFICATION_DEFAULT_DAYS,
+      // Rien à dire du contrat, et récurrent : le régime de l'immense majorité
+      // des mandats, et celui qu'on corrige le moins souvent.
+      MandateDefaults.initial(),
       null,
       null,
     );
@@ -163,6 +170,7 @@ export class LegalEntity {
       accountOf(snapshot),
       snapshot.firstMandateIssuedAt,
       snapshot.preNotificationDays,
+      MandateDefaults.create(snapshot.mandateContractDescription, snapshot.mandatePaymentType),
       snapshot.logoKey,
       snapshot.archivedAt,
     );
@@ -316,6 +324,25 @@ export class LegalEntity {
     this.preNotificationDaysValue = days;
   }
 
+  get mandateDefaults(): MandateDefaults {
+    return this.mandateDefaultsValue;
+  }
+
+  /**
+   * Ce que les mandats de cette entité diront du contrat — zones 20 et 12.
+   *
+   * ⚠️ **Pas de gel après le premier mandat**, contrairement au titulaire et à
+   * l'adresse du créancier. La raison est dans ce que chacun engage : le nom
+   * gelé est celui que le débiteur a lu et signé, et en changer dirait qu'il a
+   * autorisé quelqu'un d'autre. Une description de contrat, elle, n'est
+   * qu'indicative — la norme le dit — et un mandat déjà signé garde la sienne,
+   * imprimée sur son papier. Geler ici empêcherait de corriger une faute de
+   * frappe pour tous les mandats à venir, sans rien protéger.
+   */
+  setMandateDefaults(defaults: MandateDefaults): void {
+    this.mandateDefaultsValue = defaults;
+  }
+
   /** Une entité archivée n'émet plus rien, et ses documents passés restent. */
   archive(at: Date): void {
     this.archivedAtValue = at;
@@ -356,6 +383,8 @@ export class LegalEntity {
       accountHolder: this.creditorAccountValue?.holder ?? null,
       accountAddressLines: this.creditorAccountValue?.address.lines() ?? [],
       preNotificationDays: this.preNotificationDaysValue,
+      mandateContractDescription: this.mandateDefaultsValue.contractDescription,
+      mandatePaymentType: this.mandateDefaultsValue.paymentType,
     };
   }
 
@@ -385,6 +414,8 @@ export class LegalEntity {
       creditorAccountCountryCode: this.creditorAccountValue?.address.countryCode ?? null,
       firstMandateIssuedAt: this.firstMandateIssuedAtValue,
       preNotificationDays: this.preNotificationDaysValue,
+      mandateContractDescription: this.mandateDefaultsValue.contractDescription,
+      mandatePaymentType: this.mandateDefaultsValue.paymentType,
       logoKey: this.logoKeyValue,
       archivedAt: this.archivedAtValue,
     };

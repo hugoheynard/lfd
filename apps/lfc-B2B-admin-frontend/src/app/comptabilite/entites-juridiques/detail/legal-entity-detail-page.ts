@@ -35,6 +35,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { saveBlob } from '../../../shared/download/save-blob';
 import { DeclarePanel } from '../declare-panel/declare-panel';
 import { LegalEntitiesService } from '../../legal-entities.service';
+import { MandateSettingsCard } from './mandate-settings-card/mandate-settings-card';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
 
@@ -99,6 +100,7 @@ const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
     FoldFieldListComponent,
     FoldInlineConfirmComponent,
     FoldInputComponent,
+    MandateSettingsCard,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
@@ -356,6 +358,22 @@ export class LegalEntityDetailPage {
    * `missingToCollect` sont calculés par l'agrégat, et les deviner ici les
    * ferait diverger au premier ajout de condition.
    */
+  /**
+   * Exécute ce qu'une carte fille demande, puis relit — comme les gestes de la
+   * page elle-même.
+   *
+   * La carte des mandats n'appelle pas `run` directement : elle **décrit** son
+   * geste et le remonte. C'est la page qui détient l'état de chargement, le
+   * message d'erreur et la relecture ; les dupliquer dans chaque carte ferait
+   * deux façons de dire « enregistré », et deux entités relues différemment.
+   */
+  protected runSaved(request: {
+    readonly action: () => Promise<unknown>;
+    readonly said: string;
+  }): void {
+    void this.run(request.action, request.said);
+  }
+
   private async run(action: () => Promise<unknown>, said: string): Promise<void> {
     this.busy.set(true);
     this.error.set(null);

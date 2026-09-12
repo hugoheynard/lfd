@@ -18,7 +18,6 @@ const SAVED: CompanyBankAccountView = {
   last4: '2606',
   debtorReference: 'C-9P2X4B',
   contractNumber: '',
-  contractDescription: 'Fourniture de café',
 };
 
 interface Rendered {
@@ -100,7 +99,6 @@ describe('zones facultatives du mandat', () => {
 
     setAccount(SAVED);
     expect(section['debtorReferenceDraft']()).toBe('C-9P2X4B');
-    expect(section['contractDescriptionDraft']()).toBe('Fourniture de café');
   });
 
   /**
@@ -124,13 +122,7 @@ describe('zones facultatives du mandat', () => {
     await section['save']();
     await settle();
 
-    expect(written).toEqual([
-      {
-        debtorReference: 'C-9P2X4B',
-        contractNumber: 'CT-42',
-        contractDescription: 'Fourniture de café',
-      },
-    ]);
+    expect(written).toEqual([{ debtorReference: 'C-9P2X4B', contractNumber: 'CT-42' }]);
   });
 
   it("n'écrit rien tant que le RIB manque", async () => {

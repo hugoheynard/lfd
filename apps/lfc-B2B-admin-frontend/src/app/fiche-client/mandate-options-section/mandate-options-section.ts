@@ -27,10 +27,15 @@ import {
  *
  * ## Ce qu'elles sont
  *
- * Les zones 14, 19 et 20 du modèle EPC : le code que le débiteur veut voir
- * revenir sur son relevé, le numéro du contrat, sa description. La norme les
- * range sous « fournies seulement à titre indicatif » — aucune ne conditionne
- * la validité du mandat, et les laisser vides est parfaitement normal.
+ * Les zones 14 et 19 du modèle EPC : le code que le débiteur veut voir revenir
+ * sur son relevé, et le numéro du contrat. La norme les range sous « fournies
+ * seulement à titre indicatif » — aucune ne conditionne la validité du mandat,
+ * et les laisser vides est parfaitement normal.
+ *
+ * ⚠️ La **zone 20** (description du contrat) n'est PAS ici : elle décrit ce que
+ * nous vendons, pas ce que ce client-là a acheté, et vit donc sur l'entité
+ * émettrice. La ressaisir par dossier aurait fait circuler deux formulations
+ * chez des clients voisins, qui se parlent.
  *
  * ⚠️ Les zones du **tiers** (15 à 18) ne sont pas offertes à la saisie, et c'est
  * délibéré : les deux premières désignent un tiers débiteur, que seul le
@@ -67,7 +72,6 @@ export class MandateOptionsSection {
 
   protected readonly debtorReferenceDraft = signal('');
   protected readonly contractNumberDraft = signal('');
-  protected readonly contractDescriptionDraft = signal('');
 
   constructor() {
     // Le RIB arrive de façon ASYNCHRONE : le bloc voisin le charge et le fait
@@ -84,7 +88,6 @@ export class MandateOptionsSection {
       }
       this.debtorReferenceDraft.set(saved.debtorReference);
       this.contractNumberDraft.set(saved.contractNumber);
-      this.contractDescriptionDraft.set(saved.contractDescription);
     });
   }
 
@@ -106,7 +109,6 @@ export class MandateOptionsSection {
       await this.accounts.saveOptions(id, {
         debtorReference: this.debtorReferenceDraft().trim(),
         contractNumber: this.contractNumberDraft().trim(),
-        contractDescription: this.contractDescriptionDraft().trim(),
       });
       this.notify.success('Zones facultatives enregistrées.');
     } catch (error) {

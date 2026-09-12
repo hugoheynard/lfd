@@ -22,7 +22,6 @@ const SAVED: CompanyBankAccountView = {
   last4: '2606',
   debtorReference: 'C-9P2X4B',
   contractNumber: '',
-  contractDescription: 'Fourniture de café',
 };
 
 interface Rendered {

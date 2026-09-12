@@ -78,7 +78,6 @@ export class PreviewCustomerMandateHandler implements IQueryHandler<
       bic: bic.value,
       debtorReference: options.debtorReference,
       contractNumber: options.contractNumber,
-      contractDescription: options.contractDescription,
     });
 
     return { bytes, fileName: previewFileName(holder) };

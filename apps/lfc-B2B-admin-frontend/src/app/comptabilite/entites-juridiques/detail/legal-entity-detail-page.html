@@ -272,6 +272,12 @@
       </fold-page-section>
     </fold-card>
 
+    <!-- Après le compte créancier : on sait QUI encaisse et sur quel compte,
+         on décide maintenant de quoi aura l'air le papier qu'on fait signer. -->
+    <fold-card>
+      <app-mandate-settings-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
+    </fold-card>
+
     <fold-card>
       <fold-page-section title="Pré-notification" separator>
         <p class="ej-said">

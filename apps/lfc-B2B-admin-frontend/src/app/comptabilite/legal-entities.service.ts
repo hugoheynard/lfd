@@ -9,6 +9,7 @@ import type {
   DeclareLegalEntityPayload,
   LegalEntityView,
   SetCreditorAccountPayload,
+  SetMandateDefaultsPayload,
   SetPreNotificationPayload,
 } from '@lfd/contracts';
 
@@ -87,6 +88,45 @@ export class LegalEntitiesService {
 
   async setCreditorAccount(id: string, payload: SetCreditorAccountPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/creditor-account`, payload));
+  }
+
+  /**
+   * Les réglages de mandat de l'entité — zones 20 et 12 du modèle EPC.
+   *
+   * Sur l'entité et non sur le compte d'un client : ils décrivent ce que NOUS
+   * vendons, et la même phrase part sur tous les mandats qu'elle émet.
+   */
+  async setMandateDefaults(id: string, payload: SetMandateDefaultsPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/mandate-defaults`, payload));
+  }
+
+  /**
+   * Attache (ou remplace) le **logo imprimé sur les mandats**.
+   *
+   * ⚠️ En `multipart`, et sans `Content-Type` posé à la main : `FormData` le
+   * fixe lui-même avec la frontière que le corps porte, et l'écraser produit un
+   * corps que le serveur ne sait plus découper.
+   */
+  async setLogo(id: string, file: File): Promise<void> {
+    const body = new FormData();
+    body.append('file', file);
+    await firstValueFrom(this.http.post<void>(`${this.base}/${id}/logo`, body));
+  }
+
+  /** Retire le logo. Le mandat ressort avec sa cellule vide, et reste valide. */
+  async removeLogo(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${this.base}/${id}/logo`));
+  }
+
+  /**
+   * Le logo courant, en mémoire.
+   *
+   * Comme l'aperçu de mandat : un `<img src="/admin/…">` partirait **sans le
+   * jeton staff** — l'intercepteur ne voit que les requêtes `HttpClient` — et le
+   * navigateur afficherait une image cassée.
+   */
+  async logo(id: string): Promise<Blob> {
+    return firstValueFrom(this.http.get(`${this.base}/${id}/logo`, { responseType: 'blob' }));
   }
 
   async setPreNotification(id: string, payload: SetPreNotificationPayload): Promise<void> {

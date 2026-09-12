@@ -49,6 +49,8 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityV
     creditorAccountCountryCode: snapshot.creditorAccountCountryCode ?? "",
     creditorIdentityFrozen: entity.creditorIdentityFrozen,
     preNotificationDays: snapshot.preNotificationDays,
+    mandateContractDescription: snapshot.mandateContractDescription,
+    mandatePaymentType: snapshot.mandatePaymentType,
     archivedAt: snapshot.archivedAt?.toISOString() ?? null,
     canCollect: entity.canCollect(),
     missingToCollect: entity.missingToCollect(),
@@ -89,7 +91,53 @@ function toSnapshot(row: LegalEntityRow): LegalEntitySnapshot {
     creditorAccountCountryCode: row.creditorAccountCountryCode,
     firstMandateIssuedAt: row.firstMandateIssuedAt,
     preNotificationDays: row.preNotificationDays,
+    mandateContractDescription: row.mandateContractDescription,
+    mandatePaymentType: row.mandatePaymentType,
     logoKey: row.logoKey,
     archivedAt: row.archivedAt,
+  };
+}
+
+/**
+ * État → colonnes d'écriture.
+ *
+ * 🔴 **Pure et exportée pour être ÉPROUVÉE**, pas par élégance. La liste est
+ * explicite — elle doit l'être, `id` et les horodatages n'ayant rien à faire
+ * dans un `update` — et une colonne neuve oubliée ici s'écrit **sans erreur** :
+ * la commande réussit, l'écran annonce « enregistré », et la relecture rend
+ * l'ancienne valeur. C'est arrivé le 2026-09-12 avec les réglages de mandat.
+ *
+ * Le test qui l'accompagne compare ses clés à celles de l'état, et échoue au
+ * prochain champ ajouté à l'agrégat sans l'être ici. C'est la seule façon de
+ * transformer un oubli silencieux en rouge.
+ */
+export function legalEntityColumns(snapshot: LegalEntitySnapshot): Omit<LegalEntitySnapshot, "id"> {
+  return {
+    name: snapshot.name,
+    legalForm: snapshot.legalForm,
+    siren: snapshot.siren,
+    rcs: snapshot.rcs,
+    vatNumber: snapshot.vatNumber,
+    shareCapitalCents: snapshot.shareCapitalCents,
+    addressLine1: snapshot.addressLine1,
+    addressLine2: snapshot.addressLine2,
+    postalCode: snapshot.postalCode,
+    city: snapshot.city,
+    countryCode: snapshot.countryCode,
+    ics: snapshot.ics,
+    creditorIban: snapshot.creditorIban,
+    creditorBic: snapshot.creditorBic,
+    creditorAccountHolder: snapshot.creditorAccountHolder,
+    creditorAccountLine1: snapshot.creditorAccountLine1,
+    creditorAccountLine2: snapshot.creditorAccountLine2,
+    creditorAccountPostalCode: snapshot.creditorAccountPostalCode,
+    creditorAccountCity: snapshot.creditorAccountCity,
+    creditorAccountCountryCode: snapshot.creditorAccountCountryCode,
+    firstMandateIssuedAt: snapshot.firstMandateIssuedAt,
+    preNotificationDays: snapshot.preNotificationDays,
+    mandateContractDescription: snapshot.mandateContractDescription,
+    mandatePaymentType: snapshot.mandatePaymentType,
+    logoKey: snapshot.logoKey,
+    archivedAt: snapshot.archivedAt,
   };
 }

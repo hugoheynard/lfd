@@ -21,7 +21,6 @@ export interface CompanyBankAccountColumns {
   readonly bic: string;
   readonly debtorReference: string;
   readonly contractNumber: string;
-  readonly contractDescription: string;
 }
 
 /**
@@ -56,7 +55,6 @@ export function toColumns(
     // désignent aucun compte, et l'écran les relit telles quelles.
     debtorReference: snapshot.debtorReference,
     contractNumber: snapshot.contractNumber,
-    contractDescription: snapshot.contractDescription,
   };
 }
 
@@ -80,6 +78,5 @@ export function toDomain(row: CompanyBankAccountRow, cipher: FieldCipher): Compa
     bic: row.bic,
     debtorReference: row.debtorReference,
     contractNumber: row.contractNumber,
-    contractDescription: row.contractDescription,
   });
 }

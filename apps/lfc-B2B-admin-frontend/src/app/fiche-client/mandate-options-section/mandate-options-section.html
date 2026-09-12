@@ -1,6 +1,7 @@
 <p class="mo-lede">
-  Les trois zones <strong>facultatives</strong> du mandat. La norme les dit indicatives&nbsp;:
-  aucune ne conditionne sa validité, et les laisser vides est parfaitement normal.
+  Les zones <strong>facultatives</strong> propres à ce client. La norme les dit indicatives&nbsp;:
+  aucune ne conditionne la validité du mandat, et les laisser vides est parfaitement normal. La
+  <em>description du contrat</em>, elle, se règle une fois pour toutes sur l'entité émettrice.
 </p>
 
 @if (!ready()) {
@@ -21,15 +22,6 @@
       hint="Zone 19 — facultatif."
       [value]="contractNumberDraft()"
       (valueChange)="contractNumberDraft.set($event); markTouched()"
-    />
-  </div>
-  <div class="mo-row">
-    <fold-input
-      label="Description du contrat"
-      hint="Zone 20 — ce que ce prélèvement couvre, en une ligne."
-      placeholder="Fourniture de café et de viennoiseries"
-      [value]="contractDescriptionDraft()"
-      (valueChange)="contractDescriptionDraft.set($event); markTouched()"
     />
   </div>
 }

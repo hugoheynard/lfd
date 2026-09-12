@@ -439,6 +439,39 @@ norme telle que nous la connaissons, pas d'un guide en main.
 8. **Le délai de pré-notification** : 14 jours est-il contractualisable au
    mandat, ou imposé ?
 
+### 🔴 La dixième, ajoutée le 2026-09-12 : la SIGNATURE ÉLECTRONIQUE
+
+**Elle ne bloque pas du code, elle décide s'il faut l'écrire.** Si un mandat peut
+être signé électroniquement, tout le parcours « imprimer → signer → scanner →
+déposer » disparaît — c'est-à-dire l'essentiel de ce qui reste à construire, et
+le dépôt de scan que nous allions bâtir.
+
+> Acceptez-vous un mandat SDD **B2B** signé électroniquement, et à quel niveau
+> eIDAS — simple, avancée, qualifiée ? Le débiteur doit-il quand même déclarer la
+> RUM et notre ICS à sa propre banque, et sous quelle forme ?
+
+Ce que nous croyons savoir, **et qui n'a été vérifié dans aucun texte en main** :
+
+- **eIDAS** (règlement UE 910/2014) distingue trois niveaux. Son article 25.1
+  interdit de refuser une signature _au seul motif_ qu'elle est électronique ;
+  son article 25.2 ne donne l'effet d'une signature manuscrite **qu'à la
+  qualifiée**. Entre les deux, une signature est recevable mais sa valeur
+  probante se discute : c'est à celui qui s'en prévaut de démontrer l'identité du
+  signataire et l'intégrité de l'acte.
+- **La banque ne voit jamais le mandat** — c'est le créancier qui le détient, et
+  le formulaire EPC le dit lui-même. La vraie question n'est donc pas
+  « l'acceptez-vous » mais « qu'est-ce qui tient le jour d'une contestation ».
+- 🔴 **En B2B, le débiteur déclare le mandat à SA banque** avant le premier
+  prélèvement. Sans cette déclaration, la banque du débiteur rejette, quelle que
+  soit la qualité de la signature. Une signature électronique ne remplacerait
+  donc que le geste du client sur le papier — pas cette démarche-là.
+- Ce que la **convention de prélèvement** avec la Caisse d'Épargne autorise ne
+  se déduit d'aucun texte. Certaines banques exigent contractuellement un mandat
+  papier, ou imposent un niveau minimal.
+
+⚠️ **Poser cette question AVANT de bâtir le dépôt de scan.** L'ordre inverse
+construit un parcours qu'une réponse rendrait inutile.
+
 ⚠️ Les questions **3 et 8 décident ensemble** de trois phrases aujourd'hui
 incompatibles : « export au dernier jour du mois », « clôture le 1er », et
 « débit au plus tôt à J + délai de pré-notification ».

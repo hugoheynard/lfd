@@ -34,7 +34,6 @@ function aggregate(): CompanyBankAccount {
     options: MandateOptions.create({
       debtorReference: "C-9P2X4B",
       contractNumber: "CT-42",
-      contractDescription: "Fourniture de café",
     }),
   });
 }
@@ -85,7 +84,6 @@ describe("company-bank-account.mapper", () => {
       const columns = toColumns(aggregate().toPersistence(), cipher);
       expect(columns.debtorReference).toBe("C-9P2X4B");
       expect(columns.contractNumber).toBe("CT-42");
-      expect(columns.contractDescription).toBe("Fourniture de café");
     });
 
     it("scelle différemment deux fois la même valeur", () => {

@@ -4,6 +4,7 @@ import PDFDocument from "pdfkit";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { DebtorSnapshot } from "../debtor-snapshot.js";
+import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import { MandateFieldTooLongError } from "../errors/accounting-errors.js";
 
 /**
@@ -252,12 +253,33 @@ function comb(
   return cursor;
 }
 
-/** Un libellé suivi de sa case vide. Rend l'abscisse de fin de la case. */
-function checkbox(doc: Doc, x: number, y: number, text: string): number {
+/**
+ * Un libellé suivi de sa case. Rend l'abscisse de fin de la case.
+ *
+ * La croix est **dessinée**, pas écrite : un « X » en Helvetica ne remplit pas
+ * la case de la même façon selon la police substituée, et la lettre déborde sur
+ * les bords à cette taille.
+ */
+function checkbox(doc: Doc, x: number, y: number, text: string, checked = false): number {
   put(doc, text, x, y, { size: 9.5 });
   const width = doc.font(REGULAR).fontSize(9.5).widthOfString(text);
-  box(doc, x + width + 2 * MM, y - 0.5 * MM, 3.4 * MM, 3.4 * MM);
-  return x + width + 2 * MM + 3.4 * MM;
+  const left = x + width + 2 * MM;
+  const top = y - 0.5 * MM;
+  const side = 3.4 * MM;
+  box(doc, left, top, side, side);
+  if (checked) {
+    const inset = 0.8 * MM;
+    doc.save();
+    doc.lineWidth(RULE).strokeColor(BLACK);
+    doc
+      .moveTo(left + inset, top + inset)
+      .lineTo(left + side - inset, top + side - inset)
+      .moveTo(left + side - inset, top + inset)
+      .lineTo(left + inset, top + side - inset)
+      .stroke();
+    doc.restore();
+  }
+  return left + side;
 }
 
 /** L'astérisque de la norme : ce qui est marqué doit être rempli. */
@@ -543,8 +565,16 @@ function creditorZones(doc: Doc, top: number, creditor: CreditorSnapshot): numbe
   return y + ROW;
 }
 
-/** Type de paiement, lieu et date, signature — tout ce que le signataire pose. */
-function signatureZones(doc: Doc, top: number): number {
+/**
+ * Type de paiement, lieu et date, signature — tout ce que le signataire pose.
+ *
+ * ⚠️ La **zone 12 est cochée pour lui**, depuis le 2026-09-12 : le régime est un
+ * réglage de l'entité émettrice, pas un choix du client. La laisser vide
+ * demandait au débiteur de trancher une question qu'il ne se pose pas — et une
+ * case non cochée sur un mandat signé est une ambiguïté qui se découvre au
+ * premier prélèvement refusé.
+ */
+function signatureZones(doc: Doc, top: number, paymentType: MandatePaymentType): number {
   let y = top;
 
   label(doc, "Type de paiement", y);
@@ -552,8 +582,14 @@ function signatureZones(doc: Doc, top: number): number {
   // La case se pose après le texte MESURÉ (`widthOfString`). À un décalage
   // deviné, elle vient toucher la dernière lettre — et un libellé traduit ou
   // une police substituée déplacerait la faute ailleurs sans qu'on la voie.
-  const afterRecurring = checkbox(doc, FIELD_X, y, "Paiement récurrent / répétitif");
-  checkbox(doc, afterRecurring + 10 * MM, y, "Paiement ponctuel");
+  const afterRecurring = checkbox(
+    doc,
+    FIELD_X,
+    y,
+    "Paiement récurrent / répétitif",
+    paymentType === "recurrent",
+  );
+  checkbox(doc, afterRecurring + 10 * MM, y, "Paiement ponctuel", paymentType === "one_off");
   zone(doc, 12, y);
   y += ROW;
 
@@ -595,9 +631,10 @@ function signatureZones(doc: Doc, top: number): number {
 function contractZones(
   doc: Doc,
   top: number,
-  creditorName: string,
+  creditor: CreditorSnapshot,
   debtor: DebtorSnapshot | null,
 ): number {
+  const creditorName = creditorNameOn(creditor);
   put(doc, CONTRACT_HEADING, BOX_LEFT + 2 * MM, top + 1.5 * MM, { size: 7.6, font: BOLD });
   let y = top + 6 * MM;
 
@@ -673,7 +710,7 @@ function contractZones(
     y,
     "Description du contrat",
     20,
-    debtor?.contractDescription ?? "",
+    creditor.mandateContractDescription,
     FIELD_X,
     FIELD_RIGHT,
     false,
@@ -754,8 +791,8 @@ function draw(
   y = authorization(doc, y, creditorNameOn(creditor));
   y = debtorZones(doc, y, debtor);
   y = creditorZones(doc, y, creditor);
-  y = signatureZones(doc, y);
-  y = contractZones(doc, y, creditorNameOn(creditor), debtor);
+  y = signatureZones(doc, y, creditor.mandatePaymentType);
+  y = contractZones(doc, y, creditor, debtor);
   y = footer(doc, y, creditor);
 
   // Le cadre général en dernier : dessiné avant, les remplissages de cases le

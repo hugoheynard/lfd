@@ -5,6 +5,7 @@ import {
   AssignCreditorIdentifierCommand,
   DeclareLegalEntityCommand,
   SetCreditorAccountCommand,
+  SetMandateDefaultsCommand,
   SetLegalEntityLogoCommand,
 } from "../../b2b/accounting/application/commands/legal-entity-commands.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
@@ -115,6 +116,15 @@ const SEEDED_CREDITOR_ACCOUNT: SetCreditorAccountPayload = {
   countryCode: "FR",
 };
 
+/**
+ * La **zone 20** du mandat — ce que le prélèvement couvre.
+ *
+ * Semée non vide à dessein : c'est l'une des rares zones qu'on ne voit qu'à
+ * l'impression, sur une ligne pointillée dont un texte trop long sortirait. Un
+ * poste où elle serait vide ne montrerait jamais le cas qui déborde.
+ */
+const SEEDED_CONTRACT_DESCRIPTION = "Fourniture de café et de viennoiseries";
+
 const ENTITY: DeclareLegalEntityPayload = {
   name: SEEDED_LEGAL_ENTITY_NAME,
   legalForm: "SAS",
@@ -182,6 +192,20 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
   } else {
     await commands.execute(new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_ACCOUNT));
     console.log("✓ Compte créancier posé — l'entité peut désormais prélever.");
+  }
+
+  // Les réglages de mandat. Reposés seulement s'ils sont à leur valeur de
+  // déclaration : une description saisie à la main sur le poste survit au semis.
+  if (existing && existing.mandateContractDescription !== "") {
+    console.log("· Réglages de mandat déjà posés — inchangés.");
+  } else {
+    await commands.execute(
+      new SetMandateDefaultsCommand(entityId, {
+        contractDescription: SEEDED_CONTRACT_DESCRIPTION,
+        paymentType: "recurrent",
+      }),
+    );
+    console.log("✓ Réglages de mandat posés — description du contrat et régime récurrent.");
   }
 
   if (existing?.logoKey) {

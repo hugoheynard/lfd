@@ -20,6 +20,8 @@ const CREDITOR: CreditorSnapshot = {
   creditorBic: "CEPAFRPP751",
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,
+  mandateContractDescription: "Fourniture de cafe et de viennoiseries",
+  mandatePaymentType: "recurrent" as const,
 };
 
 /**
@@ -298,7 +300,6 @@ const DEBTOR: DebtorSnapshot = {
   bic: "CEPAFRPP751",
   debtorReference: "C-9P2X4B",
   contractNumber: "CT-42",
-  contractDescription: "Fourniture de cafe",
 };
 
 describe("renderSepaMandatePdf — le côté du débiteur", () => {
@@ -323,11 +324,21 @@ describe("renderSepaMandatePdf — le côté du débiteur", () => {
     expect(text).toContain("12 rue des Alpages, Batiment B");
   });
 
-  it("remplit les trois zones facultatives qui nous appartiennent", async () => {
+  it("remplit les zones facultatives propres à CE client", async () => {
     const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
     expect(text).toContain("C-9P2X4B");
     expect(text).toContain("CT-42");
-    expect(text).toContain("Fourniture de cafe");
+  });
+
+  /**
+   * 🔴 La zone 20 vient de l'ÉMETTEUR, pas du client : elle décrit ce que nous
+   * vendons. Elle s'imprime donc même sur la fiche d'EXEMPLE, qui n'a aucun
+   * débiteur — c'est ce qui distingue un réglage d'entité d'une saisie par
+   * dossier.
+   */
+  it("imprime la description du contrat MÊME sans débiteur", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    expect(text).toContain("Fourniture de cafe et de viennoiseries");
   });
 
   it("garde la mention EXEMPLE même avec un débiteur", async () => {

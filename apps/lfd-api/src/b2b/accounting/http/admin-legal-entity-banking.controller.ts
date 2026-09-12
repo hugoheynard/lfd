@@ -3,6 +3,8 @@ import { CommandBus } from "@nestjs/cqrs";
 import {
   assignCreditorIdentifierPayloadSchema,
   setCreditorAccountPayloadSchema,
+  setMandateDefaultsPayloadSchema,
+  type SetMandateDefaultsPayload,
   setPreNotificationPayloadSchema,
   type AssignCreditorIdentifierPayload,
   type SetCreditorAccountPayload,
@@ -13,6 +15,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   AssignCreditorIdentifierCommand,
+  SetMandateDefaultsCommand,
   SetCreditorAccountCommand,
   SetPreNotificationCommand,
 } from "../application/commands/legal-entity-commands.js";
@@ -80,6 +83,28 @@ export class AdminLegalEntityBankingController {
     @Body(new ZodBody(setCreditorAccountPayloadSchema)) payload: SetCreditorAccountPayload,
   ): Promise<void> {
     await this.commands.execute(new SetCreditorAccountCommand(id, payload));
+  }
+
+  /**
+   * Ce que les mandats de cette entité diront du contrat — zones 20 et 12.
+   *
+   * 🔴 Sur l'ENTITÉ et non sur le compte d'un client : ils décrivent ce que
+   * nous vendons, pas ce que tel client a acheté. La même phrase et le même
+   * régime partent sur tous les mandats qu'elle émet — les ressaisir par dossier
+   * ferait circuler deux formulations chez des clients voisins, qui se parlent.
+   *
+   * ⚠️ Aucun gel après le premier mandat, contrairement au titulaire du compte :
+   * ces deux-là sont indicatifs, et un mandat déjà signé garde les siens,
+   * imprimés sur son papier. Geler ici empêcherait de corriger une faute de
+   * frappe pour tous les mandats à venir, sans rien protéger.
+   */
+  @Put(":id/mandate-defaults")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setMandateDefaults(
+    @Param("id") id: string,
+    @Body(new ZodBody(setMandateDefaultsPayloadSchema)) payload: SetMandateDefaultsPayload,
+  ): Promise<void> {
+    await this.commands.execute(new SetMandateDefaultsCommand(id, payload));
   }
 
   /**

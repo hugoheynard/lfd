@@ -157,6 +157,10 @@ describe("LegalEntity — encaisser demande tout", () => {
       shareCapitalCents: 1_000_000,
       addressLines: ["12 rue des Lilas", "75011 Paris", "FR"],
       ics: "FR72ZZZ123456",
+      // Les deux réglages de mandat, à leur état de déclaration : rien à dire du
+      // contrat, et récurrent — le régime de l'immense majorité des mandats.
+      mandateContractDescription: "",
+      mandatePaymentType: "recurrent",
       creditorBic: "CEPAFRPP751",
       accountHolder: "Crazeativity",
       accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],

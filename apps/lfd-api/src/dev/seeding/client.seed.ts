@@ -507,7 +507,6 @@ async function seedBankAccount(
     new SetMandateOptionsCommand(companyId, {
       debtorReference: reference,
       contractNumber: "",
-      contractDescription: "Fourniture de café et de viennoiseries",
     }),
   );
   console.log("✓ Zones facultatives du mandat posées.");

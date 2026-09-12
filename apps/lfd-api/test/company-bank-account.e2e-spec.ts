@@ -295,10 +295,11 @@ describe("GET /admin/companies/:id/mandate/preview.pdf", () => {
 });
 
 describe("PUT /admin/companies/:id/mandate-options", () => {
+  // ⚠️ Plus de `contractDescription` : la zone 20 est remontée sur l'entité
+  // émettrice le 2026-09-12 — elle décrit ce que NOUS vendons.
   const OPTIONS = {
     debtorReference: "C-9P2X4B",
     contractNumber: "CT-42",
-    contractDescription: "Fourniture de café",
   };
 
   it("pose les zones facultatives et les rend à la relecture", async () => {
@@ -313,7 +314,7 @@ describe("PUT /admin/companies/:id/mandate-options", () => {
     await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
     await staff()
       .put(`/admin/companies/${companyId}/mandate-options`)
-      .send({ debtorReference: "", contractNumber: "", contractDescription: "" })
+      .send({ debtorReference: "", contractNumber: "" })
       .expect(204);
   });
 

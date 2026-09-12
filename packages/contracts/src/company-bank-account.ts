@@ -69,8 +69,6 @@ export interface CompanyBankAccountView {
   readonly debtorReference: string;
   /** **Zone 19** — le numéro du contrat que ce mandat sert à régler. */
   readonly contractNumber: string;
-  /** **Zone 20** — ce que ce contrat couvre, en une ligne. */
-  readonly contractDescription: string;
 }
 
 /**
@@ -99,6 +97,5 @@ export interface CompanyBankAccountSectionView {
 export const setMandateOptionsPayloadSchema = z.object({
   debtorReference: z.string().trim().default(""),
   contractNumber: z.string().trim().default(""),
-  contractDescription: z.string().trim().default(""),
 });
 export type SetMandateOptionsPayload = z.infer<typeof setMandateOptionsPayloadSchema>;

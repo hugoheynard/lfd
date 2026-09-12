@@ -40,7 +40,11 @@ export interface DebtorSnapshot {
 
   /** **Zone 19** — le numéro du contrat que ce mandat sert à régler. */
   readonly contractNumber: string;
-
-  /** **Zone 20** — ce que ce contrat couvre, en une ligne. */
-  readonly contractDescription: string;
 }
+
+/**
+ * ⚠️ La **zone 20** a vécu ici jusqu'au 2026-09-12. Elle est remontée sur
+ * `CreditorSnapshot` : elle décrit ce que NOUS vendons, et la même phrase part
+ * sur tous les mandats d'une entité. La chercher ici est le réflexe naturel —
+ * d'où cette note.
+ */

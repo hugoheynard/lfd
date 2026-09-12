@@ -1,3 +1,4 @@
+import type { SetMandateDefaultsPayload } from "@lfd/contracts";
 import type {
   CorrectLegalEntityPayload,
   DeclareLegalEntityPayload,
@@ -42,6 +43,19 @@ export class SetCreditorAccountCommand {
   constructor(
     readonly legalEntityId: string,
     readonly payload: SetCreditorAccountPayload,
+  ) {}
+}
+
+/**
+ * Les réglages de mandat de l'entité — zones 20 et 12 du modèle EPC.
+ *
+ * Sur l'entité et non sur le compte d'un client : ils décrivent ce que NOUS
+ * vendons, et la même phrase part sur tous les mandats qu'elle émet.
+ */
+export class SetMandateDefaultsCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly payload: SetMandateDefaultsPayload,
   ) {}
 }
 

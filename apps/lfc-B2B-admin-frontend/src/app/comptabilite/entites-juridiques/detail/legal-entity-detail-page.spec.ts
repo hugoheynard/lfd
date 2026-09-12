@@ -53,6 +53,8 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     creditorIdentityFrozen: false,
     creditorAccountLast4: '',
     preNotificationDays: 14,
+    mandateContractDescription: '',
+    mandatePaymentType: 'recurrent',
     archivedAt: null,
     canCollect: false,
     hasLogo: false,
@@ -264,6 +266,11 @@ describe('LegalEntityDetailPage', () => {
       'Pays',
       'IBAN',
       'BIC',
+      // ⚠️ La carte des réglages de mandat en ajoute un depuis le 2026-09-12 :
+      // le commentaire au-dessus disait « les seuls champs restants sont ceux
+      // du COMPTE », et ce n'est plus vrai. Ce que ce test tient reste le même —
+      // aucun champ ICS une fois l'ICS posé.
+      'Description du contrat',
     ]);
     expect(text(fixture)).toContain('Il ne se remplace pas');
   });
