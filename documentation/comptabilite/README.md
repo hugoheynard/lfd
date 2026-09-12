@@ -14,6 +14,7 @@ propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 | Doc                                          | Quand l'ouvrir                                                                                                                                                             |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`prelevement-sepa.md`](prelevement-sepa.md) | **Toujours.** C'est le document unique du sujet : l'objectif, l'état des lieux vérifié, le mandat, l'IBAN, le fichier `pain.008`, les objections ouvertes et le découpage. |
+| [`rum.md`](rum.md)                           | Quand on touche à la **référence unique de mandat** : ses contraintes, comment elle est frappée, et pourquoi ce n'est plus l'identifiant du mandat.                        |
 
 > **Fusion du 2026-09-12.** Trois documents se partageaient le prélèvement — le
 > socle Stripe, la conception directe, et le format du fichier. Ils se
