@@ -9,7 +9,11 @@
   grande carte posée sur la page.
 */
 .masthead {
-  --fold-page-section-gap: var(--fold-space-md, 0.75rem);
+  /* L'écart au-dessus des cartes vaut le rembourrage du BAS : elles se posaient
+     plus près du titre que du bord de la bande, ce qui les rattachait à lui au
+     lieu de les laisser respirer entre les deux. Une seule valeur pour les deux
+     côtés, et la bande encadre ses chiffres au lieu de les pousser vers le bas. */
+  --fold-page-section-gap: var(--fold-space-lg, 1rem);
   padding: var(--fold-space-md, 0.75rem) var(--fold-page-gutter, 1.25rem) var(--fold-space-lg, 1rem);
   background: var(--fold-color-bg-rail-secondary);
 }
