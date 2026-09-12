@@ -26,6 +26,7 @@ import {
   FoldPageSectionComponent,
 } from 'fold-ng';
 
+import { BankAccountSection } from '../bank-account-section/bank-account-section';
 import { NotifyService } from '../../notify.service';
 import { MandatesService } from '../mandat/mandates.service';
 
@@ -79,6 +80,7 @@ interface DangerousAction {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
+    BankAccountSection,
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldCalloutComponent,
@@ -141,6 +143,18 @@ export class PaiementSection {
   /** Un mandat actif dont le papier signé manque : actif, mais sans filet. */
   protected readonly unproven = computed(
     () => this.debitable() && this.mandate()?.hasProof === false,
+  );
+
+  /**
+   * Les 4 chiffres du compte que le mandat **actif** nomme, `''` sinon.
+   *
+   * Passé au bloc du RIB pour qu'il puisse avertir quand on s'apprête à
+   * enregistrer un autre compte. Seuls les quatre derniers sont disponibles des
+   * deux côtés — c'est grossier, et c'est suffisant : l'avertissement invite à
+   * vérifier, il ne bloque rien.
+   */
+  protected readonly mandatedLast4 = computed(() =>
+    this.debitable() ? (this.mandate()?.last4 ?? '') : '',
   );
 
   protected readonly statusLabel = computed(() => {

@@ -1,0 +1,26 @@
+/* Le compte enregistré se lit caractère par caractère — comme un IBAN sur un
+   RIB papier, qu'on compare en glissant le doigt. */
+.ba-account {
+  font-family: var(--fold-font-mono);
+  margin: 0 0 var(--fold-space-md);
+}
+
+/* Les champs d'une même ligne se partagent la largeur ; en dessous de 18rem
+   chacun, ils s'empilent — un IBAN saisi sur un champ de six centimètres ne se
+   relit pas. */
+.ba-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.ba-row fold-input {
+  flex: 1 1 18rem;
+}
+
+.ba-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--fold-space-sm);
+}

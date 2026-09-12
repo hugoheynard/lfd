@@ -57,6 +57,12 @@
        l'instrument qui rend les autres encaissables. -->
   @if (companyId(); as id) {
     <fold-card>
+      <!-- Le RIB AVANT le mandat, parce que c'est l'ordre du geste : on recopie
+           les coordonnées, puis on fait signer l'autorisation de s'en servir.
+           Composant à part — une coordonnée et une autorisation sont deux
+           sujets, et cette section est déjà longue. -->
+      <app-bank-account-section [companyId]="id" [mandateLast4]="mandatedLast4()" />
+
       @if (mandate(); as m) {
         <div class="pm-row">
           <div class="pm-what">
