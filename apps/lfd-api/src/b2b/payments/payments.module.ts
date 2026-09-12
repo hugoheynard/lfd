@@ -7,6 +7,7 @@ import { PaymentGateway } from "./domain/payment-gateway.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
 import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
 import { MintMandateHandler } from "./application/commands/mint-mandate.handler.js";
+import { SignMandateHandler } from "./application/commands/sign-mandate.handler.js";
 import { SetCompanyBankAccountHandler } from "./application/commands/set-company-bank-account.handler.js";
 import { SetMandateOptionsHandler } from "./application/commands/set-mandate-options.handler.js";
 import { GetCompanyBankAccountHandler } from "./application/queries/get-company-bank-account.handler.js";
@@ -56,6 +57,7 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
       useClass: PrismaCompanyBankAccountRepository,
     },
     MintMandateHandler,
+    SignMandateHandler,
     RevokeMandateHandler,
     AttachMandateProofHandler,
     GetCompanyMandateHandler,

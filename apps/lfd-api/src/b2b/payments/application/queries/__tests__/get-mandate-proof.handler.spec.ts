@@ -38,6 +38,7 @@ function build(options: {
     findCurrent: () => Promise.resolve(options.current),
     findById: () => Promise.resolve(null),
     findDraft: () => Promise.resolve(null),
+    findAwaitingProof: () => Promise.resolve(null),
     create: () => Promise.resolve("x"),
     save: () => Promise.resolve(),
     findHolder: () => Promise.resolve(null),

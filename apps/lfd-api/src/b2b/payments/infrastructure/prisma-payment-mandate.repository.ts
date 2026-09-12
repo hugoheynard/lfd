@@ -34,9 +34,13 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
    * répond à « que montrer de ce client », pas à « sur quel mandat agir » : en
    * rotation bancaire — un actif en cours et un brouillon frappé — elle rend
    * l'actif, et un dépôt de scan qui passerait par ici agraferait le papier du
-   * mandat NEUF sur l'ANCIEN. La pièce produite en contestation ne porterait
-   * alors pas la RUM opposée. Les gestes d'écriture visent un mandat par son
-   * identifiant (`findById`) ; celui-ci ne sert qu'à afficher.
+   * mandat NEUF sur l'ANCIEN.
+   *
+   * Ses appelants, au 2026-09-12 au soir : la vue de la fiche, la révocation
+   * (« retirer l'autorisation » désigne sans ambiguïté l'actif), et la lecture
+   * de la preuve. Le dépôt de scan passe par `findAwaitingProof`, la signature
+   * par `findById` — les deux gestes où « le mandat de cette société » ne
+   * désigne plus rien de précis.
    */
   async findCurrent(companyId: string): Promise<PaymentMandate | null> {
     const active = await this.prisma.paymentMandate.findFirst({
@@ -57,6 +61,10 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   async findById(mandateId: string): Promise<PaymentMandate | null> {
     const row = await this.prisma.paymentMandate.findUnique({ where: { id: mandateId } });
     return row === null ? null : PaymentMandate.reconstitute(toSnapshot(row));
+  }
+
+  async findAwaitingProof(companyId: string): Promise<PaymentMandate | null> {
+    return (await this.findDraft(companyId)) ?? (await this.findCurrent(companyId));
   }
 
   async findDraft(companyId: string): Promise<PaymentMandate | null> {

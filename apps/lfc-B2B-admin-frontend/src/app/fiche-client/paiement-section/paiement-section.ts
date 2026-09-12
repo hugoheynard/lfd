@@ -21,6 +21,7 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldDateComponent,
   FoldCardComponent,
   FoldDangerZoneComponent,
   FoldElementTitleComponent,
@@ -91,6 +92,7 @@ interface DangerousAction {
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldCalloutComponent,
+    FoldDateComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldDangerZoneComponent,
@@ -377,6 +379,36 @@ export class PaiementSection {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** La date saisie pour la signature — `AAAA-MM-JJ`, celle du papier. */
+  protected readonly signedAt = signal('');
+
+  /**
+   * Un brouillon attend-il sa signature ?
+   *
+   * Séparé de `mintable()` : les deux sont exclusifs, et les confondre ferait
+   * afficher les deux gestes sur le même état.
+   */
+  protected readonly signable = computed(() => this.mandate()?.status === 'draft');
+
+  /**
+   * Déclare le mandat signé.
+   *
+   * La date part telle que saisie, sans normalisation ici : le serveur en
+   * refuse la forme ET le fond (une date à venir, un mandat qui n'est pas un
+   * brouillon). Revalider à l'écran ferait une seconde définition de « date
+   * acceptable », et c'est celle que l'utilisateur lit qui dériverait.
+   */
+  protected async sign(): Promise<void> {
+    const id = this.companyId();
+    const mandate = this.mandate();
+    const at = this.signedAt();
+    if (id === null || mandate === null || at === '') {
+      return;
+    }
+    await this.run(id, () => this.mandates.sign(id, mandate.id, at), 'Mandat signé et actif.');
+    this.signedAt.set('');
   }
 
   private async revoke(): Promise<void> {

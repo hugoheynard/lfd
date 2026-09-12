@@ -93,3 +93,19 @@ export interface MandateSectionView {
   readonly mandate: PaymentMandateView | null;
   readonly publishableKey: string;
 }
+
+/**
+ * Ce qu'on saisit en déclarant qu'un mandat est **signé**.
+ *
+ * 🔴 Une seule donnée, et c'est la date portée par le PAPIER — jamais celle de
+ * la saisie. Un mandat revient signé quelques jours après avoir été posté, et
+ * c'est cette date-là qu'on oppose en contestation. Les confondre daterait
+ * l'autorisation du jour où on l'a enregistrée.
+ *
+ * Une date seule (`YYYY-MM-DD`), sans heure : le papier n'en porte pas, et en
+ * inventer une donnerait une précision que la pièce ne soutient pas.
+ */
+export const signMandatePayloadSchema = z.object({
+  signedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "une date au format AAAA-MM-JJ est attendue"),
+});
+export type SignMandatePayload = z.infer<typeof signMandatePayloadSchema>;

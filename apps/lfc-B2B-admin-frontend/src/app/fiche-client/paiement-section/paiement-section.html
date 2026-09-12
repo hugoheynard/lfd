@@ -91,7 +91,15 @@
         @if (mandate(); as m) {
           <div class="pm-row">
             <div class="pm-what">
-              <span class="pm-label">Prélèvement SEPA — ••••{{ m.last4 }}</span>
+              <!-- Un brouillon n'a pas de `last4` : il est frappé avant que le
+                   RIB soit forcément recopié. Afficher « •••• » suivi de rien
+                   ferait lire une donnée tronquée là où il n'y en a aucune. -->
+              <span class="pm-label">
+                Prélèvement SEPA
+                @if (m.last4) {
+                  — ••••{{ m.last4 }}
+                }
+              </span>
               <span class="pm-note">
                 Mandat {{ m.reference }}
                 @if (m.acceptedAt) {
@@ -146,6 +154,36 @@
               </label>
             </div>
           </div>
+
+          @if (signable()) {
+            <div class="pm-row">
+              <div class="pm-what">
+                <span class="pm-label">Le mandat est revenu signé</span>
+                <span class="pm-note">
+                  La date demandée est celle portée par le <strong>papier</strong>, pas celle du
+                  jour&nbsp;: c'est elle qu'on oppose en contestation, et un mandat posté revient
+                  signé plusieurs jours plus tard.
+                </span>
+              </div>
+              <div class="pm-state">
+                <fold-date
+                  label="Date de signature"
+                  [value]="signedAt()"
+                  (valueChange)="signedAt.set($event)"
+                />
+                <button
+                  foldButton
+                  type="button"
+                  intent="primary"
+                  [disabled]="!signedAt()"
+                  [loading]="busy()"
+                  (click)="sign()"
+                >
+                  Activer le mandat
+                </button>
+              </div>
+            </div>
+          }
 
           @if (mintable()) {
             <div class="pm-row">

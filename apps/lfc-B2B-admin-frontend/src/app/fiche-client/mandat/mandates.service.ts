@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CreatedIdResponse, MandateSectionView } from '@lfd/contracts';
+import type { CreatedIdResponse, MandateSectionView, SignMandatePayload } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
@@ -41,6 +41,26 @@ export class MandatesService {
       this.http.post<CreatedIdResponse>(`${B2B_API_BASE}/admin/companies/${companyId}/mandate`, {}),
     );
     return created.id;
+  }
+
+  /**
+   * Déclare qu'un brouillon est **revenu signé**, et l'active.
+   *
+   * Vise le mandat par son identifiant : un mandat actif peut être en vigueur
+   * pendant qu'on fait signer son remplaçant, et « le mandat de ce client » ne
+   * désignerait alors plus rien de précis.
+   *
+   * `signedAt` est la date du PAPIER (`AAAA-MM-JJ`). Le serveur refuse une date
+   * à venir et un mandat qui n'est pas un brouillon.
+   */
+  async sign(companyId: string, mandateId: string, signedAt: string): Promise<void> {
+    const payload: SignMandatePayload = { signedAt };
+    await firstValueFrom(
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/mandate/${mandateId}/signature`,
+        payload,
+      ),
+    );
   }
 
   /** Dépose (ou remplace) le scan du mandat signé. */

@@ -52,6 +52,21 @@ export abstract class PaymentMandateRepository {
    */
   abstract findDraft(companyId: string): Promise<PaymentMandate | null>;
 
+  /**
+   * Le mandat **auquel un scan qui revient appartient** : le brouillon s'il y en
+   * a un, l'actif sinon.
+   *
+   * 🔴 Nommée plutôt que déduite de `findCurrent`, et c'est tout l'objet de sa
+   * présence. `findCurrent` répond « que montrer », donc rend l'ACTIF d'abord :
+   * en rotation bancaire — un actif en vigueur pendant qu'on fait signer son
+   * remplaçant — elle aurait fait agrafer le scan du mandat NEUF sur l'ANCIEN.
+   * La pièce produite en contestation n'aurait alors pas porté la RUM opposée.
+   *
+   * L'ordre est l'inverse de `findCurrent`, et il se lit dans le geste : un
+   * papier qui revient signé est celui qu'on vient d'envoyer.
+   */
+  abstract findAwaitingProof(companyId: string): Promise<PaymentMandate | null>;
+
   /** Écrit un mandat neuf et rend son id. */
   abstract create(mandate: MandateToCreate): Promise<string>;
 

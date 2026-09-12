@@ -96,8 +96,17 @@ export type {
   CompanyBankAccountSectionView,
   SetMandateOptionsPayload,
 } from "./company-bank-account.js";
-export { mandateStatusSchema, MANDATE_STATUS_LABELS } from "./payment-mandate.js";
-export type { MandateStatus, PaymentMandateView, MandateSectionView } from "./payment-mandate.js";
+export {
+  mandateStatusSchema,
+  MANDATE_STATUS_LABELS,
+  signMandatePayloadSchema,
+} from "./payment-mandate.js";
+export type {
+  MandateStatus,
+  PaymentMandateView,
+  MandateSectionView,
+  SignMandatePayload,
+} from "./payment-mandate.js";
 export {
   assignCreditorIdentifierPayloadSchema,
   correctLegalEntityPayloadSchema,

@@ -1,5 +1,6 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import {
+  signMandatePayloadSchema,
   type CreatedIdResponse,
   type MandateSectionView,
   type PaymentMandateView,
@@ -10,6 +11,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Body,
   Param,
   Post,
   Put,
@@ -34,6 +36,7 @@ import {
   RevokeMandateCommand,
 } from "../application/mandate-commands.js";
 import { MintMandateCommand } from "../application/commands/mint-mandate.command.js";
+import { SignMandateCommand } from "../application/commands/sign-mandate.command.js";
 import { type MandateProofFile } from "../application/queries/get-mandate-proof.handler.js";
 import { GetMandateProofQuery } from "../application/queries/get-mandate-proof.query.js";
 import { MandateProofNotFoundError } from "../domain/errors/mandate-errors.js";
@@ -104,6 +107,30 @@ export class AdminMandatesController {
       new MintMandateCommand(companyId),
     );
     return { id };
+  }
+
+  /**
+   * Déclare qu'un brouillon est **revenu signé**, et l'active.
+   *
+   * Le mandat est visé **par son identifiant** dans le chemin : c'est le geste
+   * où l'ambiguïté coûte le plus cher, un mandat actif pouvant être en vigueur
+   * pendant qu'on fait signer son remplaçant.
+   *
+   * La validation Zod ne porte que la FORME de la date. Qu'elle soit dans le
+   * futur, ou que le mandat ne soit pas un brouillon, est refusé par l'agrégat —
+   * la règle métier n'a pas à exister à deux endroits.
+   */
+  @Put(":companyId/mandate/:mandateId/signature")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async sign(
+    @Param("companyId") companyId: string,
+    @Param("mandateId") mandateId: string,
+    @Body() body: unknown,
+  ): Promise<void> {
+    const { signedAt } = signMandatePayloadSchema.parse(body);
+    await this.commands.execute<SignMandateCommand, void>(
+      new SignMandateCommand(companyId, mandateId, signedAt),
+    );
   }
 
   @Put(":companyId/mandate/proof")

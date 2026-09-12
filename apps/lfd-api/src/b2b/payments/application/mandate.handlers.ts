@@ -71,7 +71,11 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
   ) {}
 
   async execute(command: AttachMandateProofCommand): Promise<void> {
-    const mandate = await this.mandates.findCurrent(command.companyId);
+    // 🔴 `findAwaitingProof` et NON `findCurrent` (corrigé le 2026-09-12 au
+    // soir). `findCurrent` rend l'actif d'abord : avec un actif en vigueur et un
+    // brouillon frappé, le scan du mandat neuf se serait agrafé sur l'ancien, et
+    // la pièce produite en contestation n'aurait pas porté la RUM opposée.
+    const mandate = await this.mandates.findAwaitingProof(command.companyId);
     if (mandate === null) {
       throw new MandateNotFoundError(command.companyId);
     }

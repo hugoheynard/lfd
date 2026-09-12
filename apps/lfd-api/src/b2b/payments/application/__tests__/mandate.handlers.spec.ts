@@ -52,6 +52,7 @@ function doubles(options: {
     findCurrent: () => Promise.resolve(options.current ?? null),
     findById: () => Promise.resolve(null),
     findDraft: () => Promise.resolve(null),
+    findAwaitingProof: () => Promise.resolve(options.current ?? null),
     create: (mandate) => {
       trace.steps.push("write");
       trace.written = mandate;

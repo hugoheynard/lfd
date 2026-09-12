@@ -62,6 +62,7 @@ function build(
   const mandates: PaymentMandateRepository = {
     findHolder: () => Promise.resolve(options.holder === undefined ? HOLDER : options.holder),
     findDraft: () => Promise.resolve(options.draft ?? null),
+    findAwaitingProof: () => Promise.resolve(null),
     findCurrent: () => Promise.resolve(null),
     findById: () => Promise.resolve(null),
     create: (snapshot: MandateToCreate) => {
