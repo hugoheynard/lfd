@@ -1,4 +1,8 @@
-import type { CorrectLegalEntityPayload, DeclareLegalEntityPayload } from "@lfd/contracts";
+import type {
+  CorrectLegalEntityPayload,
+  DeclareLegalEntityPayload,
+  SetCreditorAccountPayload,
+} from "@lfd/contracts";
 
 /**
  * Les intentions d'écriture sur une entité émettrice.
@@ -37,8 +41,7 @@ export class AssignCreditorIdentifierCommand {
 export class SetCreditorAccountCommand {
   constructor(
     readonly legalEntityId: string,
-    readonly iban: string,
-    readonly bic: string,
+    readonly payload: SetCreditorAccountPayload,
   ) {}
 }
 

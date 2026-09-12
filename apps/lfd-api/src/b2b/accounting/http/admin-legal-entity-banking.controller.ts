@@ -73,7 +73,7 @@ export class AdminLegalEntityBankingController {
     @Param("id") id: string,
     @Body(new ZodBody(setCreditorAccountPayloadSchema)) payload: SetCreditorAccountPayload,
   ): Promise<void> {
-    await this.commands.execute(new SetCreditorAccountCommand(id, payload.iban, payload.bic));
+    await this.commands.execute(new SetCreditorAccountCommand(id, payload));
   }
 
   /**

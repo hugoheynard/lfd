@@ -156,27 +156,97 @@
     <fold-card>
       <fold-page-section title="Compte créancier" separator>
         <p class="ej-said">
-          Le compte où l'argent arrive. Il <strong>change librement</strong> — aucun mandat signé ne
-          le porte, contrairement à l'ICS.
+          La <strong>recopie du RIB</strong> de l'entité, telle que la banque la connaît.
         </p>
+
+        <!-- Le callout demandé : ces champs ne servent pas qu'à l'écran, ils
+             partent sur un papier que des clients signent. Le dire ICI évite de
+             le redécouvrir en relisant un mandat imprimé. -->
+        <fold-callout appearance="inset" variant="info">
+          <strong>Ces informations s'impriment sur les mandats SEPA.</strong> Le titulaire et
+          l'adresse sont ce que le débiteur lira sur le papier qu'il signe, et ce que sa banque
+          comparera. Ils redoublent volontairement l'identité légale ci-dessus&nbsp;: celle-ci vient
+          du registre, celles-là de votre banque, et les deux peuvent différer.
+        </fold-callout>
+
+        @if (entity.creditorIdentityFrozen) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Le créancier imprimé est gelé.</strong> Des mandats ont déjà été émis au nom de
+            «&nbsp;{{ entity.creditorAccountHolder }}&nbsp;»&nbsp;: ce nom et cette adresse ne
+            changent plus, comme l'ICS. L'IBAN et le BIC, eux, restent modifiables — aucun mandat ne
+            les porte.
+          </fold-callout>
+        }
+
         <p class="ej-account">
           @if (entity.creditorAccountLast4 !== '') {
             Compte enregistré&nbsp;: •••• {{ entity.creditorAccountLast4 }}
             @if (entity.creditorBic !== '') {
               · BIC {{ entity.creditorBic }}
             }
+            @if (entity.creditorAccountHolder !== '') {
+              · {{ entity.creditorAccountHolder }}
+            }
           } @else {
             Aucun compte enregistré.
           }
         </p>
+
         <!-- 🔴 L'IBAN est toujours vide à l'ouverture, même quand un compte
-           existe : il ne revient d'aucune route. Le BIC, LUI, se réaffiche —
-           il désigne une banque, pas un compte. La ligne ci-dessus est ce qui
-           rend l'absence du premier lisible plutôt qu'inquiétante. -->
+             existe : il ne revient d'aucune route. Tout le reste se réaffiche —
+             rien de cela n'est un secret, et le relire est justement ce qu'on
+             veut avant d'imprimer un mandat. -->
+        <div class="ej-row">
+          <fold-input
+            label="Titulaire du compte"
+            placeholder="Crazeativity"
+            [disabled]="entity.creditorIdentityFrozen"
+            [value]="holderDraft()"
+            (valueChange)="holderDraft.set($event)"
+          />
+        </div>
+        <div class="ej-row">
+          <fold-input
+            label="Adresse"
+            placeholder="Route de la Balme"
+            [disabled]="entity.creditorIdentityFrozen"
+            [value]="line1Draft()"
+            (valueChange)="line1Draft.set($event)"
+          />
+          <fold-input
+            label="Complément"
+            placeholder="Bâtiment, étage…"
+            [disabled]="entity.creditorIdentityFrozen"
+            [value]="line2Draft()"
+            (valueChange)="line2Draft.set($event)"
+          />
+        </div>
+        <div class="ej-row">
+          <fold-input
+            label="Code postal"
+            placeholder="73150"
+            [disabled]="entity.creditorIdentityFrozen"
+            [value]="postalCodeDraft()"
+            (valueChange)="postalCodeDraft.set($event)"
+          />
+          <fold-input
+            label="Ville"
+            placeholder="Val d’Isère"
+            [disabled]="entity.creditorIdentityFrozen"
+            [value]="cityDraft()"
+            (valueChange)="cityDraft.set($event)"
+          />
+          <fold-input
+            label="Pays"
+            placeholder="FR"
+            [disabled]="entity.creditorIdentityFrozen"
+            [value]="countryDraft()"
+            (valueChange)="countryDraft.set($event)"
+          />
+        </div>
         <div class="ej-row">
           <fold-input
             label="IBAN"
-            hideLabel
             placeholder="FR14 2004 1010 0505 0001 3M02 606"
             hint="Saisi une fois. Il ne sera plus jamais réaffiché."
             [value]="ibanDraft()"
@@ -184,24 +254,20 @@
           />
           <fold-input
             label="BIC"
-            hideLabel
             placeholder="CEPAFRPP751"
             hint="Sur le même RIB que l'IBAN."
             [value]="bicDraft()"
             (valueChange)="bicDraft.set($event)"
           />
-          <button
-            foldButton
-            [disabled]="ibanDraft().trim() === '' || bicDraft().trim() === '' || busy()"
-            (click)="setAccount(entity)"
-          >
+        </div>
+        <div class="ej-row">
+          <button foldButton [disabled]="!accountComplete() || busy()" (click)="setAccount(entity)">
             Enregistrer
           </button>
         </div>
         <p class="ej-said">
-          Les deux se saisissent <strong>ensemble</strong> : ils se lisent sur le même RIB, et un
-          compte qui n'aurait que l'un des deux ne se découvrirait qu'au rejet du lot, cinq jours
-          après l'envoi.
+          Le RIB se recopie <strong>en entier</strong>&nbsp;: un compte à moitié saisi ne se
+          découvrirait qu'au rejet du lot, cinq jours après l'envoi.
         </p>
       </fold-page-section>
     </fold-card>

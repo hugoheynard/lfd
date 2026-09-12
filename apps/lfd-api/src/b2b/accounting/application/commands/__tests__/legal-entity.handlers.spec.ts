@@ -13,8 +13,9 @@ import {
 import { LegalEntityRepository } from "../../../domain/ports/legal-entity.repository.js";
 import { CreditorIdentifier } from "../../../domain/value-objects/creditor-identifier.js";
 import { Bic } from "../../../domain/value-objects/bic.js";
-import { Iban } from "../../../domain/value-objects/iban.js";
+import { CreditorAccount } from "../../../domain/value-objects/creditor-account.js";
 import { LegalAddress } from "../../../domain/value-objects/legal-address.js";
+import { Iban } from "../../../domain/value-objects/iban.js";
 import { Siren } from "../../../domain/value-objects/siren.js";
 import { AssignCreditorIdentifierHandler } from "../assign-creditor-identifier.handler.js";
 import { DeclareLegalEntityHandler } from "../declare-legal-entity.handler.js";
@@ -32,6 +33,26 @@ const NOW = new Date("2026-09-10T09:00:00.000Z");
 const ICS = "FR72ZZZ123456";
 /** IBAN d'exemple de la documentation EPC — clé mod-97 valide. */
 const IBAN = "FR1420041010050500013M02606";
+const ACCOUNT_PAYLOAD = {
+  iban: IBAN,
+  bic: "CEPAFRPP751",
+  holder: "Crazeativity",
+  line1: "Route de la Balme",
+  line2: "",
+  postalCode: "73150",
+  city: "Val d'Isère",
+  countryCode: "FR",
+};
+
+/** Le compte, côté domaine — le même RIB, en value objects. */
+function account(over: { holder?: string } = {}) {
+  return CreditorAccount.create({
+    holder: over.holder ?? ACCOUNT_PAYLOAD.holder,
+    address: LegalAddress.create(ACCOUNT_PAYLOAD),
+    iban: Iban.create(ACCOUNT_PAYLOAD.iban),
+    bic: Bic.create(ACCOUNT_PAYLOAD.bic),
+  });
+}
 /** SIREN dont la clé de Luhn est bonne — un SIREN inventé se fait refuser, et c'est le sujet. */
 const SIREN = "552100554";
 
@@ -235,7 +256,7 @@ describe("SetCreditorAccountHandler", () => {
   it("enregistre le compte, et le compte SEUL sort en quatre caractères", async () => {
     const { handler, entities, events } = doubles();
 
-    await handler.execute(new SetCreditorAccountCommand("le1", IBAN, "CEPAFRPP751"));
+    await handler.execute(new SetCreditorAccountCommand("le1", ACCOUNT_PAYLOAD));
 
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBe(IBAN);
     const fact = events.traced[0]?.journalFact();
@@ -254,7 +275,10 @@ describe("SetCreditorAccountHandler", () => {
     await expect(
       // Deux chiffres intervertis dans la clé.
       handler.execute(
-        new SetCreditorAccountCommand("le1", "FR4120041010050500013M02606", "CEPAFRPP751"),
+        new SetCreditorAccountCommand("le1", {
+          ...ACCOUNT_PAYLOAD,
+          iban: "FR4120041010050500013M02606",
+        }),
       ),
     ).rejects.toBeInstanceOf(InvalidIbanError);
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBeNull();
@@ -263,9 +287,12 @@ describe("SetCreditorAccountHandler", () => {
   it("le compte change librement — on peut changer de banque, contrairement à l'ICS", async () => {
     const { handler, entities } = doubles();
 
-    await handler.execute(new SetCreditorAccountCommand("le1", IBAN, "CEPAFRPP751"));
+    await handler.execute(new SetCreditorAccountCommand("le1", ACCOUNT_PAYLOAD));
     await handler.execute(
-      new SetCreditorAccountCommand("le1", "FR7630006000011234567890189", "CEPAFRPP751"),
+      new SetCreditorAccountCommand("le1", {
+        ...ACCOUNT_PAYLOAD,
+        iban: "FR7630006000011234567890189",
+      }),
     );
 
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBe(
@@ -320,7 +347,7 @@ describe("SetLegalEntityArchivedHandler", () => {
     const entities = new InMemoryEntities();
     const entity = sampleEntity();
     entity.assignCreditorIdentifier(CreditorIdentifier.create(ICS));
-    entity.setCreditorAccount(Iban.create(IBAN), Bic.create("CEPAFRPP751"));
+    entity.setCreditorAccount(account());
     entities.rows.set("le1", entity);
     // Une seconde entité, sans quoi le handler refuse : on n'archive pas la
     // dernière en service.

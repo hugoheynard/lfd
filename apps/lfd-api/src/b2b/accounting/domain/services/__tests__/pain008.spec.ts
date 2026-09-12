@@ -12,6 +12,8 @@ const CREDITOR: CreditorSnapshot = {
   shareCapitalCents: 1_000_000,
   addressLines: ["Route de la Balme", "73150 Val d'Isère", "France"],
   ics: "FR00ZZZ900001",
+  accountHolder: "CRAZEATIVITY",
+  accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],
   creditorBic: "CEPAFRPP751",
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,

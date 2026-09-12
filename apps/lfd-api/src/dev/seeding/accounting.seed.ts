@@ -1,4 +1,4 @@
-import type { DeclareLegalEntityPayload } from "@lfd/contracts";
+import type { SetCreditorAccountPayload, DeclareLegalEntityPayload } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
 import {
@@ -90,6 +90,26 @@ const SEEDED_CREDITOR_IBAN = "FR7630006000011234567890189";
 /** Caisse d'Épargne — la banque retenue pour le prélèvement direct. */
 const SEEDED_CREDITOR_BIC = "CEPAFRPP751";
 
+/**
+ * Le compte tel qu'on le recopierait d'un RIB.
+ *
+ * ⚠️ Le titulaire et l'adresse REDOUBLENT l'identité déclarée juste au-dessus,
+ * et c'est le sujet du modèle, pas une étourderie du seed : l'un vient du
+ * registre, l'autre de la banque. Le seed les fait coïncider parce que c'est le
+ * cas courant — mais il passe par la MÊME route que l'écran, donc il éprouve
+ * bien le chemin où ils pourraient diverger.
+ */
+const SEEDED_CREDITOR_ACCOUNT: SetCreditorAccountPayload = {
+  iban: SEEDED_CREDITOR_IBAN,
+  bic: SEEDED_CREDITOR_BIC,
+  holder: SEEDED_LEGAL_ENTITY_NAME,
+  line1: "Route de la Balme",
+  line2: "",
+  postalCode: "73150",
+  city: "Val d'Isère",
+  countryCode: "FR",
+};
+
 const ENTITY: DeclareLegalEntityPayload = {
   name: SEEDED_LEGAL_ENTITY_NAME,
   legalForm: "SAS",
@@ -155,9 +175,7 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
   if (existing?.creditorIban) {
     console.log("· Compte créancier déjà posé — inchangé.");
   } else {
-    await commands.execute(
-      new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_IBAN, SEEDED_CREDITOR_BIC),
-    );
+    await commands.execute(new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_ACCOUNT));
     console.log("✓ Compte créancier posé — l'entité peut désormais prélever.");
   }
 

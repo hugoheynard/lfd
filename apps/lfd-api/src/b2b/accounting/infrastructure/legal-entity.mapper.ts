@@ -38,6 +38,16 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityV
     // droit de répondre.
     creditorAccountLast4: snapshot.creditorIban?.slice(-4) ?? "",
     creditorBic: snapshot.creditorBic ?? "",
+    // Le bloc du RIB, lui, ressort EN ENTIER : titulaire et adresse s'impriment
+    // sur chaque mandat qu'on fait signer. Rien à y masquer — et le masquer
+    // empêcherait de relire ce qu'on va imprimer.
+    creditorAccountHolder: snapshot.creditorAccountHolder ?? "",
+    creditorAccountLine1: snapshot.creditorAccountLine1 ?? "",
+    creditorAccountLine2: snapshot.creditorAccountLine2 ?? "",
+    creditorAccountPostalCode: snapshot.creditorAccountPostalCode ?? "",
+    creditorAccountCity: snapshot.creditorAccountCity ?? "",
+    creditorAccountCountryCode: snapshot.creditorAccountCountryCode ?? "",
+    creditorIdentityFrozen: entity.creditorIdentityFrozen,
     preNotificationDays: snapshot.preNotificationDays,
     archivedAt: snapshot.archivedAt?.toISOString() ?? null,
     canCollect: entity.canCollect(),
@@ -71,6 +81,13 @@ function toSnapshot(row: LegalEntityRow): LegalEntitySnapshot {
     ics: row.ics,
     creditorIban: row.creditorIban,
     creditorBic: row.creditorBic,
+    creditorAccountHolder: row.creditorAccountHolder,
+    creditorAccountLine1: row.creditorAccountLine1,
+    creditorAccountLine2: row.creditorAccountLine2,
+    creditorAccountPostalCode: row.creditorAccountPostalCode,
+    creditorAccountCity: row.creditorAccountCity,
+    creditorAccountCountryCode: row.creditorAccountCountryCode,
+    firstMandateIssuedAt: row.firstMandateIssuedAt,
     preNotificationDays: row.preNotificationDays,
     logoKey: row.logoKey,
     archivedAt: row.archivedAt,

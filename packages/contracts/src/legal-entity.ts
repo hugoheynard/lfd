@@ -49,6 +49,28 @@ export interface LegalEntityView {
    * secret là où il n'y en a pas, et empêcherait de relire une saisie.
    */
   readonly creditorBic: string;
+  /**
+   * Le bloc recopié du RIB — titulaire et adresse **tels que la banque les
+   * connaît**. `""` tant qu'aucun compte n'est saisi.
+   *
+   * Il redouble `name` et l'adresse du siège, et c'est délibéré : l'un vient du
+   * registre, l'autre de la banque. C'est le second qu'un mandat imprime.
+   */
+  readonly creditorAccountHolder: string;
+  readonly creditorAccountLine1: string;
+  readonly creditorAccountLine2: string;
+  readonly creditorAccountPostalCode: string;
+  readonly creditorAccountCity: string;
+  readonly creditorAccountCountryCode: string;
+  /**
+   * 🔴 Le créancier imprimé est-il GELÉ ? Vrai dès le premier mandat frappé.
+   *
+   * L'écran s'en sert pour refuser le geste AVANT la saisie plutôt qu'après :
+   * un formulaire qui accepte puis rend un 409 fait retaper pour rien.
+   * ⚠️ Le gel ne porte que sur le titulaire et l'adresse — l'IBAN et le BIC
+   * restent modifiables, aucun mandat ne les porte.
+   */
+  readonly creditorIdentityFrozen: boolean;
   readonly preNotificationDays: number;
   /** ISO, ou `null` si l'entité est vivante. */
   readonly archivedAt: string | null;
@@ -176,13 +198,23 @@ export type AssignCreditorIdentifierPayload = z.infer<typeof assignCreditorIdent
  * la vue n'en rend que les quatre derniers caractères. Le BIC, lui, redescend
  * en entier — il désigne une banque, pas un compte.
  *
- * **Les deux sont exigés ensemble** (2026-09-12) : ils se lisent sur le même
- * RIB, et un compte qui n'aurait que l'un des deux ne se découvrirait qu'au
- * rejet du lot, cinq jours après l'envoi.
+ * **C'est la recopie d'un RIB en un seul geste** (2026-09-12) : titulaire,
+ * adresse, IBAN, BIC. Un compte à moitié rempli ne se découvrirait qu'au rejet
+ * du lot, cinq jours après l'envoi.
+ *
+ * 🔴 Après le premier mandat, le titulaire et l'adresse sont **gelés** — le
+ * papier signé les porte. L'IBAN et le BIC, eux, restent libres : aucun mandat
+ * ne les porte, donc changer de banque ne contredit aucune signature.
  */
 export const setCreditorAccountPayloadSchema = z.object({
   iban: z.string().trim().min(1),
   bic: z.string().trim().min(1),
+  holder: z.string().trim().min(1),
+  line1: z.string().trim().min(1),
+  line2: z.string().trim().default(""),
+  postalCode: z.string().trim().min(1),
+  city: z.string().trim().min(1),
+  countryCode: z.string().trim().length(2).default("FR"),
 });
 export type SetCreditorAccountPayload = z.infer<typeof setCreditorAccountPayloadSchema>;
 

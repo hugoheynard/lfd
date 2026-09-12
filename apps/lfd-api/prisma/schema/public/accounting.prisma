@@ -80,6 +80,25 @@ model LegalEntity {
   /// et qu'une entité renseignée avant lui reste capable d'émettre un mandat.
   creditorBic String? @map("creditor_bic")
 
+  /// Le bloc recopié du RIB : titulaire et adresse **tels que la banque les
+  /// connaît**. Il redouble `name` et l'adresse du siège, et c'est DÉLIBÉRÉ —
+  /// l'un vient du registre, l'autre de la banque, et c'est le second que la
+  /// banque compare. Voir le value object `CreditorAccount`.
+  creditorAccountHolder      String? @map("creditor_account_holder")
+  creditorAccountLine1       String? @map("creditor_account_line1")
+  creditorAccountLine2       String? @map("creditor_account_line2")
+  creditorAccountPostalCode  String? @map("creditor_account_postal_code")
+  creditorAccountCity        String? @map("creditor_account_city")
+  creditorAccountCountryCode String? @map("creditor_account_country_code")
+
+  /// Quand le PREMIER mandat a été frappé sous cette entité.
+  ///
+  /// 🔴 Tant qu'il est nul, le créancier imprimé se corrige ; après, il est gelé
+  /// — un mandat signé nomme le créancier, et le débiteur a autorisé CE nom-là.
+  /// Même raisonnement que l'immuabilité de l'ICS, appliqué à ce que le papier
+  /// porte. L'IBAN et le BIC, eux, restent libres : aucun mandat ne les porte.
+  firstMandateIssuedAt DateTime? @map("first_mandate_issued_at")
+
   // Le délai annoncé au débiteur entre la pré-notification et le débit. Négocié
   // avec la banque, donc DE LA DONNÉE : le renégocier est une saisie, pas un
   // déploiement, et deux entités peuvent ne pas avoir le même.

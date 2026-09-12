@@ -44,6 +44,13 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     countryCode: 'FR',
     ics: '',
     creditorBic: '',
+    creditorAccountHolder: '',
+    creditorAccountLine1: '',
+    creditorAccountLine2: '',
+    creditorAccountPostalCode: '',
+    creditorAccountCity: '',
+    creditorAccountCountryCode: '',
+    creditorIdentityFrozen: false,
     creditorAccountLast4: '',
     preNotificationDays: 14,
     archivedAt: null,
@@ -246,9 +253,18 @@ describe('LegalEntityDetailPage', () => {
     const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll('fold-input');
 
     expect(text(fixture)).toContain('FR72ZZZ123456');
-    // Les seuls champs restants sont ceux du COMPTE — IBAN et BIC. Un champ ICS
-    // ouvert promettrait un geste que le serveur refuse en 409.
-    expect([...inputs].map((field) => field.getAttribute('label'))).toEqual(['IBAN', 'BIC']);
+    // Les seuls champs restants sont ceux du COMPTE — la recopie du RIB. Un
+    // champ ICS ouvert promettrait un geste que le serveur refuse en 409.
+    expect([...inputs].map((field) => field.getAttribute('label'))).toEqual([
+      'Titulaire du compte',
+      'Adresse',
+      'Complément',
+      'Code postal',
+      'Ville',
+      'Pays',
+      'IBAN',
+      'BIC',
+    ]);
     expect(text(fixture)).toContain('Il ne se remplace pas');
   });
 
@@ -262,7 +278,7 @@ describe('LegalEntityDetailPage', () => {
    * autrement demanderait de tricher avec le composant. La garde qui compte est
    * de toute façon celle du serveur — `bic` est exigé par le schéma Zod.
    */
-  it('n’enregistre pas un compte tant que les deux champs sont vides', async () => {
+  it('n’enregistre pas un compte tant que la recopie du RIB est incomplète', async () => {
     const api = new FakeLegalEntities();
     api.row = entity({ ics: 'FR72ZZZ123456' });
 
@@ -273,7 +289,50 @@ describe('LegalEntityDetailPage', () => {
     );
 
     expect(save?.hasAttribute('disabled')).toBe(true);
-    expect(text(fixture)).toContain('Les deux se saisissent');
+    expect(text(fixture)).toContain('Le RIB se recopie');
+  });
+
+  /** Le callout demandé : ces champs partent sur un papier que des clients signent. */
+  it('annonce que ces informations partent sur les mandats SEPA', async () => {
+    const api = new FakeLegalEntities();
+    api.row = entity({ ics: 'FR72ZZZ123456' });
+
+    const fixture = await render(api);
+
+    expect(text(fixture)).toContain("s'impriment sur les mandats SEPA");
+    // Et il dit POURQUOI le doublon avec l'identité légale est voulu.
+    expect(text(fixture)).toContain('du registre');
+  });
+
+  /**
+   * Régression : le créancier imprimé gèle au premier mandat, comme l'ICS — un
+   * papier signé nomme le créancier, et le débiteur a autorisé CE nom-là.
+   * L'écran refuse AVANT la saisie : un formulaire qui accepte puis rend un 409
+   * fait retaper pour rien (fix 2026-09-12).
+   */
+  it('gèle le titulaire et l’adresse dès le premier mandat, mais PAS l’IBAN', async () => {
+    const api = new FakeLegalEntities();
+    api.row = entity({
+      ics: 'FR72ZZZ123456',
+      creditorAccountHolder: 'Crazeativity',
+      creditorIdentityFrozen: true,
+    });
+
+    const fixture = await render(api);
+    const host = fixture.nativeElement as HTMLElement;
+    // ⚠️ On interroge les `input` NATIFS : `[disabled]` est une entrée de
+    // composant, elle ne se reflète pas en attribut sur `<fold-input>`.
+    const byPlaceholder = (placeholder: string): boolean =>
+      host.querySelector<HTMLInputElement>(`input[placeholder^="${placeholder}"]`)?.disabled ??
+      false;
+
+    expect(text(fixture)).toContain('créancier imprimé est gelé');
+    expect(byPlaceholder('Crazeativity')).toBe(true);
+    expect(byPlaceholder('Route de la Balme')).toBe(true);
+    expect(byPlaceholder('73150')).toBe(true);
+    // 🔴 Le cas qui distingue cette règle de celle de l'ICS : on change de banque.
+    expect(byPlaceholder('FR14')).toBe(false);
+    expect(byPlaceholder('CEPAFRPP751')).toBe(false);
   });
 
   it('ne montre jamais un IBAN, seulement ses quatre derniers caractères', async () => {

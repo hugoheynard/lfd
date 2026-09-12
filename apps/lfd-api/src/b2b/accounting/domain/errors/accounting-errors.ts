@@ -100,6 +100,32 @@ export class CreditorIdentifierIsImmutableError extends BusinessError {
   }
 }
 
+/**
+ * Le créancier imprimé sur les mandats déjà signés ne se réécrit pas.
+ *
+ * Le raisonnement est celui de l'ICS, appliqué à ce que le PAPIER porte : un
+ * mandat SEPA nomme le créancier — titulaire et adresse — et le débiteur a
+ * autorisé CE nom-là. Le changer ici n'irait pas rechercher les signatures : on
+ * prélèverait au nom de quelqu'un que personne n'a autorisé.
+ *
+ * ⚠️ L'IBAN et le BIC ne sont PAS concernés, et c'est volontaire : aucun mandat
+ * ne les porte. Changer de banque reste libre, pour toujours.
+ */
+export class CreditorIdentityIsFrozenError extends BusinessError {
+  constructor(
+    readonly current: string,
+    readonly attempted: string,
+  ) {
+    super(
+      "accounting.creditor_identity.frozen",
+      `Des mandats ont déjà été émis au nom de « ${current} » : ce nom ne peut pas devenir ` +
+        `« ${attempted} ». Les papiers signés portent l'ancien. Vous pouvez toujours changer ` +
+        `d'IBAN ou de BIC — aucun mandat ne les porte. Pour encaisser sous une autre identité, ` +
+        `déclarez une seconde entité juridique et faites resigner les mandats concernés.`,
+    );
+  }
+}
+
 /** Encaisser demande un ICS **et** un compte où l'argent arrive. */
 export class EntityCannotCollectError extends BusinessError {
   constructor(readonly missing: readonly string[]) {

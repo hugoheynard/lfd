@@ -6,6 +6,8 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { CreditorAccountChangedEvent } from "../../domain/events/legal-entity.events.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { Bic } from "../../domain/value-objects/bic.js";
+import { CreditorAccount } from "../../domain/value-objects/creditor-account.js";
+import { LegalAddress } from "../../domain/value-objects/legal-address.js";
 import { Iban } from "../../domain/value-objects/iban.js";
 import { loadOrFail } from "../legal-entity-support.js";
 import { SetCreditorAccountCommand } from "./legal-entity-commands.js";
@@ -48,15 +50,26 @@ export class SetCreditorAccountHandler implements ICommandHandler<SetCreditorAcc
 
   async execute(command: SetCreditorAccountCommand): Promise<void> {
     const entity = await loadOrFail(this.entities, command.legalEntityId);
-    const iban = Iban.create(command.iban);
-    const bic = Bic.create(command.bic);
-    entity.setCreditorAccount(iban, bic);
+    const { payload } = command;
+    const account = CreditorAccount.create({
+      holder: payload.holder,
+      address: LegalAddress.create({
+        line1: payload.line1,
+        line2: payload.line2,
+        postalCode: payload.postalCode,
+        city: payload.city,
+        countryCode: payload.countryCode,
+      }),
+      iban: Iban.create(payload.iban),
+      bic: Bic.create(payload.bic),
+    });
+    entity.setCreditorAccount(account);
 
     const at = this.clock.now();
     await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new CreditorAccountChangedEvent(command.legalEntityId, at, iban.value.slice(-4)),
+        new CreditorAccountChangedEvent(command.legalEntityId, at, account.last4()),
       );
     });
   }

@@ -31,6 +31,22 @@ const IBAN = "FR1420041010050500013M02606";
 /** Caisse d'Épargne. Le BIC accompagne l'IBAN : ils se lisent sur le même RIB. */
 const BIC = "CEPAFRPP751";
 
+/**
+ * Le compte tel qu'on le recopie d'un RIB. Le titulaire et l'adresse redoublent
+ * l'identité déclarée, et c'est le modèle : l'un vient du registre, l'autre de
+ * la banque.
+ */
+const ACCOUNT = {
+  iban: IBAN,
+  bic: BIC,
+  holder: "Crazeativity",
+  line1: "Route de la Balme",
+  line2: "",
+  postalCode: "73150",
+  city: "Val d'Isère",
+  countryCode: "FR",
+};
+
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
@@ -166,12 +182,48 @@ describe("Entité juridique — le compte créancier", () => {
    * rejet du lot, cinq jours après l'envoi — le schéma l'exige donc, et c'est
    * cette garde-là qui compte (l'écran n'en est que le reflet) (fix 2026-09-12).
    */
+  /**
+   * Le bloc du RIB ressort EN ENTIER — titulaire et adresse s'impriment sur
+   * chaque mandat qu'on fait signer. Seul l'IBAN reste dedans.
+   */
+  it("rend la recopie du RIB, et toujours pas l'IBAN", async () => {
+    const id = await declare();
+
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+      .send(ACCOUNT)
+      .expect(204);
+
+    const one = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
+
+    expect(one.body).toMatchObject({
+      creditorAccountHolder: "Crazeativity",
+      creditorAccountLine1: "Route de la Balme",
+      creditorAccountPostalCode: "73150",
+      creditorAccountCity: "Val d'Isère",
+      creditorAccountCountryCode: "FR",
+      creditorAccountLast4: "2606",
+      // Aucun mandat n'a été frappé : le créancier imprimé se corrige encore.
+      creditorIdentityFrozen: false,
+    });
+    expect(JSON.stringify(one.body)).not.toContain(IBAN);
+  });
+
+  it("REFUSE un compte sans titulaire — un RIB se recopie en entier", async () => {
+    const id = await declare();
+
+    await staff()
+      .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+      .send({ ...ACCOUNT, holder: "   " })
+      .expect(400);
+  });
+
   it("REFUSE un compte sans BIC — les deux se lisent sur le même RIB", async () => {
     const id = await declare();
 
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN })
+      .send({ iban: IBAN, bic: BIC })
       .expect(400);
   });
 
@@ -186,7 +238,7 @@ describe("Entité juridique — le compte créancier", () => {
 
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: "cepafrpp" })
+      .send({ ...ACCOUNT, bic: "cepafrpp" })
       .expect(204);
 
     const one = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
@@ -202,7 +254,7 @@ describe("Entité juridique — le compte créancier", () => {
 
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: BIC })
+      .send(ACCOUNT)
       .expect(204);
 
     const one = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
@@ -220,7 +272,7 @@ describe("Entité juridique — le compte créancier", () => {
 
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: "FR4120041010050500013M02606", bic: BIC })
+      .send({ ...ACCOUNT, iban: "FR4120041010050500013M02606" })
       .expect(400);
 
     const response = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
@@ -236,7 +288,7 @@ describe("Entité juridique — le compte créancier", () => {
       .expect(204);
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: BIC })
+      .send(ACCOUNT)
       .expect(204);
 
     const response = await staff().get(`/admin/accounting/legal-entities/${id}`).expect(200);
@@ -266,7 +318,7 @@ describe("Le brouillon de fichier de prélèvement", () => {
       .expect(204);
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: BIC })
+      .send(ACCOUNT)
       .expect(204);
 
     const response = await staff()
@@ -302,7 +354,7 @@ describe("Le brouillon de fichier de prélèvement", () => {
       .expect(204);
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: BIC })
+      .send(ACCOUNT)
       .expect(204);
 
     const xml = await staff()
@@ -347,7 +399,7 @@ describe("Entité juridique — la fiche de mandat SEPA", () => {
       .expect(204);
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: BIC })
+      .send(ACCOUNT)
       .expect(204);
 
     const response = await staff()
@@ -493,7 +545,7 @@ describe("Entité juridique — archivage et corrections", () => {
       .expect(204);
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: BIC })
+      .send(ACCOUNT)
       .expect(204);
 
     await staff()
@@ -745,7 +797,7 @@ describe("Entité juridique — le logo", () => {
       .expect(204);
     await staff()
       .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
-      .send({ iban: IBAN, bic: BIC })
+      .send(ACCOUNT)
       .expect(204);
 
     const withoutLogo = await mandate(id);

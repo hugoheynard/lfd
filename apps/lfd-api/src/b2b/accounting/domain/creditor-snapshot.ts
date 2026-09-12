@@ -35,6 +35,16 @@ export interface CreditorSnapshot {
    * c'est donc le lot qui devra refuser, en nommant l'entité à compléter.
    */
   readonly creditorBic: string | null;
+  /**
+   * Le titulaire du compte et son adresse, **tels que la banque les connaît**.
+   *
+   * Distincts de `name` / `addressLines` juste au-dessus, qui viennent du
+   * registre. Les deux coïncident presque toujours, et « presque » est la raison
+   * d'avoir les deux : c'est CE bloc-ci que la banque compare, et c'est lui
+   * qu'un mandat doit porter. `null` / vide tant qu'aucun RIB n'a été recopié.
+   */
+  readonly accountHolder: string | null;
+  readonly accountAddressLines: readonly string[];
   /** Le délai annoncé entre la notification et le débit, en jours. */
   readonly preNotificationDays: number;
 }
