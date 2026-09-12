@@ -90,3 +90,19 @@ export class InvalidRumError extends DomainError {
     super("payments.rum.invalid", `Référence de mandat « ${raw} » : ${reason}`);
   }
 }
+
+/**
+ * Le RIB d'un client refusé pour sa **forme**, pas pour sa valeur.
+ *
+ * 🔴 Comme `InvalidIbanError`, elle ne porte **jamais** la donnée refusée : le
+ * message d'une `DomainError` repart tel quel au client via `AppErrorFilter`.
+ * Elle nomme le CHAMP et la règle, ce qui suffit à corriger une saisie.
+ */
+export class InvalidDebtorAccountError extends DomainError {
+  constructor(
+    readonly field: string,
+    readonly reason: string,
+  ) {
+    super("payments.debtor_account.invalid", `${field} : ${reason}`);
+  }
+}
