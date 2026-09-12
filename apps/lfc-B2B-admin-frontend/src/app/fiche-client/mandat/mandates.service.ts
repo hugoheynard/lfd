@@ -52,6 +52,26 @@ export class MandatesService {
     );
   }
 
+  /**
+   * La pièce déposée — le mandat papier **signé**, descellé par le serveur.
+   *
+   * ⚠️ En **blob**, et pas par une URL donnée à un `<a>` : un lien direct part
+   * sans le jeton staff — l'intercepteur ne voit que les requêtes `HttpClient` —
+   * et le navigateur afficherait une page blanche. C'est la même raison que
+   * l'aperçu du mandat.
+   *
+   * Le serveur répond **404** quand aucune pièce n'est déposée, ce qui est un
+   * état normal : le papier met des jours à revenir. L'appelant ne propose donc
+   * le geste que sur un mandat qui en porte une.
+   */
+  async proof(companyId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${B2B_API_BASE}/admin/companies/${companyId}/mandate/proof?inline=1`, {
+        responseType: 'blob',
+      }),
+    );
+  }
+
   /** Retire l'autorisation de prélever. */
   async revoke(companyId: string): Promise<void> {
     await firstValueFrom(

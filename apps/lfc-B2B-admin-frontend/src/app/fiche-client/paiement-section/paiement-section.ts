@@ -30,6 +30,7 @@ import {
   type FoldTimelineNode,
 } from 'fold-ng';
 
+import { saveBlob } from '../../shared/download/save-blob';
 import { BankAccountSection } from '../bank-account-section/bank-account-section';
 import { MandateOptionsSection } from '../mandate-options-section/mandate-options-section';
 import { NotifyService } from '../../notify.service';
@@ -348,6 +349,35 @@ export class PaiementSection {
     const status = this.mandate()?.status;
     return status === undefined || status === 'revoked' || status === 'failed';
   });
+
+  /**
+   * Récupère la pièce déposée et la remet à l'utilisateur.
+   *
+   * 🔴 En TÉLÉCHARGEMENT et non dans un onglet, alors que la route sait servir
+   * les deux. Ouvrir un onglet après un `await` se fait bloquer comme une
+   * fenêtre surgissante sur une partie des navigateurs : le geste échouerait
+   * silencieusement, au pire moment — quelqu'un qui cherche une preuve en
+   * contestation. Le fichier descend, et l'onglet reste au choix de qui le veut.
+   *
+   * Hors de `run` : c'est une LECTURE. La passer par le trio muter / annoncer /
+   * relire rechargerait la section pour rien et annoncerait un changement qui
+   * n'a pas eu lieu.
+   */
+  protected async downloadProof(): Promise<void> {
+    const id = this.companyId();
+    const mandate = this.mandate();
+    if (id === null || mandate === null) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      saveBlob(await this.mandates.proof(id), mandate.proofFileName || 'mandat-signe.pdf');
+    } catch (error) {
+      this.notify.error(error, "Le mandat signé n'a pas pu être récupéré.");
+    } finally {
+      this.busy.set(false);
+    }
+  }
 
   private async revoke(): Promise<void> {
     const id = this.companyId();

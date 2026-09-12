@@ -10,6 +10,7 @@ import { MintMandateHandler } from "./application/commands/mint-mandate.handler.
 import { SetCompanyBankAccountHandler } from "./application/commands/set-company-bank-account.handler.js";
 import { SetMandateOptionsHandler } from "./application/commands/set-mandate-options.handler.js";
 import { GetCompanyBankAccountHandler } from "./application/queries/get-company-bank-account.handler.js";
+import { GetMandateProofHandler } from "./application/queries/get-mandate-proof.handler.js";
 import { PreviewCustomerMandateHandler } from "./application/queries/preview-customer-mandate.handler.js";
 import {
   AttachMandateProofHandler,
@@ -58,6 +59,7 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     RevokeMandateHandler,
     AttachMandateProofHandler,
     GetCompanyMandateHandler,
+    GetMandateProofHandler,
     SetCompanyBankAccountHandler,
     SetMandateOptionsHandler,
     GetCompanyBankAccountHandler,

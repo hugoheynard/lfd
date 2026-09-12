@@ -124,6 +124,17 @@
             <div class="pm-state">
               @if (m.hasProof) {
                 <fold-badge content="Déposé" variant="success" />
+                <!-- 🔴 La pièce pouvait ENTRER sans jamais ressortir jusqu'au
+                     2026-09-12. En contestation, c'est elle qu'on produit. -->
+                <button
+                  foldButton
+                  type="button"
+                  emphasis="outline"
+                  [loading]="busy()"
+                  (click)="downloadProof()"
+                >
+                  Récupérer
+                </button>
               }
               <label class="proof-pick">
                 <input

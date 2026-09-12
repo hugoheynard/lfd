@@ -47,6 +47,23 @@ export class MandateNotRevocableError extends BusinessError {
 }
 
 /**
+ * Aucune pièce n'est déposée pour ce mandat — **404**.
+ *
+ * Un mandat sans scan est un état **normal et fréquent** : le papier met des
+ * jours à revenir. Ce n'est donc pas une anomalie qu'on signale, c'est une
+ * ressource qui n'existe pas encore — et la fiche le dit déjà en toutes lettres
+ * (« mandat sans filet »). Le 404 est ici la réponse juste, pas un aveu.
+ */
+export class MandateProofNotFoundError extends ResourceNotFoundError {
+  constructor(companyId: string) {
+    super(
+      "payments.mandate.proof_missing",
+      `Aucun mandat signé n'est déposé pour la société « ${companyId} ».`,
+    );
+  }
+}
+
+/**
  * Un brouillon de mandat existe déjà pour cette société — **409**.
  *
  * La règle est tenue en base par un index partiel ; cette erreur n'existe que

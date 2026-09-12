@@ -13,11 +13,20 @@ import {
   Param,
   Post,
   Put,
+  Query,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import {
+  contentDispositionAttachment,
+  contentDispositionInline,
+  sanitiseFileName,
+} from "@lfd/storage";
+import type { Response } from "express";
 
 import { InvalidScannedDocumentError } from "../../../platform/shared/errors/storage-errors.js";
 import {
@@ -25,6 +34,9 @@ import {
   RevokeMandateCommand,
 } from "../application/mandate-commands.js";
 import { MintMandateCommand } from "../application/commands/mint-mandate.command.js";
+import { type MandateProofFile } from "../application/queries/get-mandate-proof.handler.js";
+import { GetMandateProofQuery } from "../application/queries/get-mandate-proof.query.js";
+import { MandateProofNotFoundError } from "../domain/errors/mandate-errors.js";
 import { GetCompanyMandateQuery } from "../application/mandate-queries.js";
 import { PaymentGateway } from "../domain/payment-gateway.js";
 
@@ -107,6 +119,44 @@ export class AdminMandatesController {
     await this.commands.execute<AttachMandateProofCommand, void>(
       new AttachMandateProofCommand(companyId, file.originalname, file.buffer),
     );
+  }
+
+  /**
+   * Rend la **pièce déposée** : le mandat papier signé, descellé.
+   *
+   * 🔴 Cette route n'existait pas jusqu'au 2026-09-12. Le dépôt, lui, existait
+   * depuis toujours : la seule pièce qui prouve le consentement était donc
+   * **entrée sans jamais pouvoir ressortir**, sauf à ouvrir le bucket à la main.
+   * Une preuve qu'on ne sait pas produire ne prouve rien au moment où l'on en a
+   * besoin, et c'est le seul moment qui compte.
+   *
+   * `inline` bascule la disposition, comme pour la fiche exemple : c'est la
+   * différence entre REGARDER la pièce dans un onglet et l'accumuler dans un
+   * dossier de téléchargements.
+   *
+   * Le nom du fichier est **assaini** avant de partir dans l'en-tête : il vient
+   * d'un dépôt, donc d'une saisie, et un nom porteur de guillemets ou de retours
+   * à la ligne découperait l'en-tête HTTP.
+   */
+  @Get(":companyId/mandate/proof")
+  async proof(
+    @Param("companyId") companyId: string,
+    @Query("inline") inline: string | undefined,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const proof = await this.queries.execute<GetMandateProofQuery, MandateProofFile | null>(
+      new GetMandateProofQuery(companyId),
+    );
+    if (proof === null) {
+      throw new MandateProofNotFoundError(companyId);
+    }
+    const fileName = sanitiseFileName(proof.fileName);
+    response.setHeader("Content-Type", proof.contentType);
+    response.setHeader(
+      "Content-Disposition",
+      inline === "1" ? contentDispositionInline(fileName) : contentDispositionAttachment(fileName),
+    );
+    return new StreamableFile(proof.bytes);
   }
 
   /** Retire l'autorisation de prélever — chez le prestataire, puis chez nous. */
