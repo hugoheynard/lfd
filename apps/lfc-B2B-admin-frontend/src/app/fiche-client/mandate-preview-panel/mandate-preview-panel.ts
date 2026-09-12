@@ -76,7 +76,11 @@ export class MandatePreviewPanel implements FoldPanelContent<MandatePreviewPanel
     // la fiche. Un panneau latéral rendrait une page A4 sur une colonne étroite,
     // c'est-à-dire illisible — et l'aperçu n'existe que pour relire.
     side: 'center',
-    width: 'lg',
+    // `xl` et non `lg` : on relit une page A4 dans un cadre, et à `lg` le
+    // document arrivait à une largeur où les deux colonnes du formulaire EPC —
+    // créancier à gauche, débiteur à droite — se lisaient à la loupe. C'est la
+    // plus grande largeur disponible ; au-delà, il faudrait sortir du système.
+    width: 'xl',
   };
 
   readonly data = input<MandatePreviewPanelData | undefined>();

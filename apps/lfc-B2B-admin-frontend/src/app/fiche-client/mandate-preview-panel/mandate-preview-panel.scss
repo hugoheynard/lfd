@@ -1,11 +1,18 @@
-/* Une page A4 se lit en hauteur : le cadre prend ce que le dialog lui laisse,
-   et jamais moins que de quoi lire une zone. En dessous, on ne relit rien — ce
-   qui viderait l'aperçu de sa raison d'être. */
+/* Une page A4 se lit en HAUTEUR — c'est le rapport 1:1,414 qui commande, pas la
+   largeur du dialog. Le cadre prend donc tout ce que le panneau lui laisse une
+   fois l'avertissement, l'en-tête et le pied posés, et jamais moins que de quoi
+   lire une zone : en dessous, on ne relit rien, ce qui viderait l'aperçu de sa
+   raison d'être.
+
+   `82vh` plutôt que `70vh` (2026-09-12) : sur un portable 13 pouces, le
+   précédent laissait la moitié basse du mandat — les zones de signature, de date
+   et de lieu, celles qu'on relit justement avant de faire imprimer — hors du
+   cadre, et il fallait faire défiler DANS l'iframe pour les voir. */
 .mp-page {
   display: block;
   width: 100%;
-  height: min(70vh, 60rem);
-  min-height: 24rem;
+  height: min(82vh, 72rem);
+  min-height: 28rem;
   border: 1px solid var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-sm);
   background: var(--fold-color-surface-sunken);
