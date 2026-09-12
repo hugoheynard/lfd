@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import type { DeclareLegalEntityPayload, LegalEntityView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -50,7 +50,6 @@ import { DeclarePanel } from './declare-panel/declare-panel';
   selector: 'app-entites-juridiques-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -65,6 +64,7 @@ import { DeclarePanel } from './declare-panel/declare-panel';
 })
 export class EntitesJuridiquesPage {
   private readonly api = inject(LegalEntitiesService);
+  private readonly router = inject(Router);
   private readonly panels = inject(FoldPanelHostService);
   private readonly toasts = inject(FoldToastService);
 
@@ -83,6 +83,11 @@ export class EntitesJuridiquesPage {
   ];
 
   protected readonly rowKey = (entity: LegalEntityView): string => entity.id;
+
+  /** La ligne entière ouvre la fiche — le nom n'est plus une cible à viser. */
+  protected open(entity: LegalEntityView): void {
+    void this.router.navigate(['/comptabilite/entites-juridiques', entity.id]);
+  }
 
   /**
    * Aucune entité ne peut encaisser — l'avertissement de tête.

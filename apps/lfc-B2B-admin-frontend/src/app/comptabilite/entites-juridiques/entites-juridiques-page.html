@@ -47,16 +47,22 @@
         narrowLayout="cards"
         hover
         zebra
+        clickable
         [columns]="columns"
         [rows]="entities()"
         [rowKey]="rowKey"
         [loading]="loading()"
+        (rowClick)="open($event)"
       >
         <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
              `foldCell` rend une cellule vide. Chaque `key` de `columns` doit
              donc avoir son template ici — y compris les plus bêtes. -->
+        <!-- Le nom n'est plus un lien : c'est la LIGNE qui ouvre la fiche
+             (`clickable` + `rowClick`). Garder l'ancre ferait deux cibles pour
+             un seul geste — et `fold-data-table` ne garde pas le clic d'une
+             ancre interne, contrairement à son chemin clavier. -->
         <ng-template foldCell="name" let-row>
-          <a class="strong" [routerLink]="['./', row.id]">{{ row.name }}</a>
+          <span class="strong">{{ row.name }}</span>
         </ng-template>
 
         <ng-template foldCell="siren" let-row>

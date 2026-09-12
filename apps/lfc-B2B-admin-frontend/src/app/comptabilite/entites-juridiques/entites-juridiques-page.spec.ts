@@ -1,6 +1,6 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { provideRouter, Router } from '@angular/router';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { LegalEntityView } from '@lfd/contracts';
 
@@ -129,11 +129,22 @@ describe('EntitesJuridiquesPage', () => {
     expect(text(fixture)).not.toContain('Peut encaisser');
   });
 
-  it('chaque ligne mène à sa fiche', async () => {
+  /**
+   * Régression : le nom était la SEULE cible cliquable, une ancre au milieu de
+   * la ligne. C'est la ligne entière qui ouvre la fiche désormais — et le test
+   * porte sur la navigation, pas sur un `href`, parce qu'il n'y a plus d'ancre
+   * (fix 2026-09-12).
+   */
+  it('la ligne entière mène à la fiche, et plus une ancre à viser', async () => {
     const fixture = await render(new FakeLegalEntities());
-    const link = (fixture.nativeElement as HTMLElement).querySelector('a[href]');
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    expect(link?.getAttribute('href')).toContain('le1');
+    const row = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('tbody tr');
+    row?.click();
+
+    expect(navigate).toHaveBeenCalledWith(['/comptabilite/entites-juridiques', 'le1']);
+    expect((fixture.nativeElement as HTMLElement).querySelector('a[href]')).toBeNull();
   });
 
   it("sans entité, explique pourquoi rien ne peut être facturé et n'offre qu'un geste", async () => {
