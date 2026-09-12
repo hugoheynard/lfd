@@ -244,3 +244,43 @@ describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
     expect(text).toContain("Route de la Balme");
   });
 });
+
+/**
+ * La zone 8 est dessinée **en cases**, comme l'IBAN et le BIC du débiteur
+ * (2026-09-12). Le risque qu'un peigne introduit est la TRONCATURE : une case de
+ * moins que de caractères, sur un identifiant que le débiteur oppose à sa
+ * banque, ne se verrait qu'en contestation.
+ */
+describe("renderSepaMandatePdf — l'ICS en cases", () => {
+  it("imprime les 13 caractères d'un ICS français", async () => {
+    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: "FR00ZZZ900001" }, null));
+
+    expect(text).toContain("FR00ZZZ900001");
+  });
+
+  /**
+   * `CreditorIdentifier` accepte jusqu'à 35 caractères ; seuls les ICS français
+   * sont contraints à 13. Un peigne de taille fixe aurait coupé les autres.
+   */
+  it("imprime EN ENTIER un ICS étranger plus long, sans en perdre un caractère", async () => {
+    const long = "DE98ZZZ09999999999";
+
+    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: long }, null));
+
+    expect(text).toContain(long);
+  });
+
+  /**
+   * Au-delà de ce que la largeur du formulaire admet, on retombe sur la ligne
+   * pointillée — le numéro y tient en entier, et c'est la seule chose qui ne se
+   * négocie pas. Un identifiant coupé par le bord de la page serait pire.
+   */
+  it("garde le numéro entier même au-delà de ce que les cases admettent", async () => {
+    const veryLong = `BE69ZZZ${"9".repeat(28)}`;
+
+    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: veryLong }, null));
+
+    expect(veryLong).toHaveLength(35);
+    expect(text).toContain(veryLong);
+  });
+});

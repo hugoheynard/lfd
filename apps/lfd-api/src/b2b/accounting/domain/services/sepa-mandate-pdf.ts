@@ -463,7 +463,7 @@ function creditorZones(doc: Doc, top: number, creditor: CreditorSnapshot): numbe
   dottedRow(doc, y, "Nom du créancier", 7, creditorNameOn(creditor));
   y += ROW;
 
-  dottedRow(doc, y, "Identifiant du créancier", 8, creditor.ics);
+  icsRow(doc, y, creditor.ics);
   y += ROW;
 
   const address = splitAddress(creditorAddressOn(creditor));
@@ -756,4 +756,45 @@ function creditorAddressOn(creditor: CreditorSnapshot): readonly string[] {
   return creditor.accountAddressLines.length > 0
     ? creditor.accountAddressLines
     : creditor.addressLines;
+}
+
+/**
+ * L'anatomie d'un ICS : deux lettres de pays, deux chiffres de clé, trois
+ * caractères de code activité, puis le numéro national.
+ */
+const ICS_HEAD_GROUPS = [2, 2, 3] as const;
+const ICS_HEAD_LENGTH = 7;
+
+/**
+ * Le plus grand peigne qui tient dans la largeur du formulaire.
+ *
+ * 🔴 Ce n'est pas une marge de confort : c'est le nombre de cases du peigne de
+ * l'IBAN débiteur, juste au-dessus, dont la largeur est éprouvée sur la page
+ * depuis le premier rendu. Au-delà, le peigne déborderait de la zone imprimable
+ * — et un identifiant coupé par le bord de la page est pire qu'un identifiant
+ * sur une ligne pointillée.
+ */
+const ICS_COMB_MAX_BOXES = 27;
+
+/**
+ * La zone 8 — l'identifiant créancier, **en cases** comme l'IBAN et le BIC.
+ *
+ * Le peigne est dimensionné sur la LONGUEUR RÉELLE de l'ICS, jamais sur une
+ * constante : `CreditorIdentifier` accepte de 8 à 35 caractères (13 imposés aux
+ * seuls ICS français), et un peigne fixe **tronquerait en silence** un ICS
+ * étranger. Une case de moins que de caractères, sur un identifiant que le
+ * débiteur oppose à sa banque, ne se verrait qu'en contestation.
+ *
+ * Au-delà de ce que la largeur admet, on retombe sur la ligne pointillée : le
+ * numéro y tient en entier, ce qui est la seule chose qui ne se négocie pas.
+ */
+function icsRow(doc: Doc, y: number, ics: string): void {
+  if (ics.length <= ICS_HEAD_LENGTH || ics.length > ICS_COMB_MAX_BOXES) {
+    dottedRow(doc, y, "Identifiant du créancier", 8, ics);
+    return;
+  }
+  star(doc, FIELD_X - 4 * MM, y);
+  comb(doc, FIELD_X, y + 0.4 * MM, [...ICS_HEAD_GROUPS, ics.length - ICS_HEAD_LENGTH], ics);
+  caption(doc, "Identifiant du créancier", FIELD_X, y + 5.2 * MM);
+  zone(doc, 8, y);
 }
