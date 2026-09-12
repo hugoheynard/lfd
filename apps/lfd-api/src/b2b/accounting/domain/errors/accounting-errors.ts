@@ -289,6 +289,26 @@ export class SeveralIssuersError extends BusinessError {
  * Distinct de {@link SeveralIssuersError} : l'un se répare en archivant, l'autre
  * en déclarant. Les confondre enverrait chercher le mauvais geste.
  */
+/**
+ * L'entité émettrice n'a pas de **BIC**, et le lot en a besoin — **409**.
+ *
+ * 🔴 Elle peut pourtant émettre des mandats, et c'est voulu : le BIC est arrivé
+ * après (2026-09-12), et un mandat papier ne le porte pas. Exiger la complétude
+ * au moment du mandat aurait bloqué un geste qui n'en a pas besoin ; la refuser
+ * ici, au moment où la banque la réclame vraiment, nomme l'entité à compléter
+ * plutôt que de produire un `CdtrAgt` vide que le portail rejette sans dire
+ * lequel des deux champs manquait.
+ */
+export class CreditorBicMissingError extends BusinessError {
+  constructor(entityName: string) {
+    super(
+      "accounting.creditor.bic_missing",
+      `L'entité « ${entityName} » n'a pas de BIC : le fichier de prélèvement ne peut pas être ` +
+        "produit. Le renseigner dans sa fiche, section coordonnées bancaires.",
+    );
+  }
+}
+
 export class NoIssuerError extends BusinessError {
   constructor() {
     super(

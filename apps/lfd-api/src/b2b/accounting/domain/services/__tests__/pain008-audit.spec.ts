@@ -35,6 +35,7 @@ const XML = renderPain008({
   cycleStart: new Date("2026-08-31T22:00:00.000Z"),
   cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
   createdAt: new Date("2026-09-30T21:05:00.000Z"),
+  mandates: new Map(),
   lines: LINES,
 });
 
@@ -136,6 +137,7 @@ describe("auditCsv — ce qu'il CONTRÔLE", () => {
       cycleStart: new Date("2026-08-31T22:00:00.000Z"),
       cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
       createdAt: new Date("2026-09-30T21:05:00.000Z"),
+      mandates: new Map(),
       lines: centimes,
     });
     const csv = auditCsv(xml);
@@ -149,6 +151,7 @@ describe("auditCsv — ce qu'il CONTRÔLE", () => {
       cycleStart: new Date("2026-08-31T22:00:00.000Z"),
       cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
       createdAt: new Date("2026-09-30T21:05:00.000Z"),
+      mandates: new Map(),
       lines: [],
     });
     expect(auditCsv(xml)).toContain("COHÉRENT");

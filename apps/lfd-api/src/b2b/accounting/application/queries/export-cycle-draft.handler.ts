@@ -4,6 +4,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { buildCycleDraft } from "../cycle-draft-support.js";
 import { BillableOrdersReader } from "../../domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
+import { DebtorMandateReader } from "../../domain/ports/debtor-mandate.reader.js";
 import { ExportCycleDraftQuery } from "./billing-cycle-queries.js";
 
 /** Le fichier et le nom qu'on propose au navigateur. */
@@ -36,12 +37,18 @@ export class ExportCycleDraftHandler implements IQueryHandler<
   constructor(
     private readonly creditors: CreditorReader,
     private readonly billable: BillableOrdersReader,
+    private readonly debtors: DebtorMandateReader,
     private readonly clock: Clock,
   ) {}
 
   async execute(query: ExportCycleDraftQuery): Promise<CycleDraftFile> {
     const draft = await buildCycleDraft(
-      { creditors: this.creditors, billable: this.billable, clock: this.clock },
+      {
+        creditors: this.creditors,
+        billable: this.billable,
+        debtors: this.debtors,
+        clock: this.clock,
+      },
       query.legalEntityId,
     );
     return {

@@ -1,6 +1,8 @@
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { BillableCompany } from "../../ports/billable-orders.reader.js";
 import { cycleTagOf, renderPain008, UNKNOWN_IBAN, UNKNOWN_MANDATE } from "../pain008.js";
+import { CreditorBicMissingError } from "../../errors/accounting-errors.js";
+import type { DebtorMandate } from "../../ports/debtor-mandate.reader.js";
 
 const CREDITOR: CreditorSnapshot = {
   legalEntityId: "01JBQ0000000000000000000",
@@ -44,15 +46,26 @@ const LINES: readonly BillableCompany[] = [
   },
 ];
 
-function render(lines: readonly BillableCompany[] = LINES): string {
+function render(
+  lines: readonly BillableCompany[] = LINES,
+  mandates: ReadonlyMap<string, DebtorMandate> = new Map(),
+  creditor: CreditorSnapshot = CREDITOR,
+): string {
   return renderPain008({
-    creditor: CREDITOR,
+    creditor,
     cycleStart: CYCLE_START,
     cycleEnd: CYCLE_END,
     createdAt: CREATED_AT,
+    mandates,
     lines,
   });
 }
+
+/** Les deux lignes, toutes deux prélevables. */
+const ALL_MANDATES = new Map<string, DebtorMandate>([
+  ["cmp_tommeuses", { reference: "LFC-9P2X4B-260912-K7M3QT", iban: "FR7630004000031234567890143" }],
+  ["cmp_isere", { reference: "LFC-7K2M4P-260912-B4X9RD", iban: "FR7612548029980123456789161" }],
+]);
 
 describe("renderPain008 — le brouillon, et ce qui le rend indéposable", () => {
   /**
@@ -160,5 +173,62 @@ describe("cycleTagOf", () => {
   it("tient aussi au passage à l'heure d'hiver", () => {
     // Clôture du 1er novembre : minuit à Paris vaut 23h UTC, pas 22h.
     expect(cycleTagOf(new Date("2026-10-31T23:00:00.000Z"))).toBe("202610");
+  });
+});
+
+describe("renderPain008 — quand le lot est complet", () => {
+  it("écrit la VRAIE RUM et le VRAI IBAN du débiteur", () => {
+    const xml = render(LINES, ALL_MANDATES);
+
+    expect(xml).toContain("<MndtId>LFC-9P2X4B-260912-K7M3QT</MndtId>");
+    expect(xml).toContain("<IBAN>FR7630004000031234567890143</IBAN>");
+    expect(xml).not.toContain(UNKNOWN_IBAN);
+    expect(xml).not.toContain(UNKNOWN_MANDATE);
+  });
+
+  /**
+   * 🔴 Le bandeau tombe SEULEMENT ici. C'est tout l'enjeu du fichier : un lot
+   * partiellement vrai passe la relecture humaine, là où un lot entièrement
+   * faux est refusé par le portail.
+   */
+  it("perd son bandeau et son préfixe BROUILLON", () => {
+    const xml = render(LINES, ALL_MANDATES);
+
+    expect(xml).not.toContain("BROUILLON");
+  });
+
+  it("porte le BIC du créancier — `CdtrAgt`, que la banque exige", () => {
+    expect(render(LINES, ALL_MANDATES)).toContain(
+      "<CdtrAgt><FinInstnId><BIC>CEPAFRPP751</BIC></FinInstnId></CdtrAgt>",
+    );
+  });
+});
+
+describe("renderPain008 — quand une seule ligne manque", () => {
+  /**
+   * Régression : une ligne incomplète parmi deux doit garder le fichier
+   * indéposable ENTIER. Le contraire produirait un lot où un vrai IBAN côtoie
+   * un marqueur — le pire des deux mondes, puisqu'il a l'air sérieux.
+   */
+  it("garde le bandeau pour TOUT le fichier", () => {
+    const partial = new Map([["cmp_tommeuses", ALL_MANDATES.get("cmp_tommeuses")!]]);
+
+    const xml = render(LINES, partial);
+
+    expect(xml).toContain("BROUILLON");
+    expect(xml).toContain(UNKNOWN_IBAN);
+  });
+});
+
+describe("renderPain008 — ce qu'il refuse de produire", () => {
+  /**
+   * L'entité peut émettre des MANDATS sans BIC — le papier n'en porte pas. Le
+   * refus est ici, au moment où la banque le réclame vraiment, et il nomme
+   * l'entité plutôt que de laisser le portail rejeter sans dire quoi.
+   */
+  it("refuse quand l'entité émettrice n'a pas de BIC", () => {
+    const sansBic: CreditorSnapshot = { ...CREDITOR, creditorBic: null };
+
+    expect(() => render(LINES, ALL_MANDATES, sansBic)).toThrow(CreditorBicMissingError);
   });
 });

@@ -2,6 +2,7 @@ import type { Clock } from "../../../platform/time/clock.js";
 import { LegalEntityNotFoundError } from "../domain/errors/accounting-errors.js";
 import type { BillableOrdersReader } from "../domain/ports/billable-orders.reader.js";
 import type { CreditorReader } from "../domain/ports/creditor.reader.js";
+import type { DebtorMandateReader } from "../domain/ports/debtor-mandate.reader.js";
 import { cycleAt } from "../domain/services/billing-cycle.js";
 import { cycleTagOf, renderPain008 } from "../domain/services/pain008.js";
 
@@ -20,6 +21,7 @@ import { cycleTagOf, renderPain008 } from "../domain/services/pain008.js";
 export interface CycleDraftDeps {
   readonly creditors: CreditorReader;
   readonly billable: BillableOrdersReader;
+  readonly debtors: DebtorMandateReader;
   readonly clock: Clock;
 }
 
@@ -46,9 +48,16 @@ export async function buildCycleDraft(
   const cycle = cycleAt(now, null);
   const lines = await deps.billable.billableBetween(cycle.startsAt, cycle.closesAt);
 
+  // Une seule lecture pour tout le lot, et APRÈS l'assiette : on ne demande les
+  // mandats que des sociétés qui doivent effectivement quelque chose. Déchiffrer
+  // les IBAN de clients qui ne sont pas dans le cycle serait ouvrir le coffre
+  // pour rien.
+  const mandates = await deps.debtors.activeFor(lines.map((line) => line.companyId));
+
   return {
     xml: renderPain008({
       creditor,
+      mandates,
       cycleStart: cycle.startsAt,
       cycleEnd: cycle.closesAt,
       createdAt: now,
