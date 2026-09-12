@@ -469,8 +469,71 @@ Ce que nous croyons savoir, **et qui n'a été vérifié dans aucun texte en mai
   se déduit d'aucun texte. Certaines banques exigent contractuellement un mandat
   papier, ou imposent un niveau minimal.
 
-⚠️ **Poser cette question AVANT de bâtir le dépôt de scan.** L'ordre inverse
-construit un parcours qu'une réponse rendrait inutile.
+#### Les trois branches, écrites ensemble
+
+La question ci-dessus n'a pas deux issues mais **trois**, et elles sont posées
+ici d'un coup pour qu'aucune ne se découvre après qu'on a bâti une autre.
+
+| Branche                 | Ce qu'on bâtit                                     | Ce qu'on achète                 | Ordre de grandeur          |
+| ----------------------- | -------------------------------------------------- | ------------------------------- | -------------------------- |
+| **Papier**              | envoi du PDF, dépôt du scan, activation sur preuve | rien                            | 0 €                        |
+| **Prestataire**         | un appel d'API, un webhook de retour               | le dossier de preuve d'un tiers | ~1 250 €/an pour l'API     |
+| **Maison + horodatage** | l'acte de consentement et son scellement           | **l'horodatage seul**           | quelques centimes le jeton |
+
+Les montants sont des **relevés publics du 2026-09-12**, pas des devis : l'offre
+API de Yousign — en cours de bascule vers la marque Youtrust — affiche 104 €/mois
+pour 500 signatures par an, et DocuSign ne propose plus aucun plan gratuit, ses
+niveaux avancé et qualifié étant réservés aux offres sur devis. À notre volume —
+**un mandat par ouverture de compte, qui vit ensuite des années** — c'est le
+quota qui est absurde, pas le tarif : on paierait l'automatisation d'un geste
+fait quelques fois par mois.
+
+#### La branche maison, et la seule chose qu'elle ne peut pas se donner
+
+Le faisceau de preuve d'une signature **simple** tient en quatre éléments, et le
+dépôt porte déjà de quoi produire les quatre : l'empreinte SHA-256 du PDF
+exact présenté, l'instant rendu par le port `Clock`, l'acte de consentement
+(case, nom saisi, IP) et le scellement de l'ensemble par `AesGcmFieldCipher`.
+
+Ce qu'elle ne peut **structurellement** pas se délivrer, c'est l'**indépendance** :
+cette preuve vit dans notre base, que nous administrons — donc nous pouvions la
+réécrire, et c'est cela qu'un juge pèse, pas la qualité de la cryptographie.
+
+🔴 **Mais l'indépendance s'achète séparément de la plateforme.** Un horodatage
+qualifié (RFC 3161) auprès d'une autorité de la liste de confiance européenne
+rend un jeton signé attestant que _ce document exact existait à cet instant et
+n'a pas bougé depuis_. Seule l'empreinte sort de chez nous — aucune donnée du
+client. Ce que l'horodatage ne prouve pas, c'est **qui** a signé : c'est
+exactement, et uniquement, ce que le niveau avancé achète.
+
+⚠️ **Rien de ce paragraphe n'a été vérifié dans un texte en main** : ni les
+niveaux eIDAS, ni la valeur probante d'un horodatage qualifié, ni l'existence
+d'une autorité qui vende des jetons à l'unité. C'est une piste à instruire, pas
+un acquis.
+
+#### Ce qui rend le niveau de signature moins décisif qu'il n'y paraît
+
+Une observation qui découle du troisième point ci-dessus, et qu'il faut lire à
+l'envers : **en B2B, la déclaration du mandat par le débiteur à SA banque est
+une preuve de consentement détenue par un tiers sans intérêt au litige.** Un
+client qui prétendrait n'avoir jamais signé devrait expliquer pourquoi il a
+lui-même demandé à son banquier d'accepter nos prélèvements sous notre ICS et
+cette RUM.
+
+La démarche que la signature électronique ne remplace pas est donc aussi celle
+qui nous protège le mieux. S'y ajoute le faisceau ordinaire — livraisons reçues,
+factures, historique de commandes : nous ne sommes jamais dans la situation de
+celui qui n'a que sa signature à produire.
+
+Ça ne tranche pas la question — une exigence **contractuelle** de la convention
+de prélèvement l'emporterait sur tout raisonnement de valeur probante. Ça dit
+seulement où placer l'effort si la banque nous laisse le choix.
+
+⚠️ **Poser cette question AVANT de bâtir l'une des trois branches**, et le
+dépôt de scan n'est pas plus à l'abri que les deux autres : l'ordre inverse
+construit un parcours qu'une réponse rendrait inutile. La garde valait pour le
+papier quand elle a été écrite ; elle vaut désormais pour le maison, qui est
+le moins cher à bâtir et donc le plus tentant à bâtir trop tôt.
 
 ⚠️ Les questions **3 et 8 décident ensemble** de trois phrases aujourd'hui
 incompatibles : « export au dernier jour du mois », « clôture le 1er », et
