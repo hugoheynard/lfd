@@ -28,10 +28,15 @@ donc un mandat prérempli ne pouvait pas la porter. Sous notre propre ICS, elle
 existe **avant** l'impression — et c'est elle qui transforme une fiche marquée
 « EXEMPLE » en document qu'un client peut valablement signer.
 
-✅ **Et il ne manque plus qu'elle.** Depuis le 2026-09-12 au soir, l'aperçu de
-`GET /admin/companies/:id/mandate/preview.pdf` sort les deux blocs remplis — le
-créancier, le débiteur, les zones facultatives, le type de paiement. La mention
-EXEMPLE qu'il porte encore n'a plus qu'une seule cause, et c'est celle-ci.
+✅ **Elle est frappée depuis le 2026-09-12 au soir.**
+`POST /admin/companies/:id/mandate` appelle `Rum.mint` et écrit un mandat à
+l'état `draft`.
+
+🔴 **Et elle ne s'imprime toujours pas.** `renderSepaMandatePdf` n'accepte aucune
+RUM en paramètre, et `watermark()` tamponne EXEMPLE **sans condition** _(vérifié
+le 2026-09-12 au soir)_. La référence existe en base et n'atteint pas le papier :
+c'est le seul geste qui sépare encore un aperçu d'un document signable. Voir
+[`../todos/todo-mandat-imprimable.md`](../todos/todo-mandat-imprimable.md).
 
 **Elle est immuable.** Réécrire une RUM invaliderait le papier qui la porte.
 
@@ -175,43 +180,47 @@ frappe ne se heurte qu'à elle-même.
 notre frappe : une garantie qui ne couvre que ce qu'on fabrique ne couvre pas ce
 qu'on reçoit.
 
-**Ce qui est vérifié, et ce qui ne l'est pas** _(tout au 2026-09-12)_ :
+**Ce qui est vérifié** _(tout au 2026-09-12 au soir)_ :
 
 | Affirmation                                      | État                                                         |
 | ------------------------------------------------ | ------------------------------------------------------------ |
 | `Rum.create` accepte 35 caractères, `mint` 26    | ✅ `rum.ts` — `RUM_EPC_MAX_LENGTH`, `RUM_PRINTED_MAX_LENGTH` |
-| `Rum.create` relit des références importées      | ❌ **aucun appelant** — seul `rum.spec.ts` importe `rum.ts`  |
+| `Rum.mint` a un appelant de production           | ✅ `mint-mandate.handler.ts`                                 |
+| `payment_mandates.reference` est unique          | ✅ `UNIQUE (COALESCE(creditor_id,'LEGACY'), reference)`      |
+| la colonne `creditor_id` existe                  | ✅ nullable, clé étrangère vers `legal_entities`             |
+| `Rum.create` relit des références importées      | ❌ aucun appelant                                            |
 | un import de portefeuille existe                 | ❌ rien dans le dépôt                                        |
 | un fichier de retour est lu (`camt`, `pain.002`) | ❌ rien dans le dépôt                                        |
-| `payment_mandates.reference` est unique          | ❌ aucune contrainte                                         |
-| la colonne `creditor_id` existe                  | ❌ elle n'existe pas                                         |
 
-🔴 **L'absence d'index n'est pas une table encore nue.** `payment_mandates`
-porte déjà un index partiel — `UNIQUE (company_id) WHERE status = 'active'` —
-donc l'unicité y a été pensée une fois, pour une autre question. C'est un trou
-dans un mur bâti, pas un mur qui reste à bâtir : la nuance dit à quel point il
-est facile de croire le sujet traité.
+🔴 **`COALESCE(creditor_id, 'LEGACY')` et non la colonne nue.** Dans un index
+d'unicité, `NULL` est distinct de `NULL` : sur la colonne nue, deux références
+reprises sans émetteur connu coexisteraient sans que rien ne s'y oppose —
+c'est-à-dire exactement le cas contre lequel cet index existe.
 
-La conséquence pratique tient en une ligne : **la permissivité de `create` ne
-protège rien aujourd'hui**, parce que rien ne l'appelle. Elle sera juste le jour
-où un import existera — et c'est ce jour-là, pas avant, que l'index devient
-bloquant.
+La permissivité de `create` ne protège encore rien, parce que rien ne l'appelle.
+Elle sera juste le jour où un import existera ; l'index, lui, est déjà là.
 
 ---
 
-## 6. État
+## 6. État — au 2026-09-12 au soir
 
-**Le value object est frappé et testé** —
-[`rum.ts`](../../apps/lfd-api/src/b2b/payments/domain/value-objects/rum.ts), 16
-tests — et **aucun fichier du dépôt ne l'importe encore** _(au 2026-09-12)_.
+**Le value object est frappé, testé (16 tests) et appelé en production** —
+[`rum.ts`](../../apps/lfd-api/src/b2b/payments/domain/value-objects/rum.ts),
+importé par
+[`mint-mandate.handler.ts`](../../apps/lfd-api/src/b2b/payments/application/commands/mint-mandate.handler.ts).
 
-Ce qui reste, et qui ne dépend plus de la RUM elle-même :
+Les quatre blocages que ce paragraphe listait sont levés :
 
-1. **l'état brouillon** — `accepted_at` est NOT NULL, donc un mandat frappé mais
-   pas encore signé n'a pas de place dans le modèle ;
-2. **le port d'écriture** — `save()` n'écrit que quatre colonnes, donc rien ne
-   persisterait une RUM ni un état de brouillon ;
-3. **l'unicité** — l'index du §5, qui n'existe pas ;
-4. **le brouillon unique par société** — deux brouillons peuvent coexister, et
-   `findCurrent` rend le plus récent : le scan reviendrait sur un mandat dont la
-   RUM diffère de celle imprimée.
+| Ce qui bloquait                         | Ce qui est en place                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------- |
+| `accepted_at` NOT NULL                  | nullable ; l'état `draft` existe dans l'enum                           |
+| `save()` n'écrivait que quatre colonnes | il écrit statut, dates, compte et pièce                                |
+| aucune unicité sur `reference`          | `UNIQUE (COALESCE(creditor_id,'LEGACY'), reference)`                   |
+| deux brouillons coexistants             | `UNIQUE (company_id) WHERE status = 'draft'`, et `findDraft` les nomme |
+
+La RUM voyage désormais jusqu'au fichier de prélèvement : `MndtId` porte la
+référence du mandat actif, lue par le port `DebtorMandateReader`.
+
+🔴 **Ce qu'elle n'atteint pas : le papier.** Voir
+[`../todos/todo-mandat-imprimable.md`](../todos/todo-mandat-imprimable.md) — le
+seul TODO de ce dossier.

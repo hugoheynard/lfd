@@ -65,33 +65,36 @@ signer**, et ce n'est pas un oubli : c'est un refus, qui tombera avec la RUM.
 | **La fiche de mandat vierge** au modèle EPC/CFONB                                             | `accounting/domain/services/sepa-mandate-pdf.ts`                    | Déterministe, préremplie du bloc créancier, marquée EXEMPLE                                    |
 | **Le brouillon `pain.008` + son audit CSV**                                                   | `accounting/domain/services/pain008.ts`, `pain008-audit.ts`         | Sortis le 2026-09-12 : XML 2 ko, CSV dont la somme des lignes égale le `CtrlSum`               |
 | **Le RIB du client**, scellé au champ                                                         | `payments/infrastructure/`, écran Fiche client › Moyens de paiement | Posé le 2026-09-12 : AES-256-GCM, l'IBAN monte et ne redescend jamais                          |
-| **L'aperçu nominatif du mandat** — les deux blocs remplis                                     | `GET /admin/companies/:id/mandate/preview.pdf`                      | Posé le 2026-09-12 ; toujours marqué EXEMPLE, faute de RUM                                     |
+| **L'aperçu nominatif du mandat** — les deux blocs remplis                                     | `GET /admin/companies/:id/mandate/preview.pdf`                      | Posé le 2026-09-12 ; toujours marqué EXEMPLE — voir le TODO                                    |
+| **La frappe d'un mandat** — RUM sous notre ICS, état brouillon                                | `POST /admin/companies/:id/mandate`, bouton en fiche client         | Posée le 2026-09-12 au soir. `MintMandateHandler` appelle `Rum.mint`                           |
+| **La signature d'un brouillon** — `draft` → `active`                                          | `PaymentMandate.sign()`                                             | Porte la date du PAPIER, refuse une date à venir et une seconde signature                      |
+| **Le scan du mandat signé** — dépôt, scellement, relecture                                    | `PUT` et `GET /admin/companies/:id/mandate/proof`                   | Scellé AES-256-GCM en binaire ; le bouton « Récupérer » le ressort descellé                    |
+| **Le `pain.008` alimenté** — RUM, IBAN du débiteur, BIC créancier                             | `pain008.ts` + port `DebtorMandateReader`                           | Le bandeau BROUILLON tombe quand chaque ligne porte son mandat, et pas avant                   |
+| **Notre IBAN créancier, scellé**                                                              | `legal_entities.creditor_iban_sealed`                               | Palier 1 sur 3 ; la colonne claire subsiste comme retour arrière                               |
 | **Les réglages de mandat de l'entité** — description du contrat, type de paiement             | `LegalEntity`, écran Entités juridiques                             | Zones 20 et 12 du modèle EPC, posées une fois pour tous les mandats qu'elle émet               |
 | **Le logo imprimé sur les mandats**                                                           | `POST /admin/accounting/legal-entities/:id/logo`                    | Import à l'écran posé le 2026-09-12 ; sans lui la cellule reste vide et le mandat reste valide |
 | **Le mandat Stripe** — enregistrer, prouver, révoquer                                         | `src/b2b/payments/`                                                 | **Gelé** : c'est le mécanisme qu'on quitte                                                     |
 
-### Ce qui est écrit et branché à rien
+### Ce qui a été branché le 2026-09-12 au soir
 
-🔴 **La RUM.** `src/b2b/payments/domain/value-objects/rum.ts` est complet et
-testé, et **aucun fichier du dépôt ne l'importe** _(vérifié le 2026-09-12 :
-`grep -rl` ne rend que le fichier lui-même)_. Née avec le socle direct, puis le
-chantier a été mis en pause. **Ne pas la réécrire en croyant qu'elle manque.**
+✅ **La RUM est frappée et persistée.** `rum.ts` avait été écrit, testé, et
+importé par personne pendant une journée. Il est importé par
+`mint-mandate.handler.ts` _(vérifié : `grep -rl` ne rend plus que ce fichier et
+le spec)_.
 
-⚠️ **Ce paragraphe décrivait la PREMIÈRE frappe jusqu'au 2026-09-12 au soir** —
-`LFC` + ULID du mandat, 29 caractères, collision impossible par construction.
-Elle a été remplacée le jour même par une forme lisible au téléphone, et la
-borne réelle n'est pas 35 mais **26** : le peigne du formulaire EPC, qui tronque
-en silence au-delà.
+✅ **Le `pain.008` lit les vraies valeurs.** `MndtId` porte la RUM du mandat
+actif, `DbtrAcct/Id/IBAN` l'IBAN descellé du client, `CdtrAgt` notre BIC. Les
+sentinelles `IBAN-INCONNU` et `MANDAT-INCONNU` existent toujours et ne sortent
+que pour une ligne dont le mandat manque.
 
-La forme, ses deux bornes et la raison de chacune vivent désormais dans
-[`rum.md`](rum.md), et **nulle part ailleurs**. Deux descriptions du même value
-object dans le même dossier, c'est celle qu'on ouvre en premier qui gagne, au
-hasard de la table des matières.
+✅ **Les quatre blocages du cycle de vie sont levés** : `accepted_at`,
+`stripe_customer_id` et `payment_method_id` sont nullable ; `save()` écrit
+toutes les colonnes mutables ; trois index partiels tiennent l'unicité de
+l'actif par (société, créancier), du brouillon par société, et de la RUM par
+créancier _(vérifié en base)_.
 
-Ce qui reste vrai ici : la RUM est écrite, testée, et **branchée à rien**. Et
-l'index `UNIQUE (creditor_id, rum)` gagne sa place sur les références **tierces**
-qu'une reprise de portefeuille apporte — pas sur le chemin de notre propre
-frappe.
+La forme de la RUM, ses deux bornes et la raison de chacune vivent dans
+[`rum.md`](rum.md), et **nulle part ailleurs**.
 
 ### Ce qui n'existe pas du tout
 
@@ -101,12 +104,16 @@ frappe.
 - **Aucun mandat en base** : zéro ligne en dev _(vérifié le 2026-09-12)_, et les
   documents d'origine affirment la même chose en production — **non revérifié
   ici**, voir §13.
+- 🔴 **Le mandat imprimable.** `renderSepaMandatePdf` n'accepte aucune RUM en
+  paramètre, et `watermark()` tamponne EXEMPLE **sans condition** _(vérifié le
+  2026-09-12 au soir)_. La chaîne casse là, et nulle part ailleurs. C'est le
+  TODO unique : [`../todos/todo-mandat-imprimable.md`](../todos/todo-mandat-imprimable.md).
 
-✅ **Deux lignes ont quitté cette liste le 2026-09-12 au soir** : le chiffrement
-au champ, qui vit maintenant dans `platform/crypto/` (`AesGcmFieldCipher`), et le
-BIC de l'entité émettrice, que `creditor_bic` porte depuis le même jour. Elles
-sont notées ici plutôt que simplement effacées — une absence qui disparaît sans
-laisser de trace se réaffirme de mémoire six semaines plus tard.
+✅ **Quatre lignes ont quitté cette liste le 2026-09-12** : le chiffrement au
+champ (`platform/crypto/`), le BIC de l'entité (`creditor_bic`), la frappe de la
+RUM, et la relecture du scan déposé. Elles sont notées ici plutôt qu'effacées —
+une absence qui disparaît sans trace se réaffirme de mémoire six semaines plus
+tard.
 
 ---
 
@@ -248,41 +255,53 @@ ligne sur son relevé et nous payons **un** frais d'opération. Les trente se
 résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes du … au
 … », pas une liste.
 
-### Ce qu'on sait remplir, et les deux trous
+### Ce qu'on sait remplir — au 2026-09-12 au soir
 
-| Champ XML                                          | Source                                  | État                            |
-| -------------------------------------------------- | --------------------------------------- | ------------------------------- |
-| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                           | ✅                              |
-| `Dbtr/Nm`                                          | `Company`                               | ✅                              |
-| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt`             | ✅                              |
-| `MndtRltdInf/MndtId`                               | value object `Rum`                      | 🟡 écrit, branché à rien        |
-| `ReqdColltnDt`, `InstdAmt`                         | le cycle, la somme du mois              | 🟡 décidés, partiellement codés |
-| `EndToEndId`                                       | à frapper — cycle + société + tentative | ❌ à concevoir                  |
-| **`CdtrAgt/.../BIC`** (le nôtre)                   | `LegalEntity.creditorBic`               | 🟡 source posée, non branchée   |
-| **`DbtrAcct/Id/IBAN`**                             | `CompanyBankAccount`, scellé            | 🟡 source posée, non branchée   |
+| Champ XML                                          | Source                                      | État |
+| -------------------------------------------------- | ------------------------------------------- | ---- |
+| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                               | ✅   |
+| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                   | ✅   |
+| `Dbtr/Nm`                                          | `Company`                                   | ✅   |
+| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture | ✅   |
+| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)         | ✅   |
+| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt`                 | ✅   |
+| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                  | ✅   |
+| `EndToEndId`                                       | cycle + rang dans le lot                    | ✅   |
 
-**Les deux trous rouges ont été comblés le 2026-09-12 — en AMONT seulement.** Le
-BIC créancier se saisit sur l'entité, et le RIB du client sur sa fiche. Mais
-`pain008.ts` ne lit ni l'un ni l'autre : il écrit toujours `IBAN-INCONNU`
-_(vérifié le 2026-09-12)_.
+Les deux tables du débiteur appartiennent à `payments` : le lot les lit par le
+port `DebtorMandateReader`, déclaré par la comptabilité et implémenté côté
+`payments`. Une jointure SQL aurait franchi la frontière là où le graphe
+d'imports ne la voit pas.
 
-🔴 **C'est la distinction à ne pas perdre : une source qui existe n'est pas une
-source qui alimente.** Le geste qui reste — brancher deux lectures — est petit,
-et c'est précisément ce qui le rend facile à croire fait. Tant qu'il ne l'est
-pas, le fichier sortant est exactement aussi indéposable qu'avant.
+**Une entité sans BIC fait refuser le lot entier**, en la nommant
+(`CreditorBicMissingError`). Elle peut toujours émettre des mandats : le papier
+ne porte pas de BIC.
 
-### Ce qui sort aujourd'hui, et pourquoi il ne peut pas partir
+### Ce qui sort aujourd'hui
 
-Le fichier s'appelle `BROUILLON-prelevement-<cycle>.xml` et porte, dans son
-corps, `BROUILLON — CE FICHIER NE PEUT PAS ETRE DEPOSE.` Chaque ligne débiteur
-écrit `IBAN-INCONNU` et `MANDAT-INCONNU` — **des marqueurs qu'aucun schéma
-n'accepte**, plutôt que des valeurs plausibles. Le bloc créancier et les montants,
-eux, sont **réels**.
+Le bandeau `BROUILLON — CE FICHIER NE PEUT PAS ETRE DEPOSE.` et le préfixe
+`BROUILLON-` du `MsgId` sont **conditionnels** depuis le 2026-09-12 : ils
+tombent quand **chaque** ligne porte son mandat, et une seule ligne incomplète
+les garde pour tout le fichier.
 
-Il sert à une chose et il la fait bien : **relire notre bloc créancier et la
-forme du lot avec un conseiller bancaire**. Son compagnon, le CSV d'audit,
-**relit le XML** au lieu de recalculer — c'est ce qui en fait la valeur : la
-somme des lignes et le `CtrlSum` déclaré par le fichier apparaissent côte à côte.
+🔴 **La règle derrière ce choix** : un lot partiellement vrai est plus dangereux
+qu'un lot entièrement faux. Le second est refusé par le portail ; le premier
+passe la relecture humaine.
+
+Une ligne sans mandat prélevable — brouillon non signé, mandat révoqué, ou RIB
+jamais recopié — reçoit `IBAN-INCONNU` et `MANDAT-INCONNU`, marqueurs qu'aucun
+schéma n'accepte.
+
+Le CSV d'audit **relit le XML** au lieu de recalculer, et **masque l'IBAN du
+débiteur** (`••••1234`) depuis le 2026-09-12 : un fichier qui recompose en clair
+ce que la base scelle défait le coffre par la porte de service. Le masque ne
+s'applique qu'à ce qui a la forme d'un IBAN — masquer `IBAN-INCONNU` le
+déguiserait en compte.
+
+⚠️ **La séquence reste `RCUR` pour tout le lot.** Le CFONB impose `FRST` et
+`OrgnlDbtrAgt = SMNDA` après un changement de banque du débiteur. Ni l'un ni
+l'autre n'est écrit, et l'historique des changements de compte que la norme
+exige n'est pas conservé — remplacer un RIB écrase l'ancien sans trace.
 
 ### Les pièges qui font rejeter un fichier
 
@@ -368,17 +387,25 @@ reconstituer.
 
 ---
 
-## 10. Les quatre objections bloquantes ouvertes
+## 10. Les objections bloquantes — trois ouvertes, une close
 
-La conception a été contredite deux fois (onze objections bloquantes au total).
-Quatre restent ouvertes, et elles **situent** le blocage plutôt que de l'effacer.
+La conception a été contredite trois fois. **L'objection 2 est close depuis le
+2026-09-12** ; les trois autres restent ouvertes et **situent** le blocage
+plutôt que de l'effacer.
 
-| Objection                                        | Bloque                |
-| ------------------------------------------------ | --------------------- |
-| 1 — l'index de libération ne libère pas assez    | le lot et ses retours |
-| 2 — `(company_id, creditor_id)` vide l'invariant | **le mandat direct**  |
-| 3 — la porte du crédit est circulaire            | l'octroi du mensuel   |
-| 4 — le fait publié désigne le mauvais mécanisme  | le lot et ses retours |
+| Objection                                        | Bloque                | État |
+| ------------------------------------------------ | --------------------- | ---- |
+| 1 — l'index de libération ne libère pas assez    | le lot et ses retours | ❌   |
+| 2 — `(company_id, creditor_id)` vide l'invariant | —                     | ✅   |
+| 3 — la porte du crédit est circulaire            | l'octroi du mensuel   | ❌   |
+| 4 — le fait publié désigne le mauvais mécanisme  | le lot et ses retours | ❌   |
+
+✅ **L'objection 2 est close par l'expression de l'index, pas par un `NOT NULL`.**
+`UNIQUE (company_id, COALESCE(creditor_id, 'LEGACY')) WHERE status = 'active'` :
+les mandats sans émetteur connu tombent tous sur la même valeur de repli et se
+heurtent donc entre eux. La colonne reste nullable, ce qui garde la place d'une
+reprise de portefeuille — des RUM émises sous l'ICS d'un autre créancier
+_(vérifié en base le 2026-09-12)_.
 
 1. **L'index `UNIQUE (invoice_id) WHERE status <> 'returned'` ne libère pas
    assez.** Un rejet avant règlement, un lot rejeté en bloc, un dépôt manqué
@@ -396,29 +423,21 @@ Quatre restent ouvertes, et elles **situent** le blocage plutôt que de l'efface
    = argent encaissé, facture jamais payée, aucune trace. Il faut un import de
    retour **idempotent et rejouable à la demande**, pas un bus.
 
-> 🟡 **L'objection 2 a peut-être beaucoup vieilli — à trancher, pas à croire.**
-> Son prix venait de `creditor_id` nullable, et sa raison d'être nullable était
-> l'existence de mandats Stripe. Or **aucun mandat n'existe** (zéro ligne en dev,
-> _vérifié le 2026-09-12_) et la décision du 2026-09-10 fait qu'aucun ne sera
-> plus créé. Si la table de production est bien vide elle aussi, `NOT NULL` ne
-> coûte **aucun backfill** et l'objection tombe d'elle-même. **À confirmer sur la
-> production avant d'agir** — c'est la §13.
-
 ---
 
 ## 11. Le découpage
 
-| #         | Tranche                                                                                                                                                    | État                                                                                                                |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **1**     | **L'entité juridique** — agrégat, ICS, IBAN créancier, écran                                                                                               | ✅ **livrée** le 2026-09-10, vue à l'écran le 2026-09-12                                                            |
-| **1 bis** | Les données manquantes de la facturation — TVA intracom exigée à l'activation, date de livraison effective, code unité au SKU                              | ⬜                                                                                                                  |
-| **2**     | **Le mandat direct** — `origin`, `creditorId`, value objects `Rum` et `Iban`, coffre + port de chiffrement, transition vers `active`, balayage de caducité | 🟡 **le coffre et le port de chiffrement sont livrés** le 2026-09-12, hors séquence ; le reste attend l'objection 2 |
-| **3**     | **Le document** — mandat prérempli, RUM et ICS imprimés ; dépôt du signé ⇒ actif                                                                           | 🟡 la fiche vierge **et l'aperçu nominatif** sont livrés ; il manque la RUM imprimée, donc la pièce signable        |
-| **4–6**   | L'agrégat facture, la persistance, le rendu — **périmés** par « nous n'émettons pas de facture » (§8)                                                      | ⛔                                                                                                                  |
-| **8**     | La clôture mensuelle et la pré-notification                                                                                                                | ⬜                                                                                                                  |
-| **9**     | **Le lot et ses retours** — `pain.008` valide, import `pain.002`/`camt.054`                                                                                | ❌ bloquée (objections 1 et 4)                                                                                      |
-| **10**    | Le rapprochement (`camt.053`), encours par société                                                                                                         | ⬜                                                                                                                  |
-| **12**    | La porte du crédit                                                                                                                                         | ❌ bloquée (objection 3)                                                                                            |
+| #         | Tranche                                                                                                                                                  | État                                                                                                           |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **1**     | **L'entité juridique** — agrégat, ICS, IBAN créancier, écran                                                                                             | ✅ **livrée** le 2026-09-10, vue à l'écran le 2026-09-12                                                       |
+| **1 bis** | Les données manquantes de la facturation — TVA intracom exigée à l'activation, date de livraison effective, code unité au SKU                            | ⬜                                                                                                             |
+| **2**     | **Le mandat direct** — `creditorId`, value objects `Rum` et `Iban`, coffre + port de chiffrement, frappe, transition vers `active`, balayage de caducité | 🟡 tout est livré le 2026-09-12 **sauf le balayage de caducité** (36 mois) : aucun statut `expired` n'est posé |
+| **3**     | **Le document** — mandat prérempli, RUM et ICS imprimés ; dépôt du signé ⇒ actif                                                                         | 🟡 le dépôt, le scellement et la relecture du signé sont livrés ; **la RUM ne s'imprime pas** — c'est le TODO  |
+| **4–6**   | L'agrégat facture, la persistance, le rendu — **périmés** par « nous n'émettons pas de facture » (§8)                                                    | ⛔                                                                                                             |
+| **8**     | La clôture mensuelle et la pré-notification                                                                                                              | ⬜                                                                                                             |
+| **9**     | **Le lot et ses retours** — `pain.008` valide, import `pain.002`/`camt.054`                                                                              | ❌ bloquée (objections 1 et 4)                                                                                 |
+| **10**    | Le rapprochement (`camt.053`), encours par société                                                                                                       | ⬜                                                                                                             |
+| **12**    | La porte du crédit                                                                                                                                       | ❌ bloquée (objection 3)                                                                                       |
 
 ⚠️ **Ne pas faire signer un mandat avant d'avoir l'ICS.** Le formulaire EPC le
 porte imprimé ; un mandat signé sans lui est un mandat à refaire signer. _(L'ICS
