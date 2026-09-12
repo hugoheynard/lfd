@@ -1,8 +1,37 @@
 # Le cockpit annonce un coup sur un identifiant, pas sur un nom
 
-**Ouvert le 2026-09-09**, signalé depuis l'écran. 🟠 Dette **active** : l'écran
-qui sert à décider qui rappeler nomme sa cible par une chaîne que personne ne
-reconnaît.
+**Ouvert le 2026-09-09**, signalé depuis l'écran. ✅ **Clos le 2026-09-12** pour
+le libellé ; la question du « cache de compte client » reste ouverte, en bas.
+
+> **Corrigé — et le défaut portait plus loin que ce document ne le disait.**
+> `scoreActivation` n'était pas le seul lecteur : la colonne **« Société »** du
+> tableau des activations (`commercial/prospects/activation`) affichait le même
+> `companyId` brut, sur un écran entier dont c'est la première colonne. Une
+> correction limitée au cockpit aurait laissé l'autre en place.
+>
+> **Ce qui a été fait** : `ActivationView` gagne `companyName`, résolu par le
+> port `CompanyNamer` du même contexte — qui gagne un `namesOf` **par lot**,
+> une lecture pour tout le tunnel plutôt qu'une par ligne.
+>
+> **La décision qui n'était pas dans le plan** : le nom n'est **pas figé**.
+> `OnOrderPlaced` grave le sien dans le payload — une commande de 2024 doit
+> nommer son client comme il s'appelait en 2024 — et la tentation était de
+> copier ce geste sur `company.declared`. Elle aurait raté sa cible : un coup
+> `rescue` désigne un dossier **bloqué depuis des semaines**, donc déclaré
+> avant le correctif. Figer en avant n'aurait nommé que les dossiers qui ne
+> sont pas encore en retard, c'est-à-dire exactement ceux qu'on n'appelle pas.
+> Le tunnel relit donc à chaque passe : c'est une file d'appels, pas une
+> archive, et on rappelle les gens par leur nom du jour.
+>
+> Le repli sur l'identifiant subsiste, mais il est devenu ce que le JSDoc du
+> contrat prétendait déjà : le cas où la société a disparu de la base entre
+> deux recomputes. Cette phrase-là est redevenue vraie.
+>
+> Couvert par une régression à chaque étage : la projection
+> (`activation.spec.ts`), le scoring (`lead-score.spec.ts`), le libellé
+> **persisté** et le fait qu'il ne soit demandé qu'un lot
+> (`recompute-lead-scores.handler.spec.ts`), et le vrai SQL
+> (`activations.e2e-spec.ts`) — le seul à traverser `namesOf`.
 
 ## Le symptôme
 

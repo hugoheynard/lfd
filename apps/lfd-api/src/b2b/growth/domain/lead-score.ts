@@ -2,6 +2,7 @@ import type { LeadScoreView, LeadStatus, MomentumTrajectory, PlayType } from "@l
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
 import { deriveActivations } from "./activation.js";
+import type { CompanyIdentity } from "./ports/company-namer.js";
 import { deriveProspects } from "./prospect.js";
 import type { ActivationView, LeadView, ProspectView } from "@lfd/contracts";
 
@@ -95,11 +96,17 @@ const MOMENTUM_LABEL: Record<MomentumTrajectory, string> = {
  *
  * Les cold viennent d'un **agrégat** (pas du journal) : on ne reconstruit jamais leur
  * état depuis les événements — le read-model les lit à la source (`LeadReader`).
+ *
+ * `companyNames` nomme les dossiers d'activation. Le libellé est **persisté**
+ * dans `lead_score.label` et relu tel quel par l'écran : sans annuaire ici, une
+ * résolution côté front laisserait la valeur fausse en base, et le prochain
+ * lecteur la réafficherait.
  */
 export function deriveLeadScores(
   events: readonly LeadEvent[],
   now: Date,
   coldLeads: readonly LeadView[] = [],
+  companyNames: ReadonlyMap<string, CompanyIdentity> = new Map(),
 ): LeadScoreView[] {
   const computedAt = now.toISOString();
   const subscribers = subscriberUserIds(events);
@@ -112,7 +119,7 @@ export function deriveLeadScores(
       leads.push(scoreProspect(prospect, subscribers.has(prospect.subjectId), computedAt));
     }
   }
-  for (const activation of deriveActivations(companyEvents, now)) {
+  for (const activation of deriveActivations(companyEvents, now, companyNames)) {
     if (activation.status === "pending") {
       leads.push(scoreActivation(activation, computedAt));
     }
@@ -210,7 +217,10 @@ function scoreActivation(activation: ActivationView, computedAt: string): LeadSc
   return {
     subjectType: "company",
     subjectId: activation.companyId,
-    label: activation.companyId,
+    // Le repli sur l'identifiant ne tient plus qu'au cas où la société a
+    // disparu de la base entre deux recomputes — une ligne qu'on ne pourrait
+    // de toute façon pas appeler.
+    label: activation.companyName ?? activation.companyId,
     play: "rescue",
     score,
     reason: `Dossier ${activation.stepsReached.length}/4 pièces, bloqué depuis ${stalledDays} j`,

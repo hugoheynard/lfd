@@ -36,7 +36,7 @@
       [empty]="emptyState()"
     >
       <ng-template foldCell="companyId" let-row>
-        <span class="company">{{ row.companyId }}</span>
+        <span class="company">{{ row.companyName ?? row.companyId }}</span>
         <span class="via"
           >déclarée {{ row.declaredVia === 'self' ? 'par le client' : 'par le staff' }}</span
         >
