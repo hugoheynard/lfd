@@ -135,9 +135,13 @@ describe("SetCompanyBankAccountHandler", () => {
   });
 
   /**
-   * 🔴 Changer de banque ne change ni le contrat ni sa description. Les remettre
-   * à zéro ferait perdre une saisie que personne n'a demandé à effacer — et
-   * l'écran ne le dirait pas.
+   * 🔴 Changer de banque ne change pas le contrat. Le remettre à zéro ferait
+   * perdre une saisie que personne n'a demandé à effacer — et l'écran ne le
+   * dirait pas.
+   *
+   * La zone 20 n'est plus éprouvée ici : elle est remontée sur l'entité
+   * émettrice le 2026-09-12, et ce handler ne la voit plus (cf. le JSDoc de
+   * `MandateOptions`).
    */
   it("ne touche PAS aux zones facultatives en remplaçant le RIB", async () => {
     const { handler, repo } = build();
@@ -146,7 +150,6 @@ describe("SetCompanyBankAccountHandler", () => {
       MandateOptions.create({
         debtorReference: "C-9P2X4B",
         contractNumber: "CT-42",
-        contractDescription: "Fourniture de café",
       }),
     );
 
