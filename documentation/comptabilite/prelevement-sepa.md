@@ -26,17 +26,17 @@ reprennent les coordonnées.
 
 Dans l'ordre du geste réel, et c'est cette liste qui fait foi :
 
-| #   | Ce qu'on doit pouvoir faire                                                                                | État                                                                                 |
-| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 1   | Déclarer l'**entité qui encaisse** — raison sociale, ICS, compte créancier, délai de pré-notification      | ✅ **fait**                                                                          |
-| 2   | **Produire le mandat prérempli** d'un client donné : notre bloc créancier ET le sien, avec sa RUM imprimée | ❌ il manque la RUM                                                                  |
-| 3   | **L'envoyer au client** pour qu'il le signe                                                                | ❌ aucun envoi ; le mailer sait joindre un PDF _(vérifié le 2026-09-12)_             |
-| 4   | **Recevoir le scan signé** et le ranger comme preuve                                                       | 🟡 la route existe, mais elle exige un mandat, donc Stripe                           |
-| 5   | Le mandat ne devient **actif que preuve déposée**                                                          | ❌ aucun agrégat ne sait activer un mandat                                           |
-| 6   | **Détenir l'IBAN** du client, chiffré, sans qu'il ressorte jamais                                          | ❌ aucun coffre ; aucun chiffrement au champ dans le dépôt _(vérifié le 2026-09-12)_ |
-| 7   | Clore le mois, **sommer par société**, et sortir le **`pain.008`**                                         | 🟡 un brouillon inexécutable sort, avec le vrai bloc créancier et les vrais montants |
-| 8   | **Déposer le lot** à la Caisse d'Épargne, à la main, et le garder tel quel                                 | ❌                                                                                   |
-| 9   | **Importer les retours** (`pain.002` / `camt.054`) et rendre une facture impayée                           | ❌                                                                                   |
+| #   | Ce qu'on doit pouvoir faire                                                                                | État                                                                                                                                                                                                                     |
+| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Déclarer l'**entité qui encaisse** — raison sociale, ICS, compte créancier, délai de pré-notification      | ✅ **fait**                                                                                                                                                                                                              |
+| 2   | **Produire le mandat prérempli** d'un client donné : notre bloc créancier ET le sien, avec sa RUM imprimée | ❌ il manque la RUM                                                                                                                                                                                                      |
+| 3   | **L'envoyer au client** pour qu'il le signe                                                                | ❌ aucun envoi ; le mailer sait joindre un PDF _(vérifié le 2026-09-12)_                                                                                                                                                 |
+| 4   | **Recevoir le scan signé** et le ranger comme preuve                                                       | 🟡 la route existe, mais elle exige un mandat, donc Stripe                                                                                                                                                               |
+| 5   | Le mandat ne devient **actif que preuve déposée**                                                          | ❌ aucun agrégat ne sait activer un mandat                                                                                                                                                                               |
+| 6   | **Détenir l'IBAN** du client, chiffré, sans qu'il ressorte jamais                                          | ❌ aucun coffre ; aucun chiffrement au champ dans le dépôt _(vérifié le 2026-09-12)_ — 🔴 **entré dans la tranche de la RUM** le 2026-09-12 : le RIB du client se saisit sur sa fiche, donc ce n'est plus séquencé après |
+| 7   | Clore le mois, **sommer par société**, et sortir le **`pain.008`**                                         | 🟡 un brouillon inexécutable sort, avec le vrai bloc créancier et les vrais montants                                                                                                                                     |
+| 8   | **Déposer le lot** à la Caisse d'Épargne, à la main, et le garder tel quel                                 | ❌                                                                                                                                                                                                                       |
+| 9   | **Importer les retours** (`pain.002` / `camt.054`) et rendre une facture impayée                           | ❌                                                                                                                                                                                                                       |
 
 🔴 **Le point 2 commande les points 3 à 9.** Aujourd'hui la seule feuille
 imprimable porte la mention **EXEMPLE en travers de la page**, et c'est
@@ -417,6 +417,13 @@ en trois déploiements pour un gain de vocabulaire.
 ## 12. Les questions qui bloquent du code
 
 ### À la Caisse d'Épargne — aucune ne se répond depuis le dépôt
+
+🔴 **Une neuvième, ajoutée le 2026-09-12, et elle conditionne du code : la
+mécanique exacte de l'AMENDEMENT de mandat.** Nous nous alignons sur la norme
+plutôt que de faire resigner le client à chaque changement de banque. Donc :
+quels champs exigez-vous, et distinguez-vous le changement de compte **dans la
+même banque** du changement de banque ? Tout ce que nous en écrivons vient de la
+norme telle que nous la connaissons, pas d'un guide en main.
 
 1. **Quelle version** le portail accepte-t-il — `pain.008.001.02`, ou le
    `pain.008.001.08` du rulebook 2023 ? Et jusqu'à quand la première ?
