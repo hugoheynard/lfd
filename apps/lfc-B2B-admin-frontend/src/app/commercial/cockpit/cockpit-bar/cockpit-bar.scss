@@ -10,7 +10,11 @@
  */
 .cb {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(280px, 1.6fr);
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    minmax(0, 1.5fr);
   gap: var(--fold-space-md);
 }
 
@@ -146,17 +150,14 @@
 }
 
 /**
- * Sous 900px, les deux chiffres d'exploitation gardent la première ligne et la
- * croissance prend la seconde, entière : quatre mesures et une courbe sur un
- * tiers de la largeur ne se lisent plus, elles s'entassent.
+ * Sous 1200px : deux colonnes, donc un carré de quatre cartes PLEIN. La
+ * croissance ne prend pas la ligne entière — elle laisserait alors une case
+ * vide à côté des remises, et une grille trouée se lit comme une carte
+ * manquante.
  */
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .cb {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .cb-card--growth {
-    grid-column: 1 / -1;
   }
 
   .cb-kpis {

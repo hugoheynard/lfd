@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import type { PortfolioMetricsView } from '@lfd/contracts';
 
 import { Chart, type ChartOption } from '../../../shared/chart/chart';
+import { remainingHandovers, type TodayHandovers } from './today-handovers';
 import { dayLabel, type TomorrowOrders } from './tomorrow-orders';
 
 /** Une mesure de croissance : un chiffre, ce qu'il compte. */
@@ -23,6 +24,9 @@ export interface CockpitKpi {
  * - **combien de commandes pour demain** — la règle de la maison est J pour J+1,
  *   donc ce compte dit *ce qui se passe*, pendant qu'on peut encore agir. Il
  *   mène au prévisionnel, où il se décompose par produit ;
+ * - **les remises du jour**, séparées en retrait et coursier — deux voies qu'on
+ *   ne pilote pas pareil : un retrait attend qu'un client passe, un coursier
+ *   part d'ici. Elle mène à la file du comptoir ;
  * - **la croissance**, en quatre mesures et une courbe, qui mène à l'analyse.
  *
  * Trois cartes **détachées**, et chacune porte son lien en bas plutôt que d'être
@@ -45,8 +49,16 @@ export class CockpitBar {
   readonly portfolio = input.required<PortfolioMetricsView | null>();
   /** Ce qui est rentré pour J+1 — `null` si le prévisionnel n'a pas répondu. */
   readonly tomorrow = input.required<TomorrowOrders | null>();
+  /** Les remises attendues aujourd'hui — `null` si la file n'a pas répondu. */
+  readonly handovers = input.required<TodayHandovers | null>();
   readonly kpis = input.required<readonly CockpitKpi[]>();
   readonly spark = input.required<ChartOption | null>();
+
+  /** Ce qu'il reste à tendre ou à charger, les deux voies confondues. */
+  protected readonly remaining = computed<number>(() => {
+    const handovers = this.handovers();
+    return handovers === null ? 0 : remainingHandovers(handovers);
+  });
 
   /** `mardi 16 septembre` — pour quel jour ce compte vaut. */
   protected readonly tomorrowLabel = computed<string>(() => {
