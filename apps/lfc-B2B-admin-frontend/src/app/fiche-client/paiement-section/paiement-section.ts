@@ -31,6 +31,7 @@ import {
 } from 'fold-ng';
 
 import { BankAccountSection } from '../bank-account-section/bank-account-section';
+import { MandateOptionsSection } from '../mandate-options-section/mandate-options-section';
 import { NotifyService } from '../../notify.service';
 import { MandatesService } from '../mandat/mandates.service';
 
@@ -85,6 +86,7 @@ interface DangerousAction {
   imports: [
     DatePipe,
     BankAccountSection,
+    MandateOptionsSection,
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldCalloutComponent,

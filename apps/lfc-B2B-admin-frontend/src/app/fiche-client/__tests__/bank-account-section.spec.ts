@@ -20,6 +20,9 @@ const SAVED: CompanyBankAccountView = {
   countryCode: 'FR',
   bic: 'CEPAFRPP751',
   last4: '2606',
+  debtorReference: 'C-9P2X4B',
+  contractNumber: '',
+  contractDescription: 'Fourniture de café',
 };
 
 interface Rendered {

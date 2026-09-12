@@ -1,0 +1,12 @@
+/* Une page A4 se lit en hauteur : le cadre prend ce que le dialog lui laisse,
+   et jamais moins que de quoi lire une zone. En dessous, on ne relit rien — ce
+   qui viderait l'aperçu de sa raison d'être. */
+.mp-page {
+  display: block;
+  width: 100%;
+  height: min(70vh, 60rem);
+  min-height: 24rem;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
+}

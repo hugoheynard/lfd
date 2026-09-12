@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CompanyBankAccountSectionView, SetCompanyBankAccountPayload } from '@lfd/contracts';
+import type {
+  CompanyBankAccountSectionView,
+  SetCompanyBankAccountPayload,
+  SetMandateOptionsPayload,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
@@ -37,6 +41,35 @@ export class BankAccountService {
   async save(companyId: string, payload: SetCompanyBankAccountPayload): Promise<void> {
     await firstValueFrom(
       this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/bank-account`, payload),
+    );
+  }
+
+  /**
+   * Réécrit les **zones facultatives** du mandat — 14, 19 et 20.
+   *
+   * Route à part du RIB, et pas par commodité : le `PUT` du RIB exige l'IBAN,
+   * qui ne redescend jamais. Passer par lui pour corriger une description de
+   * contrat obligerait à ressaisir un IBAN à chaque fois.
+   */
+  async saveOptions(companyId: string, payload: SetMandateOptionsPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/mandate-options`, payload),
+    );
+  }
+
+  /**
+   * L'aperçu du mandat, en mémoire.
+   *
+   * ⚠️ En **blob**, et pas par une URL donnée à une `<iframe>` : un lien direct
+   * part sans le jeton staff — l'intercepteur ne voit que les requêtes
+   * `HttpClient` — et rendrait un 401 que le navigateur affiche en page
+   * blanche. C'est la même raison que `saveBlob`.
+   */
+  async preview(companyId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${B2B_API_BASE}/admin/companies/${companyId}/mandate/preview.pdf?inline=1`, {
+        responseType: 'blob',
+      }),
     );
   }
 }

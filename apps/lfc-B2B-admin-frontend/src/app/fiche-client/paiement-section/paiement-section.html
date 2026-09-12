@@ -87,7 +87,7 @@
 
       <!-- Étape 2 — l'autorisation -->
       <fold-element-title variant="caps" icon="contracts" title="2 · Mandat SEPA" />
-      @if (companyId()) {
+      @if (companyId(); as id) {
         @if (mandate(); as m) {
           <div class="pm-row">
             <div class="pm-what">
@@ -151,9 +151,15 @@
             <strong>La génération du mandat n'est pas encore ouverte.</strong> Elle passait par
             Stripe&nbsp;; le prélèvement se fait désormais sous notre propre identifiant créancier,
             et le parcours — mandat prérempli, signé par le client, scan déposé — est en cours de
-            construction.
+            construction. En attendant, l'aperçu ci-dessous montre ce que ce client recevra.
           </fold-callout>
         }
+
+        <app-mandate-options-section
+          [companyId]="id"
+          [companyLabel]="companyName()"
+          [account]="bankAccount()"
+        />
       } @else {
         <p class="pm-later">Le mandat suit le RIB, donc l'ouverture du compte.</p>
       }
