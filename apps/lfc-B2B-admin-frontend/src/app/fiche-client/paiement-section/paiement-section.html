@@ -70,18 +70,6 @@
           </div>
           <div class="pm-state">
             <fold-badge [content]="statusLabel()" [variant]="debitable() ? 'success' : 'neutral'" />
-            @if (!debitable()) {
-              <button
-                foldButton
-                size="sm"
-                intent="primary"
-                emphasis="soft"
-                [disabled]="busy()"
-                (click)="openMandatePanel()"
-              >
-                Enregistrer un mandat
-              </button>
-            }
           </div>
         </div>
 
@@ -113,22 +101,24 @@
           </fold-callout>
         }
       } @else {
-        <div class="pm-row">
-          <div class="pm-what">
-            <span class="pm-label">Prélèvement SEPA</span>
-            <span class="pm-note">Aucun mandat enregistré.</span>
-          </div>
-          <button
-            foldButton
-            size="sm"
-            intent="primary"
-            emphasis="soft"
-            [disabled]="busy()"
-            (click)="openMandatePanel()"
-          >
-            Enregistrer un mandat
-          </button>
+        <!-- Pas de `.pm-row` ici : elle répartit deux côtés
+             (`space-between`), et sans geste à droite elle laissait un vide
+             qui se lit comme un bloc cassé. Un état sans action est un
+             paragraphe, pas une ligne d'action. -->
+        <div class="pm-what">
+          <span class="pm-label">Prélèvement SEPA</span>
+          <span class="pm-note">Aucun mandat enregistré.</span>
         </div>
+
+        <!-- 🔴 Le geste a disparu le 2026-09-12 avec le canal Stripe. Dire
+             POURQUOI, plutôt que de laisser une section sans bouton : une
+             absence muette se lit comme une panne, et c'est le commercial
+             devant son client qui en fait les frais. -->
+        <fold-callout variant="info">
+          <strong>L'enregistrement d'un mandat est fermé.</strong> Il passait par Stripe&nbsp;; le
+          prélèvement se fait désormais sous notre propre identifiant créancier. Le nouveau parcours
+          — mandat prérempli, signé par le client, scan déposé — n'est pas encore ouvert.
+        </fold-callout>
       }
 
       <!-- Ce qu'on facture, il faut savoir l'encaisser. Dit sans bloquer la

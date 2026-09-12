@@ -6,7 +6,6 @@ import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js
 import {
   AttachMandateProofHandler,
   GetCompanyMandateHandler,
-  RegisterMandateHandler,
   RevokeMandateHandler,
 } from "./application/mandate.handlers.js";
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";
@@ -33,7 +32,6 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     { provide: PaymentGateway, useClass: StripePaymentGateway },
     { provide: MandateGateway, useClass: StripeMandateGateway },
     { provide: PaymentMandateRepository, useClass: PrismaPaymentMandateRepository },
-    RegisterMandateHandler,
     RevokeMandateHandler,
     AttachMandateProofHandler,
     GetCompanyMandateHandler,

@@ -24,11 +24,9 @@ import {
   FoldDangerZoneComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
-  FoldPanelHostService,
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { MandatPanel } from '../mandat/mandat-panel/mandat-panel';
 import { MandatesService } from '../mandat/mandates.service';
 
 /** Une ligne de la section : un moyen de règlement, et où il en est. */
@@ -94,7 +92,6 @@ interface DangerousAction {
 })
 export class PaiementSection {
   private readonly mandates = inject(MandatesService);
-  private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
 
   /** La société concernée ; `null` tant qu'elle n'existe pas (mode ouverture). */
@@ -201,21 +198,6 @@ export class PaiementSection {
   }
 
   /** Ouvre la saisie d'IBAN, puis recharge : l'écran reflète ce qui a été écrit. */
-  protected openMandatePanel(): void {
-    const id = this.companyId();
-    if (id === null || this.publishableKey() === '') {
-      return;
-    }
-    const closed = this.panels.open(MandatPanel, {
-      data: {
-        companyId: id,
-        companyName: this.companyName(),
-        holderEmail: this.holderEmail(),
-        publishableKey: this.publishableKey(),
-      },
-    }).closed;
-    void closed.then(() => this.load(id));
-  }
 
   protected async uploadProof(event: Event): Promise<void> {
     const picker = event.target as HTMLInputElement;

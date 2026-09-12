@@ -5,26 +5,14 @@ import {
   type MandateToCreate,
   type RegisteredMandate,
 } from "../../domain/entities/payment-mandate.js";
-import {
-  CompanyNotFoundForMandateError,
-  MandateAlreadyActiveError,
-  MandateNotFoundError,
-} from "../../domain/errors/mandate-errors.js";
+import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
 import { MandateGateway, type MandateToRegister } from "../../domain/mandate-gateway.js";
 import {
   PaymentMandateRepository,
   type MandateHolder,
 } from "../../domain/payment-mandate.repository.js";
-import {
-  AttachMandateProofCommand,
-  RegisterMandateCommand,
-  RevokeMandateCommand,
-} from "../mandate-commands.js";
-import {
-  AttachMandateProofHandler,
-  RegisterMandateHandler,
-  RevokeMandateHandler,
-} from "../mandate.handlers.js";
+import { AttachMandateProofCommand, RevokeMandateCommand } from "../mandate-commands.js";
+import { AttachMandateProofHandler, RevokeMandateHandler } from "../mandate.handlers.js";
 
 const NOW = new Date("2026-08-11T10:00:00.000Z");
 const PDF = Buffer.from("%PDF-1.4\nmandat", "latin1");
@@ -82,11 +70,6 @@ function doubles(options: {
   };
 
   const gateway: MandateGateway = {
-    registerMandate: (input) => {
-      trace.steps.push("gateway");
-      trace.registered = input;
-      return Promise.resolve(REGISTRATION);
-    },
     revokeMandate: () => {
       trace.steps.push("gateway");
       return Promise.resolve();
@@ -107,64 +90,6 @@ function activeMandate(): PaymentMandate {
     proofFileName: null,
   });
 }
-
-describe("RegisterMandateHandler", () => {
-  it("appelle le PRESTATAIRE avant d'écrire", async () => {
-    // L'invariant du handler : écrire d'abord laisserait un mandat « actif »
-    // chez nous que rien n'autorise chez eux — et c'est celui-là qu'on croirait
-    // pouvoir prélever.
-    const { repo, gateway, trace } = doubles({});
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    const id = await handler.execute(new RegisterMandateCommand("cmp_1", "pm_1", null));
-
-    expect(id).toBe("mdt_new");
-    expect(trace.steps).toEqual(["gateway", "write"]);
-  });
-
-  it("déclare la date du PAPIER signé, pas celle de la saisie", async () => {
-    const signedOn = new Date("2024-03-12T00:00:00.000Z");
-    const { repo, gateway, trace } = doubles({});
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await handler.execute(new RegisterMandateCommand("cmp_1", "pm_1", signedOn));
-
-    expect(trace.registered?.acceptedAt).toEqual(signedOn);
-    expect(trace.written?.acceptedAt).toEqual(signedOn);
-  });
-
-  it("RÉUTILISE le client Stripe déjà connu de la société", async () => {
-    // Un client Stripe par société, pas par autorisation : sinon l'historique se
-    // fragmente et le portefeuille devient illisible côté prestataire.
-    const { repo, gateway, trace } = doubles({ customerId: "cus_existant" });
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await handler.execute(new RegisterMandateCommand("cmp_1", "pm_2", null));
-
-    expect(trace.registered?.existingCustomerId).toBe("cus_existant");
-  });
-
-  it("REFUSE un second mandat tant que le premier est actif", async () => {
-    // Deux autorisations actives, et plus rien ne dit sur laquelle on a prélevé.
-    const { repo, gateway, trace } = doubles({ current: activeMandate() });
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await expect(
-      handler.execute(new RegisterMandateCommand("cmp_1", "pm_2", null)),
-    ).rejects.toBeInstanceOf(MandateAlreadyActiveError);
-    expect(trace.steps).toEqual([]);
-  });
-
-  it("refuse pour une société inconnue, SANS toucher au prestataire", async () => {
-    const { repo, gateway, trace } = doubles({ holder: null });
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await expect(
-      handler.execute(new RegisterMandateCommand("fantome", "pm_1", null)),
-    ).rejects.toBeInstanceOf(CompanyNotFoundForMandateError);
-    expect(trace.steps).toEqual([]);
-  });
-});
 
 describe("RevokeMandateHandler", () => {
   it("détache chez le PRESTATAIRE avant de marquer révoqué", async () => {

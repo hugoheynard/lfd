@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CreatedIdResponse, MandateSectionView, RegisterMandatePayload } from '@lfd/contracts';
+import type { MandateSectionView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
@@ -24,16 +24,6 @@ export class MandatesService {
   async section(companyId: string): Promise<MandateSectionView> {
     return firstValueFrom(
       this.http.get<MandateSectionView>(`${B2B_API_BASE}/admin/companies/${companyId}/mandate`),
-    );
-  }
-
-  /** Enregistre le mandat à partir du moyen de paiement créé par l'IBAN Element. */
-  async register(companyId: string, payload: RegisterMandatePayload): Promise<void> {
-    await firstValueFrom(
-      this.http.post<CreatedIdResponse>(
-        `${B2B_API_BASE}/admin/companies/${companyId}/mandate`,
-        payload,
-      ),
     );
   }
 

@@ -9,70 +9,11 @@ import type { PaymentMandateView } from "@lfd/contracts";
 import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ScannedDocument } from "../../../platform/shared/documents/scanned-document.js";
-import { draftMandate } from "../domain/entities/payment-mandate.js";
-import {
-  CompanyNotFoundForMandateError,
-  MandateAlreadyActiveError,
-  MandateNotFoundError,
-} from "../domain/errors/mandate-errors.js";
+import { MandateNotFoundError } from "../domain/errors/mandate-errors.js";
 import { MandateGateway } from "../domain/mandate-gateway.js";
 import { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
-import {
-  AttachMandateProofCommand,
-  RegisterMandateCommand,
-  RevokeMandateCommand,
-} from "./mandate-commands.js";
+import { AttachMandateProofCommand, RevokeMandateCommand } from "./mandate-commands.js";
 import { GetCompanyMandateQuery } from "./mandate-queries.js";
-
-/**
- * Enregistre un mandat : **le prestataire d'abord, la base ensuite**.
- *
- * Cet ordre est l'invariant du handler. Écrire notre ligne avant l'appel Stripe
- * laisserait un mandat « actif » chez nous que rien n'autorise chez eux — et
- * c'est ce mandat-là qu'on croirait pouvoir prélever.
- *
- * Le mur est en amont (`AdminAuthGuard`) : le staff n'est membre d'aucune
- * société, et enregistrer un mandat est un geste commercial, jamais client.
- */
-@CommandHandler(RegisterMandateCommand)
-export class RegisterMandateHandler implements ICommandHandler<RegisterMandateCommand, string> {
-  constructor(
-    private readonly mandates: PaymentMandateRepository,
-    private readonly gateway: MandateGateway,
-    private readonly clock: Clock,
-  ) {}
-
-  async execute(command: RegisterMandateCommand): Promise<string> {
-    const holder = await this.mandates.findHolder(command.companyId);
-    if (holder === null) {
-      throw new CompanyNotFoundForMandateError(command.companyId);
-    }
-
-    // Un mandat en remplace un autre par un geste explicite, jamais par
-    // surprise : deux autorisations actives, et plus rien ne dit sur laquelle on
-    // a prélevé. (L'index partiel tient la règle sous concurrence ; ici, on
-    // rend un refus lisible plutôt qu'une violation de contrainte.)
-    const current = await this.mandates.findCurrent(command.companyId);
-    if (current !== null && current.debitable()) {
-      throw new MandateAlreadyActiveError(command.companyId);
-    }
-
-    const now = this.clock.now();
-    const acceptedAt = command.acceptedAt ?? now;
-    const registration = await this.gateway.registerMandate({
-      companyId: command.companyId,
-      companyName: holder.companyName,
-      email: holder.email,
-      paymentMethodId: command.paymentMethodId,
-      existingCustomerId: await this.mandates.findStripeCustomerId(command.companyId),
-      acceptedAt,
-    });
-
-    return this.mandates.create(
-      draftMandate({ companyId: command.companyId, registration, acceptedAt, now }),
-    );
-  }
-}
 
 /**
  * Révoque le mandat courant — **chez le prestataire d'abord**, ici ensuite.

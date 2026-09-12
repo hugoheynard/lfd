@@ -52,23 +52,6 @@ export interface PaymentMandateView {
 }
 
 /**
- * Enregistrement d'un mandat depuis le back-office.
- *
- * Le commercial saisit l'IBAN dans l'**IBAN Element** de Stripe (iframe) ; le
- * navigateur n'en renvoie qu'un identifiant de moyen de paiement. L'IBAN ne
- * transite donc ni par ce payload, ni par nos journaux, ni par nos colonnes.
- *
- * `acceptedAt` est la date du mandat **papier** déjà signé — souvent bien
- * antérieure à la saisie, puisqu'on reprend un portefeuille existant. Absente,
- * le serveur prend l'instant courant.
- */
-export const registerMandatePayloadSchema = z.object({
-  paymentMethodId: z.string().trim().min(1),
-  acceptedAt: z.iso.datetime().optional(),
-});
-export type RegisterMandatePayload = z.infer<typeof registerMandatePayloadSchema>;
-
-/**
  * Tout ce dont la section « Moyens de paiement » a besoin, en une lecture : le
  * mandat courant (`null` si la société n'en a jamais eu, le cas ordinaire) et la
  * clé **publique** Stripe pour monter l'IBAN Element.

@@ -1,19 +1,12 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { type MandateSectionView, type PaymentMandateView } from "@lfd/contracts";
 import {
-  type MandateSectionView,
-  type PaymentMandateView,
-  type RegisterMandatePayload,
-  registerMandatePayloadSchema,
-} from "@lfd/contracts";
-import {
-  Body,
   Controller,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
-  Post,
   Put,
   UploadedFile,
   UseInterceptors,
@@ -22,15 +15,12 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { InvalidScannedDocumentError } from "../../../platform/shared/errors/storage-errors.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   AttachMandateProofCommand,
-  RegisterMandateCommand,
   RevokeMandateCommand,
 } from "../application/mandate-commands.js";
 import { GetCompanyMandateQuery } from "../application/mandate-queries.js";
 import { PaymentGateway } from "../domain/payment-gateway.js";
-import type { CreatedIdResponse } from "@lfd/contracts";
 
 /** Backstop DoS du multipart, aligné sur le KBIS (le domaine tranche à 10 Mo). */
 const PROOF_UPLOAD_HARD_LIMIT = 20 * 1024 * 1024;
@@ -74,26 +64,6 @@ export class AdminMandatesController {
       new GetCompanyMandateQuery(companyId),
     );
     return { mandate, publishableKey: this.payments.publishableKey() };
-  }
-
-  /**
-   * Enregistre un mandat depuis un moyen de paiement créé par l'IBAN Element.
-   *
-   * **L'IBAN n'entre pas ici** : il est parti du navigateur directement chez
-   * Stripe, et ce corps ne porte qu'un identifiant. C'est ce qui fait qu'aucun
-   * journal de ce backend ne peut contenir de coordonnées bancaires.
-   */
-  @Post(":companyId/mandate")
-  @HttpCode(HttpStatus.CREATED)
-  async register(
-    @Param("companyId") companyId: string,
-    @Body(new ZodBody(registerMandatePayloadSchema)) payload: RegisterMandatePayload,
-  ): Promise<CreatedIdResponse> {
-    const acceptedAt = payload.acceptedAt === undefined ? null : new Date(payload.acceptedAt);
-    const id = await this.commands.execute<RegisterMandateCommand, string>(
-      new RegisterMandateCommand(companyId, payload.paymentMethodId, acceptedAt),
-    );
-    return { id };
   }
 
   /** Dépose (ou remplace) le **mandat signé scanné**. Multipart `file`. */
