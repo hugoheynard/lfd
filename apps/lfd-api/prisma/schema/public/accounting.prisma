@@ -128,6 +128,79 @@ model LegalEntity {
 // PaymentMandate — l'autorisation de prélever, PAS les coordonnées bancaires
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CompanyBankAccount — le RIB d'un CLIENT, celui qu'on débite
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Le **compte bancaire d'une société cliente** — celui que nous débitons.
+///
+/// ## 🔴 Pourquoi il est AUTONOME, sans lien vers un mandat
+///
+/// La tentation est de poser ces colonnes sur `PaymentMandate` : un mandat
+/// autorise à débiter un compte, les deux semblent inséparables. Ils ne le sont
+/// pas, et la question est ouverte — SEPA connaît l'**amendement**
+/// (`AmdmntInd` + `OrgnlDbtrAcct`), qui change le compte d'un mandat **en
+/// gardant sa RUM** et sa signature. Selon la réponse de la banque, changer de
+/// RIB crée un mandat neuf, ou amende celui en cours.
+///
+/// Poser la colonne sur le mandat répondrait par la structure à cette question,
+/// et se corriger demanderait de défaire une migration. La table se tient donc
+/// seule au 2026-09-12, et le lien se posera quand la réponse existera.
+///
+/// ## Le régime de l'IBAN — scellé, pas en clair
+///
+/// `iban_sealed` porte un scellé `AesGcmFieldCipher` (AES-256-GCM), jamais
+/// l'IBAN. C'est l'exact inverse de `LegalEntity.creditor_iban`, et l'asymétrie
+/// est assumée : notre compte reçoit et nous en sommes le titulaire ; ceux-ci
+/// sont des **données personnelles de centaines de clients**, et un dump de la
+/// base en ferait un fichier qui a une valeur.
+///
+/// ⚠️ `iban_last4` reste EN CLAIR, et il le faut : c'est ce que l'écran affiche
+/// et ce sur quoi une zone de danger fait taper une confirmation. Quatre
+/// chiffres ne débitent personne.
+///
+/// ⚠️ Changer `FIELD_ENCRYPTION_KEY` rend cette colonne illisible. Une rotation
+/// est une migration de données, pas un remplacement de secret.
+///
+/// ## Un seul compte courant par société
+///
+/// `company_id` est `@unique` : un client a un RIB, pas une collection. Poser le
+/// suivant remplace le précédent — et c'est précisément ce geste qui déclenchera
+/// la règle du mandat, une fois qu'on saura laquelle.
+model CompanyBankAccount {
+  id String @id
+
+  companyId String  @unique @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// Le bloc recopié du RIB : titulaire et adresse **tels que la banque du
+  /// client les connaît**. Ils peuvent diverger de la raison sociale déclarée
+  /// sans que personne se trompe — et c'est ce bloc-là qui s'imprime sur le
+  /// mandat que le client signe.
+  holder       String
+  addressLine1 String @map("address_line1")
+  addressLine2 String @default("") @map("address_line2")
+  postalCode   String @map("postal_code")
+  city         String
+  countryCode  String @default("FR") @map("country_code")
+
+  /// 🔴 Le scellé, jamais l'IBAN. Illisible sans `FIELD_ENCRYPTION_KEY`.
+  ibanSealed String @map("iban_sealed")
+
+  /// Les quatre derniers caractères, en clair — de quoi reconnaître, pas débiter.
+  ibanLast4 String @map("iban_last4")
+
+  /// Le BIC n'est PAS scellé : il désigne un établissement, pas un compte, et il
+  /// figure sur tout virement. Le sceller coûterait sans rien protéger.
+  bic String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("company_bank_accounts")
+  @@schema("public")
+}
+
 /// Un **mandat de prélèvement SEPA** rattaché à une société.
 ///
 /// Agrégat à part, et non des colonnes sur `Company` : un mandat a un cycle de

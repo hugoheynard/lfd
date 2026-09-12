@@ -3,11 +3,13 @@ import { Module } from "@nestjs/common";
 import { MandateGateway } from "./domain/mandate-gateway.js";
 import { PaymentGateway } from "./domain/payment-gateway.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
+import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
 import {
   AttachMandateProofHandler,
   GetCompanyMandateHandler,
   RevokeMandateHandler,
 } from "./application/mandate.handlers.js";
+import { PrismaCompanyBankAccountRepository } from "./infrastructure/prisma-company-bank-account.repository.js";
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";
 import { StripeMandateGateway } from "./infrastructure/stripe-mandate-gateway.js";
 import { StripePaymentGateway } from "./infrastructure/stripe-payment-gateway.js";
@@ -32,6 +34,10 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     { provide: PaymentGateway, useClass: StripePaymentGateway },
     { provide: MandateGateway, useClass: StripeMandateGateway },
     { provide: PaymentMandateRepository, useClass: PrismaPaymentMandateRepository },
+    {
+      provide: CompanyBankAccountRepository,
+      useClass: PrismaCompanyBankAccountRepository,
+    },
     RevokeMandateHandler,
     AttachMandateProofHandler,
     GetCompanyMandateHandler,
