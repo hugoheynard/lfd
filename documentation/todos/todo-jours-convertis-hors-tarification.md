@@ -73,7 +73,15 @@ l'écrire. Si c'est mélangé, il y a un décalage à l'intérieur du même calc
 
 ## 3. Le seul sur une colonne à heure — la date d'acceptation d'un mandat
 
-`fiche-client/mandat/mandat-panel/mandat-panel.ts` envoie :
+⚠️ **Le panneau qui envoyait ça a été supprimé le 2026-09-12**, avec la route
+d'enregistrement d'un mandat par Stripe. Le constat est conservé parce qu'il
+décrit un piège de modélisation qui reviendra tel quel à la frappe de la RUM :
+la colonne `accepted_at` n'a pas bougé, et le parcours direct devra lui aussi
+décider ce qu'un jour saisi à la main vaut en instant.
+
+L'ancien panneau (fiche-client/mandat/mandat-panel/mandat-panel.ts — supprimé,
+donc nommé en texte simple : les backticks affirment qu'un fichier existe)
+envoyait :
 
 ```ts
 acceptedAt: new Date(`${this.acceptedAt()}T00:00:00.000Z`).toISOString(),
