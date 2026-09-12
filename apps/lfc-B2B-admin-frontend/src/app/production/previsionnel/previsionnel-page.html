@@ -1,0 +1,114 @@
+<!--
+  **Le mur qui arrive.** Sept colonnes égales, une matrice `produits × jours`.
+
+  Pas de `title` sur le layout : la page porte sa phrase dans la bande, et deux
+  titres de premier niveau sur un écran n'en font aucun.
+-->
+<fold-page-layout>
+  <!--
+    **La bande de tête.** Ce qu'on vient y chercher en levant les yeux : la
+    période, ce qu'elle pèse, et de quoi la déplacer. Rien d'autre — chaque
+    ligne prise par de la prose est une référence de moins visible sans faire
+    défiler.
+  -->
+  <fold-page-section bleed class="pv-masthead" foldSurface="chrome">
+    <div class="pv-masthead-bar">
+      <div class="pv-said">
+        <p class="pv-eyebrow">Semaine {{ windowLabel() }}</p>
+        @if (state() === 'ready') {
+          <h1 class="pv-title">
+            {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }} à produire sur
+            {{ headers().length }} jours.
+          </h1>
+        }
+      </div>
+
+      <div class="pv-nav">
+        @if (!atToday) {
+          <button foldButton emphasis="outline" size="sm" (click)="backToToday()">
+            Aujourd’hui
+          </button>
+        }
+        <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
+          Semaine précédente
+        </button>
+        <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
+          Semaine suivante
+        </button>
+      </div>
+    </div>
+
+    <!--
+      La légende dit d'où vient un chiffre. Une journée ARRÊTÉE porte le compte
+      à produire figé à la clôture — un fait ; une journée ouverte porte ce que
+      le commerce a reçu à cette heure-ci, et qui bougera encore.
+    -->
+    @if (state() === 'ready' && pieces() > 0) {
+      <p class="pv-legend">
+        <span class="pv-key pv-key--closed"></span> journée arrêtée
+        <span class="pv-key pv-key--open"></span> encore ouverte
+        <span class="pv-key pv-key--peak"></span> le pic
+      </p>
+    }
+  </fold-page-section>
+</fold-page-layout>
+
+<!--
+  **La table vit HORS du `fold-page-layout`, et c'est une contrainte, pas un
+  goût.**
+
+  🔴 `.page-body` — l'enveloppe que le layout pose autour de son contenu — est
+  une colonne flex en `flex: 0 1 auto`. Elle ne s'étire donc PAS à la hauteur du
+  layout : tout ce qu'on y met plafonne à la hauteur de son propre contenu, quel
+  que soit le `flex: 1` qu'on lui donne. C'est ce qui tenait les deux lignes de
+  totaux à la fin du contenu au lieu du bas de l'écran, et aucune règle écrite
+  ici ne pouvait le corriger — le style appartient à un autre composant.
+
+  Le layout garde donc ce pour quoi il est fait : l'en-tête de page et ses
+  gouttières, autour de la bande. La table, elle, est une sœur, et prend la
+  hauteur que l'hôte lui laisse. Elle n'a besoin d'aucune gouttière : la région
+  de contenu de la coquille est pleine largeur par construction.
+
+  (Vérifié le 2026-09-11 en lisant le CSS compilé de `fold-ng` : `.page-body`
+  n'y porte ni `flex: 1` ni `min-height: 0`, et `scroll="own"` ne change que
+  l'hôte.)
+-->
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture du prévisionnel…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Prévisionnel illisible"
+      subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (pieces() === 0) {
+      <fold-empty-state
+        icon="production"
+        title="Rien à produire sur cette période"
+        subtitle="Aucune commande n'est à retirer ni à livrer sur ces jours-là."
+      />
+    } @else {
+      <!--
+        🔴 Le catalogue n'a pas répondu. La grille reste juste — les pièces
+        et les jours viennent du fournil, pas de lui — mais ses rayons sont
+        perdus, et un groupe « Hors catalogue » dirait alors que tout est
+        retiré de la vente. Un échec partiel laisse le contenu à l'écran et
+        se DIT : c'est le seul cas où un callout est le bon état.
+      -->
+      @if (shelvesLost()) {
+        <fold-callout variant="warning" class="pv-lost">
+          Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
+          rangés. Réessayez pour les retrouver.
+        </fold-callout>
+      }
+
+      <app-forecast-table [headers]="headers()" [rayons]="rayons()" />
+    }
+  }
+}

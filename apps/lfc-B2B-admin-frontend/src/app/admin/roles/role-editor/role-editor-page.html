@@ -7,7 +7,7 @@
   @case ('missing') {
     <fold-empty-state
       title="Ce rôle n’est pas modifiable"
-      description="Soit il n’existe pas, soit c’est le rôle interne qui garantit qu’on ne peut pas se verrouiller dehors."
+      subtitle="Soit il n’existe pas, soit c’est le rôle interne qui garantit qu’on ne peut pas se verrouiller dehors."
     >
       <button foldButton (click)="cancel()">Retour aux rôles</button>
     </fold-empty-state>
@@ -54,7 +54,9 @@
       </fold-card>
 
       <footer class="actions">
-        <button foldButton variant="ghost" type="button" (click)="cancel()">Annuler</button>
+        <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+          Annuler
+        </button>
         <button foldButton type="submit" [disabled]="!canSubmit()">
           {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
         </button>

@@ -1,0 +1,425 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import type { HandoverQueueEntryView } from '@lfd/contracts';
+import {
+  FoldButtonComponent,
+  FoldElementTitleComponent,
+  FoldEmptyStateComponent,
+  FoldSearchComponent,
+  FoldLoadingStateComponent,
+  FoldAsideLayoutComponent,
+  FoldPageLayoutComponent,
+  FoldPageSectionComponent,
+  FoldPanelHostService,
+  FoldSurfaceDirective,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
+} from 'fold-ng';
+
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
+import { NotifyService } from '../../notify.service';
+import { HandoverQueueService } from '../handover-queue.service';
+import {
+  atTheCounter,
+  matchingQueue,
+  clockOf,
+  entriesForTab,
+  formatHour,
+  pickupTabs,
+  queueCounters,
+  type QueueCounters,
+} from '../handover-queue';
+import { QueueTable } from '../queue-table/queue-table';
+import { HandoverDetail } from '../handover-detail/handover-detail';
+import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-dialog';
+import { AdminOrdersService } from '../../commandes/orders.service';
+
+type LoadState = 'loading' | 'ready' | 'error';
+
+/** `AAAA-MM-JJ` d'un instant, en heure locale — le jour tel que l'équipe le dit. */
+function isoDay(date: Date): string {
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Le battement de l'horloge de comptoir. Trente secondes : une ligne bascule
+ * « en retard » au plus une demi-minute après l'avoir été, et le navigateur ne
+ * repeint que deux fois par minute une page qui reste ouverte toute la matinée.
+ */
+const TICK_MS = 30_000;
+
+/**
+ * **La file de remise** — qui attend au comptoir, ce jour-là.
+ *
+ * ## Ce que l'écran refuse de faire
+ *
+ * 🔴 **Il n'invente aucune heure.** Une commande sans créneau demandé — le cas
+ * de masse, le backfill du 2026-08-15 en a posé sur tout l'historique — reste à
+ * l'écran, en fin de file, et dit « sans créneau ». La faire disparaître
+ * laisserait quelqu'un chercher une commande au comptoir pendant qu'elle est
+ * là ; lui prêter une heure ferait pire, en la rangeant au mauvais endroit.
+ *
+ * 🔴 **Il ne parle de retard que sur une tranche demandée.** Un créneau
+ * `default` est une heure d'ouverture du point, recopiée à la commande. La
+ * règle vit dans `isLate`, avec sa raison ; `lateMinutes` ne fait que la
+ * chiffrer.
+ *
+ * ⚠️ **Une commande annulée reste dans la file.** C'est la seule façon que
+ * l'équipe puisse dire à quelqu'un qui se présente pourquoi on ne lui donne
+ * rien — la masquer transformerait un refus explicable en commande disparue.
+ *
+ * ## L'horloge tourne, et c'est le sujet
+ *
+ * 🔴 L'instant du jugement était **figé à la lecture**. Sur un écran qu'on
+ * laisse ouvert du premier au dernier client, cela voulait dire qu'aucune ligne
+ * ne passait jamais en retard : il fallait recharger pour l'apprendre. Il bat
+ * désormais toutes les trente secondes, et reste un signal — donc les tests le
+ * posent où ils veulent, sans attendre.
+ *
+ * ## Un seul appel, des onglets locaux
+ *
+ * Le serveur rend la journée entière, tous points confondus, et les onglets
+ * sont dérivés des `pickupLabel` reçus. Aucun nom de point n'est écrit ici : un
+ * comptoir ouvert demain apparaît sans qu'on y touche.
+ */
+@Component({
+  selector: 'app-handover-shop-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    FoldButtonComponent,
+    FoldElementTitleComponent,
+    FoldSearchComponent,
+    FoldAsideLayoutComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
+    FoldPageLayoutComponent,
+    FoldPageSectionComponent,
+    // 🔴 La directive, et pas seulement l'attribut dans le gabarit : sans elle
+    // `foldSurface="chrome"` est du HTML inerte qu'Angular ignore. Le fond
+    // sombre serait peint, la polarité jamais basculée, et le titre rendu à
+    // 1,18 de contraste — invisible au typecheck comme à l'AOT.
+    FoldSurfaceDirective,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
+    QueueTable,
+    HandoverDetail,
+  ],
+  templateUrl: './handover-shop-page.html',
+  styleUrl: './handover-shop-page.scss',
+})
+export class HandoverShopPage {
+  private readonly api = inject(HandoverQueueService);
+  private readonly orders = inject(AdminOrdersService);
+  private readonly panels = inject(FoldPanelHostService);
+  private readonly notify = inject(NotifyService);
+
+  /**
+   * L'instance des onglets, pour le `fold-tab-panel` qui la réclame.
+   *
+   * ⚠️ Par requête de vue et non par variable de gabarit : `#tabBar` déclaré
+   * dans la bande de tête ne franchirait pas le bloc `@if` qui l'entoure, et le
+   * panneau vit dans une autre branche du `@switch`.
+   */
+  protected readonly tabBar = viewChild(FoldTabsComponent);
+
+  /**
+   * Le terme cherché. Il vit ICI parce que la barre le porte, et il descend à
+   * la file qui, elle, filtre — les compteurs de la journée doivent rester
+   * ceux de la journée.
+   */
+  protected readonly query = signal<string>('');
+
+  /**
+   * **La file et le sac ne tiennent plus côte à côte.**
+   *
+   * 🔴 1040 px est le seuil auquel `fold-aside-layout` laisse tomber sa
+   * deuxième colonne — lu dans son CSS compilé le 2026-09-11, et c'est une
+   * valeur qu'il tient pour lui. On la redit ici parce qu'il n'en publie pas le
+   * jeton, et on la redit UNE fois : la feuille de cet écran ne pose pas de
+   * media query, elle suit la classe que ce signal allume. Deux définitions
+   * dériveraient, et l'écran basculerait en deux temps.
+   *
+   * ⚠️ Approximation assumée : fold interroge la largeur de son CONTENEUR,
+   * nous celle de la fenêtre. Elles ne diffèrent que si un jour cet écran est
+   * posé dans une colonne étroite d'une page large — ce qu'un poste de comptoir
+   * ne fait pas.
+   */
+  protected readonly stacked = narrowViewport('(max-width: 1040px)');
+
+  protected readonly state = signal<LoadState>('loading');
+  /**
+   * Le jour de service — **aujourd'hui, et rien d'autre**.
+   *
+   * 🔴 Un sélecteur de date vivait dans la bande jusqu'au 2026-09-11. Il a été
+   * retiré : un comptoir travaille sur le jour qu'il est en train de vivre, et
+   * l'offrir en tête d'écran mettait à portée du doigt le seul geste qui peut
+   * faire tendre un sac en croyant être un autre jour.
+   *
+   * ⚠️ Ce qui part avec lui, et qui n'est PAS remplacé : relire la file d'hier
+   * pour régler une contestation. Le besoin est réel — il est écrit dans cette
+   * page — mais il appartient à une recherche de commande, pas à une file de
+   * service. Un signal plutôt qu'une constante parce que la journée bascule sur
+   * un poste qui reste ouvert la nuit, et parce que l'écran qui rendra ce jour
+   * lira une route.
+   */
+  protected readonly day = signal<string>(isoDay(new Date()));
+  private readonly entries = signal<readonly HandoverQueueEntryView[]>([]);
+
+  /**
+   * L'instant qui sert à juger un retard. Un **signal**, battu par une horloge
+   * plutôt que lu au rendu : le lire au rendu ferait dépendre l'affichage du
+   * moment où Angular repeint, et rendrait l'écran intestable.
+   */
+  protected readonly now = signal<Date>(new Date());
+
+  /** La commande dont on envoie le rappel — au plus une, et le bouton le dit. */
+  private readonly reminding = signal<string | null>(null);
+
+  /** Ce que la file a besoin de savoir des rappels : lequel est en vol… */
+  protected readonly remindingId = this.reminding.asReadonly();
+
+  /**
+   * Les rappels déjà partis, dans cette session d'écran.
+   *
+   * ⚠️ **Local, et assumé comme tel.** Le serveur ne garde pas trace d'un
+   * rappel dans la file ; sans ce jeu, le bouton se réarmerait à l'identique et
+   * on enverrait trois courriels à la même personne en trois minutes. Rechargé,
+   * l'écran oublie — c'est le prix, et il est plus honnête qu'un compteur
+   * inventé côté client.
+   */
+  private readonly reminded = signal<ReadonlySet<string>>(new Set());
+
+  /** …et lesquels sont déjà partis. */
+  protected readonly remindedIds = this.reminded.asReadonly();
+
+  /**
+   * La commande ouverte dans le rail, **par identifiant et non par objet**.
+   *
+   * 🔴 Garder la ligne elle-même la figerait : après une remise, la file est
+   * relue et toutes ses lignes sont de nouveaux objets — le rail continuerait
+   * d'afficher « attendue » sur un sac parti. L'identifiant, lui, retrouve la
+   * ligne à jour, ou `null` si elle a quitté la journée affichée.
+   */
+  private readonly selectedId = signal<string | null>(null);
+
+  /** La clé d'onglet demandée par l'utilisateur — pas forcément encore valide. */
+  private readonly requestedTab = signal<string>('');
+
+  protected readonly tabs = computed<readonly FoldTabItem[]>(() =>
+    pickupTabs(this.entries()).map((tab) => ({
+      key: tab.key,
+      label: tab.label,
+      badge: tab.count,
+    })),
+  );
+
+  /**
+   * L'onglet réellement actif. Il retombe sur le premier dès que la clé
+   * demandée n'existe plus — changer de jour change les points de retrait
+   * présents, et une clé morte laisserait une file vide sans rien expliquer.
+   */
+  protected readonly activeTab = computed<string>(() => {
+    const tabs = this.tabs();
+    const requested = this.requestedTab();
+    if (tabs.some((tab) => tab.key === requested)) {
+      return requested;
+    }
+    return tabs[0]?.key ?? '';
+  });
+
+  /**
+   * Les lignes de l'onglet ouvert. **Pas ordonnées ici** : l'ordre de la file
+   * appartient à la file, et `app-queue-table` le pose — un appelant qui
+   * oublierait de trier obtiendrait une liste juste et illisible.
+   */
+  protected readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
+    entriesForTab(this.entries(), this.activeTab()),
+  );
+
+  protected readonly total = computed(() => this.entries().length);
+
+  /**
+   * Combien de lignes le terme laisse — ce que la boîte annonce à voix haute.
+   *
+   * 🔴 Calculé ici par la MÊME fonction que la file, et non demandé à la file :
+   * une requête de vue résout l'instance avant que ses entrées soient liées, et
+   * Angular levait `NG0950` sur `entries`. Deux appels d'une fonction pure ne
+   * peuvent pas diverger ; une barre qui interroge sa table, si.
+   */
+  protected readonly matches = computed<number | null>(() =>
+    this.query() === '' ? null : matchingQueue(this.rows(), this.query()).length,
+  );
+
+  /** Ce que le rail montre — la ligne choisie, relue dans la file courante. */
+  protected readonly selected = computed<HandoverQueueEntryView | null>(() => {
+    const id = this.selectedId();
+    return id === null ? null : (this.entries().find((entry) => entry.orderId === id) ?? null);
+  });
+
+  /**
+   * Les trois nombres de la bande : sur le POINT OUVERT, pas sur la journée.
+   *
+   * 🔴 Ils portaient sur la journée entière jusqu'au 2026-09-11, et l'argument
+   * — « combien reste-t-il ce matin » — était celui d'un gérant. Personne ne
+   * tient ce comptoir-là : qui lit cet écran est DANS un point, et « 3 en
+   * retard » dont deux au Village le fait chercher deux sacs qui ne sont pas
+   * chez lui. C'est le même raisonnement qui a fait tomber l'onglet « Tous les
+   * points » ; laisser les compteurs derrière aurait gardé la vue qu'on venait
+   * de retirer.
+   *
+   * ⚠️ Depuis `rows()` et non depuis la file peinte : `rows` suit l'onglet,
+   * jamais la RECHERCHE, qui vit plus bas. Un comptoir qui cherche un nom ne
+   * doit pas voir son nombre de retards tomber à zéro sous ses yeux — il
+   * lirait que le problème est réglé.
+   */
+  protected readonly counters = computed<QueueCounters>(() =>
+    queueCounters(this.rows(), this.day(), this.now()),
+  );
+
+  /** L'heure, telle qu'on la dit — « 7 h 26 ». */
+  protected readonly clock = computed<string>(() => formatHour(clockOf(this.now())));
+
+  /**
+   * Le sur-titre de la file. Il nomme l'onglet ouvert parce que c'est ce qu'on
+   * lit : « la file » seule laisserait croire qu'on voit tout le comptoir alors
+   * qu'un onglet en cache la moitié.
+   */
+  protected readonly eyebrow = computed<string>(() => {
+    const active = this.activeTab();
+    if (active === '') {
+      return 'La file';
+    }
+    const tab = this.tabs().find((item) => item.key === active);
+    return `La file · ${tab?.label ?? active}`;
+  });
+
+  constructor() {
+    effect(() => {
+      void this.load(this.day());
+    });
+
+    // L'horloge de comptoir. `window.setInterval` et non `setInterval` : le
+    // premier rend un `number`, le second un `Timeout` sous les types Node —
+    // et cette app n'a pas de rendu serveur (`ssr: false`), donc rien à garder.
+    //
+    // 🔴 Elle fait AUSSI basculer la journée. Sans cela, un poste laissé ouvert
+    // la nuit garderait la file de la veille pour toujours — et depuis que le
+    // sélecteur de date a disparu (2026-09-11), plus rien ne permettrait d'en
+    // sortir sans recharger la page. L'écran montrerait alors, au petit matin,
+    // une file vide et des retards de douze heures.
+    const tick = window.setInterval(() => {
+      const instant = new Date();
+      this.now.set(instant);
+      const today = isoDay(instant);
+      if (today !== this.day()) {
+        this.day.set(today);
+        this.clearSelection();
+      }
+    }, TICK_MS);
+    inject(DestroyRef).onDestroy(() => window.clearInterval(tick));
+  }
+
+  protected async load(day: string = this.day()): Promise<void> {
+    this.state.set('loading');
+    try {
+      const view = await this.api.forDay(day);
+      // 🔴 La coupe est faite UNE fois, à la lecture : les onglets, les
+      // compteurs, la file et la sélection en dérivent tous. Filtrée plus bas,
+      // elle aurait manqué l'un d'eux — et c'est le compteur qu'elle aurait
+      // manqué, puisqu'il lit `entries` en direct.
+      this.entries.set(atTheCounter(view.entries));
+      this.now.set(new Date());
+      this.state.set('ready');
+    } catch {
+      this.entries.set([]);
+      this.state.set('error');
+    }
+  }
+
+  /**
+   * 🔴 Changer d'onglet ou de jour VIDE la recherche.
+   *
+   * Un terme qui survit à ce geste laisse une file amputée sous un onglet qu'on
+   * vient d'ouvrir pour tout voir : on lit « Le Village 2 » et on n'a qu'une
+   * ligne devant soi. C'est exactement ce que `[(value)]` permet — une boîte à
+   * sens unique garderait un terme que les résultats n'honorent plus.
+   */
+  protected onTab(key: string): void {
+    this.requestedTab.set(key);
+    this.query.set('');
+  }
+
+  /**
+   * **Ouvre le scanner**, avec ou sans commande attendue.
+   *
+   * 🔴 Depuis une ligne, il porte la référence : un code qui en désigne une
+   * autre est refusé au lieu d'être honoré. Un scan lit ce qu'on lui présente,
+   * pas ce qu'on a cliqué — sans ce contrôle, un bouton par ligne remettrait la
+   * commande du voisin un matin de coup de feu. Depuis la bande, il vaut
+   * `null` : on prend ce qui se présente, comme un comptoir.
+   *
+   * ⚠️ L'onglet ouvert l'accompagne dans les deux cas. Prendre ce qui se
+   * présente ne veut pas dire le prendre en silence : l'écran affirme un point
+   * de retrait, et le dialogue doit pouvoir dire quand le code n'en est pas.
+   */
+  protected scan(entry: HandoverQueueEntryView | null): void {
+    const data: ScanDialogData = {
+      expected:
+        entry === null ? null : { reference: entry.reference, customerLabel: entry.customerLabel },
+      // 🔴 L'onglet voyage avec le geste. Depuis la bande, `expected` est
+      // `null` — on prend ce qui se présente — mais l'écran, lui, affirme un
+      // point de retrait dans son titre et dans ses trois compteurs. Sans cette
+      // clé, le scan remettait un sac du Village sans qu'une ligne ne l'ait
+      // jamais montré (revue du 2026-09-11, point 3).
+      openTab: this.activeTab(),
+    };
+    const ref = this.panels.open<ScanDialogData, string>(ScanDialog, { data });
+    void ref.closed.then((result) => {
+      if (result === SCANNED) {
+        void this.load();
+      }
+    });
+  }
+
+  /**
+   * **Renvoie au client le courriel de retrait.**
+   *
+   * Le geste du comptoir quand personne n'est venu : le message dit « votre
+   * commande vous attend » et reporte le QR. Le serveur REFUSE sur une commande
+   * que le fournil n'a pas colisée — un rappel qui ferait venir quelqu'un
+   * devant un comptoir vide est pire que pas de rappel.
+   */
+  protected async remind(entry: HandoverQueueEntryView): Promise<void> {
+    this.reminding.set(entry.orderId);
+    try {
+      await this.orders.remindHandover(entry.orderId);
+      this.reminded.update((sent) => new Set([...sent, entry.orderId]));
+      this.notify.success(`Rappel envoyé pour ${entry.reference}.`);
+    } catch (caught) {
+      this.notify.error(caught, "Le rappel n'a pas pu être envoyé.");
+    } finally {
+      this.reminding.set(null);
+    }
+  }
+
+  /** Referme le rail. Il reste à l'écran, vide — rien ne disparaît. */
+  protected clearSelection(): void {
+    this.selectedId.set(null);
+  }
+
+  /** Ouvre la ligne dans le rail. Rien ne s'ouvre ni ne se ferme : il est là. */
+  protected select(entry: HandoverQueueEntryView): void {
+    this.selectedId.set(entry.orderId);
+  }
+}

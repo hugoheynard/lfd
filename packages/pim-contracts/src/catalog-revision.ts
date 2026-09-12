@@ -31,11 +31,44 @@ export interface CatalogRevisionSummaryView {
   readonly reference: string;
   /** `null` = personne ne l'a nommée. */
   readonly label: string | null;
+  /**
+   * Le POURQUOI, en clair — `null` = personne n'en a écrit.
+   *
+   * À part du nom parce que ce sont deux lectures : le nom se lit dans une
+   * liste à côté de quinze autres, la note se lit quand on ouvre — devant un
+   * client qui conteste un prix, six mois plus tard.
+   */
+  readonly note: string | null;
   readonly hash: string;
   readonly takenAt: string;
   readonly takenBy: string;
   /** Combien d'articles elle fige. */
   readonly articles: number;
+}
+
+/**
+ * Une ancre **dans une liste** — le résumé, plus ce qui la sépare de la
+ * précédente.
+ *
+ * 🔴 Un type à part et non un champ optionnel sur le résumé, pour que `null`
+ * n'ait qu'un seul sens. Partout ailleurs — l'état du catalogue, les bornes
+ * d'un diff — on rend un résumé sans écart, parce qu'aucun écart n'y est
+ * calculé ; y mettre `null` ferait dire « rien avant elle » d'une ancre qui a
+ * une devancière.
+ */
+export interface CatalogRevisionRowView extends CatalogRevisionSummaryView {
+  /**
+   * **Combien d'articles la séparent de l'ancre précédente** — entrés, retirés
+   * et modifiés confondus.
+   *
+   * `null` sur la plus ancienne du dépôt : il n'y a rien avant elle, et un `0`
+   * dirait « rien n'a changé » alors que tout était nouveau.
+   *
+   * Un seul nombre et non trois : la liste répond à « laquelle a bougé », pas à
+   * « comment ». Le détail a son écran. Et il ne se déduit PAS d'`articles` —
+   * deux ancres de 97 articles peuvent différer d'une ligne ou de quarante.
+   */
+  readonly changes: number | null;
 }
 
 /**
@@ -125,6 +158,44 @@ export interface CatalogRevisionDiffView {
 }
 
 /**
+ * **Ce qui a bougé depuis la dernière ancre publiée, sans en poser une.**
+ *
+ * Le même corps qu'un diff entre deux ancres, parce que c'est le même geste :
+ * le côté « après » est simplement le catalogue tel qu'il est, construit en
+ * mémoire par la MÊME mécanique que la pose. Un écran ne peut donc pas annoncer
+ * un changement qu'une capture ignorerait, ni l'inverse.
+ *
+ * 🔴 Il a longtemps existé sous la forme de **trois nombres** — ajoutés,
+ * retirés, changés (`CatalogOverviewView.sinceLastRevision`). On savait qu'il y
+ * avait trois changements depuis `R-7WT4NA`, jamais lesquels : de quoi
+ * s'inquiéter, jamais de quoi écrire une intention. Le compteur reste, pour les
+ * écrans qui n'ont besoin que du chiffre.
+ */
+export interface CatalogPendingDiffView {
+  /**
+   * L'ancre de référence — la dernière **publiée**, pas la dernière posée.
+   *
+   * `null` quand rien n'est jamais parti : il n'y a alors rien à quoi se
+   * comparer, et les listes vides ne veulent PAS dire « rien n'a changé ». Un
+   * écran doit distinguer les deux.
+   */
+  readonly from: CatalogRevisionSummaryView | null;
+  /**
+   * L'instant de la lecture.
+   *
+   * Le côté « après » n'a pas de date de pose — il n'est pas figé. C'est cet
+   * instant qui borne l'intervalle d'attribution, et le dire permet à un écran
+   * de savoir de quand date ce qu'il montre.
+   */
+  readonly at: string;
+  readonly causes: readonly CatalogRevisionCauseView[];
+  readonly header: readonly FieldDiffView[];
+  readonly added: readonly string[];
+  readonly removed: readonly string[];
+  readonly changed: readonly CatalogRevisionItemDiffView[];
+}
+
+/**
  * Ce que la pose d'une ancre rend.
  *
  * `created: false` dit que le catalogue n'avait pas bougé : l'ancre rendue est
@@ -135,5 +206,14 @@ export interface CatalogRevisionTakenView {
   readonly id: string;
   readonly reference: string;
   readonly hash: string;
+  /**
+   * Comment l'ancre s'appelle **après** ce geste. `null` = toujours muette.
+   *
+   * Rendu parce que l'appelant ne peut pas le déduire : une ancre retrouvée
+   * peut porter un nom qu'il n'a pas donné, et une ancre muette peut venir de
+   * prendre le sien. Sans ce champ, l'écran devrait relire pour savoir ce qu'il
+   * vient de faire.
+   */
+  readonly label: string | null;
   readonly created: boolean;
 }

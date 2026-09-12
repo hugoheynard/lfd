@@ -1,0 +1,148 @@
+/* ── PLEINE PAGE, JUSQU'EN BAS ──────────────────────────────────────────────
+   Une matrice n'est pas un document : il n'y a rien à lire d'un bout à l'autre,
+   et la mesure typographique — la raison d'être des colonnes bornées — n'a
+   aucun sens sur une grille dont la question est « est-ce que la semaine tient
+   à l'écran ». On lève le plafond ; les gouttières restent.
+
+   🔴 **Et la table descend jusqu'au bas de la fenêtre**, sans qu'un seul nombre
+   magique soit écrit ici. La chaîne existe déjà chez fold : la coquille est une
+   grille dont la rangée de contenu vaut `1fr` — donc une hauteur DÉFINIE —, sa
+   boîte de défilement et `content-flow` sont des colonnes flex, et
+   `fold-page-layout` y est un élément `flex: 1 0 auto`. Il ne manquait que ce
+   maillon-ci : l'hôte de la page, qui rompait la chaîne en restant un bloc.
+
+   Un `calc(100dvh - …)` aurait marché le jour où on l'écrit et menti au premier
+   changement de hauteur du bandeau — c'est-à-dire exactement le genre de
+   justification qui survit à ce qui la périme. */
+:host {
+  /* Aucun écart entre les deux pièces de l'écran : la table PROLONGE la bande,
+     elle ne se pose pas dessous. Le rythme vertical est tenu à l'intérieur du
+     bandeau, là où il sépare des choses qui se lisent, plutôt qu'entre deux
+     blocs qui n'en forment qu'un. */
+  --fold-page-gap: 0;
+  --fold-page-pad-top: 0;
+  --fold-page-pad-bottom: 0;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+/* ── LA BANDE DE TÊTE ───────────────────────────────────────────────────────
+   Même partition que le comptoir et la tarification : le verdict sur le
+   chrome, la grille sur le papier. Aucune couleur n'est écrite ici —
+   `foldSurface="chrome"` repointe la polarité du sous-arbre, et c'est à
+   l'élément qui possède la surface de poser le fond. */
+.pv-masthead {
+  /* Du souffle AU-DESSUS du surtitre : la bande touche le haut de la zone de
+     contenu (`--fold-page-pad-top: 0`), et un surtitre collé au bord se lit
+     comme un débordement, pas comme une entrée en matière. */
+  /* Deux propriétés et non un `padding` unique : un `var()` inconnu rend la
+     déclaration ENTIÈRE invalide, donc une gouttière absente emporterait avec
+     elle l'espace du haut — celui qui n'a rien à voir avec elle. */
+  padding-block: var(--fold-space-3xl) var(--fold-space-lg);
+  padding-inline: var(--fold-page-gutter);
+
+  /* Le fond du rail SECONDAIRE — celui de l'espace de travail, pas celui de
+     l'application. La bande prolonge le rail des vues du fournil, et l'écran
+     n'a plus qu'un sombre par étage : l'espace en haut, le verdict en bas. */
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+.pv-masthead-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.pv-eyebrow {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* La phrase qu'on lit en levant les yeux. Elle porte un CHIFFRE, pas un titre
+   d'écran : le rail nomme déjà la page. */
+.pv-title {
+  margin: var(--fold-space-xs) 0 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+.pv-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+/* La légende dit d'où vient un chiffre — un fait arrêté, ou une prévision qui
+   bougera. La couleur ne porte jamais l'information seule : chaque clé est
+   suivie de son mot. */
+.pv-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  /* Le seul écart de la bande, et il sépare deux choses qui se lisent : le
+     verdict, puis ce qui explique d'où viennent ses chiffres. */
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.pv-key {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-primary);
+}
+
+/* La MÊME encre que la barre qu'elle explique. Elle lisait `--fold-color-border`
+   — 10 % d'opacité sur un fond de chrome, donc une clé invisible dans une
+   légende à trois : elle ne disait pas « c'est ténu », elle disait « il n'y a
+   rien ». */
+.pv-key--open {
+  background: var(--fold-color-text-muted);
+}
+
+.pv-key--peak {
+  background: var(--fold-color-warning);
+}
+
+/* ── LA PLACE DE LA TABLE ───────────────────────────────────────────────────
+   Le layout porte la bande et s'arrête là : `flex: 0 0 auto`, il prend ce que
+   son contenu mesure. Tout le reste de la hauteur est à la table.
+
+   🔴 C'est ce partage qui a été manqué deux fois. `fold-page-layout` enveloppe
+   son contenu dans un `.page-body` en `flex: 0 1 auto` — une boîte qui ne
+   s'étire pas —, si bien qu'une table posée DEDANS plafonne à la hauteur de son
+   propre contenu, quel que soit le `flex: 1` qu'on lui écrit. Le style
+   appartient à un autre composant : rien d'ici ne pouvait le corriger. La table
+   est donc une sœur du layout, pas son enfant.
+
+   Les états (chargement, erreur, vide) sont dehors avec elle : ils prennent la
+   place de la table, donc ils ont sa place. */
+fold-page-layout {
+  flex: 0 0 auto;
+}
+
+app-forecast-table {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Le callout, lui, n'est pas pleine largeur : c'est de la prose, et elle se lit
+   dans la gouttière comme le reste de la page. */
+.pv-lost {
+  margin-inline: var(--fold-page-gutter);
+}

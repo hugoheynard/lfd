@@ -34,6 +34,14 @@ export interface RevisionRecord {
   /** La référence lisible — `R-7WT4NA`. C'est par elle qu'on cite une ancre. */
   readonly reference: string;
   readonly label: string | null;
+  /**
+   * Le POURQUOI, en clair — `null` = personne n'en a écrit.
+   *
+   * À part du nom parce que ce sont deux lectures : le nom se lit dans une
+   * liste à côté de quinze autres, la note se lit quand on ouvre. Allonger le
+   * nom ferait qu'une liste afficherait des paragraphes.
+   */
+  readonly note: string | null;
   readonly hash: string;
   readonly takenAt: Date;
   readonly takenBy: string;
@@ -108,6 +116,21 @@ export abstract class CatalogRevisionRepository {
   ): Promise<{ readonly id: string; readonly reference: string }>;
 
   /** Les ancres, de la plus récente à la plus ancienne. */
+  /**
+   * **Nomme une ancre qui ne l'était pas.**
+   *
+   * Une écriture NUE, et sa justification est écrite ici plutôt que sur un
+   * agrégat qui n'existe pas : une révision n'a ni transition ni invariant —
+   * c'est une photographie immuable. Le seul champ qui puisse bouger est le nom
+   * qu'on lui donne, et il ne peut rien refuser. Lui bâtir un agrégat serait de
+   * la cérémonie (cf. §3.1 de `CLAUDE.md`, « où NE PAS mettre d'agrégat »).
+   *
+   * ⚠️ Elle ne s'applique qu'à une ancre **sans nom** : la garde vit dans le
+   * cas d'usage, pas ici, parce qu'elle n'est pas la même selon qu'on répare à
+   * la main ou qu'on nomme au passage d'un push.
+   */
+  abstract rename(revisionId: string, label: string, note: string | null): Promise<void>;
+
   abstract list(limit: number): Promise<readonly RevisionRecord[]>;
 
   /** Une ancre par sa référence. `null` = elle n'existe pas. */
@@ -122,6 +145,19 @@ export abstract class CatalogRevisionRepository {
    * pour trois lignes de résultat.
    */
   abstract indexOf(revisionId: string): Promise<RevisionIndex>;
+
+  /**
+   * Les index de PLUSIEURS ancres, en une requête.
+   *
+   * Existe pour la liste des révisions, qui veut dire combien d'articles
+   * séparent chaque ancre de la précédente. Boucler sur `indexOf` ferait
+   * cinquante allers-retours pour afficher un écran — et c'est exactement le
+   * genre de boucle qu'on ne voit pas venir : chacun est rapide, leur somme ne
+   * l'est pas.
+   *
+   * Les ancres absentes ne sont pas dans la carte rendue.
+   */
+  abstract indexesOf(revisionIds: readonly string[]): Promise<ReadonlyMap<string, RevisionIndex>>;
 
   /**
    * Inscrit une publication SUR une révision : où elle est partie, et l'issue.

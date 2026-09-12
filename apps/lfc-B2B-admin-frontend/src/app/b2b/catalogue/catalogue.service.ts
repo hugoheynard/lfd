@@ -11,7 +11,7 @@ import { B2B_API_BASE } from '../../api/api-config';
  * ici.
  *
  * Écriture par geste nommé, comme côté serveur — `setPrice` / `alignOnPim` /
- * `setVisibility`. Un `update(sku, patch)` unique aurait été plus court et
+ * `setVisibility` / `setFeatured`. Un `update(sku, patch)` unique aurait été plus court et
  * aurait perdu la seule chose qui compte : ce que l'utilisateur croyait faire.
  */
 @Injectable({ providedIn: 'root' })
@@ -43,6 +43,21 @@ export class CatalogueService {
   async alignOnPim(sku: string): Promise<void> {
     await firstValueFrom(
       this.http.delete<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/price`),
+    );
+  }
+
+  /**
+   * Met l'article en avant dans la boutique, ou l'en retire.
+   *
+   * Le serveur **refuse** de mettre en avant un article masqué : les deux états
+   * ensemble diraient « ne pas le montrer » et « le montrer en premier ».
+   * L'écran désactive donc le geste plutôt que de laisser partir un 409.
+   */
+  async setFeatured(sku: string, featured: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/featured`, {
+        featured,
+      }),
     );
   }
 

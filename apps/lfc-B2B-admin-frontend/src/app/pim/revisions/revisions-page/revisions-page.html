@@ -8,6 +8,36 @@
     <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
   }
 
+  <!--
+    **CE QUI A BOUGÉ DEPUIS LA DERNIÈRE PUBLICATION**, en premier.
+
+    C'est la question qu'on se pose en arrivant : « qu'est-ce qui attend de
+    partir ? ». L'état du catalogue l'annonce en trois nombres — entré, retiré,
+    modifié — et cet écran est le seul endroit où l'on peut voir LESQUELS.
+
+    Le détail se demande, il ne s'affiche pas d'office : il charge un payload
+    par article modifié et interroge le journal produit par produit, là où la
+    liste des ancres ne coûte qu'une requête. Qui vient comparer deux ancres
+    n'a pas à payer ça.
+  -->
+  <fold-card>
+    <fold-page-section title="Depuis la dernière publication" separator>
+      <span sectionSubtitle>
+        Le catalogue tel qu'il est, comparé à la dernière ancre <strong>publiée</strong>. Rien n'est
+        figé par cette lecture&nbsp;: c'est la même mécanique qu'une capture, jouée sans en poser
+        une.
+      </span>
+
+      <!-- Un LIEN, pas un chargement en ligne : un diff de cinquante lignes
+           écraserait la préparation et la comparaison qui suivent, et il a
+           besoin de ses propres filtres. La page qui le porte a une adresse,
+           donc se colle dans une conversation. -->
+      <a foldButton emphasis="outline" routerLink="/pim/revisions/en-attente">
+        Voir ce qui a changé
+      </a>
+    </fold-page-section>
+  </fold-card>
+
   <!-- Le bloc de PRÉPARATION disparaît quand le déploiement ferme la
        publication : une ancre n'existe que pour précéder un envoi. La
        comparaison, elle, reste — un historique se relit toujours. -->
@@ -74,21 +104,113 @@
 
   <fold-card>
     <fold-page-section title="Historique" separator>
-      @if (store.revisions().length === 0) {
-        <p class="rp-said">Aucune révision posée.</p>
-      } @else {
-        <ul class="rp-list">
-          @for (revision of store.revisions(); track revision.id) {
-            <li class="rp-row">
-              <span class="rp-version">{{ revision.reference }}</span>
-              <span class="rp-label">{{ revision.label ?? 'sans nom' }}</span>
-              <span class="rp-meta">{{ revision.articles }} articles</span>
-              <span class="rp-meta">{{ when(revision.takenAt) }}</span>
-              <span class="rp-meta">{{ revision.takenBy }}</span>
-            </li>
+      <!--
+        **Une table, pas une liste.** Six colonnes qui se comparent d'une ligne
+        à l'autre : la référence qu'on cite, le nom qui dit l'intention, la
+        taille de l'ancre, ce qui la sépare de la précédente, quand, et par qui.
+
+        🔴 « Modifications » est la colonne qui manquait. « 97 articles » dit la
+        TAILLE d'une ancre, jamais son intérêt : deux ancres consécutives de 97
+        articles peuvent différer d'une ligne ou de quarante, et rien ne le
+        disait. C'est pourtant la première question devant un historique —
+        laquelle a bougé.
+      -->
+      <fold-data-table
+        caption="Les révisions du catalogue, de la plus récente à la plus ancienne"
+        hover
+        stickyFirst
+        density="compact"
+        mobileLayout="auto-cards"
+        [columns]="columns"
+        [rows]="store.revisions()"
+        [rowKey]="rowKey"
+        [empty]="empty"
+      >
+        <ng-template foldCell="reference" let-row>
+          <span class="rp-version">{{ row.reference }}</span>
+        </ng-template>
+
+        <!--
+          Le nom, et le crayon qui l'ouvre — sur les ancres MUETTES seulement.
+          Une ancre nommée ne se renomme pas : le nom dit avec quelle intention
+          un catalogue est parti chez des clients. Offrir un crayon qui rendrait
+          409 serait une affordance qui ment.
+        -->
+        <ng-template foldCell="label" let-row>
+          @if (naming() === row.reference) {
+            <span class="rp-naming">
+              <fold-input
+                label="Ce que cette révision changeait"
+                hideLabel
+                size="sm"
+                placeholder="hausse de la rentrée…"
+                [value]="draftLabel()"
+                (valueChange)="draftLabel.set($event)"
+              />
+              <button
+                foldButton
+                size="sm"
+                [disabled]="draftLabel().trim() === '' || store.busy()"
+                (click)="confirmName(row.reference)"
+              >
+                Nommer
+              </button>
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                (click)="naming.set(null)"
+              >
+                Annuler
+              </button>
+            </span>
+          } @else if (row.label) {
+            <span class="rp-named">
+              <span class="rp-label">{{ row.label }}</span>
+              @if (row.note) {
+                <!-- La note se lit quand on ouvre, et cet écran EST l'endroit
+                     où l'on ouvre : elle prend sa ligne, sous le nom qu'elle
+                     détaille, en encre secondaire. -->
+                <span class="rp-note">{{ row.note }}</span>
+              }
+            </span>
+          } @else {
+            <!-- 🔴 « sans nom » n'est PAS un blanc : le push a longtemps posé
+                 des ancres anonymes, et le dire est la seule façon de savoir
+                 lesquelles restent à réparer. Rien ne leur invente un nom. -->
+            <span class="rp-unnamed-row">
+              <span class="rp-unnamed">sans nom</span>
+              <fold-button-icon
+                icon="edit"
+                size="sm"
+                [tooltip]="'Nommer la révision ' + row.reference"
+                (clicked)="startNaming(row.reference)"
+              />
+            </span>
           }
-        </ul>
-      }
+        </ng-template>
+
+        <ng-template foldCell="articles" let-row>{{ row.articles }}</ng-template>
+
+        <!-- `null` n'est pas zéro : la plus ancienne n'a rien avant elle, et un
+             « 0 » dirait « rien n'a changé » alors que tout était nouveau. -->
+        <ng-template foldCell="changes" let-row>
+          @if (row.changes === null) {
+            <span class="rp-meta">—</span>
+          } @else {
+            {{ row.changes }}
+          }
+        </ng-template>
+
+        <ng-template foldCell="takenAt" let-row>
+          <span class="rp-meta">{{ when(row.takenAt) }}</span>
+        </ng-template>
+
+        <ng-template foldCell="takenBy" let-row>
+          <span class="rp-meta">{{ row.takenBy }}</span>
+        </ng-template>
+      </fold-data-table>
     </fold-page-section>
   </fold-card>
 </fold-page-layout>

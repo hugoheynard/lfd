@@ -1,0 +1,79 @@
+@if (order(); as order) {
+  <fold-panel-header title="Bon de commande" [subtitle]="order.orderNumber" />
+
+  <fold-panel-body>
+    <!-- Le papier, tel qu'on le coche : une en-tête, une liste, un compte. La
+         feuille n'a ni fond ni ombre — c'est un document, pas une carte. -->
+    <article class="sh-sheet">
+      <header class="sh-head">
+        <p class="sh-customer">{{ customerLabel() }}</p>
+        <p class="sh-reference">{{ order.orderNumber }}</p>
+        <dl class="sh-facts">
+          <div>
+            <dt>Journée</dt>
+            <dd>{{ day() }}</dd>
+          </div>
+          <div>
+            <dt>Acheminement</dt>
+            <dd>{{ fulfillment() }}</dd>
+          </div>
+          <div>
+            <dt>Créneau</dt>
+            <!-- 🔴 Aucune heure inventée : sans tranche demandée on le dit. -->
+            <dd>{{ window() ?? 'Aucune tranche demandée' }}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <table class="sh-lines">
+        <caption class="sh-caption">
+          Articles de la commande
+          {{
+            order.orderNumber
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col" class="sh-col-qty">Qté</th>
+            <th scope="col">Article</th>
+            <th scope="col" class="sh-col-sku">Référence</th>
+            <!-- La case à cocher est le POINT de ce papier : on le tient d'une
+                 main et on coche de l'autre. -->
+            <th scope="col" class="sh-col-tick"><span class="sh-sr">Coché</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of order.lines; track line.sku) {
+            <tr>
+              <td class="sh-qty">{{ line.quantity }}</td>
+              <td>{{ line.productName }}</td>
+              <td class="sh-sku">{{ line.sku }}</td>
+              <td class="sh-tick" aria-hidden="true"></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <p class="sh-total">
+        <strong>{{ totalUnits() }}</strong> pièce{{ totalUnits() > 1 ? 's' : '' }} au total.
+      </p>
+
+      @if (order.note !== '') {
+        <p class="sh-note"><strong>Note</strong> — {{ order.note }}</p>
+      }
+
+      <!-- 🔴 Dit, et pas seulement absent. Quelqu'un qui cherche un total doit
+           savoir qu'il n'y en a pas ici, plutôt que de croire à un oubli. -->
+      <p class="sh-money">Aucun montant&nbsp;: on ne facture pas au comptoir.</p>
+    </article>
+  </fold-panel-body>
+
+  <fold-panel-footer align="between">
+    <button foldButton emphasis="outline" (click)="close()">Fermer</button>
+    <!-- Le document COMPLET, celui que le client a reçu : il porte les prix, et
+         le libellé le dit — on ne tire pas un papier tarifé sans le savoir. -->
+    <button foldButton emphasis="soft" icon="download" [loading]="busy()" (click)="download()">
+      Télécharger le bon tarifé (PDF)
+    </button>
+  </fold-panel-footer>
+}

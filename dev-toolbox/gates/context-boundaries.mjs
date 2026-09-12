@@ -48,6 +48,14 @@ const BLOCK_OF = {
   //   sert par le canal que la production publie (`channels/commerce/`).
   production: "production",
 
+  // ▸ LA REMISE — le transfert de garde, au comptoir comme sur le pas d'une
+  //   porte. Sorti du fournil le 2026-09-10 : sa clé d'identité est la
+  //   COMMANDE, sans journée ni clôture, là où la production est en forme de
+  //   jour. Il déclare `channels/commerce/` (ce que le commerce lui sert) et
+  //   implémente `production/channels/handover/` (ce que le fournil lui
+  //   demande) — le seul bloc du dossier à faire les deux.
+  handover: "handover",
+
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
   //   entre eux. Personne ne l'importe en retour : un contexte qui remonte
@@ -99,11 +107,12 @@ const BLOCK_OF = {
 const ALLOWED = {
   staff: new Set(["platform"]),
   pim: new Set(["staff", "platform"]),
-  b2b: new Set(["staff", "pim", "platform", "production"]),
+  b2b: new Set(["staff", "pim", "platform", "production", "handover"]),
   production: new Set(["staff", "platform"]),
+  handover: new Set(["staff", "platform", "production"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
-  root: new Set(["staff", "pim", "b2b", "platform", "ops", "production"]),
+  root: new Set(["staff", "pim", "b2b", "platform", "ops", "production", "handover"]),
 };
 
 /**
@@ -138,6 +147,20 @@ const PORT_SURFACE = {
   // `production: new Set(["staff", "platform"])` interdit. Un contexte qui
   // publie un port ne doit pas connaître ceux qui le branchent.
   "b2b→production": "production/channels/commerce/",
+  // Le commerce implémente ce que la REMISE déclare (`HandoverSubjectReader`) et
+  // consomme le fait qu'elle publie (`OrderHandedOverEvent`). Deux natures, une
+  // seule surface : un événement qu'un autre bloc consomme fait partie de ce
+  // qui est publié, au même titre qu'un port.
+  "b2b→handover": "handover/channels/commerce/",
+  // 🔴 Le seul port du dossier que la remise CONSOMME. La production déclare
+  // « quelles références ont été attestées depuis ma clôture » ; la remise
+  // l'implémente, donc c'est ELLE qui importe. Le sens de la flèche est celui
+  // de l'IMPORT, pas celui de la donnée — la donnée, elle, remonte vers le
+  // fournil.
+  //
+  // ⚠️ `production → handover` reste INTERDIT : le fournil ne sait pas que la
+  // remise existe, et c'est ce qui l'empêche de se mettre à en dépendre.
+  "handover→production": "production/channels/handover/",
 };
 
 /**

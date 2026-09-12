@@ -213,7 +213,7 @@ arrive.
 ### Déploiement C — la table
 
 `DROP TABLE public.order_cutoffs`, **et `model OrderCutoff` retiré de
-`schema.prisma` dans le même passage** — sinon le schéma reste désaligné et la
+`prisma/schema/public/orders.prisma` dans le même passage** — sinon le schéma reste désaligné et la
 prochaine `migrate dev` proposera de recréer la table.
 
 Irréversible, donc en dernier et seul. Ce qui rend la perte acceptable n'est pas

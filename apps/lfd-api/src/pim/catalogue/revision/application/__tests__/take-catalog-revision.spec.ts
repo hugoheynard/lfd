@@ -42,6 +42,9 @@ const GAGNANTE: RevisionRecord = {
   reference: "R-AAAAAA",
   label: null,
   hash: "peu-importe",
+  // La note est ce qu'on écrit APRÈS coup, en renommant : une révision qu'on
+  // vient de poser n'en a jamais.
+  note: null,
   takenAt: new Date("2026-01-01T09:00:00.000Z"),
   takenBy: "staff_1",
   articles: 0,
@@ -79,6 +82,14 @@ class RacingRepository extends CatalogRevisionRepository {
   }
 
   byReference(): Promise<RevisionRecord | null> {
+    throw new Error("Non utilisé.");
+  }
+
+  rename(): Promise<void> {
+    throw new Error("Non utilisé.");
+  }
+
+  indexesOf(): never {
     throw new Error("Non utilisé.");
   }
 

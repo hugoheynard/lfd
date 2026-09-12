@@ -270,3 +270,54 @@ describe("GET /admin/companies/:id", () => {
     expect(response.status).toBe(404);
   });
 });
+
+/**
+ * Le **portefeuille** et son export, éprouvés bout en bout.
+ *
+ * Ce que rien d'autre ne prouve : que `activatedAt` traverse vraiment la
+ * projection Prisma jusqu'à la vue — le champ existait en base depuis toujours
+ * et n'était pas rendu —, que le compteur de nouveaux clients lit bien cette
+ * date-là, et que le CSV reste muré. Le format du fichier, lui, s'éprouve à part
+ * sur la fonction pure.
+ */
+describe("GET /admin/companies/portfolio", () => {
+  it("sépare les statuts — « 84 clients » tairait ce qui attend un geste", async () => {
+    await createCompany(ctx.prisma, { siret: "81245678900021", status: CompanyStatus.active });
+    await createCompany(ctx.prisma, { siret: "81245678900038", status: CompanyStatus.pending });
+
+    const response = await staff().get("/admin/companies/portfolio").expect(200);
+
+    expect(jsonBody<{ active: number; pending: number }>(response)).toMatchObject({
+      active: 1,
+      pending: 1,
+    });
+  });
+
+  it("ne compte comme nouveau que ce qui a une date d'ACTIVATION", async () => {
+    // Une société créée mais jamais activée n'est pas un client : elle n'a rien
+    // à facturer. Compter sur la création la ferait entrer dans le chiffre.
+    await createCompany(ctx.prisma, { siret: "81245678900021", status: CompanyStatus.pending });
+
+    const response = await staff().get("/admin/companies/portfolio").expect(200);
+
+    expect(jsonBody<{ newlyActive: number }>(response).newlyActive).toBe(0);
+  });
+});
+
+describe("GET /admin/companies/export.csv", () => {
+  it("sert un CSV nommé, et protège le SIRET des tableurs", async () => {
+    await createCompany(ctx.prisma, { siret: "81245678900021" });
+
+    const response = await staff().get("/admin/companies/export.csv").expect(200);
+
+    expect(response.headers["content-type"]).toContain("text/csv");
+    expect(response.headers["content-disposition"]).toContain("comptes-clients.csv");
+    expect(response.text.startsWith("\uFEFF")).toBe(true);
+    // Entre guillemets, sinon « 8,12457E+13 » à l'ouverture.
+    expect(response.text).toContain('"81245678900021"');
+  });
+
+  it("reste muré : un portefeuille client ne sort pas sans jeton staff", async () => {
+    await ctx.http().get("/admin/companies/export.csv").expect(401);
+  });
+});

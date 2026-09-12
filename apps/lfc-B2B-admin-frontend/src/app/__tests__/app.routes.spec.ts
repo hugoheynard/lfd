@@ -45,6 +45,15 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'colisage/:reference': 'b2b_orders:write',
   'retrait/:token': 'b2b_orders:write',
 
+  // COMPTABILITÉ — l'entité qui ÉMET : notre ICS, notre compte créancier. Le
+  // droit lui est propre et n'est PAS `b2b_settings` : un commercial a
+  // `b2b_settings: "read"`, et cet écran décide de la destination des virements.
+  // La coquille porte le mur ; la vue hérite, comme dans l'espace B2B.
+  comptabilite: 'b2b_accounting:read',
+  'comptabilite/tableau-de-bord': null,
+  'comptabilite/entites-juridiques': null,
+  'comptabilite/entites-juridiques/:id': null,
+
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,
@@ -108,6 +117,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/tarification/frise': null,
   'b2b/tarification/simulateur': null,
 
+  // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
+  // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
+  // ne peut donc pas hériter, sinon un lecteur du catalogue armerait des outils
+  // d'écriture et récolterait des 403 — ce que la table existe pour empêcher.
+  'outils-agent': 'pim_catalog:write',
+
   pim: 'pim_catalog:read',
   // La SEULE vue du PIM à ne pas hériter : poser un taux de TVA est une
   // décision comptable, et `catalog:write` est réservé à l'admin. La ressource
@@ -118,6 +133,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/regles-comptables': 'pim_tax:read',
   'pim/catalogue': null,
   'pim/revisions': null,
+  // Le diff vivant : même mur que les ancres elles-mêmes — c'est une LECTURE du
+  // catalogue, elle ne pose rien et ne publie rien.
+  'pim/revisions/en-attente': null,
   'pim/collections': null,
   'pim/publication': null,
   // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle
@@ -140,7 +158,16 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,
   'pim/produits': null,
+  // LA PRODUCTION est un ESPACE : la coquille porte le garde, ses deux vues en
+  // héritent. C'est la même donnée — le lot du jour et le mur qui arrive —, et
+  // lui poser deux fois le même droit serait une condition toujours vraie.
   production: 'b2b_orders:read',
+  'production/journee': null,
+  'production/previsionnel': null,
+  // La file du comptoir : la MÊME commande, vue au moment où on la remet. En
+  // lecture — attester une remise passe par `retrait/:token`, qui exige
+  // l'écriture.
+  remises: 'b2b_orders:read',
   livraison: 'b2b_orders:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,

@@ -1,7 +1,7 @@
 import { CommandBus, EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { OrderHandedOverEvent } from "../../../../production/channels/commerce/index.js";
+import { OrderHandedOverEvent } from "../../../../handover/channels/commerce/index.js";
 import { MarkOrderFulfilledCommand } from "../commands/mark-order-fulfilled.command.js";
 
 /**
@@ -13,7 +13,7 @@ import { MarkOrderFulfilledCommand } from "../commands/mark-order-fulfilled.comm
  * le commerce ne voit pas.
  *
  * ⚠️ Le nom de l'événement écouté est celui de la **production**
- * (`production/channels/commerce`), pas celui que le commerce republie ensuite.
+ * (`handover/channels/commerce`), pas celui que le commerce republie ensuite.
  * Les deux s'appellent pareil parce qu'il n'y a rien à distinguer entre « remise
  * constatée » et « commande remise » — le jour où il y aurait quelque chose, ce
  * sera le signe qu'ils doivent se séparer.

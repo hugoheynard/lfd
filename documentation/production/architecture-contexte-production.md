@@ -6,7 +6,7 @@ tables (schéma Postgres `production`), et les deux pièces qu'elle produit — 
 feuille d'atelier d'une commande, le compte à produire d'une journée.
 
 ⚠️ **Rien de tout cela n'existe encore.** `src/` ne porte pas de dossier
-`production`, et `schema.prisma` déclare quatre schémas (`public`, `growth`,
+`production`, et `prisma/schema/datasource.prisma` déclare quatre schémas (`public`, `growth`,
 `ops`, `pim`), pas un cinquième. Ce qui suit est la cible ; l'état du jour est
 décrit dès la première section, et il n'est pas flatteur.
 

@@ -310,3 +310,17 @@ export class TermsNotGrantedError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Le rappel de retrait est refusé** — et la phrase dit pourquoi.
+ *
+ * `BusinessError` (409) et non une validation : la demande est bien formée,
+ * c'est l'état du monde qui s'y oppose. Le message part tel quel au back-office,
+ * où il est lu par quelqu'un qui n'a pas le code sous les yeux — il nomme donc
+ * le cas réel, jamais un code interne.
+ */
+export class ReminderRefusedError extends BusinessError {
+  constructor(reason: string) {
+    super("orders.handover.reminder_refused", reason);
+  }
+}

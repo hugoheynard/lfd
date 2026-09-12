@@ -83,3 +83,11 @@
   margin: var(--fold-space-xs) 0 0;
   padding-inline-start: var(--fold-space-lg);
 }
+
+/* Le champ d’intention respire au-dessus du bouton qui l’expédie : collé, il
+   se lirait comme une option de plus. */
+.intent {
+  display: block;
+  margin-block-start: var(--fold-space-md);
+  max-inline-size: 34rem;
+}

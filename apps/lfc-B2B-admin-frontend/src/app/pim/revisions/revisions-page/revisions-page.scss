@@ -56,3 +56,50 @@
 .rp-meta {
   color: var(--fold-color-text-secondary);
 }
+
+/* Le nom en cours de saisie tient sur la ligne qu’il répare : ouvrir un écran
+   pour un champ ferait perdre de vue l’ancre dont il est question. */
+.rp-naming {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+/* « sans nom » se DIT, en retrait : c’est un fait, pas un blanc d’affichage. */
+.rp-unnamed {
+  color: var(--fold-color-text-muted);
+  font-style: italic;
+}
+
+/* La note détaille le nom : elle prend toute la largeur de la ligne, sous lui,
+   et en encre secondaire — c’est un complément, pas une seconde identité. */
+.rp-note {
+  grid-column: 1 / -1;
+  margin: var(--fold-space-xs) 0 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  max-inline-size: 70ch;
+}
+
+/* Le nom et sa note, empilés dans la même cellule : la note DÉTAILLE le nom,
+   elle ne vit pas à côté. */
+.rp-named {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* La table pose `white-space: nowrap` sur ses cellules — juste pour une date ou
+   un compte, faux pour une note. */
+.rp-named,
+.rp-unnamed-row,
+.rp-naming {
+  white-space: normal;
+}
+
+.rp-unnamed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}

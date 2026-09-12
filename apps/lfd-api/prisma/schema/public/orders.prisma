@@ -1,0 +1,640 @@
+/// Mode d'**acheminement** d'une commande. `delivery` = livraison à une adresse ;
+/// `pickup` = retrait au point de retrait (labo), fallback tant que la livraison
+/// n'existe pas. Cf. `documentation/b2b/architecture-activation-configuration-b2b.md`.
+enum FulfillmentMethod {
+  delivery
+  pickup
+
+  @@schema("public")
+}
+
+/// Mode d'un **ajustement de panier** (remise d'un point de retrait, frais d'une
+/// zone de livraison) : `percent` → la valeur est en points de base (2000 = 20 %) ;
+/// `amount` → la valeur est en centimes (2000 = 20 €).
+enum CartAdjustmentMode {
+  percent
+  amount
+
+  @@schema("public")
+}
+
+/// Cycle de vie d'une commande.
+enum OrderStatus {
+  draft
+  placed
+  confirmed
+  in_production
+  /// Fabrication finie, en attente de remise. Écrit par l'ATELIER, au scan du
+  /// QR de colisage de la fiche. Cf. documentation/order/architecture-cycle-de-vie-commande.md
+  ready
+  fulfilled
+  cancelled
+
+  @@schema("public")
+}
+
+/// État du **règlement** d'une commande. Découplé de `OrderStatus` (l'avancement
+/// de production) : une commande peut être `placed` et déjà `paid`, ou `placed`
+/// et `not_required` (facturée sur terme). Décidé par le `paymentTerm` de la
+/// société : `per_order` → `pending` puis `paid` (carte Stripe) ; les termes
+/// différés (`monthly`) → `not_required` (encaissée hors ligne).
+enum PaymentStatus {
+  not_required
+  pending
+  paid
+  failed
+  refunded
+
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Order — une commande, tenant-scoped
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique @map("order_number") // référence humaine
+
+  // Tenancy. `companyId` est OPTIONNEL : une commande « zéro friction » n'appartient
+  // qu'au client connecté (`placedByUserId` = LE mur sans entreprise). Elle se
+  // rattache à une société plus tard (rapatriement — cf. doc flux commande).
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  // AU NOM DE QUI la commande est passée — toujours un client. Quand l'équipe
+  // la saisit au téléphone, c'est le contact du compte qui est porté ici : la
+  // commande reste celle du client, et elle apparaît dans « Mes commandes ».
+  placedByUserId String @map("placed_by_user_id")
+  placedBy       User   @relation(fields: [placedByUserId], references: [id])
+
+  // QUI L'A SAISIE chez LFC, quand ce n'est pas le client lui-même. Nul = le
+  // client a commandé seul.
+  //
+  // Un `StaffUser.id`, mais **pas** une clé étrangère : une commande est une
+  // pièce comptable, elle ne doit ni disparaître ni bloquer le jour où on retire
+  // du personnel de l'annuaire. Et un identifiant plutôt qu'un instantané du
+  // nom — un annuaire corrigé doit corriger l'affichage, pas laisser un ancien
+  // nom figé sur la commande (le raisonnement inverse de `handedOverBy`, qui
+  // fige le `sub` parce que c'est une ATTESTATION, pas un affichage).
+  //
+  // Ce n'est pas une nature de commande, c'est une porte d'entrée : avec
+  // `fromSubscriptionId`, ces deux colonnes produisent l'`origin` des vues de
+  // lecture (self_service | back_office | recurring). Un `kind` discriminé
+  // aurait dupliqué la même information dans une troisième forme.
+  placedByStaffId String? @map("placed_by_staff_id")
+
+  /// **De quelle version du catalogue venaient ces articles.**
+  ///
+  /// Répond à « d'où venait cet article », JAMAIS à « quel prix » : celui-là est
+  /// figé sur `OrderLine`, avec sa TVA, son nom et sa trace de résolution. Une
+  /// version dit ce que le PIM avait livré et ce que la plateforme avait accepté
+  /// — pas ce qui a été facturé.
+  ///
+  /// `NULL` = **on ne sait pas**, et c'est la vérité : toutes les commandes
+  /// antérieures à la réception du catalogue en sont là, comme celles passées
+  /// avant la première validation. Le sens net d'un `NULL`, comme
+  /// `pricingSteps` sur la ligne.
+  catalogVersionId String?         @map("catalog_version_id")
+  catalogVersion   CatalogVersion? @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
+
+  status OrderStatus @default(placed)
+
+  // Alimente le plan de prod (« à produire pour demain »).
+  requestedDeliveryDate DateTime? @map("requested_delivery_date") @db.Date
+
+  // Acheminement. `delivery` = **coursier** : `deliveryZoneId` (zone tarifée) +
+  // `deliveryAddressSnapshot` (adresse libre FIGÉE, comme les prix). `pickup` =
+  // **retrait** : `pickupAddress` (snapshot des champs postaux du labo). La relation
+  // `deliveryAddress` (adresse d'entreprise) reste pour l'héritage / le rapatriement.
+  fulfillmentMethod FulfillmentMethod @default(delivery) @map("fulfillment_method")
+
+  deliveryZoneId String? @map("delivery_zone_id")
+
+  deliveryAddressId String?  @map("delivery_address_id")
+  deliveryAddress   Address? @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
+
+  // Adresse de livraison LIBRE figée (coursier sans carnet d'entreprise).
+  deliveryAddressSnapshot Json? @map("delivery_address_snapshot")
+
+  pickupAddress Json? @map("pickup_address")
+
+  /// **La surtaxe de commande tardive**, quand une dérogation a laissé passer.
+  ///
+  /// `0` = aucune — le cas de l'immense majorité des commandes. Figée comme la
+  /// remise : changer le réglage demain ne doit pas réécrire ce qu'une commande
+  /// partie disait.
+  lateFeeCents      Int   @default(0) @map("late_fee_cents")
+  /// L'ajustement (%, ou € fixe) qui a PRODUIT `lateFeeCents`, et le taux qui l'a
+  /// taxée. Un montant sans son taux ne se justifie pas devant un comptable.
+  lateFeeAdjustment Json? @map("late_fee_adjustment")
+
+  // L'acheminement CONVENU, figé à la commande, chaque valeur avec sa provenance
+  // (défaut du réglage / override) — forme = `OrderFulfillment` de
+  // `@lfd/contracts`. Figé comme les prix : le contact d'une adresse, ses heures
+  // ou son exigence de signature peuvent changer demain, et un bon déjà imprimé
+  // ne doit pas se mettre à dire autre chose que le papier parti en tournée.
+  // Ce qui bouge après la commande passe par un AVENANT.
+  fulfillment Json?
+
+  // Argent en centimes (snapshot au moment de la commande). Prix marchandises
+  // **HT** ; `total` est le **TTC** encaissé. Remise = point de retrait ; frais
+  // = zone ; surtaxe = rattrapage d'une commande tardive ; TVA par taux.
+  //
+  // 🔴 **La formule qui était écrite ici est partie, plutôt que d'être
+  // corrigée** (2026-09-06). Elle disait `max(0, subtotal − discount) +
+  // deliveryFee + vat` — et il lui manquait `lateFee`, ajouté en septembre sans
+  // que personne ne repasse ici. Une formule recopiée dans un commentaire est
+  // une troisième définition du TTC : il y en avait deux, `P4` les a ramenées à
+  // une, et celle-ci les aurait fait remonter à deux.
+  //
+  // La définition vit dans `ventilateVat` (`@lfd/money`), et nulle part
+  // ailleurs. Pour ajouter un terme à ce panier :
+  // `documentation/pricing/ajouter-un-terme-au-panier.md`.
+  subtotalCents         Int    @map("subtotal_cents")
+  discountCents         Int    @default(0) @map("discount_cents")
+  // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
+  // prix : sans lui un document ne peut nommer la remise, seulement la chiffrer.
+  discountAdjustment    Json?  @map("discount_adjustment")
+  deliveryFeeCents      Int    @default(0) @map("delivery_fee_cents")
+  /// L'ajustement (%, ou € fixe) de la ZONE qui a produit `deliveryFeeCents`,
+  /// figé comme la remise et la surtaxe. C'était le dernier terme du panier à
+  /// n'avoir que son montant : `delivery_zones.fee_value` est mutable, donc une
+  /// facture ne pouvait pas prouver quel forfait avait été appliqué ce jour-là.
+  ///
+  /// `NULL` = retrait (aucun frais) ou commande antérieure au 2026-09-09 ; les
+  /// deux se distinguent par `delivery_fee_cents`, nul dans le premier cas.
+  deliveryFeeAdjustment Json?  @map("delivery_fee_adjustment")
+  vatCents              Int    @default(0) @map("vat_cents")
+  /// La TVA **par taux**, figée à la passation — `[{ rate, amountCents }]`.
+  ///
+  /// `vatCents` est le total ; celle-ci en est le DÉTAIL, et elle est figée pour
+  /// la même raison que le prix de la ligne : le bon de commande est archivé, et
+  /// un détail recalculé plus tard pourrait ne plus correspondre à ce qui a été
+  /// facturé. Produite par `ventilateVat`, qui la calculait déjà et la jetait.
+  ///
+  /// `null` = commande antérieure au 2026-09-07. Non rétro-remplie volontairement :
+  /// le bon n'affiche alors qu'une ligne « dont TVA », ce qui est vrai.
+  vatShares             Json?  @map("vat_shares")
+  totalCents            Int    @map("total_cents")
+  currency              String @default("EUR")
+
+  // Règlement. `paymentStatus` est fixé à la passation d'après le terme de la
+  // société (cf. enum PaymentStatus). `stripePaymentIntentId` relie la commande
+  // à l'intention de paiement Stripe (per_order) — clé de rapprochement du
+  // webhook, `@unique` pour l'idempotence. `paidAt` = horodatage d'encaissement.
+  paymentStatus         PaymentStatus @default(not_required) @map("payment_status")
+  stripePaymentIntentId String?       @unique @map("stripe_payment_intent_id")
+  paidAt                DateTime?     @map("paid_at")
+
+  note String @default("")
+
+  // Origine récurrente : l'abonnement qui a produit cette commande (« récurrent »)
+  // et l'écart vs son gabarit pour cette échéance ({ added, removed } — pills +/−).
+  // Nuls tant que le planificateur ne génère pas de commandes depuis un abonnement.
+  fromSubscriptionId String? @map("from_subscription_id")
+  recurringDeltas    Json?   @map("recurring_deltas")
+
+  // Le PLAN DU SOIR a absorbé la commande : elle est entrée dans le compte à
+  // produire. Écrit d'un coup pour toute une journée de service, à la clôture —
+  // personne ne confirme commande par commande, et la colonne ne porte donc
+  // aucun auteur : ce n'est pas un acte constaté, c'est une journée qui bascule.
+  confirmedAt DateTime? @map("confirmed_at")
+
+  // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
+  // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en
+  // clair sur la même feuille. Le scanner est donc sans risque : il ne porte
+  // rien que le papier ne dise déjà, et la porte qu'il ouvre exige une session
+  // staff. C'est la différence avec le jeton ci-dessous.
+  readyAt DateTime? @map("ready_at")
+  readyBy String?   @map("ready_by")
+
+  // Remise en main propre. `handoverToken` est un secret ALÉATOIRE, pas le
+  // numéro de commande : celui-ci est imprimé sur le bon, donc public, donc sans
+  // valeur de preuve. Émis à la passation pour les DEUX acheminements.
+  // `@unique` = c'est la clé de lecture du scan.
+  //
+  // ⚠️ Ce commentaire disait « pour les seules commandes `pickup` » jusqu'au
+  // 2026-09-10, et c'était faux depuis le 2026-09-07 : `issuesHandoverToken()` a
+  // perdu son paramètre et rend `true` sans condition, parce qu'en livraison le
+  // destinataire montre le code de son courriel et le coursier scanne.
+  //
+  // ⚠️ Il disait aussi que les deux colonnes ci-dessous « SONT l'attestation ».
+  // Elles ne le sont plus : l'attestation vit dans `production.order_handover`
+  // depuis le 2026-09-07, et ces colonnes en sont le SNAPSHOT — le commerce
+  // recopie ce que le fournil lui annonce, il ne le lui rend jamais. Les lire
+  // comme la source rouvrirait les deux vérités que la table a fermées.
+  //
+  // Le `sub` staff y est figé : un annuaire réécrit ne doit pas réécrire une
+  // preuve, et le `sub` reste résolvable même après un changement de nom.
+  handoverToken String?   @unique @map("handover_token")
+  handedOverAt  DateTime? @map("handed_over_at")
+  handedOverBy  String?   @map("handed_over_by")
+
+  /// COMMENT la remise a été constatée : `scan` (les deux parties étaient là) ou
+  /// `manual` (le scan était impossible, l'équipe a saisi). Les deux ne se
+  /// confondent pas — sans cette distinction, quelqu'un finirait par imprimer le
+  /// code sur le colis « pour les livraisons difficiles », et un coursier
+  /// scannerait son propre carton.
+  handedOverVia String? @map("handed_over_via")
+
+  createdAt DateTime @default(now()) @map("created_at") // = passée le
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lines OrderLine[]
+
+  @@index([companyId])
+  @@index([placedByUserId])
+  @@index([placedByStaffId])
+  @@index([requestedDeliveryDate])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([fromSubscriptionId])
+  @@map("orders")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OrderLine — réfère le SKU du PIM (cross-context), snapshot prix/nom/TVA
+// ─────────────────────────────────────────────────────────────────────────────
+
+model OrderLine {
+  id String @id @default(cuid())
+
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Référence au catalogue PIM. String, PAS une FK (autre db / bounded context).
+  sku String
+
+  // Snapshots au moment de la commande : le prix/nom/TVA du PIM peut changer,
+  // la commande garde ce qu'elle a facturé.
+  productNameSnapshot String  @map("product_name_snapshot")
+  /// Prix unitaire HT en **millicentimes** (10⁻⁵ €) — le seul nombre de la
+  /// ligne qu'une quantité multiplie, donc le seul qui ait besoin de
+  /// décimales. `line_total_cents` en découle par un arrondi UNIQUE.
+  unitPriceMillicents Int     @map("unit_price_millicents")
+  vatRate             Decimal @default(0) @map("vat_rate") @db.Decimal(5, 2) // %, ex. 5.50
+
+  quantity       Int
+  lineTotalCents Int @map("line_total_cents")
+
+  /// **La trace de résolution**, figée à la passation — cf.
+  /// `documentation/pricing/architecture-resolution-de-prix.md`.
+  ///
+  /// Elle répond à « pourquoi ce prix ? » six mois plus tard, quand les règles
+  /// qui l'ont produit peuvent avoir été retirées. C'est un fait clos, comme le
+  /// prix : on ne la recalcule jamais, on la relit.
+  ///
+  /// `NULL` = commande passée **avant** que la trace n'existe. Ce n'est PAS la
+  /// même chose qu'une trace vide : `steps: []` affirme « aucun étage n'a joué »,
+  /// `NULL` avoue « on ne sait pas ». Un défaut à `[]` aurait transformé une
+  /// ignorance en affirmation, sur les seules commandes qu'on ne peut plus
+  /// vérifier.
+  basePriceMillicents  Int?     @map("base_price_millicents")
+  pricingSteps         Json?    @map("pricing_steps")
+  /// Quel étage de plancher a mordu, et sur quelles preuves — figé avec le prix.
+  /// C'est ce qui rend le plancher DYNAMIQUE tenable : sans la mesure consignée,
+  /// un prix qui dépend de l'historique cesse d'être explicable dès que
+  /// l'historique bouge. Ne se relit jamais.
+  pricingFloor         Json?    @map("pricing_floor")
+  /// Le plancher a-t-il relevé ce prix ? Consigné plutôt qu'avalé : un prix
+  /// relevé est un prix dont une règle n'a pas produit son effet.
+  pricingFloored       Boolean? @map("pricing_floored")
+  /// La chaîne est-elle passée SOUS ZÉRO, et le prix ramené à zéro ? Même
+  /// raison que `pricingFloored` : un prix qu'aucune règle n'a produit tel quel.
+  ///
+  /// `NULL` = ligne écrite **avant le 2026-09-09**, quand la colonne n'existait
+  /// pas. Ce n'est pas `false` : une ligne ramenée à zéro PUIS relevée par un
+  /// plancher pouvait s'écrire sans que rien ne le consigne. La distinction est
+  /// la même que celle de `base_price_millicents` — « on ne sait pas » n'est pas
+  /// « ça n'est pas arrivé ».
+  pricingClampedToZero Boolean? @map("pricing_clamped_to_zero")
+
+  /// L'engagement de volume qui a décidé du palier, et le CUMUL mesuré à cet
+  /// instant : `{ id, promisedQuantity, cumulativeQuantity }`.
+  ///
+  /// Figé pour la même raison que la décision de plancher : un prix qui dépend
+  /// de l'historique cesse d'être explicable dès que l'historique bouge. Ne se
+  /// relit jamais, ne se recalcule jamais. `NULL` = aucun engagement ne couvrait
+  /// cette ligne, le palier s'est joué sur la quantité de la commande.
+  pricingCommitment Json? @map("pricing_commitment")
+
+  /// **Ce que le moteur a regardé et n'a pas appliqué**, avec la raison —
+  /// `[{ stage, ruleId, label, scope, cause }]`.
+  ///
+  /// C'est la moitié de « pourquoi ce prix » que rien ne gardait : une règle
+  /// sans effet ne laissait aucune trace, et le service client ne pouvait pas
+  /// distinguer « elle a expiré » de « une autre l'a battue » de « votre tarif
+  /// négocié la scelle » (R25, 2026-09-09).
+  ///
+  /// 🔴 **Trois états, et c'est la raison d'être de la colonne.** `NULL` = ligne
+  /// écrite avant ce lot, on ne consignait pas ; `[]` **affirme** que le moteur
+  /// n'a écarté personne ; une valeur dit qui, et pourquoi. Un tableau ne sait
+  /// pas avouer une ignorance — c'est pourquoi ces faits ne pouvaient pas
+  /// voyager dans `pricing_steps`.
+  ///
+  /// À part de `pricing_steps`, et ce n'est pas un rangement : `hasPriced`
+  /// interroge ce tableau-là en containment jsonb pour savoir si une règle **a
+  /// facturé**, et les clés en plus ne la gênent pas. Une règle seulement
+  /// regardée y serait passée pour une règle qui a facturé, et le staff se
+  /// serait vu refuser la repose d'une règle qui n'a jamais produit un centime.
+  ///
+  /// Le **libellé** est figé avec l'identifiant : une règle se renomme
+  /// (`RenamePriceRuleCommand`), donc le nom d'aujourd'hui n'est pas forcément
+  /// celui qui a facturé.
+  pricingRejected Json? @map("pricing_rejected")
+
+  /// **Ce qui était déclaré au moment de commander** — codes GS1 ET mentions
+  /// d'étiquette, plus l'aveu que la liste a pu être amputée.
+  ///
+  /// Figé pour la même raison que le prix, et c'était la seule chose que la
+  /// ligne ne figeait pas : un client commandait une brioche déclarée sans
+  /// fruits à coque, une livraison suivante corrigeait la déclaration, et plus
+  /// rien ne disait sous quelle déclaration la commande avait été passée. Sur
+  /// réclamation, six mois plus tard, la réponse était un blanc.
+  ///
+  /// Les CODES disent ce qui est vrai, les LIBELLÉS ce qui a été dit au client.
+  /// Ne figer que les premiers reviendrait à relire une commande de 2026 avec le
+  /// référentiel de 2029 : un libellé se corrige, et un code sans obligation UE
+  /// disparaît de la projection sans bruit.
+  ///
+  /// ⚠️ DEUX niveaux d'absence, et les confondre serait le pire de ce dépôt.
+  /// `NULL` ici = commande passée **avant** que ce champ existe — on ne sait
+  /// pas. À l'intérieur, `codes: null` = aucune fiche réglementaire, `codes: []`
+  /// = fiche déclarée **sans allergène**. Un défaut à `[]` transformerait une
+  /// ignorance en affirmation, sur les seules commandes qu'on ne peut plus
+  /// vérifier — et l'affirmation fabriquée serait « sans allergène ».
+  allergens Json? @map("allergens")
+
+  // Un SKU n'apparaît qu'UNE fois par commande. `place-order` fusionne déjà les
+  // quantités du panier ; la contrainte rend la règle structurelle plutôt que
+  // conventionnelle. C'est aussi ce qui rend une moyenne par SKU calculable sans
+  // question : deux lignes du même produit dans une commande, et « la quantité
+  // commandée » n'aurait plus de définition unique.
+  @@unique([orderId, sku])
+  @@index([orderId])
+  @@index([sku]) // agrégation par SKU pour le plan de prod
+  @@map("order_lines")
+  @@schema("public")
+}
+
+/// **Heure limite de commande** — une RÈGLE par ligne, jamais une colonne de
+/// réglage. Ouvrir un second labo ou décaler le dimanche doit être de la saisie,
+/// pas une migration.
+///
+/// `pickupAddressId` null = règle par défaut de la plateforme ; `weekday` null =
+/// tous les jours. La plus spécifique gagne (`resolveOrderCutoff`, côté contrat).
+/// La limite se compte en `daysBefore` + `time` depuis la date d'ACHEMINEMENT
+/// demandée : « 18 h » seul serait ambigu.
+/// **La dérogation d'heure limite** — l'autorisation de passer une commande
+/// arrivée après la limite, dans la fenêtre de rattrapage.
+///
+/// Elle vise UN client et UNE journée d'acheminement. Pas « ce client est
+/// dispensé » : une dispense permanente est un réglage, et elle doit se voir
+/// comme tel.
+///
+/// 🔴 **Aucune heure, aucun instant d'expiration**, et c'est structurel : sa
+/// borne est la **grâce**, que la garde est seule à connaître — elle ne consulte
+/// une dérogation que dans cet état. Une dérogation ne peut donc jamais ouvrir
+/// une journée close, quoi qu'elle porte. La borne n'est pas vérifiée, elle est
+/// inexprimable.
+///
+/// `grantedByStaffId` est un `StaffUser.id` et **pas une clé étrangère** : une
+/// décision ne disparaît pas parce qu'on retire quelqu'un de l'annuaire — même
+/// raisonnement que `Order.placedByStaffId`.
+/// **La surtaxe de commande tardive** — ce que coûte une dérogation.
+///
+/// Une seule ligne, et c'est voulu : le coût couvert est la reprise d'une
+/// production close, un coût FIXE de la maison. Le faire varier par comptoir ou
+/// par règle rouvrirait la question à chaque panier mixte — plusieurs lignes,
+/// plusieurs limites, donc plusieurs surtaxes candidates et aucune raison de
+/// choisir. `order_late_fee_singleton` (SQL) tient la ligne unique.
+///
+/// **Absente = aucune surtaxe.** Une dérogation reste alors gratuite, et c'est
+/// un état valable : la maison peut vouloir rattraper sans facturer.
+///
+/// La forme est celle des deux autres ajustements de panier — `DeliveryZone.fee`
+/// et `PickupAddress.discount` : même `CartAdjustmentMode`, même unité. Ce n'est
+/// pas un prix d'article et ça n'entre pas dans `PriceRule` : les étages
+/// tarifaires répondent à « ce que CET article vaut pour CE client », la
+/// surtaxe à « comment cette commande a été passée ».
+model OrderLateFee {
+  /// Toujours `singleton` — tenu par un CHECK, pas par une convention de lecture.
+  id String @id
+
+  mode  CartAdjustmentMode
+  value Int
+
+  /// **Le taux appliqué à la surtaxe**, en %, choisi parmi ceux du référentiel.
+  ///
+  /// Un pourcentage et non une référence au taux du PIM : `order_late_fee` est en
+  /// schéma `public`, `VatRate` en schéma `pim`, et une clé étrangère y est
+  /// interdite — le commerce ne détient jamais l'identité d'un taux, seulement
+  /// des valeurs.
+  ///
+  /// ⚠️ Ce commentaire invoquait `CatalogItem.vatRatePercent` comme précédent
+  /// « pour la même raison ». La forme est la même, la garantie ne l'est pas :
+  /// celui de l'article est **recalculé par le fil** à chaque projection, donc
+  /// il suit le référentiel. Celui-ci est recopié une fois et rien ne le
+  /// rafraîchit — un taux re-valué au PIM laisse la surtaxe derrière, en
+  /// silence. Assumé, et décrit dans
+  /// `documentation/order/architecture-heure-limite-de-commande.md` §8.
+  ///
+  /// **Sans valeur par défaut.** Inventer 20 % ou 5,5 % facturerait un taux que
+  /// personne n'a décidé, sur toutes les commandes tardives et rétroactivement.
+  /// Le réglage est donc incomplet tant qu'il n'est pas choisi.
+  vatRatePercent Decimal @map("vat_rate_percent") @db.Decimal(5, 2)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@map("order_late_fee")
+  @@schema("public")
+}
+
+/// **Une clé de passation déjà servie** — pour qu'un double clic ne fasse pas
+/// deux commandes.
+///
+/// `POST /orders` n'avait ni clé d'idempotence, ni clé naturelle, ni
+/// déduplication : un double clic, un rejeu réseau ou un retour arrière du
+/// navigateur créait deux commandes ET deux intentions Stripe. La fenêtre était
+/// la durée de l'appel — long, puisqu'il ré-résout les prix, lit l'heure limite
+/// et attend le prestataire.
+///
+/// Le plan : `documentation/order/plan-idempotence-de-passation.md`.
+model OrderIdempotency {
+  id String @id @default(cuid())
+
+  /// AU NOM DE QUI la clé est posée, avec sa clé étrangère.
+  ///
+  /// Le mur de l'idempotence : une clé n'est jamais partagée entre deux
+  /// personnes, sinon deviner celle d'un autre suffirait à lire sa commande.
+  ///
+  /// La contrainte est possible ici parce que cette table ne sert QUE la porte
+  /// client. La porte staff est hors périmètre — y mêler des `StaffUser.id`,
+  /// qui viennent d'un annuaire délibérément sans clé étrangère, aurait donné
+  /// une colonne à deux populations qu'aucun `SELECT` ne sait plus distinguer.
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// La clé, un UUID que le contrat impose (`placeOrderPayloadSchema`). Bornée
+  /// par son type : un index btree refuse une entrée au-delà de 2704 octets, et
+  /// un en-tête HTTP libre en accepte seize mille.
+  key String
+
+  /// **L'empreinte du panier demandé.**
+  ///
+  /// Sans elle, une clé rejouée avec un panier CORRIGÉ rendrait l'ancienne
+  /// commande, et le front viderait la correction en silence. Une empreinte qui
+  /// diffère est un refus (422), pas une répétition.
+  requestFingerprint String @map("request_fingerprint")
+
+  /// La commande qui en est sortie, ou `NULL` — la clé est réclamée, l'appel est
+  /// en vol. Écrite **dans la même transaction** que la commande : il n'existe
+  /// pas d'état « la commande existe, la clé n'est pas résolue ».
+  ///
+  /// Pas de clé étrangère : la ligne naît avant la commande, et une contrainte
+  /// qu'on ne peut pas honorer au moment où l'on écrit n'en est pas une.
+  orderId String? @map("order_id")
+
+  /// Quand la clé a été réclamée. C'est le **bail** : une clé réclamée et non
+  /// résolue depuis plus de deux minutes est réputée abandonnée — un crash, un
+  /// déploiement — et la tentative suivante la reprend. Sûr précisément parce
+  /// que rien n'a pu être écrit sous une clé non résolue.
+  claimedAt DateTime @default(now()) @map("claimed_at")
+
+  @@unique([userId, key])
+  @@map("order_idempotency")
+  @@schema("public")
+}
+
+model OrderCutoffWaiver {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  /// La journée d'acheminement visée. Une date, jamais un instant.
+  fulfillmentDate DateTime @map("fulfillment_date") @db.Date
+
+  /// Pourquoi. Obligatoire — une exception sans raison écrite devient la règle.
+  reason String
+
+  grantedByStaffId String   @map("granted_by_staff_id")
+  grantedAt        DateTime @default(now()) @map("granted_at")
+
+  /// La commande qui s'en est servie, ou `NULL` — elle attend encore.
+  /// **Consommée, pas supprimée** : celle qui a servi doit pouvoir être reliée à
+  /// ce qu'elle a laissé passer, et c'est de là que viendra la surtaxe.
+  usedByOrderId String?   @map("used_by_order_id")
+  usedAt        DateTime? @map("used_at")
+
+  /// ⚠️ L'unicité réelle n'est PAS ici : `@@unique` ne sait pas dire « une seule
+  /// **non consommée** ». C'est l'index partiel `order_cutoff_waiver_one_open`,
+  /// posé en SQL, qui interdit deux autorisations ouvertes pour le même client
+  /// le même jour — sans quoi « la » dérogation deviendrait une question de tri.
+  @@index([companyId, fulfillmentDate])
+  @@map("order_cutoff_waiver")
+  @@schema("public")
+}
+
+model OrderCutoff {
+  id String @id @default(cuid())
+
+  pickupAddressId String? @map("pickup_address_id")
+
+  /// `mon`…`sun` — le même {@link Weekday} que les créneaux de livraison. Deux
+  /// représentations du jour dans un seul contrat finiraient décalées d'une unité.
+  /// Null = tous les jours.
+  weekday String?
+
+  daysBefore Int    @default(1) @map("days_before")
+  /// `HH:MM` en heure LOCALE du laboratoire, pas un instant UTC.
+  time       String
+
+  /// **Le rattrapage accordé après la limite**, en minutes. `0` = aucun.
+  ///
+  /// Une durée et non une seconde heure : `limite + grâce` suit chaque rang de
+  /// l'échelle, là où une heure absolue aurait dû être ressaisie sur chacun — et
+  /// se serait retrouvée, un jour, avant sa propre limite.
+  ///
+  /// Ce qu'elle ouvre n'est pas le libre-service : dans cette fenêtre la
+  /// commande est refusée au client avec un autre message, celui qui dit
+  /// d'appeler. C'est la dérogation (à venir) qui s'en servira.
+  graceMinutes Int @default(0) @map("grace_minutes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Une seule règle par couple (point, jour) : deux règles concurrentes rendraient
+  // la résolution dépendante de l'ordre de lecture. Postgres traite chaque NULL
+  // comme distinct, d'où les index partiels ci-dessous pour couvrir les défauts.
+  @@unique([pickupAddressId, weekday])
+  @@index([pickupAddressId])
+  @@map("order_cutoffs")
+  @@schema("public")
+}
+
+/// Le **brouillon** d'une commande saisie par l'équipe — une saisie interrompue,
+/// pas une commande incomplète.
+///
+/// **Un par société** (`companyId` unique), et non un par membre du staff : c'est
+/// le compte qu'on sert, et un commercial qui reprend l'appel d'un collègue doit
+/// retrouver ce qui a été saisi. La contrepartie est assumée — deux saisies
+/// simultanées, la dernière écrase l'autre — d'où `savedByStaffId`, qui dit au
+/// moins à qui demander.
+///
+/// Le contenu est un `Json` validé par `orderDraftPayloadSchema` à l'entrée comme
+/// à la sortie : une table à colonnes suivrait chaque évolution de l'écran de
+/// saisie pour des données qui ne sont jamais requêtées autrement que par
+/// société. Aucun FK sur les lignes non plus — un brouillon référence des SKU,
+/// et les prix seront de toute façon ré-résolus à la passation.
+model OrderDraft {
+  id             String   @id @default(uuid())
+  companyId      String   @unique @map("company_id")
+  payload        Json
+  // La fiche staff qui a enregistré. Nullable : un départ ne doit pas effacer
+  // le brouillon d'un client.
+  savedByStaffId String?  @map("saved_by_staff_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("order_drafts")
+  @@schema("public")
+}
+
+/// Le **panier en cours** d'un client, gardé chez nous.
+///
+/// Frère de `OrderDraft`, et la différence est tout le sujet : le brouillon
+/// appartient à une SOCIÉTÉ et se partage dans l'équipe qui la sert ; ce
+/// panier-ci appartient à la PERSONNE qui le compose. D'où `user_id @unique` et
+/// non `company_id` — un client qui commande pour deux sociétés compose un
+/// panier à la fois, et c'est son écran, pas leur dossier.
+///
+/// `payload` en `jsonb` pour la même raison que le brouillon : un panier n'a
+/// aucun invariant à protéger en base, et une table de lignes ne rendrait ici
+/// que des jointures. La forme est tenue par `shopCartPayloadSchema`, validée à
+/// l'écriture ET à la relecture.
+///
+/// `updated_at` n'est pas de la tenue de registre : c'est lui qui rend un panier
+/// **abandonné** reconnaissable, ce qu'aucune clé de `localStorage` ne pouvait
+/// faire.
+model ShopCart {
+  id      String @id @default(uuid())
+  userId  String @unique @map("user_id")
+  payload Json
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // `Cascade` : un compte effacé n'a pas de panier en cours. Il n'y a rien à
+  // conserver ici — la commande PASSÉE, elle, vit dans `orders` et ne dépend pas
+  // de cette ligne.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("shop_carts")
+  @@schema("public")
+}

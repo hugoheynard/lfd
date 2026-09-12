@@ -116,6 +116,8 @@ export const PIM_EVENTS = {
    * posée et quand, ce que la révision, elle, ne dirait pas d'elle-même.
    */
   catalogRevisionTaken: "catalog_revision.taken",
+  /** Une ancre reçoit le nom qu'elle n'avait pas. Elle n'en change jamais. */
+  catalogRevisionNamed: "catalog_revision.named",
   /**
    * **Une révision est partie vers un canal.** Distinct de sa pose : une ancre
    * peut exister sans que rien ne soit sorti, et c'est même l'état d'un push

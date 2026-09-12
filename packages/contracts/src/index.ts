@@ -1,4 +1,6 @@
+export { NEW_CUSTOMER_WINDOW_DAYS } from "./admin-company.js";
 export type {
+  CustomerPortfolioView,
   CompanyOwnerView,
   AdminCompanyView,
   AdminCompanyDetailView,
@@ -95,6 +97,28 @@ export type {
   RegisterMandatePayload,
   MandateSectionView,
 } from "./payment-mandate.js";
+export {
+  assignCreditorIdentifierPayloadSchema,
+  correctLegalEntityPayloadSchema,
+  declareLegalEntityPayloadSchema,
+  legalAddressPayloadSchema,
+  setCreditorAccountPayloadSchema,
+  setPreNotificationPayloadSchema,
+  LEGAL_ENTITY_LOGO_ACCEPTED_TYPES,
+  LEGAL_ENTITY_LOGO_MAX_BYTES,
+  LEGAL_ENTITY_LOGO_MIN_SIDE,
+  PRE_NOTIFICATION_MAX_DAYS,
+  PRE_NOTIFICATION_MIN_DAYS,
+} from "./legal-entity.js";
+export type { BillingCycleView } from "./billing-cycle.js";
+export type {
+  AssignCreditorIdentifierPayload,
+  CorrectLegalEntityPayload,
+  DeclareLegalEntityPayload,
+  LegalEntityView,
+  SetCreditorAccountPayload,
+  SetPreNotificationPayload,
+} from "./legal-entity.js";
 export {
   fulfillmentPreferencePayloadSchema,
   NO_FULFILLMENT_PREFERENCE,
@@ -369,6 +393,13 @@ export {
   weekdayOf,
 } from "./paris-time.js";
 export type { LocalMoment } from "./paris-time.js";
+export { productionForecastQuerySchema } from "./production-forecast.js";
+export type {
+  ProductionForecastDay,
+  ProductionForecastLine,
+  ProductionForecastQuery,
+  ProductionForecastView,
+} from "./production-forecast.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
 export type {
   ProductionBatchQuery,
@@ -500,12 +531,15 @@ export type {
   PendingDeliveryView,
   CatalogHealthVersionView,
   CatalogHealthView,
+  CatalogSummaryView,
 } from "./catalog-admin.js";
 export {
   staffSettlementSchema,
   STAFF_SETTLEMENT_LABELS,
   adminPlaceOrderPayloadSchema,
+  hasWindowWhenPickedUp,
   orderDraftPayloadSchema,
+  pickupWindowIssue,
 } from "./admin-order.js";
 export type {
   StaffSettlement,
@@ -516,7 +550,15 @@ export type {
   OrderDraftResponse,
   OrderDraftView,
 } from "./admin-order.js";
-export type { OrderHandoverLine, OrderHandoverView } from "./order-handover.js";
+export type {
+  HandoverQueueEntryView,
+  HandoverQueueState,
+  HandoverVia,
+  HandoverQueueView,
+  HandoverQueueWindowView,
+  OrderHandoverLine,
+  OrderHandoverView,
+} from "./order-handover.js";
 export {
   recurrenceSchema,
   subscriptionStatusSchema,

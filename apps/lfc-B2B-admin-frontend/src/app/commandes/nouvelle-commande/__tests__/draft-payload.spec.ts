@@ -42,6 +42,7 @@ function viewOf(overrides: Partial<OrderDraftView>): OrderDraftView {
     pickupAddressId: null,
     deliveryAddress: null,
     requestedDeliveryDate: null,
+    requestedWindow: null,
     note: '',
     settlement: 'link',
     lines: [],
@@ -116,5 +117,29 @@ describe('la traduction écran ↔ brouillon', () => {
 
     expect(restored.lines).toEqual([]);
     expect(restored.dropped).toEqual(['PAT-002']);
+  });
+
+  /**
+   * 🔴 **La tranche convenue survit à un appel interrompu** (2026-09-11).
+   * L'écran vient de gagner la question ; si le brouillon ne la retenait pas,
+   * le commercial y répondrait deux fois — et la seconde réponse ne serait pas
+   * forcément la même que ce qu'il a dit au client.
+   */
+  it('🔴 garde la tranche convenue, aller et retour', () => {
+    const draft = new DraftStore();
+    draft.window.set({ start: '05:00', end: '06:00' });
+
+    const payload = draftPayloadOf(draft.snapshot(), [], [SHOP]);
+    expect(payload.requestedWindow).toEqual({ start: '05:00', end: '06:00' });
+
+    const reopened = draftSnapshotOf(viewOf({ requestedWindow: payload.requestedWindow }), [SHOP]);
+    expect(reopened.window).toEqual({ start: '05:00', end: '06:00' });
+  });
+
+  it('un brouillon interrompu avant le créneau se rouvre sans créneau', () => {
+    // Le créneau est obligatoire à la PASSATION, pas dans un brouillon : exiger
+    // ici refuserait d'enregistrer l'appel coupé au milieu, ce pour quoi le
+    // brouillon existe.
+    expect(draftSnapshotOf(viewOf({ requestedWindow: null }), [SHOP]).window).toBeNull();
   });
 });

@@ -1,0 +1,105 @@
+@if (store.busy() && pending() === null) {
+  <fold-loading message="Lecture de ce qui a changé…" />
+} @else if (store.error(); as message) {
+  <fold-empty-state tone="alert" title="Impossible de lire les changements" [subtitle]="message" />
+} @else if (pending(); as view) {
+  <fold-page-layout>
+    <!--
+      **La bande de tête.** Le retour en arrière, ce qu'on regarde, et contre
+      quoi on le regarde. Posée sur le CHROME, comme partout où l'on lit un
+      verdict : l'établi est en dessous, sur le papier.
+    -->
+    <fold-page-section bleed stack class="masthead" foldSurface="chrome">
+      <fold-back-link label="Révisions" routerLink="/pim/revisions" />
+
+      <div class="masthead-head">
+        <h1 class="masthead-title">Depuis la dernière publication</h1>
+        @if (view.from; as from) {
+          <fold-badge [content]="from.reference" variant="neutral" />
+        }
+      </div>
+
+      @if (view.from; as from) {
+        <!-- « PUBLIÉE » et pas « posée » : des ancres peuvent exister sans
+             qu'aucune ne soit partie — un envoi qui échoue en laisse une. -->
+        <p class="masthead-lead">
+          Le catalogue tel qu'il est, comparé à
+          <strong>{{ from.reference }}</strong> {{ from.label ?? 'sans nom' }}, publiée le
+          {{ when(from.takenAt) }}. Lu le {{ when(view.at) }}. Rien n'est figé par cette
+          lecture&nbsp;: c'est la mécanique d'une capture, jouée sans en poser une.
+        </p>
+      }
+
+      @if (moved()) {
+        <div class="masthead-tools">
+          <fold-search
+            class="search"
+            placeholder="Un article, ou un champ — « prix », « allergènes »…"
+            (searchChange)="query.set($event)"
+          />
+          <fold-view-toggle
+            ariaLabel="Filtrer par nature du changement"
+            size="sm"
+            activeStyle="accent"
+            [options]="natures()"
+            [value]="nature()"
+            (valueChange)="nature.set($event)"
+          />
+          @if (authors().length > 0) {
+            <!-- Les auteurs viennent du diff, pas de l'annuaire : la question
+                 est « qui a touché à ÇA », pas « qui existe ». -->
+            <fold-listbox
+              class="authors"
+              label="Auteur"
+              [value]="author()"
+              (valueChange)="author.set($event ?? '')"
+            >
+              <fold-option value="">Tous</fold-option>
+              @for (name of authors(); track name) {
+                <fold-option [value]="name">{{ name }}</fold-option>
+              }
+            </fold-listbox>
+          }
+        </div>
+      }
+    </fold-page-section>
+
+    @if (noReference()) {
+      <!-- 🔴 `from` à null ne veut PAS dire « rien n'a changé » : il n'y a rien
+           à quoi comparer. Les confondre ferait lire « catalogue à jour » d'un
+           catalogue qui n'est jamais parti. -->
+      <fold-callout variant="info">
+        Aucune révision <strong>publiée</strong>&nbsp;: il n'y a rien à quoi comparer. La référence
+        apparaîtra au premier envoi réel vers un canal — une simulation ne compte pas.
+      </fold-callout>
+    } @else if (!moved()) {
+      <fold-empty-state
+        title="Le catalogue n'a pas bougé"
+        subtitle="Rien n'a changé depuis la dernière publication. Un push ne poserait aucune nouvelle révision."
+      />
+    } @else {
+      @if (filteredOut()) {
+        <fold-empty-state
+          title="Aucun changement ne correspond"
+          subtitle="Le catalogue a bougé, mais pas de la façon que vous cherchez."
+        />
+      }
+      <!-- L'en-tête et les causes traversent le filtre : ils EXPLIQUENT les
+           lignes qu'on regarde. Les masquer parce qu'ils ne correspondent pas à
+           une recherche enlèverait ce qui rend le reste compréhensible. -->
+      @if (shown(); as diff) {
+        <!-- `emptyMessage` à `null` : c'est la PAGE qui dit ce qui est vrai —
+             « aucun changement ne correspond » quand le filtre a tout mangé,
+             « le catalogue n'a pas bougé » quand il n'y a rien. Le composant ne
+             peut pas les distinguer, et sa phrase par défaut parle de deux
+             révisions, ce qu'un diff vivant ne compare pas. -->
+        <app-revision-diff [diff]="diff" [emptyMessage]="null" />
+      }
+      @if (hasFilter()) {
+        <button foldButton emphasis="outline" intent="neutral" (click)="clearFilters()">
+          Tout afficher
+        </button>
+      }
+    }
+  </fold-page-layout>
+}

@@ -34,8 +34,7 @@ function reader(order: OwnedOrder | null): OrderReader {
     listPersonal: () => Promise.resolve([]),
     findById: () => Promise.resolve(order),
     listForAdmin: () => Promise.resolve([]),
-    findByHandoverToken: () => Promise.resolve(null),
-    findHandoverByReference: () => Promise.resolve(null),
+    findAuthorByReference: () => Promise.resolve(null),
     findForPacking: () => Promise.reject(new Error("non utilisé")),
   };
 }

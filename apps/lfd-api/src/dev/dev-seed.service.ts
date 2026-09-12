@@ -5,6 +5,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
 import { Clock } from "../platform/time/clock.js";
+import { seedAccounting } from "./seeding/accounting.seed.js";
 import { seedClient } from "./seeding/client.seed.js";
 import { seedOrders } from "./seeding/orders.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
@@ -47,8 +48,8 @@ export class DevSeedService {
   ) {}
 
   /**
-   * Efface ce que le seed ne déclare pas, repose la station, le client et ses
-   * commandes. **Dans cet ordre** : les commandes visent des adresses et des
+   * Efface ce que le seed ne déclare pas, repose la station, l'entité émettrice,
+   * le client et ses commandes. **Dans cet ordre** : les commandes visent des adresses et des
    * points que les deux étapes précédentes posent.
    */
   async reload(): Promise<DevSeedReport> {
@@ -59,6 +60,11 @@ export class DevSeedService {
     // voir deux instants — sur un semis qui date des commandes par décalage.
     const context = { prisma: this.prisma, commands: this.commands, now: this.clock.now() };
     await seedStation(context);
+    // L'entité émettrice passe ici, comme dans `prisma/seed.ts` : les deux corpus
+    // exécutent LES MÊMES fonctions, sans quoi le bouton de rechargement pose un
+    // jeu de données que la ligne de commande ne pose pas — la divergence que
+    // l'existence même de ce service est censée éviter.
+    await seedAccounting(context);
     await seedClient(context);
     const reset = await resetToSeed(this.prisma);
     // Les buckets APRÈS la coupe et AVANT le semis : les commandes qui

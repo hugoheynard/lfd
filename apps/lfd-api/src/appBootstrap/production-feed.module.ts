@@ -2,11 +2,11 @@ import { Global, Module } from "@nestjs/common";
 
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PrismaDayOrdersReader } from "../b2b/orders/infrastructure/prisma-day-orders.reader.js";
-import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
+import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
 import {
   DayOrdersReader,
-  HandoverSubjectReader,
+  ExpectedProductionReader,
   PendingCommerceOrdersReader,
 } from "../production/channels/commerce/index.js";
 
@@ -24,6 +24,12 @@ import {
  * le commerce qui se plie. Un contexte qui publie un port ne doit pas connaître
  * ceux qui le branchent, sinon la dépendance revient par l'autre bout.
  *
+ * ⚠️ **Le port de la remise n'est plus ici** depuis le 2026-09-10. Il avait le
+ * même sens que les deux autres, mais pas le même déclarant : c'est la remise
+ * qui publie `HandoverSubjectReader`, pas la production. Les câbler ensemble
+ * faisait porter au « fil du fournil » un fil qui ne le traversait pas — cf.
+ * `HandoverFeedModule`.
+ *
  * `@Global` pour la raison exacte du fil catalogue : le consommateur du port est
  * `production/`, qui ne peut pas importer le module qui le fournit sans devenir
  * dépendant du commerce. Le token reste celui de la production elle-même, donc
@@ -38,10 +44,12 @@ import {
     // demande « qu'est-ce que le commerce n'a pas basculé ? », le commerce seul
     // sait y répondre.
     { provide: PendingCommerceOrdersReader, useClass: PrismaPendingOrdersReader },
-    // La remise est constatée au fournil, mais la commande derrière le jeton est
-    // un fait du commerce : troisième port, même sens que les deux autres.
-    { provide: HandoverSubjectReader, useClass: PrismaHandoverSubjectReader },
+    // Le prévisionnel demande des PIÈCES par produit et par jour, là où la
+    // clôture demande des commandes : deux questions, deux ports, reliés au
+    // même endroit. Les confondre aurait fait porter à la clôture le poids
+    // d'une plage, et au planning la connaissance d'un client.
+    { provide: ExpectedProductionReader, useClass: PrismaExpectedProductionReader },
   ],
-  exports: [DayOrdersReader, PendingCommerceOrdersReader, HandoverSubjectReader],
+  exports: [DayOrdersReader, ExpectedProductionReader, PendingCommerceOrdersReader],
 })
 export class ProductionFeedModule {}

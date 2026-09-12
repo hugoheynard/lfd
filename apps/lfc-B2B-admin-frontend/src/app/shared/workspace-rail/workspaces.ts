@@ -98,6 +98,34 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
 ];
 
 /**
+ * Les vues de la **Production**.
+ *
+ * Deux vues, et ce sont deux QUESTIONS, pas deux niveaux de détail : la journée
+ * dit ce qu'on fabrique maintenant — c'est ce qui part au fournil sur papier —,
+ * le prévisionnel dit **quand ça tombe**. Le second ne se déduit pas du premier
+ * répété sept fois : il arbitre entre un plan arrêté et une demande qui bouge.
+ *
+ * Aucune ne porte de `needs` : `b2b_orders:read` ouvre déjà l'espace, et le
+ * répéter sur les deux serait une condition toujours vraie, donc jamais relue.
+ */
+export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
+  {
+    // EN PREMIER : c'est la vue qu'on ouvre à la clôture, et celle dont on
+    // imprime le dossier. Le prévisionnel se regarde, il ne part pas au fournil.
+    key: 'journee',
+    label: 'Journée',
+    link: '/production/journee',
+    icon: 'production',
+  },
+  {
+    key: 'previsionnel',
+    label: 'Prévisionnel',
+    link: '/production/previsionnel',
+    icon: 'calendar',
+  },
+];
+
+/**
  * Les vues du **PIM**, en trois sections.
  *
  * Elles ne sont pas décoratives : elles disent trois natures de travail qui
@@ -359,6 +387,34 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
 ];
 
 /**
+ * Les vues de la **Comptabilité**.
+ *
+ * Une seule pour l'instant, et elle porte quand même son droit : le jour où les
+ * factures et les lots de prélèvement arrivent, ils ne relèveront pas forcément
+ * du même mur — émettre une facture et déposer un lot à la banque ne sont pas
+ * le même geste. Le déclarer maintenant coûte une ligne ; le rattraper après
+ * coup demande de rouvrir chaque entrée.
+ */
+export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
+  {
+    // En TÊTE : c'est la vue qu'on ouvre tous les jours, quand les entités
+    // juridiques se règlent trois fois dans une vie.
+    key: 'tableau-de-bord',
+    label: 'Tableau de bord',
+    link: '/comptabilite/tableau-de-bord',
+    icon: 'dashboard',
+    needs: 'b2b_accounting:read',
+  },
+  {
+    key: 'entites-juridiques',
+    label: 'Entités juridiques',
+    link: '/comptabilite/entites-juridiques',
+    icon: 'company',
+    needs: 'b2b_accounting:read',
+  },
+];
+
+/**
  * Les vues de la **documentation**, en sections.
  *
  * C'est le seul espace dont les vues ne portent AUCUN droit, et ce n'est pas un
@@ -436,8 +492,20 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
 /** Le catalogue, par clé. */
 export const WORKSPACES = {
   commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
+  production: {
+    key: 'production',
+    title: 'Production',
+    icon: 'production',
+    views: PRODUCTION_VIEWS,
+  },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   b2b: { key: 'b2b', title: 'B2B', icon: 'store', views: B2B_VIEWS },
+  comptabilite: {
+    key: 'comptabilite',
+    title: 'Comptabilité',
+    icon: 'receipt',
+    views: COMPTABILITE_VIEWS,
+  },
   admin: { key: 'admin', title: 'Admin', icon: 'shield', views: ADMIN_VIEWS },
   documentation: {
     key: 'documentation',

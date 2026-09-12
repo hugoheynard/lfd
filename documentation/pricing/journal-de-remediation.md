@@ -303,12 +303,12 @@ au-dessus affirme le contraire.
 Elles ne sont pas des à-côtés : trois d'entre elles **justifient** un mécanisme,
 et c'est la catégorie de commentaire que le dépôt tient pour la plus dangereuse.
 
-| Où                                                       | Ce qui est écrit                                                              | Pourquoi c'est faux                                                                            |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `schema.prisma` (`promised_quantity`)                    | « Il sert au SUIVI, **jamais au calcul** : c'est le cumul mesuré qui décide » | `retainedQuantity` fait `max(promis, livré)` — la promesse ouvre le palier dès la 1ʳᵉ commande |
-| `packages/contracts/src/pricing.ts` (`promisedQuantity`) | « Sert à l'écran, **jamais au calcul** »                                      | idem — la même phrase, dans le contrat servi                                                   |
-| `packages/contracts/src/pricing.ts` (`orderedQuantity`)  | « Mesuré, jamais promis : **c'est lui qui décide du palier** »                | c'est `max(promis, livré)` qui décide ; et sur `category`/`global` ce n'est même pas mesuré    |
-| `volume-commitments.query.ts` (`reached`)                | « le suivi **s'abstient** plutôt que d'inventer un chiffre »                  | il rend `0`, que la vue présente comme une mesure                                              |
+| Où                                                          | Ce qui est écrit                                                              | Pourquoi c'est faux                                                                            |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `prisma/schema/public/pricing.prisma` (`promised_quantity`) | « Il sert au SUIVI, **jamais au calcul** : c'est le cumul mesuré qui décide » | `retainedQuantity` fait `max(promis, livré)` — la promesse ouvre le palier dès la 1ʳᵉ commande |
+| `packages/contracts/src/pricing.ts` (`promisedQuantity`)    | « Sert à l'écran, **jamais au calcul** »                                      | idem — la même phrase, dans le contrat servi                                                   |
+| `packages/contracts/src/pricing.ts` (`orderedQuantity`)     | « Mesuré, jamais promis : **c'est lui qui décide du palier** »                | c'est `max(promis, livré)` qui décide ; et sur `category`/`global` ce n'est même pas mesuré    |
+| `volume-commitments.query.ts` (`reached`)                   | « le suivi **s'abstient** plutôt que d'inventer un chiffre »                  | il rend `0`, que la vue présente comme une mesure                                              |
 
 Les deux premières sont déjà au registre sous **R20** ; elles sont nommées ici
 parce qu'elles vivent à trois lignes du code qu'on répare, et qu'une doc fausse
@@ -560,7 +560,7 @@ et c'est délibéré : réécrire une trentaine de dates de mémoire les transfo
 en suppositions, alors que `git log` les porte exactement. Une date fausse qui se
 sait vaut mieux qu'une date fausse qui ne se sait plus.
 
-**Le commentaire `value // bp si percent, cents si amount` de `schema.prisma`**
+**Le commentaire `value // bp si percent, cents si amount` de `prisma/schema/public/pricing.prisma`**
 est faux de la même façon — mais il appartient à **R19** (treize commentaires qui
 disent « centimes » sur des millicentimes), et le corriger ici en aurait fait le
 quatorzième traité sans sa porte.
@@ -919,7 +919,7 @@ Six formes pesées, et cinq écartées **pour des raisons différentes** :
 colonnes acceptent un `CHECK` (`(sealed_by IS NULL) = (ids IS NULL)`), donc un
 refus **en base**, plus haut dans la hiérarchie des garde-fous qu'un refus
 applicatif. Elle tombe sur une contrainte de l'outil, et le dépôt a déjà tranché
-exactement ce cas — pour les allergènes, `schema.prisma:2314` :
+exactement ce cas — pour les allergènes, `public/catalog.prisma:56` :
 
 > « `Json` et non `String[]`, pour une raison précise : une liste scalaire Prisma
 > ne peut pas être nulle, elle vaut `[]` par défaut — or il faut distinguer TROIS
@@ -1010,7 +1010,7 @@ septième colonne de trace à la prochaine question.
 #### 7.4 Ce que le §4 justifiait mal, tout en concluant juste
 
 « `pricing_floor` et `pricing_commitment` sont exactement le même genre de fait —
-un instantané à trois états » est **faux**. `schema.prisma` dit de
+un instantané à trois états » est **faux**. `prisma/schema/public/pricing.prisma` dit de
 `pricing_commitment` : « `NULL` = aucun engagement ne couvrait cette ligne » —
 une affirmation à **deux** états, pas une ignorance. Suivre cette analogie ferait
 écrire `NULL` pour « rien n'a été scellé », c'est-à-dire précisément la confusion

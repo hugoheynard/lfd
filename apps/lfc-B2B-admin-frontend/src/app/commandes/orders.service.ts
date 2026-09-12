@@ -81,6 +81,23 @@ export class AdminOrdersService {
    * l'archive, donc lui seul peut garantir qu'un avenant ne réécrit pas le
    * papier déjà parti.
    */
+  /**
+   * **Renvoie au client le courriel de retrait** — le rappel du comptoir.
+   *
+   * Il vit sur les commandes et non sur la remise : c'est le commerce qui
+   * possède le destinataire, le bon et le gabarit. Le serveur REFUSE sur une
+   * commande que le fournil n'a pas déclarée prête — un rappel qui ferait venir
+   * quelqu'un devant un comptoir vide est pire que pas de rappel du tout.
+   */
+  async remindHandover(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/rappel-retrait`,
+        {},
+      ),
+    );
+  }
+
   async sheetPdf(id: string): Promise<Blob> {
     return firstValueFrom(
       this.http.get(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/bon.pdf`, {

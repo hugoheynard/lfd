@@ -1,0 +1,47 @@
+/* La bande de tête, sur le chrome. Même partition que les autres écrans qui
+   portent un verdict : le contexte sur le chrome, le contenu sur le papier.
+   `bleed` avale le padding du layout — d'où le padding rendu ici, sans quoi le
+   titre passerait sous l'en-tête de l'application. */
+.masthead {
+  --fold-page-section-gap: var(--fold-space-md);
+  margin-bottom: var(--fold-page-gap);
+  padding: var(--fold-space-lg) var(--fold-page-gutter) var(--fold-space-xl);
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+.masthead-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.masthead-title {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-semibold);
+}
+
+/* Bornée : au-delà d'une soixantaine de caractères une ligne de prose se relit
+   mal, et celle-ci dit contre quoi on compare — elle se relit. */
+.masthead-lead {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--fold-color-text-secondary);
+}
+
+.masthead-tools {
+  display: flex;
+  align-items: end;
+  gap: var(--fold-space-lg);
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1 1 20rem;
+  max-width: 30rem;
+}
+
+.authors {
+  min-inline-size: 12rem;
+}

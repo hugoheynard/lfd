@@ -29,6 +29,7 @@ function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
     kbis: null,
     hasOpenSupportRequest: false,
     createdAt: '2026-08-01T09:00:00.000Z',
+    activatedAt: null,
     warnings: [],
     ...overrides,
   };

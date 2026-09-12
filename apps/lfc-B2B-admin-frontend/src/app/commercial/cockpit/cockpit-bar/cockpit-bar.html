@@ -1,0 +1,123 @@
+<!--
+  QUATRE cartes détachées, et non une surface continue : ce sont trois sujets
+  (le parc, demain, la tendance) et non trois vues d'un même. Le filet qui les
+  aurait cousues les ferait lire comme une seule phrase.
+
+  Chaque carte porte son lien EN BAS, avec sa flèche. La carte entière était
+  cliquable et ne le disait pas : un support qui réagit au survol n'est pas une
+  promesse de destination, et rien n'annonçait où l'on atterrirait.
+
+  🔴 Les trois destinations sont ABSOLUES. La version précédente écrivait
+  `routerLink="../croissance"` depuis `/commercial/cockpit`, donc
+  `/commercial/croissance` — une route qui n'existe plus depuis que la
+  croissance est sortie du poste commercial pour `/analytics`. Un lien relatif
+  survit à un déplacement sans rien dire ; il ne tombe qu'à l'usage.
+-->
+<section class="cb" aria-label="L'essentiel du jour">
+  <article class="cb-card">
+    <p class="cb-label">Clients actifs</p>
+    @if (portfolio(); as p) {
+      <p class="cb-value">{{ p.activeCompanies }}</p>
+      <p class="cb-note">
+        @if (p.activatedLast30d > 0) {
+          <span class="cb-up">+{{ p.activatedLast30d }}</span> entrés sur 30 jours
+        } @else {
+          Aucune entrée sur 30 jours
+        }
+      </p>
+    } @else {
+      <!-- Un tiret, pas un zéro : « zéro client actif » serait une nouvelle, et
+           ce n'en est pas une — c'est une lecture qui a échoué. -->
+      <p class="cb-value cb-unknown">—</p>
+      <p class="cb-note">État du parc indisponible</p>
+    }
+    <a class="cb-link" routerLink="/commercial/comptes-clients">
+      Voir les comptes clients <span class="cb-arrow" aria-hidden="true">→</span>
+    </a>
+  </article>
+
+  <!-- LA carte du milieu, et c'est voulu : la maison commande à J pour J+1,
+       donc ce compte est le seul de la bande sur lequel on peut encore agir
+       aujourd'hui. Le parc se constate, la croissance s'analyse ; demain se
+       rattrape. -->
+  <article class="cb-card">
+    <p class="cb-label">Commandes pour demain</p>
+    @if (tomorrow(); as day) {
+      <p class="cb-value">{{ day.orderCount }}</p>
+      <p class="cb-note">
+        {{ tomorrowLabel() }} ·
+        @if (day.closed) {
+          <!-- Une journée arrêtée ne se remplit plus : le mot évite qu'on
+               attende un chiffre qui ne bougera pas. -->
+          journée arrêtée, {{ day.totalUnits }} pièces
+        } @else {
+          {{ day.totalUnits }} pièces à produire
+        }
+      </p>
+    } @else {
+      <p class="cb-value cb-unknown">—</p>
+      <p class="cb-note">Prévisionnel indisponible</p>
+    }
+    <a class="cb-link" routerLink="/production/previsionnel">
+      Ouvrir le prévisionnel <span class="cb-arrow" aria-hidden="true">→</span>
+    </a>
+  </article>
+
+  <!-- Les remises du jour, EN DEUX VOIES et non en un total : un retrait attend
+       qu'un client passe — on ne peut que l'appeler s'il ne vient pas — pendant
+       qu'un coursier part d'ici, et son reste dit s'il faut encore une tournée.
+       Un chiffre unique masquerait la seule question de la fin de journée. -->
+  <article class="cb-card">
+    <p class="cb-label">Remises du jour</p>
+    @if (handovers(); as h) {
+      <div class="cb-kpis">
+        <span class="cb-kpi">
+          <span class="cb-kpi-value">{{ h.pickup.expected }}</span>
+          <span class="cb-kpi-label">retrait</span>
+        </span>
+        <span class="cb-kpi">
+          <span class="cb-kpi-value">{{ h.delivery.expected }}</span>
+          <span class="cb-kpi-label">coursier</span>
+        </span>
+      </div>
+      <p class="cb-note">
+        @if (h.pickup.expected + h.delivery.expected === 0) {
+          Rien à remettre aujourd'hui
+        } @else if (remaining() === 0) {
+          Tout est remis
+        } @else {
+          {{ remaining() }} encore à remettre
+        }
+      </p>
+    } @else {
+      <p class="cb-value cb-unknown">—</p>
+      <p class="cb-note">File du comptoir indisponible</p>
+    }
+    <a class="cb-link" routerLink="/remises">
+      Ouvrir la file de remise <span class="cb-arrow" aria-hidden="true">→</span>
+    </a>
+  </article>
+
+  <article class="cb-card cb-card--growth">
+    <p class="cb-label">Croissance</p>
+    @if (kpis().length > 0) {
+      <div class="cb-kpis">
+        @for (kpi of kpis(); track kpi.label) {
+          <span class="cb-kpi">
+            <span class="cb-kpi-value">{{ kpi.value }}</span>
+            <span class="cb-kpi-label">{{ kpi.label }}</span>
+          </span>
+        }
+      </div>
+      @if (spark(); as option) {
+        <app-chart class="cb-spark" [option]="option" height="36px" />
+      }
+    } @else {
+      <p class="cb-value cb-unknown">—</p>
+      <p class="cb-note">Statistiques indisponibles</p>
+    }
+    <a class="cb-link" routerLink="/analytics">
+      Analyser la croissance <span class="cb-arrow" aria-hidden="true">→</span>
+    </a>
+  </article>
+</section>

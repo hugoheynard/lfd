@@ -6,7 +6,7 @@ import { planDiff } from "../domain/diff.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
 import { buildRevision } from "../domain/revision.js";
-import { summaryOf } from "./diff-catalog-revisions.js";
+import { summaryOf } from "./revision-diff-support.js";
 
 export class GetCatalogOverviewQuery {}
 

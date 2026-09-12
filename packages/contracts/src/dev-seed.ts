@@ -33,6 +33,16 @@ export interface DevSeedOrdersReport {
   readonly placed: number;
   /** `AAAA-MM-JJ` — la journée servie la veille. */
   readonly yesterday: string;
+  /** `AAAA-MM-JJ` — la journée du comptoir : ce que la file de remise montre. */
+  readonly today: string;
+  /**
+   * Combien de lignes cette file porte, tous points confondus.
+   *
+   * Dit plutôt que sous-entendu : l'écran de rechargement annonçait « livraison
+   * + retrait » en toutes lettres pour demain, une phrase qui ne peut que
+   * diverger du semis. Un nombre que le serveur compte ne diverge pas.
+   */
+  readonly counterToday: number;
   /** `AAAA-MM-JJ` — celle des deux commandes en attente. */
   readonly tomorrow: string;
 }

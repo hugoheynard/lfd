@@ -24,7 +24,7 @@ Tout ce qui suit est un fichier lu le 2026-09-09, pas un souvenir.
 
 | Fait                                                                                                                               | Où                                                                                     |
 | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| La trace d'une ligne est **une colonne JSON déjà nullable**, qui stocke un **tableau** d'étages                                    | `prisma/schema.prisma:954` (`pricingSteps Json?`)                                      |
+| La trace d'une ligne est **une colonne JSON déjà nullable**, qui stocke un **tableau** d'étages                                    | `prisma/schema/public/orders.prisma:55` (`pricingSteps Json?`)                         |
 | Le schéma de relecture accueille les champs neufs avec un **défaut**, pour qu'une trace ancienne reste lisible                     | `packages/contracts/src/pricing.ts:559` (`priceStepsSchema`)                           |
 | L'éviction est déjà consignée sur l'étage gagnant, en `{ruleId, label}`                                                            | `resolve-price.ts:111`                                                                 |
 | Le scellement, lui, ne garde que **l'identifiant nu du gagnant** de l'étage écarté                                                 | `resolve-price.ts:97` (`sealedRuleIds.push(winner.id)`)                                |

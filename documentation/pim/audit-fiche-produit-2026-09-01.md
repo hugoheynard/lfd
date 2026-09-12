@@ -252,8 +252,8 @@ Deux nuances à charge :
 (`prisma-readiness.repository.ts:43-64`) est le maximum de `product.updatedAt`,
 `variants[].updatedAt`, `media[].updatedAt`, `editorial.updatedAt`.
 
-Or `Product.updatedAt` est un `@updatedAt` Prisma (`schema.prisma:3001`), sur la
-même ligne que `status` (`schema.prisma:2996`). **Toute écriture de statut le
+Or `Product.updatedAt` est un `@updatedAt` Prisma (`public/pricing.prisma:358`), sur la
+même ligne que `status` (`public/pricing.prisma:358`). **Toute écriture de statut le
 bump.**
 
 Donc : je signe, je mets en vente, je recharge → « La fiche a été modifiée

@@ -1,21 +1,19 @@
-<section class="ck">
-  <!-- Plus de titre ici : il est porté par le shell, sous l'onglet actif. Ne
-       restent que les chiffres de tête — on n'ouvre pas un onglet pour savoir
-       combien de prospects on a. -->
-  @if (kpis().length > 0) {
-    <a class="ck-kpis" routerLink="../croissance" aria-label="Voir la croissance en détail">
-      @for (kpi of kpis(); track kpi.label) {
-        <span class="ck-kpi">
-          <span class="ck-kpi-value">{{ kpi.value }}</span>
-          <span class="ck-kpi-label">{{ kpi.label }}</span>
-        </span>
-      }
-      @if (spark(); as option) {
-        <app-chart class="ck-spark" [option]="option" height="44px" />
-      }
-    </a>
-  }
+<!-- Les chiffres de tête REMONTENT dans le bandeau de la coquille, par
+     `providePageHeader` — même partition que les Comptes clients : le verdict
+     sur le chrome, l'établi sur le papier. Ils vivaient ici, sur le papier, et
+     se lisaient donc comme un bloc de contenu de plus, au-dessus de contenus
+     qu'ils ne résument pas. -->
+<ng-template #figures>
+  <app-cockpit-bar
+    [portfolio]="portfolio()"
+    [tomorrow]="tomorrow()"
+    [handovers]="handovers()"
+    [kpis]="kpis()"
+    [spark]="spark()"
+  />
+</ng-template>
 
+<section class="ck">
   @switch (state()) {
     @case ('loading') {
       <fold-loading message="Chargement du tableau de bord…" />

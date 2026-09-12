@@ -8,9 +8,12 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import { httpErrorMessage } from '@lfd/endpoints';
+
+import { SendPanel, type SendIntent, type SendPanelData } from './send-panel/send-panel';
 
 import {
   B2bChannelApi,
@@ -81,6 +84,7 @@ const CHANGES: Readonly<Record<string, string>> = {
 })
 export class PublicationB2b {
   private readonly api = inject(B2bChannelApi);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly preview = signal<B2bPushPreviewView | null>(null);
   protected readonly sent = signal<B2bPushSummaryView | null>(null);
@@ -132,6 +136,7 @@ export class PublicationB2b {
     ];
   });
 
+  /** Combien d'articles portent ce changement. Lu deux fois : la synthèse, et le panneau. */
   private countOf(change: string): number {
     return (this.preview()?.outgoing ?? []).filter((item) => item.change === change).length;
   }
@@ -182,19 +187,50 @@ export class PublicationB2b {
    * que ce qui a été relu. Le geste de sortie est de recharger, et c'est ce que
    * fait le rechargement en fin de méthode — y compris après un refus.
    */
+  /**
+   * **Envoyer, en deux temps** : on dit ce qu'on publie, puis ça part.
+   *
+   * 🔴 L'intention se demande ICI et nulle part ailleurs : c'est le seul moment
+   * où quelqu'un décide de publier, et le seul où les changements sont sous les
+   * yeux. Le push posait une ancre anonyme à chaque envoi, et cinq révisions
+   * sur neuf n'avaient aucune intention lisible.
+   *
+   * Un panneau MODAL plutôt qu'un champ de plus sur l'écran : envoyer le
+   * catalogue chez des clients est le geste le plus conséquent du référentiel,
+   * et il mérite un moment où l'on ne fait que ça. Fermer le panneau sans
+   * confirmer n'envoie rien — le renoncement est gratuit, ce qui est la moitié
+   * de l'intérêt d'un temps d'arrêt.
+   *
+   * ⚠️ Le SERVEUR n'exige pas encore le nom : le front en ligne appelle la
+   * route sans lui, et une API resserrée avant ce déploiement empêcherait toute
+   * publication le temps du décalage. C'est donc l'écran qui tient la règle.
+   */
   protected async send(): Promise<void> {
-    const fingerprint = this.preview()?.fingerprint;
-    if (fingerprint === undefined) {
+    const view = this.preview();
+    const fingerprint = view?.fingerprint;
+    if (view === undefined || view === null || fingerprint === undefined) {
+      return;
+    }
+    const intent = await this.panels.open<SendPanelData, SendIntent | null>(SendPanel, {
+      data: {
+        entering: this.countOf('added'),
+        changing: this.countOf('changed'),
+        removing: view.removed.length,
+      },
+      width: 'md',
+    }).closed;
+    if (intent === undefined || intent === null) {
       return;
     }
     this.busy.set(true);
     this.error.set(null);
     try {
-      this.sent.set(await this.api.push(false, fingerprint));
+      this.sent.set(await this.api.push(false, fingerprint, intent.label, intent.note));
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Envoi impossible.'));
     } finally {
       this.busy.set(false);
+
       // Après un envoi comme après un refus, ce qui est à l'écran est périmé :
       // le canal a changé, ou le catalogue avait déjà changé. Le relire est la
       // seule façon d'en sortir.

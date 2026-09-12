@@ -1,0 +1,130 @@
+/* La barre reprend le vocabulaire de la frise tarifaire : une piste creuse, des
+   lundis en traits fins, un curseur à tête losange. Deux écrans qui se
+   ressemblent coûtent moins qu'un troisième style. */
+.cycle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.cycle-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.cycle-eyebrow {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* Ce qu'il reste est la seule information qu'on vient chercher deux fois par
+   jour : elle est en pleine encre, la mécanique autour reste en sourdine. */
+.cycle-left {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+/* Un creux, pas une surface : la piste est le FOND sur lequel on pose le
+   parcours, comme la piste de la frise. */
+.cycle-track {
+  position: relative;
+  height: 1.35rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  overflow: hidden;
+}
+
+.cycle-weeks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cycle-week {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed var(--fold-color-border);
+}
+
+.cycle-week-day {
+  position: absolute;
+  top: 0.1rem;
+  left: 0.2rem;
+  font-size: var(--fold-text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-faded);
+}
+
+/* Le temps écoulé, en pleine teinte de marque : c'est la seule chose que l'œil
+   doit trouver sans lire. */
+.cycle-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary);
+  opacity: 0.85;
+}
+
+/* Le curseur traverse toute la piste : un trait qui s'arrêterait au remplissage
+   laisserait douter de ce qu'il coupe. */
+.cycle-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--fold-color-text);
+}
+
+.cycle-cursor-head {
+  position: absolute;
+  top: 0.15rem;
+  left: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-text);
+}
+
+.cycle-bounds {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.cycle-bound {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+}
+
+/* La borne de droite se lit de droite à gauche : alignée à gauche, sa note
+   pendait dans le vide sous une date qui finit au bord. */
+.cycle-bound.is-end {
+  text-align: right;
+}
+
+.cycle-bound-note {
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}
+
+.cycle-note {
+  margin: 0;
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}

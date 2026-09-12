@@ -1,0 +1,174 @@
+<!-- Pas de `title` sur le layout : la page porte son `<h1>` dans la bande, et
+     deux titres de premier niveau sur un écran n'en font aucun. Même partition
+     que le poste commercial et la tarification — le verdict sur le chrome, la
+     file sur le papier. -->
+<fold-page-layout>
+  <!--
+    **La bande de tête du comptoir.** Ce qu'on vient y chercher en levant les
+    yeux : où j'en suis, combien il en reste, et quelle heure il est — les trois
+    au même endroit, sur le support sombre, hors de la file qu'on lit ligne à
+    ligne.
+  -->
+  <!--
+    **La bande de tête du comptoir** : on choisit à gauche, on constate à
+    droite, et la journée se change à l'extrémité.
+
+    🔴 Ni titre ni phrase d'explication. Le rail de l'app nomme déjà l'écran, et
+    sur un poste de comptoir la hauteur est ce qui manque : chaque ligne prise
+    par de la prose est une commande de moins visible sans faire défiler. Ce que
+    la page fait se lit dans ce qu'elle montre.
+  -->
+  <fold-page-section bleed class="masthead" foldSurface="chrome">
+    <div class="masthead-bar">
+      <!-- Les onglets sont DÉRIVÉS des points de retrait reçus : aucun nom
+           n'est écrit ici, et un comptoir ouvert demain apparaît seul. -->
+      @if (state() === 'ready' && total() > 0) {
+        <fold-tabs
+          direction="horizontal"
+          [tabs]="tabs()"
+          [activeKey]="activeTab()"
+          (activeKeyChange)="onTab($event)"
+        />
+
+        <!-- Les compteurs portent sur le POINT OUVERT. Qui lit cet écran est
+             DANS un point : « 3 en retard » dont deux ailleurs le ferait
+             chercher des sacs qui ne sont pas chez lui. Les onglets, eux,
+             gardent le compte de chaque point pour qu'on voie d'un coup où ça
+             s'accumule. -->
+        <p class="masthead-counters">
+          <span class="mc-done"
+            >{{ counters().handedOver }} remise{{ counters().handedOver > 1 ? 's' : '' }}</span
+          >
+          <span class="mc-waiting">{{ counters().waiting }} en attente</span>
+          @if (counters().late > 0) {
+            <span class="mc-late">{{ counters().late }} en retard</span>
+          }
+          <span class="mc-clock">{{ clock() }}</span>
+        </p>
+      }
+    </div>
+  </fold-page-section>
+
+  <!--
+    **La file et le sac, côte à côte.** Un `fold-aside-layout` et non un panneau
+    modal : au comptoir on lit la file ET ce qu'on tend, on passe de l'une à
+    l'autre sans rien fermer. Une modale `inert`e la file derrière elle, ce qui
+    est exactement le geste qu'on ne veut pas ici.
+
+    Le rail est là dans TOUS les états, vide compris : sa place est réservée, et
+    la file ne se réorganise pas sous les doigts au premier clic.
+  -->
+  <!--
+    **Sur écran étroit, le sac est une feuille qui MONTE sur la file.**
+
+    🔴 Empilé, il n'apparaissait pas : `fold-aside-layout` range sa colonne sous
+    le centre, donc toucher une ligne posait le sac hors de l'écran, sous une
+    file de dix lignes, et rien ne bougeait sous le doigt. Le geste attendu est
+    celui d'un téléphone — on touche, ça monte, on referme.
+
+    `inert` sur la file pendant ce temps : la feuille la recouvre, et un clavier
+    qui continuerait de la parcourir derrière tabulerait dans le vide.
+  -->
+  <fold-aside-layout
+    class="board"
+    asideRightLabel="Détail de la remise"
+    [class.is-stacked]="stacked()"
+    [class.has-selection]="selected() !== null"
+  >
+    <div class="board-queue" [inert]="stacked() && selected() !== null">
+      @switch (state()) {
+        @case ('loading') {
+          <fold-loading message="Lecture de la file…" />
+        }
+        @case ('error') {
+          <fold-empty-state
+            tone="alert"
+            title="File illisible"
+            subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+          >
+            <button foldButton (click)="load()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @default {
+          @if (total() === 0) {
+            <fold-empty-state
+              icon="package-check"
+              title="Personne n'attend ce jour-là"
+              subtitle="Aucune commande n'est attendue au comptoir à cette date."
+            />
+          } @else {
+            <!-- ⚠️ Le panneau veut l'INSTANCE des onglets, et une variable de
+               gabarit ne franchit pas un bloc `@if` : `#tabBar` déclaré dans la
+               bande serait introuvable ici. La requête de vue, elle, traverse —
+               d'où le `@if` qui attend qu'elle se résolve, une passe plus tard. -->
+            @if (tabBar(); as bar) {
+              <fold-tab-panel [tabs]="bar" [key]="activeTab()">
+                <!--
+                **La barre de la file.** Le scan est ici et nulle part ailleurs
+                depuis le 2026-09-11 : il y en avait un par ligne ET un dans la
+                bande, et ils faisaient le MÊME appel. Le code lu résout la
+                commande à lui seul — la ligne cliquée n'apportait qu'une
+                contradiction possible, et elle n'existait que parce qu'on avait
+                cliqué quelque part d'abord.
+
+                🔴 Le scan par ligne a coûté une colonne de 8,5 rem à la file.
+                Rendue au nom du client, qui est ce qu'on y cherche.
+              -->
+                <div class="file-head">
+                  <div class="file-said">
+                    <fold-element-title variant="eyebrow" [title]="eyebrow()" />
+                    <p class="file-hint">par créneau, le plus ancien en tête</p>
+                  </div>
+
+                  <!-- Les deux gestes ensemble : ils passent à la ligne EN BLOC
+                     quand la colonne se resserre, au lieu de laisser le bouton
+                     descendre seul sous une boîte qui reste en haut. -->
+                  <div class="file-tools">
+                    <!-- 🔴 `[(value)]` et non `(searchChange)` : la file est DÉJÀ
+                     en mémoire, et un délai n'ajouterait ici que de la latence
+                     entre la frappe et ce qu'on voit. Le compte annoncé vient
+                     de la file elle-même — c'est elle qui filtre, donc elle
+                     seule sait combien il reste. -->
+                    <fold-search
+                      class="file-search"
+                      placeholder="Client, référence, créneau…"
+                      ariaLabel="Filtrer la file"
+                      size="sm"
+                      [(value)]="query"
+                      [resultCount]="matches()"
+                      [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
+                      placement="end"
+                    />
+
+                    <button class="file-scan" foldButton icon="qr-code" (click)="scan(null)">
+                      Scanner un code
+                    </button>
+                  </div>
+                </div>
+
+                <app-queue-table
+                  [entries]="rows()"
+                  [query]="query()"
+                  [day]="day()"
+                  [now]="now()"
+                  [busyId]="remindingId()"
+                  [reminded]="remindedIds()"
+                  (opened)="select($event)"
+                  (reminder)="remind($event)"
+                />
+              </fold-tab-panel>
+            }
+          }
+        }
+      }
+    </div>
+
+    <app-handover-detail
+      asideRight
+      [entry]="selected()"
+      (remitted)="load()"
+      (scanned)="scan($event)"
+      (cleared)="clearSelection()"
+    />
+  </fold-aside-layout>
+</fold-page-layout>

@@ -1,0 +1,122 @@
+<!-- La largeur des colonnes est posée UNE fois, sur la grille, et
+     héritée par chaque ligne : sept en-têtes, N lignes produit et
+     deux pieds qui recopieraient le même gabarit finiraient par
+     diverger d'une ligne, et une colonne décalée ment sur son
+     chiffre. -->
+<section
+  class="pv-grid"
+  [class.is-dense]="dense()"
+  [style.--pv-columns]="columns()"
+  aria-label="Prévisionnel de production"
+>
+  <!-- La tête sur le CHROME, comme le pied : ce sont les deux bords
+       du tableau, et ils encadrent le papier sur lequel on lit les
+       produits. Chaque colonne dit sa distance, son jour, son poids —
+       la distance d'abord, c'est la vraie question. -->
+  <div class="pv-row pv-row--head" foldSurface="chrome">
+    <div class="pv-cell pv-cell--label">
+      <span class="pv-col-label">Produit</span>
+    </div>
+    @for (day of headers(); track day.date) {
+      <div class="pv-cell pv-day" [class.is-peak]="day.peak" [class.is-open]="!day.closed">
+        <span class="pv-day-offset">{{ day.offset }}{{ day.peak ? ' · pic' : '' }}</span>
+        <span class="pv-day-date">{{ day.weekday }} {{ day.dayMonth }}</span>
+        <span class="pv-day-total">{{ day.totalUnits }}</span>
+      </div>
+    }
+  </div>
+
+  @for (rayon of rayons(); track rayon.label) {
+    <!-- La ligne de rayon est sombre, et c'est le SEUL zébrage de la
+         grille : les lignes produit restent sur le papier. Deux
+         systèmes de rayure se combattent.
+
+         Elle est aussi un bouton — replier son groupe est l'issue du
+         débordement, et c'est un geste de l'équipe plutôt qu'un seuil
+         qui décide pour elle. -->
+    <button
+      type="button"
+      class="pv-row pv-row--rayon"
+      foldSurface="chrome"
+      [attr.aria-expanded]="!isFolded(rayon.label)"
+      (click)="toggleRayon(rayon.label)"
+    >
+      <span class="pv-cell pv-cell--label pv-rayon-name">
+        {{ rayon.label }}
+        <span class="pv-rayon-count"
+          >{{ rayon.lines.length }} réf.{{ isFolded(rayon.label) ? ' · replié' : '' }}</span
+        >
+      </span>
+      @for (day of headers(); track day.date; let column = $index) {
+        <span class="pv-cell pv-rayon-sum" [class.is-peak]="day.peak">
+          {{ rayon.quantities[column] || '' }}
+        </span>
+      }
+    </button>
+
+    @if (!isFolded(rayon.label)) {
+      @for (line of rayon.lines; track line.sku) {
+        <div class="pv-row pv-row--line">
+          <div class="pv-cell pv-cell--label">
+            <span class="pv-product">{{ line.productName }}</span>
+            <span class="pv-sku">{{ line.sku }}</span>
+          </div>
+          @for (cell of line.cells; track $index; let column = $index) {
+            <!-- Un zéro est une cellule VIDE, pas un « 0 » : une
+                 grille de zéros se lit comme une grille pleine. -->
+            <div class="pv-cell pv-qty" [class.is-peak]="headers()[column]?.peak">
+              @if (cell.quantity > 0) {
+                <span class="pv-qty-value">{{ cell.quantity }}</span>
+                @if (cell.exceptional) {
+                  <span class="pv-exceptional" title="Bien au-delà de l’ordinaire pour ce produit"
+                    >exceptionnel</span
+                  >
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+
+  <!-- Le ressort : il n'existe que pour pousser le pied au bas de
+       la fenêtre quand la grille est courte. Il disparaît de lui-même
+       dès qu'elle dépasse, et le collage prend le relais. -->
+  <div class="pv-spring"></div>
+
+  <!--
+    **Le pied, sur le chrome.** Deux lignes, et deux questions
+    différentes : combien de PIÈCES il y a à faire, et en combien de
+    COMMANDES elles se répartissent. 1 240 pièces en 12 commandes et
+    1 240 en 90 ne se préparent pas de la même façon — la seconde
+    journée se passe à répartir, pas à pétrir.
+
+    Il reste collé au bas de la table : en bas d'une grille de
+    quarante références, on ne remonte pas chercher l'en-tête, et le
+    total est ce qu'on vient lire.
+  -->
+  <div class="pv-foot">
+    <div class="pv-row pv-row--total" foldSurface="chrome">
+      <div class="pv-cell pv-cell--label">
+        <span class="pv-col-label">Total pièces</span>
+      </div>
+      @for (day of headers(); track day.date) {
+        <div class="pv-cell pv-foot-total" [class.is-peak]="day.peak" [class.is-open]="!day.closed">
+          {{ day.totalUnits || '' }}
+        </div>
+      }
+    </div>
+
+    <div class="pv-row pv-row--orders" foldSurface="chrome">
+      <div class="pv-cell pv-cell--label">
+        <span class="pv-col-label">Commandes</span>
+      </div>
+      @for (day of headers(); track day.date) {
+        <div class="pv-cell pv-foot-orders" [class.is-peak]="day.peak">
+          {{ day.orderCount || '' }}
+        </div>
+      }
+    </div>
+  </div>
+</section>

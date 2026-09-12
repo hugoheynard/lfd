@@ -1,0 +1,91 @@
+<fold-page-layout title="Entités juridiques" separator>
+  <p description>
+    L'entité qui <strong>encaisse</strong> — notre personne morale, pas un client. Son identité
+    s'imprime sur les mandats et les factures&nbsp;; son identifiant créancier (ICS) est ce que le
+    débiteur oppose à sa banque.
+  </p>
+
+  <!-- Le bouton n'est ici QUE s'il y a déjà quelque chose à lire. Sur une liste
+       vide, il est projeté dans l'empty state, où il est le seul geste possible
+       et se lit sous la phrase qui l'explique. -->
+  @if (!empty()) {
+    <button pageActions foldButton [loading]="busy()" (click)="declare()">
+      Déclarer une entité
+    </button>
+  }
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  <!--
+    🔴 En tête, et une seule fois pour tout l'écran. Rien ne peut être prélevé
+    tant qu'aucune entité n'est complète, et c'est l'état du SYSTÈME, pas d'une
+    fiche : une seule entité capable suffit. Répété par ligne, il ferait du
+    bruit sur une fiche qu'on est justement en train de monter.
+  -->
+  @if (noneCanCollect()) {
+    <fold-callout appearance="inset" variant="warning">
+      <strong>Aucun prélèvement n'est possible aujourd'hui.</strong> Aucune entité ne réunit un
+      identifiant créancier et un compte&nbsp;: les mandats peuvent se préparer, aucun lot ne peut
+      partir.
+    </fold-callout>
+  }
+
+  @if (empty()) {
+    <fold-empty-state
+      icon="company"
+      title="Aucune entité déclarée"
+      subtitle="Tant qu'aucune personne morale n'est déclarée, rien ne peut être facturé ni prélevé : un document a besoin d'un émetteur."
+    >
+      <button foldButton [loading]="busy()" (click)="declare()">Déclarer une entité</button>
+    </fold-empty-state>
+  } @else {
+    <fold-card>
+      <fold-data-table
+        caption="Entités juridiques émettrices"
+        narrowLayout="cards"
+        hover
+        zebra
+        [columns]="columns"
+        [rows]="entities()"
+        [rowKey]="rowKey"
+        [loading]="loading()"
+      >
+        <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
+             `foldCell` rend une cellule vide. Chaque `key` de `columns` doit
+             donc avoir son template ici — y compris les plus bêtes. -->
+        <ng-template foldCell="name" let-row>
+          <a class="strong" [routerLink]="['./', row.id]">{{ row.name }}</a>
+        </ng-template>
+
+        <ng-template foldCell="siren" let-row>
+          {{ row.siren }}
+        </ng-template>
+
+        <ng-template foldCell="ics" let-row>
+          @if (row.ics === '') {
+            <span class="muted">—</span>
+          } @else {
+            <span class="ref">{{ row.ics }}</span>
+          }
+        </ng-template>
+
+        <!-- L'état, RÉDIGÉ PAR LE SERVEUR. Le récrire ici ferait une seconde
+             définition de « complète », et c'est celle que l'utilisateur lit
+             qui dériverait. Ce qui manque se lit sur la fiche. -->
+        <ng-template foldCell="state" let-row>
+          <fold-badge [variant]="stateVariant(row)" [content]="stateLabel(row)" />
+        </ng-template>
+
+        <ng-template foldCell="account" let-row>
+          @if (row.creditorAccountLast4 === '') {
+            <span class="muted">—</span>
+          } @else {
+            <span class="ref">•••• {{ row.creditorAccountLast4 }}</span>
+          }
+        </ng-template>
+      </fold-data-table>
+    </fold-card>
+  }
+</fold-page-layout>

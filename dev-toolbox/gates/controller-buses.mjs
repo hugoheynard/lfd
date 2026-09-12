@@ -75,6 +75,14 @@ const SCOPE = [
   // Les deux lectures ont désormais un nom — `CheckCatalogParityQuery` et
   // `CheckCatalogHealthQuery` —, et le référent de chacune se lit dans son nom.
   "apps/lfd-api/src/b2b/catalog/http/admin-catalog-parity.controller.ts",
+  // Drainé le 2026-09-10 : il injectait `CatalogAdminReader` en direct, et la
+  // lecture qu'il servait n'avait donc PAS de nom. Ça s'est payé le jour où le
+  // tableau de bord de la comptabilité a eu besoin de la même liste, sous deux
+  // formes de plus — une synthèse et un CSV. Trois requêtes nommées plus tard
+  // (`ListCatalogQuery`, `GetCatalogSummaryQuery`, `ExportCatalogCsvQuery`), le
+  // contrôleur n'injecte plus que ses bus, et il entre ici pour que le retour
+  // en arrière échoue.
+  "apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts",
   // Né drainé le 2026-09-02 : la porte machine du contrôle de santé sert la
   // MÊME requête que la porte staff, par le même bus. Deux serrures, une lecture.
   "apps/lfd-api/src/b2b/catalog/http/ops-catalog-health.controller.ts",

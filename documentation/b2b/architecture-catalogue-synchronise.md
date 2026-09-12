@@ -384,8 +384,10 @@ réglé dans le PIM.
       anti-corruption, le port de lecture. **Dépend de l'arbitrage d'identité.**
 - [~] **C5 — B2B : la comparaison de parité est livrée** (`/admin/catalog/parity` + workflow `ops_catalog_parity`). **La bascule du port reste à faire**,
   et attend les deux blocages ci-dessus — dont un qui est de la saisie PIM.
-- [ ] **C6 — `catalog-ui` + écran admin.** Prix B2B et visibilité, avec la
-      provenance affichée.
+- [x] **C6 — `catalog-ui` + écran admin.** Prix B2B et visibilité, avec la
+      provenance affichée. Livré, puis **réparé** le 2026-09-10 : le geste de
+      prix existait et personne ne pouvait le voir — voir
+      [`ecran-catalogue-b2b.md`](ecran-catalogue-b2b.md).
 - [ ] **C7 — Front client sur l'API.** Les 22 fichiers, puis suppression des deux
       seeds.
 

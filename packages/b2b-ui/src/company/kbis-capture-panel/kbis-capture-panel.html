@@ -1,0 +1,58 @@
+<fold-panel-header
+  title="Photographier l'extrait"
+  subtitle="Posez l'extrait à plat, bien éclairé, et cadrez la page entière."
+/>
+
+<fold-panel-body>
+  @switch (stage()) {
+    @case ('unsupported') {
+      <fold-empty-state
+        icon="contracts"
+        title="Ce navigateur ne sait pas photographier"
+        subtitle="La prise de vue n’existe pas partout. Le dépôt de fichier, lui, marche toujours."
+      />
+    }
+    @case ('denied') {
+      <fold-empty-state
+        icon="contracts"
+        title="Pas d’accès à la caméra"
+        subtitle="L’autorisation a été refusée, ou aucune caméra n’est disponible sur cet appareil."
+      />
+    }
+    @case ('review') {
+      <!-- LE geste que `<input capture>` ne donne pas : on relit la photo avant
+           qu'elle parte. Un extrait flou découvert à la certification, c'est une
+           semaine plus tard et un second déplacement. -->
+      <div class="kc-stage">
+        @if (shot(); as url) {
+          <img class="kc-shot" [src]="url" alt="L’extrait photographié" />
+        }
+        <p class="kc-hint">
+          Le SIRET et les mentions du greffe doivent être <strong>lisibles</strong> à l’écran.
+        </p>
+      </div>
+    }
+    @default {
+      <!-- La caméra vit dans TOUS les états où elle peut servir : l'attacher au
+           seul cadrage la détruirait entre deux rendus, et le flux serait
+           redemandé — donc une seconde invite d'autorisation. -->
+      <div class="kc-stage">
+        <video #preview class="kc-preview" muted playsinline></video>
+        @if (stage() === 'starting') {
+          <fold-loading message="Ouverture de la caméra…" />
+        }
+      </div>
+    }
+  }
+</fold-panel-body>
+
+@if (stage() === 'framing' || stage() === 'review') {
+  <fold-panel-footer align="end">
+    @if (stage() === 'review') {
+      <button foldButton emphasis="outline" icon="reload" (click)="retake()">Reprendre</button>
+      <button foldButton icon="check" (click)="use()">Utiliser cette photo</button>
+    } @else {
+      <button foldButton icon="eye" [loading]="busy()" (click)="shoot()">Prendre la photo</button>
+    }
+  </fold-panel-footer>
+}

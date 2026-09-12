@@ -7,6 +7,7 @@ import {
   type DeliveryAddressView,
   type DeliveryZoneView,
   type FulfillmentMethod,
+  type FulfillmentWindow,
   type PickupAddressView,
   type StaffSettlement,
 } from '@lfd/contracts';
@@ -30,6 +31,8 @@ export interface OrderDraft {
   readonly saveAddressToBook: boolean;
   /** Jour de retrait/livraison. Obligatoire : c'est la journée de production. */
   readonly requestedDeliveryDate: string;
+  /** La tranche convenue — en retrait seul, et le panier ne part pas sans elle. */
+  readonly requestedWindow: FulfillmentWindow | null;
   readonly note: string;
   readonly settlement: StaffSettlement;
 }
@@ -40,6 +43,7 @@ const NO_FULFILLMENT: FulfillmentChoice = {
   pickupAddressId: null,
   deliveryAddress: null,
   saveToBook: false,
+  window: null,
   issue: 'Acheminement non déterminé.',
 };
 
@@ -194,6 +198,7 @@ export class PanierCommande {
       deliveryAddress: acheminement.deliveryAddress,
       saveAddressToBook: acheminement.saveToBook,
       requestedDeliveryDate: this.requestedDate(),
+      requestedWindow: acheminement.window,
       note: this.note(),
       settlement: this.settlement(),
     });

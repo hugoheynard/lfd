@@ -755,7 +755,7 @@ B.4.
 
 **Le fait, vérifié le 2026-09-08.** Le vecteur exact de D10 — « le commentaire
 disait _centimes_ ; trois panneaux de saisie l'ont cru » — est vivant sur treize
-sites : le schéma (`schema.prisma:2601`, `:2608`, `:2612`, `:2690`, `:2934`), le
+sites : le schéma (`public/catalog.prisma:343`, `:2608`, `:2612`, `:2690`, `:2934`), le
 contrat (`pricing.ts:140`, `:467`, `:670`, `:672`, `:1033`, `:1202`), le domaine
 (`resolve-floor.ts:65`), et deux **messages lus par le staff**
 (`order-line.ts:83`, `:172`). `lint:money-units` lit les noms, pas les

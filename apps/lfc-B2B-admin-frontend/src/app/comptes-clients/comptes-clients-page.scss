@@ -21,14 +21,15 @@
 
 // La référence ouvre la fiche détail. Chiffres tabulaires : une colonne de
 // références qui ne s'aligne pas se lit comme du texte, pas comme une clé.
-.ref-link {
-  color: var(--fold-color-primary);
+/*
+  La référence n'est plus un lien (la ligne entière ouvre la fiche) : elle perd
+  donc l'encre et le soulignement, qui promettaient une destination à eux. Elle
+  garde la chasse fixe — c'est un identifiant qu'on dicte et qu'on compare d'une
+  ligne à l'autre.
+*/
+.ref {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-decoration: none;
-}
-.ref-link:hover {
-  text-decoration: underline;
 }
 
 /*

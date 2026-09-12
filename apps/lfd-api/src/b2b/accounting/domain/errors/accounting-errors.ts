@@ -2,6 +2,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
 
 // ─── Données mal formées : le modèle se protège lui-même (400) ───────────────
@@ -51,6 +52,20 @@ export class InvalidLegalEntityError extends DomainError {
   }
 }
 
+/**
+ * Le logo déposé n'est pas dessinable sur un mandat.
+ *
+ * Le message porte la RAISON et le GESTE, pas un code : il est lu par une
+ * assistante de gestion devant un écran de dépôt, qui doit savoir quoi refaire
+ * du fichier qu'elle a sous la main — recadrer, réexporter, ou en reprendre un
+ * autre.
+ */
+export class InvalidEntityLogoError extends DomainError {
+  constructor(readonly reason: string) {
+    super("accounting.entity_logo.invalid", `Logo refusé : ${reason}`);
+  }
+}
+
 // ─── Refus métier : la demande est bien formée mais impossible ici (409) ─────
 
 /**
@@ -87,8 +102,82 @@ export class EntityCannotCollectError extends BusinessError {
   }
 }
 
+/**
+ * On n'archive pas la dernière entité en service.
+ *
+ * Rien ne se corromprait : les documents déjà émis citent l'entité par son
+ * identifiant, et archiver n'efface rien. Ce qui se casse est plus sournois —
+ * **plus rien ne peut être émis ni prélevé**, et l'écran qui le dirait est
+ * justement celui qu'on vient de vider. Le refus existe pour ça : c'est un
+ * accident à un clic, dont le symptôme n'apparaît qu'au prochain cycle.
+ *
+ * Le message nomme le geste de sortie, parce qu'il est lu par quelqu'un qui n'a
+ * pas le code sous les yeux : déclarer la remplaçante d'abord.
+ */
+export class LastActiveLegalEntityError extends BusinessError {
+  constructor(readonly legalEntityId: string) {
+    super(
+      "accounting.legal_entity.last_active",
+      "Cette entité est la seule en service : l'archiver empêcherait toute " +
+        "émission et tout prélèvement. Déclarez d'abord celle qui la remplace.",
+    );
+  }
+}
+
 export class LegalEntityNotFoundError extends ResourceNotFoundError {
   constructor(readonly id: string) {
     super("accounting.legal_entity.not_found", `Aucune entité juridique « ${id} ».`);
+  }
+}
+
+/** Aucun logo n'est attaché à cette entité — le cas courant, pas une anomalie. */
+export class EntityLogoNotFoundError extends ResourceNotFoundError {
+  constructor(readonly legalEntityId: string) {
+    super(
+      "accounting.entity_logo.not_found",
+      `Aucun logo pour l'entité juridique « ${legalEntityId} ». ` +
+        `Déposez-en un dans Comptabilité › Entités juridiques.`,
+    );
+  }
+}
+
+// ─── Panne : le système se contredit lui-même (500) ──────────────────────────
+
+/**
+ * Le logo rangé n'est plus une image que nous savons dessiner.
+ *
+ * Seul {@link EntityLogo} a pu écrire cet objet, donc ce refus ne peut pas venir
+ * d'une saisie : il signale que le bucket et la base ne racontent plus la même
+ * chose — une clé écrasée à la main, un objet remplacé hors du produit. C'est
+ * une panne, et elle doit se voir plutôt que se rattraper en servant du vide.
+ */
+export class EntityLogoUnreadableError extends TechnicalError {
+  constructor(readonly legalEntityId: string) {
+    super(
+      "accounting.entity_logo.unreadable",
+      `Le logo rangé pour l'entité juridique « ${legalEntityId} » n'est ni un PNG ni un ` +
+        `JPEG. Redéposez-le depuis Comptabilité › Entités juridiques, et signalez-le : ` +
+        `le fichier a été remplacé en dehors du produit.`,
+    );
+  }
+}
+
+/**
+ * La borne d'un cycle tombe sur une heure locale qui n'existe pas.
+ *
+ * Inatteignable aujourd'hui — la clôture est à minuit, et minuit n'est sauté par
+ * aucun passage à l'heure d'été en Europe de l'Ouest. Le refus existe pour le
+ * jour où l'heure de clôture deviendrait un réglage : rendre un instant faux en
+ * silence coûterait un cycle entier décalé, découvert au relevé bancaire.
+ */
+export class BillingCycleBoundaryError extends TechnicalError {
+  constructor(
+    readonly day: string,
+    readonly time: string,
+  ) {
+    super(
+      "accounting.billing_cycle.impossible_boundary",
+      `Le ${day} à ${time} n'existe pas dans le fuseau des affaires (passage à l'heure d'été).`,
+    );
   }
 }

@@ -61,6 +61,11 @@
           <!-- Les deux journées qui font l'invariant : elles doivent TOUJOURS
                exister, quel que soit le jour où l'on sème. -->
           <fold-field label="Servie la veille">{{ done.orders.yesterday }}</fold-field>
+          <!-- La file du comptoir : le compte vient du serveur, pas d'une phrase
+               écrite ici qui divergerait du semis au premier ajout. -->
+          <fold-field label="Au comptoir aujourd'hui">
+            {{ done.orders.today }} · {{ done.orders.counterToday }} à remettre
+          </fold-field>
           <fold-field label="En attente pour demain">
             {{ done.orders.tomorrow }} · livraison + retrait
           </fold-field>

@@ -2,12 +2,15 @@ import { ChangeDetectionStrategy, Component, computed, effect, input, output } f
 import { FoldListboxComponent, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 import { formatAdjustment, resolveZoneForPostalCode } from '@lfd/b2b-ui/order';
 import { NEW_ADDRESS, type DraftAddress, type DraftStore } from '../draft.store';
+import { pickupSlots } from '@lfd/contracts';
 import type {
   BillingAddressPayload,
   DeliveryAddressView,
   DeliveryZoneView,
   FulfillmentMethod,
+  FulfillmentWindow,
   PickupAddressView,
+  PickupSlot,
 } from '@lfd/contracts';
 
 /** L'acheminement d'une commande en cours de saisie, tel que le panier l'enverra. */
@@ -20,6 +23,16 @@ export interface FulfillmentChoice {
    * pour une **saisie** — une entrée du carnet ne s'y ajoute pas deux fois.
    */
   readonly saveToBook: boolean;
+  /**
+   * La tranche de retrait convenue. `null` = **pas encore choisie**, et
+   * `issue` le dit alors — le créneau est obligatoire en retrait.
+   *
+   * ⚠️ **En retrait seulement.** En coursier elle reste `null` : la fenêtre
+   * légitime d'une livraison est celle du CARNET, que le serveur lit à partir
+   * de l'adresse. Le panier client prend exactement le même parti, et pour la
+   * même raison — une heure de tournée affichée ici n'affirmerait rien de vrai.
+   */
+  readonly window: FulfillmentWindow | null;
   /** Ce qui empêche d'acheminer, en clair — `null` quand tout est en place. */
   readonly issue: string | null;
 }
@@ -145,6 +158,74 @@ export class AcheminementCommande {
     );
   });
 
+  /**
+   * **Les créneaux du point ouvert**, déduits de ses heures d'ouverture.
+   *
+   * Vide = le point n'a déclaré aucune heure. L'écran le DIT au lieu de
+   * proposer n'importe quand — `pickupSlots` refuse déjà d'inventer, et une
+   * liste vide sans explication ferait chercher une panne.
+   */
+  protected readonly slots = computed<readonly PickupSlot[]>(() => {
+    const point = this.pickup();
+    return point === null ? [] : pickupSlots(point.opening);
+  });
+
+  /** Les créneaux du point, et rien d'autre : il n'y a pas d'option « aucune ». */
+  protected readonly slotOptions = computed(() =>
+    this.slots().map((slot) => ({
+      value: slot.id,
+      label: `${slotLabel(slot)}${slot.access === 'pro' ? ' · réservé aux pros' : ''}`,
+    })),
+  );
+
+  /** Le créneau retenu, ou `''` tant qu'aucun ne l'est. */
+  protected readonly slotId = computed<string>(() => {
+    const chosen = this.draft().window();
+    return chosen === null ? '' : idOf(chosen);
+  });
+
+  private chosenWindow(): FulfillmentWindow | null {
+    return this.draft().window();
+  }
+
+  /**
+   * **Le créneau est OBLIGATOIRE**, et il n'y a pas d'échappatoire.
+   *
+   * 🔴 Une option « aucune heure convenue » a existé une heure, le 2026-09-11,
+   * et elle a été retirée : elle rendait l'absence de créneau _acceptable_ alors
+   * que c'est précisément ce qu'on cherchait à faire disparaître. Un retard se
+   * gère — la file le montre, l'équipe rappelle — ; une commande sans heure ne
+   * se gère pas : elle n'a pas de rang dans la file, personne ne sait quand
+   * attendre le client, et rien ne peut être en retard.
+   *
+   * ⚠️ **L'écran n'est pas seul à le tenir** : `adminPlaceOrderPayloadSchema`
+   * refuse un retrait sans tranche (`hasWindowWhenPickedUp`). Ce qui se passe
+   * ici est un service rendu au commercial — dire la règle avant l'envoi —, pas
+   * la règle elle-même.
+   *
+   * ⚠️ **Un point sans heure déclarée bloque aussi**, et ce n'est pas un
+   * durcissement : le parcours CLIENT le bloque déjà. Son dialogue de retrait
+   * n'émet que si une tranche est choisie, et `pickupSlots` d'un point sans
+   * ouverture ne rend rien — personne ne peut commander sur un tel point
+   * (vérifié le 2026-09-11). Laisser passer la saisie staff ferait de l'écran
+   * du commercial la seule porte d'entrée de la donnée qu'on vient de bannir.
+   * Le message nomme le réglage qui débloque.
+   */
+  private windowIssue(): string | null {
+    if (this.slots().length === 0) {
+      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Livraisons & retraits).';
+    }
+    return this.slotId() === '' ? 'Créneau de retrait à choisir.' : null;
+  }
+
+  protected onSlot(value: string): void {
+    const slot = this.slots().find((entry) => entry.id === value);
+    if (slot === undefined) {
+      return;
+    }
+    this.draft().window.set({ start: slot.start, end: slot.end });
+  }
+
   protected readonly choice = computed<FulfillmentChoice>(() =>
     this.isCourier() ? this.courierChoice() : this.pickupChoice(),
   );
@@ -163,10 +244,11 @@ export class AcheminementCommande {
       pickupAddressId: point?.id ?? null,
       deliveryAddress: null,
       saveToBook: false,
+      window: this.chosenWindow(),
       issue:
         point === null
           ? 'Aucun point de retrait n’est configuré (Réglages → Livraisons & retraits).'
-          : null,
+          : this.windowIssue(),
     };
   }
 
@@ -178,6 +260,7 @@ export class AcheminementCommande {
         pickupAddressId: null,
         deliveryAddress: null,
         saveToBook: false,
+        window: null,
         issue: 'Adresse de livraison incomplète — rue, code postal et ville sont requis.',
       };
     }
@@ -197,6 +280,9 @@ export class AcheminementCommande {
       // Décochée par défaut, et sans effet sur une entrée du carnet : c'est un
       // geste explicite, pas une conséquence d'avoir tapé une adresse.
       saveToBook: this.isNewAddress() && this.keepAddress(),
+      // ⚠️ Jamais de tranche en coursier : celle qui vaut est au CARNET, et le
+      // serveur la lit à partir de l'adresse. En poser une ici l'écraserait.
+      window: null,
       issue:
         this.zone() === null
           ? `Aucune tournée ne dessert le ${address.codePostal.trim()} — choisissez le retrait.`
@@ -208,8 +294,17 @@ export class AcheminementCommande {
     this.draft().method.set(value === 'delivery' ? 'delivery' : 'pickup');
   }
 
+  /**
+   * Changer de point **efface la tranche**, et rouvre la question.
+   *
+   * 🔴 Les créneaux d'un point ne valent pas pour un autre : le Labo ouvre aux
+   * pros à 5 h, le Village à 7 h. Garder l'heure en changeant de comptoir
+   * promettrait une porte close — et le serveur refuserait à la passation, une
+   * fois le client raccroché.
+   */
   protected onPickup(id: string): void {
     this.draft().pickupId.set(id);
+    this.draft().window.set(null);
   }
 
   protected onAddress(id: string): void {
@@ -230,4 +325,25 @@ export class AcheminementCommande {
       this.draft().patchAddress({ [field]: element.value });
     }
   }
+}
+
+/** `07:00-08:00`, ou `-08:00` sans borne basse — la clé d'un `PickupSlot`. */
+function idOf(window: FulfillmentWindow): string {
+  return `${window.start ?? ''}-${window.end}`;
+}
+
+/** « 7 h – 8 h », ou « avant 8 h » quand le point n'a pas déclaré son ouverture. */
+function slotLabel(slot: PickupSlot): string {
+  return slot.start === null
+    ? `avant ${hour(slot.end)}`
+    : `${hour(slot.start)} – ${hour(slot.end)}`;
+}
+
+/** `07:00` → « 7 h », `06:30` → « 6 h 30 ». Les espaces sont INSÉCABLES. */
+function hour(value: string): string {
+  const [hours, minutes] = value.split(':');
+  if (hours === undefined || minutes === undefined) {
+    return value;
+  }
+  return minutes === '00' ? `${Number(hours)}\u00a0h` : `${Number(hours)}\u00a0h\u00a0${minutes}`;
 }

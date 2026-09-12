@@ -77,6 +77,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { prismaSchemaFiles } from "./lib/prisma-schema.mjs";
+
 const ROOT = process.cwd();
 
 /** Là où de l'argent circule. Le client Prisma est généré, il ne compte pas. */
@@ -242,7 +244,9 @@ function findingsIn(file) {
  * vingt-deux mentions fausses de R19 y vivaient. Le laisser dehors aurait rendu
  * la seconde passe aveugle à l'endroit où la donnée est définie.
  */
-const SCHEMA = "apps/lfd-api/prisma/schema.prisma";
+// Les sources Prisma : un DOSSIER depuis le 2026-09-10, donc une liste de
+// fichiers et non plus un chemin unique.
+const SCHEMA_FILES = prismaSchemaFiles(ROOT);
 
 /**
  * **Seconde passe : ce que les COMMENTAIRES promettent.**
@@ -359,7 +363,7 @@ const stray = [];
 const lying = [];
 const seen = new Set();
 
-const scanned = [...WATCHED.flatMap((dir) => tsFiles(join(ROOT, dir))), join(ROOT, SCHEMA)];
+const scanned = [...WATCHED.flatMap((dir) => tsFiles(join(ROOT, dir))), ...SCHEMA_FILES];
 
 for (const file of scanned) {
   const path = relative(ROOT, file);

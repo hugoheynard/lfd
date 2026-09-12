@@ -1,0 +1,271 @@
+<!--
+  Pas de `title` sur le layout : la page porte son `<h1>` dans la bande de tête,
+  et deux titres de premier niveau sur un écran n'en font aucun.
+-->
+<fold-page-layout>
+  <!--
+    **LA BANDE DE TÊTE**, sur le chrome et pleine largeur. C'est la partition de
+    la tarification et du catalogue, reprise telle quelle : le verdict sur le
+    fond sombre, l'établi sur le papier. Rien ne s'y modifie — on y lit où en est
+    le mois et ce que pèsent le portefeuille et le catalogue.
+
+    `bleed` annule EXACTEMENT la gouttière du layout, donc la bande saigne
+    jusqu'aux bords sans qu'une marge soit à resynchroniser ; `foldSurface` la
+    déclare surface de chrome, et c'est le thème qui lui donne sa polarité —
+    aucun fond n'est peint à la main par-dessus un composant fold.
+  -->
+  <fold-page-section bleed stack class="masthead" foldSurface="chrome">
+    <div class="masthead-head">
+      <h1 class="masthead-title">Comptabilité</h1>
+
+      <div class="masthead-exits">
+        <a
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          routerLink="/comptabilite/entites-juridiques"
+        >
+          Entités juridiques →
+        </a>
+      </div>
+    </div>
+
+    <p class="masthead-lead">
+      Ce qu'il y a à collecter, à déclarer et à exporter. Les cartes non encore construites disent
+      ce qu'elles attendent&nbsp;: aucune ne montre un chiffre qu'elle ne sait pas calculer.
+    </p>
+
+    <!--
+      Le cycle. Sa panne est PARTIELLE : la bande perd sa barre, le tableau de
+      bord reste à l'écran — il ne dépend pas d'elle.
+    -->
+    @if (cycleError(); as message) {
+      <fold-callout appearance="inset" variant="alert">{{ message }}</fold-callout>
+    } @else if (cycle(); as window) {
+      <app-cycle-bar [cycle]="window" />
+    }
+
+    @if (!loading()) {
+      <!--
+        LE BANDEAU CHIFFRÉ. Quatre nombres, et un seul dont une valeur non nulle
+        est une mauvaise nouvelle : les articles sans taux de TVA ne sont pas
+        masqués et ne sont pas vendables pour autant. Ils quittent la boutique
+        sans que rien ne le dise — ce compteur est ce qui le dit.
+
+        Un `<dl>` et non des cartes : ce sont des paires terme/valeur, un lecteur
+        d'écran les annonce ensemble, et quatre cartes pour quatre entiers
+        feraient quatre objets là où il y a une seule information.
+      -->
+      <dl class="tb-figures">
+        @for (figure of figures(); track figure.label) {
+          <div [class.is-warning]="figure.tone === 'warning'" [class.is-zero]="figure.value === 0">
+            <dt>{{ figure.label }}</dt>
+            <dd>{{ figure.value }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  </fold-page-section>
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @if (loading()) {
+    <fold-loading message="Lecture du tableau de bord…" />
+  } @else {
+    <!--
+      **Les quatre cartes en grille**, pas en pile. Elles répondent à quatre
+      questions indépendantes, et une colonne unique en faisait une liste où la
+      dernière se lisait comme la suite de la première. Le `gap` de la grille
+      porte l'espacement — aucune carte ne pose sa marge.
+    -->
+    <div class="tb-cards">
+      <!-- ═══ COMPTES CLIENTS — vivante ═══ -->
+      <fold-card class="tb-card">
+        <fold-page-section title="Comptes clients" separator>
+          <span sectionSubtitle>
+            Qui facture, et qui vient d'arriver. Un compte activé est un compte qui va facturer.
+          </span>
+
+          @if (customers(); as portfolio) {
+            <p class="tb-line">
+              <strong>{{ portfolio.active }}</strong> actif(s), dont
+              <strong>{{ portfolio.newlyActive }}</strong> activé(s) sur les
+              {{ windowDays }} derniers jours.
+            </p>
+            @if (portfolio.pending > 0 || portfolio.suspended > 0) {
+              <!-- Dits séparément : un dossier en attente demande un geste du
+                   staff, un compte suspendu est du chiffre d'affaires arrêté.
+                   Les taire ferait lire le nombre d'actifs comme si tout allait
+                   bien. -->
+              <p class="tb-said">
+                {{ portfolio.pending }} dossier(s) en attente · {{ portfolio.suspended }} compte(s)
+                suspendu(s).
+              </p>
+            }
+          }
+
+          <div class="tb-actions">
+            <button foldButton [loading]="busy()" (click)="exportCustomers()">
+              Exporter le CSV
+            </button>
+            <a
+              foldButton
+              emphasis="outline"
+              intent="neutral"
+              routerLink="/commercial/comptes-clients"
+            >
+              Voir les comptes
+            </a>
+          </div>
+        </fold-page-section>
+      </fold-card>
+
+      <!-- ═══ CATALOGUE B2B — vivante ═══ -->
+      <fold-card class="tb-card">
+        <fold-page-section title="Catalogue B2B" separator>
+          <span sectionSubtitle>
+            Ce qui est vendu et à quel prix, tel qu'on l'ouvre dans un tableur pour relire une
+            grille.
+          </span>
+
+          @if (catalog(); as shelf) {
+            <p class="tb-line">
+              <strong>{{ shelf.onSale }}</strong> article(s) en vente.
+            </p>
+            @if (shelf.withoutVatRate > 0) {
+              <!-- 🔴 Le seul avertissement de cet écran. Un article sans régime de
+                   TVA n'est PAS masqué : le lecteur de la boutique l'écarte plutôt
+                   que d'inventer 5,5 %. Il disparaît donc de la vente en silence,
+                   et c'est un manque de paramétrage, pas une décision. -->
+              <fold-callout appearance="inset" variant="warning">
+                <strong>{{ shelf.withoutVatRate }} article(s) sans taux de TVA.</strong> Ils ne sont
+                pas masqués et ne sont pas vendables pour autant&nbsp;: la boutique les écarte, sans
+                rien dire au client. C'est la famille qu'il faut régler dans le référentiel.
+              </fold-callout>
+            }
+            @if (shelf.hidden > 0) {
+              <p class="tb-said">{{ shelf.hidden }} article(s) masqué(s) volontairement.</p>
+            }
+          }
+
+          <div class="tb-actions">
+            <button foldButton [loading]="busy()" (click)="exportCatalog()">Exporter le CSV</button>
+            <a foldButton emphasis="outline" intent="neutral" routerLink="/b2b/catalogue">
+              Voir le catalogue
+            </a>
+          </div>
+        </fold-page-section>
+      </fold-card>
+
+      <!-- ═══ PRÉLÈVEMENT SEPA — à moitié vivante ═══ -->
+      <fold-card class="tb-card">
+        <fold-page-section title="Prélèvement SEPA" separator>
+          <span sectionSubtitle>
+            L'export XML déposé chaque fin de mois dans le portail de la Caisse d'Épargne.
+          </span>
+
+          <!--
+            La carte ne peut rien exporter — il n'y a pas de facture à prélever.
+            Mais sa PREMIÈRE condition bloquante est déjà vérifiable, et c'est ce
+            qu'elle répond : sans ICS ni compte créancier, aucun lot ne partirait
+            de toute façon. Attendre passivement sa tranche aurait laissé cette
+            question sans écran.
+          -->
+          @if (issuer(); as ready) {
+            <p class="tb-line">
+              <fold-badge variant="success" content="Émetteur prêt" />
+              <span class="tb-issuer">{{ ready.name }} · ICS {{ ready.ics }}</span>
+            </p>
+          } @else {
+            <fold-callout appearance="inset" variant="warning">
+              <strong>Aucun émetteur ne peut encaisser.</strong> Il manque {{ issuerGap() }}. Rien
+              ne pourra être prélevé tant qu'une entité juridique ne réunit pas un identifiant
+              créancier et un compte.
+            </fold-callout>
+          }
+
+          <!--
+            ⚠️ Cette phrase disait « il suppose des factures à prélever ». C'est
+            devenu FAUX le 2026-09-10 : nous n'émettons pas de factures, et
+            l'assiette se somme depuis les commandes passées au compte. Une
+            consigne périmée dans un écran gèle un chantier — voir §0 quater.
+          -->
+          <p class="tb-said">
+            Un <strong>brouillon</strong> se télécharge dès maintenant&nbsp;: notre bloc créancier
+            et les montants y sont réels. Le bloc débiteur, lui, ne peut pas l'être — ni son IBAN ni
+            la référence de son mandat n'existent encore dans le système.
+          </p>
+
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Ce fichier ne peut pas être déposé.</strong> À la place des coordonnées du
+            débiteur, il porte des marqueurs qu'aucune banque n'accepte&nbsp;: un lot incomplet qui
+            ressemblerait à un lot valide serait bien plus dangereux qu'un fichier refusé. Il sert à
+            relire notre bloc créancier, avec un conseiller.
+          </fold-callout>
+
+          <div class="tb-actions">
+            @if (issuer(); as ready) {
+              <button foldButton icon="download" [loading]="busy()" (click)="downloadDraft(ready)">
+                Télécharger le brouillon
+              </button>
+              <!--
+                Le contrôle RELIT le XML au lieu de recalculer : il atteste ce
+                que le fichier contient. Il confronte les deux totaux que le
+                fichier DÉCLARE — `NbOfTxs` et `CtrlSum` — à ce qu'on obtient en
+                comptant et sommant ses lignes, c'est-à-dire les deux champs dont
+                un centime d'écart fait rejeter le message entier.
+              -->
+              <button
+                foldButton
+                emphasis="outline"
+                icon="download"
+                [loading]="busy()"
+                (click)="downloadDraftAudit(ready)"
+              >
+                Contrôler en CSV
+              </button>
+            }
+            <a
+              foldButton
+              emphasis="outline"
+              intent="neutral"
+              routerLink="/comptabilite/entites-juridiques"
+            >
+              Régler l'émetteur
+            </a>
+          </div>
+        </fold-page-section>
+      </fold-card>
+
+      <!-- ═══ FACTURATION — pas encore ═══ -->
+      <fold-card class="tb-card">
+        <fold-page-section title="Facturation">
+          <span sectionSubtitle>Qui l'émet, et à partir de quoi.</span>
+
+          <!--
+            ⚠️ Cette carte annonçait « les tranches 4 et 5 — l'agrégat facture,
+            puis sa numérotation sans trou ». Les deux ont été SUPPRIMÉES le
+            2026-09-10 : nous n'émettons pas de factures. Une carte qui promet un
+            chantier abandonné fait attendre quelque chose qui ne viendra pas.
+          -->
+          <fold-callout appearance="inset" variant="info">
+            <strong>Nous n'émettons pas de factures, et c'est une décision.</strong> Le comptable
+            importe nos commandes dans son logiciel et sort la facture mensuelle&nbsp;; nous
+            produisons la somme et le fichier de prélèvement. Bâtir un émetteur de factures
+            aujourd'hui, ce serait bâtir contre un régime de facturation électronique qui n'est pas
+            stabilisé.
+          </fold-callout>
+
+          <p class="tb-said">
+            Ce qui manque encore ici, c'est <strong>l'export des commandes du cycle</strong>, par
+            société — l'entrée du logiciel du comptable. Sa forme dépend de ce que ce logiciel sait
+            lire, ce qui est une question à lui poser avant de l'écrire.
+          </p>
+        </fold-page-section>
+      </fold-card>
+    </div>
+  }
+</fold-page-layout>

@@ -1,0 +1,154 @@
+<!--
+  **Le rail est sur le CHROME**, pas sur le papier.
+
+  Ce n'est pas une préférence de teinte : c'est ce qu'on lit debout, à un mètre,
+  pendant qu'une personne attend en face. Le contraste inversé sort le sac de la
+  file — et c'est la seule chose à lire à ce moment-là. La bande de tête de
+  l'écran fait le même choix, pour la même raison.
+
+  🔴 `foldSurface` ET un fond peint : la directive bascule la polarité, elle ne
+  peint rien.
+-->
+<section class="hd-sheet" foldSurface="chrome">
+  @if (entry(); as row) {
+    <!-- L'identité. Le sur-titre dit OÙ et QUAND : les deux faits qui tranchent
+         « est-ce bien celle-là » avant même qu'on lise le numéro. -->
+    <header class="hd-identity">
+      <div class="hd-top">
+        <p class="hd-eyebrow">{{ contextLine() }}</p>
+        <button
+          foldButton
+          emphasis="soft"
+          size="sm"
+          icon="close"
+          aria-label="Refermer le détail"
+          (click)="clear()"
+        ></button>
+      </div>
+      <!-- Les trois lignes en UN bloc : nom, numéro, date ne sont pas trois
+           faits à peser l'un après l'autre, c'est une seule identité qu'on lit
+           d'un regard. Elles se serrent donc entre elles, et c'est le rail qui
+           les tient à distance du sur-titre. -->
+      <div class="hd-who">
+        <!-- L'enseigne d'abord quand elle existe : c'est le nom peint sur la
+             devanture, celui qu'on prononce au comptoir. La raison sociale
+             suit, en plus discret — elle sert à lever un doute entre deux
+             voisines, pas à appeler quelqu'un. -->
+        <p class="hd-customer">
+          <span class="hd-trade">{{ tradeName() ?? row.customerLabel }}</span>
+          @if (tradeName() !== null) {
+            <span class="hd-legal">{{ row.customerLabel }}</span>
+          }
+        </p>
+        <p class="hd-reference">{{ row.reference }}</p>
+        <p class="hd-meta">Commandée le {{ placedAt() }}</p>
+      </div>
+
+      <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne
+         sera remis : c'est ce qu'on lit à voix haute au comptoir. -->
+      @if (row.state === 'cancelled') {
+        <fold-callout appearance="inset" variant="alert">
+          <strong>Cette commande est annulée.</strong> Rien ne doit être remis&nbsp;: le sac ne sera
+          pas préparé, et le client n'a rien à régler.
+        </fold-callout>
+      } @else {
+        <!-- Le verdict du fournil, et rien de plus que ce qu'il a dit. Il n'y a
+               ni rupture ni avoir dans le modèle : une phrase qui affirmerait
+               « complète » inventerait une vérification que personne n'a faite. -->
+        <fold-callout appearance="inset" [variant]="readyTone()" [icon]="readyIcon()">
+          {{ readyText() }}
+        </fold-callout>
+      }
+    </header>
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture du contenu…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Contenu illisible"
+          subtitle="La commande n'a pas pu être relue — le bon de commande, lui, reste disponible."
+        >
+          <button foldButton (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (lines().length === 0) {
+          <fold-empty-state
+            icon="basket"
+            title="Aucun article"
+            subtitle="Cette commande ne porte aucune ligne de marchandise."
+          />
+        } @else {
+          <!-- Le sac dans sa propre carte : c'est la seule chose qu'on lit en
+               tendant les mains, et elle doit se détacher du reste du rail. -->
+          <section class="hd-bag">
+            <header class="hd-bag-head">
+              <h3 class="hd-bag-title">Ce qu'on tend</h3>
+              <p class="hd-bag-total">
+                <strong>{{ row.totalUnits }}</strong>
+                <span>pièce{{ row.totalUnits > 1 ? 's' : '' }}</span>
+              </p>
+            </header>
+
+            <ul class="hd-lines">
+              @for (line of lines(); track line.sku) {
+                <li class="hd-line">
+                  <span class="hd-qty">{{ line.quantity }}</span>
+                  <span class="hd-name">{{ line.productName }}</span>
+                  <span class="hd-sku">{{ line.sku }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+    }
+
+    <footer class="hd-actions">
+      <!-- 🔴 **La remise saisie, et elle le dit.** Le client n'a pas présenté
+           de code : l'attestation sera gravée `manual`, donc faible et honnête.
+           La maquiller en scan est exactement ce qui fait imprimer le code sur
+           le colis « pour les cas difficiles » — et un coursier scanne alors
+           son propre carton. -->
+      @if (remittable()) {
+        <!-- Le scan EN PREMIER, et c'est l'ordre qui le dit : on tend le
+             lecteur, et la saisie n'est que le repli quand le code manque. -->
+        <button foldButton class="hd-scan" block size="lg" icon="qr-code" (click)="scan()">
+          Scanner le code
+        </button>
+        <button
+          foldButton
+          emphasis="outline"
+          block
+          size="lg"
+          icon="check"
+          [loading]="remitting()"
+          (click)="remit()"
+        >
+          Remettre sans code
+        </button>
+      }
+
+      <div class="hd-foot">
+        <!-- Ce qu'on ne fait PAS ici, dit là où quelqu'un pourrait le chercher.
+             La file ne porte aucun montant, par construction : un total affiché
+             au comptoir se lirait comme une somme à encaisser. -->
+        <span class="hd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</span>
+        <button foldButton emphasis="soft" size="sm" iconTrailing="arrow-right" (click)="openBon()">
+          Voir le bon
+        </button>
+      </div>
+    </footer>
+  } @else {
+    <!-- Le rail existe même vide, et c'est le sujet : sa place est réservée, la
+         file ne se réorganise pas sous les doigts au premier clic. -->
+    <fold-empty-state
+      icon="package"
+      title="Aucune commande choisie"
+      subtitle="Touchez une ligne de la file pour voir ce qu'il y a dans le sac."
+    />
+  }
+</section>

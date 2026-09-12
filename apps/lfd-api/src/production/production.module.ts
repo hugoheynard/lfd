@@ -1,23 +1,19 @@
 import { Module } from "@nestjs/common";
 
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
-import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
-import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
 import { PackOrderHandler } from "./application/commands/pack-order.handler.js";
-import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
+import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
 import {
   GetAtelierSheetPdfHandler,
   GetProductionCountPdfHandler,
 } from "./application/queries/get-production-paper.handler.js";
-import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
 import { ProductionPapers } from "./application/services/production-paper.service.js";
-import { OrderHandoverRepository } from "./domain/ports/order-handover.repository.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
-import { ProductionHandoverController } from "./http/handover.controller.js";
+import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
-import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-handover.repository.js";
 import { PrismaProductionDayRepository } from "./infrastructure/prisma-production-day.repository.js";
+import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
 
 /**
  * **Le fournil.**
@@ -28,24 +24,25 @@ import { PrismaProductionDayRepository } from "./infrastructure/prisma-productio
  * `b2b`, ce que la matrice des frontières interdit — et ce serait franchir la
  * frontière par la porte de service.
  *
- * Même chose pour `HandoverSubjectReader` : le fournil constate la remise, il ne
- * connaît pas la commande — il déclare ce dont il a besoin pour l'afficher.
+ * ⚠️ **La remise n'est plus ici** depuis le 2026-09-10 : elle a son bloc, son
+ * module et son contrôleur. Ce que le fournil en garde est une QUESTION —
+ * `AttestedHandoversReader`, qu'il déclare dans `channels/handover/` et que la
+ * remise implémente. Il ne tient plus son dépôt d'écriture.
  */
 @Module({
-  controllers: [ProductionDayController, ProductionHandoverController],
+  controllers: [ProductionDayController],
   providers: [
     CloseProductionDayHandler,
     PackOrderHandler,
-    ConfirmHandoverHandler,
-    ConfirmManualHandoverHandler,
     GetProductionDayStatusHandler,
-    GetHandoverHandler,
+    GetProductionForecastHandler,
     GetProductionCountPdfHandler,
     GetAtelierSheetPdfHandler,
     ProductionPapers,
-    HandoverAttestation,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
-    { provide: OrderHandoverRepository, useClass: PrismaOrderHandoverRepository },
+    // La lecture du plan arrêté est un port À PART du dépôt d'écriture, et son
+    // adaptateur vit chez la production : c'est SON schéma qu'il interroge.
+    { provide: ProductionPlanReader, useClass: PrismaProductionPlanReader },
   ],
 })
 export class ProductionModule {}

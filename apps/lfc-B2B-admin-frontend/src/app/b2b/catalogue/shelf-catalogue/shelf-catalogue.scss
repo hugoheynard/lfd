@@ -1,0 +1,55 @@
+.tool {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Un article retiré de la vente reste LISIBLE, seulement en retrait : le masquer
+   d'un écran de paramétrage empêcherait de le rouvrir. */
+.is-hidden {
+  opacity: 0.6;
+}
+
+.name {
+  font-weight: var(--fold-weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.sku,
+.decided,
+.follows,
+.allergens {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.decision {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--fold-space-xs);
+}
+
+/* « suit le PIM » n'est pas un manque : c'est l'état par défaut d'un article que
+   personne n'a eu besoin de renégocier. En gris, donc, et pas en pastille
+   d'alerte — sans quoi trente-neuf lignes sur quarante réclameraient un geste. */
+.follows {
+  font-style: italic;
+}
+
+.shop {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  /* 🔴 La table pose `white-space: nowrap` sur ses cellules — juste pour un
+     montant ou une pastille, faux pour une phrase. La confirmation qui s'ouvre
+     ici en porte une : sans ce retour à la ligne, elle poussait la colonne à
+     cinq cents pixels et déformait toute la table (mesuré le 2026-09-10). */
+  white-space: normal;
+}

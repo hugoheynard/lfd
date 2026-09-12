@@ -201,7 +201,7 @@ d'administration, l'écran de réglage.
 | `orders/domain/services/vat.ts`                  | `VatInput` gagne `ecoFeeCents` + `ecoFeeVatRate`. `extrasOf` le pousse dans `extras` — **jamais dans `lines`**                         |
 | `orders/domain/entities/order.ts`                | `DraftOrderInput` et `OrderToPlace` le portent ; le constructeur aussi. **Rien à ajouter au total** : il vient de `computeOrderTotals` |
 | `application/services/order-drafting.service.ts` | résout le montant depuis le réglage, avant de composer                                                                                 |
-| `prisma/schema.prisma` + migration               | deux colonnes : `eco_fee_cents`, `eco_fee_adjustment` (JSON, l'ajustement **et** son taux, figés)                                      |
+| `prisma/schema/public/orders.prisma` + migration | deux colonnes : `eco_fee_cents`, `eco_fee_adjustment` (JSON, l'ajustement **et** son taux, figés)                                      |
 | `infrastructure/prisma-order.repository.ts`      | l'écrit                                                                                                                                |
 | `infrastructure/prisma-order.reader.ts`          | le relit                                                                                                                               |
 
@@ -263,15 +263,15 @@ rougi — aucun ne comparait les deux définitions.
 
 ### Les autres, par ordre de fréquence
 
-| Piège                                    | Ce qui l'évite                                                                                             |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Un montant en euros flottants            | `CartAdjustment` : `bp` ou `cents`, entiers. La porte `lint:money-units` garde les noms                    |
-| Un taux par défaut                       | Lever. `MissingLateFeeVatRateError` est le modèle                                                          |
-| Un terme à zéro dans la ventilation      | `extrasOf` saute les montants nuls — sans quoi un terme à zéro exigerait un taux que personne n'a réglé    |
-| Le terme dans `lines` au lieu d'`extras` | Il se ferait remiser. Un test le dit — « n'est pas remisée par la remise de retrait »                      |
-| Le taux recalculé à la relecture         | Le figer sur la commande, à côté du montant                                                                |
-| Le devis oublié                          | Le client voit un total, en paie un autre                                                                  |
-| La formule recopiée dans un commentaire  | Une troisième définition du TTC. Il y en avait une dans `schema.prisma`, et il lui manquait déjà `lateFee` |
+| Piège                                    | Ce qui l'évite                                                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Un montant en euros flottants            | `CartAdjustment` : `bp` ou `cents`, entiers. La porte `lint:money-units` garde les noms                                         |
+| Un taux par défaut                       | Lever. `MissingLateFeeVatRateError` est le modèle                                                                               |
+| Un terme à zéro dans la ventilation      | `extrasOf` saute les montants nuls — sans quoi un terme à zéro exigerait un taux que personne n'a réglé                         |
+| Le terme dans `lines` au lieu d'`extras` | Il se ferait remiser. Un test le dit — « n'est pas remisée par la remise de retrait »                                           |
+| Le taux recalculé à la relecture         | Le figer sur la commande, à côté du montant                                                                                     |
+| Le devis oublié                          | Le client voit un total, en paie un autre                                                                                       |
+| La formule recopiée dans un commentaire  | Une troisième définition du TTC. Il y en avait une dans `prisma/schema/public/orders.prisma`, et il lui manquait déjà `lateFee` |
 
 ---
 

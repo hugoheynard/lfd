@@ -1,0 +1,27 @@
+/* L'hôte EST la colonne du panneau : le composant est l'enfant direct du cadre
+   `fold-panel-host`, donc c'est lui qui empile en-tête / document / pied. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Le document prend tout l'espace restant. `min-height: 0` parce que le minimum
+   par défaut d'un élément flex est son contenu : sans lui, l'iframe pousserait
+   le pied hors du panneau, que `overflow: hidden` couperait ensuite. */
+.mp-viewer {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--fold-color-surface-sunken);
+}
+
+.mp-doc {
+  flex: 1 1 auto;
+  border: 0;
+  /* Un lecteur PDF sans hauteur explicite retombe sur les 150 px du défaut
+     historique de l'iframe — la boîte serait grande, le document minuscule. */
+  height: 100%;
+  width: 100%;
+}

@@ -1,14 +1,8 @@
-import { Inject } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import { OrderReadyEvent } from "../../domain/events/order-ready.event.js";
-import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../domain/ports/order.reader.js";
-import { clientSheetOf } from "../../domain/services/order-sheet.js";
+import { OrderReadyMail } from "../services/order-ready-mail.service.js";
 
 /**
  * **« Votre commande est prête »** — le seul courriel qui parte à un moment où
@@ -38,11 +32,8 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
 @EventsHandler(OrderReadyEvent)
 export class SendOrderReadyMail implements IEventHandler<OrderReadyEvent> {
   constructor(
-    private readonly orders: OrderReader,
-    private readonly recipients: OrderRecipientReader,
-    private readonly origins: OrderMailOrigins,
+    private readonly mail: OrderReadyMail,
     private readonly work: BackgroundWork,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
   handle(event: OrderReadyEvent): void {
@@ -52,32 +43,10 @@ export class SendOrderReadyMail implements IEventHandler<OrderReadyEvent> {
   }
 
   private async run(event: OrderReadyEvent): Promise<void> {
-    const owned = await this.orders.findById(event.orderId);
-    if (owned === null) {
-      return;
-    }
-    const recipient = await this.recipients.findById(owned.placedByUserId);
-    // Un client sans adresse lisible ne doit pas faire échouer un abonné de
-    // fond : la commande est prête, c'est le courriel qui manque.
-    if (recipient === null) {
-      return;
-    }
-
-    const client = this.origins.clientBaseUrl();
-    const admin = this.origins.adminBaseUrl();
-    const token = owned.view.handoverToken;
-
-    await this.mailer.send({
-      to: recipient.email,
-      template: "customer.order-ready",
-      data: {
-        sheet: clientSheetOf(owned.view),
-        handoverToken: token,
-        orderUrl: client === null ? "" : `${client}/mes-commandes`,
-        handoverUrl: token === null || admin === null ? "" : `${admin}/retrait/${token}`,
-        locale: DEFAULT_MAIL_LOCALE,
-      },
-      idempotencyKey: `order.ready:${event.orderId}`,
-    });
+    // 🔴 Clé DÉTERMINISTE par commande : même un fait rejoué sur un bus en
+    // processus ne fait pas partir un second message. Le rappel du comptoir,
+    // lui, en compose une datée — c'est la même fonction d'envoi, et c'est
+    // l'appelant qui choisit s'il se répète.
+    await this.mail.send(event.orderId, `order.ready:${event.orderId}`);
   }
 }

@@ -518,6 +518,13 @@ export class NouvelleCommandePage {
         // fera avec l'écran d'override.
         deliveryAddressId: null,
         requestedDeliveryDate: draft.requestedDeliveryDate,
+        // 🔴 **La clé est OMISE quand aucune tranche n'est convenue**, jamais
+        // mise à `null` : le serveur lit l'absence comme « prends le défaut »
+        // (celui du carnet, en livraison) et un `null` explicite comme « le
+        // client n'en veut aucune ». Un `null` posé par commodité effacerait
+        // donc la fenêtre qu'un compte a déclarée sur son adresse. Même parti
+        // que le panier du client, et pour la même raison.
+        ...(draft.requestedWindow === null ? {} : { requestedWindow: draft.requestedWindow }),
         note: draft.note,
         lines: [...this.cart.toPayloadLines()],
       });

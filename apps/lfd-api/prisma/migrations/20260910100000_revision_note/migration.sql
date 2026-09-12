@@ -1,0 +1,35 @@
+-- ───────────────────────────────────────────────────────────────────────────
+-- L'INTENTION D'UNE RÉVISION, EN DEUX LONGUEURS
+--
+-- `label` répond à « comment on l'appelle » : une phrase courte, lue dans une
+-- liste, à côté de quinze autres. `note` répond à « pourquoi », et se lit quand
+-- on ouvre — devant un client qui conteste un prix, six mois plus tard.
+--
+-- Deux colonnes et non une, parce que ce sont deux LECTURES et non deux
+-- niveaux de détail du même texte : allonger `label` ferait qu'une liste de
+-- révisions afficherait des paragraphes, et la tronquer à l'affichage
+-- cacherait précisément ce qu'on est venu chercher en ouvrant.
+--
+-- 🔴 **Trois états, et c'est ce que le NULL protège.**
+--   NULL  → personne n'a écrit de note. Y compris toutes les ancres d'avant ce
+--           lot, posées ANONYMEMENT par le push (cf.
+--           `documentation/pim/mecanique-revisions-catalogue.md`).
+--   ''    → impossible : la route refuse une chaîne vide, il n'y a donc pas
+--           d'état « note vide » qui se distinguerait du silence.
+--   valeur→ ce que quelqu'un a écrit.
+--
+-- **Aucun DEFAULT**, délibérément. Un `DEFAULT ''` transformerait le silence de
+-- toutes les révisions déjà parties en une note vide qu'on croirait écrite — et
+-- ce sont justement celles qu'on ne peut plus interroger.
+--
+-- **Aucun index** : rien n'interroge cette colonne, elle se lit avec sa ligne
+-- par la clé primaire. Le jour où une recherche la questionnera, l'index sera
+-- un geste additif de plus, pas une dette posée à l'avance.
+--
+-- ⚠️ **Additive, sans reprise, et le retour arrière n'est PAS un DROP.** Le
+-- rollback applicatif est gratuit — rien n'en dépend tant que le lecteur la
+-- traite comme optionnelle. Mais `DROP COLUMN` détruirait sans reprise possible
+-- tout ce qui aura été écrit entre-temps, et le §0 de CLAUDE.md l'interdit sur
+-- la production.
+-- ───────────────────────────────────────────────────────────────────────────
+ALTER TABLE "pim"."catalog_revision" ADD COLUMN "note" TEXT;

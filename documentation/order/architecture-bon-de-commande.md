@@ -300,12 +300,23 @@ En retrait, le client montre son code et **l'équipe scanne**. En livraison, la
 symétrie est exacte : le destinataire montre le code de son courriel, et **le
 coursier scanne** avec sa session staff. Même jeton, même porte, même geste.
 
-Rien de tout ça n'existe. `handover.ts` en émet **pour le retrait seul** —
-`issuesHandoverToken()` rend `method === "pickup"` — et `handoverBlocker()`
-refuse d'emblée toute commande en coursier (« elle ne se remet pas au
-comptoir »).
+> 🔴 **CE QUI SUIT DÉCRIT L'ÉTAT D'AVANT LE LOT 6, ET LE LOT 6 EST LIVRÉ.**
+> Le tableau des lots, plus bas dans ce même document, le marque ✅ — si bien que
+> le document se contredisait à lui-même à trois cents lignes d'écart, ce qui est
+> pire qu'une phrase périmée : le lecteur ne sait pas laquelle croire.
+>
+> **Vérifié le 2026-09-10** : `issuesHandoverToken()` n'a **plus de paramètre** et
+> rend `true` sans condition, et `handoverBlocker()` ne regarde plus
+> l'acheminement du tout. Les deux paragraphes ci-dessous sont conservés parce
+> qu'ils portent la **raison** qui a été retirée, et qu'une raison qu'on efface
+> se represente ; ils ne décrivent plus le code.
 
-⚠️ **La raison écrite au-dessus de cette fonction va devenir fausse**, et il faut
+Rien de tout ça n'existait avant le lot 6. `handover.ts` n'en émettait que **pour
+le retrait** — `issuesHandoverToken()` rendait `method === "pickup"` — et
+`handoverBlocker()` refusait d'emblée toute commande en coursier (« elle ne se
+remet pas au comptoir »).
+
+⚠️ **La raison écrite au-dessus de cette fonction est devenue fausse**, et il faut
 le dire plutôt que la contredire en silence :
 
 > « En émettre un pour une livraison créerait une porte inutilisable dont

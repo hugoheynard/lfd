@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+.tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  max-width: 46rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+code {
+  padding: var(--fold-space-xs) var(--fold-space-md);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-raised);
+  border: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text);
+}
+
+.excluded {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

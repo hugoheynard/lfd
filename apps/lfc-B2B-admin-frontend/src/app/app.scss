@@ -28,22 +28,40 @@ fold-app-shell {
 }
 
 .app-wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm, 0.5rem);
   flex: 1 1 auto;
   min-width: 0;
-  color: inherit;
-  text-decoration: none;
-  font-weight: 800;
+  margin: 0;
   font-size: clamp(0.9rem, 2vw, 1.1rem);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.app-brand {
+  flex: 0 0 auto;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+/* L'écran ouvert, en retrait de la marque : le fil se lit de gauche à droite,
+   du général au particulier, et c'est le second qui change. Le séparateur est
+   dessiné ici — écrit dans le gabarit, il serait lu entre les deux mots. */
+.app-page {
+  min-width: 0;
+  opacity: 0.6;
+  font-weight: 500;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.app-wordmark-admin {
-  opacity: 0.6;
-  font-weight: 500;
+.app-page::before {
+  content: '/';
+  margin-inline-end: var(--fold-space-sm, 0.5rem);
 }
 
 .app-header-actions {

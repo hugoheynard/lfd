@@ -5,7 +5,7 @@ export type {
   SignedDownloadOptions,
 } from "./IStorageService.js";
 export { S3StorageService } from "./S3StorageService.js";
-export { contentDispositionAttachment } from "./content-disposition.js";
+export { contentDispositionAttachment, contentDispositionInline } from "./content-disposition.js";
 export { sniffContentType } from "./content-type.js";
 export { imageDimensions } from "./image-dimensions.js";
 export type { ImageDimensions } from "./image-dimensions.js";

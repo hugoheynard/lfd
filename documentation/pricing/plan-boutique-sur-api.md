@@ -293,17 +293,17 @@ seulement absent »). Elle rend la boutique honnête avant de la rendre belle.
 
 ## 6. Ce qui a été vérifié, et comment
 
-| Affirmation                                 | Vérifiée par                                            |
-| ------------------------------------------- | ------------------------------------------------------- |
-| Le front porte des prix flottants en dur    | `mock-shop.ts:86-140`, `catalogue-seed.ts:1029`         |
-| Le front calcule le total et la TVA         | `cart-total.ts` — « tous les montants sont en euros »   |
-| Le serveur re-résout à la passation         | `order-line-pricing.service.ts:211-267`                 |
-| Aucun appel HTTP catalogue dans la boutique | recherche sur tout `apps/lfc-B2B-platform-frontend/src` |
-| Aucune route catalogue client               | recensement des `@Controller` de `b2b/*/http/`          |
-| `POST /orders/quote` existe et est muré     | `orders.controller.ts:72-81`                            |
-| L'instantané ne porte pas d'éditorial       | clés lues dans `catalog_delivery.snapshot`, en base     |
-| Le miroir n'a pas de colonne éditoriale     | `schema.prisma`, modèle `CatalogItem`                   |
-| Le PIM a éditorial et médias                | tables `pim.product_editorial`, `pim.product_media`     |
+| Affirmation                                 | Vérifiée par                                                |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| Le front porte des prix flottants en dur    | `mock-shop.ts:86-140`, `catalogue-seed.ts:1029`             |
+| Le front calcule le total et la TVA         | `cart-total.ts` — « tous les montants sont en euros »       |
+| Le serveur re-résout à la passation         | `order-line-pricing.service.ts:211-267`                     |
+| Aucun appel HTTP catalogue dans la boutique | recherche sur tout `apps/lfc-B2B-platform-frontend/src`     |
+| Aucune route catalogue client               | recensement des `@Controller` de `b2b/*/http/`              |
+| `POST /orders/quote` existe et est muré     | `orders.controller.ts:72-81`                                |
+| L'instantané ne porte pas d'éditorial       | clés lues dans `catalog_delivery.snapshot`, en base         |
+| Le miroir n'a pas de colonne éditoriale     | `prisma/schema/public/catalog.prisma`, modèle `CatalogItem` |
+| Le PIM a éditorial et médias                | tables `pim.product_editorial`, `pim.product_media`         |
 
 ⚠️ **Ce plan n'a pas été soumis à un contradicteur.** `CLAUDE.md` §9 bis le
 demande pour tout plan qui touche l'argent. À défaut, chaque affirmation de

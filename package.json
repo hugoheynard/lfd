@@ -15,8 +15,8 @@
     "dev:infra:nuke": "docker compose -f docker-compose.dev.yml down -v",
     "db:dev:sync": "node dev-toolbox/migrate-dev-db.mjs",
     "dev": "turbo run dev",
-    "dev:apps": "node dev-toolbox/fresh-vite-deps.mjs && pnpm dev:infra && pnpm db:dev:sync && (node dev-toolbox/suite-ready.mjs &) && (node dev-toolbox/restart-api-on-package-build.mjs &) && turbo run dev dev:watch dev:typecheck --output-logs=new-only --concurrency=20 --filter=lfc-b2b-platform-frontend... --filter=lfc-b2b-admin-frontend... --filter=lfd-api...",
-    "dev:gateway": "node dev-toolbox/fresh-vite-deps.mjs && pnpm dev:infra && pnpm db:dev:sync && (SUITE_URL=http://b2b-admin.localhost:8787 node dev-toolbox/suite-ready.mjs &) && (node dev-toolbox/restart-api-on-package-build.mjs &) && turbo run dev dev:watch dev:typecheck --output-logs=new-only --concurrency=20 --filter=lfd-gateway... --filter=lfc-b2b-platform-frontend... --filter=lfd-api... --filter=lfc-b2b-admin-frontend...",
+    "dev:apps": "bash dev-toolbox/dev-stack.sh --filter=lfc-b2b-platform-frontend... --filter=lfc-b2b-admin-frontend... --filter=lfd-api...",
+    "dev:gateway": "SUITE_URL=http://b2b-admin.localhost:8787 bash dev-toolbox/dev-stack.sh --filter=lfd-gateway... --filter=lfc-b2b-platform-frontend... --filter=lfd-api... --filter=lfc-b2b-admin-frontend...",
     "dev:status": "node dev-toolbox/suite-status.mjs",
     "dev:watch": "turbo run dev --filter=lfc-b2b-admin-frontend --filter=lfd-api",
     "lint": "turbo run lint",
@@ -28,6 +28,7 @@
     "lint:no-direct-env": "node dev-toolbox/gates/no-direct-env.mjs",
     "lint:events-tracked": "node dev-toolbox/gates/events-tracked.mjs",
     "lint:fold-tokens": "node dev-toolbox/gates/fold-tokens.mjs",
+    "lint:fold-unknown-attributes": "node dev-toolbox/gates/fold-unknown-attributes.mjs",
     "lint:sku-never-recycled": "node dev-toolbox/gates/sku-never-recycled.mjs",
     "lint:router-links": "node dev-toolbox/gates/router-links.mjs",
     "lint:pim-data-neutral": "node dev-toolbox/gates/pim-data-neutral.mjs",
@@ -46,7 +47,7 @@
     "test": "turbo run test",
     "clean": "turbo run clean",
     "lint:handler-per-file": "node dev-toolbox/gates/handler-per-file.mjs",
-    "lint:gates": "pnpm lint:api-types && pnpm lint:dated-decisions && pnpm lint:no-direct-env && pnpm lint:no-type-escapes && pnpm lint:money-units && pnpm lint:price-door && pnpm lint:price-pipeline && pnpm lint:prisma-model-ownership && pnpm lint:business-day && pnpm lint:clock-port && pnpm lint:catalog-shared-deps && pnpm lint:catalogue-authority && pnpm lint:code-language && pnpm lint:context-boundaries && pnpm lint:controller-buses && pnpm lint:handler-per-file && pnpm lint:cross-schema-join && pnpm lint:deployed-app-files && pnpm lint:doc-references && pnpm lint:doc-substance && pnpm lint:e2e-durations && pnpm lint:events-tracked && pnpm lint:fold-tokens && pnpm lint:fold-typography && pnpm lint:import-cycles && pnpm lint:mermaid && pnpm lint:journal-tracked && pnpm lint:pim-data-neutral && pnpm lint:router-links && pnpm lint:sku-never-recycled && pnpm lint:test-dates && pnpm lint:tests-colocated && pnpm lint:withdrawn-filter",
+    "lint:gates": "pnpm lint:api-types && pnpm lint:dated-decisions && pnpm lint:no-direct-env && pnpm lint:no-type-escapes && pnpm lint:money-units && pnpm lint:price-door && pnpm lint:price-pipeline && pnpm lint:prisma-model-ownership && pnpm lint:prisma-schema-layout && pnpm lint:business-day && pnpm lint:clock-port && pnpm lint:catalog-shared-deps && pnpm lint:catalogue-authority && pnpm lint:code-language && pnpm lint:context-boundaries && pnpm lint:controller-buses && pnpm lint:handler-per-file && pnpm lint:cross-schema-join && pnpm lint:deployed-app-files && pnpm lint:doc-references && pnpm lint:doc-substance && pnpm lint:e2e-durations && pnpm lint:events-tracked && pnpm lint:fold-tokens && pnpm lint:fold-unknown-attributes && pnpm lint:fold-typography && pnpm lint:import-cycles && pnpm lint:mermaid && pnpm lint:journal-tracked && pnpm lint:pim-data-neutral && pnpm lint:router-links && pnpm lint:sku-never-recycled && pnpm lint:test-dates && pnpm lint:tests-colocated && pnpm lint:withdrawn-filter",
     "lint:e2e-durations": "node dev-toolbox/gates/e2e-durations.mjs",
     "lint:withdrawn-filter": "node dev-toolbox/gates/withdrawn-filter.mjs",
     "lint:test-dates": "node dev-toolbox/gates/test-dates.mjs",
@@ -55,7 +56,8 @@
     "lint:business-day": "node dev-toolbox/gates/business-day.mjs",
     "lint:price-door": "node dev-toolbox/gates/price-door.mjs",
     "lint:price-pipeline": "node dev-toolbox/gates/price-pipeline.mjs",
-    "lint:prisma-model-ownership": "node dev-toolbox/gates/prisma-model-ownership.mjs"
+    "lint:prisma-model-ownership": "node dev-toolbox/gates/prisma-model-ownership.mjs",
+    "lint:prisma-schema-layout": "node dev-toolbox/gates/prisma-schema-layout.mjs"
   },
   "devDependencies": {
     "@lfd/endpoints": "workspace:*",

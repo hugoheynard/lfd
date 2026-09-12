@@ -27,9 +27,6 @@
  * (base créée + migrée). Sans ça, `bootstrapE2e` échoue avec le message qui dit
  * quoi lancer.
  */
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { legacyRoleSeeds } from "@lfd/contracts";
 import type { INestApplication } from "@nestjs/common";
@@ -47,6 +44,7 @@ import type { VerifiedToken } from "../src/platform/auth/principal.js";
 import { PointOfSaleReader } from "../src/pim/points-of-sale/domain/ports/point-of-sale.reader.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
+import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
 import { testDatabaseUrl } from "./setup-env.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
@@ -501,20 +499,16 @@ async function purgeHouseAllergens(prisma: PrismaService): Promise<void> {
 }
 
 /**
- * Les schémas que `schema.prisma` DÉCLARE, lus dans le fichier.
+ * Les schémas que le `datasource` DÉCLARE, lus dans les sources Prisma.
  *
  * La source de vérité est le `datasource` : un schéma ajouté là est
  * automatiquement nettoyé entre deux tests, sans que personne ait à penser à
  * une seconde liste. C'est le même geste que la porte des jointures.
  */
 function declaredSchemas(): string[] {
-  // Le chemin part de CE fichier, pas du répertoire courant : un test lancé
-  // depuis la racine du monorepo ou depuis l'app doit lire le même schéma.
-  const here = dirname(fileURLToPath(import.meta.url));
-  const schema = readFileSync(join(here, "..", "prisma", "schema.prisma"), "utf8");
-  const declared = /schemas\s*=\s*\[([^\]]*)\]/u.exec(schema);
+  const declared = /schemas\s*=\s*\[([^\]]*)\]/u.exec(prismaSchemaSource());
   if (declared === null) {
-    throw new Error("`schemas` introuvable dans schema.prisma : impossible de savoir quoi vider.");
+    throw new Error("`schemas` introuvable dans prisma/schema/ : impossible de savoir quoi vider.");
   }
   return [...declared[1]!.matchAll(/"([a-z_]+)"/gu)].map((match) => match[1]!);
 }

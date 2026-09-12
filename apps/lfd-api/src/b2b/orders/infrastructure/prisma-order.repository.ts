@@ -44,8 +44,12 @@ export class PrismaOrderRepository extends OrderRepository {
         orderNumber: this.generateOrderNumber(),
         // Le jeton de remise naît ici, au même endroit et pour la même raison que
         // le numéro : c'est une valeur générée à l'écriture, que l'agrégat n'a
-        // aucun moyen de produire sans dépendre d'une source d'aléa. Seul le
-        // retrait en reçoit un — cf. `issuesHandoverToken`.
+        // aucun moyen de produire sans dépendre d'une source d'aléa.
+        //
+        // ⚠️ « Seul le retrait en reçoit un » disait cette ligne jusqu'au
+        // 2026-09-10 — faux depuis le 2026-09-07. `issuesHandoverToken()` n'a
+        // plus de paramètre : les deux acheminements en reçoivent un, parce que
+        // le coursier scanne aussi. La fonction reste pour NOMMER la décision.
         handoverToken: issuesHandoverToken() ? this.secrets.next() : null,
         companyId: state.companyId,
         placedByUserId: state.placedByUserId,

@@ -1,0 +1,400 @@
+/// La **norme d'un produit** : ce qu'on en commande habituellement, tous comptes
+/// confondus. Read-model **matérialisé**, recalculé par cron.
+///
+/// Pas calculable à la volée : un agrégat cross-comptes sur six mois, par SKU, à
+/// chaque commande, c'est la requête qui met une base à genoux le jour où
+/// l'historique grossit. Même patron que `LeadScore`.
+///
+/// `medianQuantity` et non une moyenne : une moyenne se fait déplacer par
+/// l'aberration qu'on cherche, donc une faute de frappe passée une fois
+/// éteindrait la détection des suivantes.
+model ProductNorm {
+  /// Référence catalogue (SKU du PIM) — String, pas une FK (autre db).
+  sku String @id
+
+  /// Médiane des quantités observées sur la fenêtre. Décimal : la médiane d'un
+  /// échantillon pair tombe entre deux entiers.
+  medianQuantity Decimal @map("median_quantity") @db.Decimal(12, 2)
+
+  /// Nombre de lignes observées — sous un plancher, il n'y a pas de « norme ».
+  sampleLines Int @map("sample_lines")
+
+  /// La fenêtre sur laquelle cette norme a été mesurée, en jours.
+  windowDays Int @map("window_days")
+
+  computedAt DateTime @map("computed_at")
+
+  @@map("product_norms")
+  @@schema("public")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue REÇU du PIM — cf. documentation/b2b/architecture-catalogue-synchronise.md
+//
+// Deux tables, et c'est LA décision de structure de ce chantier. Le miroir est
+// remplacé en entier à chaque push ; l'override porte les décisions prises ici.
+// Les fondre donnerait au push suivant deux issues, toutes deux fausses :
+// écraser le travail commercial, ou refuser de s'appliquer.
+// ---------------------------------------------------------------------------
+
+/// Une **famille** reçue du PIM. Miroir : jamais éditée ici.
+/// **L'historique du tarif canonique** — append-only, une ligne par CHANGEMENT.
+///
+/// Le prix enregistré est l'**effectif** : la décision B2B quand elle existe,
+/// sinon celui du PIM. C'est ce prix-là qui entre dans la résolution, donc le
+/// seul dont une relecture datée ait besoin.
+///
+/// Écrit dans la transaction qui sauve l'article, au seul endroit par lequel les
+/// deux chemins passent (`saveMany`). C'est ce qui rend « aucun changement de
+/// prix sans sa trace » structurel plutôt que discipliné : un push du PIM comme
+/// une décision du back-office y aboutissent, et aucun appelant ne peut
+/// l'esquiver.
+///
+/// Une ligne n'est posée que si le prix effectif **diffère** du dernier
+/// enregistré : sans ça, un push de 92 articles inchangés écrirait 92 lignes à
+/// chaque synchronisation, et l'historique deviendrait illisible en une semaine.
+model CatalogPriceHistory {
+  id String @id
+
+  /// Le SKU de la déclinaison — la clé de l'article reçu.
+  sku        String
+  /// Le SKU du PRODUIT : c'est par lui que la boutique vend, donc par lui qu'on relit.
+  productSku String @map("product_sku")
+
+  /// Prix HT en **millicentimes** (10⁻⁵ €) réellement applicable à cet instant.
+  priceMillicents Int    @map("price_millicents")
+  /// `pim` (le tarif reçu) ou `b2b` (la décision locale l'emporte).
+  source          String
+
+  /// **Le taux applicable à cet instant**, en %. Sans lui, un prix daté ne
+  /// redonne pas une ligne facturable : il dit ce qu'on demandait, pas ce qu'on
+  /// facturait. Un devis, qui engage, a besoin des deux.
+  ///
+  /// `NULL` = article non vendable à cette date (famille non réglée dans le
+  /// PIM), ou trace écrite avant que cette colonne existe. Les deux se lisent
+  /// pareil — « on ne sait pas facturer » — et c'est le bon comportement : un
+  /// taux inventé sur une trace ancienne se retrouverait dans un devis.
+  vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
+
+  recordedAt DateTime @map("recorded_at")
+
+  @@index([productSku, recordedAt])
+  @@index([recordedAt])
+  @@map("catalog_price_history")
+  @@schema("public")
+}
+
+model CatalogCategory {
+  id String @id
+
+  name     String
+  slug     String
+  parentId String? @map("parent_id")
+  position Int     @default(0)
+
+  /// Taux de TVA en %, résolu par le PIM depuis le taux **B2B** de la famille.
+  /// Reçu plutôt que déduit : la plateforme codait 5,5 % en dur pour tout, y
+  /// compris le non-alimentaire — puis a emprunté le taux « à emporter », faute
+  /// que la famille en porte un pour le B2B. Elle en porte un depuis le
+  /// 2026-08-22, et c'est celui-là qui arrive ici.
+  ///
+  /// `NULL` = famille **non réglée dans le PIM**. Le catalogue entre quand même :
+  /// le prix canonique a de la valeur sans le taux. Ce qui reste interdit, c'est
+  /// de VENDRE sans taux — `CatalogReader` écarte ces articles de la boutique
+  /// plutôt que d'inventer 5,5 %.
+  vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
+
+  items CatalogItem[]
+
+  receivedAt DateTime @map("received_at")
+
+  @@map("catalog_categories")
+  @@schema("public")
+}
+
+/// **L'article vendable** reçu du PIM — une déclinaison, pas un produit.
+///
+/// La clé est le SKU : c'est lui que porte une ligne de commande, et il survit
+/// à tout changement d'identifiant interne côté PIM. `productId` / `productSku`
+/// sont conservés pour regrouper à l'écran, pas pour joindre.
+model CatalogItem {
+  sku String @id
+
+  productId  String @map("product_id")
+  productSku String @map("product_sku")
+  name       String
+  kind       String
+
+  categoryId String          @map("category_id")
+  category   CatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  /// Prix canonique HT en **millicentimes** (10⁻⁵ €), tel que le PIM le tarife.
+  /// **Pré-altération** :
+  /// le prix B2B, s'il existe, vit dans `CatalogItemOverride`.
+  priceMillicents Int     @map("price_millicents")
+  weightGrams     Int?    @map("weight_grams")
+  isDefault       Boolean @default(false) @map("is_default")
+  position        Int     @default(0)
+
+  /// Taux de TVA en %, **résolu par le PIM pour CET article** et reçu tel quel.
+  ///
+  /// Porté par l'article et non par la famille : c'est l'article qu'on vend,
+  /// c'est lui qui doit savoir se facturer. Le lire sur la famille faisait
+  /// dépendre la ligne facturée d'une jointure et d'un rafraîchissement de
+  /// famille réussi.
+  ///
+  /// `NULL` = famille non réglée dans le PIM. L'article entre quand même (le
+  /// prix canonique a de la valeur sans le taux) mais n'est pas VENDABLE :
+  /// `CatalogReader` l'écarte plutôt que d'inventer 5,5 %.
+  vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
+
+  /// Les **codes allergènes GS1** déclarés par le PIM pour cet article.
+  ///
+  /// `Json` et non `String[]`, pour une raison précise : une liste scalaire
+  /// Prisma ne peut pas être nulle, elle vaut `[]` par défaut — or il faut
+  /// distinguer TROIS états. `null` = aucune fiche réglementaire (rien n'a été
+  /// déclaré), `[]` = fiche déclarée SANS allergène (une affirmation), une
+  /// liste = les codes. Confondre les deux premiers transformerait un oubli de
+  /// saisie en promesse au consommateur.
+  ///
+  /// Le **stockage canonique** : des codes, et c'est eux qui portent les trois
+  /// états. La colonne voisine porte ce qu'on en AFFICHE.
+  allergens Json? @map("allergens")
+
+  /// Les **mentions d'étiquette déjà projetées** par le PIM, et l'aveu que la
+  /// liste peut être amputée : `{ labels: [{ category, label }], incomplete }`.
+  ///
+  /// ⚠️ Renversement assumé (D6 de
+  /// `documentation/pim/data-model/05-allergenes-gs1-inco.md`). Cette colonne-ci
+  /// justifiait de ne stocker que des codes, « la projection appartenant à qui
+  /// affiche ». La plateforme n'a plus de quoi projeter : le référentiel
+  /// d'allergènes est devenu une donnée administrable du PIM, qu'un contexte
+  /// marchand ne lit pas. Le dupliquer ici le laisserait dériver.
+  ///
+  /// `NULL` sur les lignes d'avant le fil v5, tant qu'un push complet n'a pas
+  /// tourné — l'écran lit alors « sans fiche », ce qui est faux mais prudent :
+  /// jamais « sans allergène ». Suit ensuite `allergens` : `NULL` si `NULL`.
+  allergenLabels Json? @map("allergen_labels")
+
+  /// **Jusqu'à quand on prend commande de cet article**, résolu par le PIM.
+  ///
+  /// Les trois vont ensemble ou pas du tout : `NULL` partout = aucune limite
+  /// pour cet article, et le commerce retombe alors sur sa propre règle. Une
+  /// limite sans heure ne se compare à rien, un rattrapage sans limite n'a rien
+  /// à rattraper — l'héritage champ par champ a déjà fait son travail côté
+  /// référentiel, ce qui arrive ici est complet ou absent.
+  ///
+  /// `NULL` sur les lignes d'avant le fil v6, tant qu'un push complet n'a pas
+  /// tourné : elles gardent donc le comportement d'hier, ce qui est exactement
+  /// ce qu'on veut d'une bascule additive.
+  /// La **ligne de vitrine** reçue du référentiel — `NULL` = rien n'a été saisi.
+  ///
+  /// Portée par l'article alors que le référentiel la range sur le produit, pour
+  /// la raison qui a déjà fait descendre le taux de TVA ici : c'est l'article
+  /// qu'on vend, c'est lui qui doit savoir se montrer.
+  ///
+  /// `NULL` n'est pas la chaîne vide : rien d'écrit n'est pas une ligne effacée,
+  /// et l'écran de réception doit pouvoir dire lequel des deux vient d'arriver.
+  note String?
+
+  /// Le **packshot** — les quatre colonnes ne servent qu'ensemble.
+  ///
+  /// Les dimensions accompagnent l'URL parce que la grille réserve la place du
+  /// visuel avec, et que la vitrine saute au chargement sans. `NULL` sur une
+  /// dimension = pas mesuré (visuel saisi par son URL), jamais zéro.
+  imageUrl    String? @map("image_url")
+  imageAlt    String? @map("image_alt")
+  imageWidth  Int?    @map("image_width")
+  imageHeight Int?    @map("image_height")
+
+  orderLimitDaysBefore   Int?    @map("order_limit_days_before")
+  orderLimitTime         String? @map("order_limit_time")
+  orderLimitGraceMinutes Int?    @map("order_limit_grace_minutes")
+
+  /// Quand ce push l'a écrit. Sert à repérer ce qu'un push partiel aurait laissé.
+  receivedAt DateTime @map("received_at")
+
+  /// **Quand cet article a quitté la vente**, ou `NULL` s'il y est.
+  ///
+  /// Le retrait MARQUE, il ne supprime plus. Le choix inverse était motivé et
+  /// testé — « un prix négocié ne veut plus rien dire sans l'article qu'il
+  /// tarifait » — et il est juste TANT QUE LE RETRAIT EST DÉFINITIF. C'est le
+  /// retour arrière qui le périme : rejouer une version ancienne retire les SKU
+  /// entrés depuis, donc détruirait les prix négociés des articles les plus
+  /// récents — ceux sur lesquels un commercial vient de travailler.
+  ///
+  /// L'objection restante — un SKU réattribué ressusciterait un prix qui ne le
+  /// concerne pas — est tenue par une porte (`pnpm lint:sku-never-recycled`), pas
+  /// par une convention.
+  ///
+  /// 🔴 **La cascade vers `catalog_item_overrides` reste, elle ne se déclenche
+  /// plus.** C'est délibéré : la supprimer ferait croire qu'une suppression
+  /// physique est devenue sûre. Elle ne l'est pas — elle emporterait toujours la
+  /// décision commerciale.
+  ///
+  /// ⚠️ Un article qui REVIENT est remis en vente par le push lui-même :
+  /// l'ingestion le réécrit avec `withdrawn_at` à `NULL`. Sans ça, un SKU retiré
+  /// puis réintroduit resterait invisible pour toujours, et rien ne le dirait.
+  withdrawnAt DateTime? @map("withdrawn_at")
+
+  override CatalogItemOverride?
+
+  @@index([categoryId])
+  @@index([productId])
+  @@map("catalog_items")
+  @@schema("public")
+}
+
+/// Ce que **la plateforme** décide, par-dessus ce que le PIM envoie.
+///
+/// Une ligne n'existe que si quelqu'un a décidé quelque chose : « revenir au
+/// prix du PIM » est une SUPPRESSION de ligne, pas une ressaisie. C'est aussi ce
+/// qui permet à l'écran de dire « prix PIM 2,40 € · prix B2B 2,10 €, posé par
+/// Cécile le 12/08 » au lieu d'un nombre sans provenance.
+///
+/// Elle **survit au push**, et cette survie tient à UNE règle d'ingestion : les
+/// articles maintenus sont **mis à jour**, jamais supprimés puis recréés. Une
+/// ingestion en « table rase » cascaderait ici et effacerait tout le travail
+/// commercial sans un mot. C'est le piège de cette table ; le test
+/// « un push ne perd pas les décisions déjà prises » existe pour le tenir.
+///
+/// La cascade sert l'autre cas, celui où elle est juste : un article réellement
+/// **retiré** du catalogue emporte sa décision, parce qu'un prix négocié ne veut
+/// plus rien dire sans l'article qu'il tarifait.
+/// **La boîte de réception du catalogue** — ce que le référentiel a livré, et
+/// que personne n'a encore accepté.
+///
+/// Elle existe parce que « livrer » et « mettre en vente » étaient le même
+/// geste, et qu'il appartenait au PIM : un article reçu était vendable dans la
+/// même requête, sans qu'aucun humain de la plateforme ne l'ait relu.
+///
+/// ⚠️ Un état sur l'article n'aurait pas suffi, et c'est le piège qu'on évite
+/// ici : il ne gate que les ARRIVÉES. Un article déjà en vente dont le PIM
+/// change le prix serait rafraîchi sur place, et le nouveau prix partirait au
+/// client sans relecture — le cas le plus sensible passerait, en croyant tout
+/// retenir.
+///
+/// Elle porte donc le snapshot **entier**, pas des faits par SKU. Un retrait est
+/// l'ABSENCE d'un SKU : il ne s'exprime pas dans une table de lignes entrantes,
+/// et sans le snapshot complet, « ce qui sort » ne serait pas validable.
+///
+/// Oui, c'est une copie de ce que le PIM a déjà produit. Une ligne, un JSON, pas
+/// un magasin adressé par contenu — mais une copie quand même. C'est le prix de
+/// « le B2B possède sa boîte de réception », et il vaut mieux le dire que le
+/// découvrir.
+model CatalogDelivery {
+  id String @id @default(cuid())
+
+  /// L'ancre PIM d'où vient cette livraison. Chaîne opaque, jamais une clé
+  /// étrangère : le référentiel est un autre contexte, et une jointure ici
+  /// franchirait la frontière que tout ce chantier tient.
+  revisionId String @map("revision_id")
+
+  /// Le snapshot reçu, **entier**, tel qu'il est arrivé.
+  snapshot Json
+
+  /// L'empreinte de la projection livrée — celle que le push a exigée.
+  /// Elle rattache l'arrivée à ce qui a été relu, et pas à autre chose.
+  fingerprint String
+
+  /// `pending` | `accepted` | `superseded`. Une arrivée close ne se rouvre pas :
+  /// la validation pose une version, et une version est immuable.
+  ///
+  /// `superseded` existe parce qu'une livraison REMPLACE l'arrivée en attente,
+  /// et qu'une arrivée remplacée sans avoir été lue n'a pas été acceptée. Les
+  /// confondre effacerait le seul fait qui compte ici : quelqu'un s'apprêtait à
+  /// relire quelque chose qui a disparu sous ses yeux.
+  status String @default("pending")
+
+  /// Les SKU écartés à la validation, s'il y en a eu. Ils gardent leurs faits
+  /// COURANTS — ils n'ont simplement pas changé.
+  excludedSkus Json? @map("excluded_skus")
+
+  receivedAt DateTime  @map("received_at")
+  acceptedAt DateTime? @map("accepted_at")
+  acceptedBy String?   @map("accepted_by")
+
+  @@index([status, receivedAt])
+  @@map("catalog_delivery")
+  @@schema("public")
+}
+
+/// **Une version du catalogue accepté** — la photographie complète du miroir des
+/// faits, prise juste après une validation.
+///
+/// Une ligne par SKU en catalogue, portant le fait PIM en vigueur pour ce SKU :
+/// issu de cette livraison s'il a été accepté, de la PRÉCÉDENTE s'il a été
+/// écarté. C'est ce qui rend le refus d'un retrait exprimable — on n'écarte pas
+/// une ligne, on écarte un SKU, et un SKU écarté garde ses faits courants, y
+/// compris son existence.
+///
+/// ⚠️ **Le prix REÇU, jamais l'effectif.** Une version est le résultat d'un geste
+/// de validation, à une date, et elle est immuable après pose ; le prix effectif
+/// bouge par construction — un commercial renégocie sans qu'aucune livraison
+/// n'arrive. Y inscrire l'effectif donnerait un objet immuable **faux dès la
+/// première renégociation**. La décision locale vit dans
+/// `catalog_item_overrides`, et le prix appliqué un jour donné dans
+/// `catalog_price_history` : trois objets, trois questions, aucun qui empiète.
+///
+/// **Copie entière, pas chaînage de deltas.** Deux cents articles à ~500 octets
+/// font cent kilo-octets la version ; même à une validation par jour, trente-six
+/// mégaoctets l'an. Le delta, lui, réintroduirait la reconstruction par rejeu —
+/// exactement la propriété refusée aux ancres du PIM.
+model CatalogVersion {
+  /// Assigné par le domaine (ULID), jamais par la base : une version est posée
+  /// par un geste applicatif, et son identité lui appartient avant l'écriture.
+  id String @id
+
+  /// L'arrivée validée qui l'a produite, et l'ancre PIM d'où elle venait. La
+  /// seconde est une chaîne opaque : le référentiel est un autre contexte.
+  deliveryId String @map("delivery_id")
+  revisionId String @map("revision_id")
+
+  /// L'empreinte de la projection livrée — celle que le push a exigée. Elle
+  /// rattache la version à ce qui a été relu, et pas à autre chose.
+  fingerprint String
+
+  /// Les SKU écartés à cette validation. `[]` = tout a été pris ; l'absence de
+  /// distinction avec `NULL` n'a pas de sens ici, une version naît validée.
+  excludedSkus Json @map("excluded_skus")
+
+  /// La photographie : les faits PIM, SKU par SKU, tels que le miroir les porte
+  /// après application. `itemCount` est redondant et assumé — lister les
+  /// versions sans désérialiser cent kilo-octets par ligne.
+  items     Json
+  itemCount Int  @map("item_count")
+
+  createdAt DateTime @map("created_at")
+  /// Qui a validé. Un `StaffUser.id`, jamais une clé étrangère : une version est
+  /// une pièce d'archive, elle ne doit pas bloquer le retrait d'une personne.
+  createdBy String?  @map("created_by")
+
+  orders Order[]
+
+  @@index([createdAt])
+  @@map("catalog_versions")
+  @@schema("public")
+}
+
+model CatalogItemOverride {
+  sku  String      @id
+  item CatalogItem @relation(fields: [sku], references: [sku], onDelete: Cascade)
+
+  /// Prix de liste **du canal B2B**, HT en **millicentimes**. `NULL` = on garde celui du
+  /// PIM. C'est l'ENTRÉE du pipeline de résolution de prix, pas un de ses étages :
+  /// mercuriale, dégressif et promotions viendront par-dessus.
+  priceMillicents Int? @map("price_millicents")
+
+  /// Retiré du catalogue B2B sans être retiré du PIM.
+  isHidden   Boolean @default(false) @map("is_hidden")
+  /// Mis en avant dans la boutique.
+  isFeatured Boolean @default(false) @map("is_featured")
+
+  /// Qui a décidé, et quand. La question posée six mois plus tard est toujours
+  /// « qui a accordé ce prix ».
+  decidedBy String?  @map("decided_by")
+  decidedAt DateTime @updatedAt @map("decided_at")
+
+  @@map("catalog_item_overrides")
+  @@schema("public")
+}

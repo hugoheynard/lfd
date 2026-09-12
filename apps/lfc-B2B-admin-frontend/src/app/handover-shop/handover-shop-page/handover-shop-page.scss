@@ -1,0 +1,219 @@
+/* ── PLEINE PAGE ────────────────────────────────────────────────────────────
+   Un écran de comptoir n'est pas un document : il n'y a rien à lire d'un bout à
+   l'autre, et la mesure typographique — la raison d'être des colonnes bornées —
+   n'a aucun sens sur une file. Ce qu'on veut, c'est la file la plus longue
+   possible sans défiler, et le sac en entier à côté.
+
+   On lève donc les deux plafonds : celui de la grille (1240 px) et celui que la
+   page pose à ses sections. Les gouttières, elles, restent — le contenu ne doit
+   pas toucher le bord de la fenêtre. */
+:host {
+  --fold-page-gap: var(--fold-space-sm);
+  --fold-page-pad-top: 0;
+}
+
+/* ── LA BANDE DE TÊTE ───────────────────────────────────────────────────────
+   Même partition que le poste commercial, la tarification et le catalogue : le
+   verdict sur le chrome, l'établi sur le papier. Aucune couleur n'est écrite
+   ici — `foldSurface="chrome"` repointe la polarité entière du sous-arbre.
+
+   🔴 Ni titre ni description : le rail de l'app nomme déjà l'écran, et sur un
+   poste de comptoir la hauteur est ce qui manque. */
+.masthead {
+  // `bleed` avale le padding HAUT du layout — c'est ce qui colle la bande au
+  // chrome de l'app. Il avale du même coup l'espace SOUS elle : sans cette
+  // marge, la file viendrait toucher la bande et les deux supports se liraient
+  // comme un seul.
+  margin-bottom: var(--fold-page-gap);
+  padding: 0 var(--fold-page-gutter);
+
+  // 🔴 **Deux gestes, et il en faut DEUX.** `foldSurface="chrome"` bascule la
+  // polarité ; il ne peint pas le fond. C'est à l'élément qui possède la
+  // surface de le poser — sans quoi l'encre claire s'écrit sur l'ivoire.
+  //
+  // La teinte est celle de la barre de l'app : la bande la prolonge vers le
+  // bas, et l'écran n'a plus qu'UN sombre au lieu de deux gris voisins qu'on
+  // prend pour un défaut de rendu.
+  background: var(--fold-color-bg-header);
+}
+
+/* Une seule ligne : les onglets à gauche, le verdict et la journée à droite.
+   Ce sont trois gestes distincts — on choisit, on constate, on change de jour —
+   et les empiler prenait deux fois la hauteur pour le dire moins bien. */
+.masthead-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm) var(--fold-space-lg);
+}
+
+/* 🔴 `width: auto`, et c'est le geste qui compte. `fold-tabs` se pose en pleine
+   largeur — ce qui est juste quand il est la navigation d'une page, et faux
+   quand il partage sa ligne. `flex: 0 1 auto` ne suffisait PAS : une largeur
+   explicite l'emporte sur une base `auto`, donc la barre continuait de faire
+   deux étages avec les compteurs renvoyés dessous (vérifié à l'écran le
+   2026-09-11 — ni le typecheck ni l'AOT ne peuvent le dire). */
+.masthead-bar fold-tabs {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.masthead-counters {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  margin: 0;
+  margin-inline-start: auto;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quatre rôles, quatre encres. Le retard est le seul qui appelle une couleur
+   d'alerte — les autres sont des constats, pas des alarmes. */
+.mc-done {
+  color: var(--fold-color-success-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.mc-waiting {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.mc-late {
+  color: var(--fold-color-warning-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.mc-clock {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+}
+
+/* ── LA BARRE DE LA FILE ────────────────────────────────────────────────────
+   L'onglet ouvert à gauche, l'ordre de lecture à côté, le geste au bout : la
+   file est triée d'une façon qui n'est pas évidente (créneau, puis heure de
+   commande), et personne ne devine un tri.
+
+   Alignée sur la LIGNE DE BASE du texte, et non centrée : un bouton centré sur
+   un eyebrow de dix pixels tire la barre vers le haut et décolle la table. */
+.file-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin-bottom: var(--fold-space-sm);
+}
+
+.file-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+/* Ce que la file DIT d'elle-même : l'onglet ouvert, et son ordre de lecture. */
+.file-said {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+  min-width: 0;
+}
+
+/* Les deux gestes, poussés au bout ENSEMBLE : la marge automatique plutôt qu'un
+   `space-between`, qui aurait écarté l'eyebrow de son indication. Groupés, ils
+   passent à la ligne en bloc — séparés, le bouton descendait seul sous une
+   boîte restée en haut (vu à l'écran le 2026-09-11, à 1440 px : le rail de
+   28 rem ne laisse que ~390 px à cette barre). */
+.file-tools {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-left: auto;
+}
+
+/* Elle se contracte, et ne s'étire pas : une boîte de recherche qui prend la
+   moitié de la barre promet une recherche large. Celle-ci filtre ce qui est
+   déjà à l'écran, et sa taille doit le dire. */
+.file-search {
+  flex: 0 1 15rem;
+  min-width: 0;
+}
+
+.file-scan {
+  flex: 0 0 auto;
+}
+
+/* ── SUR ÉCRAN ÉTROIT : LE SAC MONTE SUR LA FILE ────────────────────────────
+   Aucune media query ici, et c'est voulu : le seuil est déclaré UNE fois, en
+   TypeScript, parce qu'il sert aussi à poser `inert` — et deux définitions de
+   la même largeur font basculer un écran en deux temps. La feuille suit donc
+   la classe que le signal allume.
+
+   `fold-aside-layout` range sa colonne SOUS le centre en dessous de 1040 px.
+   Là, toucher une ligne posait le sac hors de l'écran, sous une file de dix
+   lignes : rien ne bougeait sous le doigt. On le sort du flux et on le fait
+   monter — le geste d'un téléphone. */
+.board.is-stacked app-handover-detail {
+  position: fixed;
+
+  /* 🔴 201, et le chiffre a une raison. À 40, les entrées du rail de l'app
+     passaient AU-DESSUS de la feuille : leur infobulle porte `z-index: 100` et
+     son ancre, en `position: relative` sans `z-index`, ne fait pas de contexte
+     d'empilement — le 100 remonte donc jusqu'à la racine. 201 est le plus haut
+     échelon que fold emploie hors de son `9999` de secours (relevé dans son
+     bundle le 2026-09-11). Une feuille qu'on voit à travers est pire qu'une
+     feuille absente : on lit deux écrans superposés. */
+  z-index: 201;
+  inset: auto 0 0;
+
+  /* Pas 100 % : la file reste visible en haut, et c'est ce qui dit d'où la
+     feuille sort et où l'on revient en la refermant. */
+  height: 88dvh;
+
+  /* Hors écran tant que rien n'est choisi. `translate` et non `display: none` :
+     le retour se voit, donc on comprend où le sac est parti. */
+  transform: translateY(101%);
+  transition: transform 0.22s ease;
+}
+
+.board.is-stacked.has-selection app-handover-detail {
+  transform: none;
+}
+
+/* Le mouvement se coupe pour qui l'a demandé — la feuille arrive, sans glisser. */
+@media (prefers-reduced-motion: reduce) {
+  .board.is-stacked app-handover-detail {
+    transition: none;
+  }
+}
+
+/* 🔴 Par les deux réglages que le rail OUVRE, et non par un sélecteur qui
+   viserait son intérieur : l'encapsulation de vue rend `.hd-sheet` inatteignable
+   depuis ici, tandis qu'une propriété personnalisée y descend. Dans la feuille,
+   rien ne surplombe le rail — il la prend entière — et seuls ses deux coins du
+   haut s'arrondissent, puisqu'elle sort du bas de l'écran. */
+.board.is-stacked app-handover-detail {
+  --hd-height: 100%;
+  --hd-radius: var(--fold-radius-lg) var(--fold-radius-lg) 0 0;
+}
+
+/* ── LA GRILLE : la file, et le sac à côté ──────────────────────────────────
+   Le rail par défaut fait 300 px — la largeur d'un sommaire, pas celle d'une
+   liste d'articles avec ses quantités et ses SKU. On l'élargit d'un tiers ;
+   au-delà, c'est la file qui commencerait à manquer d'air.
+
+   Et le plafond de 1240 px saute : cf. l'en-tête de cette feuille. */
+.board {
+  --fold-aside-layout-side-width: 28rem;
+  --fold-aside-layout-max: none;
+
+  // La grille pose sa propre gouttière par-dessus celle de la page : deux
+  // retraits l'un dans l'autre, et la file y perd une colonne de texte.
+  --fold-aside-layout-pad: 0;
+  --fold-aside-layout-pad-sm: 0;
+}

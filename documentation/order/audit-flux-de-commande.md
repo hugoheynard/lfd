@@ -144,7 +144,7 @@ qu'une commande vient d'entrer, sauf à regarder un écran.
 
 ### T4 — 🟡 EN PARTIE FERMÉ · Le cycle de vie déclare six états et n'en écrit que deux
 
-[`schema.prisma:149`](../../apps/lfd-api/prisma/schema.prisma) déclare
+[`public/orders.prisma:22`](../../apps/lfd-api/prisma/schema/public/orders.prisma) déclare
 `draft · placed · confirmed · in_production · fulfilled · cancelled`.
 
 Écritures réelles, dans tout le dépôt :
@@ -306,7 +306,7 @@ lu et tient.
 - **L'agrégat `Order` possède son argent.** Sous-total, TVA et total ne sont
   calculés qu'à un endroit (`ventilateVat`), et `ensureDiscountMatches` /
   `ensureLateFeeMatches` refusent une commande dont le libellé contredirait le
-  montant. Le commentaire de `schema.prisma` qui recopiait la formule a été
+  montant. Le commentaire de `prisma/schema/public/orders.prisma` qui recopiait la formule a été
   **retiré** plutôt que corrigé — c'est le bon geste.
 - **Une seule façon de composer un panier.** `OrderDrafting` est partagé par le
   client et le back-office : la remise de retrait, la zone déduite du code
@@ -366,7 +366,7 @@ que `vitruve` contredit d'abord. Le lot 5 les a rejoints.
 **Lu** : l'agrégat `Order` et sa ligne, `OrderDrafting`, les deux handlers de
 passation, `confirm-order-payment`, `confirm-handover`, `handover.ts`,
 `prisma-order.repository`, `prisma-order.reader`, les cinq contrôleurs HTTP de
-`orders/`, `schema.prisma` (modèles `Order`, `OrderLine`, énumérés), les
+`orders/`, `prisma/schema/public/orders.prisma` (modèles `Order`, `OrderLine`, énumérés), les
 gabarits du mailer, les abonnés d'`OrderPlacedEvent`, l'arbre complet de
 `b2b/accounting`, `b2b/subscriptions`, `orders.e2e-spec.ts`, et côté fronts :
 `client-orders.service`, `client-order-history.service`, `espace.service`,

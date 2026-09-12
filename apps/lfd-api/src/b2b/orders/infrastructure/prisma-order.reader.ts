@@ -32,7 +32,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   OrderReader,
-  type HandoverOrder,
+  type OrderAuthor,
   type OwnedOrder,
   type PackingOrder,
 } from "../domain/ports/order.reader.js";
@@ -237,6 +237,16 @@ export class PrismaOrderReader extends OrderReader {
     };
   }
 
+  async findAuthorByReference(reference: string): Promise<OrderAuthor | null> {
+    const row = await this.prisma.order.findUnique({
+      where: { orderNumber: reference },
+      select: { id: true, orderNumber: true, placedByUserId: true },
+    });
+    return row === null
+      ? null
+      : { orderId: row.id, orderNumber: row.orderNumber, placedByUserId: row.placedByUserId };
+  }
+
   async findForPacking(reference: string): Promise<PackingOrder | null> {
     const row = await this.prisma.order.findUnique({
       where: { orderNumber: reference },
@@ -266,65 +276,6 @@ export class PrismaOrderReader extends OrderReader {
       status: row.status,
       readyAt: row.readyAt,
       readyBy: row.readyBy,
-      lines: row.lines.map((line) => ({
-        sku: line.sku,
-        productName: line.productNameSnapshot,
-        quantity: line.quantity,
-      })),
-    };
-  }
-
-  async findByHandoverToken(token: string): Promise<HandoverOrder | null> {
-    return this.oneHandover({ handoverToken: token });
-  }
-
-  async findHandoverByReference(reference: string): Promise<HandoverOrder | null> {
-    return this.oneHandover({ orderNumber: reference });
-  }
-
-  /**
-   * La même lecture, deux clés. Le scan la trouve par un **secret**, la remise
-   * saisie par le **numéro** — mais ce qu'on lit ensuite est identique, et le
-   * dupliquer ferait diverger les deux écrans du comptoir au premier champ
-   * ajouté.
-   *
-   * ⚠️ Elle ne lit plus `handed_over_*` depuis le 2026-09-07 : ces colonnes sont
-   * devenues le **snapshot** de ce que le fournil annonce, et c'est lui qui les
-   * détient. Les relire pour les lui rendre ferait de la copie la source.
-   */
-  private async oneHandover(
-    where: { readonly handoverToken: string } | { readonly orderNumber: string },
-  ): Promise<HandoverOrder | null> {
-    const row = await this.prisma.order.findUnique({
-      where,
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        fulfillmentMethod: true,
-        requestedDeliveryDate: true,
-        pickupAddress: true,
-        createdAt: true,
-        companyId: true,
-        placedByUserId: true,
-        company: { select: { raisonSociale: true } },
-        placedBy: { select: { email: true, firstName: true, lastName: true } },
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
-      },
-    });
-    if (row === null) {
-      return null;
-    }
-    return {
-      orderId: row.id,
-      orderNumber: row.orderNumber,
-      placedByUserId: row.placedByUserId,
-      customerLabel: customerLabelOf(row),
-      placedAt: row.createdAt,
-      requestedDeliveryDate: row.requestedDeliveryDate,
-      pickupLabel: pickupLabelOf(row.pickupAddress),
-      status: row.status,
-      fulfillmentMethod: row.fulfillmentMethod,
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,

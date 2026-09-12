@@ -874,3 +874,247 @@ describe("Le push pose et inscrit sa révision", () => {
     expect(await ctx.prisma.catalogRevision.count()).toBe(0);
   });
 });
+
+/**
+ * **Le diff VIVANT** — ce qui a bougé depuis la dernière ancre publiée, sans en
+ * poser une nouvelle.
+ *
+ * Ce que seul ce niveau prouve, et qui est tout l'intérêt de la lecture : que le
+ * détail vivant et le COMPTEUR de l'état du catalogue disent la même chose du
+ * même changement. Ils traversent le même `planDiff`, mais par deux chemins
+ * différents — l'un compte, l'autre charge les payloads et interroge le journal.
+ * Les faire diverger est exactement la panne qu'on veut rendre impossible, et
+ * elle ne se voit qu'en les comparant sur une vraie base.
+ */
+describe("Diff vivant — depuis la dernière ancre publiée", () => {
+  it("n'a AUCUNE référence tant que rien n'est parti", async () => {
+    await aProduct("Croissant");
+    // Une ancre POSÉE ne suffit pas : la référence est la dernière PUBLIÉE.
+    await take("un repère");
+
+    const view = jsonBody<{ from: unknown; changed: unknown[] }>(
+      await staff().get(`${REVISIONS}/since-last`).expect(200),
+    );
+
+    expect(view.from).toBeNull();
+    // 🔴 Et les listes vides ne veulent PAS dire « rien n'a changé » : elles
+    // disent qu'il n'y a rien à quoi se comparer. C'est `from` qui tranche.
+    expect(view.changed).toEqual([]);
+  });
+
+  it("montre le champ qui a bougé depuis la publication, avec son auteur", async () => {
+    const id = await aSoldProduct();
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await ctx.drain();
+
+    await staff()
+      .put(`${PRODUCTS}/${id}/identity`)
+      .send({ name: { fr: "Pain au chocolat" }, kind: "daily", categoryId: await aCategory() })
+      .expect(200);
+    await ctx.drain();
+
+    const view = jsonBody<{
+      from: { reference: string } | null;
+      changed: {
+        sku: string;
+        fields: { field: string; attributed: boolean; by: string | null }[];
+      }[];
+    }>(await staff().get(`${REVISIONS}/since-last`).expect(200));
+
+    expect(view.from).not.toBeNull();
+    expect(view.changed).toHaveLength(1);
+    const name = view.changed[0]?.fields.find((field) => field.field === "name");
+    expect(name?.attributed).toBe(true);
+    expect(name?.by).not.toBeNull();
+  });
+
+  /**
+   * 🔴 **Le détail et le compteur ne peuvent pas diverger.**
+   *
+   * L'état du catalogue rend trois nombres, le diff vivant rend les lignes. Ils
+   * répondent à la même question par deux chemins ; si l'un se met à voir un
+   * changement que l'autre ignore, l'écran qui affiche « 3 changements » puis
+   * n'en montre que deux devient impossible à croire — sur tout le reste aussi.
+   */
+  it("dit exactement ce que le compteur de l'état du catalogue annonce", async () => {
+    const id = await aSoldProduct();
+    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await ctx.drain();
+
+    const { variantId } = await aProduct("Chausson");
+    await staff()
+      .put(`${PRODUCTS}/${id}/identity`)
+      .send({ name: { fr: "Pain au chocolat" }, kind: "daily", categoryId: await aCategory() })
+      .expect(200);
+    await ctx.drain();
+
+    const overview = jsonBody<{
+      sinceLastRevision: { added: number; removed: number; changed: number } | null;
+    }>(await staff().get(`${REVISIONS}/overview`).expect(200));
+    const view = jsonBody<{
+      added: string[];
+      removed: string[];
+      changed: unknown[];
+    }>(await staff().get(`${REVISIONS}/since-last`).expect(200));
+
+    expect(typeof variantId).toBe("string");
+    expect(view.added).toHaveLength(overview.sinceLastRevision?.added ?? -1);
+    expect(view.removed).toHaveLength(overview.sinceLastRevision?.removed ?? -1);
+    expect(view.changed).toHaveLength(overview.sinceLastRevision?.changed ?? -1);
+    // Le cas ne vaut que s'il y a quelque chose à comparer : un produit entré,
+    // un produit renommé.
+    expect(view.added.length + view.changed.length).toBeGreaterThan(1);
+  });
+});
+
+/**
+ * **Le nom d'une ancre.**
+ *
+ * Ce que seul ce niveau prouve : que le nom traverse le push jusqu'à la ligne,
+ * et que le refus de renommer sort en 409 plutôt qu'en 500. Un `BusinessError`
+ * mal catégorisé rendrait une panne là où il y a une règle.
+ */
+describe("Le nom d'une ancre", () => {
+  it("prend le nom que le push lui donne", async () => {
+    await aSoldProduct();
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: false, label: "catalogue de la rentrée" })
+      .expect(201);
+    await ctx.drain();
+
+    const [reference] = await twoLatest();
+    const rows = jsonBody<{ reference: string; label: string | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+    expect(rows.find((row) => row.reference === reference)?.label).toBe("catalogue de la rentrée");
+  });
+
+  /**
+   * 🔴 **Une ancre MUETTE prend le nom qu'on lui apporte.** Le cas est banal :
+   * un « préparer » sans nom, puis un push qui, lui, a une intention. Refuser
+   * laisserait une ancre anonyme partir une fois de plus — ce qu'on veut
+   * précisément faire cesser.
+   */
+  it("nomme au passage une ancre posée sans nom", async () => {
+    await aSoldProduct();
+    const posed = await take(null);
+    expect(posed.created).toBe(true);
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: false, label: "mise en ligne de la rentrée" })
+      .expect(201);
+    await ctx.drain();
+
+    const rows = jsonBody<{ reference: string; label: string | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.label).toBe("mise en ligne de la rentrée");
+  });
+
+  /**
+   * Le PREMIER nom gagne. Le nom dit avec quelle intention un catalogue est
+   * parti chez des clients ; le réécrire au passage d'un push le raconterait
+   * autrement, sans que personne ne l'ait demandé.
+   */
+  it("laisse son nom à une ancre qui en a déjà un", async () => {
+    await aSoldProduct();
+    await take("le vrai nom");
+
+    await staff()
+      .post("/pim/channels/b2b/push")
+      .send({ dryRun: false, label: "un autre nom" })
+      .expect(201);
+    await ctx.drain();
+
+    const rows = jsonBody<{ label: string | null }[]>(await staff().get(REVISIONS).expect(200));
+    expect(rows[0]?.label).toBe("le vrai nom");
+  });
+
+  it("nomme après coup une ancre restée muette", async () => {
+    await aProduct("Croissant");
+    const posed = await take(null);
+
+    await staff()
+      .patch(`${REVISIONS}/${posed.reference}/label`)
+      .send({ label: "la correction des allergènes" })
+      .expect(204);
+    await ctx.drain();
+
+    const rows = jsonBody<{ label: string | null }[]>(await staff().get(REVISIONS).expect(200));
+    expect(rows[0]?.label).toBe("la correction des allergènes");
+  });
+
+  it("refuse de renommer une ancre déjà nommée, en 409", async () => {
+    await aProduct("Croissant");
+    const posed = await take("son nom");
+
+    await staff()
+      .patch(`${REVISIONS}/${posed.reference}/label`)
+      .send({ label: "un autre" })
+      .expect(409);
+
+    const rows = jsonBody<{ label: string | null }[]>(await staff().get(REVISIONS).expect(200));
+    expect(rows[0]?.label).toBe("son nom");
+  });
+
+  it("refuse de nommer une ancre qui n'existe pas, en 404", async () => {
+    await staff().patch(`${REVISIONS}/R-INCONNU/label`).send({ label: "peu importe" }).expect(404);
+  });
+});
+
+/**
+ * **Ce qui sépare deux ancres, dans la liste.**
+ *
+ * Ce que seul ce niveau prouve : que le compte rendu par la liste est celui que
+ * le diff détaillé trouverait. Ils passent tous deux par `planDiff`, mais la
+ * liste le fait sur des index chargés en lot — une requête pour toute la page
+ * au lieu d'une par ancre. Une boucle qu'on aurait laissée passer serait restée
+ * invisible : chaque requête est rapide, leur somme ne l'est pas.
+ */
+describe("L'écart entre deux ancres, dans la liste", () => {
+  it("compte les articles qui séparent chaque ancre de la précédente", async () => {
+    const { id, variantId } = await aProduct("Croissant");
+    await take("la première");
+    await staff()
+      .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
+      .send({ priceCents: 1_200, weightGrams: null })
+      .expect(200);
+    await take("le prix");
+
+    const rows = jsonBody<{ reference: string; changes: number | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.changes).toBe(1);
+    // 🔴 `null` et non `0` sur la plus ancienne : il n'y a rien avant elle, et
+    // un zéro dirait « rien n'a changé » alors que tout était nouveau.
+    expect(rows[1]?.changes).toBeNull();
+  });
+
+  it("dit la même chose que le diff détaillé des deux mêmes ancres", async () => {
+    const { id, variantId } = await aProduct("Croissant");
+    await take();
+    await aProduct("Pain au chocolat");
+    await staff()
+      .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
+      .send({ priceCents: 1_200, weightGrams: null })
+      .expect(200);
+    await take();
+
+    const [to, from] = await twoLatest();
+    const diff = jsonBody<{ added: string[]; removed: string[]; changed: unknown[] }>(
+      await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200),
+    );
+    const rows = jsonBody<{ changes: number | null }[]>(await staff().get(REVISIONS).expect(200));
+
+    expect(rows[0]?.changes).toBe(diff.added.length + diff.removed.length + diff.changed.length);
+    // Le cas ne vaut que s'il y a de quoi compter : un produit entré, un prix
+    // changé.
+    expect(rows[0]?.changes).toBeGreaterThan(1);
+  });
+});

@@ -33,7 +33,10 @@
 
     <div class="actions">
       <button foldButton emphasis="soft" [disabled]="busy()" (click)="load()">Recalculer</button>
-      <button foldButton [disabled]="busy() || settled()" (click)="send()">Envoyer</button>
+      <!-- Ouvre le panneau où l'on dit CE QU'ON PUBLIE avant que ça parte.
+           Envoyer le catalogue chez des clients mérite un moment où l'on ne
+           fait que ça — et fermer le panneau n'envoie rien. -->
+      <button foldButton [disabled]="busy() || settled()" (click)="send()">Envoyer…</button>
     </div>
 
     @if (sent(); as s) {

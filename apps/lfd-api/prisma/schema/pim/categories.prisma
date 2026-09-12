@@ -1,0 +1,125 @@
+/// ⚠️ Deux garanties de ce modèle ne sont PAS ici : `category_slug_fr_unique`
+/// (index d'expression sur `slug->>'fr'` — la colonne est un `Json` localisé) et
+/// `category_sibling_rank_unique` (index partiel `NULLS NOT DISTINCT` sur
+/// `(parent_id, position)`, hors familles archivées). Aucune n'est exprimable
+/// dans ce schéma ; elles sont posées en SQL par la migration
+/// `20260826090000_unicite_slug_rang_emplacement`, comme
+/// `price_rules_no_overlap` avant elles. Une `migrate dev` proposera de les
+/// supprimer : refuser la ligne.
+model Category {
+  id         String     @id
+  name       Json
+  slug       Json
+  parentId   String?    @map("parent_id")
+  parent     Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryTree")
+  position   Int        @default(0)
+  isArchived Boolean    @default(false) @map("is_archived")
+  products   Product[]
+
+  /// Les taux par contexte de vente. Trois colonnes fixes vivaient ici
+  /// (`emporter` / `surPlace` / `b2b`) : ajouter un contexte demandait une
+  /// migration et du code dans cinq fichiers. Une ligne suffit désormais.
+  contextVat CategoryContextVat[]
+
+  /// Ce que cette famille vend, une ligne par (lieu, contexte) — voir
+  /// `CategoryChannel`. Seule source depuis d-2 ; la colonne `jsonb` qui la
+  /// précédait est tombée en d-3.
+  channels CategoryChannel[]
+
+  /// Les textes de la famille. Satellite OPTIONNEL (ADR-13) : rien de
+  /// renseigné ⇒ pas de ligne, et non une ligne de colonnes nulles.
+  editorial CategoryEditorial?
+  media     CategoryMedia[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@index([parentId])
+  @@map("category")
+  @@schema("pim")
+}
+
+/// **Ce qu'une famille vend** — une ligne par (point de vente, contexte).
+///
+/// Remplace la carte imbriquée de `channel_preset`. Deux gains qu'un `jsonb` ne
+/// pouvait pas donner : la lecture n'a plus de branche à faire selon le
+/// contexte, et une clé étrangère porte enfin le mur qui empêche de supprimer
+/// un point de vente encore vendeur.
+model CategoryChannel {
+  id         String   @id @default(cuid())
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  /// **D'où l'on vend.** Elle remplace `location_id`, et le `NULL` porteur de
+  /// sens avec elle : la plateforme professionnelle a sa ligne, donc tout canal
+  /// se vend depuis un point de vente — sans exception à retenir.
+  pointOfSaleId String      @map("point_of_sale_id")
+  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id])
+
+  contextKey String       @map("context_key")
+  context    SalesContext @relation(fields: [contextKey], references: [key])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([pointOfSaleId])
+  @@index([contextKey])
+  @@map("category_channel")
+  @@schema("pim")
+}
+
+/// Les textes d'une famille — descriptions et référencement, tous localisés.
+///
+/// Quatre colonnes contre sept pour `product_editorial` : un récit, un accord et
+/// une marque parlent d'un PRODUIT, pas du rayon où on le range. Les copier
+/// aurait offert trois champs que personne ne saurait remplir.
+model CategoryEditorial {
+  categoryId String   @id @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  descriptionShort Json? @map("description_short")
+  descriptionLong  Json? @map("description_long")
+  seoTitle         Json? @map("seo_title")
+  seoDescription   Json? @map("seo_description")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("category_editorial")
+  @@schema("pim")
+}
+
+/// Un visuel attaché à une famille. Jumeau exact de `product_media` : la
+/// bibliothèque `media_asset` est la même, et un même fichier peut donc servir
+/// une famille et une fiche sans être déposé deux fois.
+model CategoryMedia {
+  categoryId String     @map("category_id")
+  mediaId    String     @map("media_id")
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  media      MediaAsset @relation(fields: [mediaId], references: [id])
+  role       MediaRole
+  position   Int        @default(0)
+
+  @@id([categoryId, mediaId])
+  @@index([categoryId])
+  @@map("category_media")
+  @@schema("pim")
+}
+
+model CategoryContextVat {
+  categoryId String       @map("category_id")
+  category   Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  contextId  String       @map("context_id")
+  context    SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  vatRateId  String       @map("tva_rate_id")
+  /// `Restrict` (défaut) : un taux visé par une famille ne peut pas disparaître.
+  vatRate    VatRate      @relation(fields: [vatRateId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([categoryId, contextId])
+  @@index([vatRateId])
+  @@map("category_context_tva")
+  @@schema("pim")
+}

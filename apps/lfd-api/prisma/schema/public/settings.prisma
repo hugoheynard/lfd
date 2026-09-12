@@ -1,0 +1,98 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Points de retrait — adresses GLOBALES de la plateforme
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Un **point de retrait** (laboratoire) — adresse **globale** (pas par entreprise),
+/// fallback d'acheminement tant que la livraison n'existe pas. Plusieurs points
+/// possibles, un seul `isDefault`. Une commande en retrait fige un snapshot de
+/// l'adresse choisie. Cf. `documentation/b2b/architecture-activation-configuration-b2b.md`.
+model PickupAddress {
+  id String @id @default(cuid())
+
+  label      String
+  ligne1     String
+  ligne2     String @default("")
+  codePostal String @map("code_postal")
+  ville      String
+  pays       String
+
+  // Un seul point par défaut (le préselectionné au checkout). L'invariant « au
+  // moins un point » et « un seul défaut » est tenu par le repository.
+  isDefault Boolean @default(false) @map("is_default")
+
+  // Remise appliquée au panier en cas de retrait ici. `discountMode` null =
+  // aucune remise ; sinon `discountValue` = bp (percent) ou centimes (amount).
+  discountMode  CartAdjustmentMode? @map("discount_mode")
+  discountValue Int?                @map("discount_value")
+
+  // Quand un pro peut venir : ouverture au public ET créneau réservé aux pros,
+  // deux fenêtres NOMMÉES et jamais fusionnées — leur union peut avoir un trou
+  // (pros 5h–6h30, public 7h–20h), et l'aplatir inventerait une demi-heure
+  // d'ouverture. Forme = `PickupOpening` de `@lfd/contracts`, en JSON car on ne
+  // requête jamais par heure.
+  opening Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Sociétés qui ont fait de ce point leur retrait préféré (cf. Company).
+  preferredBy Company[]
+
+  @@map("pickup_addresses")
+  @@schema("public")
+}
+
+/// **Zone de livraison** — un secteur de codes postaux (stations éloignées)
+/// portant un frais de livraison HT ajouté au panier quand la commande est livrée
+/// vers ce secteur. `postalPrefixes` = préfixes couverts (`73150` exact, `731` =
+/// secteur) ; le plus long gagne. Config globale. `feeValue` = bp (percent) ou
+/// centimes (amount) selon `feeMode`.
+model DeliveryZone {
+  id             String   @id @default(cuid())
+  postalPrefixes String[] @map("postal_prefixes")
+  label          String   @default("")
+
+  feeMode  CartAdjustmentMode @map("fee_mode")
+  feeValue Int                @map("fee_value")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("delivery_zones")
+  @@schema("public")
+}
+
+/// Le **contenu de plateforme** — les textes de la vitrine, tenus par le staff.
+///
+/// Ils vivaient compilés dans le bundle du front client, en trois dictionnaires
+/// `fr/en/it.ts` : un mot à corriger demandait un développeur, une revue et un
+/// déploiement. Ils sont désormais une donnée.
+///
+/// `content` est du **JSON** et c'est un choix, pas un raccourci : la forme est
+/// l'affaire du contrat (`footerContentSchema`), validée au bord par Zod, et
+/// tout l'intérêt est qu'elle bouge quand la vitrine bouge — sans une migration
+/// par paragraphe ajouté. Ce que la base garantit, c'est qu'il y a UNE ligne par
+/// bloc et qu'on sait quand elle a changé.
+model PlatformContent {
+  /// Le bloc : `footer` aujourd'hui, d'autres ensuite. Clé NATURELLE et pas un
+  /// cuid — il y a une ligne par bloc, et son nom est connu à l'avance.
+  key String @id
+
+  /// Les trois langues, dans la forme du contrat.
+  content Json
+
+  /// Monte à chaque enregistrement. De quoi dire à un rédacteur que quelqu'un
+  /// d'autre a écrit pendant qu'il avait l'écran ouvert.
+  revision Int @default(1)
+
+  /// Le NOM de la personne, pas son identifiant : cette valeur est lue par du
+  /// personnel qui n'a pas l'annuaire staff sous les yeux — et il vit de toute
+  /// façon dans une autre base.
+  updatedBy String? @map("updated_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_content")
+  @@schema("public")
+}

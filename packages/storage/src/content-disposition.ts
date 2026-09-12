@@ -24,8 +24,31 @@
  * Passing no name (or an empty one) yields a bare `attachment` — still safe.
  */
 export function contentDispositionAttachment(downloadFilename?: string): string {
+  return disposition("attachment", downloadFilename);
+}
+
+/**
+ * Build a `Content-Disposition: inline` header value.
+ *
+ * 🔴 **Never call this on user-supplied content.** `inline` is precisely what
+ * the doc above forbids for uploads: an `.html` or `.svg` object rendered in the
+ * serving origin is stored XSS, and that risk is the whole reason
+ * {@link contentDispositionAttachment} exists.
+ *
+ * It is legitimate only for bytes **the server itself generated**, whose media
+ * type it controls — a PDF rendered from a domain service, for instance, that a
+ * staff screen wants to display rather than force-download. The name escaping is
+ * shared with the attachment form, so a hostile name cannot forge a header here
+ * either; what changes is only whether the browser shows or saves.
+ */
+export function contentDispositionInline(downloadFilename?: string): string {
+  return disposition("inline", downloadFilename);
+}
+
+/** The shared escaping. Two implementations would diverge on the hostile case. */
+function disposition(kind: "attachment" | "inline", downloadFilename?: string): string {
   if (downloadFilename === undefined || downloadFilename.length === 0) {
-    return "attachment";
+    return kind;
   }
 
   // ASCII fallback: keep printable ASCII only (the `\x20-\x7e` range excludes
@@ -48,5 +71,5 @@ export function contentDispositionAttachment(downloadFilename?: string): string 
     (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 
-  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${rfc5987}`;
+  return `${kind}; filename="${asciiFallback}"; filename*=UTF-8''${rfc5987}`;
 }

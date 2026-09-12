@@ -14,10 +14,15 @@ import { B2B_API_BASE } from '../api/api-config';
  * n'ont rien à se transmettre. La confirmation rend d'ailleurs la vue à jour, ce
  * qui évite un rechargement — c'est le back-office qui décide, pas l'écran.
  *
- * 🔴 **Le chemin d'API a changé le 2026-09-07** : la remise est constatée au
- * fournil, sous `/admin/production/handover`. La route de CET écran, elle, ne
- * bouge pas — `/retrait/:token` est ce que le QR déjà parti dans les courriels
- * encode, et la déplacer casserait chaque code entre les mains d'un client.
+ * 🔴 **Le chemin d'API a changé DEUX FOIS** — `/admin/production/handover` le
+ * 2026-09-07, puis `/admin/handover` le 2026-09-10, quand la remise a pris son
+ * propre contexte. L'API sert encore l'ancien préfixe, déprécié, le temps qu'un
+ * onglet resté ouvert soit rechargé ; cet écran, lui, vise le nouveau.
+ *
+ * ⚠️ **La route de CET écran ne bouge pas**, et c'est ce qui rend les deux
+ * déménagements sans danger : `/retrait/:token` est ce que le QR déjà parti dans
+ * les courriels encode. La déplacer casserait chaque code entre les mains d'un
+ * client — un chemin d'API se déprécie, un QR imprimé non.
  */
 @Injectable({ providedIn: 'root' })
 export class HandoverService {
@@ -27,7 +32,7 @@ export class HandoverService {
   async byToken(token: string): Promise<OrderHandoverView> {
     return firstValueFrom(
       this.http.get<OrderHandoverView>(
-        `${B2B_API_BASE}/admin/production/handover/${encodeURIComponent(token)}`,
+        `${B2B_API_BASE}/admin/handover/${encodeURIComponent(token)}`,
       ),
     );
   }
@@ -36,7 +41,7 @@ export class HandoverService {
   async confirm(token: string): Promise<OrderHandoverView> {
     return firstValueFrom(
       this.http.post<OrderHandoverView>(
-        `${B2B_API_BASE}/admin/production/handover/${encodeURIComponent(token)}`,
+        `${B2B_API_BASE}/admin/handover/${encodeURIComponent(token)}`,
         {},
       ),
     );

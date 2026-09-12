@@ -76,4 +76,24 @@
       {{ only.codePostal }} {{ only.ville }}
     </p>
   }
+
+  <!-- 🔴 OBLIGATOIRE, et jamais prérempli. Une heure qu'on suggère devient une
+       heure qu'on promet, et le comptoir la lira comme un engagement du client ;
+       une commande sans heure, elle, n'a aucun rang dans la file. `required`
+       marque le champ — le refus, lui, vient de l'acheminement. -->
+  @if (slots().length > 0) {
+    <fold-listbox
+      label="Créneau de retrait"
+      required
+      placeholder="Quand le client passe-t-il ?"
+      [options]="slotOptions()"
+      [value]="slotId()"
+      (selectionChange)="onSlot($event)"
+    />
+  } @else if (pickup() !== null) {
+    <p class="ach-line">
+      Ce point n’a aucune heure d’ouverture déclarée — aucun créneau ne peut être convenu, et le
+      client non plus ne peut pas y commander (Réglages → Livraisons &amp; retraits).
+    </p>
+  }
 }

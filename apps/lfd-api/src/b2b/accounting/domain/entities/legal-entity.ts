@@ -46,6 +46,11 @@ export interface LegalEntitySnapshot {
   readonly ics: string | null;
   readonly creditorIban: string | null;
   readonly preNotificationDays: number;
+  /**
+   * La clé de l'objet de stockage qui porte le logo, ou `null`. 🔴 Elle ne sort
+   * d'aucune API — une clé qui sort finit par être acceptée en entrée.
+   */
+  readonly logoKey: string | null;
   readonly archivedAt: Date | null;
 }
 
@@ -83,6 +88,7 @@ export class LegalEntity {
     private icsValue: CreditorIdentifier | null,
     private creditorIbanValue: Iban | null,
     private preNotificationDaysValue: number,
+    private logoKeyValue: string | null,
     private archivedAtValue: Date | null,
   ) {}
 
@@ -104,6 +110,7 @@ export class LegalEntity {
       null,
       null,
       PRE_NOTIFICATION_DEFAULT_DAYS,
+      null,
       null,
     );
   }
@@ -128,6 +135,7 @@ export class LegalEntity {
       snapshot.ics === null ? null : CreditorIdentifier.create(snapshot.ics),
       snapshot.creditorIban === null ? null : Iban.create(snapshot.creditorIban),
       snapshot.preNotificationDays,
+      snapshot.logoKey,
       snapshot.archivedAt,
     );
   }
@@ -138,6 +146,39 @@ export class LegalEntity {
 
   get archived(): boolean {
     return this.archivedAtValue !== null;
+  }
+
+  /** L'entité a-t-elle un logo ? La seule question que l'écran pose. */
+  get hasLogo(): boolean {
+    return this.logoKeyValue !== null;
+  }
+
+  /** Où le logo est rangé, pour qui a le droit d'aller le chercher. */
+  get logoKey(): string | null {
+    return this.logoKeyValue;
+  }
+
+  /**
+   * Attache le logo déjà rangé sous cette clé — méthode métier, et pas un
+   * `repo.setLogo(id, key)` qui mettrait la règle du jour où il y en aura une
+   * dans le handler appelant, donc nulle part pour le prochain.
+   *
+   * ⚠️ **Rien ne refuse ici**, délibérément : une entité archivée peut recevoir
+   * un logo, et le logo ne conditionne pas `canCollect()`.
+   *
+   * @throws {InvalidLegalEntityError} clé vide.
+   */
+  attachLogo(key: string): void {
+    this.logoKeyValue = requireText(key, "Clé de stockage du logo");
+  }
+
+  /**
+   * Retire le logo. L'objet rangé n'est pas supprimé : un redépôt écrase la même
+   * clé, et une suppression qui échouerait laisserait la base dire « pas de
+   * logo » pendant que le bucket en garde un. La base est seule autorité.
+   */
+  detachLogo(): void {
+    this.logoKeyValue = null;
   }
 
   /** Ce qui change sans conséquence sur les documents déjà émis — ils ont copié. */
@@ -255,12 +296,19 @@ export class LegalEntity {
       ics: this.icsValue?.value ?? null,
       creditorIban: this.creditorIbanValue?.value ?? null,
       preNotificationDays: this.preNotificationDaysValue,
+      logoKey: this.logoKeyValue,
       archivedAt: this.archivedAtValue,
     };
   }
 
-  /** Ce qui manque pour encaisser, nommé — le message d'erreur en dépend. */
-  private missingToCollect(): readonly string[] {
+  /**
+   * Ce qui manque pour encaisser, nommé.
+   *
+   * Public, et pas seulement pour le message d'erreur : la fiche l'affiche telle
+   * quelle. Le rédiger une seconde fois côté écran ferait deux définitions de
+   * « complète », dont celle que l'utilisateur lit serait la moins surveillée.
+   */
+  missingToCollect(): readonly string[] {
     const missing: string[] = [];
     if (this.icsValue === null) {
       missing.push("l'identifiant créancier (ICS)");

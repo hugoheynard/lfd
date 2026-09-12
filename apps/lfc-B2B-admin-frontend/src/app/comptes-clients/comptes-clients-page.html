@@ -80,12 +80,14 @@
       narrowLayout="cards"
       rowCardChrome="none"
       hover
+      clickable
       stickyFirst
       [columns]="columns"
       [rows]="paged()"
       [rowKey]="rowKey"
       [loading]="state() === 'loading'"
       [empty]="emptyState()"
+      (rowClick)="open($event)"
     >
       <!-- La barre de titre de la table, projetée dans sa surface accent. Variante
            `bar` : UNE ligne, c'est un filet d'en-tête, pas une section. Le compte
@@ -94,8 +96,12 @@
            chiffre de l'écran que le filtre fait bouger. -->
       <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
 
+      <!-- Du TEXTE, plus un lien : c'est la ligne entière qui ouvre la fiche
+           depuis le 2026-09-12. Garder l'ancre ici obligerait à viser huit
+           caractères pour faire ce qu'un clic n'importe où sur la ligne fait,
+           et ferait naviguer deux fois au même endroit. -->
       <ng-template foldCell="reference" let-row>
-        <a class="ref-link" [routerLink]="['/comptes-clients', row.id]">{{ row.reference }}</a>
+        <span class="ref">{{ row.reference }}</span>
       </ng-template>
 
       <ng-template foldCell="raisonSociale" let-row>
@@ -105,10 +111,15 @@
                seule chose actionnable de la ligne demanderait deux clics et de
                savoir où regarder. -->
           @if (pendingAlertsOf(row); as pending) {
+            <!-- 🔴 `stopPropagation` : fold n'exclut pas les contrôles internes
+                 du clic de ligne (il ne le fait qu'au clavier). Sans ça, le clic
+                 remonterait et la ligne ouvrirait la vue d'ensemble PAR-DESSUS
+                 les alertes — la pastille deviendrait inatteignable. -->
             <a
               class="alert-pill"
               [routerLink]="['/comptes-clients', row.id, 'alertes']"
               [title]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' en attente'"
+              (click)="$event.stopPropagation()"
             >
               <fold-badge variant="warning" [content]="pending + ' à voir'" />
             </a>
@@ -163,7 +174,14 @@
            La carte entière est le lien vers la fiche — une cible de la largeur
            du pouce, là où un `<a>` sur le seul nom demanderait de viser. -->
       <ng-template foldRowCard let-row>
-        <a class="rc" [routerLink]="['/comptes-clients', row.id]">
+        <!-- L'ancre reste : elle porte l'ouverture dans un nouvel onglet que le
+             clic de ligne ne sait pas donner. `stopPropagation` évite la double
+             navigation vers la même fiche. -->
+        <a
+          class="rc"
+          [routerLink]="['/comptes-clients', row.id]"
+          (click)="$event.stopPropagation()"
+        >
           <span class="rc-head">
             <span class="rc-name">{{ displayName(row) }}</span>
             @if (isAssistance(row)) {
@@ -198,7 +216,11 @@
              lien imbriqué, que le HTML interdit et que le clavier ne sait pas
              parcourir. -->
         @if (pendingAlertsOf(row); as pending) {
-          <a class="rc-alerts" [routerLink]="['/comptes-clients', row.id, 'alertes']">
+          <a
+            class="rc-alerts"
+            [routerLink]="['/comptes-clients', row.id, 'alertes']"
+            (click)="$event.stopPropagation()"
+          >
             <fold-badge
               variant="warning"
               [content]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' à voir'"

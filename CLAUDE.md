@@ -23,9 +23,19 @@
 >   `lint:catalogue-authority`, `lint:price-door`), puis **33** avec
 >   `lint:dated-decisions` : toute décision qui entre dans la résolution du prix
 >   porte une fenêtre, sans quoi une lecture datée lui applique les valeurs
->   d'aujourd'hui — ce que le plancher faisait en silence. C'est la **seule**
->   correction faite dans le corps, parce qu'un chiffre faux se vérifie en une
->   commande et trompe tout de suite ;
+>   d'aujourd'hui — ce que le plancher faisait en silence. Et **34** depuis le
+>   2026-09-10 avec `lint:fold-unknown-attributes` : un attribut statique inconnu
+>   sur un composant fold est du HTML valide, Angular l'ignore en silence, et le
+>   composant rend son défaut — ni le typecheck, ni ESLint, ni le build AOT, ni
+>   les tests ne peuvent le dire, seul l'écran le peut. Vingt-et-un cas
+>   corrigés ce jour-là, vingt-sept inscrits en dette décroissante. Et **35**
+>   depuis le 2026-09-10 avec `lint:prisma-schema-layout` : le schéma Prisma est
+>   passé d'un fichier de 4846 lignes à un dossier rangé par schéma Postgres, et
+>   Prisma ne regarde pas où vit un fichier — un modèle rangé sous `pim/` qui
+>   déclare `@@schema("public")` compile, `validate` est vert, la migration est
+>   juste, et l'arborescence ment. C'est la
+>   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
+>   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
 >   **`documentation/order/`** (ouvert le 2026-09-07) n'y figurent pas ;
 > - rien de ce qui a été livré depuis n'y est décrit : le règlement Stripe côté
@@ -103,7 +113,7 @@ Bounded contexts distincts, **schémas Postgres séparés dans UNE seule base** 
 | Schéma Postgres     | `pim`                                               | `public` (+ `growth`, `ops`)   |
 | `User` désigne      | le staff                                            | le client (customer)           |
 
-🔴 **Une seule base, une seule URL, un seul client Prisma.** `schema.prisma`
+🔴 **Une seule base, une seule URL, un seul client Prisma.** `prisma/schema/datasource.prisma`
 déclare `schemas = ["public", "growth", "ops", "pim"]`, et `AppConfig` ne lit
 que `DATABASE_LFD_URL`. Le référentiel a eu sa propre base ; il ne l'a plus
 depuis B4 (`test/setup-test-database.ts` le dit à sa première ligne de
@@ -963,7 +973,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 33 portes du dépôt, d'un coup
+pnpm lint:gates         # les 35 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

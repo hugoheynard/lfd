@@ -12,6 +12,30 @@
  * aléatoire et n'apparaît que dans l'écran du client.
  */
 
+import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
+
+/**
+ * **Comment** une remise a été constatée.
+ *
+ * `scan` — les deux parties étaient là : l'une a présenté, l'autre a scanné.
+ * C'est l'attestation forte, et la seule qui exige un secret.
+ *
+ * `manual` — le scan était impossible et l'équipe a saisi la remise. Le
+ * destinataire n'avait pas son courriel : un magasinier, quelqu'un d'autre à
+ * l'accueil, un téléphone déchargé.
+ *
+ * 🔴 **Les deux ne se confondent pas, et c'est tout l'objet de ce type.** Sans
+ * lui, quelqu'un finirait par imprimer le code sur le colis « pour les
+ * livraisons difficiles » — et un coursier scannerait son propre carton. Une
+ * attestation **faible et honnête** vaut mieux qu'une forte et fausse ; encore
+ * faut-il pouvoir les distinguer.
+ *
+ * ⚠️ Il vit ICI et non dans le domaine du serveur depuis le 2026-09-11. Il y
+ * était, et le contrat portait `string` à sa place : deux définitions du même
+ * ensemble, dont une qui ne définissait rien.
+ */
+export type HandoverVia = "scan" | "manual";
+
 /** Une ligne à vérifier au comptoir : ce qu'on compte, pas ce qu'on facture. */
 export interface OrderHandoverLine {
   readonly sku: string;
@@ -57,7 +81,119 @@ export interface OrderHandoverView {
    * L'écran l'affiche : une remise saisie est une attestation **plus faible**,
    * et la présenter comme un scan la rendrait fausse plutôt que faible.
    */
-  readonly handedOverVia: string | null;
+  readonly handedOverVia: HandoverVia | null;
   /** `null` = la remise est possible ; sinon la raison du refus, en clair. */
   readonly blockedReason: string | null;
+  /**
+   * La note du client, telle qu'elle a été passée — ou `""`.
+   *
+   * Elle est sur le bon qu'on coche au comptoir : « sans sésame », « livrer par
+   * la cour ». La lire est la seule façon de ne pas tendre un sac qui ignore ce
+   * qu'on a demandé.
+   */
+  readonly note: string;
+  /**
+   * Retrait ou livraison, **typé** — c'est le même ensemble fermé que le port
+   * du serveur porte déjà, et il ne se perd plus en traversant le contrat.
+   */
+  readonly fulfillmentMethod: FulfillmentMethod;
+}
+
+/**
+ * **La file du comptoir**, pour un jour de service.
+ *
+ * ## Pourquoi une vue à part de `OrderHandoverView`
+ *
+ * Les deux parlent de remise et ne servent pas le même geste. La vue détaillée
+ * répond « qu'est-ce que je tends à cette personne » — elle porte les lignes,
+ * le total, la raison d'un refus. Celle-ci répond « qui attend, et depuis
+ * quand » : des dizaines de lignes, aucune ligne de marchandise.
+ *
+ * 🔴 Les fondre reviendrait à charger le détail de quarante commandes pour
+ * n'en ouvrir qu'une. C'est le coût que la séparation évite, et c'est la seule
+ * raison d'avoir deux vues.
+ */
+export interface HandoverQueueView {
+  /** Le jour demandé, `AAAA-MM-JJ` — renvoyé pour que l'écran sache ce qu'il montre. */
+  readonly day: string;
+  readonly entries: readonly HandoverQueueEntryView[];
+}
+
+/** Une ligne de la file. **Aucun montant** : on ne facture pas au comptoir. */
+export interface HandoverQueueEntryView {
+  /** Pour ouvrir le bon quand le comptoir ne suffit pas. */
+  readonly orderId: string;
+  readonly reference: string;
+  readonly customerLabel: string;
+  /**
+   * L'**enseigne** — le nom peint sur la devanture —, ou `null` quand elle ne
+   * dirait rien de plus que la raison sociale.
+   *
+   * 🔴 `null` et non la chaîne vide, et `null` AUSSI quand les deux noms sont
+   * identiques : la colonne vaut `""` par défaut sur toute société qui n'en a
+   * pas déclaré, et une maison qui a rempli les deux champs à l'identique n'a
+   * pas voulu voir son nom deux fois. Le choix est fait ICI, une seule fois —
+   * laissé à l'écran, chaque écran le referait, et un seul l'oublierait.
+   */
+  readonly tradeName: string | null;
+  /** Le point de retrait figé à la commande, ou `null` en livraison. */
+  readonly pickupLabel: string | null;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  /** Le créneau convenu, ou `null` si aucune tranche n'a été demandée. */
+  readonly window: HandoverQueueWindowView | null;
+  /** Somme des quantités — le chiffre qu'on recompte à voix haute. */
+  readonly totalUnits: number;
+  /** ISO. Passée le. */
+  readonly placedAt: string;
+  /**
+   * Où en est la commande, du point de vue du COMPTOIR — et pas le statut brut
+   * du commerce, que personne au comptoir n'a à interpréter.
+   *
+   * `handed_over` gagne sur tout le reste : une commande remise est remise,
+   * même si son statut commercial a bougé depuis.
+   */
+  readonly state: HandoverQueueState;
+  /** ISO de la remise, ou `null`. */
+  readonly handedOverAt: string | null;
+  /** `scan` ou `manual`, ou `null` si elle reste à faire. */
+  readonly handedOverVia: HandoverVia | null;
+  /** ISO du moment où le fournil l'a déclarée prête, ou `null`. */
+  readonly readyAt: string | null;
+}
+
+/**
+ * L'état d'une ligne de file.
+ *
+ * ⚠️ **`cancelled` est RENDU, pas masqué.** Une commande annulée dont le client
+ * se présente quand même doit pouvoir être trouvée à l'écran : c'est la seule
+ * façon que l'équipe puisse lui dire pourquoi on ne lui donne rien. Une file qui
+ * la cacherait laisserait quelqu'un chercher une commande « disparue ».
+ */
+export type HandoverQueueState = "handed_over" | "ready" | "expected" | "cancelled";
+
+/**
+ * Le créneau, **avec sa provenance**.
+ *
+ * 🔴 `default` = heure d'ouverture du point, recopiée à la passation. `override`
+ * = tranche réellement demandée. **Seul un `override` autorise à parler de
+ * retard** : le backfill du 2026-08-15 a posé un `default` sur l'intégralité des
+ * commandes antérieures, et un écran qui l'ignorerait afficherait « en retard »
+ * sur tout le portefeuille d'un coup.
+ */
+export interface HandoverQueueWindowView {
+  /** `null` = aucune borne basse, c'est-à-dire « avant `end` ». */
+  readonly start: string | null;
+  readonly end: string;
+  /**
+   * 🔴 L'union, et non `string`. Elle portait `string` jusqu'au 2026-09-11
+   * alors que `FulfillmentSource` existait déjà dans ce paquet, trois fichiers
+   * plus loin, et que le port du serveur la portait.
+   *
+   * Ce que ça coûtait : l'écran compare cette valeur au littéral `'override'`
+   * pour décider s'il parle de retard. Une faute de frappe — `'overide'`,
+   * `'override '` — compilait, passait le lint, et inversait la condition sur
+   * TOUTE la file. Les tests ne l'auraient pas vue : leurs fixtures écrivent le
+   * même littéral que le code, donc une faute des deux côtés reste verte.
+   */
+  readonly source: FulfillmentSource;
 }

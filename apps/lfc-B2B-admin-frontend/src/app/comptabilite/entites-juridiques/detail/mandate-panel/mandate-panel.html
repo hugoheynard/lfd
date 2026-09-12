@@ -1,0 +1,26 @@
+<fold-panel-header title="Mandat SEPA — exemple" [subtitle]="data().entityName">
+  <span>
+    Notre bloc créancier, prérempli. Ni débiteur ni RUM&nbsp;: c'est la fiche qu'on fait signer, pas
+    un mandat signé.
+  </span>
+</fold-panel-header>
+
+<!-- Le document occupe tout ce que l'en-tête et le pied laissent. Pas de
+     `fold-panel-body` ici, et c'est délibéré : ce corps-là empile des champs
+     dans une colonne qui défile, alors qu'un PDF est UN bloc qui remplit et
+     qui porte son propre défilement. On en reprend en revanche la règle qui
+     se rate toujours — `min-height: 0` — sans quoi l'iframe grandirait la
+     boîte au lieu de la remplir, et pousserait le pied hors du panneau. -->
+<div class="mp-viewer">
+  @if (source(); as document) {
+    <iframe class="mp-doc" title="Mandat SEPA d'exemple" [src]="document"></iframe>
+  }
+</div>
+
+<fold-panel-footer>
+  <!-- Un second « Télécharger », en plus de celui de l'en-tête de la fiche :
+       une fois le document à l'écran, c'est ICI qu'on décide de le garder, et
+       refermer pour aller rechercher le bouton d'en dessous est un détour. -->
+  <button foldButton emphasis="outline" icon="download" (click)="download()">Télécharger</button>
+  <button foldButton (click)="close()">Fermer</button>
+</fold-panel-footer>

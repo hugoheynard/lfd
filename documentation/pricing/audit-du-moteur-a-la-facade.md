@@ -321,11 +321,11 @@ vecteur est vivant, sur des champs `*Millicents` :
 
 | Où                                                                                        | Ce qui est écrit                                        | Ce que le champ porte       |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------- |
-| `apps/lfd-api/prisma/schema.prisma:2601`                                                  | `amountMillicents` — « le prix posé, HT en centimes »   | millicentimes               |
-| `apps/lfd-api/prisma/schema.prisma:2608`                                                  | `value` — « cents si amount »                           | millicentimes               |
-| `apps/lfd-api/prisma/schema.prisma:2612`                                                  | `floorValue` — « ou cents »                             | colonne morte (B.10)        |
-| `apps/lfd-api/prisma/schema.prisma:2690`                                                  | `PriceFloor.value` — « une limite absolue en centimes » | millicentimes               |
-| `apps/lfd-api/prisma/schema.prisma:2934`                                                  | `PriceTemplate.lines` — `unitPriceCents`                | `unitPriceMillicents`       |
+| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                    | `amountMillicents` — « le prix posé, HT en centimes »   | millicentimes               |
+| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                    | `value` — « cents si amount »                           | millicentimes               |
+| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                    | `floorValue` — « ou cents »                             | colonne morte (B.10)        |
+| `apps/lfd-api/prisma/schema/public/pricing.prisma:17`                                     | `PriceFloor.value` — « une limite absolue en centimes » | millicentimes               |
+| `apps/lfd-api/prisma/schema/public/pricing.prisma:275`                                    | `PriceTemplate.lines` — `unitPriceCents`                | `unitPriceMillicents`       |
 | `packages/contracts/src/pricing.ts:140` et `:1202`                                        | « Le prix posé, HT en centimes »                        | `amountMillicents`          |
 | `packages/contracts/src/pricing.ts:467`                                                   | « ramené en centimes sur cet article »                  | `floorMillicents`           |
 | `packages/contracts/src/pricing.ts:670` et `:672`                                         | `NegotiationRoom` — « en centimes »                     | `*Millicents`               |
@@ -353,12 +353,12 @@ relecture. En attendant : les treize phrases se corrigent en une heure.
 [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md), dont
 l'en-tête dit « **A et B disent l'état** » :
 
-| Ligne                         | Il dit                                                                                                                                         | Le code dit                                                                                                                                                                         |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `:713`                        | « **la promesse ne calcule rien.** `promisedQuantity` sert au suivi ; un prix qui en dépendrait serait une remise accordée sur une intention » | `retainedQuantity = max(promis, livré)` — la promesse **fait** le prix. Le même document le dit à la ligne `:1096`. Le schéma Prisma répète la phrase fausse (`schema.prisma:2981`) |
-| `:482`, `:519`                | `amount_cents`, `basePriceCents`, `resultCents`, `finalCents`                                                                                  | tout est en millicentimes                                                                                                                                                           |
-| `:727`                        | `pricing_commitment` porte `{ commitmentId, promisedQuantity, cumulativeQuantity }`                                                            | il porte aussi `retainedQuantity`, le seul des quatre qui explique un palier ouvert par la promesse                                                                                 |
-| « Le chemin du prix, déplié » | « `board-item.ts` refaisait cet arbitrage… ce qui a disparu est la nécessité de refaire le calcul »                                            | `supersededIn` (`apps/lfd-api/src/b2b/pricing/application/board-item.ts:186`) **rejoue `winnerOf` par étage**, à chaque article                                                     |
+| Ligne                         | Il dit                                                                                                                                         | Le code dit                                                                                                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `:713`                        | « **la promesse ne calcule rien.** `promisedQuantity` sert au suivi ; un prix qui en dépendrait serait une remise accordée sur une intention » | `retainedQuantity = max(promis, livré)` — la promesse **fait** le prix. Le même document le dit à la ligne `:1096`. Le schéma Prisma répète la phrase fausse (`public/pricing.prisma:275`) |
+| `:482`, `:519`                | `amount_cents`, `basePriceCents`, `resultCents`, `finalCents`                                                                                  | tout est en millicentimes                                                                                                                                                                  |
+| `:727`                        | `pricing_commitment` porte `{ commitmentId, promisedQuantity, cumulativeQuantity }`                                                            | il porte aussi `retainedQuantity`, le seul des quatre qui explique un palier ouvert par la promesse                                                                                        |
+| « Le chemin du prix, déplié » | « `board-item.ts` refaisait cet arbitrage… ce qui a disparu est la nécessité de refaire le calcul »                                            | `supersededIn` (`apps/lfd-api/src/b2b/pricing/application/board-item.ts:186`) **rejoue `winnerOf` par étage**, à chaque article                                                            |
 
 Le [`README.md`](README.md) le marque 🟡 pour une seule ligne d'en-tête.
 
@@ -477,8 +477,8 @@ du motif « un écran qui recalcule » est sous-compté : celle-ci fait **six**.
   Un état qu'on ne peut atteindre qu'en SQL, et sur lequel deux lecteurs
   prennent des décisions différentes.
 - `price_rules.floor_mode` / `floor_value` : **jamais lus** par le code ; le
-  schéma (`schema.prisma:2610`) promet « Plancher propre à la règle ».
-- `PricingEvent` (`schema.prisma:3022`, `:3028`) : « `rule` | `floor` », six
+  schéma (`public/catalog.prisma:343`) promet « Plancher propre à la règle ».
+- `PricingEvent` (`public/pricing.prisma:358`, `:3028`) : « `rule` | `floor` », six
   actes. Le contrat en a quatre sujets et sept actes.
 - `AuthoredPriceStage` du domaine (`apps/lfd-api/src/b2b/pricing/domain/price-rule.ts:36`)
   vaut `Exclude<PriceStage, "volume">` — la mercuriale y est encore
@@ -803,7 +803,7 @@ croie faites.
   `quote-shop-cart.handler.ts`, `read-my-shop-catalogue.ts` ;
 - `apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts` ;
 - `packages/money/src/` en entier ; `packages/contracts/src/pricing.ts` ;
-  `apps/lfd-api/prisma/schema.prisma` (les huit modèles de tarification) et les
+  `apps/lfd-api/prisma/schema/public/pricing.prisma` (les huit modèles de tarification) et les
   cinq migrations qui posent une contrainte d'exclusion ;
 - `dev-toolbox/gates/price-pipeline.mjs`, `money-units.mjs`, `business-day.mjs`,
   `controller-buses.mjs`, `doc-references.mjs` ;

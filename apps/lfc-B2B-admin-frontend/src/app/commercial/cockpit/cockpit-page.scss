@@ -12,57 +12,6 @@
   max-width: 82rem;
 }
 
-/* Les chiffres de tête : une seule rangée, séparée par des filets, qui mène à
-   l'onglet Croissance. Un tableau de bord doit répondre avant de renvoyer. */
-.ck-kpis {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-lg, 1.5rem);
-  padding: var(--fold-space-md, 1rem) var(--fold-space-lg, 1.5rem);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface-card, var(--fold-color-surface-card));
-  color: inherit;
-  text-decoration: none;
-  transition:
-    border-color var(--fold-motion-fast, 0.15s),
-    box-shadow var(--fold-motion-fast, 0.15s);
-}
-
-.ck-kpis:hover {
-  border-color: var(--fold-color-primary-border, var(--fold-color-primary));
-  box-shadow: var(--fold-shadow-sm);
-}
-
-.ck-kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding-inline-end: var(--fold-space-lg, 1.5rem);
-  border-inline-end: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
-}
-
-.ck-kpi:last-of-type {
-  padding-inline-end: 0;
-  border-inline-end: 0;
-}
-
-.ck-kpi-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.ck-kpi-label {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs, 0.75rem);
-}
-
-.ck-spark {
-  inline-size: 8rem;
-}
-
 /* ── Structure ───────────────────────────────────────────────────────────── */
 
 .ck-columns {
@@ -160,10 +109,5 @@
 
   .ck-rail {
     position: static;
-  }
-
-  .ck-kpis {
-    inline-size: 100%;
-    overflow-x: auto;
   }
 }

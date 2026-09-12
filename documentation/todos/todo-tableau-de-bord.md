@@ -40,7 +40,7 @@ de trop.
 
 Ce qui reste vrai, en revanche : **`StaffUser` n'a toujours pas de `prefs`.**
 C'est ça, et seulement ça, qui manque — le miroir de `nav_prefs` sur `users`
-(`schema.prisma`), qui fait déjà ce travail pour les clients.
+(`prisma/schema/public/account.prisma`), qui fait déjà ce travail pour les clients.
 
 Conséquence encore subie aujourd'hui : les épingles ne suivent ni le navigateur,
 ni la machine.

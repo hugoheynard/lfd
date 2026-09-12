@@ -36,6 +36,7 @@ import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
 } from "../application/commands/place-order-for-customer.command.js";
+import { SendHandoverReminderCommand } from "../application/commands/send-handover-reminder.command.js";
 import { GetAdminOrderSheetPdfQuery } from "../application/queries/get-admin-order-sheet-pdf.query.js";
 import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetAdminOrderQuery } from "../application/queries/get-admin-order.query.js";
@@ -75,6 +76,27 @@ export class AdminOrdersController {
    * une chaîne de requête, et le mettre en `GET` le ferait traîner dans les
    * journaux d'accès.
    */
+  /**
+   * **Renvoyer au client le courriel de retrait.**
+   *
+   * `POST` parce qu'il part un message — un geste, pas une lecture, et il se
+   * répète volontairement (cf. `SendHandoverReminderHandler`). Il vit sur les
+   * commandes et non sur la remise : c'est le commerce qui possède le
+   * destinataire, le bon et le gabarit, et la remise n'a pas à les connaître.
+   *
+   * Rend `204` : il n'y a rien à relire. Un refus, lui, porte sa phrase.
+   */
+  @Post(":id/rappel-retrait")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remindHandover(
+    @Param("id") id: string,
+    @Req() request: AuthenticatedStaffRequest,
+  ): Promise<void> {
+    await this.commands.execute<SendHandoverReminderCommand, void>(
+      new SendHandoverReminderCommand(id, staffSubjectOf(request)),
+    );
+  }
+
   @Post("quote")
   @HttpCode(HttpStatus.OK)
   async quote(
@@ -181,4 +203,17 @@ function staffUserIdOf(request: AuthenticatedStaffRequest): string {
     throw new UnauthorizedException("Identité staff absente de la requête.");
   }
   return staffUserId;
+}
+
+/**
+ * L'identité staff posée par le guard. Le `?` du type l'autorise à manquer ;
+ * en pratique le guard a couru avant nous, mais on refuse plutôt que d'envoyer
+ * un rappel anonyme — un message part au nom de quelqu'un.
+ */
+function staffSubjectOf(request: AuthenticatedStaffRequest): string {
+  const subject = request.staff?.subject;
+  if (subject === undefined || subject === "") {
+    throw new UnauthorizedException("Identité staff absente de la requête.");
+  }
+  return subject;
 }

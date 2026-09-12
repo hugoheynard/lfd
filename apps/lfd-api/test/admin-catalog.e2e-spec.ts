@@ -451,3 +451,121 @@ function croissantIn(board: {
     .flatMap((category) => category.items)
     .find((item) => item.sku === "VIE-001")?.canonicalMillicents;
 }
+
+describe("GET /admin/catalog — l'ordre du rayon", () => {
+  /**
+   * Régression : le tri était `famille.position` puis `article.position`, et le
+   * référentiel envoie `position: 0` sur **tous** les articles. Les deux
+   * critères étaient donc à égalité sur tout un rayon, et Postgres rendait
+   * l'ordre du tas — celui qui change dès qu'une ligne est réécrite. Poser un
+   * prix faisait sauter de place l'article qu'on venait d'éditer, sur l'écran de
+   * catalogue comme dans la vitrine (fix 2026-09-10).
+   *
+   * Le SKU départage. Le semis les déclare à l'ENVERS de l'ordre attendu : sans
+   * le départage, la seule façon d'obtenir cet ordre serait la chance.
+   */
+  it("départage par SKU les articles de même position", async () => {
+    await ctx.app.get(B2bCatalogDriver).send(
+      {
+        version: CATALOG_SNAPSHOT_VERSION,
+        generatedAt: "2026-08-17T08:00:00.000Z",
+        categories: [
+          {
+            id: "cat_vien",
+            name: "Viennoiseries",
+            slug: "viennoiseries",
+            parentId: null,
+            position: 0,
+            vatRatePercent: 5.5,
+          },
+        ],
+        products: ["VIE-003", "VIE-001", "VIE-002"].map((sku, index) => ({
+          id: `prd_${sku}`,
+          sku,
+          name: sku,
+          categoryId: "cat_vien",
+          kind: "daily",
+          variants: [
+            {
+              ...NO_SHEET,
+              id: `var_${sku}`,
+              sku: `${sku}-1`,
+              name: sku,
+              priceMillicents: millicentsFromCents(200 + index),
+              weightGrams: null,
+              isDefault: true,
+              // Le point du test : tous à la MÊME position, comme en vrai.
+              position: 0,
+              vatRatePercent: 5.5,
+            },
+          ],
+          note: null,
+          image: null,
+        })),
+        orderTimeLimits: [],
+      },
+      { revisionId: "rev_ordre", fingerprint: "empreinte-ordre" },
+    );
+
+    const response = await asStaff().get("/admin/catalog");
+    const items = jsonBody<{ sku: string }[]>(response);
+
+    expect(items.map((item) => item.sku)).toEqual(["VIE-001-1", "VIE-002-1", "VIE-003-1"]);
+  });
+});
+
+/**
+ * L'**export**, éprouvé bout en bout.
+ *
+ * Ce que rien d'autre ne prouve : que le serveur pose bien les deux en-têtes
+ * qu'un navigateur lit, que le BOM traverse la sérialisation HTTP (un
+ * `res.json()` l'aurait mangé), et que le fichier reste muré. Le format
+ * lui-même est éprouvé à part, caractère par caractère, sur la fonction pure.
+ */
+describe("GET /admin/catalog/export.csv", () => {
+  it("sert un CSV nommé, avec son type et son BOM", async () => {
+    await push(240);
+
+    const response = await asStaff().get("/admin/catalog/export.csv").expect(200);
+
+    expect(response.headers["content-type"]).toContain("text/csv");
+    // Sans le nom, le fichier atterrit en « export.csv » dans un dossier de
+    // téléchargements et ne s'y retrouve plus.
+    expect(response.headers["content-disposition"]).toContain("catalogue-b2b.csv");
+    expect(response.text.startsWith("\uFEFF")).toBe(true);
+    expect(response.text).toContain("VIE-001-1");
+    expect(response.text).toContain("2,40");
+  });
+
+  it("reste muré : sans jeton staff, rien ne sort", async () => {
+    // Un export est une exfiltration complète du catalogue et de ses prix
+    // négociés. C'est la route de ce contrôleur qu'il faut le plus garder.
+    await ctx.http().get("/admin/catalog/export.csv").expect(401);
+  });
+});
+
+describe("GET /admin/catalog/summary", () => {
+  it("compte ce qui est réellement commandable", async () => {
+    await push(240);
+
+    const response = await asStaff().get("/admin/catalog/summary").expect(200);
+
+    expect(jsonBody<{ onSale: number; withoutVatRate: number; hidden: number }>(response)).toEqual({
+      onSale: 1,
+      withoutVatRate: 0,
+      hidden: 0,
+    });
+  });
+
+  it("bascule l'article masqué d'une colonne à l'autre", async () => {
+    await push(240);
+    await asStaff().put("/admin/catalog/VIE-001-1/visibility").send({ hidden: true }).expect(204);
+
+    const response = await asStaff().get("/admin/catalog/summary").expect(200);
+
+    expect(jsonBody<{ onSale: number; hidden: number }>(response)).toMatchObject({
+      onSale: 0,
+      hidden: 1,
+    });
+  });
+});

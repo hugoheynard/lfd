@@ -1,5 +1,7 @@
+import type { CustomerPortfolioView } from "@lfd/contracts";
+
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffSub } from "../../../platform/auth/staff.decorator.js";
@@ -10,6 +12,8 @@ import { CreateCompanyByStaffCommand } from "../application/commands/create-comp
 import type { CompanyOpened } from "../application/commands/create-company-by-staff.handler.js";
 import { GetCompanyForStaffQuery } from "../application/queries/get-company-for-staff.query.js";
 import { GetCustomerSheetQuery } from "../application/queries/get-customer-sheet.query.js";
+import { ExportCustomersCsvQuery } from "../application/queries/export-customers-csv.query.js";
+import { GetCustomerPortfolioQuery } from "../application/queries/get-customer-portfolio.query.js";
 import { ListAllCompaniesQuery } from "../application/queries/list-all-companies.query.js";
 import type { CustomerSheetView } from "@lfd/contracts";
 import type {
@@ -41,6 +45,37 @@ export class AdminCompaniesController {
     return this.queries.execute<ListAllCompaniesQuery, readonly AdminCompanyView[]>(
       new ListAllCompaniesQuery(),
     );
+  }
+
+  /**
+   * Les quatre nombres du portefeuille, pour le tableau de bord.
+   *
+   * Une route à part plutôt qu'un calcul sur `GET /` : le tableau de bord veut
+   * quatre entiers, pas la liste entière avec ses KBIS et ses avertissements.
+   * Faire compter l'écran lui ferait télécharger tout le portefeuille pour
+   * afficher « 84 ».
+   */
+  @Get("portfolio")
+  portfolio(): Promise<CustomerPortfolioView> {
+    return this.queries.execute<GetCustomerPortfolioQuery, CustomerPortfolioView>(
+      new GetCustomerPortfolioQuery(),
+    );
+  }
+
+  /**
+   * Le portefeuille en CSV — le fichier qu'on donne au comptable.
+   *
+   * ⚠️ Ce fichier porte des données personnelles : un nom et une adresse
+   * électronique par société. Il part par courriel, se copie, se retrouve dans
+   * des dossiers partagés. Les colonnes ont été choisies en conséquence
+   * (`customers-csv.ts`) — pas de téléphone, pas d'adresses, pas de membres. En
+   * ajouter une se décide, ça ne se complète pas.
+   */
+  @Get("export.csv")
+  @Header("Content-Type", "text/csv; charset=utf-8")
+  @Header("Content-Disposition", 'attachment; filename="comptes-clients.csv"')
+  csv(): Promise<string> {
+    return this.queries.execute<ExportCustomersCsvQuery, string>(new ExportCustomersCsvQuery());
   }
 
   /**

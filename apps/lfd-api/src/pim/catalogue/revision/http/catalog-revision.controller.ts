@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
@@ -8,11 +8,14 @@ import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import type {
   CatalogOverviewView,
   CatalogRevisionDiffView,
-  CatalogRevisionSummaryView,
+  CatalogPendingDiffView,
+  CatalogRevisionRowView,
 } from "@lfd/pim-contracts";
 
 import { DiffCatalogRevisionsQuery } from "../application/diff-catalog-revisions.js";
+import { DiffCatalogSinceLastQuery } from "../application/diff-catalog-since-last.js";
 import { GetCatalogOverviewQuery } from "../application/get-catalog-overview.js";
+import { RenameCatalogRevisionCommand } from "../application/rename-catalog-revision.js";
 import { ListCatalogRevisionsQuery } from "../application/list-catalog-revisions.js";
 import {
   TakeCatalogRevisionCommand,
@@ -23,8 +26,20 @@ import {
  * Le libellé qu'on donne à une ancre. Facultatif : la plupart des captures sont
  * des repères, et forcer un nom ferait écrire « test » quatre-vingt-dix fois.
  */
+/**
+ * Le nom qu'on donne à une ancre muette. **Obligatoire** ici, contrairement à
+ * la pose : on ne vient sur cette route que pour nommer.
+ */
+const nameRevisionPayloadSchema = z.object({
+  label: z.string().trim().min(1).max(120),
+  /** Le POURQUOI. Facultatif : on peut nommer sans avoir plus à dire. */
+  note: z.string().trim().min(1).max(2_000).nullish(),
+});
+type NameRevisionPayload = z.infer<typeof nameRevisionPayloadSchema>;
+
 const takeRevisionPayloadSchema = z.object({
   label: z.string().trim().min(1).max(120).nullish(),
+  note: z.string().trim().min(1).max(2_000).nullish(),
 });
 type TakeRevisionPayload = z.infer<typeof takeRevisionPayloadSchema>;
 
@@ -57,10 +72,29 @@ export class CatalogRevisionController {
     );
   }
 
+  /**
+   * **Ce qui a bougé depuis la dernière ancre publiée**, en détail.
+   *
+   * Une lecture À PART d'`overview`, et non un champ de plus : la synthèse ne
+   * lit aucun payload et s'affiche à chaque ouverture d'écran ; le détail
+   * charge un payload par article modifié et interroge le journal produit par
+   * produit. Les fondre ferait payer ce prix à tous les affichages de
+   * l'en-tête.
+   *
+   * Le chemin est FIXE et vient avant `:from/diff/:to` : sans quoi Nest lirait
+   * « since-last » comme une référence d'ancre.
+   */
+  @Get("since-last")
+  sinceLast(): Promise<CatalogPendingDiffView> {
+    return this.queries.execute<DiffCatalogSinceLastQuery, CatalogPendingDiffView>(
+      new DiffCatalogSinceLastQuery(),
+    );
+  }
+
   /** Les ancres, de la plus récente à la plus ancienne. */
   @Get()
-  list(): Promise<readonly CatalogRevisionSummaryView[]> {
-    return this.queries.execute<ListCatalogRevisionsQuery, readonly CatalogRevisionSummaryView[]>(
+  list(): Promise<readonly CatalogRevisionRowView[]> {
+    return this.queries.execute<ListCatalogRevisionsQuery, readonly CatalogRevisionRowView[]>(
       new ListCatalogRevisionsQuery(),
     );
   }
@@ -83,6 +117,29 @@ export class CatalogRevisionController {
     );
   }
 
+  /**
+   * **Nommer une ancre qui ne l'était pas.**
+   *
+   * `PATCH` et non `PUT` : on ne remplace pas l'ancre, on comble le seul champ
+   * qu'elle ait laissé vide. Et le serveur REFUSE une ancre déjà nommée — le
+   * nom dit avec quelle intention un catalogue est parti chez des clients, le
+   * réécrire raconterait le passé autrement.
+   *
+   * Le geste existe parce que le push a longtemps posé des ancres anonymes :
+   * il répare à la main, quand on se souvient. Rien ne les nomme d'office —
+   * une intention fabriquée ment mieux qu'une absence.
+   */
+  @Patch(":reference/label")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async name(
+    @Param("reference") reference: string,
+    @Body(new ZodBody(nameRevisionPayloadSchema)) body: NameRevisionPayload,
+  ): Promise<void> {
+    await this.commands.execute<RenameCatalogRevisionCommand, void>(
+      new RenameCatalogRevisionCommand(reference, body.label, body.note ?? null),
+    );
+  }
+
   // Poser une ancre ne publie rien à elle seule — mais elle n'existe QUE pour
   // précéder une publication, et la lecture des ancres déjà posées reste
   // ouverte. Un catalogue qu'on ne publie pas n'a rien à photographier.
@@ -92,7 +149,7 @@ export class CatalogRevisionController {
     @Body(new ZodBody(takeRevisionPayloadSchema)) body: TakeRevisionPayload,
   ): Promise<TakenRevision> {
     return this.commands.execute<TakeCatalogRevisionCommand, TakenRevision>(
-      new TakeCatalogRevisionCommand(body.label ?? null),
+      new TakeCatalogRevisionCommand(body.label ?? null, body.note ?? null),
     );
   }
 }

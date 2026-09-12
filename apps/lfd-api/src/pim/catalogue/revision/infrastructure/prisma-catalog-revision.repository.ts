@@ -90,6 +90,15 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     return row === null ? null : toRecord(row);
   }
 
+  async rename(revisionId: string, label: string, note: string | null): Promise<void> {
+    // La note n'est écrite que si on en apporte une : nommer une ancre sans
+    // rien dire de plus ne doit pas effacer ce qu'une autre main y avait mis.
+    await this.prisma.catalogRevision.update({
+      where: { id: revisionId },
+      data: { label, ...(note === null ? {} : { note }) },
+    });
+  }
+
   async list(limit: number): Promise<readonly RevisionRecord[]> {
     const rows = await this.prisma.catalogRevision.findMany({
       orderBy: { takenAt: "desc" },
@@ -129,6 +138,39 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
       hashBySku: new Map(items.map((item) => [item.sku, item.contentHash])),
       proRatioBp: ratioOf(revision?.header),
     };
+  }
+
+  async indexesOf(revisionIds: readonly string[]): Promise<ReadonlyMap<string, RevisionIndex>> {
+    if (revisionIds.length === 0) {
+      return new Map();
+    }
+    // DEUX requêtes pour N ancres, et pas deux par ancre : c'est toute la
+    // raison d'être de cette méthode.
+    const [items, revisions] = await Promise.all([
+      this.prisma.catalogRevisionItem.findMany({
+        where: { revisionId: { in: [...revisionIds] } },
+        select: { revisionId: true, sku: true, contentHash: true },
+      }),
+      this.prisma.catalogRevision.findMany({
+        where: { id: { in: [...revisionIds] } },
+        select: { id: true, header: true },
+      }),
+    ]);
+    const hashes = new Map<string, Map<string, string>>();
+    for (const item of items) {
+      const bucket = hashes.get(item.revisionId) ?? new Map<string, string>();
+      bucket.set(item.sku, item.contentHash);
+      hashes.set(item.revisionId, bucket);
+    }
+    return new Map(
+      revisions.map((revision) => [
+        revision.id,
+        {
+          hashBySku: hashes.get(revision.id) ?? new Map<string, string>(),
+          proRatioBp: ratioOf(revision.header),
+        },
+      ]),
+    );
   }
 
   async recordPublication(publication: RevisionPublication): Promise<void> {
@@ -234,12 +276,14 @@ function toRecord(row: {
   hash: string;
   takenAt: Date;
   takenBy: string;
+  note: string | null;
   _count: { items: number };
 }): RevisionRecord {
   return {
     id: row.id,
     reference: row.reference,
     label: row.label,
+    note: row.note,
     hash: row.hash,
     takenAt: row.takenAt,
     takenBy: row.takenBy,

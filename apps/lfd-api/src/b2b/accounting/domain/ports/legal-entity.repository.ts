@@ -17,4 +17,18 @@ export abstract class LegalEntityRepository {
 
   /** Écrit l'agrégat entier, tel que `toPersistence()` le rend. */
   abstract save(entity: LegalEntity): Promise<void>;
+
+  /**
+   * Reste-t-il une **autre** entité en service que celle-ci ?
+   *
+   * Une question, pas un compteur : le handler n'a pas à interpréter un nombre,
+   * et le jour où « en service » se complique (une entité suspendue ? une
+   * entité d'un autre pays ?), la définition reste d'un seul côté du port.
+   *
+   * 🔴 C'est le seul endroit du contexte où une écriture a besoin de connaître
+   * l'ENSEMBLE. Un agrégat ne voit pas ses frères — c'est ce qui l'empêche de
+   * porter la règle « on ne peut pas archiver la dernière », et c'est pourquoi
+   * elle vit dans le handler plutôt que dans `archive()`.
+   */
+  abstract hasAnotherActive(exceptId: string): Promise<boolean>;
 }

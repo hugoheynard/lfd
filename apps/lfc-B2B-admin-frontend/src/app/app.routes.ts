@@ -6,6 +6,7 @@ import { adminRoutes } from './admin/admin.routes';
 import { commercialRoutes } from './commercial/commercial.routes';
 import { ficheClientRoutes, nouveauCompteRoutes } from './fiche-client/fiche-client.routes';
 import { b2bRoutes } from './b2b/b2b.routes';
+import { comptabiliteRoutes } from './comptabilite/comptabilite.routes';
 import { pimRoutes } from './pim/pim.routes';
 import { reglagesRoutes } from './reglages/reglages.routes';
 
@@ -29,6 +30,19 @@ export const routes: Routes = [
   // ORDRE ① — avant `ficheClientRoutes` : sans cela « nouveau » serait lu comme
   // un identifiant de société, et la page afficherait « Société introuvable ».
   ...nouveauCompteRoutes,
+  {
+    // **Outils agent** — l'écran est l'interrupteur : les outils WebMCP du
+    // référentiel ne sont déclarés que par ce composant, donc ils n'existent
+    // que tant qu'on est dessus. Route de premier niveau, hors de `pim/` : ce
+    // n'est pas un écran du référentiel, c'est un atelier qui le pilote.
+    //
+    // Le garde demande l'ÉCRITURE, pas la lecture : ces outils écrivent.
+    path: 'outils-agent',
+    canActivate: [permissionGuard('pim_catalog:write')],
+    title: 'Outils agent — LFC B2B admin',
+    loadComponent: () =>
+      import('./agent/agent-tools-page/agent-tools-page').then((m) => m.AgentToolsPage),
+  },
   {
     // Le détail d'une commande vit HORS de la fiche client : une commande « zéro
     // friction » n'a pas d'entreprise, donc pas de fiche où la loger. Une route
@@ -118,6 +132,7 @@ export const routes: Routes = [
   },
   ...pimRoutes,
   ...b2bRoutes,
+  ...comptabiliteRoutes,
 
   {
     // LA DOCUMENTATION — au pied du menu, avec les Réglages : on ne l'ouvre pas
@@ -223,13 +238,53 @@ export const routes: Routes = [
       import('./app-mobile/app-mobile-page/app-mobile-page').then((m) => m.AppMobilePage),
   },
   {
-    path: 'production',
-    // Les commandes en lecture : c'est la même donnée que la liste staff, vue
-    // par le fournil. Le garde est ici parce qu'une URL tapée ou un favori ne
-    // passent pas par le rail — et un poste du labo ouvrira exactement ça.
+    // LA FILE DE REMISE — qui attend au comptoir aujourd'hui. Route de premier
+    // niveau, à côté de « production » et « livraison » : c'est le même flux de
+    // commandes, vu à un troisième moment.
+    //
+    // ⚠️ Elle ne remplace PAS `retrait/:token`, et ne peut pas : ce chemin-là
+    // est ce que les QR déjà partis en courriel encodent. Celui-ci est la file
+    // qu'on ouvre le matin ; l'autre est la cible d'un scan.
+    path: 'remises',
     canActivate: [permissionGuard('b2b_orders:read')],
-    title: 'Production — LFC B2B admin',
-    loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
+    title: 'Retrait boutique — LFC B2B admin',
+    loadComponent: () =>
+      import('./handover-shop/handover-shop-page/handover-shop-page').then(
+        (m) => m.HandoverShopPage,
+      ),
+  },
+  {
+    // LA PRODUCTION — un ESPACE de travail, et non plus une page. Deux vues, et
+    // ce sont deux questions : la journée dit ce qu'on fabrique maintenant, le
+    // prévisionnel dit quand ça tombe. La coquille ne dessine rien ; elle
+    // publie le rail secondaire, et chaque vue garde son propre sommet.
+    //
+    // Le garde est ICI, sur la coquille : une URL tapée ou un favori ne passent
+    // pas par le rail, et un poste du labo ouvrira exactement ça. Les deux vues
+    // en héritent — elles lisent la même donnée, vue à deux distances.
+    path: 'production',
+    canActivate: [permissionGuard('b2b_orders:read')],
+    loadComponent: () =>
+      import('./production/production-workspace/production-workspace-page').then(
+        (m) => m.ProductionWorkspacePage,
+      ),
+    children: [
+      // `/production` reste une adresse valide — c'est un favori de poste de
+      // labo, et une section ne casse pas les liens de ceux qui l'ouvraient
+      // avant qu'elle existe.
+      { path: '', pathMatch: 'full', redirectTo: 'journee' },
+      {
+        path: 'journee',
+        title: 'Production — LFC B2B admin',
+        loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
+      },
+      {
+        path: 'previsionnel',
+        title: 'Prévisionnel — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
+      },
+    ],
   },
   ...commercialRoutes,
   // 🔴 **VIDE dans un build de production.** `dev-tools.ts` n'y déclare aucune

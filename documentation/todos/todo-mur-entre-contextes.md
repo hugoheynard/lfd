@@ -10,7 +10,7 @@
 ## Le fait
 
 Le PIM a eu sa propre base ; il ne l'a plus. Depuis B4, c'est le **schéma
-Postgres `pim`** de la base de commerce — un seul `schema.prisma`, un seul
+Postgres `pim`** de la base de commerce — un seul `prisma/schema/datasource.prisma`, un seul
 `datasource`, une seule URL (`DATABASE_LFD_URL`).
 
 `CLAUDE.md` §1 affirmait encore des « bases physiquement séparées » et deux

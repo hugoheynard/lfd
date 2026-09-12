@@ -1,0 +1,330 @@
+/* ── LE RAIL, SUR LE CHROME ─────────────────────────────────────────────────
+   Aucune couleur n'est écrite ici : `foldSurface="chrome"` repointe la polarité
+   entière du sous-arbre, et la feuille ne fait que poser le fond que la
+   directive, elle, ne peint pas. */
+:host {
+  display: block;
+
+  /* Ce qui surplombe le rail, mesuré à l'écran : la barre de l'app (56), la
+     bande de tête (60), le sur-titre de la file et les gouttières. */
+  --hd-above: 10.5rem;
+
+  /* 🔴 Deux réglages OUVERTS, sur l'hôte et non sur `.hd-sheet` : une feuille
+     d'app ne peut pas atteindre l'intérieur d'un composant encapsulé, mais une
+     propriété personnalisée, elle, y descend. C'est par eux que l'écran de
+     comptoir fait du rail une feuille qui monte sur la file quand la colonne
+     n'existe plus. Posés sur `.hd-sheet`, ils auraient gagné contre ce que
+     l'appelant écrit sur l'élément — et rien n'aurait bougé. */
+  --hd-height: calc(100dvh - var(--hd-above));
+  --hd-radius: var(--fold-radius-lg);
+}
+
+/* 🔴 **Le rail descend jusqu'en bas.** Un bloc sombre de six lignes à côté d'une
+   file de dix se lit comme une bulle d'aide, et on cherche comment le fermer ;
+   une colonne pleine hauteur se lit comme un plan de travail. La hauteur est
+   celle de la fenêtre moins ce qui la surplombe — la barre de l'app, la bande
+   de tête, le sur-titre de la file — et le contenu défile à l'intérieur quand
+   le sac est long, plutôt que d'être coupé par le `position: sticky` du rail. */
+.hd-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  height: var(--hd-height);
+  padding: var(--fold-space-lg);
+  overflow-y: auto;
+  border-radius: var(--hd-radius);
+
+  /* 🔴 La teinte de la BARRE DE L'APP, et non celle du rail secondaire. Les
+     deux sont sombres, mais la barre est d'un cran plus profond : le rail s'y
+     accorde, et la file sur son papier gagne le relief que deux gris voisins ne
+     donnaient pas. Un seul jeton à changer — aucune couleur n'est écrite ici. */
+  background: var(--fold-color-bg-header);
+}
+
+/* ── L'IDENTITÉ ─────────────────────────────────────────────────────────────
+   Le numéro en grand, parce que c'est ce qu'on épelle au téléphone et ce qu'on
+   compare à l'écran d'un client. Le reste l'entoure sans lui disputer la place. */
+/* 🔴 L'écart est tenu par le SEUL `gap`, et il est large. Quatre lignes
+   collées — lieu, nom, numéro, date — se lisent comme un bloc de texte alors
+   que ce sont quatre faits qu'on vérifie l'un après l'autre, debout, pendant
+   qu'une personne attend. Aucune marge par élément ici : deux réglages qui
+   s'additionnent rendent l'interligne impossible à corriger d'un endroit. */
+.hd-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xl);
+}
+
+/* Le sur-titre et la fermeture sur la même ligne : le bouton n'a pas de place à
+   lui, il occupe celle que le texte laisse. */
+.hd-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  min-height: 2rem;
+}
+
+.hd-eyebrow {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-transform: uppercase;
+}
+
+/* Les trois lignes en UN bloc : nom, numéro et date ne sont pas trois faits à
+   peser l'un après l'autre, c'est une seule identité qu'on lit d'un regard.
+   Elles se serrent entre elles, et c'est le rail qui les tient à distance du
+   sur-titre. */
+.hd-who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* 🔴 En gras, à l'inverse de la maquette. Le numéro sert à VÉRIFIER ; le nom
+   sert à APPELER — c'est lui qu'on prononce à voix haute au-dessus d'un
+   comptoir, et il doit se trouver sans être cherché.
+
+   En chasse fixe, comme la référence sous lui : les trois lignes deviennent un
+   seul bloc d'identité au lieu d'une phrase suivie d'un code. C'est ce que la
+   mono dit — ceci se compare caractère par caractère. */
+.hd-customer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+}
+
+.hd-trade {
+  font-weight: var(--fold-weight-semibold);
+}
+
+/* La raison sociale ne répond pas à la même question : elle lève un doute, elle
+   n'appelle personne. Elle recule d'un ton sans quitter la ligne. */
+.hd-legal {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.hd-reference {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tight);
+  line-height: var(--fold-leading-tight);
+  /* Une référence ne se coupe pas n'importe où : elle se lit d'un bloc ou pas
+     du tout. Elle déborde donc en défilant plutôt qu'en se brisant. */
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.hd-meta {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* ── LE SAC ─────────────────────────────────────────────────────────────────
+   Dans sa propre carte, un cran plus sombre que le rail et cerclée d'un trait :
+   c'est la seule chose qu'on lit en tendant les mains, et elle doit se détacher
+   du reste.
+
+   🔴 `flex: 0 1 auto` : elle prend la hauteur de SON contenu, et se contracte —
+   jamais l'inverse. Avec `1 1`, elle s'étirait sur toute la colonne et laissait
+   un vide sous la dernière ligne, en repoussant la remise au bas du rail. Ici
+   la carte s'arrête où la liste s'arrête, la remise vient juste dessous, et
+   c'est seulement quand le sac dépasse la place disponible que la liste se met
+   à défiler. C'est ce qui remplace le dépliage : un « + 2 références »
+   demandait un clic pour voir ce qu'on est en train de tendre. */
+.hd-bag {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-height: 0;
+  padding: var(--fold-space-sm) var(--fold-space-md) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+
+  /* Une carte POSÉE sur le rail, pas creusée dedans. `surface-sunken` la
+     confondait avec le fond : on lisait une liste flottante au lieu d'un objet
+     qu'on tient.
+
+     La teinte est celle du RAIL SECONDAIRE, pas une surface de papier : le rail
+     est peint du chrome de la barre de l'app, et c'est dans cette famille-là
+     qu'un cran d'écart se lit comme un objet posé plutôt que comme une
+     seconde polarité. */
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+/* Le titre à gauche, le total à droite : c'est le nombre qu'on recompte à voix
+   haute, et il doit se lire sans parcourir la liste. */
+.hd-bag-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding-bottom: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+/* 🔴 En bas de casse, à la taille du texte courant. La capitale espacée est le
+   ton d'une ÉTIQUETTE — elle nomme une zone d'interface. Ici la phrase nomme un
+   geste, celui qu'on est en train de faire, et elle se lit comme telle. */
+.hd-bag-title {
+  margin: 0;
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.hd-bag-total {
+  display: flex;
+  align-items: baseline;
+  /* 🔴 Un écart franc entre le nombre et son unité. Collés, « 128pièces » se
+     lit comme un seul mot et le chiffre perd ce qui le rend lisible d'un
+     mètre : d'être seul. */
+  gap: var(--fold-space-xs);
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.hd-bag-total strong {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tight);
+  line-height: 1;
+}
+
+/* La liste défile DANS la carte : un sac de vingt références ne doit pas
+   repousser le bouton de remise, celui qu'on cherche en tenant le sac. */
+.hd-lines {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  margin: var(--fold-space-xs) 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* La quantité d'abord, en chiffres tabulaires alignés : la colonne se parcourt
+   du haut vers le bas pendant qu'on remplit le sac, sans relire les noms.
+
+   Un trait ENTRE les rangs, et seulement entre eux : c'est une liste qu'on
+   parcourt du doigt en comptant à voix haute, et le filet donne au doigt une
+   ligne à suivre que l'air seul ne donne pas. Le trait le plus clair de fold et
+   un seul pixel — assez pour guider, trop peu pour qu'on le compte avant de
+   lire les quantités. */
+.hd-line {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr auto;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) 0;
+}
+
+/* 🔴 Sur le rang SUIVANT, jamais sur chacun : un filet posé sur tous les rangs
+   en dessine un de plus sous le dernier article, à un cheveu du bord de la
+   carte — deux traits parallèles qu'on lit comme une erreur d'alignement. */
+.hd-line + .hd-line {
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.hd-qty {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-tight);
+  /* Aligné à GAUCHE, contre le bord de la carte. Un chiffre calé à droite
+     s'éloigne de son article à mesure qu'il raccourcit — « 8 » se retrouvait à
+     deux caractères de son nom là où « 41 » le touchait. */
+  text-align: left;
+}
+
+.hd-name {
+  font-size: var(--fold-text-sm);
+  /* Un nom long revient à la ligne plutôt que d'être coupé : on le lit pour
+     trouver le produit sur une étagère, pas pour le reconnaître d'un préfixe. */
+  overflow-wrap: anywhere;
+}
+
+.hd-sku {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  letter-spacing: var(--fold-tracking-wide);
+  white-space: nowrap;
+}
+
+/* ── LES GESTES ─────────────────────────────────────────────────────────────
+   La remise prend toute la largeur : c'est LE geste de cet écran, et on le
+   cherche en tenant un sac d'une main. Le reste est en dessous, en petit. */
+.hd-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+
+  /* Trois gestes distincts, pas une pile : le scan, la remise saisie, et la
+     ligne du bas qui n'en est pas un. Collés, les deux boutons se lisaient
+     comme un seul bloc à deux étages, et on cliquait le mauvais. */
+  gap: var(--fold-space-md);
+
+  /* 🔴 Collée au BAS du rail. Le sac s'arrête où sa liste s'arrête, donc la
+     remise suivait la dernière ligne et changeait de hauteur d'une commande à
+     l'autre — trois articles la posaient en haut, vingt la posaient en bas. Un
+     geste qu'on cherche en tenant un sac d'une main doit se trouver au même
+     endroit à chaque fois ; le vide au-dessus est le prix de cette constance,
+     et il est moins cher que la recherche. */
+  margin-top: auto;
+  padding-top: var(--fold-space-xs);
+}
+
+/* 🔴 **Le bleu de la PAGE, dans une colonne de chrome.** Sur le rail,
+   `foldSurface="chrome"` repointe tout le couple de marque vers sa polarité
+   sombre : `primary` y devient un bleu pâle à encre foncée, juste pour un
+   comptoir. Le geste central de l'écran doit porter le même bleu que le
+   « Scanner » de la file, sinon deux boutons qui font la même chose ne se
+   ressemblent pas.
+
+   `--fold-color-brand` est précisément ce qui reste : le bloc chrome de navi
+   redéclare `primary`, `on-primary` et leurs dérivés, mais JAMAIS la paire
+   `brand` / `on-brand` (vérifié dans `tokens/semantic.css` le 2026-09-11). On
+   repointe donc les rôles du bouton dessus — aucune couleur écrite ici.
+
+   Le survol est un mélange avec le fond de la barre de l'app, faute d'un
+   `brand-strong` : la page descend d'un cran (600 → 700), et sans lui le survol
+   serait allé chercher le bleu pâle du chrome — c'est-à-dire s'éclaircir. */
+.hd-scan {
+  --fold-color-primary: var(--fold-color-brand);
+  --fold-color-on-primary: var(--fold-color-on-brand);
+  --fold-color-primary-strong: color-mix(
+    in srgb,
+    var(--fold-color-brand) 82%,
+    var(--fold-color-bg-header)
+  );
+}
+
+.hd-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+}
+
+.hd-note {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}

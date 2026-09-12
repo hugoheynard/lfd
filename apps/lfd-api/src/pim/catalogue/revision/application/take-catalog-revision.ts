@@ -15,7 +15,11 @@ import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.j
 export type TakenRevision = CatalogRevisionTakenView;
 
 export class TakeCatalogRevisionCommand {
-  constructor(readonly label: string | null) {}
+  constructor(
+    readonly label: string | null,
+    /** Le POURQUOI, en clair. `null` = on n'en écrit pas. */
+    readonly note: string | null = null,
+  ) {}
 }
 
 /**
@@ -86,10 +90,32 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     // pose la bonne question.
     const existing = await this.revisions.byHash(revision.hash);
     if (existing !== null) {
+      // 🔴 **Une ancre muette prend le nom qu'on lui apporte.**
+      //
+      // Le cas est celui d'un push : l'ancre existe déjà — un envoi précédent
+      // l'a posée, ou un « préparer » sans nom — et l'appelant, lui, arrive
+      // avec une intention. La lui refuser laisserait une ancre anonyme partir
+      // une fois de plus, ce qui est exactement ce qu'on veut faire cesser.
+      //
+      // Le PREMIER nom gagne, en revanche : une ancre déjà nommée garde le
+      // sien. Le nom dit avec quelle intention un catalogue est parti chez des
+      // clients ; le réécrire au passage d'un push le raconterait autrement,
+      // sans que personne ne l'ait demandé.
+      const named = existing.label ?? command.label;
+      if (existing.label === null && command.label !== null) {
+        await this.revisions.rename(existing.id, command.label, command.note);
+        await this.journal.trace({
+          type: PIM_EVENTS.catalogRevisionNamed,
+          subjectType: "catalog_revision",
+          subjectId: existing.id,
+          payload: { reference: existing.reference, label: command.label },
+        });
+      }
       return {
         id: existing.id,
         reference: existing.reference,
         hash: existing.hash,
+        label: named,
         created: false,
       };
     }
@@ -99,7 +125,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     // Le fait et l'ancre dans la MÊME transaction. Une ancre est une lecture
     // qu'on enregistre, mais elle s'enregistre : si la trace passait et l'ancre
     // non, l'historique affirmerait une révision que la base ne porte pas.
-    const posed = await this.pose(command.label, revision, takenAt, takenBy).catch(
+    const posed = await this.pose(command, revision, takenAt, takenBy).catch(
       async (error: unknown) => {
         // Course perdue : un autre push vient de poser exactement cette ancre.
         // On la rattrape plutôt que de rendre une erreur pour un résultat qui
@@ -118,13 +144,14 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
       id: posed.id,
       reference: posed.reference,
       hash: revision.hash,
+      label: command.label,
       created: !("adopted" in posed),
     };
   }
 
   /** La trace et l'ancre, dans la même transaction. */
   private async pose(
-    label: string | null,
+    command: TakeCatalogRevisionCommand,
     revision: ReturnType<typeof buildRevision>,
     takenAt: Date,
     takenBy: string,
@@ -138,12 +165,12 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
         // l'écriture par construction. L'empreinte désigne la même chose et ne
         // dépend de personne.
         subjectId: revision.hash,
-        payload: { hash: revision.hash, label },
+        payload: { hash: revision.hash, label: command.label, note: command.note },
         // La portée d'une ancre : combien d'articles elle fige.
         blast: { articles: revision.items.length },
       });
       return this.revisions.save(
-        { label, hash: revision.hash, takenAt, takenBy },
+        { label: command.label, note: command.note, hash: revision.hash, takenAt, takenBy },
         revision,
         ticket,
       );

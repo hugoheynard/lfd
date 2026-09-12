@@ -1,0 +1,295 @@
+<!-- `headerBleed` + `separator` : l'en-tête va bord à bord, donc son filet
+     aussi — exactement comme la fiche produit, dont le corps est lui aussi une
+     PILE DE CARTES. Ce jugement a été réexaminé le jour où les sections sont
+     devenues des cartes : la raison a changé (ce n'est plus « rien ne pose de
+     sol », c'est « chaque carte pose le sien »), la conclusion non — la fiche
+     produit tranche la même chose de la même façon.
+     PAS de `headerBand` : une bande derrière l'en-tête ferait un sol de plus
+     au-dessus de cartes qui en posent déjà un chacune. -->
+<fold-page-layout [title]="entity()?.name ?? 'Entité juridique'" headerBleed separator>
+  <!-- Un bloc de projection par `@if` : un `@if` qui porte plusieurs nœuds à sa
+       racine ne projette dans aucun emplacement, et l'AOT le refuse. -->
+  <fold-back-link
+    pageEyebrow
+    icon="arrow-back"
+    label="Entités juridiques"
+    routerLink="/comptabilite/entites-juridiques"
+  />
+
+  @if (entity() !== null) {
+    <!-- L'état À CÔTÉ DU TITRE, et une seule fois sur la page : c'est la
+         première question qu'on pose à une entité (« peut-elle encaisser ? »),
+         et la section « Identité » n'a plus à la reposer. -->
+    <fold-badge titleBadge [content]="stateLabel()" [variant]="stateVariant()" radius="pill" />
+  }
+
+  @if (entity(); as entity) {
+    <span pageSubtitle class="ident">
+      <span>{{ entity.legalForm }}</span>
+      <span class="ident-sep" aria-hidden="true">·</span>
+      <span class="ident-siren">SIREN {{ entity.siren }}</span>
+    </span>
+  }
+
+  @if (entity(); as entity) {
+    <!-- 🔴 Inactifs tant que l'entité ne peut pas encaisser : le serveur refuse
+         en 409 plutôt que d'imprimer des cases vides sur un document qu'on fait
+         signer. Un bouton actif dont la seule issue est une erreur est une
+         affordance qui ment — la même règle que le champ ICS refermé.
+
+         « Voir » d'abord, et en emphase : le geste courant est de CONTRÔLER la
+         fiche à l'écran, pas d'accumuler des PDF. -->
+    <div pageActions class="ej-mandate-actions">
+      <button
+        foldButton
+        icon="eye"
+        [disabled]="!entity.canCollect"
+        [loading]="busy()"
+        (click)="viewMandate(entity)"
+      >
+        Voir le mandat SEPA
+      </button>
+      <button
+        foldButton
+        emphasis="outline"
+        icon="download"
+        [disabled]="!entity.canCollect"
+        [loading]="busy()"
+        (click)="downloadMandate(entity)"
+      >
+        Télécharger
+      </button>
+    </div>
+  }
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @if (loading()) {
+    <fold-loading message="Lecture de l'entité…" />
+  } @else if (entity() === null) {
+    <fold-empty-state tone="alert" title="Entité introuvable">
+      <button foldButton (click)="load(id())">Réessayer</button>
+    </fold-empty-state>
+  } @else if (entity(); as entity) {
+    <!-- 🔴 Une CARTE PAR SECTION, et non cinq sections dans un même flux : ces
+         cinq blocs ne se lisent pas de haut en bas, on va DIRECTEMENT à celui
+         qu'on vient régler. Une carte donne à chacun un bord, donc une cible.
+         `fold-card` + `fold-page-section` dedans, comme le tableau de bord
+         comptable et la fiche produit : la carte porte la surface, la section
+         porte le `<h2>` et le nom de la région. Aucune marge ici — l'écart
+         entre les cartes est le `--fold-page-gap` de `fold-page-layout`. -->
+    <fold-card>
+      <fold-page-section title="Identité" separator>
+        <!-- Plus de badge ici : il est à côté du titre, et le répéter à trois
+           centimètres ferait lire deux états là où il n'y en a qu'un. Ce qui
+           reste est ce que le badge NE DIT PAS — ce qui manque, ou ce qu'un
+           archivage laisse lisible. Les deux phrases sont RÉDIGÉES PAR LE
+           SERVEUR (`missingToCollect`) : les récrire ici ferait une seconde
+           définition de « complète ». -->
+        @if (entity.archivedAt !== null) {
+          <p class="ej-said">
+            Elle n'émet plus rien. Les documents qui la citent restent lisibles.
+          </p>
+        } @else if (!entity.canCollect) {
+          <p class="ej-said">Il manque {{ entity.missingToCollect.join(', ') }}.</p>
+        }
+
+        <fold-field-list>
+          <fold-field label="Siège">
+            {{ entity.addressLine1 }}
+            @if (entity.addressLine2 !== '') {
+              <br />{{ entity.addressLine2 }}
+            }
+            <br />{{ entity.postalCode }} {{ entity.city }}
+          </fold-field>
+          <fold-field label="RCS" [empty]="entity.rcs === ''">{{ entity.rcs }}</fold-field>
+          <fold-field label="TVA intracom." [empty]="entity.vatNumber === ''">
+            {{ entity.vatNumber }}
+          </fold-field>
+          <fold-field label="Capital social">{{ euros(entity.shareCapitalCents) }}</fold-field>
+        </fold-field-list>
+      </fold-page-section>
+    </fold-card>
+
+    <!--
+      L'ICS : deux états, jamais un champ ouvert sur une valeur posée. Un champ
+      qui rendrait 409 est une affordance qui ment.
+    -->
+    <fold-card>
+      <fold-page-section title="Identifiant créancier (ICS)" separator>
+        @if (entity.ics !== '') {
+          <p class="ej-ics">{{ entity.ics }}</p>
+          <p class="ej-said">
+            Il ne se remplace pas&nbsp;: chaque mandat signé le porte <strong>imprimé</strong>.
+            Prélever sous un autre identifiant rendrait chaque opération contestable. Encaisser sous
+            un autre ICS demande une seconde entité et des mandats resignés.
+          </p>
+        } @else {
+          <p class="ej-said">
+            Attribué par la Banque de France via la banque, souvent plusieurs semaines après la
+            déclaration. <strong>Une seule saisie</strong>&nbsp;: il ne pourra plus changer.
+          </p>
+          <div class="ej-row">
+            <fold-input
+              label="ICS"
+              hideLabel
+              placeholder="FR72ZZZ123456"
+              [value]="icsDraft()"
+              (valueChange)="icsDraft.set($event)"
+            />
+            <!-- Une confirmation en ligne, comme partout ailleurs dans ce
+               back-office : le geste est sans retour, et il n'y a rien à
+               défaire ensuite. -->
+            <fold-inline-confirm
+              [labels]="{ confirm: 'Attribuer définitivement' }"
+              (confirmed)="assignIcs(entity)"
+            >
+              <button foldButton [disabled]="icsDraft().trim() === '' || busy()">Attribuer</button>
+            </fold-inline-confirm>
+          </div>
+        }
+      </fold-page-section>
+    </fold-card>
+
+    <fold-card>
+      <fold-page-section title="Compte créancier" separator>
+        <p class="ej-said">
+          Le compte où l'argent arrive. Il <strong>change librement</strong> — aucun mandat signé ne
+          le porte, contrairement à l'ICS.
+        </p>
+        <p class="ej-account">
+          @if (entity.creditorAccountLast4 !== '') {
+            Compte enregistré&nbsp;: •••• {{ entity.creditorAccountLast4 }}
+          } @else {
+            Aucun compte enregistré.
+          }
+        </p>
+        <div class="ej-row">
+          <!-- 🔴 Toujours vide à l'ouverture, même quand un compte existe :
+             l'IBAN ne revient d'aucune route. La ligne ci-dessus est ce qui
+             rend cette absence lisible plutôt qu'inquiétante. -->
+          <fold-input
+            label="IBAN"
+            hideLabel
+            placeholder="FR14 2004 1010 0505 0001 3M02 606"
+            hint="Saisi une fois. Il ne sera plus jamais réaffiché."
+            [value]="ibanDraft()"
+            (valueChange)="ibanDraft.set($event)"
+          />
+          <button
+            foldButton
+            [disabled]="ibanDraft().trim() === '' || busy()"
+            (click)="setAccount(entity)"
+          >
+            Enregistrer
+          </button>
+        </div>
+      </fold-page-section>
+    </fold-card>
+
+    <fold-card>
+      <fold-page-section title="Pré-notification" separator>
+        <p class="ej-said">
+          Le délai annoncé au débiteur entre l'avis de prélèvement et le débit. Il se
+          <strong>négocie avec la banque</strong>&nbsp;: c'est une saisie, pas un réglage technique,
+          et deux entités peuvent ne pas avoir le même.
+        </p>
+        <div class="ej-row">
+          <!-- Libellé VISIBLE et unité dedans : `fold-number-input` n'a ni
+             `hideLabel` ni `suffix`. Un « 14 » nu ne dit pas s'il s'agit de
+             jours, de semaines ou d'un pourcentage. -->
+          <fold-number-input
+            label="Délai (jours)"
+            [min]="minDays"
+            [max]="maxDays"
+            [value]="days()"
+            (valueChange)="daysDraft.set($event)"
+          />
+          <button foldButton [disabled]="busy()" (click)="savePreNotification(entity)">
+            Enregistrer
+          </button>
+        </div>
+      </fold-page-section>
+    </fold-card>
+
+    <!-- 🔴 La ZONE DE DANGER de cette fiche, et elle se voit AVANT le clic :
+         `fold-danger-zone` pose un cadre d'alerte et son propre titre, ce qui
+         distingue cette carte des quatre autres au premier coup d'œil. Le
+         `fold-card` a disparu ici à dessein — la zone EST le cadre, et
+         l'emboîter dans une carte poserait deux sols l'un sur l'autre.
+
+         Sans `actionLabel` : l'action de la zone ne sait pas être INACTIVE, et
+         c'est justement ce qu'il faut quand l'entité est la dernière en
+         service. La confirmation est donc projetée, avec le même
+         `fold-inline-confirm intent="danger"` que la zone ouvre elle-même. -->
+    @if (entity.archivedAt === null) {
+      <fold-danger-zone appearance="section" title="Archiver cette entité">
+        <p class="ej-said">
+          Archiver n'efface rien&nbsp;: l'entité reste lisible pour les documents qui la citent, et
+          les mandats déjà signés gardent leur valeur. Elle cesse simplement d'émettre&nbsp;— plus
+          aucune facture, plus aucun lot de prélèvement ne partira sous son nom.
+        </p>
+
+        @if (entity.isLastActive) {
+          <!-- Le serveur refuse en 409. Le bouton reste VISIBLE mais inactif :
+               le faire disparaître cacherait où vit le geste, et la sortie est
+               écrite juste à côté plutôt que découverte après un refus. -->
+          <fold-callout appearance="inset" variant="warning">
+            <strong>C'est la seule entité en service.</strong> L'archiver laisserait la comptabilité
+            sans émetteur&nbsp;: plus rien ne pourrait être facturé ni prélevé. Déclarez d'abord
+            celle qui la remplace&nbsp;; l'archivage s'ouvrira ensuite.
+          </fold-callout>
+        }
+
+        <div class="ej-row">
+          <fold-inline-confirm
+            intent="danger"
+            confirmIcon="archive"
+            message="Archiver cette entité ? Elle cessera d'émettre immédiatement."
+            [labels]="{ confirm: 'Archiver' }"
+            (confirmed)="setArchived(entity, true)"
+          >
+            <button
+              foldButton
+              intent="danger"
+              icon="archive"
+              [disabled]="entity.isLastActive || busy()"
+            >
+              Archiver l'entité
+            </button>
+          </fold-inline-confirm>
+
+          @if (entity.isLastActive) {
+            <button foldButton emphasis="outline" [loading]="busy()" (click)="declare()">
+              Déclarer une entité
+            </button>
+          }
+        </div>
+      </fold-danger-zone>
+    } @else {
+      <fold-card>
+        <fold-page-section title="Mise en service">
+          <p class="ej-said">
+            La remettre en service ne fait qu'AJOUTER un émetteur&nbsp;: rien de ce qui a été émis
+            ne change, et son ICS comme ses mandats sont ceux qu'elle avait.
+          </p>
+          <!-- `intent="primary"` EXPLICITE, parce que le défaut de
+               `fold-inline-confirm` est `danger` : sans cette ligne, la
+               confirmation sortait rouge pour un geste qui ne fait qu'ajouter un
+               émetteur. Un rouge posé sur ce qui ne détruit rien use le rouge —
+               et c'est celui de l'archivage, deux cartes plus haut, qui perd de
+               sa force (vérifié le 2026-09-10 dans `fold-ng.d.ts`). -->
+          <fold-inline-confirm
+            intent="primary"
+            [labels]="{ confirm: 'Remettre en service' }"
+            (confirmed)="setArchived(entity, false)"
+          >
+            <button foldButton emphasis="outline" [disabled]="busy()">Remettre en service</button>
+          </fold-inline-confirm>
+        </fold-page-section>
+      </fold-card>
+    }
+  }
+</fold-page-layout>

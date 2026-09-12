@@ -54,6 +54,22 @@
       }
 
       @if (canSeeProduction()) {
+        <!-- LA FILE DE REMISE — qui attend au comptoir. Juste après la
+             production parce que c'est la suite du même flux : on fabrique, on
+             remet. Même droit, c'est la même commande vue plus tard. -->
+        <a
+          fold-menu-item
+          icon="package-check"
+          label="Retrait boutique"
+          routerLink="/remises"
+          routerLinkActive
+          #remisesRla="routerLinkActive"
+          [active]="remisesRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      @if (canSeeProduction()) {
         <!-- LIVRAISON — la place réservée. Le module n'existe pas encore ;
              l'entrée si, pour que personne ne range ses premiers écrans dans
              « Production » en attendant. Même droit : c'est la même commande,
@@ -101,6 +117,24 @@
           routerLinkActive
           #b2bRla="routerLinkActive"
           [active]="b2bRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      @if (canSeeAccounting()) {
+        <!-- COMPTABILITÉ — qui encaisse, sous quelle identité. Juste après le
+             B2B, et avant l'Admin : on descend de ce qu'on vend vers qui
+             l'encaisse, puis vers qui tient l'outil. Son droit lui est propre —
+             l'ICS et le compte créancier ne se règlent pas avec les heures de
+             retrait. -->
+        <a
+          fold-menu-item
+          icon="receipt"
+          label="Comptabilité"
+          routerLink="/comptabilite"
+          routerLinkActive
+          #comptaRla="routerLinkActive"
+          [active]="comptaRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -300,9 +334,21 @@
         (clicked)="mobileNavOpen.set(!mobileNavOpen())"
       />
 
-      <a class="app-wordmark" routerLink="/" aria-label="LFC B2B Admin — accueil">
-        LFC B2B <span class="app-wordmark-admin">Admin</span>
-      </a>
+      <!-- La marque, puis l'ESPACE de travail ouvert — à défaut l'écran. Dans
+           le Commercial, le nom de la vue est déjà en tête du rail secondaire
+           et dans le bandeau de la page : l'écrire ici une troisième fois
+           laissait « LFC PRO / Tableau de bord » sans jamais dire dans quel
+           espace on se trouvait.
+
+           Le séparateur est porté par la feuille et non écrit ici : un « / »
+           dans le texte serait lu à voix haute entre deux mots par un lecteur
+           d'écran. -->
+      <p class="app-wordmark">
+        <a class="app-brand" routerLink="/" aria-label="LFC Pro — accueil">LFC PRO</a>
+        @if (headerName(); as name) {
+          <span class="app-page">{{ name }}</span>
+        }
+      </p>
 
       <div class="app-header-actions">
         @if (email(); as who) {
@@ -380,14 +426,38 @@
         </fold-nav-group>
       }
       @if (canSeeProduction()) {
+        <!-- La production est un ESPACE depuis qu'elle a deux vues : une tuile
+             qui contient des tuiles, comme le Commercial. Ses vues viennent du
+             MÊME catalogue que le rail secondaire — le lanceur les montre
+             toutes, le rail seulement celles de l'espace ouvert, mais aucune ne
+             se déclare deux fois. -->
+        <fold-nav-group icon="production" label="Production" [entryCountLabel]="entriesLabel">
+          @for (view of productionViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #prodRla="routerLinkActive"
+              [active]="prodRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
+      }
+      @if (canSeeProduction()) {
+        <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
+             deux arbres ne partagent pas leur modèle, et une entrée d'un seul
+             côté est invisible de l'autre. -->
         <a
           fold-nav-tile
-          icon="production"
-          label="Production"
-          routerLink="/production"
+          icon="package-check"
+          label="Retrait boutique"
+          routerLink="/remises"
           routerLinkActive
-          #prodTile="routerLinkActive"
-          [active]="prodTile.isActive"
+          #remisesTile="routerLinkActive"
+          [active]="remisesTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -406,6 +476,22 @@
       @if (canSeePim()) {
         <fold-nav-group icon="catalog" label="PIM" [entryCountLabel]="entriesLabel">
           @for (view of pimViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #rla="routerLinkActive"
+              [active]="rla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
+      }
+      @if (canSeeAccounting()) {
+        <fold-nav-group icon="receipt" label="Comptabilité" [entryCountLabel]="entriesLabel">
+          @for (view of comptabiliteViews(); track view.key) {
             <a
               fold-nav-tile
               [icon]="view.icon"

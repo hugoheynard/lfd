@@ -1,0 +1,14 @@
+.strong {
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+/* ICS et compte : des références qu'on dicte et qu'on recopie, jamais des
+   phrases. Chasse fixe pour que deux caractères voisins ne se confondent pas. */
+.ref {
+  font-family: var(--fold-font-mono);
+}

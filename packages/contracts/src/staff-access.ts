@@ -103,6 +103,18 @@ export const staffResourceSchema = z.enum([
   /** Les moyens de paiement : mandats de prélèvement. Pas une donnée de compte. */
   "b2b_payments",
   /**
+   * **Notre propre identité d'émetteur** : entités juridiques, identifiant
+   * créancier SEPA, compte où l'argent arrive, mentions légales — et, à terme,
+   * les factures et les lots de prélèvement.
+   *
+   * Distincte de `b2b_payments`, qui enregistre le mandat d'UN CLIENT. Les deux
+   * touchent au prélèvement et n'ont pourtant rien du même geste : reporter le
+   * RIB d'une boulangerie est un travail de tous les jours, changer le compte
+   * qui reçoit l'argent de l'entreprise est la cible numéro un de la fraude au
+   * virement. Les réunir donnerait le second à qui n'a besoin que du premier.
+   */
+  "b2b_accounting",
+  /**
    * Les **alertes** — de compte et globales.
    *
    * Leurs trois écrans étaient répartis sur trois ressources différentes
@@ -200,6 +212,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_appointments: "Rendez-vous",
   b2b_support: "Demandes clients",
   b2b_payments: "Moyens de paiement",
+  b2b_accounting: "Comptabilité",
   b2b_alerts: "Alertes",
   b2b_order_waivers: "Dérogations d'heure limite",
   b2b_settings: "Réglages plateforme",
@@ -273,6 +286,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_appointments: "write",
     b2b_support: "write",
     b2b_payments: "write",
+    b2b_accounting: "write",
     b2b_alerts: "write",
     b2b_order_waivers: "write",
     b2b_settings: "write",
@@ -290,7 +304,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_companies: "write",
     // `write` depuis la saisie assistée : le commercial prend les commandes au
     // téléphone, c'est son métier. Ce droit couvre aussi l'attestation de remise
-    // au comptoir (`POST /admin/production/handover/:token`, déplacée au fournil le
+    // au comptoir (`POST /admin/handover/:token`, déplacée au fournil le
     // 2026-09-07 sans changer de ressource) — élargissement assumé : celui
     // qui prend la commande est souvent celui qui remet le sac.
     // Il ne couvre TOUJOURS PAS la modification d'une commande passée : aucune
@@ -321,6 +335,11 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   },
   comptabilite: {
     b2b_companies: "read",
+    // L'entité juridique émettrice est SON écran : c'est elle qui reçoit l'ICS
+    // de la Banque de France et qui sait vers quel compte l'argent doit arriver.
+    // Aucun autre rôle que l'administrateur ne l'obtient, pas même le
+    // commercial — il n'a rien à faire de l'identifiant créancier.
+    b2b_accounting: "write",
     b2b_orders: "write",
     b2b_subscriptions: "read",
     b2b_catalog: "read",

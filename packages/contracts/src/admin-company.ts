@@ -66,6 +66,20 @@ export interface AdminCompanyView {
   /** ISO. Ancienneté du compte (tri par défaut : plus récent d'abord). */
   readonly createdAt: string;
   /**
+   * ISO, ou `null` si le compte n'a jamais été activé.
+   *
+   * **Distinct de `createdAt`, et la distinction porte de l'argent.** Un dossier
+   * déposé en juin et activé en septembre est un client de septembre : c'est en
+   * septembre qu'il commande, donc en septembre qu'il facture. Compter les
+   * nouveaux clients sur `createdAt` daterait le chiffre d'affaires du jour où
+   * quelqu'un a rempli un formulaire.
+   *
+   * La fiche porte déjà `activation` — la date ET qui a activé. Ici, la date
+   * seule : une liste n'a pas besoin de l'agent, et la vue de liste se charge
+   * pour toutes les sociétés à la fois.
+   */
+  readonly activatedAt: string | null;
+  /**
    * Ce qui, dans ce dossier, appelle un geste — **ordonné par le serveur**, du
    * plus coûteux au moins pressant. La galerie de la liste se parcourt au
    * défilement : il n'y a pas d'en-tête de colonne pour rattraper un mauvais
@@ -240,3 +254,38 @@ export interface HolderAttached {
  * pièce a été retirée —, `staff` est une décision prise par quelqu'un.
  */
 export type SuspensionCause = "staff" | "kbis_revoked";
+
+/**
+ * La fenêtre de « nouveaux clients », en jours **glissants**.
+ *
+ * Glissante et non calendaire, et ce n'est pas de la paresse : « ce mois-ci »
+ * suppose de savoir où commence un mois à Paris, donc de convertir un jour en
+ * instant — exactement le geste que `lint:business-day` interdit, parce qu'il se
+ * trompe d'un jour deux fois par an. Trente jours glissants n'ont pas de
+ * frontière à placer, et répondent à la même question : « qui est arrivé
+ * récemment ».
+ *
+ * L'écran doit donc écrire « sur 30 jours », jamais « ce mois-ci ».
+ */
+export const NEW_CUSTOMER_WINDOW_DAYS = 30;
+
+/**
+ * Ce que le tableau de bord doit savoir du portefeuille client, en une lecture.
+ *
+ * `newlyActive` est le seul chiffre de cette carte qui bouge d'une semaine à
+ * l'autre, et c'est celui que la comptabilité attend : un compte activé est un
+ * compte qui va facturer. Il compte les activations **récentes**, pas les
+ * créations — un dossier déposé en juin et activé en septembre est un client de
+ * septembre.
+ *
+ * `pending` et `suspended` ne sont pas de la décoration : un `pending` est un
+ * dossier qui attend un geste du staff, un `suspended` est du chiffre d'affaires
+ * arrêté. Les taire ferait lire « 84 clients » comme si tout allait bien.
+ */
+export interface CustomerPortfolioView {
+  readonly active: number;
+  readonly pending: number;
+  readonly suspended: number;
+  /** Comptes activés dans les {@link NEW_CUSTOMER_WINDOW_DAYS} derniers jours. */
+  readonly newlyActive: number;
+}
