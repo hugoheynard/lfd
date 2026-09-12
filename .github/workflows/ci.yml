@@ -400,11 +400,22 @@ jobs:
         run: pnpm --filter "./packages/**" build
       # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
       # commande (`server /data`), et un bloc `services` ne sait pas en passer.
+      #
+      # 🔴 **quay.io et non Docker Hub**, depuis le 2026-09-12. Hub a fermé
+      # l'accès public à `minio/minio` : le tag n'a pas bougé, l'autorisation
+      # si — `denied: requested access to the resource is denied`. La CI est
+      # partie en rouge sans qu'une ligne du dépôt change, et les quatre shards
+      # e2e sont tombés avant d'exécuter un seul test.
+      #
+      # ⚠️ Une machine de développement ne voit PAS la panne : son cache Docker
+      # garde l'image déjà tirée, donc les e2e y restent vertes. C'est ce qui a
+      # fait conclure « c'est vert » la veille d'un déploiement bloqué. Un
+      # verdict local ne prouve rien sur un tirage d'image.
       - name: Démarrer le stockage objet (MinIO)
         run: |
           docker run -d --name minio -p 9100:9000 \
             -e MINIO_ROOT_USER=lfc -e MINIO_ROOT_PASSWORD=lfclfclfc \
-            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
           for _ in $(seq 1 30); do
             if curl -fs http://localhost:9100/minio/health/live > /dev/null; then
               exit 0
