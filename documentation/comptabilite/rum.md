@@ -28,6 +28,11 @@ donc un mandat prérempli ne pouvait pas la porter. Sous notre propre ICS, elle
 existe **avant** l'impression — et c'est elle qui transforme une fiche marquée
 « EXEMPLE » en document qu'un client peut valablement signer.
 
+✅ **Et il ne manque plus qu'elle.** Depuis le 2026-09-12 au soir, l'aperçu de
+`GET /admin/companies/:id/mandate/preview.pdf` sort les deux blocs remplis — le
+créancier, le débiteur, les zones facultatives, le type de paiement. La mention
+EXEMPLE qu'il porte encore n'a plus qu'une seule cause, et c'est celle-ci.
+
 **Elle est immuable.** Réécrire une RUM invaliderait le papier qui la porte.
 
 ---

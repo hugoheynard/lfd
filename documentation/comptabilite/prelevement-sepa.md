@@ -1,6 +1,13 @@
 # Prélèvement SEPA — l'état des lieux, l'objectif, et ce qui manque
 
-> **Document unique, écrit le 2026-09-12.** Il remplace et supprime les trois
+> **Document unique, écrit le 2026-09-12, et remis à jour le soir même.** La
+> tranche du RIB client a livré dans la journée ce que plusieurs de ses lignes
+> donnaient pour absent : le chiffrement au champ, le coffre du RIB, le BIC
+> créancier et l'aperçu nominatif du mandat. Ces lignes sont passées à
+> l'affirmative, chacune vérifiée dans le code plutôt que d'après le plan de la
+> tranche — une tranche livrée n'est pas une tranche entière, et deux de ses
+> promesses ne sont toujours pas branchées.
+> Il remplace et supprime les trois
 > qui se partageaient le sujet : le socle Stripe, la conception du prélèvement
 > direct, et le format du fichier bancaire. Les lire dans l'ordre demandait de
 > savoir lequel était périmé, et ce savoir-là ne se transmet pas.
@@ -26,17 +33,17 @@ reprennent les coordonnées.
 
 Dans l'ordre du geste réel, et c'est cette liste qui fait foi :
 
-| #   | Ce qu'on doit pouvoir faire                                                                                | État                                                                                                                                                                                                                     |
-| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Déclarer l'**entité qui encaisse** — raison sociale, ICS, compte créancier, délai de pré-notification      | ✅ **fait**                                                                                                                                                                                                              |
-| 2   | **Produire le mandat prérempli** d'un client donné : notre bloc créancier ET le sien, avec sa RUM imprimée | ❌ il manque la RUM                                                                                                                                                                                                      |
-| 3   | **L'envoyer au client** pour qu'il le signe                                                                | ❌ aucun envoi ; le mailer sait joindre un PDF _(vérifié le 2026-09-12)_                                                                                                                                                 |
-| 4   | **Recevoir le scan signé** et le ranger comme preuve                                                       | 🟡 la route existe, mais elle exige un mandat, donc Stripe                                                                                                                                                               |
-| 5   | Le mandat ne devient **actif que preuve déposée**                                                          | ❌ aucun agrégat ne sait activer un mandat                                                                                                                                                                               |
-| 6   | **Détenir l'IBAN** du client, chiffré, sans qu'il ressorte jamais                                          | ❌ aucun coffre ; aucun chiffrement au champ dans le dépôt _(vérifié le 2026-09-12)_ — 🔴 **entré dans la tranche de la RUM** le 2026-09-12 : le RIB du client se saisit sur sa fiche, donc ce n'est plus séquencé après |
-| 7   | Clore le mois, **sommer par société**, et sortir le **`pain.008`**                                         | 🟡 un brouillon inexécutable sort, avec le vrai bloc créancier et les vrais montants                                                                                                                                     |
-| 8   | **Déposer le lot** à la Caisse d'Épargne, à la main, et le garder tel quel                                 | ❌                                                                                                                                                                                                                       |
-| 9   | **Importer les retours** (`pain.002` / `camt.054`) et rendre une facture impayée                           | ❌                                                                                                                                                                                                                       |
+| #   | Ce qu'on doit pouvoir faire                                                                                | État                                                                                                                                   |
+| --- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Déclarer l'**entité qui encaisse** — raison sociale, ICS, compte créancier, délai de pré-notification      | ✅ **fait**                                                                                                                            |
+| 2   | **Produire le mandat prérempli** d'un client donné : notre bloc créancier ET le sien, avec sa RUM imprimée | 🟡 **les deux blocs sortent remplis** en aperçu ; il manque la RUM, donc la mention EXEMPLE reste                                      |
+| 3   | **L'envoyer au client** pour qu'il le signe                                                                | ❌ aucun envoi ; le mailer sait joindre un PDF _(vérifié le 2026-09-12)_                                                               |
+| 4   | **Recevoir le scan signé** et le ranger comme preuve                                                       | 🟡 la route existe, mais elle exige un mandat, donc Stripe                                                                             |
+| 5   | Le mandat ne devient **actif que preuve déposée**                                                          | ❌ aucun agrégat ne sait activer un mandat                                                                                             |
+| 6   | **Détenir l'IBAN** du client, chiffré, sans qu'il ressorte jamais                                          | ✅ **fait** le 2026-09-12 — `company_bank_accounts`, scellé en AES-256-GCM, et la lecture n'en rend que les quatre derniers caractères |
+| 7   | Clore le mois, **sommer par société**, et sortir le **`pain.008`**                                         | 🟡 un brouillon inexécutable sort, avec le vrai bloc créancier et les vrais montants                                                   |
+| 8   | **Déposer le lot** à la Caisse d'Épargne, à la main, et le garder tel quel                                 | ❌                                                                                                                                     |
+| 9   | **Importer les retours** (`pain.002` / `camt.054`) et rendre une facture impayée                           | ❌                                                                                                                                     |
 
 🔴 **Le point 2 commande les points 3 à 9.** Aujourd'hui la seule feuille
 imprimable porte la mention **EXEMPLE en travers de la page**, et c'est
@@ -52,12 +59,16 @@ signer**, et ce n'est pas un oubli : c'est un refus, qui tombera avec la RUM.
 
 ### Ce qui tourne
 
-| Quoi                                                                                          | Où                                                             | Note                                                                             |
-| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **L'entité juridique émettrice** — ICS, compte créancier, mentions, délai de pré-notification | `src/b2b/accounting/`, écran Comptabilité › Entités juridiques | Ouvert à l'écran le 2026-09-12 : une entité, ICS posé, « Peut encaisser »        |
-| **La fiche de mandat vierge** au modèle EPC/CFONB                                             | `accounting/domain/services/sepa-mandate-pdf.ts`               | Déterministe, préremplie du bloc créancier, marquée EXEMPLE                      |
-| **Le brouillon `pain.008` + son audit CSV**                                                   | `accounting/domain/services/pain008.ts`, `pain008-audit.ts`    | Sortis le 2026-09-12 : XML 2 ko, CSV dont la somme des lignes égale le `CtrlSum` |
-| **Le mandat Stripe** — enregistrer, prouver, révoquer                                         | `src/b2b/payments/`                                            | **Gelé** : c'est le mécanisme qu'on quitte                                       |
+| Quoi                                                                                          | Où                                                                  | Note                                                                                           |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **L'entité juridique émettrice** — ICS, compte créancier, mentions, délai de pré-notification | `src/b2b/accounting/`, écran Comptabilité › Entités juridiques      | Ouvert à l'écran le 2026-09-12 : une entité, ICS posé, « Peut encaisser »                      |
+| **La fiche de mandat vierge** au modèle EPC/CFONB                                             | `accounting/domain/services/sepa-mandate-pdf.ts`                    | Déterministe, préremplie du bloc créancier, marquée EXEMPLE                                    |
+| **Le brouillon `pain.008` + son audit CSV**                                                   | `accounting/domain/services/pain008.ts`, `pain008-audit.ts`         | Sortis le 2026-09-12 : XML 2 ko, CSV dont la somme des lignes égale le `CtrlSum`               |
+| **Le RIB du client**, scellé au champ                                                         | `payments/infrastructure/`, écran Fiche client › Moyens de paiement | Posé le 2026-09-12 : AES-256-GCM, l'IBAN monte et ne redescend jamais                          |
+| **L'aperçu nominatif du mandat** — les deux blocs remplis                                     | `GET /admin/companies/:id/mandate/preview.pdf`                      | Posé le 2026-09-12 ; toujours marqué EXEMPLE, faute de RUM                                     |
+| **Les réglages de mandat de l'entité** — description du contrat, type de paiement             | `LegalEntity`, écran Entités juridiques                             | Zones 20 et 12 du modèle EPC, posées une fois pour tous les mandats qu'elle émet               |
+| **Le logo imprimé sur les mandats**                                                           | `POST /admin/accounting/legal-entities/:id/logo`                    | Import à l'écran posé le 2026-09-12 ; sans lui la cellule reste vide et le mandat reste valide |
+| **Le mandat Stripe** — enregistrer, prouver, révoquer                                         | `src/b2b/payments/`                                                 | **Gelé** : c'est le mécanisme qu'on quitte                                                     |
 
 ### Ce qui est écrit et branché à rien
 
@@ -66,29 +77,36 @@ testé, et **aucun fichier du dépôt ne l'importe** _(vérifié le 2026-09-12 :
 `grep -rl` ne rend que le fichier lui-même)_. Née avec le socle direct, puis le
 chantier a été mis en pause. **Ne pas la réécrire en croyant qu'elle manque.**
 
-Elle dérive la référence de l'identifiant du mandat — `LFC` + ULID, 29
-caractères sous la borne EPC de 35 — ce qui rend la collision **impossible par
-construction** au lieu de surveillée, et permet de retrouver un mandat depuis sa
-seule référence : ce qui compte le jour où un client appelle avec pour toute
-information la ligne de son relevé.
+⚠️ **Ce paragraphe décrivait la PREMIÈRE frappe jusqu'au 2026-09-12 au soir** —
+`LFC` + ULID du mandat, 29 caractères, collision impossible par construction.
+Elle a été remplacée le jour même par une forme lisible au téléphone, et la
+borne réelle n'est pas 35 mais **26** : le peigne du formulaire EPC, qui tronque
+en silence au-delà.
 
-⚠️ Cette garantie ne couvre que la RUM **que nous frappons**. `Rum.create` relit
-aussi des références venues d'un import, et une reprise de portefeuille en
-apporte de tierces, qui peuvent se heurter. C'est là que l'index
-`UNIQUE (creditor_id, rum)` gagne sa place — pas sur le chemin de la frappe.
+La forme, ses deux bornes et la raison de chacune vivent désormais dans
+[`rum.md`](rum.md), et **nulle part ailleurs**. Deux descriptions du même value
+object dans le même dossier, c'est celle qu'on ouvre en premier qui gagne, au
+hasard de la table des matières.
+
+Ce qui reste vrai ici : la RUM est écrite, testée, et **branchée à rien**. Et
+l'index `UNIQUE (creditor_id, rum)` gagne sa place sur les références **tierces**
+qu'une reprise de portefeuille apporte — pas sur le chemin de notre propre
+frappe.
 
 ### Ce qui n'existe pas du tout
 
-- **Aucun chiffrement au champ** dans le dépôt. `platform/secret/` est un
-  générateur de jetons, pas un coffre ; `node:crypto` n'y sert qu'à hacher,
-  signer et tirer de l'aléa _(vérifié le 2026-09-12)_.
 - **`DocumentStore` n'a pas de `delete`** — `save`, `read`, `readIfPresent`, et
   c'est tout _(vérifié le 2026-09-12)_. Tant qu'il ne l'a pas, toute promesse de
   purge est une phrase.
-- **Aucun BIC** sur l'entité émettrice _(vérifié le 2026-09-12)_.
 - **Aucun mandat en base** : zéro ligne en dev _(vérifié le 2026-09-12)_, et les
   documents d'origine affirment la même chose en production — **non revérifié
   ici**, voir §13.
+
+✅ **Deux lignes ont quitté cette liste le 2026-09-12 au soir** : le chiffrement
+au champ, qui vit maintenant dans `platform/crypto/` (`AesGcmFieldCipher`), et le
+BIC de l'entité émettrice, que `creditor_bic` porte depuis le même jour. Elles
+sont notées ici plutôt que simplement effacées — une absence qui disparaît sans
+laisser de trace se réaffirme de mémoire six semaines plus tard.
 
 ---
 
@@ -232,21 +250,26 @@ résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes d
 
 ### Ce qu'on sait remplir, et les deux trous
 
-| Champ XML                                          | Source                                  | État                                   |
-| -------------------------------------------------- | --------------------------------------- | -------------------------------------- |
-| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                           | ✅                                     |
-| `Dbtr/Nm`                                          | `Company`                               | ✅                                     |
-| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt`             | ✅                                     |
-| `MndtRltdInf/MndtId`                               | value object `Rum`                      | 🟡 écrit, branché à rien               |
-| `ReqdColltnDt`, `InstdAmt`                         | le cycle, la somme du mois              | 🟡 décidés, partiellement codés        |
-| `EndToEndId`                                       | à frapper — cycle + société + tentative | ❌ à concevoir                         |
-| **`CdtrAgt/.../BIC`** (le nôtre)                   | —                                       | 🔴 aucune source, **mais trivial**     |
-| **`DbtrAcct/Id/IBAN`**                             | —                                       | 🔴 aucune source, **et irrécupérable** |
+| Champ XML                                          | Source                                  | État                            |
+| -------------------------------------------------- | --------------------------------------- | ------------------------------- |
+| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                           | ✅                              |
+| `Dbtr/Nm`                                          | `Company`                               | ✅                              |
+| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt`             | ✅                              |
+| `MndtRltdInf/MndtId`                               | value object `Rum`                      | 🟡 écrit, branché à rien        |
+| `ReqdColltnDt`, `InstdAmt`                         | le cycle, la somme du mois              | 🟡 décidés, partiellement codés |
+| `EndToEndId`                                       | à frapper — cycle + société + tentative | ❌ à concevoir                  |
+| **`CdtrAgt/.../BIC`** (le nôtre)                   | `LegalEntity.creditorBic`               | 🟡 source posée, non branchée   |
+| **`DbtrAcct/Id/IBAN`**                             | `CompanyBankAccount`, scellé            | 🟡 source posée, non branchée   |
 
-**Les deux trous rouges ne se valent pas.** Le BIC créancier est celui de notre
-banque, il ne change jamais, il se saisit une fois sur l'entité — une colonne.
-L'IBAN du débiteur, lui, n'existe nulle part et **ne peut pas être récupéré** de
-Stripe.
+**Les deux trous rouges ont été comblés le 2026-09-12 — en AMONT seulement.** Le
+BIC créancier se saisit sur l'entité, et le RIB du client sur sa fiche. Mais
+`pain008.ts` ne lit ni l'un ni l'autre : il écrit toujours `IBAN-INCONNU`
+_(vérifié le 2026-09-12)_.
+
+🔴 **C'est la distinction à ne pas perdre : une source qui existe n'est pas une
+source qui alimente.** Le geste qui reste — brancher deux lectures — est petit,
+et c'est précisément ce qui le rend facile à croire fait. Tant qu'il ne l'est
+pas, le fichier sortant est exactement aussi indéposable qu'avant.
 
 ### Ce qui sort aujourd'hui, et pourquoi il ne peut pas partir
 
@@ -385,17 +408,17 @@ Quatre restent ouvertes, et elles **situent** le blocage plutôt que de l'efface
 
 ## 11. Le découpage
 
-| #         | Tranche                                                                                                                                                    | État                                                       |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **1**     | **L'entité juridique** — agrégat, ICS, IBAN créancier, écran                                                                                               | ✅ **livrée** le 2026-09-10, vue à l'écran le 2026-09-12   |
-| **1 bis** | Les données manquantes de la facturation — TVA intracom exigée à l'activation, date de livraison effective, code unité au SKU                              | ⬜                                                         |
-| **2**     | **Le mandat direct** — `origin`, `creditorId`, value objects `Rum` et `Iban`, coffre + port de chiffrement, transition vers `active`, balayage de caducité | ❌ **bloquée** (objection 2)                               |
-| **3**     | **Le document** — mandat prérempli, RUM et ICS imprimés ; dépôt du signé ⇒ actif                                                                           | 🟡 la **fiche vierge** est livrée ; le nominatif attend T2 |
-| **4–6**   | L'agrégat facture, la persistance, le rendu — **périmés** par « nous n'émettons pas de facture » (§8)                                                      | ⛔                                                         |
-| **8**     | La clôture mensuelle et la pré-notification                                                                                                                | ⬜                                                         |
-| **9**     | **Le lot et ses retours** — `pain.008` valide, import `pain.002`/`camt.054`                                                                                | ❌ bloquée (objections 1 et 4)                             |
-| **10**    | Le rapprochement (`camt.053`), encours par société                                                                                                         | ⬜                                                         |
-| **12**    | La porte du crédit                                                                                                                                         | ❌ bloquée (objection 3)                                   |
+| #         | Tranche                                                                                                                                                    | État                                                                                                                |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **1**     | **L'entité juridique** — agrégat, ICS, IBAN créancier, écran                                                                                               | ✅ **livrée** le 2026-09-10, vue à l'écran le 2026-09-12                                                            |
+| **1 bis** | Les données manquantes de la facturation — TVA intracom exigée à l'activation, date de livraison effective, code unité au SKU                              | ⬜                                                                                                                  |
+| **2**     | **Le mandat direct** — `origin`, `creditorId`, value objects `Rum` et `Iban`, coffre + port de chiffrement, transition vers `active`, balayage de caducité | 🟡 **le coffre et le port de chiffrement sont livrés** le 2026-09-12, hors séquence ; le reste attend l'objection 2 |
+| **3**     | **Le document** — mandat prérempli, RUM et ICS imprimés ; dépôt du signé ⇒ actif                                                                           | 🟡 la fiche vierge **et l'aperçu nominatif** sont livrés ; il manque la RUM imprimée, donc la pièce signable        |
+| **4–6**   | L'agrégat facture, la persistance, le rendu — **périmés** par « nous n'émettons pas de facture » (§8)                                                      | ⛔                                                                                                                  |
+| **8**     | La clôture mensuelle et la pré-notification                                                                                                                | ⬜                                                                                                                  |
+| **9**     | **Le lot et ses retours** — `pain.008` valide, import `pain.002`/`camt.054`                                                                                | ❌ bloquée (objections 1 et 4)                                                                                      |
+| **10**    | Le rapprochement (`camt.053`), encours par société                                                                                                         | ⬜                                                                                                                  |
+| **12**    | La porte du crédit                                                                                                                                         | ❌ bloquée (objection 3)                                                                                            |
 
 ⚠️ **Ne pas faire signer un mandat avant d'avoir l'ICS.** Le formulaire EPC le
 porte imprimé ; un mandat signé sans lui est un mandat à refaire signer. _(L'ICS
