@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import type { CompanyBankAccountView } from '@lfd/contracts';
@@ -53,6 +54,18 @@ export class BankAccountSection {
   readonly companyId = input<string | null>(null);
   /** Les 4 chiffres du compte que le mandat ACTIF nomme, `''` s'il n'y en a pas. */
   readonly mandateLast4 = input('');
+
+  /**
+   * Le RIB connu, à chaque lecture et après chaque écriture — `null` s'il n'y
+   * en a pas.
+   *
+   * Il sort d'ici parce que la section parente en a besoin pour dire où en est
+   * le dossier, et **pas** pour l'afficher : c'est ce composant qui le montre.
+   * L'alternative — faire charger le RIB par le parent aussi — coûterait une
+   * seconde requête pour la même ligne, et ferait diverger deux états du même
+   * fait à la première écriture.
+   */
+  readonly accountChange = output<CompanyBankAccountView | null>();
 
   protected readonly account = signal<CompanyBankAccountView | null>(null);
   protected readonly busy = signal(false);
@@ -149,11 +162,13 @@ export class BankAccountSection {
     try {
       const { account } = await this.accounts.read(companyId);
       this.account.set(account);
+      this.accountChange.emit(account);
       if (account !== null) {
         this.fillDrafts(account);
       }
     } catch {
       this.account.set(null);
+      this.accountChange.emit(null);
     }
   }
 

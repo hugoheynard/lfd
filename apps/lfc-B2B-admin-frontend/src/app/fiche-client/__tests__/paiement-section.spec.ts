@@ -80,7 +80,60 @@ describe('section Moyens de paiement — le socle et les crédits', () => {
     const { host } = render({});
 
     expect(host.textContent).toContain('À la commande');
-    expect(host.textContent).toContain('Toujours actif');
+    expect(host.textContent).toContain('Ouvert à tous');
+    // Ce qui compte n'est pas le libellé du badge mais la promesse : il ne
+    // s'accorde pas, et il ne se retire pas.
+    expect(host.textContent).toContain('il ne se retire pas');
+  });
+
+  it('annonce les trois étapes du paiement différé, dans leur ordre', () => {
+    // L'ordre est RECOMMANDÉ, pas imposé : c'est un mode d'emploi, et la suite
+    // de tests vérifie qu'aucune étape n'est verrouillée par la précédente.
+    const { host } = render({});
+
+    expect(host.textContent).toContain('1 · Coordonnées bancaires');
+    expect(host.textContent).toContain('2 · Mandat SEPA');
+    expect(host.textContent).toContain('3 · Règlement périodique');
+  });
+
+  it('décrit la frise par des libellés, pas par des pastilles seules', async () => {
+    // Un libellé qui change se lit sans avoir appris le code couleur — et reste
+    // lisible quand on ne voit pas la pastille.
+    const { section, settle } = render({ companyId: 'cmp_1' });
+    await settle();
+
+    const steps = section['steps']();
+    expect(steps.map((step) => step.label)).toEqual([
+      'Aucun RIB enregistré',
+      'Aucun mandat de prélèvement',
+      'Aucun règlement périodique ouvert',
+    ]);
+    expect(steps.every((step) => step.done === false)).toBe(true);
+  });
+
+  it('marque l’étape du règlement dès qu’un crédit est accordé, mandat ou pas', async () => {
+    // 🔴 La frise DÉCRIT, elle ne commande pas. Un commercial débloque un crédit
+    // devant son client et fait suivre le mandat : si l'étape 3 attendait
+    // l'étape 2, l'écran mentirait sur ce qui vient d'être fait.
+    const { section, settle } = render({ companyId: 'cmp_1', grantedTerms: ['monthly'] });
+    await settle();
+
+    const steps = section['steps']();
+    expect(steps[2]?.done).toBe(true);
+    expect(steps[1]?.done).toBe(false);
+  });
+
+  it('distingue un mandat RÉVOQUÉ d’un mandat absent', async () => {
+    // Les deux sont « pas de prélèvement possible », et ils ne se réparent pas
+    // du même geste : l'un n'a jamais existé, l'autre a été retiré.
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, status: 'revoked', revokedAt: '2026-02-01T00:00:00.000Z' },
+    });
+    await settle();
+
+    expect(section['steps']()[1]?.label).toContain('••••3000');
+    expect(section['steps']()[1]?.done).toBe(false);
   });
 
   it('ACCORDE le mensuel sans toucher au socle', () => {

@@ -13,6 +13,7 @@ import {
   DEFERRED_TERM_LABELS,
   deferredTermSchema,
   MANDATE_STATUS_LABELS,
+  type CompanyBankAccountView,
   type DeferredTerm,
   type PaymentMandateView,
 } from '@lfd/contracts';
@@ -22,8 +23,11 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldDangerZoneComponent,
+  FoldElementTitleComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
+  FoldTimelineComponent,
+  type FoldTimelineNode,
 } from 'fold-ng';
 
 import { BankAccountSection } from '../bank-account-section/bank-account-section';
@@ -87,7 +91,9 @@ interface DangerousAction {
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldDangerZoneComponent,
+    FoldElementTitleComponent,
     FoldInlineConfirmComponent,
+    FoldTimelineComponent,
   ],
   templateUrl: './paiement-section.html',
   styleUrl: './paiement-section.scss',
@@ -111,6 +117,15 @@ export class PaiementSection {
   readonly grantedTermsChange = output<readonly DeferredTerm[]>();
 
   protected readonly mandate = signal<PaymentMandateView | null>(null);
+  /**
+   * Le RIB du client, remonté par le bloc qui le charge.
+   *
+   * Il n'est **pas** affiché ici — c'est ce bloc-là qui le montre. Il sert
+   * uniquement à dire où en est le dossier sur la frise. Le charger une seconde
+   * fois pour l'avoir en propre ferait deux états du même fait, qui
+   * divergeraient à la première écriture.
+   */
+  protected readonly bankAccount = signal<CompanyBankAccountView | null>(null);
   /** Clé publique Stripe, rendue avec le mandat ; vide si le canal n'est pas configuré. */
   private readonly publishableKey = signal('');
   protected readonly busy = signal(false);
@@ -156,6 +171,79 @@ export class PaiementSection {
   protected readonly mandatedLast4 = computed(() =>
     this.debitable() ? (this.mandate()?.last4 ?? '') : '',
   );
+
+  /**
+   * **La frise : les coordonnées, l'autorisation, l'ouverture.**
+   *
+   * Même idiome que la frise de livraison d'une fiche produit
+   * (`pim/catalogue/product-form/b2b-delivery`) : rail **vertical**, aucune
+   * icône de statut, et ce sont les **libellés qui portent l'état** — « Aucun RIB
+   * enregistré » plutôt qu'une pastille éteinte à côté de « RIB ». Un libellé
+   * qui change se lit sans avoir appris le code couleur, et il reste lisible
+   * quand on ne voit pas la pastille. Les icônes des nœuds, elles, ne disent
+   * pas l'état mais le **sujet** — et ce sont les mêmes que celles des trois
+   * titres d'étape en dessous, pour qu'on retrouve d'un coup d'œil à quel bloc
+   * chaque ligne de la frise renvoie.
+   *
+   * ⚠️ `credit-card`, `banknote`, `contracts`, `repeat` : des noms du jeu fold,
+   * vérifiés contre `FOLD_BUILTIN_ICONS`. `card` et `file` n'en font PAS partie,
+   * et le typecheck ne l'aurait pas dit — seul le build AOT lit les gabarits.
+   *
+   * 🔴 La frise **décrit**, elle ne commande pas. Aucune étape n'est verrouillée
+   * par la précédente : un commercial débloque un crédit devant son client et
+   * fait suivre le mandat. Bloquer le geste pour tenir une belle séquence ferait
+   * perdre la vente que la séquence sert — c'est ce que le callout « Rien pour
+   * encaisser » accompagne, au lieu de l'empêcher.
+   */
+  protected readonly steps = computed<readonly FoldTimelineNode[]>(() => {
+    const account = this.bankAccount();
+    const mandate = this.mandate();
+    const granted = this.grantedTerms();
+
+    return [
+      {
+        key: 'rib',
+        id: null,
+        icon: 'banknote',
+        label: account === null ? 'Aucun RIB enregistré' : `RIB enregistré — ••••${account.last4}`,
+        done: account !== null,
+      },
+      {
+        key: 'mandate',
+        id: null,
+        icon: 'contracts',
+        label: this.mandateStepLabel(mandate),
+        done: this.debitable(),
+      },
+      {
+        key: 'terms',
+        id: null,
+        icon: 'repeat',
+        label:
+          granted.length === 0
+            ? 'Aucun règlement périodique ouvert'
+            : granted.map((term) => DEFERRED_TERM_LABELS[term]).join(', ') + ' — ouvert',
+        done: granted.length > 0,
+      },
+    ];
+  });
+
+  /**
+   * Le libellé de l'étape du mandat, qui distingue trois états que la seule
+   * pastille confondrait : jamais signé, signé et actif, signé puis révoqué.
+   *
+   * Un mandat révoqué n'est PAS « aucun mandat » : il dit qu'on a eu
+   * l'autorisation et qu'on ne l'a plus, ce qui ne se répare pas du même geste.
+   */
+  private mandateStepLabel(mandate: PaymentMandateView | null): string {
+    if (mandate === null) {
+      return 'Aucun mandat de prélèvement';
+    }
+    if (mandate.status === 'active') {
+      return `Mandat signé, actif — ••••${mandate.last4}`;
+    }
+    return `Mandat ${MANDATE_STATUS_LABELS[mandate.status].toLowerCase()} — ••••${mandate.last4}`;
+  }
 
   protected readonly statusLabel = computed(() => {
     const status = this.mandate()?.status;
