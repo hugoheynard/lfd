@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { Router, provideRouter } from '@angular/router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PortfolioMetricsView } from '@lfd/contracts';
 
@@ -171,6 +171,16 @@ describe('ComptesClientsPage', () => {
     page['onFilterChange']('active');
     expect(page['clampedPage']()).toBe(1);
     expect(page['paged']()).toHaveLength(1);
+  });
+
+  it('ouvre la fiche du compte depuis la ligne', async () => {
+    const page = await setup();
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    page['open'](makeCompany('7', 'active'));
+
+    expect(navigate).toHaveBeenCalledWith(['/comptes-clients', '7']);
   });
 
   it("contextualise l'état vide au segment actif", async () => {

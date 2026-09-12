@@ -7,7 +7,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -125,6 +125,7 @@ export class ComptesClientsPage {
     () => this.figuresTemplate() ?? null,
   );
 
+  private readonly router = inject(Router);
   private readonly service = inject(AdminCompaniesService);
   private readonly alerts = inject(PendingAlertsService);
   private readonly portfolio = inject(PortfolioMetricsService);
@@ -278,6 +279,22 @@ export class ComptesClientsPage {
 
   /** Identité stable d'une ligne pour la data-table. */
   protected readonly rowKey = (company: AdminCompany): string => company.id;
+
+  /**
+   * Ouvre la fiche du compte — appelée par `(rowClick)` de fold.
+   *
+   * La cible est la LIGNE, plus la référence : on ouvre un compte pour le
+   * travailler, et faire viser huit caractères pour ça demandait de savoir
+   * d'avance où cliquer. La référence redevient ce qu'elle est, un identifiant
+   * qu'on lit et qu'on dicte.
+   *
+   * Les deux destinations qui ne sont PAS la fiche (la pastille d'alertes, en
+   * table comme en carte) arrêtent la remontée du clic dans le gabarit : fold
+   * n'exclut les contrôles internes qu'au clavier, pas à la souris.
+   */
+  protected open(company: AdminCompany): void {
+    void this.router.navigate(['/comptes-clients', company.id]);
+  }
 
   constructor() {
     providePageHeader({ actions: this.headerActions, figures: this.headerFigures });
