@@ -8,7 +8,7 @@
 > Statut : **décision / design.** Rien n'est extrait ni codé.
 > Date : 2026-08-04.
 > Voisins : [`shopify-api-map.md`](shopify-api-map.md), [`shopify-connexion-setup.md`](shopify-connexion-setup.md),
-> [`architecture-suite-gateway-scaling.md`](../suite/architecture-suite-gateway-scaling.md), [`adr.md#adr-13`](./adr.md).
+> [`architecture-suite-gateway-scaling.md`](../../suite/architecture-suite-gateway-scaling.md), [`adr.md#adr-13`](../adr.md).
 
 ---
 

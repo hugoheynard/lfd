@@ -66,7 +66,7 @@ model ShopifyProductBinding {
 
 /// Historique **append-only** des poussées réelles d'un `handle` — l'ancêtre commun
 /// (BASE) de la réconciliation à trois voies et la matière du rollback. Voir
-/// [`publication-reconciliation-3way.md`](../../../documentation/pim/publication-reconciliation-3way.md).
+/// [`publication-reconciliation-3way.md`](../../../documentation/pim/shopify-publication/publication-reconciliation-3way.md).
 ///
 /// Contrairement aux bindings (états de synchro re-dérivables), ceci est un **journal** :
 /// le perdre efface l'historique et le retour arrière. Jamais muté après écriture — un

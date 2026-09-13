@@ -120,7 +120,7 @@ poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé
 sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
 mais on cesse d'écraser en aveugle.
 
-**Tech** — Nouveau doc [`publication-reconciliation-3way.md`](./publication-reconciliation-3way.md).
+**Tech** — Nouveau doc [`publication-reconciliation-3way.md`](./shopify-publication/publication-reconciliation-3way.md).
 Modèle **BASE / OURS / THEIRS** (merge à trois voies), **clé sur le `handle`** (survit à la future
 bascule fiche×mode). Trois empreintes `fingerprint` → table de statuts (`local_ahead`, `remote_drift`,
 `conflict`, `to_remove`, `unknown≠absent`). Socle manquant : **snapshots immuables** (`ShopifyPushSnapshot`,
@@ -128,7 +128,7 @@ payload `Json` rejouable) + pointeur `headSnapshotId` sur le binding → BASE + 
 jamais). **Dry-run réel sans effet de bord** (aujourd'hui il écrit le binding). Piège identifié : normaliser
 THEIRS avant de comparer (projection inverse, cœur testable). Livraison en 5 slices — S1 (snapshots+rollback)
 et S2 (dry-run) tombent **sans boutique réelle** ; S3 (trois-voies) se valide dès le token posé, rejoint la
-boucle test DRAFT ([`shopify-e2e-strategy.md`](./shopify-e2e-strategy.md)).
+boucle test DRAFT ([`shopify-e2e-strategy.md`](./shopify-publication/shopify-e2e-strategy.md)).
 
 ## 2026-07-28
 
@@ -140,7 +140,7 @@ boucle test DRAFT ([`shopify-e2e-strategy.md`](./shopify-e2e-strategy.md)).
 **même SKU** → le « total croissant » des suivis se réconcilie. L'alcool (bar) est traité comme de la
 **disponibilité** par boutique, pas comme une divergence de taux — donc rien de lourd à faire.
 
-**Tech** — Nouveau doc [`projection-shopify.md`](./projection-shopify.md). Modèle : la **fiche**
+**Tech** — Nouveau doc [`projection-shopify.md`](./shopify-publication/projection-shopify.md). Modèle : la **fiche**
 `produit × mode` = **un produit Shopify** ; la TVA vit **uniquement** sur les collections `tva-*`
 (`tax override`, une seule par produit), les collections de nav/salle ne re-taxent jamais (invariants
 Shopify S1–S5). Le **SKU est partagé** entre les fiches d'un produit (S4 : SKU ≠ identité, duplication

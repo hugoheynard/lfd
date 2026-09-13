@@ -129,7 +129,7 @@
 >    le `ShopifyTokenProvider`.
 > 2. **Modèle vs ADR-14.** Le réassort implique de **suivre les quantités réellement
 >    consommées par SKU** (un ledger de consommation), un cran au-delà de la
->    « capacité / créneaux » de l'[ADR-14](./adr.md). Pas contradictoire (capacité =
+>    « capacité / créneaux » de l'[ADR-14](../adr.md). Pas contradictoire (capacité =
 >    combien je _peux_ faire ; réassort = combien j'ai _écoulé_), mais **nouveau modèle
 >    à trancher**.
 >

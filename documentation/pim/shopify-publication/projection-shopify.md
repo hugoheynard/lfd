@@ -13,7 +13,7 @@
 > un « mode » est un **contexte de vente**, et ce qui le porte n'est plus ce
 > qu'il décrit : ni colonnes de taux sur la famille, ni matrice `jsonb` par
 > boutique, ni table `emplacement`. Lire
-> [`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md) pour le
+> [`contextes-et-points-de-vente.md`](../contextes-et-points-de-vente.md) pour le
 > modèle réel ; ce qui reste vrai ici, ce sont les **invariants Shopify**
 > (S1–S5) et les décisions d'adaptateur (D-SHOP-1…5).
 
@@ -57,7 +57,7 @@ produit PIM  ──(× mode)──►  fiche emporter  ──►  produit Shopif
 
 - Chaque **fiche = un produit Shopify** (handle propre, déjà généré).
 - Les **déclinaisons** (tailles) de la fiche = les variantes Shopify (R4 tient : on binde la
-  déclinaison, cf. [`data-model/04`](./data-model/04-composition-et-canaux.md#r4--on-binde-sur-la-déclinaison-jamais-sur-le-produit)).
+  déclinaison, cf. [`data-model/04`](../data-model/04-composition-et-canaux.md#r4--on-binde-sur-la-déclinaison-jamais-sur-le-produit)).
 - Le **mode** est le seul multiplicateur systématique. **La boutique n'en est pas un** (§5).
 
 C'est S1/S3 rendus concrets : deux taux ⇒ deux produits.
@@ -137,7 +137,7 @@ Le générateur de fiches et les tags existent déjà côté `collections.ts` ; 
 
 ### 8.2 Le binding gagne le grain **mode** (affine R4)
 
-[`data-model/04`](./data-model/04-composition-et-canaux.md) décrit `shopify_variant_binding` en
+[`data-model/04`](../data-model/04-composition-et-canaux.md) décrit `shopify_variant_binding` en
 PK/FK `variant_id` (1 déclinaison → 1 `shopify_variant_gid`). Avec le mode, une déclinaison PIM
 s'expose en **deux** variantes Shopify (une par mode-produit). Le binding devient donc clé
 **`(variant_id, mode)`** — et **`(variant_id, mode, boutique_id)`** dans le cas différé §7. R4 tient
@@ -184,4 +184,4 @@ laisse Shopify dans l'état d'avant, pas à moitié modifié). C'est la version 
 - **Stock partagé** (S5) : non requis sur les items _daily / fait-minute_ ; à trancher si un jour un
   article au même SKU doit partager un compteur emporter/sur place.
 - **Graduation en ADR** : une fois le push fiche→produit livré, D-SHOP-1..5 méritent de passer dans
-  [`adr.md`](./adr.md) (décisions figées) plutôt que de rester en design.
+  [`adr.md`](../adr.md) (décisions figées) plutôt que de rester en design.

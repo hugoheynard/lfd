@@ -151,7 +151,7 @@
 - [ ] **Pilote Shopify réel** — à écrire **après le spike** (boutique de dev + jeton). Ne touche que
       shopify-driver.ts. Y compris : metafield allergènes, et l'`id` de déclinaison déposé côté
       Shopify comme clé de jointure
-- [ ] **Réconciliation à trois voies** ([`publication-reconciliation-3way.md`](./publication-reconciliation-3way.md)) — 5 slices :
+- [ ] **Réconciliation à trois voies** ([`publication-reconciliation-3way.md`](./shopify-publication/publication-reconciliation-3way.md)) — 5 slices :
   - [x] **S1** — `ShopifyPushSnapshot` (payload rejouable) + `headSnapshotId` sur binding + écriture au push + `GET /history` + `POST /rollback` _(29 tests, commits `623d6fa`/`be718cb`)_
   - [x] **S2** — dry-run **réel sans effet de bord** (`pushPayloadSchema.dryRun`, `previewOne`) _(commit `4f28738`)_ ; bouton pré-push front reporté à S4
   - [x] **S3** — projection inverse THEIRS + `GET /reconciliation`(+`:handle`) + statuts (`local_ahead`/`remote_drift`/`conflict`/`to_remove`) _(dérive locale=empreinte pleine, distante=comparable ; commits `c01273f`/`841e967`, +20 tests)_
@@ -217,26 +217,26 @@ Ce qui reste :
       chaque produit, avec l'oubli qui va avec.
 
       ⚠️ **Trois questions à trancher avant d'écrire**, et aucune n'est
-                              technique :
+                                  technique :
 
-                              1. **Hérité ou recopié ?** Hérité, corriger le beurre corrige cent fiches
-                                 — y compris celles qu'on n'a pas relues. Recopié, chaque fiche garde ce
-                                 qu'elle a affirmé le jour où elle l'a affirmé. Une déclaration
-                                 d'allergène ENGAGE : la première est plus juste, la seconde plus
-                                 défendable six mois plus tard.
-                              2. **Que devient la saisie manuelle ?** Aujourd'hui les allergènes se
-                                 cochent sur la DÉCLINAISON (`NutritionDeclaration`), qui distingue trois
-                                 états — `null` (rien déclaré), `[]` (déclaré sans allergène), une liste.
-                                 Un héritage doit dire ce qu'il fait de ces trois-là, et notamment si le
-                                 `[]` d'une fiche l'emporte sur le `AM` de son beurre.
-                              3. **Le grain ne correspond pas.** L'ingrédient est porté par le PRODUIT,
-                                 l'allergène par la DÉCLINAISON — c'est elle qui est mise sur le marché.
-                                 Deux déclinaisons d'un même produit peuvent avoir des recettes
-                                 différentes ; faire descendre l'ingrédient sur chacune est un choix, pas
-                                 une évidence.
+                                  1. **Hérité ou recopié ?** Hérité, corriger le beurre corrige cent fiches
+                                     — y compris celles qu'on n'a pas relues. Recopié, chaque fiche garde ce
+                                     qu'elle a affirmé le jour où elle l'a affirmé. Une déclaration
+                                     d'allergène ENGAGE : la première est plus juste, la seconde plus
+                                     défendable six mois plus tard.
+                                  2. **Que devient la saisie manuelle ?** Aujourd'hui les allergènes se
+                                     cochent sur la DÉCLINAISON (`NutritionDeclaration`), qui distingue trois
+                                     états — `null` (rien déclaré), `[]` (déclaré sans allergène), une liste.
+                                     Un héritage doit dire ce qu'il fait de ces trois-là, et notamment si le
+                                     `[]` d'une fiche l'emporte sur le `AM` de son beurre.
+                                  3. **Le grain ne correspond pas.** L'ingrédient est porté par le PRODUIT,
+                                     l'allergène par la DÉCLINAISON — c'est elle qui est mise sur le marché.
+                                     Deux déclinaisons d'un même produit peuvent avoir des recettes
+                                     différentes ; faire descendre l'ingrédient sur chacune est un choix, pas
+                                     une évidence.
 
-                              Tant que ce n'est pas tranché, la section Ingrédients reste éditoriale et
-                              n'affirme rien de réglementaire — cf. l'avertissement en tête de sa note.
+                                  Tant que ce n'est pas tranché, la section Ingrédients reste éditoriale et
+                                  n'affirme rien de réglementaire — cf. l'avertissement en tête de sa note.
 
 ## Paramétrage produit — deux écrans posés, vides
 
@@ -250,27 +250,27 @@ ira, la page dit qu'elle n'y est pas encore.
       `GET /pim/reference/allergens`.
 
       ⚠️ **Ne pas déménager la déclaration.** Ce qu'une fiche déclare se coche
-                      sur la **déclinaison** (`NutritionDeclaration`), et doit y rester : c'est
-                      elle qui est mise sur le marché, et une déclaration réglementaire se prend
-                      en regardant le produit, pas une table de réglages. Ce qui monte ici,
-                      c'est la LISTE ; ce qui reste en bas, c'est l'AFFIRMATION.
+                          sur la **déclinaison** (`NutritionDeclaration`), et doit y rester : c'est
+                          elle qui est mise sur le marché, et une déclaration réglementaire se prend
+                          en regardant le produit, pas une table de réglages. Ce qui monte ici,
+                          c'est la LISTE ; ce qui reste en bas, c'est l'AFFIRMATION.
 
-                      À trancher avant d'écrire : un référentiel modifiable veut dire qu'on peut
-                      retirer un code que des fiches déclarent déjà. Même question que les
-                      appellations, avec un enjeu plus lourd — cf. le `RESTRICT` qui les
-                      protège.
+                          À trancher avant d'écrire : un référentiel modifiable veut dire qu'on peut
+                          retirer un code que des fiches déclarent déjà. Même question que les
+                          appellations, avec un enjeu plus lourd — cf. le `RESTRICT` qui les
+                          protège.
 
 - [ ] **Conditionnements → `/pim/conditionnements`.** La table existe
       (`product_packaging` : référence propre, quantité, poids brut, prix,
       canaux) ; **rien ne la saisit**, ni ici ni sur la fiche.
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et
-                      ce qu'ils nomment. Combien d'unités dans le carton d'un produit donné
-                      reste sur la fiche : c'est une propriété de ce produit.
+                          ce qu'ils nomment. Combien d'unités dans le carton d'un produit donné
+                          reste sur la fiche : c'est une propriété de ce produit.
 
-                      Le point qui justifie l'écran : un conditionnement porte sa **propre
-                      référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-                      l'article » — c'est ce qui en fait autre chose qu'une quantité.
+                          Le point qui justifie l'écran : un conditionnement porte sa **propre
+                          référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+                          l'article » — c'est ce qui en fait autre chose qu'une quantité.
 
 ## Prochaine étape en cours
 

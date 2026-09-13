@@ -7,7 +7,7 @@
 >
 > Statut : **connexion établie** (validée sur `1kkhae-8q.myshopify.com`, 2026-08-04).
 > Voisins : [`projection-shopify.md`](projection-shopify.md) (comment le catalogue
-> se projette une fois connecté), [`migration-pim-localdb-vers-prisma.md`](migration-pim-localdb-vers-prisma.md).
+> se projette une fois connecté).
 
 ---
 
@@ -47,7 +47,7 @@ et rafraîchi. Pas de redirect interactif, pas d'hébergement.
 | Jeton legacy (alternative) | env `SHOPIFY_ADMIN_TOKEN`    | seulement si legacy custom app pré-2026 |
 
 Le cœur est le **`ShopifyTokenProvider`**
-([`token-provider.ts`](../../packages/shopify-admin/src/index.ts)) :
+([`token-provider.ts`](../../../packages/shopify-admin/src/index.ts)) :
 
 1. si `SHOPIFY_ADMIN_TOKEN` est présent → rendu tel quel (aucun échange) ;
 2. sinon `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` → **échange client credentials**
