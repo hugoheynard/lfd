@@ -489,6 +489,26 @@
           }
         </fold-nav-group>
       }
+      @if (canSeeSettings()) {
+        <!-- LE B2B, qui n'avait AUCUNE tuile : ses vues n'existaient qu'au rail
+             secondaire, donc nulle part sous 768px. Les deux arbres ne partagent
+             pas leur modèle — une entrée posée d'un seul côté est invisible de
+             l'autre. -->
+        <fold-nav-group icon="store" label="B2B" [entryCountLabel]="entriesLabel">
+          @for (view of b2bViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #b2bTile="routerLinkActive"
+              [active]="b2bTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
+      }
       @if (canSeeAccounting()) {
         <fold-nav-group icon="receipt" label="Comptabilité" [entryCountLabel]="entriesLabel">
           @for (view of comptabiliteViews(); track view.key) {
