@@ -129,6 +129,7 @@ export {
   setProductChannelsPayloadSchema,
   setProductVatPayloadSchema,
   addProductVariantPayloadSchema,
+  renameProductVariantPayloadSchema,
   alignVariantPayloadSchema,
   variantAspectSchema,
 } from "./product.js";
@@ -151,6 +152,7 @@ export type {
   SetProductChannelsPayload,
   SetProductVatPayload,
   AddProductVariantPayload,
+  RenameProductVariantPayload,
   AlignVariantPayload,
   VariantAspect,
 } from "./product.js";

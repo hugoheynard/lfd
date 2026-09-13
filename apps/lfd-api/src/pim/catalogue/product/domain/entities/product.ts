@@ -338,6 +338,17 @@ export class Product {
     return true;
   }
 
+  /**
+   * Renomme une déclinaison **du produit**.
+   *
+   * Le passage par l'agrégat n'est pas de la cérémonie : c'est lui qui refuse
+   * de renommer la déclinaison d'une AUTRE fiche, et une requête forgée sur le
+   * seul identifiant de déclinaison n'a donc aucun effet ici.
+   */
+  renameVariant(variantId: string, name: LocalizedText): void {
+    this.variant(variantId).rename(name);
+  }
+
   /** Tarif et poids d'une déclinaison **du produit**. */
   priceVariant(variantId: string, pricing: VariantPricing): void {
     this.variant(variantId).price(pricing);

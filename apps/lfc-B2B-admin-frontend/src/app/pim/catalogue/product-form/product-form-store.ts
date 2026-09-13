@@ -12,6 +12,8 @@ import {
   type ProductReadinessView,
 } from '@lfd/pim-contracts';
 
+import { variantTabLabel } from './variant-label';
+
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { NO_CHANNELS, formatPercent, pointsOfSaleSelling, sellsContext } from '../../data/channels';
@@ -1506,14 +1508,20 @@ export class ProductFormStore {
   /**
    * **Les onglets de la barre**, prêts à rendre — le composant n'en dérive rien.
    *
-   * Le libellé vient d'ici et pas du gabarit : « Défaut » puis « Déclinaison
-   * 2 », c'est une règle de nommage, et une règle dans un gabarit est une règle
-   * qu'aucun test unitaire n'atteint.
+   * Le libellé vient d'ici et pas du gabarit : c'est une règle de nommage, et
+   * une règle dans un gabarit est une règle qu'aucun test unitaire n'atteint.
+   * La règle elle-même vit dans `variant-label.ts`, avec sa raison d'être.
+   *
+   * `name` voyage à côté de `label` : le second peut être un repli (le rang,
+   * quand le nom est vide), et un formulaire de renommage pré-rempli avec
+   * « Déclinaison 2 » ferait enregistrer le repli comme s'il était un nom.
    */
   readonly variantTabs = computed(() =>
     this.variants().map((variant) => ({
       id: variant.id,
-      label: variant.isDefault ? 'Défaut' : `Déclinaison ${String(variant.position + 1)}`,
+      label: variantTabLabel(variant),
+      /** Le NOM brut, pour le formulaire de renommage — le libellé peut être un repli. */
+      name: variant.name[SOURCE_LOCALE] ?? '',
       sku: variant.sku,
       isDefault: variant.isDefault,
       selected: variant.id === this.variantId(),
@@ -1628,6 +1636,32 @@ export class ProductFormStore {
       const created = await this.products.addVariant(id, { [SOURCE_LOCALE]: name.trim() });
       await this.hydrate(id);
       this.selectVariant(created);
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /**
+   * **Rebaptise une déclinaison**, celle qu'on désigne — pas forcément celle
+   * qu'on édite.
+   *
+   * Relecture complète après coup, comme pour l'ajout : le nom part dans les
+   * envois vers les canaux, et peindre l'onglet d'avance ferait croire à un
+   * enregistrement que le serveur peut encore refuser.
+   */
+  async renameVariant(variantId: string, name: string): Promise<void> {
+    const id = this.productId();
+    const trimmed = name.trim();
+    if (id === '' || trimmed === '' || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.products.renameVariant(id, variantId, { [SOURCE_LOCALE]: trimmed });
+      await this.hydrate(id);
     } catch (caught) {
       this.error.set(messageOf(caught));
     } finally {

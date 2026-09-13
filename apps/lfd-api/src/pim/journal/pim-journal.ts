@@ -172,6 +172,15 @@ export const PIM_EVENTS = {
    * alignables pour ne rien manquer.
    */
   variantAligned: "variant.aligned",
+  /**
+   * Elle a changé de nom. Le fait est mince, et il compte quand même : le nom
+   * d'un article part dans les envois vers les canaux, donc « pourquoi la
+   * boutique affiche-t-elle autre chose qu'avant » se répond ici.
+   *
+   * La RÉFÉRENCE, elle, ne bouge jamais — il n'y a donc pas de `variant.recoded`
+   * à côté, et il ne faut pas en ajouter un.
+   */
+  variantRenamed: "variant.renamed",
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**

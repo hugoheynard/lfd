@@ -335,6 +335,17 @@ export class ProductHttpApi {
   }
 
   /**
+   * **Rebaptise une déclinaison.**
+   *
+   * Le nom seul : la référence est immuable — elle est dictée au labo et sert de
+   * clé de rapprochement dans les envois — et les options décrivent l'article,
+   * pas la façon de l'appeler.
+   */
+  renameVariant(productId: string, variantId: string, name: LocalizedText): Promise<void> {
+    return this.put(`products/${productId}/variants/${variantId}/name`, { name });
+  }
+
+  /**
    * « Cette déclinaison suit celle par défaut, sur cette section. »
    *
    * Un `PUT` de l'état de la case, jamais une bascule : deux clics rapides sur

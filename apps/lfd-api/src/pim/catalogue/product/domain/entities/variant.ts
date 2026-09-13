@@ -90,7 +90,7 @@ export interface VariantPricing {
 export class Variant {
   private readonly identity: string;
   private readonly skuValue: string;
-  private readonly nameValue: LocalizedText;
+  private nameValue: LocalizedText;
   private readonly optionsValue: Readonly<Record<string, string>>;
   private defaultFlag: boolean;
   private discontinuedFlag: boolean;
@@ -261,6 +261,22 @@ export class Variant {
       throw new DefaultVariantCannotFollowItselfError(this.skuValue);
     }
     this.followsDefault[aspect] = aligned;
+  }
+
+  /**
+   * **Rebaptise l'article** — « Boîte de 220 g », pas le nom de la fiche.
+   *
+   * Le nom était `readonly` depuis l'origine, et c'est exactement ce qui a rendu
+   * la faute invisible : on le SAISISSAIT à la création, la base le gardait, et
+   * plus personne ne pouvait ni le lire à l'écran ni le corriger. Un champ
+   * qu'on demande une fois puis qu'on n'affiche jamais est un champ qu'on
+   * n'aurait pas dû demander.
+   *
+   * La référence, elle, reste immuable : elle est dictée au labo et voyage dans
+   * les envois. Renommer n'est pas rebaptiser un article (`lint:sku-never-recycled`).
+   */
+  rename(name: LocalizedText): void {
+    this.nameValue = name;
   }
 
   /**

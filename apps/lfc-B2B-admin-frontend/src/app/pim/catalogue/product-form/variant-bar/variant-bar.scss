@@ -14,6 +14,15 @@
   margin: 0;
   padding: 0;
   list-style: none;
+
+  /* Le crayon vit À CÔTÉ de l'onglet et non dedans : imbriqué, il serait un
+     bouton dans un bouton — du HTML invalide que le navigateur défait comme il
+     veut, et un clic dont on ne sait plus lequel des deux il atteint. */
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--fold-space-xs);
+  }
 }
 
 /* Un onglet, pas un bouton : ce qui est ouvert se lit au trait sous le libellé,
@@ -37,6 +46,9 @@
 }
 
 .tab-label {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
   font-size: var(--fold-text-sm);
 }
 
@@ -45,6 +57,7 @@
   font-size: var(--fold-text-2xs);
 }
 
+/* Le même formulaire sert à créer et à renommer — cf. `variant-bar.ts`. */
 .create {
   display: flex;
   align-items: flex-end;
