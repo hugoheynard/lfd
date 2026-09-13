@@ -117,6 +117,24 @@
                 [content]="statusLabel()"
                 [variant]="debitable() ? 'success' : 'neutral'"
               />
+              @if (debitable() || signable()) {
+                <!-- 🔴 Un CHEMIN vers la zone de danger, pas un second bouton de
+                     révocation. Dupliquer un geste destructeur donnerait deux
+                     parcours, dont un finirait par perdre la confirmation. Ici,
+                     une seule implémentation — mais trouvable depuis l'endroit
+                     où on regarde le mandat, et non seulement depuis le bas de
+                     la page. -->
+                <button
+                  foldButton
+                  type="button"
+                  size="sm"
+                  emphasis="soft"
+                  intent="danger"
+                  (click)="goToRevoke()"
+                >
+                  {{ signable() ? 'Abandonner…' : 'Révoquer…' }}
+                </button>
+              }
             </div>
           </div>
 
@@ -325,7 +343,7 @@
        crédit ou une autorisation de prélever se répare mal, et se découvre au
        pire moment — à la commande suivante, ou à l'échéance. -->
 @if (dangerous().length > 0) {
-  <fold-danger-zone appearance="section" title="Zone de danger">
+  <fold-danger-zone #dangerZone appearance="section" title="Zone de danger">
     <p class="danger-lede">
       Ces retraits prennent effet immédiatement pour le client. Tapez le mot demandé pour confirmer.
     </p>

@@ -213,6 +213,34 @@ describe('section Moyens de paiement — la zone de danger', () => {
   });
 
   /**
+   * 🔴 Régression : un BROUILLON n'était listé nulle part. Impossible de
+   * l'abandonner à l'écran, et l'index d'unicité interdit d'en frapper un
+   * second : une société à laquelle on avait frappé un mandat erroné n'avait
+   * aucune sortie, sauf en SQL.
+   */
+  it('laisse abandonner un brouillon — sinon la société reste bloquée', async () => {
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: {
+        ...ACTIVE_MANDATE,
+        status: 'draft',
+        acceptedAt: null,
+        last4: '',
+        reference: 'LFC-6KTQAT-260913-HZMF98',
+      },
+    });
+    await settle();
+
+    const mandate = section['dangerous']().find((action) => action.key === 'mandate');
+
+    expect(mandate?.label).toContain('Abandonner');
+    expect(mandate?.match).toBe('HZMF98');
+    // Un brouillon n'a jamais autorisé personne : dire qu'on retire un
+    // prélèvement ferait croire qu'on enlève quelque chose au client.
+    expect(mandate?.consequence).not.toContain('Plus aucun prélèvement');
+  });
+
+  /**
    * 🔴 Régression : le mot à taper était `last4`, qui vient du mandat Stripe. Un
    * mandat que NOUS frappons naît sans — il peut l'être avant même que le RIB
    * soit recopié. La confirmation demandait donc de retaper une chaîne VIDE, et

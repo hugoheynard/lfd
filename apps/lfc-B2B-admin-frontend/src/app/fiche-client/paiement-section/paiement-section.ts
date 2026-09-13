@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ElementRef,
   Component,
   computed,
   effect,
@@ -7,6 +8,7 @@ import {
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
@@ -287,16 +289,33 @@ export class PaiementSection {
       match: DEFERRED_TERM_LABELS[term],
     }));
     const current = this.mandate();
-    if (current === null || current.status !== 'active') {
+    // 🔴 `draft` AUTANT que `active` (corrigé le 2026-09-13). Un brouillon
+    // n'était listé nulle part : impossible de l'abandonner à l'écran, et
+    // l'index d'unicité interdit d'en frapper un second. Une société à laquelle
+    // on avait frappé un mandat erroné n'avait donc **aucune sortie** — sauf en
+    // SQL. L'agrégat sait révoquer un brouillon depuis la veille ; il manquait
+    // l'endroit pour le demander.
+    if (current === null || (current.status !== 'active' && current.status !== 'draft')) {
       return credits;
     }
+    const isDraft = current.status === 'draft';
     return [
       ...credits,
       {
         key: 'mandate' as const,
-        label: `Révoquer le mandat ${current.reference}`,
-        consequence: 'Plus aucun prélèvement ne pourra partir sur ce compte.',
-        question: 'Retirer l’autorisation de prélever ?',
+        label: isDraft
+          ? `Abandonner le mandat ${current.reference}`
+          : `Révoquer le mandat ${current.reference}`,
+        // Deux conséquences, parce que ce ne sont pas les mêmes faits : un
+        // brouillon n'a jamais autorisé personne, un actif oui. Dire « plus
+        // aucun prélèvement ne partira » d'un mandat qui n'a jamais pu prélever
+        // ferait croire qu'on retire quelque chose au client.
+        consequence: isDraft
+          ? 'Le papier déjà envoyé deviendra sans valeur. Sa référence ne sera pas réutilisée.'
+          : 'Plus aucun prélèvement ne pourra partir sur ce compte.',
+        question: isDraft
+          ? 'Abandonner ce mandat non signé ?'
+          : 'Retirer l’autorisation de prélever ?',
         // 🔴 La fin de la RUM, et non les 4 chiffres du compte (corrigé le
         // 2026-09-13). `last4` vient du mandat Stripe ; un mandat que NOUS
         // frappons naît sans — il peut l'être avant même que le RIB soit
@@ -437,6 +456,30 @@ export class PaiementSection {
       data: { companyId: id, fileName: mandate.proofFileName },
     });
   }
+
+  /**
+   * Amène la zone de danger sous les yeux, plutôt que d'y dupliquer le geste.
+   *
+   * La révocation vit en bas de la fiche, derrière un mot à retaper — c'est
+   * voulu : une section dangereuse toujours visible cesse d'être lue. Mais elle
+   * était **introuvable depuis le mandat**, qui est l'endroit où l'on se pose la
+   * question. Le bouton ne révoque donc pas : il conduit.
+   *
+   * `smooth` et non un saut : un déplacement instantané vers une zone rouge fait
+   * croire à un changement d'écran, et on cherche alors ce qu'on vient de
+   * casser.
+   */
+  protected goToRevoke(): void {
+    this.dangerZone()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  /**
+   * ⚠️ `viewChild` et non une référence de gabarit passée en paramètre : la zone
+   * de danger vit dans un `@if`, donc dans une vue imbriquée, et sa référence
+   * n'est pas visible depuis le bloc du mandat. Le compilateur le dit — encore
+   * faut-il ne pas prendre son refus pour un caprice.
+   */
+  private readonly dangerZone = viewChild('dangerZone', { read: ElementRef<HTMLElement> });
 
   /** La date saisie pour la signature — `AAAA-MM-JJ`, celle du papier. */
   protected readonly signedAt = signal('');
