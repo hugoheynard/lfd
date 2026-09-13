@@ -160,8 +160,16 @@ export class ClientCommandesPage {
     }
   }
 
-  /** Ouvrir une commande = aller sur sa page. Le tableau n'en décide pas. */
+  /**
+   * Ouvrir une commande = aller sur sa page, **sans quitter le compte**.
+   *
+   * 🔴 Cette navigation visait `/commandes/:id`, qui vit hors de la coquille :
+   * un clic sur une ligne faisait disparaître le bandeau du compte et ses
+   * onglets, et le seul retour offert était la liste des comptes. On parcourt
+   * les commandes d'un client par allers-retours — chacun coûtait deux
+   * navigations et une relecture de la fiche.
+   */
   protected openOrder(row: AdminOrderRow): void {
-    void this.router.navigate(['/commandes', row.id]);
+    void this.router.navigate(['/comptes-clients', this.id(), 'commandes', row.id]);
   }
 }

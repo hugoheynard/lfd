@@ -93,7 +93,10 @@ describe('la carte des dernières commandes', () => {
     // plafonnée passait pour tout ce que le compte avait commandé.
     const hrefs = [...render([ORDER]).querySelectorAll('a')].map((a) => a.getAttribute('href'));
 
-    expect(hrefs).toContain('/commandes/or_1');
+    // Dans l'espace du compte, et non sur la route de premier niveau : celle-ci
+    // vit hors de la coquille, donc l'ouvrir fait perdre le bandeau et les
+    // onglets à qui parcourt un dossier.
+    expect(hrefs).toContain('/comptes-clients/co_1/commandes/or_1');
     expect(hrefs).toContain('/comptes-clients/co_1/commandes');
   });
 });

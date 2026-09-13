@@ -1,0 +1,40 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Chargement de la commande…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger cette commande">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (order(); as o) {
+      <!-- `audience="staff"` : les mêmes étapes que chez le client, mais
+           chacune dit ce qu'elle veut dire dans l'atelier. Au téléphone, le
+           commercial a l'écran du client sous les yeux, augmenté — jamais un
+           autre écran. -->
+      <!-- 🔴 `selectableLines` n'est vrai qu'ICI : l'explication s'appuie sur
+           la trace ENTIÈRE, que les routes clientes ne servent plus (R27).
+           Le même composant, deux publics, un geste de plus au comptoir. -->
+      <lfd-order-detail
+        audience="staff"
+        [order]="o"
+        [documents]="documents()"
+        [selectableLines]="true"
+        (lineSelected)="explainedSku.set($event)"
+        (documentAsked)="onDocument($event)"
+      >
+        <!-- Le rail d'actions reste vide, et se dit : un écran sans bouton
+             laisse croire à un oubli, une phrase dit que c'est une décision. -->
+        <fold-callout actions variant="info">
+          Aucune action staff sur une commande passée : elle est un fait daté. Les corrections
+          passeront par des avenants.
+        </fold-callout>
+      </lfd-order-detail>
+
+      @if (explained(); as line) {
+        <app-price-explain [line]="line" [orderId]="o.id" (dismissed)="explainedSku.set(null)" />
+      }
+    }
+  }
+}

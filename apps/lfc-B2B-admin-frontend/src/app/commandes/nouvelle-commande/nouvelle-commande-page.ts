@@ -549,7 +549,9 @@ export class NouvelleCommandePage {
       this.lateDraft.set(null);
       this.waiverReason.set('');
       this.notify.success(`Commande ${placed.orderNumber} enregistrée.`);
-      await this.router.navigate(['/commandes', placed.id]);
+      // Dans le dossier du compte : on vient de passer une commande POUR lui, et
+      // la suite (en repasser une, vérifier la facturation) s'y trouve.
+      await this.router.navigate(['/comptes-clients', this.id(), 'commandes', placed.id]);
     } catch (error) {
       // Le refus « encore rattrapable » n'est pas une panne : on garde la saisie
       // et on propose le geste, plutôt qu'un toast qui laisse le commercial

@@ -38,7 +38,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/contenu/app-footer': null,
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
-  'commandes/:id': 'b2b_orders:read',
+  'commandes/:orderId': 'b2b_orders:read',
   'comptes-clients/:id/nouvelle-commande': 'b2b_orders:write',
   // Cible du QR de colisage imprimé sur la fiche d'atelier. Même droit que la
   // remise : les deux écrivent un fait sur une commande.
@@ -58,6 +58,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,
   'comptes-clients/:id/commandes': null,
+  // La MÊME commande que `commandes/:orderId`, sous le bandeau de son compte, et
+  // derrière le MÊME droit : la coquille n'ouvre que `b2b_companies:read`, et
+  // hériter ici laisserait lire les commandes à qui ne le peut pas ailleurs.
+  'comptes-clients/:id/commandes/:orderId': 'b2b_orders:read',
   // Le seul onglet de la fiche qui ne suit PAS le droit du parent : voir ce
   // qu'un client a négocié n'est pas voir sa fiche.
   'comptes-clients/:id/tarifs': 'b2b_pricing:read',

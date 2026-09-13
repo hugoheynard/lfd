@@ -1,0 +1,9 @@
+<!-- Le retour NOMME sa destination, comme celui du bandeau : on arrive ici en
+     parcourant les commandes d'un compte, et c'est là qu'on veut revenir — pas
+     à la liste des comptes, deux niveaux plus haut. -->
+<a class="cc-back" [routerLink]="['/comptes-clients', id(), 'commandes']">
+  <fold-icon name="chevron-left" size="sm" />
+  Commandes du compte
+</a>
+
+<app-order-view [orderId]="orderId()" />

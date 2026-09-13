@@ -54,7 +54,10 @@
         <!-- Un vrai lien, et non une ligne qui écoute le clic : il s'ouvre au
              clavier, il s'ouvre dans un onglet, et il annonce sa destination
              avant qu'on appuie. -->
-        <a class="cs-order" [routerLink]="['/commandes', order.id]">
+        <a
+          class="cs-order"
+          [routerLink]="['/comptes-clients', view.companyId, 'commandes', order.id]"
+        >
           <span class="cs-order-ref cs-num">{{ order.orderNumber }}</span>
           <span class="cs-order-date cs-num">{{ order.placedAt | date: 'dd/MM/yyyy' }}</span>
           <fold-badge

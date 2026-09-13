@@ -51,6 +51,25 @@ export const ficheClientRoutes: Routes = [
           import('./commandes/commandes-page').then((m) => m.ClientCommandesPage),
       },
       {
+        // APRÈS `commandes` : le détail d'une commande du compte, sous le même
+        // bandeau et les mêmes onglets. `:orderId` et non `:id`, qui désigne
+        // déjà la société au niveau du parent.
+        //
+        // La route de premier niveau `/commandes/:orderId` demeure — elle
+        // couvre les commandes « zéro friction », qui n'ont pas d'entreprise.
+        // Le corps est le même composant ; seul le cadre diffère.
+        //
+        // 🔴 `b2b_orders:read` et non le droit du parent, qui est celui de la
+        // fiche (`b2b_companies:read`). C'est EXACTEMENT le mur de la route de
+        // premier niveau, et déplacer un écran ne doit pas élargir qui le lit :
+        // sans ce garde, ouvrir une commande depuis un compte serait permis à
+        // qui ne peut pas l'ouvrir depuis ailleurs.
+        path: 'commandes/:orderId',
+        canActivate: [permissionGuard('b2b_orders:read')],
+        loadComponent: () =>
+          import('./commande/client-commande-page').then((m) => m.ClientCommandePage),
+      },
+      {
         // 🔴 `b2b_pricing:read` et non le droit du parent. La fiche s'ouvre avec
         // `b2b_companies:read`, que portent aussi la comptabilité et le support ;
         // hériter ici leur DONNERAIT la lecture des prix négociés, qui
