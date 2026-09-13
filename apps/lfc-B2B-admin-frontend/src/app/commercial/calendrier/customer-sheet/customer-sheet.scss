@@ -64,10 +64,12 @@
 
 /* La sortie de la carte : un lien, pas un bouton — il NAVIGUE. */
 .cs-more {
-  align-self: start;
+  /* Centré : le lien ferme la carte, il n'appartient pas à la dernière ligne. */
+  align-self: center;
   margin-top: var(--fold-space-sm);
   color: var(--fold-color-primary-text);
   font-size: var(--fold-text-sm);
+  text-align: center;
 }
 
 .cs-empty,
