@@ -1,6 +1,13 @@
-import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
+import {
+  divideByBasisPoints,
+  fractionByBasisPoints,
+  fromCents,
+  fromMillicents,
+  roundToCents,
+  roundToMillicents,
+} from "@lfd/money";
 
-import { htFromTtc } from "./tax.js";
+import { htFromTtc, htMillicentsOf, taxMultiplierBp } from "./tax.js";
 import { z } from "zod";
 
 /**
@@ -25,6 +32,37 @@ import { z } from "zod";
  */
 export const MAX_RATIO_BP = 10_000;
 
+// ── Les deux méthodes de prix professionnel ────────────────────────────────
+
+/**
+ * **Comment on dérive le prix professionnel du prix public.**
+ *
+ * 🔴 **`remise_apres_tva_max` est arithmétiquement FAUSSE, et c'est délibéré.**
+ * Elle vient d'une réunion de communication où le calcul a été fait avec 20 %
+ * de TVA au lieu du taux réel des articles — et elle est **partie à
+ * l'impression** : la plaquette commerciale annonce ces prix-là. On la bâtit
+ * pour tenir un engagement déjà pris, pas parce qu'elle est juste.
+ *
+ * **Ne la « corrigez » pas.** Une formule réparée ici casserait la seule chose
+ * qu'elle sait faire : redonner les nombres de la plaquette. Si un jour la
+ * plaquette est refaite, c'est la MÉTHODE qu'on retire, pas son calcul qu'on
+ * ajuste.
+ *
+ * L'égalité qui dit ce qu'elle est vraiment (vérifiée le 2026-09-13) :
+ *
+ * ```
+ * B_ht = (publicTtc ÷ 1,20) × ratio  ≡  A_ttc ÷ 1,20
+ * ```
+ *
+ * Ce n'est donc pas une autre politique de prix : c'est la même remise, dont on
+ * dérive le hors taxe au taux le plus haut au lieu du taux réel de l'article.
+ * Sur un catalogue majoritairement à 5,5 %, annoncer « 10 % » revient à en
+ * consentir environ 25 % sur le TTC. C'est l'écart que la plaquette ignore, et
+ * que l'écran doit montrer.
+ */
+export const PRO_PRICE_METHODS = ["ratio_ttc", "remise_apres_tva_max"] as const;
+export type ProPriceMethod = (typeof PRO_PRICE_METHODS)[number];
+
 /**
  * En **points de base entiers**, jamais en pourcentage flottant.
  *
@@ -43,6 +81,27 @@ export const proPriceRatioPayloadSchema = z.object({
 export type ProPriceRatioPayload = z.infer<typeof proPriceRatioPayloadSchema>;
 
 /**
+ * **Le taux figé de la plaquette**, en pourcentage — borné comme un taux de TVA.
+ *
+ * Exigé par `remise_apres_tva_max`, refusé par `ratio_ttc` : lui donner un taux
+ * qui ne sert à rien laisserait croire qu'il compte, et le prochain lecteur
+ * chercherait où il s'applique.
+ */
+export const proPriceMethodPayloadSchema = z
+  .object({
+    method: z.enum(PRO_PRICE_METHODS),
+    fixedVatPercent: z.number().min(0).max(100).nullable(),
+  })
+  .refine(
+    (value) => (value.method === "remise_apres_tva_max") === (value.fixedVatPercent !== null),
+    {
+      message: "La méthode de la plaquette exige son taux figé ; le ratio TTC n'en accepte aucun.",
+      path: ["fixedVatPercent"],
+    },
+  );
+export type ProPriceMethodPayload = z.infer<typeof proPriceMethodPayloadSchema>;
+
+/**
  * Ce que l'écran lit.
  *
  * `ratioBp` à `null` = **jamais réglé**, et c'est une information à part entière :
@@ -53,6 +112,15 @@ export type ProPriceRatioPayload = z.infer<typeof proPriceRatioPayloadSchema>;
  */
 export interface AccountingRulesView {
   readonly ratioBp: number | null;
+  /**
+   * La méthode **appliquée** — celle dont le push se sert.
+   *
+   * `ratio_ttc` tant que personne n'a choisi : c'est le comportement d'origine,
+   * et un déploiement qui ne s'est pas prononcé ne doit pas changer de tarif.
+   */
+  readonly method: ProPriceMethod;
+  /** Le taux figé de la plaquette, `null` sous `ratio_ttc`. */
+  readonly fixedVatPercent: number | null;
   /** ISO-8601, ou `null` si rien n'a jamais été réglé. */
   readonly updatedAt: string | null;
 }
@@ -111,4 +179,136 @@ export function proHtFromPublic(
     return null;
   }
   return htFromTtc(proPriceFromPublic(publicTtcCents, ratioBp), ratePercent);
+}
+
+/**
+ * Le réglage complet, tel qu'il s'applique — méthode ET matériaux.
+ *
+ * `fixedVatPercent` n'est pas « le plus haut taux du référentiel » : c'est le
+ * taux **figé** qu'une réunion a employé un jour donné. Le lire du référentiel
+ * à chaque calcul ferait retarifer tout le catalogue professionnel le jour où
+ * quelqu'un crée, modifie ou supprime un taux — de l'action à distance sur de
+ * l'argent, la pire classe de défaut de ce dépôt. Il est donc saisi avec la
+ * méthode, et ne bouge plus.
+ *
+ * `null` quand la méthode ne s'en sert pas : `ratio_ttc` n'a aucun taux fixe, et
+ * lui en donner un laisserait croire qu'il compte.
+ */
+export interface ProPricePolicy {
+  readonly method: ProPriceMethod;
+  readonly ratioBp: number;
+  readonly fixedVatPercent: number | null;
+}
+
+/**
+ * Un prix professionnel, dans les **deux** unités que la chaîne demande.
+ *
+ * Les deux ensemble et jamais l'un sans l'autre : sous `ratio_ttc` c'est le TTC
+ * qui est calculé et le HT qui s'en déduit, sous `remise_apres_tva_max` c'est
+ * l'inverse. Rendre un seul des deux obligerait chaque appelant à savoir lequel
+ * est l'original — c'est-à-dire à reconstruire la branche ici.
+ */
+export interface ProPrice {
+  /** Ce qu'un professionnel paie, taxe comprise. */
+  readonly ttcCents: number;
+  /** Ce qui part sur le fil et que multiplie une quantité (10⁻⁵ €). */
+  readonly htMillicents: number;
+}
+
+/**
+ * **Le prix professionnel — l'unique porte, quelle que soit la méthode.**
+ *
+ * Un seul point d'entrée parce que la branche est une décision d'argent : la
+ * dupliquer chez ses quatre appelants (le VO, la projection, l'écran des règles
+ * et la fiche produit) garantirait qu'un écran finisse par montrer une méthode
+ * pendant que le fil en pousse une autre.
+ *
+ * `null` **sans taux d'article**, dans les deux méthodes — et c'est voulu même
+ * sous `remise_apres_tva_max`, où le hors taxe n'en dépend plus : le taux sert
+ * toujours à FACTURER. Un article sans taux reste donc écarté du canal
+ * (`variant_sans_taux`), pour la même raison qu'avant : inventer un taux
+ * facturerait un montant que personne n'a décidé.
+ */
+export function proPriceOf(
+  publicTtcCents: number,
+  policy: ProPricePolicy,
+  articleVatPercent: number | null,
+): ProPrice | null {
+  if (articleVatPercent === null) {
+    return null;
+  }
+  if (policy.method === "ratio_ttc") {
+    // La chaîne d'origine : le TTC pro est un PRIX, il s'arrête au centime, et
+    // le hors taxe se déduit de CE montant-là (cf. `proHtFromPublic`).
+    const ttcCents = proPriceFromPublic(publicTtcCents, policy.ratioBp);
+    const htMillicents = htMillicentsOf(ttcCents, articleVatPercent);
+    return htMillicents === null ? null : { ttcCents, htMillicents };
+  }
+  const htMillicents = brochureHtMillicents(publicTtcCents, policy.ratioBp, policy.fixedVatPercent);
+  if (htMillicents === null) {
+    return null;
+  }
+  // Le TTC pro n'est plus une saisie ni une étape : c'est le hors taxe de la
+  // plaquette, retaxé au taux RÉEL de l'article. La plaquette décide ce qu'on
+  // facture hors taxe ; l'État décide ce qu'on ajoute dessus.
+  return {
+    ttcCents: roundToCents(
+      // `fractionByBasisPoints` et non `scaleByBasisPoints` : le second ajoute
+      // ou retire une fraction (`bp = 5000` → +50 %), le premier PREND la
+      // fraction (`bp = 10550` → ×1,055). `taxMultiplierBp` rend un
+      // multiplicateur absolu, c'est donc le premier qu'il lui faut.
+      fractionByBasisPoints(fromMillicents(htMillicents), taxMultiplierBp(articleVatPercent)),
+    ),
+    htMillicents,
+  };
+}
+
+/**
+ * Le hors taxe **de la plaquette** : le TTC public dépouillé du taux figé, puis
+ * remisé.
+ *
+ * `null` si le taux figé manque — une méthode qui prétend retirer une TVA sans
+ * savoir laquelle ne doit rien produire du tout. Le réglage l'exige à la
+ * saisie ; ce `null` est la ceinture pour une ligne écrite avant que l'exigence
+ * existe.
+ *
+ * **Un seul arrondi, à la fin, et en MILLICENTIMES** — pas en centimes comme
+ * sous `ratio_ttc`. La raison est la même dans les deux cas, appliquée à des
+ * nombres de nature différente : là-bas le résultat est un prix qu'on paie,
+ * donc il s'arrête au centime ; ici c'est un hors taxe qui part sur le fil et
+ * qu'une quantité multipliera, donc l'arrondir au centime multiplierait
+ * l'erreur par la quantité commandée (cf. `htMillicentsOf`).
+ */
+function brochureHtMillicents(
+  publicTtcCents: number,
+  ratioBp: number,
+  fixedVatPercent: number | null,
+): number | null {
+  if (fixedVatPercent === null) {
+    return null;
+  }
+  return roundToMillicents(
+    fractionByBasisPoints(
+      divideByBasisPoints(fromCents(publicTtcCents), taxMultiplierBp(fixedVatPercent)),
+      ratioBp,
+    ),
+  );
+}
+
+/**
+ * **Ce que la plaquette consent RÉELLEMENT**, en points de base, sur le TTC.
+ *
+ * La saisie annonce une remise nominale — 10 % — et la méthode de la plaquette
+ * en donne davantage dès que le taux de l'article est sous le taux figé. Ce
+ * nombre est l'écart que la réunion a ignoré, et la seule raison pour laquelle
+ * l'écran de comparaison existe.
+ *
+ * `null` quand le prix public est nul : il n'y a alors pas de remise à exprimer
+ * en proportion de rien.
+ */
+export function realDiscountBp(publicTtcCents: number, proTtcCents: number): number | null {
+  if (publicTtcCents <= 0) {
+    return null;
+  }
+  return Math.round(((publicTtcCents - proTtcCents) / publicTtcCents) * MAX_RATIO_BP);
 }

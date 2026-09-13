@@ -228,6 +228,16 @@ export const PIM_EVENTS = {
    * moins bien que la phrase.
    */
   accountingRulesProRatioChanged: "accounting_rules.pro_ratio_changed",
+  /**
+   * La **méthode** de calcul du prix professionnel a changé.
+   *
+   * Distincte du rapport, et pas par symétrie : les deux retarifent le
+   * catalogue professionnel entier, et un seul type de fait rendrait impossible
+   * de répondre à « d'où vient cet écart de prix ». Une bascule vers
+   * `remise_apres_tva_max` déplace le prix de base d'environ 12 % sur un article
+   * à 5,5 % — c'est le genre de fait qu'on relit sous pression.
+   */
+  accountingRulesMethodChanged: "accounting_rules.method_changed",
   salesContextCreated: "sales_context.created",
   salesContextUpdated: "sales_context.updated",
   salesContextDeleted: "sales_context.deleted",

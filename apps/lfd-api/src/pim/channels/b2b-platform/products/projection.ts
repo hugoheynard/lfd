@@ -8,7 +8,7 @@ import type {
   SyncVariant,
 } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
-import { htMillicentsOf, proPriceFromPublic, type B2bExclusionReason } from "@lfd/pim-contracts";
+import { proPriceOf, type B2bExclusionReason, type ProPricePolicy } from "@lfd/pim-contracts";
 
 import type {
   IncoProjection,
@@ -157,7 +157,7 @@ function labelsOf(projection: IncoProjection): SyncAllergenLabels {
 function sortVariants(
   product: ProductRecord,
   vatRatePercent: number | null,
-  proRatioBp: number,
+  policy: ProPricePolicy,
   inco: IncoProjector,
 ): {
   sellable: SyncVariant[];
@@ -176,23 +176,27 @@ function sortVariants(
       excluded.push({ sku: variant.sku, reason: "variant_sans_prix" });
       continue;
     }
-    // **La chaîne, dans son ordre.** Le prix stocké est un prix public TTC ; le
-    // rapport en fait un prix pro TTC ; le taux du canal en fait un hors taxe.
+    // **La chaîne, dans son ordre — et l'ordre dépend maintenant de la MÉTHODE.**
+    // `proPriceOf` la porte, et c'est l'unique porte du dépôt : la brancher ici
+    // et la rebrancher à l'écran garantirait qu'un jour l'un montre une méthode
+    // pendant que l'autre en pousse une autre.
     //
-    // Le prix pro est arrondi AU CENTIME avant la division, et c'est délibéré :
-    // c'est un prix, pas un intermédiaire de calcul. Garder le rationnel exact
-    // jusqu'au bout ferait diverger d'un centime le hors taxe poussé et celui
-    // que la fiche affiche sous le prix pro — deux nombres qu'un client peut
-    // recompter. L'écran fait exactement la même chose, avec la même fonction.
-    const proTtcCents = proPriceFromPublic(priceCents, proRatioBp);
+    // Le réglage est **passé**, jamais lu. Ce module promet en tête d'être pur —
+    // aucun appel réseau, aucune dépendance Nest, aucune horloge — et le taux
+    // figé de la plaquette est exactement le genre de valeur qu'on serait tenté
+    // d'aller chercher au référentiel depuis ici.
+    //
     // Un prix d'étiquette sans taux ne se déduit pas. On l'écarte plutôt que
     // d'inventer un taux : une conversion approximative facturerait un montant
-    // que personne n'a décidé, et rien ne le signalerait ensuite.
-    const htMillicents = htMillicentsOf(proTtcCents, vatRatePercent);
-    if (htMillicents === null) {
+    // que personne n'a décidé, et rien ne le signalerait ensuite. ⚠️ Le refus
+    // vaut pour les DEUX méthodes, y compris celle de la plaquette où le hors
+    // taxe ne dépend plus du taux de l'article : il sert toujours à FACTURER.
+    const proPrice = proPriceOf(priceCents, policy, vatRatePercent);
+    if (proPrice === null) {
       excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
       continue;
     }
+    const htMillicents = proPrice.htMillicents;
     // Absence dans la carte = aucune limite. Une carte plutôt qu'un `null`
     // explicite par déclinaison : l'immense majorité des articles n'en a pas, et
     // une entrée par article ne dirait rien de plus.
@@ -248,7 +252,7 @@ export function projectCatalog(
    * le plein tarif le jour où elle le serait. C'est l'APPELANT qui refuse de
    * pousser tant que rien n'est réglé — voir `B2bCatalogFeedProjection`.
    */
-  proRatioBp: number,
+  policy: ProPricePolicy,
   /**
    * **L'échelle des limites de commande**, telle quelle.
    *
@@ -298,7 +302,7 @@ export function projectCatalog(
     const { sellable, excluded: rejected } = sortVariants(
       product,
       vatOf(vatByProduct.get(product.id) ?? {}),
-      proRatioBp,
+      policy,
       inco,
     );
     excluded.push(...rejected);

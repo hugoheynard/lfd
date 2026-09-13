@@ -290,7 +290,12 @@ describe('PricingForm — le prix professionnel', () => {
   /** Le rapport tel que les règles comptables le rendent : −10 %. */
   function withProRatio(store: ProductFormStore, ratioBp: number | null): void {
     const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp, updatedAt: null });
+    vi.spyOn(rules, 'rules').mockReturnValue({
+      ratioBp,
+      method: 'ratio_ttc',
+      fixedVatPercent: null,
+      updatedAt: null,
+    });
     withFamily(store);
     store.priceEur.set(12);
   }
@@ -353,7 +358,12 @@ describe('PricingForm — la ligne B2B suit le prix remisé', () => {
   it('déduit la ligne B2B du prix pro, pas du prix public', () => {
     const store = setup();
     const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: 9_000, updatedAt: null });
+    vi.spyOn(rules, 'rules').mockReturnValue({
+      ratioBp: 9_000,
+      method: 'ratio_ttc' as const,
+      fixedVatPercent: null,
+      updatedAt: null,
+    });
     withFamily(store);
     store.priceEur.set(12);
     const fixture = TestBed.createComponent(PricingForm);
@@ -379,7 +389,12 @@ describe('PricingForm — la ligne B2B suit le prix remisé', () => {
   it('marque la ligne remisée, et elle seule', () => {
     const store = setup();
     const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: 9_000, updatedAt: null });
+    vi.spyOn(rules, 'rules').mockReturnValue({
+      ratioBp: 9_000,
+      method: 'ratio_ttc' as const,
+      fixedVatPercent: null,
+      updatedAt: null,
+    });
     withFamily(store);
     store.priceEur.set(12);
     const fixture = TestBed.createComponent(PricingForm);

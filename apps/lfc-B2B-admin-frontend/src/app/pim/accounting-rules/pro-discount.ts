@@ -1,4 +1,6 @@
-import { MAX_RATIO_BP } from '@lfd/pim-contracts';
+import { MAX_RATIO_BP, type ProPricePolicy } from '@lfd/pim-contracts';
+import { MILLICENTS_PER_CENT } from '@lfd/money';
+import { formatCents } from '@lfd/b2b-ui/order';
 
 /**
  * **La remise professionnelle, telle qu'on la dit — et le rapport, tel qu'on le
@@ -50,4 +52,52 @@ export function formatDiscount(ratioBp: number): string {
     return 'aucune remise';
   }
   return `−${String(discount).replace('.', ',')} %`;
+}
+
+/**
+ * Le **taux de TVA figé** que l'écran propose pour la méthode de la plaquette.
+ *
+ * 20 %, parce que c'est le nombre qu'une réunion de communication a employé et
+ * qui est parti à l'impression. Une PROPOSITION de saisie, jamais un réglage :
+ * il n'entre en base que si quelqu'un choisit la plaquette, et le référentiel
+ * des taux n'a aucun droit de le changer ensuite.
+ */
+export const DEFAULT_BROCHURE_VAT = 20;
+
+/** Le réglage d'origine, assemblé — méthode, rapport, pas de taux figé. */
+export function ratioTtcPolicy(ratioBp: number): ProPricePolicy {
+  return { method: 'ratio_ttc', ratioBp, fixedVatPercent: null };
+}
+
+/** Le réglage de la plaquette : dépouillé au taux FIGÉ, puis remisé. */
+export function brochurePolicy(ratioBp: number, fixedVatPercent: number): ProPricePolicy {
+  return { method: 'remise_apres_tva_max', ratioBp, fixedVatPercent };
+}
+
+/**
+ * Un hors taxe en **millicentimes** vers une somme lisible.
+ *
+ * Le comparateur travaille en millicentimes parce que c'est l'unité qui part
+ * sur le fil : arrondir au centime pour l'afficher est juste, arrondir pour
+ * CALCULER l'écart ne le serait pas — deux arrondis se mangeraient l'écart
+ * qu'on cherche justement à montrer.
+ */
+export function formatMillicents(millicents: number): string {
+  return formatCents(Math.round(millicents / MILLICENTS_PER_CENT));
+}
+
+/** Le même, **signé** : l'écart n'a de sens qu'avec son sens. */
+export function formatSignedMillicents(millicents: number): string {
+  if (Math.abs(millicents) < MILLICENTS_PER_CENT / 2) {
+    // Moins d'un demi-centime : « +0,00 € » ferait chercher une différence là où
+    // les deux méthodes coïncident — c'est le cas d'un article déjà au taux figé.
+    return 'identique';
+  }
+  const sign = millicents > 0 ? '+' : '−';
+  return `${sign}${formatMillicents(Math.abs(millicents))}`;
+}
+
+/** « 20,9 % » — la remise RÉELLE, celle que la plaquette ignore. */
+export function formatDiscountBp(bp: number | null): string | null {
+  return bp === null ? null : `${(bp / CENTIS).toFixed(1).replace('.', ',')} %`;
 }

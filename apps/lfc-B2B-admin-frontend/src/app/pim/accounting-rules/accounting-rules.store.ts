@@ -1,11 +1,19 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
-import type { AccountingRulesView } from '@lfd/pim-contracts';
+import type { AccountingRulesView, ProPriceMethod } from '@lfd/pim-contracts';
 
 import { AccountingRulesHttpApi } from './accounting-rules-http-api';
 
 /** Rien réglé : la forme que rend le serveur, et l'état de départ de l'écran. */
-const NEVER_SET: AccountingRulesView = { ratioBp: null, updatedAt: null };
+const NEVER_SET: AccountingRulesView = {
+  ratioBp: null,
+  // La MÉTHODE n'a pas de « jamais réglée » : le calcul d'origine s'applique
+  // tant que personne n'a choisi, et le dire `null` ferait inventer un repli à
+  // l'écran — donc le choisir une seconde fois, ailleurs.
+  method: 'ratio_ttc',
+  fixedVatPercent: null,
+  updatedAt: null,
+};
 
 /**
  * Source réactive unique des **règles comptables**.
@@ -63,6 +71,15 @@ export class AccountingRulesStore {
    */
   async setProPriceRatio(ratioBp: number): Promise<void> {
     this.state.set(await this.api.setProPriceRatio(ratioBp));
+    this.loadFailure.set(null);
+  }
+
+  /** Même règle : on adopte la vue relue, jamais celle qu'on vient d'envoyer. */
+  async chooseProPriceMethod(
+    method: ProPriceMethod,
+    fixedVatPercent: number | null,
+  ): Promise<void> {
+    this.state.set(await this.api.chooseProPriceMethod(method, fixedVatPercent));
     this.loadFailure.set(null);
   }
 }

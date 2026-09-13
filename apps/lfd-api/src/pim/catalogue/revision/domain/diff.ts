@@ -18,6 +18,7 @@ export interface RevisionIndex {
   /** L'empreinte de chaque article, par SKU. */
   readonly hashBySku: ReadonlyMap<string, string>;
   readonly proRatioBp: number | null;
+  readonly proPriceMethod: string | null;
 }
 
 /** Les SKU à charger, et eux seuls. */
@@ -56,16 +57,26 @@ export function planDiff(before: RevisionIndex, after: RevisionIndex): DiffPlan 
 
 /** Ce qui a bougé dans l'en-tête. Vide = rien. */
 export function headerDiff(before: RevisionIndex, after: RevisionIndex): readonly FieldDiffView[] {
-  if (before.proRatioBp === after.proRatioBp) {
-    return [];
-  }
-  return [
-    {
+  const fields: FieldDiffView[] = [];
+  if (before.proRatioBp !== after.proRatioBp) {
+    fields.push({
       field: "proRatioBp",
       before: label(before.proRatioBp),
       after: label(after.proRatioBp),
-    },
-  ];
+    });
+  }
+  // La méthode à CÔTÉ du rapport, jamais fondue dedans : les deux retarifent le
+  // catalogue professionnel, et un seul champ de diff rendrait impossible de
+  // dire laquelle des deux décisions a produit l'écart qu'on est en train de
+  // relire.
+  if (before.proPriceMethod !== after.proPriceMethod) {
+    fields.push({
+      field: "proPriceMethod",
+      before: before.proPriceMethod ?? "—",
+      after: after.proPriceMethod ?? "—",
+    });
+  }
+  return fields;
 }
 
 /** Un article modifié, champ par champ. */

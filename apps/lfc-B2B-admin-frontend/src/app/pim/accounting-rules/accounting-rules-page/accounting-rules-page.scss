@@ -95,3 +95,61 @@ h2 {
   gap: var(--fold-space-md);
   align-items: flex-end;
 }
+
+/* Le SÉLECTEUR de méthode. Deux cartes radio plutôt qu'une liste déroulante :
+   chaque méthode porte une explication et un avertissement qu'un `<option>` ne
+   peut pas contenir — et choisir ici retarife le catalogue, ce qui mérite d'être
+   lu avant d'être cliqué. */
+.methods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+
+  legend {
+    padding-inline: var(--fold-space-xs);
+    font-weight: var(--fold-weight-medium);
+  }
+}
+
+.method {
+  display: flex;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  cursor: pointer;
+
+  &.is-chosen {
+    border-color: var(--fold-color-primary-border);
+    background: var(--fold-color-surface-raised);
+  }
+}
+
+.method-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.method-say {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* L'écart et la remise réelle empilés dans la même cellule : le premier dit
+   combien, la seconde ce qu'on a promis sans le savoir. Séparés en deux
+   colonnes, on lirait le nombre sans jamais lire sa conséquence. */
+.gap {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.gap-real {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+}

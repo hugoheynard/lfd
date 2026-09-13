@@ -19,6 +19,28 @@ export class InvalidProPriceRatioError extends DomainError {
 }
 
 /**
+ * La méthode et son taux figé ne vont pas ensemble.
+ *
+ * Deux formes du même défaut, et c'est pour ça qu'elles partagent une erreur :
+ * une méthode de plaquette **sans** taux prétend dépouiller une TVA sans savoir
+ * laquelle, et un ratio TTC **avec** un taux fait croire qu'un nombre compte
+ * alors que rien ne le lit. Les deux laisseraient un réglage à moitié décidé
+ * derrière un écran qui affiche une décision entière.
+ */
+export class InvalidProPriceMethodError extends DomainError {
+  constructor(
+    readonly method: string,
+    readonly fixedVatPercent: number | null,
+  ) {
+    super(
+      "commerce.pro_price_method.invalid",
+      `Méthode « ${method} » et taux figé (${fixedVatPercent === null ? "aucun" : String(fixedVatPercent)}) ` +
+        `incompatibles : « remise_apres_tva_max » exige son taux, « ratio_ttc » n'en accepte aucun.`,
+    );
+  }
+}
+
+/**
  * Les règles comptables n'ont jamais été réglées.
  *
  * Une `BusinessError` et non une `DomainError` : ce n'est pas une donnée

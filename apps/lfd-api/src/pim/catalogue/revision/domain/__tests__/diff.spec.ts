@@ -7,8 +7,12 @@ import type { JsonObject } from "../fingerprint.js";
  * articles dont trois ont bougé, on en lira trois — c'est toute la raison d'être
  * du magasin adressé par contenu.
  */
-function index(entries: Record<string, string>, proRatioBp: number | null = 9_000): RevisionIndex {
-  return { hashBySku: new Map(Object.entries(entries)), proRatioBp };
+function index(
+  entries: Record<string, string>,
+  proRatioBp: number | null = 9_000,
+  proPriceMethod: string | null = "ratio_ttc",
+): RevisionIndex {
+  return { hashBySku: new Map(Object.entries(entries)), proRatioBp, proPriceMethod };
 }
 
 describe("planDiff", () => {
@@ -117,5 +121,52 @@ describe("diffItem", () => {
 
     expect(appeared.fields).toEqual([{ field: "weightGrams", before: "—", after: "80" }]);
     expect(gone.fields).toEqual([{ field: "weightGrams", before: "80", after: "—" }]);
+  });
+});
+
+/**
+ * **La méthode se diffe comme le rapport**, et à côté de lui : les deux
+ * retarifent le catalogue professionnel sans qu'aucune ligne de produit ne
+ * change, et un seul champ rendrait impossible de dire laquelle a produit
+ * l'écart qu'on relit.
+ */
+describe("headerDiff sur la méthode de prix", () => {
+  it("signale la bascule de méthode", () => {
+    const fields = headerDiff(
+      index({}, 9_000, "ratio_ttc"),
+      index({}, 9_000, "remise_apres_tva_max"),
+    );
+
+    expect(fields).toEqual([
+      { field: "proPriceMethod", before: "ratio_ttc", after: "remise_apres_tva_max" },
+    ]);
+  });
+
+  it("rend les DEUX champs quand les deux bougent le même jour", () => {
+    const fields = headerDiff(
+      index({}, 9_000, "ratio_ttc"),
+      index({}, 8_800, "remise_apres_tva_max"),
+    );
+
+    expect(fields.map((field) => field.field)).toEqual(["proRatioBp", "proPriceMethod"]);
+  });
+
+  /**
+   * Une révision posée avant l'existence de la méthode porte `null` — « la
+   * question ne se posait pas ». Le tiret le dit sans affirmer qu'elle a
+   * constaté `ratio_ttc`.
+   */
+  it("dit l'absence par un tiret, jamais par une méthode inventée", () => {
+    const fields = headerDiff(index({}, 9_000, null), index({}, 9_000, "ratio_ttc"));
+
+    expect(fields[0]).toEqual({
+      field: "proPriceMethod",
+      before: "—",
+      after: "ratio_ttc",
+    });
+  });
+
+  it("ne dit rien quand la méthode n'a pas bougé", () => {
+    expect(headerDiff(index({}), index({}))).toEqual([]);
   });
 });

@@ -64,9 +64,20 @@ export {
   proPriceRatioPayloadSchema,
   MAX_RATIO_BP,
   proPriceFromPublic,
+  proPriceOf,
+  realDiscountBp,
+  proPriceMethodPayloadSchema,
+  PRO_PRICE_METHODS,
   proHtFromPublic,
 } from "./accounting-rules.js";
-export type { ProPriceRatioPayload, AccountingRulesView } from "./accounting-rules.js";
+export type {
+  ProPriceRatioPayload,
+  ProPriceMethodPayload,
+  ProPriceMethod,
+  ProPricePolicy,
+  ProPrice,
+  AccountingRulesView,
+} from "./accounting-rules.js";
 
 export { htFromTtc, htMillicentsOf } from "./tax.js";
 

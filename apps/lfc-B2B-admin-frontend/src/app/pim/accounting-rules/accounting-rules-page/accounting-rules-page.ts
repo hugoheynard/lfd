@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { htFromTtc, proPriceFromPublic } from '@lfd/pim-contracts';
+import { htFromTtc, proPriceOf, realDiscountBp, type ProPriceMethod } from '@lfd/pim-contracts';
 import { formatCents } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
@@ -22,7 +22,17 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { AccountingRulesStore } from '../accounting-rules.store';
-import { discountToRatioBp, formatDiscount, ratioBpToDiscount } from '../pro-discount';
+import {
+  DEFAULT_BROCHURE_VAT,
+  brochurePolicy,
+  discountToRatioBp,
+  formatDiscount,
+  formatDiscountBp,
+  formatMillicents,
+  formatSignedMillicents,
+  ratioBpToDiscount,
+  ratioTtcPolicy,
+} from '../pro-discount';
 
 /**
  * Le prix de DÉPART du simulateur : **10,00 € TTC**, en euros.
@@ -60,17 +70,33 @@ const SAMPLE_RATES = [5.5, 10, 20] as const;
  * identiques ferait chercher une différence qui n'existe pas.
  */
 const SAMPLE_COLUMNS: readonly FoldTableColumn[] = [
-  { key: 'rate', label: 'TVA', width: '6rem' },
-  { key: 'publicHt', label: 'Public HT', align: 'right', width: '8rem' },
-  { key: 'proHt', label: 'Pro HT', align: 'right', width: '8rem' },
+  { key: 'rate', label: 'TVA', width: '5rem' },
+  { key: 'publicHt', label: 'Public HT', align: 'right', width: '7rem' },
+  { key: 'ratioTtc', label: 'Ratio TTC', align: 'right', width: '8rem' },
+  { key: 'brochure', label: 'Plaquette', align: 'right', width: '8rem' },
+  { key: 'gap', label: 'Écart', align: 'right', width: '8rem' },
 ];
 
-/** Une ligne du simulateur : un taux, et ce qu'il déduit des deux prix TTC. */
+/**
+ * Une ligne du **comparateur** : un taux, et ce que chaque méthode en fait.
+ *
+ * Les deux méthodes côte à côte et leur écart sur la même ligne — c'est toute
+ * la raison d'être de ce tableau. Les montrer l'une après l'autre obligerait à
+ * soustraire de tête, et c'est précisément l'arithmétique que la réunion de
+ * communication n'a pas faite.
+ */
 export interface SampleRateRow {
   /** « 5,5 % », virgule française. */
   readonly label: string;
   readonly publicHt: string;
-  readonly proHt: string;
+  /** Le pro HT sous la méthode d'origine. */
+  readonly ratioTtc: string;
+  /** Le pro HT sous la méthode de la plaquette, `null` si elle n'est pas réglée. */
+  readonly brochure: string | null;
+  /** Ce que la plaquette coûte de plus (ou de moins) — signé. */
+  readonly gap: string | null;
+  /** La remise RÉELLE de la plaquette sur ce taux, « 20,9 % ». */
+  readonly realDiscount: string | null;
 }
 
 /**
@@ -138,6 +164,14 @@ export class AccountingRulesPage {
   protected readonly samplePublicEur = signal<number | null>(SAMPLE_START_EUR);
   protected readonly busy = signal(false);
 
+  /** La méthode **appliquée** — celle dont le push se sert. */
+  protected readonly savedMethod = computed(() => this.store.rules().method);
+  protected readonly savedFixedVat = computed(() => this.store.rules().fixedVatPercent);
+
+  /** La méthode qu'on s'apprête à choisir, et son taux figé. */
+  protected readonly draftMethod = signal<ProPriceMethod>('ratio_ttc');
+  protected readonly draftFixedVat = signal<number | null>(DEFAULT_BROCHURE_VAT);
+
   constructor() {
     // Le champ suit ce que le serveur affirme, y compris après enregistrement.
     // Rien réglé ⇒ champ vide : pré-remplir à 0 proposerait « aucune remise »
@@ -145,6 +179,14 @@ export class AccountingRulesPage {
     effect(() => {
       const saved = this.savedRatioBp();
       this.draftDiscount.set(saved === null ? null : ratioBpToDiscount(saved));
+    });
+    // Même règle pour la méthode : le champ suit ce que le serveur affirme. Le
+    // taux figé garde son défaut quand il n'y en a pas — c'est une proposition
+    // de saisie, pas un réglage, et il ne partira que si la plaquette est
+    // choisie.
+    effect(() => {
+      this.draftMethod.set(this.savedMethod());
+      this.draftFixedVat.set(this.savedFixedVat() ?? DEFAULT_BROCHURE_VAT);
     });
   }
 
@@ -192,9 +234,23 @@ export class AccountingRulesPage {
   protected readonly sampleProCents = computed(() => {
     const ratioBp = this.draftRatioBp();
     const publicCents = this.samplePublicCents();
-    return ratioBp === null || publicCents === null
-      ? null
-      : proPriceFromPublic(publicCents, ratioBp);
+    if (ratioBp === null || publicCents === null) {
+      return null;
+    }
+    // Le TTC pro de la méthode CHOISIE — c'est ce que l'écran doit annoncer, et
+    // c'est ce que le fil pousse. La phrase au-dessus du tableau lit ce nombre.
+    //
+    // Le taux de référence de l'exemple est le plus BAS des trois, parce que
+    // c'est là que les deux méthodes s'écartent le plus : montrer l'écart sur
+    // 20 %, où elles coïncident, laisserait croire qu'il n'y en a pas.
+    return proPriceOf(publicCents, this.appliedPolicy(ratioBp), SAMPLE_RATES[0])?.ttcCents ?? null;
+  });
+
+  /** Le réglage tel qu'il partirait, saisie comprise. */
+  private readonly appliedPolicy = (ratioBp: number) => ({
+    method: this.draftMethod(),
+    ratioBp,
+    fixedVatPercent: this.draftMethod() === 'remise_apres_tva_max' ? this.draftFixedVat() : null,
   });
 
   protected readonly samplePro = computed(() => {
@@ -225,17 +281,66 @@ export class AccountingRulesPage {
    * vérifié par mutation le 2026-09-09.
    */
   protected readonly sampleRates = computed<readonly SampleRateRow[] | null>(() => {
-    const proTtc = this.sampleProCents();
+    const ratioBp = this.draftRatioBp();
     const publicTtc = this.samplePublicCents();
-    if (proTtc === null || publicTtc === null) {
+    if (ratioBp === null || publicTtc === null) {
       return null;
     }
-    return SAMPLE_RATES.map((rate) => ({
-      label: `${String(rate).replace('.', ',')} %`,
-      publicHt: formatCents(htFromTtc(publicTtc, rate)),
-      proHt: formatCents(htFromTtc(proTtc, rate)),
-    }));
+    const fixedVat = this.draftFixedVat();
+    return SAMPLE_RATES.map((rate) => {
+      const ratio = proPriceOf(publicTtc, ratioTtcPolicy(ratioBp), rate);
+      const brochure =
+        fixedVat === null ? null : proPriceOf(publicTtc, brochurePolicy(ratioBp, fixedVat), rate);
+      const gapMillicents =
+        brochure === null || ratio === null ? null : brochure.htMillicents - ratio.htMillicents;
+      return {
+        label: `${String(rate).replace('.', ',')} %`,
+        publicHt: formatCents(htFromTtc(publicTtc, rate)),
+        ratioTtc: ratio === null ? '—' : formatMillicents(ratio.htMillicents),
+        brochure: brochure === null ? null : formatMillicents(brochure.htMillicents),
+        gap: gapMillicents === null ? null : formatSignedMillicents(gapMillicents),
+        realDiscount:
+          brochure === null ? null : formatDiscountBp(realDiscountBp(publicTtc, brochure.ttcCents)),
+      };
+    });
   });
+
+  /** La méthode de la plaquette est-elle **choisie** ? Le formulaire s'y adapte. */
+  protected readonly draftIsBrochure = computed(
+    () => this.draftMethod() === 'remise_apres_tva_max',
+  );
+
+  /**
+   * Rien à enregistrer si la méthode saisie est identique à celle appliquée, ou
+   * si la plaquette est choisie sans son taux — une méthode qui prétend retirer
+   * une TVA sans savoir laquelle ne doit pas partir.
+   */
+  protected readonly canChooseMethod = computed(() => {
+    const method = this.draftMethod();
+    const fixedVat = method === 'remise_apres_tva_max' ? this.draftFixedVat() : null;
+    if (method === 'remise_apres_tva_max' && (fixedVat === null || fixedVat < 0)) {
+      return false;
+    }
+    return !this.busy() && (method !== this.savedMethod() || fixedVat !== this.savedFixedVat());
+  });
+
+  protected chooseMethod(method: ProPriceMethod): void {
+    this.draftMethod.set(method);
+  }
+
+  protected async submitMethod(): Promise<void> {
+    const method = this.draftMethod();
+    const fixedVat = method === 'remise_apres_tva_max' ? this.draftFixedVat() : null;
+    this.busy.set(true);
+    try {
+      await this.store.chooseProPriceMethod(method, fixedVat);
+      this.notify.success('Méthode de calcul appliquée.');
+    } catch (caught) {
+      this.notify.refused(caught, 'Changement de méthode refusé.');
+    } finally {
+      this.busy.set(false);
+    }
+  }
 
   /** Rien à enregistrer si la saisie est invalide, ou identique à l'enregistré. */
   protected readonly canSubmit = computed(() => {

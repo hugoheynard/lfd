@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { ReadAccountingRulesHandler } from "./application/read-accounting-rules.js";
 import { SetProPriceRatioHandler } from "./application/set-pro-price-ratio.js";
+import { ChooseProPriceMethodHandler } from "./application/choose-pro-price-method.js";
 import { AccountingRulesRepository } from "./domain/ports/accounting-rules.repository.js";
 import { AccountingRulesController } from "./http/accounting-rules.controller.js";
 import { PrismaAccountingRulesRepository } from "./infrastructure/prisma-accounting-rules.repository.js";
@@ -26,6 +27,7 @@ import { PrismaAccountingRulesRepository } from "./infrastructure/prisma-account
     { provide: AccountingRulesRepository, useClass: PrismaAccountingRulesRepository },
     ReadAccountingRulesHandler,
     SetProPriceRatioHandler,
+    ChooseProPriceMethodHandler,
   ],
   exports: [AccountingRulesRepository],
 })

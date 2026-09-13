@@ -110,7 +110,11 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       categories,
       vatByProduct,
       channelsByProduct,
-      rules.rules.proPriceRatio.basisPoints,
+      // La POLITIQUE entière — méthode, rapport et taux figé — et non le seul
+      // rapport. C'est l'agrégat qui sait que ces trois nombres vont ensemble ;
+      // les recomposer ici pourrait marier le rapport d'aujourd'hui à la méthode
+      // d'hier, et personne ne le verrait avant une facture.
+      rules.rules.policy,
       timeLimitRules.map(toSyncRule),
       // Le canal est monolingue français : l'aplatissement se fait à l'émission
       // plutôt que de transporter un objet localisé que personne ne lira.

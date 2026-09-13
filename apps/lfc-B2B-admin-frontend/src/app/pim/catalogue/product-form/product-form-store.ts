@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal, type Signal } from '@angular/core
 
 import {
   htFromTtc,
-  proPriceFromPublic,
+  proPriceOf,
   LOCALES,
   SOURCE_LOCALE,
   missingLocales,
@@ -11,6 +11,8 @@ import {
   type LocalizedText,
   type ProductReadinessView,
 } from '@lfd/pim-contracts';
+
+import { MILLICENTS_PER_CENT } from '@lfd/money';
 
 import { variantTabLabel } from './variant-label';
 
@@ -691,31 +693,62 @@ export class ProductFormStore {
    */
   private basePriceEurFor(contextKey: string): number | null {
     const priceEur = this.priceEur();
-    const ratioBp = this.accounting.rules().ratioBp;
-    if (contextKey !== PRO_CONTEXT_KEY || priceEur === null || ratioBp === null) {
+    if (contextKey !== PRO_CONTEXT_KEY || priceEur === null) {
       return priceEur;
     }
-    return proPriceFromPublic(Math.round(priceEur * 100), ratioBp) / 100;
+    // Le prix pro de la MÉTHODE appliquée — celle que le push suivra. Garder
+    // ici le calcul d'origine ferait afficher un prix pendant que le fil en
+    // pousse un autre, ce que le JSDoc de `proPriceOf` interdit précisément.
+    const proCents = this.proPriceCentsAt(priceEur, this.percentOf(PRO_CONTEXT_KEY));
+    // En EUROS, comme son nom le dit et comme le rendait la version d'origine.
+    // Sans taux, on rend le prix public : cette fonction sert d'assiette à un
+    // affichage, et `null` y ferait disparaître une ligne plutôt que de la dire.
+    return proCents === null ? priceEur : proCents / 100;
   }
 
   readonly proPricing = computed<ProPricing | null>(() => {
     const priceEur = this.priceEur();
-    const ratioBp = this.accounting.rules().ratioBp;
-    if (priceEur === null || ratioBp === null) {
+    const rules = this.accounting.rules();
+    const percent = this.percentOf(PRO_CONTEXT_KEY);
+    if (priceEur === null || rules.ratioBp === null) {
       return null;
     }
-    const proTtcCents = proPriceFromPublic(Math.round(priceEur * 100), ratioBp);
-    const percent = this.percentOf(PRO_CONTEXT_KEY);
+    const price = proPriceOf(
+      Math.round(priceEur * 100),
+      { method: rules.method, ratioBp: rules.ratioBp, fixedVatPercent: rules.fixedVatPercent },
+      percent ?? null,
+    );
+    if (price === null) {
+      // Sans taux, aucune des deux méthodes ne produit de prix — et le canal
+      // écarterait l'article pour la même raison. Montrer le TTC public ici
+      // laisserait croire à un prix pro.
+      return null;
+    }
     return {
-      ttc: euros(proTtcCents),
-      discountLabel: formatDiscount(ratioBp),
-      // Le hors taxe se déduit du prix pro ARRONDI, pas d'un rationnel gardé
-      // jusqu'au bout : les deux nombres s'affichent l'un sous l'autre, et le
-      // second re-taxé doit redonner le premier. Un client qui recompte
-      // trouverait le désaccord avant nous.
-      ht: percent === undefined ? null : euros(htFromTtc(proTtcCents, percent)),
+      ttc: euros(price.ttcCents),
+      discountLabel: formatDiscount(rules.ratioBp),
+      // Le hors taxe vient de `proPriceOf`, comme le TTC — les deux s'affichent
+      // l'un sous l'autre, et le second re-taxé doit redonner le premier. Le
+      // déduire ici avec `htFromTtc` marcherait sous `ratio_ttc` et mentirait
+      // d'un centime sous la plaquette, où c'est le HT qui est l'original.
+      ht: euros(Math.round(price.htMillicents / MILLICENTS_PER_CENT)),
     };
   });
+
+  /** Le TTC pro en centimes sous la méthode appliquée — `null` faute de taux. */
+  private proPriceCentsAt(priceEur: number, percent: number | undefined): number | null {
+    const rules = this.accounting.rules();
+    if (rules.ratioBp === null) {
+      return null;
+    }
+    return (
+      proPriceOf(
+        Math.round(priceEur * 100),
+        { method: rules.method, ratioBp: rules.ratioBp, fixedVatPercent: rules.fixedVatPercent },
+        percent ?? null,
+      )?.ttcCents ?? null
+    );
+  }
 
   private readonly selectedCategory = computed<Category | undefined>(() =>
     this.categories().find((c) => c.id === this.categoryId()),
