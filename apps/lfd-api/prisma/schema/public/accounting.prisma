@@ -330,8 +330,8 @@ model PaymentMandate {
   // Laquelle de NOS entités a émis ce mandat. `null` pour une RUM reprise d'un
   // autre créancier, émise sous son ICS — pas pour d'anciens mandats Stripe :
   // il n'y en a aucun (table vide, aucune route de création).
-  creditorId String?       @map("creditor_id")
-  creditor   LegalEntity?  @relation(fields: [creditorId], references: [id])
+  creditorId String?      @map("creditor_id")
+  creditor   LegalEntity? @relation(fields: [creditorId], references: [id])
 
   // 🔴 TROIS index partiels ou d'expression vivent dans les migrations et sont
   // INVISIBLES ici — Prisma ne sait pas les exprimer. Les chercher dans ce
