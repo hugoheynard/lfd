@@ -44,8 +44,14 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/nouveau': 'b2b_companies:write',
   'commandes/:orderId': 'b2b_orders:read',
   'comptes-clients/:id/nouvelle-commande': 'b2b_orders:write',
-  // Cible du QR de colisage imprimé sur la fiche d'atelier. Même droit que la
-  // remise : les deux écrivent un fait sur une commande.
+  // Cible du QR de colisage imprimé sur la fiche d'atelier — c'est une VALEUR
+  // encodée dans du papier en circulation, pas un choix d'arborescence, d'où le
+  // premier niveau.
+  //
+  // `:write` et non le `:read` de ses voisines du fournil, et ce n'est pas une
+  // incohérence à lisser : le poste ÉCRIT — il coche des lignes, il compte des
+  // containers, il déclare une commande prête. En `:read`, on serait entré dans
+  // un écran dont chaque appel aurait répondu non.
   'colisage/:reference': 'b2b_orders:write',
   'retrait/:token': 'b2b_orders:write',
 
@@ -166,12 +172,14 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,
   'pim/produits': null,
-  // LA PRODUCTION est un ESPACE : la coquille porte le garde, ses deux vues en
-  // héritent. C'est la même donnée — le lot du jour et le mur qui arrive —, et
-  // lui poser deux fois le même droit serait une condition toujours vraie.
+  // LA PRODUCTION est un ESPACE : la coquille porte le garde, ses trois vues en
+  // héritent. C'est la même donnée — le lot du jour, le mur qui arrive, les bacs
+  // qu'on remplit —, et lui poser trois fois le même droit serait une condition
+  // toujours vraie.
   production: 'b2b_orders:read',
   'production/journee': null,
   'production/previsionnel': null,
+  'production/colisage': null,
   // La file du comptoir : la MÊME commande, vue au moment où on la remet. En
   // lecture — attester une remise passe par `retrait/:token`, qui exige
   // l'écriture.

@@ -124,15 +124,22 @@ export function productionRecap(
       );
       return {
         category,
-        label: labelOf(category, shelvesKnown),
+        label: shelfLabel(category, shelvesKnown),
         quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
         lines,
       };
     });
 }
 
-/** Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas. */
-function labelOf(category: CatalogCategory | null, shelvesKnown: boolean): string {
+/**
+ * Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas.
+ *
+ * Exporté parce que la **fiche d'atelier** groupe les mêmes SKU par les mêmes
+ * rayons, et doit dire la panne avec les mêmes mots. Deux écrans du même fournil
+ * qui nommeraient différemment une lecture ratée du catalogue en feraient deux
+ * incidents distincts (ouvert le 2026-09-13).
+ */
+export function shelfLabel(category: CatalogCategory | null, shelvesKnown: boolean): string {
   if (category !== null) {
     return CATALOG_CATEGORY_LABELS[category];
   }

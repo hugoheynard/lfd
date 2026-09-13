@@ -1,0 +1,592 @@
+/* ── 🔴 PLEINE HAUTEUR : LE POSTE SORT DU FLUX ──────────────────────────────
+   Le poste n'est pas un document : on coche dedans, et ses TROIS colonnes
+   défilent chacune pour elle-même sous une bande qui ne bouge pas. Le pied, qui
+   porte « hors ligne » et « N gestes en attente », reste au bas de la fenêtre —
+   cacher ce qui n'est pas parti est ce que ce lot existe pour empêcher.
+
+   ⚠️ **Un `flex: 1 1 auto` ne suffit PAS, et ce commentaire a affirmé le
+   contraire jusqu'au 2026-09-13.** La chaîne de hauteurs ne se ferme pas :
+   `.content-flow` de la coquille fold est en `flex: 1 0 auto` — **shrink
+   zéro** —, donc elle GRANDIT avec son contenu au lieu de le contraindre. Une
+   colonne de 46 lignes faisait pousser la page entière, le pied quittait le bas
+   de la fenêtre, et aucune des trois boîtes n'avait de hauteur à défiler. C'est
+   exactement le piège déjà payé sur le prévisionnel.
+
+   Le remède est le sien, et il ne devine rien : `main.content` de la coquille
+   est `position: relative; overflow: hidden` et fait exactement la boîte de
+   contenu. Un `inset: 0` s'y résout sans arithmétique, sans token de chrome — et
+   ferme la chaîne d'un coup, parce qu'une boîte absolument positionnée tient sa
+   hauteur de son conteneur, pas de son contenu.
+
+   **Mesuré dans Chromium le 2026-09-13**, sur 46 commandes et 40 lignes, la
+   coquille fold prise verbatim — pas déduit du CSS :
+
+   | | avec `inset: 0` | avec `flex: 1 0 auto` |
+   | --- | --- | --- |
+   | pied (fenêtre de 900) | `bottom: 900` | `bottom: 3624`, hors écran |
+   | colonne des commandes | 496 / 3220, défile | 3220 / 3220, **ne défile pas** |
+   | colonne des lignes | 468 / 3160, défile | 3192 / 3192, **ne défile pas** |
+   | colonne de marchandise | 516 / 1050, défile | 3240 / 3240, **ne défile pas** |
+
+   ⚠️ Et le second cas ne se rattrape pas en faisant défiler la page : `.content`
+   est en `overflow: hidden`, donc tout ce qui dépasse est **coupé**, pas
+   repoussé. `document.body.scrollHeight` vaut la fenêtre dans les DEUX cas —
+   c'est pour ça que la panne ne ressemble pas à sa cause. */
+:host {
+  /* Aucun écart entre la bande et le corps : le corps PROLONGE la bande. */
+  --fold-page-gap: 0;
+  --fold-page-pad-top: 0;
+  --fold-page-pad-bottom: 0;
+
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  /* ── LES MESURES DU FOURNIL ───────────────────────────────────────────────
+     Les mêmes que la fiche d'atelier, et pour la même raison : ce sont des
+     distances de LECTURE, pas des décisions de style. On coche debout, à un
+     mètre, les mains occupées — d'où des cibles de 44 px et des chiffres hors de
+     l'échelle typographique de fold, qui s'arrête à 24 px. */
+  --co-box: 44px;
+  --co-qty-col: 72px;
+  --co-initials-col: 56px;
+  --co-size-qty: 30px;
+  --co-size-name: 19px;
+}
+
+/* ── LA BANDE DE TÊTE ───────────────────────────────────────────────────────
+   Même partition que la fiche : le verdict sur le chrome, le travail sur le
+   papier. Aucune couleur n'est écrite dans le sous-arbre — `foldSurface="chrome"`
+   repointe la polarité, et c'est à l'élément qui possède la surface de poser le
+   fond. */
+.co-masthead {
+  padding-block: var(--fold-space-2xl) var(--fold-space-lg);
+  padding-inline: var(--fold-page-gutter);
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+.co-masthead-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.co-said {
+  min-width: 0;
+}
+
+/* Les trois capitales mono de l'écran — le sur-titre, l'étiquette d'un chiffre
+   et l'en-tête de la ressource — sont la MÊME chose et se déclarent une fois.
+   Trois blocs identiques auraient divergé au premier réglage. */
+.co-eyebrow,
+.co-figure-label,
+.co-resource-head {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.co-eyebrow {
+  margin: 0;
+}
+
+/* La distance au jour courant. Discrète, mais lisible du même coup d'œil que la
+   date — sans elle, le poste ne dit pas quel jour il colise. */
+.co-offset {
+  margin-left: var(--fold-space-xs);
+  color: var(--fold-color-text-faded);
+  font-weight: var(--fold-weight-regular);
+}
+
+/* Le CLIENT du bac ouvert : c'est ce qu'on cherche en levant les yeux, et le
+   rail nomme déjà l'écran. */
+.co-title {
+  margin: var(--fold-space-xs) 0 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+.co-figures {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: var(--fold-space-4xl);
+}
+
+.co-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  text-align: right;
+}
+
+.co-figure-value {
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
+  letter-spacing: var(--fold-tracking-tighter);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.co-figure-value--accent {
+  color: var(--fold-color-primary);
+}
+
+/* Le dénominateur ne se lit pas aussi fort que le numérateur. */
+.co-figure-of {
+  font-size: var(--fold-text-lg);
+  color: var(--fold-color-text-muted);
+}
+
+.co-note {
+  margin-top: var(--fold-space-md);
+}
+
+/* Le champ prend toute la bande : c'est une grande cible, et on le vise les
+   mains prises. Il ne défile pas — il appartient à la tête, pas aux colonnes. */
+.co-search {
+  margin-top: var(--fold-space-md);
+}
+
+/* ── 🔴 LE TROISIÈME SIGNAL : UN TRAIT, ET UN FOND PÂLE ─────────────────────
+   L'attente de la prod teinte un FOND en avertissement, le manque écrit un
+   CHIFFRE en alerte. Le surlignage n'est ni l'un ni l'autre : c'est une
+   SÉLECTION, pas un état. Il se dit donc par un TRAIT autour de l'élément et un
+   fond pâle, avec le vocabulaire de fold : `info-border`, `info-surface`.
+
+   ⚠️ **Une surélévation avait été essayée et REJETÉE** (à l'écran, le
+   2026-09-13) : l'ombre faisait sortir la ligne du plan d'une liste dense, et le
+   trait se lisait mieux. Ne pas la remettre « pour donner du relief ».
+
+   ⚠️ **`--fold-color-info` n'est pas bleu partout** : violet dans trois thèmes
+   sur quatre, azur dans le quatrième (lu dans `tokens/semantic.css` de fold
+   0.27.2 le 2026-09-13). C'est le token qu'il faut quand même — il est décliné
+   par thème, là où un `#e8f1ff` en dur serait juste en clair et illisible en
+   sombre. `info-surface` est un `color-mix` à 12 % sur du transparent : il
+   TEINTE la surface au lieu de la remplacer, et `--fold-color-text` reste donc
+   juste dans les deux thèmes.
+
+   🔴 **SEUL ce qui est trouvé se marque.** Le reste de la colonne ne bouge pas :
+   un cadre sur chaque ligne aplatirait la hiérarchie au lieu de la créer.
+
+   🔴 **`outline`, jamais un `border` ajouté.** Un contour ne prend aucune place
+   dans la boîte : les voisins ne se décalent pas et la hauteur des lignes ne
+   bouge pas pendant la frappe. Une bordure qui apparaît ferait tressauter la
+   liste à chaque lettre, juste au moment où on la lit. `outline-offset`
+   NÉGATIF, en plus : la liste des commandes défile (`overflow-y: auto`, donc
+   `overflow-x` calculé), et un contour posé à l'extérieur y serait rogné. */
+/* ⚠️ `.co-line` désigne l'HÔTE de `app-packing-line`, pas un élément d'ici : la
+   classe est posée par le `host` de l'enfant, et l'attribut d'encapsulation du
+   parent est appliqué à l'élément-hôte d'un composant fils — c'est ce qui rend
+   la règle atteignable sans percer l'encapsulation (vérifié dans le CSS compilé
+   le 2026-09-13, et c'est déjà le mécanisme de `.fa-lines app-worksheet-line`
+   sur la fiche d'atelier). */
+.co-bac.is-hit,
+.co-line.is-hit,
+.co-res.is-hit {
+  border-radius: var(--fold-radius-md);
+  outline: 2px solid var(--fold-color-info-border);
+  outline-offset: -2px;
+}
+
+/*
+  🔴 **L'ARBITRAGE DES DEUX FONDS.** `info-surface` est TRANSLUCIDE : posé sur
+  l'ambre de l'attente ou le rouge du manque, il ne les recouvre pas, il s'y
+  mêle — et deux teintes mêlées ne disent plus ni l'une ni l'autre.
+
+  La règle est donc : **l'ÉTAT garde sa couleur**, et la recherche se contente
+  du trait, qui n'est pas une teinte et se superpose à n'importe quel fond. Le
+  trait dit « c'est ce que tu cherches », la couleur dit « voilà son état », et
+  l'article à la fois cherché, pas encore sorti du four et déjà survendu reste
+  lisible sur les trois plans.
+*/
+.co-bac.is-hit,
+.co-line.is-hit:not(.is-awaiting),
+.co-res.is-hit:not(.is-awaiting):not(.is-short) {
+  background: var(--fold-color-info-surface);
+}
+
+/*
+  🔴 **LE FOCUS CLAVIER PASSE DEVANT LE SURLIGNAGE.** Les deux se disent par le
+  même `outline`, et sans cette règle une commande trouvée aurait mangé son
+  propre anneau de focus : la navigation au clavier aurait perdu son repère
+  exactement là où la recherche en désigne le plus.
+
+  Le focus est donc déclaré pour TOUTES les commandes — trouvées ou non — en
+  primaire, plus épais : une commande trouvée ET focalisée porte un anneau
+  primaire de 3 px, une commande seulement trouvée un trait `info` de 2 px, et
+  les deux restent distinguables. Le fond pâle et la pastille du « combien »
+  continuent pendant ce temps de dire qu'elle est trouvée.
+*/
+.co-bac:focus-visible {
+  outline: 3px solid var(--fold-color-primary);
+  outline-offset: -3px;
+}
+
+.co-res.is-hit .co-res-name,
+.co-res.is-hit .co-res-rest {
+  font-weight: var(--fold-weight-bold);
+}
+
+/* Ce que la commande en attend — le chiffre qui fait choisir entre deux
+   commandes quand la marchandise est courte. */
+.co-hit-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--fold-space-sm);
+  padding: 0 var(--fold-space-sm);
+  border: 1px solid var(--fold-color-primary);
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-primary);
+  white-space: nowrap;
+}
+
+/* 🔴 EN RETRAIT, PAS RETIRÉ. Le reste à répartir porte sur la journée entière :
+   une commande cachée ferait lire un reste qui ne correspond à rien de ce qui
+   est affiché. Elle reste donc lisible, simplement à plat et moins appuyée. */
+.co-plates.is-searching .co-bac:not(.is-hit),
+.co-plates.is-searching .co-line:not(.is-hit),
+.co-plates.is-searching .co-res:not(.is-hit) {
+  opacity: 0.55;
+}
+
+/* ── LE CORPS ───────────────────────────────────────────────────────────────
+   Sœur du layout, pas son enfant (voir le commentaire du gabarit). */
+fold-page-layout {
+  flex: 0 0 auto;
+}
+
+.co-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--fold-color-surface-card);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+/* 🔴 LES DEUX PLATEAUX EN MÊME TEMPS : le bac ouvert au centre, la ressource à
+   droite. Celui qui colise doit savoir s'il reste des croissants AVANT d'en
+   mettre douze dans un bac. Un onglet entre les deux tuerait la balance, qui
+   est tout l'objet de cet écran.
+
+   Sous 1100 px les colonnes passent en pile — la largeur où celle des noms de
+   produits cesse de tenir sans césure. */
+.co-plates {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr) minmax(240px, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media (max-width: 1099px) {
+  .co-plates {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
+
+.co-bacs,
+.co-open,
+.co-resource {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.co-bacs {
+  border-right: 1px solid var(--fold-color-border);
+}
+
+/* 🔴 Le sélecteur ne part PAS avec le défilement : `flex: none` entre la bande
+   et la boîte qui défile. Dès la quinzième commande, une pile qu'on ne peut plus
+   quitter sans remonter serait un piège. */
+.co-stack {
+  flex: none;
+  padding: var(--fold-space-sm) var(--fold-space-xl);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.co-stack-none {
+  margin: 0;
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.co-resource {
+  border-left: 1px solid var(--fold-color-border);
+}
+
+/* La bande de section : ce qu'on regarde, et où ça en est. */
+.co-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  margin: 0;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  background: var(--fold-color-surface-band);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.co-band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.co-band-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.co-band-sum {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+/* ── LES COMMANDES ───────────────────────────────────────────────────────────────*/
+/* 🔴 **LES TROIS BOÎTES DE DÉFILEMENT**, une par colonne, indépendantes.
+   `flex: 1 1 auto` + `min-height: 0` : elles prennent la hauteur qui RESTE sous
+   leur bande, et défilent au lieu de pousser leur colonne — ce qui ferait
+   grandir la grille, donc la page, donc chasserait le pied. Le `min-height: 0`
+   n'est pas décoratif : sans lui, une boîte flex refuse de descendre sous la
+   hauteur de son contenu, et `overflow-y` ne s'active jamais. */
+.co-bacs-list,
+.co-lines,
+.co-resource-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.co-bac {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 2px;
+  width: 100%;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  border: 0;
+  border-bottom: 1px solid var(--fold-color-border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Le bac OUVERT : un filet à gauche plutôt qu'un fond, pour que la liste reste
+   lisible quand la moitié des bacs est fermée. */
+.co-bac.is-open {
+  background: var(--fold-color-surface-band);
+  box-shadow: inset 3px 0 0 var(--fold-color-primary);
+}
+
+/* Un bac FERMÉ se distingue sans disparaître : on le rouvre pour lire ce qu'il
+   contient, jamais pour le décocher. */
+.co-bac.is-closed .co-bac-who {
+  color: var(--fold-color-text-muted);
+}
+
+.co-bac-who {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+/* Le mode et la destination : sur quelle pile le bac va. */
+.co-bac-where {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.co-bac-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-secondary);
+}
+
+/* Le volume de la commande — en produits, et il reste lisible une fois fermée. */
+.co-bac-of {
+  color: var(--fold-color-text-muted);
+}
+
+.co-bac-closed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-success-text);
+}
+
+/* Le geste irréversible, épinglé sous la liste — hors de la zone qui défile,
+   donc toujours atteignable, et jamais atteint par accident en faisant défiler. */
+.co-close {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  border-top: 1px solid var(--fold-color-border);
+  background: var(--fold-color-surface-band);
+}
+
+.co-closed-said {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* ── LA RESSOURCE ───────────────────────────────────────────────────────────*/
+.co-resource-head,
+.co-res {
+  display: grid;
+  /* Deux colonnes : le produit, et ce qu'il en reste. Les opérandes sont
+     parties — voir le gabarit. */
+  grid-template-columns: minmax(0, 1fr) 6ch;
+  gap: var(--fold-space-sm);
+  align-items: center;
+  padding: var(--fold-space-sm) var(--fold-space-xl);
+}
+
+.co-resource-head {
+  flex: none;
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.co-res-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text);
+}
+
+/*
+  🔴 **Deux états, deux places, et ils se cumulent.** L'attente teinte le FOND
+  de la rangée en avertissement et pose son badge à gauche ; le manque écrit le
+  RESTE en alerte à droite. Un article peut être les deux — pas encore sorti ET
+  déjà survendu —, et c'est précisément le cas où l'on ne peut pas se permettre
+  qu'un état masque l'autre. D'où deux canaux : la surface d'un côté, l'encre du
+  chiffre de l'autre.
+*/
+.co-res.is-awaiting {
+  background: var(--fold-color-warning-surface);
+}
+
+.co-res-num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.co-res-rest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-xs);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+/* 🔴 IL EN MANQUE : les commandes demandent plus que le four n'a sorti. Encre
+   ET icône sur le reste, plus la surface quand l'attente ne la prend pas déjà —
+   une couleur seule ne se voit pas dans un sous-sol ni sur un écran fatigué. */
+.co-res.is-short:not(.is-awaiting) {
+  background: var(--fold-color-alert-surface);
+}
+
+.co-res.is-short .co-res-rest {
+  color: var(--fold-color-alert-text);
+  font-weight: var(--fold-weight-bold);
+}
+
+/* Le nom ne vire à l'alerte que si l'attente ne l'a pas déjà teinté : sinon les
+   deux états se disputeraient la même ligne de texte, et le dernier déclaré
+   gagnerait — c'est-à-dire au hasard de l'ordre du fichier. */
+.co-res.is-short:not(.is-awaiting) .co-res-name {
+  color: var(--fold-color-alert-text);
+  font-weight: var(--fold-weight-bold);
+}
+
+.co-res-none {
+  margin: 0;
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* ── LE PIED ────────────────────────────────────────────────────────────────
+   Il ne défile jamais : la règle de l'écran à gauche, ce qui n'est pas parti à
+   droite. */
+.co-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-2xl);
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  background: var(--fold-color-bg-rail-secondary);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.co-foot-rule,
+.co-foot-origin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  letter-spacing: var(--fold-tracking-wide);
+  color: var(--fold-color-text-muted);
+}
+
+/*
+  🔴 « hors ligne » et « N gestes en attente » sont les seules mentions
+  accentuées du pied : jamais un écran qui a l'air d'avoir enregistré alors que
+  non.
+*/
+.co-foot-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-warning);
+  font-weight: var(--fold-weight-bold);
+}

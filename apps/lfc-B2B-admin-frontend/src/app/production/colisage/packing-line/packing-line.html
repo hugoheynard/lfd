@@ -1,0 +1,33 @@
+<!--
+  L'ordre du DOM est celui du geste : on coche, on lit la quantité, on lit le
+  produit. Le badge d'attente vit DANS le bloc du nom — c'est ce qui lui permet
+  de passer à droite sur un poste large et sous le nom sur un écran étroit sans
+  qu'une seule balise bouge.
+-->
+<fold-checkbox
+  class="co-box"
+  [checked]="line().packed"
+  [disabled]="frozen()"
+  [ariaLabel]="boxLabel()"
+  (checkedChange)="toggled.emit($event)"
+/>
+
+<span class="co-qty">{{ line().quantity }}</span>
+
+<span class="co-name">
+  {{ line().productName }}
+  @if (line().awaitingProduction) {
+    <app-awaiting-badge />
+  }
+</span>
+
+<!--
+  Qui a mis la ligne dedans. Deux lettres, ce que les fournils écrivent déjà au
+  crayon — et la seule trace qui serve quand une ligne manque à 7 h. Cochée sans
+  signature : le trait reste, il n'y a rien à lire.
+-->
+@if (line().initials; as who) {
+  <span class="co-initials">{{ who }}</span>
+} @else {
+  <span class="co-initials co-initials--blank" aria-hidden="true"></span>
+}

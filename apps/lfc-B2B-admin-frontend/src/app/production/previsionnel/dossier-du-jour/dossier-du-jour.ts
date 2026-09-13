@@ -16,10 +16,10 @@ import {
 } from 'fold-ng';
 import type { CatalogItemView, ProductionBatchView } from '@lfd/contracts';
 
-import { AdminCatalogService } from '../commandes/catalog.service';
-import { FicheProduction } from './fiche-production/fiche-production';
-import { productionRecap, totalPieces } from './production-recap';
-import { ProductionService } from './production.service';
+import { AdminCatalogService } from '../../../commandes/catalog.service';
+import { FicheProduction } from '../../fiche-production/fiche-production';
+import { productionRecap, totalPieces } from '../../production-recap';
+import { ProductionService } from '../../production.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -50,17 +50,30 @@ function defaultDate(): string {
 }
 
 /**
- * La **production d'une journée** : ce qu'il y a à fabriquer, et pour qui.
+ * **Le dossier du jour** : ce qu'il y a à fabriquer pour une journée, et pour
+ * qui — récapitulatif d'abord, puis un bon par commande.
  *
- * L'écran ouvre sur le **récapitulatif** — rayon, produit, quantité — parce que
- * c'est l'ordre du travail : on pétrit par produit, on répartit ensuite. Les
- * **bons de commande** sont l'autre onglet, une feuille par commande.
+ * ## Pourquoi il vit dans le prévisionnel (déménagé le 2026-09-13)
  *
- * **L'impression sort le dossier entier**, quel que soit l'onglet regardé : le
- * récapitulatif d'abord, puis tous les bons. Les onglets servent à lire à
- * l'écran ; le papier, lui, part au fournil en un seul paquet. C'est aussi
- * pourquoi les deux vues restent dans le DOM et sont seulement masquées : une
- * vue détruite ne s'imprimerait pas.
+ * C'est **le même geste du soir** : on arrête le plan d'une journée, et on tire
+ * son dossier dans la foulée. Il ouvrait auparavant la « Fournée du jour », aux
+ * côtés de la fiche d'atelier — mais celle-ci est un écran de MATIN, allumé
+ * toute la fournée, tandis que le dossier est un tirage, fait une fois, la
+ * veille au soir. Les deux ne se lisent jamais en même temps.
+ *
+ * 🔴 **Sa journée est la SIENNE**, et ne se déduit pas de la fenêtre de sept
+ * jours du prévisionnel. Deux états distincts, délibérément : la fenêtre est une
+ * plage qu'on fait glisser pour voir venir, le dossier est UN service qu'on
+ * tire. Les fusionner ferait imprimer le lundi parce qu'on regardait la semaine
+ * qui commence lundi. D'où son propre sélecteur, et son propre défaut — demain,
+ * le service suivant.
+ *
+ * ## L'impression sort le dossier ENTIER
+ *
+ * Quel que soit l'onglet regardé : le récapitulatif d'abord, puis tous les bons.
+ * Les onglets servent à lire à l'écran ; le papier, lui, part au fournil en un
+ * seul paquet. C'est aussi pourquoi les deux vues restent dans le DOM et sont
+ * seulement masquées : **une vue détruite ne s'imprimerait pas**.
  *
  * La production n'a pas d'écran de suivi, et le papier ne répond pas : si
  * l'imprimante manque de feuilles, une commande cesse d'exister pour le fournil
@@ -73,7 +86,7 @@ function defaultDate(): string {
  * qui manqueraient — il ne peut pas y en avoir.
  */
 @Component({
-  selector: 'app-production-page',
+  selector: 'app-dossier-du-jour',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FicheProduction,
@@ -83,10 +96,10 @@ function defaultDate(): string {
     FoldLoadingStateComponent,
     FoldViewToggleComponent,
   ],
-  templateUrl: './production-page.html',
-  styleUrl: './production-page.scss',
+  templateUrl: './dossier-du-jour.html',
+  styleUrl: './dossier-du-jour.scss',
 })
-export class ProductionPage {
+export class DossierDuJour {
   private readonly production = inject(ProductionService);
   private readonly catalog = inject(AdminCatalogService);
 

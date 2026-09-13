@@ -84,20 +84,35 @@ export const routes: Routes = [
     loadComponent: () => import('./ops/sante-page/sante-page').then((m) => m.SantePage),
   },
   {
-    // La cible d'un QR de COLISAGE, imprimé sur la fiche d'atelier. Même forme
-    // que `retrait/:token` en dessous, et pour la même raison : le segment est
-    // encodé dans un code-barres, donc chaque caractère de plus densifie les
-    // modules et fragilise le scan.
+    // 🔴 **Premier niveau, et ce n'est pas un choix d'arborescence.** Ce chemin
+    // est une VALEUR : `production-paper.service.ts` l'encode dans le QR de
+    // chaque feuille d'atelier, et ces feuilles sont imprimées, en circulation,
+    // sur des plans de travail. Le ranger sous `/production/colisage/:reference`
+    // ferait tomber en 404 tout le papier déjà sorti — on ne renomme pas une
+    // valeur, on la migre (CLAUDE.md §8), et ici la migration coûterait un
+    // réimprimage du fournil.
+    //
+    // Même forme que `retrait/:token` en dessous, et pour la même raison : le
+    // segment est encodé dans un code-barres, donc chaque caractère de plus
+    // densifie les modules et fragilise le scan.
     //
     // Ce qu'il porte n'est PAS un secret : le numéro de commande est imprimé en
     // clair sur la même feuille. C'est la porte staff qui protège, pas
     // l'ignorance du code — et ça suffit, parce que le colisage est un fait
     // interne, sans seconde partie à représenter.
+    //
+    // Même mur que ses voisines de production : `b2b_orders:read` ouvre déjà
+    // l'espace du fournil, et scanner une feuille n'est pas un droit de plus.
     path: 'colisage/:reference',
+    // 🔴 `:write`, et pas `:read` comme les vues voisines du fournil. Ce n'est
+    // pas une incohérence à lisser : le poste de colisage ÉCRIT — il coche des
+    // lignes et ferme des commandes, ce que le commerce apprend aussitôt. Une
+    // porte en lecture y laisserait entrer quelqu'un à qui l'écran offrirait
+    // des gestes que chaque appel refuserait ensuite (rétabli le 2026-09-13,
+    // c'était la garde d'origine de cette route).
     canActivate: [permissionGuard('b2b_orders:write')],
     title: 'Colisage — LFC B2B admin',
-    loadComponent: () =>
-      import('./colisage/colisage-page/colisage-page').then((m) => m.ColisagePage),
+    loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
   },
   {
     // La cible d'un QR de retrait. Route de premier niveau et courte : elle est
@@ -285,14 +300,23 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'journee' },
       {
         path: 'journee',
-        title: 'Production — LFC B2B admin',
-        loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
+        title: 'Fournée du jour — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
       },
       {
         path: 'previsionnel',
         title: 'Prévisionnel — LFC B2B admin',
         loadComponent: () =>
           import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
+      },
+      {
+        // Le même composant que `colisage/:reference` au premier niveau : c'est
+        // le poste, ouvert sur la liste des commandes plutôt que sur l'une d'elles. Deux
+        // portes, un seul écran — on y entre par le rail ou par un QR.
+        path: 'colisage',
+        title: 'Colisage — LFC B2B admin',
+        loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
       },
     ],
   },

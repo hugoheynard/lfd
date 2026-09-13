@@ -1,0 +1,34 @@
+<!--
+  L'ordre du DOM est celui du geste, et il ne change d'aucun support : on coche,
+  on lit la quantité, on lit le nom. Le contenant vit DANS le bloc du nom — c'est
+  ce qui lui permet de passer à droite sur un poste fixe et sous le nom sur un
+  téléphone sans qu'une seule balise bouge.
+-->
+<fold-checkbox
+  class="wl-box"
+  [checked]="line().done"
+  [ariaLabel]="boxLabel()"
+  (checkedChange)="toggled.emit($event)"
+/>
+
+<span class="wl-qty">{{ line().quantity }}</span>
+
+<span class="wl-what">
+  <span class="wl-name">{{ line().productName }}</span>
+  <!-- Le contenant remplace le prix : là où un bon de commande met un montant,
+       la fiche met un matériel. Rien de réglé, colonne vide — elle ne ment pas. -->
+  @if (line().containerLabel; as container) {
+    <span class="wl-container">{{ container }}</span>
+  }
+</span>
+
+<!--
+  Qui a fait. Deux lettres, ce que les fournils écrivent déjà au crayon — et la
+  seule trace qui serve quand une ligne manque à 7 h. Cochée sans signature : le
+  trait reste, il n'y a rien à lire.
+-->
+@if (line().initials; as initials) {
+  <span class="wl-initials">{{ initials }}</span>
+} @else {
+  <span class="wl-initials wl-initials--blank" aria-hidden="true"></span>
+}

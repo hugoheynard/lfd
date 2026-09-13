@@ -1,0 +1,39 @@
+<p class="pc-band">
+  <span class="pc-band-title">Containers</span>
+  <span class="pc-band-rule" aria-hidden="true"></span>
+  <span class="pc-band-sum">{{ count() }} container{{ count() > 1 ? 's' : '' }}</span>
+</p>
+
+<div class="pc-list">
+  @for (slot of slots(); track slot) {
+    <div class="co-container">
+      <span class="pc-rank">{{ slot }}</span>
+    </div>
+  } @empty {
+    <p class="pc-none">Aucun container déclaré.</p>
+  }
+
+  <!-- Deux cibles franches, et grandes : on les actionne les mains prises. Le
+       « − » retire le dernier ; il disparaît à zéro plutôt que de rester
+       inerte, parce qu'un contrôle mort se re-clique. -->
+  @if (editable()) {
+    @if (count() > 0) {
+      <button
+        type="button"
+        class="co-container-step"
+        aria-label="Retirer un container"
+        (click)="step.emit(-1)"
+      >
+        −
+      </button>
+    }
+    <button
+      type="button"
+      class="co-container-step co-container-step--add"
+      aria-label="Ajouter un container"
+      (click)="step.emit(1)"
+    >
+      +
+    </button>
+  }
+</div>

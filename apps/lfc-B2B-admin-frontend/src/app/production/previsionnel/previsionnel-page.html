@@ -14,27 +14,46 @@
   <fold-page-section bleed class="pv-masthead" foldSurface="chrome">
     <div class="pv-masthead-bar">
       <div class="pv-said">
-        <p class="pv-eyebrow">Semaine {{ windowLabel() }}</p>
-        @if (state() === 'ready') {
-          <h1 class="pv-title">
-            {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }} à produire sur
-            {{ headers().length }} jours.
-          </h1>
+        @if (view() === 'mur') {
+          <p class="pv-eyebrow">Semaine {{ windowLabel() }}</p>
+          @if (state() === 'ready') {
+            <h1 class="pv-title">
+              {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }} à produire sur
+              {{ headers().length }} jours.
+            </h1>
+          }
+        } @else {
+          <p class="pv-eyebrow">Le tirage du soir</p>
+          <h1 class="pv-title">Le dossier qui part au fournil.</h1>
         }
       </div>
 
       <div class="pv-nav">
-        @if (!atToday) {
-          <button foldButton emphasis="outline" size="sm" (click)="backToToday()">
-            Aujourd’hui
+        <!--
+          Les deux lectures du soir. La navigation de FENÊTRE ne s'affiche qu'avec
+          la matrice : le dossier a sa propre journée, et deux sélecteurs de temps
+          côte à côte feraient croire qu'ils se commandent.
+        -->
+        <fold-view-toggle
+          size="sm"
+          ariaLabel="Lecture du prévisionnel"
+          [options]="views"
+          [value]="view()"
+          (valueChange)="view.set($event)"
+        />
+        @if (view() === 'mur') {
+          @if (!atToday) {
+            <button foldButton emphasis="outline" size="sm" (click)="backToToday()">
+              Aujourd’hui
+            </button>
+          }
+          <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
+            Semaine précédente
+          </button>
+          <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
+            Semaine suivante
           </button>
         }
-        <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
-          Semaine précédente
-        </button>
-        <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
-          Semaine suivante
-        </button>
       </div>
     </div>
 
@@ -43,7 +62,73 @@
       à produire figé à la clôture — un fait ; une journée ouverte porte ce que
       le commerce a reçu à cette heure-ci, et qui bougera encore.
     -->
-    @if (state() === 'ready' && pieces() > 0) {
+    <!--
+      **Arrêter le plan.** Une bande, pas un bouton par colonne : le geste se
+      fait une fois par soir, sur la journée qu'on vient de finir de prendre —
+      et la nommer en toutes lettres vaut mieux que six boutons dont on
+      choisirait le mauvais.
+
+      Elle ne s'affiche que s'il y a quelque chose à arrêter dans la fenêtre
+      (`dayToArrest` écarte les journées déjà closes et les journées vides,
+      que la clôture refuserait).
+    -->
+    @if (view() === 'mur' && state() === 'ready') {
+      @if (dayToArrest(); as day) {
+        <div class="pv-arrest">
+          <p class="pv-arrest-said">
+            Le plan du <strong>{{ day.weekday }} {{ day.dayMonth }}</strong> n’est pas arrêté —
+            {{ day.orderCount }} commande{{ day.orderCount > 1 ? 's' : '' }},
+            {{ day.totalUnits }} pièce{{ day.totalUnits > 1 ? 's' : '' }}. Tant qu’il ne l’est pas,
+            la fournée du jour n’a pas d’heure de tirage.
+          </p>
+          @if (arrestingDay() === day.date) {
+            <fold-inline-confirm
+              [open]="true"
+              [loading]="arresting()"
+              keepOpenOnConfirm
+              intent="neutral"
+              [message]="
+                'Arrêter le plan du ' +
+                day.weekday +
+                ' ' +
+                day.dayMonth +
+                ' ? Son compte à produire sera figé — il ne se recalcule pas.'
+              "
+              (confirmed)="arrest(day.date)"
+              (cancelled)="arrestingDay.set(null)"
+            >
+              <span hidden></span>
+            </fold-inline-confirm>
+          } @else {
+            <!--
+            🔴 Le bouton NOMME sa journée, et ce n'est pas du confort : on le
+            presse en regardant une semaine entière, et il agit presque toujours
+            sur DEMAIN — pas sur la colonne qu'on a sous les yeux. « Arrêter le
+            plan » tout court laissait deviner laquelle, un soir, vite fait.
+          -->
+            <button foldButton size="sm" emphasis="outline" (click)="arrestingDay.set(day.date)">
+              Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }}
+            </button>
+          }
+        </div>
+      }
+    }
+
+    <!--
+      Ce que la clôture a inscrit, ou la panne. Un `fold-callout` : le contenu
+      reste à l'écran dans les deux cas, c'est un après-coup, pas un état.
+    -->
+    @if (arrestSaid(); as said) {
+      <fold-callout variant="info" class="pv-arrest-note">{{ said }}</fold-callout>
+    }
+    @if (arrestFailed()) {
+      <fold-callout variant="warning" class="pv-arrest-note">
+        Le plan n’a pas pu être arrêté — rien n’a été figé, et les commandes sont intactes.
+        Réessayez.
+      </fold-callout>
+    }
+
+    @if (view() === 'mur' && state() === 'ready' && pieces() > 0) {
       <p class="pv-legend">
         <span class="pv-key pv-key--closed"></span> journée arrêtée
         <span class="pv-key pv-key--open"></span> encore ouverte
@@ -73,42 +158,52 @@
   n'y porte ni `flex: 1` ni `min-height: 0`, et `scroll="own"` ne change que
   l'hôte.)
 -->
-@switch (state()) {
-  @case ('loading') {
-    <fold-loading message="Lecture du prévisionnel…" />
-  }
-  @case ('error') {
-    <fold-empty-state
-      tone="alert"
-      title="Prévisionnel illisible"
-      subtitle="La lecture a échoué — les commandes, elles, sont intactes."
-    >
-      <button foldButton (click)="load()">Réessayer</button>
-    </fold-empty-state>
-  }
-  @default {
-    @if (pieces() === 0) {
+@if (view() === 'mur') {
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture du prévisionnel…" />
+    }
+    @case ('error') {
       <fold-empty-state
-        icon="production"
-        title="Rien à produire sur cette période"
-        subtitle="Aucune commande n'est à retirer ni à livrer sur ces jours-là."
-      />
-    } @else {
-      <!--
-        🔴 Le catalogue n'a pas répondu. La grille reste juste — les pièces
-        et les jours viennent du fournil, pas de lui — mais ses rayons sont
-        perdus, et un groupe « Hors catalogue » dirait alors que tout est
-        retiré de la vente. Un échec partiel laisse le contenu à l'écran et
-        se DIT : c'est le seul cas où un callout est le bon état.
-      -->
-      @if (shelvesLost()) {
-        <fold-callout variant="warning" class="pv-lost">
-          Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
-          rangés. Réessayez pour les retrouver.
-        </fold-callout>
-      }
+        tone="alert"
+        title="Prévisionnel illisible"
+        subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (pieces() === 0) {
+        <fold-empty-state
+          icon="production"
+          title="Rien à produire sur cette période"
+          subtitle="Aucune commande n'est à retirer ni à livrer sur ces jours-là."
+        />
+      } @else {
+        <!--
+          🔴 Le catalogue n'a pas répondu. La grille reste juste — les pièces
+          et les jours viennent du fournil, pas de lui — mais ses rayons sont
+          perdus, et un groupe « Hors catalogue » dirait alors que tout est
+          retiré de la vente. Un échec partiel laisse le contenu à l'écran et
+          se DIT : c'est le seul cas où un callout est le bon état.
+        -->
+        @if (shelvesLost()) {
+          <fold-callout variant="warning" class="pv-lost">
+            Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
+            rangés. Réessayez pour les retrouver.
+          </fold-callout>
+        }
 
-      <app-forecast-table [headers]="headers()" [rayons]="rayons()" />
+        <app-forecast-table [headers]="headers()" [rayons]="rayons()" />
+      }
     }
   }
+} @else {
+  <!--
+    **Le dossier du jour.** Sœur du layout comme la matrice, et pour la même
+    raison de hauteur. Il porte sa PROPRE journée et son propre chargement : la
+    fenêtre de sept jours du prévisionnel ne le commande pas, et c'est
+    délibéré — on tire UN service, on ne tire pas une semaine.
+  -->
+  <app-dossier-du-jour />
 }

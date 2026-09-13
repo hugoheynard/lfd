@@ -1,7 +1,14 @@
+/* Le dossier vit HORS du `fold-page-layout` du prévisionnel, en sœur de la
+   bande de tête — même raison que la matrice, écrite en tête de
+   `previsionnel-page.html` : `.page-body` est en `flex: 0 1 auto` et ne
+   s'étire pas. Il porte donc lui-même sa gouttière, que le layout aurait posée
+   pour lui. */
 :host {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
+  padding-inline: var(--fold-page-gutter);
+  padding-block-end: var(--fold-space-3xl);
 }
 
 /* ── La barre de commande de l'écran ─────────────────────────────────────── */
@@ -169,8 +176,11 @@
     display: none;
   }
 
+  /* Au fournil, la gouttière d'écran n'est pas une marge d'impression : la
+     feuille a la sienne. */
   :host {
     gap: 0;
+    padding: 0;
   }
 
   .pr-stack {
