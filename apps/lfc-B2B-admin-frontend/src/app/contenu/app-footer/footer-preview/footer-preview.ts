@@ -5,9 +5,7 @@ import type {
   LegalIdentity,
   LegalMentionDisplay,
 } from '@lfd/contracts';
-import { legalMentionOrder } from '@lfd/contracts/content-values';
-
-import { legalMentionLabel } from '../../legal-mention-label';
+import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
 
 /**
  * L'**aperçu de disposition** du pied de page.
@@ -37,31 +35,24 @@ export class FooterPreview {
   readonly legalMentions = input.required<LegalMentionDisplay>();
 
   /**
-   * Le VRAI titre du document des CGV, quand il a pu être lu.
-   *
-   * `null` tant qu'il ne l'a pas été — et l'aperçu retombe alors sur le mot de
-   * secours. Un aperçu existe pour montrer ce que le client verra : y afficher
-   * « Conditions générales de vente » alors que le document a été renommé
-   * serait précisément le genre de mot faux que cet écran sert à débusquer.
-   */
-  readonly salesTermsTitle = input<string | null>(null);
-
-  /**
    * Les mentions COCHÉES, dans l'ordre du contrat.
    *
    * L'aperçu sert à voir ce que le bandeau portera : une mention décochée y
    * disparaît tout de suite, ce qu'aucune liste de cases ne montre. Le mot vient
    * du contrat — l'écran choisit ce qui s'affiche, jamais comment ça s'écrit.
+   *
+   * ⚠️ Les CGV ont porté ici le TITRE de leur document, lu à part. Elles n'y
+   * font plus exception : la barre nomme l'obligation pour les cinq, et le
+   * titre est ce que le dialogue affiche (tranché le 2026-09-13). L'exception
+   * obligeait sinon à charger les cinq documents pour nommer une barre que
+   * personne n'a encore ouverte.
    */
   protected readonly legalLinks = computed(() => {
     const shown = this.legalMentions();
     const locale = this.locale();
-    const titre = this.salesTermsTitle();
     return legalMentionOrder
       .filter((mention) => shown[mention])
-      .map((mention) =>
-        mention === 'salesTerms' && titre !== null ? titre : legalMentionLabel(locale, mention),
-      );
+      .map((mention) => legalMentionLabels[locale][mention]);
   });
 
   /**

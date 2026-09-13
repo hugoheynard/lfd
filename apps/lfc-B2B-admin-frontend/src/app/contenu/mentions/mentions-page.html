@@ -1,20 +1,33 @@
-<fold-page-layout icon="contracts" title="Conditions générales de vente">
+<fold-page-layout icon="contracts" [title]="heading()">
   <p description>
-    Le document que le client professionnel accepte en commandant sur la boutique. Il s’écrit en
-    <strong>trois langues</strong> et se corrige ici — sans développeur ni déploiement.
+    La mention légale que la boutique publie. Elle s’écrit en <strong>trois langues</strong> et se
+    corrige ici — sans développeur ni déploiement.
   </p>
 
   @switch (state()) {
+    @case ('unknown') {
+      <!-- LE SEGMENT D'URL NE DÉSIGNE AUCUNE MENTION du vocabulaire fermé. Rien
+           n'est demandé au serveur : une clé libre ouvrirait un bloc de contenu
+           que le pied de page ne peut pas cocher et que personne ne saurait
+           retrouver. -->
+      <fold-empty-state
+        tone="alert"
+        title="Mention inconnue"
+        subtitle="Cette adresse ne désigne aucune des cinq mentions légales. Choisissez-en une dans le menu Contenu."
+      >
+        <fold-icon empty-icon name="contracts" [size]="28" />
+      </fold-empty-state>
+    }
     @case ('loading') {
-      <fold-loading message="Lecture des conditions…" />
+      <fold-loading message="Lecture du document…" />
     }
     @case ('error') {
       <fold-empty-state
         tone="alert"
-        title="Conditions illisibles"
+        title="Document illisible"
         subtitle="La lecture a échoué — le document enregistré, lui, est intact."
       >
-        <button foldButton (click)="load()">Réessayer</button>
+        <button foldButton (click)="reload()">Réessayer</button>
       </fold-empty-state>
     }
     @default {
@@ -25,7 +38,7 @@
         <fold-callout variant="alert">
           L’enregistrement est passé, mais la relecture a échoué&nbsp;: ce qui s’affiche peut dater
           d’avant.
-          <button actions foldButton emphasis="outline" intent="neutral" (click)="load()">
+          <button actions foldButton emphasis="outline" intent="neutral" (click)="reload()">
             Relire le document
           </button>
         </fold-callout>
@@ -33,7 +46,7 @@
 
       @if (revision() === 0) {
         <fold-callout variant="info">
-          Personne n’a encore enregistré ces conditions&nbsp;: ce que vous lisez est le document de
+          Personne n’a encore enregistré cette mention&nbsp;: ce que vous lisez est le document de
           <strong>démonstration</strong>, servi par défaut. Il n’engage personne tant qu’il n’a pas
           été réécrit.
         </fold-callout>
@@ -43,7 +56,7 @@
         <fold-element-title
           variant="title"
           title="Titre du document"
-          subtitle="Il nomme les conditions, et sert de libellé au lien qui les ouvre dans la boutique."
+          subtitle="Il nomme le document, et c’est lui que la boutique affiche en tête du dialogue."
         >
           <fold-view-toggle
             titleAction

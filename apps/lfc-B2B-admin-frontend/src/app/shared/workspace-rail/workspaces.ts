@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, type Signal } from '@angular/core';
 import type { StaffPermission } from '@lfd/contracts';
+import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
 import type { FoldIconName } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -344,13 +345,18 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'grid',
     section: 'Contenu',
   },
-  {
-    key: 'cgv',
-    label: 'CGV',
-    link: '/b2b/contenu/cgv',
+  // LES CINQ MENTIONS LÉGALES, une entrée chacune et non une page d'index : on
+  // vient corriger une mention précise, et un index n'aurait ajouté qu'un clic
+  // entre le menu et le texte. Elles sont DÉRIVÉES du vocabulaire — leur ordre
+  // et leurs mots viennent du contrat, jamais d'une liste recopiée ici qui
+  // aurait divergé à la première mention ajoutée.
+  ...legalMentionOrder.map((mention): WorkspaceView => ({
+    key: `mention-${mention}`,
+    label: legalMentionLabels.fr[mention],
+    link: `/b2b/contenu/mentions/${mention}`,
     icon: 'contracts',
     section: 'Contenu',
-  },
+  })),
 ];
 
 /**

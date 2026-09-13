@@ -1,14 +1,27 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import type {
   ContentLocale,
-  SalesTerms,
-  SalesTermsHeading,
-  SalesTermsParagraph,
-  SalesTermsParagraphPayload,
-  SalesTermsProse,
+  LegalDocument,
+  LegalDocumentHeading,
+  LegalDocumentParagraph,
+  LegalDocumentParagraphPayload,
+  LegalDocumentProse,
+  LegalMention,
 } from '@lfd/contracts';
 // Les VALEURS par `content-values`, qui ne tire pas zod (cf. l'écran du pied de page).
-import { contentLocales, DEFAULT_SALES_TERMS } from '@lfd/contracts/content-values';
+import {
+  contentLocales,
+  legalMentionLabels,
+  legalMentionOrder,
+} from '@lfd/contracts/content-values';
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
@@ -45,18 +58,36 @@ const LOCALE_NAMES: Readonly<Record<ContentLocale, string>> = {
 };
 
 /** Un texte vide, pour ouvrir une saisie. */
-const EMPTY_PROSE: SalesTermsProse = { title: '', body: '' };
+const EMPTY_PROSE: LegalDocumentProse = { title: '', body: '' };
 
 /** Une charge utile vide — les trois langues, puisqu'elles n'existent qu'ensemble. */
-const EMPTY_PAYLOAD: SalesTermsParagraphPayload = {
+const EMPTY_PAYLOAD: LegalDocumentParagraphPayload = {
   fr: EMPTY_PROSE,
   en: EMPTY_PROSE,
   it: EMPTY_PROSE,
 };
 
-/** L'état de la LECTURE, pas celui des écritures : un enregistrement refusé ne
- *  fait pas disparaître le document de l'écran. */
-type LoadState = 'loading' | 'ready' | 'error';
+/**
+ * Le document d'avant la lecture — et il n'atteint JAMAIS l'écran : tant que
+ * rien n'est lu, l'état est `loading` et le gabarit ne rend que fold.
+ *
+ * Il est vide plutôt que `DEFAULT_LEGAL_DOCUMENT(…)` d'une mention choisie au
+ * hasard : un titre de repli emprunté à une autre mention aurait clignoté sous
+ * le titre de la bonne au moindre décalage de rendu.
+ */
+const BLANK_DOCUMENT: LegalDocument = {
+  title: { fr: '', en: '', it: '' },
+  paragraphs: [],
+};
+
+/**
+ * L'état de la LECTURE, pas celui des écritures : un enregistrement refusé ne
+ * fait pas disparaître le document de l'écran.
+ *
+ * `unknown` est à part, et avant toute lecture : le segment d'URL ne désigne
+ * aucune mention du vocabulaire, donc il n'y a rien à demander au serveur.
+ */
+type LoadState = 'unknown' | 'loading' | 'ready' | 'error';
 
 /** Garde de type : évite un `as` là où une vérification suffit. */
 function isLocale(value: string): value is ContentLocale {
@@ -64,8 +95,24 @@ function isLocale(value: string): value is ContentLocale {
 }
 
 /**
- * **Conditions générales de vente** — le document que la boutique B2B fait
- * accepter, administré ici.
+ * Le segment d'URL désigne-t-il une mention du vocabulaire fermé ?
+ *
+ * 🔴 C'est ce qui empêche d'appeler le serveur avec une mention inventée : une
+ * clé libre ouvrirait un bloc de contenu que le pied de page ne peut pas
+ * cocher et que personne ne saurait retrouver.
+ */
+function isMention(value: string): value is LegalMention {
+  return (legalMentionOrder as readonly string[]).includes(value);
+}
+
+/**
+ * **Une mention légale** — le document que la boutique B2B publie, administré
+ * ici.
+ *
+ * Un SEUL écran pour les cinq mentions : elles ont exactement la même forme —
+ * un titre, puis des articles titrés, dans les trois langues — et ce qui les
+ * distingue est leur CLÉ, lue dans le segment de route. Cinq copies auraient
+ * divergé au premier correctif.
  *
  * Deux natures de saisie se partagent l'écran, et elles n'ont pas le même
  * rapport aux langues :
@@ -84,7 +131,7 @@ function isLocale(value: string): value is ContentLocale {
  * enregistré entre-temps — le document est un JSON unique, le dernier gagne.
  */
 @Component({
-  selector: 'app-cgv-page',
+  selector: 'app-mentions-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
@@ -102,12 +149,34 @@ function isLocale(value: string): value is ContentLocale {
     FoldTextareaComponent,
     FoldViewToggleComponent,
   ],
-  templateUrl: './cgv-page.html',
-  styleUrl: './cgv-page.scss',
+  templateUrl: './mentions-page.html',
+  styleUrl: './mentions-page.scss',
 })
-export class CgvPage {
+export class MentionsPage {
   private readonly api = inject(PlatformContentService);
   private readonly notify = inject(NotifyService);
+
+  /**
+   * Le segment `:mention` de la route, tel qu'il est écrit dans l'URL — donc
+   * une chaîne quelconque tant qu'on ne l'a pas confrontée au vocabulaire.
+   */
+  readonly mention = input.required<string>();
+
+  /** La mention à éditer, ou `null` si le segment n'en désigne aucune. */
+  protected readonly target = computed<LegalMention | null>(() => {
+    const segment = this.mention();
+    return isMention(segment) ? segment : null;
+  });
+
+  /**
+   * Le titre de l'écran vient du CONTRAT, pas du document : une mention légale
+   * porte un nom consacré, et l'écran doit se nommer avant d'avoir lu quoi que
+   * ce soit. Le titre du document, lui, est ce que le dialogue affiche.
+   */
+  protected readonly heading = computed(() => {
+    const mention = this.target();
+    return mention === null ? 'Mention inconnue' : legalMentionLabels.fr[mention];
+  });
 
   protected readonly localeOptions = LOCALE_OPTIONS;
   protected readonly locale = signal<ContentLocale>('fr');
@@ -117,8 +186,8 @@ export class CgvPage {
 
   /**
    * La révision LUE. Zéro veut dire que personne n'a jamais enregistré : ce qui
-   * est à l'écran est le document de démonstration, et il faut le dire — des
-   * CGV de démonstration se lisent comme opposables si rien ne les distingue.
+   * est à l'écran est le document de démonstration, et il faut le dire — un
+   * document de démonstration se lit comme opposable si rien ne le distingue.
    */
   protected readonly revision = signal(0);
 
@@ -128,14 +197,14 @@ export class CgvPage {
    */
   protected readonly stale = signal(false);
 
-  private readonly document = signal<SalesTerms>(DEFAULT_SALES_TERMS);
+  private readonly document = signal<LegalDocument>(BLANK_DOCUMENT);
 
-  protected readonly paragraphs = computed<readonly SalesTermsParagraph[]>(
+  protected readonly paragraphs = computed<readonly LegalDocumentParagraph[]>(
     () => this.document().paragraphs,
   );
 
   /** Le titre en cours de saisie, dans ses trois langues. */
-  protected readonly titleDraft = signal<SalesTermsHeading>(DEFAULT_SALES_TERMS.title);
+  protected readonly titleDraft = signal<LegalDocumentHeading>(BLANK_DOCUMENT.title);
 
   protected readonly titleChanged = computed(() => {
     const saved = this.document().title;
@@ -149,7 +218,7 @@ export class CgvPage {
 
   /** L'article en cours de modification, et son texte dans la langue affichée. */
   protected readonly editingId = signal<string | null>(null);
-  protected readonly editDraft = signal<SalesTermsProse>(EMPTY_PROSE);
+  protected readonly editDraft = signal<LegalDocumentProse>(EMPTY_PROSE);
 
   protected readonly editComplete = computed(
     () => this.editDraft().title.trim().length > 0 && this.editDraft().body.trim().length > 0,
@@ -157,7 +226,7 @@ export class CgvPage {
 
   /** La saisie d'un nouvel article — les trois langues, ouvertes ensemble. */
   protected readonly adding = signal(false);
-  private readonly addDraft = signal<SalesTermsParagraphPayload>(EMPTY_PAYLOAD);
+  private readonly addDraft = signal<LegalDocumentParagraphPayload>(EMPTY_PAYLOAD);
 
   /** Les trois blocs du formulaire de création, dans l'ordre du contrat. */
   protected readonly addFields = computed(() =>
@@ -197,23 +266,53 @@ export class CgvPage {
   });
 
   constructor() {
-    void this.load();
+    // La mention est un SEGMENT de route : le routeur réutilise le composant
+    // quand on passe d'une mention à l'autre, donc la lecture se rejoue sur le
+    // changement d'entrée et pas seulement à la construction. Sans ça, le menu
+    // montrerait le document précédent sous le titre du suivant.
+    effect(() => {
+      const mention = this.target();
+      void this.open(mention);
+    });
+  }
+
+  /** Ouvre une mention : remet l'écran à zéro, puis lit — ou dit qu'elle n'existe pas. */
+  private async open(mention: LegalMention | null): Promise<void> {
+    this.editingId.set(null);
+    this.cancelAdd();
+    this.document.set(BLANK_DOCUMENT);
+    this.titleDraft.set(BLANK_DOCUMENT.title);
+    this.stale.set(false);
+    this.revision.set(0);
+    if (mention === null) {
+      this.state.set('unknown');
+      return;
+    }
+    await this.load(mention);
   }
 
   /** La lecture d'entrée, et celle du bouton « Réessayer ». */
-  protected async load(): Promise<void> {
+  protected async load(mention: LegalMention): Promise<void> {
     this.state.set('loading');
     try {
-      await this.read();
+      await this.read(mention);
       this.state.set('ready');
     } catch (error) {
-      this.notify.error(error, 'Conditions illisibles — la lecture a échoué.');
+      this.notify.error(error, 'Document illisible — la lecture a échoué.');
       this.state.set('error');
     }
   }
 
-  private async read(): Promise<void> {
-    const view = await this.api.salesTerms();
+  /** Le geste de relecture depuis le gabarit, où la mention est déjà résolue. */
+  protected async reload(): Promise<void> {
+    const mention = this.target();
+    if (mention !== null) {
+      await this.load(mention);
+    }
+  }
+
+  private async read(mention: LegalMention): Promise<void> {
+    const view = await this.api.legalDocument(mention);
     this.document.set(view.content);
     this.revision.set(view.revision);
     this.titleDraft.set(view.content.title);
@@ -231,7 +330,7 @@ export class CgvPage {
   }
 
   /** Le texte d'un article dans la langue affichée. */
-  protected prose(paragraph: SalesTermsParagraph): SalesTermsProse {
+  protected prose(paragraph: LegalDocumentParagraph): LegalDocumentProse {
     return paragraph[this.locale()];
   }
 
@@ -242,13 +341,13 @@ export class CgvPage {
 
   protected async saveTitle(): Promise<void> {
     await this.write(
-      () => this.api.renameSalesTerms(this.titleDraft()),
+      (mention) => this.api.renameLegalDocument(mention, this.titleDraft()),
       'Titre enregistré, dans les trois langues.',
       'Titre refusé — les trois langues doivent être remplies.',
     );
   }
 
-  protected startEdit(paragraph: SalesTermsParagraph): void {
+  protected startEdit(paragraph: LegalDocumentParagraph): void {
     this.editingId.set(paragraph.id);
     this.editDraft.set(this.prose(paragraph));
   }
@@ -257,7 +356,7 @@ export class CgvPage {
     this.editingId.set(null);
   }
 
-  protected setEdit(field: keyof SalesTermsProse, value: string): void {
+  protected setEdit(field: keyof LegalDocumentProse, value: string): void {
     this.editDraft.update((draft) => ({ ...draft, [field]: value }));
   }
 
@@ -266,16 +365,16 @@ export class CgvPage {
    * autres telles qu'elles sont. La route remplace la charge utile — omettre
    * une langue l'effacerait.
    */
-  protected async saveEdit(paragraph: SalesTermsParagraph): Promise<void> {
+  protected async saveEdit(paragraph: LegalDocumentParagraph): Promise<void> {
     const locale = this.locale();
-    const saved: SalesTermsParagraphPayload = {
+    const saved: LegalDocumentParagraphPayload = {
       fr: paragraph.fr,
       en: paragraph.en,
       it: paragraph.it,
     };
-    const payload: SalesTermsParagraphPayload = { ...saved, [locale]: this.editDraft() };
+    const payload: LegalDocumentParagraphPayload = { ...saved, [locale]: this.editDraft() };
     const done = await this.write(
-      () => this.api.editSalesTermsParagraph(paragraph.id, payload),
+      (mention) => this.api.editLegalParagraph(mention, paragraph.id, payload),
       'Article enregistré.',
       'Article refusé — un titre et un corps sont exigés.',
     );
@@ -286,7 +385,7 @@ export class CgvPage {
 
   protected async remove(paragraphId: string): Promise<void> {
     await this.write(
-      () => this.api.removeSalesTermsParagraph(paragraphId),
+      (mention) => this.api.removeLegalParagraph(mention, paragraphId),
       'Article retiré du document.',
       'Suppression refusée.',
     );
@@ -295,7 +394,7 @@ export class CgvPage {
   /** Déplace un article au rang demandé — le rang est compté à partir de zéro. */
   protected async move(paragraphId: string, position: number): Promise<void> {
     await this.write(
-      () => this.api.moveSalesTermsParagraph(paragraphId, position),
+      (mention) => this.api.moveLegalParagraph(mention, paragraphId, position),
       'Ordre de lecture mis à jour.',
       'Déplacement refusé.',
     );
@@ -311,7 +410,7 @@ export class CgvPage {
     this.addDraft.set(EMPTY_PAYLOAD);
   }
 
-  protected setAdd(locale: ContentLocale, field: keyof SalesTermsProse, value: string): void {
+  protected setAdd(locale: ContentLocale, field: keyof LegalDocumentProse, value: string): void {
     this.addDraft.update((draft) => ({
       ...draft,
       [locale]: { ...draft[locale], [field]: value },
@@ -320,8 +419,8 @@ export class CgvPage {
 
   protected async submitAdd(): Promise<void> {
     const done = await this.write(
-      async () => {
-        await this.api.addSalesTermsParagraph(this.addDraft());
+      async (mention) => {
+        await this.api.addLegalParagraph(mention, this.addDraft());
       },
       'Article ajouté, dans les trois langues.',
       'Ajout refusé — les trois langues sont exigées ensemble.',
@@ -334,26 +433,34 @@ export class CgvPage {
   /**
    * Le cycle commun des écritures : écrire, RELIRE, dire.
    *
+   * La mention est passée à l'action plutôt que relue par chacune : elle est
+   * résolue UNE fois, et l'écriture comme la relecture portent alors sur le
+   * même document même si le menu a changé de page entre-temps.
+   *
    * La relecture est séparée de l'écriture dans le traitement d'erreur, et ce
    * n'est pas une précaution de style : une écriture passée dont la relecture
    * échoue laisse un écran juste mais périmé, ce que le bandeau `stale` dit —
    * alors qu'une écriture refusée n'a rien changé du tout.
    */
   private async write(
-    action: () => Promise<void>,
+    action: (mention: LegalMention) => Promise<void>,
     success: string,
     fallback: string,
   ): Promise<boolean> {
+    const mention = this.target();
+    if (mention === null) {
+      return false;
+    }
     this.busy.set(true);
     try {
-      await action();
+      await action(mention);
     } catch (error) {
       this.notify.refused(error, fallback);
       this.busy.set(false);
       return false;
     }
     try {
-      await this.read();
+      await this.read(mention);
       this.notify.success(success);
     } catch (error) {
       this.notify.error(error, 'Enregistré, mais la relecture a échoué.');

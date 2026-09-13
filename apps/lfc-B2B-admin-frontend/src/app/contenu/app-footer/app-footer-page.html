@@ -27,7 +27,6 @@
         [identity]="identity()"
         [locale]="locale()"
         [legalMentions]="legalMentions()"
-        [salesTermsTitle]="salesTermsTitle()"
       />
     </fold-card>
 
@@ -160,7 +159,6 @@
         @for (mention of legalMentionRows(); track mention.key) {
           <fold-checkbox
             [label]="mention.label"
-            [hint]="mention.hint"
             [checked]="mention.shown"
             (checkedChange)="setLegalMention(mention.key, $event)"
           />

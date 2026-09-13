@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   ContentLocale,
-  SalesTermsHeading,
   FooterContent,
   FooterLocaleContent,
   LegalIdentity,
@@ -13,6 +12,7 @@ import type {
 import {
   contentLocales,
   DEFAULT_FOOTER_CONTENT,
+  legalMentionLabels,
   legalMentionOrder,
   socialChannelLabels,
   socialChannels,
@@ -35,7 +35,6 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { legalMentionLabel } from '../legal-mention-label';
 import { PlatformContentService } from '../platform-content.service';
 import { FooterPreview } from './footer-preview/footer-preview';
 
@@ -77,7 +76,10 @@ function isChannel(value: string): value is SocialChannel {
  *
  * Les mentions légales ne se SAISISSENT plus : ce sont des prérequis, pas des
  * textes de vitrine. L'écran choisit celles qui s'affichent dans un vocabulaire
- * fermé, et leur mot vient du contrat.
+ * fermé, et leur mot vient du contrat — pour les CINQ, titre du document
+ * compris. La barre nomme l'OBLIGATION ; le document se nomme lui-même, et son
+ * titre n'est plus que ce que le dialogue de la boutique affiche (tranché le
+ * 2026-09-13). Cet écran ne lit donc plus aucun document.
  *
  * L'aperçu est en tête parce qu'on vient corriger un texte en le VOYANT à sa
  * place. Il montre la forme et pas la peau : ce qu'aucun formulaire ne dit,
@@ -138,27 +140,7 @@ export class AppFooterPage {
     void this.load();
   }
 
-  /**
-   * Le titre du document des CGV, dans ses trois langues — `null` tant qu'il
-   * n'a pas pu être lu.
-   *
-   * Il suit le sélecteur de langue comme le reste de l'aperçu : un titre figé
-   * sur une langue aurait montré un bandeau français sous un onglet italien.
-   */
-  private readonly salesTermsHeading = signal<SalesTermsHeading | null>(null);
-
-  protected readonly salesTermsTitle = computed<string | null>(
-    () => this.salesTermsHeading()?.[this.locale()] ?? null,
-  );
-
   private async load(): Promise<void> {
-    // Le titre des CGV part À CÔTÉ et non dans le même `await` : il ne sert
-    // qu'à nommer une ligne de l'aperçu, et son échec ne doit pas empêcher
-    // d'éditer le pied de page. Il se replie alors sur le mot de secours.
-    void this.api
-      .salesTerms()
-      .then((view) => this.salesTermsHeading.set(view.content.title))
-      .catch(() => undefined);
     try {
       const view = await this.api.footer();
       this.draft.set(view.content);
@@ -201,11 +183,7 @@ export class AppFooterPage {
   protected readonly legalMentionRows = computed(() =>
     legalMentionOrder.map((key) => ({
       key,
-      label: legalMentionLabel('fr', key),
-      hint:
-        key === 'salesTerms'
-          ? 'Le lien porte le TITRE du document, qui se renomme dans l’écran CGV.'
-          : undefined,
+      label: legalMentionLabels.fr[key],
       shown: this.draft().legalMentions[key],
     })),
   );

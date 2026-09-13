@@ -41,18 +41,6 @@ class FakeContent {
     this.saved.push(content);
     return Promise.resolve(view(content));
   }
-
-  /**
-   * L'écran lit AUSSI le titre des CGV — pour que l'aperçu nomme cette ligne
-   * comme le client la verra, et non avec le mot de secours.
-   *
-   * Le double le refuse ici : la lecture est délibérément tolérante, et c'est
-   * ce qu'il faut éprouver — un titre illisible ne doit pas empêcher d'éditer
-   * le pied de page.
-   */
-  salesTerms(): Promise<never> {
-    return Promise.reject(new Error('titre des CGV indisponible'));
-  }
 }
 
 class FakeNotify {
@@ -122,10 +110,17 @@ describe('AppFooterPage — les mentions légales', () => {
     expect(shown[4]).toContain('Accessibilité');
   });
 
-  it('dit que le libellé des CGV se change dans l’écran CGV', async () => {
+  /**
+   * Régression : l'aperçu prenait le TITRE du document des CGV, lu à part par
+   * cet écran. La barre nomme désormais l'obligation pour les cinq, et cet
+   * écran ne lit plus aucun document (tranché le 2026-09-13) — le double ne
+   * porte d'ailleurs plus de méthode de lecture légale.
+   */
+  it('nomme la barre légale avec le mot du contrat, sans lire aucun document', async () => {
     const { fixture } = await render();
 
-    expect(fixture.nativeElement.textContent).toContain('écran CGV');
+    const preview = fixture.nativeElement.querySelector('app-footer-preview');
+    expect(preview?.textContent ?? '').toContain('Conditions générales de vente');
   });
 
   it('enregistre à false la mention décochée, et elle seule', async () => {

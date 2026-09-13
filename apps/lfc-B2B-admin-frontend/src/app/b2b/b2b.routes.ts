@@ -1,6 +1,26 @@
-import { type Routes } from '@angular/router';
+import { type ActivatedRouteSnapshot, type Routes } from '@angular/router';
+import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
 
 import { permissionGuard } from '../auth/permission.guard';
+
+/**
+ * L'onglet d'une mention : son nom consacré, jamais le segment brut.
+ *
+ * Le titre vient du CONTRAT et non du document lu : il est posé avant tout
+ * appel, et un onglet qui attendrait la réponse du serveur afficherait l'URL
+ * pendant ce temps.
+ *
+ * ⚠️ Une mention hors vocabulaire dit « Mention inconnue », **le même mot que
+ * l'écran**. Le repli a d'abord été « Mentions légales », pensé comme le nom du
+ * groupe — sauf que c'est EXACTEMENT le libellé de `legalNotice` : l'onglet
+ * devenait indiscernable d'une vraie page pendant que la page, elle, refusait
+ * d'afficher quoi que ce soit (corrigé le 2026-09-13, vu à l'écran).
+ */
+function legalMentionTitle(route: ActivatedRouteSnapshot): string {
+  const segment = route.paramMap.get('mention') ?? '';
+  const known = legalMentionOrder.find((mention) => mention === segment);
+  return `${known === undefined ? 'Mention inconnue' : legalMentionLabels.fr[known]} — LFC B2B admin`;
+}
 
 /**
  * Les routes de l'**espace B2B** — le catalogue vendu et sa tarification.
@@ -33,12 +53,23 @@ export const b2bRoutes: Routes = [
               import('../contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
           },
           {
-            // Les CGV vivent avec le pied de page : même table, même révision,
-            // même doctrine — un article à corriger ne demande ni développeur,
-            // ni revue, ni déploiement.
+            // L'ANCIENNE adresse des CGV, quand elles étaient la seule mention
+            // adossée à un document. Elle est dans des favoris : un rangement
+            // qui rend 404 se paie par celui qui ne l'a pas fait.
             path: 'cgv',
-            title: 'CGV — LFC B2B admin',
-            loadComponent: () => import('../contenu/cgv/cgv-page').then((m) => m.CgvPage),
+            pathMatch: 'full',
+            redirectTo: 'mentions/salesTerms',
+          },
+          {
+            // LES CINQ MENTIONS par un seul écran, paramétré par son segment :
+            // elles ont la même forme, et cinq composants auraient divergé au
+            // premier correctif. Elles vivent avec le pied de page — même
+            // table, même révision, même doctrine : un article à corriger ne
+            // demande ni développeur, ni revue, ni déploiement.
+            path: 'mentions/:mention',
+            title: legalMentionTitle,
+            loadComponent: () =>
+              import('../contenu/mentions/mentions-page').then((m) => m.MentionsPage),
           },
         ],
       },

@@ -36,7 +36,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
   // groupement, et la table n'inventorie que ce qui s'affiche.
   'b2b/contenu/app-footer': null,
-  'b2b/contenu/cgv': null,
+  // UN écran pour les cinq mentions : ce qui les distingue est leur clé, pas
+  // leur forme. Le segment est validé par le composant, qui n'appelle rien
+  // quand il ne désigne aucune mention du vocabulaire.
+  'b2b/contenu/mentions/:mention': null,
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   'commandes/:orderId': 'b2b_orders:read',
