@@ -422,6 +422,37 @@ export type {
   ProductionDayStatus,
   ProductionPackingAck,
 } from "./production-sheet.js";
+export {
+  markPackingLineSchema,
+  productionPackingQuerySchema,
+  setPackingContainersSchema,
+} from "./production-packing.js";
+export type {
+  MarkPackingLine,
+  PackingLine,
+  PackingResource,
+  PackingSheet,
+  ProductionPackingQuery,
+  ProductionPackingView,
+  SetPackingContainers,
+} from "./production-packing.js";
+export {
+  markWorkshopLineSchema,
+  productionContainerSchema,
+  productionWorksheetQuerySchema,
+  workshopInitialsSchema,
+} from "./production-worksheet.js";
+export type {
+  MarkWorkshopLine,
+  ProductionContainerRule,
+  ProductionContainerView,
+  ProductionWorksheetQuery,
+  ProductionWorksheetRetake,
+  ProductionWorksheetView,
+  WorkshopDrift,
+  WorkshopDriftLine,
+  WorkshopLine,
+} from "./production-worksheet.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,
@@ -458,6 +489,8 @@ export {
   staffStatusSchema,
   staffStatusChangeSchema,
   staffUserPayloadSchema,
+  staffNavPreferencesSchema,
+  staffNavPreferencesPatchSchema,
   STAFF_STATUS_LABELS,
 } from "./staff-user.js";
 export type {
@@ -465,6 +498,8 @@ export type {
   StaffStatusChange,
   StaffUserPayload,
   StaffUserView,
+  StaffNavPreferences,
+  StaffNavPreferencesPatch,
   CreatedStaffUserResponse,
 } from "./staff-user.js";
 export {
