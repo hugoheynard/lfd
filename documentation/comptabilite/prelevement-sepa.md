@@ -172,22 +172,99 @@ l'apprenons qu'au premier rejet**. Deux conséquences :
 
 ---
 
-## 5. Le mandat — le cycle visé
+## 5. Le mandat — le cycle, et qui fait quoi
 
-```
-frappe de la RUM          → mandat en attente de signature
-   ↓  le PDF prérempli part au client (§1, point 3)
-signature du client       → sur papier ; le scan revient
-   ↓  dépôt de la preuve
-mandat ACTIF              ← et jamais avant : pas de preuve ⇒ pas d'actif
-   ↓  premier lot
-firstCollectionSettledAt  ← la banque du débiteur a bien enregistré le mandat
+⚠️ **Cette section décrivait un cycle VISÉ jusqu'au 2026-09-13**, dont chaque
+flèche manquait. Elle décrit désormais ce qui tourne, et signale ce qui reste.
+
+### Les états, et ce qui les fait changer
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> draft: frapper
+    draft --> active: signer
+    draft --> revoked: abandonner
+    active --> revoked: révoquer
+    active --> active: déposer le scan
+    draft --> draft: déposer le scan
+    revoked --> [*]
+
+    note right of draft
+        Frapper : une RUM sous notre ICS.
+        Ne prélève rien. Un seul par société.
+    end note
+    note right of active
+        Signer : la date du PAPIER, pas celle de la saisie.
+        Seul état débitable.
+        Un seul par (société, créancier).
+    end note
 ```
 
-**Ce qui manque à chaque flèche** : la frappe (RUM non branchée), l'envoi (aucun
-gabarit de courrier — le mailer sait pourtant joindre un PDF, il le fait pour le
-QR de retrait), la transition vers `active` (aucun agrégat ne sait activer un
-mandat ; il n'y a rien à « refuser » aujourd'hui, tout est à inventer).
+🔴 **`failed` existe dans l'enum et n'est produit par personne** : il venait de
+Stripe. Aucun code ne le pose aujourd'hui _(vérifié le 2026-09-13)_.
+
+⚠️ **`expired` n'existe pas.** Un mandat dort 36 mois sans prélèvement et devient
+caduc par la norme — rien ne le détecte ici. C'est un balayage à écrire, pas un
+calcul : un mandat caduc _calculé_ resterait `active` en base et bloquerait son
+remplaçant sur l'index partiel.
+
+### Le parcours, de la frappe au prélèvement
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Staff as Commercial
+    participant BO as Back-office
+    participant API as lfd-api
+    actor Client
+    participant Banque as Banque du client
+
+    Staff->>BO: Frapper le mandat
+    BO->>API: POST /mandate
+    API-->>BO: RUM — LFC-XXXXXX-AAMMJJ-TIRAGE
+    Note over API: refuse si : société inconnue,<br/>pas d'entité émettrice,<br/>brouillon déjà en cours
+
+    Staff->>BO: Voir le mandat
+    Note over BO: la RUM s'imprime,<br/>le filigrane EXEMPLE tombe
+
+    alt Envoi par courriel
+        Staff->>BO: Envoyer au client
+        BO->>API: POST /mandate/:id/send
+        API->>Client: PDF en pièce jointe + RUM et ICS en clair
+    else Remise en main propre
+        Staff->>BO: Télécharger, puis imprimer
+        Staff->>Client: le papier
+    end
+
+    Client->>Banque: déclare la RUM et l'ICS
+    Note over Client,Banque: 🔴 SDD B2B — sans cette déclaration,<br/>la banque REFUSE le premier prélèvement
+
+    Client-->>Staff: renvoie le papier signé, scanné
+    Staff->>BO: Déposer le scan
+    BO->>API: PUT /mandate/proof
+    Note over API: scellé AES-256-GCM<br/>avant d'entrer au stockage
+
+    Staff->>BO: Activer le mandat (date du papier)
+    BO->>API: PUT /mandate/:id/signature
+    Note over API: révoque l'ancien actif<br/>dans la MÊME transaction
+
+    API->>Banque: pain.008 — RUM, IBAN, ICS
+```
+
+### Ce que le parcours ne dit pas, et qu'il faut savoir
+
+**L'ordre des deux derniers gestes est libre.** Déposer le scan avant d'activer,
+ou l'inverse : le dépôt vise `findAwaitingProof` — le brouillon s'il existe,
+l'actif sinon — donc la pièce tombe sur le bon mandat dans les deux sens.
+
+**Le mandat s'envoie tant qu'il est brouillon, et pas après.** Un mandat déjà
+signé qu'on renverrait ferait circuler un second exemplaire de la même
+référence, et c'est celui qui revient en dernier qui gagnerait.
+
+**Le premier prélèvement ne part pas parce que nous sommes prêts.** Il part
+quand la banque du client a enregistré le mandat — un geste que nous ne voyons
+pas, et dont l'échec revient sous forme de rejet.
 
 **La preuve, c'est le mandat signé — pas le RIB.** Le RIB donne des coordonnées,
 pas un consentement. En contestation, la charge de la preuve est sur nous : 8
