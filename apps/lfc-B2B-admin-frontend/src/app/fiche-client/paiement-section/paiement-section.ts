@@ -88,6 +88,15 @@ interface DangerousAction {
  * « Débloquer » finit par être cliqué, et le client ne l'apprend qu'à la
  * commande suivante — ou à l'échéance.
  */
+/**
+ * Combien de caractères de la RUM il faut retaper pour révoquer.
+ *
+ * Six : le tirage final, la partie qui distingue deux mandats du même client le
+ * même jour. Recopier les 24 caractères ferait un copier-coller, c'est-à-dire un
+ * geste qui ne prouve rien.
+ */
+const RUM_CONFIRM_LENGTH = 6;
+
 @Component({
   selector: 'app-paiement-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -250,10 +259,13 @@ export class PaiementSection {
     if (mandate === null) {
       return 'Aucun mandat de prélèvement';
     }
+    // Les quatre chiffres n'existent que sur un mandat Stripe ; un mandat frappé
+    // ici n'en a pas. On nomme donc par la RUM, qui est toujours renseignée.
+    const suffix = mandate.last4 === '' ? mandate.reference : `••••${mandate.last4}`;
     if (mandate.status === 'active') {
-      return `Mandat signé, actif — ••••${mandate.last4}`;
+      return `Mandat signé, actif — ${suffix}`;
     }
-    return `Mandat ${MANDATE_STATUS_LABELS[mandate.status].toLowerCase()} — ••••${mandate.last4}`;
+    return `Mandat ${MANDATE_STATUS_LABELS[mandate.status].toLowerCase()} — ${suffix}`;
   }
 
   protected readonly statusLabel = computed(() => {
@@ -282,12 +294,20 @@ export class PaiementSection {
       ...credits,
       {
         key: 'mandate' as const,
-        label: `Révoquer le mandat ••••${current.last4}`,
+        label: `Révoquer le mandat ${current.reference}`,
         consequence: 'Plus aucun prélèvement ne pourra partir sur ce compte.',
         question: 'Retirer l’autorisation de prélever ?',
-        // Les 4 chiffres du compte : taper autre chose signifie qu'on ne
-        // regardait pas la bonne fiche.
-        match: current.last4,
+        // 🔴 La fin de la RUM, et non les 4 chiffres du compte (corrigé le
+        // 2026-09-13). `last4` vient du mandat Stripe ; un mandat que NOUS
+        // frappons naît sans — il peut l'être avant même que le RIB soit
+        // recopié. Le mot à taper était donc VIDE, la confirmation ne pouvait
+        // pas aboutir, et la révocation était inatteignable depuis l'écran
+        // sans que rien ne le dise.
+        //
+        // La RUM est renseignée par construction, elle est affichée juste
+        // au-dessus, et c'est elle qui est imprimée sur le papier signé : taper
+        // autre chose signifie qu'on ne regarde pas le bon mandat.
+        match: current.reference.slice(-RUM_CONFIRM_LENGTH),
       },
     ];
   });

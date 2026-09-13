@@ -199,14 +199,36 @@ describe('section Moyens de paiement — la zone de danger', () => {
     expect(host.querySelector('fold-danger-zone')).toBeNull();
   });
 
-  it('demande les 4 chiffres du compte pour révoquer le mandat', async () => {
-    // Taper autre chose signifie qu'on ne regardait pas la bonne fiche.
-    const { section, settle } = render({ companyId: 'cmp_1', mandate: ACTIVE_MANDATE });
+  it('demande la fin de la RUM pour révoquer le mandat', async () => {
+    // Taper autre chose signifie qu'on ne regardait pas le bon mandat.
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, reference: 'LFC-9P2X4B-260912-K7M3QT' },
+    });
     await settle();
 
     expect(section['dangerous']()).toEqual([
-      expect.objectContaining({ key: 'mandate', match: '3000' }),
+      expect.objectContaining({ key: 'mandate', match: 'K7M3QT' }),
     ]);
+  });
+
+  /**
+   * 🔴 Régression : le mot à taper était `last4`, qui vient du mandat Stripe. Un
+   * mandat que NOUS frappons naît sans — il peut l'être avant même que le RIB
+   * soit recopié. La confirmation demandait donc de retaper une chaîne VIDE, et
+   * la révocation était inatteignable depuis l'écran sans que rien ne le dise.
+   */
+  it('reste révocable quand le mandat n’a pas de `last4` — le cas des mandats frappés ici', async () => {
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, last4: '', reference: 'LFC-6KTQAT-260913-S54CQZ' },
+    });
+    await settle();
+
+    const mandate = section['dangerous']().find((action) => action.key === 'mandate');
+
+    expect(mandate?.match).toBe('S54CQZ');
+    expect(mandate?.match).not.toBe('');
   });
 });
 
