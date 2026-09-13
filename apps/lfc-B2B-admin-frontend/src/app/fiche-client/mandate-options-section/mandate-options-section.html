@@ -1,0 +1,53 @@
+<p class="mo-lede">
+  Les zones <strong>facultatives</strong> propres à ce client. La norme les dit indicatives&nbsp;:
+  aucune ne conditionne la validité du mandat, et les laisser vides est parfaitement normal. La
+  <em>description du contrat</em>, elle, se règle une fois pour toutes sur l'entité émettrice.
+</p>
+
+@if (!ready()) {
+  <fold-callout appearance="inset" variant="neutral">
+    Ces zones s'enregistrent avec le RIB du client&nbsp;: renseignez-le à l'étape&nbsp;1 d'abord.
+  </fold-callout>
+} @else {
+  <div class="mo-row">
+    <fold-input
+      label="Code identifiant du débiteur"
+      hint="Zone 14 — ce que le client verra revenir sur son relevé bancaire."
+      placeholder="C-9P2X4B"
+      [value]="debtorReferenceDraft()"
+      (valueChange)="debtorReferenceDraft.set($event); markTouched()"
+    />
+    <fold-input
+      label="Numéro du contrat"
+      hint="Zone 19 — facultatif."
+      [value]="contractNumberDraft()"
+      (valueChange)="contractNumberDraft.set($event); markTouched()"
+    />
+  </div>
+}
+
+<div class="mo-actions">
+  <!-- L'aperçu AVANT l'enregistrement dans l'ordre de lecture : c'est le geste
+       de vérification, et il ne modifie rien. Le bouton qui écrit reste à
+       droite, là où l'œil finit. -->
+  <button
+    foldButton
+    size="sm"
+    emphasis="outline"
+    intent="neutral"
+    [disabled]="!ready()"
+    (click)="preview()"
+  >
+    Prévisualiser le mandat
+  </button>
+  <button
+    foldButton
+    size="sm"
+    emphasis="soft"
+    intent="primary"
+    [disabled]="!ready() || busy()"
+    (click)="save()"
+  >
+    Enregistrer ces zones
+  </button>
+</div>

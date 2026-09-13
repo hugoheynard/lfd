@@ -1,176 +1,370 @@
-<fold-page-section
-  title="Moyens de paiement"
-  icon="wallet"
-  description="Ce que ce client peut utiliser pour régler. Ils s'ajoutent, ils ne se remplacent pas."
->
-  <fold-card>
-    <!-- Le socle : il ne se règle pas, il ne se retire pas. Le montrer évite de
-         croire qu'il faut « activer » quelque chose pour vendre. -->
-    <div class="pm-row">
-      <div class="pm-what">
-        <span class="pm-label">À la commande</span>
-        <span class="pm-note">Carte bancaire au moment de commander.</span>
+<!-- 🔴 UNE carte, comme toutes les sections de la fiche, et le TITRE DEDANS.
+     La section en portait trois : le socle, le mandat, puis le reste. Trois
+     surfaces côte à côte se lisent comme trois sujets sans rapport, alors qu'il
+     n'y en a que deux — ce qui est offert à tout le monde, et ce qui se mérite.
+
+     L'imbrication `fold-card` > `fold-page-section` est celle de la fiche
+     d'entité juridique (`comptabilite/entites-juridiques/detail`) : elle met le
+     titre et sa description SUR la carte, pas au-dessus d'elle. L'inverse
+     laissait l'en-tête flotter sur le fond de la page, comme s'il annonçait
+     autre chose que ce qui suit. -->
+<fold-card>
+  <fold-page-section
+    title="Moyens de paiement"
+    icon="wallet"
+    description="Ce que ce client peut utiliser pour régler. Ils s'ajoutent, ils ne se remplacent pas."
+  >
+    <!-- ─── LE SOCLE ────────────────────────────────────────────────────────
+           Traité à part, et pas comme une ligne de plus : ce n'est pas un réglage
+           qu'on accorde, c'est le plancher du système. Le voir en premier, et
+           différemment, évite de croire qu'il faut « activer » quelque chose pour
+           pouvoir vendre. -->
+    <div class="pm-base">
+      <div class="pm-base-head">
+        <fold-element-title
+          variant="title"
+          icon="credit-card"
+          iconTone="primary"
+          title="À la commande"
+          subtitle="Carte bancaire au moment de commander."
+        />
+        <fold-badge content="Ouvert à tous" variant="success" />
       </div>
-      <fold-badge content="Toujours actif" variant="success" />
+      <p class="pm-base-note">
+        C'est le socle&nbsp;: actif pour <strong>tous les clients</strong>, sans démarche et sans
+        condition. Il ne s'accorde pas, et il ne se retire pas — même à un client qui obtient le
+        paiement différé, qui pourra toujours régler une commande à part.
+      </p>
     </div>
 
-    @for (row of rows(); track row.term) {
-      <div class="pm-row">
-        <div class="pm-what">
-          <span class="pm-label">{{ row.label }}</span>
-          <span class="pm-note">
-            @if (row.granted) {
-              Porté au compte par défaut ; le client peut régler une commande à part.
-            } @else {
-              Crédit non accordé.
-            }
-          </span>
-        </div>
+    <!-- ─── LE PAIEMENT DIFFÉRÉ ─────────────────────────────────────────── -->
+    <div class="pm-deferred">
+      <fold-element-title
+        variant="title"
+        icon="clock"
+        title="Paiement différé"
+        subtitle="Commander maintenant, régler au terme convenu."
+      />
 
-        <div class="pm-state">
-          @if (row.requested) {
-            <fold-badge content="Demandé par le client" variant="warning" />
-          }
-          @if (row.granted) {
-            <!-- Accordé, on ne montre plus qu'un état : le retrait vit en zone
-                 de danger, plus bas. Un bouton « Retirer » à côté d'un bouton
-                 « Débloquer » invite au clic de trop. -->
-            <fold-badge content="Accordé" variant="success" />
-          } @else {
-            <button
-              foldButton
-              size="sm"
-              emphasis="soft"
-              intent="primary"
-              (click)="toggle(row.term)"
-            >
-              Débloquer
-            </button>
-          }
-        </div>
-      </div>
-    }
-  </fold-card>
+      <p class="pm-lede">
+        Trois étapes, dans cet ordre&nbsp;: le <strong>RIB</strong> du client, le
+        <strong>mandat SEPA</strong> qu'il signe, puis l'<strong
+          >activation du règlement périodique</strong
+        >. Chacune sert la suivante — sans RIB, pas de mandat à imprimer&nbsp;; sans mandat, rien
+        pour encaisser ce qu'on aura facturé.
+      </p>
 
-  <!-- Le mandat : comment on encaisse ce qu'on a accordé. Séparé des crédits
-       parce que ce n'est pas un moyen de plus offert au client, c'est
-       l'instrument qui rend les autres encaissables. -->
-  @if (companyId(); as id) {
-    <fold-card>
-      @if (mandate(); as m) {
+      <!-- ⚠️ L'ordre est RECOMMANDÉ, pas imposé : aucune étape n'est verrouillée
+             par la précédente. Un commercial débloque un crédit devant son client
+             et fait suivre le mandat — bloquer le geste pour tenir une belle
+             séquence ferait perdre la vente que la séquence sert. -->
+      <fold-timeline
+        orientation="vertical"
+        ariaLabel="Où en est ce client sur le paiement différé"
+        [nodes]="steps()"
+      />
+
+      <!-- ⚠️ Les trois TITRES se posent toujours, même à l'ouverture d'un compte
+             où la société n'existe pas encore. La numérotation a d'abord vécu dans
+             le bloc conditionnel : les lignes de crédit, elles, sont dehors, et
+             s'affichaient donc sous un « 3 · » absent. Un écran qui saute de « 2 »
+             à rien fait douter d'avoir manqué une étape. -->
+
+      <!-- Étape 1 — les coordonnées -->
+      <fold-element-title variant="caps" icon="banknote" title="1 · Coordonnées bancaires" />
+      @if (companyId(); as id) {
+        <app-bank-account-section
+          [companyId]="id"
+          [mandateLast4]="mandatedLast4()"
+          (accountChange)="bankAccount.set($event)"
+        />
+      } @else {
+        <p class="pm-later">
+          Le RIB se saisit une fois le compte ouvert&nbsp;: il se rattache à la société, qui
+          n'existe pas encore.
+        </p>
+      }
+
+      <!-- Étape 2 — l'autorisation -->
+      <fold-element-title variant="caps" icon="contracts" title="2 · Mandat SEPA" />
+      @if (companyId(); as id) {
+        @if (mandate(); as m) {
+          <div class="pm-row">
+            <div class="pm-what">
+              <!-- Un brouillon n'a pas de `last4` : il est frappé avant que le
+                   RIB soit forcément recopié. Afficher « •••• » suivi de rien
+                   ferait lire une donnée tronquée là où il n'y en a aucune. -->
+              <span class="pm-label">
+                Prélèvement SEPA
+                @if (m.last4) {
+                  — ••••{{ m.last4 }}
+                }
+              </span>
+              <span class="pm-note">
+                Mandat {{ m.reference }}
+                @if (m.acceptedAt) {
+                  , signé le {{ m.acceptedAt | date: 'dd/MM/yyyy' }}
+                } @else {
+                  , pas encore signé
+                }
+                @if (m.revokedAt) {
+                  · révoqué le {{ m.revokedAt | date: 'dd/MM/yyyy' }}
+                }
+              </span>
+            </div>
+            <div class="pm-state">
+              <fold-badge
+                [content]="statusLabel()"
+                [variant]="debitable() ? 'success' : 'neutral'"
+              />
+              @if (debitable() || signable()) {
+                <!-- 🔴 Un CHEMIN vers la zone de danger, pas un second bouton de
+                     révocation. Dupliquer un geste destructeur donnerait deux
+                     parcours, dont un finirait par perdre la confirmation. Ici,
+                     une seule implémentation — mais trouvable depuis l'endroit
+                     où on regarde le mandat, et non seulement depuis le bas de
+                     la page. -->
+                <button
+                  foldButton
+                  type="button"
+                  size="sm"
+                  emphasis="soft"
+                  intent="danger"
+                  (click)="goToRevoke()"
+                >
+                  {{ signable() ? 'Abandonner…' : 'Révoquer…' }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- La pièce qui prouve le consentement. Le RIB ne prouve rien : il
+                 donne des coordonnées, pas une autorisation. -->
+          <div class="pm-row">
+            <div class="pm-what">
+              <span class="pm-label">Mandat signé</span>
+              <span class="pm-note">
+                {{ m.hasProof ? m.proofFileName : 'Aucun scan déposé.' }}
+              </span>
+            </div>
+            <div class="pm-state">
+              @if (m.hasProof) {
+                <fold-badge content="Déposé" variant="success" />
+                <!-- 🔴 La pièce pouvait ENTRER sans jamais ressortir jusqu'au
+                     2026-09-12. En contestation, c'est elle qu'on produit. -->
+                <button foldButton type="button" emphasis="outline" (click)="openProof()">
+                  Voir
+                </button>
+                <button
+                  foldButton
+                  type="button"
+                  emphasis="outline"
+                  [loading]="busy()"
+                  (click)="downloadProof()"
+                >
+                  Télécharger
+                </button>
+              }
+              <label class="proof-pick">
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  (change)="uploadProof($event)"
+                />
+                <span>{{ m.hasProof ? 'Remplacer' : 'Déposer le scan' }}</span>
+              </label>
+            </div>
+          </div>
+
+          @if (signable()) {
+            <div class="pm-row">
+              <div class="pm-what">
+                <span class="pm-label">Le mandat à faire signer</span>
+                <span class="pm-note">
+                  Il porte la référence <strong>{{ m.reference }}</strong> et n'a plus de mention
+                  EXEMPLE. À relire, puis à envoyer au client — ou à imprimer si vous le remettez en
+                  main propre.
+                </span>
+              </div>
+              <div class="pm-state">
+                <button foldButton emphasis="outline" type="button" (click)="openMandate()">
+                  Voir le mandat
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (signable()) {
+            <div class="pm-row">
+              <div class="pm-what">
+                <span class="pm-label">Le mandat est revenu signé</span>
+                <span class="pm-note">
+                  La date demandée est celle portée par le <strong>papier</strong>, pas celle du
+                  jour&nbsp;: c'est elle qu'on oppose en contestation, et un mandat posté revient
+                  signé plusieurs jours plus tard.
+                </span>
+              </div>
+              <div class="pm-state">
+                <fold-date
+                  label="Date de signature"
+                  [value]="signedAt()"
+                  (valueChange)="signedAt.set($event)"
+                />
+                <button
+                  foldButton
+                  type="button"
+                  intent="primary"
+                  [disabled]="!signedAt()"
+                  [loading]="busy()"
+                  (click)="sign()"
+                >
+                  Activer le mandat
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (mintable()) {
+            <div class="pm-row">
+              <div class="pm-what">
+                <span class="pm-label">Frapper un nouveau mandat</span>
+                <span class="pm-note">
+                  Le mandat ci-dessus ne prélève plus. Le suivant portera une RUM neuve&nbsp;: une
+                  référence ne se réutilise pas, sans quoi deux papiers diraient la même chose.
+                </span>
+              </div>
+              <div class="pm-state">
+                <button foldButton type="button" [loading]="busy()" (click)="mint()">
+                  Frapper un mandat
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (unproven()) {
+            <fold-callout appearance="inset" variant="warning">
+              <strong>Mandat sans pièce justificative.</strong> Nous prélevons sur une acceptation
+              déclarée hors ligne&nbsp;: en contestation, c'est le scan du mandat signé qui répond.
+              Sans lui, la somme est remboursable sur simple demande du client.
+            </fold-callout>
+          }
+        } @else {
+          <div class="pm-what">
+            <span class="pm-label">Aucun mandat enregistré.</span>
+          </div>
+
+          <!-- Le geste, rouvert le 2026-09-12 sous notre propre ICS. Il avait
+                 disparu avec le canal Stripe, et l'étape est restée sans bouton
+                 le temps que la RUM existe. -->
+          <div class="pm-row">
+            <div class="pm-what">
+              <span class="pm-label">Frapper le mandat</span>
+              <span class="pm-note">
+                Attribue une référence (RUM) sous notre identifiant créancier et prépare le document
+                à imprimer. Rien n'est signé&nbsp;: la signature du client, puis le dépôt de son
+                scan, restent à faire.
+              </span>
+            </div>
+            <div class="pm-state">
+              <button foldButton type="button" intent="primary" [loading]="busy()" (click)="mint()">
+                Frapper le mandat
+              </button>
+            </div>
+          </div>
+        }
+
+        <app-mandate-options-section
+          [companyId]="id"
+          [companyLabel]="companyName()"
+          [account]="bankAccount()"
+        />
+      } @else {
+        <p class="pm-later">Le mandat suit le RIB, donc l'ouverture du compte.</p>
+      }
+
+      <!-- Étape 3 — ce qu'on ouvre une fois qu'on saura encaisser.
+             Elle, on peut la faire tout de suite : un crédit s'accorde à
+             l'ouverture, et le reste suit. -->
+      <fold-element-title variant="caps" icon="repeat" title="3 · Règlement périodique" />
+
+      @for (row of rows(); track row.term) {
         <div class="pm-row">
           <div class="pm-what">
-            <span class="pm-label">Prélèvement SEPA — ••••{{ m.last4 }}</span>
+            <span class="pm-label">{{ row.label }}</span>
             <span class="pm-note">
-              Mandat {{ m.reference }}, signé le {{ m.acceptedAt | date: 'dd/MM/yyyy' }}
-              @if (m.revokedAt) {
-                · révoqué le {{ m.revokedAt | date: 'dd/MM/yyyy' }}
+              @if (row.granted) {
+                Porté au compte par défaut&nbsp;; le client peut régler une commande à part.
+              } @else {
+                Crédit non accordé.
               }
             </span>
           </div>
+
           <div class="pm-state">
-            <fold-badge [content]="statusLabel()" [variant]="debitable() ? 'success' : 'neutral'" />
-            @if (!debitable()) {
+            @if (row.requested) {
+              <fold-badge content="Demandé par le client" variant="warning" />
+            }
+            @if (row.granted) {
+              <!-- Accordé, on ne montre plus qu'un état : le retrait vit en zone
+                     de danger, plus bas. Un bouton « Retirer » à côté d'un bouton
+                     « Débloquer » invite au clic de trop. -->
+              <fold-badge content="Accordé" variant="success" />
+            } @else {
               <button
                 foldButton
                 size="sm"
-                intent="primary"
                 emphasis="soft"
-                [disabled]="busy()"
-                (click)="openMandatePanel()"
+                intent="primary"
+                (click)="toggle(row.term)"
               >
-                Enregistrer un mandat
+                Débloquer
               </button>
             }
           </div>
         </div>
-
-        <!-- La pièce qui prouve le consentement. Le RIB ne prouve rien : il
-             donne des coordonnées, pas une autorisation. -->
-        <div class="pm-row">
-          <div class="pm-what">
-            <span class="pm-label">Mandat signé</span>
-            <span class="pm-note">
-              {{ m.hasProof ? m.proofFileName : 'Aucun scan déposé.' }}
-            </span>
-          </div>
-          <div class="pm-state">
-            @if (m.hasProof) {
-              <fold-badge content="Déposé" variant="success" />
-            }
-            <label class="proof-pick">
-              <input type="file" accept="application/pdf,image/*" (change)="uploadProof($event)" />
-              <span>{{ m.hasProof ? 'Remplacer' : 'Déposer le scan' }}</span>
-            </label>
-          </div>
-        </div>
-
-        @if (unproven()) {
-          <fold-callout variant="warning">
-            <strong>Mandat sans pièce justificative.</strong> Nous prélevons sur une acceptation
-            déclarée hors ligne : en contestation, c'est le scan du mandat signé qui répond. Sans
-            lui, la somme est remboursable sur simple demande du client.
-          </fold-callout>
-        }
-      } @else {
-        <div class="pm-row">
-          <div class="pm-what">
-            <span class="pm-label">Prélèvement SEPA</span>
-            <span class="pm-note">Aucun mandat enregistré.</span>
-          </div>
-          <button
-            foldButton
-            size="sm"
-            intent="primary"
-            emphasis="soft"
-            [disabled]="busy()"
-            (click)="openMandatePanel()"
-          >
-            Enregistrer un mandat
-          </button>
-        </div>
       }
 
       <!-- Ce qu'on facture, il faut savoir l'encaisser. Dit sans bloquer la
-           vente : le commercial débloque devant son client, le mandat suit. -->
+             vente : le commercial débloque devant son client, le mandat suit. -->
       @if (settlesOnAccount() && !debitable()) {
-        <fold-callout variant="warning">
+        <fold-callout appearance="inset" variant="warning">
           <strong>Rien pour encaisser.</strong> Ce client est facturé au terme, mais aucun mandat
           actif ne permet de le prélever — les échéances devront être réclamées à la main.
         </fold-callout>
       }
-    </fold-card>
-  }
+    </div>
+  </fold-page-section>
+</fold-card>
 
-  <!-- Zone de danger : tout ce qui RETIRE quelque chose au client, rassemblé et
-       à distance des gestes ordinaires. Chaque action y demande le mot exact —
-       retirer un crédit ou une autorisation de prélever se répare mal, et se
-       découvre au pire moment : à la commande suivante, ou à l'échéance. -->
-  @if (dangerous().length > 0) {
-    <fold-danger-zone appearance="section" title="Zone de danger">
-      <p class="danger-lede">
-        Ces retraits prennent effet immédiatement pour le client. Tapez le mot demandé pour
-        confirmer.
-      </p>
+<!-- Zone de danger : elle reste HORS de la carte, à dessein. Tout ce qui
+       RETIRE quelque chose au client est rassemblé et tenu à distance des gestes
+       ordinaires — la mettre dans la même surface annulerait la distance qui est
+       toute sa fonction. Chaque action y demande le mot exact : retirer un
+       crédit ou une autorisation de prélever se répare mal, et se découvre au
+       pire moment — à la commande suivante, ou à l'échéance. -->
+@if (dangerous().length > 0) {
+  <fold-danger-zone #dangerZone appearance="section" title="Zone de danger">
+    <p class="danger-lede">
+      Ces retraits prennent effet immédiatement pour le client. Tapez le mot demandé pour confirmer.
+    </p>
 
-      @for (action of dangerous(); track action.key) {
-        <div class="pm-row">
-          <div class="pm-what">
-            <span class="pm-label">{{ action.label }}</span>
-            <span class="pm-note">{{ action.consequence }}</span>
-          </div>
-          <fold-inline-confirm
-            intent="danger"
-            [match]="action.match"
-            [message]="action.question"
-            [loading]="busy()"
-            [labels]="{ confirm: 'Retirer' }"
-            (confirmed)="runDanger(action.key)"
-          >
-            <button foldButton size="sm" emphasis="outline" intent="danger">Retirer</button>
-          </fold-inline-confirm>
+    @for (action of dangerous(); track action.key) {
+      <div class="pm-row">
+        <div class="pm-what">
+          <span class="pm-label">{{ action.label }}</span>
+          <span class="pm-note">{{ action.consequence }}</span>
         </div>
-      }
-    </fold-danger-zone>
-  }
-</fold-page-section>
+        <fold-inline-confirm
+          intent="danger"
+          [match]="action.match"
+          [message]="action.question"
+          [loading]="busy()"
+          [labels]="{ confirm: 'Retirer' }"
+          (confirmed)="runDanger(action.key)"
+        >
+          <button foldButton size="sm" emphasis="outline" intent="danger">Retirer</button>
+        </fold-inline-confirm>
+      </div>
+    }
+  </fold-danger-zone>
+}

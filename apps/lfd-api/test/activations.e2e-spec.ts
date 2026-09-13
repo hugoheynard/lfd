@@ -7,6 +7,7 @@
 import type { ActivationView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { createCompany } from "./factories.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
 const stubAdminVerifier = {
@@ -71,6 +72,7 @@ const SELF_STEP = daysAgo(9);
 const STAFF_DECLARED = daysAgo(11);
 const STAFF_STEP = daysAgo(8);
 const GHOST_STEP = daysAgo(8);
+const NAMED_DECLARED = daysAgo(12);
 
 describe("GET /admin/activations", () => {
   it("mure la route côté staff (401 sans jeton porteur)", async () => {
@@ -108,5 +110,30 @@ describe("GET /admin/activations", () => {
       adoptionPlus: true,
     });
     expect(views.find((v) => v.companyId === "c_staff")?.adoptionPlus).toBe(false);
+  });
+
+  /**
+   * Régression : la projection ne rendait que `companyId`, et la colonne
+   * « Société » de l'écran affichait donc une chaîne technique. Le nom est relu
+   * à CHAQUE passe (jamais figé) : un dossier bloqué est une file d'appels, et
+   * on rappelle les gens par leur nom du jour (fix 2026-09-12).
+   *
+   * Cet e2e est le seul à traverser le vrai `namesOf` : les tests de domaine
+   * lui passent une table en mémoire.
+   */
+  it("nomme le dossier par la société réelle, et laisse `null` quand elle n'existe pas", async () => {
+    const company = await createCompany(ctx.prisma, { raisonSociale: "Boulangerie Martin SAS" });
+    await seed("company.declared", company.id, NAMED_DECLARED, "customer", { via: "self" });
+    // Une société qui n'a jamais existé en base : le journal la connaît, pas
+    // l'annuaire. C'est le seul cas où l'écran retombe sur l'identifiant.
+    await seed("company.declared", "c_ghost_company", SELF_DECLARED, "customer", { via: "self" });
+
+    const views = jsonBody<ActivationView[]>(await staff().get("/admin/activations").expect(200));
+
+    // Sans enseigne saisie, la société se nomme par sa raison sociale.
+    expect(views.find((v) => v.companyId === company.id)?.companyName).toBe(
+      "Boulangerie Martin SAS",
+    );
+    expect(views.find((v) => v.companyId === "c_ghost_company")?.companyName).toBeNull();
   });
 });

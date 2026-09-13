@@ -87,7 +87,7 @@ function handlerOf(
 describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
   it("🔴 une commande à la fois ATTESTÉE et ANNULÉE reste `handed_over` — le sac est parti", async () => {
     // C'est la combinaison qui compte : sans cette priorité, une annulation
-    // arrivée après la remise repeindrait la ligne et ferait mentir l'écran
+    // arrivée après le retrait repeindrait la ligne et ferait mentir l'écran
     // sur un fait physique.
     const { handler } = handlerOf(
       [entry({ orderId: "ord_1", status: "cancelled" })],

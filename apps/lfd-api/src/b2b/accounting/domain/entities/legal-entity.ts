@@ -1,10 +1,14 @@
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import {
+  CreditorIdentityIsFrozenError,
   CreditorIdentifierIsImmutableError,
   EntityCannotCollectError,
   InvalidLegalEntityError,
 } from "../errors/accounting-errors.js";
+import { MandateDefaults, type MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import { CreditorIdentifier } from "../value-objects/creditor-identifier.js";
+import { Bic } from "../value-objects/bic.js";
+import { CreditorAccount } from "../value-objects/creditor-account.js";
 import { Iban } from "../value-objects/iban.js";
 import { LegalAddress } from "../value-objects/legal-address.js";
 import { Siren } from "../value-objects/siren.js";
@@ -45,7 +49,30 @@ export interface LegalEntitySnapshot {
   readonly vatNumber: string;
   readonly ics: string | null;
   readonly creditorIban: string | null;
+  /** Le BIC de la banque du compte ci-dessus. Public, contrairement à l'IBAN. */
+  readonly creditorBic: string | null;
+  /**
+   * Le bloc recopié du RIB : titulaire et adresse **tels que la banque les
+   * connaît**. Distincts de la raison sociale et du siège ci-dessus — voir
+   * {@link CreditorAccount}. Tous nuls tant qu'aucun compte n'est saisi.
+   */
+  readonly creditorAccountHolder: string | null;
+  readonly creditorAccountLine1: string | null;
+  readonly creditorAccountLine2: string | null;
+  readonly creditorAccountPostalCode: string | null;
+  readonly creditorAccountCity: string | null;
+  readonly creditorAccountCountryCode: string | null;
+  /**
+   * Quand le PREMIER mandat a été frappé sous cette entité, ou `null`.
+   *
+   * Posé par un abonné au fait publié par `payments` — `accounting` ne lit pas
+   * ses tables. Tant qu'il est nul, le créancier imprimé se corrige librement ;
+   * après, il est gelé (cf. {@link LegalEntity.setCreditorAccount}).
+   */
+  readonly firstMandateIssuedAt: Date | null;
   readonly preNotificationDays: number;
+  readonly mandateContractDescription: string;
+  readonly mandatePaymentType: MandatePaymentType;
   /**
    * La clé de l'objet de stockage qui porte le logo, ou `null`. 🔴 Elle ne sort
    * d'aucune API — une clé qui sort finit par être acceptée en entrée.
@@ -86,8 +113,10 @@ export class LegalEntity {
     private shareCapitalCentsValue: number,
     private vatNumberValue: string,
     private icsValue: CreditorIdentifier | null,
-    private creditorIbanValue: Iban | null,
+    private creditorAccountValue: CreditorAccount | null,
+    private firstMandateIssuedAtValue: Date | null,
     private preNotificationDaysValue: number,
+    private mandateDefaultsValue: MandateDefaults,
     private logoKeyValue: string | null,
     private archivedAtValue: Date | null,
   ) {}
@@ -107,9 +136,14 @@ export class LegalEntity {
       declaration.rcs.trim(),
       requireCapital(declaration.shareCapitalCents),
       declaration.vatNumber.trim().toUpperCase(),
+      // ICS et compte créancier : absents à la déclaration. Et aucun mandat.
+      null,
       null,
       null,
       PRE_NOTIFICATION_DEFAULT_DAYS,
+      // Rien à dire du contrat, et récurrent : le régime de l'immense majorité
+      // des mandats, et celui qu'on corrige le moins souvent.
+      MandateDefaults.initial(),
       null,
       null,
     );
@@ -133,8 +167,10 @@ export class LegalEntity {
       snapshot.shareCapitalCents,
       snapshot.vatNumber,
       snapshot.ics === null ? null : CreditorIdentifier.create(snapshot.ics),
-      snapshot.creditorIban === null ? null : Iban.create(snapshot.creditorIban),
+      accountOf(snapshot),
+      snapshot.firstMandateIssuedAt,
       snapshot.preNotificationDays,
+      MandateDefaults.create(snapshot.mandateContractDescription, snapshot.mandatePaymentType),
       snapshot.logoKey,
       snapshot.archivedAt,
     );
@@ -214,9 +250,59 @@ export class LegalEntity {
     this.icsValue = ics;
   }
 
-  /** Le compte où l'argent arrive. Il change : on peut changer de banque. */
-  setCreditorAccount(iban: Iban): void {
-    this.creditorIbanValue = iban;
+  /**
+   * Le compte où l'argent arrive. Il change : on peut changer de banque.
+   *
+   * **C'est la recopie d'un RIB, en un seul geste** : titulaire, adresse, IBAN,
+   * BIC. Un compte à moitié rempli ne se découvrirait qu'au rejet du lot, cinq
+   * jours après l'envoi — {@link CreditorAccount} le rend inexprimable.
+   *
+   * 🔴 **Après le premier mandat, le titulaire et l'adresse sont GELÉS**, pour
+   * la raison exacte qui rend l'ICS immuable : le papier signé les porte, et le
+   * débiteur a autorisé CE créancier-là.
+   *
+   * ⚠️ L'IBAN et le BIC, eux, restent libres **pour toujours** — aucun mandat ne
+   * les porte, et changer de banque ne contredit aucune signature. C'est
+   * pourquoi le gel se mesure sur l'identité seule
+   * ({@link CreditorAccount.sameIdentityAs}) et non sur l'objet entier.
+   *
+   * @throws {CreditorIdentityIsFrozenError} un mandat existe et le nom change.
+   */
+  setCreditorAccount(account: CreditorAccount): void {
+    const current = this.creditorAccountValue;
+    if (
+      this.firstMandateIssuedAtValue !== null &&
+      current !== null &&
+      !current.sameIdentityAs(account)
+    ) {
+      throw new CreditorIdentityIsFrozenError(current.holder, account.holder);
+    }
+    this.creditorAccountValue = account;
+  }
+
+  /**
+   * Le premier mandat vient d'être frappé : le créancier imprimé se fige.
+   *
+   * **Idempotent, et volontairement** : c'est le PREMIER qui compte, et ce fait
+   * arrivera par un abonné à un événement — donc rejouable. Écraser la date au
+   * second mandat déplacerait le moment du gel, c'est-à-dire la seule chose que
+   * ce champ sert à dire.
+   */
+  noteFirstMandateIssued(at: Date): void {
+    this.firstMandateIssuedAtValue ??= at;
+  }
+
+  /**
+   * Le créancier imprimé est-il gelé ? La fiche l'affiche pour que le geste
+   * soit refusé AVANT la saisie, et pas après.
+   */
+  get creditorIdentityFrozen(): boolean {
+    return this.firstMandateIssuedAtValue !== null;
+  }
+
+  /** Le compte tel qu'il est recopié du RIB, ou `null`. L'IBAN ne sort pas d'ici. */
+  get creditorAccount(): CreditorAccount | null {
+    return this.creditorAccountValue;
   }
 
   /**
@@ -236,6 +322,25 @@ export class LegalEntity {
       );
     }
     this.preNotificationDaysValue = days;
+  }
+
+  get mandateDefaults(): MandateDefaults {
+    return this.mandateDefaultsValue;
+  }
+
+  /**
+   * Ce que les mandats de cette entité diront du contrat — zones 20 et 12.
+   *
+   * ⚠️ **Pas de gel après le premier mandat**, contrairement au titulaire et à
+   * l'adresse du créancier. La raison est dans ce que chacun engage : le nom
+   * gelé est celui que le débiteur a lu et signé, et en changer dirait qu'il a
+   * autorisé quelqu'un d'autre. Une description de contrat, elle, n'est
+   * qu'indicative — la norme le dit — et un mandat déjà signé garde la sienne,
+   * imprimée sur son papier. Geler ici empêcherait de corriger une faute de
+   * frappe pour tous les mandats à venir, sans rien protéger.
+   */
+  setMandateDefaults(defaults: MandateDefaults): void {
+    this.mandateDefaultsValue = defaults;
   }
 
   /** Une entité archivée n'émet plus rien, et ses documents passés restent. */
@@ -273,8 +378,13 @@ export class LegalEntity {
       addressLines: this.addressValue.lines(),
       // `canCollect()` vient de prouver les deux non nuls.
       ics: String(this.icsValue),
-      creditorIban: String(this.creditorIbanValue),
+      creditorIban: String(this.creditorAccountValue?.iban),
+      creditorBic: this.creditorAccountValue?.bic.value ?? null,
+      accountHolder: this.creditorAccountValue?.holder ?? null,
+      accountAddressLines: this.creditorAccountValue?.address.lines() ?? [],
       preNotificationDays: this.preNotificationDaysValue,
+      mandateContractDescription: this.mandateDefaultsValue.contractDescription,
+      mandatePaymentType: this.mandateDefaultsValue.paymentType,
     };
   }
 
@@ -294,8 +404,18 @@ export class LegalEntity {
       shareCapitalCents: this.shareCapitalCentsValue,
       vatNumber: this.vatNumberValue,
       ics: this.icsValue?.value ?? null,
-      creditorIban: this.creditorIbanValue?.value ?? null,
+      creditorIban: this.creditorAccountValue?.iban.value ?? null,
+      creditorBic: this.creditorAccountValue?.bic.value ?? null,
+      creditorAccountHolder: this.creditorAccountValue?.holder ?? null,
+      creditorAccountLine1: this.creditorAccountValue?.address.line1 ?? null,
+      creditorAccountLine2: this.creditorAccountValue?.address.line2 ?? null,
+      creditorAccountPostalCode: this.creditorAccountValue?.address.postalCode ?? null,
+      creditorAccountCity: this.creditorAccountValue?.address.city ?? null,
+      creditorAccountCountryCode: this.creditorAccountValue?.address.countryCode ?? null,
+      firstMandateIssuedAt: this.firstMandateIssuedAtValue,
       preNotificationDays: this.preNotificationDaysValue,
+      mandateContractDescription: this.mandateDefaultsValue.contractDescription,
+      mandatePaymentType: this.mandateDefaultsValue.paymentType,
       logoKey: this.logoKeyValue,
       archivedAt: this.archivedAtValue,
     };
@@ -313,7 +433,7 @@ export class LegalEntity {
     if (this.icsValue === null) {
       missing.push("l'identifiant créancier (ICS)");
     }
-    if (this.creditorIbanValue === null) {
+    if (this.creditorAccountValue === null) {
       missing.push("le compte bancaire de l'entité");
     }
     if (this.archivedAtValue !== null) {
@@ -337,4 +457,30 @@ function requireCapital(cents: number): number {
     throw new InvalidLegalEntityError("Capital social", "entier positif, en centimes");
   }
   return cents;
+}
+
+/**
+ * Rebâtit le compte depuis les colonnes, ou rend `null`.
+ *
+ * L'IBAN décide seul : les autres colonnes sont arrivées après lui (2026-09-12),
+ * et une ligne écrite avant n'en porte aucune. Les lire strictement ferait
+ * disparaître le compte des entités existantes — un écran qui se vide tout seul
+ * est pire qu'un écran incomplet.
+ */
+function accountOf(snapshot: LegalEntitySnapshot): CreditorAccount | null {
+  if (snapshot.creditorIban === null || snapshot.creditorBic === null) {
+    return null;
+  }
+  return CreditorAccount.create({
+    holder: snapshot.creditorAccountHolder ?? snapshot.name,
+    address: LegalAddress.create({
+      line1: snapshot.creditorAccountLine1 ?? snapshot.addressLine1,
+      line2: snapshot.creditorAccountLine2 ?? snapshot.addressLine2,
+      postalCode: snapshot.creditorAccountPostalCode ?? snapshot.postalCode,
+      city: snapshot.creditorAccountCity ?? snapshot.city,
+      countryCode: snapshot.creditorAccountCountryCode ?? snapshot.countryCode,
+    }),
+    iban: Iban.create(snapshot.creditorIban),
+    bic: Bic.create(snapshot.creditorBic),
+  });
 }

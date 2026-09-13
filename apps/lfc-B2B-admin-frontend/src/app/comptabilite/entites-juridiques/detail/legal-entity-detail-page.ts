@@ -35,6 +35,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { saveBlob } from '../../../shared/download/save-blob';
 import { DeclarePanel } from '../declare-panel/declare-panel';
 import { LegalEntitiesService } from '../../legal-entities.service';
+import { MandateSettingsCard } from './mandate-settings-card/mandate-settings-card';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
 
@@ -99,6 +100,7 @@ const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
     FoldFieldListComponent,
     FoldInlineConfirmComponent,
     FoldInputComponent,
+    MandateSettingsCard,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
@@ -127,6 +129,28 @@ export class LegalEntityDetailPage {
 
   protected readonly icsDraft = signal('');
   protected readonly ibanDraft = signal('');
+  protected readonly bicDraft = signal('');
+  protected readonly holderDraft = signal('');
+  protected readonly line1Draft = signal('');
+  protected readonly line2Draft = signal('');
+  protected readonly postalCodeDraft = signal('');
+  protected readonly cityDraft = signal('');
+  protected readonly countryDraft = signal('FR');
+
+  /**
+   * Le RIB se recopie en entier, donc le bouton attend TOUT — sauf le
+   * complément d'adresse, qui est facultatif sur un vrai RIB.
+   */
+  protected readonly accountComplete = computed(
+    () =>
+      this.ibanDraft().trim() !== '' &&
+      this.bicDraft().trim() !== '' &&
+      this.holderDraft().trim() !== '' &&
+      this.line1Draft().trim() !== '' &&
+      this.postalCodeDraft().trim() !== '' &&
+      this.cityDraft().trim() !== '' &&
+      this.countryDraft().trim() !== '',
+  );
   protected readonly daysDraft = signal<number | null>(null);
 
   /** Le délai en cours d'édition, ou celui que porte l'entité. */
@@ -162,7 +186,9 @@ export class LegalEntityDetailPage {
     this.loadFailed.set(false);
     this.error.set(null);
     try {
-      this.entity.set(await this.api.one(id));
+      const loaded = await this.api.one(id);
+      this.entity.set(loaded);
+      this.fillAccountDrafts(loaded);
     } catch (caught) {
       this.loadFailed.set(true);
       this.error.set(httpErrorMessage(caught, 'Entité illisible.'));
@@ -188,14 +214,42 @@ export class LegalEntityDetailPage {
   }
 
   protected async setAccount(entity: LegalEntityView): Promise<void> {
-    const iban = this.ibanDraft().trim();
-    if (iban === '') {
+    if (!this.accountComplete()) {
       return;
     }
-    await this.run(() => this.api.setCreditorAccount(entity.id, { iban }), 'Compte enregistré.');
-    // Le champ se vide même en cas d'échec : un IBAN reste à l'écran tant qu'on
-    // ne l'efface pas, et un écran de back-office reste ouvert des heures.
+    await this.run(
+      () =>
+        this.api.setCreditorAccount(entity.id, {
+          iban: this.ibanDraft().trim(),
+          bic: this.bicDraft().trim(),
+          holder: this.holderDraft().trim(),
+          line1: this.line1Draft().trim(),
+          line2: this.line2Draft().trim(),
+          postalCode: this.postalCodeDraft().trim(),
+          city: this.cityDraft().trim(),
+          countryCode: this.countryDraft().trim().toUpperCase(),
+        }),
+      'Compte enregistré.',
+    );
+    // 🔴 Seul l'IBAN se vide. Les autres champs se REPRENNENT de la fiche
+    // relue : ils reviennent du serveur, et les effacer donnerait l'impression
+    // d'avoir perdu ce qu'on vient d'enregistrer. L'IBAN, lui, ne revient
+    // d'aucune route — le laisser à l'écran le ferait traîner sur un poste de
+    // back-office ouvert des heures.
     this.ibanDraft.set('');
+  }
+
+  /** Préremplit la recopie du RIB avec ce que le serveur vient de rendre. */
+  private fillAccountDrafts(entity: LegalEntityView): void {
+    this.bicDraft.set(entity.creditorBic);
+    this.holderDraft.set(entity.creditorAccountHolder);
+    this.line1Draft.set(entity.creditorAccountLine1);
+    this.line2Draft.set(entity.creditorAccountLine2);
+    this.postalCodeDraft.set(entity.creditorAccountPostalCode);
+    this.cityDraft.set(entity.creditorAccountCity);
+    this.countryDraft.set(
+      entity.creditorAccountCountryCode === '' ? 'FR' : entity.creditorAccountCountryCode,
+    );
   }
 
   protected async savePreNotification(entity: LegalEntityView): Promise<void> {
@@ -304,13 +358,31 @@ export class LegalEntityDetailPage {
    * `missingToCollect` sont calculés par l'agrégat, et les deviner ici les
    * ferait diverger au premier ajout de condition.
    */
+  /**
+   * Exécute ce qu'une carte fille demande, puis relit — comme les gestes de la
+   * page elle-même.
+   *
+   * La carte des mandats n'appelle pas `run` directement : elle **décrit** son
+   * geste et le remonte. C'est la page qui détient l'état de chargement, le
+   * message d'erreur et la relecture ; les dupliquer dans chaque carte ferait
+   * deux façons de dire « enregistré », et deux entités relues différemment.
+   */
+  protected runSaved(request: {
+    readonly action: () => Promise<unknown>;
+    readonly said: string;
+  }): void {
+    void this.run(request.action, request.said);
+  }
+
   private async run(action: () => Promise<unknown>, said: string): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
     try {
       await action();
       this.toasts.show(said, 'success');
-      this.entity.set(await this.api.one(this.id()));
+      const reloaded = await this.api.one(this.id());
+      this.entity.set(reloaded);
+      this.fillAccountDrafts(reloaded);
       this.daysDraft.set(null);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Enregistrement impossible.'));

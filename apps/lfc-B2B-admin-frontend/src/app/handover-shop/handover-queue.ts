@@ -8,7 +8,7 @@ import type {
 import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
 
 /**
- * **La logique de la file de remise**, hors de tout composant : dérivation des
+ * **La logique de la file de retrait**, hors de tout composant : dérivation des
  * onglets, ordre de la file, écriture d'un créneau, et la seule décision qui
  * peut faire du tort — celle de parler de retard.
  *
@@ -257,7 +257,7 @@ export function formatHour(value: string): string {
  * à-dire aucun créneau — et le disait dans son propre en-tête. Une garde
  * défendue par un danger qui n'existe pas se fait retirer au premier ménage.
  *
- * Non plus sur une commande **remise** (le sac est parti) ni **annulée** (rien
+ * Non plus sur une commande **retirée** (le sac est parti) ni **annulée** (rien
  * ne partira) : dans les deux cas l'heure ne promet plus rien.
  *
  * @param day Le jour de service `AAAA-MM-JJ` de la file — le créneau ne porte
@@ -328,7 +328,7 @@ export interface QueueCounters {
   readonly total: number;
   readonly handedOver: number;
   readonly late: number;
-  /** Ni remises, ni annulées — ce qu'il reste réellement à tendre. */
+  /** Ni retirées, ni annulées — ce qu'il reste réellement à tendre. */
   readonly waiting: number;
 }
 
@@ -385,7 +385,7 @@ export function clockOf(date: Date): string {
  * ⚠️ **Le serveur reste l'autorité.** `handoverBlocker` décide, et il rend une
  * phrase ; cette fonction ne fait qu'éviter d'armer un bouton dont on connaît
  * déjà la réponse. Elle est donc permissive de la même façon : tout état qui
- * n'est ni « remise » ni « annulée » passe, y compris une commande que le
+ * n'est ni « retirée » ni « annulée » passe, y compris une commande que le
  * fournil n'a pas encore déclarée prête — renvoyer un client physiquement là,
  * colis prêt, parce qu'un écran d'atelier n'a pas été cliqué serait pire.
  *
@@ -402,7 +402,7 @@ export function stillRemittable(state: HandoverQueueState): boolean {
 export function stateLabel(state: HandoverQueueState): string {
   switch (state) {
     case 'handed_over':
-      return 'Remise';
+      return 'Retirée';
     case 'ready':
       return 'Prête';
     case 'cancelled':
@@ -446,13 +446,13 @@ export function rowTone(entry: HandoverQueueEntryView, day: string, now: Date): 
  * Un comptoir prend ce qui se présente, et le code résout la commande tout
  * seul : refuser renverrait quelqu'un qui est physiquement là, sac compris.
  * Un sac transporté d'un point à l'autre, un client redirigé par téléphone, une
- * livraison rattrapée au comptoir — les trois existent, et la remise y est
+ * livraison rattrapée au comptoir — les trois existent, et le retrait y est
  * légitime. Même permissivité que `handoverBlocker` côté serveur, et pour la
  * même raison : le monde réel prime sur la machine à états.
  *
  * ## Ce que la phrase sert VRAIMENT
  *
- * 🔴 Moins à empêcher une fausse remise qu'à **expliquer pourquoi le sac n'est
+ * 🔴 Moins à empêcher un faux retrait qu'à **expliquer pourquoi le sac n'est
  * pas là**. Si le client s'est trompé de point, la marchandise est à l'autre
  * bout : l'opérateur cherche dans son rack, ne trouve rien, et sans cette
  * phrase il ne sait pas s'il cherche mal ou si le sac n'a jamais existé. Elle

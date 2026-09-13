@@ -1,0 +1,77 @@
+<fold-page-section title="Mandats SEPA" separator>
+  <p class="ms-said">
+    Ce que porteront les mandats de cette entité&nbsp;: son logo en en-tête, la description du
+    contrat et le régime de paiement. Les
+    <strong>trois sont les mêmes pour tous ses clients</strong>
+    — ce qui se règle par dossier, c'est le numéro de contrat et le code du débiteur, sur la fiche
+    du client.
+  </p>
+
+  <!-- LE LOGO. Il n'avait aucun écran jusqu'au 2026-09-12 : le serveur le
+       servait, le semis l'attachait, et sur une base réelle tous les mandats
+       sortaient avec leur cellule vide sans que rien ne le dise. -->
+  <div class="ms-logo">
+    <div class="ms-logo-frame">
+      @if (logoPreview(); as src) {
+        <img class="ms-logo-img" [src]="src" alt="Logo imprimé sur les mandats" />
+      } @else {
+        <span class="ms-logo-empty">Aucun logo</span>
+      }
+    </div>
+
+    <div class="ms-logo-side">
+      <p class="ms-hint">
+        Il s'imprime dans la cellule d'en-tête du mandat. PNG ou JPEG,
+        {{ maxBytes / 1024 / 1024 }}&nbsp;Mo au maximum.
+      </p>
+      <div class="ms-logo-actions">
+        <label class="ms-pick">
+          <input type="file" [accept]="accepted" (change)="uploadLogo($event)" />
+          <span>{{ entity().hasLogo ? 'Remplacer le logo' : 'Importer un logo' }}</span>
+        </label>
+        @if (entity().hasLogo) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            [disabled]="busy()"
+            (click)="removeLogo()"
+          >
+            Retirer
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (!entity().hasLogo) {
+    <!-- Dit, parce qu'un mandat sans logo reste VALIDE : l'absence est indolore
+         et se découvre sur un papier déjà parti chez un client. -->
+    <fold-callout appearance="inset" variant="info">
+      Sans logo, les mandats sortent avec leur en-tête vide. Ils restent parfaitement valides —
+      c'est pour cela que l'oubli ne se voit pas tout seul.
+    </fold-callout>
+  }
+
+  <div class="ms-row">
+    <fold-input
+      label="Description du contrat"
+      hint="Zone 20 du mandat — ce que le prélèvement couvre, en une ligne. Facultatif."
+      placeholder="Fourniture de café et de viennoiseries"
+      [value]="descriptionDraft()"
+      (valueChange)="descriptionDraft.set($event)"
+    />
+    <fold-listbox
+      label="Type de paiement"
+      hint="Zone 12 — cochée d'avance sur le mandat, pour ne pas la laisser au client."
+      [options]="paymentTypes"
+      [value]="paymentTypeDraft()"
+      (valueChange)="onPaymentType($event)"
+    />
+  </div>
+
+  <div class="ms-actions">
+    <button foldButton [disabled]="busy()" (click)="saveDefaults()">Enregistrer</button>
+  </div>
+</fold-page-section>

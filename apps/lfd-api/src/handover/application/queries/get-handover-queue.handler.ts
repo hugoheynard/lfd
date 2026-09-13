@@ -10,18 +10,18 @@ import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
 
 /**
  * **La file du comptoir** — ce que le commerce attend ce jour-là, croisé avec ce
- * que la remise a déjà attesté.
+ * que le retrait a déjà attesté.
  *
  * ## Deux lectures, deux propriétaires, et c'est tout le dossier
  *
  * Ce que le client a commandé appartient au **commerce** : on le lui demande,
- * on ne le recopie pas. Ce qui a été remis appartient à la **remise** : elle le
- * lit chez elle, et ne le redemande à personne.
+ * on ne le recopie pas. Ce qui a été remis appartient au **retrait** : il le
+ * lit chez lui, et ne le redemande à personne.
  *
  * 🔴 C'est le seul endroit du contexte où les deux se rencontrent, et il fallait
  * que ce soit un handler plutôt qu'un port : fusionner les deux lectures dans un
- * adaptateur aurait obligé le commerce à connaître les attestations, ou la
- * remise à joindre `orders` — c'est-à-dire à franchir la frontière que tout ce
+ * adaptateur aurait obligé le commerce à connaître les attestations, ou le
+ * retrait à joindre `orders` — c'est-à-dire à franchir la frontière que tout ce
  * chantier vient de poser.
  *
  * ## Deux requêtes, jamais N + 1
@@ -78,7 +78,7 @@ function toEntryView(
  * L'ordre des tests est la règle métier, pas une commodité :
  *
  * 1. 🔴 **`handed_over` gagne sur tout**, y compris sur une annulation. Une
- *    commande remise est remise — le sac est parti. Laisser une annulation
+ *    commande retirée est retirée — le sac est parti. Laisser une annulation
  *    postérieure repeindre la ligne ferait mentir l'écran sur un fait physique,
  *    et c'est exactement le jour où on a besoin de le relire.
  * 2. `cancelled` ensuite : rien ne partira, et il faut pouvoir le dire à

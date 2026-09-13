@@ -2,16 +2,16 @@
  * **Ce que le comptoir attend aujourd'hui** — la file, telle que le commerce la
  * connaît.
  *
- * ## Pourquoi la remise ne stocke PAS cette liste
+ * ## Pourquoi le retrait ne stocke PAS cette liste
  *
  * Parce qu'elle ne peut pas diverger. C'est de l'alimentaire : ce qui est cuit
  * est facturé, donc le contenu d'une commande **gèle quand le four démarre**, et
- * la remise a lieu après. Une copie et une lecture vive donneraient la même
+ * le retrait a lieu après. Une copie et une lecture vive donneraient la même
  * réponse — la copie n'achèterait rien, et coûterait de suivre annulations et
  * avenants sur un bus qui n'est ni persisté ni rejoué.
  *
  * La règle du dossier : on ne copie pas pour aller plus vite ; on instantané
- * quand la copie devient un **fait distinct**. Ce que la remise stocke, c'est ce
+ * quand la copie devient un **fait distinct**. Ce que le retrait stocke, c'est ce
  * que personne d'autre ne sait — l'attestation, et les états de comptoir.
  *
  * ## Ce qui suit du même raisonnement
@@ -21,7 +21,7 @@
  * toutes lettres. Un instantané pris à la clôture l'aurait perdue ; une lecture
  * vive le rend gratuitement.
  *
- * ## Le jour où la remise devient un worker
+ * ## Le jour où le retrait devient un worker
  *
  * 🔴 C'est ce port, et non une copie, qui rend le découpage bon marché. Le
  * contrat et ses appelants ne bougeront pas : seul **l'adaptateur** deviendra un
@@ -74,7 +74,7 @@ export interface HandoverQueueEntry {
   readonly window: HandoverWindow | null;
   /** Somme des quantités — le chiffre qu'on recompte à voix haute. */
   readonly totalUnits: number;
-  /** L'état côté COMMERCE. La règle de remise le lit, elle ne l'écrit pas. */
+  /** L'état côté COMMERCE. La règle de retrait le lit, elle ne l'écrit pas. */
   readonly status: string;
   /** Quand le fournil l'a déclarée prête, ou `null` si elle ne l'est pas. */
   readonly readyAt: Date | null;

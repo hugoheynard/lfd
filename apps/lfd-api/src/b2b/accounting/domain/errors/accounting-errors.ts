@@ -16,12 +16,40 @@ export class InvalidSirenError extends DomainError {
   }
 }
 
+/**
+ * 🔴 **Cette erreur ne porte PAS l'IBAN refusé, et c'est tout son sujet.**
+ *
+ * Ses sœurs ci-dessus recopient la valeur fautive dans leur message ; celle-ci
+ * ne le peut pas, parce que ce message **repart au client**. `AppErrorFilter`
+ * ne neutralise que les erreurs `technical` — une `DomainError` voit son
+ * `message` rendu tel quel dans la réponse HTTP (vérifié le 2026-09-12,
+ * `platform/shared/http/app-error.filter.ts`).
+ *
+ * Un IBAN refusé est un IBAN **mal saisi**, donc à un caractère du vrai. Le
+ * renvoyer ferait voyager un compte bancaire — le nôtre pour le créancier, celui
+ * d'un client pour le débiteur — dans une réponse, un journal d'accès, un
+ * rapport d'erreur de navigateur.
+ *
+ * ⚠️ Le champ `raw` a été **retiré**, pas seulement omis du message. Le garder
+ * laisserait la fuite à un `console.log` de distance : ce qu'on ne peut pas
+ * écrire vaut mieux que ce qu'il faut penser à ne pas écrire.
+ *
+ * La `reason`, elle, reste entière — elle dit quoi corriger sans rien révéler,
+ * et c'est ce dont a besoin le personnel qui lit l'écran sans le code sous les
+ * yeux.
+ */
 export class InvalidIbanError extends DomainError {
+  constructor(readonly reason: string) {
+    super("accounting.iban.invalid", `IBAN invalide — ${reason}`);
+  }
+}
+
+export class InvalidBicError extends DomainError {
   constructor(
     readonly raw: string,
     readonly reason: string,
   ) {
-    super("accounting.iban.invalid", `IBAN « ${raw} » : ${reason}`);
+    super("accounting.bic.invalid", `BIC « ${raw} » : ${reason}`);
   }
 }
 
@@ -87,6 +115,32 @@ export class CreditorIdentifierIsImmutableError extends BusinessError {
       `Cette entité encaisse déjà sous l'ICS ${current} ; il ne peut pas devenir ${attempted}. ` +
         `Les mandats déjà signés portent l'ancien identifiant. Pour encaisser sous un autre ICS, ` +
         `créez une seconde entité juridique et faites resigner les mandats concernés.`,
+    );
+  }
+}
+
+/**
+ * Le créancier imprimé sur les mandats déjà signés ne se réécrit pas.
+ *
+ * Le raisonnement est celui de l'ICS, appliqué à ce que le PAPIER porte : un
+ * mandat SEPA nomme le créancier — titulaire et adresse — et le débiteur a
+ * autorisé CE nom-là. Le changer ici n'irait pas rechercher les signatures : on
+ * prélèverait au nom de quelqu'un que personne n'a autorisé.
+ *
+ * ⚠️ L'IBAN et le BIC ne sont PAS concernés, et c'est volontaire : aucun mandat
+ * ne les porte. Changer de banque reste libre, pour toujours.
+ */
+export class CreditorIdentityIsFrozenError extends BusinessError {
+  constructor(
+    readonly current: string,
+    readonly attempted: string,
+  ) {
+    super(
+      "accounting.creditor_identity.frozen",
+      `Des mandats ont déjà été émis au nom de « ${current} » : ce nom ne peut pas devenir ` +
+        `« ${attempted} ». Les papiers signés portent l'ancien. Vous pouvez toujours changer ` +
+        `d'IBAN ou de BIC — aucun mandat ne les porte. Pour encaisser sous une autre identité, ` +
+        `déclarez une seconde entité juridique et faites resigner les mandats concernés.`,
     );
   }
 }
@@ -178,6 +232,88 @@ export class BillingCycleBoundaryError extends TechnicalError {
     super(
       "accounting.billing_cycle.impossible_boundary",
       `Le ${day} à ${time} n'existe pas dans le fuseau des affaires (passage à l'heure d'été).`,
+    );
+  }
+}
+
+/**
+ * Une valeur ne tient pas dans le peigne de cases que le formulaire EPC lui
+ * réserve.
+ *
+ * 🔴 **Elle existe parce que le dessin tronquait en SILENCE.** `comb` remplit
+ * case par case et ignore tout caractère au-delà de la dernière : un IBAN de 31
+ * caractères — la Norvège en a 15, Malte 31 — sortait amputé sur le papier
+ * signé pendant que la base en gardait la forme entière. L'écart ne se serait
+ * vu qu'en contestation, c'est-à-dire au pire moment.
+ *
+ * `BusinessError` et non `TechnicalError` : ce n'est pas une panne, c'est un
+ * fait opposable — **ce client ne peut pas être mandaté sur ce formulaire**. Le
+ * message le dit en toutes lettres, parce qu'il est lu par quelqu'un qui n'a
+ * pas le code sous les yeux et qui doit décider quoi faire du dossier.
+ */
+export class MandateFieldTooLongError extends BusinessError {
+  constructor(
+    readonly field: string,
+    readonly length: number,
+    readonly capacity: number,
+  ) {
+    super(
+      "accounting.mandate.field_too_long",
+      `${field} fait ${String(length)} caractères, et le formulaire SEPA n'en imprime que ` +
+        `${String(capacity)}. Le mandat ne peut pas être édité tel quel pour ce compte.`,
+    );
+  }
+}
+
+/**
+ * Plusieurs entités émettrices actives, et rien pour choisir.
+ *
+ * Levée seulement là où un document doit nommer UN créancier sans qu'on lui ait
+ * dit lequel. Refuser est la seule issue honnête : un mandat émis au nom de la
+ * mauvaise entité est un papier signé pour quelqu'un d'autre, et l'erreur ne se
+ * verrait qu'en contestation.
+ */
+export class SeveralIssuersError extends BusinessError {
+  constructor(readonly count: number) {
+    super(
+      "accounting.issuer.ambiguous",
+      `${String(count)} entités émettrices sont actives : impossible de savoir laquelle doit ` +
+        `figurer sur ce mandat. Archivez celles qui n'émettent plus.`,
+    );
+  }
+}
+
+/**
+ * Aucune entité émettrice active, alors qu'un document doit en nommer une.
+ *
+ * Distinct de {@link SeveralIssuersError} : l'un se répare en archivant, l'autre
+ * en déclarant. Les confondre enverrait chercher le mauvais geste.
+ */
+/**
+ * L'entité émettrice n'a pas de **BIC**, et le lot en a besoin — **409**.
+ *
+ * 🔴 Elle peut pourtant émettre des mandats, et c'est voulu : le BIC est arrivé
+ * après (2026-09-12), et un mandat papier ne le porte pas. Exiger la complétude
+ * au moment du mandat aurait bloqué un geste qui n'en a pas besoin ; la refuser
+ * ici, au moment où la banque la réclame vraiment, nomme l'entité à compléter
+ * plutôt que de produire un `CdtrAgt` vide que le portail rejette sans dire
+ * lequel des deux champs manquait.
+ */
+export class CreditorBicMissingError extends BusinessError {
+  constructor(entityName: string) {
+    super(
+      "accounting.creditor.bic_missing",
+      `L'entité « ${entityName} » n'a pas de BIC : le fichier de prélèvement ne peut pas être ` +
+        "produit. Le renseigner dans sa fiche, section coordonnées bancaires.",
+    );
+  }
+}
+
+export class NoIssuerError extends BusinessError {
+  constructor() {
+    super(
+      "accounting.issuer.missing",
+      "Aucune entité émettrice active : déclarez-en une avant d'éditer un mandat.",
     );
   }
 }

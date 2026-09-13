@@ -5,26 +5,15 @@ import {
   type MandateToCreate,
   type RegisteredMandate,
 } from "../../domain/entities/payment-mandate.js";
-import {
-  CompanyNotFoundForMandateError,
-  MandateAlreadyActiveError,
-  MandateNotFoundError,
-} from "../../domain/errors/mandate-errors.js";
+import { AesGcmFieldCipher } from "../../../../platform/crypto/aes-gcm-field-cipher.js";
+import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
 import { MandateGateway, type MandateToRegister } from "../../domain/mandate-gateway.js";
 import {
   PaymentMandateRepository,
   type MandateHolder,
 } from "../../domain/payment-mandate.repository.js";
-import {
-  AttachMandateProofCommand,
-  RegisterMandateCommand,
-  RevokeMandateCommand,
-} from "../mandate-commands.js";
-import {
-  AttachMandateProofHandler,
-  RegisterMandateHandler,
-  RevokeMandateHandler,
-} from "../mandate.handlers.js";
+import { AttachMandateProofCommand, RevokeMandateCommand } from "../mandate-commands.js";
+import { AttachMandateProofHandler, RevokeMandateHandler } from "../mandate.handlers.js";
 
 const NOW = new Date("2026-08-11T10:00:00.000Z");
 const PDF = Buffer.from("%PDF-1.4\nmandat", "latin1");
@@ -62,6 +51,8 @@ function doubles(options: {
   const repo: PaymentMandateRepository = {
     findCurrent: () => Promise.resolve(options.current ?? null),
     findById: () => Promise.resolve(null),
+    findDraft: () => Promise.resolve(null),
+    findAwaitingProof: () => Promise.resolve(options.current ?? null),
     create: (mandate) => {
       trace.steps.push("write");
       trace.written = mandate;
@@ -75,18 +66,17 @@ function doubles(options: {
     findHolder: () =>
       Promise.resolve(
         options.holder === undefined
-          ? { companyName: "Café des Halles SAS", email: "camille@halles.fr" }
+          ? {
+              companyName: "Café des Halles SAS",
+              email: "camille@halles.fr",
+              reference: "C-7K2M4P",
+            }
           : options.holder,
       ),
     findStripeCustomerId: () => Promise.resolve(options.customerId ?? null),
   };
 
   const gateway: MandateGateway = {
-    registerMandate: (input) => {
-      trace.steps.push("gateway");
-      trace.registered = input;
-      return Promise.resolve(REGISTRATION);
-    },
     revokeMandate: () => {
       trace.steps.push("gateway");
       return Promise.resolve();
@@ -105,66 +95,16 @@ function activeMandate(): PaymentMandate {
     revokedAt: null,
     proofStorageKey: null,
     proofFileName: null,
+    creditorId: null,
   });
 }
 
-describe("RegisterMandateHandler", () => {
-  it("appelle le PRESTATAIRE avant d'écrire", async () => {
-    // L'invariant du handler : écrire d'abord laisserait un mandat « actif »
-    // chez nous que rien n'autorise chez eux — et c'est celui-là qu'on croirait
-    // pouvoir prélever.
-    const { repo, gateway, trace } = doubles({});
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    const id = await handler.execute(new RegisterMandateCommand("cmp_1", "pm_1", null));
-
-    expect(id).toBe("mdt_new");
-    expect(trace.steps).toEqual(["gateway", "write"]);
-  });
-
-  it("déclare la date du PAPIER signé, pas celle de la saisie", async () => {
-    const signedOn = new Date("2024-03-12T00:00:00.000Z");
-    const { repo, gateway, trace } = doubles({});
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await handler.execute(new RegisterMandateCommand("cmp_1", "pm_1", signedOn));
-
-    expect(trace.registered?.acceptedAt).toEqual(signedOn);
-    expect(trace.written?.acceptedAt).toEqual(signedOn);
-  });
-
-  it("RÉUTILISE le client Stripe déjà connu de la société", async () => {
-    // Un client Stripe par société, pas par autorisation : sinon l'historique se
-    // fragmente et le portefeuille devient illisible côté prestataire.
-    const { repo, gateway, trace } = doubles({ customerId: "cus_existant" });
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await handler.execute(new RegisterMandateCommand("cmp_1", "pm_2", null));
-
-    expect(trace.registered?.existingCustomerId).toBe("cus_existant");
-  });
-
-  it("REFUSE un second mandat tant que le premier est actif", async () => {
-    // Deux autorisations actives, et plus rien ne dit sur laquelle on a prélevé.
-    const { repo, gateway, trace } = doubles({ current: activeMandate() });
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await expect(
-      handler.execute(new RegisterMandateCommand("cmp_1", "pm_2", null)),
-    ).rejects.toBeInstanceOf(MandateAlreadyActiveError);
-    expect(trace.steps).toEqual([]);
-  });
-
-  it("refuse pour une société inconnue, SANS toucher au prestataire", async () => {
-    const { repo, gateway, trace } = doubles({ holder: null });
-    const handler = new RegisterMandateHandler(repo, gateway, new FixedClock(NOW));
-
-    await expect(
-      handler.execute(new RegisterMandateCommand("fantome", "pm_1", null)),
-    ).rejects.toBeInstanceOf(CompanyNotFoundForMandateError);
-    expect(trace.steps).toEqual([]);
-  });
-});
+/**
+ * Un vrai coffre plutôt qu'un doublé : le scellement est déterministe dans son
+ * effet (aller-retour) et son coût est nul. Un doublé qui rendrait les octets
+ * tels quels laisserait passer un handler qui oublie de sceller.
+ */
+const CIPHER = new AesGcmFieldCipher(Buffer.alloc(32, 5));
 
 describe("RevokeMandateHandler", () => {
   it("détache chez le PRESTATAIRE avant de marquer révoqué", async () => {
@@ -205,7 +145,7 @@ describe("AttachMandateProofHandler", () => {
       // lecture doit dire « pas encore » plutôt que rendre une pièce.
       readIfPresent: () => Promise.resolve(null),
     };
-    const handler = new AttachMandateProofHandler(repo, store);
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
@@ -227,12 +167,40 @@ describe("AttachMandateProofHandler", () => {
       // lecture doit dire « pas encore » plutôt que rendre une pièce.
       readIfPresent: () => Promise.resolve(null),
     };
-    const handler = new AttachMandateProofHandler(repo, store);
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
     expect(trace.stored?.key).toBe("companies/cmp_1/mandates/mdt_1/mandat-signe");
-    expect(trace.stored?.document.contentType).toBe("application/pdf");
+    // 🔴 `octet-stream` et non `application/pdf` depuis le 2026-09-12 : ce qui
+    // est rangé n'EST plus un PDF. Annoncer le type réel ferait croire, à qui
+    // ouvre le bucket, que la pièce est lisible — et un outil de stockage
+    // tenterait de la prévisualiser.
+    expect(trace.stored?.document.contentType).toBe("application/octet-stream");
+  });
+
+  /**
+   * 🔴 Régression : le scan du mandat SIGNÉ partait en clair dans le bucket,
+   * alors que les mêmes données — nom, banque, IBAN — étaient scellées en
+   * colonne. C'est la pièce qui porte en plus une signature manuscrite.
+   */
+  it("scelle les octets — le bucket ne voit jamais la pièce", async () => {
+    const { repo, trace } = doubles({ current: activeMandate() });
+    const store: DocumentStore = {
+      save: (key, document) => {
+        trace.stored = { key, document };
+        return Promise.resolve(key);
+      },
+      read: () => Promise.resolve(Buffer.alloc(0)),
+      readIfPresent: () => Promise.resolve(null),
+    };
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
+
+    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+
+    const stored = trace.stored?.document.bytes;
+    expect(stored?.equals(PDF)).toBe(false);
+    expect(CIPHER.openBytes(stored!).equals(PDF)).toBe(true);
   });
 
   it("refuse une pièce dont les octets ne sont pas une pièce", async () => {
@@ -244,7 +212,7 @@ describe("AttachMandateProofHandler", () => {
       // lecture doit dire « pas encore » plutôt que rendre une pièce.
       readIfPresent: () => Promise.resolve(null),
     };
-    const handler = new AttachMandateProofHandler(repo, store);
+    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
 
     await expect(
       handler.execute(

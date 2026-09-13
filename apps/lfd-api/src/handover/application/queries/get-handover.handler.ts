@@ -13,14 +13,14 @@ import { GetHandoverQuery } from "./get-handover.query.js";
  * L'écran de comptoir : ce que le staff a sous les yeux entre le scan et le
  * bouton de confirmation.
  *
- * Il **répond toujours** quand le jeton existe, même si la remise est
+ * Il **répond toujours** quand le jeton existe, même si le retrait est
  * impossible : le refus part avec la commande (`blockedReason`), pas à la place.
  * Une erreur sèche ferait disparaître de l'écran le numéro et le client — les
  * deux seules choses avec lesquelles on peut décrocher un téléphone.
  *
  * ## Deux sources, et c'est la forme normale ici
  *
- * La commande vient du **commerce** (par le port), la remise vient de **nos**
+ * La commande vient du **commerce** (par le port), le retrait vient de **nos**
  * tables. C'est exactement la frontière : chacun rend ce qu'il observe, et la
  * vue les assemble au dernier moment plutôt qu'une jointure ne les confonde.
  */

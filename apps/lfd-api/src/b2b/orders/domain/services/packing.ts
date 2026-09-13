@@ -41,7 +41,7 @@ export function packingBlocker(subject: PackingSubject): string | null {
     return "Cette commande n'est pas encore passée.";
   }
   if (subject.status === "fulfilled") {
-    return "Cette commande a déjà été remise.";
+    return "Cette commande a déjà été retirée.";
   }
   if (subject.readyAt !== null) {
     return "Cette commande est déjà déclarée prête.";

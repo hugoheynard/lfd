@@ -110,6 +110,7 @@ la production.
 | `CLOUDFLARE_ACCOUNT_ID`                                                           | tous les déploiements          | injecté dans l'image au deploy                                                     |
 | `CLOUDFLARE_LFD_API_WORKER` · `CLOUDFLARE_LFD_GATEWAY` · `CLOUDFLARE_LFC_*_PAGES` | déploiements                   | jetons Cloudflare, un par app — préfixe `LFC_` → `LFD_` le 2026-08-20              |
 | `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                          | backend B2B                    | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable |
+| `FIELD_ENCRYPTION_KEY`                                                            | backend B2B                    | scelle les IBAN des clients au repos — **le backend refuse de démarrer sans elle** |
 
 **Le PIM ne reçoit aucun webhook** — zéro occurrence de « webhook » dans son
 code source. Le seul endpoint entrant de tiers est `POST /payments/webhook`

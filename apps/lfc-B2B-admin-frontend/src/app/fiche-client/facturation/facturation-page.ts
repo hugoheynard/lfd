@@ -141,8 +141,9 @@ export class ClientFacturationPage {
     return paymentStatusVariant(row.paymentStatus);
   }
 
+  /** Ouvrir une commande sans quitter le compte — cf. l'onglet Commandes. */
   protected openOrder(row: AdminOrderRow): void {
-    void this.router.navigate(['/commandes', row.id]);
+    void this.router.navigate(['/comptes-clients', this.id(), 'commandes', row.id]);
   }
 
   /**

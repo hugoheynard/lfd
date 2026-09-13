@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import { inflateSync } from "node:zlib";
 
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
+import type { DebtorSnapshot } from "../../debtor-snapshot.js";
 import { renderSepaMandatePdf, sampleMandateFileName } from "../sepa-mandate-pdf.js";
 
 const CREDITOR: CreditorSnapshot = {
@@ -14,8 +15,13 @@ const CREDITOR: CreditorSnapshot = {
   shareCapitalCents: 1_000_000,
   addressLines: ["Route de la Balme", "73150 Val d'Isère", "France"],
   ics: "FR00ZZZ900001",
+  accountHolder: "CRAZEATIVITY",
+  accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],
+  creditorBic: "CEPAFRPP751",
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,
+  mandateContractDescription: "Fourniture de cafe et de viennoiseries",
+  mandatePaymentType: "recurrent" as const,
 };
 
 /**
@@ -109,7 +115,8 @@ describe("renderSepaMandatePdf", () => {
   it("imprime l'ICS, le nom et l'adresse du créancier", async () => {
     const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
     expect(text).toContain("FR00ZZZ900001");
-    expect(text).toContain("Crazeativity");
+    // Le TITULAIRE du compte, pas la raison sociale — cf. le describe dédié.
+    expect(text).toContain("CRAZEATIVITY");
     expect(text).toContain("Route de la Balme");
   });
 
@@ -175,5 +182,200 @@ describe("sampleMandateFileName", () => {
     expect(sampleMandateFileName(named)).toBe(
       "mandat-sepa-exemple-boulangerie-emile-fils-val-d-isere.pdf",
     );
+  });
+});
+
+/**
+ * 🔴 Le mandat imprime le créancier **tel que la banque le connaît** — le
+ * titulaire du compte —, pas la raison sociale du registre. Les deux coïncident
+ * presque toujours, et c'est « presque » qui décide : le débiteur rapproche le
+ * papier de sa ligne de relevé, et cette ligne vient du titulaire du compte
+ * (branché le 2026-09-12).
+ */
+describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
+  it("imprime le TITULAIRE du compte, et PAS la raison sociale, quand ils diffèrent", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf(
+        { ...CREDITOR, name: "Ancienne Raison Sociale", accountHolder: "CRAZEATIVITY SAS" },
+        null,
+      ),
+    );
+
+    expect(text).toContain("CRAZEATIVITY SAS");
+    expect(text).not.toContain("Ancienne Raison Sociale");
+  });
+
+  it("imprime l'adresse DU RIB, et pas celle du siège, quand elles diffèrent", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf(
+        {
+          ...CREDITOR,
+          addressLines: ["Siège social", "75001 Paris", "FR"],
+          accountAddressLines: ["Agence de la Balme", "73150 Val d'Isère", "FR"],
+        },
+        null,
+      ),
+    );
+
+    expect(text).toContain("Agence de la Balme");
+    expect(text).not.toContain("Siège social");
+  });
+
+  /**
+   * Le nom imprimé est repris DANS le texte d'autorisation (« vous autorisez
+   * (A) … »), pas seulement dans la zone 7. Un mandat qui autoriserait un nom et
+   * en nommerait un autre plus bas serait contestable.
+   */
+  it("emploie le MÊME nom dans l'autorisation et dans la zone du créancier", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf({ ...CREDITOR, accountHolder: "TITULAIRE UNIQUE" }, null),
+    );
+
+    expect(text.split("TITULAIRE UNIQUE").length - 1).toBeGreaterThan(1);
+  });
+
+  /** Repli pour les entités renseignées avant que le bloc du RIB existe. */
+  it("retombe sur la raison sociale et le siège quand aucun RIB n'est recopié", async () => {
+    const text = drawnText(
+      await renderSepaMandatePdf(
+        { ...CREDITOR, accountHolder: null, accountAddressLines: [] },
+        null,
+      ),
+    );
+
+    expect(text).toContain("Crazeativity");
+    expect(text).toContain("Route de la Balme");
+  });
+});
+
+/**
+ * La zone 8 est dessinée **en cases**, comme l'IBAN et le BIC du débiteur
+ * (2026-09-12). Le risque qu'un peigne introduit est la TRONCATURE : une case de
+ * moins que de caractères, sur un identifiant que le débiteur oppose à sa
+ * banque, ne se verrait qu'en contestation.
+ */
+describe("renderSepaMandatePdf — l'ICS en cases", () => {
+  it("imprime les 13 caractères d'un ICS français", async () => {
+    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: "FR00ZZZ900001" }, null));
+
+    expect(text).toContain("FR00ZZZ900001");
+  });
+
+  /**
+   * `CreditorIdentifier` accepte jusqu'à 35 caractères ; seuls les ICS français
+   * sont contraints à 13. Un peigne de taille fixe aurait coupé les autres.
+   */
+  it("imprime EN ENTIER un ICS étranger plus long, sans en perdre un caractère", async () => {
+    const long = "DE98ZZZ09999999999";
+
+    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: long }, null));
+
+    expect(text).toContain(long);
+  });
+
+  /**
+   * Au-delà de ce que la largeur du formulaire admet, on retombe sur la ligne
+   * pointillée — le numéro y tient en entier, et c'est la seule chose qui ne se
+   * négocie pas. Un identifiant coupé par le bord de la page serait pire.
+   */
+  it("garde le numéro entier même au-delà de ce que les cases admettent", async () => {
+    const veryLong = `BE69ZZZ${"9".repeat(28)}`;
+
+    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: veryLong }, null));
+
+    expect(veryLong).toHaveLength(35);
+    expect(text).toContain(veryLong);
+  });
+});
+
+/** Le RIB d'un client, tel que l'aperçu le remplit. */
+const DEBTOR: DebtorSnapshot = {
+  holder: "Refuge du Col SARL",
+  addressLine1: "12 rue des Alpages",
+  addressLine2: "",
+  postalCode: "73150",
+  city: "Val d'Isere",
+  countryCode: "FR",
+  iban: "FR1420041010050500013M02606",
+  bic: "CEPAFRPP751",
+  debtorReference: "C-9P2X4B",
+  contractNumber: "CT-42",
+};
+
+describe("renderSepaMandatePdf — le côté du débiteur", () => {
+  it("laisse les zones 1 à 6 VIERGES sans débiteur : c'est la fiche d'exemple", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    expect(text).not.toContain("Refuge du Col");
+  });
+
+  it("imprime le titulaire, son adresse et son pays", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    expect(text).toContain("Refuge du Col SARL");
+    expect(text).toContain("12 rue des Alpages");
+    expect(text).toContain("Val d'Isere");
+  });
+
+  it("recolle le complément d'adresse plutôt que de le perdre", async () => {
+    // « Bâtiment B » perdu, le courrier de la banque n'arrive pas — et le
+    // formulaire n'a qu'UNE ligne d'adresse.
+    const text = drawnText(
+      await renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, addressLine2: "Batiment B" }),
+    );
+    expect(text).toContain("12 rue des Alpages, Batiment B");
+  });
+
+  it("remplit les zones facultatives propres à CE client", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    expect(text).toContain("C-9P2X4B");
+    expect(text).toContain("CT-42");
+  });
+
+  /**
+   * 🔴 La zone 20 vient de l'ÉMETTEUR, pas du client : elle décrit ce que nous
+   * vendons. Elle s'imprime donc même sur la fiche d'EXEMPLE, qui n'a aucun
+   * débiteur — c'est ce qui distingue un réglage d'entité d'une saisie par
+   * dossier.
+   */
+  it("imprime la description du contrat MÊME sans débiteur", async () => {
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    expect(text).toContain("Fourniture de cafe et de viennoiseries");
+  });
+
+  it("garde la mention EXEMPLE même avec un débiteur", async () => {
+    // 🔴 Aucune RUM n'est frappée : une signature apposée sur cet aperçu
+    // créerait un mandat sans référence, inutilisable, mais que le client
+    // croirait avoir donné.
+    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    expect(text).toContain("EXEMPLE");
+  });
+
+  /**
+   * 🔴 Régression : `comb` remplissait case par case et ignorait SILENCIEUSEMENT
+   * tout caractère au-delà de la dernière. Le peigne de l'IBAN compte 27 cases ;
+   * un IBAN maltais en fait 31. Il sortait amputé sur le papier signé pendant
+   * que la base en gardait la forme entière (fix 2026-09-12).
+   */
+  it("REFUSE un IBAN plus long que le peigne, au lieu de le tronquer", async () => {
+    const tooLong = "MT84MALT011000012345MTLCAST001S";
+    expect(tooLong.length).toBeGreaterThan(27);
+
+    await expect(
+      renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, iban: tooLong }),
+    ).rejects.toThrow(/27/u);
+  });
+
+  it("accepte un IBAN plus court que le peigne", async () => {
+    // La Norvège en a 15 : le peigne garde ses cases vides à droite, ce qui est
+    // le rendu normal d'un formulaire à cases.
+    const text = drawnText(
+      await renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, iban: "NO9386011117947" }),
+    );
+    expect(text).toContain("Refuge du Col SARL");
+  });
+
+  it("REFUSE un BIC plus long que ses 11 cases", async () => {
+    await expect(
+      renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, bic: "CEPAFRPP751XXXX" }),
+    ).rejects.toThrow(/11/u);
   });
 });

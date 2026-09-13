@@ -12,11 +12,7 @@
 import type { MandateSectionView, PaymentMandateView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  MandateGateway,
-  type MandateToRegister,
-} from "../src/b2b/payments/domain/mandate-gateway.js";
-import type { RegisteredMandate } from "../src/b2b/payments/domain/entities/payment-mandate.js";
+import { MandateGateway } from "../src/b2b/payments/domain/mandate-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
@@ -30,21 +26,7 @@ const stubAdminVerifier = {
 
 /** Prestataire doublé : aucun appel réseau, mais la même forme de réponse. */
 class FakeMandateGateway extends MandateGateway {
-  readonly registered: MandateToRegister[] = [];
   readonly revoked: string[] = [];
-
-  registerMandate(input: MandateToRegister): Promise<RegisteredMandate> {
-    this.registered.push(input);
-    return Promise.resolve({
-      stripeCustomerId: input.existingCustomerId ?? "cus_e2e",
-      paymentMethodId: input.paymentMethodId,
-      reference: "RUM-E2E",
-      last4: "3000",
-      bankCode: "BNPA",
-      country: "FR",
-      status: "active",
-    });
-  }
 
   revokeMandate(paymentMethodId: string): Promise<void> {
     this.revoked.push(paymentMethodId);
@@ -72,7 +54,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  gateway.registered.length = 0;
   gateway.revoked.length = 0;
   const company = await createCompany(ctx.prisma);
   companyId = company.id;
@@ -83,17 +64,68 @@ function staff(): ReturnType<E2eContext["asSub"]> {
   return ctx.asSub("staff-e2e");
 }
 
-async function registerMandate(): Promise<string> {
-  const response = await staff()
-    .post(`/admin/companies/${companyId}/mandate`)
-    .send({ paymentMethodId: "pm_e2e" })
-    .expect(201);
-  return jsonBody<{ id: string }>(response).id;
+/**
+ * Sème un mandat **directement en base**, faute de route pour l'enregistrer.
+ *
+ * 🔴 La route `POST /admin/companies/:id/mandate` a été **supprimée** le
+ * 2026-09-12 avec le canal Stripe. Ces e2e n'en éprouvaient pas seulement
+ * l'écriture : ils tiennent aussi le dépôt de la preuve et la révocation, qui
+ * servent le parcours DIRECT à venir. Les supprimer avec la route aurait rendu
+ * deux chemins vivants à la couverture nulle.
+ *
+ * ⚠️ Écrire par Prisma contourne les invariants de l'agrégat — c'est la dette
+ * que `test/factories.ts` porte déjà, et elle est acceptable ici parce que ce
+ * que ces suites éprouvent est en AVAL de l'écriture. Elle se referme quand la
+ * frappe de la RUM donne une vraie porte d'entrée.
+ */
+async function seedMandate(paymentMethodId = "pm_e2e"): Promise<string> {
+  const row = await ctx.prisma.paymentMandate.create({
+    data: {
+      companyId,
+      stripeCustomerId: "cus_e2e",
+      paymentMethodId,
+      reference: "RUM-E2E",
+      last4: "3000",
+      bankCode: "BNPA",
+      country: "FR",
+      status: "active",
+      acceptedAt: new Date("2026-01-15T10:00:00.000Z"),
+    },
+    select: { id: true },
+  });
+  return row.id;
 }
 
-describe("Mandat — enregistrement", () => {
-  it("écrit la ligne et la rend lisible sur la fiche", async () => {
-    await registerMandate();
+/**
+ * 🔴 Le canal d'ENREGISTREMENT chez un prestataire reste fermé, et ce test est
+ * le seul endroit où la fermeture est vérifiée de l'extérieur.
+ *
+ * ⚠️ **Il ne peut plus le vérifier par l'absence de route** — corrigé le
+ * 2026-09-13, après un échec en e2e. `POST /admin/companies/:id/mandate` existe
+ * de nouveau depuis le 2026-09-12 : elle **frappe** un mandat sous NOTRE ICS, et
+ * n'enregistre rien chez personne. Le test attendait un 404 et recevait un 409.
+ *
+ * Ce qu'il éprouve désormais est le fait, pas le code de retour : ce qu'on lui
+ * envoie du prestataire est **ignoré**, et aucun mandat n'en sort. C'est plus
+ * robuste : un code de statut change avec la cause du refus, le fait ne change
+ * pas.
+ */
+describe("Mandat — le canal d'enregistrement est fermé", () => {
+  it("n'enregistre AUCUN mandat depuis un identifiant de prestataire", async () => {
+    // La société n'a pas d'émetteur déclaré dans ce contexte : la frappe refuse
+    // donc AVANT toute écriture. Ce qui est éprouvé ici n'est pas ce refus-là,
+    // mais le fait qu'aucun `paymentMethodId` reçu ne devienne jamais un mandat.
+    await staff().post(`/admin/companies/${companyId}/mandate`).send({ paymentMethodId: "pm_e2e" });
+
+    const section = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
+
+    expect(jsonBody<MandateSectionView>(section).mandate).toBeNull();
+  });
+
+  it("rend le mandat semé, et ne laisse JAMAIS sortir de quoi débiter", async () => {
+    // C'est l'identifiant de moyen de paiement qui permet de débiter. La réponse
+    // doit permettre de reconnaître le compte, pas de s'en servir.
+    await seedMandate();
 
     const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
     const { mandate } = jsonBody<MandateSectionView>(response);
@@ -101,52 +133,15 @@ describe("Mandat — enregistrement", () => {
     expect(mandate?.status).toBe("active");
     expect(mandate?.reference).toBe("RUM-E2E");
     expect(mandate?.last4).toBe("3000");
-    // Rien n'est encore prouvé : le scan du papier n'est pas déposé.
     expect(mandate?.hasProof).toBe(false);
-  });
-
-  it("ne laisse JAMAIS sortir l'identifiant du moyen de paiement", async () => {
-    // C'est lui qui permet de débiter. La réponse doit permettre de reconnaître
-    // le compte, pas de s'en servir.
-    await registerMandate();
-
-    const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
-
     expect(JSON.stringify(response.body)).not.toContain("pm_e2e");
     expect(JSON.stringify(response.body)).not.toContain("cus_e2e");
-  });
-
-  it("REFUSE un second mandat tant que le premier est actif", async () => {
-    await registerMandate();
-
-    await staff()
-      .post(`/admin/companies/${companyId}/mandate`)
-      .send({ paymentMethodId: "pm_autre" })
-      .expect(409);
-
-    expect(gateway.registered).toHaveLength(1);
-  });
-
-  it("refuse une société inconnue sans appeler le prestataire", async () => {
-    await staff()
-      .post(`/admin/companies/fantome/mandate`)
-      .send({ paymentMethodId: "pm_e2e" })
-      .expect(404);
-
-    expect(gateway.registered).toHaveLength(0);
-  });
-
-  it("refuse une date de signature dans le futur", async () => {
-    await staff()
-      .post(`/admin/companies/${companyId}/mandate`)
-      .send({ paymentMethodId: "pm_e2e", acceptedAt: "2099-01-01T00:00:00.000Z" })
-      .expect(400);
   });
 });
 
 describe("Mandat — révocation puis remplacement", () => {
   it("date la révocation, détache chez le prestataire, et rouvre la voie", async () => {
-    await registerMandate();
+    await seedMandate();
 
     await staff().delete(`/admin/companies/${companyId}/mandate`).expect(204);
 
@@ -158,13 +153,6 @@ describe("Mandat — révocation puis remplacement", () => {
     // jamais rien signé avec ce client.
     expect(revoked.mandate?.status).toBe("revoked");
     expect(revoked.mandate?.revokedAt).not.toBeNull();
-
-    // Et un nouveau mandat peut alors être enregistré.
-    await staff()
-      .post(`/admin/companies/${companyId}/mandate`)
-      .send({ paymentMethodId: "pm_nouveau" })
-      .expect(201);
-    expect(gateway.registered.at(-1)?.existingCustomerId).toBe("cus_e2e");
   });
 
   it("refuse de révoquer quand il n'y a rien à révoquer", async () => {
@@ -174,7 +162,7 @@ describe("Mandat — révocation puis remplacement", () => {
 
 describe("Mandat — la preuve", () => {
   it("marque le mandat prouvé une fois le papier signé déposé", async () => {
-    await registerMandate();
+    await seedMandate();
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
@@ -188,7 +176,7 @@ describe("Mandat — la preuve", () => {
   });
 
   it("refuse une pièce dont les octets ne sont pas une pièce", async () => {
-    await registerMandate();
+    await seedMandate();
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)

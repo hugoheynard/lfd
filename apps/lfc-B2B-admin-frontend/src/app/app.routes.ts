@@ -44,10 +44,17 @@ export const routes: Routes = [
       import('./agent/agent-tools-page/agent-tools-page').then((m) => m.AgentToolsPage),
   },
   {
-    // Le détail d'une commande vit HORS de la fiche client : une commande « zéro
-    // friction » n'a pas d'entreprise, donc pas de fiche où la loger. Une route
-    // de premier niveau les couvre toutes les deux.
-    path: 'commandes/:id',
+    // Le détail d'une commande vit AUSSI hors de la fiche client : une commande
+    // « zéro friction » n'a pas d'entreprise, donc pas de fiche où la loger.
+    //
+    // ⚠️ Ce n'est plus le chemin par lequel on ouvre la commande D'UN COMPTE :
+    // celle-là s'ouvre sous la coquille (`comptes-clients/:id/commandes/:orderId`)
+    // pour ne pas faire perdre le bandeau et les onglets à qui parcourt un
+    // dossier. Les deux écrans partagent leur corps, `app-order-view`.
+    //
+    // `:orderId` et non `:id` : les deux routes lient le même composant de
+    // corps, et sous la coquille `:id` désigne déjà la société.
+    path: 'commandes/:orderId',
     canActivate: [permissionGuard('b2b_orders:read')],
     title: 'Commande — LFC B2B admin',
     loadComponent: () =>
@@ -238,9 +245,12 @@ export const routes: Routes = [
       import('./app-mobile/app-mobile-page/app-mobile-page').then((m) => m.AppMobilePage),
   },
   {
-    // LA FILE DE REMISE — qui attend au comptoir aujourd'hui. Route de premier
+    // LA FILE DE RETRAIT — qui attend au comptoir aujourd'hui. Route de premier
     // niveau, à côté de « production » et « livraison » : c'est le même flux de
     // commandes, vu à un troisième moment.
+    //
+    // ⚠️ Le chemin `remises` est une VALEUR : le renommer romprait les
+    // signets du personnel, et une valeur n'est pas un nom (CLAUDE.md §8).
     //
     // ⚠️ Elle ne remplace PAS `retrait/:token`, et ne peut pas : ce chemin-là
     // est ce que les QR déjà partis en courriel encodent. Celui-ci est la file

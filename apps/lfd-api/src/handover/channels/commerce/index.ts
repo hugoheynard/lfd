@@ -1,11 +1,11 @@
 /**
- * **Le canal que la remise publie POUR le commerce.**
+ * **Le canal que le retrait publie POUR le commerce.**
  *
  * Deux sens y passent, et ce n'est pas une incohérence :
  *
  * - `HandoverSubjectReader` est une classe **abstraite que le commerce
- *   implémente** — la remise déclare ce dont elle a besoin pour afficher et
- *   pour juger, elle ne va pas le chercher ;
+ *   implémente** — le retrait déclare ce dont il a besoin pour afficher et
+ *   pour juger, il ne va pas le chercher ;
  * - `OrderHandedOverEvent` est un **fait qu'elle publie**, et que le commerce
  *   consomme pour basculer la commande en `fulfilled`.
  *

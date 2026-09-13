@@ -1,7 +1,7 @@
 import { handoverBlocker, type HandoverCandidate } from "../handover.js";
 
 /**
- * La règle de remise, éprouvée là où elle vit maintenant.
+ * La règle de retrait, éprouvée là où elle vit maintenant.
  *
  * 🔴 Ces cas viennent de `b2b/orders/domain/services/__tests__/handover.spec.ts`
  * et ont suivi la règle au fournil le 2026-09-07. Deux d'entre eux ont disparu
@@ -45,7 +45,7 @@ describe("handoverBlocker", () => {
     // L'instant vient de la table du fournil : c'est lui qui détient ce fait
     // depuis qu'il le constate.
     const blocker = handoverBlocker(candidate({ handedOverAt: new Date() }));
-    expect(blocker).toBe("Cette commande a déjà été remise.");
+    expect(blocker).toBe("Cette commande a déjà été retirée.");
   });
 
   it("refuse l'annulation AVANT de constater la remise déjà faite", () => {

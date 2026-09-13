@@ -8,11 +8,11 @@ import { OrderHandoverRepository } from "../../../domain/ports/order-handover.re
 import { HandoverAttestation } from "../handover-attestation.service.js";
 
 /**
- * Le geste commun aux deux portes de remise, éprouvé sur ce qui compte : **qui
+ * Le geste commun aux deux portes de retrait, éprouvé sur ce qui compte : **qui
  * publie, et quand**.
  *
  * Un fait publié par le perdant d'une course ferait partir un second courriel au
- * client et compterait deux remises au journal, là où la base n'en porte qu'une.
+ * client et compterait deux retraits au journal, là où la base n'en porte qu'un.
  * C'est le genre de défaut qu'aucun écran ne montre.
  */
 
@@ -119,7 +119,7 @@ describe("HandoverAttestation", () => {
 
   it("ne publie RIEN quand un autre poste a gagné la course", async () => {
     // Le perdant lève. S'il publiait aussi, le client recevrait deux courriels
-    // et le journal compterait deux remises — pour un seul sac qui part.
+    // et le journal compterait deux retraits — pour un seul sac qui part.
     const { service, events } = attestationOf(null, false);
 
     await expect(service.attest(subject(), "staff-2", "scan")).rejects.toThrow(
@@ -153,7 +153,7 @@ describe("HandoverAttestation", () => {
     );
     const { service, written } = attestationOf(earlier, true);
 
-    await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été remise/u);
+    await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été retirée/u);
     expect(written).toEqual([]);
   });
 
@@ -163,7 +163,7 @@ describe("HandoverAttestation", () => {
     // ce sont deux questions, et une seule réponse les confondait.
     //
     // On republie l'attestation EXISTANTE, jamais celle qu'on vient de refuser :
-    // l'heure et l'auteur sont ceux de la vraie remise.
+    // l'heure et l'auteur sont ceux du vrai retrait.
     const earlier = OrderHandover.rehydrate(
       "ord_1",
       "ORD-ABCD-1234",
@@ -173,7 +173,7 @@ describe("HandoverAttestation", () => {
     );
     const { service, events } = attestationOf(earlier, true);
 
-    await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été remise/u);
+    await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été retirée/u);
 
     expect(events.published).toEqual([
       new OrderHandedOverEvent(

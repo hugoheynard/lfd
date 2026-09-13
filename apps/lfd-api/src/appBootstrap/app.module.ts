@@ -22,6 +22,7 @@ import { PimModule } from "../pim/pim.module.js";
 import { HandoverModule } from "../handover/handover.module.js";
 import { ProductionModule } from "../production/production.module.js";
 import { HandoverFeedModule } from "./handover-feed.module.js";
+import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
@@ -112,6 +113,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     ProductionFeedModule,
     HandoverModule,
     HandoverFeedModule,
+    DebtorMandateModule,
     PricingAdminModule,
     OrderPricingModule,
     // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.

@@ -45,21 +45,39 @@
     variant="title"
     icon="contracts"
     title="Dernières commandes"
-    subtitle="Les plus récentes d'abord."
+    subtitle="Les cinq plus récentes, montants TTC."
   />
 
   <ul class="cs-orders">
     @for (order of view.recentOrders; track order.id) {
-      <li class="cs-order">
-        <span class="cs-order-ref cs-num">{{ order.orderNumber }}</span>
-        <span class="cs-order-date cs-num">{{ order.placedAt | date: 'dd/MM/yyyy' }}</span>
-        <span class="cs-order-status">{{ order.status }}</span>
-        <span class="cs-order-total cs-num">{{ euros(order.totalCents) }}</span>
+      <li>
+        <!-- Un vrai lien, et non une ligne qui écoute le clic : il s'ouvre au
+             clavier, il s'ouvre dans un onglet, et il annonce sa destination
+             avant qu'on appuie. -->
+        <a
+          class="cs-order"
+          [routerLink]="['/comptes-clients', view.companyId, 'commandes', order.id]"
+        >
+          <span class="cs-order-ref cs-num">{{ order.orderNumber }}</span>
+          <span class="cs-order-date cs-num">{{ order.placedAt | date: 'dd/MM/yyyy' }}</span>
+          <fold-badge
+            class="cs-order-status"
+            [variant]="orderTone(order.status)"
+            [content]="orderLabel(order.status)"
+          />
+          <span class="cs-order-total cs-num">{{ money(order.totalCents) }}</span>
+        </a>
       </li>
     } @empty {
       <li class="cs-empty">Aucune commande à ce jour.</li>
     }
   </ul>
+
+  <!-- La carte est plafonnée : sans cette sortie, elle passerait pour tout ce
+       que le compte a commandé. -->
+  <a class="cs-more" [routerLink]="['/comptes-clients', view.companyId, 'commandes']">
+    Voir plus
+  </a>
 </fold-card>
 
 <!-- Les gestes qui ENGAGENT, en bas et derrière une confirmation : suspendre ou

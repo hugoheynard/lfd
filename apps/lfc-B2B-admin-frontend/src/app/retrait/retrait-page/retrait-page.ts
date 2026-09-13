@@ -51,14 +51,14 @@ export class PickupPage {
   protected readonly confirming = signal<boolean>(false);
 
   /**
-   * `true` quand la remise vient d'être attestée **par ce poste**, à distinguer
-   * d'une commande trouvée déjà remise : le premier cas mérite un accusé franc,
+   * `true` quand le retrait vient d'être attesté **par ce poste**, à distinguer
+   * d'une commande trouvée déjà retirée : le premier cas mérite un accusé franc,
    * le second un simple constat. C'est la seule chose que l'écran sait et que le
    * serveur ne sait pas.
    */
   protected readonly justConfirmed = signal<boolean>(false);
 
-  /** La remise est possible : on tient une commande, et rien ne la bloque. */
+  /** Le retrait est possible : on tient une commande, et rien ne la bloque. */
   protected readonly canConfirm = computed<boolean>(() => {
     const view = this.handover();
     return view !== null && view.blockedReason === null;
@@ -89,9 +89,9 @@ export class PickupPage {
   }
 
   /**
-   * Atteste la remise. En cas de refus, on **remplace** la vue par ce que le
+   * Atteste le retrait. En cas de refus, on **remplace** la vue par ce que le
    * serveur renvoie plutôt que d'afficher seulement un message : si un autre
-   * poste a gagné la course, l'écran doit montrer sa remise à lui, pas rester
+   * poste a gagné la course, l'écran doit montrer son retrait à lui, pas rester
    * sur un état devenu faux.
    */
   protected async confirm(): Promise<void> {
@@ -103,7 +103,7 @@ export class PickupPage {
       this.handover.set(await this.api.confirm(this.token()));
       this.justConfirmed.set(true);
     } catch (error: unknown) {
-      this.error.set(httpErrorMessage(error, 'La remise n’a pas pu être enregistrée.'));
+      this.error.set(httpErrorMessage(error, 'Le retrait n’a pas pu être enregistré.'));
       await this.reload();
     } finally {
       this.confirming.set(false);

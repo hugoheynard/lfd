@@ -48,7 +48,7 @@ const HEADERS = [
   "Rang",
   "Référence de bout en bout",
   "Débiteur",
-  "IBAN du débiteur",
+  "Compte du débiteur",
   "Référence du mandat",
   "Montant (€)",
 ] as const;
@@ -61,6 +61,44 @@ interface AuditedLine {
   /** En centimes, reconverti depuis le texte du fichier. */
   readonly cents: number;
 }
+
+/**
+ * L'IBAN **masqué** — `••••1234`.
+ *
+ * 🔴 Le CSV entier sortait l'IBAN en clair jusqu'au 2026-09-12. Il a changé de
+ * nature depuis que le RIB du client est scellé en base (`company_bank_accounts`,
+ * AES-256-GCM) : un fichier qui recompose en clair ce que la base scelle défait
+ * le coffre par la porte de service, et celui-ci s'ouvre dans un tableur, se
+ * transfère par courriel et se garde dans un dossier de téléchargements.
+ *
+ * Ce que l'audit vérifie, c'est qu'un LOT est juste — les montants, les comptes,
+ * le total déclaré. Reconnaître un compte suffit à ça ; le recomposer n'y ajoute
+ * rien. Qui doit lire l'IBAN entier ouvre la fiche du client, où le mur tenant
+ * et les rôles s'appliquent — ce qu'un fichier posé sur un bureau ne fait plus.
+ *
+ * ⚠️ Ce qui n'a pas la FORME d'un IBAN ressort tel quel — au premier chef
+ * `IBAN-INCONNU`, que le lot écrit tant qu'il n'est pas branché. Un masque
+ * appliqué à tout rendrait `••••ONNU`, c'est-à-dire un compte d'apparence
+ * normale là où le fichier hurle qu'il n'en a pas. Masquer une sentinelle la
+ * déguise en donnée.
+ */
+function maskedIban(iban: string): string {
+  const trimmed = iban.trim();
+  if (!IBAN_SHAPE.test(trimmed)) {
+    return trimmed;
+  }
+  return `••••${trimmed.slice(-MASKED_IBAN_TAIL)}`;
+}
+
+/** Quatre, comme partout ailleurs dans le dépôt (`last4`, `creditorAccountLast4`). */
+const MASKED_IBAN_TAIL = 4;
+
+/**
+ * La forme d'un IBAN, pas sa validité : deux lettres de pays, deux chiffres de
+ * clé, puis au moins dix caractères. On ne valide pas ici — le domaine l'a fait
+ * avant que la valeur entre en base —, on distingue un compte d'une sentinelle.
+ */
+const IBAN_SHAPE = /^[A-Z]{2}\d{2}[A-Z0-9]{10,}$/i;
 
 /** Rend le CSV de contrôle d'un `pain.008`. */
 export function auditCsv(xml: string): string {
@@ -76,7 +114,7 @@ export function auditCsv(xml: string): string {
         String(rank + 1),
         quoted(line.endToEndId),
         quoted(line.debtor),
-        quoted(line.iban),
+        quoted(maskedIban(line.iban)),
         quoted(line.mandate),
         euros(line.cents),
       ].join(SEPARATOR),

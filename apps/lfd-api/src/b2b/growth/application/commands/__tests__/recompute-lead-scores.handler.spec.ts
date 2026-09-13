@@ -5,6 +5,7 @@ import type { LeadEvent } from "../../../domain/lead-score.js";
 import { LeadEventSource } from "../../../domain/ports/lead-event-source.js";
 import { LeadReader } from "../../../domain/ports/lead.reader.js";
 import { LeadScoreStore } from "../../../domain/ports/lead-score.store.js";
+import { CompanyNamer, type CompanyIdentity } from "../../../domain/ports/company-namer.js";
 import { RecomputeLeadScoresHandler } from "../recompute-lead-scores.handler.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
@@ -38,6 +39,33 @@ class CapturingStore extends LeadScoreStore {
   }
 }
 
+/** Annuaire doublé : capture les LOTS demandés, pour compter les allers-retours. */
+class FakeCompanies extends CompanyNamer {
+  readonly batches: string[][] = [];
+  constructor(private readonly known: ReadonlyMap<string, CompanyIdentity> = new Map()) {
+    super();
+  }
+  nameOf(companyId: string): Promise<CompanyIdentity | null> {
+    return Promise.resolve(this.known.get(companyId) ?? null);
+  }
+  namesOf(companyIds: readonly string[]): Promise<ReadonlyMap<string, CompanyIdentity>> {
+    this.batches.push([...companyIds]);
+    return Promise.resolve(new Map([...this.known].filter(([id]) => companyIds.includes(id))));
+  }
+}
+
+/** Déclaration d'une société restée en plan — le dossier que `rescue` vise. */
+function declared(companyId: string, at: string): LeadEvent {
+  return {
+    type: "company.declared",
+    subjectType: "company",
+    subjectId: companyId,
+    occurredAt: new Date(at),
+    actorType: "customer",
+    payload: { via: "self", ownerUserId: "u_owner" },
+  };
+}
+
 function ordered(subjectId: string, at: string, totalCents: number): LeadEvent {
   return {
     type: "order.placed",
@@ -57,6 +85,7 @@ describe("RecomputeLeadScoresHandler", () => {
       new FakeLeadReader(),
       store,
       new FixedClock(NOW),
+      new FakeCompanies(),
     );
 
     const count = await handler.execute();
@@ -77,11 +106,54 @@ describe("RecomputeLeadScoresHandler", () => {
       new FakeLeadReader(),
       store,
       new FixedClock(NOW),
+      new FakeCompanies(),
     );
 
     const count = await handler.execute();
 
     expect(count).toBe(0);
     expect(store.written).toEqual([]);
+  });
+
+  /**
+   * Régression : le libellé est PERSISTÉ dans `lead_score.label` et relu tel
+   * quel. Le résoudre à l'affichage aurait laissé l'identifiant en base, et le
+   * lecteur suivant l'aurait réaffiché (fix 2026-09-12).
+   */
+  it("écrit l'enseigne dans le libellé persisté du coup rescue", async () => {
+    const store = new CapturingStore();
+    const companies = new FakeCompanies(
+      new Map([["c_stalled", { enseigne: "Boulangerie Martin", raisonSociale: "SARL MARTIN" }]]),
+    );
+    const handler = new RecomputeLeadScoresHandler(
+      new FakeEventSource([declared("c_stalled", "2026-08-05T09:00:00.000Z")]),
+      new FakeLeadReader(),
+      store,
+      new FixedClock(NOW),
+      companies,
+    );
+
+    await handler.execute();
+
+    expect(store.written?.[0]).toMatchObject({ play: "rescue", label: "Boulangerie Martin" });
+  });
+
+  it("demande les enseignes en UN lot, et ne demande pas les sujets qui ne sont pas des sociétés", async () => {
+    const companies = new FakeCompanies();
+    const handler = new RecomputeLeadScoresHandler(
+      new FakeEventSource([
+        declared("c_a", "2026-08-05T09:00:00.000Z"),
+        declared("c_b", "2026-08-06T09:00:00.000Z"),
+        ordered("u1", "2026-08-18T09:00:00.000Z", 5000),
+      ]),
+      new FakeLeadReader(),
+      new CapturingStore(),
+      new FixedClock(NOW),
+      companies,
+    );
+
+    await handler.execute();
+
+    expect(companies.batches).toEqual([["c_a", "c_b"]]);
   });
 });

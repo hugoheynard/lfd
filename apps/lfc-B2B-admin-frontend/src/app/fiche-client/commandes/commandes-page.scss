@@ -1,8 +1,10 @@
+/* Pleine largeur, contrairement aux onglets de formulaire : ce qu'on lit ici
+   est un TABLEAU de cinq colonnes, et le cap de lecture d'un paragraphe le
+   serrait pour rien. Facturation et Tarifs font déjà de même. */
 .cmd {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md, 1rem);
-  max-width: 52rem;
 }
 
 .cmd-h2 {

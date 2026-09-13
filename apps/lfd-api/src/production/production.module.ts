@@ -24,10 +24,10 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
  * `b2b`, ce que la matrice des frontières interdit — et ce serait franchir la
  * frontière par la porte de service.
  *
- * ⚠️ **La remise n'est plus ici** depuis le 2026-09-10 : elle a son bloc, son
+ * ⚠️ **Le retrait n'est plus ici** depuis le 2026-09-10 : il a son bloc, son
  * module et son contrôleur. Ce que le fournil en garde est une QUESTION —
- * `AttestedHandoversReader`, qu'il déclare dans `channels/handover/` et que la
- * remise implémente. Il ne tient plus son dépôt d'écriture.
+ * `AttestedHandoversReader`, qu'il déclare dans `channels/handover/` et que le
+ * retrait implémente. Il ne tient plus son dépôt d'écriture.
  */
 @Module({
   controllers: [ProductionDayController],

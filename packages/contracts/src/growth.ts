@@ -59,6 +59,15 @@ export type ActivationStep = "vat" | "kbis" | "billing" | "delivery";
 /** Une ligne du tunnel **activation & frictions** (sujet = société). */
 export interface ActivationView {
   readonly companyId: string;
+  /**
+   * L'enseigne **d'aujourd'hui**, ou `null` si la société n'est plus lisible.
+   *
+   * Volontairement **non figée**, contrairement au `clientName` d'un
+   * `order.placed` : un dossier d'activation est une file d'appels ouverte, pas
+   * un fait passé. On rappelle une société par le nom qu'elle porte au moment
+   * où on décroche, pas par celui qu'elle portait à l'inscription.
+   */
+  readonly companyName: string | null;
   readonly declaredVia: "self" | "staff";
   readonly declaredAt: string;
   readonly status: ActivationStatus;
@@ -96,7 +105,14 @@ export interface LeadScoreView {
   /** Sujet : une personne (`user`), une société (`company`) ou un lead cold (`lead`). */
   readonly subjectType: "user" | "company" | "lead";
   readonly subjectId: string;
-  /** Libellé lisible (e-mail connu du journal, sinon l'identifiant). */
+  /**
+   * Libellé lisible : enseigne pour une société, e-mail pour une personne, nom
+   * commercial pour un lead cold — et l'identifiant en tout dernier repli.
+   *
+   * ⚠️ Ce repli est un **aveu d'échec**, pas un cas nominal : une ligne qui
+   * montre un identifiant est une ligne que personne n'appellera. Il n'arrive
+   * que si la société ou l'e-mail a disparu de la base entre deux recomputes.
+   */
   readonly label: string;
   readonly play: PlayType;
   /** Score de priorité, entier 0..100 (fonction pure auditable). */

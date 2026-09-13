@@ -23,8 +23,8 @@ import { GetProductionDayStatusQuery } from "./get-production-day-status.query.j
  * ## Trois faits, trois compteurs — depuis le 2026-09-08
  *
  * 🔴 Il n'y en avait qu'un, et c'était le trou du dispositif. Le fournil annonce
- * **trois** faits (clôture, colisage, remise) sur le même bus fragile, et seul
- * le premier avait son contrepoids. Un colisage ou une remise perdus ne se
+ * **trois** faits (clôture, colisage, retrait) sur le même bus fragile, et seul
+ * le premier avait son contrepoids. Un colisage ou un retrait perdus ne se
  * voyaient nulle part : la commande restait en arrière, et personne ne pouvait
  * l'apprendre autrement qu'en comparant deux tables à la main.
  *
@@ -32,7 +32,7 @@ import { GetProductionDayStatusQuery } from "./get-production-day-status.query.j
  *
  * Sur une journée pas encore arrêtée, des commandes `placed` sont l'état normal,
  * et compter quoi que ce soit ferait passer la normalité pour une anomalie. La
- * clôture est aussi l'instant qui **borne** la fenêtre des remises regardées :
+ * clôture est aussi l'instant qui **borne** la fenêtre des retraits regardés :
  * une fenêtre qui a un sens métier, plutôt qu'un nombre de jours au hasard.
  */
 @QueryHandler(GetProductionDayStatusQuery)

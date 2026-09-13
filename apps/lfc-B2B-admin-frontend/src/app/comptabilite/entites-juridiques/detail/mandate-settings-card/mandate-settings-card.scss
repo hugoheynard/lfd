@@ -1,0 +1,104 @@
+.ms-said,
+.ms-hint {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 65ch;
+}
+
+/* La vignette à gauche, ce qu'on en fait à droite. En dessous de 30rem elles
+   s'empilent — un cadre de logo et deux boutons côte à côte sur un téléphone
+   se chevauchent. */
+.ms-logo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--fold-space-md);
+}
+
+/* Un cadre de taille FIXE : le logo d'un mandat vit dans une cellule, et le
+   montrer à sa taille réelle ferait sauter la mise en page d'une image à
+   l'autre. */
+.ms-logo-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 9rem;
+  height: 5rem;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
+  overflow: hidden;
+}
+
+.ms-logo-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.ms-logo-empty {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.ms-logo-side {
+  flex: 1 1 20rem;
+}
+
+.ms-logo-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+/* Déclencheur de dépôt : un `<input type=file>` est inhabillable, on garde donc
+   le label comme bouton et on masque l'input sans le sortir du flux clavier. */
+.ms-pick {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  font-size: var(--fold-text-sm);
+  /* 🔴 `relative` OBLIGATOIRE : l'input qui suit est en `position: absolute`, et
+     sans bloc englobant il se place par rapport à un ancêtre lointain. Constaté
+     le 2026-09-13 — l'input atterrissait **3259 px** sous son label, et cliquer
+     dessus faisait scroller la page jusqu'à lui : le navigateur amène l'élément
+     focalisé dans le champ de vision, et on tombait sur une zone vide. Vu de
+     l'écran, « la page devient toute blanche ». Rien dans la console. */
+  position: relative;
+}
+
+.ms-pick input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.ms-pick:focus-within {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}
+
+.ms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.ms-row fold-input,
+.ms-row fold-listbox {
+  flex: 1 1 18rem;
+}
+
+.ms-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--fold-space-sm);
+}

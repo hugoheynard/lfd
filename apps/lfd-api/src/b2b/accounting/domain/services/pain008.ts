@@ -1,7 +1,9 @@
 import { addDays, instantToLocal } from "@lfd/contracts";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
+import type { DebtorMandate } from "../ports/debtor-mandate.reader.js";
 import type { BillableCompany } from "../ports/billable-orders.reader.js";
+import { CreditorBicMissingError } from "../errors/accounting-errors.js";
 
 /**
  * **Le `pain.008`** — le message ISO 20022 qui demande les prélèvements.
@@ -9,21 +11,33 @@ import type { BillableCompany } from "../ports/billable-orders.reader.js";
  * C'est le fichier qu'on dépose au portail de la banque, et la seule pièce du
  * système dont une erreur se paie en argent réel plutôt qu'en écran faux. Le
  * format, ses pièges et les questions encore ouvertes vivent dans
- * [`format-pain-008.md`](../../../../../../documentation/comptabilite/format-pain-008.md).
+ * [`prelevement-sepa.md`](../../../../../../documentation/comptabilite/prelevement-sepa.md).
  *
- * ## 🔴 CE FICHIER EST UN BROUILLON, ET IL DOIT LE RESTER
+ * ## 🔴 LE BROUILLON EST DÉSORMAIS CONDITIONNEL — 2026-09-12
  *
- * Deux données du bloc débiteur n'existent **nulle part** dans le système :
- * son **IBAN** et la **RUM** de son mandat. Le mandat Stripe ne porte que
- * `last4`, `bankCode` et `country` — de quoi reconnaître un compte, jamais de
- * quoi le débiter. C'est la tranche 2 qui les apportera.
+ * L'IBAN du débiteur et la RUM de son mandat n'existaient **nulle part** dans
+ * le système. Ils existent depuis ce jour : la RUM est frappée par nous
+ * (`MintMandateHandler`), et le compte est recopié scellé dans
+ * `company_bank_accounts`. Le rendu les écrit donc pour de vrai.
  *
- * Le rendu **n'invente donc rien**. Il écrit à leur place des marqueurs
- * qu'aucun schéma n'accepte — `IBAN-INCONNU` ne passe pas le motif d'un IBAN.
- * C'est délibéré et c'est le cœur de ce fichier : **un lot incomplet qui
- * RESSEMBLE à un lot valide est exactement ce qui finit déposé un vendredi
- * soir.** Un fichier qu'aucun portail n'accepte ne peut prélever personne par
- * accident.
+ * Ce qui n'a PAS changé, et qui est le cœur de ce fichier : **il n'invente
+ * jamais**. Une ligne dont le mandat ou le compte manque reçoit toujours des
+ * marqueurs qu'aucun schéma n'accepte — `IBAN-INCONNU` ne passe pas le motif
+ * d'un IBAN — et le fichier garde alors son bandeau d'avertissement.
+ *
+ * **Un lot incomplet qui RESSEMBLE à un lot valide est exactement ce qui finit
+ * déposé un vendredi soir.** Le bandeau tombe quand, et seulement quand, chaque
+ * ligne porte son mandat. C'est la seule façon d'avoir un fichier déposable
+ * sans jamais en produire un qui trompe.
+ *
+ * ⚠️ **La séquence reste `RCUR` pour tout le lot.** Le CFONB recommande
+ * d'émettre systématiquement un `FRST` après un changement d'IBAN, le créancier
+ * ne pouvant pas savoir s'il s'agit d'un changement de banque ou d'une
+ * renumérotation — et un changement de banque impose en plus
+ * `OrgnlDbtrAgt = SMNDA`. Rien de tout cela n'est écrit ici : il faudrait un
+ * `PmtInf` par couple (séquence, date), et nous ne gardons pas encore
+ * l'historique des changements de compte que la norme exige par ailleurs.
+ * C'est la tranche suivante, et elle est nommée dans `prelevement-sepa.md`.
  *
  * Ce qui est réel, en revanche, l'est entièrement : notre bloc créancier (ICS,
  * IBAN, raison sociale), la fenêtre du cycle, et **les montants**, sommés depuis
@@ -45,6 +59,11 @@ const SEPA_ALLOWED = /[^A-Za-z0-9/\-?:().,'+ ]/gu;
 
 export interface Pain008Input {
   readonly creditor: CreditorSnapshot;
+  /**
+   * Les mandats prélevables, par société. Une société absente sort en
+   * marqueurs, et le fichier garde son bandeau.
+   */
+  readonly mandates: ReadonlyMap<string, DebtorMandate>;
   /** Bornes du cycle — la seconde est **exclusive**. */
   readonly cycleStart: Date;
   readonly cycleEnd: Date;
@@ -53,18 +72,57 @@ export interface Pain008Input {
   readonly lines: readonly BillableCompany[];
 }
 
+/**
+ * Le lot est-il **déposable** ? Même règle que le rendu, exposée pour que le NOM
+ * du fichier ne puisse pas contredire son contenu.
+ *
+ * ⚠️ Le nom portait `BROUILLON-` en dur jusqu'au 2026-09-13 : un lot complet
+ * serait sorti avec un corps sans avertissement sous un nom qui en criait un.
+ * Deux vérités sur le même fichier, dont une fausse — et c'est le NOM qu'on lit
+ * en premier dans un dossier de téléchargements.
+ */
+export function isDepositable(
+  lines: readonly BillableCompany[],
+  mandates: ReadonlyMap<string, DebtorMandate>,
+): boolean {
+  return lines.length > 0 && lines.every((line) => mandates.has(line.companyId));
+}
+
 /** Rend le XML. Déterministe : mêmes entrées, même fichier. */
 export function renderPain008(input: Pain008Input): string {
-  const { creditor, lines } = input;
+  const { creditor, lines, mandates } = input;
+
+  // 🔴 Le BIC du créancier est exigé ICI, et nulle part avant. Le JSDoc de
+  // `CreditorSnapshot` l'annonçait : une entité renseignée avant que la colonne
+  // existe reste parfaitement capable d'émettre un MANDAT — ce document-là ne
+  // porte pas de BIC. C'est le lot qui en a besoin, donc le lot qui refuse, en
+  // nommant l'entité à compléter plutôt qu'en écrivant un `CdtrAgt` vide que la
+  // banque rejetterait sans dire lequel des deux manquait.
+  if (creditor.creditorBic === null || creditor.creditorBic === "") {
+    throw new CreditorBicMissingError(creditor.name);
+  }
+
   const total = lines.reduce((sum, line) => sum + line.totalCents, 0);
+  // Une seule ligne incomplète suffit à garder le bandeau : un fichier
+  // partiellement vrai est plus dangereux qu'un fichier entièrement faux, parce
+  // qu'il passe la relecture humaine.
+  //
+  // 🔴 `lines.length > 0` et pas seulement `every` — corrigé le 2026-09-13,
+  // après un échec en e2e. Sur un lot VIDE, `every` rend `true` par vacuité :
+  // un cycle sans aucune société à prélever sortait donc en fichier
+  // « déposable », sans bandeau, avec `NbOfTxs` à zéro. Un lot qui ne demande
+  // rien n'est pas un lot complet, c'est un lot qui n'existe pas — et le
+  // présenter comme prêt à déposer est exactement le genre de fichier qu'on
+  // dépose un vendredi soir en croyant avoir fait quelque chose.
+  const complete = isDepositable(lines, mandates);
   const collectionDay = requestedCollectionDay(input.cycleEnd, creditor.preNotificationDays);
   const cycleTag = cycleTagOf(input.cycleEnd);
-  const messageId = `BROUILLON-${cycleTag}`;
+  const messageId = complete ? cycleTag : `BROUILLON-${cycleTag}`;
   const period = `${localDay(input.cycleStart)} au ${localDay(dayBefore(input.cycleEnd))}`;
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    draftBanner(),
+    ...(complete ? [] : [draftBanner()]),
     `<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.02">`,
     `  <CstmrDrctDbtInitn>`,
     `    <GrpHdr>`,
@@ -82,6 +140,14 @@ export function renderPain008(input: Pain008Input): string {
     `      <CtrlSum>${euros(total)}</CtrlSum>`,
     `      <PmtTpInf>`,
     `        <SvcLvl><Cd>SEPA</Cd></SvcLvl>`,
+    // 🔴 `B2B` ici, alors que le MANDAT imprimé est un formulaire CORE — il
+    // accorde le remboursement à 8 semaines, ce que le schéma interentreprises
+    // refuse (vérifié le 2026-09-13, cf. `sepa-mandate-pdf.ts`). Le fichier et
+    // le papier se contredisent, et c'est le papier qui fait foi en litige.
+    // Ne pas aligner l'un sur l'autre sans lire
+    // `documentation/todos/todo-mandat-core-contre-b2b.md` : basculer ce code
+    // en `CORE` changerait le droit du client, et l'y laisser fait refuser le
+    // lot par sa banque. Aucun des deux ne se décide ici.
     `        <LclInstrm><Cd>B2B</Cd></LclInstrm>`,
     // ⚠️ `RCUR` pour toutes les lignes, et un seul `PmtInf` par conséquent. Le
     // jour où un premier prélèvement exigera `FRST`, il faudra un SECOND bloc :
@@ -92,12 +158,15 @@ export function renderPain008(input: Pain008Input): string {
     `      <ReqdColltnDt>${collectionDay}</ReqdColltnDt>`,
     `      <Cdtr><Nm>${sepa(creditor.name)}</Nm></Cdtr>`,
     `      <CdtrAcct><Id><IBAN>${creditor.creditorIban}</IBAN></Id></CdtrAcct>`,
+    `      <CdtrAgt><FinInstnId><BIC>${creditor.creditorBic}</BIC></FinInstnId></CdtrAgt>`,
     `      <ChrgBr>SLEV</ChrgBr>`,
     `      <CdtrSchmeId><Id><PrvtId><Othr>`,
     `        <Id>${creditor.ics}</Id>`,
     `        <SchmeNm><Prtry>SEPA</Prtry></SchmeNm>`,
     `      </Othr></PrvtId></Id></CdtrSchmeId>`,
-    ...lines.map((line, rank) => transaction(line, cycleTag, rank, period)),
+    ...lines.map((line, rank) =>
+      transaction(line, mandates.get(line.companyId) ?? null, cycleTag, rank, period),
+    ),
     `    </PmtInf>`,
     `  </CstmrDrctDbtInitn>`,
     `</Document>`,
@@ -112,6 +181,7 @@ export function renderPain008(input: Pain008Input): string {
  */
 function transaction(
   line: BillableCompany,
+  mandate: DebtorMandate | null,
   cycleTag: string,
   rank: number,
   period: string,
@@ -126,18 +196,18 @@ function transaction(
   // ⚠️ Il n'est stable que tant que la composition du lot ne change pas. Le vrai
   // `EndToEndId` devra porter le numéro de TENTATIVE pour rester traçable après
   // une re-présentation — c'est la tranche 9, et le budget de 35 caractères y
-  // sera serré (voir `format-pain-008.md`).
+  // sera serré (voir `prelevement-sepa.md`).
   const endToEndId = `${cycleTag}-${String(rank + 1).padStart(3, "0")}`;
   return [
     `      <DrctDbtTxInf>`,
     `        <PmtId><EndToEndId>${endToEndId}</EndToEndId></PmtId>`,
     `        <InstdAmt Ccy="EUR">${euros(line.totalCents)}</InstdAmt>`,
     `        <DrctDbtTx><MndtRltdInf>`,
-    `          <MndtId>${UNKNOWN_MANDATE}</MndtId>`,
+    `          <MndtId>${mandate?.reference ?? UNKNOWN_MANDATE}</MndtId>`,
     `          <AmdmntInd>false</AmdmntInd>`,
     `        </MndtRltdInf></DrctDbtTx>`,
     `        <Dbtr><Nm>${sepa(line.companyName)}</Nm></Dbtr>`,
-    `        <DbtrAcct><Id><IBAN>${UNKNOWN_IBAN}</IBAN></Id></DbtrAcct>`,
+    `        <DbtrAcct><Id><IBAN>${mandate?.iban ?? UNKNOWN_IBAN}</IBAN></Id></DbtrAcct>`,
     // 140 caractères au maximum : les commandes du cycle se résument, elles ne
     // se listent pas.
     `        <RmtInf><Ustrd>${sepa(`Commandes du ${period} (${String(line.orderCount)})`).slice(0, 140)}</Ustrd></RmtInf>`,
@@ -157,7 +227,7 @@ function draftBanner(): string {
     `  n'accepte, plutot que d'inventer des valeurs plausibles.`,
     ``,
     `  Il sert a relire notre bloc creancier et la forme du lot, avec un`,
-    `  conseiller bancaire. Voir documentation/comptabilite/format-pain-008.md.`,
+    `  conseiller bancaire. Voir documentation/comptabilite/prelevement-sepa.md.`,
     `-->`,
   ].join("\n");
 }
@@ -183,7 +253,7 @@ export function cycleTagOf(cycleEnd: Date): string {
  * annoncé au débiteur.
  *
  * ⚠️ Elle ne tient pas compte des jours ouvrés ni du délai de présentation de la
- * banque — deux inconnues de `format-pain-008.md` (questions 3 et 8). C'est une
+ * banque — deux inconnues de `prelevement-sepa.md` (questions 3 et 8). C'est une
  * raison de plus pour que ce fichier reste un brouillon.
  */
 function requestedCollectionDay(cycleEnd: Date, preNotificationDays: number): string {

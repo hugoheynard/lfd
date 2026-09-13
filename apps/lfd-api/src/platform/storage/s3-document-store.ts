@@ -44,18 +44,42 @@ export class S3DocumentStore extends DocumentStore {
     return this.attempt("lecture", key, () => this.service().downloadToBuffer(key));
   }
 
+  /**
+   * 🔴 **Ne passe PAS par `attempt`**, et c'est tout l'enjeu (corrigé le
+   * 2026-09-12). `attempt` emballe l'erreur du SDK dans une
+   * `DocumentStorageUnavailableError` ; le `isMissingObject` qui vivait ici
+   * testait donc l'EMBALLAGE, jamais l'erreur S3, et rendait faux à tous les
+   * coups. `readIfPresent` ne rendait `null` pour rien au monde.
+   *
+   * Le symptôme était trompeur : le journal montrait bien
+   * `DEBUG … n'existe pas (NoSuchKey)` — émis depuis `attempt`, qui voit
+   * l'erreur brute — juste avant l'ERREUR. Les deux lignes se contredisaient,
+   * et la bonne était la première.
+   *
+   * Ce qui l'a fermé n'est pas un second test mais **un seul décideur** : la
+   * conversion en panne vit désormais dans `refuse()`, appelée après que
+   * l'absence a été écartée. Deux gardes sur deux formes d'erreur ne peuvent
+   * plus diverger, parce qu'il n'y en a plus qu'une.
+   */
   async readIfPresent(key: string): Promise<Buffer | null> {
     try {
-      return await this.attempt("lecture", key, () => this.service().downloadToBuffer(key));
+      return await this.service().downloadToBuffer(key);
     } catch (error) {
       // Seule l'ABSENCE devient `null`. Une clé refusée, un bucket inconnu, une
       // signature invalide continuent de lever : ce sont des pannes, et les
       // confondre avec « pas encore rangé » ferait refabriquer en silence pour
       // toujours devant un stockage cassé.
       if (isMissingObject(error)) {
+        // ⚠️ Le message dit ce que l'adaptateur SAIT — le stockage a répondu, il
+        // n'a rien à cette clé — et pas ce que ça signifie, qu'il ignore. Il a
+        // dit « n'existe pas encore » jusqu'au 2026-09-12 : vrai pour les
+        // archives, qui se refabriquent, et rassurant à tort pour les pièces
+        // dont une colonne annonce la présence. C'est à l'appelant, seul à
+        // savoir s'il avait une promesse, de hausser le ton.
+        this.logger.debug(`Stockage des pièces — aucun objet à la clé « ${key} ».`);
         return null;
       }
-      throw error;
+      throw this.refuse("lecture", key, error);
     }
   }
 
@@ -80,25 +104,37 @@ export class S3DocumentStore extends DocumentStore {
     try {
       return await run();
     } catch (error) {
-      // Le refus « non configuré » porte déjà sa raison : on ne la réécrit pas.
-      if (error instanceof DocumentStorageUnavailableError) {
-        throw error;
-      }
-      const cause = error instanceof Error ? error.name : String(error);
-      // Une pièce absente n'est pas un refus du canal : le canal a répondu, et sa
-      // réponse est « rien ici ». `read` la traite quand même en panne — c'est son
-      // contrat, cf. le port — mais la journaliser en ERREUR ferait crier le
-      // chemin courant de `readIfPresent`, qui passe par ici.
-      if (isMissingObject(error)) {
-        this.logger.debug(`Stockage des pièces — « ${key} » n'existe pas (${cause}).`);
-      } else {
-        this.logger.error(`Stockage des pièces — ${what} de « ${key} » refusé : ${cause}`);
-      }
-      throw new DocumentStorageUnavailableError(
-        `Le stockage des pièces a refusé le ${what}.`,
-        error,
-      );
+      throw this.refuse(what, key, error);
     }
+  }
+
+  /**
+   * Traduit une panne du canal en refus du port, et la journalise **une fois**.
+   *
+   * ⚠️ **Le seul endroit qui emballe.** Tant qu'il y en avait deux formes
+   * d'erreur en circulation — la brute et l'emballée — un appelant pouvait
+   * tester la mauvaise sans que rien ne le dise. Ici, quiconque veut distinguer
+   * l'absence le fait AVANT d'appeler cette méthode, sur l'erreur brute.
+   *
+   * Une pièce absente qui arrive quand même jusqu'ici vient de `read`, dont le
+   * contrat est d'en faire une panne — mais elle se journalise en DEBUG, parce
+   * qu'elle dit une incohérence base/bucket et non un canal cassé.
+   */
+  private refuse(what: string, key: string, error: unknown): Error {
+    // Le refus « non configuré » porte déjà sa raison : on ne la réécrit pas.
+    if (error instanceof DocumentStorageUnavailableError) {
+      return error;
+    }
+    const cause = error instanceof Error ? error.name : String(error);
+    if (isMissingObject(error)) {
+      this.logger.debug(`Stockage des pièces — « ${key} » n'existe pas (${cause}).`);
+    } else {
+      this.logger.error(`Stockage des pièces — ${what} de « ${key} » refusé : ${cause}`);
+    }
+    return new DocumentStorageUnavailableError(
+      `Le stockage des pièces a refusé le ${what}.`,
+      error,
+    );
   }
 
   /** Le service S3, construit à la demande, ou un refus explicite si non configuré. */

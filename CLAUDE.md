@@ -734,6 +734,33 @@ mots à employer :
 | remise      | `discount` | sur place       | `eatIn`     |
 | retrait     | `pickup`   | livraison       | `delivery`  |
 
+🔴 **« Remise » ne désigne QUE la réduction de prix** (décidé le 2026-09-12). Le
+geste de tendre la marchandise s'appelait « remise » dans toute la prose du
+dépôt ; il s'appelle désormais **retrait**, et `handover` en anglais.
+
+Ce mot-là se paie d'une ambiguïté, et elle est **assumée plutôt que subie** :
+
+| Français               | Anglais    | Ce que c'est                                                                    |
+| ---------------------- | ---------- | ------------------------------------------------------------------------------- |
+| retrait (le **mode**)  | `pickup`   | le client vient chercher, par opposition à la livraison                         |
+| retrait (le **geste**) | `handover` | l'instant où la marchandise change de mains — au comptoir **ou** chez le client |
+
+Le français a un mot pour deux notions ; l'anglais en a deux. C'est le sens de
+la circulation qui compte : **du français vers l'anglais, on choisit**, et le
+contexte tranche sans effort (un mode d'acheminement n'est pas un instant). De
+l'anglais vers le français, les deux se disent « retrait » et personne ne s'y
+trompe, parce qu'un retrait se fait toujours au terme d'un retrait.
+
+L'alternative — inventer un troisième mot français pour le geste — aurait
+coûté plus cher : elle aurait obligé à l'apprendre, alors que « retrait » est
+déjà ce que dit l'équipe au comptoir.
+
+⚠️ Les identifiants, eux, disaient **déjà** `handover` (`HandoverQueue`,
+`handedOverVia`, `OrderHandoverView`) : c'est la prose française qui était en
+retard sur le code, pas l'inverse. Et les deux dossiers de migration
+`*_remise_en_livraison` / `*_remise_au_fournil` ne se renomment pas — une valeur
+n'est pas un nom, voir la troisième exception ci-dessous.
+
 **Trois exceptions, écrites plutôt que tues** — une exception nommée ne dérive
 pas, une exception tacite si :
 

@@ -6,7 +6,7 @@
 
 Nous n'émettons pas de factures : **le comptable importe nos commandes dans son
 logiciel et sort la facture mensuelle** (décision du 2026-09-10, §0 quater de
-[`../comptabilite/architecture-prelevement-sepa-direct.md`](../comptabilite/architecture-prelevement-sepa-direct.md)).
+[`../comptabilite/prelevement-sepa.md`](../comptabilite/prelevement-sepa.md)).
 
 Cet import est donc **son entrée**, et elle n'existe pas. Nous savons calculer le
 montant à prélever, nous savons produire le fichier de la banque, et nous ne
@@ -23,7 +23,7 @@ demandent pas le même travail qu'un fichier structuré à son schéma. L'écrir
 avant de la poser, c'est écrire deux fois.
 
 Elle se pose **avec** les huit questions à la Caisse d'Épargne
-([`../comptabilite/format-pain-008.md`](../comptabilite/format-pain-008.md)) —
+([`../comptabilite/prelevement-sepa.md`](../comptabilite/prelevement-sepa.md)) —
 même entretien, même semaine.
 
 ## Ce qu'on sait déjà, et qui ne bougera pas

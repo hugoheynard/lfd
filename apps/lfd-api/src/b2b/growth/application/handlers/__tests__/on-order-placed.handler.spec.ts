@@ -29,6 +29,10 @@ class StubCompanies extends CompanyNamer {
         : null,
     );
   }
+  /** Cet abonné ne nomme qu'une société à la fois ; le lot ne le concerne pas. */
+  namesOf(): Promise<ReadonlyMap<string, CompanyIdentity>> {
+    return Promise.resolve(new Map());
+  }
 }
 
 /**

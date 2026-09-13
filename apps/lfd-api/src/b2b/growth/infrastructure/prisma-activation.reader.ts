@@ -5,19 +5,25 @@ import type { ActivationView } from "@lfd/contracts";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ACTIVITY_TYPES } from "../domain/activity-event.js";
-import { deriveActivations, type ActivationEvent } from "../domain/activation.js";
+import { companyIdsOf, deriveActivations, type ActivationEvent } from "../domain/activation.js";
+import { CompanyNamer } from "../domain/ports/company-namer.js";
 import { ActivationReader } from "../domain/ports/activation.reader.js";
 
 /**
  * Adaptateur Prisma du tunnel d'activation : lit le journal (sujet = société) —
  * les faits `company.declared` / `company.step_reached` / `company.activated` —
  * puis délègue à la fonction pure `deriveActivations`.
+ *
+ * Il ne lit **aucune table voisine** : l'enseigne des dossiers lui vient du port
+ * `CompanyNamer`, qui appartient au même contexte. Une lecture directe de
+ * `companies` serait une jointure de plus qu'aucune porte ne verrait.
  */
 @Injectable()
 export class PrismaActivationReader extends ActivationReader {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    private readonly companies: CompanyNamer,
   ) {
     super();
   }
@@ -45,7 +51,11 @@ export class PrismaActivationReader extends ActivationReader {
       payload: asRecord(row.payload),
     }));
 
-    return deriveActivations(events, this.clock.now());
+    // Une seule lecture pour toutes les enseignes : le tunnel en nomme autant
+    // qu'il porte de dossiers, et les demander une par une ferait une requête
+    // par ligne d'écran.
+    const names = await this.companies.namesOf(companyIdsOf(events));
+    return deriveActivations(events, this.clock.now(), names);
   }
 }
 

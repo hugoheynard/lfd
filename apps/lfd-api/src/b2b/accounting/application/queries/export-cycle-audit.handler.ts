@@ -3,6 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { BillableOrdersReader } from "../../domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
+import { DebtorMandateReader } from "../../domain/ports/debtor-mandate.reader.js";
 import { auditCsv } from "../../domain/services/pain008-audit.js";
 import { buildCycleDraft } from "../cycle-draft-support.js";
 import { ExportCycleAuditQuery } from "./billing-cycle-queries.js";
@@ -30,12 +31,18 @@ export class ExportCycleAuditHandler implements IQueryHandler<
   constructor(
     private readonly creditors: CreditorReader,
     private readonly billable: BillableOrdersReader,
+    private readonly debtors: DebtorMandateReader,
     private readonly clock: Clock,
   ) {}
 
   async execute(query: ExportCycleAuditQuery): Promise<CycleAuditFile> {
     const draft = await buildCycleDraft(
-      { creditors: this.creditors, billable: this.billable, clock: this.clock },
+      {
+        creditors: this.creditors,
+        billable: this.billable,
+        debtors: this.debtors,
+        clock: this.clock,
+      },
       query.legalEntityId,
     );
     return {

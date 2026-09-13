@@ -52,7 +52,7 @@ export interface ScanDialogData {
   readonly openTab: string;
 }
 
-/** Ce que le panneau rend à la file : une remise a été gravée. */
+/** Ce que le panneau rend à la file : un retrait a été gravé. */
 export const SCANNED = 'scanned';
 
 type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'done';
@@ -85,11 +85,11 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  * désigne — y compris un sac de l'autre point, y compris une livraison que la
  * file ne montre plus. `openTab` lui donne de quoi le DIRE avant d'attester.
  *
- * La phrase sert moins à empêcher une fausse remise qu'à expliquer pourquoi le
+ * La phrase sert moins à empêcher un faux retrait qu'à expliquer pourquoi le
  * sac n'est pas dans le rack : l'opérateur cherche, ne trouve rien, et sans
  * elle il ne sait pas s'il cherche mal. Elle ne barre donc pas la confirmation
  * — un sac transporté, un client redirigé, une livraison rattrapée au comptoir
- * sont des remises légitimes. La règle vit dans `outsideTheCounter`.
+ * sont des retraits légitimes. La règle vit dans `outsideTheCounter`.
  *
  * ⚠️ Ce paragraphe a justifié le contrôle par une comparaison entre « un bouton
  * de scan par ligne » et « un scanner global » jusqu'au 2026-09-11. Le bouton
@@ -104,8 +104,8 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  * cassée.
  *
  * 🔴 Il ne propose PAS la saisie du numéro, et c'est un retrait délibéré du
- * 2026-09-11. Ce dialogue ne sait faire qu'une chose : lire un code. La remise
- * saisie existe toujours — sur le rail, à côté du sac qu'on regarde, où elle a
+ * 2026-09-11. Ce dialogue ne sait faire qu'une chose : lire un code. Le retrait
+ * saisi existe toujours — sur le rail, à côté du sac qu'on regarde, où il a
  * un sujet. Offrir les deux ici, dont l'un sous une caméra allumée, revenait à
  * mettre le chemin faible à portée du geste pressé.
  */
@@ -166,7 +166,7 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
    *
    * ⚠️ Un **avertissement**, pas un refus : `mismatch` barre la confirmation,
    * celui-ci la laisse passer. Un sac transporté, un client redirigé, une
-   * livraison rattrapée au comptoir — la remise y est légitime, et ce qui
+   * livraison rattrapée au comptoir — le retrait y est légitime, et ce qui
    * manquait n'était pas une interdiction mais une phrase.
    */
   protected readonly elsewhere = signal<string | null>(null);
@@ -263,7 +263,7 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
 
   private token: string | null = null;
 
-  /** Atteste la remise par le SCAN — l'attestation forte. */
+  /** Atteste le retrait par le SCAN — l'attestation forte. */
   protected async confirm(): Promise<void> {
     const token = this.token;
     if (token === null) {
@@ -275,7 +275,7 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
       this.stage.set('done');
       this.panel.close(SCANNED);
     } catch (caught) {
-      this.notify.error(caught, "Cette remise n'a pas pu être enregistrée.");
+      this.notify.error(caught, "Ce retrait n'a pas pu être enregistré.");
     } finally {
       this.busy.set(false);
     }

@@ -61,6 +61,30 @@ export interface B2bMails {
     /** ⚠️ Rien ne choisit encore : l'appelant passe `fr`. Cf. `mail-copy.ts`. */
     readonly locale: ContentLocale;
   };
+  /**
+   * **Le mandat de prélèvement à signer.** Destinataire : le client.
+   *
+   * 🔴 Le seul courriel du dépôt qui porte un document **opposable** en pièce
+   * jointe. Ce qu'il demande n'est pas de lire : c'est de signer, de scanner, et
+   * de renvoyer — et de déclarer la RUM à sa banque, sans quoi le premier débit
+   * sera refusé. Les trois gestes sont dans le corps, parce qu'un client qui en
+   * oublie un croit avoir fini.
+   *
+   * La RUM est répétée en clair dans le texte, en plus d'être imprimée sur le
+   * PDF : c'est elle qu'il dictera à son conseiller, et personne ne rouvre une
+   * pièce jointe pour recopier une référence au téléphone.
+   */
+  "customer.mandate-to-sign": {
+    readonly companyName: string;
+    /** La RUM, dictable au téléphone. */
+    readonly reference: string;
+    /** L'ICS du créancier — il se déclare avec la RUM. */
+    readonly creditorIdentifier: string;
+    readonly creditorName: string;
+    /** Le PDF du mandat, en base64. */
+    readonly pdfBase64: string;
+    readonly fileName: string;
+  };
   /** Un client a réservé un créneau. Destinataire : la boîte de l'équipe. */
   "staff.appointment-booked": {
     readonly contactName: string;
@@ -431,6 +455,37 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           "rien de nouveau à créer.",
         footer: "Vous n'attendiez pas ce rattachement ? Répondez à cet e-mail, nous le retirerons.",
       }),
+    }),
+    "customer.mandate-to-sign": (data) => ({
+      subject: sanitiseSubject(`Votre mandat de prélèvement SEPA — ${data.reference}`),
+      html: person({
+        title: "Votre mandat de prélèvement à signer",
+        body:
+          `Bonjour,\n\nVous trouverez en pièce jointe le mandat de prélèvement SEPA ` +
+          `établi pour ${data.companyName}. Il est prérempli : il ne vous reste qu'à le ` +
+          `dater, le signer, et nous le renvoyer scanné ou photographié.`,
+        // 🔴 La déclaration à la banque est une ÉTAPE, pas une remarque. En SDD
+        // B2B, la banque du débiteur refuse le premier prélèvement tant que le
+        // mandat ne lui a pas été déclaré — un client qui signe sans le faire
+        // croit avoir fini, et c'est le débit qui le lui apprend.
+        rows: [
+          { label: "Référence du mandat (RUM)", value: data.reference },
+          { label: "Identifiant créancier (ICS)", value: data.creditorIdentifier },
+          { label: "Créancier", value: data.creditorName },
+        ],
+        footer:
+          "Important : ce mandat relève du schéma SEPA « interentreprises » (B2B). " +
+          "Vous devez le déclarer à votre banque, avec la référence et l'identifiant " +
+          "créancier ci-dessus, avant le premier prélèvement — sans cette déclaration, " +
+          "votre banque le refusera.",
+      }),
+      attachments: [
+        {
+          filename: data.fileName,
+          contentBase64: data.pdfBase64,
+          contentType: "application/pdf",
+        },
+      ],
     }),
     "staff.appointment-booked": (data) => ({
       subject: sanitiseSubject(`Nouveau rendez-vous — ${data.contactName} · ${data.when}`),

@@ -1,0 +1,25 @@
+-- L'état **brouillon** d'un mandat : frappé, imprimé, pas encore signé.
+--
+-- C'est la place qui manque pour un mandat que NOUS émettons. Le modèle est de
+-- forme Stripe — il suppose qu'un tiers a enregistré le mandat avant que nous en
+-- ayons un, donc qu'il est né signé. Un mandat maison naît à l'inverse : il
+-- existe pour être imprimé, et la signature revient des jours plus tard.
+--
+-- 🔴 **SEULE dans sa migration, et l'ordre avec le reste du lot n'est pas
+-- négociable.** La raison n'est PAS transactionnelle : vérifié le 2026-09-12
+-- contre Postgres 17 et Prisma 7.8, `ADD VALUE` et un `WHERE status='draft'`
+-- passent dans le même fichier sans erreur. La raison est que les migrations
+-- d'ici ne sont PAS atomiques : une migration qui échoue à mi-course laisse la
+-- base à moitié migrée ET une entrée en échec dans `_prisma_migrations` qui
+-- bloque tous les déploiements suivants. Plus une migration porte de gestes,
+-- plus elle a d'endroits où s'arrêter au milieu.
+--
+-- ⚠️ **Le libellé de cet état est parti AVANT lui** (`packages/contracts`,
+-- `MANDATE_STATUS_LABELS`). L'inverse tuerait la section paiement du
+-- back-office EN SERVICE : elle fait `LABELS[status].toLowerCase()`, et un
+-- bundle déjà chargé qui reçoit une valeur inconnue rend `undefined`. Un onglet
+-- ouvert n'est pas redéployé.
+--
+-- Purement ADDITIVE. Une valeur d'enum que personne n'accorde n'est portée par
+-- aucune ligne ; le retour arrière consiste à ne pas s'en servir.
+ALTER TYPE "public"."MandateStatus" ADD VALUE IF NOT EXISTS 'draft' BEFORE 'pending';

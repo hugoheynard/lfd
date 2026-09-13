@@ -7,7 +7,7 @@ import { HandoverAttestation } from "../services/handover-attestation.service.js
 import { ConfirmHandoverCommand } from "./confirm-handover.command.js";
 
 /**
- * **La remise scannée** : résoudre le jeton, puis attester.
+ * **Le retrait scanné** : résoudre le jeton, puis attester.
  *
  * 🔴 Ce handler vivait dans `b2b/orders/application/commands/` jusqu'au
  * 2026-09-07, et il écrivait `orders.handed_over_*` en direct. C'est au labo

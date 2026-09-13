@@ -1,5 +1,3 @@
-import type { RegisteredMandate } from "./entities/payment-mandate.js";
-
 /** Ce qu'il faut au prestataire pour créer le mandat. */
 export interface MandateToRegister {
   readonly companyId: string;
@@ -32,17 +30,6 @@ export interface MandateToRegister {
  * transporte donc des identifiants, jamais de la donnée bancaire.
  */
 export abstract class MandateGateway {
-  /**
-   * Crée le mandat chez le prestataire et rend de quoi le reconnaître.
-   *
-   * L'acceptation est déclarée **hors ligne** : le client n'a rien cliqué, nous
-   * affirmons détenir son mandat signé. En contestation, la charge de la preuve
-   * est sur nous — d'où la pièce justificative attendue par l'agrégat.
-   *
-   * @throws {PaymentGatewayUnavailableError} canal non configuré ou refus du prestataire.
-   */
-  abstract registerMandate(input: MandateToRegister): Promise<RegisteredMandate>;
-
   /**
    * Détache le moyen de paiement chez le prestataire, pour qu'aucun prélèvement
    * ne puisse plus partir dessus. Silencieux si le moyen a déjà disparu :

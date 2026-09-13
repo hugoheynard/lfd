@@ -214,6 +214,8 @@ model Company {
   orderDraft         OrderDraft?
   supportRequests    SupportRequest[]
   mandates           PaymentMandate[]
+  // Le RIB du client — au plus un (`company_id` est unique côté table).
+  bankAccount        CompanyBankAccount?
 
   /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
   alertOverrides AccountAlertOverride[]

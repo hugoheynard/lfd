@@ -2,6 +2,86 @@
   display: block;
 }
 
+/* La zone de danger est devenue SŒUR de la carte, le titre de section étant
+   passé dedans. Elle pose donc son propre écart — sans lui, elle se collerait
+   à la carte et perdrait la distance qui est toute sa fonction. */
+fold-danger-zone {
+  display: block;
+  margin-top: var(--fold-space-lg);
+}
+
+/* ─── LE SOCLE ───────────────────────────────────────────────────────────────
+   Il n'est pas une ligne de plus : c'est le plancher du système, actif pour
+   tout le monde. Il prend donc une surface à lui — un fond doux et une bordure —
+   plutôt que la même rangée que les crédits, qui le ferait lire comme un
+   réglage parmi d'autres.
+
+   ⚠️ UN SEUL bloc, titre et phrase compris. La première version en faisait deux,
+   recollés par une marge de -1px et des coins remis à plat : un assemblage qui
+   se défait au premier changement de rayon ou de bordure chez fold, sans que
+   rien ne le signale. */
+.pm-base {
+  padding: var(--fold-space-md);
+  margin-bottom: var(--fold-space-lg);
+  border: 1px solid var(--fold-color-success-border);
+  background: var(--fold-color-success-surface);
+  border-radius: var(--fold-radius-md);
+}
+
+.pm-base-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+.pm-base-note {
+  margin: var(--fold-space-sm) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 70ch;
+}
+
+/* ─── LE PAIEMENT DIFFÉRÉ ───────────────────────────────────────────────────
+   Aucune surface propre, à dessein : c'est le corps de la carte. Lui donner un
+   fond aussi mettrait les deux blocs au même rang, alors que l'un est offert et
+   l'autre se construit. */
+.pm-deferred {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Ce qu'une étape attend pour devenir faisable. Même ton que le mode d'emploi :
+   ce n'est pas une erreur, c'est une chronologie. */
+.pm-later {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le mode d'emploi, avant la frise : trois étapes en une phrase. Il se lit une
+   fois — d'où le ton discret, et la place au-dessus de ce qu'il explique. */
+.pm-lede {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 60ch;
+}
+
+/* Une frise suit ce qu'elle résume, sans se coller au titre. */
+.pm-deferred fold-timeline {
+  margin-bottom: var(--fold-space-md);
+}
+
+/* Un titre d'étape reprend de l'air après le bloc précédent : sans ça,
+   « 2 · Mandat SEPA » se collait au formulaire du RIB et paraissait en faire
+   partie. */
+.pm-deferred fold-element-title[variant='caps'] {
+  margin-top: var(--fold-space-md);
+}
+
 /* Un moyen par ligne : ce qu'il est à gauche, où il en est à droite. */
 .pm-row {
   display: flex;
@@ -45,6 +125,13 @@
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
   font-size: var(--fold-text-sm);
+  /* 🔴 `relative` OBLIGATOIRE : l'input qui suit est en `position: absolute`, et
+     sans bloc englobant il se place par rapport à un ancêtre lointain. Constaté
+     le 2026-09-13 — l'input atterrissait **3259 px** sous son label, et cliquer
+     dessus faisait scroller la page jusqu'à lui : le navigateur amène l'élément
+     focalisé dans le champ de vision, et on tombait sur une zone vide. Vu de
+     l'écran, « la page devient toute blanche ». Rien dans la console. */
+  position: relative;
 }
 
 .proof-pick input {

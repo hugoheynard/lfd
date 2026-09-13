@@ -445,9 +445,24 @@ for (const dir of SCOPE) {
 // travail en cours était simplement un `git rm` non fait. Une porte qui plante
 // au lieu de dire ce qu'elle reproche se contourne au lieu de se lire
 // (constaté le 2026-09-09, en déplaçant un fichier).
+//
+// 🔴 **Les migrations APPLIQUÉES sont exclues, et ce n'est pas une faiblesse.**
+// Prisma garde la somme de contrôle de chaque migration jouée ; en rééditer le
+// moindre commentaire fait échouer `migrate deploy` en production. Une référence
+// écrite dans une migration ne peut donc PAS être repointée — elle cite l'état
+// du dépôt au jour où la migration a été écrite, et c'est tout ce qu'elle peut
+// faire. L'exiger vivante revient à interdire de renommer un document dès
+// qu'une migration l'a nommé, c'est-à-dire pour toujours.
+//
+// La contrepartie est acceptée : une migration peut citer un document disparu.
+// Elle ne se lit qu'en archéologie, où un nom périmé se retrouve par l'historique
+// git — alors qu'un `migrate deploy` cassé se paie un jour de déploiement.
+// (Constaté le 2026-09-12, en fusionnant les trois documents du prélèvement.)
+const APPLIED_MIGRATIONS = "/prisma/migrations/";
 const SOURCES = everyFile.filter(
   (file) =>
     !file.startsWith("documentation/") &&
+    !file.includes(APPLIED_MIGRATIONS) &&
     /\.(?:ts|tsx|mjs|cjs|js|prisma|sql|html|json)$/u.test(file) &&
     existsSync(join(ROOT, file)),
 );

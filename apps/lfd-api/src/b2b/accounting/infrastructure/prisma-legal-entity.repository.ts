@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
+import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { LegalEntity } from "../domain/entities/legal-entity.js";
 import { LegalEntityRepository } from "../domain/ports/legal-entity.repository.js";
-import { toDomain } from "./legal-entity.mapper.js";
+import { legalEntityColumns, toDomain } from "./legal-entity.mapper.js";
 
 /**
  * Adaptateur Prisma du port d'**écriture**.
@@ -19,35 +20,31 @@ import { toDomain } from "./legal-entity.mapper.js";
  */
 @Injectable()
 export class PrismaLegalEntityRepository extends LegalEntityRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cipher: FieldCipher,
+  ) {
     super();
   }
 
   async load(id: string): Promise<LegalEntity | null> {
     const row = await this.prisma.legalEntity.findUnique({ where: { id } });
-    return row === null ? null : toDomain(row);
+    return row === null ? null : toDomain(row, this.cipher);
   }
 
+  /**
+   * ⚠️ **La liste est EXPLICITE, donc une colonne neuve s'y ajoute à la main.**
+   * Un champ posé sur l'agrégat mais absent d'ici s'écrit sans erreur et ne
+   * persiste rien : la commande réussit, l'écran annonce, et la relecture rend
+   * l'ancienne valeur. C'est arrivé le 2026-09-12 avec les réglages de mandat —
+   * le semis disait « posés » sur une colonne restée vide.
+   *
+   * Un `...snapshot` étalé serait plus sûr mais ferait passer `id` et les
+   * horodatages dans l'`update` ; la vigilance est le prix de ce choix.
+   */
   async save(entity: LegalEntity): Promise<void> {
     const snapshot = entity.toPersistence();
-    const columns = {
-      name: snapshot.name,
-      legalForm: snapshot.legalForm,
-      siren: snapshot.siren,
-      rcs: snapshot.rcs,
-      vatNumber: snapshot.vatNumber,
-      shareCapitalCents: snapshot.shareCapitalCents,
-      addressLine1: snapshot.addressLine1,
-      addressLine2: snapshot.addressLine2,
-      postalCode: snapshot.postalCode,
-      city: snapshot.city,
-      countryCode: snapshot.countryCode,
-      ics: snapshot.ics,
-      creditorIban: snapshot.creditorIban,
-      preNotificationDays: snapshot.preNotificationDays,
-      logoKey: snapshot.logoKey,
-      archivedAt: snapshot.archivedAt,
-    };
+    const columns = legalEntityColumns(snapshot, this.cipher);
     await this.prisma.legalEntity.upsert({
       where: { id: snapshot.id },
       create: { id: snapshot.id, ...columns },

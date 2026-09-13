@@ -1,6 +1,7 @@
 import type { ActivationStatus, ActivationStep, ActivationView } from "@lfd/contracts";
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
+import type { CompanyIdentity } from "./ports/company-namer.js";
 
 /**
  * Projection **Activation & frictions** — dérivée du journal, au niveau
@@ -26,12 +27,39 @@ export interface ActivationEvent {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
+ * Les sociétés que ce lot d'événements nomme, dédupliquées — de quoi demander
+ * leur identité **en une lecture** avant de dériver.
+ *
+ * Vit ici, et pas dans l'adaptateur, parce que c'est la même question que se
+ * posent les deux appelants de `deriveActivations` (la projection de l'écran et
+ * le recompute du cockpit) : la dupliquer les laisserait diverger.
+ */
+export function companyIdsOf(events: readonly ActivationEvent[]): string[] {
+  const ids = new Set<string>();
+  for (const event of events) {
+    if (event.type === ACTIVITY_TYPES.companyDeclared) {
+      ids.add(event.subjectId);
+    }
+  }
+  return [...ids];
+}
+
+/**
  * Dérive le tunnel d'activation par société. **Pure et déterministe** (temps
  * injecté). N'inclut que les sociétés **déclarées** dans le journal (le fait
  * fondateur). Trie les `pending` d'abord (les dossiers à pousser), les plus
  * anciennement bloqués en tête.
+ *
+ * `names` est l'annuaire des enseignes, résolu par l'appelant
+ * (`companyIdsOf` → `CompanyNamer.namesOf`). Absent, chaque dossier sort avec
+ * `companyName: null` — c'est le cas des lectures qui ne font que compter
+ * (`deriveGrowthStats`), et qui n'ont personne à nommer.
  */
-export function deriveActivations(events: readonly ActivationEvent[], now: Date): ActivationView[] {
+export function deriveActivations(
+  events: readonly ActivationEvent[],
+  now: Date,
+  names: ReadonlyMap<string, CompanyIdentity> = new Map(),
+): ActivationView[] {
   const byCompany = new Map<string, ActivationEvent[]>();
   for (const event of events) {
     const bucket = byCompany.get(event.subjectId) ?? [];
@@ -52,6 +80,7 @@ export function deriveActivations(events: readonly ActivationEvent[], now: Date)
 
     activations.push({
       companyId,
+      companyName: names.get(companyId)?.enseigne ?? null,
       declaredVia,
       declaredAt: declared.occurredAt.toISOString(),
       status,

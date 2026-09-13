@@ -34,7 +34,7 @@ describe("packingBlocker", () => {
     // Les états ne reculent jamais : le colisage constate la fin d'une
     // fabrication, il ne peut pas défaire une remise qui a eu lieu.
     expect(packingBlocker(subject({ status: "fulfilled" }))).toBe(
-      "Cette commande a déjà été remise.",
+      "Cette commande a déjà été retirée.",
     );
   });
 

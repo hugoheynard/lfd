@@ -3,6 +3,9 @@ import { Buffer } from "node:buffer";
 import PDFDocument from "pdfkit";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
+import type { DebtorSnapshot } from "../debtor-snapshot.js";
+import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
+import { MandateFieldTooLongError } from "../errors/accounting-errors.js";
 
 /**
  * **La fiche de mandat SEPA, préremplie de NOTRE côté** — l'exemplaire vierge
@@ -13,6 +16,27 @@ import type { CreditorSnapshot } from "../creditor-snapshot.js";
  * mention légale a été reformulée est un mandat que la banque du débiteur peut
  * écarter — et elle l'écarte au moment du prélèvement, c'est-à-dire des semaines
  * après la signature.
+ *
+ * ## 🔴 CE FORMULAIRE EST UN MANDAT **CORE**, PAS UN MANDAT B2B
+ *
+ * Et le lot de prélèvement, lui, déclare `<LclInstrm><Cd>B2B</Cd></LclInstrm>`
+ * (`pain008.ts`, vérifié le 2026-09-13). **Les deux se contredisent.**
+ *
+ * Ce qui le prouve est le paragraphe d'autorisation ci-dessous : « vous
+ * bénéficiez du droit d'être remboursé… dans les 8 semaines ». C'est la
+ * signature du schéma CORE. Le formulaire interentreprises dit l'INVERSE — il
+ * porte la mention « INTERENTREPRISES » et énonce que le débiteur ne peut pas
+ * demander le remboursement d'un prélèvement autorisé.
+ *
+ * Deux conséquences : la banque du débiteur refusera un lot B2B dont le mandat
+ * ne lui a pas été déclaré — rien ici ne dit au client de le faire — et, en
+ * litige, c'est le texte SIGNÉ qui fait foi, pas le code du fichier.
+ *
+ * ⚠️ **Ne pas « corriger » ce texte à la légère.** Retirer un droit au
+ * remboursement qu'un formulaire accorde n'est pas une retouche de gabarit : le
+ * geste, ses mentions obligatoires et la décision qui le commande vivent dans
+ * `documentation/todos/todo-mandat-core-contre-b2b.md`, et il attend la réponse
+ * de la banque.
  *
  * ## Ce qu'il remplit, et ce qu'il laisse vide
  *
@@ -33,17 +57,25 @@ import type { CreditorSnapshot } from "../creditor-snapshot.js";
  * circuler chez chaque client. Ce fichier ne lit donc jamais
  * `creditor.creditorIban`, et un test le tient.
  *
- * ## Les zones 14 à 20 sont absentes, et c'est un choix
+ * ## Les zones 14 à 20 sont DESSINÉES, et trois d'entre elles se remplissent
+ *
+ * ⚠️ Ce paragraphe affirmait le contraire — « les zones 14 à 20 sont absentes,
+ * et c'est un choix » — jusqu'au 2026-09-12, pendant que `contractZones` les
+ * dessinait juste en dessous. Deux justifications opposées dans le même
+ * fichier : celle-ci décrivait une intention abandonnée, et elle aurait fait
+ * « restaurer » des zones déjà là.
  *
  * La norme les range sous « informations relatives au contrat entre le créancier
- * et le débiteur — fournies seulement à titre indicatif » : code identifiant du
- * débiteur, tiers débiteur, tiers créancier, numéro de contrat. Aucune ne
- * conditionne la validité du mandat, et nous n'encaissons ni pour un tiers ni
- * via un tiers. Les imprimer vides ferait une page de zones que personne ne
- * remplit — et une zone vide sur un formulaire se lit comme un oubli.
+ * et le débiteur — fournies seulement à titre indicatif ». Aucune ne conditionne
+ * la validité du mandat. Elles se répartissent en trois camps :
  *
- * À rouvrir le jour où nous prélèverions pour le compte d'un tiers : c'est la
- * zone 17 qui deviendrait obligatoire.
+ * - **14, 19, 20** — le code que le débiteur veut voir revenir sur son relevé,
+ *   le numéro et la description du contrat. Ce sont les nôtres à proposer, et
+ *   ils se saisissent sur la fiche du client ;
+ * - **15, 16** — le tiers débiteur. C'est au signataire de les remplir s'il
+ *   paie pour quelqu'un d'autre ; nous ne pouvons pas le deviner ;
+ * - **17, 18** — le tiers créancier. Vides parce que nous n'encaissons pour
+ *   personne. À rouvrir le jour où ce serait le cas : la 17 devient obligatoire.
  *
  * ## La mention « EXEMPLE », et pourquoi elle est dans le dessin
  *
@@ -195,8 +227,31 @@ function leader(doc: Doc, x1: number, y: number, x2: number): void {
  *
  * `groups` décrit le découpage (`[4, 4, 4, 3]`) ; `filled` pose éventuellement
  * une valeur, un caractère par case.
+ *
+ * 🔴 **Il REFUSE ce qui déborde, depuis le 2026-09-12.** Il remplissait case par
+ * case et ignorait tout caractère au-delà de la dernière : aucune erreur, aucun
+ * débordement visible. Un IBAN de 31 caractères — Malte en a 31, la France 27 —
+ * sortait donc amputé sur le papier que le client signe, pendant que la base en
+ * gardait la forme entière. L'écart ne se serait vu qu'en contestation.
+ *
+ * Le refus vaut pour TOUS les peignes, pas seulement l'IBAN : la RUM, le BIC, le
+ * code postal. C'est la même erreur, et elle devient inexprimable partout d'un
+ * coup plutôt que gardée à chaque appel — où il aurait suffi d'en oublier un.
+ *
+ * @throws {MandateFieldTooLongError} la valeur dépasse le nombre de cases.
  */
-function comb(doc: Doc, x: number, y: number, groups: readonly number[], filled = ""): number {
+function comb(
+  doc: Doc,
+  x: number,
+  y: number,
+  groups: readonly number[],
+  filled = "",
+  field = "Cette valeur",
+): number {
+  const capacity = groups.reduce((total, size) => total + size, 0);
+  if (filled.length > capacity) {
+    throw new MandateFieldTooLongError(field, filled.length, capacity);
+  }
   const cell = 4.1 * MM;
   const gap = 1.6 * MM;
   const height = 4.3 * MM;
@@ -219,12 +274,33 @@ function comb(doc: Doc, x: number, y: number, groups: readonly number[], filled 
   return cursor;
 }
 
-/** Un libellé suivi de sa case vide. Rend l'abscisse de fin de la case. */
-function checkbox(doc: Doc, x: number, y: number, text: string): number {
+/**
+ * Un libellé suivi de sa case. Rend l'abscisse de fin de la case.
+ *
+ * La croix est **dessinée**, pas écrite : un « X » en Helvetica ne remplit pas
+ * la case de la même façon selon la police substituée, et la lettre déborde sur
+ * les bords à cette taille.
+ */
+function checkbox(doc: Doc, x: number, y: number, text: string, checked = false): number {
   put(doc, text, x, y, { size: 9.5 });
   const width = doc.font(REGULAR).fontSize(9.5).widthOfString(text);
-  box(doc, x + width + 2 * MM, y - 0.5 * MM, 3.4 * MM, 3.4 * MM);
-  return x + width + 2 * MM + 3.4 * MM;
+  const left = x + width + 2 * MM;
+  const top = y - 0.5 * MM;
+  const side = 3.4 * MM;
+  box(doc, left, top, side, side);
+  if (checked) {
+    const inset = 0.8 * MM;
+    doc.save();
+    doc.lineWidth(RULE).strokeColor(BLACK);
+    doc
+      .moveTo(left + inset, top + inset)
+      .lineTo(left + side - inset, top + side - inset)
+      .moveTo(left + side - inset, top + inset)
+      .lineTo(left + inset, top + side - inset)
+      .stroke();
+    doc.restore();
+  }
+  return left + side;
 }
 
 /** L'astérisque de la norme : ce qui est marqué doit être rempli. */
@@ -302,8 +378,14 @@ function watermark(doc: Doc): void {
 }
 
 /** Le bandeau de titre, hors cadre — comme sur le modèle. */
-function title(doc: Doc): number {
-  put(doc, "MANDAT SEPA (exemple - document non contractuel)", BOX_LEFT, 9 * MM, {
+function title(doc: Doc, issued: boolean): number {
+  // Le sous-titre disparaît AVEC le filigrane, et pour la même raison : les deux
+  // disent « ceci ne se signe pas ». En laisser un seul ferait un document qui
+  // se contredit — et c'est le texte, pas le filigrane, qu'un client lit.
+  const heading = issued
+    ? "MANDAT DE PRELEVEMENT SEPA"
+    : "MANDAT SEPA (exemple - document non contractuel)";
+  put(doc, heading, BOX_LEFT, 9 * MM, {
     size: 11.5,
     font: BOLD,
     width: BOX_RIGHT - BOX_LEFT,
@@ -313,16 +395,23 @@ function title(doc: Doc): number {
 }
 
 /**
- * La ligne d'en-tête : trois cellules. La RUM reste **vide** — elle est frappée
- * à la création du mandat, donc elle n'existe pas sur un exemplaire vierge.
+ * La ligne d'en-tête : trois cellules, dont le peigne de la **RUM**.
+ *
+ * Le peigne reste vide sur un exemplaire vierge — la référence est frappée à la
+ * création du mandat, elle n'existe donc pas avant. Sur un mandat émis, elle
+ * s'imprime case par case.
+ *
+ * 🔴 `comb` **refuse** au-delà de 26 caractères plutôt que de tronquer : c'est
+ * la borne du peigne, et une RUM rognée en silence serait imprimée fausse sur un
+ * papier signé. Voir `documentation/comptabilite/rum.md` §2.
  */
-function header(doc: Doc, top: number, logo: Buffer | null): number {
+function header(doc: Doc, top: number, logo: Buffer | null, reference: string): number {
   const bottom = top + 19 * MM;
   vline(doc, HEAD_SPLIT_LEFT, top, bottom, HAIRLINE);
   vline(doc, HEAD_SPLIT_RIGHT, top, bottom, HAIRLINE);
 
   put(doc, "MANDAT de Prélèvement SEPA", FIELD_X + 1 * MM, top + 2 * MM, { size: 11, font: BOLD });
-  comb(doc, FIELD_X + 1 * MM, top + 7 * MM, [26]);
+  comb(doc, FIELD_X + 1 * MM, top + 7 * MM, [26], reference, "La référence unique de mandat");
   caption(doc, "Référence unique du mandat", FIELD_X + 1 * MM, top + 12 * MM);
 
   // La cellule de droite porte « Nom du créancier et logo » sur le modèle
@@ -400,30 +489,42 @@ function authorization(doc: Doc, top: number, creditorName: string): number {
 }
 
 /** Les zones 1 à 6 : tout ce que le débiteur remplit lui-même. */
-function debtorZones(doc: Doc, top: number): number {
+function debtorZones(doc: Doc, top: number, debtor: DebtorSnapshot | null): number {
   let y = top + 3 * MM;
+  // `null` laisse les six zones vierges : c'est la fiche que le client remplit
+  // à la main. Un `??` par champ plutôt qu'une seconde fonction — le dessin est
+  // le MÊME, seuls les remplissages changent, et deux dessins jumeaux
+  // divergeraient au premier ajustement de mise en page.
+  const at = (value: string): string => (debtor === null ? "" : value);
 
   label(doc, "Votre Nom", y);
-  dottedRow(doc, y, "Nom / Prénoms du débiteur", 1);
+  dottedRow(doc, y, "Nom / Prénoms du débiteur", 1, at(debtor?.holder ?? ""));
   y += ROW;
 
   label(doc, "Votre adresse", y);
-  dottedRow(doc, y, "Numéro et nom de la rue", 2);
+  dottedRow(doc, y, "Numéro et nom de la rue", 2, at(addressLineOf(debtor)));
   y += ROW;
 
   star(doc, FIELD_X - 4 * MM, y);
-  comb(doc, FIELD_X, y + 0.4 * MM, [5]);
+  comb(doc, FIELD_X, y + 0.4 * MM, [5], at(debtor?.postalCode ?? ""), "Le code postal");
   caption(doc, "Code Postal", FIELD_X, y + 5.2 * MM);
-  dottedRow(doc, y, "Ville", 3, "", CITY_X, FIELD_RIGHT);
+  dottedRow(doc, y, "Ville", 3, at(debtor?.city ?? ""), CITY_X, FIELD_RIGHT);
   star(doc, CITY_STAR_X, y);
   y += ROW;
 
-  dottedRow(doc, y, "Pays", 4);
+  dottedRow(doc, y, "Pays", 4, at(debtor?.countryCode ?? ""));
   y += ROW;
 
   label(doc, "Les coordonnées\nde votre compte", y);
   star(doc, FIELD_X - 4 * MM, y);
-  comb(doc, FIELD_X, y + 0.4 * MM, [4, 4, 4, 4, 4, 4, 3]);
+  comb(
+    doc,
+    FIELD_X,
+    y + 0.4 * MM,
+    [4, 4, 4, 4, 4, 4, 3],
+    at(debtor?.iban ?? ""),
+    "L'IBAN de ce compte",
+  );
   caption(
     doc,
     "Numéro d'identification international du compte bancaire - IBAN (International Bank Account Number)",
@@ -434,7 +535,7 @@ function debtorZones(doc: Doc, top: number): number {
   y += ROW;
 
   star(doc, FIELD_X - 4 * MM, y);
-  comb(doc, FIELD_X, y + 0.4 * MM, [11]);
+  comb(doc, FIELD_X, y + 0.4 * MM, [11], at(debtor?.bic ?? ""), "Le BIC de cette banque");
   caption(
     doc,
     "Code international d'identification de votre banque - BIC (Bank Identifier Code)",
@@ -443,6 +544,23 @@ function debtorZones(doc: Doc, top: number): number {
   );
   zone(doc, 6, y);
   return y + ROW;
+}
+
+/**
+ * L'adresse du débiteur sur UNE ligne — le formulaire n'en a qu'une.
+ *
+ * Le complément est recollé derrière plutôt qu'abandonné : « Bâtiment B » perdu,
+ * le courrier de la banque n'arrive pas. La ligne est pointillée et non
+ * découpée en cases, donc un dépassement ne tronque rien — il déborde
+ * visiblement, ce qui se corrige en regardant la prévisualisation.
+ */
+function addressLineOf(debtor: DebtorSnapshot | null): string {
+  if (debtor === null) {
+    return "";
+  }
+  return debtor.addressLine2 === ""
+    ? debtor.addressLine1
+    : `${debtor.addressLine1}, ${debtor.addressLine2}`;
 }
 
 /**
@@ -460,13 +578,13 @@ function creditorZones(doc: Doc, top: number, creditor: CreditorSnapshot): numbe
   let y = top;
 
   label(doc, "Nom du créancier", y);
-  dottedRow(doc, y, "Nom du créancier", 7, creditor.name);
+  dottedRow(doc, y, "Nom du créancier", 7, creditorNameOn(creditor));
   y += ROW;
 
-  dottedRow(doc, y, "Identifiant du créancier", 8, creditor.ics);
+  icsRow(doc, y, creditor.ics);
   y += ROW;
 
-  const address = splitAddress(creditor.addressLines);
+  const address = splitAddress(creditorAddressOn(creditor));
   dottedRow(doc, y, "Numéro et nom de la rue", 9, address.street);
   y += ROW;
 
@@ -481,8 +599,16 @@ function creditorZones(doc: Doc, top: number, creditor: CreditorSnapshot): numbe
   return y + ROW;
 }
 
-/** Type de paiement, lieu et date, signature — tout ce que le signataire pose. */
-function signatureZones(doc: Doc, top: number): number {
+/**
+ * Type de paiement, lieu et date, signature — tout ce que le signataire pose.
+ *
+ * ⚠️ La **zone 12 est cochée pour lui**, depuis le 2026-09-12 : le régime est un
+ * réglage de l'entité émettrice, pas un choix du client. La laisser vide
+ * demandait au débiteur de trancher une question qu'il ne se pose pas — et une
+ * case non cochée sur un mandat signé est une ambiguïté qui se découvre au
+ * premier prélèvement refusé.
+ */
+function signatureZones(doc: Doc, top: number, paymentType: MandatePaymentType): number {
   let y = top;
 
   label(doc, "Type de paiement", y);
@@ -490,8 +616,14 @@ function signatureZones(doc: Doc, top: number): number {
   // La case se pose après le texte MESURÉ (`widthOfString`). À un décalage
   // deviné, elle vient toucher la dernière lettre — et un libellé traduit ou
   // une police substituée déplacerait la faute ailleurs sans qu'on la voie.
-  const afterRecurring = checkbox(doc, FIELD_X, y, "Paiement récurrent / répétitif");
-  checkbox(doc, afterRecurring + 10 * MM, y, "Paiement ponctuel");
+  const afterRecurring = checkbox(
+    doc,
+    FIELD_X,
+    y,
+    "Paiement récurrent / répétitif",
+    paymentType === "recurrent",
+  );
+  checkbox(doc, afterRecurring + 10 * MM, y, "Paiement ponctuel", paymentType === "one_off");
   zone(doc, 12, y);
   y += ROW;
 
@@ -523,14 +655,20 @@ function signatureZones(doc: Doc, top: number): number {
 }
 
 /**
- * Les zones 14 à 20 — indicatives, et laissées vides.
+ * Les zones 14 à 20 — indicatives, et remplies pour trois d'entre elles.
  *
- * La norme les range sous « fournies seulement à titre indicatif » : aucune ne
- * conditionne la validité du mandat. Elles sont **dessinées** parce que le
- * formulaire les porte et qu'une fiche amputée ne se reconnaît plus ; elles
- * restent vides parce que nous n'encaissons ni pour un tiers ni via un tiers.
+ * Dessinées parce que le formulaire les porte et qu'une fiche amputée ne se
+ * reconnaît plus. Les zones du **tiers** (15 à 18) restent vides : les deux
+ * premières sont au signataire, les deux autres ne nous concernent pas tant que
+ * nous n'encaissons pour personne.
  */
-function contractZones(doc: Doc, top: number, creditorName: string): number {
+function contractZones(
+  doc: Doc,
+  top: number,
+  creditor: CreditorSnapshot,
+  debtor: DebtorSnapshot | null,
+): number {
+  const creditorName = creditorNameOn(creditor);
   put(doc, CONTRACT_HEADING, BOX_LEFT + 2 * MM, top + 1.5 * MM, { size: 7.6, font: BOLD });
   let y = top + 6 * MM;
 
@@ -540,7 +678,7 @@ function contractZones(doc: Doc, top: number, creditorName: string): number {
     y,
     "Indiquer ici tout code que vous souhaitez voir restitué par votre banque",
     14,
-    "",
+    debtor?.debtorReference ?? "",
     FIELD_X,
     FIELD_RIGHT,
     false,
@@ -589,10 +727,28 @@ function contractZones(doc: Doc, top: number, creditorName: string): number {
   y += ROW;
 
   label(doc, "Contrat concerné", y, 9);
-  dottedRow(doc, y, "Numéro d'identification du contrat", 19, "", FIELD_X, FIELD_RIGHT, false);
+  dottedRow(
+    doc,
+    y,
+    "Numéro d'identification du contrat",
+    19,
+    debtor?.contractNumber ?? "",
+    FIELD_X,
+    FIELD_RIGHT,
+    false,
+  );
   y += ROW;
 
-  dottedRow(doc, y, "Description du contrat", 20, "", FIELD_X, FIELD_RIGHT, false);
+  dottedRow(
+    doc,
+    y,
+    "Description du contrat",
+    20,
+    creditor.mandateContractDescription,
+    FIELD_X,
+    FIELD_RIGHT,
+    false,
+  );
   const bottom = y + ROW;
   line(doc, BOX_LEFT, bottom, BOX_RIGHT, RULE);
   return bottom;
@@ -615,10 +771,16 @@ function footer(doc: Doc, top: number, creditor: CreditorSnapshot): number {
   vline(doc, split, top, bottom, HAIRLINE);
 
   put(doc, "A retourner à :", LABEL_X, top + 2 * MM, { size: 9.5 });
-  put(doc, [creditor.name, ...creditor.addressLines].join("\n"), LABEL_X, top + 6.5 * MM, {
-    size: 7.5,
-    width: split - LABEL_X - 4 * MM,
-  });
+  put(
+    doc,
+    [creditorNameOn(creditor), ...creditorAddressOn(creditor)].join("\n"),
+    LABEL_X,
+    top + 6.5 * MM,
+    {
+      size: 7.5,
+      width: split - LABEL_X - 4 * MM,
+    },
+  );
 
   put(doc, "Zone réservée à l'usage exclusif du créancier", split + 2 * MM, top + 2 * MM, {
     size: 8,
@@ -651,15 +813,28 @@ function splitAddress(lines: readonly string[]): {
   };
 }
 
-function draw(doc: Doc, creditor: CreditorSnapshot, logo: Buffer | null): void {
-  watermark(doc);
-  const top = title(doc);
-  let y = header(doc, top, logo);
-  y = authorization(doc, y, creditor.name);
-  y = debtorZones(doc, y);
+function draw(
+  doc: Doc,
+  creditor: CreditorSnapshot,
+  logo: Buffer | null,
+  debtor: DebtorSnapshot | null,
+  issuance: MandateIssuance | null,
+): void {
+  // 🔴 **Le filigrane et la RUM sont liés par construction.** Il tombe si, et
+  // seulement si, une référence est imprimée. Les découpler laisserait sortir un
+  // document d'apparence signable et sans référence — que le client signerait,
+  // et qui ne vaudrait rien : une autorisation qu'il ne peut opposer à sa banque
+  // et que nous ne pouvons rattacher à aucun prélèvement.
+  if (issuance === null) {
+    watermark(doc);
+  }
+  const top = title(doc, issuance !== null);
+  let y = header(doc, top, logo, issuance?.reference ?? "");
+  y = authorization(doc, y, creditorNameOn(creditor));
+  y = debtorZones(doc, y, debtor);
   y = creditorZones(doc, y, creditor);
-  y = signatureZones(doc, y);
-  y = contractZones(doc, y, creditor.name);
+  y = signatureZones(doc, y, creditor.mandatePaymentType);
+  y = contractZones(doc, y, creditor, debtor);
   y = footer(doc, y, creditor);
 
   // Le cadre général en dernier : dessiné avant, les remplissages de cases le
@@ -684,9 +859,36 @@ function draw(doc: Doc, creditor: CreditorSnapshot, logo: Buffer | null): void {
  * `legal_entities` avait justement évitée en base. `null` laisse la cellule
  * vide, sans placeholder — voir {@link header}.
  */
+/**
+ * Ce qui transforme un exemplaire en **document signable** : une RUM.
+ *
+ * Un seul champ, et c'est voulu — tout le reste du mandat existe déjà sans lui.
+ * Le jour où l'émission portera autre chose (une date d'émission imprimée, un
+ * numéro d'exemplaire), il entrera ici plutôt que de s'ajouter en paramètre.
+ */
+export interface MandateIssuance {
+  /** La RUM, telle qu'elle s'imprimera dans le peigne de 26 cases. */
+  readonly reference: string;
+}
+
+/**
+ * Rend le mandat SEPA.
+ *
+ * 🔴 `issuance` commande **deux** choses d'un seul geste : la référence
+ * imprimée, et la disparition du filigrane EXEMPLE. Les séparer en deux
+ * paramètres permettrait de retirer l'avertissement sans donner de référence,
+ * c'est-à-dire de produire le seul document dangereux que ce rendu puisse
+ * fabriquer.
+ *
+ * ⚠️ **Le rendu n'est plus déterministe quand `issuance` est fourni** : la RUM
+ * porte un tirage et une date de frappe. Les tests qui comparent des octets
+ * doivent viser le cas SANS émission ; le cas avec s'éprouve sur le texte.
+ */
 export async function renderSepaMandatePdf(
   creditor: CreditorSnapshot,
   logo: Buffer | null,
+  debtor: DebtorSnapshot | null = null,
+  issuance: MandateIssuance | null = null,
 ): Promise<Buffer> {
   const doc = new PDFDocument({
     size: "A4",
@@ -695,7 +897,10 @@ export async function renderSepaMandatePdf(
     // `pdfkit`, ils porteraient son numéro de version, et une montée de
     // dépendance changerait les octets d'un document qu'on compare.
     info: {
-      Title: `Mandat SEPA (exemple) - ${creditor.name}`,
+      Title:
+        issuance === null
+          ? `Mandat SEPA (exemple) - ${creditor.name}`
+          : `Mandat SEPA ${issuance.reference} - ${creditor.name}`,
       Author: creditor.name,
       Producer: "La Folie Coffee",
       Creator: "La Folie Coffee",
@@ -710,7 +915,7 @@ export async function renderSepaMandatePdf(
       resolve();
     });
   });
-  draw(doc, creditor, logo);
+  draw(doc, creditor, logo, debtor, issuance);
   doc.end();
   await done;
   return Buffer.concat(chunks);
@@ -725,4 +930,70 @@ export function sampleMandateFileName(creditor: CreditorSnapshot): string {
     .replace(/^-|-$/gu, "")
     .toLowerCase();
   return `mandat-sepa-exemple-${slug}.pdf`;
+}
+
+/**
+ * Le nom du créancier **tel que la banque le connaît** — le titulaire du compte.
+ *
+ * 🔴 Et pas la raison sociale du registre, alors que les deux coïncident presque
+ * toujours (branché le 2026-09-12). C'est « presque » qui décide : le débiteur
+ * verra sur son relevé le libellé que SA banque tire du nôtre, et c'est le
+ * titulaire du compte qui le produit. Imprimer un autre nom sur le mandat ferait
+ * un papier que le client ne rapproche pas de sa ligne de relevé — et un mandat
+ * qu'on ne reconnaît pas est un mandat qu'on conteste.
+ *
+ * Le repli sur la raison sociale ne sert que les entités renseignées avant que
+ * le bloc du RIB existe : `creditorSnapshot()` ne se rend que si un compte est
+ * posé, donc `accountHolder` est en pratique toujours là.
+ */
+function creditorNameOn(creditor: CreditorSnapshot): string {
+  return creditor.accountHolder ?? creditor.name;
+}
+
+/** Même raisonnement que {@link creditorNameOn}, pour l'adresse imprimée. */
+function creditorAddressOn(creditor: CreditorSnapshot): readonly string[] {
+  return creditor.accountAddressLines.length > 0
+    ? creditor.accountAddressLines
+    : creditor.addressLines;
+}
+
+/**
+ * L'anatomie d'un ICS : deux lettres de pays, deux chiffres de clé, trois
+ * caractères de code activité, puis le numéro national.
+ */
+const ICS_HEAD_GROUPS = [2, 2, 3] as const;
+const ICS_HEAD_LENGTH = 7;
+
+/**
+ * Le plus grand peigne qui tient dans la largeur du formulaire.
+ *
+ * 🔴 Ce n'est pas une marge de confort : c'est le nombre de cases du peigne de
+ * l'IBAN débiteur, juste au-dessus, dont la largeur est éprouvée sur la page
+ * depuis le premier rendu. Au-delà, le peigne déborderait de la zone imprimable
+ * — et un identifiant coupé par le bord de la page est pire qu'un identifiant
+ * sur une ligne pointillée.
+ */
+const ICS_COMB_MAX_BOXES = 27;
+
+/**
+ * La zone 8 — l'identifiant créancier, **en cases** comme l'IBAN et le BIC.
+ *
+ * Le peigne est dimensionné sur la LONGUEUR RÉELLE de l'ICS, jamais sur une
+ * constante : `CreditorIdentifier` accepte de 8 à 35 caractères (13 imposés aux
+ * seuls ICS français), et un peigne fixe **tronquerait en silence** un ICS
+ * étranger. Une case de moins que de caractères, sur un identifiant que le
+ * débiteur oppose à sa banque, ne se verrait qu'en contestation.
+ *
+ * Au-delà de ce que la largeur admet, on retombe sur la ligne pointillée : le
+ * numéro y tient en entier, ce qui est la seule chose qui ne se négocie pas.
+ */
+function icsRow(doc: Doc, y: number, ics: string): void {
+  if (ics.length <= ICS_HEAD_LENGTH || ics.length > ICS_COMB_MAX_BOXES) {
+    dottedRow(doc, y, "Identifiant du créancier", 8, ics);
+    return;
+  }
+  star(doc, FIELD_X - 4 * MM, y);
+  comb(doc, FIELD_X, y + 0.4 * MM, [...ICS_HEAD_GROUPS, ics.length - ICS_HEAD_LENGTH], ics);
+  caption(doc, "Identifiant du créancier", FIELD_X, y + 5.2 * MM);
+  zone(doc, 8, y);
 }

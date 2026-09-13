@@ -1,7 +1,7 @@
 import type { OrderStatus } from "@lfd/contracts";
 
 /**
- * La règle de la **remise en main propre**, pure et sans dépendance : à partir
+ * La règle du **retrait en main propre**, pure et sans dépendance : à partir
  * de l'état d'une commande, dire si on peut la remettre — et sinon, pourquoi.
  *
  * Elle rend une **phrase**, pas un booléen. Au comptoir, un refus muet est
@@ -25,7 +25,7 @@ import type { OrderStatus } from "@lfd/contracts";
 export interface HandoverCandidate {
   readonly status: OrderStatus;
   /**
-   * L'instant de la remise **déjà constatée par le fournil**, ou `null`.
+   * L'instant du retrait **déjà constaté par le fournil**, ou `null`.
    *
    * Il vient de la table de production, jamais du commerce : c'est le fournil
    * qui détient ce fait depuis qu'il le constate.
@@ -34,7 +34,7 @@ export interface HandoverCandidate {
 }
 
 /**
- * Ce qui **empêche** la remise, en clair — ou `null` si rien ne l'empêche.
+ * Ce qui **empêche** le retrait, en clair — ou `null` si rien ne l'empêche.
  *
  * Volontairement permissif sur l'avancement : tout état autre que `draft` et
  * `cancelled` passe. Refuser une commande encore `placed` reviendrait à renvoyer
@@ -43,7 +43,7 @@ export interface HandoverCandidate {
  *
  * ⚠️ C'est cette permissivité qui a décidé de la FORME de la table : une
  * commande passée après la clôture de sa journée n'est dans aucun plan, et reste
- * remettable. La remise ne pouvait donc pas s'accrocher à `production_order`.
+ * remettable. Le retrait ne pouvait donc pas s'accrocher à `production_order`.
  *
  * **Le mode d'acheminement ne bloque pas**, depuis le 2026-09-07. En retrait, le
  * client montre son code et l'équipe scanne ; en livraison, le destinataire
@@ -59,13 +59,13 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
     return "Cette commande n'est pas encore passée.";
   }
   if (candidate.handedOverAt !== null) {
-    return "Cette commande a déjà été remise.";
+    return "Cette commande a déjà été retirée.";
   }
   return null;
 }
 
 /**
- * **Comment** une remise a été constatée — repris du contrat, pas redéfini.
+ * **Comment** un retrait a été constaté — repris du contrat, pas redéfini.
  *
  * 🔴 Il était déclaré ici, et le contrat portait `string` à sa place : deux
  * définitions du même ensemble, dont une qui ne définissait rien. C'est le

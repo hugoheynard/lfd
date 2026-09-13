@@ -17,7 +17,7 @@ import type { ProducedItemSnapshot, ProductionOrderSnapshot } from "../entities/
  * ## Le QR, lui, s'imprime — et c'est l'inverse du bon de commande
  *
  * 🔴 Les deux codes n'ont pas la même nature, et c'est toute la règle : celui du
- * comptoir encode un **secret** (le jeton de remise), celui de l'atelier encode
+ * comptoir encode un **secret** (le jeton de retrait), celui de l'atelier encode
  * un **nom** (`/colisage/{référence}`). Un secret sur un papier qui voyage dans
  * un carton se ferait scanner par le coursier ; une référence, non — elle est
  * déjà écrite en toutes lettres au-dessus.

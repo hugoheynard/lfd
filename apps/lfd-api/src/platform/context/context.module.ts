@@ -1,5 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
+import { AesGcmFieldCipher } from "../crypto/aes-gcm-field-cipher.js";
+import { FieldCipher } from "../crypto/field-cipher.js";
 import { IdGenerator } from "../id/id-generator.js";
 import { UlidGenerator } from "../id/ulid-generator.js";
 import { RandomSecretGenerator } from "../secret/random-secret-generator.js";
@@ -16,7 +18,7 @@ import { SystemClock } from "../time/system-clock.js";
 
 /**
  * Fondations **cross-cutting** : les ports `Clock`, `IdGenerator`,
- * `SecretGenerator`, `DocumentStore` et `MediaStore`, câblés sur leurs adaptateurs
+ * `SecretGenerator`, `FieldCipher`, `DocumentStore` et `MediaStore`, câblés sur leurs adaptateurs
  * de production. `@Global` →
  * injectables partout sans ré-importer le module dans chaque contexte métier.
  *
@@ -33,6 +35,15 @@ import { SystemClock } from "../time/system-clock.js";
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UlidGenerator },
     { provide: SecretGenerator, useClass: RandomSecretGenerator },
+    // La clé vient de `AppConfig`, qui l'a déjà validée au démarrage — et qui
+    // refuse de booter en production si elle manque. L'adaptateur, lui, ne sait
+    // rien de l'environnement : il reçoit 32 octets ou il échoue.
+    {
+      provide: FieldCipher,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): FieldCipher =>
+        new AesGcmFieldCipher(config.fieldEncryptionKey()),
+    },
     // Le MÊME adaptateur, TROIS buckets. L'usage se décide ici, à la racine de
     // composition, et pas dans l'adaptateur : c'est un fait de déploiement, et
     // un appelant ne choisit jamais le bucket dans lequel il écrit.
@@ -61,6 +72,7 @@ import { SystemClock } from "../time/system-clock.js";
     Clock,
     IdGenerator,
     SecretGenerator,
+    FieldCipher,
     DocumentStore,
     CustomerDocumentStore,
     ProductionDocumentStore,

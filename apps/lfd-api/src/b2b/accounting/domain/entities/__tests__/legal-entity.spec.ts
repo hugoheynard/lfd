@@ -1,11 +1,14 @@
 import {
   CreditorIdentifierIsImmutableError,
+  CreditorIdentityIsFrozenError,
   EntityCannotCollectError,
   InvalidLegalEntityError,
 } from "../../errors/accounting-errors.js";
 import { CreditorIdentifier } from "../../value-objects/creditor-identifier.js";
-import { Iban } from "../../value-objects/iban.js";
+import { Bic } from "../../value-objects/bic.js";
+import { CreditorAccount } from "../../value-objects/creditor-account.js";
 import { LegalAddress } from "../../value-objects/legal-address.js";
+import { Iban } from "../../value-objects/iban.js";
 import { Siren } from "../../value-objects/siren.js";
 import {
   LegalEntity,
@@ -15,7 +18,24 @@ import {
 } from "../legal-entity.js";
 
 const ICS = CreditorIdentifier.create("FR72ZZZ123456");
-const ACCOUNT = Iban.create("FR1420041010050500013M02606");
+const BIC = Bic.create("CEPAFRPP751");
+
+/** Le RIB recopié — titulaire et adresse compris, comme sur le papier. */
+function accountWith(over: { iban?: string; holder?: string; city?: string } = {}) {
+  return CreditorAccount.create({
+    holder: over.holder ?? "Crazeativity",
+    address: LegalAddress.create({
+      line1: "Route de la Balme",
+      line2: "",
+      postalCode: "73150",
+      city: over.city ?? "Val d'Isère",
+      countryCode: "FR",
+    }),
+    iban: Iban.create(over.iban ?? "FR1420041010050500013M02606"),
+    bic: BIC,
+  });
+}
+const ACCOUNT = accountWith();
 
 function declaration(overrides: Partial<LegalEntityDeclaration> = {}): LegalEntityDeclaration {
   return {
@@ -100,7 +120,7 @@ describe("LegalEntity — l'ICS ne se remplace pas", () => {
 
   it("laisse en revanche changer de banque", () => {
     const entity = collecting();
-    entity.setCreditorAccount(Iban.create("FR7630006000011234567890189"));
+    entity.setCreditorAccount(accountWith({ iban: "FR7630006000011234567890189" }));
     expect(entity.toPersistence().creditorIban).toBe("FR7630006000011234567890189");
   });
 });
@@ -137,6 +157,13 @@ describe("LegalEntity — encaisser demande tout", () => {
       shareCapitalCents: 1_000_000,
       addressLines: ["12 rue des Lilas", "75011 Paris", "FR"],
       ics: "FR72ZZZ123456",
+      // Les deux réglages de mandat, à leur état de déclaration : rien à dire du
+      // contrat, et récurrent — le régime de l'immense majorité des mandats.
+      mandateContractDescription: "",
+      mandatePaymentType: "recurrent",
+      creditorBic: "CEPAFRPP751",
+      accountHolder: "Crazeativity",
+      accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],
       creditorIban: "FR1420041010050500013M02606",
       preNotificationDays: PRE_NOTIFICATION_DEFAULT_DAYS,
     });
@@ -244,5 +271,117 @@ describe("LegalEntity — le logo", () => {
     const entity = collecting();
     entity.archive(new Date("2026-09-01T10:00:00.000Z"));
     expect(() => entity.attachLogo("legal-entities/le1/logo")).not.toThrow();
+  });
+});
+
+/**
+ * Le gel du créancier imprimé — même raisonnement que l'immuabilité de l'ICS,
+ * appliqué à ce que le PAPIER porte.
+ *
+ * 🔴 L'asymétrie est le sujet : un mandat SEPA imprime le titulaire, son adresse
+ * et l'ICS. Il n'imprime **pas** l'IBAN du créancier. Changer de banque ne
+ * contredit donc aucune signature, alors que changer de nom dit au débiteur
+ * qu'il a autorisé quelqu'un d'autre (posé le 2026-09-12).
+ */
+describe("LegalEntity — le créancier imprimé gèle au premier mandat", () => {
+  function withAccount(): LegalEntity {
+    const entity = LegalEntity.declare(declaration());
+    entity.assignCreditorIdentifier(ICS);
+    entity.setCreditorAccount(ACCOUNT);
+    return entity;
+  }
+
+  it("se corrige librement TANT QU'AUCUN mandat n'est frappé", () => {
+    const entity = withAccount();
+
+    entity.setCreditorAccount(accountWith({ holder: "Crazeativity SAS" }));
+
+    expect(entity.toPersistence().creditorAccountHolder).toBe("Crazeativity SAS");
+    expect(entity.creditorIdentityFrozen).toBe(false);
+  });
+
+  it("refuse de changer le TITULAIRE une fois le premier mandat frappé", () => {
+    const entity = withAccount();
+    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+
+    expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
+      CreditorIdentityIsFrozenError,
+    );
+  });
+
+  it("refuse aussi de changer l'ADRESSE : elle est imprimée à côté du nom", () => {
+    const entity = withAccount();
+    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+
+    expect(() => entity.setCreditorAccount(accountWith({ city: "Tignes" }))).toThrow(
+      CreditorIdentityIsFrozenError,
+    );
+  });
+
+  /** Le cas qui distingue cette règle de celle de l'ICS : on change de banque. */
+  it("LAISSE changer d'IBAN après le premier mandat — aucun mandat ne le porte", () => {
+    const entity = withAccount();
+    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+
+    entity.setCreditorAccount(accountWith({ iban: "FR7630006000011234567890189" }));
+
+    expect(entity.toPersistence().creditorIban).toBe("FR7630006000011234567890189");
+  });
+
+  it("nomme l'ancien créancier ET le nouveau, pour qu'on sache lequel est sur le papier", () => {
+    const entity = withAccount();
+    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+
+    expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
+      /Crazeativity.*Autre Société/su,
+    );
+  });
+
+  it("dit la sortie : une seconde entité, pas une correction en douce", () => {
+    const entity = withAccount();
+    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+
+    expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
+      /seconde entité juridique/u,
+    );
+  });
+
+  /**
+   * Le fait arrivera par un ABONNÉ à un événement de `payments`, donc rejouable.
+   * Écraser la date au second mandat déplacerait le moment du gel — la seule
+   * chose que ce champ sert à dire.
+   */
+  it("garde la date du PREMIER mandat, même rejouée", () => {
+    const entity = withAccount();
+    const first = new Date("2026-09-12T08:00:00.000Z");
+
+    entity.noteFirstMandateIssued(first);
+    entity.noteFirstMandateIssued(new Date("2026-10-01T08:00:00.000Z"));
+
+    expect(entity.toPersistence().firstMandateIssuedAt).toEqual(first);
+  });
+
+  it("se relit gelée depuis la base — le verrou survit au rechargement", () => {
+    const entity = withAccount();
+    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+
+    const reloaded = LegalEntity.reconstitute(entity.toPersistence());
+
+    expect(reloaded.creditorIdentityFrozen).toBe(true);
+    expect(() => reloaded.setCreditorAccount(accountWith({ holder: "Autre" }))).toThrow(
+      CreditorIdentityIsFrozenError,
+    );
+  });
+
+  /**
+   * Le premier compte posé APRÈS un mandat n'a rien à contredire : il n'y avait
+   * pas de nom imprimé avant lui. Refuser là ferait un cul-de-sac.
+   */
+  it("laisse POSER un premier compte même si un mandat existe déjà", () => {
+    const entity = LegalEntity.declare(declaration());
+    entity.assignCreditorIdentifier(ICS);
+    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+
+    expect(() => entity.setCreditorAccount(ACCOUNT)).not.toThrow();
   });
 });

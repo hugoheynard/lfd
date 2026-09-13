@@ -141,6 +141,23 @@ describe("la fiche client", () => {
     expect(view.recentOrders).toHaveLength(2);
   });
 
+  it("en rend CINQ au plus — la carte les affiche toutes", async () => {
+    // La carte de la fiche n'a ni pagination ni défilement : ce que la route
+    // rend est ce que le commercial lit. Sans ce plafond en base, ajouter une
+    // commande allongeait un écran que personne n'avait décidé d'allonger.
+    const seeded = await seed();
+    for (let daysAgo = 1; daysAgo <= 7; daysAgo += 1) {
+      await placeOrder(seeded, daysAgo, 1_000 * daysAgo);
+    }
+
+    const view = await sheet(seeded.companyId);
+    expect(view.recentOrders).toHaveLength(5);
+    // Les CINQ plus récentes, pas les cinq premières venues.
+    expect(view.recentOrders.map((order) => order.totalCents)).toEqual([
+      1_000, 2_000, 3_000, 4_000, 5_000,
+    ]);
+  });
+
   it("remonte l'historique d'interaction depuis le JOURNAL, du plus récent au plus ancien", async () => {
     const { companyId } = await seed();
     const record = async (type: string, minutesAgo: number): Promise<void> => {

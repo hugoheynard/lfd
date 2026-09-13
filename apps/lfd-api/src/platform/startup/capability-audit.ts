@@ -26,6 +26,8 @@ export interface CapabilitySnapshot {
   readonly hasMailerKey: boolean;
   readonly hasMailerWebhookSecret: boolean;
   readonly hasWebPushKeys: boolean;
+  /** Une clé de coffre PROPRE est configurée — pas le repli de développement. */
+  readonly hasOwnFieldEncryptionKey: boolean;
   readonly hasStorage: boolean;
   /** Bucket média **et** domaine public : l'un sans l'autre ne sert à rien. */
   readonly hasMediaStorage: boolean;
@@ -123,6 +125,22 @@ const CHECKS: readonly Check[] = [
       "la cloche fonctionne à l'écran, mais aucun téléphone ne vibre — on n'apprend rien sans avoir le back-office ouvert",
     severity: "degraded",
     present: (s) => s.hasWebPushKeys,
+  },
+  {
+    capability: "Coffre des coordonnées bancaires",
+    setting: "FIELD_ENCRYPTION_KEY",
+    // 🔴 Ce réglage ne peut PAS manquer en production : `AppConfig` refuse d'y
+    // démarrer sans lui. Si cette ligne s'affiche, c'est donc hors production —
+    // et ce qu'elle signale n'est pas une capacité éteinte mais une capacité
+    // qui MARCHE avec une clé publique, écrite dans le dépôt.
+    //
+    // C'est exactement le genre d'état qu'on ne découvre pas tout seul : tout
+    // fonctionne, les IBAN se scellent et se relisent, et rien à l'écran ne
+    // distingue un coffre réel d'un coffre en carton.
+    consequence:
+      "les IBAN des clients sont scellés avec la clé de DÉVELOPPEMENT, qui est publique — le coffre fonctionne mais ne protège rien",
+    severity: "degraded",
+    present: (s) => s.hasOwnFieldEncryptionKey,
   },
   {
     capability: "Paiement",

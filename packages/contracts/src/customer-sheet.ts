@@ -10,6 +10,8 @@
  */
 import { z } from "zod";
 
+import type { OrderStatus } from "./order.js";
+
 /**
  * État commercial d'un compte. Déclaré ici parce que c'est la fiche qui le fait
  * enfin traverser la frontière — jusque-là il ne vivait qu'en base et dans un
@@ -24,7 +26,17 @@ export interface CustomerOrderLine {
   readonly orderNumber: string;
   /** Instant de la commande (ISO UTC). */
   readonly placedAt: string;
-  readonly status: string;
+  /**
+   * L'avancement, **en valeur d'enum** et non en `string`.
+   *
+   * Il n'a jamais rien porté d'autre — la lecture le prend dans la colonne
+   * `OrderStatus` de Postgres — mais le déclarer `string` laissait l'écran
+   * l'afficher tel quel, et c'est ce qu'il a fait : la carte « Dernières
+   * commandes » écrivait `in_production` au commercial jusqu'au 2026-09-13.
+   * Le type nommé rend `orderStatusLabel()` applicable, donc le mot français
+   * obligatoire.
+   */
+  readonly status: OrderStatus;
   /** Total **TTC** encaissé, en centimes. */
   readonly totalCents: number;
 }

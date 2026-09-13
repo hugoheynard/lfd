@@ -1,0 +1,34 @@
+<fold-panel-header title="Mandat signé" [subtitle]="data()?.fileName ?? ''" />
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Ouverture de la pièce…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="La pièce n'a pas pu être ouverte"
+        subtitle="Elle a peut-être été déposée avant le scellement, ou retirée du stockage."
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (source(); as piece) {
+        <!-- Le type commande le rendu : une photo dans une iframe propose un
+             téléchargement au lieu de s'afficher, sur certains navigateurs. -->
+        @if (isImage()) {
+          <img class="pp-page" [src]="piece" alt="Mandat signé déposé" />
+        } @else {
+          <iframe class="pp-page" title="Mandat signé déposé" [src]="piece"></iframe>
+        }
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="between">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Fermer</button>
+  <button foldButton [disabled]="state() !== 'ready'" (click)="download()">Télécharger</button>
+</fold-panel-footer>

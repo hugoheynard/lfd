@@ -3,12 +3,12 @@ import type { HandoverSubject } from "../../channels/commerce/handover-subject.r
 import { handoverBlocker, type HandoverVia } from "../services/handover.js";
 
 /**
- * **L'attestation de remise** — le fait que le fournil grave, et son gardien.
+ * **L'attestation de retrait** — le fait que le fournil grave, et son gardien.
  *
  * ## Pourquoi un agrégat, alors que c'est une ligne à cinq colonnes
  *
  * Parce qu'une règle peut refuser cette écriture : la commande est annulée, elle
- * n'est pas passée, elle a déjà été remise. Le critère de tri du dossier est
+ * n'est pas passée, elle a déjà été retirée. Le critère de tri du dossier est
  * exactement celui-là — « existe-t-il une règle qui peut refuser cette
  * écriture ? » —, et il dit agrégat.
  *
@@ -35,13 +35,13 @@ export class OrderHandover {
   ) {}
 
   /**
-   * Atteste la remise de cette commande, ou **refuse en nommant l'empêchement**.
+   * Atteste le retrait de cette commande, ou **refuse en nommant l'empêchement**.
    *
    * `alreadyHandedOver` vient de la table du fournil, pas du sujet : le commerce
    * n'est plus l'autorité sur ce fait, et le lui demander rouvrirait la porte
    * aux deux vérités.
    *
-   * @throws {HandoverRefusedError} l'état interdit la remise, ou l'auteur manque.
+   * @throws {HandoverRefusedError} l'état interdit le retrait, ou l'auteur manque.
    */
   static attest(
     subject: HandoverSubject,
@@ -58,7 +58,7 @@ export class OrderHandover {
       // Le contrôleur refuse déjà une session sans sujet. On le refuse ici
       // aussi : le jour où un second appelant existera, il ne pourra pas graver
       // une attestation anonyme en ayant simplement oublié cette garde-là.
-      throw new HandoverRefusedError("Une remise sans auteur n'est pas une attestation.");
+      throw new HandoverRefusedError("Un retrait sans auteur n'est pas une attestation.");
     }
     return new OrderHandover(subject.orderId, subject.orderNumber, at, by, via);
   }
@@ -67,7 +67,7 @@ export class OrderHandover {
    * Réhydrate une attestation **déjà gravée**, sans repasser par la règle.
    *
    * Elle ne la repasse pas volontairement : la règle dit ce qu'on a le droit de
-   * FAIRE, pas ce qui a eu lieu. Une commande annulée après sa remise ne doit
+   * FAIRE, pas ce qui a eu lieu. Une commande annulée après son retrait ne doit
    * pas rendre illisible l'attestation qui prouve qu'elle est partie — c'est
    * précisément le jour où on va la relire.
    */

@@ -40,7 +40,42 @@ export interface LegalEntityView {
   readonly ics: string;
   /** 4 derniers caractères de l'IBAN créancier, `""` si aucun compte n'est saisi. */
   readonly creditorAccountLast4: string;
+  /**
+   * Le BIC de notre banque, ou `""`.
+   *
+   * ⚠️ **Rendu en entier, contrairement à l'IBAN**, et ce n'est pas une entorse :
+   * un BIC désigne un établissement, pas un compte. Il figure sur tout virement
+   * reçu et s'interroge publiquement — le masquer donnerait l'illusion d'un
+   * secret là où il n'y en a pas, et empêcherait de relire une saisie.
+   */
+  readonly creditorBic: string;
+  /**
+   * Le bloc recopié du RIB — titulaire et adresse **tels que la banque les
+   * connaît**. `""` tant qu'aucun compte n'est saisi.
+   *
+   * Il redouble `name` et l'adresse du siège, et c'est délibéré : l'un vient du
+   * registre, l'autre de la banque. C'est le second qu'un mandat imprime.
+   */
+  readonly creditorAccountHolder: string;
+  readonly creditorAccountLine1: string;
+  readonly creditorAccountLine2: string;
+  readonly creditorAccountPostalCode: string;
+  readonly creditorAccountCity: string;
+  readonly creditorAccountCountryCode: string;
+  /**
+   * 🔴 Le créancier imprimé est-il GELÉ ? Vrai dès le premier mandat frappé.
+   *
+   * L'écran s'en sert pour refuser le geste AVANT la saisie plutôt qu'après :
+   * un formulaire qui accepte puis rend un 409 fait retaper pour rien.
+   * ⚠️ Le gel ne porte que sur le titulaire et l'adresse — l'IBAN et le BIC
+   * restent modifiables, aucun mandat ne les porte.
+   */
+  readonly creditorIdentityFrozen: boolean;
   readonly preNotificationDays: number;
+  /** Zone 20 du mandat — ce que le contrat couvre, en une ligne. */
+  readonly mandateContractDescription: string;
+  /** Zone 12 du mandat — récurrent, ou ponctuel. */
+  readonly mandatePaymentType: MandatePaymentType;
   /** ISO, ou `null` si l'entité est vivante. */
   readonly archivedAt: string | null;
   /**
@@ -164,14 +199,60 @@ export type AssignCreditorIdentifierPayload = z.infer<typeof assignCreditorIdent
  * ce qui le distingue de l'ICS.
  *
  * L'IBAN monte en clair sur une route staff murée, et **ne redescend jamais** :
- * la vue n'en rend que les quatre derniers caractères.
+ * la vue n'en rend que les quatre derniers caractères. Le BIC, lui, redescend
+ * en entier — il désigne une banque, pas un compte.
+ *
+ * **C'est la recopie d'un RIB en un seul geste** (2026-09-12) : titulaire,
+ * adresse, IBAN, BIC. Un compte à moitié rempli ne se découvrirait qu'au rejet
+ * du lot, cinq jours après l'envoi.
+ *
+ * 🔴 Après le premier mandat, le titulaire et l'adresse sont **gelés** — le
+ * papier signé les porte. L'IBAN et le BIC, eux, restent libres : aucun mandat
+ * ne les porte, donc changer de banque ne contredit aucune signature.
  */
 export const setCreditorAccountPayloadSchema = z.object({
   iban: z.string().trim().min(1),
+  bic: z.string().trim().min(1),
+  holder: z.string().trim().min(1),
+  line1: z.string().trim().min(1),
+  line2: z.string().trim().default(""),
+  postalCode: z.string().trim().min(1),
+  city: z.string().trim().min(1),
+  countryCode: z.string().trim().length(2).default("FR"),
 });
 export type SetCreditorAccountPayload = z.infer<typeof setCreditorAccountPayloadSchema>;
 
 /** Le délai annoncé au débiteur entre la notification et le débit, négocié avec la banque. */
+/**
+ * Les **réglages de mandat** d'une entité — zones 20 et 12 du modèle EPC.
+ *
+ * 🔴 Sur l'entité et non sur le compte d'un client : ils décrivent **ce que nous
+ * vendons**, pas ce que tel client a acheté. La même phrase et le même régime
+ * partent sur tous les mandats qu'elle émet — les ressaisir par dossier ferait
+ * circuler deux formulations chez des clients voisins, qui se parlent.
+ *
+ * Ce qui reste par client : le **numéro** de contrat (zone 19) et le code du
+ * débiteur (zone 14), qui désignent un dossier précis.
+ */
+export const mandatePaymentTypeSchema = z.enum(["recurrent", "one_off"]);
+export type MandatePaymentType = z.infer<typeof mandatePaymentTypeSchema>;
+
+export const MANDATE_PAYMENT_TYPE_LABELS: Readonly<Record<MandatePaymentType, string>> = {
+  recurrent: "Paiement récurrent / répétitif",
+  one_off: "Paiement ponctuel",
+};
+
+export const setMandateDefaultsPayloadSchema = z.object({
+  /**
+   * Zone 20. Bornée parce qu'elle s'imprime sur **une** ligne pointillée : un
+   * dépassement ne tronque rien, il sort du cadre — et une phrase qui déborde
+   * sur un document qu'on fait signer se lit comme un formulaire mal imprimé.
+   */
+  contractDescription: z.string().trim().max(90).default(""),
+  paymentType: mandatePaymentTypeSchema.default("recurrent"),
+});
+export type SetMandateDefaultsPayload = z.infer<typeof setMandateDefaultsPayloadSchema>;
+
 export const setPreNotificationPayloadSchema = z.object({
   days: z.int().min(PRE_NOTIFICATION_MIN_DAYS).max(PRE_NOTIFICATION_MAX_DAYS),
 });

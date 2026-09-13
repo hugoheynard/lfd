@@ -1,3 +1,5 @@
+import type { MandatePaymentType } from "./value-objects/mandate-defaults.js";
+
 /**
  * L'émetteur, **figé au jour où le document a été produit**.
  *
@@ -26,6 +28,36 @@ export interface CreditorSnapshot {
   readonly ics: string;
   /** Le compte où l'argent arrive — sur la facture, pas sur le mandat. */
   readonly creditorIban: string;
+  /**
+   * Le BIC de notre banque — `CdtrAgt/FinInstnId/BIC` du `pain.008`.
+   *
+   * **Nullable, et l'IBAN ne l'est pas** : le BIC est arrivé après (2026-09-12),
+   * et une entité renseignée avant lui reste parfaitement capable d'émettre un
+   * mandat — ce document-là ne le porte pas. C'est le LOT qui en aura besoin, et
+   * c'est donc le lot qui devra refuser, en nommant l'entité à compléter.
+   */
+  readonly creditorBic: string | null;
+  /**
+   * Le titulaire du compte et son adresse, **tels que la banque les connaît**.
+   *
+   * Distincts de `name` / `addressLines` juste au-dessus, qui viennent du
+   * registre. Les deux coïncident presque toujours, et « presque » est la raison
+   * d'avoir les deux : c'est CE bloc-ci que la banque compare, et c'est lui
+   * qu'un mandat doit porter. `null` / vide tant qu'aucun RIB n'a été recopié.
+   */
+  readonly accountHolder: string | null;
+  readonly accountAddressLines: readonly string[];
   /** Le délai annoncé entre la notification et le débit, en jours. */
   readonly preNotificationDays: number;
+
+  /**
+   * **Zone 20** du mandat — ce que le contrat couvre, en une ligne.
+   *
+   * Sur l'ÉMETTEUR et non sur le client : elle décrit ce que nous vendons, et
+   * la même phrase part sur tous les mandats de cette entité.
+   */
+  readonly mandateContractDescription: string;
+
+  /** **Zone 12** du mandat — récurrent, ou ponctuel. */
+  readonly mandatePaymentType: MandatePaymentType;
 }

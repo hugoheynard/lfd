@@ -4,19 +4,19 @@ import type { OrderHandoverLine } from "./order-handover.js";
  * Le **colisage** : ce que l'atelier a sous les yeux quand il scanne le QR de la
  * fiche pour déclarer une commande prête.
  *
- * ## Ce qui le distingue de la remise, et pourquoi ça compte
+ * ## Ce qui le distingue du retrait, et pourquoi ça compte
  *
- * La remise se lit par un **jeton secret** ; le colisage se lit par le **numéro
+ * Le retrait se lit par un **jeton secret** ; le colisage se lit par le **numéro
  * de commande**, déjà imprimé en clair sur la même feuille. Ce n'est pas un
  * relâchement : les deux gestes n'attestent pas la même chose.
  *
- * - La **remise** est un fait à DEUX parties — l'un présente, l'autre scanne.
+ * - Le **retrait** est un fait à DEUX parties — l'un présente, l'autre scanne.
  *   Son code doit donc être un secret que le porteur du colis n'a pas, sans quoi
  *   un coursier scannerait son propre carton.
  * - Le **colisage** est un fait INTERNE. Il n'y a personne d'autre à
  *   représenter, donc rien à s'attribuer indûment : la porte staff suffit.
  *
- * C'est pour ça que le QR de la fiche peut s'imprimer et que celui de la remise
+ * C'est pour ça que le QR de la fiche peut s'imprimer et que celui du retrait
  * ne le peut pas. Voir `documentation/order/architecture-bon-de-commande.md`.
  */
 export interface OrderPackingView {

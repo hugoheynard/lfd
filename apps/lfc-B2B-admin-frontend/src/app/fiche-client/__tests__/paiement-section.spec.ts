@@ -80,7 +80,60 @@ describe('section Moyens de paiement — le socle et les crédits', () => {
     const { host } = render({});
 
     expect(host.textContent).toContain('À la commande');
-    expect(host.textContent).toContain('Toujours actif');
+    expect(host.textContent).toContain('Ouvert à tous');
+    // Ce qui compte n'est pas le libellé du badge mais la promesse : il ne
+    // s'accorde pas, et il ne se retire pas.
+    expect(host.textContent).toContain('il ne se retire pas');
+  });
+
+  it('annonce les trois étapes du paiement différé, dans leur ordre', () => {
+    // L'ordre est RECOMMANDÉ, pas imposé : c'est un mode d'emploi, et la suite
+    // de tests vérifie qu'aucune étape n'est verrouillée par la précédente.
+    const { host } = render({});
+
+    expect(host.textContent).toContain('1 · Coordonnées bancaires');
+    expect(host.textContent).toContain('2 · Mandat SEPA');
+    expect(host.textContent).toContain('3 · Règlement périodique');
+  });
+
+  it('décrit la frise par des libellés, pas par des pastilles seules', async () => {
+    // Un libellé qui change se lit sans avoir appris le code couleur — et reste
+    // lisible quand on ne voit pas la pastille.
+    const { section, settle } = render({ companyId: 'cmp_1' });
+    await settle();
+
+    const steps = section['steps']();
+    expect(steps.map((step) => step.label)).toEqual([
+      'Aucun RIB enregistré',
+      'Aucun mandat de prélèvement',
+      'Aucun règlement périodique ouvert',
+    ]);
+    expect(steps.every((step) => step.done === false)).toBe(true);
+  });
+
+  it('marque l’étape du règlement dès qu’un crédit est accordé, mandat ou pas', async () => {
+    // 🔴 La frise DÉCRIT, elle ne commande pas. Un commercial débloque un crédit
+    // devant son client et fait suivre le mandat : si l'étape 3 attendait
+    // l'étape 2, l'écran mentirait sur ce qui vient d'être fait.
+    const { section, settle } = render({ companyId: 'cmp_1', grantedTerms: ['monthly'] });
+    await settle();
+
+    const steps = section['steps']();
+    expect(steps[2]?.done).toBe(true);
+    expect(steps[1]?.done).toBe(false);
+  });
+
+  it('distingue un mandat RÉVOQUÉ d’un mandat absent', async () => {
+    // Les deux sont « pas de prélèvement possible », et ils ne se réparent pas
+    // du même geste : l'un n'a jamais existé, l'autre a été retiré.
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, status: 'revoked', revokedAt: '2026-02-01T00:00:00.000Z' },
+    });
+    await settle();
+
+    expect(section['steps']()[1]?.label).toContain('••••3000');
+    expect(section['steps']()[1]?.done).toBe(false);
   });
 
   it('ACCORDE le mensuel sans toucher au socle', () => {
@@ -146,14 +199,64 @@ describe('section Moyens de paiement — la zone de danger', () => {
     expect(host.querySelector('fold-danger-zone')).toBeNull();
   });
 
-  it('demande les 4 chiffres du compte pour révoquer le mandat', async () => {
-    // Taper autre chose signifie qu'on ne regardait pas la bonne fiche.
-    const { section, settle } = render({ companyId: 'cmp_1', mandate: ACTIVE_MANDATE });
+  it('demande la fin de la RUM pour révoquer le mandat', async () => {
+    // Taper autre chose signifie qu'on ne regardait pas le bon mandat.
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, reference: 'LFC-9P2X4B-260912-K7M3QT' },
+    });
     await settle();
 
     expect(section['dangerous']()).toEqual([
-      expect.objectContaining({ key: 'mandate', match: '3000' }),
+      expect.objectContaining({ key: 'mandate', match: 'K7M3QT' }),
     ]);
+  });
+
+  /**
+   * 🔴 Régression : un BROUILLON n'était listé nulle part. Impossible de
+   * l'abandonner à l'écran, et l'index d'unicité interdit d'en frapper un
+   * second : une société à laquelle on avait frappé un mandat erroné n'avait
+   * aucune sortie, sauf en SQL.
+   */
+  it('laisse abandonner un brouillon — sinon la société reste bloquée', async () => {
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: {
+        ...ACTIVE_MANDATE,
+        status: 'draft',
+        acceptedAt: null,
+        last4: '',
+        reference: 'LFC-6KTQAT-260913-HZMF98',
+      },
+    });
+    await settle();
+
+    const mandate = section['dangerous']().find((action) => action.key === 'mandate');
+
+    expect(mandate?.label).toContain('Abandonner');
+    expect(mandate?.match).toBe('HZMF98');
+    // Un brouillon n'a jamais autorisé personne : dire qu'on retire un
+    // prélèvement ferait croire qu'on enlève quelque chose au client.
+    expect(mandate?.consequence).not.toContain('Plus aucun prélèvement');
+  });
+
+  /**
+   * 🔴 Régression : le mot à taper était `last4`, qui vient du mandat Stripe. Un
+   * mandat que NOUS frappons naît sans — il peut l'être avant même que le RIB
+   * soit recopié. La confirmation demandait donc de retaper une chaîne VIDE, et
+   * la révocation était inatteignable depuis l'écran sans que rien ne le dise.
+   */
+  it('reste révocable quand le mandat n’a pas de `last4` — le cas des mandats frappés ici', async () => {
+    const { section, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, last4: '', reference: 'LFC-6KTQAT-260913-S54CQZ' },
+    });
+    await settle();
+
+    const mandate = section['dangerous']().find((action) => action.key === 'mandate');
+
+    expect(mandate?.match).toBe('S54CQZ');
+    expect(mandate?.match).not.toBe('');
   });
 });
 

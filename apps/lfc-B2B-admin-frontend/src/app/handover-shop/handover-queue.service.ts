@@ -45,7 +45,7 @@ export class HandoverQueueService {
    * n'est pas un rangement : cette route-là rendait l'`OrderView` du CLIENT —
    * prix unitaires, TVA, totaux, et la trace de négociation étage par étage —
    * sur un poste de comptoir, avec quelqu'un en face. Les trois surfaces de
-   * remise promettent « aucun montant » ; deux le tenaient par leur forme, le
+   * retrait promettent « aucun montant » ; deux le tenaient par leur forme, le
    * rail par la seule discrétion de son gabarit.
    *
    * `OrderHandoverView` n'en porte aucun. La promesse est redevenue
@@ -60,11 +60,11 @@ export class HandoverQueueService {
   }
 
   /**
-   * **La remise saisie**, par le numéro de commande — le chemin sans QR.
+   * **Le retrait saisi**, par le numéro de commande — le chemin sans QR.
    *
    * 🔴 Elle grave `manual`, et c'est tout ce qui la distingue du scan côté
-   * serveur. Une remise saisie n'a eu qu'**une** partie : l'équipe. La présenter
-   * comme un scan la rendrait fausse plutôt que faible — c'est pour cela que le
+   * serveur. Un retrait saisi n'a eu qu'**une** partie : l'équipe. Le présenter
+   * comme un scan le rendrait faux plutôt que faible — c'est pour cela que le
    * serveur porte deux verbes, et que l'écran écrit « sans code » à côté.
    *
    * Elle vit ici et non dans `HandoverService` (`retrait/`) parce qu'elle ne

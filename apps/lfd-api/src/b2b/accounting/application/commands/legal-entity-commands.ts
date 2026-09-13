@@ -1,4 +1,9 @@
-import type { CorrectLegalEntityPayload, DeclareLegalEntityPayload } from "@lfd/contracts";
+import type { SetMandateDefaultsPayload } from "@lfd/contracts";
+import type {
+  CorrectLegalEntityPayload,
+  DeclareLegalEntityPayload,
+  SetCreditorAccountPayload,
+} from "@lfd/contracts";
 
 /**
  * Les intentions d'écriture sur une entité émettrice.
@@ -37,7 +42,20 @@ export class AssignCreditorIdentifierCommand {
 export class SetCreditorAccountCommand {
   constructor(
     readonly legalEntityId: string,
-    readonly iban: string,
+    readonly payload: SetCreditorAccountPayload,
+  ) {}
+}
+
+/**
+ * Les réglages de mandat de l'entité — zones 20 et 12 du modèle EPC.
+ *
+ * Sur l'entité et non sur le compte d'un client : ils décrivent ce que NOUS
+ * vendons, et la même phrase part sur tous les mandats qu'elle émet.
+ */
+export class SetMandateDefaultsCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly payload: SetMandateDefaultsPayload,
   ) {}
 }
 

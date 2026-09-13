@@ -7,6 +7,7 @@ import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 import {
   optionalAdminDevBypass,
   optionalDevImpersonation,
+  optionalFieldEncryptionKey,
   optionalMailerConfig,
   optionalManagementCredentials,
   optionalPort,
@@ -84,6 +85,8 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly shopifyClientSecretValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
+  private readonly fieldKey: Buffer;
+  private readonly fieldKeyIsConfigured: boolean;
 
   constructor() {
     this.database = required("DATABASE_LFD_URL");
@@ -116,6 +119,33 @@ export class AppConfig implements ShopifyCredentialsSource {
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
+    const configuredFieldKey = optionalFieldEncryptionKey();
+    this.fieldKeyIsConfigured = configuredFieldKey !== null;
+    this.fieldKey = resolveFieldEncryptionKey(configuredFieldKey, this.production);
+  }
+
+  /**
+   * La clé du coffre de champs — celle qui scelle les coordonnées bancaires de
+   * nos clients au repos.
+   *
+   * Résolue **au démarrage** : en production, son absence empêche de booter.
+   * Voir {@link resolveFieldEncryptionKey} pour la raison du repli hors
+   * production.
+   */
+  fieldEncryptionKey(): Buffer {
+    return this.fieldKey;
+  }
+
+  /**
+   * La clé du coffre vient-elle de l'environnement, ou du repli de développement ?
+   *
+   * Lu par le bulletin de démarrage. La distinction compte parce qu'elle est
+   * **invisible à l'usage** : dans les deux cas les IBAN se scellent et se
+   * relisent, et rien ne sépare un coffre réel d'un coffre en carton — sauf
+   * cette ligne au démarrage.
+   */
+  hasOwnFieldEncryptionKey(): boolean {
+    return this.fieldKeyIsConfigured;
   }
 
   /**
@@ -521,3 +551,44 @@ export interface StripeConfig {
   readonly webhookSecret: string;
   readonly publishableKey: string;
 }
+
+/**
+ * 🔴 **Une clé absente ne doit jamais équivaloir à « pas de chiffrement ».**
+ *
+ * En production, l'absence de `FIELD_ENCRYPTION_KEY` **empêche le démarrage**.
+ * C'est le seul comportement acceptable : un backend qui boote sans clé
+ * écrirait des IBAN en clair dans une colonne que tout le monde croit scellée,
+ * et l'erreur ne se découvrirait qu'en lisant la base — c'est-à-dire jamais.
+ *
+ * Hors production, le repli est une clé **publique, écrite ici en clair et
+ * volontairement reconnaissable**. Elle n'est pas un secret et ne prétend pas
+ * l'être : elle existe pour qu'un dépôt fraîchement cloné démarre, et pour que
+ * les e2e traversent le **vrai** chemin de chiffrement plutôt qu'un double.
+ *
+ * ⚠️ Le repli change la SOURCE de la clé, jamais l'algorithme : c'est le même
+ * `AesGcmFieldCipher` dans les deux cas. Un double transparent en test aurait
+ * laissé le scellement inéprouvé là où il compte.
+ *
+ * La garde porte sur `NODE_ENV=production`, comme tout le reste du fichier.
+ */
+function resolveFieldEncryptionKey(configured: Buffer | null, isProduction: boolean): Buffer {
+  if (configured !== null) {
+    return configured;
+  }
+  if (isProduction) {
+    throw new Error(
+      "FIELD_ENCRYPTION_KEY est obligatoire en production : sans elle, les coordonnées " +
+        "bancaires des clients seraient écrites en clair. Générez-en une avec : " +
+        "openssl rand -base64 32",
+    );
+  }
+  return Buffer.from(DEVELOPMENT_FIELD_KEY, "base64");
+}
+
+/**
+ * ⚠️ **Clé de DÉVELOPPEMENT, publique et sans valeur.** Elle est dans le dépôt à
+ * dessein : la publier ici évite qu'un poste en invente une et que deux
+ * développeurs ne puissent plus relire la base de l'autre. Aucune donnée réelle
+ * n'est scellée avec elle — la production refuse de démarrer sans la sienne.
+ */
+const DEVELOPMENT_FIELD_KEY = "ZGV2ZWxvcHBlbWVudC1zZXVsZW1lbnQtcGFzLXByb2Q=";

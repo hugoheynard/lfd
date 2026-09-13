@@ -10,6 +10,7 @@ import {
   renderSepaMandatePdf,
   sampleMandateFileName,
 } from "../../domain/services/sepa-mandate-pdf.js";
+import { readEntityLogo } from "../legal-entity-support.js";
 import { ExportSampleMandateQuery } from "./legal-entity-queries.js";
 
 /** Le fichier et le nom qu'on propose au navigateur. */
@@ -55,8 +56,7 @@ export class ExportSampleMandateHandler implements IQueryHandler<
     if (creditor === null) {
       throw new LegalEntityNotFoundError(query.legalEntityId);
     }
-    const logoKey = await this.logos.logoKeyOf(query.legalEntityId);
-    const logo = logoKey === null ? null : await this.store.readIfPresent(logoKey);
+    const logo = await readEntityLogo(this.logos, this.store, query.legalEntityId);
     return {
       bytes: await renderSepaMandatePdf(creditor, logo),
       fileName: sampleMandateFileName(creditor),

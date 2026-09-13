@@ -32,8 +32,13 @@ export class OnOrderPlaced implements IEventHandler<OrderPlacedEvent> {
    * enseigne change, et une commande de 2024 doit continuer de nommer son client
    * comme il s'appelait en 2024.
    *
-   * Une lecture de plus, et une seule — ici, pas dans le recorder : seul ce
-   * fait-là parle d'une société. Les autres événements n'en paient rien.
+   * Une lecture de plus, et une seule **parmi les faits journalisés** — ici,
+   * pas dans le recorder : seul `order.placed` fige un nom dans son payload
+   * (`company.declared` n'en porte aucun, vérifié le 2026-09-12). Les autres
+   * événements n'en paient rien.
+   *
+   * ⚠️ Ce n'est PAS le seul appelant de `CompanyNamer` dans le contexte : le
+   * tunnel d'activation le lit aussi, par lot et sans rien figer.
    */
   private async run(event: OrderPlacedEvent): Promise<void> {
     const client = event.companyId === null ? null : await this.nameOrNull(event.companyId);

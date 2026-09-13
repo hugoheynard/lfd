@@ -1,10 +1,11 @@
-import type { DeclareLegalEntityPayload } from "@lfd/contracts";
+import type { SetCreditorAccountPayload, DeclareLegalEntityPayload } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
 import {
   AssignCreditorIdentifierCommand,
   DeclareLegalEntityCommand,
   SetCreditorAccountCommand,
+  SetMandateDefaultsCommand,
   SetLegalEntityLogoCommand,
 } from "../../b2b/accounting/application/commands/legal-entity-commands.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
@@ -82,11 +83,47 @@ const SEEDED_ICS = "FR00ZZZ900001";
  * (`1234567890189`) le désigne comme factice à quiconque le lit.
  *
  * 🔴 Il n'est ici que parce que c'est le compte du **créancier** — le nôtre,
- * celui où l'argent arrive, et qui s'imprime sur un mandat. Un IBAN de
- * **débiteur** ne se sèmerait pas ainsi : il ne se stocke pas en clair
- * (`architecture-prelevement-sepa-direct.md` §4).
+ * celui où l'argent arrive, et qui s'imprime sur un mandat.
+ *
+ * ⚠️ Ce paragraphe ajoutait jusqu'au 2026-09-12 qu'« un IBAN de débiteur ne se
+ * sèmerait pas ainsi, il ne se stocke pas en clair ». La prémisse a changé : il
+ * se stocke désormais, **scellé** (AES-256-GCM), et `client.seed.ts` en sème un
+ * — justement pour que le coffre travaille sur un poste de développement au lieu
+ * de rester inéprouvé jusqu'à la production. Ce qui reste vrai, et qui est le
+ * fond de la phrase : les deux IBAN ne se traitent PAS pareil en base.
  */
 const SEEDED_CREDITOR_IBAN = "FR7630006000011234567890189";
+/** Caisse d'Épargne — la banque retenue pour le prélèvement direct. */
+const SEEDED_CREDITOR_BIC = "CEPAFRPP751";
+
+/**
+ * Le compte tel qu'on le recopierait d'un RIB.
+ *
+ * ⚠️ Le titulaire et l'adresse REDOUBLENT l'identité déclarée juste au-dessus,
+ * et c'est le sujet du modèle, pas une étourderie du seed : l'un vient du
+ * registre, l'autre de la banque. Le seed les fait coïncider parce que c'est le
+ * cas courant — mais il passe par la MÊME route que l'écran, donc il éprouve
+ * bien le chemin où ils pourraient diverger.
+ */
+const SEEDED_CREDITOR_ACCOUNT: SetCreditorAccountPayload = {
+  iban: SEEDED_CREDITOR_IBAN,
+  bic: SEEDED_CREDITOR_BIC,
+  holder: SEEDED_LEGAL_ENTITY_NAME,
+  line1: "Route de la Balme",
+  line2: "",
+  postalCode: "73150",
+  city: "Val d'Isère",
+  countryCode: "FR",
+};
+
+/**
+ * La **zone 20** du mandat — ce que le prélèvement couvre.
+ *
+ * Semée non vide à dessein : c'est l'une des rares zones qu'on ne voit qu'à
+ * l'impression, sur une ligne pointillée dont un texte trop long sortirait. Un
+ * poste où elle serait vide ne montrerait jamais le cas qui déborde.
+ */
+const SEEDED_CONTRACT_DESCRIPTION = "Fourniture de café et de viennoiseries";
 
 const ENTITY: DeclareLegalEntityPayload = {
   name: SEEDED_LEGAL_ENTITY_NAME,
@@ -153,8 +190,22 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
   if (existing?.creditorIban) {
     console.log("· Compte créancier déjà posé — inchangé.");
   } else {
-    await commands.execute(new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_IBAN));
+    await commands.execute(new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_ACCOUNT));
     console.log("✓ Compte créancier posé — l'entité peut désormais prélever.");
+  }
+
+  // Les réglages de mandat. Reposés seulement s'ils sont à leur valeur de
+  // déclaration : une description saisie à la main sur le poste survit au semis.
+  if (existing && existing.mandateContractDescription !== "") {
+    console.log("· Réglages de mandat déjà posés — inchangés.");
+  } else {
+    await commands.execute(
+      new SetMandateDefaultsCommand(entityId, {
+        contractDescription: SEEDED_CONTRACT_DESCRIPTION,
+        paymentType: "recurrent",
+      }),
+    );
+    console.log("✓ Réglages de mandat posés — description du contrat et régime récurrent.");
   }
 
   if (existing?.logoKey) {

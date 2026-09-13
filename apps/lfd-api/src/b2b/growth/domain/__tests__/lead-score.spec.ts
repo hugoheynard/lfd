@@ -1,4 +1,5 @@
 import { deriveLeadScores, type LeadEvent } from "../lead-score.js";
+import type { CompanyIdentity } from "../ports/company-namer.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
 
@@ -261,5 +262,41 @@ describe("deriveLeadScores — leads cold (play nurture)", () => {
     ]);
     expect(leads[0]?.subjectId).toBe("hot_lead");
     expect(leads[0]?.score ?? 0).toBeGreaterThan(leads[1]?.score ?? 0);
+  });
+});
+
+/**
+ * Régression : `scoreActivation` écrivait `label: activation.companyId` SANS
+ * condition — pas un repli, le cas nominal. Le coup `rescue` désigne un dossier
+ * d'inscription bloqué, c'est-à-dire l'appel qu'on passe le matin ; une ligne
+ * qui ne dit pas à qui n'est pas passée (fix 2026-09-12).
+ */
+describe("deriveLeadScores — le coup rescue nomme sa cible", () => {
+  const MARTIN: CompanyIdentity = { enseigne: "Boulangerie Martin", raisonSociale: "SARL MARTIN" };
+
+  it("porte l'enseigne de la société, pas son identifiant", () => {
+    const [lead] = deriveLeadScores(
+      [declared("c_stalled", "2026-08-05T09:00:00.000Z")],
+      NOW,
+      [],
+      new Map([["c_stalled", MARTIN]]),
+    );
+
+    expect(lead).toMatchObject({
+      play: "rescue",
+      subjectId: "c_stalled",
+      label: "Boulangerie Martin",
+    });
+  });
+
+  it("retombe sur l'identifiant quand la société n'est plus dans l'annuaire", () => {
+    const [lead] = deriveLeadScores(
+      [declared("c_ghost", "2026-08-05T09:00:00.000Z")],
+      NOW,
+      [],
+      new Map(),
+    );
+
+    expect(lead?.label).toBe("c_ghost");
   });
 });

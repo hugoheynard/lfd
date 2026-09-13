@@ -87,15 +87,25 @@ export type {
   UpdateStaffRolePayload,
 } from "./staff-role.js";
 export {
+  setCompanyBankAccountPayloadSchema,
+  setMandateOptionsPayloadSchema,
+} from "./company-bank-account.js";
+export type {
+  SetCompanyBankAccountPayload,
+  CompanyBankAccountView,
+  CompanyBankAccountSectionView,
+  SetMandateOptionsPayload,
+} from "./company-bank-account.js";
+export {
   mandateStatusSchema,
-  registerMandatePayloadSchema,
   MANDATE_STATUS_LABELS,
+  signMandatePayloadSchema,
 } from "./payment-mandate.js";
 export type {
   MandateStatus,
   PaymentMandateView,
-  RegisterMandatePayload,
   MandateSectionView,
+  SignMandatePayload,
 } from "./payment-mandate.js";
 export {
   assignCreditorIdentifierPayloadSchema,
@@ -103,7 +113,10 @@ export {
   declareLegalEntityPayloadSchema,
   legalAddressPayloadSchema,
   setCreditorAccountPayloadSchema,
+  setMandateDefaultsPayloadSchema,
   setPreNotificationPayloadSchema,
+  mandatePaymentTypeSchema,
+  MANDATE_PAYMENT_TYPE_LABELS,
   LEGAL_ENTITY_LOGO_ACCEPTED_TYPES,
   LEGAL_ENTITY_LOGO_MAX_BYTES,
   LEGAL_ENTITY_LOGO_MIN_SIDE,
@@ -116,7 +129,9 @@ export type {
   CorrectLegalEntityPayload,
   DeclareLegalEntityPayload,
   LegalEntityView,
+  MandatePaymentType,
   SetCreditorAccountPayload,
+  SetMandateDefaultsPayload,
   SetPreNotificationPayload,
 } from "./legal-entity.js";
 export {

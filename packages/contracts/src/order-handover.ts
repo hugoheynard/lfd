@@ -1,5 +1,5 @@
 /**
- * Contrat de fil de la **remise en main propre** — le retrait au labo.
+ * Contrat de fil du **retrait en main propre** — la marchandise au labo.
  *
  * Le principe tient en une phrase : **le scan prouve la présence, la session
  * prouve l'identité**. Le QR que le client présente porte un jeton opaque
@@ -15,12 +15,12 @@
 import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
 
 /**
- * **Comment** une remise a été constatée.
+ * **Comment** un retrait a été constaté.
  *
  * `scan` — les deux parties étaient là : l'une a présenté, l'autre a scanné.
  * C'est l'attestation forte, et la seule qui exige un secret.
  *
- * `manual` — le scan était impossible et l'équipe a saisi la remise. Le
+ * `manual` — le scan était impossible et l'équipe a saisi le retrait. Le
  * destinataire n'avait pas son courriel : un magasinier, quelqu'un d'autre à
  * l'accueil, un téléphone déchargé.
  *
@@ -51,8 +51,8 @@ export interface OrderHandoverLine {
  * négocié devant la personne qui attend au comptoir.
  *
  * `blockedReason` porte le refus **en clair** plutôt qu'un booléen : quand la
- * remise est impossible, la seule chose utile à l'écran est *pourquoi*, et c'est
- * le serveur qui le sait (état de la commande, remise déjà faite).
+ * retrait est impossible, la seule chose utile à l'écran est *pourquoi*, et c'est
+ * le serveur qui le sait (état de la commande, retrait déjà fait).
  */
 export interface OrderHandoverView {
   /** Pour ouvrir la fiche complète quand le comptoir ne suffit pas. */
@@ -69,20 +69,20 @@ export interface OrderHandoverView {
   /** Somme des quantités — le chiffre qu'on recompte à voix haute. */
   readonly totalUnits: number;
   readonly lines: readonly OrderHandoverLine[];
-  /** ISO de la remise déjà effectuée, ou `null` si elle reste à faire. */
+  /** ISO du retrait déjà effectué, ou `null` s'il reste à faire. */
   readonly handedOverAt: string | null;
-  /** Qui l'a remise — l'identité staff figée (claim `sub`) —, ou `null`. */
+  /** Qui l'a remis — l'identité staff figée (claim `sub`) —, ou `null`. */
   readonly handedOverBy: string | null;
   /**
    * **Comment** elle a été constatée : `scan` (les deux parties étaient là) ou
    * `manual` (le scan était impossible, l'équipe a saisi). `null` tant qu'elle
-   * n'a pas été remise — ou sur une remise antérieure à la distinction.
+   * n'a pas été remis — ou sur un retrait antérieur à la distinction.
    *
-   * L'écran l'affiche : une remise saisie est une attestation **plus faible**,
+   * L'écran l'affiche : un retrait saisi est une attestation **plus faible**,
    * et la présenter comme un scan la rendrait fausse plutôt que faible.
    */
   readonly handedOverVia: HandoverVia | null;
-  /** `null` = la remise est possible ; sinon la raison du refus, en clair. */
+  /** `null` = le retrait est possible ; sinon la raison du refus, en clair. */
   readonly blockedReason: string | null;
   /**
    * La note du client, telle qu'elle a été passée — ou `""`.
@@ -104,7 +104,7 @@ export interface OrderHandoverView {
  *
  * ## Pourquoi une vue à part de `OrderHandoverView`
  *
- * Les deux parlent de remise et ne servent pas le même geste. La vue détaillée
+ * Les deux parlent de retrait et ne servent pas le même geste. La vue détaillée
  * répond « qu'est-ce que je tends à cette personne » — elle porte les lignes,
  * le total, la raison d'un refus. Celle-ci répond « qui attend, et depuis
  * quand » : des dizaines de lignes, aucune ligne de marchandise.
@@ -149,11 +149,11 @@ export interface HandoverQueueEntryView {
    * Où en est la commande, du point de vue du COMPTOIR — et pas le statut brut
    * du commerce, que personne au comptoir n'a à interpréter.
    *
-   * `handed_over` gagne sur tout le reste : une commande remise est remise,
+   * `handed_over` gagne sur tout le reste : une commande retirée est retirée,
    * même si son statut commercial a bougé depuis.
    */
   readonly state: HandoverQueueState;
-  /** ISO de la remise, ou `null`. */
+  /** ISO du retrait, ou `null`. */
   readonly handedOverAt: string | null;
   /** `scan` ou `manual`, ou `null` si elle reste à faire. */
   readonly handedOverVia: HandoverVia | null;

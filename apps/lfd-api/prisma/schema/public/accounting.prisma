@@ -11,7 +11,25 @@
 /// État d'un **mandat de prélèvement SEPA**. `active` seul autorise un
 /// prélèvement ; `revoked` est notre geste (retrait du client, ou remplacement),
 /// `failed` vient de la banque. Un mandat ne s'efface jamais, il se date.
+/// Le **type de paiement** d'un mandat — zone 12 du modèle EPC.
+///
+/// Binaire, et c'est la norme qui le veut : le formulaire porte deux cases à
+/// cocher, pas une liste. `recurrent` autorise une série de prélèvements ;
+/// `one_off` n'en autorise qu'un, après quoi le mandat est mort.
+///
+/// ⚠️ Ce n'est PAS le `SeqTp` d'un `pain.008` (`FRST`/`RCUR`/`OOFF`/`FNAL`),
+/// qui décrit une échéance dans une série. Celui-ci décrit l'autorisation.
+enum MandatePaymentType {
+  recurrent
+  one_off
+
+  @@schema("public")
+}
+
 enum MandateStatus {
+  // Frappé et imprimé, pas encore signé. Le seul état que NOUS produisons —
+  // les quatre autres viennent du prestataire ou de la banque.
+  draft
   pending
   active
   revoked
@@ -64,13 +82,65 @@ model LegalEntity {
   city         String
   countryCode  String @default("FR") @map("country_code")
 
+  /// Ce que nos mandats disent du contrat qu'ils servent — zone 20, et le type
+  /// de paiement de la zone 12.
+  ///
+  /// 🔴 Ils vivent ICI et non sur le compte d'un client, parce qu'ils décrivent
+  /// **ce que nous vendons**, pas ce que ce client-là a acheté : la même phrase
+  /// et le même régime sur tous les mandats que cette entité émet. Les poser par
+  /// client ferait ressaisir la même chose à chaque dossier, et deux
+  /// formulations concurrentes finiraient par circuler chez des clients voisins.
+  ///
+  /// Ce qui reste par client, et pourquoi : le **numéro** de contrat (zone 19)
+  /// et le code du débiteur (zone 14) désignent un dossier précis.
+  mandateContractDescription String             @default("") @map("mandate_contract_description")
+  mandatePaymentType         MandatePaymentType @default(recurrent) @map("mandate_payment_type")
+
   // `null` = pas encore attribué par la Banque de France. C'est un état normal
   // et durable : on prépare le dossier des semaines avant de recevoir l'ICS.
   ics String? @unique
 
   // Le compte où l'argent arrive. Il change — on peut changer de banque — et
   // c'est ce qui le distingue de l'ICS.
-  creditorIban String? @map("creditor_iban")
+  // 🔴 DEUX colonnes pour un seul IBAN, le temps d'une bascule (palier 1 sur 3,
+  // 2026-09-12). `creditor_iban_sealed` porte un scellé AES-256-GCM ;
+  // `creditor_iban` garde la valeur claire d'avant, et n'existe plus que comme
+  // retour arrière. Le code écrit le scellé et lit « scellé d'abord, clair
+  // sinon » — un scellé commence par `v1.`, rien d'autre ne le peut.
+  //
+  // La valeur existante NE SE CONVERTIT PAS en SQL : la clé vit dans
+  // l'application. Elle se ressaisit par l'écran, ce qui évite d'avoir à sortir
+  // la clé de production sur un poste. Palier 3, plus tard et irréversible :
+  // supprimer `creditor_iban`.
+  creditorIban       String? @map("creditor_iban")
+  creditorIbanSealed String? @map("creditor_iban_sealed")
+
+  /// Le BIC de la banque du compte ci-dessus — `CdtrAgt` du `pain.008`.
+  ///
+  /// ⚠️ Il n'est PAS soumis au régime de `creditor_iban` : un BIC désigne un
+  /// établissement, pas un compte, il figure sur tout virement reçu et se rend
+  /// donc en entier par l'API. Nullable parce qu'il est arrivé après (2026-09-12)
+  /// et qu'une entité renseignée avant lui reste capable d'émettre un mandat.
+  creditorBic String? @map("creditor_bic")
+
+  /// Le bloc recopié du RIB : titulaire et adresse **tels que la banque les
+  /// connaît**. Il redouble `name` et l'adresse du siège, et c'est DÉLIBÉRÉ —
+  /// l'un vient du registre, l'autre de la banque, et c'est le second que la
+  /// banque compare. Voir le value object `CreditorAccount`.
+  creditorAccountHolder      String? @map("creditor_account_holder")
+  creditorAccountLine1       String? @map("creditor_account_line1")
+  creditorAccountLine2       String? @map("creditor_account_line2")
+  creditorAccountPostalCode  String? @map("creditor_account_postal_code")
+  creditorAccountCity        String? @map("creditor_account_city")
+  creditorAccountCountryCode String? @map("creditor_account_country_code")
+
+  /// Quand le PREMIER mandat a été frappé sous cette entité.
+  ///
+  /// 🔴 Tant qu'il est nul, le créancier imprimé se corrige ; après, il est gelé
+  /// — un mandat signé nomme le créancier, et le débiteur a autorisé CE nom-là.
+  /// Même raisonnement que l'immuabilité de l'ICS, appliqué à ce que le papier
+  /// porte. L'IBAN et le BIC, eux, restent libres : aucun mandat ne les porte.
+  firstMandateIssuedAt DateTime? @map("first_mandate_issued_at")
 
   // Le délai annoncé au débiteur entre la pré-notification et le débit. Négocié
   // avec la banque, donc DE LA DONNÉE : le renégocier est une saisie, pas un
@@ -90,6 +160,11 @@ model LegalEntity {
   // DELETE physique — une entité citée par un mandat signé ne s'efface pas.
   archivedAt DateTime? @map("archived_at")
 
+  // Les mandats émis sous cette entité. Côté inverse obligatoire pour Prisma ;
+  // personne ne lit une entité PAR ses mandats — c'est le mandat qui nomme son
+  // émetteur, et le FK empêche d'effacer une entité qu'un papier signé cite.
+  mandates PaymentMandate[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -100,6 +175,103 @@ model LegalEntity {
 // ─────────────────────────────────────────────────────────────────────────────
 // PaymentMandate — l'autorisation de prélever, PAS les coordonnées bancaires
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CompanyBankAccount — le RIB d'un CLIENT, celui qu'on débite
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Le **côté client d'un mandat SEPA** — son compte, et ce qu'on imprimera avec.
+///
+/// ⚠️ Le nom de la table dit « bank accounts » et c'est exact mais étroit : elle
+/// porte aussi les zones facultatives du contrat (14, 19, 20). Les deux vont
+/// ensemble parce qu'ils remplissent le même papier et se saisissent au même
+/// moment ; les séparer ferait deux tables pour un seul formulaire.
+///
+/// ## 🔴 Pourquoi il est AUTONOME, sans lien vers un mandat
+///
+/// La tentation est de poser ces colonnes sur `PaymentMandate` : un mandat
+/// autorise à débiter un compte, les deux semblent inséparables. Ils ne le sont
+/// pas, et la question est ouverte — SEPA connaît l'**amendement**
+/// (`AmdmntInd` + `OrgnlDbtrAcct`), qui change le compte d'un mandat **en
+/// gardant sa RUM** et sa signature. Selon la réponse de la banque, changer de
+/// RIB crée un mandat neuf, ou amende celui en cours.
+///
+/// Poser la colonne sur le mandat répondrait par la structure à cette question,
+/// et se corriger demanderait de défaire une migration. La table se tient donc
+/// seule au 2026-09-12, et le lien se posera quand la réponse existera.
+///
+/// ## Le régime de l'IBAN — scellé, pas en clair
+///
+/// `iban_sealed` porte un scellé `AesGcmFieldCipher` (AES-256-GCM), jamais
+/// l'IBAN. C'est l'exact inverse de `LegalEntity.creditor_iban`, et l'asymétrie
+/// est assumée : notre compte reçoit et nous en sommes le titulaire ; ceux-ci
+/// sont des **données personnelles de centaines de clients**, et un dump de la
+/// base en ferait un fichier qui a une valeur.
+///
+/// ⚠️ `iban_last4` reste EN CLAIR, et il le faut : c'est ce que l'écran affiche
+/// et ce sur quoi une zone de danger fait taper une confirmation. Quatre
+/// chiffres ne débitent personne.
+///
+/// ⚠️ Changer `FIELD_ENCRYPTION_KEY` rend cette colonne illisible. Une rotation
+/// est une migration de données, pas un remplacement de secret.
+///
+/// ## Un seul compte courant par société
+///
+/// `company_id` est `@unique` : un client a un RIB, pas une collection. Poser le
+/// suivant remplace le précédent — et c'est précisément ce geste qui déclenchera
+/// la règle du mandat, une fois qu'on saura laquelle.
+model CompanyBankAccount {
+  id String @id
+
+  companyId String  @unique @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// Le bloc recopié du RIB : titulaire et adresse **tels que la banque du
+  /// client les connaît**. Ils peuvent diverger de la raison sociale déclarée
+  /// sans que personne se trompe — et c'est ce bloc-là qui s'imprime sur le
+  /// mandat que le client signe.
+  holder       String
+  addressLine1 String @map("address_line1")
+  addressLine2 String @default("") @map("address_line2")
+  postalCode   String @map("postal_code")
+  city         String
+  countryCode  String @default("FR") @map("country_code")
+
+  /// 🔴 Le scellé, jamais l'IBAN. Illisible sans `FIELD_ENCRYPTION_KEY`.
+  ibanSealed String @map("iban_sealed")
+
+  /// Les quatre derniers caractères, en clair — de quoi reconnaître, pas débiter.
+  ibanLast4 String @map("iban_last4")
+
+  /// Le BIC n'est PAS scellé : il désigne un établissement, pas un compte, et il
+  /// figure sur tout virement. Le sceller coûterait sans rien protéger.
+  bic String
+
+  /// Les zones **facultatives** du mandat propres à CE client — 14 et 19 du
+  /// modèle EPC.
+  ///
+  /// ⚠️ La zone 20 (description du contrat) a vécu ici jusqu'au 2026-09-12 et
+  /// est remontée sur `legal_entities` : elle décrit ce que nous vendons, pas
+  /// ce que ce client-là a acheté. La colonne n'a jamais atteint la production
+  /// — sa migration de création n'était pas déployée (vérifié). Elles ne conditionnent pas la validité du mandat, et elles
+  /// vivent ici parce que cette table porte tout le **côté client du mandat** :
+  /// les zones 1 à 6 sont le RIB ci-dessus, celles-ci le contrat.
+  ///
+  /// Les zones 15 à 18 n'y sont PAS : les deux premières sont au signataire (un
+  /// tiers débiteur, que nous ne pouvons pas deviner), les deux autres ne nous
+  /// concernent pas tant que nous n'encaissons pour personne.
+  ///
+  /// `""` et non `null` : une zone facultative non renseignée est un état
+  /// normal et durable, pas une donnée manquante à signaler.
+  debtorReference String @default("") @map("debtor_reference")
+  contractNumber  String @default("") @map("contract_number")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("company_bank_accounts")
+  @@schema("public")
+}
 
 /// Un **mandat de prélèvement SEPA** rattaché à une société.
 ///
@@ -121,8 +293,11 @@ model PaymentMandate {
 
   // Rattachement Stripe. Le `customerId` est réutilisé d'un mandat au suivant
   // pour la même société : un client Stripe par société, pas par autorisation.
-  stripeCustomerId String @map("stripe_customer_id")
-  paymentMethodId  String @map("payment_method_id")
+  // Nullable depuis le 2026-09-12 : un mandat que NOUS frappons n'a pas de
+  // client Stripe. Un lecteur qui suppose ces champs pleins est un appelant à
+  // corriger, pas un `!` à poser.
+  stripeCustomerId String? @map("stripe_customer_id")
+  paymentMethodId  String? @map("payment_method_id")
 
   // Référence opposable du mandat (RUM), rendue par Stripe. C'est elle qu'on
   // dicte en contestation — pas l'id technique.
@@ -138,7 +313,9 @@ model PaymentMandate {
 
   // Date du consentement **déclaré** — celle du mandat papier déjà signé, donc
   // souvent bien antérieure à la saisie (reprise de portefeuille).
-  acceptedAt DateTime  @map("accepted_at")
+  // `null` tant que le papier n'est pas revenu signé. Inventer une date à la
+  // frappe serait dater le consentement du jour où on l'a demandé.
+  acceptedAt DateTime? @map("accepted_at")
   revokedAt  DateTime? @map("revoked_at")
 
   // Le **mandat signé scanné** : la seule pièce qui prouve le consentement (le
@@ -150,10 +327,21 @@ model PaymentMandate {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Un seul mandat ACTIF par société : index PARTIEL (`status = 'active'`), donc
-  // invisible du schéma Prisma — il vit dans la migration
-  // `20260811200000_mandat_prelevement`. Les mandats révoqués s'empilent sans
-  // se gêner ; c'est tout l'intérêt de garder l'historique.
+  // Laquelle de NOS entités a émis ce mandat. `null` pour une RUM reprise d'un
+  // autre créancier, émise sous son ICS — pas pour d'anciens mandats Stripe :
+  // il n'y en a aucun (table vide, aucune route de création).
+  creditorId String?       @map("creditor_id")
+  creditor   LegalEntity?  @relation(fields: [creditorId], references: [id])
+
+  // 🔴 TROIS index partiels ou d'expression vivent dans les migrations et sont
+  // INVISIBLES ici — Prisma ne sait pas les exprimer. Les chercher dans ce
+  // fichier et conclure qu'ils n'existent pas est l'erreur que ce commentaire
+  // existe pour empêcher (migration `20260912221000_mandat_maison_frappe`) :
+  //   · un seul ACTIF par (société, créancier)   — `COALESCE(creditor_id,'LEGACY')`
+  //   · un seul BROUILLON par société
+  //   · une RUM unique par créancier
+  // Le `COALESCE` n'est pas décoratif : `NULL` étant distinct de `NULL` dans un
+  // index d'unicité, la colonne nue laisserait les mandats hérités sans garantie.
   @@index([companyId, status])
   @@map("payment_mandates")
   @@schema("public")

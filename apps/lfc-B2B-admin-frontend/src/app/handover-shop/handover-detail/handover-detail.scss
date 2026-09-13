@@ -138,8 +138,8 @@
 
    🔴 `flex: 0 1 auto` : elle prend la hauteur de SON contenu, et se contracte —
    jamais l'inverse. Avec `1 1`, elle s'étirait sur toute la colonne et laissait
-   un vide sous la dernière ligne, en repoussant la remise au bas du rail. Ici
-   la carte s'arrête où la liste s'arrête, la remise vient juste dessous, et
+   un vide sous la dernière ligne, en repoussant le retrait au bas du rail. Ici
+   la carte s'arrête où la liste s'arrête, le retrait vient juste dessous, et
    c'est seulement quand le sac dépasse la place disponible que la liste se met
    à défiler. C'est ce qui remplace le dépliage : un « + 2 références »
    demandait un clic pour voir ce qu'on est en train de tendre. */
@@ -207,7 +207,7 @@
 }
 
 /* La liste défile DANS la carte : un sac de vingt références ne doit pas
-   repousser le bouton de remise, celui qu'on cherche en tenant le sac. */
+   repousser le bouton de retrait, celui qu'on cherche en tenant le sac. */
 .hd-lines {
   display: flex;
   flex: 0 1 auto;
@@ -269,20 +269,20 @@
 }
 
 /* ── LES GESTES ─────────────────────────────────────────────────────────────
-   La remise prend toute la largeur : c'est LE geste de cet écran, et on le
+   Le retrait prend toute la largeur : c'est LE geste de cet écran, et on le
    cherche en tenant un sac d'une main. Le reste est en dessous, en petit. */
 .hd-actions {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
 
-  /* Trois gestes distincts, pas une pile : le scan, la remise saisie, et la
+  /* Trois gestes distincts, pas une pile : le scan, le retrait saisi, et la
      ligne du bas qui n'en est pas un. Collés, les deux boutons se lisaient
      comme un seul bloc à deux étages, et on cliquait le mauvais. */
   gap: var(--fold-space-md);
 
   /* 🔴 Collée au BAS du rail. Le sac s'arrête où sa liste s'arrête, donc la
-     remise suivait la dernière ligne et changeait de hauteur d'une commande à
+     retrait suivait la dernière ligne et changeait de hauteur d'une commande à
      l'autre — trois articles la posaient en haut, vingt la posaient en bas. Un
      geste qu'on cherche en tenant un sac d'une main doit se trouver au même
      endroit à chaque fois ; le vide au-dessus est le prix de cette constance,
