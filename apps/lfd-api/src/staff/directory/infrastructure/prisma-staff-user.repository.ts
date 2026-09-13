@@ -23,6 +23,7 @@ import {
   assertStatusChangeAllowed,
   type StaffMutationTarget,
 } from "../../permissions/staff-access.policy.js";
+import { parseStaffNavPreferences } from "../domain/staff-nav-preferences.js";
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
 import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
 
@@ -123,7 +124,12 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   }
 
   async me(id: string): Promise<StaffMeView> {
-    const row = await this.prisma.staffUser.findUnique({ where: { id }, select: SELECT });
+    // Les préférences ne sont lues QUE par la surface réflexive : l'annuaire les
+    // affiche nulle part, et un `select` partagé les enverrait à tout le monde.
+    const row = await this.prisma.staffUser.findUnique({
+      where: { id },
+      select: { ...SELECT, navPrefs: true },
+    });
     if (row === null) {
       throw new StaffUserNotFoundError(id);
     }
@@ -135,6 +141,10 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       email: view.email,
       role: view.role,
       permissions: view.permissions,
+      // Défauts appliqués ici, une fois : `nav_prefs` est `NULL` sur toutes les
+      // fiches d'avant la colonne, et laisser passer ce `null` obligerait chaque
+      // écran à décider pour son compte de ce que « rien de choisi » veut dire.
+      navPrefs: parseStaffNavPreferences(row.navPrefs),
     };
   }
 

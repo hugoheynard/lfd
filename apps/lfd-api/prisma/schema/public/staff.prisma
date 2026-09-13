@@ -115,6 +115,20 @@ model StaffUser {
   /// personne n'a invité.
   invitedAt DateTime? @map("invited_at")
 
+  /// Préférences de navigation/affichage de la personne (sac JSON, extensible).
+  ///
+  /// Aujourd'hui : `worksheetCategory` — la fiche d'atelier sur laquelle le
+  /// poste s'est mis. Absent = aucun choix explicite, l'écran applique son
+  /// défaut.
+  ///
+  /// 🔴 **Ici et pas dans le navigateur**, contrairement aux plis d'écran de
+  /// `ui-prefs.store.ts`. Ce réglage-ci doit suivre la PERSONNE : le téléphone
+  /// posé contre le pétrin n'est pas la machine du chef, et celui qui reprend
+  /// son poste doit retrouver sa catégorie sans la rechercher les mains
+  /// farinées. Le sac plutôt qu'une colonne par préférence : ces réglages
+  /// purement UI n'ont aucun invariant et grossiront.
+  navPrefs Json? @map("nav_prefs")
+
   /// Les écarts au rôle, pour cette personne.
   overrides StaffPermissionOverride[]
 

@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+// Import de TYPE uniquement, donc effacé à la compilation : `staff-user.ts`
+// importe les valeurs d'ici, et un import de valeur en retour fermerait un
+// cycle à l'exécution. Les préférences vivent là-bas parce qu'elles décrivent
+// la PERSONNE, pas son périmètre — mais `/admin/me` les rend, d'où le champ.
+import type { StaffNavPreferences } from "./staff-user.js";
+
 /**
  * Contrat d'**accès staff** : qui peut quoi dans le back-office.
  *
@@ -523,6 +529,12 @@ export interface StaffMeView {
   readonly email: string;
   readonly role: StaffRole;
   readonly permissions: readonly StaffPermission[];
+  /**
+   * Les préférences de navigation de la personne, **défauts déjà appliqués**.
+   * Jamais `null` : chaque écran déciderait sinon pour son compte de ce que
+   * « rien de choisi » veut dire, et ils divergeraient.
+   */
+  readonly navPrefs: StaffNavPreferences;
 }
 
 /** Développe la matrice d'un rôle en permissions atomiques. */

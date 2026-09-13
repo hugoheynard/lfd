@@ -15,6 +15,9 @@ import {
 import { PrismaStaffAccessResolver } from "./permissions/prisma-staff-access.resolver.js";
 import { StaffAccessCache } from "./permissions/staff-access-cache.port.js";
 import { StaffIdentityPort } from "./invitations/staff-identity.port.js";
+import { StaffNavPreferencesRepository } from "./directory/domain/staff-nav-preferences.repository.js";
+import { UpdateStaffNavPrefsHandler } from "./directory/application/update-staff-nav-prefs.handler.js";
+import { PrismaStaffNavPreferencesRepository } from "./directory/infrastructure/prisma-staff-nav-preferences.repository.js";
 import { StaffUserRepository } from "./directory/domain/staff-user.repository.js";
 import { Auth0StaffIdentity } from "./invitations/auth0-staff-identity.js";
 import { DevStaffIdentity } from "./invitations/dev-staff-identity.js";
@@ -64,6 +67,9 @@ import {
     ListPendingStaffAccessHandler,
     IssueStaffPasswordLinkHandler,
     { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
+    // Un port à part, et pas une méthode de plus sur l'annuaire : écrire un
+    // réglage d'affichage n'a rien à voir avec l'identité ni le périmètre (ISP).
+    { provide: StaffNavPreferencesRepository, useClass: PrismaStaffNavPreferencesRepository },
     // Les rôles définis. Le dépôt et la lecture sont DEUX ports (ISP) : l'écran
     // ne reçoit que des vues, jamais l'agrégat.
     { provide: StaffRoleRepository, useClass: PrismaStaffRoleRepository },
@@ -81,6 +87,7 @@ import {
     { provide: StaffAccessCache, useExisting: PrismaStaffAccessResolver },
     ListStaffUsersHandler,
     GetStaffMeHandler,
+    UpdateStaffNavPrefsHandler,
     CreateStaffUserHandler,
     UpdateStaffUserHandler,
     RemoveStaffUserHandler,

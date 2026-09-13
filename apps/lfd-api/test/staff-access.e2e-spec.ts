@@ -110,6 +110,75 @@ describe("le mur staff — /admin/me", () => {
   it("ne répond pas à un inconnu", async () => {
     await ctx.asSub(STRANGER_SUB).get("/admin/me").expect(403);
   });
+
+  /**
+   * La colonne `nav_prefs` est neuve (2026-09-13) : toutes les fiches d'avant
+   * valent `NULL`, comme celle que ce `beforeEach` sème. Un `null` rendu tel
+   * quel obligerait chaque écran à décider de ce que « rien de choisi » veut
+   * dire — et ils divergeraient.
+   */
+  it("rend des préférences déjà pourvues de leurs défauts, colonne vide comprise", async () => {
+    const response = await accountant().get("/admin/me").expect(200);
+
+    expect(response.body).toMatchObject({ navPrefs: { worksheetCategory: null } });
+  });
+});
+
+describe("le mur staff — /admin/me/prefs", () => {
+  it("retient la fiche d'atelier de la personne, pas de la machine", async () => {
+    await accountant().patch("/admin/me/prefs").send({ worksheetCategory: "pains" }).expect(204);
+
+    // La commande ne rend rien : on relit, comme le fera l'écran.
+    const response = await accountant().get("/admin/me").expect(200);
+    expect(response.body).toMatchObject({ navPrefs: { worksheetCategory: "pains" } });
+  });
+
+  it("laisse effacer le choix", async () => {
+    await accountant().patch("/admin/me/prefs").send({ worksheetCategory: "pains" }).expect(204);
+    await accountant().patch("/admin/me/prefs").send({ worksheetCategory: null }).expect(204);
+
+    const response = await accountant().get("/admin/me").expect(200);
+    expect(response.body).toMatchObject({ navPrefs: { worksheetCategory: null } });
+  });
+
+  /**
+   * La fusion, vue de bout en bout : le sac porte une clé que l'API d'aujourd'hui
+   * ne connaît pas (une préférence d'un front plus récent, ou plus ancien). Une
+   * écriture qui remplacerait le sac entier la ferait disparaître en silence.
+   */
+  it("n'efface pas une préférence qu'il ne connaît pas", async () => {
+    await ctx.prisma.staffUser.update({
+      where: { email: ACCOUNTANT_EMAIL },
+      data: { navPrefs: { densite: "compacte" } },
+    });
+
+    await accountant()
+      .patch("/admin/me/prefs")
+      .send({ worksheetCategory: "viennoiseries" })
+      .expect(204);
+
+    const row = await ctx.prisma.staffUser.findUniqueOrThrow({
+      where: { email: ACCOUNTANT_EMAIL },
+    });
+    expect(row.navPrefs).toEqual({ densite: "compacte", worksheetCategory: "viennoiseries" });
+  });
+
+  it("refuse une catégorie vide — le choix se pose ou s'efface, il ne se vide pas", async () => {
+    await accountant().patch("/admin/me/prefs").send({ worksheetCategory: "   " }).expect(400);
+  });
+
+  /**
+   * L'écriture vit sur la surface réflexive : elle n'exige aucune permission,
+   * parce qu'elle ne touche QUE la personne que le jeton désigne. Elle exige en
+   * revanche d'être quelqu'un.
+   */
+  it("n'écrit rien pour un inconnu de l'annuaire", async () => {
+    await ctx
+      .asSub(STRANGER_SUB)
+      .patch("/admin/me/prefs")
+      .send({ worksheetCategory: "pains" })
+      .expect(403);
+  });
 });
 
 describe("le mur staff — une décision mord tout de suite", () => {
