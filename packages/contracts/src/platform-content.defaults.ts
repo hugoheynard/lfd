@@ -114,7 +114,11 @@ const FR: FooterLocaleContent = {
   legal: {
     pay: "Paiement sécurisé CB et Apple Pay, virement pour les comptes pro.",
     vat: "Prix TTC, TVA 5,5 % ou 10 % selon les produits.",
-    links: ["Mentions légales", "CGV", "Confidentialité", "Cookies", "Accessibilité"],
+    // ⚠️ Plus de « CGV » ici : les conditions ont désormais un lien VIVANT,
+    // posé par le pied de page lui-même et titré par le document. Garder le
+    // libellé inerte à côté offrait deux fois le même mot, dont un seul
+    // cliquable — et c'est le mort qui ressemblait le plus à un lien.
+    links: ["Mentions légales", "Confidentialité", "Cookies", "Accessibilité"],
   },
 };
 
@@ -160,7 +164,7 @@ const EN: FooterLocaleContent = {
   legal: {
     pay: "Secure card and Apple Pay payment, bank transfer for trade accounts.",
     vat: "Prices include VAT, at 5.5% or 10% depending on the product.",
-    links: ["Legal notice", "Terms", "Privacy", "Cookies", "Accessibility"],
+    links: ["Legal notice", "Privacy", "Cookies", "Accessibility"],
   },
 };
 
@@ -211,7 +215,7 @@ const IT: FooterLocaleContent = {
   legal: {
     pay: "Pagamento sicuro con carta e Apple Pay, bonifico per gli account pro.",
     vat: "Prezzi IVA inclusa, 5,5 % o 10 % secondo i prodotti.",
-    links: ["Note legali", "Condizioni", "Privacy", "Cookie", "Accessibilità"],
+    links: ["Note legali", "Privacy", "Cookie", "Accessibilità"],
   },
 };
 
@@ -236,3 +240,16 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
   en: EN,
   it: IT,
 };
+
+/**
+ * Les CGV de démonstration, reprises ici pour que `@lfd/contracts/content-values`
+ * reste **l'unique** entrée sans zod des deux fronts.
+ *
+ * Un second sous-chemin aurait marché aussi, et aurait obligé chaque écran à
+ * savoir lequel des deux porte la valeur qu'il cherche. Ce module n'importe que
+ * des types, celui qu'il réexporte aussi : la garantie de poids tient.
+ */
+export { DEFAULT_SALES_TERMS, DEMO_SALES_TERMS_PARAGRAPHS } from "./sales-terms.defaults.js";
+
+/** Les bornes des CGV, par la même entrée sans zod que le reste des valeurs. */
+export { MAX_SALES_TERMS_BODY, MAX_SALES_TERMS_PARAGRAPHS } from "./sales-terms.bounds.js";

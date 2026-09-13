@@ -840,10 +840,33 @@ export type {
   FooterContentView,
 } from "./platform-content.js";
 export {
+  MAX_SALES_TERMS_BODY,
+  MAX_SALES_TERMS_PARAGRAPHS,
+  salesTermsProseSchema,
+  salesTermsParagraphPayloadSchema,
+  salesTermsParagraphSchema,
+  salesTermsHeadingSchema,
+  salesTermsSchema,
+  salesTermsPositionPayloadSchema,
+} from "./sales-terms.js";
+export type {
+  SalesTermsProse,
+  SalesTermsParagraphPayload,
+  SalesTermsParagraph,
+  SalesTermsHeading,
+  SalesTerms,
+  SalesTermsPositionPayload,
+  SalesTermsView,
+  SalesTermsParagraphCreated,
+} from "./sales-terms.js";
+
+export {
   contentLocales,
   socialChannels,
   socialChannelLabels,
   DEFAULT_FOOTER_CONTENT,
+  DEFAULT_SALES_TERMS,
+  DEMO_SALES_TERMS_PARAGRAPHS,
 } from "./platform-content.defaults.js";
 
 export {
