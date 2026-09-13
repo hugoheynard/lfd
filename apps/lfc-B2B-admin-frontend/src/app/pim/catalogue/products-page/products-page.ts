@@ -320,7 +320,14 @@ export class ProductsPage {
     void this.reload();
   }
 
-  /** Un clic sur une ligne ouvre la page produit (plus d'édition dans la table). */
+  /**
+   * Un clic sur une ligne ouvre la page produit.
+   *
+   * La phrase était là AVANT que la table soit cliquable : seul le nom l'était,
+   * et le commentaire décrivait une intention plutôt que l'écran. C'est
+   * `clickable` + `(rowClick)` qui la rendent vraie, et le menu d'actions arrête
+   * la propagation pour que ⋮ n'ouvre pas la fiche (cf. le gabarit).
+   */
   protected openProduct(product: Product): void {
     void this.router.navigate(['/pim/produits', product.id]);
   }

@@ -48,7 +48,9 @@
     [rowKey]="rowKey"
     [rowTone]="rowTone"
     [rowNote]="hasFaults"
-    zebra
+    clickable
+    (rowClick)="openProduct($event)"
+    hover
     selectable
     [(selected)]="selection"
     toolbarSurface="accent"
@@ -104,8 +106,13 @@
     </ng-template>
 
     <ng-template foldCell="name" let-p>
-      <!-- Plus d'édition dans la table : le nom ouvre la fiche produit. -->
-      <fold-link (clicked)="openProduct(p)">{{ p.name.fr }}</fold-link>
+      <!-- Plus d'édition dans la table : le nom ouvre la fiche produit. Il reste
+           un lien alors que la LIGNE entière est cliquable, parce qu'il dit où
+           l'on va — un curseur en main ne le dit pas. `stopPropagation` évite
+           que le même clic navigue deux fois et empile deux entrées d'historique. -->
+      <fold-link (clicked)="openProduct(p)" (click)="$event.stopPropagation()">
+        {{ p.name.fr }}
+      </fold-link>
     </ng-template>
 
     <ng-template foldCell="category" let-p>
@@ -173,8 +180,14 @@
       </fold-callout>
     </ng-template>
 
+    <!-- 🔴 `stopPropagation` OBLIGATOIRE depuis que la ligne est cliquable. Le
+         `(click)` de fold vit sur le `<tr>` et n'inspecte pas sa cible pour la
+         souris (seul le clavier vérifie que la touche n'a pas bouillonné d'un
+         contrôle interne). Sans ça, ouvrir le menu d'actions naviguerait vers
+         la fiche, et le menu se refermerait sur une autre page. La case de
+         sélection, elle, porte déjà son propre arrêt côté fold. -->
     <ng-template foldCell="actions" let-p>
-      <div class="row-actions">
+      <div class="row-actions" (click)="$event.stopPropagation()">
         <fold-dropdown ariaLabel="Actions du produit" placement="bottom-end">
           <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
 
