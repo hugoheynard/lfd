@@ -1,67 +1,20 @@
-# LFC PIM — Architecture Decision Records
+# Le référentiel — Architecture Decision Records
 
-> Décision → raison → conséquences. Une entrée par choix structurant. Les ADR 01–07 viennent de la
-> phase de cadrage ; 08–10 ont été tranchées à la mise en place du monorepo.
-
-## ADR-01 — Monolithe modulaire (pas de microservices)
-
-**Décision** : une seule app structurée en modules internes (`catalogue`, `pricing`,
-`disponibilite-production`, `publication`), pas une constellation de microservices.
-**Raison** : l'échelle d'une boulangerie ne justifie pas la complexité opérationnelle du distribué ;
-le « microservice » initial désignait en fait _un_ service central unique.
-**Conséquences** : frontières nettes entre modules → extraction possible plus tard si un vrai
-déclencheur apparaît (scale, runtime différent, consommateur externe).
-
-## ADR-02 — Un seul déployable, hébergé long-running
-
-**Décision** : déployer en une unité sur un hôte qui **tourne en continu** (conteneur / Railway / Fly
-/ Render / VPS), **pas en serverless pur**.
-**Raison** : les **crons** (plan de prod, synchro PI) et le **worker de push** (async, retries)
-supportent mal les timeouts et l'absence de worker persistant du serverless.
-**Conséquences** : API + scheduler + worker cohabitent au départ ; le worker peut être isolé plus tard
-(même code, flag `start:worker`).
-
-## ADR-03 — Stack Angular + NestJS, monorepo, types partagés
-
-**Décision** : front **Angular** (SPA, Vitest), back **NestJS** (Jest). Nest sert le build Angular.
-Monorepo avec une lib `shared-types`.
-**Raison** : Nest long-running (crons/worker) et ses modules mappent le design ; Angular SPA pur
-(jamais d'accès DB direct → sécurité par construction) ; types partagés = une seule source de vérité
-TS front + back.
-**Conséquences** : les **entities ORM restent côté Nest** ; l'API expose des **DTOs**
-(`shared-types`), jamais les entities brutes.
-
-## ADR-04 — ORM Prisma (+ raw SQL en échappatoire)
-
-**Décision** : **Prisma** comme ORM. Raw SQL / query builder réservé aux **agrégations** (plan de
-production) et aux champs **`jsonb`**.
-**Raison** : migrations, relations typées, sécurité de type, meilleure DX ; ne pas réécrire une couche
-d'accès à la main.
-**Conséquences** : Prisma fonctionne avec n'importe quel Postgres → pas de lock-in hébergeur.
-
-- **Prisma 7** impose un **driver adapter** (l'URL seule ne suffit plus) → on utilise
-  **`@prisma/adapter-pg`** (node-postgres, TCP + pool), cohérent avec le déploiement **long-running**
-  (ADR-02) ; `adapter-neon` viserait le serverless/edge. Neon parle le protocole Postgres standard.
-- Le client est généré en **TS ESM** dans `src/infra/database/client/` (gitignoré, régénéré au
-  `postinstall`) et compilé par notre build — il passe nos flags stricts (ADR-10).
-- Les **tests backend tournent en ESM** (`ts-jest useESM` + `--experimental-vm-modules`) : le client
-  généré utilise `import.meta`, incompatible avec une transpilation CommonJS.
-
-## ADR-05 — PostgreSQL (pas MongoDB), catalogue compris
-
-**Décision** : **PostgreSQL** pour tout, catalogue inclus. `jsonb` pour les parties variables
-(`options`, `attributes`, `snapshot`, `diff`).
-**Raison** : domaine relationnel (jointures, agrégations, intégrité). Le catalogue est le hub où tout
-se rattache → le fragmenter dans Mongo créerait deux stores et des consistances inter-bases.
-**Conséquences** : colonne vertébrale relationnelle + `jsonb` ciblé.
-
-## ADR-06 — Postgres managé, free tier, sans lock-in
-
-**Décision** : Postgres **managé** en free tier (voir ADR-09 pour le fournisseur retenu).
-**Raison** : confort type Atlas (backups/HA délégués) à €0 ; volumes très en deçà des limites
-gratuites.
-**Conséquences** : portabilité (`pg_dump`/restore + changer l'URL) + backups à soi ; une courte indispo
-est survivable (caisse PI en local + resynchro).
+> **Décision → raison → conséquences.** Une entrée par choix structurant **propre
+> au référentiel produit**.
+>
+> 🔴 **Dix entrées ont quitté ce fichier le 2026-09-13** — monolithe modulaire,
+> déployable, stack Angular/Nest, Prisma, Postgres, hébergement, Turborepo, ESM
+> et flags TypeScript, Auth0. Elles engagent **tout le monorepo** et se lisaient
+> ici comme des choix du PIM : elles vivent désormais dans
+> [`../adr.md`](../adr.md). Les numéros n'ont pas bougé, pour que les citations
+> existantes restent vraies — les deux fichiers se partagent une numérotation,
+> 01–06, 08–10 et 12 là-bas, 07, 11 et 13–17 ici.
+>
+> Chaque entrée restante a été **confrontée au code le 2026-09-13**. Ce qui
+> avait vieilli porte un bandeau ⚠️ plutôt qu'une réécriture silencieuse : une
+> décision qu'on a cessé d'appliquer est une information, et l'effacer ferait
+> disparaître la question qui se reposera.
 
 ## ADR-07 — Allergènes stockés en GS1, projetés en INCO
 
@@ -69,53 +22,23 @@ est survivable (caisse PI en local + resynchro).
 l'affichage. Mapping **n:1** maintenu (donnée de référence versionnée), service `AllergenMapping`.
 **Raison** : GS1 = sur-ensemble international interopérable (B2B/GDSN) ; INCO = obligation légale UE.
 Stocker le plus riche, projeter vers le bas (l'inverse serait avec perte).
-**Conséquences** : détail dans `data-model/05-allergenes-gs1-inco.md`. Slice de domaine en place :
-[`apps/lfd-api/src/pim/allergens`](../../apps/lfd-api/src/pim/allergens) (codes GS1
-**provisoires** — à peupler depuis `ref.gs1.org`).
+**Conséquences** : détail dans
+[`data-model/05-allergenes-gs1-inco.md`](./data-model/05-allergenes-gs1-inco.md).
+Le bloc est en place : [`apps/lfd-api/src/pim/allergens`](../../apps/lfd-api/src/pim/allergens).
+
+✅ **Le « à peupler » est fait** (vérifié le 2026-09-13), et autrement que prévu :
+les codes ne sont plus une liste en dur à compléter depuis `ref.gs1.org`, ils
+sont devenus un **référentiel administrable** — création, archivage et
+réorganisation des catégories et des entrées ont chacun leur cas d'usage. La
+projection vers INCO est une fonction pure (`allergen-projection.ts`), et
+`toGdsn` existe bien.
+
+⚠️ Deux noms de la v1 ne désignent rien : il n'existe **pas** de service
+`AllergenMapping`. La projection est portée par `IncoProjector`, injecté dans les
+canaux — c'est-à-dire passé aux fonctions pures plutôt que lu par elles, ce que
+`projection.ts` promet en tête.
 
 ---
-
-## ADR-08 — Monorepo Turborepo + pnpm (pas Nx)
-
-**Décision** : monorepo **pnpm workspaces + Turborepo**, calqué sur SH3PHERD. Apps scaffoldées via les
-CLI officiels (`ng new`, `nest new`).
-**Raison** : transparence maximale (tout est dans `package.json`/`turbo.json`, greppable ; pas de
-targets inférées) ; zéro friction Angular (Nx heurte le setup TS project-references d'Angular) ;
-transfert 1:1 du savoir-faire SH3PHERD.
-**Conséquences** : `turbo run <task> --filter=…` ; script suite `lfc-suite:dev:watch` + compound
-WebStorm (`.run/`) une console par process.
-
-## ADR-09 — Base Neon (pas Prisma Postgres Free)
-
-**Décision** : **Neon** (Postgres serverless managé, free tier heures-compute + stockage).
-**Raison** : le modèle **à l'opération** de Prisma Postgres Free pénalise le **travail de fond**
-(worker de push, crons, synchro PI) ; le modèle heures-compute de Neon est plus tolérant. Prisma ORM
-reste compatible → aucun lock-in, bascule possible.
-**Conséquences** : scale-to-zero à surveiller (cold start) ; backups à soi conservés (ADR-06).
-
-## ADR-10 — Backend ESM + flags TS stricts partagés
-
-**Décision** : backend en **ESM** (`type: module`, imports `.js` NodeNext). Flags stricts en deux
-couches : [`tsconfig.base.json`](../../tsconfig.base.json) (tout le monorepo) puis
-[`tsconfig/tsflags.backend.json`](../../tsconfig/tsflags.backend.json) (spécifique Node/Nest :
-`module`, décorateurs, **`noUncheckedIndexedAccess`**).
-**Raison** : `verbatimModuleSyntax` (« no ghost imports ») impose l'ESM ; les flags forcent la gestion
-explicite de l'`undefined`/hors-borne → moins de bugs silencieux. Base héritée de SH3PHERD, **durcie**
-au-delà.
-**Ce que la base ajoute par rapport à SH3PHERD** :
-
-- `noImplicitReturns` et `allowUnusedLabels: false` — deux trous réels chez SH3 (non couverts par `strict`).
-- **`exactOptionalPropertyTypes`** — distingue `{a?: T}` de `{a: T | undefined}`.
-- **`noUncheckedSideEffectImports`** — un `import './x'` doit exister.
-- **`noUncheckedIndexedAccess`** (couche backend) — que SH3PHERD laisse volontairement OFF.
-- Les flags déjà impliqués par `strict` sont **épinglés explicitement** : l'intention survit à une
-  couche enfant qui toucherait `strict`.
-  **Écarté délibérément** : `erasableSyntaxOnly` (TS 5.8) — il interdit les _parameter properties_
-  (`constructor(private readonly x: X)`) et les enums, ce qui **casserait NestJS de fond en comble**.
-  `isolatedDeclarations` : trop verbeux ici (gain surtout pour une lib publiée).
-  **Conséquences** : chaque futur backend `extends` la couche backend ; le front est en **Vitest**
-  (`@angular/build:unit-test` + analog). Les **tests backend tournent en ESM** (cf. ADR-04) — le client
-  Prisma généré, compilé avec ces flags, passe sans concession.
 
 ## ADR-11 — Catalogue orienté comportement ; event store **préparé, pas activé**
 
@@ -178,6 +101,11 @@ Shopify, le catalogue compilerait-il encore ?_
 
 - L'absence de donnée se représente par **absence de ligne**, pas par colonnes `NULL`.
 - Le code famille caisse PI Helios **sort de `Category`** → `helios_category_binding`.
+  ⚠️ **Cette table n'existe pas** (vérifié le 2026-09-13), ni `helios_variant_binding`.
+  La caisse n'a jamais été branchée ; le motif, lui, est appliqué — c'est
+  `shopify_variant_binding` qui le porte, et c'est la seule table de canal du
+  dépôt. Une ADR qui nomme une table absente fait chercher un couplage qui
+  n'existe pas.
 - Binding mécanique et overrides éditoriaux par canal sont **deux tables séparées** : le premier est
   jetable et re-poussable, le second est une saisie utilisateur à ne jamais écraser.
 - `attributes` (jsonb) est soumis à une **règle de promotion** : lu par un adaptateur ou utilisé par
@@ -191,29 +119,16 @@ palette) ni de la **hiérarchie GTIN / GDSN** dans la v1.
 **Raison** : ces champs n'étaient présents que par anticipation d'un B2B non spécifié (**D1** ouvert).
 Modéliser une hiérarchie d'unités commerciales sans savoir ce qui est réellement vendu en gros, c'est
 figer une structure qu'on paiera à chaque migration.
+⚠️ **Partiellement dépassée.** Le **poids** est modélisé depuis :
+`ProductVariant.weightGrams` existe, il est saisi dans la section « Tarif &
+logistique » et il **part sur le fil** vers la plateforme professionnelle
+(vérifié le 2026-09-13). Ce qui reste descopé est le reste — dimensions, unités
+logistiques (colis, palette), hiérarchie GTIN/GDSN. Le poids est entré par le
+besoin réel qu'attendait cette ADR : vendre au format et à la pièce.
+
 **Conséquences** : le **code-barres** n'est pas un attribut du catalogue — il reviendra par le
 **binding caisse** (`helios_variant_binding`) quand **D4** sera tranché. La projection GDSN reste un
 objectif d'`AllergenMapping.toGdsn()` (ADR-07), pas une structure de données.
-
-## ADR-12 — Authentification déléguée à Auth0, vérifiée avec `jose`
-
-**Décision** : l'authentification est **déléguée à Auth0** (OIDC). L'API valide les **access tokens
-JWT (RS256)** contre le **JWKS** du tenant via **`jose`** (pas Passport). Le guard est branché en
-**`APP_GUARD`** → API **protégée par défaut**, ouverture explicite avec `@Public()`.
-**Raison** : login / reset / MFA / social est du travail **non différenciant**. Le volume est dérisoire
-(staff interne + quelques pros B2B — les clients **B2C s'authentifient sur Shopify**, pas ici), donc
-très loin du free tier. `jose` est ESM natif (ADR-10), typé, sans le boilerplate Passport. Surtout,
-l'identité reste **hors du domaine** : l'`actor` d'un event n'est qu'un `sub` vérifié.
-**Conséquences** :
-
-- `AUTH0_DOMAIN` + `AUTH0_AUDIENCE` obligatoires — l'API **refuse de démarrer** sans (une auth mal
-  configurée valide des jetons contre le mauvais émetteur).
-- JWKS résolu **paresseusement** et mis en cache par `jose` (rotation des clés gérée) — aucun appel
-  réseau à l'amorçage.
-- **À faire** : table `User` interne (notre id ↔ `sub` Auth0), pour que domaine et events ne
-  référencent **jamais** l'id du fournisseur → changer d'IdP reste indolore.
-- Le **domaine de login custom est payant** : la page de login restera sur `*.auth0.com` (sans
-  importance pour un back-office ; à revoir si un portail B2B brandé apparaît).
 
 ## ADR-15 — Construire un PIM minimal plutôt qu'en acheter un
 
@@ -237,7 +152,7 @@ rhétorique : elle est le critère d'arbitrage de tout le reste (voir « Test pe
    comme **capacité de production** (pas un stock), les allergènes en **GS1 canonique projeté INCO**,
    la **déclinaison** comme unité vendue commune caisse/web : aucun PIM générique ne porte ça. On ne
    l'obtiendrait qu'en encodant le métier dans de la **configuration** là où on peut l'encoder dans
-   des **types** — c'est-à-dire en renonçant au bénéfice des flags stricts (ADR-10) : un attribut
+   des **types** — c'est-à-dire en renonçant au bénéfice des flags stricts ([ADR-10](../adr.md)) : un attribut
    dynamique est un `any` avec une interface d'admin. Le socle fait **six tables**.
 4. **Shopify-comme-maître est intenable** malgré son coût minimal : pas de plan de production, pas de
    champ allergène natif (metafields + travail de thème), et un maître qui ignore l'existence de la
@@ -360,10 +275,19 @@ l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appe
 - Un secret en base **fuite par les sauvegardes, les exports, les dumps et les logs**, et devient
   lisible par quiconque ouvre l'admin. Le distinguer d'un réglage ordinaire est une frontière de
   sécurité, pas une préférence.
-- Le pilote réel **ne peut pas être écrit honnêtement aujourd'hui** : l'API Admin de Shopify est
-  versionnée trimestriellement et nous n'avons ni boutique ni jeton. Écrire des mutations
-  invérifiables produirait du code _plausible et faux_. Le spike (une journée, boutique de
-  développement) tranchera, et ne touchera **que ce fichier**.
+- Le pilote réel **ne pouvait pas être écrit honnêtement** au moment de la
+  décision : l'API Admin de Shopify est versionnée trimestriellement et nous
+  n'avions ni boutique ni jeton. Écrire des mutations invérifiables aurait
+  produit du code _plausible et faux_.
+
+  ⚠️ **Cette prémisse est tombée.** La connexion est établie depuis le
+  2026-08-04 (`shopify-publication/shopify-connexion-setup.md`), la forme exacte
+  de `productSet` a été relevée en direct
+  (`shopify-publication/shopify-productset-findings.md`), et
+  `SHOPIFY_ADMIN_TOKEN` est posé par le déploiement. Le `dry-run` n'est donc
+  plus une nécessité mais un **choix de mode**, et la phrase « le spike
+  tranchera » décrit un travail déjà fait.
+
 - Le mode `dry-run` n'est pas un bouchon : il exerce toute la chaîne — lecture par le port,
   projection, empreinte, écriture du binding — et rend le comportement observable **maintenant**.
 
