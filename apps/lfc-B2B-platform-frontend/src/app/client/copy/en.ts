@@ -358,4 +358,13 @@ export const EN: ClientCopy = {
     at: 'On',
     cancel: 'Cancel',
   },
+  salesTerms: {
+    close: 'Close',
+    loading: 'Loading the terms…',
+    errorTitle: 'Terms unavailable',
+    errorSubtitle: 'The document could not be loaded. Try again in a moment — or just ask us.',
+    retry: 'Try again',
+    emptyTitle: 'No clause yet',
+    emptySubtitle: 'The document does not carry any clause yet.',
+  },
 };

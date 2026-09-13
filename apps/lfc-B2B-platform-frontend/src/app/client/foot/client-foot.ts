@@ -1,8 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
+import { FoldLinkComponent, FoldPanelHostService } from 'fold-ng';
+
 import { socialChannelLabels } from '@lfd/contracts/content-values';
 
 import { ClientContent } from '../client-content.service';
+import { ClientSalesTerms } from '../client-sales-terms.service';
+import { SalesTermsPanel } from '../sales-terms-panel/sales-terms-panel';
 import { LEGAL_YEAR } from './legal-identity';
 
 /**
@@ -24,11 +28,21 @@ import { LEGAL_YEAR } from './legal-identity';
 @Component({
   selector: 'app-client-foot',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldLinkComponent],
   templateUrl: './client-foot.html',
   styleUrl: './client-foot.scss',
 })
 export class ClientFoot {
   private readonly content = inject(ClientContent);
+  private readonly panelHost = inject(FoldPanelHostService);
+  private readonly salesTerms = inject(ClientSalesTerms);
+
+  /**
+   * Le libellé du bouton des CGV : le TITRE du document, dans la langue
+   * courante. Tant que rien n'est chargé — et rien ne l'est avant la première
+   * ouverture — c'est le titre de repli, jamais un trou.
+   */
+  protected readonly salesTermsTitle = this.salesTerms.title;
 
   /** Les textes, servis par l'API — le contenu de départ tant qu'elle n'a pas répondu. */
   protected readonly foot = this.content.footer;
@@ -66,4 +80,13 @@ export class ClientFoot {
     const id = this.legal();
     return [id.company, id.capital, id.siret, id.rcs, id.vat].filter((value) => value !== '');
   });
+
+  /**
+   * Ouvre les conditions générales. C'est CE geste qui déclenche la lecture du
+   * document : le panneau appelle le service, qui ne charge qu'à la première
+   * ouverture.
+   */
+  protected openSalesTerms(): void {
+    this.panelHost.open(SalesTermsPanel);
+  }
 }

@@ -485,4 +485,20 @@ export interface ClientCopy {
     readonly at: string;
     readonly cancel: string;
   };
+
+  /**
+   * Le dialogue des conditions générales de vente, ouvert depuis le pied de
+   * page. Le TITRE du document n'est pas ici : il vient de l'API, dans les trois
+   * langues, et c'est lui qui nomme le bouton comme le dialogue.
+   */
+  readonly salesTerms: {
+    /** Le nom accessible du bouton de fermeture du panneau. */
+    readonly close: string;
+    readonly loading: string;
+    readonly errorTitle: string;
+    readonly errorSubtitle: string;
+    readonly retry: string;
+    readonly emptyTitle: string;
+    readonly emptySubtitle: string;
+  };
 }

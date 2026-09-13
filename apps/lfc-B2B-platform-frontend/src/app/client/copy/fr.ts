@@ -356,4 +356,14 @@ export const FR: ClientCopy = {
     at: 'Au',
     cancel: 'Annuler',
   },
+  salesTerms: {
+    close: 'Fermer',
+    loading: 'Chargement des conditions…',
+    errorTitle: 'Conditions indisponibles',
+    errorSubtitle:
+      'Le document n’a pas pu être chargé. Réessayez dans un instant — ou demandez-le-nous.',
+    retry: 'Réessayer',
+    emptyTitle: 'Aucun article',
+    emptySubtitle: 'Le document ne porte encore aucun article.',
+  },
 };

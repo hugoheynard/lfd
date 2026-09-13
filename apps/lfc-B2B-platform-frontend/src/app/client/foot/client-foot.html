@@ -74,6 +74,13 @@
       @for (link of foot().legal.links; track link) {
         <span class="link">{{ link }}</span>
       }
+      <!-- Un bouton À PART, et jamais accroché aux liens ci-dessus :
+           `foot().legal.links` est une liste de CHAÎNES LIBRES éditées au
+           back-office, et y reconnaître le mot « CGV » serait un couplage par
+           chaîne de caractères qu'un rédacteur casserait en corrigeant une
+           faute. Son libellé est le TITRE du document — un document renommé
+           renomme son propre lien. -->
+      <fold-link tone="muted" (clicked)="openSalesTerms()">{{ salesTermsTitle() }}</fold-link>
     </nav>
   </div>
 </div>
