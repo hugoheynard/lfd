@@ -53,7 +53,7 @@ function build(options: {
     findStripeCustomerId: () => Promise.resolve(null),
   };
   const clock: Clock = { now: () => NOW };
-  const uow: UnitOfWork = { run: (work) => work() } as UnitOfWork;
+  const uow: UnitOfWork = { run: (work) => work() };
   return { handler: new SignMandateHandler(mandates, clock, uow), saved };
 }
 

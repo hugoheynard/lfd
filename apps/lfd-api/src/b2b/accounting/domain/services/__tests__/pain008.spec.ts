@@ -1,6 +1,12 @@
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { BillableCompany } from "../../ports/billable-orders.reader.js";
-import { cycleTagOf, renderPain008, UNKNOWN_IBAN, UNKNOWN_MANDATE } from "../pain008.js";
+import {
+  cycleTagOf,
+  isDepositable,
+  renderPain008,
+  UNKNOWN_IBAN,
+  UNKNOWN_MANDATE,
+} from "../pain008.js";
 import { CreditorBicMissingError } from "../../errors/accounting-errors.js";
 import type { DebtorMandate } from "../../ports/debtor-mandate.reader.js";
 
@@ -230,5 +236,27 @@ describe("renderPain008 — ce qu'il refuse de produire", () => {
     const sansBic: CreditorSnapshot = { ...CREDITOR, creditorBic: null };
 
     expect(() => render(LINES, ALL_MANDATES, sansBic)).toThrow(CreditorBicMissingError);
+  });
+});
+
+describe("renderPain008 — le lot VIDE", () => {
+  /**
+   * 🔴 Régression trouvée en e2e le 2026-09-13, jamais par les unitaires.
+   * `lines.every(...)` rend `true` sur un tableau vide : un cycle sans aucune
+   * société à prélever sortait donc « complet », sans bandeau, avec `NbOfTxs` à
+   * zéro. Un lot qui ne demande rien n'est pas un lot complet — c'est un lot
+   * qui n'existe pas.
+   */
+  it("garde son bandeau — un lot qui ne demande rien n'est pas déposable", () => {
+    const xml = render([], ALL_MANDATES);
+
+    expect(xml).toContain("CE FICHIER NE PEUT PAS ETRE DEPOSE");
+    expect(xml).toContain("BROUILLON");
+  });
+
+  it("le dit aussi par `isDepositable`, que le NOM du fichier consulte", () => {
+    expect(isDepositable([], ALL_MANDATES)).toBe(false);
+    expect(isDepositable(LINES, ALL_MANDATES)).toBe(true);
+    expect(isDepositable(LINES, new Map())).toBe(false);
   });
 });

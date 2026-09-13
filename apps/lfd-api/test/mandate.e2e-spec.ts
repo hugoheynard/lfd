@@ -97,20 +97,29 @@ async function seedMandate(paymentMethodId = "pm_e2e"): Promise<string> {
 }
 
 /**
- * 🔴 La route d'enregistrement N'EXISTE PLUS — supprimée le 2026-09-12 avec le
- * canal Stripe (la décision du 2026-09-10 ne lui laisse que la carte).
+ * 🔴 Le canal d'ENREGISTREMENT chez un prestataire reste fermé, et ce test est
+ * le seul endroit où la fermeture est vérifiée de l'extérieur.
  *
- * Ce test n'est pas une formalité : il est le seul endroit où la fermeture est
- * vérifiée de l'extérieur. Le jour où quelqu'un rebranche un contrôleur sur
- * `draftMandate`, il rougit.
+ * ⚠️ **Il ne peut plus le vérifier par l'absence de route** — corrigé le
+ * 2026-09-13, après un échec en e2e. `POST /admin/companies/:id/mandate` existe
+ * de nouveau depuis le 2026-09-12 : elle **frappe** un mandat sous NOTRE ICS, et
+ * n'enregistre rien chez personne. Le test attendait un 404 et recevait un 409.
+ *
+ * Ce qu'il éprouve désormais est le fait, pas le code de retour : ce qu'on lui
+ * envoie du prestataire est **ignoré**, et aucun mandat n'en sort. C'est plus
+ * robuste : un code de statut change avec la cause du refus, le fait ne change
+ * pas.
  */
 describe("Mandat — le canal d'enregistrement est fermé", () => {
-  it("n'expose plus AUCUNE route pour enregistrer un mandat", async () => {
-    const response = await staff()
-      .post(`/admin/companies/${companyId}/mandate`)
-      .send({ paymentMethodId: "pm_e2e" });
+  it("n'enregistre AUCUN mandat depuis un identifiant de prestataire", async () => {
+    // La société n'a pas d'émetteur déclaré dans ce contexte : la frappe refuse
+    // donc AVANT toute écriture. Ce qui est éprouvé ici n'est pas ce refus-là,
+    // mais le fait qu'aucun `paymentMethodId` reçu ne devienne jamais un mandat.
+    await staff().post(`/admin/companies/${companyId}/mandate`).send({ paymentMethodId: "pm_e2e" });
 
-    expect([404, 405]).toContain(response.status);
+    const section = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
+
+    expect(jsonBody<MandateSectionView>(section).mandate).toBeNull();
   });
 
   it("rend le mandat semé, et ne laisse JAMAIS sortir de quoi débiter", async () => {

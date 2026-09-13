@@ -55,7 +55,15 @@ export class ExportCycleDraftHandler implements IQueryHandler<
       xml: draft.xml,
       // Le nom porte l'avertissement : un fichier rangé sur un bureau perd son
       // contexte, jamais son nom.
-      fileName: `BROUILLON-prelevement-${draft.cycleTag}.xml`,
+      //
+      // 🔴 Il suit la MÊME condition que le corps depuis le 2026-09-13. En dur,
+      // il aurait fini par crier « BROUILLON » sur un lot déposable — ou pire,
+      // l'inverse le jour où quelqu'un l'aurait retiré en dur de son côté. Deux
+      // vérités sur le même fichier, dont une fausse, et c'est le nom qu'on lit
+      // en premier.
+      fileName: draft.depositable
+        ? `prelevement-${draft.cycleTag}.xml`
+        : `BROUILLON-prelevement-${draft.cycleTag}.xml`,
     };
   }
 }

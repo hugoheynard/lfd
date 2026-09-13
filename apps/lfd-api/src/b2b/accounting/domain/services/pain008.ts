@@ -72,6 +72,22 @@ export interface Pain008Input {
   readonly lines: readonly BillableCompany[];
 }
 
+/**
+ * Le lot est-il **déposable** ? Même règle que le rendu, exposée pour que le NOM
+ * du fichier ne puisse pas contredire son contenu.
+ *
+ * ⚠️ Le nom portait `BROUILLON-` en dur jusqu'au 2026-09-13 : un lot complet
+ * serait sorti avec un corps sans avertissement sous un nom qui en criait un.
+ * Deux vérités sur le même fichier, dont une fausse — et c'est le NOM qu'on lit
+ * en premier dans un dossier de téléchargements.
+ */
+export function isDepositable(
+  lines: readonly BillableCompany[],
+  mandates: ReadonlyMap<string, DebtorMandate>,
+): boolean {
+  return lines.length > 0 && lines.every((line) => mandates.has(line.companyId));
+}
+
 /** Rend le XML. Déterministe : mêmes entrées, même fichier. */
 export function renderPain008(input: Pain008Input): string {
   const { creditor, lines, mandates } = input;
@@ -90,7 +106,15 @@ export function renderPain008(input: Pain008Input): string {
   // Une seule ligne incomplète suffit à garder le bandeau : un fichier
   // partiellement vrai est plus dangereux qu'un fichier entièrement faux, parce
   // qu'il passe la relecture humaine.
-  const complete = lines.every((line) => mandates.has(line.companyId));
+  //
+  // 🔴 `lines.length > 0` et pas seulement `every` — corrigé le 2026-09-13,
+  // après un échec en e2e. Sur un lot VIDE, `every` rend `true` par vacuité :
+  // un cycle sans aucune société à prélever sortait donc en fichier
+  // « déposable », sans bandeau, avec `NbOfTxs` à zéro. Un lot qui ne demande
+  // rien n'est pas un lot complet, c'est un lot qui n'existe pas — et le
+  // présenter comme prêt à déposer est exactement le genre de fichier qu'on
+  // dépose un vendredi soir en croyant avoir fait quelque chose.
+  const complete = isDepositable(lines, mandates);
   const collectionDay = requestedCollectionDay(input.cycleEnd, creditor.preNotificationDays);
   const cycleTag = cycleTagOf(input.cycleEnd);
   const messageId = complete ? cycleTag : `BROUILLON-${cycleTag}`;

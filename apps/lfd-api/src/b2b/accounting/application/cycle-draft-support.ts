@@ -4,7 +4,7 @@ import type { BillableOrdersReader } from "../domain/ports/billable-orders.reade
 import type { CreditorReader } from "../domain/ports/creditor.reader.js";
 import type { DebtorMandateReader } from "../domain/ports/debtor-mandate.reader.js";
 import { cycleAt } from "../domain/services/billing-cycle.js";
-import { cycleTagOf, renderPain008 } from "../domain/services/pain008.js";
+import { cycleTagOf, isDepositable, renderPain008 } from "../domain/services/pain008.js";
 
 /**
  * Le brouillon du cycle, **construit une seule fois pour deux sorties**.
@@ -27,6 +27,11 @@ export interface CycleDraftDeps {
 
 export interface CycleDraft {
   readonly xml: string;
+  /**
+   * Chaque ligne porte-t-elle son mandat ? C'est ce qui décide du bandeau DANS
+   * le fichier ; l'exposer ici fait que son NOM dit la même chose.
+   */
+  readonly depositable: boolean;
   /** `202609` — le mois COUVERT, pas celui de la clôture. */
   readonly cycleTag: string;
 }
@@ -64,5 +69,6 @@ export async function buildCycleDraft(
       lines,
     }),
     cycleTag: cycleTagOf(cycle.closesAt),
+    depositable: isDepositable(lines, mandates),
   };
 }
