@@ -64,6 +64,13 @@
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
   font-size: var(--fold-text-sm);
+  /* 🔴 `relative` OBLIGATOIRE : l'input qui suit est en `position: absolute`, et
+     sans bloc englobant il se place par rapport à un ancêtre lointain. Constaté
+     le 2026-09-13 — l'input atterrissait **3259 px** sous son label, et cliquer
+     dessus faisait scroller la page jusqu'à lui : le navigateur amène l'élément
+     focalisé dans le champ de vision, et on tombait sur une zone vide. Vu de
+     l'écran, « la page devient toute blanche ». Rien dans la console. */
+  position: relative;
 }
 
 .ms-pick input {
