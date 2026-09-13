@@ -32,11 +32,14 @@ existe **avant** l'impression — et c'est elle qui transforme une fiche marqué
 `POST /admin/companies/:id/mandate` appelle `Rum.mint` et écrit un mandat à
 l'état `draft`.
 
-🔴 **Et elle ne s'imprime toujours pas.** `renderSepaMandatePdf` n'accepte aucune
-RUM en paramètre, et `watermark()` tamponne EXEMPLE **sans condition** _(vérifié
-le 2026-09-12 au soir)_. La référence existe en base et n'atteint pas le papier :
-c'est le seul geste qui sépare encore un aperçu d'un document signable. Voir
-[`../todos/todo-mandat-imprimable.md`](../todos/todo-mandat-imprimable.md).
+✅ **Et elle s'imprime depuis le 2026-09-13.** `renderSepaMandatePdf` prend une
+émission, la RUM entre dans le peigne de 26 cases, et le filigrane EXEMPLE tombe
+— commandés par le **même** paramètre, donc impossibles à découpler. Le peigne
+refuse au-delà de 26 plutôt que de tronquer.
+
+🔴 **Ce que le papier ne dit toujours pas : son schéma.** Il est rédigé en
+formulaire **CORE** pendant que le lot déclare `B2B` — voir
+[`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md).
 
 **Elle est immuable.** Réécrire une RUM invaliderait le papier qui la porte.
 
@@ -221,6 +224,10 @@ Les quatre blocages que ce paragraphe listait sont levés :
 La RUM voyage désormais jusqu'au fichier de prélèvement : `MndtId` porte la
 référence du mandat actif, lue par le port `DebtorMandateReader`.
 
-🔴 **Ce qu'elle n'atteint pas : le papier.** Voir
-[`../todos/todo-mandat-imprimable.md`](../todos/todo-mandat-imprimable.md) — le
-seul TODO de ce dossier.
+✅ **Et elle atteint le papier** depuis le 2026-09-13 : elle s'imprime dans le
+peigne du formulaire, et le filigrane EXEMPLE tombe avec elle.
+
+🔴 **Ce qui reste** ne concerne plus la RUM mais le formulaire qui la porte : il
+est rédigé en **CORE** alors que le lot déclare `B2B`. C'est le seul TODO de ce
+dossier —
+[`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md).

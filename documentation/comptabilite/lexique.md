@@ -29,6 +29,13 @@
 | Remboursement sans motif | **8 semaines**     | **aucun**                          |
 | Le débiteur doit…        | rien de plus       | **déclarer le mandat à sa banque** |
 
+🔴 **Le formulaire n'est PAS le même.** Un mandat B2B porte la mention
+« INTERENTREPRISES » et dit expressément que le débiteur ne peut pas se faire
+rembourser un prélèvement autorisé ; le mandat CORE accorde au contraire les
+8 semaines. ⚠️ **Le document imprimé par ce dépôt est aujourd'hui un CORE**,
+pendant que le lot déclare B2B — voir
+[`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md).
+
 🔴 **C'est le B2B qui rend le prélèvement sûr pour nous, et contraignant pour le
 client.** Il ne peut pas se faire rembourser sur simple demande — mais sa banque
 **refusera** le premier débit tant qu'il ne lui a pas déclaré notre ICS et la

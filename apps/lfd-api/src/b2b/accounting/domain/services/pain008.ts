@@ -140,6 +140,14 @@ export function renderPain008(input: Pain008Input): string {
     `      <CtrlSum>${euros(total)}</CtrlSum>`,
     `      <PmtTpInf>`,
     `        <SvcLvl><Cd>SEPA</Cd></SvcLvl>`,
+    // 🔴 `B2B` ici, alors que le MANDAT imprimé est un formulaire CORE — il
+    // accorde le remboursement à 8 semaines, ce que le schéma interentreprises
+    // refuse (vérifié le 2026-09-13, cf. `sepa-mandate-pdf.ts`). Le fichier et
+    // le papier se contredisent, et c'est le papier qui fait foi en litige.
+    // Ne pas aligner l'un sur l'autre sans lire
+    // `documentation/todos/todo-mandat-core-contre-b2b.md` : basculer ce code
+    // en `CORE` changerait le droit du client, et l'y laisser fait refuser le
+    // lot par sa banque. Aucun des deux ne se décide ici.
     `        <LclInstrm><Cd>B2B</Cd></LclInstrm>`,
     // ⚠️ `RCUR` pour toutes les lignes, et un seul `PmtInf` par conséquent. Le
     // jour où un premier prélèvement exigera `FRST`, il faudra un SECOND bloc :

@@ -17,6 +17,27 @@ import { MandateFieldTooLongError } from "../errors/accounting-errors.js";
  * écarter — et elle l'écarte au moment du prélèvement, c'est-à-dire des semaines
  * après la signature.
  *
+ * ## 🔴 CE FORMULAIRE EST UN MANDAT **CORE**, PAS UN MANDAT B2B
+ *
+ * Et le lot de prélèvement, lui, déclare `<LclInstrm><Cd>B2B</Cd></LclInstrm>`
+ * (`pain008.ts`, vérifié le 2026-09-13). **Les deux se contredisent.**
+ *
+ * Ce qui le prouve est le paragraphe d'autorisation ci-dessous : « vous
+ * bénéficiez du droit d'être remboursé… dans les 8 semaines ». C'est la
+ * signature du schéma CORE. Le formulaire interentreprises dit l'INVERSE — il
+ * porte la mention « INTERENTREPRISES » et énonce que le débiteur ne peut pas
+ * demander le remboursement d'un prélèvement autorisé.
+ *
+ * Deux conséquences : la banque du débiteur refusera un lot B2B dont le mandat
+ * ne lui a pas été déclaré — rien ici ne dit au client de le faire — et, en
+ * litige, c'est le texte SIGNÉ qui fait foi, pas le code du fichier.
+ *
+ * ⚠️ **Ne pas « corriger » ce texte à la légère.** Retirer un droit au
+ * remboursement qu'un formulaire accorde n'est pas une retouche de gabarit : le
+ * geste, ses mentions obligatoires et la décision qui le commande vivent dans
+ * `documentation/todos/todo-mandat-core-contre-b2b.md`, et il attend la réponse
+ * de la banque.
+ *
  * ## Ce qu'il remplit, et ce qu'il laisse vide
  *
  * **Rempli — notre bloc créancier** (zones 7 à 11) : raison sociale, ICS,

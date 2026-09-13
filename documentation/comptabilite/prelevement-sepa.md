@@ -104,10 +104,14 @@ La forme de la RUM, ses deux bornes et la raison de chacune vivent dans
 - **Aucun mandat en base** : zéro ligne en dev _(vérifié le 2026-09-12)_, et les
   documents d'origine affirment la même chose en production — **non revérifié
   ici**, voir §13.
-- 🔴 **Le mandat imprimable.** `renderSepaMandatePdf` n'accepte aucune RUM en
-  paramètre, et `watermark()` tamponne EXEMPLE **sans condition** _(vérifié le
-  2026-09-12 au soir)_. La chaîne casse là, et nulle part ailleurs. C'est le
-  TODO unique : [`../todos/todo-mandat-imprimable.md`](../todos/todo-mandat-imprimable.md).
+- 🔴 **Un formulaire B2B.** Le document imprimé est un mandat **CORE** — il
+  accorde le remboursement à 8 semaines — pendant que le lot déclare `B2B`
+  _(vérifié le 2026-09-13)_. Voir le §4 et le TODO unique :
+  [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md).
+
+✅ **Le mandat imprimable est livré le 2026-09-13** : `renderSepaMandatePdf`
+prend une émission, la RUM s'imprime dans le peigne de 26, et le filigrane tombe
+avec elle — commandés par le même paramètre, donc indissociables.
 
 ✅ **Quatre lignes ont quitté cette liste le 2026-09-12** : le chiffrement au
 champ (`platform/crypto/`), le BIC de l'entité (`creditor_bic`), la frappe de la
@@ -145,7 +149,42 @@ soit le format : un mandat Stripe ne porte que `last4`, `bankCode` et `country`
 
 ---
 
-## 4. Le schéma retenu : SDD B2B
+## 4. Le schéma retenu : SDD B2B — 🔴 mais le PAPIER est un mandat CORE
+
+> ## 🔴 Le document et le fichier ne déclarent pas le même schéma
+>
+> **Constaté le 2026-09-13**, en vérifiant les deux côtés :
+>
+> | Où                             | Ce qui est déclaré                                  |
+> | ------------------------------ | --------------------------------------------------- |
+> | `pain008.ts:143`               | `<LclInstrm><Cd>B2B</Cd></LclInstrm>`               |
+> | `sepa-mandate-pdf.ts`          | **rien** — ni « interentreprises », ni B2B, ni CORE |
+> | le texte imprimé sur le mandat | « droit d'être remboursé… **dans les 8 semaines** » |
+>
+> Cette dernière phrase **EST** la signature du schéma CORE. Le formulaire B2B
+> dit l'inverse : il doit porter la mention « INTERENTREPRISES » et énoncer
+> expressément que le débiteur **ne peut pas** demander le remboursement d'un
+> prélèvement autorisé.
+>
+> **En l'état, tout mandat imprimé par ce dépôt est un mandat CORE.**
+>
+> Deux conséquences, et la seconde est la plus lourde :
+>
+> 1. **Pratique** — la banque du débiteur, recevant un lot `B2B`, cherche le
+>    mandat dans son registre. Rien sur le papier ne dit au client qu'il doit
+>    l'y déclarer : le premier prélèvement est refusé.
+> 2. **Juridique** — on émettrait sous un schéma sans remboursement, sur une
+>    autorisation dont le texte signé **accorde** le remboursement à 8 semaines.
+>    En litige, c'est ce que le client a signé qui fait foi.
+>
+> Ce n'est pas corrigé : supprimer un droit au remboursement que le formulaire
+> accorde n'est pas une correction technique. Le geste est décrit dans
+> [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md),
+> et il attend la réponse de la banque — c'est elle qui confirmera le formulaire
+> qu'elle attend, le schéma B2B s'ouvrant sur contrat séparé.
+
+Le tableau ci-dessous décrit le schéma **décidé**, pas celui que le papier
+énonce aujourd'hui.
 
 |                                                      | SDD Core   | **SDD B2B** (retenu) |
 | ---------------------------------------------------- | ---------- | -------------------- |
