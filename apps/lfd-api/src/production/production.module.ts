@@ -1,17 +1,36 @@
 import { Module } from "@nestjs/common";
 
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
+import { DeclarePackingContainersHandler } from "./application/commands/declare-packing-containers.handler.js";
+import { MarkPackingLineHandler } from "./application/commands/mark-packing-line.handler.js";
+import { MarkWorksheetLineHandler } from "./application/commands/mark-worksheet-line.handler.js";
 import { PackOrderHandler } from "./application/commands/pack-order.handler.js";
+import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
+import { RetakeProductionDayHandler } from "./application/commands/retake-production-day.handler.js";
+import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
+import { UnmarkPackingLineHandler } from "./application/commands/unmark-packing-line.handler.js";
+import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
 import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
+import { GetProductionPackingHandler } from "./application/queries/get-production-packing.handler.js";
+import { GetProductionWorksheetHandler } from "./application/queries/get-production-worksheet.handler.js";
+import { ListProductionContainersHandler } from "./application/queries/list-production-containers.handler.js";
 import {
   GetAtelierSheetPdfHandler,
   GetProductionCountPdfHandler,
 } from "./application/queries/get-production-paper.handler.js";
 import { ProductionPapers } from "./application/services/production-paper.service.js";
+import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
+import { ProductionContainerRepository } from "./domain/ports/production-container.repository.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
 import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
+import { ProductionPackingController } from "./http/production-packing.controller.js";
+import { ProductionWorksheetController } from "./http/production-worksheet.controller.js";
+import {
+  PrismaProductionContainerReader,
+  PrismaProductionContainerRepository,
+} from "./infrastructure/prisma-production-container.repository.js";
 import { PrismaProductionDayRepository } from "./infrastructure/prisma-production-day.repository.js";
 import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
 
@@ -30,12 +49,27 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
  * retrait implémente. Il ne tient plus son dépôt d'écriture.
  */
 @Module({
-  controllers: [ProductionDayController],
+  controllers: [
+    ProductionDayController,
+    ProductionWorksheetController,
+    ProductionPackingController,
+  ],
   providers: [
     CloseProductionDayHandler,
     PackOrderHandler,
+    MarkWorksheetLineHandler,
+    UnmarkWorksheetLineHandler,
+    MarkPackingLineHandler,
+    UnmarkPackingLineHandler,
+    DeclarePackingContainersHandler,
+    RetakeProductionDayHandler,
+    SetProductionContainerHandler,
+    RemoveProductionContainerHandler,
     GetProductionDayStatusHandler,
     GetProductionForecastHandler,
+    GetProductionWorksheetHandler,
+    GetProductionPackingHandler,
+    ListProductionContainersHandler,
     GetProductionCountPdfHandler,
     GetAtelierSheetPdfHandler,
     ProductionPapers,
@@ -43,6 +77,13 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     // La lecture du plan arrêté est un port À PART du dépôt d'écriture, et son
     // adaptateur vit chez la production : c'est SON schéma qu'il interroge.
     { provide: ProductionPlanReader, useClass: PrismaProductionPlanReader },
+    // Le contenant est du PARAMÉTRAGE du fournil, et ses deux ports sont reliés
+    // ici : c'est le schéma `production` qu'ils interrogent, donc rien n'a à
+    // remonter dans la racine de composition. Deux adaptateurs pour deux ports —
+    // lire et régler sont deux besoins (ISP), et TypeScript n'hérite pas de deux
+    // classes abstraites.
+    { provide: ProductionContainerReader, useClass: PrismaProductionContainerReader },
+    { provide: ProductionContainerRepository, useClass: PrismaProductionContainerRepository },
   ],
 })
 export class ProductionModule {}
