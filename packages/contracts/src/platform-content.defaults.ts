@@ -49,39 +49,40 @@ export const legalMentionOrder = [
 export type LegalMention = (typeof legalMentionOrder)[number];
 
 /**
- * Celles dont le mot est FIXE — c'est-à-dire toutes sauf les CGV.
- *
- * ⚠️ `salesTerms` n'a pas de libellé écrit ici, et c'est délibéré : le sien est
- * le TITRE du document, qui vit en base et se renomme depuis l'écran des CGV.
- * Un document renommé renomme son propre lien ; un libellé en double aurait
- * divergé au premier renommage.
- */
-export type FixedLabelMention = Exclude<LegalMention, "salesTerms">;
-
-/**
  * Le mot de chaque mention, par langue.
  *
  * Il vit dans le CONTRAT et non en base : une mention légale porte un nom
  * consacré, pas un nom qu'on choisit. Le rédacteur décide de l'afficher, pas de
  * la renommer — et les trois langues ne peuvent plus diverger.
+ *
+ * ⚠️ Le libellé de la barre et le TITRE du document sont deux choses, et ils
+ * l'ont été à retardement : tant que les CGV étaient la seule mention adossée à
+ * un document, leur lien portait ce titre. À cinq documents, ça obligeait à les
+ * charger tous les cinq pour nommer une barre que personne n'a encore ouverte —
+ * et c'était faux sur le fond. **La barre nomme l'obligation ; le document se
+ * nomme lui-même** (tranché le 2026-09-13). Le titre reste ce que le dialogue
+ * affiche, et ce que l'écran d'édition modifie.
  */
 export const legalMentionLabels: Readonly<
-  Record<(typeof contentLocales)[number], Readonly<Record<FixedLabelMention, string>>>
+  Record<(typeof contentLocales)[number], Readonly<Record<LegalMention, string>>>
 > = {
   fr: {
     legalNotice: "Mentions légales",
+    salesTerms: "Conditions générales de vente",
     privacy: "Confidentialité",
     cookies: "Cookies",
     accessibility: "Accessibilité",
   },
   en: {
     legalNotice: "Legal notice",
+    salesTerms: "Terms and conditions of sale",
     privacy: "Privacy",
     cookies: "Cookies",
     accessibility: "Accessibility",
   },
   it: {
     legalNotice: "Note legali",
+    salesTerms: "Condizioni generali di vendita",
     privacy: "Privacy",
     cookies: "Cookie",
     accessibility: "Accessibilità",
@@ -316,14 +317,15 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
 };
 
 /**
- * Les CGV de démonstration, reprises ici pour que `@lfd/contracts/content-values`
- * reste **l'unique** entrée sans zod des deux fronts.
+ * Les documents légaux de démonstration, repris ici pour que
+ * `@lfd/contracts/content-values` reste **l'unique** entrée sans zod des deux
+ * fronts.
  *
  * Un second sous-chemin aurait marché aussi, et aurait obligé chaque écran à
  * savoir lequel des deux porte la valeur qu'il cherche. Ce module n'importe que
  * des types, celui qu'il réexporte aussi : la garantie de poids tient.
  */
-export { DEFAULT_SALES_TERMS, DEMO_SALES_TERMS_PARAGRAPHS } from "./sales-terms.defaults.js";
+export { DEFAULT_LEGAL_DOCUMENT, DEMO_LEGAL_DOCUMENTS } from "./legal-document.defaults.js";
 
-/** Les bornes des CGV, par la même entrée sans zod que le reste des valeurs. */
-export { MAX_SALES_TERMS_BODY, MAX_SALES_TERMS_PARAGRAPHS } from "./sales-terms.bounds.js";
+/** Les bornes d'un document légal, par la même entrée sans zod que le reste des valeurs. */
+export { MAX_LEGAL_DOCUMENT_BODY, MAX_LEGAL_DOCUMENT_PARAGRAPHS } from "./legal-document.bounds.js";

@@ -1,6 +1,10 @@
 /**
- * Les **bornes** des CGV — les seules valeurs du contrat que les deux fronts
- * lisent pour prévenir avant que le serveur refuse.
+ * Les **bornes** d'un document légal — les seules valeurs du contrat que les
+ * deux fronts lisent pour prévenir avant que le serveur refuse.
+ *
+ * Les cinq mentions les partagent : ce sont des documents de même forme, et
+ * une borne par mention aurait inventé une différence que le métier ne fait
+ * pas.
  *
  * ⚠️ Elles vivent dans leur propre module, sans le moindre import, pour la même
  * raison mesurée que `platform-content.defaults.ts` : les écrans n'importent
@@ -13,7 +17,7 @@
  */
 
 /** Le nombre maximum d'articles dans un document. Une borne, pas une limite ressentie. */
-export const MAX_SALES_TERMS_PARAGRAPHS = 120;
+export const MAX_LEGAL_DOCUMENT_PARAGRAPHS = 120;
 
 /** La longueur maximale du corps d'un article, en caractères. */
-export const MAX_SALES_TERMS_BODY = 20_000;
+export const MAX_LEGAL_DOCUMENT_BODY = 20_000;

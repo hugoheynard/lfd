@@ -1,5 +1,5 @@
 /**
- * E2E des **CGV** — sur un vrai Postgres.
+ * E2E des **documents de mentions légales** — sur un vrai Postgres.
  *
  * Ce que seul ce niveau prouve :
  *
@@ -7,15 +7,21 @@
  *    dialogue de la boutique n'a pas d'instant vide ;
  * 2. le cycle complet — ajouter, relire, modifier, déplacer, retirer — survit à
  *    l'aller-retour JSONB, accents et trois langues compris ;
- * 3. les refus du domaine traversent le filtre d'erreurs avec le bon statut :
+ * 3. les cinq mentions vivent sur **cinq lignes** : écrire dans l'une n'en
+ *    touche aucune autre, ce qu'un double en mémoire ne peut qu'affirmer ;
+ * 4. une mention hors vocabulaire rend **404**, sur la surface staff comme sur
+ *    la publique ;
+ * 5. les refus du domaine traversent le filtre d'erreurs avec le bon statut :
  *    **404** pour un article inconnu, **400** pour un rang hors bornes, et pas
  *    un 500 ni un 409 indifférencié.
  */
 import {
-  DEFAULT_SALES_TERMS,
-  type SalesTermsParagraphCreated,
-  type SalesTermsParagraphPayload,
-  type SalesTermsView,
+  DEFAULT_LEGAL_DOCUMENT,
+  legalMentionOrder,
+  type LegalDocumentParagraphCreated,
+  type LegalDocumentParagraphPayload,
+  type LegalDocumentView,
+  type LegalMention,
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -46,8 +52,11 @@ beforeEach(async () => {
 
 const staff = () => ctx.asSub(E2E_STAFF_SUB);
 
+/** La mention de référence des cas qui n'en éprouvent qu'une. */
+const SALES_TERMS: LegalMention = "salesTerms";
+
 /** Un article reconnaissable à son mot-clé, dans les trois langues. */
-function prose(word: string): SalesTermsParagraphPayload {
+function prose(word: string): LegalDocumentParagraphPayload {
   return {
     fr: { title: `Article ${word}`, body: `Corps français — ${word} · accentué` },
     en: { title: `Clause ${word}`, body: `English body — ${word}` },
@@ -56,23 +65,23 @@ function prose(word: string): SalesTermsParagraphPayload {
 }
 
 /** Ajoute un article par la route staff et rend l'identifiant frappé par le serveur. */
-async function addParagraph(word: string): Promise<string> {
-  const created = jsonBody<SalesTermsParagraphCreated>(
-    await staff().post("/admin/content/sales-terms/paragraphs").send(prose(word)).expect(201),
+async function addParagraph(word: string, mention: LegalMention = SALES_TERMS): Promise<string> {
+  const created = jsonBody<LegalDocumentParagraphCreated>(
+    await staff().post(`/admin/content/legal/${mention}/paragraphs`).send(prose(word)).expect(201),
   );
   return created.id;
 }
 
-const publicView = async (): Promise<SalesTermsView> =>
-  jsonBody<SalesTermsView>(await ctx.http().get("/content/sales-terms").expect(200));
+const publicView = async (mention: LegalMention = SALES_TERMS): Promise<LegalDocumentView> =>
+  jsonBody<LegalDocumentView>(await ctx.http().get(`/content/legal/${mention}`).expect(200));
 
-describe("la lecture publique des CGV", () => {
+describe("la lecture publique d'une mention", () => {
   it("aboutit sur une base VIERGE, avec le titre de départ et AUCUN article", async () => {
     const view = await publicView();
 
     expect(view.revision).toBe(0);
     expect(view.updatedBy).toBeNull();
-    expect(view.content.title.fr).toBe(DEFAULT_SALES_TERMS.title.fr);
+    expect(view.content.title.fr).toBe(DEFAULT_LEGAL_DOCUMENT(SALES_TERMS).title.fr);
     // 🔴 Le repli porte le titre, jamais d'article. Servir des articles de
     // démonstration sous le titre « Conditions générales de vente » à un client
     // qui s'engage serait un faux — et le fait qu'ils avouent en être ne répare
@@ -80,14 +89,57 @@ describe("la lecture publique des CGV", () => {
     expect(view.content.paragraphs).toEqual([]);
   });
 
+  it("sert les CINQ mentions, chacune sous son propre titre", async () => {
+    const titles = new Set<string>();
+    for (const mention of legalMentionOrder) {
+      const view = await publicView(mention);
+      expect(view.content.title.fr).toBe(DEFAULT_LEGAL_DOCUMENT(mention).title.fr);
+      titles.add(view.content.title.fr);
+    }
+
+    // Cinq titres distincts : une route qui servirait toujours le même document
+    // passerait tous les tests précédents sans que rien ne le dise.
+    expect(titles.size).toBe(legalMentionOrder.length);
+  });
+
   it("n'exige aucune authentification — le dialogue s'ouvre avant toute connexion", async () => {
-    await ctx.http().get("/content/sales-terms").expect(200);
+    await ctx.http().get("/content/legal/privacy").expect(200);
+  });
+
+  /**
+   * 🔴 Le vocabulaire est fermé au BORD. Une clé libre ouvrirait un bloc de
+   * contenu que le pied de page ne peut pas cocher et que personne ne saurait
+   * retrouver ; sur la surface anonyme, elle laisserait en plus sonder la table
+   * de contenu par son segment d'URL.
+   */
+  it("rend 404 sur une mention inconnue", async () => {
+    await ctx.http().get("/content/legal/charte-maison").expect(404);
+    // La casse compte : le vocabulaire est celui du contrat, pas une
+    // approximation que le serveur rattraperait.
+    await ctx.http().get("/content/legal/sales-terms").expect(404);
   });
 });
 
 describe("l'écriture staff", () => {
   it("refuse un anonyme", async () => {
-    await ctx.http().post("/admin/content/sales-terms/paragraphs").send(prose("un")).expect(401);
+    await ctx
+      .http()
+      .post("/admin/content/legal/salesTerms/paragraphs")
+      .send(prose("un"))
+      .expect(401);
+  });
+
+  it("rend 404 sur une mention inconnue, sur TOUTES les routes d'écriture", async () => {
+    await staff().get("/admin/content/legal/charte-maison").expect(404);
+    await staff()
+      .put("/admin/content/legal/charte-maison/title")
+      .send({ fr: "a", en: "b", it: "c" })
+      .expect(404);
+    await staff()
+      .post("/admin/content/legal/charte-maison/paragraphs")
+      .send(prose("un"))
+      .expect(404);
+    await staff().delete("/admin/content/legal/charte-maison/paragraphs/art_1").expect(404);
   });
 
   it("parcourt le cycle complet, et la surface publique suit", async () => {
@@ -100,21 +152,21 @@ describe("l'écriture staff", () => {
     expect(first).not.toContain("un");
 
     await staff()
-      .put("/admin/content/sales-terms/title")
+      .put("/admin/content/legal/salesTerms/title")
       .send({ fr: "Nos CGV", en: "Our terms", it: "Le nostre condizioni" })
       .expect(204);
 
     await staff()
-      .put(`/admin/content/sales-terms/paragraphs/${second}`)
+      .put(`/admin/content/legal/salesTerms/paragraphs/${second}`)
       .send(prose("deux-corrigé"))
       .expect(204);
 
     await staff()
-      .put(`/admin/content/sales-terms/paragraphs/${third}/position`)
+      .put(`/admin/content/legal/salesTerms/paragraphs/${third}/position`)
       .send({ position: 0 })
       .expect(204);
 
-    await staff().delete(`/admin/content/sales-terms/paragraphs/${first}`).expect(204);
+    await staff().delete(`/admin/content/legal/salesTerms/paragraphs/${first}`).expect(204);
 
     const view = await publicView();
     expect(view.content.title.it).toBe("Le nostre condizioni");
@@ -127,10 +179,44 @@ describe("l'écriture staff", () => {
     expect(view.revision).toBe(7);
   });
 
+  /**
+   * 🔴 L'invariant de la généralisation, et le seul que le vrai SQL peut
+   * prouver : cinq mentions, cinq LIGNES. Une clé de stockage partagée entre
+   * deux mentions — une transformation de chaîne mal faite, une correspondance
+   * oubliée — rendrait chaque écriture visible sous l'autre document, et tous
+   * les tests d'une mention seule resteraient verts.
+   */
+  it("écrire dans une mention ne touche aucune autre", async () => {
+    const inCookies = await addParagraph("traceurs", "cookies");
+    await staff()
+      .put("/admin/content/legal/cookies/title")
+      .send({ fr: "Traceurs", en: "Trackers", it: "Traccianti" })
+      .expect(204);
+
+    const cookies = await publicView("cookies");
+    expect(cookies.content.title.fr).toBe("Traceurs");
+    expect(cookies.content.paragraphs.map((paragraph) => paragraph.id)).toEqual([inCookies]);
+
+    const privacy = await publicView("privacy");
+    expect(privacy.revision).toBe(0);
+    expect(privacy.content.paragraphs).toEqual([]);
+    expect(privacy.content.title.fr).toBe(DEFAULT_LEGAL_DOCUMENT("privacy").title.fr);
+
+    // Et l'article des cookies n'est pas modifiable depuis la confidentialité :
+    // ce n'est pas le même document, donc l'identifiant n'y existe pas.
+    await staff()
+      .put(`/admin/content/legal/privacy/paragraphs/${inCookies}`)
+      .send(prose("volé"))
+      .expect(404);
+
+    // Une ligne par mention écrite, et pas une de plus.
+    expect(await ctx.prisma.platformContent.count()).toBe(1);
+  });
+
   it("l'écran d'édition voit la révision et la dernière main, que le public ignore", async () => {
     await addParagraph("un");
-    const view = jsonBody<SalesTermsView>(
-      await staff().get("/admin/content/sales-terms").expect(200),
+    const view = jsonBody<LegalDocumentView>(
+      await staff().get("/admin/content/legal/salesTerms").expect(200),
     );
 
     expect(view.revision).toBe(1);
@@ -168,7 +254,7 @@ describe("l'écriture staff", () => {
 
     for (const paragraph of served) {
       await staff()
-        .put(`/admin/content/sales-terms/paragraphs/${paragraph.id}`)
+        .put(`/admin/content/legal/salesTerms/paragraphs/${paragraph.id}`)
         .send(prose("relu"))
         .expect(204);
     }
@@ -177,10 +263,10 @@ describe("l'écriture staff", () => {
   it("rend 404 sur un article inconnu", async () => {
     await addParagraph("un");
     await staff()
-      .put("/admin/content/sales-terms/paragraphs/art_inexistant")
+      .put("/admin/content/legal/salesTerms/paragraphs/art_inexistant")
       .send(prose("deux"))
       .expect(404);
-    await staff().delete("/admin/content/sales-terms/paragraphs/art_inexistant").expect(404);
+    await staff().delete("/admin/content/legal/salesTerms/paragraphs/art_inexistant").expect(404);
   });
 
   it("rend 400 sur un rang hors du document", async () => {
@@ -189,11 +275,11 @@ describe("l'écriture staff", () => {
     // Un seul article : le seul rang valide est 0. La borne haute ne peut pas
     // vivre dans le schéma, elle dépend du document.
     await staff()
-      .put(`/admin/content/sales-terms/paragraphs/${id}/position`)
+      .put(`/admin/content/legal/salesTerms/paragraphs/${id}/position`)
       .send({ position: 4 })
       .expect(400);
     await staff()
-      .put(`/admin/content/sales-terms/paragraphs/${id}/position`)
+      .put(`/admin/content/legal/salesTerms/paragraphs/${id}/position`)
       .send({ position: -1 })
       .expect(400);
   });
@@ -202,13 +288,13 @@ describe("l'écriture staff", () => {
     const incomplete: Record<string, unknown> = { ...prose("un") };
     delete incomplete["it"];
 
-    await staff().post("/admin/content/sales-terms/paragraphs").send(incomplete).expect(400);
+    await staff().post("/admin/content/legal/salesTerms/paragraphs").send(incomplete).expect(400);
   });
 
   it("refuse en 400 un corps vide", async () => {
     const empty = prose("un");
     const wrong = { ...empty, fr: { title: empty.fr.title, body: "   " } };
 
-    await staff().post("/admin/content/sales-terms/paragraphs").send(wrong).expect(400);
+    await staff().post("/admin/content/legal/salesTerms/paragraphs").send(wrong).expect(400);
   });
 });

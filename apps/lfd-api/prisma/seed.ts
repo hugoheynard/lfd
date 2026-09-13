@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { seedAccounting } from "../src/dev/seeding/accounting.seed.js";
 import { CLIENT_ENSEIGNE, DEFAULT_IDENTITY, seedClient } from "../src/dev/seeding/client.seed.js";
-import { seedSalesTerms } from "../src/dev/seeding/sales-terms.seed.js";
+import { seedLegalDocuments } from "../src/dev/seeding/legal-documents.seed.js";
 import { seedStation } from "../src/dev/seeding/station.seed.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 import { bootstrapHarness } from "./seed-growth/harness.js";
@@ -56,7 +56,7 @@ async function main(): Promise<void> {
     // Les mêmes fonctions que le bouton de rechargement, dans le même ordre :
     // deux corpus de développement qui divergent seraient pires que pas de
     // bouton du tout.
-    await seedSalesTerms(context);
+    await seedLegalDocuments(context);
     // L'identité se lit ICI, pas dans le module : `src/` n'a pas le droit de
     // toucher `process.env`, et c'est la ligne de commande qui connaît le poste.
     const client = await seedClient(context, {

@@ -841,27 +841,28 @@ export type {
   FooterContentView,
   LegalMentionDisplay,
 } from "./platform-content.js";
-export type { LegalMention, FixedLabelMention } from "./platform-content.defaults.js";
+export type { LegalMention } from "./platform-content.defaults.js";
 export {
-  MAX_SALES_TERMS_BODY,
-  MAX_SALES_TERMS_PARAGRAPHS,
-  salesTermsProseSchema,
-  salesTermsParagraphPayloadSchema,
-  salesTermsParagraphSchema,
-  salesTermsHeadingSchema,
-  salesTermsSchema,
-  salesTermsPositionPayloadSchema,
-} from "./sales-terms.js";
+  MAX_LEGAL_DOCUMENT_BODY,
+  MAX_LEGAL_DOCUMENT_PARAGRAPHS,
+  legalDocumentProseSchema,
+  legalDocumentParagraphPayloadSchema,
+  legalDocumentParagraphSchema,
+  legalDocumentHeadingSchema,
+  legalDocumentSchema,
+  legalDocumentPositionPayloadSchema,
+  legalMentionSchema,
+} from "./legal-document.js";
 export type {
-  SalesTermsProse,
-  SalesTermsParagraphPayload,
-  SalesTermsParagraph,
-  SalesTermsHeading,
-  SalesTerms,
-  SalesTermsPositionPayload,
-  SalesTermsView,
-  SalesTermsParagraphCreated,
-} from "./sales-terms.js";
+  LegalDocumentProse,
+  LegalDocumentParagraphPayload,
+  LegalDocumentParagraph,
+  LegalDocumentHeading,
+  LegalDocument,
+  LegalDocumentPositionPayload,
+  LegalDocumentView,
+  LegalDocumentParagraphCreated,
+} from "./legal-document.js";
 
 export {
   contentLocales,
@@ -870,8 +871,8 @@ export {
   legalMentionOrder,
   legalMentionLabels,
   DEFAULT_FOOTER_CONTENT,
-  DEFAULT_SALES_TERMS,
-  DEMO_SALES_TERMS_PARAGRAPHS,
+  DEFAULT_LEGAL_DOCUMENT,
+  DEMO_LEGAL_DOCUMENTS,
 } from "./platform-content.defaults.js";
 
 export {
