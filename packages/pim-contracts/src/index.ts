@@ -65,7 +65,6 @@ export {
   MAX_RATIO_BP,
   proPriceFromPublic,
   proPriceOf,
-  realDiscountBp,
   proPriceMethodPayloadSchema,
   PRO_PRICE_METHODS,
   proHtFromPublic,

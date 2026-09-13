@@ -10,10 +10,7 @@ import { AccountingRulesRepository } from "../domain/ports/accounting-rules.repo
 const ACCOUNTING_RULES_SUBJECT = "accounting";
 
 export class ChooseProPriceMethodCommand {
-  constructor(
-    readonly method: ProPriceMethod,
-    readonly fixedVatPercent: number | null,
-  ) {}
+  constructor(readonly method: ProPriceMethod) {}
 }
 
 /**
@@ -35,12 +32,16 @@ export class ChooseProPriceMethodCommand {
  *
  * Le prix poussé est le `canonicalMillicents` de la plateforme : la BASE sur
  * laquelle s'appliquent ensuite la mercuriale, les paliers, les promotions et le
- * plancher. Changer de méthode le déplace d'environ 12 % sur un article à
- * 5,5 % — mais les planchers en montant ABSOLU ne suivent pas, et les articles
- * à prix négocié ne bougent pas du tout. Le référentiel ne connaît aucun de ces
- * trois matériaux (vérifié le 2026-09-13, `catalogue-article.ts:12`,
+ * plancher. Une méthode qui déplacerait ce nombre ne déplacerait donc PAS les
+ * prix d'autant : les planchers en montant absolu ne suivent pas, et les
+ * articles à prix négocié ne bougent pas du tout. Le référentiel ne connaît
+ * aucun de ces trois matériaux (vérifié le 2026-09-13, `catalogue-article.ts:12`,
  * `resolve-floor.ts:84`) : il ne peut donc pas annoncer combien d'articles
  * changent de prix, et il ne doit pas faire semblant.
+ *
+ * ⚠️ Sans objet tant qu'il n'y a qu'une méthode — cette route ne peut
+ * aujourd'hui que rechoisir celle qui est déjà là. Elle existe pour la
+ * suivante, et ce paragraphe est ce qu'il faudra relire ce jour-là.
  */
 @CommandHandler(ChooseProPriceMethodCommand)
 export class ChooseProPriceMethodHandler implements ICommandHandler<
@@ -58,15 +59,12 @@ export class ChooseProPriceMethodHandler implements ICommandHandler<
     if (record === null) {
       throw new AccountingRulesNotSetError();
     }
-    const before = record.rules.proPriceMethod;
-    record.rules.chooseMethod(command.method, command.fixedVatPercent);
-    const after = record.rules.proPriceMethod;
+    const before = record.rules.proPriceMethod.method;
+    record.rules.chooseMethod(command.method);
+    const after = record.rules.proPriceMethod.method;
 
     await this.uow.run(async () => {
-      const ticket = await this.journalize(
-        { method: before.method, fixedVatPercent: before.fixedVatPercent },
-        { method: after.method, fixedVatPercent: after.fixedVatPercent },
-      );
+      const ticket = await this.journalize(before, after);
       await this.rules.save(record.rules, ticket);
     });
   }
@@ -76,11 +74,8 @@ export class ChooseProPriceMethodHandler implements ICommandHandler<
    * seul événement que quelqu'un cherchera : celui où le catalogue
    * professionnel a changé de tarif.
    */
-  private async journalize(
-    before: { method: string; fixedVatPercent: number | null },
-    after: { method: string; fixedVatPercent: number | null },
-  ): Promise<WriteTicket> {
-    if (before.method === after.method && before.fixedVatPercent === after.fixedVatPercent) {
+  private async journalize(before: string, after: string): Promise<WriteTicket> {
+    if (before === after) {
       return this.journal.untraced("méthode rechoisie à l'identique");
     }
     return this.journal.trace({

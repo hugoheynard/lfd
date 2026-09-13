@@ -55,49 +55,23 @@ export function formatDiscount(ratioBp: number): string {
 }
 
 /**
- * Le **taux de TVA figé** que l'écran propose pour la méthode de la plaquette.
+ * Le réglage tel qu'il s'applique, assemblé — méthode et rapport.
  *
- * 20 %, parce que c'est le nombre qu'une réunion de communication a employé et
- * qui est parti à l'impression. Une PROPOSITION de saisie, jamais un réglage :
- * il n'entre en base que si quelqu'un choisit la plaquette, et le référentiel
- * des taux n'a aucun droit de le changer ensuite.
+ * Une fabrique plutôt qu'un littéral chez chaque appelant : le jour où une
+ * seconde méthode arrive avec son paramètre, elle s'ajoute ici et nulle part
+ * ailleurs.
  */
-export const DEFAULT_BROCHURE_VAT = 20;
-
-/** Le réglage d'origine, assemblé — méthode, rapport, pas de taux figé. */
 export function ratioTtcPolicy(ratioBp: number): ProPricePolicy {
-  return { method: 'ratio_ttc', ratioBp, fixedVatPercent: null };
-}
-
-/** Le réglage de la plaquette : dépouillé au taux FIGÉ, puis remisé. */
-export function brochurePolicy(ratioBp: number, fixedVatPercent: number): ProPricePolicy {
-  return { method: 'remise_apres_tva_max', ratioBp, fixedVatPercent };
+  return { method: 'ratio_ttc', ratioBp };
 }
 
 /**
  * Un hors taxe en **millicentimes** vers une somme lisible.
  *
- * Le comparateur travaille en millicentimes parce que c'est l'unité qui part
- * sur le fil : arrondir au centime pour l'afficher est juste, arrondir pour
- * CALCULER l'écart ne le serait pas — deux arrondis se mangeraient l'écart
- * qu'on cherche justement à montrer.
+ * Le simulateur travaille en millicentimes parce que c'est l'unité qui part sur
+ * le fil : arrondir au centime pour l'afficher est juste, arrondir pour
+ * calculer ne le serait pas.
  */
 export function formatMillicents(millicents: number): string {
   return formatCents(Math.round(millicents / MILLICENTS_PER_CENT));
-}
-
-/** Le même, **signé** : l'écart n'a de sens qu'avec son sens. */
-export function formatSignedMillicents(millicents: number): string {
-  if (Math.abs(millicents) < MILLICENTS_PER_CENT / 2) {
-    // Moins d'un demi-centime : « +0,00 € » ferait chercher une différence là où
-    // les deux méthodes coïncident — c'est le cas d'un article déjà au taux figé.
-    return 'identique';
-  }
-  const sign = millicents > 0 ? '+' : '−';
-  return `${sign}${formatMillicents(Math.abs(millicents))}`;
-}
-
-/** « 20,9 % » — la remise RÉELLE, celle que la plaquette ignore. */
-export function formatDiscountBp(bp: number | null): string | null {
-  return bp === null ? null : `${(bp / CENTIS).toFixed(1).replace('.', ',')} %`;
 }

@@ -715,7 +715,7 @@ export class ProductFormStore {
     }
     const price = proPriceOf(
       Math.round(priceEur * 100),
-      { method: rules.method, ratioBp: rules.ratioBp, fixedVatPercent: rules.fixedVatPercent },
+      { method: rules.method, ratioBp: rules.ratioBp },
       percent ?? null,
     );
     if (price === null) {
@@ -744,7 +744,7 @@ export class ProductFormStore {
     return (
       proPriceOf(
         Math.round(priceEur * 100),
-        { method: rules.method, ratioBp: rules.ratioBp, fixedVatPercent: rules.fixedVatPercent },
+        { method: rules.method, ratioBp: rules.ratioBp },
         percent ?? null,
       )?.ttcCents ?? null
     );

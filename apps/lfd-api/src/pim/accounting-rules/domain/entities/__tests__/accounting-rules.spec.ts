@@ -5,7 +5,6 @@ describe("AccountingRules", () => {
   it("s'ouvre sur un rapport valide", () => {
     expect(AccountingRules.open(9_000).snapshot()).toEqual({
       proPriceMethod: "ratio_ttc",
-      proPriceFixedVatPercent: null,
       proPriceRatioBp: 9_000,
     });
   });
@@ -19,7 +18,6 @@ describe("AccountingRules", () => {
     rules.setProPriceRatio(8_500);
     expect(rules.snapshot()).toEqual({
       proPriceMethod: "ratio_ttc",
-      proPriceFixedVatPercent: null,
       proPriceRatioBp: 8_500,
     });
   });
@@ -29,7 +27,6 @@ describe("AccountingRules", () => {
     expect(() => rules.setProPriceRatio(0)).toThrow(InvalidProPriceRatioError);
     expect(rules.snapshot()).toEqual({
       proPriceMethod: "ratio_ttc",
-      proPriceFixedVatPercent: null,
       proPriceRatioBp: 9_000,
     });
   });
@@ -43,7 +40,6 @@ describe("AccountingRules", () => {
     expect(() =>
       AccountingRules.reconstitute({
         proPriceMethod: "ratio_ttc",
-        proPriceFixedVatPercent: null,
         proPriceRatioBp: 15_000,
       }),
     ).toThrow(InvalidProPriceRatioError);

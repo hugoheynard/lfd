@@ -23,15 +23,17 @@
       </header>
 
       <p class="rule-say">
-        Le professionnel paie ce pourcentage <strong>de moins</strong> que le particulier. Ce que ce
-        pourcentage mord exactement dépend de la <strong>méthode</strong> choisie ci-dessous&nbsp;:
-        les deux partent du même prix public TTC et de la même remise, et n'arrivent pas au même
-        prix.
+        Le professionnel paie ce pourcentage <strong>de moins</strong> que le particulier, sur le
+        prix <strong>TTC</strong>. La remise s'applique donc <em>avant</em> toute TVA&nbsp;: c'est
+        le prix affiché qui est comparé, pas le prix hors taxe — dont le montant dépend du taux, et
+        change d'un contexte de vente à l'autre.
       </p>
 
-      <!-- 🔴 LE SÉLECTEUR. La seconde méthode est arithmétiquement fausse, et
-           l'écran doit le dire : sans cette phrase, quelqu'un la prendra pour
-           une option comme une autre — ou la « corrigera ». -->
+      <!-- LE SÉLECTEUR, avec une seule méthode — et c'est délibéré. Une
+           seconde a existé le temps d'une journée : elle devait reproduire le
+           catalogue professionnel imprimé, et l'analyse des 89 prix de cette
+           plaquette a montré qu'elle n'applique aucune formule. Ce qui reste
+           est la PLACE, pour le jour où le commerce en fournit une vraie. -->
       <fieldset class="methods">
         <legend>Méthode de calcul appliquée</legend>
 
@@ -46,58 +48,19 @@
             <strong>Ratio TTC pré-remise</strong>
             <span class="method-say">
               La remise porte sur le prix <strong>TTC</strong>, et le hors taxe se déduit ensuite du
-              taux réel de l'article. <em>C'est notre calcul, et il est cohérent.</em>
+              taux réel de l'article. C'est la seule méthode disponible, et c'est elle qui part au
+              prochain envoi.
             </span>
           </span>
         </label>
 
-        <label class="method" [class.is-chosen]="draftIsBrochure()">
-          <input
-            type="radio"
-            name="pro-price-method"
-            [checked]="draftIsBrochure()"
-            (change)="chooseMethod('remise_apres_tva_max')"
-          />
-          <span class="method-body">
-            <strong>Remise après plus haute TVA possible</strong>
-            <span class="method-say">
-              <strong>Le calcul de la plaquette commerciale.</strong> On retire du prix public TTC
-              le taux figé ci-contre, puis on applique la remise.
-            </span>
-            <fold-callout appearance="inset" variant="warning">
-              <strong>Ce calcul est faux, et c'est pourquoi il existe.</strong> Il a été fait en
-              réunion de communication avec un taux unique au lieu du taux réel des articles, et il
-              est parti à l'impression. On le garde pour tenir ce qui est annoncé — il ne se corrige
-              pas.
-            </fold-callout>
-            @if (draftIsBrochure()) {
-              <fold-number-input
-                label="Taux figé de la plaquette (%)"
-                [min]="0"
-                [max]="100"
-                [step]="0.5"
-                [value]="draftFixedVat()"
-                (valueChange)="draftFixedVat.set($event)"
-              />
-              <span class="method-say">
-                Figé au moment du choix, et <strong>jamais relu</strong> du référentiel des taux :
-                sinon créer ou supprimer un taux de TVA retariferait tout le catalogue professionnel
-                sans qu'on le voie.
-              </span>
-            }
-          </span>
-        </label>
-
-        @if (canWrite()) {
-          <button
-            foldButton
-            emphasis="outline"
-            [disabled]="!canChooseMethod()"
-            (click)="submitMethod()"
-          >
-            Appliquer cette méthode
-          </button>
-        }
+        <fold-callout appearance="inset" variant="info">
+          <strong>La plaquette commerciale n'applique aucune règle.</strong> Ses 89 prix
+          professionnels ont été posés à la main, article par article&nbsp;: au même prix public de
+          6,00&nbsp;€, on y trouve des prix pro de 3,20&nbsp;€ à 4,80&nbsp;€, et la meilleure
+          formule unique ne retrouve que 21&nbsp;% des lignes. Aucune seconde méthode ne peut donc
+          la reproduire. Le jour où une vraie formule est fournie, elle s'ajoutera ici.
+        </fold-callout>
       </fieldset>
 
       @if (canWrite()) {
@@ -147,9 +110,8 @@
           @if (sampleRates(); as rates) {
             <div class="sample">
               <p class="sample-caption">
-                <strong>Les deux méthodes côte à côte</strong>, sur le même article et la même
-                remise. La colonne « Écart » est ce que la plaquette coûte de plus ou de moins que
-                notre calcul, en hors taxe — c'est l'arithmétique que la réunion n'a pas faite.
+                Le même article sous les trois taux&nbsp;: le prix d'étiquette ne bouge pas, sa part
+                hors taxe si.
               </p>
 
               <!-- Repli par DÉFAUT (`scroll`), et non `cards` comme le tableau des
@@ -162,25 +124,13 @@
                   <strong>{{ row.label }}</strong>
                 </ng-template>
                 <ng-template foldCell="publicHt" let-row>{{ row.publicHt }}</ng-template>
-                <ng-template foldCell="ratioTtc" let-row>{{ row.ratioTtc }}</ng-template>
-                <ng-template foldCell="brochure" let-row>{{ row.brochure ?? '—' }}</ng-template>
-                <!-- L'écart ET la remise réelle sur la même ligne : le premier
-                     dit combien, la seconde dit ce qu'on a promis sans le
-                     savoir. L'un sans l'autre laisse la moitié de l'histoire. -->
-                <ng-template foldCell="gap" let-row>
-                  <span class="gap">{{ row.gap ?? '—' }}</span>
-                  @if (row.realDiscount; as real) {
-                    <span class="gap-real">soit {{ real }} de remise</span>
-                  }
-                </ng-template>
+                <ng-template foldCell="proHt" let-row>{{ row.proHt }}</ng-template>
               </fold-data-table>
 
               <p class="sample-say">
-                Sous <strong>ratio TTC</strong>, la remise reste la même partout&nbsp;: elle porte
-                sur le TTC, et la TVA est proportionnelle. Sous la <strong>plaquette</strong>, non —
-                elle dépouille toujours au taux figé, donc plus le taux réel de l'article est bas,
-                plus la remise réellement consentie est grande. Sur un article au taux figé, les
-                deux méthodes coïncident.
+                La remise reste la même partout&nbsp;: elle porte sur le TTC, et la TVA est
+                proportionnelle. Le taux ne change donc pas ce que le professionnel gagne — il
+                change ce que la comptabilité inscrit.
               </p>
             </div>
           }
@@ -209,9 +159,9 @@
            consigne — corrigé le 2026-09-13. -->
       <fold-callout appearance="inset" variant="warning">
         <strong>Ces réglages tarifent pour de vrai.</strong> Le prochain envoi vers la boutique
-        professionnelle partira avec cette remise et cette méthode. Changer de méthode déplace le
-        prix de <em>base</em> de tout le catalogue&nbsp;: les prix négociés ne bougeront pas, et un
-        plancher en euros peut faire remonter un prix qu'on croyait baisser.
+        professionnelle partira avec cette remise. Elle pose le prix de <em>base</em> du
+        catalogue&nbsp;: les prix professionnels négociés article par article, eux, la recouvrent là
+        où ils existent.
       </fold-callout>
     </section>
   }

@@ -74,7 +74,7 @@ export class AccountingRulesController {
     @Body(new ZodBody(proPriceMethodPayloadSchema)) body: ProPriceMethodPayload,
   ): Promise<AccountingRulesView> {
     await this.commands.execute<ChooseProPriceMethodCommand, void>(
-      new ChooseProPriceMethodCommand(body.method, body.fixedVatPercent),
+      new ChooseProPriceMethodCommand(body.method),
     );
     return this.queries.execute<ReadAccountingRulesQuery, AccountingRulesView>(
       new ReadAccountingRulesQuery(),

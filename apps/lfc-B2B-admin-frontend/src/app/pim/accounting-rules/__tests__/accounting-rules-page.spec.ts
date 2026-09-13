@@ -41,7 +41,7 @@ async function render({ granted = true, view, fails = false }: Setup = {}) {
                 view ?? {
                   ratioBp: null,
                   method: 'ratio_ttc' as const,
-                  fixedVatPercent: null,
+
                   updatedAt: null,
                 },
               ),
@@ -113,7 +113,7 @@ describe('AccountingRulesPage — un rapport en place', () => {
   const IN_PLACE: AccountingRulesView = {
     ratioBp: 9_000,
     method: 'ratio_ttc' as const,
-    fixedVatPercent: null,
+
     updatedAt: null,
   };
 
@@ -130,6 +130,23 @@ describe('AccountingRulesPage — un rapport en place', () => {
   });
 
   /**
+   * **Le sélecteur survit à la méthode qu'il devait offrir.**
+   *
+   * Une seconde méthode a existé le temps d'une journée — celle qui devait
+   * reproduire le catalogue professionnel imprimé. L'analyse des 89 prix de
+   * cette plaquette a montré qu'elle n'applique aucune formule, et la méthode a
+   * été retirée. Ce cas garde la PLACE : l'écran doit continuer de nommer la
+   * méthode appliquée, et dire pourquoi il n'y en a qu'une.
+   */
+  it('nomme la méthode appliquée, et dit pourquoi elle est seule', async () => {
+    const rendered = text(await render({ view: IN_PLACE }));
+
+    expect(rendered).toContain('Méthode de calcul appliquée');
+    expect(rendered).toContain('Ratio TTC pré-remise');
+    expect(rendered).toContain("n'applique aucune règle");
+  });
+
+  /**
    * 🔴 Régression inversée : ce cas exigeait « Pas encore appliquée ». C'était
    * vrai à l'écriture et faux depuis le raccordement — la projection B2B refuse
    * même de partir sans ce réglage (`ProPriceRatioNotSetError`). Un écran qui
@@ -141,41 +158,6 @@ describe('AccountingRulesPage — un rapport en place', () => {
 
     expect(rendered).not.toContain('Pas encore appliquée');
     expect(rendered).toContain('tarifent pour de vrai');
-  });
-
-  /**
-   * **Le comparateur.** Les deux méthodes sur la même ligne, et leur écart : les
-   * montrer l'une après l'autre obligerait à soustraire de tête, ce qui est
-   * exactement l'arithmétique que la réunion de communication n'a pas faite.
-   *
-   * Les montants sont écrits en dur plutôt que recalculés : un test qui refait
-   * l'arithmétique du code sous test ne prouve que leur accord, pas leur
-   * justesse. 10,00 € TTC à 5,5 % donnent 8,53 € HT par notre calcul, et
-   * 7,50 € par celui de la plaquette.
-   */
-  it('montre les deux méthodes et ce qui les sépare', async () => {
-    const rendered = text(await render({ view: IN_PLACE }));
-
-    expect(rendered).toContain('8,53');
-    expect(rendered).toContain('7,50');
-    expect(rendered).toContain('−1,03');
-  });
-
-  /**
-   * 🔴 Le nombre que la plaquette ignore : 10 % annoncés, **20,9 % consentis**
-   * sur un article à 5,5 %. C'est la seule raison d'être de ce comparateur — un
-   * écart en euros seul laisserait croire à un arrondi.
-   */
-  it('dit la remise RÉELLE que la plaquette consent', async () => {
-    expect(text(await render({ view: IN_PLACE }))).toContain('20,9 %');
-  });
-
-  /**
-   * Sur un article déjà au taux figé, les deux méthodes coïncident — et
-   * « +0,00 € » ferait chercher une différence là où il n'y en a pas.
-   */
-  it('dit « identique » plutôt qu’un écart nul au taux figé', async () => {
-    expect(text(await render({ view: IN_PLACE }))).toContain('identique');
   });
 
   /**
@@ -212,10 +194,7 @@ describe('AccountingRulesPage — un rapport en place', () => {
 
     expect(rendered).toContain('TVA');
     expect(rendered).toContain('Public HT');
-    // Les colonnes nomment les deux MÉTHODES depuis qu'il y en a deux ;
-    // « Pro HT » ne distinguait rien quand deux calculs le produisent.
-    expect(rendered).toContain('Ratio TTC');
-    expect(rendered).toContain('Plaquette');
+    expect(rendered).toContain('Pro HT');
     expect(rendered).not.toContain('Public TTC');
   });
 

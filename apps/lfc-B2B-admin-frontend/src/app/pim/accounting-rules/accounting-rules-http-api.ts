@@ -37,15 +37,9 @@ export class AccountingRulesHttpApi {
    * Deux décisions, chacune retarife le catalogue professionnel : les fondre
    * rendrait impossible de lire dans le journal laquelle a produit quel écart.
    */
-  chooseProPriceMethod(
-    method: ProPriceMethod,
-    fixedVatPercent: number | null,
-  ): Promise<AccountingRulesView> {
+  chooseProPriceMethod(method: ProPriceMethod): Promise<AccountingRulesView> {
     return firstValueFrom(
-      this.http.put<AccountingRulesView>(`${this.url()}/pro-price-method`, {
-        method,
-        fixedVatPercent,
-      }),
+      this.http.put<AccountingRulesView>(`${this.url()}/pro-price-method`, { method }),
     );
   }
 

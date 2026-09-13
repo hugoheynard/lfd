@@ -67,33 +67,21 @@ model AccountingRules {
 
   /// **Comment** le rapport se transforme en prix professionnel.
   ///
-  /// 🔴 `remise_apres_tva_max` est arithmétiquement FAUSSE, et c'est voulu :
-  /// elle reproduit un calcul fait en réunion de communication avec 20 % de TVA
-  /// au lieu du taux réel des articles, et **parti à l'impression** dans la
-  /// plaquette commerciale. On la garde pour tenir un engagement déjà pris.
-  /// Elle ne se corrige pas — le jour où la plaquette est refaite, c'est la
-  /// méthode qu'on retire.
+  /// Une seule valeur aujourd'hui — `ratio_ttc` — et la colonne existe quand
+  /// même. Elle avait été ajoutée pour une seconde méthode qui devait reproduire
+  /// le catalogue professionnel imprimé ; l'analyse des 89 prix de cette
+  /// plaquette a montré qu'elle n'applique aucune formule, et la méthode a été
+  /// retirée le jour même (`20260913140000_retrait_methode_plaquette`).
   ///
-  /// Une CHAÎNE et non un enum Postgres : renommer une valeur d'enum est une
-  /// migration de données en trois déploiements (CLAUDE.md §8), et ces deux
-  /// valeurs-là sont jeunes. Le défaut reproduit le comportement d'avant la
-  /// colonne — un déploiement ne change jamais un prix par lui-même.
+  /// Ce qui reste est la PLACE : si le commerce fournit un jour une vraie
+  /// formule, ce sera une valeur de plus ici et dans `PRO_PRICE_METHODS` — pas
+  /// une colonne, une migration, une route et un écran à refaire.
+  ///
+  /// ⚠️ Une contrainte non exprimable ici la garde :
+  /// `accounting_rules_method_known` n'admet que les valeurs connues. Une
+  /// `migrate dev` proposera de la supprimer, comme
+  /// `accounting_rules_pro_ratio_bounds` : refuser la ligne.
   proPriceMethod String @default("ratio_ttc") @map("pro_price_method")
-
-  /// Le taux de TVA **figé** de la plaquette, en pourcentage — `null` sous
-  /// `ratio_ttc`.
-  ///
-  /// Figé et non lu du référentiel : c'est le taux qu'une réunion a employé un
-  /// jour donné, pas le maximum courant. Le relire à chaque calcul ferait
-  /// retarifer tout le catalogue professionnel le jour où quelqu'un crée,
-  /// modifie ou supprime un taux — de l'action à distance sur de l'argent.
-  ///
-  /// `Float`, comme `VatRate.percent` juste au-dessus (vérifié le 2026-09-13) :
-  /// c'est la même nature de nombre, et deux représentations pour un taux de TVA
-  /// finiraient par se comparer mal. La précision n'est pas perdue pour autant —
-  /// `taxMultiplierBp` repasse par l'entier (`Math.round(percent * 100)`) avant
-  /// toute division, précisément pour que le binaire ne dérive pas.
-  proPriceFixedVatPercent Float? @map("pro_price_fixed_vat_percent")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

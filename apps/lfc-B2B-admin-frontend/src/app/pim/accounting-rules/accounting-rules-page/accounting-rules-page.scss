@@ -139,17 +139,3 @@ h2 {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
-
-/* L'écart et la remise réelle empilés dans la même cellule : le premier dit
-   combien, la seconde ce qu'on a promis sans le savoir. Séparés en deux
-   colonnes, on lirait le nombre sans jamais lire sa conséquence. */
-.gap {
-  display: block;
-  font-variant-numeric: tabular-nums;
-}
-
-.gap-real {
-  display: block;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-2xs);
-}

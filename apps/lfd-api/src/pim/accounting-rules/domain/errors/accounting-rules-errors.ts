@@ -19,23 +19,18 @@ export class InvalidProPriceRatioError extends DomainError {
 }
 
 /**
- * La méthode et son taux figé ne vont pas ensemble.
+ * La méthode de calcul du prix professionnel n'existe pas.
  *
- * Deux formes du même défaut, et c'est pour ça qu'elles partagent une erreur :
- * une méthode de plaquette **sans** taux prétend dépouiller une TVA sans savoir
- * laquelle, et un ratio TTC **avec** un taux fait croire qu'un nombre compte
- * alors que rien ne le lit. Les deux laisseraient un réglage à moitié décidé
- * derrière un écran qui affiche une décision entière.
+ * La colonne est une chaîne libre en base : une valeur inconnue y tariferait le
+ * catalogue sur un calcul que personne n'a écrit, et rien ne le signalerait
+ * avant une facture. Le refus est donc à la reconstitution comme à la saisie.
  */
 export class InvalidProPriceMethodError extends DomainError {
-  constructor(
-    readonly method: string,
-    readonly fixedVatPercent: number | null,
-  ) {
+  constructor(readonly method: string) {
     super(
       "commerce.pro_price_method.invalid",
-      `Méthode « ${method} » et taux figé (${fixedVatPercent === null ? "aucun" : String(fixedVatPercent)}) ` +
-        `incompatibles : « remise_apres_tva_max » exige son taux, « ratio_ttc » n'en accepte aucun.`,
+      `Méthode de prix professionnel inconnue : « ${method} ». La seule méthode ` +
+        `disponible est « ratio_ttc » — la remise s'applique au prix public TTC.`,
     );
   }
 }

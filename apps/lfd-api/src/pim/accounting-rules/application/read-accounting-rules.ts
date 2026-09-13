@@ -21,7 +21,6 @@ const NEVER_SET: AccountingRulesView = {
   // obligerait l'écran à inventer un repli — donc à le choisir une seconde fois,
   // ailleurs, avec le risque d'en choisir un autre.
   method: "ratio_ttc",
-  fixedVatPercent: null,
   updatedAt: null,
 };
 
@@ -40,8 +39,9 @@ export class ReadAccountingRulesHandler implements IQueryHandler<
     const snapshot = record.rules.snapshot();
     return {
       ratioBp: snapshot.proPriceRatioBp,
-      method: snapshot.proPriceMethod,
-      fixedVatPercent: snapshot.proPriceFixedVatPercent,
+      // Le VO a déjà refusé toute méthode inconnue à la reconstitution : ce
+      // qui sort de l'agrégat appartient donc à l'union.
+      method: record.rules.proPriceMethod.method,
       updatedAt: record.updatedAt.toISOString(),
     };
   }

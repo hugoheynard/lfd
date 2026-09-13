@@ -1,4 +1,4 @@
-import type { ProPriceMethod, ProPricePolicy } from "@lfd/pim-contracts";
+import type { ProPricePolicy } from "@lfd/pim-contracts";
 
 import { ProPriceMethodSetting } from "../value-objects/pro-price-method-setting.js";
 import { ProPriceRatio } from "../value-objects/pro-price-ratio.js";
@@ -23,9 +23,7 @@ import { ProPriceRatio } from "../value-objects/pro-price-ratio.js";
  */
 export interface AccountingRulesSnapshot {
   readonly proPriceRatioBp: number;
-  readonly proPriceMethod: ProPriceMethod;
-  /** Le taux figé de la plaquette ; `null` sous `ratio_ttc`. */
-  readonly proPriceFixedVatPercent: number | null;
+  readonly proPriceMethod: string;
 }
 
 export class AccountingRules {
@@ -37,9 +35,9 @@ export class AccountingRules {
   /**
    * Le premier réglage — celui qui fait exister la ligne.
    *
-   * Il naît sur `ratio_ttc`, le calcul JUSTE. La méthode de la plaquette est un
-   * choix qu'on prend, jamais un défaut qu'on subit : personne ne doit se
-   * retrouver à facturer sur une formule fausse sans l'avoir décidé.
+   * Il naît sur `ratio_ttc` — la seule méthode disponible, et de toute façon
+   * celle qu'un réglage muet doit valoir : un déploiement ne change jamais un
+   * prix par lui-même.
    */
   static open(proPriceRatioBp: number): AccountingRules {
     return new AccountingRules(
@@ -56,7 +54,7 @@ export class AccountingRules {
   static reconstitute(snapshot: AccountingRulesSnapshot): AccountingRules {
     return new AccountingRules(
       ProPriceRatio.create(snapshot.proPriceRatioBp),
-      ProPriceMethodSetting.create(snapshot.proPriceMethod, snapshot.proPriceFixedVatPercent),
+      ProPriceMethodSetting.create(snapshot.proPriceMethod),
     );
   }
 
@@ -91,15 +89,14 @@ export class AccountingRules {
    * rapport aussi, et les enchaîner dans une seule écriture rendrait impossible
    * de lire dans le journal laquelle des deux décisions a produit quel écart.
    */
-  chooseMethod(method: ProPriceMethod, fixedVatPercent: number | null): void {
-    this.methodValue = ProPriceMethodSetting.create(method, fixedVatPercent);
+  chooseMethod(method: string): void {
+    this.methodValue = ProPriceMethodSetting.create(method);
   }
 
   snapshot(): AccountingRulesSnapshot {
     return {
       proPriceRatioBp: this.ratioValue.basisPoints,
       proPriceMethod: this.methodValue.method,
-      proPriceFixedVatPercent: this.methodValue.fixedVatPercent,
     };
   }
 }

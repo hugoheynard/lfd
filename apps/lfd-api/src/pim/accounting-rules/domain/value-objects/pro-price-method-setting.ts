@@ -1,4 +1,4 @@
-import type { ProPriceMethod, ProPricePolicy } from "@lfd/pim-contracts";
+import { PRO_PRICE_METHODS, type ProPriceMethod, type ProPricePolicy } from "@lfd/pim-contracts";
 
 import { InvalidProPriceMethodError } from "../errors/accounting-rules-errors.js";
 import type { ProPriceRatio } from "./pro-price-ratio.js";
@@ -6,48 +6,46 @@ import type { ProPriceRatio } from "./pro-price-ratio.js";
 /**
  * **La méthode de calcul du prix professionnel, et ce qu'elle exige.**
  *
- * Un value object pour DEUX champs parce que l'invariant est **entre** eux :
- * `remise_apres_tva_max` n'a aucun sens sans son taux figé, et `ratio_ttc` n'a
- * rien à faire d'un taux. Les tenir séparés laisserait exister un réglage qui
- * prétend dépouiller une TVA sans savoir laquelle — la moitié d'une décision
- * d'argent, qu'aucune lecture ne pourrait rattraper.
+ * Un value object pour un seul champ, et c'est assumé : il garde l'endroit où
+ * la validation d'une méthode vit. La colonne est une chaîne libre en base —
+ * une valeur inconnue y tariferait le catalogue sur un calcul que personne n'a
+ * écrit, et c'est ICI qu'elle est refusée, à la reconstitution comme à la
+ * saisie.
  *
- * ## 🔴 `remise_apres_tva_max` est FAUSSE, et on la garde
+ * ## Pourquoi une seule méthode, et pourtant un mécanisme
  *
- * Elle reproduit un calcul fait en réunion de communication avec 20 % de TVA au
- * lieu du taux réel des articles, et **parti à l'impression** : la plaquette
- * commerciale annonce ces prix-là. Elle existe pour tenir un engagement déjà
- * pris, pas parce qu'elle est juste. Le jour où la plaquette est refaite, c'est
- * la méthode qu'on retire — jamais sa formule qu'on ajuste.
+ * Une seconde méthode a existé le temps d'une journée : elle devait reproduire
+ * le catalogue professionnel imprimé. L'analyse des 89 prix de cette plaquette
+ * (2026-09-13) a montré qu'elle **n'applique aucune formule** — ses prix ont
+ * été posés à la main, article par article, et la meilleure règle unique ne
+ * colle qu'à 21 % des lignes. Une méthode qui ne reproduit rien a été retirée.
  *
- * ## Pourquoi le taux est FIGÉ et non lu
- *
- * C'est le taux qu'une réunion a employé un jour donné, pas le maximum courant
- * du référentiel. Le relire à chaque calcul ferait retarifer tout le catalogue
- * professionnel le jour où quelqu'un crée, modifie ou **supprime** un taux de
- * TVA — de l'action à distance sur de l'argent, que rien ne signalerait. Le
- * référentiel peut le PROPOSER à la saisie ; il ne le change jamais après coup.
+ * Ce qui reste est la **place**. Si le commerce fournit un jour une vraie
+ * formule, elle s'ajoute à {@link PRO_PRICE_METHODS} et à `proPriceOf`, et tout
+ * le reste — colonne, contrainte, route, écran — est déjà là. Une union à un
+ * seul membre n'est pas de la généralité spéculative : c'est le prix, très bas,
+ * de ne pas refaire cinq pièces pour ajouter un mot.
  */
 export class ProPriceMethodSetting {
-  private constructor(
-    readonly method: ProPriceMethod,
-    readonly fixedVatPercent: number | null,
-  ) {}
+  private constructor(readonly method: ProPriceMethod) {}
 
   /** Le comportement d'avant la colonne — ce qu'un réglage muet doit valoir. */
   static ratioTtc(): ProPriceMethodSetting {
-    return new ProPriceMethodSetting("ratio_ttc", null);
+    return new ProPriceMethodSetting("ratio_ttc");
   }
 
-  static create(method: ProPriceMethod, fixedVatPercent: number | null): ProPriceMethodSetting {
-    const needsRate = method === "remise_apres_tva_max";
-    if (needsRate !== (fixedVatPercent !== null)) {
-      throw new InvalidProPriceMethodError(method, fixedVatPercent);
+  /**
+   * Refuse une méthode inconnue plutôt que de la laisser passer.
+   *
+   * Le paramètre est une `string` et non l'union : c'est précisément une valeur
+   * venue de la base ou du réseau qu'on juge ici, et la typer d'avance ferait
+   * croire que quelqu'un l'a déjà vérifiée.
+   */
+  static create(method: string): ProPriceMethodSetting {
+    if (!PRO_PRICE_METHODS.includes(method as ProPriceMethod)) {
+      throw new InvalidProPriceMethodError(method);
     }
-    if (fixedVatPercent !== null && (!Number.isFinite(fixedVatPercent) || fixedVatPercent < 0)) {
-      throw new InvalidProPriceMethodError(method, fixedVatPercent);
-    }
-    return new ProPriceMethodSetting(method, fixedVatPercent);
+    return new ProPriceMethodSetting(method as ProPriceMethod);
   }
 
   /**
@@ -58,14 +56,10 @@ export class ProPriceMethodSetting {
    * sont des `number` voisins s'intervertissent sans qu'un compilateur bronche.
    */
   policyWith(ratio: ProPriceRatio): ProPricePolicy {
-    return {
-      method: this.method,
-      ratioBp: ratio.basisPoints,
-      fixedVatPercent: this.fixedVatPercent,
-    };
+    return { method: this.method, ratioBp: ratio.basisPoints };
   }
 
   equals(other: ProPriceMethodSetting): boolean {
-    return this.method === other.method && this.fixedVatPercent === other.fixedVatPercent;
+    return this.method === other.method;
   }
 }

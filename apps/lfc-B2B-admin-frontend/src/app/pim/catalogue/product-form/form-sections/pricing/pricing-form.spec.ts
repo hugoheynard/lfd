@@ -293,7 +293,7 @@ describe('PricingForm — le prix professionnel', () => {
     vi.spyOn(rules, 'rules').mockReturnValue({
       ratioBp,
       method: 'ratio_ttc',
-      fixedVatPercent: null,
+
       updatedAt: null,
     });
     withFamily(store);
@@ -361,7 +361,7 @@ describe('PricingForm — la ligne B2B suit le prix remisé', () => {
     vi.spyOn(rules, 'rules').mockReturnValue({
       ratioBp: 9_000,
       method: 'ratio_ttc' as const,
-      fixedVatPercent: null,
+
       updatedAt: null,
     });
     withFamily(store);
@@ -392,7 +392,7 @@ describe('PricingForm — la ligne B2B suit le prix remisé', () => {
     vi.spyOn(rules, 'rules').mockReturnValue({
       ratioBp: 9_000,
       method: 'ratio_ttc' as const,
-      fixedVatPercent: null,
+
       updatedAt: null,
     });
     withFamily(store);

@@ -94,12 +94,7 @@ const NO_DISCOUNT = ratioTtc(10_000);
  * produire une paire que le domaine refuserait mais que ce module accepte.
  */
 function ratioTtc(ratioBp: number): ProPricePolicy {
-  return { method: "ratio_ttc", ratioBp, fixedVatPercent: null };
-}
-
-/** La méthode de la plaquette : dépouillée au taux FIGÉ, puis remisée. */
-function brochure(ratioBp: number, fixedVatPercent: number): ProPricePolicy {
-  return { method: "remise_apres_tva_max", ratioBp, fixedVatPercent };
+  return { method: "ratio_ttc", ratioBp };
 }
 
 /**
@@ -223,58 +218,6 @@ describe("projectCatalog", () => {
 
     // 12,00 € public × 90 % = 10,80 € pro TTC ; ÷ 1,20 = 9,00 € HT exactement.
     expect(snapshot.products[0]?.variants[0]?.priceMillicents).toBe(900_000);
-  });
-
-  /**
-   * 🔴 **La méthode de la plaquette pousse un AUTRE prix**, et c'est tout
-   * l'objet du réglage. Elle dépouille au taux FIGÉ (20 %) au lieu du taux réel
-   * de l'article, ce qui laisse une assiette plus petite — donc un hors taxe
-   * plus BAS, pas plus haut.
-   *
-   * Le calcul qu'elle reproduit est faux ; il est parti à l'impression dans la
-   * plaquette commerciale, et c'est pour ça qu'il existe ici. Ne pas le
-   * « corriger » — voir `PRO_PRICE_METHODS` dans le contrat.
-   */
-  it("pousse le prix de la plaquette quand c'est la méthode choisie", () => {
-    const priceOf = (policy: ProPricePolicy): number | undefined =>
-      projectCatalog(
-        [product({ variants: [variant({ priceCents: 1_200 })] })],
-        [category()],
-        // L'article est à 5,5 %, la plaquette calcule à 20 % : c'est l'écart.
-        vat({ b2b: 5.5 }),
-        sold(),
-        policy,
-        NO_LIMITS,
-        INCO,
-        NO_SHOWCASE,
-        AT,
-      ).snapshot.products[0]?.variants[0]?.priceMillicents;
-
-    // 12,00 € × 90 % = 10,80 € TTC, ÷ 1,055 = 10,2370 € HT.
-    expect(priceOf(ratioTtc(9_000))).toBe(1_023_697);
-    // 12,00 € ÷ 1,20 = 10,00 €, × 90 % = 9,00 € HT — 12 % de moins.
-    expect(priceOf(brochure(9_000, 20))).toBe(900_000);
-  });
-
-  /**
-   * Le taux de l'article reste EXIGÉ sous la plaquette, où il ne sert pourtant
-   * plus à dériver le hors taxe : il sert toujours à facturer. L'écarter ici
-   * plutôt que de pousser un article qu'on ne saurait pas taxer.
-   */
-  it("écarte l'article sans taux, plaquette comprise", () => {
-    const { excluded } = projectCatalog(
-      [product({ variants: [variant({ priceCents: 1_200 })] })],
-      [category()],
-      vat({}),
-      sold(),
-      brochure(9_000, 20),
-      NO_LIMITS,
-      INCO,
-      NO_SHOWCASE,
-      AT,
-    );
-
-    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_sans_taux" });
   });
 
   /**

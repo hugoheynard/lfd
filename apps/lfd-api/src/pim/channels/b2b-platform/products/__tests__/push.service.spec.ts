@@ -190,7 +190,7 @@ async function build(
                         products.map((p) => [p.id, [{ pointOfSaleId: "pos_b2b", context: "b2b" }]]),
                       ),
                       // Réglage neutre : ce test parle de PUSH, pas de tarif.
-                      { method: "ratio_ttc" as const, ratioBp: 10_000, fixedVatPercent: null },
+                      { method: "ratio_ttc" as const, ratioBp: 10_000 },
                       // Aucune limite de commande : ce test parle d'estampille.
                       [],
                       // Référentiel vide : aucune fiche n'est déclarée ici, donc

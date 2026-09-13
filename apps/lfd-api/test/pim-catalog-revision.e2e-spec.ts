@@ -438,35 +438,6 @@ describe("Diff entre deux ancres", () => {
     expect(diff.changed).toEqual([]);
   });
 
-  /**
-   * 🔴 **Basculer la MÉTHODE ne change aucun article, et retarife tout.**
-   *
-   * C'est exactement le cas que le diff d'en-tête existe pour attraper : sans
-   * lui, une révision prise après la bascule montrerait « rien n'a bougé »
-   * alors que le prix de base de tout le catalogue professionnel a changé.
-   */
-  it("montre la bascule de méthode, sans aucun article modifié", async () => {
-    await aProduct("Croissant");
-    await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
-    await take();
-    await staff()
-      .put("/pim/accounting-rules/pro-price-method")
-      .send({ method: "remise_apres_tva_max", fixedVatPercent: 20 })
-      .expect(200);
-    await take();
-
-    const [to, from] = await twoLatest();
-    const diff = jsonBody<{
-      header: { field: string; before: string; after: string }[];
-      changed: unknown[];
-    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
-
-    expect(diff.header).toEqual([
-      { field: "proPriceMethod", before: "ratio_ttc", after: "remise_apres_tva_max" },
-    ]);
-    expect(diff.changed).toEqual([]);
-  });
-
   /** Regarder en arrière est légitime : l'ordre demandé fait foi. */
   it("échange « ajouté » et « retiré » quand on demande l'inverse", async () => {
     await aProduct("Croissant");

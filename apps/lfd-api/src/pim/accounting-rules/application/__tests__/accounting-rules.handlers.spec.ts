@@ -27,7 +27,6 @@ class InMemoryRepo extends AccountingRulesRepository {
     return Promise.resolve({
       rules: AccountingRules.reconstitute({
         proPriceMethod: "ratio_ttc",
-        proPriceFixedVatPercent: null,
         proPriceRatioBp: this.stored,
       }),
       updatedAt: STORED_AT,
@@ -63,7 +62,6 @@ describe("ReadAccountingRulesHandler", () => {
     expect(view).toEqual({
       ratioBp: null,
       method: "ratio_ttc",
-      fixedVatPercent: null,
       updatedAt: null,
     });
   });
@@ -77,7 +75,6 @@ describe("ReadAccountingRulesHandler", () => {
     expect(view).toEqual({
       ratioBp: 9_000,
       method: "ratio_ttc",
-      fixedVatPercent: null,
       updatedAt: STORED_AT.toISOString(),
     });
   });

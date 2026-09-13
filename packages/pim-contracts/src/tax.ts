@@ -29,14 +29,7 @@ import { divideByBasisPoints, fromCents, roundToCents, roundToMillicents } from 
  */
 const BP_PER_UNIT = 10_000;
 
-/**
- * Exporté depuis le 2026-09-13 pour la **méthode de la plaquette**, qui remonte
- * d'un hors taxe vers un TTC — le seul endroit du dépôt qui ait besoin du
- * multiplicateur sans passer par une des deux divisions ci-dessous. Le garder
- * privé aurait obligé à le recopier, donc à entretenir deux fois le piège
- * d'arrondi que son JSDoc décrit.
- */
-export function taxMultiplierBp(ratePercent: number): number {
+function taxMultiplierBp(ratePercent: number): number {
   return BP_PER_UNIT + Math.round(ratePercent * 100);
 }
 
