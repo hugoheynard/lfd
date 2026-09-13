@@ -30,8 +30,13 @@
 🔴 **C'est le défaut que la spec ne pouvait pas voir**, parce qu'il naît de ce
 que le dépôt a construit après elle.
 
-La spec dit : « réutiliser l'agrégation de `production-page.ts`, étendue à une
-plage ». Cette agrégation lit les commandes du **commerce**. Or la clôture du
+La spec dit : « réutiliser l'agrégation de production-page.ts, étendue à une
+plage » — citée sans accents graves parce que ce nom n'est plus un fichier : il
+a déménagé en
+[`dossier-du-jour.ts`](../../apps/lfc-B2B-admin-frontend/src/app/production/previsionnel/dossier-du-jour/dossier-du-jour.ts)
+(2026-09-13, quand le dossier du jour est passé sous le prévisionnel). La
+citation reste telle qu'elle a été écrite : on note où le fichier est parti, on
+ne réécrit pas ce que la spec disait. Cette agrégation lit les commandes du **commerce**. Or la clôture du
 plan du soir fait quitter `placed` aux commandes de la journée — c'est
 exactement ce que `PrismaDayOrdersReader` documente, et ce que l'abonné du
 commerce écrit en réponse à `ProductionDayClosedEvent`.
