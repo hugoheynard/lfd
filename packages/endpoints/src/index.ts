@@ -169,13 +169,20 @@ export const PROD_FRONT_ORIGINS = {
 const LEGACY_B2B_FRONT = "https://lfc-b2b.pages.dev";
 
 /**
- * L'ancienne adresse du back-office, le temps de la bascule vers
- * `lfd-backoffice`. Elle sert encore : tant que le projet `lfc-b2b-admin`
- * existe, il répond, et des onglets déjà ouverts continuent d'en émettre des
- * appels.
+ * L'ancienne adresse du back-office, gardée le temps de la bascule vers
+ * `lfd-backoffice`.
  *
- * ⚠️ À RETIRER dès que le nouveau est confirmé — c'est la moitié de l'opération
- * qui ne se voit pas si on l'oublie, puisque tout marche.
+ * 🔴 **Sa raison a cessé d'être vraie.** Elle disait « tant que le projet
+ * `lfc-b2b-admin` existe, il répond, et des onglets déjà ouverts continuent
+ * d'en émettre des appels ». Le nom n'a plus d'entrée DNS : `host` ne le
+ * résout pas et `curl` rend `000` (vérifié le 2026-09-13). Aucun onglet ne
+ * peut donc plus charger cette origine, ni en émettre un appel — la ligne
+ * n'autorise plus personne.
+ *
+ * ⚠️ À RETIRER, et c'est désormais sans contrepartie. Retirer une origine reste
+ * un geste sur une frontière de sécurité : il se décide pour lui-même, pas en
+ * passant. `documentation/ops/securite-frontiere-de-confiance.md` §3 porte le
+ * tableau des préflights qui le vérifiera.
  */
 const LEGACY_B2B_ADMIN_FRONT = "https://lfc-b2b-admin.pages.dev";
 

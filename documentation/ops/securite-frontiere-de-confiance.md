@@ -64,14 +64,28 @@ vœu, et personne ne le revérifie.
 ## 3. CORS
 
 Liste **fermée**, définie dans `packages/endpoints` (`PROD_CORS_ORIGINS`).
-Vérifiée en production, préflight par préflight :
+Vérifiée en production, préflight par préflight — **rejouée le 2026-09-13** :
 
-| Origine                   | Verdict                            |
-| ------------------------- | ---------------------------------- |
-| `lfc-b2b-eu7.pages.dev`   | autorisée — la boutique vivante    |
-| `lfc-b2b-admin.pages.dev` | autorisée                          |
-| `lfc-b2b.pages.dev`       | autorisée — **héritée, à retirer** |
-| `evil.example`            | refusée                            |
+| Origine                    | Verdict                                          |
+| -------------------------- | ------------------------------------------------ |
+| `lfc-b2b-eu7.pages.dev`    | autorisée — la boutique vivante                  |
+| `lfd-backoffice.pages.dev` | autorisée — **le back-office vivant**            |
+| `lafoliecoffee.info`       | autorisée — l'app client servie par la zone      |
+| `lfc-b2b-admin.pages.dev`  | autorisée — **héritée, morte au DNS, à retirer** |
+| `lfc-b2b.pages.dev`        | autorisée — **héritée, à retirer**               |
+| `evil.example`             | refusée                                          |
+
+🔴 **Ce tableau ne portait pas le back-office vivant.** Il nommait
+`lfc-b2b-admin.pages.dev` comme s'il était l'adresse du back-office ; c'est
+l'ANCIENNE, et elle n'a plus d'entrée DNS (vérifié le 2026-09-13 : `host` ne la
+résout pas, `curl` rend `000`). Une liste blanche qui ne nomme pas l'origine
+réellement servie se lit encore comme juste, parce que tout marche — et le jour
+où on la resserre, on retire la mauvaise ligne.
+
+⚠️ L'entrée morte reste **autorisée** : plus aucun contenu n'y est déployé, mais
+la retirer est un geste sur une frontière de sécurité, à décider pour lui-même.
+Son commentaire dans `packages/endpoints` dit « tant que le projet existe, il
+répond » — ce n'est plus vrai, et c'est justement la raison qui la maintenait.
 
 La dernière ligne compte autant que les autres : élargir une liste blanche sans
 vérifier qu'elle refuse toujours le reste, c'est se contenter d'un test qui ne
