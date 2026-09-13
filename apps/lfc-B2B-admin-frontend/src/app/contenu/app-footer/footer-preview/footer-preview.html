@@ -70,7 +70,7 @@
       <span class="mention">{{ content().legal.vat }}</span>
     </p>
     <p class="legal-links">
-      @for (link of content().legal.links; track link) {
+      @for (link of legalLinks(); track link) {
         <span class="mention">{{ link }}</span>
       }
     </p>

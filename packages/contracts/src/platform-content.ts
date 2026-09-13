@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { contentLocales, socialChannels } from "./platform-content.defaults.js";
+import { contentLocales, socialChannels, type LegalMention } from "./platform-content.defaults.js";
 
 /**
  * **Le contenu de plateforme** — les textes de la vitrine, tenus par le staff.
@@ -167,10 +167,42 @@ export const footerLocaleContentSchema = z.object({
   legal: z.object({
     pay: z.string().trim().min(1).max(200),
     vat: z.string().trim().min(1).max(200),
+    /**
+     * @deprecated Depuis le 2026-09-13 — remplacé par `legalMentions`, qui
+     * porte un vocabulaire fermé plutôt que des libellés libres. Le champ
+     * reste SERVI et n'est plus ni rendu ni édité : un contrat déjà servi se
+     * déprécie, il ne disparaît pas dans le même déploiement (§0). À retirer au
+     * déploiement suivant.
+     */
     links: z.array(footerLinkSchema).min(1).max(10),
   }),
 });
 export type FooterLocaleContent = z.infer<typeof footerLocaleContentSchema>;
+
+/**
+ * **L'affichage des mentions légales** — un booléen par mention facultative.
+ *
+ * Toutes à `true` par défaut, et c'est ce qui dispense de TOUTE migration : les
+ * lignes déjà enregistrées n'ont pas ce champ, l'adaptateur les relit à travers
+ * ce schéma, et zod le remplit. Aucune bascule, aucun SQL, aucun pied de page
+ * qui perdrait une mention le temps d'un déploiement.
+ *
+ * Toutes y figurent, CGV comprises : la maison décide ce qu'elle affiche. Ce
+ * que la forme interdit, c'est d'AJOUTER une mention — le vocabulaire est
+ * fermé ({@link legalMentionOrder}).
+ */
+export const legalMentionDisplaySchema = z.object({
+  legalNotice: z.boolean().default(true),
+  salesTerms: z.boolean().default(true),
+  privacy: z.boolean().default(true),
+  cookies: z.boolean().default(true),
+  accessibility: z.boolean().default(true),
+  // `satisfies` et non un cast : il VÉRIFIE que les champs déclarés ici sont
+  // exactement le vocabulaire, sans rien affirmer au compilateur. Ajouter une
+  // mention à la liste sans l'ajouter ici cesse de compiler — c'est ce qui
+  // empêche les deux de diverger en silence.
+} satisfies Record<LegalMention, z.ZodDefault<z.ZodBoolean>>);
+export type LegalMentionDisplay = z.infer<typeof legalMentionDisplaySchema>;
 
 /**
  * Le pied de page : l'identité légale, puis les trois langues.
@@ -182,6 +214,19 @@ export type FooterLocaleContent = z.infer<typeof footerLocaleContentSchema>;
 export const footerContentSchema = z.object({
   /** Ce qui ne se traduit pas — hors du sélecteur de langue, dans l'écran. */
   identity: legalIdentitySchema,
+  /**
+   * Quelles mentions légales s'affichent — un booléen par mention, hors du
+   * sélecteur de langue comme l'identité : afficher une mention est une
+   * décision unique, pas une décision par langue. Le mot, lui, vient du
+   * contrat.
+   */
+  legalMentions: legalMentionDisplaySchema.default({
+    legalNotice: true,
+    salesTerms: true,
+    privacy: true,
+    cookies: true,
+    accessibility: true,
+  }),
   fr: footerLocaleContentSchema,
   en: footerLocaleContentSchema,
   it: footerLocaleContentSchema,

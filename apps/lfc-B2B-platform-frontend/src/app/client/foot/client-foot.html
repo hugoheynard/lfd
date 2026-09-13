@@ -70,17 +70,25 @@
       <span class="mention">{{ foot().legal.vat }}</span>
       <span class="mention">© {{ year }} {{ legal().brandName }}.</span>
     </p>
+    <!-- LES MENTIONS. Un vocabulaire FERMÉ, affiché ou non — ce ne sont pas
+         des textes qu'on ajoute, ce sont des prérequis. Leur mot vient du
+         contrat ; seul leur affichage vient de la base. Les libellés libres
+         d'avant (`legal.links`) ne sont plus rendus : ils invitaient à écrire
+         une mention qui n'existe pas, et aucun rendu ne pouvait savoir de quoi
+         il parlait — donc aucune ne pouvait devenir cliquable. -->
     <nav class="legal-links" aria-label="Mentions">
-      @for (link of foot().legal.links; track link) {
-        <span class="link">{{ link }}</span>
+      @for (mention of shownMentions(); track mention.key) {
+        @if (mention.key === 'salesTerms') {
+          <!-- La seule mention adossée à un vrai document, donc la seule
+               vivante. Son libellé est le TITRE de ce document : renommer les
+               CGV renomme leur propre lien, sans toucher au pied de page. -->
+          <fold-link tone="muted" (clicked)="openSalesTerms()">{{ mention.label }}</fold-link>
+        } @else {
+          <!-- Inertes tant qu'aucun document ne les porte. Le jour où l'un
+               d'eux existe, il rejoint la branche du dessus par sa CLÉ. -->
+          <span class="link">{{ mention.label }}</span>
+        }
       }
-      <!-- Un bouton À PART, et jamais accroché aux liens ci-dessus :
-           `foot().legal.links` est une liste de CHAÎNES LIBRES éditées au
-           back-office, et y reconnaître le mot « CGV » serait un couplage par
-           chaîne de caractères qu'un rédacteur casserait en corrigeant une
-           faute. Son libellé est le TITRE du document — un document renommé
-           renomme son propre lien. -->
-      <fold-link tone="muted" (clicked)="openSalesTerms()">{{ salesTermsTitle() }}</fold-link>
     </nav>
   </div>
 </div>

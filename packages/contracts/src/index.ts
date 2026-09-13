@@ -827,6 +827,7 @@ export {
   footerLocaleContentSchema,
   footerContentSchema,
   footerContentPayloadSchema,
+  legalMentionDisplaySchema,
 } from "./platform-content.js";
 export type {
   ContentLocale,
@@ -838,7 +839,9 @@ export type {
   FooterContent,
   FooterContentPayload,
   FooterContentView,
+  LegalMentionDisplay,
 } from "./platform-content.js";
+export type { LegalMention, FixedLabelMention } from "./platform-content.defaults.js";
 export {
   MAX_SALES_TERMS_BODY,
   MAX_SALES_TERMS_PARAGRAPHS,
@@ -864,6 +867,8 @@ export {
   contentLocales,
   socialChannels,
   socialChannelLabels,
+  legalMentionOrder,
+  legalMentionLabels,
   DEFAULT_FOOTER_CONTENT,
   DEFAULT_SALES_TERMS,
   DEMO_SALES_TERMS_PARAGRAPHS,

@@ -23,6 +23,71 @@ export const contentLocales = ["fr", "en", "it"] as const;
  * ⚠️ Ils vivent ici pour la même raison que les langues : ce module n'importe
  * que des types, donc les deux fronts peuvent lire la liste sans embarquer zod.
  */
+/**
+ * Les **mentions légales** du bandeau de pied de page, dans l'ordre où elles se
+ * lisent.
+ *
+ * 🔴 Une liste FERMÉE, et non des libellés libres — c'est le même geste que
+ * pour les réseaux sociaux, et pour une raison plus forte : ce ne sont pas des
+ * textes de vitrine, ce sont des **prérequis**. Une mention légale ne
+ * s'INVENTE pas ; elle s'affiche ou non, comme le bandeau cookies. Les laisser
+ * en chaînes libres invitait à en écrire une qui n'existe pas, à en
+ * orthographier deux différemment d'une langue à l'autre, et ne permettait à
+ * aucun rendu de savoir de quoi il parlait.
+ *
+ * Toutes sont masquables, CGV comprises : la maison décide ce qu'elle affiche.
+ * Ce que la forme interdit, c'est d'en ajouter une qui n'est pas une mention.
+ */
+export const legalMentionOrder = [
+  "legalNotice",
+  "salesTerms",
+  "privacy",
+  "cookies",
+  "accessibility",
+] as const;
+
+export type LegalMention = (typeof legalMentionOrder)[number];
+
+/**
+ * Celles dont le mot est FIXE — c'est-à-dire toutes sauf les CGV.
+ *
+ * ⚠️ `salesTerms` n'a pas de libellé écrit ici, et c'est délibéré : le sien est
+ * le TITRE du document, qui vit en base et se renomme depuis l'écran des CGV.
+ * Un document renommé renomme son propre lien ; un libellé en double aurait
+ * divergé au premier renommage.
+ */
+export type FixedLabelMention = Exclude<LegalMention, "salesTerms">;
+
+/**
+ * Le mot de chaque mention, par langue.
+ *
+ * Il vit dans le CONTRAT et non en base : une mention légale porte un nom
+ * consacré, pas un nom qu'on choisit. Le rédacteur décide de l'afficher, pas de
+ * la renommer — et les trois langues ne peuvent plus diverger.
+ */
+export const legalMentionLabels: Readonly<
+  Record<(typeof contentLocales)[number], Readonly<Record<FixedLabelMention, string>>>
+> = {
+  fr: {
+    legalNotice: "Mentions légales",
+    privacy: "Confidentialité",
+    cookies: "Cookies",
+    accessibility: "Accessibilité",
+  },
+  en: {
+    legalNotice: "Legal notice",
+    privacy: "Privacy",
+    cookies: "Cookies",
+    accessibility: "Accessibility",
+  },
+  it: {
+    legalNotice: "Note legali",
+    privacy: "Privacy",
+    cookies: "Cookie",
+    accessibility: "Accessibilità",
+  },
+};
+
 export const socialChannels = [
   "instagram",
   "facebook",
@@ -220,6 +285,15 @@ const IT: FooterLocaleContent = {
 };
 
 export const DEFAULT_FOOTER_CONTENT: FooterContent = {
+  // Toutes affichées : ce sont des obligations, et le repli d'une obligation
+  // est de paraître. Les décocher est un geste que quelqu'un pose sciemment.
+  legalMentions: {
+    legalNotice: true,
+    salesTerms: true,
+    privacy: true,
+    cookies: true,
+    accessibility: true,
+  },
   identity: {
     brandName: "La Folie Coffee",
     company: "La Folie Coffee SAS",

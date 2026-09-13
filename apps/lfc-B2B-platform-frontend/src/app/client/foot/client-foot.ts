@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 
 import { FoldLinkComponent, FoldPanelHostService } from 'fold-ng';
 
-import { socialChannelLabels } from '@lfd/contracts/content-values';
+import {
+  legalMentionLabels,
+  legalMentionOrder,
+  socialChannelLabels,
+  type LegalMention,
+} from '@lfd/contracts/content-values';
 
 import { ClientContent } from '../client-content.service';
 import { ClientSalesTerms } from '../client-sales-terms.service';
@@ -86,6 +91,30 @@ export class ClientFoot {
    * document : le panneau appelle le service, qui ne charge qu'à la première
    * ouverture.
    */
+  /**
+   * Les mentions à afficher, dans l'ordre du contrat, avec leur mot.
+   *
+   * L'ORDRE vient du vocabulaire et non de la base : c'est l'ordre d'une barre
+   * légale, pas une préférence — et le laisser en donnée aurait rendu possible
+   * une barre qui commence par « Cookies ».
+   *
+   * Le mot des CGV est le titre de leur document ; celui des autres est fixé
+   * par le contrat. Une mention légale porte un nom consacré, que le rédacteur
+   * affiche ou masque — jamais qu'il renomme.
+   */
+  protected readonly shownMentions = computed<readonly { key: LegalMention; label: string }[]>(
+    () => {
+      const shown = this.content.legalMentions();
+      const locale = this.content.locale();
+      return legalMentionOrder
+        .filter((key) => shown[key])
+        .map((key) => ({
+          key,
+          label: key === 'salesTerms' ? this.salesTermsTitle() : legalMentionLabels[locale][key],
+        }));
+    },
+  );
+
   protected openSalesTerms(): void {
     this.panelHost.open(SalesTermsPanel);
   }

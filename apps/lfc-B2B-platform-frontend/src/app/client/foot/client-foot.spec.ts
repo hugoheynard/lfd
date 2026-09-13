@@ -1,7 +1,12 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { DEFAULT_SALES_TERMS } from '@lfd/contracts/content-values';
+import type { FooterContent, FooterContentView, LegalMentionDisplay } from '@lfd/contracts';
+import {
+  DEFAULT_FOOTER_CONTENT,
+  DEFAULT_SALES_TERMS,
+  legalMentionLabels,
+} from '@lfd/contracts/content-values';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { SalesTermsPanel } from '../sales-terms-panel/sales-terms-panel';
@@ -9,6 +14,7 @@ import { ClientFoot } from './client-foot';
 
 describe('le pied de page — la barre légale', () => {
   let opened: unknown[];
+  let fixture: ReturnType<typeof TestBed.createComponent<ClientFoot>>;
 
   const boot = (): HTMLElement => {
     TestBed.resetTestingModule();
@@ -29,13 +35,45 @@ describe('le pied de page — la barre légale', () => {
         },
       ],
     });
-    const fixture = TestBed.createComponent(ClientFoot);
+    fixture = TestBed.createComponent(ClientFoot);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   };
 
-  const termsButton = (host: HTMLElement): HTMLButtonElement | null =>
+  /**
+   * Répond à la lecture du pied de page avec l'affichage de mentions demandé.
+   *
+   * C'est le SEUL chemin par lequel l'écran apprend ce qui s'affiche : le
+   * contenu de départ les montre toutes, et un test qui ne répondrait pas
+   * n'éprouverait donc que ce repli.
+   */
+  const servirMentions = (mentions: LegalMentionDisplay): void => {
+    const content: FooterContent = { ...DEFAULT_FOOTER_CONTENT, legalMentions: mentions };
+    const view: FooterContentView = {
+      content,
+      revision: 1,
+      updatedAt: new Date(0).toISOString(),
+      updatedBy: null,
+    };
+    TestBed.inject(HttpTestingController)
+      .expectOne((req) => req.url.includes('/content/footer'))
+      .flush(view);
+    fixture.detectChanges();
+  };
+
+  const toutesSauf = (cachees: readonly (keyof LegalMentionDisplay)[]): LegalMentionDisplay => ({
+    legalNotice: !cachees.includes('legalNotice'),
+    salesTerms: !cachees.includes('salesTerms'),
+    privacy: !cachees.includes('privacy'),
+    cookies: !cachees.includes('cookies'),
+    accessibility: !cachees.includes('accessibility'),
+  });
+
+  const lienCgv = (host: HTMLElement): HTMLButtonElement | null =>
     host.querySelector<HTMLButtonElement>('.legal-links button');
+
+  const mentionsAffichees = (host: HTMLElement): readonly string[] =>
+    [...host.querySelectorAll('.legal-links > *')].map((el) => el.textContent?.trim() ?? '');
 
   afterEach(() => {
     // Le contenu du pied part au montage ; les CGV, elles, ne partent PAS —
@@ -46,19 +84,49 @@ describe('le pied de page — la barre légale', () => {
   });
 
   /**
-   * 🔴 Le bouton ne se raccroche pas aux liens de `foot().legal.links` : ce
-   * sont des CHAÎNES LIBRES éditées au back-office, et y reconnaître « CGV »
-   * serait un couplage par chaîne de caractères qu'un rédacteur casserait en
-   * corrigeant une faute.
+   * 🔴 Les mentions ne sont plus des libellés libres : leur mot vient du
+   * CONTRAT, et seul leur affichage vient de la base. Une mention légale porte
+   * un nom consacré — le rédacteur l'affiche ou la masque, il ne la renomme
+   * pas, et il ne peut plus en inventer une qui n'existe pas.
    */
-  it('porte un bouton distinct des liens légaux, nommé par le TITRE du document', () => {
+  it('affiche le vocabulaire fermé, dans son ordre, avec les mots du contrat', () => {
     const host = boot();
-    const button = termsButton(host);
+    servirMentions(toutesSauf([]));
 
-    expect(button).not.toBeNull();
-    expect(button?.textContent?.trim()).toBe(DEFAULT_SALES_TERMS.title.fr);
-    // Les liens libres restent des libellés inertes, sans geste attaché.
-    expect(host.querySelectorAll('.legal-links .link').length).toBeGreaterThan(0);
+    expect(mentionsAffichees(host)).toEqual([
+      legalMentionLabels.fr.legalNotice,
+      // Les CGV en deuxième position, et nommées par le TITRE de leur
+      // document : renommer les CGV renomme leur propre lien.
+      DEFAULT_SALES_TERMS.title.fr,
+      legalMentionLabels.fr.privacy,
+      legalMentionLabels.fr.cookies,
+      legalMentionLabels.fr.accessibility,
+    ]);
+  });
+
+  it('ne rend pas une mention décochée', () => {
+    const host = boot();
+    servirMentions(toutesSauf(['cookies', 'accessibility']));
+
+    const affichees = mentionsAffichees(host);
+    expect(affichees).not.toContain(legalMentionLabels.fr.cookies);
+    expect(affichees).not.toContain(legalMentionLabels.fr.accessibility);
+    expect(affichees).toContain(legalMentionLabels.fr.legalNotice);
+  });
+
+  /**
+   * Les CGV sont masquables comme les autres — ce sont des prérequis dont la
+   * maison décide l'affichage, pas une exception. Ce qui reste impossible,
+   * c'est d'AJOUTER une mention hors du vocabulaire.
+   */
+  it('retire le lien vivant quand les CGV sont décochées', () => {
+    const host = boot();
+    expect(lienCgv(host)).not.toBeNull();
+
+    servirMentions(toutesSauf(['salesTerms']));
+
+    expect(lienCgv(host)).toBeNull();
+    expect(mentionsAffichees(host)).not.toContain(DEFAULT_SALES_TERMS.title.fr);
   });
 
   it('ouvre le dialogue des conditions, et ne charge rien avant ce clic', () => {
@@ -67,7 +135,7 @@ describe('le pied de page — la barre légale', () => {
     const http = TestBed.inject(HttpTestingController);
     expect(http.match((req) => req.url.includes('sales-terms'))).toHaveLength(0);
 
-    termsButton(host)?.click();
+    lienCgv(host)?.click();
 
     expect(opened).toEqual([SalesTermsPanel]);
   });

@@ -1,15 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   ContentLocale,
+  SalesTermsHeading,
   FooterContent,
   FooterLocaleContent,
   LegalIdentity,
+  LegalMention,
+  LegalMentionDisplay,
   SocialChannel,
 } from '@lfd/contracts';
 // Les VALEURS par `content-values`, qui ne tire pas zod (cf. le front client).
 import {
   contentLocales,
   DEFAULT_FOOTER_CONTENT,
+  legalMentionOrder,
   socialChannelLabels,
   socialChannels,
 } from '@lfd/contracts/content-values';
@@ -18,6 +22,7 @@ import {
   FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldCheckboxComponent,
   FoldElementTitleComponent,
   FoldFieldsetComponent,
   FoldInputComponent,
@@ -30,6 +35,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { legalMentionLabel } from '../legal-mention-label';
 import { PlatformContentService } from '../platform-content.service';
 import { FooterPreview } from './footer-preview/footer-preview';
 
@@ -64,9 +70,14 @@ function isChannel(value: string): value is SocialChannel {
  *
  * - la **copie**, sous le sélecteur de langue — quatre sections verticales puis
  *   le bandeau légal, dans l'ordre où la vitrine les empile ;
- * - l'**identité légale**, au-dessus et HORS du sélecteur — un SIRET ne se
- *   traduit pas, et le mettre sous le switch inviterait à le ressaisir trois
- *   fois.
+ * - l'**identité légale** et les **mentions affichées**, au-dessus et HORS du
+ *   sélecteur — un SIRET ne se traduit pas, et afficher une mention est une
+ *   décision unique ; les ranger sous le switch inviterait à les reprendre
+ *   trois fois.
+ *
+ * Les mentions légales ne se SAISISSENT plus : ce sont des prérequis, pas des
+ * textes de vitrine. L'écran choisit celles qui s'affichent dans un vocabulaire
+ * fermé, et leur mot vient du contrat.
  *
  * L'aperçu est en tête parce qu'on vient corriger un texte en le VOYANT à sa
  * place. Il montre la forme et pas la peau : ce qu'aucun formulaire ne dit,
@@ -80,6 +91,7 @@ function isChannel(value: string): value is SocialChannel {
     FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldCheckboxComponent,
     FoldElementTitleComponent,
     FoldFieldsetComponent,
     FoldInputComponent,
@@ -117,13 +129,36 @@ export class AppFooterPage {
   private readonly draft = signal<FooterContent>(DEFAULT_FOOTER_CONTENT);
 
   protected readonly identity = computed<LegalIdentity>(() => this.draft().identity);
+  protected readonly legalMentions = computed<LegalMentionDisplay>(
+    () => this.draft().legalMentions,
+  );
   protected readonly current = computed<FooterLocaleContent>(() => this.draft()[this.locale()]);
 
   constructor() {
     void this.load();
   }
 
+  /**
+   * Le titre du document des CGV, dans ses trois langues — `null` tant qu'il
+   * n'a pas pu être lu.
+   *
+   * Il suit le sélecteur de langue comme le reste de l'aperçu : un titre figé
+   * sur une langue aurait montré un bandeau français sous un onglet italien.
+   */
+  private readonly salesTermsHeading = signal<SalesTermsHeading | null>(null);
+
+  protected readonly salesTermsTitle = computed<string | null>(
+    () => this.salesTermsHeading()?.[this.locale()] ?? null,
+  );
+
   private async load(): Promise<void> {
+    // Le titre des CGV part À CÔTÉ et non dans le même `await` : il ne sert
+    // qu'à nommer une ligne de l'aperçu, et son échec ne doit pas empêcher
+    // d'éditer le pied de page. Il se replie alors sur le mot de secours.
+    void this.api
+      .salesTerms()
+      .then((view) => this.salesTermsHeading.set(view.content.title))
+      .catch(() => undefined);
     try {
       const view = await this.api.footer();
       this.draft.set(view.content);
@@ -154,6 +189,34 @@ export class AppFooterPage {
     const taken = new Set(this.identity().socials.map((social) => social.channel));
     return socialChannels.find((channel) => !taken.has(channel)) ?? null;
   });
+
+  /**
+   * Les mentions légales à cocher — le vocabulaire FERMÉ, dans son ordre.
+   *
+   * Les mots viennent du contrat et non de la saisie : une mention légale ne
+   * s'invente pas, elle s'affiche ou non. Ils sont montrés en français parce
+   * que la case, elle, est un réglage du back-office — l'anglais et l'italien
+   * sont écrits dans le contrat et suivent tout seuls.
+   */
+  protected readonly legalMentionRows = computed(() =>
+    legalMentionOrder.map((key) => ({
+      key,
+      label: legalMentionLabel('fr', key),
+      hint:
+        key === 'salesTerms'
+          ? 'Le lien porte le TITRE du document, qui se renomme dans l’écran CGV.'
+          : undefined,
+      shown: this.draft().legalMentions[key],
+    })),
+  );
+
+  /** Affiche ou masque une mention. Le mot, lui, ne se touche pas. */
+  protected setLegalMention(mention: LegalMention, shown: boolean): void {
+    this.draft.update((draft) => ({
+      ...draft,
+      legalMentions: { ...draft.legalMentions, [mention]: shown },
+    }));
+  }
 
   /** Écrit un champ d'identité, sans toucher au reste du brouillon. */
   protected setIdentity(field: IdentityTextField, value: string): void {
@@ -251,16 +314,6 @@ export class AppFooterPage {
 
   protected setLegal(field: 'pay' | 'vat', value: string): void {
     this.patchLocale((content) => ({ ...content, legal: { ...content.legal, [field]: value } }));
-  }
-
-  protected setLegalLink(index: number, value: string): void {
-    this.patchLocale((content) => ({
-      ...content,
-      legal: {
-        ...content.legal,
-        links: content.legal.links.map((link, i) => (i === index ? value : link)),
-      },
-    }));
   }
 
   protected async save(): Promise<void> {
