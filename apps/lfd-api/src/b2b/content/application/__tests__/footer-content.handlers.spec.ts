@@ -1,12 +1,29 @@
-import { DEFAULT_FOOTER_CONTENT, type FooterContent, type FooterContentView } from "@lfd/contracts";
+import {
+  DEFAULT_FOOTER_CONTENT,
+  DEFAULT_SALES_TERMS,
+  type FooterContent,
+  type FooterContentView,
+  type SalesTerms,
+  type SalesTermsView,
+} from "@lfd/contracts";
+
+import { SalesTermsDocument } from "../../domain/entities/sales-terms-document.js";
 
 import { PlatformContentRepository } from "../../domain/platform-content.repository.js";
 import { GetFooterContentHandler } from "../get-footer-content.handler.js";
 import { SaveFooterContentCommand } from "../save-footer-content.command.js";
 import { SaveFooterContentHandler } from "../save-footer-content.handler.js";
 
-/** Un double du port — un objet qui implémente l'interface, pas un module moqué. */
+/**
+ * Un double du port — un objet qui implémente l'interface, pas un module moqué.
+ *
+ * Il porte aussi les CGV : le port tient les DEUX blocs de contenu, et une
+ * classe qui n'en implémenterait qu'un ne compilerait pas. Elles ne sont pas le
+ * sujet ici — ces trois méthodes existent pour que le double reste un vrai
+ * sous-type, et les CGV ont leur propre suite.
+ */
 class FakeContentRepository extends PlatformContentRepository {
+  private salesTerms: SalesTerms | null = null;
   saved: { content: FooterContent; staffUserId: string } | null = null;
   revision = 0;
 
@@ -28,6 +45,28 @@ class FakeContentRepository extends PlatformContentRepository {
       updatedAt: new Date(0).toISOString(),
       updatedBy: staffUserId,
     });
+  }
+
+  readSalesTerms(): Promise<SalesTermsView> {
+    return Promise.resolve({
+      content: this.salesTerms ?? DEFAULT_SALES_TERMS,
+      revision: this.salesTerms === null ? 0 : 1,
+      updatedAt: new Date(0).toISOString(),
+      updatedBy: null,
+    });
+  }
+
+  loadSalesTerms(): Promise<SalesTermsDocument> {
+    return Promise.resolve(
+      SalesTermsDocument.reconstitute(
+        this.salesTerms ?? { title: DEFAULT_SALES_TERMS.title, paragraphs: [] },
+      ),
+    );
+  }
+
+  saveSalesTerms(document: SalesTermsDocument): Promise<void> {
+    this.salesTerms = document.snapshot();
+    return Promise.resolve();
   }
 }
 

@@ -9,6 +9,7 @@ import { seedAccounting } from "./seeding/accounting.seed.js";
 import { seedClient } from "./seeding/client.seed.js";
 import { seedOrders } from "./seeding/orders.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
+import { seedSalesTerms } from "./seeding/sales-terms.seed.js";
 import { seedStation } from "./seeding/station.seed.js";
 import { clearSeededBuckets } from "./seeding/storage.seed.js";
 
@@ -65,6 +66,10 @@ export class DevSeedService {
     // jeu de données que la ligne de commande ne pose pas — la divergence que
     // l'existence même de ce service est censée éviter.
     await seedAccounting(context);
+    // Les CGV appartiennent au décor, comme la station : elles ne dépendent
+    // d'aucun client et ne sont touchées par aucune coupe — `resetToSeed` ne
+    // connaît que les sociétés et leurs commandes.
+    await seedSalesTerms(context);
     await seedClient(context);
     const reset = await resetToSeed(this.prisma);
     // Les buckets APRÈS la coupe et AVANT le semis : les commandes qui

@@ -15,6 +15,7 @@
   "test/admin-pricing.e2e-spec.ts": 23292,
   "test/admin-subscriptions.e2e-spec.ts": 4699,
   "test/appointments.e2e-spec.ts": 7731,
+  "test/b2b-sales-terms.e2e-spec.ts": 5138,
   "test/catalog-delivery-review.e2e-spec.ts": 10415,
   "test/catalog-delivery.e2e-spec.ts": 15487,
   "test/catalog-ingest-facts.e2e-spec.ts": 2997,
