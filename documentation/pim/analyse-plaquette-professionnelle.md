@@ -87,3 +87,24 @@ Les 89 couples ont été extraits du PDF, puis confrontés à chaque hypothèse 
 coefficient unique sur le TTC, division par un taux de TVA (5,5 %, 10 %, 20 %)
 suivie d'une remise, et règle par catégorie. « Juste » signifie exact au
 centime.
+
+## L'import, et ce qu'il a révélé
+
+`pnpm --filter lfd-api mercuriale:import` — compte rendu seul, puis
+`--appliquer` pour écrire. Il passe par le **bus de commandes** (`SetB2bPrice`),
+jamais par la colonne : écrire `catalog_item_overrides` en direct contournerait
+les refus de l'agrégat et laisserait `decided_by` vide.
+
+🔴 **La plaquette vend 89 articles ; le catalogue B2B n'en porte que 40.**
+Sur la base de développement au 2026-09-13, 22 lignes s'apparient, 67 restent
+sans prix — et **au moins 49 ne peuvent PAS s'apparier quel que soit leur nom**,
+puisqu'il n'y a pas d'article en face. Le rapprochement par libellé n'est donc
+pas le goulot : c'est la **couverture** du catalogue professionnel.
+
+C'est la vraie découverte de ce chantier, et elle dépasse les prix : un client
+professionnel qui commande d'après cette plaquette ne trouvera pas les deux
+tiers des articles. Aucun import n'y change quoi que ce soit.
+
+⚠️ Ces chiffres viennent de la base de **dev**, clonée de la production à une
+date inconnue. Relancer le compte rendu contre la production avant d'en tirer
+une conclusion commerciale.

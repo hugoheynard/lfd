@@ -1,6 +1,23 @@
 import type { B2bExclusionReason } from './b2b-channel-api';
 
 /**
+ * 🔴 **Un BROUILLON part quand même à la boutique professionnelle.**
+ *
+ * Ce n'est pas un motif d'exclusion — c'est l'inverse : la projection B2B ne
+ * consulte JAMAIS le statut de la fiche. Elle part de l'appartenance au canal
+ * (`publishedProductIds()` rend toutes les liaisons, quel que soit le statut),
+ * charge les produits par identifiant (`byIds` ne filtre que sur l'id), et ne
+ * regarde ensuite que la matrice, le tarif et le taux. Un brouillon dont le
+ * canal est ouvert est donc VENDU aux professionnels (vérifié le 2026-09-13 ;
+ * l'écart est déjà nommé dans `ecrans-du-cycle-catalogue.md`).
+ *
+ * Aucun aperçu ne peut le dire, puisque rien ne l'écarte. C'est l'écran qui doit
+ * le voir — et c'est pour ça que ce motif est fabriqué ICI plutôt que reçu du
+ * serveur.
+ */
+const BROUILLON_VENDU = 'brouillon_vendu_aux_pros';
+
+/**
  * Le motif d'exclusion, dit en français plutôt qu'en clé technique.
  *
  * 🔴 **Une seule table pour tous les écrans qui la lisent.** Elle vivait dans
@@ -25,6 +42,18 @@ export const REASON_LABELS: Readonly<Record<B2bExclusionReason, string>> = {
 };
 
 /**
+ * Le seul motif que l'ÉCRAN fabrique, faute que le serveur puisse le dire.
+ *
+ * Séparé de la table du contrat, et volontairement : celle-ci traduit une union
+ * fermée que le référentiel produit. Y glisser une clé qu'il n'émet jamais
+ * ferait croire qu'il peut l'émettre — et le prochain qui cherchera d'où elle
+ * vient ouvrira `projection.ts` pour rien.
+ */
+const LABELS_ECRAN: Readonly<Record<string, string>> = {
+  [BROUILLON_VENDU]: 'brouillon, et pourtant vendu aux pros',
+};
+
+/**
  * « On ne la vend pas aux professionnels » — le refus qui n'en est pas un.
  *
  * Écrit une fois, et typé sur l'union pour qu'un renommage du motif casse ici
@@ -44,12 +73,13 @@ export const CHANNEL_CLOSED: B2bExclusionReason = 'canal_ferme';
  * disparaître.
  */
 export function reasonLabel(reason: string): string {
-  return REASON_LABELS[reason as B2bExclusionReason] ?? reason;
+  return REASON_LABELS[reason as B2bExclusionReason] ?? LABELS_ECRAN[reason] ?? reason;
 }
 
 /** Une fiche minimale — tout ce que ces fonctions ont besoin de savoir d'un produit. */
 export interface ExcludableProduct {
   readonly sku: string;
+  readonly status: string;
   readonly variants: readonly { readonly sku: string }[];
 }
 
@@ -96,8 +126,22 @@ export function exclusionIndex(
 export function blockersOf(
   product: ExcludableProduct,
   index: ReadonlyMap<string, string>,
+  /** La fiche est-elle ouverte sur le canal professionnel ? */
+  surLeCanalB2b = false,
 ): readonly Blocker[] {
   const blockers: Blocker[] = [];
+  // En PREMIER, et ce n'est pas un ordre d'affichage : un brouillon qui part en
+  // vente est une anomalie d'une autre nature que « il manque un tarif ». Les
+  // autres motifs disent pourquoi une fiche ne partira PAS ; celui-ci dit
+  // qu'elle part alors qu'elle ne devrait pas.
+  if (surLeCanalB2b && product.status === 'draft') {
+    blockers.push({
+      sku: product.sku,
+      reason: BROUILLON_VENDU,
+      label: reasonLabel(BROUILLON_VENDU),
+      wholeProduct: true,
+    });
+  }
   const own = index.get(product.sku);
   if (own !== undefined) {
     blockers.push({ sku: product.sku, reason: own, label: reasonLabel(own), wholeProduct: true });

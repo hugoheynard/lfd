@@ -26,7 +26,9 @@
     "prisma/seed-pim.ts",
     "prisma/seed-delivery.ts",
     "prisma/seed-pim",
-    "prisma/seed-growth/fake-document-store.ts"
+    "prisma/seed-growth/fake-document-store.ts",
+    "prisma/import-mercuriale.ts",
+    "prisma/mercuriale"
   ],
   "exclude": ["dist", "dist-seed", "node_modules", "test", "**/*.spec.ts"]
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { blockersOf, exclusionIndex } from '../../channels/b2b-exclusions';
 import { b2bChannelState } from '../products-page/products-page';
 
-const PRODUCT = { sku: 'CHO-002', variants: [{ sku: 'CHO-002-1' }] };
+const PRODUCT = { sku: 'CHO-002', status: 'published', variants: [{ sku: 'CHO-002-1' }] };
 
 /** Les refus de l'aperçu pour cette fiche, à partir des motifs bruts. */
 function blockers(...reasons: readonly string[]) {

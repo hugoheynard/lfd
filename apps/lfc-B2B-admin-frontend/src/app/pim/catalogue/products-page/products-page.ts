@@ -282,7 +282,16 @@ export class ProductsPage {
    */
   private readonly blockersById = computed(() => {
     const index = this.exclusions();
-    return new Map(this.products().map((product) => [product.id, blockersOf(product, index)]));
+    const membres = this.membershipById();
+    return new Map(
+      this.products().map((product) => [
+        product.id,
+        // L'appartenance au canal est passée : un brouillon HORS canal ne part
+        // nulle part et n'a rien à signaler. C'est le couple « brouillon » ET
+        // « canal ouvert » qui est l'anomalie.
+        blockersOf(product, index, membres.has(product.id)),
+      ]),
+    );
   });
 
   /** Ce qui manque à cette fiche — la décision de ne pas la vendre exclue. */

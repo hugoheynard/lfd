@@ -12,8 +12,11 @@ import {
 /** Une fiche et sa déclinaison, dans la forme minimale que ces fonctions lisent. */
 const PRODUCT = {
   sku: 'P-8EMFGZ',
+  status: 'published',
   variants: [{ sku: 'P-8EMFGZ-1' }, { sku: 'P-8EMFGZ-2' }],
 };
+
+const BROUILLON = { ...PRODUCT, status: 'draft' };
 
 describe('les refus de la projection B2B, vus de la table', () => {
   it('remonte le refus de la fiche AVANT celui de ses déclinaisons', () => {
@@ -124,5 +127,53 @@ describe('la traduction des motifs', () => {
     for (const [reason, label] of Object.entries(REASON_LABELS)) {
       expect(label, `« ${reason} » n'est pas traduit`).not.toBe('');
     }
+  });
+});
+
+describe('le brouillon vendu aux professionnels', () => {
+  /**
+   * 🔴 Le motif que le serveur ne peut PAS produire : la projection B2B ne
+   * consulte jamais le statut de la fiche. Un brouillon dont le canal est
+   * ouvert n'est pas écarté — il PART. Aucun aperçu ne le dira, puisque rien ne
+   * l'exclut ; c'est l'écran qui doit le voir.
+   */
+  it('signale un brouillon dont le canal est ouvert', () => {
+    const blockers = blockersOf(BROUILLON, exclusionIndex([]), true);
+
+    expect(blockers).toHaveLength(1);
+    expect(blockers[0]?.label).toBe('brouillon, et pourtant vendu aux pros');
+    expect(blockers[0]?.wholeProduct).toBe(true);
+  });
+
+  /** Hors canal, il ne part nulle part : il n'y a rien à signaler. */
+  it('se tait sur un brouillon hors canal', () => {
+    expect(blockersOf(BROUILLON, exclusionIndex([]), false)).toEqual([]);
+  });
+
+  it('se tait sur une fiche en vente, canal ouvert', () => {
+    expect(blockersOf(PRODUCT, exclusionIndex([]), true)).toEqual([]);
+  });
+
+  /**
+   * Il vient EN PREMIER, et ce n'est pas un ordre d'affichage : les autres
+   * motifs disent pourquoi une fiche ne partira pas, celui-ci dit qu'elle part
+   * alors qu'elle ne devrait pas. On lit l'anomalie avant le manque.
+   */
+  it('passe devant les motifs de la projection', () => {
+    const blockers = blockersOf(
+      BROUILLON,
+      exclusionIndex([{ sku: 'P-8EMFGZ-1', reason: 'variant_sans_prix' }]),
+      true,
+    );
+
+    expect(blockers.map((b) => b.label)).toEqual([
+      'brouillon, et pourtant vendu aux pros',
+      'pas de tarif',
+    ]);
+  });
+
+  /** Ce n'est PAS une décision comme « non vendue aux pros » : il descend dans la note. */
+  it('descend dans la note de ligne', () => {
+    expect(faultsOf(blockersOf(BROUILLON, exclusionIndex([]), true))).toHaveLength(1);
   });
 });
