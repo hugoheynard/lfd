@@ -3,14 +3,51 @@
 ✅ **Vérifié le 2026-08-13.** Chaque geste est suivi de son **contrôle**. Un
 déploiement vert ne prouve rien tout seul — cette page existe pour ça.
 
+⚠️ **Deux gestes de la section « Déployer » étaient faux, et l'ont été pendant
+deux déploiements** : la commande de fusion et l'adresse du back-office. Tous
+deux corrigés et **rejoués** le 2026-09-13, à l'occasion de la promotion
+`544c54e6`. Le reste de la page n'a pas été revérifié à cette date — une page
+qu'on lit sous pression mérite qu'on sache jusqu'où elle a été éprouvée.
+
 ## Déployer
 
 Tout part d'un merge dans `main`. Les filtres de chemins choisissent quoi
 redéployer.
 
 ```bash
-git checkout main && git merge --ff-only dev && git push
+git checkout main && git merge --no-ff dev -F <message> && git push
 ```
+
+🔴 **`--ff-only` échoue, et c'est normal.** Cette page a prescrit
+`git merge --ff-only dev` jusqu'au 2026-09-13. La commande ne marche plus depuis
+qu'une promotion a été faite par commit de fusion : `main` porte alors un commit
+que `dev` ne contient pas, et l'avance rapide devient impossible **pour
+toujours**. Les trois promotions de `main` sont des `merge(dev): …`
+(`07c963aa`, `459c511a`, `544c54e6`) — la consigne décrivait donc un geste que
+personne n'avait pu suivre depuis deux déploiements, et qu'on découvrait au
+moment de déployer.
+
+**Avant de fusionner, vérifier qu'on n'écrase rien** — c'est ce que `--ff-only`
+garantissait gratuitement, et qu'un merge ordinaire ne garantit plus :
+
+```bash
+git log --oneline --no-merges dev..main   # doit être VIDE : aucun contenu propre à main
+git diff dev main --stat                  # après le merge : doit être VIDE
+```
+
+Le premier dit qu'aucun correctif n'a été posé directement sur `main` ; le
+second, une fois la fusion faite, que les deux branches portent le même arbre.
+Une sortie non vide au premier ⇒ **ne pas fusionner** : reporter d'abord sur
+`dev`, sans quoi la fusion réintroduit l'ancien état du fichier concerné.
+
+Le message suit la forme des précédents : `merge(dev): <ce que la promotion
+emporte>`, et il dit ce qui a été **contrôlé** avant — portes, tests, et le
+verdict du lecteur de migrations.
+
+⚠️ Le hook de pré-push avertit « aucune CI trouvée sur ce commit — poussez
+d'abord sur dev » : le commit de FUSION n'existe sur aucune branche déjà passée
+en CI, il n'a donc rien à interroger. C'est attendu tant que `dev` a été poussé
+et vert juste avant ; ça ne l'est pas autrement.
 
 **Contrôle** — pour un backend, lire l'étape « Migrer la base » :
 
@@ -34,11 +71,33 @@ gh workflow run deploy_lfd_api.yml --ref main
 la configuration :
 
 ```bash
-curl -s https://lfc-b2b-admin.pages.dev/ | grep -oE 'main-[A-Z0-9]+\.js' | head -1
+curl -s https://lfd-backoffice.pages.dev/ | grep -oE 'main-[A-Z0-9]+\.js' | head -1
+curl -s https://lfc-b2b-eu7.pages.dev/    | grep -oE 'main-[A-Z0-9]+\.js' | head -1
 ```
 
 puis chercher l'URL attendue dans ce fichier. C'est le seul contrôle qui
 distingue « déployé » de « configuré ».
+
+🔴 **L'adresse du back-office était FAUSSE ici jusqu'au 2026-09-13** :
+`lfc-b2b-admin.pages.dev`, qui ne résout plus. `curl` rend alors `000` et une
+sortie vide — c'est-à-dire exactement ce que rendrait un front mort. Un contrôle
+qui échoue comme la panne qu'il cherche est pire que pas de contrôle. Le projet
+Pages s'appelle **`lfd-backoffice`** — la section sur les URL de rappel Auth0,
+plus bas dans cette page, le disait déjà : le document se contredisait avec
+lui-même. La boutique, elle, est bien `lfc-b2b-eu7`.
+
+⚠️ L'ancienne origine reste **autorisée au CORS** (vérifié le 2026-09-13 :
+la passerelle renvoie son `access-control-allow-origin` pour les deux). Une
+adresse morte qu'on laisse dans une liste blanche ne gêne personne aujourd'hui
+et ne s'explique plus dans six mois.
+
+⚠️ **Chercher la chaîne attendue dans le BON fichier.** Les deux fronts
+découpent en chunks paresseux : `main-*.js` ne porte que ce qui est chargé au
+démarrage — les routes, et rien des écrans. Un libellé d'écran (« Passer une
+commande ») est absent de `main` **même dans un build correct**. Pour prouver
+qu'une version est servie, viser ce qui vit dans `main` — un chemin de route,
+une URL d'API — ou télécharger le chunk concerné. Le 2026-09-13, le contrôle
+fait sur `main` a conclu à tort que le déploiement n'était pas passé.
 
 ## Vérifier que le mur tient
 
