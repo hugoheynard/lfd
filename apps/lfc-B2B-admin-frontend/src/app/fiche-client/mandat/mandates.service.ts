@@ -63,6 +63,26 @@ export class MandatesService {
     );
   }
 
+  /**
+   * Envoie au client **son mandat à signer**, en pièce jointe.
+   *
+   * ⚠️ Aucun retour arrière : un courriel parti est parti. L'appelant confirme
+   * avant, jamais après — l'idempotence du serveur empêche le doublon, pas le
+   * regret.
+   *
+   * Le serveur refuse un mandat non frappé (il porterait le filigrane EXEMPLE)
+   * et un mandat déjà signé (un second exemplaire de la même référence
+   * circulerait).
+   */
+  async send(companyId: string, mandateId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/mandate/${mandateId}/send`,
+        {},
+      ),
+    );
+  }
+
   /** Dépose (ou remplace) le scan du mandat signé. */
   async uploadProof(companyId: string, file: File): Promise<void> {
     const body = new FormData();

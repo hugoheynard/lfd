@@ -26,12 +26,18 @@ import {
   FoldDangerZoneComponent,
   FoldElementTitleComponent,
   FoldInlineConfirmComponent,
+  FoldPanelHostService,
   FoldPageSectionComponent,
   FoldTimelineComponent,
   type FoldTimelineNode,
 } from 'fold-ng';
 
 import { saveBlob } from '../../shared/download/save-blob';
+import {
+  MandatePreviewPanel,
+  type MandatePreviewPanelData,
+} from '../mandate-preview-panel/mandate-preview-panel';
+import { ProofPanel, type ProofPanelData } from '../proof-panel/proof-panel';
 import { BankAccountSection } from '../bank-account-section/bank-account-section';
 import { MandateOptionsSection } from '../mandate-options-section/mandate-options-section';
 import { NotifyService } from '../../notify.service';
@@ -379,6 +385,37 @@ export class PaiementSection {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  private readonly panels = inject(FoldPanelHostService);
+
+  /**
+   * Ouvre le mandat émis — le voir, le télécharger, l'envoyer au client.
+   *
+   * Le panneau relit le mandat lui-même plutôt que de le recevoir : deux écrans
+   * l'ouvrent, et faire descendre l'état par les deux aurait donné deux sources
+   * de vérité sur « ce document est-il signable ».
+   */
+  protected openMandate(): void {
+    const id = this.companyId();
+    if (id === null) {
+      return;
+    }
+    this.panels.open<MandatePreviewPanelData>(MandatePreviewPanel, {
+      data: { companyId: id, companyLabel: this.companyName() },
+    });
+  }
+
+  /** Ouvre le scan déposé — le voir avant de le télécharger. */
+  protected openProof(): void {
+    const id = this.companyId();
+    const mandate = this.mandate();
+    if (id === null || mandate === null) {
+      return;
+    }
+    this.panels.open<ProofPanelData>(ProofPanel, {
+      data: { companyId: id, fileName: mandate.proofFileName },
+    });
   }
 
   /** La date saisie pour la signature — `AAAA-MM-JJ`, celle du papier. */

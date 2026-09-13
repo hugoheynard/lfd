@@ -1,0 +1,14 @@
+/* Même cadre que l'aperçu du mandat, et pour la même raison : une page A4 se lit
+   en hauteur. `object-fit: contain` pour la photo — une pièce redressée au
+   téléphone n'a pas le rapport d'une page, et la déformer rendrait une signature
+   illisible. */
+.pp-page {
+  display: block;
+  width: 100%;
+  height: min(82vh, 72rem);
+  min-height: 28rem;
+  object-fit: contain;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
+}

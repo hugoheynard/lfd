@@ -4,12 +4,24 @@
   <!-- 🔴 Dit AVANT le document, pas après. Le filigrane « EXEMPLE » voyage avec
        le fichier ; cette phrase voyage avec le geste, et c'est elle qu'on lit
        avant de cliquer sur « Télécharger ». -->
-  <fold-callout appearance="inset" variant="warning">
-    <strong>Ce document ne se signe pas.</strong> Aucune référence de mandat (RUM) n'est encore
-    frappée&nbsp;: une signature apposée ici créerait une autorisation sans référence, inutilisable
-    — mais que le client croirait avoir donnée. Cet aperçu sert à
-    <strong>relire les informations</strong> avant de faire imprimer le vrai.
-  </fold-callout>
+  @if (issued()) {
+    <!-- 🔴 L'inverse de l'avertissement d'en dessous, et pour la même raison :
+         ce qu'on dit du document doit suivre ce que le document EST. -->
+    <fold-callout appearance="inset" variant="success">
+      <strong>Ce mandat est prêt à signer.</strong> Il porte la référence
+      <strong>{{ mandate()?.reference }}</strong> et n'a plus de mention EXEMPLE. Le client doit le
+      dater, le signer, nous le renvoyer scanné — et
+      <strong>déclarer cette référence à sa banque</strong>, sans quoi le premier prélèvement sera
+      refusé.
+    </fold-callout>
+  } @else {
+    <fold-callout appearance="inset" variant="warning">
+      <strong>Ce document ne se signe pas.</strong> Aucune référence de mandat (RUM) n'est encore
+      frappée&nbsp;: une signature apposée ici créerait une autorisation sans référence,
+      inutilisable — mais que le client croirait avoir donnée. Cet aperçu sert à
+      <strong>relire les informations</strong> avant de faire imprimer le vrai.
+    </fold-callout>
+  }
 
   @switch (state()) {
     @case ('loading') {
@@ -34,5 +46,33 @@
 
 <fold-panel-footer align="between">
   <button foldButton emphasis="outline" intent="neutral" (click)="close()">Fermer</button>
-  <button foldButton [disabled]="state() !== 'ready'" (click)="download()">Télécharger</button>
+  <div class="mp-actions">
+    <button foldButton emphasis="outline" [disabled]="state() !== 'ready'" (click)="download()">
+      Télécharger
+    </button>
+    @if (issued()) {
+      <!-- ⚠️ En DEUX temps : c'est le seul geste de cette fiche qui atteigne
+           quelqu'un d'extérieur, et un courriel parti est parti. -->
+      @if (confirming()) {
+        <fold-inline-confirm
+          [open]="true"
+          [loading]="sending()"
+          message="Envoyer ce mandat au client par courriel ?"
+          (confirmed)="send()"
+          (cancelled)="confirming.set(false)"
+        >
+          <span hidden></span>
+        </fold-inline-confirm>
+      } @else {
+        <button
+          foldButton
+          intent="primary"
+          [disabled]="state() !== 'ready'"
+          (click)="confirming.set(true)"
+        >
+          Envoyer au client
+        </button>
+      }
+    }
+  </div>
 </fold-panel-footer>

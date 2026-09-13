@@ -357,8 +357,14 @@ function watermark(doc: Doc): void {
 }
 
 /** Le bandeau de titre, hors cadre — comme sur le modèle. */
-function title(doc: Doc): number {
-  put(doc, "MANDAT SEPA (exemple - document non contractuel)", BOX_LEFT, 9 * MM, {
+function title(doc: Doc, issued: boolean): number {
+  // Le sous-titre disparaît AVEC le filigrane, et pour la même raison : les deux
+  // disent « ceci ne se signe pas ». En laisser un seul ferait un document qui
+  // se contredit — et c'est le texte, pas le filigrane, qu'un client lit.
+  const heading = issued
+    ? "MANDAT DE PRELEVEMENT SEPA"
+    : "MANDAT SEPA (exemple - document non contractuel)";
+  put(doc, heading, BOX_LEFT, 9 * MM, {
     size: 11.5,
     font: BOLD,
     width: BOX_RIGHT - BOX_LEFT,
@@ -368,16 +374,23 @@ function title(doc: Doc): number {
 }
 
 /**
- * La ligne d'en-tête : trois cellules. La RUM reste **vide** — elle est frappée
- * à la création du mandat, donc elle n'existe pas sur un exemplaire vierge.
+ * La ligne d'en-tête : trois cellules, dont le peigne de la **RUM**.
+ *
+ * Le peigne reste vide sur un exemplaire vierge — la référence est frappée à la
+ * création du mandat, elle n'existe donc pas avant. Sur un mandat émis, elle
+ * s'imprime case par case.
+ *
+ * 🔴 `comb` **refuse** au-delà de 26 caractères plutôt que de tronquer : c'est
+ * la borne du peigne, et une RUM rognée en silence serait imprimée fausse sur un
+ * papier signé. Voir `documentation/comptabilite/rum.md` §2.
  */
-function header(doc: Doc, top: number, logo: Buffer | null): number {
+function header(doc: Doc, top: number, logo: Buffer | null, reference: string): number {
   const bottom = top + 19 * MM;
   vline(doc, HEAD_SPLIT_LEFT, top, bottom, HAIRLINE);
   vline(doc, HEAD_SPLIT_RIGHT, top, bottom, HAIRLINE);
 
   put(doc, "MANDAT de Prélèvement SEPA", FIELD_X + 1 * MM, top + 2 * MM, { size: 11, font: BOLD });
-  comb(doc, FIELD_X + 1 * MM, top + 7 * MM, [26]);
+  comb(doc, FIELD_X + 1 * MM, top + 7 * MM, [26], reference, "La référence unique de mandat");
   caption(doc, "Référence unique du mandat", FIELD_X + 1 * MM, top + 12 * MM);
 
   // La cellule de droite porte « Nom du créancier et logo » sur le modèle
@@ -784,10 +797,18 @@ function draw(
   creditor: CreditorSnapshot,
   logo: Buffer | null,
   debtor: DebtorSnapshot | null,
+  issuance: MandateIssuance | null,
 ): void {
-  watermark(doc);
-  const top = title(doc);
-  let y = header(doc, top, logo);
+  // 🔴 **Le filigrane et la RUM sont liés par construction.** Il tombe si, et
+  // seulement si, une référence est imprimée. Les découpler laisserait sortir un
+  // document d'apparence signable et sans référence — que le client signerait,
+  // et qui ne vaudrait rien : une autorisation qu'il ne peut opposer à sa banque
+  // et que nous ne pouvons rattacher à aucun prélèvement.
+  if (issuance === null) {
+    watermark(doc);
+  }
+  const top = title(doc, issuance !== null);
+  let y = header(doc, top, logo, issuance?.reference ?? "");
   y = authorization(doc, y, creditorNameOn(creditor));
   y = debtorZones(doc, y, debtor);
   y = creditorZones(doc, y, creditor);
@@ -817,10 +838,36 @@ function draw(
  * `legal_entities` avait justement évitée en base. `null` laisse la cellule
  * vide, sans placeholder — voir {@link header}.
  */
+/**
+ * Ce qui transforme un exemplaire en **document signable** : une RUM.
+ *
+ * Un seul champ, et c'est voulu — tout le reste du mandat existe déjà sans lui.
+ * Le jour où l'émission portera autre chose (une date d'émission imprimée, un
+ * numéro d'exemplaire), il entrera ici plutôt que de s'ajouter en paramètre.
+ */
+export interface MandateIssuance {
+  /** La RUM, telle qu'elle s'imprimera dans le peigne de 26 cases. */
+  readonly reference: string;
+}
+
+/**
+ * Rend le mandat SEPA.
+ *
+ * 🔴 `issuance` commande **deux** choses d'un seul geste : la référence
+ * imprimée, et la disparition du filigrane EXEMPLE. Les séparer en deux
+ * paramètres permettrait de retirer l'avertissement sans donner de référence,
+ * c'est-à-dire de produire le seul document dangereux que ce rendu puisse
+ * fabriquer.
+ *
+ * ⚠️ **Le rendu n'est plus déterministe quand `issuance` est fourni** : la RUM
+ * porte un tirage et une date de frappe. Les tests qui comparent des octets
+ * doivent viser le cas SANS émission ; le cas avec s'éprouve sur le texte.
+ */
 export async function renderSepaMandatePdf(
   creditor: CreditorSnapshot,
   logo: Buffer | null,
   debtor: DebtorSnapshot | null = null,
+  issuance: MandateIssuance | null = null,
 ): Promise<Buffer> {
   const doc = new PDFDocument({
     size: "A4",
@@ -829,7 +876,10 @@ export async function renderSepaMandatePdf(
     // `pdfkit`, ils porteraient son numéro de version, et une montée de
     // dépendance changerait les octets d'un document qu'on compare.
     info: {
-      Title: `Mandat SEPA (exemple) - ${creditor.name}`,
+      Title:
+        issuance === null
+          ? `Mandat SEPA (exemple) - ${creditor.name}`
+          : `Mandat SEPA ${issuance.reference} - ${creditor.name}`,
       Author: creditor.name,
       Producer: "La Folie Coffee",
       Creator: "La Folie Coffee",
@@ -844,7 +894,7 @@ export async function renderSepaMandatePdf(
       resolve();
     });
   });
-  draw(doc, creditor, logo, debtor);
+  draw(doc, creditor, logo, debtor, issuance);
   doc.end();
   await done;
   return Buffer.concat(chunks);

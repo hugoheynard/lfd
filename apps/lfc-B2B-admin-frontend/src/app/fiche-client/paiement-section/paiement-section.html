@@ -134,6 +134,9 @@
                 <fold-badge content="Déposé" variant="success" />
                 <!-- 🔴 La pièce pouvait ENTRER sans jamais ressortir jusqu'au
                      2026-09-12. En contestation, c'est elle qu'on produit. -->
+                <button foldButton type="button" emphasis="outline" (click)="openProof()">
+                  Voir
+                </button>
                 <button
                   foldButton
                   type="button"
@@ -141,7 +144,7 @@
                   [loading]="busy()"
                   (click)="downloadProof()"
                 >
-                  Récupérer
+                  Télécharger
                 </button>
               }
               <label class="proof-pick">
@@ -154,6 +157,24 @@
               </label>
             </div>
           </div>
+
+          @if (signable()) {
+            <div class="pm-row">
+              <div class="pm-what">
+                <span class="pm-label">Le mandat à faire signer</span>
+                <span class="pm-note">
+                  Il porte la référence <strong>{{ m.reference }}</strong> et n'a plus de mention
+                  EXEMPLE. À relire, puis à envoyer au client — ou à imprimer si vous le remettez en
+                  main propre.
+                </span>
+              </div>
+              <div class="pm-state">
+                <button foldButton emphasis="outline" type="button" (click)="openMandate()">
+                  Voir le mandat
+                </button>
+              </div>
+            </div>
+          }
 
           @if (signable()) {
             <div class="pm-row">

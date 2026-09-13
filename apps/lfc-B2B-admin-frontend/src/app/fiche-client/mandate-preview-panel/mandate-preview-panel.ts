@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   effect,
   inject,
@@ -12,6 +13,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
+  FoldInlineConfirmComponent,
   FoldLoadingStateComponent,
   FoldPanelBodyComponent,
   FoldPanelFooterComponent,
@@ -21,7 +23,11 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
+import type { PaymentMandateView } from '@lfd/contracts';
+
 import { BankAccountService } from '../bank-account/bank-account.service';
+import { MandatesService } from '../mandat/mandates.service';
+import { NotifyService } from '../../notify.service';
 import { saveBlob } from '../../shared/download/save-blob';
 
 /** Ce que la fiche remet au panneau. */
@@ -65,6 +71,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
+    FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
   ],
   templateUrl: './mandate-preview-panel.html',
@@ -95,6 +102,26 @@ export class MandatePreviewPanel implements FoldPanelContent<MandatePreviewPanel
   private objectUrl: string | null = null;
   private blob: Blob | null = null;
 
+  private readonly mandates = inject(MandatesService);
+  private readonly notify = inject(NotifyService);
+
+  /**
+   * Le mandat courant, lu **par le panneau** et non reçu de l'appelant.
+   *
+   * 🔴 Deux écrans l'ouvrent — la fiche et la section des zones facultatives —
+   * et faire descendre le mandat par les deux aurait donné deux sources de
+   * vérité sur « ce document est-il signable ». C'est exactement la question où
+   * se tromper coûte le plus : une seule lecture, faite ici.
+   */
+  protected readonly mandate = signal<PaymentMandateView | null>(null);
+
+  /** Le document porte-t-il une RUM ? Alors il se signe, et le filigrane est tombé. */
+  protected readonly issued = computed(() => this.mandate()?.status === 'draft');
+
+  protected readonly sending = signal(false);
+  /** L'envoi est en DEUX temps : un courriel parti ne se rattrape pas. */
+  protected readonly confirming = signal(false);
+
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.revoke();
@@ -109,8 +136,41 @@ export class MandatePreviewPanel implements FoldPanelContent<MandatePreviewPanel
 
   protected download(): void {
     const opened = this.data();
-    if (this.blob !== null && opened !== undefined) {
-      saveBlob(this.blob, `apercu-mandat-sepa-${opened.companyId}.pdf`);
+    if (this.blob === null || opened === undefined) {
+      return;
+    }
+    // Le nom suit le document : « apercu- » tombe avec le filigrane. Un fichier
+    // rangé sur un bureau perd son contexte, jamais son nom — et c'est le nom
+    // qu'on lit en rouvrant un dossier de téléchargements un mois plus tard.
+    const reference = this.mandate()?.reference ?? opened.companyId;
+    saveBlob(
+      this.blob,
+      this.issued() ? `mandat-sepa-${reference}.pdf` : `apercu-mandat-sepa-${opened.companyId}.pdf`,
+    );
+  }
+
+  /**
+   * Envoie le mandat au client, en pièce jointe.
+   *
+   * ⚠️ **Un courriel parti est parti.** Le geste passe donc par une confirmation
+   * en ligne, et pas par un bouton nu : c'est le seul endroit de cette fiche qui
+   * atteigne quelqu'un d'extérieur.
+   */
+  protected async send(): Promise<void> {
+    const opened = this.data();
+    const mandate = this.mandate();
+    if (opened === undefined || mandate === null) {
+      return;
+    }
+    this.sending.set(true);
+    try {
+      await this.mandates.send(opened.companyId, mandate.id);
+      this.notify.success('Mandat envoyé au client.');
+      this.confirming.set(false);
+    } catch (error) {
+      this.notify.error(error, "Le mandat n'a pas pu être envoyé.");
+    } finally {
+      this.sending.set(false);
     }
   }
 
@@ -128,7 +188,14 @@ export class MandatePreviewPanel implements FoldPanelContent<MandatePreviewPanel
     // « Réessayer ».
     this.revoke();
     try {
-      const blob = await this.accounts.preview(companyId);
+      // Les deux lectures en parallèle : le document, et ce qu'il faut en dire.
+      // En série, le panneau afficherait le PDF avant de savoir s'il se signe —
+      // donc le mauvais avertissement pendant un instant.
+      const [blob, section] = await Promise.all([
+        this.accounts.preview(companyId),
+        this.mandates.section(companyId),
+      ]);
+      this.mandate.set(section.mandate);
       this.blob = blob;
       this.objectUrl = URL.createObjectURL(blob);
       // `bypassSecurityTrustResourceUrl` sur une URL D'OBJET que nous venons de

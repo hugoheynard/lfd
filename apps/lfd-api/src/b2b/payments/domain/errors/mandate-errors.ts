@@ -85,6 +85,27 @@ export class MandateDraftAlreadyExistsError extends BusinessError {
 }
 
 /**
+ * On a voulu envoyer un mandat qui n'est pas un brouillon — **409**.
+ *
+ * Deux cas, et le message doit les distinguer parce que le geste de sortie
+ * diffère. Un mandat **non frappé** n'a pas de RUM : l'envoyer ferait parvenir
+ * au client un exemplaire filigrané « EXEMPLE », c'est-à-dire un document qui
+ * dit lui-même qu'il ne se signe pas. Un mandat **déjà signé** ferait circuler
+ * un second exemplaire de la même référence, et c'est celui qui revient en
+ * dernier qui gagnerait — sur une autorisation qu'on oppose en contestation.
+ */
+export class MandateNotSendableError extends BusinessError {
+  constructor(status: string) {
+    super(
+      "payments.mandate.not_sendable",
+      status === "active"
+        ? "Ce mandat est déjà signé : le renvoyer ferait circuler un second exemplaire de la même référence."
+        : `Un mandat « ${status} » ne s'envoie pas — seul un mandat frappé et non signé attend une signature.`,
+    );
+  }
+}
+
+/**
  * On a voulu signer un mandat qui n'est pas un brouillon — **409**.
  *
  * Signer, c'est faire passer une autorisation de « imprimée » à « opposable ».

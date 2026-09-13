@@ -36,6 +36,7 @@ import {
   RevokeMandateCommand,
 } from "../application/mandate-commands.js";
 import { MintMandateCommand } from "../application/commands/mint-mandate.command.js";
+import { SendMandateCommand } from "../application/commands/send-mandate.command.js";
 import { SignMandateCommand } from "../application/commands/sign-mandate.command.js";
 import { type MandateProofFile } from "../application/queries/get-mandate-proof.handler.js";
 import { GetMandateProofQuery } from "../application/queries/get-mandate-proof.query.js";
@@ -130,6 +131,29 @@ export class AdminMandatesController {
     const { signedAt } = signMandatePayloadSchema.parse(body);
     await this.commands.execute<SignMandateCommand, void>(
       new SignMandateCommand(companyId, mandateId, signedAt),
+    );
+  }
+
+  /**
+   * Envoie au client **son mandat à signer**, en pièce jointe.
+   *
+   * ⚠️ **Un courriel parti est parti.** Le geste n'a pas de retour arrière, et
+   * l'idempotence du mailer empêche le doublon, pas le regret. C'est l'écran
+   * qui doit demander confirmation, pas cette route — un refus ici arriverait
+   * après l'envoi.
+   *
+   * Le serveur refuse un mandat non frappé (il porterait le filigrane EXEMPLE)
+   * et un mandat déjà signé (un second exemplaire de la même référence
+   * circulerait).
+   */
+  @Post(":companyId/mandate/:mandateId/send")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async send(
+    @Param("companyId") companyId: string,
+    @Param("mandateId") mandateId: string,
+  ): Promise<void> {
+    await this.commands.execute<SendMandateCommand, void>(
+      new SendMandateCommand(companyId, mandateId),
     );
   }
 
