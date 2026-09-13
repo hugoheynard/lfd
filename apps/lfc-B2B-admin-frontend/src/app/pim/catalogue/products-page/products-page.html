@@ -26,6 +26,16 @@
     </fold-callout>
   }
 
+  <!-- Un échec PARTIEL : la liste est là, l'enrichissement manque. Le taire
+       ferait lire l'absence de notes comme « rien ne bloque », ce qui est la
+       façon la plus coûteuse de se tromper sur cet écran. -->
+  @if (previewFailed()) {
+    <fold-callout appearance="inset" variant="warning">
+      L'aperçu d'envoi B2B n'a pas pu être lu : cette liste ne signale donc pas ce qui empêche une
+      fiche de partir. La page <a routerLink="/pim/publication">Publication</a> en dira la raison.
+    </fold-callout>
+  }
+
   @if (categories().length === 0) {
     <fold-callout appearance="inset" variant="warning">
       Créez d'abord une <a routerLink="/pim/categories">catégorie</a> : un produit s'y rattache.
@@ -37,6 +47,7 @@
     [rows]="pagedProducts()"
     [rowKey]="rowKey"
     [rowTone]="rowTone"
+    [rowNote]="hasFaults"
     zebra
     selectable
     [(selected)]="selection"
@@ -138,7 +149,28 @@
          demanderait d'interroger la plateforme fiche par fiche, ce que la frise
          de la fiche produit fait, et pas un tableau. -->
     <ng-template foldCell="b2b" let-p>
-      <fold-badge [content]="b2bLabel(p.id)" [variant]="b2bVariant(p.id)" />
+      <fold-badge [content]="b2bLabel(p)" [variant]="b2bVariant(p)" />
+    </ng-template>
+
+    <!-- LA NOTE DE LIGNE — toujours visible, jamais derrière un chevron.
+         `foldRowDetail` aurait caché un avertissement jusqu'à ce qu'on pense à
+         le demander, ce qui revient à ne pas l'afficher. Elle dit ce qui MANQUE
+         pour partir ; « non vendue aux pros » n'y figure pas, c'est une
+         décision et le badge de la colonne B2B la porte déjà. -->
+    <ng-template foldRowNote let-p>
+      <fold-callout appearance="inset" variant="warning">
+        Ne partira pas vers la boutique professionnelle —
+        @for (fault of rowFaults(p); track fault.sku) {
+          @if (!$first) {
+            <span aria-hidden="true"> · </span>
+          }
+          @if (fault.wholeProduct) {
+            {{ fault.label }}
+          } @else {
+            <strong>{{ fault.sku }}</strong> : {{ fault.label }}
+          }
+        }
+      </fold-callout>
     </ng-template>
 
     <ng-template foldCell="actions" let-p>

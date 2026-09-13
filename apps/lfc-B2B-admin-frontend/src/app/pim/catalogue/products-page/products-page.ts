@@ -9,6 +9,7 @@ import {
   FoldCalloutComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowNoteDirective,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldElementTitleComponent,
@@ -28,6 +29,13 @@ import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { soldContexts, type SoldContext } from '../sold-contexts';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 import { B2bChannelApi, type B2bMembershipView } from '../../channels/b2b-channel-api';
+import {
+  blockersOf,
+  exclusionIndex,
+  faultsOf,
+  isChannelClosed,
+  type Blocker,
+} from '../../channels/b2b-exclusions';
 
 import {
   CatalogueApi,
@@ -56,22 +64,64 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
 /**
  * **Où en est une fiche sur la boutique professionnelle**, vue de la liste.
  *
- * Trois états, et pas quatre : l'acceptation par la plateforme demande un appel
- * par fiche (le port de retour), donc elle vit sur la FRISE de la fiche produit.
- * Annoncer ici « en vente » sans l'avoir vérifié serait dire ce qu'on ne sait
- * pas — la colonne s'arrête donc à ce que l'appartenance et la date de push
- * suffisent à établir.
+ * L'acceptation par la plateforme demande un appel par fiche (le port de
+ * retour), donc elle vit sur la FRISE de la fiche produit. Annoncer ici « en
+ * vente » sans l'avoir vérifié serait dire ce qu'on ne sait pas.
+ *
+ * 🔴 `non_vendue_pro` est le cas qui manquait, et son absence faisait MENTIR la
+ * colonne. Elle lisait la seule **appartenance** au canal — une ligne de
+ * liaison, écrite par « Vendre sur la boutique B2B » — alors que la projection
+ * décide sur la **matrice des contextes de vente**, et son commentaire le dit
+ * en toutes lettres : « la matrice DÉCIDE, elle ne se contente plus de
+ * décrire » (`projection.ts:292`, vérifié le 2026-09-13). Une fiche dont
+ * l'appartenance est ouverte et la matrice fermée s'affichait donc « jamais
+ * poussée » en orange — c'est-à-dire « la décision est prise, le catalogue ne
+ * l'a pas emportée », quand la vérité est l'inverse exact : rien ne l'emportera
+ * jamais. Le badge promettait un retard là où il y a un refus.
+ *
+ * L'état vient de l'aperçu d'envoi, pas d'une seconde lecture de la matrice :
+ * c'est le même fait, dit par celui qui le décide.
  */
-type B2bChannelState = 'hors_canal' | 'jamais_poussee' | 'poussee';
+type B2bChannelState = 'hors_canal' | 'non_vendue_pro' | 'jamais_poussee' | 'poussee';
+
+/**
+ * L'état du badge, **dérivé et rien d'autre** — donc éprouvable sans monter la
+ * page. C'est la règle que le correctif a changée : elle mérite un test qui
+ * échouait avant lui, et un `TestBed` avec six injections n'en aurait pas été un.
+ *
+ * @param membered la fiche a-t-elle une appartenance au canal ?
+ * @param pushedAt la date du dernier envoi, `null` si jamais parti.
+ */
+export function b2bChannelState(
+  membered: boolean,
+  pushedAt: string | null,
+  blockers: readonly Blocker[],
+): B2bChannelState {
+  if (!membered) {
+    return 'hors_canal';
+  }
+  // Avant la date de push, et c'est tout le correctif : une fiche que la
+  // projection refuse n'est pas « en attente d'envoi », elle ne partira pas.
+  // Lire l'aperçu d'abord évite de peindre une étape sur un refus.
+  if (isChannelClosed(blockers)) {
+    return 'non_vendue_pro';
+  }
+  return pushedAt === null ? 'jamais_poussee' : 'poussee';
+}
 
 const B2B_LABELS: Record<B2bChannelState, string> = {
   hors_canal: 'hors canal',
+  non_vendue_pro: 'non vendue aux pros',
   jamais_poussee: 'jamais poussée',
   poussee: 'poussée',
 };
 
 const B2B_VARIANTS: Record<B2bChannelState, FoldBadgeVariant> = {
   hors_canal: 'neutral',
+  // Le canal est ouvert pour elle et elle ne partira pourtant jamais : il faut
+  // aller rouvrir sa matrice. Rouge, parce que c'est une contradiction entre
+  // deux réglages, pas une étape qui reste à faire.
+  non_vendue_pro: 'alert',
   // Décidée mais jamais partie : l'écart que le commercial doit voir, et le seul
   // que cette colonne sache signaler.
   jamais_poussee: 'warning',
@@ -86,6 +136,7 @@ const B2B_VARIANTS: Record<B2bChannelState, FoldBadgeVariant> = {
     FoldPageLayoutComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldDataTableRowNoteDirective,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldBadgeComponent,
@@ -119,6 +170,18 @@ export class ProductsPage {
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
   protected readonly memberships = signal<B2bMembershipView[]>([]);
+  /**
+   * Ce que l'envoi B2B écarterait, par SKU — la source des notes de ligne.
+   *
+   * Vide quand l'aperçu n'a pas pu être lu, et c'est **délibéré** : il réclame
+   * un rapport pro réglé et traverse les deux côtés du canal, donc il échoue là
+   * où la liste des produits marche très bien. Le faire tomber avec elle
+   * priverait d'un écran entier pour un enrichissement. On perd les notes, on
+   * garde le catalogue — et `previewFailed` le dit plutôt que de laisser croire
+   * que tout est en ordre.
+   */
+  private readonly exclusions = signal<ReadonlyMap<string, string>>(new Map());
+  protected readonly previewFailed = signal(false);
   protected readonly rates = signal<VatRate[]>([]);
   protected readonly query = signal('');
   protected readonly page = signal(1);
@@ -210,8 +273,40 @@ export class ProductsPage {
 
   protected readonly rowKey = (product: Product): string => product.id;
 
-  protected readonly rowTone = (product: Product): FoldTableTone =>
-    this.syncStatus(product.id) === 'failed' ? 'alert' : null;
+  /**
+   * Les refus de l'aperçu rangés par fiche, calculés une fois par chargement.
+   *
+   * Un `computed` plutôt qu'un appel par ligne : `rowNote`, `rowTone` et le
+   * gabarit de la note interrogent tous les trois la même fiche, et fold les
+   * appelle à chaque rendu.
+   */
+  private readonly blockersById = computed(() => {
+    const index = this.exclusions();
+    return new Map(this.products().map((product) => [product.id, blockersOf(product, index)]));
+  });
+
+  /** Ce qui manque à cette fiche — la décision de ne pas la vendre exclue. */
+  protected rowFaults(product: Product): readonly Blocker[] {
+    return faultsOf(this.blockersById().get(product.id) ?? []);
+  }
+
+  /**
+   * Quelles lignes portent une note. **Indispensable** : sans ce prédicat, fold
+   * émettrait un `<tr>` par produit — vide pour la plupart, et un lecteur
+   * d'écran annonce une ligne blanche par enregistrement.
+   */
+  protected readonly hasFaults = (product: Product): boolean => this.rowFaults(product).length > 0;
+
+  /**
+   * L'échec de synchro Shopify garde la priorité : c'est une panne, alors qu'un
+   * refus de projection est un état connu du catalogue.
+   */
+  protected readonly rowTone = (product: Product): FoldTableTone => {
+    if (this.syncStatus(product.id) === 'failed') {
+      return 'alert';
+    }
+    return this.hasFaults(product) ? 'warning' : null;
+  };
 
   private readonly bindingById = computed(
     () => new Map(this.bindings().map((binding) => [binding.productId, binding])),
@@ -253,24 +348,32 @@ export class ProductsPage {
     () => new Map(this.memberships().map((entry) => [entry.productId, entry])),
   );
 
-  protected b2bState(productId: string): B2bChannelState {
-    const found = this.membershipById().get(productId);
-    if (found === undefined) {
-      return 'hors_canal';
-    }
-    return found.lastPushedAt === null ? 'jamais_poussee' : 'poussee';
+  protected b2bState(product: Product): B2bChannelState {
+    const found = this.membershipById().get(product.id);
+    return b2bChannelState(
+      found !== undefined,
+      found?.lastPushedAt ?? null,
+      this.blockersById().get(product.id) ?? [],
+    );
   }
 
-  protected b2bLabel(productId: string): string {
-    return B2B_LABELS[this.b2bState(productId)];
+  protected b2bLabel(product: Product): string {
+    return B2B_LABELS[this.b2bState(product)];
   }
 
-  protected b2bVariant(productId: string): FoldBadgeVariant {
-    return B2B_VARIANTS[this.b2bState(productId)];
+  protected b2bVariant(product: Product): FoldBadgeVariant {
+    return B2B_VARIANTS[this.b2bState(product)];
   }
 
+  /**
+   * L'**appartenance** au canal, et elle seule — c'est ce que le menu bascule.
+   *
+   * Elle passait par `b2bState`, qui répond maintenant à une autre question
+   * (« que montre le badge »). Une fiche refusée par la matrice garde son
+   * appartenance : le menu doit donc toujours offrir de la retirer.
+   */
   protected onB2bChannel(productId: string): boolean {
-    return this.b2bState(productId) !== 'hors_canal';
+    return this.membershipById().has(productId);
   }
 
   /**
@@ -433,6 +536,26 @@ export class ProductsPage {
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
       this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+    }
+    await this.reloadPreview();
+  }
+
+  /**
+   * L'aperçu d'envoi, **à part et après** le reste.
+   *
+   * Hors du `Promise.all` à dessein : il a ses propres préconditions (le rapport
+   * pro réglé) et traverse les deux côtés du canal. Le joindre aux autres
+   * lectures ferait tomber la liste des produits entière le jour où l'une
+   * d'elles manque — pour un enrichissement dont on peut se passer.
+   */
+  private async reloadPreview(): Promise<void> {
+    try {
+      const preview = await this.b2b.preview();
+      this.exclusions.set(exclusionIndex(preview.excluded));
+      this.previewFailed.set(false);
+    } catch {
+      this.exclusions.set(new Map());
+      this.previewFailed.set(true);
     }
   }
 }
