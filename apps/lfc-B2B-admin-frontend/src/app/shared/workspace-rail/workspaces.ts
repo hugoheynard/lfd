@@ -344,6 +344,13 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'grid',
     section: 'Contenu',
   },
+  {
+    key: 'cgv',
+    label: 'CGV',
+    link: '/b2b/contenu/cgv',
+    icon: 'contracts',
+    section: 'Contenu',
+  },
 ];
 
 /**

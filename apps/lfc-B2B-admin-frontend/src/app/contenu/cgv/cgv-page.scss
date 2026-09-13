@@ -1,0 +1,44 @@
+/* Le titre et son bouton sur une ligne : le champ prend la largeur, le bouton
+   s'aligne sur la BOÎTE et non sur le bloc — sans quoi il se centre sur
+   l'étiquette et flotte au-dessus du champ. */
+.title-row {
+  display: flex;
+  align-items: end;
+  gap: var(--fold-space-sm);
+}
+
+.title-row fold-input {
+  flex: 1;
+}
+
+/* Les quatre gestes d'un article, serrés : ils vivent dans l'en-tête de la
+   carte et n'ont pas à peser autant que son titre. */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+/* Le corps tel qu'il sera lu : les retours à la ligne du rédacteur sont du
+   contenu, pas de la mise en forme — les écraser ferait relire un mur. */
+.article-body {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--fold-color-text-muted);
+  line-height: var(--fold-leading-relaxed);
+}
+
+/* LES TROIS LANGUES CÔTE À CÔTE tant que l'écran le permet : c'est la forme du
+   formulaire qui dit qu'on les écrit ensemble. Repliées, elles restent les
+   trois, l'une sous l'autre. */
+.languages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--fold-space-md);
+}

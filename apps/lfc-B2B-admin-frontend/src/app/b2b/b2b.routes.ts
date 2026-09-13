@@ -32,6 +32,14 @@ export const b2bRoutes: Routes = [
             loadComponent: () =>
               import('../contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
           },
+          {
+            // Les CGV vivent avec le pied de page : même table, même révision,
+            // même doctrine — un article à corriger ne demande ni développeur,
+            // ni revue, ni déploiement.
+            path: 'cgv',
+            title: 'CGV — LFC B2B admin',
+            loadComponent: () => import('../contenu/cgv/cgv-page').then((m) => m.CgvPage),
+          },
         ],
       },
       {

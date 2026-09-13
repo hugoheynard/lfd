@@ -36,6 +36,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
   // groupement, et la table n'inventorie que ce qui s'affiche.
   'b2b/contenu/app-footer': null,
+  'b2b/contenu/cgv': null,
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   'commandes/:orderId': 'b2b_orders:read',
