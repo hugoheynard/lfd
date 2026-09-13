@@ -4,16 +4,22 @@ import { TestBed } from '@angular/core/testing';
 import type { FooterContent, FooterContentView, LegalMentionDisplay } from '@lfd/contracts';
 import {
   DEFAULT_FOOTER_CONTENT,
-  DEFAULT_SALES_TERMS,
   legalMentionLabels,
+  legalMentionOrder,
 } from '@lfd/contracts/content-values';
 import { FoldPanelHostService } from 'fold-ng';
 
-import { SalesTermsPanel } from '../sales-terms-panel/sales-terms-panel';
+import { LegalDocumentPanel } from '../legal-document-panel/legal-document-panel';
 import { ClientFoot } from './client-foot';
 
+/** Ce que le pied a demandé d'ouvrir : le composant, et la mention passée en `data`. */
+interface Ouverture {
+  readonly component: unknown;
+  readonly data: unknown;
+}
+
 describe('le pied de page — la barre légale', () => {
-  let opened: unknown[];
+  let opened: Ouverture[];
   let fixture: ReturnType<typeof TestBed.createComponent<ClientFoot>>;
 
   const boot = (): HTMLElement => {
@@ -27,8 +33,8 @@ describe('le pied de page — la barre légale', () => {
         {
           provide: FoldPanelHostService,
           useValue: {
-            open: (component: unknown) => {
-              opened.push(component);
+            open: (component: unknown, config?: { readonly data?: unknown }) => {
+              opened.push({ component, data: config?.data });
               return { close: () => undefined };
             },
           },
@@ -69,14 +75,16 @@ describe('le pied de page — la barre légale', () => {
     accessibility: !cachees.includes('accessibility'),
   });
 
-  const lienCgv = (host: HTMLElement): HTMLButtonElement | null =>
-    host.querySelector<HTMLButtonElement>('.legal-links button');
+  /** Les liens VIVANTS de la barre — `fold-link` rend un `<button>` en mode bouton. */
+  const liens = (host: HTMLElement): readonly HTMLButtonElement[] => [
+    ...host.querySelectorAll<HTMLButtonElement>('.legal-links button'),
+  ];
 
   const mentionsAffichees = (host: HTMLElement): readonly string[] =>
     [...host.querySelectorAll('.legal-links > *')].map((el) => el.textContent?.trim() ?? '');
 
   afterEach(() => {
-    // Le contenu du pied part au montage ; les CGV, elles, ne partent PAS —
+    // Le contenu du pied part au montage ; les DOCUMENTS, eux, ne partent PAS —
     // c'est tout l'objet du chargement paresseux.
     const http = TestBed.inject(HttpTestingController);
     http.match(() => true);
@@ -88,6 +96,9 @@ describe('le pied de page — la barre légale', () => {
    * CONTRAT, et seul leur affichage vient de la base. Une mention légale porte
    * un nom consacré — le rédacteur l'affiche ou la masque, il ne la renomme
    * pas, et il ne peut plus en inventer une qui n'existe pas.
+   *
+   * Le mot vient du contrat pour les CINQ, CGV comprises : nommer la barre par
+   * le titre des documents obligerait à les charger tous d'avance.
    */
   it('affiche le vocabulaire fermé, dans son ordre, avec les mots du contrat', () => {
     const host = boot();
@@ -95,19 +106,32 @@ describe('le pied de page — la barre légale', () => {
 
     expect(mentionsAffichees(host)).toEqual([
       legalMentionLabels.fr.legalNotice,
-      // Les CGV en deuxième position, et nommées par le TITRE de leur
-      // document : renommer les CGV renomme leur propre lien.
-      DEFAULT_SALES_TERMS.title.fr,
+      legalMentionLabels.fr.salesTerms,
       legalMentionLabels.fr.privacy,
       legalMentionLabels.fr.cookies,
       legalMentionLabels.fr.accessibility,
     ]);
   });
 
-  it('ne rend pas une mention décochée', () => {
+  /**
+   * 🔴 Plus aucun libellé inerte : une mention qu'on affiche est une mention
+   * qu'on peut lire. Le compte s'affirme AVANT toute lecture élément par
+   * élément — une barre vide passerait toutes les assertions d'une boucle.
+   */
+  it('rend les cinq mentions cochées en liens vivants', () => {
+    const host = boot();
+    servirMentions(toutesSauf([]));
+
+    expect(liens(host)).toHaveLength(legalMentionOrder.length);
+    // Aucun texte mort à côté des liens : autant d'enfants que de boutons.
+    expect(mentionsAffichees(host)).toHaveLength(legalMentionOrder.length);
+  });
+
+  it('ne rend rien pour une mention décochée', () => {
     const host = boot();
     servirMentions(toutesSauf(['cookies', 'accessibility']));
 
+    expect(liens(host)).toHaveLength(legalMentionOrder.length - 2);
     const affichees = mentionsAffichees(host);
     expect(affichees).not.toContain(legalMentionLabels.fr.cookies);
     expect(affichees).not.toContain(legalMentionLabels.fr.accessibility);
@@ -119,24 +143,50 @@ describe('le pied de page — la barre légale', () => {
    * maison décide l'affichage, pas une exception. Ce qui reste impossible,
    * c'est d'AJOUTER une mention hors du vocabulaire.
    */
-  it('retire le lien vivant quand les CGV sont décochées', () => {
+  it('retire le lien quand les CGV sont décochées', () => {
     const host = boot();
-    expect(lienCgv(host)).not.toBeNull();
+    expect(mentionsAffichees(host)).toContain(legalMentionLabels.fr.salesTerms);
 
     servirMentions(toutesSauf(['salesTerms']));
 
-    expect(lienCgv(host)).toBeNull();
-    expect(mentionsAffichees(host)).not.toContain(DEFAULT_SALES_TERMS.title.fr);
+    expect(mentionsAffichees(host)).not.toContain(legalMentionLabels.fr.salesTerms);
   });
 
-  it('ouvre le dialogue des conditions, et ne charge rien avant ce clic', () => {
+  /**
+   * Chaque lien ouvre le dialogue de SA mention : c'est la CLÉ qui relie le
+   * lien au document, jamais son texte.
+   */
+  it('ouvre le dialogue de la mention cliquée', () => {
     const host = boot();
-    // Aucune lecture des CGV au rendu : le pied n'a demandé que son contenu.
+    servirMentions(toutesSauf([]));
+
+    const boutons = liens(host);
+    // Le compte d'abord : sans lui, une barre vide rendrait la boucle muette.
+    expect(boutons).toHaveLength(legalMentionOrder.length);
+    for (const [index, bouton] of boutons.entries()) {
+      bouton.click();
+      expect(opened[index]).toEqual({
+        component: LegalDocumentPanel,
+        data: legalMentionOrder[index],
+      });
+    }
+    expect(opened).toHaveLength(legalMentionOrder.length);
+  });
+
+  it('ne charge aucun document avant le premier clic', () => {
+    const host = boot();
+    servirMentions(toutesSauf([]));
+
+    // Le pied n'a demandé que son contenu : les cinq documents dorment.
     const http = TestBed.inject(HttpTestingController);
-    expect(http.match((req) => req.url.includes('sales-terms'))).toHaveLength(0);
+    expect(http.match((req) => req.url.includes('/content/legal/'))).toHaveLength(0);
 
-    lienCgv(host)?.click();
+    const premier = liens(host)[0];
+    expect(premier).toBeDefined();
+    premier?.click();
 
-    expect(opened).toEqual([SalesTermsPanel]);
+    // La lecture appartient au DIALOGUE, pas au pied : celui-ci n'a fait
+    // qu'ouvrir, et l'hôte des panneaux est doublé ici.
+    expect(opened).toHaveLength(1);
   });
 });

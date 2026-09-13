@@ -77,17 +77,13 @@
          une mention qui n'existe pas, et aucun rendu ne pouvait savoir de quoi
          il parlait — donc aucune ne pouvait devenir cliquable. -->
     <nav class="legal-links" aria-label="Mentions">
-      @for (mention of shownMentions(); track mention.key) {
-        @if (mention.key === 'salesTerms') {
-          <!-- La seule mention adossée à un vrai document, donc la seule
-               vivante. Son libellé est le TITRE de ce document : renommer les
-               CGV renomme leur propre lien, sans toucher au pied de page. -->
-          <fold-link tone="muted" (clicked)="openSalesTerms()">{{ mention.label }}</fold-link>
-        } @else {
-          <!-- Inertes tant qu'aucun document ne les porte. Le jour où l'un
-               d'eux existe, il rejoint la branche du dessus par sa CLÉ. -->
-          <span class="link">{{ mention.label }}</span>
-        }
+      <!-- Chacune est VIVANTE : une mention qu'on affiche est une mention qu'on
+           peut lire, et un libellé inerte à côté d'un lien ressemblait plus à un
+           lien que le lien lui-même. Le mot vient du CONTRAT — la barre nomme
+           l'obligation, le document se nomme lui-même dans son dialogue — et
+           c'est la CLÉ qui relie le lien à son document, jamais son texte. -->
+      @for (mention of shownMentions(); track mention) {
+        <fold-link tone="muted" (clicked)="openMention(mention)">{{ label(mention) }}</fold-link>
       }
     </nav>
   </div>

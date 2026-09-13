@@ -1,4 +1,4 @@
-<fold-panel-header [title]="title()" [closeLabel]="t().salesTerms.close" />
+<fold-panel-header [title]="title()" [closeLabel]="t().legalDocument.close" />
 
 <!-- `lang` suit la langue choisie : c'est lui qui donne au navigateur le
      dictionnaire de césure. Un texte justifié sans césure creuse des rivières
@@ -8,11 +8,11 @@
     @case ('failed') {
       <fold-empty-state
         tone="alert"
-        [title]="t().salesTerms.errorTitle"
-        [subtitle]="t().salesTerms.errorSubtitle"
+        [title]="t().legalDocument.errorTitle"
+        [subtitle]="t().legalDocument.errorSubtitle"
       >
         <button foldButton emphasis="outline" intent="neutral" (click)="retry()">
-          {{ t().salesTerms.retry }}
+          {{ t().legalDocument.retry }}
         </button>
       </fold-empty-state>
     }
@@ -20,8 +20,8 @@
       @if (articles().length === 0) {
         <fold-empty-state
           icon="contracts"
-          [title]="t().salesTerms.emptyTitle"
-          [subtitle]="t().salesTerms.emptySubtitle"
+          [title]="t().legalDocument.emptyTitle"
+          [subtitle]="t().legalDocument.emptySubtitle"
         />
       } @else {
         <article class="doc">
@@ -39,7 +39,7 @@
     }
     <!-- `idle` et `loading` disent la même chose au visiteur : ça arrive. -->
     @default {
-      <fold-loading [message]="t().salesTerms.loading" />
+      <fold-loading [message]="t().legalDocument.loading" />
     }
   }
 </div>

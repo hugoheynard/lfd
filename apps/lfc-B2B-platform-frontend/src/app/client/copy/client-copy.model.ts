@@ -487,11 +487,17 @@ export interface ClientCopy {
   };
 
   /**
-   * Le dialogue des conditions générales de vente, ouvert depuis le pied de
-   * page. Le TITRE du document n'est pas ici : il vient de l'API, dans les trois
-   * langues, et c'est lui qui nomme le bouton comme le dialogue.
+   * Le dialogue d'une **mention légale**, ouvert depuis le pied de page — les
+   * cinq le partagent, parce qu'elles ont la même forme. Ces phrases parlent
+   * donc du « document » et jamais des CGV : elles servent aussi bien aux
+   * cookies qu'à l'accessibilité.
+   *
+   * Le TITRE du document n'est pas ici : il vient de l'API, dans les trois
+   * langues, et c'est lui qui nomme le dialogue. Le libellé du LIEN, lui, vient
+   * du contrat (`legalMentionLabels`) : la barre nomme l'obligation, le
+   * document se nomme lui-même.
    */
-  readonly salesTerms: {
+  readonly legalDocument: {
     /** Le nom accessible du bouton de fermeture du panneau. */
     readonly close: string;
     readonly loading: string;

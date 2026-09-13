@@ -364,14 +364,14 @@ export const IT: ClientCopy = {
     at: 'Al',
     cancel: 'Annulla',
   },
-  salesTerms: {
+  legalDocument: {
     close: 'Chiudi',
-    loading: 'Caricamento delle condizioni…',
-    errorTitle: 'Condizioni non disponibili',
+    loading: 'Caricamento del documento…',
+    errorTitle: 'Documento non disponibile',
     errorSubtitle:
       'Non è stato possibile caricare il documento. Riprova tra un istante — o scrivici.',
     retry: 'Riprova',
-    emptyTitle: 'Nessun articolo',
-    emptySubtitle: 'Il documento non contiene ancora alcun articolo.',
+    emptyTitle: 'Documento non pubblicato',
+    emptySubtitle: 'Questa informativa non contiene ancora alcun articolo.',
   },
 };

@@ -10,8 +10,7 @@ import {
 } from '@lfd/contracts/content-values';
 
 import { ClientContent } from '../client-content.service';
-import { ClientSalesTerms } from '../client-sales-terms.service';
-import { SalesTermsPanel } from '../sales-terms-panel/sales-terms-panel';
+import { LegalDocumentPanel } from '../legal-document-panel/legal-document-panel';
 import { LEGAL_YEAR } from './legal-identity';
 
 /**
@@ -40,14 +39,6 @@ import { LEGAL_YEAR } from './legal-identity';
 export class ClientFoot {
   private readonly content = inject(ClientContent);
   private readonly panelHost = inject(FoldPanelHostService);
-  private readonly salesTerms = inject(ClientSalesTerms);
-
-  /**
-   * Le libellé du bouton des CGV : le TITRE du document, dans la langue
-   * courante. Tant que rien n'est chargé — et rien ne l'est avant la première
-   * ouverture — c'est le titre de repli, jamais un trou.
-   */
-  protected readonly salesTermsTitle = this.salesTerms.title;
 
   /** Les textes, servis par l'API — le contenu de départ tant qu'elle n'a pas répondu. */
   protected readonly foot = this.content.footer;
@@ -87,35 +78,36 @@ export class ClientFoot {
   });
 
   /**
-   * Ouvre les conditions générales. C'est CE geste qui déclenche la lecture du
-   * document : le panneau appelle le service, qui ne charge qu'à la première
-   * ouverture.
-   */
-  /**
    * Les mentions à afficher, dans l'ordre du contrat, avec leur mot.
    *
    * L'ORDRE vient du vocabulaire et non de la base : c'est l'ordre d'une barre
    * légale, pas une préférence — et le laisser en donnée aurait rendu possible
    * une barre qui commence par « Cookies ».
    *
-   * Le mot des CGV est le titre de leur document ; celui des autres est fixé
-   * par le contrat. Une mention légale porte un nom consacré, que le rédacteur
-   * affiche ou masque — jamais qu'il renomme.
+   * 🔴 Le mot vient du CONTRAT pour les cinq, TITRE du document compris. Il a
+   * été celui du document pour les CGV, du temps où elles étaient la seule
+   * mention vivante ; à cinq documents, nommer la barre par leurs titres
+   * obligerait à charger les cinq d'avance pour peindre un pied de page que
+   * personne n'a encore ouvert — ce qui ruine le chargement paresseux. Et c'est
+   * juste sur le fond : **la barre nomme l'obligation, le dialogue porte le nom
+   * que le document se donne** (tranché le 2026-09-13).
    */
-  protected readonly shownMentions = computed<readonly { key: LegalMention; label: string }[]>(
-    () => {
-      const shown = this.content.legalMentions();
-      const locale = this.content.locale();
-      return legalMentionOrder
-        .filter((key) => shown[key])
-        .map((key) => ({
-          key,
-          label: key === 'salesTerms' ? this.salesTermsTitle() : legalMentionLabels[locale][key],
-        }));
-    },
-  );
+  protected readonly shownMentions = computed<readonly LegalMention[]>(() => {
+    const shown = this.content.legalMentions();
+    return legalMentionOrder.filter((key) => shown[key]);
+  });
 
-  protected openSalesTerms(): void {
-    this.panelHost.open(SalesTermsPanel);
+  /** Le mot de la mention, dans la langue de la vitrine. */
+  protected label(mention: LegalMention): string {
+    return legalMentionLabels[this.content.locale()][mention];
+  }
+
+  /**
+   * Ouvre le dialogue de CETTE mention. C'est CE geste qui déclenche la lecture
+   * du document : le panneau appelle le service, qui ne charge qu'à la première
+   * ouverture de la mention demandée.
+   */
+  protected openMention(mention: LegalMention): void {
+    this.panelHost.open(LegalDocumentPanel, { data: mention });
   }
 }

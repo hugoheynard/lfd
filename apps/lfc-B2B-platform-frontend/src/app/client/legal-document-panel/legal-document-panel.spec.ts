@@ -5,17 +5,18 @@ import {
   type TestRequest,
 } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { SalesTermsView } from '@lfd/contracts';
-import { DEMO_SALES_TERMS_PARAGRAPHS } from '@lfd/contracts/content-values';
+import type { LegalDocumentView } from '@lfd/contracts';
+import { DEMO_LEGAL_DOCUMENTS, type LegalMention } from '@lfd/contracts/content-values';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { FR } from '../copy/fr';
-import { SalesTermsPanel } from './sales-terms-panel';
+import { LegalDocumentPanel } from './legal-document-panel';
 
-const URL = `${AUTH_CONFIG.apiBaseUrl}/content/sales-terms`;
+/** ⚠️ L'URL porte le mot du CONTRAT (`salesTerms`), pas la clé de stockage. */
+const url = (mention: LegalMention): string => `${AUTH_CONFIG.apiBaseUrl}/content/legal/${mention}`;
 
 /** Deux articles, dans un ordre que seul le document décide. */
-const VIEW: SalesTermsView = {
+const VIEW: LegalDocumentView = {
   content: {
     title: { fr: 'Conditions de vente', en: 'Terms of sale', it: 'Condizioni di vendita' },
     paragraphs: [
@@ -38,8 +39,24 @@ const VIEW: SalesTermsView = {
   updatedBy: null,
 };
 
-describe('le dialogue des conditions générales de vente', () => {
-  let fixture: ComponentFixture<SalesTermsPanel>;
+/** Le document des cookies — il sert à montrer que le dialogue n'est PAS celui des CGV. */
+const COOKIES: LegalDocumentView = {
+  ...VIEW,
+  content: {
+    title: { fr: 'Gestion des cookies', en: 'Cookie policy', it: 'Gestione dei cookie' },
+    paragraphs: [
+      {
+        id: 'p_traceurs',
+        fr: { title: 'Traceurs', body: 'Les traceurs déposés.' },
+        en: { title: 'Trackers', body: 'The trackers set.' },
+        it: { title: 'Traccianti', body: 'I traccianti impostati.' },
+      },
+    ],
+  },
+};
+
+describe('le dialogue d’une mention légale', () => {
+  let fixture: ComponentFixture<LegalDocumentPanel>;
   let http: HttpTestingController;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -52,30 +69,38 @@ describe('le dialogue des conditions générales de vente', () => {
       return `${rank} ${title}`;
     });
 
+  /** Monte le dialogue SUR une mention : c'est la seule chose qui les distingue. */
+  const ouvrir = (mention: LegalMention): void => {
+    fixture = TestBed.createComponent(LegalDocumentPanel);
+    fixture.componentRef.setInput('data', mention);
+    fixture.detectChanges();
+  };
+
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [SalesTermsPanel],
+      imports: [LegalDocumentPanel],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(SalesTermsPanel);
-    fixture.detectChanges();
+    ouvrir('salesTerms');
   });
 
   afterEach(() => http.verify());
 
   /** La requête que l'ouverture déclenche — le chargement est PARESSEUX. */
-  const pending = (): TestRequest => http.expectOne(URL);
+  const pending = (mention: LegalMention = 'salesTerms'): TestRequest =>
+    http.expectOne(url(mention));
 
-  it('lit le document à l’ouverture, et pas avant', () => {
-    // Une seule requête, celle que cette ouverture-ci a déclenchée.
+  it('lit le document de SA mention à l’ouverture, et pas avant', () => {
+    // Une seule requête, celle que cette ouverture-ci a déclenchée, et sur la
+    // mention demandée : un dialogue de cookies ne lit pas les CGV.
     pending().flush(VIEW);
   });
 
   it('montre l’état de chargement fold tant que la réponse n’est pas là', () => {
     expect(el().querySelector('fold-loading')).not.toBeNull();
-    expect(text()).toContain(FR.salesTerms.loading);
+    expect(text()).toContain(FR.legalDocument.loading);
 
     pending().flush(VIEW);
   });
@@ -98,8 +123,25 @@ describe('le dialogue des conditions générales de vente', () => {
   });
 
   /**
-   * 🔴 Le repli sert le TITRE, jamais un article — `DEFAULT_SALES_TERMS` n'en
-   * porte aucun. Une lecture en échec le DIT donc, au lieu de remplir le
+   * La mention est un PARAMÈTRE, pas un composant de plus : le même dialogue
+   * sert les cinq, et il lit celui qu'on lui a donné.
+   */
+  it('sert une autre mention sans rien partager avec les CGV', () => {
+    // Le montage du `beforeEach` a déjà demandé les CGV ; on le solde.
+    pending().flush(VIEW);
+
+    ouvrir('cookies');
+    pending('cookies').flush(COOKIES);
+    fixture.detectChanges();
+
+    expect(text()).toContain('Gestion des cookies');
+    expect(articles()).toEqual(['1. Traceurs']);
+    expect(text()).not.toContain('Le tribunal compétent.');
+  });
+
+  /**
+   * 🔴 Le repli sert le TITRE, jamais un article — `DEFAULT_LEGAL_DOCUMENT`
+   * n'en porte aucun. Une lecture en échec le DIT donc, au lieu de remplir le
    * dialogue : montrer au client un engagement que personne n'a publié serait
    * pire que de lui annoncer une panne.
    *
@@ -114,11 +156,13 @@ describe('le dialogue des conditions générales de vente', () => {
     const state = el().querySelector('fold-empty-state');
     expect(state).not.toBeNull();
     expect(state?.getAttribute('tone')).toBe('alert');
-    expect(text()).toContain(FR.salesTerms.errorTitle);
+    expect(text()).toContain(FR.legalDocument.errorTitle);
 
     // ⚠️ La longueur s'affirme AVANT la boucle : parcourir une liste vide ne
     // refuse rien, et rendrait ce test vert pour la mauvaise raison.
-    const corpsDeDemonstration = DEMO_SALES_TERMS_PARAGRAPHS.map((article) => article.fr.body);
+    const corpsDeDemonstration = DEMO_LEGAL_DOCUMENTS.salesTerms.paragraphs.map(
+      (article) => article.fr.body,
+    );
     expect(corpsDeDemonstration.length).toBeGreaterThan(0);
     for (const corps of corpsDeDemonstration) {
       expect(text()).not.toContain(corps);
@@ -130,7 +174,7 @@ describe('le dialogue des conditions générales de vente', () => {
     fixture.detectChanges();
 
     const retry = el().querySelector<HTMLButtonElement>('fold-empty-state button');
-    expect(retry?.textContent).toContain(FR.salesTerms.retry);
+    expect(retry?.textContent).toContain(FR.legalDocument.retry);
     retry?.click();
     fixture.detectChanges();
 
@@ -144,7 +188,7 @@ describe('le dialogue des conditions générales de vente', () => {
     fixture.detectChanges();
 
     expect(el().querySelector('fold-empty-state')).not.toBeNull();
-    expect(text()).toContain(FR.salesTerms.emptyTitle);
+    expect(text()).toContain(FR.legalDocument.emptyTitle);
   });
 
   it('le corps défile dans son propre conteneur, jamais la page derrière', () => {
