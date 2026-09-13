@@ -9,8 +9,17 @@ import { commercialTimeline } from "../domain/services/commercial-timeline.js";
 import { averageTicket, spendTrend, trendWindows } from "../domain/services/customer-stats.js";
 import { companyStatusOf } from "./company-status.js";
 
-/** Combien de commandes récentes la fiche montre — de quoi ouvrir la conversation. */
-const RECENT_ORDERS = 8;
+/**
+ * Combien de commandes récentes la fiche montre — de quoi ouvrir la conversation.
+ *
+ * **Cinq**, et non huit : la carte les rend toutes, et huit lignes en faisaient
+ * une liste qu'on parcourt au lieu d'un rappel qu'on lit. Ce qui dépasse est à
+ * un clic, dans l'onglet Commandes, qui pagine et filtre. Baisser ce nombre
+ * n'ôte rien à personne d'autre — le seul autre lecteur du champ est la
+ * métrique « Dernière commande » du cockpit, qui ne prend que `[0]`
+ * (vérifié le 2026-09-13).
+ */
+const RECENT_ORDERS = 5;
 
 /**
  * Combien d'interactions l'historique remonte. Borné : au-delà, on ne relit plus
@@ -144,7 +153,7 @@ function toOrderLine(row: {
   id: string;
   orderNumber: string;
   createdAt: Date;
-  status: string;
+  status: CustomerOrderLine["status"];
   totalCents: number;
 }): CustomerOrderLine {
   return {

@@ -15,11 +15,13 @@ import {
   FoldElementTitleComponent,
   FoldInlineConfirmComponent,
 } from 'fold-ng';
-import type { CompanyStatusAction, CustomerSheetView } from '@lfd/contracts';
+import { RouterLink } from '@angular/router';
+import type { CompanyStatusAction, CustomerOrderLine, CustomerSheetView } from '@lfd/contracts';
+import { formatCents, orderStatusLabel, orderStatusVariant } from '@lfd/b2b-ui/order';
 
 import { NotifyService } from '../../../notify.service';
 import { CustomerSheetService } from './customer-sheet.service';
-import { companyStatusLabel, companyStatusTone, euros, membershipAge } from './customer-format';
+import { companyStatusLabel, companyStatusTone, membershipAge } from './customer-format';
 
 /** Les libellés d'état, tels que le commercial les lit. */
 /**
@@ -51,6 +53,7 @@ import { companyStatusLabel, companyStatusTone, euros, membershipAge } from './c
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldInlineConfirmComponent,
+    RouterLink,
   ],
   templateUrl: './customer-sheet.html',
   styleUrl: './customer-sheet.scss',
@@ -86,8 +89,25 @@ export class CustomerSheet {
     () => this.sheet().status === 'active' || this.sheet().status === 'suspended',
   );
 
-  protected euros(cents: number): string {
-    return euros(cents);
+  /**
+   * Le total d'une commande, **au centime**.
+   *
+   * `formatCents` et non le `euros()` de cette fiche, qui arrondit à l'euro : cet
+   * arrondi sert les CUMULS de l'en-tête (« 12 480 € » se retient), et il ment
+   * sur une ligne de commande, qui est un montant facturé. Le client qui appelle
+   * lit ses centimes sur sa facture.
+   */
+  protected money(cents: number): string {
+    return formatCents(cents);
+  }
+
+  /** Le mot français, partagé avec l'écran du client — cf. `@lfd/b2b-ui/order`. */
+  protected orderLabel(status: CustomerOrderLine['status']): string {
+    return orderStatusLabel(status);
+  }
+
+  protected orderTone(status: CustomerOrderLine['status']): ReturnType<typeof orderStatusVariant> {
+    return orderStatusVariant(status);
   }
 
   /** Suspend, réactive ou résilie — et relit la fiche pour afficher l'état réel. */
