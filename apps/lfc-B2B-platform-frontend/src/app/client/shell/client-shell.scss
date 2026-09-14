@@ -77,6 +77,12 @@
   flex: 1;
 }
 
+/* L'échec de lecture des niveaux : aligné sur la gouttière de la page, pour se
+   lire comme le haut de l'écran et non comme un débordement du bandeau. */
+.feature-access-failed {
+  padding: var(--fold-space-md) var(--lfc-inset) 0;
+}
+
 .back {
   flex: none;
   display: grid;

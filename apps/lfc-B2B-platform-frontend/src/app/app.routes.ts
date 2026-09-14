@@ -1,6 +1,7 @@
 import { type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
+import { featureAccessGuard } from './client/feature-access/feature-access.guard';
 import { ClientShell } from './client/shell/client-shell';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
@@ -103,6 +104,12 @@ export const routes: Routes = [
     // routeur revient en arrière et essaie les routes pro qui suivent.
     path: '',
     component: ClientShell,
+    // ⚠️ Chaque enfant dit ce que la BOUTIQUE doit permettre pour s'ouvrir
+    // (plan `plan-inscription-pro-seule.md` §4). Sans garde : joignable à tous
+    // les niveaux — l'entrée, le dossier, et les commandes EXISTANTES (suivi,
+    // QR, règlement, confirmation), que le serveur ne ferme pas non plus. Les
+    // anciennes adresses en fin de liste n'ont pas de garde à elles : une
+    // redirection passe par la garde de sa cible.
     children: [
       {
         // LA RACINE : qui arrive sur le site tombe ici. Une redirection plutôt
@@ -121,11 +128,24 @@ export const routes: Routes = [
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
+        // LA PORTE PRO : le lien que donne la commerciale (plan
+        // `plan-inscription-pro-seule.md` §3). Sans garde : on ouvre son compte
+        // à tous les niveaux de la boutique, c'est même tout l'intérêt quand
+        // elle est fermée.
+        path: 'ouverture-compte-pro',
+        title: 'Ouverture de compte pro — La Folie Coffee',
+        loadComponent: () =>
+          import('./login/ouverture-compte-pro-page/ouverture-compte-pro-page').then(
+            (m) => m.OuvertureCompteProPage,
+          ),
+      },
+      {
         // L'ACCUEIL DU CLIENT RECONNU. Il répond à une seule question — qu'est-ce
         // qui m'attend aujourd'hui ? — et c'est là qu'on atterrit après la
         // connexion, sauf pendant le parcours de première commande, qui a sa
         // propre suite d'écrans.
         path: 'mon-espace',
+        canActivate: [featureAccessGuard('shop', 'browse')],
         title: 'Mon espace — La Folie Coffee',
         loadComponent: () =>
           import('./client/mon-espace/espace-page/espace-page').then((m) => m.EspacePage),
@@ -163,6 +183,7 @@ export const routes: Routes = [
         // question du parcours, avant le catalogue — ce qui est en stock, à
         // quelle heure et à quel prix dépend du mode de service.
         path: 'nouvelle-commande',
+        canActivate: [featureAccessGuard('shop', 'order')],
         title: 'Commander — La Folie Coffee',
         loadComponent: () =>
           import('./client/nouvelle-commande/commande-page/commande-page').then(
@@ -176,11 +197,13 @@ export const routes: Routes = [
         // `/boutique` reste la boutique PRO — deux produits, deux catalogues,
         // deux adresses.
         path: 'nouvelle-commande/boutique',
+        canActivate: [featureAccessGuard('shop', 'browse')],
         title: 'Boutique — La Folie Coffee',
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
       },
       {
         path: 'nouvelle-commande/panier',
+        canActivate: [featureAccessGuard('shop', 'order')],
         title: 'Mon panier — La Folie Coffee',
         loadComponent: () =>
           import('./client/cart/panier-page/panier-page').then((m) => m.PanierPage),

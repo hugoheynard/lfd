@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 
 /**
  * « Mes données » — deux moitiés, et la seconde a son propre territoire.
@@ -23,4 +24,5 @@ import { ClientCopyService } from '../../copy/client-copy.service';
 })
 export class DataCard {
   protected readonly t = inject(ClientCopyService).t;
+  protected readonly access = inject(ClientFeatureAccess);
 }

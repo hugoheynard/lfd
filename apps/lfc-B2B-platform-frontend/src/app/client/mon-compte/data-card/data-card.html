@@ -1,12 +1,16 @@
 <div class="data-row">
   <div class="exports">
-    <button class="export" type="button">
-      <span class="export-lines">
-        <span class="export-title">{{ t().account.dataExportOrders }}</span>
-        <span class="export-note">{{ t().account.dataExportOrdersSub }}</span>
-      </span>
-      <fold-icon name="chevron-right" />
-    </button>
+    <!-- L'export des commandes suit la boutique (plan §4) : sous le niveau où
+         l'on commande, il n'est pas offert. -->
+    @if (access.atLeast('order')) {
+      <button class="export" type="button">
+        <span class="export-lines">
+          <span class="export-title">{{ t().account.dataExportOrders }}</span>
+          <span class="export-note">{{ t().account.dataExportOrdersSub }}</span>
+        </span>
+        <fold-icon name="chevron-right" />
+      </button>
+    }
     <button class="export" type="button">
       <span class="export-lines">
         <span class="export-title">{{ t().account.dataExportPersonal }}</span>

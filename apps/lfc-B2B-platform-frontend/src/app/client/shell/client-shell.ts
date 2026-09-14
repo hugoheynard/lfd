@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { FoldAppShellComponent, FoldIconComponent, FoldPanelHostComponent } from 'fold-ng';
+import {
+  FoldAppShellComponent,
+  FoldCalloutComponent,
+  FoldIconComponent,
+  FoldPanelHostComponent,
+} from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
 import { ClientIdentity } from '../client-identity.service';
@@ -9,7 +14,9 @@ import { ClientMenu } from '../nav/client-menu/client-menu';
 import { ClientBand } from '../nav/client-band/client-band';
 import { ClientCartPill } from '../cart/client-cart-pill/client-cart-pill';
 import { ClientOnboarding } from '../client-onboarding.service';
+import { ProOnboarding } from '../pro-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
 
 /**
@@ -33,6 +40,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
     ClientFoot,
     ClientMenu,
     FoldAppShellComponent,
+    FoldCalloutComponent,
     FoldIconComponent,
     FoldPanelHostComponent,
     LangSwitch,
@@ -45,12 +53,16 @@ export class ClientShell {
   protected readonly chrome = inject(ClientChrome);
   protected readonly identity = inject(ClientIdentity);
   protected readonly t = inject(ClientCopyService).t;
+  protected readonly access = inject(ClientFeatureAccess);
 
   constructor() {
     // Instancié pour son EFFET, pas pour son API : c'est lui qui repose prénom
     // et téléphone au retour d'Auth0. Un service `providedIn: 'root'` que
     // personne n'injecte ne s'exécute jamais.
     inject(ClientOnboarding);
+    // Même raison : c'est lui qui déclare l'établissement au retour de la porte
+    // pro. Le shell enveloppe `/mon-compte`, où ce retour atterrit.
+    inject(ProOnboarding);
   }
 
   /** L'initiale, ou un point d'interrogation : on ne devine pas un nom. */

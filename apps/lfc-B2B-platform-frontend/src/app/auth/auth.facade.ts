@@ -106,6 +106,16 @@ export class AuthFacade {
    */
   readonly pendingProfile = signal<PendingProfile | null>(null);
 
+  /**
+   * La déclaration saisie sur la porte pro, retrouvée au retour d'Auth0.
+   *
+   * Même aller-retour que {@link pendingProfile}, et même mise en garde : rien
+   * de secret n'a sa place ici. Elle a son signal à elle parce que `/bienvenue`
+   * et la porte pro ne font pas le même geste au retour — l'une repose un
+   * profil, l'autre déclare un établissement (`ProOnboarding`).
+   */
+  readonly pendingProRegistration = signal<ProRegistration | null>(null);
+
   constructor() {
     // Restauration de la route demandée : au **retour** du callback Auth0 (un
     // nouveau chargement de page), le SDK émet l'`appState` passé à
@@ -117,6 +127,12 @@ export class AuthFacade {
       if (target) {
         void this.router.navigateByUrl(target);
       }
+    });
+    // Un second abonnement plutôt qu'une ligne de plus dans le premier : le
+    // parcours de `/bienvenue` reste intact, et le SDK rejoue le même état aux
+    // deux abonnés.
+    this.auth0?.appState$.subscribe((state: unknown) => {
+      this.pendingProRegistration.set(readProRegistration(state));
     });
   }
 
@@ -186,6 +202,34 @@ export class AuthFacade {
           connection: CUSTOMER_CONNECTION,
           screen_hint: 'signup',
           ...loginHint(profile?.email),
+        },
+      })
+      .subscribe();
+  }
+
+  /**
+   * L'inscription par la porte pro : le même geste que {@link register}
+   * (onglet inscription, connexion nommée, e-mail soufflé), mais la déclaration
+   * entière fait l'aller-retour, pour être déposée au retour par
+   * `POST /me/establishment`.
+   */
+  registerPro(target: string, registration: ProRegistration): void {
+    // En bypass dev, même geste que `register()`, et pour la même raison : la
+    // déclaration n'est PAS retenue. L'API impersonne l'utilisateur du seed,
+    // déjà rattaché — la déposer ne rendrait qu'un 409.
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      writeDevSignedOut(false);
+      this.devSignedOut.set(false);
+      void this.router.navigateByUrl(target);
+      return;
+    }
+    void this.auth0
+      ?.loginWithRedirect({
+        appState: { target, proRegistration: registration },
+        authorizationParams: {
+          connection: CUSTOMER_CONNECTION,
+          screen_hint: 'signup',
+          ...loginHint(registration.email),
         },
       })
       .subscribe();
@@ -323,4 +367,57 @@ function readProfile(state: unknown): PendingProfile | null {
         email,
         phone: readString(state.profile, 'phone'),
       };
+}
+
+/**
+ * Ce que la porte pro retient le temps de l'aller-retour Auth0 : la personne
+ * et son enseigne. Le mot de passe, lui, se pose chez Auth0 et n'y figure pas.
+ */
+export interface ProRegistration {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly phone: string;
+  readonly enseigne: string;
+}
+
+/** Prédicat de garde : `state` porte-t-il une `proRegistration` ? (sans cast). */
+function hasProRegistration(state: unknown): state is { proRegistration: unknown } {
+  return typeof state === 'object' && state !== null && 'proRegistration' in state;
+}
+
+/** La valeur d'un champ, seulement si c'est une chaîne. */
+function stringField(source: Record<string, unknown>, key: string): string | null {
+  const value = source[key];
+  return typeof value === 'string' ? value : null;
+}
+
+/**
+ * Extrait la déclaration pro de l'`appState`. Elle revient du stockage du
+ * navigateur : chacun des cinq champs est vérifié, et **un seul manquant rend
+ * `null`**. Contrairement au profil de `/bienvenue`, une déclaration partielle
+ * ne se complète pas par du vide — le serveur la refuserait, et la carte
+ * « Compléter mon dossier » est là pour la reprendre en entier.
+ */
+function readProRegistration(state: unknown): ProRegistration | null {
+  if (!hasProRegistration(state) || !isRecord(state.proRegistration)) {
+    return null;
+  }
+  const source = state.proRegistration;
+  const firstName = stringField(source, 'firstName');
+  const lastName = stringField(source, 'lastName');
+  const email = stringField(source, 'email');
+  const phone = stringField(source, 'phone');
+  const enseigne = stringField(source, 'enseigne');
+  if (
+    firstName === null ||
+    lastName === null ||
+    email === null ||
+    email === '' ||
+    phone === null ||
+    enseigne === null
+  ) {
+    return null;
+  }
+  return { firstName, lastName, email, phone, enseigne };
 }

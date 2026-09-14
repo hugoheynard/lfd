@@ -29,16 +29,20 @@
     </div>
 
     <div dialog-foot class="foot">
-      <app-quantity-rail
-        size="lg"
-        [quantity]="quantity()"
-        [addLabel]="addLabel()"
-        [removeLabel]="removeLabel()"
-        (added)="added.emit()"
-        (removed)="removed.emit()"
-      />
+      @if (orderable()) {
+        <app-quantity-rail
+          size="lg"
+          [quantity]="quantity()"
+          [addLabel]="addLabel()"
+          [removeLabel]="removeLabel()"
+          (added)="added.emit()"
+          (removed)="removed.emit()"
+        />
 
-      <button class="cta" type="button" (click)="added.emit()">{{ cta() }}</button>
+        <button class="cta" type="button" (click)="added.emit()">{{ cta() }}</button>
+      } @else {
+        <p class="soon">{{ t().shop.orderingSoon }}</p>
+      }
     </div>
   </app-client-dialog>
 }

@@ -1,9 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { CompanyView } from '@lfd/contracts';
+import type { CompanyView, ShopLevel } from '@lfd/contracts';
 
 import { AccountService } from '../../../account/account.service';
 import { FR } from '../../copy/fr';
+import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
+import { openShopAt } from '../../feature-access/feature-access.fixture';
+import { ProOnboarding } from '../../pro-onboarding.service';
 import { ComptePage } from './compte-page';
 
 /** La société du client de référence, telle que `GET /me` la rend. */
@@ -48,15 +51,21 @@ const TOMMEUSES = {
   },
 } as unknown as CompanyView;
 
-function boot(companies: readonly CompanyView[]): ComponentFixture<ComptePage> {
+function boot(
+  companies: readonly CompanyView[],
+  shop: ShopLevel = 'order',
+): ComponentFixture<ComptePage> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ComptePage],
     providers: [
       provideRouter([]),
       { provide: AccountService, useValue: { companies: () => companies } },
+      // La carte « Compléter mon dossier » a sa propre suite : ici, le dossier existe.
+      { provide: ProOnboarding, useValue: { needsDossier: () => false } },
     ],
   });
+  openShopAt(shop);
   const fixture = TestBed.createComponent(ComptePage);
   fixture.detectChanges();
   return fixture;
@@ -86,6 +95,47 @@ describe('ComptePage', () => {
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
     }
+  });
+
+  /**
+   * Plan `plan-inscription-pro-seule.md` §4 : sous le niveau où l'on commande,
+   * règlement et préférences disparaissent — et le sommaire se renumérote sur
+   * ce qui reste, sans trou ni ancre morte.
+   */
+  it('sous `order`, retire règlement et préférences, et renumérote le sommaire', () => {
+    fixture = boot([TOMMEUSES], 'browse');
+
+    const links = Array.from(el().querySelectorAll('.summary-link'));
+    const anchors = links.map((a) => a.getAttribute('href')?.slice(1));
+    expect(anchors).toEqual([
+      'compte-identity',
+      'compte-users',
+      'compte-kbis',
+      'compte-addresses',
+      'compte-data',
+    ]);
+    expect(links.map((a) => a.querySelector('.summary-num')?.textContent)).toEqual([
+      '01',
+      '02',
+      '03',
+      '04',
+      '05',
+    ]);
+    for (const anchor of anchors) {
+      expect(el().querySelector(`#${anchor}`)).not.toBeNull();
+    }
+    expect(el().querySelector('#compte-payment')).toBeNull();
+    expect(el().querySelector('#compte-preferences')).toBeNull();
+    // L'export des commandes suit la même règle ; l'export personnel reste.
+    expect(el().querySelectorAll('.export').length).toBe(1);
+  });
+
+  /** Plan §3.1 : tant qu'on ne commande pas, l'écran dit pourquoi, et quoi faire. */
+  it('promet la boutique sous `order`, et se tait quand elle est ouverte', () => {
+    expect(el().textContent).not.toContain(PRO_ACCOUNT_FR.promise.closed);
+
+    fixture = boot([TOMMEUSES], 'closed');
+    expect(el().textContent).toContain(PRO_ACCOUNT_FR.promise.closed);
   });
 
   it('dit la règle plutôt que de griser le champ', () => {

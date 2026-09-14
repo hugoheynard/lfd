@@ -63,7 +63,11 @@
          parcourt. Il ne paraît qu'à un client reconnu — la même condition que
          le menu, parce que c'est la même chose : avoir des affaires ici. -->
     @if (chrome.menu()) {
-      <app-client-cart-pill />
+      <!-- Pas de panier là où l'on ne commande pas (plan §4) : il mènerait à
+           une garde, et le compterait sur un catalogue que rien ne demande. -->
+      @if (access.atLeast('order')) {
+        <app-client-cart-pill />
+      }
 
       <!-- L'identité ferme la rangée. Pas de sélecteur d'espace : il n'existe
            qu'à partir de deux espaces, et le compte n'en a qu'un — la réf
@@ -85,6 +89,16 @@
        elle-même se replie quand rien n'y est projeté, et c'est elle qui décide
        maintenant. -->
   <app-client-band subheader />
+
+  <!-- L'ÉCHEC DE LECTURE des niveaux de la boutique. Dans le shell et pas dans
+       un écran : la garde a pu renvoyer ailleurs que là où l'on allait, et
+       c'est partout que des pages manquent — un seul endroit le dit, quel que
+       soit l'écran d'arrivée. -->
+  @if (access.state() === 'failed') {
+    <div class="feature-access-failed">
+      <fold-callout variant="alert">{{ t().chrome.featureAccessFailed }}</fold-callout>
+    </div>
+  }
 
   <router-outlet />
 

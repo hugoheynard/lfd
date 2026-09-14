@@ -6,13 +6,17 @@ import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ClientAddresses } from '../../client-addresses.service';
 import { ClientCompany } from '../../client-company.service';
 import { ClientLocale, LOCALES } from '../../client-locale.service';
 import { formatCents, formatRate } from '../../format-money';
 import { ServicePoints } from '../../shop/pickup-points.store';
+import { ProOnboarding } from '../../pro-onboarding.service';
+import { ShopPromise } from '../../shop-promise/shop-promise';
 import { AccountCard } from '../account-card/account-card';
 import { DataCard } from '../data-card/data-card';
+import { DossierCard } from '../dossier-card/dossier-card';
 import { KbisCard } from '../kbis-card/kbis-card';
 import { UsersCard } from '../users-card/users-card';
 
@@ -26,6 +30,16 @@ const SECTIONS = [
   'preferences',
   'data',
 ] as const;
+
+/**
+ * Les sujets qui n'ont de sens que si la boutique permet de COMMANDER (plan
+ * `plan-inscription-pro-seule.md` §4) : un régime de règlement et une habitude
+ * de service ne se lisent qu'à l'aune d'une commande.
+ */
+const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
+  'payment',
+  'preferences',
+]);
 
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
@@ -50,8 +64,10 @@ const SECTIONS = [
     ClientBannerBlock,
     ClientBannerOutlet,
     DataCard,
+    DossierCard,
     FoldIconComponent,
     KbisCard,
+    ShopPromise,
     UsersCard,
   ],
   templateUrl: './compte-page.html',
@@ -60,6 +76,17 @@ const SECTIONS = [
 export class ComptePage {
   protected readonly t = inject(ClientCopyService).t;
   private readonly chrome = inject(ClientChrome);
+  protected readonly access = inject(ClientFeatureAccess);
+  protected readonly onboarding = inject(ProOnboarding);
+
+  /**
+   * Le niveau qui décide de la promesse « ouvre bientôt » — `null` tant que la
+   * lecture est en vol, pour qu'elle ne clignote pas quand la boutique est
+   * ouverte. Un échec vaut `closed`, donc la phrase s'affiche : le sens prudent.
+   */
+  protected readonly promiseLevel = computed(() =>
+    this.access.state() === 'loading' ? null : this.access.shop(),
+  );
 
   /**
    * 🔴 **L'identité vient de notre base** (`GET /me`), plus d'une maquette. Cet
@@ -147,10 +174,17 @@ export class ComptePage {
     this.t().account.deliveryCount.replace('{n}', String(this.deliveries().length)),
   );
 
-  /** Le sommaire — numéroté, chaque entrée pointant l'ancre de sa carte. */
+  /**
+   * Le sommaire — numéroté, chaque entrée pointant l'ancre de sa carte.
+   *
+   * La numérotation suit ce qui est MONTRÉ : une carte retirée ne laisse pas de
+   * trou, sans quoi le sommaire promettrait une carte qu'on ne trouve pas.
+   */
   protected readonly summary = computed(() => {
     const labels = this.t().account.sections;
-    return SECTIONS.map((key, index) => ({
+    const orderable = this.access.atLeast('order');
+    const shown = SECTIONS.filter((key) => orderable || !ORDER_ONLY_SECTIONS.has(key));
+    return shown.map((key, index) => ({
       key,
       label: labels[key],
       number: String(index + 1).padStart(2, '0'),

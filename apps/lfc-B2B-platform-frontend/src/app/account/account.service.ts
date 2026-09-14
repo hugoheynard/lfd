@@ -1,13 +1,19 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import type { CatalogueView, FulfillmentPreferenceView } from '@lfd/contracts';
-import { httpErrorMessage } from '@lfd/endpoints';
+import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
+import {
+  PERSON_ALREADY_ATTACHED,
+  refusalFrom,
+  type DeclarationOutcome,
+  type EstablishmentDraft,
+} from './establishment';
 import type {
   Account,
   CompanyDraft,
@@ -146,6 +152,44 @@ export class AccountService {
           this.notify.error(error);
         },
       });
+  }
+
+  /**
+   * `POST /me/establishment` — la porte pro : profil et société `pending` en un
+   * geste, puis relecture de `/me`.
+   *
+   * Contrairement aux autres écritures, l'échec ne part PAS en toast : il est
+   * RENDU, rattaché à son champ, pour s'afficher sous lui (plan §3.3). Le statut
+   * de page n'est pas touché pendant le vol — une carte qui disparaîtrait le
+   * temps de l'envoi ne pourrait plus montrer l'erreur qui revient.
+   *
+   * Un 409 « déjà rattaché » n'est pas une erreur à montrer : la personne est
+   * dans l'état visé (double clic, second onglet, rejeu). On relit `/me`, qui
+   * dira sa société.
+   */
+  declareEstablishment(draft: EstablishmentDraft): Promise<DeclarationOutcome> {
+    return firstValueFrom(
+      this.auth
+        .accessToken$()
+        .pipe(
+          switchMap((token) =>
+            this.http.post(`${AUTH_CONFIG.apiBaseUrl}/me/establishment`, draft, headers(token)),
+          ),
+        ),
+    ).then(
+      (): DeclarationOutcome => {
+        this.load();
+        this.notify.success('Établissement déclaré.');
+        return { kind: 'declared' };
+      },
+      (error: unknown): DeclarationOutcome => {
+        if (httpErrorCode(error) === PERSON_ALREADY_ATTACHED) {
+          this.load();
+          return { kind: 'already-attached' };
+        }
+        return refusalFrom(error);
+      },
+    );
   }
 
   createCompany(draft: CompanyDraft, onDone?: () => void): void {

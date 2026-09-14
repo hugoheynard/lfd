@@ -68,6 +68,7 @@
 <app-product-sheet
   [product]="piece()"
   [quantity]="pieceQuantity()"
+  [orderable]="access.shop() !== 'browse'"
   (closed)="openPiece.set(null)"
   (added)="cart.add(openPiece() ?? '')"
   (removed)="cart.remove(openPiece() ?? '')"
