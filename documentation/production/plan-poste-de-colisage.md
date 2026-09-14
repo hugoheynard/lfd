@@ -87,6 +87,10 @@ La journée se **déduit** comme celle de la fiche d'atelier : demain si son pla
 est arrêté, aujourd'hui sinon. Un sélecteur de plus serait une question de plus
 à 4 h du matin.
 
+> 🔴 **Plus de file hors ligne depuis le 2026-09-14** (décision de Hugo) : une
+> coche part directement au serveur, et revient en arrière en le disant si elle
+> échoue. Le paragraphe suivant est celui du plan d'origine.
+
 Les coches passent par la file hors ligne du fournil, pour la raison qui l'a
 fait naître : le sous-sol. Jamais un écran qui a l'air d'avoir enregistré alors
 que non.
@@ -189,3 +193,7 @@ se devine pas en relisant le code.
 containers ne restera pas un nombre. Il faut que la structure d'aujourd'hui
 puisse devenir une liste de containers nommés, chacun portant ce qu'il contient
 — sans quoi cette règle n'aura nulle part où s'appliquer.
+
+---
+
+> **Relecture multiposte** — depuis le 2026-09-14, ce poste se relit toutes les 15 s tant que l'onglet est visible, et une coche part directement au serveur, sans file. La règle et ses raisons : [`relecture-des-postes.md`](relecture-des-postes.md).

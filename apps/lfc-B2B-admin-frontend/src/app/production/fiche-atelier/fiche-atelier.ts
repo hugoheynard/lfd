@@ -27,11 +27,11 @@ import {
   nextDay,
   markKey,
   withLocalMarks,
-  withoutRefused,
   type LocalMark,
 } from '../worksheet-day';
 import { worksheetGroups, type WorksheetGroup } from '../worksheet-groups';
-import { WorksheetQueue } from '../worksheet-queue';
+import { refreshWhileVisible } from '../periodic-refresh';
+import { serverMessageOf } from '../server-message';
 import { WorksheetService } from '../worksheet.service';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorksheetLine } from './worksheet-line/worksheet-line';
@@ -64,10 +64,11 @@ const WORKSHOP_NARROW = '(max-width: 1023px)';
  * est **ce que le support enlève** — jamais la ligne, qui est le geste qu'on
  * répète neuf fois.
  *
- * **La coche s'écrit à l'écran d'abord.** Le fournil est en sous-sol : cocher
- * pose l'état ici, puis le confie à {@link WorksheetQueue}. Le pied dit toujours
- * combien de gestes attendent — 🔴 jamais un écran qui a l'air d'avoir
- * enregistré alors que non.
+ * **Une coche part tout de suite.** La case se coche à l'écran et se désarme
+ * le temps de l'envoi ; acceptée, elle reste ; refusée, elle revient en arrière
+ * et l'écran dit pourquoi. 🔴 Il n'y a plus de file hors ligne depuis le
+ * 2026-09-14 — le fournil a toujours du réseau, et la file coûtait plus qu'elle
+ * ne protégeait (`documentation/production/relecture-des-postes.md`).
  *
  * **La catégorie ouverte suit la PERSONNE**, dans `nav_prefs` et non dans
  * `localStorage` : le téléphone du pétrin n'est pas la machine du chef, et c'est
@@ -99,7 +100,6 @@ export class FicheAtelier {
   private readonly catalog = inject(AdminCatalogService);
   private readonly permissions = inject(PermissionsStore);
   private readonly prefs = inject(StaffPrefsService);
-  private readonly queue = inject(WorksheetQueue);
 
   /**
    * 🔴 **La journée que le four est en train de faire** — elle se déduit, elle
@@ -166,7 +166,7 @@ export class FicheAtelier {
   /** Le retirage vient-il d'échouer ? Un échec partiel, la fiche reste à l'écran. */
   protected readonly retakeFailed = signal(false);
 
-  /** Les coches posées ici, par `AAAA-MM-JJ SKU`. Elles l'emportent sur le serveur. */
+  /** Les coches en cours d'envoi, par `AAAA-MM-JJ SKU` — l'écran les montre avant la réponse. */
   private readonly localMarks = signal<ReadonlyMap<string, LocalMark>>(new Map());
 
   /** Le bloc des lignes faites, sur téléphone. Replié : on vient voir ce qui reste. */
@@ -175,21 +175,58 @@ export class FicheAtelier {
   /** La fiche choisie. `null` tant que rien n'a été lu ni préféré. */
   private readonly chosen = signal<string | null>(null);
 
-  protected readonly pendingMarks = this.queue.pending;
-  protected readonly offline = this.queue.offline;
+  /** Les lignes dont la coche est en train de partir — leur case est désarmée. */
+  private readonly busy = signal<ReadonlySet<string>>(new Set());
 
   /**
-   * Les coches refusées pour de bon, **nommées** : le SKU seul ne dit rien à qui
-   * a les mains dans la pâte, le nom du produit si.
+   * La dernière coche refusée, avec le produit et la raison du serveur.
+   *
+   * 🔴 La case est revenue en arrière : il reste à le DIRE. Une coche qui se
+   * défait sans explication se recoche, et se refait refuser.
    */
-  protected readonly refusals = computed(() => {
-    const lines = this.sheet()?.lines ?? [];
-    return this.queue.rejected().map(({ mark, message }) => ({
-      key: markKey(mark.date, mark.sku),
-      label: lines.find((line) => line.sku === mark.sku)?.productName ?? mark.sku,
-      message,
-    }));
+  protected readonly markFailed = signal<string | null>(null);
+
+  /**
+   * L'instant de la dernière écriture acceptée (`Date.now()`). Une relecture
+   * partie AVANT elle rendrait l'état d'avant : sa réponse est jetée.
+   */
+  private lastWriteAt = 0;
+
+  /** L'instant ISO de la dernière lecture réussie — le pied dit de quand date l'écran. */
+  private readonly readAt = signal<string | null>(null);
+
+  /** « 4 h 12 » — l'heure de la dernière lecture réussie. */
+  protected readonly readLabel = computed(() => hourLabel(this.readAt()));
+
+  /**
+   * La dernière relecture a-t-elle échoué ? La fiche reste à l'écran — une
+   * relecture ratée ne vide rien —, mais le pied dit depuis quand elle n'a pas
+   * bougé. Un écran figé qui a l'air vivant fait cocher deux fois la même ligne.
+   */
+  protected readonly refreshFailed = signal(false);
+
+  /**
+   * La journée vers laquelle la fiche vient de basculer **pendant qu'on la
+   * regardait**, le temps de le dire.
+   *
+   * 🔴 Le soir, quand le plan du lendemain est arrêté, la relecture fait passer
+   * la fiche à demain — c'est la règle, et c'est ce qui évite au fournil de 4 h
+   * de trouver la fournée d'hier. Mais un écran qui change de journée sans
+   * prévenir ferait cocher le mauvais jour : il le dit.
+   */
+  protected readonly dayTurned = signal<string | null>(null);
+
+  protected readonly dayTurnedLabel = computed(() => {
+    const day = this.dayTurned();
+    return day === null ? null : dayLabelOf(day);
   });
+
+  /**
+   * Le rang de la dernière lecture lancée. Une réponse lente n'écrase jamais une
+   * lecture partie après elle — un retirage suivi d'une relecture en vol, par
+   * exemple, ne doit pas faire revenir la fiche d'avant.
+   */
+  private readSeq = 0;
 
   constructor() {
     // 🔴 Une lecture UNIQUE, et pas un `effect` sur la journée. L'écran n'a pas
@@ -197,6 +234,9 @@ export class FicheAtelier {
     // un effet qui la lirait se rappellerait après chaque lecture — et le jour
     // où la règle bascule d'aujourd'hui à demain, il partirait deux fois.
     void this.load();
+    // Les autres postes cochent aussi : sans relecture, une ligne sortie du four
+    // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
+    refreshWhileVisible(() => this.refresh());
     // La préférence n'arrive pas avant la personne : `GET /admin/me` est déjà en
     // vol pour les droits, on ne le redemande pas. Si elle n'arrive jamais, la
     // première fiche de la liste fait très bien l'affaire.
@@ -210,13 +250,7 @@ export class FicheAtelier {
   /** Les lignes du serveur, recouvertes par ce qui a été coché ici. */
   private readonly lines = computed<readonly WorkshopLine[]>(() => {
     const sheet = this.sheet();
-    return sheet === null
-      ? []
-      : withLocalMarks(
-          sheet.lines,
-          sheet.date,
-          withoutRefused(this.localMarks(), this.queue.rejected()),
-        );
+    return sheet === null ? [] : withLocalMarks(sheet.lines, sheet.date, this.localMarks());
   });
 
   protected readonly groups = computed(() =>
@@ -273,6 +307,8 @@ export class FicheAtelier {
   protected async load(date?: string): Promise<void> {
     this.state.set('loading');
     this.retakeFailed.set(false);
+    this.readSeq += 1;
+    const seq = this.readSeq;
     try {
       // Le catalogue part avec la fiche : sans lui, pas de rayons, donc pas de
       // postes. Une lecture ratée ne doit pas faire disparaître la production,
@@ -281,6 +317,9 @@ export class FicheAtelier {
         date === undefined ? this.workedDay() : this.api.worksheet(date),
         this.catalog.list().catch(() => null),
       ]);
+      if (seq !== this.readSeq) {
+        return;
+      }
       this.sheet.set(served);
       // La journée vient de la RÉPONSE, pas de la demande : `workedDay` peut
       // rendre demain là où on avait aujourd'hui, et l'en-tête doit nommer la
@@ -289,8 +328,12 @@ export class FicheAtelier {
       this.shelvesLost.set(catalogue === null);
       this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
+      this.readAt.set(new Date().toISOString());
+      this.refreshFailed.set(false);
     } catch {
-      this.state.set('error');
+      if (seq === this.readSeq) {
+        this.state.set('error');
+      }
     }
   }
 
@@ -313,6 +356,53 @@ export class FicheAtelier {
     return tomorrow.generatedAt === null ? this.api.worksheet(isoDay(new Date())) : tomorrow;
   }
 
+  /**
+   * **La relecture silencieuse** — toutes les 15 s tant que l'onglet est visible.
+   *
+   * Silencieuse, et c'est la différence avec {@link load} : pas d'écran de
+   * chargement, pas de fiche qui disparaît, la catégorie ouverte ne bouge pas.
+   * Seul change ce que le serveur sait de nouveau.
+   *
+   * Elle réapplique la règle du jour (`workedDay`) : la fiche bascule sur demain
+   * dès que son plan est arrêté, même si l'écran était déjà ouvert — et elle le
+   * dit.
+   *
+   * 🔴 Une réponse est **jetée** si une coche a été acceptée après le départ de
+   * la relecture : elle rendrait l'état d'avant, et décocherait sous les doigts.
+   * La suivante, quinze secondes plus tard, la contiendra.
+   */
+  private async refresh(): Promise<void> {
+    if (this.state() !== 'ready') {
+      return;
+    }
+    this.readSeq += 1;
+    const seq = this.readSeq;
+    const startedAt = Date.now();
+    try {
+      const served = await this.workedDay();
+      if (seq !== this.readSeq || this.lastWriteAt >= startedAt) {
+        return;
+      }
+      const previousDay = this.sheet()?.date ?? null;
+      this.sheet.set(served);
+      this.date.set(served.date);
+      if (previousDay !== null && previousDay !== served.date) {
+        this.dayTurned.set(served.date);
+      }
+      this.readAt.set(new Date().toISOString());
+      this.refreshFailed.set(false);
+    } catch {
+      if (seq === this.readSeq) {
+        this.refreshFailed.set(true);
+      }
+    }
+  }
+
+  /** La personne a vu que la fiche a changé de journée. */
+  protected acknowledgeDayTurn(): void {
+    this.dayTurned.set(null);
+  }
+
   /** Change de fiche, et le retient pour la personne. */
   protected choose(key: string): void {
     this.chosen.set(key);
@@ -321,19 +411,78 @@ export class FicheAtelier {
   }
 
   /**
-   * Coche ou décoche une ligne : **à l'écran d'abord**, puis dans la file.
+   * Coche ou décoche une ligne : **à l'écran tout de suite**, au serveur aussitôt.
    *
-   * Rien n'attend ici la réponse du serveur. Une case qui mettrait deux secondes
-   * à noircir au sous-sol serait recochée une seconde fois, et ce sont les deux
-   * gestes contradictoires que la file existe pour éviter.
+   * La case se coche avant la réponse — une case qui attendrait serait recochée
+   * une seconde fois — mais elle est désarmée le temps de l'envoi : un second
+   * geste contraire pourrait arriver avant le premier, et le serveur garderait
+   * le mauvais. Acceptée, la coche est inscrite dans la fiche lue ; refusée, la
+   * case revient en arrière et l'écran dit pourquoi.
    */
-  protected toggle(line: WorkshopLine, done: boolean): void {
+  protected async toggle(line: WorkshopLine, done: boolean): Promise<void> {
     const date = this.sheet()?.date ?? this.date();
+    const key = markKey(date, line.sku);
+    if (this.busy().has(key)) {
+      return;
+    }
     const initials = this.initials();
+    this.markFailed.set(null);
+    this.setLocal(key, { done, initials });
+    this.setBusy(key, true);
+    try {
+      await this.api.mark(date, line.sku, done, initials);
+      this.writeServed(line.sku, done, initials);
+      this.lastWriteAt = Date.now();
+    } catch (error) {
+      this.markFailed.set(`${line.productName} — ${serverMessageOf(error)}`);
+    } finally {
+      this.setLocal(key, null);
+      this.setBusy(key, false);
+    }
+  }
+
+  /** La coche de cette ligne est-elle en train de partir ? */
+  protected isBusy(line: WorkshopLine): boolean {
+    return this.busy().has(markKey(this.sheet()?.date ?? this.date(), line.sku));
+  }
+
+  /**
+   * Inscrit une coche acceptée dans la fiche lue. Sans ça, la case retomberait
+   * sur l'état d'avant entre la réponse et la prochaine relecture.
+   */
+  private writeServed(sku: string, done: boolean, initials: string): void {
+    this.sheet.update((sheet) =>
+      sheet === null
+        ? sheet
+        : {
+            ...sheet,
+            lines: sheet.lines.map((line) =>
+              line.sku === sku
+                ? { ...line, done, initials: done && initials !== '' ? initials : null }
+                : line,
+            ),
+          },
+    );
+  }
+
+  private setLocal(key: string, mark: LocalMark | null): void {
     const next = new Map(this.localMarks());
-    next.set(markKey(date, line.sku), { done, initials });
+    if (mark === null) {
+      next.delete(key);
+    } else {
+      next.set(key, mark);
+    }
     this.localMarks.set(next);
-    this.queue.mark({ date, sku: line.sku, done, initials });
+  }
+
+  private setBusy(key: string, busy: boolean): void {
+    const next = new Set(this.busy());
+    if (busy) {
+      next.add(key);
+    } else {
+      next.delete(key);
+    }
+    this.busy.set(next);
   }
 
   /** Absorbe ce qui est arrivé depuis le tirage, puis relit la fiche. */
@@ -346,20 +495,6 @@ export class FicheAtelier {
       return;
     }
     await this.load();
-  }
-
-  /**
-   * La personne a vu les refus. Les coches locales correspondantes sont
-   * **retirées pour de bon** avant qu'on oublie le refus : sans ça, elles
-   * réapparaîtraient cochées à l'instant où le filtre des refus se lève.
-   */
-  protected acknowledgeRefusals(): void {
-    const next = new Map(this.localMarks());
-    for (const { mark } of this.queue.rejected()) {
-      next.delete(markKey(mark.date, mark.sku));
-    }
-    this.localMarks.set(next);
-    this.queue.acknowledge();
   }
 
   protected toggleDone(): void {

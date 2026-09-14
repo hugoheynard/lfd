@@ -80,28 +80,6 @@ export function withLocalMarks(
 }
 
 /**
- * Les coches locales **moins celles que le serveur a refusées pour de bon**.
- *
- * 🔴 Sans ce filtre, une coche écartée de la file resterait affichée : l'écran
- * montrerait comme faite une ligne que le serveur n'a jamais acceptée, et plus
- * rien ne le dirait — exactement ce que la file existe pour empêcher. La case
- * revient donc à l'état que le serveur connaît, pendant que l'écran dit le refus.
- */
-export function withoutRefused(
-  marks: ReadonlyMap<string, LocalMark>,
-  refused: readonly { readonly mark: { readonly date: string; readonly sku: string } }[],
-): ReadonlyMap<string, LocalMark> {
-  if (refused.length === 0) {
-    return marks;
-  }
-  const next = new Map(marks);
-  for (const { mark } of refused) {
-    next.delete(markKey(mark.date, mark.sku));
-  }
-  return next;
-}
-
-/**
  * Le lendemain d'un instant.
  *
  * Par `setDate`, qui absorbe les fins de mois, les années bissextiles et les

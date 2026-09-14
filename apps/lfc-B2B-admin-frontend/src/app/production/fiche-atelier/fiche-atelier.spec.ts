@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   CatalogItemView,
@@ -11,8 +11,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AdminCatalogService } from '../../commandes/catalog.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
-import { WorksheetQueue, type QueuedMark } from '../worksheet-queue';
-import type { Rejected } from '../queue-refusal';
 import { WorksheetService } from '../worksheet.service';
 import { FicheAtelier } from './fiche-atelier';
 
@@ -77,6 +75,14 @@ const CATALOGUE: readonly CatalogItemView[] = [
   { sku: 'SEI', name: 'Seigle', unitPriceMillicents: 100, vatRate: 5.5, category: 'pain' },
 ];
 
+/** Une coche telle que le service l'a reçue. */
+interface SentMark {
+  readonly date: string;
+  readonly sku: string;
+  readonly done: boolean;
+  readonly initials: string;
+}
+
 class FakeWorksheetService {
   view: ProductionWorksheetView | null = sheet();
   retakes = 0;
@@ -87,6 +93,9 @@ class FakeWorksheetService {
 
   async worksheet(date: string): Promise<ProductionWorksheetView> {
     this.asked.push(date);
+    if (this.holdReads) {
+      await new Promise<void>((resolve) => this.heldReads.push(resolve));
+    }
     const served = this.byDay.get(date) ?? this.view;
     if (served === null) {
       throw new Error('lecture refusée');
@@ -96,6 +105,38 @@ class FakeWorksheetService {
 
   async retake(): Promise<void> {
     this.retakes += 1;
+  }
+
+  /** Les coches envoyées, dans l'ordre. */
+  readonly marks: SentMark[] = [];
+  /** Ce que le serveur répond aux coches — `null` = il les accepte. */
+  markError: unknown = null;
+  /** Retenir les réponses, pour éprouver ce qui se passe PENDANT un envoi ou une lecture. */
+  holdMarks = false;
+  holdReads = false;
+  private readonly heldMarks: (() => void)[] = [];
+  private readonly heldReads: (() => void)[] = [];
+
+  async mark(date: string, sku: string, done: boolean, initials: string): Promise<void> {
+    this.marks.push({ date, sku, done, initials });
+    if (this.holdMarks) {
+      await new Promise<void>((resolve) => this.heldMarks.push(resolve));
+    }
+    if (this.markError !== null) {
+      throw this.markError;
+    }
+  }
+
+  releaseMarks(): void {
+    for (const resolve of this.heldMarks.splice(0)) {
+      resolve();
+    }
+  }
+
+  releaseReads(): void {
+    for (const resolve of this.heldReads.splice(0)) {
+      resolve();
+    }
   }
 }
 
@@ -107,25 +148,6 @@ class FakeCatalog {
       throw new Error('catalogue muet');
     }
     return this.items;
-  }
-}
-
-class FakeQueue {
-  readonly marks: QueuedMark[] = [];
-  readonly pending = (): number => this.marks.length;
-  readonly offline = (): boolean => false;
-  /** Les refus définitifs, posés à la main par un test — la vraie file les produit au vidage. */
-  readonly refused = signal<readonly Rejected<QueuedMark>[]>([]);
-  readonly rejected = this.refused.asReadonly();
-  acknowledged = 0;
-
-  mark(mark: QueuedMark): void {
-    this.marks.push(mark);
-  }
-
-  acknowledge(): void {
-    this.acknowledged += 1;
-    this.refused.set([]);
   }
 }
 
@@ -149,13 +171,11 @@ interface Harness {
   readonly el: HTMLElement;
   readonly api: FakeWorksheetService;
   readonly catalog: FakeCatalog;
-  readonly queue: FakeQueue;
   readonly prefs: FakePrefs;
 }
 
 let api: FakeWorksheetService;
 let catalog: FakeCatalog;
-let queue: FakeQueue;
 let prefs: FakePrefs;
 
 async function render(): Promise<Harness> {
@@ -167,21 +187,19 @@ async function render(): Promise<Harness> {
   // revenue, et l'écran serait encore en chargement.
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
   fixture.detectChanges();
-  return { fixture, el: fixture.nativeElement, api, catalog, queue, prefs };
+  return { fixture, el: fixture.nativeElement, api, catalog, prefs };
 }
 
 describe('la fiche d’atelier', () => {
   beforeEach(() => {
     api = new FakeWorksheetService();
     catalog = new FakeCatalog();
-    queue = new FakeQueue();
     prefs = new FakePrefs();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: WorksheetService, useValue: api },
         { provide: AdminCatalogService, useValue: catalog },
-        { provide: WorksheetQueue, useValue: queue },
         { provide: StaffPrefsService, useValue: prefs },
         { provide: PermissionsStore, useValue: { identity: () => ME } },
       ],
@@ -248,76 +266,151 @@ describe('la fiche d’atelier', () => {
     expect(el.textContent).not.toContain('€');
   });
 
-  it('🔴 écrit la coche à l’écran AVANT de la confier à la file', async () => {
-    const { fixture, el, queue: q } = await render();
-    const box: HTMLInputElement | null = el.querySelector('input[type="checkbox"]');
+  /** Un tour de boucle : la réponse du service double arrive dans une promesse. */
+  async function settle(fixture: ComponentFixture<FicheAtelier>): Promise<void> {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+  }
 
-    box?.click();
+  const premiere = (el: HTMLElement): boolean =>
+    el.querySelector('app-worksheet-line')?.classList.contains('is-done') ?? false;
+
+  const premiereCase = (el: HTMLElement): HTMLInputElement | null =>
+    el.querySelector('input[type="checkbox"]');
+
+  it('envoie la coche au serveur, et la garde une fois acceptée', async () => {
+    const { fixture, el } = await render();
+
+    premiereCase(el)?.click();
+    await settle(fixture);
+
+    expect(api.marks).toEqual([{ date: today(), sku: 'BAG', done: true, initials: 'MJ' }]);
+    expect(premiere(el)).toBe(true);
+  });
+
+  it('coche à l’écran tout de suite, et désarme la case le temps de l’envoi', async () => {
+    const { fixture, el } = await render();
+    api.holdMarks = true;
+
+    premiereCase(el)?.click();
     fixture.detectChanges();
 
-    // Le serveur n'a rien confirmé, et la ligne est déjà faite à l'écran : c'est
-    // tout l'objet du sous-sol.
-    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(true);
-    expect(q.marks).toEqual([{ date: today(), sku: 'BAG', done: true, initials: 'MJ' }]);
+    expect(premiere(el)).toBe(true);
+    expect(premiereCase(el)?.disabled).toBe(true);
+
+    api.releaseMarks();
+    await settle(fixture);
+
+    expect(premiereCase(el)?.disabled).toBe(false);
+    expect(premiere(el)).toBe(true);
   });
 
   /**
-   * Régression : une coche refusée pour de bon restait affichée cochée. La file
-   * la gardait en tête et bloquait toutes les suivantes ; l'écran, lui, montrait
-   * la ligne faite jusqu'au rechargement (constaté en dev le 2026-09-14).
+   * Régression : une coche refusée restait affichée cochée jusqu'au
+   * rechargement, sans que rien ne le dise (constaté en dev le 2026-09-14).
    */
-  it('🔴 décoche une ligne refusée pour de bon, et DIT pourquoi', async () => {
-    const { fixture, el, queue: q } = await render();
-    el.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
-    fixture.detectChanges();
-    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(true);
+  it('🔴 remet la case en arrière quand le serveur refuse, et DIT pourquoi', async () => {
+    const { fixture, el } = await render();
+    api.markError = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'Le plan du jour n’est pas arrêté.' },
+    });
 
-    const [mark] = q.marks;
-    if (mark === undefined) {
-      throw new Error('la coche n’est pas partie dans la file');
-    }
-    q.refused.set([{ mark, message: 'Le plan du jour n’est pas arrêté.' }]);
-    fixture.detectChanges();
+    premiereCase(el)?.click();
+    await settle(fixture);
 
-    // La case revient à ce que le serveur connaît…
-    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(false);
-    // …et l'écran nomme le produit et la raison, pas un SKU.
-    const said = el.querySelector('.fa-refusals')?.textContent ?? '';
+    expect(premiere(el)).toBe(false);
+    const said = el.querySelector('.fa-mark-failed')?.textContent ?? '';
     expect(said).toContain('Baguette tradition');
     expect(said).toContain('Le plan du jour n’est pas arrêté.');
   });
 
-  it('prend acte des refus sans faire revenir la coche', async () => {
-    const { fixture, el, queue: q } = await render();
-    el.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
-    fixture.detectChanges();
-    const [mark] = q.marks;
-    if (mark === undefined) {
-      throw new Error('la coche n’est pas partie dans la file');
-    }
-    q.refused.set([{ mark, message: 'Refusé.' }]);
-    fixture.detectChanges();
+  it('décocher renvoie un geste inverse, jamais un second geste identique', async () => {
+    const { fixture, el } = await render();
 
-    el.querySelector<HTMLButtonElement>('.fa-refusals button')?.click();
-    fixture.detectChanges();
+    premiereCase(el)?.click();
+    await settle(fixture);
+    premiereCase(el)?.click();
+    await settle(fixture);
 
-    expect(q.acknowledged).toBe(1);
-    expect(el.querySelector('.fa-refusals')).toBeNull();
-    // 🔴 Le filtre des refus vient de se lever : sans le retrait de la coche
-    // locale, la ligne réapparaîtrait cochée à cet instant précis.
-    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(false);
+    expect(api.marks.map((mark) => mark.done)).toEqual([true, false]);
   });
 
-  it('décocher renvoie un geste inverse, jamais un second geste identique', async () => {
-    const { fixture, el, queue: q } = await render();
-    const box: HTMLInputElement | null = el.querySelector('input[type="checkbox"]');
+  describe('la relecture', () => {
+    beforeEach(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+    });
 
-    box?.click();
-    fixture.detectChanges();
-    el.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
-    fixture.detectChanges();
+    /** Revenir sur l'onglet relit tout de suite — c'est le déclencheur le plus sûr en test. */
+    function relancer(): void {
+      document.dispatchEvent(new Event('visibilitychange'));
+    }
 
-    expect(q.marks.map((mark) => mark.done)).toEqual([true, false]);
+    it('montre une coche posée sur un autre poste', async () => {
+      const { fixture, el } = await render();
+      expect(premiere(el)).toBe(false);
+
+      api.view = sheet({
+        lines: [
+          line({ done: true, initials: 'PL' }),
+          line({ sku: 'SEI', productName: 'Pain de seigle', quantity: 30 }),
+        ],
+      });
+      relancer();
+      await settle(fixture);
+
+      expect(premiere(el)).toBe(true);
+    });
+
+    /**
+     * 🔴 Le seul piège d'ordre qui reste : une relecture partie AVANT une coche
+     * acceptée revient avec l'état d'avant. La laisser gagner décocherait la
+     * case sous les doigts de qui vient de la cocher.
+     */
+    it('🔴 jette une relecture partie avant une coche acceptée', async () => {
+      const { fixture, el } = await render();
+      api.holdMarks = true;
+      premiereCase(el)?.click();
+      fixture.detectChanges();
+
+      api.holdReads = true;
+      relancer();
+      api.releaseMarks();
+      await settle(fixture);
+      expect(premiere(el)).toBe(true);
+
+      // La relecture revient avec la fiche d'AVANT la coche : elle doit être jetée.
+      api.releaseReads();
+      await settle(fixture);
+      await settle(fixture);
+
+      expect(premiere(el)).toBe(true);
+    });
+
+    it('🔴 dit quand la fiche bascule de journée pendant qu’on la regarde', async () => {
+      const { fixture, el } = await render();
+      api.byDay.set(tomorrow(), sheet({ date: tomorrow() }));
+
+      relancer();
+      await settle(fixture);
+
+      expect(el.querySelector('.fa-day-turned')?.textContent).toContain('désormais');
+    });
+
+    it('dit que la relecture a échoué, sans vider la fiche', async () => {
+      const { fixture, el } = await render();
+      expect(el.querySelector('.fa-foot-origin')?.textContent).toContain('relue à');
+
+      api.view = null;
+      relancer();
+      await settle(fixture);
+
+      expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
+      expect(el.querySelector('.fa-foot-origin')?.textContent).toContain('relecture impossible');
+    });
   });
 
   it('dit l’heure du tirage en pied', async () => {

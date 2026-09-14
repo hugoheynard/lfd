@@ -33,6 +33,13 @@ import type { WorkshopLine } from '@lfd/contracts';
 export class WorksheetLine {
   readonly line = input.required<WorkshopLine>();
 
+  /**
+   * La coche de cette ligne est en train de partir. La case est désarmée le
+   * temps de l'envoi : un second clic enverrait un geste contraire qui pourrait
+   * arriver avant le premier, et le serveur garderait le mauvais.
+   */
+  readonly busy = input(false);
+
   /** L'état demandé par la personne. Le parent écrit d'abord, envoie ensuite. */
   readonly toggled = output<boolean>();
 

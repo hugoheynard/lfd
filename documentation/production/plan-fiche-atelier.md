@@ -156,6 +156,13 @@ n'est pas la machine du chef, et c'est la PERSONNE qui reprend son poste.
 
 ## 8. Le hors ligne
 
+> 🔴 **Retiré le 2026-09-14.** Décision de Hugo : le fournil a toujours du
+> réseau, et la file locale coûtait plus qu'elle ne protégeait — elle a bloqué
+> le poste au premier usage. Une coche part désormais directement au serveur, et
+> revient en arrière en le disant si elle échoue. Le texte ci-dessous est celui
+> du plan d'origine, gardé pour dire ce qui avait été décidé et pourquoi. La
+> suite : [`relecture-des-postes.md`](relecture-des-postes.md).
+
 Le fournil est en sous-sol. La coche s'écrit **dans l'écran d'abord**, part
 ensuite ; ce qui n'est pas parti attend dans une file locale et repart à la
 reconnexion. Le pied dit « hors ligne » et combien de gestes attendent —
@@ -184,3 +191,7 @@ abstraction. Celle-ci est faite pour être reprise, pas pour être générale.
 **Ce qui NE bouge pas** : `fiche-production/` (les bons de commande), la vue
 Récapitulatif, `renderDeliveryNote`. La fiche d'atelier **ouvre** l'écran de la
 Fournée du jour ; les deux autres vues restent derrière elle, intactes.
+
+---
+
+> **Relecture multiposte** — depuis le 2026-09-14, cette fiche se relit toutes les 15 s tant que l'onglet est visible, et une coche part directement au serveur, sans file. La règle et ses raisons : [`relecture-des-postes.md`](relecture-des-postes.md).

@@ -89,23 +89,26 @@
     }
 
     <!--
-      🔴 Des coches que le serveur a refusées pour de bon. Elles ont quitté la
-      file — sans quoi elles bloqueraient toutes les suivantes — et leurs cases
-      sont revenues à ce que le serveur connaît. Il reste à le DIRE : une coche
-      qui disparaît sans explication se recoche, et se refait refuser.
+      🔴 La coche n'a pas été enregistrée : la case est revenue en arrière, et on
+      dit pourquoi. Une coche qui se défait sans explication se recoche, et se
+      refait refuser.
     -->
-    @if (refusals().length > 0) {
-      <fold-callout variant="alert" class="fa-note fa-refusals">
-        Ces coches n'ont pas été enregistrées — leurs cases sont revenues à ce que le serveur
-        connaît :
-        <ul class="fa-refusal-list">
-          @for (refusal of refusals(); track refusal.key) {
-            <li>
-              <strong>{{ refusal.label }}</strong> — {{ refusal.message }}
-            </li>
-          }
-        </ul>
-        <button foldButton (click)="acknowledgeRefusals()">Compris</button>
+    @if (markFailed(); as failed) {
+      <fold-callout variant="alert" class="fa-note fa-mark-failed">
+        La coche n'a pas été enregistrée — {{ failed }}
+      </fold-callout>
+    }
+
+    <!--
+      🔴 La fiche vient de changer de journée sous les yeux de qui la regarde :
+      le plan de ce jour a été arrêté, et c'est lui qui passe au four. Le dire,
+      sinon on coche le mauvais jour.
+    -->
+    @if (dayTurnedLabel(); as turned) {
+      <fold-callout variant="info" class="fa-note fa-day-turned">
+        La fiche montre désormais le {{ turned }} — son plan vient d'être arrêté, et c'est lui qui
+        passe au four.
+        <button foldButton (click)="acknowledgeDayTurn()">Compris</button>
       </fold-callout>
     }
 
@@ -137,7 +140,7 @@
   lisant le CSS compilé de `fold-ng`).
 
   Ici, ça décide de tout : le pied doit rester au bas de la fenêtre et la LISTE
-  doit défiler seule, sinon « hors ligne » et « 2 gestes en attente » partent
+  doit défiler seule, sinon « relue à 4 h 12 » et l'échec d'une relecture partent
   sous le pli, et c'est exactement ce qu'on ne peut pas se permettre de cacher.
 -->
 @switch (state()) {
@@ -175,7 +178,11 @@
         -->
         <div class="fa-lines">
           @for (line of compact() ? todo() : fiche.lines; track line.sku) {
-            <app-worksheet-line [line]="line" (toggled)="toggle(line, $event)" />
+            <app-worksheet-line
+              [line]="line"
+              [busy]="isBusy(line)"
+              (toggled)="toggle(line, $event)"
+            />
           } @empty {
             <fold-empty-state
               title="Tout est sorti"
@@ -204,7 +211,11 @@
             @if (doneOpen()) {
               <div class="fa-done-lines">
                 @for (line of done(); track line.sku) {
-                  <app-worksheet-line [line]="line" (toggled)="toggle(line, $event)" />
+                  <app-worksheet-line
+                    [line]="line"
+                    [busy]="isBusy(line)"
+                    (toggled)="toggle(line, $event)"
+                  />
                 }
               </div>
             }
@@ -240,16 +251,15 @@
               Le plan n'est pas arrêté — ceci est la demande du commerce à cette heure-ci. Le plan
               du soir s'arrête depuis le prévisionnel.
             }
-            @if (offline()) {
-              <span class="fa-foot-flag">
-                <fold-icon name="offline-bolt" size="sm" />
-                hors ligne
-              </span>
-            }
-            @if (pendingMarks() > 0) {
-              <span class="fa-foot-flag">
-                {{ pendingMarks() }} geste{{ pendingMarks() > 1 ? 's' : '' }} en attente d'envoi
-              </span>
+            <!--
+              De quand date ce qu'on lit. Les autres postes cochent aussi, et la
+              fiche se relit toutes les 15 s : si la relecture échoue, l'écran le
+              dit plutôt que d'avoir l'air à jour.
+            -->
+            @if (refreshFailed()) {
+              <strong class="fa-foot-stale">· relecture impossible depuis {{ readLabel() }}</strong>
+            } @else if (readLabel(); as read) {
+              · relue à {{ read }}
             }
           </p>
         </footer>

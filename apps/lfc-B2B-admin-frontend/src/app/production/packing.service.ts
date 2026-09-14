@@ -15,8 +15,7 @@ import { B2B_API_BASE } from '../api/api-config';
  * qu'on sort du four », le colisage à « ce bac est-il complet ». Deux questions,
  * deux raisons de changer.
  *
- * Aucun état gardé ici : {@link PackingQueue} est le seul endroit qui retient
- * quelque chose, et elle le fait explicitement.
+ * Aucun état gardé ici : une coche part directement, et l'écran relit.
  */
 @Injectable({ providedIn: 'root' })
 export class PackingService {

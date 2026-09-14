@@ -49,29 +49,6 @@ export interface PackingBoard {
  * locale restée en file après sa fermeture ne doit pas donner à l'écran l'air de
  * pouvoir encore le défaire.
  */
-/**
- * Les coches locales **moins celles que le serveur a refusées pour de bon** —
- * jumeau de `withoutRefused` côté fiche d'atelier, à la clé du bac.
- *
- * 🔴 Sans ce filtre, une coche écartée de la file resterait affichée, et la
- * balance compterait comme réparti ce que le serveur n'a jamais accepté.
- */
-export function withoutRefusedPacking(
-  marks: ReadonlyMap<string, LocalPackingMark>,
-  refused: readonly {
-    readonly mark: { readonly date: string; readonly reference: string; readonly sku: string };
-  }[],
-): ReadonlyMap<string, LocalPackingMark> {
-  if (refused.length === 0) {
-    return marks;
-  }
-  const next = new Map(marks);
-  for (const { mark } of refused) {
-    next.delete(packingMarkKey(mark.date, mark.reference, mark.sku));
-  }
-  return next;
-}
-
 export function packingBoard(
   view: ProductionPackingView,
   marks: ReadonlyMap<string, LocalPackingMark>,

@@ -118,23 +118,26 @@
     }
 
     <!--
-      🔴 Des coches que le serveur a refusées pour de bon — un article pas encore
-      sorti du four, une commande déclarée prête entre-temps sur un autre poste.
-      Elles ont quitté la file et leurs cases sont revenues à l'état enregistré ;
-      il reste à le DIRE, sinon la balance a l'air d'avoir bougé toute seule.
+      🔴 La coche n'a pas été enregistrée — un article pas encore sorti du four,
+      une commande déclarée prête entre-temps sur un autre poste. La case est
+      revenue en arrière, la balance avec : il reste à le DIRE.
     -->
-    @if (refusals().length > 0) {
-      <fold-callout variant="alert" class="co-note co-refusals">
-        Ces coches n'ont pas été enregistrées — leurs cases sont revenues à ce que le serveur
-        connaît :
-        <ul class="co-refusal-list">
-          @for (refusal of refusals(); track refusal.key) {
-            <li>
-              <strong>{{ refusal.label }}</strong> — {{ refusal.message }}
-            </li>
-          }
-        </ul>
-        <button foldButton (click)="acknowledgeRefusals()">Compris</button>
+    @if (markFailed(); as failed) {
+      <fold-callout variant="alert" class="co-note co-mark-failed">
+        La coche n'a pas été enregistrée — {{ failed }}
+      </fold-callout>
+    }
+
+    <!--
+      🔴 La commande ouverte ici vient d'être déclarée prête sur un AUTRE poste.
+      La relecture l'a rangée dans les prêtes et l'écran a enchaîné : sans cette
+      phrase, on croirait avoir perdu sa commande.
+    -->
+    @if (closedElsewhere(); as who) {
+      <fold-callout variant="info" class="co-note co-closed-elsewhere">
+        La commande {{ who }} a été déclarée prête sur un autre poste — elle est passée dans les
+        prêtes, et l'écran a enchaîné sur la suivante.
+        <button foldButton (click)="acknowledgeClosedElsewhere()">Compris</button>
       </fold-callout>
     }
 
@@ -311,7 +314,7 @@
                 @for (line of order.lines; track line.sku) {
                   <app-packing-line
                     [line]="line"
-                    [locked]="order.packedAt !== null"
+                    [locked]="order.packedAt !== null || isBusy(order, line)"
                     [hit]="hit(line.sku)"
                     (toggled)="toggle(order, line, $event)"
                   />
@@ -441,22 +444,12 @@
             Ni prix, ni total en euros sur ce poste — le fournil colise, il ne facture pas.
           </p>
           <p class="co-foot-origin">
-            <!--
-              🔴 Le pied dit TOUJOURS ce qui n'est pas parti. Jamais un écran qui
-              a l'air d'avoir enregistré alors que non.
-            -->
-            @if (offline()) {
-              <span class="co-foot-flag">
-                <fold-icon name="offline-bolt" size="sm" />
-                hors ligne
-              </span>
-            }
-            @if (pendingMarks() > 0) {
-              <span class="co-foot-flag">
-                {{ pendingMarks() }} geste{{ pendingMarks() > 1 ? 's' : '' }} en attente d'envoi
-              </span>
-            } @else {
-              <span>Toutes les coches sont parties</span>
+            <!-- De quand date la balance : le poste se relit toutes les 15 s, et
+                 une relecture ratée se dit au lieu d'avoir l'air à jour. -->
+            @if (refreshFailed()) {
+              <span class="co-foot-flag">relecture impossible depuis {{ readLabel() }}</span>
+            } @else if (readLabel(); as read) {
+              <span>relu à {{ read }}</span>
             }
           </p>
         </footer>

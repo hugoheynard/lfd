@@ -35,12 +35,12 @@ import {
   packedCount,
   packingBoard,
   packingMarkKey,
-  withoutRefusedPacking,
   type LocalPackingMark,
 } from '../packing-board';
-import { PackingQueue } from '../packing-queue';
+import { refreshWhileVisible } from '../periodic-refresh';
+import { serverMessageOf } from '../server-message';
 import { PackingService } from '../packing.service';
-import { dayLabelOf, isoDay, nextDay } from '../worksheet-day';
+import { dayLabelOf, hourLabel, isoDay, nextDay } from '../worksheet-day';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -71,10 +71,10 @@ const MAX_CONTAINERS = 99;
  * mettre douze dans un bac. 🔴 Un reste négatif se voit tel quel : c'est le cas
  * que ce poste existe pour attraper, et le masquer à zéro l'effacerait.
  *
- * **Deux états, un seul réversible.** Cocher une ligne est un état de travail —
- * il passe par {@link PackingQueue}, parce que le fournil est en sous-sol.
- * Déclarer la commande prête est le fait irréversible : il ne passe PAS par la
- * file, il échoue à l'écran et se redit.
+ * **Deux états, un seul réversible.** Cocher une ligne est un état de travail :
+ * il part tout de suite, et revient en arrière en le disant s'il est refusé
+ * (plus de file hors ligne depuis le 2026-09-14). Déclarer la commande prête est
+ * le fait irréversible : il échoue à l'écran et se redit.
  *
  * ⚠️ **« Prête » à l'écran, `packed` dans le code, et c'est voulu.** Le serveur
  * publie `OrderPackedEvent` — « colisé », ce que le fournil a fait — et le
@@ -110,7 +110,6 @@ const MAX_CONTAINERS = 99;
 export class Colisage {
   private readonly api = inject(PackingService);
   private readonly permissions = inject(PermissionsStore);
-  private readonly queue = inject(PackingQueue);
 
   /**
    * Le bac à ouvrir, quand on arrive par le QR d'une feuille d'atelier
@@ -152,7 +151,7 @@ export class Colisage {
 
   private readonly view = signal<ProductionPackingView | null>(null);
 
-  /** Les coches posées ici, par `AAAA-MM-JJ RÉFÉRENCE SKU`. Elles l'emportent. */
+  /** Les coches en cours d'envoi, par `AAAA-MM-JJ RÉFÉRENCE SKU` — montrées avant la réponse. */
   private readonly localMarks = signal<ReadonlyMap<string, LocalPackingMark>>(new Map());
 
   /** La commande ouverte. `null` = celle du haut de la pile affichée. */
@@ -220,22 +219,47 @@ export class Colisage {
   /** Le compte de containers vient-il d'être refusé ? Il se dit, il ne se tait pas. */
   protected readonly containersFailed = signal(false);
 
-  protected readonly pendingMarks = this.queue.pending;
-  protected readonly offline = this.queue.offline;
+  /** Les lignes dont la coche est en train de partir — leur case est désarmée. */
+  private readonly busy = signal<ReadonlySet<string>>(new Set());
 
-  /** Les coches refusées pour de bon, nommées par produit et par commande. */
-  protected readonly refusals = computed(() => {
-    const sheets = this.view()?.sheets ?? [];
-    return this.queue.rejected().map(({ mark, message }) => {
-      const sheet = sheets.find((candidate) => candidate.reference === mark.reference);
-      const line = sheet?.lines.find((candidate) => candidate.sku === mark.sku);
-      return {
-        key: packingMarkKey(mark.date, mark.reference, mark.sku),
-        label: `${line?.productName ?? mark.sku} · ${sheet?.customerLabel ?? mark.reference}`,
-        message,
-      };
-    });
-  });
+  /**
+   * La dernière coche refusée, avec le produit, la commande et la raison du
+   * serveur. 🔴 La case est revenue en arrière, et la balance avec : il reste à
+   * le DIRE, sinon elle a l'air d'avoir bougé toute seule.
+   */
+  protected readonly markFailed = signal<string | null>(null);
+
+  /**
+   * L'instant de la dernière écriture acceptée — coche ou containers. Une
+   * relecture partie AVANT elle rendrait l'état d'avant : sa réponse est jetée.
+   */
+  private lastWriteAt = 0;
+
+  /** L'instant ISO de la dernière lecture réussie — le pied dit de quand date l'écran. */
+  private readonly readAt = signal<string | null>(null);
+
+  /** « 4 h 12 » — l'heure de la dernière lecture réussie. */
+  protected readonly readLabel = computed(() => hourLabel(this.readAt()));
+
+  /**
+   * La dernière relecture a-t-elle échoué ? Le poste reste à l'écran, mais le
+   * pied dit depuis quand il n'a pas bougé : une balance figée qui a l'air à
+   * jour fait répartir deux fois la même marchandise.
+   */
+  protected readonly refreshFailed = signal(false);
+
+  /**
+   * La commande ouverte ICI qu'un **autre poste** vient de déclarer prête.
+   *
+   * 🔴 C'est le cas multiposte par excellence : la relecture la fait passer dans
+   * la pile des prêtes, et l'écran enchaîne sur la suivante — sous les doigts de
+   * quelqu'un qui n'a rien cliqué. Sans cette phrase, on croirait avoir perdu sa
+   * commande, ou avoir déclaré la mauvaise.
+   */
+  protected readonly closedElsewhere = signal<string | null>(null);
+
+  /** Le rang de la dernière lecture lancée. Une réponse lente n'écrase jamais une plus récente. */
+  private readSeq = 0;
 
   constructor() {
     // 🔴 Une lecture UNIQUE, et pas un `effect` sur la journée. Le poste n'a pas
@@ -243,14 +267,15 @@ export class Colisage {
     // un effet qui la lirait se rappellerait après chaque lecture — et le jour
     // où la règle bascule d'aujourd'hui à demain, il partirait deux fois.
     void this.load();
+    // Les autres postes colisent aussi : sans relecture, une commande déclarée
+    // prête ailleurs resterait « en cours » ici, et la balance mentirait.
+    refreshWhileVisible(() => this.refresh());
   }
 
   /** Les bacs et la ressource, recouverts par ce qui a été coché ici. */
   private readonly board = computed(() => {
     const view = this.view();
-    return view === null
-      ? { sheets: [], resources: [] }
-      : packingBoard(view, withoutRefusedPacking(this.localMarks(), this.queue.rejected()));
+    return view === null ? { sheets: [], resources: [] } : packingBoard(view, this.localMarks());
   });
 
   protected readonly sheets = computed(() => this.board().sheets);
@@ -498,8 +523,13 @@ export class Colisage {
     this.state.set('loading');
     this.closeFailed.set(false);
     this.containersFailed.set(false);
+    this.readSeq += 1;
+    const seq = this.readSeq;
     try {
       const served = await this.workedDay();
+      if (seq !== this.readSeq) {
+        return;
+      }
       this.view.set(served);
       // La journée vient de la RÉPONSE, pas de la demande : `workedDay` peut
       // rendre demain là où on avait aujourd'hui, et l'en-tête doit nommer la
@@ -507,8 +537,12 @@ export class Colisage {
       this.date.set(served.date);
       this.openAsked(served);
       this.state.set('ready');
+      this.readAt.set(new Date().toISOString());
+      this.refreshFailed.set(false);
     } catch {
-      this.state.set('error');
+      if (seq === this.readSeq) {
+        this.state.set('error');
+      }
     }
   }
 
@@ -549,6 +583,68 @@ export class Colisage {
     return tomorrow.closedAt === null ? this.api.packing(isoDay(new Date())) : tomorrow;
   }
 
+  /**
+   * **La relecture silencieuse** — toutes les 15 s tant que l'onglet est visible.
+   *
+   * Pas d'écran de chargement, et rien de ce que la personne a choisi ne bouge :
+   * la pile, la recherche, la commande ouverte. Seul change ce que le serveur
+   * sait de nouveau — une ligne cochée ailleurs, une commande déclarée prête sur
+   * un autre poste, un article enfin sorti du four.
+   *
+   * Sautée pendant une déclaration : celle-ci relit elle-même au retour, et deux
+   * lectures croisées rendraient l'enchaînement sur la commande suivante
+   * incertain.
+   *
+   * 🔴 Une réponse est **jetée** si une écriture a été acceptée après le départ
+   * de la relecture : elle rendrait l'état d'avant.
+   */
+  private async refresh(): Promise<void> {
+    if (this.state() !== 'ready' || this.closing()) {
+      return;
+    }
+    this.readSeq += 1;
+    const seq = this.readSeq;
+    const startedAt = Date.now();
+    const openBefore = this.current();
+    try {
+      const served = await this.workedDay();
+      if (seq !== this.readSeq || this.lastWriteAt >= startedAt) {
+        return;
+      }
+      this.view.set(served);
+      this.date.set(served.date);
+      this.noticeClosedElsewhere(openBefore);
+      this.readAt.set(new Date().toISOString());
+      this.refreshFailed.set(false);
+    } catch {
+      if (seq === this.readSeq) {
+        this.refreshFailed.set(true);
+      }
+    }
+  }
+
+  /**
+   * La commande qu'on avait sous les yeux est-elle passée prête ailleurs ?
+   *
+   * Seulement depuis la pile « en cours » : dans la pile des prêtes, une
+   * commande prête est à sa place, et il n'y a rien à dire.
+   */
+  private noticeClosedElsewhere(openBefore: PackingSheet | null): void {
+    if (openBefore === null || openBefore.packedAt !== null || this.stack() !== 'todo') {
+      return;
+    }
+    const now = this.sheets().find((sheet) => sheet.reference === openBefore.reference);
+    if (now?.packedAt != null) {
+      this.closedElsewhere.set(openBefore.customerLabel);
+      this.chosen.set(null);
+    }
+  }
+
+  /** La personne a vu qu'une commande a été déclarée prête ailleurs. */
+  protected acknowledgeClosedElsewhere(): void {
+    this.closedElsewhere.set(null);
+  }
+
   /** Ouvre une commande. Un échec ne se traîne pas d'une commande à l'autre. */
   protected choose(reference: string): void {
     this.chosen.set(reference);
@@ -556,6 +652,7 @@ export class Colisage {
     this.closeFailed.set(false);
     this.containersFailed.set(false);
     this.justDeclared.set(null);
+    this.closedElsewhere.set(null);
   }
 
   /**
@@ -583,6 +680,12 @@ export class Colisage {
     this.writeContainers(sheet.reference, wanted);
     try {
       await this.api.setContainers(this.date(), sheet.reference, wanted);
+      // Accepté : inscrit dans ce qu'on a lu, puis le compte local s'efface —
+      // sinon il l'emporterait pour toujours, et ce poste ne verrait jamais un
+      // autre poste changer le compte de cette commande.
+      this.writeServedSheet(sheet.reference, (served) => ({ ...served, containers: wanted }));
+      this.dropContainers(sheet.reference);
+      this.lastWriteAt = Date.now();
     } catch {
       this.dropContainers(sheet.reference);
       this.containersFailed.set(true);
@@ -607,14 +710,19 @@ export class Colisage {
   }
 
   /**
-   * Met une ligne dans le bac, ou l'en sort : **à l'écran d'abord**, puis dans
-   * la file.
+   * Met une ligne dans le bac, ou l'en sort : **à l'écran tout de suite**, au
+   * serveur aussitôt.
    *
-   * Rien n'attend ici la réponse du serveur. Une case qui mettrait deux secondes
-   * à noircir au sous-sol serait recochée une seconde fois, et ce sont les deux
-   * gestes contradictoires que la file existe pour éviter.
+   * La case se coche avant la réponse et se désarme le temps de l'envoi : un
+   * second geste contraire pourrait arriver avant le premier. Acceptée, la
+   * coche est inscrite dans ce qu'on a lu ; refusée, elle revient en arrière — la
+   * balance avec — et l'écran dit pourquoi.
    */
-  protected toggle(sheet: PackingSheet, line: PackingLineView, packed: boolean): void {
+  protected async toggle(
+    sheet: PackingSheet,
+    line: PackingLineView,
+    packed: boolean,
+  ): Promise<void> {
     // 🔴 Deux refus, deux raisons. Une commande déclarée prête ne revient pas
     // dessus ; une ligne dont l'article n'est pas sorti du four redeviendra
     // cochable. Le gabarit désarme déjà les deux cases — ce garde-ci tient le
@@ -623,24 +731,72 @@ export class Colisage {
       return;
     }
     const date = this.date();
+    const key = packingMarkKey(date, sheet.reference, line.sku);
+    if (this.busy().has(key)) {
+      return;
+    }
     const initials = this.initials();
-    const next = new Map(this.localMarks());
-    next.set(packingMarkKey(date, sheet.reference, line.sku), { packed, initials });
-    this.localMarks.set(next);
-    this.queue.mark({ date, reference: sheet.reference, sku: line.sku, packed, initials });
+    this.markFailed.set(null);
+    this.setLocal(key, { packed, initials });
+    this.setBusy(key, true);
+    try {
+      await this.api.mark(date, sheet.reference, line.sku, packed, initials);
+      this.writeServedSheet(sheet.reference, (served) => ({
+        ...served,
+        lines: served.lines.map((candidate) =>
+          candidate.sku === line.sku
+            ? { ...candidate, packed, initials: packed && initials !== '' ? initials : null }
+            : candidate,
+        ),
+      }));
+      this.lastWriteAt = Date.now();
+    } catch (error) {
+      this.markFailed.set(
+        `${line.productName} · ${sheet.customerLabel} — ${serverMessageOf(error)}`,
+      );
+    } finally {
+      this.setLocal(key, null);
+      this.setBusy(key, false);
+    }
   }
 
-  /**
-   * La personne a vu les refus. Les coches locales sont retirées pour de bon
-   * AVANT d'oublier le refus, sans quoi elles réapparaîtraient cochées.
-   */
-  protected acknowledgeRefusals(): void {
+  /** La coche de cette ligne est-elle en train de partir ? */
+  protected isBusy(sheet: PackingSheet, line: PackingLineView): boolean {
+    return this.busy().has(packingMarkKey(this.date(), sheet.reference, line.sku));
+  }
+
+  /** Réécrit une commande dans ce qu'on a lu — après une écriture acceptée. */
+  private writeServedSheet(reference: string, change: (sheet: PackingSheet) => PackingSheet): void {
+    this.view.update((view) =>
+      view === null
+        ? view
+        : {
+            ...view,
+            sheets: view.sheets.map((sheet) =>
+              sheet.reference === reference ? change(sheet) : sheet,
+            ),
+          },
+    );
+  }
+
+  private setLocal(key: string, mark: LocalPackingMark | null): void {
     const next = new Map(this.localMarks());
-    for (const { mark } of this.queue.rejected()) {
-      next.delete(packingMarkKey(mark.date, mark.reference, mark.sku));
+    if (mark === null) {
+      next.delete(key);
+    } else {
+      next.set(key, mark);
     }
     this.localMarks.set(next);
-    this.queue.acknowledge();
+  }
+
+  private setBusy(key: string, busy: boolean): void {
+    const next = new Set(this.busy());
+    if (busy) {
+      next.add(key);
+    } else {
+      next.delete(key);
+    }
+    this.busy.set(next);
   }
 
   /**
