@@ -1,10 +1,47 @@
-# Les accès client — à revisiter, et d'abord le transfert de détenteur
+# Les accès client — l'invitation et le transfert de détenteur, à reprendre
 
 > Ouvert le 2026-09-14 à la demande de Hugo, pendant le plan
 > [`../b2b/plan-invitation-client.md`](../b2b/plan-invitation-client.md). Les
 > décisions prises ce jour-là sont **volontairement prudentes** : elles ferment
 > des failles et un oracle, sans prétendre avoir dessiné le modèle définitif des
 > accès. Ce document dit ce qu'il faudra rouvrir.
+
+## 0. 🔴 IMPORTANT — l'invitation client n'est pas construite, et ne tient pas en un lot
+
+**Marqué important par Hugo le 2026-09-14.** La demande : un lien « Envoyer une
+invitation » sous chaque contact de Mon compte. Le plan
+[`../b2b/plan-invitation-client.md`](../b2b/plan-invitation-client.md) a subi
+**trois contradictions de `vitruve` le même jour — dix objections bloquantes** —
+et **rien n'est construit**.
+
+Pourquoi c'est gros : aujourd'hui **inviter EST rattacher** (`grant-account-access.service.ts`).
+Séparer l'invitation de l'accès — ce qu'exigent l'absence d'oracle, l'accord de
+la personne et le retrait propre — touche le bus d'événements (un abonné publié
+dans une transaction hérite d'une transaction close), le resolver d'identité
+(le compte passe `active` avant tout handler), trois appelants staff de `grant`,
+le contrat servi `HolderOutcome`, une migration (`company_invitations`,
+`company_invitation_sends`), de nouveaux e-mails et les deux fronts.
+
+**Décidé** (Hugo, 2026-09-14) : détenteur et admin invitent ; le rôle du contact,
+jamais `owner` ; société en attente ou active seulement ; jamais de rattachement
+d'office d'un compte existant ; supprimer un contact ne coupe que les accès nés
+d'une invitation de la société ; le staff passe aussi par l'invitation pour un
+compte déjà actif.
+
+**Reste à trancher avant de construire** (plan §12.1) : le staff rattache le
+**détenteur** d'une société à une adresse qui a déjà un compte actif — une
+invitation ne peut pas porter `owner`. Rattachement direct réservé au staff, ou
+invitation `owner` réservée au staff et acceptée par la personne ?
+
+**Déjà fait en chemin** : les trois failles que ce plan a révélées sont corrigées
+(`9f28f00f`) — détenteur non rétrogradable par le carnet, compte non prouvé qui
+ne capte plus un accès, joker `_` dans la recherche par adresse.
+
+**Comment reprendre** : trancher §12.1, relire les §11 et §12 du plan (ils font
+foi sur la v2), découper en lots — migration + domaine, API client, chemin staff
+et contrat, e-mails, fronts — et passer `lecteur-de-migrations` sur la migration.
+Le transfert de détenteur (§1 ci-dessous) touche les mêmes pièces : les concevoir
+ensemble évite de refaire le modèle deux fois.
 
 ## 1. 🔴 Le transfert de détenteur n'existe pas
 
