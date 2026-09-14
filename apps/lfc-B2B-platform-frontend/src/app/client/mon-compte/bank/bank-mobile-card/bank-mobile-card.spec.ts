@@ -5,6 +5,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
 import { type BankReadStatus, ClientBankAccount } from '../../../client-bank-account.service';
+import { ClientMandate } from '../../../client-mandate.service';
 import { FR } from '../../../copy/fr';
 import { bootCard, footButton, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { BankPanel } from '../bank-panel/bank-panel';
@@ -23,10 +24,12 @@ const SAVED: CustomerBankAccountView = {
 
 let ensured: string[];
 let reloads: string[];
+let refreshes: string[];
 
 function render(status: BankReadStatus, account: CustomerBankAccountView | null): HTMLElement {
   ensured = [];
   reloads = [];
+  refreshes = [];
   const fixture = bootCard(
     BankMobileCard,
     [TOMMEUSES],
@@ -39,6 +42,15 @@ function render(status: BankReadStatus, account: CustomerBankAccountView | null)
           ensure: (id: string) => ensured.push(id),
           reload: (id: string) => {
             reloads.push(id);
+            return Promise.resolve();
+          },
+        },
+      },
+      {
+        provide: ClientMandate,
+        useValue: {
+          refresh: (id: string) => {
+            refreshes.push(id);
             return Promise.resolve();
           },
         },

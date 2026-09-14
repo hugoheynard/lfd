@@ -8,6 +8,7 @@ import {
 
 import { ClientBankAccount } from '../../../client-bank-account.service';
 import { ClientCompany } from '../../../client-company.service';
+import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { BankPanel } from '../bank-panel/bank-panel';
 import { bankActionLabel, bankLine } from '../bank-section';
@@ -31,6 +32,7 @@ import { bankActionLabel, bankLine } from '../bank-section';
 export class BankDeskCard {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly accounts = inject(ClientBankAccount);
+  private readonly mandates = inject(ClientMandate);
   private readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);
 
@@ -60,7 +62,7 @@ export class BankDeskCard {
   protected open(): void {
     const id = this.companyId();
     if (id !== null) {
-      void BankPanel.open(this.panels, this.accounts, id);
+      void BankPanel.open(this.panels, this.accounts, this.mandates, id);
     }
   }
 }

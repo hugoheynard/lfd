@@ -1,0 +1,54 @@
+<h2 class="title">{{ t().account.sections.mandate }}</h2>
+@switch (mandates.status()) {
+  @case ('loading') {
+    <fold-loading [message]="t().account.mandateLoading" />
+  }
+  @case ('failed') {
+    <fold-empty-state
+      tone="alert"
+      [title]="t().account.mandateLoadFailedTitle"
+      [subtitle]="t().account.mandateLoadFailedBody"
+    >
+      <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+        {{ t().account.loadRetry }}
+      </button>
+    </fold-empty-state>
+  }
+  @default {
+    <div class="summary">
+      <div class="lines">
+        <p class="line state">{{ state() }}</p>
+        @if (reference(); as rum) {
+          <p class="line reference">{{ rum }}</p>
+        }
+        @if (detail(); as precision) {
+          <p class="line meta">{{ precision }}</p>
+        }
+      </div>
+      <!-- Le PDF ne se rend que pour le brouillon : un actif n'a plus de papier à signer. -->
+      @if (printable()) {
+        <span class="icons">
+          <fold-button-icon icon="eye" [tooltip]="t().account.mandateView" (clicked)="view()" />
+          <fold-button-icon
+            icon="download"
+            [tooltip]="t().account.mandateDownload"
+            (clicked)="download()"
+          />
+        </span>
+      }
+    </div>
+    @if (fetchFailed()) {
+      <fold-callout variant="alert" announce>{{ t().account.mandateFetchFailed }}</fold-callout>
+    }
+    <button
+      foldButton
+      class="action"
+      emphasis="soft"
+      intent="primary"
+      type="button"
+      (click)="open()"
+    >
+      {{ action() }}
+    </button>
+  }
+}

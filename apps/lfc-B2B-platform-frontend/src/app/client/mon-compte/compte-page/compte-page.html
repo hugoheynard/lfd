@@ -144,9 +144,20 @@
             <!-- Le RIB : au détenteur et au rôle comptable seulement (plan
                `plan-rib-client.md` §2). Le sommaire se renumérote sans lui. -->
             @if (showsBank()) {
-              <section class="card bank" id="compte-bank">
+              <section class="card bank" id="compte-bank" [class.paired]="showsMandate()">
                 <app-bank-desk-card class="desk" />
                 <app-bank-mobile-card class="mobile" />
+              </section>
+            }
+
+            <!-- Le mandat SEPA, voisin du RIB qu'il autorise à débiter : rôle du RIB,
+                 RIB enregistré, drapeau `customerMandate` ouvert (plan
+                 `plan-mandat-client.md` §3). Au bureau, sur la même rangée que le
+                 RIB ; en pile, son propre panneau, juste après. -->
+            @if (showsMandate()) {
+              <section class="card mandate" id="compte-mandate">
+                <app-mandate-desk-card class="desk" />
+                <app-mandate-mobile-card class="mobile" />
               </section>
             }
 

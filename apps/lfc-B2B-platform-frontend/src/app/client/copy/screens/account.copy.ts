@@ -69,6 +69,7 @@ export interface AccountCopy {
     readonly kbis: string;
     readonly addresses: string;
     readonly bank: string;
+    readonly mandate: string;
     readonly payment: string;
     readonly preferences: string;
     readonly data: string;
@@ -287,6 +288,51 @@ export interface AccountCopy {
   readonly bankReplace: string;
   readonly bankSavedToast: string;
   readonly bankSaveFailed: string;
+  /** Pendant la lecture du mandat SEPA. */
+  readonly mandateLoading: string;
+  /** La lecture du mandat a échoué : ce n'est PAS « aucun mandat », et on le dit. */
+  readonly mandateLoadFailedTitle: string;
+  readonly mandateLoadFailedBody: string;
+  /** Aucun mandat, ou un mandat qui n'est plus en cours (révoqué, rejeté, en attente chez Stripe). */
+  readonly mandateNone: string;
+  /** Le brouillon sans scan : l'état EST la consigne (demande de Hugo, plan §0). */
+  readonly mandateAwaiting: string;
+  /** Le brouillon dont le scan est déposé : le commercial le relit avant d'activer. */
+  readonly mandateInReview: string;
+  readonly mandateActive: string;
+  /** `{reference}` : la RUM, que le client déclare à sa banque. */
+  readonly mandateReference: string;
+  /** `{date}` : la date portée par le papier signé. */
+  readonly mandateSignedOn: string;
+  /** `{fileName}` : le nom du scan déposé. */
+  readonly mandateProofFile: string;
+  readonly mandateGenerate: string;
+  /** Le bouton du bas d'un brouillon sans scan : il ouvre le panneau où l'on dépose. */
+  readonly mandateSend: string;
+  /** Voir / télécharger : les libellés des deux icônes, pour qui ne les voit pas. */
+  readonly mandateView: string;
+  readonly mandateDownload: string;
+  /** Le panneau, sans mandat en cours : ce que le mandat autorise, avant de le générer. */
+  readonly mandateNoneBody: string;
+  /** Le panneau, brouillon sans scan : imprimer, dater, signer, renvoyer, déclarer à sa banque. */
+  readonly mandateAwaitingBody: string;
+  readonly mandateInReviewBody: string;
+  /** Un mandat actif ne se remplace pas d'ici : le changement de banque passe par le commercial. */
+  readonly mandateActiveBody: string;
+  readonly mandateDrop: string;
+  readonly mandateDropReplace: string;
+  /** Sous la zone de dépôt : les formats et la taille que l'API accepte. */
+  readonly mandateDropHint: string;
+  readonly mandateUploading: string;
+  readonly mandateUploadedToast: string;
+  /** En tête du message du serveur, quand la génération est refusée. */
+  readonly mandateGenerateFailed: string;
+  /** En tête du message du serveur, quand le dépôt est refusé. */
+  readonly mandateUploadFailed: string;
+  readonly mandateFetchFailed: string;
+  /** Visible et désactivé tant qu'aucun prestataire n'est branché (plan §5.1). */
+  readonly mandateEsign: string;
+  readonly mandateEsignSoon: string;
   /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
   readonly supportTitle: string;
   /** Le titre du panneau que la carte ouvre. */

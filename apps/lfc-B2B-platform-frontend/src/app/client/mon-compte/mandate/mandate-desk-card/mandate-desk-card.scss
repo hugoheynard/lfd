@@ -1,0 +1,51 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.desk-host;
+}
+
+.title {
+  @include card.title;
+}
+
+/* L'état et sa RUM à gauche, les deux icônes du PDF à droite. */
+.summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
+}
+
+.lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.line {
+  @include card.line;
+}
+
+.state {
+  font-weight: var(--fold-weight-bold);
+}
+
+/* La RUM se dicte à sa banque : caractères alignés. */
+.reference {
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  color: var(--fold-color-text-muted);
+}
+
+.icons {
+  flex: none;
+  display: flex;
+  gap: var(--fold-space-xs);
+}
+
+.action {
+  align-self: flex-start;
+}

@@ -1,0 +1,31 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.mobile-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.line {
+  @include card.line;
+}
+
+.state {
+  font-weight: var(--fold-weight-bold);
+}
+
+/* La RUM se dicte à sa banque : caractères alignés. */
+.reference {
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  color: var(--fold-color-text-muted);
+}
+
+.icons {
+  display: flex;
+  gap: var(--fold-space-xs);
+}

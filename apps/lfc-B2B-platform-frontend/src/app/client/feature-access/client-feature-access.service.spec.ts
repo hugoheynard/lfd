@@ -81,6 +81,38 @@ describe('ClientFeatureAccess', () => {
       expect(access.atLeast('browse')).toBe(false);
     });
 
+    /**
+     * Plan mandat client §8 : la clé est gardée par l'API et fermée par défaut.
+     * Une carte montrée sur une lecture en vol, en échec ou muette n'enverrait
+     * que des requêtes refusées.
+     */
+    it('le mandat client reste `closed` tant qu’on ne sait pas, et suit le serveur ensuite', async () => {
+      const loading = access.load();
+      expect(access.customerMandate()).toBe('closed');
+      http.expectOne(globalRead).flush({ shop: 'order' });
+      await loading;
+      // Un serveur qui ne connaît pas la clé : fermé.
+      expect(access.customerMandate()).toBe('closed');
+
+      access.receive({
+        shop: 'order',
+        orders: 'visible',
+        invoices: 'visible',
+        desktopMenu: 'visible',
+        customerMandate: 'open',
+      });
+      expect(access.customerMandate()).toBe('open');
+      expect(access.levelOf('customerMandate')).toBe('open');
+    });
+
+    it('un échec de lecture ferme aussi le mandat client', async () => {
+      const loading = access.load();
+      http.expectOne(globalRead).flush('panne', { status: 503, statusText: 'Service Unavailable' });
+      await loading;
+
+      expect(access.customerMandate()).toBe('closed');
+    });
+
     it('ne relit pas : deux appelants attendent la même lecture', async () => {
       const first = access.load();
       const second = access.load();

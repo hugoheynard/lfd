@@ -23,6 +23,7 @@ import {
 
 import { NotifyService } from '../../../../notify.service';
 import { ClientBankAccount } from '../../../client-bank-account.service';
+import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
 import { bankActionLabel, bankLine } from '../bank-section';
@@ -73,10 +74,16 @@ export class BankPanel {
    * Ouvre le panneau sur le RIB déjà lu, et **relit** au succès : la réponse
    * d'écriture ne porte rien, seule la relecture dit les quatre derniers
    * chiffres — aux deux cartes à la fois, puisqu'elles lisent la même source.
+   *
+   * Le **mandat** se relit aussi : enregistrer le RIB révoque le brouillon côté
+   * serveur (plan `plan-mandat-client.md` §8), dont le papier nommerait un
+   * compte qui n'est plus le RIB. Sans relecture, la carte mandat proposerait
+   * encore de télécharger un brouillon que l'API refuse désormais.
    */
   static async open(
     panels: FoldPanelHostService,
     accounts: ClientBankAccount,
+    mandates: ClientMandate,
     companyId: string,
   ): Promise<void> {
     const ref = panels.open<BankPanelData, boolean>(BankPanel, {
@@ -84,7 +91,7 @@ export class BankPanel {
       data: { companyId, account: accounts.account() },
     });
     if ((await ref.closed) === true) {
-      await accounts.reload(companyId);
+      await Promise.all([accounts.reload(companyId), mandates.refresh(companyId)]);
     }
   }
 
