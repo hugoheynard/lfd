@@ -1,0 +1,34 @@
+<fold-panel-header [title]="heading()" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.addressSaveFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <!-- Le formulaire postal partagé, champs par défaut : une facture ne se livre pas. -->
+  <lfd-address-form
+    [fields]="fields"
+    [labels]="t().account.addressForm"
+    [value]="postal()"
+    (valueChange)="setPostal($event)"
+  />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    class="submit"
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSubmit()"
+    (click)="submit()"
+  >
+    {{ t().account.save }}
+  </button>
+</fold-panel-footer>

@@ -16,15 +16,6 @@ import type { ServicePoints } from '../../shop/pickup-points.store';
 export type AddressesView = 'billing' | 'delivery';
 
 /**
- * Par où le panneau entre : le détail de sa partie (`null`), ou directement le
- * formulaire de la facturation, qui est unique.
- *
- * Une livraison ne s'édite plus dans le panneau : elle a son dialogue
- * (`DeliveryAddressDialog`) depuis le 2026-09-14, avec ses consignes.
- */
-export type AddressesForm = null | { readonly kind: 'edit' };
-
-/**
  * Les contacts proposés pour « reprendre un contact connu » : le contact
  * principal de la société, s'il a un nom — la même règle que `knownContactsOf`
  * du back-office (`fiche-client.panels.ts`, vérifié le 2026-09-14), pour que les

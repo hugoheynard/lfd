@@ -1,7 +1,7 @@
 <fold-panel-header [title]="heading()" [closeLabel]="t().dialog.close" />
 
 <fold-panel-body>
-  @if (mode() === 'list' && data().view === 'billing') {
+  @if (data().view === 'billing') {
     <section class="block">
       @if (billing(); as line) {
         <p class="line">{{ line }}</p>
@@ -22,7 +22,7 @@
         </button>
       }
     </section>
-  } @else if (mode() === 'list') {
+  } @else {
     <section class="block">
       <h3 class="head">{{ deliveryCount() }}</h3>
       <!-- LE REFUS d'une action de ligne : la liste reste à l'écran, telle que relue. -->
@@ -108,36 +108,5 @@
         </button>
       }
     </section>
-  } @else {
-    <!-- Le formulaire de la FACTURATION. Une livraison a son dialogue. -->
-    @if (refusal(); as message) {
-      <fold-callout variant="alert" announce>
-        {{ t().account.addressSaveFailed }} {{ message }}
-      </fold-callout>
-    }
-    <lfd-address-form
-      [fields]="fields"
-      [labels]="t().account.addressForm"
-      [value]="postal()"
-      (valueChange)="setPostal($event)"
-    />
   }
 </fold-panel-body>
-
-@if (mode() !== 'list') {
-  <fold-panel-footer>
-    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="backToList()">
-      {{ t().account.cancel }}
-    </button>
-    <button
-      foldButton
-      intent="primary"
-      type="button"
-      [loading]="saving()"
-      [disabled]="!canSave()"
-      (click)="save()"
-    >
-      {{ t().account.save }}
-    </button>
-  </fold-panel-footer>
-}

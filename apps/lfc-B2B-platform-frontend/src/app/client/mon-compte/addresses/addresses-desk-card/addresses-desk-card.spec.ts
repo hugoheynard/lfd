@@ -8,7 +8,7 @@ import { ClientAddresses } from '../../../client-addresses.service';
 import { FR } from '../../../copy/fr';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { asRole, bootCard, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
-import { AddressesPanel } from '../addresses-panel/addresses-panel';
+import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
 import { AddressesDeskCard } from './addresses-desk-card';
 
@@ -82,7 +82,7 @@ describe('AddressesDeskCard', () => {
     expect(two.textContent).toContain(`${FR.account.deliveryHead} · 2 adresses`);
   });
 
-  it('ses gestes ouvrent le panneau sur leur formulaire, aux seuls rôles qui écrivent', () => {
+  it('ses gestes ouvrent leur dialogue, aux seuls rôles qui écrivent', () => {
     const reader = bootCard(AddressesDeskCard, [asRole('orders')], carnet(null, []))
       .nativeElement as HTMLElement;
     expect(reader.querySelectorAll('button').length).toBe(0);
@@ -106,23 +106,23 @@ describe('AddressesDeskCard', () => {
 
     TestBed.inject(FoldPanelHostService).dismissAll();
     button(writer, FR.account.billingFill)?.click();
-    expect(openedPanel()?.component).toBe(AddressesPanel);
-    expect(openedPanel()?.data).toEqual({
-      companyId: 'cmp_1',
-      canManage: true,
-      view: 'billing',
-      form: { kind: 'edit' },
+    // La facturation a son dialogue aussi (depuis le 2026-09-14).
+    expect(openedPanel()).toEqual({
+      component: BillingAddressDialog,
+      side: 'center',
+      data: { companyId: 'cmp_1', billing: null },
     });
   });
 
   /** Rétablis le 2026-09-14 : « Modifier la facturation » et « Modifier » par livraison. */
-  it('« Modifier la facturation » ouvre son formulaire, « Modifier » une livraison son dialogue', () => {
+  it('« Modifier la facturation » et « Modifier » une livraison ouvrent chacun leur dialogue', () => {
     vi.stubGlobal('matchMedia', matchMediaAt(false));
     const el = bootCard(AddressesDeskCard, [TOMMEUSES], carnet(SIEGE, [CHALET]))
       .nativeElement as HTMLElement;
 
     button(el, FR.account.billingEdit)?.click();
-    expect(openedPanel()?.data).toMatchObject({ view: 'billing', form: { kind: 'edit' } });
+    expect(openedPanel()?.component).toBe(BillingAddressDialog);
+    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', billing: SIEGE });
 
     TestBed.inject(FoldPanelHostService).dismissAll();
     el.querySelector<HTMLButtonElement>('.delivery button.row-edit')?.click();

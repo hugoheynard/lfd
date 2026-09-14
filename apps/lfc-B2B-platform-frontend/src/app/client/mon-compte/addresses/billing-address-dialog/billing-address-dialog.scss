@@ -1,0 +1,8 @@
+/* Même montage que `delivery-address-dialog` : l'hôte se borne à la hauteur que
+   fold lui laisse, et `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}

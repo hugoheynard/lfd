@@ -5,7 +5,7 @@ import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ServicePoints } from '../../../shop/pickup-points.store';
-import { AddressesPanel } from '../addresses-panel/addresses-panel';
+import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import {
   canWriteAddresses,
   deliveryCountLabel,
@@ -22,9 +22,9 @@ import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-addre
  * les mêmes que le carnet du checkout : deux listes pour un même client
  * finiraient par ne pas dire la même chose.
  *
- * Ses gestes d'écriture, aux rôles qui écrivent : la facturation ouvre le
- * panneau sur son formulaire ; ajouter ou modifier une livraison ouvre son
- * DIALOGUE, consignes comprises (`DeliveryAddressDialog`).
+ * Ses gestes d'écriture, aux rôles qui écrivent, ouvrent chacun leur DIALOGUE :
+ * la facturation (`BillingAddressDialog`), une livraison consignes comprises
+ * (`DeliveryAddressDialog`).
  */
 @Component({
   selector: 'app-addresses-desk-card',
@@ -59,11 +59,11 @@ export class AddressesDeskCard {
     deliveryCountLabel(this.deliveries().length, this.t().account),
   );
 
-  /** Renseigner ou modifier la facturation : le panneau, droit à son formulaire. */
+  /** Renseigner ou modifier la facturation : son dialogue. */
   protected editBilling(): void {
     const company = this.client.company();
     if (company !== null) {
-      AddressesPanel.open(this.panels, company, 'billing', { kind: 'edit' });
+      BillingAddressDialog.open(this.panels, company, this.addresses.billing());
     }
   }
 

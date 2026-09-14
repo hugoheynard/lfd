@@ -1,23 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-  untracked,
-} from '@angular/core';
-import { AddressForm, DEFAULT_POSTAL_FIELDS, type PostalAddress } from '@lfd/b2b-ui/address';
-import {
-  EMPTY_POSTAL_DRAFT,
-  postalDraftFrom,
-  postalIssue,
-  toBillingPayload,
-  toPostal,
-  withPostal,
-  type PostalDraft,
-} from '@lfd/b2b-ui/company';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type { CompanyView, DeliveryAddressView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -27,7 +8,6 @@ import {
   type FoldInlineConfirmLabels,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
-  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
 } from 'fold-ng';
@@ -38,8 +18,8 @@ import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
 import { ServicePoints } from '../../../shop/pickup-points.store';
+import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import {
-  type AddressesForm,
   type AddressesView,
   canWriteAddresses,
   deliveryCountLabel,
@@ -47,9 +27,6 @@ import {
   postalLine,
 } from '../addresses-section';
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
-
-/** Ce que montre le panneau : la partie du carnet, ou le formulaire de la facturation. */
-type AddressesMode = 'list' | 'form';
 
 /** Une action de ligne en vol : sur quelle livraison, et laquelle des deux. */
 interface RowAction {
@@ -64,11 +41,6 @@ export interface AddressesPanelData {
   readonly canManage: boolean;
   /** La partie du carnet par laquelle on entre — chaque bouton de carte ouvre la sienne. */
   readonly view: AddressesView;
-  /**
-   * Ouvrir directement le formulaire de facturation : c'est le geste de la
-   * carte bureau (« Renseigner », « Modifier »). La carte mobile ouvre le détail.
-   */
-  readonly form: AddressesForm;
 }
 
 /**
@@ -78,15 +50,16 @@ export interface AddressesPanelData {
  * ## Une partie du carnet
  *
  * Le panneau s'ouvre sur UNE partie — la facturation, ou les livraisons —,
- * celle du bouton qui l'a ouvert.
+ * celle du bouton qui l'a ouvert. Il ne montre que des LISTES : aucun formulaire n'y vit plus (2026-09-14).
  *
- * - **La facturation** bascule le panneau sur son formulaire postal : on
- *   revient par Annuler, ou par Enregistrer.
- * - **Une livraison** s'ajoute et se corrige dans son DIALOGUE
- *   (`DeliveryAddressDialog`, depuis le 2026-09-14), empilé par-dessus la
- *   liste : postal, note, point GPS, créneaux, contact sur place et signature —
- *   la parité avec le back-office. Au succès, la liste est celle que l'écriture
- *   a relue : l'adresse y apparaît à la place que le serveur lui donne.
+ * - **La facturation** se renseigne et se corrige dans son DIALOGUE
+ *   (`BillingAddressDialog`), empilé par-dessus : les champs postaux seuls.
+ * - **Une livraison** s'ajoute et se corrige dans le sien
+ *   (`DeliveryAddressDialog`) : postal, note, point GPS, créneaux, contact sur
+ *   place et signature — la parité avec le back-office.
+ *
+ * Au succès, la liste est celle que l'écriture a relue : l'adresse y apparaît
+ * à la place que le serveur lui donne, sans seconde lecture.
  *
  * ## Supprimer, désigner la défaut
  *
@@ -97,20 +70,17 @@ export interface AddressesPanelData {
  * promouvoir une autre par le serveur, et l'écran ne la devine pas. Un refus
  * s'affiche en tête de la liste, qui reste à l'écran.
  *
- * Le refus d'une facturation reste affiché dans le formulaire resté ouvert ;
- * celui d'une livraison, dans son dialogue.
+ * Le refus d'une écriture d'adresse s'affiche dans son dialogue.
  */
 @Component({
   selector: 'app-addresses-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AddressForm,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldInlineConfirmComponent,
     FoldPanelBodyComponent,
-    FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
   ],
   templateUrl: './addresses-panel.html',
@@ -119,15 +89,10 @@ export interface AddressesPanelData {
 export class AddressesPanel {
   static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
 
-  static open(
-    panels: FoldPanelHostService,
-    company: CompanyView,
-    view: AddressesView,
-    form: AddressesForm,
-  ): void {
+  static open(panels: FoldPanelHostService, company: CompanyView, view: AddressesView): void {
     panels.open(AddressesPanel, {
       side: panelSide(),
-      data: { companyId: company.id, canManage: canWriteAddresses(company), view, form },
+      data: { companyId: company.id, canManage: canWriteAddresses(company), view },
     });
   }
 
@@ -139,11 +104,6 @@ export class AddressesPanel {
   private readonly service = inject(ServicePoints);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
-
-  protected readonly mode = signal<AddressesMode>('list');
-  protected readonly draft = signal<PostalDraft>(EMPTY_POSTAL_DRAFT);
-  protected readonly saving = signal(false);
-  protected readonly refusal = signal<string | null>(null);
 
   /** L'action de ligne en vol — une seule à la fois, sur tout le carnet. */
   protected readonly pending = signal<RowAction | null>(null);
@@ -178,35 +138,9 @@ export class AddressesPanel {
     deliveryCountLabel(this.deliveries().length, this.t().account),
   );
 
-  protected readonly fields = DEFAULT_POSTAL_FIELDS;
-
-  protected readonly heading = computed(() => {
-    const copy = this.t().account;
-    if (this.data().view === 'delivery') {
-      return copy.deliveryHead;
-    }
-    if (this.mode() === 'form') {
-      return this.addresses.billing() === null ? copy.billingFill : copy.billingEdit;
-    }
-    return copy.billingHead;
-  });
-
-  protected readonly postal = computed(() => toPostal(this.draft()));
-
-  protected readonly canSave = computed(() => !this.saving() && postalIssue(this.draft()) === '');
-
-  constructor() {
-    // L'ouverture peut aller droit au formulaire de facturation : un effet,
-    // puisque `data` n'est pas encore posé quand le constructeur tourne.
-    effect(() => {
-      const { view, form } = this.data();
-      untracked(() => {
-        if (view === 'billing' && form !== null) {
-          this.editBilling();
-        }
-      });
-    });
-  }
+  protected readonly heading = computed(() =>
+    this.data().view === 'delivery' ? this.t().account.deliveryHead : this.t().account.billingHead,
+  );
 
   /** Une livraison neuve, dans son dialogue — cochée « par défaut » si le carnet est vide. */
   protected addDelivery(): Promise<void> {
@@ -219,38 +153,16 @@ export class AddressesPanel {
     return address === undefined ? Promise.resolve() : this.openDelivery(address);
   }
 
-  /** Pose ou corrige la facturation : préremplie quand elle existe. */
+  /**
+   * Renseigne ou corrige la facturation dans son dialogue, empilé par-dessus la
+   * liste. Au succès, l'écriture a relu le carnet : la ligne est à jour au retour.
+   */
   protected editBilling(): void {
-    const billing = this.addresses.billing();
-    this.startForm(billing === null ? EMPTY_POSTAL_DRAFT : postalDraftFrom(billing));
-  }
-
-  protected setPostal(postal: PostalAddress): void {
-    this.draft.update((draft) => withPostal(draft, postal));
-  }
-
-  protected backToList(): void {
-    this.mode.set('list');
-    this.refusal.set(null);
-  }
-
-  protected async save(): Promise<void> {
-    if (!this.canSave()) {
+    const company = this.client.company();
+    if (company === null || !this.data().canManage) {
       return;
     }
-    this.saving.set(true);
-    this.refusal.set(null);
-    const refusal = await this.addresses.saveBilling(
-      this.data().companyId,
-      toBillingPayload(this.draft()),
-    );
-    this.saving.set(false);
-    if (refusal === null) {
-      this.notify.success(this.t().account.addressSavedToast);
-      this.mode.set('list');
-    } else {
-      this.refusal.set(refusal);
-    }
+    BillingAddressDialog.open(this.panels, company, this.addresses.billing(), true);
   }
 
   /** Vrai quand CETTE action de ligne est en vol — pour le chargement de son seul bouton. */
@@ -315,11 +227,5 @@ export class AddressesPanel {
     if ((await ref.closed) === true) {
       this.rowRefusal.set(null);
     }
-  }
-
-  private startForm(draft: PostalDraft): void {
-    this.draft.set(draft);
-    this.refusal.set(null);
-    this.mode.set('form');
   }
 }

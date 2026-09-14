@@ -1,7 +1,5 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { AddressForm, type PostalAddress } from '@lfd/b2b-ui/address';
 import type {
   BillingAddressPayload,
   BillingAddressView,
@@ -16,6 +14,7 @@ import { ClientAddresses } from '../../../client-addresses.service';
 import { FR } from '../../../copy/fr';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { accountWith, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
+import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
 import { AddressesPanel, type AddressesPanelData } from './addresses-panel';
 
@@ -45,19 +44,6 @@ const SIEGE: BillingAddressView = {
   codePostal: '73150',
   ville: "Val d'Isère",
   pays: 'France',
-};
-
-/** Ce que l'on tape dans le formulaire. */
-const TYPED: PostalAddress = {
-  label: 'Bureau',
-  line1: '3 place du Village',
-  line2: '',
-  postalCode: '73320',
-  city: 'Tignes',
-  country: 'France',
-  latitude: '',
-  longitude: '',
-  note: 'Code 1234',
 };
 
 /** Une seconde livraison, qui n'est PAS la défaut. */
@@ -124,6 +110,10 @@ function boot(
           },
           saveBilling: (_: string, payload: BillingAddressPayload): Promise<string | null> => {
             wire.billings.push(payload);
+            // La relecture du vrai service, rejouée : la ligne posée revient.
+            if (wire.answer === null) {
+              billing.set({ id: 'adr_siege', ...payload });
+            }
             return Promise.resolve(wire.answer);
           },
           // La relecture du vrai service, rejouée : l'archivée disparaît, la
@@ -188,24 +178,10 @@ describe('AddressesPanel', () => {
     return found;
   };
 
-  const typeAddress = (): void => {
-    const form = fixture.debugElement.query(By.directive(AddressForm))
-      .componentInstance as AddressForm;
-    form.value.set(TYPED);
-    fixture.detectChanges();
-  };
-
-  const save = async (): Promise<void> => {
-    button(FR.account.save).click();
-    await fixture.whenStable();
-    fixture.detectChanges();
-  };
-
   const BILLING: AddressesPanelData = {
     companyId: 'cmp_1',
     canManage: true,
     view: 'billing',
-    form: null,
   };
   const DELIVERY: AddressesPanelData = { ...BILLING, view: 'delivery' };
 
@@ -283,25 +259,6 @@ describe('AddressesPanel', () => {
     expect(el().querySelector('.delivery')?.textContent).toContain('Bureau');
   });
 
-  it('ouvert droit au formulaire de facturation, écrit la charge postale seule', async () => {
-    fixture = boot({ ...BILLING, form: { kind: 'edit' } }, { billing: null, deliveries: [] });
-    fixture.detectChanges();
-
-    typeAddress();
-    await save();
-
-    expect(wire.billings).toEqual([
-      {
-        label: 'Bureau',
-        ligne1: '3 place du Village',
-        ligne2: '',
-        codePostal: '73320',
-        ville: 'Tignes',
-        pays: 'France',
-      },
-    ]);
-  });
-
   it('« Modifier » une livraison ouvre son dialogue sur CETTE adresse, consignes comprises', () => {
     vi.stubGlobal('matchMedia', matchMediaAt(true));
     const withSpecs: DeliveryAddressView = {
@@ -321,25 +278,50 @@ describe('AddressesPanel', () => {
     expect(wire.updates).toEqual([]);
   });
 
-  it('« Modifier la facturation » la préremplit', () => {
-    fixture = boot(BILLING, { billing: SIEGE, deliveries: [] });
-    button(FR.account.billingEdit).click();
+  /** Depuis le 2026-09-14, la facturation a son dialogue, empilé : le panneau ne garde que la liste. */
+  it('« Renseigner la facturation » ouvre son dialogue ; au succès, la ligne relue s’affiche', async () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    fixture = boot(BILLING, { billing: null, deliveries: [] });
+    expect(el().querySelector('lfd-address-form')).toBeNull();
+
+    button(FR.account.billingFill).click();
+    expect(openedPanel()).toEqual({
+      component: BillingAddressDialog,
+      side: 'center',
+      data: { companyId: 'cmp_1', billing: null },
+    });
+
+    // Le dialogue écrit (le carnet partagé est relu), puis se ferme sur un succès.
+    await TestBed.inject(ClientAddresses).saveBilling('cmp_1', {
+      label: 'Siège',
+      ligne1: '12 chemin des Barmettes',
+      ligne2: '',
+      codePostal: '73150',
+      ville: "Val d'Isère",
+      pays: 'France',
+    });
+    const [dialog] = TestBed.inject(FoldPanelHostService).panels();
+    if (dialog?.kind !== 'component') {
+      throw new Error('Le dialogue ne s’est pas ouvert.');
+    }
+    dialog.injector.get(FoldPanelRef).close(true);
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    const form = fixture.debugElement.query(By.directive(AddressForm))
-      .componentInstance as AddressForm;
-    expect(form.value().line1).toBe('12 chemin des Barmettes');
+    expect(el().querySelector('.line')?.textContent).toContain(
+      "12 chemin des Barmettes, 73150 Val d'Isère",
+    );
+    expect(button(FR.account.billingEdit)).toBeTruthy();
   });
 
-  it('Annuler revient à la liste sans rien écrire', () => {
-    fixture = boot(BILLING, { billing: null, deliveries: [] });
-    button(FR.account.billingFill).click();
-    fixture.detectChanges();
+  it('« Modifier la facturation » ouvre son dialogue sur la facturation posée, en feuille sous le pli', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(true));
+    fixture = boot(BILLING, { billing: SIEGE, deliveries: [] });
 
-    button(FR.account.cancel).click();
-    fixture.detectChanges();
-
-    expect(el().querySelector('lfd-address-form')).toBeNull();
+    button(FR.account.billingEdit).click();
+    expect(openedPanel()?.component).toBe(BillingAddressDialog);
+    expect(openedPanel()?.side).toBe('bottom');
+    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', billing: SIEGE });
     expect(wire.billings).toEqual([]);
   });
 
