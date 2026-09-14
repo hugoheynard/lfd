@@ -91,9 +91,11 @@ export {
   setMandateOptionsPayloadSchema,
 } from "./company-bank-account.js";
 export type {
-  SetCompanyBankAccountPayload,
-  CompanyBankAccountView,
   CompanyBankAccountSectionView,
+  CompanyBankAccountView,
+  CustomerBankAccountSectionView,
+  CustomerBankAccountView,
+  SetCompanyBankAccountPayload,
   SetMandateOptionsPayload,
 } from "./company-bank-account.js";
 export {

@@ -5,13 +5,16 @@ import { AccountingModule } from "../accounting/accounting.module.js";
 import { MandateGateway } from "./domain/mandate-gateway.js";
 import { PaymentGateway } from "./domain/payment-gateway.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
+import { BankAccountGuardReader } from "./domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
 import { MintMandateHandler } from "./application/commands/mint-mandate.handler.js";
 import { SendMandateHandler } from "./application/commands/send-mandate.handler.js";
 import { SignMandateHandler } from "./application/commands/sign-mandate.handler.js";
 import { SetCompanyBankAccountHandler } from "./application/commands/set-company-bank-account.handler.js";
+import { SetMyCompanyBankAccountHandler } from "./application/commands/set-my-company-bank-account.handler.js";
 import { SetMandateOptionsHandler } from "./application/commands/set-mandate-options.handler.js";
 import { GetCompanyBankAccountHandler } from "./application/queries/get-company-bank-account.handler.js";
+import { GetMyCompanyBankAccountHandler } from "./application/queries/get-my-company-bank-account.handler.js";
 import { GetMandateProofHandler } from "./application/queries/get-mandate-proof.handler.js";
 import { PreviewCustomerMandateHandler } from "./application/queries/preview-customer-mandate.handler.js";
 import {
@@ -19,11 +22,13 @@ import {
   GetCompanyMandateHandler,
   RevokeMandateHandler,
 } from "./application/mandate.handlers.js";
+import { PrismaBankAccountGuardReader } from "./infrastructure/prisma-bank-account-guard.reader.js";
 import { PrismaCompanyBankAccountRepository } from "./infrastructure/prisma-company-bank-account.repository.js";
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";
 import { StripeMandateGateway } from "./infrastructure/stripe-mandate-gateway.js";
 import { StripePaymentGateway } from "./infrastructure/stripe-payment-gateway.js";
 import { AdminCompanyBankAccountController } from "./http/admin-company-bank-account.controller.js";
+import { CompanyBankAccountController } from "./http/company-bank-account.controller.js";
 import { AdminMandatesController } from "./http/admin-mandates.controller.js";
 import { PaymentsWebhookController } from "./http/payments-webhook.controller.js";
 
@@ -48,6 +53,7 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     PaymentsWebhookController,
     AdminMandatesController,
     AdminCompanyBankAccountController,
+    CompanyBankAccountController,
   ],
   providers: [
     { provide: PaymentGateway, useClass: StripePaymentGateway },
@@ -57,6 +63,7 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
       provide: CompanyBankAccountRepository,
       useClass: PrismaCompanyBankAccountRepository,
     },
+    { provide: BankAccountGuardReader, useClass: PrismaBankAccountGuardReader },
     MintMandateHandler,
     SignMandateHandler,
     SendMandateHandler,
@@ -67,6 +74,8 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     SetCompanyBankAccountHandler,
     SetMandateOptionsHandler,
     GetCompanyBankAccountHandler,
+    SetMyCompanyBankAccountHandler,
+    GetMyCompanyBankAccountHandler,
     PreviewCustomerMandateHandler,
   ],
   exports: [PaymentGateway],

@@ -86,6 +86,27 @@ export interface CompanyBankAccountSectionView {
 }
 
 /**
+ * Ce que le **client** voit de son propre RIB, sur `/mon-compte`.
+ *
+ * Le même contenu que le back-office, **moins les zones 14 et 19** : ce sont
+ * des réglages du mandat que le staff pose, pas des coordonnées que le client
+ * recopie. L'IBAN ne redescend pas davantage ici que côté staff — `last4`, et
+ * rien d'autre.
+ *
+ * Plan : `documentation/b2b/plan-rib-client.md`.
+ */
+export type CustomerBankAccountView = Omit<
+  CompanyBankAccountView,
+  "debtorReference" | "contractNumber"
+>;
+
+/** `GET /companies/:companyId/bank-account` — enveloppé, pour la même raison que la vue staff. */
+export interface CustomerBankAccountSectionView {
+  /** `null` tant qu'aucun RIB n'a été déposé. */
+  readonly account: CustomerBankAccountView | null;
+}
+
+/**
  * Les **zones facultatives** du mandat, seules — 14, 19 et 20 du modèle EPC.
  *
  * 🔴 Elles ont leur propre route, et ce n'est pas une commodité d'écran. Le

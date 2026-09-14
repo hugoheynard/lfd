@@ -25,6 +25,7 @@
   "test/company-bank-account.e2e-spec.ts": 7132,
   "test/company-pricing.e2e-spec.ts": 17159,
   "test/contacts.e2e-spec.ts": 2953,
+  "test/customer-bank-account.e2e-spec.ts": 3000,
   "test/customer-sheet.e2e-spec.ts": 28093,
   "test/devis-comptable.e2e-spec.ts": 15708,
   "test/feature-access-guards.e2e-spec.ts": 21646,

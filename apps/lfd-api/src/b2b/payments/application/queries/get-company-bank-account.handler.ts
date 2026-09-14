@@ -2,6 +2,7 @@ import type { CompanyBankAccountView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
+import { customerBankAccountView } from "./customer-bank-account-view.js";
 import { GetCompanyBankAccountQuery } from "./get-company-bank-account.query.js";
 
 /**
@@ -13,6 +14,9 @@ import { GetCompanyBankAccountQuery } from "./get-company-bank-account.query.js"
  * objects de refuser une ligne abîmée — mais la vue n'en garde que les quatre
  * derniers caractères. Une réponse d'API qui porterait un IBAN entier est une
  * réponse qui finit dans un journal d'accès.
+ *
+ * La vue staff est celle du client augmentée des zones 14 et 19 : le mapping
+ * des coordonnées n'est écrit qu'une fois, dans `customerBankAccountView`.
  */
 @QueryHandler(GetCompanyBankAccountQuery)
 export class GetCompanyBankAccountHandler implements IQueryHandler<
@@ -27,19 +31,10 @@ export class GetCompanyBankAccountHandler implements IQueryHandler<
       return null;
     }
 
-    const { holder, address, bic } = found.account;
-    const options = found.options;
     return {
-      holder,
-      addressLine1: address.line1,
-      addressLine2: address.line2,
-      postalCode: address.postalCode,
-      city: address.city,
-      countryCode: address.countryCode,
-      bic: bic.value,
-      last4: found.account.last4(),
-      debtorReference: options.debtorReference,
-      contractNumber: options.contractNumber,
+      ...customerBankAccountView(found),
+      debtorReference: found.options.debtorReference,
+      contractNumber: found.options.contractNumber,
     };
   }
 }
