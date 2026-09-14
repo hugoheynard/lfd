@@ -10,7 +10,11 @@ courriel.
 > ✅ **Tranché par Hugo le 2026-09-14 : on fait INTERENTREPRISES (B2B).** Le
 > lot déclare déjà `B2B` : c'est le **formulaire** qui bascule, pas le lot. La
 > bascule est le lot 0 de [`../b2b/plan-mandat-client.md`](../b2b/plan-mandat-client.md).
-> ⚠️ Ce choix ne dispense pas du **contrat SDD B2B** avec la Caisse d'Épargne :
+> ✅ **Le contrat SDD B2B avec la Caisse d'Épargne est signé** (dit par Hugo le
+> 2026-09-14) : la bascule n'attend plus de réponse. Mécanisme retenu : le schéma
+> devient une propriété de chaque mandat (plan §7).
+>
+> ~~Ce choix ne dispense pas du **contrat SDD B2B** avec la Caisse d'Épargne :~~
 > sans lui, la banque du créancier refusera le lot. La question à la banque
 > change de forme — « ouvrez le B2B, quel modèle attendez-vous ? » — elle ne
 > disparaît pas.
