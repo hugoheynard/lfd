@@ -11,4 +11,6 @@
 <!-- La LÈVRE : le bord haut de la feuille crème, qui remonte sur l'encre. Elle
      appartient au chrome et pas aux écrans — sinon chaque nouvel écran devrait
      y penser, et le premier qui l'oublie casse le raccord. -->
-<span class="lip" aria-hidden="true"></span>
+@if (chrome.bandLip()) {
+  <span class="lip" aria-hidden="true"></span>
+}

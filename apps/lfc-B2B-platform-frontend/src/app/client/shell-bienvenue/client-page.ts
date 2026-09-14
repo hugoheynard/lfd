@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input } from '@angular/core';
 import { FoldSurfaceDirective } from 'fold-ng';
 
+import { ClientChrome } from '../client-chrome.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
 
@@ -50,4 +51,13 @@ export class ClientPage {
   readonly centred = input(false);
 
   protected readonly t = inject(ClientCopyService).t;
+
+  constructor() {
+    // L'accroche suit le bandeau, sur l'encre : la lèvre du bandeau ferait une
+    // languette crème au-dessus du titre, et la feuille a déjà la sienne. Rallumée
+    // en partant — l'écran suivant est une feuille crème, qui en a besoin.
+    const chrome = inject(ClientChrome);
+    chrome.bandLip.set(false);
+    inject(DestroyRef).onDestroy(() => chrome.bandLip.set(true));
+  }
 }
