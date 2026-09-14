@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { FoldIconComponent } from 'fold-ng';
 
 import { ClientCompany } from '../../client-company.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -36,6 +37,7 @@ import { ClientCopyService } from '../../copy/client-copy.service';
  */
 @Component({
   selector: 'app-account-card',
+  imports: [FoldIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './account-card.html',
   styleUrl: './account-card.scss',
@@ -66,11 +68,4 @@ export class AccountCard {
       ? ''
       : this.t().account.cardReference.replace('{ref}', company.reference);
   });
-
-  /** Le terme convenu, ou le défaut — qui n'est pas une absence de réglage. */
-  protected readonly term = computed(() =>
-    this.client.hasDeferredTerm()
-      ? this.t().account.cardTermMonthly
-      : this.t().account.cardTermOrder,
-  );
 }

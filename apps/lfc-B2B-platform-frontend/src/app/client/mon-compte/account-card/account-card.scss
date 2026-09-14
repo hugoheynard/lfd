@@ -100,41 +100,72 @@
   color: var(--lfc-color-on-well-muted);
 }
 
-/* En rangée qui se replie, pas en trois colonnes : il n'y a que deux faits, et
-   « À la commande » ne tenait pas dans un tiers — sa valeur passait sous le
-   libellé voisin. */
-.numbers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm) var(--fold-space-xl);
+/* Les modes de paiement : une liste sous un filet, à la taille du texte — un
+   fait de la carte ne crie pas autant que le nom de la maison. */
+.payments {
   margin: var(--fold-space-lg) 0 0;
   padding-top: var(--fold-space-md);
   border-top: 1px solid rgb(250 245 236 / 20%);
 }
 
-.number {
-  min-width: 0;
-}
-
-/* Un régime de paiement est un FAIT de la carte, pas son titre : il se lit à
-   la taille du texte, le nom de la maison garde seul la taille d'affiche. */
-.value {
-  margin: 0;
+.payments-head {
+  margin: 0 0 var(--fold-space-sm);
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-md);
-  font-weight: var(--fold-weight-extrabold);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.value.accent {
-  color: var(--lfc-butter-200);
-}
-
-.label {
-  margin-top: 2px;
   font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
   color: var(--lfc-color-on-well-muted);
+}
+
+.payments-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.payment {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+.payment-name {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+}
+
+.payment-note {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+  color: var(--lfc-color-on-well-muted);
+}
+
+/* Le vert ne se dit que de ce qui est ouvert. */
+.tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-success);
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-xs);
+}
+
+/* Ce qui attend nos informations : un cercle vide, pas une croix. */
+.waiting {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 2px dashed var(--lfc-color-on-well-muted);
+  border-radius: var(--fold-radius-pill);
 }
 
 @media (min-width: 900px) {

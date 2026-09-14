@@ -43,16 +43,17 @@ export interface AccountCopy {
   /** `{month}` le mois d'ouverture, `{ref}` la référence du dossier. */
   /** `{ref}` est remplacé par la référence société — celle qu'on dicte. */
   readonly cardReference: string;
-  /** Le terme CONVENU, quand il y en a un. */
-  readonly cardTermMonthly: string;
-  /** Le défaut : payer à la commande, ce que tout le monde peut faire. */
-  readonly cardTermOrder: string;
+  /** Les modes de paiement de la carte : l'un est toujours ouvert, l'autre s'accorde. */
+  readonly cardPaymentHead: string;
+  readonly cardPaymentOnOrder: string;
+  readonly cardPaymentOnAccount: string;
+  /** Sous « au compte », tant qu'il n'est pas accordé. */
+  readonly cardPaymentPending: string;
   /** Personne de reconnu, ou compte sans entreprise — on le DIT. */
   readonly cardUnknown: string;
   readonly cardUnknownNote: string;
   /** Un champ légal encore vide : une société peut ouvrir sans papiers. */
   readonly identityUnknown: string;
-  readonly cardTerm: string;
   readonly summaryHead: string;
   readonly summaryNote: string;
   readonly edit: string;

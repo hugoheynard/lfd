@@ -60,10 +60,16 @@ describe('la carte de compte', () => {
     expect(text(boot([{ ...TOMMEUSES, enseigne: '' }]))).toContain('SAS Les Tommeuses');
   });
 
-  /** Un terme ACCORDÉ n'est pas le défaut, et les deux écrans diffèrent. */
-  it('dit le terme convenu, et le défaut quand il n’y en a pas', () => {
-    expect(text(boot([TOMMEUSES]))).toContain(FR.account.cardTermMonthly);
-    expect(text(boot([{ ...TOMMEUSES, grantedTerms: [] }]))).toContain(FR.account.cardTermOrder);
+  /** À la commande est toujours ouvert ; au compte attend tant qu'il n'est pas accordé. */
+  it('dit les deux modes de paiement, et ce qu’attend le paiement au compte', () => {
+    const granted = text(boot([TOMMEUSES]));
+    expect(granted).toContain(FR.account.cardPaymentOnOrder);
+    expect(granted).toContain(FR.account.cardPaymentOnAccount);
+    expect(granted).not.toContain(FR.account.cardPaymentPending);
+
+    expect(text(boot([{ ...TOMMEUSES, grantedTerms: [] }]))).toContain(
+      FR.account.cardPaymentPending,
+    );
   });
 
   /** Le badge l'affirmait sans regarder ; il dit l'état du dossier. */

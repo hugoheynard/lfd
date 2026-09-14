@@ -16,19 +16,30 @@
     <h2 class="name">{{ client.name() }}</h2>
     <p class="since">{{ reference() }}</p>
 
-    <dl class="numbers">
-      <div class="number">
-        <dd class="value">{{ term() }}</dd>
-        <dt class="label">{{ t().account.cardTerm }}</dt>
-      </div>
-      <!-- Une porte pro ouvre sans forme juridique : un libellé sans valeur ne dit rien. -->
-      @if (company.formeJuridique) {
-        <div class="number">
-          <dd class="value num">{{ company.formeJuridique }}</dd>
-          <dt class="label">{{ t().account.identityForm }}</dt>
-        </div>
-      }
-    </dl>
+    <!-- DEUX MODES, et ils se lisent l'un sous l'autre : payer à la commande est
+         toujours ouvert ; au compte s'accorde, et tant qu'il ne l'est pas, on dit
+         ce qu'on attend plutôt qu'un refus. -->
+    <div class="payments">
+      <p class="payments-head">{{ t().account.cardPaymentHead }}</p>
+      <ul class="payments-list">
+        <li class="payment">
+          <span class="tick" aria-hidden="true"><fold-icon name="check" /></span>
+          <span class="payment-name">{{ t().account.cardPaymentOnOrder }}</span>
+        </li>
+        <li class="payment">
+          @if (client.hasDeferredTerm()) {
+            <span class="tick" aria-hidden="true"><fold-icon name="check" /></span>
+            <span class="payment-name">{{ t().account.cardPaymentOnAccount }}</span>
+          } @else {
+            <span class="waiting" aria-hidden="true"></span>
+            <span class="payment-name">
+              {{ t().account.cardPaymentOnAccount }}
+              <span class="payment-note">{{ t().account.cardPaymentPending }}</span>
+            </span>
+          }
+        </li>
+      </ul>
+    </div>
   } @else {
     <!-- Personne de reconnu, ou un compte sans entreprise. On le DIT : un nom
          d'exemple serait celui de quelqu'un d'autre. -->
