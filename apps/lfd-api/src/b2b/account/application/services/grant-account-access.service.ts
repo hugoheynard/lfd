@@ -2,13 +2,19 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.module.js";
 import { IdentitySubjectUnknownError } from "../../../../platform/shared/errors/identity-errors.js";
-import { AccountDisabledError } from "../../domain/errors/account-errors.js";
+import {
+  AccountDisabledError,
+  AccountEmailUnverifiedError,
+} from "../../domain/errors/account-errors.js";
 import {
   CompanyMemberRepository,
   type KnownAccount,
 } from "../../domain/ports/company-member.repository.js";
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
-import { ensureNoRivalOwner } from "../../domain/services/company-access.js";
+import {
+  ensureHolderKeepsOwnership,
+  ensureNoRivalOwner,
+} from "../../domain/services/company-access.js";
 import type { AccessOutcome } from "../../domain/value-objects/access-outcome.js";
 import { EmailAddress } from "../../domain/value-objects/email-address.js";
 import type { CompanyRole } from "../../domain/value-objects/company-role.js";
@@ -63,7 +69,10 @@ export abstract class AccountAccessGranter {
  *   habituels » alors qu'il n'en a jamais eu ;
  * - **cliente active** → on **rattache** la société à son espace existant. Lui
  *   refabriquer une identité lui donnerait deux mots de passe pour une seule
- *   adresse.
+ *   adresse. **Seulement si son adresse est prouvée** : sinon, refus nommé.
+ *
+ * Et deux refus qui valent pour les trois : le détenteur ne se rétrograde pas
+ * par ce geste, et une adresse portée par plusieurs comptes n'en désigne aucun.
  *
  * **Un e-mail qui ne part pas ne défait pas l'accès.** Le rattachement est en
  * base ; l'annuler pour un canal indisponible ferait perdre le travail du
@@ -106,9 +115,21 @@ export class GrantAccountAccess extends AccountAccessGranter {
       // la renverse pas au passage.
       throw new AccountDisabledError(input.email);
     }
-    return known.status === "invited"
-      ? this.reissueLink(known, input)
-      : this.attachToActive(known, input);
+    if (known.status === "invited") {
+      // Pas de garde d'adresse ici, et c'est délibéré : un compte `invited` n'est
+      // créé que par nous (`createInvited`, l'inscription libre crée `active`),
+      // et on n'y ouvre rien — on envoie un lien À L'ADRESSE. Seule la personne
+      // qui lit la boîte peut s'en servir, et le ticket marque alors l'adresse
+      // vérifiée (vérifié le 2026-09-14).
+      return this.reissueLink(known, input);
+    }
+    if (!known.emailVerified) {
+      // Actif sans preuve = inscription libre : n'importe qui a pu taper cette
+      // adresse. Le rattacher donnait la société à celui qui l'a tapée, rôle
+      // d'administration compris (corrigé le 2026-09-14).
+      throw new AccountEmailUnverifiedError(input.email);
+    }
+    return this.attachToActive(known, input);
   }
 
   /** Personne inconnue : identité neuve + lien de mot de passe. */
@@ -136,8 +157,11 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * on en fabrique un.
    */
   private async reissueLink(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
+    // Le rôle se vérifie AVANT d'émettre le lien : un refus découvert après
+    // aurait déjà fabriqué un ticket chez le fournisseur.
+    await this.ensureRoleFits(known.userId, input);
     const url = await this.linkForKnown(known, input.email);
-    await this.attach(known.userId, input);
+    await this.members.attach(known.userId, input.companyId, input.role);
     // Son prénom à ELLE : celui qu'un commercial vient de taper n'a pas à la
     // renommer dans l'e-mail qu'elle reçoit.
     return this.deliverLink(known.userId, "link_reissued", url, {
@@ -198,11 +222,22 @@ export class GrantAccountAccess extends AccountAccessGranter {
     return { userId: known.userId, outcome: "attached", mailSent };
   }
 
-  /** Rattache (ou aligne le rôle), après avoir écarté un second détenteur. */
+  /** Rattache (ou aligne le rôle), après avoir vérifié que le rôle tient. */
   private async attach(userId: string, input: AccessToGrant): Promise<void> {
-    const owner = await this.members.findOwner(input.companyId);
-    ensureNoRivalOwner(input.companyId, input.role, owner?.userId ?? null, userId);
+    await this.ensureRoleFits(userId, input);
     await this.members.attach(userId, input.companyId, input.role);
+  }
+
+  /**
+   * Ni second détenteur, ni détenteur rétrogradé. L'adaptateur ignore déjà la
+   * rétrogradation ; la refuser ici la NOMME, au lieu de répondre « accès
+   * ouvert » avec un rôle qui n'a pas été posé.
+   */
+  private async ensureRoleFits(userId: string, input: AccessToGrant): Promise<void> {
+    const owner = await this.members.findOwner(input.companyId);
+    const ownerId = owner?.userId ?? null;
+    ensureNoRivalOwner(input.companyId, input.role, ownerId, userId);
+    ensureHolderKeepsOwnership(input.companyId, input.role, ownerId, userId);
   }
 
   /** Envoie le lien de mot de passe, et rend l'issue telle qu'elle est. */

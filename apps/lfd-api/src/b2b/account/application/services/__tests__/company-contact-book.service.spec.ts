@@ -2,6 +2,7 @@ import { Company } from "../../../domain/entities/company.js";
 import {
   CompanyNotFoundError,
   ContactAlreadyExistsError,
+  HolderRoleLockedError,
 } from "../../../domain/errors/account-errors.js";
 import { CompanyContactRepository } from "../../../domain/ports/company-contact.repository.js";
 import {
@@ -59,6 +60,7 @@ interface Written {
 function bookWith(
   known: KnownAccount | null,
   company: Company | null = sampleCompany(),
+  owner: KnownAccount | null = null,
 ): { readonly book: CompanyContactBook; readonly written: Written } {
   const written: Written = { contacts: [], alignedRoles: [] };
 
@@ -86,7 +88,7 @@ function bookWith(
   const members: CompanyMemberRepository = {
     rebindSubject: () => Promise.resolve(),
     findAccountByEmail: () => Promise.resolve(known),
-    findOwner: () => Promise.resolve(null),
+    findOwner: () => Promise.resolve(owner),
     createInvited: () => Promise.resolve("user_new"),
     attach: () => Promise.resolve(),
     alignRole: (_userId, _companyId, role) => {
@@ -146,6 +148,7 @@ describe("CompanyContactBook — un rôle, pas deux", () => {
       subject: "auth0|1",
       firstName: "Camille",
       status: "active",
+      emailVerified: true,
     });
 
     await book.replace("cmp_1", "ct_1", KARIM, "admin");
@@ -161,5 +164,57 @@ describe("CompanyContactBook — un rôle, pas deux", () => {
     await book.add("cmp_1", KARIM, "orders");
 
     expect(written.alignedRoles).toEqual([]);
+  });
+});
+
+describe("CompanyContactBook — le détenteur ne se rétrograde pas", () => {
+  /**
+   * Le compte du détenteur, connecté sous une adresse que la fiche n'affiche
+   * plus : `ensureNotTheHolder` ne la reconnaît pas.
+   */
+  const HOLDER_LOGIN: KnownAccount = {
+    userId: "user_owner",
+    subject: "auth0|owner",
+    firstName: "Camille",
+    status: "active",
+    emailVerified: true,
+  };
+  const HOLDER_LOGIN_CONTACT = ContactDetails.create({
+    ...HOLDER,
+    email: "camille.rousseau@gmail.com",
+  });
+
+  /**
+   * Régression : un admin client notait l'adresse de CONNEXION du détenteur,
+   * différente de celle de la fiche, avec le rôle « Facturation » — et
+   * l'alignement du rôle le rétrogradait (corrigé le 2026-09-14).
+   */
+  it("REFUSE d'ajouter l'adresse de connexion du détenteur, sans rien écrire", async () => {
+    const { book, written } = bookWith(HOLDER_LOGIN, sampleCompany(), HOLDER_LOGIN);
+
+    await expect(book.add("cmp_1", HOLDER_LOGIN_CONTACT, "billing")).rejects.toBeInstanceOf(
+      HolderRoleLockedError,
+    );
+    expect(written.contacts).toEqual([]);
+    expect(written.alignedRoles).toEqual([]);
+  });
+
+  it("REFUSE aussi de modifier un contact vers cette adresse", async () => {
+    const { book, written } = bookWith(HOLDER_LOGIN, sampleCompany(), HOLDER_LOGIN);
+
+    await expect(
+      book.replace("cmp_1", "ct_1", HOLDER_LOGIN_CONTACT, "orders"),
+    ).rejects.toBeInstanceOf(HolderRoleLockedError);
+    expect(written.contacts).toEqual([]);
+    expect(written.alignedRoles).toEqual([]);
+  });
+
+  it("aligne toujours un collègue quand la société a un détenteur", async () => {
+    const colleague: KnownAccount = { ...HOLDER_LOGIN, userId: "user_karim" };
+    const { book, written } = bookWith(colleague, sampleCompany(), HOLDER_LOGIN);
+
+    await book.add("cmp_1", KARIM, "admin");
+
+    expect(written.alignedRoles).toEqual(["admin"]);
   });
 });

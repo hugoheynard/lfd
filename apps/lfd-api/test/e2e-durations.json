@@ -22,6 +22,7 @@
   "test/catalog-ingest.e2e-spec.ts": 3972,
   "test/catalog-parity.e2e-spec.ts": 5384,
   "test/cockpit.e2e-spec.ts": 14919,
+  "test/company-access-guards.e2e-spec.ts": 3300,
   "test/company-bank-account.e2e-spec.ts": 7132,
   "test/company-pricing.e2e-spec.ts": 17159,
   "test/contacts.e2e-spec.ts": 2953,

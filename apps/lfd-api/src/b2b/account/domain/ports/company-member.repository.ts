@@ -1,4 +1,4 @@
-import type { CompanyRole } from "../value-objects/company-role.js";
+import type { AssignableRole, CompanyRole } from "../value-objects/company-role.js";
 
 /** Cycle de vie d'un accès, tel que la persistance le rend. */
 export type MemberStatus = "invited" | "active" | "disabled";
@@ -48,6 +48,12 @@ export interface KnownAccount {
   readonly subject: string;
   readonly firstName: string;
   readonly status: MemberStatus;
+  /**
+   * L'adresse a-t-elle été **prouvée** ? Un compte `active` non vérifié est une
+   * inscription libre : n'importe qui a pu taper l'adresse. C'est ce qui décide
+   * si on peut lui rattacher une société.
+   */
+  readonly emailVerified: boolean;
 }
 
 /**
@@ -70,6 +76,12 @@ export abstract class CompanyMemberRepository {
    * ou cliente active (une société de plus dans son espace). La même personne
    * peut travailler pour deux sociétés clientes, et lui créer une seconde
    * identité lui donnerait deux mots de passe pour une seule boîte e-mail.
+   *
+   * **Égalité exacte** sur la forme normalisée (blancs, casse), jamais un motif :
+   * `jean_dupont@` ne désigne pas `jeanXdupont@`.
+   *
+   * @throws {AccountEmailAmbiguousError} plusieurs comptes portent l'adresse.
+   *   La colonne n'est pas unique ; choisir l'un d'eux serait arbitraire.
    */
   abstract findAccountByEmail(email: string): Promise<KnownAccount | null>;
 
@@ -100,6 +112,13 @@ export abstract class CompanyMemberRepository {
    * courant (le lien s'est perdu), et il ne doit ni échouer ni laisser un rôle
    * périmé. Un rattachement qui ignorerait le rôle demandé afficherait un rôle
    * à l'écran et en appliquerait un autre.
+   *
+   * 🔴 **Un rattachement `owner` n'est jamais modifié** : l'adaptateur ne le
+   * touche pas, quel que soit le rôle demandé. Rétrograder le détenteur par ce
+   * chemin doit être inexprimable ; le refus lisible est à l'appelant
+   * (`ensureHolderKeepsOwnership`). Promouvoir un rattachement existant en
+   * `owner` reste possible — c'est le rattachement du détenteur d'un compte
+   * ouvert sans lui — et l'index `memberships_one_owner` en garde l'unicité.
    */
   abstract attach(userId: string, companyId: string, role: CompanyRole): Promise<void>;
 
@@ -109,8 +128,12 @@ export abstract class CompanyMemberRepository {
    * C'est ce qui tient ensemble le rôle affiché sur la fiche (celui du contact)
    * et les droits réels (ceux du rattachement) : sans cela, corriger un rôle à
    * l'écran ne changerait rien à ce que la personne peut faire.
+   *
+   * 🔴 **Sans effet non plus sur un rattachement `owner`**, et c'est tenu dans
+   * la requête : le rôle attribuable n'est jamais `owner`, donc aligner le
+   * détenteur ne pourrait que le rétrograder.
    */
-  abstract alignRole(userId: string, companyId: string, role: CompanyRole): Promise<void>;
+  abstract alignRole(userId: string, companyId: string, role: AssignableRole): Promise<void>;
 
   /** Le rattachement (userId, companyId), ou `null` s'il n'existe pas. */
   abstract findMember(userId: string, companyId: string): Promise<CompanyMemberRecord | null>;

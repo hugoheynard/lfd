@@ -1,7 +1,9 @@
 import type { B2bMailer } from "../../../../../platform/mailer/mailer.module.js";
 import {
   AccountDisabledError,
+  AccountEmailUnverifiedError,
   CompanyAlreadyHasOwnerError,
+  HolderRoleLockedError,
   InvalidEmailError,
 } from "../../../domain/errors/account-errors.js";
 import {
@@ -156,9 +158,12 @@ function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: bo
   return { mailer, sent };
 }
 
-/** Une personne connue, dans l'état voulu. */
-function account(status: MemberStatus, userId = "user_known"): KnownAccount {
-  return { userId, subject: "auth0|known", firstName: "Claire", status };
+/**
+ * Une personne connue, dans l'état voulu. Adresse **prouvée** par défaut : c'est
+ * l'état de toute cliente installée, et les cas sans preuve le disent.
+ */
+function account(status: MemberStatus, userId = "user_known", emailVerified = true): KnownAccount {
+  return { userId, subject: "auth0|known", firstName: "Claire", status, emailVerified };
 }
 
 const INPUT: AccessToGrant = {
@@ -280,9 +285,13 @@ describe("GrantAccountAccess — cliente active", () => {
 
   it("aligne le rôle d'un rattachement déjà en place", async () => {
     // `attach` est un upsert : ré-ouvrir un accès ne doit ni échouer ni laisser
-    // un rôle périmé derrière l'écran.
-    const known = account("active");
-    const members = new FakeMembers({ account: known, owner: known });
+    // un rôle périmé derrière l'écran. Le compte est un COLLÈGUE : ce test
+    // réalignait autrefois le détenteur lui-même en `billing`, c'est-à-dire la
+    // faille corrigée le 2026-09-14 (cf. « les refus »).
+    const members = new FakeMembers({
+      account: account("active"),
+      owner: account("active", "user_owner"),
+    });
     const { mailer } = fakeMailer();
 
     await granter(members, mailer).service.grant({ ...INPUT, role: "billing" });
@@ -293,7 +302,68 @@ describe("GrantAccountAccess — cliente active", () => {
   });
 });
 
+describe("GrantAccountAccess — une adresse jamais prouvée", () => {
+  /**
+   * Régression : un compte ouvert par inscription libre à l'adresse de quelqu'un
+   * d'autre, jamais vérifiée, était rattaché d'office à la société — rôle
+   * d'administration compris (corrigé le 2026-09-14).
+   */
+  it("REFUSE de rattacher un compte actif dont l'adresse n'est pas vérifiée", async () => {
+    const members = new FakeMembers({ account: account("active", "user_known", false) });
+    const { mailer, sent } = fakeMailer();
+    const { service, identity } = granter(members, mailer);
+
+    await expect(service.grant({ ...INPUT, role: "admin" })).rejects.toBeInstanceOf(
+      AccountEmailUnverifiedError,
+    );
+    expect(members.attached).toEqual([]);
+    expect(identity.provisioned).toEqual([]);
+    expect(identity.reissuedFor).toEqual([]);
+    expect(sent).toEqual([]);
+  });
+
+  it("rattache le même compte une fois l'adresse prouvée", async () => {
+    const members = new FakeMembers({ account: account("active", "user_known", true) });
+    const { mailer } = fakeMailer();
+
+    await expect(granter(members, mailer).service.grant(INPUT)).resolves.toMatchObject({
+      outcome: "attached",
+    });
+    expect(members.attached).toEqual([{ userId: "user_known", companyId: "cmp_1", role: "owner" }]);
+  });
+
+  it("renvoie un LIEN à un compte invité, même sans adresse prouvée", async () => {
+    // Un `invited` n'est créé que par nous, et on n'y ouvre rien : le lien part
+    // à l'adresse, seule la personne qui lit la boîte peut s'en servir.
+    const members = new FakeMembers({ account: account("invited", "user_known", false) });
+    const { mailer, sent } = fakeMailer();
+
+    await expect(granter(members, mailer).service.grant(INPUT)).resolves.toMatchObject({
+      outcome: "link_reissued",
+    });
+    expect(sent[0]?.carriesPasswordLink).toBe(true);
+  });
+});
+
 describe("GrantAccountAccess — les refus", () => {
+  /**
+   * Régression : ré-ouvrir l'accès à l'adresse du détenteur avec un autre rôle
+   * le rétrogradait, par la branche `update` de l'upsert (corrigé le 2026-09-14).
+   */
+  it("REFUSE de rétrograder le détenteur, avant tout lien émis", async () => {
+    const known = account("invited");
+    const members = new FakeMembers({ account: known, owner: known });
+    const { mailer, sent } = fakeMailer();
+    const { service, identity } = granter(members, mailer);
+
+    await expect(service.grant({ ...INPUT, role: "billing" })).rejects.toBeInstanceOf(
+      HolderRoleLockedError,
+    );
+    expect(members.attached).toEqual([]);
+    expect(identity.reissuedFor).toEqual([]);
+    expect(sent).toEqual([]);
+  });
+
   it("REFUSE de rouvrir l'accès d'un compte désactivé", async () => {
     // `disabled` est une décision prise sur quelqu'un : un clic sur un bouton
     // d'invitation ne la renverse pas discrètement.
