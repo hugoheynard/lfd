@@ -8,11 +8,19 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { CustomerBankAccountView, SetCompanyBankAccountPayload } from '@lfd/contracts';
+import {
+  BankAccountForm,
+  bankAccountDraftFrom,
+  EMPTY_BANK_ACCOUNT_DRAFT,
+  hasCountryCode,
+  isBankAccountComplete,
+  toBankAccountPayload,
+  type BankAccountDraft,
+} from '@lfd/b2b-ui/payment';
+import type { CustomerBankAccountView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldInputComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -28,9 +36,6 @@ import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
 import { bankActionLabel, bankLine } from '../bank-section';
 
-/** Le pays proposé tant que rien n'est enregistré — celui de presque tous nos clients. */
-const DEFAULT_COUNTRY = 'FR';
-
 /** Charge d'ouverture : la société, et le compte que la carte vient de lire. */
 export interface BankPanelData {
   readonly companyId: string;
@@ -40,9 +45,11 @@ export interface BankPanelData {
 /**
  * Le panneau **RIB** de `/mon-compte` — le formulaire que la carte portait.
  *
- * Symétrique de la section RIB de la fiche client du back-office : les mêmes
- * champs, la même règle d'IBAN, la même phrase sur le titulaire, dite AVANT
- * les champs.
+ * Symétrique de la section RIB de la fiche client du back-office, et plus que
+ * symétrique depuis le 2026-09-14 : les champs sont `lfd-bank-account-form` de
+ * `@lfd/b2b-ui/payment`, le MÊME formulaire, et leurs règles vivent dans
+ * `bank-account-draft.model.ts`. Ce panneau garde son cadre, sa phrase sur le
+ * titulaire dite AVANT les champs, et son écriture par `ClientBankAccount`.
  *
  * ## 🔴 L'IBAN ne revient jamais
  *
@@ -57,9 +64,9 @@ export interface BankPanelData {
   selector: 'app-bank-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BankAccountForm,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldInputComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -105,14 +112,8 @@ export class BankPanel {
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
-  protected readonly ibanDraft = signal('');
-  protected readonly bicDraft = signal('');
-  protected readonly holderDraft = signal('');
-  protected readonly line1Draft = signal('');
-  protected readonly line2Draft = signal('');
-  protected readonly postalCodeDraft = signal('');
-  protected readonly cityDraft = signal('');
-  protected readonly countryDraft = signal(DEFAULT_COUNTRY);
+  /** Le RIB en saisie — IBAN vide, le reste repris du compte lu (`bankAccountDraftFrom`). */
+  protected readonly draft = signal<BankAccountDraft>(EMPTY_BANK_ACCOUNT_DRAFT);
 
   constructor() {
     // Une entrée requise n'est pas posée quand le constructeur tourne.
@@ -120,7 +121,7 @@ export class BankPanel {
       const account = this.data().account;
       untracked(() => {
         if (account !== null) {
-          this.fillDrafts(account);
+          this.draft.set(bankAccountDraftFrom(account));
         }
       });
     });
@@ -130,20 +131,12 @@ export class BankPanel {
   protected readonly saved = computed(() => bankLine(this.data().account, this.t().account));
 
   /**
-   * Le compte se recopie **en entier** — sauf le complément d'adresse,
-   * facultatif sur un vrai RIB. Un compte à moitié rempli ne se découvrirait
-   * qu'au rejet du prélèvement.
+   * Le compte se recopie **en entier**, complément excepté, et le pays tient en
+   * deux lettres : ce panneau désarme le bouton sur un pays mal formé, là où la
+   * fiche staff laisse le serveur refuser (`hasCountryCode`).
    */
   protected readonly canSave = computed(
-    () =>
-      !this.saving() &&
-      this.ibanDraft().trim() !== '' &&
-      this.bicDraft().trim() !== '' &&
-      this.holderDraft().trim() !== '' &&
-      this.line1Draft().trim() !== '' &&
-      this.postalCodeDraft().trim() !== '' &&
-      this.cityDraft().trim() !== '' &&
-      this.countryDraft().trim().length === 2,
+    () => !this.saving() && isBankAccountComplete(this.draft()) && hasCountryCode(this.draft()),
   );
 
   protected readonly submitLabel = computed(() =>
@@ -156,7 +149,10 @@ export class BankPanel {
     }
     this.saving.set(true);
     this.refusal.set(null);
-    const refusal = await this.accounts.save(this.data().companyId, this.payload());
+    const refusal = await this.accounts.save(
+      this.data().companyId,
+      toBankAccountPayload(this.draft()),
+    );
     this.saving.set(false);
     if (refusal === null) {
       this.notify.success(this.t().account.bankSavedToast);
@@ -168,28 +164,5 @@ export class BankPanel {
 
   protected cancel(): void {
     this.ref.close();
-  }
-
-  private payload(): SetCompanyBankAccountPayload {
-    return {
-      iban: this.ibanDraft().trim(),
-      bic: this.bicDraft().trim(),
-      holder: this.holderDraft().trim(),
-      line1: this.line1Draft().trim(),
-      line2: this.line2Draft().trim(),
-      postalCode: this.postalCodeDraft().trim(),
-      city: this.cityDraft().trim(),
-      countryCode: this.countryDraft().trim().toUpperCase(),
-    };
-  }
-
-  private fillDrafts(account: CustomerBankAccountView): void {
-    this.bicDraft.set(account.bic);
-    this.holderDraft.set(account.holder);
-    this.line1Draft.set(account.addressLine1);
-    this.line2Draft.set(account.addressLine2);
-    this.postalCodeDraft.set(account.postalCode);
-    this.cityDraft.set(account.city);
-    this.countryDraft.set(account.countryCode === '' ? DEFAULT_COUNTRY : account.countryCode);
   }
 }

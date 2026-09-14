@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import type { CustomerBankAccountView, SetCompanyBankAccountPayload } from '@lfd/contracts';
+import { BankAccountForm } from '@lfd/b2b-ui/payment';
 import { FoldPanelRef } from 'fold-ng';
+import { By } from '@angular/platform-browser';
 
 import { NotifyService } from '../../../../notify.service';
 import { ClientBankAccount } from '../../../client-bank-account.service';
@@ -81,6 +83,25 @@ describe('BankPanel', () => {
     await fixture.whenStable();
     fixture.detectChanges();
   };
+
+  /** Le formulaire est celui de la fiche staff : ce sont les mots de l'écran qu'il affiche, pas son défaut. */
+  it('passe au formulaire partagé les libellés de l’écran, et ils s’affichent', () => {
+    fixture = boot({ companyId: 'cmp_1', account: null });
+
+    const form = fixture.debugElement.query(By.directive(BankAccountForm))
+      .componentInstance as BankAccountForm;
+    expect(form.labels()).toBe(FR.account.bankForm);
+    for (const label of [
+      FR.account.bankForm.holder,
+      FR.account.bankForm.postalCode,
+      FR.account.bankForm.iban,
+      FR.account.bankForm.ibanHint,
+    ]) {
+      expect(el().textContent).toContain(label);
+    }
+    // Le client n'a pas d'exemple dans ses champs : ceux de la fiche staff n'y entrent pas.
+    expect(el().querySelector('input[placeholder="Refuge du Col SARL"]')).toBeNull();
+  });
 
   it('sans RIB, propose « Enregistrer », le pays par défaut, et reste fermé tant que tout manque', () => {
     fixture = boot({ companyId: 'cmp_1', account: null });

@@ -1,4 +1,6 @@
+import type { AddressFormLabels } from '@lfd/b2b-ui/address';
 import type { DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
+import type { BankAccountFormLabels, MandateOptionsFormLabels } from '@lfd/b2b-ui/payment';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
@@ -196,6 +198,8 @@ export interface AccountCopy {
   readonly deliveryDialogSubtitle: string;
   /** Le bouton d'envoi d'une livraison NEUVE — « Enregistrer » corrige une existante. */
   readonly deliveryAddSubmit: string;
+  /** Le formulaire postal partagé — la facturation, et la base de celui d'une livraison. */
+  readonly addressForm: AddressFormLabels;
   /** Le formulaire partagé d'une livraison — rang, postal, consignes — dans la langue de l'écran. */
   readonly deliveryForm: DeliveryAddressFormLabels;
   readonly termMonthly: string;
@@ -282,14 +286,8 @@ export interface AccountCopy {
   readonly bankLast4: string;
   /** Le titulaire est celui que la BANQUE connaît, et un compte mandaté ne se remplace pas sans nouveau mandat. */
   readonly bankNotice: string;
-  readonly bankHolder: string;
-  readonly bankLine1: string;
-  readonly bankLine2: string;
-  readonly bankPostalCode: string;
-  readonly bankCity: string;
-  readonly bankCountry: string;
-  /** Sous l'IBAN : il ne revient d'aucune route. */
-  readonly bankIbanHint: string;
+  /** Les champs du RIB — le formulaire partagé avec la fiche staff. */
+  readonly bankForm: BankAccountFormLabels;
   readonly bankSave: string;
   readonly bankReplace: string;
   readonly bankSavedToast: string;
@@ -347,10 +345,8 @@ export interface AccountCopy {
   readonly mandateOptionsNotice: string;
   /** Tant qu'un brouillon existe : l'enregistrement le rend caduc. */
   readonly mandateOptionsDraftWarning: string;
-  readonly mandateOptionsDebtorReference: string;
-  readonly mandateOptionsDebtorReferenceHint: string;
-  readonly mandateOptionsContractNumber: string;
-  readonly mandateOptionsContractNumberHint: string;
+  /** Les deux zones — le formulaire partagé avec la fiche staff. */
+  readonly mandateOptionsForm: MandateOptionsFormLabels;
   readonly mandateOptionsLoading: string;
   readonly mandateOptionsLoadFailedTitle: string;
   /** Sans RIB, les zones n'ont pas de ligne où vivre. */

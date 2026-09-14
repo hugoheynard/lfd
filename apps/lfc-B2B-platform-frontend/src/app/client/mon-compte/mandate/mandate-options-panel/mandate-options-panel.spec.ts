@@ -113,8 +113,8 @@ describe('MandateOptionsPanel', () => {
     expect(wire.loads).toEqual(['cmp_1']);
     expect(fields(fixture).map((field) => field.value())).toEqual(['C-9P2X4B', 'CT-12']);
     expect(el(fixture).textContent).toContain(FR.account.mandateOptionsNotice);
-    expect(el(fixture).textContent).toContain(FR.account.mandateOptionsDebtorReference);
-    expect(el(fixture).textContent).toContain(FR.account.mandateOptionsContractNumber);
+    expect(el(fixture).textContent).toContain(FR.account.mandateOptionsForm.debtorReference);
+    expect(el(fixture).textContent).toContain(FR.account.mandateOptionsForm.contractNumber);
   });
 
   it('pré-remplit quand la lecture arrive après l’ouverture', () => {

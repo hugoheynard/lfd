@@ -1,21 +1,14 @@
 import type { DeliveryContact } from '@lfd/contracts';
 
+import {
+  ADDRESS_FORM_LABELS_FR,
+  type AddressFormLabels,
+} from '../../address/address-form/address-form.labels';
 import type { DeliveryDraft } from '../delivery-draft.model';
 import {
   DELIVERY_SPECS_LABELS_FR,
   type DeliverySpecsLabels,
 } from '../delivery-specs/delivery-specs.labels';
-
-/** Les mots que le formulaire passe à `lfd-address-form` pour une LIVRAISON. */
-export interface DeliveryPostalLabels {
-  readonly legend: string;
-  readonly labelHint: string;
-  readonly line2Hint: string;
-  readonly noteLabel: string;
-  readonly notePlaceholder: string;
-  readonly coordinatesLabel: string;
-  readonly coordinatesHint: string;
-}
 
 /**
  * Les **libellés** du formulaire d'une adresse de livraison, en UNE entrée : la
@@ -28,7 +21,9 @@ export interface DeliveryPostalLabels {
 export interface DeliveryAddressFormLabels {
   readonly defaultLabel: string;
   readonly defaultHint: string;
-  readonly address: DeliveryPostalLabels;
+  /** Le nom du groupe postal : ici il voisine d'autres groupes nommés, il en faut un. */
+  readonly legend: string;
+  readonly address: AddressFormLabels;
   readonly specs: DeliverySpecsLabels;
 }
 
@@ -36,19 +31,18 @@ export interface DeliveryAddressFormLabels {
  * Le texte qu'écrivait `DeliveryAddressPanel` avant la mutualisation, mot pour
  * mot — le défaut, et ce que lit le back-office.
  *
- * `labelHint` et `coordinatesLabel` n'y étaient pas passés : ce sont les défauts
- * d'`AddressForm`, recopiés ici pour que rien ne change.
+ * Le panneau ne passait que quatre mots à `AddressForm` ; les autres sont ses
+ * défauts, repris de {@link ADDRESS_FORM_LABELS_FR} pour que rien ne change.
  */
 export const DELIVERY_ADDRESS_FORM_LABELS_FR: DeliveryAddressFormLabels = {
   defaultLabel: 'Adresse de livraison par défaut',
   defaultHint: "utilisée d'office pour les prochaines commandes",
+  legend: 'Adresse postale',
   address: {
-    legend: 'Adresse postale',
-    labelHint: 'ex. Siège, Boutique Bastille',
+    ...ADDRESS_FORM_LABELS_FR,
     line2Hint: 'bâtiment, étage, instructions de livraison…',
     noteLabel: 'Note pour les livreurs',
     notePlaceholder: "Code d'accès, étage, contact sur place, consignes de dépôt…",
-    coordinatesLabel: 'Point GPS',
     coordinatesHint: 'lieux difficiles à localiser',
   },
   specs: DELIVERY_SPECS_LABELS_FR,

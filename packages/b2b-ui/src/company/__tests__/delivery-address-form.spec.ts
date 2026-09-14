@@ -1,5 +1,6 @@
 import type { DeliveryAddressView } from '@lfd/contracts';
 
+import { ADDRESS_FORM_LABELS_FR } from '../../address/address-form/address-form.labels';
 import {
   DELIVERY_ADDRESS_FORM_LABELS_FR,
   type DeliveryAddressFormLabels,
@@ -44,13 +45,12 @@ describe('formulaire d’adresse de livraison', () => {
       expect(DELIVERY_ADDRESS_FORM_LABELS_FR).toEqual({
         defaultLabel: 'Adresse de livraison par défaut',
         defaultHint: "utilisée d'office pour les prochaines commandes",
+        legend: 'Adresse postale',
         address: {
-          legend: 'Adresse postale',
-          labelHint: 'ex. Siège, Boutique Bastille',
+          ...ADDRESS_FORM_LABELS_FR,
           line2Hint: 'bâtiment, étage, instructions de livraison…',
           noteLabel: 'Note pour les livreurs',
           notePlaceholder: "Code d'accès, étage, contact sur place, consignes de dépôt…",
-          coordinatesLabel: 'Point GPS',
           coordinatesHint: 'lieux difficiles à localiser',
         },
         specs: DELIVERY_SPECS_LABELS_FR,
@@ -61,12 +61,15 @@ describe('formulaire d’adresse de livraison', () => {
       const english: DeliveryAddressFormLabels = {
         ...DELIVERY_ADDRESS_FORM_LABELS_FR,
         defaultLabel: 'Default delivery address',
-        address: { ...DELIVERY_ADDRESS_FORM_LABELS_FR.address, legend: 'Postal address' },
+        legend: 'Postal address',
+        address: { ...DELIVERY_ADDRESS_FORM_LABELS_FR.address, city: 'City' },
         specs: { ...DELIVERY_SPECS_LABELS_FR, contactLegend: 'On-site contact' },
       };
-      expect(english.address.legend).toBe('Postal address');
+      expect(english.legend).toBe('Postal address');
+      expect(english.address.city).toBe('City');
       expect(english.specs.contactLegend).toBe('On-site contact');
-      expect(DELIVERY_ADDRESS_FORM_LABELS_FR.address.legend).toBe('Adresse postale');
+      expect(DELIVERY_ADDRESS_FORM_LABELS_FR.legend).toBe('Adresse postale');
+      expect(DELIVERY_ADDRESS_FORM_LABELS_FR.address.city).toBe('Ville');
       expect(DELIVERY_SPECS_LABELS_FR.contactLegend).toBe('Contact sur place');
     });
   });

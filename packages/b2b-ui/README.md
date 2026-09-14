@@ -40,7 +40,8 @@ séparer ferait deux paquets qui s'importent l'un l'autre.
 
 Trois règles :
 
-1. **Il s'appelle `*-form`** (`address-form`, `hours-form`, `delivery-address-form`)
+1. **Il s'appelle `*-form`** (`address-form`, `hours-form`, `delivery-address-form`,
+   `bank-account-form`, `mandate-options-form`)
    et ne fait **que** le formulaire : un brouillon en `model()`, des champs.
    Ni bouton d'envoi, ni écriture, ni panneau — chaque app l'**habille** (panneau
    côté staff, dialogue centré ou feuille du bas côté client) et écrit par son
@@ -63,7 +64,11 @@ formulaire partagé n'en ajoute pas une troisième.
 
 Un dossier par domaine, exporté en subpath (liste vérifiée le 2026-09-14) :
 `address`, `appointment`, `cart`, `catalog`, `company`, `flags`, `hours`,
-`order`, `panel`, `pricing`, `subscription`.
+`order`, `panel`, `payment`, `pricing`, `subscription`.
+
+`payment` porte le RIB d'une société et les zones facultatives de son mandat :
+ni une adresse, ni une fiche société — le compte qu'on débite, et ce que le
+mandat imprime en plus.
 
 ## Consommation
 

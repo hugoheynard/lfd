@@ -118,10 +118,10 @@ describe('RIB du client — ce que la fiche montre', () => {
     const { section, settle } = render({ account: SAVED });
     await settle();
 
-    expect(section['ibanDraft']()).toBe('');
-    expect(section['holderDraft']()).toBe('Refuge du Col SARL');
-    expect(section['bicDraft']()).toBe('CEPAFRPP751');
-    expect(section['cityDraft']()).toBe("Val d'Isère");
+    expect(section['draft']().iban).toBe('');
+    expect(section['draft']().holder).toBe('Refuge du Col SARL');
+    expect(section['draft']().bic).toBe('CEPAFRPP751');
+    expect(section['draft']().city).toBe("Val d'Isère");
   });
 
   it('refuse d’enregistrer tant que le RIB est incomplet', async () => {
@@ -130,8 +130,11 @@ describe('RIB du client — ce que la fiche montre', () => {
     const { section, settle } = render({ account: null });
     await settle();
 
-    section['holderDraft'].set('Refuge du Col SARL');
-    section['ibanDraft'].set('FR1420041010050500013M02606');
+    section['draft'].update((d) => ({
+      ...d,
+      holder: 'Refuge du Col SARL',
+      iban: 'FR1420041010050500013M02606',
+    }));
     expect(section['canSave']()).toBe(false);
   });
 
@@ -139,7 +142,7 @@ describe('RIB du client — ce que la fiche montre', () => {
     const { section, settle } = render({ account: SAVED });
     await settle();
 
-    section['ibanDraft'].set('FR1420041010050500013M02606');
+    section['draft'].update((d) => ({ ...d, iban: 'FR1420041010050500013M02606' }));
     expect(section['canSave']()).toBe(true);
   });
 
@@ -147,8 +150,11 @@ describe('RIB du client — ce que la fiche montre', () => {
     const { section, written, settle } = render({ account: SAVED });
     await settle();
 
-    section['ibanDraft'].set('  fr14 2004 1010 0505 0001 3m02 606 ');
-    section['countryDraft'].set('fr');
+    section['draft'].update((d) => ({
+      ...d,
+      iban: '  fr14 2004 1010 0505 0001 3m02 606 ',
+      countryCode: 'fr',
+    }));
     await section['save']();
 
     expect(written).toHaveLength(1);
@@ -156,8 +162,8 @@ describe('RIB du client — ce que la fiche montre', () => {
     expect(written[0]?.holder).toBe('Refuge du Col SARL');
     // Seul l'IBAN se vide : effacer le reste donnerait l'impression qu'il a
     // été perdu.
-    expect(section['ibanDraft']()).toBe('');
-    expect(section['holderDraft']()).toBe('Refuge du Col SARL');
+    expect(section['draft']().iban).toBe('');
+    expect(section['draft']().holder).toBe('Refuge du Col SARL');
   });
 
   describe('quand un mandat actif nomme un autre compte', () => {
@@ -165,7 +171,7 @@ describe('RIB du client — ce que la fiche montre', () => {
       const { host, section, settle } = render({ account: SAVED, mandateLast4: '3000' });
       await settle();
 
-      section['ibanDraft'].set('FR1420041010050500013M02606');
+      section['draft'].update((d) => ({ ...d, iban: 'FR1420041010050500013M02606' }));
       await settle();
 
       expect(host.textContent).toContain("n'est pas celui du mandat en cours");
@@ -175,7 +181,7 @@ describe('RIB du client — ce que la fiche montre', () => {
       const { host, section, settle } = render({ account: SAVED, mandateLast4: '2606' });
       await settle();
 
-      section['ibanDraft'].set('FR1420041010050500013M02606');
+      section['draft'].update((d) => ({ ...d, iban: 'FR1420041010050500013M02606' }));
       await settle();
 
       expect(host.textContent).not.toContain("n'est pas celui du mandat en cours");
@@ -192,7 +198,7 @@ describe('RIB du client — ce que la fiche montre', () => {
       const { host, section, settle } = render({ account: SAVED, mandateLast4: '' });
       await settle();
 
-      section['ibanDraft'].set('FR1420041010050500013M02606');
+      section['draft'].update((d) => ({ ...d, iban: 'FR1420041010050500013M02606' }));
       await settle();
 
       expect(host.textContent).not.toContain("n'est pas celui du mandat en cours");

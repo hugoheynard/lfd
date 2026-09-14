@@ -8,12 +8,17 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { SetMandateOptionsPayload } from '@lfd/contracts';
+import {
+  EMPTY_MANDATE_OPTIONS_DRAFT,
+  MandateOptionsForm,
+  mandateOptionsDraftFrom,
+  toMandateOptionsPayload,
+  type MandateOptionsDraft,
+} from '@lfd/b2b-ui/payment';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
-  FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
@@ -47,6 +52,9 @@ export interface MandateOptionsPanelData {
  * réécrire le rend caduc côté serveur, et le panneau le dit AVANT
  * l'enregistrement. Sous un mandat actif, la carte ne propose pas le geste.
  *
+ * Les deux champs sont `lfd-mandate-options-form` de `@lfd/b2b-ui/payment`, le
+ * même formulaire que la fiche staff (depuis le 2026-09-14).
+ *
  * Un refus reste affiché ici ; un succès relit le mandat et les options, puis
  * ferme le panneau.
  */
@@ -57,11 +65,11 @@ export interface MandateOptionsPanelData {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
-    FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
+    MandateOptionsForm,
   ],
   templateUrl: './mandate-options-panel.html',
   styleUrl: './mandate-options-panel.scss',
@@ -86,8 +94,7 @@ export class MandateOptionsPanel {
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
-  protected readonly debtorReferenceDraft = signal('');
-  protected readonly contractNumberDraft = signal('');
+  protected readonly draft = signal<MandateOptionsDraft>(EMPTY_MANDATE_OPTIONS_DRAFT);
 
   /** Un brouillon — scanné ou non — deviendrait caduc à l'enregistrement. */
   protected readonly voidsDraft = computed(() => {
@@ -111,10 +118,11 @@ export class MandateOptionsPanel {
     // Le pré-remplissage suit la lecture : elle arrive après l'ouverture.
     effect(() => {
       const options = this.mandates.options();
-      untracked(() => {
-        this.debtorReferenceDraft.set(options?.debtorReference ?? '');
-        this.contractNumberDraft.set(options?.contractNumber ?? '');
-      });
+      untracked(() =>
+        this.draft.set(
+          options === null ? EMPTY_MANDATE_OPTIONS_DRAFT : mandateOptionsDraftFrom(options),
+        ),
+      );
     });
   }
 
@@ -128,7 +136,10 @@ export class MandateOptionsPanel {
     }
     this.saving.set(true);
     this.refusal.set(null);
-    const refusal = await this.mandates.saveOptions(this.data().companyId, this.payload());
+    const refusal = await this.mandates.saveOptions(
+      this.data().companyId,
+      toMandateOptionsPayload(this.draft()),
+    );
     this.saving.set(false);
     if (refusal === null) {
       this.notify.success(this.t().account.mandateOptionsSavedToast);
@@ -140,12 +151,5 @@ export class MandateOptionsPanel {
 
   protected cancel(): void {
     this.ref.close();
-  }
-
-  private payload(): SetMandateOptionsPayload {
-    return {
-      debtorReference: this.debtorReferenceDraft().trim(),
-      contractNumber: this.contractNumberDraft().trim(),
-    };
   }
 }

@@ -6,21 +6,13 @@
   height: 100%;
 }
 
+/* Les rangées du formulaire partagé, espacées ici. Dans un panneau, les champs
+   d'une ligne s'empilent sous 14rem chacun — la fiche staff, plus large, garde
+   18rem : un IBAN ne se relit pas dans un champ de six centimètres. */
 .rows {
+  --lfd-bank-account-field-basis: 14rem;
+
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
-}
-
-/* Les champs d'une ligne se partagent la largeur, et s'empilent sous 14rem
-   chacun : un IBAN ne se relit pas dans un champ de six centimètres. */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--fold-space-sm);
-}
-
-.row fold-input {
-  flex: 1 1 14rem;
 }

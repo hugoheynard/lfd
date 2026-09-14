@@ -5,19 +5,6 @@
   max-width: 60ch;
 }
 
-/* Mêmes règles que le bloc du RIB juste au-dessus : les champs se partagent la
-   largeur et s'empilent en dessous de 18rem chacun. */
-.mo-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--fold-space-sm);
-  flex-wrap: wrap;
-}
-
-.mo-row fold-input {
-  flex: 1 1 18rem;
-}
-
 .mo-actions {
   display: flex;
   justify-content: flex-end;

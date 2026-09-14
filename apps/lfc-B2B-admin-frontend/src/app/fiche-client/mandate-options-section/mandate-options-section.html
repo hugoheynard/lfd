@@ -9,21 +9,8 @@
     Ces zones s'enregistrent avec le RIB du client&nbsp;: renseignez-le à l'étape&nbsp;1 d'abord.
   </fold-callout>
 } @else {
-  <div class="mo-row">
-    <fold-input
-      label="Code identifiant du débiteur"
-      hint="Zone 14 — ce que le client verra revenir sur son relevé bancaire."
-      placeholder="C-9P2X4B"
-      [value]="debtorReferenceDraft()"
-      (valueChange)="debtorReferenceDraft.set($event); markTouched()"
-    />
-    <fold-input
-      label="Numéro du contrat"
-      hint="Zone 19 — facultatif."
-      [value]="contractNumberDraft()"
-      (valueChange)="contractNumberDraft.set($event); markTouched()"
-    />
-  </div>
+  <!-- Le formulaire partagé avec le panneau des options du client. -->
+  <lfd-mandate-options-form [value]="draft()" (valueChange)="edit($event)" />
 }
 
 <div class="mo-actions">

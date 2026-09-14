@@ -43,22 +43,8 @@
           </fold-callout>
         }
 
-        <div class="fields">
-          <fold-input
-            class="debtor-reference"
-            [label]="t().account.mandateOptionsDebtorReference"
-            [hint]="t().account.mandateOptionsDebtorReferenceHint"
-            [value]="debtorReferenceDraft()"
-            (valueChange)="debtorReferenceDraft.set($event)"
-          />
-          <fold-input
-            class="contract-number"
-            [label]="t().account.mandateOptionsContractNumber"
-            [hint]="t().account.mandateOptionsContractNumberHint"
-            [value]="contractNumberDraft()"
-            (valueChange)="contractNumberDraft.set($event)"
-          />
-        </div>
+        <!-- Le formulaire partagé avec la fiche staff. -->
+        <lfd-mandate-options-form [(value)]="draft" [labels]="t().account.mandateOptionsForm" />
       }
     }
   }

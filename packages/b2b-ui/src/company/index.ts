@@ -18,10 +18,7 @@ export {
   withDefault,
   withKnownContact,
 } from './delivery-address-form/delivery-address-form.model';
-export type {
-  DeliveryAddressFormLabels,
-  DeliveryPostalLabels,
-} from './delivery-address-form/delivery-address-form.model';
+export type { DeliveryAddressFormLabels } from './delivery-address-form/delivery-address-form.model';
 export { BillingAddressPanel } from './billing-address-panel/billing-address-panel';
 export type { BillingAddressPanelData } from './billing-address-panel/billing-address-panel';
 export { DeliveryAddressPanel } from './delivery-address-panel/delivery-address-panel';

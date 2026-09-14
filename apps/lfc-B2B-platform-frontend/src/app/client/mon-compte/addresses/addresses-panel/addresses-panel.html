@@ -115,7 +115,12 @@
         {{ t().account.addressSaveFailed }} {{ message }}
       </fold-callout>
     }
-    <lfd-address-form [fields]="fields" [value]="postal()" (valueChange)="setPostal($event)" />
+    <lfd-address-form
+      [fields]="fields"
+      [labels]="t().account.addressForm"
+      [value]="postal()"
+      (valueChange)="setPostal($event)"
+    />
   }
 </fold-panel-body>
 

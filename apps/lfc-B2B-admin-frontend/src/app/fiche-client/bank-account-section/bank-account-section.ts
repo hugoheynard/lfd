@@ -8,8 +8,18 @@ import {
   output,
   signal,
 } from '@angular/core';
+import {
+  BankAccountForm,
+  bankAccountDraftFrom,
+  changesMandatedAccount,
+  EMPTY_BANK_ACCOUNT_DRAFT,
+  isBankAccountComplete,
+  toBankAccountPayload,
+  withoutIban,
+  type BankAccountDraft,
+} from '@lfd/b2b-ui/payment';
 import type { CompanyBankAccountView } from '@lfd/contracts';
-import { FoldButtonComponent, FoldCalloutComponent, FoldInputComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { BankAccountService } from '../bank-account/bank-account.service';
@@ -32,6 +42,14 @@ import { BankAccountService } from '../bank-account/bank-account.service';
  * reste se réaffiche — titulaire, adresse, BIC ne sont pas des secrets, et les
  * relire est exactement ce qu'on veut avant d'imprimer un mandat.
  *
+ * ## Le formulaire est partagé
+ *
+ * Les champs sont `lfd-bank-account-form` de `@lfd/b2b-ui/payment` (depuis le
+ * 2026-09-14), le même que le panneau RIB de `/mon-compte` ; leurs règles sont
+ * dans `bank-account-draft.model.ts`. Cette section garde ce qui est à elle : le
+ * rappel d'impression, le compte enregistré, l'avertissement de compte mandaté,
+ * le bouton et l'écriture.
+ *
  * ## Ce que l'écran NE promet pas
  *
  * Il n'annonce pas ce qu'un changement de compte fait au mandat en cours.
@@ -42,7 +60,7 @@ import { BankAccountService } from '../bank-account/bank-account.service';
 @Component({
   selector: 'app-bank-account-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldInputComponent, FoldButtonComponent],
+  imports: [BankAccountForm, FoldCalloutComponent, FoldButtonComponent],
   templateUrl: './bank-account-section.html',
   styleUrl: './bank-account-section.scss',
 })
@@ -70,14 +88,8 @@ export class BankAccountSection {
   protected readonly account = signal<CompanyBankAccountView | null>(null);
   protected readonly busy = signal(false);
 
-  protected readonly ibanDraft = signal('');
-  protected readonly bicDraft = signal('');
-  protected readonly holderDraft = signal('');
-  protected readonly line1Draft = signal('');
-  protected readonly line2Draft = signal('');
-  protected readonly postalCodeDraft = signal('');
-  protected readonly cityDraft = signal('');
-  protected readonly countryDraft = signal('FR');
+  /** Le RIB en cours de saisie — IBAN toujours vide à l'ouverture. */
+  protected readonly draft = signal<BankAccountDraft>(EMPTY_BANK_ACCOUNT_DRAFT);
 
   constructor() {
     effect(() => {
@@ -88,37 +100,13 @@ export class BankAccountSection {
     });
   }
 
-  /**
-   * Le RIB se recopie **en entier**, donc le bouton attend tout — sauf le
-   * complément d'adresse, facultatif sur un vrai RIB. Un compte à moitié rempli
-   * ne se découvrirait qu'au rejet du lot, cinq jours après l'envoi.
-   */
-  protected readonly canSave = computed(
-    () =>
-      this.ibanDraft().trim() !== '' &&
-      this.bicDraft().trim() !== '' &&
-      this.holderDraft().trim() !== '' &&
-      this.line1Draft().trim() !== '' &&
-      this.postalCodeDraft().trim() !== '' &&
-      this.cityDraft().trim() !== '',
-  );
+  /** Le RIB se recopie en entier, complément excepté (`isBankAccountComplete`). */
+  protected readonly canSave = computed(() => isBankAccountComplete(this.draft()));
 
-  /**
-   * Enregistrer va-t-il désigner un compte **différent** de celui que le mandat
-   * actif nomme ?
-   *
-   * Comparé sur les quatre derniers caractères, seuls disponibles des deux
-   * côtés. C'est grossier — deux comptes peuvent les partager — et c'est
-   * suffisant : l'avertissement invite à vérifier, il ne bloque rien.
-   */
-  protected readonly changesMandatedAccount = computed(() => {
-    const last4 = this.mandateLast4();
-    if (last4 === '') {
-      return false;
-    }
-    const typed = this.ibanDraft().replace(/\s/gu, '');
-    return typed.length >= IBAN_LAST4 && !typed.endsWith(last4);
-  });
+  /** Enregistrer va-t-il désigner un autre compte que celui du mandat actif ? */
+  protected readonly changesMandatedAccount = computed(() =>
+    changesMandatedAccount(this.draft(), this.mandateLast4()),
+  );
 
   /** Y a-t-il un compte enregistré à afficher ? */
   protected readonly hasAccount = computed(() => this.account() !== null);
@@ -131,20 +119,11 @@ export class BankAccountSection {
 
     this.busy.set(true);
     try {
-      await this.accounts.save(id, {
-        iban: this.ibanDraft().trim(),
-        bic: this.bicDraft().trim(),
-        holder: this.holderDraft().trim(),
-        line1: this.line1Draft().trim(),
-        line2: this.line2Draft().trim(),
-        postalCode: this.postalCodeDraft().trim(),
-        city: this.cityDraft().trim(),
-        countryCode: this.countryDraft().trim().toUpperCase(),
-      });
+      await this.accounts.save(id, toBankAccountPayload(this.draft()));
       this.notify.success('RIB enregistré.');
       // 🔴 Seul l'IBAN se vide : les autres champs se REPRENNENT de la lecture
       // qui suit. Les effacer donnerait l'impression qu'ils ont été perdus.
-      this.ibanDraft.set('');
+      this.draft.update(withoutIban);
       await this.load(id);
     } catch (error) {
       this.notify.error(error, "Le RIB n'a pas été enregistré.");
@@ -164,25 +143,11 @@ export class BankAccountSection {
       this.account.set(account);
       this.accountChange.emit(account);
       if (account !== null) {
-        this.fillDrafts(account);
+        this.draft.set(bankAccountDraftFrom(account));
       }
     } catch {
       this.account.set(null);
       this.accountChange.emit(null);
     }
   }
-
-  /** Préremplit la recopie avec ce que le serveur vient de rendre. */
-  private fillDrafts(account: CompanyBankAccountView): void {
-    this.bicDraft.set(account.bic);
-    this.holderDraft.set(account.holder);
-    this.line1Draft.set(account.addressLine1);
-    this.line2Draft.set(account.addressLine2);
-    this.postalCodeDraft.set(account.postalCode);
-    this.cityDraft.set(account.city);
-    this.countryDraft.set(account.countryCode === '' ? 'FR' : account.countryCode);
-  }
 }
-
-/** Les quatre derniers caractères — tout ce qu'on connaît d'un compte enregistré. */
-const IBAN_LAST4 = 4;

@@ -9,13 +9,8 @@
 />
 
 <lfd-address-form
-  [legend]="labels().address.legend"
-  [labelHint]="labels().address.labelHint"
-  [line2Hint]="labels().address.line2Hint"
-  [noteLabel]="labels().address.noteLabel"
-  [notePlaceholder]="labels().address.notePlaceholder"
-  [coordinatesLabel]="labels().address.coordinatesLabel"
-  [coordinatesHint]="labels().address.coordinatesHint"
+  [legend]="labels().legend"
+  [labels]="labels().address"
   [fields]="fields"
   [value]="postal()"
   (valueChange)="setPostal($event)"
