@@ -94,6 +94,9 @@ export class MandateSignedEvent implements JournaledEvent {
  * Fait : **le brouillon est révoqué** parce que le RIB ou les zones du mandat
  * ont été réécrits. Sans cette ligne, un brouillon disparu de l'écran du client
  * n'aurait pas d'explication — ni pour lui, ni pour le commercial qu'il appelle.
+ *
+ * `via` dit qui a réécrit (depuis le 2026-09-14) : « le client a changé son RIB »
+ * et « le commercial l'a changé » n'appellent pas le même coup de fil.
  */
 export class MandateDraftVoidedEvent implements JournaledEvent {
   constructor(
@@ -101,6 +104,7 @@ export class MandateDraftVoidedEvent implements JournaledEvent {
     readonly companyId: string,
     readonly reference: string,
     readonly cause: DraftVoidingCause,
+    readonly via: MandateActorChannel,
   ) {}
 
   journalFact(): JournalFact {
@@ -108,7 +112,45 @@ export class MandateDraftVoidedEvent implements JournaledEvent {
       type: PAYMENT_MANDATE_FACTS.draftVoided,
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
-      payload: { companyId: this.companyId, reference: this.reference, cause: this.cause },
+      payload: {
+        companyId: this.companyId,
+        reference: this.reference,
+        cause: this.cause,
+        via: this.via,
+      },
+    };
+  }
+}
+
+/**
+ * Fait : **les zones 14 et 19 sont réécrites**, qu'un brouillon existe ou non.
+ *
+ * Le sujet est le **RIB** (`company_bank_account`), pas un mandat : les zones
+ * vivent sur sa ligne, et il n'existe souvent aucun mandat à nommer. Les
+ * valeurs écrites entrent au payload — ce ne sont pas des coordonnées
+ * bancaires, et « quelle référence a-t-on imprimée, et depuis quand » est la
+ * question qu'on posera.
+ */
+export class MandateOptionsChangedEvent implements JournaledEvent {
+  constructor(
+    readonly bankAccountId: string,
+    readonly companyId: string,
+    readonly debtorReference: string,
+    readonly contractNumber: string,
+    readonly via: MandateActorChannel,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PAYMENT_MANDATE_FACTS.optionsChanged,
+      subjectType: "company_bank_account",
+      subjectId: this.bankAccountId,
+      payload: {
+        companyId: this.companyId,
+        debtorReference: this.debtorReference,
+        contractNumber: this.contractNumber,
+        via: this.via,
+      },
     };
   }
 }

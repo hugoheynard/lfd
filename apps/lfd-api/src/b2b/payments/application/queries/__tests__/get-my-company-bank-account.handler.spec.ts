@@ -66,7 +66,7 @@ class FakeRepository extends CompanyBankAccountRepository {
 async function repoWithAccount(): Promise<FakeRepository> {
   const repo = new FakeRepository();
   const steps = new Steps();
-  await recordCompanyBankAccount("cmp_1", PAYLOAD, {
+  await recordCompanyBankAccount("cmp_1", PAYLOAD, "customer", {
     accounts: repo,
     ids: new FixedIdGenerator("cba"),
     mandates: new InMemoryMandates(steps),

@@ -357,7 +357,11 @@ describe("le brouillon devient caduc quand son papier change", () => {
     const after = jsonBody<CustomerMandateView>(await ctx.asSub(OWNER).get(base()).expect(200));
     expect(after).toMatchObject({ id: draft.id, status: "revoked" });
     expect(await journal("payment_mandate.draft_voided")).toEqual([
-      expect.objectContaining({ reference: draft.reference, cause: "bank_account_changed" }),
+      expect.objectContaining({
+        reference: draft.reference,
+        cause: "bank_account_changed",
+        via: "customer",
+      }),
     ]);
     expect(
       await ctx.prisma.staffNotification.count({ where: { kind: "payment_mandate.draft_voided" } }),
@@ -378,6 +382,16 @@ describe("le brouillon devient caduc quand son papier change", () => {
       await staff().get(`/admin/companies/${companyId}/mandate`).expect(200),
     );
     expect(section.mandate).toMatchObject({ id: draft.id, status: "revoked" });
+    // Plan §10 (2026-09-14) : la révocation dit qui a réécrit, et la réécriture a son fait.
+    expect(await journal("payment_mandate.draft_voided")).toEqual([
+      expect.objectContaining({ cause: "mandate_options_changed", via: "staff" }),
+    ]);
+    const rewrites = await ctx.prisma.activityEvent.findMany({
+      where: { type: "payment_mandate.options_changed" },
+    });
+    expect(rewrites.map((row) => row.payload)).toEqual([
+      { companyId, debtorReference: "C-9P2X4B", contractNumber: "CT-42", via: "staff" },
+    ]);
   });
 });
 

@@ -5,6 +5,7 @@ import { Iban } from "../../../accounting/domain/value-objects/iban.js";
 import { LegalAddress } from "../../../accounting/domain/value-objects/legal-address.js";
 import type { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CompanyBankAccount } from "../../domain/entities/company-bank-account.js";
+import type { MandateActorChannel } from "../../domain/events/payment-mandate-facts.js";
 import type { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { DebtorAccount } from "../../domain/value-objects/debtor-account.js";
 import { MandateOptions } from "../../domain/value-objects/mandate-options.js";
@@ -42,6 +43,7 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
 export async function recordCompanyBankAccount(
   companyId: string,
   payload: SetCompanyBankAccountPayload,
+  via: MandateActorChannel,
   deps: RecordBankAccountDeps,
 ): Promise<void> {
   // Les value objects valident AVANT toute lecture : un IBAN mal recopié se
@@ -61,7 +63,8 @@ export async function recordCompanyBankAccount(
       options: MandateOptions.empty(),
     });
 
-  const voided = await writeVoidingDraft(deps, companyId, "bank_account_changed", () =>
+  const trigger = { cause: "bank_account_changed", via } as const;
+  const voided = await writeVoidingDraft(deps, companyId, trigger, () =>
     deps.accounts.save(written),
   );
   if (voided !== null) {

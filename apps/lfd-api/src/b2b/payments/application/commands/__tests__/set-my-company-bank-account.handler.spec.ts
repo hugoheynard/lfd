@@ -178,6 +178,11 @@ describe("SetMyCompanyBankAccountHandler", () => {
     expect(events.traced.map((event) => event.journalFact().type)).toEqual([
       "payment_mandate.draft_voided",
     ]);
+    // Plan §10 (2026-09-14) : le fait dit que c'est le client qui a réécrit.
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      cause: "bank_account_changed",
+      via: "customer",
+    });
     expect(notifier.notices).toHaveLength(1);
   });
 

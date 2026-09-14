@@ -24,6 +24,12 @@ export const PAYMENT_MANDATE_FACTS = {
   signed: "payment_mandate.signed",
   /** Le brouillon est révoqué parce que ce qu'il imprime a changé. */
   draftVoided: "payment_mandate.draft_voided",
+  /**
+   * Les zones 14 et 19 sont réécrites — **avec ou sans brouillon** (décidé le
+   * 2026-09-14, plan §10). Sans ce fait, une référence changée sur les relevés
+   * du client n'aurait ni auteur ni date.
+   */
+  optionsChanged: "payment_mandate.options_changed",
 } as const;
 
 /** Qui a fait le geste : un agent du back-office, ou le client depuis « Mon compte ». */

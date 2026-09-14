@@ -1,7 +1,9 @@
 import type { SetMandateOptionsPayload } from "@lfd/contracts";
 
-import { CompanyBankAccountNotFoundError } from "../../domain/errors/mandate-errors.js";
 import type { CompanyBankAccount } from "../../domain/entities/company-bank-account.js";
+import { MandateOptionsWithoutBankAccountError } from "../../domain/errors/bank-account-errors.js";
+import type { MandateActorChannel } from "../../domain/events/payment-mandate-facts.js";
+import { MandateOptionsChangedEvent } from "../../domain/events/payment-mandate.events.js";
 import type { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { MandateOptions } from "../../domain/value-objects/mandate-options.js";
 import { writeVoidingDraft, type DraftVoidingDeps } from "../draft-mandate-voiding.js";
@@ -30,28 +32,45 @@ const NO_PRECONDITION: MandateOptionsPrecondition = () => Promise.resolve();
  *
  * - **Refus 404 sans RIB** : les zones vivent sur sa ligne ; en créer une sans
  *   compte ferait exister un « côté client du mandat » sans le compte à débiter.
+ * - **Toute réécriture est journalisée**, brouillon ou pas (décidé le
+ *   2026-09-14, plan §10) : `payment_mandate.options_changed` porte `via` et les
+ *   valeurs écrites, dans la transaction de l'écriture. Rien n'est écrit sur un
+ *   refus — les deux refus précèdent l'unité de travail.
  * - **Le brouillon en cours devient caduc** : les zones sont imprimées. Il est
  *   révoqué dans la même unité de travail, et l'équipe prévenue ensuite, hors
  *   transaction (plan §9 #4).
  *
- * @throws {CompanyBankAccountNotFoundError} aucun RIB n'est déposé.
+ * @throws {MandateOptionsWithoutBankAccountError} aucun RIB n'est déposé.
  */
 export async function recordMandateOptions(
   companyId: string,
   payload: SetMandateOptionsPayload,
+  via: MandateActorChannel,
   deps: RecordMandateOptionsDeps,
   precondition: MandateOptionsPrecondition = NO_PRECONDITION,
 ): Promise<void> {
   const account = await deps.accounts.findByCompany(companyId);
   if (account === null) {
-    throw new CompanyBankAccountNotFoundError(companyId);
+    throw new MandateOptionsWithoutBankAccountError(companyId);
   }
   await precondition(account);
 
-  account.setOptions(MandateOptions.create(payload));
-  const voided = await writeVoidingDraft(deps, companyId, "mandate_options_changed", () =>
-    deps.accounts.save(account),
-  );
+  const options = MandateOptions.create(payload);
+  account.setOptions(options);
+  const trigger = { cause: "mandate_options_changed", via } as const;
+  const voided = await writeVoidingDraft(deps, companyId, trigger, async () => {
+    await deps.accounts.save(account);
+    // Les valeurs NORMALISÉES : celles que la ligne porte, donc celles imprimées.
+    await deps.events.publishTraced(
+      new MandateOptionsChangedEvent(
+        account.id,
+        companyId,
+        options.debtorReference,
+        options.contractNumber,
+        via,
+      ),
+    );
+  });
   if (voided !== null) {
     await ringDraftVoided(deps, voided, "mandate_options_changed");
   }

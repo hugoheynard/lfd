@@ -34,3 +34,24 @@ export class BankAccountRoleRequiredError extends AuthorizationError {
     );
   }
 }
+
+/**
+ * On règle les zones 14 et 19 du mandat d'une société **sans RIB** — **404**.
+ *
+ * Les zones vivent sur la ligne du RIB : en créer une sans compte ferait
+ * exister un « côté client du mandat » sans le compte à débiter. Lu par le
+ * staff comme par le client, d'où « cette société » plutôt que « ce client » ou
+ * « votre ».
+ *
+ * 🔴 Le code reste `payments.bank_account.missing`, celui que la route staff
+ * rendait déjà sous `CompanyBankAccountNotFoundError` : seule la phrase change,
+ * pas le contrat.
+ */
+export class MandateOptionsWithoutBankAccountError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.bank_account.missing",
+      "Aucun RIB n'est enregistré pour cette société : enregistrez d'abord ses coordonnées bancaires, puis renseignez les références du mandat, qui sont conservées avec elles.",
+    );
+  }
+}

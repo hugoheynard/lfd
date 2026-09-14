@@ -51,7 +51,7 @@ export class SetMyCompanyBankAccountHandler implements ICommandHandler<
       throw new BankAccountBoundToActiveMandateError(command.companyId);
     }
 
-    await recordCompanyBankAccount(command.companyId, command.payload, {
+    await recordCompanyBankAccount(command.companyId, command.payload, "customer", {
       accounts: this.accounts,
       ids: this.ids,
       mandates: this.mandates,

@@ -28,7 +28,7 @@ export class SetMandateOptionsHandler implements ICommandHandler<SetMandateOptio
   ) {}
 
   async execute({ companyId, payload }: SetMandateOptionsCommand): Promise<void> {
-    await recordMandateOptions(companyId, payload, {
+    await recordMandateOptions(companyId, payload, "staff", {
       accounts: this.accounts,
       mandates: this.mandates,
       clock: this.clock,

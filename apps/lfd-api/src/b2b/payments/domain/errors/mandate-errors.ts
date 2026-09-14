@@ -243,7 +243,14 @@ export class CompanyNotFoundForBankAccountError extends ResourceNotFoundError {
 }
 
 /**
- * Ce client n'a pas de RIB, et le document demandé en exige un.
+ * Ce client n'a pas de RIB, et le **mandat à imprimer** en exige un — aperçu
+ * staff, envoi par courriel, téléchargement client.
+ *
+ * Le message sert les trois : il nomme la société sans supposer qui lit, et le
+ * geste de sortie est le même pour tous. L'écriture des zones 14/19 a sa propre
+ * erreur (`MandateOptionsWithoutBankAccountError`) : son geste n'est pas
+ * d'imprimer. Message réécrit le 2026-09-14 — il parlait de « prévisualiser »
+ * à des appelants qui ne prévisualisaient rien.
  *
  * ⚠️ Refuser plutôt que rendre un formulaire aux zones 5 et 6 vides : ce
  * document-là existe déjà, c'est le mandat d'EXEMPLE d'une entité émettrice. En
@@ -255,7 +262,7 @@ export class CompanyBankAccountNotFoundError extends ResourceNotFoundError {
   constructor(readonly companyId: string) {
     super(
       "payments.bank_account.missing",
-      "Ce client n'a pas de RIB enregistré : renseignez-le avant de prévisualiser son mandat.",
+      "Aucun RIB n'est enregistré pour cette société : enregistrez ses coordonnées bancaires avant d'afficher ou d'envoyer le mandat, qui doit nommer le compte à débiter.",
     );
   }
 }

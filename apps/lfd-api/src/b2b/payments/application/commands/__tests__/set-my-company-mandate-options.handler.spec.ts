@@ -2,9 +2,9 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   BankAccountCompanyNotFoundError,
   BankAccountRoleRequiredError,
+  MandateOptionsWithoutBankAccountError,
 } from "../../../domain/errors/bank-account-errors.js";
 import {
-  CompanyBankAccountNotFoundError,
   CustomerMandateClosedError,
   MandateOptionsBoundToActiveMandateError,
 } from "../../../domain/errors/mandate-errors.js";
@@ -69,6 +69,29 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
     },
   );
 
+  /** Plan §10 (2026-09-14) : sans brouillon, la réécriture n'avait aucune trace. */
+  it("journalise la réécriture du client DANS l'unité de travail, même sans brouillon", async () => {
+    const h = harness();
+
+    await h.run();
+
+    expect(h.steps.log).toEqual([
+      "guard",
+      "gate",
+      "mandate:find-current",
+      "mandate:find-draft",
+      "uow:begin",
+      "account:save",
+      "journal:payment_mandate.options_changed",
+      "uow:end",
+    ]);
+    expect(h.events.traced[0]?.journalFact().payload).toEqual({
+      companyId: "cmp_1",
+      ...OPTIONS,
+      via: "customer",
+    });
+  });
+
   it.each<BankAccountRole>(["admin", "orders"])(
     "refuse %s en 403, sans rien lire au-delà du mur",
     async (role) => {
@@ -101,8 +124,9 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
     h.accounts.stored = null;
     h.mandates.draft = mandate();
 
-    await expect(h.run()).rejects.toBeInstanceOf(CompanyBankAccountNotFoundError);
+    await expect(h.run()).rejects.toBeInstanceOf(MandateOptionsWithoutBankAccountError);
     expect(h.steps.log).toEqual(["guard", "gate"]);
+    expect(h.events.traced).toHaveLength(0);
   });
 
   /** Plan §10 (2026-09-14) : les zones sont imprimées sur un papier déjà signé. */
@@ -114,6 +138,7 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
     expect(h.accounts.saved).toHaveLength(0);
     expect(h.mandates.saved).toHaveLength(0);
     expect(h.accounts.stored?.options.contractNumber).toBe("");
+    expect(h.events.traced).toHaveLength(0);
   });
 
   /** Plan §9 #4 : un brouillon signé après la réécriture porterait l'ancienne version. */
@@ -130,15 +155,17 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
       "mandate:find-draft",
       "uow:begin",
       "account:save",
+      "journal:payment_mandate.options_changed",
       "mandate:save:revoked",
       "journal:payment_mandate.draft_voided",
       "uow:end",
       "bell",
     ]);
-    expect(h.events.traced[0]?.journalFact().payload).toEqual({
+    expect(h.events.traced[1]?.journalFact().payload).toEqual({
       companyId: "cmp_1",
       reference: "LFC-9P2X4B-260914-K7M3QT",
       cause: "mandate_options_changed",
+      via: "customer",
     });
     expect(h.notifier.notices[0]).toMatchObject({
       kind: "payment_mandate.draft_voided",

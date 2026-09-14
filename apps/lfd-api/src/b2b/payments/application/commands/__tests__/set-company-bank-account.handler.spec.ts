@@ -186,6 +186,7 @@ describe("SetCompanyBankAccountHandler", () => {
     ]);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       cause: "bank_account_changed",
+      via: "staff",
     });
     expect(notifier.notices[0]).toMatchObject({
       kind: "payment_mandate.draft_voided",

@@ -271,6 +271,20 @@ deux handlers — RIB requis, `setOptions`, brouillon révoqué dans l'unité de
 travail (fait `payment_mandate.draft_voided`, cause `mandate_options_changed`),
 cloche du staff hors transaction.
 
-⚠️ Le fait `draft_voided` ne dit pas **qui** a réécrit (`via` absent de
-l'événement), et aucune réécriture des zones n'est journalisée quand il n'y a
-pas de brouillon. Non tranché dans ce lot.
+**Journal — les deux trous nommés ici sont fermés (2026-09-14).** Cette
+section disait que `draft_voided` ne portait pas `via`, et qu'aucune réécriture
+des zones n'était journalisée sans brouillon. Tranché par Hugo et bâti le même
+jour :
+
+- **toute** réécriture des zones 14/19, staff comme client, écrit
+  `payment_mandate.options_changed` dans la transaction de l'écriture, brouillon
+  ou pas. Sujet : le RIB (`company_bank_account`, son identifiant) — les zones
+  vivent sur sa ligne et il n'existe souvent aucun mandat. Charge : `companyId`,
+  `debtorReference`, `contractNumber` (valeurs normalisées) et `via`. Rien
+  n'est écrit sur un refus ;
+- `payment_mandate.draft_voided` porte `via` (`staff` / `customer`), pour ses
+  quatre déclencheurs : RIB staff, RIB client, zones staff, zones client ;
+- sans RIB, l'écriture des zones lève `MandateOptionsWithoutBankAccountError`
+  (404, même code `payments.bank_account.missing`) : le message de
+  `CompanyBankAccountNotFoundError` parlait de « prévisualiser » à des
+  appelants qui ne prévisualisaient rien.

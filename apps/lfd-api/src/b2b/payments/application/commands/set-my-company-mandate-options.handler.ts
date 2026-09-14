@@ -54,6 +54,7 @@ export class SetMyCompanyMandateOptionsHandler implements ICommandHandler<
     await recordMandateOptions(
       companyId,
       payload,
+      "customer",
       {
         accounts: this.accounts,
         mandates: this.mandates,

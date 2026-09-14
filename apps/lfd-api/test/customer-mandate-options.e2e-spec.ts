@@ -102,6 +102,15 @@ async function openFlag(): Promise<void> {
 }
 
 const optionsUrl = (id = companyId): string => `/companies/${id}/mandate-options`;
+
+/** Les réécritures des zones journalisées pour la société — brouillon ou pas. */
+async function optionsFacts(): Promise<readonly unknown[]> {
+  const rows = await ctx.prisma.activityEvent.findMany({
+    where: { type: "payment_mandate.options_changed" },
+    orderBy: { occurredAt: "asc" },
+  });
+  return rows.map((row) => row.payload);
+}
 const mandateUrl = (): string => `/companies/${companyId}/mandate`;
 
 async function readOptions(sub = OWNER): Promise<CustomerMandateOptionsSectionView> {
@@ -165,6 +174,7 @@ describe("les zones — drapeau ouvert", () => {
 
     const response = await ctx.asSub(OWNER).put(optionsUrl()).send(OPTIONS).expect(404);
     expect(jsonBody<{ code: string }>(response).code).toBe("payments.bank_account.missing");
+    expect(await optionsFacts()).toEqual([]);
   });
 
   it.each([
@@ -179,6 +189,8 @@ describe("les zones — drapeau ouvert", () => {
     await ctx.asSub(sub).put(optionsUrl()).send(OPTIONS).expect(204);
 
     expect(await readOptions(sub)).toEqual({ options: OPTIONS });
+    // Plan §10 (2026-09-14) : journalisé même sans brouillon, avec qui et quoi.
+    expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
   });
 
   it("révoque le brouillon existant, trace la cause et sonne l'équipe", async () => {
@@ -196,8 +208,13 @@ describe("les zones — drapeau ouvert", () => {
       where: { type: "payment_mandate.draft_voided", subjectId: draft.id },
     });
     expect(facts.map((fact) => fact.payload)).toEqual([
-      expect.objectContaining({ reference: draft.reference, cause: "mandate_options_changed" }),
+      expect.objectContaining({
+        reference: draft.reference,
+        cause: "mandate_options_changed",
+        via: "customer",
+      }),
     ]);
+    expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
     expect(
       await ctx.prisma.staffNotification.count({ where: { kind: "payment_mandate.draft_voided" } }),
     ).toBe(1);
@@ -219,6 +236,7 @@ describe("les zones — drapeau ouvert", () => {
       "payments.mandate_options.bound_to_active_mandate",
     );
     expect(await readOptions()).toEqual({ options: { debtorReference: "", contractNumber: "" } });
+    expect(await optionsFacts()).toEqual([]);
     const mandate = jsonBody<CustomerMandateView>(
       await ctx.asSub(OWNER).get(mandateUrl()).expect(200),
     );

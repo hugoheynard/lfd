@@ -46,7 +46,7 @@ export class SetCompanyBankAccountHandler implements ICommandHandler<
   ) {}
 
   async execute({ companyId, payload }: SetCompanyBankAccountCommand): Promise<void> {
-    await recordCompanyBankAccount(companyId, payload, {
+    await recordCompanyBankAccount(companyId, payload, "staff", {
       accounts: this.accounts,
       ids: this.ids,
       mandates: this.mandates,
