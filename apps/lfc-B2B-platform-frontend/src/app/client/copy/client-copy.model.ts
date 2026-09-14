@@ -35,6 +35,10 @@ export interface ClientCopy {
      * manquent, et comment réessayer.
      */
     readonly featureAccessFailed: string;
+    /** Le nom du déclencheur du menu de la personne, dans l'en-tête : l'initiale seule n'en est pas un. */
+    readonly accountMenu: string;
+    /** L'entrée qui ouvre le profil de la personne — et le titre de son dialogue. */
+    readonly myProfile: string;
   };
 
   readonly nav: {

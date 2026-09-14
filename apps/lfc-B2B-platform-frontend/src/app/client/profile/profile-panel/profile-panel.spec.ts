@@ -2,10 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
-import type { UserProfileDraft } from '../../../../account/account.model';
-import { AccountService } from '../../../../account/account.service';
-import { FR } from '../../../copy/fr';
-import { matchMediaAt, openedPanel, PROFILE } from '../../account.fixture';
+import type { UserProfileDraft } from '../../../account/account.model';
+import { AccountService } from '../../../account/account.service';
+import { FR } from '../../copy/fr';
+import { matchMediaAt, openedPanel, PROFILE } from '../../mon-compte/account.fixture';
 import { ProfilePanel, type ProfilePanelData } from './profile-panel';
 
 interface Wire {
@@ -101,9 +101,7 @@ describe('ProfilePanel', () => {
     expect(field(FR.account.profileLastName).value).toBe('Heynard');
     expect(field(FR.account.profileEmail).value).toBe('hheynard@gmail.com');
     expect(field(FR.account.panelPhone).value).toBe('06 12 44 08 71');
-    expect(el().querySelector('fold-panel-header')?.textContent).toContain(
-      FR.account.sections.profile,
-    );
+    expect(el().querySelector('fold-panel-header')?.textContent).toContain(FR.chrome.myProfile);
   });
 
   it('n’arme Enregistrer que lorsque quelque chose a changé', () => {
@@ -188,6 +186,17 @@ describe('ProfilePanel', () => {
       email: PROFILE.email,
       phone: PROFILE.phone,
     });
+    panels.dismissAll();
+  });
+
+  /** Une saisie : dialogue centré au-delà du pli (règle « Saisir », 2026-09-14). */
+  it('open() se centre au-delà du pli', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    const panels = TestBed.inject(FoldPanelHostService);
+
+    ProfilePanel.open(panels, PROFILE);
+
+    expect(openedPanel()?.side).toBe('center');
     panels.dismissAll();
   });
 });

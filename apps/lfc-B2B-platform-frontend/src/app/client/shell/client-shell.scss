@@ -237,38 +237,9 @@
 
 /* ── L'identité, en fin de rangée ────────────────────────────────────────── */
 
-.who {
+.account {
   display: none;
   flex: none;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  height: 40px;
-  padding: 0 var(--fold-space-xs) 0 var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-hover);
-}
-
-.who-name {
-  font-size: var(--fold-text-base);
-  color: var(--fold-color-text);
-  white-space: nowrap;
-}
-
-/* La pastille d'initiales prend le papier : sur l'encre, c'est le contraste qui
-   la détache, pas une bordure de plus. */
-.who-chip {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--fold-radius-sm);
-  background: var(--lfc-paper-50);
-  color: var(--lfc-ink-800);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--lfc-weight-black);
 }
 
 /* Un écran peut demander que la barre s'efface au-delà du pli — l'accueil le
@@ -308,7 +279,7 @@
 
   /* Le nom ne paraît qu'ici. En deçà, le menu pleine page porte déjà le salut
      et l'identité : le répéter dans la barre coûterait la place du panier. */
-  .who.wide-only {
-    display: flex;
+  .account.wide-only {
+    display: block;
   }
 }

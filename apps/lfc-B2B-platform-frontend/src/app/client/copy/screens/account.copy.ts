@@ -68,7 +68,6 @@ export interface AccountCopy {
   readonly sections: {
     readonly identity: string;
     readonly users: string;
-    readonly profile: string;
     readonly kbis: string;
     readonly addresses: string;
     readonly bank: string;
@@ -134,7 +133,6 @@ export interface AccountCopy {
   readonly profileFirstName: string;
   readonly profileLastName: string;
   readonly profileEmail: string;
-  readonly profileNote: string;
   readonly profilePanelSubtitle: string;
   readonly profileEmailHint: string;
   /** Dit AVANT l'enregistrement ce qu'un changement d'adresse emporte chez Auth0. */
@@ -262,7 +260,6 @@ export interface AccountCopy {
   readonly closeBody: string;
   readonly closeCta: string;
   readonly panelPhone: string;
-  readonly noPhone: string;
   /** Pendant la lecture du RIB. */
   readonly bankLoading: string;
   /** La lecture du RIB a échoué : ce n'est PAS « aucun RIB », et on le dit. */

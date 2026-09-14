@@ -21,10 +21,10 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import type { UserProfileDraft } from '../../../../account/account.model';
-import { AccountService } from '../../../../account/account.service';
-import { ClientCopyService } from '../../../copy/client-copy.service';
-import { panelSide } from '../../../panel-side';
+import type { UserProfileDraft } from '../../../account/account.model';
+import { AccountService } from '../../../account/account.service';
+import { ClientCopyService } from '../../copy/client-copy.service';
+import { dialogSide } from '../../panel-side';
 
 /** Charge d'ouverture : le profil tel que la carte le montrait. */
 export type ProfilePanelData = UserProfileDraft;
@@ -34,9 +34,21 @@ type ProfileField = keyof UserProfileDraft;
 const EMPTY: UserProfileDraft = { firstName: '', lastName: '', email: '', phone: '' };
 
 /**
- * Le panneau **Mes informations** de `/mon-compte` — la personne connectée, pas
- * la société. Tout membre l'ouvre : c'est son propre profil, et
- * `PATCH /me/profile` ne lit l'identité que du jeton.
+ * Le dialogue **Mon profil** — la personne connectée, pas la société. Tout
+ * membre l'ouvre : c'est son propre profil, et `PATCH /me/profile` ne lit
+ * l'identité que du jeton.
+ *
+ * ## Il vit hors de `/mon-compte`, et c'est le sujet
+ *
+ * Mon compte est le dossier de la SOCIÉTÉ. La personne s'ouvre depuis
+ * l'en-tête — le menu du compte au bureau, le menu de poche en pile —, et ce
+ * dossier a quitté `mon-compte/profile/` le 2026-09-14 : un emplacement qui
+ * rangeait la personne sous la société aurait continué d'affirmer le modèle
+ * qu'on venait de corriger.
+ *
+ * C'est une SAISIE : dialogue centré au bureau, feuille du bas en pile
+ * (`dialogSide()`, règle « Saisir » du `CLAUDE.md` de l'app). Le nom `*-panel`
+ * est d'avant cette règle.
  *
  * ## Ce qu'un changement d'adresse emporte, dit AVANT d'enregistrer
  *
@@ -64,12 +76,13 @@ const EMPTY: UserProfileDraft = { firstName: '', lastName: '', email: '', phone:
   styleUrl: './profile-panel.scss',
 })
 export class ProfilePanel {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
+  /** `md` (490 px) : quatre champs et un avertissement (échelle `FoldPanelSize`). */
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
 
-  /** Ouvre le panneau depuis l'une ou l'autre carte, sur les valeurs du moment du clic. */
+  /** Ouvre le dialogue depuis l'en-tête, sur les valeurs du moment du clic. */
   static open(panels: FoldPanelHostService, profile: ProfileView): void {
     panels.open(ProfilePanel, {
-      side: panelSide(),
+      side: dialogSide(),
       data: {
         firstName: profile.firstName,
         lastName: profile.lastName,

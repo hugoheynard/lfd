@@ -112,10 +112,9 @@ function boot(
   return fixture;
 }
 
-/** Les neuf sections, dans l'ordre du sommaire. */
+/** Les huit sections, dans l'ordre du sommaire. */
 const SECTIONS = [
   'identity',
-  'profile',
   'users',
   'kbis',
   'addresses',
@@ -153,13 +152,15 @@ describe('ComptePage', () => {
     expect(chrome.bandNarrow()).toBe(true);
   });
 
-  it('donne neuf sections, et un sommaire qui pointe LEURS ancres', () => {
+  it('donne huit sections, et un sommaire qui pointe LEURS ancres', () => {
     // Le sommaire fait défiler, il ne change pas d'écran : une entrée qui
     // pointerait une ancre absente mènerait nulle part.
     const anchors = Array.from(el().querySelectorAll('.summary-link')).map((a) =>
       a.getAttribute('href')?.slice(1),
     );
-    expect(anchors.length).toBe(9);
+    expect(anchors.length).toBe(8);
+    // « Mes informations » a quitté Mon compte pour l'en-tête (2026-09-14).
+    expect(el().querySelector('#compte-profile')).toBeNull();
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
     }
@@ -191,7 +192,6 @@ describe('ComptePage', () => {
     const anchors = links.map((a) => a.getAttribute('href')?.slice(1));
     expect(anchors).toEqual([
       'compte-identity',
-      'compte-profile',
       'compte-users',
       'compte-kbis',
       'compte-addresses',
@@ -205,7 +205,6 @@ describe('ComptePage', () => {
       '04',
       '05',
       '06',
-      '07',
     ]);
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
@@ -230,8 +229,8 @@ describe('ComptePage', () => {
       const links = Array.from(el().querySelectorAll('.summary-link'));
       expect(el().querySelector('#compte-bank')).toBeNull();
       expect(links.map((a) => a.getAttribute('href'))).not.toContain('#compte-bank');
-      expect(links.length).toBe(8);
-      expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('08');
+      expect(links.length).toBe(7);
+      expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('07');
     }
   });
 
@@ -258,12 +257,12 @@ describe('ComptePage', () => {
         expect(el().querySelector('section#compte-bank')?.classList).toContain('paired');
 
         const shown = anchors();
-        expect(shown.length).toBe(10);
+        expect(shown.length).toBe(9);
         expect(shown.indexOf('compte-mandate')).toBe(shown.indexOf('compte-bank') + 1);
         expect(
           Array.from(el().querySelectorAll('.summary-num')).map((n) => n.textContent),
-        ).toContain('10');
-        expect(el().querySelector('.rail-foot .rail-count')?.textContent?.trim()).toBe('1/10');
+        ).toContain('09');
+        expect(el().querySelector('.rail-foot .rail-count')?.textContent?.trim()).toBe('1/9');
       }
     });
 
@@ -272,7 +271,7 @@ describe('ComptePage', () => {
 
       expect(el().querySelector('#compte-mandate')).toBeNull();
       expect(anchors()).not.toContain('compte-mandate');
-      expect(anchors().length).toBe(9);
+      expect(anchors().length).toBe(8);
       expect(el().querySelector('section#compte-bank')?.classList).not.toContain('paired');
     });
 
@@ -281,7 +280,7 @@ describe('ComptePage', () => {
 
       expect(el().querySelector('#compte-mandate')).toBeNull();
       expect(anchors()).toContain('compte-bank');
-      expect(anchors().length).toBe(9);
+      expect(anchors().length).toBe(8);
     });
 
     it('reste absent aux rôles qui ne voient pas le RIB, même drapeau ouvert et RIB lu', () => {
@@ -290,7 +289,7 @@ describe('ComptePage', () => {
 
         expect(el().querySelector('#compte-mandate')).toBeNull();
         expect(anchors()).not.toContain('compte-mandate');
-        expect(anchors().length).toBe(8);
+        expect(anchors().length).toBe(7);
       }
     });
   });

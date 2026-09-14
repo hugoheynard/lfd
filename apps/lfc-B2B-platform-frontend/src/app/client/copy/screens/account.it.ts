@@ -64,7 +64,6 @@ export const ACCOUNT_IT: AccountCopy = {
   sections: {
     identity: 'Identità legale',
     users: 'Utenti',
-    profile: 'I miei dati personali',
     kbis: 'Visura',
     addresses: 'Indirizzi',
     bank: 'Coordinate bancarie',
@@ -126,8 +125,6 @@ export const ACCOUNT_IT: AccountCopy = {
   profileFirstName: 'Nome',
   profileLastName: 'Cognome',
   profileEmail: 'E-mail',
-  profileNote:
-    'I vostri recapiti, non quelli della società. L’indirizzo e-mail è anche quello con cui accedete.',
   profilePanelSubtitle: 'I vostri recapiti personali, visibili solo a noi.',
   profileEmailHint: 'Serve anche per accedere.',
   profileEmailChange:
@@ -276,7 +273,6 @@ export const ACCOUNT_IT: AccountCopy = {
     'Definitivo, e proprio di questo spazio: accesso revocato per voi e per i vostri utenti, sconto e condizioni di pagamento persi, carrelli ricorrenti eliminati. Gli altri spazi non si muovono. Un ordine in corso va ritirato o annullato prima.',
   closeCta: 'Chiudere questo spazio',
   panelPhone: 'Telefono',
-  noPhone: 'non indicato',
   bankLoading: 'Lettura delle coordinate bancarie…',
   bankLoadFailedTitle: 'Le coordinate bancarie non sono state lette',
   bankLoadFailedBody: 'Il servizio non risponde al momento. Riprovate tra un istante.',

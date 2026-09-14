@@ -64,7 +64,6 @@ export const ACCOUNT_EN: AccountCopy = {
   sections: {
     identity: 'Legal identity',
     users: 'Users',
-    profile: 'My details',
     kbis: 'Registry extract',
     addresses: 'Addresses',
     bank: 'Bank details',
@@ -125,8 +124,6 @@ export const ACCOUNT_EN: AccountCopy = {
   profileFirstName: 'First name',
   profileLastName: 'Last name',
   profileEmail: 'E-mail',
-  profileNote:
-    'Your own details, not the company’s. The e-mail address is also the one you sign in with.',
   profilePanelSubtitle: 'Your personal details, seen only by us.',
   profileEmailHint: 'Also used to sign in.',
   profileEmailChange:
@@ -272,7 +269,6 @@ export const ACCOUNT_EN: AccountCopy = {
     'Final, and specific to this workspace: access revoked for you and your users, discount and payment terms lost, recurring baskets deleted. Your other workspaces do not move. A live order must be collected or cancelled first.',
   closeCta: 'Close this workspace',
   panelPhone: 'Phone',
-  noPhone: 'not given',
   bankLoading: 'Reading your bank details…',
   bankLoadFailedTitle: 'Your bank details could not be read',
   bankLoadFailedBody: 'The service is not responding right now. Try again in a moment.',

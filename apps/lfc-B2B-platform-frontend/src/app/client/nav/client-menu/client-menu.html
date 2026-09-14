@@ -72,6 +72,11 @@
     <!-- La déconnexion ne vit ici QUE parce que le pouce n'a pas d'autre endroit
          où l'atteindre : en desktop c'est une action de compte, et la réf la
          garde hors de la navigation. -->
+    <!-- Le profil de la PERSONNE, à côté de sa déconnexion : au bureau, les deux
+         vivent dans le menu de l'initiale ; ici, le pouce n'a que ce menu. -->
+    <button class="logout profile" type="button" [disabled]="!hasProfile()" (click)="openProfile()">
+      {{ t().chrome.myProfile }}
+    </button>
     <button class="logout" type="button" (click)="logout()">{{ t().nav.logout }}</button>
     <p class="address">{{ t().nav.address }}</p>
   </div>

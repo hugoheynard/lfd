@@ -48,20 +48,19 @@ import { PaymentDeskCard } from '../payment/payment-desk-card/payment-desk-card'
 import { PaymentMobileCard } from '../payment/payment-mobile-card/payment-mobile-card';
 import { PreferencesDeskCard } from '../preferences/preferences-desk-card/preferences-desk-card';
 import { PreferencesMobileCard } from '../preferences/preferences-mobile-card/preferences-mobile-card';
-import { ProfileDeskCard } from '../profile/profile-desk-card/profile-desk-card';
-import { ProfileMobileCard } from '../profile/profile-mobile-card/profile-mobile-card';
 import { SupportCard } from '../support-card/support-card';
 import { UsersDeskCard } from '../users/users-desk-card/users-desk-card';
 import { UsersMobileCard } from '../users/users-mobile-card/users-mobile-card';
 
 /**
- * Les dix sujets, numérotés dans l'ordre de lecture. « Mes informations »
- * précède les utilisateurs : qui je suis, puis les autres. Le mandat suit le
- * RIB qu'il autorise à débiter.
+ * Les neuf sujets, numérotés dans l'ordre de lecture. Le mandat suit le RIB
+ * qu'il autorise à débiter.
+ *
+ * « Mes informations » n'en est plus (2026-09-14) : Mon compte est le dossier
+ * de la SOCIÉTÉ, et la personne s'ouvre depuis l'en-tête (`ProfilePanel`).
  */
 const SECTIONS = [
   'identity',
-  'profile',
   'users',
   'kbis',
   'addresses',
@@ -92,7 +91,7 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
  *
- * **Jusqu'à dix sections, pas dix écrans.** Le rôle, le niveau de la boutique
+ * **Jusqu'à neuf sections, pas neuf écrans.** Le rôle, le niveau de la boutique
  * et le drapeau du mandat en retirent ; le sommaire se renumérote sur ce qui
  * reste. Le back-office a une fiche à onglets parce
  * qu'un commercial y passe la journée ; un client y passe deux fois par an. Une
@@ -139,8 +138,6 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
     PaymentMobileCard,
     PreferencesDeskCard,
     PreferencesMobileCard,
-    ProfileDeskCard,
-    ProfileMobileCard,
     ShopPromise,
     SupportCard,
     UsersDeskCard,

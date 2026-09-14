@@ -64,7 +64,6 @@ export const ACCOUNT_FR: AccountCopy = {
   sections: {
     identity: 'Identité légale',
     users: 'Utilisateurs',
-    profile: 'Mes informations',
     kbis: 'KBIS',
     addresses: 'Adresses',
     bank: 'RIB',
@@ -126,8 +125,6 @@ export const ACCOUNT_FR: AccountCopy = {
   profileFirstName: 'Prénom',
   profileLastName: 'Nom',
   profileEmail: 'E-mail',
-  profileNote:
-    'Vos coordonnées à vous, pas celles de la société. L’adresse e-mail est aussi celle avec laquelle vous vous connectez.',
   profilePanelSubtitle: 'Vos coordonnées personnelles, visibles de nous seuls.',
   profileEmailHint: 'Sert aussi à vous connecter.',
   profileEmailChange:
@@ -276,7 +273,6 @@ export const ACCOUNT_FR: AccountCopy = {
     'Définitif, et propre à cet espace : accès révoqué pour vous et vos utilisateurs, remise et conditions de paiement perdues, paniers récurrents supprimés. Vos autres espaces ne bougent pas. Une commande en cours doit être retirée ou annulée avant.',
   closeCta: 'Fermer cet espace',
   panelPhone: 'Téléphone',
-  noPhone: 'non renseigné',
   bankLoading: 'Lecture de votre RIB…',
   bankLoadFailedTitle: 'Votre RIB n’a pas pu être lu',
   bankLoadFailedBody: 'Le service ne répond pas pour le moment. Réessayez dans un instant.',
