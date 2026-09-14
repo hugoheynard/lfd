@@ -41,7 +41,6 @@ export interface AccountCopy {
   readonly signIn: string;
   readonly cardKicker: string;
   /** `{month}` le mois d'ouverture, `{ref}` la référence du dossier. */
-  readonly cardActive: string;
   /** `{ref}` est remplacé par la référence société — celle qu'on dicte. */
   readonly cardReference: string;
   /** Le terme CONVENU, quand il y en a un. */

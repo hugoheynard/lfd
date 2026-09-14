@@ -1,12 +1,13 @@
 <div class="card">
   <div class="head">
     <p class="kicker">{{ t().account.cardKicker }}</p>
-    <!-- La pastille monte sur la ligne du sur-titre : c'est ce qui laisse au nom
-         la largeur entière, et le droit de passer sur deux lignes. Elle ne dit
-         « Actif » que si le compte l'est — elle l'affirmait sans regarder. -->
-    @if (client.isActive()) {
-      <span class="state"
-        ><span class="dot" aria-hidden="true"></span>{{ t().account.cardActive }}</span
+    <!-- Le badge monte sur la ligne du sur-titre : c'est ce qui laisse au nom
+         la largeur entière, et le droit de passer sur deux lignes. Il dit l'état
+         du DOSSIER — « en cours de vérification » compris —, rien tant qu'on ne
+         le sait pas. -->
+    @if (stateLabel(); as label) {
+      <span class="state" [attr.data-tone]="stateTone()"
+        ><span class="dot" aria-hidden="true"></span>{{ label }}</span
       >
     }
   </div>
@@ -20,10 +21,13 @@
         <dd class="value">{{ term() }}</dd>
         <dt class="label">{{ t().account.cardTerm }}</dt>
       </div>
-      <div class="number">
-        <dd class="value num">{{ company.formeJuridique }}</dd>
-        <dt class="label">{{ t().account.identityForm }}</dt>
-      </div>
+      <!-- Une porte pro ouvre sans forme juridique : un libellé sans valeur ne dit rien. -->
+      @if (company.formeJuridique) {
+        <div class="number">
+          <dd class="value num">{{ company.formeJuridique }}</dd>
+          <dt class="label">{{ t().account.identityForm }}</dt>
+        </div>
+      }
     </dl>
   } @else {
     <!-- Personne de reconnu, ou un compte sans entreprise. On le DIT : un nom

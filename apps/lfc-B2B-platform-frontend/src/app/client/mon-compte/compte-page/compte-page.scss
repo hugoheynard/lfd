@@ -10,35 +10,6 @@
   padding: 0 var(--lfc-inset) var(--fold-space-4xl);
 }
 
-.state {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 13px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--lfc-color-on-well-tile);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-bold);
-}
-
-.state-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-success);
-
-  /* Un dossier à compléter ou en vérification attend quelque chose ; un compte
-     suspendu ou clos est bloqué. Le vert ne se dit que d'un compte actif. */
-  &[data-tone='wait'] {
-    background: var(--fold-color-warning-text);
-  }
-
-  &[data-tone='blocked'] {
-    background: var(--fold-color-alert);
-  }
-}
-
 .body {
   display: flex;
   flex-direction: column;
@@ -312,8 +283,10 @@
     padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-5xl);
   }
 
+  /* Dans le bandeau, la carte garde sa largeur de carte : le titre prend le reste. */
   .member {
-    max-width: 420px;
+    flex: none;
+    width: min(420px, 45%);
   }
 
   .body {

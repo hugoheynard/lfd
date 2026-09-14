@@ -18,7 +18,6 @@ export const ACCOUNT_EN: AccountCopy = {
   signedOutBody: 'Your file, access and paperwork are waiting for you here.',
   signIn: 'Sign in',
   cardKicker: 'Trade account',
-  cardActive: 'Active',
   cardReference: 'Ref. {ref} — quote it on the phone',
   cardTermMonthly: 'End of month',
   cardTermOrder: 'On order',

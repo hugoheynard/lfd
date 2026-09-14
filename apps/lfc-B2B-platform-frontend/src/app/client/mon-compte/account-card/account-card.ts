@@ -44,6 +44,21 @@ export class AccountCard {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly client = inject(ClientCompany);
 
+  /** Le badge : l'état du dossier, ou rien tant qu'on ne le sait pas. */
+  protected readonly stateLabel = computed(() => {
+    const dossier = this.client.dossier();
+    return dossier === null ? null : this.t().account.states[dossier];
+  });
+
+  /** Le vert ne se dit que d'un compte actif. */
+  protected readonly stateTone = computed(() => {
+    const dossier = this.client.dossier();
+    if (dossier === 'active') {
+      return 'ok';
+    }
+    return dossier === 'suspended' || dossier === 'terminated' ? 'blocked' : 'wait';
+  });
+
   /** La référence, pour la dicter. Vide tant que le compte n'est pas connu. */
   protected readonly reference = computed(() => {
     const company = this.client.company();

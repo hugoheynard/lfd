@@ -1,11 +1,9 @@
 <ng-template clientBanner>
   <app-client-banner-block [title]="t().account.title" [lead]="t().account.lead">
-    <!-- L'état du DOSSIER, et rien tant qu'on ne le sait pas. Elle affirmait
-         « Compte actif · dossier complet » en dur, à tout le monde. -->
-    @if (stateLabel(); as label) {
-      <span banner-action class="state">
-        <span class="state-dot" [attr.data-tone]="stateTone()" aria-hidden="true"></span>{{ label }}
-      </span>
+    <!-- LA CARTE DE COMPTE tient l'en-tête, et porte l'état du dossier en badge.
+         Seulement avec une société : sans elle, la carte n'aurait rien à dire. -->
+    @if (view() === 'dossier') {
+      <app-account-card banner-action class="member" />
     }
   </app-client-banner-block>
 </ng-template>
@@ -52,7 +50,6 @@
       @if (promiseLevel(); as level) {
         <app-shop-promise [level]="level" />
       }
-      <app-account-card class="member" />
 
       <div class="body">
         <!-- LE SOMMAIRE fait défiler, il ne change pas d'écran — et il le dit. -->

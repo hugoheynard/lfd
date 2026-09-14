@@ -26,11 +26,14 @@
     linear-gradient(118deg, transparent 42%, rgb(250 245 236 / 7%) 50%, transparent 58%);
 }
 
+/* Le badge passe sous le sur-titre plutôt que de déborder : « Dossier en cours
+   de vérification » ne tient pas à côté de lui sur un téléphone. */
 .head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--fold-space-sm);
+  gap: var(--fold-space-xs) var(--fold-space-sm);
 }
 
 .kicker {
@@ -57,6 +60,18 @@
   font-weight: var(--fold-weight-extrabold);
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
+
+  /* Un dossier à compléter ou en vérification attend quelque chose ; un compte
+     suspendu ou clos est bloqué. Le vert ne se dit que d'un compte actif. */
+  &[data-tone='wait'] {
+    background: var(--fold-color-warning-surface);
+    color: var(--fold-color-warning-text);
+  }
+
+  &[data-tone='blocked'] {
+    background: var(--fold-color-alert-surface);
+    color: var(--fold-color-alert-text);
+  }
 }
 
 .dot {
@@ -85,10 +100,13 @@
   color: var(--lfc-color-on-well-muted);
 }
 
+/* En rangée qui se replie, pas en trois colonnes : il n'y a que deux faits, et
+   « À la commande » ne tenait pas dans un tiers — sa valeur passait sous le
+   libellé voisin. */
 .numbers {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--fold-space-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm) var(--fold-space-xl);
   margin: var(--fold-space-lg) 0 0;
   padding-top: var(--fold-space-md);
   border-top: 1px solid rgb(250 245 236 / 20%);

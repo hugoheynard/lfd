@@ -27,7 +27,9 @@ function boot(companies: readonly CompanyView[]): ComponentFixture<AccountCard> 
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [AccountCard],
-    providers: [{ provide: AccountService, useValue: { companies: () => companies } }],
+    providers: [
+      { provide: AccountService, useValue: { companies: () => companies, status: () => 'ready' } },
+    ],
   });
   // Le VRAI dépôt, pas un doublé : c'est lui qui choisit l'enseigne plutôt que
   // la raison sociale, et cette règle-là doit être traversée.
@@ -64,10 +66,15 @@ describe('la carte de compte', () => {
     expect(text(boot([{ ...TOMMEUSES, grantedTerms: [] }]))).toContain(FR.account.cardTermOrder);
   });
 
-  /** La pastille l'affirmait sans regarder ; elle regarde. */
-  it('n’affirme « Actif » que si le compte l’est', () => {
-    expect(text(boot([TOMMEUSES]))).toContain(FR.account.cardActive);
-    expect(text(boot([{ ...TOMMEUSES, status: 'pending' }]))).not.toContain(FR.account.cardActive);
+  /** Le badge l'affirmait sans regarder ; il dit l'état du dossier. */
+  it('dit l’état du dossier en badge, et « en cours » ne se peint pas en vert', () => {
+    const active = boot([TOMMEUSES]);
+    expect(text(active)).toContain(FR.account.states.active);
+
+    const pending = boot([{ ...TOMMEUSES, status: 'pending' }]);
+    expect(text(pending)).toContain(FR.account.states.pending);
+    const badge = (pending.nativeElement as HTMLElement).querySelector('.state');
+    expect(badge?.getAttribute('data-tone')).toBe('wait');
   });
 
   /**
