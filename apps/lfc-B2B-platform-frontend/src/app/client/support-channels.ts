@@ -1,4 +1,7 @@
-/** Ce que l'identité publiée de la plateforme dit pour joindre le service. */
+/**
+ * Ce que le contenu de plateforme dit pour joindre le service commercial — le
+ * `commercialContact`, et non l'identité du pied de page.
+ */
 export interface PublishedReach {
   readonly phone: string;
   readonly phoneHref: string;
@@ -17,8 +20,13 @@ export interface SupportChannels {
 }
 
 /**
- * Les canaux du service commercial, tirés de l'identité PUBLIÉE — les mêmes que
- * le pied de page affiche au bureau, corrigés au back-office sans déploiement.
+ * Les canaux du service commercial, tirés du **contact commercial** du contenu
+ * de plateforme — corrigé au back-office sans déploiement.
+ *
+ * ⚠️ Plus l'identité du pied de page, depuis le 2026-09-14 : le pied de page
+ * affiche le standard de la maison, Mon compte la personne qui suit le compte
+ * pro (Hugo). La fonction ne sait pas lequel on lui passe ; ce sont la carte et
+ * le panneau qui lisent `ClientContent.commercialContact`.
  *
  * Partagé par la carte (qui se tait sans aucun canal) et par le panneau (qui les
  * donne) : deux lectures séparées sont deux occasions d'afficher un numéro que

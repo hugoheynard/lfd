@@ -1,5 +1,10 @@
 import { DEFAULT_FOOTER_CONTENT } from "../platform-content.defaults.js";
-import { footerContentSchema, legalIdentitySchema } from "../platform-content.js";
+import {
+  commercialContactSchema,
+  DEFAULT_COMMERCIAL_CONTACT_EMAIL,
+  footerContentSchema,
+  legalIdentitySchema,
+} from "../platform-content.js";
 
 describe("l'identité légale", () => {
   it("accepte le VIDE — un numéro qu'on n'a pas ne s'invente pas", () => {
@@ -100,6 +105,60 @@ describe("le pied de page", () => {
     expect(
       footerContentSchema.safeParse({ identity: {}, fr: noCity, en: locale, it: locale }).success,
     ).toBe(false);
+  });
+});
+
+describe("le contact commercial de Mon compte", () => {
+  /**
+   * 🔴 Une ligne de production enregistrée AVANT ce champ doit se relire
+   * intacte. Si son parse échouait, l'API servirait le contenu de départ à la
+   * place de ce que le staff a saisi.
+   */
+  it("une ligne enregistrée sans lui se relit avec le défaut, et garde tout le reste", () => {
+    const { commercialContact: _absent, ...saved } = DEFAULT_FOOTER_CONTENT;
+    const edited = {
+      ...saved,
+      identity: { ...saved.identity, email: "standard@lafoliecoffee.fr", phone: "04 00 00 00 00" },
+    };
+
+    const parsed = footerContentSchema.safeParse(edited);
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.commercialContact).toEqual({
+        email: "celine@lafoliedouce.com",
+        phone: "",
+        phoneHref: "",
+      });
+      expect(parsed.data.identity).toEqual(edited.identity);
+      expect(parsed.data.fr).toEqual(edited.fr);
+      expect(parsed.data.legalMentions).toEqual(edited.legalMentions);
+    }
+  });
+
+  it("reste à part de l'identité : l'une ne réécrit pas l'autre", () => {
+    const parsed = footerContentSchema.parse({
+      ...DEFAULT_FOOTER_CONTENT,
+      commercialContact: { email: "celine@lafoliedouce.com", phone: "", phoneHref: "" },
+    });
+    expect(parsed.identity.email).toBe(DEFAULT_FOOTER_CONTENT.identity.email);
+    expect(parsed.commercialContact.email).toBe("celine@lafoliedouce.com");
+  });
+
+  it("refuse une adresse e-mail qui n'en est pas une, mais pas l'absence", () => {
+    expect(commercialContactSchema.safeParse({ email: "celine@" }).success).toBe(false);
+    expect(commercialContactSchema.safeParse({ email: "" }).success).toBe(true);
+    expect(
+      footerContentSchema.safeParse({
+        ...DEFAULT_FOOTER_CONTENT,
+        commercialContact: { email: "pas une adresse", phone: "", phoneHref: "" },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("le contenu de départ et le défaut du schéma portent la même adresse", () => {
+    expect(DEFAULT_FOOTER_CONTENT.commercialContact.email).toBe(DEFAULT_COMMERCIAL_CONTACT_EMAIL);
+    expect(DEFAULT_FOOTER_CONTENT.commercialContact.phone).toBe("");
   });
 });
 

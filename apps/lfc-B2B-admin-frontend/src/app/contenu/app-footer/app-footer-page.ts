@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
+  CommercialContact,
   ContentLocale,
   FooterContent,
   FooterLocaleContent,
@@ -131,6 +132,10 @@ export class AppFooterPage {
   private readonly draft = signal<FooterContent>(DEFAULT_FOOTER_CONTENT);
 
   protected readonly identity = computed<LegalIdentity>(() => this.draft().identity);
+  /** Le contact de la carte « service commercial » de Mon compte — à part de l'identité. */
+  protected readonly commercialContact = computed<CommercialContact>(
+    () => this.draft().commercialContact,
+  );
   protected readonly legalMentions = computed<LegalMentionDisplay>(
     () => this.draft().legalMentions,
   );
@@ -199,6 +204,17 @@ export class AppFooterPage {
   /** Écrit un champ d'identité, sans toucher au reste du brouillon. */
   protected setIdentity(field: IdentityTextField, value: string): void {
     this.draft.update((draft) => ({ ...draft, identity: { ...draft.identity, [field]: value } }));
+  }
+
+  /**
+   * Écrit un champ du contact commercial, sans toucher à l'identité : le pied
+   * de page garde son standard, Mon compte sa personne (Hugo, 2026-09-14).
+   */
+  protected setCommercialContact(field: keyof CommercialContact, value: string): void {
+    this.draft.update((draft) => ({
+      ...draft,
+      commercialContact: { ...draft.commercialContact, [field]: value },
+    }));
   }
 
   /** Remplace la liste des réseaux — l'unique chemin d'écriture des trois gestes. */

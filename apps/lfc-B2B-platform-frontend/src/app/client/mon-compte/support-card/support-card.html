@@ -1,5 +1,27 @@
 @if (reachable()) {
-  <fold-card class="contact" padding="md" interactive (activated)="open()">
+  <!-- AU BUREAU : l'adresse sous le titre, sans dialogue. La carte contient des
+       liens : elle n'est donc pas `interactive`. -->
+  <fold-card class="contact desk" padding="md">
+    <span class="row">
+      <span class="glyph" aria-hidden="true"><fold-icon name="mail" /></span>
+      <span class="label">{{ t().account.supportTitle }}</span>
+    </span>
+    <ul class="channels">
+      @if (channels().email; as write) {
+        <li>
+          <a class="channel email" [href]="write.href">{{ write.label }}</a>
+        </li>
+      }
+      @if (channels().phone; as call) {
+        <li>
+          <a class="channel phone" [href]="call.href">{{ call.label }}</a>
+        </li>
+      }
+    </ul>
+  </fold-card>
+
+  <!-- EN PILE : la carte entière est le geste, et ouvre le panneau. -->
+  <fold-card class="contact mobile" padding="md" interactive (activated)="open()">
     <span class="row">
       <span class="glyph" aria-hidden="true"><fold-icon name="phone" /></span>
       <span class="label">{{ t().account.supportTitle }}</span>

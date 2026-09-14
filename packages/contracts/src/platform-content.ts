@@ -123,6 +123,45 @@ export const legalIdentitySchema = z.object({
 });
 export type LegalIdentity = z.infer<typeof legalIdentitySchema>;
 
+/**
+ * L'adresse que Mon compte donne quand aucun contact commercial n'est encore
+ * enregistré — décidée par Hugo le 2026-09-14.
+ *
+ * Elle vit ICI, dans le schéma, et pas seulement dans `DEFAULT_FOOTER_CONTENT` :
+ * c'est le `.default(...)` du schéma qui remplit une ligne déjà enregistrée,
+ * sans la clé, quand l'API la relit. Sans lui, le parse échouerait, et l'API
+ * retomberait sur le contenu de départ — tout ce que le staff a saisi
+ * disparaîtrait du site.
+ */
+export const DEFAULT_COMMERCIAL_CONTACT_EMAIL = "celine@lafoliedouce.com";
+
+/**
+ * Le **contact commercial** que la carte « Contacter le service commercial » de
+ * Mon compte donne au client pro.
+ *
+ * 🔴 **À part de l'identité publiée**, et c'est tout le sujet (Hugo,
+ * 2026-09-14). Le pied de page garde le standard de la maison
+ * (`identity.email`, `identity.phone`) ; le client pro, lui, écrit à la
+ * personne qui suit son compte. Les confondre ferait choisir entre une vitrine
+ * qui affiche une adresse personnelle et un client pro renvoyé au standard.
+ *
+ * Mêmes règles de forme que l'identité : tout accepte le vide, et une adresse
+ * saisie doit en être une.
+ */
+export const commercialContactSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .max(160)
+    .refine((v) => v === "" || z.string().email().safeParse(v).success, "adresse invalide")
+    .default(""),
+  /** Le téléphone tel qu'il se lit — vide « pour le moment » (2026-09-14). */
+  phone: z.string().trim().max(40).default(""),
+  /** Le même, composable — sans espace ni séparateur. */
+  phoneHref: z.string().trim().max(40).default(""),
+});
+export type CommercialContact = z.infer<typeof commercialContactSchema>;
+
 /** Une maison, au pied de page. L'adresse est COMPLÈTE : on la copie dans un GPS. */
 export const footerHouseSchema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -214,6 +253,21 @@ export type LegalMentionDisplay = z.infer<typeof legalMentionDisplaySchema>;
 export const footerContentSchema = z.object({
   /** Ce qui ne se traduit pas — hors du sélecteur de langue, dans l'écran. */
   identity: legalIdentitySchema,
+  /**
+   * Le contact de la carte « service commercial » de Mon compte — hors de
+   * l'identité publiée, que le pied de page garde (voir
+   * {@link commercialContactSchema}).
+   *
+   * 🔴 `.default(...)` et aucune migration : les lignes déjà enregistrées n'ont
+   * pas cette clé, et l'adaptateur les relit à travers ce schéma. Sans défaut,
+   * leur parse échouerait et l'API servirait le contenu de départ à la place de
+   * ce que le staff a saisi.
+   */
+  commercialContact: commercialContactSchema.default({
+    email: DEFAULT_COMMERCIAL_CONTACT_EMAIL,
+    phone: "",
+    phoneHref: "",
+  }),
   /**
    * Quelles mentions légales s'affichent — un booléen par mention, hors du
    * sélecteur de langue comme l'identité : afficher une mention est une

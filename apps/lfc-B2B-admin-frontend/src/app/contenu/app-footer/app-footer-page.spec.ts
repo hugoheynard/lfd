@@ -164,3 +164,57 @@ describe('AppFooterPage — les mentions légales', () => {
     expect(fieldLabels.some((text) => text.includes('Mention '))).toBe(false);
   });
 });
+
+/** Le champ `label` DANS le bloc `selector` — le même libellé existe dans l'identité. */
+function inputIn(
+  fixture: ComponentFixture<AppFooterPage>,
+  selector: string,
+  label: string,
+): HTMLInputElement {
+  const block = fixture.nativeElement.querySelector(selector);
+  const host = [...(block?.querySelectorAll('fold-input') ?? [])].find(
+    (node): node is HTMLElement =>
+      node instanceof HTMLElement &&
+      (node.querySelector('label')?.textContent ?? '').trim().startsWith(label),
+  );
+  const input = host?.querySelector('input');
+  if (!(input instanceof HTMLInputElement)) {
+    throw new Error(`Champ « ${label} » introuvable dans ${selector}.`);
+  }
+  return input;
+}
+
+describe('AppFooterPage — le contact commercial de Mon compte', () => {
+  it('a son propre bloc, qui dit où il s’affiche, avec l’adresse décidée par défaut', async () => {
+    const { fixture } = await render();
+    const block = fixture.nativeElement.querySelector('fold-card.commercial');
+
+    expect(block?.textContent).toContain('Contact commercial (Mon compte)');
+    expect(block?.textContent).toContain('pas dans le pied de page');
+    expect(inputIn(fixture, 'fold-card.commercial', 'E-mail').value).toBe(
+      'celine@lafoliedouce.com',
+    );
+    expect(inputIn(fixture, 'fold-card.commercial', 'Téléphone').value).toBe('');
+  });
+
+  /** À part de l'identité : écrire l'un ne réécrit jamais l'autre. */
+  it('enregistre le contact commercial sans toucher à l’identité du pied de page', async () => {
+    const { fixture, api } = await render();
+
+    const email = inputIn(fixture, 'fold-card.commercial', 'E-mail');
+    email.value = 'commercial@lafoliedouce.com';
+    email.dispatchEvent(new Event('input'));
+    const phone = inputIn(fixture, 'fold-card.commercial', 'Téléphone');
+    phone.value = '06 12 34 56 78';
+    phone.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    await save(fixture);
+
+    expect(api.saved[0]?.commercialContact).toEqual({
+      email: 'commercial@lafoliedouce.com',
+      phone: '06 12 34 56 78',
+      phoneHref: '',
+    });
+    expect(api.saved[0]?.identity).toEqual(DEFAULT_FOOTER_CONTENT.identity);
+  });
+});

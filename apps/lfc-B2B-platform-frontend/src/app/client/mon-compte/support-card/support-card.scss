@@ -40,3 +40,35 @@
   flex: none;
   color: var(--lfc-color-primary-vivid);
 }
+
+/* Au bureau, les coordonnées sous le titre, alignées sur le libellé. */
+.channels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: var(--fold-space-sm) 0 0 calc(32px + var(--fold-space-sm));
+  list-style: none;
+}
+
+.channel {
+  font-size: var(--fold-text-sm);
+  color: var(--lfc-color-primary-vivid);
+  overflow-wrap: anywhere;
+}
+
+/* Deux cartes, une seule affichée : le même pli que `NARROW_QUERY`. `display:
+   none` sort l'autre de l'arbre d'accessibilité. */
+.desk {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .desk {
+    display: block;
+  }
+
+  .mobile {
+    display: none;
+  }
+}
