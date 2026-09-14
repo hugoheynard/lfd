@@ -29,7 +29,6 @@ describe('brouillon des zones facultatives du mandat', () => {
       debtorReferencePlaceholder: 'C-9P2X4B',
       contractNumber: 'Numéro du contrat',
       contractNumberHint: 'Zone 19 — facultatif.',
-      contractNumberPlaceholder: '',
     });
   });
 });

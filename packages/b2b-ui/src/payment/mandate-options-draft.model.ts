@@ -36,10 +36,10 @@ export function toMandateOptionsPayload(draft: MandateOptionsDraft): SetMandateO
 export interface MandateOptionsFormLabels {
   readonly debtorReference: string;
   readonly debtorReferenceHint: string;
-  readonly debtorReferencePlaceholder: string;
+  readonly debtorReferencePlaceholder?: string;
   readonly contractNumber: string;
   readonly contractNumberHint: string;
-  readonly contractNumberPlaceholder: string;
+  readonly contractNumberPlaceholder?: string;
 }
 
 export const MANDATE_OPTIONS_FORM_LABELS_FR: MandateOptionsFormLabels = {
@@ -48,5 +48,4 @@ export const MANDATE_OPTIONS_FORM_LABELS_FR: MandateOptionsFormLabels = {
   debtorReferencePlaceholder: 'C-9P2X4B',
   contractNumber: 'Numéro du contrat',
   contractNumberHint: 'Zone 19 — facultatif.',
-  contractNumberPlaceholder: '',
 };

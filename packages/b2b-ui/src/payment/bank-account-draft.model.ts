@@ -142,23 +142,28 @@ export function changesMandatedAccount(draft: BankAccountDraft, mandateLast4: st
  */
 export interface BankAccountFormLabels {
   readonly holder: string;
-  readonly holderPlaceholder: string;
+  /**
+   * Les exemples de saisie sont FACULTATIFS : le back-office les montre, l'app
+   * cliente n'en affiche aucun — et ses dictionnaires refusent une chaîne vide
+   * (`client-copy.spec.ts`). Absent = pas d'exemple.
+   */
+  readonly holderPlaceholder?: string;
   readonly line1: string;
-  readonly line1Placeholder: string;
+  readonly line1Placeholder?: string;
   readonly line2: string;
-  readonly line2Placeholder: string;
+  readonly line2Placeholder?: string;
   readonly postalCode: string;
-  readonly postalCodePlaceholder: string;
+  readonly postalCodePlaceholder?: string;
   readonly city: string;
-  readonly cityPlaceholder: string;
+  readonly cityPlaceholder?: string;
   readonly country: string;
-  readonly countryPlaceholder: string;
+  readonly countryPlaceholder?: string;
   readonly iban: string;
-  readonly ibanPlaceholder: string;
+  readonly ibanPlaceholder?: string;
   /** Sous l'IBAN : il ne revient d'aucune route, et on le dit avant qu'on le cherche. */
   readonly ibanHint: string;
   readonly bic: string;
-  readonly bicPlaceholder: string;
+  readonly bicPlaceholder?: string;
 }
 
 export const BANK_ACCOUNT_FORM_LABELS_FR: BankAccountFormLabels = {

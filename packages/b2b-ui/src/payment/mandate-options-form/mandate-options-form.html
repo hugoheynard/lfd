@@ -2,14 +2,14 @@
   <fold-input
     [label]="labels().debtorReference"
     [hint]="labels().debtorReferenceHint"
-    [placeholder]="labels().debtorReferencePlaceholder"
+    [placeholder]="labels().debtorReferencePlaceholder ?? ''"
     [value]="value().debtorReference"
     (valueChange)="set('debtorReference', $event)"
   />
   <fold-input
     [label]="labels().contractNumber"
     [hint]="labels().contractNumberHint"
-    [placeholder]="labels().contractNumberPlaceholder"
+    [placeholder]="labels().contractNumberPlaceholder ?? ''"
     [value]="value().contractNumber"
     (valueChange)="set('contractNumber', $event)"
   />

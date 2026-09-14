@@ -5,7 +5,7 @@
 <div class="row">
   <fold-input
     [label]="labels().holder"
-    [placeholder]="labels().holderPlaceholder"
+    [placeholder]="labels().holderPlaceholder ?? ''"
     [value]="value().holder"
     (valueChange)="set('holder', $event)"
   />
@@ -13,13 +13,13 @@
 <div class="row">
   <fold-input
     [label]="labels().line1"
-    [placeholder]="labels().line1Placeholder"
+    [placeholder]="labels().line1Placeholder ?? ''"
     [value]="value().line1"
     (valueChange)="set('line1', $event)"
   />
   <fold-input
     [label]="labels().line2"
-    [placeholder]="labels().line2Placeholder"
+    [placeholder]="labels().line2Placeholder ?? ''"
     [value]="value().line2"
     (valueChange)="set('line2', $event)"
   />
@@ -27,19 +27,19 @@
 <div class="row">
   <fold-input
     [label]="labels().postalCode"
-    [placeholder]="labels().postalCodePlaceholder"
+    [placeholder]="labels().postalCodePlaceholder ?? ''"
     [value]="value().postalCode"
     (valueChange)="set('postalCode', $event)"
   />
   <fold-input
     [label]="labels().city"
-    [placeholder]="labels().cityPlaceholder"
+    [placeholder]="labels().cityPlaceholder ?? ''"
     [value]="value().city"
     (valueChange)="set('city', $event)"
   />
   <fold-input
     [label]="labels().country"
-    [placeholder]="labels().countryPlaceholder"
+    [placeholder]="labels().countryPlaceholder ?? ''"
     [value]="value().countryCode"
     (valueChange)="set('countryCode', $event)"
   />
@@ -47,14 +47,14 @@
 <div class="row">
   <fold-input
     [label]="labels().iban"
-    [placeholder]="labels().ibanPlaceholder"
+    [placeholder]="labels().ibanPlaceholder ?? ''"
     [hint]="labels().ibanHint"
     [value]="value().iban"
     (valueChange)="set('iban', $event)"
   />
   <fold-input
     [label]="labels().bic"
-    [placeholder]="labels().bicPlaceholder"
+    [placeholder]="labels().bicPlaceholder ?? ''"
     [value]="value().bic"
     (valueChange)="set('bic', $event)"
   />
