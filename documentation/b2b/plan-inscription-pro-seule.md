@@ -1,6 +1,7 @@
 # L'ouverture de compte pro, et l'accès à la boutique piloté en admin
 
-**Statut** : 📐 plan, rien n'est bâti.
+**Statut** : 🟡 lots 1 à 6 bâtis le 2026-09-14, non commités à l'écriture de
+cette ligne ; lot 0 retiré. Ce que la construction a changé au plan est au §11.
 **Écrit le 2026-09-14**, puis refondu le même jour sur deux décisions de Hugo :
 
 - une **porte pro à elle**, `/pro/ouverture-compte-pro` : c'est le lien que donne
@@ -290,6 +291,27 @@ inscrit qui reçoit ensuite le lien de la commerciale.
 chrome de `/bienvenue` (colonne bleue, `ClientPage`), mais pas son contenu ni sa
 copie. `/bienvenue` ne change pas.
 
+**La promesse suit le flag** (précisé par Hugo le 2026-09-14). Tant que
+`boutique` est sous `order`, la porte pro **et** Mon compte le disent, au lieu
+de laisser chercher une boutique qui n'est pas ouverte :
+
+> « Notre boutique en ligne ouvre bientôt. En attendant, configurez votre
+> espace. »
+
+- **Où.** Sur `/ouverture-compte-pro`, sous le titre, avant le formulaire.
+  Sur `/mon-compte`, en tête, au-dessus de la carte « Compléter mon dossier »
+  ou du dossier.
+- **Quand.** Seulement si le niveau lu par `ClientFeatureAccess` est `closed`
+  ou `browse`. Au niveau `order`, la phrase disparaît d'elle-même : rien à
+  retirer le jour de l'ouverture.
+- **Au niveau `browse`**, la seconde phrase peut inviter à regarder le rayon
+  (« … et découvrez déjà la boutique »). Copie à valider à l'écran.
+- **La lecture échoue** : l'app se comporte comme en `closed` (§4), donc la
+  phrase s'affiche. C'est le sens prudent : promettre « bientôt » à qui
+  pourrait déjà commander coûte moins que l'inverse.
+- **Pas une date.** Rien dans le système ne porte une date d'ouverture ; en
+  écrire une ferait une promesse que personne n'est chargé de tenir.
+
 ### 3.2 `POST /me/establishment`
 
 `DeclareMyEstablishmentCommand` prend `{ firstName, lastName, phone, enseigne }`
@@ -410,7 +432,7 @@ Une ligne dont la clé n'est plus au catalogue est signalée, jamais interprét�
 | 3   | `batisseur` | **Les gardes du §2.3**, et le test de la table des routes. E2E par niveau, avec exemption prouvée et non prouvée ; `POST /admin/orders` à tous les niveaux ; commandes existantes lisibles en `closed`.                                                                                                                                                                               | 1, 2                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 4   | `pablo`     | **Écran admin** (§5).                                                                                                                                                                                                                                                                                                                                                                 | 1                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 5   | `pablo`     | **App cliente** : `ClientFeatureAccess`, gardes, menu, panier conditionnel (§4). Specs dans les trois niveaux, et en échec de lecture.                                                                                                                                                                                                                                                | 1                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| 6   | `pablo`     | **Page `/ouverture-compte-pro`**, `ClientOnboarding`, carte « Compléter mon dossier ». Specs : un appel par retour, champs rendus en cas d'échec, carte affichée si et seulement si aucune société et aucune déclaration en vol.                                                                                                                                                      | 2                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 6   | `pablo`     | **Page `/ouverture-compte-pro`**, `ClientOnboarding`, carte « Compléter mon dossier », promesse « la boutique ouvre bientôt » selon le niveau (§3.1). Specs : un appel par retour, champs rendus en cas d'échec, carte affichée si et seulement si aucune société et aucune déclaration en vol.                                                                                       | 2                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 7   | moi         | **Documentation.** Écarts datés dans `architecture-feature-flags.md` (§1.5) ; parcours pro dans `architecture-inscription-zero-friction.md` ; bandeau sur le §2 du cycle de vie ; geste de fermeture dans `documentation/ops/runbook.md` ; todo de l'oracle SIRET ; index.                                                                                                            | 1 à 6                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 **Le lot 1 démarre seul** (le lot 0, correctif de `/bienvenue`, est retiré le
@@ -496,3 +518,33 @@ reste valable est intégré :
   pas un essai.
 - **Le réglage « Disable Sign Ups » du tenant** et le gabarit
   `customer.welcome`.
+
+## 11. Ce que la construction a changé (2026-09-14)
+
+Le plan a été bâti le jour même, lots 1 à 6. Ce qui s'écarte du texte
+ci-dessus, et pourquoi :
+
+| Où                 | Écart                                                                                                                                                                                                                                                                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lot 0              | **Retiré.** `/bienvenue` sort du périmètre (décision de Hugo) : son défaut du §1.1 reste en production.                                                                                                                                                                                                                                             |
+| Migration          | Elle ajoute aussi la valeur `b2b_feature_access` à l'enum Prisma `StaffResource` — le plan ne l'avait pas vu. Toujours additive.                                                                                                                                                                                                                    |
+| §2.2 — la preuve   | La preuve d'adresse n'est recopiée que si le jeton porte **l'adresse** en base. Sans ça, un jeton émis pour l'ancienne adresse re-prouvait la nouvelle, et la correction du §1.7 ne tenait que jusqu'à l'expiration du jeton.                                                                                                                       |
+| §2.3 — une route   | `DELETE /subscriptions/:id` reste **sans marqueur** : supprimer un panier récurrent ne passe aucune commande. Inscrite avec sa raison dans le test de la table des routes.                                                                                                                                                                          |
+| §2.3 — la table    | `GET /shop/catalogue` vit dans `b2b/catalog/http`, pas dans `orders` : ajouté à la table. Les autres contrôleurs non-admin de `catalog/http` ne sont pas surveillés par la découverte de fichiers.                                                                                                                                                  |
+| Contrat, poids     | Les niveaux et `isAtLeast` vivent dans un module **sans zod**, publié `@lfd/contracts/feature-access-levels` (modèle : `content-values`). Importés depuis le baril, ils tiraient 355 ko de zod dans le bundle initial de l'app cliente : 1,45 Mo pour un budget d'erreur de 1,30 Mo en `cloudflare`, soit un déploiement en échec. Après : 1,10 Mo. |
+| §4 — la lecture    | `ClientFeatureAccess` lit `/feature-access/mine` pour une personne reconnue (après `authGate$()`, pas `isAuthenticated`), `/feature-access` sinon. Le délai de 8 s couvre aussi la résolution de session Auth0.                                                                                                                                     |
+| §4 — le panier     | Le panier ne s'hydrate qu'à partir de `order` (et non de `browse`) : la condition la plus stricte satisfait les deux lectures du plan.                                                                                                                                                                                                              |
+| §3.3 — les erreurs | Prénom et nom partagent le code `account.person_name.invalid` : le front rattache l'erreur au champ par le début du message. Un message reformulé côté serveur la ferait remonter en tête du formulaire. Solide seulement avec un code par champ.                                                                                                   |
+
+**Reste, hors lots :**
+
+- l'écran admin ne peut pas retirer une exemption signalée « ignorée » (la vue
+  ne porte pas son `id`), ni épingler une dérogation égale au défaut ;
+- les faits `feature_access.*` ne sont rangés dans aucun module du journal et
+  n'ont pas de libellé dans `admin/journal` ;
+- la copie de la porte pro vit dans `pro-account.copy.ts`, hors du
+  `ClientCopy` typé ; la phrase « browse » de la promesse est à valider à
+  l'écran ;
+- la porte pro ne se joue pas de bout en bout en local : le bypass dev
+  n'aller-retourne pas chez Auth0, et l'utilisateur du semis est déjà rattaché ;
+- l'oracle SIRET : [`../todos/todo-oracle-siret.md`](../todos/todo-oracle-siret.md).

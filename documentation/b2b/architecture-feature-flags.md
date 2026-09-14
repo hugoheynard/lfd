@@ -17,6 +17,27 @@
 > **Statut : 📐 doc-first — rien n'est codé.** Seul le déplacement de « Réglages »
 > au pied du menu (pour faire de la place à « Tech ») est livré.
 
+> 🟡 **Bâti en partie le 2026-09-14, et pas tout à fait comme ce document le
+> dit.** Le premier consommateur est arrivé par
+> [`plan-inscription-pro-seule.md`](plan-inscription-pro-seule.md) : un seul
+> flag, **boutique** (`closed` · `browse` · `order`), sous le nom
+> **« accès aux fonctionnalités »** (`b2b/feature-access/`, contrat
+> `feature-access`). Ce qui suit reste le design d'origine ; voici ce qui en
+> diffère dans le code, décidé ce jour-là :
+>
+> | Ce document dit                                          | Le code fait                                                                                                                            |
+> | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+> | Une entrée **Tech → Feature flags**                      | `/admin/feature-access`, dans la section **Admin**, ressource staff `b2b_feature_access`                                                |
+> | Table `b2b_feature_flags`, routes `/admin/feature-flags` | Tables `feature_access_overrides` + `feature_access_exemptions`, routes `/admin/feature-access`                                         |
+> | « Portée par client : hors périmètre » (§10)             | **Exemption par e-mail prouvé** : une adresse vérifiée garde le niveau le plus ouvert, pour tester en production                        |
+> | Client B2B « différé » (§10)                             | L'app cliente est le **premier** consommateur : `GET /feature-access` (public) et `…/mine`                                              |
+> | Refus en **403** (§5)                                    | **409**, par une garde marquée (`@RequiresShop`) sur le modèle de `PublicationEnabledGuard` : un flag fermé n'est pas un droit manquant |
+> | Cache backend de 30 s (§4)                               | **Aucun cache** : une instance, deux lectures indexées ; un cache laissait passer des commandes après la fermeture                      |
+>
+> Ce qui n'est **pas** bâti : la nature `release` / `kill_switch`, l'âge d'un
+> flag à l'écran, et le cycle « un `release` se supprime » (§6). Les valeurs du
+> seul flag existant sont ordonnées, et une garde demande « au moins » un niveau.
+
 ---
 
 ## 0. Le problème

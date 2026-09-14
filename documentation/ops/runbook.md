@@ -154,6 +154,45 @@ Dans `apps/lfc-*/wrangler.jsonc` : `"workers_dev": false` → `true`, commit,
 push. C'est un interrupteur de secours, pas un mode de fonctionnement — la
 passerelle reste le chemin normal.
 
+## Fermer ou ouvrir la boutique en ligne
+
+Un réglage, pas un déploiement : **`/admin/feature-access`**, carte
+« Boutique », réservé à l'écriture `b2b_feature_access` (administrateurs).
+Trois niveaux : **Fermée** (rien, vitrine publique comprise), **Voir** (le
+catalogue et ses prix, sans commande), **Commander**. Le défaut du code est
+« Commander » : une base neuve est ouverte.
+
+**Fermer, dans cet ordre** — l'inverse coupe les testeurs pendant l'intervalle :
+
+1. dans « Adresses exemptées », ajouter les comptes de test ;
+2. **vérifier que chaque ligne affiche « vérifiée »**. « Non vérifiée » ou
+   « aucun compte » : l'exemption ne jouera pas. La cause la plus probable est
+   côté Auth0 — l'Action `add-email-claim` doit poser l'adresse ET
+   `email_verified` sur les jetons **clients** (`platform/auth/auth0-claims.ts`) ;
+   ou la personne n'a pas cliqué le lien de vérification ;
+3. choisir le niveau.
+
+**Comment savoir que ça a marché** — sans jeton :
+
+```bash
+curl -s https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/feature-access
+```
+
+(La passerelle est la seule porte publique et retire le préfixe `/api/lfd` —
+`documentation/ops/architecture-deploiement.md`.)
+
+Attendu : `{"shop":"browse"}` (ou le niveau posé). Puis, toujours sans jeton,
+`POST /orders` ne doit plus passer : un **409** « Les commandes en ligne ne sont
+pas encore ouvertes. » — pas un 401, qui dirait seulement qu'il manque un jeton.
+Avec le compte d'un testeur exempté, l'app cliente montre la boutique entière.
+
+**Ce qui reste ouvert quel que soit le niveau**, et c'est voulu : la saisie de
+commande par le staff (`POST /admin/orders`), les commandes **déjà passées**
+(suivi, QR de retrait, règlement, bon), et l'ouverture d'un compte pro.
+
+**Ouvrir** : poser « Commander », ou « Revenir au défaut ». Effet immédiat côté
+API (aucun cache) ; l'app cliente le prend au prochain chargement de page.
+
 ## Revenir en arrière
 
 Cloudflare garde les versions. Le plus sûr reste de **redéployer le commit

@@ -6,6 +6,22 @@
 **Portée** : **la surface CLIENT uniquement** (`lfc-b2b-customers`). Le staff
 (`lfc-staff`) ne change pas — voir « Ce qui déborde sur le staff ».
 
+> 🔴 **Relevé le 2026-09-14 : ce parcours perd le profil en production.** Le
+> retour d'Auth0 repose le profil avec `lastName: ''`, et le domaine refuse un
+> nom vide (`PersonName.create`) : prénom et téléphone ne sont jamais
+> enregistrés. **Non corrigé**, par décision : `/bienvenue` est hors du périmètre
+> du chantier qui l'a vu.
+>
+> 🟡 **Une seconde porte existe depuis le 2026-09-14 : la porte PRO,
+> `/ouverture-compte-pro`**, le lien que donne la commerciale. Même mécanique
+> Auth0 (mot de passe chez Auth0, connexion nommée, champs dans l'`appState`),
+> mais cinq champs — prénom, **nom**, e-mail, téléphone, **enseigne** — et un
+> autre geste au retour : `POST /me/establishment` écrit profil **et** société
+> `pending` en une transaction, sous verrou sur la personne, refusée si la
+> personne est déjà rattachée. Elle arrive sur Mon compte, où « Compléter mon
+> dossier » rattrape un retour manqué. `/bienvenue` et son onboarding ne changent
+> pas. Détail et décisions : [`plan-inscription-pro-seule.md`](plan-inscription-pro-seule.md) §3.
+
 ## La décision
 
 Un visiteur donne **prénom, e-mail, téléphone**. Rien d'autre. Il pose un mot de

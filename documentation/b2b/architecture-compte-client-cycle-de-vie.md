@@ -78,6 +78,16 @@ pas par « Mes entreprises ».
 
 ## 2. Ce qui s'ouvre avec quoi
 
+> ⚠️ **Le diagramme ci-dessous affirme « pending : ni prix, ni commande ». C'est
+> faux, et c'était faux avant le 2026-09-14** (vérifié ce jour-là) :
+> `POST /orders` accepte une commande pour une société `pending`, réglée par
+> carte — seul le règlement **au compte** exige une société `active`
+> (`place-order.handler.ts`, `maySettleOnAccount`). Le handoff de l'app cliente
+> le voulait ainsi : « la commande est possible pendant la vérification ». Ce qui
+> ferme la commande aujourd'hui est un **flag global**, pas le statut : voir
+> [`plan-inscription-pro-seule.md`](plan-inscription-pro-seule.md) §2. Une règle
+> « un dossier `pending` ne commande pas » reste une décision à prendre (plan §8, Q6).
+
 **Une enseigne. C'est tout.**
 
 Le commercial a le client au téléphone et n'a souvent que le nom de la maison.
