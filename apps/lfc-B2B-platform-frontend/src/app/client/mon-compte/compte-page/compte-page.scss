@@ -143,6 +143,9 @@
     width: 88%;
     max-height: var(--compte-panel-max);
     overflow-y: auto;
+    /* Un `overflow-y` non visible fait calculer `overflow-x` à `auto` : chaque
+       panneau devenait un défileur horizontal et avalait le glissé du rail. */
+    overflow-x: hidden;
     overscroll-behavior: contain;
     scroll-snap-align: start;
   }
@@ -155,8 +158,35 @@
   --compte-panel-max: max(280px, calc(100dvh - var(--lfc-header-height, 64px) - 420px));
 }
 
+/* L'indicateur au centre, la pastille à droite : trois colonnes, pour que
+   l'indicateur reste centré sur le rail et non sur ce que la pastille laisse. */
+.rail-foot {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding-top: var(--fold-space-sm);
+}
+
 .dots {
-  margin-top: var(--fold-space-sm);
+  grid-column: 2;
+}
+
+.rail-count {
+  grid-column: 3;
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--fold-space-xs);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-secondary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  font-variant-numeric: tabular-nums;
 }
 
 .card {
@@ -189,6 +219,24 @@
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
   color: var(--lfc-color-text-subtle);
+}
+
+/* Le titre et son action sur une même rangée ; la rangée porte l'écart que le
+   titre seul portait. */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-md);
+}
+
+.card-head .card-title {
+  margin: 0;
+}
+
+.card-action {
+  flex: none;
 }
 
 /* Le texte courant reste en `text-muted` (5,9:1) : `text-subtle` y descendrait
@@ -497,8 +545,9 @@
     --lfc-well-body-align: start;
   }
 
-  /* Au bureau, rien ne glisse : l'indicateur n'aurait rien à dire. */
-  .dots {
+  /* Au bureau, rien ne glisse : ni l'indicateur ni la pastille n'auraient
+     rien à dire. */
+  .rail-foot {
     display: none;
   }
 

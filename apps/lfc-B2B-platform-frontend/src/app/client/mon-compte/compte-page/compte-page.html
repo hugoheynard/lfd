@@ -99,14 +99,29 @@
         <div class="main">
           <fold-well #rail class="cards" scrollable="narrow">
             <section class="card identity" id="compte-identity">
-              <h2 class="card-title">{{ t().account.sections.identity }}</h2>
+              <!-- L'action appartient à la CARTE, pas à une ligne : le panneau
+                   édite l'enseigne, la TVA, et comble les mentions manquantes.
+                   Aux seuls rôles que l'API laisse écrire. -->
+              <header class="card-head">
+                <h2 class="card-title">{{ t().account.sections.identity }}</h2>
+                @if (canEditIdentity()) {
+                  <button
+                    foldButton
+                    class="card-action"
+                    size="sm"
+                    emphasis="soft"
+                    intent="primary"
+                    type="button"
+                    (click)="openIdentity()"
+                  >
+                    {{ t().account.edit }}
+                  </button>
+                }
+              </header>
               @if (company(); as identity) {
                 <dl class="facts">
                   <dt>{{ t().account.identityBrand }}</dt>
-                  <dd>
-                    {{ client.name()
-                    }}<button class="inline" type="button">{{ t().account.edit }}</button>
-                  </dd>
+                  <dd>{{ client.name() }}</dd>
                   <dt>{{ t().account.identityCompany }}</dt>
                   <dd>{{ identity.raisonSociale }}</dd>
                   <dt>{{ t().account.identityForm }}</dt>
@@ -241,15 +256,25 @@
               <app-data-card />
             </section>
 
-            <fold-scroll-indicator
-              wellFoot
-              class="dots"
-              variant="morse"
-              [count]="summary().length"
-              [active]="rail.active()"
-              [markerLabel]="t().account.panelDot"
-              (picked)="rail.goTo($event)"
-            />
+            <!-- Le pied du rail : l'indicateur au centre, et la pastille qui dit
+                 le rang en chiffres — sept tirets ne se comptent pas d'un coup
+                 d'œil. -->
+            <div wellFoot class="rail-foot">
+              <fold-scroll-indicator
+                class="dots"
+                variant="morse"
+                [count]="summary().length"
+                [active]="rail.active()"
+                [markerLabel]="t().account.panelDot"
+                (picked)="rail.goTo($event)"
+              />
+              <span
+                class="rail-count"
+                aria-live="polite"
+                [attr.aria-label]="railPosition(rail.active())"
+                >{{ rail.active() + 1 }}/{{ summary().length }}</span
+              >
+            </div>
           </fold-well>
 
           <app-support-card class="support" />

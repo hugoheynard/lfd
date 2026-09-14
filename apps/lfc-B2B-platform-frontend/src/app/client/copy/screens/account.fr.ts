@@ -47,6 +47,17 @@ export const ACCOUNT_FR: AccountCopy = {
   identityVat: 'TVA intracom.',
   identityNote:
     'L’enseigne se change ici. Les mentions du greffe passent par nous : on vérifie, puis on met à jour — c’est ce qui figure sur vos factures.',
+  identityPanelSubtitle:
+    'L’enseigne et la TVA se changent ici ; les mentions du greffe se complètent une fois.',
+  identityVatField: 'TVA intracommunautaire',
+  identityLegalHint:
+    'À compléter une seule fois : une fois enregistrée, cette mention ne se corrige plus qu’avec notre service commercial.',
+  identityLegalLocked:
+    'Ces mentions viennent du greffe. Pour les corriger, passez par notre service commercial.',
+  identitySaveFailed: 'L’identité n’a pas été enregistrée.',
+  identityCancel: 'Annuler',
+  identitySave: 'Enregistrer',
+  railPosition: 'Section {n} sur {total}',
   usersHolder: 'Détenteur du compte · vous',
   usersAllRights: 'Tous droits',
   usersAdd: 'Ajouter un utilisateur ou un contact',

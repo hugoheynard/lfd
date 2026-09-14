@@ -1,6 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import type { CatalogueView, FulfillmentPreferenceView } from '@lfd/contracts';
+import type {
+  CatalogueView,
+  FulfillmentPreferenceView,
+  UpdateIdentityPayload,
+} from '@lfd/contracts';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -22,6 +26,15 @@ import type {
   SettlementMean,
   UserProfileDraft,
 } from './account.model';
+
+/**
+ * Ce qu'une écriture d'identité envoie. Les trois mentions légales sont
+ * facultatives : absentes, le serveur les lit vides et n'y touche pas.
+ */
+export type IdentityDraft = Pick<UpdateIdentityPayload, 'enseigne' | 'vatNumber'> &
+  Partial<Pick<UpdateIdentityPayload, 'raisonSociale' | 'formeJuridique' | 'siret'>>;
+
+const IDENTITY_SAVED = 'Identité mise à jour.';
 
 /** Où en est le chargement du compte — l'app doit distinguer « vide » de « pas encore su ». */
 export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -200,21 +213,32 @@ export class AccountService {
     );
   }
 
-  updateIdentity(
-    companyId: string,
-    identity: { enseigne: string; vatNumber: string },
-    onDone?: () => void,
-  ): void {
-    this.mutate(
-      (token) =>
-        this.http.patch(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/identity`,
-          identity,
-          headers(token),
-        ),
-      'Identité mise à jour.',
-      onDone,
-    );
+  /**
+   * `PATCH /companies/:id/identity` — l'identité souple, et de quoi COMBLER
+   * l'identité légale.
+   *
+   * Raison sociale, forme juridique et SIRET ne sont retenus par le serveur que
+   * s'ils manquent encore : un champ déjà renseigné est ignoré, pas réécrit. Les
+   * omettre revient à les envoyer vides — c'est ce que fait l'ancien panneau
+   * `entreprise-identite-panel`, qui n'édite que l'enseigne et la TVA.
+   *
+   * `onDone` ne part qu'au succès ; un panneau qui doit se réarmer sur un échec
+   * passe par {@link saveIdentity}.
+   */
+  updateIdentity(companyId: string, identity: IdentityDraft, onDone?: () => void): void {
+    this.mutate((token) => this.patchIdentity(companyId, identity, token), IDENTITY_SAVED, onDone);
+  }
+
+  /**
+   * Même écriture que {@link updateIdentity}, mais la promesse retombe dans les
+   * deux cas : `null` au succès, le **message du serveur** à l'échec.
+   *
+   * Le message est rendu plutôt que seulement toasté : un SIRET refusé se
+   * corrige dans le panneau resté ouvert, sous les yeux de qui l'a saisi — un
+   * toast fugace se lit trop tard pour ça.
+   */
+  saveIdentity(companyId: string, identity: IdentityDraft): Promise<string | null> {
+    return this.attempt((token) => this.patchIdentity(companyId, identity, token), IDENTITY_SAVED);
   }
 
   requestSettlementMean(companyId: string, paymentTerm: SettlementMean, onDone?: () => void): void {
@@ -376,16 +400,50 @@ export class AccountService {
    */
   private write(call: (token: string) => Observable<unknown>, success: string): Promise<boolean> {
     this._status.set('loading');
+    return this.attempt(call, success).then((refusal) => {
+      if (refusal !== null) {
+        this._status.set('ready');
+      }
+      return refusal === null;
+    });
+  }
+
+  /**
+   * Comme {@link write}, mais l'échec rend le **message** de l'enveloppe au lieu
+   * d'un simple `false`, pour l'écran qui doit le montrer là où l'on corrige.
+   *
+   * ⚠️ Le statut de page n'est PAS touché pendant le vol, pour la raison que
+   * donne `declareEstablishment` : `/mon-compte` remplace tout son contenu par
+   * un chargement dès que `status` quitte `ready` (vérifié le 2026-09-14,
+   * `ComptePage.view`). Le panneau ouvert serait détruit avec l'envoi, et
+   * l'erreur reviendrait vers un écran qui ne peut plus la montrer.
+   */
+  private attempt(
+    call: (token: string) => Observable<unknown>,
+    success: string,
+  ): Promise<string | null> {
     return firstValueFrom(this.auth.accessToken$().pipe(switchMap(call))).then(
       () => {
         this.load();
         this.notify.success(success);
-        return true;
+        return null;
       },
       (error: unknown) => {
-        this.failOperation(error);
-        return false;
+        this.notify.error(error);
+        return httpErrorMessage(error);
       },
+    );
+  }
+
+  private patchIdentity(
+    companyId: string,
+    identity: IdentityDraft,
+    token: string,
+  ): Observable<unknown> {
+    return this.http.patch(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/identity`,
+      identity,
+      headers(token),
     );
   }
 

@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { CompanyView, ShopLevel } from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
 import { AccountService, type AccountStatus } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
@@ -10,6 +12,7 @@ import { FR } from '../../copy/fr';
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
 import { openShopAt } from '../../feature-access/feature-access.fixture';
 import { ProOnboarding } from '../../pro-onboarding.service';
+import { IdentityPanel } from '../identity-panel/identity-panel';
 import { ComptePage } from './compte-page';
 
 /** La société du client de référence, telle que `GET /me` la rend. */
@@ -204,6 +207,82 @@ describe('ComptePage', () => {
       expect(links.length).toBe(7);
       expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('07');
     }
+  });
+
+  /**
+   * L'API n'écrit l'identité que pour `owner` et `admin` (403 aux autres) :
+   * un « Modifier » qui finirait en refus se lirait comme une panne.
+   */
+  it('n’offre « Modifier » sur l’identité qu’aux rôles `owner` et `admin`', () => {
+    const action = (): Element | null =>
+      el().querySelector('#compte-identity .card-head button[foldButton]');
+
+    for (const role of ['owner', 'admin'] as const) {
+      fixture = boot([{ ...TOMMEUSES, role }]);
+      expect(action()?.textContent).toContain(FR.account.edit);
+    }
+    for (const role of ['orders', 'billing'] as const) {
+      fixture = boot([{ ...TOMMEUSES, role }]);
+      expect(action()).toBeNull();
+    }
+  });
+
+  describe('« Modifier » ouvre le panneau fold d’identité', () => {
+    /** La largeur que `matchMedia` prétend, au moment du clic. */
+    const atWidth = (narrow: boolean): void => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: narrow && query === '(max-width: 899.98px)',
+        media: query,
+      }));
+    };
+
+    afterEach(() => {
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      vi.unstubAllGlobals();
+    });
+
+    const openIdentity = (): ReturnType<FoldPanelHostService['panels']> => {
+      el()
+        .querySelector<HTMLButtonElement>('#compte-identity .card-head button[foldButton]')
+        ?.click();
+      return TestBed.inject(FoldPanelHostService).panels();
+    };
+
+    it('avec les valeurs de LA société', () => {
+      atWidth(false);
+      const [panel, ...rest] = openIdentity();
+
+      expect(rest).toEqual([]);
+      expect(panel?.kind === 'component' ? panel.component : null).toBe(IdentityPanel);
+      expect(panel?.kind === 'component' ? panel.data : null).toEqual({
+        companyId: 'cmp_1',
+        enseigne: "La Folie Douce Val d'Isère",
+        vatNumber: 'FR45812456789',
+        raisonSociale: 'SAS Les Tommeuses',
+        formeJuridique: 'SAS',
+        siret: '81245678900021',
+      });
+    });
+
+    /** Le côté se lit au clic : feuille du bas en pile, tiroir droit au bureau. */
+    it('en feuille du bas sous le pli, à droite au-delà', () => {
+      atWidth(true);
+      expect(openIdentity()[0]?.side).toBe('bottom');
+
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      atWidth(false);
+      expect(openIdentity()[0]?.side).toBe('right');
+    });
+  });
+
+  /** En pile, sept tirets ne se comptent pas : la pastille dit le rang en chiffres. */
+  it('dit le rang du panneau dans une pastille « 1/N », et le libelle', () => {
+    const count = el().querySelector('.rail-foot .rail-count');
+    const total = el().querySelectorAll('.summary-link').length;
+
+    expect(count?.textContent?.trim()).toBe(`1/${total}`);
+    expect(count?.getAttribute('aria-live')).toBe('polite');
+    expect(count?.getAttribute('aria-label')).toBe(`Section 1 sur ${total}`);
   });
 
   it('pose de quoi joindre le service commercial SOUS les cartes, hors du rail', () => {

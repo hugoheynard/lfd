@@ -75,6 +75,26 @@ export interface AccountCopy {
   readonly identitySiret: string;
   readonly identityVat: string;
   readonly identityNote: string;
+  /**
+   * Sous le titre du panneau d'identité — le premier des panneaux de
+   * `/mon-compte`. Il dit les deux régimes avant qu'on les rencontre.
+   */
+  readonly identityPanelSubtitle: string;
+  /** Le libellé de TVA en toutes lettres : dans un champ, l'abréviation de la carte se lit mal. */
+  readonly identityVatField: string;
+  /**
+   * Sous une mention légale ENCORE VIDE : une fois enregistrée, elle ne se
+   * corrige plus d'ici — le serveur ignore un champ déjà renseigné.
+   */
+  readonly identityLegalHint: string;
+  /** Sous les mentions déjà renseignées, montrées en lecture. */
+  readonly identityLegalLocked: string;
+  /** En tête du message du serveur, quand l'écriture est refusée. */
+  readonly identitySaveFailed: string;
+  readonly identityCancel: string;
+  readonly identitySave: string;
+  /** La pastille du rail, pour qui ne la voit pas. `{n}` le rang depuis un, `{total}` le nombre de sections. */
+  readonly railPosition: string;
   readonly usersHolder: string;
   readonly usersAllRights: string;
   readonly usersAdd: string;

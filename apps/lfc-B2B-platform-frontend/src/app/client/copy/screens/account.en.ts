@@ -47,6 +47,16 @@ export const ACCOUNT_EN: AccountCopy = {
   identityVat: 'VAT number',
   identityNote:
     'The trading name changes here. Registry details go through us: we check, then we update — these are the mentions that appear on your invoices.',
+  identityPanelSubtitle: 'Trading name and VAT change here; registry details are filled in once.',
+  identityVatField: 'Intra-EU VAT number',
+  identityLegalHint:
+    'Fill in once: after saving, this detail can only be corrected through our sales team.',
+  identityLegalLocked:
+    'These details come from the company registry. To correct them, contact our sales team.',
+  identitySaveFailed: 'Your identity was not saved.',
+  identityCancel: 'Cancel',
+  identitySave: 'Save',
+  railPosition: 'Section {n} of {total}',
   usersHolder: 'Account holder · you',
   usersAllRights: 'All rights',
   usersAdd: 'Add a user or a contact',

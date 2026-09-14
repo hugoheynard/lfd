@@ -47,6 +47,17 @@ export const ACCOUNT_IT: AccountCopy = {
   identityVat: 'Partita IVA intracom.',
   identityNote:
     'L’insegna si cambia qui. Le menzioni del registro passano da noi: verifichiamo, poi aggiorniamo — sono quelle che figurano sulle vostre fatture.',
+  identityPanelSubtitle:
+    'Insegna e partita IVA si cambiano qui; le menzioni del registro si completano una volta.',
+  identityVatField: 'Partita IVA intracomunitaria',
+  identityLegalHint:
+    'Da completare una sola volta: una volta registrata, questa menzione si corregge solo tramite il nostro servizio commerciale.',
+  identityLegalLocked:
+    'Queste menzioni provengono dal registro delle imprese. Per correggerle, passate dal nostro servizio commerciale.',
+  identitySaveFailed: 'L’identità non è stata registrata.',
+  identityCancel: 'Annulla',
+  identitySave: 'Registra',
+  railPosition: 'Sezione {n} di {total}',
   usersHolder: 'Titolare dell’account · voi',
   usersAllRights: 'Tutti i diritti',
   usersAdd: 'Aggiungere un utente o un contatto',

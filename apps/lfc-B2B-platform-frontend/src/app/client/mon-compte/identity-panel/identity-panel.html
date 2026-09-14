@@ -1,0 +1,68 @@
+<!-- fold-panel-header n'a pas de sur-titre : la qualification passe par son
+     `subtitle`, sous le titre. -->
+<fold-panel-header
+  [title]="t().account.sections.identity"
+  [subtitle]="t().account.identityPanelSubtitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  <!-- LE REFUS reste dans le panneau : c'est ici qu'on corrige ce qu'il nomme. -->
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.identitySaveFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <fold-input
+    [label]="t().account.identityBrand"
+    [value]="enseigne()"
+    (valueChange)="enseigne.set($event)"
+  />
+  <fold-input
+    [label]="t().account.identityVatField"
+    [value]="vatNumber()"
+    (valueChange)="vatNumber.set($event)"
+  />
+
+  @for (field of openFields(); track field.key) {
+    <fold-input
+      [label]="field.label"
+      [hint]="t().account.identityLegalHint"
+      [value]="legal()[field.key]"
+      (valueChange)="setLegal(field.key, $event)"
+    />
+  }
+
+  <!-- Une mention déjà renseignée n'est PAS un champ : le serveur ignorerait
+       ce qu'on y taperait. Elle se lit, et la phrase dit par où passer. -->
+  @if (lockedFields().length > 0) {
+    <div class="locked">
+      <dl class="facts">
+        @for (field of lockedFields(); track field.key) {
+          <div class="fact">
+            <dt>{{ field.label }}</dt>
+            <dd>{{ field.current }}</dd>
+          </div>
+        }
+      </dl>
+      <p class="note">{{ t().account.identityLegalLocked }}</p>
+    </div>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.identityCancel }}
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ t().account.identitySave }}
+  </button>
+</fold-panel-footer>

@@ -12,6 +12,7 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
   FoldSurfaceDirective,
 } from 'fold-ng';
 
@@ -38,6 +39,7 @@ import { AccountCard } from '../account-card/account-card';
 import { BankCard } from '../bank-card/bank-card';
 import { DataCard } from '../data-card/data-card';
 import { DossierCard } from '../dossier-card/dossier-card';
+import { IdentityPanel } from '../identity-panel/identity-panel';
 import { KbisCard } from '../kbis-card/kbis-card';
 import { SupportCard } from '../support-card/support-card';
 import { UsersCard } from '../users-card/users-card';
@@ -70,6 +72,23 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
  * propose pas une carte qui ne ferait que dire non.
  */
 const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing']);
+
+/**
+ * Les rôles qui éditent l'identité : ceux que l'API laisse écrire (vérifié le
+ * 2026-09-14, `update-company-identity.handler.ts` refuse les autres en 403).
+ * Aux autres, pas de bouton — un « Modifier » qui finirait en refus se lit
+ * comme une panne.
+ */
+const IDENTITY_EDIT_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin']);
+
+/**
+ * Le pli de l'écran, en requête : le même seuil que `compte-page.scss` et que
+ * le rail de `fold-well` (`scrollable="narrow"`). En deçà, les panneaux
+ * montent du bas ; au-delà, ils s'amarrent à droite. Aucune constante de
+ * l'app ne le porte en TypeScript (vérifié le 2026-09-14) : le CSS l'écrit
+ * seul partout ailleurs.
+ */
+const NARROW_QUERY = '(max-width: 899.98px)';
 
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
@@ -177,6 +196,49 @@ export class ComptePage {
     const role = this.company()?.role;
     return role !== undefined && BANK_ROLES.has(role);
   });
+
+  /** « Modifier » sur l'identité légale, au détenteur et à l'administrateur seulement. */
+  protected readonly canEditIdentity = computed(() => {
+    const role = this.company()?.role;
+    return role !== undefined && IDENTITY_EDIT_ROLES.has(role);
+  });
+
+  private readonly panels = inject(FoldPanelHostService);
+
+  /**
+   * Ouvre le panneau d'identité dans l'hôte de panneaux du shell client — qui
+   * porte `data-theme="lfc-app"`, donc les jetons de l'app.
+   *
+   * Les valeurs partent en `data` au moment du clic : le panneau édite ce que
+   * la carte montrait, et la relecture de `/me` qui suit un succès ne le
+   * réécrit pas sous les doigts.
+   */
+  protected openIdentity(): void {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    this.panels.open(IdentityPanel, {
+      // Lu AU CLIC, pas en signal : c'est un geste, donc toujours dans le
+      // navigateur, et la largeur qui compte est celle du moment où l'on ouvre.
+      side: matchMedia(NARROW_QUERY).matches ? 'bottom' : 'right',
+      data: {
+        companyId: company.id,
+        enseigne: company.enseigne,
+        vatNumber: company.vatNumber,
+        raisonSociale: company.raisonSociale,
+        formeJuridique: company.formeJuridique,
+        siret: company.siret,
+      },
+    });
+  }
+
+  /** Le libellé de la pastille du rail : « Section 2 sur 7 ». */
+  protected railPosition(active: number): string {
+    return this.t()
+      .account.railPosition.replace('{n}', String(active + 1))
+      .replace('{total}', String(this.summary().length));
+  }
 
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
