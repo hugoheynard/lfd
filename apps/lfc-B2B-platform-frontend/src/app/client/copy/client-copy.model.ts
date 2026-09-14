@@ -492,6 +492,8 @@ export interface ClientCopy {
     readonly bookedTitle: string;
     readonly pitch: string;
     readonly cta: string;
+    /** Le lien vers la porte pro, sous le rappel. */
+    readonly openAccount: string;
     /** `{slot}` est remplacé par le créneau retenu. */
     readonly booked: string;
     readonly at: string;

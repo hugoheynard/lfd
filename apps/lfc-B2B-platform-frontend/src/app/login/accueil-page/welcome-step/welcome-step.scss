@@ -247,3 +247,22 @@ fold-input {
     margin-top: auto;
   }
 }
+
+/* La porte pro, sous le rappel : qui a déjà le lien de la commerciale, ou
+   préfère ouvrir son compte sans attendre d'être rappelé. */
+.pro-door {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-primary);
+  text-decoration: none;
+}
+
+.pro-door:hover {
+  text-decoration: underline;
+}

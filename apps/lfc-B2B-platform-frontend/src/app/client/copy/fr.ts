@@ -355,6 +355,7 @@ export const FR: ClientCopy = {
     pitch:
       'Tarifs négociés, livraison en station, facturation mensuelle. On vous explique en deux minutes.',
     cta: 'Demander à être rappelé',
+    openAccount: 'Ouvrir mon compte pro',
     booked: 'Rappel demandé · {slot}',
     at: 'Au',
     cancel: 'Annuler',

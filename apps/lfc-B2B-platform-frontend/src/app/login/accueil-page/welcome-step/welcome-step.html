@@ -102,6 +102,11 @@
   [bookedSlot]="bookedSlot()"
   (wantsCallback)="wantsCallback.emit()"
   (cancelled)="cancelledCallback.emit()"
-/>
+>
+  <a class="pro-door" routerLink="/ouverture-compte-pro">
+    {{ t().pro.openAccount }}
+    <fold-icon name="arrow-right" aria-hidden="true" />
+  </a>
+</app-callback-block>
 
 <p class="legal">{{ t().signup.legal }}</p>

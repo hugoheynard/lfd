@@ -357,6 +357,7 @@ export const EN: ClientCopy = {
     bookedTitle: 'Call requested',
     pitch: 'Negotiated prices, resort delivery, monthly invoicing. We’ll explain in two minutes.',
     cta: 'Ask us to call you',
+    openAccount: 'Open my trade account',
     booked: 'Call requested · {slot}',
     at: 'On',
     cancel: 'Cancel',

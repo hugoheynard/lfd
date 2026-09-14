@@ -363,6 +363,7 @@ export const IT: ClientCopy = {
     pitch:
       'Prezzi concordati, consegna in stazione, fatturazione mensile. Te lo spieghiamo in due minuti.',
     cta: 'Chiedi di essere richiamato',
+    openAccount: 'Apri il mio account professionale',
     booked: 'Richiamo richiesto · {slot}',
     at: 'Al',
     cancel: 'Annulla',
