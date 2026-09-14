@@ -29,6 +29,13 @@ const ACTIVE_MANDATE: PaymentMandateView = {
   proofFileName: '',
 };
 
+/** Le bouton « Activer le mandat », s'il est rendu. */
+function activateButton(host: HTMLElement): HTMLButtonElement | undefined {
+  return Array.from(host.querySelectorAll('button')).find((button) =>
+    button.textContent?.includes('Activer le mandat'),
+  );
+}
+
 /** Service de mandat doublé — aucun appel réseau, aucun Stripe. */
 function fakeMandates(mandate: PaymentMandateView | null): Partial<MandatesService> {
   return {
@@ -280,13 +287,45 @@ describe('section Moyens de paiement — le mandat', () => {
     expect(host.textContent).not.toContain('Rien pour encaisser');
   });
 
-  it('dit franchement quand un mandat actif est SANS pièce justificative', async () => {
-    // Un mandat actif sans scan est un mandat sans filet : l'afficher comme un
-    // mandat normal reviendrait à cacher le seul risque qui compte ici.
+  /**
+   * 🔴 Depuis le 2026-09-14 : le serveur refuse le scan d'un mandat actif et
+   * l'activation d'un brouillon sans scan. L'écran propose donc le dépôt sur le
+   * brouillon, et n'active qu'une fois la pièce déposée.
+   */
+  it("n'active un brouillon qu'une fois son scan déposé", async () => {
+    const draft: PaymentMandateView = {
+      ...ACTIVE_MANDATE,
+      status: 'draft',
+      acceptedAt: null,
+      last4: '',
+    };
+    const naked = render({ companyId: 'cmp_1', mandate: draft });
+    await naked.settle();
+    naked.section['signedAt'].set('2026-09-10');
+    await naked.settle();
+
+    expect(naked.host.textContent).toContain('Déposer le scan');
+    expect(naked.host.textContent).toContain("Déposez d'abord le scan");
+    expect(activateButton(naked.host)?.disabled).toBe(true);
+
+    TestBed.resetTestingModule();
+    const proven = render({
+      companyId: 'cmp_1',
+      mandate: { ...draft, hasProof: true, proofFileName: 'mandat-signe.pdf' },
+    });
+    await proven.settle();
+    proven.section['signedAt'].set('2026-09-10');
+    await proven.settle();
+
+    expect(activateButton(proven.host)?.disabled).toBe(false);
+  });
+
+  it('ne propose plus de déposer un scan sur un mandat actif', async () => {
     const { host, settle } = render({ companyId: 'cmp_1', mandate: ACTIVE_MANDATE });
     await settle();
 
-    expect(host.textContent).toContain('Mandat sans pièce justificative');
+    expect(host.textContent).not.toContain('Déposer le scan');
+    expect(host.textContent).not.toContain('Remplacer');
   });
 
   it('ne montre le mandat que sur une société qui existe', () => {

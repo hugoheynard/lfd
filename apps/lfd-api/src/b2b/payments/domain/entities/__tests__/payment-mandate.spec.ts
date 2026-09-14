@@ -1,7 +1,9 @@
 import {
   MandateAcceptanceInFutureError,
+  MandateNotProvableError,
   MandateNotRevocableError,
   MandateNotSignableError,
+  MandateUnprovenError,
 } from "../../errors/mandate-errors.js";
 import {
   draftMandate,
@@ -102,15 +104,58 @@ describe("PaymentMandate — prélever, ou ne plus prélever", () => {
   });
 
   it("distingue le mandat PROUVÉ du mandat nu", () => {
-    // Un mandat actif sans pièce est un mandat sans filet : la fiche doit
-    // pouvoir le dire, donc l'agrégat doit pouvoir le distinguer.
-    const mandate = PaymentMandate.reconstitute(snapshot());
+    // Un mandat sans pièce est un mandat sans filet : la fiche doit pouvoir le
+    // dire, donc l'agrégat doit pouvoir le distinguer.
+    const mandate = PaymentMandate.reconstitute(snapshot({ status: "draft", acceptedAt: null }));
     expect(mandate.proven()).toBe(false);
 
     mandate.attachProof({ storageKey: "companies/cmp_1/mandates/mdt_1/x", fileName: "mandat.pdf" });
 
     expect(mandate.proven()).toBe(true);
     expect(mandate.toView().proofFileName).toBe("mandat.pdf");
+  });
+
+  /**
+   * 🔴 Régression (2026-09-14) : un dépôt sur un mandat ACTIF remplaçait la
+   * pièce qu'on oppose en contestation, sans que personne ne la relise.
+   */
+  it.each(["active", "revoked", "pending", "failed"] as const)(
+    "refuse un scan sur un mandat « %s », et garde la pièce en place",
+    (status) => {
+      const mandate = PaymentMandate.reconstitute(
+        snapshot({
+          status,
+          proofStorageKey: "companies/cmp_1/mandates/mdt_1/v1",
+          proofFileName: "v1.pdf",
+        }),
+      );
+
+      expect(() => {
+        mandate.refuseUnlessProvable();
+      }).toThrow(MandateNotProvableError);
+      expect(() => {
+        mandate.attachProof({
+          storageKey: "companies/cmp_1/mandates/mdt_1/v2",
+          fileName: "v2.pdf",
+        });
+      }).toThrow(MandateNotProvableError);
+      expect(mandate.proofStorageKey()).toBe("companies/cmp_1/mandates/mdt_1/v1");
+    },
+  );
+
+  it("laisse remplacer le scan d'un brouillon — c'est encore la saisie", () => {
+    const mandate = PaymentMandate.reconstitute(
+      snapshot({
+        status: "draft",
+        acceptedAt: null,
+        proofStorageKey: "k/v1",
+        proofFileName: "v1.pdf",
+      }),
+    );
+
+    mandate.attachProof({ storageKey: "k/v2", fileName: "v2.pdf" });
+
+    expect(mandate.proofStorageKey()).toBe("k/v2");
   });
 });
 
@@ -154,15 +199,35 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
 });
 
 describe("PaymentMandate.sign — le papier revient signé", () => {
-  function draftSnapshot(): MandateSnapshot {
+  /** Un brouillon PROUVÉ : l'activation l'exige, le brouillon nu a son cas. */
+  function draftSnapshot(overrides: Partial<MandateSnapshot> = {}): MandateSnapshot {
     return snapshot({
       status: "draft",
       acceptedAt: null,
       stripeCustomerId: null,
       paymentMethodId: null,
       creditorId: "ent_1",
+      proofStorageKey: "companies/cmp_1/mandates/mdt_1/mandat-signe-1",
+      proofFileName: "mandat-signe.pdf",
+      ...overrides,
     });
   }
+
+  /**
+   * 🔴 Depuis le 2026-09-14 : on prouve AVANT d'activer. C'est ce qui permet de
+   * refuser le dépôt sur un actif sans laisser d'actif à jamais improuvable.
+   */
+  it("refuse d'activer un brouillon sans scan, et le laisse brouillon", () => {
+    const mandate = PaymentMandate.reconstitute(
+      draftSnapshot({ proofStorageKey: null, proofFileName: null }),
+    );
+
+    expect(() => {
+      mandate.sign(new Date(NOW.getTime() - 86_400_000), NOW);
+    }).toThrow(MandateUnprovenError);
+    expect(mandate.status).toBe("draft");
+    expect(mandate.acceptedAt).toBeNull();
+  });
 
   it("porte la date du PAPIER, pas celle de la saisie", () => {
     const mandate = PaymentMandate.reconstitute(draftSnapshot());
@@ -201,7 +266,7 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     }).toThrow(MandateNotSignableError);
   });
 
-  it("un brouillon ne prélève pas, et ne prouve rien", () => {
+  it("un brouillon ne prélève pas, et n'est pas signé", () => {
     const mandate = PaymentMandate.reconstitute(draftSnapshot());
 
     expect(mandate.debitable()).toBe(false);

@@ -38,9 +38,9 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
    *
    * Ses appelants, au 2026-09-12 au soir : la vue de la fiche, la révocation
    * (« retirer l'autorisation » désigne sans ambiguïté l'actif), et la lecture
-   * de la preuve. Le dépôt de scan passe par `findAwaitingProof`, la signature
-   * par `findById` — les deux gestes où « le mandat de cette société » ne
-   * désigne plus rien de précis.
+   * de la preuve. Le dépôt de scan passe par `findDraft` (depuis le 2026-09-14 :
+   * un actif ne reçoit plus de pièce), la signature par `findById` — les deux
+   * gestes où « le mandat de cette société » ne désigne plus rien de précis.
    */
   async findCurrent(companyId: string): Promise<PaymentMandate | null> {
     const active = await this.prisma.paymentMandate.findFirst({

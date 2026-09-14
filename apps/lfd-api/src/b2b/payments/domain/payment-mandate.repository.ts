@@ -56,6 +56,11 @@ export abstract class PaymentMandateRepository {
    * Le mandat **auquel un scan qui revient appartient** : le brouillon s'il y en
    * a un, l'actif sinon.
    *
+   * ⚠️ Le DÉPÔT du scan ne passe plus par ici depuis le 2026-09-14 : il vise
+   * `findDraft` seul, parce qu'un actif ne reçoit plus de pièce. Seul appelant
+   * restant, vérifié ce jour-là : le rendu du mandat client
+   * (`customer-mandate-support.ts`), qui décide du filigrane.
+   *
    * 🔴 Nommée plutôt que déduite de `findCurrent`, et c'est tout l'objet de sa
    * présence. `findCurrent` répond « que montrer », donc rend l'ACTIF d'abord :
    * en rotation bancaire — un actif en vigueur pendant qu'on fait signer son

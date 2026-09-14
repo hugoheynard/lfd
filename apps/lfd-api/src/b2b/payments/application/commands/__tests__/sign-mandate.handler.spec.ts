@@ -4,6 +4,7 @@ import {
   MandateNotFoundError,
   MandateNotSignableError,
   MandateAcceptanceInFutureError,
+  MandateUnprovenError,
 } from "../../../domain/errors/mandate-errors.js";
 import { PaymentMandate, type MandateSnapshot } from "../../../domain/entities/payment-mandate.js";
 import type { PaymentMandateRepository } from "../../../domain/payment-mandate.repository.js";
@@ -27,8 +28,10 @@ function snapshot(overrides: Partial<MandateSnapshot>): MandateSnapshot {
     status: "draft",
     acceptedAt: null,
     revokedAt: null,
-    proofStorageKey: null,
-    proofFileName: null,
+    // Prouvé par défaut : l'activation l'exige, et les cas qui suivent éprouvent
+    // autre chose. Le brouillon nu a son propre cas.
+    proofStorageKey: "companies/cmp_1/mandates/mdt_draft/mandat-signe-1",
+    proofFileName: "mandat-signe.pdf",
     creditorId: "ent_1",
     ...overrides,
   };
@@ -120,6 +123,24 @@ describe("SignMandateHandler", () => {
     await expect(
       handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
     ).rejects.toThrow(MandateNotSignableError);
+  });
+
+  /**
+   * 🔴 Depuis le 2026-09-14 : on prouve AVANT d'activer. Sans cette règle, le
+   * dépôt refusé sur un actif laissait un mandat actif sans aucun moyen d'être
+   * prouvé.
+   */
+  it("refuse d'activer un brouillon dont le scan n'est pas déposé", async () => {
+    const naked = PaymentMandate.reconstitute(
+      snapshot({ proofStorageKey: null, proofFileName: null }),
+    );
+    const { handler, saved } = build({ target: naked, current: naked });
+
+    await expect(
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
+    ).rejects.toThrow(MandateUnprovenError);
+    expect(naked.status).toBe("draft");
+    expect(saved).toHaveLength(0);
   });
 
   it("refuse une date de signature à venir", async () => {

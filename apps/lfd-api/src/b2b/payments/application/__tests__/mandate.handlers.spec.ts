@@ -6,7 +6,10 @@ import {
   type RegisteredMandate,
 } from "../../domain/entities/payment-mandate.js";
 import { AesGcmFieldCipher } from "../../../../platform/crypto/aes-gcm-field-cipher.js";
-import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
+import {
+  MandateNotFoundError,
+  MandateNotProvableError,
+} from "../../domain/errors/mandate-errors.js";
 import { MandateGateway, type MandateToRegister } from "../../domain/mandate-gateway.js";
 import {
   PaymentMandateRepository,
@@ -39,6 +42,7 @@ interface Trace {
 
 function doubles(options: {
   readonly current?: PaymentMandate | null;
+  readonly draft?: PaymentMandate | null;
   readonly holder?: MandateHolder | null;
   readonly customerId?: string | null;
 }): {
@@ -51,8 +55,8 @@ function doubles(options: {
   const repo: PaymentMandateRepository = {
     findCurrent: () => Promise.resolve(options.current ?? null),
     findById: () => Promise.resolve(null),
-    findDraft: () => Promise.resolve(null),
-    findAwaitingProof: () => Promise.resolve(options.current ?? null),
+    findDraft: () => Promise.resolve(options.draft ?? null),
+    findAwaitingProof: () => Promise.resolve(options.draft ?? options.current ?? null),
     create: (mandate) => {
       trace.steps.push("write");
       trace.written = mandate;
@@ -84,6 +88,23 @@ function doubles(options: {
   };
 
   return { repo, gateway, trace };
+}
+
+/** Le brouillon frappé qui attend son scan — le seul mandat qui en reçoit un. */
+function draftMandate(): PaymentMandate {
+  return PaymentMandate.reconstitute({
+    ...REGISTRATION,
+    id: "mdt_1",
+    companyId: "cmp_1",
+    stripeCustomerId: null,
+    paymentMethodId: null,
+    status: "draft",
+    acceptedAt: null,
+    revokedAt: null,
+    proofStorageKey: null,
+    proofFileName: null,
+    creditorId: "ent_1",
+  });
 }
 
 function activeMandate(): PaymentMandate {
@@ -129,23 +150,32 @@ describe("RevokeMandateHandler", () => {
   });
 });
 
+/** Un coffre qui trace ce qu'on lui confie, dans l'ordre des gestes. */
+function tracingStore(trace: Trace): DocumentStore {
+  return {
+    save: (key, document) => {
+      trace.steps.push("store");
+      trace.stored = { key, document };
+      return Promise.resolve(key);
+    },
+    read: () => Promise.resolve(Buffer.alloc(0)),
+    // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque lecture
+    // doit dire « pas encore » plutôt que rendre une pièce.
+    readIfPresent: () => Promise.resolve(null),
+  };
+}
+
 describe("AttachMandateProofHandler", () => {
   it("range la pièce AVANT d'écrire sa référence", async () => {
     // Si le stockage échoue, la base ne doit pas pointer vers une pièce absente :
     // un mandat qu'on croit prouvé sans l'être est pire qu'un mandat qu'on sait nu.
-    const { repo, trace } = doubles({ current: activeMandate() });
-    const store: DocumentStore = {
-      save: (key, document) => {
-        trace.steps.push("store");
-        trace.stored = { key, document };
-        return Promise.resolve(key);
-      },
-      read: () => Promise.resolve(Buffer.alloc(0)),
-      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
-      // lecture doit dire « pas encore » plutôt que rendre une pièce.
-      readIfPresent: () => Promise.resolve(null),
-    };
-    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
+    const { repo, trace } = doubles({ draft: draftMandate() });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+    );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
@@ -153,30 +183,93 @@ describe("AttachMandateProofHandler", () => {
     expect(trace.saved?.proven()).toBe(true);
   });
 
-  it("ancre la clé sur la société ET sur le mandat", async () => {
-    // Un mandat remplacé garde sa preuve — sinon l'historique qu'on tient tant à
-    // conserver perdrait la seule pièce qui le justifie.
-    const { repo, trace } = doubles({ current: activeMandate() });
-    const store: DocumentStore = {
-      save: (key, document) => {
-        trace.stored = { key, document };
-        return Promise.resolve(key);
-      },
-      read: () => Promise.resolve(Buffer.alloc(0)),
-      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
-      // lecture doit dire « pas encore » plutôt que rendre une pièce.
-      readIfPresent: () => Promise.resolve(null),
-    };
-    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
+  it("vise le BROUILLON quand un actif est encore en vigueur", async () => {
+    // En rotation bancaire, le papier qui revient est celui qu'on vient d'envoyer.
+    const { repo, trace } = doubles({ current: activeMandate(), draft: draftMandate() });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+    );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
-    expect(trace.stored?.key).toBe("companies/cmp_1/mandates/mdt_1/mandat-signe");
+    expect(trace.saved?.status).toBe("draft");
+  });
+
+  /**
+   * 🔴 Régression (2026-09-14) : le refus hors brouillon tombait APRÈS le
+   * rangement. Le fichier du bucket était déjà remplacé quand l'agrégat disait
+   * non, et la base désignait toujours l'ancienne pièce.
+   */
+  it("refuse le scan d'un mandat ACTIF sans rien ranger", async () => {
+    const { repo, trace } = doubles({ current: activeMandate(), draft: null });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+    );
+
+    await expect(
+      handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF)),
+    ).rejects.toBeInstanceOf(MandateNotProvableError);
+    expect(trace.steps).toEqual([]);
+    expect(trace.stored).toBeNull();
+  });
+
+  it("refuse quand la société n'a aucun mandat, sans rien ranger", async () => {
+    const { repo, trace } = doubles({ current: null, draft: null });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+    );
+
+    await expect(
+      handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF)),
+    ).rejects.toBeInstanceOf(MandateNotFoundError);
+    expect(trace.steps).toEqual([]);
+  });
+
+  it("ancre la clé sur la société, le mandat ET l'instant du dépôt", async () => {
+    // Un mandat remplacé garde sa preuve ; et une clé neuve par dépôt fait qu'une
+    // écriture en base qui échoue ne recouvre pas la pièce que la base désigne.
+    const { repo, trace } = doubles({ draft: draftMandate() });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+    );
+
+    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+
+    expect(trace.stored?.key).toBe(`companies/cmp_1/mandates/mdt_1/mandat-signe-${NOW.getTime()}`);
     // 🔴 `octet-stream` et non `application/pdf` depuis le 2026-09-12 : ce qui
-    // est rangé n'EST plus un PDF. Annoncer le type réel ferait croire, à qui
-    // ouvre le bucket, que la pièce est lisible — et un outil de stockage
-    // tenterait de la prévisualiser.
+    // est rangé n'EST plus un PDF.
     expect(trace.stored?.document.contentType).toBe("application/octet-stream");
+  });
+
+  it("ne recouvre jamais le dépôt précédent", async () => {
+    const draft = draftMandate();
+    const keys: string[] = [];
+    for (const at of [NOW, new Date(NOW.getTime() + 60_000)]) {
+      const { repo, trace } = doubles({ draft });
+      const handler = new AttachMandateProofHandler(
+        repo,
+        tracingStore(trace),
+        CIPHER,
+        new FixedClock(at),
+      );
+      await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+      keys.push(trace.stored?.key ?? "");
+    }
+
+    expect(keys[0]).not.toBe(keys[1]);
+    expect(draft.proofStorageKey()).toBe(keys[1]);
   });
 
   /**
@@ -185,16 +278,13 @@ describe("AttachMandateProofHandler", () => {
    * colonne. C'est la pièce qui porte en plus une signature manuscrite.
    */
   it("scelle les octets — le bucket ne voit jamais la pièce", async () => {
-    const { repo, trace } = doubles({ current: activeMandate() });
-    const store: DocumentStore = {
-      save: (key, document) => {
-        trace.stored = { key, document };
-        return Promise.resolve(key);
-      },
-      read: () => Promise.resolve(Buffer.alloc(0)),
-      readIfPresent: () => Promise.resolve(null),
-    };
-    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
+    const { repo, trace } = doubles({ draft: draftMandate() });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+    );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
@@ -204,20 +294,19 @@ describe("AttachMandateProofHandler", () => {
   });
 
   it("refuse une pièce dont les octets ne sont pas une pièce", async () => {
-    const { repo } = doubles({ current: activeMandate() });
-    const store: DocumentStore = {
-      save: (key) => Promise.resolve(key),
-      read: () => Promise.resolve(Buffer.alloc(0)),
-      // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque
-      // lecture doit dire « pas encore » plutôt que rendre une pièce.
-      readIfPresent: () => Promise.resolve(null),
-    };
-    const handler = new AttachMandateProofHandler(repo, store, CIPHER);
+    const { repo, trace } = doubles({ draft: draftMandate() });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+    );
 
     await expect(
       handler.execute(
         new AttachMandateProofCommand("cmp_1", "mandat.pdf", Buffer.from("MZ\x90\x00", "latin1")),
       ),
     ).rejects.toThrow(/Pièce invalide/u);
+    expect(trace.stored).toBeNull();
   });
 });

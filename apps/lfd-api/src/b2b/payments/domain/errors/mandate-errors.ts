@@ -124,6 +124,40 @@ export class MandateNotSignableError extends BusinessError {
 }
 
 /**
+ * On a voulu déposer un scan sur un mandat qui n'est pas un brouillon — **409**.
+ *
+ * Le scan prouve la signature du papier qu'on a fait signer : il n'a de sens
+ * que sur le brouillon qui attend cette signature. Déposé sur un mandat actif,
+ * il remplacerait la pièce qu'on oppose en contestation ; sur un mandat
+ * révoqué, il justifierait une autorisation retirée.
+ */
+export class MandateNotProvableError extends BusinessError {
+  constructor(status: string) {
+    super(
+      "payments.mandate.not_provable",
+      status === "active"
+        ? "Ce mandat est déjà actif : son scan signé fait foi et ne se remplace pas. Pour changer de papier, frappez un nouveau mandat."
+        : `Un mandat « ${status} » ne reçoit pas de scan : seul un mandat frappé et non signé attend le sien.`,
+    );
+  }
+}
+
+/**
+ * On a voulu activer un mandat dont le scan signé n'est pas déposé — **409**.
+ *
+ * Activer autorise un débit. En contestation, c'est le scan qui répond : un
+ * mandat actif sans pièce est une somme remboursable sur simple demande.
+ */
+export class MandateUnprovenError extends BusinessError {
+  constructor() {
+    super(
+      "payments.mandate.unproven",
+      "Déposez le scan du mandat signé avant de l'activer : c'est la pièce qu'on opposera en contestation.",
+    );
+  }
+}
+
+/**
  * La **date de consentement** déclarée est dans le futur — **400**.
  *
  * Un mandat papier se signe avant d'être saisi. Une date à venir est une faute

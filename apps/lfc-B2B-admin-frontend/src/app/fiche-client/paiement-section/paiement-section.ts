@@ -177,11 +177,6 @@ export class PaiementSection {
   /** Un mandat sur lequel on peut prélever aujourd'hui. */
   protected readonly debitable = computed(() => this.mandate()?.status === 'active');
 
-  /** Un mandat actif dont le papier signé manque : actif, mais sans filet. */
-  protected readonly unproven = computed(
-    () => this.debitable() && this.mandate()?.hasProof === false,
-  );
-
   /**
    * Les 4 chiffres du compte que le mandat **actif** nomme, `''` sinon.
    *

@@ -2,8 +2,10 @@ import type { MandateStatus, PaymentMandateView } from "@lfd/contracts";
 
 import {
   MandateAcceptanceInFutureError,
+  MandateNotProvableError,
   MandateNotRevocableError,
   MandateNotSignableError,
+  MandateUnprovenError,
 } from "../errors/mandate-errors.js";
 
 /** Ce que le prestataire rend une fois le mandat créé chez lui. */
@@ -257,6 +259,12 @@ export class PaymentMandate {
     if (this.statusValue !== "draft") {
       throw new MandateNotSignableError(this.statusValue);
     }
+    // 🔴 Depuis le 2026-09-14 : l'activation autorise un débit, et le scan est
+    // la seule pièce qui répond en contestation. On prouve AVANT d'activer —
+    // c'est ce qui permet de refuser le dépôt sur un mandat actif.
+    if (this.proofValue === null) {
+      throw new MandateUnprovenError();
+    }
     if (at.getTime() > now.getTime()) {
       throw new MandateAcceptanceInFutureError();
     }
@@ -283,9 +291,30 @@ export class PaymentMandate {
     this.revokedAtValue = now;
   }
 
-  /** Attache le scan du mandat signé — la pièce qui prouve le consentement. */
+  /**
+   * Attache le scan du mandat signé — la pièce qui prouve le consentement.
+   *
+   * 🔴 **Sur le brouillon seulement** (depuis le 2026-09-14). Un actif a déjà
+   * la pièce qu'on oppose en contestation : la remplacer ferait produire un
+   * papier que personne n'a relu à l'activation. Un nouveau dépôt sur le
+   * brouillon, lui, remplace le précédent — c'est encore la saisie.
+   */
   attachProof(proof: MandateProof): void {
+    this.refuseUnlessProvable();
     this.proofValue = proof;
+  }
+
+  /**
+   * Refuse, AVANT tout effet, un dépôt que {@link attachProof} refuserait.
+   *
+   * Existe pour l'appelant qui doit ranger le fichier avant d'écrire sa
+   * référence : sans elle, le fichier du bucket serait déjà remplacé quand le
+   * refus tombe.
+   */
+  refuseUnlessProvable(): void {
+    if (this.statusValue !== "draft") {
+      throw new MandateNotProvableError(this.statusValue);
+    }
   }
 
   /** L'état complet, à écrire tel quel. */

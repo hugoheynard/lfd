@@ -11,6 +11,7 @@ import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ScannedDocument } from "../../../platform/shared/documents/scanned-document.js";
 import { MandateNotFoundError } from "../domain/errors/mandate-errors.js";
+import type { PaymentMandate } from "../domain/entities/payment-mandate.js";
 import { MandateGateway } from "../domain/mandate-gateway.js";
 import { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { AttachMandateProofCommand, RevokeMandateCommand } from "./mandate-commands.js";
@@ -56,11 +57,19 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
 }
 
 /**
- * Dépose le mandat signé scanné.
+ * Dépose le mandat signé scanné — **sur le brouillon seulement**.
  *
- * Ranger d'abord, écrire la référence ensuite : si le stockage échoue, la base
- * ne pointe pas vers une pièce absente — et un mandat qu'on croit prouvé sans
- * l'être est pire qu'un mandat qu'on sait nu.
+ * Trois temps, dans cet ordre, et chacun ferme une panne :
+ *
+ * 1. **Refuser avant de ranger.** Le refus hors brouillon tombait, jusqu'au
+ *    2026-09-14, APRÈS l'écriture dans le bucket : le fichier était déjà
+ *    remplacé quand l'agrégat disait non.
+ * 2. **Ranger sous une clé neuve.** Une clé fixe par mandat faisait qu'un dépôt
+ *    dont l'écriture en base échoue écrasait quand même la pièce précédente,
+ *    que la base continuait de désigner.
+ * 3. **Écrire la référence.** Si le stockage échoue, la base ne pointe pas vers
+ *    une pièce absente — un mandat qu'on croit prouvé sans l'être est pire
+ *    qu'un mandat qu'on sait nu.
  */
 @CommandHandler(AttachMandateProofCommand)
 export class AttachMandateProofHandler implements ICommandHandler<AttachMandateProofCommand, void> {
@@ -68,17 +77,11 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
     private readonly mandates: PaymentMandateRepository,
     private readonly store: DocumentStore,
     private readonly cipher: FieldCipher,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: AttachMandateProofCommand): Promise<void> {
-    // 🔴 `findAwaitingProof` et NON `findCurrent` (corrigé le 2026-09-12 au
-    // soir). `findCurrent` rend l'actif d'abord : avec un actif en vigueur et un
-    // brouillon frappé, le scan du mandat neuf se serait agrafé sur l'ancien, et
-    // la pièce produite en contestation n'aurait pas porté la RUM opposée.
-    const mandate = await this.mandates.findAwaitingProof(command.companyId);
-    if (mandate === null) {
-      throw new MandateNotFoundError(command.companyId);
-    }
+    const mandate = await this.provableMandate(command.companyId);
     // Le domaine valide le fichier EN CLAIR — type réel, taille, nom. Sceller
     // avant validerait des octets chiffrés, c'est-à-dire rien.
     const document = ScannedDocument.create(command.fileName, command.bytes);
@@ -92,12 +95,37 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
     // plus un PDF. Annoncer `application/pdf` sur des octets chiffrés ferait
     // qu'un outil de stockage tenterait de les prévisualiser, et surtout ferait
     // croire, à qui ouvre le bucket, que la pièce est lisible.
-    const storageKey = await this.store.save(proofKeyFor(command.companyId, mandate.id), {
+    const key = proofKeyFor(command.companyId, mandate.id, this.clock.now());
+    const storageKey = await this.store.save(key, {
       bytes: this.cipher.sealBytes(document.bytes),
       contentType: "application/octet-stream",
     });
     mandate.attachProof({ storageKey, fileName: document.fileName });
     await this.mandates.save(mandate);
+  }
+
+  /**
+   * Le brouillon de la société, refusé AVANT tout rangement s'il n'y en a pas.
+   *
+   * 🔴 `findDraft` et non `findAwaitingProof` depuis le 2026-09-14 :
+   * `findAwaitingProof` retombe sur l'actif sans brouillon, et c'est
+   * précisément le mandat dont la pièce ne doit plus bouger. Sans brouillon,
+   * le refus nomme l'état réel du mandat courant — « déjà actif » ne se corrige
+   * pas comme « aucun mandat ».
+   */
+  private async provableMandate(companyId: string): Promise<PaymentMandate> {
+    const draft = await this.mandates.findDraft(companyId);
+    if (draft !== null) {
+      return draft;
+    }
+    const current = await this.mandates.findCurrent(companyId);
+    if (current === null) {
+      throw new MandateNotFoundError(companyId);
+    }
+    current.refuseUnlessProvable();
+    // Inatteignable : un mandat courant qui accepte une preuve est un brouillon,
+    // et `findDraft` l'aurait rendu. Refuser plutôt que ranger sur un doute.
+    throw new MandateNotFoundError(companyId);
   }
 }
 
@@ -121,10 +149,14 @@ export class GetCompanyMandateHandler implements IQueryHandler<
 }
 
 /**
- * Clé de stockage du mandat signé — ancrée sur la société **et** sur le mandat :
- * un mandat remplacé garde sa preuve, sinon l'historique qu'on tient tant à
- * conserver perdrait la seule pièce qui le justifie.
+ * Clé de stockage du mandat signé — ancrée sur la société, sur le mandat **et**
+ * sur l'instant du dépôt.
+ *
+ * La société et le mandat : un mandat remplacé garde sa preuve, sinon
+ * l'historique perdrait la seule pièce qui le justifie. L'instant : un dépôt ne
+ * recouvre jamais le précédent, donc une écriture en base qui échoue après le
+ * rangement laisse la pièce que la base désigne intacte.
  */
-function proofKeyFor(companyId: string, mandateId: string): string {
-  return `companies/${companyId}/mandates/${mandateId}/mandat-signe`;
+function proofKeyFor(companyId: string, mandateId: string, at: Date): string {
+  return `companies/${companyId}/mandates/${mandateId}/mandat-signe-${at.getTime()}`;
 }
