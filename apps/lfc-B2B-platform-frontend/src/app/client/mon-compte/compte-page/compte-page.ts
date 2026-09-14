@@ -1,6 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import type { CartAdjustment } from '@lfd/contracts';
-import { FoldIconComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldEmptyStateComponent,
+  FoldIconComponent,
+  FoldLoadingStateComponent,
+} from 'fold-ng';
+
+import { AccountService } from '../../../account/account.service';
+import { AuthFacade } from '../../../auth/auth.facade';
+
+/** Les états de l'écran — exclusifs, et c'est tout leur intérêt. */
+type AccountView = 'loading' | 'signed-out' | 'failed' | 'incomplete' | 'dossier';
 
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
@@ -65,7 +76,10 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
     ClientBannerOutlet,
     DataCard,
     DossierCard,
+    FoldButtonComponent,
+    FoldEmptyStateComponent,
     FoldIconComponent,
+    FoldLoadingStateComponent,
     KbisCard,
     ShopPromise,
     UsersCard,
@@ -87,6 +101,58 @@ export class ComptePage {
   protected readonly promiseLevel = computed(() =>
     this.access.state() === 'loading' ? null : this.access.shop(),
   );
+
+  private readonly auth = inject(AuthFacade);
+  protected readonly account = inject(AccountService);
+
+  /**
+   * **Ce que l'écran peut montrer**, un seul à la fois.
+   *
+   * 🔴 Il empilait tout (relevé le 2026-09-14) : une lecture de `/me` en échec
+   * s'affichait « Compte non reconnu », et une personne pas encore entrée voyait
+   * la carte « Compléter mon dossier » au-dessus de sept cartes de compte vides.
+   * Le compte complet ne se montre donc qu'à qui a une société ; sans société,
+   * seule la carte de dossier ; sans entrée, seulement de quoi entrer.
+   */
+  protected readonly view = computed<AccountView>(() => {
+    if (this.auth.isLoading()) {
+      return 'loading';
+    }
+    if (!this.auth.isAuthenticated()) {
+      return 'signed-out';
+    }
+    const status = this.account.status();
+    if (status === 'error') {
+      return 'failed';
+    }
+    if (status !== 'ready') {
+      return 'loading';
+    }
+    return this.client.company() === null ? 'incomplete' : 'dossier';
+  });
+
+  /** La pastille du bandeau : l'état du dossier, ou rien tant qu'on ne le sait pas. */
+  protected readonly stateLabel = computed(() => {
+    const dossier = this.client.dossier();
+    return dossier === null ? null : this.t().account.states[dossier];
+  });
+
+  /** Le vert ne se dit que d'un compte actif. */
+  protected readonly stateTone = computed(() => {
+    const dossier = this.client.dossier();
+    if (dossier === 'active') {
+      return 'ok';
+    }
+    return dossier === 'suspended' || dossier === 'terminated' ? 'blocked' : 'wait';
+  });
+
+  protected retry(): void {
+    this.account.load();
+  }
+
+  protected signIn(): void {
+    this.auth.login('/mon-compte');
+  }
 
   /**
    * 🔴 **L'identité vient de notre base** (`GET /me`), plus d'une maquette. Cet

@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { CompanyView, ShopLevel } from '@lfd/contracts';
 
-import { AccountService } from '../../../account/account.service';
+import { AccountService, type AccountStatus } from '../../../account/account.service';
+import { AuthFacade } from '../../../auth/auth.facade';
 import { FR } from '../../copy/fr';
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
 import { openShopAt } from '../../feature-access/feature-access.fixture';
@@ -51,16 +52,48 @@ const TOMMEUSES = {
   },
 } as unknown as CompanyView;
 
+/** Ce que le test fait croire à l'écran : qui est entré, et ce que `/me` a rendu. */
+interface Situation {
+  readonly authenticated?: boolean;
+  readonly status?: AccountStatus;
+}
+
+/** Les relectures de `/me` et les connexions demandées par l'écran. */
+let loads = 0;
+let signIns: string[] = [];
+
 function boot(
   companies: readonly CompanyView[],
   shop: ShopLevel = 'order',
+  { authenticated = true, status = 'ready' }: Situation = {},
 ): ComponentFixture<ComptePage> {
+  loads = 0;
+  signIns = [];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ComptePage],
     providers: [
       provideRouter([]),
-      { provide: AccountService, useValue: { companies: () => companies } },
+      {
+        provide: AccountService,
+        useValue: {
+          companies: () => companies,
+          status: () => status,
+          load: (): void => {
+            loads += 1;
+          },
+        },
+      },
+      {
+        provide: AuthFacade,
+        useValue: {
+          isLoading: () => false,
+          isAuthenticated: () => authenticated,
+          login: (target: string): void => {
+            signIns.push(target);
+          },
+        },
+      },
       // La carte « Compléter mon dossier » a sa propre suite : ici, le dossier existe.
       { provide: ProOnboarding, useValue: { needsDossier: () => false } },
     ],
@@ -171,13 +204,47 @@ describe('ComptePage', () => {
   });
 
   /**
-   * Aucune société ⇒ **aucun dossier**. L'écran affichait un compte complet à
-   * qui n'est pas connecté ; c'était le dossier de personne.
+   * Régression (2026-09-14) : sans entrée, l'écran empilait la carte de dossier
+   * au-dessus de sept cartes de compte vides. Il ne montre plus que de quoi entrer.
    */
-  it('ne montre aucun dossier quand personne n’est reconnu', () => {
-    fixture = boot([]);
+  it('à qui n’est pas entré, ne montre que de quoi se connecter', () => {
+    fixture = boot([], 'order', { authenticated: false, status: 'idle' });
 
-    expect((el().textContent ?? '').includes('Tommeuses')).toBe(false);
-    expect(el().textContent).toContain(FR.account.cardUnknown);
+    expect(el().textContent).toContain(FR.account.signedOutTitle);
+    expect(el().querySelectorAll('.summary-link').length).toBe(0);
+    expect(el().querySelector('app-account-card')).toBeNull();
+
+    const signIn = Array.from(el().querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes(FR.account.signIn),
+    );
+    signIn?.click();
+    expect(signIns).toEqual(['/mon-compte']);
+  });
+
+  /**
+   * Régression (2026-09-14) : une lecture de `/me` en échec s'affichait « Compte
+   * non reconnu, connectez-vous » — à quelqu'un de connecté, pendant que l'API
+   * redémarrait. C'est un échec, et on peut réessayer.
+   */
+  it('dit l’échec de lecture, et relit au clic', () => {
+    fixture = boot([], 'order', { status: 'error' });
+
+    expect(el().textContent).toContain(FR.account.loadFailedTitle);
+    expect(el().textContent).not.toContain(FR.account.cardUnknown);
+
+    const retry = Array.from(el().querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes(FR.account.loadRetry),
+    );
+    retry?.click();
+    expect(loads).toBe(1);
+  });
+
+  /** Connecté sans société : la carte de dossier, et pas le compte vide en dessous. */
+  it('sans société, ne montre pas les cartes de compte', () => {
+    fixture = boot([], 'closed');
+
+    expect(el().querySelectorAll('.summary-link').length).toBe(0);
+    expect(el().querySelector('app-account-card')).toBeNull();
+    expect(el().textContent).toContain(PRO_ACCOUNT_FR.promise.closed);
   });
 });

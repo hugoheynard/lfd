@@ -14,7 +14,31 @@
 export interface AccountCopy {
   readonly title: string;
   readonly lead: string;
-  readonly state: string;
+  /**
+   * La pastille du bandeau, par état du DOSSIER. Elle disait « Compte actif ·
+   * dossier complet » en dur, y compris à un compte sans société (relevé le
+   * 2026-09-14) : l'inverse du message pour un pro qui vient d'ouvrir le sien.
+   */
+  readonly states: {
+    readonly incomplete: string;
+    readonly pending: string;
+    readonly active: string;
+    readonly suspended: string;
+    readonly terminated: string;
+  };
+  /** La lecture de `/me` a échoué : ce n'est PAS un compte inconnu, et on le dit. */
+  readonly loadFailedTitle: string;
+  readonly loadFailedBody: string;
+  readonly loadRetry: string;
+  /** Pendant la lecture du compte : on ne montre rien de ce qu'on ne sait pas encore. */
+  readonly loading: string;
+  /**
+   * Personne n'est entré. L'écran ne montre alors NI la carte de dossier NI des
+   * cartes de compte vides en dessous — une seule chose : se connecter.
+   */
+  readonly signedOutTitle: string;
+  readonly signedOutBody: string;
+  readonly signIn: string;
   readonly cardKicker: string;
   /** `{month}` le mois d'ouverture, `{ref}` la référence du dossier. */
   readonly cardActive: string;

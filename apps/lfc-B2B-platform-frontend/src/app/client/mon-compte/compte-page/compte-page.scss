@@ -27,6 +27,16 @@
   height: 7px;
   border-radius: var(--fold-radius-pill);
   background: var(--fold-color-success);
+
+  /* Un dossier à compléter ou en vérification attend quelque chose ; un compte
+     suspendu ou clos est bloqué. Le vert ne se dit que d'un compte actif. */
+  &[data-tone='wait'] {
+    background: var(--fold-color-warning-text);
+  }
+
+  &[data-tone='blocked'] {
+    background: var(--fold-color-alert);
+  }
 }
 
 .body {
