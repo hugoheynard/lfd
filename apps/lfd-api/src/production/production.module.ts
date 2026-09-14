@@ -11,6 +11,7 @@ import { RetakeProductionDayHandler } from "./application/commands/retake-produc
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
 import { UnmarkPackingLineHandler } from "./application/commands/unmark-packing-line.handler.js";
 import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
+import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
 import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
 import { GetProductionPackingHandler } from "./application/queries/get-production-packing.handler.js";
@@ -21,6 +22,7 @@ import {
   GetProductionCountPdfHandler,
 } from "./application/queries/get-production-paper.handler.js";
 import { ProductionPapers } from "./application/services/production-paper.service.js";
+import { ProductionWorksheetReading } from "./application/services/production-worksheet-reading.service.js";
 import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
 import { ProductionContainerRepository } from "./domain/ports/production-container.repository.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
@@ -70,11 +72,15 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     GetProductionDayStatusHandler,
     GetProductionForecastHandler,
     GetProductionWorksheetHandler,
+    GetCurrentProductionWorksheetHandler,
     GetProductionPackingHandler,
     ListProductionContainersHandler,
     GetProductionCountPdfHandler,
     GetAtelierSheetPdfHandler,
     ProductionPapers,
+    // La lecture de la fiche, partagée par la route datée et la route « en
+    // cours » : un handler n'en appelle pas un autre (§4).
+    ProductionWorksheetReading,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
     // La lecture du plan arrêté est un port À PART du dépôt d'écriture, et son
     // adaptateur vit chez la production : c'est SON schéma qu'il interroge.

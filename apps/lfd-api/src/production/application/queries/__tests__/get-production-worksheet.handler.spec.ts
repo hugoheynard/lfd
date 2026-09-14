@@ -1,4 +1,13 @@
 import {
+  SHELF_LABEL_UNKNOWN,
+  UNSHELVED_WORKSHOP_GROUP_KEY,
+  addDays,
+  instantToLocal,
+  type CatalogCategory,
+} from "@lfd/contracts";
+
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
@@ -6,6 +15,7 @@ import {
   ExpectedProductionReader,
   type ExpectedDayProduction,
 } from "../../../channels/commerce/expected-production.reader.js";
+import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionDay, type DoneMark } from "../../../domain/entities/production-day.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
@@ -13,11 +23,16 @@ import type { ContainerRule } from "../../../domain/services/production-workshee
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { GetProductionWorksheetHandler } from "../get-production-worksheet.handler.js";
 import { GetProductionWorksheetQuery } from "../get-production-worksheet.query.js";
-import { ListProductionContainersHandler } from "../list-production-containers.handler.js";
+import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
 
-/** Recopié, jamais comparé à l'horloge — exception étroite du §5. */
-const TIRAGE = new Date("2026-09-13T04:20:00.000Z");
-const DAY = "2026-09-13";
+/**
+ * Le jour est DÉRIVÉ de maintenant : `relativeDay` le compare à l'horloge, et un
+ * jour en dur deviendrait « ni aujourd'hui ni demain » le lendemain. Le tirage,
+ * lui, n'est que recopié dans la vue — exception étroite du §5.
+ */
+const NOW = new Date();
+const DAY = instantToLocal(NOW).day;
+const TIRAGE = new Date(NOW.getTime() - 60 * 60 * 1000);
 
 function order(orderId: string, quantity: number): ProducibleOrder {
   return {
@@ -97,6 +112,21 @@ class Containers extends ProductionContainerReader {
   }
 }
 
+/** Les rayons doublés : une table fixe, ou une panne du commerce. */
+class Shelves extends WorkshopShelvesReader {
+  constructor(private readonly table: ReadonlyMap<string, CatalogCategory> | "down") {
+    super();
+  }
+
+  shelvesOf(): Promise<ReadonlyMap<string, CatalogCategory>> {
+    return this.table === "down"
+      ? Promise.reject(new Error("catalogue injoignable"))
+      : Promise.resolve(this.table);
+  }
+}
+
+const SEIGLE_AU_PAIN = new Map<string, CatalogCategory>([["PAI-SEI", "pain"]]);
+
 function demandOfDay(quantity: number): ExpectedDayProduction {
   return {
     day: DAY,
@@ -116,12 +146,18 @@ function handlerFor(
   producible: readonly ProducibleOrder[],
   expected: readonly ExpectedDayProduction[],
   rules: ReadonlyMap<string, ContainerRule> = new Map(),
+  shelves: Shelves = new Shelves(SEIGLE_AU_PAIN),
+  commerce: Commerce = new Commerce(producible),
 ): GetProductionWorksheetHandler {
   return new GetProductionWorksheetHandler(
-    new Days(current),
-    new Expected(expected),
-    new Commerce(producible),
-    new Containers(rules),
+    new ProductionWorksheetReading(
+      new Days(current),
+      new Expected(expected),
+      commerce,
+      new Containers(rules),
+      shelves,
+      new FixedClock(NOW),
+    ),
   );
 }
 
@@ -202,45 +238,65 @@ describe("GetProductionWorksheetHandler", () => {
     // avoir chargé la journée, et les enchaîner doublerait la latence d'un écran
     // qu'on rafraîchit debout.
     const commerce = new Commerce([order("ord_1", 30)]);
-    const handler = new GetProductionWorksheetHandler(
-      new Days(ProductionDay.open(ServiceDay.of(DAY))),
-      new Expected([demandOfDay(30)]),
+    const handler = handlerFor(
+      ProductionDay.open(ServiceDay.of(DAY)),
+      [],
+      [demandOfDay(30)],
+      new Map(),
+      new Shelves(SEIGLE_AU_PAIN),
       commerce,
-      new Containers(new Map()),
     );
 
     await handler.execute(new GetProductionWorksheetQuery(DAY));
 
     expect(commerce.asked).toBe(1);
   });
-});
 
-describe("ListProductionContainersHandler", () => {
-  it("rend les réglages triés par SKU", async () => {
-    const handler = new ListProductionContainersHandler(
-      new Containers(
-        new Map([
-          ["VIE-CRO", { unitsPerContainer: 12, singular: "plaque", plural: "plaques" }],
-          ["PAI-BAG", { unitsPerContainer: 10, singular: "tourneuse", plural: "tourneuses" }],
-        ]),
-      ),
+  it("range les lignes par rayon, et dit que les rayons sont connus", async () => {
+    const handler = handlerFor(closedDay(), [order("ord_1", 30)], []);
+
+    const view = await handler.execute(new GetProductionWorksheetQuery(DAY));
+
+    expect(view.shelvesKnown).toBe(true);
+    expect(view.groups).toHaveLength(1);
+    expect(view.groups[0]).toMatchObject({ key: "pain", label: "Pains", totalUnits: 30 });
+    expect(view.groups[0]?.pending[0]).toMatchObject({ sku: "PAI-SEI", done: false });
+  });
+
+  it("🔴 SERT la fiche quand les rayons sont illisibles — tout en « Rayon inconnu »", async () => {
+    // Les quantités ne dépendent pas du catalogue : refuser la fiche pour un
+    // rangement ferait d'un confort une panne de production.
+    const handler = handlerFor(
+      closedDay(),
+      [order("ord_1", 30)],
+      [],
+      new Map(),
+      new Shelves("down"),
     );
 
-    const rows = await handler.execute();
+    const view = await handler.execute(new GetProductionWorksheetQuery(DAY));
 
-    expect(rows).toHaveLength(2);
-    expect(rows.map((row) => row.sku)).toEqual(["PAI-BAG", "VIE-CRO"]);
-    expect(rows[0]).toEqual({
-      sku: "PAI-BAG",
-      unitsPerContainer: 10,
-      singular: "tourneuse",
-      plural: "tourneuses",
+    expect(view.shelvesKnown).toBe(false);
+    expect(view.lines).toHaveLength(1);
+    expect(view.groups).toHaveLength(1);
+    expect(view.groups[0]).toMatchObject({
+      key: UNSHELVED_WORKSHOP_GROUP_KEY,
+      category: null,
+      label: SHELF_LABEL_UNKNOWN,
+      lineCount: 1,
     });
   });
 
-  it("rend une liste vide quand rien n'est réglé", async () => {
-    const rows = await new ListProductionContainersHandler(new Containers(new Map())).execute();
+  it("dit « today », « tomorrow » ou rien, selon l'horloge du SERVEUR", async () => {
+    const at = async (day: string) =>
+      (
+        await handlerFor(ProductionDay.open(ServiceDay.of(day)), [], []).execute(
+          new GetProductionWorksheetQuery(day),
+        )
+      ).relativeDay;
 
-    expect(rows).toEqual([]);
+    expect(await at(DAY)).toBe("today");
+    expect(await at(addDays(DAY, 1))).toBe("tomorrow");
+    expect(await at(addDays(DAY, 7))).toBeNull();
   });
 });

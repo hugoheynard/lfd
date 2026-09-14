@@ -33,6 +33,7 @@ import { RetakeProductionDayCommand } from "../application/commands/retake-produ
 import { SetProductionContainerCommand } from "../application/commands/set-production-container.command.js";
 import { UnmarkWorksheetLineCommand } from "../application/commands/unmark-worksheet-line.command.js";
 import { ListProductionContainersQuery } from "../application/queries/list-production-containers.query.js";
+import { GetCurrentProductionWorksheetQuery } from "../application/queries/get-current-production-worksheet.query.js";
 import { GetProductionWorksheetQuery } from "../application/queries/get-production-worksheet.query.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit. */
@@ -78,6 +79,21 @@ export class ProductionWorksheetController {
   ): Promise<ProductionWorksheetView> {
     return this.queries.execute<GetProductionWorksheetQuery, ProductionWorksheetView>(
       new GetProductionWorksheetQuery(query.date),
+    );
+  }
+
+  /**
+   * **La fiche de la journée qu'on travaille** : demain si son plan est arrêté,
+   * aujourd'hui sinon — au jour de Paris, selon l'horloge du serveur.
+   *
+   * Elle existe pour que l'écran cesse de choisir sa journée sur l'horloge du
+   * poste, et de faire deux lectures pour le savoir. Même vue que la route datée,
+   * qui reste servie pour les liens partagés.
+   */
+  @Get("worksheet/current")
+  async currentWorksheet(): Promise<ProductionWorksheetView> {
+    return this.queries.execute<GetCurrentProductionWorksheetQuery, ProductionWorksheetView>(
+      new GetCurrentProductionWorksheetQuery(),
     );
   }
 

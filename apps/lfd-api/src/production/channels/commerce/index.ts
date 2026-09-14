@@ -26,3 +26,4 @@ export {
 export { ProductionDayClosedEvent } from "./production-day-closed.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
 export { OrderPackedEvent } from "./order-packed.event.js";
+export { WorkshopShelvesReader } from "./workshop-shelves.reader.js";

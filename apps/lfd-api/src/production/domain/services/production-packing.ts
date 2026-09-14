@@ -1,6 +1,4 @@
 import {
-  addDays,
-  instantToLocal,
   type PackingLine,
   type PackingResource,
   type PackingSheet,
@@ -8,6 +6,7 @@ import {
 } from "@lfd/contracts";
 
 import type { ProducedItemSnapshot, ProductionOrderSnapshot } from "../entities/production-day.js";
+import { relativeDayOf } from "./relative-day.js";
 
 /**
  * **Le poste de colisage** — les bacs d'un côté, ce que le four a sorti de
@@ -110,26 +109,6 @@ export function canDeclareReady(order: ProductionOrderSnapshot): boolean {
     order.lines.length > 0 &&
     order.lines.every((line) => line.packed !== null)
   );
-}
-
-/**
- * La journée lue, **relativement à aujourd'hui à Paris**.
- *
- * Le jour se lit à l'heure de la maison (`instantToLocal`, `Europe/Paris`), et
- * surtout pas en UTC : à 00 h 30 à Paris l'été, il est 22 h 30 UTC la VEILLE, et
- * un `toISOString().slice(0, 10)` dirait « demain » d'une journée qui a déjà
- * commencé au fournil. Même lecture que `billing-cycle` et `pain008`
- * (vérifié le 2026-09-14).
- *
- * Aucune conversion jour → instant ici : on compare deux jours `AAAA-MM-JJ`
- * entre eux, ce que le tri lexicographique d'un jour ISO permet sans fuseau.
- */
-export function relativeDayOf(serviceDay: string, now: Date): ProductionPackingView["relativeDay"] {
-  const today = instantToLocal(now).day;
-  if (serviceDay === today) {
-    return "today";
-  }
-  return serviceDay === addDays(today, 1) ? "tomorrow" : null;
 }
 
 /**

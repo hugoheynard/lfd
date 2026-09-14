@@ -3,14 +3,9 @@ import type {
   ProducedItemSnapshot,
   ProductionOrderSnapshot,
 } from "../../entities/production-day.js";
-import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
+import { addDays, instantToLocal } from "@lfd/contracts";
 
-import {
-  canDeclareReady,
-  packingBoardOf,
-  relativeDayOf,
-  type PackingSources,
-} from "../production-packing.js";
+import { canDeclareReady, packingBoardOf, type PackingSources } from "../production-packing.js";
 
 /**
  * **La balance**, éprouvée en fonction pure : on pose un état de journée, on
@@ -432,25 +427,6 @@ describe("les compteurs de la journée", () => {
 });
 
 describe("la journée relative — selon l'horloge du serveur", () => {
-  it("dit « today », « tomorrow », ou rien", () => {
-    expect(relativeDayOf(TODAY, NOW)).toBe("today");
-    expect(relativeDayOf(addDays(TODAY, 1), NOW)).toBe("tomorrow");
-    expect(relativeDayOf(addDays(TODAY, 2), NOW)).toBeNull();
-    expect(relativeDayOf(addDays(TODAY, -1), NOW)).toBeNull();
-  });
-
-  it("🔴 lit le jour à l'heure de PARIS, pas en UTC", () => {
-    // À 00 h 30 à Paris, il est encore la VEILLE en UTC (22 h 30 l'été, 23 h 30
-    // l'hiver). Un `toISOString().slice(0, 10)` dirait « demain » d'une journée
-    // que le fournil a déjà commencée.
-    const justAfterMidnight = localToInstant(TODAY, "00:30");
-    if (justAfterMidnight === null) {
-      throw new Error("00:30 existe tous les jours à Paris — le changement d'heure est à 02:00.");
-    }
-
-    expect(relativeDayOf(TODAY, justAfterMidnight)).toBe("today");
-  });
-
   it("est calculée même sur une journée qui n'est pas arrêtée", () => {
     expect(packingBoardOf(sources({ date: TODAY, closedAt: null })).relativeDay).toBe("today");
   });
