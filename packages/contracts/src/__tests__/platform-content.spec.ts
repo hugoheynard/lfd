@@ -115,7 +115,9 @@ describe("le contact commercial de Mon compte", () => {
    * place de ce que le staff a saisi.
    */
   it("une ligne enregistrée sans lui se relit avec le défaut, et garde tout le reste", () => {
-    const { commercialContact: _absent, ...saved } = DEFAULT_FOOTER_CONTENT;
+    // `undefined` et non une clé retirée : zod les traite pareil (le défaut s'applique),
+    // et le reste de la ligne garde ses types sans variable jetable.
+    const saved = { ...DEFAULT_FOOTER_CONTENT, commercialContact: undefined };
     const edited = {
       ...saved,
       identity: { ...saved.identity, email: "standard@lafoliecoffee.fr", phone: "04 00 00 00 00" },
