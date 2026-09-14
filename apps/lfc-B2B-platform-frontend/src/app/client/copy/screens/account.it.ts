@@ -69,12 +69,10 @@ export const ACCOUNT_IT: AccountCopy = {
   kbisCertified: 'Estratto certificato',
   kbisPending: 'In attesa di verifica',
   kbisNone: 'Nessun estratto depositato.',
-  kbisUpload: 'Depositare un estratto',
+  kbisUpload: 'Depositare il KBIS',
   kbisFiled: 'Depositato il {date}',
   kbisOpen: 'Aprire',
   kbisReplace: 'Sostituire',
-  kbisNote:
-    'Una visura di meno di tre mesi è richiesta all’apertura di un credito, mai all’iscrizione. Questa resta valida fino al 12/05 — vi avviseremo prima.',
   billingHead: 'Fatturazione',
   billingNote:
     'Un solo indirizzo di fatturazione: è quello che figura sulle fatture e sul mandato.',

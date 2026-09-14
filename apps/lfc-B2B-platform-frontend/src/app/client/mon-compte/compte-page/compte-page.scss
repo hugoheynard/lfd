@@ -22,6 +22,12 @@
   .page-promise {
     display: none;
   }
+
+  /* La règle de l'identité se lit dans le panneau qui l'édite : en pile, la
+     carte n'en garde que les faits. */
+  .identity-note {
+    display: none;
+  }
 }
 
 /* La carte et le bord de la feuille, amarrés ensemble sous la barre.
@@ -148,12 +154,13 @@
     --lfc-well-radius: var(--lfc-radius-2xl);
   }
 
-  /* Un panneau par section, et la suivante qui dépasse : le bord visible dit
-     qu'il y a une suite. Sa hauteur est BORNÉE et il défile en lui-même :
-     l'indicateur reste à portée de pouce quelle que soit la section. */
+  /* Un panneau par section, sur TOUTE la largeur du puits : l'indicateur et la
+     pastille disent déjà qu'il y a une suite, un bord qui dépasse ne faisait
+     que rogner le panneau en vue. Sa hauteur est BORNÉE et il défile en
+     lui-même : l'indicateur reste à portée de pouce quelle que soit la section. */
   .card {
     flex: none;
-    width: 88%;
+    width: 100%;
     max-height: var(--compte-panel-max);
     overflow-y: auto;
     /* Un `overflow-y` non visible fait calculer `overflow-x` à `auto` : chaque

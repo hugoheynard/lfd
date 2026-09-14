@@ -68,12 +68,10 @@ export const ACCOUNT_EN: AccountCopy = {
   kbisCertified: 'Certified extract',
   kbisPending: 'Awaiting verification',
   kbisNone: 'No extract on file.',
-  kbisUpload: 'Upload an extract',
+  kbisUpload: 'Upload the KBIS',
   kbisFiled: 'Filed on {date}',
   kbisOpen: 'Open',
   kbisReplace: 'Replace',
-  kbisNote:
-    'An extract less than three months old is asked for when credit is opened, never at sign-up. This one stays valid until 12/05 — we will warn you beforehand.',
   billingHead: 'Billing',
   billingNote:
     'One billing address only: it is the one on your invoices and on the direct-debit mandate.',

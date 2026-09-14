@@ -2,18 +2,6 @@
   display: block;
 }
 
-/* Les tons et le rythme de la carte : le composant est projeté DANS une carte
-   de la page, mais il porte sa propre encapsulation — il redit donc les deux ou
-   trois règles de texte dont il a besoin plutôt que d'espérer les hériter. */
-.note {
-  margin: var(--fold-space-md) 0 0;
-  font-size: var(--fold-text-xs);
-  line-height: var(--lfc-leading-note);
-  /* `text-muted` (5,9:1) et non `text-subtle` (3,73:1) : c'est du texte courant
-     en bas de casse, pas un sur-titre. */
-  color: var(--fold-color-text-muted);
-}
-
 .inline {
   flex: none;
   border: 0;
@@ -139,4 +127,10 @@
   height: 100%;
   border-radius: inherit;
   background: var(--fold-color-primary);
+}
+
+/* LE GESTE de la carte quand rien n'est déposé : un vrai bouton, pleine
+   largeur, et plus un lien perdu sous l'état. */
+.upload {
+  width: 100%;
 }

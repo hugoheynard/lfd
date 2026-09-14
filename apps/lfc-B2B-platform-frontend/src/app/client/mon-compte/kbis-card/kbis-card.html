@@ -25,7 +25,7 @@
   <!-- Aucun extrait n'est un ÉTAT NORMAL : une société ouvre sans papiers, et
        le KBIS n'est jamais bloquant pour l'activation. -->
   <p class="kbis-verified">{{ t().account.kbisNone }}</p>
-  <button class="inline" type="button">{{ t().account.kbisUpload }}</button>
+  <button class="upload" foldButton emphasis="solid" intent="primary" size="lg" type="button">
+    <fold-icon name="upload" aria-hidden="true" />{{ t().account.kbisUpload }}
+  </button>
 }
-
-<p class="note">{{ t().account.kbisNote }}</p>

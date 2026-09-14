@@ -69,12 +69,10 @@ export const ACCOUNT_FR: AccountCopy = {
   kbisCertified: 'Extrait certifié',
   kbisPending: 'En attente de vérification',
   kbisNone: 'Aucun extrait déposé.',
-  kbisUpload: 'Déposer un extrait',
+  kbisUpload: 'Déposer le KBIS',
   kbisFiled: 'Déposé le {date}',
   kbisOpen: 'Ouvrir',
   kbisReplace: 'Remplacer',
-  kbisNote:
-    'Un extrait de moins de trois mois est demandé à l’ouverture d’un crédit, jamais à l’inscription. Celui-ci reste valable jusqu’au 12/05 — nous vous préviendrons avant.',
   billingHead: 'Facturation',
   billingNote:
     'Une seule adresse de facturation : c’est elle qui figure sur les factures et sur le mandat.',

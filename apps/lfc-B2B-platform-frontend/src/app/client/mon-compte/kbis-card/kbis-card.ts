@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldIconComponent } from 'fold-ng';
 
 import { ClientCompany } from '../../client-company.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -33,7 +33,7 @@ import { ClientCopyService } from '../../copy/client-copy.service';
 @Component({
   selector: 'app-kbis-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent],
+  imports: [FoldButtonComponent, FoldIconComponent],
   templateUrl: './kbis-card.html',
   styleUrl: './kbis-card.scss',
 })

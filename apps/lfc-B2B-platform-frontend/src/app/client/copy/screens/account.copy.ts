@@ -114,7 +114,6 @@ export interface AccountCopy {
   readonly kbisFiled: string;
   readonly kbisOpen: string;
   readonly kbisReplace: string;
-  readonly kbisNote: string;
   readonly billingHead: string;
   readonly billingNote: string;
   readonly deliveryHead: string;
