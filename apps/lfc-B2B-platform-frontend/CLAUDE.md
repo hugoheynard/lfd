@@ -131,7 +131,7 @@ panels.open(BillingAddressDialog, { side: dialogSide(), stack, data });
 ```
 
 (`width` et non `size` : c'est le nom de l'option dans `FoldPanelDefaults`, vérifié
-dans `fold-ng.d.ts` le 2026-09-14. `md` pour une adresse postale, `lg` quand des
+dans `node_modules/fold-ng/types/fold-ng.d.ts` le 2026-09-14. `md` pour une adresse postale, `lg` quand des
 créneaux par jour doivent tenir sur une ligne.)
 
 - **Le côté se lit au clic**, jamais en signal : ouvrir est un geste, dans le
