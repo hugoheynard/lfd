@@ -73,7 +73,13 @@ export class DiffCatalogSinceLastHandler implements IQueryHandler<
       this.revisions.lastPublished(),
     ]);
     const current = buildRevision(
-      { proRatioBp: rules?.rules.proPriceRatio.basisPoints ?? null },
+      {
+        proRatioBp: rules?.rules.proPriceRatio.basisPoints ?? null,
+        // La méthode voyage AVEC le rapport : une bascule déplace le prix de
+        // base sans qu'aucune ligne de produit ne change, et un en-tête qui ne
+        // la garderait pas montrerait « tout a changé » sans rien expliquer.
+        proPriceMethod: rules?.rules.proPriceMethod.method ?? null,
+      },
       items,
     );
 
@@ -92,6 +98,7 @@ export class DiffCatalogSinceLastHandler implements IQueryHandler<
     const afterIndex = {
       hashBySku: new Map(current.items.map((item) => [item.sku, item.hash])),
       proRatioBp: current.header.proRatioBp,
+      proPriceMethod: current.header.proPriceMethod,
     };
     const beforeIndex = await this.revisions.indexOf(latest.id);
     const plan = planDiff(beforeIndex, afterIndex);

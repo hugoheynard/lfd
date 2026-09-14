@@ -364,4 +364,14 @@ export const IT: ClientCopy = {
     at: 'Al',
     cancel: 'Annulla',
   },
+  legalDocument: {
+    close: 'Chiudi',
+    loading: 'Caricamento del documento…',
+    errorTitle: 'Documento non disponibile',
+    errorSubtitle:
+      'Non è stato possibile caricare il documento. Riprova tra un istante — o scrivici.',
+    retry: 'Riprova',
+    emptyTitle: 'Documento non pubblicato',
+    emptySubtitle: 'Questa informativa non contiene ancora alcun articolo.',
+  },
 };

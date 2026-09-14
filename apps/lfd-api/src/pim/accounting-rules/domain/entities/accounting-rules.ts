@@ -1,3 +1,6 @@
+import type { ProPricePolicy } from "@lfd/pim-contracts";
+
+import { ProPriceMethodSetting } from "../value-objects/pro-price-method-setting.js";
 import { ProPriceRatio } from "../value-objects/pro-price-ratio.js";
 
 /**
@@ -20,14 +23,27 @@ import { ProPriceRatio } from "../value-objects/pro-price-ratio.js";
  */
 export interface AccountingRulesSnapshot {
   readonly proPriceRatioBp: number;
+  readonly proPriceMethod: string;
 }
 
 export class AccountingRules {
-  private constructor(private ratioValue: ProPriceRatio) {}
+  private constructor(
+    private ratioValue: ProPriceRatio,
+    private methodValue: ProPriceMethodSetting,
+  ) {}
 
-  /** Le premier réglage — celui qui fait exister la ligne. */
+  /**
+   * Le premier réglage — celui qui fait exister la ligne.
+   *
+   * Il naît sur `ratio_ttc` — la seule méthode disponible, et de toute façon
+   * celle qu'un réglage muet doit valoir : un déploiement ne change jamais un
+   * prix par lui-même.
+   */
   static open(proPriceRatioBp: number): AccountingRules {
-    return new AccountingRules(ProPriceRatio.create(proPriceRatioBp));
+    return new AccountingRules(
+      ProPriceRatio.create(proPriceRatioBp),
+      ProPriceMethodSetting.ratioTtc(),
+    );
   }
 
   /**
@@ -36,18 +52,51 @@ export class AccountingRules {
    * telle quelle et de tarifer le catalogue entier.
    */
   static reconstitute(snapshot: AccountingRulesSnapshot): AccountingRules {
-    return new AccountingRules(ProPriceRatio.create(snapshot.proPriceRatioBp));
+    return new AccountingRules(
+      ProPriceRatio.create(snapshot.proPriceRatioBp),
+      ProPriceMethodSetting.create(snapshot.proPriceMethod),
+    );
   }
 
   get proPriceRatio(): ProPriceRatio {
     return this.ratioValue;
   }
 
+  get proPriceMethod(): ProPriceMethodSetting {
+    return this.methodValue;
+  }
+
+  /**
+   * **Le réglage tel qu'il s'applique** — l'unique forme que les calculs lisent.
+   *
+   * Rendre la politique entière plutôt que ses trois nombres : c'est l'agrégat
+   * qui sait qu'ils vont ensemble, et un appelant qui les recompose pourrait
+   * marier le rapport d'aujourd'hui à la méthode d'hier.
+   */
+  get policy(): ProPricePolicy {
+    return this.methodValue.policyWith(this.ratioValue);
+  }
+
   setProPriceRatio(basisPoints: number): void {
     this.ratioValue = ProPriceRatio.create(basisPoints);
   }
 
+  /**
+   * Choisit la méthode appliquée — c'est elle que le push suivra.
+   *
+   * Le geste est séparé de celui du rapport, et ce n'est pas de la symétrie :
+   * changer de méthode retarife le catalogue professionnel entier, changer le
+   * rapport aussi, et les enchaîner dans une seule écriture rendrait impossible
+   * de lire dans le journal laquelle des deux décisions a produit quel écart.
+   */
+  chooseMethod(method: string): void {
+    this.methodValue = ProPriceMethodSetting.create(method);
+  }
+
   snapshot(): AccountingRulesSnapshot {
-    return { proPriceRatioBp: this.ratioValue.basisPoints };
+    return {
+      proPriceRatioBp: this.ratioValue.basisPoints,
+      proPriceMethod: this.methodValue.method,
+    };
   }
 }

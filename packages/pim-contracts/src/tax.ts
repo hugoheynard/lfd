@@ -28,6 +28,7 @@ import { divideByBasisPoints, fromCents, roundToCents, roundToMillicents } from 
  * `VatPercent`.
  */
 const BP_PER_UNIT = 10_000;
+
 function taxMultiplierBp(ratePercent: number): number {
   return BP_PER_UNIT + Math.round(ratePercent * 100);
 }

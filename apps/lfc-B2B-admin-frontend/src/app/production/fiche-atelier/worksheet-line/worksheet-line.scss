@@ -1,0 +1,104 @@
+/*
+  Les `--fa-*` ne sont PAS déclarés ici : ils le sont une seule fois, sur l'hôte
+  de la fiche, et descendent par héritage. Une ligne qui les redéclarerait aurait
+  ses propres mesures le jour où celles de la fiche bougent.
+
+  Aucune media query dans ce fichier non plus : ce sont les VALEURS des jetons
+  qui changent de support (case 34 → 44 px, quantité 34 → 28 px), et elles
+  changent chez le parent. La ligne, elle, a la même forme partout.
+*/
+
+:host {
+  display: flex;
+  align-items: center;
+  gap: var(--fa-row-gap);
+  padding: var(--fa-row-pad-y) var(--fa-row-pad-x);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  color: var(--fold-color-text);
+}
+
+/* La ligne faite : le fond s'enfonce, l'encre s'éteint, le nom se barre. Elle
+   reste à sa place dans la liste — une ligne qui remonterait en se cochant
+   ferait perdre la sienne à quelqu'un qui a les mains dans la farine. */
+:host(.is-done) {
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-faded);
+}
+
+/* La case vient de fold : rôle, clavier, focus, `forced-colors`. On ne pose que
+   sa TAILLE, par la propriété qu'elle expose — 34 px au poste fixe, 44 px sous
+   le pouce. Ses couleurs sont celles du thème, comme partout ailleurs. */
+.wl-box {
+  flex: none;
+  --cb-size: var(--fa-box);
+}
+
+/* La quantité est le seul chiffre qui compte au fournil : mono, tabulaire,
+   alignée à droite sur une gouttière fixe pour que les unités se superposent
+   d'une ligne à l'autre. */
+.wl-qty {
+  flex: none;
+  width: var(--fa-qty-col);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fa-size-qty);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
+  letter-spacing: var(--fold-tracking-tighter);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/*
+  Le bloc « quoi ». C'est LUI qui porte la différence entre les deux supports, et
+  elle tient en une propriété : en ligne, le contenant part à droite ; en
+  colonne, il passe sous le nom.
+*/
+.wl-what {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: var(--fa-what-direction);
+  align-items: var(--fa-what-align);
+  gap: var(--fa-what-gap);
+}
+
+.wl-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fa-size-name);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-tight);
+}
+
+:host(.is-done) .wl-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--fold-color-border);
+}
+
+.wl-container {
+  flex: none;
+  font-size: var(--fa-size-container);
+  color: var(--fold-color-text-muted);
+}
+
+:host(.is-done) .wl-container {
+  color: var(--fold-color-text-faded);
+}
+
+/* Les initiales n'existent qu'au poste fixe : sous 1024 px la colonne disparaît,
+   et le parent remet sa largeur à zéro. */
+.wl-initials {
+  display: var(--fa-initials-display);
+  flex: none;
+  width: var(--fa-initials-col);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fa-size-initials);
+  font-weight: var(--fold-weight-bold);
+  text-align: center;
+}
+
+/* Cochée sans signature, ou pas encore faite : le trait attend le crayon. */
+.wl-initials--blank {
+  height: var(--fold-space-3xl);
+  border-bottom: 1px dashed var(--fold-color-border);
+}

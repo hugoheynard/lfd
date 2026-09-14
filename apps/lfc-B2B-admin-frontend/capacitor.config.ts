@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { PROD_FRONT_ORIGINS } from '@lfd/endpoints';
 
 /**
  * Coque iOS de l'admin staff — l'app qu'on installe sur SON téléphone, pas une
@@ -9,9 +10,18 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * fichiers. Ce n'est pas de la paresse, c'est ce qui fait que RIEN d'autre ne
  * change :
  *
- * - L'origine reste `https://lfc-b2b-admin.pages.dev`. Donc Auth0 fonctionne tel
- *   quel (l'URL de retour est déjà déclarée) et le CORS du backend aussi
- *   (`PROD_FRONT_ORIGINS.b2bAdminFront`). En mode embarqué, l'origine
+ * - L'origine reste celle du site déployé. Donc Auth0 fonctionne tel
+ *   quel (l'URL de retour est déjà déclarée) et le CORS du backend aussi —
+ *   c'est la MÊME constante, `PROD_FRONT_ORIGINS.b2bAdminFront`, et non une
+ *   recopie.
+ *
+ *   🔴 Elle était recopiée, et elle avait dérivé : ce fichier a porté
+ *   `https://lfc-b2b-admin.pages.dev` jusqu'au 2026-09-13, alors que le projet
+ *   Pages s'appelle `lfd-backoffice` depuis la bascule. Ce nom n'a plus
+ *   d'entrée DNS — la coque iOS aurait donc chargé un ÉCRAN BLANC, sans rien
+ *   dire de plus qu'une panne de réseau, qui est justement le seul défaut que
+ *   ce mode assume. Lire la constante rend la dérive impossible plutôt que
+ *   détectable. En mode embarqué, l'origine
  *   deviendrait `capacitor://localhost` : il faudrait la déclarer chez Auth0 ET
  *   l'ouvrir dans la liste CORS — deux murs percés pour un confort.
  * - L'app suit les déploiements. Chaque push sur `main` la met à jour, sans
@@ -36,7 +46,7 @@ const config: CapacitorConfig = {
   // chemin existe — et c'est lui qui servira au basculement en mode embarqué.
   webDir: 'dist/lfc-b2b-admin-frontend/browser',
   server: {
-    url: 'https://lfc-b2b-admin.pages.dev',
+    url: PROD_FRONT_ORIGINS.b2bAdminFront,
     // Pas de HTTP en clair : la WebView doit refuser un downgrade, comme le
     // ferait Safari. C'est le défaut, on l'écrit pour que ça reste vrai.
     cleartext: false,

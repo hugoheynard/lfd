@@ -24,6 +24,7 @@ const ME: StaffMeView = {
   email: 'compta@lfc.test',
   role: 'comptabilite',
   permissions: ['b2b_orders:read', 'b2b_orders:write', 'b2b_companies:read', 'b2b_settings:read'],
+  navPrefs: { worksheetCategory: null },
 };
 
 function setup(): { store: PermissionsStore; ctrl: HttpTestingController } {

@@ -36,6 +36,21 @@ export interface RevisionHeader {
    * « rien n'a bougé ». `null` = jamais réglé.
    */
   readonly proRatioBp: number | null;
+
+  /**
+   * La **méthode** qui transforme ce rapport en prix professionnel.
+   *
+   * Pour la même raison que son voisin, et un cran plus fort : basculer de
+   * `ratio_ttc` vers `remise_apres_tva_max` déplace le prix de base d'environ
+   * 12 % sur un article à 5,5 %, sans qu'une seule ligne de produit ne change.
+   * Une révision qui ne garderait pas la méthode montrerait « tous les articles
+   * ont changé » et n'expliquerait rien.
+   *
+   * `null` sur les révisions posées AVANT que la méthode existe (2026-09-13) :
+   * l'absence dit « la question ne se posait pas », ce qu'un `ratio_ttc` écrit
+   * de force effacerait.
+   */
+  readonly proPriceMethod: string | null;
 }
 
 /** Un visuel, tel qu'une révision le garde : son adresse, pas ses octets. */

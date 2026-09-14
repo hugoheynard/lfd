@@ -26,6 +26,16 @@
     </fold-callout>
   }
 
+  <!-- Un échec PARTIEL : la liste est là, l'enrichissement manque. Le taire
+       ferait lire l'absence de notes comme « rien ne bloque », ce qui est la
+       façon la plus coûteuse de se tromper sur cet écran. -->
+  @if (previewFailed()) {
+    <fold-callout appearance="inset" variant="warning">
+      L'aperçu d'envoi B2B n'a pas pu être lu : cette liste ne signale donc pas ce qui empêche une
+      fiche de partir. La page <a routerLink="/pim/publication">Publication</a> en dira la raison.
+    </fold-callout>
+  }
+
   @if (categories().length === 0) {
     <fold-callout appearance="inset" variant="warning">
       Créez d'abord une <a routerLink="/pim/categories">catégorie</a> : un produit s'y rattache.
@@ -37,7 +47,10 @@
     [rows]="pagedProducts()"
     [rowKey]="rowKey"
     [rowTone]="rowTone"
-    zebra
+    [rowNote]="hasFaults"
+    clickable
+    (rowClick)="openProduct($event)"
+    hover
     selectable
     [(selected)]="selection"
     toolbarSurface="accent"
@@ -93,8 +106,13 @@
     </ng-template>
 
     <ng-template foldCell="name" let-p>
-      <!-- Plus d'édition dans la table : le nom ouvre la fiche produit. -->
-      <fold-link (clicked)="openProduct(p)">{{ p.name.fr }}</fold-link>
+      <!-- Plus d'édition dans la table : le nom ouvre la fiche produit. Il reste
+           un lien alors que la LIGNE entière est cliquable, parce qu'il dit où
+           l'on va — un curseur en main ne le dit pas. `stopPropagation` évite
+           que le même clic navigue deux fois et empile deux entrées d'historique. -->
+      <fold-link (clicked)="openProduct(p)" (click)="$event.stopPropagation()">
+        {{ p.name.fr }}
+      </fold-link>
     </ng-template>
 
     <ng-template foldCell="category" let-p>
@@ -138,11 +156,38 @@
          demanderait d'interroger la plateforme fiche par fiche, ce que la frise
          de la fiche produit fait, et pas un tableau. -->
     <ng-template foldCell="b2b" let-p>
-      <fold-badge [content]="b2bLabel(p.id)" [variant]="b2bVariant(p.id)" />
+      <fold-badge [content]="b2bLabel(p)" [variant]="b2bVariant(p)" />
     </ng-template>
 
+    <!-- LA NOTE DE LIGNE — toujours visible, jamais derrière un chevron.
+         `foldRowDetail` aurait caché un avertissement jusqu'à ce qu'on pense à
+         le demander, ce qui revient à ne pas l'afficher. Elle dit ce qui MANQUE
+         pour partir ; « non vendue aux pros » n'y figure pas, c'est une
+         décision et le badge de la colonne B2B la porte déjà. -->
+    <ng-template foldRowNote let-p>
+      <fold-callout appearance="inset" variant="warning">
+        Ne partira pas vers la boutique professionnelle —
+        @for (fault of rowFaults(p); track fault.sku) {
+          @if (!$first) {
+            <span aria-hidden="true"> · </span>
+          }
+          @if (fault.wholeProduct) {
+            {{ fault.label }}
+          } @else {
+            <strong>{{ fault.sku }}</strong> : {{ fault.label }}
+          }
+        }
+      </fold-callout>
+    </ng-template>
+
+    <!-- 🔴 `stopPropagation` OBLIGATOIRE depuis que la ligne est cliquable. Le
+         `(click)` de fold vit sur le `<tr>` et n'inspecte pas sa cible pour la
+         souris (seul le clavier vérifie que la touche n'a pas bouillonné d'un
+         contrôle interne). Sans ça, ouvrir le menu d'actions naviguerait vers
+         la fiche, et le menu se refermerait sur une autre page. La case de
+         sélection, elle, porte déjà son propre arrêt côté fold. -->
     <ng-template foldCell="actions" let-p>
-      <div class="row-actions">
+      <div class="row-actions" (click)="$event.stopPropagation()">
         <fold-dropdown ariaLabel="Actions du produit" placement="bottom-end">
           <fold-button-icon foldPopoverTrigger icon="more-vertical" tooltip="Actions" />
 

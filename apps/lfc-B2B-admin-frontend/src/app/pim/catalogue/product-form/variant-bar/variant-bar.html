@@ -12,25 +12,46 @@
             [attr.aria-current]="tab.selected ? 'true' : null"
             (click)="store.selectVariant(tab.id)"
           >
-            <span class="tab-label">{{ tab.label }}</span>
+            <span class="tab-label">
+              {{ tab.label }}
+              <!-- « Défaut » était le LIBELLÉ du premier onglet, et masquait donc
+                   le seul nom qu'on ne pouvait pas corriger — alors qu'il part
+                   aux canaux comme les autres. C'est un rôle, pas une identité :
+                   il se dit à côté du nom. -->
+              @if (tab.isDefault) {
+                <fold-badge content="Défaut" variant="neutral" />
+              }
+            </span>
             <!-- La référence sous le libellé : c'est elle qu'on dicte au labo et
                  qu'on retrouve dans un envoi, pas « Déclinaison 2 ». -->
             <span class="tab-sku">{{ tab.sku }}</span>
           </button>
+
+          <!-- Le crayon n'apparaît que sur l'onglet OUVERT : une rangée de
+               crayons ferait six invitations à modifier là où on cherche
+               d'abord à naviguer. -->
+          @if (tab.selected) {
+            <fold-button-icon
+              icon="edit"
+              tooltip="Renommer la déclinaison"
+              [disabled]="store.busy()"
+              (clicked)="rename(tab)"
+            />
+          }
         </li>
       }
     </ul>
 
-    @if (creating()) {
-      <form class="create" (submit)="create(); $event.preventDefault()">
+    @if (editing()) {
+      <form class="create" (submit)="submit(); $event.preventDefault()">
         <fold-input
           class="create-name"
-          label="Nom de la déclinaison"
+          [label]="renamingId() ? 'Nouveau nom' : 'Nom de la déclinaison'"
           placeholder="Boîte de 220 g"
           [(value)]="draftName"
         />
         <button foldButton type="submit" [disabled]="store.busy() || draftName().trim() === ''">
-          Créer
+          {{ renamingId() ? 'Renommer' : 'Créer' }}
         </button>
         <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
           Annuler

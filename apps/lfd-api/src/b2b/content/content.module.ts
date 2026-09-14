@@ -1,7 +1,13 @@
 import { Module } from "@nestjs/common";
 
+import { AddLegalDocumentParagraphHandler } from "./application/add-legal-document-paragraph.handler.js";
+import { EditLegalDocumentParagraphHandler } from "./application/edit-legal-document-paragraph.handler.js";
 import { GetFooterContentHandler } from "./application/get-footer-content.handler.js";
+import { GetLegalDocumentHandler } from "./application/get-legal-document.handler.js";
+import { MoveLegalDocumentParagraphHandler } from "./application/move-legal-document-paragraph.handler.js";
+import { RemoveLegalDocumentParagraphHandler } from "./application/remove-legal-document-paragraph.handler.js";
 import { SaveFooterContentHandler } from "./application/save-footer-content.handler.js";
+import { SetLegalDocumentTitleHandler } from "./application/set-legal-document-title.handler.js";
 import { PlatformContentRepository } from "./domain/platform-content.repository.js";
 import { AdminPlatformContentController } from "./http/admin-platform-content.controller.js";
 import { PlatformContentController } from "./http/platform-content.controller.js";
@@ -21,6 +27,12 @@ import { PrismaPlatformContentRepository } from "./infrastructure/prisma-platfor
     { provide: PlatformContentRepository, useClass: PrismaPlatformContentRepository },
     GetFooterContentHandler,
     SaveFooterContentHandler,
+    GetLegalDocumentHandler,
+    SetLegalDocumentTitleHandler,
+    AddLegalDocumentParagraphHandler,
+    EditLegalDocumentParagraphHandler,
+    RemoveLegalDocumentParagraphHandler,
+    MoveLegalDocumentParagraphHandler,
   ],
 })
 export class PlatformContentModule {}

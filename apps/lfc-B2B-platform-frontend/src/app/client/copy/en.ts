@@ -358,4 +358,13 @@ export const EN: ClientCopy = {
     at: 'On',
     cancel: 'Cancel',
   },
+  legalDocument: {
+    close: 'Close',
+    loading: 'Loading the document…',
+    errorTitle: 'Document unavailable',
+    errorSubtitle: 'The document could not be loaded. Try again in a moment — or just ask us.',
+    retry: 'Try again',
+    emptyTitle: 'Not published yet',
+    emptySubtitle: 'This notice does not carry any clause yet.',
+  },
 };

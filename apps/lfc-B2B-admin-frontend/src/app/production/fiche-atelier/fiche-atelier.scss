@@ -1,0 +1,337 @@
+/* ── PLEINE HAUTEUR, ET LE PIED AU BAS DE LA FENÊTRE ────────────────────────
+   La fiche n'est pas un document : on ne la lit pas d'un bout à l'autre, on
+   coche dedans. La bande de tête, les onglets, le bandeau d'écart et le PIED
+   doivent rester sous les yeux ; seule la liste défile.
+
+   🔴 Le pied porte « hors ligne » et « 2 gestes en attente ». Une page qui
+   prendrait la hauteur de son contenu les pousserait sous le pli, et un écran
+   qui cache ce qui n'est pas parti est exactement ce que ce lot existe pour
+   empêcher.
+
+   La chaîne de hauteur vient de fold : la coquille est une grille dont la rangée
+   de contenu vaut `1fr`, sa boîte de défilement et `content-flow` sont des
+   colonnes flex. Il ne manque que ce maillon-ci — l'hôte de la page, qui
+   romprait la chaîne en restant un bloc. */
+:host {
+  /* Aucun écart entre la bande et le corps : le corps PROLONGE la bande, il ne
+     se pose pas dessous. */
+  --fold-page-gap: 0;
+  --fold-page-pad-top: 0;
+  --fold-page-pad-bottom: 0;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
+
+  /* ── LES MESURES DU FOURNIL ───────────────────────────────────────────────
+     Ce qui reste de la maquette après son passage au thème de l'app : la
+     STRUCTURE. La colonne de gauche ne bouge d'aucun support — case, quantité
+     mono alignée à droite, nom —, et les tailles sont celles qui se lisent à un
+     mètre du four, pas à quarante centimètres d'un écran.
+
+     Elles sont donc écrites en pixels, hors de l'échelle de fold (qui s'arrête à
+     24 px) : une quantité de 34 px n'est pas une décision de style, c'est la
+     distance de lecture. Déclarées ici et nulle part ailleurs — la ligne et le
+     bandeau les LISENT par héritage. */
+  --fa-box: 34px;
+  --fa-qty-col: 96px;
+  --fa-initials-col: 74px;
+  --fa-initials-display: block;
+  --fa-row-gap: var(--fold-space-2xl);
+  --fa-row-pad-x: var(--fold-page-gutter);
+  --fa-row-pad-y: var(--fold-space-lg);
+  --fa-what-direction: row;
+  --fa-what-align: center;
+  --fa-what-gap: var(--fold-space-2xl);
+
+  --fa-size-qty: 34px;
+  --fa-size-name: 22px;
+  --fa-size-container: var(--fold-text-base);
+  --fa-size-initials: var(--fold-text-base);
+}
+
+/*
+  🔴 Le seuil est 1024 px, et non les 640 px du back-office : c'est la largeur en
+  dessous de laquelle la barre d'onglets cesse de tenir sur une ligne. La MÊME
+  valeur est écrite dans `fiche-atelier.ts` (`WORKSHOP_NARROW`), qu'une media
+  query ne peut pas lire. Les deux bougent ensemble, ou l'écran se coupe en deux.
+*/
+@media (max-width: 1023px) {
+  :host {
+    --fa-box: 44px;
+    --fa-qty-col: 52px;
+    --fa-initials-col: 0;
+    --fa-initials-display: none;
+    --fa-row-gap: var(--fold-space-lg);
+    --fa-row-pad-x: var(--fold-space-xl);
+    --fa-row-pad-y: var(--fold-space-md);
+    --fa-what-direction: column;
+    --fa-what-align: stretch;
+    --fa-what-gap: 2px;
+
+    --fa-size-qty: 28px;
+    --fa-size-name: 17px;
+    --fa-size-container: var(--fold-text-md);
+  }
+}
+
+/* ── LA BANDE DE TÊTE ───────────────────────────────────────────────────────
+   Même partition que le prévisionnel : le verdict sur le chrome, le travail sur
+   le papier. Aucune couleur n'est écrite ici — `foldSurface="chrome"` repointe
+   la polarité du sous-arbre, et c'est à l'élément qui possède la surface de
+   poser le fond. */
+.fa-masthead {
+  padding-block: var(--fold-space-2xl) var(--fold-space-lg);
+  padding-inline: var(--fold-page-gutter);
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+.fa-masthead-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.fa-said {
+  min-width: 0;
+}
+
+.fa-eyebrow {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* Le nom du POSTE, et rien d'autre : c'est ce qu'on cherche en levant les yeux,
+   et le rail nomme déjà l'écran. */
+.fa-title {
+  margin: var(--fold-space-xs) 0 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+.fa-figures {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: var(--fold-space-4xl);
+}
+
+.fa-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  text-align: right;
+}
+
+.fa-figure-label {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.fa-figure-value {
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
+  letter-spacing: var(--fold-tracking-tighter);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+/* Les pièces qui RESTENT : le seul chiffre accentué de la bande. */
+.fa-figure-value--accent {
+  color: var(--fold-color-primary);
+}
+
+/* « / 9 » : le dénominateur ne se lit pas aussi fort que ce qui est fait. */
+.fa-figure-of {
+  font-size: var(--fold-text-lg);
+  color: var(--fold-color-text-muted);
+}
+
+.fa-picker {
+  flex: none;
+  min-width: 16ch;
+}
+
+.fa-tabs {
+  margin-top: var(--fold-space-md);
+}
+
+/* Callouts et bandeau d'écart : ils se lisent, donc ils prennent la gouttière du
+   reste de la bande — et l'écart qui les sépare du bar au-dessus. */
+.fa-note {
+  margin-top: var(--fold-space-md);
+}
+
+/* ── LE CORPS ───────────────────────────────────────────────────────────────
+   Sœur du layout, pas son enfant (voir le commentaire du gabarit). Le layout
+   prend ce que sa bande mesure ; tout le reste de la hauteur est ici. */
+fold-page-layout {
+  flex: 0 0 auto;
+}
+
+.fa-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--fold-color-surface-card);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+/* La bande de section : le poste, en capitales, et où il en est. */
+.fa-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-md) var(--fa-row-pad-x);
+  background: var(--fold-color-surface-band);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.fa-band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.fa-band-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.fa-band-sum {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+/* 🔴 La SEULE zone qui défile. Tout le reste tient. */
+.fa-lines {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* La dernière ligne n'a pas de filet : le pied ou le bloc replié fait la coupure. */
+.fa-lines app-worksheet-line:last-child {
+  border-bottom: 0;
+}
+
+/* ── Le bloc des faites, épinglé au-dessus du pied ──────────────────────────
+   `flex: 0 1 auto` + `min-height: 0` : déplié, il prend la place qu'il y a, et
+   défile lui-même au lieu de pousser le pied hors de l'écran. Aucune hauteur
+   écrite — un `40vh` aurait menti au premier changement de bandeau. */
+.fa-done {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.fa-done-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  width: 100%;
+  padding: var(--fold-space-md) var(--fa-row-pad-x);
+  border: 0;
+  background: var(--fold-color-surface-band);
+  color: var(--fold-color-text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fa-done-sum {
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.fa-done-more {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.fa-done-lines {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Le pied ────────────────────────────────────────────────────────────────
+   Il ne défile jamais : il porte la règle de l'écran à gauche, et à droite d'où
+   vient ce qu'on lit — plus ce qui n'est pas encore parti. */
+.fa-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-2xl);
+  padding: var(--fold-space-lg) var(--fa-row-pad-x);
+  background: var(--fold-color-bg-rail-secondary);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.fa-foot-rule,
+.fa-foot-origin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  letter-spacing: var(--fold-tracking-wide);
+  color: var(--fold-color-text-muted);
+}
+
+/*
+  🔴 « hors ligne » et « N gestes en attente » sont les seules mentions
+  accentuées du pied : jamais un écran qui a l'air d'avoir enregistré alors que
+  non.
+*/
+.fa-foot-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-warning);
+  font-weight: var(--fold-weight-bold);
+}
+
+/* La distance au jour courant, à côté de la date. Discrète : c'est un repère,
+   pas une information qu'on vient chercher — mais elle doit être lisible du
+   même coup d'œil que la date, sinon elle ne sert à rien. */
+.fa-offset {
+  margin-left: var(--fold-space-xs);
+  color: var(--fold-color-text-faded);
+  font-weight: var(--fold-weight-regular);
+}

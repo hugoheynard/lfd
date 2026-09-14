@@ -192,11 +192,16 @@
 
 .legal-links {
   display: flex;
-  flex: none;
-  gap: var(--fold-space-lg);
-}
+  /* Les mentions partagent la ligne des immatriculations : même taille, même
+     ton, une seule différence — elles sont cliquables. Elles portaient un
+     bouton bordé en capitales, qui faisait de la seule mention VIVANTE la plus
+     bruyante de la rangée (corrigé le 2026-09-13, devant l'écran).
 
-.legal-links .link {
-  font-size: var(--fold-text-sm);
-  line-height: 1.6;
+     Elles se replient : à cinq mentions cochées, la rangée peut manquer de
+     place sur un écran étroit, et une barre légale tronquée cacherait une
+     obligation. */
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--fold-space-lg);
 }

@@ -178,9 +178,15 @@ langages. Un type partagé n'est légitime que s'il est vraiment transverse
 
 ## 3. DDD — découpage et couches
 
-Un dossier de `src/` = un **bounded context** (`catalogue/`, `channels/`,
-`orders/`…), nommé dans le langage métier. À l'intérieur, quatre couches et une
-seule direction de dépendance :
+Un dossier de `src/` est un **bloc** ; à l'intérieur, un sous-dossier est un
+**bounded context** nommé dans le langage métier — `b2b/account/`,
+`b2b/orders/`, `pim/catalogue/`, `production/`. À l'intérieur d'un contexte,
+quatre couches et une seule direction de dépendance :
+
+⚠️ Cette phrase citait `catalogue/`, `channels/` et `orders/` comme s'ils
+étaient à la racine de `src/`. Ils ne l'ont jamais été depuis le découpage en
+blocs (corrigé le 2026-09-13) : un chemin faux dans le document qui fait
+autorité envoie chercher un dossier qui n'existe pas.
 
 ```
 src/<contexte>/
@@ -196,11 +202,18 @@ src/<contexte>/
 
 ```
 
-### Les quatre blocs de `src/`
+### Les blocs de `src/`
 
 Un bloc **est** un dossier de premier niveau, et la frontière se voit en ouvrant
 `src/` — c'est tout l'objet du découpage. `lint:context-boundaries` transcrit la
-matrice ; elle tient en cinq lignes parce que l'arborescence la dessine.
+matrice ; elle tient en huit lignes parce que l'arborescence la dessine.
+
+> ⚠️ **Cette section a dit « quatre blocs » jusqu'au 2026-09-13**, en n'en
+> nommant que cinq. Il y en avait **huit** : `handover`, `ops` et `dev`
+> manquaient. La porte, elle, les connaissait tous les trois — c'est donc le
+> document qui était en retard, pas le code, et c'est le pire sens : une
+> matrice incomplète ne refuse rien, elle laisse croire qu'un dossier n'a pas
+> de règle.
 
 ```
 src/
@@ -213,20 +226,51 @@ src/
 ├── b2b/          ▸ LA PLATEFORME MARCHANDE — account, orders, pricing, catalog…
 ├── production/   ▸ LE FOURNIL — schéma `production`, ses tables, son agrégat
 │                   channels/commerce/ = la porte que le commerce implémente
+├── handover/     ▸ LE RETRAIT — le transfert de garde, comptoir ou livraison
+│                   sorti du fournil le 2026-09-10 : sa clé est la COMMANDE,
+│                   pas la journée. Le SEUL bloc à déclarer un canal ET à en
+│                   implémenter un autre (cf. plus bas)
+├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
+│                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
 │                   auth, config, database, mailer, bus, http, errors…
 ├── appBootstrap/ racine de composition : AppModule + les bindings de ports
+├── dev/          ▸ L'OUTILLAGE — semis de démonstration. MÊME bloc que la
+│                   racine pour la porte, et pour la même raison : semer demande
+│                   de faire tourner les VRAIS handlers
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `b2b` | `production`        | `platform` |
-| ------------------ | ---------------- | ------------------- | ----- | ------------------- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗     | ✗                   | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | ✗     | ✗                   | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | —     | **port uniquement** | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | **✗** | —                   | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗     | ✗                   | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓     | ✓                   | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `b2b` | `production`        | `handover`          | `ops` | `platform` |
+| ------------------ | ---------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | —     | **port uniquement** | **port uniquement** | ✗     | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | **✗** | —                   | ✗                   | ✗     | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | **✗** | **port uniquement** | —                   | ✗     | ✓          |
+| **`ops`**          | ✗                | ✗                   | ✗     | ✗                   | ✗                   | —     | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗     | ✗                   | ✗                   | ✗     | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
+| **`dev`**          | ✓                | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
+
+**`ops` a la ligne la plus stricte de la matrice, et c'est voulu** : il observe,
+il ne possède rien. N'ayant aucun métier, il n'a rien à lire chez les autres
+blocs — et personne ne l'importe en retour. C'est aussi ce qui rendra son
+déménagement facile le jour où il deviendra sa propre application.
+
+**`dev` a les droits de la racine parce qu'il EST la racine**, du point de vue
+de la porte : semer un corpus demande de faire tourner les vrais handlers de
+commande contre la vraie base, et un seed qui doublerait ce qu'il sème cesserait
+d'éprouver ce qu'il prétend préparer. Il en a donc aussi la contrainte —
+**personne ne l'importe en retour**. Un contexte métier qui lirait `dev/` aurait
+fait de son jeu de démonstration une dépendance de production.
+
+🔴 **`handover` est le seul bloc des deux côtés d'un canal.** Il DÉCLARE
+`handover/channels/commerce/` — ce que le commerce lui sert — et IMPLÉMENTE
+`production/channels/handover/` — ce que le fournil lui demande. Le lire comme
+un sous-dossier du fournil serait la faute : il en est sorti le 2026-09-10
+précisément parce que sa clé d'identité est la **commande**, sans journée ni
+clôture, là où la production est en forme de **jour**.
 
 🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce

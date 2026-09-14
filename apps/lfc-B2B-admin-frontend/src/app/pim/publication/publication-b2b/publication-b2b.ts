@@ -17,23 +17,10 @@ import { SendPanel, type SendIntent, type SendPanelData } from './send-panel/sen
 
 import {
   B2bChannelApi,
-  type B2bExclusionReason,
   type B2bPushPreviewView,
   type B2bPushSummaryView,
 } from '../../channels/b2b-channel-api';
-
-/** Le motif d'exclusion, dit en français plutôt qu'en clé technique. */
-const REASONS: Readonly<Record<B2bExclusionReason, string>> = {
-  variant_sans_prix: 'pas de tarif',
-  variant_arretee: 'déclinaison arrêtée',
-  produit_sans_variante_vendable: 'aucune déclinaison vendable',
-  famille_inconnue: 'famille absente du référentiel',
-  canal_ferme: 'non vendue aux professionnels',
-  // « le prix existe, le taux manque » : c'est l'écran des taux qu'il faut
-  // ouvrir, pas celui du tarif. Le dire évite d'aller corriger au mauvais
-  // endroit.
-  variant_sans_taux: 'prix sans taux B2B',
-};
+import { reasonLabel } from '../../channels/b2b-exclusions';
 
 /** Ce que l'envoi ferait à un article, dit à qui regarde. */
 const CHANGES: Readonly<Record<string, string>> = {
@@ -95,10 +82,7 @@ export class PublicationB2b {
   protected readonly excluded = computed(() =>
     (this.preview()?.excluded ?? []).map((item) => ({
       sku: item.sku,
-      // Le motif voyage en chaîne — son vocabulaire appartient au référentiel,
-      // et le contrat de la plateforme ne l'importe pas. Un motif inconnu se
-      // montre tel quel plutôt que de disparaître.
-      label: REASONS[item.reason as B2bExclusionReason] ?? item.reason,
+      label: reasonLabel(item.reason),
     })),
   );
 

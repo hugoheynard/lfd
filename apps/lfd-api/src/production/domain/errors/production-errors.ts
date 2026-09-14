@@ -113,3 +113,94 @@ export class InvalidServiceRangeError extends DomainError {
     super("production.service_range.invalid", `Plage de production invalide : ${reason}.`);
   }
 }
+
+/**
+ * Aucun article sous ce SKU dans le **compte à produire** de la journée.
+ *
+ * ⚠️ Ce n'est pas « ce produit n'existe pas » : la production ne connaît pas le
+ * catalogue. C'est « il n'est pas au programme de ce jour-là », et c'est la
+ * seule chose qu'elle sache dire. Un 404, donc, et pas un 400 — l'appelant ne
+ * corrigera pas sa charge, il regarde la mauvaise journée.
+ */
+export class ProducedItemNotFoundError extends ResourceNotFoundError {
+  constructor(sku: string, serviceDay: string) {
+    super(
+      "production.item.not_found",
+      `Aucun article « ${sku} » au compte à produire du ${serviceDay}.`,
+    );
+  }
+}
+
+/**
+ * Aucune ligne sous ce SKU dans le **bac** de cette commande.
+ *
+ * ⚠️ Ce n'est pas {@link ProducedItemNotFoundError} : un article peut très bien
+ * être au compte à produire du jour sans être dans CE bon-là. Le poste de
+ * colisage coche une ligne de commande, pas un article du four — d'où deux
+ * refus distincts, qui ne se remplacent pas.
+ */
+export class PackingLineNotFoundError extends ResourceNotFoundError {
+  constructor(sku: string, reference: string) {
+    super("production.packing.line_not_found", `Aucune ligne « ${sku} » sur le bon ${reference}.`);
+  }
+}
+
+/**
+ * Le bac est **fermé**, et son contenu ne bouge plus.
+ *
+ * La fermeture est le fait irréversible du colisage : le commerce en tire son
+ * « prête pour le client », et le client l'apprend. Laisser décocher une ligne
+ * après coup ferait mentir ce qui a déjà été annoncé — c'est pour ça que le
+ * refus porte sur les DEUX gestes, cocher comme décocher.
+ */
+export class PackedOrderSealedError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "production.packing.order_sealed",
+      `Le bac de ${reference} est fermé : son contenu a été annoncé au client et ne se modifie plus. Signalez l'écart au commerce plutôt que de le corriger ici.`,
+    );
+  }
+}
+
+/**
+ * Le nombre de containers annoncé n'en est pas un.
+ *
+ * Un `DomainError` et pas un refus métier : ce n'est pas l'état de la journée
+ * qui interdit le geste, c'est la donnée qui ne peut pas exister. On ne charge
+ * pas deux bacs et demi dans un véhicule, ni moins que zéro.
+ *
+ * ⚠️ Le PLAFOND n'est pas ici : il vit dans `setPackingContainersSchema`, à la
+ * frontière, parce que c'est une garde de saisie — une valeur qui part en
+ * boucle — et non une règle du fournil. Le resserrer ici refuserait demain un
+ * appelant légitime que le contrat autorise.
+ */
+export class InvalidContainerCountError extends DomainError {
+  constructor(value: number) {
+    super(
+      "production.packing.invalid_container_count",
+      `Nombre de containers invalide : ${String(value)}. Saisissez un nombre entier de bacs, zéro compris.`,
+    );
+  }
+}
+
+/**
+ * L'article n'est **pas encore sorti du four**, et il ne peut pas entrer dans
+ * un bac.
+ *
+ * Ce n'est pas un droit qui manque, c'est une marchandise qui n'existe pas
+ * encore : la balance compterait comme réparti ce qui n'a jamais été fabriqué,
+ * et le reste affiché deviendrait faux dans le seul sens qui coûte — optimiste.
+ *
+ * ⚠️ Le refus ne vaut que dans **un** sens. Ressortir du bac une ligne devenue
+ * « en attente » — parce que quelqu'un a repris sa coche sur la fiche d'atelier
+ * — reste autorisé : refuser les deux sens enfermerait l'exploitant avec un bac
+ * qu'il ne peut ni compléter ni corriger.
+ */
+export class LineNotProducedYetError extends BusinessError {
+  constructor(productName: string) {
+    super(
+      "production.packing.not_produced_yet",
+      `« ${productName} » n'est pas encore sorti du four. Cochez-le sur la fiche d'atelier avant de le mettre au bac.`,
+    );
+  }
+}

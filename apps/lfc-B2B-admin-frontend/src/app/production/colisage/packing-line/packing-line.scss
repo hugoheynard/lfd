@@ -1,0 +1,74 @@
+:host {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-2xl);
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+/* La ligne dedans se lit d'un coup d'œil : encre passée, nom barré. C'est
+   l'état, pas une décoration — d'où la classe sur l'hôte. */
+:host(.is-packed) .co-name {
+  color: var(--fold-color-text-muted);
+  text-decoration: line-through;
+}
+
+/* La ligne en attente n'est ni barrée ni grisée : elle est à FAIRE. Seule sa
+   case est morte, et le badge dit pourquoi. */
+:host(.is-awaiting) .co-box {
+  opacity: 0.5;
+}
+
+/* Ce que la recherche a trouvé : la page soulève la ligne, le nom prend la
+   graisse. Deux canaux, dont aucun n'est une teinte — le surlignage doit tenir
+   sans couleur. */
+:host(.is-hit) .co-name {
+  font-weight: var(--fold-weight-bold);
+}
+
+.co-box {
+  flex: none;
+  /* La case du fournil : `--cb-size` est la variable que `fold-checkbox` lit
+     pour sa boîte — vérifié dans ses styles compilés avant de s'en servir. */
+  --cb-size: var(--co-box);
+}
+
+/* La quantité est le chiffre qui compte au poste : mono, tabulaire, alignée à
+   droite sur une gouttière fixe pour que les unités se superposent d'une ligne
+   à l'autre. */
+.co-qty {
+  flex: none;
+  width: var(--co-qty-col);
+  font-size: var(--co-size-qty);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--fold-leading-none);
+  text-align: right;
+  color: var(--fold-color-text);
+}
+
+.co-name {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+  font-size: var(--co-size-name);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+.co-initials {
+  flex: none;
+  width: var(--co-initials-col);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-base);
+  text-align: right;
+  color: var(--fold-color-text-muted);
+}
+
+.co-initials--blank {
+  visibility: hidden;
+}

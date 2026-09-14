@@ -6,6 +6,7 @@ import type {
   FooterContentView,
   FooterLocaleContent,
   LegalIdentity,
+  LegalMentionDisplay,
 } from '@lfd/contracts';
 // ⚠️ Les VALEURS passent par `content-values` et non par le baril : celui-ci
 // tire zod, qui n'a rien à faire dans un bundle de vitrine — mesuré, +380 ko,
@@ -36,16 +37,27 @@ import { ClientLocale } from './client-locale.service';
 @Injectable({ providedIn: 'root' })
 export class ClientContent {
   private readonly http = inject(HttpClient);
-  private readonly locale = inject(ClientLocale);
+  private readonly localeService = inject(ClientLocale);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly content = signal<FooterContent>(DEFAULT_FOOTER_CONTENT);
 
   /** Le pied de page dans la langue courante. */
-  readonly footer = computed<FooterLocaleContent>(() => this.content()[this.locale.current()]);
+  readonly footer = computed<FooterLocaleContent>(
+    () => this.content()[this.localeService.current()],
+  );
 
   /** L'identité légale — la même quelle que soit la langue. */
   readonly identity = computed<LegalIdentity>(() => this.content().identity);
+
+  /**
+   * Quelles mentions légales s'affichent — hors de la langue, comme l'identité :
+   * afficher une mention est une décision unique, pas une décision par langue.
+   */
+  readonly legalMentions = computed<LegalMentionDisplay>(() => this.content().legalMentions);
+
+  /** La langue courante, dont le pied de page tire le mot de chaque mention. */
+  readonly locale = this.localeService.current;
 
   constructor() {
     // ⚠️ Navigateur SEULEMENT. Le rendu serveur n'a pas à attendre un appel

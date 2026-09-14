@@ -42,7 +42,11 @@ describe("arrêter une journée", () => {
     expect(day.isClosed).toBe(true);
     expect(day.closedAt).toBe(AT);
     expect(day.orders).toHaveLength(1);
-    expect(day.counts).toEqual([{ sku: "VIE-001", productName: "Croissant", quantity: 40 }]);
+    expect(day.counts).toEqual([
+      // `done: null` : une journée qu'on vient d'arrêter n'a rien de sorti du
+      // four. Écrit plutôt que laissé deviner — comme `packed` sur la commande.
+      { sku: "VIE-001", productName: "Croissant", quantity: 40, done: null },
+    ]);
   });
 
   it("ADDITIONNE le même article à travers les commandes", () => {
@@ -65,7 +69,9 @@ describe("arrêter une journée", () => {
       AT,
     );
 
-    expect(day.counts).toEqual([{ sku: "VIE-001", productName: "Croissant", quantity: 52 }]);
+    expect(day.counts).toEqual([
+      { sku: "VIE-001", productName: "Croissant", quantity: 52, done: null },
+    ]);
   });
 
   it("trie le compte par SKU — deux clôtures identiques rendent le même compte", () => {

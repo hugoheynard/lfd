@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { htFromTtc, proPriceFromPublic } from '@lfd/pim-contracts';
+import { htFromTtc, proPriceOf, type ProPriceMethod } from '@lfd/pim-contracts';
 import { formatCents } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
@@ -22,7 +22,13 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { AccountingRulesStore } from '../accounting-rules.store';
-import { discountToRatioBp, formatDiscount, ratioBpToDiscount } from '../pro-discount';
+import {
+  discountToRatioBp,
+  formatDiscount,
+  formatMillicents,
+  ratioBpToDiscount,
+  ratioTtcPolicy,
+} from '../pro-discount';
 
 /**
  * Le prix de DÉPART du simulateur : **10,00 € TTC**, en euros.
@@ -138,6 +144,12 @@ export class AccountingRulesPage {
   protected readonly samplePublicEur = signal<number | null>(SAMPLE_START_EUR);
   protected readonly busy = signal(false);
 
+  /** La méthode **appliquée** — celle dont le push se sert. */
+  protected readonly savedMethod = computed(() => this.store.rules().method);
+
+  /** La méthode qu'on s'apprête à choisir. */
+  protected readonly draftMethod = signal<ProPriceMethod>('ratio_ttc');
+
   constructor() {
     // Le champ suit ce que le serveur affirme, y compris après enregistrement.
     // Rien réglé ⇒ champ vide : pré-remplir à 0 proposerait « aucune remise »
@@ -145,6 +157,10 @@ export class AccountingRulesPage {
     effect(() => {
       const saved = this.savedRatioBp();
       this.draftDiscount.set(saved === null ? null : ratioBpToDiscount(saved));
+    });
+    // Même règle pour la méthode : le champ suit ce que le serveur affirme.
+    effect(() => {
+      this.draftMethod.set(this.savedMethod());
     });
   }
 
@@ -192,9 +208,13 @@ export class AccountingRulesPage {
   protected readonly sampleProCents = computed(() => {
     const ratioBp = this.draftRatioBp();
     const publicCents = this.samplePublicCents();
-    return ratioBp === null || publicCents === null
-      ? null
-      : proPriceFromPublic(publicCents, ratioBp);
+    if (ratioBp === null || publicCents === null) {
+      return null;
+    }
+    // Le TTC pro de la méthode appliquée. Le taux passé ne change rien au TTC
+    // sous `ratio_ttc` — il est exigé parce qu'une autre méthode, elle, en
+    // dépendrait, et que l'écran doit suivre la méthode sans la connaître.
+    return proPriceOf(publicCents, ratioTtcPolicy(ratioBp), SAMPLE_RATES[0])?.ttcCents ?? null;
   });
 
   protected readonly samplePro = computed(() => {
@@ -225,17 +245,51 @@ export class AccountingRulesPage {
    * vérifié par mutation le 2026-09-09.
    */
   protected readonly sampleRates = computed<readonly SampleRateRow[] | null>(() => {
-    const proTtc = this.sampleProCents();
+    const ratioBp = this.draftRatioBp();
     const publicTtc = this.samplePublicCents();
-    if (proTtc === null || publicTtc === null) {
+    if (ratioBp === null || publicTtc === null) {
       return null;
     }
-    return SAMPLE_RATES.map((rate) => ({
-      label: `${String(rate).replace('.', ',')} %`,
-      publicHt: formatCents(htFromTtc(publicTtc, rate)),
-      proHt: formatCents(htFromTtc(proTtc, rate)),
-    }));
+    return SAMPLE_RATES.map((rate) => {
+      const pro = proPriceOf(publicTtc, ratioTtcPolicy(ratioBp), rate);
+      return {
+        label: `${String(rate).replace('.', ',')} %`,
+        publicHt: formatCents(htFromTtc(publicTtc, rate)),
+        // Le pro HT vient de `proPriceOf`, comme le TTC : c'est la chaîne que
+        // la facture suit. Le recalculer avec `htFromTtc` tomberait sur le même
+        // centime aujourd'hui, et sur un autre le jour où une méthode produit
+        // le hors taxe en premier.
+        proHt: pro === null ? '—' : formatMillicents(pro.htMillicents),
+      };
+    });
   });
+
+  /**
+   * Rien à enregistrer si la méthode saisie est celle qui s'applique déjà.
+   *
+   * ⚠️ Il n'y a qu'une méthode aujourd'hui : ce bouton ne peut donc rien faire
+   * d'autre que rester éteint. Le mécanisme est là pour la suivante — voir
+   * `PRO_PRICE_METHODS` dans le contrat.
+   */
+  protected readonly canChooseMethod = computed(
+    () => !this.busy() && this.draftMethod() !== this.savedMethod(),
+  );
+
+  protected chooseMethod(method: ProPriceMethod): void {
+    this.draftMethod.set(method);
+  }
+
+  protected async submitMethod(): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.store.chooseProPriceMethod(this.draftMethod());
+      this.notify.success('Méthode de calcul appliquée.');
+    } catch (caught) {
+      this.notify.refused(caught, 'Changement de méthode refusé.');
+    } finally {
+      this.busy.set(false);
+    }
+  }
 
   /** Rien à enregistrer si la saisie est invalide, ou identique à l'enregistré. */
   protected readonly canSubmit = computed(() => {

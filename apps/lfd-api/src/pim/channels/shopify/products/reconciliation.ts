@@ -5,7 +5,7 @@ import { fingerprint, type ShopifyProductPayload } from "./projection.js";
 
 /**
  * Réconciliation à trois voies — la **logique pure** (aucun réseau, aucune base). Voir
- * `documentation/pim/publication-reconciliation-3way.md`.
+ * `documentation/pim/shopify-publication/publication-reconciliation-3way.md`.
  *
  * Deux taux d'empreinte, volontairement :
  * - **dérive locale** (OURS vs BASE) → empreinte *pleine* (`fingerprint`) : les deux

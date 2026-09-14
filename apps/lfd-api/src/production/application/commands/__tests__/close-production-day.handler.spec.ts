@@ -64,6 +64,20 @@ class Days extends ProductionDayRepository {
   markPacked(): Promise<boolean> {
     return Promise.reject(new Error("non utilisé"));
   }
+
+  /** Idem — la coche est un geste de la fiche d'atelier, pas de la clôture. */
+  markProduced(): Promise<void> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  /** Idem — le colisage est un geste du poste de bacs, pas de la clôture. */
+  markPackedLine(): Promise<void> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  recordContainerCount(): Promise<void> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 /** Le publieur, réduit à ce que le handler en appelle — il étend la classe. */
@@ -105,7 +119,7 @@ describe("clore une journée", () => {
       closedAt: NOW.toISOString(),
     });
     expect(days.saved?.counts).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 80 },
+      { sku: "VIE-001", productName: "Croissant", quantity: 80, done: null },
     ]);
     expect(events.published).toEqual([new ProductionDayClosedEvent(DAY, NOW, 2)]);
   });

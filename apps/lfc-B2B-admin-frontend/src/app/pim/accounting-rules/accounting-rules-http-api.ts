@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { AccountingRulesView } from '@lfd/pim-contracts';
+import type { AccountingRulesView, ProPriceMethod } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -28,6 +28,18 @@ export class AccountingRulesHttpApi {
   setProPriceRatio(ratioBp: number): Promise<AccountingRulesView> {
     return firstValueFrom(
       this.http.put<AccountingRulesView>(`${this.url()}/pro-price-ratio`, { ratioBp }),
+    );
+  }
+
+  /**
+   * Choisit la méthode appliquée — une route à part de celle du rapport.
+   *
+   * Deux décisions, chacune retarife le catalogue professionnel : les fondre
+   * rendrait impossible de lire dans le journal laquelle a produit quel écart.
+   */
+  chooseProPriceMethod(method: ProPriceMethod): Promise<AccountingRulesView> {
+    return firstValueFrom(
+      this.http.put<AccountingRulesView>(`${this.url()}/pro-price-method`, { method }),
     );
   }
 

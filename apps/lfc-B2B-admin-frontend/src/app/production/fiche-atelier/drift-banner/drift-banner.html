@@ -1,0 +1,84 @@
+<!--
+  `fold-callout` porte le rôle, la couleur et l'annonce aux lecteurs d'écran. Sa
+  teinte `warning` est celle du thème : le bandeau ne repeint rien.
+-->
+<fold-callout variant="warning">
+  @if (compact()) {
+    <!-- Le téléphone : un chiffre, une action. Les lignes nommées ne tiennent
+         pas sous le pouce, mais le cas dangereux, lui, est dit. -->
+    <p class="db-lead">
+      <span class="db-figure">+{{ drift().addedUnits }}</span> pièce{{
+        drift().addedUnits > 1 ? 's' : ''
+      }}
+      depuis le tirage de {{ generatedLabel() }}
+    </p>
+    <p class="db-sub">
+      {{ changedCount() }} ligne{{ changedCount() > 1 ? 's' : '' }} changée{{
+        changedCount() > 1 ? 's' : ''
+      }}
+      @if (doneCount() > 0) {
+        , dont {{ doneCount() }} déjà cochée{{ doneCount() > 1 ? 's' : '' }}
+      }
+    </p>
+  } @else {
+    <p class="db-lead">
+      <span class="db-figure">+{{ drift().addedUnits }}</span> pièce{{
+        drift().addedUnits > 1 ? 's' : ''
+      }}
+      sur {{ changedCount() }} ligne{{ changedCount() > 1 ? 's' : '' }} depuis le tirage de
+      {{ generatedLabel() }}.
+    </p>
+    <p class="db-sub">
+      {{ drift().orders }} commande{{ drift().orders > 1 ? 's' : '' }} arrivée{{
+        drift().orders > 1 ? 's' : ''
+      }}
+      depuis.
+      @if (doneCount() > 0) {
+        <!-- Le seul cas réellement dangereux : quelqu'un a déclaré avoir sorti
+             une quantité qui n'est plus la bonne. Écrit en clair, jamais résumé. -->
+        <strong class="db-danger"
+          >{{ doneCount() }} de ces ligne{{ doneCount() > 1 ? 's' : '' }} est déjà cochée — la
+          quantité sortie n'est plus celle qui est demandée.</strong
+        >
+      }
+    </p>
+  }
+
+  <div actions class="db-actions">
+    <button foldButton size="sm" (click)="retake.emit()">
+      {{ compact() ? 'Mettre à jour' : 'Retirer la fiche' }}
+    </button>
+    @if (!compact()) {
+      <button
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        [attr.aria-expanded]="open()"
+        (click)="toggle()"
+      >
+        {{ open() ? 'Masquer l’écart' : 'Voir l’écart' }}
+      </button>
+    }
+  </div>
+
+  @if (open()) {
+    <!-- Les lignes nommées : « Pain de seigle 30 → 42 ». Un compteur ne dirait pas
+         laquelle est déjà cochée, et c'est tout ce qu'on vient chercher ici. -->
+    <ul class="db-lines">
+      @for (line of drift().lines; track line.sku) {
+        <li class="db-line" [class.is-done]="line.done">
+          <span class="db-line-name">{{ line.productName }}</span>
+          <span class="db-line-move">
+            <span class="db-line-from">{{ line.from }}</span>
+            <span aria-hidden="true">→</span>
+            <span class="db-line-to">{{ line.to }}</span>
+          </span>
+          @if (line.done) {
+            <span class="db-line-flag">déjà cochée</span>
+          }
+        </li>
+      }
+    </ul>
+  }
+</fold-callout>

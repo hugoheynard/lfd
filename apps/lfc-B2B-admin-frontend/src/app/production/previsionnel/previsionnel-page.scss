@@ -14,6 +14,41 @@
    Un `calc(100dvh - …)` aurait marché le jour où on l'écrit et menti au premier
    changement de hauteur du bandeau — c'est-à-dire exactement le genre de
    justification qui survit à ce qui la périme. */
+/* ── LA HAUTEUR DU MUR ──────────────────────────────────────────────────────
+   🔴 **Le pied collant de la table ne collait à rien**, et ça ne s'est vu qu'au
+   jour où le semis a posé 38 références au lieu de 7 (2026-09-13).
+
+   `section.pv-grid` porte `overflow: auto` — elle EST censée être le conteneur
+   qui défile, et c'est elle que le `position: sticky` du pied vise. Mais elle
+   prenait la hauteur de son contenu (1115 px pour une fenêtre de 900), donc
+   elle ne défilait jamais : c'est la coquille qui défilait à sa place, et un
+   pied collant dans une boîte qui ne défile pas ne colle nulle part. Le total,
+   qu'on vient précisément lire en bas d'une grille longue, sortait de l'écran.
+
+   **Pourquoi la chaîne flex ne pouvait PAS le corriger** : `.content-flow`, la
+   boîte que fold pose autour d'une page, est en `flex: 1 0 auto` — shrink ZÉRO.
+   Elle refuse donc de descendre sous la hauteur de son contenu, quels que
+   soient les `min-height: 0` posés en dessous. Aucune règle écrite ici ne
+   pouvait l'atteindre.
+
+   **Pourquoi pas les tokens de chrome de fold non plus** : `--fold-shell-header-height`
+   et ses voisins existent, mais sont déclarés dans le scope du shell et valent
+   `""` sur `:root` — un `calc()` dessus rend zéro, en silence (vérifié dans le
+   navigateur le 2026-09-13, avant de s'en servir).
+
+   **Ce qui reste, et qui est exact** : `main.content` est `position: relative`
+   et fait exactement la boîte de contenu de la coquille. Un `inset: 0` s'y
+   résout sans arithmétique et sans rien deviner. Fold connaît ce chemin — son
+   propre code s'en sert pour faire flotter un panneau au-dessus du défilement.
+
+   ⚠️ **Seulement sur le MUR.** Le dossier du jour reste en flux, donc il défile
+   avec la coquille et s'imprime comme avant. Le sortir du flux aurait mis en jeu
+   le seul document de cet écran qui part au fournil sur papier. */
+:host(.is-wall) {
+  position: absolute;
+  inset: 0;
+}
+
 :host {
   /* Aucun écart entre les deux pièces de l'écran : la table PROLONGE la bande,
      elle ne se pose pas dessous. Le rythme vertical est tenu à l'intérieur du
@@ -145,4 +180,23 @@ app-forecast-table {
    dans la gouttière comme le reste de la page. */
 .pv-lost {
   margin-inline: var(--fold-page-gutter);
+}
+
+/* Le dossier prend la hauteur de son contenu, pas celle de l'écran : il se
+   parcourt du haut vers le bas comme le papier qu'il va devenir, et son dernier
+   bon doit pouvoir dépasser le bas de la fenêtre. */
+app-dossier-du-jour {
+  flex: 0 0 auto;
+}
+
+/* ── À l'impression ─────────────────────────────────────────────────────────
+   🔴 La bande de tête ne part PAS au fournil. Elle n'a rien à y faire — et sans
+   cette règle, le déménagement du dossier lui aurait silencieusement ajouté une
+   première page portant le titre du prévisionnel et ses boutons de semaine.
+   L'ancienne page cachait `.pr-bar` pour la même raison ; le layout a pris sa
+   place, il hérite donc de sa règle. */
+@media print {
+  fold-page-layout {
+    display: none;
+  }
 }

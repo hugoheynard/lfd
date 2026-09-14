@@ -25,7 +25,10 @@ class InMemoryRepo extends AccountingRulesRepository {
       return Promise.resolve(null);
     }
     return Promise.resolve({
-      rules: AccountingRules.reconstitute({ proPriceRatioBp: this.stored }),
+      rules: AccountingRules.reconstitute({
+        proPriceMethod: "ratio_ttc",
+        proPriceRatioBp: this.stored,
+      }),
       updatedAt: STORED_AT,
     });
   }
@@ -53,7 +56,14 @@ describe("ReadAccountingRulesHandler", () => {
   it("rend deux null quand rien n'a jamais été réglé", async () => {
     const view = await new ReadAccountingRulesHandler(new InMemoryRepo()).execute();
 
-    expect(view).toEqual({ ratioBp: null, updatedAt: null });
+    // La MÉTHODE, elle, n'a pas de « jamais réglée » : le calcul d'origine
+    // s'applique tant que personne n'a choisi, et le dire `null` obligerait
+    // l'écran à inventer un repli — donc à le choisir une seconde fois.
+    expect(view).toEqual({
+      ratioBp: null,
+      method: "ratio_ttc",
+      updatedAt: null,
+    });
   });
 
   it("rend le rapport posé et la date du dépôt", async () => {
@@ -62,7 +72,11 @@ describe("ReadAccountingRulesHandler", () => {
 
     const view = await new ReadAccountingRulesHandler(repo).execute();
 
-    expect(view).toEqual({ ratioBp: 9_000, updatedAt: STORED_AT.toISOString() });
+    expect(view).toEqual({
+      ratioBp: 9_000,
+      method: "ratio_ttc",
+      updatedAt: STORED_AT.toISOString(),
+    });
   });
 });
 

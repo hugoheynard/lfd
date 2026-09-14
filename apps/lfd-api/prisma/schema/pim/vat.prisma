@@ -65,6 +65,24 @@ model AccountingRules {
   /// se tromper de sens.
   proPriceRatioBp Int @map("pro_price_ratio_bp")
 
+  /// **Comment** le rapport se transforme en prix professionnel.
+  ///
+  /// Une seule valeur aujourd'hui — `ratio_ttc` — et la colonne existe quand
+  /// même. Elle avait été ajoutée pour une seconde méthode qui devait reproduire
+  /// le catalogue professionnel imprimé ; l'analyse des 89 prix de cette
+  /// plaquette a montré qu'elle n'applique aucune formule, et la méthode a été
+  /// retirée le jour même (`20260913140000_retrait_methode_plaquette`).
+  ///
+  /// Ce qui reste est la PLACE : si le commerce fournit un jour une vraie
+  /// formule, ce sera une valeur de plus ici et dans `PRO_PRICE_METHODS` — pas
+  /// une colonne, une migration, une route et un écran à refaire.
+  ///
+  /// ⚠️ Une contrainte non exprimable ici la garde :
+  /// `accounting_rules_method_known` n'admet que les valeurs connues. Une
+  /// `migrate dev` proposera de la supprimer, comme
+  /// `accounting_rules_pro_ratio_bounds` : refuser la ligne.
+  proPriceMethod String @default("ratio_ttc") @map("pro_price_method")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

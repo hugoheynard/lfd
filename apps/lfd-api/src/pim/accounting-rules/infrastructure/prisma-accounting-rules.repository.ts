@@ -25,7 +25,14 @@ export class PrismaAccountingRulesRepository extends AccountingRulesRepository {
       return null;
     }
     return {
-      rules: AccountingRules.reconstitute({ proPriceRatioBp: row.proPriceRatioBp }),
+      rules: AccountingRules.reconstitute({
+        proPriceRatioBp: row.proPriceRatioBp,
+        // La colonne est une chaîne libre côté base : le VO la juge à la
+        // reconstitution, comme le rapport. Une ligne écrite à la main avec une
+        // méthode inconnue se signale ICI, plutôt que de ressortir telle quelle
+        // et de tarifer le catalogue sur un calcul que personne n'a écrit.
+        proPriceMethod: row.proPriceMethod,
+      }),
       updatedAt: row.updatedAt,
     };
   }
@@ -36,11 +43,12 @@ export class PrismaAccountingRulesRepository extends AccountingRulesRepository {
    * L'absence de ligne est un état du modèle, pas un cas d'erreur.
    */
   async save(rules: AccountingRules): Promise<void> {
-    const { proPriceRatioBp } = rules.snapshot();
+    const { proPriceRatioBp, proPriceMethod } = rules.snapshot();
+    const columns = { proPriceRatioBp, proPriceMethod };
     await this.prisma.accountingRules.upsert({
       where: { id: SINGLETON_ID },
-      create: { id: SINGLETON_ID, proPriceRatioBp },
-      update: { proPriceRatioBp },
+      create: { id: SINGLETON_ID, ...columns },
+      update: columns,
     });
   }
 }

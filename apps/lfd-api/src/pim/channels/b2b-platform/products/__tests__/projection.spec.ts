@@ -1,4 +1,5 @@
 import type { SyncOrderTimeLimitRule } from "@lfd/catalog-sync";
+import type { ProPricePolicy } from "@lfd/pim-contracts";
 import type { SalesChannels } from "../../../../catalogue/shared/domain/value-objects/sales-channels.js";
 import type { ChannelCategory } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type {
@@ -83,7 +84,18 @@ function sold(channels: SalesChannels = [{ pointOfSaleId: "pos_b2b", context: "b
  * dans l'esprit du lecteur. `10 000` dit « aucune remise », ce qui est un
  * réglage possible et pas une absence de réglage.
  */
-const NO_DISCOUNT = 10_000;
+const NO_DISCOUNT = ratioTtc(10_000);
+
+/**
+ * La politique d'origine — celle qui remise le TTC public.
+ *
+ * Un assembleur plutôt qu'un littéral par cas : la méthode et son taux figé
+ * sont liés par un invariant, et les recopier à chaque appel finirait par
+ * produire une paire que le domaine refuserait mais que ce module accepte.
+ */
+function ratioTtc(ratioBp: number): ProPricePolicy {
+  return { method: "ratio_ttc", ratioBp };
+}
 
 /**
  * **Aucune limite de commande déclarée** — l'état du référentiel tant que
@@ -197,7 +209,7 @@ describe("projectCatalog", () => {
       [category()],
       vat({ b2b: 20 }),
       sold(),
-      9_000,
+      ratioTtc(9_000),
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
@@ -221,7 +233,7 @@ describe("projectCatalog", () => {
       [category()],
       vat({ b2b: 5.5 }),
       sold(),
-      9_000,
+      ratioTtc(9_000),
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,

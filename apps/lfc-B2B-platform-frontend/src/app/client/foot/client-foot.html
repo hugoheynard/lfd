@@ -70,9 +70,20 @@
       <span class="mention">{{ foot().legal.vat }}</span>
       <span class="mention">© {{ year }} {{ legal().brandName }}.</span>
     </p>
+    <!-- LES MENTIONS. Un vocabulaire FERMÉ, affiché ou non — ce ne sont pas
+         des textes qu'on ajoute, ce sont des prérequis. Leur mot vient du
+         contrat ; seul leur affichage vient de la base. Les libellés libres
+         d'avant (`legal.links`) ne sont plus rendus : ils invitaient à écrire
+         une mention qui n'existe pas, et aucun rendu ne pouvait savoir de quoi
+         il parlait — donc aucune ne pouvait devenir cliquable. -->
     <nav class="legal-links" aria-label="Mentions">
-      @for (link of foot().legal.links; track link) {
-        <span class="link">{{ link }}</span>
+      <!-- Chacune est VIVANTE : une mention qu'on affiche est une mention qu'on
+           peut lire, et un libellé inerte à côté d'un lien ressemblait plus à un
+           lien que le lien lui-même. Le mot vient du CONTRAT — la barre nomme
+           l'obligation, le document se nomme lui-même dans son dialogue — et
+           c'est la CLÉ qui relie le lien à son document, jamais son texte. -->
+      @for (mention of shownMentions(); track mention) {
+        <fold-link tone="muted" (clicked)="openMention(mention)">{{ label(mention) }}</fold-link>
       }
     </nav>
   </div>

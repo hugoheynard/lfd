@@ -1,0 +1,96 @@
+/*
+  Les mesures `--fa-*` descendent de l'hôte de la fiche : ce fichier les lit, il
+  n'en déclare aucune. Les couleurs, elles, sont celles du thème — le callout de
+  fold porte sa propre teinte `warning`, et rien ici ne la détourne.
+*/
+
+:host {
+  display: block;
+}
+
+.db-lead {
+  margin: 0;
+  font-size: var(--fold-text-base);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tight);
+}
+
+/* Le chiffre d'abord : c'est ce que le bandeau vient dire. */
+.db-figure {
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.db-sub {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  line-height: var(--fold-leading-snug);
+}
+
+.db-danger {
+  color: var(--fold-color-warning-text);
+}
+
+.db-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+/* ── L'écart déplié ──────────────────────────────────────────────────────── */
+
+.db-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: var(--fold-space-md) 0 0;
+  list-style: none;
+}
+
+.db-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-base);
+  color: var(--fold-color-text-secondary);
+}
+
+.db-line-name {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.db-line-move {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.db-line-from {
+  text-decoration: line-through;
+  text-decoration-color: var(--fold-color-border);
+}
+
+.db-line-to {
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+/* « déjà cochée » : la mention se voit avant qu'on lise la ligne. */
+.db-line-flag {
+  padding: 0 var(--fold-space-sm);
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-warning);
+  color: var(--fold-color-on-warning);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+}
+
+.db-line.is-done .db-line-name {
+  color: var(--fold-color-text);
+}

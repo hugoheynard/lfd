@@ -162,10 +162,22 @@ async function setup(api = new FakeApi()) {
 }
 
 describe('la barre des déclinaisons', () => {
-  it('nomme le défaut, puis les rangs — jamais un identifiant', async () => {
+  /**
+   * 🔴 Régression : les onglets affichaient « Défaut » puis « Déclinaison 2 »,
+   * c'est-à-dire un rôle et un rang — alors que la fixture porte les noms que
+   * la création DEMANDE, que la base garde et que `projection.ts` pousse aux
+   * canaux. Ce test AFFIRMAIT le défaut : il attendait le rang sur une
+   * déclinaison nommée « Boîte de 220 g ».
+   */
+  it('nomme chaque déclinaison par son NOM, défaut compris', async () => {
     const { store } = await setup();
 
-    expect(store.variantTabs().map((tab) => tab.label)).toEqual(['Défaut', 'Déclinaison 2']);
+    expect(store.variantTabs().map((tab) => tab.label)).toEqual([
+      'Gros florentin lait',
+      'Boîte de 220 g',
+    ]);
+    // Le rôle n'est pas perdu : il devient une pastille à côté du nom.
+    expect(store.variantTabs().map((tab) => tab.isDefault)).toEqual([true, false]);
     expect(store.variantTabs()[0]?.selected).toBe(true);
   });
 

@@ -569,3 +569,57 @@ describe("GET /admin/catalog/summary", () => {
     });
   });
 });
+
+/**
+ * 🔴 **Régression : cette route n'existait pas, et personne ne pouvait le voir.**
+ *
+ * `b2b/orders/http/admin-catalog.controller.ts` la déclarait sous `@Get()`, avec
+ * le même `@Controller("admin/catalog")` que le contrôleur du catalogue
+ * ci-dessus. Nest sert le premier enregistré : celle-ci n'a jamais répondu
+ * depuis le découpage en blocs. Aucun signal — ni typecheck, ni démarrage, ni
+ * test, puisqu'un test qui l'aurait appelée aurait reçu l'AUTRE contrôleur et
+ * serait passé ou tombé pour de mauvaises raisons.
+ *
+ * Ce que ça coûtait : le back-office demandait ce catalogue-ci pour ranger par
+ * rayon, et recevait l'autre — SKU de variant, et aucun champ `category`. Le
+ * récapitulatif de production, le prévisionnel et la fiche d'atelier mettaient
+ * donc TOUTES leurs lignes dans « rayon inconnu » (corrigé le 2026-09-13).
+ *
+ * Le test tient les deux moitiés du défaut, et il faut les deux : l'adresse
+ * répond, ET ce qu'elle rend porte le rayon. Une route qui répond 200 en
+ * servant l'autre forme aurait laissé le bug entier.
+ */
+describe("GET /admin/catalog/sellable", () => {
+  it("rend le catalogue vendable AVEC son rayon, sous une adresse à lui", async () => {
+    await push(240);
+
+    const response = await asStaff().get("/admin/catalog/sellable").expect(200);
+    const items =
+      jsonBody<{ sku: string; name: string; category: string; unitPriceMillicents: number }[]>(
+        response,
+      );
+
+    // Le compte d'abord : une liste vide passerait toutes les assertions qui
+    // suivent sans rien affirmer.
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      name: "Croissant",
+      category: "viennoiserie",
+    });
+  });
+
+  /**
+   * L'autre contrôleur garde son adresse, et sa forme. Sans ce cas, « réparer »
+   * la collision en déplaçant le mauvais des deux casserait l'écran du
+   * catalogue B2B — qui, lui, marche depuis toujours.
+   */
+  it("laisse la racine au catalogue B2B, inchangée", async () => {
+    await push(240);
+
+    const response = await asStaff().get("/admin/catalog").expect(200);
+    const items = jsonBody<{ sku: string; categoryName: string }[]>(response);
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.categoryName).toBe("Viennoiseries");
+  });
+});

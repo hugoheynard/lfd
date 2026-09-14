@@ -137,6 +137,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     return {
       hashBySku: new Map(items.map((item) => [item.sku, item.contentHash])),
       proRatioBp: ratioOf(revision?.header),
+      proPriceMethod: methodOf(revision?.header),
     };
   }
 
@@ -168,6 +169,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
         {
           hashBySku: hashes.get(revision.id) ?? new Map<string, string>(),
           proRatioBp: ratioOf(revision.header),
+          proPriceMethod: methodOf(revision.header),
         },
       ]),
     );
@@ -304,6 +306,22 @@ function ratioOf(header: unknown): number | null {
   }
   const value: unknown = header["proRatioBp"];
   return typeof value === "number" ? value : null;
+}
+
+/**
+ * La **méthode** de l'en-tête, lue avec la même prudence que le rapport.
+ *
+ * `null` sur toute révision posée avant le 2026-09-13 : le champ n'existait pas,
+ * et lui inventer `ratio_ttc` ferait dire à une vieille révision qu'elle a
+ * constaté une méthode. Une absence qui devient une affirmation est exactement
+ * ce qu'un diff ne doit pas fabriquer.
+ */
+function methodOf(header: unknown): string | null {
+  if (!isRecord(header)) {
+    return null;
+  }
+  const value: unknown = header["proPriceMethod"];
+  return typeof value === "string" ? value : null;
 }
 
 /** Un payload stocké est un objet — sinon la ligne a été écrite hors de ce code. */

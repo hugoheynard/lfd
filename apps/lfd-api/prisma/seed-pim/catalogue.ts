@@ -161,24 +161,57 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pâtisseries",
       },
       parentName: null,
-      channels: [],
-      vat: {},
+      // Ouverte aux pros le 2026-09-13, sur demande : les trois familles
+      // restantes portaient une matrice VIDE, donc leurs 54 fiches n'étaient
+      // candidates à aucun canal — le miroir B2B n'en montrait que 38 sur 94,
+      // et le reste tombait en « canal fermé » sans que rien ne dise pourquoi.
+      channels: [
+        {
+          pointOfSaleLabel: "B2B",
+          context: "b2b",
+        },
+      ],
+      vat: {
+        b2b: "Réduit",
+      },
     },
     {
       name: {
         fr: "Salé & traiteur",
       },
       parentName: null,
-      channels: [],
-      vat: {},
+      // Ouverte aux pros le 2026-09-13 — même geste que « Pâtisseries ».
+      channels: [
+        {
+          pointOfSaleLabel: "B2B",
+          context: "b2b",
+        },
+      ],
+      vat: {
+        b2b: "Réduit",
+      },
     },
     {
       name: {
         fr: "Chocolat & confiserie",
       },
       parentName: null,
-      channels: [],
-      vat: {},
+      // Ouverte aux pros le 2026-09-13 — même geste que « Pâtisseries ».
+      //
+      // ⚠️ Taux PLEIN, à l'inverse des quatre autres familles : la confiserie
+      // n'est pas de l'alimentaire à taux réduit. Le chocolat, lui, se discute
+      // selon la forme — c'est un arbitrage de dev posé faute de source, pas
+      // une position fiscale de la maison. À reprendre avec la comptabilité
+      // avant que ce canal serve ailleurs qu'en démonstration.
+      channels: [
+        {
+          pointOfSaleLabel: "B2B",
+          context: "b2b",
+        },
+      ],
+      vat: {
+        b2b: "Normal",
+      },
     },
   ],
   products: [

@@ -1,4 +1,4 @@
-import type { ProductionDay } from "../entities/production-day.js";
+import type { DoneMark, PackedLineMark, ProductionDay } from "../entities/production-day.js";
 import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
@@ -43,4 +43,60 @@ export abstract class ProductionDayRepository {
    * Rend `false` quand la course est perdue.
    */
   abstract markPacked(day: ServiceDay, reference: string, at: Date, by: string): Promise<boolean>;
+
+  /**
+   * Coche (`mark`) ou décoche (`null`) une ligne du **compte à produire**.
+   *
+   * Écriture ciblée pour la même raison que {@link markPacked} — `save` réécrit
+   * la journée entière, et six postes cochent six fiches en même temps — mais
+   * **sans condition en base** : une case se décoche et se recoche, donc le
+   * dernier geste est le vrai et il n'y a pas de course à arbitrer.
+   *
+   * Les deux refus (journée ouverte, SKU hors compte) restent dans l'agrégat,
+   * `itemToMark`. Ce port n'écrit que ce qu'il a déjà laissé passer.
+   */
+  abstract markProduced(day: ServiceDay, sku: string, mark: DoneMark | null): Promise<void>;
+
+  /**
+   * Met une ligne **au bac** (`mark`) ou l'en ressort (`null`).
+   *
+   * Écriture ciblée pour la raison de {@link markProduced}, aggravée d'un cran :
+   * deux postes colisent DEUX BACS DIFFÉRENTS en même temps, et c'est le cas
+   * normal du poste de colisage — chacun tient un bon. Un `save` de l'agrégat
+   * réécrit la journée entière (il efface commandes et lignes avant de les
+   * recréer) ; le second écrasement effacerait tout le remplissage du premier,
+   * et le fournil relirait un bac qu'il vient de finir comme s'il était vide.
+   *
+   * Sans condition en base, là encore : une case se décoche et se recoche, donc
+   * le dernier geste est le vrai et il n'y a pas de course à arbitrer.
+   *
+   * Les quatre refus (journée ouverte, référence hors plan, SKU hors bon, bac
+   * fermé) restent dans l'agrégat, `lineToPack`. Ce port n'écrit que ce qu'il a
+   * déjà laissé passer.
+   */
+  abstract markPackedLine(
+    day: ServiceDay,
+    reference: string,
+    sku: string,
+    mark: PackedLineMark | null,
+  ): Promise<void>;
+
+  /**
+   * Grave le **nombre de containers** qu'une commande occupe.
+   *
+   * Écriture ciblée pour la raison de {@link markPackedLine}, et c'est la même
+   * scène : deux postes tiennent deux bons au même moment, et un `save` de
+   * l'agrégat réécrirait la journée entière — le second écrasement effacerait le
+   * remplissage et le compte du premier.
+   *
+   * Sans condition en base : un compte se corrige tant que le bac est ouvert,
+   * donc le dernier geste est le vrai. Les quatre refus (journée ouverte,
+   * référence hors plan, bac fermé, nombre invalide) restent dans l'agrégat,
+   * `declareContainers`.
+   */
+  abstract recordContainerCount(
+    day: ServiceDay,
+    reference: string,
+    containers: number,
+  ): Promise<void>;
 }

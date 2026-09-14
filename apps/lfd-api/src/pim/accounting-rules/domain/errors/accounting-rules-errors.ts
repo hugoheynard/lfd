@@ -19,6 +19,23 @@ export class InvalidProPriceRatioError extends DomainError {
 }
 
 /**
+ * La méthode de calcul du prix professionnel n'existe pas.
+ *
+ * La colonne est une chaîne libre en base : une valeur inconnue y tariferait le
+ * catalogue sur un calcul que personne n'a écrit, et rien ne le signalerait
+ * avant une facture. Le refus est donc à la reconstitution comme à la saisie.
+ */
+export class InvalidProPriceMethodError extends DomainError {
+  constructor(readonly method: string) {
+    super(
+      "commerce.pro_price_method.invalid",
+      `Méthode de prix professionnel inconnue : « ${method} ». La seule méthode ` +
+        `disponible est « ratio_ttc » — la remise s'applique au prix public TTC.`,
+    );
+  }
+}
+
+/**
  * Les règles comptables n'ont jamais été réglées.
  *
  * Une `BusinessError` et non une `DomainError` : ce n'est pas une donnée

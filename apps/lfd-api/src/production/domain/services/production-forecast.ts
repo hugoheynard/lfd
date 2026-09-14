@@ -1,5 +1,21 @@
-import type { ProducedItemSnapshot } from "../entities/production-day.js";
 import type { ServiceRange } from "../value-objects/service-range.value-object.js";
+
+/**
+ * Un article et son poids, pour un mur de planning.
+ *
+ * ⚠️ **Il ne réutilise plus `ProducedItemSnapshot`**, et c'est un resserrement,
+ * pas une duplication (2026-09-13). Depuis que le compte à produire porte la
+ * COCHE du fournil, ce type-là dit deux choses : ce qu'il y a à fabriquer, et
+ * ce qui est déjà sorti. Le prévisionnel ne sait rien de la seconde et n'a rien
+ * à en faire — une demande encore ouverte n'a personne pour la cocher. Le lui
+ * servir obligeait à poser un `done: null` dans chaque lecture, c'est-à-dire à
+ * inventer « pas fait » pour des journées qui n'ont même pas de tirage.
+ */
+export interface DemandItem {
+  readonly sku: string;
+  readonly productName: string;
+  readonly quantity: number;
+}
 
 /**
  * Ce qu'une journée pèse, article par article — **quelle qu'en soit la source**.
@@ -12,7 +28,7 @@ import type { ServiceRange } from "../value-objects/service-range.value-object.j
 export interface DayDemand {
   /** `AAAA-MM-JJ`. */
   readonly day: string;
-  readonly items: readonly ProducedItemSnapshot[];
+  readonly items: readonly DemandItem[];
   /**
    * Combien de **commandes** composent cette journée.
    *

@@ -1,6 +1,6 @@
 import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
 
-import { htFromTtc } from "./tax.js";
+import { htFromTtc, htMillicentsOf } from "./tax.js";
 import { z } from "zod";
 
 /**
@@ -25,6 +25,29 @@ import { z } from "zod";
  */
 export const MAX_RATIO_BP = 10_000;
 
+// ── Les deux méthodes de prix professionnel ────────────────────────────────
+
+/**
+ * **Comment on dérive le prix professionnel du prix public.**
+ *
+ * Une seule méthode aujourd'hui, et le mécanisme existe quand même — c'est
+ * délibéré. Il a été bâti pour une seconde méthode qui reproduisait le calcul
+ * de la plaquette commerciale ; l'analyse des 89 prix imprimés (2026-09-13,
+ * `documentation/pim/analyse-plaquette-professionnelle.md`) a montré que cette
+ * plaquette **n'applique aucune formule** : ses prix ont été posés à la main,
+ * article par article. Une méthode qui ne reproduit rien n'a pas de raison
+ * d'exister, et elle a donc été retirée.
+ *
+ * Ce qui reste est la **place** : le jour où le commerce fournit une vraie
+ * formule, elle s'ajoute ici et dans `proPriceOf`, et l'écran la propose sans
+ * qu'aucune autre pièce ne bouge. Garder une union à un seul membre plutôt que
+ * de supprimer le champ n'est pas de la généralité spéculative — c'est ce qui
+ * évite de refaire la colonne, la migration, la route et l'écran pour ajouter
+ * un mot.
+ */
+export const PRO_PRICE_METHODS = ["ratio_ttc"] as const;
+export type ProPriceMethod = (typeof PRO_PRICE_METHODS)[number];
+
 /**
  * En **points de base entiers**, jamais en pourcentage flottant.
  *
@@ -43,6 +66,18 @@ export const proPriceRatioPayloadSchema = z.object({
 export type ProPriceRatioPayload = z.infer<typeof proPriceRatioPayloadSchema>;
 
 /**
+ * **Choisir la méthode appliquée.**
+ *
+ * Un seul champ, et un seul choix possible aujourd'hui. La route existe pour
+ * que la deuxième méthode — si le commerce fournit un jour une formule — ne
+ * demande qu'une valeur de plus dans {@link PRO_PRICE_METHODS}.
+ */
+export const proPriceMethodPayloadSchema = z.object({
+  method: z.enum(PRO_PRICE_METHODS),
+});
+export type ProPriceMethodPayload = z.infer<typeof proPriceMethodPayloadSchema>;
+
+/**
  * Ce que l'écran lit.
  *
  * `ratioBp` à `null` = **jamais réglé**, et c'est une information à part entière :
@@ -53,6 +88,13 @@ export type ProPriceRatioPayload = z.infer<typeof proPriceRatioPayloadSchema>;
  */
 export interface AccountingRulesView {
   readonly ratioBp: number | null;
+  /**
+   * La méthode **appliquée** — celle dont le push se sert.
+   *
+   * `ratio_ttc` tant que personne n'a choisi : c'est le comportement d'origine,
+   * et un déploiement qui ne s'est pas prononcé ne doit pas changer de tarif.
+   */
+  readonly method: ProPriceMethod;
   /** ISO-8601, ou `null` si rien n'a jamais été réglé. */
   readonly updatedAt: string | null;
 }
@@ -111,4 +153,60 @@ export function proHtFromPublic(
     return null;
   }
   return htFromTtc(proPriceFromPublic(publicTtcCents, ratioBp), ratePercent);
+}
+
+/**
+ * Le réglage complet, tel qu'il s'applique — méthode ET matériaux.
+ *
+ * Un objet plutôt que deux arguments : la méthode et le rapport vont ensemble,
+ * et une future méthode paramétrée ajoutera son champ ici sans toucher aux
+ * signatures qui la traversent.
+ */
+export interface ProPricePolicy {
+  readonly method: ProPriceMethod;
+  readonly ratioBp: number;
+}
+
+/**
+ * Un prix professionnel, dans les **deux** unités que la chaîne demande.
+ *
+ * Les deux ensemble et jamais l'un sans l'autre : c'est aujourd'hui le TTC qui
+ * est calculé et le HT qui s'en déduit, mais une méthode pourrait faire
+ * l'inverse. Rendre un seul des deux obligerait chaque appelant à savoir lequel
+ * est l'original — c'est-à-dire à reconstruire la branche ici.
+ */
+export interface ProPrice {
+  /** Ce qu'un professionnel paie, taxe comprise. */
+  readonly ttcCents: number;
+  /** Ce qui part sur le fil et que multiplie une quantité (10⁻⁵ €). */
+  readonly htMillicents: number;
+}
+
+/**
+ * **Le prix professionnel — l'unique porte, quelle que soit la méthode.**
+ *
+ * Un seul point d'entrée parce que la branche est une décision d'argent : la
+ * dupliquer chez ses quatre appelants (le VO, la projection, l'écran des règles
+ * et la fiche produit) garantirait qu'un écran finisse par montrer une méthode
+ * pendant que le fil en pousse une autre.
+ *
+ * `null` **sans taux d'article** : le hors taxe n'en est pas dérivable, et le
+ * taux sert de toute façon à FACTURER. Un article sans taux est donc écarté du
+ * canal (`variant_sans_taux`) — inventer un taux facturerait un montant que
+ * personne n'a décidé.
+ */
+export function proPriceOf(
+  publicTtcCents: number,
+  policy: ProPricePolicy,
+  articleVatPercent: number | null,
+): ProPrice | null {
+  if (articleVatPercent === null) {
+    return null;
+  }
+  // Le TTC pro est un PRIX : il s'arrête au centime, et le hors taxe se déduit
+  // de CE montant-là (cf. `proHtFromPublic`). Une seule branche aujourd'hui —
+  // le `switch` viendra avec la deuxième méthode, pas avant.
+  const ttcCents = proPriceFromPublic(publicTtcCents, policy.ratioBp);
+  const htMillicents = htMillicentsOf(ttcCents, articleVatPercent);
+  return htMillicents === null ? null : { ttcCents, htMillicents };
 }

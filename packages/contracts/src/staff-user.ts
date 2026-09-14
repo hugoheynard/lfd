@@ -108,3 +108,47 @@ export type StaffStatusChange = z.infer<typeof staffStatusChangeSchema>;
 export interface CreatedStaffUserResponse {
   readonly id: string;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Les préférences de navigation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Bornes d'une catégorie de fiche d'atelier. Le schéma ne connaît **pas** la
+ * liste des catégories : elle vit dans le référentiel et bouge sans que ce
+ * contrat en sache rien. Une préférence d'affichage ne protège rien — la borne
+ * haute n'est là que pour refuser un sac qui grossirait sans limite.
+ */
+const worksheetCategorySchema = z.string().trim().min(1).max(40);
+
+/**
+ * Le sac de préférences de navigation d'une personne du staff — l'équivalent
+ * back-office de `nav_prefs` côté client.
+ *
+ * 🔴 **Tout y est facultatif à la relecture, et ça n'est pas décoratif.** La
+ * colonne est neuve : toutes les fiches existantes portent `nav_prefs = NULL`,
+ * donc un sac vide est le cas NORMAL, pas une anomalie. Sans le `.default(null)`,
+ * la première connexion de chaque personne déjà en base tomberait sur une
+ * erreur de lecture.
+ */
+export const staffNavPreferencesSchema = z.object({
+  /** La fiche d'atelier sur laquelle ce poste s'est mis. `null` = aucun choix. */
+  worksheetCategory: worksheetCategorySchema.nullable().default(null),
+});
+export type StaffNavPreferences = z.infer<typeof staffNavPreferencesSchema>;
+
+/**
+ * La charge de `PATCH /admin/me/prefs` — **une préférence à la fois**.
+ *
+ * Volontairement distincte de {@link staffNavPreferencesSchema} : celui-ci
+ * décrit un sac COMPLET relu, avec ses défauts, et servirait mal d'écriture. Une
+ * clé absente y vaudrait « remets le défaut », c'est-à-dire qu'une future
+ * préférence envoyée seule effacerait la catégorie. Ici, une clé absente vaut
+ * « n'y touche pas », et le serveur fusionne.
+ */
+export const staffNavPreferencesPatchSchema = z
+  .object({
+    worksheetCategory: worksheetCategorySchema.nullable(),
+  })
+  .partial();
+export type StaffNavPreferencesPatch = z.infer<typeof staffNavPreferencesPatchSchema>;

@@ -92,6 +92,16 @@
        ferme tout seul au-delà du pli, où la sous-barre le remplace. -->
   <app-client-menu [open]="menuOpen()" (closed)="menuOpen.set(false)" />
 
+  <!-- 🔴 L'HÔTE DES PANNEAUX. Il n'existait que dans la branche du chrome pro
+       de `app.html` ; les routes de la boutique passent par un `router-outlet`
+       qui n'en voyait aucun. `FoldPanelHostService.open()` y était donc un
+       appel sans effet : rien ne s'ouvrait, et rien ne le disait — ni le
+       typecheck, ni le build, ni un spec, qui monte le panneau directement au
+       lieu de le demander à l'hôte. Seul l'écran pouvait le dire
+       (constaté le 2026-09-13, en ouvrant les CGV).
+       ⚠️ Le shell garde le sien : deux régions de contenu, deux hôtes. -->
+  <fold-panel-host />
+
   <!-- Le pied de l'app. Il n'apparaît qu'au-delà du pli — sur un téléphone, un
        pied de page est du contenu qu'on fait défiler pour rien — et il se peint
        lui-même : la rangée du shell se replie quand il ne prend pas de place. -->

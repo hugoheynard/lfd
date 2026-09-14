@@ -3,7 +3,10 @@ import { InvalidProPriceRatioError } from "../../errors/accounting-rules-errors.
 
 describe("AccountingRules", () => {
   it("s'ouvre sur un rapport valide", () => {
-    expect(AccountingRules.open(9_000).snapshot()).toEqual({ proPriceRatioBp: 9_000 });
+    expect(AccountingRules.open(9_000).snapshot()).toEqual({
+      proPriceMethod: "ratio_ttc",
+      proPriceRatioBp: 9_000,
+    });
   });
 
   it("refuse de s'ouvrir sur un rapport impossible", () => {
@@ -13,13 +16,19 @@ describe("AccountingRules", () => {
   it("révise son rapport", () => {
     const rules = AccountingRules.open(9_000);
     rules.setProPriceRatio(8_500);
-    expect(rules.snapshot()).toEqual({ proPriceRatioBp: 8_500 });
+    expect(rules.snapshot()).toEqual({
+      proPriceMethod: "ratio_ttc",
+      proPriceRatioBp: 8_500,
+    });
   });
 
   it("refuse une révision impossible et garde le rapport d'avant", () => {
     const rules = AccountingRules.open(9_000);
     expect(() => rules.setProPriceRatio(0)).toThrow(InvalidProPriceRatioError);
-    expect(rules.snapshot()).toEqual({ proPriceRatioBp: 9_000 });
+    expect(rules.snapshot()).toEqual({
+      proPriceMethod: "ratio_ttc",
+      proPriceRatioBp: 9_000,
+    });
   });
 
   /**
@@ -28,8 +37,11 @@ describe("AccountingRules", () => {
    * tarifer le catalogue entier.
    */
   it("refait passer un rapport relu par son VO", () => {
-    expect(() => AccountingRules.reconstitute({ proPriceRatioBp: 15_000 })).toThrow(
-      InvalidProPriceRatioError,
-    );
+    expect(() =>
+      AccountingRules.reconstitute({
+        proPriceMethod: "ratio_ttc",
+        proPriceRatioBp: 15_000,
+      }),
+    ).toThrow(InvalidProPriceRatioError);
   });
 });

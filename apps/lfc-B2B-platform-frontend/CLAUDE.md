@@ -143,6 +143,34 @@ non-authentifiée d'`app.html`.
 - Header type La Folie Coffee (surface `chrome`, thème `navi`), recherche,
   avatar. **Réglages** et **Déconnexion** vivent dans le footer du menu.
 
+## 🔴 Un export NEUF d'un paquet du workspace est invisible du serveur de dev
+
+Ajouter un export à `@lfd/contracts` (ou à n'importe quel paquet lié du
+monorepo) et recompiler ce paquet **ne suffit pas** : le serveur de dev sert un
+**pré-bundle** du paquet, gardé dans `.angular/cache/`, fabriqué avant que
+l'export existe. L'app tombe alors sur
+
+```
+SyntaxError: The requested module '…' does not provide an export named 'X'
+```
+
+et **ne démarre plus du tout** — page blanche, pas un écran dégradé.
+
+```bash
+rm -rf apps/lfc-B2B-platform-frontend/.angular/cache   # puis relancer ng serve
+```
+
+Deux choses à savoir, parce qu'elles font chercher au mauvais endroit :
+
+- **Le cache est partagé par tous les serveurs de dev de l'app.** En ouvrir un
+  second sur un autre port ne le contourne pas — il lit le même dossier. C'est
+  ce qui fait croire à un vrai défaut du code alors que `dist/` est juste.
+- **Le build AOT et les tests ne le voient pas.** Ils ne passent pas par ce
+  pré-bundle. Vert partout, cassé à l'écran — la même asymétrie que les
+  attributs fold inconnus, et la même conclusion : seul l'écran peut le dire.
+
+Constaté deux fois le 2026-09-13, en posant les CGV.
+
 ## Backend (contexte)
 
 Contrairement au PIM (POC frontend-only sur LocalDb), la plateforme B2B parle à un

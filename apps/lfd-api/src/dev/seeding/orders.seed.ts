@@ -25,7 +25,7 @@ import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
  * | --- | --- |
  * | **hier** | une commande servie la veille |
  * | **aujourd'hui** | la file du comptoir — cf. {@link COUNTER} |
- * | **demain** | deux commandes en attente — une en LIVRAISON, une en RETRAIT |
+ * | **demain** | deux commandes en attente — une en LIVRAISON, une en RETRAIT, et **tout le catalogue** réparti entre les deux (cf. {@link spreadLines}) |
  *
  * Un corpus daté en dur vieillit : semé un lundi, il montre le mardi une
  * « prochaine commande » déjà passée, et l'écran de production s'ouvre sur du
@@ -310,14 +310,21 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   // 🔴 AUJOURD'HUI — la file du comptoir, sur les deux points.
   await seedCounter(context, target, today);
 
-  // 🔴 DEMAIN — deux en attente, une par mode d'acheminement.
+  // 🔴 DEMAIN — deux en attente, une par mode d'acheminement, et **tout le
+  // catalogue** réparti entre les deux. C'est la journée que la fiche d'atelier
+  // ouvre dès qu'on arrête son plan : elle doit montrer ce que fait un rayon
+  // plein, pas six références qui tiennent sans défiler.
+  //
+  // Deux moitiés COMPLÉMENTAIRES, et pas deux fois la même : le compte à
+  // produire somme les commandes, et deux sacs identiques ne prouveraient pas
+  // qu'il somme — ils doubleraient simplement chaque ligne.
   await place(context, target, {
     at: today,
     forDay: isoDay(shiftDays(today, 1)),
     method: "delivery",
     point: null,
     window: null,
-    lines: linesFor(1),
+    lines: await spreadLines(context, 0),
     paid: false,
   });
   await place(context, target, {
@@ -326,7 +333,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
     method: "pickup",
     point: null,
     window: PICKUP_WINDOW,
-    lines: linesFor(2),
+    lines: await spreadLines(context, 1),
     paid: false,
   });
 
@@ -582,6 +589,44 @@ const WIDE_LINE_COUNT = 18;
  * L'ordre est celui du SKU, pas celui que la base rend : `findMany` n'en promet
  * aucun, et deux exécutions poseraient sinon deux sacs différents.
  */
+/**
+ * **Tout le catalogue, étalé** — les lignes des journées qu'on regarde à l'écran.
+ *
+ * Le « sac long » ci-dessous fait dix-huit références et vise le rail de remise ;
+ * celui-ci vise les GRANDES TABLES — la fiche d'atelier, le récapitulatif, la
+ * matrice du prévisionnel. Une maison qui prend six références ne montre jamais
+ * ce que fait une colonne à quarante lignes, ni un onglet de catégorie plein, ni
+ * l'alignement tabulaire des quantités sur trois chiffres. Un comportement qu'on
+ * ne peut pas voir est un comportement qu'on casse sans s'en apercevoir.
+ *
+ * ⚠️ **L'ordre est `categoryId` puis SKU**, et pas le SKU seul : trancher par
+ * SKU donnerait deux moitiés dont la première ne contiendrait que des chocolats
+ * et des pains. On veut que CHAQUE rayon soit fourni, puisque c'est un rayon que
+ * la fiche d'atelier ouvre à la fois.
+ *
+ * @param skip combien de références sauter — de quoi donner deux moitiés
+ *   complémentaires à deux commandes du même jour.
+ */
+async function spreadLines(
+  context: SeedContext,
+  skip: number,
+): Promise<{ readonly sku: string; readonly quantity: number }[]> {
+  const items = await context.prisma.catalogItem.findMany({
+    where: { isDefault: true, ...STILL_SOLD },
+    select: { productSku: true },
+    orderBy: [{ categoryId: "asc" }, { productSku: "asc" }],
+  });
+  return items
+    .filter((_, index) => index % 2 === skip)
+    .map((item, index) => ({
+      sku: item.productSku,
+      // Déterministe, et sur trois ordres de grandeur : c'est là que se voit
+      // l'alignement des chiffres monospacés, et le contenant qui bascule du
+      // singulier au pluriel.
+      quantity: 1 + ((index * 13) % 7) + (index % 5 === 0 ? 40 : 0) + (index % 11 === 0 ? 100 : 0),
+    }));
+}
+
 async function wideLines(
   context: SeedContext,
 ): Promise<{ readonly sku: string; readonly quantity: number }[]> {

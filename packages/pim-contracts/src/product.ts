@@ -324,6 +324,19 @@ export type SetProductVatPayload = z.infer<typeof setProductVatPayloadSchema>;
  * en imposer un (taille/couleur) ferait rentrer au chausse-pied ce qui n'y
  * rentre pas — un poids, un conditionnement, un affinage.
  */
+/**
+ * **Rebaptiser une déclinaison** — son nom seul.
+ *
+ * Ni la référence ni les options ne voyagent avec : le SKU est immuable par
+ * construction (il est dicté au labo et part dans les envois), et les options
+ * décrivent ce qui distingue l'article, pas comment on l'appelle. Un `PUT` qui
+ * accepterait les trois ferait d'un renommage un remplacement.
+ */
+export const renameProductVariantPayloadSchema = z.object({
+  name: localizedTextSchema,
+});
+export type RenameProductVariantPayload = z.infer<typeof renameProductVariantPayloadSchema>;
+
 export const addProductVariantPayloadSchema = z.object({
   name: localizedTextSchema,
   options: z.record(z.string(), z.string()).optional(),

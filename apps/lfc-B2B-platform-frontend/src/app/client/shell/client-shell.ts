@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { FoldAppShellComponent, FoldIconComponent } from 'fold-ng';
+import { FoldAppShellComponent, FoldIconComponent, FoldPanelHostComponent } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
 import { ClientIdentity } from '../client-identity.service';
@@ -34,6 +34,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
     ClientMenu,
     FoldAppShellComponent,
     FoldIconComponent,
+    FoldPanelHostComponent,
     LangSwitch,
     RouterOutlet,
   ],

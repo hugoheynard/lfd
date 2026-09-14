@@ -29,6 +29,40 @@
         change d'un contexte de vente à l'autre.
       </p>
 
+      <!-- LE SÉLECTEUR, avec une seule méthode — et c'est délibéré. Une
+           seconde a existé le temps d'une journée : elle devait reproduire le
+           catalogue professionnel imprimé, et l'analyse des 89 prix de cette
+           plaquette a montré qu'elle n'applique aucune formule. Ce qui reste
+           est la PLACE, pour le jour où le commerce en fournit une vraie. -->
+      <fieldset class="methods">
+        <legend>Méthode de calcul appliquée</legend>
+
+        <label class="method" [class.is-chosen]="draftMethod() === 'ratio_ttc'">
+          <input
+            type="radio"
+            name="pro-price-method"
+            [checked]="draftMethod() === 'ratio_ttc'"
+            (change)="chooseMethod('ratio_ttc')"
+          />
+          <span class="method-body">
+            <strong>Ratio TTC pré-remise</strong>
+            <span class="method-say">
+              La remise porte sur le prix <strong>TTC</strong>, et le hors taxe se déduit ensuite du
+              taux réel de l'article. C'est la seule méthode disponible, et c'est elle qui part au
+              prochain envoi.
+            </span>
+          </span>
+        </label>
+
+        <fold-callout appearance="inset" variant="info">
+          <strong>La plaquette commerciale n'applique aucune règle.</strong> Ses 89 prix
+          professionnels ont été posés à la main, article par article&nbsp;: au même prix public de
+          6,00&nbsp;€, on y trouve des prix pro de 3,20&nbsp;€ à 4,80&nbsp;€, et la meilleure
+          formule unique ne retrouve que 21&nbsp;% des lignes. Aucune seconde méthode ne peut donc
+          la reproduire. Le jour où une vraie formule est fournie, elle s'ajoutera ici.
+        </fold-callout>
+      </fieldset>
+
       @if (canWrite()) {
         <div class="rule-form">
           <div class="fields">
@@ -118,12 +152,16 @@
         </fold-callout>
       }
 
-      <!-- Le dire ici plutôt que de laisser croire qu'une saisie retarife le
-           catalogue. L'honnêteté sur ce qui n'est pas encore branché coûte une
-           phrase ; la découvrir soi-même coûte une facture. -->
+      <!-- ⚠️ Ce bloc disait « Pas encore appliquée ». C'était vrai à l'écriture
+           et faux depuis le raccordement : la projection B2B refuse même de
+           partir sans ce réglage (`ProPriceRatioNotSetError`). Une consigne
+           fausse dans l'écran qui fait autorité coûte plus qu'une absence de
+           consigne — corrigé le 2026-09-13. -->
       <fold-callout appearance="inset" variant="warning">
-        <strong>Pas encore appliquée.</strong> La remise est enregistrée et tracée, mais aucun prix
-        ne s'en sert pour l'instant&nbsp;: le raccordement au catalogue vient avec l'ancrage TTC.
+        <strong>Ces réglages tarifent pour de vrai.</strong> Le prochain envoi vers la boutique
+        professionnelle partira avec cette remise. Elle pose le prix de <em>base</em> du
+        catalogue&nbsp;: les prix professionnels négociés article par article, eux, la recouvrent là
+        où ils existent.
       </fold-callout>
     </section>
   }

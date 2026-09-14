@@ -422,6 +422,37 @@ export type {
   ProductionDayStatus,
   ProductionPackingAck,
 } from "./production-sheet.js";
+export {
+  markPackingLineSchema,
+  productionPackingQuerySchema,
+  setPackingContainersSchema,
+} from "./production-packing.js";
+export type {
+  MarkPackingLine,
+  PackingLine,
+  PackingResource,
+  PackingSheet,
+  ProductionPackingQuery,
+  ProductionPackingView,
+  SetPackingContainers,
+} from "./production-packing.js";
+export {
+  markWorkshopLineSchema,
+  productionContainerSchema,
+  productionWorksheetQuerySchema,
+  workshopInitialsSchema,
+} from "./production-worksheet.js";
+export type {
+  MarkWorkshopLine,
+  ProductionContainerRule,
+  ProductionContainerView,
+  ProductionWorksheetQuery,
+  ProductionWorksheetRetake,
+  ProductionWorksheetView,
+  WorkshopDrift,
+  WorkshopDriftLine,
+  WorkshopLine,
+} from "./production-worksheet.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,
@@ -458,6 +489,8 @@ export {
   staffStatusSchema,
   staffStatusChangeSchema,
   staffUserPayloadSchema,
+  staffNavPreferencesSchema,
+  staffNavPreferencesPatchSchema,
   STAFF_STATUS_LABELS,
 } from "./staff-user.js";
 export type {
@@ -465,6 +498,8 @@ export type {
   StaffStatusChange,
   StaffUserPayload,
   StaffUserView,
+  StaffNavPreferences,
+  StaffNavPreferencesPatch,
   CreatedStaffUserResponse,
 } from "./staff-user.js";
 export {
@@ -827,6 +862,7 @@ export {
   footerLocaleContentSchema,
   footerContentSchema,
   footerContentPayloadSchema,
+  legalMentionDisplaySchema,
 } from "./platform-content.js";
 export type {
   ContentLocale,
@@ -838,12 +874,40 @@ export type {
   FooterContent,
   FooterContentPayload,
   FooterContentView,
+  LegalMentionDisplay,
 } from "./platform-content.js";
+export type { LegalMention } from "./platform-content.defaults.js";
+export {
+  MAX_LEGAL_DOCUMENT_BODY,
+  MAX_LEGAL_DOCUMENT_PARAGRAPHS,
+  legalDocumentProseSchema,
+  legalDocumentParagraphPayloadSchema,
+  legalDocumentParagraphSchema,
+  legalDocumentHeadingSchema,
+  legalDocumentSchema,
+  legalDocumentPositionPayloadSchema,
+  legalMentionSchema,
+} from "./legal-document.js";
+export type {
+  LegalDocumentProse,
+  LegalDocumentParagraphPayload,
+  LegalDocumentParagraph,
+  LegalDocumentHeading,
+  LegalDocument,
+  LegalDocumentPositionPayload,
+  LegalDocumentView,
+  LegalDocumentParagraphCreated,
+} from "./legal-document.js";
+
 export {
   contentLocales,
   socialChannels,
   socialChannelLabels,
+  legalMentionOrder,
+  legalMentionLabels,
   DEFAULT_FOOTER_CONTENT,
+  DEFAULT_LEGAL_DOCUMENT,
+  DEMO_LEGAL_DOCUMENTS,
 } from "./platform-content.defaults.js";
 
 export {

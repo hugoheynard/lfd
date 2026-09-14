@@ -1,0 +1,452 @@
+<!--
+  **Le poste de colisage.** Une commande ouverte, ses lignes cochables, et la ressource
+  à côté — les deux plateaux de la balance, jamais l'un sans l'autre.
+
+  Pas de `title` sur le layout : la bande porte le client de la commande ouverte, et deux
+  titres de premier niveau sur un écran n'en font aucun.
+-->
+<fold-page-layout>
+  <!--
+    **La bande de tête.** Ce qu'on lève les yeux pour voir : quelle commande, où en est
+    la journée. Elle ne défile PAS — les listes, si.
+  -->
+  <fold-page-section bleed class="co-masthead" foldSurface="chrome">
+    <div class="co-masthead-bar">
+      <div class="co-said">
+        <p class="co-eyebrow">
+          Colisage du {{ dayLabel() }}
+          @if (dayOffset(); as offset) {
+            <span class="co-offset">· {{ offset }}</span>
+          }
+          @if (current(); as order) {
+            · {{ method(order) }} · {{ order.destination }}
+          }
+        </p>
+        <h1 class="co-title">{{ current()?.customerLabel ?? 'Colisage' }}</h1>
+      </div>
+
+      @if (current(); as order) {
+        <div class="co-figures">
+          <p class="co-figure">
+            <span class="co-figure-label">Dans la commande</span>
+            <span class="co-figure-value"
+              >{{ currentPacked() }}<span class="co-figure-of"> / {{ order.lines.length }}</span>
+            </span>
+          </p>
+          <p class="co-figure">
+            <span class="co-figure-label">Commandes prêtes</span>
+            <span class="co-figure-value co-figure-value--accent"
+              >{{ closedSheets() }}<span class="co-figure-of"> / {{ sheets().length }}</span>
+            </span>
+          </p>
+        </div>
+      }
+    </div>
+
+    <!--
+      🔴 **ELLE SURLIGNE, ELLE NE FILTRE PAS.** Filtrer casserait la balance : le
+      reste à répartir porte sur la journée entière, et une liste réduite ferait
+      lire un reste qui ne correspond à rien de ce qui est affiché. La question
+      est « j'ai douze croissants, qui les attend ? » — il faut voir en même
+      temps ce qui reste ET toutes les commandes qui en veulent.
+
+      `Escape` vide le champ ; le `×` de `fold-search` fait le même geste, et
+      c'est lui qui porte l'accessibilité du bouton.
+    -->
+    <fold-search
+      class="co-search"
+      size="lg"
+      placeholder="Chercher un produit ou un SKU — surligne, ne filtre pas"
+      ariaLabel="Chercher un produit dans la journée"
+      clearLabel="Effacer la recherche"
+      resultLabel="commandes"
+      placement="end"
+      [value]="term()"
+      [resultCount]="searching() ? hitOrders() : null"
+      (valueChange)="term.set($event)"
+      (keydown.escape)="clearTerm()"
+    />
+
+    <!--
+      🔴 Le sélecteur FILTRE, la recherche SURLIGNE — et sans ce compte, le
+      premier rendrait faux ce que la seconde promet : un article présent dans
+      trois commandes déjà prêtes n'apparaîtrait nulle part, et on conclurait
+      que personne ne le demande.
+    -->
+    @if (onlyElsewhere()) {
+      <fold-callout variant="info" class="co-note">
+        Rien pour « {{ term() }} » dans la pile affichée, mais {{ hitsElsewhere() }} commande{{
+          hitsElsewhere() > 1 ? 's' : ''
+        }}
+        dans les {{ otherStackLabel() }}.
+      </fold-callout>
+    }
+
+    @if (noHit()) {
+      <fold-callout variant="info" class="co-note">
+        Aucun produit de cette journée ne correspond à « {{ term() }} » — ni par son nom, ni par son
+        SKU. Rien n'a été retiré de l'écran.
+      </fold-callout>
+    }
+
+    <!--
+      🔴 Une référence scannée qui n'est pas dans la journée ouverte : on la dit
+      EN TOUTES LETTRES. C'est le cas d'un QR d'hier, et un écran muet laisserait
+      croire que la commande est faite.
+    -->
+    @if (unknownReference(); as asked) {
+      <fold-callout variant="warning" class="co-note">
+        La commande {{ asked }} n'est pas dans la journée du {{ dayLabel() }} — la feuille scannée
+        est peut-être celle d'un autre jour. Les commandes de cette journée sont ci-dessous.
+      </fold-callout>
+    }
+
+    <!-- Le moment le plus fréquent de la journée : la commande quitte la pile
+         « en cours » sous les doigts et l'écran enchaîne. Sans cette phrase, on
+         verrait un autre client apparaître et on douterait d'avoir cliqué. -->
+    @if (justDeclared(); as who) {
+      <fold-callout variant="success" class="co-note">
+        {{ who }} est déclarée prête — au suivant.
+      </fold-callout>
+    }
+
+    @if (closeFailed()) {
+      <fold-callout variant="alert" class="co-note">
+        La commande n'a pas pu être déclarée prête — rien n'a été annoncé au commerce, et les coches
+        sont intactes. Réessayez.
+      </fold-callout>
+    }
+
+    <!-- Le compte de containers sert à charger un véhicule : le montrer
+         enregistré alors qu'il ne l'est pas ferait partir un camion sur une
+         croyance. Il est donc reposé à la valeur servie, et l'échec se dit. -->
+    @if (containersFailed()) {
+      <fold-callout variant="alert" class="co-note">
+        Le nombre de containers n’a pas pu être enregistré — c’est celui du serveur qui est affiché.
+        Réessayez.
+      </fold-callout>
+    }
+  </fold-page-section>
+</fold-page-layout>
+
+<!--
+  **Le corps vit HORS du `fold-page-layout`**, exactement comme sur la fiche
+  d'atelier, et pour la même contrainte : `.page-body` est en `flex: 0 1 auto` et
+  ne s'étire pas à la hauteur du layout. Le pied doit rester au bas de la
+  fenêtre — il porte « hors ligne » et « 2 gestes en attente », et c'est ce qu'on
+  ne peut pas se permettre de cacher.
+-->
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture des commandes…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire les commandes"
+      subtitle="La lecture a échoué — ce qui a été coché, lui, est intact."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (closedAt() === null) {
+      <!--
+        🔴 La journée n'est pas arrêtée : il n'y a RIEN à coliser, et on le dit.
+        Une liste vide ressemblerait à « tout est fait », qui est exactement le
+        contraire.
+      -->
+      <fold-empty-state
+        title="Le plan n’est pas arrêté"
+        subtitle="Tant que le plan du soir n’est pas arrêté, la journée n’a aucune commande. Il s’arrête depuis le prévisionnel."
+      >
+        <fold-icon empty-icon name="clock" size="lg" />
+        <a foldButton routerLink="/production/previsionnel">Ouvrir le prévisionnel</a>
+      </fold-empty-state>
+    } @else if (sheets().length > 0) {
+      <!--
+        🔴 Le corps se rend dès que la JOURNÉE porte des commandes, pas dès que
+        la pile affichée en porte : choisir une pile vide ferait sinon
+        disparaître le sélecteur par lequel on en sort, et l'écran se
+        refermerait sur lui-même.
+      -->
+      <section class="co-body" aria-label="Poste de colisage">
+        <!-- `is-searching` met en RETRAIT ce que le terme ne touche pas — il ne
+             le retire pas : voir le commentaire du champ. -->
+        <div class="co-plates" [class.is-searching]="searching()">
+          <!-- LES COMMANDES — où le colis va, et où il en est. -->
+          <nav class="co-bacs" aria-label="Les commandes de la journée">
+            <p class="co-band">
+              <span class="co-band-title">Commandes</span>
+              <span class="co-band-rule" aria-hidden="true"></span>
+              <!-- La bande a CÉDÉ son compte de prêtes au sélecteur, où le
+                   chiffre sert à choisir plutôt qu'à constater. Elle garde le
+                   volume de la journée, que le sélecteur ne dit pas. -->
+              <span class="co-band-sum">{{ sheets().length }} sur la journée</span>
+            </p>
+
+            <!--
+              🔴 **Le sélecteur FILTRE** — et c'est légitime : choisir une pile
+              n'est pas cacher un résultat, c'est ranger son travail. Ce qu'il
+              pourrait faire croire (« l'article n'est nulle part ») est fermé
+              par le compte de l'autre pile, sous le champ de recherche.
+
+              Il est FIXE, entre la bande et la liste : seule la liste défile
+              sous lui, sinon on perdrait de quoi changer de pile dès la
+              quinzième commande.
+            -->
+            <fold-view-toggle
+              class="co-stack"
+              size="sm"
+              ariaLabel="Pile de commandes"
+              [options]="stackTabs()"
+              [value]="stack()"
+              (valueChange)="chooseStack($event)"
+            />
+
+            <div class="co-bacs-list">
+              @for (sheet of visibleSheets(); track sheet.reference) {
+                <button
+                  type="button"
+                  class="co-bac"
+                  [class.is-open]="sheet.reference === current()?.reference"
+                  [class.is-closed]="sheet.packedAt !== null"
+                  [class.is-hit]="wanted(sheet) > 0"
+                  [attr.aria-current]="sheet.reference === current()?.reference ? 'true' : null"
+                  (click)="choose(sheet.reference)"
+                >
+                  <span class="co-bac-who">
+                    {{ sheet.customerLabel }}
+                    <!-- 🔴 COMBIEN elle en attend. Répartir une marchandise
+                         courte, c'est choisir entre des commandes, et on ne
+                         choisit pas sans ce nombre-là. -->
+                    @if (wanted(sheet); as asked) {
+                      <span class="co-hit-chip">{{ asked }} demandés</span>
+                    }
+                  </span>
+                  <!-- L'acheminement : le mode et le lieu disent sur quelle pile
+                       la commande va, et c'est ce qu'on cherche en la fermant.
+                       ⚠️ Pas d'heure : une commande porte un JOUR de service et
+                       rien de plus fin (vérifié le 2026-09-13). -->
+                  <span class="co-bac-where">{{ method(sheet) }} · {{ sheet.destination }}</span>
+                  <span class="co-bac-count">
+                    <!-- 🔴 Le compte est en PRODUITS, pas en lignes, et il reste
+                         affiché sur une commande fermée : « fermée » dit l'état,
+                         pas le volume, et c'est le volume qu'on cherche quand on
+                         cherche où est passée la marchandise. -->
+                    <span class="co-bac-pieces"
+                      >{{ packedPieces(sheet)
+                      }}<span class="co-bac-of"> / {{ pieces(sheet) }} produits</span></span
+                    >
+                    @if (sheet.packedAt !== null) {
+                      <span class="co-bac-closed">
+                        <fold-icon name="package-check" size="sm" />
+                        Prête
+                      </span>
+                    }
+                  </span>
+                </button>
+              } @empty {
+                <!-- « Tout est prêt » et « rien n'est encore prêt » ne se
+                     ressemblent pas : le premier est la fin de la journée, le
+                     second son début. Un message unique aurait menti une fois
+                     sur deux. -->
+                <p class="co-stack-none">
+                  @if (stack() === 'todo') {
+                    Tout est déclaré prêt — plus une commande à préparer.
+                  } @else {
+                    Rien n'est encore déclaré prêt.
+                  }
+                </p>
+              }
+            </div>
+          </nav>
+
+          <!-- LA COMMANDE OUVERTE — le geste qu'on répète, en grandes cibles. -->
+          <div class="co-open">
+            @if (current(); as order) {
+              <p class="co-band">
+                <span class="co-band-title">{{ order.reference }}</span>
+                <span class="co-band-rule" aria-hidden="true"></span>
+                <span class="co-band-sum">
+                  {{ currentPacked() }} ligne{{ currentPacked() > 1 ? 's' : '' }} sur
+                  {{ order.lines.length }} dans la commande
+                </span>
+              </p>
+
+              <!--
+              **LES CONTAINERS DE LA COMMANDE** — au-dessus des lignes parce
+              qu'on les compte en remplissant, pas après. Le bloc est un
+              composant : les produits y seront glissés-déposés, et son gabarit
+              boucle déjà pour que ce jour-là ne le refasse pas.
+            -->
+              <app-packing-containers
+                [count]="containers()"
+                [editable]="canSetContainers()"
+                (step)="stepContainers($event)"
+              />
+
+              <div class="co-lines">
+                @for (line of order.lines; track line.sku) {
+                  <app-packing-line
+                    [line]="line"
+                    [locked]="order.packedAt !== null"
+                    [hit]="hit(line.sku)"
+                    (toggled)="toggle(order, line, $event)"
+                  />
+                } @empty {
+                  <fold-empty-state
+                    title="Cette commande est vide"
+                    subtitle="Aucune ligne à mettre dedans — rien n’a été commandé sur cette feuille."
+                  >
+                    <fold-icon empty-icon name="basket" size="lg" />
+                  </fold-empty-state>
+                }
+              </div>
+
+              <div class="co-close">
+                @if (order.packedAt !== null) {
+                  <p class="co-closed-said">
+                    <fold-icon name="package-check" size="sm" />
+                    Commande déclarée prête — le commerce l'a appris. Rien ne revient dessus.
+                  </p>
+                } @else {
+                  <!-- Le MODE est dans le libellé : c'est la seule chose qui dise
+                     ce qui va se passer ensuite, et « retrait » sur une commande
+                     livrée serait faux — le lexique réserve `pickup` au mode
+                     d'acheminement. -->
+                  <button
+                    foldButton
+                    block
+                    size="lg"
+                    [disabled]="!canClose()"
+                    [loading]="closing()"
+                    (click)="close(order)"
+                  >
+                    {{ readyLabel() }}
+                  </button>
+                  @if (!canClose() && !closing()) {
+                    <p class="co-closed-said">
+                      {{ order.lines.length - currentPacked() }} ligne{{
+                        order.lines.length - currentPacked() > 1 ? 's' : ''
+                      }}
+                      encore dehors — la commande se déclare prête quand tout est dedans.
+                    </p>
+                  }
+                }
+              </div>
+            } @else {
+              <!-- La pile affichée est vide : on dit LEQUEL des deux cas c'est.
+                   « Tout est prêt » est la fin de la journée, « rien n'est
+                   encore prêt » son début — un message unique aurait menti une
+                   fois sur deux. -->
+              <fold-empty-state
+                [title]="stack() === 'todo' ? 'Tout est déclaré prêt' : 'Rien n’est encore prêt'"
+                [subtitle]="
+                  stack() === 'todo'
+                    ? 'Plus une commande à préparer pour cette journée.'
+                    : 'Déclarez une commande prête, et elle viendra se ranger ici.'
+                "
+              >
+                <fold-icon
+                  empty-icon
+                  [name]="stack() === 'todo' ? 'completed' : 'package'"
+                  size="lg"
+                />
+              </fold-empty-state>
+            }
+          </div>
+
+          <!-- LA RESSOURCE — l'autre plateau. Ce que le four a sorti, ce que les
+               commandes ont déjà pris, et ce qui reste. -->
+          <aside class="co-resource" aria-label="Ressource de la journée">
+            <p class="co-band">
+              <span class="co-band-title">Marchandise à répartir</span>
+              <span class="co-band-rule" aria-hidden="true"></span>
+            </p>
+            <!--
+              Deux colonnes, et les deux chiffres du milieu sont partis. « Sorti »
+              et « Pris » sont les OPÉRANDES du reste : les afficher demandait une
+              soustraction à qui n'a qu'une question — en reste-t-il. Le reste,
+              lui, se lit sans rien calculer.
+            -->
+            <div class="co-resource-head" aria-hidden="true">
+              <span class="co-res-name">Produit</span>
+              <span class="co-res-num">Reste</span>
+            </div>
+            <div class="co-resource-list">
+              @for (item of resources(); track item.sku) {
+                <!-- 🔴 Un reste NÉGATIF n'est pas une erreur de calcul : les commandes
+                     demandent plus que le tirage n'a prévu. C'est le cas que ce
+                     poste existe pour attraper — il se voit, il ne se borne pas
+                     à zéro. -->
+                <!--
+                  🔴 DEUX signaux, et surtout pas un seul. « Pas encore sorti du
+                  four » et « il en manque » sont deux choses différentes, et un
+                  article peut être les deux à la fois : l'attente se lit à
+                  gauche, sur le NOM, en avertissement ; le manque se lit à
+                  droite, sur le RESTE, en alerte. Les fondre en un état ferait
+                  disparaître le manque derrière l'attente le matin, c'est-à-dire
+                  exactement quand il compte.
+                -->
+                <div
+                  class="co-res"
+                  [class.is-short]="item.remaining < 0"
+                  [class.is-awaiting]="item.awaitingProduction"
+                  [class.is-hit]="hit(item.sku)"
+                >
+                  <span class="co-res-name">
+                    {{ item.productName }}
+                    @if (item.awaitingProduction) {
+                      <app-awaiting-badge />
+                    }
+                  </span>
+                  <span class="co-res-num co-res-rest">
+                    @if (item.remaining < 0) {
+                      <fold-icon name="alert" size="sm" />
+                    }
+                    {{ item.remaining }}
+                  </span>
+                </div>
+              } @empty {
+                <p class="co-res-none">Aucun compte à produire sur cette journée.</p>
+              }
+            </div>
+          </aside>
+        </div>
+
+        <footer class="co-foot">
+          <p class="co-foot-rule">
+            Ni prix, ni total en euros sur ce poste — le fournil colise, il ne facture pas.
+          </p>
+          <p class="co-foot-origin">
+            <!--
+              🔴 Le pied dit TOUJOURS ce qui n'est pas parti. Jamais un écran qui
+              a l'air d'avoir enregistré alors que non.
+            -->
+            @if (offline()) {
+              <span class="co-foot-flag">
+                <fold-icon name="offline-bolt" size="sm" />
+                hors ligne
+              </span>
+            }
+            @if (pendingMarks() > 0) {
+              <span class="co-foot-flag">
+                {{ pendingMarks() }} geste{{ pendingMarks() > 1 ? 's' : '' }} en attente d'envoi
+              </span>
+            } @else {
+              <span>Toutes les coches sont parties</span>
+            }
+          </p>
+        </footer>
+      </section>
+    } @else {
+      <fold-empty-state
+        title="Aucune commande ce jour-là"
+        subtitle="Le plan est arrêté, mais la journée ne porte aucune commande à coliser."
+      >
+        <fold-icon empty-icon name="package" size="lg" />
+      </fold-empty-state>
+    }
+  }
+}

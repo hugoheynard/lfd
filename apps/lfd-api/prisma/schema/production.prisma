@@ -35,6 +35,17 @@ model ProductionDay {
   /// `null` = ouverte. L'instant vient du port d'horloge, jamais du mur.
   closedAt DateTime? @map("closed_at")
 
+  /// Le dernier **retirage** : le moment où quelqu'un a décidé, en voyant
+  /// l'écart, d'absorber ce qui était arrivé depuis la clôture.
+  ///
+  /// 🔴 Deux colonnes et pas une : `retakenAt` sans `retakenBy` serait un
+  /// recalcul anonyme, c'est-à-dire exactement ce que l'agrégat refuse. Le
+  /// compte à produire ne se recalcule jamais tout seul ; il se reprend, et la
+  /// reprise a un auteur. `null` tous les deux = la journée porte encore son
+  /// tirage d'origine.
+  retakenAt DateTime? @map("retaken_at")
+  retakenBy String?   @map("retaken_by")
+
   orders ProductionOrder[]
   counts ProductionCount[]
 
@@ -70,6 +81,25 @@ model ProductionOrder {
   packedAt DateTime? @map("packed_at")
   /// L'identité staff qui a scanné, figée. Elle ne vient jamais de la charge.
   packedBy String?   @map("packed_by")
+
+  /// **Combien de containers cette commande occupe** — les bacs qu'on charge
+  /// dans le véhicule. `0` = personne ne les a encore comptés.
+  ///
+  /// 🔴 Ce n'est PAS un {@link ProductionContainer}, et les deux noms sont
+  /// assez proches pour qu'on s'y trompe une fois. Celui-là est le matériel du
+  /// FOUR, réglé par SKU une fois pour toutes ; celui-ci est le contenant
+  /// d'EXPÉDITION d'UNE commande, compté au colisage. Ni la même clé, ni le
+  /// même rythme, ni la même personne. Les confondre mettrait un réglage de
+  /// four sur un bon de livraison.
+  ///
+  /// Un compte et non une liste, pour l'instant : ce qu'on sait aujourd'hui,
+  /// c'est **combien**. Le jour où chaque produit ira dans un container nommé,
+  /// ce nombre deviendra la longueur de cette liste, et ce qui aura été compté
+  /// d'ici là restera vrai.
+  ///
+  /// Il se fige avec le bac : une commande fermée a été annoncée, et le nombre
+  /// de bacs annoncés ne se corrige pas après coup.
+  containerCount Int @default(0) @map("container_count")
 
   lines ProductionOrderLine[]
 
@@ -126,6 +156,24 @@ model ProductionOrderLine {
   productName String @map("product_name")
   quantity    Int
 
+  /// **La ligne est DANS le bac**, telle que le poste de colisage la constate.
+  ///
+  /// C'est l'état de travail du remplissage, et il est RÉVERSIBLE — une ligne
+  /// cochée les doigts farinés se décoche. Il ne faut pas le confondre avec
+  /// `production_order.packed_at`, qui ferme le bac et que le commerce lit
+  /// pour annoncer la commande prête : celui-là ne se reprend pas.
+  ///
+  /// Une fois le bac fermé, ces trois colonnes cessent de bouger : le contenu
+  /// a été annoncé, et le modifier après coup ferait mentir l'annonce.
+  ///
+  /// `packed_at = null` est le seul état « pas encore au bac ». L'agrégat ne
+  /// produit jamais un auteur sans instant.
+  packedAt       DateTime? @map("packed_at")
+  packedBy       String?   @map("packed_by")
+  /// Vides autorisées sur une ligne pourtant au bac — la trace sert à savoir à
+  /// qui demander à 7 h, pas à tenir un registre du personnel.
+  packedInitials String    @default("") @map("packed_initials")
+
   @@index([orderId])
   @@map("production_order_line")
   @@schema("production")
@@ -145,7 +193,52 @@ model ProductionCount {
   productName String @map("product_name")
   quantity    Int
 
+  /// **La ligne est sortie du four**, telle que le fournil la constate.
+  ///
+  /// Trois colonnes qui vont ensemble, comme `packed_at` / `packed_by` sur la
+  /// commande : un instant sans auteur ne se conteste pas, il s'efface. Les
+  /// initiales, elles, peuvent manquer sur une ligne pourtant faite — on coche
+  /// d'abord, on signe si on veut — d'où le `""` par défaut plutôt qu'un
+  /// troisième nullable qui laisserait croire à un quatrième état.
+  ///
+  /// `done_at = null` est le seul état « pas fait ». L'agrégat ne produit
+  /// jamais un auteur sans instant.
+  doneAt       DateTime? @map("done_at")
+  doneBy       String?   @map("done_by")
+  doneInitials String    @default("") @map("done_initials")
+
   @@unique([serviceDay, sku])
   @@map("production_count")
+  @@schema("production")
+}
+
+/// **Le contenant d'un produit au four** — le paramétrage du fournil.
+///
+/// ⚠️ Ce n'est PAS un `pim.product_packaging`. Celui-là est une unité de VENTE
+/// en volume, ce que le client achète d'un coup ; celui-ci est le matériel du
+/// four — combien de baguettes tiennent sur une tourneuse. Les confondre ferait
+/// sortir la mauvaise quantité, et mettrait un conditionnement client sur une
+/// feuille d'atelier.
+///
+/// Le SKU est la clé NATURELLE, et il est opaque : la production ne joint rien
+/// vers le catalogue, elle garde le mot pour pouvoir en reparler. Un produit
+/// sans ligne ici n'a simplement pas de contenant réglé — la colonne de la
+/// fiche reste vide au lieu d'inventer « 1 plaque ».
+model ProductionContainer {
+  sku String @id
+
+  /// Combien de pièces tiennent dans UN contenant. Toujours ≥ 1 : un contenant
+  /// qui n'en porte aucune ne dirait rien, et une division par zéro non plus.
+  unitsPerContainer Int @map("units_per_container")
+
+  /// Le mot du fournil, aux deux nombres. Le pluriel est ÉCRIT et non dérivé :
+  /// « plaque entière » n'en prend pas un « s » mais deux.
+  singular String
+  plural   String
+
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("production_container")
   @@schema("production")
 }

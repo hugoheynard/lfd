@@ -1,4 +1,6 @@
-import { MAX_RATIO_BP } from '@lfd/pim-contracts';
+import { MAX_RATIO_BP, type ProPricePolicy } from '@lfd/pim-contracts';
+import { MILLICENTS_PER_CENT } from '@lfd/money';
+import { formatCents } from '@lfd/b2b-ui/order';
 
 /**
  * **La remise professionnelle, telle qu'on la dit — et le rapport, tel qu'on le
@@ -50,4 +52,26 @@ export function formatDiscount(ratioBp: number): string {
     return 'aucune remise';
   }
   return `−${String(discount).replace('.', ',')} %`;
+}
+
+/**
+ * Le réglage tel qu'il s'applique, assemblé — méthode et rapport.
+ *
+ * Une fabrique plutôt qu'un littéral chez chaque appelant : le jour où une
+ * seconde méthode arrive avec son paramètre, elle s'ajoute ici et nulle part
+ * ailleurs.
+ */
+export function ratioTtcPolicy(ratioBp: number): ProPricePolicy {
+  return { method: 'ratio_ttc', ratioBp };
+}
+
+/**
+ * Un hors taxe en **millicentimes** vers une somme lisible.
+ *
+ * Le simulateur travaille en millicentimes parce que c'est l'unité qui part sur
+ * le fil : arrondir au centime pour l'afficher est juste, arrondir pour
+ * calculer ne le serait pas.
+ */
+export function formatMillicents(millicents: number): string {
+  return formatCents(Math.round(millicents / MILLICENTS_PER_CENT));
 }

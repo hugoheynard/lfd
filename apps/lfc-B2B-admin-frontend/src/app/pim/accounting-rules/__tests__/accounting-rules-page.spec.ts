@@ -37,7 +37,14 @@ async function render({ granted = true, view, fails = false }: Setup = {}) {
         useValue: stubApi(() =>
           fails
             ? Promise.reject(new Error('réseau'))
-            : Promise.resolve(view ?? { ratioBp: null, updatedAt: null }),
+            : Promise.resolve(
+                view ?? {
+                  ratioBp: null,
+                  method: 'ratio_ttc' as const,
+
+                  updatedAt: null,
+                },
+              ),
         ),
       },
     ],
@@ -103,7 +110,12 @@ describe('AccountingRulesPage — jamais réglé', () => {
 });
 
 describe('AccountingRulesPage — un rapport en place', () => {
-  const IN_PLACE: AccountingRulesView = { ratioBp: 9_000, updatedAt: null };
+  const IN_PLACE: AccountingRulesView = {
+    ratioBp: 9_000,
+    method: 'ratio_ttc' as const,
+
+    updatedAt: null,
+  };
 
   it('affiche la remise en pastille', async () => {
     expect(text(await render({ view: IN_PLACE }))).toContain('−10 %');
@@ -118,11 +130,34 @@ describe('AccountingRulesPage — un rapport en place', () => {
   });
 
   /**
-   * L'honnêteté sur ce qui n'est pas branché coûte une phrase ; la découvrir
-   * soi-même coûte une facture.
+   * **Le sélecteur survit à la méthode qu'il devait offrir.**
+   *
+   * Une seconde méthode a existé le temps d'une journée — celle qui devait
+   * reproduire le catalogue professionnel imprimé. L'analyse des 89 prix de
+   * cette plaquette a montré qu'elle n'applique aucune formule, et la méthode a
+   * été retirée. Ce cas garde la PLACE : l'écran doit continuer de nommer la
+   * méthode appliquée, et dire pourquoi il n'y en a qu'une.
    */
-  it('dit que la remise n’est pas encore appliquée', async () => {
-    expect(text(await render({ view: IN_PLACE }))).toContain('Pas encore appliquée');
+  it('nomme la méthode appliquée, et dit pourquoi elle est seule', async () => {
+    const rendered = text(await render({ view: IN_PLACE }));
+
+    expect(rendered).toContain('Méthode de calcul appliquée');
+    expect(rendered).toContain('Ratio TTC pré-remise');
+    expect(rendered).toContain("n'applique aucune règle");
+  });
+
+  /**
+   * 🔴 Régression inversée : ce cas exigeait « Pas encore appliquée ». C'était
+   * vrai à l'écriture et faux depuis le raccordement — la projection B2B refuse
+   * même de partir sans ce réglage (`ProPriceRatioNotSetError`). Un écran qui
+   * dit qu'il ne fait rien alors qu'il tarife est la pire des consignes, et un
+   * test qui l'exige est ce qui l'a laissée survivre.
+   */
+  it('dit que ces réglages tarifent pour de vrai', async () => {
+    const rendered = text(await render({ view: IN_PLACE }));
+
+    expect(rendered).not.toContain('Pas encore appliquée');
+    expect(rendered).toContain('tarifent pour de vrai');
   });
 
   /**

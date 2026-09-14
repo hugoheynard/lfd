@@ -1,0 +1,245 @@
+<!--
+  **La fournée du jour.** Une fiche par poste, cochable, sans un prix ni un nom
+  de client.
+
+  Pas de `title` sur le layout : la bande porte le nom du poste, et deux titres
+  de premier niveau sur un écran n'en font aucun.
+-->
+<fold-page-layout>
+  <!--
+    **La bande de tête.** Ce qu'on lève les yeux pour voir : quel poste, où on en
+    est, et ce qui reste. Elle ne défile PAS — la liste, si.
+  -->
+  <fold-page-section bleed class="fa-masthead" foldSurface="chrome">
+    <div class="fa-masthead-bar">
+      <div class="fa-said">
+        <p class="fa-eyebrow">
+          Fournée du {{ dayLabel() }}
+          @if (dayOffset(); as offset) {
+            <span class="fa-offset">· {{ offset }}</span>
+          }
+          @if (current()) {
+            · fiche {{ rank() }} sur {{ groups().length }}
+          }
+        </p>
+        <h1 class="fa-title">{{ current()?.label ?? 'Fiche d’atelier' }}</h1>
+      </div>
+
+      @if (current(); as fiche) {
+        @if (compact()) {
+          <!-- Pas d'onglets sous le pouce : autant de chips sur 390 px, c'est un
+               menu qu'on ouvre par erreur les mains sales. On choisit sa fiche,
+               on y reste. Le libellé reste VISIBLE : un contrôle qui ne s'annonce
+               que par sa valeur ne dit pas ce qu'il règle. -->
+          <fold-listbox
+            class="fa-picker"
+            size="sm"
+            label="Poste"
+            [options]="tabOptions()"
+            [value]="fiche.key"
+            (selectionChange)="choose($event)"
+          />
+        } @else {
+          <div class="fa-figures">
+            <p class="fa-figure">
+              <span class="fa-figure-label">Cochées</span>
+              <span class="fa-figure-value"
+                >{{ fiche.doneCount }}<span class="fa-figure-of"> / {{ fiche.lines.length }}</span>
+              </span>
+            </p>
+            <p class="fa-figure">
+              <span class="fa-figure-label">Pièces restantes</span>
+              <span class="fa-figure-value fa-figure-value--accent">{{
+                fiche.remainingUnits
+              }}</span>
+            </p>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Les onglets, au poste fixe seulement : un rayon, son avancement. -->
+    @if (!compact() && current(); as fiche) {
+      <fold-view-toggle
+        class="fa-tabs"
+        size="sm"
+        ariaLabel="Poste de la fiche d’atelier"
+        [options]="tabs()"
+        [value]="fiche.key"
+        (valueChange)="choose($event)"
+      />
+    }
+
+    <!--
+      🔴 La lecture du catalogue a échoué : les quantités restent justes, mais
+      les rayons sont perdus — et sans rayon, il n'y a plus de poste. Un échec
+      partiel laisse le contenu à l'écran et se DIT.
+    -->
+    @if (shelvesLost() && state() === 'ready') {
+      <fold-callout variant="warning" class="fa-note">
+        Les rayons n'ont pas pu être lus — les quantités sont justes, mais les fiches ne sont pas
+        séparées par poste. Rechargez pour les retrouver.
+      </fold-callout>
+    }
+
+    @if (retakeFailed()) {
+      <fold-callout variant="alert" class="fa-note">
+        Le retirage n'a pas abouti — la fiche affichée est toujours celle du tirage lu. Réessayez.
+      </fold-callout>
+    }
+
+    <!-- Le bandeau de version périmée : un chiffre et une action. -->
+    @if (drift(); as changed) {
+      @if (generatedLabel(); as tirage) {
+        <app-drift-banner
+          class="fa-note"
+          [drift]="changed"
+          [generatedLabel]="tirage"
+          [compact]="compact()"
+          (retake)="retake()"
+        />
+      }
+    }
+  </fold-page-section>
+</fold-page-layout>
+
+<!--
+  **Le corps vit HORS du `fold-page-layout`, et c'est une contrainte, pas un
+  goût.**
+
+  🔴 `.page-body` — l'enveloppe que le layout pose autour de son contenu — est
+  une colonne flex en `flex: 0 1 auto`. Elle ne s'étire donc PAS à la hauteur du
+  layout : tout ce qu'on y met plafonne à la hauteur de son propre contenu, quel
+  que soit le `flex: 1` qu'on lui donne. C'est ce qui tenait les totaux du
+  prévisionnel au milieu de l'écran, et aucune règle écrite ici ne pouvait le
+  corriger — le style appartient à un autre composant (vérifié le 2026-09-11 en
+  lisant le CSS compilé de `fold-ng`).
+
+  Ici, ça décide de tout : le pied doit rester au bas de la fenêtre et la LISTE
+  doit défiler seule, sinon « hors ligne » et « 2 gestes en attente » partent
+  sous le pli, et c'est exactement ce qu'on ne peut pas se permettre de cacher.
+-->
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture de la fiche…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire la fiche"
+      subtitle="La lecture a échoué — ce qui a été coché, lui, est intact."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (current(); as fiche) {
+      <section class="fa-body" aria-label="Lignes à sortir">
+        <div class="fa-band">
+          <span class="fa-band-title">{{ fiche.label }}</span>
+          <span class="fa-band-rule" aria-hidden="true"></span>
+          <span class="fa-band-sum">
+            {{ fiche.doneCount }} ligne{{ fiche.doneCount > 1 ? 's' : '' }} sur
+            {{ fiche.lines.length }} faite{{ fiche.doneCount > 1 ? 's' : '' }} ·
+            {{ fiche.totalUnits }} pièce{{ fiche.totalUnits > 1 ? 's' : '' }} au total
+          </span>
+        </div>
+
+        <!--
+          UNE seule liste, UN seul composant de ligne. Le poste fixe montre tout
+          dans l'ordre de la fiche ; le téléphone ne garde que ce qui reste, les
+          lignes faites descendant dans le bloc replié du bas. Ce qui change est
+          la SOURCE, jamais le gabarit — deux gabarits divergeraient au premier
+          produit ajouté.
+        -->
+        <div class="fa-lines">
+          @for (line of compact() ? todo() : fiche.lines; track line.sku) {
+            <app-worksheet-line [line]="line" (toggled)="toggle(line, $event)" />
+          } @empty {
+            <fold-empty-state
+              title="Tout est sorti"
+              subtitle="Plus une ligne à cocher sur cette fiche."
+            >
+              <fold-icon empty-icon name="completed" size="lg" />
+            </fold-empty-state>
+          }
+        </div>
+
+        <!-- Les lignes faites, épinglées au-dessus du pied — hors de la zone qui
+             défile, donc toujours atteignables. -->
+        @if (compact() && done().length > 0) {
+          <div class="fa-done">
+            <button
+              type="button"
+              class="fa-done-bar"
+              [attr.aria-expanded]="doneOpen()"
+              (click)="toggleDone()"
+            >
+              <span class="fa-band-title">Faites · {{ done().length }}</span>
+              <span class="fa-done-sum">{{ donePieces() }} pièces sorties</span>
+              <span class="fa-band-rule" aria-hidden="true"></span>
+              <span class="fa-done-more">{{ doneOpen() ? 'Replier' : 'Déplier' }}</span>
+            </button>
+            @if (doneOpen()) {
+              <div class="fa-done-lines">
+                @for (line of done(); track line.sku) {
+                  <app-worksheet-line [line]="line" (toggled)="toggle(line, $event)" />
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <footer class="fa-foot">
+          <p class="fa-foot-rule">
+            Ni prix, ni nom de client, ni total en euros sur cette fiche — par construction.
+          </p>
+          <p class="fa-foot-origin">
+            @if (generatedLabel(); as tirage) {
+              Tirée à {{ tirage }}
+              @if (retakenLabel(); as retiree) {
+                · retirée à {{ retiree }}
+              }
+              @if (drift(); as changed) {
+                · {{ changed.orders }} commande{{ changed.orders > 1 ? 's' : '' }} arrivée{{
+                  changed.orders > 1 ? 's' : ''
+                }}
+                depuis
+              }
+            } @else {
+              <!--
+                Pas d'heure de tirage : il n'y a rien d'arrêté. On le dit, plutôt
+                que d'écrire l'heure de la lecture, qui n'atteste de rien.
+
+                Et on dit OÙ le plan s'arrête : sans ça, quelqu'un lirait « pas
+                arrêté » toute la matinée sans savoir que c'est un geste, ni de
+                qui. Une phrase, pas un bouton — le geste appartient au
+                prévisionnel, pas à la fiche.
+              -->
+              Le plan n'est pas arrêté — ceci est la demande du commerce à cette heure-ci. Le plan
+              du soir s'arrête depuis le prévisionnel.
+            }
+            @if (offline()) {
+              <span class="fa-foot-flag">
+                <fold-icon name="offline-bolt" size="sm" />
+                hors ligne
+              </span>
+            }
+            @if (pendingMarks() > 0) {
+              <span class="fa-foot-flag">
+                {{ pendingMarks() }} geste{{ pendingMarks() > 1 ? 's' : '' }} en attente d'envoi
+              </span>
+            }
+          </p>
+        </footer>
+      </section>
+    } @else {
+      <fold-empty-state
+        title="Rien à sortir ce jour-là"
+        subtitle="Aucune commande n'est à retirer ni à livrer à cette date."
+      >
+        <fold-icon empty-icon name="package" size="lg" />
+      </fold-empty-state>
+    }
+  }
+}

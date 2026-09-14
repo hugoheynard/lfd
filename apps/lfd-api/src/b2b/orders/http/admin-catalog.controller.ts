@@ -24,8 +24,29 @@ import { ListCustomerSkusQuery } from "../application/queries/list-customer-skus
 export class AdminCatalogController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Le catalogue entier, rangé par rayon — celui-là même qui fixe les prix. */
-  @Get()
+  /**
+   * Le catalogue **vendable**, rangé par rayon — celui-là même qui fixe les prix.
+   *
+   * 🔴 **Il répondait sous `@Get()`, et il ne répondait à personne** (corrigé le
+   * 2026-09-13). `b2b/catalog/http/admin-catalog.controller.ts` déclare le même
+   * `@Controller("admin/catalog")` avec le même `@Get()` : Nest sert le premier
+   * enregistré, et c'était l'autre. Cette route-ci était donc morte depuis le
+   * découpage en blocs, **sans qu'aucun signal ne le dise** — ni le typecheck,
+   * ni les tests, ni le démarrage, qui n'a pas d'avis sur deux contrôleurs qui
+   * se recouvrent.
+   *
+   * Ce que ça coûtait : le back-office demandait ce catalogue-ci et recevait
+   * l'autre, qui porte les SKU de **variant** (`VIE-001-1`) et pas de champ
+   * `category` du tout. Tous les écrans qui rangent par rayon — récapitulatif
+   * de production, prévisionnel, fiche d'atelier — voyaient donc chaque ligne
+   * tomber dans « rayon inconnu ». Le front ne pouvait pas le voir : il type sa
+   * réponse `CatalogItemView`, et HTTP ne vérifie rien.
+   *
+   * Le chemin change ici plutôt que là-bas parce que l'autre est celui qui est
+   * SERVI aujourd'hui : lui prendre son adresse casserait l'écran du catalogue
+   * B2B, qui marche.
+   */
+  @Get("sellable")
   async list(): Promise<readonly CatalogItemView[]> {
     return this.queries.execute<ListCatalogQuery, readonly CatalogItemView[]>(
       new ListCatalogQuery(),

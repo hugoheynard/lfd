@@ -427,7 +427,14 @@ describe("Diff entre deux ancres", () => {
       changed: unknown[];
     }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
-    expect(diff.header).toEqual([{ field: "proRatioBp", before: "—", after: "8800" }]);
+    // La MÉTHODE bouge avec lui, et c'est juste : la première ancre est prise
+    // avant qu'aucune règle n'existe — elle ne porte donc pas de méthode, et le
+    // tiret dit « la question ne se posait pas ». Poser le rapport fait naître
+    // l'agrégat sur `ratio_ttc`, le calcul juste.
+    expect(diff.header).toEqual([
+      { field: "proRatioBp", before: "—", after: "8800" },
+      { field: "proPriceMethod", before: "—", after: "ratio_ttc" },
+    ]);
     expect(diff.changed).toEqual([]);
   });
 

@@ -356,4 +356,14 @@ export const FR: ClientCopy = {
     at: 'Au',
     cancel: 'Annuler',
   },
+  legalDocument: {
+    close: 'Fermer',
+    loading: 'Chargement du document…',
+    errorTitle: 'Document indisponible',
+    errorSubtitle:
+      'Le document n’a pas pu être chargé. Réessayez dans un instant — ou demandez-le-nous.',
+    retry: 'Réessayer',
+    emptyTitle: 'Document non publié',
+    emptySubtitle: 'Cette mention ne porte encore aucun article.',
+  },
 };

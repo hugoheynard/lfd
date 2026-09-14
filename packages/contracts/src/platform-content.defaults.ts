@@ -23,6 +23,72 @@ export const contentLocales = ["fr", "en", "it"] as const;
  * ⚠️ Ils vivent ici pour la même raison que les langues : ce module n'importe
  * que des types, donc les deux fronts peuvent lire la liste sans embarquer zod.
  */
+/**
+ * Les **mentions légales** du bandeau de pied de page, dans l'ordre où elles se
+ * lisent.
+ *
+ * 🔴 Une liste FERMÉE, et non des libellés libres — c'est le même geste que
+ * pour les réseaux sociaux, et pour une raison plus forte : ce ne sont pas des
+ * textes de vitrine, ce sont des **prérequis**. Une mention légale ne
+ * s'INVENTE pas ; elle s'affiche ou non, comme le bandeau cookies. Les laisser
+ * en chaînes libres invitait à en écrire une qui n'existe pas, à en
+ * orthographier deux différemment d'une langue à l'autre, et ne permettait à
+ * aucun rendu de savoir de quoi il parlait.
+ *
+ * Toutes sont masquables, CGV comprises : la maison décide ce qu'elle affiche.
+ * Ce que la forme interdit, c'est d'en ajouter une qui n'est pas une mention.
+ */
+export const legalMentionOrder = [
+  "legalNotice",
+  "salesTerms",
+  "privacy",
+  "cookies",
+  "accessibility",
+] as const;
+
+export type LegalMention = (typeof legalMentionOrder)[number];
+
+/**
+ * Le mot de chaque mention, par langue.
+ *
+ * Il vit dans le CONTRAT et non en base : une mention légale porte un nom
+ * consacré, pas un nom qu'on choisit. Le rédacteur décide de l'afficher, pas de
+ * la renommer — et les trois langues ne peuvent plus diverger.
+ *
+ * ⚠️ Le libellé de la barre et le TITRE du document sont deux choses, et ils
+ * l'ont été à retardement : tant que les CGV étaient la seule mention adossée à
+ * un document, leur lien portait ce titre. À cinq documents, ça obligeait à les
+ * charger tous les cinq pour nommer une barre que personne n'a encore ouverte —
+ * et c'était faux sur le fond. **La barre nomme l'obligation ; le document se
+ * nomme lui-même** (tranché le 2026-09-13). Le titre reste ce que le dialogue
+ * affiche, et ce que l'écran d'édition modifie.
+ */
+export const legalMentionLabels: Readonly<
+  Record<(typeof contentLocales)[number], Readonly<Record<LegalMention, string>>>
+> = {
+  fr: {
+    legalNotice: "Mentions légales",
+    salesTerms: "Conditions générales de vente",
+    privacy: "Confidentialité",
+    cookies: "Cookies",
+    accessibility: "Accessibilité",
+  },
+  en: {
+    legalNotice: "Legal notice",
+    salesTerms: "Terms and conditions of sale",
+    privacy: "Privacy",
+    cookies: "Cookies",
+    accessibility: "Accessibility",
+  },
+  it: {
+    legalNotice: "Note legali",
+    salesTerms: "Condizioni generali di vendita",
+    privacy: "Privacy",
+    cookies: "Cookie",
+    accessibility: "Accessibilità",
+  },
+};
+
 export const socialChannels = [
   "instagram",
   "facebook",
@@ -114,7 +180,11 @@ const FR: FooterLocaleContent = {
   legal: {
     pay: "Paiement sécurisé CB et Apple Pay, virement pour les comptes pro.",
     vat: "Prix TTC, TVA 5,5 % ou 10 % selon les produits.",
-    links: ["Mentions légales", "CGV", "Confidentialité", "Cookies", "Accessibilité"],
+    // ⚠️ Plus de « CGV » ici : les conditions ont désormais un lien VIVANT,
+    // posé par le pied de page lui-même et titré par le document. Garder le
+    // libellé inerte à côté offrait deux fois le même mot, dont un seul
+    // cliquable — et c'est le mort qui ressemblait le plus à un lien.
+    links: ["Mentions légales", "Confidentialité", "Cookies", "Accessibilité"],
   },
 };
 
@@ -160,7 +230,7 @@ const EN: FooterLocaleContent = {
   legal: {
     pay: "Secure card and Apple Pay payment, bank transfer for trade accounts.",
     vat: "Prices include VAT, at 5.5% or 10% depending on the product.",
-    links: ["Legal notice", "Terms", "Privacy", "Cookies", "Accessibility"],
+    links: ["Legal notice", "Privacy", "Cookies", "Accessibility"],
   },
 };
 
@@ -211,11 +281,20 @@ const IT: FooterLocaleContent = {
   legal: {
     pay: "Pagamento sicuro con carta e Apple Pay, bonifico per gli account pro.",
     vat: "Prezzi IVA inclusa, 5,5 % o 10 % secondo i prodotti.",
-    links: ["Note legali", "Condizioni", "Privacy", "Cookie", "Accessibilità"],
+    links: ["Note legali", "Privacy", "Cookie", "Accessibilità"],
   },
 };
 
 export const DEFAULT_FOOTER_CONTENT: FooterContent = {
+  // Toutes affichées : ce sont des obligations, et le repli d'une obligation
+  // est de paraître. Les décocher est un geste que quelqu'un pose sciemment.
+  legalMentions: {
+    legalNotice: true,
+    salesTerms: true,
+    privacy: true,
+    cookies: true,
+    accessibility: true,
+  },
   identity: {
     brandName: "La Folie Coffee",
     company: "La Folie Coffee SAS",
@@ -236,3 +315,17 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
   en: EN,
   it: IT,
 };
+
+/**
+ * Les documents légaux de démonstration, repris ici pour que
+ * `@lfd/contracts/content-values` reste **l'unique** entrée sans zod des deux
+ * fronts.
+ *
+ * Un second sous-chemin aurait marché aussi, et aurait obligé chaque écran à
+ * savoir lequel des deux porte la valeur qu'il cherche. Ce module n'importe que
+ * des types, celui qu'il réexporte aussi : la garantie de poids tient.
+ */
+export { DEFAULT_LEGAL_DOCUMENT, DEMO_LEGAL_DOCUMENTS } from "./legal-document.defaults.js";
+
+/** Les bornes d'un document légal, par la même entrée sans zod que le reste des valeurs. */
+export { MAX_LEGAL_DOCUMENT_BODY, MAX_LEGAL_DOCUMENT_PARAGRAPHS } from "./legal-document.bounds.js";

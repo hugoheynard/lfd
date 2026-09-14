@@ -64,9 +64,19 @@ export {
   proPriceRatioPayloadSchema,
   MAX_RATIO_BP,
   proPriceFromPublic,
+  proPriceOf,
+  proPriceMethodPayloadSchema,
+  PRO_PRICE_METHODS,
   proHtFromPublic,
 } from "./accounting-rules.js";
-export type { ProPriceRatioPayload, AccountingRulesView } from "./accounting-rules.js";
+export type {
+  ProPriceRatioPayload,
+  ProPriceMethodPayload,
+  ProPriceMethod,
+  ProPricePolicy,
+  ProPrice,
+  AccountingRulesView,
+} from "./accounting-rules.js";
 
 export { htFromTtc, htMillicentsOf } from "./tax.js";
 
@@ -129,6 +139,7 @@ export {
   setProductChannelsPayloadSchema,
   setProductVatPayloadSchema,
   addProductVariantPayloadSchema,
+  renameProductVariantPayloadSchema,
   alignVariantPayloadSchema,
   variantAspectSchema,
 } from "./product.js";
@@ -151,6 +162,7 @@ export type {
   SetProductChannelsPayload,
   SetProductVatPayload,
   AddProductVariantPayload,
+  RenameProductVariantPayload,
   AlignVariantPayload,
   VariantAspect,
 } from "./product.js";

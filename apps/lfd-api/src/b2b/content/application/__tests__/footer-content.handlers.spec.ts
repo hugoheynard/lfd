@@ -1,12 +1,30 @@
-import { DEFAULT_FOOTER_CONTENT, type FooterContent, type FooterContentView } from "@lfd/contracts";
+import {
+  DEFAULT_FOOTER_CONTENT,
+  DEFAULT_LEGAL_DOCUMENT,
+  type FooterContent,
+  type FooterContentView,
+  type LegalDocument as LegalDocumentContent,
+  type LegalDocumentView,
+  type LegalMention,
+} from "@lfd/contracts";
+
+import { LegalDocument } from "../../domain/entities/legal-document.js";
 
 import { PlatformContentRepository } from "../../domain/platform-content.repository.js";
 import { GetFooterContentHandler } from "../get-footer-content.handler.js";
 import { SaveFooterContentCommand } from "../save-footer-content.command.js";
 import { SaveFooterContentHandler } from "../save-footer-content.handler.js";
 
-/** Un double du port — un objet qui implémente l'interface, pas un module moqué. */
+/**
+ * Un double du port — un objet qui implémente l'interface, pas un module moqué.
+ *
+ * Il porte aussi les documents légaux : le port tient les DEUX formes de bloc,
+ * et une classe qui n'en implémenterait qu'une ne compilerait pas. Ils ne sont
+ * pas le sujet ici — ces trois méthodes existent pour que le double reste un
+ * vrai sous-type, et les documents légaux ont leur propre suite.
+ */
 class FakeContentRepository extends PlatformContentRepository {
+  private readonly documents = new Map<LegalMention, LegalDocumentContent>();
   saved: { content: FooterContent; staffUserId: string } | null = null;
   revision = 0;
 
@@ -28,6 +46,27 @@ class FakeContentRepository extends PlatformContentRepository {
       updatedAt: new Date(0).toISOString(),
       updatedBy: staffUserId,
     });
+  }
+
+  readLegalDocument(mention: LegalMention): Promise<LegalDocumentView> {
+    const stored = this.documents.get(mention);
+    return Promise.resolve({
+      content: stored ?? DEFAULT_LEGAL_DOCUMENT(mention),
+      revision: stored === undefined ? 0 : 1,
+      updatedAt: new Date(0).toISOString(),
+      updatedBy: null,
+    });
+  }
+
+  loadLegalDocument(mention: LegalMention): Promise<LegalDocument> {
+    return Promise.resolve(
+      LegalDocument.reconstitute(this.documents.get(mention) ?? DEFAULT_LEGAL_DOCUMENT(mention)),
+    );
+  }
+
+  saveLegalDocument(mention: LegalMention, document: LegalDocument): Promise<void> {
+    this.documents.set(mention, document.snapshot());
+    return Promise.resolve();
   }
 }
 

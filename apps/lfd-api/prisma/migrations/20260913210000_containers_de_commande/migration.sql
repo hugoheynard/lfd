@@ -1,0 +1,22 @@
+-- LES CONTAINERS D'UNE COMMANDE — combien de bacs elle occupe dans le véhicule.
+--
+-- Strictement ADDITIVE : une colonne à défaut `0` sur une table existante.
+-- Aucune colonne supprimée, aucun renommage, aucune donnée déplacée. Les lignes
+-- déjà en base prennent `0`, ce qui est exactement leur état : personne n'a
+-- encore compté leurs bacs.
+--
+-- 🔴 **Ce n'est PAS la table `production_container`**, et la ressemblance des
+-- deux noms est le seul vrai danger de cette migration. `production_container`
+-- est le matériel du FOUR — combien de baguettes tiennent sur une tourneuse —,
+-- réglé par SKU une fois pour toutes par le fournil. Cette colonne-ci est le
+-- contenant d'EXPÉDITION d'une commande : les bacs qu'on charge dans le
+-- véhicule, comptés au colisage, commande par commande. Ni la même clé, ni le
+-- même rythme, ni la même personne.
+--
+-- Un simple compte, et c'est délibéré : ce qu'on sait aujourd'hui, c'est
+-- **combien**. Le jour où l'on posera chaque produit dans un container nommé,
+-- ce nombre deviendra la longueur de cette liste — et ce qui aura été compté
+-- d'ici là restera vrai. C'est pour ça que l'information se garde dès
+-- maintenant plutôt qu'à l'arrivée du glisser-déposer.
+ALTER TABLE "production"."production_order"
+    ADD COLUMN IF NOT EXISTS "container_count" INTEGER NOT NULL DEFAULT 0;

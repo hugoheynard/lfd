@@ -1,8 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import { socialChannelLabels } from '@lfd/contracts/content-values';
+import { FoldLinkComponent, FoldPanelHostService } from 'fold-ng';
+
+import {
+  legalMentionLabels,
+  legalMentionOrder,
+  socialChannelLabels,
+  type LegalMention,
+} from '@lfd/contracts/content-values';
 
 import { ClientContent } from '../client-content.service';
+import { LegalDocumentPanel } from '../legal-document-panel/legal-document-panel';
 import { LEGAL_YEAR } from './legal-identity';
 
 /**
@@ -24,11 +32,13 @@ import { LEGAL_YEAR } from './legal-identity';
 @Component({
   selector: 'app-client-foot',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldLinkComponent],
   templateUrl: './client-foot.html',
   styleUrl: './client-foot.scss',
 })
 export class ClientFoot {
   private readonly content = inject(ClientContent);
+  private readonly panelHost = inject(FoldPanelHostService);
 
   /** Les textes, servis par l'API — le contenu de départ tant qu'elle n'a pas répondu. */
   protected readonly foot = this.content.footer;
@@ -66,4 +76,38 @@ export class ClientFoot {
     const id = this.legal();
     return [id.company, id.capital, id.siret, id.rcs, id.vat].filter((value) => value !== '');
   });
+
+  /**
+   * Les mentions à afficher, dans l'ordre du contrat, avec leur mot.
+   *
+   * L'ORDRE vient du vocabulaire et non de la base : c'est l'ordre d'une barre
+   * légale, pas une préférence — et le laisser en donnée aurait rendu possible
+   * une barre qui commence par « Cookies ».
+   *
+   * 🔴 Le mot vient du CONTRAT pour les cinq, TITRE du document compris. Il a
+   * été celui du document pour les CGV, du temps où elles étaient la seule
+   * mention vivante ; à cinq documents, nommer la barre par leurs titres
+   * obligerait à charger les cinq d'avance pour peindre un pied de page que
+   * personne n'a encore ouvert — ce qui ruine le chargement paresseux. Et c'est
+   * juste sur le fond : **la barre nomme l'obligation, le dialogue porte le nom
+   * que le document se donne** (tranché le 2026-09-13).
+   */
+  protected readonly shownMentions = computed<readonly LegalMention[]>(() => {
+    const shown = this.content.legalMentions();
+    return legalMentionOrder.filter((key) => shown[key]);
+  });
+
+  /** Le mot de la mention, dans la langue de la vitrine. */
+  protected label(mention: LegalMention): string {
+    return legalMentionLabels[this.content.locale()][mention];
+  }
+
+  /**
+   * Ouvre le dialogue de CETTE mention. C'est CE geste qui déclenche la lecture
+   * du document : le panneau appelle le service, qui ne charge qu'à la première
+   * ouverture de la mention demandée.
+   */
+  protected openMention(mention: LegalMention): void {
+    this.panelHost.open(LegalDocumentPanel, { data: mention });
+  }
 }

@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, type Signal } from '@angular/core';
 import type { StaffPermission } from '@lfd/contracts';
+import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
 import type { FoldIconName } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -100,28 +101,59 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
 /**
  * Les vues de la **Production**.
  *
- * Deux vues, et ce sont deux QUESTIONS, pas deux niveaux de détail : la journée
- * dit ce qu'on fabrique maintenant — c'est ce qui part au fournil sur papier —,
- * le prévisionnel dit **quand ça tombe**. Le second ne se déduit pas du premier
- * répété sept fois : il arbitre entre un plan arrêté et une demande qui bouge.
+ * Trois vues, et ce sont trois QUESTIONS, pas trois niveaux de détail : le
+ * prévisionnel dit **quand ça tombe**, la fournée du jour dit ce qu'on sort du
+ * four maintenant, le colisage dit **dans quel bac ça va**. Aucune ne se déduit
+ * d'une autre lue autrement : la fournée arbitre entre un plan arrêté et une
+ * demande qui bouge, et le colisage pèse ce qui est sorti contre ce qui est dû.
+ *
+ * ⚠️ **Ce commentaire disait « deux vues » jusqu'au 2026-09-13**, et il était
+ * juste quand il a été écrit. La fournée et le colisage ont pour clés le RAYON
+ * et la COMMANDE : les ranger l'une sous l'autre aurait enseigné qu'elles sont
+ * deux distances d'un même écran, ce qu'elles ne sont pas.
+ *
+ * ⚠️ **Le prévisionnel est passé DEVANT le 2026-09-13**, et ce commentaire
+ * disait l'inverse — « en premier : c'est la vue qu'on ouvre à la clôture, et
+ * celle dont on imprime le dossier ». L'ordre suit désormais le rythme : on
+ * regarde la semaine avant de lancer la journée, et la fournée du jour se
+ * prend dans le fournil, sur un téléphone, pas depuis le rail.
+ *
+ * ⚠️ **L'adresse par défaut de `/production` n'a PAS suivi** : elle mène
+ * toujours à la fournée. C'est le favori d'un poste de labo, et le premier
+ * item d'un menu n'est pas la même question que la page qu'ouvre un raccourci
+ * posé sur un écran de fournil.
  *
  * Aucune ne porte de `needs` : `b2b_orders:read` ouvre déjà l'espace, et le
  * répéter sur les deux serait une condition toujours vraie, donc jamais relue.
  */
 export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
   {
-    // EN PREMIER : c'est la vue qu'on ouvre à la clôture, et celle dont on
-    // imprime le dossier. Le prévisionnel se regarde, il ne part pas au fournil.
-    key: 'journee',
-    label: 'Journée',
-    link: '/production/journee',
-    icon: 'production',
-  },
-  {
     key: 'previsionnel',
     label: 'Prévisionnel',
     link: '/production/previsionnel',
     icon: 'calendar',
+  },
+  {
+    // L'adresse reste `journee`, alors que le libellé dit « Fournée du jour ».
+    // Renommer le chemin casserait les favoris des postes de labo pour gagner
+    // une cohérence que personne ne lit : une URL n'est pas un libellé.
+    key: 'journee',
+    label: 'Fournée du jour',
+    link: '/production/journee',
+    icon: 'production',
+  },
+  {
+    // APRÈS la fournée, parce que c'est l'ordre du fournil : on sort du four,
+    // puis on répartit. Le poste s'atteint aussi par le QR d'une feuille
+    // d'atelier (`/colisage/:reference`) — l'entrée de rail est la porte de
+    // celui qui n'a pas de papier sous la main.
+    key: 'colisage',
+    label: 'Colisage',
+    link: '/production/colisage',
+    // `package` : le jeu d'icônes de fold ne porte pas de `box` (vérifié le
+    // 2026-09-13, 0.27.2), et `package` EST le carton. `basket` disait le
+    // panier d'achat, c'est-à-dire le geste du client, pas celui du fournil.
+    icon: 'package',
   },
 ];
 
@@ -344,6 +376,18 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'grid',
     section: 'Contenu',
   },
+  // LES CINQ MENTIONS LÉGALES, une entrée chacune et non une page d'index : on
+  // vient corriger une mention précise, et un index n'aurait ajouté qu'un clic
+  // entre le menu et le texte. Elles sont DÉRIVÉES du vocabulaire — leur ordre
+  // et leurs mots viennent du contrat, jamais d'une liste recopiée ici qui
+  // aurait divergé à la première mention ajoutée.
+  ...legalMentionOrder.map((mention): WorkspaceView => ({
+    key: `mention-${mention}`,
+    label: legalMentionLabels.fr[mention],
+    link: `/b2b/contenu/mentions/${mention}`,
+    icon: 'contracts',
+    section: 'Contenu',
+  })),
 ];
 
 /**

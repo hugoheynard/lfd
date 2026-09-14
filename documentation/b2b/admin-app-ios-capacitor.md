@@ -15,18 +15,27 @@ l'App Store — c'est une installation personnelle.
 ## La décision qui structure tout : coque distante
 
 `capacitor.config.ts` définit `server.url` sur
-`https://lfc-b2b-admin.pages.dev`. La WebView charge donc le site **déjà
+`PROD_FRONT_ORIGINS.b2bAdminFront` — aujourd'hui
+`https://lfd-backoffice.pages.dev`. La WebView charge donc le site **déjà
 déployé** au lieu d'embarquer une copie des fichiers.
+
+🔴 **L'adresse était RECOPIÉE ici et dans la config, et elle avait dérivé** :
+les deux portaient `lfc-b2b-admin.pages.dev` jusqu'au 2026-09-13, alors que le
+projet Pages s'appelle `lfd-backoffice` depuis la bascule. Ce nom n'a plus
+d'entrée DNS (vérifié le 2026-09-13). La coque iOS aurait donc chargé un **écran
+blanc** — indiscernable de la seule panne que ce mode assume, l'absence de
+réseau. La config lit désormais la constante de `@lfd/endpoints` : la dérive
+n'est plus détectable, elle est impossible.
 
 Ce n'est pas un raccourci, c'est ce qui fait que **rien d'autre ne change** :
 
-|                     | Coque distante (retenu)           | Fichiers embarqués                                          |
-| ------------------- | --------------------------------- | ----------------------------------------------------------- |
-| Origine de la page  | `https://lfc-b2b-admin.pages.dev` | `capacitor://localhost`                                     |
-| Auth0               | inchangé, l'URL est déjà déclarée | déclarer `capacitor://localhost` en callback                |
-| CORS backend        | inchangé (`PROD_FRONT_ORIGINS`)   | ouvrir `capacitor://localhost` dans `PROD_CORS_ORIGINS.b2b` |
-| Mise à jour du code | à chaque déploiement, automatique | reconstruire + `cap sync` + réinstaller                     |
-| Hors-ligne          | **non** — écran blanc sans réseau | la coquille s'affiche                                       |
+|                     | Coque distante (retenu)            | Fichiers embarqués                                          |
+| ------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| Origine de la page  | `https://lfd-backoffice.pages.dev` | `capacitor://localhost`                                     |
+| Auth0               | inchangé, l'URL est déjà déclarée  | déclarer `capacitor://localhost` en callback                |
+| CORS backend        | inchangé (`PROD_FRONT_ORIGINS`)    | ouvrir `capacitor://localhost` dans `PROD_CORS_ORIGINS.b2b` |
+| Mise à jour du code | à chaque déploiement, automatique  | reconstruire + `cap sync` + réinstaller                     |
+| Hors-ligne          | **non** — écran blanc sans réseau  | la coquille s'affiche                                       |
 
 Les deux lignes du milieu sont les vraies : le mode embarqué demande de percer
 **deux murs** (les URL de retour Auth0 et la liste CORS fermée du backend) pour

@@ -1,0 +1,101 @@
+/* Une rangée de tuiles, pas un chiffre : le compte deviendra la longueur d'une
+   liste de containers nommés, et ce bloc ne sera pas refait ce jour-là. Elle ne
+   défile pas — elle est courte, et on la lit en même temps que les lignes. */
+:host {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+/* La même bande que les trois colonnes du poste. Recopiée plutôt qu'héritée :
+   l'encapsulation de vue ne laisse pas une règle du parent atteindre ce
+   gabarit-ci, et la percer coûterait plus cher que huit déclarations. */
+.pc-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  margin: 0;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  background: var(--fold-color-surface-band);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.pc-band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.pc-band-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.pc-band-sum {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.pc-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-xl);
+}
+
+/* La tuile d'un container. Son rang se lit de loin — c'est ce qu'on compte en
+   levant les yeux depuis le quai. */
+.co-container {
+  display: grid;
+  place-items: center;
+  width: var(--co-box);
+  height: var(--co-box);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+.pc-rank {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+/* 🔴 À la taille d'une case du fournil : on les actionne les mains prises, et un
+   contrôle de 24 px se rate une fois sur trois. */
+.co-container-step {
+  display: grid;
+  place-items: center;
+  width: var(--co-box);
+  height: var(--co-box);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
+  cursor: pointer;
+}
+
+/* L'ajout est le geste courant : c'est le seul des deux qui s'annonce. */
+.co-container-step--add {
+  border-color: var(--fold-color-primary);
+  color: var(--fold-color-primary);
+}
+
+.pc-none {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

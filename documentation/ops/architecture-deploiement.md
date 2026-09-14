@@ -11,7 +11,7 @@ Sept choses sont déployées : trois Workers Cloudflare et quatre projets Pages.
 ```mermaid
 flowchart TB
     subgraph nav["Navigateurs"]
-        A["Admin staff<br/>lfc-b2b-admin.pages.dev"]
+        A["Admin staff<br/>lfd-backoffice.pages.dev"]
         B["Boutique client<br/>lfc-b2b-eu7.pages.dev"]
         P["PIM<br/>lfc-pim.pages.dev"]
         S["Shell suite<br/>lfc-suite.pages.dev"]

@@ -1,0 +1,76 @@
+/* Le couple qui rend le défilement possible : l'hôte se borne en hauteur
+   (`min-height: 0` défait le plancher `auto` d'un enfant flex), et c'est `.body`
+   qui défile — jamais la page derrière. Même montage que `contact-panel`. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--fold-space-lg) var(--fold-space-xl) var(--fold-space-2xl);
+}
+
+/* ── Le document ────────────────────────────────────────────────────────────
+   Registre administratif : un seul bloc de texte, dense, sans accent ni
+   illustration. Ce qu'on lit pour s'engager ne se survole pas. */
+
+.doc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  /* La mesure de lecture : au-delà, l'œil perd la ligne suivante. Le panneau
+     `md` est déjà étroit, mais le dialogue s'élargit sur un grand écran. */
+  max-width: 68ch;
+}
+
+.article {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Le titre d'article : petites capitales et graisse sobre, à la taille du
+   corps. Un article numéroté se repère par son rang, pas par un changement
+   d'échelle — d'où l'absence de hiérarchie typographique bruyante. */
+.article-head {
+  display: flex;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+  line-height: var(--fold-leading-snug);
+  letter-spacing: var(--fold-tracking-wide);
+  color: var(--fold-color-text);
+}
+
+.article-title {
+  font-variant-caps: small-caps;
+}
+
+/* Le rang, dans la gouttière : c'est lui qui numérote le document, et il reste
+   lisible même quand le titre passe sur deux lignes. */
+.rank {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.article-body {
+  margin: 0;
+  /* Le cœur du registre : justifié AVEC césure. Sans `hyphens`, un texte
+     justifié creuse des rivières blanches — c'est la même règle depuis le
+     plomb, et le navigateur ne la connaît que si `lang` est posé (il l'est,
+     sur `.body`). */
+  text-align: justify;
+  hyphens: auto;
+  /* Les corps saisis au back-office portent leurs propres retours à la ligne :
+     `pre-line` les garde sans casser le rendu justifié. */
+  white-space: pre-line;
+  font-size: var(--fold-text-md);
+  line-height: var(--fold-leading-relaxed);
+  color: var(--fold-color-text-secondary);
+}

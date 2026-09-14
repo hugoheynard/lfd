@@ -23,12 +23,15 @@ import {
   type SetProductChannelsPayload,
   type SetProductVatPayload,
   type AddProductVariantPayload,
+  renameProductVariantPayloadSchema,
+  type RenameProductVariantPayload,
   type AlignVariantPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { AddProductVariantCommand } from "../application/add-product-variant.js";
+import { RenameProductVariantCommand } from "../application/rename-product-variant.js";
 import { AlignVariantOnDefaultCommand } from "../application/align-variant-on-default.js";
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
@@ -166,6 +169,27 @@ export class ProductController {
       new AddProductVariantCommand(id, body),
     );
     return { id: variantId };
+  }
+
+  /**
+   * **Rebaptise une déclinaison.**
+   *
+   * Un `PUT` sur `/name` et non un `PATCH` de la déclinaison entière : le nom
+   * est la SEULE chose qu'on puisse y changer après coup. La référence est
+   * immuable et les options décrivent l'article — un verbe qui les accepterait
+   * toutes les trois inviterait à recycler un SKU, ce que la porte
+   * `lint:sku-never-recycled` interdit par ailleurs.
+   */
+  @Put(":id/variants/:variantId/name")
+  async renameVariant(
+    @Param("id") id: string,
+    @Param("variantId") variantId: string,
+    @Body(new ZodBody(renameProductVariantPayloadSchema)) body: RenameProductVariantPayload,
+  ) {
+    await this.commands.execute<RenameProductVariantCommand, void>(
+      new RenameProductVariantCommand(id, variantId, body.name),
+    );
+    return { id, variantId };
   }
 
   /**

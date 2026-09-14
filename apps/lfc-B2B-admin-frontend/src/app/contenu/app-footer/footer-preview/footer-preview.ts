@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { FooterLocaleContent, LegalIdentity } from '@lfd/contracts';
+import type {
+  ContentLocale,
+  FooterLocaleContent,
+  LegalIdentity,
+  LegalMentionDisplay,
+} from '@lfd/contracts';
+import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
 
 /**
  * L'**aperçu de disposition** du pied de page.
@@ -23,6 +29,31 @@ import type { FooterLocaleContent, LegalIdentity } from '@lfd/contracts';
 export class FooterPreview {
   readonly content = input.required<FooterLocaleContent>();
   readonly identity = input.required<LegalIdentity>();
+  /** La langue affichée : c'est elle qui choisit le mot de chaque mention. */
+  readonly locale = input.required<ContentLocale>();
+  /** Quelles mentions s'affichent — la même décision dans les trois langues. */
+  readonly legalMentions = input.required<LegalMentionDisplay>();
+
+  /**
+   * Les mentions COCHÉES, dans l'ordre du contrat.
+   *
+   * L'aperçu sert à voir ce que le bandeau portera : une mention décochée y
+   * disparaît tout de suite, ce qu'aucune liste de cases ne montre. Le mot vient
+   * du contrat — l'écran choisit ce qui s'affiche, jamais comment ça s'écrit.
+   *
+   * ⚠️ Les CGV ont porté ici le TITRE de leur document, lu à part. Elles n'y
+   * font plus exception : la barre nomme l'obligation pour les cinq, et le
+   * titre est ce que le dialogue affiche (tranché le 2026-09-13). L'exception
+   * obligeait sinon à charger les cinq documents pour nommer une barre que
+   * personne n'a encore ouverte.
+   */
+  protected readonly legalLinks = computed(() => {
+    const shown = this.legalMentions();
+    const locale = this.locale();
+    return legalMentionOrder
+      .filter((mention) => shown[mention])
+      .map((mention) => legalMentionLabels[locale][mention]);
+  });
 
   /**
    * Les mentions d'identité qui sont RENSEIGNÉES, dans l'ordre de la barre.

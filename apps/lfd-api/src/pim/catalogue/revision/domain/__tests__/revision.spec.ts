@@ -33,7 +33,7 @@ function item(over: Partial<RevisionItemInput> = {}): RevisionItemInput {
   };
 }
 
-const HEADER = { proRatioBp: 9_000 };
+const HEADER = { proRatioBp: 9_000, proPriceMethod: "ratio_ttc" };
 
 describe("fingerprint", () => {
   /**
@@ -98,8 +98,8 @@ describe("buildRevision", () => {
    * « rien n'a bougé » — le pire des mensonges pour une ancre.
    */
   it("change d'empreinte quand SEUL le rapport pro bouge", () => {
-    const before = buildRevision({ proRatioBp: 9_000 }, [item()]);
-    const after = buildRevision({ proRatioBp: 8_800 }, [item()]);
+    const before = buildRevision({ proRatioBp: 9_000, proPriceMethod: "ratio_ttc" }, [item()]);
+    const after = buildRevision({ proRatioBp: 8_800, proPriceMethod: "ratio_ttc" }, [item()]);
 
     expect(after.hash).not.toBe(before.hash);
     // Et les articles, eux, sont INCHANGÉS : c'est ce qui permet au magasin de

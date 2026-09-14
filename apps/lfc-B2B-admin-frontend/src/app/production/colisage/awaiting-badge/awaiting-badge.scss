@@ -1,0 +1,18 @@
+/* Un avertissement posé, et jamais l'alerte : l'attente est l'état NORMAL du
+   début de fournée, le manque est l'exception qu'on doit attraper. Les deux
+   partagent l'écran et ne doivent pas partager leur couleur. */
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  padding: 2px var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-warning-text);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+}

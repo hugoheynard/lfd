@@ -1,0 +1,45 @@
+<fold-panel-header [title]="title()" [closeLabel]="t().legalDocument.close" />
+
+<!-- `lang` suit la langue choisie : c'est lui qui donne au navigateur le
+     dictionnaire de césure. Un texte justifié sans césure creuse des rivières
+     blanches, et une césure française appliquée à de l'italien coupe faux. -->
+<div class="body" [attr.lang]="locale()">
+  @switch (status()) {
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        [title]="t().legalDocument.errorTitle"
+        [subtitle]="t().legalDocument.errorSubtitle"
+      >
+        <button foldButton emphasis="outline" intent="neutral" (click)="retry()">
+          {{ t().legalDocument.retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (articles().length === 0) {
+        <fold-empty-state
+          icon="contracts"
+          [title]="t().legalDocument.emptyTitle"
+          [subtitle]="t().legalDocument.emptySubtitle"
+        />
+      } @else {
+        <article class="doc">
+          @for (article of articles(); track article.id) {
+            <section class="article">
+              <h3 class="article-head">
+                <span class="rank">{{ article.rank }}.</span>
+                <span class="article-title">{{ article.title }}</span>
+              </h3>
+              <p class="article-body">{{ article.body }}</p>
+            </section>
+          }
+        </article>
+      }
+    }
+    <!-- `idle` et `loading` disent la même chose au visiteur : ça arrive. -->
+    @default {
+      <fold-loading [message]="t().legalDocument.loading" />
+    }
+  }
+</div>

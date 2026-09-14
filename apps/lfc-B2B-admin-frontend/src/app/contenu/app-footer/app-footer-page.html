@@ -22,7 +22,12 @@
         title="Aperçu"
         subtitle="La disposition, pas les couleurs — quatre colonnes et le bandeau légal."
       />
-      <app-footer-preview [content]="current()" [identity]="identity()" />
+      <app-footer-preview
+        [content]="current()"
+        [identity]="identity()"
+        [locale]="locale()"
+        [legalMentions]="legalMentions()"
+      />
     </fold-card>
 
     <!-- L'IDENTITÉ, hors du sélecteur de langue : un SIRET ne se traduit pas, et
@@ -139,6 +144,25 @@
             Ajouter un canal
           </button>
         </div>
+      </fold-fieldset>
+
+      <!-- LES MENTIONS LÉGALES — des cases, et non des libellés. Ce ne sont pas
+           des textes de vitrine, ce sont des PRÉREQUIS : une mention ne
+           s'invente pas, elle s'affiche ou non, comme le bandeau cookies. Leur
+           mot vient du contrat, dans les trois langues à la fois — d'où leur
+           place ici, hors du sélecteur : décider d'en afficher une n'est pas
+           une décision de langue. -->
+      <fold-fieldset
+        legend="Mentions légales affichées"
+        hint="On n’en ajoute plus : on choisit celles que le bandeau affiche. Leur libellé est celui du contrat, identique dans les trois langues."
+      >
+        @for (mention of legalMentionRows(); track mention.key) {
+          <fold-checkbox
+            [label]="mention.label"
+            [checked]="mention.shown"
+            (checkedChange)="setLegalMention(mention.key, $event)"
+          />
+        }
       </fold-fieldset>
     </fold-card>
 
@@ -270,15 +294,9 @@
           [value]="current().legal.vat"
           (valueChange)="setLegal('vat', $event)"
         />
-        <div class="grid">
-          @for (link of current().legal.links; track $index) {
-            <fold-input
-              [label]="'Mention ' + ($index + 1)"
-              [value]="link"
-              (valueChange)="setLegalLink($index, $event)"
-            />
-          }
-        </div>
+        <!-- Les mentions légales ne sont PLUS ici : elles ne se traduisent pas
+             et ne se saisissent pas. Elles se cochent au-dessus, avec
+             l'identité. -->
       </section>
     </fold-card>
 

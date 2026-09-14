@@ -1,0 +1,212 @@
+<fold-page-layout icon="contracts" [title]="heading()">
+  <p description>
+    La mention légale que la boutique publie. Elle s’écrit en <strong>trois langues</strong> et se
+    corrige ici — sans développeur ni déploiement.
+  </p>
+
+  @switch (state()) {
+    @case ('unknown') {
+      <!-- LE SEGMENT D'URL NE DÉSIGNE AUCUNE MENTION du vocabulaire fermé. Rien
+           n'est demandé au serveur : une clé libre ouvrirait un bloc de contenu
+           que le pied de page ne peut pas cocher et que personne ne saurait
+           retrouver. -->
+      <fold-empty-state
+        tone="alert"
+        title="Mention inconnue"
+        subtitle="Cette adresse ne désigne aucune des cinq mentions légales. Choisissez-en une dans le menu Contenu."
+      >
+        <fold-icon empty-icon name="contracts" [size]="28" />
+      </fold-empty-state>
+    }
+    @case ('loading') {
+      <fold-loading message="Lecture du document…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Document illisible"
+        subtitle="La lecture a échoué — le document enregistré, lui, est intact."
+      >
+        <button foldButton (click)="reload()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <!-- ÉCHEC PARTIEL : l'écriture est passée, la relecture non. Le document
+           reste à l'écran parce qu'il est juste à un enregistrement près — le
+           masquer ferait croire à une perte. -->
+      @if (stale()) {
+        <fold-callout variant="alert">
+          L’enregistrement est passé, mais la relecture a échoué&nbsp;: ce qui s’affiche peut dater
+          d’avant.
+          <button actions foldButton emphasis="outline" intent="neutral" (click)="reload()">
+            Relire le document
+          </button>
+        </fold-callout>
+      }
+
+      @if (revision() === 0) {
+        <fold-callout variant="info">
+          Personne n’a encore enregistré cette mention&nbsp;: ce que vous lisez est le document de
+          <strong>démonstration</strong>, servi par défaut. Il n’engage personne tant qu’il n’a pas
+          été réécrit.
+        </fold-callout>
+      }
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          title="Titre du document"
+          subtitle="Il nomme le document, et c’est lui que la boutique affiche en tête du dialogue."
+        >
+          <fold-view-toggle
+            titleAction
+            ariaLabel="Langue affichée"
+            [options]="localeOptions"
+            [value]="locale()"
+            (valueChange)="pickLocale($event)"
+          />
+        </fold-element-title>
+
+        <div class="title-row">
+          <fold-input
+            label="Titre"
+            hint="Chaque langue a le sien — le sélecteur ci-dessus dit lequel vous écrivez."
+            [value]="titleDraft()[locale()]"
+            (valueChange)="setTitle($event)"
+          />
+          <button
+            foldButton
+            [disabled]="!titleChanged() || !titleComplete()"
+            [loading]="busy()"
+            (click)="saveTitle()"
+          >
+            Enregistrer le titre
+          </button>
+        </div>
+      </fold-card>
+
+      <!-- LES ARTICLES, dans l'ordre de lecture. Le numéro n'est pas décoratif :
+           c'est celui que le client verra, et c'est lui que les deux chevrons
+           changent. -->
+      @if (paragraphs().length === 0) {
+        <fold-empty-state
+          title="Aucun article"
+          subtitle="Le document n’a que son titre. Écrivez le premier article ci-dessous."
+        >
+          <fold-icon empty-icon name="contracts" [size]="28" />
+        </fold-empty-state>
+      } @else {
+        @for (paragraph of paragraphs(); track paragraph.id; let i = $index) {
+          <fold-card>
+            <fold-element-title variant="title" [title]="i + 1 + '. ' + prose(paragraph).title">
+              <div titleAction class="row-actions">
+                <fold-button-icon
+                  icon="chevron-up"
+                  size="sm"
+                  tooltip="Monter d’un rang"
+                  [disabled]="$first || busy()"
+                  (clicked)="move(paragraph.id, i - 1)"
+                />
+                <fold-button-icon
+                  icon="chevron-down"
+                  size="sm"
+                  tooltip="Descendre d’un rang"
+                  [disabled]="$last || busy()"
+                  (clicked)="move(paragraph.id, i + 1)"
+                />
+                <fold-button-icon
+                  icon="edit"
+                  size="sm"
+                  tooltip="Modifier cet article"
+                  [disabled]="busy()"
+                  (clicked)="startEdit(paragraph)"
+                />
+                <!-- La suppression est gardée SUR PLACE : un dialogue ferait
+                     perdre de vue l'article qu'on retire, et c'est justement ce
+                     qu'on veut relire avant de confirmer. -->
+                <fold-inline-confirm
+                  message="L’article part des trois langues à la fois."
+                  [loading]="busy()"
+                  (confirmed)="remove(paragraph.id)"
+                >
+                  <fold-button-icon icon="bin" size="sm" tone="critical" tooltip="Supprimer" />
+                </fold-inline-confirm>
+              </div>
+            </fold-element-title>
+
+            @if (editingId() === paragraph.id) {
+              <fold-input
+                label="Titre de l’article"
+                [value]="editDraft().title"
+                (valueChange)="setEdit('title', $event)"
+              />
+              <fold-textarea
+                label="Corps"
+                [rows]="8"
+                [value]="editDraft().body"
+                (valueChange)="setEdit('body', $event)"
+              />
+              <div class="actions">
+                <button foldButton emphasis="outline" intent="neutral" (click)="cancelEdit()">
+                  Annuler
+                </button>
+                <button
+                  foldButton
+                  [disabled]="!editComplete()"
+                  [loading]="busy()"
+                  (click)="saveEdit(paragraph)"
+                >
+                  Enregistrer cette langue
+                </button>
+              </div>
+            } @else {
+              <p class="article-body">{{ prose(paragraph).body }}</p>
+            }
+          </fold-card>
+        }
+      }
+
+      <!-- L'AJOUT, hors du sélecteur de langue et le disant : un article naît
+           dans les trois langues ou n'existe pas. La contrainte se voit dans la
+           FORME du formulaire — trois blocs ouverts ensemble — plutôt que dans
+           un refus du serveur après la saisie. -->
+      <fold-card>
+        <fold-element-title variant="title" title="Ajouter un article" [subtitle]="addSubtitle()" />
+
+        @if (adding()) {
+          <div class="languages">
+            @for (field of addFields(); track field.code) {
+              <fold-fieldset [legend]="field.name">
+                <fold-input
+                  label="Titre de l’article"
+                  [value]="field.prose.title"
+                  (valueChange)="setAdd(field.code, 'title', $event)"
+                />
+                <fold-textarea
+                  label="Corps"
+                  [rows]="6"
+                  [value]="field.prose.body"
+                  (valueChange)="setAdd(field.code, 'body', $event)"
+                />
+              </fold-fieldset>
+            }
+          </div>
+          <div class="actions">
+            <button foldButton emphasis="outline" intent="neutral" (click)="cancelAdd()">
+              Annuler
+            </button>
+            <button foldButton [disabled]="!addComplete()" [loading]="busy()" (click)="submitAdd()">
+              Ajouter l’article
+            </button>
+          </div>
+        } @else {
+          <div class="actions">
+            <button foldButton emphasis="outline" intent="neutral" (click)="openAdd()">
+              Écrire un article dans les trois langues
+            </button>
+          </div>
+        }
+      </fold-card>
+    }
+  }
+</fold-page-layout>
