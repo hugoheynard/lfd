@@ -1,0 +1,29 @@
+<!-- En TÊTE, avant l'adresse elle-même : ce n'est pas une consigne de
+     livraison, c'est le rang de cette adresse parmi les autres. On le décide
+     en ouvrant le formulaire, pas après avoir tapé une rue. -->
+<fold-checkbox
+  [label]="labels().defaultLabel"
+  [hint]="labels().defaultHint"
+  [checked]="value().isDefault"
+  (checkedChange)="setDefault($event)"
+/>
+
+<lfd-address-form
+  [legend]="labels().address.legend"
+  [labelHint]="labels().address.labelHint"
+  [line2Hint]="labels().address.line2Hint"
+  [noteLabel]="labels().address.noteLabel"
+  [notePlaceholder]="labels().address.notePlaceholder"
+  [coordinatesLabel]="labels().address.coordinatesLabel"
+  [coordinatesHint]="labels().address.coordinatesHint"
+  [fields]="fields"
+  [value]="postal()"
+  (valueChange)="setPostal($event)"
+/>
+
+<lfd-delivery-specs
+  [(value)]="value"
+  [signatureFloor]="signatureFloor()"
+  [knownContacts]="knownContacts()"
+  [labels]="labels().specs"
+/>

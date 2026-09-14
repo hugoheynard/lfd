@@ -8,11 +8,15 @@ import type {
   DeliveryAddressPayload,
   DeliveryAddressView,
 } from '@lfd/contracts';
+import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
 import { NotifyService } from '../../../../notify.service';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { FR } from '../../../copy/fr';
 import { ServicePoints } from '../../../shop/pickup-points.store';
+import { accountWith, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
+import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
 import { AddressesPanel, type AddressesPanelData } from './addresses-panel';
 
 const CHALET: DeliveryAddressView = {
@@ -94,6 +98,7 @@ function boot(
   TestBed.configureTestingModule({
     imports: [AddressesPanel],
     providers: [
+      accountWith([TOMMEUSES]),
       {
         provide: ClientAddresses,
         useValue: {
@@ -164,6 +169,11 @@ function boot(
   return fixture;
 }
 
+afterEach(() => {
+  TestBed.inject(FoldPanelHostService).dismissAll();
+  vi.unstubAllGlobals();
+});
+
 describe('AddressesPanel', () => {
   let fixture: ComponentFixture<AddressesPanel>;
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -228,59 +238,53 @@ describe('AddressesPanel', () => {
     }
   });
 
-  it('bascule sur le formulaire, poste la livraison, et revient à la liste relue', async () => {
+  /**
+   * Depuis le 2026-09-14, une livraison s'édite dans son DIALOGUE, empilé sur la
+   * liste. Au succès, la liste montrée est celle que l'écriture a relue.
+   */
+  it('« Ajouter » ouvre le dialogue, coché par défaut sur un carnet vide ; au succès, la liste relue le montre', async () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
     fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [] });
 
     button(FR.account.addressAdd).click();
-    fixture.detectChanges();
-    expect(el().querySelector('lfd-address-form')).not.toBeNull();
-
-    typeAddress();
-    await save();
-
-    expect(wire.deliveries).toEqual([
-      {
-        label: 'Bureau',
-        ligne1: '3 place du Village',
-        ligne2: '',
-        codePostal: '73320',
-        ville: 'Tignes',
-        pays: 'France',
-        // Le carnet était vide : la première adresse devient la défaut.
-        isDefault: true,
-        specs: {
-          signatureRequired: null,
-          note: 'Code 1234',
-          slots: { mode: 'everyday', slot: null },
-          deliveryContact: null,
-          gps: null,
-        },
+    expect(openedPanel()).toEqual({
+      component: DeliveryAddressDialog,
+      side: 'center',
+      data: {
+        companyId: 'cmp_1',
+        address: null,
+        knownContacts: [{ prenom: 'Hugo', nom: 'Heynard', telephone: '06 12 44 08 71' }],
+        signatureFloor: false,
+        firstOfBook: true,
       },
-    ]);
+    });
+    // Le panneau ne bascule plus sur un formulaire postal : la liste reste dessous.
     expect(el().querySelector('lfd-address-form')).toBeNull();
+
+    // Le dialogue écrit (le carnet partagé est relu), puis se ferme sur un succès.
+    await TestBed.inject(ClientAddresses).addDelivery('cmp_1', {
+      label: 'Bureau',
+      ligne1: '3 place du Village',
+      ligne2: '',
+      codePostal: '73320',
+      ville: 'Tignes',
+      pays: 'France',
+      isDefault: true,
+      specs: CHALET.specs,
+    });
+    const [dialog] = TestBed.inject(FoldPanelHostService).panels();
+    if (dialog?.kind !== 'component') {
+      throw new Error('Le dialogue ne s’est pas ouvert.');
+    }
+    dialog.injector.get(FoldPanelRef).close(true);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     expect(el().querySelector('.delivery')?.textContent).toContain('Bureau');
   });
 
-  it('sur un refus, reste sur le formulaire et montre le message du serveur', async () => {
-    fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET] });
-    button(FR.account.addressAdd).click();
-    fixture.detectChanges();
-    typeAddress();
-    wire.answer = 'Code postal hors de nos zones.';
-    await save();
-
-    expect(el().querySelector('lfd-address-form')).not.toBeNull();
-    const callout = el().querySelector('fold-callout');
-    expect(callout?.textContent).toContain(FR.account.addressSaveFailed);
-    expect(callout?.textContent).toContain('Code postal hors de nos zones.');
-    expect(wire.deliveries[0]?.isDefault).toBe(false);
-  });
-
   it('ouvert droit au formulaire de facturation, écrit la charge postale seule', async () => {
-    fixture = boot(
-      { ...BILLING, form: { kind: 'edit', addressId: null } },
-      { billing: null, deliveries: [] },
-    );
+    fixture = boot({ ...BILLING, form: { kind: 'edit' } }, { billing: null, deliveries: [] });
     fixture.detectChanges();
 
     typeAddress();
@@ -298,8 +302,8 @@ describe('AddressesPanel', () => {
     ]);
   });
 
-  /** Rétabli le 2026-09-14 : « Modifier » sur une livraison, qui manquait au lot. */
-  it('« Modifier » une livraison préremplit tout, garde ses consignes, et la PATCHe', async () => {
+  it('« Modifier » une livraison ouvre son dialogue sur CETTE adresse, consignes comprises', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(true));
     const withSpecs: DeliveryAddressView = {
       ...CHALET,
       specs: {
@@ -311,38 +315,10 @@ describe('AddressesPanel', () => {
     fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [withSpecs] });
 
     button(FR.account.edit).click();
-    fixture.detectChanges();
-    expect(el().querySelector('fold-panel-header')?.textContent).toContain(FR.account.addressEdit);
-    const form = fixture.debugElement.query(By.directive(AddressForm))
-      .componentInstance as AddressForm;
-    expect(form.value().line1).toBe('1 route du Col');
-
-    form.value.set({ ...form.value(), city: 'Tignes' });
-    fixture.detectChanges();
-    await save();
-
-    expect(wire.updates).toEqual([
-      {
-        addressId: 'adr_1',
-        payload: expect.objectContaining({
-          ville: 'Tignes',
-          isDefault: true,
-          specs: expect.objectContaining({ note: 'Porte bleue', slots: withSpecs.specs.slots }),
-        }),
-      },
-    ]);
-    expect(wire.deliveries).toEqual([]);
-  });
-
-  it('ouvert par la carte bureau sur une livraison, entre directement dans son formulaire', () => {
-    fixture = boot(
-      { ...DELIVERY, form: { kind: 'edit', addressId: 'adr_1' } },
-      { billing: SIEGE, deliveries: [CHALET] },
-    );
-
-    const form = fixture.debugElement.query(By.directive(AddressForm))
-      .componentInstance as AddressForm;
-    expect(form.value().label).toBe('Chalet');
+    expect(openedPanel()?.component).toBe(DeliveryAddressDialog);
+    expect(openedPanel()?.side).toBe('bottom');
+    expect(openedPanel()?.data).toMatchObject({ address: withSpecs, firstOfBook: false });
+    expect(wire.updates).toEqual([]);
   });
 
   it('« Modifier la facturation » la préremplit', () => {

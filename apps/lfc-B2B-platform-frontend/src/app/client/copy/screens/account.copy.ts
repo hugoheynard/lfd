@@ -1,3 +1,4 @@
+import type { DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
@@ -176,7 +177,6 @@ export interface AccountCopy {
   readonly billingEdit: string;
   /** Le titre du formulaire qui modifie une livraison. */
   readonly addressEdit: string;
-  readonly deliveryNote: string;
   readonly addressSaveFailed: string;
   readonly addressSavedToast: string;
   /** Désigner une livraison comme la défaut — absent sur celle qui l'est déjà. */
@@ -192,6 +192,12 @@ export interface AccountCopy {
   readonly addressRemovedToast: string;
   /** En tête du message du serveur, quand suppression ou défaut est refusé. */
   readonly addressActionFailed: string;
+  /** Sous le titre du dialogue d'une livraison : le lieu, et comment on y livre. */
+  readonly deliveryDialogSubtitle: string;
+  /** Le bouton d'envoi d'une livraison NEUVE — « Enregistrer » corrige une existante. */
+  readonly deliveryAddSubmit: string;
+  /** Le formulaire partagé d'une livraison — rang, postal, consignes — dans la langue de l'écran. */
+  readonly deliveryForm: DeliveryAddressFormLabels;
   readonly termMonthly: string;
   /**
    * Sous le crédit mensuel, selon ce que `/me` en dit. 🔴 Il y avait ici UNE
@@ -333,6 +339,26 @@ export interface AccountCopy {
   /** Visible et désactivé tant qu'aucun prestataire n'est branché (plan §5.1). */
   readonly mandateEsign: string;
   readonly mandateEsignSoon: string;
+  /** Le geste de la carte, et le titre du panneau des zones 14 et 19. */
+  readonly mandateOptions: string;
+  /** Sous le titre : ce que ces zones sont. */
+  readonly mandateOptionsSubtitle: string;
+  /** Dit AVANT les champs : aucune zone n'est obligatoire. */
+  readonly mandateOptionsNotice: string;
+  /** Tant qu'un brouillon existe : l'enregistrement le rend caduc. */
+  readonly mandateOptionsDraftWarning: string;
+  readonly mandateOptionsDebtorReference: string;
+  readonly mandateOptionsDebtorReferenceHint: string;
+  readonly mandateOptionsContractNumber: string;
+  readonly mandateOptionsContractNumberHint: string;
+  readonly mandateOptionsLoading: string;
+  readonly mandateOptionsLoadFailedTitle: string;
+  /** Sans RIB, les zones n'ont pas de ligne où vivre. */
+  readonly mandateOptionsNoBank: string;
+  readonly mandateOptionsSave: string;
+  readonly mandateOptionsSavedToast: string;
+  /** En tête du message du serveur, quand l'enregistrement est refusé. */
+  readonly mandateOptionsSaveFailed: string;
   /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
   readonly supportTitle: string;
   /** Le titre du panneau que la carte ouvre. */

@@ -3,24 +3,29 @@
      imbriqué ne répète pas celui de son parent, il le précise, et « Créneaux
      de livraison préférés » sous « Détail de livraison » disait deux fois le
      même mot. -->
-<fold-fieldset legend="Détail de livraison" legendVariant="heading" appearance="border">
-  <fold-fieldset class="slots" legend="Créneaux préférés" legendVariant="heading">
+<fold-fieldset [legend]="labels().detailLegend" legendVariant="heading" appearance="border">
+  <fold-fieldset class="slots" [legend]="labels().slotsLegend" legendVariant="heading">
     <fold-checkbox
-      label="Le même créneau tous les jours"
-      hint="décochez pour définir un créneau par jour"
+      [label]="labels().sameEveryDay"
+      [hint]="labels().sameEveryDayHint"
       [checked]="value().sameEveryDay"
       (checkedChange)="set('sameEveryDay', $event)"
     />
 
     <!-- Une ligne « Tous les jours », ou sept : le socle rend les lignes
          qu'on lui donne, c'est ici qu'on décide lesquelles. -->
-    <lfd-hours-form [value]="slotEntries()" (valueChange)="setSlotEntries($event)" />
+    <lfd-hours-form
+      [startLabel]="labels().slotStart"
+      [endLabel]="labels().slotEnd"
+      [value]="slotEntries()"
+      (valueChange)="setSlotEntries($event)"
+    />
   </fold-fieldset>
 
-  <fold-fieldset legend="Contact sur place" legendVariant="heading">
+  <fold-fieldset [legend]="labels().contactLegend" legendVariant="heading">
     <fold-checkbox
-      label="Pas de contact de livraison dédié"
-      hint="cochez si le livreur n'a personne à prévenir sur place"
+      [label]="labels().noContact"
+      [hint]="labels().noContactHint"
       [checked]="value().noContact"
       (checkedChange)="set('noContact', $event)"
     />
@@ -30,9 +35,9 @@
         <!-- Raccourci de saisie, pas un champ : la valeur reste vide après le
              choix, parce que ce qui compte est ce qu'il a REMPLI en dessous. -->
         <fold-listbox
-          label="Reprendre un contact connu"
           optional
-          placeholder="Choisir un contact…"
+          [label]="labels().knownContact"
+          [placeholder]="labels().knownContactPlaceholder"
           [options]="knownContactOptions()"
           [value]="null"
           (selectionChange)="onPickContact($event)"
@@ -42,28 +47,28 @@
       <div class="row">
         <fold-input
           class="grow"
-          label="Prénom"
           required
+          [label]="labels().firstName"
           [value]="value().contactPrenom"
           (valueChange)="set('contactPrenom', $event)"
         />
         <fold-input
           class="grow"
-          label="Nom"
           required
+          [label]="labels().lastName"
           [value]="value().contactNom"
           (valueChange)="set('contactNom', $event)"
         />
       </div>
       <fold-input
-        label="Téléphone"
         required
+        [label]="labels().phone"
         [value]="value().contactTel"
         (valueChange)="set('contactTel', $event)"
       />
 
       @if (contactIssue()) {
-        <p class="contact-issue">{{ contactIssue() }}</p>
+        <p class="contact-issue">{{ labels().contactIncomplete }}</p>
       }
     }
   </fold-fieldset>
@@ -74,8 +79,8 @@
      seconde le jour où l'habitude change — c'est-à-dire au moment précis où
      l'héritage devait servir. -->
 <fold-listbox
-  label="Signature à la remise"
-  hint="préremplit les commandes livrées ici ; modifiable au panier"
+  [label]="labels().signature"
+  [hint]="labels().signatureHint"
   [options]="signatureOptions()"
   [value]="signatureChoice()"
   (selectionChange)="setSignature($event)"

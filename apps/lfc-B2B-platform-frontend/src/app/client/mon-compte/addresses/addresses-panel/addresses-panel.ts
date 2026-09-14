@@ -8,24 +8,17 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { AddressForm, DEFAULT_POSTAL_FIELDS, type PostalAddress } from '@lfd/b2b-ui/address';
 import {
-  AddressForm,
-  DEFAULT_POSTAL_FIELDS,
-  type PostalAddress,
-  type PostalField,
-} from '@lfd/b2b-ui/address';
-import {
-  deliveryDraftFrom,
-  EMPTY_DELIVERY_DRAFT,
+  EMPTY_POSTAL_DRAFT,
   postalDraftFrom,
   postalIssue,
   toBillingPayload,
-  toDeliveryPayload,
   toPostal,
   withPostal,
-  type DeliveryDraft,
+  type PostalDraft,
 } from '@lfd/b2b-ui/company';
-import type { CompanyView } from '@lfd/contracts';
+import type { CompanyView, DeliveryAddressView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -41,6 +34,7 @@ import {
 
 import { NotifyService } from '../../../../notify.service';
 import { ClientAddresses } from '../../../client-addresses.service';
+import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
 import { ServicePoints } from '../../../shop/pickup-points.store';
@@ -52,8 +46,9 @@ import {
   deliveryRows,
   postalLine,
 } from '../addresses-section';
+import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
 
-/** Ce que montre le panneau : la partie du carnet, ou le formulaire d'UNE adresse. */
+/** Ce que montre le panneau : la partie du carnet, ou le formulaire de la facturation. */
 type AddressesMode = 'list' | 'form';
 
 /** Une action de ligne en vol : sur quelle livraison, et laquelle des deux. */
@@ -61,9 +56,6 @@ interface RowAction {
   readonly addressId: string;
   readonly kind: 'remove' | 'default';
 }
-
-/** Une livraison se nomme et porte sa note pour les livreurs ; une facturation, non. */
-const DELIVERY_FIELDS: readonly PostalField[] = [...DEFAULT_POSTAL_FIELDS, 'note'];
 
 /** Charge d'ouverture : la société, et si l'on peut écrire son carnet. */
 export interface AddressesPanelData {
@@ -73,8 +65,8 @@ export interface AddressesPanelData {
   /** La partie du carnet par laquelle on entre — chaque bouton de carte ouvre la sienne. */
   readonly view: AddressesView;
   /**
-   * Ouvrir directement un formulaire : c'est le geste de la carte bureau
-   * (« Ajouter », « Modifier », « Renseigner »). La carte mobile ouvre le détail.
+   * Ouvrir directement le formulaire de facturation : c'est le geste de la
+   * carte bureau (« Renseigner », « Modifier »). La carte mobile ouvre le détail.
    */
   readonly form: AddressesForm;
 }
@@ -83,13 +75,18 @@ export interface AddressesPanelData {
  * Le panneau **Adresses** de `/mon-compte` — la facturation, les livraisons, et
  * de quoi en AJOUTER, pour de vrai.
  *
- * ## Une partie du carnet, puis son formulaire
+ * ## Une partie du carnet
  *
  * Le panneau s'ouvre sur UNE partie — la facturation, ou les livraisons —,
- * celle du bouton qui l'a ouvert. « Ajouter » ou « Renseigner » bascule le
- * panneau sur le formulaire au lieu d'en empiler un second : on revient par
- * Annuler, ou par Enregistrer, qui retombe sur la liste RELUE — l'adresse y
- * apparaît à la place que le serveur lui donne (la défaut en tête).
+ * celle du bouton qui l'a ouvert.
+ *
+ * - **La facturation** bascule le panneau sur son formulaire postal : on
+ *   revient par Annuler, ou par Enregistrer.
+ * - **Une livraison** s'ajoute et se corrige dans son DIALOGUE
+ *   (`DeliveryAddressDialog`, depuis le 2026-09-14), empilé par-dessus la
+ *   liste : postal, note, point GPS, créneaux, contact sur place et signature —
+ *   la parité avec le back-office. Au succès, la liste est celle que l'écriture
+ *   a relue : l'adresse y apparaît à la place que le serveur lui donne.
  *
  * ## Supprimer, désigner la défaut
  *
@@ -100,16 +97,8 @@ export interface AddressesPanelData {
  * promouvoir une autre par le serveur, et l'écran ne la devine pas. Un refus
  * s'affiche en tête de la liste, qui reste à l'écran.
  *
- * ## Ce qui n'y est pas
- *
- * Ni créneaux ni contact sur place :
- * une adresse neuve part sans consignes horaires ni contact (`noContact`), et
- * devient la défaut seulement si c'est la première ; une adresse modifiée
- * garde les siens. Le formulaire complet reste
- * celui du back-office et de l'ancien écran « Mes entreprises ».
- *
- * Le refus reste affiché dans le formulaire resté ouvert, sous les champs
- * qu'il nomme.
+ * Le refus d'une facturation reste affiché dans le formulaire resté ouvert ;
+ * celui d'une livraison, dans son dialogue.
  */
 @Component({
   selector: 'app-addresses-panel',
@@ -146,13 +135,13 @@ export class AddressesPanel {
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly addresses = inject(ClientAddresses);
+  private readonly client = inject(ClientCompany);
   private readonly service = inject(ServicePoints);
   private readonly notify = inject(NotifyService);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly mode = signal<AddressesMode>('list');
-  protected readonly draft = signal<DeliveryDraft>(EMPTY_DELIVERY_DRAFT);
-  /** La livraison en cours de modification, `null` pour un ajout. */
-  private readonly editing = signal<string | null>(null);
+  protected readonly draft = signal<PostalDraft>(EMPTY_POSTAL_DRAFT);
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
@@ -189,82 +178,51 @@ export class AddressesPanel {
     deliveryCountLabel(this.deliveries().length, this.t().account),
   );
 
-  protected readonly fields = computed(() =>
-    this.data().view === 'delivery' ? DELIVERY_FIELDS : DEFAULT_POSTAL_FIELDS,
-  );
+  protected readonly fields = DEFAULT_POSTAL_FIELDS;
 
   protected readonly heading = computed(() => {
     const copy = this.t().account;
-    const billing = this.data().view === 'billing';
-    if (this.mode() === 'form') {
-      if (billing) {
-        return this.addresses.billing() === null ? copy.billingFill : copy.billingEdit;
-      }
-      return this.editing() === null ? copy.addressAdd : copy.addressEdit;
+    if (this.data().view === 'delivery') {
+      return copy.deliveryHead;
     }
-    return billing ? copy.billingHead : copy.deliveryHead;
+    if (this.mode() === 'form') {
+      return this.addresses.billing() === null ? copy.billingFill : copy.billingEdit;
+    }
+    return copy.billingHead;
   });
 
   protected readonly postal = computed(() => toPostal(this.draft()));
 
   protected readonly canSave = computed(() => !this.saving() && postalIssue(this.draft()) === '');
 
-  /**
-   * Une adresse neuve n'a ni créneau ni contact sur place (`noContact`) : sans
-   * lui, la charge porterait un contact aux trois champs vides, que le contrat
-   * refuse. Elle devient la défaut seulement si le carnet est vide.
-   */
   constructor() {
-    // L'ouverture peut aller droit au formulaire : un effet, puisque `data`
-    // n'est pas encore posé quand le constructeur tourne.
+    // L'ouverture peut aller droit au formulaire de facturation : un effet,
+    // puisque `data` n'est pas encore posé quand le constructeur tourne.
     effect(() => {
       const { view, form } = this.data();
       untracked(() => {
-        if (form === null) {
-          return;
-        }
-        if (view === 'billing') {
+        if (view === 'billing' && form !== null) {
           this.editBilling();
-        } else if (form.kind === 'edit' && form.addressId !== null) {
-          this.editDelivery(form.addressId);
-        } else {
-          this.addDelivery();
         }
       });
     });
   }
 
-  protected addDelivery(): void {
-    this.editing.set(null);
-    this.startForm({
-      ...EMPTY_DELIVERY_DRAFT,
-      noContact: true,
-      isDefault: this.deliveries().length === 0,
-    });
+  /** Une livraison neuve, dans son dialogue — cochée « par défaut » si le carnet est vide. */
+  protected addDelivery(): Promise<void> {
+    return this.openDelivery(null);
   }
 
-  /**
-   * Modifie une livraison du carnet, préremplie EN ENTIER : ses créneaux, son
-   * contact et son point GPS repartent tels quels, puisque le formulaire ne
-   * les montre pas — une modification ne doit pas les effacer.
-   */
-  protected editDelivery(addressId: string): void {
+  /** Corrige une livraison du carnet dans son dialogue, préremplie EN ENTIER. */
+  protected editDelivery(addressId: string): Promise<void> {
     const address = this.addresses.deliveries().find((a) => a.id === addressId);
-    if (address === undefined) {
-      return;
-    }
-    this.editing.set(addressId);
-    this.startForm(deliveryDraftFrom(address));
+    return address === undefined ? Promise.resolve() : this.openDelivery(address);
   }
 
   /** Pose ou corrige la facturation : préremplie quand elle existe. */
   protected editBilling(): void {
     const billing = this.addresses.billing();
-    this.startForm(
-      billing === null
-        ? EMPTY_DELIVERY_DRAFT
-        : { ...EMPTY_DELIVERY_DRAFT, ...postalDraftFrom(billing) },
-    );
+    this.startForm(billing === null ? EMPTY_POSTAL_DRAFT : postalDraftFrom(billing));
   }
 
   protected setPostal(postal: PostalAddress): void {
@@ -280,17 +238,12 @@ export class AddressesPanel {
     if (!this.canSave()) {
       return;
     }
-    const { companyId } = this.data();
-    const draft = this.draft();
     this.saving.set(true);
     this.refusal.set(null);
-    const editing = this.editing();
-    const refusal =
-      this.data().view === 'billing'
-        ? await this.addresses.saveBilling(companyId, toBillingPayload(draft))
-        : editing === null
-          ? await this.addresses.addDelivery(companyId, toDeliveryPayload(draft))
-          : await this.addresses.updateDelivery(companyId, editing, toDeliveryPayload(draft));
+    const refusal = await this.addresses.saveBilling(
+      this.data().companyId,
+      toBillingPayload(this.draft()),
+    );
     this.saving.set(false);
     if (refusal === null) {
       this.notify.success(this.t().account.addressSavedToast);
@@ -346,7 +299,25 @@ export class AddressesPanel {
     }
   }
 
-  private startForm(draft: DeliveryDraft): void {
+  /**
+   * Empile le dialogue par-dessus la liste. Au succès, l'écriture a déjà relu
+   * le carnet partagé (`ClientAddresses.write`) : la liste est à jour quand le
+   * dialogue se ferme, sans seconde lecture ; le refus d'une action de ligne
+   * précédente, lui, n'a plus lieu d'être.
+   */
+  private async openDelivery(address: DeliveryAddressView | null): Promise<void> {
+    const company = this.client.company();
+    if (company === null || !this.data().canManage) {
+      return;
+    }
+    const firstOfBook = this.addresses.deliveries().length === 0;
+    const ref = DeliveryAddressDialog.open(this.panels, company, address, firstOfBook, true);
+    if ((await ref.closed) === true) {
+      this.rowRefusal.set(null);
+    }
+  }
+
+  private startForm(draft: PostalDraft): void {
     this.draft.set(draft);
     this.refusal.set(null);
     this.mode.set('form');

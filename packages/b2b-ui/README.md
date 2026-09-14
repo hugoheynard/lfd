@@ -30,12 +30,40 @@ Test d'appartenance d'un nouvel input : s'il nomme un **comportement** ou une
   app enveloppe la vue dans un _container_ qui injecte ses services et mappe
   _son_ modèle vers le view-model neutre.
 
+## Les formulaires — un seul par sujet, habillé par chaque app
+
+Décidé le 2026-09-14 avec Hugo, après avoir trouvé le même formulaire écrit deux
+fois (le RIB, les options du mandat) : un formulaire de saisie métier qui sert
+les deux fronts **vit ici, dans le dossier de son sujet**, et pas dans un paquet
+à part. Il a besoin du modèle, des pays, de l'affichage de son sujet — les
+séparer ferait deux paquets qui s'importent l'un l'autre.
+
+Trois règles :
+
+1. **Il s'appelle `*-form`** (`address-form`, `hours-form`, `delivery-address-form`)
+   et ne fait **que** le formulaire : un brouillon en `model()`, des champs.
+   Ni bouton d'envoi, ni écriture, ni panneau — chaque app l'**habille** (panneau
+   côté staff, dialogue centré ou feuille du bas côté client) et écrit par son
+   propre chemin.
+2. **La logique n'est pas dans le composant** : le brouillon, sa lecture depuis
+   une vue, sa validation et sa conversion en payload sont des **fonctions pures**
+   d'un `*.model.ts` voisin (`deliveryDraftFrom`, `deliveryIssueOf`,
+   `toDeliveryPayload`). Pures plutôt qu'un service injectable : aucun état
+   partagé entre deux panneaux ouverts, rien à fournir, et elles se testent sans
+   Angular.
+3. **Ses libellés entrent par une entrée typée**, le français par défaut : l'admin
+   ne passe rien et ne change pas ; la plateforme passe les siens (fr/en/it).
+
+⚠️ La règle « présentation only » ci-dessus a déjà **deux exceptions** au
+2026-09-14 : `delivery-address-panel` et `billing-address-panel` injectent
+`ADDRESS_WRITER` et `FoldPanelRef`. Elles précèdent cette section ; un nouveau
+formulaire partagé n'en ajoute pas une troisième.
+
 ## Structure
 
-Un dossier par domaine, exporté en subpath :
-
-- `@lfd/b2b-ui/company` — identité légale, contacts, KBIS…
-- _(à venir)_ `@lfd/b2b-ui/orders` — timeline de commandes…
+Un dossier par domaine, exporté en subpath (liste vérifiée le 2026-09-14) :
+`address`, `appointment`, `cart`, `catalog`, `company`, `flags`, `hours`,
+`order`, `panel`, `pricing`, `subscription`.
 
 ## Consommation
 

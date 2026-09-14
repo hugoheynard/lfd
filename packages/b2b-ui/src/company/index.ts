@@ -7,6 +7,21 @@ export { CompanyFulfillmentCard } from './company-fulfillment-card/company-fulfi
 export { CompanyIdentityFields } from './company-identity-fields/company-identity-fields';
 export { ContactFields } from './contact-fields/contact-fields';
 export { DeliverySpecs } from './delivery-specs/delivery-specs';
+export {
+  DELIVERY_SPECS_LABELS_FR,
+  signatureOptionsOf,
+} from './delivery-specs/delivery-specs.labels';
+export type { DeliverySpecsLabels } from './delivery-specs/delivery-specs.labels';
+export { DeliveryAddressForm } from './delivery-address-form/delivery-address-form';
+export {
+  DELIVERY_ADDRESS_FORM_LABELS_FR,
+  withDefault,
+  withKnownContact,
+} from './delivery-address-form/delivery-address-form.model';
+export type {
+  DeliveryAddressFormLabels,
+  DeliveryPostalLabels,
+} from './delivery-address-form/delivery-address-form.model';
 export { BillingAddressPanel } from './billing-address-panel/billing-address-panel';
 export type { BillingAddressPanelData } from './billing-address-panel/billing-address-panel';
 export { DeliveryAddressPanel } from './delivery-address-panel/delivery-address-panel';

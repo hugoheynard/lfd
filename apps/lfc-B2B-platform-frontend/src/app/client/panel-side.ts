@@ -18,3 +18,20 @@ export const NARROW_QUERY = '(max-width: 899.98px)';
 export function panelSide(): FoldPanelSide {
   return matchMedia(NARROW_QUERY).matches ? 'bottom' : 'right';
 }
+
+/**
+ * Le côté d'un **dialogue** fold : **le bas en pile, le centre au-delà**.
+ *
+ * Deux fonctions et non une option, parce que ce sont deux natures. Un panneau
+ * travaille À CÔTÉ de la page — la liste d'adresses reste lisible pendant qu'on
+ * la parcourt. Un dialogue l'INTERROMPT : une adresse de livraison se saisit
+ * d'un bloc, créneaux et contact compris, et `center` pose le voile, le piège
+ * de focus et Échap (fold-ng 0.27.2). En pile, un dialogue centré serait une
+ * boîte serrée au milieu d'un téléphone : la feuille du bas reste la forme
+ * native, pouce à portée du pied.
+ *
+ * Lu AU CLIC, comme {@link panelSide}.
+ */
+export function dialogSide(): FoldPanelSide {
+  return matchMedia(NARROW_QUERY).matches ? 'bottom' : 'center';
+}

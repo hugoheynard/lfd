@@ -109,17 +109,13 @@
       }
     </section>
   } @else {
+    <!-- Le formulaire de la FACTURATION. Une livraison a son dialogue. -->
     @if (refusal(); as message) {
       <fold-callout variant="alert" announce>
         {{ t().account.addressSaveFailed }} {{ message }}
       </fold-callout>
     }
-    <lfd-address-form
-      [fields]="fields()"
-      [noteLabel]="t().account.deliveryNote"
-      [value]="postal()"
-      (valueChange)="setPostal($event)"
-    />
+    <lfd-address-form [fields]="fields" [value]="postal()" (valueChange)="setPostal($event)" />
   }
 </fold-panel-body>
 
