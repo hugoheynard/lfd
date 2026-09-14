@@ -88,6 +88,27 @@
       </fold-callout>
     }
 
+    <!--
+      🔴 Des coches que le serveur a refusées pour de bon. Elles ont quitté la
+      file — sans quoi elles bloqueraient toutes les suivantes — et leurs cases
+      sont revenues à ce que le serveur connaît. Il reste à le DIRE : une coche
+      qui disparaît sans explication se recoche, et se refait refuser.
+    -->
+    @if (refusals().length > 0) {
+      <fold-callout variant="alert" class="fa-note fa-refusals">
+        Ces coches n'ont pas été enregistrées — leurs cases sont revenues à ce que le serveur
+        connaît :
+        <ul class="fa-refusal-list">
+          @for (refusal of refusals(); track refusal.key) {
+            <li>
+              <strong>{{ refusal.label }}</strong> — {{ refusal.message }}
+            </li>
+          }
+        </ul>
+        <button foldButton (click)="acknowledgeRefusals()">Compris</button>
+      </fold-callout>
+    }
+
     <!-- Le bandeau de version périmée : un chiffre et une action. -->
     @if (drift(); as changed) {
       @if (generatedLabel(); as tirage) {

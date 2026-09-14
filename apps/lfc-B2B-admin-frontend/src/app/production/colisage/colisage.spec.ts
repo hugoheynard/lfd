@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
@@ -11,6 +12,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PackingQueue, type QueuedPackingMark } from '../packing-queue';
+import type { Rejected } from '../queue-refusal';
 import { PackingService } from '../packing.service';
 import { Colisage } from './colisage';
 
@@ -140,9 +142,18 @@ class FakeQueue {
   readonly marks: QueuedPackingMark[] = [];
   readonly pending = (): number => this.marks.length;
   readonly offline = (): boolean => false;
+  /** Les refus définitifs, posés à la main par un test — la vraie file les produit au vidage. */
+  readonly refused = signal<readonly Rejected<QueuedPackingMark>[]>([]);
+  readonly rejected = this.refused.asReadonly();
+  acknowledged = 0;
 
   mark(mark: QueuedPackingMark): void {
     this.marks.push(mark);
+  }
+
+  acknowledge(): void {
+    this.acknowledged += 1;
+    this.refused.set([]);
   }
 }
 
@@ -266,6 +277,37 @@ describe('le poste de colisage', () => {
     expect(queue.marks).toEqual([
       { date: today(), reference: 'CMD-001', sku: 'CRO', packed: true, initials: 'MJ' },
     ]);
+  });
+
+  /**
+   * Régression : une coche de colisage refusée pour de bon restait affichée, et
+   * la balance comptait comme réparti ce que le serveur n'avait jamais accepté
+   * (même défaut que la fiche d'atelier, corrigé le 2026-09-14).
+   */
+  it('🔴 sort du bac une ligne refusée pour de bon, et DIT pourquoi', async () => {
+    const { fixture, el } = await render();
+    el.querySelector<HTMLInputElement>('.co-line input[type="checkbox"]')?.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.co-line')?.classList.contains('is-packed')).toBe(true);
+
+    const [mark] = queue.marks;
+    if (mark === undefined) {
+      throw new Error('la coche n’est pas partie dans la file');
+    }
+    queue.refused.set([{ mark, message: 'Cette commande a déjà été déclarée prête.' }]);
+    fixture.detectChanges();
+
+    expect(el.querySelector('.co-line')?.classList.contains('is-packed')).toBe(false);
+    expect(el.querySelector('.co-refusals')?.textContent).toContain(
+      'Cette commande a déjà été déclarée prête.',
+    );
+
+    el.querySelector<HTMLButtonElement>('.co-refusals button')?.click();
+    fixture.detectChanges();
+
+    expect(queue.acknowledged).toBe(1);
+    expect(el.querySelector('.co-refusals')).toBeNull();
+    expect(el.querySelector('.co-line')?.classList.contains('is-packed')).toBe(false);
   });
 
   /**

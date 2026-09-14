@@ -2,6 +2,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { computed, DestroyRef, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 
 import { PackingService } from './packing.service';
+import { refusalOf, type Rejected } from './queue-refusal';
 
 /** La clé sous laquelle la file tient — une seule, pour pouvoir tout jeter d'un geste. */
 const STORAGE_KEY = 'lfc.admin.packing-queue';
@@ -76,6 +77,18 @@ export class PackingQueue {
   /** Combien de gestes attendent. `0` = tout est parti. */
   readonly pending = computed(() => this.marks().length);
 
+  private readonly refused = signal<readonly Rejected<QueuedPackingMark>[]>([]);
+
+  /**
+   * 🔴 **Les gestes que le serveur a refusés pour de bon** — une commande
+   * déclarée prête entre-temps, un article pas encore sorti du four.
+   *
+   * Même contrat que la file de la fiche d'atelier : ils quittent la file mais
+   * ne disparaissent pas en silence. L'écran les montre, retire la coche locale,
+   * et appelle {@link acknowledge}. En mémoire seulement : le serveur a tranché.
+   */
+  readonly rejected = this.refused.asReadonly();
+
   /**
    * Le navigateur se dit-il hors ligne ? Faux au rendu serveur, où la question
    * n'a pas de sens.
@@ -117,16 +130,25 @@ export class PackingQueue {
   mark(mark: QueuedPackingMark): void {
     const key = keyOf(mark);
     this.write([...this.marks().filter((queued) => keyOf(queued) !== key), mark]);
+    // Un nouveau geste sur une ligne refusée remplace le refus.
+    this.refused.update((list) => list.filter((rejected) => keyOf(rejected.mark) !== key));
     void this.flush();
   }
 
+  /** La personne a vu les refus : on les oublie. */
+  acknowledge(): void {
+    this.refused.set([]);
+  }
+
   /**
-   * Envoie ce qui attend, dans l'ordre, et s'arrête au premier refus.
+   * Envoie ce qui attend, dans l'ordre.
    *
-   * S'arrêter plutôt que continuer : un échec réseau vaut pour les suivants, et
-   * les tenter tous ferait autant d'allers-retours perdus. Un refus du serveur
-   * (un bac déjà fermé, une journée non arrêtée) n'est pas rattrapable non
-   * plus — mais il retient alors la file, et le pied continue de le dire.
+   * Un échec rattrapable (réseau, 5xx) arrête le vidage et garde le geste en
+   * tête ; un refus définitif le sort de la file, et le vidage continue.
+   *
+   * 🔴 Jusqu'au 2026-09-14, tout échec arrêtait le vidage — un refus que le
+   * serveur rendrait toujours bloquait donc la file à vie. Le tri est partagé
+   * avec la fiche d'atelier, dans `queue-refusal.ts`.
    */
   async flush(): Promise<void> {
     if (!this.isBrowser) {
@@ -144,8 +166,16 @@ export class PackingQueue {
     for (const mark of [...this.marks()]) {
       try {
         await this.api.mark(mark.date, mark.reference, mark.sku, mark.packed, mark.initials);
-      } catch {
-        return;
+      } catch (error) {
+        const refusal = refusalOf(error);
+        if (refusal === null) {
+          return;
+        }
+        // Seulement si ce geste est ENCORE celui en file — recochée pendant
+        // l'envoi, la ligne porte un geste plus récent que ce refus ne vise pas.
+        if (this.marks().includes(mark)) {
+          this.refused.update((list) => [...list, { mark, message: refusal.message }]);
+        }
       }
       // Par identité, et non par clé : si la ligne a été recochée PENDANT
       // l'envoi, l'entrée en file n'est plus celle qu'on vient d'envoyer, et

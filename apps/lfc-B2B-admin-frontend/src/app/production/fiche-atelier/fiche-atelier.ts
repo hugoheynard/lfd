@@ -27,6 +27,7 @@ import {
   nextDay,
   markKey,
   withLocalMarks,
+  withoutRefused,
   type LocalMark,
 } from '../worksheet-day';
 import { worksheetGroups, type WorksheetGroup } from '../worksheet-groups';
@@ -177,6 +178,19 @@ export class FicheAtelier {
   protected readonly pendingMarks = this.queue.pending;
   protected readonly offline = this.queue.offline;
 
+  /**
+   * Les coches refusées pour de bon, **nommées** : le SKU seul ne dit rien à qui
+   * a les mains dans la pâte, le nom du produit si.
+   */
+  protected readonly refusals = computed(() => {
+    const lines = this.sheet()?.lines ?? [];
+    return this.queue.rejected().map(({ mark, message }) => ({
+      key: markKey(mark.date, mark.sku),
+      label: lines.find((line) => line.sku === mark.sku)?.productName ?? mark.sku,
+      message,
+    }));
+  });
+
   constructor() {
     // 🔴 Une lecture UNIQUE, et pas un `effect` sur la journée. L'écran n'a pas
     // de sélecteur de date : le seul à écrire `date` est `load` lui-même, donc
@@ -196,7 +210,13 @@ export class FicheAtelier {
   /** Les lignes du serveur, recouvertes par ce qui a été coché ici. */
   private readonly lines = computed<readonly WorkshopLine[]>(() => {
     const sheet = this.sheet();
-    return sheet === null ? [] : withLocalMarks(sheet.lines, sheet.date, this.localMarks());
+    return sheet === null
+      ? []
+      : withLocalMarks(
+          sheet.lines,
+          sheet.date,
+          withoutRefused(this.localMarks(), this.queue.rejected()),
+        );
   });
 
   protected readonly groups = computed(() =>
@@ -326,6 +346,20 @@ export class FicheAtelier {
       return;
     }
     await this.load();
+  }
+
+  /**
+   * La personne a vu les refus. Les coches locales correspondantes sont
+   * **retirées pour de bon** avant qu'on oublie le refus : sans ça, elles
+   * réapparaîtraient cochées à l'instant où le filtre des refus se lève.
+   */
+  protected acknowledgeRefusals(): void {
+    const next = new Map(this.localMarks());
+    for (const { mark } of this.queue.rejected()) {
+      next.delete(markKey(mark.date, mark.sku));
+    }
+    this.localMarks.set(next);
+    this.queue.acknowledge();
   }
 
   protected toggleDone(): void {

@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { computed, DestroyRef, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 
+import { refusalOf, type Rejected } from './queue-refusal';
 import { WorksheetService } from './worksheet.service';
 
 /** La clé sous laquelle la file tient — une seule, pour pouvoir tout jeter d'un geste. */
@@ -59,6 +60,23 @@ export class WorksheetQueue {
   /** Combien de gestes attendent. `0` = tout est parti. */
   readonly pending = computed(() => this.marks().length);
 
+  private readonly refused = signal<readonly Rejected<QueuedMark>[]>([]);
+
+  /**
+   * 🔴 **Les gestes que le serveur a refusés pour de bon**, et qui ont quitté
+   * la file.
+   *
+   * Ils ne disparaissent pas en silence : un geste jeté sans trace laisserait
+   * l'écran afficher une coche que le serveur n'a jamais acceptée, et plus rien
+   * ne le dirait. L'écran les montre, retire la coche locale correspondante, et
+   * appelle {@link acknowledge} quand la personne en a pris acte.
+   *
+   * En mémoire seulement : le serveur a déjà tranché, et ce qui est affiché
+   * après un rechargement est son état — la seule chose à ne pas perdre, c'est
+   * de le DIRE pendant la session où c'est arrivé.
+   */
+  readonly rejected = this.refused.asReadonly();
+
   /**
    * Le navigateur se dit-il hors ligne ? Faux au rendu serveur, où la question
    * n'a pas de sens.
@@ -100,16 +118,33 @@ export class WorksheetQueue {
   mark(mark: QueuedMark): void {
     const key = keyOf(mark);
     this.write([...this.marks().filter((queued) => keyOf(queued) !== key), mark]);
+    // Un nouveau geste sur une ligne refusée remplace le refus : la personne a
+    // vu, et elle recoche en connaissance de cause.
+    this.refused.update((list) => list.filter((rejected) => keyOf(rejected.mark) !== key));
     void this.flush();
   }
 
+  /** La personne a vu les refus : on les oublie. */
+  acknowledge(): void {
+    this.refused.set([]);
+  }
+
   /**
-   * Envoie ce qui attend, dans l'ordre, et s'arrête au premier refus.
+   * Envoie ce qui attend, dans l'ordre.
    *
-   * S'arrêter plutôt que continuer : un échec réseau vaut pour les suivants, et
-   * les tenter tous ferait autant d'allers-retours perdus. Un refus du serveur
-   * (une journée non arrêtée, un SKU disparu) n'est pas rattrapable non plus —
-   * mais il retient alors la file, et le pied continue de le dire.
+   * **Un échec rattrapable arrête le vidage** : une panne réseau vaut pour les
+   * suivants, et les tenter tous ferait autant d'allers-retours perdus. Le geste
+   * reste en tête, et repart au prochain vidage.
+   *
+   * **Un refus définitif, lui, sort de la file, et le vidage continue.** Un 409
+   * sur une ligne ne dit rien de la suivante.
+   *
+   * 🔴 C'était l'inverse jusqu'au 2026-09-14 : tout échec arrêtait le vidage et
+   * gardait le geste en tête. Juste pour le réseau, faux pour un refus — un geste
+   * que le serveur refuserait toujours restait devant tous les autres, et plus
+   * rien ne partait. Le défaut a bloqué le fournil au premier vrai usage : une
+   * ligne cochée avant l'arrêt du plan retenait toutes les coches d'après. Le tri
+   * vit dans `queue-refusal.ts`, partagé avec la file du colisage.
    */
   async flush(): Promise<void> {
     if (!this.isBrowser) {
@@ -127,8 +162,17 @@ export class WorksheetQueue {
     for (const mark of [...this.marks()]) {
       try {
         await this.api.mark(mark.date, mark.sku, mark.done, mark.initials);
-      } catch {
-        return;
+      } catch (error) {
+        const refusal = refusalOf(error);
+        if (refusal === null) {
+          return;
+        }
+        // ⚠️ Seulement si ce geste est ENCORE celui en file. Recochée pendant
+        // l'envoi, la ligne porte un geste plus récent : le refus vise un état
+        // que la personne a déjà remplacé, et l'afficher masquerait sa coche.
+        if (this.marks().includes(mark)) {
+          this.refused.update((list) => [...list, { mark, message: refusal.message }]);
+        }
       }
       // Par identité, et non par clé : si la ligne a été recochée PENDANT
       // l'envoi, l'entrée en file n'est plus celle qu'on vient d'envoyer, et

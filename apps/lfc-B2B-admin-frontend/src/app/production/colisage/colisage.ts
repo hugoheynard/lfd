@@ -35,6 +35,7 @@ import {
   packedCount,
   packingBoard,
   packingMarkKey,
+  withoutRefusedPacking,
   type LocalPackingMark,
 } from '../packing-board';
 import { PackingQueue } from '../packing-queue';
@@ -222,6 +223,20 @@ export class Colisage {
   protected readonly pendingMarks = this.queue.pending;
   protected readonly offline = this.queue.offline;
 
+  /** Les coches refusées pour de bon, nommées par produit et par commande. */
+  protected readonly refusals = computed(() => {
+    const sheets = this.view()?.sheets ?? [];
+    return this.queue.rejected().map(({ mark, message }) => {
+      const sheet = sheets.find((candidate) => candidate.reference === mark.reference);
+      const line = sheet?.lines.find((candidate) => candidate.sku === mark.sku);
+      return {
+        key: packingMarkKey(mark.date, mark.reference, mark.sku),
+        label: `${line?.productName ?? mark.sku} · ${sheet?.customerLabel ?? mark.reference}`,
+        message,
+      };
+    });
+  });
+
   constructor() {
     // 🔴 Une lecture UNIQUE, et pas un `effect` sur la journée. Le poste n'a pas
     // de sélecteur de date : le seul à écrire `date` est `load` lui-même, donc
@@ -233,7 +248,9 @@ export class Colisage {
   /** Les bacs et la ressource, recouverts par ce qui a été coché ici. */
   private readonly board = computed(() => {
     const view = this.view();
-    return view === null ? { sheets: [], resources: [] } : packingBoard(view, this.localMarks());
+    return view === null
+      ? { sheets: [], resources: [] }
+      : packingBoard(view, withoutRefusedPacking(this.localMarks(), this.queue.rejected()));
   });
 
   protected readonly sheets = computed(() => this.board().sheets);
@@ -611,6 +628,19 @@ export class Colisage {
     next.set(packingMarkKey(date, sheet.reference, line.sku), { packed, initials });
     this.localMarks.set(next);
     this.queue.mark({ date, reference: sheet.reference, sku: line.sku, packed, initials });
+  }
+
+  /**
+   * La personne a vu les refus. Les coches locales sont retirées pour de bon
+   * AVANT d'oublier le refus, sans quoi elles réapparaîtraient cochées.
+   */
+  protected acknowledgeRefusals(): void {
+    const next = new Map(this.localMarks());
+    for (const { mark } of this.queue.rejected()) {
+      next.delete(packingMarkKey(mark.date, mark.reference, mark.sku));
+    }
+    this.localMarks.set(next);
+    this.queue.acknowledge();
   }
 
   /**

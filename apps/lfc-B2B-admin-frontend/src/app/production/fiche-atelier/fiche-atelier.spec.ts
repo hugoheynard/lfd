@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   CatalogItemView,
@@ -11,6 +12,7 @@ import { AdminCatalogService } from '../../commandes/catalog.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { WorksheetQueue, type QueuedMark } from '../worksheet-queue';
+import type { Rejected } from '../queue-refusal';
 import { WorksheetService } from '../worksheet.service';
 import { FicheAtelier } from './fiche-atelier';
 
@@ -112,9 +114,18 @@ class FakeQueue {
   readonly marks: QueuedMark[] = [];
   readonly pending = (): number => this.marks.length;
   readonly offline = (): boolean => false;
+  /** Les refus définitifs, posés à la main par un test — la vraie file les produit au vidage. */
+  readonly refused = signal<readonly Rejected<QueuedMark>[]>([]);
+  readonly rejected = this.refused.asReadonly();
+  acknowledged = 0;
 
   mark(mark: QueuedMark): void {
     this.marks.push(mark);
+  }
+
+  acknowledge(): void {
+    this.acknowledged += 1;
+    this.refused.set([]);
   }
 }
 
@@ -248,6 +259,53 @@ describe('la fiche d’atelier', () => {
     // tout l'objet du sous-sol.
     expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(true);
     expect(q.marks).toEqual([{ date: today(), sku: 'BAG', done: true, initials: 'MJ' }]);
+  });
+
+  /**
+   * Régression : une coche refusée pour de bon restait affichée cochée. La file
+   * la gardait en tête et bloquait toutes les suivantes ; l'écran, lui, montrait
+   * la ligne faite jusqu'au rechargement (constaté en dev le 2026-09-14).
+   */
+  it('🔴 décoche une ligne refusée pour de bon, et DIT pourquoi', async () => {
+    const { fixture, el, queue: q } = await render();
+    el.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(true);
+
+    const [mark] = q.marks;
+    if (mark === undefined) {
+      throw new Error('la coche n’est pas partie dans la file');
+    }
+    q.refused.set([{ mark, message: 'Le plan du jour n’est pas arrêté.' }]);
+    fixture.detectChanges();
+
+    // La case revient à ce que le serveur connaît…
+    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(false);
+    // …et l'écran nomme le produit et la raison, pas un SKU.
+    const said = el.querySelector('.fa-refusals')?.textContent ?? '';
+    expect(said).toContain('Baguette tradition');
+    expect(said).toContain('Le plan du jour n’est pas arrêté.');
+  });
+
+  it('prend acte des refus sans faire revenir la coche', async () => {
+    const { fixture, el, queue: q } = await render();
+    el.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+    fixture.detectChanges();
+    const [mark] = q.marks;
+    if (mark === undefined) {
+      throw new Error('la coche n’est pas partie dans la file');
+    }
+    q.refused.set([{ mark, message: 'Refusé.' }]);
+    fixture.detectChanges();
+
+    el.querySelector<HTMLButtonElement>('.fa-refusals button')?.click();
+    fixture.detectChanges();
+
+    expect(q.acknowledged).toBe(1);
+    expect(el.querySelector('.fa-refusals')).toBeNull();
+    // 🔴 Le filtre des refus vient de se lever : sans le retrait de la coche
+    // locale, la ligne réapparaîtrait cochée à cet instant précis.
+    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(false);
   });
 
   it('décocher renvoie un geste inverse, jamais un second geste identique', async () => {
