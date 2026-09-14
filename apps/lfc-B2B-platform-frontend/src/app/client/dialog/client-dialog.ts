@@ -16,11 +16,17 @@ import { ClientCopyService } from '../copy/client-copy.service';
 /**
  * Un dialogue CENTRÉ — la décision qui interrompt, posée au milieu de l'écran.
  *
- * C'est un `<dialog>` natif et pas un panneau fold : fold ouvre par les bords
- * (`left`/`right`/`bottom`), et la réf demande le centre. Le natif donne au
- * passage ce qu'un `div` obligerait à réécrire — piège de focus, `Escape`,
- * inertie de la page derrière, et un `::backdrop` qui n'a pas besoin d'exister
- * dans le DOM.
+ * C'est un `<dialog>` natif et pas un panneau fold : quand il a été écrit, fold
+ * n'ouvrait que par les bords (`left`/`right`/`bottom`), et la réf demandait le
+ * centre. Le natif donne au passage ce qu'un `div` obligerait à réécrire — piège
+ * de focus, `Escape`, inertie de la page derrière, et un `::backdrop` qui n'a pas
+ * besoin d'exister dans le DOM.
+ *
+ * ⚠️ **Ce n'est plus vrai depuis fold-ng 0.27** (vérifié le 2026-09-14) : le
+ * panneau fold a un côté `center`, un vrai dialogue modal. La règle du front
+ * client est désormais `dialogSide()` (`CLAUDE.md`, « Saisir : dialogue centré
+ * au bureau, feuille du bas en mobile ») ; ce composant et ses usages sont à
+ * migrer, pas à copier.
  *
  * Le voile et l'entrée sont ceux de la réf : `scale(.96) → 1` en 260 ms, et
  * rien du tout pour qui a demandé moins d'animation.

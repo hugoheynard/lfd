@@ -112,6 +112,42 @@ si la carte est réellement un contrôle unique — jamais quand elle contient u
 bouton, un lien ou un graphe. Corollaire : **pas d'ombre au survol** sur une
 carte non cliquable ; elle promet un clic qui n'existe pas.
 
+### Saisir : dialogue centré au bureau, feuille du bas en mobile (règle permanente)
+
+Décidé par Hugo le 2026-09-14. **Toute saisie ou édition** — une adresse, un RIB,
+une identité, des options — s'ouvre dans un **panneau fold** placé par
+`dialogSide()` (`client/panel-side.ts`) :
+
+| Largeur                            | Côté     | Ce que c'est                                   |
+| ---------------------------------- | -------- | ---------------------------------------------- |
+| au-delà du pli (≥ 900 px)          | `center` | un dialogue modal centré, sur voile            |
+| en pile (< 900 px, `NARROW_QUERY`) | `bottom` | la feuille du bas, qui monte jusqu'à l'en-tête |
+
+```ts
+this.panels.open(BillingAddressDialog, { side: dialogSide(), surface: 'solid', size: 'lg', data });
+```
+
+- **Le côté se lit au clic**, jamais en signal : ouvrir est un geste, dans le
+  navigateur, et c'est la largeur de ce moment qui compte.
+- **Ouvert depuis un panneau**, le dialogue s'empile (`stack: true`) : le panneau
+  reste dessous, et relit ce qu'il montre quand le dialogue se ferme sur un succès.
+- **Le formulaire est celui du paquet** quand il existe (`@lfd/b2b-ui`, convention
+  « Les formulaires » de son README) ; le dialogue n'apporte que l'en-tête, le
+  pied, l'écriture et ses libellés.
+- **Un refus du serveur reste dans le dialogue**, dans un `fold-callout`, et le
+  dialogue reste ouvert ; un succès annonce et ferme.
+- **Consulter n'est pas saisir.** Un panneau qu'on lit à côté de la page — une
+  liste, un détail, le mandat et son PDF — garde `panelSide()` : la droite au
+  bureau, le bas en pile.
+- ⚠️ **`ClientDialog` (`<dialog>` natif) n'est plus le modèle** : il a été écrit
+  quand fold n'ouvrait que par les bords. fold-ng 0.27 a un côté `center` qui porte
+  déjà le piège de focus, Échap, l'inertie et le voile. Ses **sept** usages
+  (vérifié le 2026-09-14) sont à migrer, pas à copier. Le tri qui suit se lit
+  aux NOMS, pas au contenu — à confirmer en ouvrant chacun : les saisies —
+  `pickup-dialog` et `address-dialog` de la commande, `user-panel` — vers
+  `dialogSide()` ; les consultations — `product-sheet`, `shelf-sheet`,
+  `cart-panel`, `report-sheet` — vers le côté qui convient à ce qu'on lit.
+
 ## CSS propre & marges (règles permanentes)
 
 - **Zéro CSS morte.** Toute classe définie dans un `.scss` est référencée dans le
