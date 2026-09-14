@@ -3,23 +3,9 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import type { ProductionPackingView } from '@lfd/contracts';
 
 import { PackingService } from '../packing.service';
-import { dayLabelOf, hourLabel, isoDay, nextDay } from '../worksheet-day';
+import { dayLabelOf, hourLabel, isoDay, nextDay, RELATIVE_DAY_LABEL } from '../worksheet-day';
 
 type LoadState = 'loading' | 'ready' | 'error';
-
-/**
- * « aujourd'hui » / « demain » — une correspondance de MOTS, et rien d'autre.
- *
- * L'écran ne compare pas de dates : c'est le serveur qui dit où tombe la journée
- * lue (`relativeDay`), selon SON horloge. Celle d'un poste de fournil n'est pas
- * une autorité, et se tromper d'un jour est l'erreur la plus chère du poste.
- */
-const RELATIVE_DAY_LABEL: Readonly<
-  Record<NonNullable<ProductionPackingView['relativeDay']>, string>
-> = {
-  today: 'aujourd’hui',
-  tomorrow: 'demain',
-};
 
 /**
  * **CE QU'ON LIT** au poste de colisage — la journée servie, et tout ce qui dit

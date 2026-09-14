@@ -1,13 +1,28 @@
-import type { WorkshopLine } from '@lfd/contracts';
+import type { ProductionWorksheetView } from '@lfd/contracts';
 
 /**
- * Les petites conversions de la fiche d'atelier : un jour, une heure, et la
- * superposition des coches locales sur ce que le serveur a rendu.
+ * Les petites conversions des postes du fournil : un jour, une heure, et le mot
+ * qui dit où tombe la journée servie.
  *
  * Hors du composant parce qu'aucune ne dépend de l'écran : ce sont des fonctions
  * pures, elles s'éprouvent sans monter quoi que ce soit, et la page reste sous
  * les 300 lignes que le dépôt s'impose.
  */
+
+/**
+ * « aujourd'hui » / « demain » — une correspondance de MOTS, et rien d'autre.
+ *
+ * L'écran ne compare pas de dates : c'est le serveur qui dit où tombe la journée
+ * lue (`relativeDay`), selon SON horloge. Celle d'un poste de fournil n'est pas
+ * une autorité, et se tromper d'un jour est l'erreur la plus chère du poste.
+ * Partagé par la fiche d'atelier et le colisage depuis le 2026-09-14.
+ */
+export const RELATIVE_DAY_LABEL: Readonly<
+  Record<NonNullable<ProductionWorksheetView['relativeDay']>, string>
+> = {
+  today: 'aujourd’hui',
+  tomorrow: 'demain',
+};
 
 const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long',
@@ -44,39 +59,9 @@ export function hourLabel(iso: string | null): string | null {
   return `${at.getHours()} h ${`${at.getMinutes()}`.padStart(2, '0')}`;
 }
 
-/** L'état de coche posé par la personne, avant que le serveur le confirme. */
-export interface LocalMark {
-  readonly done: boolean;
-  readonly initials: string;
-}
-
-/** La clé d'une coche locale : une ligne d'une journée, et rien de plus fin. */
+/** La clé d'une coche en vol : une ligne d'une journée, et rien de plus fin. */
 export function markKey(date: string, sku: string): string {
   return `${date} ${sku}`;
-}
-
-/**
- * Recouvre les lignes du serveur par ce qui a été coché **ici**.
- *
- * Les coches locales l'emportent, et c'est tout l'objet du sous-sol : elles ont
- * pu être posées alors que le réseau était absent, et la relecture suivante
- * remonterait sinon des cases vides sous les doigts de qui vient de les cocher.
- *
- * `doneAt` reste celui du serveur : l'écran ne sait pas quelle heure le serveur
- * inscrira, et l'inventer ferait une heure fausse le temps d'un rechargement.
- */
-export function withLocalMarks(
-  lines: readonly WorkshopLine[],
-  date: string,
-  marks: ReadonlyMap<string, LocalMark>,
-): readonly WorkshopLine[] {
-  return lines.map((line) => {
-    const mark = marks.get(markKey(date, line.sku));
-    if (mark === undefined) {
-      return line;
-    }
-    return { ...line, done: mark.done, initials: mark.done ? mark.initials : null };
-  });
 }
 
 /**

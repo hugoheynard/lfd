@@ -1,4 +1,6 @@
 import {
+  SHELF_LABEL_OFF_CATALOG,
+  SHELF_LABEL_UNKNOWN,
   CATALOG_CATEGORY_LABELS,
   CATALOG_CATEGORY_ORDER,
   type CatalogCategory,
@@ -49,7 +51,7 @@ export interface ProductionRecapGroup {
  * portent les lignes de commande, et un groupe vide n'est jamais rendu. Il ne
  * se remplit qu'avec un article **retiré** depuis la commande.
  */
-const OFF_CATALOG_LABEL = 'Hors catalogue';
+const OFF_CATALOG_LABEL = SHELF_LABEL_OFF_CATALOG;
 
 /**
  * Le même groupe quand le catalogue n'a **pas pu être lu**.
@@ -60,7 +62,7 @@ const OFF_CATALOG_LABEL = 'Hors catalogue';
  * l'écran ne dit que la phrase vient d'une panne. Corrigé le 2026-09-11, en
  * même temps que le prévisionnel, qui portait le défaut recopié d'ici.
  */
-const UNKNOWN_SHELF_LABEL = 'Rayon inconnu';
+const UNKNOWN_SHELF_LABEL = SHELF_LABEL_UNKNOWN;
 
 interface Tally {
   productName: string;
