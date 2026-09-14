@@ -23,15 +23,15 @@
       <p class="payments-head">{{ t().account.cardPaymentHead }}</p>
       <ul class="payments-list">
         <li class="payment">
-          <span class="tick" aria-hidden="true"><fold-icon name="check" /></span>
+          <fold-icon class="mark ok" name="check" size="sm" aria-hidden="true" />
           <span class="payment-name">{{ t().account.cardPaymentOnOrder }}</span>
         </li>
         <li class="payment">
           @if (client.hasDeferredTerm()) {
-            <span class="tick" aria-hidden="true"><fold-icon name="check" /></span>
+            <fold-icon class="mark ok" name="check" size="sm" aria-hidden="true" />
             <span class="payment-name">{{ t().account.cardPaymentOnAccount }}</span>
           } @else {
-            <span class="waiting" aria-hidden="true"></span>
+            <fold-icon class="mark" name="clock" size="sm" aria-hidden="true" />
             <span class="payment-name">
               {{ t().account.cardPaymentOnAccount }}
               <span class="payment-note">{{ t().account.cardPaymentPending }}</span>

@@ -146,26 +146,16 @@
   color: var(--lfc-color-on-well-muted);
 }
 
-/* Le vert ne se dit que de ce qui est ouvert. */
-.tick {
+/* Un trait, pas une pastille : la coche et l'horloge se lisent comme un signe
+   du texte, à sa hauteur. Le vert ne se dit que de ce qui est ouvert. */
+.mark {
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-success);
-  color: var(--fold-color-on-primary);
-  font-size: var(--fold-text-xs);
+  margin-top: 2px;
+  color: var(--lfc-color-on-well-muted);
 }
 
-/* Ce qui attend nos informations : un cercle vide, pas une croix. */
-.waiting {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  border: 2px dashed var(--lfc-color-on-well-muted);
-  border-radius: var(--fold-radius-pill);
+.mark.ok {
+  color: var(--fold-color-success);
 }
 
 @media (min-width: 900px) {
