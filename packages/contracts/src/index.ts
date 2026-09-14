@@ -439,6 +439,9 @@ export type {
   SetPackingContainers,
 } from "./production-packing.js";
 export {
+  SHELF_LABEL_OFF_CATALOG,
+  SHELF_LABEL_UNKNOWN,
+  UNSHELVED_WORKSHOP_GROUP_KEY,
   markWorkshopLineSchema,
   productionContainerSchema,
   productionWorksheetQuerySchema,
@@ -453,6 +456,7 @@ export type {
   ProductionWorksheetView,
   WorkshopDrift,
   WorkshopDriftLine,
+  WorkshopGroup,
   WorkshopLine,
 } from "./production-worksheet.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";

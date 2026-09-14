@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CatalogCategory } from "./catalog.js";
+
 /**
  * **La fiche d'atelier** : ce que le fournil a à sortir aujourd'hui, et ce qui
  * est déjà sorti.
@@ -11,10 +13,10 @@ import { z } from "zod";
  *
  * ## Ce que la fiche ne porte PAS, et pourquoi
  *
- * **La catégorie.** Le fournil groupe ses postes par rayon, mais la production
- * ne connaît un article que par son SKU — elle ne lit pas le catalogue, et ne
- * doit pas commencer. L'écran joint le catalogue lui-même, exactement comme le
- * récapitulatif le fait déjà pour ses rayons.
+ * **Un calcul à l'écran** (décidé le 2026-09-14). Rayons, piles, compteurs et
+ * journée travaillée sont servis : l'écran affiche et relit. Le rayon vient d'un
+ * port que le commerce implémente — la production ne lit toujours pas le
+ * catalogue.
  *
  * **Un taux de casse.** La maquette montre « 4 moules · +2 de casse ». Aucune
  * table n'en porte, et un nombre fabriqué pour remplir un dessin devient un
@@ -73,6 +75,48 @@ export interface WorkshopLine {
   readonly doneAt: string | null;
 }
 
+/** Le libellé du groupe des SKU que le catalogue ne connaît pas. */
+export const SHELF_LABEL_OFF_CATALOG = "Hors catalogue";
+
+/**
+ * Le libellé du groupe quand la lecture des rayons a ÉCHOUÉ. Distinct du
+ * précédent : « Hors catalogue » affirmerait que le fournil fabrique des articles
+ * retirés de la vente.
+ */
+export const SHELF_LABEL_UNKNOWN = "Rayon inconnu";
+
+/** La clé du groupe sans rayon — aucune catégorie ne la porte. */
+export const UNSHELVED_WORKSHOP_GROUP_KEY = "?";
+
+/**
+ * **Une fiche** : un rayon, ses deux listes, et où elle en est — tout compté au
+ * serveur.
+ *
+ * 🔴 L'écran n'additionne rien et ne filtre rien : `pending` et `done` arrivent
+ * séparées, dans l'ordre de la fiche, qui ne bouge pas quand on coche.
+ */
+export interface WorkshopGroup {
+  /** La catégorie, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. Sert d'onglet et de préférence. */
+  readonly key: string;
+  /** `null` = SKU hors catalogue, ou rayons illisibles (`shelvesKnown: false`). */
+  readonly category: CatalogCategory | null;
+  readonly label: string;
+  readonly lineCount: number;
+  /** Les lignes en cours de production — le « N » de sa liste. */
+  readonly pendingCount: number;
+  readonly doneCount: number;
+  /** Toutes lignes confondues, faites ou non. */
+  readonly totalUnits: number;
+  /** Ce qu'il reste à sortir. */
+  readonly remainingUnits: number;
+  /** Ce qui est sorti. */
+  readonly doneUnits: number;
+  /** En cours de production, dans l'ordre de la fiche. */
+  readonly pending: readonly WorkshopLine[];
+  /** Production faite, dans l'ordre de la fiche. */
+  readonly done: readonly WorkshopLine[];
+}
+
 /** Une ligne dont l'écart a changé la quantité — « seigle 30 → 42 ». */
 export interface WorkshopDriftLine {
   readonly sku: string;
@@ -129,9 +173,25 @@ export interface ProductionWorksheetView {
   readonly generatedAt: string | null;
   /** L'heure du dernier retirage, si la journée en a connu un. */
   readonly retakenAt: string | null;
+  /**
+   * @deprecated depuis le 2026-09-14 — lire `groups`. Servi un déploiement de
+   * plus : le front en ligne le lit (CLAUDE.md §0).
+   */
   readonly lines: readonly WorkshopLine[];
   /** Toujours `null` sur une journée ouverte : rien d'arrêté ne peut périmer. */
   readonly drift: WorkshopDrift | null;
+  /** Les fiches, une par rayon, dans l'ordre de la vitrine ; le groupe sans rayon en dernier. */
+  readonly groups: readonly WorkshopGroup[];
+  /**
+   * `false` = la lecture des rayons a échoué : toutes les lignes sont dans le
+   * groupe « Rayon inconnu ». La fiche reste juste, et l'écran le dit.
+   */
+  readonly shelvesKnown: boolean;
+  /**
+   * La journée servie, relativement à aujourd'hui **selon l'horloge du
+   * serveur**. `null` = ni aujourd'hui ni demain.
+   */
+  readonly relativeDay: "today" | "tomorrow" | null;
 }
 
 /**
