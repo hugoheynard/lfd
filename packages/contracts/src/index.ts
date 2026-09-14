@@ -424,6 +424,7 @@ export type {
 } from "./production-sheet.js";
 export {
   markPackingLineSchema,
+  packingContainerStepSchema,
   productionPackingQuerySchema,
   setPackingContainersSchema,
 } from "./production-packing.js";
@@ -431,6 +432,7 @@ export type {
   MarkPackingLine,
   PackingLine,
   PackingResource,
+  PackingContainerStep,
   PackingSheet,
   ProductionPackingQuery,
   ProductionPackingView,
