@@ -51,6 +51,20 @@ export class AuthFacade {
    * juste que le bypass s'active au pré-rendu SSR ; il n'a aucun rôle de sécurité.
    */
 
+  /**
+   * En bypass dev, « je me suis déconnecté ».
+   *
+   * Sans lui, le bypass rendait la déconnexion impossible : `logout()` partait
+   * chez Auth0, revenait, et la façade se redéclarait authentifiée — puis
+   * `/bienvenue`, qui renvoie ailleurs qui est déjà entré, se fermait aussitôt.
+   * On ne pouvait donc jamais regarder la porte d'entrée en dev.
+   *
+   * Gardé dans le stockage local pour survivre à un rechargement ; levé par
+   * `login()` ou `register()`. En production, `DEV_BYPASS_AUTH` vaut `false` en
+   * tête de chaque lecture et ce signal n'est jamais consulté.
+   */
+  private readonly devSignedOut = signal(DEV_BYPASS_AUTH && this.isBrowser && readDevSignedOut());
+
   private readonly rawIsLoading = toSignal(this.auth0?.isLoading$ ?? NEVER, {
     initialValue: true,
   });
@@ -64,7 +78,7 @@ export class AuthFacade {
   });
   /** Vrai si un utilisateur a prouvé son identité auprès d'Auth0 (ou bypass dev). */
   readonly isAuthenticated = computed(
-    () => (DEV_BYPASS_AUTH && this.isBrowser) || this.rawIsAuthenticated(),
+    () => (DEV_BYPASS_AUTH && this.isBrowser && !this.devSignedOut()) || this.rawIsAuthenticated(),
   );
 
   /** Profil Auth0 (claims du token) — « qui a prouvé son sub ». */
@@ -113,7 +127,7 @@ export class AuthFacade {
    */
   authGate$(): Observable<boolean> {
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      return of(true);
+      return of(!this.devSignedOut());
     }
     const auth = this.auth0;
     if (!auth) {
@@ -133,6 +147,14 @@ export class AuthFacade {
    * taper son e-mail chez nous n'a pas à le retaper chez lui.
    */
   login(target: string, hint?: string): void {
+    // En bypass dev, se connecter, c'est lever la déconnexion : il n'y a pas de
+    // session Auth0 à ouvrir, l'API impersonne déjà l'utilisateur du seed.
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      writeDevSignedOut(false);
+      this.devSignedOut.set(false);
+      void this.router.navigateByUrl(target);
+      return;
+    }
     void this.auth0
       ?.loginWithRedirect({
         appState: { target },
@@ -149,6 +171,14 @@ export class AuthFacade {
    * compte dépend de cette connexion (sign-ups activés). Le nouveau compte arrive en base au 1er `GET /me` (statut invité).
    */
   register(target: string, profile?: PendingProfile): void {
+    // En bypass dev, même geste que `login()`. Le profil saisi n'est PAS reposé :
+    // il écraserait celui de l'utilisateur du seed, que l'API impersonne.
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      writeDevSignedOut(false);
+      this.devSignedOut.set(false);
+      void this.router.navigateByUrl(target);
+      return;
+    }
     void this.auth0
       ?.loginWithRedirect({
         appState: { target, profile },
@@ -166,9 +196,18 @@ export class AuthFacade {
    *
    * `appBaseUrl()` et non l'origine nue : sous `/pro`, une origine nue déposerait
    * la personne à la racine du domaine, hors de l'app.
+   *
+   * En bypass dev, aucun aller-retour Auth0 : on pose la déconnexion et on
+   * revient sur la porte d'entrée, où l'on reste jusqu'à `login()`.
    */
   logout(): void {
     if (!this.isBrowser) {
+      return;
+    }
+    if (DEV_BYPASS_AUTH) {
+      writeDevSignedOut(true);
+      this.devSignedOut.set(true);
+      void this.router.navigateByUrl(DEV_SIGNED_OUT_LANDING);
       return;
     }
     void this.auth0?.logout({ logoutParams: { returnTo: appBaseUrl() } }).subscribe();
@@ -189,10 +228,41 @@ export class AuthFacade {
   accessToken$(): Observable<string> {
     // En bypass dev, l'API ignore le jeton (impersonation backend) : on évite
     // `getAccessTokenSilently()`, qui lèverait faute de session Auth0.
+    // Déconnecté, aucun appel ne part : comme sans session.
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      return of('dev-impersonation');
+      return this.devSignedOut() ? NEVER : of('dev-impersonation');
     }
     return this.auth0?.getAccessTokenSilently() ?? NEVER;
+  }
+}
+
+/** Où l'on atterrit en se déconnectant en dev : la porte d'entrée. */
+const DEV_SIGNED_OUT_LANDING = '/bienvenue';
+
+/** La clé de stockage local de la déconnexion dev. */
+const DEV_SIGNED_OUT_KEY = 'lfc-dev-signed-out';
+
+/**
+ * Le stockage local peut être refusé (navigation privée, réglage du
+ * navigateur) : on retombe alors sur « connecté », le comportement d'avant.
+ */
+function readDevSignedOut(): boolean {
+  try {
+    return localStorage.getItem(DEV_SIGNED_OUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeDevSignedOut(signedOut: boolean): void {
+  try {
+    if (signedOut) {
+      localStorage.setItem(DEV_SIGNED_OUT_KEY, '1');
+    } else {
+      localStorage.removeItem(DEV_SIGNED_OUT_KEY);
+    }
+  } catch {
+    // Stockage refusé : la déconnexion tient jusqu'au prochain rechargement.
   }
 }
 
