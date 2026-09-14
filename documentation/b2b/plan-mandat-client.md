@@ -205,3 +205,38 @@ compte figé sur le mandat, pas de caducité automatique, pas de `attachLegacyPr
 
 **Lot B — app cliente** : inchangé (§3), états `draft` / preuve déposée /
 `active` / aucun mandat en cours (`revoked`, `failed`, `expired`, `pending`).
+
+## 9. Dernière contradiction (vitruve, 2026-09-14) — tranchée
+
+Ce qui suit **complète le §8** et fait foi pour les batisseurs.
+
+**Déjà fait** — commit `5a7c98fd` : `attachProof` refusé hors `draft` dans
+l'agrégat, dépôt staff sur `findDraft` refusé **avant** de ranger, clé de
+stockage neuve par dépôt (plus d'écrasement silencieux), activation qui exige
+le scan, écran staff aligné (dépôt sur brouillon, « Activer » inerte sans
+pièce). Les e2e et specs cassés par cette règle sont réécrits. **Ne pas refaire.**
+
+| #   | Objection                                                                                            | Tranché                                                                                                                                                                                                                                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Clé `customerMandate` : `FeatureLevelsView` est mappé sur `FeatureKey`, les `toEqual` exacts cassent | Le lot étend **toutes** les listes : `feature-access.e2e-spec.ts`, `contracts/src/__tests__/feature-access.spec.ts`, `feature-access.fixture.ts` (plateforme), `feature-access-labels.ts` (admin), repli du front (`ClientFeatureAccess`). Niveaux propres `closed`/`open`, défaut `closed`                                |
+| 2   | Le résolveur exige un `FeatureSubject` que les handlers n'ont pas                                    | Une méthode **sans sujet** pour une clé non exemptible, nommée. `resolveFeatureLevel`, le tableau admin des exemptions et `AddFeatureExemptionHandler` ignorent/refusent `customerMandate`                                                                                                                                 |
+| 3   | Journal : aucun handler de `payments` n'injecte `Journal`                                            | Suivre un handler existant qui écrit un fait dans la transaction de son écriture (le citer dans le rapport). Faits : frappe (staff/client), dépôt de scan (staff/client), activation, révocation par changement de RIB. Si le mécanisme demande plus que l'injection de `Journal` + `UnitOfWork`, **s'arrêter et le dire** |
+| 4   | Ce qui déclenche la révocation du brouillon                                                          | **Toute** écriture du RIB (IBAN, BIC, titulaire, adresse) ou des options du mandat (zones 14/19) tant qu'un brouillon existe : tout est imprimé sur le papier. La fonction partagée `recordCompanyBankAccount` prend les ports nécessaires ; la notification staff reste hors transaction                                  |
+| 5   | RIB d'un **actif** changé par le staff : aucun mécanisme                                             | **Hors lot**, entrée datée dans `todos/todo-mandat-core-contre-b2b.md` (aucun actif en production ; l'écran staff avertit déjà sur un autre compte). Côté client : refus 409, §8                                                                                                                                           |
+| 6   | `RCUR` en dur contre `one_off` proposé en admin                                                      | **Non tranché — question posée à Hugo.** Le lot ne touche pas au type de paiement                                                                                                                                                                                                                                          |
+| 7   | « 13 mois » retiré sans source                                                                       | Retiré avec le paragraphe CORE (§8), **et** noté « à confirmer avec la banque » dans la todo, avec la raison : ce délai vise les opérations non autorisées, pas le remboursement                                                                                                                                           |
+| 8   | `MintMandateHandler` sans port RIB                                                                   | Il en reçoit un ; sa spec est refaite                                                                                                                                                                                                                                                                                      |
+| 9   | Justifications à réécrire                                                                            | `pain008.ts` (en-tête `LclInstrm`) et `sepa-mandate-pdf.ts` (en-tête) au Lot 0                                                                                                                                                                                                                                             |
+
+**Découpage de construction.** Lot 0 et Lot A en parallèle (fichiers
+disjoints ; **seul le Lot A lance les e2e**, la base de test ne se partage pas).
+Lot B après le Lot A, sur les contrats qu'il aura posés.
+
+**Contrat client posé par le Lot A** (pour le Lot B) : `CustomerMandateView`
+(`id`, `reference`, `status`, `hasProof`, `proofFileName`, `acceptedAt`) dans
+`packages/contracts` ; routes `GET /companies/:companyId/mandate` (vue ou
+`null`), `POST /companies/:companyId/mandate` (frappe ou brouillon existant,
+rend la vue), `GET /companies/:companyId/mandate/document.pdf[?inline=1]`
+(brouillon seulement), `PUT /companies/:companyId/mandate/proof` (multipart
+`file`). Ordre des refus : non-membre 404 → rôle 403 → drapeau fermé 409 →
+règle métier.
