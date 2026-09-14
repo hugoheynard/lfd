@@ -44,7 +44,15 @@ function sheet(reference: string, lines: readonly PackingLine[]): PackingSheet {
 }
 
 function resource(sku: string, productName: string): PackingResource {
-  return { sku, productName, produced: 0, allocated: 0, remaining: 0, awaitingProduction: false };
+  return {
+    sku,
+    productName,
+    produced: 0,
+    allocated: 0,
+    remaining: 0,
+    awaitingProduction: false,
+    exhausted: true,
+  };
 }
 
 describe('la recherche du poste de colisage', () => {

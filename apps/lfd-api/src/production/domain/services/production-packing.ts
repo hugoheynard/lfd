@@ -245,13 +245,16 @@ function resourcesOf(
     .map((sku) => {
       const count = produced.get(sku);
       const taken = allocated.get(sku) ?? 0;
+      const remaining = (count?.quantity ?? 0) - taken;
+      const awaitingProduction = awaiting(sku);
       return {
         sku,
         productName: count?.productName ?? names.get(sku) ?? sku,
         produced: count?.quantity ?? 0,
         allocated: taken,
-        remaining: (count?.quantity ?? 0) - taken,
-        awaitingProduction: awaiting(sku),
+        remaining,
+        awaitingProduction,
+        exhausted: remaining === 0 && !awaitingProduction,
       };
     })
     .sort(byNameThenSku);

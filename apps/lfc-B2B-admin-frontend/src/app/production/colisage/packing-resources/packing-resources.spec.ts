@@ -17,6 +17,7 @@ function resource(over: Partial<PackingResource> = {}): PackingResource {
     allocated: 0,
     remaining: 40,
     awaitingProduction: false,
+    exhausted: false,
     ...over,
   };
 }
@@ -76,6 +77,41 @@ describe('la marchandise à répartir', () => {
     expect(rows[0]?.classList.contains('is-hit')).toBe(false);
     expect(rows[1]?.classList.contains('is-hit')).toBe(true);
     expect(host.classList.contains('is-searching')).toBe(true);
+  });
+
+  it('masque le stock épuisé par défaut, et le montre une fois décoché', () => {
+    // Le serveur dit `exhausted` ; le reste servi (40) est volontairement
+    // incohérent : l'écran ne compare rien à zéro.
+    const fixture = render([
+      resource({ sku: 'CRO', productName: 'Croissant', remaining: 40, exhausted: true }),
+      resource({ sku: 'BAG', productName: 'Baguette', remaining: 0, exhausted: false }),
+    ]);
+    const host: HTMLElement = fixture.nativeElement;
+
+    expect([...host.querySelectorAll('.co-res')].map(said)).toEqual(['Baguette 0']);
+
+    fixture.componentInstance.hideExhausted.set(false);
+    fixture.detectChanges();
+
+    expect(host.querySelectorAll('.co-res')).toHaveLength(2);
+  });
+
+  it('garde montré un article épuisé que la recherche surligne', () => {
+    const fixture = render([resource({ exhausted: true })], new Set(['CRO']), true);
+    const host: HTMLElement = fixture.nativeElement;
+
+    expect(host.querySelectorAll('.co-res')).toHaveLength(1);
+  });
+
+  it('dit « plus de marchandise disponible » quand tout est épuisé', () => {
+    const fixture = render([resource({ exhausted: true })]);
+    const host: HTMLElement = fixture.nativeElement;
+
+    expect(host.querySelectorAll('.co-res')).toHaveLength(0);
+    expect(host.querySelector('.co-res-none')).toBeNull();
+    expect(said(host.querySelector('fold-empty-state'))).toContain(
+      'Plus de marchandise disponible',
+    );
   });
 
   it('le dit quand la journée n’a aucun compte à produire', () => {

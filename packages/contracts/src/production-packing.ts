@@ -157,6 +157,15 @@ export interface PackingResource {
   /** `produced - allocated`. Négatif = les bacs veulent plus que le four n'a sorti. */
   readonly remaining: number;
   /**
+   * **Plus rien à répartir** : le reste est à zéro, et l'article est sorti du
+   * four. L'écran s'en sert pour masquer la rangée — il ne compare pas le reste.
+   *
+   * 🔴 Ni un reste NÉGATIF (il en manque : c'est ce qu'il faut voir), ni un
+   * article EN ATTENTE (un reste à zéro sur ce qui n'est pas fabriqué n'est pas
+   * un stock épuisé) ne le sont.
+   */
+  readonly exhausted: boolean;
+  /**
    * L'article attend encore le four — sa ligne de fiche d'atelier n'est pas
    * cochée.
    *

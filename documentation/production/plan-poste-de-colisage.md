@@ -229,6 +229,27 @@ proposerait un geste que le serveur refuse. La marchandise (`produced`, `allocat
   puis remplacée par ce que le serveur relit. Ce n'est pas un chiffre, et sans
   lui la case d'un `fold-checkbox` ne reviendrait pas en arrière sur un refus ;
 - **le choix de ce qui est surligné** par la recherche : un filtre, pas un calcul.
+- **« Masquer le stock épuisé »**, coché à l'ouverture. Le serveur dit quel
+  article est épuisé (`exhausted`) ; l'écran masque, il ne compare pas le reste
+  à zéro.
+
+### Le stock épuisé se masque, le manque jamais
+
+_Ajouté le 2026-09-14._ En cours de matinée, la plupart des articles de la
+marchandise à répartir sont à zéro, et ce qui reste à répartir se perd entre
+eux. `exhausted` vaut `true` quand le reste est **exactement** à zéro **et** que
+l'article est sorti du four. Deux cas ne le sont jamais, et c'est la raison
+d'en faire une règle serveur plutôt qu'un `remaining === 0` à l'écran :
+
+- un reste **négatif** — il en manque, c'est ce que la colonne doit crier ;
+- un article **en attente de la prod** — zéro sur ce qui n'est pas fabriqué
+  n'est pas un stock épuisé.
+
+Un article que la recherche surligne reste montré même épuisé : chercher un
+produit et ne rien voir s'allumer ferait croire qu'il n'est dans aucune
+commande. Quand le filtre masque tout, la colonne le dit — « Plus de marchandise
+disponible » — plutôt que de laisser une liste vide. Le choix ne survit pas au
+rechargement : c'est un réglage du poste, pas une donnée.
 
 ### Les containers se comptent au serveur
 

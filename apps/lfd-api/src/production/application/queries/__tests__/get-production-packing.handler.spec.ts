@@ -94,6 +94,7 @@ describe("GetProductionPackingHandler", () => {
         remaining: 12,
         // La journée vient d'être arrêtée : rien n'est encore sorti du four.
         awaitingProduction: true,
+        exhausted: false,
       },
     ]);
   });

@@ -66,6 +66,13 @@
   color: var(--fold-color-text-muted);
 }
 
+/* Le filtre reste sous la bande : il ne défile pas avec la liste qu'il règle. */
+.co-resource-filter {
+  flex: none;
+  padding: var(--fold-space-sm) var(--fold-space-xl);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
 /* 🔴 LA BOÎTE QUI DÉFILE, sous la bande et l'en-tête. */
 .co-resource-list {
   display: flex;

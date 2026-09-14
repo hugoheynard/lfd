@@ -92,6 +92,7 @@ function resource(over: Partial<PackingResource> = {}): PackingResource {
     allocated: 0,
     remaining: 40,
     awaitingProduction: false,
+    exhausted: false,
     ...over,
   };
 }

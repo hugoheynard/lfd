@@ -323,7 +323,12 @@ describe("l'article pas encore sorti du four", () => {
     expect(firstSheet(after).lines[0]?.awaitingProduction).toBe(false);
     expect(resourceOf(after, CROISSANT).awaitingProduction).toBe(false);
     await mark(reference, CROISSANT);
-    expect(resourceOf(await packing(), CROISSANT).allocated).toBe(12);
+    // Douze tirés, douze au bac : plus rien à répartir, et c'est le serveur qui le dit.
+    expect(resourceOf(await packing(), CROISSANT)).toMatchObject({
+      allocated: 12,
+      remaining: 0,
+      exhausted: true,
+    });
   });
 
   it("laisse RESSORTIR du bac une ligne dont la coche d'atelier a été reprise", async () => {

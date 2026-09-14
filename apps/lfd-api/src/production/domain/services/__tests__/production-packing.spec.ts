@@ -211,6 +211,7 @@ describe("la ressource", () => {
         allocated: 0,
         remaining: 30,
         awaitingProduction: false,
+        exhausted: false,
       },
       {
         sku: "VIE-001",
@@ -219,6 +220,7 @@ describe("la ressource", () => {
         allocated: 20,
         remaining: 20,
         awaitingProduction: false,
+        exhausted: false,
       },
     ]);
   });
@@ -258,6 +260,7 @@ describe("la ressource", () => {
         remaining: -12,
         // Absent du compte à produire : arrivé après le tirage, jamais fabriqué.
         awaitingProduction: true,
+        exhausted: false,
       },
     ]);
   });
@@ -299,6 +302,46 @@ describe("la ressource", () => {
 
     expect(board.sheets[0]?.lines[0]?.awaitingProduction).toBe(true);
     expect(board.resources.find((entry) => entry.sku === "PAI-001")?.awaitingProduction).toBe(true);
+  });
+
+  it("dit épuisé l'article sorti du four dont tout le tirage est au bac", () => {
+    const board = packingBoardOf(
+      sources({
+        orders: [sheet("CMD-0001", [line("VIE-001", "Croissant", 12, PACKED)])],
+        counts: [count("VIE-001", "Croissant", 12)],
+      }),
+    );
+
+    expect(board.resources[0]).toMatchObject({ remaining: 0, exhausted: true });
+  });
+
+  it("🔴 ne dit JAMAIS épuisé un article en manque, ni un article qui attend le four", () => {
+    // Masquer l'un ou l'autre sous « stock épuisé » effacerait précisément ce
+    // que la colonne doit montrer : il en manque, ou il n'est pas encore fait.
+    const board = packingBoardOf(
+      sources({
+        orders: [
+          sheet("CMD-0001", [
+            line("VIE-001", "Croissant", 15, PACKED),
+            line("PAI-001", "Baguette tradition", 30),
+          ]),
+        ],
+        counts: [
+          count("VIE-001", "Croissant", 12),
+          count("PAI-001", "Baguette tradition", 0, false),
+        ],
+      }),
+    );
+
+    expect(board.resources.find((entry) => entry.sku === "VIE-001")).toMatchObject({
+      remaining: -3,
+      exhausted: false,
+    });
+    expect(board.resources.find((entry) => entry.sku === "PAI-001")).toMatchObject({
+      remaining: 0,
+      awaitingProduction: true,
+      exhausted: false,
+    });
   });
 
   it("range les ressources par NOM de produit, puis par SKU", () => {
