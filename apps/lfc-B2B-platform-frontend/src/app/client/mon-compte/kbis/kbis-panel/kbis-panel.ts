@@ -15,7 +15,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AccountService } from '../../../../account/account.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { panelSide } from '../../../panel-side';
+import { dialogSide } from '../../../panel-side';
 import { canUploadKbis, kbisFiledLabel, kbisStateLabel } from '../kbis-section';
 
 /** Le temps laissé à l'onglet ou au téléchargement pour lire le blob avant de le libérer. */
@@ -54,12 +54,22 @@ export interface KbisPanelData {
   styleUrl: './kbis-panel.scss',
 })
 export class KbisPanel {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
+  /**
+   * Un DÉPÔT est une saisie : dialogue centré au bureau, feuille du bas en pile
+   * (`dialogSide()`, règle « Saisir » du `CLAUDE.md` de l'app, 2026-09-14). `md`
+   * (490 px) : l'état, le fichier et la zone de dépôt (échelle `FoldPanelSize`).
+   *
+   * Pas d'Enregistrer à armer : déposer EST le geste. Un dépôt accepté ferme le
+   * dialogue — à l'inverse du mandat, qui reste ouvert parce que l'étape
+   * suivante (renvoyer le scan signé) est dedans. Ici, rien ne suit : la carte
+   * relue dit l'état. Le nom `*-panel` est d'avant cette règle.
+   */
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
 
   /** Ouvre le panneau depuis l'une ou l'autre carte, sur l'extrait tel que `/me` le porte. */
   static open(panels: FoldPanelHostService, company: CompanyView): void {
     panels.open(KbisPanel, {
-      side: panelSide(),
+      side: dialogSide(),
       data: { companyId: company.id, kbis: company.kbis, canManage: canUploadKbis(company) },
     });
   }
