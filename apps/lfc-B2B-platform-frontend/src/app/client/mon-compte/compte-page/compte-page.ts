@@ -45,13 +45,19 @@ import { PaymentDeskCard } from '../payment/payment-desk-card/payment-desk-card'
 import { PaymentMobileCard } from '../payment/payment-mobile-card/payment-mobile-card';
 import { PreferencesDeskCard } from '../preferences/preferences-desk-card/preferences-desk-card';
 import { PreferencesMobileCard } from '../preferences/preferences-mobile-card/preferences-mobile-card';
+import { ProfileDeskCard } from '../profile/profile-desk-card/profile-desk-card';
+import { ProfileMobileCard } from '../profile/profile-mobile-card/profile-mobile-card';
 import { SupportCard } from '../support-card/support-card';
 import { UsersDeskCard } from '../users/users-desk-card/users-desk-card';
 import { UsersMobileCard } from '../users/users-mobile-card/users-mobile-card';
 
-/** Les huit sujets, numérotés dans l'ordre de lecture. */
+/**
+ * Les neuf sujets, numérotés dans l'ordre de lecture. « Mes informations »
+ * précède les utilisateurs : qui je suis, puis les autres.
+ */
 const SECTIONS = [
   'identity',
+  'profile',
   'users',
   'kbis',
   'addresses',
@@ -81,7 +87,7 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
  *
- * **Huit sections, pas huit écrans.** Le back-office a une fiche à onglets parce
+ * **Neuf sections, pas neuf écrans.** Le back-office a une fiche à onglets parce
  * qu'un commercial y passe la journée ; un client y passe deux fois par an. Une
  * seule page, aucun sous-écran à retrouver — et le sommaire de bureau fait
  * DÉFILER, il ne change pas d'écran : chaque entrée pointe l'ancre de sa
@@ -124,6 +130,8 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
     PaymentMobileCard,
     PreferencesDeskCard,
     PreferencesMobileCard,
+    ProfileDeskCard,
+    ProfileMobileCard,
     ShopPromise,
     SupportCard,
     UsersDeskCard,

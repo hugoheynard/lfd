@@ -38,7 +38,8 @@ describe('UsersList', () => {
 
     const panel = el().querySelector('app-client-dialog');
     expect(panel?.textContent).toContain('Cabinet Ferrand');
-    expect(panel?.textContent).toContain(FR.account.spaceInvite);
+    // « Inviter » n'avait aucune action, et aucune route client n'invite (2026-09-14).
+    expect(panel?.textContent).not.toContain('Inviter');
   });
 
   it('le détenteur lit POURQUOI son accès ne se retire pas d’ici', () => {

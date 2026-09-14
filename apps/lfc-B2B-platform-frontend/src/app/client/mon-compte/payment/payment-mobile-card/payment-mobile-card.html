@@ -1,6 +1,4 @@
 <h2 class="title">{{ t().account.sections.payment }}</h2>
 <p class="line">{{ t().account.termOrder }}</p>
-@if (client.hasDeferredTerm()) {
-  <p class="line">{{ t().account.termMonthly }}</p>
-}
+<p class="line monthly">{{ t().account.termMonthly }} · {{ monthly().badge }}</p>
 <app-card-foot [label]="t().account.details" (pressed)="open()" />

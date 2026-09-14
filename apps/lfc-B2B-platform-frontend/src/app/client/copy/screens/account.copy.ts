@@ -65,6 +65,7 @@ export interface AccountCopy {
   readonly sections: {
     readonly identity: string;
     readonly users: string;
+    readonly profile: string;
     readonly kbis: string;
     readonly addresses: string;
     readonly bank: string;
@@ -109,6 +110,30 @@ export interface AccountCopy {
   /** Un rôle non renseigné : les contacts d'avant les rôles n'en ont pas. */
   readonly roleUnset: string;
   readonly tagContact: string;
+  /** L'en-tête de la fiche d'un interlocuteur quand on la modifie : détenteur, ou contact du carnet. */
+  readonly contactEditHolderTitle: string;
+  readonly contactEditTitle: string;
+  /** Le détenteur sur la fiche de la société n'est PAS l'adresse de connexion, et on le dit. */
+  readonly contactEditHolderSubtitle: string;
+  readonly contactEditSubtitle: string;
+  readonly contactEditFailed: string;
+  /** Le retrait d'un contact, confirmé en place (`fold-inline-confirm`). */
+  readonly contactRemove: string;
+  readonly contactRemoveMessage: string;
+  readonly contactRemoveConfirm: string;
+  readonly contactRemoveBusy: string;
+  readonly contactRemoveGroup: string;
+  readonly contactRemoveFailed: string;
+  /** « Mes informations » : la personne connectée, pas la société. */
+  readonly profileFirstName: string;
+  readonly profileLastName: string;
+  readonly profileEmail: string;
+  readonly profileNote: string;
+  readonly profilePanelSubtitle: string;
+  readonly profileEmailHint: string;
+  /** Dit AVANT l'enregistrement ce qu'un changement d'adresse emporte chez Auth0. */
+  readonly profileEmailChange: string;
+  readonly profileSaveFailed: string;
   readonly kbisHead: string;
   /** `{date}` la date de vérification, `{who}` la personne qui a certifié. */
   /** Deux états, et pas un de plus : le staff a validé ce fichier, ou pas. */
@@ -136,6 +161,8 @@ export interface AccountCopy {
   readonly deliveryHead: string;
   /** `{n}` est remplacé par le nombre d'adresses de livraison. */
   readonly deliveryCount: string;
+  /** La même phrase pour UNE adresse : « 1 adresses » se lisait à l'écran (relevé le 2026-09-14). */
+  readonly deliveryCountOne: string;
   /** Ce qu'on écrit quand aucune zone ne dessert le code postal. */
   readonly addressNoZone: string;
   /** Ce qu'on écrit quand l'entreprise n'a déclaré aucune adresse. */
@@ -151,13 +178,39 @@ export interface AccountCopy {
   readonly deliveryNote: string;
   readonly addressSaveFailed: string;
   readonly addressSavedToast: string;
+  /** Désigner une livraison comme la défaut — absent sur celle qui l'est déjà. */
+  readonly addressMakeDefault: string;
+  readonly addressDefaultToast: string;
+  /** L'archivage d'une livraison, confirmé en place (`fold-inline-confirm`) — les mêmes cinq phrases que `contactRemove*`. */
+  readonly addressRemove: string;
+  /** La question posée avant d'archiver : elle nomme ce qui ne disparaît PAS. */
+  readonly addressRemoveMessage: string;
+  readonly addressRemoveConfirm: string;
+  readonly addressRemoveBusy: string;
+  readonly addressRemoveGroup: string;
+  readonly addressRemovedToast: string;
+  /** En tête du message du serveur, quand suppression ou défaut est refusé. */
+  readonly addressActionFailed: string;
   readonly termMonthly: string;
-  readonly termMonthlySub: string;
+  /**
+   * Sous le crédit mensuel, selon ce que `/me` en dit. 🔴 Il y avait ici UNE
+   * phrase, « Accordé le 14/02/2024 · plafond 2 000 € », écrite en dur et lue par
+   * tout le monde : `CompanyView` ne porte ni date d'accord ni plafond.
+   */
+  readonly termGrantedSub: string;
+  readonly termRequestedSub: string;
+  readonly termNoneSub: string;
   readonly termOrder: string;
   readonly termOrderSub: string;
   readonly stateActive: string;
   readonly stateAvailable: string;
+  /** Le crédit demandé, que le commercial n'a pas encore tranché. */
+  readonly stateRequested: string;
   readonly paymentNote: string;
+  /** Le geste de la carte et du panneau — une DEMANDE, que le commercial valide. */
+  readonly termRequest: string;
+  readonly termRequestNote: string;
+  readonly termRequestFailed: string;
   readonly prefPickup: string;
   /** Aucune habitude posée — ce n'est pas « retrait », c'est « rien n'a été dit ». */
   readonly prefNone: string;
@@ -169,6 +222,21 @@ export interface AccountCopy {
   readonly stateUnavailable: string;
   readonly prefLang: string;
   readonly prefNote: string;
+  /** Le réglage de l'habitude, dans le panneau : le mode, puis sa destination. */
+  readonly prefMethod: string;
+  readonly prefMethodNone: string;
+  readonly prefMethodPickup: string;
+  readonly prefMethodDelivery: string;
+  readonly prefPickupPoint: string;
+  /** « Suivre le défaut » est un CHOIX, pas un placeholder : il suit le défaut du moment. */
+  readonly prefPickupDefault: string;
+  readonly prefDeliveryAddress: string;
+  readonly prefDeliveryDefault: string;
+  /** Accolé à la destination qui est le défaut d'aujourd'hui. */
+  readonly prefDefaultTag: string;
+  readonly prefSaveFailed: string;
+  /** Sous le choix de langue : il vaut tout de suite, sans Enregistrer. */
+  readonly prefLangNote: string;
   readonly dataExportOrders: string;
   readonly dataExportOrdersSub: string;
   readonly dataExportPersonal: string;
@@ -187,12 +255,9 @@ export interface AccountCopy {
   readonly panelContact: string;
   readonly panelPhone: string;
   readonly panelRole: string;
-  readonly panelCan: string;
   readonly noPhone: string;
   readonly spaceContactHead: string;
   readonly spaceContactBody: string;
-  readonly spaceInvite: string;
-  readonly spaceInviteNote: string;
   /** `{date}` est remplacé par la date d'envoi de l'invitation. */
   readonly spaceActiveHead: string;
   /** `{date}` est remplacé par la date d'activation de l'espace. */

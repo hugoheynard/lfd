@@ -56,7 +56,10 @@ describe('AddressesMobileCard', () => {
       .nativeElement as HTMLElement;
 
     expect(el.querySelector('.billing')?.textContent).toContain('12 chemin des Barmettes, 73150');
-    expect(el.querySelector('.count')?.textContent).toContain('1 adresses');
+    // Régression : la carte disait « 1 adresses » (relevé le 2026-09-14).
+    expect(el.querySelector('.count')?.textContent?.trim()).toBe(
+      `${FR.account.deliveryHead} · 1 adresse`,
+    );
     expect(el.textContent).not.toContain('Chalet');
     expect(el.textContent).not.toContain(FR.account.billingNote);
   });

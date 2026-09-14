@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FoldPanelHostService } from 'fold-ng';
 
+import { ClientCompany } from '../../../client-company.service';
 import { ClientPreferences } from '../../../client-preferences.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { CardFoot } from '../../card-foot/card-foot';
@@ -17,9 +18,10 @@ import { PreferencesPanel } from '../preferences-panel/preferences-panel';
 export class PreferencesMobileCard {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly preferences = inject(ClientPreferences);
+  private readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);
 
   protected open(): void {
-    PreferencesPanel.open(this.panels);
+    PreferencesPanel.open(this.panels, this.client.company());
   }
 }

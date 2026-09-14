@@ -56,11 +56,20 @@ const TYPED: PostalAddress = {
   note: 'Code 1234',
 };
 
+/** Une seconde livraison, qui n'est PAS la défaut. */
+const BUREAU: DeliveryAddressView = { ...CHALET, id: 'adr_2', label: 'Bureau', isDefault: false };
+
 interface Wire {
   deliveries: DeliveryAddressPayload[];
   updates: { addressId: string; payload: DeliveryAddressPayload }[];
   billings: BillingAddressPayload[];
+  /** `société/adresse` de chaque archivage et de chaque désignation de défaut. */
+  removes: string[];
+  defaults: string[];
+  toasts: string[];
   answer: string | null;
+  /** Posé, retient la réponse des actions de ligne jusqu'à ce qu'on le libère. */
+  gate: Promise<void> | null;
 }
 
 let wire: Wire;
@@ -69,7 +78,16 @@ function boot(
   data: AddressesPanelData,
   carnet: { billing: BillingAddressView | null; deliveries: DeliveryAddressView[] },
 ): ComponentFixture<AddressesPanel> {
-  wire = { deliveries: [], updates: [], billings: [], answer: null };
+  wire = {
+    deliveries: [],
+    updates: [],
+    billings: [],
+    removes: [],
+    defaults: [],
+    toasts: [],
+    answer: null,
+    gate: null,
+  };
   const billing = signal(carnet.billing);
   const deliveries = signal<readonly DeliveryAddressView[]>(carnet.deliveries);
   TestBed.resetTestingModule();
@@ -103,10 +121,41 @@ function boot(
             wire.billings.push(payload);
             return Promise.resolve(wire.answer);
           },
+          // La relecture du vrai service, rejouée : l'archivée disparaît, la
+          // défaut remonte en tête.
+          removeDelivery: async (companyId: string, addressId: string): Promise<string | null> => {
+            wire.removes.push(`${companyId}/${addressId}`);
+            await wire.gate;
+            if (wire.answer === null) {
+              deliveries.update((list) => list.filter((a) => a.id !== addressId));
+            }
+            return wire.answer;
+          },
+          makeDefaultDelivery: async (
+            companyId: string,
+            addressId: string,
+          ): Promise<string | null> => {
+            wire.defaults.push(`${companyId}/${addressId}`);
+            await wire.gate;
+            if (wire.answer === null) {
+              deliveries.update((list) =>
+                list
+                  .map((a) => ({ ...a, isDefault: a.id === addressId }))
+                  .sort((a, b) => Number(b.isDefault) - Number(a.isDefault)),
+              );
+            }
+            return wire.answer;
+          },
         },
       },
       { provide: ServicePoints, useValue: { zoneFor: () => null } },
-      { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+      {
+        provide: NotifyService,
+        useValue: {
+          success: (message: string) => wire.toasts.push(message),
+          error: () => undefined,
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(AddressesPanel);
@@ -316,5 +365,191 @@ describe('AddressesPanel', () => {
 
     expect(el().querySelector('lfd-address-form')).toBeNull();
     expect(wire.billings).toEqual([]);
+  });
+
+  describe('les gestes de ligne — Supprimer, Définir par défaut', () => {
+    /** La ligne dont le libellé est `label`. */
+    const row = (label: string): HTMLElement => {
+      const found = Array.from(el().querySelectorAll<HTMLElement>('.delivery')).find(
+        (node) => node.querySelector('.delivery-label')?.textContent?.trim() === label,
+      );
+      if (!found) {
+        throw new Error(`Pas de ligne « ${label} ».`);
+      }
+      return found;
+    };
+
+    /** Le bouton de cette ligne dont le texte est EXACTEMENT `text`. */
+    const rowButton = (label: string, text: string): HTMLButtonElement | undefined =>
+      Array.from(row(label).querySelectorAll<HTMLButtonElement>('button[foldButton]')).find(
+        (b) => b.textContent?.trim() === text,
+      );
+
+    const labels = (): string[] =>
+      Array.from(el().querySelectorAll('.delivery-label')).map((n) => n.textContent?.trim() ?? '');
+
+    const settle = async (): Promise<void> => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    /** Ouvre la confirmation en place de cette ligne, et la rend. */
+    const askRemove = (label: string): HTMLElement => {
+      rowButton(label, FR.account.addressRemove)?.click();
+      fixture.detectChanges();
+      const group = row(label).querySelector<HTMLElement>('fold-inline-confirm [role="group"]');
+      if (!group) {
+        throw new Error(`Pas de confirmation sur « ${label} ».`);
+      }
+      return group;
+    };
+
+    const groupButton = (group: HTMLElement, text: string): HTMLButtonElement | undefined =>
+      Array.from(group.querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === text,
+      );
+
+    it('n’offre « Définir par défaut » qu’aux livraisons qui ne le sont pas déjà', () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+
+      expect(rowButton('Chalet', FR.account.addressMakeDefault)).toBeUndefined();
+      expect(rowButton('Bureau', FR.account.addressMakeDefault)).toBeDefined();
+      expect(rowButton('Chalet', FR.account.addressRemove)).toBeDefined();
+      expect(rowButton('Bureau', FR.account.addressRemove)).toBeDefined();
+    });
+
+    it('aux rôles qui ne gèrent pas la société : ni suppression ni défaut, même devant des livraisons', () => {
+      fixture = boot(
+        { ...DELIVERY, canManage: false },
+        { billing: SIEGE, deliveries: [CHALET, BUREAU] },
+      );
+
+      expect(labels()).toEqual(['Chalet', 'Bureau']);
+      expect(el().querySelectorAll('fold-inline-confirm').length).toBe(0);
+      expect(el().querySelectorAll('button[foldButton]').length).toBe(0);
+    });
+
+    it('« Définir par défaut » vise CETTE adresse, toaste, et la liste relue la remonte en tête', async () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+
+      rowButton('Bureau', FR.account.addressMakeDefault)?.click();
+      await settle();
+
+      expect(wire.defaults).toEqual(['cmp_1/adr_2']);
+      expect(wire.removes).toEqual([]);
+      expect(wire.toasts).toEqual([FR.account.addressDefaultToast]);
+      expect(labels()).toEqual(['Bureau', 'Chalet']);
+      expect(row('Bureau').querySelector('fold-badge')?.textContent).toContain(
+        FR.account.addressDefault,
+      );
+      expect(rowButton('Chalet', FR.account.addressMakeDefault)).toBeDefined();
+      expect(rowButton('Bureau', FR.account.addressMakeDefault)).toBeUndefined();
+    });
+
+    it('« Supprimer » demande confirmation EN PLACE, en français, sans rien appeler', () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+
+      const group = askRemove('Bureau');
+
+      expect(wire.removes).toEqual([]);
+      expect(group.getAttribute('aria-label')).toBe(FR.account.addressRemoveGroup);
+      expect(group.textContent).toContain(FR.account.addressRemoveMessage);
+      expect(groupButton(group, FR.account.addressRemoveConfirm)).toBeDefined();
+      expect(groupButton(group, FR.account.cancel)).toBeDefined();
+      // L'autre ligne ne bouge pas.
+      expect(row('Chalet').querySelector('[role="group"]')).toBeNull();
+    });
+
+    it('Annuler la confirmation n’appelle rien, ne toaste rien, et rend le bouton', () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+
+      groupButton(askRemove('Bureau'), FR.account.cancel)?.click();
+      fixture.detectChanges();
+
+      expect(wire.removes).toEqual([]);
+      expect(wire.toasts).toEqual([]);
+      expect(row('Bureau').querySelector('[role="group"]')).toBeNull();
+      expect(rowButton('Bureau', FR.account.addressRemove)).toBeDefined();
+      expect(labels()).toEqual(['Chalet', 'Bureau']);
+    });
+
+    it('confirmer archive CETTE adresse, toaste, et la liste relue ne la montre plus', async () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+
+      groupButton(askRemove('Bureau'), FR.account.addressRemoveConfirm)?.click();
+      await settle();
+
+      expect(wire.removes).toEqual(['cmp_1/adr_2']);
+      expect(wire.defaults).toEqual([]);
+      expect(wire.toasts).toEqual([FR.account.addressRemovedToast]);
+      expect(labels()).toEqual(['Chalet']);
+      // Et le décompte s'accorde : c'était « 1 adresses ».
+      expect(el().querySelector('.head')?.textContent?.trim()).toBe('1 adresse');
+      expect(el().querySelector('fold-callout')).toBeNull();
+    });
+
+    it('un refus s’affiche en tête de la liste, qui reste à l’écran, sans toast de succès', async () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+      wire.answer = 'Adresse de livraison introuvable.';
+
+      groupButton(askRemove('Chalet'), FR.account.addressRemoveConfirm)?.click();
+      await settle();
+
+      const callout = el().querySelector('fold-callout');
+      expect(callout?.textContent).toContain(FR.account.addressActionFailed);
+      expect(callout?.textContent).toContain('Adresse de livraison introuvable.');
+      expect(labels()).toEqual(['Chalet', 'Bureau']);
+      expect(wire.toasts).toEqual([]);
+      expect(rowButton('Chalet', FR.account.addressRemove)?.disabled).toBe(false);
+    });
+
+    it('le refus précédent s’efface au geste suivant', async () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+      wire.answer = 'Refus.';
+      rowButton('Bureau', FR.account.addressMakeDefault)?.click();
+      await settle();
+      expect(el().querySelector('fold-callout')).not.toBeNull();
+
+      wire.answer = null;
+      rowButton('Bureau', FR.account.addressMakeDefault)?.click();
+      await settle();
+
+      expect(el().querySelector('fold-callout')).toBeNull();
+      expect(wire.defaults).toEqual(['cmp_1/adr_2', 'cmp_1/adr_2']);
+    });
+
+    /** Deux actions en parallèle : la relecture de l'une écraserait l'autre. */
+    it('une action en vol désarme tous les gestes de ligne, et un second clic ne part pas', async () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+      let release: () => void = () => undefined;
+      wire.gate = new Promise<void>((resolve) => (release = resolve));
+
+      const makeDefault = rowButton('Bureau', FR.account.addressMakeDefault);
+      makeDefault?.click();
+      fixture.detectChanges();
+
+      expect(rowButton('Chalet', FR.account.edit)?.disabled).toBe(true);
+      expect(rowButton('Chalet', FR.account.addressRemove)?.disabled).toBe(true);
+      expect(rowButton('Bureau', FR.account.addressRemove)?.disabled).toBe(true);
+      makeDefault?.click();
+      expect(wire.defaults).toEqual(['cmp_1/adr_2']);
+
+      release();
+      // `whenStable` ne suit pas une promesse retenue à la main : on vide les microtâches.
+      for (let i = 0; i < 5; i += 1) {
+        await Promise.resolve();
+      }
+      fixture.detectChanges();
+      expect(rowButton('Chalet', FR.account.addressRemove)?.disabled).toBe(false);
+      expect(wire.defaults).toEqual(['cmp_1/adr_2']);
+    });
+
+    it('accorde le décompte : « 2 adresses », puis « 1 adresse »', () => {
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET, BUREAU] });
+      expect(el().querySelector('.head')?.textContent?.trim()).toBe('2 adresses');
+
+      fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET] });
+      expect(el().querySelector('.head')?.textContent?.trim()).toBe('1 adresse');
+    });
   });
 });

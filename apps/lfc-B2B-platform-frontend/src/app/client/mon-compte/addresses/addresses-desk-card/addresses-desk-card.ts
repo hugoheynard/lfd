@@ -3,13 +3,14 @@ import { FoldBadgeComponent, FoldButtonComponent, FoldPanelHostService } from 'f
 
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
-import { ClientCopyService, fill } from '../../../copy/client-copy.service';
+import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { AddressesPanel } from '../addresses-panel/addresses-panel';
 import {
   type AddressesForm,
   type AddressesView,
   canWriteAddresses,
+  deliveryCountLabel,
   deliveryRows,
   postalLine,
 } from '../addresses-section';
@@ -56,7 +57,7 @@ export class AddressesDeskCard {
   );
 
   protected readonly deliveryCount = computed(() =>
-    fill(this.t().account.deliveryCount, { n: String(this.deliveries().length) }),
+    deliveryCountLabel(this.deliveries().length, this.t().account),
   );
 
   /** Les gestes du bureau vont droit au formulaire de leur partie. */

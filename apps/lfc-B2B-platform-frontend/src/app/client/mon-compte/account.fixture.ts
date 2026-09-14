@@ -1,6 +1,6 @@
 import type { Provider, Type } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CompanyMemberRole, CompanyView, ContactView } from '@lfd/contracts';
+import type { CompanyMemberRole, CompanyView, ContactView, ProfileView } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { AccountService } from '../../account/account.service';
@@ -63,11 +63,24 @@ export function asRole(role: CompanyMemberRole, company: CompanyView = TOMMEUSES
   return { ...company, role };
 }
 
-/** `GET /me` déjà lu : ces sociétés-là, et rien en vol. */
-export function accountWith(companies: readonly CompanyView[]): Provider {
+/** La personne connectée : le détenteur de TOMMEUSES, sous son profil à elle. */
+export const PROFILE: ProfileView = {
+  userId: 'usr_1',
+  subject: 'auth0|hugo',
+  firstName: 'Hugo',
+  lastName: 'Heynard',
+  email: 'hheynard@gmail.com',
+  phone: '06 12 44 08 71',
+};
+
+/** `GET /me` déjà lu : ces sociétés-là, ce profil-là, et rien en vol. */
+export function accountWith(
+  companies: readonly CompanyView[],
+  profile: ProfileView | null = PROFILE,
+): Provider {
   return {
     provide: AccountService,
-    useValue: { companies: () => companies, status: () => 'ready' },
+    useValue: { companies: () => companies, profile: () => profile, status: () => 'ready' },
   };
 }
 

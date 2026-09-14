@@ -6,6 +6,8 @@ import type {
   DeliveryAddressView,
 } from '@lfd/contracts';
 
+import { fill } from '../../copy/client-copy.service';
+import type { AccountCopy } from '../../copy/screens/account.copy';
 import { formatCents, formatRate } from '../../format-money';
 import type { ServicePoints } from '../../shop/pickup-points.store';
 
@@ -25,6 +27,18 @@ const ADDRESS_WRITE_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'a
 
 export function canWriteAddresses(company: CompanyView | null): boolean {
   return company !== null && ADDRESS_WRITE_ROLES.has(company.role);
+}
+
+/**
+ * « 1 adresse », « 3 adresses » — la phrase lue par les deux cartes et le
+ * panneau. Elle disait « 1 adresses » partout où une maison n'en a qu'une,
+ * c'est-à-dire chez la plupart.
+ */
+export function deliveryCountLabel(
+  count: number,
+  copy: Pick<AccountCopy, 'deliveryCount' | 'deliveryCountOne'>,
+): string {
+  return fill(count === 1 ? copy.deliveryCountOne : copy.deliveryCount, { n: String(count) });
 }
 
 /** Une adresse en une ligne : « 12 chemin des Barmettes, 73150 Val d'Isère ». */

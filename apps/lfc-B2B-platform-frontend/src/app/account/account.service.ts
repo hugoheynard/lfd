@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import type {
   CatalogueView,
+  DeferredTerm,
   FulfillmentPreferenceView,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
@@ -37,6 +38,17 @@ export type IdentityDraft = Pick<UpdateIdentityPayload, 'enseigne' | 'vatNumber'
 const IDENTITY_SAVED = 'Identité mise à jour.';
 const KBIS_SAVED = 'KBIS déposé.';
 const CONTACT_ADDED = 'Contact ajouté.';
+const CONTACT_SAVED = 'Contact enregistré.';
+const CONTACT_REMOVED = 'Contact supprimé.';
+const PROFILE_SAVED = 'Profil enregistré.';
+const TERM_REQUESTED = 'Demande de règlement enregistrée.';
+const FULFILLMENT_SAVED = "Préférence d'acheminement enregistrée.";
+
+/**
+ * Ce qu'une écriture du **détenteur** envoie : les coordonnées d'un contact,
+ * sans rôle — le sien est `owner` par construction.
+ */
+export type HolderDraft = Omit<ContactDraft, 'role'>;
 
 /** Où en est le chargement du compte — l'app doit distinguer « vide » de « pas encore su ». */
 export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -245,15 +257,23 @@ export class AccountService {
 
   requestSettlementMean(companyId: string, paymentTerm: SettlementMean, onDone?: () => void): void {
     this.mutate(
-      (token) =>
-        this.http.patch(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/payment-term`,
-          { paymentTerm },
-          headers(token),
-        ),
-      'Demande de règlement enregistrée.',
+      (token) => this.patchPaymentTerm(companyId, paymentTerm, token),
+      TERM_REQUESTED,
       onDone,
     );
+  }
+
+  /**
+   * `PATCH /companies/:id/payment-term` — **demande** un crédit, en promesse
+   * qui retombe dans les deux cas : `null` au succès, le message du serveur au
+   * refus.
+   *
+   * Une demande, jamais un accord : le serveur ne touche pas aux termes
+   * convenus, et demander un terme déjà accordé retire la demande (vérifié le
+   * 2026-09-14, `Company.requestTerm`). Réservé à `owner`/`admin`.
+   */
+  askPaymentTerm(companyId: string, term: DeferredTerm): Promise<string | null> {
+    return this.attempt((token) => this.patchPaymentTerm(companyId, term, token), TERM_REQUESTED);
   }
 
   /**
@@ -264,26 +284,59 @@ export class AccountService {
    */
   preferFulfillment(companyId: string, preference: FulfillmentPreferenceView): Promise<boolean> {
     return this.write(
-      (token) =>
-        this.http.patch(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/fulfillment-preference`,
-          preference,
-          headers(token),
-        ),
-      "Préférence d'acheminement enregistrée.",
+      (token) => this.patchFulfillment(companyId, preference, token),
+      FULFILLMENT_SAVED,
+    );
+  }
+
+  /**
+   * Même écriture que {@link preferFulfillment}, mais le refus rend le
+   * **message du serveur** — pour le panneau Préférences de `/mon-compte`, qui
+   * le montre sous le choix resté ouvert.
+   *
+   * ⚠️ Pas `write` : il bascule le statut de page pendant le vol, et
+   * `/mon-compte` détruirait alors le panneau (cf. {@link attempt}).
+   */
+  saveFulfillment(
+    companyId: string,
+    preference: FulfillmentPreferenceView,
+  ): Promise<string | null> {
+    return this.attempt(
+      (token) => this.patchFulfillment(companyId, preference, token),
+      FULFILLMENT_SAVED,
     );
   }
 
   updatePrimaryContact(companyId: string, draft: ContactDraft, onDone?: () => void): void {
-    this.mutate(
-      (token) =>
-        this.http.patch(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contact`,
-          draft,
-          headers(token),
-        ),
-      'Contact enregistré.',
-      onDone,
+    this.mutate((token) => this.patchHolder(companyId, draft, token), CONTACT_SAVED, onDone);
+  }
+
+  /**
+   * `PATCH /companies/:id/contact` — les coordonnées du **détenteur**, promesse
+   * qui retombe dans les deux cas : `null` au succès, le **message du serveur**
+   * à l'échec.
+   *
+   * Le corps ne porte PAS de rôle : celui du détenteur est constaté, pas choisi,
+   * et le schéma du serveur n'en lit aucun (vérifié le 2026-09-14,
+   * `contactPayload` dans `payloads.ts`).
+   */
+  saveHolder(companyId: string, draft: HolderDraft): Promise<string | null> {
+    return this.attempt((token) => this.patchHolder(companyId, draft, token), CONTACT_SAVED);
+  }
+
+  /**
+   * `PATCH /me/profile` — les coordonnées de la **personne connectée**, promesse
+   * qui retombe dans les deux cas.
+   *
+   * Changer l'adresse la change AUSSI chez Auth0, avant notre base, en adresse
+   * non vérifiée avec un e-mail de vérification (vérifié le 2026-09-14,
+   * `update-my-profile.handler.ts` et `auth0-identity.gateway.ts`) : le
+   * panneau le dit avant qu'on enregistre.
+   */
+  saveMyProfile(draft: UserProfileDraft): Promise<string | null> {
+    return this.attempt(
+      (token) => this.http.patch(`${AUTH_CONFIG.apiBaseUrl}/me/profile`, draft, headers(token)),
+      PROFILE_SAVED,
     );
   }
 
@@ -307,26 +360,44 @@ export class AccountService {
     onDone?: () => void,
   ): void {
     this.mutate(
-      (token) =>
-        this.http.patch(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts/${contactId}`,
-          draft,
-          headers(token),
-        ),
-      'Contact enregistré.',
+      (token) => this.patchContact(companyId, contactId, draft, token),
+      CONTACT_SAVED,
       onDone,
+    );
+  }
+
+  /**
+   * Même écriture que {@link updateContact}, mais la promesse retombe dans les
+   * deux cas : `null` au succès, le **message du serveur** à l'échec — pour le
+   * panneau d'édition de `/mon-compte`, qui reste ouvert sur un refus.
+   */
+  saveContactEdit(
+    companyId: string,
+    contactId: string,
+    draft: ContactDraft,
+  ): Promise<string | null> {
+    return this.attempt(
+      (token) => this.patchContact(companyId, contactId, draft, token),
+      CONTACT_SAVED,
     );
   }
 
   removeContact(companyId: string, contactId: string, onDone?: () => void): void {
     this.mutate(
-      (token) =>
-        this.http.delete(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts/${contactId}`,
-          headers(token),
-        ),
-      'Contact supprimé.',
+      (token) => this.deleteContactCall(companyId, contactId, token),
+      CONTACT_REMOVED,
       onDone,
+    );
+  }
+
+  /**
+   * Même retrait que {@link removeContact}, mais la promesse retombe dans les
+   * deux cas — la fiche de la personne garde sa confirmation et montre le refus.
+   */
+  deleteContact(companyId: string, contactId: string): Promise<string | null> {
+    return this.attempt(
+      (token) => this.deleteContactCall(companyId, contactId, token),
+      CONTACT_REMOVED,
     );
   }
 
@@ -443,12 +514,72 @@ export class AccountService {
     );
   }
 
+  private patchHolder(
+    companyId: string,
+    draft: HolderDraft | ContactDraft,
+    token: string,
+  ): Observable<unknown> {
+    return this.http.patch(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contact`,
+      draft,
+      headers(token),
+    );
+  }
+
+  private patchContact(
+    companyId: string,
+    contactId: string,
+    draft: ContactDraft,
+    token: string,
+  ): Observable<unknown> {
+    return this.http.patch(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts/${contactId}`,
+      draft,
+      headers(token),
+    );
+  }
+
+  private deleteContactCall(
+    companyId: string,
+    contactId: string,
+    token: string,
+  ): Observable<unknown> {
+    return this.http.delete(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts/${contactId}`,
+      headers(token),
+    );
+  }
+
   private putKbis(companyId: string, file: File, token: string): Observable<unknown> {
     const form = new FormData();
     form.append('file', file, file.name);
     return this.http.put(
       `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`,
       form,
+      headers(token),
+    );
+  }
+
+  private patchPaymentTerm(
+    companyId: string,
+    paymentTerm: SettlementMean,
+    token: string,
+  ): Observable<unknown> {
+    return this.http.patch(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/payment-term`,
+      { paymentTerm },
+      headers(token),
+    );
+  }
+
+  private patchFulfillment(
+    companyId: string,
+    preference: FulfillmentPreferenceView,
+    token: string,
+  ): Observable<unknown> {
+    return this.http.patch(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/fulfillment-preference`,
+      preference,
       headers(token),
     );
   }

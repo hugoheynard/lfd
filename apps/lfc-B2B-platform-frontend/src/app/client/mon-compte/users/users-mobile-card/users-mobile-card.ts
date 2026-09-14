@@ -7,7 +7,7 @@ import { CardFoot } from '../../card-foot/card-foot';
 import { UserAddPanel } from '../user-add-panel/user-add-panel';
 import { UsersList } from '../users-list/users-list';
 import { UsersPanel } from '../users-panel/users-panel';
-import { canAddContacts } from '../users-section';
+import { canManageContacts } from '../users-section';
 
 /**
  * La carte **Utilisateurs** en pile : la carte bleue du détenteur, telle
@@ -27,7 +27,7 @@ export class UsersMobileCard {
   private readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);
 
-  protected readonly canAdd = computed(() => canAddContacts(this.client.company()));
+  protected readonly canAdd = computed(() => canManageContacts(this.client.company()));
 
   protected openList(): void {
     UsersPanel.open(this.panels);

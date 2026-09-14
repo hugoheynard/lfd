@@ -1,16 +1,18 @@
 <h2 class="title">{{ t().account.sections.preferences }}</h2>
 <dl class="facts">
   <dt>{{ t().account.prefPickup }}</dt>
-  <dd>
+  <dd class="habit">
     {{ preferences.habit() }}
-    <button foldButton size="sm" emphasis="soft" intent="primary" type="button">
-      {{ t().account.edit }}
-    </button>
+    @if (canEdit()) {
+      <button foldButton size="sm" emphasis="soft" intent="primary" type="button" (click)="open()">
+        {{ t().account.edit }}
+      </button>
+    }
   </dd>
   <dt>{{ t().account.prefLang }}</dt>
-  <dd>
+  <dd class="language">
     {{ preferences.language() }}
-    <button foldButton size="sm" emphasis="soft" intent="primary" type="button">
+    <button foldButton size="sm" emphasis="soft" intent="primary" type="button" (click)="open()">
       {{ t().account.edit }}
     </button>
   </dd>

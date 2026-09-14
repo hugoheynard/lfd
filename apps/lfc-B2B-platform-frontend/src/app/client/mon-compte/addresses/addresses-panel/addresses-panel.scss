@@ -60,7 +60,14 @@
   color: var(--fold-color-text-muted);
 }
 
-.row-edit {
+/* Les gestes d'une ligne ensemble, poussés à droite : c'est le groupe qui se
+   pousse, pas chacun. `wrap` : trois boutons ne tiennent pas en pile étroite. */
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-xs);
   margin-left: auto;
 }
 

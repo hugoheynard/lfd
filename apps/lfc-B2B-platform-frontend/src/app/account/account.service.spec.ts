@@ -100,3 +100,143 @@ describe('AccountService — declareEstablishment', () => {
     expect(toasts.error).toEqual([]);
   });
 });
+
+/**
+ * Les écritures de `/mon-compte` qui rendent le refus au panneau : détenteur,
+ * contact, retrait, profil. Chacune est éprouvée sur les trois faits qui
+ * comptent pour l'écran — la requête exacte, `null` + relecture au succès, le
+ * message du serveur sans relecture à l'échec.
+ */
+describe('AccountService — écritures à refus rendu', () => {
+  let account: AccountService;
+  let http: HttpTestingController;
+  let toasts: { success: string[]; error: unknown[] };
+
+  beforeEach(() => {
+    toasts = { success: [], error: [] };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: {
+            isAuthenticated: signal(false),
+            authEmail: signal(null),
+            accessToken$: () => of('jeton'),
+          },
+        },
+        {
+          provide: NotifyService,
+          useValue: {
+            success: (message: string) => toasts.success.push(message),
+            error: (error: unknown) => toasts.error.push(error),
+          },
+        },
+      ],
+    });
+    account = TestBed.inject(AccountService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    http.verify();
+  });
+
+  const HOLDER = {
+    firstName: 'Hugo',
+    lastName: 'Heynard',
+    fonction: 'Directeur',
+    email: 'hheynard@gmail.com',
+    phone: '06 12 44 08 71',
+  };
+  const CONTACT = { ...HOLDER, email: 'compta@cabinet-ferrand.fr', role: 'billing' as const };
+  const PROFILE = { firstName: 'Hugo', lastName: 'Heynard', email: 'hugo@lfd.fr', phone: '' };
+
+  /** Les quatre écritures, chacune avec la requête qu'elle doit émettre. */
+  const CASES = [
+    {
+      name: 'saveHolder',
+      call: (): Promise<string | null> => account.saveHolder('cmp_1', HOLDER),
+      method: 'PATCH',
+      path: '/companies/cmp_1/contact',
+      body: HOLDER,
+    },
+    {
+      name: 'saveContactEdit',
+      call: (): Promise<string | null> => account.saveContactEdit('cmp_1', 'ct_1', CONTACT),
+      method: 'PATCH',
+      path: '/companies/cmp_1/contacts/ct_1',
+      body: CONTACT,
+    },
+    {
+      name: 'deleteContact',
+      call: (): Promise<string | null> => account.deleteContact('cmp_1', 'ct_1'),
+      method: 'DELETE',
+      path: '/companies/cmp_1/contacts/ct_1',
+      body: null,
+    },
+    {
+      name: 'saveMyProfile',
+      call: (): Promise<string | null> => account.saveMyProfile(PROFILE),
+      method: 'PATCH',
+      path: '/me/profile',
+      body: PROFILE,
+    },
+  ] as const;
+
+  for (const c of CASES) {
+    describe(c.name, () => {
+      const request = () => http.expectOne((r) => r.url.endsWith(c.path));
+
+      it(`émet ${c.method} ${c.path} avec le corps exact et le jeton`, async () => {
+        const outcome = c.call();
+        await Promise.resolve();
+        const sent = request();
+        expect(sent.request.method).toBe(c.method);
+        expect(sent.request.body).toEqual(c.body);
+        expect(sent.request.headers.get('Authorization')).toBe('Bearer jeton');
+
+        sent.flush(null, { status: 204, statusText: 'No Content' });
+        await outcome;
+        http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET');
+      });
+
+      it('rend `null` au succès, toaste la réussite et relit `/me`', async () => {
+        const outcome = c.call();
+        request().flush(null, { status: 204, statusText: 'No Content' });
+
+        await expect(outcome).resolves.toBeNull();
+        expect(toasts.success.length).toBe(1);
+        expect(toasts.error).toEqual([]);
+        http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET');
+      });
+
+      it('rend le message du serveur à l’échec, sans relire `/me`', async () => {
+        const outcome = c.call();
+        request().flush(
+          { code: 'account.refused', message: 'Refus nommé par le serveur.' },
+          { status: 409, statusText: 'Conflict' },
+        );
+
+        await expect(outcome).resolves.toBe('Refus nommé par le serveur.');
+        expect(toasts.success).toEqual([]);
+        expect(toasts.error.length).toBe(1);
+        http.expectNone((r) => r.url.endsWith('/me'));
+        // Le statut de page ne bouge pas : le panneau ouvert n'est pas détruit.
+        expect(account.status()).toBe('idle');
+      });
+    });
+  }
+
+  /** Le détenteur n'a pas de rôle à choisir : un rôle glissé dans le corps serait un mensonge. */
+  it('saveHolder n’envoie aucun rôle', async () => {
+    const outcome = account.saveHolder('cmp_1', HOLDER);
+    const sent = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/contact'));
+    expect(Object.keys(sent.request.body as object)).not.toContain('role');
+    sent.flush(null);
+    await outcome;
+    http.expectOne((r) => r.url.endsWith('/me'));
+  });
+});

@@ -1,6 +1,6 @@
 import { COMPANY_ROLE_LABELS, type CompanyView, type ContactView } from '@lfd/contracts';
 
-import { canManageCompany } from '../../../account/account.model';
+import { canManageCompany, type ContactDraft } from '../../../account/account.model';
 
 /**
  * Le nom affichable d'un interlocuteur, ou son **e-mail** à défaut : prénom et
@@ -33,10 +33,30 @@ export function contactCount(company: CompanyView | null): number {
 }
 
 /**
- * `owner`/`admin` : ceux que l'API laisse ajouter un contact
- * (`add-company-contact.handler.ts` → `ensureCompanyAdmin`, vérifié le
- * 2026-09-14). Aux autres, pas de bouton qui finirait en refus.
+ * `owner`/`admin` : ceux que l'API laisse ajouter, modifier et retirer un
+ * contact, détenteur compris (`add-company-contact`, `update-company-contact`,
+ * `remove-company-contact` et `update-primary-contact.handler.ts` passent tous
+ * par `ensureCompanyAdmin`, vérifié le 2026-09-14). Aux autres, pas de bouton
+ * qui finirait en refus.
  */
-export function canAddContacts(company: CompanyView | null): boolean {
+export function canManageContacts(company: CompanyView | null): boolean {
   return company !== null && canManageCompany(company.role);
+}
+
+/**
+ * Le brouillon d'édition d'un interlocuteur, tel que la fiche le montrait.
+ *
+ * Un rôle `null` (contact d'avant les rôles) ou `owner` part VIDE : le
+ * formulaire demande alors de le choisir, plutôt que de le deviner — et `owner`
+ * ne s'attribue pas, il se constate.
+ */
+export function draftOf(contact: ContactView): ContactDraft {
+  return {
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    fonction: contact.fonction,
+    email: contact.email,
+    phone: contact.phone,
+    role: contact.role === null || contact.role === 'owner' ? '' : contact.role,
+  };
 }

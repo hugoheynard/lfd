@@ -1,15 +1,60 @@
 <fold-panel-header [title]="t().account.sections.preferences" [closeLabel]="t().dialog.close" />
 
 <fold-panel-body>
-  <dl class="facts">
-    <div class="fact">
-      <dt>{{ t().account.prefPickup }}</dt>
-      <dd>{{ preferences.habit() }}</dd>
-    </div>
-    <div class="fact">
-      <dt>{{ t().account.prefLang }}</dt>
-      <dd>{{ preferences.language() }}</dd>
-    </div>
-  </dl>
+  @if (data().canManage) {
+    <!-- LE REFUS reste dans le panneau, au-dessus du choix qu'il concerne. -->
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>
+        {{ t().account.prefSaveFailed }} {{ message }}
+      </fold-callout>
+    }
+    <fold-listbox
+      [label]="t().account.prefMethod"
+      [options]="methods()"
+      [value]="method()"
+      (selectionChange)="chooseMethod($event)"
+    />
+    @if (draft().method !== null) {
+      <fold-listbox
+        [label]="destinationLabel()"
+        [options]="destinations()"
+        [value]="destination()"
+        (selectionChange)="chooseDestination($event)"
+      />
+    }
+  } @else {
+    <dl class="facts">
+      <div class="fact">
+        <dt>{{ t().account.prefPickup }}</dt>
+        <dd>{{ preferences.habit() }}</dd>
+      </div>
+    </dl>
+  }
+
+  <!-- La langue vaut tout de suite : pas de brouillon, pas d'Enregistrer. -->
+  <div class="lang">
+    <p class="label">{{ t().account.prefLang }}</p>
+    <app-lang-switch size="md" />
+    <p class="note">{{ t().account.prefLangNote }}</p>
+  </div>
+
   <p class="note">{{ t().account.prefNote }}</p>
 </fold-panel-body>
+
+@if (data().canManage) {
+  <fold-panel-footer>
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      {{ t().account.cancel }}
+    </button>
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [loading]="saving()"
+      [disabled]="!canSave()"
+      (click)="save()"
+    >
+      {{ t().account.save }}
+    </button>
+  </fold-panel-footer>
+}

@@ -115,6 +115,33 @@ export class ClientAddresses {
   }
 
   /**
+   * `DELETE /companies/:id/delivery-addresses/:addressId` — archive une
+   * livraison. Même contrat que {@link saveBilling}.
+   *
+   * La relecture compte plus qu'ailleurs : si l'archivée était la défaut, c'est
+   * le SERVEUR qui promeut sa remplaçante (vérifié le 2026-09-14,
+   * `remove-delivery-address.handler.ts`), et l'écran ne peut pas la deviner.
+   */
+  removeDelivery(companyId: string, addressId: string): Promise<string | null> {
+    return this.write(companyId, (headers) =>
+      this.http.delete(`${this.url(companyId)}/delivery-addresses/${addressId}`, { headers }),
+    );
+  }
+
+  /**
+   * `PATCH /companies/:id/delivery-addresses/:addressId/default` — désigne la
+   * livraison par défaut. La route ne lit aucun corps. Même contrat que
+   * {@link saveBilling}.
+   */
+  makeDefaultDelivery(companyId: string, addressId: string): Promise<string | null> {
+    return this.write(companyId, (headers) =>
+      this.http.patch(`${this.url(companyId)}/delivery-addresses/${addressId}/default`, null, {
+        headers,
+      }),
+    );
+  }
+
+  /**
    * Écrit, puis relit le carnet : c'est la relecture qui fait apparaître
    * l'adresse, avec le tri du serveur (la défaut en tête), pas une insertion
    * locale qui pourrait s'en écarter.

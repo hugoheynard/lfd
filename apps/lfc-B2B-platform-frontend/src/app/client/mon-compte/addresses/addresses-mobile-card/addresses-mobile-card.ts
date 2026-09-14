@@ -3,10 +3,10 @@ import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
-import { ClientCopyService, fill } from '../../../copy/client-copy.service';
+import { ClientCopyService } from '../../../copy/client-copy.service';
 import { CardFoot } from '../../card-foot/card-foot';
 import { AddressesPanel } from '../addresses-panel/addresses-panel';
-import { type AddressesView, postalLine } from '../addresses-section';
+import { type AddressesView, deliveryCountLabel, postalLine } from '../addresses-section';
 
 /**
  * La carte **Adresses** en pile : la facturation en une ligne et le nombre de
@@ -33,7 +33,7 @@ export class AddressesMobileCard {
   });
 
   protected readonly deliveryCount = computed(() =>
-    fill(this.t().account.deliveryCount, { n: String(this.addresses.deliveries().length) }),
+    deliveryCountLabel(this.addresses.deliveries().length, this.t().account),
   );
 
   protected open(view: AddressesView): void {

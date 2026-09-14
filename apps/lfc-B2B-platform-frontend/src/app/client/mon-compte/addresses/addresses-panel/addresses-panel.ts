@@ -30,6 +30,8 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldInlineConfirmComponent,
+  type FoldInlineConfirmLabels,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -39,19 +41,26 @@ import {
 
 import { NotifyService } from '../../../../notify.service';
 import { ClientAddresses } from '../../../client-addresses.service';
-import { ClientCopyService, fill } from '../../../copy/client-copy.service';
+import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import {
   type AddressesForm,
   type AddressesView,
   canWriteAddresses,
+  deliveryCountLabel,
   deliveryRows,
   postalLine,
 } from '../addresses-section';
 
 /** Ce que montre le panneau : la partie du carnet, ou le formulaire d'UNE adresse. */
 type AddressesMode = 'list' | 'form';
+
+/** Une action de ligne en vol : sur quelle livraison, et laquelle des deux. */
+interface RowAction {
+  readonly addressId: string;
+  readonly kind: 'remove' | 'default';
+}
 
 /** Une livraison se nomme et porte sa note pour les livreurs ; une facturation, non. */
 const DELIVERY_FIELDS: readonly PostalField[] = [...DEFAULT_POSTAL_FIELDS, 'note'];
@@ -82,9 +91,18 @@ export interface AddressesPanelData {
  * Annuler, ou par Enregistrer, qui retombe sur la liste RELUE — l'adresse y
  * apparaît à la place que le serveur lui donne (la défaut en tête).
  *
+ * ## Supprimer, désigner la défaut
+ *
+ * Chaque livraison porte ses deux gestes de ligne, aux rôles qui écrivent :
+ * « Définir par défaut » (absent sur la défaut, qui l'est déjà) et
+ * « Supprimer », confirmé EN PLACE par `fold-inline-confirm` — annuler
+ * n'appelle rien. Le carnet est RELU après chacun : archiver la défaut en fait
+ * promouvoir une autre par le serveur, et l'écran ne la devine pas. Un refus
+ * s'affiche en tête de la liste, qui reste à l'écran.
+ *
  * ## Ce qui n'y est pas
  *
- * Ni suppression, ni changement de défaut, ni créneaux ni contact sur place :
+ * Ni créneaux ni contact sur place :
  * une adresse neuve part sans consignes horaires ni contact (`noContact`), et
  * devient la défaut seulement si c'est la première ; une adresse modifiée
  * garde les siens. Le formulaire complet reste
@@ -101,6 +119,7 @@ export interface AddressesPanelData {
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldInlineConfirmComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -137,6 +156,22 @@ export class AddressesPanel {
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
+  /** L'action de ligne en vol — une seule à la fois, sur tout le carnet. */
+  protected readonly pending = signal<RowAction | null>(null);
+  /** Le message du dernier refus d'une action de ligne, montré en tête de liste. */
+  protected readonly rowRefusal = signal<string | null>(null);
+
+  /** Les mots de la confirmation en place : fold parle anglais par défaut. */
+  protected readonly removeLabels = computed<Partial<FoldInlineConfirmLabels>>(() => {
+    const copy = this.t().account;
+    return {
+      confirm: copy.addressRemoveConfirm,
+      cancel: copy.cancel,
+      busy: copy.addressRemoveBusy,
+      group: copy.addressRemoveGroup,
+    };
+  });
+
   protected readonly billing = computed(() => {
     const billing = this.addresses.billing();
     return billing === null ? null : postalLine(billing);
@@ -151,7 +186,7 @@ export class AddressesPanel {
   );
 
   protected readonly deliveryCount = computed(() =>
-    fill(this.t().account.deliveryCount, { n: String(this.deliveries().length) }),
+    deliveryCountLabel(this.deliveries().length, this.t().account),
   );
 
   protected readonly fields = computed(() =>
@@ -262,6 +297,52 @@ export class AddressesPanel {
       this.mode.set('list');
     } else {
       this.refusal.set(refusal);
+    }
+  }
+
+  /** Vrai quand CETTE action de ligne est en vol — pour le chargement de son seul bouton. */
+  protected isPending(addressId: string, kind: RowAction['kind']): boolean {
+    const pending = this.pending();
+    return pending !== null && pending.addressId === addressId && pending.kind === kind;
+  }
+
+  /** Appelé par `fold-inline-confirm` : l'annulation, elle, n'arrive jamais ici. */
+  protected removeDelivery(addressId: string): Promise<void> {
+    return this.rowAction(
+      { addressId, kind: 'remove' },
+      (companyId) => this.addresses.removeDelivery(companyId, addressId),
+      this.t().account.addressRemovedToast,
+    );
+  }
+
+  protected makeDefault(addressId: string): Promise<void> {
+    return this.rowAction(
+      { addressId, kind: 'default' },
+      (companyId) => this.addresses.makeDefaultDelivery(companyId, addressId),
+      this.t().account.addressDefaultToast,
+    );
+  }
+
+  /**
+   * Une action de ligne à la fois : deux clics rapides sur deux lignes
+   * partiraient sinon en parallèle, et la relecture de l'une écraserait l'autre.
+   */
+  private async rowAction(
+    action: RowAction,
+    call: (companyId: string) => Promise<string | null>,
+    toast: string,
+  ): Promise<void> {
+    if (!this.data().canManage || this.pending() !== null) {
+      return;
+    }
+    this.pending.set(action);
+    this.rowRefusal.set(null);
+    const refusal = await call(this.data().companyId);
+    this.pending.set(null);
+    if (refusal === null) {
+      this.notify.success(toast);
+    } else {
+      this.rowRefusal.set(refusal);
     }
   }
 

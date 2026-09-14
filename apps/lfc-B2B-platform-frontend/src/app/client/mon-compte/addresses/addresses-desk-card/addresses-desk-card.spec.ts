@@ -66,6 +66,21 @@ describe('AddressesDeskCard', () => {
     expect(el.textContent).toContain(FR.account.addressNoZone);
   });
 
+  /** Régression : « Livraison · 1 adresses » (relevé le 2026-09-14). */
+  it('accorde le nombre de livraisons : une adresse, puis deux adresses', () => {
+    const one = bootCard(AddressesDeskCard, [TOMMEUSES], carnet(SIEGE, [CHALET]))
+      .nativeElement as HTMLElement;
+    expect(one.textContent).toContain(`${FR.account.deliveryHead} · 1 adresse`);
+    expect(one.textContent).not.toContain('1 adresses');
+
+    const two = bootCard(
+      AddressesDeskCard,
+      [TOMMEUSES],
+      carnet(SIEGE, [CHALET, { ...CHALET, id: 'adr_2', label: 'Bureau', isDefault: false }]),
+    ).nativeElement as HTMLElement;
+    expect(two.textContent).toContain(`${FR.account.deliveryHead} · 2 adresses`);
+  });
+
   it('ses gestes ouvrent le panneau sur leur formulaire, aux seuls rôles qui écrivent', () => {
     const reader = bootCard(AddressesDeskCard, [asRole('orders')], carnet(null, []))
       .nativeElement as HTMLElement;

@@ -11,7 +11,7 @@ import { FR } from '../../copy/fr';
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
 import { openShopAt } from '../../feature-access/feature-access.fixture';
 import { ProOnboarding } from '../../pro-onboarding.service';
-import { asRole, TOMMEUSES } from '../account.fixture';
+import { asRole, PROFILE, TOMMEUSES } from '../account.fixture';
 import { ComptePage } from './compte-page';
 
 /** Ce que le test fait croire à l'écran : qui est entré, et ce que `/me` a rendu. */
@@ -40,6 +40,7 @@ function boot(
         provide: AccountService,
         useValue: {
           companies: () => companies,
+          profile: () => PROFILE,
           status: () => status,
           load: (): void => {
             loads += 1;
@@ -76,9 +77,10 @@ function boot(
   return fixture;
 }
 
-/** Les huit sections, dans l'ordre du sommaire. */
+/** Les neuf sections, dans l'ordre du sommaire. */
 const SECTIONS = [
   'identity',
+  'profile',
   'users',
   'kbis',
   'addresses',
@@ -116,13 +118,13 @@ describe('ComptePage', () => {
     expect(chrome.bandNarrow()).toBe(true);
   });
 
-  it('donne huit sections, et un sommaire qui pointe LEURS ancres', () => {
+  it('donne neuf sections, et un sommaire qui pointe LEURS ancres', () => {
     // Le sommaire fait défiler, il ne change pas d'écran : une entrée qui
     // pointerait une ancre absente mènerait nulle part.
     const anchors = Array.from(el().querySelectorAll('.summary-link')).map((a) =>
       a.getAttribute('href')?.slice(1),
     );
-    expect(anchors.length).toBe(8);
+    expect(anchors.length).toBe(9);
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
     }
@@ -154,6 +156,7 @@ describe('ComptePage', () => {
     const anchors = links.map((a) => a.getAttribute('href')?.slice(1));
     expect(anchors).toEqual([
       'compte-identity',
+      'compte-profile',
       'compte-users',
       'compte-kbis',
       'compte-addresses',
@@ -167,6 +170,7 @@ describe('ComptePage', () => {
       '04',
       '05',
       '06',
+      '07',
     ]);
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
@@ -191,12 +195,12 @@ describe('ComptePage', () => {
       const links = Array.from(el().querySelectorAll('.summary-link'));
       expect(el().querySelector('#compte-bank')).toBeNull();
       expect(links.map((a) => a.getAttribute('href'))).not.toContain('#compte-bank');
-      expect(links.length).toBe(7);
-      expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('07');
+      expect(links.length).toBe(8);
+      expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('08');
     }
   });
 
-  /** En pile, huit tirets ne se comptent pas : la pastille dit le rang en chiffres. */
+  /** En pile, neuf tirets ne se comptent pas : la pastille dit le rang en chiffres. */
   it('dit le rang du panneau dans une pastille « 1/N », et le libelle', () => {
     const count = el().querySelector('.rail-foot .rail-count');
     const total = el().querySelectorAll('.summary-link').length;

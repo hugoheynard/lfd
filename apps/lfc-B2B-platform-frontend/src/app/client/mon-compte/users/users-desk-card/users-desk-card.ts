@@ -5,7 +5,7 @@ import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { UserAddPanel } from '../user-add-panel/user-add-panel';
 import { UsersList } from '../users-list/users-list';
-import { canAddContacts, contactCount } from '../users-section';
+import { canManageContacts, contactCount } from '../users-section';
 
 /**
  * La carte **Utilisateurs** du bureau : le compte, la liste entière, et
@@ -25,7 +25,7 @@ export class UsersDeskCard {
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly count = computed(() => contactCount(this.client.company()));
-  protected readonly canAdd = computed(() => canAddContacts(this.client.company()));
+  protected readonly canAdd = computed(() => canManageContacts(this.client.company()));
 
   protected openAdd(): void {
     const company = this.client.company();

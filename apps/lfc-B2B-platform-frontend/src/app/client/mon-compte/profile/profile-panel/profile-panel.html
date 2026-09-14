@@ -1,0 +1,62 @@
+<fold-panel-header
+  [title]="t().account.sections.profile"
+  [subtitle]="t().account.profilePanelSubtitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  <!-- LE REFUS reste dans le panneau : une adresse déjà prise se corrige ici. -->
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.profileSaveFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <fold-input
+    [label]="t().account.profileFirstName"
+    required
+    [value]="draft().firstName"
+    (valueChange)="set('firstName', $event)"
+  />
+  <fold-input
+    [label]="t().account.profileLastName"
+    required
+    [value]="draft().lastName"
+    (valueChange)="set('lastName', $event)"
+  />
+  <fold-input
+    [label]="t().account.profileEmail"
+    type="email"
+    required
+    [hint]="t().account.profileEmailHint"
+    [value]="draft().email"
+    (valueChange)="set('email', $event)"
+  />
+  <!-- Ce qu'un changement d'adresse emporte, dit AVANT d'enregistrer. -->
+  @if (emailChanged()) {
+    <fold-callout variant="warning">{{ t().account.profileEmailChange }}</fold-callout>
+  }
+  <fold-input
+    [label]="t().account.panelPhone"
+    type="tel"
+    optional
+    [value]="draft().phone"
+    (valueChange)="set('phone', $event)"
+  />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ t().account.save }}
+  </button>
+</fold-panel-footer>

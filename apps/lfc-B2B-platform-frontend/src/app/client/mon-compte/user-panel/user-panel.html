@@ -33,6 +33,45 @@
         <dd>{{ role() }}</dd>
       </dl>
 
+      <!-- LES GESTES, aux seuls rôles que l'API laisse écrire. Le détenteur se
+           modifie mais ne se retire pas : son rôle se transmet d'abord. -->
+      @if (canManage()) {
+        <div class="actions">
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            intent="primary"
+            type="button"
+            (click)="edit()"
+          >
+            {{ t().account.edit }}
+          </button>
+          @if (!isHolder()) {
+            <fold-inline-confirm
+              keepOpenOnConfirm
+              size="sm"
+              [loading]="removing()"
+              [(open)]="confirming"
+              [message]="t().account.contactRemoveMessage"
+              [labels]="removeLabels()"
+              (confirmed)="remove()"
+            >
+              <button foldButton size="sm" emphasis="outline" intent="danger" type="button">
+                {{ t().account.contactRemove }}
+              </button>
+            </fold-inline-confirm>
+          }
+        </div>
+      }
+
+      <!-- LE REFUS reste sous les yeux, dans la fiche encore ouverte. -->
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce>
+          {{ t().account.contactRemoveFailed }} {{ message }}
+        </fold-callout>
+      }
+
       <!-- LE BLOC D'ESPACE change de NATURE selon la situation, pas de libellé.
            Deux situations, parce que le fil n'en distingue que deux : celui qui
            a un espace (c'est vous) et celui qui n'en a pas. -->
@@ -47,8 +86,6 @@
         <div class="space contact">
           <p class="space-head">{{ t().account.spaceContactHead }}</p>
           <p class="space-body">{{ t().account.spaceContactBody }}</p>
-          <button class="space-cta" type="button">{{ t().account.spaceInvite }}</button>
-          <p class="space-note">{{ t().account.spaceInviteNote }}</p>
         </div>
       }
     </div>
