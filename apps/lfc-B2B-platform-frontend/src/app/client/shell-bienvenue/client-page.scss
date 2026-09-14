@@ -160,7 +160,12 @@
 .lip::after {
   content: '';
   position: absolute;
-  inset: var(--fold-space-xl) 0 0;
+  /* UN PIXEL SOUS LE BAS. La lèvre finit à une hauteur fractionnaire (303,195 px
+     mesuré le 2026-09-14), et sur un écran dense son fond d'encre affleurait
+     d'un demi-pixel sous la crème : un filet bleu en travers, juste au-dessus du
+     premier bloc. Déborder sur la feuille, de la même crème, le bouche sans rien
+     déplacer — le même remède que la lèvre du bandeau. */
+  inset: var(--fold-space-xl) 0 -1px;
   border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
   background: var(--fold-color-bg-page);
 }
