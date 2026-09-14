@@ -1,6 +1,7 @@
 export { BankAccountForm } from './bank-account-form/bank-account-form';
 export {
   BANK_ACCOUNT_FORM_LABELS_FR,
+  bankAccountDraftChanged,
   bankAccountDraftFrom,
   changesMandatedAccount,
   DEFAULT_BANK_COUNTRY,
@@ -19,6 +20,7 @@ export { MandateOptionsForm } from './mandate-options-form/mandate-options-form'
 export {
   EMPTY_MANDATE_OPTIONS_DRAFT,
   MANDATE_OPTIONS_FORM_LABELS_FR,
+  mandateOptionsDraftChanged,
   mandateOptionsDraftFrom,
   toMandateOptionsPayload,
 } from './mandate-options-draft.model';

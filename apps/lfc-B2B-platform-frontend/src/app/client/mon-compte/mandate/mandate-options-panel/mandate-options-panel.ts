@@ -11,6 +11,7 @@ import {
 import {
   EMPTY_MANDATE_OPTIONS_DRAFT,
   MandateOptionsForm,
+  mandateOptionsDraftChanged,
   mandateOptionsDraftFrom,
   toMandateOptionsPayload,
   type MandateOptionsDraft,
@@ -31,7 +32,7 @@ import {
 import { NotifyService } from '../../../../notify.service';
 import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { panelSide } from '../../../panel-side';
+import { dialogSide } from '../../../panel-side';
 import { mandateStage } from '../mandate-section';
 
 /** Charge d'ouverture : la société, rien d'autre — les zones se relisent à l'ouverture. */
@@ -75,11 +76,17 @@ export interface MandateOptionsPanelData {
   styleUrl: './mandate-options-panel.scss',
 })
 export class MandateOptionsPanel {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
+  /**
+   * Une SAISIE : dialogue centré au bureau, feuille du bas en pile
+   * (`dialogSide()`, règle « Saisir » du `CLAUDE.md` de l'app, 2026-09-14). `md`
+   * (490 px) : deux zones et un avertissement (échelle `FoldPanelSize`). Le nom
+   * `*-panel` est d'avant cette règle.
+   */
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
 
   static open(panels: FoldPanelHostService, companyId: string): void {
     panels.open<MandateOptionsPanelData, boolean>(MandateOptionsPanel, {
-      side: panelSide(),
+      side: dialogSide(),
       data: { companyId },
     });
   }
@@ -102,12 +109,19 @@ export class MandateOptionsPanel {
     return stage === 'awaiting' || stage === 'review';
   });
 
-  protected readonly canSave = computed(
-    () =>
+  /**
+   * Les zones relues, prêtes, ET une modification (règle « Saisir ») : réécrire
+   * les mêmes zones révoquerait un brouillon pour rien.
+   */
+  protected readonly canSave = computed(() => {
+    const options = this.mandates.options();
+    return (
       !this.saving() &&
       this.mandates.optionsStatus() === 'ready' &&
-      this.mandates.options() !== null,
-  );
+      options !== null &&
+      mandateOptionsDraftChanged(this.draft(), options)
+    );
+  });
 
   constructor() {
     // Une entrée requise n'est pas posée quand le constructeur tourne.

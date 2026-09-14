@@ -6,11 +6,13 @@ import type {
   CustomerMandateView,
   SetMandateOptionsPayload,
 } from '@lfd/contracts';
-import { FoldInputComponent, FoldPanelRef } from 'fold-ng';
+import { FoldInputComponent, FoldPanelHostService, FoldPanelRef } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
 import { NotifyService } from '../../../../notify.service';
 import { ClientMandate, type MandateReadStatus } from '../../../client-mandate.service';
 import { FR } from '../../../copy/fr';
+import { matchMediaAt, openedPanel } from '../../account.fixture';
 import { MandateOptionsPanel } from './mandate-options-panel';
 
 const DRAFT: CustomerMandateView = {
@@ -158,6 +160,7 @@ describe('MandateOptionsPanel', () => {
 
   it('un refus du serveur s’affiche tel quel, et le panneau reste ouvert', async () => {
     const fixture = boot({ ...DRAFT, status: 'active' });
+    type(fixture, 1, 'CT-13');
     wire.answer = 'Le mandat actif porte déjà ces zones.';
     save(fixture)?.click();
     await fixture.whenStable();
@@ -182,5 +185,46 @@ describe('MandateOptionsPanel', () => {
     expect(el(fixture).textContent).toContain(FR.account.mandateOptionsLoadFailedTitle);
     el(fixture).querySelector<HTMLButtonElement>('fold-empty-state button')?.click();
     expect(wire.loads).toEqual(['cmp_1', 'cmp_1']);
+  });
+  /** Règle « Saisir » : réécrire les mêmes zones révoquerait un brouillon pour rien. */
+  it('Enregistrer reste désarmé tant que les zones relues n’ont pas changé', () => {
+    const fixture = boot(DRAFT);
+    expect(save(fixture)?.disabled).toBe(true);
+
+    type(fixture, 1, 'CT-13');
+    expect(save(fixture)?.disabled).toBe(false);
+    // L'avertissement de brouillon reste dit AVANT l'enregistrement.
+    expect(el(fixture).querySelector('.draft-warning')?.textContent).toContain(
+      FR.account.mandateOptionsDraftWarning,
+    );
+
+    type(fixture, 1, ' CT-12 ');
+    expect(save(fixture)?.disabled).toBe(true);
+  });
+
+  describe('open()', () => {
+    afterEach(() => {
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      vi.unstubAllGlobals();
+    });
+
+    /** Une saisie : feuille du bas sous le pli, dialogue centré au-delà (règle « Saisir »). */
+    it('monte du bas sous le pli, et se centre au-delà', () => {
+      boot(null);
+      const panels = TestBed.inject(FoldPanelHostService);
+
+      vi.stubGlobal('matchMedia', matchMediaAt(true));
+      MandateOptionsPanel.open(panels, 'cmp_1');
+      expect(openedPanel()).toEqual({
+        component: MandateOptionsPanel,
+        side: 'bottom',
+        data: { companyId: 'cmp_1' },
+      });
+
+      panels.dismissAll();
+      vi.stubGlobal('matchMedia', matchMediaAt(false));
+      MandateOptionsPanel.open(panels, 'cmp_1');
+      expect(openedPanel()?.side).toBe('center');
+    });
   });
 });

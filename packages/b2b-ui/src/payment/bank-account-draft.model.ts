@@ -112,6 +112,30 @@ export function toBankAccountPayload(draft: BankAccountDraft): SetCompanyBankAcc
 }
 
 /**
+ * Le brouillon diffère-t-il de ce que la lecture a rendu ? C'est ce qui arme
+ * « Enregistrer » (règle « Saisir » de l'app cliente, 2026-09-14).
+ *
+ * Comparé sur la **charge envoyée** (champs rognés, pays en capitales) : un
+ * espace ajouté puis retiré n'est pas une modification. Sans compte lu
+ * (`null`), la référence est le brouillon vide.
+ *
+ * 🔴 L'IBAN ne redescend jamais : la vue n'en porte pas, le brouillon lu part
+ * vide. Un IBAN saisi compte donc TOUJOURS comme une modification. Ce test ne
+ * dit rien de la complétude — et comme {@link isBankAccountComplete} exige
+ * l'IBAN, corriger une seule ligne d'adresse n'arme rien tant qu'il n'est pas
+ * ressaisi (constaté le 2026-09-14 ; l'exigence reste une décision de sécurité).
+ */
+export function bankAccountDraftChanged(
+  draft: BankAccountDraft,
+  view: BankAccountReadView | null,
+): boolean {
+  const origin = view === null ? EMPTY_BANK_ACCOUNT_DRAFT : bankAccountDraftFrom(view);
+  return (
+    JSON.stringify(toBankAccountPayload(draft)) !== JSON.stringify(toBankAccountPayload(origin))
+  );
+}
+
+/**
  * Après un enregistrement, **seul l'IBAN se vide** : effacer le reste donnerait
  * l'impression qu'il a été perdu, et la relecture le reprend de toute façon.
  */

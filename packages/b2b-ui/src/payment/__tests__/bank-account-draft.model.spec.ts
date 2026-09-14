@@ -2,6 +2,7 @@ import type { CompanyBankAccountView, CustomerBankAccountView } from '@lfd/contr
 
 import {
   BANK_ACCOUNT_FORM_LABELS_FR,
+  bankAccountDraftChanged,
   bankAccountDraftFrom,
   changesMandatedAccount,
   EMPTY_BANK_ACCOUNT_DRAFT,
@@ -127,6 +128,40 @@ describe('brouillon du RIB', () => {
     it('se tait tant que moins de quatre caractères sont saisis, et sans mandat actif', () => {
       expect(changesMandatedAccount(typed('FR1'), '2606')).toBe(false);
       expect(changesMandatedAccount(typed(IBAN), '')).toBe(false);
+    });
+  });
+
+  describe('modifié ou non', () => {
+    it('ouvert sur un compte lu et intact : rien n’a changé', () => {
+      expect(bankAccountDraftChanged(bankAccountDraftFrom(CUSTOMER), CUSTOMER)).toBe(false);
+    });
+
+    it('un champ corrigé est une modification — un espace ajouté ne l’est pas', () => {
+      const draft = bankAccountDraftFrom(CUSTOMER);
+      expect(bankAccountDraftChanged({ ...draft, line2: 'Bâtiment B' }, CUSTOMER)).toBe(true);
+      expect(bankAccountDraftChanged({ ...draft, city: " Val d'Isère " }, CUSTOMER)).toBe(false);
+      expect(bankAccountDraftChanged({ ...draft, countryCode: 'fr' }, CUSTOMER)).toBe(false);
+    });
+
+    /** 🔴 L'IBAN ne redescend jamais : en saisir un est toujours un changement. */
+    it('un IBAN saisi est une modification, même sur le même compte', () => {
+      expect(
+        bankAccountDraftChanged({ ...bankAccountDraftFrom(CUSTOMER), iban: IBAN }, CUSTOMER),
+      ).toBe(true);
+    });
+
+    it('sans compte lu, la référence est le brouillon vide', () => {
+      expect(bankAccountDraftChanged(EMPTY_BANK_ACCOUNT_DRAFT, null)).toBe(false);
+      expect(bankAccountDraftChanged({ ...EMPTY_BANK_ACCOUNT_DRAFT, holder: 'X' }, null)).toBe(
+        true,
+      );
+    });
+
+    /** Constat du 2026-09-14 : corriger une ligne ne suffit pas à rendre le compte enregistrable. */
+    it('corriger une ligne d’adresse est modifié, mais incomplet tant que l’IBAN manque', () => {
+      const corrected = { ...bankAccountDraftFrom(CUSTOMER), line1: '14 rue des Alpages' };
+      expect(bankAccountDraftChanged(corrected, CUSTOMER)).toBe(true);
+      expect(isBankAccountComplete(corrected)).toBe(false);
     });
   });
 

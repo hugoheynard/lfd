@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import {
   BankAccountForm,
+  bankAccountDraftChanged,
   bankAccountDraftFrom,
   EMPTY_BANK_ACCOUNT_DRAFT,
   hasCountryCode,
@@ -33,7 +34,7 @@ import { NotifyService } from '../../../../notify.service';
 import { ClientBankAccount } from '../../../client-bank-account.service';
 import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { panelSide } from '../../../panel-side';
+import { dialogSide } from '../../../panel-side';
 import { bankActionLabel, bankLine } from '../bank-section';
 
 /** Charge d'ouverture : la société, et le compte que la carte vient de lire. */
@@ -59,6 +60,18 @@ export interface BankPanelData {
  *
  * Un refus reste affiché ici, sous les champs à corriger ; un succès ferme le
  * panneau avec `true`, et {@link BankPanel.open} relit le RIB partagé.
+ *
+ * ## Une saisie : dialogue, et Enregistrer attend une modification
+ *
+ * Dialogue centré au bureau, feuille du bas en pile (`dialogSide()`, règle
+ * « Saisir » du `CLAUDE.md` de l'app, 2026-09-14). Le nom `*-panel` est d'avant
+ * cette règle.
+ *
+ * « Enregistrer » exige une modification (`bankAccountDraftChanged`) ET un
+ * compte complet. Comme l'IBAN ne redescend pas et que la complétude l'exige,
+ * corriger une seule ligne d'adresse n'arme rien tant qu'il n'est pas ressaisi
+ * (constaté le 2026-09-14) : l'exigence d'IBAN est une décision de sécurité,
+ * pas un détail d'écran.
  */
 @Component({
   selector: 'app-bank-panel',
@@ -75,7 +88,8 @@ export interface BankPanelData {
   styleUrl: './bank-panel.scss',
 })
 export class BankPanel {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
+  /** `md` (490 px) : les rangées du RIB s'y empilent sous 14rem (échelle `FoldPanelSize`). */
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
 
   /**
    * Ouvre le panneau sur le RIB déjà lu, et **relit** au succès : la réponse
@@ -94,7 +108,7 @@ export class BankPanel {
     companyId: string,
   ): Promise<void> {
     const ref = panels.open<BankPanelData, boolean>(BankPanel, {
-      side: panelSide(),
+      side: dialogSide(),
       data: { companyId, account: accounts.account() },
     });
     if ((await ref.closed) === true) {
@@ -131,13 +145,19 @@ export class BankPanel {
   protected readonly saved = computed(() => bankLine(this.data().account, this.t().account));
 
   /**
-   * Le compte se recopie **en entier**, complément excepté, et le pays tient en
-   * deux lettres : ce panneau désarme le bouton sur un pays mal formé, là où la
-   * fiche staff laisse le serveur refuser (`hasCountryCode`).
+   * Quelque chose a changé depuis la lecture, ET le compte se recopie **en
+   * entier** (complément excepté), pays en deux lettres : ce panneau désarme le
+   * bouton sur un pays mal formé, là où la fiche staff laisse le serveur refuser.
    */
-  protected readonly canSave = computed(
-    () => !this.saving() && isBankAccountComplete(this.draft()) && hasCountryCode(this.draft()),
-  );
+  protected readonly canSave = computed(() => {
+    const draft = this.draft();
+    return (
+      !this.saving() &&
+      bankAccountDraftChanged(draft, this.data().account) &&
+      isBankAccountComplete(draft) &&
+      hasCountryCode(draft)
+    );
+  });
 
   protected readonly submitLabel = computed(() =>
     bankActionLabel(this.data().account, this.t().account),

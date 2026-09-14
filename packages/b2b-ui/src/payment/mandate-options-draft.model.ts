@@ -24,6 +24,24 @@ export function mandateOptionsDraftFrom(view: CustomerMandateOptionsView): Manda
   return { debtorReference: view.debtorReference, contractNumber: view.contractNumber };
 }
 
+/**
+ * Le brouillon diffère-t-il des zones relues ? C'est ce qui arme « Enregistrer »
+ * (règle « Saisir » de l'app cliente, 2026-09-14). Comparé zone par zone,
+ * rognées : un espace ajouté n'est pas une modification. Sans zones lues
+ * (`null`), la référence est le brouillon vide.
+ */
+export function mandateOptionsDraftChanged(
+  draft: MandateOptionsDraft,
+  view: CustomerMandateOptionsView | null,
+): boolean {
+  const origin = view === null ? EMPTY_MANDATE_OPTIONS_DRAFT : mandateOptionsDraftFrom(view);
+  const now = toMandateOptionsPayload(draft);
+  const before = toMandateOptionsPayload(origin);
+  return (
+    now.debtorReference !== before.debtorReference || now.contractNumber !== before.contractNumber
+  );
+}
+
 /** Le payload d'écriture : les deux zones, rognées. */
 export function toMandateOptionsPayload(draft: MandateOptionsDraft): SetMandateOptionsPayload {
   return {
