@@ -124,8 +124,15 @@ une identité, des options — s'ouvre dans un **panneau fold** placé par
 | en pile (< 900 px, `NARROW_QUERY`) | `bottom` | la feuille du bas, qui monte jusqu'à l'en-tête |
 
 ```ts
-this.panels.open(BillingAddressDialog, { side: dialogSide(), surface: 'solid', size: 'lg', data });
+// Les défauts vivent sur le composant ; le côté, lui, se lit à l'ouverture.
+static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
+
+panels.open(BillingAddressDialog, { side: dialogSide(), stack, data });
 ```
+
+(`width` et non `size` : c'est le nom de l'option dans `FoldPanelDefaults`, vérifié
+dans `fold-ng.d.ts` le 2026-09-14. `md` pour une adresse postale, `lg` quand des
+créneaux par jour doivent tenir sur une ligne.)
 
 - **Le côté se lit au clic**, jamais en signal : ouvrir est un geste, dans le
   navigateur, et c'est la largeur de ce moment qui compte.
