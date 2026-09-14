@@ -12,6 +12,11 @@ import type { CompanyBankAccount } from "../../domain/entities/company-bank-acco
  * 🔴 **L'IBAN ne franchit pas cette frontière** : quatre caractères, jamais
  * davantage. Une réponse d'API qui porterait un IBAN entier finit dans un
  * journal d'accès.
+ *
+ * ⚠️ Amendé le 2026-09-14 : l'invariant vaut pour les réponses JSON. Le PDF du
+ * mandat à signer rend l'IBAN entier au détenteur ou au rôle facturation —
+ * assumé par Hugo, un mandat EPC porte l'IBAN du débiteur (plan
+ * `documentation/b2b/plan-mandat-client.md` §6 #3). Cette vue-ci n'en change pas.
  */
 export function customerBankAccountView(found: CompanyBankAccount): CustomerBankAccountView {
   const { holder, address, bic } = found.account;

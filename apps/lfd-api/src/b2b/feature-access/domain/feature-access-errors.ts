@@ -1,4 +1,8 @@
-import { DomainError, ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  ResourceNotFoundError,
+} from "../../../platform/shared/errors/app-error.js";
 
 /** La clé demandée n'est pas au catalogue du code (**404**). */
 export class UnknownFeatureError extends ResourceNotFoundError {
@@ -43,6 +47,23 @@ export class FeatureExemptionNotFoundError extends ResourceNotFoundError {
     super(
       "feature_access.exemption_not_found",
       `Cette adresse n'est plus dans la liste d'exemption de « ${key} » : elle a sans doute déjà été retirée. Rechargez la page.`,
+    );
+  }
+}
+
+/**
+ * On a voulu exempter une adresse sur une clé qu'aucune exemption n'ouvre
+ * (**409**).
+ *
+ * Refus métier et non 400 : la clé et l'adresse sont bien formées, c'est le
+ * geste qui n'a pas de sens pour cette clé. Le message dit le geste de sortie —
+ * ouvrir la clé pour tous, ou pas du tout.
+ */
+export class FeatureNotExemptibleError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "feature_access.not_exemptible",
+      `« ${key} » ne s'ouvre pas adresse par adresse : ce qu'elle ouvre engage un vrai compte. Réglez son niveau pour tous, ou laissez-la fermée.`,
     );
   }
 }

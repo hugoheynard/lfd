@@ -2,7 +2,6 @@ import type { SetCompanyBankAccountPayload } from "@lfd/contracts";
 
 import { InvalidIbanError } from "../../../../accounting/domain/errors/accounting-errors.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
-import type { CompanyBankAccount } from "../../../domain/entities/company-bank-account.js";
 import {
   BankAccountCompanyNotFoundError,
   BankAccountRoleRequiredError,
@@ -11,7 +10,18 @@ import {
   BankAccountGuardReader,
   type BankAccountRole,
 } from "../../../domain/ports/bank-account-guard.reader.js";
-import { CompanyBankAccountRepository } from "../../../domain/ports/company-bank-account.repository.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { BankAccountBoundToActiveMandateError } from "../../../domain/errors/mandate-errors.js";
+import {
+  activeMandate,
+  InMemoryBankAccounts,
+  InMemoryMandates,
+  mandate,
+  RecordingNotifier,
+  StepPublisher,
+  Steps,
+  StepUnitOfWork,
+} from "../../__tests__/payment-doubles.js";
 import { SetMyCompanyBankAccountCommand } from "../set-my-company-bank-account.command.js";
 import { SetMyCompanyBankAccountHandler } from "../set-my-company-bank-account.handler.js";
 
@@ -42,33 +52,24 @@ class FixedGuard extends BankAccountGuardReader {
   }
 }
 
-/** Doublé du dépôt : compte les lectures, garde les écritures. */
-class FakeRepository extends CompanyBankAccountRepository {
-  stored: CompanyBankAccount | null = null;
-  readonly saved: CompanyBankAccount[] = [];
-  reads = 0;
-
-  findByCompany(_companyId: string): Promise<CompanyBankAccount | null> {
-    this.reads += 1;
-    return Promise.resolve(this.stored);
-  }
-
-  save(account: CompanyBankAccount): Promise<void> {
-    this.saved.push(account);
-    this.stored = account;
-    return Promise.resolve();
-  }
-}
-
-function build(role: BankAccountRole | null): {
-  handler: SetMyCompanyBankAccountHandler;
-  guard: FixedGuard;
-  repo: FakeRepository;
-} {
+function build(role: BankAccountRole | null) {
+  const steps = new Steps();
   const guard = new FixedGuard(role);
-  const repo = new FakeRepository();
-  const handler = new SetMyCompanyBankAccountHandler(guard, repo, new FixedIdGenerator("cba"));
-  return { handler, guard, repo };
+  const repo = new InMemoryBankAccounts(steps);
+  const mandates = new InMemoryMandates(steps);
+  const events = new StepPublisher(steps);
+  const notifier = new RecordingNotifier(steps);
+  const handler = new SetMyCompanyBankAccountHandler(
+    guard,
+    repo,
+    new FixedIdGenerator("cba"),
+    mandates,
+    new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
+    events,
+    new StepUnitOfWork(steps),
+    notifier,
+  );
+  return { handler, guard, repo, mandates, events, notifier };
 }
 
 describe("SetMyCompanyBankAccountHandler", () => {
@@ -139,6 +140,45 @@ describe("SetMyCompanyBankAccountHandler", () => {
 
     expect(repo.reads).toBe(0);
     expect(repo.saved).toHaveLength(0);
+  });
+
+  /**
+   * Plan mandat client §8 (2026-09-14) : le papier signé nomme ce compte ; le
+   * changement de banque passe par le staff.
+   */
+  it("refuse en 409 tant qu'un mandat est actif, sans lire ni écrire le RIB", async () => {
+    const { handler, repo, mandates } = build("owner");
+    mandates.current = activeMandate();
+
+    await expect(
+      handler.execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD)),
+    ).rejects.toBeInstanceOf(BankAccountBoundToActiveMandateError);
+    expect(repo.reads).toBe(0);
+    expect(repo.saved).toHaveLength(0);
+  });
+
+  it("oppose le mur AVANT le mandat actif : un non-membre reçoit 404, pas 409", async () => {
+    const { handler, mandates } = build(null);
+    mandates.current = activeMandate();
+
+    await expect(
+      handler.execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD)),
+    ).rejects.toBeInstanceOf(BankAccountCompanyNotFoundError);
+  });
+
+  /** Un brouillon ne bloque pas : il est révoqué, et le client régénère. */
+  it("accepte le RIB quand un BROUILLON existe, et le révoque en le traçant", async () => {
+    const { handler, repo, mandates, events, notifier } = build("billing");
+    mandates.draft = mandate();
+
+    await handler.execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD));
+
+    expect(repo.saved).toHaveLength(1);
+    expect(mandates.saved.map((saved) => saved.status)).toEqual(["revoked"]);
+    expect(events.traced.map((event) => event.journalFact().type)).toEqual([
+      "payment_mandate.draft_voided",
+    ]);
+    expect(notifier.notices).toHaveLength(1);
   });
 
   it("remplace le RIB existant sans en frapper un second", async () => {

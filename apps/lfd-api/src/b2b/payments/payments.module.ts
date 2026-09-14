@@ -1,12 +1,20 @@
 import { Module } from "@nestjs/common";
 
 import { AccountingModule } from "../accounting/accounting.module.js";
+import { FeatureAccessModule } from "../feature-access/feature-access.module.js";
 
 import { MandateGateway } from "./domain/mandate-gateway.js";
 import { PaymentGateway } from "./domain/payment-gateway.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
 import { BankAccountGuardReader } from "./domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
+import { CustomerMandateGate } from "./domain/ports/customer-mandate-gate.js";
+import { AttachMyCompanyMandateProofHandler } from "./application/commands/attach-my-company-mandate-proof.handler.js";
+import { MintMyCompanyMandateHandler } from "./application/commands/mint-my-company-mandate.handler.js";
+import { GetMyCompanyMandateDocumentHandler } from "./application/queries/get-my-company-mandate-document.handler.js";
+import { GetMyCompanyMandateHandler } from "./application/queries/get-my-company-mandate.handler.js";
+import { FeatureAccessCustomerMandateGate } from "./infrastructure/feature-access-customer-mandate-gate.js";
+import { CompanyMandateController } from "./http/company-mandate.controller.js";
 import { MintMandateHandler } from "./application/commands/mint-mandate.handler.js";
 import { SendMandateHandler } from "./application/commands/send-mandate.handler.js";
 import { SignMandateHandler } from "./application/commands/sign-mandate.handler.js";
@@ -37,8 +45,11 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
  *
  * `PaymentGateway` encaisse une commande ponctuelle (intention + webhook) ; il
  * est **exporté** car `orders` le consomme à la passation. `MandateGateway`
- * enregistre l'autorisation durable de prélever ; il ne sort pas d'ici — le
- * mandat est un geste de back-office, et personne d'autre n'a à le connaître.
+ * enregistre l'autorisation durable de prélever ; il ne sort pas d'ici.
+ *
+ * ⚠️ « le mandat est un geste de back-office » était écrit ici jusqu'au
+ * 2026-09-14 : le client génère et renvoie désormais le sien
+ * (`CompanyMandateController`). Le port Stripe, lui, reste interne.
  *
  * Le contrôleur de webhook ne dépend pas d'`OrdersModule` : après vérification
  * de signature, il dispatche sur le bus CQRS. Le couplage passe par le bus, pas
@@ -48,12 +59,15 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
   // 🔴 `payments` importe `accounting`, et jamais l'inverse. Le mandat est le
   // document de l'émetteur ; ce contexte-ci y ajoute le côté client. Le sens de
   // la flèche est ce qui empêche les deux de se tenir l'un l'autre.
-  imports: [AccountingModule],
+  // `feature-access` pour le seul drapeau `customerMandate`, lu par un
+  // adaptateur : les handlers du mandat n'en voient qu'un port booléen.
+  imports: [AccountingModule, FeatureAccessModule],
   controllers: [
     PaymentsWebhookController,
     AdminMandatesController,
     AdminCompanyBankAccountController,
     CompanyBankAccountController,
+    CompanyMandateController,
   ],
   providers: [
     { provide: PaymentGateway, useClass: StripePaymentGateway },
@@ -64,6 +78,7 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
       useClass: PrismaCompanyBankAccountRepository,
     },
     { provide: BankAccountGuardReader, useClass: PrismaBankAccountGuardReader },
+    { provide: CustomerMandateGate, useClass: FeatureAccessCustomerMandateGate },
     MintMandateHandler,
     SignMandateHandler,
     SendMandateHandler,
@@ -77,6 +92,10 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     SetMyCompanyBankAccountHandler,
     GetMyCompanyBankAccountHandler,
     PreviewCustomerMandateHandler,
+    MintMyCompanyMandateHandler,
+    AttachMyCompanyMandateProofHandler,
+    GetMyCompanyMandateHandler,
+    GetMyCompanyMandateDocumentHandler,
   ],
   exports: [PaymentGateway],
 })

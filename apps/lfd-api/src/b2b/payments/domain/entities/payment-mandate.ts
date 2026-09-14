@@ -1,4 +1,4 @@
-import type { MandateStatus, PaymentMandateView } from "@lfd/contracts";
+import type { CustomerMandateView, MandateStatus, PaymentMandateView } from "@lfd/contracts";
 
 import {
   MandateAcceptanceInFutureError,
@@ -105,9 +105,13 @@ export function draftMandate(input: {
  * elle que le débiteur opposera à sa banque avec la RUM. Un brouillon sans
  * émetteur serait un papier qu'on ne pourrait pas imprimer.
  *
- * Aucun `last4` ni `bankCode` : ils viennent du RIB, qui peut être recopié après
- * la frappe. Le mandat n'a pas besoin d'eux pour exister — seulement pour être
- * imprimé complet.
+ * Aucun `last4` ni `bankCode` : ils viennent du RIB, lu à l'impression.
+ *
+ * ⚠️ Cette phrase disait « le RIB peut être recopié après la frappe » jusqu'au
+ * 2026-09-14. Ce n'est plus vrai : la frappe EXIGE un RIB, staff comme client
+ * (`MandateWithoutBankAccountError`, décision de Hugo). Le mandat ne fige pas
+ * pour autant le compte (plan mandat client §8) : réécrire le RIB révoque le
+ * brouillon, qui ne peut plus nommer un compte qui n'est plus le bon.
  */
 export function mintMandate(input: {
   readonly companyId: string;
@@ -192,6 +196,11 @@ export class PaymentMandate {
       proof,
       snapshot.status,
     );
+  }
+
+  /** La RUM — frappée par nous, ou rendue par le prestataire. Ne bouge jamais. */
+  get reference(): string {
+    return this.identity.reference;
   }
 
   /** La date de signature, ou `null` pour un brouillon. */
@@ -353,6 +362,22 @@ export class PaymentMandate {
       revokedAt: this.revokedAtValue?.toISOString() ?? null,
       hasProof: this.proven(),
       proofFileName: this.proofValue?.fileName ?? "",
+    };
+  }
+
+  /**
+   * Ce que le **client** voit de son mandat. Ni compte, ni date de révocation :
+   * sa carte RIB dit déjà le compte, et un mandat révoqué se lit « aucun mandat
+   * en cours » de son côté (plan mandat client, fin du §9).
+   */
+  toCustomerView(): CustomerMandateView {
+    return {
+      id: this.id,
+      reference: this.identity.reference,
+      status: this.statusValue,
+      hasProof: this.proven(),
+      proofFileName: this.proofValue?.fileName ?? "",
+      acceptedAt: this.acceptedAtValue?.toISOString() ?? null,
     };
   }
 }

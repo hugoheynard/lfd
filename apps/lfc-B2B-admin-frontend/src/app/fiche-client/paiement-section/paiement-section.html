@@ -91,9 +91,11 @@
         @if (mandate(); as m) {
           <div class="pm-row">
             <div class="pm-what">
-              <!-- Un brouillon n'a pas de `last4` : il est frappé avant que le
-                   RIB soit forcément recopié. Afficher « •••• » suivi de rien
-                   ferait lire une donnée tronquée là où il n'y en a aucune. -->
+              <!-- Un brouillon n'a pas de `last4` : le compte est lu sur le RIB à
+                   l'impression, pas copié sur le mandat. (⚠️ Ce commentaire disait
+                   « frappé avant que le RIB soit recopié » : faux depuis le
+                   2026-09-14, la frappe exige le RIB.) Afficher « •••• » suivi de
+                   rien ferait lire une donnée tronquée là où il n'y en a aucune. -->
               <span class="pm-label">
                 Prélèvement SEPA
                 @if (m.last4) {
@@ -267,9 +269,24 @@
               </span>
             </div>
             <div class="pm-state">
-              <button foldButton type="button" intent="primary" [loading]="busy()" (click)="mint()">
-                Frapper le mandat
-              </button>
+              <!-- Sans RIB, pas de bouton : le serveur refuse la frappe (2026-09-14),
+                   et l'écran dit pourquoi plutôt que de laisser tomber un 409. -->
+              @if (bankAccount() !== null) {
+                <button
+                  foldButton
+                  type="button"
+                  intent="primary"
+                  [loading]="busy()"
+                  (click)="mint()"
+                >
+                  Frapper le mandat
+                </button>
+              } @else {
+                <span class="pm-note">
+                  Enregistrez d'abord le RIB&nbsp;: le mandat nomme le compte qu'il autorise à
+                  débiter.
+                </span>
+              }
             </div>
           </div>
         }

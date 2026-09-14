@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { DocumentStore, type StoredDocument } from "../../../../platform/storage/document-store.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
@@ -175,12 +177,37 @@ describe("AttachMandateProofHandler", () => {
       tracingStore(trace),
       CIPHER,
       new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
     expect(trace.steps).toEqual(["store", "save"]);
     expect(trace.saved?.proven()).toBe(true);
+  });
+
+  /** Plan mandat client §9 #3 (2026-09-14) : le dépôt du staff est tracé, lui aussi. */
+  it("trace le dépôt au journal, en nommant le staff", async () => {
+    const { repo, trace } = doubles({ draft: draftMandate() });
+    const events = new RecordingPublisher();
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+      events,
+      new DirectUnitOfWork(),
+    );
+
+    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+
+    expect(events.factTypes()).toEqual(["payment_mandate.proof_attached"]);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      reference: "RUM-123",
+      fileName: "mandat.pdf",
+      via: "staff",
+    });
   });
 
   it("vise le BROUILLON quand un actif est encore en vigueur", async () => {
@@ -191,6 +218,8 @@ describe("AttachMandateProofHandler", () => {
       tracingStore(trace),
       CIPHER,
       new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -210,6 +239,8 @@ describe("AttachMandateProofHandler", () => {
       tracingStore(trace),
       CIPHER,
       new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await expect(
@@ -226,6 +257,8 @@ describe("AttachMandateProofHandler", () => {
       tracingStore(trace),
       CIPHER,
       new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await expect(
@@ -243,6 +276,8 @@ describe("AttachMandateProofHandler", () => {
       tracingStore(trace),
       CIPHER,
       new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -263,6 +298,8 @@ describe("AttachMandateProofHandler", () => {
         tracingStore(trace),
         CIPHER,
         new FixedClock(at),
+        new RecordingPublisher(),
+        new DirectUnitOfWork(),
       );
       await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
       keys.push(trace.stored?.key ?? "");
@@ -284,6 +321,8 @@ describe("AttachMandateProofHandler", () => {
       tracingStore(trace),
       CIPHER,
       new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -300,6 +339,8 @@ describe("AttachMandateProofHandler", () => {
       tracingStore(trace),
       CIPHER,
       new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await expect(

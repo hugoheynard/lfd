@@ -120,15 +120,17 @@ export class AdminCompanyBankAccountController {
   /**
    * **L'aperçu du mandat de ce client**, les deux côtés remplis.
    *
-   * 🔴 Il porte toujours la mention « EXEMPLE » en travers de la page, et ce
-   * n'est pas un oubli : aucune RUM n'est frappée, donc une signature apposée
-   * dessus créerait un mandat sans référence — inutilisable, mais que le client
-   * croirait avoir donné. L'aperçu sert à **relire les informations** avant de
-   * les faire imprimer, pas à produire la pièce.
+   * 🔴 Il porte la mention « EXEMPLE » **tant qu'aucun brouillon n'est frappé** :
+   * sans RUM, une signature apposée dessus créerait un mandat sans référence —
+   * inutilisable, mais que le client croirait avoir donné.
    *
-   * `GET` : rien n'est créé, et deux appels rendent le même fichier. Le jour où
-   * un mandat nominatif sera émis, ce sera une commande — frapper une RUM est un
-   * fait qu'on garde.
+   * ⚠️ Ce JSDoc disait « toujours EXEMPLE » : faux depuis la frappe de la RUM
+   * (2026-09-12). `buildCustomerMandate` imprime la RUM du brouillon et le
+   * filigrane tombe avec elle — c'est le même document que la pièce jointe du
+   * courriel et que le PDF du client (constaté le 2026-09-14).
+   *
+   * `GET` : rien n'est créé, et deux appels rendent le même fichier. Frapper une
+   * RUM, elle, est une commande (`POST :companyId/mandate`).
    *
    * Refus possibles, tous nommés : pas de RIB (404), aucune entité émettrice ou
    * plusieurs (409), entité sans ICS (409).

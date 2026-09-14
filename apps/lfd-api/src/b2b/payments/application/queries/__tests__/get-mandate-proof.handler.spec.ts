@@ -35,8 +35,10 @@ function build(options: {
   readonly stored?: Buffer | null;
 }) {
   const mandates: PaymentMandateRepository = {
-    findCurrent: () => Promise.resolve(options.current),
-    findById: () => Promise.resolve(null),
+    // 🔴 `findCurrent` rend un AUTRE mandat : la pièce se lit par identifiant
+    // depuis le 2026-09-14, et un handler qui retomberait sur le courant rougirait.
+    findCurrent: () => Promise.resolve(null),
+    findById: () => Promise.resolve(options.current),
     findDraft: () => Promise.resolve(null),
     findAwaitingProof: () => Promise.resolve(null),
     create: () => Promise.resolve("x"),
@@ -64,7 +66,7 @@ describe("GetMandateProofHandler — ressortir la preuve", () => {
       stored: CIPHER.sealBytes(PDF),
     });
 
-    const proof = await handler.execute(new GetMandateProofQuery("cmp_1"));
+    const proof = await handler.execute(new GetMandateProofQuery("cmp_1", "mdt_1"));
 
     expect(proof?.bytes.equals(PDF)).toBe(true);
     expect(proof?.fileName).toBe("mandat.pdf");
@@ -81,7 +83,7 @@ describe("GetMandateProofHandler — ressortir la preuve", () => {
       stored: CIPHER.sealBytes(PDF),
     });
 
-    expect((await handler.execute(new GetMandateProofQuery("cmp_1")))?.contentType).toBe(
+    expect((await handler.execute(new GetMandateProofQuery("cmp_1", "mdt_1")))?.contentType).toBe(
       "application/pdf",
     );
   });
@@ -89,7 +91,7 @@ describe("GetMandateProofHandler — ressortir la preuve", () => {
   it("rend null quand aucune pièce n'est déposée — un état normal, pas une panne", async () => {
     const handler = build({ current: mandate(null) });
 
-    expect(await handler.execute(new GetMandateProofQuery("cmp_1"))).toBeNull();
+    expect(await handler.execute(new GetMandateProofQuery("cmp_1", "mdt_1"))).toBeNull();
   });
 
   /**
@@ -100,13 +102,28 @@ describe("GetMandateProofHandler — ressortir la preuve", () => {
   it("rend null quand la base annonce une pièce que le bucket n'a pas", async () => {
     const handler = build({ current: mandate({ key: "k", name: "mandat.pdf" }), stored: null });
 
-    expect(await handler.execute(new GetMandateProofQuery("cmp_1"))).toBeNull();
+    expect(await handler.execute(new GetMandateProofQuery("cmp_1", "mdt_1"))).toBeNull();
   });
 
-  it("refuse quand la société n'a aucun mandat", async () => {
+  /**
+   * 🔴 Le mur tenant : la pièce se lit par identifiant, donc un identifiant
+   * deviné ne doit pas suffire à lire celle d'un autre client.
+   */
+  it("refuse la pièce d'un mandat qui appartient à une autre société", async () => {
+    const handler = build({
+      current: mandate({ key: "k", name: "mandat.pdf" }),
+      stored: CIPHER.sealBytes(PDF),
+    });
+
+    await expect(handler.execute(new GetMandateProofQuery("cmp_autre", "mdt_1"))).rejects.toThrow(
+      MandateNotFoundError,
+    );
+  });
+
+  it("refuse un identifiant de mandat inconnu", async () => {
     const handler = build({ current: null });
 
-    await expect(handler.execute(new GetMandateProofQuery("cmp_x"))).rejects.toThrow(
+    await expect(handler.execute(new GetMandateProofQuery("cmp_x", "mdt_x"))).rejects.toThrow(
       MandateNotFoundError,
     );
   });

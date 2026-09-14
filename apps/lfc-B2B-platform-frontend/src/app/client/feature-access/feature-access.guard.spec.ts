@@ -12,7 +12,7 @@ import { of } from 'rxjs';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientFeatureAccess } from './client-feature-access.service';
 import { featureAccessGuard } from './feature-access.guard';
-import { ALL_VISIBLE } from './feature-access.fixture';
+import { DEFAULT_SURFACES } from './feature-access.fixture';
 
 /** Le routeur ne lit ni la route ni l'état : la garde ne dépend que du niveau. */
 const ROUTE = {} as ActivatedRouteSnapshot;
@@ -68,7 +68,7 @@ describe('featureAccessGuard', () => {
       const who = signedIn ? 'connecté' : 'anonyme';
 
       it(`boutique « ${level} », ${who} : browse → ${browse ? 'ouvert' : fallback}, order → ${order ? 'ouvert' : fallback}`, async () => {
-        boot(signedIn).receive({ shop: level, ...ALL_VISIBLE });
+        boot(signedIn).receive({ shop: level, ...DEFAULT_SURFACES });
 
         expect(await run('browse')).toBe(browse ? true : fallback);
         expect(await run('order')).toBe(order ? true : fallback);
@@ -91,7 +91,7 @@ describe('featureAccessGuard', () => {
     await Promise.resolve();
     expect(decided).toBeNull();
 
-    access.receive({ shop: 'order', ...ALL_VISIBLE });
+    access.receive({ shop: 'order', ...DEFAULT_SURFACES });
     await access.settled();
     await Promise.resolve();
     await Promise.resolve();

@@ -73,12 +73,17 @@ export class MandateProofNotFoundError extends ResourceNotFoundError {
  *
  * Le message porte la référence existante : le geste de sortie est d'ouvrir ce
  * brouillon-là — ou de l'abandonner — pas de recommencer.
+ *
+ * `reference` est `null` quand c'est l'INDEX qui a refusé (deux frappes
+ * simultanées) : l'adaptateur ne peut pas relire dans une transaction que
+ * Postgres vient d'avorter. L'appelant relit après, hors transaction, et
+ * relève l'erreur nommée — ou rend le brouillon, côté client (2026-09-14).
  */
 export class MandateDraftAlreadyExistsError extends BusinessError {
-  constructor(reference: string) {
+  constructor(readonly reference: string | null) {
     super(
       "payments.mandate.draft_already_exists",
-      `Un mandat est déjà frappé et attend sa signature (${reference}). ` +
+      `Un mandat est déjà frappé et attend sa signature${reference === null ? "" : ` (${reference})`}. ` +
         "L'imprimer à nouveau, ou l'abandonner avant d'en frapper un autre.",
     );
   }
@@ -251,6 +256,86 @@ export class CompanyBankAccountNotFoundError extends ResourceNotFoundError {
     super(
       "payments.bank_account.missing",
       "Ce client n'a pas de RIB enregistré : renseignez-le avant de prévisualiser son mandat.",
+    );
+  }
+}
+
+/**
+ * On a voulu frapper un mandat pour une société **sans RIB** — **409**.
+ *
+ * Décidé par Hugo le 2026-09-14, pour le staff comme pour le client : un mandat
+ * nomme le compte qu'il autorise à débiter. Sans compte, il n'autorise rien, et
+ * la RUM frappée pour rien serait une référence perdue.
+ */
+export class MandateWithoutBankAccountError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.mandate.bank_account_missing",
+      "Aucun RIB n'est enregistré pour cette société : enregistrez les coordonnées bancaires avant de générer le mandat, qui doit nommer le compte à débiter.",
+    );
+  }
+}
+
+/**
+ * Le client demande un mandat alors que le sien est **déjà actif** — **409**.
+ *
+ * Le remplacement d'un mandat actif reste un geste du staff (plan mandat client
+ * §6 #6) : il engage un changement de compte ou de papier que le client ne
+ * mène pas seul. Message écrit pour le client, pas pour le back-office.
+ */
+export class MandateAlreadyInForceError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.mandate.already_in_force",
+      "Votre mandat de prélèvement est déjà actif. Pour changer de compte ou de mandat, contactez-nous : un nouveau mandat devra être signé.",
+    );
+  }
+}
+
+/**
+ * Aucun mandat n'attend de signature : il n'y a pas de document à rendre — **404**.
+ *
+ * Le PDF nominatif ne se compose QUE pour un brouillon (plan §6 #4) : la RUM
+ * ne s'imprime qu'en `draft`, et recomposer le papier d'un actif produirait un
+ * second exemplaire que personne n'a signé.
+ */
+export class MandateDocumentNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.mandate.document_not_found",
+      "Aucun mandat n'attend de signature : générez d'abord votre mandat pour pouvoir le télécharger.",
+    );
+  }
+}
+
+/**
+ * Le client remplace son RIB alors qu'un mandat **actif** désigne ce compte — **409**.
+ *
+ * Le papier signé nomme l'ancien compte : le prélèvement partirait sur une
+ * autorisation qui ne le couvre pas. Le changement de banque passe par le
+ * staff, qui fait signer un nouveau mandat (plan §8).
+ */
+export class BankAccountBoundToActiveMandateError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.bank_account.bound_to_active_mandate",
+      "Votre mandat de prélèvement actif désigne ce compte : pour changer de banque, contactez-nous, un nouveau mandat devra être signé.",
+    );
+  }
+}
+
+/**
+ * Le mandat en ligne n'est pas ouvert aux clients — **409**.
+ *
+ * Refus d'état et non d'autorisation, comme `ShopClosedError` : il ne dit rien
+ * de la personne. Il tombe APRÈS le mur tenant, pour ne pas révéler à un
+ * non-membre qu'une société existe (plan §7 MINEUR, ordre testé).
+ */
+export class CustomerMandateClosedError extends BusinessError {
+  constructor() {
+    super(
+      "payments.mandate.customer_closed",
+      "Le mandat de prélèvement en ligne n'est pas encore ouvert. Contactez-nous pour le mettre en place.",
     );
   }
 }

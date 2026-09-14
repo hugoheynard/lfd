@@ -104,6 +104,7 @@ export {
   signMandatePayloadSchema,
 } from "./payment-mandate.js";
 export type {
+  CustomerMandateView,
   MandateStatus,
   PaymentMandateView,
   MandateSectionView,
@@ -955,6 +956,8 @@ export {
   SHOP_LEVELS,
   featureExemptionPayloadSchema,
   featureLevelsOf,
+  GATE_LEVELS,
+  isExemptible,
   featureOverridePayloadSchema,
   isAtLeast,
   isFeatureKey,
@@ -975,8 +978,10 @@ export type {
   FeatureLevelsView,
   FeatureOverridePayload,
   FeatureOverrideView,
+  GateLevel,
   IgnoredFeatureRowView,
   ShopLevel,
+  UnexemptibleFeatureKey,
   VisibilityFeatureKey,
   VisibilityLevel,
 } from "./feature-access.js";

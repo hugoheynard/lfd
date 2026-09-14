@@ -1,5 +1,9 @@
 import { InvalidEmailError } from "../../../account/domain/errors/account-errors.js";
-import { UnknownFeatureError, UnknownFeatureLevelError } from "../feature-access-errors.js";
+import {
+  FeatureNotExemptibleError,
+  UnknownFeatureError,
+  UnknownFeatureLevelError,
+} from "../feature-access-errors.js";
 import { FeatureExemption } from "../feature-exemption.js";
 import { FeatureOverride } from "../feature-override.js";
 
@@ -50,6 +54,19 @@ describe("FeatureExemption.grant", () => {
         author: AUTHOR,
       }),
     ).toThrow(UnknownFeatureError);
+  });
+
+  /** Un mandat signé par un testeur exempté serait un vrai mandat, sur un vrai compte. */
+  it("refuse une clé qu'aucune exemption n'ouvre", () => {
+    expect(() =>
+      FeatureExemption.grant({
+        id: "ex_1",
+        key: "customerMandate",
+        email: "testeur@exemple.fr",
+        at: AT,
+        author: AUTHOR,
+      }),
+    ).toThrow(FeatureNotExemptibleError);
   });
 
   it("refuse ce qui n'est manifestement pas une adresse", () => {

@@ -21,3 +21,13 @@
 - **Trace** : aucun fait au journal pour un dépôt de RIB, ni côté staff ni côté
   client.
 - Passage par `vitruve` avant d'ouvrir le geste à tous les clients.
+- **Le PDF du mandat rend l'IBAN à qui porte un jeton owner/billing**
+  (ajouté le 2026-09-14, plan `../b2b/plan-mandat-client.md` §6 #3). Assumé :
+  un mandat EPC porte l'IBAN du débiteur. Mais un jeton volé permet désormais
+  de LIRE le compte, plus seulement de le remplacer — la question « prise de
+  compte » ci-dessus s'élargit d'autant.
+
+> ⚠️ Deux des points ci-dessus ont bougé le 2026-09-14 avec le mandat client :
+> un changement de RIB client est **refusé en 409 tant qu'un mandat est actif**
+> et révoque le brouillon sinon ; et la **révocation d'un brouillon** est
+> journalisée. Le dépôt du RIB lui-même n'écrit toujours aucun fait.

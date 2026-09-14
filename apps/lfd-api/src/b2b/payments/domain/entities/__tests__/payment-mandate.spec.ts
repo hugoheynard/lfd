@@ -294,3 +294,38 @@ describe("PaymentMandate — ce que la vue dit d'un brouillon", () => {
     expect(view.status).toBe("draft");
   });
 });
+
+describe("toCustomerView — ce que le client voit de son mandat", () => {
+  /** Plan mandat client, fin du §9 : six champs, aucun qui dise le compte. */
+  it("ne rend ni le compte, ni la date de révocation", () => {
+    const view = PaymentMandate.reconstitute(
+      snapshot({ proofStorageKey: "k", proofFileName: "scan.pdf" }),
+    ).toCustomerView();
+
+    expect(view).toEqual({
+      id: "mdt_1",
+      reference: "RUM-123",
+      status: "active",
+      hasProof: true,
+      proofFileName: "scan.pdf",
+      acceptedAt: "2024-03-12T00:00:00.000Z",
+    });
+  });
+
+  it("dit « aucune pièce » par un nom vide et une date nulle sur un brouillon nu", () => {
+    const view = PaymentMandate.reconstitute(
+      snapshot({ status: "draft", acceptedAt: null }),
+    ).toCustomerView();
+
+    expect(view).toMatchObject({
+      status: "draft",
+      hasProof: false,
+      proofFileName: "",
+      acceptedAt: null,
+    });
+  });
+
+  it("expose la RUM, qui ne bouge jamais", () => {
+    expect(PaymentMandate.reconstitute(snapshot()).reference).toBe("RUM-123");
+  });
+});

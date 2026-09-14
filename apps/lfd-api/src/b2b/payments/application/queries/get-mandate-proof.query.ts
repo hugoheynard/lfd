@@ -1,11 +1,14 @@
 /**
- * Relire la **pièce déposée** — le mandat papier signé, scanné.
+ * Relire la **pièce déposée** d'un mandat précis — le papier signé, scanné.
  *
- * Vise la société, pas le mandat : c'est ce que la fiche affiche, et c'est du
- * mandat COURANT qu'on veut la preuve. Un jour où il faudra produire celle d'un
- * mandat révoqué — une contestation sur un prélèvement ancien — cette requête
- * prendra un identifiant de mandat, et ce jour-là l'écran devra dire lequel.
+ * 🔴 Vise le MANDAT depuis le 2026-09-14 (plan mandat client §7 #6). Elle visait
+ * la société, donc le mandat courant : en rotation bancaire, `findCurrent` rend
+ * l'actif, et l'écran staff montrait la pièce de l'ANCIEN mandat au moment
+ * d'activer le NOUVEAU. La société reste portée : c'est le mur tenant.
  */
 export class GetMandateProofQuery {
-  constructor(readonly companyId: string) {}
+  constructor(
+    readonly companyId: string,
+    readonly mandateId: string,
+  ) {}
 }

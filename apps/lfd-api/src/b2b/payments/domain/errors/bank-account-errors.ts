@@ -18,7 +18,8 @@ export class BankAccountCompanyNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * Le demandeur est membre de la société, mais son rôle ne lui ouvre pas le RIB.
+ * Le demandeur est membre de la société, mais son rôle ne lui ouvre ni le RIB,
+ * ni le mandat (le même mur les garde depuis le 2026-09-14).
  *
  * **403** : il sait que la société existe, il en est. Le message nomme les deux
  * rôles qui passent et le geste de sortie, parce qu'il est lu par quelqu'un qui
@@ -28,7 +29,7 @@ export class BankAccountRoleRequiredError extends AuthorizationError {
   constructor(readonly companyId: string) {
     super(
       "payments.bank_account.role_required",
-      "Le RIB de la société n'est accessible qu'à son détenteur et au rôle « facturation ». " +
+      "Le RIB et le mandat de prélèvement de la société ne sont accessibles qu'à son détenteur et au rôle « facturation ». " +
         "Demandez au détenteur de vous attribuer ce rôle.",
     );
   }

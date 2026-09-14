@@ -2,6 +2,7 @@ import {
   FEATURE_CATALOGUE,
   FEATURE_KEYS,
   featureLevelsOf,
+  isExemptible,
   isFeatureKey,
   isFeatureLevel,
   type AdminFeatureAccessView,
@@ -44,6 +45,7 @@ function featureView(key: FeatureKey, stored: StoredFeatureAccess): AdminFeature
     description: definition.description,
     levels: featureLevelsOf(key),
     defaultLevel: definition.defaultLevel,
+    exemptible: isExemptible(key),
     effectiveLevel: resolveFeatureLevel(key, {
       exempt: false,
       storedOverride: override?.value ?? null,

@@ -88,7 +88,10 @@
             <div class="exemptions">
               <fold-element-title variant="bar" title="Adresses exemptées" [level]="3" />
 
-              @if (canWrite()) {
+              <!-- Clé non exemptible (le mandat client, 2026-09-14) : le serveur
+                     refuse l'ajout en 409, donc l'écran ne le propose pas. Les
+                     lignes déjà en base restent listées pour pouvoir les retirer. -->
+              @if (canWrite() && card.exemptible) {
                 <div class="add">
                   <fold-input
                     class="add-input"
@@ -136,10 +139,17 @@
                 }
               </ul>
 
-              <p class="muted">
-                Ces adresses gardent la boutique entière, quel que soit le niveau. Elles doivent
-                être vérifiées pour compter.
-              </p>
+              @if (card.exemptible) {
+                <p class="muted">
+                  Ces adresses gardent la boutique entière, quel que soit le niveau. Elles doivent
+                  être vérifiées pour compter.
+                </p>
+              } @else {
+                <p class="muted">
+                  Aucune exemption ne s'applique ici : ce que cette fonctionnalité ouvre engage un
+                  vrai compte. Elle s'ouvre pour tous, ou pour personne.
+                </p>
+              }
             </div>
           </div>
         </fold-card>

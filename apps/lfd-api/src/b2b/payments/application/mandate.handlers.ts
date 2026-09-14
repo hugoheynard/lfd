@@ -7,15 +7,16 @@ import {
 import type { PaymentMandateView } from "@lfd/contracts";
 
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { ScannedDocument } from "../../../platform/shared/documents/scanned-document.js";
 import { MandateNotFoundError } from "../domain/errors/mandate-errors.js";
-import type { PaymentMandate } from "../domain/entities/payment-mandate.js";
 import { MandateGateway } from "../domain/mandate-gateway.js";
 import { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { AttachMandateProofCommand, RevokeMandateCommand } from "./mandate-commands.js";
 import { GetCompanyMandateQuery } from "./mandate-queries.js";
+import { attachProofToDraft } from "./mandate-proof-support.js";
 
 /**
  * Révoque le mandat courant — **chez le prestataire d'abord**, ici ensuite.
@@ -57,19 +58,15 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
 }
 
 /**
- * Dépose le mandat signé scanné — **sur le brouillon seulement**.
+ * Dépose le mandat signé scanné, depuis le back-office — **sur le brouillon
+ * seulement**.
  *
- * Trois temps, dans cet ordre, et chacun ferme une panne :
+ * La séquence — refuser avant de ranger, clé neuve par dépôt, référence et fait
+ * au journal dans la même transaction — vit dans `attachProofToDraft`, partagée
+ * avec le client depuis le 2026-09-14. Pas de cloche ici : c'est l'équipe qui
+ * dépose.
  *
- * 1. **Refuser avant de ranger.** Le refus hors brouillon tombait, jusqu'au
- *    2026-09-14, APRÈS l'écriture dans le bucket : le fichier était déjà
- *    remplacé quand l'agrégat disait non.
- * 2. **Ranger sous une clé neuve.** Une clé fixe par mandat faisait qu'un dépôt
- *    dont l'écriture en base échoue écrasait quand même la pièce précédente,
- *    que la base continuait de désigner.
- * 3. **Écrire la référence.** Si le stockage échoue, la base ne pointe pas vers
- *    une pièce absente — un mandat qu'on croit prouvé sans l'être est pire
- *    qu'un mandat qu'on sait nu.
+ * `@hors-transaction` le fichier part au stockage objet avant la transaction.
  */
 @CommandHandler(AttachMandateProofCommand)
 export class AttachMandateProofHandler implements ICommandHandler<AttachMandateProofCommand, void> {
@@ -78,54 +75,27 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
     private readonly store: DocumentStore,
     private readonly cipher: FieldCipher,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: AttachMandateProofCommand): Promise<void> {
-    const mandate = await this.provableMandate(command.companyId);
-    // Le domaine valide le fichier EN CLAIR — type réel, taille, nom. Sceller
-    // avant validerait des octets chiffrés, c'est-à-dire rien.
-    const document = ScannedDocument.create(command.fileName, command.bytes);
-
-    // 🔴 Scellé depuis le 2026-09-12. Le scan du mandat signé porte le nom du
-    // client, sa banque, son IBAN et sa signature manuscrite — c'est la pièce la
-    // plus lourde du dépôt, et elle partait en clair dans le bucket pendant que
-    // les MÊMES données étaient scellées en colonne.
-    //
-    // `application/octet-stream` et non le vrai type : ce qui est rangé n'est
-    // plus un PDF. Annoncer `application/pdf` sur des octets chiffrés ferait
-    // qu'un outil de stockage tenterait de les prévisualiser, et surtout ferait
-    // croire, à qui ouvre le bucket, que la pièce est lisible.
-    const key = proofKeyFor(command.companyId, mandate.id, this.clock.now());
-    const storageKey = await this.store.save(key, {
-      bytes: this.cipher.sealBytes(document.bytes),
-      contentType: "application/octet-stream",
-    });
-    mandate.attachProof({ storageKey, fileName: document.fileName });
-    await this.mandates.save(mandate);
-  }
-
-  /**
-   * Le brouillon de la société, refusé AVANT tout rangement s'il n'y en a pas.
-   *
-   * 🔴 `findDraft` et non `findAwaitingProof` depuis le 2026-09-14 :
-   * `findAwaitingProof` retombe sur l'actif sans brouillon, et c'est
-   * précisément le mandat dont la pièce ne doit plus bouger. Sans brouillon,
-   * le refus nomme l'état réel du mandat courant — « déjà actif » ne se corrige
-   * pas comme « aucun mandat ».
-   */
-  private async provableMandate(companyId: string): Promise<PaymentMandate> {
-    const draft = await this.mandates.findDraft(companyId);
-    if (draft !== null) {
-      return draft;
-    }
-    const current = await this.mandates.findCurrent(companyId);
-    if (current === null) {
-      throw new MandateNotFoundError(companyId);
-    }
-    current.refuseUnlessProvable();
-    // Inatteignable : un mandat courant qui accepte une preuve est un brouillon,
-    // et `findDraft` l'aurait rendu. Refuser plutôt que ranger sur un doute.
-    throw new MandateNotFoundError(companyId);
+    await attachProofToDraft(
+      {
+        mandates: this.mandates,
+        store: this.store,
+        cipher: this.cipher,
+        clock: this.clock,
+        events: this.events,
+        uow: this.uow,
+      },
+      {
+        companyId: command.companyId,
+        fileName: command.fileName,
+        bytes: command.bytes,
+        via: "staff",
+      },
+    );
   }
 }
 
@@ -146,17 +116,4 @@ export class GetCompanyMandateHandler implements IQueryHandler<
     const mandate = await this.mandates.findCurrent(query.companyId);
     return mandate?.toView() ?? null;
   }
-}
-
-/**
- * Clé de stockage du mandat signé — ancrée sur la société, sur le mandat **et**
- * sur l'instant du dépôt.
- *
- * La société et le mandat : un mandat remplacé garde sa preuve, sinon
- * l'historique perdrait la seule pièce qui le justifie. L'instant : un dépôt ne
- * recouvre jamais le précédent, donc une écriture en base qui échoue après le
- * rangement laisse la pièce que la base désigne intacte.
- */
-function proofKeyFor(companyId: string, mandateId: string, at: Date): string {
-  return `companies/${companyId}/mandates/${mandateId}/mandat-signe-${at.getTime()}`;
 }

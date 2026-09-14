@@ -67,3 +67,34 @@ describe("FeatureLevelResolver.levelFor", () => {
     expect(lookup.asked).toEqual(["override:shop"]);
   });
 });
+
+describe("FeatureLevelResolver — une clé qu'aucune exemption n'ouvre", () => {
+  it("ne cherche pas l'adresse, même prouvée et inscrite", async () => {
+    const lookup = new StubLookup({}, ["testeur@exemple.fr"]);
+
+    await expect(
+      new FeatureLevelResolver(lookup).levelFor("customerMandate", {
+        email: "testeur@exemple.fr",
+        emailProven: true,
+      }),
+    ).resolves.toBe("closed");
+    expect(lookup.asked).toEqual(["override:customerMandate"]);
+  });
+
+  it("se lit SANS sujet, fermée par défaut", async () => {
+    const lookup = new StubLookup({}, []);
+
+    await expect(
+      new FeatureLevelResolver(lookup).unexemptibleLevelOf("customerMandate"),
+    ).resolves.toBe("closed");
+    expect(lookup.asked).toEqual(["override:customerMandate"]);
+  });
+
+  it("suit la dérogation posée pour tous", async () => {
+    const lookup = new StubLookup({ customerMandate: "open" }, []);
+
+    await expect(
+      new FeatureLevelResolver(lookup).unexemptibleLevelOf("customerMandate"),
+    ).resolves.toBe("open");
+  });
+});
