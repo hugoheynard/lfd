@@ -1,9 +1,11 @@
 import {
   type MarkPackingLine,
+  type PackingContainerStep,
   type ProductionPackingQuery,
   type ProductionPackingView,
   type SetPackingContainers,
   markPackingLineSchema,
+  packingContainerStepSchema,
   productionPackingQuerySchema,
   setPackingContainersSchema,
 } from "@lfd/contracts";
@@ -14,6 +16,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Post,
   Put,
   Query,
   Req,
@@ -26,6 +29,7 @@ import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-princi
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { DeclarePackingContainersCommand } from "../application/commands/declare-packing-containers.command.js";
 import { MarkPackingLineCommand } from "../application/commands/mark-packing-line.command.js";
+import { StepPackingContainersCommand } from "../application/commands/step-packing-containers.command.js";
 import { UnmarkPackingLineCommand } from "../application/commands/unmark-packing-line.command.js";
 import { GetProductionPackingQuery } from "../application/queries/get-production-packing.query.js";
 
@@ -117,6 +121,13 @@ export class ProductionPackingController {
    * 🔴 À ne pas confondre avec `PUT containers/:sku` chez le contrôleur voisin,
    * qui règle le matériel du FOUR par SKU. Même mot, deux objets : ici c'est le
    * contenant d'expédition d'UNE commande.
+   *
+   * @deprecated Depuis le 2026-09-14 — remplacée par
+   * `POST packing/:date/sheets/:reference/containers/:step` ({@link step}). Un
+   * total envoyé par l'écran perdait un container quand deux postes appuyaient
+   * ensemble. Elle reste servie **un déploiement de plus** parce qu'elle est en
+   * production (CLAUDE.md §0) ; la retirer est un geste à part, une fois le front
+   * passé au pas.
    */
   @Put("packing/:date/sheets/:reference/containers")
   @HttpCode(NO_CONTENT)
@@ -127,6 +138,33 @@ export class ProductionPackingController {
   ): Promise<void> {
     await this.commands.execute<DeclarePackingContainersCommand, void>(
       new DeclarePackingContainersCommand(dayOf(date), reference, body.containers),
+    );
+  }
+
+  /**
+   * **Un container de plus, ou de moins.**
+   *
+   * Un sens, pas un total : le serveur calcule le nouveau compte en une écriture
+   * atomique, donc deux postes qui appuient sur « + » ensemble font deux
+   * containers — là où deux totaux identiques en faisaient un.
+   *
+   * `POST` et non `PUT` : le geste n'est PAS idempotent, et c'est voulu — deux
+   * « + » font deux containers. Rend 204 dans tous les cas où rien n'est refusé,
+   * y compris un « − » à zéro, qui est sans effet : l'écran n'a pas à comparer
+   * le compte à zéro pour savoir s'il peut appuyer.
+   *
+   * `:step` est validé par le schéma du contrat ; un autre mot rend 400 en
+   * nommant le paramètre.
+   */
+  @Post("packing/:date/sheets/:reference/containers/:step")
+  @HttpCode(NO_CONTENT)
+  async step(
+    @Param("date") date: string,
+    @Param("reference") reference: string,
+    @Param("step", new ZodQuery(packingContainerStepSchema)) step: PackingContainerStep,
+  ): Promise<void> {
+    await this.commands.execute<StepPackingContainersCommand, void>(
+      new StepPackingContainersCommand(dayOf(date), reference, step),
     );
   }
 

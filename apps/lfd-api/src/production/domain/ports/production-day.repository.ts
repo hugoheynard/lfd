@@ -1,4 +1,5 @@
 import type { DoneMark, PackedLineMark, ProductionDay } from "../entities/production-day.js";
+import type { ContainerStep } from "../value-objects/container-step.js";
 import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
@@ -99,4 +100,24 @@ export abstract class ProductionDayRepository {
     reference: string,
     containers: number,
   ): Promise<void>;
+
+  /**
+   * **Un container de plus, ou de moins** — calculé PAR LA BASE.
+   *
+   * ⚠️ C'est l'écriture nue la plus justifiée de ce port. Un total envoyé par
+   * l'écran perdait un container quand deux postes appuyaient ensemble ; un
+   * `load` → calcul → écriture côté serveur rouvrirait exactement la même
+   * course, puisque les deux lectures verraient le même compte. Seul
+   * `container_count = container_count ± 1` compose deux gestes simultanés.
+   *
+   * Les bornes et `packed_at IS NULL` sont dans le `WHERE` : un pas qui les
+   * franchirait ne s'écrit pas. Rend `false` quand rien n'a été écrit — au
+   * plafond, à zéro, bac fermé entre-temps. C'est l'appelant qui dit pourquoi,
+   * en relisant l'agrégat.
+   */
+  abstract stepContainerCount(
+    day: ServiceDay,
+    reference: string,
+    step: ContainerStep,
+  ): Promise<boolean>;
 }

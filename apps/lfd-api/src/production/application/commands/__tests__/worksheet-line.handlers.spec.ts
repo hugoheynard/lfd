@@ -62,6 +62,10 @@ class Days extends ProductionDayRepository {
   recordContainerCount(): Promise<void> {
     return Promise.reject(new Error("non utilisé"));
   }
+
+  stepContainerCount(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 /** Une journée déjà arrêtée, qui porte un seul article au compte. */

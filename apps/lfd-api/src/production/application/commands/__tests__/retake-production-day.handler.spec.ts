@@ -68,6 +68,10 @@ class Days extends ProductionDayRepository {
   recordContainerCount(): Promise<void> {
     return Promise.reject(new Error("non utilisé"));
   }
+
+  stepContainerCount(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 /** Une journée arrêtée sur la seule commande `ord_1`, coche posée ou non. */

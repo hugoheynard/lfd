@@ -59,6 +59,10 @@ class Days extends ProductionDayRepository {
     this.counts.push({ reference, containers });
     return Promise.resolve();
   }
+
+  stepContainerCount(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 function closedDay(): ProductionDay {

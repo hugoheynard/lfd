@@ -7,6 +7,10 @@ import {
   type PackedLineMark,
 } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
+import {
+  type ContainerStep,
+  MAX_CONTAINERS_PER_ORDER,
+} from "../domain/value-objects/container-step.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 
 /**
@@ -233,6 +237,40 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
       where: { serviceDay: day.value, reference },
       data: { containerCount: containers },
     });
+  }
+
+  /**
+   * Un container de plus ou de moins, **atomique en SQL**.
+   *
+   * 🔴 `increment` / `decrement` compilent en `SET container_count =
+   * container_count ± 1` : c'est la base qui lit et écrit d'un seul geste, et
+   * c'est la seule forme qui compose deux « + » simultanés. Un `load` → calcul →
+   * `recordContainerCount` perdrait l'un des deux, exactement comme le total
+   * envoyé par l'écran le faisait avant le 2026-09-14.
+   *
+   * Le `WHERE` porte les deux bornes et `packed_at IS NULL` : la condition et
+   * l'écriture sont la même instruction, donc aucun poste ne peut passer entre
+   * les deux. Même partage que {@link markPacked} — l'agrégat a déjà dit si le
+   * geste a un sens, la base ne tranche que la course.
+   */
+  async stepContainerCount(
+    day: ServiceDay,
+    reference: string,
+    step: ContainerStep,
+  ): Promise<boolean> {
+    const { count } = await this.prisma.productionOrder.updateMany({
+      where:
+        step === "add"
+          ? {
+              serviceDay: day.value,
+              reference,
+              packedAt: null,
+              containerCount: { lt: MAX_CONTAINERS_PER_ORDER },
+            }
+          : { serviceDay: day.value, reference, packedAt: null, containerCount: { gt: 0 } },
+      data: { containerCount: step === "add" ? { increment: 1 } : { decrement: 1 } },
+    });
+    return count === 1;
   }
 
   /**

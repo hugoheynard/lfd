@@ -3,7 +3,14 @@ import type {
   ProducedItemSnapshot,
   ProductionOrderSnapshot,
 } from "../../entities/production-day.js";
-import { packingBoardOf, type PackingSources } from "../production-packing.js";
+import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
+
+import {
+  canDeclareReady,
+  packingBoardOf,
+  relativeDayOf,
+  type PackingSources,
+} from "../production-packing.js";
 
 /**
  * **La balance**, éprouvée en fonction pure : on pose un état de journée, on
@@ -13,7 +20,15 @@ import { packingBoardOf, type PackingSources } from "../production-packing.js";
  * telles quelles dans la vue, et c'est la seule chose qu'on en vérifie.
  */
 
-const DATE = "2026-09-08";
+/**
+ * Le jour lu est **dérivé de maintenant**, jamais écrit en dur : `relativeDay`
+ * le compare à l'horloge, et une date figée passerait un jour pour « demain ».
+ * À sept jours, il n'est ni aujourd'hui ni demain, quel que soit le jour où la
+ * suite tourne.
+ */
+const NOW = new Date();
+const TODAY = instantToLocal(NOW).day;
+const DATE = addDays(TODAY, 7);
 const CLOSED_AT = new Date("2026-09-07T18:00:00.000Z");
 const PACKED: PackedLineMark = {
   at: new Date("2026-09-08T05:30:00.000Z"),
@@ -71,14 +86,23 @@ function count(
 }
 
 function sources(overrides: Partial<PackingSources> = {}): PackingSources {
-  return { date: DATE, closedAt: CLOSED_AT, orders: [], counts: [], ...overrides };
+  return { date: DATE, closedAt: CLOSED_AT, orders: [], counts: [], now: NOW, ...overrides };
 }
 
 describe("une journée qui n'est pas arrêtée", () => {
   it("rend le vide plutôt que de lever — il n'y a rien à coliser, pas une erreur", () => {
     const board = packingBoardOf(sources({ closedAt: null }));
 
-    expect(board).toEqual({ date: DATE, closedAt: null, sheets: [], resources: [] });
+    expect(board).toEqual({
+      date: DATE,
+      closedAt: null,
+      sheets: [],
+      resources: [],
+      orderCount: 0,
+      todoCount: 0,
+      readyCount: 0,
+      relativeDay: null,
+    });
   });
 });
 
@@ -289,5 +313,102 @@ describe("la ressource", () => {
     );
 
     expect(board.resources.map((entry) => entry.sku)).toEqual(["PAI-000", "PAI-001", "VIE-002"]);
+  });
+});
+
+describe("les compteurs d'un bac — l'écran n'additionne rien", () => {
+  it("compte les lignes et les PIÈCES d'une commande à moitié cochée", () => {
+    const board = packingBoardOf(
+      sources({
+        orders: [
+          sheet("CMD-0001", [
+            line("VIE-001", "Croissant", 12, PACKED),
+            line("PAI-001", "Baguette tradition", 30),
+            line("VIE-002", "Pain au chocolat", 8, PACKED),
+          ]),
+        ],
+      }),
+    );
+
+    expect(board.sheets).toHaveLength(1);
+    expect(board.sheets[0]).toMatchObject({
+      lineCount: 3,
+      packedLines: 2,
+      remainingLines: 1,
+      pieces: 50,
+      packedPieces: 20,
+      canDeclareReady: false,
+    });
+  });
+
+  it("permet de déclarer prête une commande dont toutes les lignes sont au bac", () => {
+    const board = packingBoardOf(
+      sources({ orders: [sheet("CMD-0001", [line("VIE-001", "Croissant", 12, PACKED)])] }),
+    );
+
+    expect(board.sheets[0]).toMatchObject({ remainingLines: 0, canDeclareReady: true });
+  });
+
+  it("ne permet plus de déclarer prête une commande DÉJÀ déclarée", () => {
+    const board = packingBoardOf(
+      sources({
+        orders: [
+          sheet("CMD-0001", [line("VIE-001", "Croissant", 12, PACKED)], {
+            at: PACKED.at,
+            by: "auth0|karim",
+          }),
+        ],
+      }),
+    );
+
+    expect(board.sheets[0]?.canDeclareReady).toBe(false);
+  });
+
+  it("ne permet pas de déclarer prête une commande SANS ligne", () => {
+    // « Toutes ses lignes sont au bac » est vrai sur une liste vide ; annoncer
+    // prêt un colis vide serait le mensonge qu'on veut rendre impossible.
+    expect(canDeclareReady(sheet("CMD-0001", []))).toBe(false);
+  });
+});
+
+describe("les compteurs de la journée", () => {
+  it("sépare les commandes à préparer de celles déclarées prêtes", () => {
+    const sealed = { at: PACKED.at, by: "auth0|karim" };
+    const board = packingBoardOf(
+      sources({
+        orders: [
+          sheet("CMD-0001", [line("VIE-001", "Croissant", 12, PACKED)], sealed),
+          sheet("CMD-0002", [line("VIE-001", "Croissant", 12)]),
+          sheet("CMD-0003", [line("VIE-001", "Croissant", 12)]),
+        ],
+      }),
+    );
+
+    expect(board).toMatchObject({ orderCount: 3, todoCount: 2, readyCount: 1 });
+  });
+});
+
+describe("la journée relative — selon l'horloge du serveur", () => {
+  it("dit « today », « tomorrow », ou rien", () => {
+    expect(relativeDayOf(TODAY, NOW)).toBe("today");
+    expect(relativeDayOf(addDays(TODAY, 1), NOW)).toBe("tomorrow");
+    expect(relativeDayOf(addDays(TODAY, 2), NOW)).toBeNull();
+    expect(relativeDayOf(addDays(TODAY, -1), NOW)).toBeNull();
+  });
+
+  it("🔴 lit le jour à l'heure de PARIS, pas en UTC", () => {
+    // À 00 h 30 à Paris, il est encore la VEILLE en UTC (22 h 30 l'été, 23 h 30
+    // l'hiver). Un `toISOString().slice(0, 10)` dirait « demain » d'une journée
+    // que le fournil a déjà commencée.
+    const justAfterMidnight = localToInstant(TODAY, "00:30");
+    if (justAfterMidnight === null) {
+      throw new Error("00:30 existe tous les jours à Paris — le changement d'heure est à 02:00.");
+    }
+
+    expect(relativeDayOf(TODAY, justAfterMidnight)).toBe("today");
+  });
+
+  it("est calculée même sur une journée qui n'est pas arrêtée", () => {
+    expect(packingBoardOf(sources({ date: TODAY, closedAt: null })).relativeDay).toBe("today");
   });
 });

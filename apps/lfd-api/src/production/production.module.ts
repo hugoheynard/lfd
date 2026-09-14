@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
 import { DeclarePackingContainersHandler } from "./application/commands/declare-packing-containers.handler.js";
 import { MarkPackingLineHandler } from "./application/commands/mark-packing-line.handler.js";
+import { StepPackingContainersHandler } from "./application/commands/step-packing-containers.handler.js";
 import { MarkWorksheetLineHandler } from "./application/commands/mark-worksheet-line.handler.js";
 import { PackOrderHandler } from "./application/commands/pack-order.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
@@ -62,6 +63,7 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     MarkPackingLineHandler,
     UnmarkPackingLineHandler,
     DeclarePackingContainersHandler,
+    StepPackingContainersHandler,
     RetakeProductionDayHandler,
     SetProductionContainerHandler,
     RemoveProductionContainerHandler,

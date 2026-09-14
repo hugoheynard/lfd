@@ -169,7 +169,17 @@ describe("une journée qui n'est pas arrêtée", () => {
 
     const view = await packing();
 
-    expect(view).toEqual({ date: SERVICE_DAY, closedAt: null, sheets: [], resources: [] });
+    expect(view).toEqual({
+      date: SERVICE_DAY,
+      closedAt: null,
+      sheets: [],
+      resources: [],
+      orderCount: 0,
+      todoCount: 0,
+      readyCount: 0,
+      // La journée servie est dans une semaine : ni aujourd'hui, ni demain.
+      relativeDay: null,
+    });
   });
 
   it("refuse de cocher : sans plan arrêté, il n'y a pas de bon à remplir", async () => {
@@ -387,6 +397,114 @@ describe("les containers de la commande", () => {
     await setContainers(reference, 2.5, 400);
     await setContainers(reference, 100, 400);
     expect(firstSheet(await packing()).containers).toBe(0);
+  });
+});
+
+describe("les containers comptés par le serveur", () => {
+  async function step(reference: string, direction: string, expected = 204): Promise<void> {
+    await ctx
+      .asSub(STAFF)
+      .post(`/admin/production/packing/${SERVICE_DAY}/sheets/${reference}/containers/${direction}`)
+      .expect(expected);
+  }
+
+  it("ajoute deux fois, retire une fois, et retire à zéro SANS erreur", async () => {
+    await place([{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan();
+    const reference = firstSheet(await packing()).reference;
+
+    await step(reference, "add");
+    await step(reference, "add");
+    expect(firstSheet(await packing()).containers).toBe(2);
+
+    await step(reference, "remove");
+    expect(firstSheet(await packing()).containers).toBe(1);
+
+    await step(reference, "remove");
+    // À zéro : sans effet, 204. L'écran n'a pas à comparer pour appuyer.
+    await step(reference, "remove");
+    const view = await packing();
+    expect(view.sheets).toHaveLength(1);
+    expect(firstSheet(view).containers).toBe(0);
+  });
+
+  it("🔴 compose deux « + » SIMULTANÉS — le container ne se perd plus", async () => {
+    // C'est la raison du changement : deux totaux identiques faisaient UN
+    // container. Deux pas font deux containers, même lancés au même instant.
+    await place([{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan();
+    const reference = firstSheet(await packing()).reference;
+
+    await Promise.all([step(reference, "add"), step(reference, "add"), step(reference, "add")]);
+
+    expect(firstSheet(await packing()).containers).toBe(3);
+  });
+
+  it("🔴 refuse une commande déclarée prête", async () => {
+    await place([{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan();
+    const reference = firstSheet(await packing()).reference;
+    await step(reference, "add");
+    await ctx
+      .asSub(STAFF)
+      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`)
+      .expect(201);
+
+    await step(reference, "add", 409);
+    await step(reference, "remove", 409);
+    expect(firstSheet(await packing()).containers).toBe(1);
+  });
+
+  it("refuse un « + » au plafond, et un sens qui n'en est pas un", async () => {
+    await place([{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan();
+    const reference = firstSheet(await packing()).reference;
+    await ctx
+      .asSub(STAFF)
+      .put(`/admin/production/packing/${SERVICE_DAY}/sheets/${reference}/containers`)
+      .send({ containers: 99 })
+      .expect(204);
+
+    await step(reference, "add", 409);
+    await step(reference, "double", 400);
+    expect(firstSheet(await packing()).containers).toBe(99);
+  });
+});
+
+describe("les compteurs servis au poste", () => {
+  it("compte les lignes, les pièces, et la règle « déclarer prête »", async () => {
+    await place([
+      { sku: CROISSANT, quantity: 12 },
+      { sku: BAGUETTE, quantity: 30 },
+    ]);
+    await closePlan();
+    await produce(CROISSANT);
+    await produce(BAGUETTE);
+    const reference = firstSheet(await packing()).reference;
+
+    await mark(reference, CROISSANT);
+    const half = await packing();
+    expect(half.sheets).toHaveLength(1);
+    expect(firstSheet(half)).toMatchObject({
+      lineCount: 2,
+      packedLines: 1,
+      remainingLines: 1,
+      pieces: 42,
+      packedPieces: 12,
+      canDeclareReady: false,
+    });
+    expect(half).toMatchObject({ orderCount: 1, todoCount: 1, readyCount: 0 });
+
+    await mark(reference, BAGUETTE);
+    expect(firstSheet(await packing()).canDeclareReady).toBe(true);
+
+    await ctx
+      .asSub(STAFF)
+      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`)
+      .expect(201);
+    const ready = await packing();
+    expect(firstSheet(ready).canDeclareReady).toBe(false);
+    expect(ready).toMatchObject({ orderCount: 1, todoCount: 0, readyCount: 1 });
   });
 });
 

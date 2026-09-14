@@ -78,6 +78,10 @@ class Days extends ProductionDayRepository {
   recordContainerCount(): Promise<void> {
     return Promise.reject(new Error("non utilisé"));
   }
+
+  stepContainerCount(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 /** Le publieur, réduit à ce que le handler en appelle — il étend la classe. */

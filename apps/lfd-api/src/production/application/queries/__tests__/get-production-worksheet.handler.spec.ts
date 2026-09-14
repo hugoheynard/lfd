@@ -58,6 +58,10 @@ class Days extends ProductionDayRepository {
   recordContainerCount(): Promise<void> {
     return Promise.reject(new Error("une lecture n'écrit rien"));
   }
+
+  stepContainerCount(): Promise<boolean> {
+    return Promise.reject(new Error("une lecture n'écrit rien"));
+  }
 }
 
 class Commerce extends DayOrdersReader {
