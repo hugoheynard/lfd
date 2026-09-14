@@ -116,6 +116,36 @@ export class AuthFacade {
    */
   readonly pendingProRegistration = signal<ProRegistration | null>(null);
 
+  /**
+   * En bypass dev, l'inscription pro EN COURS sur l'écran d'Auth0 simulé.
+   *
+   * Pas d'aller-retour réel, donc pas d'`appState` : c'est ce signal qui porte
+   * la déclaration entre la porte pro et l'écran simulé. En production, il
+   * reste `null` — `DEV_BYPASS_AUTH` vaut `false` en tête de chaque écriture.
+   */
+  readonly devSignup = signal<{
+    readonly target: string;
+    readonly registration: ProRegistration;
+  } | null>(null);
+
+  /**
+   * Termine l'inscription simulée : on est entré, la déclaration est retenue
+   * comme au vrai retour d'Auth0, et l'on rend la cible où aller.
+   *
+   * `null` hors dev, ou sans inscription en cours (rechargement de l'écran).
+   */
+  completeDevSignup(): string | null {
+    const signup = this.devSignup();
+    if (!(DEV_BYPASS_AUTH && this.isBrowser) || signup === null) {
+      return null;
+    }
+    writeDevSignedOut(false);
+    this.devSignedOut.set(false);
+    this.pendingProRegistration.set(signup.registration);
+    this.devSignup.set(null);
+    return signup.target;
+  }
+
   constructor() {
     // Restauration de la route demandée : au **retour** du callback Auth0 (un
     // nouveau chargement de page), le SDK émet l'`appState` passé à
@@ -214,15 +244,13 @@ export class AuthFacade {
    * `POST /me/establishment`.
    */
   registerPro(target: string, registration: ProRegistration): void {
-    // En bypass dev, pas d'aller-retour Auth0, mais la déclaration EST retenue,
-    // comme au vrai retour : sans elle, Mon compte redemandait les champs qu'on
-    // venait de saisir (relevé le 2026-09-14). Sur un compte impersonné déjà
-    // rattaché, `ProOnboarding` reçoit un 409 et relit `/me` sans rien afficher.
+    // En bypass dev, l'écran d'Auth0 est SIMULÉ : on y passe comme en
+    // production, et c'est lui qui rend la main avec la déclaration retenue
+    // (`completeDevSignup`). Sans cette étape, le parcours de dev sautait le
+    // mot de passe et l'e-mail de vérification, qu'on ne voyait donc jamais.
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      writeDevSignedOut(false);
-      this.devSignedOut.set(false);
-      this.pendingProRegistration.set(registration);
-      void this.router.navigateByUrl(target);
+      this.devSignup.set({ target, registration });
+      void this.router.navigateByUrl(DEV_AUTH0_SIGNUP_SCREEN);
       return;
     }
     void this.auth0
@@ -281,6 +309,9 @@ export class AuthFacade {
     return this.auth0?.getAccessTokenSilently() ?? NEVER;
   }
 }
+
+/** L'écran d'Auth0 simulé, en dev — la route n'existe pas en production. */
+export const DEV_AUTH0_SIGNUP_SCREEN = '/dev/inscription-auth0';
 
 /** Où l'on atterrit en se déconnectant en dev : la porte d'entrée. */
 const DEV_SIGNED_OUT_LANDING = '/bienvenue';

@@ -1,6 +1,7 @@
 import { type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
+import { DEV_BYPASS_AUTH } from './auth/dev-flags';
 import { featureAccessGuard } from './client/feature-access/feature-access.guard';
 import { ClientShell } from './client/shell/client-shell';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
@@ -97,6 +98,21 @@ export const routes: Routes = [
     title: 'Connexion — La Folie Coffee B2B',
     loadComponent: () => import('./login/login-page').then((m) => m.LoginPage),
   },
+  // L'ÉCRAN D'AUTH0 SIMULÉ, en dev seulement. `DEV_BYPASS_AUTH` vaut `false` au
+  // build de production : la condition se plie, et la route comme son chunk
+  // disparaissent du bundle. Hors du shell, comme le vrai écran d'Auth0.
+  ...(DEV_BYPASS_AUTH
+    ? [
+        {
+          path: 'dev/inscription-auth0',
+          title: 'Auth0 (simulé) — La Folie Coffee',
+          loadComponent: () =>
+            import('./auth/dev-auth0-signup-page/dev-auth0-signup-page').then(
+              (m) => m.DevAuth0SignupPage,
+            ),
+        },
+      ]
+    : []),
   {
     // Refonte de l'app CLIENT (handoff design). Route PARENTE : le shell client
     // (barre de marque bleue, pas de rail) enveloppe ses écrans, exactement

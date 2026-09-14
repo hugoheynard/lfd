@@ -1,0 +1,50 @@
+/* Un écran hors du shell, sobre et centré : il imite un fournisseur d'identité,
+   il ne porte pas la marque. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  min-height: 100dvh;
+  padding: var(--fold-space-4xl) var(--fold-space-xl);
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text);
+}
+
+/* Le bandeau qui dit que ce n'est pas le vrai écran : il ne doit pas se rater. */
+.dev-flag {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  text-transform: uppercase;
+  color: var(--fold-color-warning-text);
+}
+
+.box {
+  width: 100%;
+  max-width: 420px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.email {
+  margin: 0;
+  font-weight: var(--fold-weight-bold);
+}

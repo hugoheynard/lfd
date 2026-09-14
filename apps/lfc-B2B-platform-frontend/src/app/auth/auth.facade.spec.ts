@@ -52,9 +52,10 @@ describe('AuthFacade — la porte pro', () => {
    */
   /**
    * Régression (2026-09-14) : en dev, la déclaration était jetée, et Mon compte
-   * redemandait les champs qu'on venait de saisir sur la porte pro.
+   * redemandait les champs qu'on venait de saisir sur la porte pro. Le parcours
+   * passe désormais par l'écran d'Auth0 simulé, qui rend la main avec elle.
    */
-  it('en bypass dev, entre sans passer par Auth0 et retient la déclaration', () => {
+  it('en bypass dev, passe par l’écran d’Auth0 simulé puis retient la déclaration', () => {
     const router = TestBed.inject(Router);
     const navigated: string[] = [];
     router.navigateByUrl = (url): Promise<boolean> => {
@@ -66,8 +67,15 @@ describe('AuthFacade — la porte pro', () => {
 
     expect(DEV_BYPASS_AUTH).toBe(true);
     expect(redirects).toEqual([]);
-    expect(navigated).toEqual(['/mon-compte']);
+    expect(navigated).toEqual(['/dev/inscription-auth0']);
+    // Rien n'est retenu tant que l'écran simulé n'a pas rendu la main.
+    expect(facade.pendingProRegistration()).toBeNull();
+
+    expect(facade.completeDevSignup()).toBe('/mon-compte');
     expect(facade.pendingProRegistration()).toEqual(REGISTRATION);
+    expect(facade.isAuthenticated()).toBe(true);
+    // Une seule fois : un second passage n'a plus rien à rendre.
+    expect(facade.completeDevSignup()).toBeNull();
   });
 
   it('retrouve la déclaration au retour', () => {
