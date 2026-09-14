@@ -104,9 +104,10 @@ La forme de la RUM, ses deux bornes et la raison de chacune vivent dans
 - **Aucun mandat en base** : zéro ligne en dev _(vérifié le 2026-09-12)_, et les
   documents d'origine affirment la même chose en production — **non revérifié
   ici**, voir §13.
-- 🔴 **Un formulaire B2B.** Le document imprimé est un mandat **CORE** — il
-  accorde le remboursement à 8 semaines — pendant que le lot déclare `B2B`
-  _(vérifié le 2026-09-13)_. Voir le §4 et le TODO unique :
+- ✅ **Un formulaire B2B.** Le document imprimé était un mandat **CORE**
+  pendant que le lot déclarait `B2B` _(constaté le 2026-09-13)_. Basculé le
+  2026-09-14 : le formulaire est « interentreprises », sans remboursement, et
+  lit la même constante que le lot. Voir le §4 et le TODO :
   [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md).
 
 ✅ **Le mandat imprimable est livré le 2026-09-13** : `renderSepaMandatePdf`
@@ -149,42 +150,23 @@ soit le format : un mandat Stripe ne porte que `last4`, `bankCode` et `country`
 
 ---
 
-## 4. Le schéma retenu : SDD B2B — 🔴 mais le PAPIER est un mandat CORE
+## 4. Le schéma retenu : SDD B2B — le papier et le fichier le déclarent tous deux
 
-> ## 🔴 Le document et le fichier ne déclarent pas le même schéma
+> ✅ **Basculé le 2026-09-14.** Jusque-là, le lot déclarait `B2B` pendant que le
+> formulaire imprimé portait le texte CORE (« remboursé… dans les 8 semaines ») —
+> constaté le 2026-09-13. Un débiteur signait donc un droit au remboursement que
+> le schéma émis ne lui laissait pas.
 >
-> **Constaté le 2026-09-13**, en vérifiant les deux côtés :
+> Désormais une seule constante du domaine comptable (`SEPA_SCHEME`) est lue par
+> `pain008.ts` (`LclInstrm`) **et** par `sepa-mandate-pdf.ts`, et un test échoue
+> si les deux divergent. Le formulaire porte « interentreprises », énonce
+> l'absence de remboursement après débit, et demande de **déclarer le mandat à
+> sa banque** avant le premier prélèvement.
 >
-> | Où                             | Ce qui est déclaré                                  |
-> | ------------------------------ | --------------------------------------------------- |
-> | `pain008.ts:143`               | `<LclInstrm><Cd>B2B</Cd></LclInstrm>`               |
-> | `sepa-mandate-pdf.ts`          | **rien** — ni « interentreprises », ni B2B, ni CORE |
-> | le texte imprimé sur le mandat | « droit d'être remboursé… **dans les 8 semaines** » |
->
-> Cette dernière phrase **EST** la signature du schéma CORE. Le formulaire B2B
-> dit l'inverse : il doit porter la mention « INTERENTREPRISES » et énoncer
-> expressément que le débiteur **ne peut pas** demander le remboursement d'un
-> prélèvement autorisé.
->
-> **En l'état, tout mandat imprimé par ce dépôt est un mandat CORE.**
->
-> Deux conséquences, et la seconde est la plus lourde :
->
-> 1. **Pratique** — la banque du débiteur, recevant un lot `B2B`, cherche le
->    mandat dans son registre. Rien sur le papier ne dit au client qu'il doit
->    l'y déclarer : le premier prélèvement est refusé.
-> 2. **Juridique** — on émettrait sous un schéma sans remboursement, sur une
->    autorisation dont le texte signé **accorde** le remboursement à 8 semaines.
->    En litige, c'est ce que le client a signé qui fait foi.
->
-> Ce n'est pas corrigé : supprimer un droit au remboursement que le formulaire
-> accorde n'est pas une correction technique. Le geste est décrit dans
-> [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md),
-> et il attend la réponse de la banque — c'est elle qui confirmera le formulaire
-> qu'elle attend, le schéma B2B s'ouvrant sur contrat séparé.
-
-Le tableau ci-dessous décrit le schéma **décidé**, pas celui que le papier
-énonce aujourd'hui.
+> ⚠️ Deux points restent à confirmer avec la banque, écrits dans
+> [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md) :
+> le libellé exact du modèle B2B qu'elle attend, et le retrait de la mention
+> « 13 mois » (qui vise les opérations non autorisées, pas le remboursement).
 
 |                                                      | SDD Core   | **SDD B2B** (retenu) |
 | ---------------------------------------------------- | ---------- | -------------------- |

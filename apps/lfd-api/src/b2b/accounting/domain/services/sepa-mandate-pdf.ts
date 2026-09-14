@@ -6,6 +6,8 @@ import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { DebtorSnapshot } from "../debtor-snapshot.js";
 import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import { MandateFieldTooLongError } from "../errors/accounting-errors.js";
+import { SEPA_SCHEME } from "../value-objects/sepa-scheme.js";
+import { SEPA_MANDATE_WORDING } from "./sepa-mandate-wording.js";
 
 /**
  * **La fiche de mandat SEPA, préremplie de NOTRE côté** — l'exemplaire vierge
@@ -17,26 +19,29 @@ import { MandateFieldTooLongError } from "../errors/accounting-errors.js";
  * écarter — et elle l'écarte au moment du prélèvement, c'est-à-dire des semaines
  * après la signature.
  *
- * ## 🔴 CE FORMULAIRE EST UN MANDAT **CORE**, PAS UN MANDAT B2B
+ * ## 🔴 CE FORMULAIRE EST UN MANDAT **INTERENTREPRISES** (B2B) — 2026-09-14
  *
- * Et le lot de prélèvement, lui, déclare `<LclInstrm><Cd>B2B</Cd></LclInstrm>`
- * (`pain008.ts`, vérifié le 2026-09-13). **Les deux se contredisent.**
+ * Il imprimait jusqu'à ce jour le texte **CORE** — « vous bénéficiez du droit
+ * d'être remboursé… dans les 8 semaines » — pendant que le lot de prélèvement
+ * déclarait `<LclInstrm><Cd>B2B</Cd></LclInstrm>`. Le papier signé accordait un
+ * remboursement que le schéma du fichier refuse, et en litige c'est le papier
+ * qui fait foi. Tranché par Hugo le 2026-09-14 : on prélève en interentreprises,
+ * et c'est le FORMULAIRE qui a basculé (contrat SDD B2B signé avec la Caisse
+ * d'Épargne, dit par Hugo le même jour).
  *
- * Ce qui le prouve est le paragraphe d'autorisation ci-dessous : « vous
- * bénéficiez du droit d'être remboursé… dans les 8 semaines ». C'est la
- * signature du schéma CORE. Le formulaire interentreprises dit l'INVERSE — il
- * porte la mention « INTERENTREPRISES » et énonce que le débiteur ne peut pas
- * demander le remboursement d'un prélèvement autorisé.
+ * Ce qui tient la bascule, et qu'il ne faut pas défaire :
  *
- * Deux conséquences : la banque du débiteur refusera un lot B2B dont le mandat
- * ne lui a pas été déclaré — rien ici ne dit au client de le faire — et, en
- * litige, c'est le texte SIGNÉ qui fait foi, pas le code du fichier.
+ * - **le schéma n'est écrit nulle part ici** : titre, autorisation et consigne
+ *   viennent de `SEPA_MANDATE_WORDING[SEPA_SCHEME]`, et `pain008.ts` lit la même
+ *   constante. Un test rend les deux et vérifie qu'ils disent la même chose ;
+ * - **le paragraphe CORE est retiré en entier** (8 semaines ET 13 mois) : un
+ *   texte à moitié CORE serait encore un mandat qui promet un remboursement ;
+ * - **la consigne de déclarer le mandat à sa banque est SUR le papier**, et plus
+ *   seulement dans le courriel d'envoi : en B2B, la banque du débiteur refuse le
+ *   premier prélèvement d'un mandat qui ne lui a pas été déclaré.
  *
- * ⚠️ **Ne pas « corriger » ce texte à la légère.** Retirer un droit au
- * remboursement qu'un formulaire accorde n'est pas une retouche de gabarit : le
- * geste, ses mentions obligatoires et la décision qui le commande vivent dans
- * `documentation/todos/todo-mandat-core-contre-b2b.md`, et il attend la réponse
- * de la banque.
+ * ⚠️ Le libellé exact reste à confronter au modèle que la banque confirmera —
+ * voir `sepa-mandate-wording.ts` et `documentation/todos/todo-mandat-core-contre-b2b.md`.
  *
  * ## Ce qu'il remplit, et ce qu'il laisse vide
  *
@@ -382,9 +387,8 @@ function title(doc: Doc, issued: boolean): number {
   // Le sous-titre disparaît AVEC le filigrane, et pour la même raison : les deux
   // disent « ceci ne se signe pas ». En laisser un seul ferait un document qui
   // se contredit — et c'est le texte, pas le filigrane, qu'un client lit.
-  const heading = issued
-    ? "MANDAT DE PRELEVEMENT SEPA"
-    : "MANDAT SEPA (exemple - document non contractuel)";
+  const wording = SEPA_MANDATE_WORDING[SEPA_SCHEME];
+  const heading = issued ? wording.issuedTitle : wording.sampleTitle;
   put(doc, heading, BOX_LEFT, 9 * MM, {
     size: 11.5,
     font: BOLD,
@@ -410,7 +414,10 @@ function header(doc: Doc, top: number, logo: Buffer | null, reference: string): 
   vline(doc, HEAD_SPLIT_LEFT, top, bottom, HAIRLINE);
   vline(doc, HEAD_SPLIT_RIGHT, top, bottom, HAIRLINE);
 
-  put(doc, "MANDAT de Prélèvement SEPA", FIELD_X + 1 * MM, top + 2 * MM, { size: 11, font: BOLD });
+  put(doc, SEPA_MANDATE_WORDING[SEPA_SCHEME].headerCell, FIELD_X + 1 * MM, top + 2 * MM, {
+    size: 11,
+    font: BOLD,
+  });
   comb(doc, FIELD_X + 1 * MM, top + 7 * MM, [26], reference, "La référence unique de mandat");
   caption(doc, "Référence unique du mandat", FIELD_X + 1 * MM, top + 12 * MM);
 
@@ -441,10 +448,15 @@ function header(doc: Doc, top: number, logo: Buffer | null, reference: string): 
 }
 
 /**
- * Le pavé d'autorisation. Le texte est celui de la norme, au mot près : un
- * mandat dont la mention légale a été reformulée est un mandat que la banque du
- * débiteur peut écarter — et elle l'écarte au moment du prélèvement, des
- * semaines après la signature.
+ * Le pavé d'autorisation. Le texte suit la norme : un mandat dont la mention
+ * légale a été reformulée est un mandat que la banque du débiteur peut écarter —
+ * et elle l'écarte au moment du prélèvement, des semaines après la signature.
+ *
+ * La phrase (A)/(B) est commune aux deux schémas EPC ; ce qui la suit dépend du
+ * schéma et vient de `SEPA_MANDATE_WORDING`. La consigne de déclaration à la
+ * banque est en GRAS : c'est une étape, pas une remarque — un client qui signe
+ * sans la faire croit avoir fini, et c'est le premier débit refusé qui le lui
+ * apprend.
  */
 function authorization(doc: Doc, top: number, creditorName: string): number {
   const width = BOX_RIGHT - BOX_LEFT - 4 * MM;
@@ -469,15 +481,13 @@ function authorization(doc: Doc, top: number, creditorName: string): number {
   doc.font(REGULAR).text(".", { continued: false });
   y = doc.y + 1 * MM;
 
-  for (const paragraphe of [
-    "Vous bénéficiez du droit d'être remboursé par votre banque selon les conditions décrites dans la convention que vous avez passée avec elle.",
-    "Une demande de remboursement doit être présentée :",
-    "- dans les 8 semaines suivant la date de débit de votre compte pour un prélèvement autorisé,",
-    "- sans tarder et au plus tard dans les 13 mois en cas de prélèvement non autorisé.",
-  ]) {
-    put(doc, paragraphe, x, y, { size: 8.6, width });
+  const wording = SEPA_MANDATE_WORDING[SEPA_SCHEME];
+  for (const paragraph of wording.authorizationTerms) {
+    put(doc, paragraph, x, y, { size: 8.6, width });
     y = doc.y;
   }
+  put(doc, wording.bankDeclaration, x, y + 0.8 * MM, { size: 8.6, width, font: BOLD });
+  y = doc.y;
 
   put(doc, "Veuillez compléter les champs marqués *", x, y + 0.8 * MM, {
     size: 8.6,
@@ -899,8 +909,8 @@ export async function renderSepaMandatePdf(
     info: {
       Title:
         issuance === null
-          ? `Mandat SEPA (exemple) - ${creditor.name}`
-          : `Mandat SEPA ${issuance.reference} - ${creditor.name}`,
+          ? `${SEPA_MANDATE_WORDING[SEPA_SCHEME].documentLabel} (exemple) - ${creditor.name}`
+          : `${SEPA_MANDATE_WORDING[SEPA_SCHEME].documentLabel} ${issuance.reference} - ${creditor.name}`,
       Author: creditor.name,
       Producer: "La Folie Coffee",
       Creator: "La Folie Coffee",

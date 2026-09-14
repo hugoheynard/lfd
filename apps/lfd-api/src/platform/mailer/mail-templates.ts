@@ -457,27 +457,37 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       }),
     }),
     "customer.mandate-to-sign": (data) => ({
-      subject: sanitiseSubject(`Votre mandat de prélèvement SEPA — ${data.reference}`),
+      subject: sanitiseSubject(
+        `Votre mandat de prélèvement SEPA interentreprises — ${data.reference}`,
+      ),
       html: person({
-        title: "Votre mandat de prélèvement à signer",
+        title: "Votre mandat de prélèvement SEPA interentreprises à signer",
         body:
           `Bonjour,\n\nVous trouverez en pièce jointe le mandat de prélèvement SEPA ` +
-          `établi pour ${data.companyName}. Il est prérempli : il ne vous reste qu'à le ` +
-          `dater, le signer, et nous le renvoyer scanné ou photographié.`,
+          `interentreprises établi pour ${data.companyName}. Il est prérempli : il ne vous ` +
+          `reste qu'à le dater, le signer, et nous le renvoyer scanné ou photographié.`,
         // 🔴 La déclaration à la banque est une ÉTAPE, pas une remarque. En SDD
         // B2B, la banque du débiteur refuse le premier prélèvement tant que le
         // mandat ne lui a pas été déclaré — un client qui signe sans le faire
         // croit avoir fini, et c'est le débit qui le lui apprend.
+        //
+        // Même vocabulaire que le formulaire joint (`sepa-mandate-wording.ts`,
+        // aligné le 2026-09-14) : un courriel qui dit « interentreprises » sur
+        // un papier qui dirait autre chose ferait douter du papier. Le texte est
+        // recopié et non importé — le mailer est une brique de `platform/`, qui
+        // ne connaît pas la comptabilité.
         rows: [
           { label: "Référence du mandat (RUM)", value: data.reference },
           { label: "Identifiant créancier (ICS)", value: data.creditorIdentifier },
           { label: "Créancier", value: data.creditorName },
         ],
         footer:
-          "Important : ce mandat relève du schéma SEPA « interentreprises » (B2B). " +
-          "Vous devez le déclarer à votre banque, avec la référence et l'identifiant " +
-          "créancier ci-dessus, avant le premier prélèvement — sans cette déclaration, " +
-          "votre banque le refusera.",
+          "Important : ce mandat relève du schéma SEPA interentreprises (B2B). Il est " +
+          "destiné uniquement à des transactions interentreprises et ne donne droit à " +
+          "aucun remboursement une fois votre compte débité. Avant le premier " +
+          "prélèvement, déclarez-le à votre banque avec la référence du mandat et " +
+          "l'identifiant du créancier ci-dessus — sans cette déclaration, votre banque " +
+          "refusera le prélèvement.",
       }),
       attachments: [
         {

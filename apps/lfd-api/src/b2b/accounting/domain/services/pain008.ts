@@ -1,9 +1,11 @@
 import { addDays, instantToLocal } from "@lfd/contracts";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
+import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import type { DebtorMandate } from "../ports/debtor-mandate.reader.js";
 import type { BillableCompany } from "../ports/billable-orders.reader.js";
 import { CreditorBicMissingError } from "../errors/accounting-errors.js";
+import { SEPA_SCHEME } from "../value-objects/sepa-scheme.js";
 
 /**
  * **Le `pain.008`** — le message ISO 20022 qui demande les prélèvements.
@@ -30,7 +32,23 @@ import { CreditorBicMissingError } from "../errors/accounting-errors.js";
  * ligne porte son mandat. C'est la seule façon d'avoir un fichier déposable
  * sans jamais en produire un qui trompe.
  *
- * ⚠️ **La séquence reste `RCUR` pour tout le lot.** Le CFONB recommande
+ * ## La séquence suit le TYPE DE PAIEMENT de l'entité — 2026-09-14
+ *
+ * `RCUR` pour une entité réglée en `recurrent`, `OOFF` pour `one_off` : c'est le
+ * même réglage (`CreditorSnapshot.mandatePaymentType`) qui coche la zone 12 du
+ * formulaire. Le lot écrivait `RCUR` en dur jusqu'à ce jour, et une entité
+ * réglée en ponctuel aurait fait signer « Paiement ponctuel » puis prélevé en
+ * récurrent (tranché par Hugo le 2026-09-14, plan §9 #6).
+ *
+ * ⚠️ **C'est le réglage COURANT de l'entité, pas ce qui a été imprimé.** Le
+ * mandat ne mémorise pas la case cochée sur son papier : si le réglage change
+ * après signature, le fichier contredit le papier. Accepté parce qu'aucun
+ * mandat n'existe en production ; le trou est écrit dans
+ * `documentation/todos/todo-mandat-core-contre-b2b.md`. Un mandat ponctuel ne
+ * sert qu'à UN débit, et rien ici ne refuse le second : le lot ne connaît aucun
+ * débit déjà présenté (même todo).
+ *
+ * ⚠️ **Pas de `FRST`, et un seul `PmtInf`.** Le CFONB recommande
  * d'émettre systématiquement un `FRST` après un changement d'IBAN, le créancier
  * ne pouvant pas savoir s'il s'agit d'un changement de banque ou d'une
  * renumérotation — et un changement de banque impose en plus
@@ -118,6 +136,7 @@ export function renderPain008(input: Pain008Input): string {
   const collectionDay = requestedCollectionDay(input.cycleEnd, creditor.preNotificationDays);
   const cycleTag = cycleTagOf(input.cycleEnd);
   const messageId = complete ? cycleTag : `BROUILLON-${cycleTag}`;
+  const sequence = sequenceTypeOf(creditor.mandatePaymentType);
   const period = `${localDay(input.cycleStart)} au ${localDay(dayBefore(input.cycleEnd))}`;
 
   return [
@@ -134,26 +153,26 @@ export function renderPain008(input: Pain008Input): string {
     `      <InitgPty><Nm>${sepa(creditor.name)}</Nm></InitgPty>`,
     `    </GrpHdr>`,
     `    <PmtInf>`,
-    `      <PmtInfId>${messageId}-RCUR</PmtInfId>`,
+    `      <PmtInfId>${messageId}-${sequence}</PmtInfId>`,
     `      <PmtMtd>DD</PmtMtd>`,
     `      <NbOfTxs>${String(lines.length)}</NbOfTxs>`,
     `      <CtrlSum>${euros(total)}</CtrlSum>`,
     `      <PmtTpInf>`,
     `        <SvcLvl><Cd>SEPA</Cd></SvcLvl>`,
-    // 🔴 `B2B` ici, alors que le MANDAT imprimé est un formulaire CORE — il
-    // accorde le remboursement à 8 semaines, ce que le schéma interentreprises
-    // refuse (vérifié le 2026-09-13, cf. `sepa-mandate-pdf.ts`). Le fichier et
-    // le papier se contredisent, et c'est le papier qui fait foi en litige.
-    // Ne pas aligner l'un sur l'autre sans lire
-    // `documentation/todos/todo-mandat-core-contre-b2b.md` : basculer ce code
-    // en `CORE` changerait le droit du client, et l'y laisser fait refuser le
-    // lot par sa banque. Aucun des deux ne se décide ici.
-    `        <LclInstrm><Cd>B2B</Cd></LclInstrm>`,
-    // ⚠️ `RCUR` pour toutes les lignes, et un seul `PmtInf` par conséquent. Le
-    // jour où un premier prélèvement exigera `FRST`, il faudra un SECOND bloc :
-    // la norme veut un `PmtInf` par couple (SeqTp, date), et un bloc mélangé se
-    // fait rejeter EN ENTIER. C'est la question 4 posée à la banque.
-    `        <SeqTp>RCUR</SeqTp>`,
+    // 🔴 Le schéma n'est PAS écrit ici : il vient de `SEPA_SCHEME`, que le
+    // formulaire de mandat lit aussi (`sepa-mandate-pdf.ts`). Jusqu'au
+    // 2026-09-14, ce fichier portait `B2B` en dur pendant que le papier
+    // imprimait le texte CORE — remboursement à 8 semaines, que le schéma
+    // interentreprises refuse. Le lot et le mandat signé se contredisaient, et
+    // c'est le papier qui fait foi en litige. Un test tient désormais qu'ils
+    // disent la même chose (`sepa-mandate-scheme.spec.ts`).
+    `        <LclInstrm><Cd>${SEPA_SCHEME}</Cd></LclInstrm>`,
+    // ⚠️ UNE séquence pour toutes les lignes — celle du type de paiement de
+    // l'entité —, et un seul `PmtInf` par conséquent. Le jour où un premier
+    // prélèvement exigera `FRST`, il faudra un SECOND bloc : la norme veut un
+    // `PmtInf` par couple (SeqTp, date), et un bloc mélangé se fait rejeter EN
+    // ENTIER. C'est la question 4 posée à la banque.
+    `        <SeqTp>${sequence}</SeqTp>`,
     `      </PmtTpInf>`,
     `      <ReqdColltnDt>${collectionDay}</ReqdColltnDt>`,
     `      <Cdtr><Nm>${sepa(creditor.name)}</Nm></Cdtr>`,
@@ -213,6 +232,24 @@ function transaction(
     `        <RmtInf><Ustrd>${sepa(`Commandes du ${period} (${String(line.orderCount)})`).slice(0, 140)}</Ustrd></RmtInf>`,
     `      </DrctDbtTxInf>`,
   ].join("\n");
+}
+
+/**
+ * La séquence `pain.008` d'un type de paiement de mandat.
+ *
+ * Exhaustive sur `MandatePaymentType` : un troisième type de paiement ne
+ * compile pas tant qu'il n'a pas sa séquence. `FRST` et `FNAL` n'en font pas
+ * partie — ils décrivent le RANG d'une échéance dans une série, que rien ne
+ * mémorise encore (cf. l'en-tête).
+ */
+const SEQUENCE_TYPES: Readonly<Record<MandatePaymentType, "RCUR" | "OOFF">> = {
+  recurrent: "RCUR",
+  one_off: "OOFF",
+};
+
+/** La séquence du lot, pour le type de paiement que le formulaire a coché. */
+function sequenceTypeOf(paymentType: MandatePaymentType): "RCUR" | "OOFF" {
+  return SEQUENCE_TYPES[paymentType];
 }
 
 /** L'avertissement, en tête du fichier et en toutes lettres. */
