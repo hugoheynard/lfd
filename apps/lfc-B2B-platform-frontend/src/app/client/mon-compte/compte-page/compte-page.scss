@@ -27,6 +27,12 @@
      défile affleurait sinon d'un demi-pixel entre la barre et la carte. */
   margin-top: -1px;
   padding: calc(var(--fold-space-md) + 1px) var(--lfc-inset) 0;
+  /* L'ENCRE AU-DESSUS du bloc. Pendant un défilement tactile, un \`sticky\` se
+     recale parfois une image après le contenu : ce qui défile affleurait alors
+     d'un ou deux pixels sous la barre, et scintillait (relevé le 2026-09-14 ;
+     à l'arrêt, la géométrie est exacte au pixel). L'ombre pleine de l'encre de
+     la barre bouche ce retard sans rien déplacer. */
+  box-shadow: 0 -4px 0 0 var(--lfc-ink-800);
   background: linear-gradient(
     to bottom,
     var(--lfc-ink-800) 0%,
