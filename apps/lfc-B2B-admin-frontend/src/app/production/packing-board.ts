@@ -9,8 +9,9 @@ import type { PackingSheet } from '@lfd/contracts';
  * refaisait `allocated` et `remaining` à chaque coche, et deux calculs du même
  * chiffre divergent à la première règle modifiée d'un seul côté. Tout chiffre
  * vient désormais du serveur (`documentation/production/plan-poste-de-colisage.md`,
- * « L'écran n'additionne rien ») ; il ne reste ici qu'un type de pile, une clé,
- * un libellé et un filtre de texte.
+ * « L'écran n'additionne rien ») ; il ne reste ici qu'un type de pile, une clé
+ * et un libellé. Le filtre de texte de la recherche vit dans
+ * `colisage/packing-search.ts` depuis le 2026-09-14.
  */
 
 /**
@@ -28,38 +29,4 @@ export function packingMarkKey(date: string, reference: string, sku: string): st
 /** « Retrait » / « Livraison » — sur quelle pile le bac va. */
 export function methodLabel(method: PackingSheet['fulfillmentMethod']): string {
   return method === 'pickup' ? 'Retrait' : 'Livraison';
-}
-
-/**
- * Le terme de recherche, réduit à ce qui se compare : minuscules, sans accents.
- *
- * Le fournil tape « croissant » sur une étiquette qui dit « Croissant », et
- * « pate a choux » sur une fiche qui dit « Pâte à choux ». Comparer les chaînes
- * telles quelles aurait fait rater exactement les cas où l'on cherche vite.
- *
- * `NFD` sépare la lettre de son accent, et la plage `U+0300–U+036F` retire les
- * diacritiques combinants — ce que `toLowerCase()` seul ne fait pas.
- */
-export function normaliseTerm(term: string): string {
-  return term.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase().trim();
-}
-
-/**
- * Cet article répond-il au terme cherché ?
- *
- * Sur le NOM **et** sur le SKU : le fournil tape « croissant », un poste qui lit
- * une étiquette de bac tape la référence article. Deux entrées pour une même
- * question, parce que ce sont deux gestes réels et non deux goûts.
- *
- * C'est un filtre de texte, pas un calcul : il choisit ce qui est surligné, il
- * ne produit aucun chiffre.
- */
-export function matchesTerm(normalisedTerm: string, sku: string, productName: string): boolean {
-  if (normalisedTerm === '') {
-    return false;
-  }
-  return (
-    normaliseTerm(productName).includes(normalisedTerm) ||
-    normaliseTerm(sku).includes(normalisedTerm)
-  );
 }

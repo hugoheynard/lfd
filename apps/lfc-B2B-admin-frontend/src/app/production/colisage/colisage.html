@@ -18,10 +18,10 @@
     <div class="co-masthead-bar">
       <div class="co-said">
         <p class="co-eyebrow">
-          Colisage du {{ dayLabel() }}
+          Colisage du {{ day.dayLabel() }}
           <!-- « aujourd'hui » / « demain » tel que le SERVEUR le dit : l'écran ne
                compare pas de dates. -->
-          @if (dayOffset(); as offset) {
+          @if (day.dayOffset(); as offset) {
             <span class="co-offset">· {{ offset }}</span>
           }
           @if (current(); as order) {
@@ -42,7 +42,7 @@
           <p class="co-figure">
             <span class="co-figure-label">Commandes prêtes</span>
             <span class="co-figure-value co-figure-value--accent"
-              >{{ readyCount() }}<span class="co-figure-of"> / {{ orderCount() }}</span>
+              >{{ day.readyCount() }}<span class="co-figure-of"> / {{ day.orderCount() }}</span>
             </span>
           </p>
         </div>
@@ -100,8 +100,8 @@
     -->
     @if (unknownReference(); as asked) {
       <fold-callout variant="warning" class="co-note">
-        La commande {{ asked }} n'est pas dans la journée du {{ dayLabel() }} — la feuille scannée
-        est peut-être celle d'un autre jour. Les commandes de cette journée sont ci-dessous.
+        La commande {{ asked }} n'est pas dans la journée du {{ day.dayLabel() }} — la feuille
+        scannée est peut-être celle d'un autre jour. Les commandes de cette journée sont ci-dessous.
       </fold-callout>
     }
 
@@ -114,7 +114,7 @@
       </fold-callout>
     }
 
-    @if (closeFailed()) {
+    @if (gestures.closeFailed()) {
       <fold-callout variant="alert" class="co-note">
         La commande n'a pas pu être déclarée prête — rien n'a été annoncé au commerce, et les coches
         sont intactes. Réessayez.
@@ -126,7 +126,7 @@
       une commande déclarée prête entre-temps sur un autre poste. La case est
       revenue en arrière : il reste à le DIRE.
     -->
-    @if (markFailed(); as failed) {
+    @if (gestures.markFailed(); as failed) {
       <fold-callout variant="alert" class="co-note co-mark-failed">
         La coche n'a pas été enregistrée — {{ failed }}
       </fold-callout>
@@ -148,7 +148,7 @@
     <!-- Le compte de containers sert à charger un véhicule. L'écran n'en tient
          aucun : un geste refusé laisse à l'écran le compte servi, et l'échec se
          dit. -->
-    @if (containersFailed()) {
+    @if (gestures.containersFailed()) {
       <fold-callout variant="alert" class="co-note">
         Le nombre de containers n’a pas pu être enregistré — c’est celui du serveur qui est affiché.
         Réessayez.
@@ -163,7 +163,7 @@
   ne s'étire pas à la hauteur du layout. Le pied doit rester au bas de la
   fenêtre — il dit de quand date la balance, et une relecture ratée.
 -->
-@switch (state()) {
+@switch (day.state()) {
   @case ('loading') {
     <fold-loading message="Lecture des commandes…" />
   }
@@ -177,7 +177,7 @@
     </fold-empty-state>
   }
   @default {
-    @if (closedAt() === null) {
+    @if (day.closedAt() === null) {
       <!--
         🔴 La journée n'est pas arrêtée : il n'y a RIEN à coliser, et on le dit.
         Une liste vide ressemblerait à « tout est fait », qui est exactement le
@@ -190,7 +190,7 @@
         <fold-icon empty-icon name="clock" size="lg" />
         <a foldButton routerLink="/production/previsionnel">Ouvrir le prévisionnel</a>
       </fold-empty-state>
-    } @else if (sheets().length > 0) {
+    } @else if (day.sheets().length > 0) {
       <!--
         🔴 Le corps se rend dès que la JOURNÉE porte des commandes, pas dès que
         la pile affichée en porte : choisir une pile vide ferait sinon
@@ -215,9 +215,9 @@
           <app-packing-orders
             [sheets]="visibleSheets()"
             [stack]="stack()"
-            [orderCount]="orderCount()"
-            [todoCount]="todoCount()"
-            [readyCount]="readyCount()"
+            [orderCount]="day.orderCount()"
+            [todoCount]="day.todoCount()"
+            [readyCount]="day.readyCount()"
             [openReference]="current()?.reference ?? null"
             [hitLines]="hitLinesByOrder()"
             [searching]="searching()"
@@ -233,8 +233,8 @@
             [hitSkus]="hits()"
             [searching]="searching()"
             [canSetContainers]="canSetContainers()"
-            [containersBusy]="containersBusy()"
-            [closing]="closing()"
+            [containersBusy]="gestures.containersBusy()"
+            [closing]="gestures.closing()"
             [readyLabel]="readyLabel()"
             (toggled)="onLineToggled($event)"
             (containerStep)="stepContainers($event)"
@@ -242,7 +242,7 @@
           />
 
           <app-packing-resources
-            [resources]="resources()"
+            [resources]="day.resources()"
             [hitSkus]="hits()"
             [searching]="searching()"
           />
@@ -255,9 +255,9 @@
           <p class="co-foot-origin">
             <!-- De quand date la balance : le poste se relit toutes les 15 s, et
                  une relecture ratée se dit au lieu d'avoir l'air à jour. -->
-            @if (refreshFailed()) {
-              <span class="co-foot-flag">relecture impossible depuis {{ readLabel() }}</span>
-            } @else if (readLabel(); as read) {
+            @if (day.refreshFailed()) {
+              <span class="co-foot-flag">relecture impossible depuis {{ day.readLabel() }}</span>
+            } @else if (day.readLabel(); as read) {
               <span>relu à {{ read }}</span>
             }
           </p>
