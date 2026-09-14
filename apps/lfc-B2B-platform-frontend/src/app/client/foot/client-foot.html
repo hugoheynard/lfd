@@ -38,7 +38,11 @@
 
     <nav class="col" [attr.aria-label]="foot().order.head">
       <h2 class="col-head">{{ foot().order.head }}</h2>
-      @for (link of foot().order.links; track link) {
+      <!-- Suivies par POSITION, pas par valeur : ces textes arrivent de l'API après
+           le contenu de départ, et suivis par valeur, chaque réponse détruisait
+           puis recréait toute la liste (NG0956, relevé le 2026-09-14). Une
+           ligne de texte n'a pas d'état à préserver : seul son texte change. -->
+      @for (link of foot().order.links; track $index) {
         <span class="link">{{ link }}</span>
       }
     </nav>
@@ -49,7 +53,8 @@
            demandée d'un pied de page de commerce. -->
       <a class="phone" [href]="legal().phoneHref">{{ legal().phone }}</a>
       <p class="phone-hours">{{ foot().help.phoneHours }}</p>
-      @for (link of foot().help.links; track link) {
+      <!-- Par position, pour la même raison que la colonne « Commander ». -->
+      @for (link of foot().help.links; track $index) {
         <span class="link">{{ link }}</span>
       }
       <a class="link email" [href]="'mailto:' + legal().email">{{ legal().email }}</a>
@@ -63,7 +68,8 @@
       <!-- Ce qui n'est pas renseigné ne laisse pas de trou : une barre courte se
            lit, un séparateur qui traîne se remarque. Les numéros arrivent par le
            back-office, sans déploiement. -->
-      @for (mention of mentions(); track mention) {
+      <!-- Par position : l'identité légale arrive du back-office après le départ. -->
+      @for (mention of mentions(); track $index) {
         <span class="mention">{{ mention }}</span>
       }
       <span class="mention">{{ foot().legal.pay }}</span>
