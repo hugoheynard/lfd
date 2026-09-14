@@ -170,26 +170,59 @@
         </div>
 
         <!--
-          UNE seule liste, UN seul composant de ligne. Le poste fixe montre tout
-          dans l'ordre de la fiche ; le téléphone ne garde que ce qui reste, les
-          lignes faites descendant dans le bloc replié du bas. Ce qui change est
-          la SOURCE, jamais le gabarit — deux gabarits divergeraient au premier
-          produit ajouté.
+          DEUX listes, UN seul composant de ligne (décidé le 2026-09-14). Ce qui
+          reste à sortir d'un côté, ce qui est sorti de l'autre : cocher fait
+          passer la ligne d'une liste à l'autre, dans l'ordre de la fiche. Le
+          poste fixe met les faites dans un rail à droite ; le téléphone, qui n'a
+          pas la largeur, les descend dans le bloc replié du bas. Ce qui change
+          est la PLACE des faites, jamais le gabarit d'une ligne.
         -->
-        <div class="fa-lines">
-          @for (line of compact() ? todo() : fiche.lines; track line.sku) {
-            <app-worksheet-line
-              [line]="line"
-              [busy]="isBusy(line)"
-              (toggled)="toggle(line, $event)"
-            />
-          } @empty {
-            <fold-empty-state
-              title="Tout est sorti"
-              subtitle="Plus une ligne à cocher sur cette fiche."
-            >
-              <fold-icon empty-icon name="completed" size="lg" />
-            </fold-empty-state>
+        <div class="fa-work" [class.is-split]="!compact()">
+          <div class="fa-main">
+            @if (!compact()) {
+              <p class="fa-subband">
+                <span class="fa-band-title">En cours de production · {{ todo().length }}</span>
+                <span class="fa-band-rule" aria-hidden="true"></span>
+              </p>
+            }
+            <div class="fa-lines fa-todo-lines">
+              @for (line of todo(); track line.sku) {
+                <app-worksheet-line
+                  [line]="line"
+                  [busy]="isBusy(line)"
+                  (toggled)="toggle(line, $event)"
+                />
+              } @empty {
+                <fold-empty-state
+                  title="Tout est sorti"
+                  subtitle="Plus une ligne à cocher sur cette fiche."
+                >
+                  <fold-icon empty-icon name="completed" size="lg" />
+                </fold-empty-state>
+              }
+            </div>
+          </div>
+
+          <!-- Le rail des faites, au poste fixe : il défile seul, à côté. -->
+          @if (!compact()) {
+            <aside class="fa-rail" aria-label="Production faite">
+              <p class="fa-subband">
+                <span class="fa-band-title">Production faite · {{ done().length }}</span>
+                <span class="fa-band-rule" aria-hidden="true"></span>
+                <span class="fa-done-sum">{{ donePieces() }} pièces sorties</span>
+              </p>
+              <div class="fa-lines fa-rail-lines">
+                @for (line of done(); track line.sku) {
+                  <app-worksheet-line
+                    [line]="line"
+                    [busy]="isBusy(line)"
+                    (toggled)="toggle(line, $event)"
+                  />
+                } @empty {
+                  <p class="fa-rail-none">Rien n'est encore sorti sur cette fiche.</p>
+                }
+              </div>
+            </aside>
           }
         </div>
 

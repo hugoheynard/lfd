@@ -272,11 +272,46 @@ describe('la fiche d’atelier', () => {
     fixture.detectChanges();
   }
 
+  // La baguette est cherchée par son NOM, pas par sa place : cochée, elle passe
+  // de la liste en cours au rail des faites.
+  const baguette = (el: HTMLElement): Element | undefined =>
+    [...el.querySelectorAll('app-worksheet-line')].find((node) =>
+      (node.textContent ?? '').includes('Baguette tradition'),
+    );
+
   const premiere = (el: HTMLElement): boolean =>
-    el.querySelector('app-worksheet-line')?.classList.contains('is-done') ?? false;
+    baguette(el)?.classList.contains('is-done') ?? false;
 
   const premiereCase = (el: HTMLElement): HTMLInputElement | null =>
-    el.querySelector('input[type="checkbox"]');
+    baguette(el)?.querySelector('input[type="checkbox"]') ?? null;
+
+  const namesIn = (el: HTMLElement, selector: string): string[] =>
+    [...el.querySelectorAll(`${selector} .wl-name`)].map((node) => node.textContent?.trim() ?? '');
+
+  it('sépare ce qui reste à sortir de ce qui est sorti, au poste fixe', async () => {
+    api.view = sheet({
+      lines: [
+        line({ done: true, initials: 'PL' }),
+        line({ sku: 'SEI', productName: 'Pain de seigle', quantity: 30 }),
+      ],
+    });
+    const { el } = await render();
+
+    expect(namesIn(el, '.fa-todo-lines')).toEqual(['Pain de seigle']);
+    expect(namesIn(el, '.fa-rail')).toEqual(['Baguette tradition']);
+    expect(el.querySelector('.fa-rail')?.textContent).toContain('Production faite · 1');
+  });
+
+  it('fait passer une ligne cochée dans le rail des faites', async () => {
+    const { fixture, el } = await render();
+    expect(el.querySelector('.fa-rail-none')).not.toBeNull();
+
+    premiereCase(el)?.click();
+    await settle(fixture);
+
+    expect(namesIn(el, '.fa-todo-lines')).toEqual(['Pain de seigle']);
+    expect(namesIn(el, '.fa-rail')).toEqual(['Baguette tradition']);
+  });
 
   it('envoie la coche au serveur, et la garde une fois acceptée', async () => {
     const { fixture, el } = await render();
