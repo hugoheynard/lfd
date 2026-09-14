@@ -7,7 +7,11 @@
    gauche — c'est ce qui donne l'impression d'une carte qu'on tient. */
 .card {
   position: relative;
-  padding: var(--fold-space-lg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--lfc-radius-2xl);
   background: linear-gradient(134deg, #0b1f52, var(--lfc-ink-800) 46%, var(--lfc-ink-900));
   color: var(--lfc-color-on-well);
@@ -26,14 +30,8 @@
     linear-gradient(118deg, transparent 42%, rgb(250 245 236 / 7%) 50%, transparent 58%);
 }
 
-/* Le badge passe sous le sur-titre plutôt que de déborder : « Dossier en cours
-   de vérification » ne tient pas à côté de lui sur un téléphone. */
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-xs) var(--fold-space-sm);
+.who {
+  min-width: 0;
 }
 
 .kicker {
@@ -46,8 +44,35 @@
   color: var(--lfc-color-on-well-muted);
 }
 
+/* Le nom garde le droit de passer sur deux lignes : jamais d'ellipse sur le
+   nom de la maison. */
+.name {
+  margin: var(--fold-space-xs) 0 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 1.02;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.since {
+  margin: 2px 0 0;
+  font-size: var(--fold-text-2xs);
+  color: var(--lfc-color-on-well-muted);
+}
+
+/* La colonne de droite s'aligne à droite : le badge en tête, les modes dessous. */
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
 .state {
-  flex: none;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -60,6 +85,7 @@
   font-weight: var(--fold-weight-extrabold);
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
+  white-space: nowrap;
 
   /* Un dossier à compléter ou en vérification attend quelque chose ; un compte
      suspendu ou clos est bloqué. Le vert ne se dit que d'un compte actif. */
@@ -81,47 +107,10 @@
   background: currentcolor;
 }
 
-/* Le nom prend la largeur entière et peut passer sur deux lignes : jamais
-   d'ellipse sur le nom de la maison. */
-.name {
-  margin: var(--fold-space-md) 0 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-screen-sm);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-display);
-  line-height: 1.02;
-  text-transform: uppercase;
-  text-wrap: balance;
-}
-
-.since {
-  margin: var(--fold-space-xs) 0 0;
-  font-size: var(--fold-text-xs);
-  color: var(--lfc-color-on-well-muted);
-}
-
-/* Les modes de paiement : une liste sous un filet, à la taille du texte — un
-   fait de la carte ne crie pas autant que le nom de la maison. */
 .payments {
-  margin: var(--fold-space-lg) 0 0;
-  padding-top: var(--fold-space-md);
-  border-top: 1px solid rgb(250 245 236 / 20%);
-}
-
-.payments-head {
-  margin: 0 0 var(--fold-space-sm);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--lfc-color-on-well-muted);
-}
-
-.payments-list {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-sm);
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -130,27 +119,28 @@
 .payment {
   display: flex;
   align-items: flex-start;
-  gap: var(--fold-space-sm);
+  gap: 6px;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--lfc-leading-tight);
 }
 
-.payment-name {
+.payment-text {
   display: flex;
   flex-direction: column;
-  font-size: var(--fold-text-md);
-  font-weight: var(--fold-weight-bold);
 }
 
 .payment-note {
-  font-size: var(--fold-text-xs);
+  font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-regular);
   color: var(--lfc-color-on-well-muted);
 }
 
 /* Un trait, pas une pastille : la coche et l'horloge se lisent comme un signe
-   du texte, à sa hauteur. Le vert ne se dit que de ce qui est ouvert. */
+   du texte, à sa hauteur. */
 .mark {
   flex: none;
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--lfc-color-on-well-muted);
 }
 
@@ -159,11 +149,7 @@
 }
 
 @media (min-width: 900px) {
-  .card {
-    padding: var(--fold-space-xl);
-  }
-
   .name {
-    font-size: var(--lfc-text-screen);
+    font-size: var(--lfc-text-screen-sm);
   }
 }
