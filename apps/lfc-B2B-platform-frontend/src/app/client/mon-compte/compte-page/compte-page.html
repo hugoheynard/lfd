@@ -90,7 +90,10 @@
           <p class="summary-note">{{ t().account.summaryNote }}</p>
         </nav>
 
-        <div class="cards">
+        <!-- EN PILE, UNE SECTION PAR PANNEAU : un rail qu'on fait glisser, et
+             l'indicateur dit où l'on est. Au-delà du pli, le même puits range
+             les cartes en grille — un seul balisage, la largeur décide. -->
+        <fold-well #rail class="cards" scrollable="narrow">
           <section class="card identity" id="compte-identity">
             <h2 class="card-title">{{ t().account.sections.identity }}</h2>
             @if (company(); as identity) {
@@ -223,7 +226,17 @@
             <h2 class="card-title">{{ t().account.sections.data }}</h2>
             <app-data-card />
           </section>
-        </div>
+
+          <fold-scroll-indicator
+            wellFoot
+            class="dots"
+            variant="morse"
+            [count]="summary().length"
+            [active]="rail.active()"
+            [markerLabel]="t().account.panelDot"
+            (picked)="rail.goTo($event)"
+          />
+        </fold-well>
       </div>
     }
   }

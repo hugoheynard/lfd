@@ -19,6 +19,7 @@ export const ACCOUNT_EN: AccountCopy = {
   signIn: 'Sign in',
   cardKicker: 'Trade account',
   cardReference: 'My customer reference: {ref}',
+  panelDot: 'Go to section {n}',
   cardPaymentHead: 'Payment methods',
   cardPaymentOnOrder: 'On order',
   cardPaymentOnAccount: 'On account / periodic',

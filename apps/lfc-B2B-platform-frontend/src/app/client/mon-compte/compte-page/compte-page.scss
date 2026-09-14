@@ -86,10 +86,29 @@
   display: none;
 }
 
+/* Les cartes vivent dans un puits : il n'a ici ni fond ni rembourrage, il ne
+   sert qu'à faire glisser les panneaux en pile. */
 .cards {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
+  --lfc-well-bg: transparent;
+  --lfc-well-padding: 0;
+  --lfc-well-gap: var(--fold-space-md);
+  /* Chaque panneau garde SA hauteur : étirés à celle du plus haut, les courts
+     montraient une carte à moitié vide. */
+  --lfc-well-rail-align: start;
+}
+
+@media (max-width: 899.98px) {
+  /* Un panneau par section, et la suivante qui dépasse : le bord visible dit
+     qu'il y a une suite. */
+  .card {
+    flex: none;
+    width: 88%;
+    scroll-snap-align: start;
+  }
+}
+
+.dots {
+  margin-top: var(--fold-space-sm);
 }
 
 .card {
@@ -422,9 +441,16 @@
   .cards {
     flex: 1;
     min-width: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
+
+    --lfc-well-gap: var(--fold-space-lg);
+    --lfc-well-body-display: grid;
+    --lfc-well-body-columns: repeat(2, minmax(0, 1fr));
+    --lfc-well-body-align: start;
+  }
+
+  /* Au bureau, rien ne glisse : l'indicateur n'aurait rien à dire. */
+  .dots {
+    display: none;
   }
 
   .card {

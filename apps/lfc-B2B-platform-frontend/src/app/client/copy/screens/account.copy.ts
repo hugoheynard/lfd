@@ -43,6 +43,8 @@ export interface AccountCopy {
   /** `{month}` le mois d'ouverture, `{ref}` la référence du dossier. */
   /** `{ref}` est remplacé par la référence société — celle qu'on dicte. */
   readonly cardReference: string;
+  /** Le repère de l'indicateur des panneaux, en pile. `{n}` = le rang, depuis un. */
+  readonly panelDot: string;
   /** Les modes de paiement de la carte : l'un est toujours ouvert, l'autre s'accorde. */
   readonly cardPaymentHead: string;
   readonly cardPaymentOnOrder: string;

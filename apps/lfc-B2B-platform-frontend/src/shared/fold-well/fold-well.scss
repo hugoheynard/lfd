@@ -45,9 +45,18 @@
 
    `scroll-padding` makes a snapped item stop at the same offset, so the rail
    never parks a card against the bezel. */
-:host([data-scrollable]) .body {
+/* Hors rail, le corps suit la mise en page que l'hôte lui donne : bloc par
+   défaut, grille quand un écran de bureau range ses items côte à côte. */
+.body {
+  display: var(--lfc-well-body-display, block);
+  grid-template-columns: var(--lfc-well-body-columns, none);
+  align-items: var(--lfc-well-body-align, normal);
+  gap: var(--lfc-well-gap, var(--fold-space-md));
+}
+
+:host([data-scrollable='']) .body {
   display: flex;
-  align-items: stretch;
+  align-items: var(--lfc-well-rail-align, stretch);
   /* L'écart entre items est thémable : sur un rail, il ne sépare pas seulement
      deux cartes, il dit combien on en voit à la fois. */
   gap: var(--lfc-well-gap, var(--fold-space-md));
@@ -60,6 +69,26 @@
   /* ⚠️ A horizontal scroller inside a flex COLUMN gets compressed and clips its
      children with nothing to show for it. `flex: none` is the guard. */
   flex: none;
+}
+
+/* `scrollable="narrow"` : le même rail, en pile seulement. */
+@media (max-width: 899.98px) {
+  :host([data-scrollable='narrow']) .body {
+    display: flex;
+    align-items: var(--lfc-well-rail-align, stretch);
+    /* L'écart entre items est thémable : sur un rail, il ne sépare pas seulement
+       deux cartes, il dit combien on en voit à la fois. */
+    gap: var(--lfc-well-gap, var(--fold-space-md));
+    margin-left: calc(var(--lfc-well-padding, var(--fold-space-lg)) * -1);
+    padding-left: var(--lfc-well-padding, var(--fold-space-lg));
+    padding-bottom: var(--fold-space-xs);
+    scroll-padding-inline-start: var(--lfc-well-padding, var(--fold-space-lg));
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    /* ⚠️ A horizontal scroller inside a flex COLUMN gets compressed and clips its
+       children with nothing to show for it. `flex: none` is the guard. */
+    flex: none;
+  }
 }
 
 /* The items themselves carry `scroll-snap-align` and their width: they are the

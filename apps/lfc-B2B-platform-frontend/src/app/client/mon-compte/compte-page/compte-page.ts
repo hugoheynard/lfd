@@ -32,6 +32,7 @@ import { ClientLocale, LOCALES } from '../../client-locale.service';
 import { formatCents, formatRate } from '../../format-money';
 import { ServicePoints } from '../../shop/pickup-points.store';
 import { ProOnboarding } from '../../pro-onboarding.service';
+import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
 import { ShopPromise } from '../../shop-promise/shop-promise';
 import { AccountCard } from '../account-card/account-card';
 import { DataCard } from '../data-card/data-card';
@@ -88,7 +89,9 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
+    FoldScrollIndicatorComponent,
     FoldSurfaceDirective,
+    FoldWellComponent,
     KbisCard,
     ShopPromise,
     UsersCard,

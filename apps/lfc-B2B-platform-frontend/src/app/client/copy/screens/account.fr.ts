@@ -19,6 +19,7 @@ export const ACCOUNT_FR: AccountCopy = {
   signIn: 'Se connecter',
   cardKicker: 'Compte professionnel',
   cardReference: 'Ma référence client : {ref}',
+  panelDot: 'Aller à la section {n}',
   cardPaymentHead: 'Modes de paiement',
   cardPaymentOnOrder: 'À la commande',
   cardPaymentOnAccount: 'Au compte / périodique',
