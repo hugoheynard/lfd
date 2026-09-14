@@ -27,7 +27,7 @@
       [label]="labels().noContact"
       [hint]="labels().noContactHint"
       [checked]="value().noContact"
-      (checkedChange)="set('noContact', $event)"
+      (checkedChange)="setNoContact($event)"
     />
 
     @if (!value().noContact) {
@@ -80,7 +80,7 @@
      l'héritage devait servir. -->
 <fold-listbox
   [label]="labels().signature"
-  [hint]="labels().signatureHint"
+  [hint]="signatureHint()"
   [options]="signatureOptions()"
   [value]="signatureChoice()"
   (selectionChange)="setSignature($event)"

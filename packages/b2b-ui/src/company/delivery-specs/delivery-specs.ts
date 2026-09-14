@@ -10,7 +10,12 @@ import {
 
 import { HoursForm } from '../../hours/hours-form/hours-form';
 import type { HoursEntry } from '../../hours/hours.model';
-import { contactIssueOf, type DeliveryDraft, type DraftDays } from '../delivery-draft.model';
+import {
+  contactIssueOf,
+  type DeliveryDraft,
+  type DraftDays,
+  withNoContact,
+} from '../delivery-draft.model';
 import { formatDeliveryContact, WEEKDAYS } from '../delivery-format';
 import { withKnownContact } from '../delivery-address-form/delivery-address-form.model';
 import {
@@ -133,8 +138,18 @@ export class DeliverySpecs {
    * choisirait donc au hasard.
    */
   protected readonly signatureOptions = computed<readonly FoldSelectOption<string>[]>(() =>
-    signatureOptionsOf(this.labels(), this.signatureFloor()),
+    signatureOptionsOf(this.labels(), this.signatureFloor(), this.value().noContact),
   );
+
+  /** L'aide sous la signature : sans contact sur place, elle dit pourquoi « exigée » a disparu. */
+  protected readonly signatureHint = computed(() =>
+    this.value().noContact ? this.labels().signatureNoContactHint : this.labels().signatureHint,
+  );
+
+  /** « Pas de contact » : cocher fait tomber une signature exigée, posée ou héritée. */
+  protected setNoContact(noContact: boolean): void {
+    this.value.update((draft) => withNoContact(draft, noContact, this.signatureFloor()));
+  }
 
   protected readonly signatureChoice = computed(() => {
     const own = this.value().signatureRequired;

@@ -210,6 +210,7 @@ export const ACCOUNT_FR: AccountCopy = {
       signatureFloorNotRequired: 'non exigée',
       signatureRequired: 'Exigée',
       signatureNotRequired: 'Non exigée',
+      signatureNoContactHint: 'sans contact sur place, personne ne peut signer à la remise',
     },
   },
   termMonthly: 'Paiement à 30 jours fin de mois',

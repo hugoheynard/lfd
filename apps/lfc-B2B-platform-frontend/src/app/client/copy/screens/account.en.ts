@@ -208,6 +208,7 @@ export const ACCOUNT_EN: AccountCopy = {
       signatureFloorNotRequired: 'not required',
       signatureRequired: 'Required',
       signatureNotRequired: 'Not required',
+      signatureNoContactHint: 'with nobody on site, nobody can sign on delivery',
     },
   },
   termMonthly: '30 days end of month',

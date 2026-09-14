@@ -43,6 +43,8 @@ export interface DeliverySpecsLabels {
   readonly signatureFloorNotRequired: string;
   readonly signatureRequired: string;
   readonly signatureNotRequired: string;
+  /** Remplace `signatureHint` quand « pas de contact » est coché : il dit pourquoi « exigée » a disparu. */
+  readonly signatureNoContactHint: string;
 }
 
 /** Le texte d'avant l'entrée, mot pour mot — le défaut, et ce que lit le back-office. */
@@ -79,17 +81,28 @@ export const DELIVERY_SPECS_LABELS_FR: DeliverySpecsLabels = {
   signatureFloorNotRequired: 'non exigée',
   signatureRequired: 'Exigée',
   signatureNotRequired: 'Non exigée',
+  signatureNoContactHint: 'sans contact sur place, personne ne peut signer à la remise',
 };
 
 /** Les trois réponses à « signe-t-on ici ? » — l'héritage DIT ce dont il hérite. */
 export function signatureOptionsOf(
   labels: DeliverySpecsLabels,
   floor: boolean,
+  noContact = false,
 ): readonly { readonly value: string; readonly label: string }[] {
   const inherited = floor ? labels.signatureFloorRequired : labels.signatureFloorNotRequired;
-  return [
+  const options = [
     { value: 'inherit', label: labels.signatureInherit.replace('{floor}', inherited) },
     { value: 'yes', label: labels.signatureRequired },
     { value: 'no', label: labels.signatureNotRequired },
   ];
+  // Sans contact sur place, personne ne signe (Hugo, 2026-09-14) : ce qui exigerait
+  // une signature — l'exigence posée ici, ou l'héritage d'une société qui l'exige —
+  // n'est pas proposé. Inexprimable plutôt que refusé à l'envoi.
+  if (!noContact) {
+    return options;
+  }
+  return options.filter(
+    (option) => option.value !== 'yes' && !(floor && option.value === 'inherit'),
+  );
 }

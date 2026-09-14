@@ -1,5 +1,10 @@
 import { WEEKDAYS } from '../delivery-format';
-import { contactIssueOf, EMPTY_DELIVERY_SPECS } from '../delivery-draft.model';
+import {
+  contactIssueOf,
+  EMPTY_DELIVERY_SPECS,
+  signatureIssueOf,
+  withNoContact,
+} from '../delivery-draft.model';
 import {
   DELIVERY_SPECS_LABELS_FR,
   type DeliverySpecsLabels,
@@ -64,5 +69,62 @@ describe('libellés de DeliverySpecs', () => {
       'Required',
       'Not required',
     ]);
+  });
+});
+
+/**
+ * Hugo, 2026-09-14 : « pas de contact sur place » et « signature exigée » étaient
+ * saisissables ensemble — une signature que personne ne pouvait donner.
+ */
+describe('pas de signature exigée sans contact sur place', () => {
+  const values = (floor: boolean, noContact: boolean): readonly string[] =>
+    signatureOptionsOf(DELIVERY_SPECS_LABELS_FR, floor, noContact).map((option) => option.value);
+
+  it('propose les trois réponses tant qu’il y a un contact', () => {
+    expect(values(true, false)).toEqual(['inherit', 'yes', 'no']);
+    expect(values(false, false)).toEqual(['inherit', 'yes', 'no']);
+  });
+
+  it('sans contact, retire « exigée » — et l’héritage quand la société l’exige', () => {
+    expect(values(false, true)).toEqual(['inherit', 'no']);
+    expect(values(true, true)).toEqual(['no']);
+  });
+
+  it('cocher « pas de contact » fait tomber une exigence posée sur l’adresse', () => {
+    const draft = { ...EMPTY_DELIVERY_SPECS, signatureRequired: true };
+    expect(withNoContact(draft, true, false)).toMatchObject({
+      noContact: true,
+      signatureRequired: false,
+    });
+  });
+
+  it('cocher « pas de contact » fait tomber une exigence héritée de la société', () => {
+    const draft = { ...EMPTY_DELIVERY_SPECS, signatureRequired: null };
+    expect(withNoContact(draft, true, true).signatureRequired).toBe(false);
+  });
+
+  it('laisse l’héritage tel quel quand la société n’exige rien', () => {
+    const draft = { ...EMPTY_DELIVERY_SPECS, signatureRequired: null };
+    expect(withNoContact(draft, true, false).signatureRequired).toBeNull();
+  });
+
+  it('décocher ne rétablit rien', () => {
+    const draft = { ...EMPTY_DELIVERY_SPECS, noContact: true, signatureRequired: false };
+    expect(withNoContact(draft, false, true)).toMatchObject({
+      noContact: false,
+      signatureRequired: false,
+    });
+  });
+
+  it('signale une exigence explicite sans contact, et rien d’autre', () => {
+    expect(
+      signatureIssueOf({ ...EMPTY_DELIVERY_SPECS, noContact: true, signatureRequired: true }),
+    ).not.toBe('');
+    expect(
+      signatureIssueOf({ ...EMPTY_DELIVERY_SPECS, noContact: false, signatureRequired: true }),
+    ).toBe('');
+    expect(
+      signatureIssueOf({ ...EMPTY_DELIVERY_SPECS, noContact: true, signatureRequired: null }),
+    ).toBe('');
   });
 });
