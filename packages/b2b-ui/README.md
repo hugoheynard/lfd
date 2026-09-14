@@ -60,6 +60,12 @@ Trois règles :
 `ADDRESS_WRITER` et `FoldPanelRef`. Elles précèdent cette section ; un nouveau
 formulaire partagé n'en ajoute pas une troisième.
 
+⚠️ **Deux textes échappent encore aux libellés** (relevé le 2026-09-14) : les noms
+de pays de `address/countries.ts`, calculés en français quelle que soit la langue
+de l'app, et le message de `coordinatesIssueOf` (point GPS invalide). Les
+traduire demande de choisir la langue d'`Intl.DisplayNames` **sans** changer la
+valeur enregistrée.
+
 ## Structure
 
 Un dossier par domaine, exporté en subpath (liste vérifiée le 2026-09-14) :
