@@ -7,6 +7,14 @@ Ce fichier **remplace** le TODO précédent de ce dossier, livré le même jour 
 RUM s'imprime, le filigrane tombe avec elle, et le mandat part au client par
 courriel.
 
+> ✅ **Tranché par Hugo le 2026-09-14 : on fait INTERENTREPRISES (B2B).** Le
+> lot déclare déjà `B2B` : c'est le **formulaire** qui bascule, pas le lot. La
+> bascule est le lot 0 de [`../b2b/plan-mandat-client.md`](../b2b/plan-mandat-client.md).
+> ⚠️ Ce choix ne dispense pas du **contrat SDD B2B** avec la Caisse d'Épargne :
+> sans lui, la banque du créancier refusera le lot. La question à la banque
+> change de forme — « ouvrez le B2B, quel modèle attendez-vous ? » — elle ne
+> disparaît pas.
+
 ## Le fait
 
 | Où                             | Ce qui est déclaré                                  |
