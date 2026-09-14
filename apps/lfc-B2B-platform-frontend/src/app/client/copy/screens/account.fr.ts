@@ -97,7 +97,6 @@ export const ACCOUNT_FR: AccountCopy = {
   usersAddShort: 'Ajouter un utilisateur',
   usersAddSubtitle: 'Ses coordonnées, et ce qu’il fait pour la société.',
   usersAddFailed: 'Le contact n’a pas été ajouté.',
-  roleUnset: 'À préciser',
   tagContact: 'Contact seulement',
   contactFields: {
     email: 'E-mail',
@@ -123,6 +122,7 @@ export const ACCOUNT_FR: AccountCopy = {
   contactRemoveBusy: 'Suppression…',
   contactRemoveGroup: 'Confirmer la suppression du contact',
   contactRemoveFailed: 'Le contact n’a pas été supprimé.',
+  dangerZone: 'Zone de danger',
   profileFirstName: 'Prénom',
   profileLastName: 'Nom',
   profileEmail: 'E-mail',
@@ -163,8 +163,6 @@ export const ACCOUNT_FR: AccountCopy = {
   addressEdit: 'Modifier l’adresse de livraison',
   addressSaveFailed: 'L’adresse n’a pas été enregistrée.',
   addressSavedToast: 'Adresse enregistrée.',
-  addressMakeDefault: 'Définir par défaut',
-  addressDefaultToast: 'Adresse par défaut changée.',
   addressRemove: 'Supprimer',
   addressRemoveMessage:
     'Retirer cette adresse du carnet ? Les commandes déjà passées gardent la leur.',
@@ -277,17 +275,8 @@ export const ACCOUNT_FR: AccountCopy = {
   closeBody:
     'Définitif, et propre à cet espace : accès révoqué pour vous et vos utilisateurs, remise et conditions de paiement perdues, paniers récurrents supprimés. Vos autres espaces ne bougent pas. Une commande en cours doit être retirée ou annulée avant.',
   closeCta: 'Fermer cet espace',
-  panelKicker: 'Utilisateur',
-  panelContact: 'Coordonnées',
   panelPhone: 'Téléphone',
-  panelRole: 'Fonction',
   noPhone: 'non renseigné',
-  spaceContactHead: 'Pas d’espace',
-  spaceContactBody:
-    'Ce contact existe uniquement pour recevoir les factures par e-mail. Il n’a pas de mot de passe, pas de panier, et ne voit rien de l’application.',
-  spaceActiveHead: 'Espace actif',
-  spaceSelf:
-    'Votre propre accès ne se retire pas d’ici : transmettez d’abord le rôle de détenteur.',
   bankLoading: 'Lecture de votre RIB…',
   bankLoadFailedTitle: 'Votre RIB n’a pas pu être lu',
   bankLoadFailedBody: 'Le service ne répond pas pour le moment. Réessayez dans un instant.',

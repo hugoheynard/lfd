@@ -4,6 +4,7 @@
 <fold-input
   type="email"
   required
+  [readOnly]="readOnly()"
   [label]="labels().email"
   [hint]="labels().emailHint"
   [value]="value().email"
@@ -13,6 +14,7 @@
 @if (withRole()) {
   <fold-listbox
     required
+    [disabled]="readOnly()"
     [label]="labels().role"
     [placeholder]="labels().rolePlaceholder"
     [options]="roles()"
@@ -24,12 +26,14 @@
 <div class="row">
   <fold-input
     optional
+    [readOnly]="readOnly()"
     [label]="labels().firstName"
     [value]="value().firstName"
     (valueChange)="setFirstName($event)"
   />
   <fold-input
     optional
+    [readOnly]="readOnly()"
     [label]="labels().lastName"
     [value]="value().lastName"
     (valueChange)="setLastName($event)"
@@ -38,6 +42,7 @@
 
 <fold-input
   optional
+  [readOnly]="readOnly()"
   [label]="labels().fonction"
   [placeholder]="labels().fonctionPlaceholder"
   [value]="value().fonction"
@@ -46,6 +51,7 @@
 <fold-input
   type="tel"
   optional
+  [readOnly]="readOnly()"
   [label]="labels().phone"
   [value]="value().phone"
   (valueChange)="setPhone($event)"

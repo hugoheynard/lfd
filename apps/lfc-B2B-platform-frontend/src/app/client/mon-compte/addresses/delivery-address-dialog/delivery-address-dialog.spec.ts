@@ -43,6 +43,7 @@ const CREATE: DeliveryAddressDialogData = {
 interface Wire {
   adds: DeliveryAddressPayload[];
   updates: { addressId: string; payload: DeliveryAddressPayload }[];
+  removes: string[];
   answer: string | null;
   closes: unknown[];
   toasts: string[];
@@ -51,7 +52,7 @@ interface Wire {
 let wire: Wire;
 
 function boot(data: DeliveryAddressDialogData): ComponentFixture<DeliveryAddressDialog> {
-  wire = { adds: [], updates: [], answer: null, closes: [], toasts: [] };
+  wire = { adds: [], updates: [], removes: [], answer: null, closes: [], toasts: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [DeliveryAddressDialog],
@@ -69,6 +70,10 @@ function boot(data: DeliveryAddressDialogData): ComponentFixture<DeliveryAddress
             payload: DeliveryAddressPayload,
           ): Promise<string | null> => {
             wire.updates.push({ addressId, payload });
+            return Promise.resolve(wire.answer);
+          },
+          removeDelivery: (_: string, addressId: string): Promise<string | null> => {
+            wire.removes.push(addressId);
             return Promise.resolve(wire.answer);
           },
         },
@@ -172,6 +177,8 @@ describe('DeliveryAddressDialog', () => {
 
   it('un refus du serveur s’affiche dans le dialogue, qui reste ouvert', async () => {
     const fixture = boot({ ...CREATE, address: CHALET });
+    form(fixture).value.set({ ...form(fixture).value(), ville: 'Tignes' });
+    fixture.detectChanges();
     wire.answer = 'Code postal hors de nos zones.';
     await submit(fixture);
 
@@ -180,6 +187,73 @@ describe('DeliveryAddressDialog', () => {
     expect(alert?.textContent).toContain('Code postal hors de nos zones.');
     expect(wire.closes).toEqual([]);
     expect(wire.toasts).toEqual([]);
+  });
+
+  /** Règle « Saisir » : rien de changé, rien à envoyer — même sur une adresse complète. */
+  it('correction : Enregistrer reste désarmé tant que rien n’a changé', () => {
+    const fixture = boot({ ...CREATE, address: CHALET, firstOfBook: false });
+    expect(submitButton(fixture)?.disabled).toBe(true);
+
+    form(fixture).value.set({ ...form(fixture).value(), ville: 'Tignes' });
+    fixture.detectChanges();
+    expect(submitButton(fixture)?.disabled).toBe(false);
+
+    form(fixture).value.set(deliveryDraftFrom(CHALET));
+    fixture.detectChanges();
+    expect(submitButton(fixture)?.disabled).toBe(true);
+  });
+
+  describe('la zone de danger', () => {
+    const host = (fixture: ComponentFixture<DeliveryAddressDialog>): HTMLElement =>
+      fixture.nativeElement as HTMLElement;
+
+    const confirmRemoval = async (
+      fixture: ComponentFixture<DeliveryAddressDialog>,
+    ): Promise<void> => {
+      const zone = host(fixture).querySelector('fold-danger-zone');
+      Array.from(zone?.querySelectorAll<HTMLButtonElement>('button') ?? [])
+        .find((b) => b.textContent?.trim() === FR.account.addressRemove)
+        ?.click();
+      fixture.detectChanges();
+      const confirm = Array.from(zone?.querySelectorAll<HTMLButtonElement>('button') ?? []).find(
+        (b) => b.textContent?.trim() === FR.account.addressRemoveConfirm,
+      );
+      expect(confirm).toBeDefined();
+      confirm?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it('n’existe pas à la création : il n’y a rien à supprimer', () => {
+      expect(host(boot(CREATE)).querySelector('fold-danger-zone')).toBeNull();
+    });
+
+    it('en correction, archive CETTE adresse, toaste et ferme', async () => {
+      const fixture = boot({ ...CREATE, address: CHALET, firstOfBook: false });
+      expect(host(fixture).querySelector('fold-danger-zone')?.textContent).toContain(
+        FR.account.addressRemoveMessage,
+      );
+
+      await confirmRemoval(fixture);
+
+      expect(wire.removes).toEqual(['adr_1']);
+      expect(wire.updates).toEqual([]);
+      expect(wire.toasts).toEqual([FR.account.addressRemovedToast]);
+      expect(wire.closes).toEqual([true]);
+    });
+
+    it('sur un refus, reste ouvert et le montre', async () => {
+      const fixture = boot({ ...CREATE, address: CHALET, firstOfBook: false });
+      wire.answer = 'Adresse de livraison introuvable.';
+
+      await confirmRemoval(fixture);
+
+      expect(wire.closes).toEqual([]);
+      expect(wire.toasts).toEqual([]);
+      const alert = host(fixture).querySelector('fold-callout[variant="alert"]');
+      expect(alert?.textContent).toContain(FR.account.addressActionFailed);
+      expect(alert?.textContent).toContain('Adresse de livraison introuvable.');
+    });
   });
 
   describe('ouverture', () => {

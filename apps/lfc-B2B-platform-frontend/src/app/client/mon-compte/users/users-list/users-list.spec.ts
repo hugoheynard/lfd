@@ -1,8 +1,24 @@
-import { ComponentFixture } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FoldPanelHostService } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
 import { FR } from '../../../copy/fr';
-import { bootCard, COMPTA, TOMMEUSES } from '../../account.fixture';
+import {
+  asRole,
+  bootCard,
+  COMPTA,
+  matchMediaAt,
+  openedPanel,
+  TOMMEUSES,
+} from '../../account.fixture';
+import { ContactEditPanel } from '../contact-edit-panel/contact-edit-panel';
+import { draftOf } from '../users-section';
 import { UsersList } from './users-list';
+
+afterEach(() => {
+  TestBed.inject(FoldPanelHostService).dismissAll();
+  vi.unstubAllGlobals();
+});
 
 /**
  * 🔴 **Cette liste portait cinq personnes qui n'existent pas** — Pierre, Hélène,
@@ -31,22 +47,27 @@ describe('UsersList', () => {
     );
   });
 
-  it('ouvre la fiche de la personne cliquée', () => {
-    expect(el().querySelector('app-client-dialog')).toBeNull();
+  /** Plus de fiche intermédiaire (règle « Saisir », 2026-09-14) : le clic ouvre le dialogue. */
+  it('un clic sur une personne ouvre directement son dialogue', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
     el().querySelector<HTMLButtonElement>('.person')?.click();
-    fixture.detectChanges();
 
-    const panel = el().querySelector('app-client-dialog');
-    expect(panel?.textContent).toContain('Cabinet Ferrand');
-    // « Inviter » n'avait aucune action, et aucune route client n'invite (2026-09-14).
-    expect(panel?.textContent).not.toContain('Inviter');
+    expect(openedPanel()).toEqual({
+      component: ContactEditPanel,
+      side: 'center',
+      data: { companyId: 'cmp_1', contactId: 'ct_1', initial: draftOf(COMPTA), canManage: true },
+    });
+    expect(el().querySelector('app-client-dialog')).toBeNull();
   });
 
-  it('le détenteur lit POURQUOI son accès ne se retire pas d’ici', () => {
+  it('le détenteur s’ouvre aussi en dialogue — en lecture seule pour un rôle qui ne gère pas', () => {
+    fixture = bootCard(UsersList, [asRole('orders')]);
+    vi.stubGlobal('matchMedia', matchMediaAt(true));
     el().querySelector<HTMLButtonElement>('.holder')?.click();
-    fixture.detectChanges();
 
-    expect(el().querySelector('app-client-dialog')?.textContent).toContain(FR.account.spaceSelf);
+    expect(openedPanel()?.component).toBe(ContactEditPanel);
+    expect(openedPanel()?.side).toBe('bottom');
+    expect(openedPanel()?.data).toMatchObject({ contactId: null, canManage: false });
   });
 
   it('retombe sur l’e-mail quand la personne n’a pas de nom', () => {

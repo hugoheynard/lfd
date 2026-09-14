@@ -111,8 +111,6 @@ export interface AccountCopy {
   readonly usersAddSubtitle: string;
   /** En tête du message du serveur, quand l'ajout est refusé. */
   readonly usersAddFailed: string;
-  /** Un rôle non renseigné : les contacts d'avant les rôles n'en ont pas. */
-  readonly roleUnset: string;
   readonly tagContact: string;
   /** Les champs d'un interlocuteur — le formulaire partagé avec la fiche staff, rôles compris. */
   readonly contactFields: ContactFieldsLabels;
@@ -130,6 +128,8 @@ export interface AccountCopy {
   readonly contactRemoveBusy: string;
   readonly contactRemoveGroup: string;
   readonly contactRemoveFailed: string;
+  /** Le titre de la zone de danger d'un dialogue — là, et seulement là, qu'on supprime. */
+  readonly dangerZone: string;
   /** « Mes informations » : la personne connectée, pas la société. */
   readonly profileFirstName: string;
   readonly profileLastName: string;
@@ -183,9 +183,6 @@ export interface AccountCopy {
   readonly addressEdit: string;
   readonly addressSaveFailed: string;
   readonly addressSavedToast: string;
-  /** Désigner une livraison comme la défaut — absent sur celle qui l'est déjà. */
-  readonly addressMakeDefault: string;
-  readonly addressDefaultToast: string;
   /** L'archivage d'une livraison, confirmé en place (`fold-inline-confirm`) — les mêmes cinq phrases que `contactRemove*`. */
   readonly addressRemove: string;
   /** La question posée avant d'archiver : elle nomme ce qui ne disparaît PAS. */
@@ -264,17 +261,8 @@ export interface AccountCopy {
   readonly closeHead: string;
   readonly closeBody: string;
   readonly closeCta: string;
-  readonly panelKicker: string;
-  readonly panelContact: string;
   readonly panelPhone: string;
-  readonly panelRole: string;
   readonly noPhone: string;
-  readonly spaceContactHead: string;
-  readonly spaceContactBody: string;
-  /** `{date}` est remplacé par la date d'envoi de l'invitation. */
-  readonly spaceActiveHead: string;
-  /** `{date}` est remplacé par la date d'activation de l'espace. */
-  readonly spaceSelf: string;
   /** Pendant la lecture du RIB. */
   readonly bankLoading: string;
   /** La lecture du RIB a échoué : ce n'est PAS « aucun RIB », et on le dit. */

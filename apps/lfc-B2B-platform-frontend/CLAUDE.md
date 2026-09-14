@@ -143,17 +143,29 @@ créneaux par jour doivent tenir sur une ligne.)
   pied, l'écriture et ses libellés.
 - **Un refus du serveur reste dans le dialogue**, dans un `fold-callout`, et le
   dialogue reste ouvert ; un succès annonce et ferme.
+- **Pas de panneau de détail intermédiaire** (Hugo, 2026-09-14) : un clic sur un
+  élément — une personne, une adresse — ouvre directement son dialogue, champs
+  éditables. Qui ne peut pas écrire reçoit le même dialogue en lecture seule,
+  sans Enregistrer.
+- **Enregistrer n'est cliquable que si le formulaire est modifié** : le brouillon
+  se compare à l'état d'ouverture, pas seulement à la validité. Rien à envoyer,
+  rien à cliquer.
+- **Supprimer se fait dans une `fold-danger-zone` du dialogue** (`appearance="section"`),
+  en correction seulement — jamais en ligne dans une liste. Ses mots de
+  confirmation se fournissent au dialogue (`FOLD_INLINE_CONFIRM_LABELS`) : la zone
+  n'a pas d'entrée de libellés, et fold parle anglais par défaut.
 - **Consulter n'est pas saisir.** Un panneau qu'on lit à côté de la page — une
   liste, un détail, le mandat et son PDF — garde `panelSide()` : la droite au
   bureau, le bas en pile.
 - ⚠️ **`ClientDialog` (`<dialog>` natif) n'est plus le modèle** : il a été écrit
   quand fold n'ouvrait que par les bords. fold-ng 0.27 a un côté `center` qui porte
-  déjà le piège de focus, Échap, l'inertie et le voile. Ses **sept** usages
-  (vérifié le 2026-09-14) sont à migrer, pas à copier. Le tri qui suit se lit
-  aux NOMS, pas au contenu — à confirmer en ouvrant chacun : les saisies —
-  `pickup-dialog` et `address-dialog` de la commande, `user-panel` — vers
-  `dialogSide()` ; les consultations — `product-sheet`, `shelf-sheet`,
-  `cart-panel`, `report-sheet` — vers le côté qui convient à ce qu'on lit.
+  déjà le piège de focus, Échap, l'inertie et le voile. Ses **six** usages
+  (vérifié le 2026-09-14, après le retrait de `user-panel`) sont à migrer, pas à
+  copier. Le tri qui suit se lit aux NOMS, pas au contenu — à confirmer en
+  ouvrant chacun : les saisies — `pickup-dialog` et `address-dialog` de la
+  commande — vers `dialogSide()` ; les consultations — `product-sheet`,
+  `shelf-sheet`, `cart-panel`, `report-sheet` — vers le côté qui convient à ce
+  qu'on lit.
 
 ## CSS propre & marges (règles permanentes)
 

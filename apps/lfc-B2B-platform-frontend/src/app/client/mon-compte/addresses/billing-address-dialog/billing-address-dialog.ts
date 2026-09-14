@@ -104,19 +104,36 @@ export class BillingAddressDialog {
 
   protected readonly postal = computed(() => toPostal(this.draft()));
 
+  /** L'état d'ouverture : la facturation posée, ou un brouillon vide. */
+  private readonly initial = computed<PostalDraft>(() => {
+    const billing = this.data().billing;
+    return billing === null ? EMPTY_POSTAL_DRAFT : postalDraftFrom(billing);
+  });
+
+  /**
+   * Quelque chose a-t-il changé depuis l'ouverture ? Comparé sur la charge
+   * envoyée, rognée : un espace ajouté puis retiré ne vaut pas modification.
+   */
+  private readonly changed = computed(
+    () =>
+      JSON.stringify(toBillingPayload(this.draft())) !==
+      JSON.stringify(toBillingPayload(this.initial())),
+  );
+
   protected readonly heading = computed(() =>
     this.data().billing === null ? this.t().account.billingFill : this.t().account.billingEdit,
   );
 
-  protected readonly canSubmit = computed(() => !this.saving() && postalIssue(this.draft()) === '');
+  /** Enregistrer attend une modification ET une adresse complète (règle « Saisir »). */
+  protected readonly canSubmit = computed(
+    () => !this.saving() && this.changed() && postalIssue(this.draft()) === '',
+  );
 
   constructor() {
     // Une entrée requise n'est pas posée quand le constructeur tourne.
     effect(() => {
-      const { billing } = this.data();
-      untracked(() =>
-        this.draft.set(billing === null ? EMPTY_POSTAL_DRAFT : postalDraftFrom(billing)),
-      );
+      const initial = this.initial();
+      untracked(() => this.draft.set(initial));
     });
   }
 

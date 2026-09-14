@@ -34,6 +34,13 @@ export class ContactFields {
   readonly withRole = input(false);
 
   /**
+   * Lecture seule : les champs montrent le contact sans se laisser changer —
+   * pour qui voit une personne sans pouvoir la modifier. Faux par défaut : les
+   * écrans qui ne passent rien restent en saisie.
+   */
+  readonly readOnly = input(false);
+
+  /**
    * Les mots du fragment, options de rôle comprises. Le défaut est le français
    * d'avant l'entrée : le back-office ne passe rien ; l'app cliente passe sa langue.
    */

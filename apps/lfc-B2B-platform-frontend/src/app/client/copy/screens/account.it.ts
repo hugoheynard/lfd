@@ -97,7 +97,6 @@ export const ACCOUNT_IT: AccountCopy = {
   usersAddShort: 'Aggiungere un utente',
   usersAddSubtitle: 'I suoi recapiti, e che cosa fa per l’azienda.',
   usersAddFailed: 'Il contatto non è stato aggiunto.',
-  roleUnset: 'Da precisare',
   tagContact: 'Solo contatto',
   contactFields: {
     email: 'E-mail',
@@ -123,6 +122,7 @@ export const ACCOUNT_IT: AccountCopy = {
   contactRemoveBusy: 'Eliminazione…',
   contactRemoveGroup: 'Confermare l’eliminazione del contatto',
   contactRemoveFailed: 'Il contatto non è stato eliminato.',
+  dangerZone: 'Zona pericolosa',
   profileFirstName: 'Nome',
   profileLastName: 'Cognome',
   profileEmail: 'E-mail',
@@ -163,8 +163,6 @@ export const ACCOUNT_IT: AccountCopy = {
   addressEdit: 'Modificare l’indirizzo di consegna',
   addressSaveFailed: 'L’indirizzo non è stato registrato.',
   addressSavedToast: 'Indirizzo registrato.',
-  addressMakeDefault: 'Impostare come predefinito',
-  addressDefaultToast: 'Indirizzo predefinito cambiato.',
   addressRemove: 'Eliminare',
   addressRemoveMessage:
     'Togliere questo indirizzo dalla rubrica? Gli ordini già passati conservano il loro.',
@@ -277,16 +275,8 @@ export const ACCOUNT_IT: AccountCopy = {
   closeBody:
     'Definitivo, e proprio di questo spazio: accesso revocato per voi e per i vostri utenti, sconto e condizioni di pagamento persi, carrelli ricorrenti eliminati. Gli altri spazi non si muovono. Un ordine in corso va ritirato o annullato prima.',
   closeCta: 'Chiudere questo spazio',
-  panelKicker: 'Utente',
-  panelContact: 'Contatti',
   panelPhone: 'Telefono',
-  panelRole: 'Funzione',
   noPhone: 'non indicato',
-  spaceContactHead: 'Nessuno spazio',
-  spaceContactBody:
-    'Questo contatto esiste solo per ricevere le fatture per e-mail. Non ha password, non ha carrello e non vede nulla dell’applicazione.',
-  spaceActiveHead: 'Spazio attivo',
-  spaceSelf: 'Il vostro accesso non si toglie da qui: trasmettete prima il ruolo di titolare.',
   bankLoading: 'Lettura delle coordinate bancarie…',
   bankLoadFailedTitle: 'Le coordinate bancarie non sono state lette',
   bankLoadFailedBody: 'Il servizio non risponde al momento. Riprovate tra un istante.',

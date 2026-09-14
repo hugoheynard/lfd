@@ -124,6 +124,18 @@ describe('BillingAddressDialog', () => {
     expect(submitButton(fixture)?.disabled).toBe(false);
   });
 
+  /** Règle « Saisir » : rien de changé, rien à envoyer — même sur une adresse complète. */
+  it('correction : Enregistrer reste désarmé tant que rien n’a changé', () => {
+    const fixture = boot({ ...FILL, billing: SIEGE });
+    expect(submitButton(fixture)?.disabled).toBe(true);
+
+    type(fixture, { ...form(fixture).value(), city: 'Tignes' });
+    expect(submitButton(fixture)?.disabled).toBe(false);
+
+    type(fixture, { ...form(fixture).value(), city: "Val d'Isère" });
+    expect(submitButton(fixture)?.disabled).toBe(true);
+  });
+
   it('correction : « Modifier », préremplie depuis la facturation posée', () => {
     const fixture = boot({ ...FILL, billing: SIEGE });
 

@@ -25,71 +25,33 @@
   } @else {
     <section class="block">
       <h3 class="head">{{ deliveryCount() }}</h3>
-      <!-- LE REFUS d'une action de ligne : la liste reste à l'écran, telle que relue. -->
-      @if (rowRefusal(); as message) {
-        <fold-callout variant="alert" announce>
-          {{ t().account.addressActionFailed }} {{ message }}
-        </fold-callout>
-      }
       @if (deliveries().length === 0) {
         <p class="line">{{ t().account.addressNone }}</p>
       }
+      <!-- Une ligne se LIT ; aux rôles qui écrivent, un clic ouvre son dialogue —
+           où se règlent le rang « par défaut » et la suppression. -->
       <ul class="deliveries">
         @for (address of deliveries(); track address.id) {
-          <li class="delivery">
-            <span class="delivery-label">{{ address.label }}</span>
-            @if (address.primary) {
-              <fold-badge variant="accent" [content]="t().account.addressDefault" />
-            }
-            <span class="delivery-line"
-              >{{ address.line }} · {{ address.zone }} · {{ address.fee }}</span
-            >
+          <li>
             @if (data().canManage) {
-              <div class="row-actions">
-                <!-- La défaut l'est déjà : le geste n'y a pas de sens. -->
-                @if (!address.primary) {
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="soft"
-                    intent="primary"
-                    type="button"
-                    [loading]="isPending(address.id, 'default')"
-                    [disabled]="pending() !== null"
-                    (click)="makeDefault(address.id)"
-                  >
-                    {{ t().account.addressMakeDefault }}
-                  </button>
+              <button class="delivery clickable" type="button" (click)="editDelivery(address.id)">
+                <span class="delivery-label">{{ address.label }}</span>
+                @if (address.primary) {
+                  <fold-badge variant="accent" [content]="t().account.addressDefault" />
                 }
-                <button
-                  foldButton
-                  size="sm"
-                  emphasis="soft"
-                  intent="primary"
-                  type="button"
-                  [disabled]="pending() !== null"
-                  (click)="editDelivery(address.id)"
+                <span class="delivery-line"
+                  >{{ address.line }} · {{ address.zone }} · {{ address.fee }}</span
                 >
-                  {{ t().account.edit }}
-                </button>
-                <!-- Confirmé EN PLACE : annuler ne quitte pas la ligne et n'appelle rien. -->
-                <fold-inline-confirm
-                  [message]="t().account.addressRemoveMessage"
-                  [labels]="removeLabels()"
-                  [loading]="isPending(address.id, 'remove')"
-                  (confirmed)="removeDelivery(address.id)"
+              </button>
+            } @else {
+              <div class="delivery">
+                <span class="delivery-label">{{ address.label }}</span>
+                @if (address.primary) {
+                  <fold-badge variant="accent" [content]="t().account.addressDefault" />
+                }
+                <span class="delivery-line"
+                  >{{ address.line }} · {{ address.zone }} · {{ address.fee }}</span
                 >
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="soft"
-                    intent="danger"
-                    type="button"
-                    [disabled]="pending() !== null"
-                  >
-                    {{ t().account.addressRemove }}
-                  </button>
-                </fold-inline-confirm>
               </div>
             }
           </li>
