@@ -3,6 +3,7 @@ import { Controller, Get } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
+import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { ReadMyShopCatalogueQuery } from "../application/queries/read-my-shop-catalogue.js";
 
 /**
@@ -31,6 +32,7 @@ export class MyShopCatalogueController {
   constructor(private readonly queries: QueryBus) {}
 
   /** Le catalogue vendable, résolu à la mercuriale de la société courante. */
+  @RequiresShop("browse")
   @Get("mine")
   read(@ActingCompany() companyId: string | null): Promise<ShopCatalogueView> {
     return this.queries.execute<ReadMyShopCatalogueQuery, ShopCatalogueView>(

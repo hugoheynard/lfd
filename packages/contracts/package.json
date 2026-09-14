@@ -12,6 +12,11 @@
       "types": "./src/platform-content.defaults.ts",
       "import": "./dist/platform-content.defaults.js",
       "require": "./dist/platform-content.defaults.js"
+    },
+    "./feature-access-levels": {
+      "types": "./src/feature-access.levels.ts",
+      "import": "./dist/feature-access.levels.js",
+      "require": "./dist/feature-access.levels.js"
     }
   },
   "private": true,

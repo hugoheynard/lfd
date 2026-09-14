@@ -9,6 +9,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { PreflightOrderAlertsQuery } from "../application/queries/preflight-order-alerts.query.js";
 
 /**
@@ -30,6 +31,7 @@ import { PreflightOrderAlertsQuery } from "../application/queries/preflight-orde
 export class OrderPreflightController {
   constructor(private readonly queries: QueryBus) {}
 
+  @RequiresShop("order")
   @Post("preflight")
   @HttpCode(HttpStatus.OK)
   async preflight(

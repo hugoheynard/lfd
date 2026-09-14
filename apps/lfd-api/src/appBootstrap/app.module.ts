@@ -5,6 +5,7 @@ import { AppService } from "./app.service.js";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { AlertsModule } from "../b2b/alerts/alerts.module.js";
 import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module.js";
+import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
 import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
@@ -47,6 +48,7 @@ import { APP_GUARD } from "@nestjs/core";
 import { AuthGuard } from "../platform/auth/auth.guard.js";
 import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
 import { PublicationEnabledGuard } from "../pim/publication/publication-switch.js";
+import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.guard.js";
 
 @Module({
   imports: [
@@ -86,6 +88,8 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     PickupAddressesModule,
     CatalogModule,
     DeliveryZonesModule,
+    // L'accès aux fonctionnalités : ce qu'on peut faire de la boutique, réglé en admin.
+    FeatureAccessModule,
     PlatformContentModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,
@@ -150,6 +154,11 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // APRÈS l'authentification : refuser un geste de publication à qui n'est
     // même pas identifié dirait au passage que ce déploiement en a un.
     { provide: APP_GUARD, useClass: PublicationEnabledGuard },
+    // APRÈS l'authentification, pour la même raison et une de plus : la garde
+    // de la boutique lit le `Principal` que `AuthGuard` vient de poser — c'est
+    // lui qui porte l'adresse prouvée d'une exemption. Avant, elle ne verrait
+    // personne et refuserait les testeurs (plan inscription-pro-seule §2.3).
+    { provide: APP_GUARD, useClass: FeatureAccessGuard },
   ],
 })
 export class AppModule {}

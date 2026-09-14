@@ -947,3 +947,31 @@ export type {
 } from "./order-sheet.js";
 export type { OrderPackingView } from "./order-packing.js";
 export type { ProductionPlanClosure } from "./production-sheet.js";
+export {
+  FEATURE_CATALOGUE,
+  FEATURE_KEYS,
+  SHOP_LEVELS,
+  featureExemptionPayloadSchema,
+  featureLevelsOf,
+  featureOverridePayloadSchema,
+  isAtLeast,
+  isFeatureKey,
+  isFeatureLevel,
+  mostOpenLevel,
+} from "./feature-access.js";
+export type {
+  AdminFeatureAccessView,
+  AdminFeatureView,
+  FeatureAccessAuthorView,
+  FeatureDefinition,
+  FeatureExemptionAccountState,
+  FeatureExemptionPayload,
+  FeatureExemptionView,
+  FeatureKey,
+  FeatureLevel,
+  FeatureLevelsView,
+  FeatureOverridePayload,
+  FeatureOverrideView,
+  IgnoredFeatureRowView,
+  ShopLevel,
+} from "./feature-access.js";

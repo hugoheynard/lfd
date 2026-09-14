@@ -129,11 +129,20 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * coûtent une. Les trois lecteurs partagent la même, étant appelés dans un seul
  * `Promise.all`.
  *
- * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4 ou 5,
+ * 🔴 **Il est passé de 5 à 6 le 2026-09-14, et voici laquelle.** `POST
+ * /shop/quote` porte `@RequiresShop('browse')` : la garde `FeatureAccessGuard`
+ * lit la dérogation du flag boutique (`feature_access_overrides`) avant la
+ * requête. Une lecture, **constante** — elle ne dépend ni du panier ni des
+ * règles, et une route publique n'a pas de personne dont lire l'exemption.
+ * Elle n'est pas mise en cache, délibérément : un cache laissait passer des
+ * devis et des commandes pendant sa durée après une fermeture posée en admin
+ * (plan `plan-inscription-pro-seule.md` §2.1).
+ *
+ * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5 ou 6,
  * c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité qui
  * attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 5;
+const COLD_QUOTE_OPS = 6;
 
 /**
  * Sème `count` règles de promotion **distinctes**.
@@ -194,7 +203,7 @@ describe("le devis d'un panier", () => {
    * nombre d'appels ORM et non une durée. Une inégalité ici n'est pas du bruit :
    * c'est une lecture par article qui vient de réapparaître.
    */
-  it("coûte QUATRE lectures pour une seule ligne", async () => {
+  it("coûte le budget à froid pour une seule ligne", async () => {
     await seedRules(40);
 
     const cost = await coldOperationsOf(() => quote([{ sku: "VIE-001", quantity: 2 }]).expect(200));

@@ -10,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { SaveShopCartCommand } from "../application/commands/save-shop-cart.command.js";
 import { GetShopCartQuery } from "../application/queries/get-shop-cart.query.js";
 
@@ -58,6 +59,7 @@ export class ShopCartController {
   ) {}
 
   /** Le panier en cours — `{ cart: null }` quand il n'y en a pas. */
+  @RequiresShop("browse")
   @Get()
   async mine(@CurrentUser() user: Principal): Promise<ShopCartResponse> {
     const cart = await this.queries.execute<GetShopCartQuery, ShopCartView | null>(
@@ -67,6 +69,7 @@ export class ShopCartController {
   }
 
   /** Met le panier de côté. Le propriétaire vient de la porte, jamais du corps. */
+  @RequiresShop("browse")
   @Put()
   async save(
     @CurrentUser() user: Principal,

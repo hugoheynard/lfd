@@ -87,6 +87,19 @@ const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "order-cutoffs"];
 const PRICING_ACT = /VolumeCommitmentHandler$/;
 
 /**
+ * **L'accès aux fonctionnalités** (2026-09-14) : fermer la boutique, la rouvrir,
+ * exempter une adresse. Chaque geste décide qui peut commander, et la ligne qui
+ * le porte est SUPPRIMÉE quand on revient en arrière — le journal est donc la
+ * seule mémoire de « qui avait fermé, et depuis quand ».
+ *
+ * Tous ses handlers, sans tri par nom : le module n'a aucun chemin d'écriture
+ * client. Zone à part plutôt qu'entrée de `SETTINGS_ZONES`, parce que ce n'est
+ * pas un réglage commercial au sens de ce commentaire-là : il ne change aucun
+ * prix, il ouvre ou ferme la vente.
+ */
+const FEATURE_ACCESS_ZONE = "feature-access";
+
+/**
  * La dette déclarée — **vide depuis le 2026-08-25**.
  *
  * Elle a compté quatorze handlers : ceux qui écrivaient déjà sans tracer le
@@ -202,6 +215,10 @@ const ZONES = [
     root: join(SRC, "b2b", zone),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   })),
+  {
+    root: join(SRC, "b2b", FEATURE_ACCESS_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
   {
     root: join(SRC, "b2b", "pricing"),
     audit: (source, index, params, handler) =>

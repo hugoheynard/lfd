@@ -3,6 +3,7 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
+import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { QuoteShopCartQuery } from "../application/queries/quote-shop-cart.handler.js";
 
@@ -36,6 +37,7 @@ import { QuoteShopCartQuery } from "../application/queries/quote-shop-cart.handl
 export class MyShopQuoteController {
   constructor(private readonly queries: QueryBus) {}
 
+  @RequiresShop("browse")
   @Post("mine")
   @HttpCode(HttpStatus.OK)
   async quote(
