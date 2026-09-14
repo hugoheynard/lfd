@@ -214,12 +214,14 @@ export class AuthFacade {
    * `POST /me/establishment`.
    */
   registerPro(target: string, registration: ProRegistration): void {
-    // En bypass dev, même geste que `register()`, et pour la même raison : la
-    // déclaration n'est PAS retenue. L'API impersonne l'utilisateur du seed,
-    // déjà rattaché — la déposer ne rendrait qu'un 409.
+    // En bypass dev, pas d'aller-retour Auth0, mais la déclaration EST retenue,
+    // comme au vrai retour : sans elle, Mon compte redemandait les champs qu'on
+    // venait de saisir (relevé le 2026-09-14). Sur un compte impersonné déjà
+    // rattaché, `ProOnboarding` reçoit un 409 et relit `/me` sans rien afficher.
     if (DEV_BYPASS_AUTH && this.isBrowser) {
       writeDevSignedOut(false);
       this.devSignedOut.set(false);
+      this.pendingProRegistration.set(registration);
       void this.router.navigateByUrl(target);
       return;
     }

@@ -50,7 +50,11 @@ describe('AuthFacade — la porte pro', () => {
    * qui part chez Auth0 n'est pas atteignable ici — pas plus pour `register`.
    * On éprouve donc ce que fait VRAIMENT ce runner, et le garde-fou qu'il porte.
    */
-  it('en bypass dev, entre sans passer par Auth0 et ne retient pas la déclaration', () => {
+  /**
+   * Régression (2026-09-14) : en dev, la déclaration était jetée, et Mon compte
+   * redemandait les champs qu'on venait de saisir sur la porte pro.
+   */
+  it('en bypass dev, entre sans passer par Auth0 et retient la déclaration', () => {
     const router = TestBed.inject(Router);
     const navigated: string[] = [];
     router.navigateByUrl = (url): Promise<boolean> => {
@@ -63,7 +67,7 @@ describe('AuthFacade — la porte pro', () => {
     expect(DEV_BYPASS_AUTH).toBe(true);
     expect(redirects).toEqual([]);
     expect(navigated).toEqual(['/mon-compte']);
-    expect(facade.pendingProRegistration()).toBeNull();
+    expect(facade.pendingProRegistration()).toEqual(REGISTRATION);
   });
 
   it('retrouve la déclaration au retour', () => {
