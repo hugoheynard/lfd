@@ -116,13 +116,14 @@
   min-width: 0;
 }
 
+/* Un régime de paiement est un FAIT de la carte, pas son titre : il se lit à
+   la taille du texte, le nom de la maison garde seul la taille d'affiche. */
 .value {
   margin: 0;
   font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-screen-sm);
-  font-weight: var(--lfc-weight-black);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-extrabold);
   font-variant-numeric: tabular-nums;
-  letter-spacing: var(--lfc-tracking-display);
   white-space: nowrap;
 }
 
@@ -142,10 +143,6 @@
   }
 
   .name {
-    font-size: var(--lfc-text-screen);
-  }
-
-  .value {
     font-size: var(--lfc-text-screen);
   }
 }
