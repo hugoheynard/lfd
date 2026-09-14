@@ -205,3 +205,86 @@ compte figé sur le mandat, pas de caducité automatique, pas de `attachLegacyPr
 
 **Lot B — app cliente** : inchangé (§3), états `draft` / preuve déposée /
 `active` / aucun mandat en cours (`revoked`, `failed`, `expired`, `pending`).
+
+## 9. Dernière contradiction (vitruve, 2026-09-14) — tranchée
+
+Ce qui suit **complète le §8** et fait foi pour les batisseurs.
+
+**Déjà fait** — commit `5a7c98fd` : `attachProof` refusé hors `draft` dans
+l'agrégat, dépôt staff sur `findDraft` refusé **avant** de ranger, clé de
+stockage neuve par dépôt (plus d'écrasement silencieux), activation qui exige
+le scan, écran staff aligné (dépôt sur brouillon, « Activer » inerte sans
+pièce). Les e2e et specs cassés par cette règle sont réécrits. **Ne pas refaire.**
+
+| #   | Objection                                                                                            | Tranché                                                                                                                                                                                                                                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Clé `customerMandate` : `FeatureLevelsView` est mappé sur `FeatureKey`, les `toEqual` exacts cassent | Le lot étend **toutes** les listes : `feature-access.e2e-spec.ts`, `contracts/src/__tests__/feature-access.spec.ts`, `feature-access.fixture.ts` (plateforme), `feature-access-labels.ts` (admin), repli du front (`ClientFeatureAccess`). Niveaux propres `closed`/`open`, défaut `closed`                                |
+| 2   | Le résolveur exige un `FeatureSubject` que les handlers n'ont pas                                    | Une méthode **sans sujet** pour une clé non exemptible, nommée. `resolveFeatureLevel`, le tableau admin des exemptions et `AddFeatureExemptionHandler` ignorent/refusent `customerMandate`                                                                                                                                 |
+| 3   | Journal : aucun handler de `payments` n'injecte `Journal`                                            | Suivre un handler existant qui écrit un fait dans la transaction de son écriture (le citer dans le rapport). Faits : frappe (staff/client), dépôt de scan (staff/client), activation, révocation par changement de RIB. Si le mécanisme demande plus que l'injection de `Journal` + `UnitOfWork`, **s'arrêter et le dire** |
+| 4   | Ce qui déclenche la révocation du brouillon                                                          | **Toute** écriture du RIB (IBAN, BIC, titulaire, adresse) ou des options du mandat (zones 14/19) tant qu'un brouillon existe : tout est imprimé sur le papier. La fonction partagée `recordCompanyBankAccount` prend les ports nécessaires ; la notification staff reste hors transaction                                  |
+| 5   | RIB d'un **actif** changé par le staff : aucun mécanisme                                             | **Hors lot**, entrée datée dans `todos/todo-mandat-core-contre-b2b.md` (aucun actif en production ; l'écran staff avertit déjà sur un autre compte). Côté client : refus 409, §8                                                                                                                                           |
+| 6   | `RCUR` en dur contre `one_off` proposé en admin                                                      | **Tranché par Hugo le 2026-09-14 : le lot SUIT le réglage** (`OOFF` si `one_off`, `RCUR` sinon), le choix ponctuel reste proposé en admin. Bâti au Lot 0. Trou écrit dans la todo : le mandat ne mémorise pas le type imprimé                                                                                              |
+| 7   | « 13 mois » retiré sans source                                                                       | Retiré avec le paragraphe CORE (§8), **et** noté « à confirmer avec la banque » dans la todo, avec la raison : ce délai vise les opérations non autorisées, pas le remboursement                                                                                                                                           |
+| 8   | `MintMandateHandler` sans port RIB                                                                   | Il en reçoit un ; sa spec est refaite                                                                                                                                                                                                                                                                                      |
+| 9   | Justifications à réécrire                                                                            | `pain008.ts` (en-tête `LclInstrm`) et `sepa-mandate-pdf.ts` (en-tête) au Lot 0                                                                                                                                                                                                                                             |
+
+**Découpage de construction.** Lot 0 et Lot A en parallèle (fichiers
+disjoints ; **seul le Lot A lance les e2e**, la base de test ne se partage pas).
+Lot B après le Lot A, sur les contrats qu'il aura posés.
+
+**Contrat client posé par le Lot A** (pour le Lot B) : `CustomerMandateView`
+(`id`, `reference`, `status`, `hasProof`, `proofFileName`, `acceptedAt`) dans
+`packages/contracts` ; routes `GET /companies/:companyId/mandate` (vue ou
+`null`), `POST /companies/:companyId/mandate` (frappe ou brouillon existant,
+rend la vue), `GET /companies/:companyId/mandate/document.pdf[?inline=1]`
+(brouillon seulement), `PUT /companies/:companyId/mandate/proof` (multipart
+`file`). Ordre des refus : non-membre 404 → rôle 403 → drapeau fermé 409 →
+règle métier.
+
+## 10. Le client règle les zones 14 et 19 — décidé par Hugo le 2026-09-14
+
+Jusque-là, `debtorReference` (zone 14) et `contractNumber` (zone 19) étaient
+des réglages du staff (`PUT /admin/companies/:companyId/mandate-options`). Le
+client les règle désormais lui-même, depuis `/mon-compte`.
+
+**Contrat** (`packages/contracts`, `company-bank-account.ts`) :
+
+- `CustomerMandateOptionsView = Pick<CompanyBankAccountView, "debtorReference" | "contractNumber">` ;
+- `CustomerMandateOptionsSectionView { options: CustomerMandateOptionsView | null }`,
+  `null` tant qu'aucun RIB n'est déposé ;
+- `GET /companies/:companyId/mandate-options` → la section ;
+- `PUT /companies/:companyId/mandate-options`, corps `SetMandateOptionsPayload`
+  (celui du staff), réponse **204**.
+
+`CustomerBankAccountView` ne change pas : les zones n'y entrent pas, elles ont
+leur propre lecture, pour la même raison que la route staff (le `PUT` du RIB
+exige l'IBAN).
+
+**Ordre des refus** : non-membre 404 → rôle ni détenteur ni facturation 403 →
+drapeau `customerMandate` fermé 409 → sans RIB 404 → **sous un mandat actif
+409** (`MandateOptionsBoundToActiveMandateError`). Les zones sont imprimées sur
+un papier déjà signé : le changement de papier passe par le staff, comme le RIB
+client (§8). Le staff, lui, n'a pas ce refus.
+
+**Écriture** : une seule séquence, `recordMandateOptions`, partagée par les
+deux handlers — RIB requis, `setOptions`, brouillon révoqué dans l'unité de
+travail (fait `payment_mandate.draft_voided`, cause `mandate_options_changed`),
+cloche du staff hors transaction.
+
+**Journal — les deux trous nommés ici sont fermés (2026-09-14).** Cette
+section disait que `draft_voided` ne portait pas `via`, et qu'aucune réécriture
+des zones n'était journalisée sans brouillon. Tranché par Hugo et bâti le même
+jour :
+
+- **toute** réécriture des zones 14/19, staff comme client, écrit
+  `payment_mandate.options_changed` dans la transaction de l'écriture, brouillon
+  ou pas. Sujet : le RIB (`company_bank_account`, son identifiant) — les zones
+  vivent sur sa ligne et il n'existe souvent aucun mandat. Charge : `companyId`,
+  `debtorReference`, `contractNumber` (valeurs normalisées) et `via`. Rien
+  n'est écrit sur un refus ;
+- `payment_mandate.draft_voided` porte `via` (`staff` / `customer`), pour ses
+  quatre déclencheurs : RIB staff, RIB client, zones staff, zones client ;
+- sans RIB, l'écriture des zones lève `MandateOptionsWithoutBankAccountError`
+  (404, même code `payments.bank_account.missing`) : le message de
+  `CompanyBankAccountNotFoundError` parlait de « prévisualiser » à des
+  appelants qui ne prévisualisaient rien.

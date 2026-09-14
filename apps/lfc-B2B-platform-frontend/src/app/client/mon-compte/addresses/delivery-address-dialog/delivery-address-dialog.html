@@ -1,0 +1,55 @@
+<fold-panel-header
+  [title]="heading()"
+  [subtitle]="t().account.deliveryDialogSubtitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.addressSaveFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <!-- Le formulaire partagé avec le back-office : rang, postal, consignes. -->
+  <lfd-delivery-address-form
+    [(value)]="draft"
+    [signatureFloor]="data().signatureFloor"
+    [knownContacts]="data().knownContacts"
+    [labels]="t().account.deliveryForm"
+  />
+
+  <!-- SUPPRIMER vit ici, en correction seulement — jamais en ligne dans le carnet. -->
+  @if (!isCreate()) {
+    @if (removeRefusal(); as message) {
+      <fold-callout variant="alert" announce>
+        {{ t().account.addressActionFailed }} {{ message }}
+      </fold-callout>
+    }
+    <fold-danger-zone
+      appearance="section"
+      [title]="t().account.dangerZone"
+      [actionLabel]="t().account.addressRemove"
+      (confirmed)="remove()"
+    >
+      <p>{{ t().account.addressRemoveMessage }}</p>
+    </fold-danger-zone>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    class="submit"
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSubmit()"
+    (click)="submit()"
+  >
+    {{ isCreate() ? t().account.deliveryAddSubmit : t().account.save }}
+  </button>
+</fold-panel-footer>

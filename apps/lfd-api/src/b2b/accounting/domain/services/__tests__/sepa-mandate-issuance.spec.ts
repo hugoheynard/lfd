@@ -24,10 +24,10 @@ const CREDITOR: CreditorSnapshot = {
 const RUM = "LFC-9P2X4B-260912-K7M3QT";
 
 /**
- * Le PDF n'est pas lisible en texte simple (pdfkit compresse les flux), donc ces
- * tests portent sur ce qui est OBSERVABLE sans le décompresser : les
- * métadonnées, la taille, et le refus. C'est la limite honnête de ce niveau —
- * ce que le peigne dessine s'éprouve à l'œil, pas ici.
+ * Ces tests portent sur ce qui est observable SANS décompresser le PDF : les
+ * métadonnées, la taille, et le refus. Le texte dessiné, lui, se lit avec
+ * `pdf-drawn-text.ts` (depuis le 2026-09-14) — c'est `sepa-mandate-scheme.spec.ts`
+ * qui l'éprouve. Ce que le peigne dessine au pixel s'éprouve toujours à l'œil.
  */
 describe("renderSepaMandatePdf — l'émission", () => {
   it("nomme le document par sa RUM dans ses métadonnées", async () => {

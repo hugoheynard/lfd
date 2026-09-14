@@ -1,10 +1,11 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { CustomerBankAccountView } from '@lfd/contracts';
-import { FoldPanelHostService } from 'fold-ng';
+import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
 import { type BankReadStatus, ClientBankAccount } from '../../../client-bank-account.service';
+import { ClientMandate } from '../../../client-mandate.service';
 import { FR } from '../../../copy/fr';
 import { bootCard, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { BankPanel } from '../bank-panel/bank-panel';
@@ -23,10 +24,12 @@ const SAVED: CustomerBankAccountView = {
 
 let ensured: string[];
 let reloads: string[];
+let refreshes: string[];
 
 function render(status: BankReadStatus, account: CustomerBankAccountView | null): HTMLElement {
   ensured = [];
   reloads = [];
+  refreshes = [];
   const fixture = bootCard(
     BankDeskCard,
     [TOMMEUSES],
@@ -39,6 +42,15 @@ function render(status: BankReadStatus, account: CustomerBankAccountView | null)
           ensure: (id: string) => ensured.push(id),
           reload: (id: string) => {
             reloads.push(id);
+            return Promise.resolve();
+          },
+        },
+      },
+      {
+        provide: ClientMandate,
+        useValue: {
+          refresh: (id: string) => {
+            refreshes.push(id);
             return Promise.resolve();
           },
         },
@@ -90,6 +102,34 @@ describe('BankDeskCard', () => {
 
     expect(openedPanel()?.component).toBe(BankPanel);
     expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', account: SAVED });
+  });
+
+  /**
+   * Plan `plan-mandat-client.md` §8 : enregistrer le RIB révoque le brouillon
+   * côté serveur. La carte mandat proposerait sinon de télécharger un papier
+   * que l'API refuse désormais.
+   */
+  it('un RIB enregistré relit le RIB ET le mandat ; un panneau fermé sans enregistrer, rien', async () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    const el = render('ready', SAVED);
+    const host = TestBed.inject(FoldPanelHostService);
+    const closeWith = async (result: boolean | undefined): Promise<void> => {
+      el.querySelector<HTMLButtonElement>('button.action')?.click();
+      const [panel] = host.panels();
+      if (panel?.kind !== 'component') {
+        throw new Error('Le panneau RIB ne s’est pas ouvert.');
+      }
+      panel.injector.get(FoldPanelRef).close(result);
+      await new Promise((resolve) => setTimeout(resolve));
+    };
+
+    await closeWith(undefined);
+    expect(reloads).toEqual([]);
+    expect(refreshes).toEqual([]);
+
+    await closeWith(true);
+    expect(reloads).toEqual(['cmp_1']);
+    expect(refreshes).toEqual(['cmp_1']);
   });
 
   it('dit l’échec de lecture au lieu de « aucun RIB », et relit au clic', () => {

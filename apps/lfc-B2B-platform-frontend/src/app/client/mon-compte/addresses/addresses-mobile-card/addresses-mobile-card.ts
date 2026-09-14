@@ -39,7 +39,7 @@ export class AddressesMobileCard {
   protected open(view: AddressesView): void {
     const company = this.client.company();
     if (company !== null) {
-      AddressesPanel.open(this.panels, company, view, null);
+      AddressesPanel.open(this.panels, company, view);
     }
   }
 }

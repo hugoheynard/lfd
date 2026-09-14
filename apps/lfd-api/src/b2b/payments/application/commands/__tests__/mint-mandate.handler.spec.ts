@@ -6,7 +6,15 @@ import type { SecretGenerator } from "../../../../../platform/secret/secret-gene
 import {
   CompanyNotFoundForMandateError,
   MandateDraftAlreadyExistsError,
+  MandateWithoutBankAccountError,
 } from "../../../domain/errors/mandate-errors.js";
+import {
+  bankAccount,
+  InMemoryBankAccounts,
+  StepPublisher,
+  Steps,
+  StepUnitOfWork,
+} from "../../__tests__/payment-doubles.js";
 import {
   mintMandate,
   PaymentMandate,
@@ -52,20 +60,30 @@ function build(
     readonly holder?: MandateHolder | null;
     readonly issuer?: CreditorSnapshot | null;
     readonly draft?: PaymentMandate | null;
+    readonly withAccount?: boolean;
+    /** Le brouillon qu'un second onglet a frappé entre la lecture et l'écriture. */
+    readonly raceWinner?: PaymentMandate;
   } = {},
 ) {
   const written: MandateToCreate[] = [];
+  const steps = new Steps();
+  let draft = options.draft ?? null;
 
   // 🔴 Les deux doublés implémentent le port EN ENTIER, sans cast. Un
   // `as unknown as` laisserait la signature changer sans que rien ne rougisse —
   // le test resterait vert en éprouvant un port qui n'existe plus.
   const mandates: PaymentMandateRepository = {
     findHolder: () => Promise.resolve(options.holder === undefined ? HOLDER : options.holder),
-    findDraft: () => Promise.resolve(options.draft ?? null),
+    findDraft: () => Promise.resolve(draft),
     findAwaitingProof: () => Promise.resolve(null),
     findCurrent: () => Promise.resolve(null),
     findById: () => Promise.resolve(null),
     create: (snapshot: MandateToCreate) => {
+      if (options.raceWinner !== undefined) {
+        draft = options.raceWinner;
+        return Promise.reject(new MandateDraftAlreadyExistsError(null));
+      }
+      steps.log.push("mandate:create");
       written.push(snapshot);
       return Promise.resolve("mdt_neuf");
     },
@@ -81,7 +99,25 @@ function build(
   const clock: Clock = { now: () => NOW };
   const secrets: SecretGenerator = { next: () => "K7M3QT9Z" };
 
-  return { handler: new MintMandateHandler(mandates, creditors, clock, secrets), written };
+  const accounts = new InMemoryBankAccounts(steps);
+  if (options.withAccount ?? true) {
+    accounts.stored = bankAccount();
+  }
+  const events = new StepPublisher(steps);
+  return {
+    handler: new MintMandateHandler(
+      mandates,
+      creditors,
+      clock,
+      secrets,
+      accounts,
+      events,
+      new StepUnitOfWork(steps),
+    ),
+    written,
+    steps,
+    events,
+  };
 }
 
 describe("MintMandateHandler — frapper sans signer", () => {
@@ -111,6 +147,60 @@ describe("MintMandateHandler — frapper sans signer", () => {
     await handler.execute(new MintMandateCommand("cmp_1"));
 
     expect(written[0]?.creditorId).toBe("ent_1");
+  });
+
+  /** Plan mandat client §9 #3 (2026-09-14) : la frappe s'écrit avec sa trace. */
+  it("écrit le brouillon ET son fait dans la même unité de travail", async () => {
+    const { handler, steps, events } = build();
+
+    await handler.execute(new MintMandateCommand("cmp_1"));
+
+    expect(steps.log).toEqual([
+      "uow:begin",
+      "mandate:create",
+      "journal:payment_mandate.minted",
+      "uow:end",
+    ]);
+    expect(events.traced[0]?.journalFact()).toMatchObject({
+      subjectId: "mdt_neuf",
+      payload: { companyId: "cmp_1", via: "staff" },
+    });
+  });
+
+  /**
+   * 🔴 Décision de Hugo (2026-09-14) : la frappe exige un RIB, pour le staff
+   * aussi. Ce spec affirmait l'inverse — « l'impression refusera ».
+   */
+  it("refuse en 409 sans RIB, sans tirer de RUM", async () => {
+    const { handler, written } = build({ withAccount: false });
+
+    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow(
+      MandateWithoutBankAccountError,
+    );
+    expect(written).toHaveLength(0);
+  });
+
+  it("oppose le RIB manquant avant l'émetteur manquant (société → RIB → émetteur)", async () => {
+    const { handler } = build({ withAccount: false, issuer: null });
+
+    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow(
+      MandateWithoutBankAccountError,
+    );
+  });
+
+  /**
+   * Régression prévenue (plan §6 #5) : deux clics simultanés passent tous deux
+   * la lecture, et l'index partiel remontait en 500. Le staff garde son 409 —
+   * qui nomme la RUM du brouillon gagnant, relue après la transaction.
+   */
+  it("nomme la RUM du brouillon gagnant quand l'index tranche", async () => {
+    const winner = PaymentMandate.reconstitute({
+      ...mintMandate({ companyId: "cmp_1", creditorId: "ent_1", reference: "LFC-GAGNANT" }),
+      id: "mdt_gagnant",
+    });
+    const { handler } = build({ raceWinner: winner });
+
+    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow("LFC-GAGNANT");
   });
 
   it("refuse une société inconnue", async () => {

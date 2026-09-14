@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import type {
+  CommercialContact,
   FooterContent,
   FooterContentView,
   FooterLocaleContent,
@@ -49,6 +50,12 @@ export class ClientContent {
 
   /** L'identité légale — la même quelle que soit la langue. */
   readonly identity = computed<LegalIdentity>(() => this.content().identity);
+
+  /**
+   * Le contact de la carte « service commercial » de Mon compte — À PART de
+   * l'identité, que le pied de page garde (Hugo, 2026-09-14).
+   */
+  readonly commercialContact = computed<CommercialContact>(() => this.content().commercialContact);
 
   /**
    * Quelles mentions légales s'affichent — hors de la langue, comme l'identité :

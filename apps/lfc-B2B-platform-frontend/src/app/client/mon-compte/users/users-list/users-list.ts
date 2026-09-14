@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import type { ContactView } from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { UserPanel } from '../../user-panel/user-panel';
+import { ContactEditPanel } from '../contact-edit-panel/contact-edit-panel';
 import { contactLine, initialsOf, nameOf } from '../users-section';
 
 /**
@@ -24,11 +25,16 @@ import { contactLine, initialsOf, nameOf } from '../users-section';
  * Le fil n'en distingue que **deux** : le détenteur a un espace, un contact
  * additionnel n'en a pas, par construction du modèle. `invited` reviendra avec
  * l'invitation elle-même, qui n'est pas construite.
+ *
+ * ## Un clic ouvre le dialogue de la personne
+ *
+ * Plus de fiche intermédiaire (règle « Saisir », 2026-09-14) : le clic ouvre
+ * `ContactEditPanel` directement — en saisie aux rôles qui gèrent, en lecture
+ * seule aux autres —, empilé quand la liste est dans un panneau.
  */
 @Component({
   selector: 'app-users-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UserPanel],
   templateUrl: './users-list.html',
   styleUrl: './users-list.scss',
 })
@@ -41,9 +47,7 @@ export class UsersList {
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly client = inject(ClientCompany);
-
-  /** L'interlocuteur dont la fiche est ouverte — `null` la referme. */
-  protected readonly opened = signal<ContactView | null>(null);
+  private readonly panels = inject(FoldPanelHostService);
 
   /** Le contact PRINCIPAL : le détenteur, toujours présent quand la société l'est. */
   protected readonly holder = computed(() => this.client.company()?.primaryContact ?? null);
@@ -68,6 +72,9 @@ export class UsersList {
   });
 
   protected open(contact: ContactView): void {
-    this.opened.set(contact);
+    const company = this.client.company();
+    if (company !== null) {
+      ContactEditPanel.open(this.panels, company, contact);
+    }
   }
 }

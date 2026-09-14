@@ -12,7 +12,7 @@
         intent="primary"
         size="sm"
         type="button"
-        (click)="open('billing', { kind: 'edit', addressId: null })"
+        (click)="editBilling()"
       >
         {{ billing() === null ? t().account.billingFill : t().account.billingEdit }}
       </button>
@@ -41,7 +41,7 @@
               emphasis="soft"
               intent="primary"
               type="button"
-              (click)="open('delivery', { kind: 'edit', addressId: address.id })"
+              (click)="openDelivery(address.id)"
             >
               {{ t().account.edit }}
             </button>
@@ -57,7 +57,7 @@
         intent="primary"
         size="sm"
         type="button"
-        (click)="open('delivery', { kind: 'new' })"
+        (click)="openDelivery(null)"
       >
         {{ t().account.addressAdd }}
       </button>

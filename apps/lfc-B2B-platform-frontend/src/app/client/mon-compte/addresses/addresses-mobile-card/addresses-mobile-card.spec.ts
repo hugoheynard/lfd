@@ -83,11 +83,10 @@ describe('AddressesMobileCard', () => {
       companyId: 'cmp_1',
       canManage: false,
       view: 'billing',
-      form: null,
     });
 
     TestBed.inject(FoldPanelHostService).dismissAll();
     delivery?.click();
-    expect(openedPanel()?.data).toMatchObject({ view: 'delivery', form: null });
+    expect(openedPanel()?.data).toMatchObject({ view: 'delivery' });
   });
 });

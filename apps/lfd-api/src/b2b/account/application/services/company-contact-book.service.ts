@@ -5,8 +5,12 @@ import {
   ContactAlreadyExistsError,
 } from "../../domain/errors/account-errors.js";
 import { CompanyContactRepository } from "../../domain/ports/company-contact.repository.js";
-import { CompanyMemberRepository } from "../../domain/ports/company-member.repository.js";
+import {
+  CompanyMemberRepository,
+  type KnownAccount,
+} from "../../domain/ports/company-member.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { ensureHolderKeepsOwnership } from "../../domain/services/company-access.js";
 import type { AssignableRole } from "../../domain/value-objects/company-role.js";
 import type { ContactDetails } from "../../domain/value-objects/contact-details.js";
 
@@ -37,8 +41,9 @@ export class CompanyContactBook {
   /** Ajoute un interlocuteur, et rend son identifiant. */
   async add(companyId: string, details: ContactDetails, role: AssignableRole): Promise<string> {
     await this.ensureNotTheHolder(companyId, details.email.value);
+    const account = await this.accountToAlign(companyId, details.email.value, role);
     const contactId = await this.contacts.add(companyId, details, role);
-    await this.alignAccess(companyId, details.email.value, role);
+    await this.alignAccess(account, companyId, role);
     return contactId;
   }
 
@@ -50,8 +55,9 @@ export class CompanyContactBook {
     role: AssignableRole,
   ): Promise<void> {
     await this.ensureNotTheHolder(companyId, details.email.value);
+    const account = await this.accountToAlign(companyId, details.email.value, role);
     await this.contacts.update(companyId, contactId, details, role);
-    await this.alignAccess(companyId, details.email.value, role);
+    await this.alignAccess(account, companyId, role);
   }
 
   /**
@@ -73,6 +79,36 @@ export class CompanyContactBook {
   }
 
   /**
+   * Le compte dont le rôle sera aligné — résolu **avant** toute écriture.
+   *
+   * 🔴 Refuse l'adresse de connexion du **détenteur**. `ensureNotTheHolder` ne
+   * voit que l'adresse de la fiche, et les deux divergent dès que la fiche est
+   * corrigée : un admin client notait alors l'adresse de connexion du détenteur
+   * avec le rôle « Facturation », et l'alignement le rétrogradait (corrigé le
+   * 2026-09-14). La base ignore désormais la rétrogradation ; refuser plutôt
+   * que l'ignorer en silence évite d'afficher un rôle qui n'est pas appliqué.
+   */
+  private async accountToAlign(
+    companyId: string,
+    email: string,
+    role: AssignableRole,
+  ): Promise<KnownAccount | null> {
+    const account = await this.members.findAccountByEmail(email);
+    if (account === null) {
+      return null;
+    }
+    const owner = await this.members.findOwner(companyId);
+    ensureHolderKeepsOwnership(
+      companyId,
+      role,
+      owner?.userId ?? null,
+      account.userId,
+      HOLDER_IN_BOOK_REFUSAL,
+    );
+    return account;
+  }
+
+  /**
    * Aligne les droits réels sur le rôle affiché — **sans jamais créer d'accès**.
    *
    * Noter un interlocuteur et lui donner les clés de l'espace restent deux
@@ -80,14 +116,24 @@ export class CompanyContactBook {
    * et c'est exactement ce qu'on veut du responsable réception qu'on vient
    * d'ajouter au carnet.
    */
-  private async alignAccess(companyId: string, email: string, role: AssignableRole): Promise<void> {
-    const account = await this.members.findAccountByEmail(email);
+  private async alignAccess(
+    account: KnownAccount | null,
+    companyId: string,
+    role: AssignableRole,
+  ): Promise<void> {
     if (account === null) {
       return;
     }
     await this.members.alignRole(account.userId, companyId, role);
   }
 }
+
+/** Le refus, dit dans les termes du carnet — la personne croyait noter un contact. */
+const HOLDER_IN_BOOK_REFUSAL =
+  "Cette adresse est celle du compte qui détient cette société : il figure déjà en tête " +
+  "de la fiche, et son rôle ne se change pas depuis les interlocuteurs. Si l'adresse " +
+  "affichée pour le détenteur n'est plus la bonne, corriger le contact principal ; pour " +
+  "confier la détention à une autre personne, passer par le support.";
 
 /** Deux adresses sont la même boîte, quelle qu'en soit la casse. */
 function sameAddress(left: string, right: string): boolean {

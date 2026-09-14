@@ -141,11 +141,34 @@ const postalFieldsSchema = z.object({
 export const billingAddressPayloadSchema = postalFieldsSchema;
 export type BillingAddressPayload = z.infer<typeof billingAddressPayloadSchema>;
 
-/** Charge de création/édition d'une **adresse de livraison** (postal + consignes). */
-export const deliveryAddressPayloadSchema = postalFieldsSchema.extend({
-  isDefault: z.boolean().default(false),
-  specs: deliverySpecsSchema,
-});
+/**
+ * Charge de création/édition d'une **adresse de livraison** (postal + consignes).
+ *
+ * 🔴 **Pas de signature exigée sans contact sur place** (Hugo, 2026-09-14) : une
+ * signature suppose quelqu'un pour signer. Le refus vit sur la CHARGE et non sur
+ * `deliverySpecsSchema`, que les lectures réutilisent (`deliverySpecsSchema.parse`
+ * dans les lecteurs d'adresses, vérifié ce jour-là) : une adresse déjà enregistrée
+ * ainsi doit rester lisible, et se corrige à sa prochaine écriture.
+ *
+ * ⚠️ Le cas HÉRITÉ — `signatureRequired: null` sur une société qui exige la
+ * signature — n'est pas refusé ici : le contrat ne connaît pas le socle de la
+ * société. Le formulaire partagé le rend inexprimable (`withNoContact`).
+ */
+export const deliveryAddressPayloadSchema = postalFieldsSchema
+  .extend({
+    isDefault: z.boolean().default(false),
+    specs: deliverySpecsSchema,
+  })
+  .superRefine((payload, ctx) => {
+    if (payload.specs.deliveryContact === null && payload.specs.signatureRequired === true) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["specs", "signatureRequired"],
+        message:
+          "une signature ne peut pas être exigée sans contact sur place : renseignez un contact, ou n'exigez pas de signature",
+      });
+    }
+  });
 export type DeliveryAddressPayload = z.infer<typeof deliveryAddressPayloadSchema>;
 
 // ─── Vues de LECTURE (réponses) ──────────────────────────────────────────────

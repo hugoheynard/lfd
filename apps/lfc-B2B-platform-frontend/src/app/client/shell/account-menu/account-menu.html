@@ -1,0 +1,18 @@
+@if (recognised()) {
+  <fold-dropdown placement="bottom-end" [ariaLabel]="t().chrome.accountMenu" [(open)]="open">
+    <!-- Un VRAI bouton : l'initiale seule n'est pas un nom, le déclencheur en porte un. -->
+    <button class="who" type="button" foldPopoverTrigger="menu" [attr.aria-label]="triggerLabel()">
+      @if (identity.firstName(); as name) {
+        <span class="who-name" aria-hidden="true">{{ name }}</span>
+      }
+      <span class="who-chip" aria-hidden="true">{{ initials() }}</span>
+    </button>
+
+    <fold-dropdown-item icon="user" [disabled]="!hasProfile()" (selected)="openProfile()">
+      {{ t().chrome.myProfile }}
+    </fold-dropdown-item>
+    <fold-dropdown-item icon="logout" (selected)="logout()">
+      {{ t().nav.logout }}
+    </fold-dropdown-item>
+  </fold-dropdown>
+}

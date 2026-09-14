@@ -1,0 +1,5 @@
+// Fragment transparent : ses blocs deviennent enfants directs du corps du
+// panneau container, qui gouverne l'espacement (gap). Comme les autres fragments.
+:host {
+  display: contents;
+}

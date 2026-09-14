@@ -95,6 +95,8 @@ export type {
   CompanyBankAccountView,
   CustomerBankAccountSectionView,
   CustomerBankAccountView,
+  CustomerMandateOptionsSectionView,
+  CustomerMandateOptionsView,
   SetCompanyBankAccountPayload,
   SetMandateOptionsPayload,
 } from "./company-bank-account.js";
@@ -104,6 +106,7 @@ export {
   signMandatePayloadSchema,
 } from "./payment-mandate.js";
 export type {
+  CustomerMandateView,
   MandateStatus,
   PaymentMandateView,
   MandateSectionView,
@@ -865,6 +868,8 @@ export {
   contentLocaleSchema,
   socialLinkSchema,
   legalIdentitySchema,
+  commercialContactSchema,
+  DEFAULT_COMMERCIAL_CONTACT_EMAIL,
   footerHouseSchema,
   footerLinkSchema,
   footerLocaleContentSchema,
@@ -879,6 +884,7 @@ export type {
   LegalIdentity,
   FooterHouse,
   FooterLocaleContent,
+  CommercialContact,
   FooterContent,
   FooterContentPayload,
   FooterContentView,
@@ -955,6 +961,8 @@ export {
   SHOP_LEVELS,
   featureExemptionPayloadSchema,
   featureLevelsOf,
+  GATE_LEVELS,
+  isExemptible,
   featureOverridePayloadSchema,
   isAtLeast,
   isFeatureKey,
@@ -975,8 +983,10 @@ export type {
   FeatureLevelsView,
   FeatureOverridePayload,
   FeatureOverrideView,
+  GateLevel,
   IgnoredFeatureRowView,
   ShopLevel,
+  UnexemptibleFeatureKey,
   VisibilityFeatureKey,
   VisibilityLevel,
 } from "./feature-access.js";

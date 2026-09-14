@@ -166,6 +166,38 @@
       </fold-fieldset>
     </fold-card>
 
+    <!-- LE CONTACT COMMERCIAL, à part de l'identité (Hugo, 2026-09-14) : le pied
+         de page garde le standard de la maison, Mon compte donne la personne qui
+         suit le compte pro. Hors du sélecteur de langue : une adresse ne se
+         traduit pas. -->
+    <fold-card class="commercial">
+      <fold-element-title
+        title="Contact commercial (Mon compte)"
+        subtitle="Affiché sur la carte « Contacter le service commercial » de Mon compte, pas dans le pied de page. Ce qui reste vide n’est pas affiché."
+      />
+      <div class="grid">
+        <fold-input
+          label="E-mail"
+          placeholder="celine@lafoliedouce.com"
+          [value]="commercialContact().email"
+          (valueChange)="setCommercialContact('email', $event)"
+        />
+        <fold-input
+          label="Téléphone"
+          placeholder="04 79 06 12 40"
+          [value]="commercialContact().phone"
+          (valueChange)="setCommercialContact('phone', $event)"
+        />
+        <fold-input
+          label="Téléphone composable"
+          hint="Le lien du bouton d’appel — préfixe « tel: » compris"
+          placeholder="tel:+33479061240"
+          [value]="commercialContact().phoneHref"
+          (valueChange)="setCommercialContact('phoneHref', $event)"
+        />
+      </div>
+    </fold-card>
+
     <!-- LA COPIE, sous le sélecteur. Les quatre sections dans l'ordre où la
          vitrine les empile : un écran qui les réordonnerait ferait deviner au
          rédacteur ce qu'il est en train de changer. -->

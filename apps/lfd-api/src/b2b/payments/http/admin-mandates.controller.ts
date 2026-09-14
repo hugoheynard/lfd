@@ -40,7 +40,10 @@ import { SendMandateCommand } from "../application/commands/send-mandate.command
 import { SignMandateCommand } from "../application/commands/sign-mandate.command.js";
 import { type MandateProofFile } from "../application/queries/get-mandate-proof.handler.js";
 import { GetMandateProofQuery } from "../application/queries/get-mandate-proof.query.js";
-import { MandateProofNotFoundError } from "../domain/errors/mandate-errors.js";
+import {
+  MandateNotFoundError,
+  MandateProofNotFoundError,
+} from "../domain/errors/mandate-errors.js";
 import { GetCompanyMandateQuery } from "../application/mandate-queries.js";
 import { PaymentGateway } from "../domain/payment-gateway.js";
 
@@ -56,10 +59,12 @@ interface UploadedFilePart {
 /**
  * Surface **staff** du mandat de prélèvement d'une société.
  *
- * Staff-only, et ce n'est pas une commodité : la clientèle visée ne saisira
- * jamais ses coordonnées bancaires elle-même — le registre repris arrive avec,
- * et c'est le commercial qui les reporte. Il n'y a donc pas d'endpoint client
- * jumeau, contrairement au KBIS.
+ * ⚠️ Ce JSDoc affirmait qu'il n'existerait jamais d'endpoint client jumeau, « la
+ * clientèle ne saisira jamais ses coordonnées bancaires ». C'est faux depuis le
+ * 2026-09-14 : le client dépose son RIB (`CompanyBankAccountController`), génère,
+ * télécharge et renvoie son mandat (`CompanyMandateController`). Ce qui reste
+ * propre au staff, et le restera : **activer** (déclarer la date du papier après
+ * l'avoir relu), **envoyer** par courriel, **révoquer**, et relire la pièce.
  *
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
@@ -189,14 +194,15 @@ export class AdminMandatesController {
    * d'un dépôt, donc d'une saisie, et un nom porteur de guillemets ou de retours
    * à la ligne découperait l'en-tête HTTP.
    */
-  @Get(":companyId/mandate/proof")
+  @Get(":companyId/mandate/:mandateId/proof")
   async proof(
     @Param("companyId") companyId: string,
+    @Param("mandateId") mandateId: string,
     @Query("inline") inline: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     const proof = await this.queries.execute<GetMandateProofQuery, MandateProofFile | null>(
-      new GetMandateProofQuery(companyId),
+      new GetMandateProofQuery(companyId, mandateId),
     );
     if (proof === null) {
       throw new MandateProofNotFoundError(companyId);
@@ -208,6 +214,29 @@ export class AdminMandatesController {
       inline === "1" ? contentDispositionInline(fileName) : contentDispositionAttachment(fileName),
     );
     return new StreamableFile(proof.bytes);
+  }
+
+  /**
+   * ⚠️ **Dépréciée le 2026-09-14** — la pièce du mandat COURANT. Remplacée par
+   * `GET :companyId/mandate/:mandateId/proof`, qui dit de quel mandat on parle.
+   *
+   * Gardée parce qu'un back-office déjà chargé l'appelle encore : un contrat
+   * servi ne se casse pas dans le déploiement qui le remplace (`CLAUDE.md` §0).
+   * À retirer une fois le front déployé.
+   */
+  @Get(":companyId/mandate/proof")
+  async currentProof(
+    @Param("companyId") companyId: string,
+    @Query("inline") inline: string | undefined,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const current = await this.queries.execute<GetCompanyMandateQuery, PaymentMandateView | null>(
+      new GetCompanyMandateQuery(companyId),
+    );
+    if (current === null) {
+      throw new MandateNotFoundError(companyId);
+    }
+    return this.proof(companyId, current.id, inline, response);
   }
 
   /** Retire l'autorisation de prélever — chez le prestataire, puis chez nous. */

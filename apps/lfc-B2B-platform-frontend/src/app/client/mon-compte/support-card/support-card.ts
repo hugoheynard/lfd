@@ -8,15 +8,23 @@ import { supportChannels } from '../../support-channels';
 import { SupportPanel } from '../support-panel/support-panel';
 
 /**
- * « Contacter le service commercial » — sous les cartes de `/mon-compte`, une
- * carte bleu clair qui ouvre le panneau des coordonnées.
+ * « Contacter le service commercial » — la carte bleu clair de `/mon-compte`,
+ * sur le **contact commercial** du contenu de plateforme, pas sur l'identité du
+ * pied de page (Hugo, 2026-09-14).
  *
- * La carte entière est le geste, et c'est pourquoi elle est `interactive` : elle
- * ne contient ni lien ni autre bouton, et le rôle `button` que fold lui pose
- * dit exactement ce qu'elle fait. Les coordonnées vivent dans le panneau — la
- * carte reste courte, amarrée au bas de l'écran en pile.
+ * ## Deux cartes, une seule affichée
  *
- * Sans aucun canal publié, la carte se tait plutôt que d'ouvrir un panneau vide.
+ * - **Au bureau**, dans l'aside : l'adresse s'affiche SOUS le titre, en lien
+ *   `mailto:`, le téléphone seulement s'il est renseigné. Aucun dialogue — la
+ *   place y est, et ouvrir un panneau pour lire une adresse est un clic de trop.
+ *   La carte n'est donc PAS `interactive` : elle contient des liens.
+ * - **En pile**, amarrée au bas de la colonne : la carte entière est le geste,
+ *   `interactive`, et ouvre le panneau des coordonnées. Ce panneau ne SAISIT
+ *   rien, il se lit : il garde `panelSide()` (règle « Consulter n'est pas
+ *   saisir » du `CLAUDE.md` de l'app).
+ *
+ * Les deux sont dans le DOM, le CSS choisit au pli — comme les cartes de la page.
+ * Sans aucun canal, la carte se tait plutôt que d'ouvrir un panneau vide.
  */
 @Component({
   selector: 'app-support-card',
@@ -27,11 +35,13 @@ import { SupportPanel } from '../support-panel/support-panel';
 })
 export class SupportCard {
   protected readonly t = inject(ClientCopyService).t;
-  private readonly identity = inject(ClientContent).identity;
+  private readonly contact = inject(ClientContent).commercialContact;
   private readonly panels = inject(FoldPanelHostService);
 
+  protected readonly channels = computed(() => supportChannels(this.contact()));
+
   protected readonly reachable = computed(() => {
-    const { phone, email } = supportChannels(this.identity());
+    const { phone, email } = this.channels();
     return phone !== null || email !== null;
   });
 

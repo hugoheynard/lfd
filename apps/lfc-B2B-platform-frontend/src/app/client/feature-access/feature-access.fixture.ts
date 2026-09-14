@@ -12,13 +12,19 @@ import { ClientFeatureAccess } from './client-feature-access.service';
  */
 export function openShopAt(level: ShopLevel): ClientFeatureAccess {
   const access = TestBed.inject(ClientFeatureAccess);
-  access.receive({ shop: level, ...ALL_VISIBLE });
+  access.receive({ shop: level, ...DEFAULT_SURFACES });
   return access;
 }
 
-/** Les trois surfaces masquables, montrées : l'état par défaut du catalogue. */
-export const ALL_VISIBLE = {
+/**
+ * Toutes les clés sauf la boutique, à leur défaut du catalogue.
+ *
+ * S'appelait `ALL_VISIBLE` jusqu'au 2026-09-14 : le mandat client y est entré
+ * FERMÉ (`closed`), et le nom aurait menti.
+ */
+export const DEFAULT_SURFACES = {
   orders: 'visible',
   invoices: 'visible',
   desktopMenu: 'visible',
+  customerMandate: 'closed',
 } as const;

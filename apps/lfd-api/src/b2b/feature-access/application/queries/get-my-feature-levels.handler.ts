@@ -21,12 +21,13 @@ export class GetMyFeatureLevelsHandler implements IQueryHandler<
   constructor(private readonly resolver: FeatureLevelResolver) {}
 
   async execute(query: GetMyFeatureLevelsQuery): Promise<FeatureLevelsView> {
-    const [shop, orders, invoices, desktopMenu] = await Promise.all([
+    const [shop, orders, invoices, desktopMenu, customerMandate] = await Promise.all([
       this.resolver.levelFor("shop", query.subject),
       this.resolver.levelFor("orders", query.subject),
       this.resolver.levelFor("invoices", query.subject),
       this.resolver.levelFor("desktopMenu", query.subject),
+      this.resolver.levelFor("customerMandate", query.subject),
     ]);
-    return { shop, orders, invoices, desktopMenu };
+    return { shop, orders, invoices, desktopMenu, customerMandate };
   }
 }

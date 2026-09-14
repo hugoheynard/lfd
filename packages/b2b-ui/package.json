@@ -48,6 +48,10 @@
     "./pricing": {
       "types": "./src/pricing/index.ts",
       "default": "./src/pricing/index.ts"
+    },
+    "./payment": {
+      "types": "./src/payment/index.ts",
+      "default": "./src/payment/index.ts"
     }
   },
   "scripts": {

@@ -22,6 +22,19 @@ describe("resolveFeatureLevel — l'ordre de la résolution", () => {
     expect(resolveFeatureLevel("shop", { exempt: true, storedOverride: "closed" })).toBe("order");
   });
 
+  /**
+   * Plan mandat client §9 #2 (2026-09-14) : une clé non exemptible ne s'ouvre
+   * pas pour une personne, même si l'appelant se trompe et dit « exempté ».
+   */
+  it("n'ouvre pas une clé non exemptible, même à un exempté", () => {
+    expect(resolveFeatureLevel("customerMandate", { exempt: true, storedOverride: null })).toBe(
+      "closed",
+    );
+    expect(resolveFeatureLevel("customerMandate", { exempt: true, storedOverride: "open" })).toBe(
+      "open",
+    );
+  });
+
   it("ignore une dérogation dont la valeur n'est plus un niveau de la clé", () => {
     // Deviner ce qu'un niveau disparu voulait dire ouvrirait ou fermerait la
     // vente sur une supposition : on retombe sur le défaut.

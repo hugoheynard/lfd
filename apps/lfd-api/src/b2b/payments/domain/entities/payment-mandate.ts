@@ -1,9 +1,11 @@
-import type { MandateStatus, PaymentMandateView } from "@lfd/contracts";
+import type { CustomerMandateView, MandateStatus, PaymentMandateView } from "@lfd/contracts";
 
 import {
   MandateAcceptanceInFutureError,
+  MandateNotProvableError,
   MandateNotRevocableError,
   MandateNotSignableError,
+  MandateUnprovenError,
 } from "../errors/mandate-errors.js";
 
 /** Ce que le prestataire rend une fois le mandat créé chez lui. */
@@ -103,9 +105,13 @@ export function draftMandate(input: {
  * elle que le débiteur opposera à sa banque avec la RUM. Un brouillon sans
  * émetteur serait un papier qu'on ne pourrait pas imprimer.
  *
- * Aucun `last4` ni `bankCode` : ils viennent du RIB, qui peut être recopié après
- * la frappe. Le mandat n'a pas besoin d'eux pour exister — seulement pour être
- * imprimé complet.
+ * Aucun `last4` ni `bankCode` : ils viennent du RIB, lu à l'impression.
+ *
+ * ⚠️ Cette phrase disait « le RIB peut être recopié après la frappe » jusqu'au
+ * 2026-09-14. Ce n'est plus vrai : la frappe EXIGE un RIB, staff comme client
+ * (`MandateWithoutBankAccountError`, décision de Hugo). Le mandat ne fige pas
+ * pour autant le compte (plan mandat client §8) : réécrire le RIB révoque le
+ * brouillon, qui ne peut plus nommer un compte qui n'est plus le bon.
  */
 export function mintMandate(input: {
   readonly companyId: string;
@@ -192,6 +198,11 @@ export class PaymentMandate {
     );
   }
 
+  /** La RUM — frappée par nous, ou rendue par le prestataire. Ne bouge jamais. */
+  get reference(): string {
+    return this.identity.reference;
+  }
+
   /** La date de signature, ou `null` pour un brouillon. */
   get acceptedAt(): Date | null {
     return this.acceptedAtValue;
@@ -257,6 +268,12 @@ export class PaymentMandate {
     if (this.statusValue !== "draft") {
       throw new MandateNotSignableError(this.statusValue);
     }
+    // 🔴 Depuis le 2026-09-14 : l'activation autorise un débit, et le scan est
+    // la seule pièce qui répond en contestation. On prouve AVANT d'activer —
+    // c'est ce qui permet de refuser le dépôt sur un mandat actif.
+    if (this.proofValue === null) {
+      throw new MandateUnprovenError();
+    }
     if (at.getTime() > now.getTime()) {
       throw new MandateAcceptanceInFutureError();
     }
@@ -283,9 +300,30 @@ export class PaymentMandate {
     this.revokedAtValue = now;
   }
 
-  /** Attache le scan du mandat signé — la pièce qui prouve le consentement. */
+  /**
+   * Attache le scan du mandat signé — la pièce qui prouve le consentement.
+   *
+   * 🔴 **Sur le brouillon seulement** (depuis le 2026-09-14). Un actif a déjà
+   * la pièce qu'on oppose en contestation : la remplacer ferait produire un
+   * papier que personne n'a relu à l'activation. Un nouveau dépôt sur le
+   * brouillon, lui, remplace le précédent — c'est encore la saisie.
+   */
   attachProof(proof: MandateProof): void {
+    this.refuseUnlessProvable();
     this.proofValue = proof;
+  }
+
+  /**
+   * Refuse, AVANT tout effet, un dépôt que {@link attachProof} refuserait.
+   *
+   * Existe pour l'appelant qui doit ranger le fichier avant d'écrire sa
+   * référence : sans elle, le fichier du bucket serait déjà remplacé quand le
+   * refus tombe.
+   */
+  refuseUnlessProvable(): void {
+    if (this.statusValue !== "draft") {
+      throw new MandateNotProvableError(this.statusValue);
+    }
   }
 
   /** L'état complet, à écrire tel quel. */
@@ -324,6 +362,22 @@ export class PaymentMandate {
       revokedAt: this.revokedAtValue?.toISOString() ?? null,
       hasProof: this.proven(),
       proofFileName: this.proofValue?.fileName ?? "",
+    };
+  }
+
+  /**
+   * Ce que le **client** voit de son mandat. Ni compte, ni date de révocation :
+   * sa carte RIB dit déjà le compte, et un mandat révoqué se lit « aucun mandat
+   * en cours » de son côté (plan mandat client, fin du §9).
+   */
+  toCustomerView(): CustomerMandateView {
+    return {
+      id: this.id,
+      reference: this.identity.reference,
+      status: this.statusValue,
+      hasProof: this.proven(),
+      proofFileName: this.proofValue?.fileName ?? "",
+      acceptedAt: this.acceptedAtValue?.toISOString() ?? null,
     };
   }
 }

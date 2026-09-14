@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FoldPanelRef } from 'fold-ng';
+import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
 import { AccountService, type IdentityDraft } from '../../../../account/account.service';
 import { FR } from '../../../copy/fr';
+import { matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { IdentityPanel, type IdentityPanelData } from './identity-panel';
 
 /** Une société ouverte avec ses papiers : les trois mentions sont posées. */
@@ -206,5 +208,36 @@ describe('IdentityPanel', () => {
 
     expect(wire.saves).toEqual([]);
     expect(wire.closes).toEqual([undefined]);
+  });
+  describe('open()', () => {
+    afterEach(() => {
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      vi.unstubAllGlobals();
+    });
+
+    /** Une saisie : feuille du bas sous le pli, dialogue centré au-delà (règle « Saisir »). */
+    it('monte du bas sous le pli, et se centre au-delà', () => {
+      boot(FILLED);
+      const panels = TestBed.inject(FoldPanelHostService);
+
+      vi.stubGlobal('matchMedia', matchMediaAt(true));
+      IdentityPanel.open(panels, TOMMEUSES);
+      expect(openedPanel()?.component).toBe(IdentityPanel);
+      expect(openedPanel()?.side).toBe('bottom');
+      expect(openedPanel()?.data).toEqual({
+        companyId: 'cmp_1',
+        enseigne: TOMMEUSES.enseigne,
+        vatNumber: TOMMEUSES.vatNumber,
+        raisonSociale: TOMMEUSES.raisonSociale,
+        formeJuridique: TOMMEUSES.formeJuridique,
+        siret: TOMMEUSES.siret,
+        editable: true,
+      });
+
+      panels.dismissAll();
+      vi.stubGlobal('matchMedia', matchMediaAt(false));
+      IdentityPanel.open(panels, TOMMEUSES);
+      expect(openedPanel()?.side).toBe('center');
+    });
   });
 });

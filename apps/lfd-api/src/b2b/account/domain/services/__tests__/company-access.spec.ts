@@ -1,5 +1,40 @@
-import { CompanyAdminRequiredError, CompanyNotFoundError } from "../../errors/account-errors.js";
-import { ensureCompanyAdmin } from "../company-access.js";
+import {
+  CompanyAdminRequiredError,
+  CompanyNotFoundError,
+  HolderRoleLockedError,
+} from "../../errors/account-errors.js";
+import { ensureCompanyAdmin, ensureHolderKeepsOwnership } from "../company-access.js";
+
+describe("ensureHolderKeepsOwnership", () => {
+  /**
+   * Régression : un admin client rétrogradait le détenteur en notant son adresse
+   * de connexion dans le carnet avec un autre rôle (corrigé le 2026-09-14).
+   */
+  it("REFUSE de donner un autre rôle au détenteur en place", () => {
+    expect(() => ensureHolderKeepsOwnership("company_1", "billing", "user_1", "user_1")).toThrow(
+      HolderRoleLockedError,
+    );
+  });
+
+  it("laisse le détenteur se ré-ouvrir un accès détenteur", () => {
+    expect(() =>
+      ensureHolderKeepsOwnership("company_1", "owner", "user_1", "user_1"),
+    ).not.toThrow();
+  });
+
+  it("laisse passer quiconque n'est pas le détenteur, avec n'importe quel rôle", () => {
+    expect(() =>
+      ensureHolderKeepsOwnership("company_1", "admin", "user_1", "user_2"),
+    ).not.toThrow();
+    expect(() => ensureHolderKeepsOwnership("company_1", "admin", null, "user_2")).not.toThrow();
+  });
+
+  it("dit le refus dans les termes du geste appelant", () => {
+    expect(() =>
+      ensureHolderKeepsOwnership("company_1", "orders", "user_1", "user_1", "Dit par le carnet."),
+    ).toThrow("Dit par le carnet.");
+  });
+});
 
 describe("ensureCompanyAdmin", () => {
   it("laisse passer un gestionnaire", () => {

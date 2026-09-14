@@ -7,10 +7,14 @@ import {
   type MandateSnapshot,
   type MandateToCreate,
 } from "../domain/entities/payment-mandate.js";
+import { MandateDraftAlreadyExistsError } from "../domain/errors/mandate-errors.js";
 import {
   PaymentMandateRepository,
   type MandateHolder,
 } from "../domain/payment-mandate.repository.js";
+
+/** Violation d'unicité côté Prisma. */
+const UNIQUE_VIOLATION = "P2002";
 
 /**
  * Adaptateur Prisma des mandats.
@@ -38,9 +42,9 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
    *
    * Ses appelants, au 2026-09-12 au soir : la vue de la fiche, la révocation
    * (« retirer l'autorisation » désigne sans ambiguïté l'actif), et la lecture
-   * de la preuve. Le dépôt de scan passe par `findAwaitingProof`, la signature
-   * par `findById` — les deux gestes où « le mandat de cette société » ne
-   * désigne plus rien de précis.
+   * de la preuve. Le dépôt de scan passe par `findDraft` (depuis le 2026-09-14 :
+   * un actif ne reçoit plus de pièce), la signature par `findById` — les deux
+   * gestes où « le mandat de cette société » ne désigne plus rien de précis.
    */
   async findCurrent(companyId: string): Promise<PaymentMandate | null> {
     const active = await this.prisma.paymentMandate.findFirst({
@@ -74,7 +78,28 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
     return row === null ? null : PaymentMandate.reconstitute(toSnapshot(row));
   }
 
+  /**
+   * 🔴 Une violation d'unicité sur un BROUILLON est traduite en
+   * `MandateDraftAlreadyExistsError` sans référence (depuis le 2026-09-14) :
+   * deux frappes simultanées passent toutes deux `findDraft`, et la seconde
+   * butait sur `payment_mandates_one_draft_per_company` en 500.
+   *
+   * Pas de relecture ici pour nommer la RUM : la frappe écrit dans une unité de
+   * travail, et Postgres refuse toute requête dans une transaction qu'il vient
+   * d'avorter. C'est l'appelant qui relit, une fois la transaction retombée.
+   */
   async create(snapshot: MandateToCreate): Promise<string> {
+    try {
+      return await this.insert(snapshot);
+    } catch (error) {
+      if (snapshot.status !== "draft" || Reflect.get(Object(error), "code") !== UNIQUE_VIOLATION) {
+        throw error;
+      }
+      throw new MandateDraftAlreadyExistsError(null);
+    }
+  }
+
+  private async insert(snapshot: MandateToCreate): Promise<string> {
     const created = await this.prisma.paymentMandate.create({
       data: {
         companyId: snapshot.companyId,

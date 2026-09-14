@@ -8,10 +8,11 @@ import type { PublishedReach } from '../../support-channels';
 import { SupportPanel } from '../support-panel/support-panel';
 import { SupportCard } from './support-card';
 
-const PUBLISHED: PublishedReach = {
-  phone: '04 79 06 12 40',
-  phoneHref: 'tel:+33479061240',
-  email: 'contact@lafoliecoffee.fr',
+/** Le contact décidé le 2026-09-14 : une adresse, pas de téléphone pour le moment. */
+const CELINE: PublishedReach = {
+  phone: '',
+  phoneHref: '',
+  email: 'celine@lafoliedouce.com',
 };
 
 let opened: unknown[] = [];
@@ -27,7 +28,8 @@ function boot(reach: PublishedReach): ComponentFixture<SupportCard> {
   TestBed.configureTestingModule({
     imports: [SupportCard],
     providers: [
-      { provide: ClientContent, useValue: { identity: signal(reach) } },
+      // La carte lit le CONTACT COMMERCIAL : l'identité du pied de page n'est pas fournie.
+      { provide: ClientContent, useValue: { commercialContact: signal(reach) } },
       {
         provide: FoldPanelHostService,
         useValue: {
@@ -44,25 +46,48 @@ function boot(reach: PublishedReach): ComponentFixture<SupportCard> {
 }
 
 describe('SupportCard', () => {
-  it('dit le geste, sans coordonnées', () => {
-    const el = boot(PUBLISHED).nativeElement as HTMLElement;
+  describe('au bureau', () => {
+    it('montre l’adresse sous le titre, en lien mailto, sans dialogue ni téléphone vide', () => {
+      const el = boot(CELINE).nativeElement as HTMLElement;
+      const desk = el.querySelector('fold-card.desk');
 
-    expect(el.textContent).toContain(FR.account.supportTitle);
-    expect(el.querySelector('fold-card')?.classList.contains('contact')).toBe(true);
-    // Les coordonnées vivent dans le panneau : la carte reste courte.
-    expect(el.querySelector('a')).toBeNull();
+      expect(desk?.textContent).toContain(FR.account.supportTitle);
+      expect(desk?.querySelector('a.email')?.getAttribute('href')).toBe(
+        'mailto:celine@lafoliedouce.com',
+      );
+      expect(desk?.querySelector('a.email')?.textContent?.trim()).toBe('celine@lafoliedouce.com');
+      // Pas de téléphone renseigné : pas de lien vide.
+      expect(desk?.querySelector('a.phone')).toBeNull();
+      // Une carte qui contient des liens n'est pas un bouton.
+      expect(desk?.getAttribute('role')).not.toBe('button');
+
+      desk?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(opened).toEqual([]);
+    });
+
+    it('donne aussi le téléphone quand il est renseigné', () => {
+      const el = boot({ ...CELINE, phone: '04 79 06 12 40', phoneHref: 'tel:+33479061240' })
+        .nativeElement as HTMLElement;
+      expect(el.querySelector('fold-card.desk a.phone')?.getAttribute('href')).toBe(
+        'tel:+33479061240',
+      );
+    });
   });
 
-  it('ouvre le panneau du service commercial', () => {
-    const fixture = boot(PUBLISHED);
-    (fixture.nativeElement as HTMLElement)
-      .querySelector('fold-card')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  describe('en pile', () => {
+    it('dit le geste, sans coordonnées, et ouvre le panneau du service commercial', () => {
+      const fixture = boot(CELINE);
+      const mobile = (fixture.nativeElement as HTMLElement).querySelector('fold-card.mobile');
 
-    expect(opened).toEqual([SupportPanel]);
+      expect(mobile?.textContent).toContain(FR.account.supportTitle);
+      expect(mobile?.querySelector('a')).toBeNull();
+      mobile?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(opened).toEqual([SupportPanel]);
+    });
   });
 
-  it('se tait sans aucun canal publié', () => {
+  it('se tait sans aucun canal', () => {
     const el = boot({ phone: '', phoneHref: '', email: '' }).nativeElement as HTMLElement;
     expect(el.querySelector('fold-card')).toBeNull();
   });

@@ -10,7 +10,9 @@ import { supportChannels } from '../../support-channels';
  * ouvre : le téléphone et l'adresse, en liens qu'on compose d'un pouce.
  *
  * Sans pied ni bouton : il n'y a rien à valider, et l'en-tête de fold porte
- * déjà la fermeture.
+ * déjà la fermeture. Il lit le **contact commercial**, pas l'identité du pied
+ * de page (2026-09-14), et ne s'ouvre qu'en pile : au bureau, la carte montre
+ * déjà l'adresse.
  */
 @Component({
   selector: 'app-support-panel',
@@ -21,7 +23,7 @@ import { supportChannels } from '../../support-channels';
 })
 export class SupportPanel {
   protected readonly t = inject(ClientCopyService).t;
-  private readonly identity = inject(ClientContent).identity;
+  private readonly contact = inject(ClientContent).commercialContact;
 
-  protected readonly channels = computed(() => supportChannels(this.identity()));
+  protected readonly channels = computed(() => supportChannels(this.contact()));
 }

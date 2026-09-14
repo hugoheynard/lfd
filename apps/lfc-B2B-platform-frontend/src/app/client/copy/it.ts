@@ -29,6 +29,8 @@ export const IT: ClientCopy = {
     deskKicker: 'Val d’Isère · ordina online',
     featureAccessFailed:
       'Non siamo riusciti a verificare cosa offre il negozio in questo momento: alcune pagine restano chiuse. Ricarica la pagina per riprovare.',
+    accountMenu: 'Il mio account personale',
+    myProfile: 'Il mio profilo',
   },
 
   nav: {

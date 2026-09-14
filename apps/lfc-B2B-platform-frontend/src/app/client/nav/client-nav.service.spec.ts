@@ -13,7 +13,7 @@ import { provideRecognised } from '../client-orders.fixture';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
-import { ALL_VISIBLE, openShopAt } from '../feature-access/feature-access.fixture';
+import { DEFAULT_SURFACES, openShopAt } from '../feature-access/feature-access.fixture';
 import { ClientNav } from './client-nav.service';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
@@ -55,7 +55,7 @@ describe('Les destinations du menu', () => {
   it('retire commandes et factures quand l’admin les masque', () => {
     TestBed.inject(ClientFeatureAccess).receive({
       shop: 'order',
-      ...ALL_VISIBLE,
+      ...DEFAULT_SURFACES,
       orders: 'hidden',
       invoices: 'hidden',
     });

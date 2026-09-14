@@ -17,7 +17,7 @@ function boot(reach: PublishedReach): ComponentFixture<SupportPanel> {
   TestBed.configureTestingModule({
     imports: [SupportPanel],
     providers: [
-      { provide: ClientContent, useValue: { identity: signal(reach) } },
+      { provide: ClientContent, useValue: { commercialContact: signal(reach) } },
       { provide: FoldPanelRef, useValue: { close: (): void => undefined } },
     ],
   });
@@ -27,7 +27,7 @@ function boot(reach: PublishedReach): ComponentFixture<SupportPanel> {
 }
 
 describe('SupportPanel', () => {
-  it('donne le numéro et l’adresse PUBLIÉS, en liens composables avec leur icône', () => {
+  it('donne le numéro et l’adresse du CONTACT COMMERCIAL, en liens composables avec leur icône', () => {
     const el = boot(PUBLISHED).nativeElement as HTMLElement;
 
     const phone = el.querySelector<HTMLAnchorElement>('a.phone');

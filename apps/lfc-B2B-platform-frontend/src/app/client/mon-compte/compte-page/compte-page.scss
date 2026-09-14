@@ -324,10 +324,11 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* UNE SEULE rangée à deux cartes, le reste en pleine largeur : c'est la règle
-     qui évite l'effet de quadrillage à trous. Identité légale et KBIS vont
-     ensemble parce que ce sont les deux faces d'un même sujet — ce que la maison
-     déclare, et la pièce qui le prouve. */
+  /* DES RANGÉES À DEUX seulement pour les paires, le reste en pleine largeur :
+     c'est la règle qui évite l'effet de quadrillage à trous. Identité légale et
+     KBIS vont ensemble parce que ce sont les deux faces d'un même sujet — ce que
+     la maison déclare, et la pièce qui le prouve. Le RIB et le mandat, pour la
+     même raison (plus bas). */
   .main {
     flex: 1;
   }
@@ -351,6 +352,14 @@
 
   .card.identity,
   .card.kbis {
+    grid-column: auto;
+  }
+
+  /* Le RIB et son mandat, la seconde rangée à deux : le compte, et
+     l'autorisation de le débiter. Sans mandat montré, le RIB garde toute la
+     largeur — une demi-rangée seule serait le trou que la règle évite. */
+  .card.bank.paired,
+  .card.mandate {
     grid-column: auto;
   }
 

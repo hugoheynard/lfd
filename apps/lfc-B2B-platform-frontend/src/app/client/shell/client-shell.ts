@@ -8,7 +8,7 @@ import {
 } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
-import { ClientIdentity } from '../client-identity.service';
+import { AccountMenu } from './account-menu/account-menu';
 import { ClientFoot } from '../foot/client-foot';
 import { ClientMenu } from '../nav/client-menu/client-menu';
 import { ClientBand } from '../nav/client-band/client-band';
@@ -35,6 +35,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
   imports: [
+    AccountMenu,
     ClientBand,
     ClientCartPill,
     ClientFoot,
@@ -51,7 +52,6 @@ import { LangSwitch } from '../lang-switch/lang-switch';
 })
 export class ClientShell {
   protected readonly chrome = inject(ClientChrome);
-  protected readonly identity = inject(ClientIdentity);
   protected readonly t = inject(ClientCopyService).t;
   protected readonly access = inject(ClientFeatureAccess);
 
@@ -64,9 +64,6 @@ export class ClientShell {
     // pro. Le shell enveloppe `/mon-compte`, où ce retour atterrit.
     inject(ProOnboarding);
   }
-
-  /** L'initiale, ou un point d'interrogation : on ne devine pas un nom. */
-  protected readonly initials = computed(() => this.identity.firstName()?.charAt(0) ?? '?');
 
   protected goBack(): void {
     this.chrome.back()?.();

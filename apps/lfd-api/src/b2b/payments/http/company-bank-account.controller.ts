@@ -32,8 +32,14 @@ export class CompanyBankAccountController {
   /**
    * Le RIB de la société, ou `{ account: null }` s'il n'en a jamais été déposé.
    *
-   * 🔴 L'IBAN ne redescend **jamais** : `last4` seulement, et sans les zones
-   * facultatives du mandat.
+   * 🔴 L'IBAN ne redescend **jamais en JSON** : `last4` seulement, et sans les
+   * zones facultatives du mandat.
+   *
+   * ⚠️ Amendé le 2026-09-14 : cette phrase disait « jamais », tout court. Le
+   * PDF du mandat à signer (`GET :companyId/mandate/document.pdf`) rend l'IBAN
+   * entier au même détenteur ou rôle facturation — assumé par Hugo, un mandat
+   * EPC porte l'IBAN du débiteur (plan `documentation/b2b/plan-mandat-client.md`
+   * §6 #3). Aucune réponse JSON ne le porte, toujours.
    */
   @Get(":companyId/bank-account")
   async read(
@@ -54,8 +60,10 @@ export class CompanyBankAccountController {
    * même payload que le staff. L'IBAN monte en clair ici et nulle part ne
    * redescend ; il est scellé avant d'entrer en colonne.
    *
-   * ⚠️ Remplacer un compte déjà mandaté casse le prélèvement : aucune garde ici,
-   * c'est l'écran qui le dit (plan, §2 « Mandat »).
+   * ⚠️ Cette phrase disait « remplacer un compte déjà mandaté : aucune garde
+   * ici, c'est l'écran qui le dit ». Depuis le 2026-09-14, le handler refuse en
+   * **409** tant qu'un mandat est ACTIF (le changement de banque passe par le
+   * staff), et révoque le BROUILLON en cours sinon (plan mandat client §8).
    */
   @Put(":companyId/bank-account")
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -91,9 +91,11 @@
         @if (mandate(); as m) {
           <div class="pm-row">
             <div class="pm-what">
-              <!-- Un brouillon n'a pas de `last4` : il est frappé avant que le
-                   RIB soit forcément recopié. Afficher « •••• » suivi de rien
-                   ferait lire une donnée tronquée là où il n'y en a aucune. -->
+              <!-- Un brouillon n'a pas de `last4` : le compte est lu sur le RIB à
+                   l'impression, pas copié sur le mandat. (⚠️ Ce commentaire disait
+                   « frappé avant que le RIB soit recopié » : faux depuis le
+                   2026-09-14, la frappe exige le RIB.) Afficher « •••• » suivi de
+                   rien ferait lire une donnée tronquée là où il n'y en a aucune. -->
               <span class="pm-label">
                 Prélèvement SEPA
                 @if (m.last4) {
@@ -165,14 +167,18 @@
                   Télécharger
                 </button>
               }
-              <label class="proof-pick">
-                <input
-                  type="file"
-                  accept="application/pdf,image/*"
-                  (change)="uploadProof($event)"
-                />
-                <span>{{ m.hasProof ? 'Remplacer' : 'Déposer le scan' }}</span>
-              </label>
+              <!-- Déposer, SUR LE BROUILLON SEULEMENT (2026-09-14) : le serveur
+                   refuse le scan d'un mandat actif, dont la pièce fait foi. -->
+              @if (signable()) {
+                <label class="proof-pick">
+                  <input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    (change)="uploadProof($event)"
+                  />
+                  <span>{{ m.hasProof ? 'Remplacer' : 'Déposer le scan' }}</span>
+                </label>
+              }
             </div>
           </div>
 
@@ -199,9 +205,14 @@
               <div class="pm-what">
                 <span class="pm-label">Le mandat est revenu signé</span>
                 <span class="pm-note">
-                  La date demandée est celle portée par le <strong>papier</strong>, pas celle du
-                  jour&nbsp;: c'est elle qu'on oppose en contestation, et un mandat posté revient
-                  signé plusieurs jours plus tard.
+                  @if (m.hasProof) {
+                    La date demandée est celle portée par le <strong>papier</strong>, pas celle du
+                    jour&nbsp;: c'est elle qu'on oppose en contestation, et un mandat posté revient
+                    signé plusieurs jours plus tard.
+                  } @else {
+                    Déposez d'abord le scan du mandat signé&nbsp;: c'est la pièce qu'on opposera en
+                    contestation, et l'activation l'exige.
+                  }
                 </span>
               </div>
               <div class="pm-state">
@@ -214,7 +225,7 @@
                   foldButton
                   type="button"
                   intent="primary"
-                  [disabled]="!signedAt()"
+                  [disabled]="!signedAt() || !m.hasProof"
                   [loading]="busy()"
                   (click)="sign()"
                 >
@@ -240,14 +251,6 @@
               </div>
             </div>
           }
-
-          @if (unproven()) {
-            <fold-callout appearance="inset" variant="warning">
-              <strong>Mandat sans pièce justificative.</strong> Nous prélevons sur une acceptation
-              déclarée hors ligne&nbsp;: en contestation, c'est le scan du mandat signé qui répond.
-              Sans lui, la somme est remboursable sur simple demande du client.
-            </fold-callout>
-          }
         } @else {
           <div class="pm-what">
             <span class="pm-label">Aucun mandat enregistré.</span>
@@ -266,9 +269,24 @@
               </span>
             </div>
             <div class="pm-state">
-              <button foldButton type="button" intent="primary" [loading]="busy()" (click)="mint()">
-                Frapper le mandat
-              </button>
+              <!-- Sans RIB, pas de bouton : le serveur refuse la frappe (2026-09-14),
+                   et l'écran dit pourquoi plutôt que de laisser tomber un 409. -->
+              @if (bankAccount() !== null) {
+                <button
+                  foldButton
+                  type="button"
+                  intent="primary"
+                  [loading]="busy()"
+                  (click)="mint()"
+                >
+                  Frapper le mandat
+                </button>
+              } @else {
+                <span class="pm-note">
+                  Enregistrez d'abord le RIB&nbsp;: le mandat nomme le compte qu'il autorise à
+                  débiter.
+                </span>
+              }
             </div>
           </div>
         }

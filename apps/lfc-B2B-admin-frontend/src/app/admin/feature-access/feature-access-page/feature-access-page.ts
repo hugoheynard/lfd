@@ -55,6 +55,8 @@ interface FeatureCard {
   /** `null` = défaut du code. */
   readonly provenance: string | null;
   readonly defaultLabel: string;
+  /** `false` : la clé ne s'ouvre pas adresse par adresse — pas de formulaire d'ajout. */
+  readonly exemptible: boolean;
   readonly exemptions: readonly ExemptionRow[];
 }
 
@@ -71,6 +73,7 @@ function toCard(key: FeatureKey, feature: AdminFeatureView): FeatureCard {
         ? null
         : authoredLine('Posé', feature.override.updatedBy, feature.override.updatedAt),
     defaultLabel: levelLabel(key, feature.defaultLevel),
+    exemptible: feature.exemptible,
     exemptions: feature.exemptions.map((exemption) => ({
       id: exemption.id,
       email: exemption.email,

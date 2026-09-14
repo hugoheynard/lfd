@@ -29,6 +29,19 @@ export type ShopLevel = (typeof SHOP_LEVELS)[number];
 export const VISIBILITY_LEVELS = ["hidden", "visible"] as const;
 export type VisibilityLevel = (typeof VISIBILITY_LEVELS)[number];
 
+/**
+ * Les niveaux d'une surface que le SERVEUR ferme : `closed` refuse la route en
+ * 409, `open` la sert.
+ *
+ * ⚠️ Distincts de {@link VISIBILITY_LEVELS}, et c'est le sujet : `hidden` ne
+ * ferme rien, `closed` si. Réutiliser `hidden`/`visible` pour une clé gardée
+ * ferait lire « masqué » là où la route refuse — la confusion même que la
+ * contradiction du plan mandat client a relevée (plan
+ * `documentation/b2b/plan-mandat-client.md` §6 #1, 2026-09-14).
+ */
+export const GATE_LEVELS = ["closed", "open"] as const;
+export type GateLevel = (typeof GATE_LEVELS)[number];
+
 /** Une entrée du catalogue : ce que l'écran en montre, et ce que le code en décide. */
 export interface FeatureDefinition<Level extends string> {
   readonly label: string;
@@ -37,6 +50,15 @@ export interface FeatureDefinition<Level extends string> {
   readonly levels: readonly Level[];
   /** La valeur quand aucune dérogation n'est posée. */
   readonly defaultLevel: Level;
+  /**
+   * Une adresse exemptée peut-elle ouvrir cette clé pour elle seule ?
+   *
+   * `false` quand ouvrir à une personne n'a pas de sens métier : un mandat de
+   * prélèvement signé par un testeur est un vrai mandat, sur un vrai compte.
+   * Le résolveur ignore alors les exemptions, et l'ajout d'une exemption est
+   * refusé.
+   */
+  readonly exemptible: boolean;
 }
 
 /**
@@ -51,6 +73,7 @@ export const FEATURE_CATALOGUE = {
       "Ce que les clients peuvent faire de la boutique en ligne : rien (fermée), voir le catalogue et ses prix, ou commander.",
     levels: SHOP_LEVELS,
     defaultLevel: "order",
+    exemptible: true,
   },
   orders: {
     label: "Mes commandes",
@@ -58,12 +81,14 @@ export const FEATURE_CATALOGUE = {
       "La liste « Mes commandes » de l'app cliente et son entrée de menu. Masquée, le suivi, le règlement et le QR de retrait d'une commande restent joignables par lien direct.",
     levels: VISIBILITY_LEVELS,
     defaultLevel: "visible",
+    exemptible: true,
   },
   invoices: {
     label: "Mes factures",
     description: "L'écran « Mes factures » de l'app cliente et son entrée de menu.",
     levels: VISIBILITY_LEVELS,
     defaultLevel: "visible",
+    exemptible: true,
   },
   desktopMenu: {
     label: "Menu au bureau",
@@ -71,6 +96,17 @@ export const FEATURE_CATALOGUE = {
       "La sous-barre d'onglets sous le bandeau, sur grand écran. Le menu du téléphone et la barre du haut ne changent pas.",
     levels: VISIBILITY_LEVELS,
     defaultLevel: "visible",
+    exemptible: true,
+  },
+  customerMandate: {
+    label: "Mandat SEPA client",
+    description:
+      "La génération, le téléchargement et le dépôt du mandat de prélèvement depuis « Mon compte ». Fermé, les routes client du mandat refusent ; le staff garde tous ses gestes.",
+    levels: GATE_LEVELS,
+    defaultLevel: "closed",
+    // 🔴 Non exemptible (plan mandat client §8, 2026-09-14) : ce que la clé
+    // ouvre produit une autorisation de débit opposable, pas un aperçu.
+    exemptible: false,
   },
 } as const satisfies Readonly<Record<string, FeatureDefinition<string>>>;
 
@@ -80,10 +116,29 @@ export type FeatureLevel<Key extends FeatureKey = FeatureKey> =
   (typeof FEATURE_CATALOGUE)[Key]["levels"][number];
 
 /** Les clés, dans l'ordre du catalogue. */
-export const FEATURE_KEYS: readonly FeatureKey[] = ["shop", "orders", "invoices", "desktopMenu"];
+export const FEATURE_KEYS: readonly FeatureKey[] = [
+  "shop",
+  "orders",
+  "invoices",
+  "desktopMenu",
+  "customerMandate",
+];
 
 /** Les clés qui se montrent ou se cachent, sans garde serveur. */
 export type VisibilityFeatureKey = "orders" | "invoices" | "desktopMenu";
+
+/**
+ * Les clés qu'aucune exemption n'ouvre — calculées depuis le catalogue, pour
+ * qu'une clé déclarée `exemptible: false` n'ait pas à être recopiée ici.
+ */
+export type UnexemptibleFeatureKey = {
+  [Key in FeatureKey]: (typeof FEATURE_CATALOGUE)[Key]["exemptible"] extends false ? Key : never;
+}[FeatureKey];
+
+/** Vrai si une exemption peut ouvrir cette clé. */
+export function isExemptible(key: FeatureKey): boolean {
+  return FEATURE_CATALOGUE[key].exemptible;
+}
 
 /** Vrai si `key` est une clé du catalogue — une ligne de base peut en porter une disparue. */
 export function isFeatureKey(key: string): key is FeatureKey {

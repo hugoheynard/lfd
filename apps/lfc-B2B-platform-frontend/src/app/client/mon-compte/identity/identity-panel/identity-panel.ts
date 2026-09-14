@@ -23,7 +23,7 @@ import {
 
 import { AccountService, type IdentityDraft } from '../../../../account/account.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { panelSide } from '../../../panel-side';
+import { dialogSide } from '../../../panel-side';
 import { canEditIdentity } from '../identity-section';
 
 /** Les trois mentions du greffe : le client les COMBLE, il ne les corrige pas. */
@@ -86,11 +86,13 @@ export interface IdentityPanelData extends LegalDraft {
 export class IdentityPanel {
   /**
    * OPAQUE : le verre par défaut laisserait transparaître la page crème et
-   * encre derrière un formulaire, qui doit rester lisible. Le côté `right` est
-   * celui du bureau ; en pile, {@link IdentityPanel.open} ouvre en `bottom`,
-   * et l'appel l'emporte sur ce défaut.
+   * encre derrière un formulaire, qui doit rester lisible. C'est une SAISIE :
+   * dialogue centré au bureau, et en pile {@link IdentityPanel.open} ouvre en
+   * `bottom` (`dialogSide()`, règle « Saisir » du `CLAUDE.md` de l'app,
+   * 2026-09-14). `md` (490 px) : cinq champs l'un sous l'autre (échelle
+   * `FoldPanelSize`). Le nom `*-panel` est d'avant cette règle.
    */
-  static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
 
   /**
    * Ouvre le panneau depuis l'une ou l'autre carte. Les valeurs partent en
@@ -99,7 +101,7 @@ export class IdentityPanel {
    */
   static open(panels: FoldPanelHostService, company: CompanyView): void {
     panels.open(IdentityPanel, {
-      side: panelSide(),
+      side: dialogSide(),
       data: {
         companyId: company.id,
         enseigne: company.enseigne,

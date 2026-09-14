@@ -2,6 +2,7 @@ import {
   FEATURE_CATALOGUE,
   FEATURE_KEYS,
   isAtLeast,
+  isExemptible,
   isFeatureKey,
   isFeatureLevel,
   mostOpenLevel,
@@ -10,7 +11,7 @@ import {
 describe("le catalogue de l'accès aux fonctionnalités", () => {
   it("porte la boutique, fermée < voir < commander, ouverte par défaut", () => {
     // Le défaut est l'état d'avant le module : rien ne se ferme au déploiement.
-    expect(FEATURE_KEYS).toEqual(["shop", "orders", "invoices", "desktopMenu"]);
+    expect(FEATURE_KEYS).toEqual(["shop", "orders", "invoices", "desktopMenu", "customerMandate"]);
     expect(FEATURE_CATALOGUE.shop.levels).toEqual(["closed", "browse", "order"]);
     expect(FEATURE_CATALOGUE.shop.defaultLevel).toBe("order");
     expect(FEATURE_CATALOGUE.shop.label).toBe("Boutique");
@@ -21,6 +22,25 @@ describe("le catalogue de l'accès aux fonctionnalités", () => {
     for (const key of ["orders", "invoices", "desktopMenu"] as const) {
       expect(FEATURE_CATALOGUE[key].levels).toEqual(["hidden", "visible"]);
       expect(FEATURE_CATALOGUE[key].defaultLevel).toBe("visible");
+    }
+  });
+
+  /**
+   * Ajoutée le 2026-09-14 (plan mandat client §8) : la clé ferme des ROUTES,
+   * d'où ses niveaux propres — `hidden` ne ferme rien, `closed` si.
+   */
+  it("porte le mandat client, fermé par défaut, sur ses propres niveaux", () => {
+    expect(FEATURE_CATALOGUE.customerMandate.levels).toEqual(["closed", "open"]);
+    expect(FEATURE_CATALOGUE.customerMandate.defaultLevel).toBe("closed");
+    expect(isAtLeast("customerMandate", "closed", "open")).toBe(false);
+    expect(isAtLeast("customerMandate", "open", "open")).toBe(true);
+  });
+
+  /** Un mandat signé par un testeur exempté serait un vrai mandat, sur un vrai compte. */
+  it("rend le mandat client non exemptible, et laisse les autres clés l'être", () => {
+    expect(isExemptible("customerMandate")).toBe(false);
+    for (const key of ["shop", "orders", "invoices", "desktopMenu"] as const) {
+      expect(isExemptible(key)).toBe(true);
     }
   });
 

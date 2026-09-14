@@ -13,10 +13,15 @@ import type { MandateSectionView, PaymentMandateView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MandateGateway } from "../src/b2b/payments/domain/mandate-gateway.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 const PDF = Buffer.from("%PDF-1.4\nmandat signé", "latin1");
+/**
+ * La date portée par le papier — relative : l'agrégat la compare à l'horloge
+ * (une date à venir est refusée), donc écrite en dur elle vieillirait mal.
+ */
+const ON_PAPER = daysAgo(3).slice(0, 10);
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -78,7 +83,10 @@ function staff(): ReturnType<E2eContext["asSub"]> {
  * que ces suites éprouvent est en AVAL de l'écriture. Elle se referme quand la
  * frappe de la RUM donne une vraie porte d'entrée.
  */
-async function seedMandate(paymentMethodId = "pm_e2e"): Promise<string> {
+async function seedMandate(
+  paymentMethodId = "pm_e2e",
+  status: "active" | "draft" = "active",
+): Promise<string> {
   const row = await ctx.prisma.paymentMandate.create({
     data: {
       companyId,
@@ -88,8 +96,9 @@ async function seedMandate(paymentMethodId = "pm_e2e"): Promise<string> {
       last4: "3000",
       bankCode: "BNPA",
       country: "FR",
-      status: "active",
-      acceptedAt: new Date("2026-01-15T10:00:00.000Z"),
+      status,
+      // Un brouillon n'est pas signé : il n'a pas de date de consentement.
+      acceptedAt: status === "draft" ? null : new Date("2026-01-15T10:00:00.000Z"),
     },
     select: { id: true },
   });
@@ -161,8 +170,8 @@ describe("Mandat — révocation puis remplacement", () => {
 });
 
 describe("Mandat — la preuve", () => {
-  it("marque le mandat prouvé une fois le papier signé déposé", async () => {
-    await seedMandate();
+  it("marque le brouillon prouvé une fois le papier signé déposé", async () => {
+    await seedMandate("pm_e2e", "draft");
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
@@ -176,11 +185,60 @@ describe("Mandat — la preuve", () => {
   });
 
   it("refuse une pièce dont les octets ne sont pas une pièce", async () => {
-    await seedMandate();
+    await seedMandate("pm_e2e", "draft");
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
       .attach("file", Buffer.from("MZ\x90\x00", "latin1"), "virus.pdf")
       .expect(400);
+  });
+
+  /**
+   * 🔴 Régression (2026-09-14) : un scan déposé sur un mandat ACTIF remplaçait
+   * la pièce qu'on oppose en contestation. Refusé en 409, et rien ne bouge.
+   */
+  it("refuse le scan d'un mandat actif, et n'y attache rien", async () => {
+    await seedMandate();
+
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/proof`)
+      .attach("file", PDF, "mandat-signe.pdf")
+      .expect(409);
+
+    const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
+    const mandate = jsonBody<MandateSectionView>(response).mandate as PaymentMandateView;
+    expect(mandate.hasProof).toBe(false);
+  });
+
+  it("refuse d'activer un brouillon dont le scan n'est pas déposé", async () => {
+    const mandateId = await seedMandate("pm_e2e", "draft");
+
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
+      .send({ signedAt: ON_PAPER })
+      .expect(409);
+
+    const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
+    expect((jsonBody<MandateSectionView>(response).mandate as PaymentMandateView).status).toBe(
+      "draft",
+    );
+  });
+
+  it("active le brouillon une fois son scan déposé", async () => {
+    const mandateId = await seedMandate("pm_e2e", "draft");
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/proof`)
+      .attach("file", PDF, "mandat-signe.pdf")
+      .expect(204);
+
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
+      .send({ signedAt: ON_PAPER })
+      .expect(204);
+
+    const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
+    const mandate = jsonBody<MandateSectionView>(response).mandate as PaymentMandateView;
+    expect(mandate.status).toBe("active");
+    expect(mandate.hasProof).toBe(true);
   });
 });

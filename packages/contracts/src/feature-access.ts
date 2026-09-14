@@ -92,6 +92,11 @@ export interface AdminFeatureView {
   readonly defaultLevel: string;
   /** Ce qui s'applique à qui n'est pas exempté. */
   readonly effectiveLevel: string;
+  /**
+   * `false` : aucune exemption ne s'applique ni ne s'ajoute, et l'écran ne
+   * propose pas la liste. Ajouté le 2026-09-14 avec `customerMandate`.
+   */
+  readonly exemptible: boolean;
   /** `null` = défaut du code. */
   readonly override: FeatureOverrideView | null;
   readonly exemptions: readonly FeatureExemptionView[];

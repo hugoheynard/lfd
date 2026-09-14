@@ -21,6 +21,7 @@ import { AuthFacade } from '../../../auth/auth.facade';
 type AccountView = 'loading' | 'signed-out' | 'failed' | 'incomplete' | 'dossier';
 
 import { ClientBannerOutlet } from '../../nav/client-banner';
+import { ClientBankAccount } from '../../client-bank-account.service';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -41,27 +42,30 @@ import { IdentityDeskCard } from '../identity/identity-desk-card/identity-desk-c
 import { IdentityMobileCard } from '../identity/identity-mobile-card/identity-mobile-card';
 import { KbisDeskCard } from '../kbis/kbis-desk-card/kbis-desk-card';
 import { KbisMobileCard } from '../kbis/kbis-mobile-card/kbis-mobile-card';
+import { MandateDeskCard } from '../mandate/mandate-desk-card/mandate-desk-card';
+import { MandateMobileCard } from '../mandate/mandate-mobile-card/mandate-mobile-card';
 import { PaymentDeskCard } from '../payment/payment-desk-card/payment-desk-card';
 import { PaymentMobileCard } from '../payment/payment-mobile-card/payment-mobile-card';
 import { PreferencesDeskCard } from '../preferences/preferences-desk-card/preferences-desk-card';
 import { PreferencesMobileCard } from '../preferences/preferences-mobile-card/preferences-mobile-card';
-import { ProfileDeskCard } from '../profile/profile-desk-card/profile-desk-card';
-import { ProfileMobileCard } from '../profile/profile-mobile-card/profile-mobile-card';
 import { SupportCard } from '../support-card/support-card';
 import { UsersDeskCard } from '../users/users-desk-card/users-desk-card';
 import { UsersMobileCard } from '../users/users-mobile-card/users-mobile-card';
 
 /**
- * Les neuf sujets, numérotés dans l'ordre de lecture. « Mes informations »
- * précède les utilisateurs : qui je suis, puis les autres.
+ * Les neuf sujets, numérotés dans l'ordre de lecture. Le mandat suit le RIB
+ * qu'il autorise à débiter.
+ *
+ * « Mes informations » n'en est plus (2026-09-14) : Mon compte est le dossier
+ * de la SOCIÉTÉ, et la personne s'ouvre depuis l'en-tête (`ProfilePanel`).
  */
 const SECTIONS = [
   'identity',
-  'profile',
   'users',
   'kbis',
   'addresses',
   'bank',
+  'mandate',
   'payment',
   'preferences',
   'data',
@@ -87,7 +91,9 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
  *
- * **Neuf sections, pas neuf écrans.** Le back-office a une fiche à onglets parce
+ * **Jusqu'à neuf sections, pas neuf écrans.** Le rôle, le niveau de la boutique
+ * et le drapeau du mandat en retirent ; le sommaire se renumérote sur ce qui
+ * reste. Le back-office a une fiche à onglets parce
  * qu'un commercial y passe la journée ; un client y passe deux fois par an. Une
  * seule page, aucun sous-écran à retrouver — et le sommaire de bureau fait
  * DÉFILER, il ne change pas d'écran : chaque entrée pointe l'ancre de sa
@@ -126,12 +132,12 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
     IdentityMobileCard,
     KbisDeskCard,
     KbisMobileCard,
+    MandateDeskCard,
+    MandateMobileCard,
     PaymentDeskCard,
     PaymentMobileCard,
     PreferencesDeskCard,
     PreferencesMobileCard,
-    ProfileDeskCard,
-    ProfileMobileCard,
     ShopPromise,
     SupportCard,
     UsersDeskCard,
@@ -220,6 +226,26 @@ export class ComptePage {
     return role !== undefined && BANK_ROLES.has(role);
   });
 
+  private readonly bank = inject(ClientBankAccount);
+
+  /**
+   * La carte mandat (plan `plan-mandat-client.md` §3, lot B) — trois conditions,
+   * toutes nécessaires :
+   *
+   * - **le rôle du RIB** : le mandat autorise à débiter le compte que ces rôles
+   *   gèrent ;
+   * - **un RIB enregistré** : l'API refuse de frapper un mandat sans lui (§2) ;
+   * - **le drapeau `customerMandate` ouvert** : fermé, les routes refusent en
+   *   409, et la carte n'enverrait que des refus. Fermé tant qu'on ne sait pas.
+   *
+   * Le RIB est lu par ses propres cartes, montrées au même rôle : tant qu'elles
+   * ne l'ont pas lu, `account()` vaut `null` et la carte mandat attend.
+   */
+  protected readonly showsMandate = computed(
+    () =>
+      this.showsBank() && this.bank.account() !== null && this.access.customerMandate() === 'open',
+  );
+
   /** Le libellé de la pastille du rail : « Section 2 sur 7 ». */
   protected railPosition(active: number): string {
     return this.t()
@@ -237,8 +263,12 @@ export class ComptePage {
     const labels = this.t().account.sections;
     const orderable = this.access.atLeast('order');
     const bank = this.showsBank();
+    const mandate = this.showsMandate();
     const shown = SECTIONS.filter(
-      (key) => (orderable || !ORDER_ONLY_SECTIONS.has(key)) && (bank || key !== 'bank'),
+      (key) =>
+        (orderable || !ORDER_ONLY_SECTIONS.has(key)) &&
+        (bank || key !== 'bank') &&
+        (mandate || key !== 'mandate'),
     );
     return shown.map((key, index) => ({
       key,

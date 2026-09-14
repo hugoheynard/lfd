@@ -4,6 +4,7 @@ import type {
   FeatureKey,
   FeatureLevel,
   FeatureLevelsView,
+  GateLevel,
   ShopLevel,
   VisibilityFeatureKey,
 } from '@lfd/contracts';
@@ -37,6 +38,9 @@ const READ_TIMEOUT_MS = 8_000;
  * moins qu'un écran qui envoie des requêtes que le serveur refusera en 409.
  */
 const UNKNOWN_LEVEL: ShopLevel = 'closed';
+
+/** Le mandat client tant qu'on ne sait pas : fermé, comme le défaut du catalogue. */
+const UNKNOWN_MANDATE_LEVEL: GateLevel = 'closed';
 
 /**
  * **Ce que l'app cliente peut faire de la boutique**, tel que le serveur le dit.
@@ -79,6 +83,18 @@ export class ClientFeatureAccess {
    */
   readonly shop = computed<ShopLevel>(() => this.levels()?.shop ?? UNKNOWN_LEVEL);
 
+  /**
+   * Le niveau **appliqué** du mandat client (`customerMandate`).
+   *
+   * `closed` tant qu'on ne sait pas — lecture en vol, échec, ou serveur qui ne
+   * connaît pas la clé. C'est le défaut du catalogue, et le sens prudent : la
+   * clé est gardée par l'API, une carte montrée à tort n'enverrait que des
+   * requêtes refusées en 409.
+   */
+  readonly customerMandate = computed<GateLevel>(
+    () => this.levels()?.customerMandate ?? UNKNOWN_MANDATE_LEVEL,
+  );
+
   /** « Au moins tel niveau » — le seul test qu'un écran écrit, par la règle du contrat. */
   atLeast(required: ShopLevel): boolean {
     return isAtLeast('shop', this.shop(), required);
@@ -93,7 +109,9 @@ export class ClientFeatureAccess {
    * - `shop` vaut `closed`, le sens prudent : l'API refuserait en 409 ;
    * - une surface masquable vaut **son défaut** (`visible`). La masquer ne
    *   protège rien, et une API muette ne doit pas retirer « Mes commandes » du
-   *   menu — la commande en cours avec.
+   *   menu — la commande en cours avec ;
+   * - `customerMandate` vaut aussi son défaut, `closed` : voir
+   *   {@link customerMandate}.
    */
   levelOf(key: FeatureKey): FeatureLevel {
     return (

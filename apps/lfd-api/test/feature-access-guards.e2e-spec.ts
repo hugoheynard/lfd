@@ -39,8 +39,13 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
-/** Les trois surfaces masquables, à leur défaut : aucune ligne ne les touche ici. */
-const ALL_VISIBLE = { orders: "visible", invoices: "visible", desktopMenu: "visible" } as const;
+/** Toutes les clés sauf la boutique, à leur défaut : le mandat client est fermé (2026-09-14). */
+const OTHER_DEFAULTS = {
+  orders: "visible",
+  invoices: "visible",
+  desktopMenu: "visible",
+  customerMandate: "closed",
+} as const;
 
 const CLIENT = "auth0|client";
 const TESTER = "auth0|testeur";
@@ -211,9 +216,9 @@ describe("GET /feature-access/mine", () => {
     const tester = await ctx.asSub(TESTER).get("/feature-access/mine").expect(200);
     const client = await ctx.asSub(CLIENT).get("/feature-access/mine").expect(200);
 
-    expect(jsonBody<FeatureLevelsView>(tester)).toEqual({ shop: "order", ...ALL_VISIBLE });
+    expect(jsonBody<FeatureLevelsView>(tester)).toEqual({ shop: "order", ...OTHER_DEFAULTS });
     expect(tester.text).not.toMatch(/exempt|@/i);
-    expect(jsonBody<FeatureLevelsView>(client)).toEqual({ shop: "closed", ...ALL_VISIBLE });
+    expect(jsonBody<FeatureLevelsView>(client)).toEqual({ shop: "closed", ...OTHER_DEFAULTS });
   });
 
   it("exige une personne connectée", async () => {

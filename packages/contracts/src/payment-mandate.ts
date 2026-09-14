@@ -80,6 +80,29 @@ export interface PaymentMandateView {
 }
 
 /**
+ * Ce que le **client** voit de son mandat — `GET /companies/:companyId/mandate`.
+ *
+ * Plan `documentation/b2b/plan-mandat-client.md`, fin du §9 (2026-09-14).
+ *
+ * Plus étroite que {@link PaymentMandateView}, et chaque absence est voulue :
+ * ni `last4`, ni `bankCode`, ni `country` — le client a déjà sa carte RIB, et
+ * une seconde source sur le compte finirait par contredire la première ; ni
+ * `revokedAt` — un mandat révoqué se lit « aucun mandat en cours » côté client.
+ */
+export interface CustomerMandateView {
+  readonly id: string;
+  /** La RUM, que le client déclare à sa banque. */
+  readonly reference: string;
+  readonly status: MandateStatus;
+  /** Le scan signé est-il déposé ? Vrai = « en vérification » tant que `draft`. */
+  readonly hasProof: boolean;
+  /** Nom du fichier déposé, vide s'il n'y en a pas. */
+  readonly proofFileName: string;
+  /** Date portée par le papier signé (ISO), `null` tant que non activé. */
+  readonly acceptedAt: string | null;
+}
+
+/**
  * Tout ce dont la section « Moyens de paiement » a besoin, en une lecture : le
  * mandat courant (`null` si la société n'en a jamais eu, le cas ordinaire) et la
  * clé **publique** Stripe pour monter l'IBAN Element.

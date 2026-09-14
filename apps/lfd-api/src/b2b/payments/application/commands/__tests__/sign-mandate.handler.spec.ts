@@ -1,9 +1,11 @@
 import type { Clock } from "../../../../../platform/time/clock.js";
 import type { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import {
   MandateNotFoundError,
   MandateNotSignableError,
   MandateAcceptanceInFutureError,
+  MandateUnprovenError,
 } from "../../../domain/errors/mandate-errors.js";
 import { PaymentMandate, type MandateSnapshot } from "../../../domain/entities/payment-mandate.js";
 import type { PaymentMandateRepository } from "../../../domain/payment-mandate.repository.js";
@@ -27,8 +29,10 @@ function snapshot(overrides: Partial<MandateSnapshot>): MandateSnapshot {
     status: "draft",
     acceptedAt: null,
     revokedAt: null,
-    proofStorageKey: null,
-    proofFileName: null,
+    // Prouvé par défaut : l'activation l'exige, et les cas qui suivent éprouvent
+    // autre chose. Le brouillon nu a son propre cas.
+    proofStorageKey: "companies/cmp_1/mandates/mdt_draft/mandat-signe-1",
+    proofFileName: "mandat-signe.pdf",
     creditorId: "ent_1",
     ...overrides,
   };
@@ -54,7 +58,8 @@ function build(options: {
   };
   const clock: Clock = { now: () => NOW };
   const uow: UnitOfWork = { run: (work) => work() };
-  return { handler: new SignMandateHandler(mandates, clock, uow), saved };
+  const events = new RecordingPublisher();
+  return { handler: new SignMandateHandler(mandates, clock, uow, events), saved, events };
 }
 
 describe("SignMandateHandler", () => {
@@ -85,6 +90,35 @@ describe("SignMandateHandler", () => {
 
     expect(active.status).toBe("revoked");
     expect(saved).toHaveLength(2);
+  });
+
+  /** Plan mandat client §9 #3 (2026-09-14) : activer autorise un débit, et se trace. */
+  it("trace l'activation avec la date du papier et le mandat remplacé", async () => {
+    const draft = PaymentMandate.reconstitute(snapshot({}));
+    const active = PaymentMandate.reconstitute(
+      snapshot({ id: "mdt_vieux", status: "active", acceptedAt: new Date("2024-01-01") }),
+    );
+    const { handler, events } = build({ target: draft, current: active });
+
+    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER));
+
+    expect(events.factTypes()).toEqual(["payment_mandate.signed"]);
+    expect(events.traced[0]?.journalFact()).toMatchObject({
+      subjectId: "mdt_draft",
+      payload: { signedAt: ON_PAPER, replacedMandateId: "mdt_vieux" },
+    });
+  });
+
+  it("ne trace rien quand l'activation est refusée", async () => {
+    const naked = PaymentMandate.reconstitute(
+      snapshot({ proofStorageKey: null, proofFileName: null }),
+    );
+    const { handler, events } = build({ target: naked, current: naked });
+
+    await expect(
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
+    ).rejects.toThrow(MandateUnprovenError);
+    expect(events.traced).toHaveLength(0);
   });
 
   it("ne révoque rien quand il n'y avait pas d'actif", async () => {
@@ -120,6 +154,24 @@ describe("SignMandateHandler", () => {
     await expect(
       handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
     ).rejects.toThrow(MandateNotSignableError);
+  });
+
+  /**
+   * 🔴 Depuis le 2026-09-14 : on prouve AVANT d'activer. Sans cette règle, le
+   * dépôt refusé sur un actif laissait un mandat actif sans aucun moyen d'être
+   * prouvé.
+   */
+  it("refuse d'activer un brouillon dont le scan n'est pas déposé", async () => {
+    const naked = PaymentMandate.reconstitute(
+      snapshot({ proofStorageKey: null, proofFileName: null }),
+    );
+    const { handler, saved } = build({ target: naked, current: naked });
+
+    await expect(
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
+    ).rejects.toThrow(MandateUnprovenError);
+    expect(naked.status).toBe("draft");
+    expect(saved).toHaveLength(0);
   });
 
   it("refuse une date de signature à venir", async () => {

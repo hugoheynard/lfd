@@ -72,12 +72,10 @@
       <!-- L'identité ferme la rangée. Pas de sélecteur d'espace : il n'existe
            qu'à partir de deux espaces, et le compte n'en a qu'un — la réf
            interdit d'ouvrir un déroulant qui ne mène nulle part. -->
-      <span class="who wide-only">
-        @if (identity.firstName(); as name) {
-          <span class="who-name">{{ name }}</span>
-        }
-        <span class="who-chip" aria-hidden="true">{{ initials() }}</span>
-      </span>
+      <!-- Depuis le 2026-09-14, l'identité est un MENU : « Mon profil » et
+           « Se déconnecter » — la personne, pas la société. En pile, le menu
+           de poche porte les mêmes gestes, et ce bloc reste masqué. -->
+      <app-account-menu class="account wide-only" />
     }
   </div>
 

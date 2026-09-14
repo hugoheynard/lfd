@@ -11,8 +11,29 @@ courriel.
 > lot déclare déjà `B2B` : c'est le **formulaire** qui bascule, pas le lot. La
 > bascule est le lot 0 de [`../b2b/plan-mandat-client.md`](../b2b/plan-mandat-client.md).
 > ✅ **Le contrat SDD B2B avec la Caisse d'Épargne est signé** (dit par Hugo le
-> 2026-09-14) : la bascule n'attend plus de réponse. Mécanisme retenu : le schéma
-> devient une propriété de chaque mandat (plan §7).
+> 2026-09-14) : la bascule n'attend plus de réponse. ~~Mécanisme retenu : le schéma
+> devient une propriété de chaque mandat (plan §7).~~ Abandonné le même jour pour
+> la version simple du plan §8.
+>
+> ✅ **Bascule FAITE le 2026-09-14** (lot 0 du plan, version simple du §8 — le
+> §7 et sa colonne `scheme` par mandat ont été abandonnés : aucun mandat en
+> production, dit par Hugo le même jour). Le schéma est une constante unique,
+> `SEPA_SCHEME` (`b2b/accounting/domain/value-objects/sepa-scheme.ts`), lue par
+> `pain008.ts` ET par `sepa-mandate-pdf.ts` ; le texte du formulaire vit dans
+> `sepa-mandate-wording.ts`, indexé par le schéma. Le formulaire porte
+> « interentreprises » dans ses deux titres, le texte d'autorisation B2B et la
+> consigne de déclarer le mandat à sa banque ; le courriel
+> `customer.mandate-to-sign` dit le même vocabulaire. Tenu par
+> `sepa-mandate-scheme.spec.ts`. Les tableaux « Le fait » ci-dessous décrivent
+> l'état du 2026-09-13, avant la bascule.
+>
+> ⚠️ **Libellé non confronté au modèle de la banque** : le texte d'autorisation
+> est la version la plus fidèle à ce document, pas une copie du modèle que la
+> Caisse d'Épargne attend. À aligner au mot près quand elle l'aura fourni.
+>
+> ⚠️ **13 mois : retiré, à confirmer avec la banque** — ce délai vise les
+> opérations non autorisées, pas le remboursement. Il est parti avec le
+> paragraphe CORE entier (plan §8 et §9 #7).
 >
 > ~~Ce choix ne dispense pas du **contrat SDD B2B** avec la Caisse d'Épargne :~~
 > sans lui, la banque du créancier refusera le lot. La question à la banque
@@ -75,6 +96,30 @@ Tout mandat imprimé avant la bascule porte le texte CORE. Au 2026-09-13, un seu
 existe en développement (`LFC-6KTQAT-260913-HZMF98`, brouillon) — **l'état de la
 production n'a pas été vérifié**.
 
+## Le type de paiement — deux trous, ouverts le 2026-09-14
+
+Tranché par Hugo le 2026-09-14 (plan §9 #6) : le lot **suit** le réglage de
+l'entité émettrice (`LegalEntity.mandatePaymentType`) — `RCUR` pour `recurrent`,
+`OOFF` pour `one_off` — au lieu d'écrire `RCUR` en dur. Le formulaire coche la
+zone 12 selon ce même réglage. Ce que la bascule laisse ouvert :
+
+- **Le réglage COURANT, pas ce qui a été imprimé.** Le mandat ne mémorise pas la
+  case cochée sur son papier. Si le réglage de l'entité change après la
+  signature, le lot suivant prélève sous une séquence que le papier signé
+  n'autorise pas. Tranché au plus simple parce qu'aucun mandat n'existe en
+  production (dit par Hugo le 2026-09-14) ; à fermer avant qu'un réglage change
+  sur une entité qui a des mandats actifs — en figeant le type de paiement sur
+  le mandat à la frappe, ou en refusant de changer le réglage tant qu'un mandat
+  actif existe.
+- **Un mandat ponctuel ne sert qu'à UN débit, et rien ne refuse le second.** Le
+  lot (`pain008.ts`, via `DebtorMandateReader.activeFor`) ne connaît aucun débit
+  déjà présenté : il n'existe pas d'historique des prélèvements par mandat
+  (vérifié le 2026-09-14 — `DebtorMandate` ne porte que la RUM et l'IBAN, et les
+  tentatives sont la tranche 9 de `prelevement-sepa.md`). Une entité réglée en
+  ponctuel ferait donc repartir le même mandat `OOFF` à chaque cycle. À fermer
+  avec l'historique des débits : un mandat ponctuel déjà présenté sort du lot
+  (ou passe caduc).
+
 ## Ce que ce TODO ne couvre pas
 
 - **le balayage de caducité** — aucun mandat ne passe à `expired` après 36 mois ;
@@ -85,3 +130,26 @@ production n'a pas été vérifié**.
   claire, après ressaisie ;
 - **les dix questions à la Caisse d'Épargne**, dont aucune ne se répond depuis le
   dépôt.
+
+## Un mandat ACTIF dont le staff change le RIB — aucun mécanisme
+
+**Ajouté le 2026-09-14** (plan [`../b2b/plan-mandat-client.md`](../b2b/plan-mandat-client.md)
+§9 #5), hors du Lot A qui l'a constaté.
+
+Le mandat ne fige pas le compte qu'il nomme : le PDF et le lot lisent le RIB
+**courant**. Depuis le Lot A :
+
+- un **brouillon** est révoqué par toute écriture du RIB ou des zones 14/19
+  (staff comme client), fait `payment_mandate.draft_voided` au journal, cloche
+  staff ;
+- côté **client**, remplacer le RIB est refusé en **409** tant qu'un mandat est
+  actif ;
+- côté **staff**, rien n'empêche de remplacer le RIB sous un mandat **actif** :
+  le prochain lot prélèverait un compte que le papier signé ne nomme pas.
+  `CompanyBankAccount.replaceWith` calcule déjà si le compte a réellement
+  changé, et ce booléen reste ignoré.
+
+Pourquoi ce n'est pas bloquant aujourd'hui : **aucun mandat actif en production**
+(Hugo, 2026-09-14), et l'écran staff avertit déjà quand le RIB diffère du compte
+mandaté (`mandateLast4`). Le geste à décider avec la banque : amendement sous la
+même RUM (`AmdmntInd` + `OrgnlDbtrAcct`) ou nouveau mandat.

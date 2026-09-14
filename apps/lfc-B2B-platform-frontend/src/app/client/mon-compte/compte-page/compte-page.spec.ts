@@ -1,15 +1,17 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { CompanyView, ShopLevel } from '@lfd/contracts';
+import type { CompanyView, CustomerBankAccountView, GateLevel, ShopLevel } from '@lfd/contracts';
 
 import { AccountService, type AccountStatus } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientBankAccount } from '../../client-bank-account.service';
 import { ClientChrome } from '../../client-chrome.service';
+import { ClientMandate } from '../../client-mandate.service';
 import { FR } from '../../copy/fr';
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
-import { openShopAt } from '../../feature-access/feature-access.fixture';
+import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
+import { DEFAULT_SURFACES, openShopAt } from '../../feature-access/feature-access.fixture';
 import { ProOnboarding } from '../../pro-onboarding.service';
 import { asRole, PROFILE, TOMMEUSES } from '../account.fixture';
 import { ComptePage } from './compte-page';
@@ -18,7 +20,23 @@ import { ComptePage } from './compte-page';
 interface Situation {
   readonly authenticated?: boolean;
   readonly status?: AccountStatus;
+  /** Le drapeau `customerMandate` — fermé par défaut, comme au catalogue. */
+  readonly mandate?: GateLevel;
+  /** Le RIB que ses cartes ont lu — aucun par défaut. */
+  readonly bank?: CustomerBankAccountView | null;
 }
+
+/** Un RIB enregistré, sans IBAN : la lecture n'en rend que `last4`. */
+const RIB: CustomerBankAccountView = {
+  holder: 'SAS Les Tommeuses',
+  addressLine1: '12 rue des Alpages',
+  addressLine2: '',
+  postalCode: '73150',
+  city: 'Val d’Isère',
+  countryCode: 'FR',
+  bic: 'CEPAFRPP751',
+  last4: '1906',
+};
 
 /** Les relectures de `/me` et les connexions demandées par l'écran. */
 let loads = 0;
@@ -27,7 +45,7 @@ let signIns: string[] = [];
 function boot(
   companies: readonly CompanyView[],
   shop: ShopLevel = 'order',
-  { authenticated = true, status = 'ready' }: Situation = {},
+  { authenticated = true, status = 'ready', mandate = 'closed', bank = null }: Situation = {},
 ): ComponentFixture<ComptePage> {
   loads = 0;
   signIns = [];
@@ -57,12 +75,22 @@ function boot(
           },
         },
       },
-      // Les cartes RIB ont leur propre suite : ici, un RIB lu et absent.
+      // Les cartes RIB ont leur propre suite : ici, un RIB lu, absent sauf mention.
       {
         provide: ClientBankAccount,
         useValue: {
           status: signal('ready'),
-          account: signal(null),
+          account: signal(bank),
+          ensure: (): void => undefined,
+          reload: (): Promise<void> => Promise.resolve(),
+        },
+      },
+      // Les cartes mandat ont leur propre suite : ici, aucun mandat en cours.
+      {
+        provide: ClientMandate,
+        useValue: {
+          status: signal('ready'),
+          mandate: signal(null),
           ensure: (): void => undefined,
           reload: (): Promise<void> => Promise.resolve(),
         },
@@ -72,15 +100,21 @@ function boot(
     ],
   });
   openShopAt(shop);
+  if (mandate === 'open') {
+    TestBed.inject(ClientFeatureAccess).receive({
+      shop,
+      ...DEFAULT_SURFACES,
+      customerMandate: 'open',
+    });
+  }
   const fixture = TestBed.createComponent(ComptePage);
   fixture.detectChanges();
   return fixture;
 }
 
-/** Les neuf sections, dans l'ordre du sommaire. */
+/** Les huit sections, dans l'ordre du sommaire. */
 const SECTIONS = [
   'identity',
-  'profile',
   'users',
   'kbis',
   'addresses',
@@ -118,13 +152,15 @@ describe('ComptePage', () => {
     expect(chrome.bandNarrow()).toBe(true);
   });
 
-  it('donne neuf sections, et un sommaire qui pointe LEURS ancres', () => {
+  it('donne huit sections, et un sommaire qui pointe LEURS ancres', () => {
     // Le sommaire fait défiler, il ne change pas d'écran : une entrée qui
     // pointerait une ancre absente mènerait nulle part.
     const anchors = Array.from(el().querySelectorAll('.summary-link')).map((a) =>
       a.getAttribute('href')?.slice(1),
     );
-    expect(anchors.length).toBe(9);
+    expect(anchors.length).toBe(8);
+    // « Mes informations » a quitté Mon compte pour l'en-tête (2026-09-14).
+    expect(el().querySelector('#compte-profile')).toBeNull();
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
     }
@@ -156,7 +192,6 @@ describe('ComptePage', () => {
     const anchors = links.map((a) => a.getAttribute('href')?.slice(1));
     expect(anchors).toEqual([
       'compte-identity',
-      'compte-profile',
       'compte-users',
       'compte-kbis',
       'compte-addresses',
@@ -170,7 +205,6 @@ describe('ComptePage', () => {
       '04',
       '05',
       '06',
-      '07',
     ]);
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
@@ -195,9 +229,69 @@ describe('ComptePage', () => {
       const links = Array.from(el().querySelectorAll('.summary-link'));
       expect(el().querySelector('#compte-bank')).toBeNull();
       expect(links.map((a) => a.getAttribute('href'))).not.toContain('#compte-bank');
-      expect(links.length).toBe(8);
-      expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('08');
+      expect(links.length).toBe(7);
+      expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('07');
     }
+  });
+
+  /**
+   * Plan `plan-mandat-client.md` §3, lot B : la carte mandat exige le rôle du
+   * RIB, un RIB enregistré ET le drapeau ouvert. Elle suit le RIB — même rangée
+   * au bureau, panneau suivant en pile — et le sommaire la compte.
+   */
+  describe('le mandat SEPA', () => {
+    const anchors = (): (string | undefined)[] =>
+      Array.from(el().querySelectorAll('.summary-link')).map((a) =>
+        a.getAttribute('href')?.slice(1),
+      );
+
+    it('se montre juste après le RIB, sur sa rangée, et le sommaire se renumérote avec lui', () => {
+      for (const role of ['owner', 'billing'] as const) {
+        fixture = boot([asRole(role)], 'order', { mandate: 'open', bank: RIB });
+
+        const section = el().querySelector('section#compte-mandate');
+        expect(section?.querySelectorAll('app-mandate-desk-card.desk').length).toBe(1);
+        expect(section?.querySelectorAll('app-mandate-mobile-card.mobile').length).toBe(1);
+        // Dans le rail, le panneau qui suit immédiatement celui du RIB.
+        expect(el().querySelector('section#compte-bank + section#compte-mandate')).not.toBeNull();
+        expect(el().querySelector('section#compte-bank')?.classList).toContain('paired');
+
+        const shown = anchors();
+        expect(shown.length).toBe(9);
+        expect(shown.indexOf('compte-mandate')).toBe(shown.indexOf('compte-bank') + 1);
+        expect(
+          Array.from(el().querySelectorAll('.summary-num')).map((n) => n.textContent),
+        ).toContain('09');
+        expect(el().querySelector('.rail-foot .rail-count')?.textContent?.trim()).toBe('1/9');
+      }
+    });
+
+    it('reste absent tant que le drapeau est fermé — le RIB reprend toute sa rangée', () => {
+      fixture = boot([TOMMEUSES], 'order', { mandate: 'closed', bank: RIB });
+
+      expect(el().querySelector('#compte-mandate')).toBeNull();
+      expect(anchors()).not.toContain('compte-mandate');
+      expect(anchors().length).toBe(8);
+      expect(el().querySelector('section#compte-bank')?.classList).not.toContain('paired');
+    });
+
+    it('reste absent sans RIB enregistré, même drapeau ouvert', () => {
+      fixture = boot([TOMMEUSES], 'order', { mandate: 'open', bank: null });
+
+      expect(el().querySelector('#compte-mandate')).toBeNull();
+      expect(anchors()).toContain('compte-bank');
+      expect(anchors().length).toBe(8);
+    });
+
+    it('reste absent aux rôles qui ne voient pas le RIB, même drapeau ouvert et RIB lu', () => {
+      for (const role of ['orders', 'admin'] as const) {
+        fixture = boot([asRole(role)], 'order', { mandate: 'open', bank: RIB });
+
+        expect(el().querySelector('#compte-mandate')).toBeNull();
+        expect(anchors()).not.toContain('compte-mandate');
+        expect(anchors().length).toBe(7);
+      }
+    });
   });
 
   /** En pile, neuf tirets ne se comptent pas : la pastille dit le rang en chiffres. */

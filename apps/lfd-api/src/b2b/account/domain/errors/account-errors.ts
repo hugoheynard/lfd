@@ -290,4 +290,64 @@ export class ContactAlreadyExistsError extends BusinessError {
   }
 }
 
+/**
+ * Le compte visé est le **détenteur** de la société, et le geste lui donnerait
+ * un autre rôle.
+ *
+ * Rétrograder le détenteur n'est pas une correction de rôle : c'est lui retirer
+ * la société. Par le carnet, un admin client pouvait le faire en notant
+ * l'adresse de connexion du détenteur quand elle diffère de celle de la fiche
+ * (corrigé le 2026-09-14). La base refuse désormais d'écrire la rétrogradation ;
+ * ce refus-ci existe pour la NOMMER, au lieu de laisser croire à un rôle posé.
+ */
+export class HolderRoleLockedError extends BusinessError {
+  /** @param explanation le refus dit dans les termes du geste qui l'a provoqué. */
+  constructor(
+    readonly companyId: string,
+    explanation = "Ce compte détient la société : son rôle ne se change pas ici. " +
+      "Pour confier la détention à une autre personne, passer par le support — " +
+      "le transfert de détention n'existe pas encore.",
+  ) {
+    super("account.company.holder_role_locked", explanation);
+  }
+}
+
+/**
+ * Le compte existe, il est actif, mais son adresse n'a **jamais été prouvée**.
+ *
+ * N'importe qui peut ouvrir un compte à n'importe quelle adresse par
+ * l'inscription libre : sans preuve, l'adresse ne dit pas qui est derrière.
+ * Rattacher ce compte à une société donnait l'espace — rôle d'administration
+ * compris — à la personne qui avait tapé l'adresse, pas à celle qui la lit
+ * (corrigé le 2026-09-14).
+ */
+export class AccountEmailUnverifiedError extends BusinessError {
+  constructor(readonly email: string) {
+    super(
+      "account.access.email_unverified",
+      "Un compte existe déjà à cette adresse, mais elle n'a jamais été vérifiée : " +
+        "il ne peut pas être rattaché à une société. La personne doit d'abord confirmer " +
+        "son adresse (lien de vérification reçu à l'inscription) puis l'accès pourra être " +
+        "rouvert ; si elle ne le retrouve pas, faire régulariser le compte par le support.",
+    );
+  }
+}
+
+/**
+ * **Plusieurs** comptes portent cette adresse, et rien ne dit lequel est le bon.
+ *
+ * La colonne n'est pas unique : l'inscription libre crée un compte par sujet
+ * d'identité, pas par adresse. Prendre « le premier » rattachait une société à
+ * un compte choisi par l'ordre physique des lignes.
+ */
+export class AccountEmailAmbiguousError extends BusinessError {
+  constructor(readonly email: string) {
+    super(
+      "account.access.email_ambiguous",
+      "Plusieurs comptes portent cette adresse : impossible de savoir lequel est le bon, " +
+        "et rien n'a été modifié. Faire regrouper ces comptes par le support avant de réessayer.",
+    );
+  }
+}
+
 // ─── Panne technique (500) ───────────────────────────────────────────────────

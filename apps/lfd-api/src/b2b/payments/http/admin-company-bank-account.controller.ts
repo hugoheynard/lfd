@@ -42,9 +42,13 @@ import { PreviewCustomerMandateQuery } from "../application/queries/preview-cust
  * coordonnée qu'on recopie ; le mandat est une autorisation qu'on obtient. Les
  * réunir ici ferait le fichier où l'on pose la troisième chose.
  *
- * Staff-only, comme le mandat, et pour la même raison : la clientèle visée ne
- * saisit pas ses coordonnées bancaires elle-même — le commercial les reporte
- * depuis un RIB papier.
+ * Surface du **back-office** — ce n'est plus la seule. Cette phrase disait
+ * jusqu'au 2026-09-14 que la clientèle ne saisit pas ses coordonnées bancaires ;
+ * c'est faux depuis le RIB client (`documentation/b2b/plan-rib-client.md`) : le
+ * détenteur et le rôle facturation déposent le leur, et règlent les zones 14/19,
+ * par `company-bank-account.controller.ts` (vérifié le 2026-09-14). Ce
+ * contrôleur-ci reste celui du commercial qui reporte un RIB papier ; il n'a pas
+ * le refus sous mandat actif que porte le chemin client.
  */
 @Controller("admin/companies")
 @AdminSurface("b2b_payments")
@@ -120,15 +124,17 @@ export class AdminCompanyBankAccountController {
   /**
    * **L'aperçu du mandat de ce client**, les deux côtés remplis.
    *
-   * 🔴 Il porte toujours la mention « EXEMPLE » en travers de la page, et ce
-   * n'est pas un oubli : aucune RUM n'est frappée, donc une signature apposée
-   * dessus créerait un mandat sans référence — inutilisable, mais que le client
-   * croirait avoir donné. L'aperçu sert à **relire les informations** avant de
-   * les faire imprimer, pas à produire la pièce.
+   * 🔴 Il porte la mention « EXEMPLE » **tant qu'aucun brouillon n'est frappé** :
+   * sans RUM, une signature apposée dessus créerait un mandat sans référence —
+   * inutilisable, mais que le client croirait avoir donné.
    *
-   * `GET` : rien n'est créé, et deux appels rendent le même fichier. Le jour où
-   * un mandat nominatif sera émis, ce sera une commande — frapper une RUM est un
-   * fait qu'on garde.
+   * ⚠️ Ce JSDoc disait « toujours EXEMPLE » : faux depuis la frappe de la RUM
+   * (2026-09-12). `buildCustomerMandate` imprime la RUM du brouillon et le
+   * filigrane tombe avec elle — c'est le même document que la pièce jointe du
+   * courriel et que le PDF du client (constaté le 2026-09-14).
+   *
+   * `GET` : rien n'est créé, et deux appels rendent le même fichier. Frapper une
+   * RUM, elle, est une commande (`POST :companyId/mandate`).
    *
    * Refus possibles, tous nommés : pas de RIB (404), aucune entité émettrice ou
    * plusieurs (409), entité sans ICS (409).

@@ -1,3 +1,6 @@
+import type { AddressFormLabels } from '@lfd/b2b-ui/address';
+import type { ContactFieldsLabels, DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
+import type { BankAccountFormLabels, MandateOptionsFormLabels } from '@lfd/b2b-ui/payment';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
@@ -65,10 +68,10 @@ export interface AccountCopy {
   readonly sections: {
     readonly identity: string;
     readonly users: string;
-    readonly profile: string;
     readonly kbis: string;
     readonly addresses: string;
     readonly bank: string;
+    readonly mandate: string;
     readonly payment: string;
     readonly preferences: string;
     readonly data: string;
@@ -107,9 +110,9 @@ export interface AccountCopy {
   readonly usersAddSubtitle: string;
   /** En tête du message du serveur, quand l'ajout est refusé. */
   readonly usersAddFailed: string;
-  /** Un rôle non renseigné : les contacts d'avant les rôles n'en ont pas. */
-  readonly roleUnset: string;
   readonly tagContact: string;
+  /** Les champs d'un interlocuteur — le formulaire partagé avec la fiche staff, rôles compris. */
+  readonly contactFields: ContactFieldsLabels;
   /** L'en-tête de la fiche d'un interlocuteur quand on la modifie : détenteur, ou contact du carnet. */
   readonly contactEditHolderTitle: string;
   readonly contactEditTitle: string;
@@ -124,11 +127,12 @@ export interface AccountCopy {
   readonly contactRemoveBusy: string;
   readonly contactRemoveGroup: string;
   readonly contactRemoveFailed: string;
+  /** Le titre de la zone de danger d'un dialogue — là, et seulement là, qu'on supprime. */
+  readonly dangerZone: string;
   /** « Mes informations » : la personne connectée, pas la société. */
   readonly profileFirstName: string;
   readonly profileLastName: string;
   readonly profileEmail: string;
-  readonly profileNote: string;
   readonly profilePanelSubtitle: string;
   readonly profileEmailHint: string;
   /** Dit AVANT l'enregistrement ce qu'un changement d'adresse emporte chez Auth0. */
@@ -175,12 +179,8 @@ export interface AccountCopy {
   readonly billingEdit: string;
   /** Le titre du formulaire qui modifie une livraison. */
   readonly addressEdit: string;
-  readonly deliveryNote: string;
   readonly addressSaveFailed: string;
   readonly addressSavedToast: string;
-  /** Désigner une livraison comme la défaut — absent sur celle qui l'est déjà. */
-  readonly addressMakeDefault: string;
-  readonly addressDefaultToast: string;
   /** L'archivage d'une livraison, confirmé en place (`fold-inline-confirm`) — les mêmes cinq phrases que `contactRemove*`. */
   readonly addressRemove: string;
   /** La question posée avant d'archiver : elle nomme ce qui ne disparaît PAS. */
@@ -191,6 +191,14 @@ export interface AccountCopy {
   readonly addressRemovedToast: string;
   /** En tête du message du serveur, quand suppression ou défaut est refusé. */
   readonly addressActionFailed: string;
+  /** Sous le titre du dialogue d'une livraison : le lieu, et comment on y livre. */
+  readonly deliveryDialogSubtitle: string;
+  /** Le bouton d'envoi d'une livraison NEUVE — « Enregistrer » corrige une existante. */
+  readonly deliveryAddSubmit: string;
+  /** Le formulaire postal partagé — la facturation, et la base de celui d'une livraison. */
+  readonly addressForm: AddressFormLabels;
+  /** Le formulaire partagé d'une livraison — rang, postal, consignes — dans la langue de l'écran. */
+  readonly deliveryForm: DeliveryAddressFormLabels;
   readonly termMonthly: string;
   /**
    * Sous le crédit mensuel, selon ce que `/me` en dit. 🔴 Il y avait ici UNE
@@ -251,17 +259,7 @@ export interface AccountCopy {
   readonly closeHead: string;
   readonly closeBody: string;
   readonly closeCta: string;
-  readonly panelKicker: string;
-  readonly panelContact: string;
   readonly panelPhone: string;
-  readonly panelRole: string;
-  readonly noPhone: string;
-  readonly spaceContactHead: string;
-  readonly spaceContactBody: string;
-  /** `{date}` est remplacé par la date d'envoi de l'invitation. */
-  readonly spaceActiveHead: string;
-  /** `{date}` est remplacé par la date d'activation de l'espace. */
-  readonly spaceSelf: string;
   /** Pendant la lecture du RIB. */
   readonly bankLoading: string;
   /** La lecture du RIB a échoué : ce n'est PAS « aucun RIB », et on le dit. */
@@ -275,18 +273,75 @@ export interface AccountCopy {
   readonly bankLast4: string;
   /** Le titulaire est celui que la BANQUE connaît, et un compte mandaté ne se remplace pas sans nouveau mandat. */
   readonly bankNotice: string;
-  readonly bankHolder: string;
-  readonly bankLine1: string;
-  readonly bankLine2: string;
-  readonly bankPostalCode: string;
-  readonly bankCity: string;
-  readonly bankCountry: string;
-  /** Sous l'IBAN : il ne revient d'aucune route. */
-  readonly bankIbanHint: string;
+  /** Les champs du RIB — le formulaire partagé avec la fiche staff. */
+  readonly bankForm: BankAccountFormLabels;
   readonly bankSave: string;
   readonly bankReplace: string;
   readonly bankSavedToast: string;
   readonly bankSaveFailed: string;
+  /** Pendant la lecture du mandat SEPA. */
+  readonly mandateLoading: string;
+  /** La lecture du mandat a échoué : ce n'est PAS « aucun mandat », et on le dit. */
+  readonly mandateLoadFailedTitle: string;
+  readonly mandateLoadFailedBody: string;
+  /** Aucun mandat, ou un mandat qui n'est plus en cours (révoqué, rejeté, en attente chez Stripe). */
+  readonly mandateNone: string;
+  /** Le brouillon sans scan : l'état EST la consigne (demande de Hugo, plan §0). */
+  readonly mandateAwaiting: string;
+  /** Le brouillon dont le scan est déposé : le commercial le relit avant d'activer. */
+  readonly mandateInReview: string;
+  readonly mandateActive: string;
+  /** `{reference}` : la RUM, que le client déclare à sa banque. */
+  readonly mandateReference: string;
+  /** `{date}` : la date portée par le papier signé. */
+  readonly mandateSignedOn: string;
+  /** `{fileName}` : le nom du scan déposé. */
+  readonly mandateProofFile: string;
+  readonly mandateGenerate: string;
+  /** Le bouton du bas d'un brouillon sans scan : il ouvre le panneau où l'on dépose. */
+  readonly mandateSend: string;
+  /** Voir / télécharger : les libellés des deux icônes, pour qui ne les voit pas. */
+  readonly mandateView: string;
+  readonly mandateDownload: string;
+  /** Le panneau, sans mandat en cours : ce que le mandat autorise, avant de le générer. */
+  readonly mandateNoneBody: string;
+  /** Le panneau, brouillon sans scan : imprimer, dater, signer, renvoyer, déclarer à sa banque. */
+  readonly mandateAwaitingBody: string;
+  readonly mandateInReviewBody: string;
+  /** Un mandat actif ne se remplace pas d'ici : le changement de banque passe par le commercial. */
+  readonly mandateActiveBody: string;
+  readonly mandateDrop: string;
+  readonly mandateDropReplace: string;
+  /** Sous la zone de dépôt : les formats et la taille que l'API accepte. */
+  readonly mandateDropHint: string;
+  readonly mandateUploading: string;
+  readonly mandateUploadedToast: string;
+  /** En tête du message du serveur, quand la génération est refusée. */
+  readonly mandateGenerateFailed: string;
+  /** En tête du message du serveur, quand le dépôt est refusé. */
+  readonly mandateUploadFailed: string;
+  readonly mandateFetchFailed: string;
+  /** Visible et désactivé tant qu'aucun prestataire n'est branché (plan §5.1). */
+  readonly mandateEsign: string;
+  readonly mandateEsignSoon: string;
+  /** Le geste de la carte, et le titre du panneau des zones 14 et 19. */
+  readonly mandateOptions: string;
+  /** Sous le titre : ce que ces zones sont. */
+  readonly mandateOptionsSubtitle: string;
+  /** Dit AVANT les champs : aucune zone n'est obligatoire. */
+  readonly mandateOptionsNotice: string;
+  /** Tant qu'un brouillon existe : l'enregistrement le rend caduc. */
+  readonly mandateOptionsDraftWarning: string;
+  /** Les deux zones — le formulaire partagé avec la fiche staff. */
+  readonly mandateOptionsForm: MandateOptionsFormLabels;
+  readonly mandateOptionsLoading: string;
+  readonly mandateOptionsLoadFailedTitle: string;
+  /** Sans RIB, les zones n'ont pas de ligne où vivre. */
+  readonly mandateOptionsNoBank: string;
+  readonly mandateOptionsSave: string;
+  readonly mandateOptionsSavedToast: string;
+  /** En tête du message du serveur, quand l'enregistrement est refusé. */
+  readonly mandateOptionsSaveFailed: string;
   /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
   readonly supportTitle: string;
   /** Le titre du panneau que la carte ouvre. */

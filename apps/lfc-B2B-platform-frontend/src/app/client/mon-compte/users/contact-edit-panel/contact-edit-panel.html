@@ -1,11 +1,18 @@
-<fold-panel-header
-  [title]="isHolder() ? t().account.contactEditHolderTitle : t().account.contactEditTitle"
-  [subtitle]="isHolder() ? t().account.contactEditHolderSubtitle : t().account.contactEditSubtitle"
-  [closeLabel]="t().dialog.close"
-/>
+@if (readOnly()) {
+  <!-- Une LECTURE : la personne, sans verbe d'écriture dans le titre. -->
+  <fold-panel-header [title]="name()" [closeLabel]="t().dialog.close" />
+} @else {
+  <fold-panel-header
+    [title]="isHolder() ? t().account.contactEditHolderTitle : t().account.contactEditTitle"
+    [subtitle]="
+      isHolder() ? t().account.contactEditHolderSubtitle : t().account.contactEditSubtitle
+    "
+    [closeLabel]="t().dialog.close"
+  />
+}
 
 <fold-panel-body>
-  <!-- LE REFUS reste dans le panneau : c'est ici qu'on corrige ce qu'il nomme. -->
+  <!-- LE REFUS reste dans le dialogue : c'est ici qu'on corrige ce qu'il nomme. -->
   @if (refusal(); as message) {
     <fold-callout variant="alert" announce>
       {{ t().account.contactEditFailed }} {{ message }}
@@ -17,21 +24,47 @@
     [value]="draft()"
     (valueChange)="draft.set($event)"
     [withRole]="!isHolder()"
+    [readOnly]="readOnly()"
+    [labels]="t().account.contactFields"
   />
+
+  <!-- SUPPRIMER vit ici, jamais en ligne dans une liste (règle « Saisir »). -->
+  @if (canRemove()) {
+    @if (removeRefusal(); as message) {
+      <fold-callout variant="alert" announce>
+        {{ t().account.contactRemoveFailed }} {{ message }}
+      </fold-callout>
+    }
+    <fold-danger-zone
+      appearance="section"
+      [title]="t().account.dangerZone"
+      [actionLabel]="t().account.contactRemove"
+      (confirmed)="remove()"
+    >
+      <p>{{ t().account.contactRemoveMessage }}</p>
+    </fold-danger-zone>
+  }
 </fold-panel-body>
 
 <fold-panel-footer>
-  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
-    {{ t().account.cancel }}
-  </button>
-  <button
-    foldButton
-    intent="primary"
-    type="button"
-    [loading]="saving()"
-    [disabled]="!canSave()"
-    (click)="save()"
-  >
-    {{ t().account.save }}
-  </button>
+  @if (readOnly()) {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      {{ t().dialog.close }}
+    </button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      {{ t().account.cancel }}
+    </button>
+    <button
+      foldButton
+      class="save"
+      intent="primary"
+      type="button"
+      [loading]="saving()"
+      [disabled]="!canSave()"
+      (click)="save()"
+    >
+      {{ t().account.save }}
+    </button>
+  }
 </fold-panel-footer>

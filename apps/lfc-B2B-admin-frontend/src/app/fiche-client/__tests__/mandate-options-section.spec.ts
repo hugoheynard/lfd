@@ -95,10 +95,10 @@ describe('zones facultatives du mandat', () => {
   it('reprend les zones enregistrées quand le RIB arrive', async () => {
     // Le RIB est chargé par le bloc voisin : il est `null` au premier rendu.
     const { section, setAccount } = render({ account: null });
-    expect(section['debtorReferenceDraft']()).toBe('');
+    expect(section['draft']().debtorReference).toBe('');
 
     setAccount(SAVED);
-    expect(section['debtorReferenceDraft']()).toBe('C-9P2X4B');
+    expect(section['draft']().debtorReference).toBe('C-9P2X4B');
   });
 
   /**
@@ -108,17 +108,17 @@ describe('zones facultatives du mandat', () => {
   it("n'écrase JAMAIS ce qu'on est en train de taper", () => {
     const { section, setAccount } = render({ account: SAVED });
 
-    section['contractNumberDraft'].set('CT-42');
+    section['draft'].update((d) => ({ ...d, contractNumber: 'CT-42' }));
     section['markTouched']();
     setAccount({ ...SAVED, contractNumber: 'AUTRE' });
 
-    expect(section['contractNumberDraft']()).toBe('CT-42');
+    expect(section['draft']().contractNumber).toBe('CT-42');
   });
 
   it('envoie les trois zones, rognées', async () => {
     const { section, written, settle } = render({ account: SAVED });
 
-    section['contractNumberDraft'].set('  CT-42  ');
+    section['draft'].update((d) => ({ ...d, contractNumber: '  CT-42  ' }));
     await section['save']();
     await settle();
 

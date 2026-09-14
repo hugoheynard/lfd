@@ -173,6 +173,39 @@ export function contactIssueOf(draft: DeliverySpecsDraft): string {
 }
 
 /**
+ * Pas de signature exigée sans contact sur place (Hugo, 2026-09-14) : une
+ * signature suppose quelqu'un pour signer. Ne voit que l'exigence EXPLICITE —
+ * l'héritée dépend du socle de la société, que {@link withNoContact} traite au
+ * moment où l'on coche. Le serveur refuse le même cas (`deliveryAddressPayloadSchema`).
+ */
+export function signatureIssueOf(draft: DeliverySpecsDraft): string {
+  return draft.noContact && draft.signatureRequired === true
+    ? 'Une signature ne peut pas être exigée sans contact sur place.'
+    : '';
+}
+
+/**
+ * Coche ou décoche « pas de contact ».
+ *
+ * Cocher fait tomber une signature exigée — posée sur l'adresse, ou héritée d'une
+ * société qui l'exige (`floor`) — à « non exigée » : sans personne sur place, il
+ * n'y a personne pour signer. Décocher ne rétablit rien, on ne devine pas ce qui
+ * était voulu avant.
+ */
+export function withNoContact<T extends DeliverySpecsDraft>(
+  draft: T,
+  noContact: boolean,
+  floor: boolean,
+): T {
+  const signs = (draft.signatureRequired ?? floor) === true;
+  return {
+    ...draft,
+    noContact,
+    signatureRequired: noContact && signs ? false : draft.signatureRequired,
+  };
+}
+
+/**
  * Contrôle de forme d'une livraison : le lieu, puis les consignes.
  *
  * Une facturation n'a pas d'équivalent — elle appelle {@link postalIssue}
@@ -180,7 +213,12 @@ export function contactIssueOf(draft: DeliverySpecsDraft): string {
  */
 export function deliveryIssueOf(draft: DeliveryDraft): string {
   return (
-    postalIssue(draft) || slotIssueOf(draft) || contactIssueOf(draft) || gpsIssueOf(draft) || ''
+    postalIssue(draft) ||
+    slotIssueOf(draft) ||
+    contactIssueOf(draft) ||
+    signatureIssueOf(draft) ||
+    gpsIssueOf(draft) ||
+    ''
   );
 }
 

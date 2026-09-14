@@ -7,13 +7,15 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { CompanyBankAccountView } from '@lfd/contracts';
 import {
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldInputComponent,
-  FoldPanelHostService,
-} from 'fold-ng';
+  EMPTY_MANDATE_OPTIONS_DRAFT,
+  MandateOptionsForm,
+  mandateOptionsDraftFrom,
+  toMandateOptionsPayload,
+  type MandateOptionsDraft,
+} from '@lfd/b2b-ui/payment';
+import type { CompanyBankAccountView } from '@lfd/contracts';
+import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { BankAccountService } from '../bank-account/bank-account.service';
@@ -43,6 +45,12 @@ import {
  * que nous n'encaissons pour personne. Offrir un champ pour ce qu'on ne peut pas
  * savoir fait inventer.
  *
+ * ## Le formulaire est partagé
+ *
+ * Les deux champs sont `lfd-mandate-options-form` de `@lfd/b2b-ui/payment`
+ * (depuis le 2026-09-14), le même que le panneau des options de `/mon-compte`.
+ * Cette section garde son texte, sa garde « sans RIB », l'aperçu et l'écriture.
+ *
  * ## Pourquoi elles ont leur propre bouton
  *
  * Le `PUT` du RIB exige l'IBAN, qui ne redescend jamais. Les faire passer par
@@ -52,7 +60,7 @@ import {
 @Component({
   selector: 'app-mandate-options-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldInputComponent, FoldButtonComponent],
+  imports: [FoldCalloutComponent, FoldButtonComponent, MandateOptionsForm],
   templateUrl: './mandate-options-section.html',
   styleUrl: './mandate-options-section.scss',
 })
@@ -70,8 +78,7 @@ export class MandateOptionsSection {
   protected readonly busy = signal(false);
   private readonly touched = signal(false);
 
-  protected readonly debtorReferenceDraft = signal('');
-  protected readonly contractNumberDraft = signal('');
+  protected readonly draft = signal<MandateOptionsDraft>(EMPTY_MANDATE_OPTIONS_DRAFT);
 
   constructor() {
     // Le RIB arrive de façon ASYNCHRONE : le bloc voisin le charge et le fait
@@ -86,8 +93,7 @@ export class MandateOptionsSection {
       if (saved === null || this.touched()) {
         return;
       }
-      this.debtorReferenceDraft.set(saved.debtorReference);
-      this.contractNumberDraft.set(saved.contractNumber);
+      this.draft.set(mandateOptionsDraftFrom(saved));
     });
   }
 
@@ -106,10 +112,7 @@ export class MandateOptionsSection {
 
     this.busy.set(true);
     try {
-      await this.accounts.saveOptions(id, {
-        debtorReference: this.debtorReferenceDraft().trim(),
-        contractNumber: this.contractNumberDraft().trim(),
-      });
+      await this.accounts.saveOptions(id, toMandateOptionsPayload(this.draft()));
       this.notify.success('Zones facultatives enregistrées.');
     } catch (error) {
       this.notify.error(error, "Les zones facultatives n'ont pas été enregistrées.");
@@ -127,6 +130,12 @@ export class MandateOptionsSection {
     this.panels.open<MandatePreviewPanelData>(MandatePreviewPanel, {
       data: { companyId: id, companyLabel: this.companyLabel() },
     });
+  }
+
+  /** Une frappe dans le formulaire : elle devient le brouillon, et plus rien ne l'écrase. */
+  protected edit(draft: MandateOptionsDraft): void {
+    this.draft.set(draft);
+    this.markTouched();
   }
 
   protected markTouched(): void {

@@ -2,6 +2,7 @@ import {
   CompanyAlreadyHasOwnerError,
   CompanyAdminRequiredError,
   CompanyNotFoundError,
+  HolderRoleLockedError,
 } from "../errors/account-errors.js";
 import type { CompanyRole } from "../value-objects/company-role.js";
 
@@ -78,4 +79,28 @@ export function ensureNoRivalOwner(
       "à l'adresse qui a ouvert l'accès. Pour changer d'adresse, il faut aujourd'hui " +
       "passer par le support — le transfert de détention n'existe pas encore.",
   );
+}
+
+/**
+ * Vérifie qu'un geste ne donne pas un **autre rôle** au détenteur en place.
+ *
+ * Le pendant d'`ensureNoRivalOwner` : l'une empêche un second détenteur, l'autre
+ * empêche d'en perdre un. La base ne sait qu'ignorer la rétrogradation (le
+ * rattachement `owner` n'est jamais réécrit) ; ce refus-ci la nomme, pour qu'on
+ * n'annonce pas « rôle posé » à qui vient d'être ignoré.
+ *
+ * @param explanation le refus dit dans les termes du geste appelant.
+ * @throws {HolderRoleLockedError} le candidat détient la société.
+ */
+export function ensureHolderKeepsOwnership(
+  companyId: string,
+  role: CompanyRole,
+  currentOwnerUserId: string | null,
+  candidateUserId: string,
+  explanation?: string,
+): void {
+  if (role === "owner" || currentOwnerUserId !== candidateUserId) {
+    return;
+  }
+  throw new HolderRoleLockedError(companyId, explanation);
 }

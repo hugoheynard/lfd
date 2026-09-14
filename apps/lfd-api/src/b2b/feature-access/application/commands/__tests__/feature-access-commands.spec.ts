@@ -3,6 +3,7 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { InvalidEmailError } from "../../../../account/domain/errors/account-errors.js";
 import {
   FeatureExemptionNotFoundError,
+  FeatureNotExemptibleError,
   FeatureOverrideNotFoundError,
   UnknownFeatureError,
   UnknownFeatureLevelError,
@@ -192,6 +193,19 @@ describe("AddFeatureExemptionHandler", () => {
     expect(second).toBe(first);
     expect(h.exemptions.rows).toHaveLength(1);
     expect(h.events.traced).toHaveLength(1);
+  });
+
+  /** Plan mandat client §8 (2026-09-14) : la clé ne s'ouvre pas adresse par adresse. */
+  it("refuse d'exempter sur le mandat client, sans écriture ni trace", async () => {
+    const h = harness();
+
+    await expect(
+      h.add.execute(
+        new AddFeatureExemptionCommand("customerMandate", "testeur@exemple.fr", "staff|admin"),
+      ),
+    ).rejects.toThrow(FeatureNotExemptibleError);
+
+    expect(h.steps.log).toEqual([]);
   });
 
   it("refuse une adresse invalide avant toute écriture", async () => {

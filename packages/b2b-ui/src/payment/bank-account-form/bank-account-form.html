@@ -1,0 +1,61 @@
+<!-- 🔴 L'IBAN est toujours vide à l'ouverture, même quand un compte existe : il
+     ne revient d'aucune route. Tout le reste se réaffiche — rien de cela n'est
+     un secret, et le relire est justement ce qu'on veut avant d'imprimer un
+     mandat. -->
+<div class="row">
+  <fold-input
+    [label]="labels().holder"
+    [placeholder]="labels().holderPlaceholder ?? ''"
+    [value]="value().holder"
+    (valueChange)="set('holder', $event)"
+  />
+</div>
+<div class="row">
+  <fold-input
+    [label]="labels().line1"
+    [placeholder]="labels().line1Placeholder ?? ''"
+    [value]="value().line1"
+    (valueChange)="set('line1', $event)"
+  />
+  <fold-input
+    [label]="labels().line2"
+    [placeholder]="labels().line2Placeholder ?? ''"
+    [value]="value().line2"
+    (valueChange)="set('line2', $event)"
+  />
+</div>
+<div class="row">
+  <fold-input
+    [label]="labels().postalCode"
+    [placeholder]="labels().postalCodePlaceholder ?? ''"
+    [value]="value().postalCode"
+    (valueChange)="set('postalCode', $event)"
+  />
+  <fold-input
+    [label]="labels().city"
+    [placeholder]="labels().cityPlaceholder ?? ''"
+    [value]="value().city"
+    (valueChange)="set('city', $event)"
+  />
+  <fold-input
+    [label]="labels().country"
+    [placeholder]="labels().countryPlaceholder ?? ''"
+    [value]="value().countryCode"
+    (valueChange)="set('countryCode', $event)"
+  />
+</div>
+<div class="row">
+  <fold-input
+    [label]="labels().iban"
+    [placeholder]="labels().ibanPlaceholder ?? ''"
+    [hint]="labels().ibanHint"
+    [value]="value().iban"
+    (valueChange)="set('iban', $event)"
+  />
+  <fold-input
+    [label]="labels().bic"
+    [placeholder]="labels().bicPlaceholder ?? ''"
+    [value]="value().bic"
+    (valueChange)="set('bic', $event)"
+  />
+</div>

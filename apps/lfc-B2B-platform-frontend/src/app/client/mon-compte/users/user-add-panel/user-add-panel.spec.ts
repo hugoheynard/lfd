@@ -1,11 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ContactFields } from '@lfd/b2b-ui/company';
-import { FoldPanelRef } from 'fold-ng';
+import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
 import type { ContactDraft } from '../../../../account/account.model';
 import { AccountService } from '../../../../account/account.service';
 import { FR } from '../../../copy/fr';
+import { matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { UserAddPanel } from './user-add-panel';
 
 interface Wire {
@@ -114,5 +116,40 @@ describe('UserAddPanel', () => {
     const callout = el().querySelector('fold-callout');
     expect(callout?.textContent).toContain(FR.account.usersAddFailed);
     expect(callout?.textContent).toContain('Cette adresse est déjà au carnet.');
+  });
+  it('passe au formulaire partagé les libellés de l’écran, et ils s’affichent', () => {
+    fixture = boot();
+    const fields = fixture.debugElement.query(By.directive(ContactFields))
+      .componentInstance as ContactFields;
+
+    expect(fields.labels()).toBe(FR.account.contactFields);
+    expect(el().textContent).toContain(FR.account.contactFields.emailHint);
+    expect(el().textContent).toContain(FR.account.contactFields.fonction);
+  });
+
+  describe('open()', () => {
+    afterEach(() => {
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      vi.unstubAllGlobals();
+    });
+
+    /** Une saisie : feuille du bas sous le pli, dialogue centré au-delà (règle « Saisir »). */
+    it('monte du bas sous le pli, et se centre au-delà', () => {
+      boot();
+      const panels = TestBed.inject(FoldPanelHostService);
+
+      vi.stubGlobal('matchMedia', matchMediaAt(true));
+      UserAddPanel.open(panels, TOMMEUSES);
+      expect(openedPanel()).toEqual({
+        component: UserAddPanel,
+        side: 'bottom',
+        data: { companyId: 'cmp_1' },
+      });
+
+      panels.dismissAll();
+      vi.stubGlobal('matchMedia', matchMediaAt(false));
+      UserAddPanel.open(panels, TOMMEUSES);
+      expect(openedPanel()?.side).toBe('center');
+    });
   });
 });

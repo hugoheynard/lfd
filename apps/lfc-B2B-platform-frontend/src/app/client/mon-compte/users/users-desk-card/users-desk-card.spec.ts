@@ -21,7 +21,7 @@ describe('UsersDeskCard', () => {
     expect(el.querySelectorAll('app-users-list .person').length).toBe(1);
   });
 
-  it('« Ajouter » ouvre le panneau d’ajout, aux seuls rôles qui écrivent', () => {
+  it('« Ajouter » ouvre le dialogue d’ajout, aux seuls rôles qui écrivent', () => {
     const reader = bootCard(UsersDeskCard, [asRole('orders')]).nativeElement as HTMLElement;
     expect(reader.querySelector('button.add')).toBeNull();
 
@@ -32,6 +32,7 @@ describe('UsersDeskCard', () => {
     add?.click();
 
     expect(openedPanel()?.component).toBe(UserAddPanel);
-    expect(openedPanel()?.side).toBe('right');
+    // Une saisie : dialogue centré au bureau (règle « Saisir », 2026-09-14).
+    expect(openedPanel()?.side).toBe('center');
   });
 });

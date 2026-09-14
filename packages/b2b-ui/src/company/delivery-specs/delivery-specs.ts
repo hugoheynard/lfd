@@ -10,8 +10,19 @@ import {
 
 import { HoursForm } from '../../hours/hours-form/hours-form';
 import type { HoursEntry } from '../../hours/hours.model';
-import { contactIssueOf, type DeliveryDraft, type DraftDays } from '../delivery-draft.model';
+import {
+  contactIssueOf,
+  type DeliveryDraft,
+  type DraftDays,
+  withNoContact,
+} from '../delivery-draft.model';
 import { formatDeliveryContact, WEEKDAYS } from '../delivery-format';
+import { withKnownContact } from '../delivery-address-form/delivery-address-form.model';
+import {
+  DELIVERY_SPECS_LABELS_FR,
+  type DeliverySpecsLabels,
+  signatureOptionsOf,
+} from './delivery-specs.labels';
 
 /**
  * Les **consignes de livraison** d'une adresse : quand on vient, à qui on
@@ -52,6 +63,12 @@ export class DeliverySpecs {
   /** Contacts connus de l'entreprise, proposés pour préremplir le contact sur place. */
   readonly knownContacts = input.required<readonly DeliveryContact[]>();
 
+  /**
+   * Les mots du fragment. Le défaut est le français d'avant l'entrée : le
+   * back-office ne passe rien et ne change pas ; l'app cliente passe sa langue.
+   */
+  readonly labels = input<DeliverySpecsLabels>(DELIVERY_SPECS_LABELS_FR);
+
   protected readonly contactIssue = computed(() => contactIssueOf(this.value()));
 
   /**
@@ -64,14 +81,14 @@ export class DeliverySpecs {
       return [
         {
           key: 'every',
-          label: 'Tous les jours',
+          label: this.labels().everyDay,
           range: { start: draft.everyStart, end: draft.everyEnd },
         },
       ];
     }
     return WEEKDAYS.map((day) => ({
       key: day.value,
-      label: day.label,
+      label: this.labels().weekdays[day.value],
       range: draft.days[day.value],
     }));
   });
@@ -120,14 +137,19 @@ export class DeliverySpecs {
    * obligerait à ouvrir un autre écran pour savoir ce qu'on choisit — et on
    * choisirait donc au hasard.
    */
-  protected readonly signatureOptions = computed<readonly FoldSelectOption<string>[]>(() => [
-    {
-      value: 'inherit',
-      label: `Comme la société (${this.signatureFloor() ? 'exigée' : 'non exigée'})`,
-    },
-    { value: 'yes', label: 'Exigée' },
-    { value: 'no', label: 'Non exigée' },
-  ]);
+  protected readonly signatureOptions = computed<readonly FoldSelectOption<string>[]>(() =>
+    signatureOptionsOf(this.labels(), this.signatureFloor(), this.value().noContact),
+  );
+
+  /** L'aide sous la signature : sans contact sur place, elle dit pourquoi « exigée » a disparu. */
+  protected readonly signatureHint = computed(() =>
+    this.value().noContact ? this.labels().signatureNoContactHint : this.labels().signatureHint,
+  );
+
+  /** « Pas de contact » : cocher fait tomber une signature exigée, posée ou héritée. */
+  protected setNoContact(noContact: boolean): void {
+    this.value.update((draft) => withNoContact(draft, noContact, this.signatureFloor()));
+  }
 
   protected readonly signatureChoice = computed(() => {
     const own = this.value().signatureRequired;
@@ -144,12 +166,6 @@ export class DeliverySpecs {
     if (picked === undefined) {
       return;
     }
-    this.value.update((draft) => ({
-      ...draft,
-      noContact: false,
-      contactPrenom: picked.prenom,
-      contactNom: picked.nom,
-      contactTel: picked.telephone,
-    }));
+    this.value.update((draft) => withKnownContact(draft, picked));
   }
 }

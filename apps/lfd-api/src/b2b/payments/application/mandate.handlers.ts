@@ -7,14 +7,16 @@ import {
 import type { PaymentMandateView } from "@lfd/contracts";
 
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { ScannedDocument } from "../../../platform/shared/documents/scanned-document.js";
 import { MandateNotFoundError } from "../domain/errors/mandate-errors.js";
 import { MandateGateway } from "../domain/mandate-gateway.js";
 import { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { AttachMandateProofCommand, RevokeMandateCommand } from "./mandate-commands.js";
 import { GetCompanyMandateQuery } from "./mandate-queries.js";
+import { attachProofToDraft } from "./mandate-proof-support.js";
 
 /**
  * Révoque le mandat courant — **chez le prestataire d'abord**, ici ensuite.
@@ -56,11 +58,15 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
 }
 
 /**
- * Dépose le mandat signé scanné.
+ * Dépose le mandat signé scanné, depuis le back-office — **sur le brouillon
+ * seulement**.
  *
- * Ranger d'abord, écrire la référence ensuite : si le stockage échoue, la base
- * ne pointe pas vers une pièce absente — et un mandat qu'on croit prouvé sans
- * l'être est pire qu'un mandat qu'on sait nu.
+ * La séquence — refuser avant de ranger, clé neuve par dépôt, référence et fait
+ * au journal dans la même transaction — vit dans `attachProofToDraft`, partagée
+ * avec le client depuis le 2026-09-14. Pas de cloche ici : c'est l'équipe qui
+ * dépose.
+ *
+ * `@hors-transaction` le fichier part au stockage objet avant la transaction.
  */
 @CommandHandler(AttachMandateProofCommand)
 export class AttachMandateProofHandler implements ICommandHandler<AttachMandateProofCommand, void> {
@@ -68,36 +74,28 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
     private readonly mandates: PaymentMandateRepository,
     private readonly store: DocumentStore,
     private readonly cipher: FieldCipher,
+    private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: AttachMandateProofCommand): Promise<void> {
-    // 🔴 `findAwaitingProof` et NON `findCurrent` (corrigé le 2026-09-12 au
-    // soir). `findCurrent` rend l'actif d'abord : avec un actif en vigueur et un
-    // brouillon frappé, le scan du mandat neuf se serait agrafé sur l'ancien, et
-    // la pièce produite en contestation n'aurait pas porté la RUM opposée.
-    const mandate = await this.mandates.findAwaitingProof(command.companyId);
-    if (mandate === null) {
-      throw new MandateNotFoundError(command.companyId);
-    }
-    // Le domaine valide le fichier EN CLAIR — type réel, taille, nom. Sceller
-    // avant validerait des octets chiffrés, c'est-à-dire rien.
-    const document = ScannedDocument.create(command.fileName, command.bytes);
-
-    // 🔴 Scellé depuis le 2026-09-12. Le scan du mandat signé porte le nom du
-    // client, sa banque, son IBAN et sa signature manuscrite — c'est la pièce la
-    // plus lourde du dépôt, et elle partait en clair dans le bucket pendant que
-    // les MÊMES données étaient scellées en colonne.
-    //
-    // `application/octet-stream` et non le vrai type : ce qui est rangé n'est
-    // plus un PDF. Annoncer `application/pdf` sur des octets chiffrés ferait
-    // qu'un outil de stockage tenterait de les prévisualiser, et surtout ferait
-    // croire, à qui ouvre le bucket, que la pièce est lisible.
-    const storageKey = await this.store.save(proofKeyFor(command.companyId, mandate.id), {
-      bytes: this.cipher.sealBytes(document.bytes),
-      contentType: "application/octet-stream",
-    });
-    mandate.attachProof({ storageKey, fileName: document.fileName });
-    await this.mandates.save(mandate);
+    await attachProofToDraft(
+      {
+        mandates: this.mandates,
+        store: this.store,
+        cipher: this.cipher,
+        clock: this.clock,
+        events: this.events,
+        uow: this.uow,
+      },
+      {
+        companyId: command.companyId,
+        fileName: command.fileName,
+        bytes: command.bytes,
+        via: "staff",
+      },
+    );
   }
 }
 
@@ -118,13 +116,4 @@ export class GetCompanyMandateHandler implements IQueryHandler<
     const mandate = await this.mandates.findCurrent(query.companyId);
     return mandate?.toView() ?? null;
   }
-}
-
-/**
- * Clé de stockage du mandat signé — ancrée sur la société **et** sur le mandat :
- * un mandat remplacé garde sa preuve, sinon l'historique qu'on tient tant à
- * conserver perdrait la seule pièce qui le justifie.
- */
-function proofKeyFor(companyId: string, mandateId: string): string {
-  return `companies/${companyId}/mandates/${mandateId}/mandat-signe`;
 }

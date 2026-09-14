@@ -59,8 +59,13 @@ async function board(): Promise<AdminFeatureAccessView> {
   return jsonBody<AdminFeatureAccessView>(await admin().get("/admin/feature-access").expect(200));
 }
 
-/** Les trois surfaces masquables, à leur défaut : aucune ligne ne les touche ici. */
-const ALL_VISIBLE = { orders: "visible", invoices: "visible", desktopMenu: "visible" } as const;
+/** Toutes les clés sauf la boutique, à leur défaut : le mandat client est fermé (2026-09-14). */
+const OTHER_DEFAULTS = {
+  orders: "visible",
+  invoices: "visible",
+  desktopMenu: "visible",
+  customerMandate: "closed",
+} as const;
 
 async function publicLevels(): Promise<FeatureLevelsView> {
   return jsonBody<FeatureLevelsView>(await ctx.http().get("/feature-access").expect(200));
@@ -75,8 +80,15 @@ describe("la dérogation — posée, puis retirée", () => {
       expect.objectContaining({ key: "orders", effectiveLevel: "visible", override: null }),
       expect.objectContaining({ key: "invoices", effectiveLevel: "visible", override: null }),
       expect.objectContaining({ key: "desktopMenu", effectiveLevel: "visible", override: null }),
+      // 2026-09-14 : fermé par défaut, et aucune exemption ne l'ouvre.
+      expect.objectContaining({
+        key: "customerMandate",
+        effectiveLevel: "closed",
+        exemptible: false,
+        override: null,
+      }),
     ]);
-    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...ALL_VISIBLE });
+    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...OTHER_DEFAULTS });
   });
 
   it("pose la valeur avec son auteur, puis la ligne DISPARAÎT au retour au défaut", async () => {
@@ -90,12 +102,12 @@ describe("la dérogation — posée, puis retirée", () => {
         updatedBy: { sub: E2E_STAFF_SUB, name: "Opérateur E2E", role: "admin" },
       },
     });
-    await expect(publicLevels()).resolves.toEqual({ shop: "browse", ...ALL_VISIBLE });
+    await expect(publicLevels()).resolves.toEqual({ shop: "browse", ...OTHER_DEFAULTS });
 
     await admin().delete("/admin/feature-access/shop").expect(204);
 
     expect(await ctx.prisma.featureAccessOverride.count()).toBe(0);
-    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...ALL_VISIBLE });
+    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...OTHER_DEFAULTS });
     const types = await ctx.prisma.activityEvent.findMany({
       where: { subjectType: "feature_access", subjectId: "shop" },
       select: { type: true },
@@ -136,7 +148,7 @@ describe("la dérogation — posée, puis retirée", () => {
     expect(view.ignored).toEqual([
       { table: "override", key: "legacy_flag", detail: "on", reason: "unknown_key" },
     ]);
-    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...ALL_VISIBLE });
+    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...OTHER_DEFAULTS });
   });
 });
 
@@ -246,7 +258,7 @@ describe("GET /feature-access — public", () => {
 
     const response = await ctx.http().get("/feature-access").expect(200);
 
-    expect(jsonBody<FeatureLevelsView>(response)).toEqual({ shop: "order", ...ALL_VISIBLE });
+    expect(jsonBody<FeatureLevelsView>(response)).toEqual({ shop: "order", ...OTHER_DEFAULTS });
     expect(response.text).not.toContain("@");
   });
 });

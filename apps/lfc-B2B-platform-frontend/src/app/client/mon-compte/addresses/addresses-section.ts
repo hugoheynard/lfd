@@ -4,6 +4,7 @@ import type {
   CompanyMemberRole,
   CompanyView,
   DeliveryAddressView,
+  DeliveryContact,
 } from '@lfd/contracts';
 
 import { fill } from '../../copy/client-copy.service';
@@ -15,12 +16,18 @@ import type { ServicePoints } from '../../shop/pickup-points.store';
 export type AddressesView = 'billing' | 'delivery';
 
 /**
- * Par où le panneau entre : le détail de sa partie (`null`), ou directement un
- * formulaire — une adresse neuve, ou celle-ci (`addressId`, ignoré pour la
- * facturation, qui est unique).
+ * Les contacts proposés pour « reprendre un contact connu » : le contact
+ * principal de la société, s'il a un nom — la même règle que `knownContactsOf`
+ * du back-office (`fiche-client.panels.ts`, vérifié le 2026-09-14), pour que les
+ * deux écrans proposent la même personne.
  */
-export type AddressesForm =
-  null | { readonly kind: 'new' } | { readonly kind: 'edit'; readonly addressId: string | null };
+export function knownDeliveryContacts(company: CompanyView): readonly DeliveryContact[] {
+  const contact = company.primaryContact;
+  if (contact.firstName === '' && contact.lastName === '') {
+    return [];
+  }
+  return [{ prenom: contact.firstName, nom: contact.lastName, telephone: contact.phone }];
+}
 
 /** Les rôles qui écrivent le carnet (`ensureCompanyAdmin`, vérifié le 2026-09-14). */
 const ADDRESS_WRITE_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin']);

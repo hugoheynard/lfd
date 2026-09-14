@@ -10,15 +10,12 @@ import {
 import type { DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldCheckboxComponent,
   FoldPanelBodyComponent,
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
 } from 'fold-ng';
 
-import { AddressForm } from '../../address/address-form/address-form';
-import { ALL_POSTAL_FIELDS, type PostalAddress } from '../../address/address.model';
 import { panelSubmit } from '../../panel/panel-submit';
 import { ADDRESS_PANEL_DEFAULTS } from '../address-panel.defaults';
 import { ADDRESS_WRITER } from '../../panel/address-writer';
@@ -29,8 +26,7 @@ import {
   toDeliveryPayload,
   type DeliveryDraft,
 } from '../delivery-draft.model';
-import { DeliverySpecs } from '../delivery-specs/delivery-specs';
-import { toPostal, withPostal } from '../postal-draft.model';
+import { DeliveryAddressForm } from '../delivery-address-form/delivery-address-form';
 
 /** Charge d'ouverture : la société visée, l'adresse à corriger, et son contexte. */
 export interface DeliveryAddressPanelData {
@@ -51,8 +47,10 @@ export interface DeliveryAddressPanelData {
  * Panneau **Adresse de livraison** — plusieurs par entreprise, une par défaut,
  * postal plus les consignes de LFC.
  *
- * Le même panneau sert le client et le commercial : seul le chemin d'écriture
- * change (cf. `ADDRESS_WRITER`). Le commercial règle un code d'accès ou un
+ * Son corps est le formulaire partagé `lfd-delivery-address-form` (depuis le
+ * 2026-09-14) : le dialogue client de `/mon-compte` compose le même, avec son
+ * propre cadre, son écriture et sa langue. Ce panneau garde l'en-tête, le pied
+ * et `ADDRESS_WRITER`. Le commercial règle un code d'accès ou un
  * créneau dicté au téléphone ; renvoyer le client sur son écran reviendrait à
  * attendre une livraison ratée pour que ça bouge.
  */
@@ -64,9 +62,7 @@ export interface DeliveryAddressPanelData {
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldButtonComponent,
-    FoldCheckboxComponent,
-    AddressForm,
-    DeliverySpecs,
+    DeliveryAddressForm,
   ],
   templateUrl: './delivery-address-panel.html',
 })
@@ -79,12 +75,9 @@ export class DeliveryAddressPanel {
 
   readonly data = input.required<DeliveryAddressPanelData>();
 
-  /** Le point GPS et la note ne se demandent qu'ici : c'est le livreur qui cherche l'entrée. */
-  protected readonly fields = ALL_POSTAL_FIELDS;
   protected readonly draft = signal<DeliveryDraft>(EMPTY_DELIVERY_DRAFT);
   protected readonly pending = this.submitter.pending;
 
-  protected readonly postal = computed(() => toPostal(this.draft()));
   protected readonly isCreate = computed(() => this.data().address === null);
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouvelle adresse de livraison' : 'Modifier l’adresse de livraison',
@@ -99,14 +92,6 @@ export class DeliveryAddressPanel {
         this.draft.set(deliveryDraftFrom(address));
       }
     });
-  }
-
-  protected setPostal(postal: PostalAddress): void {
-    this.draft.update((draft) => withPostal(draft, postal));
-  }
-
-  protected setDefault(isDefault: boolean): void {
-    this.draft.update((draft) => ({ ...draft, isDefault }));
   }
 
   protected submit(): void {

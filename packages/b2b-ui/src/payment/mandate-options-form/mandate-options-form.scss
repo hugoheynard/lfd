@@ -1,0 +1,17 @@
+// Fragment transparent : sa rangée devient enfant direct de l'hôte.
+:host {
+  display: contents;
+}
+
+// Mêmes règles que le formulaire du RIB : les champs se partagent la largeur et
+// s'empilent en dessous de 18rem chacun.
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+.row fold-input {
+  flex: 1 1 18rem;
+}

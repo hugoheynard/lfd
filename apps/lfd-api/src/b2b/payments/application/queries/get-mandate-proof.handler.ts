@@ -54,8 +54,10 @@ export class GetMandateProofHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetMandateProofQuery): Promise<MandateProofFile | null> {
-    const mandate = await this.mandates.findCurrent(query.companyId);
-    if (mandate === null) {
+    const mandate = await this.mandates.findById(query.mandateId);
+    // Le mur tenant : un identifiant deviné ne suffit pas à lire la pièce d'un
+    // autre client depuis la fiche du sien.
+    if (mandate === null || mandate.companyId !== query.companyId) {
       throw new MandateNotFoundError(query.companyId);
     }
 

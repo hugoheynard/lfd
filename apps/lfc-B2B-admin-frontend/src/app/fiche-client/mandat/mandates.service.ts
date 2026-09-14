@@ -103,12 +103,17 @@ export class MandatesService {
    * Le serveur répond **404** quand aucune pièce n'est déposée, ce qui est un
    * état normal : le papier met des jours à revenir. L'appelant ne propose donc
    * le geste que sur un mandat qui en porte une.
+   *
+   * 🔴 Vise le mandat par son identifiant depuis le 2026-09-14 : la route par
+   * société rendait la pièce du mandat COURANT, c'est-à-dire de l'actif en
+   * rotation bancaire — pas celle du brouillon qu'on s'apprête à activer.
    */
-  async proof(companyId: string): Promise<Blob> {
+  async proof(companyId: string, mandateId: string): Promise<Blob> {
     return firstValueFrom(
-      this.http.get(`${B2B_API_BASE}/admin/companies/${companyId}/mandate/proof?inline=1`, {
-        responseType: 'blob',
-      }),
+      this.http.get(
+        `${B2B_API_BASE}/admin/companies/${companyId}/mandate/${mandateId}/proof?inline=1`,
+        { responseType: 'blob' },
+      ),
     );
   }
 

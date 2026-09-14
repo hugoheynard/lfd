@@ -27,6 +27,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         levels: ["closed", "browse", "order"],
         defaultLevel: "order",
         effectiveLevel: "order",
+        exemptible: true,
         override: null,
         exemptions: [],
       }),
@@ -44,6 +45,14 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         key: "desktopMenu",
         levels: ["hidden", "visible"],
         effectiveLevel: "visible",
+      }),
+      // 2026-09-14 : l'écran ne propose pas d'exemption sur cette clé.
+      expect.objectContaining({
+        key: "customerMandate",
+        levels: ["closed", "open"],
+        defaultLevel: "closed",
+        effectiveLevel: "closed",
+        exemptible: false,
       }),
     ]);
   });

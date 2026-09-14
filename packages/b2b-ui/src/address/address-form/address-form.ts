@@ -17,12 +17,11 @@ import {
   type PostalAddress,
   type PostalField,
 } from '../address.model';
-
-/** Les deux façons de saisir un point : deux champs, ou un point collé. */
-const ENTRY_MODES: readonly FoldViewToggleOption[] = [
-  { value: 'pair', label: 'Deux champs' },
-  { value: 'pasted', label: 'Point collé' },
-];
+import {
+  ADDRESS_FORM_LABELS_FR,
+  type AddressFormLabels,
+  entryModesOf,
+} from './address-form.labels';
 
 /**
  * Les **champs d'une adresse postale** — le pendant saisie de `lfd-address`.
@@ -55,8 +54,6 @@ export class AddressForm {
   /** Les champs à montrer, dans l'ordre postal quoi qu'il arrive. */
   readonly fields = input<readonly PostalField[]>(DEFAULT_POSTAL_FIELDS);
 
-  readonly labelHint = input('ex. Siège, Boutique Bastille');
-  readonly line2Hint = input('bâtiment, étage, digicode…');
   /**
    * Nom du groupe des champs postaux — vide (défaut) = **aucun** groupe.
    *
@@ -69,19 +66,16 @@ export class AddressForm {
   readonly legend = input('');
 
   /**
-   * Libellé de la note. Neutre par défaut : ce fragment ne sait pas QUI viendra
-   * lire les consignes, et « note pour les livreurs » est un mot de l'appelant.
+   * Tous les mots du fragment, en une entrée. Le défaut est le français d'avant :
+   * un écran qui ne passe rien ne change pas. La note reste un mot de
+   * l'appelant — « note pour les livreurs » se passe ici, pas en dur.
    */
-  readonly noteLabel = input('Consignes d’accès');
-
-  /** Exemple montré dans le champ vide — le meilleur mode d'emploi qui soit. */
-  readonly notePlaceholder = input('Digicode, étage, où déposer…');
-
-  readonly coordinatesLabel = input('Point GPS');
-  readonly coordinatesHint = input('pour les lieux qu’une adresse ne suffit pas à trouver');
+  readonly labels = input<AddressFormLabels>(ADDRESS_FORM_LABELS_FR);
 
   protected readonly countries: readonly FoldSelectOption<string>[] = countryOptions();
-  protected readonly entryModes = ENTRY_MODES;
+  protected readonly entryModes = computed<readonly FoldViewToggleOption[]>(() =>
+    entryModesOf(this.labels()),
+  );
 
   /** Mode de saisie du point — état d'écran, pas une donnée d'adresse. */
   protected readonly entryMode = signal<string>('pair');

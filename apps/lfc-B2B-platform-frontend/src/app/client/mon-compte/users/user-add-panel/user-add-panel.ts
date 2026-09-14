@@ -19,7 +19,7 @@ import {
 
 import { AccountService } from '../../../../account/account.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { panelSide } from '../../../panel-side';
+import { dialogSide } from '../../../panel-side';
 
 /** Charge d'ouverture : la société à qui l'on ajoute quelqu'un. */
 export interface UserAddPanelData {
@@ -32,7 +32,12 @@ export interface UserAddPanelData {
  * Utilisateurs aux seuls rôles que l'API laisse écrire.
  *
  * Les champs sont ceux du panneau d'origine (`lfd-contact-fields`, rôle
- * compris) ; le chrome et les libellés sont ceux de l'app.
+ * compris) ; le chrome et les libellés sont ceux de l'app (`contactFields`).
+ *
+ * C'est une SAISIE : elle s'ouvre en dialogue centré au bureau, en feuille du
+ * bas en pile (`dialogSide()`, règle « Saisir » du `CLAUDE.md` de l'app). Le
+ * nom `*-panel` est d'avant cette règle ; il reste un panneau fold, placé au
+ * centre.
  *
  * ## Ce que l'ajout crée, et ce qu'il ne crée pas
  *
@@ -57,10 +62,11 @@ export interface UserAddPanelData {
   styleUrl: './user-add-panel.scss',
 })
 export class UserAddPanel {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
+  /** `md` (490 px) : six champs, prénom et nom côte à côte (échelle `FoldPanelSize`, fold-ng 0.27.2). */
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
 
   static open(panels: FoldPanelHostService, company: CompanyView): void {
-    panels.open(UserAddPanel, { side: panelSide(), data: { companyId: company.id } });
+    panels.open(UserAddPanel, { side: dialogSide(), data: { companyId: company.id } });
   }
 
   readonly data = input.required<UserAddPanelData>();

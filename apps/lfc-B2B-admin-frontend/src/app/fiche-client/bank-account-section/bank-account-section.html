@@ -29,67 +29,9 @@
   </fold-callout>
 }
 
-<!-- 🔴 L'IBAN est toujours vide à l'ouverture, même quand un compte existe : il
-     ne revient d'aucune route. Tout le reste se réaffiche — rien de cela n'est
-     un secret, et le relire est justement ce qu'on veut avant d'imprimer un
-     mandat. -->
-<div class="ba-row">
-  <fold-input
-    label="Titulaire du compte"
-    placeholder="Refuge du Col SARL"
-    [value]="holderDraft()"
-    (valueChange)="holderDraft.set($event)"
-  />
-</div>
-<div class="ba-row">
-  <fold-input
-    label="Adresse"
-    placeholder="12 rue des Alpages"
-    [value]="line1Draft()"
-    (valueChange)="line1Draft.set($event)"
-  />
-  <fold-input
-    label="Complément"
-    placeholder="Bâtiment, étage…"
-    [value]="line2Draft()"
-    (valueChange)="line2Draft.set($event)"
-  />
-</div>
-<div class="ba-row">
-  <fold-input
-    label="Code postal"
-    placeholder="73150"
-    [value]="postalCodeDraft()"
-    (valueChange)="postalCodeDraft.set($event)"
-  />
-  <fold-input
-    label="Ville"
-    placeholder="Val d’Isère"
-    [value]="cityDraft()"
-    (valueChange)="cityDraft.set($event)"
-  />
-  <fold-input
-    label="Pays"
-    placeholder="FR"
-    [value]="countryDraft()"
-    (valueChange)="countryDraft.set($event)"
-  />
-</div>
-<div class="ba-row">
-  <fold-input
-    label="IBAN"
-    placeholder="FR14 2004 1010 0505 0001 3M02 606"
-    hint="Saisi une fois. Il ne sera plus jamais réaffiché."
-    [value]="ibanDraft()"
-    (valueChange)="ibanDraft.set($event)"
-  />
-  <fold-input
-    label="BIC"
-    placeholder="CEPAFRPP751"
-    [value]="bicDraft()"
-    (valueChange)="bicDraft.set($event)"
-  />
-</div>
+<!-- Les champs : le formulaire partagé avec le panneau RIB du client. L'IBAN y
+     entre vide, le reste se réaffiche (`bankAccountDraftFrom`). -->
+<lfd-bank-account-form [(value)]="draft" />
 
 <div class="ba-actions">
   <button

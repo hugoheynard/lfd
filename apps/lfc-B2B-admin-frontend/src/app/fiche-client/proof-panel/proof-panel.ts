@@ -27,6 +27,8 @@ import { saveBlob } from '../../shared/download/save-blob';
 /** Ce que la fiche remet au panneau. */
 export interface ProofPanelData {
   readonly companyId: string;
+  /** Le mandat dont on regarde la pièce — pas « le mandat courant » (2026-09-14). */
+  readonly mandateId: string;
   /** Le nom du fichier déposé, pour le proposer tel quel au téléchargement. */
   readonly fileName: string;
 }
@@ -104,7 +106,7 @@ export class ProofPanel implements FoldPanelContent<ProofPanelData> {
     effect(() => {
       const opened = this.data();
       if (opened !== undefined) {
-        void this.load(opened.companyId);
+        void this.load(opened);
       }
     });
   }
@@ -120,14 +122,14 @@ export class ProofPanel implements FoldPanelContent<ProofPanelData> {
     this.panel.close();
   }
 
-  protected async load(companyId = this.data()?.companyId): Promise<void> {
-    if (companyId === undefined) {
+  protected async load(opened = this.data()): Promise<void> {
+    if (opened === undefined) {
       return;
     }
     this.state.set('loading');
     this.revoke();
     try {
-      const blob = await this.mandates.proof(companyId);
+      const blob = await this.mandates.proof(opened.companyId, opened.mandateId);
       this.blob = blob;
       this.contentType.set(blob.type);
       this.objectUrl = URL.createObjectURL(blob);

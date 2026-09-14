@@ -295,6 +295,16 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
     cookies: true,
     accessibility: true,
   },
+  // Le contact de la carte « service commercial » de Mon compte — à part de
+  // l'identité que le pied de page affiche. Pas de téléphone pour le moment
+  // (Hugo, 2026-09-14). La même adresse que le défaut du schéma, recopiée
+  // parce que ce module ne doit pas importer zod ; le spec du contrat les
+  // compare.
+  commercialContact: {
+    email: "celine@lafoliedouce.com",
+    phone: "",
+    phoneHref: "",
+  },
   identity: {
     brandName: "La Folie Coffee",
     company: "La Folie Coffee SAS",

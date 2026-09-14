@@ -24,6 +24,7 @@ const LEVEL_LABELS: { readonly [Key in FeatureKey]: Readonly<Record<FeatureLevel
     orders: { hidden: 'Masquées', visible: 'Visibles' },
     invoices: { hidden: 'Masquées', visible: 'Visibles' },
     desktopMenu: { hidden: 'Masqué', visible: 'Visible' },
+    customerMandate: { closed: 'Fermé', open: 'Ouvert' },
   };
 
 /**

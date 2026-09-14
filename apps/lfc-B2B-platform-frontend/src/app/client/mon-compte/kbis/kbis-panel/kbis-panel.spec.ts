@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { FoldPanelRef } from 'fold-ng';
+import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { of, throwError } from 'rxjs';
+import { afterEach, vi } from 'vitest';
 
 import { AccountService } from '../../../../account/account.service';
 import { FR } from '../../../copy/fr';
+import { matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { KbisPanel, type KbisPanelData } from './kbis-panel';
 
 const FILED: KbisPanelData = {
@@ -112,5 +114,33 @@ describe('KbisPanel', () => {
     fixture.detectChanges();
 
     expect(el().querySelector('fold-callout')?.textContent).toContain(FR.account.kbisFetchFailed);
+  });
+
+  describe('open()', () => {
+    afterEach(() => {
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      vi.unstubAllGlobals();
+    });
+
+    /** Un dépôt est une saisie : feuille du bas sous le pli, dialogue centré au-delà. */
+    it('monte du bas sous le pli, et se centre au-delà', () => {
+      boot(FILED);
+      const panels = TestBed.inject(FoldPanelHostService);
+
+      vi.stubGlobal('matchMedia', matchMediaAt(true));
+      KbisPanel.open(panels, TOMMEUSES);
+      expect(openedPanel()?.component).toBe(KbisPanel);
+      expect(openedPanel()?.side).toBe('bottom');
+      expect(openedPanel()?.data).toEqual({
+        companyId: 'cmp_1',
+        kbis: TOMMEUSES.kbis,
+        canManage: true,
+      });
+
+      panels.dismissAll();
+      vi.stubGlobal('matchMedia', matchMediaAt(false));
+      KbisPanel.open(panels, TOMMEUSES);
+      expect(openedPanel()?.side).toBe('center');
+    });
   });
 });

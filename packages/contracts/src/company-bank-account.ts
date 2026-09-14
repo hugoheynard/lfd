@@ -88,10 +88,15 @@ export interface CompanyBankAccountSectionView {
 /**
  * Ce que le **client** voit de son propre RIB, sur `/mon-compte`.
  *
- * Le même contenu que le back-office, **moins les zones 14 et 19** : ce sont
- * des réglages du mandat que le staff pose, pas des coordonnées que le client
- * recopie. L'IBAN ne redescend pas davantage ici que côté staff — `last4`, et
- * rien d'autre.
+ * Le même contenu que le back-office, **moins les zones 14 et 19** : elles ont
+ * leur propre lecture, {@link CustomerMandateOptionsSectionView}. L'IBAN ne
+ * redescend pas davantage ici que côté staff — `last4`, et rien d'autre.
+ *
+ * ⚠️ Amendé le 2026-09-14 : cette phrase justifiait l'absence des zones par
+ * « des réglages du mandat que le staff pose ». Hugo a décidé ce jour-là que le
+ * client les règle lui-même (plan `documentation/b2b/plan-mandat-client.md`
+ * §10). La vue ne change pas : les zones ne s'y ajoutent pas, elles ont leur
+ * route, pour la même raison que côté staff.
  *
  * Plan : `documentation/b2b/plan-rib-client.md`.
  */
@@ -120,3 +125,24 @@ export const setMandateOptionsPayloadSchema = z.object({
   contractNumber: z.string().trim().default(""),
 });
 export type SetMandateOptionsPayload = z.infer<typeof setMandateOptionsPayloadSchema>;
+
+/**
+ * Les zones 14 et 19 telles que le **client** les lit et les règle, sur
+ * `/mon-compte` (décidé par Hugo le 2026-09-14, plan mandat client §10).
+ *
+ * Le même sous-ensemble que la vue staff, par construction : aucune zone que le
+ * client ne verrait pas, aucune qu'il verrait seul.
+ */
+export type CustomerMandateOptionsView = Pick<
+  CompanyBankAccountView,
+  "debtorReference" | "contractNumber"
+>;
+
+/**
+ * `GET /companies/:companyId/mandate-options` — enveloppé, pour la même raison
+ * que le RIB : un `null` nu partirait en corps vide.
+ */
+export interface CustomerMandateOptionsSectionView {
+  /** `null` tant qu'aucun RIB n'est déposé : les zones vivent sur sa ligne. */
+  readonly options: CustomerMandateOptionsView | null;
+}

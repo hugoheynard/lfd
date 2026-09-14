@@ -1,0 +1,20 @@
+// Fragment transparent : ses rangées deviennent enfants directs de l'hôte, qui
+// gouverne l'espacement entre elles.
+:host {
+  display: contents;
+}
+
+// Les champs d'une même ligne se partagent la largeur ; en dessous de la base,
+// ils s'empilent — un IBAN saisi sur un champ de six centimètres ne se relit
+// pas. La base est une propriété de l'HÔTE : la fiche staff garde 18rem, un
+// panneau étroit peut la réduire sans surcharger ce fragment.
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+.row fold-input {
+  flex: 1 1 var(--lfd-bank-account-field-basis, 18rem);
+}

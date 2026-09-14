@@ -67,6 +67,56 @@ describe("contrat d'une adresse de livraison", () => {
     expect(parsed.specs.note).toBe("");
   });
 
+  /** Hugo, 2026-09-14 : une signature suppose quelqu'un sur place pour signer. */
+  it("refuse une signature exigée sans contact sur place", () => {
+    const result = deliveryAddressPayloadSchema.safeParse({
+      ligne1: "18 rue des Archives",
+      codePostal: "75004",
+      ville: "Paris",
+      pays: "France",
+      specs: {
+        slots: { mode: "everyday", slot: null },
+        deliveryContact: null,
+        gps: null,
+        signatureRequired: true,
+      },
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["specs", "signatureRequired"]);
+  });
+
+  it("accepte une signature exigée avec un contact, et l'absence de signature sans contact", () => {
+    const base = {
+      ligne1: "18 rue des Archives",
+      codePostal: "75004",
+      ville: "Paris",
+      pays: "France",
+    };
+    const slots = { mode: "everyday", slot: null } as const;
+    const withContact = deliveryAddressPayloadSchema.safeParse({
+      ...base,
+      specs: {
+        slots,
+        deliveryContact: { prenom: "Léa", nom: "Martin", telephone: "0600000000" },
+        gps: null,
+        signatureRequired: true,
+      },
+    });
+    const noSignature = deliveryAddressPayloadSchema.safeParse({
+      ...base,
+      specs: { slots, deliveryContact: null, gps: null, signatureRequired: false },
+    });
+    const inherited = deliveryAddressPayloadSchema.safeParse({
+      ...base,
+      specs: { slots, deliveryContact: null, gps: null, signatureRequired: null },
+    });
+    expect([withContact.success, noSignature.success, inherited.success]).toEqual([
+      true,
+      true,
+      true,
+    ]);
+  });
+
   it("refuse une adresse sans ligne1", () => {
     const result = deliveryAddressPayloadSchema.safeParse({
       ligne1: "",

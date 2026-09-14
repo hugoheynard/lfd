@@ -22,6 +22,7 @@ import { ContactEditPanel, type ContactEditPanelData } from './contact-edit-pane
 interface Wire {
   holders: { companyId: string; draft: HolderDraft }[];
   contacts: { companyId: string; contactId: string; draft: ContactDraft }[];
+  deletes: { companyId: string; contactId: string }[];
   answer: string | null;
   closes: unknown[];
 }
@@ -32,16 +33,18 @@ const AS_HOLDER: ContactEditPanelData = {
   companyId: 'cmp_1',
   contactId: null,
   initial: draftOf(HOLDER),
+  canManage: true,
 };
 
 const AS_CONTACT: ContactEditPanelData = {
   companyId: 'cmp_1',
   contactId: 'ct_1',
   initial: draftOf(COMPTA),
+  canManage: true,
 };
 
 function boot(data: ContactEditPanelData): ComponentFixture<ContactEditPanel> {
-  wire = { holders: [], contacts: [], answer: null, closes: [] };
+  wire = { holders: [], contacts: [], deletes: [], answer: null, closes: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ContactEditPanel],
@@ -59,6 +62,10 @@ function boot(data: ContactEditPanelData): ComponentFixture<ContactEditPanel> {
             draft: ContactDraft,
           ): Promise<string | null> => {
             wire.contacts.push({ companyId, contactId, draft });
+            return Promise.resolve(wire.answer);
+          },
+          deleteContact: (companyId: string, contactId: string): Promise<string | null> => {
+            wire.deletes.push({ companyId, contactId });
             return Promise.resolve(wire.answer);
           },
         },
@@ -233,6 +240,93 @@ describe('ContactEditPanel', () => {
     });
   });
 
+  it('passe au formulaire partagé les libellés de l’écran, et ils s’affichent', () => {
+    const fixture = boot(AS_CONTACT);
+    const fields = fixture.debugElement.query(By.directive(ContactFields))
+      .componentInstance as ContactFields;
+
+    expect(fields.labels()).toBe(FR.account.contactFields);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain(FR.account.contactFields.emailHint);
+    expect(text).toContain(FR.account.contactFields.role);
+  });
+
+  /** Règle « Saisir » : Enregistrer attend un écart avec la fiche, rôle compris. */
+  it('Enregistrer se désarme quand on revient au rôle d’origine', () => {
+    fixture = boot(AS_CONTACT);
+    expect(button(FR.account.save).disabled).toBe(true);
+
+    fill({ role: 'orders' });
+    expect(button(FR.account.save).disabled).toBe(false);
+
+    fill({ role: 'billing' });
+    expect(button(FR.account.save).disabled).toBe(true);
+  });
+
+  describe('la zone de danger', () => {
+    const dangerZone = (): HTMLElement | null => el().querySelector('fold-danger-zone');
+
+    /** Ouvre la confirmation de la zone, puis confirme avec le mot de l'écran. */
+    const confirmRemoval = async (): Promise<void> => {
+      const action = Array.from(
+        dangerZone()?.querySelectorAll<HTMLButtonElement>('button') ?? [],
+      ).find((b) => b.textContent?.trim() === FR.account.contactRemove);
+      action?.click();
+      fixture.detectChanges();
+      const confirm = Array.from(
+        dangerZone()?.querySelectorAll<HTMLButtonElement>('button') ?? [],
+      ).find((b) => b.textContent?.trim() === FR.account.contactRemoveConfirm);
+      expect(confirm).toBeDefined();
+      confirm?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it('n’existe pas pour le détenteur : son rôle se transmet d’abord', () => {
+      fixture = boot(AS_HOLDER);
+      expect(dangerZone()).toBeNull();
+    });
+
+    it('supprime CE contact, confirmé en français, puis ferme', async () => {
+      fixture = boot(AS_CONTACT);
+      expect(dangerZone()?.textContent).toContain(FR.account.dangerZone);
+      expect(dangerZone()?.textContent).toContain(FR.account.contactRemoveMessage);
+
+      await confirmRemoval();
+
+      expect(wire.deletes).toEqual([{ companyId: 'cmp_1', contactId: 'ct_1' }]);
+      expect(wire.contacts).toEqual([]);
+      expect(wire.closes).toEqual([true]);
+    });
+
+    it('sur un refus, reste ouvert et le montre', async () => {
+      fixture = boot(AS_CONTACT);
+      wire.answer = 'Ce contact a déjà été retiré.';
+
+      await confirmRemoval();
+
+      expect(wire.closes).toEqual([]);
+      const alert = el().querySelector('fold-callout[variant="alert"]');
+      expect(alert?.textContent).toContain(FR.account.contactRemoveFailed);
+      expect(alert?.textContent).toContain('Ce contact a déjà été retiré.');
+    });
+  });
+
+  describe('un rôle qui ne gère pas', () => {
+    it('lit la personne : champs en lecture seule, ni Enregistrer ni zone de danger', () => {
+      fixture = boot({ ...AS_CONTACT, canManage: false });
+
+      expect(fields().readOnly()).toBe(true);
+      expect(el().querySelector('fold-panel-header')?.textContent).toContain('Cabinet Ferrand');
+      expect(el().querySelector('button.save')).toBeNull();
+      expect(el().querySelector('fold-danger-zone')).toBeNull();
+
+      button(FR.dialog.close).click();
+      expect(wire.closes).toEqual([undefined]);
+      expect(wire.contacts).toEqual([]);
+    });
+  });
+
   describe('open()', () => {
     afterEach(() => {
       TestBed.inject(FoldPanelHostService).dismissAll();
@@ -251,6 +345,7 @@ describe('ContactEditPanel', () => {
         companyId: 'cmp_1',
         contactId: 'ct_1',
         initial: draftOf(COMPTA),
+        canManage: true,
       });
     });
 
@@ -261,18 +356,21 @@ describe('ContactEditPanel', () => {
       ContactEditPanel.open(TestBed.inject(FoldPanelHostService), asRole('admin'), HOLDER);
 
       expect(openedPanel()?.data).toMatchObject({ contactId: null });
-      expect(openedPanel()?.side).toBe('right');
+      // Une saisie : dialogue centré au-delà du pli (règle « Saisir », 2026-09-14).
+      expect(openedPanel()?.side).toBe('center');
     });
 
-    /** L'API refuse l'écriture hors `owner`/`admin` : le panneau ne s'ouvre même pas. */
-    it('n’ouvre rien aux rôles que l’API refuse', () => {
+    /** Plus de fiche intermédiaire : à qui ne gère pas, le MÊME dialogue, en lecture seule. */
+    it('ouvre en lecture seule aux rôles que l’API refuse', () => {
       boot(AS_CONTACT);
       vi.stubGlobal('matchMedia', matchMediaAt(false));
       const panels = TestBed.inject(FoldPanelHostService);
 
       for (const role of ['orders', 'billing'] as const) {
         ContactEditPanel.open(panels, asRole(role), COMPTA);
-        expect(openedPanel()).toBeNull();
+        expect(openedPanel()?.component).toBe(ContactEditPanel);
+        expect(openedPanel()?.data).toMatchObject({ contactId: 'ct_1', canManage: false });
+        panels.dismissAll();
       }
     });
   });

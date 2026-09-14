@@ -2,6 +2,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { MandateSignedEvent } from "../../domain/events/payment-mandate.events.js";
 import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { SignMandateCommand } from "./sign-mandate.command.js";
@@ -30,6 +32,13 @@ import { SignMandateCommand } from "./sign-mandate.command.js";
  * autre client depuis la fiche du sien — le `companyId` de l'URL ne prouve rien
  * à lui seul.
  *
+ * ## Le journal (depuis le 2026-09-14)
+ *
+ * Le fait `payment_mandate.signed` part dans la même transaction que les deux
+ * écritures, sur le modèle de `CorrectLegalEntityHandler` : activer autorise un
+ * débit, et « qui a activé ce mandat, sur quelle date de papier » doit avoir
+ * une réponse le jour d'une contestation.
+ *
  * ## La date
  *
  * Elle vient du PAPIER et non de l'horloge : un mandat posté revient signé
@@ -42,6 +51,7 @@ export class SignMandateHandler implements ICommandHandler<SignMandateCommand, v
     private readonly mandates: PaymentMandateRepository,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: SignMandateCommand): Promise<void> {
@@ -57,13 +67,24 @@ export class SignMandateHandler implements ICommandHandler<SignMandateCommand, v
     const signedAt = new Date(`${command.signedAt}T00:00:00`);
     mandate.sign(signedAt, now);
 
-    const replaced = await this.mandates.findCurrent(command.companyId);
+    const current = await this.mandates.findCurrent(command.companyId);
+    const replaced =
+      current !== null && current.id !== mandate.id && current.debitable() ? current : null;
     await this.uow.run(async () => {
-      if (replaced !== null && replaced.id !== mandate.id && replaced.status === "active") {
+      if (replaced !== null) {
         replaced.revoke(now);
         await this.mandates.save(replaced);
       }
       await this.mandates.save(mandate);
+      await this.events.publishTraced(
+        new MandateSignedEvent(
+          mandate.id,
+          command.companyId,
+          mandate.reference,
+          command.signedAt,
+          replaced?.id ?? null,
+        ),
+      );
     });
   }
 }

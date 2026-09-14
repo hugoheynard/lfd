@@ -36,7 +36,8 @@ describe('IdentityDeskCard', () => {
 
     const panel = openedPanel();
     expect(panel?.component).toBe(IdentityPanel);
-    expect(panel?.side).toBe('right');
+    // Une saisie : dialogue centré au bureau (règle « Saisir », 2026-09-14).
+    expect(panel?.side).toBe('center');
     expect(panel?.data).toMatchObject({
       companyId: 'cmp_1',
       siret: '81245678900021',

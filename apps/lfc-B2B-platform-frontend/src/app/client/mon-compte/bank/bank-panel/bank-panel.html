@@ -15,53 +15,10 @@
        prélèvement : dit AVANT les champs, pas découvert après. -->
   <fold-callout appearance="inset" variant="info">{{ t().account.bankNotice }}</fold-callout>
 
-  <!-- 🔴 L'IBAN est toujours vide : il ne revient d'aucune route. -->
+  <!-- Le formulaire partagé avec la fiche staff. 🔴 L'IBAN y entre vide : il ne
+       revient d'aucune route. -->
   <div class="rows">
-    <div class="row">
-      <fold-input
-        [label]="t().account.bankHolder"
-        [value]="holderDraft()"
-        (valueChange)="holderDraft.set($event)"
-      />
-    </div>
-    <div class="row">
-      <fold-input
-        [label]="t().account.bankLine1"
-        [value]="line1Draft()"
-        (valueChange)="line1Draft.set($event)"
-      />
-      <fold-input
-        [label]="t().account.bankLine2"
-        [value]="line2Draft()"
-        (valueChange)="line2Draft.set($event)"
-      />
-    </div>
-    <div class="row">
-      <fold-input
-        [label]="t().account.bankPostalCode"
-        [value]="postalCodeDraft()"
-        (valueChange)="postalCodeDraft.set($event)"
-      />
-      <fold-input
-        [label]="t().account.bankCity"
-        [value]="cityDraft()"
-        (valueChange)="cityDraft.set($event)"
-      />
-      <fold-input
-        [label]="t().account.bankCountry"
-        [value]="countryDraft()"
-        (valueChange)="countryDraft.set($event)"
-      />
-    </div>
-    <div class="row">
-      <fold-input
-        label="IBAN"
-        [hint]="t().account.bankIbanHint"
-        [value]="ibanDraft()"
-        (valueChange)="ibanDraft.set($event)"
-      />
-      <fold-input label="BIC" [value]="bicDraft()" (valueChange)="bicDraft.set($event)" />
-    </div>
+    <lfd-bank-account-form [(value)]="draft" [labels]="t().account.bankForm" />
   </div>
 </fold-panel-body>
 

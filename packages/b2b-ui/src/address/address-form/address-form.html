@@ -8,9 +8,10 @@
 <fold-fieldset legendVariant="heading" [legend]="legend()" appearance="border">
   @if (has('label')) {
     <fold-input
-      label="Nom de l'adresse"
-      [hint]="labelHint()"
       optional
+      [optionalLabel]="labels().optional"
+      [label]="labels().label"
+      [hint]="labels().labelHint"
       [value]="value().label"
       (valueChange)="set('label', $event)"
     />
@@ -18,18 +19,19 @@
 
   @if (has('line1')) {
     <fold-input
-      label="Adresse"
-      placeholder="n° et voie"
       required
+      [label]="labels().line1"
+      [placeholder]="labels().line1Placeholder"
       [value]="value().line1"
       (valueChange)="set('line1', $event)"
     />
   }
   @if (has('line2')) {
     <fold-input
-      label="Complément"
-      [hint]="line2Hint()"
       optional
+      [optionalLabel]="labels().optional"
+      [label]="labels().line2"
+      [hint]="labels().line2Hint"
       [value]="value().line2"
       (valueChange)="set('line2', $event)"
     />
@@ -39,16 +41,16 @@
     <div class="row row-postal">
       @if (has('postalCode')) {
         <fold-input
-          label="Code postal"
           required
+          [label]="labels().postalCode"
           [value]="value().postalCode"
           (valueChange)="set('postalCode', $event)"
         />
       }
       @if (has('city')) {
         <fold-input
-          label="Ville"
           required
+          [label]="labels().city"
           [value]="value().city"
           (valueChange)="set('city', $event)"
         />
@@ -58,9 +60,9 @@
 
   @if (has('country')) {
     <fold-listbox
-      label="Pays"
       required
-      placeholder="Choisir un pays…"
+      [label]="labels().country"
+      [placeholder]="labels().countryPlaceholder"
       [options]="countryChoices()"
       [value]="value().country"
       (selectionChange)="set('country', $event)"
@@ -70,10 +72,10 @@
   @if (has('note')) {
     <fold-textarea
       optional
-      optionalLabel="optionnel"
+      [optionalLabel]="labels().optional"
       [rows]="3"
-      [label]="noteLabel()"
-      [placeholder]="notePlaceholder()"
+      [label]="labels().noteLabel"
+      [placeholder]="labels().notePlaceholder"
       [value]="value().note"
       (valueChange)="set('note', $event)"
     />
@@ -89,17 +91,17 @@
     appearance="border"
     hintPosition="inline"
     optional
-    optionalLabel="optionnel"
-    [legend]="coordinatesLabel()"
-    [hint]="coordinatesHint()"
+    [optionalLabel]="labels().optional"
+    [legend]="labels().coordinatesLabel"
+    [hint]="labels().coordinatesHint"
   >
     <!-- Deux façons de saisir le même point : à la main, ou collé depuis une
          carte. Le second est le geste réel — on ne tape pas des décimales, on
          les copie — mais le premier reste pour corriger une seule des deux. -->
     <fold-view-toggle
       size="sm"
-      ariaLabel="Mode de saisie du point"
-      [options]="entryModes"
+      [ariaLabel]="labels().entryModeAria"
+      [options]="entryModes()"
       [value]="entryMode()"
       (valueChange)="entryMode.set($event)"
     />
@@ -107,26 +109,29 @@
     @if (entryMode() === 'pair') {
       <div class="row">
         <fold-input
-          label="Latitude"
           optional
-          placeholder="48.8566"
+          [optionalLabel]="labels().optional"
+          [label]="labels().latitude"
+          [placeholder]="labels().latitudePlaceholder"
           [value]="value().latitude"
           (valueChange)="set('latitude', $event)"
         />
         <fold-input
-          label="Longitude"
           optional
-          placeholder="2.3522"
+          [optionalLabel]="labels().optional"
+          [label]="labels().longitude"
+          [placeholder]="labels().longitudePlaceholder"
           [value]="value().longitude"
           (valueChange)="set('longitude', $event)"
         />
       </div>
     } @else {
       <fold-input
-        label="Point"
         optional
-        hint="collez « 48.8566, 2.3522 » depuis une carte"
-        placeholder="48.8566, 2.3522"
+        [optionalLabel]="labels().optional"
+        [label]="labels().point"
+        [hint]="labels().pointHint"
+        [placeholder]="labels().pointPlaceholder"
         [value]="pastedPoint()"
         (valueChange)="setPastedPoint($event)"
       />

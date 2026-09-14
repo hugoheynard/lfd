@@ -177,11 +177,6 @@ export class PaiementSection {
   /** Un mandat sur lequel on peut prélever aujourd'hui. */
   protected readonly debitable = computed(() => this.mandate()?.status === 'active');
 
-  /** Un mandat actif dont le papier signé manque : actif, mais sans filet. */
-  protected readonly unproven = computed(
-    () => this.debitable() && this.mandate()?.hasProof === false,
-  );
-
   /**
    * Les 4 chiffres du compte que le mandat **actif** nomme, `''` sinon.
    *
@@ -391,10 +386,14 @@ export class PaiementSection {
    * ⚠️ Un mandat `draft` fait dire NON : le serveur refuserait en 409, et un
    * bouton dont la seule issue est un message d'erreur vaut moins que pas de
    * bouton du tout.
+   *
+   * 🔴 Sans RIB aussi, depuis le 2026-09-14 : le serveur refuse la frappe en
+   * 409 (décision de Hugo — un mandat nomme le compte qu'il autorise à débiter).
    */
   protected readonly mintable = computed(() => {
     const status = this.mandate()?.status;
-    return status === undefined || status === 'revoked' || status === 'failed';
+    const dead = status === undefined || status === 'revoked' || status === 'failed';
+    return dead && this.bankAccount() !== null;
   });
 
   /**
@@ -418,7 +417,10 @@ export class PaiementSection {
     }
     this.busy.set(true);
     try {
-      saveBlob(await this.mandates.proof(id), mandate.proofFileName || 'mandat-signe.pdf');
+      saveBlob(
+        await this.mandates.proof(id, mandate.id),
+        mandate.proofFileName || 'mandat-signe.pdf',
+      );
     } catch (error) {
       this.notify.error(error, "Le mandat signé n'a pas pu être récupéré.");
     } finally {
@@ -453,7 +455,7 @@ export class PaiementSection {
       return;
     }
     this.panels.open<ProofPanelData>(ProofPanel, {
-      data: { companyId: id, fileName: mandate.proofFileName },
+      data: { companyId: id, mandateId: mandate.id, fileName: mandate.proofFileName },
     });
   }
 

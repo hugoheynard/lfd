@@ -1,6 +1,14 @@
 import type { SetCompanyBankAccountPayload } from "@lfd/contracts";
 
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import {
+  InMemoryMandates,
+  RecordingNotifier,
+  StepPublisher,
+  Steps,
+  StepUnitOfWork,
+} from "../../__tests__/payment-doubles.js";
 import type { CompanyBankAccount } from "../../../domain/entities/company-bank-account.js";
 import {
   BankAccountCompanyNotFoundError,
@@ -57,7 +65,16 @@ class FakeRepository extends CompanyBankAccountRepository {
 /** Un dépôt qui porte déjà un RIB, semé par la séquence de production. */
 async function repoWithAccount(): Promise<FakeRepository> {
   const repo = new FakeRepository();
-  await recordCompanyBankAccount("cmp_1", PAYLOAD, repo, new FixedIdGenerator("cba"));
+  const steps = new Steps();
+  await recordCompanyBankAccount("cmp_1", PAYLOAD, "customer", {
+    accounts: repo,
+    ids: new FixedIdGenerator("cba"),
+    mandates: new InMemoryMandates(steps),
+    clock: new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
+    events: new StepPublisher(steps),
+    uow: new StepUnitOfWork(steps),
+    notifier: new RecordingNotifier(steps),
+  });
   repo.stored?.setOptions(
     MandateOptions.create({ debtorReference: "C-9P2X4B", contractNumber: "CT-42" }),
   );

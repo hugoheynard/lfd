@@ -112,6 +112,61 @@ si la carte est réellement un contrôle unique — jamais quand elle contient u
 bouton, un lien ou un graphe. Corollaire : **pas d'ombre au survol** sur une
 carte non cliquable ; elle promet un clic qui n'existe pas.
 
+### Saisir : dialogue centré au bureau, feuille du bas en mobile (règle permanente)
+
+Décidé par Hugo le 2026-09-14. **Toute saisie ou édition** — une adresse, un RIB,
+une identité, des options — s'ouvre dans un **panneau fold** placé par
+`dialogSide()` (`client/panel-side.ts`) :
+
+| Largeur                            | Côté     | Ce que c'est                                   |
+| ---------------------------------- | -------- | ---------------------------------------------- |
+| au-delà du pli (≥ 900 px)          | `center` | un dialogue modal centré, sur voile            |
+| en pile (< 900 px, `NARROW_QUERY`) | `bottom` | la feuille du bas, qui monte jusqu'à l'en-tête |
+
+```ts
+// Les défauts vivent sur le composant ; le côté, lui, se lit à l'ouverture.
+static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
+
+panels.open(BillingAddressDialog, { side: dialogSide(), stack, data });
+```
+
+(`width` et non `size` : c'est le nom de l'option dans `FoldPanelDefaults`, vérifié
+dans `node_modules/fold-ng/types/fold-ng.d.ts` le 2026-09-14. `md` pour une adresse postale, `lg` quand des
+créneaux par jour doivent tenir sur une ligne.)
+
+- **Le côté se lit au clic**, jamais en signal : ouvrir est un geste, dans le
+  navigateur, et c'est la largeur de ce moment qui compte.
+- **Ouvert depuis un panneau**, le dialogue s'empile (`stack: true`) : le panneau
+  reste dessous, et relit ce qu'il montre quand le dialogue se ferme sur un succès.
+- **Le formulaire est celui du paquet** quand il existe (`@lfd/b2b-ui`, convention
+  « Les formulaires » de son README) ; le dialogue n'apporte que l'en-tête, le
+  pied, l'écriture et ses libellés.
+- **Un refus du serveur reste dans le dialogue**, dans un `fold-callout`, et le
+  dialogue reste ouvert ; un succès annonce et ferme.
+- **Pas de panneau de détail intermédiaire** (Hugo, 2026-09-14) : un clic sur un
+  élément — une personne, une adresse — ouvre directement son dialogue, champs
+  éditables. Qui ne peut pas écrire reçoit le même dialogue en lecture seule,
+  sans Enregistrer.
+- **Enregistrer n'est cliquable que si le formulaire est modifié** : le brouillon
+  se compare à l'état d'ouverture, pas seulement à la validité. Rien à envoyer,
+  rien à cliquer.
+- **Supprimer se fait dans une `fold-danger-zone` du dialogue** (`appearance="section"`),
+  en correction seulement — jamais en ligne dans une liste. Ses mots de
+  confirmation se fournissent au dialogue (`FOLD_INLINE_CONFIRM_LABELS`) : la zone
+  n'a pas d'entrée de libellés, et fold parle anglais par défaut.
+- **Consulter n'est pas saisir.** Un panneau qu'on lit à côté de la page — une
+  liste, un détail, le mandat et son PDF — garde `panelSide()` : la droite au
+  bureau, le bas en pile.
+- ⚠️ **`ClientDialog` (`<dialog>` natif) n'est plus le modèle** : il a été écrit
+  quand fold n'ouvrait que par les bords. fold-ng 0.27 a un côté `center` qui porte
+  déjà le piège de focus, Échap, l'inertie et le voile. Ses **six** usages
+  (vérifié le 2026-09-14, après le retrait de `user-panel`) sont à migrer, pas à
+  copier. Le tri qui suit se lit aux NOMS, pas au contenu — à confirmer en
+  ouvrant chacun : les saisies — `pickup-dialog` et `address-dialog` de la
+  commande — vers `dialogSide()` ; les consultations — `product-sheet`,
+  `shelf-sheet`, `cart-panel`, `report-sheet` — vers le côté qui convient à ce
+  qu'on lit.
+
 ## CSS propre & marges (règles permanentes)
 
 - **Zéro CSS morte.** Toute classe définie dans un `.scss` est référencée dans le

@@ -2,14 +2,24 @@ import type { SetCompanyBankAccountPayload } from "@lfd/contracts";
 
 import { InvalidIbanError } from "../../../../accounting/domain/errors/accounting-errors.js";
 import type { IdGenerator } from "../../../../../platform/id/id-generator.js";
-import type { CompanyBankAccount } from "../../../domain/entities/company-bank-account.js";
-import type { CompanyBankAccountRepository } from "../../../domain/ports/company-bank-account.repository.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { MandateOptions } from "../../../domain/value-objects/mandate-options.js";
+import {
+  activeMandate,
+  InMemoryBankAccounts,
+  InMemoryMandates,
+  mandate,
+  RecordingNotifier,
+  StepPublisher,
+  Steps,
+  StepUnitOfWork,
+} from "../../__tests__/payment-doubles.js";
 import { SetCompanyBankAccountCommand } from "../set-company-bank-account.command.js";
 import { SetCompanyBankAccountHandler } from "../set-company-bank-account.handler.js";
 
 const IBAN = "FR1420041010050500013M02606";
 const OTHER_IBAN = "DE89370400440532013000";
+const NOW = new Date("2026-09-14T09:00:00.000Z");
 
 const PAYLOAD: SetCompanyBankAccountPayload = {
   iban: IBAN,
@@ -22,25 +32,6 @@ const PAYLOAD: SetCompanyBankAccountPayload = {
   countryCode: "FR",
 };
 
-/** Doublé du port : il implémente l'interface, il ne la contourne pas. */
-class FakeRepository implements CompanyBankAccountRepository {
-  stored: CompanyBankAccount | null = null;
-  readonly saved: CompanyBankAccount[] = [];
-  /** Compté dans le doublé : `jest` n'est pas une globale en ESM. */
-  reads = 0;
-
-  findByCompany(_companyId: string): Promise<CompanyBankAccount | null> {
-    this.reads += 1;
-    return Promise.resolve(this.stored);
-  }
-
-  save(account: CompanyBankAccount): Promise<void> {
-    this.saved.push(account);
-    this.stored = account;
-    return Promise.resolve();
-  }
-}
-
 class FixedIds implements IdGenerator {
   private count = 0;
   next(): string {
@@ -49,9 +40,22 @@ class FixedIds implements IdGenerator {
   }
 }
 
-function build(): { handler: SetCompanyBankAccountHandler; repo: FakeRepository } {
-  const repo = new FakeRepository();
-  return { handler: new SetCompanyBankAccountHandler(repo, new FixedIds()), repo };
+function build() {
+  const steps = new Steps();
+  const repo = new InMemoryBankAccounts(steps);
+  const mandates = new InMemoryMandates(steps);
+  const events = new StepPublisher(steps);
+  const notifier = new RecordingNotifier(steps);
+  const handler = new SetCompanyBankAccountHandler(
+    repo,
+    new FixedIds(),
+    mandates,
+    new FixedClock(NOW),
+    events,
+    new StepUnitOfWork(steps),
+    notifier,
+  );
+  return { handler, repo, steps, mandates, events, notifier };
 }
 
 describe("SetCompanyBankAccountHandler", () => {
@@ -159,6 +163,82 @@ describe("SetCompanyBankAccountHandler", () => {
 
     expect(repo.stored?.options.contractNumber).toBe("CT-42");
     expect(repo.stored?.account.iban.value).toBe(OTHER_IBAN);
+  });
+
+  /**
+   * Plan mandat client §8 et §9 #4 (2026-09-14) : le brouillon imprime le RIB.
+   * Signé après un changement, il nommerait un compte qui n'est plus le bon.
+   */
+  it("révoque le brouillon dans la MÊME unité de travail, trace, puis sonne", async () => {
+    const { handler, steps, mandates, events, notifier } = build();
+    mandates.draft = mandate();
+
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+
+    expect(steps.log).toEqual([
+      "mandate:find-draft",
+      "uow:begin",
+      "account:save",
+      "mandate:save:revoked",
+      "journal:payment_mandate.draft_voided",
+      "uow:end",
+      "bell",
+    ]);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      cause: "bank_account_changed",
+      via: "staff",
+    });
+    expect(notifier.notices[0]).toMatchObject({
+      kind: "payment_mandate.draft_voided",
+      subject: "Mandat à refaire — Refuge du Col SARL",
+      link: "/comptes-clients/cmp_1/informations",
+    });
+  });
+
+  /** « Toute écriture » (plan §9 #4) : même une correction de titulaire est imprimée. */
+  it("révoque le brouillon sur une simple correction de titulaire", async () => {
+    const { handler, repo, mandates } = build();
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+    mandates.draft = mandate();
+
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holder: "Refuge du Col SAS" }),
+    );
+
+    expect(mandates.saved.map((saved) => saved.status)).toEqual(["revoked"]);
+    expect(repo.stored?.account.iban.value).toBe(IBAN);
+  });
+
+  it("ne révoque ni ne sonne quand aucun brouillon n'existe", async () => {
+    const { handler, mandates, events, notifier } = build();
+
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+
+    expect(mandates.saved).toHaveLength(0);
+    expect(events.traced).toHaveLength(0);
+    expect(notifier.notices).toHaveLength(0);
+  });
+
+  /** Hors lot (plan §9 #5) : l'actif changé par le staff n'a pas encore de mécanisme. */
+  it("ne touche PAS au mandat actif", async () => {
+    const { handler, mandates } = build();
+    mandates.current = activeMandate();
+
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+
+    expect(mandates.saved).toHaveLength(0);
+  });
+
+  it("garde le RIB et la révocation quand la cloche tombe en panne", async () => {
+    const { handler, repo, mandates, notifier } = build();
+    mandates.draft = mandate();
+    notifier.broken = true;
+
+    await expect(
+      handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD)),
+    ).resolves.toBeUndefined();
+    expect(repo.stored).not.toBeNull();
+    expect(mandates.saved[0]?.status).toBe("revoked");
   });
 
   it("ne rend rien — CQRS, le client relit", async () => {

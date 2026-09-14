@@ -47,6 +47,7 @@ function shop(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
     levels: ['closed', 'browse', 'order'],
     defaultLevel: 'order',
     effectiveLevel: 'order',
+    exemptible: true,
     override: null,
     exemptions: [],
     ...over,
@@ -167,6 +168,35 @@ describe('FeatureAccessPage', () => {
       expect(host(fixture).querySelector('fold-listbox')).not.toBeNull();
       expect(host(fixture).querySelector('fold-input')).not.toBeNull();
       expect(text(fixture)).not.toContain('Lecture seule');
+    });
+
+    /**
+     * 2026-09-14 : le serveur refuse en 409 une exemption sur une clé non
+     * exemptible (le mandat client). L'écran ne propose donc pas le geste, et
+     * dit pourquoi.
+     */
+    it('ne propose pas d’exemption sur une clé non exemptible, et dit pourquoi', async () => {
+      const { fixture } = await render(
+        board({
+          features: [
+            shop({
+              key: 'customerMandate',
+              label: 'Mandat SEPA client',
+              levels: ['closed', 'open'],
+              defaultLevel: 'closed',
+              effectiveLevel: 'closed',
+              exemptible: false,
+            }),
+          ],
+        }),
+        WRITER,
+      );
+
+      expect(host(fixture).querySelector('fold-listbox')).not.toBeNull();
+      expect(host(fixture).querySelector('fold-input')).toBeNull();
+      expect(buttonSaying(fixture, 'Ajouter')).toBeNull();
+      expect(text(fixture)).toContain('Aucune exemption ne s');
+      expect(text(fixture)).toContain('Fermé');
     });
 
     it('dit « Défaut du code » sans offrir de retour au défaut quand rien n’est posé', async () => {
