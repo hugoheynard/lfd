@@ -36,6 +36,7 @@ import { ClientNavBar } from '../client-nav-bar/client-nav-bar';
 @Component({
   selector: 'app-client-band',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.narrow-in-page]': '!chrome.bandNarrow()' },
   imports: [ClientNavBar],
   templateUrl: './client-band.html',
   styleUrl: './client-band.scss',

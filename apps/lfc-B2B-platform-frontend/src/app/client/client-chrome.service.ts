@@ -65,4 +65,17 @@ export class ClientChrome {
    * rien garde la lèvre, comme il garde la barre.
    */
   readonly bandLip = signal(true);
+
+  /**
+   * En PILE, le bandeau reste-t-il dans la bande fixe ?
+   *
+   * Oui par défaut. Mais la bande est une rangée fixe du shell : un bandeau haut
+   * y mange l'écran du téléphone — 338 px sur 812 sur Mon compte, mesuré le
+   * 2026-09-14, laissant 410 px au contenu. Un écran qui dit non reprend son
+   * bandeau dans le flux de sa page, où il défile avec elle ; la bande n'en
+   * garde rien en pile, et rien ne change au-delà du pli.
+   *
+   * C'est l'écran qui l'éteint et le rallume en partant, comme la lèvre.
+   */
+  readonly bandNarrow = signal(true);
 }

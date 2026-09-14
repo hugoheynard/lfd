@@ -4,6 +4,7 @@ import type { CompanyView, ShopLevel } from '@lfd/contracts';
 
 import { AccountService, type AccountStatus } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
+import { ClientChrome } from '../../client-chrome.service';
 import { FR } from '../../copy/fr';
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
 import { openShopAt } from '../../feature-access/feature-access.fixture';
@@ -116,6 +117,20 @@ describe('ComptePage', () => {
 
   beforeEach(() => {
     fixture = boot([TOMMEUSES]);
+  });
+
+  /**
+   * En pile, le bandeau fixe mangeait 338 px sur 812 et laissait 410 px au
+   * contenu (mesuré le 2026-09-14). L'écran le reprend dans sa page pour qu'il
+   * défile, la carte amarrée — et le rend à la bande en partant.
+   */
+  it('reprend son bandeau dans la page en pile, la carte amarrée, et le rend en partant', () => {
+    const chrome = TestBed.inject(ClientChrome);
+    expect(chrome.bandNarrow()).toBe(false);
+    expect(el().querySelector('.narrow-pin app-account-card')).not.toBeNull();
+
+    fixture.destroy();
+    expect(chrome.bandNarrow()).toBe(true);
   });
 
   it('donne sept cartes, et un sommaire qui pointe LEURS ancres', () => {

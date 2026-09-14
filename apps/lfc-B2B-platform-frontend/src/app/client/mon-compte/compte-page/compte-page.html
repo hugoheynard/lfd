@@ -8,6 +8,28 @@
   </app-client-banner-block>
 </ng-template>
 
+<!-- EN PILE, LE TRANSFERT DE DÉFILEMENT. Le bandeau quitte la bande fixe et
+     descend ici, dans le seul défilement de l'écran : le titre part d'abord,
+     puis la carte s'amarre sous la barre avec le bord de la feuille, et c'est
+     la crème qui continue. L'ordre vient de la position (`sticky`), pas d'un
+     script — rien à enchaîner sur un écran tactile.
+     ⚠️ La carte et la lèvre sont des enfants DIRECTS de l'écran : un `sticky`
+     ne colle que dans son parent, et un parent court le relâcherait aussitôt.
+     Au-delà du pli, ces deux blocs n'existent pas à l'écran : le bandeau reste
+     celui de la bande, plus haut. -->
+<app-client-banner-block
+  class="narrow-banner"
+  foldSurface="chrome"
+  [title]="t().account.title"
+  [lead]="t().account.lead"
+/>
+<div class="narrow-pin" foldSurface="chrome">
+  @if (view() === 'dossier') {
+    <app-account-card class="narrow-card" />
+  }
+  <span class="narrow-lip" aria-hidden="true"></span>
+</div>
+
 <div class="page">
   <!-- UN ÉTAT À LA FOIS. Le compte complet ne se montre qu'à qui a une société :
        sans société, seulement la carte de dossier ; sans entrée, seulement de

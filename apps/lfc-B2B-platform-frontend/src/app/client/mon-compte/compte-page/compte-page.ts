@@ -1,10 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+} from '@angular/core';
 import type { CartAdjustment } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
+  FoldSurfaceDirective,
 } from 'fold-ng';
 
 import { AccountService } from '../../../account/account.service';
@@ -80,6 +88,7 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
+    FoldSurfaceDirective,
     KbisCard,
     ShopPromise,
     UsersCard,
@@ -249,6 +258,10 @@ export class ComptePage {
     this.chrome.menu.set(true);
     this.chrome.bell.set(null);
     this.chrome.barOnDesktop.set(true);
+    // En pile, le bandeau descend dans la page pour y défiler (voir le gabarit).
+    // Rallumé en partant : l'écran suivant n'a pas repris le sien.
+    this.chrome.bandNarrow.set(false);
+    inject(DestroyRef).onDestroy(() => this.chrome.bandNarrow.set(true));
   }
 }
 

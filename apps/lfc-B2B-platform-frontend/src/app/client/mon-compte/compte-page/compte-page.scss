@@ -3,6 +3,63 @@
   background: var(--fold-color-bg-page);
 }
 
+/* ── En pile : le bandeau dans la page ────────────────────────────────────── */
+
+/* Le titre, sur l'encre de la barre : il défile et part le premier. Uni, pour
+   que le bloc amarré commence exactement là où il finit. */
+.narrow-banner {
+  background: var(--lfc-ink-800);
+}
+
+/* La carte et le bord de la feuille, amarrés ensemble sous la barre.
+
+   Amarrée, la carte garde de l'air au-dessus d'elle plutôt que de coller à la
+   barre. Et le fond reprend la descente de la bande — l'encre de la barre en
+   haut, la plus profonde en bas — pour que la barre et le bloc amarré se
+   lisent comme un seul fondu, au repos comme en défilement. */
+.narrow-pin {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  /* Un pixel d'encre au-dessus : aux hauteurs fractionnaires, la crème qui
+     défile affleurait sinon d'un demi-pixel entre la barre et la carte. */
+  margin-top: -1px;
+  padding: calc(var(--fold-space-md) + 1px) var(--lfc-inset) 0;
+  background: linear-gradient(
+    to bottom,
+    var(--lfc-ink-800) 0%,
+    var(--lfc-ink-900) 55%,
+    var(--lfc-ink-950) 100%
+  );
+}
+
+.narrow-lip {
+  position: relative;
+  display: block;
+  height: calc(var(--fold-space-lg) + var(--lfc-radius-sheet));
+  margin-inline: calc(-1 * var(--lfc-inset));
+
+  /* Le bord arrondi de la feuille. Un pixel sous le bas, de la même crème que
+     la page, pour boucher le filet d'une hauteur fractionnaire. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: var(--fold-space-lg) 0 -1px;
+    border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
+    /* La crème NOMMÉE : sous `foldSurface="chrome"`, `bg-page` vaut l'encre. */
+    background: var(--lfc-paper-50);
+  }
+}
+
+@media (min-width: 900px) {
+  .narrow-banner,
+  .narrow-pin {
+    display: none;
+  }
+}
+
 .page {
   display: flex;
   flex-direction: column;

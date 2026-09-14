@@ -113,3 +113,13 @@
     display: none;
   }
 }
+
+/* EN PILE, l'écran a repris son bandeau dans sa page (`bandNarrow`) : la bande
+   ne garde ni la descente ni la lèvre, que la page dessine elle-même pour les
+   faire défiler. Au-delà du pli, rien ne change. */
+@media (max-width: 899.98px) {
+  :host(.narrow-in-page) .descent,
+  :host(.narrow-in-page) .lip {
+    display: none;
+  }
+}
