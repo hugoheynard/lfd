@@ -1,0 +1,16 @@
+<h2 class="title">
+  {{ t().account.sections.users }} <span class="count">({{ count() }})</span>
+</h2>
+<app-users-list />
+@if (canAdd()) {
+  <button
+    foldButton
+    class="add"
+    emphasis="outline"
+    intent="neutral"
+    type="button"
+    (click)="openAdd()"
+  >
+    <fold-icon name="plus" aria-hidden="true" />{{ t().account.usersAdd }}
+  </button>
+}

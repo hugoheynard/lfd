@@ -1,0 +1,63 @@
+/* Même montage que `identity-panel` : l'hôte se borne, `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-muted);
+}
+
+.danger-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.danger-head {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.danger-title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.danger-text {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+}
+
+.exports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.export {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.export-action {
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Bordé, jamais un aplat : l'action est offerte, jamais encouragée. */
+.danger-cta {
+  align-self: flex-start;
+}

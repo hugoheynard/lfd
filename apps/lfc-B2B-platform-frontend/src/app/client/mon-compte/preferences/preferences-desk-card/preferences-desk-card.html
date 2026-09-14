@@ -1,0 +1,18 @@
+<h2 class="title">{{ t().account.sections.preferences }}</h2>
+<dl class="facts">
+  <dt>{{ t().account.prefPickup }}</dt>
+  <dd>
+    {{ preferences.habit() }}
+    <button foldButton size="sm" emphasis="soft" intent="primary" type="button">
+      {{ t().account.edit }}
+    </button>
+  </dd>
+  <dt>{{ t().account.prefLang }}</dt>
+  <dd>
+    {{ preferences.language() }}
+    <button foldButton size="sm" emphasis="soft" intent="primary" type="button">
+      {{ t().account.edit }}
+    </button>
+  </dd>
+</dl>
+<p class="note">{{ t().account.prefNote }}</p>

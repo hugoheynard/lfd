@@ -1,0 +1,26 @@
+/* Même montage que `identity-panel` : l'hôte se borne, `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Les champs d'une ligne se partagent la largeur, et s'empilent sous 14rem
+   chacun : un IBAN ne se relit pas dans un champ de six centimètres. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+.row fold-input {
+  flex: 1 1 14rem;
+}

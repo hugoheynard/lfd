@@ -1,0 +1,23 @@
+<h2 class="title">{{ t().account.sections.payment }}</h2>
+<div class="grid">
+  <div class="regime">
+    <p class="head">
+      {{ t().account.termMonthly }}
+      <fold-badge
+        [variant]="client.hasDeferredTerm() ? 'success' : 'neutral'"
+        [content]="
+          client.hasDeferredTerm() ? t().account.stateActive : t().account.stateUnavailable
+        "
+      />
+    </p>
+    <p class="note">{{ t().account.termMonthlySub }}</p>
+  </div>
+  <div class="regime">
+    <p class="head">
+      {{ t().account.termOrder }}
+      <fold-badge variant="success" [content]="t().account.stateAvailable" />
+    </p>
+    <p class="note">{{ t().account.termOrderSub }}</p>
+  </div>
+</div>
+<p class="note">{{ t().account.paymentNote }}</p>

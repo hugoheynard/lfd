@@ -1,0 +1,26 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.mobile-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.line {
+  @include card.line;
+}
+
+/* Les deux boutons ensemble, poussés en bas : c'est le groupe qui descend, pas
+   chacun — deux `margin-top: auto` se partageraient l'espace libre. */
+.feet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin-top: auto;
+}
+
+.count {
+  color: var(--fold-color-text-muted);
+}

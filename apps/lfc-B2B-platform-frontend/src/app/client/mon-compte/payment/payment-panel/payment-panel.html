@@ -1,0 +1,22 @@
+<fold-panel-header [title]="t().account.sections.payment" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  <div class="regime">
+    <p class="regime-head">
+      {{ t().account.termMonthly }}
+      <fold-badge
+        [variant]="data().deferred ? 'success' : 'neutral'"
+        [content]="data().deferred ? t().account.stateActive : t().account.stateUnavailable"
+      />
+    </p>
+    <p class="note">{{ t().account.termMonthlySub }}</p>
+  </div>
+  <div class="regime">
+    <p class="regime-head">
+      {{ t().account.termOrder }}
+      <fold-badge variant="success" [content]="t().account.stateAvailable" />
+    </p>
+    <p class="note">{{ t().account.termOrderSub }}</p>
+  </div>
+  <p class="note">{{ t().account.paymentNote }}</p>
+</fold-panel-body>

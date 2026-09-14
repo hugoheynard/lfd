@@ -1,7 +1,14 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import type { BillingAddressView, CompanyAddressesView, DeliveryAddressView } from '@lfd/contracts';
-import { firstValueFrom } from 'rxjs';
+import type {
+  BillingAddressPayload,
+  BillingAddressView,
+  CompanyAddressesView,
+  DeliveryAddressPayload,
+  DeliveryAddressView,
+} from '@lfd/contracts';
+import { httpErrorMessage } from '@lfd/endpoints';
+import { firstValueFrom, type Observable } from 'rxjs';
 
 import { AccountService } from '../account/account.service';
 import { AUTH_CONFIG } from '../auth/auth.config';
@@ -75,15 +82,69 @@ export class ClientAddresses {
     this.loadedFor = 'posé-par-la-suite';
   }
 
+  /**
+   * `PATCH /companies/:id/billing-address` — pose ou remplace la facturation,
+   * puis relit le carnet. `null` au succès, le **message du serveur** au refus
+   * (écriture réservée à `owner`/`admin`, vérifié le 2026-09-14 dans
+   * `company-addresses.controller.ts`).
+   */
+  saveBilling(companyId: string, payload: BillingAddressPayload): Promise<string | null> {
+    return this.write(companyId, (headers) =>
+      this.http.patch(`${this.url(companyId)}/billing-address`, payload, { headers }),
+    );
+  }
+
+  /** `POST /companies/:id/delivery-addresses` — même contrat que {@link saveBilling}. */
+  addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<string | null> {
+    return this.write(companyId, (headers) =>
+      this.http.post(`${this.url(companyId)}/delivery-addresses`, payload, { headers }),
+    );
+  }
+
+  /** `PATCH /companies/:id/delivery-addresses/:addressId` — même contrat que {@link saveBilling}. */
+  updateDelivery(
+    companyId: string,
+    addressId: string,
+    payload: DeliveryAddressPayload,
+  ): Promise<string | null> {
+    return this.write(companyId, (headers) =>
+      this.http.patch(`${this.url(companyId)}/delivery-addresses/${addressId}`, payload, {
+        headers,
+      }),
+    );
+  }
+
+  /**
+   * Écrit, puis relit le carnet : c'est la relecture qui fait apparaître
+   * l'adresse, avec le tri du serveur (la défaut en tête), pas une insertion
+   * locale qui pourrait s'en écarter.
+   */
+  private async write(
+    companyId: string,
+    call: (headers: HttpHeaders) => Observable<unknown>,
+  ): Promise<string | null> {
+    try {
+      const token = await firstValueFrom(this.auth.accessToken$());
+      await firstValueFrom(call(new HttpHeaders({ Authorization: `Bearer ${token}` })));
+    } catch (error) {
+      return httpErrorMessage(error);
+    }
+    await this.load(companyId);
+    return null;
+  }
+
+  private url(companyId: string): string {
+    return `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}`;
+  }
+
   private async load(companyId: string): Promise<void> {
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
       this.known.set(
         await firstValueFrom(
-          this.http.get<CompanyAddressesView>(
-            `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/addresses`,
-            { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
-          ),
+          this.http.get<CompanyAddressesView>(`${this.url(companyId)}/addresses`, {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          }),
         ),
       );
     } catch {

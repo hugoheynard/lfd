@@ -1,10 +1,10 @@
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
- * Une phrase y fait tout le travail : `identityNote`. L'enseigne se change en
- * autonomie, les mentions du greffe passent par nous — et l'écran le DIT au lieu
- * de griser un champ. Un champ grisé laisse croire à une panne ; une phrase dit
- * une règle.
+ * Chaque section a deux cartes (règle de Hugo, 2026-09-14). Au bureau, la
+ * carte garde ses phrases — `identityNote`, `billingNote` — et ses gestes
+ * d'écriture ouvrent un panneau ; en pile, elle ne garde que l'essentiel et un
+ * bouton, et les phrases se lisent dans le panneau que ce bouton ouvre.
  *
  * Découpé du dictionnaire général pour la même raison que [[orders.copy]] — et,
  * seul des trois, découpé une fois de plus PAR LANGUE : sept cartes font un
@@ -57,8 +57,11 @@ export interface AccountCopy {
   /** Un champ légal encore vide : une société peut ouvrir sans papiers. */
   readonly identityUnknown: string;
   readonly summaryHead: string;
-  readonly summaryNote: string;
   readonly edit: string;
+  /** Le bouton du bas d'une carte dont le panneau se LIT, sans rien à écrire. */
+  readonly details: string;
+  readonly save: string;
+  readonly cancel: string;
   readonly sections: {
     readonly identity: string;
     readonly users: string;
@@ -91,14 +94,18 @@ export interface AccountCopy {
   readonly identityLegalLocked: string;
   /** En tête du message du serveur, quand l'écriture est refusée. */
   readonly identitySaveFailed: string;
-  readonly identityCancel: string;
-  readonly identitySave: string;
   /** La pastille du rail, pour qui ne la voit pas. `{n}` le rang depuis un, `{total}` le nombre de sections. */
   readonly railPosition: string;
   readonly usersHolder: string;
   readonly usersAllRights: string;
-  readonly usersAdd: string;
   readonly usersNote: string;
+  /** Le bouton de la carte bureau, et le titre du panneau d'ajout. */
+  readonly usersAdd: string;
+  /** Le même geste, sur le bouton pleine largeur de la carte mobile. */
+  readonly usersAddShort: string;
+  readonly usersAddSubtitle: string;
+  /** En tête du message du serveur, quand l'ajout est refusé. */
+  readonly usersAddFailed: string;
   /** Un rôle non renseigné : les contacts d'avant les rôles n'en ont pas. */
   readonly roleUnset: string;
   readonly tagContact: string;
@@ -114,6 +121,16 @@ export interface AccountCopy {
   readonly kbisFiled: string;
   readonly kbisOpen: string;
   readonly kbisReplace: string;
+  /** Le bouton de la carte quand on ne dépose pas : l'extrait se VOIT dans le panneau. */
+  readonly kbisView: string;
+  readonly kbisDownload: string;
+  /** Le libellé de la zone de dépôt, tant qu'aucun extrait n'est déposé. */
+  readonly kbisDrop: string;
+  readonly kbisHint: string;
+  readonly kbisUploading: string;
+  /** En tête du message du serveur, quand le dépôt est refusé. */
+  readonly kbisSaveFailed: string;
+  readonly kbisFetchFailed: string;
   readonly billingHead: string;
   readonly billingNote: string;
   readonly deliveryHead: string;
@@ -125,6 +142,15 @@ export interface AccountCopy {
   readonly addressNone: string;
   readonly addressDefault: string;
   readonly addressAdd: string;
+  /** Le geste du panneau quand aucune facturation n'est posée. */
+  readonly billingFill: string;
+  /** Le même geste quand elle l'est. */
+  readonly billingEdit: string;
+  /** Le titre du formulaire qui modifie une livraison. */
+  readonly addressEdit: string;
+  readonly deliveryNote: string;
+  readonly addressSaveFailed: string;
+  readonly addressSavedToast: string;
   readonly termMonthly: string;
   readonly termMonthlySub: string;
   readonly termOrder: string;
@@ -147,6 +173,8 @@ export interface AccountCopy {
   readonly dataExportOrdersSub: string;
   readonly dataExportPersonal: string;
   readonly dataExportPersonalSub: string;
+  /** Le résumé de la carte « Mes données » : ce que son panneau explique. */
+  readonly dataSummary: string;
   readonly dataKeep: string;
   readonly dangerHead: string;
   readonly transferHead: string;
@@ -176,8 +204,10 @@ export interface AccountCopy {
   readonly bankLoadFailedBody: string;
   /** Aucun RIB déposé — le cas ordinaire d'une société qui ouvre. */
   readonly bankNone: string;
-  /** `{last4}`, `{bic}` et `{holder}` : le compte enregistré, IBAN masqué. */
-  readonly bankSaved: string;
+  /** La carte ne dit que l'essentiel : un RIB est là, et ses quatre derniers chiffres. */
+  readonly bankRegistered: string;
+  /** `{last4}` : les quatre derniers caractères de l'IBAN, le reste masqué. */
+  readonly bankLast4: string;
   /** Le titulaire est celui que la BANQUE connaît, et un compte mandaté ne se remplace pas sans nouveau mandat. */
   readonly bankNotice: string;
   readonly bankHolder: string;

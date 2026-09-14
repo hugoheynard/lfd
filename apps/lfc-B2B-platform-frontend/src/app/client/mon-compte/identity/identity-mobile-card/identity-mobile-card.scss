@@ -1,0 +1,44 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.mobile-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+/* Un fait par ligne, le libellé à gauche et la valeur à droite : trois lignes
+   au lieu de six. */
+.fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-xs) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.fact dt {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.fact dd {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}

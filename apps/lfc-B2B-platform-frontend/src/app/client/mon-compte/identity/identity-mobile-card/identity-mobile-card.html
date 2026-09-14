@@ -1,0 +1,18 @@
+<h2 class="title">{{ t().account.sections.identity }}</h2>
+@if (client.company(); as identity) {
+  <dl class="facts">
+    <div class="fact">
+      <dt>{{ t().account.identityBrand }}</dt>
+      <dd>{{ client.name() }}</dd>
+    </div>
+    <div class="fact">
+      <dt>{{ t().account.identityCompany }}</dt>
+      <dd>{{ identity.raisonSociale || t().account.identityUnknown }}</dd>
+    </div>
+    <div class="fact">
+      <dt>{{ t().account.identitySiret }}</dt>
+      <dd class="num">{{ identity.siret || t().account.identityUnknown }}</dd>
+    </div>
+  </dl>
+}
+<app-card-foot [label]="action()" (pressed)="open()" />

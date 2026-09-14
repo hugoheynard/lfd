@@ -2,7 +2,11 @@
    without reaching in, which is what lets the same component sit on a dark
    region here and a sunken card there. */
 :host {
-  display: block;
+  /* `flex` via `--lfc-well-display` : un hôte qui borne la hauteur du puits
+     (le rail de `/mon-compte` en pile) en fait une colonne, et le corps prend
+     ce qui reste au-dessus du pied. Bloc par défaut : rien ne change ailleurs. */
+  display: var(--lfc-well-display, block);
+  flex-direction: column;
   padding: var(--lfc-well-padding, var(--fold-space-lg));
   border-radius: var(--lfc-well-radius, var(--lfc-radius-xl));
   background: var(--lfc-well-bg, var(--fold-color-surface-sunken));
@@ -76,6 +80,11 @@
   :host([data-scrollable='narrow']) .body {
     display: flex;
     align-items: var(--lfc-well-rail-align, stretch);
+    /* Le rail garde sa hauteur de contenu (`none`) — sauf quand l'hôte borne
+       le puits et demande au rail de la remplir (`1`) : les items s'étirent
+       alors à la hauteur disponible. `min-height: 0` défait le plancher `auto`. */
+    flex: var(--lfc-well-body-flex, none);
+    min-height: 0;
     /* L'écart entre items est thémable : sur un rail, il ne sépare pas seulement
        deux cartes, il dit combien on en voit à la fois. */
     gap: var(--lfc-well-gap, var(--fold-space-md));
@@ -86,8 +95,8 @@
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     /* ⚠️ A horizontal scroller inside a flex COLUMN gets compressed and clips its
-       children with nothing to show for it. `flex: none` is the guard. */
-    flex: none;
+       children with nothing to show for it. `flex: none` is the guard — the
+       default of `--lfc-well-body-flex` above. */
   }
 }
 

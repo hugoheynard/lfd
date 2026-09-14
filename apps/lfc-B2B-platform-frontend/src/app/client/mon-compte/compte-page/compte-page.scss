@@ -23,9 +23,9 @@
     display: none;
   }
 
-  /* La règle de l'identité se lit dans le panneau qui l'édite : en pile, la
-     carte n'en garde que les faits. */
-  .identity-note {
+  /* EN PILE, LA CARTE MOBILE. `display: none` et non une simple transparence :
+     la carte bureau sort aussi de l'arbre d'accessibilité. */
+  .desk {
     display: none;
   }
 }
@@ -98,10 +98,9 @@
   gap: var(--fold-space-lg);
 }
 
-/* Le sommaire n'existe qu'au bureau : sur un téléphone, on descend, on ne
-   navigue pas — et une liste de sept ancres au-dessus de sept cartes ferait
-   deux fois le même travail. */
-.summary {
+/* L'aside — le sommaire et la carte contact — n'existe qu'au bureau : sur un
+   téléphone, on glisse, on ne navigue pas, et le contact est en bas de l'écran. */
+.aside {
   display: none;
 }
 
@@ -114,10 +113,6 @@
   min-width: 0;
 }
 
-/* EN PILE, LE CONTACT RESTE EN VUE. Amarré au bas de l'écran pendant qu'on
-   parcourt le dossier : le geste de sortie d'un problème ne se cherche pas au
-   bout de la page. `sticky` et non `fixed` : il garde sa place dans le flux,
-   donc rien ne passe dessous à la fin du défilement. */
 @media (max-width: 899.98px) {
   /* Un cran d'air sous la lèvre amarrée : elle déborde d'un pixel sur la page
      pour boucher un filet, et ce pixel mangeait le bord haut du premier bloc —
@@ -126,10 +121,47 @@
     padding-top: var(--fold-space-xs);
   }
 
+  /* EN PILE, LE DOSSIER TIENT DANS L'ÉCRAN (demande de Hugo, 2026-09-14).
+     L'écran est une colonne de la hauteur que le shell laisse sous sa barre :
+     le bandeau et la carte amarrée gardent la leur, le rail prend TOUT ce qui
+     reste, et la carte contact ferme la colonne — collée en bas à l'œil, sans
+     `sticky` qui dépende du défilement. Rien n'est mesuré ni codé en dur : la
+     hauteur variable du bloc amarré, c'est le flex qui l'absorbe.
+     Le shell garde son propre défilement : si un très petit écran ne tient
+     pas, c'est la CARTE qui défile (plus bas), et la page reste le filet. */
+  :host(.dossier) {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--lfc-header-height, 64px));
+  }
+
+  :host(.dossier) .narrow-banner,
+  :host(.dossier) .narrow-pin {
+    flex: none;
+  }
+
+  :host(.dossier) .page {
+    flex: 1;
+    min-height: 0;
+    padding-bottom: var(--fold-space-sm);
+  }
+
+  :host(.dossier) .body,
+  :host(.dossier) .main {
+    flex: 1;
+    min-height: 0;
+  }
+
+  :host(.dossier) .cards {
+    --lfc-well-display: flex;
+    --lfc-well-body-flex: 1;
+
+    flex: 1;
+    min-height: 0;
+  }
+
   .support {
-    position: sticky;
-    bottom: var(--fold-space-sm);
-    z-index: 2;
+    flex: none;
   }
 }
 
@@ -139,43 +171,39 @@
   --lfc-well-bg: transparent;
   --lfc-well-padding: 0;
   --lfc-well-gap: var(--fold-space-md);
-  /* Chaque panneau garde SA hauteur : étirés à celle du plus haut, les courts
-     montraient une carte à moitié vide. */
+  /* Au bureau, chaque carte garde sa hauteur dans la grille. */
   --lfc-well-rail-align: start;
 }
 
 @media (max-width: 899.98px) {
-  /* EN PILE, UN VRAI PUITS : le rail est posé dans un creux, et c'est lui qui
-     CONTIENT le défilement. Sans ça, la section la plus longue (le RIB, ~600 px)
-     faisait descendre toute la page avant d'atteindre l'indicateur. */
+  /* EN PILE, PLUS DE PUITS : ni fond creux ni rembourrage — chaque carte prend
+     la largeur de la page, gouttière `--lfc-inset` comprise. Le rail garde son
+     glissé et son snap, et TOUTES LES CARTES ONT LA MÊME HAUTEUR : celle du
+     rail, bouton en bas. */
   .cards {
-    --lfc-well-bg: var(--fold-color-surface-sunken);
-    --lfc-well-padding: var(--fold-space-md);
-    --lfc-well-radius: var(--lfc-radius-2xl);
+    --lfc-well-rail-align: stretch;
+    --lfc-well-bg: transparent;
+    --lfc-well-padding: 0;
+    --lfc-well-radius: 0;
   }
 
-  /* Un panneau par section, sur TOUTE la largeur du puits : l'indicateur et la
-     pastille disent déjà qu'il y a une suite, un bord qui dépasse ne faisait
-     que rogner le panneau en vue. Sa hauteur est BORNÉE et il défile en
-     lui-même : l'indicateur reste à portée de pouce quelle que soit la section. */
+  /* Une carte par cran, sur TOUTE la largeur du rail, en colonne : la carte
+     mobile y prend toute la hauteur, et son bouton descend en bas.
+     Sur un écran trop court pour son contenu, elle défile EN ELLE-MÊME — la
+     page, non. Un `overflow-y` non visible fait calculer `overflow-x` à
+     `auto` : sans le `hidden`, chaque carte devenait un défileur horizontal et
+     avalait le glissé du rail. */
   .card {
+    display: flex;
     flex: none;
+    flex-direction: column;
     width: 100%;
-    max-height: var(--compte-panel-max);
-    overflow-y: auto;
-    /* Un `overflow-y` non visible fait calculer `overflow-x` à `auto` : chaque
-       panneau devenait un défileur horizontal et avalait le glissé du rail. */
+    min-height: 0;
     overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: contain;
     scroll-snap-align: start;
   }
-}
-
-/* La hauteur d'un panneau : l'écran moins la barre, la carte amarrée et la
-   carte de contact amarrée (≈ 420 px mesurés le 2026-09-14, 375 × 812), avec un
-   plancher pour les petits écrans où tout ne tiendra de toute façon pas. */
-:host {
-  --compte-panel-max: max(280px, calc(100dvh - var(--lfc-header-height, 64px) - 420px));
 }
 
 /* L'indicateur au centre, la pastille à droite : trois colonnes, pour que
@@ -217,262 +245,6 @@
   scroll-margin-top: var(--fold-space-2xl);
 }
 
-.card-title {
-  margin: 0 0 var(--fold-space-md);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-eyebrow);
-  text-transform: uppercase;
-  /* ⚠️ Le SEUL endroit où ce ton est permis : `text-subtle` donne 3,6:1 et ne
-     vaut que pour un sur-titre en capitales. Le texte courant, lui, est en
-     `text-muted` — voir `.note` plus bas. */
-  color: var(--lfc-color-text-subtle);
-}
-
-.sub,
-.sub-head {
-  margin: 0 0 var(--fold-space-sm);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  color: var(--lfc-color-text-subtle);
-}
-
-/* Le titre et son action sur une même rangée ; la rangée porte l'écart que le
-   titre seul portait. */
-.card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  margin-bottom: var(--fold-space-md);
-}
-
-.card-head .card-title {
-  margin: 0;
-}
-
-.card-action {
-  flex: none;
-}
-
-/* Le texte courant reste en `text-muted` (5,9:1) : `text-subtle` y descendrait
-   à 3,73:1, et c'est l'une des quatre régressions de contraste que le dossier
-   de design a eu à corriger. */
-.note {
-  margin: var(--fold-space-md) 0 0;
-  font-size: var(--fold-text-xs);
-  line-height: var(--lfc-leading-note);
-  color: var(--fold-color-text-muted);
-}
-
-.facts {
-  display: grid;
-  margin: 0;
-}
-
-.facts dt {
-  padding-top: var(--fold-space-sm);
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-.facts dd {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding-bottom: var(--fold-space-sm);
-  border-bottom: 1px solid var(--fold-color-border-subtle);
-  font-size: var(--fold-text-sm);
-}
-
-.facts dd.num {
-  font-variant-numeric: tabular-nums;
-}
-
-/* L'action textuelle vit À DROITE de la valeur : elle appartient à la ligne,
-   pas à la carte. */
-.inline {
-  flex: none;
-  border: 0;
-  background: none;
-  color: var(--lfc-color-primary-vivid);
-  font-family: inherit;
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-bold);
-  cursor: pointer;
-}
-
-/* ── Adresses ──────────────────────────────────────────────────────────── */
-
-.address-row {
-  display: grid;
-  gap: var(--fold-space-md);
-}
-
-.sub-card {
-  padding: var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--lfc-radius-xl);
-  background: var(--fold-color-surface-sunken);
-}
-
-.sub-line {
-  margin: 0;
-  font-size: var(--fold-text-sm);
-}
-
-.delivery {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--fold-space-xs);
-  padding: var(--fold-space-sm) 0;
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-.delivery-label {
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-bold);
-}
-
-.delivery-tag {
-  padding: 1px 7px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-primary-surface);
-  color: var(--fold-color-primary-text);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-}
-
-.delivery-line {
-  flex-basis: 100%;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-.dashed {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--fold-space-xs);
-  width: 100%;
-  min-height: 40px;
-  margin-top: var(--fold-space-sm);
-  border: 1px dashed var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: none;
-  color: var(--fold-color-text-secondary);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-bold);
-  cursor: pointer;
-}
-
-/* ── Paiement ──────────────────────────────────────────────────────────── */
-
-.pay-grid {
-  display: grid;
-  gap: var(--fold-space-md);
-}
-
-/* Chaque bloc porte son filet haut : c'est ce qui garde l'alignement des deux
-   colonnes internes quand elles se rangent en 2 × 2. */
-.pay {
-  padding-top: var(--fold-space-sm);
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-.pay-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-bold);
-}
-
-.pay-tag {
-  flex: none;
-  padding: 2px 8px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-sunken);
-  color: var(--fold-color-text-secondary);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-}
-
-.pay-tag.on {
-  background: var(--fold-color-success-surface);
-  color: var(--fold-color-success-text);
-}
-
-.pay-note {
-  margin: 3px 0 0;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-/* ── Préférences ───────────────────────────────────────────────────────── */
-
-.switches {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.switches li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  padding: var(--fold-space-sm) 0;
-  border-bottom: 1px solid var(--fold-color-border-subtle);
-  font-size: var(--fold-text-sm);
-}
-
-.pill {
-  flex: none;
-  position: relative;
-  width: 40px;
-  height: 23px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-band);
-}
-
-.pill::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 17px;
-  height: 17px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--lfc-paper-0);
-}
-
-.pill.on {
-  background: var(--fold-color-primary);
-}
-
-.pill.on::after {
-  left: auto;
-  right: 3px;
-}
-
 /* ── Le bureau ─────────────────────────────────────────────────────────── */
 
 @media (min-width: 900px) {
@@ -493,12 +265,22 @@
     gap: var(--fold-space-2xl);
   }
 
-  .summary {
-    display: block;
+  /* Le sommaire et la carte contact, dans UN bloc collant : la carte suit le
+     sommaire au défilement. */
+  .aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fold-space-xl);
     position: sticky;
     top: var(--fold-space-lg);
     flex: none;
     width: 248px;
+  }
+
+  /* AU BUREAU, LA CARTE CONTACT DE L'ASIDE : l'exemplaire du bas sort de
+     l'écran et de l'arbre d'accessibilité. */
+  .support {
+    display: none;
   }
 
   .summary-head {
@@ -542,14 +324,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .summary-note {
-    margin: var(--fold-space-sm) 0 0;
-    padding: 0 var(--fold-space-md);
-    font-size: var(--fold-text-xs);
-    line-height: var(--lfc-leading-note);
-    color: var(--fold-color-text-muted);
-  }
-
   /* UNE SEULE rangée à deux cartes, le reste en pleine largeur : c'est la règle
      qui évite l'effet de quadrillage à trous. Identité légale et KBIS vont
      ensemble parce que ce sont les deux faces d'un même sujet — ce que la maison
@@ -580,16 +354,8 @@
     grid-column: auto;
   }
 
-  .address-row {
-    /* Facturation à gauche, livraisons à droite : en rangée, on voit d'un coup
-       qu'il y a UNE facturation et PLUSIEURS livraisons. */
-    grid-template-columns: minmax(0, 310fr) minmax(0, 496fr);
-  }
-
-  /* Le sujet le plus lourd d'un compte pro se range en 2 × 2 plutôt qu'en pile :
-     196 px de haut au lieu de 330, et plus de colonne à moitié vide. */
-  .pay-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--fold-space-xl);
+  /* AU BUREAU, LA CARTE BUREAU. */
+  .mobile {
+    display: none;
   }
 }

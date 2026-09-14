@@ -1,0 +1,10 @@
+/* Pleine largeur, et poussé en bas de la carte mobile : les cartes du rail
+   s'étirent à la même hauteur, le geste s'aligne d'une carte à l'autre. */
+:host {
+  display: block;
+  margin-top: auto;
+}
+
+.action {
+  width: 100%;
+}

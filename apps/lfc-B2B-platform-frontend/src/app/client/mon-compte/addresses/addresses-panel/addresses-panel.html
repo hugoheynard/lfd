@@ -1,0 +1,101 @@
+<fold-panel-header [title]="heading()" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  @if (mode() === 'list' && data().view === 'billing') {
+    <section class="block">
+      @if (billing(); as line) {
+        <p class="line">{{ line }}</p>
+      } @else {
+        <p class="line">{{ t().account.addressNone }}</p>
+      }
+      <p class="note">{{ t().account.billingNote }}</p>
+      @if (data().canManage) {
+        <button
+          foldButton
+          class="gesture"
+          emphasis="outline"
+          intent="primary"
+          type="button"
+          (click)="editBilling()"
+        >
+          {{ billing() === null ? t().account.billingFill : t().account.billingEdit }}
+        </button>
+      }
+    </section>
+  } @else if (mode() === 'list') {
+    <section class="block">
+      <h3 class="head">{{ deliveryCount() }}</h3>
+      @if (deliveries().length === 0) {
+        <p class="line">{{ t().account.addressNone }}</p>
+      }
+      <ul class="deliveries">
+        @for (address of deliveries(); track address.id) {
+          <li class="delivery">
+            <span class="delivery-label">{{ address.label }}</span>
+            @if (address.primary) {
+              <fold-badge variant="accent" [content]="t().account.addressDefault" />
+            }
+            <span class="delivery-line"
+              >{{ address.line }} · {{ address.zone }} · {{ address.fee }}</span
+            >
+            @if (data().canManage) {
+              <button
+                foldButton
+                class="row-edit"
+                size="sm"
+                emphasis="soft"
+                intent="primary"
+                type="button"
+                (click)="editDelivery(address.id)"
+              >
+                {{ t().account.edit }}
+              </button>
+            }
+          </li>
+        }
+      </ul>
+      @if (data().canManage) {
+        <button
+          foldButton
+          class="gesture"
+          emphasis="outline"
+          intent="primary"
+          type="button"
+          (click)="addDelivery()"
+        >
+          {{ t().account.addressAdd }}
+        </button>
+      }
+    </section>
+  } @else {
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>
+        {{ t().account.addressSaveFailed }} {{ message }}
+      </fold-callout>
+    }
+    <lfd-address-form
+      [fields]="fields()"
+      [noteLabel]="t().account.deliveryNote"
+      [value]="postal()"
+      (valueChange)="setPostal($event)"
+    />
+  }
+</fold-panel-body>
+
+@if (mode() !== 'list') {
+  <fold-panel-footer>
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="backToList()">
+      {{ t().account.cancel }}
+    </button>
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [loading]="saving()"
+      [disabled]="!canSave()"
+      (click)="save()"
+    >
+      {{ t().account.save }}
+    </button>
+  </fold-panel-footer>
+}

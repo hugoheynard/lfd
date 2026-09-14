@@ -1,0 +1,82 @@
+<fold-panel-header
+  [title]="t().account.sections.bank"
+  [subtitle]="saved()"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.bankSaveFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <!-- Ce que la banque connaît, et ce qu'un changement de compte coûte au
+       prélèvement : dit AVANT les champs, pas découvert après. -->
+  <fold-callout appearance="inset" variant="info">{{ t().account.bankNotice }}</fold-callout>
+
+  <!-- 🔴 L'IBAN est toujours vide : il ne revient d'aucune route. -->
+  <div class="rows">
+    <div class="row">
+      <fold-input
+        [label]="t().account.bankHolder"
+        [value]="holderDraft()"
+        (valueChange)="holderDraft.set($event)"
+      />
+    </div>
+    <div class="row">
+      <fold-input
+        [label]="t().account.bankLine1"
+        [value]="line1Draft()"
+        (valueChange)="line1Draft.set($event)"
+      />
+      <fold-input
+        [label]="t().account.bankLine2"
+        [value]="line2Draft()"
+        (valueChange)="line2Draft.set($event)"
+      />
+    </div>
+    <div class="row">
+      <fold-input
+        [label]="t().account.bankPostalCode"
+        [value]="postalCodeDraft()"
+        (valueChange)="postalCodeDraft.set($event)"
+      />
+      <fold-input
+        [label]="t().account.bankCity"
+        [value]="cityDraft()"
+        (valueChange)="cityDraft.set($event)"
+      />
+      <fold-input
+        [label]="t().account.bankCountry"
+        [value]="countryDraft()"
+        (valueChange)="countryDraft.set($event)"
+      />
+    </div>
+    <div class="row">
+      <fold-input
+        label="IBAN"
+        [hint]="t().account.bankIbanHint"
+        [value]="ibanDraft()"
+        (valueChange)="ibanDraft.set($event)"
+      />
+      <fold-input label="BIC" [value]="bicDraft()" (valueChange)="bicDraft.set($event)" />
+    </div>
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ submitLabel() }}
+  </button>
+</fold-panel-footer>

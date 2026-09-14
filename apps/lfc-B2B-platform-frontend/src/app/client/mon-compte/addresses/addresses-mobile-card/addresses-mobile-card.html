@@ -1,0 +1,7 @@
+<h2 class="title">{{ t().account.sections.addresses }}</h2>
+<p class="line billing">{{ t().account.billingHead }} · {{ billing() }}</p>
+<p class="line count">{{ t().account.deliveryHead }} · {{ deliveryCount() }}</p>
+<div class="feet">
+  <app-card-foot [label]="t().account.billingHead" (pressed)="open('billing')" />
+  <app-card-foot [label]="t().account.deliveryHead" (pressed)="open('delivery')" />
+</div>

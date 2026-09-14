@@ -6,13 +6,11 @@ import {
   effect,
   inject,
 } from '@angular/core';
-import type { CartAdjustment, CompanyMemberRole } from '@lfd/contracts';
+import type { CompanyMemberRole } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
-  FoldIconComponent,
   FoldLoadingStateComponent,
-  FoldPanelHostService,
   FoldSurfaceDirective,
 } from 'fold-ng';
 
@@ -27,23 +25,29 @@ import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-b
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
-import { ClientAddresses } from '../../client-addresses.service';
 import { ClientCompany } from '../../client-company.service';
-import { ClientLocale, LOCALES } from '../../client-locale.service';
-import { formatCents, formatRate } from '../../format-money';
-import { ServicePoints } from '../../shop/pickup-points.store';
 import { ProOnboarding } from '../../pro-onboarding.service';
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
 import { ShopPromise } from '../../shop-promise/shop-promise';
 import { AccountCard } from '../account-card/account-card';
-import { BankCard } from '../bank-card/bank-card';
-import { DataCard } from '../data-card/data-card';
+import { AddressesDeskCard } from '../addresses/addresses-desk-card/addresses-desk-card';
+import { AddressesMobileCard } from '../addresses/addresses-mobile-card/addresses-mobile-card';
+import { BankDeskCard } from '../bank/bank-desk-card/bank-desk-card';
+import { BankMobileCard } from '../bank/bank-mobile-card/bank-mobile-card';
+import { DataDeskCard } from '../data/data-desk-card/data-desk-card';
+import { DataMobileCard } from '../data/data-mobile-card/data-mobile-card';
 import { DossierCard } from '../dossier-card/dossier-card';
-import { IdentityPanel } from '../identity-panel/identity-panel';
-import { panelSide } from '../../panel-side';
-import { KbisCard } from '../kbis-card/kbis-card';
+import { IdentityDeskCard } from '../identity/identity-desk-card/identity-desk-card';
+import { IdentityMobileCard } from '../identity/identity-mobile-card/identity-mobile-card';
+import { KbisDeskCard } from '../kbis/kbis-desk-card/kbis-desk-card';
+import { KbisMobileCard } from '../kbis/kbis-mobile-card/kbis-mobile-card';
+import { PaymentDeskCard } from '../payment/payment-desk-card/payment-desk-card';
+import { PaymentMobileCard } from '../payment/payment-mobile-card/payment-mobile-card';
+import { PreferencesDeskCard } from '../preferences/preferences-desk-card/preferences-desk-card';
+import { PreferencesMobileCard } from '../preferences/preferences-mobile-card/preferences-mobile-card';
 import { SupportCard } from '../support-card/support-card';
-import { UsersCard } from '../users-card/users-card';
+import { UsersDeskCard } from '../users/users-desk-card/users-desk-card';
+import { UsersMobileCard } from '../users/users-mobile-card/users-mobile-card';
 
 /** Les huit sujets, numérotés dans l'ordre de lecture. */
 const SECTIONS = [
@@ -75,52 +79,61 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
 const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing']);
 
 /**
- * Les rôles qui éditent l'identité : ceux que l'API laisse écrire (vérifié le
- * 2026-09-14, `update-company-identity.handler.ts` refuse les autres en 403).
- * Aux autres, pas de bouton — un « Modifier » qui finirait en refus se lit
- * comme une panne.
- */
-const IDENTITY_EDIT_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin']);
-
-/**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
  *
- * **Sept cartes, pas sept écrans.** Le back-office a une fiche à onglets parce
+ * **Huit sections, pas huit écrans.** Le back-office a une fiche à onglets parce
  * qu'un commercial y passe la journée ; un client y passe deux fois par an. Une
- * seule page qui descend, chaque carte autonome, aucun sous-écran à retrouver —
- * et le sommaire de bureau fait DÉFILER, il ne change pas d'écran. C'est écrit
- * sous la liste, et c'est vrai : chaque entrée pointe l'ancre de sa carte.
+ * seule page, aucun sous-écran à retrouver — et le sommaire de bureau fait
+ * DÉFILER, il ne change pas d'écran : chaque entrée pointe l'ancre de sa
+ * section.
  *
- * Ce qui passe par nous le DIT. L'enseigne se change en autonomie ; raison
- * sociale, forme juridique, SIRET et TVA sont en lecture, avec la phrase qui
- * explique pourquoi — ce sont les mentions qui figurent sur les factures. Aucune
- * illusion de champ modifiable, et aucun champ grisé non plus : un champ mort se
- * lit comme une panne, une phrase se lit comme une règle.
+ * **Deux cartes par section, une seule affichée** (règle de Hugo,
+ * 2026-09-14). La carte BUREAU garde tout son contenu, et ses gestes
+ * d'écriture ouvrent le panneau fold de la section. La carte MOBILE ne garde
+ * que l'essentiel et un bouton pleine largeur en bas ; les phrases, les listes
+ * et les formulaires sont dans le panneau. Les deux sont dans le DOM et le
+ * CSS de la page masque l'une ou l'autre au pli — `display: none`, donc un
+ * lecteur d'écran n'en lit qu'une. Les ancres du sommaire restent sur la
+ * section.
  */
 @Component({
   selector: 'app-compte-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AccountCard,
-    BankCard,
+    AddressesDeskCard,
+    AddressesMobileCard,
+    BankDeskCard,
+    BankMobileCard,
     ClientBannerBlock,
     ClientBannerOutlet,
-    DataCard,
+    DataDeskCard,
+    DataMobileCard,
     DossierCard,
     FoldButtonComponent,
     FoldEmptyStateComponent,
-    FoldIconComponent,
     FoldLoadingStateComponent,
     FoldScrollIndicatorComponent,
     FoldSurfaceDirective,
     FoldWellComponent,
-    KbisCard,
+    IdentityDeskCard,
+    IdentityMobileCard,
+    KbisDeskCard,
+    KbisMobileCard,
+    PaymentDeskCard,
+    PaymentMobileCard,
+    PreferencesDeskCard,
+    PreferencesMobileCard,
     ShopPromise,
     SupportCard,
-    UsersCard,
+    UsersDeskCard,
+    UsersMobileCard,
   ],
   templateUrl: './compte-page.html',
   styleUrl: './compte-page.scss',
+  // La colonne à hauteur d'écran, en pile, ne vaut que pour le dossier : un
+  // état de chargement ou la carte « Compléter » défilent comme une page.
+  host: { '[class.dossier]': "view() === 'dossier'" },
 })
 export class ComptePage {
   protected readonly t = inject(ClientCopyService).t;
@@ -199,123 +212,12 @@ export class ComptePage {
     return role !== undefined && BANK_ROLES.has(role);
   });
 
-  /** « Modifier » sur l'identité légale, au détenteur et à l'administrateur seulement. */
-  protected readonly canEditIdentity = computed(() => {
-    const role = this.company()?.role;
-    return role !== undefined && IDENTITY_EDIT_ROLES.has(role);
-  });
-
-  private readonly panels = inject(FoldPanelHostService);
-
-  /**
-   * Ouvre le panneau d'identité dans l'hôte de panneaux du shell client — qui
-   * porte `data-theme="lfc-app"`, donc les jetons de l'app.
-   *
-   * Les valeurs partent en `data` au moment du clic : le panneau édite ce que
-   * la carte montrait, et la relecture de `/me` qui suit un succès ne le
-   * réécrit pas sous les doigts.
-   */
-  protected openIdentity(): void {
-    const company = this.company();
-    if (company === null) {
-      return;
-    }
-    this.panels.open(IdentityPanel, {
-      side: panelSide(),
-      data: {
-        companyId: company.id,
-        enseigne: company.enseigne,
-        vatNumber: company.vatNumber,
-        raisonSociale: company.raisonSociale,
-        formeJuridique: company.formeJuridique,
-        siret: company.siret,
-      },
-    });
-  }
-
   /** Le libellé de la pastille du rail : « Section 2 sur 7 ». */
   protected railPosition(active: number): string {
     return this.t()
       .account.railPosition.replace('{n}', String(active + 1))
       .replace('{total}', String(this.summary().length));
   }
-
-  private readonly addresses = inject(ClientAddresses);
-  private readonly service = inject(ServicePoints);
-  private readonly locale = inject(ClientLocale);
-
-  /**
-   * 🔴 **Les adresses viennent de notre base**, plus d'une maquette
-   * (`GET /companies/:id/addresses`). Ce sont les mêmes que celles du carnet du
-   * checkout, et c'est le point : deux listes d'adresses pour un même client
-   * finiraient par ne pas dire la même chose.
-   *
-   * La zone et son tarif sont **calculés** sur le code postal, par le même
-   * préfixe que le serveur — la maquette les écrivait à côté (« zone 1 · 20 € »)
-   * sans qu'aucun barème ne les soutienne.
-   */
-  protected readonly deliveries = computed(() =>
-    this.addresses.deliveries().map((address) => {
-      const zone = this.service.zoneFor(address.codePostal);
-      return {
-        id: address.id,
-        label: address.label,
-        primary: address.isDefault,
-        line: `${address.ligne1}, ${address.codePostal} ${address.ville}`,
-        // Pas de zone = pas de livraison à cette adresse. Un tiret le dit ;
-        // inventer « zone 1 » promettrait une tournée qui ne passe pas.
-        zone: zone?.label ?? this.t().account.addressNoZone,
-        fee: zone === null ? '—' : feeOf(zone.fee),
-      };
-    }),
-  );
-
-  /** L'adresse de facturation déclarée, ou la mention d'absence. */
-  protected readonly billing = computed(() => {
-    const billing = this.addresses.billing();
-    return billing === null
-      ? this.t().account.addressNone
-      : `${billing.ligne1}, ${billing.codePostal} ${billing.ville}`;
-  });
-
-  /**
-   * **Comment cette maison est servie d'habitude** — le point de départ de ses
-   * commandes, jamais une contrainte.
-   *
-   * 🔴 La maquette écrivait « Le Labo · 7 h – 8 h », un point ET un créneau, en
-   * dur. La préférence porte un MODE et une adresse, jamais une heure : un
-   * créneau se choisit à chaque commande, et l'annoncer comme une habitude
-   * laissait croire qu'il était réservé.
-   */
-  protected readonly habit = computed(() => {
-    const preference = this.client.company()?.fulfillmentPreference ?? null;
-    const copy = this.t().account;
-    if (preference === null || preference.method === null) {
-      return copy.prefNone;
-    }
-    if (preference.method === 'pickup') {
-      const point = this.service.pickups().find((p) => p.id === preference.pickupAddressId);
-      return point === undefined ? copy.prefPickupAny : `${copy.prefPickupAt} ${point.label}`;
-    }
-    const address = this.addresses.deliveries().find((a) => a.id === preference.deliveryAddressId);
-    return address === undefined ? copy.prefDeliveryAny : `${copy.prefDeliveryTo} ${address.label}`;
-  });
-
-  /**
-   * La langue de l'interface — celle qu'on est **en train de lire**.
-   *
-   * Elle était écrite « Français » en dur, ce qui restait juste jusqu'à ce que
-   * quelqu'un bascule en anglais : l'écran affirmait alors le contraire de ce
-   * qu'il montrait.
-   */
-  protected readonly language = computed(() => {
-    const code = this.locale.current();
-    return LOCALES.find((entry) => entry.code === code)?.name ?? code;
-  });
-
-  protected readonly deliveryCount = computed(() =>
-    this.t().account.deliveryCount.replace('{n}', String(this.deliveries().length)),
-  );
 
   /**
    * Le sommaire — numéroté, chaque entrée pointant l'ancre de sa carte.
@@ -349,9 +251,4 @@ export class ComptePage {
     this.chrome.bandNarrow.set(false);
     inject(DestroyRef).onDestroy(() => this.chrome.bandNarrow.set(true));
   }
-}
-
-/** Un frais de zone tel qu'il se lit : « 8,00 € » ou « 3 % ». */
-function feeOf(fee: CartAdjustment): string {
-  return fee.mode === 'amount' ? formatCents(fee.cents) : formatRate(fee.bp / 100);
 }

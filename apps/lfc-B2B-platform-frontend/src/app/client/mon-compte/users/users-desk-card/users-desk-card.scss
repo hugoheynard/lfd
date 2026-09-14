@@ -1,0 +1,17 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.desk-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+}
+
+.add {
+  width: 100%;
+}

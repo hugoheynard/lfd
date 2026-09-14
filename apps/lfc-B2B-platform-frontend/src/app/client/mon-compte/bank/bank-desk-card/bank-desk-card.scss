@@ -1,0 +1,19 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.desk-host;
+}
+
+.title {
+  @include card.title;
+}
+
+/* Le compte se lit caractère par caractère, chiffres alignés. */
+.line {
+  @include card.line;
+  font-variant-numeric: tabular-nums;
+}
+
+.action {
+  align-self: flex-start;
+}

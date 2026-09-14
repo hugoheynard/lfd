@@ -1,0 +1,21 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.mobile-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.line {
+  @include card.line;
+}
+
+.state {
+  font-weight: var(--fold-weight-bold);
+}
+
+.name {
+  color: var(--fold-color-text-muted);
+}

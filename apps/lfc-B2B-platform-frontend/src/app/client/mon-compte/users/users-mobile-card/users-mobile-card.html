@@ -1,0 +1,8 @@
+<h2 class="title">{{ t().account.sections.users }}</h2>
+<app-users-list [people]="false" />
+<div class="feet">
+  <app-card-foot [label]="t().account.details" (pressed)="openList()" />
+  @if (canAdd()) {
+    <app-card-foot [label]="t().account.usersAddShort" (pressed)="openAdd()" />
+  }
+</div>

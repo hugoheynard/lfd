@@ -35,6 +35,8 @@ export type IdentityDraft = Pick<UpdateIdentityPayload, 'enseigne' | 'vatNumber'
   Partial<Pick<UpdateIdentityPayload, 'raisonSociale' | 'formeJuridique' | 'siret'>>;
 
 const IDENTITY_SAVED = 'Identité mise à jour.';
+const KBIS_SAVED = 'KBIS déposé.';
+const CONTACT_ADDED = 'Contact ajouté.';
 
 /** Où en est le chargement du compte — l'app doit distinguer « vide » de « pas encore su ». */
 export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -286,16 +288,16 @@ export class AccountService {
   }
 
   addContact(companyId: string, draft: ContactDraft, onDone?: () => void): void {
-    this.mutate(
-      (token) =>
-        this.http.post(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts`,
-          draft,
-          headers(token),
-        ),
-      'Contact ajouté.',
-      onDone,
-    );
+    this.mutate((token) => this.postContact(companyId, draft, token), CONTACT_ADDED, onDone);
+  }
+
+  /**
+   * Même ajout que {@link addContact}, mais la promesse retombe dans les deux
+   * cas : `null` au succès, le **message du serveur** à l'échec — pour le
+   * panneau d'ajout de `/mon-compte`, qui montre le refus là où l'on corrige.
+   */
+  saveContact(companyId: string, draft: ContactDraft): Promise<string | null> {
+    return this.attempt((token) => this.postContact(companyId, draft, token), CONTACT_ADDED);
   }
 
   updateContact(
@@ -329,18 +331,16 @@ export class AccountService {
   }
 
   uploadKbis(companyId: string, file: File, onDone?: () => void): void {
-    const form = new FormData();
-    form.append('file', file, file.name);
-    this.mutate(
-      (token) =>
-        this.http.put(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`,
-          form,
-          headers(token),
-        ),
-      'KBIS déposé.',
-      onDone,
-    );
+    this.mutate((token) => this.putKbis(companyId, file, token), KBIS_SAVED, onDone);
+  }
+
+  /**
+   * Même dépôt que {@link uploadKbis}, mais la promesse retombe dans les deux
+   * cas : `null` au succès, le **message du serveur** à l'échec — pour le
+   * panneau KBIS de `/mon-compte`, qui montre le refus là où l'on redépose.
+   */
+  saveKbis(companyId: string, file: File): Promise<string | null> {
+    return this.attempt((token) => this.putKbis(companyId, file, token), KBIS_SAVED);
   }
 
   /**
@@ -432,6 +432,24 @@ export class AccountService {
         this.notify.error(error);
         return httpErrorMessage(error);
       },
+    );
+  }
+
+  private postContact(companyId: string, draft: ContactDraft, token: string): Observable<unknown> {
+    return this.http.post(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts`,
+      draft,
+      headers(token),
+    );
+  }
+
+  private putKbis(companyId: string, file: File, token: string): Observable<unknown> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.put(
+      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`,
+      form,
+      headers(token),
     );
   }
 

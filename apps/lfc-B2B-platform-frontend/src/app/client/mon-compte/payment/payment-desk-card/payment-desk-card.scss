@@ -1,0 +1,39 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.desk-host;
+}
+
+.title {
+  @include card.title;
+}
+
+/* Les deux régimes côte à côte : l'absence de crédit se lit à côté du régime
+   ouvert à tous, pas en dessous comme un refus. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--fold-space-xl);
+}
+
+.regime {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.note {
+  @include card.note;
+}
