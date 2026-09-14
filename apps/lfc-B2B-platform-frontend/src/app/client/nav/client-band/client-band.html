@@ -4,11 +4,15 @@
 <!-- Les six destinations n'existent que pour un client reconnu : un visiteur
      n'a nulle part où aller depuis ici. Le bandeau, lui, reste — la boutique
      est ouverte à tout le monde. -->
-@if (chrome.menu()) {
+<!-- Masquable en admin (« Menu au bureau ») : la sous-barre part, le menu du
+     téléphone reste. -->
+@if (chrome.menu() && access.visible('desktopMenu')) {
   <app-client-nav-bar />
 }
 
 <!-- La LÈVRE : le bord haut de la feuille crème, qui remonte sur l'encre. Elle
      appartient au chrome et pas aux écrans — sinon chaque nouvel écran devrait
      y penser, et le premier qui l'oublie casse le raccord. -->
-<span class="lip" aria-hidden="true"></span>
+@if (chrome.bandLip()) {
+  <span class="lip" aria-hidden="true"></span>
+}

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
+import { ClientFeatureAccess } from '../../../feature-access/client-feature-access.service';
 import { ProductTile } from '../../product-tile/product-tile';
 import type { ShopItemView } from '@lfd/contracts';
 
@@ -34,4 +35,6 @@ export class ShelfGrid {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
+  /** Au niveau `browse` exactement, le rayon se visite sans panier (plan §4). */
+  protected readonly access = inject(ClientFeatureAccess);
 }

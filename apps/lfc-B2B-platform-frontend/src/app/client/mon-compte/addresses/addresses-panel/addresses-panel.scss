@@ -1,0 +1,76 @@
+/* Même montage que `identity-panel` : l'hôte se borne, `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.head {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.line {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text-muted);
+}
+
+.deliveries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.delivery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.delivery-label {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.delivery-line {
+  flex-basis: 100%;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+/* Les gestes d'une ligne ensemble, poussés à droite : c'est le groupe qui se
+   pousse, pas chacun. `wrap` : trois boutons ne tiennent pas en pile étroite. */
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-xs);
+  margin-left: auto;
+}
+
+.gesture {
+  width: 100%;
+}

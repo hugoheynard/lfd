@@ -97,6 +97,28 @@ describe("UpdateMyProfileHandler", () => {
     expect(journal.calls).toEqual(["identity", "save"]);
   });
 
+  /**
+   * Régression : changer d'adresse laissait `users.email_verified` intact, si
+   * bien qu'une personne vérifiée le restait sur n'importe quelle adresse
+   * (2026-09-14). Le handler remet au port un profil qui SAIT qu'il change
+   * d'adresse ; c'est ce que l'adaptateur lit pour faire retomber la preuve.
+   */
+  it("remet au port un profil qui annonce le changement d'adresse", async () => {
+    const { handler, journal } = doubles();
+
+    await handler.execute(command({ email: "camille@nouvelle.fr" }));
+
+    expect(journal.saved[0]?.emailChanged).toBe(true);
+  });
+
+  it("n'annonce aucun changement d'adresse sur un simple renommage", async () => {
+    const { handler, journal } = doubles();
+
+    await handler.execute(command({ lastName: "Benali", email: "CAMILLE@ancienne.fr" }));
+
+    expect(journal.saved[0]?.emailChanged).toBe(false);
+  });
+
   it("n'écrit RIEN chez nous si la propagation échoue", async () => {
     const { handler, journal } = doubles({ identityFails: true });
 

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { FoldIconComponent } from 'fold-ng';
 
 import { ClientCompany } from '../../client-company.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -36,6 +37,7 @@ import { ClientCopyService } from '../../copy/client-copy.service';
  */
 @Component({
   selector: 'app-account-card',
+  imports: [FoldIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './account-card.html',
   styleUrl: './account-card.scss',
@@ -44,6 +46,21 @@ export class AccountCard {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly client = inject(ClientCompany);
 
+  /** Le badge : l'état du dossier, ou rien tant qu'on ne le sait pas. */
+  protected readonly stateLabel = computed(() => {
+    const dossier = this.client.dossier();
+    return dossier === null ? null : this.t().account.states[dossier];
+  });
+
+  /** Le vert ne se dit que d'un compte actif. */
+  protected readonly stateTone = computed(() => {
+    const dossier = this.client.dossier();
+    if (dossier === 'active') {
+      return 'ok';
+    }
+    return dossier === 'suspended' || dossier === 'terminated' ? 'blocked' : 'wait';
+  });
+
   /** La référence, pour la dicter. Vide tant que le compte n'est pas connu. */
   protected readonly reference = computed(() => {
     const company = this.client.company();
@@ -51,11 +68,4 @@ export class AccountCard {
       ? ''
       : this.t().account.cardReference.replace('{ref}', company.reference);
   });
-
-  /** Le terme convenu, ou le défaut — qui n'est pas une absence de réglage. */
-  protected readonly term = computed(() =>
-    this.client.hasDeferredTerm()
-      ? this.t().account.cardTermMonthly
-      : this.t().account.cardTermOrder,
-  );
 }

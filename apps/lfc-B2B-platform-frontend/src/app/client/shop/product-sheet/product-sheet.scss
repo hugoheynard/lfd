@@ -74,6 +74,21 @@
   width: 100%;
 }
 
+/* La mention qui remplace le geste d'ajout au niveau `browse` : la hauteur du
+   bouton qu'elle remplace, pour que la fiche ne saute pas d'un niveau à l'autre. */
+.soon {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin: 0;
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text-muted);
+  text-align: center;
+}
+
 .cta {
   flex: 1;
   display: flex;

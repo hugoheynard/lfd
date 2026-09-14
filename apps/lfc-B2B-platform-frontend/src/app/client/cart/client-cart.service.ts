@@ -1,10 +1,11 @@
-import { computed, effect, inject, Injectable } from '@angular/core';
+import { computed, effect, inject, Injectable, Injector, untracked } from '@angular/core';
 
 import { type CartLine } from './cart-total';
 import { CartStore } from './cart.store';
 import { ShopCartSync } from './shop-cart-sync.service';
 import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 
 /**
  * **Le panier en cours** — un seul, partagé par le rayon, la fiche et le panier.
@@ -34,13 +35,53 @@ export class ClientCart {
   private readonly quote = inject(ShopQuote);
   private readonly catalogue = inject(ShopCatalogue);
 
+  private readonly access = inject(ClientFeatureAccess);
+  private readonly injector = inject(Injector);
+
+  /** Vrai dès que le panier a demandé le catalogue et lancé sa synchronisation. */
+  private started = false;
+
   constructor() {
+    /**
+     * 🔴 **Rien ne part tant que la boutique ne permet pas de COMMANDER.**
+     *
+     * Le panier est construit par des écrans ouverts à des niveaux inférieurs —
+     * `ClientOrders`, l'espace. Sans cette attente, le catalogue et le panier
+     * serveur partaient à chaque construction, et le serveur les refuse en 409
+     * quand la boutique est fermée (plan `plan-inscription-pro-seule.md` §4).
+     * Au niveau `browse`, le rayon demande le catalogue lui-même : le panier,
+     * qui ne peut plus rien recevoir, n'a rien à y ajouter.
+     *
+     * Une fois lancé, il ne s'arrête plus : les niveaux sont lus une fois par
+     * chargement de page.
+     */
+    effect(() => {
+      if (this.started || !this.access.atLeast('order')) {
+        return;
+      }
+      this.started = true;
+      // `untracked` : la synchronisation pose ses propres effets, ce qu'Angular
+      // refuse depuis un contexte réactif.
+      untracked(() => {
+        this.start();
+      });
+    });
+
+    // Le catalogue arrive du réseau : l'élagage des références disparues ne peut
+    // pas se faire à la relecture du stockage, il se fait ici, une fois qu'on
+    // sait ce qui est encore en vente. Cf. `CartStore.keepOnly`.
+    effect(() => {
+      if (this.catalogue.status() === 'ready') {
+        this.store.keepOnly(new Set(this.catalogue.items().map((item) => item.sku)));
+      }
+    });
+  }
+
+  private start(): void {
     // Instanciée pour son EFFET, pas pour son API — le même parti que
     // `ClientOnboarding` dans le shell. Elle reprend le panier gardé chez nous à
-    // la première reconnaissance, puis écrit ce que le client compose. Réveillée
-    // ici parce que c'est ici que le panier existe : partout où il est
-    // construit, elle doit tourner.
-    inject(ShopCartSync);
+    // la première reconnaissance, puis écrit ce que le client compose.
+    this.injector.get(ShopCartSync);
 
     /**
      * 🔴 **Le panier demande le catalogue lui-même.**
@@ -52,20 +93,9 @@ export class ClientCart {
      * intact dans le navigateur. La pastille du bandeau comptait zéro pour la
      * même raison, sur tous les écrans.
      *
-     * Ce n'est pas une requête de trop : partout où le panier est construit, sa
-     * pastille est affichée, donc le catalogue est nécessaire. `hydrate()` est
-     * idempotent — l'appel du rayon reste sans effet.
+     * `hydrate()` est idempotent — l'appel du rayon reste sans effet.
      */
     void this.catalogue.hydrate();
-
-    // Le catalogue arrive du réseau : l'élagage des références disparues ne peut
-    // pas se faire à la relecture du stockage, il se fait ici, une fois qu'on
-    // sait ce qui est encore en vente. Cf. `CartStore.keepOnly`.
-    effect(() => {
-      if (this.catalogue.status() === 'ready') {
-        this.store.keepOnly(new Set(this.catalogue.items().map((item) => item.sku)));
-      }
-    });
   }
 
   /**

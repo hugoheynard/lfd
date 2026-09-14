@@ -52,8 +52,8 @@
   padding: var(--fold-space-md) var(--fold-space-xl);
 }
 
-/* La tuile d'un container. Son rang se lit de loin — c'est ce qu'on compte en
-   levant les yeux depuis le quai. */
+/* La tuile d'un container — sans numéro : le seul chiffre du bloc est le compte
+   servi, dans la bande. Les tuiles se comptent d'un coup d'œil depuis le quai. */
 .co-container {
   display: grid;
   place-items: center;
@@ -62,13 +62,6 @@
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-card);
-}
-
-.pc-rank {
-  font-size: var(--fold-text-lg);
-  font-weight: var(--fold-weight-bold);
-  font-variant-numeric: tabular-nums;
-  color: var(--fold-color-text);
 }
 
 /* 🔴 À la taille d'une case du fournil : on les actionne les mains prises, et un
@@ -86,6 +79,12 @@
   font-weight: var(--fold-weight-bold);
   line-height: var(--fold-leading-none);
   cursor: pointer;
+}
+
+/* Pendant l'envoi seulement : le serveur n'a pas encore compté. */
+.co-container-step:disabled {
+  cursor: progress;
+  opacity: 0.5;
 }
 
 /* L'ajout est le geste courant : c'est le seul des deux qui s'annonce. */

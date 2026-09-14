@@ -1,11 +1,13 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable, Injector, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import type { ShopLevel, VisibilityFeatureKey } from '@lfd/contracts';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { ClientSubscriptions } from '../client-subscriptions.service';
 import { ClientCopyService } from '../copy/client-copy.service';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
@@ -20,6 +22,17 @@ interface Destination {
    * les quatre autres, et l'habitude du pouce avec.
    */
   readonly ready: boolean;
+  /**
+   * Le niveau de boutique à partir duquel la destination paraît (plan
+   * `plan-inscription-pro-seule.md` §4). `closed` = à tous les niveaux.
+   *
+   * ⚠️ Ici, et contrairement à `ready`, la destination DISPARAÎT : un écran qui
+   * existe mais que la garde refuse n'a pas à s'annoncer. Ce qui reste garde
+   * son ordre relatif — on retire, on ne réordonne jamais.
+   */
+  readonly shop: ShopLevel;
+  /** La surface masquable en admin qui la porte, s'il y en a une. Masquée, elle disparaît. */
+  readonly surface?: VisibilityFeatureKey;
 }
 
 /**
@@ -50,12 +63,12 @@ interface Destination {
  * mène au rayon. Deux intentions, deux adresses.
  */
 const DESTINATIONS: readonly Destination[] = [
-  { id: 'espace', route: '/mon-espace', ready: true },
-  { id: 'shop', route: '/nouvelle-commande/boutique', ready: true },
-  { id: 'orders', route: '/mes-commandes', ready: true },
-  { id: 'invoices', route: '/mes-factures', ready: true },
-  { id: 'baskets', route: '/paniers-recurrents', ready: false },
-  { id: 'account', route: '/mon-compte', ready: true },
+  { id: 'espace', route: '/mon-espace', ready: true, shop: 'browse' },
+  { id: 'shop', route: '/nouvelle-commande/boutique', ready: true, shop: 'browse' },
+  { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
+  { id: 'invoices', route: '/mes-factures', ready: true, shop: 'closed', surface: 'invoices' },
+  { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order' },
+  { id: 'account', route: '/mon-compte', ready: true, shop: 'closed' },
 ];
 
 /** Une destination prête à être dessinée, dans l'une ou l'autre des deux formes. */
@@ -94,7 +107,8 @@ export interface NavItem {
 @Injectable({ providedIn: 'root' })
 export class ClientNav {
   private readonly orders = inject(ClientOrderHistory);
-  private readonly subscriptions = inject(ClientSubscriptions);
+  private readonly access = inject(ClientFeatureAccess);
+  private readonly injector = inject(Injector);
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
 
@@ -119,8 +133,13 @@ export class ClientNav {
   );
 
   readonly items = computed<readonly NavItem[]>(() =>
-    DESTINATIONS.map((d) => ({
-      ...d,
+    DESTINATIONS.filter(
+      (d) =>
+        this.access.atLeast(d.shop) && (d.surface === undefined || this.access.visible(d.surface)),
+    ).map((d) => ({
+      id: d.id,
+      route: d.route,
+      ready: d.ready,
       label: this.t().nav.destinations[d.id],
       ...this.counts(d.id),
     })),
@@ -143,7 +162,12 @@ export class ClientNav {
     // facture. Le jour où la facturation existe, c'est ici que son compte se
     // branche — pas avant.
     if (id === 'baskets') {
-      const models = this.subscriptions.all().length;
+      // Le service n'est construit QUE si la destination paraît : il lit
+      // `/subscriptions/mine` dès sa construction, et un menu réduit ne lit pas
+      // ce qu'il ne montre pas (plan §9). `untracked` parce qu'il pose un effet,
+      // ce qu'Angular refuse depuis un contexte réactif.
+      const subscriptions = untracked(() => this.injector.get(ClientSubscriptions));
+      const models = subscriptions.all().length;
       return models === 0
         ? EMPTY
         : {

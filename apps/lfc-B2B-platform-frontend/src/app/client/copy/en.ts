@@ -25,6 +25,8 @@ export const EN: ClientCopy = {
     kickerQr: 'Collection',
     kickerDone: 'Confirmed',
     deskKicker: 'Val d’Isère · order online',
+    featureAccessFailed:
+      'We couldn’t check what the shop offers right now, so some pages stay closed. Reload the page to try again.',
   },
 
   nav: {
@@ -220,6 +222,7 @@ export const EN: ClientCopy = {
       'Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.',
     upsell: '{name} with that?',
     upsellLine: 'The treat you regret leaving behind.',
+    orderingSoon: 'Online ordering opens soon.',
   },
   product: {
     signature: 'Signature',
@@ -354,6 +357,7 @@ export const EN: ClientCopy = {
     bookedTitle: 'Call requested',
     pitch: 'Negotiated prices, resort delivery, monthly invoicing. We’ll explain in two minutes.',
     cta: 'Ask us to call you',
+    openAccount: 'Open my trade account',
     booked: 'Call requested · {slot}',
     at: 'On',
     cancel: 'Cancel',

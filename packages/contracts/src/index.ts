@@ -91,9 +91,11 @@ export {
   setMandateOptionsPayloadSchema,
 } from "./company-bank-account.js";
 export type {
-  SetCompanyBankAccountPayload,
-  CompanyBankAccountView,
   CompanyBankAccountSectionView,
+  CompanyBankAccountView,
+  CustomerBankAccountSectionView,
+  CustomerBankAccountView,
+  SetCompanyBankAccountPayload,
   SetMandateOptionsPayload,
 } from "./company-bank-account.js";
 export {
@@ -424,6 +426,7 @@ export type {
 } from "./production-sheet.js";
 export {
   markPackingLineSchema,
+  packingContainerStepSchema,
   productionPackingQuerySchema,
   setPackingContainersSchema,
 } from "./production-packing.js";
@@ -431,12 +434,16 @@ export type {
   MarkPackingLine,
   PackingLine,
   PackingResource,
+  PackingContainerStep,
   PackingSheet,
   ProductionPackingQuery,
   ProductionPackingView,
   SetPackingContainers,
 } from "./production-packing.js";
 export {
+  SHELF_LABEL_OFF_CATALOG,
+  SHELF_LABEL_UNKNOWN,
+  UNSHELVED_WORKSHOP_GROUP_KEY,
   markWorkshopLineSchema,
   productionContainerSchema,
   productionWorksheetQuerySchema,
@@ -451,6 +458,7 @@ export type {
   ProductionWorksheetView,
   WorkshopDrift,
   WorkshopDriftLine,
+  WorkshopGroup,
   WorkshopLine,
 } from "./production-worksheet.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
@@ -941,3 +949,34 @@ export type {
 } from "./order-sheet.js";
 export type { OrderPackingView } from "./order-packing.js";
 export type { ProductionPlanClosure } from "./production-sheet.js";
+export {
+  FEATURE_CATALOGUE,
+  FEATURE_KEYS,
+  SHOP_LEVELS,
+  featureExemptionPayloadSchema,
+  featureLevelsOf,
+  featureOverridePayloadSchema,
+  isAtLeast,
+  isFeatureKey,
+  isFeatureLevel,
+  mostOpenLevel,
+  VISIBILITY_LEVELS,
+} from "./feature-access.js";
+export type {
+  AdminFeatureAccessView,
+  AdminFeatureView,
+  FeatureAccessAuthorView,
+  FeatureDefinition,
+  FeatureExemptionAccountState,
+  FeatureExemptionPayload,
+  FeatureExemptionView,
+  FeatureKey,
+  FeatureLevel,
+  FeatureLevelsView,
+  FeatureOverridePayload,
+  FeatureOverrideView,
+  IgnoredFeatureRowView,
+  ShopLevel,
+  VisibilityFeatureKey,
+  VisibilityLevel,
+} from "./feature-access.js";

@@ -1,0 +1,66 @@
+<h2 class="title">{{ t().account.sections.addresses }}</h2>
+<div class="row">
+  <div class="block">
+    <p class="sub">{{ t().account.billingHead }}</p>
+    <p class="line">{{ billing() ?? t().account.addressNone }}</p>
+    <p class="note">{{ t().account.billingNote }}</p>
+    @if (canWrite()) {
+      <button
+        foldButton
+        class="gesture"
+        emphasis="outline"
+        intent="primary"
+        size="sm"
+        type="button"
+        (click)="open('billing', { kind: 'edit', addressId: null })"
+      >
+        {{ billing() === null ? t().account.billingFill : t().account.billingEdit }}
+      </button>
+    }
+  </div>
+  <div class="block">
+    <p class="sub">{{ t().account.deliveryHead }} · {{ deliveryCount() }}</p>
+    @if (deliveries().length === 0) {
+      <p class="note">{{ t().account.addressNone }}</p>
+    }
+    <ul class="deliveries">
+      @for (address of deliveries(); track address.id) {
+        <li class="delivery">
+          <span class="delivery-label">{{ address.label }}</span>
+          @if (address.primary) {
+            <fold-badge variant="accent" [content]="t().account.addressDefault" />
+          }
+          <span class="delivery-line"
+            >{{ address.line }} · {{ address.zone }} · {{ address.fee }}</span
+          >
+          @if (canWrite()) {
+            <button
+              foldButton
+              class="row-edit"
+              size="sm"
+              emphasis="soft"
+              intent="primary"
+              type="button"
+              (click)="open('delivery', { kind: 'edit', addressId: address.id })"
+            >
+              {{ t().account.edit }}
+            </button>
+          }
+        </li>
+      }
+    </ul>
+    @if (canWrite()) {
+      <button
+        foldButton
+        class="gesture"
+        emphasis="outline"
+        intent="primary"
+        size="sm"
+        type="button"
+        (click)="open('delivery', { kind: 'new' })"
+      >
+        {{ t().account.addressAdd }}
+      </button>
+    }
+  </div>
+</div>

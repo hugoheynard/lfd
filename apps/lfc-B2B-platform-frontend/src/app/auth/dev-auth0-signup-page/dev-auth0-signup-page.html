@@ -1,0 +1,61 @@
+<main class="screen">
+  <p class="dev-flag">Développement · écran d'Auth0 simulé</p>
+
+  @if (signup(); as current) {
+    <fold-card class="box">
+      @if (!sent()) {
+        <form class="form" (submit)="$event.preventDefault(); createAccount()">
+          <h1 class="title">Créez votre mot de passe</h1>
+          <p class="lead">
+            En production, cet écran est celui d'Auth0. Le mot de passe saisi ici n'est ni envoyé ni
+            gardé.
+          </p>
+          <p class="email">{{ current.registration.email }}</p>
+          <fold-input
+            size="lg"
+            type="password"
+            label="Mot de passe"
+            autocomplete="new-password"
+            [(value)]="password"
+          />
+          <button
+            foldButton
+            emphasis="solid"
+            intent="primary"
+            size="lg"
+            type="submit"
+            [disabled]="password().trim() === ''"
+          >
+            Continuer
+          </button>
+        </form>
+      } @else {
+        <div class="form">
+          <h1 class="title">Compte créé</h1>
+          <fold-callout variant="info">
+            E-mail de vérification envoyé à {{ email() }} — simulé : rien n'est parti.
+          </fold-callout>
+          <button
+            foldButton
+            emphasis="solid"
+            intent="primary"
+            size="lg"
+            type="button"
+            (click)="continueToAccount()"
+          >
+            Aller à Mon compte
+          </button>
+        </div>
+      }
+    </fold-card>
+  } @else {
+    <fold-empty-state
+      title="Aucune inscription en cours"
+      subtitle="Cet écran se rejoint depuis la porte pro. Un rechargement perd l'inscription, comme un vrai aller-retour interrompu."
+    >
+      <button foldButton emphasis="solid" intent="primary" type="button" (click)="backToDoor()">
+        Revenir à l'ouverture de compte
+      </button>
+    </fold-empty-state>
+  }
+</main>

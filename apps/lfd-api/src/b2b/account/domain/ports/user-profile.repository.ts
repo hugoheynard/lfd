@@ -30,5 +30,15 @@ export abstract class UserProfileRepository {
    */
   abstract findIdByEmail(email: string): Promise<string | null>;
 
+  /**
+   * Persiste le profil.
+   *
+   * Quand {@link UserProfile.emailChanged} est vrai, la vérification de
+   * l'adresse retombe à `false` **dans la même écriture** que la nouvelle
+   * adresse (2026-09-14) : deux écritures laisseraient une fenêtre où l'adresse
+   * neuve passe pour prouvée. Une adresse inchangée ne touche jamais à la
+   * vérification — pas même pour la réécrire à sa valeur lue, ce qui effacerait
+   * une preuve recopiée entre-temps par une connexion.
+   */
   abstract save(userId: string, profile: UserProfile): Promise<void>;
 }

@@ -315,11 +315,12 @@ fold-page-layout {
 }
 
 /*
-  🔴 « hors ligne » et « N gestes en attente » sont les seules mentions
-  accentuées du pied : jamais un écran qui a l'air d'avoir enregistré alors que
-  non.
+  🔴 « relecture impossible » est la seule mention accentuée du pied : jamais un
+  écran figé qui a l'air à jour. La règle portait l'ancien nom de la file hors
+  ligne (`.fa-foot-flag`), et la mention restait sans style (corrigé le
+  2026-09-14).
 */
-.fa-foot-flag {
+.fa-foot-stale {
   display: inline-flex;
   align-items: center;
   gap: var(--fold-space-xs);

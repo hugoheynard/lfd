@@ -1,0 +1,30 @@
+<h2 class="title">{{ t().account.sections.bank }}</h2>
+@switch (accounts.status()) {
+  @case ('loading') {
+    <fold-loading [message]="t().account.bankLoading" />
+  }
+  @case ('failed') {
+    <fold-empty-state
+      tone="alert"
+      [title]="t().account.bankLoadFailedTitle"
+      [subtitle]="t().account.bankLoadFailedBody"
+    >
+      <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+        {{ t().account.loadRetry }}
+      </button>
+    </fold-empty-state>
+  }
+  @default {
+    <p class="line">{{ line() }}</p>
+    <button
+      foldButton
+      class="action"
+      emphasis="soft"
+      intent="primary"
+      type="button"
+      (click)="open()"
+    >
+      {{ action() }}
+    </button>
+  }
+}

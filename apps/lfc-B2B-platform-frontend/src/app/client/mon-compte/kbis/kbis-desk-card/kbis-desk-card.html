@@ -1,0 +1,54 @@
+<h2 class="title">{{ t().account.sections.kbis }}</h2>
+<p class="sub">{{ t().account.kbisHead }}</p>
+
+@if (kbis(); as extrait) {
+  <!-- L'ÉTAT D'ABORD : certifié ou en attente, c'est la question qu'on se pose
+       en ouvrant cette carte. -->
+  <div class="state" [class.certified]="extrait.certified">
+    @if (extrait.certified) {
+      <span class="check" aria-hidden="true"><fold-icon name="check" /></span>
+    }
+    <span class="kbis-verified">{{ state() }}</span>
+  </div>
+
+  <div class="file">
+    <span class="thumb" aria-hidden="true">PDF</span>
+    <span class="lines">
+      <span class="name">{{ extrait.fileName }}</span>
+      <span class="meta">{{ filed() }}</span>
+    </span>
+    <span class="acts">
+      <button foldButton size="sm" emphasis="soft" intent="primary" type="button" (click)="open()">
+        {{ t().account.kbisOpen }}
+      </button>
+      @if (canUpload()) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="primary"
+          type="button"
+          (click)="open()"
+        >
+          {{ t().account.kbisReplace }}
+        </button>
+      }
+    </span>
+  </div>
+} @else {
+  <!-- Aucun extrait n'est un ÉTAT NORMAL : une société ouvre sans papiers. -->
+  <p class="kbis-verified">{{ state() }}</p>
+  @if (canUpload()) {
+    <button
+      class="upload"
+      foldButton
+      emphasis="solid"
+      intent="primary"
+      size="lg"
+      type="button"
+      (click)="open()"
+    >
+      <fold-icon name="upload" aria-hidden="true" />{{ action() }}
+    </button>
+  }
+}

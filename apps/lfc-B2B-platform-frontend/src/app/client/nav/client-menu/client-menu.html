@@ -17,14 +17,18 @@
       <p class="who"><span class="who-rule" aria-hidden="true"></span>{{ email }}</p>
     }
 
-    <a class="new-order" routerLink="/nouvelle-commande" (click)="closed.emit()">
-      <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
-      <span class="new-order-titles">
-        <span class="new-order-title">{{ t().nav.newOrder }}</span>
-        <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
-      </span>
-      <fold-icon class="new-order-caret" name="chevron-right" />
-    </a>
+    <!-- Ouvrir une commande n'a de sens que si la boutique la permet : la tuile
+         mènerait sinon à une garde qui renvoie au dossier. -->
+    @if (access.atLeast('order')) {
+      <a class="new-order" routerLink="/nouvelle-commande" (click)="closed.emit()">
+        <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
+        <span class="new-order-titles">
+          <span class="new-order-title">{{ t().nav.newOrder }}</span>
+          <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
+        </span>
+        <fold-icon class="new-order-caret" name="chevron-right" />
+      </a>
+    }
 
     <nav class="dests" [attr.aria-label]="t().chrome.menu">
       @for (item of nav.items(); track item.id; let i = $index) {

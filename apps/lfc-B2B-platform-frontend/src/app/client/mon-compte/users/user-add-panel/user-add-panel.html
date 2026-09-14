@@ -1,0 +1,34 @@
+<fold-panel-header
+  [title]="t().account.usersAdd"
+  [subtitle]="t().account.usersAddSubtitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.usersAddFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <!-- Ce que l'ajout crée, dit AVANT qu'on enregistre : un contact, pas un accès. -->
+  <p class="note">{{ t().account.usersNote }}</p>
+
+  <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" [withRole]="true" />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ t().account.save }}
+  </button>
+</fold-panel-footer>

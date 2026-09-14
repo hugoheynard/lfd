@@ -33,6 +33,7 @@ import { ActingCompany } from "../../../platform/auth/acting-company.decorator.j
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import {
   PlaceOrderCommand,
   type PlaceOrderResult,
@@ -61,6 +62,7 @@ export class OrdersController {
   ) {}
 
   /** Passe une commande (personnelle, ou pour une entreprise dont on est membre). */
+  @RequiresShop("order")
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async place(
@@ -106,6 +108,7 @@ export class OrdersController {
    * un littéral, et un champ ajouté demain à la vue staff fuirait sans qu'une
    * ligne rougisse.
    */
+  @RequiresShop("order")
   @Post("quote")
   @HttpCode(HttpStatus.OK)
   async quote(

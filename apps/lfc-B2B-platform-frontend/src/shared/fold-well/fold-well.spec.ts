@@ -17,7 +17,7 @@ class Host {
   // Des SIGNAUX et pas des champs nus : l'app est zoneless, et une propriété
   // muette ne salit aucune vue — le gabarit ne se recalculerait jamais.
   readonly title = signal('Mes suivis');
-  readonly scrollable = signal(false);
+  readonly scrollable = signal<boolean | 'narrow'>(false);
   readonly well = viewChild.required(FoldWellComponent);
 }
 
@@ -59,6 +59,14 @@ describe('FoldWellComponent', () => {
     fixture.componentInstance.scrollable.set(true);
     fixture.detectChanges();
     expect(well().hasAttribute('data-scrollable')).toBe(true);
+  });
+
+  it('ne devient un rail qu’en pile quand on le demande « narrow »', () => {
+    // Un téléphone fait glisser des panneaux qu'un bureau lit côte à côte : le
+    // même balisage, et c'est la largeur qui décide.
+    fixture.componentInstance.scrollable.set('narrow');
+    fixture.detectChanges();
+    expect(well().getAttribute('data-scrollable')).toBe('narrow');
   });
 
   it('tient sa position lui-même, à partir du premier item', () => {

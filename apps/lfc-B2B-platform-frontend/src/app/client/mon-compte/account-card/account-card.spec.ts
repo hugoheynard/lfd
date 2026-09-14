@@ -27,7 +27,9 @@ function boot(companies: readonly CompanyView[]): ComponentFixture<AccountCard> 
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [AccountCard],
-    providers: [{ provide: AccountService, useValue: { companies: () => companies } }],
+    providers: [
+      { provide: AccountService, useValue: { companies: () => companies, status: () => 'ready' } },
+    ],
   });
   // Le VRAI dépôt, pas un doublé : c'est lui qui choisit l'enseigne plutôt que
   // la raison sociale, et cette règle-là doit être traversée.
@@ -58,16 +60,27 @@ describe('la carte de compte', () => {
     expect(text(boot([{ ...TOMMEUSES, enseigne: '' }]))).toContain('SAS Les Tommeuses');
   });
 
-  /** Un terme ACCORDÉ n'est pas le défaut, et les deux écrans diffèrent. */
-  it('dit le terme convenu, et le défaut quand il n’y en a pas', () => {
-    expect(text(boot([TOMMEUSES]))).toContain(FR.account.cardTermMonthly);
-    expect(text(boot([{ ...TOMMEUSES, grantedTerms: [] }]))).toContain(FR.account.cardTermOrder);
+  /** À la commande est toujours ouvert ; au compte attend tant qu'il n'est pas accordé. */
+  it('dit les deux modes de paiement, et ce qu’attend le paiement au compte', () => {
+    const granted = text(boot([TOMMEUSES]));
+    expect(granted).toContain(FR.account.cardPaymentOnOrder);
+    expect(granted).toContain(FR.account.cardPaymentOnAccount);
+    expect(granted).not.toContain(FR.account.cardPaymentPending);
+
+    expect(text(boot([{ ...TOMMEUSES, grantedTerms: [] }]))).toContain(
+      FR.account.cardPaymentPending,
+    );
   });
 
-  /** La pastille l'affirmait sans regarder ; elle regarde. */
-  it('n’affirme « Actif » que si le compte l’est', () => {
-    expect(text(boot([TOMMEUSES]))).toContain(FR.account.cardActive);
-    expect(text(boot([{ ...TOMMEUSES, status: 'pending' }]))).not.toContain(FR.account.cardActive);
+  /** Le badge l'affirmait sans regarder ; il dit l'état du dossier. */
+  it('dit l’état du dossier en badge, et « en cours » ne se peint pas en vert', () => {
+    const active = boot([TOMMEUSES]);
+    expect(text(active)).toContain(FR.account.states.active);
+
+    const pending = boot([{ ...TOMMEUSES, status: 'pending' }]);
+    expect(text(pending)).toContain(FR.account.states.pending);
+    const badge = (pending.nativeElement as HTMLElement).querySelector('.state');
+    expect(badge?.getAttribute('data-tone')).toBe('wait');
   });
 
   /**

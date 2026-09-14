@@ -5,6 +5,7 @@ import { FoldIconComponent } from 'fold-ng';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientIdentity } from '../../client-identity.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { NewOrderAction } from '../../nav/new-order-action/new-order-action';
@@ -47,6 +48,7 @@ import { ReadyWell } from '../ready-well/ready-well';
   styleUrl: './espace-page.scss',
 })
 export class EspacePage {
+  protected readonly access = inject(ClientFeatureAccess);
   protected readonly t = inject(ClientCopyService).t;
 
   /**

@@ -9,6 +9,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { openShopAt } from '../feature-access/feature-access.fixture';
 
 /** Le rang d'une référence dans le rayon — l'ordre que le panier doit suivre. */
 const order = (sku: string): number => TEST_ITEMS.findIndex((item) => item.sku === sku);
@@ -55,8 +56,10 @@ describe('Le panier au premier écran venu', () => {
     });
     const catalogue = TestBed.inject(ShopCatalogue);
     expect(catalogue.status()).toBe('idle');
+    openShopAt('order');
 
     TestBed.inject(ClientCart);
+    TestBed.tick();
 
     // Publique ou reconnue : ce cas éprouve que le PANIER hydrate le catalogue
     // lui-même, sans attendre le rayon — pas laquelle des deux routes il prend.
@@ -68,6 +71,58 @@ describe('Le panier au premier écran venu', () => {
     );
     expect(asked.request.method).toBe('GET');
     expect(catalogue.status()).toBe('loading');
+  });
+});
+
+/**
+ * Plan `plan-inscription-pro-seule.md` §4 : le panier est construit par des
+ * écrans ouverts sous le niveau `order` — `ClientOrders`, l'espace. Il
+ * demandait alors le catalogue et le panier serveur, que l'API refuse en 409
+ * quand la boutique est fermée.
+ */
+describe('Le panier, selon la boutique', () => {
+  function boot(): HttpTestingController {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRecognised()],
+    });
+    return TestBed.inject(HttpTestingController);
+  }
+
+  /** Ce qui est parti vers la boutique : le catalogue, ou le panier gardé chez nous. */
+  async function shopRequests(http: HttpTestingController): Promise<number> {
+    TestBed.tick();
+    // Le jeton, puis la requête : deux micro-tâches.
+    await Promise.resolve();
+    await Promise.resolve();
+    return http.match((r) => r.url.includes('/shop/')).length;
+  }
+
+  for (const level of ['closed', 'browse'] as const) {
+    it(`boutique « ${level} » : ne s’hydrate pas et ne synchronise rien`, async () => {
+      const http = boot();
+      openShopAt(level);
+
+      TestBed.inject(ClientCart);
+
+      expect(await shopRequests(http)).toBe(0);
+      expect(TestBed.inject(ShopCatalogue).status()).toBe('idle');
+    });
+  }
+
+  it('pendant la lecture des niveaux, attend — puis part dès que la boutique permet de commander', async () => {
+    const http = boot();
+    TestBed.inject(ClientCart);
+    expect(await shopRequests(http)).toBe(0);
+
+    openShopAt('order');
+
+    // Le catalogue ET le panier serveur : le témoin que les zéros ci-dessus
+    // mesurent bien quelque chose.
+    const asked = await shopRequests(http);
+    expect(asked).toBeGreaterThanOrEqual(2);
+    expect(TestBed.inject(ShopCatalogue).status()).toBe('loading');
   });
 });
 

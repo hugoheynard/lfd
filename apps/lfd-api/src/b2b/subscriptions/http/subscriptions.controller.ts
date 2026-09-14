@@ -25,6 +25,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { CreateSubscriptionCommand } from "../application/commands/create-subscription.command.js";
 import { DeleteSubscriptionCommand } from "../application/commands/delete-subscription.command.js";
 import { SetSubscriptionStatusCommand } from "../application/commands/set-subscription-status.command.js";
@@ -45,6 +46,7 @@ export class SubscriptionsController {
     private readonly queries: QueryBus,
   ) {}
 
+  @RequiresShop("order")
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(
@@ -67,6 +69,7 @@ export class SubscriptionsController {
    * Déroge à une échéance précise (« modifier cette commande uniquement ») — on
    * saute la date ou on remplace ses lignes. Mur = le propriétaire (sinon `404`).
    */
+  @RequiresShop("order")
   @Put(":id/occurrences/:date")
   @HttpCode(HttpStatus.NO_CONTENT)
   override(
@@ -87,6 +90,7 @@ export class SubscriptionsController {
   }
 
   /** Met en pause / reprend un panier récurrent. Mur = le propriétaire (sinon `404`). */
+  @RequiresShop("order")
   @Patch(":id/status")
   @HttpCode(HttpStatus.NO_CONTENT)
   setStatus(

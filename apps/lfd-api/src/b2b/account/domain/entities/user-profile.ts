@@ -19,8 +19,15 @@ export interface UserProfileInput {
  * son créateur. Confondre les deux (l'ancien modèle) rendait impossible d'avoir
  * un compte sans entreprise.
  *
- * `create()` est le seul constructeur : un profil invalide n'existe pas en
+ * `revise()` est le seul constructeur : un profil invalide n'existe pas en
  * mémoire, quel que soit le chemin d'entrée (HTTP, seed, import).
+ *
+ * **La preuve d'adresse suit l'adresse** (2026-09-14). Un profil se construit
+ * TOUJOURS contre l'adresse enregistrée, et sait donc s'il la remplace
+ * ({@link emailChanged}). La persistance en tire la remise à `false` de la
+ * vérification, dans la même écriture que la nouvelle adresse. Il n'existe plus
+ * de fabrique qui ignore l'adresse d'avant : c'est ce qui laissait une personne
+ * vérifiée le rester quelle que soit l'adresse tapée ensuite.
  */
 export class UserProfile {
   private constructor(
@@ -28,27 +35,26 @@ export class UserProfile {
     readonly lastName: PersonName,
     readonly email: EmailAddress,
     readonly phone: PhoneNumber,
+    /** Vrai si ce profil remplace l'adresse enregistrée par une autre. */
+    readonly emailChanged: boolean,
   ) {}
 
-  static create(input: UserProfileInput): UserProfile {
+  /**
+   * Le profil tel que la personne le déclare, confronté à l'adresse
+   * **actuellement enregistrée**.
+   *
+   * @throws {InvalidEmailError} si l'adresse enregistrée elle-même n'en est pas
+   *   une : on ne décide pas qu'une adresse « change » en la comparant à rien.
+   */
+  static revise(currentEmail: string, input: UserProfileInput): UserProfile {
+    const email = EmailAddress.create(input.email);
     return new UserProfile(
       PersonName.create(input.firstName, "Prénom"),
       PersonName.create(input.lastName, "Nom"),
-      EmailAddress.create(input.email),
+      email,
       PhoneNumber.create(input.phone),
+      !email.equals(EmailAddress.create(currentEmail)),
     );
-  }
-
-  /**
-   * Vrai si l'e-mail diffère de celui déjà enregistré.
-   *
-   * L'appelant s'en sert pour ne toucher au fournisseur d'identité **que** sur un
-   * vrai changement : un simple renommage ne doit pas déclencher une
-   * re-vérification d'adresse chez Auth0, ni échouer quand ce canal est
-   * indisponible.
-   */
-  emailDiffersFrom(currentEmail: string): boolean {
-    return !this.email.equals(EmailAddress.create(currentEmail));
   }
 
   /** Nom d'usage — « Prénom Nom ». */

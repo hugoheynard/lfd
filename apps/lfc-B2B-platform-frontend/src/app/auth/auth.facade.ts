@@ -51,6 +51,20 @@ export class AuthFacade {
    * juste que le bypass s'active au pré-rendu SSR ; il n'a aucun rôle de sécurité.
    */
 
+  /**
+   * En bypass dev, « je me suis déconnecté ».
+   *
+   * Sans lui, le bypass rendait la déconnexion impossible : `logout()` partait
+   * chez Auth0, revenait, et la façade se redéclarait authentifiée — puis
+   * `/bienvenue`, qui renvoie ailleurs qui est déjà entré, se fermait aussitôt.
+   * On ne pouvait donc jamais regarder la porte d'entrée en dev.
+   *
+   * Gardé dans le stockage local pour survivre à un rechargement ; levé par
+   * `login()` ou `register()`. En production, `DEV_BYPASS_AUTH` vaut `false` en
+   * tête de chaque lecture et ce signal n'est jamais consulté.
+   */
+  private readonly devSignedOut = signal(DEV_BYPASS_AUTH && this.isBrowser && readDevSignedOut());
+
   private readonly rawIsLoading = toSignal(this.auth0?.isLoading$ ?? NEVER, {
     initialValue: true,
   });
@@ -64,7 +78,7 @@ export class AuthFacade {
   });
   /** Vrai si un utilisateur a prouvé son identité auprès d'Auth0 (ou bypass dev). */
   readonly isAuthenticated = computed(
-    () => (DEV_BYPASS_AUTH && this.isBrowser) || this.rawIsAuthenticated(),
+    () => (DEV_BYPASS_AUTH && this.isBrowser && !this.devSignedOut()) || this.rawIsAuthenticated(),
   );
 
   /** Profil Auth0 (claims du token) — « qui a prouvé son sub ». */
@@ -92,6 +106,46 @@ export class AuthFacade {
    */
   readonly pendingProfile = signal<PendingProfile | null>(null);
 
+  /**
+   * La déclaration saisie sur la porte pro, retrouvée au retour d'Auth0.
+   *
+   * Même aller-retour que {@link pendingProfile}, et même mise en garde : rien
+   * de secret n'a sa place ici. Elle a son signal à elle parce que `/bienvenue`
+   * et la porte pro ne font pas le même geste au retour — l'une repose un
+   * profil, l'autre déclare un établissement (`ProOnboarding`).
+   */
+  readonly pendingProRegistration = signal<ProRegistration | null>(null);
+
+  /**
+   * En bypass dev, l'inscription pro EN COURS sur l'écran d'Auth0 simulé.
+   *
+   * Pas d'aller-retour réel, donc pas d'`appState` : c'est ce signal qui porte
+   * la déclaration entre la porte pro et l'écran simulé. En production, il
+   * reste `null` — `DEV_BYPASS_AUTH` vaut `false` en tête de chaque écriture.
+   */
+  readonly devSignup = signal<{
+    readonly target: string;
+    readonly registration: ProRegistration;
+  } | null>(null);
+
+  /**
+   * Termine l'inscription simulée : on est entré, la déclaration est retenue
+   * comme au vrai retour d'Auth0, et l'on rend la cible où aller.
+   *
+   * `null` hors dev, ou sans inscription en cours (rechargement de l'écran).
+   */
+  completeDevSignup(): string | null {
+    const signup = this.devSignup();
+    if (!(DEV_BYPASS_AUTH && this.isBrowser) || signup === null) {
+      return null;
+    }
+    writeDevSignedOut(false);
+    this.devSignedOut.set(false);
+    this.pendingProRegistration.set(signup.registration);
+    this.devSignup.set(null);
+    return signup.target;
+  }
+
   constructor() {
     // Restauration de la route demandée : au **retour** du callback Auth0 (un
     // nouveau chargement de page), le SDK émet l'`appState` passé à
@@ -104,6 +158,12 @@ export class AuthFacade {
         void this.router.navigateByUrl(target);
       }
     });
+    // Un second abonnement plutôt qu'une ligne de plus dans le premier : le
+    // parcours de `/bienvenue` reste intact, et le SDK rejoue le même état aux
+    // deux abonnés.
+    this.auth0?.appState$.subscribe((state: unknown) => {
+      this.pendingProRegistration.set(readProRegistration(state));
+    });
   }
 
   /**
@@ -113,7 +173,7 @@ export class AuthFacade {
    */
   authGate$(): Observable<boolean> {
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      return of(true);
+      return of(!this.devSignedOut());
     }
     const auth = this.auth0;
     if (!auth) {
@@ -133,6 +193,14 @@ export class AuthFacade {
    * taper son e-mail chez nous n'a pas à le retaper chez lui.
    */
   login(target: string, hint?: string): void {
+    // En bypass dev, se connecter, c'est lever la déconnexion : il n'y a pas de
+    // session Auth0 à ouvrir, l'API impersonne déjà l'utilisateur du seed.
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      writeDevSignedOut(false);
+      this.devSignedOut.set(false);
+      void this.router.navigateByUrl(target);
+      return;
+    }
     void this.auth0
       ?.loginWithRedirect({
         appState: { target },
@@ -149,6 +217,14 @@ export class AuthFacade {
    * compte dépend de cette connexion (sign-ups activés). Le nouveau compte arrive en base au 1er `GET /me` (statut invité).
    */
   register(target: string, profile?: PendingProfile): void {
+    // En bypass dev, même geste que `login()`. Le profil saisi n'est PAS reposé :
+    // il écraserait celui de l'utilisateur du seed, que l'API impersonne.
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      writeDevSignedOut(false);
+      this.devSignedOut.set(false);
+      void this.router.navigateByUrl(target);
+      return;
+    }
     void this.auth0
       ?.loginWithRedirect({
         appState: { target, profile },
@@ -162,13 +238,50 @@ export class AuthFacade {
   }
 
   /**
+   * L'inscription par la porte pro : le même geste que {@link register}
+   * (onglet inscription, connexion nommée, e-mail soufflé), mais la déclaration
+   * entière fait l'aller-retour, pour être déposée au retour par
+   * `POST /me/establishment`.
+   */
+  registerPro(target: string, registration: ProRegistration): void {
+    // En bypass dev, l'écran d'Auth0 est SIMULÉ : on y passe comme en
+    // production, et c'est lui qui rend la main avec la déclaration retenue
+    // (`completeDevSignup`). Sans cette étape, le parcours de dev sautait le
+    // mot de passe et l'e-mail de vérification, qu'on ne voyait donc jamais.
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      this.devSignup.set({ target, registration });
+      void this.router.navigateByUrl(DEV_AUTH0_SIGNUP_SCREEN);
+      return;
+    }
+    void this.auth0
+      ?.loginWithRedirect({
+        appState: { target, proRegistration: registration },
+        authorizationParams: {
+          connection: CUSTOMER_CONNECTION,
+          screen_hint: 'signup',
+          ...loginHint(registration.email),
+        },
+      })
+      .subscribe();
+  }
+
+  /**
    * Déconnexion Auth0 puis retour à l'app (le guard renverra vers /login).
    *
    * `appBaseUrl()` et non l'origine nue : sous `/pro`, une origine nue déposerait
    * la personne à la racine du domaine, hors de l'app.
+   *
+   * En bypass dev, aucun aller-retour Auth0 : on pose la déconnexion et on
+   * revient sur la porte d'entrée, où l'on reste jusqu'à `login()`.
    */
   logout(): void {
     if (!this.isBrowser) {
+      return;
+    }
+    if (DEV_BYPASS_AUTH) {
+      writeDevSignedOut(true);
+      this.devSignedOut.set(true);
+      void this.router.navigateByUrl(DEV_SIGNED_OUT_LANDING);
       return;
     }
     void this.auth0?.logout({ logoutParams: { returnTo: appBaseUrl() } }).subscribe();
@@ -189,10 +302,44 @@ export class AuthFacade {
   accessToken$(): Observable<string> {
     // En bypass dev, l'API ignore le jeton (impersonation backend) : on évite
     // `getAccessTokenSilently()`, qui lèverait faute de session Auth0.
+    // Déconnecté, aucun appel ne part : comme sans session.
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      return of('dev-impersonation');
+      return this.devSignedOut() ? NEVER : of('dev-impersonation');
     }
     return this.auth0?.getAccessTokenSilently() ?? NEVER;
+  }
+}
+
+/** L'écran d'Auth0 simulé, en dev — la route n'existe pas en production. */
+export const DEV_AUTH0_SIGNUP_SCREEN = '/dev/inscription-auth0';
+
+/** Où l'on atterrit en se déconnectant en dev : la porte d'entrée. */
+const DEV_SIGNED_OUT_LANDING = '/bienvenue';
+
+/** La clé de stockage local de la déconnexion dev. */
+const DEV_SIGNED_OUT_KEY = 'lfc-dev-signed-out';
+
+/**
+ * Le stockage local peut être refusé (navigation privée, réglage du
+ * navigateur) : on retombe alors sur « connecté », le comportement d'avant.
+ */
+function readDevSignedOut(): boolean {
+  try {
+    return localStorage.getItem(DEV_SIGNED_OUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeDevSignedOut(signedOut: boolean): void {
+  try {
+    if (signedOut) {
+      localStorage.setItem(DEV_SIGNED_OUT_KEY, '1');
+    } else {
+      localStorage.removeItem(DEV_SIGNED_OUT_KEY);
+    }
+  } catch {
+    // Stockage refusé : la déconnexion tient jusqu'au prochain rechargement.
   }
 }
 
@@ -253,4 +400,57 @@ function readProfile(state: unknown): PendingProfile | null {
         email,
         phone: readString(state.profile, 'phone'),
       };
+}
+
+/**
+ * Ce que la porte pro retient le temps de l'aller-retour Auth0 : la personne
+ * et son enseigne. Le mot de passe, lui, se pose chez Auth0 et n'y figure pas.
+ */
+export interface ProRegistration {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly phone: string;
+  readonly enseigne: string;
+}
+
+/** Prédicat de garde : `state` porte-t-il une `proRegistration` ? (sans cast). */
+function hasProRegistration(state: unknown): state is { proRegistration: unknown } {
+  return typeof state === 'object' && state !== null && 'proRegistration' in state;
+}
+
+/** La valeur d'un champ, seulement si c'est une chaîne. */
+function stringField(source: Record<string, unknown>, key: string): string | null {
+  const value = source[key];
+  return typeof value === 'string' ? value : null;
+}
+
+/**
+ * Extrait la déclaration pro de l'`appState`. Elle revient du stockage du
+ * navigateur : chacun des cinq champs est vérifié, et **un seul manquant rend
+ * `null`**. Contrairement au profil de `/bienvenue`, une déclaration partielle
+ * ne se complète pas par du vide — le serveur la refuserait, et la carte
+ * « Compléter mon dossier » est là pour la reprendre en entier.
+ */
+function readProRegistration(state: unknown): ProRegistration | null {
+  if (!hasProRegistration(state) || !isRecord(state.proRegistration)) {
+    return null;
+  }
+  const source = state.proRegistration;
+  const firstName = stringField(source, 'firstName');
+  const lastName = stringField(source, 'lastName');
+  const email = stringField(source, 'email');
+  const phone = stringField(source, 'phone');
+  const enseigne = stringField(source, 'enseigne');
+  if (
+    firstName === null ||
+    lastName === null ||
+    email === null ||
+    email === '' ||
+    phone === null ||
+    enseigne === null
+  ) {
+    return null;
+  }
+  return { firstName, lastName, email, phone, enseigne };
 }

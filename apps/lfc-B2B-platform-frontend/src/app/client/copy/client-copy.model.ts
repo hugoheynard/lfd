@@ -29,6 +29,12 @@ export interface ClientCopy {
     readonly kickerQr: string;
     readonly kickerDone: string;
     readonly deskKicker: string;
+    /**
+     * Ce que dit l'app quand elle n'a pas pu lire ce que la boutique permet.
+     * Elle se comporte alors comme fermée : la phrase dit pourquoi des écrans
+     * manquent, et comment réessayer.
+     */
+    readonly featureAccessFailed: string;
   };
 
   readonly nav: {
@@ -275,6 +281,12 @@ export interface ClientCopy {
     /** `{name}` est remplacé par la gourmandise proposée. */
     readonly upsell: string;
     readonly upsellLine: string;
+    /**
+     * À la place du geste d'ajout, quand la boutique se VISITE sans encore
+     * permettre de commander (niveau `browse`). Pas de date : rien dans le
+     * système n'en porte une.
+     */
+    readonly orderingSoon: string;
   };
   readonly product: {
     readonly signature: string;
@@ -480,6 +492,8 @@ export interface ClientCopy {
     readonly bookedTitle: string;
     readonly pitch: string;
     readonly cta: string;
+    /** Le lien vers la porte pro, sous le rappel. */
+    readonly openAccount: string;
     /** `{slot}` est remplacé par le créneau retenu. */
     readonly booked: string;
     readonly at: string;

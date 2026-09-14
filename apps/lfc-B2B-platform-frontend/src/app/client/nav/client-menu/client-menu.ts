@@ -15,6 +15,7 @@ import { FoldIconComponent } from 'fold-ng';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientIdentity } from '../../client-identity.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { LangSwitch } from '../../lang-switch/lang-switch';
 import { ClientNav } from '../client-nav.service';
 
@@ -52,6 +53,7 @@ export class ClientMenu {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly nav = inject(ClientNav);
+  protected readonly access = inject(ClientFeatureAccess);
   protected readonly identity = inject(ClientIdentity);
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);

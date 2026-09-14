@@ -1,157 +1,198 @@
 <ng-template clientBanner>
   <app-client-banner-block [title]="t().account.title" [lead]="t().account.lead">
-    <span banner-action class="state">
-      <span class="state-dot" aria-hidden="true"></span>{{ t().account.state }}
-    </span>
+    <!-- LA CARTE DE COMPTE tient l'en-tête, et porte l'état du dossier en badge.
+         Seulement avec une société : sans elle, la carte n'aurait rien à dire. -->
+    @if (view() === 'dossier') {
+      <app-account-card banner-action class="member" />
+    }
   </app-client-banner-block>
 </ng-template>
 
+<!-- EN PILE, LE TRANSFERT DE DÉFILEMENT. Le bandeau quitte la bande fixe et
+     descend ici, dans le seul défilement de l'écran : le titre part d'abord,
+     puis la carte s'amarre sous la barre avec le bord de la feuille, et c'est
+     la crème qui continue. L'ordre vient de la position (`sticky`), pas d'un
+     script — rien à enchaîner sur un écran tactile.
+     ⚠️ La carte et la lèvre sont des enfants DIRECTS de l'écran : un `sticky`
+     ne colle que dans son parent, et un parent court le relâcherait aussitôt.
+     Au-delà du pli, ces deux blocs n'existent pas à l'écran : le bandeau reste
+     celui de la bande, plus haut. -->
+<!-- EN PILE, LA PROMESSE PREND LA PLACE DU TITRE. Quand la boutique n'est pas
+     ouverte, c'est la première chose à dire, et la barre nomme déjà l'écran :
+     le titre et son texte ne reviennent que s'il n'y a pas de promesse.
+     Le callout ne prend PAS la surface `chrome`, qui inverserait ses tons. -->
+<div class="narrow-banner">
+  @if (promiseShown()) {
+    <app-shop-promise class="narrow-promise" [level]="promiseLevel() ?? 'order'" />
+  } @else {
+    <app-client-banner-block
+      foldSurface="chrome"
+      [title]="t().account.title"
+      [lead]="t().account.lead"
+    />
+  }
+</div>
+<div class="narrow-pin" foldSurface="chrome">
+  @if (view() === 'dossier') {
+    <app-account-card class="narrow-card" />
+  }
+  <span class="narrow-lip" aria-hidden="true"></span>
+</div>
+
 <div class="page">
-  <app-account-card class="member" />
+  <!-- UN ÉTAT À LA FOIS. Le compte complet ne se montre qu'à qui a une société :
+       sans société, seulement la carte de dossier ; sans entrée, seulement de
+       quoi entrer ; en échec de lecture, l'échec — pas « compte non reconnu ». -->
+  @switch (view()) {
+    @case ('loading') {
+      <fold-loading [message]="t().account.loading" />
+    }
+    @case ('signed-out') {
+      <fold-empty-state [title]="t().account.signedOutTitle" [subtitle]="t().account.signedOutBody">
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="signIn()">
+          {{ t().account.signIn }}
+        </button>
+      </fold-empty-state>
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        [title]="t().account.loadFailedTitle"
+        [subtitle]="t().account.loadFailedBody"
+      >
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+          {{ t().account.loadRetry }}
+        </button>
+      </fold-empty-state>
+    }
+    @case ('incomplete') {
+      <!-- LA PROMESSE suit le niveau de la boutique (plan §3.1). -->
+      @if (promiseLevel(); as level) {
+        <app-shop-promise class="page-promise" [level]="level" />
+      }
+      <!-- La déclaration en vol n'est pas un dossier à remplir : on attend. -->
+      @if (onboarding.needsDossier()) {
+        <app-dossier-card />
+      } @else {
+        <fold-loading [message]="t().account.loading" />
+      }
+    }
+    @default {
+      @if (promiseLevel(); as level) {
+        <app-shop-promise class="page-promise" [level]="level" />
+      }
 
-  <div class="body">
-    <!-- LE SOMMAIRE fait défiler, il ne change pas d'écran — et il le dit. -->
-    <nav class="summary" [attr.aria-label]="t().account.summaryHead">
-      <p class="summary-head">{{ t().account.summaryHead }}</p>
-      <ol class="summary-list">
-        @for (entry of summary(); track entry.key) {
-          <li>
-            <a class="summary-link" [href]="'#' + entry.anchor">
-              <span class="summary-num">{{ entry.number }}</span
-              >{{ entry.label }}
-            </a>
-          </li>
-        }
-      </ol>
-      <p class="summary-note">{{ t().account.summaryNote }}</p>
-    </nav>
+      <div class="body">
+        <!-- LE SOMMAIRE fait défiler, il ne change pas d'écran. -->
+        <!-- L'ASIDE DU BUREAU : le sommaire, puis de quoi nous joindre — un seul
+             bloc collant. En pile, l'aside n'existe pas à l'écran (`display:
+             none`) : la carte contact est en bas de l'écran. -->
+        <aside class="aside">
+          <nav class="summary" [attr.aria-label]="t().account.summaryHead">
+            <p class="summary-head">{{ t().account.summaryHead }}</p>
+            <ol class="summary-list">
+              @for (entry of summary(); track entry.key) {
+                <li>
+                  <a class="summary-link" [href]="'#' + entry.anchor">
+                    <span class="summary-num">{{ entry.number }}</span
+                    >{{ entry.label }}
+                  </a>
+                </li>
+              }
+            </ol>
+          </nav>
+          <app-support-card />
+        </aside>
 
-    <div class="cards">
-      <section class="card identity" id="compte-identity">
-        <h2 class="card-title">{{ t().account.sections.identity }}</h2>
-        @if (company(); as identity) {
-          <dl class="facts">
-            <dt>{{ t().account.identityBrand }}</dt>
-            <dd>
-              {{ client.name()
-              }}<button class="inline" type="button">{{ t().account.edit }}</button>
-            </dd>
-            <dt>{{ t().account.identityCompany }}</dt>
-            <dd>{{ identity.raisonSociale }}</dd>
-            <dt>{{ t().account.identityForm }}</dt>
-            <dd>{{ identity.formeJuridique }}</dd>
-            <dt>{{ t().account.identitySiret }}</dt>
-            <!-- Vide tant qu'inconnu, et c'est un ÉTAT : une société peut ouvrir
-                 sans papiers. Un tiret le dit ; un SIRET d'exemple serait celui
-                 d'une autre maison. -->
-            <dd class="num">{{ identity.siret || t().account.identityUnknown }}</dd>
-            <dt>{{ t().account.identityVat }}</dt>
-            <dd class="num">{{ identity.vatNumber || t().account.identityUnknown }}</dd>
-          </dl>
-        } @else {
-          <p class="note">{{ t().account.cardUnknownNote }}</p>
-        }
-        <!-- La règle est ÉCRITE, pas grisée. -->
-        <p class="note">{{ t().account.identityNote }}</p>
-      </section>
+        <!-- EN PILE, UNE SECTION PAR PANNEAU : un rail qu'on fait glisser, et
+             l'indicateur dit où l'on est. Au-delà du pli, le même puits range
+             les cartes en grille — un seul balisage, la largeur décide. -->
+        <!-- LA COLONNE PRINCIPALE : les cartes, puis — en pile seulement — de
+             quoi nous joindre, collé en bas de l'écran. Au bureau, cette carte
+             est dans l'aside. -->
+        <div class="main">
+          <fold-well #rail class="cards" scrollable="narrow">
+            <!-- DEUX CARTES PAR SECTION, UNE SEULE AFFICHÉE : la carte bureau au-delà
+                 du pli, la carte mobile en deçà. `display: none` sur l'autre, donc
+                 un lecteur d'écran n'en lit qu'une. L'ancre reste sur la section. -->
+            <section class="card identity" id="compte-identity">
+              <app-identity-desk-card class="desk" />
+              <app-identity-mobile-card class="mobile" />
+            </section>
 
-      <section class="card kbis" id="compte-kbis">
-        <h2 class="card-title">{{ t().account.sections.kbis }}</h2>
-        <app-kbis-card />
-      </section>
+            <section class="card kbis" id="compte-kbis">
+              <app-kbis-desk-card class="desk" />
+              <app-kbis-mobile-card class="mobile" />
+            </section>
 
-      <section class="card users" id="compte-users">
-        <app-users-card />
-      </section>
+            <!-- La personne connectée, avant les autres personnes de la société. -->
+            <section class="card profile" id="compte-profile">
+              <app-profile-desk-card class="desk" />
+              <app-profile-mobile-card class="mobile" />
+            </section>
 
-      <section class="card addresses" id="compte-addresses">
-        <h2 class="card-title">{{ t().account.sections.addresses }}</h2>
-        <!-- En rangée, on voit d'un coup qu'il y a UNE facturation et PLUSIEURS
-             livraisons. Empilées, les deux blocs se confondaient. -->
-        <div class="address-row">
-          <div class="sub-card billing">
-            <p class="sub-head">{{ t().account.billingHead }}</p>
-            <p class="sub-line">{{ billing() }}</p>
-            <p class="note">{{ t().account.billingNote }}</p>
-          </div>
-          <div class="sub-card">
-            <p class="sub-head">{{ t().account.deliveryHead }} · {{ deliveryCount() }}</p>
-            @if (deliveries().length === 0) {
-              <p class="note">{{ t().account.addressNone }}</p>
+            <section class="card users" id="compte-users">
+              <app-users-desk-card class="desk" />
+              <app-users-mobile-card class="mobile" />
+            </section>
+
+            <section class="card addresses" id="compte-addresses">
+              <app-addresses-desk-card class="desk" />
+              <app-addresses-mobile-card class="mobile" />
+            </section>
+
+            <!-- Le RIB : au détenteur et au rôle comptable seulement (plan
+               `plan-rib-client.md` §2). Le sommaire se renumérote sans lui. -->
+            @if (showsBank()) {
+              <section class="card bank" id="compte-bank">
+                <app-bank-desk-card class="desk" />
+                <app-bank-mobile-card class="mobile" />
+              </section>
             }
-            @for (address of deliveries(); track address.id) {
-              <div class="delivery">
-                <span class="delivery-label">{{ address.label }}</span>
-                @if (address.primary) {
-                  <span class="delivery-tag">{{ t().account.addressDefault }}</span>
-                }
-                <span class="delivery-line">
-                  {{ address.line }} · {{ address.zone }} · {{ address.fee }}
-                </span>
-              </div>
+
+            <!-- Règlement et habitudes de service n'ont de sens qu'au niveau où l'on
+           commande (plan §4) : le sommaire se renumérote sur ce qui reste. -->
+            @if (access.atLeast('order')) {
+              <section class="card payment" id="compte-payment">
+                <app-payment-desk-card class="desk" />
+                <app-payment-mobile-card class="mobile" />
+              </section>
+
+              <section class="card preferences" id="compte-preferences">
+                <app-preferences-desk-card class="desk" />
+                <app-preferences-mobile-card class="mobile" />
+              </section>
             }
-            <button class="dashed" type="button">
-              <fold-icon name="plus" />{{ t().account.addressAdd }}
-            </button>
-          </div>
+
+            <section class="card data" id="compte-data">
+              <app-data-desk-card class="desk" />
+              <app-data-mobile-card class="mobile" />
+            </section>
+
+            <!-- Le pied du rail : l'indicateur au centre, et la pastille qui dit
+                 le rang en chiffres — sept tirets ne se comptent pas d'un coup
+                 d'œil. -->
+            <div wellFoot class="rail-foot">
+              <fold-scroll-indicator
+                class="dots"
+                variant="morse"
+                [count]="summary().length"
+                [active]="rail.active()"
+                [markerLabel]="t().account.panelDot"
+                (picked)="rail.goTo($event)"
+              />
+              <span
+                class="rail-count"
+                aria-live="polite"
+                [attr.aria-label]="railPosition(rail.active())"
+                >{{ rail.active() + 1 }}/{{ summary().length }}</span
+              >
+            </div>
+          </fold-well>
+
+          <app-support-card class="support" />
         </div>
-      </section>
-
-      <section class="card payment" id="compte-payment">
-        <h2 class="card-title">{{ t().account.sections.payment }}</h2>
-        <!-- DEUX RÉGIMES ET PAS PLUS, et ils se lisent côte à côte : l'absence
-             de crédit ne doit pas ressembler à un refus. La pastille dit lequel
-             est CONVENU — elle l'affirmait sans regarder.
-
-             🔴 Les deux tuiles SEPA et carte sont parties : « Mandat signé le
-             14/02/2024 · IBAN •••• 3041 » et « Visa •••• 4242 » étaient écrits
-             en dur. Les mandats existent en base (`PaymentMandate`) mais ne
-             traversent pas `/me` ; un moyen de paiement d'exemple est celui de
-             quelqu'un d'autre, et c'est la pire des maquettes à laisser. -->
-        <div class="pay-grid">
-          <div class="pay">
-            <p class="pay-head">
-              {{ t().account.termMonthly
-              }}<span class="pay-tag" [class.on]="client.hasDeferredTerm()">{{
-                client.hasDeferredTerm() ? t().account.stateActive : t().account.stateUnavailable
-              }}</span>
-            </p>
-            <p class="pay-note">{{ t().account.termMonthlySub }}</p>
-          </div>
-          <div class="pay">
-            <p class="pay-head">
-              {{ t().account.termOrder
-              }}<span class="pay-tag on">{{ t().account.stateAvailable }}</span>
-            </p>
-            <p class="pay-note">{{ t().account.termOrderSub }}</p>
-          </div>
-        </div>
-        <p class="note">{{ t().account.paymentNote }}</p>
-      </section>
-
-      <section class="card preferences" id="compte-preferences">
-        <h2 class="card-title">{{ t().account.sections.preferences }}</h2>
-        <dl class="facts">
-          <dt>{{ t().account.prefPickup }}</dt>
-          <dd>
-            {{ habit() }}<button class="inline" type="button">{{ t().account.edit }}</button>
-          </dd>
-          <dt>{{ t().account.prefLang }}</dt>
-          <dd>
-            {{ language() }}<button class="inline" type="button">{{ t().account.edit }}</button>
-          </dd>
-        </dl>
-        <!-- 🔴 Les trois interrupteurs de notification sont partis. Ils étaient
-             DESSINÉS, pas branchés : deux allumés, un éteint, en dur, et aucun
-             clic ne les bougeait. Un réglage qui ne se règle pas est pire qu'un
-             réglage absent — on croit l'avoir posé. -->
-        <p class="note">{{ t().account.prefNote }}</p>
-      </section>
-
-      <section class="card data" id="compte-data">
-        <h2 class="card-title">{{ t().account.sections.data }}</h2>
-        <app-data-card />
-      </section>
-    </div>
-  </div>
+      </div>
+    }
+  }
 </div>

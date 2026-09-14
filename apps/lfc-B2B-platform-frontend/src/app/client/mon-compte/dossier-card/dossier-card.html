@@ -1,0 +1,69 @@
+<fold-card>
+  <div class="body">
+    <fold-element-title
+      variant="title"
+      [title]="copy().dossier.title"
+      [subtitle]="copy().dossier.subtitle"
+    />
+
+    <form class="form" (submit)="$event.preventDefault(); submit()">
+      <p class="pitch">{{ copy().dossier.pitch }}</p>
+
+      @if (formError(); as message) {
+        <fold-callout variant="alert">{{ message }}</fold-callout>
+      }
+
+      <!-- Une erreur serveur n'attend pas qu'on quitte le champ : `touched` suit
+           sa présence, sans quoi `fold-input` la garderait pour lui. -->
+      <div class="fields">
+        <fold-input
+          size="lg"
+          [label]="copy().fields.firstName"
+          autocomplete="given-name"
+          [errors]="fieldErrors().firstName"
+          [touched]="fieldErrors().firstName.length > 0"
+          [(value)]="firstName"
+        />
+        <fold-input
+          size="lg"
+          [label]="copy().fields.lastName"
+          autocomplete="family-name"
+          [errors]="fieldErrors().lastName"
+          [touched]="fieldErrors().lastName.length > 0"
+          [(value)]="lastName"
+        />
+        <fold-input
+          size="lg"
+          type="tel"
+          [label]="copy().fields.phone"
+          autocomplete="tel"
+          [placeholder]="copy().fields.phonePlaceholder"
+          [hint]="copy().fields.phoneHint"
+          [errors]="fieldErrors().phone"
+          [touched]="fieldErrors().phone.length > 0"
+          [(value)]="phone"
+        />
+        <fold-input
+          size="lg"
+          [label]="copy().fields.enseigne"
+          autocomplete="organization"
+          [placeholder]="copy().fields.enseignePlaceholder"
+          [errors]="fieldErrors().enseigne"
+          [touched]="fieldErrors().enseigne.length > 0"
+          [(value)]="enseigne"
+        />
+      </div>
+
+      <button
+        foldButton
+        class="submit"
+        emphasis="solid"
+        intent="primary"
+        type="submit"
+        [loading]="submitting()"
+      >
+        {{ copy().dossier.submit }}
+      </button>
+    </form>
+  </div>
+</fold-card>

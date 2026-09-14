@@ -1,0 +1,42 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.desk-host;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.title {
+  @include card.title;
+}
+
+.facts {
+  display: grid;
+  margin: 0;
+}
+
+.facts dt {
+  padding-top: var(--fold-space-sm);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  padding-bottom: var(--fold-space-sm);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-sm);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  @include card.note;
+}

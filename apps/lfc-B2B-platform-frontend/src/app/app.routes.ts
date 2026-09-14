@@ -1,6 +1,8 @@
 import { type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
+import { DEV_BYPASS_AUTH } from './auth/dev-flags';
+import { featureAccessGuard } from './client/feature-access/feature-access.guard';
 import { ClientShell } from './client/shell/client-shell';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
@@ -96,6 +98,21 @@ export const routes: Routes = [
     title: 'Connexion — La Folie Coffee B2B',
     loadComponent: () => import('./login/login-page').then((m) => m.LoginPage),
   },
+  // L'ÉCRAN D'AUTH0 SIMULÉ, en dev seulement. `DEV_BYPASS_AUTH` vaut `false` au
+  // build de production : la condition se plie, et la route comme son chunk
+  // disparaissent du bundle. Hors du shell, comme le vrai écran d'Auth0.
+  ...(DEV_BYPASS_AUTH
+    ? [
+        {
+          path: 'dev/inscription-auth0',
+          title: 'Auth0 (simulé) — La Folie Coffee',
+          loadComponent: () =>
+            import('./auth/dev-auth0-signup-page/dev-auth0-signup-page').then(
+              (m) => m.DevAuth0SignupPage,
+            ),
+        },
+      ]
+    : []),
   {
     // Refonte de l'app CLIENT (handoff design). Route PARENTE : le shell client
     // (barre de marque bleue, pas de rail) enveloppe ses écrans, exactement
@@ -103,6 +120,12 @@ export const routes: Routes = [
     // routeur revient en arrière et essaie les routes pro qui suivent.
     path: '',
     component: ClientShell,
+    // ⚠️ Chaque enfant dit ce que la BOUTIQUE doit permettre pour s'ouvrir
+    // (plan `plan-inscription-pro-seule.md` §4). Sans garde : joignable à tous
+    // les niveaux — l'entrée, le dossier, et les commandes EXISTANTES (suivi,
+    // QR, règlement, confirmation), que le serveur ne ferme pas non plus. Les
+    // anciennes adresses en fin de liste n'ont pas de garde à elles : une
+    // redirection passe par la garde de sa cible.
     children: [
       {
         // LA RACINE : qui arrive sur le site tombe ici. Une redirection plutôt
@@ -121,11 +144,24 @@ export const routes: Routes = [
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
+        // LA PORTE PRO : le lien que donne la commerciale (plan
+        // `plan-inscription-pro-seule.md` §3). Sans garde : on ouvre son compte
+        // à tous les niveaux de la boutique, c'est même tout l'intérêt quand
+        // elle est fermée.
+        path: 'ouverture-compte-pro',
+        title: 'Ouverture de compte pro — La Folie Coffee',
+        loadComponent: () =>
+          import('./login/ouverture-compte-pro-page/ouverture-compte-pro-page').then(
+            (m) => m.OuvertureCompteProPage,
+          ),
+      },
+      {
         // L'ACCUEIL DU CLIENT RECONNU. Il répond à une seule question — qu'est-ce
         // qui m'attend aujourd'hui ? — et c'est là qu'on atterrit après la
         // connexion, sauf pendant le parcours de première commande, qui a sa
         // propre suite d'écrans.
         path: 'mon-espace',
+        canActivate: [featureAccessGuard('shop', 'browse')],
         title: 'Mon espace — La Folie Coffee',
         loadComponent: () =>
           import('./client/mon-espace/espace-page/espace-page').then((m) => m.EspacePage),
@@ -134,6 +170,9 @@ export const routes: Routes = [
         // LE SUIVI, PUIS LA MÉMOIRE. Deux registres et l'ordre n'est pas
         // négociable : ce qui est en route d'abord, ce qui est passé ensuite.
         path: 'mes-commandes',
+        // Masquable en admin : seule la LISTE se ferme. Suivi, règlement et
+        // retrait gardent leurs adresses à eux, sans cette garde.
+        canActivate: [featureAccessGuard('orders', 'visible')],
         title: 'Mes commandes — La Folie Coffee',
         loadComponent: () =>
           import('./client/mes-commandes/commandes-page/commandes-page').then(
@@ -145,6 +184,7 @@ export const routes: Routes = [
         // elle rassemble les commandes telles qu'elles partent en comptabilité,
         // et le comptable dépose le PDF après la clôture.
         path: 'mes-factures',
+        canActivate: [featureAccessGuard('invoices', 'visible')],
         title: 'Mes factures — La Folie Coffee',
         loadComponent: () =>
           import('./client/mes-factures/factures-page/factures-page').then((m) => m.FacturesPage),
@@ -163,6 +203,7 @@ export const routes: Routes = [
         // question du parcours, avant le catalogue — ce qui est en stock, à
         // quelle heure et à quel prix dépend du mode de service.
         path: 'nouvelle-commande',
+        canActivate: [featureAccessGuard('shop', 'order')],
         title: 'Commander — La Folie Coffee',
         loadComponent: () =>
           import('./client/nouvelle-commande/commande-page/commande-page').then(
@@ -176,11 +217,13 @@ export const routes: Routes = [
         // `/boutique` reste la boutique PRO — deux produits, deux catalogues,
         // deux adresses.
         path: 'nouvelle-commande/boutique',
+        canActivate: [featureAccessGuard('shop', 'browse')],
         title: 'Boutique — La Folie Coffee',
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
       },
       {
         path: 'nouvelle-commande/panier',
+        canActivate: [featureAccessGuard('shop', 'order')],
         title: 'Mon panier — La Folie Coffee',
         loadComponent: () =>
           import('./client/cart/panier-page/panier-page').then((m) => m.PanierPage),

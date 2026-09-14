@@ -169,16 +169,16 @@ export class PackedOrderSealedError extends BusinessError {
  * qui interdit le geste, c'est la donnée qui ne peut pas exister. On ne charge
  * pas deux bacs et demi dans un véhicule, ni moins que zéro.
  *
- * ⚠️ Le PLAFOND n'est pas ici : il vit dans `setPackingContainersSchema`, à la
- * frontière, parce que c'est une garde de saisie — une valeur qui part en
- * boucle — et non une règle du fournil. Le resserrer ici refuserait demain un
- * appelant légitime que le contrat autorise.
+ * Le plafond en fait partie depuis le 2026-09-14 : le compte se calcule
+ * désormais au serveur, pas par pas, et un plafond tenu par le seul schéma de
+ * la route aurait laissé le « + » le franchir. Il vaut
+ * `MAX_CONTAINERS_PER_ORDER`, le même nombre que `setPackingContainersSchema`.
  */
 export class InvalidContainerCountError extends DomainError {
   constructor(value: number) {
     super(
       "production.packing.invalid_container_count",
-      `Nombre de containers invalide : ${String(value)}. Saisissez un nombre entier de bacs, zéro compris.`,
+      `Nombre de containers invalide : ${String(value)}. Saisissez un nombre entier de bacs, de zéro à 99.`,
     );
   }
 }
@@ -201,6 +201,38 @@ export class LineNotProducedYetError extends BusinessError {
     super(
       "production.packing.not_produced_yet",
       `« ${productName} » n'est pas encore sorti du four. Cochez-le sur la fiche d'atelier avant de le mettre au bac.`,
+    );
+  }
+}
+
+/**
+ * La commande a atteint le **plafond de containers**.
+ *
+ * Un refus métier (409) et pas une donnée invalide : le geste « + » est bien
+ * formé, c'est l'état de la commande qui ne le permet plus.
+ */
+export class ContainerCeilingReachedError extends BusinessError {
+  constructor(reference: string, ceiling: number) {
+    super(
+      "production.packing.container_ceiling",
+      `La commande ${reference} compte déjà ${String(ceiling)} containers, le maximum. Vérifiez le compte avant d'en ajouter : une commande n'en occupe jamais autant.`,
+    );
+  }
+}
+
+/**
+ * Le compte de containers **a bougé pendant l'envoi**.
+ *
+ * L'écriture est atomique et bornée en base : quand elle ne s'applique pas
+ * alors que l'état relu juste après la permettrait, c'est qu'un autre poste a
+ * changé la commande entre les deux. Refuser plutôt que réessayer en silence :
+ * celui qui appuie doit relire ce que son voisin vient de faire.
+ */
+export class ContainerStepConflictError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "production.packing.container_step_conflict",
+      `Le nombre de containers de ${reference} vient d'être modifié depuis un autre poste. Relisez le poste, puis recommencez si besoin.`,
     );
   }
 }

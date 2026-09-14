@@ -1,0 +1,4 @@
+<h2 class="title">{{ t().account.sections.payment }}</h2>
+<p class="line">{{ t().account.termOrder }}</p>
+<p class="line monthly">{{ t().account.termMonthly }} · {{ monthly().badge }}</p>
+<app-card-foot [label]="t().account.details" (pressed)="open()" />

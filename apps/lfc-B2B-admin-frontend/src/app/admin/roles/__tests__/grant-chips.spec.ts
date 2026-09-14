@@ -45,8 +45,10 @@ describe('grantGroups', () => {
    * la prise de commande. `b2b_accounting` l'a fait passer de 20 à 21 le
    * 2026-09-10 : enregistrer le mandat d'un client et changer le compte qui
    * reçoit l'argent de l'entreprise ne peuvent pas s'ouvrir ensemble.
+   * `b2b_feature_access` l'a fait passer de 21 à 22 le 2026-09-14 : ouvrir ou
+   * couper la vente en ligne pèse plus que corriger une zone de livraison.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(21);
+    expect(RESOURCE_COUNT).toBe(22);
   });
 });

@@ -1,0 +1,97 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.desk-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.sub {
+  @include card.sub;
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-warning-text);
+}
+
+.state.certified {
+  background: var(--fold-color-success-surface);
+  color: var(--fold-color-success-text);
+}
+
+.check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-success);
+  color: var(--fold-color-on-success);
+}
+
+.kbis-verified {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fold-text-xs);
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 38px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 3px;
+  background: var(--lfc-paper-0);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  color: var(--fold-color-text-muted);
+}
+
+.lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--fold-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.acts {
+  flex: none;
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+/* LE GESTE de la carte quand rien n'est déposé : un vrai bouton, pleine largeur. */
+.upload {
+  width: 100%;
+}

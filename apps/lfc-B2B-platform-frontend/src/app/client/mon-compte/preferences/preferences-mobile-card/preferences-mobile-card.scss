@@ -1,0 +1,13 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.mobile-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.line {
+  @include card.line;
+}

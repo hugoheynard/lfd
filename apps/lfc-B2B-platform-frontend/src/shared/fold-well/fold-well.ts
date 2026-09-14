@@ -64,7 +64,9 @@ import { FoldElementTitleComponent } from 'fold-ng';
   selector: 'fold-well',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldElementTitleComponent],
-  host: { '[attr.data-scrollable]': 'scrollable() ? "" : null' },
+  host: {
+    '[attr.data-scrollable]': "scrollable() === 'narrow' ? 'narrow' : scrollable() ? '' : null",
+  },
   templateUrl: './fold-well.html',
   styleUrl: './fold-well.scss',
 })
@@ -90,8 +92,17 @@ export class FoldWellComponent {
    * Off by default: a well that scrolls when it did not need to steals the
    * page's own scroll on a touch screen, and the item under the thumb stops
    * being the one that moves.
+   *
+   * `"narrow"` makes it a rail **below the fold only** (899.98px). Above, the
+   * well lays its items out as the host decides through
+   * `--lfc-well-body-display`, `--lfc-well-body-columns` and
+   * `--lfc-well-body-align` — a phone swipes panels that a desk reads side by
+   * side, in ONE markup: the fold is a question of width, which server
+   * rendering does not know.
    */
-  readonly scrollable = input(false, { transform: booleanAttribute });
+  readonly scrollable = input<boolean | 'narrow', boolean | string | null | undefined>(false, {
+    transform: (value) => (value === 'narrow' ? 'narrow' : booleanAttribute(value)),
+  });
 
   /**
    * The item nearest the rail's leading edge, zero-based.

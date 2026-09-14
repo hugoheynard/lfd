@@ -12,14 +12,18 @@ import { randomUUID } from "node:crypto";
  *   recréée par `save` : une coche perdue là ferait refaire au fournil ce qui
  *   est déjà sorti du four, et aucun test unitaire ne voit cette réécriture.
  */
-import type {
-  ProductionContainerView,
-  ProductionWorksheetRetake,
-  ProductionWorksheetView,
+import {
+  addDays,
+  localToInstant,
+  type ProductionContainerView,
+  type ProductionWorksheetRetake,
+  type ProductionWorksheetView,
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { Clock } from "../src/platform/time/clock.js";
+import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 
@@ -58,6 +62,13 @@ const fakeGateway = {
   parseWebhook: () => ({ kind: "ignored" as const }),
 };
 
+/**
+ * L'horloge du serveur, figée à MAINTENANT avant chaque test — jamais à une
+ * date du calendrier. Seule la route « en cours » la déplace, et toujours
+ * relativement à la journée servie.
+ */
+const clock = new FixedClock(new Date());
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
@@ -65,6 +76,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: PaymentGateway, value: fakeGateway },
+      { token: Clock, value: clock },
     ],
   });
 });
@@ -74,6 +86,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  clock.set(new Date());
   await ctx.reset();
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
 });
@@ -331,5 +344,74 @@ describe("le contenant", () => {
       .put(`/admin/production/containers/${CROISSANT}`)
       .send({ unitsPerContainer: 0, singular: "plaque", plural: "plaques" })
       .expect(400);
+  });
+});
+
+describe("les fiches par rayon", () => {
+  it("sert les groupes dans l'ordre de la vitrine, avec leurs deux listes et leurs compteurs", async () => {
+    await place(BAGUETTE, 30);
+    await place(CROISSANT, 12);
+    await closePlan();
+    await mark(BAGUETTE, "MB");
+
+    const view = await worksheet();
+
+    expect(view.shelvesKnown).toBe(true);
+    // Sept jours devant : ni aujourd'hui, ni demain.
+    expect(view.relativeDay).toBeNull();
+    expect(view.groups.map((group) => group.key)).toEqual(["viennoiserie", "pain"]);
+    expect(view.groups[0]).toMatchObject({
+      lineCount: 1,
+      doneCount: 0,
+      remainingUnits: 12,
+    });
+    expect(view.groups[0]?.pending.map((line) => line.sku)).toEqual([CROISSANT]);
+    expect(view.groups[1]).toMatchObject({
+      label: "Pains",
+      doneCount: 1,
+      doneUnits: 30,
+      remainingUnits: 0,
+    });
+    expect(view.groups[1]?.done[0]).toMatchObject({ sku: BAGUETTE, initials: "MB" });
+  });
+});
+
+describe("la fiche EN COURS", () => {
+  /** L'horloge posée à midi, à Paris, la VEILLE de la journée servie. */
+  function eveOfServiceDay(): void {
+    const noon = localToInstant(addDays(SERVICE_DAY, -1), "12:00");
+    if (noon === null) {
+      throw new Error("Midi existe tous les jours à Paris.");
+    }
+    clock.set(noon);
+  }
+
+  async function current(): Promise<ProductionWorksheetView> {
+    return jsonBody<ProductionWorksheetView>(
+      await ctx.asSub(STAFF).get(`/admin/production/worksheet/current`).expect(200),
+    );
+  }
+
+  it("sert AUJOURD'HUI tant que le plan de demain n'est pas arrêté", async () => {
+    await place(CROISSANT, 12);
+    eveOfServiceDay();
+
+    const view = await current();
+
+    expect(view.date).toBe(addDays(SERVICE_DAY, -1));
+    expect(view.relativeDay).toBe("today");
+  });
+
+  it("sert DEMAIN dès que son plan est arrêté", async () => {
+    await place(CROISSANT, 12);
+    const closedAt = await closePlan();
+    eveOfServiceDay();
+
+    const view = await current();
+
+    expect(view.date).toBe(SERVICE_DAY);
+    expect(view.relativeDay).toBe("tomorrow");
+    expect(view.generatedAt).toBe(closedAt);
+    expect(view.groups.map((group) => group.key)).toEqual(["viennoiserie"]);
   });
 });

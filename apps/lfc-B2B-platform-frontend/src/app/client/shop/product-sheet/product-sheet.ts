@@ -32,6 +32,13 @@ export class ProductSheet {
 
   readonly quantity = input(0);
 
+  /**
+   * La boutique permet-elle d'ajouter au panier ? Faux au niveau `browse` (plan
+   * `plan-inscription-pro-seule.md` §4) : le pied de la fiche porte alors la
+   * mention à la place du stepper et du bouton.
+   */
+  readonly orderable = input(true);
+
   readonly closed = output<void>();
   readonly added = output<void>();
   readonly removed = output<void>();

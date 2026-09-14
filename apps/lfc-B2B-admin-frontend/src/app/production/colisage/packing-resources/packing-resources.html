@@ -1,0 +1,69 @@
+<!-- LA RESSOURCE — l'autre plateau, TELLE QUE SERVIE. -->
+<aside class="co-resource" aria-label="Ressource de la journée">
+  <p class="co-band">
+    <span class="co-band-title">Marchandise à répartir</span>
+    <span class="co-band-rule" aria-hidden="true"></span>
+  </p>
+  <!--
+    Deux colonnes. « Sorti » et « Pris » sont les OPÉRANDES du reste : les
+    afficher demandait une soustraction à qui n'a qu'une question — en reste-t-il.
+  -->
+  <div class="co-resource-filter">
+    <fold-checkbox
+      label="Masquer le stock épuisé"
+      [checked]="hideExhausted()"
+      (checkedChange)="hideExhausted.set($event)"
+    />
+  </div>
+  <div class="co-resource-head" aria-hidden="true">
+    <span class="co-res-name">Produit</span>
+    <span class="co-res-num">Reste</span>
+  </div>
+  <div class="co-resource-list">
+    @for (item of shownResources(); track item.sku) {
+      <!--
+        🔴 Un reste NÉGATIF n'est pas une erreur de calcul : les commandes
+        demandent plus que le tirage n'a prévu. Il se voit, il ne se borne pas à
+        zéro.
+
+        🔴 DEUX signaux, et surtout pas un seul : l'attente se lit sur le NOM, en
+        avertissement ; le manque sur le RESTE, en alerte. Un article peut être
+        les deux à la fois.
+      -->
+      <div
+        class="co-res"
+        [class.is-short]="item.remaining < 0"
+        [class.is-awaiting]="item.awaitingProduction"
+        [class.is-hit]="hitSkus().has(item.sku)"
+      >
+        <span class="co-res-name">
+          {{ item.productName }}
+          @if (item.awaitingProduction) {
+            <app-awaiting-badge />
+          }
+        </span>
+        <span class="co-res-num co-res-rest">
+          @if (item.remaining < 0) {
+            <fold-icon name="alert" size="sm" />
+          }
+          {{ item.remaining }}
+        </span>
+      </div>
+    } @empty {
+      <!--
+        Deux vides qui ne disent pas la même chose. Le filtre ne masque que ce
+        que le serveur dit épuisé : une liste servie non vide qui ne montre plus
+        rien veut donc dire que TOUT est épuisé.
+      -->
+      @if (resources().length === 0) {
+        <p class="co-res-none">Aucun compte à produire sur cette journée.</p>
+      } @else {
+        <fold-empty-state
+          icon="package-check"
+          title="Plus de marchandise disponible"
+          subtitle="Tout le tirage est parti dans les commandes. Décochez le filtre pour revoir les articles."
+        />
+      }
+    }
+  </div>
+</aside>

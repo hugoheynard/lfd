@@ -1,0 +1,9 @@
+@if (reachable()) {
+  <fold-card class="contact" padding="md" interactive (activated)="open()">
+    <span class="row">
+      <span class="glyph" aria-hidden="true"><fold-icon name="phone" /></span>
+      <span class="label">{{ t().account.supportTitle }}</span>
+      <fold-icon class="chevron" name="chevron-right" aria-hidden="true" />
+    </span>
+  </fold-card>
+}

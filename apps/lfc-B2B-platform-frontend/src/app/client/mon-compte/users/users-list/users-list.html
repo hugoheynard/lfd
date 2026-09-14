@@ -1,0 +1,34 @@
+@if (holder(); as person) {
+  <button class="holder" type="button" (click)="open(person)">
+    <span class="holder-initials" aria-hidden="true">{{ holderInitials() }}</span>
+    <span class="lines">
+      <span class="holder-kicker">{{ t().account.usersHolder }}</span>
+      <span class="holder-name">{{ holderName() }}</span>
+      <span class="holder-mail">{{ person.email }}</span>
+    </span>
+    <span class="holder-tag">{{ t().account.usersAllRights }}</span>
+  </button>
+
+  @if (people()) {
+    <ul class="people">
+      @for (row of rows(); track row.contact.id) {
+        <li>
+          <button class="person" type="button" (click)="open(row.contact)">
+            <span class="initials" aria-hidden="true">{{ row.initials }}</span>
+            <span class="lines">
+              <span class="person-name">{{ row.name }}</span>
+              <span class="person-line">{{ row.line }}</span>
+            </span>
+            <span class="tag">{{ t().account.tagContact }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+
+    <p class="note">{{ t().account.usersNote }}</p>
+  }
+} @else {
+  <p class="note">{{ t().account.cardUnknownNote }}</p>
+}
+
+<app-user-panel [contact]="opened()" (closed)="opened.set(null)" />

@@ -14,12 +14,12 @@
     <div class="fa-masthead-bar">
       <div class="fa-said">
         <p class="fa-eyebrow">
-          Fournée du {{ dayLabel() }}
-          @if (dayOffset(); as offset) {
+          Fournée du {{ day.dayLabel() }}
+          @if (day.dayOffset(); as offset) {
             <span class="fa-offset">· {{ offset }}</span>
           }
           @if (current()) {
-            · fiche {{ rank() }} sur {{ groups().length }}
+            · fiche {{ rank() }} sur {{ day.groups().length }}
           }
         </p>
         <h1 class="fa-title">{{ current()?.label ?? 'Fiche d’atelier' }}</h1>
@@ -44,7 +44,7 @@
             <p class="fa-figure">
               <span class="fa-figure-label">Cochées</span>
               <span class="fa-figure-value"
-                >{{ fiche.doneCount }}<span class="fa-figure-of"> / {{ fiche.lines.length }}</span>
+                >{{ fiche.doneCount }}<span class="fa-figure-of"> / {{ fiche.lineCount }}</span>
               </span>
             </p>
             <p class="fa-figure">
@@ -71,32 +71,57 @@
     }
 
     <!--
-      🔴 La lecture du catalogue a échoué : les quantités restent justes, mais
-      les rayons sont perdus — et sans rayon, il n'y a plus de poste. Un échec
-      partiel laisse le contenu à l'écran et se DIT.
+      🔴 Le serveur n'a pas pu lire les rayons (`shelvesKnown: false`) : les
+      quantités restent justes, mais tout est sous « Rayon inconnu » — et sans
+      rayon, il n'y a plus de poste. Un échec partiel laisse le contenu à l'écran
+      et se DIT.
     -->
-    @if (shelvesLost() && state() === 'ready') {
+    @if (day.shelvesLost() && day.state() === 'ready') {
       <fold-callout variant="warning" class="fa-note">
         Les rayons n'ont pas pu être lus — les quantités sont justes, mais les fiches ne sont pas
         séparées par poste. Rechargez pour les retrouver.
       </fold-callout>
     }
 
-    @if (retakeFailed()) {
+    @if (gestures.retakeFailed()) {
       <fold-callout variant="alert" class="fa-note">
         Le retirage n'a pas abouti — la fiche affichée est toujours celle du tirage lu. Réessayez.
       </fold-callout>
     }
 
+    <!--
+      🔴 La coche n'a pas été enregistrée : la case est revenue en arrière, et on
+      dit pourquoi. Une coche qui se défait sans explication se recoche, et se
+      refait refuser.
+    -->
+    @if (gestures.markFailed(); as failed) {
+      <fold-callout variant="alert" class="fa-note fa-mark-failed">
+        La coche n'a pas été enregistrée — {{ failed }}
+      </fold-callout>
+    }
+
+    <!--
+      🔴 La fiche vient de changer de journée sous les yeux de qui la regarde :
+      le plan de ce jour a été arrêté, et c'est lui qui passe au four. Le dire,
+      sinon on coche le mauvais jour.
+    -->
+    @if (day.dayTurnedLabel(); as turned) {
+      <fold-callout variant="info" class="fa-note fa-day-turned">
+        La fiche montre désormais le {{ turned }} — son plan vient d'être arrêté, et c'est lui qui
+        passe au four.
+        <button foldButton (click)="day.acknowledgeDayTurn()">Compris</button>
+      </fold-callout>
+    }
+
     <!-- Le bandeau de version périmée : un chiffre et une action. -->
-    @if (drift(); as changed) {
-      @if (generatedLabel(); as tirage) {
+    @if (day.drift(); as changed) {
+      @if (day.generatedLabel(); as tirage) {
         <app-drift-banner
           class="fa-note"
           [drift]="changed"
           [generatedLabel]="tirage"
           [compact]="compact()"
-          (retake)="retake()"
+          (retake)="gestures.retake()"
         />
       }
     }
@@ -116,10 +141,10 @@
   lisant le CSS compilé de `fold-ng`).
 
   Ici, ça décide de tout : le pied doit rester au bas de la fenêtre et la LISTE
-  doit défiler seule, sinon « hors ligne » et « 2 gestes en attente » partent
+  doit défiler seule, sinon « relue à 4 h 12 » et l'échec d'une relecture partent
   sous le pli, et c'est exactement ce qu'on ne peut pas se permettre de cacher.
 -->
-@switch (state()) {
+@switch (day.state()) {
   @case ('loading') {
     <fold-loading message="Lecture de la fiche…" />
   }
@@ -129,7 +154,7 @@
       title="Impossible de lire la fiche"
       subtitle="La lecture a échoué — ce qui a été coché, lui, est intact."
     >
-      <button foldButton (click)="load()">Réessayer</button>
+      <button foldButton (click)="day.load()">Réessayer</button>
     </fold-empty-state>
   }
   @default {
@@ -140,21 +165,27 @@
           <span class="fa-band-rule" aria-hidden="true"></span>
           <span class="fa-band-sum">
             {{ fiche.doneCount }} ligne{{ fiche.doneCount > 1 ? 's' : '' }} sur
-            {{ fiche.lines.length }} faite{{ fiche.doneCount > 1 ? 's' : '' }} ·
+            {{ fiche.lineCount }} faite{{ fiche.doneCount > 1 ? 's' : '' }} ·
             {{ fiche.totalUnits }} pièce{{ fiche.totalUnits > 1 ? 's' : '' }} au total
           </span>
         </div>
 
         <!--
           UNE seule liste, UN seul composant de ligne. Le poste fixe montre tout
-          dans l'ordre de la fiche ; le téléphone ne garde que ce qui reste, les
-          lignes faites descendant dans le bloc replié du bas. Ce qui change est
-          la SOURCE, jamais le gabarit — deux gabarits divergeraient au premier
-          produit ajouté.
+          dans l'ordre de la fiche (`lines`) ; le téléphone ne garde que ce qui
+          reste (`pending`), les lignes faites descendant dans le bloc replié du
+          bas. Ce qui change est la SOURCE — servie —, jamais le gabarit.
+
+          Deux listes au poste fixe (en cours / faite) ont été essayées puis
+          retirées le 2026-09-14 : on y perdait en ergonomie.
         -->
         <div class="fa-lines">
-          @for (line of compact() ? todo() : fiche.lines; track line.sku) {
-            <app-worksheet-line [line]="line" (toggled)="toggle(line, $event)" />
+          @for (line of compact() ? todo() : lines(); track line.sku) {
+            <app-worksheet-line
+              [line]="line"
+              [busy]="gestures.isBusy(line)"
+              (toggled)="gestures.toggle(line, $event)"
+            />
           } @empty {
             <fold-empty-state
               title="Tout est sorti"
@@ -167,7 +198,7 @@
 
         <!-- Les lignes faites, épinglées au-dessus du pied — hors de la zone qui
              défile, donc toujours atteignables. -->
-        @if (compact() && done().length > 0) {
+        @if (compact() && fiche.doneCount > 0) {
           <div class="fa-done">
             <button
               type="button"
@@ -175,15 +206,23 @@
               [attr.aria-expanded]="doneOpen()"
               (click)="toggleDone()"
             >
-              <span class="fa-band-title">Faites · {{ done().length }}</span>
-              <span class="fa-done-sum">{{ donePieces() }} pièces sorties</span>
+              <span class="fa-band-title">Faites · {{ fiche.doneCount }}</span>
+              <span class="fa-done-sum"
+                >{{ fiche.doneUnits }} pièce{{ fiche.doneUnits > 1 ? 's' : '' }} sortie{{
+                  fiche.doneUnits > 1 ? 's' : ''
+                }}</span
+              >
               <span class="fa-band-rule" aria-hidden="true"></span>
               <span class="fa-done-more">{{ doneOpen() ? 'Replier' : 'Déplier' }}</span>
             </button>
             @if (doneOpen()) {
               <div class="fa-done-lines">
                 @for (line of done(); track line.sku) {
-                  <app-worksheet-line [line]="line" (toggled)="toggle(line, $event)" />
+                  <app-worksheet-line
+                    [line]="line"
+                    [busy]="gestures.isBusy(line)"
+                    (toggled)="gestures.toggle(line, $event)"
+                  />
                 }
               </div>
             }
@@ -195,12 +234,12 @@
             Ni prix, ni nom de client, ni total en euros sur cette fiche — par construction.
           </p>
           <p class="fa-foot-origin">
-            @if (generatedLabel(); as tirage) {
+            @if (day.generatedLabel(); as tirage) {
               Tirée à {{ tirage }}
-              @if (retakenLabel(); as retiree) {
+              @if (day.retakenLabel(); as retiree) {
                 · retirée à {{ retiree }}
               }
-              @if (drift(); as changed) {
+              @if (day.drift(); as changed) {
                 · {{ changed.orders }} commande{{ changed.orders > 1 ? 's' : '' }} arrivée{{
                   changed.orders > 1 ? 's' : ''
                 }}
@@ -219,16 +258,17 @@
               Le plan n'est pas arrêté — ceci est la demande du commerce à cette heure-ci. Le plan
               du soir s'arrête depuis le prévisionnel.
             }
-            @if (offline()) {
-              <span class="fa-foot-flag">
-                <fold-icon name="offline-bolt" size="sm" />
-                hors ligne
-              </span>
-            }
-            @if (pendingMarks() > 0) {
-              <span class="fa-foot-flag">
-                {{ pendingMarks() }} geste{{ pendingMarks() > 1 ? 's' : '' }} en attente d'envoi
-              </span>
+            <!--
+              De quand date ce qu'on lit. Les autres postes cochent aussi, et la
+              fiche se relit toutes les 15 s : si la relecture échoue, l'écran le
+              dit plutôt que d'avoir l'air à jour.
+            -->
+            @if (day.refreshFailed()) {
+              <strong class="fa-foot-stale"
+                >· relecture impossible depuis {{ day.readLabel() }}</strong
+              >
+            } @else if (day.readLabel(); as read) {
+              · relue à {{ read }}
             }
           </p>
         </footer>

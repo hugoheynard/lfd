@@ -9,10 +9,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldIconComponent,
   FoldIdService,
   FoldInputComponent,
 } from 'fold-ng';
@@ -50,10 +52,12 @@ import { RuleOu } from '../rule-ou/rule-ou';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldIconComponent,
     FoldInputComponent,
     CallbackBlock,
     DoorCard,
     EventCard,
+    RouterLink,
     RuleOu,
   ],
   templateUrl: './welcome-step.html',

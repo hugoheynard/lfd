@@ -1,0 +1,14 @@
+<h2 class="title">{{ t().account.sections.profile }}</h2>
+@if (profile(); as me) {
+  <dl class="facts">
+    <div class="fact">
+      <dt>{{ t().account.profileLastName }}</dt>
+      <dd>{{ name() }}</dd>
+    </div>
+    <div class="fact">
+      <dt>{{ t().account.profileEmail }}</dt>
+      <dd>{{ me.email }}</dd>
+    </div>
+  </dl>
+  <app-card-foot [label]="t().account.edit" (pressed)="open()" />
+}

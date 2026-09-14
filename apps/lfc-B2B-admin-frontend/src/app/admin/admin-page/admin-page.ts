@@ -22,6 +22,12 @@ const ADMIN: WorkspaceRailItem = {
  * **Admin** — ce qui se règle sur les GENS, par opposition aux Réglages, qui
  * portent sur le commerce (retraits, catalogue, tarification, facturation).
  *
+ * ⚠️ Une exception depuis le 2026-09-14 : **l'accès aux fonctionnalités**
+ * (`feature-access`) vit ici alors qu'il porte sur le commerce — c'est le plan
+ * `plan-inscription-pro-seule.md` qui l'y range. La définition « les gens » n'en
+ * rend donc plus compte seule : ce qui se règle ici, c'est **qui entre, et
+ * dans quoi**, d'une personne ou de tout le monde à la fois.
+ *
  * Deux vues qui vivaient chacune ailleurs, et mal :
  *
  * - **Utilisateurs** était rangé sous Réglages par commodité, alors qu'il exige

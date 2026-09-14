@@ -32,9 +32,9 @@ export class UpdateMyProfileHandler implements ICommandHandler<UpdateMyProfileCo
       throw new UserProfileNotFoundError(command.userId);
     }
 
-    const profile = UserProfile.create(command);
+    const profile = UserProfile.revise(current.email, command);
 
-    if (profile.emailDiffersFrom(current.email)) {
+    if (profile.emailChanged) {
       await this.ensureEmailIsFree(profile.email.value, command.userId);
       await this.identity.changeEmail(command.subject, profile.email.value);
     }

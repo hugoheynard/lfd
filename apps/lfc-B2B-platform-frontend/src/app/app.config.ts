@@ -1,10 +1,16 @@
-import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  type ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
+import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
 import { AddressesService } from './legacy/entreprises/addresses.service';
@@ -34,6 +40,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withFetch()),
     provideAuth(),
+    // Ce que la boutique permet, lu au DÉMARRAGE et sans attendre la réponse :
+    // le premier écran se dessine tout de suite, seules les gardes qui en
+    // dépendent patientent (cf. `featureAccessGuard`).
+    provideAppInitializer(() => {
+      void inject(ClientFeatureAccess).load();
+    }),
     // Toasts d'opération (succès/échec) : succès bref, erreur sticky (défauts fold).
     provideFoldToasts({}),
     // Le port de retour d'opération de `@lfd/b2b-ui` : les panneaux de la lib

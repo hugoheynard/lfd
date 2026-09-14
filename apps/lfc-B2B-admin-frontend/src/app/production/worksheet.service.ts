@@ -13,14 +13,25 @@ import { B2B_API_BASE } from '../api/api-config';
  * lit un lot de commandes pour l'imprimer, celui-là lit un compte à produire et
  * l'**écrit** — deux raisons de changer, et une seule qui porte des gestes.
  *
- * Aucun état gardé ici : la file hors ligne est le seul endroit qui retient
- * quelque chose, et elle le fait explicitement.
+ * Aucun état gardé ici : la lecture de l'écran vit dans `WorkshopDayReader`.
  */
 @Injectable({ providedIn: 'root' })
 export class WorksheetService {
   private readonly http = inject(HttpClient);
 
-  /** La fiche d'une journée de service (`AAAA-MM-JJ`). */
+  /**
+   * **La fiche que le four est en train de faire** — demain si son plan est
+   * arrêté, aujourd'hui sinon, décidé au SERVEUR avec son horloge (2026-09-14).
+   * C'est la seule lecture de la fournée du jour : l'horloge du poste n'est pas
+   * une autorité.
+   */
+  async current(): Promise<ProductionWorksheetView> {
+    return firstValueFrom(
+      this.http.get<ProductionWorksheetView>(`${B2B_API_BASE}/admin/production/worksheet/current`),
+    );
+  }
+
+  /** La fiche d'une journée de service (`AAAA-MM-JJ`) — celle d'un lien partagé. */
   async worksheet(date: string): Promise<ProductionWorksheetView> {
     return firstValueFrom(
       this.http.get<ProductionWorksheetView>(

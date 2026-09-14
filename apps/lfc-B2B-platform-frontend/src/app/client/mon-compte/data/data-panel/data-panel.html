@@ -1,0 +1,54 @@
+<fold-panel-header [title]="t().account.sections.data" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  <div class="exports">
+    <!-- L'export des commandes suit la boutique (plan §4) : sous le niveau où
+         l'on commande, il n'est pas offert. -->
+    @if (access.atLeast('order')) {
+      <div class="export">
+        <button foldButton class="export-action" emphasis="outline" intent="neutral" type="button">
+          {{ t().account.dataExportOrders }}
+        </button>
+        <p class="note">{{ t().account.dataExportOrdersSub }}</p>
+      </div>
+    }
+    <div class="export">
+      <button foldButton class="export-action" emphasis="outline" intent="neutral" type="button">
+        {{ t().account.dataExportPersonal }}
+      </button>
+      <p class="note">{{ t().account.dataExportPersonalSub }}</p>
+    </div>
+  </div>
+  <p class="note">{{ t().account.dataKeep }}</p>
+  <!-- LA ZONE SENSIBLE a son propre territoire : deux gestes irréversibles,
+       chacun avec sa conséquence énoncée, et son bouton BORDÉ. -->
+  <fold-callout variant="alert">
+    <div class="danger">
+      <p class="danger-head">{{ t().account.dangerHead }}</p>
+      <p class="danger-title">{{ t().account.transferHead }}</p>
+      <p class="danger-text">{{ t().account.transferBody }}</p>
+      <button
+        foldButton
+        class="danger-cta"
+        size="sm"
+        emphasis="outline"
+        intent="danger"
+        type="button"
+      >
+        {{ t().account.transferCta }}
+      </button>
+      <p class="danger-title">{{ t().account.closeHead }}</p>
+      <p class="danger-text">{{ t().account.closeBody }}</p>
+      <button
+        foldButton
+        class="danger-cta"
+        size="sm"
+        emphasis="outline"
+        intent="danger"
+        type="button"
+      >
+        {{ t().account.closeCta }}
+      </button>
+    </div>
+  </fold-callout>
+</fold-panel-body>

@@ -1,0 +1,59 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Accès aux fonctionnalités — les ÉCARTS au catalogue du code
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/feature-access/`. Plan :
+// `documentation/b2b/plan-inscription-pro-seule.md` §2.1.
+//
+// Le catalogue (clés, niveaux ordonnés, défauts) vit dans `@lfd/contracts`. Ces
+// deux tables ne portent que ce qui s'en écarte : « revenir au défaut » et
+// « retirer une exemption » SUPPRIMENT la ligne, et c'est le geste lui-même —
+// la trace reste au journal, écrite dans la même transaction.
+//
+// Aucune contrainte ne lie `key` au catalogue, délibérément : une clé retirée du
+// code laisserait sinon une migration à écrire pour pouvoir déployer. Une ligne
+// dont la clé ou la valeur n'est plus au catalogue est ignorée par la
+// résolution, et signalée à l'écran.
+
+/// Une **dérogation** : la valeur posée en admin pour une clé du catalogue.
+/// Absente = défaut du code.
+model FeatureAccessOverride {
+  /// La clé du catalogue (`shop`). Clé NATURELLE : une dérogation par clé.
+  key   String @id
+  /// Un niveau de cette clé (`closed`, `browse`, `order`).
+  value String
+
+  /// Instant du geste, lu du `Clock` — pas `@updatedAt`, qui lirait l'horloge
+  /// de la base au lieu de celle de la requête.
+  updatedAt     DateTime @map("updated_at")
+  /// Qui l'a posée, figé à l'instant du geste : le `sub` survit à tout, le nom
+  /// et le rôle sont un instantané (cf. l'activation d'une société).
+  updatedBySub  String   @map("updated_by_sub")
+  updatedByName String   @map("updated_by_name")
+  updatedByRole String   @map("updated_by_role")
+
+  @@map("feature_access_overrides")
+  @@schema("public")
+}
+
+/// Une **exemption** : une adresse qui garde le niveau le plus ouvert d'une clé,
+/// pour tester en production. Ne joue que sur une adresse PROUVÉE.
+model FeatureAccessExemption {
+  /// ULID fourni par l'`IdGenerator`.
+  id    String @id
+  key   String
+  /// Normalisée (sans espace, en minuscules) à l'écriture ; la lecture
+  /// normalise de la même façon avant de chercher.
+  email String
+
+  createdAt     DateTime @map("created_at")
+  createdBySub  String   @map("created_by_sub")
+  createdByName String   @map("created_by_name")
+  createdByRole String   @map("created_by_role")
+
+  /// Une adresse au plus une fois par clé : l'ajout est idempotent, et c'est
+  /// aussi l'index de la recherche faite à chaque requête gardée.
+  @@unique([key, email])
+  @@map("feature_access_exemptions")
+  @@schema("public")
+}

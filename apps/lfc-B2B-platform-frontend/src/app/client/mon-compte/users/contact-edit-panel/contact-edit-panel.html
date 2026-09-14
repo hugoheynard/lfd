@@ -1,0 +1,37 @@
+<fold-panel-header
+  [title]="isHolder() ? t().account.contactEditHolderTitle : t().account.contactEditTitle"
+  [subtitle]="isHolder() ? t().account.contactEditHolderSubtitle : t().account.contactEditSubtitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  <!-- LE REFUS reste dans le panneau : c'est ici qu'on corrige ce qu'il nomme. -->
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.contactEditFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <!-- Le rôle du détenteur est constaté, pas choisi : pas de liste pour lui. -->
+  <lfd-contact-fields
+    [value]="draft()"
+    (valueChange)="draft.set($event)"
+    [withRole]="!isHolder()"
+  />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ t().account.save }}
+  </button>
+</fold-panel-footer>

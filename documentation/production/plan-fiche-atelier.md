@@ -130,6 +130,11 @@ quelqu'un finirait par citer. La ligne est absente plutôt que fabriquée.
 
 ## 6. La catégorie reste côté écran
 
+> 🔴 **Périmé le 2026-09-14** — décision de Hugo : la fiche ne calcule rien, elle
+> interroge le serveur. Le groupement par rayon passe au serveur par un port que
+> le commerce implémente ; voir le §10. Le texte ci-dessous est celui du plan
+> d'origine.
+
 Le compte à produire ne connaît que des SKU — la production ne lit pas le
 catalogue, et ne doit pas commencer. Le groupement par catégorie se fait donc
 **dans l'écran**, par `production-recap.ts`, exactement comme le récapitulatif
@@ -155,6 +160,13 @@ qu'une préférence suive la personne, c'est une colonne sur `staff_users` et un
 n'est pas la machine du chef, et c'est la PERSONNE qui reprend son poste.
 
 ## 8. Le hors ligne
+
+> 🔴 **Retiré le 2026-09-14.** Décision de Hugo : le fournil a toujours du
+> réseau, et la file locale coûtait plus qu'elle ne protégeait — elle a bloqué
+> le poste au premier usage. Une coche part désormais directement au serveur, et
+> revient en arrière en le disant si elle échoue. Le texte ci-dessous est celui
+> du plan d'origine, gardé pour dire ce qui avait été décidé et pourquoi. La
+> suite : [`relecture-des-postes.md`](relecture-des-postes.md).
 
 Le fournil est en sous-sol. La coche s'écrit **dans l'écran d'abord**, part
 ensuite ; ce qui n'est pas parti attend dans une file locale et repart à la
@@ -184,3 +196,78 @@ abstraction. Celle-ci est faite pour être reprise, pas pour être générale.
 **Ce qui NE bouge pas** : `fiche-production/` (les bons de commande), la vue
 Récapitulatif, `renderDeliveryNote`. La fiche d'atelier **ouvre** l'écran de la
 Fournée du jour ; les deux autres vues restent derrière elle, intactes.
+
+---
+
+> **Relecture multiposte** — depuis le 2026-09-14, cette fiche se relit toutes les 15 s tant que l'onglet est visible, et une coche part directement au serveur, sans file. La règle et ses raisons : [`relecture-des-postes.md`](relecture-des-postes.md).
+
+## 10. La fiche ne calcule rien
+
+_Décidé le 2026-09-14, à la demande de Hugo. État : en construction._
+
+Même règle que le poste de colisage (`plan-poste-de-colisage.md`, « L'écran
+n'additionne rien ») : **tout ce qui est un chiffre, une pile ou une règle vient
+du serveur**, et l'écran relit après chaque geste accepté. Jusqu'ici la fiche
+joignait elle-même le catalogue pour trouver les rayons, triait, comptait les
+lignes faites, les pièces restantes, séparait les deux listes, et choisissait
+sa journée sur l'horloge du poste.
+
+### Ce que le serveur sert en plus (contrat additif)
+
+- `groups` — les fiches, une par rayon, **dans l'ordre de la vitrine**
+  (`CATALOG_CATEGORY_ORDER`), le groupe sans rayon en dernier. Chacune porte sa
+  clé, son libellé, `lineCount`, `doneCount`, `totalUnits`, `remainingUnits`,
+  `doneUnits`, toutes ses lignes (`lines`, le poste fixe) et ses deux listes
+  `pending` et `done` (le téléphone), dans l'ordre de la fiche
+  (le plus gros d'abord, puis le nom — celui que `worksheetOf` applique déjà).
+- `shelvesKnown` — `false` quand la lecture des rayons a échoué : les lignes sont
+  alors toutes dans le groupe « Rayon inconnu », et l'écran le dit. La fiche
+  reste servie : les quantités ne dépendent pas du catalogue.
+- `relativeDay` — « aujourd'hui » / « demain » selon l'horloge du **serveur**,
+  par le même `relativeDayOf` que le colisage.
+- `lines` reste servi, **déprécié** : le front en ligne le lit (CLAUDE.md §0).
+
+### La journée travaillée se décide au serveur
+
+`GET /admin/production/worksheet/current` applique la règle du 2026-09-13 —
+**demain si son plan est arrêté, aujourd'hui sinon** — avec le `Clock`, au jour
+de Paris. L'écran ne fait plus deux lectures et ne lit plus sa propre horloge.
+`GET …/worksheet?date=` reste servi pour un lien partagé.
+
+### D'où viennent les rayons
+
+La production ne lit ni le commerce ni le référentiel (§3 de CLAUDE.md). Elle
+**déclare** `WorkshopShelvesReader` dans `production/channels/commerce/` —
+`shelvesOf(skus) → Map<sku, CatalogCategory>` — et le commerce l'implémente sur
+son `ProductCatalogReader.resolveMany`, relié dans `ProductionFeedModule`. Même
+motif que `DayOrdersReader` ; aucune migration, aucune copie de la catégorie.
+
+Deux faits, lus dans le code (vérifié le 2026-09-14) :
+
+- l'adaptateur (`b2b/catalog/infrastructure/catalog-workshop-shelves.reader.ts`)
+  lit `CatalogReader.listDefaultsByProductSkus`, la même source que
+  `resolveMany`, qui **écarte les articles masqués et ceux sans taux de TVA**.
+  Un article masqué à la vente mais fabriqué ce jour-là tombe donc en « Hors
+  catalogue ». ⚠️ La première version de ce plan affirmait l'inverse, sur la foi
+  d'une lecture de `resolveMany` seul ; c'est la construction qui l'a démenti ;
+- la conversion complète en article **lève** `UnknownCatalogShelfError` quand une
+  famille n'a pas de rayon, et `resolveMany` ferait alors tomber tout le lot.
+  L'adaptateur ne traduit que la famille : ce SKU est absent de la table, une
+  vraie panne remonte.
+
+Deux listes au poste fixe — en cours au centre, faite dans un rail — ont été
+essayées puis retirées le même jour : on y perdait en ergonomie. Le poste fixe
+montre `lines` dans l'ordre de la fiche, le téléphone garde `pending` et le bloc
+replié des `done`.
+
+### Ce qui reste à l'écran
+
+- l'état montré d'une case le temps de son envoi, et son désarmement ; au
+  téléphone, la ligne change de bloc **à la relecture qui suit**, pas avant ;
+- le choix de la fiche ouverte et sa mémorisation par personne (§7) ;
+- la mise en forme : pluriels, « 3/5 » composé de deux chiffres servis.
+
+### Hors périmètre
+
+Le **prévisionnel** joint encore le catalogue côté écran (`previsionnel-page.ts`,
+`dossier-du-jour.ts`). Même dette, pas traitée ici.

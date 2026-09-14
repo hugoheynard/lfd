@@ -1,0 +1,4 @@
+<h2 class="title">{{ t().account.sections.preferences }}</h2>
+<p class="line">{{ preferences.habit() }}</p>
+<p class="line">{{ preferences.language() }}</p>
+<app-card-foot [label]="t().account.details" (pressed)="open()" />

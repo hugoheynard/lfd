@@ -13,6 +13,7 @@
  */
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
+import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
 import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -123,6 +124,62 @@ describe("PATCH /me/profile", () => {
     expect(emailChanges).toEqual([{ subject: SUB, email: "camille@nouvelle.fr" }]);
     const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     expect(stored.email).toBe("camille@nouvelle.fr");
+  });
+
+  /**
+   * Régression : changer d'adresse laissait `users.email_verified` à `true`,
+   * alors qu'Auth0 le remettait à `false` — une personne vérifiée le restait
+   * sur n'importe quelle adresse tapée ensuite (2026-09-14).
+   */
+  it("fait retomber la preuve d'adresse avec l'adresse qu'elle prouvait", async () => {
+    await ctx.prisma.user.update({ where: { id: userId }, data: { emailVerified: true } });
+
+    await ctx
+      .asSub(SUB)
+      .patch("/me/profile")
+      .send({ firstName: "Camille", lastName: "Rousseau", email: "camille@nouvelle.fr", phone: "" })
+      .expect(200);
+
+    const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    expect(stored).toMatchObject({ email: "camille@nouvelle.fr", emailVerified: false });
+  });
+
+  /**
+   * Régression : le jeton d'accès émis pour l'ANCIENNE adresse, encore valide
+   * après le changement, remettait la preuve à `true` à la requête suivante
+   * (2026-09-14). Par le vrai resolver : le verifier doublé ne porte pas de claim.
+   */
+  it("ne laisse pas l'ancien jeton re-prouver la nouvelle adresse", async () => {
+    await ctx.prisma.user.update({ where: { id: userId }, data: { emailVerified: true } });
+    await ctx
+      .asSub(SUB)
+      .patch("/me/profile")
+      .send({ firstName: "Camille", lastName: "Rousseau", email: "camille@nouvelle.fr", phone: "" })
+      .expect(200);
+
+    const principal = await ctx.app.get(PrincipalResolver).resolve({
+      subject: SUB,
+      scopes: [],
+      email: "camille@ancienne.fr",
+      emailVerified: true,
+    });
+
+    expect(principal.emailProven).toBe(false);
+    const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    expect(stored.emailVerified).toBe(false);
+  });
+
+  it("garde la preuve d'adresse quand l'adresse ne change pas", async () => {
+    await ctx.prisma.user.update({ where: { id: userId }, data: { emailVerified: true } });
+
+    await ctx
+      .asSub(SUB)
+      .patch("/me/profile")
+      .send({ firstName: "Camille", lastName: "Benali", email: "CAMILLE@ancienne.fr", phone: "" })
+      .expect(200);
+
+    const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    expect(stored).toMatchObject({ lastName: "Benali", emailVerified: true });
   });
 
   it("n'écrit RIEN chez nous si la propagation à Auth0 échoue", async () => {

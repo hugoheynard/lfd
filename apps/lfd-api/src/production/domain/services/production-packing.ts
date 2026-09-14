@@ -1,6 +1,12 @@
-import type { PackingResource, PackingSheet, ProductionPackingView } from "@lfd/contracts";
+import {
+  type PackingLine,
+  type PackingResource,
+  type PackingSheet,
+  type ProductionPackingView,
+} from "@lfd/contracts";
 
 import type { ProducedItemSnapshot, ProductionOrderSnapshot } from "../entities/production-day.js";
+import { relativeDayOf } from "./relative-day.js";
 
 /**
  * **Le poste de colisage** — les bacs d'un côté, ce que le four a sorti de
@@ -24,6 +30,12 @@ export interface PackingSources {
   readonly orders: readonly ProductionOrderSnapshot[];
   /** Le compte à produire : la moitié « ressource » de la balance. */
   readonly counts: readonly ProducedItemSnapshot[];
+  /**
+   * L'instant du **serveur**, lu par le port `Clock` dans le handler. Il ne sert
+   * qu'à dire si la journée lue est aujourd'hui ou demain : l'horloge d'un poste
+   * de fournil n'est pas une autorité, et la fonction reste pure.
+   */
+  readonly now: Date;
 }
 
 /**
@@ -45,10 +57,21 @@ export interface PackingSources {
  * puissent jamais rendre deux ordres.
  */
 export function packingBoardOf(sources: PackingSources): ProductionPackingView {
+  const relativeDay = relativeDayOf(sources.date, sources.now);
   if (sources.closedAt === null) {
-    return { date: sources.date, closedAt: null, sheets: [], resources: [] };
+    return {
+      date: sources.date,
+      closedAt: null,
+      sheets: [],
+      resources: [],
+      orderCount: 0,
+      todoCount: 0,
+      readyCount: 0,
+      relativeDay,
+    };
   }
   const awaiting = awaitingOf(sources.counts);
+  const readyCount = sources.orders.filter((order) => order.packed !== null).length;
   return {
     date: sources.date,
     closedAt: sources.closedAt.toISOString(),
@@ -56,7 +79,36 @@ export function packingBoardOf(sources: PackingSources): ProductionPackingView {
       .map((order) => sheetOf(order, awaiting))
       .sort((left, right) => left.reference.localeCompare(right.reference)),
     resources: resourcesOf(sources, awaiting),
+    orderCount: sources.orders.length,
+    todoCount: sources.orders.length - readyCount,
+    readyCount,
+    relativeDay,
   };
+}
+
+/**
+ * **La règle de « Déclarer prête »** — écrite ici, et nulle part ailleurs.
+ *
+ * Toutes les lignes sont dans le bac, et la commande n'est pas déjà déclarée.
+ * C'est une RÈGLE, donc au serveur (décidé le 2026-09-14) : un bouton dont
+ * l'écran décide seul s'il est actif proposerait, le jour où elle change ici, un
+ * geste que le serveur refuse.
+ *
+ * ⚠️ Une commande **sans ligne** n'est pas déclarable, alors que « toutes ses
+ * lignes sont dans le bac » serait vrai sur une liste vide. Rien ne produit une
+ * telle commande aujourd'hui ; si l'une apparaissait, la déclarer prête
+ * annoncerait au client un colis qui ne contient rien.
+ *
+ * ⚠️ Ce n'est pas la garde de la route de scan, qui reste inconditionnelle :
+ * elle est encodée dans des QR déjà imprimés (cf. le plan). L'écran est plus
+ * exigeant que la route, et c'est assumé.
+ */
+export function canDeclareReady(order: ProductionOrderSnapshot): boolean {
+  return (
+    order.packed === null &&
+    order.lines.length > 0 &&
+    order.lines.every((line) => line.packed !== null)
+  );
 }
 
 /**
@@ -80,31 +132,58 @@ function awaitingOf(counts: readonly ProducedItemSnapshot[]): (sku: string) => b
   return (sku) => !produced.has(sku);
 }
 
-/** Un bac : le bon tel qu'il a été figé, plus l'état de son remplissage. */
+/**
+ * Un bac : le bon tel qu'il a été figé, l'état de son remplissage, et ses
+ * compteurs.
+ *
+ * Les compteurs sont ici et pas à l'écran (décidé le 2026-09-14) : deux calculs
+ * du même chiffre divergent à la première règle modifiée d'un seul côté.
+ * `pieces` compte en PIÈCES, l'unité de la marchandise à répartir — un compte
+ * de lignes ne se compare à rien.
+ */
 function sheetOf(order: ProductionOrderSnapshot, awaiting: (sku: string) => boolean): PackingSheet {
+  const packed = order.lines.filter((line) => line.packed !== null);
   return {
     reference: order.reference,
     containers: order.containers,
     customerLabel: order.customerLabel,
     fulfillmentMethod: order.fulfillmentMethod,
     destination: order.destination,
-    lines: [...order.lines]
-      .map((line) => ({
-        sku: line.sku,
-        productName: line.productName,
-        quantity: line.quantity,
-        packed: line.packed !== null,
-        // La chaîne vide n'est pas une signature : une ligne au bac sans
-        // initiales rend `null`, comme une ligne pas encore rangée. L'écran n'a
-        // alors rien à afficher, plutôt qu'un blanc qui appelle un crayon.
-        initials: line.packed === null || line.packed.initials === "" ? null : line.packed.initials,
-        packedAt: line.packed?.at.toISOString() ?? null,
-        awaitingProduction: awaiting(line.sku),
-      }))
-      .sort(byNameThenSku),
+    lines: linesOf(order, awaiting),
+    lineCount: order.lines.length,
+    packedLines: packed.length,
+    remainingLines: order.lines.length - packed.length,
+    pieces: sumOfQuantities(order.lines),
+    packedPieces: sumOfQuantities(packed),
+    canDeclareReady: canDeclareReady(order),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,
   };
+}
+
+/** Les lignes d'un bac, rangées par nom puis SKU. */
+function linesOf(
+  order: ProductionOrderSnapshot,
+  awaiting: (sku: string) => boolean,
+): readonly PackingLine[] {
+  return [...order.lines]
+    .map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      quantity: line.quantity,
+      packed: line.packed !== null,
+      // La chaîne vide n'est pas une signature : une ligne au bac sans
+      // initiales rend `null`, comme une ligne pas encore rangée. L'écran n'a
+      // alors rien à afficher, plutôt qu'un blanc qui appelle un crayon.
+      initials: line.packed === null || line.packed.initials === "" ? null : line.packed.initials,
+      packedAt: line.packed?.at.toISOString() ?? null,
+      awaitingProduction: awaiting(line.sku),
+    }))
+    .sort(byNameThenSku);
+}
+
+function sumOfQuantities(lines: readonly { readonly quantity: number }[]): number {
+  return lines.reduce((total, line) => total + line.quantity, 0);
 }
 
 /**
@@ -145,13 +224,16 @@ function resourcesOf(
     .map((sku) => {
       const count = produced.get(sku);
       const taken = allocated.get(sku) ?? 0;
+      const remaining = (count?.quantity ?? 0) - taken;
+      const awaitingProduction = awaiting(sku);
       return {
         sku,
         productName: count?.productName ?? names.get(sku) ?? sku,
         produced: count?.quantity ?? 0,
         allocated: taken,
-        remaining: (count?.quantity ?? 0) - taken,
-        awaitingProduction: awaiting(sku),
+        remaining,
+        awaitingProduction,
+        exhausted: remaining === 0 && !awaitingProduction,
       };
     })
     .sort(byNameThenSku);

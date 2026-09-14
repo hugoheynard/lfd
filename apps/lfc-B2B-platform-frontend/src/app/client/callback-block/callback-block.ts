@@ -10,6 +10,9 @@ import { ClientCopyService, fill } from '../copy/client-copy.service';
  * pro, la commande rattrape un oubli. L'ARGUMENT change donc, et il arrive en
  * entrée ; ce qui ne change pas — la forme du rappel obtenu, l'annulation, le
  * numéro rappelé — vit ici, une seule fois.
+ *
+ * Un contenu projeté se pose sous les actions : l'accueil y ajoute la porte
+ * pro, que la commande n'a pas à montrer.
  */
 @Component({
   selector: 'app-callback-block',

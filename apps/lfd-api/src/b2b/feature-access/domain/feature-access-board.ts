@@ -1,0 +1,85 @@
+import {
+  FEATURE_CATALOGUE,
+  FEATURE_KEYS,
+  featureLevelsOf,
+  isFeatureKey,
+  isFeatureLevel,
+  type AdminFeatureAccessView,
+  type AdminFeatureView,
+  type FeatureKey,
+  type IgnoredFeatureRowView,
+} from "@lfd/contracts";
+
+import type {
+  StoredExemptionRow,
+  StoredFeatureAccess,
+  StoredOverrideRow,
+} from "./ports/feature-access-board.reader.js";
+import { resolveFeatureLevel } from "./feature-level-resolution.js";
+
+/**
+ * **L'écran admin, composé** à partir de ce qui est en base.
+ *
+ * Pure : le catalogue décide de ce qui se lit, les lignes qu'il ne sait pas lire
+ * partent dans `ignored`. Une ligne ignorée n'est jamais « presque » appliquée :
+ * elle est montrée pour qu'on la retire, pas interprétée.
+ */
+export function composeFeatureAccessBoard(stored: StoredFeatureAccess): AdminFeatureAccessView {
+  return {
+    features: FEATURE_KEYS.map((key) => featureView(key, stored)),
+    ignored: [
+      ...stored.overrides.flatMap(ignoredOverride),
+      ...stored.exemptions.flatMap(ignoredExemption),
+    ],
+  };
+}
+
+function featureView(key: FeatureKey, stored: StoredFeatureAccess): AdminFeatureView {
+  const definition = FEATURE_CATALOGUE[key];
+  const row = stored.overrides.find((candidate) => candidate.key === key);
+  const override = row !== undefined && isFeatureLevel(key, row.value) ? row : null;
+  return {
+    key,
+    label: definition.label,
+    description: definition.description,
+    levels: featureLevelsOf(key),
+    defaultLevel: definition.defaultLevel,
+    effectiveLevel: resolveFeatureLevel(key, {
+      exempt: false,
+      storedOverride: override?.value ?? null,
+    }),
+    override:
+      override === null
+        ? null
+        : {
+            value: override.value,
+            updatedAt: override.updatedAt.toISOString(),
+            updatedBy: override.updatedBy,
+          },
+    exemptions: stored.exemptions
+      .filter((exemption) => exemption.key === key)
+      .map((exemption) => ({
+        id: exemption.id,
+        email: exemption.email,
+        createdAt: exemption.createdAt.toISOString(),
+        createdBy: exemption.createdBy,
+        accountState: exemption.accountState,
+      })),
+  };
+}
+
+function ignoredOverride(row: StoredOverrideRow): readonly IgnoredFeatureRowView[] {
+  if (!isFeatureKey(row.key)) {
+    return [{ table: "override", key: row.key, detail: row.value, reason: "unknown_key" }];
+  }
+  if (!isFeatureLevel(row.key, row.value)) {
+    return [{ table: "override", key: row.key, detail: row.value, reason: "unknown_level" }];
+  }
+  return [];
+}
+
+function ignoredExemption(row: StoredExemptionRow): readonly IgnoredFeatureRowView[] {
+  return isFeatureKey(row.key)
+    ? []
+    : [{ table: "exemption", key: row.key, detail: row.email, reason: "unknown_key" }];
+}

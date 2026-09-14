@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { CompanyAddressesView } from '@lfd/contracts';
+import type { CompanyAddressesView, DeliveryAddressPayload } from '@lfd/contracts';
 import { of } from 'rxjs';
 
 import { AccountService } from '../account/account.service';
@@ -83,6 +83,138 @@ describe('le carnet d’adresses du client', () => {
     await Promise.resolve();
 
     expect(addresses.deliveries()).toEqual([]);
+  });
+});
+
+describe('les écritures du carnet', () => {
+  const PAYLOAD: DeliveryAddressPayload = {
+    label: 'Chalet',
+    ligne1: '1 route du Col',
+    ligne2: '',
+    codePostal: '73150',
+    ville: "Val d'Isère",
+    pays: 'France',
+    isDefault: false,
+    specs: {
+      note: '',
+      slots: { mode: 'everyday', slot: null },
+      deliveryContact: null,
+      gps: null,
+      signatureRequired: null,
+    },
+  };
+
+  /** Le jeton, l'écriture, puis la relecture : trois vols, dans cet ordre. */
+  const settle = async (): Promise<void> => {
+    for (let i = 0; i < 4; i += 1) {
+      await Promise.resolve();
+    }
+  };
+
+  it('modifie une livraison par PATCH, relit le carnet, et rend `null`', async () => {
+    const http = bootWith([]);
+    const addresses = TestBed.inject(ClientAddresses);
+
+    const done = addresses.updateDelivery('cmp_1', 'adr_1', PAYLOAD);
+    await settle();
+    const write = http.expectOne((r) =>
+      r.url.endsWith('/companies/cmp_1/delivery-addresses/adr_1'),
+    );
+    expect(write.request.method).toBe('PATCH');
+    expect(write.request.body).toEqual(PAYLOAD);
+    write.flush(null);
+    await settle();
+    http.expectOne((r) => r.url.endsWith('/companies/cmp_1/addresses')).flush(CARNET);
+
+    await expect(done).resolves.toBeNull();
+    expect(addresses.billing()?.ligne1).toBe('12 chemin des Barmettes');
+  });
+
+  it('rend le message du serveur quand l’écriture est refusée, sans relire', async () => {
+    const http = bootWith([]);
+    const addresses = TestBed.inject(ClientAddresses);
+
+    const done = addresses.addDelivery('cmp_1', PAYLOAD);
+    await settle();
+    const write = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/delivery-addresses'));
+    expect(write.request.method).toBe('POST');
+    write.flush(
+      { message: 'Code postal hors de nos zones.' },
+      { status: 400, statusText: 'Bad Request' },
+    );
+
+    await expect(done).resolves.toBe('Code postal hors de nos zones.');
+    http.verify();
+  });
+
+  /**
+   * Archiver par DELETE, puis relire : si l'archivée était la défaut, c'est le
+   * serveur qui promeut sa remplaçante, et seule la relecture la montre.
+   */
+  it('supprime une livraison par DELETE, avec le jeton, relit le carnet, et rend `null`', async () => {
+    const http = bootWith([]);
+    const addresses = TestBed.inject(ClientAddresses);
+
+    const done = addresses.removeDelivery('cmp_1', 'adr_1');
+    await settle();
+    const write = http.expectOne((r) =>
+      r.url.endsWith('/companies/cmp_1/delivery-addresses/adr_1'),
+    );
+    expect(write.request.method).toBe('DELETE');
+    expect(write.request.body).toBeNull();
+    expect(write.request.headers.get('Authorization')).toBe('Bearer jeton');
+    write.flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+    const reread = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/addresses'));
+    expect(reread.request.method).toBe('GET');
+    reread.flush(CARNET);
+
+    await expect(done).resolves.toBeNull();
+    http.verify();
+  });
+
+  it('désigne la défaut par PATCH …/default, sans corps, relit le carnet, et rend `null`', async () => {
+    const http = bootWith([]);
+    const addresses = TestBed.inject(ClientAddresses);
+
+    const done = addresses.makeDefaultDelivery('cmp_1', 'adr_2');
+    await settle();
+    const write = http.expectOne((r) =>
+      r.url.endsWith('/companies/cmp_1/delivery-addresses/adr_2/default'),
+    );
+    expect(write.request.method).toBe('PATCH');
+    expect(write.request.body).toBeNull();
+    expect(write.request.headers.get('Authorization')).toBe('Bearer jeton');
+    write.flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+    http.expectOne((r) => r.url.endsWith('/companies/cmp_1/addresses')).flush(CARNET);
+
+    await expect(done).resolves.toBeNull();
+    expect(addresses.billing()?.ligne1).toBe('12 chemin des Barmettes');
+    http.verify();
+  });
+
+  it.each([
+    ['removeDelivery', '/companies/cmp_1/delivery-addresses/adr_1'],
+    ['makeDefaultDelivery', '/companies/cmp_1/delivery-addresses/adr_1/default'],
+  ] as const)('%s rend le message du serveur au refus, sans relire', async (method, path) => {
+    const http = bootWith([]);
+    const addresses = TestBed.inject(ClientAddresses);
+
+    const done =
+      method === 'removeDelivery'
+        ? addresses.removeDelivery('cmp_1', 'adr_1')
+        : addresses.makeDefaultDelivery('cmp_1', 'adr_1');
+    await settle();
+    http
+      .expectOne((r) => r.url.endsWith(path))
+      .flush(
+        { message: 'Adresse de livraison introuvable.' },
+        { status: 404, statusText: 'Not Found' },
+      );
+
+    await expect(done).resolves.toBe('Adresse de livraison introuvable.');
+    http.verify();
   });
 });
 

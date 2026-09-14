@@ -1,0 +1,30 @@
+<h2 class="title">{{ t().account.sections.payment }}</h2>
+<div class="grid">
+  <div class="regime monthly">
+    <p class="head">
+      {{ t().account.termMonthly }}
+      <fold-badge [variant]="monthly().variant" [content]="monthly().badge" />
+    </p>
+    <p class="note">{{ monthly().note }}</p>
+    @if (canRequest()) {
+      <button
+        foldButton
+        emphasis="outline"
+        intent="primary"
+        size="sm"
+        type="button"
+        (click)="open()"
+      >
+        {{ t().account.termRequest }}
+      </button>
+    }
+  </div>
+  <div class="regime">
+    <p class="head">
+      {{ t().account.termOrder }}
+      <fold-badge variant="success" [content]="t().account.stateAvailable" />
+    </p>
+    <p class="note">{{ t().account.termOrderSub }}</p>
+  </div>
+</div>
+<p class="note">{{ t().account.paymentNote }}</p>

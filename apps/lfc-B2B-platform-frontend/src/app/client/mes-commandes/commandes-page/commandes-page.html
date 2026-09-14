@@ -4,7 +4,11 @@
     [title]="t().orders.title"
     [lead]="t().orders.lead"
   >
-    <app-new-order-action banner-action />
+    <!-- L'action n'existe qu'au niveau où l'on commande (plan §4) : elle ne
+         mène pas à une garde qui renverrait ailleurs. -->
+    @if (access.atLeast('order')) {
+      <app-new-order-action banner-action />
+    }
   </app-client-banner-block>
 </ng-template>
 

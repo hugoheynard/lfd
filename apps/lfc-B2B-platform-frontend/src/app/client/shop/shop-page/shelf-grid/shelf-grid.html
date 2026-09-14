@@ -8,6 +8,7 @@
   <app-product-tile
     [product]="piece"
     [quantity]="cart.quantityOf(piece.sku)"
+    [orderable]="access.shop() !== 'browse'"
     (opened)="opened.emit(piece.sku)"
     (added)="cart.add(piece.sku)"
     (removed)="cart.remove(piece.sku)"

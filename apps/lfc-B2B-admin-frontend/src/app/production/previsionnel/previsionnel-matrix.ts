@@ -1,4 +1,6 @@
 import {
+  SHELF_LABEL_OFF_CATALOG,
+  SHELF_LABEL_UNKNOWN,
   CATALOG_CATEGORY_LABELS,
   CATALOG_CATEGORY_ORDER,
   type CatalogCategory,
@@ -37,7 +39,7 @@ import {
  * lectures vendables sans effacer ce qui a été vendu. Un groupe vide n'est
  * jamais rendu.
  */
-const OFF_CATALOG_LABEL = 'Hors catalogue';
+const OFF_CATALOG_LABEL = SHELF_LABEL_OFF_CATALOG;
 
 /**
  * Le même groupe quand le catalogue n'a **pas pu être lu**.
@@ -47,7 +49,7 @@ const OFF_CATALOG_LABEL = 'Hors catalogue';
  * produits retirés de la vente. C'est un mensonge plausible, donc du pire
  * genre : rien à l'écran ne dit que la phrase vient d'une panne.
  */
-const UNKNOWN_SHELF_LABEL = 'Rayon inconnu';
+const UNKNOWN_SHELF_LABEL = SHELF_LABEL_UNKNOWN;
 
 /**
  * Le facteur au-delà duquel une quantité est **exceptionnelle** : deux fois la

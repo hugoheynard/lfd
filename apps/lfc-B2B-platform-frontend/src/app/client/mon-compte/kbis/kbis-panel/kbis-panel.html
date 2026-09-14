@@ -1,0 +1,60 @@
+<fold-panel-header
+  [title]="t().account.sections.kbis"
+  [subtitle]="t().account.kbisHead"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.kbisSaveFailed }} {{ message }}
+    </fold-callout>
+  }
+  @if (fetchFailed()) {
+    <fold-callout variant="alert" announce>{{ t().account.kbisFetchFailed }}</fold-callout>
+  }
+
+  @if (kbis(); as extrait) {
+    <div class="file">
+      <fold-badge [variant]="extrait.certified ? 'success' : 'warning'" [content]="state()" />
+      <p class="name">{{ extrait.fileName }}</p>
+      <p class="meta">{{ filed() }}</p>
+      <div class="acts">
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          type="button"
+          (click)="open()"
+        >
+          {{ t().account.kbisOpen }}
+        </button>
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          type="button"
+          (click)="download()"
+        >
+          {{ t().account.kbisDownload }}
+        </button>
+      </div>
+    </div>
+  } @else {
+    <p class="meta">{{ state() }}</p>
+  }
+
+  @if (data().canManage) {
+    <fold-file-dropzone
+      accept="application/pdf"
+      [multiple]="false"
+      [label]="dropLabel()"
+      [hint]="t().account.kbisHint"
+      [busy]="saving()"
+      [busyLabel]="t().account.kbisUploading"
+      (filesPicked)="upload($event)"
+    />
+  }
+</fold-panel-body>

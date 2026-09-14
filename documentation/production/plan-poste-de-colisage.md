@@ -87,6 +87,10 @@ La journée se **déduit** comme celle de la fiche d'atelier : demain si son pla
 est arrêté, aujourd'hui sinon. Un sélecteur de plus serait une question de plus
 à 4 h du matin.
 
+> 🔴 **Plus de file hors ligne depuis le 2026-09-14** (décision de Hugo) : une
+> coche part directement au serveur, et revient en arrière en le disant si elle
+> échoue. Le paragraphe suivant est celui du plan d'origine.
+
 Les coches passent par la file hors ligne du fournil, pour la raison qui l'a
 fait naître : le sous-sol. Jamais un écran qui a l'air d'avoir enregistré alors
 que non.
@@ -189,3 +193,79 @@ se devine pas en relisant le code.
 containers ne restera pas un nombre. Il faut que la structure d'aujourd'hui
 puisse devenir une liste de containers nommés, chacun portant ce qu'il contient
 — sans quoi cette règle n'aura nulle part où s'appliquer.
+
+---
+
+> **Relecture multiposte** — depuis le 2026-09-14, ce poste se relit toutes les 15 s tant que l'onglet est visible, et une coche part directement au serveur, sans file. La règle et ses raisons : [`relecture-des-postes.md`](relecture-des-postes.md).
+
+---
+
+## L'écran n'additionne rien
+
+_Décidé le 2026-09-14, à la demande de Hugo. État : en construction._
+
+**Tout chiffre affiché dans les trois colonnes est calculé au serveur.** L'écran
+affiche ce qu'il reçoit, et relit après chaque geste. Jusqu'ici il recalculait
+lui-même le volume des commandes, les lignes dans le bac, les compteurs des
+piles et — surtout — la marchandise à répartir, à chaque coche. Deux calculs du
+même chiffre divergent à la première règle modifiée d'un seul côté, et c'était
+précisément la balance qui en portait le risque.
+
+Le contrat porte donc, par commande, `lineCount`, `packedLines`,
+`remainingLines`, `pieces`, `packedPieces`, et la règle `canDeclareReady` ;
+par journée, `orderCount`, `todoCount`, `readyCount`, et `relativeDay`
+(« aujourd'hui » / « demain », selon l'horloge du **serveur** — celle d'un poste
+de fournil n'est pas une autorité).
+
+Hugo l'a dit en deux mots : **aucun calcul dans l'UI**. Les règles comptent
+autant que les chiffres — un bouton « Déclarer prête » dont l'écran décide seul
+s'il est actif est un calcul, et le jour où la règle change au serveur, l'écran
+proposerait un geste que le serveur refuse. La marchandise (`produced`, `allocated`,
+`remaining`) l'était déjà — l'écran cesse simplement de la refaire.
+
+### Ce qui reste à l'écran
+
+- **l'état d'une case le temps de l'envoi** : cochée tout de suite, désarmée,
+  puis remplacée par ce que le serveur relit. Ce n'est pas un chiffre, et sans
+  lui la case d'un `fold-checkbox` ne reviendrait pas en arrière sur un refus ;
+- **le choix de ce qui est surligné** par la recherche : un filtre, pas un calcul.
+- **« Masquer le stock épuisé »**, coché à l'ouverture. Le serveur dit quel
+  article est épuisé (`exhausted`) ; l'écran masque, il ne compare pas le reste
+  à zéro.
+
+### Le stock épuisé se masque, le manque jamais
+
+_Ajouté le 2026-09-14._ En cours de matinée, la plupart des articles de la
+marchandise à répartir sont à zéro, et ce qui reste à répartir se perd entre
+eux. `exhausted` vaut `true` quand le reste est **exactement** à zéro **et** que
+l'article est sorti du four. Deux cas ne le sont jamais, et c'est la raison
+d'en faire une règle serveur plutôt qu'un `remaining === 0` à l'écran :
+
+- un reste **négatif** — il en manque, c'est ce que la colonne doit crier ;
+- un article **en attente de la prod** — zéro sur ce qui n'est pas fabriqué
+  n'est pas un stock épuisé.
+
+Un article que la recherche surligne reste montré même épuisé : chercher un
+produit et ne rien voir s'allumer ferait croire qu'il n'est dans aucune
+commande. Quand le filtre masque tout, la colonne le dit — « Plus de marchandise
+disponible » — plutôt que de laisser une liste vide. Le choix ne survit pas au
+rechargement : c'est un réglage du poste, pas une donnée.
+
+### Les containers se comptent au serveur
+
+« + » et « − » envoient un **sens** (`POST …/containers/add` ou `/remove`), et
+le serveur calcule le nouveau compte en une écriture atomique. Ce n'est pas
+qu'un principe : un total envoyé par l'écran **perdait un container** dès que
+deux postes appuyaient en même temps — chacun envoyait le même nombre.
+
+La route `PUT …/containers` reste servie un déploiement de plus, dépréciée : elle
+est en production (CLAUDE.md §0).
+
+### La recherche ne fait plus de totaux
+
+Elle affichait « en attend 24 » et « 3 commandes » — des sommes faites à la
+frappe, donc par l'écran. Elle montre désormais **les quantités des lignes
+trouvées**, qui sont des chiffres du serveur : on voit toujours qui attend
+combien, sans qu'aucune addition ait lieu côté écran. Si ce recul devait
+manquer, la suite serait une recherche au serveur, pas un retour du calcul à
+l'écran.

@@ -1,5 +1,34 @@
 # TODO — une file hors ligne se bloque à vie sur un refus définitif
 
+> ⚠️ **Sans objet depuis le 2026-09-14, le jour de sa résolution.** Les deux
+> files hors ligne ont été **retirées** : le fournil a toujours du réseau, et la
+> file coûtait plus de problèmes qu'elle n'en évitait (décision de Hugo). Une
+> coche part désormais directement au serveur. Ce qui suit reste comme trace de
+> ce qui a été constaté — le code qu'il décrit n'existe plus.
+
+> ✅ **Soldée le 2026-09-14**, le lendemain de son ouverture. Elle ne s'est pas
+> contentée d'être théorique : elle a bloqué le fournil au **premier vrai
+> usage**, en dev — une ligne cochée avant l'arrêt du plan retenait toutes les
+> coches d'après, et elles disparaissaient au rechargement. Hugo a décidé de la
+> traiter aussitôt.
+>
+> **Ce qui a été fait**, et qui suit le piège écrit plus bas :
+>
+> - queue-refusal.ts (retiré depuis) portait **la**
+>   décision, partagée par les deux files : réseau, 5xx, 401, 408, 425, 429 → on
+>   garde ; tout autre 4xx → refus définitif. **Une erreur qu'on ne sait pas lire
+>   est gardée**, jamais écartée : écarter est le seul choix irréversible.
+> - Un refus définitif **sort de la file, et le vidage continue** — un 409 sur
+>   une ligne ne dit rien de la suivante.
+> - Il ne disparaît pas en silence : la file l'expose (`rejected`), l'écran
+>   retire la coche locale et affiche le refus avec le message du serveur, et
+>   « Compris » en prend acte. C'est le piège nommé ci-dessous, et il est tenu.
+> - Un refus visant un geste **déjà remplacé** (ligne recochée pendant l'envoi)
+>   n'est pas affiché : il masquerait la coche la plus récente.
+> - Une file déjà empoisonnée se remet seule au prochain chargement de l'écran.
+>
+> Le texte d'origine suit, inchangé — il dit pourquoi.
+
 **Ouvert le 2026-09-13**, en bâtissant le poste de colisage. Trouvé en
 cherchant, pas en production : aucun incident connu à ce jour.
 

@@ -2,21 +2,25 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { ProductionPackingAck, ProductionPackingView } from '@lfd/contracts';
+import type {
+  PackingContainerStep,
+  ProductionPackingAck,
+  ProductionPackingView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * **Le poste de colisage** d'une journée : les bacs, la ressource, et les deux
- * gestes qu'on y fait.
+ * **Le poste de colisage** d'une journée : les bacs, la ressource, et les gestes
+ * qu'on y fait.
  *
  * Jumeau de {@link WorksheetService} et séparé de lui pour la même raison qu'il
  * est séparé de `ProductionService` : la fiche d'atelier répond à « qu'est-ce
  * qu'on sort du four », le colisage à « ce bac est-il complet ». Deux questions,
  * deux raisons de changer.
  *
- * Aucun état gardé ici : {@link PackingQueue} est le seul endroit qui retient
- * quelque chose, et elle le fait explicitement.
+ * Aucun état gardé ici, et aucun chiffre fabriqué : un geste part directement,
+ * et l'écran relit ce que le serveur a calculé.
  */
 @Injectable({ providedIn: 'root' })
 export class PackingService {
@@ -39,9 +43,8 @@ export class PackingService {
   /**
    * Met une ligne dans le bac, ou l'en retire.
    *
-   * Les deux gestes en une méthode plutôt qu'en deux : l'appelant est une file
-   * qui rejoue des intentions, et une intention porte son sens (`packed`) comme
-   * une donnée. Deux méthodes l'auraient obligée à un `if` à chaque envoi.
+   * Les deux gestes en une méthode plutôt qu'en deux : une intention porte son
+   * sens (`packed`) comme une donnée, et l'appelant n'a pas à choisir sa route.
    */
   async mark(
     date: string,
@@ -57,24 +60,26 @@ export class PackingService {
   }
 
   /**
-   * **Combien de containers la commande occupe** — les contenants qu'on charge
-   * dans le véhicule.
+   * **Ajoute ou retire UN container** à une commande — les contenants qu'on
+   * charge dans le véhicule.
+   *
+   * 🔴 **Un sens, pas un total.** Le serveur calcule le nouveau compte en une
+   * écriture atomique. Un total envoyé par l'écran perdait un container dès que
+   * deux postes appuyaient sur « + » en même temps : chacun envoyait le même
+   * nombre. La route `PUT …/containers` reste servie un déploiement de plus,
+   * dépréciée, mais cet écran ne l'appelle plus (retirée le 2026-09-14).
    *
    * 🔴 **Aucun rapport avec `production_container`**, qui est le matériel du
    * FOUR (combien de baguettes tiennent sur une tourneuse, réglé par SKU une
    * fois pour toutes). Ni la même clé, ni le même rythme, ni la même personne —
    * et le front ne réutilise aucun de ses noms pour que la confusion n'ait pas
    * d'endroit où naître.
-   *
-   * Hors de la file hors ligne, comme la déclaration : c'est un nombre qu'on
-   * relit sur un quai de chargement, et le montrer enregistré alors qu'il ne
-   * l'est pas ferait charger un camion sur une croyance.
    */
-  async setContainers(date: string, reference: string, containers: number): Promise<void> {
+  async stepContainers(date: string, reference: string, step: PackingContainerStep): Promise<void> {
     await firstValueFrom(
-      this.http.put<void>(
-        `${B2B_API_BASE}/admin/production/packing/${encodeURIComponent(date)}/sheets/${encodeURIComponent(reference)}/containers`,
-        { containers },
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/production/packing/${encodeURIComponent(date)}/sheets/${encodeURIComponent(reference)}/containers/${encodeURIComponent(step)}`,
+        {},
       ),
     );
   }
@@ -89,10 +94,6 @@ export class PackingService {
    * attendre le froid. L'écran nomme l'EFFET, que l'exploitant comprend ; le
    * nom de cette méthode suit le fait, qui est ce que la route écrit. Renommer
    * l'événement pour « aligner » les deux effacerait la distinction.
-   *
-   * 🔴 Volontairement HORS de la file hors ligne : une coche qui attend le
-   * réseau ne coûte rien, une déclaration qui attend en silence annoncerait au
-   * client un colis que personne n'a vu partir. Elle échoue donc à l'écran.
    *
    * La route est celle du QR des feuilles déjà imprimées : elle existe avant cet
    * écran, et rescanner **réannonce** le fait au lieu de refuser — d'où l'accusé

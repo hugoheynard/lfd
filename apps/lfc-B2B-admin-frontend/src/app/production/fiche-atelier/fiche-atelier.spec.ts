@@ -1,31 +1,36 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type {
-  CatalogItemView,
-  ProductionWorksheetView,
-  StaffNavPreferencesPatch,
-  WorkshopLine,
+import {
+  SHELF_LABEL_UNKNOWN,
+  UNSHELVED_WORKSHOP_GROUP_KEY,
+  type ProductionWorksheetView,
+  type StaffNavPreferencesPatch,
+  type WorkshopGroup,
+  type WorkshopLine,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { AdminCatalogService } from '../../commandes/catalog.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
-import { WorksheetQueue, type QueuedMark } from '../worksheet-queue';
+import { dayLabelOf } from '../worksheet-day';
 import { WorksheetService } from '../worksheet.service';
 import { FicheAtelier } from './fiche-atelier';
 
 /**
  * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
  *
- * - 🔴 **une coche s'écrit à l'écran AVANT de partir** — le fournil est en
- *   sous-sol, et une case qui attendrait le réseau serait recochée deux fois ;
- * - 🔴 **le pied ne fabrique pas d'heure de tirage** quand le plan n'est pas
- *   arrêté : il dit qu'il ne l'est pas ;
- * - **les quatre états passent par fold**, y compris l'échec de la seule lecture
- *   du catalogue, qui laisse la fiche à l'écran et se dit ;
- * - **aucun prix, aucun nom de client** ne peut apparaître : la règle qui définit
- *   cet écran est vérifiée sur le rendu, pas seulement sur le type.
+ * - 🔴 **l'écran ne calcule rien** : fiches, listes et chiffres sont servis
+ *   (`groups`), écrits à la main ici — le test ne réimplémente pas le groupement,
+ *   et un chiffre incohérent s'affiche tel quel ;
+ * - 🔴 **la journée et son mot viennent du serveur** : les dates des fixtures
+ *   sont absolues À DESSEIN, l'écran ne les compare plus à l'horloge du poste ;
+ * - une coche se montre AVANT de partir, et la ligne change de liste à la
+ *   relecture qui suit ;
+ * - les quatre états passent par fold ; aucun prix, aucun nom de client.
  */
+
+const DAY = '2026-09-15';
+const NEXT_DAY = '2026-09-16';
 
 function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
   return {
@@ -40,52 +45,82 @@ function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
   };
 }
 
-/** Aujourd'hui, en heure locale : la fiche ne connaît pas d'autre journée. */
-function today(): string {
-  const now = new Date();
-  const month = `${now.getMonth() + 1}`.padStart(2, '0');
-  const day = `${now.getDate()}`.padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
+const SEIGLE = line({ sku: 'SEI', productName: 'Pain de seigle', quantity: 30 });
+const BAGUETTE_DONE = line({ done: true, initials: 'MJ', doneAt: `${DAY}T04:30:00` });
+
+/** Le rayon des pains, rien de coché. */
+function painTodo(): WorkshopGroup {
+  return {
+    key: 'pain',
+    category: 'pain',
+    label: 'Pains',
+    lineCount: 2,
+    doneCount: 0,
+    totalUnits: 190,
+    remainingUnits: 190,
+    doneUnits: 0,
+    lines: [line(), SEIGLE],
+    pending: [line(), SEIGLE],
+    done: [],
+  };
 }
 
-/** Demain, en heure locale — la journée que le geste du soir fait basculer. */
-function tomorrow(): string {
-  const next = new Date();
-  next.setDate(next.getDate() + 1);
-  const month = `${next.getMonth() + 1}`.padStart(2, '0');
-  const day = `${next.getDate()}`.padStart(2, '0');
-  return `${next.getFullYear()}-${month}-${day}`;
+/** Le même rayon, la baguette sortie — tel que le serveur le rend après la coche. */
+function painBaguetteDone(): WorkshopGroup {
+  return {
+    ...painTodo(),
+    doneCount: 1,
+    remainingUnits: 30,
+    doneUnits: 160,
+    lines: [BAGUETTE_DONE, SEIGLE],
+    pending: [SEIGLE],
+    done: [BAGUETTE_DONE],
+  };
 }
 
 function sheet(over: Partial<ProductionWorksheetView> = {}): ProductionWorksheetView {
+  const groups = over.groups ?? [painTodo()];
   return {
-    date: today(),
-    // Une heure relative à aujourd'hui : la fiche lit la journée du poste, et
-    // une date en dur y deviendrait fausse le lendemain.
-    generatedAt: `${today()}T04:05:00`,
+    date: DAY,
+    generatedAt: `${DAY}T04:05:00`,
     retakenAt: null,
-    lines: [line(), line({ sku: 'SEI', productName: 'Pain de seigle', quantity: 30 })],
+    lines: [],
     drift: null,
+    groups,
+    shelvesKnown: true,
+    relativeDay: 'today',
     ...over,
   };
 }
 
-const CATALOGUE: readonly CatalogItemView[] = [
-  { sku: 'BAG', name: 'Baguette', unitPriceMillicents: 100, vatRate: 5.5, category: 'pain' },
-  { sku: 'SEI', name: 'Seigle', unitPriceMillicents: 100, vatRate: 5.5, category: 'pain' },
-];
+/** Une coche telle que le service l'a reçue. */
+interface SentMark {
+  readonly date: string;
+  readonly sku: string;
+  readonly done: boolean;
+  readonly initials: string;
+}
 
 class FakeWorksheetService {
+  /** Ce que sert `current()`. `null` = la lecture échoue. */
   view: ProductionWorksheetView | null = sheet();
-  retakes = 0;
-  /** Les journées demandées, dans l'ordre — la règle de choix se lit là-dessus. */
-  readonly asked: string[] = [];
-  /** Une réponse par journée ; à défaut, `view` pour toutes. */
-  readonly byDay = new Map<string, ProductionWorksheetView>();
+  reads = 0;
+  readonly marks: SentMark[] = [];
+  /** Ce que le serveur répond aux coches — `null` = il les accepte. */
+  markError: unknown = null;
+  /** Retenir les réponses, pour éprouver ce qui se passe PENDANT un envoi ou une lecture. */
+  holdMarks = false;
+  holdReads = false;
+  private readonly heldMarks: (() => void)[] = [];
+  private readonly heldReads: (() => void)[] = [];
 
-  async worksheet(date: string): Promise<ProductionWorksheetView> {
-    this.asked.push(date);
-    const served = this.byDay.get(date) ?? this.view;
+  async current(): Promise<ProductionWorksheetView> {
+    this.reads += 1;
+    // La réponse est prise AU DÉPART : une lecture retenue rend l'état d'alors.
+    const served = this.view;
+    if (this.holdReads) {
+      await new Promise<void>((resolve) => this.heldReads.push(resolve));
+    }
     if (served === null) {
       throw new Error('lecture refusée');
     }
@@ -93,28 +128,29 @@ class FakeWorksheetService {
   }
 
   async retake(): Promise<void> {
-    this.retakes += 1;
+    // Rien : le retirage n'est pas éprouvé ici.
   }
-}
 
-class FakeCatalog {
-  items: readonly CatalogItemView[] | null = CATALOGUE;
-
-  async list(): Promise<readonly CatalogItemView[]> {
-    if (this.items === null) {
-      throw new Error('catalogue muet');
+  async mark(date: string, sku: string, done: boolean, initials: string): Promise<void> {
+    this.marks.push({ date, sku, done, initials });
+    if (this.holdMarks) {
+      await new Promise<void>((resolve) => this.heldMarks.push(resolve));
     }
-    return this.items;
+    if (this.markError !== null) {
+      throw this.markError;
+    }
   }
-}
 
-class FakeQueue {
-  readonly marks: QueuedMark[] = [];
-  readonly pending = (): number => this.marks.length;
-  readonly offline = (): boolean => false;
+  releaseMarks(): void {
+    for (const resolve of this.heldMarks.splice(0)) {
+      resolve();
+    }
+  }
 
-  mark(mark: QueuedMark): void {
-    this.marks.push(mark);
+  releaseReads(): void {
+    for (const resolve of this.heldReads.splice(0)) {
+      resolve();
+    }
   }
 }
 
@@ -133,94 +169,72 @@ class FakePrefs {
 
 const ME = { firstName: 'Marie', lastName: 'Jost' };
 
-interface Harness {
-  readonly fixture: ComponentFixture<FicheAtelier>;
-  readonly el: HTMLElement;
-  readonly api: FakeWorksheetService;
-  readonly catalog: FakeCatalog;
-  readonly queue: FakeQueue;
-  readonly prefs: FakePrefs;
-}
-
 let api: FakeWorksheetService;
-let catalog: FakeCatalog;
-let queue: FakeQueue;
 let prefs: FakePrefs;
 
-async function render(): Promise<Harness> {
-  const fixture = TestBed.createComponent(FicheAtelier);
-  fixture.detectChanges();
-  // Un tour de boucle d'événements, et non `whenStable()` : la lecture part d'un
-  // `effect`, dans une promesse que le runtime zoneless ne compte pas comme une
-  // tâche en attente. `whenStable()` rendrait la main avant que la fiche soit
-  // revenue, et l'écran serait encore en chargement.
+/** Un tour de boucle : la réponse du service double arrive dans une promesse. */
+async function settle(fixture: ComponentFixture<FicheAtelier>): Promise<void> {
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
   fixture.detectChanges();
-  return { fixture, el: fixture.nativeElement, api, catalog, queue, prefs };
 }
+
+async function render(): Promise<{ fixture: ComponentFixture<FicheAtelier>; el: HTMLElement }> {
+  const fixture = TestBed.createComponent(FicheAtelier);
+  fixture.detectChanges();
+  // Un tour de boucle, et non `whenStable()` : la lecture part dans une promesse
+  // que le runtime zoneless ne compte pas comme une tâche en attente.
+  await settle(fixture);
+  return { fixture, el: fixture.nativeElement };
+}
+
+// La baguette est cherchée par son NOM, pas par sa place : cochée, elle passe
+// de la liste en cours au rail des faites.
+const baguette = (el: HTMLElement): Element | undefined =>
+  [...el.querySelectorAll('app-worksheet-line')].find((node) =>
+    (node.textContent ?? '').includes('Baguette tradition'),
+  );
+
+const premiere = (el: HTMLElement): boolean => baguette(el)?.classList.contains('is-done') ?? false;
+
+const premiereCase = (el: HTMLElement): HTMLInputElement | null =>
+  baguette(el)?.querySelector('input[type="checkbox"]') ?? null;
+
+const namesIn = (el: HTMLElement, selector: string): string[] =>
+  [...el.querySelectorAll(`${selector} .wl-name`)].map((node) => node.textContent?.trim() ?? '');
+
+const text = (el: HTMLElement, selector: string): string =>
+  el.querySelector(selector)?.textContent?.replace(/\s+/gu, ' ') ?? '';
 
 describe('la fiche d’atelier', () => {
   beforeEach(() => {
     api = new FakeWorksheetService();
-    catalog = new FakeCatalog();
-    queue = new FakeQueue();
     prefs = new FakePrefs();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: WorksheetService, useValue: api },
-        { provide: AdminCatalogService, useValue: catalog },
-        { provide: WorksheetQueue, useValue: queue },
         { provide: StaffPrefsService, useValue: prefs },
         { provide: PermissionsStore, useValue: { identity: () => ME } },
       ],
     });
   });
 
-  /**
-   * 🔴 **La fiche suit le FOUR, pas le calendrier** (décidé le 2026-09-13).
-   *
-   * Demain dès que le plan de demain est arrêté, aujourd'hui sinon. Ni l'un ni
-   * l'autre en dur : « aujourd'hui » laissait le fournil de la nuit sur la
-   * journée qui vient de finir, « demain » le faisait cocher une fiche qui
-   * n'existe pas encore. C'est le geste du soir — arrêter le plan — qui fait
-   * basculer l'écran, et non une heure devinée sur l'horloge du poste.
-   */
-  it('montre DEMAIN dès que le plan de demain est arrêté', async () => {
-    api.byDay.set(tomorrow(), sheet({ date: tomorrow(), generatedAt: `${tomorrow()}T20:05:00` }));
+  it('nomme la journée SERVIE, et son mot tel que le serveur le dit', async () => {
+    api.view = sheet({ date: NEXT_DAY, relativeDay: 'tomorrow' });
 
     const { el } = await render();
 
-    expect(api.asked[0]).toBe(tomorrow());
-    // Une seule lecture : la journée qui porte un tirage est celle qu'on fabrique.
-    expect(api.asked).toEqual([tomorrow()]);
-    // L'écran NOMME sa journée : sans sélecteur, c'est la seule chose qui dise
-    // au fournil quel jour il coche.
-    expect(el.textContent).toContain('demain');
+    expect(api.reads).toBe(1);
+    expect(text(el, '.fa-eyebrow')).toContain(dayLabelOf(NEXT_DAY));
+    expect(text(el, '.fa-offset')).toContain('demain');
   });
 
-  it('retombe sur AUJOURD’HUI tant que le plan de demain n’est pas arrêté', async () => {
-    api.byDay.set(tomorrow(), sheet({ date: tomorrow(), generatedAt: null, lines: [] }));
-    api.byDay.set(today(), sheet());
+  it('ne dit ni « aujourd’hui » ni « demain » quand le serveur ne le dit pas', async () => {
+    api.view = sheet({ relativeDay: null });
 
     const { el } = await render();
 
-    expect(api.asked).toEqual([tomorrow(), today()]);
-    expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
-  });
-
-  /**
-   * L'en-tête nomme la journée qu'on LIT, jamais celle qu'on a demandée. Sans
-   * sélecteur de date, c'est la seule chose qui dise au fournil de quel jour il
-   * parle — et se tromper d'un jour est exactement l'erreur que cette fiche
-   * peut coûter le plus cher.
-   */
-  it('nomme la journée servie, pas celle qui a été demandée', async () => {
-    api.byDay.set(tomorrow(), sheet({ date: tomorrow(), generatedAt: `${tomorrow()}T20:05:00` }));
-
-    const { fixture } = await render();
-
-    expect(fixture.componentInstance['date']()).toBe(tomorrow());
+    expect(el.querySelector('.fa-offset')).toBeNull();
   });
 
   it('montre les lignes du poste, quantité et contenant', async () => {
@@ -237,41 +251,194 @@ describe('la fiche d’atelier', () => {
     expect(el.textContent).not.toContain('€');
   });
 
-  it('🔴 écrit la coche à l’écran AVANT de la confier à la file', async () => {
-    const { fixture, el, queue: q } = await render();
-    const box: HTMLInputElement | null = el.querySelector('input[type="checkbox"]');
+  /**
+   * 🔴 L'écran n'additionne rien : des chiffres servis volontairement
+   * incohérents avec les lignes s'affichent TELS QUELS. Un écran qui recompterait
+   * afficherait 190, 2 ou 0 ici.
+   */
+  it('🔴 affiche les chiffres servis tels quels, même incohérents', async () => {
+    api.view = sheet({
+      groups: [
+        {
+          ...painBaguetteDone(),
+          lineCount: 3,
+          doneCount: 7,
+          totalUnits: 12345,
+          remainingUnits: 999,
+          doneUnits: 555,
+        },
+      ],
+    });
+    const { el } = await render();
 
-    box?.click();
+    expect(text(el, '.fa-figure-value--accent')).toContain('999');
+    expect(text(el, '.fa-figures')).toContain('7 / 3');
+    expect(text(el, '.fa-tabs')).toContain('Pains 7/3');
+    expect(text(el, '.fa-band-sum')).toContain('7 lignes sur 3 faites');
+    expect(text(el, '.fa-band-sum')).toContain('12345 pièces au total');
+  });
+
+  it('montre au poste fixe toutes les lignes servies, dans l’ordre servi', async () => {
+    api.view = sheet({ groups: [painBaguetteDone()] });
+    const { el } = await render();
+
+    expect(namesIn(el, '.fa-lines')).toEqual(['Baguette tradition', 'Pain de seigle']);
+    expect(premiere(el)).toBe(true);
+  });
+
+  it('envoie la coche, puis relit', async () => {
+    const { fixture, el } = await render();
+    api.view = sheet({ groups: [painBaguetteDone()] });
+
+    premiereCase(el)?.click();
+    await settle(fixture);
+
+    expect(api.marks).toEqual([{ date: DAY, sku: 'BAG', done: true, initials: 'MJ' }]);
+    expect(api.reads).toBe(2);
+    expect(premiere(el)).toBe(true);
+  });
+
+  it('coche à l’écran tout de suite, et désarme la case le temps de l’envoi', async () => {
+    const { fixture, el } = await render();
+    api.holdMarks = true;
+    api.view = sheet({ groups: [painBaguetteDone()] });
+
+    premiereCase(el)?.click();
     fixture.detectChanges();
 
-    // Le serveur n'a rien confirmé, et la ligne est déjà faite à l'écran : c'est
-    // tout l'objet du sous-sol.
-    expect(el.querySelector('app-worksheet-line')?.classList.contains('is-done')).toBe(true);
-    expect(q.marks).toEqual([{ date: today(), sku: 'BAG', done: true, initials: 'MJ' }]);
+    expect(premiere(el)).toBe(true);
+    expect(premiereCase(el)?.disabled).toBe(true);
+
+    api.releaseMarks();
+    await settle(fixture);
+
+    expect(premiereCase(el)?.disabled).toBe(false);
+    expect(premiere(el)).toBe(true);
+  });
+
+  /**
+   * Régression : une coche refusée restait affichée cochée jusqu'au
+   * rechargement, sans que rien ne le dise (constaté en dev le 2026-09-14).
+   */
+  it('🔴 remet la case en arrière quand le serveur refuse, et DIT pourquoi', async () => {
+    const { fixture, el } = await render();
+    api.markError = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'Le plan du jour n’est pas arrêté.' },
+    });
+
+    premiereCase(el)?.click();
+    await settle(fixture);
+
+    expect(premiere(el)).toBe(false);
+    expect(api.reads).toBe(1);
+    const said = text(el, '.fa-mark-failed');
+    expect(said).toContain('Baguette tradition');
+    expect(said).toContain('Le plan du jour n’est pas arrêté.');
   });
 
   it('décocher renvoie un geste inverse, jamais un second geste identique', async () => {
-    const { fixture, el, queue: q } = await render();
-    const box: HTMLInputElement | null = el.querySelector('input[type="checkbox"]');
+    const { fixture, el } = await render();
+    api.view = sheet({ groups: [painBaguetteDone()] });
+    premiereCase(el)?.click();
+    await settle(fixture);
 
-    box?.click();
-    fixture.detectChanges();
-    el.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
-    fixture.detectChanges();
+    api.view = sheet();
+    premiereCase(el)?.click();
+    await settle(fixture);
 
-    expect(q.marks.map((mark) => mark.done)).toEqual([true, false]);
+    expect(api.marks.map((mark) => mark.done)).toEqual([true, false]);
+  });
+
+  describe('la relecture', () => {
+    beforeEach(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+    });
+
+    /** Revenir sur l'onglet relit tout de suite — c'est le déclencheur le plus sûr en test. */
+    function relancer(): void {
+      document.dispatchEvent(new Event('visibilitychange'));
+    }
+
+    it('montre une coche posée sur un autre poste', async () => {
+      const { fixture, el } = await render();
+      expect(premiere(el)).toBe(false);
+
+      api.view = sheet({ groups: [painBaguetteDone()] });
+      relancer();
+      await settle(fixture);
+
+      expect(premiere(el)).toBe(true);
+    });
+
+    /**
+     * 🔴 Une relecture partie AVANT une coche acceptée revient avec l'état
+     * d'avant. La laisser gagner décocherait la case sous les doigts de qui
+     * vient de la cocher.
+     */
+    it('🔴 jette une relecture partie avant une coche acceptée', async () => {
+      const { fixture, el } = await render();
+      api.holdMarks = true;
+      premiereCase(el)?.click();
+      fixture.detectChanges();
+
+      // La relecture périodique part avec la fiche d'AVANT la coche, et reste en vol.
+      api.holdReads = true;
+      relancer();
+      api.holdReads = false;
+
+      // La coche est acceptée ; la relecture d'après écriture rend la ligne faite.
+      api.view = sheet({ groups: [painBaguetteDone()] });
+      api.releaseMarks();
+      await settle(fixture);
+      expect(premiere(el)).toBe(true);
+
+      api.releaseReads();
+      await settle(fixture);
+      await settle(fixture);
+
+      expect(premiere(el)).toBe(true);
+      expect(premiere(el)).toBe(true);
+    });
+
+    it('🔴 dit quand la fiche bascule de journée pendant qu’on la regarde', async () => {
+      const { fixture, el } = await render();
+      expect(el.querySelector('.fa-day-turned')).toBeNull();
+
+      api.view = sheet({ date: NEXT_DAY, relativeDay: 'tomorrow' });
+      relancer();
+      await settle(fixture);
+
+      expect(text(el, '.fa-day-turned')).toContain('désormais');
+      expect(text(el, '.fa-day-turned')).toContain(dayLabelOf(NEXT_DAY));
+    });
+
+    it('dit que la relecture a échoué, sans vider la fiche', async () => {
+      const { fixture, el } = await render();
+      expect(text(el, '.fa-foot-origin')).toContain('relue à');
+
+      api.view = null;
+      relancer();
+      await settle(fixture);
+
+      expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
+      expect(text(el, '.fa-foot-origin')).toContain('relecture impossible');
+    });
   });
 
   it('dit l’heure du tirage en pied', async () => {
     const { el } = await render();
 
-    expect(el.querySelector('.fa-foot-origin')?.textContent).toContain('Tirée à 4 h 05');
+    expect(text(el, '.fa-foot-origin')).toContain('Tirée à 4 h 05');
   });
 
   it('🔴 ne fabrique AUCUNE heure quand le plan n’est pas arrêté', async () => {
     api.view = sheet({ generatedAt: null });
     const { el } = await render();
-    const foot = el.querySelector('.fa-foot-origin')?.textContent ?? '';
+    const foot = text(el, '.fa-foot-origin');
 
     expect(foot).toContain('pas arrêté');
     expect(foot).not.toContain('Tirée à');
@@ -300,16 +467,29 @@ describe('la fiche d’atelier', () => {
     expect(el.textContent).toContain('déjà cochée');
   });
 
-  it('laisse la fiche à l’écran quand le catalogue est muet, et le DIT', async () => {
-    // Sans catalogue, chaque SKU tombe dans le groupe sans rayon : la fiche
-    // resterait juste mais sans poste, et « Hors catalogue » affirmerait que le
-    // fournil fabrique des articles retirés de la vente.
-    catalog.items = null;
+  it('laisse la fiche à l’écran quand le serveur n’a pas lu les rayons, et le DIT', async () => {
+    api.view = sheet({
+      shelvesKnown: false,
+      groups: [
+        {
+          ...painTodo(),
+          key: UNSHELVED_WORKSHOP_GROUP_KEY,
+          category: null,
+          label: SHELF_LABEL_UNKNOWN,
+        },
+      ],
+    });
     const { el } = await render();
 
-    expect(el.querySelector('fold-callout')).not.toBeNull();
+    expect(text(el, 'fold-callout')).toContain('rayons n');
     expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
-    expect(el.textContent).toContain('Rayon inconnu');
+    expect(text(el, '.fa-title')).toContain('Rayon inconnu');
+  });
+
+  it('ne dit rien des rayons quand le serveur les a lus', async () => {
+    const { el } = await render();
+
+    expect(el.querySelector('fold-callout')).toBeNull();
   });
 
   it('passe par fold pour l’erreur de lecture, avec de quoi réessayer', async () => {
@@ -323,7 +503,7 @@ describe('la fiche d’atelier', () => {
   });
 
   it('passe par fold pour le vide', async () => {
-    api.view = sheet({ lines: [] });
+    api.view = sheet({ groups: [] });
     const { el } = await render();
 
     expect(el.querySelector('fold-empty-state')).not.toBeNull();
@@ -331,24 +511,31 @@ describe('la fiche d’atelier', () => {
   });
 
   it('ouvre sur la fiche que la PERSONNE a laissée', async () => {
+    const croissant = line({ sku: 'CRO', productName: 'Croissant', quantity: 240 });
     api.view = sheet({
-      lines: [line(), line({ sku: 'CRO', productName: 'Croissant', quantity: 240 })],
+      groups: [
+        {
+          key: 'viennoiserie',
+          category: 'viennoiserie',
+          label: 'Viennoiseries',
+          lineCount: 1,
+          doneCount: 0,
+          totalUnits: 240,
+          remainingUnits: 240,
+          doneUnits: 0,
+          lines: [croissant],
+          pending: [croissant],
+          done: [],
+        },
+        painTodo(),
+      ],
     });
-    catalog.items = [
-      ...CATALOGUE,
-      {
-        sku: 'CRO',
-        name: 'Croissant',
-        unitPriceMillicents: 100,
-        vatRate: 5.5,
-        category: 'viennoiserie',
-      },
-    ];
     prefs.category = 'pain';
     const { el } = await render();
 
-    // « Viennoiseries » vient avant « Pains » dans l'ordre de la vitrine : sans
-    // la préférence, c'est elle qui se serait ouverte.
-    expect(el.querySelector('.fa-title')?.textContent?.trim()).toBe('Pains');
+    // « Viennoiseries » est servie la première : sans la préférence, c'est elle
+    // qui se serait ouverte.
+    expect(text(el, '.fa-title').trim()).toBe('Pains');
+    expect(text(el, '.fa-eyebrow')).toContain('fiche 2 sur 2');
   });
 });

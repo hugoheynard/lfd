@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { SubscriptionView } from '@lfd/contracts';
+import type { ShopLevel, SubscriptionView } from '@lfd/contracts';
 
 import { ClientSubscriptions } from '../client-subscriptions.service';
 
@@ -12,6 +12,8 @@ import { ClientCart } from '../cart/client-cart.service';
 import { provideRecognised } from '../client-orders.fixture';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { ALL_VISIBLE, openShopAt } from '../feature-access/feature-access.fixture';
 import { ClientNav } from './client-nav.service';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
@@ -37,6 +39,8 @@ describe('Les destinations du menu', () => {
       ],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    // Ces cas décrivent le menu COMPLET : la boutique permet de commander.
+    openShopAt('order');
   });
 
   it('garde le même ordre, panier vide comme panier plein', () => {
@@ -45,6 +49,22 @@ describe('Les destinations du menu', () => {
 
     TestBed.inject(ClientCart).add('VIE-001');
     expect(nav.items().map((i) => i.id)).toEqual(ORDER);
+  });
+
+  /** Masquées en admin, les deux destinations partent ; les autres gardent leur ordre. */
+  it('retire commandes et factures quand l’admin les masque', () => {
+    TestBed.inject(ClientFeatureAccess).receive({
+      shop: 'order',
+      ...ALL_VISIBLE,
+      orders: 'hidden',
+      invoices: 'hidden',
+    });
+
+    expect(
+      TestBed.inject(ClientNav)
+        .items()
+        .map((i) => i.id),
+    ).toEqual(['espace', 'shop', 'baskets', 'account']);
   });
 
   it('ne porte PAS le panier — il vit dans la barre, pas dans le menu', () => {
@@ -132,5 +152,77 @@ describe('Les destinations du menu', () => {
     // ne retire PAS l'entrée : l'ordre des six ne bouge jamais d'une surface à
     // l'autre, et l'habitude du pouce avec.
     expect(nav.items().find((i) => i.id === 'baskets')?.ready).toBe(false);
+  });
+});
+
+/** Plan `plan-inscription-pro-seule.md` §4 : le menu suit ce que la boutique permet. */
+describe('Les destinations du menu, selon la boutique', () => {
+  function boot(): void {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(ROUTES),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+      ],
+    });
+  }
+
+  const SHOWN: Readonly<Record<ShopLevel, readonly string[]>> = {
+    closed: ['orders', 'invoices', 'account'],
+    browse: ['espace', 'shop', 'orders', 'invoices', 'account'],
+    order: ORDER,
+  };
+
+  for (const level of ['closed', 'browse', 'order'] as const) {
+    it(`boutique « ${level} » : retire des destinations, n’en réordonne aucune`, () => {
+      boot();
+      openShopAt(level);
+
+      const ids = TestBed.inject(ClientNav)
+        .items()
+        .map((i) => i.id);
+      expect(ids).toEqual(SHOWN[level]);
+      // Ce qui reste suit l'ordre figé : c'est une sous-suite, jamais un
+      // réarrangement.
+      expect(ids).toEqual(ORDER.filter((id) => ids.includes(id)));
+    });
+  }
+
+  /** Tant que les niveaux ne sont pas lus, on ne promet rien de ce qui peut être fermé. */
+  it('pendant la lecture, et après son échec, montre le menu de `closed`', () => {
+    boot();
+    const nav = TestBed.inject(ClientNav);
+    expect(nav.items().map((i) => i.id)).toEqual(SHOWN.closed);
+  });
+
+  /**
+   * Plan §9 : « le menu réduit ne lit plus ce qu'il ne montre pas ». Les paniers
+   * récurrents partaient lire `/subscriptions/mine` même quand leur destination
+   * n'était pas montrée.
+   */
+  it('ne lit les paniers récurrents qu’au niveau où il les montre', async () => {
+    const asked = async (): Promise<number> => {
+      TestBed.inject(ClientNav).items();
+      TestBed.tick();
+      // Le jeton, puis la requête : deux micro-tâches.
+      await Promise.resolve();
+      await Promise.resolve();
+      return TestBed.inject(HttpTestingController).match((r) =>
+        r.url.endsWith('/subscriptions/mine'),
+      ).length;
+    };
+
+    boot();
+    openShopAt('browse');
+    expect(await asked()).toBe(0);
+
+    // Le témoin : au niveau `order`, la lecture part bien — sans lui, le zéro
+    // ci-dessus ne prouverait rien.
+    boot();
+    openShopAt('order');
+    expect(await asked()).toBe(1);
   });
 });

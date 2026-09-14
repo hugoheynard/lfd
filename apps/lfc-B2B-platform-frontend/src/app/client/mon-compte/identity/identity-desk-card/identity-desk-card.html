@@ -1,0 +1,27 @@
+<header class="head">
+  <h2 class="title">{{ t().account.sections.identity }}</h2>
+  @if (canEdit()) {
+    <button foldButton size="sm" emphasis="soft" intent="primary" type="button" (click)="open()">
+      {{ t().account.edit }}
+    </button>
+  }
+</header>
+@if (client.company(); as identity) {
+  <dl class="facts">
+    <dt>{{ t().account.identityBrand }}</dt>
+    <dd>{{ client.name() }}</dd>
+    <dt>{{ t().account.identityCompany }}</dt>
+    <dd>{{ identity.raisonSociale }}</dd>
+    <dt>{{ t().account.identityForm }}</dt>
+    <dd>{{ identity.formeJuridique }}</dd>
+    <dt>{{ t().account.identitySiret }}</dt>
+    <!-- Vide tant qu'inconnu, et c'est un ÉTAT : une société peut ouvrir sans
+         papiers. Un tiret le dit ; un SIRET d'exemple serait celui d'une autre
+         maison. -->
+    <dd class="num">{{ identity.siret || t().account.identityUnknown }}</dd>
+    <dt>{{ t().account.identityVat }}</dt>
+    <dd class="num">{{ identity.vatNumber || t().account.identityUnknown }}</dd>
+  </dl>
+}
+<!-- La règle est ÉCRITE, pas grisée. -->
+<p class="note">{{ t().account.identityNote }}</p>

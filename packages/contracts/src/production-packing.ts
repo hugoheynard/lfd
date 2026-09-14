@@ -17,6 +17,15 @@ import { workshopInitialsSchema } from "./production-worksheet.js";
  * bac est fermé, il n'a changé de mains avec personne. Le geste de remise vit
  * dans `handover/`, et sa clé n'est même pas la journée.
  *
+ * ## 🔴 L'écran n'additionne rien (décidé le 2026-09-14)
+ *
+ * Tout ce qui s'affiche en chiffre sur le poste — volume d'une commande, lignes
+ * dans le bac, compteurs des piles, marchandise à répartir — est **calculé au
+ * serveur** et porté par ce contrat. L'écran relit après chaque geste et affiche
+ * tel quel. Deux calculs du même chiffre, l'un au serveur et l'autre à l'écran,
+ * divergent à la première règle qui change d'un seul côté ; et c'est justement
+ * la balance, ce que ce poste existe pour montrer juste, qui divergeait.
+ *
  * ## Aucun montant, et c'est le TYPE qui le tient
  *
  * Même règle que `ProducibleLine` : le fournil colise, il ne facture pas. Il n'y
@@ -100,6 +109,26 @@ export interface PackingSheet {
   readonly fulfillmentMethod: "pickup" | "delivery";
   readonly destination: string;
   readonly lines: readonly PackingLine[];
+  /** Le nombre de lignes de la commande — compté au serveur, l'écran ne compte rien. */
+  readonly lineCount: number;
+  /** Les lignes déjà dans le bac. */
+  readonly packedLines: number;
+  /** `lineCount - packedLines` : ce qui reste dehors. */
+  readonly remainingLines: number;
+  /**
+   * Le volume de la commande **en pièces** — la somme de ses quantités. C'est ce
+   * nombre-là qu'on compare à la marchandise à répartir, comptée dans la même
+   * unité ; un compte de lignes ne se compare à rien.
+   */
+  readonly pieces: number;
+  /** Les pièces déjà dans le bac. */
+  readonly packedPieces: number;
+  /**
+   * « Déclarer prête » est-il permis ? Une **règle**, donc au serveur : aujourd'hui
+   * « toutes les lignes dans le bac, et pas déjà déclarée », demain peut-être
+   * davantage — et l'écran n'aura rien à réapprendre.
+   */
+  readonly canDeclareReady: boolean;
   /** `null` = le bac n'est pas fermé. */
   readonly packedAt: string | null;
   readonly packedBy: string | null;
@@ -128,6 +157,15 @@ export interface PackingResource {
   /** `produced - allocated`. Négatif = les bacs veulent plus que le four n'a sorti. */
   readonly remaining: number;
   /**
+   * **Plus rien à répartir** : le reste est à zéro, et l'article est sorti du
+   * four. L'écran s'en sert pour masquer la rangée — il ne compare pas le reste.
+   *
+   * 🔴 Ni un reste NÉGATIF (il en manque : c'est ce qu'il faut voir), ni un
+   * article EN ATTENTE (un reste à zéro sur ce qui n'est pas fabriqué n'est pas
+   * un stock épuisé) ne le sont.
+   */
+  readonly exhausted: boolean;
+  /**
    * L'article attend encore le four — sa ligne de fiche d'atelier n'est pas
    * cochée.
    *
@@ -154,9 +192,37 @@ export interface ProductionPackingView {
   readonly closedAt: string | null;
   readonly sheets: readonly PackingSheet[];
   readonly resources: readonly PackingResource[];
+  /** Toutes les commandes de la journée. */
+  readonly orderCount: number;
+  /** Celles qui restent à préparer — la pile « En cours ». */
+  readonly todoCount: number;
+  /** Celles déclarées prêtes — la pile « Prêtes ». */
+  readonly readyCount: number;
+  /**
+   * La journée lue, relativement à aujourd'hui **selon l'horloge du serveur**.
+   * `null` = ni aujourd'hui ni demain. L'écran ne compare pas de dates : l'horloge
+   * d'un poste de fournil n'est pas une autorité.
+   */
+  readonly relativeDay: "today" | "tomorrow" | null;
 }
 
 /**
+ * **Ajouter ou retirer UN container** à une commande — le geste du poste depuis
+ * le 2026-09-14.
+ *
+ * Un sens, pas un total : c'est le serveur qui calcule le nouveau compte. Un
+ * total envoyé par l'écran perdait un container dès que deux postes appuyaient
+ * sur « + » en même temps — chacun envoyait le même nombre.
+ */
+export const packingContainerStepSchema = z.enum(["add", "remove"]);
+export type PackingContainerStep = z.infer<typeof packingContainerStepSchema>;
+
+/**
+ * @deprecated Depuis le 2026-09-14 — le poste envoie un sens
+ * ({@link packingContainerStepSchema}), plus un total. La route `PUT` reste
+ * servie **un déploiement de plus** parce qu'elle est en production (CLAUDE.md
+ * §0 : un contrat servi se déprécie, il ne disparaît pas dans le même passage).
+ *
  * Déclarer combien de containers une commande occupe.
  *
  * Le plafond n'est pas décoratif : il n'existe pas de commande à mille bacs, et

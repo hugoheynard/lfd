@@ -80,6 +80,19 @@ export class OpenSupportRequestExistsError extends BusinessError {
   }
 }
 
+/**
+ * La personne a déjà un rattachement, et la porte pro n'en ouvre qu'un.
+ *
+ * La phrase ne dit pas « vous avez déjà déclaré » : elle vaut aussi pour un
+ * employé invité, qui n'a rien déclaré lui-même. Double clic, second onglet et
+ * rejeu finissent tous ici, dans le même état.
+ */
+export class PersonAlreadyAttachedError extends BusinessError {
+  constructor(readonly userId: string) {
+    super("account.person.already_attached", "Votre compte est déjà rattaché à un établissement.");
+  }
+}
+
 /** L'adresse e-mail visée appartient déjà à un autre compte. */
 export class EmailAlreadyUsedError extends BusinessError {
   constructor(readonly email: string) {

@@ -339,3 +339,19 @@
   --lfc-color-text-subtle: var(--lfc-ink-300);
   --lfc-color-border-strong: rgb(250 245 236 / 40%);
 }
+
+/* ── Les panneaux fold montent jusqu'à la barre ──────────────────────────────
+   Le dock de l'hôte commence déjà SOUS la barre du shell (64 px, mesuré le
+   2026-09-14) ; la feuille du bas, elle, s'arrête à `min(85dvh, 40rem)` et
+   laissait une bande de page au-dessus d'un formulaire. On lui donne la hauteur
+   du dock : la feuille touche la barre, comme le panneau latéral.
+
+   ⚠️ Ce n'est PAS un réglage de fold : il n'en expose aucun pour cette hauteur
+   (vérifié dans fold-ng 0.26). La règle vise sa structure interne
+   (`.panel-dock`, `.panel[data-side]`) et gagne sur son encapsulation par la
+   spécificité. Une montée de version de fold peut la rendre muette : c'est
+   l'écran qui le dira. */
+[data-theme='lfc-app'] fold-panel-host .panel-dock .panel[data-side='bottom'] {
+  height: 100%;
+  max-height: 100%;
+}

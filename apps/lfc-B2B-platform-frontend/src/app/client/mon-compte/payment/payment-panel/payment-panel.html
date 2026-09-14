@@ -1,0 +1,46 @@
+<fold-panel-header [title]="t().account.sections.payment" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  <!-- LE REFUS reste dans le panneau, au-dessus de ce qu'on retente. -->
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.termRequestFailed }} {{ message }}
+    </fold-callout>
+  }
+  <div class="regime monthly">
+    <p class="regime-head">
+      {{ t().account.termMonthly }}
+      <fold-badge [variant]="monthly().variant" [content]="monthly().badge" />
+    </p>
+    <p class="note">{{ monthly().note }}</p>
+  </div>
+  <div class="regime">
+    <p class="regime-head">
+      {{ t().account.termOrder }}
+      <fold-badge variant="success" [content]="t().account.stateAvailable" />
+    </p>
+    <p class="note">{{ t().account.termOrderSub }}</p>
+  </div>
+  <p class="note">{{ t().account.paymentNote }}</p>
+  @if (data().canRequest) {
+    <fold-callout variant="info">{{ t().account.termRequestNote }}</fold-callout>
+  }
+</fold-panel-body>
+
+@if (data().canRequest) {
+  <fold-panel-footer>
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      {{ t().account.cancel }}
+    </button>
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [loading]="saving()"
+      [disabled]="saving()"
+      (click)="request()"
+    >
+      {{ t().account.termRequest }}
+    </button>
+  </fold-panel-footer>
+}

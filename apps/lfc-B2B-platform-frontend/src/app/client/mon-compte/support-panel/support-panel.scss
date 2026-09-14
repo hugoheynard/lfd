@@ -1,0 +1,25 @@
+.channels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une ligne par canal, assez haute pour le pouce : c'est un lien qu'on compose. */
+.channel {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-height: 44px;
+  color: var(--lfc-color-primary-vivid);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  text-decoration: none;
+}
+
+/* Le numéro se dicte chiffre par chiffre : les chiffres ne dansent pas. */
+.phone {
+  font-variant-numeric: tabular-nums;
+}

@@ -1,7 +1,10 @@
 import { computed, inject, Injectable } from '@angular/core';
-import type { CompanyView } from '@lfd/contracts';
+import type { CompanyStatus, CompanyView } from '@lfd/contracts';
 
 import { AccountService } from '../account/account.service';
+
+/** L'état d'un dossier client : à compléter, ou le statut de sa société. */
+export type DossierState = 'incomplete' | CompanyStatus;
 
 /**
  * **La société du client**, telle que notre base la porte (`GET /me`).
@@ -46,6 +49,19 @@ export class ClientCompany {
   /** Le compte est-il ouvert ? La pastille de la carte n'affirme plus « Actif » à l'aveugle. */
   readonly isActive = computed(() => this.company()?.status === 'active');
 
+  /**
+   * **Où en est le dossier**, tel que l'écran doit le dire — `null` tant qu'on ne
+   * le SAIT pas (compte non lu, lecture en vol ou en échec).
+   *
+   * `incomplete` : la personne est reconnue et n'a aucune société — le cas exact
+   * de qui arrive par la porte pro. Le reste est le statut de la société.
+   */
+  readonly dossier = computed<DossierState | null>(() => {
+    if (this.account.status() !== 'ready') {
+      return null;
+    }
+    return this.company()?.status ?? 'incomplete';
+  });
   /**
    * La condition de règlement **convenue**, en un mot.
    *

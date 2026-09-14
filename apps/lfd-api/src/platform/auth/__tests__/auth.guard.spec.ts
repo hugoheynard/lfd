@@ -18,6 +18,7 @@ const principal: Principal = {
   subject: "auth0|active",
   userId: "user_1",
   email: "jean@client.fr",
+  emailProven: false,
   memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
   scopes: ["read:orders"],
 };

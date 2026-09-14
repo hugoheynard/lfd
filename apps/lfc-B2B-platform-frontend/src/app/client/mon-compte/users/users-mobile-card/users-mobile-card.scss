@@ -1,0 +1,17 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.mobile-host;
+}
+
+.title {
+  @include card.title;
+}
+
+/* Les deux boutons ensemble, poussés en bas : c'est le groupe qui descend. */
+.feet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin-top: auto;
+}

@@ -11,21 +11,23 @@
       <span class="signature wide-only">{{ t().product.signature }}</span>
     }
 
-    <!-- LE GESTE RAPIDE, en pile : la pastille porte la quantité. Le retrait se
-         fait dans la fiche, où la cible est assez grande pour être visée. -->
-    <button
-      class="quick narrow-only"
-      type="button"
-      [class.filled]="quantity() > 0"
-      [attr.aria-label]="addLabel()"
-      (click)="added.emit()"
-    >
-      @if (quantity() > 0) {
-        {{ quantity() }}
-      } @else {
-        <fold-icon name="plus" />
-      }
-    </button>
+    @if (orderable()) {
+      <!-- LE GESTE RAPIDE, en pile : la pastille porte la quantité. Le retrait se
+           fait dans la fiche, où la cible est assez grande pour être visée. -->
+      <button
+        class="quick narrow-only"
+        type="button"
+        [class.filled]="quantity() > 0"
+        [attr.aria-label]="addLabel()"
+        (click)="added.emit()"
+      >
+        @if (quantity() > 0) {
+          {{ quantity() }}
+        } @else {
+          <fold-icon name="plus" />
+        }
+      </button>
+    }
   </div>
 
   <button class="body" type="button" (click)="opened.emit()">
@@ -46,27 +48,29 @@
       <span class="price-ht">{{ t().shop.htSuffix }}</span>
     </span>
 
-    <!-- LE STEPPER, au-delà du pli seulement : c'est là que la tuile a la place
-         de porter trois cibles au lieu d'une. -->
-    @if (quantity() > 0) {
-      <app-quantity-rail
-        class="wide-only"
-        size="sm"
-        [quantity]="quantity()"
-        [addLabel]="addLabel()"
-        [removeLabel]="removeLabel()"
-        (added)="added.emit()"
-        (removed)="removed.emit()"
-      />
-    } @else {
-      <button
-        class="add wide-only"
-        type="button"
-        [attr.aria-label]="addLabel()"
-        (click)="added.emit()"
-      >
-        {{ t().shop.add }}
-      </button>
+    @if (orderable()) {
+      <!-- LE STEPPER, au-delà du pli seulement : c'est là que la tuile a la place
+           de porter trois cibles au lieu d'une. -->
+      @if (quantity() > 0) {
+        <app-quantity-rail
+          class="wide-only"
+          size="sm"
+          [quantity]="quantity()"
+          [addLabel]="addLabel()"
+          [removeLabel]="removeLabel()"
+          (added)="added.emit()"
+          (removed)="removed.emit()"
+        />
+      } @else {
+        <button
+          class="add wide-only"
+          type="button"
+          [attr.aria-label]="addLabel()"
+          (click)="added.emit()"
+        >
+          {{ t().shop.add }}
+        </button>
+      }
     }
   </div>
 </div>

@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+/* BLEU CLAIR, et pas la surface `accent` de fold : dans le thème de l'app,
+   elle vaut l'encre, et le libellé bleu y devenait illisible (relevé le
+   2026-09-14). C'est le bleu de l'encart « Intéressé par l'espace pro ? ». */
+.contact {
+  background: var(--fold-color-primary-surface);
+  border-color: var(--fold-color-primary-border);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+/* Une tuile ronde pour le téléphone : on reconnaît le geste avant de lire. */
+.glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--lfc-color-primary-vivid);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  color: var(--lfc-color-primary-vivid);
+}
+
+.chevron {
+  flex: none;
+  color: var(--lfc-color-primary-vivid);
+}

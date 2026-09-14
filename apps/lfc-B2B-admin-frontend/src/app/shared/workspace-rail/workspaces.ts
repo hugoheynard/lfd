@@ -422,6 +422,13 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
     needs: 'staff_access:read',
   },
   {
+    key: 'feature-access',
+    label: 'Accès aux fonctionnalités',
+    link: '/admin/feature-access',
+    icon: 'sliders',
+    needs: 'b2b_feature_access:read',
+  },
+  {
     key: 'journal',
     label: 'Journal',
     link: '/admin/journal',

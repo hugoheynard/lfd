@@ -27,6 +27,8 @@ export const IT: ClientCopy = {
     kickerQr: 'Ritiro',
     kickerDone: 'Confermato',
     deskKicker: 'Val d’Isère · ordina online',
+    featureAccessFailed:
+      'Non siamo riusciti a verificare cosa offre il negozio in questo momento: alcune pagine restano chiuse. Ricarica la pagina per riprovare.',
   },
 
   nav: {
@@ -223,6 +225,7 @@ export const IT: ClientCopy = {
       'Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.',
     upsell: '{name} insieme?',
     upsellLine: 'La golosità che si rimpiange di non aver preso.',
+    orderingSoon: 'Gli ordini online aprono presto.',
   },
   product: {
     signature: 'Firma',
@@ -360,6 +363,7 @@ export const IT: ClientCopy = {
     pitch:
       'Prezzi concordati, consegna in stazione, fatturazione mensile. Te lo spieghiamo in due minuti.',
     cta: 'Chiedi di essere richiamato',
+    openAccount: 'Apri il mio account professionale',
     booked: 'Richiamo richiesto · {slot}',
     at: 'Al',
     cancel: 'Annulla',
