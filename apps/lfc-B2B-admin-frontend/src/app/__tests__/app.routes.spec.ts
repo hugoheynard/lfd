@@ -95,6 +95,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // définir ne sont pas le même geste, et l'URL d'un formulaire se tape.
   'admin/roles/nouveau': 'staff_access:write',
   'admin/roles/:key': 'staff_access:write',
+  // Sa propre ressource (plan inscription pro §2.4) : le parent s'ouvre sur les
+  // sociétés, et couper la vente en ligne n'est pas lire une fiche client.
+  'admin/feature-access': 'b2b_feature_access:read',
   // Le journal traverse les modules : il a sa propre ressource, et n'hérite
   // donc pas du `companies:read` de son parent.
   'admin/journal': 'activity:read',

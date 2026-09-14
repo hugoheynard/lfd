@@ -50,4 +50,15 @@ describe("les vues d'Admin", () => {
     // fabriquer des droits à qui n'a pas celui de les donner.
     expect(tabsFor(['b2b_companies:read'])).not.toContain('roles');
   });
+
+  it('montre « Accès aux fonctionnalités » à qui la lit', () => {
+    // Le commercial la LIT : il doit pouvoir dire à un client si la boutique
+    // est ouverte.
+    expect(tabsFor(['b2b_companies:read', 'b2b_feature_access:read'])).toContain('feature-access');
+  });
+
+  it("cache « Accès aux fonctionnalités » à qui ne la lit pas, même administrateur de l'équipe", () => {
+    // Ni les sociétés ni l'annuaire ne l'ouvrent : la route refuserait.
+    expect(tabsFor(['b2b_companies:read', 'staff_access:read'])).not.toContain('feature-access');
+  });
 });

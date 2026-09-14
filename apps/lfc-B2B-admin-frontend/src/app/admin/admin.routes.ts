@@ -12,6 +12,10 @@ export const adminRoutes: Routes = [
     // principal pour un geste rare. Les deux répondent à la même question —
     // qui entre, et avec quoi.
     //
+    // ⚠️ Depuis le 2026-09-14, « Accès aux fonctionnalités » s'y ajoute alors
+    // qu'il porte sur le commerce : il répond à la même question, pour tout le
+    // monde à la fois (plan `plan-inscription-pro-seule.md`).
+    //
     // Le garde du parent est le PLUS FAIBLE des deux enfants, et chaque vue
     // porte le sien : le contraire enfermerait dehors qui n'a que l'un des deux
     // droits — même prudence que sur Commercial.
@@ -68,6 +72,19 @@ export const adminRoutes: Routes = [
         title: 'Modifier un rôle — LFC B2B admin',
         loadComponent: () =>
           import('./roles/role-editor/role-editor-page').then((m) => m.RoleEditorPage),
+      },
+      {
+        // Sa PROPRE ressource, pas `b2b_settings` ni le `companies:read` du
+        // parent : ouvrir ou couper la vente en ligne pèse plus qu'une zone de
+        // livraison (plan `documentation/b2b/plan-inscription-pro-seule.md` §2.4).
+        // Le commercial la lit, seul l'administrateur l'écrit — l'écran le suit.
+        path: 'feature-access',
+        canActivate: [permissionGuard('b2b_feature_access:read')],
+        title: 'Accès aux fonctionnalités — LFC B2B admin',
+        loadComponent: () =>
+          import('./feature-access/feature-access-page/feature-access-page').then(
+            (m) => m.FeatureAccessPage,
+          ),
       },
       {
         path: 'journal',

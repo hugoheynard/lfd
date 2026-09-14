@@ -1,0 +1,155 @@
+<fold-page-layout icon="sliders" title="Accès aux fonctionnalités">
+  <p description>
+    Ce que les clients peuvent faire de la plateforme, réglé <strong>sans redéployer</strong>. Une
+    valeur posée ici remplace le défaut du code pour tout le monde, sauf les adresses exemptées.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l'accès aux fonctionnalités…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire l'accès aux fonctionnalités">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (staleBoard()) {
+        <fold-callout variant="alert" announce>
+          La relecture a échoué. Ce qui s'affiche est la dernière lecture réussie&nbsp;: elle peut
+          avoir vieilli.
+          <button actions foldButton size="sm" emphasis="outline" (click)="refresh()">
+            Relire
+          </button>
+        </fold-callout>
+      }
+
+      @if (!canWrite()) {
+        <fold-callout variant="info">
+          Lecture seule&nbsp;: ouvrir ou fermer une fonctionnalité, et désigner les adresses
+          exemptées, est réservé aux administrateurs.
+        </fold-callout>
+      }
+
+      @if (unreadable().length > 0) {
+        <fold-callout variant="warning">
+          Des lignes en base ne correspondent pas au catalogue. Elles ne s'appliquent pas, et cet
+          écran ne les interprète pas&nbsp;:
+          <ul class="unreadable">
+            @for (line of unreadable(); track line) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+        </fold-callout>
+      }
+
+      @for (card of cards(); track card.key + ':' + revision()) {
+        <fold-card>
+          <fold-element-title variant="title" [title]="card.label" [subtitle]="card.description" />
+
+          <div class="body">
+            <div class="value">
+              @if (canWrite()) {
+                <fold-listbox
+                  label="Niveau"
+                  [options]="card.options"
+                  [value]="card.effectiveLevel"
+                  [disabled]="pendingKey() !== null"
+                  (selectionChange)="chooseLevel(card, $event)"
+                />
+              } @else {
+                <fold-field-list>
+                  <fold-field label="Niveau">{{ card.effectiveLabel }}</fold-field>
+                </fold-field-list>
+              }
+
+              <div class="provenance">
+                @if (card.provenance; as provenance) {
+                  <span class="muted">{{ provenance }}</span>
+                  @if (canWrite()) {
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="outline"
+                      intent="neutral"
+                      icon="undo"
+                      [disabled]="pendingKey() !== null"
+                      (click)="revertToDefault(card)"
+                    >
+                      Revenir au défaut ({{ card.defaultLabel }})
+                    </button>
+                  }
+                } @else {
+                  <span class="muted">Défaut du code</span>
+                }
+              </div>
+            </div>
+
+            <div class="exemptions">
+              <fold-element-title variant="bar" title="Adresses exemptées" [level]="3" />
+
+              @if (canWrite()) {
+                <div class="add">
+                  <fold-input
+                    class="add-input"
+                    label="Adresse e-mail"
+                    type="email"
+                    placeholder="testeur@exemple.fr"
+                    [value]="draft(card.key)"
+                    (valueChange)="setDraft(card.key, $event)"
+                  />
+                  <button
+                    foldButton
+                    icon="plus"
+                    [disabled]="draft(card.key).trim() === '' || pendingKey() !== null"
+                    (click)="addExemption(card)"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              }
+
+              <ul class="rows">
+                @for (row of card.exemptions; track row.id) {
+                  <li class="row">
+                    <div class="row-main">
+                      <span class="email">{{ row.email }}</span>
+                      <fold-badge [content]="row.badge.label" [variant]="row.badge.variant" />
+                      <span class="muted">{{ row.added }}</span>
+                    </div>
+                    @if (canWrite()) {
+                      <fold-inline-confirm
+                        [message]="removeMessage(row)"
+                        [loading]="pendingKey() === card.key"
+                        (confirmed)="removeExemption(card, row)"
+                      >
+                        <button foldButton size="sm" emphasis="outline" intent="danger" icon="bin">
+                          Retirer
+                        </button>
+                      </fold-inline-confirm>
+                    }
+                  </li>
+                } @empty {
+                  <li>
+                    <fold-callout variant="neutral">Aucune adresse exemptée.</fold-callout>
+                  </li>
+                }
+              </ul>
+
+              <p class="muted">
+                Ces adresses gardent la boutique entière, quel que soit le niveau. Elles doivent
+                être vérifiées pour compter.
+              </p>
+            </div>
+          </div>
+        </fold-card>
+      } @empty {
+        <fold-empty-state
+          icon="sliders"
+          title="Aucune fonctionnalité au catalogue"
+          subtitle="Le catalogue vit dans le code : une liste vide signale un déploiement incomplet, pas un réglage à faire ici."
+        />
+      }
+    }
+  }
+</fold-page-layout>
