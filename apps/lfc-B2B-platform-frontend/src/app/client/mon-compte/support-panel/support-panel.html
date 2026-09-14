@@ -1,0 +1,24 @@
+<fold-panel-header
+  [title]="t().account.supportPanelTitle"
+  [subtitle]="t().account.supportBody"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  <ul class="channels">
+    @if (channels().phone; as call) {
+      <li>
+        <a class="channel phone" [href]="call.href">
+          <fold-icon name="phone" aria-hidden="true" />{{ call.label }}
+        </a>
+      </li>
+    }
+    @if (channels().email; as write) {
+      <li>
+        <a class="channel email" [href]="write.href">
+          <fold-icon name="mail" aria-hidden="true" />{{ write.label }}
+        </a>
+      </li>
+    }
+  </ul>
+</fold-panel-body>

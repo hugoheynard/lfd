@@ -1,54 +1,42 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { FoldCardComponent, FoldElementTitleComponent, FoldIconComponent } from 'fold-ng';
+import { FoldCardComponent, FoldIconComponent, FoldPanelHostService } from 'fold-ng';
 
 import { ClientContent } from '../../client-content.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
-
-/** Un moyen de joindre le service : ce qu'on lit, et où le lien mène. */
-interface Channel {
-  readonly label: string;
-  readonly href: string;
-}
+import { panelSide } from '../../panel-side';
+import { supportChannels } from '../../support-channels';
+import { SupportPanel } from '../support-panel/support-panel';
 
 /**
- * « Un problème ? » — sous les cartes de `/mon-compte`, de quoi joindre le
- * service commercial.
+ * « Contacter le service commercial » — sous les cartes de `/mon-compte`, une
+ * carte bleu clair qui ouvre le panneau des coordonnées.
  *
- * Le numéro et l'adresse ne sont **pas** écrits ici : ce sont ceux de
- * l'identité publiée de la plateforme (`ClientContent.identity`), les mêmes que
- * le pied de page affiche au bureau. Ils se corrigent au back-office, sans
- * déploiement — et en pile, où le pied de page n'existe pas, cette carte est
- * le seul endroit où on les trouve.
+ * La carte entière est le geste, et c'est pourquoi elle est `interactive` : elle
+ * ne contient ni lien ni autre bouton, et le rôle `button` que fold lui pose
+ * dit exactement ce qu'elle fait. Les coordonnées vivent dans le panneau — la
+ * carte reste courte, amarrée au bas de l'écran en pile.
  *
- * Un canal non renseigné disparaît ; sans aucun des deux, la carte entière se
- * tait plutôt que de promettre un contact qu'elle ne donne pas.
+ * Sans aucun canal publié, la carte se tait plutôt que d'ouvrir un panneau vide.
  */
 @Component({
   selector: 'app-support-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldElementTitleComponent, FoldIconComponent],
+  imports: [FoldCardComponent, FoldIconComponent],
   templateUrl: './support-card.html',
   styleUrl: './support-card.scss',
 })
 export class SupportCard {
   protected readonly t = inject(ClientCopyService).t;
   private readonly identity = inject(ClientContent).identity;
+  private readonly panels = inject(FoldPanelHostService);
 
-  /** Le numéro tel qu'il se lit ; le lien composable s'il est saisi, dérivé sinon. */
-  protected readonly phone = computed<Channel | null>(() => {
-    const { phone, phoneHref } = this.identity();
-    const label = phone.trim();
-    if (label === '') {
-      return null;
-    }
-    const href = phoneHref.trim();
-    return { label, href: href === '' ? `tel:${label.replace(/\s/gu, '')}` : href };
+  protected readonly reachable = computed(() => {
+    const { phone, email } = supportChannels(this.identity());
+    return phone !== null || email !== null;
   });
 
-  protected readonly email = computed<Channel | null>(() => {
-    const label = this.identity().email.trim();
-    return label === '' ? null : { label, href: `mailto:${label}` };
-  });
-
-  protected readonly reachable = computed(() => this.phone() !== null || this.email() !== null);
+  protected open(): void {
+    // Solide : des coordonnées se lisent sur un fond qui ne laisse pas passer la page.
+    this.panels.open(SupportPanel, { side: panelSide(), surface: 'solid' });
+  }
 }

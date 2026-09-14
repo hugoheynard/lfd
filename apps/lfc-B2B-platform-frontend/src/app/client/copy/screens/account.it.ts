@@ -148,6 +148,7 @@ export const ACCOUNT_IT: AccountCopy = {
   bankReplace: 'Sostituisci le coordinate',
   bankSavedToast: 'Coordinate bancarie registrate.',
   bankSaveFailed: 'Le coordinate bancarie non sono state registrate.',
-  supportTitle: 'Un problema? Contattate il nostro servizio commerciale',
+  supportTitle: 'Contattare il servizio commerciale',
+  supportPanelTitle: 'Servizio commerciale',
   supportBody: 'Una domanda sul vostro conto, un ordine o una fattura: vi rispondiamo.',
 };

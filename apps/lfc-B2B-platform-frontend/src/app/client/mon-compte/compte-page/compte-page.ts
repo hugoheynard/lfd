@@ -40,6 +40,7 @@ import { BankCard } from '../bank-card/bank-card';
 import { DataCard } from '../data-card/data-card';
 import { DossierCard } from '../dossier-card/dossier-card';
 import { IdentityPanel } from '../identity-panel/identity-panel';
+import { panelSide } from '../../panel-side';
 import { KbisCard } from '../kbis-card/kbis-card';
 import { SupportCard } from '../support-card/support-card';
 import { UsersCard } from '../users-card/users-card';
@@ -80,15 +81,6 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
  * comme une panne.
  */
 const IDENTITY_EDIT_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin']);
-
-/**
- * Le pli de l'écran, en requête : le même seuil que `compte-page.scss` et que
- * le rail de `fold-well` (`scrollable="narrow"`). En deçà, les panneaux
- * montent du bas ; au-delà, ils s'amarrent à droite. Aucune constante de
- * l'app ne le porte en TypeScript (vérifié le 2026-09-14) : le CSS l'écrit
- * seul partout ailleurs.
- */
-const NARROW_QUERY = '(max-width: 899.98px)';
 
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
@@ -144,6 +136,16 @@ export class ComptePage {
   protected readonly promiseLevel = computed(() =>
     this.access.state() === 'loading' ? null : this.access.shop(),
   );
+
+  /**
+   * La promesse a-t-elle quelque chose à DIRE ? Elle se tait quand on commande
+   * (`order`) et tant que le niveau n'est pas lu : en pile, c'est ce qui décide
+   * si elle prend la place du titre dans le bleu.
+   */
+  protected readonly promiseShown = computed(() => {
+    const level = this.promiseLevel();
+    return level === 'closed' || level === 'browse';
+  });
 
   private readonly auth = inject(AuthFacade);
   protected readonly account = inject(AccountService);
@@ -219,9 +221,7 @@ export class ComptePage {
       return;
     }
     this.panels.open(IdentityPanel, {
-      // Lu AU CLIC, pas en signal : c'est un geste, donc toujours dans le
-      // navigateur, et la largeur qui compte est celle du moment où l'on ouvre.
-      side: matchMedia(NARROW_QUERY).matches ? 'bottom' : 'right',
+      side: panelSide(),
       data: {
         companyId: company.id,
         enseigne: company.enseigne,

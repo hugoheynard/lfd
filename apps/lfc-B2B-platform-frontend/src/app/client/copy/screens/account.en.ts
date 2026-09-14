@@ -146,6 +146,7 @@ export const ACCOUNT_EN: AccountCopy = {
   bankReplace: 'Replace bank details',
   bankSavedToast: 'Bank details saved.',
   bankSaveFailed: 'Your bank details were not saved.',
-  supportTitle: 'A problem? Contact our sales team',
+  supportTitle: 'Contact our sales team',
+  supportPanelTitle: 'Sales team',
   supportBody: 'A question about your account, an order or an invoice: we will get back to you.',
 };

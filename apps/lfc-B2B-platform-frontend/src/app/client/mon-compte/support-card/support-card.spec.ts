@@ -1,28 +1,42 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientContent } from '../../client-content.service';
 import { FR } from '../../copy/fr';
+import type { PublishedReach } from '../../support-channels';
+import { SupportPanel } from '../support-panel/support-panel';
 import { SupportCard } from './support-card';
 
-/** Les trois champs de l'identité publiée que la carte lit. */
-interface Reach {
-  readonly phone: string;
-  readonly phoneHref: string;
-  readonly email: string;
-}
-
-const PUBLISHED: Reach = {
+const PUBLISHED: PublishedReach = {
   phone: '04 79 06 12 40',
   phoneHref: 'tel:+33479061240',
   email: 'contact@lafoliecoffee.fr',
 };
 
-function boot(reach: Reach): ComponentFixture<SupportCard> {
+let opened: unknown[] = [];
+
+function boot(reach: PublishedReach): ComponentFixture<SupportCard> {
+  opened = [];
+  // L'environnement de test n'a pas `matchMedia`, que le côté d'ouverture lit au clic.
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (): Pick<MediaQueryList, 'matches'> => ({ matches: true }),
+  });
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [SupportCard],
-    providers: [{ provide: ClientContent, useValue: { identity: signal(reach) } }],
+    providers: [
+      { provide: ClientContent, useValue: { identity: signal(reach) } },
+      {
+        provide: FoldPanelHostService,
+        useValue: {
+          open: (component: unknown): void => {
+            opened.push(component);
+          },
+        },
+      },
+    ],
   });
   const fixture = TestBed.createComponent(SupportCard);
   fixture.detectChanges();
@@ -30,36 +44,26 @@ function boot(reach: Reach): ComponentFixture<SupportCard> {
 }
 
 describe('SupportCard', () => {
-  let fixture: ComponentFixture<SupportCard>;
-  const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+  it('dit le geste, sans coordonnées', () => {
+    const el = boot(PUBLISHED).nativeElement as HTMLElement;
 
-  it('donne le numéro et l’adresse PUBLIÉS, en liens composables', () => {
-    fixture = boot(PUBLISHED);
-
-    expect(el().textContent).toContain(FR.account.supportTitle);
-    const phone = el().querySelector<HTMLAnchorElement>('a.phone');
-    expect(phone?.getAttribute('href')).toBe('tel:+33479061240');
-    expect(phone?.textContent).toContain('04 79 06 12 40');
-    expect(phone?.querySelector('fold-icon[aria-hidden="true"]')).not.toBeNull();
-
-    const email = el().querySelector<HTMLAnchorElement>('a.email');
-    expect(email?.getAttribute('href')).toBe('mailto:contact@lafoliecoffee.fr');
-    expect(email?.textContent).toContain('contact@lafoliecoffee.fr');
-    expect(email?.querySelector('fold-icon[aria-hidden="true"]')).not.toBeNull();
+    expect(el.textContent).toContain(FR.account.supportTitle);
+    expect(el.querySelector('fold-card')?.classList.contains('contact')).toBe(true);
+    // Les coordonnées vivent dans le panneau : la carte reste courte.
+    expect(el.querySelector('a')).toBeNull();
   });
 
-  it('compose le lien depuis le numéro quand le lien n’est pas saisi', () => {
-    fixture = boot({ ...PUBLISHED, phoneHref: '' });
+  it('ouvre le panneau du service commercial', () => {
+    const fixture = boot(PUBLISHED);
+    (fixture.nativeElement as HTMLElement)
+      .querySelector('fold-card')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    expect(el().querySelector('a.phone')?.getAttribute('href')).toBe('tel:0479061240');
+    expect(opened).toEqual([SupportPanel]);
   });
 
-  it('retire un canal non renseigné, et se tait sans aucun', () => {
-    fixture = boot({ ...PUBLISHED, email: '' });
-    expect(el().querySelector('a.email')).toBeNull();
-    expect(el().querySelector('a.phone')).not.toBeNull();
-
-    fixture = boot({ phone: '', phoneHref: '', email: '' });
-    expect(el().querySelector('fold-card')).toBeNull();
+  it('se tait sans aucun canal publié', () => {
+    const el = boot({ phone: '', phoneHref: '', email: '' }).nativeElement as HTMLElement;
+    expect(el.querySelector('fold-card')).toBeNull();
   });
 });

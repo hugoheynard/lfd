@@ -17,12 +17,21 @@
      ne colle que dans son parent, et un parent court le relâcherait aussitôt.
      Au-delà du pli, ces deux blocs n'existent pas à l'écran : le bandeau reste
      celui de la bande, plus haut. -->
-<app-client-banner-block
-  class="narrow-banner"
-  foldSurface="chrome"
-  [title]="t().account.title"
-  [lead]="t().account.lead"
-/>
+<!-- EN PILE, LA PROMESSE PREND LA PLACE DU TITRE. Quand la boutique n'est pas
+     ouverte, c'est la première chose à dire, et la barre nomme déjà l'écran :
+     le titre et son texte ne reviennent que s'il n'y a pas de promesse.
+     Le callout ne prend PAS la surface `chrome`, qui inverserait ses tons. -->
+<div class="narrow-banner">
+  @if (promiseShown()) {
+    <app-shop-promise class="narrow-promise" [level]="promiseLevel() ?? 'order'" />
+  } @else {
+    <app-client-banner-block
+      foldSurface="chrome"
+      [title]="t().account.title"
+      [lead]="t().account.lead"
+    />
+  }
+</div>
 <div class="narrow-pin" foldSurface="chrome">
   @if (view() === 'dossier') {
     <app-account-card class="narrow-card" />
@@ -59,7 +68,7 @@
     @case ('incomplete') {
       <!-- LA PROMESSE suit le niveau de la boutique (plan §3.1). -->
       @if (promiseLevel(); as level) {
-        <app-shop-promise [level]="level" />
+        <app-shop-promise class="page-promise" [level]="level" />
       }
       <!-- La déclaration en vol n'est pas un dossier à remplir : on attend. -->
       @if (onboarding.needsDossier()) {
@@ -70,7 +79,7 @@
     }
     @default {
       @if (promiseLevel(); as level) {
-        <app-shop-promise [level]="level" />
+        <app-shop-promise class="page-promise" [level]="level" />
       }
 
       <div class="body">

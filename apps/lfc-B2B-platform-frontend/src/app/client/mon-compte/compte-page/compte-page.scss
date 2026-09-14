@@ -11,6 +11,19 @@
   background: var(--lfc-ink-800);
 }
 
+/* La promesse à la place du titre : la même respiration que le bandeau. */
+.narrow-promise {
+  display: block;
+  padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
+}
+
+@media (max-width: 899.98px) {
+  /* En pile, la promesse est déjà dans le bleu : elle ne se répète pas ici. */
+  .page-promise {
+    display: none;
+  }
+}
+
 /* La carte et le bord de la feuille, amarrés ensemble sous la barre.
 
    Amarrée, la carte garde de l'air au-dessus d'elle plutôt que de coller à la

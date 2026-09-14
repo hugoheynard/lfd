@@ -195,5 +195,7 @@ export interface AccountCopy {
   readonly bankSaveFailed: string;
   /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
   readonly supportTitle: string;
+  /** Le titre du panneau que la carte ouvre. */
+  readonly supportPanelTitle: string;
   readonly supportBody: string;
 }

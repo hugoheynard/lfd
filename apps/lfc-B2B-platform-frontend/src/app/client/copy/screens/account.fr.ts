@@ -149,6 +149,7 @@ export const ACCOUNT_FR: AccountCopy = {
   bankReplace: 'Remplacer le RIB',
   bankSavedToast: 'RIB enregistré.',
   bankSaveFailed: 'Le RIB n’a pas été enregistré.',
-  supportTitle: 'Un problème ? Contactez notre service commercial',
+  supportTitle: 'Contacter le service commercial',
+  supportPanelTitle: 'Service commercial',
   supportBody: 'Une question sur votre compte, une commande ou une facture : nous vous répondons.',
 };
