@@ -151,3 +151,57 @@ l'état des mandats existants.
 | 9      | Le test laisse passer un texte à moitié CORE                                                    | Le test fige le **texte d'autorisation complet** de chaque schéma (instantané par schéma), et vérifie l'absence des lignes « 8 semaines » **et** « 13 mois » en B2B                                                                                                                                                                                                                                                                    |
 | 10     | Le type de paiement diverge (ponctuel au formulaire, RCUR au lot)                               | Le type de paiement suit la même règle que le schéma : propriété du mandat (`recurring` pour toute frappe), lue par le formulaire et le lot                                                                                                                                                                                                                                                                                            |
 | MINEUR | P2002 sans RUM, port manquant, titre d'exemple, courriel déjà B2B, hidden/closed, 409 avant 404 | P2002 → relecture du brouillon pour nommer la RUM ; `MintMandateHandler` reçoit le port du RIB ; le titre de l'exemplaire suit le schéma ; le courriel est laissé tel quel ; niveaux `closed/open` partout ; la garde du drapeau passe **après** le mur tenant pour ne pas révéler l'existence d'une société (ordre testé)                                                                                                             |
+
+## 8. Version simple — retenue par Hugo le 2026-09-14
+
+**Fait qui décide : il n'y a aucun mandat en production** (dit par Hugo le
+2026-09-14). La troisième contradiction de vitruve (5 BLOQUANT) portait
+entièrement sur la cohabitation avec des mandats existants ; sans eux, elle
+tombe. **Le §7 est abandonné** ; ce qui suit le remplace là où ils divergent.
+
+**Ce qu'on NE fait pas** : pas de colonne `scheme`, pas de lecteur filtré, pas de
+compte figé sur le mandat, pas de caducité automatique, pas de `attachLegacyProof`.
+
+**Lot 0 — bascule globale en INTERENTREPRISES.**
+
+- Le schéma et le type de paiement restent des réglages **globaux** : `pain008.ts`
+  et `sepa-mandate-pdf.ts` lisent **une même constante** du domaine comptable
+  (`LclInstrm B2B`) ; le type de paiement reste le réglage existant de l'entité
+  émettrice (`LegalEntity.mandatePaymentType`), et le lot cesse d'écrire `RCUR` en
+  dur s'il diverge — sinon on le dit.
+- Le formulaire : titre « interentreprises », retrait **complet** du paragraphe
+  CORE (lignes « 8 semaines » **et** « 13 mois »), texte d'autorisation EPC B2B,
+  consigne de déclarer le mandat à sa banque ; le titre de l'exemplaire
+  non émis suit.
+- Tests : instantané du texte d'autorisation B2B ; absence des deux lignes CORE ;
+  le lot et le formulaire lisent la même valeur.
+
+**Lot A — API client** (inchangé du §6 sauf ceci) :
+
+- **Drapeau contrôlé dans les handlers**, juste après le mur tenant (404 non-membre
+  avant 409 drapeau fermé) — pas de garde globale. Clé `customerMandate`
+  (`closed`/`open`, défaut `closed`) **non exemptible** : le résolveur ignore les
+  exemptions pour cette clé, `AddFeatureExemptionHandler` la refuse, les listes
+  tenues à la main sont étendues (`FEATURE_KEYS`, `LEVEL_LABELS`, handlers de
+  lecture des niveaux, test des contrats, repli du front).
+- **Pas de mandat sans RIB**, staff et client (ordre : société → RIB → émetteur →
+  brouillon) ; l'écran staff masque « Frapper » sans RIB.
+- Frappe client refusée si un mandat est **actif** ; brouillon existant **rendu**
+  (P2002 traduit en relisant le brouillon).
+- PDF client : **brouillon seulement** ; l'IBAN entier y figure (assumé, invariant
+  du RIB amendé et daté).
+- Preuve : dépôt client **sur le brouillon seulement**, **refus hors `draft` dans
+  l'agrégat** ; un nouveau dépôt remplace la pièce et le fait est écrit.
+- **Tant qu'un brouillon existe, remplacer le RIB (staff ou client) le révoque**
+  dans la même unité de travail, fait au journal, notification staff — le papier
+  ne peut pas nommer un compte qui n'est plus le RIB. Pour un actif : le RIB
+  client est **refusé 409** (changement de banque = staff).
+- Activation : **exige une preuve sur ce mandat** ; `GetMandateProof` par
+  identifiant ; écran staff : pièce du brouillon, « Activer » masqué sans preuve.
+- Journal **dans la transaction** : frappe, preuve, activation, révocation par
+  RIB. Le dépôt de pièce écrit l'objet avant la transaction (`@hors-transaction`,
+  comme le KBIS) : si la transaction échoue, la pièce déposée est orpheline — dit
+  et accepté, pas de promesse d'archive.
+
+**Lot B — app cliente** : inchangé (§3), états `draft` / preuve déposée /
+`active` / aucun mandat en cours (`revoked`, `failed`, `expired`, `pending`).
