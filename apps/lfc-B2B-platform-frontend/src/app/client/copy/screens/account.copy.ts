@@ -64,6 +64,7 @@ export interface AccountCopy {
     readonly users: string;
     readonly kbis: string;
     readonly addresses: string;
+    readonly bank: string;
     readonly payment: string;
     readonly preferences: string;
     readonly data: string;
@@ -149,4 +150,30 @@ export interface AccountCopy {
   readonly spaceActiveHead: string;
   /** `{date}` est remplacé par la date d'activation de l'espace. */
   readonly spaceSelf: string;
+  /** Pendant la lecture du RIB. */
+  readonly bankLoading: string;
+  /** La lecture du RIB a échoué : ce n'est PAS « aucun RIB », et on le dit. */
+  readonly bankLoadFailedTitle: string;
+  readonly bankLoadFailedBody: string;
+  /** Aucun RIB déposé — le cas ordinaire d'une société qui ouvre. */
+  readonly bankNone: string;
+  /** `{last4}`, `{bic}` et `{holder}` : le compte enregistré, IBAN masqué. */
+  readonly bankSaved: string;
+  /** Le titulaire est celui que la BANQUE connaît, et un compte mandaté ne se remplace pas sans nouveau mandat. */
+  readonly bankNotice: string;
+  readonly bankHolder: string;
+  readonly bankLine1: string;
+  readonly bankLine2: string;
+  readonly bankPostalCode: string;
+  readonly bankCity: string;
+  readonly bankCountry: string;
+  /** Sous l'IBAN : il ne revient d'aucune route. */
+  readonly bankIbanHint: string;
+  readonly bankSave: string;
+  readonly bankReplace: string;
+  readonly bankSavedToast: string;
+  readonly bankSaveFailed: string;
+  /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
+  readonly supportTitle: string;
+  readonly supportBody: string;
 }

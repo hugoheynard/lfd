@@ -1,0 +1,27 @@
+@if (reachable()) {
+  <fold-card>
+    <div class="body">
+      <fold-element-title
+        variant="title"
+        [title]="t().account.supportTitle"
+        [subtitle]="t().account.supportBody"
+      />
+      <ul class="channels">
+        @if (phone(); as call) {
+          <li>
+            <a class="channel phone" [href]="call.href">
+              <fold-icon name="phone" aria-hidden="true" />{{ call.label }}
+            </a>
+          </li>
+        }
+        @if (email(); as write) {
+          <li>
+            <a class="channel email" [href]="write.href">
+              <fold-icon name="mail" aria-hidden="true" />{{ write.label }}
+            </a>
+          </li>
+        }
+      </ul>
+    </div>
+  </fold-card>
+}

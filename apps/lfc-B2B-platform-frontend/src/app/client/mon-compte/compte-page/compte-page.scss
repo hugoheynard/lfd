@@ -27,7 +27,7 @@
      défile affleurait sinon d'un demi-pixel entre la barre et la carte. */
   margin-top: -1px;
   padding: calc(var(--fold-space-md) + 1px) var(--lfc-inset) 0;
-  /* L'ENCRE AU-DESSUS du bloc. Pendant un défilement tactile, un \`sticky\` se
+  /* L'ENCRE AU-DESSUS du bloc. Pendant un défilement tactile, un `sticky` se
      recale parfois une image après le contenu : ce qui défile affleurait alors
      d'un ou deux pixels sous la barre, et scintillait (relevé le 2026-09-14 ;
      à l'arrêt, la géométrie est exacte au pixel). L'ombre pleine de l'encre de
@@ -86,6 +86,34 @@
   display: none;
 }
 
+/* Les cartes, puis la carte de contact dessous. `min-width: 0` : sans lui, le
+   rail qui défile en pile élargirait la colonne au lieu de glisser. */
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  min-width: 0;
+}
+
+/* EN PILE, LE CONTACT RESTE EN VUE. Amarré au bas de l'écran pendant qu'on
+   parcourt le dossier : le geste de sortie d'un problème ne se cherche pas au
+   bout de la page. `sticky` et non `fixed` : il garde sa place dans le flux,
+   donc rien ne passe dessous à la fin du défilement. */
+@media (max-width: 899.98px) {
+  /* Un cran d'air sous la lèvre amarrée : elle déborde d'un pixel sur la page
+     pour boucher un filet, et ce pixel mangeait le bord haut du premier bloc —
+     la promesse « boutique » paraissait coupée. */
+  .page {
+    padding-top: var(--fold-space-xs);
+  }
+
+  .support {
+    position: sticky;
+    bottom: var(--fold-space-sm);
+    z-index: 2;
+  }
+}
+
 /* Les cartes vivent dans un puits : il n'a ici ni fond ni rembourrage, il ne
    sert qu'à faire glisser les panneaux en pile. */
 .cards {
@@ -98,13 +126,33 @@
 }
 
 @media (max-width: 899.98px) {
+  /* EN PILE, UN VRAI PUITS : le rail est posé dans un creux, et c'est lui qui
+     CONTIENT le défilement. Sans ça, la section la plus longue (le RIB, ~600 px)
+     faisait descendre toute la page avant d'atteindre l'indicateur. */
+  .cards {
+    --lfc-well-bg: var(--fold-color-surface-sunken);
+    --lfc-well-padding: var(--fold-space-md);
+    --lfc-well-radius: var(--lfc-radius-2xl);
+  }
+
   /* Un panneau par section, et la suivante qui dépasse : le bord visible dit
-     qu'il y a une suite. */
+     qu'il y a une suite. Sa hauteur est BORNÉE et il défile en lui-même :
+     l'indicateur reste à portée de pouce quelle que soit la section. */
   .card {
     flex: none;
     width: 88%;
+    max-height: var(--compte-panel-max);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     scroll-snap-align: start;
   }
+}
+
+/* La hauteur d'un panneau : l'écran moins la barre, la carte amarrée et la
+   carte de contact amarrée (≈ 420 px mesurés le 2026-09-14, 375 × 812), avec un
+   plancher pour les petits écrans où tout ne tiendra de toute façon pas. */
+:host {
+  --compte-panel-max: max(280px, calc(100dvh - var(--lfc-header-height, 64px) - 420px));
 }
 
 .dots {
@@ -438,10 +486,11 @@
      qui évite l'effet de quadrillage à trous. Identité légale et KBIS vont
      ensemble parce que ce sont les deux faces d'un même sujet — ce que la maison
      déclare, et la pièce qui le prouve. */
-  .cards {
+  .main {
     flex: 1;
-    min-width: 0;
+  }
 
+  .cards {
     --lfc-well-gap: var(--fold-space-lg);
     --lfc-well-body-display: grid;
     --lfc-well-body-columns: repeat(2, minmax(0, 1fr));

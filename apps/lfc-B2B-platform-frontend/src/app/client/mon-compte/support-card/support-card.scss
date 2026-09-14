@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm) var(--fold-space-xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.channel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--lfc-color-primary-vivid);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  text-decoration: none;
+}
+
+/* Le numéro se dicte chiffre par chiffre : les chiffres ne dansent pas. */
+.phone {
+  font-variant-numeric: tabular-nums;
+}

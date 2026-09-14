@@ -4,6 +4,7 @@ import type { CompanyView, ShopLevel } from '@lfd/contracts';
 
 import { AccountService, type AccountStatus } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
+import { ClientBankAccount } from '../../client-bank-account.service';
 import { ClientChrome } from '../../client-chrome.service';
 import { FR } from '../../copy/fr';
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
@@ -95,6 +96,11 @@ function boot(
           },
         },
       },
+      // La carte RIB a sa propre suite : ici, elle lit un compte vide.
+      {
+        provide: ClientBankAccount,
+        useValue: { read: () => Promise.resolve({ account: null }) },
+      },
       // La carte « Compléter mon dossier » a sa propre suite : ici, le dossier existe.
       { provide: ProOnboarding, useValue: { needsDossier: () => false } },
     ],
@@ -133,13 +139,13 @@ describe('ComptePage', () => {
     expect(chrome.bandNarrow()).toBe(true);
   });
 
-  it('donne sept cartes, et un sommaire qui pointe LEURS ancres', () => {
+  it('donne huit cartes, et un sommaire qui pointe LEURS ancres', () => {
     // Le sommaire fait défiler, il ne change pas d'écran : une entrée qui
     // pointerait une ancre absente romprait la promesse écrite sous la liste.
     const anchors = Array.from(el().querySelectorAll('.summary-link')).map((a) =>
       a.getAttribute('href')?.slice(1),
     );
-    expect(anchors.length).toBe(7);
+    expect(anchors.length).toBe(8);
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
     }
@@ -160,6 +166,7 @@ describe('ComptePage', () => {
       'compte-users',
       'compte-kbis',
       'compte-addresses',
+      'compte-bank',
       'compte-data',
     ]);
     expect(links.map((a) => a.querySelector('.summary-num')?.textContent)).toEqual([
@@ -168,6 +175,7 @@ describe('ComptePage', () => {
       '03',
       '04',
       '05',
+      '06',
     ]);
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
@@ -176,6 +184,31 @@ describe('ComptePage', () => {
     expect(el().querySelector('#compte-preferences')).toBeNull();
     // L'export des commandes suit la même règle ; l'export personnel reste.
     expect(el().querySelectorAll('.export').length).toBe(1);
+  });
+
+  /**
+   * Plan `plan-rib-client.md` §2 : le RIB n'appartient qu'au détenteur et au
+   * rôle comptable. Aux autres, ni carte ni entrée de sommaire — et le sommaire
+   * se renumérote sans trou.
+   */
+  it('ne montre le RIB qu’aux rôles `owner` et `billing`', () => {
+    for (const role of ['owner', 'billing'] as const) {
+      fixture = boot([{ ...TOMMEUSES, role }]);
+      expect(el().querySelector('#compte-bank app-bank-card')).not.toBeNull();
+    }
+    for (const role of ['orders', 'admin'] as const) {
+      fixture = boot([{ ...TOMMEUSES, role }]);
+      const links = Array.from(el().querySelectorAll('.summary-link'));
+      expect(el().querySelector('#compte-bank')).toBeNull();
+      expect(links.map((a) => a.getAttribute('href'))).not.toContain('#compte-bank');
+      expect(links.length).toBe(7);
+      expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('07');
+    }
+  });
+
+  it('pose de quoi joindre le service commercial SOUS les cartes, hors du rail', () => {
+    expect(el().querySelector('.main > app-support-card')).not.toBeNull();
+    expect(el().querySelector('fold-well app-support-card')).toBeNull();
   });
 
   /** Plan §3.1 : tant qu'on ne commande pas, l'écran dit pourquoi, et quoi faire. */

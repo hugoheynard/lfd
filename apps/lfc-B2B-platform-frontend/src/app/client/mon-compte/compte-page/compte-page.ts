@@ -6,7 +6,7 @@ import {
   effect,
   inject,
 } from '@angular/core';
-import type { CartAdjustment } from '@lfd/contracts';
+import type { CartAdjustment, CompanyMemberRole } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
@@ -35,17 +35,20 @@ import { ProOnboarding } from '../../pro-onboarding.service';
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
 import { ShopPromise } from '../../shop-promise/shop-promise';
 import { AccountCard } from '../account-card/account-card';
+import { BankCard } from '../bank-card/bank-card';
 import { DataCard } from '../data-card/data-card';
 import { DossierCard } from '../dossier-card/dossier-card';
 import { KbisCard } from '../kbis-card/kbis-card';
+import { SupportCard } from '../support-card/support-card';
 import { UsersCard } from '../users-card/users-card';
 
-/** Les sept sujets, numérotés dans l'ordre de lecture. */
+/** Les huit sujets, numérotés dans l'ordre de lecture. */
 const SECTIONS = [
   'identity',
   'users',
   'kbis',
   'addresses',
+  'bank',
   'payment',
   'preferences',
   'data',
@@ -60,6 +63,13 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
   'payment',
   'preferences',
 ]);
+
+/**
+ * Les rôles qui voient et déposent le RIB (plan `plan-rib-client.md` §2) : le
+ * détenteur et le rôle comptable. L'API refuse les autres ; l'écran ne leur
+ * propose pas une carte qui ne ferait que dire non.
+ */
+const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing']);
 
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
@@ -81,6 +91,7 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AccountCard,
+    BankCard,
     ClientBannerBlock,
     ClientBannerOutlet,
     DataCard,
@@ -94,6 +105,7 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
     FoldWellComponent,
     KbisCard,
     ShopPromise,
+    SupportCard,
     UsersCard,
   ],
   templateUrl: './compte-page.html',
@@ -159,6 +171,12 @@ export class ComptePage {
    */
   protected readonly client = inject(ClientCompany);
   protected readonly company = this.client.company;
+
+  /** Le RIB ne se montre qu'au détenteur et au rôle comptable de la société. */
+  protected readonly showsBank = computed(() => {
+    const role = this.company()?.role;
+    return role !== undefined && BANK_ROLES.has(role);
+  });
 
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
@@ -246,7 +264,10 @@ export class ComptePage {
   protected readonly summary = computed(() => {
     const labels = this.t().account.sections;
     const orderable = this.access.atLeast('order');
-    const shown = SECTIONS.filter((key) => orderable || !ORDER_ONLY_SECTIONS.has(key));
+    const bank = this.showsBank();
+    const shown = SECTIONS.filter(
+      (key) => (orderable || !ORDER_ONLY_SECTIONS.has(key)) && (bank || key !== 'bank'),
+    );
     return shown.map((key, index) => ({
       key,
       label: labels[key],

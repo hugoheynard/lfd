@@ -1,0 +1,85 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading [message]="t().account.bankLoading" />
+  }
+  @case ('failed') {
+    <fold-empty-state
+      tone="alert"
+      [title]="t().account.bankLoadFailedTitle"
+      [subtitle]="t().account.bankLoadFailedBody"
+    >
+      <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+        {{ t().account.loadRetry }}
+      </button>
+    </fold-empty-state>
+  }
+  @default {
+    <p class="saved">{{ saved() }}</p>
+
+    <!-- Ce que la banque connaît, et ce qu'un changement de compte coûte au
+         prélèvement : dit AVANT les champs, pas découvert après. -->
+    <fold-callout appearance="inset" variant="info">{{ t().account.bankNotice }}</fold-callout>
+
+    <!-- 🔴 L'IBAN est toujours vide : il ne revient d'aucune route. -->
+    <div class="rows">
+      <div class="row">
+        <fold-input
+          [label]="t().account.bankHolder"
+          [value]="holderDraft()"
+          (valueChange)="holderDraft.set($event)"
+        />
+      </div>
+      <div class="row">
+        <fold-input
+          [label]="t().account.bankLine1"
+          [value]="line1Draft()"
+          (valueChange)="line1Draft.set($event)"
+        />
+        <fold-input
+          [label]="t().account.bankLine2"
+          [value]="line2Draft()"
+          (valueChange)="line2Draft.set($event)"
+        />
+      </div>
+      <div class="row">
+        <fold-input
+          [label]="t().account.bankPostalCode"
+          [value]="postalCodeDraft()"
+          (valueChange)="postalCodeDraft.set($event)"
+        />
+        <fold-input
+          [label]="t().account.bankCity"
+          [value]="cityDraft()"
+          (valueChange)="cityDraft.set($event)"
+        />
+        <fold-input
+          [label]="t().account.bankCountry"
+          [value]="countryDraft()"
+          (valueChange)="countryDraft.set($event)"
+        />
+      </div>
+      <div class="row">
+        <fold-input
+          label="IBAN"
+          autocomplete="off"
+          [hint]="t().account.bankIbanHint"
+          [value]="ibanDraft()"
+          (valueChange)="ibanDraft.set($event)"
+        />
+        <fold-input label="BIC" [value]="bicDraft()" (valueChange)="bicDraft.set($event)" />
+      </div>
+    </div>
+
+    <button
+      class="submit"
+      foldButton
+      emphasis="solid"
+      intent="primary"
+      type="button"
+      [disabled]="!canSave() || busy()"
+      (click)="save()"
+    >
+      {{ submitLabel() }}
+    </button>
+  }
+}
