@@ -11,9 +11,10 @@ import { GetMyCompanyBankAccountQuery } from "./get-my-company-bank-account.quer
  * Rend le RIB de la société au détenteur ou au rôle facturation, ou `null`
  * s'il n'en a jamais été déposé.
  *
- * La vue est celle du staff **sans les zones 14 et 19** : ce sont des réglages
- * du mandat, pas des coordonnées que le client recopie. Et l'IBAN ne redescend
- * pas davantage ici — `last4`, rien d'autre.
+ * La vue est celle du staff **sans les zones 14 et 19**, qui ont leur propre
+ * lecture depuis que le client les règle (2026-09-14, plan mandat client §10 —
+ * avant, cette phrase les disait « réglages du mandat »). Et l'IBAN ne
+ * redescend pas davantage ici — `last4`, rien d'autre.
  */
 @QueryHandler(GetMyCompanyBankAccountQuery)
 export class GetMyCompanyBankAccountHandler implements IQueryHandler<

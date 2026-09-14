@@ -240,3 +240,37 @@ rend la vue), `GET /companies/:companyId/mandate/document.pdf[?inline=1]`
 (brouillon seulement), `PUT /companies/:companyId/mandate/proof` (multipart
 `file`). Ordre des refus : non-membre 404 → rôle 403 → drapeau fermé 409 →
 règle métier.
+
+## 10. Le client règle les zones 14 et 19 — décidé par Hugo le 2026-09-14
+
+Jusque-là, `debtorReference` (zone 14) et `contractNumber` (zone 19) étaient
+des réglages du staff (`PUT /admin/companies/:companyId/mandate-options`). Le
+client les règle désormais lui-même, depuis `/mon-compte`.
+
+**Contrat** (`packages/contracts`, `company-bank-account.ts`) :
+
+- `CustomerMandateOptionsView = Pick<CompanyBankAccountView, "debtorReference" | "contractNumber">` ;
+- `CustomerMandateOptionsSectionView { options: CustomerMandateOptionsView | null }`,
+  `null` tant qu'aucun RIB n'est déposé ;
+- `GET /companies/:companyId/mandate-options` → la section ;
+- `PUT /companies/:companyId/mandate-options`, corps `SetMandateOptionsPayload`
+  (celui du staff), réponse **204**.
+
+`CustomerBankAccountView` ne change pas : les zones n'y entrent pas, elles ont
+leur propre lecture, pour la même raison que la route staff (le `PUT` du RIB
+exige l'IBAN).
+
+**Ordre des refus** : non-membre 404 → rôle ni détenteur ni facturation 403 →
+drapeau `customerMandate` fermé 409 → sans RIB 404 → **sous un mandat actif
+409** (`MandateOptionsBoundToActiveMandateError`). Les zones sont imprimées sur
+un papier déjà signé : le changement de papier passe par le staff, comme le RIB
+client (§8). Le staff, lui, n'a pas ce refus.
+
+**Écriture** : une seule séquence, `recordMandateOptions`, partagée par les
+deux handlers — RIB requis, `setOptions`, brouillon révoqué dans l'unité de
+travail (fait `payment_mandate.draft_voided`, cause `mandate_options_changed`),
+cloche du staff hors transaction.
+
+⚠️ Le fait `draft_voided` ne dit pas **qui** a réécrit (`via` absent de
+l'événement), et aucune réécriture des zones n'est journalisée quand il n'y a
+pas de brouillon. Non tranché dans ce lot.

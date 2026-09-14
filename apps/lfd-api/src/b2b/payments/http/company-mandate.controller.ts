@@ -1,5 +1,12 @@
-import type { CustomerMandateView } from "@lfd/contracts";
 import {
+  type CustomerMandateOptionsSectionView,
+  type CustomerMandateOptionsView,
+  type CustomerMandateView,
+  type SetMandateOptionsPayload,
+  setMandateOptionsPayloadSchema,
+} from "@lfd/contracts";
+import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -25,9 +32,12 @@ import type { Response } from "express";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { InvalidScannedDocumentError } from "../../../platform/shared/errors/storage-errors.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachMyCompanyMandateProofCommand } from "../application/commands/attach-my-company-mandate-proof.command.js";
 import { MintMyCompanyMandateCommand } from "../application/commands/mint-my-company-mandate.command.js";
+import { SetMyCompanyMandateOptionsCommand } from "../application/commands/set-my-company-mandate-options.command.js";
 import { GetMyCompanyMandateDocumentQuery } from "../application/queries/get-my-company-mandate-document.query.js";
+import { GetMyCompanyMandateOptionsQuery } from "../application/queries/get-my-company-mandate-options.query.js";
 import { GetMyCompanyMandateQuery } from "../application/queries/get-my-company-mandate.query.js";
 import type { CustomerMandatePdf } from "../application/queries/preview-customer-mandate.handler.js";
 
@@ -139,6 +149,38 @@ export class CompanyMandateController {
         file.originalname,
         file.buffer,
       ),
+    );
+  }
+
+  /**
+   * Les zones 14 et 19, ou `{ options: null }` tant qu'aucun RIB n'est déposé.
+   * Enveloppé : un `null` de contrôleur partirait en corps vide.
+   */
+  @Get(":companyId/mandate-options")
+  async readOptions(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+  ): Promise<CustomerMandateOptionsSectionView> {
+    const options = await this.queries.execute<
+      GetMyCompanyMandateOptionsQuery,
+      CustomerMandateOptionsView | null
+    >(new GetMyCompanyMandateOptionsQuery(user.userId, companyId));
+    return { options };
+  }
+
+  /**
+   * Réécrit les zones 14 et 19 — le même payload que le staff (plan §10). Sans
+   * RIB 404 ; sous un mandat actif 409 ; un brouillon en cours devient caduc.
+   */
+  @Put(":companyId/mandate-options")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setOptions(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(setMandateOptionsPayloadSchema)) payload: SetMandateOptionsPayload,
+  ): Promise<void> {
+    await this.commands.execute<SetMyCompanyMandateOptionsCommand, void>(
+      new SetMyCompanyMandateOptionsCommand(user.userId, companyId, payload),
     );
   }
 

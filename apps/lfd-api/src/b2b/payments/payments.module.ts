@@ -11,8 +11,10 @@ import { CompanyBankAccountRepository } from "./domain/ports/company-bank-accoun
 import { CustomerMandateGate } from "./domain/ports/customer-mandate-gate.js";
 import { AttachMyCompanyMandateProofHandler } from "./application/commands/attach-my-company-mandate-proof.handler.js";
 import { MintMyCompanyMandateHandler } from "./application/commands/mint-my-company-mandate.handler.js";
+import { SetMyCompanyMandateOptionsHandler } from "./application/commands/set-my-company-mandate-options.handler.js";
 import { GetMyCompanyMandateDocumentHandler } from "./application/queries/get-my-company-mandate-document.handler.js";
 import { GetMyCompanyMandateHandler } from "./application/queries/get-my-company-mandate.handler.js";
+import { GetMyCompanyMandateOptionsHandler } from "./application/queries/get-my-company-mandate-options.handler.js";
 import { FeatureAccessCustomerMandateGate } from "./infrastructure/feature-access-customer-mandate-gate.js";
 import { CompanyMandateController } from "./http/company-mandate.controller.js";
 import { MintMandateHandler } from "./application/commands/mint-mandate.handler.js";
@@ -96,6 +98,8 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     AttachMyCompanyMandateProofHandler,
     GetMyCompanyMandateHandler,
     GetMyCompanyMandateDocumentHandler,
+    SetMyCompanyMandateOptionsHandler,
+    GetMyCompanyMandateOptionsHandler,
   ],
   exports: [PaymentGateway],
 })

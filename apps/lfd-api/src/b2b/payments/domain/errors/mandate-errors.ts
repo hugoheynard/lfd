@@ -325,6 +325,24 @@ export class BankAccountBoundToActiveMandateError extends BusinessError {
 }
 
 /**
+ * Le client réécrit les zones 14 ou 19 alors qu'un mandat **actif** les
+ * imprime — **409**.
+ *
+ * Elles figurent sur un papier déjà signé : les changer côté serveur ferait
+ * diverger ce que le débiteur a en main de ce qui part sur ses relevés. Le
+ * changement de papier passe par le staff, comme le changement de banque
+ * (plan §8, décidé le 2026-09-14 au §10).
+ */
+export class MandateOptionsBoundToActiveMandateError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "payments.mandate_options.bound_to_active_mandate",
+      "Votre mandat de prélèvement actif est signé avec ces références : pour les modifier, contactez-nous, un nouveau mandat devra être signé.",
+    );
+  }
+}
+
+/**
  * Le mandat en ligne n'est pas ouvert aux clients — **409**.
  *
  * Refus d'état et non d'autorisation, comme `ShopClosedError` : il ne dit rien

@@ -95,6 +95,8 @@ export type {
   CompanyBankAccountView,
   CustomerBankAccountSectionView,
   CustomerBankAccountView,
+  CustomerMandateOptionsSectionView,
+  CustomerMandateOptionsView,
   SetCompanyBankAccountPayload,
   SetMandateOptionsPayload,
 } from "./company-bank-account.js";
