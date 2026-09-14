@@ -226,21 +226,38 @@ deux divergent.
 ### 11.2 À trancher par Hugo
 
 **a. Qui une suppression de contact peut-elle couper ?** ✅ **Tranché par Hugo le 2026-09-14 : seulement les accès nés d'une invitation de la société.** Exemple posé : Léa, admin ouverte par le staff, garde son accès quand un autre admin ajoute puis supprime un contact à son adresse. La confirmation dit que l'accès ouvert par La Folie Douce reste ; aucun retrait ne laisse la société sans détenteur ni admin. Aujourd'hui n'importe
-quelle adresse entre au carnet : ajouter un contact à l'adresse d'un autre admin
-puis le supprimer couperait cet admin. Deux lectures :
-
-- **(recommandé)** la suppression ne retire que les accès **nés d'une invitation
-  de la société** (`accepted_by_user_id`) ; un accès ouvert par le staff reste, et
-  la confirmation le dit ; jamais un retrait qui laisserait la société sans
-  détenteur ni admin ;
-- ou tout rattachement non détenteur, en l'assumant par écrit.
 
 **b. Le staff passe-t-il aussi par l'invitation pour un compte déjà actif ?** ✅ **Tranché par Hugo le 2026-09-14 : oui, pour la seule branche « compte actif ».** Les adresses inconnues et `invited` gardent le chemin direct du staff.
-Sinon, demander au support « ouvrez l'accès à cette adresse » rattache toujours
-un compte actif sans son accord (`attachToActive`).
 
-- **(recommandé)** oui pour la seule branche « compte actif » : le staff crée une
-  invitation que la personne accepte ; les adresses inconnues et `invited` gardent
-  le chemin direct du staff, qui sert au téléphone ;
-- ou le staff garde le rattachement direct, et `invited_by_staff_sub` ne sert que
-  pour les invitations staff qu'on voudra plus tard.
+## 12. Troisième contradiction (vitruve, 2026-09-14) — ce qui change encore
+
+Fait foi sur le §11 là où ils divergent.
+
+| #   | Objection                                                                                                                                                                                                                                                           | Correction                                                                                                                                                                                                                                                                                                                                                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | L'abonné au fait publié **dans** `uow.run` hérite du contexte de la transaction (`transaction.store.ts`, proxy `transactionalPrisma`) : après le premier `await` Auth0, ses écritures visent une transaction commitée, échouent, et `BackgroundWork` avale l'erreur | Le fait qui déclenche l'envoi est publié **après le retour** de `uow.run` ; `BackgroundWork.track` sort du contexte transactionnel (`storage.exit`). e2e où l'abonné écrit en base                                                                                                                                                                                              |
+| B2  | Aucune garantie de livraison : bus en processus, sans outbox ni rejeu ; le §5.1 promettait « un envoi raté se voit »                                                                                                                                                | L'abonné écrit **l'issue de chaque envoi** dans `company_invitation_sends` (`sent` / `failed` + raison) ; l'écran admin la lit ; un envoi `failed` ne compte ni dans le délai ni dans les plafonds. **Pas de rejeu automatique**, écrit                                                                                                                                         |
+| B3  | L'identifiant d'invitation dans l'URL n'est lié à aucun compte : un admin client ferait accepter sans clic une personne active ; et « le compte reste `invited` » est faux — le resolver le passe `active` dans le guard, avant tout handler                        | Colonne **`provisioned_user_id`**, écrite par l'abonné quand **il crée** le compte. Acceptation d'office admise **seulement** si `provisioned_user_id = principal.userId` **et** `invitation.email` = adresse prouvée du compte ; sinon bandeau et clic. La promesse « reste `invited` » est abandonnée : l'acceptation d'office est idempotente et rejouable depuis le bandeau |
+| B4  | La décision 11.2 b casse trois appelants de `grant` : l'invitation de membre staff (relit un rattachement qui n'existe plus → 404), le rattachement du **détenteur** (`role: owner`, interdit en invitation), et le contrat servi `HolderOutcome = "attached"`      | `InviteCompanyMember` rend une vue sans membre quand la personne est invitée ; **l'issue `"invited"` s'ajoute** à côté de `"attached"` (déprécié, pas retiré). Le **détenteur** d'un compte actif : à trancher (§12.1). Les deux tests qui changent de sens sont nommés et réécrits                                                                                             |
+| S   | `accepted_by_user_id` rempli sur un rattachement déjà ouvert par le staff ferait couper Léa (11.2 a)                                                                                                                                                                | Rempli **seulement si l'acceptation a créé** le rattachement                                                                                                                                                                                                                                                                                                                    |
+| S   | Plafonds de `company_invitation_sends` : compter puis insérer laisse passer N requêtes                                                                                                                                                                              | `pg_advisory_xact_lock` sur la société avant le comptage, dans l'unité de travail                                                                                                                                                                                                                                                                                               |
+| S   | « Jamais sans détenteur ni admin » : vide avec un détenteur, trouée sans lui (deux retraits concurrents)                                                                                                                                                            | Même verrou de société ; e2e à deux suppressions concurrentes                                                                                                                                                                                                                                                                                                                   |
+| S   | Délai et création en deux instructions                                                                                                                                                                                                                              | Une seule : `INSERT … ON CONFLICT … DO UPDATE … WHERE last_sent_at < seuil RETURNING id` ; aucune ligne = 429                                                                                                                                                                                                                                                                   |
+| m   | Supprimer puis réajouter le contact contourne le délai                                                                                                                                                                                                              | Accepté : les plafonds journaliers restent le frein ; écrit                                                                                                                                                                                                                                                                                                                     |
+| m   | FK `accepted_by_user_id`                                                                                                                                                                                                                                            | `RESTRICT`, comme `invited_by_user_id`                                                                                                                                                                                                                                                                                                                                          |
+
+### 12.1 À trancher par Hugo
+
+**Le staff rattache le détenteur d'une société à une adresse qui a déjà un compte
+actif** (création de compte ou « rattacher le détenteur »). Une invitation ne
+peut pas porter `owner`. Soit ce cas garde le **rattachement direct**, staff
+seulement — la décision 11.2 b s'arrête au détenteur ; soit l'invitation accepte
+`owner` **pour le staff seulement**, et le détenteur doit accepter avant d'entrer.
+
+### 12.2 L'état du plan
+
+Trois contradictions, dix objections bloquantes au total, toutes nées du même
+fait : aujourd'hui **inviter est rattacher**, et séparer les deux touche le bus
+d'événements, le resolver d'identité, trois appelants staff et un contrat servi.
+La construction est un chantier à lots (migration, domaine, API client, chemin
+staff, e-mails, deux fronts), pas un lien sous un contact.
