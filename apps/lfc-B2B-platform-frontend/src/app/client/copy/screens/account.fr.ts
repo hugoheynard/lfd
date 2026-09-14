@@ -18,7 +18,7 @@ export const ACCOUNT_FR: AccountCopy = {
   signedOutBody: 'Votre dossier, vos accès et vos papiers vous attendent ici.',
   signIn: 'Se connecter',
   cardKicker: 'Compte professionnel',
-  cardReference: 'Réf. {ref} — à donner au téléphone',
+  cardReference: 'Ma référence client : {ref}',
   cardTermMonthly: 'Fin de mois',
   cardTermOrder: 'À la commande',
   cardUnknown: 'Compte non reconnu',
