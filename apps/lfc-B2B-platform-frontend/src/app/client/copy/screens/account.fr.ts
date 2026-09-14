@@ -5,7 +5,7 @@ export const ACCOUNT_FR: AccountCopy = {
   lead: 'Votre dossier tel que nous le tenons : identité, accès, papiers, adresses, conditions de paiement.',
   states: {
     incomplete: 'Dossier à compléter',
-    pending: 'Dossier en cours de vérification',
+    pending: 'Dossier en cours',
     active: 'Compte actif',
     suspended: 'Compte suspendu',
     terminated: 'Compte clos',

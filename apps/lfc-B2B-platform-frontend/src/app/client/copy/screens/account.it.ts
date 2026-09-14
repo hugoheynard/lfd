@@ -5,7 +5,7 @@ export const ACCOUNT_IT: AccountCopy = {
   lead: 'Il vostro fascicolo così come lo teniamo: identità, accessi, documenti, indirizzi, condizioni di pagamento.',
   states: {
     incomplete: 'Fascicolo da completare',
-    pending: 'Fascicolo in verifica',
+    pending: 'Fascicolo in corso',
     active: 'Account attivo',
     suspended: 'Account sospeso',
     terminated: 'Account chiuso',

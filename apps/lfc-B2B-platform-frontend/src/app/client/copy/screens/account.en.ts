@@ -5,7 +5,7 @@ export const ACCOUNT_EN: AccountCopy = {
   lead: 'Your file as we keep it: identity, access, paperwork, addresses, payment terms.',
   states: {
     incomplete: 'File to complete',
-    pending: 'File under review',
+    pending: 'File in progress',
     active: 'Account active',
     suspended: 'Account suspended',
     terminated: 'Account closed',
