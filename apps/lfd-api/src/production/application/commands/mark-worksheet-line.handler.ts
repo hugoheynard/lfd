@@ -36,6 +36,7 @@ export class MarkWorksheetLineHandler implements ICommandHandler<MarkWorksheetLi
     const day = ServiceDay.of(command.serviceDay);
     const current = await this.days.load(day);
     current.itemToMark(command.sku);
+
     await this.days.markProduced(day, command.sku, {
       at: this.clock.now(),
       by: command.staffSubject,
