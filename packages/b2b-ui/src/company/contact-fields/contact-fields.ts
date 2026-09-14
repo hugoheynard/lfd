@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
-import { assignableRoleSchema, COMPANY_ROLE_LABELS, type AssignableRole } from '@lfd/contracts';
+import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { assignableRoleSchema, type AssignableRole } from '@lfd/contracts';
 import { FoldInputComponent, FoldListboxComponent, type FoldSelectOption } from 'fold-ng';
 
 import type { CompanyContactDraft } from '../company-form.model';
-
-/** Les rôles proposés, dans l'ordre du contrat — `owner` en est absent. */
-const ASSIGNABLE_ROLES: readonly FoldSelectOption<AssignableRole>[] =
-  assignableRoleSchema.options.map((value) => ({ value, label: COMPANY_ROLE_LABELS[value] }));
+import {
+  CONTACT_FIELDS_LABELS_FR,
+  type ContactFieldsLabels,
+  roleOptionsOf,
+} from './contact-fields.labels';
 
 /**
  * Champs d'un **interlocuteur** — fragment de formulaire pur, réutilisable pour
@@ -32,7 +33,16 @@ export class ContactFields {
    */
   readonly withRole = input(false);
 
-  protected readonly roles = ASSIGNABLE_ROLES;
+  /**
+   * Les mots du fragment, options de rôle comprises. Le défaut est le français
+   * d'avant l'entrée : le back-office ne passe rien ; l'app cliente passe sa langue.
+   */
+  readonly labels = input<ContactFieldsLabels>(CONTACT_FIELDS_LABELS_FR);
+
+  /** Les rôles proposés, dans l'ordre du contrat — `owner` en est absent. */
+  protected readonly roles = computed<readonly FoldSelectOption<AssignableRole>[]>(() =>
+    roleOptionsOf(this.labels()),
+  );
 
   protected setFirstName(firstName: string): void {
     this.value.update((draft) => ({ ...draft, firstName }));

@@ -2,20 +2,20 @@
      seul champ exigé. Le nom vient ensuite, facultatif — l'imposer bloquerait
      une saisie faite au téléphone. -->
 <fold-input
-  label="E-mail"
   type="email"
   required
-  hint="c'est par là qu'un accès lui serait envoyé"
+  [label]="labels().email"
+  [hint]="labels().emailHint"
   [value]="value().email"
   (valueChange)="setEmail($event)"
 />
 
 @if (withRole()) {
   <fold-listbox
-    label="Rôle dans la société"
     required
-    placeholder="À choisir"
-    [options]="roles"
+    [label]="labels().role"
+    [placeholder]="labels().rolePlaceholder"
+    [options]="roles()"
     [value]="value().role"
     (selectionChange)="setRole($event)"
   />
@@ -23,25 +23,30 @@
 
 <div class="row">
   <fold-input
-    label="Prénom"
     optional
+    [label]="labels().firstName"
     [value]="value().firstName"
     (valueChange)="setFirstName($event)"
   />
-  <fold-input label="Nom" optional [value]="value().lastName" (valueChange)="setLastName($event)" />
+  <fold-input
+    optional
+    [label]="labels().lastName"
+    [value]="value().lastName"
+    (valueChange)="setLastName($event)"
+  />
 </div>
 
 <fold-input
-  label="Fonction"
-  placeholder="ex. Responsable achats"
   optional
+  [label]="labels().fonction"
+  [placeholder]="labels().fonctionPlaceholder"
   [value]="value().fonction"
   (valueChange)="setFonction($event)"
 />
 <fold-input
-  label="Téléphone"
   type="tel"
   optional
+  [label]="labels().phone"
   [value]="value().phone"
   (valueChange)="setPhone($event)"
 />

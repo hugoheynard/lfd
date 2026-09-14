@@ -99,6 +99,18 @@ export const ACCOUNT_IT: AccountCopy = {
   usersAddFailed: 'Il contatto non è stato aggiunto.',
   roleUnset: 'Da precisare',
   tagContact: 'Solo contatto',
+  contactFields: {
+    email: 'E-mail',
+    emailHint: 'è a questo indirizzo che verrebbe inviato un accesso',
+    role: 'Ruolo nella società',
+    rolePlaceholder: 'Da scegliere',
+    roles: { admin: 'Amministratore', orders: 'Ordini', billing: 'Fatturazione' },
+    firstName: 'Nome',
+    lastName: 'Cognome',
+    fonction: 'Funzione',
+    fonctionPlaceholder: 'es. Responsabile acquisti',
+    phone: 'Telefono',
+  },
   contactEditHolderTitle: 'Modificare il titolare',
   contactEditTitle: 'Modificare il contatto',
   contactEditHolderSubtitle:

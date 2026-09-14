@@ -14,7 +14,12 @@
   <!-- Ce que l'ajout crée, dit AVANT qu'on enregistre : un contact, pas un accès. -->
   <p class="note">{{ t().account.usersNote }}</p>
 
-  <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" [withRole]="true" />
+  <lfd-contact-fields
+    [value]="draft()"
+    (valueChange)="draft.set($event)"
+    [withRole]="true"
+    [labels]="t().account.contactFields"
+  />
 </fold-panel-body>
 
 <fold-panel-footer>

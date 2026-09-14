@@ -17,6 +17,7 @@
     [value]="draft()"
     (valueChange)="draft.set($event)"
     [withRole]="!isHolder()"
+    [labels]="t().account.contactFields"
   />
 </fold-panel-body>
 

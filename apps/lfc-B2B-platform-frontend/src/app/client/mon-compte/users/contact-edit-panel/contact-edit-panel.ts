@@ -30,7 +30,7 @@ import {
 import type { ContactDraft } from '../../../../account/account.model';
 import { AccountService } from '../../../../account/account.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { panelSide } from '../../../panel-side';
+import { dialogSide } from '../../../panel-side';
 import { canManageContacts, draftOf } from '../users-section';
 
 /** Les coordonnées comparées pour savoir si quelque chose a changé. */
@@ -53,7 +53,12 @@ export interface ContactEditPanelData {
  * écrire.
  *
  * Les champs sont ceux du panneau d'origine (`lfd-contact-fields`) ; le chrome,
- * les libellés et le refus rendu sont ceux de l'app, comme `user-add-panel`.
+ * les libellés (`contactFields`) et le refus rendu sont ceux de l'app, comme
+ * `user-add-panel`.
+ *
+ * C'est une SAISIE : dialogue centré au bureau, feuille du bas en pile
+ * (`dialogSide()`, règle « Saisir » du `CLAUDE.md` de l'app). Le nom `*-panel`
+ * est d'avant cette règle.
  *
  * ## Deux écritures, choisies par la cible
  *
@@ -80,21 +85,22 @@ export interface ContactEditPanelData {
   styleUrl: './contact-edit-panel.scss',
 })
 export class ContactEditPanel {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'right', width: 'md', surface: 'solid' };
+  /** `md` (490 px) : six champs au plus, prénom et nom côte à côte (échelle `FoldPanelSize`). */
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
 
   /**
    * Ouvre le panneau pour cette personne — et **rien** aux rôles que l'API
    * refuserait : la garde est ici aussi, pas seulement sur le bouton.
    *
-   * `stack` : ouvert depuis le panneau Utilisateurs en pile, il se pose dessus
-   * au lieu de le fermer, et l'on retrouve la liste en sortant.
+   * `stack` : ouvert depuis la fiche d'une personne, il se pose dessus au lieu
+   * de la fermer, et l'on retrouve la fiche en sortant.
    */
   static open(panels: FoldPanelHostService, company: CompanyView, contact: ContactView): void {
     if (!canManageContacts(company)) {
       return;
     }
     panels.open(ContactEditPanel, {
-      side: panelSide(),
+      side: dialogSide(),
       stack: true,
       data: { companyId: company.id, contactId: contact.id, initial: draftOf(contact) },
     });

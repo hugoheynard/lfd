@@ -1,5 +1,5 @@
 import type { AddressFormLabels } from '@lfd/b2b-ui/address';
-import type { DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
+import type { ContactFieldsLabels, DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
 import type { BankAccountFormLabels, MandateOptionsFormLabels } from '@lfd/b2b-ui/payment';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
@@ -114,6 +114,8 @@ export interface AccountCopy {
   /** Un rôle non renseigné : les contacts d'avant les rôles n'en ont pas. */
   readonly roleUnset: string;
   readonly tagContact: string;
+  /** Les champs d'un interlocuteur — le formulaire partagé avec la fiche staff, rôles compris. */
+  readonly contactFields: ContactFieldsLabels;
   /** L'en-tête de la fiche d'un interlocuteur quand on la modifie : détenteur, ou contact du carnet. */
   readonly contactEditHolderTitle: string;
   readonly contactEditTitle: string;

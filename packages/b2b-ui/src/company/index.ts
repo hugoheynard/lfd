@@ -6,6 +6,8 @@ export { CompanyBillingCard } from './company-billing-card/company-billing-card'
 export { CompanyFulfillmentCard } from './company-fulfillment-card/company-fulfillment-card';
 export { CompanyIdentityFields } from './company-identity-fields/company-identity-fields';
 export { ContactFields } from './contact-fields/contact-fields';
+export { CONTACT_FIELDS_LABELS_FR, roleOptionsOf } from './contact-fields/contact-fields.labels';
+export type { ContactFieldsLabels } from './contact-fields/contact-fields.labels';
 export { DeliverySpecs } from './delivery-specs/delivery-specs';
 export {
   DELIVERY_SPECS_LABELS_FR,

@@ -233,6 +233,17 @@ describe('ContactEditPanel', () => {
     });
   });
 
+  it('passe au formulaire partagé les libellés de l’écran, et ils s’affichent', () => {
+    const fixture = boot(AS_CONTACT);
+    const fields = fixture.debugElement.query(By.directive(ContactFields))
+      .componentInstance as ContactFields;
+
+    expect(fields.labels()).toBe(FR.account.contactFields);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain(FR.account.contactFields.emailHint);
+    expect(text).toContain(FR.account.contactFields.role);
+  });
+
   describe('open()', () => {
     afterEach(() => {
       TestBed.inject(FoldPanelHostService).dismissAll();
@@ -261,7 +272,8 @@ describe('ContactEditPanel', () => {
       ContactEditPanel.open(TestBed.inject(FoldPanelHostService), asRole('admin'), HOLDER);
 
       expect(openedPanel()?.data).toMatchObject({ contactId: null });
-      expect(openedPanel()?.side).toBe('right');
+      // Une saisie : dialogue centré au-delà du pli (règle « Saisir », 2026-09-14).
+      expect(openedPanel()?.side).toBe('center');
     });
 
     /** L'API refuse l'écriture hors `owner`/`admin` : le panneau ne s'ouvre même pas. */

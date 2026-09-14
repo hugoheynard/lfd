@@ -98,6 +98,18 @@ export const ACCOUNT_EN: AccountCopy = {
   usersAddFailed: 'The contact was not added.',
   roleUnset: 'To be set',
   tagContact: 'Contact only',
+  contactFields: {
+    email: 'Email',
+    emailHint: 'this is where an access would be sent',
+    role: 'Role in the company',
+    rolePlaceholder: 'Choose',
+    roles: { admin: 'Administrator', orders: 'Orders', billing: 'Billing' },
+    firstName: 'First name',
+    lastName: 'Last name',
+    fonction: 'Job title',
+    fonctionPlaceholder: 'e.g. Purchasing manager',
+    phone: 'Phone',
+  },
   contactEditHolderTitle: 'Edit the holder',
   contactEditTitle: 'Edit the contact',
   contactEditHolderSubtitle:
