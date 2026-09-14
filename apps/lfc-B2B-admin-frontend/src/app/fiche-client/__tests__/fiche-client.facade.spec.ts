@@ -9,6 +9,9 @@ import { FicheClientStore } from '../informations/fiche-client.store';
 
 const COMPANY = { id: 'cmp_1', contacts: [] } as unknown as AdminCompanyDetail;
 
+/** Les clés d'étape demandées aux panneaux, dans l'ordre. */
+let openedSteps: string[] = [];
+
 interface Harness {
   readonly facade: FicheClientFacade;
   readonly loads: () => number;
@@ -26,6 +29,7 @@ function setup(
   } = {},
 ): Harness {
   let loads = 0;
+  openedSteps = [];
   const store = {
     company: (): AdminCompanyDetail | null => COMPANY,
     load: (): Promise<void> => {
@@ -59,8 +63,10 @@ function setup(
   } as unknown as FicheClientActions;
 
   const panels = {
-    openStep: (): Promise<unknown> | null =>
-      options.panelCloses === false ? null : Promise.resolve(),
+    openStep: (key: string): Promise<unknown> | null => {
+      openedSteps.push(key);
+      return options.panelCloses === false ? null : Promise.resolve();
+    },
   } as unknown as FicheClientPanels;
 
   TestBed.configureTestingModule({
@@ -127,5 +133,23 @@ describe('façade — un panneau fermé recharge la fiche', () => {
     await Promise.resolve();
 
     expect(loads()).toBe(0);
+  });
+});
+
+describe('façade — « Modifier » l’identité', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  /**
+   * Régression : la carte d'identité demandait l'étape `tva`, que les panneaux
+   * ne servent plus depuis le passage à `vat` — le clic n'ouvrait rien (2026-09-14).
+   */
+  it('demande l’étape que le panneau d’identité sert', () => {
+    const { facade } = setup();
+
+    facade.editIdentity();
+
+    expect(openedSteps).toEqual(['vat']);
   });
 });

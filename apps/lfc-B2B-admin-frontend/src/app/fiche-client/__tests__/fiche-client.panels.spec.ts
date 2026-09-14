@@ -1,8 +1,15 @@
 import type { CompanyContactView } from '@lfd/contracts';
+import { TestBed } from '@angular/core/testing';
+import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
-import { contactTargetOf, knownContactsOf } from '../informations/fiche-client.panels';
+import {
+  contactTargetOf,
+  FicheClientPanels,
+  knownContactsOf,
+} from '../informations/fiche-client.panels';
+import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
 
 const HOLDER = {
   contactId: null,
@@ -96,5 +103,52 @@ describe('contacts connus proposés à une adresse de livraison', () => {
     } as AdminCompanyDetail;
 
     expect(knownContactsOf(anonymous)).toEqual([]);
+  });
+});
+
+describe('les étapes qui ouvrent un panneau', () => {
+  function panelsWith(opened: unknown[]): FicheClientPanels {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        FicheClientPanels,
+        {
+          provide: FoldPanelHostService,
+          useValue: {
+            open: (component: unknown, config: unknown) => {
+              opened.push({ component, config });
+              return { closed: Promise.resolve() };
+            },
+          },
+        },
+      ],
+    });
+    return TestBed.inject(FicheClientPanels);
+  }
+
+  const FULL = {
+    ...company(),
+    enseigne: 'Les Halles',
+    vatNumber: 'FR00123456789',
+    raisonSociale: 'SAS Les Halles',
+    formeJuridique: 'SAS',
+    siret: '12345678900012',
+  } as AdminCompanyDetail;
+
+  it('ouvre le panneau d’identité sur `vat`, prérempli de la société', () => {
+    const opened: { component: unknown; config: { data: unknown } }[] = [];
+    const panels = panelsWith(opened);
+
+    expect(panels.openStep('vat', FULL)).not.toBeNull();
+    expect(opened[0]?.component).toBe(AdminIdentitePanel);
+    expect(opened[0]?.config.data).toMatchObject({ companyId: 'cmp_1', siret: '12345678900012' });
+  });
+
+  /** Régression : `tva` était la clé de la carte d'identité, et n'ouvrait rien (2026-09-14). */
+  it('n’ouvre rien pour l’ancienne clé `tva`', () => {
+    const opened: unknown[] = [];
+
+    expect(panelsWith(opened).openStep('tva', FULL)).toBeNull();
+    expect(opened).toEqual([]);
   });
 });

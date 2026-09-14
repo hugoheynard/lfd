@@ -155,6 +155,18 @@ export class FicheClientFacade {
   // ── Panneaux ────────────────────────────────────────────────────────────
 
   /** Le panneau d'une étape d'activation ; la fiche se recharge à sa fermeture. */
+  /**
+   * « Modifier » sur la carte d'identité.
+   *
+   * 🔴 Une méthode nommée plutôt qu'une clé écrite dans le gabarit : la carte
+   * appelait `openStep('tva')`, clé que plus rien ne servait depuis que les
+   * étapes disent `vat` — le clic n'ouvrait rien, sans une erreur (relevé le
+   * 2026-09-14). Un nom de méthode faux ne compile pas ; une chaîne fausse, si.
+   */
+  editIdentity(): void {
+    this.openStep('vat');
+  }
+
   openStep(key: string): void {
     // La vérification n'ouvre aucun panneau : c'est le geste lui-même, et il
     // est identique à celui de la carte Identité.
