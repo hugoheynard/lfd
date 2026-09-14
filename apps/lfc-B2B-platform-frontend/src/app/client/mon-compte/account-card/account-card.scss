@@ -7,10 +7,14 @@
    gauche — c'est ce qui donne l'impression d'une carte qu'on tient. */
 .card {
   position: relative;
+  /* La hauteur d'une carte qu'on tient, commune aux cartes d'en-tête : le haut
+     identifie, le bas se pose sur le bord inférieur. */
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: var(--fold-space-md);
+  grid-template-rows: auto 1fr;
+  column-gap: var(--fold-space-md);
+  row-gap: var(--fold-space-lg);
+  min-height: 150px;
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--lfc-radius-2xl);
   background: linear-gradient(134deg, #0b1f52, var(--lfc-ink-800) 46%, var(--lfc-ink-900));
@@ -31,6 +35,7 @@
 }
 
 .who {
+  align-self: end;
   min-width: 0;
 }
 
@@ -47,7 +52,7 @@
 /* Le nom garde le droit de passer sur deux lignes : jamais d'ellipse sur le
    nom de la maison. */
 .name {
-  margin: var(--fold-space-xs) 0 0;
+  margin: 0;
   font-family: var(--fold-font-label);
   font-size: var(--lfc-text-block);
   font-weight: var(--lfc-weight-black);
@@ -64,15 +69,8 @@
   color: var(--lfc-color-on-well-muted);
 }
 
-/* La colonne de droite s'aligne à droite : le badge en tête, les modes dessous. */
-.status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--fold-space-sm);
-}
-
 .state {
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -108,6 +106,7 @@
 }
 
 .payments {
+  align-self: end;
   display: flex;
   flex-direction: column;
   gap: 4px;

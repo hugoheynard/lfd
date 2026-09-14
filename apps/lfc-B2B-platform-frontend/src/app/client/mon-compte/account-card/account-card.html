@@ -1,48 +1,47 @@
 <div class="card">
   @if (client.company(); as company) {
-    <!-- DEUX COLONNES pour tenir la hauteur commune des cartes d'en-tête : qui
-         est la maison à gauche, où en est son dossier à droite — le badge, puis
-         les modes de paiement juste dessous. -->
+    <!-- LA DISPOSITION D'UNE CARTE : ce qui l'identifie en haut, ce qu'elle
+         permet en bas. Le badge du dossier en haut à droite, les modes de
+         paiement juste dessous, en bas à droite. -->
+    <p class="kicker">{{ t().account.cardKicker }}</p>
+    <!-- Le badge dit l'état du DOSSIER — « en cours » compris —, rien tant
+         qu'on ne le sait pas. -->
+    @if (stateLabel(); as label) {
+      <span class="state" [attr.data-tone]="stateTone()"
+        ><span class="dot" aria-hidden="true"></span>{{ label }}</span
+      >
+    }
+
     <div class="who">
-      <p class="kicker">{{ t().account.cardKicker }}</p>
       <h2 class="name">{{ client.name() }}</h2>
       <p class="since">{{ reference() }}</p>
     </div>
 
-    <div class="status">
-      <!-- Le badge dit l'état du DOSSIER — « en cours » compris —, rien tant
-           qu'on ne le sait pas. -->
-      @if (stateLabel(); as label) {
-        <span class="state" [attr.data-tone]="stateTone()"
-          ><span class="dot" aria-hidden="true"></span>{{ label }}</span
-        >
-      }
-      <!-- DEUX MODES : à la commande est toujours ouvert ; au compte s'accorde,
-           et tant qu'il ne l'est pas, on dit ce qu'on attend plutôt qu'un refus. -->
-      <ul class="payments" [attr.aria-label]="t().account.cardPaymentHead">
-        <li class="payment">
+    <!-- DEUX MODES : à la commande est toujours ouvert ; au compte s'accorde,
+         et tant qu'il ne l'est pas, on dit ce qu'on attend plutôt qu'un refus. -->
+    <ul class="payments" [attr.aria-label]="t().account.cardPaymentHead">
+      <li class="payment">
+        <fold-icon class="mark ok" name="check" size="xs" aria-hidden="true" />
+        <span>{{ t().account.cardPaymentOnOrder }}</span>
+      </li>
+      <li class="payment">
+        @if (client.hasDeferredTerm()) {
           <fold-icon class="mark ok" name="check" size="xs" aria-hidden="true" />
-          <span>{{ t().account.cardPaymentOnOrder }}</span>
-        </li>
-        <li class="payment">
-          @if (client.hasDeferredTerm()) {
-            <fold-icon class="mark ok" name="check" size="xs" aria-hidden="true" />
-            <span>{{ t().account.cardPaymentOnAccount }}</span>
-          } @else {
-            <fold-icon class="mark" name="clock" size="xs" aria-hidden="true" />
-            <span class="payment-text">
-              {{ t().account.cardPaymentOnAccount }}
-              <span class="payment-note">{{ t().account.cardPaymentPending }}</span>
-            </span>
-          }
-        </li>
-      </ul>
-    </div>
+          <span>{{ t().account.cardPaymentOnAccount }}</span>
+        } @else {
+          <fold-icon class="mark" name="clock" size="xs" aria-hidden="true" />
+          <span class="payment-text">
+            {{ t().account.cardPaymentOnAccount }}
+            <span class="payment-note">{{ t().account.cardPaymentPending }}</span>
+          </span>
+        }
+      </li>
+    </ul>
   } @else {
     <!-- Personne de reconnu, ou un compte sans entreprise. On le DIT : un nom
          d'exemple serait celui de quelqu'un d'autre. -->
+    <p class="kicker">{{ t().account.cardKicker }}</p>
     <div class="who">
-      <p class="kicker">{{ t().account.cardKicker }}</p>
       <h2 class="name">{{ t().account.cardUnknown }}</h2>
       <p class="since">{{ t().account.cardUnknownNote }}</p>
     </div>
