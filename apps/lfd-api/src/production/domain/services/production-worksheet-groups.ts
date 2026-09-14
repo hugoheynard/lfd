@@ -28,12 +28,12 @@ export interface WorksheetGroup {
   readonly category: CatalogCategory | null;
   readonly label: string;
   readonly lineCount: number;
-  /** Les lignes de `pending` — servi pour que l'écran ne compte rien. */
-  readonly pendingCount: number;
   readonly doneCount: number;
   readonly totalUnits: number;
   readonly remainingUnits: number;
   readonly doneUnits: number;
+  /** Toutes les lignes, dans l'ordre reçu. */
+  readonly lines: readonly WorksheetLine[];
   readonly pending: readonly WorksheetLine[];
   readonly done: readonly WorksheetLine[];
 }
@@ -105,11 +105,11 @@ function groupOf(
     category,
     label,
     lineCount: lines.length,
-    pendingCount: pending.length,
     doneCount: done.length,
     totalUnits,
     remainingUnits: totalUnits - doneUnits,
     doneUnits,
+    lines,
     pending,
     done,
   };

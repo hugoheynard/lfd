@@ -136,5 +136,10 @@ function lineView(line: WorksheetLine): WorkshopLine {
 }
 
 function groupView(group: WorksheetGroup): ProductionWorksheetView["groups"][number] {
-  return { ...group, pending: group.pending.map(lineView), done: group.done.map(lineView) };
+  return {
+    ...group,
+    lines: group.lines.map(lineView),
+    pending: group.pending.map(lineView),
+    done: group.done.map(lineView),
+  };
 }

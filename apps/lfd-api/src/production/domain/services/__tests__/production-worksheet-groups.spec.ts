@@ -90,7 +90,6 @@ describe("worksheetGroupsOf", () => {
 
     expect(pain).toMatchObject({
       lineCount: 3,
-      pendingCount: 1,
       doneCount: 2,
       totalUnits: 75,
       doneUnits: 50,
@@ -118,7 +117,12 @@ describe("worksheetGroupsOf", () => {
     );
 
     expect(pain?.pending.map((entry) => entry.sku)).toEqual(["PAI-A", "PAI-C", "PAI-E"]);
-    expect(pain?.pendingCount).toBe(3);
+    // `lines` porte les mêmes lignes, dans le même ordre relatif.
+    expect(pain?.lines.filter((entry) => !entry.done).map((entry) => entry.sku)).toEqual([
+      "PAI-A",
+      "PAI-C",
+      "PAI-E",
+    ]);
     expect(pain?.done.map((entry) => entry.sku)).toEqual(["PAI-B", "PAI-D"]);
   });
 });

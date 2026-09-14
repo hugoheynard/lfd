@@ -102,8 +102,6 @@ export interface WorkshopGroup {
   readonly category: CatalogCategory | null;
   readonly label: string;
   readonly lineCount: number;
-  /** Les lignes en cours de production — le « N » de sa liste. */
-  readonly pendingCount: number;
   readonly doneCount: number;
   /** Toutes lignes confondues, faites ou non. */
   readonly totalUnits: number;
@@ -111,7 +109,9 @@ export interface WorkshopGroup {
   readonly remainingUnits: number;
   /** Ce qui est sorti. */
   readonly doneUnits: number;
-  /** En cours de production, dans l'ordre de la fiche. */
+  /** Toutes les lignes, dans l'ordre de la fiche — ce que le poste fixe montre. */
+  readonly lines: readonly WorkshopLine[];
+  /** En cours de production, dans l'ordre de la fiche — ce que le téléphone garde. */
   readonly pending: readonly WorkshopLine[];
   /** Production faite, dans l'ordre de la fiche. */
   readonly done: readonly WorkshopLine[];

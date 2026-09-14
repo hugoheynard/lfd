@@ -55,11 +55,11 @@ function painTodo(): WorkshopGroup {
     category: 'pain',
     label: 'Pains',
     lineCount: 2,
-    pendingCount: 2,
     doneCount: 0,
     totalUnits: 190,
     remainingUnits: 190,
     doneUnits: 0,
+    lines: [line(), SEIGLE],
     pending: [line(), SEIGLE],
     done: [],
   };
@@ -69,10 +69,10 @@ function painTodo(): WorkshopGroup {
 function painBaguetteDone(): WorkshopGroup {
   return {
     ...painTodo(),
-    pendingCount: 1,
     doneCount: 1,
     remainingUnits: 30,
     doneUnits: 160,
+    lines: [BAGUETTE_DONE, SEIGLE],
     pending: [SEIGLE],
     done: [BAGUETTE_DONE],
   };
@@ -262,7 +262,6 @@ describe('la fiche d’atelier', () => {
         {
           ...painBaguetteDone(),
           lineCount: 3,
-          pendingCount: 42,
           doneCount: 7,
           totalUnits: 12345,
           remainingUnits: 999,
@@ -277,22 +276,18 @@ describe('la fiche d’atelier', () => {
     expect(text(el, '.fa-tabs')).toContain('Pains 7/3');
     expect(text(el, '.fa-band-sum')).toContain('7 lignes sur 3 faites');
     expect(text(el, '.fa-band-sum')).toContain('12345 pièces au total');
-    expect(text(el, '.fa-main .fa-subband')).toContain('En cours de production · 42');
-    expect(text(el, '.fa-rail')).toContain('Production faite · 7');
-    expect(text(el, '.fa-rail')).toContain('555 pièces sorties');
   });
 
-  it('range les lignes dans les listes servies, pas selon leur case', async () => {
+  it('montre au poste fixe toutes les lignes servies, dans l’ordre servi', async () => {
     api.view = sheet({ groups: [painBaguetteDone()] });
     const { el } = await render();
 
-    expect(namesIn(el, '.fa-todo-lines')).toEqual(['Pain de seigle']);
-    expect(namesIn(el, '.fa-rail')).toEqual(['Baguette tradition']);
+    expect(namesIn(el, '.fa-lines')).toEqual(['Baguette tradition', 'Pain de seigle']);
+    expect(premiere(el)).toBe(true);
   });
 
-  it('envoie la coche, puis relit : la ligne passe dans le rail des faites', async () => {
+  it('envoie la coche, puis relit', async () => {
     const { fixture, el } = await render();
-    expect(el.querySelector('.fa-rail-none')).not.toBeNull();
     api.view = sheet({ groups: [painBaguetteDone()] });
 
     premiereCase(el)?.click();
@@ -300,11 +295,10 @@ describe('la fiche d’atelier', () => {
 
     expect(api.marks).toEqual([{ date: DAY, sku: 'BAG', done: true, initials: 'MJ' }]);
     expect(api.reads).toBe(2);
-    expect(namesIn(el, '.fa-rail')).toEqual(['Baguette tradition']);
     expect(premiere(el)).toBe(true);
   });
 
-  it('coche à l’écran tout de suite, désarme la case, et ne déplace la ligne qu’à la relecture', async () => {
+  it('coche à l’écran tout de suite, et désarme la case le temps de l’envoi', async () => {
     const { fixture, el } = await render();
     api.holdMarks = true;
     api.view = sheet({ groups: [painBaguetteDone()] });
@@ -314,13 +308,12 @@ describe('la fiche d’atelier', () => {
 
     expect(premiere(el)).toBe(true);
     expect(premiereCase(el)?.disabled).toBe(true);
-    expect(namesIn(el, '.fa-todo-lines')).toEqual(['Baguette tradition', 'Pain de seigle']);
 
     api.releaseMarks();
     await settle(fixture);
 
     expect(premiereCase(el)?.disabled).toBe(false);
-    expect(namesIn(el, '.fa-rail')).toEqual(['Baguette tradition']);
+    expect(premiere(el)).toBe(true);
   });
 
   /**
@@ -401,13 +394,13 @@ describe('la fiche d’atelier', () => {
       api.view = sheet({ groups: [painBaguetteDone()] });
       api.releaseMarks();
       await settle(fixture);
-      expect(namesIn(el, '.fa-rail')).toEqual(['Baguette tradition']);
+      expect(premiere(el)).toBe(true);
 
       api.releaseReads();
       await settle(fixture);
       await settle(fixture);
 
-      expect(namesIn(el, '.fa-rail')).toEqual(['Baguette tradition']);
+      expect(premiere(el)).toBe(true);
       expect(premiere(el)).toBe(true);
     });
 
@@ -526,11 +519,11 @@ describe('la fiche d’atelier', () => {
           category: 'viennoiserie',
           label: 'Viennoiseries',
           lineCount: 1,
-          pendingCount: 1,
           doneCount: 0,
           totalUnits: 240,
           remainingUnits: 240,
           doneUnits: 0,
+          lines: [croissant],
           pending: [croissant],
           done: [],
         },

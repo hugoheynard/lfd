@@ -144,6 +144,9 @@ export class FicheAtelier {
   );
 
   /** En cours de production, telle que servie — avec l'état montré des cases en vol. */
+  /** Toutes les lignes de la fiche, dans l'ordre servi — le poste fixe. */
+  protected readonly lines = computed(() => this.shownLines(this.current()?.lines ?? []));
+
   protected readonly todo = computed(() => this.shownLines(this.current()?.pending ?? []));
 
   /** Production faite, telle que servie — sur téléphone, dans le bloc replié du pied. */

@@ -362,14 +362,12 @@ describe("les fiches par rayon", () => {
     expect(view.groups.map((group) => group.key)).toEqual(["viennoiserie", "pain"]);
     expect(view.groups[0]).toMatchObject({
       lineCount: 1,
-      pendingCount: 1,
       doneCount: 0,
       remainingUnits: 12,
     });
     expect(view.groups[0]?.pending.map((line) => line.sku)).toEqual([CROISSANT]);
     expect(view.groups[1]).toMatchObject({
       label: "Pains",
-      pendingCount: 0,
       doneCount: 1,
       doneUnits: 30,
       remainingUnits: 0,

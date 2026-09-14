@@ -217,7 +217,8 @@ sa journée sur l'horloge du poste.
 - `groups` — les fiches, une par rayon, **dans l'ordre de la vitrine**
   (`CATALOG_CATEGORY_ORDER`), le groupe sans rayon en dernier. Chacune porte sa
   clé, son libellé, `lineCount`, `doneCount`, `totalUnits`, `remainingUnits`,
-  `doneUnits`, et ses deux listes `pending` et `done`, dans l'ordre de la fiche
+  `doneUnits`, toutes ses lignes (`lines`, le poste fixe) et ses deux listes
+  `pending` et `done` (le téléphone), dans l'ordre de la fiche
   (le plus gros d'abord, puis le nom — celui que `worksheetOf` applique déjà).
 - `shelvesKnown` — `false` quand la lecture des rayons a échoué : les lignes sont
   alors toutes dans le groupe « Rayon inconnu », et l'écran le dit. La fiche
@@ -254,10 +255,15 @@ Deux faits, lus dans le code (vérifié le 2026-09-14) :
   L'adaptateur ne traduit que la famille : ce SKU est absent de la table, une
   vraie panne remonte.
 
+Deux listes au poste fixe — en cours au centre, faite dans un rail — ont été
+essayées puis retirées le même jour : on y perdait en ergonomie. Le poste fixe
+montre `lines` dans l'ordre de la fiche, le téléphone garde `pending` et le bloc
+replié des `done`.
+
 ### Ce qui reste à l'écran
 
-- l'état montré d'une case le temps de son envoi, et son désarmement — la ligne
-  change de liste **à la relecture qui suit**, pas avant ;
+- l'état montré d'une case le temps de son envoi, et son désarmement ; au
+  téléphone, la ligne change de bloc **à la relecture qui suit**, pas avant ;
 - le choix de la fiche ouverte et sa mémorisation par personne (§7) ;
 - la mise en forme : pluriels, « 3/5 » composé de deux chiffres servis.
 

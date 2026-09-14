@@ -227,65 +227,7 @@ fold-page-layout {
   color: var(--fold-color-text-muted);
 }
 
-/* ── En cours / faite ────────────────────────────────────────────────────────
-   Au poste fixe, deux colonnes côte à côte, chacune avec SA liste qui défile ;
-   au téléphone, une seule colonne. Chaque maillon garde `min-height: 0` : un
-   seul oubli et la liste grandit au lieu de défiler. */
-.fa-work {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.fa-work.is-split {
-  flex-direction: row;
-}
-
-.fa-main {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-}
-
-/* Le rail des faites : le fond secondaire dit « c'est derrière nous » sans
-   griser ce qu'on peut encore décocher. */
-.fa-rail {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 clamp(20rem, 36%, 32rem);
-  min-width: 0;
-  min-height: 0;
-  background: var(--fold-color-bg-rail-secondary);
-  border-left: 1px solid var(--fold-color-border);
-}
-
-/* Le fond enfoncé d'une ligne faite masquerait celui du rail : toute ligne du
-   rail est faite, le rail suffit à le dire. */
-.fa-rail app-worksheet-line.is-done {
-  background: transparent;
-}
-
-.fa-subband {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding: var(--fold-space-sm) var(--fa-row-pad-x);
-  border-bottom: 1px solid var(--fold-color-border);
-}
-
-.fa-rail-none {
-  margin: 0;
-  padding: var(--fold-space-lg) var(--fa-row-pad-x);
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
-}
-
-/* 🔴 Les zones qui défilent — une par liste. Tout le reste tient. */
+/* 🔴 La SEULE zone qui défile. Tout le reste tient. */
 .fa-lines {
   display: flex;
   flex-direction: column;
