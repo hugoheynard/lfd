@@ -117,6 +117,9 @@ import { CompanyAddressesController } from "./http/company-addresses.controller.
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
 import { CompanyKbisController } from "./http/company-kbis.controller.js";
 import { MeController } from "./http/me.controller.js";
+import { DeclareMyEstablishmentHandler } from "./application/commands/declare-my-establishment.handler.js";
+import { PersonAttachmentLock } from "./domain/ports/person-attachment.lock.js";
+import { PrismaPersonAttachmentLock } from "./infrastructure/prisma-person-attachment.lock.js";
 import { ImpersonationSubjects } from "../../platform/auth/impersonation-subjects.resolver.js";
 import { PrismaImpersonationSubjects } from "./infrastructure/prisma-impersonation-subjects.js";
 import { PrincipalResolver } from "../../platform/auth/principal.resolver.js";
@@ -147,6 +150,9 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
   ],
   providers: [
     UpdateMyProfileHandler,
+    DeclareMyEstablishmentHandler,
+    // Le verrou de la porte pro : il ne vit que sous l'unité de travail du handler.
+    { provide: PersonAttachmentLock, useClass: PrismaPersonAttachmentLock },
     UpdateNavPreferencesHandler,
     CreateCompanyHandler,
     CreateCompanyByStaffHandler,
@@ -246,6 +252,8 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     // `platform/auth`. La table est ici, l'adaptateur aussi.
     { provide: ImpersonationSubjects, useClass: PrismaImpersonationSubjects },
   ],
-  exports: [ImpersonationSubjects, PrincipalResolver],
+  // `StaffDirectory` : l'accès aux fonctionnalités fige l'auteur d'un écart par
+  // le même port que la certification d'un KBIS (2026-09-14).
+  exports: [ImpersonationSubjects, PrincipalResolver, StaffDirectory],
 })
 export class AccountModule {}

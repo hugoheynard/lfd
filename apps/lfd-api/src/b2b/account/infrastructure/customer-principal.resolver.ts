@@ -69,39 +69,48 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     if (user.status === UserStatus.disabled) {
       throw new UnauthorizedException("Compte non actif.");
     }
-    await this.record(user, token);
+    // Le `Principal` se construit sur l'état APRÈS recopie. Construit sur la
+    // ligne lue avant l'écriture, la requête qui apporte la preuve voyait encore
+    // l'ancien `emailVerified` — et une exemption par adresse prouvée ne jouait
+    // qu'à la requête SUIVANTE.
+    const recorded = await this.record(user, token);
 
     // `subject` vient du token ; `userId`/`email`/`memberships` de la BASE (autorité).
     return {
       subject: token.subject,
-      userId: user.id,
-      email: user.email,
-      memberships: user.memberships,
+      userId: recorded.id,
+      email: recorded.email,
+      emailProven: recorded.emailVerified,
+      memberships: recorded.memberships,
       scopes: token.scopes,
     };
   }
 
   /**
    * Recopie ce que **cette connexion** vient de prouver : l'invité devient
-   * actif, et l'adresse devient vérifiée si le token le dit.
+   * actif, et l'adresse devient vérifiée si le token la prouve — celle en
+   * base, pas une autre (cf. {@link tokenProvesAddress}).
    *
    * Écrit seulement si quelque chose change — une requête d'écriture par appel
    * authentifié serait un coût permanent pour un fait qui ne bouge qu'une fois.
    * Un claim absent ne fait **rien** : « on ne sait pas » n'efface pas une
    * vérification déjà acquise.
+   *
+   * @returns la personne telle qu'elle est en base APRÈS cette recopie.
    */
-  private async record(user: ResolvedUser, token: VerifiedToken): Promise<void> {
+  private async record(user: ResolvedUser, token: VerifiedToken): Promise<ResolvedUser> {
     const facts: ProvenFacts = {};
     if (user.status === UserStatus.invited) {
       facts.status = UserStatus.active;
     }
-    if (token.emailVerified === true && !user.emailVerified) {
+    if (!user.emailVerified && tokenProvesAddress(token, user.email)) {
       facts.emailVerified = true;
     }
     if (Object.keys(facts).length === 0) {
-      return;
+      return user;
     }
     await this.prisma.user.update({ where: { id: user.id }, data: facts });
+    return { ...user, ...facts };
   }
 
   /** La personne d'`auth0Sub`, rattachements inclus, ou `null`. */
@@ -148,6 +157,33 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     }
     return user;
   }
+}
+
+/**
+ * Le jeton prouve-t-il l'adresse **actuellement en base** ?
+ *
+ * Il faut les deux claims, et que l'adresse soit la même (trim + minuscules).
+ * Un jeton émis pour l'ancienne adresse ne prouve pas la nouvelle : sans cette
+ * comparaison, la requête qui suit un changement d'adresse, portée par le jeton
+ * d'accès encore valide, remettait `email_verified` à `true` sur une adresse
+ * que personne n'a vérifiée — et l'exemption par adresse prouvée devenait
+ * contournable pour toute la durée de vie du jeton (décidé le 2026-09-14).
+ *
+ * Claim d'adresse absent ou adresse différente : « on ne sait pas », qui
+ * n'efface ni ne prouve. Seule la recopie de la preuve en dépend — ni le
+ * provisionnement au vol, ni l'activation de l'invité.
+ */
+function tokenProvesAddress(token: VerifiedToken, storedEmail: string): boolean {
+  return (
+    token.emailVerified === true &&
+    token.email !== undefined &&
+    normalizeEmail(token.email) === normalizeEmail(storedEmail)
+  );
+}
+
+/** Forme de comparaison d'une adresse : la casse et les blancs ne font pas une autre adresse. */
+function normalizeEmail(raw: string): string {
+  return raw.trim().toLowerCase();
 }
 
 /** Violation d'unicité Prisma (`P2002`) — duck-typée, sans importer le client. */

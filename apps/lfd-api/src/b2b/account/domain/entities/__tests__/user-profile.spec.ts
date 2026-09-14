@@ -1,6 +1,9 @@
 import { InvalidPersonNameError } from "../../errors/account-errors.js";
 import { UserProfile, type UserProfileInput } from "../user-profile.js";
 
+/** L'adresse enregistrée, contre laquelle tout profil se révise. */
+const STORED_EMAIL = "camille@pqmarais.fr";
+
 const input: UserProfileInput = {
   firstName: "Camille",
   lastName: "Rousseau",
@@ -10,33 +13,47 @@ const input: UserProfileInput = {
 
 describe("UserProfile", () => {
   it("normalise et compose le nom d'usage", () => {
-    const profile = UserProfile.create({ ...input, firstName: "  Camille  " });
+    const profile = UserProfile.revise(STORED_EMAIL, { ...input, firstName: "  Camille  " });
 
     expect(profile.fullName()).toBe("Camille Rousseau");
   });
 
   it("exige un prénom et un nom, en disant lequel manque", () => {
-    expect(() => UserProfile.create({ ...input, firstName: " " })).toThrow(/Prénom/u);
-    expect(() => UserProfile.create({ ...input, lastName: "" })).toThrow(InvalidPersonNameError);
+    expect(() => UserProfile.revise(STORED_EMAIL, { ...input, firstName: " " })).toThrow(/Prénom/u);
+    expect(() => UserProfile.revise(STORED_EMAIL, { ...input, lastName: "" })).toThrow(
+      InvalidPersonNameError,
+    );
   });
 
   it("accepte les noms propres tels qu'ils s'écrivent", () => {
     // Restreindre le charset écarterait de vraies personnes.
     for (const lastName of ["d'Artagnan", "Le Goff", "Ngô Thị", "Müller-Schmidt"]) {
-      expect(UserProfile.create({ ...input, lastName }).lastName.value).toBe(lastName);
+      expect(UserProfile.revise(STORED_EMAIL, { ...input, lastName }).lastName.value).toBe(
+        lastName,
+      );
     }
   });
 
   it("accepte un téléphone vide", () => {
-    expect(UserProfile.create({ ...input, phone: "" }).phone.isEmpty).toBe(true);
+    expect(UserProfile.revise(STORED_EMAIL, { ...input, phone: "" }).phone.isEmpty).toBe(true);
   });
 
   it("ne voit pas de changement d'e-mail sur un simple écart de casse", () => {
     // Ce qui décide d'appeler Auth0 : une re-vérification d'adresse déclenchée
     // par une majuscule serait absurde pour l'utilisateur.
-    const profile = UserProfile.create({ ...input, email: "Camille@PQMarais.fr" });
+    const profile = UserProfile.revise(STORED_EMAIL, { ...input, email: "Camille@PQMarais.fr" });
 
-    expect(profile.emailDiffersFrom("camille@pqmarais.fr")).toBe(false);
-    expect(profile.emailDiffersFrom("autre@pqmarais.fr")).toBe(true);
+    expect(profile.emailChanged).toBe(false);
+    expect(UserProfile.revise("autre@pqmarais.fr", input).emailChanged).toBe(true);
+  });
+
+  /**
+   * Régression : une adresse vérifiée le restait après avoir été remplacée,
+   * faute pour le profil de savoir qu'il la remplaçait (2026-09-14).
+   */
+  it("sait qu'il remplace l'adresse enregistrée, pour que la preuve retombe", () => {
+    const profile = UserProfile.revise(STORED_EMAIL, { ...input, email: "camille@nouvelle.fr" });
+
+    expect(profile.emailChanged).toBe(true);
   });
 });

@@ -52,6 +52,9 @@ export class PrismaUserProfileRepository extends UserProfileRepository {
         lastName: profile.lastName.value,
         email: profile.email.value,
         phone: profile.phone.value,
+        // La preuve suit l'adresse : une adresse neuve n'est pas prouvée.
+        // Jamais `emailVerified: true` ici — seule une connexion le prouve.
+        ...(profile.emailChanged ? { emailVerified: false } : {}),
       },
     });
   }

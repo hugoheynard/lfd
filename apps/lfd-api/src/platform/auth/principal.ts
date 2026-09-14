@@ -52,6 +52,21 @@ export interface Principal {
   readonly userId: string;
   /** E-mail de la personne (depuis notre base, pas depuis le token). */
   readonly email: string;
+  /**
+   * L'adresse `email` ci-dessus a-t-elle été **prouvée** — lu en BASE
+   * (`users.email_verified`), jamais dans le jeton.
+   *
+   * Il ne s'appelle pas `emailVerified`, et c'est délibéré : sur
+   * {@link VerifiedToken}, ce nom désigne un claim OPTIONNEL où `undefined`
+   * veut dire « le jeton n'en sait rien ». Ici c'est un fait tranché, `false`
+   * compris. Deux champs homonymes de sens différent se confondraient au
+   * premier `principal.emailVerified ?? …` venu.
+   *
+   * La preuve suit l'adresse : changer d'adresse la remet à `false` dans la
+   * même écriture (cf. `UserProfile.revise`). C'est ce qui permet à une
+   * exemption par e-mail de s'y fier.
+   */
+  readonly emailProven: boolean;
   /** Sociétés auxquelles la personne est rattachée — possiblement aucune. */
   readonly memberships: readonly PrincipalMembership[];
   /** Scopes accordés par le token. */

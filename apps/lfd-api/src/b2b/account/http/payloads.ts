@@ -56,6 +56,23 @@ export const createCompanyPayload = z.object({
 export type CreateCompanyPayload = z.infer<typeof createCompanyPayload>;
 
 /**
+ * `POST /me/establishment` — la déclaration de la porte pro : la personne et
+ * l'enseigne, en un geste.
+ *
+ * **Pas d'e-mail** : il reste celui du compte, et le changer passe par Auth0.
+ * Le téléphone a le même défaut que sur le profil ; prénom, nom et enseigne
+ * n'en ont pas, et leur vide est refusé par les value objects — pas ici.
+ */
+export const declareEstablishmentPayload = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  phone: z.string().default(""),
+  enseigne: z.string(),
+});
+
+export type DeclareEstablishmentPayload = z.infer<typeof declareEstablishmentPayload>;
+
+/**
  * Coordonnées d'un contact — même forme pour le contact principal et les
  * additionnels (cf. le value object `ContactDetails`, qui en tient les vraies
  * règles ; ici on ne valide que la structure).

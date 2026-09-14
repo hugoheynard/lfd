@@ -112,6 +112,7 @@ describe("CustomerPrincipalResolver", () => {
         subject: "auth0|123",
         userId: "user_1",
         email: "jean@client.fr",
+        emailProven: false,
         memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
         scopes: ["read:orders"],
       });
@@ -141,15 +142,86 @@ describe("CustomerPrincipalResolver", () => {
       ]);
     });
 
-    it("recopie l'e-mail vérifié quand le token le prouve", async () => {
+    it("recopie l'e-mail vérifié quand le token prouve l'adresse en base", async () => {
       const double = prismaDouble([activeUser]);
       const resolver = await resolverWith(double);
 
-      await resolver.resolve({ ...token, emailVerified: true });
+      await resolver.resolve({ ...token, email: "jean@client.fr", emailVerified: true });
 
       expect(double.updateCalls).toEqual([
         { where: { id: "user_1" }, data: { emailVerified: true } },
       ]);
+    });
+
+    /**
+     * Régression : un jeton émis pour l'ANCIENNE adresse, encore valide après un
+     * changement d'adresse, re-prouvait la nouvelle — la preuve remise à `false`
+     * par le profil remontait à `true` à la requête suivante (2026-09-14).
+     */
+    it("ne recopie pas la preuve d'un jeton émis pour une autre adresse", async () => {
+      const double = prismaDouble([{ ...activeUser, email: "jean@nouvelle.fr" }]);
+      const resolver = await resolverWith(double);
+
+      const principal = await resolver.resolve({
+        ...token,
+        email: "jean@client.fr",
+        emailVerified: true,
+      });
+
+      expect(double.updateCalls).toEqual([]);
+      expect(principal.emailProven).toBe(false);
+    });
+
+    it("ne recopie pas la preuve quand le token ne porte pas d'adresse", async () => {
+      const double = prismaDouble([activeUser]);
+      const resolver = await resolverWith(double);
+
+      const principal = await resolver.resolve({ ...token, emailVerified: true });
+
+      expect(double.updateCalls).toEqual([]);
+      expect(principal.emailProven).toBe(false);
+    });
+
+    it("recopie la preuve d'une même adresse écrite dans une autre casse", async () => {
+      const double = prismaDouble([activeUser]);
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ ...token, email: "  Jean@CLIENT.fr ", emailVerified: true });
+
+      expect(double.updateCalls).toEqual([
+        { where: { id: "user_1" }, data: { emailVerified: true } },
+      ]);
+    });
+
+    it("active l'invité même sans preuve d'adresse recopiable", async () => {
+      // Seule la recopie de la preuve dépend de l'adresse du jeton.
+      const double = prismaDouble([{ ...activeUser, status: UserStatus.invited }]);
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ ...token, email: "autre@client.fr", emailVerified: true });
+
+      expect(double.updateCalls).toEqual([
+        { where: { id: "user_1" }, data: { status: UserStatus.active } },
+      ]);
+    });
+
+    /**
+     * Régression : le `Principal` était construit sur la ligne lue AVANT la
+     * recopie, si bien que la requête qui apportait la preuve voyait encore
+     * `emailProven: false` (2026-09-14).
+     */
+    it("voit l'adresse prouvée dès la requête qui apporte la preuve", async () => {
+      const resolver = await resolverWith(prismaDouble([activeUser]));
+
+      await expect(
+        resolver.resolve({ ...token, email: "jean@client.fr", emailVerified: true }),
+      ).resolves.toMatchObject({ emailProven: true });
+    });
+
+    it("garde une preuve déjà acquise quand le token ne dit rien", async () => {
+      const resolver = await resolverWith(prismaDouble([{ ...activeUser, emailVerified: true }]));
+
+      await expect(resolver.resolve(token)).resolves.toMatchObject({ emailProven: true });
     });
 
     it("n'écrit RIEN quand le token ne dit rien de l'e-mail", async () => {

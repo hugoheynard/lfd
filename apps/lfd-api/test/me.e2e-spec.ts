@@ -13,6 +13,7 @@ import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
+import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
 
 const SUB = "auth0|lifecycle";
 
@@ -43,6 +44,29 @@ describe("GET /me — la porte d'entrée", () => {
 
     expect(response.status).toBe(401);
     expect(response.body).toMatchObject({ message: "Jeton invalide ou expiré." });
+  });
+});
+
+describe("PrincipalResolver — la preuve d'adresse", () => {
+  /**
+   * Régression : le `Principal` était construit sur la ligne lue AVANT la
+   * recopie de la preuve, si bien que la requête qui l'apportait voyait encore
+   * `emailProven: false` (2026-09-14).
+   *
+   * Par le resolver de l'application et non par HTTP : le verifier doublé du
+   * harnais ne porte pas le claim `emailVerified`, et aucune route ne rend
+   * encore `emailProven`. C'est le vrai resolver, sur la vraie base.
+   */
+  it("voit l'adresse prouvée dès la requête qui apporte la preuve", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: SUB, emailVerified: false });
+
+    const principal = await ctx.app
+      .get(PrincipalResolver)
+      .resolve({ subject: SUB, scopes: [], email: user.email, emailVerified: true });
+
+    expect(principal.emailProven).toBe(true);
+    const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: SUB } });
+    expect(stored.emailVerified).toBe(true);
   });
 });
 
