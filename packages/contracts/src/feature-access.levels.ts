@@ -19,6 +19,16 @@
 export const SHOP_LEVELS = ["closed", "browse", "order"] as const;
 export type ShopLevel = (typeof SHOP_LEVELS)[number];
 
+/**
+ * Les niveaux d'une surface qu'on MONTRE ou qu'on cache dans l'app cliente.
+ *
+ * ⚠️ Masquer n'est pas fermer : ces clés ne gardent aucune route serveur. Une
+ * commande déjà passée garde son suivi, son règlement et son QR de retrait par
+ * lien direct (décision de Hugo, 2026-09-14).
+ */
+export const VISIBILITY_LEVELS = ["hidden", "visible"] as const;
+export type VisibilityLevel = (typeof VISIBILITY_LEVELS)[number];
+
 /** Une entrée du catalogue : ce que l'écran en montre, et ce que le code en décide. */
 export interface FeatureDefinition<Level extends string> {
   readonly label: string;
@@ -30,8 +40,9 @@ export interface FeatureDefinition<Level extends string> {
 }
 
 /**
- * **Le catalogue fermé.** Une seule entrée au 2026-09-14, et c'est voulu (plan §7) :
- * un flag de plus est une décision, pas une ligne qu'on ajoute en passant.
+ * **Le catalogue fermé.** Un flag de plus est une décision, pas une ligne qu'on
+ * ajoute en passant (plan §7) : `shop` le 2026-09-14, puis les trois surfaces
+ * masquables le même jour, à la demande de Hugo.
  */
 export const FEATURE_CATALOGUE = {
   shop: {
@@ -41,6 +52,26 @@ export const FEATURE_CATALOGUE = {
     levels: SHOP_LEVELS,
     defaultLevel: "order",
   },
+  orders: {
+    label: "Mes commandes",
+    description:
+      "La liste « Mes commandes » de l'app cliente et son entrée de menu. Masquée, le suivi, le règlement et le QR de retrait d'une commande restent joignables par lien direct.",
+    levels: VISIBILITY_LEVELS,
+    defaultLevel: "visible",
+  },
+  invoices: {
+    label: "Mes factures",
+    description: "L'écran « Mes factures » de l'app cliente et son entrée de menu.",
+    levels: VISIBILITY_LEVELS,
+    defaultLevel: "visible",
+  },
+  desktopMenu: {
+    label: "Menu au bureau",
+    description:
+      "La sous-barre d'onglets sous le bandeau, sur grand écran. Le menu du téléphone et la barre du haut ne changent pas.",
+    levels: VISIBILITY_LEVELS,
+    defaultLevel: "visible",
+  },
 } as const satisfies Readonly<Record<string, FeatureDefinition<string>>>;
 
 export type FeatureKey = keyof typeof FEATURE_CATALOGUE;
@@ -49,7 +80,10 @@ export type FeatureLevel<Key extends FeatureKey = FeatureKey> =
   (typeof FEATURE_CATALOGUE)[Key]["levels"][number];
 
 /** Les clés, dans l'ordre du catalogue. */
-export const FEATURE_KEYS: readonly FeatureKey[] = ["shop"];
+export const FEATURE_KEYS: readonly FeatureKey[] = ["shop", "orders", "invoices", "desktopMenu"];
+
+/** Les clés qui se montrent ou se cachent, sans garde serveur. */
+export type VisibilityFeatureKey = "orders" | "invoices" | "desktopMenu";
 
 /** Vrai si `key` est une clé du catalogue — une ligne de base peut en porter une disparue. */
 export function isFeatureKey(key: string): key is FeatureKey {

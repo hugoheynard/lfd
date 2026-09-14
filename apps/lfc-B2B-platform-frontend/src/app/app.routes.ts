@@ -170,6 +170,9 @@ export const routes: Routes = [
         // LE SUIVI, PUIS LA MÉMOIRE. Deux registres et l'ordre n'est pas
         // négociable : ce qui est en route d'abord, ce qui est passé ensuite.
         path: 'mes-commandes',
+        // Masquable en admin : seule la LISTE se ferme. Suivi, règlement et
+        // retrait gardent leurs adresses à eux, sans cette garde.
+        canActivate: [featureAccessGuard('orders', 'visible')],
         title: 'Mes commandes — La Folie Coffee',
         loadComponent: () =>
           import('./client/mes-commandes/commandes-page/commandes-page').then(
@@ -181,6 +184,7 @@ export const routes: Routes = [
         // elle rassemble les commandes telles qu'elles partent en comptabilité,
         // et le comptable dépose le PDF après la clôture.
         path: 'mes-factures',
+        canActivate: [featureAccessGuard('invoices', 'visible')],
         title: 'Mes factures — La Folie Coffee',
         loadComponent: () =>
           import('./client/mes-factures/factures-page/factures-page').then((m) => m.FacturesPage),

@@ -1,10 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import type { FeatureKey, FeatureLevel, FeatureLevelsView, ShopLevel } from '@lfd/contracts';
-// Le SEUL import de valeur du contrat : par le sous-chemin sans zod. Le prendre
+import type {
+  FeatureKey,
+  FeatureLevel,
+  FeatureLevelsView,
+  ShopLevel,
+  VisibilityFeatureKey,
+} from '@lfd/contracts';
+// Les imports de valeur du contrat passent par le sous-chemin sans zod. Le prendre
 // au baril embarquait zod dans le bundle initial, et le build de déploiement
 // dépassait son budget d'erreur (1,44 Mo pour 1,30 Mo, mesuré le 2026-09-14).
-import { isAtLeast } from '@lfd/contracts/feature-access-levels';
+import { FEATURE_CATALOGUE, isAtLeast } from '@lfd/contracts/feature-access-levels';
 import { firstValueFrom, switchMap, take, timeout, type Observable } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
@@ -78,10 +84,26 @@ export class ClientFeatureAccess {
     return isAtLeast('shop', this.shop(), required);
   }
 
-  /** Le niveau appliqué d'une clé, pour une garde qui la reçoit en paramètre. */
+  /**
+   * Le niveau appliqué d'une clé, pour une garde qui la reçoit en paramètre.
+   *
+   * Tant qu'on ne sait pas — lecture en vol, échec, ou serveur plus ancien qui
+   * ne connaît pas la clé :
+   *
+   * - `shop` vaut `closed`, le sens prudent : l'API refuserait en 409 ;
+   * - une surface masquable vaut **son défaut** (`visible`). La masquer ne
+   *   protège rien, et une API muette ne doit pas retirer « Mes commandes » du
+   *   menu — la commande en cours avec.
+   */
   levelOf(key: FeatureKey): FeatureLevel {
-    const known = this.levels();
-    return known === null ? UNKNOWN_LEVEL : known[key];
+    return (
+      this.levels()?.[key] ?? (key === 'shop' ? UNKNOWN_LEVEL : FEATURE_CATALOGUE[key].defaultLevel)
+    );
+  }
+
+  /** La surface est-elle montrée ? Vrai tant qu'on ne sait pas : c'est son défaut. */
+  visible(key: VisibilityFeatureKey): boolean {
+    return this.levelOf(key) === 'visible';
   }
 
   /** Résout quand l'état a quitté `loading` — succès ou échec. */

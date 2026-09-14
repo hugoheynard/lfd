@@ -39,6 +39,9 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
+/** Les trois surfaces masquables, à leur défaut : aucune ligne ne les touche ici. */
+const ALL_VISIBLE = { orders: "visible", invoices: "visible", desktopMenu: "visible" } as const;
+
 const CLIENT = "auth0|client";
 const TESTER = "auth0|testeur";
 const TESTER_EMAIL = "testeur@exemple.fr";
@@ -208,9 +211,9 @@ describe("GET /feature-access/mine", () => {
     const tester = await ctx.asSub(TESTER).get("/feature-access/mine").expect(200);
     const client = await ctx.asSub(CLIENT).get("/feature-access/mine").expect(200);
 
-    expect(jsonBody<FeatureLevelsView>(tester)).toEqual({ shop: "order" });
+    expect(jsonBody<FeatureLevelsView>(tester)).toEqual({ shop: "order", ...ALL_VISIBLE });
     expect(tester.text).not.toMatch(/exempt|@/i);
-    expect(jsonBody<FeatureLevelsView>(client)).toEqual({ shop: "closed" });
+    expect(jsonBody<FeatureLevelsView>(client)).toEqual({ shop: "closed", ...ALL_VISIBLE });
   });
 
   it("exige une personne connectée", async () => {

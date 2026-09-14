@@ -4,7 +4,9 @@
 <!-- Les six destinations n'existent que pour un client reconnu : un visiteur
      n'a nulle part où aller depuis ici. Le bandeau, lui, reste — la boutique
      est ouverte à tout le monde. -->
-@if (chrome.menu()) {
+<!-- Masquable en admin (« Menu au bureau ») : la sous-barre part, le menu du
+     téléphone reste. -->
+@if (chrome.menu() && access.visible('desktopMenu')) {
   <app-client-nav-bar />
 }
 

@@ -9,6 +9,7 @@ import {
 
 import { ClientBanner } from '../client-banner';
 import { ClientChrome } from '../../client-chrome.service';
+import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ClientNavBar } from '../client-nav-bar/client-nav-bar';
 
 /**
@@ -45,6 +46,7 @@ export class ClientBand {
    * aller depuis ici, mais il a droit au bandeau — la boutique lui est ouverte.
    */
   protected readonly chrome = inject(ClientChrome);
+  protected readonly access = inject(ClientFeatureAccess);
 
   /** ⚠️ `read: ViewContainerRef` — sans lui on récupérerait l'élément, pas le
    *  conteneur, et l'insertion n'aurait nulle part où aller. */

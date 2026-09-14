@@ -21,6 +21,9 @@ import type { FoldBadgeVariant } from 'fold-ng';
 const LEVEL_LABELS: { readonly [Key in FeatureKey]: Readonly<Record<FeatureLevel<Key>, string>> } =
   {
     shop: { closed: 'Fermée', browse: 'Voir', order: 'Commander' },
+    orders: { hidden: 'Masquées', visible: 'Visibles' },
+    invoices: { hidden: 'Masquées', visible: 'Visibles' },
+    desktopMenu: { hidden: 'Masqué', visible: 'Visible' },
   };
 
 /**

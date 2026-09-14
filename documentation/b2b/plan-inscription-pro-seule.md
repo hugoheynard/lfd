@@ -460,7 +460,8 @@ d'`account` : aucun autre lot n'y va.
 - **Il ne ferme pas l'oracle SIRET** (§3.4). Une todo séparée le traitera, et
   passera par `vitruve`.
 - **Pas d'e-mail de bienvenue ni de notification au staff.**
-- **Un seul flag, `shop`.** Aucun autre pour l'instant.
+- **Un seul flag, `shop`.** Aucun autre pour l'instant. ⚠️ Dépassé le
+  2026-09-14 : trois surfaces masquables s'y ajoutent, voir §11.
 - **Pas de portée par société.** L'exemption sert à tester, pas à ouvrir la
   boutique à un client avant les autres.
 - **Pas de règle « un dossier `pending` ne commande pas »** (Q6).
@@ -535,6 +536,16 @@ ci-dessus, et pourquoi :
 | §4 — la lecture    | `ClientFeatureAccess` lit `/feature-access/mine` pour une personne reconnue (après `authGate$()`, pas `isAuthenticated`), `/feature-access` sinon. Le délai de 8 s couvre aussi la résolution de session Auth0.                                                                                                                                     |
 | §4 — le panier     | Le panier ne s'hydrate qu'à partir de `order` (et non de `browse`) : la condition la plus stricte satisfait les deux lectures du plan.                                                                                                                                                                                                              |
 | §3.3 — les erreurs | Prénom et nom partagent le code `account.person_name.invalid` : le front rattache l'erreur au champ par le début du message. Un message reformulé côté serveur la ferait remonter en tête du formulaire. Solide seulement avec un code par champ.                                                                                                   |
+
+**Ajouté après les lots (2026-09-14, demande de Hugo) :** trois clés à deux
+niveaux, `hidden` / `visible`, défaut `visible` — `orders` (la liste « Mes
+commandes » et son entrée de menu), `invoices` (« Mes factures ») et
+`desktopMenu` (la sous-barre d'onglets du bureau). **Elles ne gardent aucune
+route serveur** : masquer n'est pas fermer, et une commande passée garde son
+suivi, son règlement et son QR de retrait par lien direct. Aucune migration —
+`key` est un `TEXT`. Tant que les niveaux ne sont pas lus, ces trois clés
+valent leur défaut (`visible`), à l'inverse de `shop` : masquer ne protège
+rien, et une API muette ne doit pas retirer « Mes commandes » du menu.
 
 **Reste, hors lots :**
 

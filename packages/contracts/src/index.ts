@@ -958,6 +958,7 @@ export {
   isFeatureKey,
   isFeatureLevel,
   mostOpenLevel,
+  VISIBILITY_LEVELS,
 } from "./feature-access.js";
 export type {
   AdminFeatureAccessView,
@@ -974,4 +975,6 @@ export type {
   FeatureOverrideView,
   IgnoredFeatureRowView,
   ShopLevel,
+  VisibilityFeatureKey,
+  VisibilityLevel,
 } from "./feature-access.js";

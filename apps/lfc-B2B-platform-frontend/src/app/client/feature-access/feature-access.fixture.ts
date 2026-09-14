@@ -12,6 +12,13 @@ import { ClientFeatureAccess } from './client-feature-access.service';
  */
 export function openShopAt(level: ShopLevel): ClientFeatureAccess {
   const access = TestBed.inject(ClientFeatureAccess);
-  access.receive({ shop: level });
+  access.receive({ shop: level, ...ALL_VISIBLE });
   return access;
 }
+
+/** Les trois surfaces masquables, montrées : l'état par défaut du catalogue. */
+export const ALL_VISIBLE = {
+  orders: 'visible',
+  invoices: 'visible',
+  desktopMenu: 'visible',
+} as const;

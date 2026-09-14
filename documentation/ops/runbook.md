@@ -181,7 +181,9 @@ curl -s https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/feature-access
 (La passerelle est la seule porte publique et retire le préfixe `/api/lfd` —
 `documentation/ops/architecture-deploiement.md`.)
 
-Attendu : `{"shop":"browse"}` (ou le niveau posé). Puis, toujours sans jeton,
+Attendu : `{"shop":"browse","orders":"visible","invoices":"visible","desktopMenu":"visible"}`
+(ou les niveaux posés — les trois dernières clés ne font que masquer des écrans
+de l'app, elles ne ferment rien côté API). Puis, toujours sans jeton,
 `POST /orders` ne doit plus passer : un **409** « Les commandes en ligne ne sont
 pas encore ouvertes. » — pas un 401, qui dirait seulement qu'il manque un jeton.
 Avec le compte d'un testeur exempté, l'app cliente montre la boutique entière.

@@ -12,7 +12,8 @@ import { ClientCart } from '../cart/client-cart.service';
 import { provideRecognised } from '../client-orders.fixture';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
-import { openShopAt } from '../feature-access/feature-access.fixture';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { ALL_VISIBLE, openShopAt } from '../feature-access/feature-access.fixture';
 import { ClientNav } from './client-nav.service';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
@@ -48,6 +49,22 @@ describe('Les destinations du menu', () => {
 
     TestBed.inject(ClientCart).add('VIE-001');
     expect(nav.items().map((i) => i.id)).toEqual(ORDER);
+  });
+
+  /** Masquées en admin, les deux destinations partent ; les autres gardent leur ordre. */
+  it('retire commandes et factures quand l’admin les masque', () => {
+    TestBed.inject(ClientFeatureAccess).receive({
+      shop: 'order',
+      ...ALL_VISIBLE,
+      orders: 'hidden',
+      invoices: 'hidden',
+    });
+
+    expect(
+      TestBed.inject(ClientNav)
+        .items()
+        .map((i) => i.id),
+    ).toEqual(['espace', 'shop', 'baskets', 'account']);
   });
 
   it('ne porte PAS le panier — il vit dans la barre, pas dans le menu', () => {

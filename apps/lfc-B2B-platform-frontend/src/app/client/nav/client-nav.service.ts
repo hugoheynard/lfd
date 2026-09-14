@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, Injector, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import type { ShopLevel } from '@lfd/contracts';
+import type { ShopLevel, VisibilityFeatureKey } from '@lfd/contracts';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
@@ -31,6 +31,8 @@ interface Destination {
    * son ordre relatif — on retire, on ne réordonne jamais.
    */
   readonly shop: ShopLevel;
+  /** La surface masquable en admin qui la porte, s'il y en a une. Masquée, elle disparaît. */
+  readonly surface?: VisibilityFeatureKey;
 }
 
 /**
@@ -63,8 +65,8 @@ interface Destination {
 const DESTINATIONS: readonly Destination[] = [
   { id: 'espace', route: '/mon-espace', ready: true, shop: 'browse' },
   { id: 'shop', route: '/nouvelle-commande/boutique', ready: true, shop: 'browse' },
-  { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed' },
-  { id: 'invoices', route: '/mes-factures', ready: true, shop: 'closed' },
+  { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
+  { id: 'invoices', route: '/mes-factures', ready: true, shop: 'closed', surface: 'invoices' },
   { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order' },
   { id: 'account', route: '/mon-compte', ready: true, shop: 'closed' },
 ];
@@ -131,7 +133,10 @@ export class ClientNav {
   );
 
   readonly items = computed<readonly NavItem[]>(() =>
-    DESTINATIONS.filter((d) => this.access.atLeast(d.shop)).map((d) => ({
+    DESTINATIONS.filter(
+      (d) =>
+        this.access.atLeast(d.shop) && (d.surface === undefined || this.access.visible(d.surface)),
+    ).map((d) => ({
       id: d.id,
       route: d.route,
       ready: d.ready,

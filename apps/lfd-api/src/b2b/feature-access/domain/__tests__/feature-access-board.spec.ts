@@ -30,6 +30,21 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         override: null,
         exemptions: [],
       }),
+      expect.objectContaining({
+        key: "orders",
+        levels: ["hidden", "visible"],
+        effectiveLevel: "visible",
+      }),
+      expect.objectContaining({
+        key: "invoices",
+        levels: ["hidden", "visible"],
+        effectiveLevel: "visible",
+      }),
+      expect.objectContaining({
+        key: "desktopMenu",
+        levels: ["hidden", "visible"],
+        effectiveLevel: "visible",
+      }),
     ]);
   });
 

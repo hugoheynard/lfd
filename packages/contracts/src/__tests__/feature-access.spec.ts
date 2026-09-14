@@ -8,12 +8,20 @@ import {
 } from "../feature-access.js";
 
 describe("le catalogue de l'accès aux fonctionnalités", () => {
-  it("ne porte que la boutique, fermée < voir < commander, ouverte par défaut", () => {
+  it("porte la boutique, fermée < voir < commander, ouverte par défaut", () => {
     // Le défaut est l'état d'avant le module : rien ne se ferme au déploiement.
-    expect(FEATURE_KEYS).toEqual(["shop"]);
+    expect(FEATURE_KEYS).toEqual(["shop", "orders", "invoices", "desktopMenu"]);
     expect(FEATURE_CATALOGUE.shop.levels).toEqual(["closed", "browse", "order"]);
     expect(FEATURE_CATALOGUE.shop.defaultLevel).toBe("order");
     expect(FEATURE_CATALOGUE.shop.label).toBe("Boutique");
+  });
+
+  /** Ajoutées le 2026-09-14 : masquer une surface de l'app ne ferme rien au déploiement. */
+  it("porte trois surfaces masquables, montrées par défaut", () => {
+    for (const key of ["orders", "invoices", "desktopMenu"] as const) {
+      expect(FEATURE_CATALOGUE[key].levels).toEqual(["hidden", "visible"]);
+      expect(FEATURE_CATALOGUE[key].defaultLevel).toBe("visible");
+    }
   });
 
   it("déclare chaque défaut parmi les niveaux de sa clé", () => {
