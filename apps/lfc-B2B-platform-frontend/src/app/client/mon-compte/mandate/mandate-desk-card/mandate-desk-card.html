@@ -40,15 +40,29 @@
     @if (fetchFailed()) {
       <fold-callout variant="alert" announce>{{ t().account.mandateFetchFailed }}</fold-callout>
     }
-    <button
-      foldButton
-      class="action"
-      emphasis="soft"
-      intent="primary"
-      type="button"
-      (click)="open()"
-    >
-      {{ action() }}
-    </button>
+    <div class="gestures">
+      <button
+        foldButton
+        class="action"
+        emphasis="soft"
+        intent="primary"
+        type="button"
+        (click)="open()"
+      >
+        {{ action() }}
+      </button>
+      @if (editableOptions()) {
+        <button
+          foldButton
+          class="options"
+          emphasis="outline"
+          intent="neutral"
+          type="button"
+          (click)="openOptions()"
+        >
+          {{ t().account.mandateOptions }}
+        </button>
+      }
+    </div>
   }
 }

@@ -35,6 +35,19 @@
     @if (fetchFailed()) {
       <fold-callout variant="alert" announce>{{ t().account.mandateFetchFailed }}</fold-callout>
     }
+    @if (editableOptions()) {
+      <button
+        foldButton
+        class="options"
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        type="button"
+        (click)="openOptions()"
+      >
+        {{ t().account.mandateOptions }}
+      </button>
+    }
     <app-card-foot [label]="action()" (pressed)="open()" />
   }
 }

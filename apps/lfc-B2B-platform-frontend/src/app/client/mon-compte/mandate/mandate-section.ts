@@ -79,6 +79,14 @@ export function mandatePrintable(mandate: CustomerMandateView | null): boolean {
   return mandate?.status === 'draft';
 }
 
+/**
+ * Les zones facultatives se règlent tant qu'aucun mandat n'est ACTIF : son
+ * papier signé les porte déjà, et l'API refuse en 409.
+ */
+export function mandateOptionsEditable(stage: MandateStage): boolean {
+  return stage !== 'active';
+}
+
 /** Le bouton du bas : générer, renvoyer signé, ou lire le détail. */
 export function mandateActionLabel(stage: MandateStage, copy: AccountCopy): string {
   switch (stage) {

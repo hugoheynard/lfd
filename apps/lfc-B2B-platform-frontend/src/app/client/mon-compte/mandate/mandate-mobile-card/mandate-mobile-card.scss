@@ -29,3 +29,8 @@
   display: flex;
   gap: var(--fold-space-xs);
 }
+
+/* Le réglage secondaire garde sa largeur : le geste pleine largeur est en bas. */
+.options {
+  align-self: flex-start;
+}

@@ -1,0 +1,82 @@
+<fold-panel-header
+  [title]="t().account.mandateOptions"
+  [subtitle]="t().account.mandateOptionsSubtitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  @switch (mandates.optionsStatus()) {
+    @case ('loading') {
+      <fold-loading [message]="t().account.mandateOptionsLoading" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        [title]="t().account.mandateOptionsLoadFailedTitle"
+        [subtitle]="t().account.mandateLoadFailedBody"
+      >
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+          {{ t().account.loadRetry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce>
+          {{ t().account.mandateOptionsSaveFailed }} {{ message }}
+        </fold-callout>
+      }
+
+      @if (mandates.options() === null) {
+        <fold-callout appearance="inset" variant="neutral">
+          {{ t().account.mandateOptionsNoBank }}
+        </fold-callout>
+      } @else {
+        <fold-callout appearance="inset" variant="info">
+          {{ t().account.mandateOptionsNotice }}
+        </fold-callout>
+
+        <!-- Dit AVANT d'enregistrer : le papier en attente nomme ces zones. -->
+        @if (voidsDraft()) {
+          <fold-callout class="draft-warning" variant="warning">
+            {{ t().account.mandateOptionsDraftWarning }}
+          </fold-callout>
+        }
+
+        <div class="fields">
+          <fold-input
+            class="debtor-reference"
+            [label]="t().account.mandateOptionsDebtorReference"
+            [hint]="t().account.mandateOptionsDebtorReferenceHint"
+            [value]="debtorReferenceDraft()"
+            (valueChange)="debtorReferenceDraft.set($event)"
+          />
+          <fold-input
+            class="contract-number"
+            [label]="t().account.mandateOptionsContractNumber"
+            [hint]="t().account.mandateOptionsContractNumberHint"
+            [value]="contractNumberDraft()"
+            (valueChange)="contractNumberDraft.set($event)"
+          />
+        </div>
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    class="save"
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ t().account.mandateOptionsSave }}
+  </button>
+</fold-panel-footer>

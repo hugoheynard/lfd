@@ -135,6 +135,58 @@ describe('ClientMandate', () => {
     http.expectNone((r) => MANDATE_URL.test(r.url));
   });
 
+  it('lit les options enveloppées, et tient `null` pour « pas de RIB »', async () => {
+    const reading = mandates.loadOptions('cmp_1');
+    expect(mandates.optionsStatus()).toBe('loading');
+    await tick();
+    const request = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/mandate-options'));
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer jeton-de-test');
+    request.flush({ options: null });
+    await reading;
+
+    expect(mandates.optionsStatus()).toBe('ready');
+    expect(mandates.options()).toBeNull();
+  });
+
+  /** Plan §9 #4 : réécrire les zones révoque le brouillon — le mandat se relit avec elles. */
+  it('enregistrer les options relit le mandat ET les options', async () => {
+    const saving = mandates.saveOptions('cmp_1', {
+      debtorReference: 'C-9P2X4B',
+      contractNumber: '',
+    });
+    await tick();
+    const put = http.expectOne((r) => r.url.endsWith('/mandate-options') && r.method === 'PUT');
+    expect(put.request.body).toEqual({ debtorReference: 'C-9P2X4B', contractNumber: '' });
+    put.flush(null, { status: 204, statusText: 'No Content' });
+    await tick();
+
+    http.expectOne((r) => MANDATE_URL.test(r.url)).flush({ ...DRAFT, status: 'revoked' });
+    http
+      .expectOne((r) => r.url.endsWith('/mandate-options') && r.method === 'GET')
+      .flush({ options: { debtorReference: 'C-9P2X4B', contractNumber: '' } });
+    expect(await saving).toBeNull();
+    expect(mandates.mandate()?.status).toBe('revoked');
+    expect(mandates.options()?.debtorReference).toBe('C-9P2X4B');
+  });
+
+  it('un refus des options rend le message du serveur, et ne relit rien', async () => {
+    const saving = mandates.saveOptions('cmp_1', { debtorReference: 'X', contractNumber: 'Y' });
+    await tick();
+    http
+      .expectOne((r) => r.url.endsWith('/mandate-options'))
+      .flush(
+        {
+          code: 'payments.mandate_options.bound_to_active_mandate',
+          message: 'Le mandat actif porte déjà ces zones.',
+        },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(await saving).toBe('Le mandat actif porte déjà ces zones.');
+    http.expectNone((r) => MANDATE_URL.test(r.url));
+  });
+
   it('récupère le PDF en blob avec le jeton, `?inline=1` pour un onglet', async () => {
     const reading = mandates.document('cmp_1', true);
     await tick();

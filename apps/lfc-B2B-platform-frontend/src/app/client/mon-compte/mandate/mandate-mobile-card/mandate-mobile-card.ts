@@ -20,10 +20,12 @@ import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { CardFoot } from '../../card-foot/card-foot';
 import { downloadMandate, openMandate } from '../mandate-document';
+import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
 import {
   mandateActionLabel,
   mandateDetailLabel,
+  mandateOptionsEditable,
   mandatePrintable,
   mandateReferenceLabel,
   mandateStage,
@@ -71,6 +73,8 @@ export class MandateMobileCard {
     mandateDetailLabel(this.mandates.mandate(), this.t().account),
   );
   protected readonly action = computed(() => mandateActionLabel(this.stage(), this.t().account));
+  /** Pas sous un mandat actif : son papier signé porte déjà ces zones. */
+  protected readonly editableOptions = computed(() => mandateOptionsEditable(this.stage()));
 
   protected readonly fetchFailed = signal(false);
 
@@ -95,6 +99,13 @@ export class MandateMobileCard {
     const id = this.companyId();
     if (id !== null) {
       MandatePanel.open(this.panels, id, this.stage() === 'none');
+    }
+  }
+
+  protected openOptions(): void {
+    const id = this.companyId();
+    if (id !== null) {
+      MandateOptionsPanel.open(this.panels, id);
     }
   }
 

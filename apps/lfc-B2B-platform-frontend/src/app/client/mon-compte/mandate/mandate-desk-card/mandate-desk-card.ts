@@ -19,10 +19,12 @@ import { ClientCompany } from '../../../client-company.service';
 import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { downloadMandate, openMandate } from '../mandate-document';
+import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
 import {
   mandateActionLabel,
   mandateDetailLabel,
+  mandateOptionsEditable,
   mandatePrintable,
   mandateReferenceLabel,
   mandateStage,
@@ -70,6 +72,8 @@ export class MandateDeskCard {
   );
   protected readonly printable = computed(() => mandatePrintable(this.mandates.mandate()));
   protected readonly action = computed(() => mandateActionLabel(this.stage(), this.t().account));
+  /** Pas sous un mandat actif : son papier signé porte déjà ces zones. */
+  protected readonly editableOptions = computed(() => mandateOptionsEditable(this.stage()));
 
   /** L'ouverture ou le téléchargement du PDF a échoué : dit sous l'état, qui reste lisible. */
   protected readonly fetchFailed = signal(false);
@@ -95,6 +99,13 @@ export class MandateDeskCard {
     const id = this.companyId();
     if (id !== null) {
       MandatePanel.open(this.panels, id, this.stage() === 'none');
+    }
+  }
+
+  protected openOptions(): void {
+    const id = this.companyId();
+    if (id !== null) {
+      MandateOptionsPanel.open(this.panels, id);
     }
   }
 

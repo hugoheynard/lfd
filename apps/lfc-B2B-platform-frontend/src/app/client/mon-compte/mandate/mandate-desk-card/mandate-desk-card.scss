@@ -46,6 +46,9 @@
   gap: var(--fold-space-xs);
 }
 
-.action {
-  align-self: flex-start;
+/* Le geste de l'état, puis le réglage des zones facultatives. */
+.gestures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
 }

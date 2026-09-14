@@ -1,6 +1,11 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import type { CustomerMandateView } from '@lfd/contracts';
+import type {
+  CustomerMandateOptionsSectionView,
+  CustomerMandateOptionsView,
+  CustomerMandateView,
+  SetMandateOptionsPayload,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom } from 'rxjs';
 
@@ -35,6 +40,14 @@ export class ClientMandate {
 
   readonly status = this._status.asReadonly();
   readonly mandate = this._mandate.asReadonly();
+
+  private readonly _optionsStatus = signal<MandateReadStatus>('loading');
+  private readonly _options = signal<CustomerMandateOptionsView | null>(null);
+
+  /** Où en est la lecture des zones 14 et 19 — lue à l'ouverture de leur panneau seulement. */
+  readonly optionsStatus = this._optionsStatus.asReadonly();
+  /** Les zones facultatives, ou `null` tant qu'aucun RIB n'est déposé : elles vivent sur sa ligne. */
+  readonly options = this._options.asReadonly();
 
   /**
    * Lit le mandat si ce n'est pas déjà fait. Paresseux, comme le RIB : seules
@@ -133,6 +146,47 @@ export class ClientMandate {
         responseType: 'blob',
       }),
     );
+  }
+
+  /** `GET …/mandate-options` — relue à chaque ouverture du panneau : c'est un réglage rare. */
+  async loadOptions(companyId: string): Promise<void> {
+    this._optionsStatus.set('loading');
+    try {
+      const { options } = await firstValueFrom(
+        this.http.get<CustomerMandateOptionsSectionView>(this.optionsUrl(companyId), {
+          headers: await this.headers(),
+        }),
+      );
+      this._options.set(options);
+      this._optionsStatus.set('ready');
+    } catch {
+      this._optionsStatus.set('failed');
+    }
+  }
+
+  /**
+   * `PUT …/mandate-options` (204), puis relit **le mandat et les options**.
+   *
+   * Le mandat parce qu'un brouillon en cours devient caduc côté serveur : ces
+   * zones sont imprimées sur le papier (plan §9 #4). Refusé en 409 sous un
+   * mandat actif, dont le papier signé les porte déjà
+   * (`payments.mandate_options.bound_to_active_mandate`) — le message du
+   * serveur est rendu tel quel.
+   */
+  async saveOptions(companyId: string, payload: SetMandateOptionsPayload): Promise<string | null> {
+    try {
+      await firstValueFrom(
+        this.http.put(this.optionsUrl(companyId), payload, { headers: await this.headers() }),
+      );
+    } catch (error) {
+      return httpErrorMessage(error);
+    }
+    await Promise.all([this.reload(companyId), this.loadOptions(companyId)]);
+    return null;
+  }
+
+  private optionsUrl(companyId: string): string {
+    return `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/mandate-options`;
   }
 
   private url(companyId: string): string {

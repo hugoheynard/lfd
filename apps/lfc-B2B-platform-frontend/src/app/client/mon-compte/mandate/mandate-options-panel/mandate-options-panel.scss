@@ -1,0 +1,13 @@
+/* Même montage que `bank-panel` : l'hôte se borne, `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}

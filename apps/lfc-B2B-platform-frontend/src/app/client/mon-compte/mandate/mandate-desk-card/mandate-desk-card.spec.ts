@@ -7,6 +7,7 @@ import { afterEach, vi } from 'vitest';
 import { ClientMandate, type MandateReadStatus } from '../../../client-mandate.service';
 import { FR } from '../../../copy/fr';
 import { bootCard, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
+import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
 import { MandateDeskCard } from './mandate-desk-card';
 
@@ -152,6 +153,25 @@ describe('MandateDeskCard', () => {
     expect(text(el, '.reference')).toBe('RUM · LFD-MDT-0001');
     expect(text(el, '.meta')).toBe('Signé le 10/09/2026');
     expect(el.querySelector('fold-button-icon')).toBeNull();
+  });
+
+  it('« Options du mandat » ouvre leur panneau, sans mandat comme sur un brouillon', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    for (const mandate of [null, DRAFT, { ...DRAFT, hasProof: true }]) {
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      const el = render('ready', mandate);
+      const button = el.querySelector<HTMLButtonElement>('button.options');
+      expect(button?.textContent).toContain(FR.account.mandateOptions);
+      button?.click();
+      expect(openedPanel()?.component).toBe(MandateOptionsPanel);
+      expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1' });
+    }
+  });
+
+  /** Plan §10 : le papier signé porte déjà ces zones, l'API refuse en 409. */
+  it('sous un mandat actif, ne propose pas les options', () => {
+    const el = render('ready', { ...DRAFT, status: 'active', acceptedAt: '2026-09-10' });
+    expect(el.querySelector('button.options')).toBeNull();
   });
 
   it('dit l’échec de lecture au lieu de « aucun mandat », et relit au clic', () => {

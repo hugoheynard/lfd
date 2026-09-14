@@ -92,7 +92,9 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
  *
- * **Neuf sections, pas neuf écrans.** Le back-office a une fiche à onglets parce
+ * **Jusqu'à dix sections, pas dix écrans.** Le rôle, le niveau de la boutique
+ * et le drapeau du mandat en retirent ; le sommaire se renumérote sur ce qui
+ * reste. Le back-office a une fiche à onglets parce
  * qu'un commercial y passe la journée ; un client y passe deux fois par an. Une
  * seule page, aucun sous-écran à retrouver — et le sommaire de bureau fait
  * DÉFILER, il ne change pas d'écran : chaque entrée pointe l'ancre de sa

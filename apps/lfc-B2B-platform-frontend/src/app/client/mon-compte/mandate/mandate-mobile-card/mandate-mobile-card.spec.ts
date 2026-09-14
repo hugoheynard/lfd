@@ -7,6 +7,7 @@ import { afterEach, vi } from 'vitest';
 import { ClientMandate, type MandateReadStatus } from '../../../client-mandate.service';
 import { FR } from '../../../copy/fr';
 import { bootCard, footButton, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
+import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
 import { MandateMobileCard } from './mandate-mobile-card';
 
@@ -84,8 +85,18 @@ describe('MandateMobileCard', () => {
     expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', generate: false });
   });
 
+  it('« Options du mandat » ouvre leur panneau depuis le bas', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(true));
+    const el = render('ready', DRAFT);
+    el.querySelector<HTMLButtonElement>('button.options')?.click();
+
+    expect(openedPanel()?.component).toBe(MandateOptionsPanel);
+    expect(openedPanel()?.side).toBe('bottom');
+  });
+
   it('actif : l’état, la RUM, la date du papier, et aucun PDF', () => {
     const el = render('ready', { ...DRAFT, status: 'active', acceptedAt: '2026-09-10' });
+    expect(el.querySelector('button.options')).toBeNull();
 
     expect(el.querySelector('.state')?.textContent?.trim()).toBe(FR.account.mandateActive);
     expect(el.querySelector('.meta')?.textContent?.trim()).toBe('Signé le 10/09/2026');
