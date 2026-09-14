@@ -10,33 +10,26 @@ import {
   FoldPageSectionComponent,
   FoldSearchComponent,
   FoldSurfaceDirective,
-  FoldViewToggleComponent,
-  type FoldViewToggleOption,
 } from 'fold-ng';
 
-// `PackingLine` est ALIASÉ : le composant de ligne porte déjà ce nom, et c'est
-// lui qu'on écrit le plus souvent dans ce fichier. Le type garde le suffixe
-// `View`, comme dans `app-packing-line`.
 import type {
-  PackingLine as PackingLineView,
+  PackingContainerStep,
+  PackingLine,
   PackingSheet,
   ProductionPackingView,
 } from '@lfd/contracts';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { AwaitingBadge } from './awaiting-badge/awaiting-badge';
-import { PackingContainers } from './packing-containers/packing-containers';
-import { PackingLine } from './packing-line/packing-line';
 import {
-  isComplete,
   matchesTerm,
   methodLabel,
   normaliseTerm,
-  packedCount,
-  packingBoard,
   packingMarkKey,
-  type LocalPackingMark,
+  type PackingStack,
 } from '../packing-board';
+import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order/packing-open-order';
+import { PackingOrders } from './packing-orders/packing-orders';
+import { PackingResources } from './packing-resources/packing-resources';
 import { refreshWhileVisible } from '../periodic-refresh';
 import { serverMessageOf } from '../server-message';
 import { PackingService } from '../packing.service';
@@ -44,18 +37,20 @@ import { dayLabelOf, hourLabel, isoDay, nextDay } from '../worksheet-day';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Les deux piles de la colonne de gauche. */
-type PackingStack = 'todo' | 'ready';
-
 /**
- * Le plafond de containers d'une commande, recopié du contrat
- * (`setPackingContainersSchema`, borne haute 99).
+ * « aujourd'hui » / « demain » — une correspondance de MOTS, et rien d'autre.
  *
- * Ici plutôt qu'en laissant le serveur refuser : le `+` est un geste qu'on fait
- * les mains prises, et un doigt qui reste posé doit buter sur quelque chose
- * plutôt que d'envoyer quarante requêtes qui finiront toutes en 400.
+ * L'écran ne compare pas de dates : c'est le serveur qui dit où tombe la journée
+ * lue (`relativeDay`), selon SON horloge. Celle d'un poste de fournil n'est pas
+ * une autorité — elle dérive, elle se règle à la main, et se tromper d'un jour
+ * est l'erreur la plus chère que ce poste puisse coûter.
  */
-const MAX_CONTAINERS = 99;
+const RELATIVE_DAY_LABEL: Readonly<
+  Record<NonNullable<ProductionPackingView['relativeDay']>, string>
+> = {
+  today: 'aujourd’hui',
+  tomorrow: 'demain',
+};
 
 /**
  * **Le poste de colisage** — répartir ce qui est sorti du four dans les bacs.
@@ -71,10 +66,26 @@ const MAX_CONTAINERS = 99;
  * mettre douze dans un bac. 🔴 Un reste négatif se voit tel quel : c'est le cas
  * que ce poste existe pour attraper, et le masquer à zéro l'effacerait.
  *
+ * 🔴 **L'écran n'additionne rien** (décidé le 2026-09-14, à la demande de
+ * Hugo). Tout chiffre et toute règle affichés — volume d'une commande, lignes
+ * dans le bac, compteurs des piles, marchandise à répartir, « Déclarer prête »
+ * actif ou non, « aujourd'hui » / « demain » — viennent du serveur, et l'écran
+ * **relit après chaque geste accepté**. Deux calculs du même chiffre divergent à
+ * la première règle modifiée d'un seul côté, et c'était précisément la balance
+ * qui en portait le risque. Les deux seules choses gardées ici ne sont pas des
+ * chiffres : l'état d'une case le temps de son envoi, et le choix de ce que la
+ * recherche surligne.
+ *
+ * **L'orchestrateur, et lui seul** (découpé le 2026-09-14). Les trois colonnes
+ * sont des composants de présentation — {@link PackingOrders},
+ * {@link PackingOpenOrder}, {@link PackingResources} — qui reçoivent ce que le
+ * serveur a calculé et émettent des gestes. L'état, les lectures, la relecture
+ * périodique, les écritures et la recherche restent ici.
+ *
  * **Deux états, un seul réversible.** Cocher une ligne est un état de travail :
- * il part tout de suite, et revient en arrière en le disant s'il est refusé
- * (plus de file hors ligne depuis le 2026-09-14). Déclarer la commande prête est
- * le fait irréversible : il échoue à l'écran et se redit.
+ * il part tout de suite, et revient en arrière en le disant s'il est refusé.
+ * Déclarer la commande prête est le fait irréversible : il échoue à l'écran et
+ * se redit.
  *
  * ⚠️ **« Prête » à l'écran, `packed` dans le code, et c'est voulu.** Le serveur
  * publie `OrderPackedEvent` — « colisé », ce que le fournil a fait — et le
@@ -89,7 +100,6 @@ const MAX_CONTAINERS = 99;
   selector: 'app-colisage',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AwaitingBadge,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -99,9 +109,9 @@ const MAX_CONTAINERS = 99;
     FoldPageSectionComponent,
     FoldSearchComponent,
     FoldSurfaceDirective,
-    FoldViewToggleComponent,
-    PackingContainers,
-    PackingLine,
+    PackingOpenOrder,
+    PackingOrders,
+    PackingResources,
     RouterLink,
   ],
   templateUrl: './colisage.html',
@@ -118,16 +128,10 @@ export class Colisage {
   readonly reference = input<string>();
 
   /**
-   * 🔴 **La journée que le fournil est en train de coliser** — elle se déduit,
-   * elle ne se choisit pas.
+   * La journée LUE — celle de la dernière réponse, jamais celle demandée.
    *
-   * La même règle que la fiche d'atelier, et pour la même raison : demain dès
-   * que le plan de demain est arrêté, aujourd'hui sinon. C'est le geste du soir
-   * qui fait basculer l'écran, pas une heure devinée sur l'horloge du poste — un
-   * sélecteur de plus serait une question de plus à 4 h du matin.
-   *
-   * En contrepartie, l'en-tête NOMME sa journée en toutes lettres : sans
-   * sélecteur, c'est la seule chose qui dise au fournil quel jour il colise.
+   * Sa valeur initiale n'est qu'un marque-place le temps de la première
+   * lecture : dès qu'une réponse arrive, c'est elle qui l'écrit.
    */
   protected readonly date = signal(isoDay(new Date()));
 
@@ -135,24 +139,29 @@ export class Colisage {
   protected readonly dayLabel = computed(() => dayLabelOf(this.date()));
 
   /**
-   * « aujourd'hui » ou « demain », à côté de la date. Vide en dehors de ces deux
-   * cas — le poste ne montre jamais une autre journée, et un troisième mot
-   * suggérerait qu'il le pourrait.
+   * « aujourd'hui » ou « demain », à côté de la date — tel que le SERVEUR le
+   * dit. Vide quand il ne dit ni l'un ni l'autre : un troisième mot suggérerait
+   * que le poste montre une autre journée.
    */
   protected readonly dayOffset = computed(() => {
-    const day = this.date();
-    if (day === isoDay(new Date())) {
-      return 'aujourd’hui';
-    }
-    return day === isoDay(nextDay(new Date())) ? 'demain' : '';
+    const relative = this.view()?.relativeDay ?? null;
+    return relative === null ? '' : RELATIVE_DAY_LABEL[relative];
   });
 
   protected readonly state = signal<LoadState>('loading');
 
   private readonly view = signal<ProductionPackingView | null>(null);
 
-  /** Les coches en cours d'envoi, par `AAAA-MM-JJ RÉFÉRENCE SKU` — montrées avant la réponse. */
-  private readonly localMarks = signal<ReadonlyMap<string, LocalPackingMark>>(new Map());
+  /**
+   * **L'état montré d'une case le temps de son envoi**, par
+   * `AAAA-MM-JJ RÉFÉRENCE SKU` — la seule chose que l'écran garde.
+   *
+   * Un booléen, pas un chiffre : il ne touche ni au volume, ni aux lignes dans
+   * le bac, ni à la balance, qui attendent la relecture. Sans lui, un
+   * `fold-checkbox` cliqué ne reviendrait pas en arrière sur un refus. Il est
+   * retiré dès qu'une relecture revient.
+   */
+  private readonly shown = signal<ReadonlyMap<string, boolean>>(new Map());
 
   /** La commande ouverte. `null` = celle du haut de la pile affichée. */
   private readonly chosen = signal<string | null>(null);
@@ -165,7 +174,7 @@ export class Colisage {
    * cohabitent sans se contredire : choisir une pile n'est pas cacher un
    * résultat, c'est ranger son travail. Le malentendu que « ça surligne, ça ne
    * filtre pas » voulait éviter — croire qu'un article n'est nulle part — est
-   * fermé ailleurs, par le compte de l'AUTRE pile affiché sous le champ.
+   * fermé ailleurs, par l'avis « trouvé dans l'autre pile » sous le champ.
    */
   protected readonly stack = signal<PackingStack>('todo');
 
@@ -203,35 +212,30 @@ export class Colisage {
    */
   protected readonly closeFailed = signal(false);
 
-  /** Une déclaration en vol — le bouton se désarme pour ne pas doubler le geste. */
+  /** Une déclaration en vol, relecture comprise — le bouton se désarme pour ne pas doubler le geste. */
   protected readonly closing = signal(false);
 
-  /**
-   * Le compte de containers posé **ici**, par référence de commande.
-   *
-   * Le `+` doit répondre sous le doigt : sur un quai, un chiffre qui met deux
-   * secondes à bouger se re-tape. Ce qui est posé ici l'emporte sur le serveur
-   * jusqu'à la relecture — et **retombe** sur la valeur servie si l'envoi
-   * échoue, plutôt que de laisser un compte que personne n'a enregistré.
-   */
-  private readonly localContainers = signal<ReadonlyMap<string, number>>(new Map());
-
-  /** Le compte de containers vient-il d'être refusé ? Il se dit, il ne se tait pas. */
+  /** Le geste sur les containers vient-il d'être refusé ? Il se dit, il ne se tait pas. */
   protected readonly containersFailed = signal(false);
+
+  /** Un geste sur les containers en vol : « + » et « − » se désarment, et seulement pendant ce temps. */
+  protected readonly containersBusy = signal(false);
 
   /** Les lignes dont la coche est en train de partir — leur case est désarmée. */
   private readonly busy = signal<ReadonlySet<string>>(new Set());
 
   /**
    * La dernière coche refusée, avec le produit, la commande et la raison du
-   * serveur. 🔴 La case est revenue en arrière, et la balance avec : il reste à
-   * le DIRE, sinon elle a l'air d'avoir bougé toute seule.
+   * serveur. 🔴 La case est revenue en arrière : il reste à le DIRE, sinon elle
+   * a l'air d'avoir bougé toute seule.
    */
   protected readonly markFailed = signal<string | null>(null);
 
   /**
-   * L'instant de la dernière écriture acceptée — coche ou containers. Une
-   * relecture partie AVANT elle rendrait l'état d'avant : sa réponse est jetée.
+   * L'instant de la dernière écriture acceptée — coche, containers ou
+   * déclaration. Une relecture PÉRIODIQUE partie avant elle rendrait l'état
+   * d'avant : sa réponse est jetée. La relecture d'après écriture, elle, part
+   * après et n'y est pas soumise (voir {@link rereadAfterWrite}).
    */
   private lastWriteAt = 0;
 
@@ -263,33 +267,37 @@ export class Colisage {
 
   constructor() {
     // 🔴 Une lecture UNIQUE, et pas un `effect` sur la journée. Le poste n'a pas
-    // de sélecteur de date : le seul à écrire `date` est `load` lui-même, donc
-    // un effet qui la lirait se rappellerait après chaque lecture — et le jour
-    // où la règle bascule d'aujourd'hui à demain, il partirait deux fois.
+    // de sélecteur de date : le seul à écrire `date` est la lecture elle-même,
+    // donc un effet qui la lirait se rappellerait après chaque lecture — et le
+    // jour où la règle bascule d'aujourd'hui à demain, il partirait deux fois.
     void this.load();
     // Les autres postes colisent aussi : sans relecture, une commande déclarée
     // prête ailleurs resterait « en cours » ici, et la balance mentirait.
     refreshWhileVisible(() => this.refresh());
   }
 
-  /** Les bacs et la ressource, recouverts par ce qui a été coché ici. */
-  private readonly board = computed(() => {
-    const view = this.view();
-    return view === null ? { sheets: [], resources: [] } : packingBoard(view, this.localMarks());
-  });
-
-  protected readonly sheets = computed(() => this.board().sheets);
+  /** Les commandes de la journée, telles que servies. */
+  protected readonly sheets = computed(() => this.view()?.sheets ?? []);
 
   /**
-   * La marchandise à répartir, **pour la journée entière**, prêtes comprises.
+   * La marchandise à répartir, **pour la journée entière**, prêtes comprises,
+   * et **telle que servie** : l'écran ne la recompte plus.
    *
    * Elle ne bouge pas avec le sélecteur de pile, et c'est tout le sujet : ce qui
-   * est parti dans un bac reste réparti. Une marchandise qui suivrait la pile
-   * affichée remonterait un reste qui ne correspond à rien de réel.
+   * est parti dans un bac reste réparti.
    */
-  protected readonly resources = computed(() => this.board().resources);
+  protected readonly resources = computed(() => this.view()?.resources ?? []);
 
-  /** Ce qui reste à faire. */
+  /** Toutes les commandes de la journée — compté au serveur. */
+  protected readonly orderCount = computed(() => this.view()?.orderCount ?? 0);
+
+  /** Celles qui restent à préparer — compté au serveur. */
+  protected readonly todoCount = computed(() => this.view()?.todoCount ?? 0);
+
+  /** Celles déclarées prêtes — compté au serveur. */
+  protected readonly readyCount = computed(() => this.view()?.readyCount ?? 0);
+
+  /** Ce qui reste à faire. Un tri de la pile, pas un compte. */
   protected readonly todoSheets = computed(() =>
     this.sheets().filter((sheet) => sheet.packedAt === null),
   );
@@ -303,12 +311,6 @@ export class Colisage {
   protected readonly visibleSheets = computed(() =>
     this.stack() === 'todo' ? this.todoSheets() : this.readySheets(),
   );
-
-  /** Les deux segments du sélecteur, chacun avec son compte. */
-  protected readonly stackTabs = computed<readonly FoldViewToggleOption[]>(() => [
-    { value: 'todo', label: `En cours ${this.todoSheets().length}` },
-    { value: 'ready', label: `Prêtes ${this.readySheets().length}` },
-  ]);
 
   /** La journée est-elle arrêtée ? `null` = il n'y a rien à coliser. */
   protected readonly closedAt = computed(() => this.view()?.closedAt ?? null);
@@ -326,17 +328,6 @@ export class Colisage {
     return sheets.find((sheet) => sheet.reference === key) ?? sheets[0] ?? null;
   });
 
-  /** Combien de lignes du bac ouvert sont dedans. */
-  protected readonly currentPacked = computed(() => {
-    const sheet = this.current();
-    return sheet === null ? 0 : packedCount(sheet);
-  });
-
-  /** Combien de bacs sont fermés — le chiffre d'avancement de la journée. */
-  protected readonly closedSheets = computed(
-    () => this.sheets().filter((sheet) => sheet.packedAt !== null).length,
-  );
-
   /**
    * 🔴 **Le terme cherché SURLIGNE, il ne filtre pas.**
    *
@@ -346,8 +337,8 @@ export class Colisage {
    * croissants, qui les attend ? » — il faut donc voir EN MÊME TEMPS ce qui
    * reste et toutes les commandes qui en veulent.
    *
-   * Tout est déjà en mémoire, et la journée tient en quelques dizaines de
-   * lignes : aucun appel réseau, aucun délai.
+   * Le choix de ce qui est surligné reste à l'écran : c'est un filtre de texte,
+   * pas un calcul. La recherche ne fait plus aucun total (retirés le 2026-09-14).
    */
   protected readonly term = signal('');
 
@@ -365,7 +356,7 @@ export class Colisage {
    * une commande se distinguer pour un article que la marchandise ne montrerait
    * pas — et c'est justement le rapprochement des deux qu'on est venu lire.
    */
-  private readonly hits = computed<ReadonlySet<string>>(() => {
+  protected readonly hits = computed<ReadonlySet<string>>(() => {
     const normalised = this.normalised();
     const skus = new Set<string>();
     if (normalised === '') {
@@ -386,66 +377,64 @@ export class Colisage {
     return skus;
   });
 
-  /** Cet article est-il celui qu'on cherche ? */
-  protected hit(sku: string): boolean {
-    return this.hits().has(sku);
-  }
-
   /**
-   * **Combien cette commande en attend**, en produits.
+   * **Les lignes trouvées de chaque commande**, telles que servies, par
+   * référence — seulement les commandes qui en ont.
    *
-   * C'est là qu'est la valeur de l'outil : répartir une marchandise courte,
-   * c'est choisir entre des commandes, et on ne choisit pas sans savoir combien
-   * chacune en demande. `0` = elle ne contient pas l'article.
+   * 🔴 Leurs quantités s'affichent une à une, JAMAIS additionnées : c'était « en
+   * attend 24 », une somme faite à la frappe, donc par l'écran. On voit toujours
+   * qui attend combien — plusieurs quantités si plusieurs articles répondent —
+   * sans qu'aucune addition ait lieu ici. Une commande présente dans la table est
+   * surlignée ; c'est un filtre de texte, pas un compte.
    */
-  protected wanted(sheet: PackingSheet): number {
+  protected readonly hitLinesByOrder = computed<ReadonlyMap<string, readonly PackingLine[]>>(() => {
     const hits = this.hits();
-    return sheet.lines
-      .filter((line) => hits.has(line.sku))
-      .reduce((sum, line) => sum + line.quantity, 0);
-  }
-
-  /** Les commandes que le terme touche ICI — le compte affiché à côté du champ. */
-  protected readonly hitOrders = computed(
-    () => this.visibleSheets().filter((sheet) => this.wanted(sheet) > 0).length,
-  );
+    const found = new Map<string, readonly PackingLine[]>();
+    if (hits.size === 0) {
+      return found;
+    }
+    for (const sheet of this.sheets()) {
+      const lines = sheet.lines.filter((line) => hits.has(line.sku));
+      if (lines.length > 0) {
+        found.set(sheet.reference, lines);
+      }
+    }
+    return found;
+  });
 
   /** Le terme ne désigne rien de la journée : on le DIT plutôt que de ne rien changer. */
   protected readonly noHit = computed(() => this.searching() && this.hits().size === 0);
 
-  /** Les commandes touchées dans la pile affichée. */
-  private readonly hitsHere = computed(
-    () => this.visibleSheets().filter((sheet) => this.wanted(sheet) > 0).length,
+  /** L'autre pile que celle affichée. */
+  private readonly otherSheets = computed(() =>
+    this.stack() === 'todo' ? this.readySheets() : this.todoSheets(),
   );
-
-  /**
-   * 🔴 **Les commandes touchées dans l'AUTRE pile.**
-   *
-   * Sans ce compte, le sélecteur rendrait faux ce que la recherche promet : un
-   * article présent dans trois commandes déjà prêtes n'apparaîtrait nulle part,
-   * et on conclurait qu'il n'est demandé par personne. C'est exactement le
-   * malentendu que « ça surligne, ça ne filtre pas » existe pour empêcher —
-   * sauf qu'ici c'est le sélecteur qui filtre, légitimement, et c'est donc à lui
-   * de rendre des comptes.
-   */
-  protected readonly hitsElsewhere = computed(() => {
-    const others = this.stack() === 'todo' ? this.readySheets() : this.todoSheets();
-    return others.filter((sheet) => this.wanted(sheet) > 0).length;
-  });
 
   /** Le nom de l'autre pile, pour le dire en toutes lettres. */
   protected readonly otherStackLabel = computed(() =>
     this.stack() === 'todo' ? 'prêtes' : 'en cours',
   );
 
-  /** Le terme ne trouve rien ICI, mais quelque chose ailleurs. */
-  protected readonly onlyElsewhere = computed(
-    () => this.searching() && this.hitsHere() === 0 && this.hitsElsewhere() > 0,
-  );
+  /**
+   * 🔴 **Le terme ne trouve rien ICI, mais quelque chose dans l'autre pile.**
+   *
+   * Sans cet avis, le sélecteur rendrait faux ce que la recherche promet : un
+   * article présent seulement dans des commandes déjà prêtes n'apparaîtrait
+   * nulle part, et on conclurait qu'il n'est demandé par personne. L'avis ne
+   * porte AUCUN nombre : combien de commandes serait un compte fait par l'écran.
+   */
+  protected readonly onlyElsewhere = computed(() => {
+    const found = this.hitLinesByOrder();
+    return (
+      this.searching() &&
+      !this.visibleSheets().some((sheet) => found.has(sheet.reference)) &&
+      this.otherSheets().some((sheet) => found.has(sheet.reference))
+    );
+  });
 
   /** Change de pile. Le choix courant retombe sur la tête de la nouvelle pile. */
-  protected chooseStack(stack: string): void {
-    this.stack.set(stack === 'ready' ? 'ready' : 'todo');
+  protected chooseStack(stack: PackingStack): void {
+    this.stack.set(stack);
     this.chosen.set(null);
     this.justDeclared.set(null);
   }
@@ -456,16 +445,16 @@ export class Colisage {
   }
 
   /**
-   * 🔴 « Déclarer prête » n'est actif que lorsque TOUTES les lignes sont cochées.
+   * 🔴 « Déclarer prête » suit **la règle du serveur** (`canDeclareReady`), et
+   * rien d'autre que le geste en vol.
    *
-   * L'écran est plus exigeant que la route de scan, qui reste inconditionnelle :
-   * elle est encodée dans des papiers en circulation, et y ajouter une condition
-   * ferait échouer une feuille posée sur un plan de travail. Ici rien ne presse,
-   * et une commande déclarée prête à moitié est un client qui vient pour rien.
+   * L'écran décidait seul — « toutes les lignes cochées » — et le jour où la
+   * règle change au serveur, il aurait proposé un geste que le serveur refuse,
+   * ou caché un geste permis. Une règle est un calcul comme un autre.
    */
   protected readonly canClose = computed(() => {
     const sheet = this.current();
-    return sheet !== null && sheet.packedAt === null && isComplete(sheet) && !this.closing();
+    return sheet !== null && sheet.canDeclareReady && !this.closing();
   });
 
   /**
@@ -487,33 +476,14 @@ export class Colisage {
   });
 
   /**
-   * **Les containers de la commande ouverte, un par entrée.**
+   * « + » et « − » s'offrent-ils ? Une commande déclarée prête ne change plus de
+   * compte.
    *
-   * 🔴 Une LISTE là où le contrat ne porte qu'un nombre, et c'est délibéré :
-   * les produits seront glissés-déposés dans des containers nommés, et ce
-   * nombre deviendra la longueur de cette liste-là. Le gabarit boucle donc
-   * déjà — le jour venu, on change la source de la boucle et chaque entrée
-   * gagne un nom et une zone de dépôt. Peindre un simple chiffre aurait
-   * demandé de refaire le bloc entier.
-   *
-   * ⚠️ Ce n'est PAS un `production_container` (le matériel du four, réglé par
-   * SKU). Ici c'est le contenant d'expédition d'UNE commande.
+   * ⚠️ Ce n'est pas une règle calculée ici, c'est la LECTURE d'un état servi
+   * (`packedAt`) : le contrat ne porte pas de `canStepContainers`, et sans ce
+   * garde l'écran offrirait sur une commande prête un geste que le serveur
+   * refuserait (vérifié dans le contrat le 2026-09-14).
    */
-  protected readonly containerSlots = computed<readonly number[]>(() => {
-    const sheet = this.current();
-    if (sheet === null) {
-      return [];
-    }
-    return Array.from({ length: this.containersOf(sheet) }, (_, index) => index + 1);
-  });
-
-  /** Le compte affiché pour la commande ouverte — local s'il y en a un, servi sinon. */
-  protected readonly containers = computed(() => {
-    const sheet = this.current();
-    return sheet === null ? 0 : this.containersOf(sheet);
-  });
-
-  /** Une commande déclarée prête ne change plus de compte : rien ne revient dessus. */
   protected readonly canSetContainers = computed(() => {
     const sheet = this.current();
     return sheet !== null && sheet.packedAt === null;
@@ -530,20 +500,33 @@ export class Colisage {
       if (seq !== this.readSeq) {
         return;
       }
-      this.view.set(served);
-      // La journée vient de la RÉPONSE, pas de la demande : `workedDay` peut
-      // rendre demain là où on avait aujourd'hui, et l'en-tête doit nommer la
-      // journée qu'on lit, jamais celle qu'on a demandée.
-      this.date.set(served.date);
+      this.applyRead(served);
       this.openAsked(served);
       this.state.set('ready');
-      this.readAt.set(new Date().toISOString());
-      this.refreshFailed.set(false);
     } catch {
       if (seq === this.readSeq) {
         this.state.set('error');
       }
     }
+  }
+
+  /**
+   * Inscrit une lecture réussie : la journée, sa date, et l'heure de lecture.
+   *
+   * La journée vient de la RÉPONSE, pas de la demande : `workedDay` peut rendre
+   * demain là où on avait aujourd'hui, et l'en-tête doit nommer la journée qu'on
+   * lit, jamais celle qu'on a demandée.
+   *
+   * L'état montré des cases s'efface ici — sauf celui des cases dont l'envoi est
+   * encore en vol : ce que le serveur vient de relire les remplace.
+   */
+  private applyRead(served: ProductionPackingView): void {
+    this.view.set(served);
+    this.date.set(served.date);
+    this.readAt.set(new Date().toISOString());
+    this.refreshFailed.set(false);
+    const inFlight = this.busy();
+    this.shown.set(new Map([...this.shown()].filter(([key]) => inFlight.has(key))));
   }
 
   /**
@@ -574,9 +557,11 @@ export class Colisage {
    * **La journée que le fournil colise** : demain si son plan est arrêté,
    * aujourd'hui sinon.
    *
-   * On demande demain D'ABORD, comme la fiche : la journée qui a un plan arrêté
-   * est celle qu'on fabrique, et une seule lecture suffit dans le cas courant —
-   * celui du fournil de la nuit.
+   * ⚠️ **Le seul endroit où l'horloge du poste décide encore quelque chose** :
+   * QUELLE date demander. Le contrat n'offre qu'une lecture par date
+   * (`GET …/packing?date=`), sans « la journée qu'on colise » ; le passer au
+   * serveur demande une route de plus. Le MOT affiché, lui, vient du serveur
+   * (`relativeDay`).
    */
   private async workedDay(): Promise<ProductionPackingView> {
     const tomorrow = await this.api.packing(isoDay(nextDay(new Date())));
@@ -611,15 +596,45 @@ export class Colisage {
       if (seq !== this.readSeq || this.lastWriteAt >= startedAt) {
         return;
       }
-      this.view.set(served);
-      this.date.set(served.date);
+      this.applyRead(served);
       this.noticeClosedElsewhere(openBefore);
-      this.readAt.set(new Date().toISOString());
-      this.refreshFailed.set(false);
     } catch {
       if (seq === this.readSeq) {
         this.refreshFailed.set(true);
       }
+    }
+  }
+
+  /**
+   * **La relecture qui suit une écriture acceptée** — coche, containers ou
+   * déclaration.
+   *
+   * 🔴 **Elle n'est PAS soumise à la règle `lastWriteAt`**, et c'est tout ce qui
+   * la sépare de {@link refresh}. Elle part après l'écriture ; or `lastWriteAt`
+   * et l'instant de son départ tombent dans la même milliseconde, et la règle
+   * `lastWriteAt >= startedAt` l'aurait jetée — c'est-à-dire aurait jeté
+   * justement la lecture qui porte le geste qu'on vient de faire. Elle passe
+   * devant toute relecture périodique en vol par le rang (`readSeq`).
+   *
+   * Rend `true` si elle a été inscrite. `false` si elle a échoué (le pied le dit)
+   * ou si une lecture plus récente l'a devancée — l'état montré de la case reste
+   * alors jusqu'à la prochaine lecture inscrite.
+   */
+  private async rereadAfterWrite(): Promise<boolean> {
+    this.readSeq += 1;
+    const seq = this.readSeq;
+    try {
+      const served = await this.workedDay();
+      if (seq !== this.readSeq) {
+        return false;
+      }
+      this.applyRead(served);
+      return true;
+    } catch {
+      if (seq === this.readSeq) {
+        this.refreshFailed.set(true);
+      }
+      return false;
     }
   }
 
@@ -656,73 +671,43 @@ export class Colisage {
   }
 
   /**
-   * Ajoute ou retire **un** container à la commande ouverte.
+   * Ajoute ou retire **un** container à la commande ouverte, puis relit.
    *
-   * Le geste est gros et sans ambiguïté parce qu'on l'actionne les mains
-   * prises ; le compte est écrit à l'écran d'abord, puis envoyé. Un envoi refusé
-   * REPOSE la valeur servie et le dit : un compte de containers sert à charger
-   * un véhicule, et le montrer enregistré alors qu'il ne l'est pas ferait partir
-   * un camion sur une croyance.
-   *
-   * Le plafond de 99 est celui du contrat (`setPackingContainersSchema`) : une
-   * saisie qui part en boucle bute ici plutôt que d'aller se faire refuser.
+   * 🔴 **Un sens, pas un total** : c'est le serveur qui compte. Aucun compte
+   * local, aucun plafond, aucune comparaison à zéro — le serveur rend `remove` à
+   * zéro sans effet, et c'est à lui de savoir ce que vaut un retrait. Refusé,
+   * le geste se dit ; le compte affiché n'a pas bougé, puisque l'écran n'en
+   * tient aucun.
    */
-  protected async stepContainers(step: number): Promise<void> {
+  protected async stepContainers(step: PackingContainerStep): Promise<void> {
     const sheet = this.current();
-    if (sheet === null || !this.canSetContainers()) {
-      return;
-    }
-    const wanted = Math.min(MAX_CONTAINERS, Math.max(0, this.containersOf(sheet) + step));
-    if (wanted === this.containersOf(sheet)) {
+    if (sheet === null || !this.canSetContainers() || this.containersBusy()) {
       return;
     }
     this.containersFailed.set(false);
-    this.writeContainers(sheet.reference, wanted);
+    this.containersBusy.set(true);
     try {
-      await this.api.setContainers(this.date(), sheet.reference, wanted);
-      // Accepté : inscrit dans ce qu'on a lu, puis le compte local s'efface —
-      // sinon il l'emporterait pour toujours, et ce poste ne verrait jamais un
-      // autre poste changer le compte de cette commande.
-      this.writeServedSheet(sheet.reference, (served) => ({ ...served, containers: wanted }));
-      this.dropContainers(sheet.reference);
-      this.lastWriteAt = Date.now();
+      await this.api.stepContainers(this.date(), sheet.reference, step);
     } catch {
-      this.dropContainers(sheet.reference);
       this.containersFailed.set(true);
+      this.containersBusy.set(false);
+      return;
     }
-  }
-
-  /** Le compte affiché d'une commande : celui posé ici, ou celui du serveur. */
-  private containersOf(sheet: PackingSheet): number {
-    return this.localContainers().get(sheet.reference) ?? sheet.containers;
-  }
-
-  private writeContainers(reference: string, value: number): void {
-    const next = new Map(this.localContainers());
-    next.set(reference, value);
-    this.localContainers.set(next);
-  }
-
-  private dropContainers(reference: string): void {
-    const next = new Map(this.localContainers());
-    next.delete(reference);
-    this.localContainers.set(next);
+    this.lastWriteAt = Date.now();
+    await this.rereadAfterWrite();
+    this.containersBusy.set(false);
   }
 
   /**
-   * Met une ligne dans le bac, ou l'en sort : **à l'écran tout de suite**, au
-   * serveur aussitôt.
+   * Met une ligne dans le bac, ou l'en sort — puis **relit**.
    *
    * La case se coche avant la réponse et se désarme le temps de l'envoi : un
-   * second geste contraire pourrait arriver avant le premier. Acceptée, la
-   * coche est inscrite dans ce qu'on a lu ; refusée, elle revient en arrière — la
-   * balance avec — et l'écran dit pourquoi.
+   * second geste contraire pourrait arriver avant le premier. Acceptée, la coche
+   * déclenche une relecture, et c'est ce que le serveur relit qui s'affiche —
+   * lignes dans le bac, volume, balance. Refusée, la case revient en arrière et
+   * l'écran dit pourquoi. Aucun chiffre n'est réécrit ici.
    */
-  protected async toggle(
-    sheet: PackingSheet,
-    line: PackingLineView,
-    packed: boolean,
-  ): Promise<void> {
+  protected async toggle(sheet: PackingSheet, line: PackingLine, packed: boolean): Promise<void> {
     // 🔴 Deux refus, deux raisons. Une commande déclarée prête ne revient pas
     // dessus ; une ligne dont l'article n'est pas sorti du four redeviendra
     // cochable. Le gabarit désarme déjà les deux cases — ce garde-ci tient le
@@ -737,56 +722,87 @@ export class Colisage {
     }
     const initials = this.initials();
     this.markFailed.set(null);
-    this.setLocal(key, { packed, initials });
+    this.setShown(key, packed);
     this.setBusy(key, true);
     try {
       await this.api.mark(date, sheet.reference, line.sku, packed, initials);
-      this.writeServedSheet(sheet.reference, (served) => ({
-        ...served,
-        lines: served.lines.map((candidate) =>
-          candidate.sku === line.sku
-            ? { ...candidate, packed, initials: packed && initials !== '' ? initials : null }
-            : candidate,
-        ),
-      }));
-      this.lastWriteAt = Date.now();
     } catch (error) {
+      this.setBusy(key, false);
+      this.setShown(key, null);
       this.markFailed.set(
         `${line.productName} · ${sheet.customerLabel} — ${serverMessageOf(error)}`,
       );
-    } finally {
-      this.setLocal(key, null);
-      this.setBusy(key, false);
+      return;
+    }
+    this.lastWriteAt = Date.now();
+    const read = await this.rereadAfterWrite();
+    this.setBusy(key, false);
+    // Relue : l'état montré cède la place à ce que le serveur a relu. Pas relue
+    // (échec, ou devancée) : il reste — le geste a été ACCEPTÉ, et c'est vrai —
+    // jusqu'à la prochaine lecture inscrite, qui l'effacera.
+    if (read) {
+      this.setShown(key, null);
     }
   }
 
-  /** La coche de cette ligne est-elle en train de partir ? */
-  protected isBusy(sheet: PackingSheet, line: PackingLineView): boolean {
-    return this.busy().has(packingMarkKey(this.date(), sheet.reference, line.sku));
-  }
+  /**
+   * L'état montré des cases de la commande OUVERTE, par SKU — ce que la colonne
+   * du milieu recouvre le temps d'un envoi. Une projection des clés de
+   * `shown`, pas un chiffre.
+   */
+  protected readonly openShown = computed<ReadonlyMap<string, boolean>>(() => {
+    const sheet = this.current();
+    const out = new Map<string, boolean>();
+    if (sheet === null) {
+      return out;
+    }
+    for (const line of sheet.lines) {
+      const shown = this.shown().get(packingMarkKey(this.date(), sheet.reference, line.sku));
+      if (shown !== undefined) {
+        out.set(line.sku, shown);
+      }
+    }
+    return out;
+  });
 
-  /** Réécrit une commande dans ce qu'on a lu — après une écriture acceptée. */
-  private writeServedSheet(reference: string, change: (sheet: PackingSheet) => PackingSheet): void {
-    this.view.update((view) =>
-      view === null
-        ? view
-        : {
-            ...view,
-            sheets: view.sheets.map((sheet) =>
-              sheet.reference === reference ? change(sheet) : sheet,
-            ),
-          },
+  /** Les SKU de la commande ouverte dont la coche est en vol. */
+  protected readonly openBusy = computed<ReadonlySet<string>>(() => {
+    const sheet = this.current();
+    const busy = this.busy();
+    if (sheet === null) {
+      return new Set();
+    }
+    return new Set(
+      sheet.lines
+        .filter((line) => busy.has(packingMarkKey(this.date(), sheet.reference, line.sku)))
+        .map((line) => line.sku),
     );
+  });
+
+  /** Une coche demandée par la colonne du milieu, sur la commande ouverte. */
+  protected onLineToggled(event: PackingLineToggle): void {
+    const sheet = this.current();
+    if (sheet !== null) {
+      void this.toggle(sheet, event.line, event.packed);
+    }
   }
 
-  private setLocal(key: string, mark: LocalPackingMark | null): void {
-    const next = new Map(this.localMarks());
-    if (mark === null) {
+  /** « Déclarer prête » demandé par la colonne du milieu, sur la commande ouverte. */
+  protected declareCurrent(): void {
+    const sheet = this.current();
+    if (sheet !== null) {
+      void this.close(sheet);
+    }
+  }
+
+  private setShown(key: string, packed: boolean | null): void {
+    const next = new Map(this.shown());
+    if (packed === null) {
       next.delete(key);
     } else {
-      next.set(key, mark);
+      next.set(key, packed);
     }
-    this.localMarks.set(next);
+    this.shown.set(next);
   }
 
   private setBusy(key: string, busy: boolean): void {
@@ -800,8 +816,9 @@ export class Colisage {
   }
 
   /**
-   * **Déclare la commande prête.** Le seul geste irréversible du poste, et le
-   * seul qui n'attende pas le réseau en silence : un échec reste à l'écran.
+   * **Déclare la commande prête**, puis relit. Le seul geste irréversible du
+   * poste, et le seul qui n'attende pas le réseau en silence : un échec reste à
+   * l'écran.
    */
   protected async close(sheet: PackingSheet): Promise<void> {
     if (!this.canClose()) {
@@ -814,14 +831,15 @@ export class Colisage {
       await this.api.packOrder(this.date(), sheet.reference);
     } catch {
       this.closeFailed.set(true);
-      return;
-    } finally {
       this.closing.set(false);
+      return;
     }
+    this.lastWriteAt = Date.now();
     // On relit plutôt que d'inscrire l'heure de l'accusé : la déclaration déplace
-    // aussi la marchandise et l'avancement de la journée, et deux sources pour
-    // la même commande divergeraient à la première déclarée par un autre poste.
-    await this.load();
+    // aussi la marchandise, les compteurs des piles et l'avancement de la
+    // journée — tous calculés au serveur.
+    await this.rereadAfterWrite();
+    this.closing.set(false);
     // 🔴 **ON ENCHAÎNE.** La commande vient de quitter la pile « en cours » sous
     // les doigts : oublier le choix fait retomber `current()` sur la tête de la
     // pile, c'est-à-dire sur la commande suivante. Sans ça, l'écran resterait
@@ -833,23 +851,6 @@ export class Colisage {
 
   protected method(sheet: PackingSheet): string {
     return methodLabel(sheet.fulfillmentMethod);
-  }
-
-  /**
-   * Les **produits** d'une commande, en pièces — pas ses lignes.
-   *
-   * Une commande de trois lignes peut porter quarante croissants, et c'est ce
-   * nombre-là qu'on regarde en préparant : il dit ce qu'il y a à mettre dedans,
-   * et il se compare directement à la marchandise à répartir, qui est comptée
-   * dans la même unité. Un compte de lignes ne se compare à rien.
-   */
-  protected pieces(sheet: PackingSheet): number {
-    return sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
-  }
-
-  /** Les pièces DÉJÀ dedans — le numérateur du même compte. */
-  protected packedPieces(sheet: PackingSheet): number {
-    return sheet.lines.filter((line) => line.packed).reduce((sum, line) => sum + line.quantity, 0);
   }
 
   /**

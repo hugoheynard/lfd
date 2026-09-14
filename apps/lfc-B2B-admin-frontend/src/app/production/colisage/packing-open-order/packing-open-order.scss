@@ -1,0 +1,108 @@
+/* 🔴 L'HÔTE FERME LA CHAÎNE DE HAUTEURS : élément de la grille `.co-plates`, il
+   serait sinon en `min-height: auto` et grandirait jusqu'à son contenu — la
+   liste des lignes cesserait de défiler, et ce qui dépasse serait coupé.
+   Explication complète et mesure : `packing-orders.scss`, `colisage.scss`. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.co-open {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* La bande de section — recopiée dans chaque colonne, l'encapsulation de vue ne
+   laissant pas une règle du poste l'atteindre. */
+.co-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  margin: 0;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  background: var(--fold-color-surface-band);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.co-band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.co-band-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.co-band-sum {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+/* 🔴 LA BOÎTE QUI DÉFILE : la hauteur qui reste entre les containers et « Déclarer
+   prête ». `min-height: 0`, sinon `overflow-y` ne s'active jamais. */
+.co-lines {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Le geste irréversible, épinglé sous la liste — hors de la zone qui défile,
+   donc toujours atteignable, et jamais atteint par accident en faisant défiler. */
+.co-close {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  border-top: 1px solid var(--fold-color-border);
+  background: var(--fold-color-surface-band);
+}
+
+.co-closed-said {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* ── LE SURLIGNAGE D'UNE LIGNE ────────────────────────────────────────────────
+   La règle du trait et du fond pâle est expliquée dans `packing-orders.scss`.
+
+   ⚠️ `.co-line` désigne l'HÔTE de `app-packing-line` : l'attribut d'encapsulation
+   de ce composant est posé sur l'élément-hôte d'un fils, ce qui rend la règle
+   atteignable sans percer l'encapsulation (vérifié dans le CSS compilé le
+   2026-09-13).
+
+   🔴 L'état garde sa couleur : une ligne EN ATTENTE ne prend que le trait, le
+   fond pâle translucide se mêlerait à l'ambre et ne dirait plus rien. */
+.co-line.is-hit {
+  border-radius: var(--fold-radius-md);
+  outline: 2px solid var(--fold-color-info-border);
+  outline-offset: -2px;
+}
+
+.co-line.is-hit:not(.is-awaiting) {
+  background: var(--fold-color-info-surface);
+}
+
+/* 🔴 EN RETRAIT, PAS RETIRÉ. */
+:host(.is-searching) .co-line:not(.is-hit) {
+  opacity: 0.55;
+}

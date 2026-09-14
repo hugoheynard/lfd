@@ -1,0 +1,199 @@
+/* 🔴 **L'HÔTE FERME LA CHAÎNE DE HAUTEURS.** Ce composant est un élément de la
+   grille `.co-plates` du poste ; un élément de grille est en `min-height: auto`
+   par défaut, c'est-à-dire qu'il GRANDIT jusqu'à la hauteur de son contenu. Resté
+   ainsi, il pousserait la grille, et la liste cesserait de défiler — ce qui
+   dépasse serait alors COUPÉ, pas repoussé, puisque `main.content` est en
+   `overflow: hidden`. Mesuré dans Chromium le 2026-09-14 (voir `colisage.scss`). */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.co-bacs {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--fold-color-border);
+}
+
+/* La bande de section : ce qu'on regarde, et où ça en est. Recopiée dans chaque
+   colonne plutôt qu'héritée : l'encapsulation de vue ne laisse pas une règle du
+   poste atteindre ce gabarit-ci. */
+.co-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  margin: 0;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  background: var(--fold-color-surface-band);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.co-band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.co-band-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.co-band-sum {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+/* 🔴 Le sélecteur ne part PAS avec le défilement : `flex: none` entre la bande
+   et la boîte qui défile. */
+.co-stack {
+  flex: none;
+  padding: var(--fold-space-sm) var(--fold-space-xl);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.co-stack-none {
+  margin: 0;
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* 🔴 LA BOÎTE QUI DÉFILE. `flex: 1 1 auto` + `min-height: 0` : elle prend la
+   hauteur qui RESTE sous la bande et le sélecteur, et défile au lieu de pousser
+   sa colonne. Sans le `min-height: 0`, une boîte flex refuse de descendre sous
+   la hauteur de son contenu, et `overflow-y` ne s'active jamais. */
+.co-bacs-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.co-bac {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  border: 0;
+  border-bottom: 1px solid var(--fold-color-border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* La commande OUVERTE : un filet à gauche plutôt qu'un fond, pour que la liste
+   reste lisible quand la moitié des commandes est prête. */
+.co-bac.is-open {
+  background: var(--fold-color-surface-band);
+  box-shadow: inset 3px 0 0 var(--fold-color-primary);
+}
+
+/* Une commande PRÊTE se distingue sans disparaître : on la rouvre pour lire ce
+   qu'elle contient, jamais pour la décocher. */
+.co-bac.is-closed .co-bac-who {
+  color: var(--fold-color-text-muted);
+}
+
+.co-bac-who {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+.co-bac-where {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.co-bac-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-secondary);
+}
+
+.co-bac-of {
+  color: var(--fold-color-text-muted);
+}
+
+.co-bac-closed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-success-text);
+}
+
+/* ── 🔴 LE SURLIGNAGE : UN TRAIT, ET UN FOND PÂLE ─────────────────────────────
+   Le surlignage est une SÉLECTION, pas un état : il se dit par un TRAIT et un
+   fond pâle (`info-border`, `info-surface`). La même règle est recopiée dans la
+   commande ouverte et dans la marchandise ; c'est ICI qu'elle est expliquée.
+
+   ⚠️ **Une surélévation avait été essayée et REJETÉE** (à l'écran, le
+   2026-09-13) : le trait se lisait mieux. Ne pas la remettre.
+
+   ⚠️ **`--fold-color-info` n'est pas bleu partout** : violet dans trois thèmes
+   sur quatre (lu dans `tokens/semantic.css` de fold 0.27.2 le 2026-09-13).
+   C'est le token qu'il faut quand même — décliné par thème. `info-surface` est
+   un `color-mix` à 12 % : il TEINTE sans toucher au contraste de l'encre.
+
+   🔴 **`outline`, jamais un `border` ajouté** : un contour ne prend aucune place,
+   la liste ne tressaute pas à la frappe. Décalage NÉGATIF : la liste défile, et
+   un contour posé à l'extérieur y serait rogné. */
+.co-bac.is-hit {
+  border-radius: var(--fold-radius-md);
+  outline: 2px solid var(--fold-color-info-border);
+  outline-offset: -2px;
+  background: var(--fold-color-info-surface);
+}
+
+/* 🔴 **LE FOCUS CLAVIER PASSE DEVANT LE SURLIGNAGE.** Les deux se disent par le
+   même `outline` : sans cette règle, une commande trouvée mangerait son propre
+   anneau de focus. Primaire et plus épais — trouvée ET focalisée se distingue de
+   trouvée seulement, et le fond pâle continue de dire qu'elle est trouvée. */
+.co-bac:focus-visible {
+  outline: 3px solid var(--fold-color-primary);
+  outline-offset: -3px;
+}
+
+/* Une quantité trouvée, telle que servie — une pastille par ligne, jamais une
+   somme. */
+.co-hit-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--fold-space-sm);
+  padding: 0 var(--fold-space-sm);
+  border: 1px solid var(--fold-color-primary);
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-primary);
+  white-space: nowrap;
+}
+
+/* 🔴 EN RETRAIT, PAS RETIRÉ : ce que la recherche ne touche pas reste lisible,
+   simplement moins appuyé. */
+:host(.is-searching) .co-bac:not(.is-hit) {
+  opacity: 0.55;
+}

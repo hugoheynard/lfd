@@ -1,0 +1,78 @@
+<!-- LES COMMANDES — où le colis va, et où il en est. -->
+<nav class="co-bacs" aria-label="Les commandes de la journée">
+  <p class="co-band">
+    <span class="co-band-title">Commandes</span>
+    <span class="co-band-rule" aria-hidden="true"></span>
+    <!-- La bande a CÉDÉ son compte de prêtes au sélecteur, où le chiffre sert à
+         choisir plutôt qu'à constater. Elle garde le volume de la journée —
+         compté au serveur. -->
+    <span class="co-band-sum">{{ orderCount() }} sur la journée</span>
+  </p>
+
+  <!--
+    Il est FIXE, entre la bande et la liste : seule la liste défile sous lui,
+    sinon on perdrait de quoi changer de pile dès la quinzième commande. Ses deux
+    comptes sont ceux du serveur (`todoCount`, `readyCount`).
+  -->
+  <fold-view-toggle
+    class="co-stack"
+    size="sm"
+    ariaLabel="Pile de commandes"
+    [options]="tabs()"
+    [value]="stack()"
+    (valueChange)="chooseStack($event)"
+  />
+
+  <div class="co-bacs-list">
+    @for (sheet of sheets(); track sheet.reference) {
+      <button
+        type="button"
+        class="co-bac"
+        [class.is-open]="sheet.reference === openReference()"
+        [class.is-closed]="sheet.packedAt !== null"
+        [class.is-hit]="hitLines().has(sheet.reference)"
+        [attr.aria-current]="sheet.reference === openReference() ? 'true' : null"
+        (click)="chosen.emit(sheet.reference)"
+      >
+        <span class="co-bac-who">
+          {{ sheet.customerLabel }}
+          <!-- 🔴 Les quantités des lignes TROUVÉES, une par ligne, telles que
+               servies — JAMAIS additionnées. On voit qui attend combien sans
+               qu'aucune somme ait lieu ici. -->
+          @for (found of hitLines().get(sheet.reference) ?? []; track found.sku) {
+            <span class="co-hit-chip">{{ found.quantity }} {{ found.productName }}</span>
+          }
+        </span>
+        <!-- L'acheminement : le mode et le lieu disent sur quelle pile la
+             commande va. ⚠️ Pas d'heure : une commande porte un JOUR de service
+             et rien de plus fin (vérifié le 2026-09-13). -->
+        <span class="co-bac-where">{{ method(sheet) }} · {{ sheet.destination }}</span>
+        <span class="co-bac-count">
+          <!-- 🔴 Le volume est en PRODUITS, compté au serveur (`pieces`,
+               `packedPieces`), et il reste affiché sur une commande prête :
+               « prête » dit l'état, pas le volume. -->
+          <span class="co-bac-pieces"
+            >{{ sheet.packedPieces
+            }}<span class="co-bac-of"> / {{ sheet.pieces }} produits</span></span
+          >
+          @if (sheet.packedAt !== null) {
+            <span class="co-bac-closed">
+              <fold-icon name="package-check" size="sm" />
+              Prête
+            </span>
+          }
+        </span>
+      </button>
+    } @empty {
+      <!-- « Tout est prêt » et « rien n'est encore prêt » ne se ressemblent pas :
+           le premier est la fin de la journée, le second son début. -->
+      <p class="co-stack-none">
+        @if (stack() === 'todo') {
+          Tout est déclaré prêt — plus une commande à préparer.
+        } @else {
+          Rien n'est encore déclaré prêt.
+        }
+      </p>
+    }
+  </div>
+</nav>

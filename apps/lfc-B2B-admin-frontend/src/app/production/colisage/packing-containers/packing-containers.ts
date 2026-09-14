@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
+import type { PackingContainerStep } from '@lfd/contracts';
+
 /**
  * **Les containers d'une commande** — les contenants qu'on charge dans le
  * véhicule.
@@ -10,13 +12,15 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
  * ne réutilise aucun de ses noms pour que la confusion n'ait pas d'endroit où
  * naître.
  *
- * 🔴 **Un composant, et une BOUCLE, alors que le contrat ne porte qu'un
- * nombre.** Les produits y seront glissés-déposés, et ce nombre deviendra la
- * longueur d'une liste de containers nommés : le jour venu, `slots` cesse d'être
- * dérivé du compte pour devenir la liste elle-même, chaque entrée gagne un nom
- * et une zone de dépôt, et la page au-dessus ne change pas d'une ligne. Peindre
- * un simple chiffre dans le gabarit du poste aurait demandé de refaire le bloc
- * entier — et de le sortir d'un coin où on l'aurait peint.
+ * 🔴 **Il ne compte rien.** « + » et « − » émettent un SENS (`add`, `remove`) ;
+ * le parent l'envoie, le serveur calcule le nouveau compte, et l'écran relit.
+ * `count` est donc toujours le chiffre servi — jamais un compte tenu ici.
+ *
+ * **Une BOUCLE, alors que le contrat ne porte qu'un nombre.** Les produits y
+ * seront glissés-déposés, et ce nombre deviendra la longueur d'une liste de
+ * containers nommés : le jour venu, `slots` devient la liste elle-même, chaque
+ * tuile gagne un nom et une zone de dépôt, et la page au-dessus ne change pas
+ * d'une ligne.
  */
 @Component({
   selector: 'app-packing-containers',
@@ -25,16 +29,22 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
   styleUrl: './packing-containers.scss',
 })
 export class PackingContainers {
+  /** Le compte SERVI. */
   readonly count = input.required<number>();
 
   /** Une commande déclarée prête ne change plus de compte : rien ne revient dessus. */
   readonly editable = input(true);
 
-  /** `+1` ou `-1`. Le parent borne, envoie et retombe sur le serveur s'il refuse. */
-  readonly step = output<number>();
+  /** Un envoi en vol : les deux boutons se désarment, et seulement pendant ce temps. */
+  readonly busy = input(false);
 
-  /** Une entrée par container — c'est elle qui deviendra un container nommé. */
-  protected readonly slots = computed<readonly number[]>(() =>
-    Array.from({ length: this.count() }, (_, index) => index + 1),
-  );
+  /** Le sens demandé. Le parent envoie, puis relit ce que le serveur a compté. */
+  readonly step = output<PackingContainerStep>();
+
+  /**
+   * Une tuile par container servi — **sans numéro**. Un rang affiché aurait été
+   * un chiffre fabriqué par l'écran (`index + 1`) ; le seul nombre montré est
+   * celui du serveur, dans la bande.
+   */
+  protected readonly slots = computed(() => Array.from({ length: this.count() }));
 }

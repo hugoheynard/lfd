@@ -1,0 +1,87 @@
+<!-- LA COMMANDE OUVERTE — le geste qu'on répète, en grandes cibles. -->
+<div class="co-open">
+  @if (sheet(); as order) {
+    <p class="co-band">
+      <span class="co-band-title">{{ order.reference }}</span>
+      <span class="co-band-rule" aria-hidden="true"></span>
+      <span class="co-band-sum">
+        {{ order.packedLines }} ligne{{ order.packedLines > 1 ? 's' : '' }} sur
+        {{ order.lineCount }} dans la commande
+      </span>
+    </p>
+
+    <!--
+      **LES CONTAINERS DE LA COMMANDE** — au-dessus des lignes parce qu'on les
+      compte en remplissant, pas après. Le compte est celui du serveur ; « + » et
+      « − » émettent un sens, et le poste relit.
+    -->
+    <app-packing-containers
+      [count]="order.containers"
+      [editable]="canSetContainers()"
+      [busy]="containersBusy()"
+      (step)="containerStep.emit($event)"
+    />
+
+    <div class="co-lines">
+      @for (line of order.lines; track line.sku) {
+        <app-packing-line
+          [line]="shownLine(line)"
+          [locked]="order.packedAt !== null || busySkus().has(line.sku)"
+          [hit]="hitSkus().has(line.sku)"
+          (toggled)="toggled.emit({ line, packed: $event })"
+        />
+      } @empty {
+        <fold-empty-state
+          title="Cette commande est vide"
+          subtitle="Aucune ligne à mettre dedans — rien n’a été commandé sur cette feuille."
+        >
+          <fold-icon empty-icon name="basket" size="lg" />
+        </fold-empty-state>
+      }
+    </div>
+
+    <div class="co-close">
+      @if (order.packedAt !== null) {
+        <p class="co-closed-said">
+          <fold-icon name="package-check" size="sm" />
+          Commande déclarée prête — le commerce l'a appris. Rien ne revient dessus.
+        </p>
+      } @else {
+        <!-- Le MODE est dans le libellé : « retrait » sur une commande livrée
+             serait faux. 🔴 Actif selon `canDeclareReady`, la règle du SERVEUR,
+             et désarmé pendant la déclaration en vol. -->
+        <button
+          foldButton
+          block
+          size="lg"
+          [disabled]="!order.canDeclareReady || closing()"
+          [loading]="closing()"
+          (click)="declareReady.emit()"
+        >
+          {{ readyLabel() }}
+        </button>
+        @if (!order.canDeclareReady && !closing()) {
+          <!-- ⚠️ Le nombre est celui du serveur (`remainingLines`), mais la
+               PHRASE décrit la règle d'aujourd'hui : le serveur dit « non » sans
+               dire pourquoi. -->
+          <p class="co-closed-said">
+            {{ order.remainingLines }} ligne{{ order.remainingLines > 1 ? 's' : '' }}
+            encore dehors — la commande se déclare prête quand tout est dedans.
+          </p>
+        }
+      }
+    </div>
+  } @else {
+    <!-- La pile affichée est vide : on dit LEQUEL des deux cas c'est. -->
+    <fold-empty-state
+      [title]="stack() === 'todo' ? 'Tout est déclaré prêt' : 'Rien n’est encore prêt'"
+      [subtitle]="
+        stack() === 'todo'
+          ? 'Plus une commande à préparer pour cette journée.'
+          : 'Déclarez une commande prête, et elle viendra se ranger ici.'
+      "
+    >
+      <fold-icon empty-icon [name]="stack() === 'todo' ? 'completed' : 'package'" size="lg" />
+    </fold-empty-state>
+  }
+</div>
