@@ -24,9 +24,9 @@
             [badge]="t().commande.pickupBadge"
             [title]="t().commande.pickupTitle"
             [detail]="t().commande.pickupDetail"
-            [note]="t().commande.pickupNote"
+            [note]="deliveryOffered() ? t().commande.pickupNote : null"
             [detailWide]="t().commande.pickupDetailWide"
-            [ctaLabel]="t().commande.pickupCta"
+            [ctaLabel]="deliveryOffered() ? t().commande.pickupCta : null"
             [noteWide]="pickupNoteWide()"
             (chosen)="openDialog('pickup')"
           />

@@ -59,8 +59,11 @@ export class OfferCard {
   /** Ce que c'est, sous la photo. */
   readonly detail = input.required<string>();
 
-  /** Le délai, l'échéance, la remise — ce qui décide vraiment. */
-  readonly note = input.required<string>();
+  /**
+   * Le délai, l'échéance, la remise — ce qui décide vraiment. `null` quand la
+   * carte n'a rien à en dire : le retrait seul laisse ses boutiques le dire.
+   */
+  readonly note = input<string | null>(null);
 
   readonly noteTone = input<OfferNoteTone>('info');
 

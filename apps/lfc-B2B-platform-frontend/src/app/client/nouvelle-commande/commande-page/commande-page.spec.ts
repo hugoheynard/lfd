@@ -180,6 +180,11 @@ describe('CommandePage', () => {
     );
     expect(shops).toHaveLength(2);
     expect(shops[1]?.textContent).toContain('Le Village');
+    // Les boutiques répondent à « où » : la carte du retrait ne le redemande
+    // pas, et ne promet plus « demain à partir de 6 h ».
+    const pickup = el().querySelector('app-offer-card[data-photo="labo"]');
+    expect(pickup?.textContent).not.toContain(FR.commande.pickupCta);
+    expect(pickup?.textContent).not.toContain(FR.commande.pickupNote);
 
     (shops[1]?.querySelector('button') as HTMLButtonElement).click();
     fixture.detectChanges();
