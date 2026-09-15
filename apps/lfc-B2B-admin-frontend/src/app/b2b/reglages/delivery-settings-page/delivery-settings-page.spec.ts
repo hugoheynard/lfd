@@ -31,20 +31,20 @@ class FakeSettings {
       : Promise.resolve(this.current);
   }
 
-  update(patch: DeliverySettingsPatch): Promise<DeliverySettingsView> {
+  /** Comme la route : `204`, aucun corps. Le réglage se relit par `read`. */
+  update(patch: DeliverySettingsPatch): Promise<void> {
     this.patches.push(patch);
     if (this.refusal !== null) {
       return Promise.reject(this.refusal);
     }
     const base = this.current instanceof Error ? OPEN : this.current;
-    const saved: DeliverySettingsView = {
+    this.current = {
       openToB2b: patch.openToB2b ?? base.openToB2b,
       openToB2c: patch.openToB2c ?? base.openToB2c,
       updatedAt: '2026-09-15T08:00:00.000Z',
       updatedBy: 'Hugo',
     };
-    this.current = saved;
-    return Promise.resolve(saved);
+    return Promise.resolve();
   }
 }
 
@@ -80,7 +80,11 @@ describe('DeliverySettingsPage — la carte « Livraison »', () => {
     expect(text(fixture)).not.toContain('Les pros ne peuvent plus choisir la livraison.');
   });
 
-  it('enregistre la case au geste, et seulement elle', async () => {
+  /**
+   * Régression (2026-09-15) : le corps vide du `204` était pris pour le réglage,
+   * qui passait à `null` — l'écran restait blanc au premier clic sur une case.
+   */
+  it('garde l’écran après un geste accepté, et montre le réglage relu', async () => {
     const settings = new FakeSettings(OPEN);
     const fixture = await mount(settings);
 
@@ -88,6 +92,8 @@ describe('DeliverySettingsPage — la carte « Livraison »', () => {
     fixture.detectChanges();
 
     expect(settings.patches).toEqual([{ openToB2b: false }]);
+    expect(fixture.nativeElement.querySelector('fold-card')).not.toBeNull();
+    expect(fixture.componentInstance['settings']()?.updatedBy).toBe('Hugo');
     expect(text(fixture)).toContain('Les pros ne peuvent plus choisir la livraison.');
   });
 

@@ -23,9 +23,16 @@ export class DeliverySettingsService {
     return firstValueFrom(this.http.get<DeliverySettingsView>(this.url()));
   }
 
-  /** Change une clientèle (ou les deux) et rend le réglage tel qu'enregistré. */
-  update(patch: DeliverySettingsPatch): Promise<DeliverySettingsView> {
-    return firstValueFrom(this.http.patch<DeliverySettingsView>(this.url(), patch));
+  /**
+   * Change une clientèle (ou les deux). Ne rend RIEN : la route répond `204`,
+   * comme toute écriture ici, et c'est à l'appelant de relire.
+   *
+   * 🔴 Elle était typée `DeliverySettingsView` jusqu'au 2026-09-15 : le corps vide
+   * du `204` devenait le réglage, l'écran le recevait à `null` et se vidait au
+   * premier clic sur une case.
+   */
+  update(patch: DeliverySettingsPatch): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(this.url(), patch));
   }
 
   private url(): string {

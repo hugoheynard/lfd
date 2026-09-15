@@ -102,14 +102,28 @@ export class DeliverySettingsPage {
     this.saving.set(true);
     this.failure.set(null);
     try {
-      this.settings.set(await this.service.update(patch));
+      await this.service.update(patch);
     } catch (error) {
       this.settings.set(previous);
       this.failure.set(
         httpErrorMessage(error, "Le réglage de livraison n'a pas pu être enregistré."),
       );
-    } finally {
       this.saving.set(false);
+      return;
+    }
+    await this.refresh();
+    this.saving.set(false);
+  }
+
+  /**
+   * Relit le réglage après une écriture acceptée. Un échec de relecture garde la
+   * case telle que cochée : le serveur a accepté, elle dit donc vrai.
+   */
+  private async refresh(): Promise<void> {
+    try {
+      this.settings.set(await this.service.read());
+    } catch {
+      // La valeur posée au geste est celle que le serveur vient d'accepter.
     }
   }
 }
