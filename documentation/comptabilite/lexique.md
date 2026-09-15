@@ -32,9 +32,11 @@
 🔴 **Le formulaire n'est PAS le même.** Un mandat B2B porte la mention
 « INTERENTREPRISES » et dit expressément que le débiteur ne peut pas se faire
 rembourser un prélèvement autorisé ; le mandat CORE accorde au contraire les
-8 semaines. ✅ **Le document imprimé par ce dépôt est un B2B depuis le
-2026-09-14**, et le lot et le formulaire lisent la même constante
-(`SEPA_SCHEME`) — voir
+8 semaines. ⚠️ **Depuis le 2026-09-15 (en construction), ce dépôt imprime les
+DEUX** : l'entité juridique choisit le schéma de ses frappes, chaque mandat fige
+le sien, le lot sort un fichier par schéma — voir
+[`../b2b/plan-mandat-deux-schemas.md`](../b2b/plan-mandat-deux-schemas.md). La
+constante unique `SEPA_SCHEME` du 2026-09-14 disparaît. Historique :
 [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md).
 
 🔴 **C'est le B2B qui rend le prélèvement sûr pour nous, et contraignant pour le

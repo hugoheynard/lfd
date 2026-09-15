@@ -1,7 +1,16 @@
 # Le mandat imprimé est un CORE, le lot déclare B2B
 
 **Ouvert le 2026-09-13.**
-🔴 Bloque le premier prélèvement réel, et engage juridiquement.
+
+> 🔄 **Dépassé le 2026-09-15** par [`../b2b/plan-mandat-deux-schemas.md`](../b2b/plan-mandat-deux-schemas.md) :
+> Hugo veut les deux schémas, choisis par l'entité. Le mandat fige désormais son
+> schéma **et** son type de paiement à la frappe (colonnes
+> `payment_mandates.scheme` / `payment_type`, migration `20260915090000`) — ce qui
+> ferme le trou « le réglage COURANT, pas ce qui a été imprimé » ci-dessous. La
+> constante unique `SEPA_SCHEME` est abandonnée. Restent ouverts ici : le second
+> débit d'un mandat ponctuel, le RIB changé sous un actif, et les questions à la
+> banque.
+> 🔴 Bloque le premier prélèvement réel, et engage juridiquement.
 
 Ce fichier **remplace** le TODO précédent de ce dossier, livré le même jour : la
 RUM s'imprime, le filigrane tombe avec elle, et le mandat part au client par
