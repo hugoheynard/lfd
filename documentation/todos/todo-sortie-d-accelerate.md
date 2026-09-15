@@ -4,41 +4,53 @@
 > dimanche 20 septembre 2026** : moins de trafic client, et le temps de vérifier.
 > Échéance Prisma : **1er décembre 2026** — après, la production ne joint plus sa
 > base. Le plan, ses raisons et l'ordre des gestes :
-> [`../ops/plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md).
->
-> ⚠️ Le plan est **en cours de contradiction par `vitruve`** au moment de cette
-> note : relire ses objections, intégrées au plan, avant de commencer.
+> [`../ops/plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md) —
+> **contredit par `vitruve` le 2026-09-15**, objections intégrées (§7 du plan).
+
+## À trancher par Hugo avant de commencer
+
+- [ ] **Répétition** (plan §2.6) : **A** — une seconde base Prisma Postgres vide
+      pour éprouver le pooler hors production (recommandé) ; ou **B** — premier
+      essai en production, assumé.
+- [ ] **Dev applicatif** : confirmer qu'aucune autre base que la production ne
+      passe par Accelerate.
 
 ## Avant le week-end (sans effet en production)
 
-- [ ] **Code** (Claude) : durcir les garde-fous des outils — `clone-dev`,
-      `reset-growth`, `seed:growth`, `seed:delivery` refusent toute base qui
-      n'est pas locale (schéma **et** hôte).
-- [ ] **Code** (Claude) : l'étape « Migrer la base » du déploiement lit l'URL
-      directe ; JSDoc et docs (`secrets-et-variables.md`, `runbook.md`) au présent.
-- [ ] Batterie complète verte, merge sur `main` — rien ne change encore en
-      production tant que les secrets n'ont pas bougé.
+- [ ] **Code** (Claude, geste 1) : outils locaux verrouillés (`clone-dev`,
+      `reset-growth`, `seed-fiche`, `seed:growth`, `seed:delivery`,
+      `backfill-naf`), `import-mercuriale` sur une variable de production
+      dédiée ; pool `pg` réglé (`max`, délai d'acquisition) et
+      `enableShutdownHooks` ; `P2037` classé « base indisponible » ; `/health`
+      publie le transport ; workflow : migration par l'URL directe, contrôle du
+      transport ; JSDoc, `.env.example` et docs.
+- [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe, **région**
+      et **limite de connexions** du plan.
+- [ ] **GitHub** (Hugo, geste 3, par l'interface) : créer
+      `DATABASE_LFD_DIRECT_URL` ; copier la valeur actuelle de `DATABASE_LFD_URL`
+      dans le gestionnaire de mots de passe.
+- [ ] **Merge** (Claude, geste 4) : batterie verte ; l'API se redéploie **encore
+      sur Accelerate**, `/health` doit publier `accelerate`.
 
 ## Le week-end
 
-- [ ] **Console Prisma** (Hugo) : générer l'URL **mutualisée**
-      (`pooled.db.prisma.io`) et l'URL **directe** (`db.prisma.io`). Relever la
-      **région** de la base et la **limite de connexions** du plan.
-- [ ] **Secrets GitHub** (Hugo, par l'interface — jamais en ligne de commande) :
-      mettre de côté la valeur Accelerate actuelle de `DATABASE_LFD_URL` ; créer
-      `DATABASE_LFD_DIRECT_URL` ; remplacer `DATABASE_LFD_URL` par l'URL
-      mutualisée.
-- [ ] **Redéployer l'API** (Claude, workflow manuel).
-- [ ] **Vérifier** (Claude + Hugo) : sonde et contrôle du mur du runbook, un
-      écran admin qui lit la base, une connexion client, une commande de test si
-      possible, latence des vitals avant / après, console Prisma sans trafic
-      Accelerate.
-- [ ] **Si ça ne va pas** : recoller l'ancienne valeur de `DATABASE_LFD_URL`,
-      redéployer. C'est tout le retour arrière.
+- [ ] (option A) **Répétition** sur la seconde base (Claude + Hugo, geste 5).
+- [ ] **La bascule** (geste 6) : Hugo remplace `DATABASE_LFD_URL` par l'URL
+      mutualisée ; Claude pousse le commit qui attend `pg` ; le déploiement
+      échoue si `/health` ne le publie pas.
+- [ ] **Vérifier** (geste 7) : contrôle du mur, sonde `postgres-b2b`, écran
+      admin, connexion client, commande de test, vitals avant / après, console
+      Prisma sans trafic Accelerate.
+- [ ] **Si ça ne va pas** (geste 7′) : recoller la valeur Accelerate, pousser le
+      retour du contrôle à `accelerate`.
+
+⚠️ Entre la création du secret direct et la bascule, **ne pas toucher
+`DATABASE_LFD_URL`** : tout push sur `main` qui touche l'API ou `packages/**`
+le resynchronise vers le container.
 
 ## Quelques jours après
 
-- [ ] **Révoquer la clé Accelerate** (Hugo) — ferme aussi la fuite de clé
-      encore ouverte.
-- [ ] **Retirer la branche `accelerateUrl`** de `PrismaService` et des scripts
-      (Claude) : le resserrement.
+- [ ] **Révoquer la clé Accelerate** (Hugo) — après avoir vérifié que les
+      nouveaux identifiants n'en dépendent pas ; ferme aussi la fuite de clé.
+- [ ] **Resserrer** (Claude, geste 8) : retirer la branche `accelerateUrl` du
+      service et des scripts, et la valeur `accelerate` du contrôle.
