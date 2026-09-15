@@ -1,5 +1,11 @@
 export { PhotoCardsEditor } from './photo-cards-editor/photo-cards-editor';
-export type { PhotoCardAddSide } from './photo-cards-editor/photo-cards-editor';
+export type {
+  PhotoCardAddSide,
+  PhotoCardPhotoDisplay,
+} from './photo-cards-editor/photo-cards-editor';
+export { PhotoCardViewer } from './photo-card-viewer/photo-card-viewer';
+export type { PhotoCardViewerData } from './photo-card-viewer/photo-card-viewer';
+export { PhotoCardInView } from './photo-card-in-view';
 export { PhotoCardForm } from './photo-card-form/photo-card-form';
 export { PhotoCardFormSlot } from './photo-card-form-slot';
 export type { PhotoCardFormContext, PhotoCardFormState } from './photo-card-form-slot';
@@ -9,13 +15,18 @@ export {
   PhotoCardsWriteError,
 } from './photo-cards.gateway';
 export type { PhotoCardFields, PhotoCardPhotoChange, PhotoCardView } from './photo-cards.gateway';
-export type { PhotoCardFormLabels, PhotoCardsEditorLabels } from './photo-cards.labels';
+export type {
+  PhotoCardFormLabels,
+  PhotoCardsEditorLabels,
+  PhotoCardViewerLabels,
+} from './photo-cards.labels';
 export {
   canAddCard,
   EMPTY_PHOTO_CARD_DRAFT,
   isPhotoCardDraftChanged,
   movedCardIds,
   newPhotoOf,
+  newThumbnailOf,
   photoCardChangeOf,
   photoCardDraftFrom,
   photoCardIssueOf,
@@ -30,6 +41,7 @@ export type {
 export { photoFrame, reducePhoto } from './photo-reduction';
 export type {
   PhotoEncoder,
+  PhotoEncodingPolicy,
   PhotoFrame,
   PhotoReduction,
   PhotoReductionPolicy,

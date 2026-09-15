@@ -78,6 +78,8 @@ function sentenceOf(event: ActivityEventView): string {
       return `Produit « ${text(p['name'])} » publié au catalogue (${text(p['sku'])})`;
     case 'product.unpublished':
       return `Produit « ${text(p['name'])} » retiré de la vente (${text(p['sku'])})`;
+    case 'company.client_note_edited_by_staff':
+      return clientNoteSentence(p['action']);
     default:
       return pricingSentence(event) ?? settingSentence(event) ?? event.type;
   }
@@ -227,4 +229,26 @@ function settingSentence(event: ActivityEventView): string | null {
     default:
       return null;
   }
+}
+
+/**
+ * Les gestes du staff sur les **notes du commercial**.
+ *
+ * Le fait ne porte AUCUN contenu — ni titre, ni description, ni photo — et la
+ * phrase n'en invente pas : une note supprimée définitivement ne doit rester
+ * lisible nulle part, journal compris (plan « notes photo du commercial », D6).
+ * Une action inconnue se dit en termes généraux plutôt que de disparaître.
+ */
+const CLIENT_NOTE_ACTIONS: Readonly<Record<string, string>> = {
+  note_added: 'Note du commercial ajoutée',
+  note_revised: 'Note du commercial modifiée',
+  note_removed: 'Note du commercial supprimée définitivement',
+  notes_reordered: 'Notes du commercial reclassées',
+};
+
+function clientNoteSentence(action: unknown): string {
+  return (
+    (typeof action === 'string' ? CLIENT_NOTE_ACTIONS[action] : undefined) ??
+    'Notes du commercial modifiées'
+  );
 }

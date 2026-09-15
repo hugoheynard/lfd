@@ -8,12 +8,13 @@ import type { PhotoCardFields, PhotoCardPhotoChange, PhotoCardView } from './pho
 
 /**
  * La photo telle qu'on la voit dans le formulaire : aucune, celle déjà
- * enregistrée (reconnue à sa révision), ou une nouvelle, déjà allégée.
+ * enregistrée (reconnue à sa révision), ou une nouvelle, déjà allégée — avec
+ * sa vignette quand la politique de l'usage en fabrique une.
  */
 export type PhotoDraft =
   | { readonly kind: 'none' }
   | { readonly kind: 'kept'; readonly revision: string }
-  | { readonly kind: 'picked'; readonly photo: Blob };
+  | { readonly kind: 'picked'; readonly photo: Blob; readonly thumbnail?: Blob };
 
 export interface PhotoCardDraft {
   readonly title: string;
@@ -78,6 +79,11 @@ export function newPhotoOf(draft: PhotoCardDraft): Blob | null {
   return draft.photo.kind === 'picked' ? draft.photo.photo : null;
 }
 
+/** La vignette de la photo neuve, quand l'usage en fabrique une. */
+export function newThumbnailOf(draft: PhotoCardDraft): Blob | undefined {
+  return draft.photo.kind === 'picked' ? draft.photo.thumbnail : undefined;
+}
+
 /**
  * Ce qu'on fait de la photo d'une carte qu'on refait, par comparaison à
  * l'ouverture : une nouvelle la remplace, l'avoir retirée la retire, sinon on
@@ -88,7 +94,10 @@ export function photoCardChangeOf(
   initial: PhotoCardDraft,
 ): PhotoCardPhotoChange {
   if (draft.photo.kind === 'picked') {
-    return { kind: 'replace', photo: draft.photo.photo };
+    const { photo, thumbnail } = draft.photo;
+    return thumbnail === undefined
+      ? { kind: 'replace', photo }
+      : { kind: 'replace', photo, thumbnail };
   }
   if (draft.photo.kind === 'none' && initial.photo.kind !== 'none') {
     return { kind: 'remove' };

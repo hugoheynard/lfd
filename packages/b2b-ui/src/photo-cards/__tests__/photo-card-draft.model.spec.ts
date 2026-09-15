@@ -4,6 +4,7 @@ import {
   isPhotoCardDraftChanged,
   movedCardIds,
   newPhotoOf,
+  newThumbnailOf,
   photoCardChangeOf,
   photoCardDraftFrom,
   photoCardIssueOf,
@@ -97,10 +98,41 @@ describe('le brouillon d’une carte photo', () => {
       });
     });
 
+    it('remplace avec la vignette quand la photo neuve en a une, sans clé vide sinon', () => {
+      const thumbnail = { size: 3 } as Blob;
+      expect(
+        photoCardChangeOf(
+          { ...initial, photo: { kind: 'picked', photo: PHOTO, thumbnail } },
+          initial,
+        ),
+      ).toEqual({ kind: 'replace', photo: PHOTO, thumbnail });
+      const bare = photoCardChangeOf(
+        { ...initial, photo: { kind: 'picked', photo: PHOTO } },
+        initial,
+      );
+      expect(Object.keys(bare)).not.toContain('thumbnail');
+    });
+
     it('ne demande pas de retirer une photo qui n’existait pas', () => {
       const bare = photoCardDraftFrom(card('b'));
       expect(photoCardChangeOf(bare, bare)).toEqual({ kind: 'keep' });
     });
+  });
+
+  it('rend la vignette de la photo neuve, et rien pour une photo gardée ou sans vignette', () => {
+    const thumbnail = { size: 3 } as Blob;
+    expect(
+      newThumbnailOf({
+        ...EMPTY_PHOTO_CARD_DRAFT,
+        photo: { kind: 'picked', photo: PHOTO, thumbnail },
+      }),
+    ).toBe(thumbnail);
+    expect(
+      newThumbnailOf({ ...EMPTY_PHOTO_CARD_DRAFT, photo: { kind: 'picked', photo: PHOTO } }),
+    ).toBeUndefined();
+    expect(
+      newThumbnailOf({ ...EMPTY_PHOTO_CARD_DRAFT, photo: { kind: 'kept', revision: 'r1' } }),
+    ).toBeUndefined();
   });
 
   it('n’est modifié que par un vrai changement', () => {

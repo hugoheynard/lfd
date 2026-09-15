@@ -23,6 +23,7 @@ import {
   FoldIconComponent,
   type FoldIconName,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import {
@@ -31,6 +32,7 @@ import {
   isPhotoCardDraftChanged,
   movedCardIds,
   newPhotoOf,
+  newThumbnailOf,
   photoCardChangeOf,
   photoCardDraftFrom,
   photoCardIssueOf,
@@ -39,13 +41,15 @@ import {
   type PhotoCardLimits,
 } from '../photo-card-draft.model';
 import { PhotoCardFormSlot, type PhotoCardFormContext } from '../photo-card-form-slot';
+import { PhotoCardInView } from '../photo-card-in-view';
+import { PhotoCardViewer, type PhotoCardViewerData } from '../photo-card-viewer/photo-card-viewer';
 import {
   PhotoCardsConflictError,
   PhotoCardsGateway,
   PhotoCardsWriteError,
   type PhotoCardView,
 } from '../photo-cards.gateway';
-import type { PhotoCardsEditorLabels } from '../photo-cards.labels';
+import type { PhotoCardsEditorLabels, PhotoCardViewerLabels } from '../photo-cards.labels';
 
 /** Ce que montre l'éditeur : la liste, ou le formulaire d'une carte. */
 type EditorMode<C> =
@@ -61,6 +65,21 @@ interface EditorNotice {
 
 /** Où paraît le geste d'ajout : du côté où la carte neuve arrivera. */
 export type PhotoCardAddSide = 'start' | 'end';
+
+/**
+ * Comment la liste montre les photos.
+ *
+ * - `inline` — la photo elle-même, téléchargée pour chaque carte dès la
+ *   lecture. C'est ce que fait la procédure de livraison, et le défaut.
+ * - `thumbnail` — la **vignette** seulement (`PhotoCardsGateway.thumbnail`),
+ *   téléchargée quand la carte entre à l'écran ; un clic ouvre la photo
+ *   lisible en grand. Pour un usage dont la photo pèse et se lit de près.
+ */
+export type PhotoCardPhotoDisplay =
+  | { readonly kind: 'inline' }
+  | { readonly kind: 'thumbnail'; readonly labels: PhotoCardViewerLabels };
+
+const INLINE: PhotoCardPhotoDisplay = { kind: 'inline' };
 
 /**
  * L'**éditeur d'une liste ordonnée de cartes photo** : les cartes dans l'ordre,
@@ -94,6 +113,7 @@ export type PhotoCardAddSide = 'start' | 'end';
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
+    PhotoCardInView,
   ],
   templateUrl: './photo-cards-editor.html',
   styleUrl: './photo-cards-editor.scss',
@@ -107,6 +127,7 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
   readonly addSide = input<PhotoCardAddSide>('end');
   /** Sans, lecture seule : ni ajout, ni déplacement, ni correction. */
   readonly canEdit = input(false);
+  readonly photoDisplay = input<PhotoCardPhotoDisplay>(INLINE);
 
   /** Le nombre de cartes, à chaque fois qu'il change après la première lecture. */
   readonly countChange = output<number>();
@@ -122,6 +143,15 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
 
   /** Les vignettes, par `cardId@revision` → URL d'objet. */
   private readonly thumbs = signal<ReadonlyMap<string, string>>(new Map());
+  /**
+   * Les cartes déjà passées à l'écran, en mode vignette. Une photo remplacée
+   * sur l'une d'elles se recharge sans attendre un nouveau passage : l'élément
+   * est resté à sa place, et ne repréviendra pas.
+   */
+  private readonly seen = new Set<string>();
+  /** Les vignettes en route, par clé — une carte qui repasse n'en relance pas une. */
+  private readonly fetching = new Set<string>();
+  private readonly panels = inject(FoldPanelHostService);
   private initialDraft: PhotoCardDraft = EMPTY_PHOTO_CARD_DRAFT;
   private knownCount: number | null = null;
   private destroyed = false;
@@ -175,10 +205,37 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
     });
   }
 
+  /** Les libellés de la vue en grand, ou `null` quand la liste montre les photos elles-mêmes. */
+  protected readonly viewerLabels = computed(() => {
+    const display = this.photoDisplay();
+    return display.kind === 'thumbnail' ? display.labels : null;
+  });
+
   protected thumbOf(card: C): string | null {
     return card.photoRevision === null
       ? null
       : (this.thumbs().get(thumbKey(card.id, card.photoRevision)) ?? null);
+  }
+
+  /** La carte entre à l'écran : sa vignette peut venir. */
+  protected cardInView(card: C): void {
+    this.seen.add(card.id);
+    if (card.photoRevision !== null) {
+      this.requestThumb(thumbKey(card.id, card.photoRevision), card);
+    }
+  }
+
+  /** Ouvre la photo lisible en grand — la seule lecture de la photo pleine taille. */
+  protected openPhoto(card: C): void {
+    const labels = this.viewerLabels();
+    const revision = card.photoRevision;
+    if (labels === null || revision === null) {
+      return;
+    }
+    const gateway = this.gateway();
+    this.panels.open<PhotoCardViewerData>(PhotoCardViewer, {
+      data: { title: card.title, labels, load: () => gateway.photo(card.id, revision) },
+    });
   }
 
   protected retry(): void {
@@ -216,7 +273,7 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
     const gateway = this.gateway();
     void this.write(() =>
       card === null
-        ? gateway.add(toPhotoCardFields(draft), newPhotoOf(draft))
+        ? gateway.add(toPhotoCardFields(draft), newPhotoOf(draft), newThumbnailOf(draft))
         : gateway.revise(
             card.id,
             toPhotoCardFields(draft),
@@ -314,20 +371,34 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
       }
     });
     this.thumbs.set(kept);
+    const lazy = this.photoDisplay().kind === 'thumbnail';
     wanted.forEach((card, key) => {
-      if (!kept.has(key)) {
-        void this.fetchThumb(key, card);
+      // En vignette, seules les cartes déjà vues se rechargent ici ; les autres attendent leur passage.
+      if (!kept.has(key) && (!lazy || this.seen.has(card.id))) {
+        this.requestThumb(key, card);
       }
     });
+  }
+
+  private requestThumb(key: string, card: C): void {
+    if (this.thumbs().has(key) || this.fetching.has(key)) {
+      return;
+    }
+    this.fetching.add(key);
+    void this.fetchThumb(key, card).finally(() => this.fetching.delete(key));
   }
 
   private async fetchThumb(key: string, card: C): Promise<void> {
     if (card.photoRevision === null) {
       return;
     }
+    const gateway = this.gateway();
     let blob: Blob;
     try {
-      blob = await this.gateway().photo(card.id, card.photoRevision);
+      blob =
+        this.photoDisplay().kind === 'thumbnail'
+          ? await gateway.thumbnail(card.id, card.photoRevision)
+          : await gateway.photo(card.id, card.photoRevision);
     } catch {
       // Sans vignette, la carte se lit encore : titre et texte portent l'essentiel.
       return;

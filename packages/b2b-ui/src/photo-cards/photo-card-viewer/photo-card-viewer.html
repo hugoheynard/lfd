@@ -1,0 +1,46 @@
+<fold-panel-header [title]="data().title" [closeLabel]="data().labels.close" />
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading [message]="data().labels.loading" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" [title]="data().labels.loadError">
+        <button foldButton type="button" emphasis="outline" icon="reload" (click)="load()">
+          {{ data().labels.retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (url(); as src) {
+        <div class="stage" [class.actual]="actualSize()">
+          <!-- Cliquer l'image bascule la taille ; le bouton du pied porte le même geste au clavier. -->
+          <img
+            class="photo"
+            [src]="src"
+            [alt]="data().labels.photoAlt(data().title)"
+            (click)="toggleSize()"
+          />
+        </div>
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="between">
+  <button
+    foldButton
+    type="button"
+    emphasis="outline"
+    intent="neutral"
+    [disabled]="state() !== 'ready'"
+    [attr.aria-pressed]="actualSize()"
+    (click)="toggleSize()"
+  >
+    {{ actualSize() ? data().labels.fitToScreen : data().labels.actualSize }}
+  </button>
+  <button foldButton type="button" emphasis="outline" intent="neutral" (click)="close()">
+    {{ data().labels.close }}
+  </button>
+</fold-panel-footer>

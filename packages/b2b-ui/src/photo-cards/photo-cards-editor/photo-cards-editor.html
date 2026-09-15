@@ -74,7 +74,22 @@
                       @if (card.body) {
                         <p class="card-body">{{ card.body }}</p>
                       }
-                      @if (thumbOf(card); as url) {
+                      @if (viewerLabels(); as viewer) {
+                        @if (card.photoRevision) {
+                          <!-- La vignette ne se télécharge qu'à son passage à l'écran ; la cliquer ouvre la photo lisible. -->
+                          <button
+                            type="button"
+                            class="card-thumb"
+                            [attr.aria-label]="viewer.enlarge(card.title)"
+                            (lfdPhotoCardInView)="cardInView(card)"
+                            (click)="openPhoto(card)"
+                          >
+                            @if (thumbOf(card); as url) {
+                              <img class="card-thumb-image" [src]="url" alt="" />
+                            }
+                          </button>
+                        }
+                      } @else if (thumbOf(card); as url) {
                         <img class="card-photo" [src]="url" [alt]="labels().photoAlt(card)" />
                       }
                     </div>

@@ -128,7 +128,14 @@ export class PhotoCardForm {
       }
       this.forgetPicked();
       this.pickedUrl.set(URL.createObjectURL(reduced.photo));
-      this.value.update((draft) => ({ ...draft, photo: { kind: 'picked', photo: reduced.photo } }));
+      const { photo, thumbnail } = reduced;
+      this.value.update((draft) => ({
+        ...draft,
+        photo:
+          thumbnail === undefined
+            ? { kind: 'picked', photo }
+            : { kind: 'picked', photo, thumbnail },
+      }));
     } finally {
       this.reducing.set(false);
     }

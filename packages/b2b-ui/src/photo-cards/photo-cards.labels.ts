@@ -60,3 +60,22 @@ export interface PhotoCardsEditorLabels<C extends PhotoCardView = PhotoCardView>
   readonly removeExplanation: string;
   readonly removeConfirm: string;
 }
+
+/**
+ * Les libellés de la **vue en grand** (`lfd-photo-card-viewer`) et du geste
+ * qui l'ouvre. Seul un usage à vignettes en a besoin : la liste n'y montre
+ * qu'une réduction, et la photo lisible ne s'ouvre qu'ici.
+ */
+export interface PhotoCardViewerLabels {
+  /** Le nom accessible de la vignette cliquable, à partir du titre de la carte. */
+  readonly enlarge: (title: string) => string;
+  readonly photoAlt: (title: string) => string;
+  readonly loading: string;
+  readonly loadError: string;
+  readonly retry: string;
+  /** Passer de l'image ajustée à sa taille réelle. */
+  readonly actualSize: string;
+  /** Revenir à l'image ajustée. */
+  readonly fitToScreen: string;
+  readonly close: string;
+}

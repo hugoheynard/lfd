@@ -26,7 +26,7 @@ export interface PhotoCardFields {
  */
 export type PhotoCardPhotoChange =
   | { readonly kind: 'keep' }
-  | { readonly kind: 'replace'; readonly photo: Blob }
+  | { readonly kind: 'replace'; readonly photo: Blob; readonly thumbnail?: Blob }
   | { readonly kind: 'remove' };
 
 /**
@@ -45,8 +45,13 @@ export abstract class PhotoCardsGateway<C extends PhotoCardView = PhotoCardView>
   /** Les cartes, dans l'ordre ; aucune rend une liste vide. */
   abstract load(): Promise<readonly C[]>;
 
-  /** Ajoute une carte — du côté que le serveur a choisi ; rend son identifiant. */
-  abstract add(fields: PhotoCardFields, photo: Blob | null): Promise<string>;
+  /**
+   * Ajoute une carte — du côté que le serveur a choisi ; rend son identifiant.
+   *
+   * `thumbnail` n'arrive que si la politique de photo de l'usage en fabrique
+   * une ; un usage sans vignette l'ignore.
+   */
+  abstract add(fields: PhotoCardFields, photo: Blob | null, thumbnail?: Blob): Promise<string>;
 
   /** Refait une carte : titre, texte, et ce qu'on fait de sa photo. */
   abstract revise(
@@ -63,6 +68,18 @@ export abstract class PhotoCardsGateway<C extends PhotoCardView = PhotoCardView>
 
   /** Les octets de la photo d'une carte, à la révision de la vue. */
   abstract photo(cardId: string, revision: string): Promise<Blob>;
+
+  /**
+   * Les octets de la **vignette** d'une carte, ce que la liste affiche.
+   *
+   * Par défaut, la photo elle-même : un usage sans vignette n'a rien de plus
+   * léger à servir, et la procédure de livraison lit ainsi exactement ce
+   * qu'elle lisait. Un usage qui en range une la redéfinit — sans quoi sa
+   * liste téléchargerait les photos en pleine taille.
+   */
+  thumbnail(cardId: string, revision: string): Promise<Blob> {
+    return this.photo(cardId, revision);
+  }
 }
 
 /** La liste a changé entre la lecture et l'écriture : il faut la relire. */
