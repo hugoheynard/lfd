@@ -50,6 +50,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     preNotificationDays: 14,
     mandateContractDescription: '',
     mandatePaymentType: 'recurrent',
+    mandateScheme: 'B2B',
     archivedAt: null,
     canCollect: false,
     hasLogo: false,

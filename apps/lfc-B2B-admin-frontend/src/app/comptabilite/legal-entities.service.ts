@@ -8,8 +8,10 @@ import type {
   CreatedIdResponse,
   DeclareLegalEntityPayload,
   LegalEntityView,
+  MandateSchemeUsageView,
   SetCreditorAccountPayload,
   SetMandateDefaultsPayload,
+  SetMandateSchemePayload,
   SetPreNotificationPayload,
 } from '@lfd/contracts';
 
@@ -98,6 +100,32 @@ export class LegalEntitiesService {
    */
   async setMandateDefaults(id: string, payload: SetMandateDefaultsPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/mandate-defaults`, payload));
+  }
+
+  /**
+   * Ce qu'un changement de schéma toucherait : les brouillons de l'entité, qui
+   * deviendraient caducs, et ses mandats actifs par schéma, qui gardent le leur.
+   *
+   * Lu par le dialogue de confirmation AVANT l'écriture : la conséquence se
+   * nomme en nombres, pas en généralités.
+   */
+  async mandateSchemeUsage(id: string): Promise<MandateSchemeUsageView> {
+    return firstValueFrom(
+      this.http.get<MandateSchemeUsageView>(`${this.base}/${id}/mandate-scheme`),
+    );
+  }
+
+  /**
+   * Le schéma des mandats que l'entité frappera désormais — CORE ou
+   * interentreprises.
+   *
+   * Sa propre route, et pas un champ de `setMandateDefaults` : ce payload-là a
+   * des défauts, et un écran ancien qui l'enverrait sans ce champ rebasculerait
+   * le schéma sans que personne l'ait décidé (plan `plan-mandat-deux-schemas.md`
+   * §3.3).
+   */
+  async setMandateScheme(id: string, payload: SetMandateSchemePayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/mandate-scheme`, payload));
   }
 
   /**

@@ -12,8 +12,11 @@ import {
   LEGAL_ENTITY_LOGO_MAX_BYTES,
   MANDATE_PAYMENT_TYPE_LABELS,
   mandatePaymentTypeSchema,
+  SEPA_SCHEME_LABELS,
+  sepaSchemeSchema,
   type LegalEntityView,
   type MandatePaymentType,
+  type SepaScheme,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -21,14 +24,28 @@ import {
   FoldInputComponent,
   FoldListboxComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
   type FoldSelectOption,
 } from 'fold-ng';
 
 import { LegalEntitiesService } from '../../../legal-entities.service';
+import {
+  MandateSchemeDialog,
+  type MandateSchemeDialogData,
+} from '../mandate-scheme-dialog/mandate-scheme-dialog';
 
 /**
- * **Ce qui façonne les mandats d'une entité** : son logo, la description du
- * contrat (zone 20) et le type de paiement (zone 12).
+ * **Ce qui façonne les mandats d'une entité** : leur schéma (CORE ou
+ * interentreprises), son logo, la description du contrat (zone 20) et le type
+ * de paiement (zone 12).
+ *
+ * ## Le schéma ne s'enregistre pas avec le reste
+ *
+ * Il décide si le débiteur peut se faire rembourser et s'il doit passer par sa
+ * banque : le choisir ouvre un dialogue qui nomme ces conséquences et chiffre
+ * les brouillons rendus caducs, puis l'écrit par sa propre route. Le mettre
+ * sous le bouton « Enregistrer » des deux autres réglages ferait basculer le
+ * prélèvement d'un client au passage d'une correction de description.
  *
  * ## Les trois vont ensemble, et ce n'est pas un fourre-tout
  *
@@ -68,6 +85,7 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
 })
 export class MandateSettingsCard {
   private readonly api = inject(LegalEntitiesService);
+  private readonly panels = inject(FoldPanelHostService);
 
   readonly entity = input.required<LegalEntityView>();
   readonly busy = input(false);
@@ -80,6 +98,12 @@ export class MandateSettingsCard {
 
   protected readonly descriptionDraft = signal('');
   protected readonly paymentTypeDraft = signal<MandatePaymentType>('recurrent');
+  /**
+   * Ce que montre la liste. Distinct de `entity().mandateScheme` pour pouvoir
+   * REVENIR au schéma en vigueur quand la confirmation est annulée : sans ce
+   * signal, la liste garderait le choix abandonné sous les yeux.
+   */
+  protected readonly schemeDraft = signal<SepaScheme>('B2B');
   protected readonly logoPreview = signal<string | null>(null);
 
   /** Les deux régimes de la zone 12 — la norme n'en connaît pas d'autre. */
@@ -89,9 +113,15 @@ export class MandateSettingsCard {
       label: MANDATE_PAYMENT_TYPE_LABELS[value],
     }));
 
+  /** Les deux schémas que la norme connaît. */
+  protected readonly schemes: FoldSelectOption<SepaScheme>[] = sepaSchemeSchema.options.map(
+    (value) => ({ value, label: SEPA_SCHEME_LABELS[value] }),
+  );
+
   constructor() {
     effect(() => {
       const current = this.entity();
+      this.schemeDraft.set(current.mandateScheme);
       this.descriptionDraft.set(current.mandateContractDescription);
       this.paymentTypeDraft.set(current.mandatePaymentType);
       void this.loadLogo(current);
@@ -108,6 +138,39 @@ export class MandateSettingsCard {
     if (value !== null) {
       this.paymentTypeDraft.set(value);
     }
+  }
+
+  /**
+   * Un autre schéma choisi : rien ne s'écrit avant la confirmation. Un `null`
+   * (effacement) ou le schéma en vigueur ramènent la liste à ce qui est vrai.
+   */
+  protected onScheme(value: SepaScheme | null): void {
+    const current = this.entity().mandateScheme;
+    if (value === null || value === current) {
+      this.schemeDraft.set(current);
+      return;
+    }
+    this.schemeDraft.set(value);
+    void this.confirmScheme(current, value);
+  }
+
+  private async confirmScheme(from: SepaScheme, to: SepaScheme): Promise<void> {
+    const id = this.entity().id;
+    const ref = this.panels.open<MandateSchemeDialogData, boolean>(MandateSchemeDialog, {
+      data: { entityId: id, from, to },
+    });
+    const confirmed = await ref.closed;
+    // Revenu à ce qui est en vigueur dans les deux cas : confirmé, c'est la
+    // relecture de la page qui posera le nouveau schéma — et un refus du
+    // serveur ne laissera pas la liste affirmer un schéma qui n'a pas été écrit.
+    this.schemeDraft.set(this.entity().mandateScheme);
+    if (confirmed !== true) {
+      return;
+    }
+    this.saved.emit({
+      action: () => this.api.setMandateScheme(id, { scheme: to }),
+      said: `Schéma des mandats enregistré : ${SEPA_SCHEME_LABELS[to]}.`,
+    });
   }
 
   protected saveDefaults(): void {

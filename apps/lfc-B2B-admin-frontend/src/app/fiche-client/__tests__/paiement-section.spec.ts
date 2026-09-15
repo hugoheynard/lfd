@@ -20,6 +20,7 @@ const ACTIVE_MANDATE: PaymentMandateView = {
   id: 'mdt_1',
   reference: 'RUM-1',
   status: 'active',
+  scheme: 'B2B',
   last4: '3000',
   bankCode: 'BNPA',
   country: 'FR',
@@ -334,5 +335,30 @@ describe('section Moyens de paiement — le mandat', () => {
     const { host } = render({ companyId: null });
 
     expect(host.textContent).not.toContain('Prélèvement SEPA');
+  });
+});
+
+describe('section Moyens de paiement — le schéma du mandat', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('porte la puce du schéma figé sur le mandat', async () => {
+    const { host, settle } = render({ companyId: 'cmp_1', mandate: ACTIVE_MANDATE });
+    await settle();
+
+    expect(host.querySelector('fold-badge.pm-scheme')?.textContent).toContain(
+      'SEPA interentreprises (B2B)',
+    );
+  });
+
+  it('dit CORE pour un mandat frappé en CORE, quel que soit le réglage de l’entité', async () => {
+    const { host, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, scheme: 'CORE' },
+    });
+    await settle();
+
+    expect(host.querySelector('fold-badge.pm-scheme')?.textContent).toContain('SEPA CORE');
   });
 });

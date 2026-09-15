@@ -5,6 +5,7 @@ import type {
   CatalogSummaryView,
   CustomerPortfolioView,
   LegalEntityView,
+  SepaScheme,
 } from '@lfd/contracts';
 import { NEW_CUSTOMER_WINDOW_DAYS } from '@lfd/contracts';
 import {
@@ -21,7 +22,7 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { saveBlob } from '../../shared/download/save-blob';
-import { ComptabiliteDashboardService } from '../comptabilite-dashboard.service';
+import { ComptabiliteDashboardService, type NamedBlob } from '../comptabilite-dashboard.service';
 import { CycleBar } from '../cycle-bar/cycle-bar';
 import { LegalEntitiesService } from '../legal-entities.service';
 
@@ -197,12 +198,31 @@ export class TableauDeBordPage {
     }
   }
 
+  /**
+   * Les deux lots — un fichier par schéma, et son contrôle avec lui. Le CORE
+   * d'abord, l'interentreprises ensuite.
+   */
+  protected readonly draftSchemes: readonly DraftScheme[] = [
+    { scheme: 'CORE', draftLabel: 'Brouillon CORE', auditLabel: 'Contrôler CORE en CSV' },
+    {
+      scheme: 'B2B',
+      draftLabel: 'Brouillon interentreprises',
+      auditLabel: 'Contrôler interentreprises en CSV',
+    },
+  ];
+
   protected async exportCustomers(): Promise<void> {
-    await this.download(() => this.api.customersCsv(), 'comptes-clients.csv');
+    await this.download(
+      unnamed(() => this.api.customersCsv()),
+      'comptes-clients.csv',
+    );
   }
 
   protected async exportCatalog(): Promise<void> {
-    await this.download(() => this.api.catalogCsv(), 'catalogue-b2b.csv');
+    await this.download(
+      unnamed(() => this.api.catalogCsv()),
+      'catalogue-b2b.csv',
+    );
   }
 
   /**
@@ -218,14 +238,17 @@ export class TableauDeBordPage {
    * L'entité est passée EXPLICITEMENT, jamais devinée côté serveur : le jour où
    * il y en a deux, choisir en silence prélèverait sous le mauvais ICS.
    *
-   * Le nom du fichier vient du serveur, qui le fait dériver du cycle — le
-   * recalculer ici donnerait une seconde définition de « quel mois », et ce
-   * serait celle que l'utilisateur lit sur son bureau qui dériverait.
+   * Le nom du fichier vient du serveur (`Content-Disposition`), qui le fait
+   * dériver du cycle et du schéma — le recalculer ici donnerait une seconde
+   * définition de « quel mois », et ce serait celle que l'utilisateur lit sur
+   * son bureau qui dériverait. Le nom de repli ne sert que si l'en-tête manque
+   * ou n'est pas exposé ; il porte le schéma, pour que deux téléchargements ne
+   * s'écrasent pas l'un l'autre.
    */
-  protected async downloadDraft(issuer: LegalEntityView): Promise<void> {
+  protected async downloadDraft(issuer: LegalEntityView, scheme: SepaScheme): Promise<void> {
     await this.download(
-      () => this.api.cycleDraft(issuer.id),
-      `BROUILLON-prelevement-${issuer.siren}.xml`,
+      () => this.api.cycleDraft(issuer.id, scheme),
+      `BROUILLON-prelevement-${issuer.siren}-${scheme}.xml`,
     );
   }
 
@@ -236,22 +259,35 @@ export class TableauDeBordPage {
    * CSV produit en parallèle pourrait porter le même défaut que le XML, et les
    * deux s'accorderaient.
    */
-  protected async downloadDraftAudit(issuer: LegalEntityView): Promise<void> {
+  protected async downloadDraftAudit(issuer: LegalEntityView, scheme: SepaScheme): Promise<void> {
     await this.download(
-      () => this.api.cycleDraftAudit(issuer.id),
-      `CONTROLE-prelevement-${issuer.siren}.csv`,
+      () => this.api.cycleDraftAudit(issuer.id, scheme),
+      `CONTROLE-prelevement-${issuer.siren}-${scheme}.csv`,
     );
   }
 
-  private async download(load: () => Promise<Blob>, fileName: string): Promise<void> {
+  private async download(load: () => Promise<NamedBlob>, fallbackName: string): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
     try {
-      saveBlob(await load(), fileName);
+      const { blob, fileName } = await load();
+      saveBlob(blob, fileName ?? fallbackName);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Export impossible.'));
     } finally {
       this.busy.set(false);
     }
   }
+}
+
+/** Un schéma du lot, et les libellés de ses deux fichiers. */
+interface DraftScheme {
+  readonly scheme: SepaScheme;
+  readonly draftLabel: string;
+  readonly auditLabel: string;
+}
+
+/** Un export que l'écran nomme lui-même : le serveur n'en propose pas le nom. */
+function unnamed(load: () => Promise<Blob>): () => Promise<NamedBlob> {
+  return async () => ({ blob: await load(), fileName: null });
 }

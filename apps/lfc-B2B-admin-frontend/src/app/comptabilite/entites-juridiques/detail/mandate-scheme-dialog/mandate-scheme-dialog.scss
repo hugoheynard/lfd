@@ -1,0 +1,9 @@
+/* Deux faits chiffrés, lus d'un coup d'œil : l'écart vient du `gap`, pas des
+   marges par défaut d'une liste. */
+.msd-facts {
+  display: grid;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding-left: var(--fold-space-md);
+  font-size: var(--fold-text-sm);
+}

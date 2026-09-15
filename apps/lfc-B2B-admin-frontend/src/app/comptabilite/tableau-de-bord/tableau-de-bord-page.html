@@ -208,25 +208,35 @@
 
           <div class="tb-actions">
             @if (issuer(); as ready) {
-              <button foldButton icon="download" [loading]="busy()" (click)="downloadDraft(ready)">
-                Télécharger le brouillon
-              </button>
-              <!--
-                Le contrôle RELIT le XML au lieu de recalculer : il atteste ce
-                que le fichier contient. Il confronte les deux totaux que le
-                fichier DÉCLARE — `NbOfTxs` et `CtrlSum` — à ce qu'on obtient en
-                comptant et sommant ses lignes, c'est-à-dire les deux champs dont
-                un centime d'écart fait rejeter le message entier.
-              -->
-              <button
-                foldButton
-                emphasis="outline"
-                icon="download"
-                [loading]="busy()"
-                (click)="downloadDraftAudit(ready)"
-              >
-                Contrôler en CSV
-              </button>
+              <!-- Un fichier par schéma : un lot CORE et un lot interentreprises
+                   ne partent pas dans le même message.
+
+                   Le contrôle RELIT le XML au lieu de recalculer : il atteste ce
+                   que le fichier contient. Il confronte les deux totaux que le
+                   fichier DÉCLARE — `NbOfTxs` et `CtrlSum` — à ce qu'on obtient en
+                   comptant et sommant ses lignes, c'est-à-dire les deux champs dont
+                   un centime d'écart fait rejeter le message entier. -->
+              @for (draft of draftSchemes; track draft.scheme) {
+                <button
+                  foldButton
+                  class="tb-draft"
+                  icon="download"
+                  [loading]="busy()"
+                  (click)="downloadDraft(ready, draft.scheme)"
+                >
+                  {{ draft.draftLabel }}
+                </button>
+                <button
+                  foldButton
+                  class="tb-audit"
+                  emphasis="outline"
+                  icon="download"
+                  [loading]="busy()"
+                  (click)="downloadDraftAudit(ready, draft.scheme)"
+                >
+                  {{ draft.auditLabel }}
+                </button>
+              }
             }
             <a
               foldButton

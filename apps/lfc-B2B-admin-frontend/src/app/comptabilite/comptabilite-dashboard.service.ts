@@ -2,9 +2,21 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { BillingCycleView, CatalogSummaryView, CustomerPortfolioView } from '@lfd/contracts';
+import type {
+  BillingCycleView,
+  CatalogSummaryView,
+  CustomerPortfolioView,
+  SepaScheme,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { attachmentFileName } from '../shared/download/content-disposition';
+
+/** Un fichier rendu, et le nom que le serveur lui donne — `null` s'il n'en dit rien. */
+export interface NamedBlob {
+  readonly blob: Blob;
+  readonly fileName: string | null;
+}
 
 /**
  * Ce que le tableau de bord de la comptabilité lit — et les deux fichiers qu'il
@@ -77,19 +89,19 @@ export class ComptabiliteDashboardService {
   }
 
   /**
-   * Le **brouillon** de fichier de prélèvement du cycle en cours.
+   * Le **brouillon** de fichier de prélèvement du cycle en cours, pour UN
+   * schéma : un fichier par schéma, chacun avec son `LclInstrm`
+   * (`plan-mandat-deux-schemas.md` §10.2).
    *
    * `responseType: 'blob'` : c'est un fichier, pas un objet. Et il part avec son
    * avertissement dans son nom comme dans son corps — l'écran n'a pas à le
-   * rajouter.
+   * rajouter. `observe: 'response'` pour lire ce nom dans `Content-Disposition`.
+   *
+   * `scheme` toujours envoyé : la route sans paramètre est dépréciée, et rend le
+   * B2B d'hier en silence.
    */
-  async cycleDraft(legalEntityId: string): Promise<Blob> {
-    return firstValueFrom(
-      this.http.get(`${B2B_API_BASE}/admin/accounting/billing-cycle/draft.xml`, {
-        params: { legalEntityId },
-        responseType: 'blob',
-      }),
-    );
+  async cycleDraft(legalEntityId: string, scheme: SepaScheme): Promise<NamedBlob> {
+    return this.namedFile('draft.xml', legalEntityId, scheme);
   }
 
   /**
@@ -97,14 +109,39 @@ export class ComptabiliteDashboardService {
    *
    * Une seconde requête, et non un champ de la première : le serveur relit le
    * XML pour le produire, et le fabriquer à chaque téléchargement de XML
-   * coûterait un travail que personne n'a demandé.
+   * coûterait un travail que personne n'a demandé. Par schéma, comme le XML
+   * qu'il relit.
    */
-  async cycleDraftAudit(legalEntityId: string): Promise<Blob> {
-    return firstValueFrom(
-      this.http.get(`${B2B_API_BASE}/admin/accounting/billing-cycle/draft-audit.csv`, {
-        params: { legalEntityId },
+  async cycleDraftAudit(legalEntityId: string, scheme: SepaScheme): Promise<NamedBlob> {
+    return this.namedFile('draft-audit.csv', legalEntityId, scheme);
+  }
+
+  /**
+   * Un fichier du cycle, et le nom que le serveur lui donne.
+   *
+   * La route sans `scheme` est dépréciée et rend le B2B d'hier : le paramètre
+   * part donc toujours, pour qu'aucun fichier ne change de contenu en silence
+   * le jour où elle disparaît.
+   */
+  private async namedFile(
+    file: 'draft.xml' | 'draft-audit.csv',
+    legalEntityId: string,
+    scheme: SepaScheme,
+  ): Promise<NamedBlob> {
+    const response = await firstValueFrom(
+      this.http.get(`${B2B_API_BASE}/admin/accounting/billing-cycle/${file}`, {
+        params: { legalEntityId, scheme },
         responseType: 'blob',
+        observe: 'response',
       }),
     );
+    if (response.body === null) {
+      // Enregistrer un fichier vide ferait croire à un lot sans ligne.
+      throw new Error('Le fichier est arrivé sans contenu.');
+    }
+    return {
+      blob: response.body,
+      fileName: attachmentFileName(response.headers.get('Content-Disposition')),
+    };
   }
 }

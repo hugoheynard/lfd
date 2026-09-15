@@ -1,8 +1,8 @@
 <fold-page-section title="Mandats SEPA" separator>
   <p class="ms-said">
-    Ce que porteront les mandats de cette entité&nbsp;: son logo en en-tête, la description du
-    contrat et le régime de paiement. Les
-    <strong>trois sont les mêmes pour tous ses clients</strong>
+    Ce que porteront les mandats de cette entité&nbsp;: leur schéma, son logo en en-tête, la
+    description du contrat et le régime de paiement. Les
+    <strong>quatre sont les mêmes pour tous ses clients</strong>
     — ce qui se règle par dossier, c'est le numéro de contrat et le code du débiteur, sur la fiche
     du client.
   </p>
@@ -53,6 +53,19 @@
       c'est pour cela que l'oubli ne se voit pas tout seul.
     </fold-callout>
   }
+
+  <!-- LE SCHÉMA. Hors du bouton « Enregistrer » : il s'écrit après une
+       confirmation qui en nomme les conséquences (plan-mandat-deux-schemas §3.3). -->
+  <div class="ms-row">
+    <fold-listbox
+      label="Schéma du mandat"
+      hint="S'applique aux mandats frappés désormais. Les mandats actifs gardent le leur."
+      [options]="schemes"
+      [value]="schemeDraft()"
+      [disabled]="busy()"
+      (valueChange)="onScheme($event)"
+    />
+  </div>
 
   <div class="ms-row">
     <fold-input

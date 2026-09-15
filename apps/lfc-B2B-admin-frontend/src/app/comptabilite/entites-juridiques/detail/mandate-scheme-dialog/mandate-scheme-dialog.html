@@ -1,0 +1,47 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Les mandats que cette entité frappera désormais"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  @switch (stage()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des mandats de l'entité…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="Les mandats de l'entité n'ont pas pu être comptés"
+        [subtitle]="failure()"
+      >
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+          Réessayer
+        </button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-callout class="msd-consequence" variant="warning">{{ consequence() }}</fold-callout>
+      <ul class="msd-facts">
+        <li class="msd-drafts">{{ draftsLine() }}</li>
+        <li class="msd-actives">{{ activesLine() }}</li>
+      </ul>
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    class="msd-confirm"
+    intent="primary"
+    type="button"
+    [disabled]="stage() !== 'ready'"
+    (click)="confirm()"
+  >
+    {{ confirmLabel() }}
+  </button>
+</fold-panel-footer>
