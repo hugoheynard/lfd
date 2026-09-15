@@ -76,7 +76,7 @@
         <app-bank-account-section
           #bankStep
           [companyId]="id"
-          [mandateLast4]="mandatedLast4()"
+          [mandateActive]="debitable()"
           [holderLegalFormRequired]="holderLegalFormRequired()"
           (accountChange)="onBankAccount($event)"
         />

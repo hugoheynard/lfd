@@ -47,6 +47,7 @@ import { MandateOptionsSection } from '../mandate-options-section/mandate-option
 import { NotifyService } from '../../notify.service';
 import { MandatesService } from '../mandat/mandates.service';
 import { mintBlockerLines } from '../mandat/mint-blockers';
+import { isProofConflict } from '../mandat/proof-conflict';
 
 /** Une ligne de la section : un moyen de règlement, et où il en est. */
 interface PaymentMeanRow {
@@ -101,6 +102,14 @@ interface DangerousAction {
  * geste qui ne prouve rien.
  */
 const RUM_CONFIRM_LENGTH = 6;
+
+/**
+ * Ce que l'écran dit quand la signature vise une pièce remplacée entre-temps.
+ * Le message du serveur parle de « recharger la fiche » : la section se relit
+ * d'elle-même, il ne reste donc que le geste qui compte — relire le scan.
+ */
+const PROOF_REPLACED_ON_SIGN =
+  "La pièce a été remplacée depuis que vous l'avez ouverte : relisez-la avant d'activer.";
 
 @Component({
   selector: 'app-paiement-section',
@@ -236,18 +245,6 @@ export class PaiementSection {
 
   /** Un mandat sur lequel on peut prélever aujourd'hui. */
   protected readonly debitable = computed(() => this.mandate()?.status === 'active');
-
-  /**
-   * Les 4 chiffres du compte que le mandat **actif** nomme, `''` sinon.
-   *
-   * Passé au bloc du RIB pour qu'il puisse avertir quand on s'apprête à
-   * enregistrer un autre compte. Seuls les quatre derniers sont disponibles des
-   * deux côtés — c'est grossier, et c'est suffisant : l'avertissement invite à
-   * vérifier, il ne bloque rien.
-   */
-  protected readonly mandatedLast4 = computed(() =>
-    this.debitable() ? (this.mandate()?.last4 ?? '') : '',
-  );
 
   /**
    * **La frise : les coordonnées, l'autorisation, l'ouverture.**
@@ -572,6 +569,10 @@ export class PaiementSection {
    * refuse la forme ET le fond (une date à venir, un mandat qui n'est pas un
    * brouillon). Revalider à l'écran ferait une seconde définition de « date
    * acceptable », et c'est celle que l'utilisateur lit qui dériverait.
+   *
+   * La date saisie reste en place après un refus : sur une pièce remplacée, le
+   * geste suivant est de relire le nouveau scan puis de réactiver, pas de
+   * retaper la date du papier.
    */
   protected async sign(): Promise<void> {
     const id = this.companyId();
@@ -580,8 +581,17 @@ export class PaiementSection {
     if (id === null || mandate === null || at === '') {
       return;
     }
-    await this.run(id, () => this.mandates.sign(id, mandate.id, at), 'Mandat signé et actif.');
-    this.signedAt.set('');
+    // La révision part de la vue AFFICHÉE, pas d'une relecture : c'est la pièce
+    // que le staff a regardée qu'il atteste.
+    const signed = await this.run(
+      id,
+      () => this.mandates.sign(id, mandate.id, at, mandate.proofRevision),
+      'Mandat signé et actif.',
+      PROOF_REPLACED_ON_SIGN,
+    );
+    if (signed) {
+      this.signedAt.set('');
+    }
   }
 
   private async revoke(): Promise<void> {
@@ -592,11 +602,20 @@ export class PaiementSection {
     await this.run(id, () => this.mandates.revoke(id), 'Mandat révoqué.');
   }
 
-  /** Mute, annonce, recharge — le trio est le même pour les deux gestes. Rend `true` au succès. */
+  /**
+   * Mute, annonce, recharge — le trio est le même pour tous les gestes. Rend
+   * `true` au succès.
+   *
+   * Un refus « la pièce a changé » (`isProofConflict`) relit aussi la section :
+   * la vue est périmée, et la garder ferait recommencer sur la même. Le geste
+   * peut nommer ce cas par `conflictMessage` ; sinon le message du serveur
+   * s'affiche.
+   */
   private async run(
     companyId: string,
     mutate: () => Promise<void>,
     done: string,
+    conflictMessage?: string,
   ): Promise<boolean> {
     this.busy.set(true);
     try {
@@ -605,7 +624,17 @@ export class PaiementSection {
       await this.load(companyId);
       return true;
     } catch (error) {
-      this.notify.error(error, "L'opération a échoué.");
+      if (!isProofConflict(error)) {
+        this.notify.error(error, "L'opération a échoué.");
+        return false;
+      }
+      // Le message de l'écran PRIME sur celui de l'enveloppe quand le geste en
+      // donne un : `httpErrorMessage` ne rend le repli qu'à défaut de message.
+      this.notify.refused(
+        conflictMessage === undefined ? error : null,
+        conflictMessage ?? "L'opération a échoué.",
+      );
+      await this.load(companyId);
       return false;
     } finally {
       this.busy.set(false);

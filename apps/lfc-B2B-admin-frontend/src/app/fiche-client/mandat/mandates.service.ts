@@ -52,9 +52,18 @@ export class MandatesService {
    *
    * `signedAt` est la date du PAPIER (`AAAA-MM-JJ`). Le serveur refuse une date
    * à venir et un mandat qui n'est pas un brouillon.
+   *
+   * `proofRevision` est celle de la vue que le staff a sous les yeux (depuis le
+   * 2026-09-15) : le serveur refuse en 409 si la pièce a été remplacée depuis —
+   * on n'atteste pas un scan qu'on n'a pas relu.
    */
-  async sign(companyId: string, mandateId: string, signedAt: string): Promise<void> {
-    const payload: SignMandatePayload = { signedAt };
+  async sign(
+    companyId: string,
+    mandateId: string,
+    signedAt: string,
+    proofRevision: string,
+  ): Promise<void> {
+    const payload: SignMandatePayload = { signedAt, proofRevision };
     await firstValueFrom(
       this.http.put<void>(
         `${B2B_API_BASE}/admin/companies/${companyId}/mandate/${mandateId}/signature`,

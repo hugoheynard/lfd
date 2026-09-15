@@ -6,8 +6,11 @@ import type {
   CompanyBankAccountView,
   SetCompanyBankAccountPayload,
 } from '@lfd/contracts';
+import { HttpErrorResponse } from '@angular/common/http';
+import { httpErrorMessage } from '@lfd/endpoints';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { NotifyService } from '../../notify.service';
 import { BankAccountService } from '../bank-account/bank-account.service';
 import { BankAccountSection } from '../bank-account-section/bank-account-section';
 
@@ -37,12 +40,13 @@ interface Rendered {
 function fakeAccounts(
   account: CompanyBankAccountView | null,
   written: SetCompanyBankAccountPayload[],
+  refusal: HttpErrorResponse | null,
 ): Partial<BankAccountService> {
   return {
     read: (): Promise<CompanyBankAccountSectionView> => Promise.resolve({ account }),
     save: (_companyId: string, payload: SetCompanyBankAccountPayload): Promise<void> => {
       written.push(payload);
-      return Promise.resolve();
+      return refusal === null ? Promise.resolve() : Promise.reject(refusal);
     },
   };
 }
@@ -50,24 +54,38 @@ function fakeAccounts(
 function render(options: {
   readonly account?: CompanyBankAccountView | null;
   readonly companyId?: string | null;
-  readonly mandateLast4?: string;
+  readonly mandateActive?: boolean;
   readonly holderLegalFormRequired?: boolean;
+  /** Le refus que le serveur rend à l'écriture ; `null` = elle passe. */
+  readonly refusal?: HttpErrorResponse | null;
+  /** Les messages d'erreur annoncés, dans l'ordre. */
+  readonly errors?: string[];
 }): Rendered {
   const written: SetCompanyBankAccountPayload[] = [];
+  const errors = options.errors ?? [];
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
       {
         provide: BankAccountService,
-        useValue: fakeAccounts(options.account ?? null, written),
+        useValue: fakeAccounts(options.account ?? null, written, options.refusal ?? null),
+      },
+      {
+        provide: NotifyService,
+        useValue: {
+          success: (): void => undefined,
+          error: (error: unknown, fallback?: string): void => {
+            errors.push(httpErrorMessage(error, fallback));
+          },
+        },
       },
     ],
   });
 
   const fixture = TestBed.createComponent(BankAccountSection);
   fixture.componentRef.setInput('companyId', options.companyId ?? 'cmp_1');
-  fixture.componentRef.setInput('mandateLast4', options.mandateLast4 ?? '');
+  fixture.componentRef.setInput('mandateActive', options.mandateActive ?? false);
   fixture.componentRef.setInput(
     'holderLegalFormRequired',
     options.holderLegalFormRequired ?? false,
@@ -242,42 +260,76 @@ describe('RIB du client — ce que la fiche montre', () => {
     expect(section['draft']().holder).toBe('Refuge du Col SARL');
   });
 
-  describe('quand un mandat actif nomme un autre compte', () => {
-    it("prévient que l'autorisation ne vaudra plus", async () => {
-      const { host, section, settle } = render({ account: SAVED, mandateLast4: '3000' });
+  /**
+   * Plan `plan-restes-du-mandat.md` §8 : le staff est refusé comme le client
+   * quand il remplace le RIB sous un mandat actif. L'écran le dit avant le geste.
+   */
+  describe('sous un mandat actif', () => {
+    const IBAN = 'FR7630004000031234567890143';
+
+    it('désarme le formulaire et le bouton, même RIB complet', async () => {
+      const { host, section, settle } = render({ account: SAVED, mandateActive: true });
       await settle();
 
-      section['draft'].update((d) => ({ ...d, iban: 'FR1420041010050500013M02606' }));
+      section['draft'].update((d) => ({ ...d, iban: IBAN }));
       await settle();
 
-      expect(host.textContent).toContain("n'est pas celui du mandat en cours");
+      expect(host.querySelector('fieldset')?.disabled).toBe(true);
+      expect(section['canSave']()).toBe(false);
+      const replace = Array.from(host.querySelectorAll('button')).find((button) =>
+        button.textContent?.includes('Remplacer le RIB'),
+      );
+      expect(replace?.disabled).toBe(true);
     });
 
-    it('se tait quand le compte saisi est celui du mandat', async () => {
-      const { host, section, settle } = render({ account: SAVED, mandateLast4: '2606' });
+    it('dit pourquoi, et le geste de sortie : révoquer, puis frapper un nouveau mandat', async () => {
+      const { host, settle } = render({ account: SAVED, mandateActive: true });
       await settle();
 
-      section['draft'].update((d) => ({ ...d, iban: 'FR1420041010050500013M02606' }));
-      await settle();
-
-      expect(host.textContent).not.toContain("n'est pas celui du mandat en cours");
+      const callout = host.querySelector('fold-callout[variant="warning"]');
+      expect(callout?.textContent).toContain('ne se remplace pas sous un mandat actif');
+      expect(callout?.textContent).toContain('révoquez');
+      expect(callout?.textContent).toContain('frappez un nouveau');
     });
 
-    it('se tait tant que rien n’est saisi — on ne prévient pas d’un geste absent', async () => {
-      const { host, settle } = render({ account: SAVED, mandateLast4: '3000' });
+    it('sans mandat actif, le formulaire reste armé et rien ne prévient', async () => {
+      const { host, section, settle } = render({ account: SAVED });
       await settle();
 
-      expect(host.textContent).not.toContain("n'est pas celui du mandat en cours");
+      section['draft'].update((d) => ({ ...d, iban: IBAN }));
+      await settle();
+
+      expect(host.querySelector('fieldset')?.disabled).toBe(false);
+      expect(section['canSave']()).toBe(true);
+      expect(host.querySelector('fold-callout[variant="warning"]')).toBeNull();
     });
 
-    it("se tait quand aucun mandat n'est actif", async () => {
-      const { host, section, settle } = render({ account: SAVED, mandateLast4: '' });
+    it('affiche le message du 409 reçu malgré tout, et relit le RIB', async () => {
+      // Le mandat a pu devenir actif entre la lecture de la fiche et le clic.
+      const message =
+        'Le mandat de prélèvement actif désigne ce compte : révoquez-le avant de changer de RIB.';
+      const errors: string[] = [];
+      const accounts: CompanyBankAccountView[] = [];
+      const { section, settle } = render({
+        account: SAVED,
+        errors,
+        refusal: new HttpErrorResponse({
+          status: 409,
+          error: { code: 'payments.bank_account.bound_to_active_mandate', message },
+        }),
+      });
       await settle();
+      section.accountChange.subscribe((account) => {
+        if (account !== null) {
+          accounts.push(account);
+        }
+      });
 
-      section['draft'].update((d) => ({ ...d, iban: 'FR1420041010050500013M02606' }));
-      await settle();
+      section['draft'].update((d) => ({ ...d, iban: IBAN }));
+      await section['save']();
 
-      expect(host.textContent).not.toContain("n'est pas celui du mandat en cours");
+      expect(errors).toEqual([message]);
+      expect(accounts).toHaveLength(1);
     });
   });
 

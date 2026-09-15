@@ -19,22 +19,24 @@
   }
 </p>
 
-@if (changesMandatedAccount()) {
-  <!-- Ce qui est CERTAIN, et rien de plus : un mandat ne vaut que pour le
-       compte qu'il nomme. Ce qu'il faudra faire ensuite — un mandat neuf, ou un
-       amendement sous la même RUM — dépend de la banque, et l'écran ne
-       l'invente pas. -->
+@if (mandateActive()) {
+  <!-- Le refus du serveur, dit AVANT le geste : le papier signé nomme ce compte,
+       et un remplacement le laisserait sans autorisation. Le geste de sortie est
+       le seul qui existe tant que l'amendement attend la banque. -->
   <fold-callout appearance="inset" variant="warning">
-    <strong>Ce compte n'est pas celui du mandat en cours.</strong> Le mandat actif autorise à
-    prélever sur ••••&nbsp;{{ mandateLast4() }}. Une autorisation ne vaut que pour le compte qu'elle
-    nomme&nbsp;: après ce changement, plus rien ne pourra être prélevé tant que le mandat n'aura pas
-    été refait.
+    <strong>Le RIB ne se remplace pas sous un mandat actif.</strong> Le mandat signé autorise à
+    prélever sur ce compte-ci, et sur lui seul. Pour changer de compte, révoquez d'abord le mandat
+    actif (zone de danger, en bas de la fiche), enregistrez le nouveau RIB, puis frappez un nouveau
+    mandat à faire signer.
   </fold-callout>
 }
 
 <!-- Les champs : le formulaire partagé avec le panneau RIB du client. L'IBAN y
-     entre vide, le reste se réaffiche (`bankAccountDraftFrom`). -->
-<lfd-bank-account-form [(value)]="draft" [holderLegalFormRequired]="holderLegalFormRequired()" />
+     entre vide, le reste se réaffiche (`bankAccountDraftFrom`). Le fieldset
+     désarme tous les champs d'un attribut sous un mandat actif. -->
+<fold-fieldset ariaLabel="Coordonnées bancaires" [disabled]="mandateActive()">
+  <lfd-bank-account-form [(value)]="draft" [holderLegalFormRequired]="holderLegalFormRequired()" />
+</fold-fieldset>
 
 <div class="ba-actions">
   <button
