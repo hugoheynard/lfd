@@ -13,6 +13,8 @@ const PDF = Buffer.from("%PDF-1.4\nmandat signé", "latin1");
 
 function mandate(proof: { key: string; name: string } | null): PaymentMandate {
   return PaymentMandate.reconstitute({
+    scheme: "B2B",
+    paymentType: "recurrent",
     id: "mdt_1",
     companyId: "cmp_1",
     stripeCustomerId: null,

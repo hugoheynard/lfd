@@ -1,7 +1,8 @@
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
+import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { ACCOUNTING_FACTS } from "./accounting-facts.js";
 
-/** Le sujet, écrit une fois : sept faits parlent de la même chose. */
+/** Le sujet, écrit une fois : tous ces faits parlent de la même chose. */
 const SUBJECT = "legal_entity";
 
 /** Une entité émettrice vient d'être déclarée. */
@@ -119,6 +120,34 @@ export class PreNotificationChangedEvent implements JournaledEvent {
       subjectId: this.legalEntityId,
       occurredAt: this.at,
       payload: { days: this.days },
+    };
+  }
+}
+
+/**
+ * Le schéma des mandats à venir a basculé.
+ *
+ * **L'avant ET l'après** au payload, contrairement à la correction d'identité :
+ * un mandat déjà émis a figé son schéma, mais c'est ce fait seul qui dit sous
+ * quel régime l'entité frappait le jour où tel brouillon a été rendu caduc — et
+ * la bascule inverse, six mois plus tard, ne se lit qu'en voyant d'où l'on
+ * repartait. L'acteur est posé par le journal, depuis le contexte de requête.
+ */
+export class MandateSchemeChangedEvent implements JournaledEvent {
+  constructor(
+    readonly legalEntityId: string,
+    readonly at: Date,
+    readonly from: SepaScheme,
+    readonly to: SepaScheme,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNTING_FACTS.mandateSchemeChanged,
+      subjectType: SUBJECT,
+      subjectId: this.legalEntityId,
+      occurredAt: this.at,
+      payload: { from: this.from, to: this.to },
     };
   }
 }

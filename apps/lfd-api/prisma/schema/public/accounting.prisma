@@ -19,6 +19,17 @@
 ///
 /// ⚠️ Ce n'est PAS le `SeqTp` d'un `pain.008` (`FRST`/`RCUR`/`OOFF`/`FNAL`),
 /// qui décrit une échéance dans une série. Celui-ci décrit l'autorisation.
+/// Le schéma SEPA d'un mandat : `CORE` (tout débiteur, remboursement sous 8
+/// semaines) ou `B2B` (interentreprises, aucun remboursement d'un prélèvement
+/// autorisé, mandat déclaré à la banque du débiteur). Plan
+/// `documentation/b2b/plan-mandat-deux-schemas.md`.
+enum SepaScheme {
+  CORE
+  B2B
+
+  @@schema("public")
+}
+
 enum MandatePaymentType {
   recurrent
   one_off
@@ -95,6 +106,12 @@ model LegalEntity {
   /// et le code du débiteur (zone 14) désignent un dossier précis.
   mandateContractDescription String             @default("") @map("mandate_contract_description")
   mandatePaymentType         MandatePaymentType @default(recurrent) @map("mandate_payment_type")
+
+  /// Le schéma des mandats que cette entité FRAPPE désormais. 🔴 Il ne décrit
+  /// que les frappes à venir : chaque mandat fige le sien (`payment_mandates.scheme`),
+  /// et c'est celui-là que le papier et le lot lisent. Changer ce réglage rend
+  /// caducs les brouillons en cours, jamais les actifs.
+  mandateScheme SepaScheme @default(B2B) @map("mandate_scheme")
 
   // `null` = pas encore attribué par la Banque de France. C'est un état normal
   // et durable : on prépare le dossier des semaines avant de recevoir l'ICS.
@@ -332,6 +349,15 @@ model PaymentMandate {
   // il n'y en a aucun (table vide, aucune route de création).
   creditorId String?      @map("creditor_id")
   creditor   LegalEntity? @relation(fields: [creditorId], references: [id])
+
+  // 🔴 Le schéma et le type de paiement FIGÉS à la frappe, recopiés de
+  // l'émetteur. Le papier signé et le lot de prélèvement lisent CES colonnes,
+  // jamais le réglage courant de l'entité : un réglage qui change après la
+  // signature ferait prélever sous un régime que le papier n'autorise pas.
+  // Sans `@default` — délibérément : une frappe qui oublierait de les passer ne
+  // compile pas, au lieu d'écrire B2B en silence.
+  scheme      SepaScheme         @map("scheme")
+  paymentType MandatePaymentType @map("payment_type")
 
   // 🔴 TROIS index partiels ou d'expression vivent dans les migrations et sont
   // INVISIBLES ici — Prisma ne sait pas les exprimer. Les chercher dans ce

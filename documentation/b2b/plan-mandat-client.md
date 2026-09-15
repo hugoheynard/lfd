@@ -154,6 +154,10 @@ l'état des mandats existants.
 
 ## 8. Version simple — retenue par Hugo le 2026-09-14
 
+> 🔄 **Revu le 2026-09-15** : « pas de colonne `scheme` » ne tient plus. Hugo veut
+> les deux schémas au choix de l'entité, et le mandat fige désormais son schéma
+> et son type de paiement — voir [`plan-mandat-deux-schemas.md`](plan-mandat-deux-schemas.md).
+
 **Fait qui décide : il n'y a aucun mandat en production** (dit par Hugo le
 2026-09-14). La troisième contradiction de vitruve (5 BLOQUANT) portait
 entièrement sur la cohabitation avec des mandats existants ; sans eux, elle

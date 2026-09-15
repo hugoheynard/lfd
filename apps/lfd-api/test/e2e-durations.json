@@ -37,6 +37,7 @@
   "test/growth-stats.e2e-spec.ts": 4803,
   "test/kbis.e2e-spec.ts": 7093,
   "test/leads.e2e-spec.ts": 4270,
+  "test/mandate-scheme.e2e-spec.ts": 9000,
   "test/mandate.e2e-spec.ts": 37184,
   "test/me-establishment.e2e-spec.ts": 13540,
   "test/me.e2e-spec.ts": 17923,

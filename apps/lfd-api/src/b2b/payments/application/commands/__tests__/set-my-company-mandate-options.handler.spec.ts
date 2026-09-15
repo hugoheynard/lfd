@@ -144,7 +144,7 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
   /** Plan §9 #4 : un brouillon signé après la réécriture porterait l'ancienne version. */
   it("révoque le brouillon dans la MÊME unité de travail, trace, puis sonne", async () => {
     const h = harness({ role: "billing" });
-    h.mandates.draft = mandate();
+    h.mandates.draft = mandate({ scheme: "CORE" });
 
     await h.run();
 
@@ -171,5 +171,24 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
       kind: "payment_mandate.draft_voided",
       idempotencyKey: "notification:payment_mandate.draft_voided:mdt_1",
     });
+  });
+
+  /**
+   * Plan mandat deux schémas §10, Q2 (2026-09-15) : le formulaire
+   * interentreprises n'imprime pas les zones 14 et 19. Réécrites, elles ne
+   * changent rien à son papier — le brouillon reste signable. Le fait de la
+   * réécriture, lui, reste au journal.
+   */
+  it("ne révoque PAS un brouillon interentreprises, et journalise quand même", async () => {
+    const h = harness({ role: "billing" });
+    h.mandates.draft = mandate({ scheme: "B2B" });
+
+    await h.run();
+
+    expect(h.mandates.saved).toHaveLength(0);
+    expect(h.notifier.notices).toHaveLength(0);
+    expect(h.events.traced.map((event) => event.journalFact().type)).toEqual([
+      "payment_mandate.options_changed",
+    ]);
   });
 });

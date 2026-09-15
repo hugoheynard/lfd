@@ -1,10 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   assignCreditorIdentifierPayloadSchema,
   setCreditorAccountPayloadSchema,
   setMandateDefaultsPayloadSchema,
   type SetMandateDefaultsPayload,
+  setMandateSchemePayloadSchema,
+  type MandateSchemeUsageView,
+  type SetMandateSchemePayload,
   setPreNotificationPayloadSchema,
   type AssignCreditorIdentifierPayload,
   type SetCreditorAccountPayload,
@@ -19,6 +22,8 @@ import {
   SetCreditorAccountCommand,
   SetPreNotificationCommand,
 } from "../application/commands/legal-entity-commands.js";
+import { SetMandateSchemeCommand } from "../application/commands/set-mandate-scheme.command.js";
+import { GetMandateSchemeUsageQuery } from "../application/queries/get-mandate-scheme-usage.query.js";
 
 /**
  * **Ce qui décide de l'encaissement** — l'ICS, le compte, le délai de
@@ -44,7 +49,10 @@ import {
 @Controller("admin/accounting/legal-entities")
 @AdminSurface("b2b_accounting")
 export class AdminLegalEntityBankingController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
 
   /**
    * Attribue l'ICS. **Irréversible** — l'agrégat refuse d'en poser un second, et
@@ -105,6 +113,39 @@ export class AdminLegalEntityBankingController {
     @Body(new ZodBody(setMandateDefaultsPayloadSchema)) payload: SetMandateDefaultsPayload,
   ): Promise<void> {
     await this.commands.execute(new SetMandateDefaultsCommand(id, payload));
+  }
+
+  /**
+   * Le schéma des mandats que l'entité frappera désormais — CORE ou
+   * interentreprises.
+   *
+   * 🔴 Sa propre route, et pas un champ de `mandate-defaults` : ce payload-là a
+   * des défauts, et un écran chargé avant la bascule rebasculerait le régime de
+   * prélèvement sans que personne l'ait décidé (plan
+   * `documentation/b2b/plan-mandat-deux-schemas.md` §3.3). Si le schéma change,
+   * les brouillons de l'entité deviennent caducs ; les actifs gardent le leur.
+   */
+  @Put(":id/mandate-scheme")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setMandateScheme(
+    @Param("id") id: string,
+    @Body(new ZodBody(setMandateSchemePayloadSchema)) payload: SetMandateSchemePayload,
+  ): Promise<void> {
+    await this.commands.execute<SetMandateSchemeCommand, void>(
+      new SetMandateSchemeCommand(id, payload.scheme),
+    );
+  }
+
+  /**
+   * Ce qu'une bascule laisserait derrière elle : le schéma courant, les actifs
+   * par schéma, les brouillons. Lu par le dialogue de confirmation, AVANT le
+   * `PUT` — sur la même surface, parce que c'est la même décision.
+   */
+  @Get(":id/mandate-scheme")
+  mandateSchemeUsage(@Param("id") id: string): Promise<MandateSchemeUsageView> {
+    return this.queries.execute<GetMandateSchemeUsageQuery, MandateSchemeUsageView>(
+      new GetMandateSchemeUsageQuery(id),
+    );
   }
 
   /**

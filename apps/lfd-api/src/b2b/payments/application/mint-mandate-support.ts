@@ -1,5 +1,7 @@
 import { NoIssuerError } from "../../accounting/domain/errors/accounting-errors.js";
 import type { CreditorReader } from "../../accounting/domain/ports/creditor.reader.js";
+import type { MandatePaymentType } from "../../accounting/domain/value-objects/mandate-defaults.js";
+import type { SepaScheme } from "../../accounting/domain/value-objects/sepa-scheme.js";
 import type { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import type { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import type { SecretGenerator } from "../../../platform/secret/secret-generator.js";
@@ -32,6 +34,14 @@ export interface MintMandateDeps {
  * déjà. Les deux appelants ne tranchent pas pareil — le staff refuse en 409 en
  * nommant la RUM, le client reçoit le brouillon (plan mandat client §2).
  */
+/** Ce que la frappe retient de l'émetteur — dont ce que le mandat fige. */
+interface MintIssuer {
+  readonly customer: string;
+  readonly creditorId: string;
+  readonly scheme: SepaScheme;
+  readonly paymentType: MandatePaymentType;
+}
+
 export type MintOutcome =
   | { readonly minted: true; readonly mandateId: string }
   | { readonly minted: false; readonly draft: PaymentMandate };
@@ -78,10 +88,7 @@ export async function mintDraftMandate(
  * Les trois gardes qui précèdent le brouillon. Rend la référence client et
  * l'émetteur utiles au tirage.
  */
-async function mintPreconditions(
-  deps: MintMandateDeps,
-  companyId: string,
-): Promise<{ readonly customer: string; readonly creditorId: string }> {
+async function mintPreconditions(deps: MintMandateDeps, companyId: string): Promise<MintIssuer> {
   const holder = await deps.mandates.findHolder(companyId);
   if (holder === null) {
     throw new CompanyNotFoundForMandateError(companyId);
@@ -93,14 +100,21 @@ async function mintPreconditions(
   if (creditor === null) {
     throw new NoIssuerError();
   }
-  return { customer: holder.reference, creditorId: creditor.legalEntityId };
+  // 🔴 Le schéma et le type sont RECOPIÉS ici, une fois : le mandat les fige, et
+  // un réglage changé demain ne touche plus ce papier.
+  return {
+    customer: holder.reference,
+    creditorId: creditor.legalEntityId,
+    scheme: creditor.mandateScheme,
+    paymentType: creditor.mandatePaymentType,
+  };
 }
 
 /** Tire la RUM, écrit le brouillon ET sa trace dans la même transaction. */
 async function writeMinted(
   deps: MintMandateDeps,
   companyId: string,
-  issuer: { readonly customer: string; readonly creditorId: string },
+  issuer: MintIssuer,
   via: MandateActorChannel,
 ): Promise<string> {
   const rum = Rum.mint({
@@ -110,7 +124,13 @@ async function writeMinted(
   });
   return deps.uow.run(async () => {
     const mandateId = await deps.mandates.create(
-      mintMandate({ companyId, creditorId: issuer.creditorId, reference: rum.value }),
+      mintMandate({
+        companyId,
+        creditorId: issuer.creditorId,
+        reference: rum.value,
+        scheme: issuer.scheme,
+        paymentType: issuer.paymentType,
+      }),
     );
     await deps.events.publishTraced(new MandateMintedEvent(mandateId, companyId, rum.value, via));
     return mandateId;

@@ -8,10 +8,12 @@ import { SetCreditorAccountHandler } from "./application/commands/set-creditor-a
 import { SetLegalEntityArchivedHandler } from "./application/commands/set-legal-entity-archived.handler.js";
 import { SetLegalEntityLogoHandler } from "./application/commands/set-legal-entity-logo.handler.js";
 import { SetMandateDefaultsHandler } from "./application/commands/set-mandate-defaults.handler.js";
+import { SetMandateSchemeHandler } from "./application/commands/set-mandate-scheme.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
 import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
 import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draft.handler.js";
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
+import { GetMandateSchemeUsageHandler } from "./application/queries/get-mandate-scheme-usage.handler.js";
 import { ExportSampleMandateHandler } from "./application/queries/export-sample-mandate.handler.js";
 import { GetLegalEntityLogoHandler } from "./application/queries/get-legal-entity-logo.handler.js";
 import { GetLegalEntityHandler } from "./application/queries/get-legal-entity.handler.js";
@@ -70,12 +72,14 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AssignCreditorIdentifierHandler,
     SetCreditorAccountHandler,
     SetMandateDefaultsHandler,
+    SetMandateSchemeHandler,
     SetPreNotificationHandler,
     SetLegalEntityArchivedHandler,
     SetLegalEntityLogoHandler,
     RemoveLegalEntityLogoHandler,
     ListLegalEntitiesHandler,
     GetLegalEntityHandler,
+    GetMandateSchemeUsageHandler,
     ExportSampleMandateHandler,
     GetCurrentBillingCycleHandler,
     ExportCycleDraftHandler,

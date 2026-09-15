@@ -14,7 +14,7 @@ export interface CycleDraftFile {
 }
 
 /**
- * Rend le brouillon de `pain.008` du cycle en cours.
+ * Rend le brouillon de `pain.008` du cycle en cours, pour UN schéma.
  *
  * 🔴 Il lit l'émetteur par `CreditorReader`, qui **refuse** de rendre une copie
  * pour une entité sans ICS ni compte (409 nommant ce qui manque). L'incomplétude
@@ -50,6 +50,7 @@ export class ExportCycleDraftHandler implements IQueryHandler<
         clock: this.clock,
       },
       query.legalEntityId,
+      query.scheme,
     );
     return {
       xml: draft.xml,
@@ -61,9 +62,11 @@ export class ExportCycleDraftHandler implements IQueryHandler<
       // l'inverse le jour où quelqu'un l'aurait retiré en dur de son côté. Deux
       // vérités sur le même fichier, dont une fausse, et c'est le nom qu'on lit
       // en premier.
-      fileName: draft.depositable
-        ? `prelevement-${draft.cycleTag}.xml`
-        : `BROUILLON-prelevement-${draft.cycleTag}.xml`,
+      //
+      // Le schéma et le SIREN y entrent depuis le 2026-09-15 : un cycle rend
+      // deux fichiers, et deux fichiers du même nom s'écrasent dans un dossier
+      // de téléchargements — c'est alors le mauvais qu'on dépose.
+      fileName: `${draft.depositable ? "" : "BROUILLON-"}prelevement-${draft.scheme}-${draft.creditorSiren}-${draft.cycleTag}.xml`,
     };
   }
 }

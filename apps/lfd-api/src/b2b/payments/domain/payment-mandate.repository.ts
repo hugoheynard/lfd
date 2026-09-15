@@ -13,6 +13,12 @@ export interface MandateHolder {
    * des mandats imprimés.
    */
   readonly reference: string;
+  /**
+   * Le SIRET tel qu'enregistré — **chaîne vide** quand la société n'en a pas
+   * déclaré (il est facultatif à l'ouverture). Le mandat interentreprises en
+   * tire le SIREN du débiteur ; ce port le rend brut, sans le revalider.
+   */
+  readonly siret: string;
 }
 
 /**

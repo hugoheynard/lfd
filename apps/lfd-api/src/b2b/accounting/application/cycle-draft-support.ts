@@ -4,7 +4,8 @@ import type { BillableOrdersReader } from "../domain/ports/billable-orders.reade
 import type { CreditorReader } from "../domain/ports/creditor.reader.js";
 import type { DebtorMandateReader } from "../domain/ports/debtor-mandate.reader.js";
 import { cycleAt } from "../domain/services/billing-cycle.js";
-import { cycleTagOf, isDepositable, renderPain008 } from "../domain/services/pain008.js";
+import { cycleTagOf, isSchemeFileDepositable, renderPain008 } from "../domain/services/pain008.js";
+import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
 
 /**
  * Le brouillon du cycle, **construit une seule fois pour deux sorties**.
@@ -27,11 +28,15 @@ export interface CycleDraftDeps {
 
 export interface CycleDraft {
   readonly xml: string;
+  readonly scheme: SepaScheme;
   /**
-   * Chaque ligne porte-t-elle son mandat ? C'est ce qui décide du bandeau DANS
-   * le fichier ; l'exposer ici fait que son NOM dit la même chose.
+   * Le FICHIER de ce schéma est-il déposable — cycle entier mandaté, et au moins
+   * une ligne ici ? C'est ce qui décide du bandeau DANS le fichier ; l'exposer
+   * fait que son NOM dit la même chose.
    */
   readonly depositable: boolean;
+  /** Le SIREN de l'émetteur : deux entités, deux fichiers au nom distinct. */
+  readonly creditorSiren: string;
   /** `202609` — le mois COUVERT, pas celui de la clôture. */
   readonly cycleTag: string;
 }
@@ -40,6 +45,7 @@ export interface CycleDraft {
 export async function buildCycleDraft(
   deps: CycleDraftDeps,
   legalEntityId: string,
+  scheme: SepaScheme,
 ): Promise<CycleDraft> {
   // `CreditorReader` REFUSE de rendre une copie pour une entité qui ne peut pas
   // encaisser : l'incomplétude du bloc créancier est donc inexprimable ici, et
@@ -53,7 +59,10 @@ export async function buildCycleDraft(
   const cycle = cycleAt(now, null);
   const lines = await deps.billable.billableBetween(cycle.startsAt, cycle.closesAt);
 
-  // Une seule lecture pour tout le lot, et APRÈS l'assiette : on ne demande les
+  // Une seule lecture pour TOUT le cycle, tous schémas confondus, et APRÈS
+  // l'assiette. Tous schémas, parce que le caractère déposable se juge sur le
+  // cycle entier avant la découpe (plan mandat deux schémas, objection 3).
+  // Après l'assiette : on ne demande les
   // mandats que des sociétés qui doivent effectivement quelque chose. Déchiffrer
   // les IBAN de clients qui ne sont pas dans le cycle serait ouvrir le coffre
   // pour rien.
@@ -62,13 +71,16 @@ export async function buildCycleDraft(
   return {
     xml: renderPain008({
       creditor,
+      scheme,
       mandates,
       cycleStart: cycle.startsAt,
       cycleEnd: cycle.closesAt,
       createdAt: now,
       lines,
     }),
+    scheme,
     cycleTag: cycleTagOf(cycle.closesAt),
-    depositable: isDepositable(lines, mandates),
+    depositable: isSchemeFileDepositable(lines, mandates, scheme),
+    creditorSiren: creditor.siren,
   };
 }

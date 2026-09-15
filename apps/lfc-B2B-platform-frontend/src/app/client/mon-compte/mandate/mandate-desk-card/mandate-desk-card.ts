@@ -72,8 +72,13 @@ export class MandateDeskCard {
   );
   protected readonly printable = computed(() => mandatePrintable(this.mandates.mandate()));
   protected readonly action = computed(() => mandateActionLabel(this.stage(), this.t().account));
-  /** Pas sous un mandat actif : son papier signé porte déjà ces zones. */
-  protected readonly editableOptions = computed(() => mandateOptionsEditable(this.stage()));
+  /**
+   * Pas sous un mandat actif : son papier signé porte déjà ces zones. Ni sous un
+   * émetteur interentreprises : son mandat ne les imprime pas.
+   */
+  protected readonly editableOptions = computed(() =>
+    mandateOptionsEditable(this.stage(), this.mandates.issuerScheme()),
+  );
 
   /** L'ouverture ou le téléchargement du PDF a échoué : dit sous l'état, qui reste lisible. */
   protected readonly fetchFailed = signal(false);

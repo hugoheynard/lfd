@@ -74,6 +74,7 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityV
     preNotificationDays: snapshot.preNotificationDays,
     mandateContractDescription: snapshot.mandateContractDescription,
     mandatePaymentType: snapshot.mandatePaymentType,
+    mandateScheme: snapshot.mandateScheme,
     archivedAt: snapshot.archivedAt?.toISOString() ?? null,
     canCollect: entity.canCollect(),
     missingToCollect: entity.missingToCollect(),
@@ -116,6 +117,7 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
     preNotificationDays: row.preNotificationDays,
     mandateContractDescription: row.mandateContractDescription,
     mandatePaymentType: row.mandatePaymentType,
+    mandateScheme: row.mandateScheme,
     logoKey: row.logoKey,
     archivedAt: row.archivedAt,
   };
@@ -177,6 +179,7 @@ export function legalEntityColumns(
     preNotificationDays: snapshot.preNotificationDays,
     mandateContractDescription: snapshot.mandateContractDescription,
     mandatePaymentType: snapshot.mandatePaymentType,
+    mandateScheme: snapshot.mandateScheme,
     logoKey: snapshot.logoKey,
     archivedAt: snapshot.archivedAt,
   };

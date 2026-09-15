@@ -9,7 +9,9 @@ export const RUM_EPC_MAX_LENGTH = 35;
 /**
  * 🔴 La borne **réelle à la frappe** — et elle vient du papier, pas de la norme.
  *
- * `sepa-mandate-pdf.ts` dessine la case de la référence en `comb(…, [26])` :
+ * `core-mandate-pdf.ts` dessine la case de la référence en `comb(…, [26])` — le
+ * mandat CORE ; l'interentreprises en a 35 depuis le 2026-09-15, la borne suit donc le
+ * plus étroit des deux :
  * vingt-six cases, et `comb` remplit case par case en ignorant **silencieusement**
  * tout caractère au-delà de la dernière. Une RUM de 29 caractères sortirait donc
  * tronquée sur le papier signé pendant que la base en stocke 29 — l'écart ne se

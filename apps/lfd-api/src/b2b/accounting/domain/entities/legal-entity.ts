@@ -6,6 +6,7 @@ import {
   InvalidLegalEntityError,
 } from "../errors/accounting-errors.js";
 import { MandateDefaults, type MandatePaymentType } from "../value-objects/mandate-defaults.js";
+import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { CreditorIdentifier } from "../value-objects/creditor-identifier.js";
 import { Bic } from "../value-objects/bic.js";
 import { CreditorAccount } from "../value-objects/creditor-account.js";
@@ -73,6 +74,8 @@ export interface LegalEntitySnapshot {
   readonly preNotificationDays: number;
   readonly mandateContractDescription: string;
   readonly mandatePaymentType: MandatePaymentType;
+  /** Le schéma des mandats frappés DÉSORMAIS — chaque mandat fige le sien. */
+  readonly mandateScheme: SepaScheme;
   /**
    * La clé de l'objet de stockage qui porte le logo, ou `null`. 🔴 Elle ne sort
    * d'aucune API — une clé qui sort finit par être acceptée en entrée.
@@ -117,6 +120,7 @@ export class LegalEntity {
     private firstMandateIssuedAtValue: Date | null,
     private preNotificationDaysValue: number,
     private mandateDefaultsValue: MandateDefaults,
+    private mandateSchemeValue: SepaScheme,
     private logoKeyValue: string | null,
     private archivedAtValue: Date | null,
   ) {}
@@ -144,6 +148,9 @@ export class LegalEntity {
       // Rien à dire du contrat, et récurrent : le régime de l'immense majorité
       // des mandats, et celui qu'on corrige le moins souvent.
       MandateDefaults.initial(),
+      // Interentreprises : le schéma du contrat signé avec la banque, et celui
+      // de nos débiteurs, qui sont tous des professionnels.
+      "B2B",
       null,
       null,
     );
@@ -171,6 +178,7 @@ export class LegalEntity {
       snapshot.firstMandateIssuedAt,
       snapshot.preNotificationDays,
       MandateDefaults.create(snapshot.mandateContractDescription, snapshot.mandatePaymentType),
+      snapshot.mandateScheme,
       snapshot.logoKey,
       snapshot.archivedAt,
     );
@@ -343,6 +351,33 @@ export class LegalEntity {
     this.mandateDefaultsValue = defaults;
   }
 
+  get mandateScheme(): SepaScheme {
+    return this.mandateSchemeValue;
+  }
+
+  /**
+   * Change le schéma des mandats que cette entité frappera — CORE ou
+   * interentreprises.
+   *
+   * 🔴 **Hors de `MandateDefaults`, et c'est voulu** : la commande des réglages
+   * reconstruit cette valeur entière à chaque édition de la description, et un
+   * schéma rangé dedans retomberait à son défaut sans que personne l'ait
+   * décidé. Un changement de régime de prélèvement a sa méthode, sa commande et
+   * son fait au journal.
+   *
+   * Aucun gel : les mandats déjà frappés ont figé le leur. Ce qui en découle —
+   * les brouillons en cours deviennent caducs — est le travail de l'appelant.
+   *
+   * @returns vrai si le schéma a réellement changé.
+   */
+  changeMandateScheme(scheme: SepaScheme): boolean {
+    if (scheme === this.mandateSchemeValue) {
+      return false;
+    }
+    this.mandateSchemeValue = scheme;
+    return true;
+  }
+
   /** Une entité archivée n'émet plus rien, et ses documents passés restent. */
   archive(at: Date): void {
     this.archivedAtValue = at;
@@ -385,6 +420,7 @@ export class LegalEntity {
       preNotificationDays: this.preNotificationDaysValue,
       mandateContractDescription: this.mandateDefaultsValue.contractDescription,
       mandatePaymentType: this.mandateDefaultsValue.paymentType,
+      mandateScheme: this.mandateSchemeValue,
     };
   }
 
@@ -416,6 +452,7 @@ export class LegalEntity {
       preNotificationDays: this.preNotificationDaysValue,
       mandateContractDescription: this.mandateDefaultsValue.contractDescription,
       mandatePaymentType: this.mandateDefaultsValue.paymentType,
+      mandateScheme: this.mandateSchemeValue,
       logoKey: this.logoKeyValue,
       archivedAt: this.archivedAtValue,
     };

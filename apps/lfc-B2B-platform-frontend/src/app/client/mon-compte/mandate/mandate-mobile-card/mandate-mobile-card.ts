@@ -73,8 +73,13 @@ export class MandateMobileCard {
     mandateDetailLabel(this.mandates.mandate(), this.t().account),
   );
   protected readonly action = computed(() => mandateActionLabel(this.stage(), this.t().account));
-  /** Pas sous un mandat actif : son papier signé porte déjà ces zones. */
-  protected readonly editableOptions = computed(() => mandateOptionsEditable(this.stage()));
+  /**
+   * Pas sous un mandat actif : son papier signé porte déjà ces zones. Ni sous un
+   * émetteur interentreprises : son mandat ne les imprime pas.
+   */
+  protected readonly editableOptions = computed(() =>
+    mandateOptionsEditable(this.stage(), this.mandates.issuerScheme()),
+  );
 
   protected readonly fetchFailed = signal(false);
 

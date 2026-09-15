@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { SepaScheme } from "./legal-entity.js";
+
 /**
  * État d'un **mandat de prélèvement SEPA**.
  *
@@ -49,6 +51,8 @@ export interface PaymentMandateView {
   /** Référence opposable du mandat (RUM), dictable en cas de contestation. */
   readonly reference: string;
   readonly status: MandateStatus;
+  /** Le schéma FIGÉ à la frappe — CORE ou interentreprises. */
+  readonly scheme: SepaScheme;
   /** 4 derniers chiffres de l'IBAN, pour reconnaître le compte. */
   readonly last4: string;
   /** Code banque (BIC court), vide si Stripe ne l'a pas rendu. */
@@ -94,6 +98,8 @@ export interface CustomerMandateView {
   /** La RUM, que le client déclare à sa banque. */
   readonly reference: string;
   readonly status: MandateStatus;
+  /** Le schéma FIGÉ à la frappe — CORE ou interentreprises. */
+  readonly scheme: SepaScheme;
   /** Le scan signé est-il déposé ? Vrai = « en vérification » tant que `draft`. */
   readonly hasProof: boolean;
   /** Nom du fichier déposé, vide s'il n'y en a pas. */

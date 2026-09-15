@@ -21,7 +21,14 @@ const LOGGER = new Logger("MandateStaffBell");
 const CAUSE_LINES: Readonly<Record<DraftVoidingCause, string>> = {
   bank_account_changed: "les coordonnées bancaires ont été réécrites",
   mandate_options_changed: "les zones facultatives du mandat ont été réécrites",
+  mandate_scheme_changed:
+    "l'entité émettrice a changé le schéma de ses mandats (CORE ou interentreprises)",
+  mandate_defaults_changed:
+    "l'entité émettrice a changé le type de paiement ou la description du contrat imprimés sur le mandat",
 };
+
+/** Ce que la cloche lit d'un brouillon révoqué : de quoi nommer la société et la RUM. */
+export type VoidedDraft = Pick<PaymentMandate, "id" | "companyId" | "reference">;
 
 /**
  * Le client a déposé son mandat signé : **sans cette cloche, la pièce dort**
@@ -48,7 +55,7 @@ export async function ringProofDeposited(
  */
 export async function ringDraftVoided(
   deps: MandateBellDeps,
-  draft: PaymentMandate,
+  draft: VoidedDraft,
   cause: DraftVoidingCause,
 ): Promise<void> {
   await ring(deps, draft.companyId, (companyName) => ({

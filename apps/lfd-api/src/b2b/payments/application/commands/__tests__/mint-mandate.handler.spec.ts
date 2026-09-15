@@ -47,12 +47,14 @@ const CREDITOR: CreditorSnapshot = {
   preNotificationDays: 14,
   mandateContractDescription: "Fourniture de pains et viennoiseries",
   mandatePaymentType: "recurrent",
+  mandateScheme: "B2B",
 };
 
 const HOLDER: MandateHolder = {
   companyName: "SAS Les Tommeuses",
   email: "x@y.fr",
   reference: "C-9P2X4B",
+  siret: "",
 };
 
 function build(
@@ -195,7 +197,13 @@ describe("MintMandateHandler — frapper sans signer", () => {
    */
   it("nomme la RUM du brouillon gagnant quand l'index tranche", async () => {
     const winner = PaymentMandate.reconstitute({
-      ...mintMandate({ companyId: "cmp_1", creditorId: "ent_1", reference: "LFC-GAGNANT" }),
+      ...mintMandate({
+        scheme: "B2B",
+        paymentType: "recurrent",
+        companyId: "cmp_1",
+        creditorId: "ent_1",
+        reference: "LFC-GAGNANT",
+      }),
       id: "mdt_gagnant",
     });
     const { handler } = build({ raceWinner: winner });
@@ -224,7 +232,13 @@ describe("MintMandateHandler — frapper sans signer", () => {
    */
   it("refuse un second brouillon, et nomme celui qui existe", async () => {
     const draft = PaymentMandate.reconstitute({
-      ...mintMandate({ companyId: "cmp_1", creditorId: "ent_1", reference: "LFC-DEJA-LA" }),
+      ...mintMandate({
+        scheme: "B2B",
+        paymentType: "recurrent",
+        companyId: "cmp_1",
+        creditorId: "ent_1",
+        reference: "LFC-DEJA-LA",
+      }),
       id: "mdt_1",
     });
     const { handler, written } = build({ draft });

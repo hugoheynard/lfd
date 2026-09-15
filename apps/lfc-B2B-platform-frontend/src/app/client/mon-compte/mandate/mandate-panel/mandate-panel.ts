@@ -25,6 +25,7 @@ import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
 import { downloadMandate, openMandate } from '../mandate-document';
 import {
+  mandateBody,
   mandateDetailLabel,
   mandateReferenceLabel,
   mandateStage,
@@ -109,19 +110,9 @@ export class MandatePanel {
   );
 
   /** Le texte détaillé de l'état — la carte n'en garde que la ligne. */
-  protected readonly body = computed(() => {
-    const copy = this.t().account;
-    switch (this.stage()) {
-      case 'none':
-        return copy.mandateNoneBody;
-      case 'awaiting':
-        return copy.mandateAwaitingBody;
-      case 'review':
-        return copy.mandateInReviewBody;
-      case 'active':
-        return copy.mandateActiveBody;
-    }
-  });
+  protected readonly body = computed(() =>
+    mandateBody(this.mandates.mandate(), this.mandates.issuerScheme(), this.t().account),
+  );
 
   protected readonly dropLabel = computed(() =>
     this.stage() === 'review' ? this.t().account.mandateDropReplace : this.t().account.mandateDrop,

@@ -1,6 +1,8 @@
 import type { SetMandateOptionsPayload } from "@lfd/contracts";
 
+import { printsOptionalZones } from "../../../accounting/domain/services/mandate-printed-zones.js";
 import type { CompanyBankAccount } from "../../domain/entities/company-bank-account.js";
+import type { PaymentMandate } from "../../domain/entities/payment-mandate.js";
 import { MandateOptionsWithoutBankAccountError } from "../../domain/errors/bank-account-errors.js";
 import type { MandateActorChannel } from "../../domain/events/payment-mandate-facts.js";
 import { MandateOptionsChangedEvent } from "../../domain/events/payment-mandate.events.js";
@@ -39,6 +41,11 @@ const NO_PRECONDITION: MandateOptionsPrecondition = () => Promise.resolve();
  * - **Le brouillon en cours devient caduc** : les zones sont imprimées. Il est
  *   révoqué dans la même unité de travail, et l'équipe prévenue ensuite, hors
  *   transaction (plan §9 #4).
+ * - 🔴 **Sauf un brouillon interentreprises** (depuis le 2026-09-15, plan
+ *   `documentation/b2b/plan-mandat-deux-schemas.md` §10, Q2) : son formulaire
+ *   n'imprime pas ces zones, son papier ne change donc pas. Le schéma lu est
+ *   celui **du brouillon**, figé à sa frappe — pas le réglage courant de
+ *   l'entité. La réécriture reste journalisée.
  *
  * @throws {MandateOptionsWithoutBankAccountError} aucun RIB n'est déposé.
  */
@@ -57,7 +64,7 @@ export async function recordMandateOptions(
 
   const options = MandateOptions.create(payload);
   account.setOptions(options);
-  const trigger = { cause: "mandate_options_changed", via } as const;
+  const trigger = { cause: "mandate_options_changed", via, appliesTo: printsTheZones } as const;
   const voided = await writeVoidingDraft(deps, companyId, trigger, async () => {
     await deps.accounts.save(account);
     // Les valeurs NORMALISÉES : celles que la ligne porte, donc celles imprimées.
@@ -74,4 +81,9 @@ export async function recordMandateOptions(
   if (voided !== null) {
     await ringDraftVoided(deps, voided, "mandate_options_changed");
   }
+}
+
+/** Le papier de ce brouillon porte-t-il les zones 14 et 19 ? */
+function printsTheZones(draft: PaymentMandate): boolean {
+  return printsOptionalZones(draft.toSnapshot().scheme);
 }

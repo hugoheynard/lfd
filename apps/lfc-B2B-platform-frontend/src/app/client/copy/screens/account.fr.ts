@@ -310,10 +310,14 @@ export const ACCOUNT_FR: AccountCopy = {
   mandateSend: 'Renvoyer le mandat signé',
   mandateView: 'Voir le mandat',
   mandateDownload: 'Télécharger le mandat',
-  mandateNoneBody:
-    'Le mandat de prélèvement SEPA interentreprises autorise le prélèvement de vos factures sur le compte de votre RIB. Générez-le : vous pourrez ensuite l’imprimer, le dater, le signer et nous le renvoyer ici.',
-  mandateAwaitingBody:
-    'Imprimez le mandat, datez-le et signez-le, puis déposez ici son scan ou sa photo. Déclarez-le aussi à votre banque : un prélèvement interentreprises n’est accepté qu’une fois le mandat enregistré chez elle.',
+  mandateNoneBody: {
+    CORE: 'Le mandat de prélèvement SEPA autorise le prélèvement de vos factures sur le compte de votre RIB. Générez-le : vous pourrez ensuite l’imprimer, le dater, le signer et nous le renvoyer ici.',
+    B2B: 'Le mandat de prélèvement SEPA interentreprises autorise le prélèvement de vos factures sur le compte de votre RIB. Générez-le : vous pourrez ensuite l’imprimer, le dater, le signer et nous le renvoyer ici.',
+  },
+  mandateAwaitingBody: {
+    CORE: 'Imprimez le mandat, datez-le et signez-le, puis déposez ici son scan ou sa photo.',
+    B2B: 'Imprimez le mandat, datez-le et signez-le, puis déposez ici son scan ou sa photo. Déclarez-le aussi à votre banque : un prélèvement interentreprises n’est accepté qu’une fois le mandat enregistré chez elle.',
+  },
   mandateInReviewBody:
     'Nous vérifions le mandat signé : il sera actif dès que notre service l’aura relu. Vous pouvez encore remplacer le fichier déposé.',
   mandateActiveBody:

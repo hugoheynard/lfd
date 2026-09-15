@@ -1,9 +1,8 @@
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
-import type { DebtorMandate } from "../../ports/debtor-mandate.reader.js";
-import { SEPA_SCHEME } from "../../value-objects/sepa-scheme.js";
-import { renderPain008 } from "../pain008.js";
-import { renderSepaMandatePdf } from "../sepa-mandate-pdf.js";
-import { SEPA_MANDATE_WORDING } from "../sepa-mandate-wording.js";
+import type { DebtorSnapshot } from "../../debtor-snapshot.js";
+import type { MandatePaymentType } from "../../value-objects/mandate-defaults.js";
+import type { SepaScheme } from "../../value-objects/sepa-scheme.js";
+import { type MandateIssuance, renderSepaMandatePdf } from "../sepa-mandate-pdf.js";
 import { drawnText } from "./pdf-drawn-text.js";
 
 const CREDITOR: CreditorSnapshot = {
@@ -23,9 +22,26 @@ const CREDITOR: CreditorSnapshot = {
   preNotificationDays: 14,
   mandateContractDescription: "Fourniture de pains et viennoiseries",
   mandatePaymentType: "recurrent",
+  mandateScheme: "B2B",
+};
+
+const DEBTOR: DebtorSnapshot = {
+  companyName: "SARL Refuge du Col",
+  siren: "812456789",
+  holder: "Refuge du Col SARL",
+  addressLine1: "12 rue des Alpages",
+  addressLine2: "",
+  postalCode: "73150",
+  city: "Val d'Isere",
+  countryCode: "FR",
+  iban: "FR1420041010050500013M02606",
+  bic: "CEPAFRPP751",
+  debtorReference: "CODE-RELEVE-77",
+  contractNumber: "CT-42",
 };
 
 const RUM = "LFC-9P2X4B-260912-K7M3QT";
+const SCHEMES: readonly SepaScheme[] = ["CORE", "B2B"];
 
 /**
  * Le texte dessiné, sans aucun blanc. `pdfkit` coupe les paragraphes en lignes
@@ -36,160 +52,184 @@ function compact(text: string): string {
   return text.replace(/\s/gu, "");
 }
 
-function pain008For(creditor: CreditorSnapshot): string {
-  return renderPain008({
-    creditor,
-    cycleStart: new Date("2026-08-31T22:00:00.000Z"),
-    cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
-    createdAt: new Date("2026-09-30T21:05:00.000Z"),
-    mandates: new Map<string, DebtorMandate>([
-      ["cmp_1", { reference: RUM, iban: "FR7630004000031234567890143" }],
-    ]),
-    lines: [{ companyId: "cmp_1", companyName: "SAS Test", orderCount: 1, totalCents: 1_000 }],
-  });
+function render(
+  scheme: SepaScheme,
+  options: {
+    readonly debtor?: DebtorSnapshot | null;
+    readonly issuance?: MandateIssuance | null;
+    readonly paymentType?: MandatePaymentType;
+  } = {},
+) {
+  return renderSepaMandatePdf(
+    { scheme, paymentType: options.paymentType ?? "recurrent" },
+    CREDITOR,
+    null,
+    options.debtor ?? null,
+    options.issuance ?? null,
+  );
 }
 
-async function issuedText(): Promise<string> {
-  return drawnText(await renderSepaMandatePdf(CREDITOR, null, null, { reference: RUM }));
-}
-
-async function sampleText(): Promise<string> {
-  return drawnText(await renderSepaMandatePdf(CREDITOR, null));
+async function textOf(scheme: SepaScheme, issued = true): Promise<string> {
+  return drawnText(
+    await render(scheme, issued ? { debtor: DEBTOR, issuance: { reference: RUM } } : {}),
+  );
 }
 
 /**
- * 🔴 Le lot déclarait `B2B` pendant que le formulaire imprimait le texte CORE,
- * et rien ne les obligeait à s'accorder (constaté le 2026-09-13). Ces tests
- * rendent LES DEUX documents et comparent ce qu'ils disent réellement : un
- * retour du `B2B` en dur dans le lot, ou d'un titre en dur dans le formulaire,
- * les fait diverger ici.
+ * 🔴 Le schéma choisit le DOCUMENT depuis le 2026-09-15 : un mandat CORE promet
+ * un remboursement de 8 semaines, un mandat interentreprises le refuse. Un papier
+ * qui dirait l'un sous le titre de l'autre serait opposable contre nous — ces
+ * instantanés sont écrits EN CLAIR, jamais relus depuis la constante qu'on rend.
  */
-describe("le lot et le mandat déclarent le MÊME schéma", () => {
-  it("le `pain.008` écrit le schéma de la constante", () => {
-    const xml = pain008For(CREDITOR);
-
-    const declared = /<LclInstrm><Cd>([A-Z0-9]+)<\/Cd><\/LclInstrm>/u.exec(xml)?.[1];
-
-    expect(declared).toBe(SEPA_SCHEME);
-  });
-
-  it("le mandat imprime le titre du schéma que le lot déclare", async () => {
-    const wording = SEPA_MANDATE_WORDING[SEPA_SCHEME];
-
-    expect(await issuedText()).toContain(wording.issuedTitle);
-    expect(await sampleText()).toContain(wording.sampleTitle);
-  });
-
-  /**
-   * L'ancre littérale : sans elle, le lot et le formulaire pourraient basculer
-   * ENSEMBLE vers un schéma dont le texte serait faux, et les deux tests
-   * ci-dessus resteraient verts. Changer de schéma doit faire rougir celui-ci —
-   * c'est une décision de contrat bancaire, pas un réglage.
-   */
-  it("le schéma est l'interentreprises, tranché le 2026-09-14", () => {
-    expect(SEPA_SCHEME).toBe("B2B");
-  });
-});
-
-describe("renderSepaMandatePdf — le formulaire INTERENTREPRISES", () => {
-  it("porte « interentreprises » dans le titre du mandat émis ET de l'exemplaire", async () => {
-    expect(await issuedText()).toContain("MANDAT DE PRÉLÈVEMENT SEPA INTERENTREPRISES");
-    expect(await sampleText()).toContain(
-      "MANDAT SEPA INTERENTREPRISES (exemple - document non contractuel)",
-    );
-  });
-
-  /**
-   * Le paragraphe CORE retiré EN ENTIER : un texte à moitié CORE serait encore
-   * un mandat qui promet un remboursement que le schéma du lot refuse.
-   */
-  it("ne contient plus rien du paragraphe CORE — ni 8 semaines, ni 13 mois", async () => {
-    for (const text of [await issuedText(), await sampleText()]) {
-      expect(text).not.toContain("8 semaines");
-      expect(text).not.toContain("13 mois");
-      expect(text).not.toContain("droit d'être remboursé");
-      expect(text).not.toContain("demande de remboursement");
-    }
-  });
-
-  /**
-   * Instantané du texte d'autorisation, écrit EN CLAIR et non relu depuis la
-   * constante : un test qui comparerait le rendu à la constante qu'il rend
-   * resterait vert sur n'importe quel texte.
-   */
-  it("imprime le texte d'autorisation interentreprises complet", async () => {
-    const text = compact(await issuedText());
+describe("renderSepaMandatePdf — chaque schéma dit SON texte", () => {
+  it("CORE imprime la phrase (A)/(B) et le droit au remboursement, complets", async () => {
+    const text = compact(await textOf("CORE"));
 
     for (const paragraph of [
+      "MANDAT DE PRÉLÈVEMENT SEPA",
       "En signant ce formulaire de mandat, vous autorisez (A) (CRAZEATIVITY) à envoyer des " +
         "instructions à votre banque pour débiter votre compte, et (B) votre banque à " +
         "débiter votre compte conformément aux instructions de (CRAZEATIVITY).",
-      "Ce mandat est destiné uniquement à des transactions interentreprises.",
-      "Vous ne bénéficiez d'aucun droit à remboursement par votre banque une fois votre " +
-        "compte débité, mais vous pouvez demander à votre banque de ne pas débiter " +
-        "votre compte jusqu'au jour où le paiement est dû.",
+      "Vous bénéficiez du droit d'être remboursé par votre banque selon les conditions " +
+        "décrites dans la convention que vous avez passée avec elle.",
+      "Une demande de remboursement doit être présentée :",
+      "- dans les 8 semaines suivant la date de débit de votre compte pour un prélèvement autorisé,",
+      "- sans tarder et au plus tard dans les 13 mois en cas de prélèvement non autorisé.",
+    ]) {
+      expect(text).toContain(compact(paragraph));
+    }
+    expect(text).not.toContain("INTERENTREPRISES");
+  });
+
+  it("l'interentreprises imprime le texte du gabarit, au nom du créancier", async () => {
+    const text = compact(await textOf("B2B"));
+
+    for (const paragraph of [
+      "MANDAT DE PRÉLÈVEMENT SEPA INTERENTREPRISES",
+      "Vous devez compléter et signer ce mandat puis le transmettre à votre établissement " +
+        "bancaire. Assurez-vous que votre établissement bancaire a enregistré la RUM " +
+        "ci-dessous avant tout premier paiement sur le compte désigné.",
+      "En signant ce formulaire de mandat, vous autorisez CRAZEATIVITY à envoyer des " +
+        "instructions à votre banque pour débiter votre compte, et votre banque à débiter " +
+        "votre compte conformément aux instructions de CRAZEATIVITY.",
+      "Ce mandat est dédié aux prélèvements SEPA interentreprises. Vous n'êtes pas en droit " +
+        "de demander à votre banque le remboursement d'un prélèvement SEPA interentreprises " +
+        "une fois que le montant est débité de votre compte. Vous pouvez cependant demander " +
+        "à votre banque de ne pas débiter votre compte jusqu'au jour de l'échéance.",
+      "Veuillez obligatoirement compléter les champs marqués *.",
     ]) {
       expect(text).toContain(compact(paragraph));
     }
   });
 
-  it("dit au débiteur de déclarer le mandat à sa banque avant le premier prélèvement", async () => {
-    const consigne =
-      "Important : avant le premier prélèvement, déclarez ce mandat à votre " +
-      "banque en lui communiquant la référence unique du mandat et l'identifiant du " +
-      "créancier. Sans cette déclaration, votre banque refusera le prélèvement.";
+  it("CORE contient « 8 semaines » et « 13 mois » ; l'interentreprises ni l'un ni l'autre", async () => {
+    const [core, b2b] = [await textOf("CORE"), await textOf("B2B")];
 
-    expect(compact(await issuedText())).toContain(compact(consigne));
-    expect(compact(await sampleText())).toContain(compact(consigne));
+    expect(core).toContain("8 semaines");
+    expect(core).toContain("13 mois");
+    for (const text of [b2b, await textOf("B2B", false)]) {
+      expect(text).not.toContain("8 semaines");
+      expect(text).not.toContain("13 mois");
+      expect(text).not.toContain("droit d'être remboursé");
+    }
   });
 
-  /** Le paragraphe a grandi d'une ligne : le modèle tient en une page, et doit. */
-  it("tient toujours sur UNE page", async () => {
-    const pdf = await renderSepaMandatePdf(CREDITOR, null, null, { reference: RUM });
-
-    expect(pdf.toString("latin1").match(/\/Type \/Page\b(?!s)/gu)).toHaveLength(1);
+  it("l'interentreprises porte la mention RGPD au nom du créancier imprimé", async () => {
+    expect(compact(await textOf("B2B"))).toContain(
+      compact(
+        "Les informations de ce mandat sont traitées par CRAZEATIVITY, responsable du " +
+          "traitement, pour la gestion de vos prélèvements SEPA",
+      ),
+    );
+    expect(await textOf("B2B")).toContain("CNIL");
   });
 });
 
 /**
- * 🔴 Le lot écrivait `RCUR` en dur pendant que le formulaire cochait la zone 12
- * selon le réglage de l'entité : une entité réglée en ponctuel aurait fait
- * signer « Paiement ponctuel » et prélevé en récurrent (tranché par Hugo le
- * 2026-09-14). Les deux lisent désormais `mandatePaymentType`, et rien d'autre.
- *
- * ⚠️ La case cochée est DESSINÉE (deux traits), pas écrite : l'extracteur de
- * texte ne la voit pas. Ce qu'on éprouve côté formulaire, c'est que le réglage
- * change le document — et côté lot, la séquence exacte.
+ * Le gabarit est celui de la DGFiP : tout ce qui la désigne en est retiré, et
+ * l'IBAN du créancier n'a pas plus sa place ici qu'en CORE.
  */
-describe("le lot et le mandat suivent le MÊME type de paiement", () => {
-  const recurrent: CreditorSnapshot = { ...CREDITOR, mandatePaymentType: "recurrent" };
-  const oneOff: CreditorSnapshot = { ...CREDITOR, mandatePaymentType: "one_off" };
-
-  it("prélève en RCUR une entité réglée en récurrent", () => {
-    const xml = pain008For(recurrent);
-
-    expect(xml).toContain("<SeqTp>RCUR</SeqTp>");
-    expect(xml).toContain("-RCUR</PmtInfId>");
-    expect(xml).not.toContain("OOFF");
+describe("renderSepaMandatePdf — l'interentreprises, adapté du gabarit DGFiP", () => {
+  it("ne nomme ni la DGFiP, ni son service, ni la loi de 1978", async () => {
+    for (const text of [await textOf("B2B"), await textOf("B2B", false)]) {
+      expect(text).not.toContain("Direction Générale");
+      expect(text.toUpperCase()).not.toContain("DGFIP");
+      expect(text).not.toContain("service gestionnaire");
+      expect(text).not.toContain("78-17");
+    }
   });
 
-  it("prélève en OOFF une entité réglée en ponctuel — et plus jamais en RCUR", () => {
-    const xml = pain008For(oneOff);
+  it("n'imprime JAMAIS l'IBAN du créancier — et imprime bien celui du débiteur", async () => {
+    const text = compact(await textOf("B2B"));
 
-    expect(xml).toContain("<SeqTp>OOFF</SeqTp>");
-    expect(xml).toContain("-OOFF</PmtInfId>");
-    expect(xml).not.toContain("RCUR");
+    // La présence de l'IBAN débiteur prouve que l'extracteur lit les peignes.
+    expect(text).toContain(DEBTOR.iban);
+    expect(text).not.toContain(CREDITOR.creditorIban);
   });
 
-  it("le formulaire change avec le même réglage que le lot", async () => {
-    const [recurrentPdf, oneOffPdf] = await Promise.all([
-      renderSepaMandatePdf(recurrent, null),
-      renderSepaMandatePdf(oneOff, null),
-    ]);
+  it("imprime le SIREN, la raison sociale du débiteur ET le titulaire du compte", async () => {
+    const text = await textOf("B2B");
 
-    expect(recurrentPdf.equals(oneOffPdf)).toBe(false);
-    // Et rien d'autre que ce réglage ne les distingue : deux rendus du même
-    // réglage sont identiques octet pour octet.
-    expect(recurrentPdf.equals(await renderSepaMandatePdf(recurrent, null))).toBe(true);
+    expect(compact(text)).toContain("812456789");
+    expect(text).toContain("SARL Refuge du Col");
+    expect(text).toContain("Refuge du Col SARL");
   });
+
+  /** Décision Q2 : le gabarit n'a pas de zones 14, 19, 20. */
+  it("n'imprime ni le code débiteur, ni le numéro, ni la description du contrat", async () => {
+    const text = await textOf("B2B");
+
+    // Pas un fragment de la RUM : « C-9P2X4B » y figure, et le test passait faux.
+    expect(text).not.toContain("CODE-RELEVE-77");
+    expect(text).not.toContain("CT-42");
+    expect(text).not.toContain("Fourniture de pains et viennoiseries");
+    // Et CORE, lui, les imprime toujours.
+    expect(await textOf("CORE")).toContain("CT-42");
+  });
+
+  it("écrit le type de paiement DU MANDAT en toutes lettres", async () => {
+    const recurrent = drawnText(await render("B2B", { paymentType: "recurrent" }));
+    const oneOff = drawnText(await render("B2B", { paymentType: "one_off" }));
+
+    expect(recurrent).toContain("Paiement récurrent");
+    expect(recurrent).not.toContain("Paiement ponctuel");
+    expect(oneOff).toContain("Paiement ponctuel");
+    expect(oneOff).not.toContain("Paiement récurrent");
+  });
+
+  it("imprime la RUM entière dans son peigne de 35 cases", async () => {
+    const reference = `LFC-${"9".repeat(31)}`;
+
+    expect(compact(drawnText(await render("B2B", { issuance: { reference } })))).toContain(
+      reference,
+    );
+  });
+});
+
+describe.each(SCHEMES)("renderSepaMandatePdf — %s, ce qui vaut pour les deux", (scheme) => {
+  it("tient sur UNE page, émis et débiteur rempli", async () => {
+    const pdf = await render(scheme, { debtor: DEBTOR, issuance: { reference: RUM } });
+
+    expect(pdf.toString("latin1").match(/\/Type \/Page\b(?!s)/gu)).toHaveLength(1);
+  });
+
+  /**
+   * 🔴 Un seul paramètre commande la RUM et le filigrane : sans émission, la
+   * mention EXEMPLE est là, avec ou sans débiteur ; avec, elle tombe.
+   */
+  it("porte le filigrane EXEMPLE sans émission, et le perd avec", async () => {
+    expect(await textOf(scheme, false)).toContain("EXEMPLE");
+    expect(drawnText(await render(scheme, { debtor: DEBTOR }))).toContain("EXEMPLE");
+    expect(await textOf(scheme)).not.toContain("EXEMPLE");
+  });
+
+  it("rend les MÊMES octets deux fois sans émission", async () => {
+    const [first, second] = await Promise.all([render(scheme), render(scheme)]);
+
+    expect(first.equals(second)).toBe(true);
+  });
+});
+
+it("les deux schémas ne rendent pas le même document", async () => {
+  expect((await render("CORE")).equals(await render("B2B"))).toBe(false);
 });

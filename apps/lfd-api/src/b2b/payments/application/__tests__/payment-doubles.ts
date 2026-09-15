@@ -64,6 +64,7 @@ export const HOLDER: MandateHolder = {
   companyName: "Refuge du Col SARL",
   email: "compta@refuge.fr",
   reference: "C-9P2X4B",
+  siret: "81245678900017",
 };
 
 /** Un émetteur complet : il peut imprimer un mandat. */
@@ -84,6 +85,7 @@ export const CREDITOR: CreditorSnapshot = {
   preNotificationDays: 14,
   mandateContractDescription: "Fourniture de pains et viennoiseries",
   mandatePaymentType: "recurrent",
+  mandateScheme: "B2B",
 };
 
 export const PDF = Buffer.from("%PDF-1.4\nmandat signé", "latin1");
@@ -96,6 +98,8 @@ export function mandate(overrides: Partial<MandateSnapshot> = {}): PaymentMandat
     stripeCustomerId: null,
     paymentMethodId: null,
     reference: "LFC-9P2X4B-260914-K7M3QT",
+    scheme: "B2B",
+    paymentType: "recurrent",
     last4: "",
     bankCode: "",
     country: "",

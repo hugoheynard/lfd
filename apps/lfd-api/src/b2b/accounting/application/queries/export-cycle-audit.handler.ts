@@ -44,10 +44,12 @@ export class ExportCycleAuditHandler implements IQueryHandler<
         clock: this.clock,
       },
       query.legalEntityId,
+      query.scheme,
     );
     return {
       csv: auditCsv(draft.xml),
-      fileName: `CONTROLE-prelevement-${draft.cycleTag}.csv`,
+      // Le même nom que le XML qu'il contrôle, pour qu'on les range ensemble.
+      fileName: `CONTROLE-prelevement-${draft.scheme}-${draft.creditorSiren}-${draft.cycleTag}.csv`,
     };
   }
 }

@@ -161,6 +161,7 @@ describe("LegalEntity — encaisser demande tout", () => {
       // contrat, et récurrent — le régime de l'immense majorité des mandats.
       mandateContractDescription: "",
       mandatePaymentType: "recurrent",
+      mandateScheme: "B2B",
       creditorBic: "CEPAFRPP751",
       accountHolder: "Crazeativity",
       accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],

@@ -1,3 +1,5 @@
+import type { SepaScheme } from "../../domain/value-objects/sepa-scheme.js";
+
 /**
  * Le cycle en cours.
  *
@@ -18,7 +20,11 @@ export class GetCurrentBillingCycleQuery {}
  * deux, choisir en silence prélèverait sous le mauvais ICS.
  */
 export class ExportCycleDraftQuery {
-  constructor(readonly legalEntityId: string) {}
+  constructor(
+    readonly legalEntityId: string,
+    /** Un fichier par schéma : le cycle rend CORE et B2B séparément. */
+    readonly scheme: SepaScheme,
+  ) {}
 }
 
 /**
@@ -29,5 +35,9 @@ export class ExportCycleDraftQuery {
  * téléchargement de XML.
  */
 export class ExportCycleAuditQuery {
-  constructor(readonly legalEntityId: string) {}
+  constructor(
+    readonly legalEntityId: string,
+    /** Le contrôle atteste UN fichier : celui de ce schéma. */
+    readonly scheme: SepaScheme,
+  ) {}
 }

@@ -11,6 +11,7 @@ const DRAFT: CustomerMandateView = {
   id: 'mdt_1',
   reference: 'LFD-MDT-0001',
   status: 'draft',
+  scheme: 'CORE',
   hasProof: false,
   proofFileName: '',
   acceptedAt: null,
@@ -67,6 +68,9 @@ describe('ClientMandate', () => {
     mandates.ensure('cmp_1');
     await tick();
     http.expectOne((r) => MANDATE_URL.test(r.url)).flush(DRAFT);
+    http
+      .expectOne((r) => r.url.endsWith('/mandate-options'))
+      .flush({ options: null, issuerScheme: 'CORE' });
     await tick();
 
     const refreshing = mandates.refresh('cmp_1');
@@ -142,11 +146,29 @@ describe('ClientMandate', () => {
     const request = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/mandate-options'));
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.get('Authorization')).toBe('Bearer jeton-de-test');
-    request.flush({ options: null });
+    request.flush({ options: null, issuerScheme: null });
     await reading;
 
     expect(mandates.optionsStatus()).toBe('ready');
     expect(mandates.options()).toBeNull();
+  });
+
+  /**
+   * Le schéma de l'émetteur vit dans l'enveloppe des options, et la CARTE en a
+   * besoin avant tout panneau : `ensure` lit donc les deux, une seule fois.
+   */
+  it('`ensure` lit le mandat ET le schéma de l’émetteur, une fois par société', async () => {
+    expect(mandates.issuerScheme()).toBeNull();
+    mandates.ensure('cmp_1');
+    mandates.ensure('cmp_1');
+    await tick();
+    http.expectOne((r) => MANDATE_URL.test(r.url)).flush(null);
+    http
+      .expectOne((r) => r.url.endsWith('/companies/cmp_1/mandate-options'))
+      .flush({ options: null, issuerScheme: 'B2B' });
+    await tick();
+
+    expect(mandates.issuerScheme()).toBe('B2B');
   });
 
   /** Plan §9 #4 : réécrire les zones révoque le brouillon — le mandat se relit avec elles. */
@@ -164,7 +186,10 @@ describe('ClientMandate', () => {
     http.expectOne((r) => MANDATE_URL.test(r.url)).flush({ ...DRAFT, status: 'revoked' });
     http
       .expectOne((r) => r.url.endsWith('/mandate-options') && r.method === 'GET')
-      .flush({ options: { debtorReference: 'C-9P2X4B', contractNumber: '' } });
+      .flush({
+        options: { debtorReference: 'C-9P2X4B', contractNumber: '' },
+        issuerScheme: 'CORE',
+      });
     expect(await saving).toBeNull();
     expect(mandates.mandate()?.status).toBe('revoked');
     expect(mandates.options()?.debtorReference).toBe('C-9P2X4B');

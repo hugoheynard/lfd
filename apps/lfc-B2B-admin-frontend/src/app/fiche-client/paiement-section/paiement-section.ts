@@ -15,6 +15,7 @@ import {
   DEFERRED_TERM_LABELS,
   deferredTermSchema,
   MANDATE_STATUS_LABELS,
+  SEPA_SCHEME_LABELS,
   type CompanyBankAccountView,
   type DeferredTerm,
   type PaymentMandateView,
@@ -139,6 +140,8 @@ export class PaiementSection {
   readonly grantedTermsChange = output<readonly DeferredTerm[]>();
 
   protected readonly mandate = signal<PaymentMandateView | null>(null);
+  /** Le schéma FIGÉ sur le mandat, pas celui de l'entité : c'est lui que le lot prélève. */
+  protected readonly schemeLabels = SEPA_SCHEME_LABELS;
   /**
    * Le RIB du client, remonté par le bloc qui le charge.
    *

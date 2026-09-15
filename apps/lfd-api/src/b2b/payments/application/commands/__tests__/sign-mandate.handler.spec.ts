@@ -18,6 +18,8 @@ const ON_PAPER = "2026-09-03";
 
 function snapshot(overrides: Partial<MandateSnapshot>): MandateSnapshot {
   return {
+    scheme: "B2B",
+    paymentType: "recurrent",
     id: "mdt_draft",
     companyId: "cmp_1",
     stripeCustomerId: null,

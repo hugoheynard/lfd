@@ -113,6 +113,9 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
         acceptedAt: snapshot.acceptedAt,
         revokedAt: snapshot.revokedAt,
         creditorId: snapshot.creditorId,
+        // Écrits à la création, jamais réécrits par `save` : figés.
+        scheme: snapshot.scheme,
+        paymentType: snapshot.paymentType,
         proofStorageKey: snapshot.proofStorageKey,
         proofFileName: snapshot.proofFileName,
       },
@@ -156,11 +159,16 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   async findHolder(companyId: string): Promise<MandateHolder | null> {
     const row = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { raisonSociale: true, contactEmail: true, reference: true },
+      select: { raisonSociale: true, contactEmail: true, reference: true, siret: true },
     });
     return row === null
       ? null
-      : { companyName: row.raisonSociale, email: row.contactEmail, reference: row.reference };
+      : {
+          companyName: row.raisonSociale,
+          email: row.contactEmail,
+          reference: row.reference,
+          siret: row.siret,
+        };
   }
 
   async findStripeCustomerId(companyId: string): Promise<string | null> {
@@ -189,6 +197,8 @@ function toSnapshot(row: PaymentMandateRow): MandateSnapshot {
     revokedAt: row.revokedAt,
     proofStorageKey: row.proofStorageKey,
     proofFileName: row.proofFileName,
+    scheme: row.scheme,
+    paymentType: row.paymentType,
     creditorId: row.creditorId,
   };
 }

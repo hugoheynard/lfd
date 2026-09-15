@@ -82,6 +82,8 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
       to: holder.email,
       template: "customer.mandate-to-sign",
       data: {
+        // Le schéma DU MANDAT, figé à sa frappe : le courriel décrit le papier joint.
+        scheme: snapshot.scheme,
         companyName: holder.companyName,
         reference: snapshot.reference,
         creditorIdentifier: document.creditorIdentifier,

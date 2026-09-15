@@ -1,15 +1,16 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type {
   BillingCycleView,
   CatalogSummaryView,
   CustomerPortfolioView,
   LegalEntityView,
+  SepaScheme,
 } from '@lfd/contracts';
 
-import { ComptabiliteDashboardService } from '../comptabilite-dashboard.service';
+import { ComptabiliteDashboardService, type NamedBlob } from '../comptabilite-dashboard.service';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { TableauDeBordPage } from './tableau-de-bord-page';
 
@@ -57,6 +58,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     preNotificationDays: 14,
     mandateContractDescription: '',
     mandatePaymentType: 'recurrent',
+    mandateScheme: 'B2B',
     archivedAt: null,
     canCollect: false,
     hasLogo: false,
@@ -99,6 +101,23 @@ class FakeDashboard {
   catalogCsv(): Promise<Blob> {
     this.downloaded.push('catalogue');
     return Promise.resolve(new Blob(['x']));
+  }
+  /** Le nom que le serveur rend dans `Content-Disposition` ; `null` = en-tête absent. */
+  draftFileName: ((scheme: SepaScheme) => string) | null = (scheme) =>
+    `BROUILLON-prelevement-${scheme}-552100554-2026-09.xml`;
+  cycleDraftAudit(legalEntityId: string, scheme: SepaScheme): Promise<NamedBlob> {
+    this.downloaded.push(`controle:${legalEntityId}:${scheme}`);
+    return Promise.resolve({
+      blob: new Blob(['Référence']),
+      fileName: this.draftFileName === null ? null : `CONTROLE-${this.draftFileName(scheme)}`,
+    });
+  }
+  cycleDraft(legalEntityId: string, scheme: SepaScheme): Promise<NamedBlob> {
+    this.downloaded.push(`brouillon:${legalEntityId}:${scheme}`);
+    return Promise.resolve({
+      blob: new Blob(['<Document/>']),
+      fileName: this.draftFileName === null ? null : this.draftFileName(scheme),
+    });
   }
 }
 
@@ -256,5 +275,101 @@ describe('TableauDeBordPage', () => {
     await fixture.whenStable();
 
     expect(api.downloaded).toEqual(['comptes', 'catalogue']);
+  });
+});
+
+describe('TableauDeBordPage — les brouillons du lot, un par schéma', () => {
+  const ready = (): FakeEntities => {
+    const entities = new FakeEntities();
+    entities.rows = [entity({ ics: 'FR72ZZZ123456', canCollect: true, missingToCollect: [] })];
+    return entities;
+  };
+
+  /** Les noms sous lesquels le navigateur a reçu les fichiers. */
+  function captureSaves(): string[] {
+    const names: string[] = [];
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:brouillon');
+    vi.spyOn(URL, 'revokeObjectURL').mockReturnValue(undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      names.push(this.download);
+    });
+    return names;
+  }
+
+  const draftButtons = (fixture: ComponentFixture<TableauDeBordPage>): HTMLButtonElement[] => [
+    ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+      'button.tb-draft',
+    ),
+  ];
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const auditButtons = (fixture: ComponentFixture<TableauDeBordPage>): HTMLButtonElement[] => [
+    ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+      'button.tb-audit',
+    ),
+  ];
+
+  it('propose deux lots, CORE puis interentreprises, chacun avec son contrôle', async () => {
+    const { fixture } = await render(new FakeDashboard(), ready());
+
+    expect(draftButtons(fixture).map((b) => b.textContent?.trim())).toEqual([
+      'Brouillon CORE',
+      'Brouillon interentreprises',
+    ]);
+    expect(auditButtons(fixture).map((b) => b.textContent?.trim())).toEqual([
+      'Contrôler CORE en CSV',
+      'Contrôler interentreprises en CSV',
+    ]);
+  });
+
+  it('le contrôle suit le schéma, et le nom du serveur — ou son repli suffixé', async () => {
+    const names = captureSaves();
+    const api = new FakeDashboard();
+    const { fixture } = await render(api, ready());
+
+    auditButtons(fixture)[0]?.click();
+    await fixture.whenStable();
+    api.draftFileName = null;
+    auditButtons(fixture)[1]?.click();
+    await fixture.whenStable();
+
+    expect(api.downloaded).toEqual(['controle:le1:CORE', 'controle:le1:B2B']);
+    expect(names).toEqual([
+      'CONTROLE-BROUILLON-prelevement-CORE-552100554-2026-09.xml',
+      'CONTROLE-prelevement-552100554-B2B.csv',
+    ]);
+  });
+
+  it('demande chaque fichier avec son schéma, et l’enregistre sous le nom du serveur', async () => {
+    const names = captureSaves();
+    const { fixture, api } = await render(new FakeDashboard(), ready());
+
+    draftButtons(fixture)[0]?.click();
+    await fixture.whenStable();
+    draftButtons(fixture)[1]?.click();
+    await fixture.whenStable();
+
+    expect(api.downloaded).toEqual(['brouillon:le1:CORE', 'brouillon:le1:B2B']);
+    expect(names).toEqual([
+      'BROUILLON-prelevement-CORE-552100554-2026-09.xml',
+      'BROUILLON-prelevement-B2B-552100554-2026-09.xml',
+    ]);
+  });
+
+  it('sans `Content-Disposition`, retombe sur un nom suffixé du schéma', async () => {
+    const names = captureSaves();
+    const api = new FakeDashboard();
+    api.draftFileName = null;
+    const { fixture } = await render(api, ready());
+
+    draftButtons(fixture)[1]?.click();
+    await fixture.whenStable();
+
+    expect(names).toEqual(['BROUILLON-prelevement-552100554-B2B.xml']);
   });
 });

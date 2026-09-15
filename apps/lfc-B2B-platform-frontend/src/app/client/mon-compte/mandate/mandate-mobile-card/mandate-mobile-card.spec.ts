@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { CustomerMandateView } from '@lfd/contracts';
+import type { CustomerMandateView, SepaScheme } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
@@ -15,6 +15,7 @@ const DRAFT: CustomerMandateView = {
   id: 'mdt_1',
   reference: 'LFD-MDT-0001',
   status: 'draft',
+  scheme: 'CORE',
   hasProof: false,
   proofFileName: '',
   acceptedAt: null,
@@ -23,7 +24,11 @@ const DRAFT: CustomerMandateView = {
 let ensured: string[];
 let reloads: string[];
 
-function render(status: MandateReadStatus, mandate: CustomerMandateView | null): HTMLElement {
+function render(
+  status: MandateReadStatus,
+  mandate: CustomerMandateView | null,
+  issuerScheme: SepaScheme | null = null,
+): HTMLElement {
   ensured = [];
   reloads = [];
   const fixture = bootCard(
@@ -35,6 +40,7 @@ function render(status: MandateReadStatus, mandate: CustomerMandateView | null):
         useValue: {
           status: signal(status),
           mandate: signal(mandate),
+          issuerScheme: signal(issuerScheme),
           ensure: (id: string) => ensured.push(id),
           reload: (id: string) => {
             reloads.push(id);
@@ -54,6 +60,21 @@ afterEach(() => {
 });
 
 describe('MandateMobileCard', () => {
+  /** Plan-mandat-deux-schemas §10 Q2 : le mandat interentreprises n'imprime ni la zone 14 ni la 19. */
+  it('sous un émetteur interentreprises, ne propose pas les options', () => {
+    for (const mandate of [null, DRAFT]) {
+      const el = render('ready', mandate, 'B2B');
+      expect(el.querySelector('button.options')).toBeNull();
+    }
+  });
+
+  it('sous un émetteur CORE, ou tant que le schéma n’est pas lu, propose les options', () => {
+    for (const scheme of ['CORE', null] as const) {
+      const el = render('ready', DRAFT, scheme);
+      expect(el.querySelector('button.options')).not.toBeNull();
+    }
+  });
+
   it('sans mandat, le bouton du bas génère — le panneau monte du bas', () => {
     const el = render('ready', null);
     expect(ensured).toEqual(['cmp_1']);
@@ -76,7 +97,7 @@ describe('MandateMobileCard', () => {
     expect(el.querySelector('.state')?.textContent?.trim()).toBe(FR.account.mandateAwaiting);
     expect(el.querySelector('.reference')?.textContent?.trim()).toBe('RUM · LFD-MDT-0001');
     expect(el.querySelectorAll('fold-button-icon').length).toBe(2);
-    expect(el.textContent).not.toContain(FR.account.mandateAwaitingBody);
+    expect(el.textContent).not.toContain(FR.account.mandateAwaitingBody.CORE);
     expect(el.textContent).not.toContain(FR.account.mandateEsign);
 
     const button = footButton(el);

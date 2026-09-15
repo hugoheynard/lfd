@@ -97,6 +97,15 @@ async function declareIssuer(): Promise<void> {
     .expect(204);
 }
 
+/** Bascule l'émetteur en CORE — seul formulaire qui imprime les zones 14 et 19. */
+async function useCoreScheme(): Promise<void> {
+  const entity = await ctx.prisma.legalEntity.findFirstOrThrow();
+  await staff()
+    .put(`/admin/accounting/legal-entities/${entity.id}/mandate-scheme`)
+    .send({ scheme: "CORE" })
+    .expect(204);
+}
+
 async function openFlag(): Promise<void> {
   await staff().put("/admin/feature-access/customerMandate").send({ value: "open" }).expect(204);
 }
@@ -170,7 +179,7 @@ describe("les zones — drapeau ouvert", () => {
   beforeEach(openFlag);
 
   it("rend `{ options: null }` sans RIB, et refuse le PUT en 404", async () => {
-    expect(await readOptions()).toEqual({ options: null });
+    expect(await readOptions()).toEqual({ options: null, issuerScheme: null });
 
     const response = await ctx.asSub(OWNER).put(optionsUrl()).send(OPTIONS).expect(404);
     expect(jsonBody<{ code: string }>(response).code).toBe("payments.bank_account.missing");
@@ -184,18 +193,20 @@ describe("les zones — drapeau ouvert", () => {
     await ctx.asSub(OWNER).put(`/companies/${companyId}/bank-account`).send(RIB).expect(204);
     expect(await readOptions(sub)).toEqual({
       options: { debtorReference: "", contractNumber: "" },
+      issuerScheme: null,
     });
 
     await ctx.asSub(sub).put(optionsUrl()).send(OPTIONS).expect(204);
 
-    expect(await readOptions(sub)).toEqual({ options: OPTIONS });
+    expect(await readOptions(sub)).toEqual({ options: OPTIONS, issuerScheme: null });
     // Plan §10 (2026-09-14) : journalisé même sans brouillon, avec qui et quoi.
     expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
   });
 
-  it("révoque le brouillon existant, trace la cause et sonne l'équipe", async () => {
+  it("révoque le brouillon CORE existant, trace la cause et sonne l'équipe", async () => {
     await ctx.asSub(OWNER).put(`/companies/${companyId}/bank-account`).send(RIB).expect(204);
     await declareIssuer();
+    await useCoreScheme();
     const draft = await mint();
 
     await ctx.asSub(BILLING).put(optionsUrl()).send(OPTIONS).expect(204);
@@ -220,6 +231,29 @@ describe("les zones — drapeau ouvert", () => {
     ).toBe(1);
   });
 
+  /**
+   * Plan mandat deux schémas §10, Q2 (2026-09-15) : le formulaire
+   * interentreprises n'imprime pas ces zones — le brouillon reste signable, et
+   * l'écran lit `issuerScheme` pour masquer la carte.
+   */
+  it("ne révoque PAS un brouillon interentreprises, et annonce le schéma de l'émetteur", async () => {
+    await ctx.asSub(OWNER).put(`/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await declareIssuer();
+    const draft = await mint();
+
+    await ctx.asSub(BILLING).put(optionsUrl()).send(OPTIONS).expect(204);
+
+    const after = jsonBody<CustomerMandateView>(
+      await ctx.asSub(OWNER).get(mandateUrl()).expect(200),
+    );
+    expect(after).toMatchObject({ id: draft.id, status: "draft" });
+    expect(await readOptions()).toEqual({ options: OPTIONS, issuerScheme: "B2B" });
+    expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
+    expect(
+      await ctx.prisma.activityEvent.count({ where: { type: "payment_mandate.draft_voided" } }),
+    ).toBe(0);
+  });
+
   it("refuse le PUT en 409 sous un mandat actif, sans rien réécrire", async () => {
     await ctx.asSub(OWNER).put(`/companies/${companyId}/bank-account`).send(RIB).expect(204);
     await declareIssuer();
@@ -235,7 +269,10 @@ describe("les zones — drapeau ouvert", () => {
     expect(jsonBody<{ code: string }>(response).code).toBe(
       "payments.mandate_options.bound_to_active_mandate",
     );
-    expect(await readOptions()).toEqual({ options: { debtorReference: "", contractNumber: "" } });
+    expect(await readOptions()).toEqual({
+      options: { debtorReference: "", contractNumber: "" },
+      issuerScheme: "B2B",
+    });
     expect(await optionsFacts()).toEqual([]);
     const mandate = jsonBody<CustomerMandateView>(
       await ctx.asSub(OWNER).get(mandateUrl()).expect(200),

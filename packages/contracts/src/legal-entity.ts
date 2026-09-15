@@ -76,6 +76,11 @@ export interface LegalEntityView {
   readonly mandateContractDescription: string;
   /** Zone 12 du mandat — récurrent, ou ponctuel. */
   readonly mandatePaymentType: MandatePaymentType;
+  /**
+   * Le schéma des mandats que l'entité frappe désormais. Chaque mandat a figé
+   * le sien : ce champ ne dit rien des mandats déjà émis.
+   */
+  readonly mandateScheme: SepaScheme;
   /** ISO, ou `null` si l'entité est vivante. */
   readonly archivedAt: string | null;
   /**
@@ -241,6 +246,50 @@ export const MANDATE_PAYMENT_TYPE_LABELS: Readonly<Record<MandatePaymentType, st
   recurrent: "Paiement récurrent / répétitif",
   one_off: "Paiement ponctuel",
 };
+
+/**
+ * Le **schéma SEPA** d'un mandat — `CORE` ou interentreprises (`B2B`).
+ *
+ * Plan `documentation/b2b/plan-mandat-deux-schemas.md`.
+ */
+export const sepaSchemeSchema = z.enum(["CORE", "B2B"]);
+export type SepaScheme = z.infer<typeof sepaSchemeSchema>;
+
+export const SEPA_SCHEME_LABELS: Readonly<Record<SepaScheme, string>> = {
+  CORE: "SEPA CORE",
+  B2B: "SEPA interentreprises (B2B)",
+};
+
+/**
+ * Changer le schéma des frappes à venir.
+ *
+ * 🔴 **Sans `.default()`, et dans son propre payload** : les réglages de mandat
+ * ont des défauts, et un écran ancien qui les enverrait sans ce champ
+ * rebasculerait le schéma sans que personne l'ait décidé.
+ */
+export const setMandateSchemePayloadSchema = z.object({ scheme: sepaSchemeSchema });
+export type SetMandateSchemePayload = z.infer<typeof setMandateSchemePayloadSchema>;
+
+/**
+ * `GET /admin/accounting/legal-entities/:id/mandate-scheme` — ce qu'une bascule
+ * de schéma laisserait derrière elle, **lu avant** de la confirmer.
+ *
+ * Des comptes, pas des listes (plan mandat deux schémas §3.3) : le dialogue de
+ * confirmation dit « 3 brouillons deviendront caducs, 12 mandats actifs gardent
+ * leur schéma », et la re-signature des actifs reste un geste staff, dossier
+ * par dossier.
+ */
+export interface MandateSchemeUsageView {
+  /** Le schéma sous lequel l'entité frappe aujourd'hui. */
+  readonly scheme: SepaScheme;
+  /**
+   * Les mandats **actifs** émis par l'entité, par schéma figé à leur frappe.
+   * Une bascule ne les touche pas : ils gardent le leur jusqu'à remplacement.
+   */
+  readonly activeByScheme: { readonly CORE: number; readonly B2B: number };
+  /** Les brouillons émis par l'entité — ceux qu'une bascule rend caducs. */
+  readonly drafts: number;
+}
 
 export const setMandateDefaultsPayloadSchema = z.object({
   /**

@@ -76,6 +76,7 @@ function doubles(options: {
               companyName: "Café des Halles SAS",
               email: "camille@halles.fr",
               reference: "C-7K2M4P",
+              siret: "",
             }
           : options.holder,
       ),
@@ -95,6 +96,8 @@ function doubles(options: {
 /** Le brouillon frappé qui attend son scan — le seul mandat qui en reçoit un. */
 function draftMandate(): PaymentMandate {
   return PaymentMandate.reconstitute({
+    scheme: "B2B",
+    paymentType: "recurrent",
     ...REGISTRATION,
     id: "mdt_1",
     companyId: "cmp_1",
@@ -111,6 +114,8 @@ function draftMandate(): PaymentMandate {
 
 function activeMandate(): PaymentMandate {
   return PaymentMandate.reconstitute({
+    scheme: "B2B",
+    paymentType: "recurrent",
     ...REGISTRATION,
     id: "mdt_1",
     companyId: "cmp_1",

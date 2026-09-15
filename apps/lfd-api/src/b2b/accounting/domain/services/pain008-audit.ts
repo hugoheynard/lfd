@@ -51,6 +51,9 @@ const HEADERS = [
   "Compte du débiteur",
   "Référence du mandat",
   "Montant (€)",
+  // En DERNIER : les lignes de contrôle alignent leur valeur sous « Montant »,
+  // et une colonne insérée avant les décalerait sans que rien ne le dise.
+  "Schéma",
 ] as const;
 
 interface AuditedLine {
@@ -58,6 +61,8 @@ interface AuditedLine {
   readonly debtor: string;
   readonly iban: string;
   readonly mandate: string;
+  /** `LclInstrm` du bloc qui porte la ligne — `CORE` ou `B2B`. */
+  readonly scheme: string;
   /** En centimes, reconverti depuis le texte du fichier. */
   readonly cents: number;
 }
@@ -76,8 +81,10 @@ interface AuditedLine {
  * rien. Qui doit lire l'IBAN entier ouvre la fiche du client, où le mur tenant
  * et les rôles s'appliquent — ce qu'un fichier posé sur un bureau ne fait plus.
  *
- * ⚠️ Ce qui n'a pas la FORME d'un IBAN ressort tel quel — au premier chef
- * `IBAN-INCONNU`, que le lot écrit tant qu'il n'est pas branché. Un masque
+ * ⚠️ Ce qui n'a pas la FORME d'un IBAN ressort tel quel. Le lot écrivait
+ * `IBAN-INCONNU` pour une société sans mandat ; depuis le 2026-09-15 il ne
+ * l'écrit plus (la société sort du fichier et son bandeau la nomme), mais la
+ * règle tient pour tout ce qui ne ressemble pas à un compte. Un masque
  * appliqué à tout rendrait `••••ONNU`, c'est-à-dire un compte d'apparence
  * normale là où le fichier hurle qu'il n'en a pas. Masquer une sentinelle la
  * déguise en donnée.
@@ -117,6 +124,7 @@ export function auditCsv(xml: string): string {
         quoted(maskedIban(line.iban)),
         quoted(line.mandate),
         euros(line.cents),
+        quoted(line.scheme),
       ].join(SEPARATOR),
     ),
     // Une ligne vide sépare les lignes du lot de son contrôle : un tableur
@@ -144,23 +152,29 @@ function control(label: string, value: string): string {
 }
 
 /**
- * Les lignes du lot, relues dans le XML.
+ * Les lignes du lot, relues dans le XML, bloc de paiement par bloc.
  *
- * Le découpage se fait sur `DrctDbtTxInf` plutôt que sur chaque balise
- * séparément : cherchées globalement, un `IBAN` créancier et un `IBAN` débiteur
- * se retrouveraient dans la même liste, et les colonnes se décaleraient d'un
- * cran sans que rien ne le dise.
+ * Le découpage se fait sur `PmtInf` puis sur `DrctDbtTxInf` plutôt que sur
+ * chaque balise séparément : cherchées globalement, un `IBAN` créancier et un
+ * `IBAN` débiteur se retrouveraient dans la même liste, et les colonnes se
+ * décaleraient d'un cran sans que rien ne le dise. Le schéma est lu sur le BLOC
+ * (`LclInstrm`), parce que c'est là que le fichier le déclare à la banque.
  */
 function readLines(xml: string): readonly AuditedLine[] {
-  return [...xml.matchAll(/<DrctDbtTxInf>([\s\S]*?)<\/DrctDbtTxInf>/gu)].map((match) => {
-    const block = match[1] ?? "";
-    return {
-      endToEndId: tag(block, "EndToEndId"),
-      debtor: tag(block, "Nm"),
-      iban: tag(block, "IBAN"),
-      mandate: tag(block, "MndtId"),
-      cents: centsOf(tag(block, "InstdAmt")),
-    };
+  return [...xml.matchAll(/<PmtInf>([\s\S]*?)<\/PmtInf>/gu)].flatMap((payment) => {
+    const block = payment[1] ?? "";
+    const scheme = tag(tag(block, "LclInstrm", true), "Cd");
+    return [...block.matchAll(/<DrctDbtTxInf>([\s\S]*?)<\/DrctDbtTxInf>/gu)].map((match) => {
+      const line = match[1] ?? "";
+      return {
+        endToEndId: tag(line, "EndToEndId"),
+        debtor: tag(line, "Nm"),
+        iban: tag(line, "IBAN"),
+        mandate: tag(line, "MndtId"),
+        scheme,
+        cents: centsOf(tag(line, "InstdAmt")),
+      };
+    });
   });
 }
 
@@ -174,9 +188,13 @@ function declaredNumber(xml: string): number {
   return Number.isFinite(raw) ? raw : 0;
 }
 
-/** Le contenu de la première balise de ce nom, attributs tolérés. */
-function tag(xml: string, name: string): string {
-  return new RegExp(`<${name}(?:\\s[^>]*)?>([^<]*)</${name}>`, "u").exec(xml)?.[1]?.trim() ?? "";
+/**
+ * Le contenu de la première balise de ce nom, attributs tolérés. `nested` admet
+ * des balises enfants — `<LclInstrm><Cd>B2B</Cd></LclInstrm>`.
+ */
+function tag(xml: string, name: string, nested = false): string {
+  const content = nested ? "([\\s\\S]*?)" : "([^<]*)";
+  return new RegExp(`<${name}(?:\\s[^>]*)?>${content}</${name}>`, "u").exec(xml)?.[1]?.trim() ?? "";
 }
 
 /**
