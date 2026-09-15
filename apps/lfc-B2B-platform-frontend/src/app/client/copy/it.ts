@@ -313,6 +313,7 @@ export const IT: ClientCopy = {
   pickupDialog: {
     kicker: 'Ritiro',
     title: 'Dove passa a prenderlo ?',
+    whenTitle: 'Quando passa ?',
     lead: 'Ci fa piacere riceverla : ritiri al Labo e approfitti di uno sconto del {value} sull’ordine.',
     habit: 'la sua abitudine',
     readyFrom: 'Pronto dalle {time}',

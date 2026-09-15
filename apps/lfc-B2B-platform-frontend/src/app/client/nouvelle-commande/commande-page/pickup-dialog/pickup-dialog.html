@@ -3,7 +3,7 @@
   [step]="step()"
   [canBack]="step() > 0"
   [kicker]="t().pickupDialog.kicker"
-  [title]="t().pickupDialog.title"
+  [title]="title()"
   (closed)="closed.emit()"
   (back)="back()"
 >

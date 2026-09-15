@@ -125,6 +125,11 @@ export class PickupDialog {
     () => this.available().find((p) => p.id === this.pickedId()) ?? null,
   );
 
+  /** Le titre suit le volet : « où » puis « quand ». */
+  protected readonly title = computed(() =>
+    this.step() === 0 ? this.t().pickupDialog.title : this.t().pickupDialog.whenTitle,
+  );
+
   /** Le lieu retenu, que le second volet rappelle. */
   protected readonly place = computed(() => this.picked()?.label ?? '');
 

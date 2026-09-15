@@ -95,8 +95,11 @@ describe('PickupDialog', () => {
     let done = 0;
     fixture.componentInstance.done.subscribe(() => (done += 1));
 
+    expect(el().querySelector('h2.title')?.textContent).toBe(FR.pickupDialog.title);
     cta().click();
     fixture.detectChanges();
+    // Le titre suit le volet : « où » cède la place à « quand ».
+    expect(el().querySelector('h2.title')?.textContent).toBe(FR.pickupDialog.whenTitle);
     expect(el().querySelector('app-slot-step')?.textContent).toContain('Le Labo');
     expect(cta().textContent).toContain(FR.slotStep.ctaIdle);
 

@@ -440,6 +440,8 @@ export interface ClientCopy {
   readonly pickupDialog: {
     readonly kicker: string;
     readonly title: string;
+    /** Le titre du second volet, celui de l'heure. */
+    readonly whenTitle: string;
     /** `{value}` est remplacé par la remise du meilleur point. */
     readonly lead: string;
     readonly habit: string;

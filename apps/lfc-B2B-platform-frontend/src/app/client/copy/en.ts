@@ -310,6 +310,7 @@ export const EN: ClientCopy = {
   pickupDialog: {
     kicker: 'Pickup',
     title: 'Where are you coming ?',
+    whenTitle: 'When are you coming ?',
     lead: 'We like having you over : collect at the Labo and get {value} off your order.',
     habit: 'your usual',
     readyFrom: 'Ready from {time}',
