@@ -243,6 +243,7 @@ export const IT: ClientCopy = {
     pickupGroup: 'Da ritirare',
     deliveryGroup: 'Da consegnare',
     slotNote: 'domani · fascia scelta',
+    changeService: 'Modifica',
     subtotal: 'Subtotale IVA escl.',
     discount: 'Sconto ritiro {at} −{value}',
     fee: 'Corriere',

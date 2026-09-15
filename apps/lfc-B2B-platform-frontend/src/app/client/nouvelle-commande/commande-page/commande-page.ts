@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FoldCalloutComponent } from 'fold-ng';
 
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
@@ -24,6 +24,7 @@ import { AddressDialog } from './address-dialog/address-dialog';
 import { OfferCard } from './offer-card/offer-card';
 import { OfferCarousel } from './offer-carousel/offer-carousel';
 import { PickupDialog } from './pickup-dialog/pickup-dialog';
+import { returnsToCart } from './return-to-cart';
 import { SectionPanel } from './section-panel/section-panel';
 import { ShortcutRow } from './shortcut-row/shortcut-row';
 
@@ -65,6 +66,7 @@ export class CommandePage {
    *  sources se seraient désaccordées le jour où le panneau de rappel s'ouvre. */
   protected readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly order = inject(OrderContextStore);
 
   protected readonly t = inject(ClientCopyService).t;
@@ -161,11 +163,17 @@ export class CommandePage {
    * Le choix est PUBLIÉ avant la navigation, parce que le rayon en dépend pour
    * exister : il porte le mode dans sa barre, la remise dans son décompte, et
    * sans lui il renvoie ici même.
+   *
+   * Venu du panier par « Modifier », on y retourne : le panier est composé, il
+   * ne manquait qu'à changer le mode ou l'heure.
    */
   protected fillBasket(choice: ServiceChoice): void {
     this.order.choice.set(choice);
     this.dialog.set(null);
-    void this.router.navigate(['/nouvelle-commande/boutique']);
+    const next = returnsToCart(this.route.snapshot.queryParamMap)
+      ? '/nouvelle-commande/panier'
+      : '/nouvelle-commande/boutique';
+    void this.router.navigate([next]);
   }
 
   /**

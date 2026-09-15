@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { Component, effect, inject, viewChild, ViewContainerRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { By } from '@angular/platform-browser';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 
 import { ClientBanner } from '../../../client/nav/client-banner';
 
@@ -15,6 +16,8 @@ import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import type { PickupAddressView } from '@lfd/contracts';
 
 import { CommandePage } from './commande-page';
+import { PickupDialog } from './pickup-dialog/pickup-dialog';
+import type { ServiceChoice } from '../../../client/order-context.store';
 
 /**
  * Le compte RECONNU de la suite.
@@ -97,7 +100,10 @@ describe('CommandePage', () => {
   };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [CommandePage], providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({
+      imports: [CommandePage],
+      providers: [provideHttpClient(), provideRouter([])],
+    });
     TestBed.inject(ServicePoints).receive(POINTS, []);
     const slot = TestBed.createComponent(BannerSlotHost);
     slot.detectChanges();
@@ -233,5 +239,55 @@ describe('CommandePage', () => {
 
     expect(text()).toContain(IT.commande.pickupBadge);
     expect(chrome.kicker()).toBe(IT.chrome.kickerCommande);
+  });
+});
+
+/**
+ * « Modifier » depuis le panier : le choix refait ramène AU PANIER, pas au rayon.
+ * Sans ce retour, changer d'heure faisait recomposer un panier déjà fait.
+ */
+describe('CommandePage — venue du panier', () => {
+  const CHOICE: ServiceChoice = {
+    mode: 'pickup',
+    place: 'Le Labo',
+    at: 'au Labo',
+    address: 'Route de la Balme, Val d’Isère',
+    slot: '7 h – 8 h',
+    window: { start: '07:00', end: '08:00' },
+    date: '2026-09-16',
+    pickupAddressId: 'pick_labo',
+  };
+
+  const chooseFrom = (query: Record<string, string>): unknown[] => {
+    TestBed.configureTestingModule({
+      imports: [CommandePage],
+      providers: [
+        provideHttpClient(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap(query) } },
+        },
+      ],
+    });
+    const gone: unknown[] = [];
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockImplementation((commands: unknown) => {
+      gone.push(commands);
+      return Promise.resolve(true);
+    });
+    const fixture = TestBed.createComponent(CommandePage);
+    fixture.detectChanges();
+    const dialog = fixture.debugElement.query(By.directive(PickupDialog))
+      .componentInstance as PickupDialog;
+    dialog.done.emit(CHOICE);
+    return gone;
+  };
+
+  it('retourne au panier quand on en vient', () => {
+    expect(chooseFrom({ retour: 'panier' })).toEqual([['/nouvelle-commande/panier']]);
+  });
+
+  it('mène au rayon sinon', () => {
+    expect(chooseFrom({})).toEqual([['/nouvelle-commande/boutique']]);
   });
 });

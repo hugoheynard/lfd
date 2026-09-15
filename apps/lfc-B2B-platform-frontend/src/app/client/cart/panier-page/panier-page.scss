@@ -86,11 +86,41 @@
   color: var(--lfc-color-on-primary-muted);
 }
 
+/* Le bas de la carte : l'heure à gauche, « Modifier » poussé à droite. */
+.service-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
 .service-slot {
   display: flex;
   align-items: center;
   gap: 9px;
+  min-width: 0;
   margin: 0;
+}
+
+/* Un lien, pas un second bouton : le seul appel de la page reste « Régler ». */
+.change {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.change:focus-visible {
+  outline: 2px solid var(--fold-color-on-primary);
+  outline-offset: 3px;
 }
 
 /* Le créneau en pastille crème : c'est le fait qu'on relit, pas la phrase. */

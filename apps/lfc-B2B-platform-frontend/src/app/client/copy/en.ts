@@ -240,6 +240,7 @@ export const EN: ClientCopy = {
     pickupGroup: 'To collect',
     deliveryGroup: 'To deliver',
     slotNote: 'tomorrow · chosen slot',
+    changeService: 'Change',
     subtotal: 'Subtotal excl. VAT',
     discount: 'Collection discount {at} −{value}',
     fee: 'Courier',

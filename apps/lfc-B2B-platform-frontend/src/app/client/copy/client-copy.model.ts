@@ -314,6 +314,8 @@ export interface ClientCopy {
     readonly pickupGroup: string;
     readonly deliveryGroup: string;
     readonly slotNote: string;
+    /** Le lien du rappel de service : rouvre le mode ET l'heure, puis ramène au panier. */
+    readonly changeService: string;
     readonly subtotal: string;
     /** `{at}` porte le complément du lieu, `{pct}` la remise. */
     readonly discount: string;

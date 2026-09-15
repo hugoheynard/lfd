@@ -236,6 +236,7 @@ export const FR: ClientCopy = {
     pickupGroup: 'À retirer',
     deliveryGroup: 'À livrer',
     slotNote: 'demain · créneau choisi',
+    changeService: 'Modifier',
     subtotal: 'Sous-total HT',
     discount: 'Remise retrait {at} −{value}',
     fee: 'Coursier',

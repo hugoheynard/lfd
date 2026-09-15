@@ -8,12 +8,13 @@ import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { CartSummary } from '../cart-summary/cart-summary';
+import { RETURN_TO_CART } from '../../nouvelle-commande/commande-page/return-to-cart';
 
 /**
  * Le panier, en pile — ce que le bureau montre dans sa colonne de droite.
  *
  * Il ne redemande rien : le lieu et le créneau sont déjà pris, ils se rappellent
- * en tête de page. Le seul geste qui reste est de régler, et le bouton porte le
+ * en tête de page — et « Modifier » les rouvre sans perdre le panier. Le seul geste qui reste est de régler, et le bouton porte le
  * montant plutôt que de le laisser deviner.
  */
 @Component({
@@ -55,6 +56,16 @@ export class PanierPage {
 
   protected pickService(): void {
     void this.router.navigate(['/nouvelle-commande']);
+  }
+
+  /**
+   * Rouvre le mode et l'heure, et **revient ici** une fois choisis.
+   *
+   * Sans le retour, l'écran de commande enchaîne sur le rayon : on aurait changé
+   * d'heure pour se retrouver à recomposer un panier qui était déjà fait.
+   */
+  protected changeService(): void {
+    void this.router.navigate(['/nouvelle-commande'], { queryParams: RETURN_TO_CART });
   }
 
   protected backToShop(): void {
