@@ -1,5 +1,12 @@
 # L'ouverture de compte pro, et l'accès à la boutique piloté en admin
 
+> ⚠️ **Adresse changée le 2026-09-15.** La boutique est servie à la racine de
+> `lafoliecoffee.info` : la porte pro est désormais `/ouverture-compte-pro`.
+> L'ancien lien `/pro/ouverture-compte-pro`, que la commerciale a déjà donné,
+> **renvoie** vers elle (302, passerelle). Le reste de ce plan dit `/pro` : c'était
+> l'adresse au moment où il a été écrit. Cf.
+> [`../ops/architecture-deploiement.md`](../ops/architecture-deploiement.md).
+
 **Statut** : 🟡 lots 1 à 6 bâtis le 2026-09-14, non commités à l'écriture de
 cette ligne ; lot 0 retiré. Ce que la construction a changé au plan est au §11.
 **Écrit le 2026-09-14**, puis refondu le même jour sur deux décisions de Hugo :

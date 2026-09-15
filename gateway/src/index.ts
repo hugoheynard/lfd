@@ -199,9 +199,10 @@ function destinationFor(target: Forwardable, url: URL, env: Env): Destination | 
     return { url: new URL(url.pathname + url.search, target.url).toString(), send: fetch };
   }
   if (target.kind === "front") {
-    // Le préfixe est DÉJÀ retiré : Pages sert depuis sa racine, et c'est
-    // l'app qui porte `/pro` dans son `base href`. Les deux moitiés doivent
-    // rester d'accord — l'une sans l'autre, ce sont des 404 sur tous les assets.
+    // Le chemin arrive tel que Pages le sert, depuis sa racine : intact pour la
+    // racine de la zone, préfixe retiré pour `/pro` hors zone. L'app a sa base à
+    // `/` (depuis le 2026-09-15) — si un préfixe revenait, il faudrait qu'elle le
+    // porte dans son `base href`, sans quoi tous les assets rendraient 404.
     const destination = new URL(target.path + url.search, PRO_FRONT_ORIGIN).toString();
     // On FABRIQUE la requête sortante au lieu de recopier l'entrante : recopier
     // emporterait le `Host` de la zone, et le sous-appel reviendrait ici même.

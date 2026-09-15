@@ -58,7 +58,7 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
   });
 });
 
-describe("resolveTarget — le front client sous /pro", () => {
+describe("resolveTarget — le front client : la racine de la zone, et /pro qui y renvoie", () => {
   it("sur la zone, l'ancienne adresse /pro RENVOIE vers la même page sans préfixe", () => {
     const target = resolveTarget(ZONE_HOSTNAME, `${FRONT_PREFIXES.pro}/ouverture-compte-pro`);
     expect(target).toEqual({ kind: "redirect", path: "/ouverture-compte-pro" });

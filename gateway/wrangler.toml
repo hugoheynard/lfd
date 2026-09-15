@@ -56,8 +56,10 @@ workers_dev = true
 ip = "127.0.0.1"
 port = 8787
 
-# ── Le front CLIENT, servi sous /pro ───────────────────────────────────────────
-# `lafoliecoffee.info/pro` est un CHEMIN, pas un sous-domaine. Un sous-domaine se
+# ── Le front CLIENT, servi par la zone ─────────────────────────────────────────
+# Historique : il a d'abord été servi sous `lafoliecoffee.info/pro` (jusqu'au
+# 2026-09-15), et le paragraphe qui suit décrit ce choix-là. `/pro` était un
+# CHEMIN, pas un sous-domaine. Un sous-domaine se
 # réglerait par un domaine personnalisé sur le projet Pages, sans une ligne de
 # code ; un chemin oblige la passerelle à le porter, et l'app à connaître son
 # préfixe (`baseHref: "/pro/"`, cf. sa configuration de build `cloudflare`). Les
