@@ -29,10 +29,11 @@
         <p class="line">{{ t().account.addressNone }}</p>
       }
       <!-- Une ligne se LIT ; aux rôles qui écrivent, un clic ouvre son dialogue —
-           où se règlent le rang « par défaut » et la suppression. -->
+           où se règlent le rang « par défaut » et la suppression. Sa procédure de
+           livraison, elle, s'ouvre à tout membre, en bouton frère de la ligne. -->
       <ul class="deliveries">
         @for (address of deliveries(); track address.id) {
-          <li>
+          <li class="delivery-item">
             @if (data().canManage) {
               <button class="delivery clickable" type="button" (click)="editDelivery(address.id)">
                 <span class="delivery-label">{{ address.label }}</span>
@@ -54,6 +55,18 @@
                 >
               </div>
             }
+            <button
+              foldButton
+              class="procedure"
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              icon="door"
+              type="button"
+              (click)="openProcedure(address.id)"
+            >
+              {{ address.procedure }}
+            </button>
           </li>
         }
       </ul>

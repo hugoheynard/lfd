@@ -5,7 +5,9 @@ import { CompletionCallout } from '../../completion/completion-callout/completio
 import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
+import { ClientLocale } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
+import { deliveryProcedureCopy } from '../../../copy/screens/delivery-procedure.copy';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import {
@@ -13,8 +15,10 @@ import {
   deliveryCountLabel,
   deliveryRows,
   postalLine,
+  procedureEntryLabel,
 } from '../addresses-section';
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
+import { DeliveryProcedureDialog } from '../delivery-procedure-dialog/delivery-procedure-dialog';
 
 /**
  * La carte **Adresses** du bureau : UNE facturation et PLUSIEURS livraisons,
@@ -27,6 +31,9 @@ import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-addre
  * Ses gestes d'écriture, aux rôles qui écrivent, ouvrent chacun leur DIALOGUE :
  * la facturation (`BillingAddressDialog`), une livraison consignes comprises
  * (`DeliveryAddressDialog`).
+ *
+ * Chaque livraison porte aussi l'entrée de sa **procédure de livraison**, à
+ * TOUS les membres : son dialogue est en lecture seule pour qui ne gère pas.
  */
 @Component({
   selector: 'app-addresses-desk-card',
@@ -42,6 +49,8 @@ export class AddressesDeskCard {
   readonly completionAction = output<CompletionTarget>();
 
   protected readonly t = inject(ClientCopyService).t;
+  private readonly locale = inject(ClientLocale);
+  private readonly procedureCopy = computed(() => deliveryProcedureCopy(this.locale.current()));
   private readonly client = inject(ClientCompany);
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
@@ -59,7 +68,10 @@ export class AddressesDeskCard {
       this.addresses.deliveries(),
       (codePostal) => this.service.zoneFor(codePostal),
       this.t().account.addressNoZone,
-    ),
+    ).map((row) => ({
+      ...row,
+      procedure: procedureEntryLabel(row.procedureStepCount, this.canWrite(), this.procedureCopy()),
+    })),
   );
 
   protected readonly deliveryCount = computed(() =>
@@ -71,6 +83,15 @@ export class AddressesDeskCard {
     const company = this.client.company();
     if (company !== null) {
       BillingAddressDialog.open(this.panels, company, this.addresses.billing());
+    }
+  }
+
+  /** La procédure de livraison d'une adresse : son dialogue, lecture seule selon le rôle. */
+  protected openProcedure(addressId: string): void {
+    const company = this.client.company();
+    const address = this.addresses.deliveries().find((a) => a.id === addressId);
+    if (company !== null && address !== undefined) {
+      DeliveryProcedureDialog.open(this.panels, company, address);
     }
   }
 

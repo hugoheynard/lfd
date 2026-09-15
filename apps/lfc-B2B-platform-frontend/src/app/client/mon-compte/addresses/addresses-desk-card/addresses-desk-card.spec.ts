@@ -6,10 +6,12 @@ import { afterEach, vi } from 'vitest';
 
 import { ClientAddresses } from '../../../client-addresses.service';
 import { FR } from '../../../copy/fr';
+import { DELIVERY_PROCEDURE_FR } from '../../../copy/screens/delivery-procedure.fr';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { asRole, bootCard, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
+import { DeliveryProcedureDialog } from '../delivery-procedure-dialog/delivery-procedure-dialog';
 import { AddressesDeskCard } from './addresses-desk-card';
 
 const SIEGE: BillingAddressView = {
@@ -27,6 +29,7 @@ const CHALET: DeliveryAddressView = {
   id: 'adr_1',
   label: 'Chalet',
   isDefault: true,
+  procedureStepCount: 0,
   specs: {
     note: '',
     slots: { mode: 'everyday', slot: null },
@@ -128,5 +131,51 @@ describe('AddressesDeskCard', () => {
     el.querySelector<HTMLButtonElement>('.delivery button.row-edit')?.click();
     expect(openedPanel()?.component).toBe(DeliveryAddressDialog);
     expect(openedPanel()?.data).toMatchObject({ address: CHALET, firstOfBook: false });
+  });
+
+  /** Plan `procedure-de-livraison` §2.6 : chaque livraison montre sa procédure, à tout membre. */
+  it('chaque livraison montre sa procédure et l’ouvre en dialogue — lecture seule sans le rôle', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    const bureau: DeliveryAddressView = {
+      ...CHALET,
+      id: 'adr_2',
+      label: 'Bureau',
+      isDefault: false,
+      procedureStepCount: 3,
+    };
+    const writer = bootCard(AddressesDeskCard, [TOMMEUSES], carnet(SIEGE, [CHALET, bureau]))
+      .nativeElement as HTMLElement;
+    const entries = Array.from(writer.querySelectorAll<HTMLButtonElement>('button.procedure'));
+    expect(entries.map((b) => b.textContent?.trim())).toEqual([
+      `${DELIVERY_PROCEDURE_FR.entry} · ${DELIVERY_PROCEDURE_FR.toWrite}`,
+      `${DELIVERY_PROCEDURE_FR.entry} · 3 étapes`,
+    ]);
+
+    entries[1]?.click();
+    expect(openedPanel()).toEqual({
+      component: DeliveryProcedureDialog,
+      side: 'center',
+      data: { companyId: 'cmp_1', address: bureau, canEdit: true },
+    });
+
+    TestBed.inject(FoldPanelHostService).dismissAll();
+    const reader = bootCard(
+      AddressesDeskCard,
+      [asRole('orders')],
+      carnet(SIEGE, [
+        { ...CHALET, procedureStepCount: 1 },
+        { ...bureau, procedureStepCount: 0 },
+      ]),
+    ).nativeElement as HTMLElement;
+    const readerEntries = Array.from(
+      reader.querySelectorAll<HTMLButtonElement>('button.procedure'),
+    );
+    expect(readerEntries.map((b) => b.textContent?.trim())).toEqual([
+      `${DELIVERY_PROCEDURE_FR.entry} · 1 étape`,
+      `${DELIVERY_PROCEDURE_FR.entry} · ${DELIVERY_PROCEDURE_FR.stepsNone}`,
+    ]);
+    expect(reader.querySelectorAll('button.row-edit').length).toBe(0);
+    readerEntries[0]?.click();
+    expect(openedPanel()?.data).toMatchObject({ canEdit: false });
   });
 });

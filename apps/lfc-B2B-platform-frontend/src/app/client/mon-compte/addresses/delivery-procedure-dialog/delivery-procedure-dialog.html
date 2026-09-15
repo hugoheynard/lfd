@@ -1,0 +1,21 @@
+<fold-panel-header
+  [title]="procedure().entry"
+  [subtitle]="subtitle()"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  <!-- L'éditeur partagé avec le back-office : il lit, écrit et relit par la passerelle client. -->
+  <lfd-delivery-procedure-editor
+    [addressId]="data().address.id"
+    [canEdit]="data().canEdit"
+    [labels]="procedure().editor"
+    (stepCountChange)="stepCountChanged()"
+  />
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
+    {{ t().dialog.close }}
+  </button>
+</fold-panel-footer>

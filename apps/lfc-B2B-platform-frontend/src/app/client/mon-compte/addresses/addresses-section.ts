@@ -9,6 +9,7 @@ import type {
 
 import { fill } from '../../copy/client-copy.service';
 import type { AccountCopy } from '../../copy/screens/account.copy';
+import type { DeliveryProcedureCopy } from '../../copy/screens/delivery-procedure.copy';
 import { formatCents, formatRate } from '../../format-money';
 import type { ServicePoints } from '../../shop/pickup-points.store';
 
@@ -61,6 +62,8 @@ export interface DeliveryRow {
   readonly line: string;
   readonly zone: string;
   readonly fee: string;
+  /** Le nombre d'étapes de sa procédure de livraison — `0` sans procédure. */
+  readonly procedureStepCount: number;
 }
 
 /**
@@ -82,8 +85,31 @@ export function deliveryRows(
       line: postalLine(address),
       zone: zone?.label ?? noZone,
       fee: zone === null ? '—' : feeOf(zone.fee),
+      procedureStepCount: address.procedureStepCount,
     };
   });
+}
+
+/**
+ * « Procédure de livraison · 3 étapes » — l'entrée sous une livraison.
+ *
+ * Sans étape, le gestionnaire lit « à rédiger » : c'est lui qui l'écrit. Les
+ * autres membres lisent « aucune étape », et gardent l'entrée — le dialogue
+ * leur dit la même chose en lecture seule.
+ */
+export function procedureEntryLabel(
+  count: number,
+  canManage: boolean,
+  copy: DeliveryProcedureCopy,
+): string {
+  return `${copy.entry} · ${procedureCountOf(count, canManage, copy)}`;
+}
+
+function procedureCountOf(count: number, canManage: boolean, copy: DeliveryProcedureCopy): string {
+  if (count === 0) {
+    return canManage ? copy.toWrite : copy.stepsNone;
+  }
+  return count === 1 ? copy.stepsOne : fill(copy.steps, { n: String(count) });
 }
 
 /** Un frais de zone tel qu'il se lit : « 8,00 € » ou « 3 % ». */
