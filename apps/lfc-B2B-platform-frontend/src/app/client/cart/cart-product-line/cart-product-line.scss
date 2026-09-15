@@ -63,7 +63,7 @@
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-md);
   font-weight: var(--fold-weight-extrabold);
-  letter-spacing: -0.005em;
+  letter-spacing: var(--lfc-tracking-block);
   text-transform: uppercase;
   color: var(--fold-color-text);
 }

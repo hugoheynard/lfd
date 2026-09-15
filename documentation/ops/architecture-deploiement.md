@@ -195,6 +195,21 @@ sous-domaines **sans toucher aux backends**.
 
 ## Le front client sous `lafoliecoffee.info/pro`
 
+> 🟡 **En bascule vers la racine depuis le 2026-09-15** (décision de Hugo : la
+> boutique accueille aussi le public, son adresse ne doit plus dire « pro »).
+> Deux déploiements, dans cet ordre :
+>
+> 1. **La passerelle** sert la racine de la zone (`ZONE_HOSTNAME` dans
+>    `gateway/src/routes.ts`, route `lafoliecoffee.info/*`) **et** garde `/pro`.
+>    Compatible avec le front actuel comme avec le suivant.
+> 2. **Le front** passe à `baseHref: "/"`, et `/pro/…` devient une redirection
+>    vers le même chemin sans préfixe. 🔴 **Avant**, ajouter
+>    `https://lafoliecoffee.info` aux URL de rappel **et** de déconnexion de
+>    l'application Auth0 : `redirect_uri` et `returnTo` valent `appBaseUrl()`,
+>    qui perdra son `/pro`.
+>
+> La suite de cette section décrit l'état d'avant l'étape 2.
+
 `/pro` est un **chemin**, pas un sous-domaine. Le choix a un coût qu'il vaut
 mieux connaître :
 

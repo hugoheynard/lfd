@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
 
-import { API_PREFIXES, FRONT_PREFIXES, frontHeaders, resolveTarget } from "../routes";
+import {
+  API_PREFIXES,
+  FRONT_PREFIXES,
+  frontHeaders,
+  resolveTarget,
+  ZONE_HOSTNAME,
+} from "../routes";
 
 /**
  * Le résolveur porte **toutes** les décisions de la gateway : `index.ts` ne
@@ -68,9 +74,28 @@ describe("resolveTarget — le front client sous /pro", () => {
   });
 
   it("ne vole pas un chemin qui COMMENCE par le préfixe sans lui appartenir", () => {
-    // `/production` n'est pas `/pro` : sans cette garde, tout chemin préfixé
-    // partirait chez le front dès qu'il partagerait ses trois lettres.
-    expect(resolveTarget("lafoliecoffee.info", "/production")).toBeUndefined();
+    // `/production` n'est pas `/pro` : sans cette garde, le préfixe serait
+    // retiré d'un chemin qui ne le porte pas. Hors zone, rien ne le sert ; sur
+    // la zone, il part au front par la racine, chemin INTACT.
+    expect(resolveTarget("gw.example", "/production")).toBeUndefined();
+    expect(resolveTarget(ZONE_HOSTNAME, "/production")).toEqual({
+      kind: "front",
+      front: "pro",
+      path: "/production",
+    });
+  });
+
+  it("la racine de la zone sert le front, chemin intact", () => {
+    expect(resolveTarget(ZONE_HOSTNAME, "/bienvenue")).toEqual({
+      kind: "front",
+      front: "pro",
+      path: "/bienvenue",
+    });
+    expect(resolveTarget(ZONE_HOSTNAME, "/")).toEqual({ kind: "front", front: "pro", path: "/" });
+  });
+
+  it("la racine d'un autre hôte ne sert rien — ni workers.dev, ni un inconnu", () => {
+    expect(resolveTarget("lfd-gateway.lafoliedouce.workers.dev", "/bienvenue")).toBeUndefined();
   });
 
   it("l'API garde la priorité sur le front", () => {

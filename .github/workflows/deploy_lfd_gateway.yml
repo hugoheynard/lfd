@@ -14,7 +14,7 @@ name: deploy_lfd_gateway
 #     « All zones · Workers Routes · Edit ». Le second a longtemps manqué à cette
 #     note alors que le token le portait : vérifié au tableau de bord le
 #     2026-08-27. Il est nécessaire depuis que `wrangler.toml` déclare une route
-#     de zone (`lafoliecoffee.info/pro*`) — sans lui, le déploiement échoue.
+#     de zone (`lafoliecoffee.info/*` depuis le 2026-09-15, `/pro*` avant) — sans lui, le déploiement échoue.
 #     (+ « Zone · Workers Routes · Edit » le jour où on posera les routes prod).
 #   CLOUDFLARE_ACCOUNT_ID — l'account id partagé.
 

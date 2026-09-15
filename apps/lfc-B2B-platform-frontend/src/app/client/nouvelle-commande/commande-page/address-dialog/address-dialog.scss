@@ -96,7 +96,7 @@
 
 /* ⚠️ PAS `.default` : `fold-input` porte cette classe sur son hôte (c'est son
    cran de taille), et la règle repeignait donc tous les champs du dialogue en
-   capitales d'Archivo. Un nom de classe générique dans un composant qui en
+   capitales de Chunk. Un nom de classe générique dans un composant qui en
    accueille d'autres finit toujours par en toucher un. */
 .default-tag {
   font-family: var(--fold-font-label);
