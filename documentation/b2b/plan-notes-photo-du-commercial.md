@@ -3,7 +3,7 @@
 > **État au 2026-09-15** : 📐 plan, **rien n'est bâti**. **Contredit par
 > `vitruve` le même jour** : un BLOQUANT (qui lit la fiche client) et onze
 > objections sérieuses, toutes intégrées ou tranchées — leur sort est au §6.
-> Décisions de Hugo reçues le même jour ; **Q1 reste à confirmer** (§5).
+> Décisions de Hugo reçues le même jour, Q1 confirmée comprise. Lot 0 lancé.
 
 ## 0. La demande
 
@@ -90,8 +90,8 @@ règle que les étapes, qui, elles, ajoutent en fin.
 à « pas de DELETE physique » que les étapes : le carnet ne se supprime jamais,
 une note si. Remplacement de la photo : keep / replace / remove.
 
-**D5 — Visibilité : admin et commercial seulement** (Hugo, questionnaire — **à
-confirmer**, voir Q1). Une ressource de permission neuve, `b2b_client_notes` :
+**D5 — Visibilité : admin et commercial seulement** (Hugo, confirmé le
+2026-09-15). Une ressource de permission neuve, `b2b_client_notes` :
 `write` pour `admin` et `commercial`, rien pour `comptabilite`, `support`,
 `dev`. Aucune route côté client. L'onglet et ses routes exigent
 `b2b_client_notes:read`.
@@ -189,13 +189,7 @@ Tant que le lot 3 n'est pas committé, les lots 1 et 2 se défont par un revert.
 
 ## 5. Questions pour Hugo
 
-- **Q1 — À confirmer : qui voit les notes ?** Deux réponses se contredisent.
-  Au questionnaire : « admin et commercial » ; dans le message qui l'a suivi :
-  « comme la fiche ». **« Comme la fiche » donne la LECTURE à `comptabilite`
-  et à `support`** — le support lit les photos manuscrites de la commerciale.
-  Le plan est écrit pour « admin et commercial » (D5).
-
-Tranchées le 2026-09-15 : 50 notes au plus ; nouvelle note en tête ; pas de date
+Toutes tranchées le 2026-09-15 : **admin et commercial seulement** (Q1, confirmée après que deux réponses se sont contredites) ; 50 notes au plus ; nouvelle note en tête ; pas de date
 de la note papier ; classement à la main par le commercial ; socle partagé
 d'abord.
 
@@ -203,7 +197,7 @@ d'abord.
 
 | Objection                                                                                                 | Sort                                                                              |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| **B1** `support` lit aussi `b2b_companies` : « comme la fiche » ouvre les notes au support                | corrigée — §1.2, D5, et Q1 reposée à Hugo                                         |
+| **B1** `support` lit aussi `b2b_companies` : « comme la fiche » ouvre les notes au support                | corrigée — §1.2, D5 ; Q1 reposée, confirmée par Hugo                              |
 | **S2** les deux usages divergent (ajout, bornes, identité, verrou, mur, faits, messages)                  | tranchée par Hugo (socle d'abord) — ce qui diverge est paramètre, D8              |
 | **S3** « specs inchangées » contredit l'extraction ; socle sans tests                                     | corrigée — `DeliveryProcedure` garde son API et délègue ; tests du socle au lot 1 |
 | **S4** le filet ne prouve pas « aucun changement observable » (messages, `Cache-Control`, éditeur, photo) | corrigée — lot 0, D9                                                              |
