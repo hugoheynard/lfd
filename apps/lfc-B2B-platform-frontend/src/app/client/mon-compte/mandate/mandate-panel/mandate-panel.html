@@ -25,12 +25,16 @@
 
   @switch (stage()) {
     @case ('none') {
+      @if (blockers().length > 0) {
+        <app-mandate-blockers [blockers]="blockers()" [stack]="true" />
+      }
       <button
         foldButton
         class="generate"
         intent="primary"
         type="button"
         [loading]="generating()"
+        [disabled]="blockers().length > 0"
         (click)="generate()"
       >
         {{ t().account.mandateGenerate }}

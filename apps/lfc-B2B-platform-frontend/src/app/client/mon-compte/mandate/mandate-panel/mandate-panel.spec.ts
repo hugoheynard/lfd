@@ -1,7 +1,7 @@
 import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import type { CustomerMandateView, SepaScheme } from '@lfd/contracts';
+import type { CustomerMandateView, MintBlocker, SepaScheme } from '@lfd/contracts';
 import { FoldFileDropzoneComponent } from 'fold-ng';
 
 import { NotifyService } from '../../../../notify.service';
@@ -22,6 +22,8 @@ const DRAFT: CustomerMandateView = {
 interface Wire {
   mandate: WritableSignal<CustomerMandateView | null>;
   issuerScheme: WritableSignal<SepaScheme | null>;
+  mintBlockers: WritableSignal<readonly MintBlocker[]>;
+  refreshes: string[];
   generates: string[];
   proofs: { companyId: string; name: string }[];
   /** Ce que le serveur répond : `null` accepté, sinon son message. */
@@ -35,10 +37,13 @@ function boot(
   mandate: CustomerMandateView | null,
   data: MandatePanelData = { companyId: 'cmp_1', generate: false },
   issuerScheme: SepaScheme | null = null,
+  mintBlockers: readonly MintBlocker[] = [],
 ): ComponentFixture<MandatePanel> {
   wire = {
     mandate: signal(mandate),
     issuerScheme: signal(issuerScheme),
+    mintBlockers: signal(mintBlockers),
+    refreshes: [],
     generates: [],
     proofs: [],
     answer: null,
@@ -53,6 +58,11 @@ function boot(
         useValue: {
           mandate: wire.mandate,
           issuerScheme: wire.issuerScheme,
+          mintBlockers: wire.mintBlockers,
+          refresh: (companyId: string): Promise<void> => {
+            wire.refreshes.push(companyId);
+            return Promise.resolve();
+          },
           generate: (companyId: string): Promise<string | null> => {
             wire.generates.push(companyId);
             if (wire.answer === null) {
@@ -149,6 +159,32 @@ describe('MandatePanel', () => {
     el(fixture).querySelector<HTMLButtonElement>('button.generate')?.click();
     await settle(fixture);
     expect(wire.generates).toEqual(['cmp_1']);
+  });
+
+  it('ouvert depuis « Générer » avec des mentions manquantes : ne génère pas, liste et désarme', async () => {
+    const fixture = boot(null, { companyId: 'cmp_1', generate: true }, 'B2B', [
+      'company_name_missing',
+    ]);
+    await settle(fixture);
+
+    expect(wire.generates).toEqual([]);
+    expect(el(fixture).querySelector('app-mandate-blockers')?.textContent).toContain(
+      FR.account.mandateBlockers.company_name_missing,
+    );
+    expect(el(fixture).querySelector<HTMLButtonElement>('button.generate')?.disabled).toBe(true);
+  });
+
+  /** Un 409 `MandateMentionsMissingError` reçu malgré tout : son message, puis la liste relue. */
+  it('un refus faute de mentions s’affiche avec son message et relit les mentions', async () => {
+    const fixture = boot(null);
+    wire.answer = 'Il manque le SIREN — Identité légale.';
+    el(fixture).querySelector<HTMLButtonElement>('button.generate')?.click();
+    await settle(fixture);
+
+    expect(el(fixture).querySelector('fold-callout[variant="alert"]')?.textContent).toContain(
+      'Il manque le SIREN — Identité légale.',
+    );
+    expect(wire.refreshes).toEqual(['cmp_1']);
   });
 
   it('un refus de génération s’affiche tel quel, et le panneau reste là', async () => {

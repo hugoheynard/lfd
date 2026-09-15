@@ -76,6 +76,7 @@ export const ACCOUNT_FR: AccountCopy = {
   identityCompany: 'Raison sociale',
   identityForm: 'Forme juridique',
   identitySiret: 'SIRET',
+  identitySiren: 'SIREN',
   identityVat: 'TVA intracom.',
   identityNote:
     'L’enseigne se change ici. Les mentions du greffe passent par nous : on vérifie, puis on met à jour — c’est ce qui figure sur vos factures.',
@@ -283,6 +284,9 @@ export const ACCOUNT_FR: AccountCopy = {
     'Le titulaire et l’adresse sont ceux que connaît votre banque : ils peuvent différer de votre raison sociale. Si un prélèvement est en place sur ce compte, le remplacer l’interrompt : nous revenons vers vous pour la suite.',
   bankForm: {
     holder: 'Titulaire du compte',
+    holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',
+    holderLegalFormHint:
+      'Exigée par le mandat interentreprises, que le titulaire soit une société ou une personne — 40 caractères au plus.',
     line1: 'Adresse',
     line2: 'Complément',
     postalCode: 'Code postal',
@@ -327,6 +331,16 @@ export const ACCOUNT_FR: AccountCopy = {
   mandateDropHint: 'PDF ou photo (JPEG, PNG, HEIC), 10 Mo au plus.',
   mandateUploading: 'Envoi du mandat…',
   mandateUploadedToast: 'Mandat signé reçu.',
+  mandateBlockedLead: 'Pour générer votre mandat, il manque :',
+  mandateBlockers: {
+    bank_account_missing: 'votre RIB',
+    issuer_missing: 'nos coordonnées de créancier — nous nous en occupons',
+    company_name_missing: 'la raison sociale de votre entreprise',
+    siren_missing: 'le SIREN de votre entreprise',
+    holder_legal_form_missing: 'la civilité ou forme juridique du titulaire du compte',
+  },
+  mandateBlockersIdentity: 'Compléter l’identité légale',
+  mandateBlockersBank: 'Compléter le RIB',
   mandateGenerateFailed: 'Le mandat n’a pas été généré.',
   mandateUploadFailed: 'Le mandat signé n’a pas été déposé.',
   mandateFetchFailed: 'Le mandat n’a pas pu être ouvert. Réessayez dans un instant.',

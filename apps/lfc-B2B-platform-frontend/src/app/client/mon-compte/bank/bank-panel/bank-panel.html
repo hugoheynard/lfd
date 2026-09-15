@@ -18,7 +18,11 @@
   <!-- Le formulaire partagé avec la fiche staff. 🔴 L'IBAN y entre vide : il ne
        revient d'aucune route. -->
   <div class="rows">
-    <lfd-bank-account-form [(value)]="draft" [labels]="t().account.bankForm" />
+    <lfd-bank-account-form
+      [(value)]="draft"
+      [labels]="t().account.bankForm"
+      [holderLegalFormRequired]="holderLegalFormRequired()"
+    />
   </div>
 </fold-panel-body>
 

@@ -41,6 +41,7 @@ export const TOMMEUSES: CompanyView = {
   enseigne: "La Folie Douce Val d'Isère",
   formeJuridique: 'SAS',
   siret: '81245678900021',
+  siren: '',
   vatNumber: 'FR45812456789',
   vatNumberRequired: true,
   status: 'active',

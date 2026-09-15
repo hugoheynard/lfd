@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { CustomerMandateView, SepaScheme } from '@lfd/contracts';
+import type { CustomerMandateView, MintBlocker, SepaScheme } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
@@ -28,6 +28,7 @@ function render(
   status: MandateReadStatus,
   mandate: CustomerMandateView | null,
   issuerScheme: SepaScheme | null = null,
+  mintBlockers: readonly MintBlocker[] = [],
 ): HTMLElement {
   ensured = [];
   reloads = [];
@@ -41,6 +42,7 @@ function render(
           status: signal(status),
           mandate: signal(mandate),
           issuerScheme: signal(issuerScheme),
+          mintBlockers: signal(mintBlockers),
           ensure: (id: string) => ensured.push(id),
           reload: (id: string) => {
             reloads.push(id);
@@ -60,6 +62,24 @@ afterEach(() => {
 });
 
 describe('MandateMobileCard', () => {
+  /** Plan mentions obligatoires §9 : le serveur refuserait, la carte le dit avant le clic. */
+  it('sans mandat et avec des mentions manquantes, « Générer » est inerte et la liste s’affiche', () => {
+    const el = render('ready', null, 'B2B', ['siren_missing']);
+
+    const button = footButton(el);
+    expect(button?.textContent).toContain(FR.account.mandateGenerate);
+    expect(button?.disabled).toBe(true);
+    expect(el.querySelector('app-mandate-blockers')?.textContent).toContain(
+      FR.account.mandateBlockers.siren_missing,
+    );
+  });
+
+  it('un brouillon en cours ne montre pas la liste : il n’y a rien à générer', () => {
+    const el = render('ready', DRAFT, 'B2B', ['siren_missing']);
+
+    expect(el.querySelector('app-mandate-blockers')).toBeNull();
+    expect(footButton(el)?.disabled).toBe(false);
+  });
   /** Plan-mandat-deux-schemas §10 Q2 : le mandat interentreprises n'imprime ni la zone 14 ni la 19. */
   it('sous un émetteur interentreprises, ne propose pas les options', () => {
     for (const mandate of [null, DRAFT]) {

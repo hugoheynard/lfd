@@ -76,6 +76,7 @@ export const ACCOUNT_EN: AccountCopy = {
   identityCompany: 'Registered name',
   identityForm: 'Legal form',
   identitySiret: 'SIRET',
+  identitySiren: 'SIREN',
   identityVat: 'VAT number',
   identityNote:
     'The trading name changes here. Registry details go through us: we check, then we update — these are the mentions that appear on your invoices.',
@@ -279,6 +280,9 @@ export const ACCOUNT_EN: AccountCopy = {
     'The account holder and address are the ones your bank knows: they may differ from your registered company name. If a direct debit runs on this account, replacing it stops the debit: we will get back to you on what comes next.',
   bankForm: {
     holder: 'Account holder',
+    holderLegalForm: 'Title (Mr, Ms) or legal form (SAS, SARL…)',
+    holderLegalFormHint:
+      'Required by the business-to-business mandate, whether the holder is a company or a person — 40 characters at most.',
     line1: 'Address',
     line2: 'Address line 2',
     postalCode: 'Postcode',
@@ -323,6 +327,16 @@ export const ACCOUNT_EN: AccountCopy = {
   mandateDropHint: 'PDF or photo (JPEG, PNG, HEIC), 10 MB max.',
   mandateUploading: 'Uploading the mandate…',
   mandateUploadedToast: 'Signed mandate received.',
+  mandateBlockedLead: 'To generate your mandate, we still need:',
+  mandateBlockers: {
+    bank_account_missing: 'your bank details',
+    issuer_missing: 'our creditor details — we are taking care of it',
+    company_name_missing: 'your company’s registered name',
+    siren_missing: 'your company’s SIREN number',
+    holder_legal_form_missing: 'the account holder’s title or legal form',
+  },
+  mandateBlockersIdentity: 'Complete legal identity',
+  mandateBlockersBank: 'Complete bank details',
   mandateGenerateFailed: 'The mandate was not generated.',
   mandateUploadFailed: 'The signed mandate was not uploaded.',
   mandateFetchFailed: 'The mandate could not be opened. Try again in a moment.',

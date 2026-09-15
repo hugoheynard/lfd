@@ -22,6 +22,7 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
     enseigne,
     formeJuridique: 'SAS',
     siret: '81245678900021',
+    siren: '',
     vatNumber: '',
     vatNumberRequired: true,
     status: 'pending',

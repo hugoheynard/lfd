@@ -15,11 +15,18 @@ const FILLED: IdentityPanelData = {
   raisonSociale: 'SAS Les Tommeuses',
   formeJuridique: 'SAS',
   siret: '81245678900021',
+  siren: '552100554',
   editable: true,
 };
 
 /** Une société ouverte SANS papiers : le commercial était chez le client. */
-const BARE: IdentityPanelData = { ...FILLED, raisonSociale: '', formeJuridique: '', siret: '' };
+const BARE: IdentityPanelData = {
+  ...FILLED,
+  raisonSociale: '',
+  formeJuridique: '',
+  siret: '',
+  siren: '',
+};
 
 /** Ce que les doublés ont vu passer : les écritures, et les fermetures du panneau. */
 interface Wire {
@@ -117,10 +124,39 @@ describe('IdentityPanel', () => {
   it('ouvre en champ les mentions encore vides, et elles seules', () => {
     fixture = boot({ ...BARE, formeJuridique: 'SAS' });
 
-    expect(el().querySelectorAll('fold-input').length).toBe(4);
+    expect(el().querySelectorAll('fold-input').length).toBe(5);
     expect(() => field(FR.account.identityCompany)).not.toThrow();
     expect(() => field(FR.account.identitySiret)).not.toThrow();
     expect(el().querySelector('.locked')?.textContent).toContain(FR.account.identityForm);
+  });
+
+  /** Décision de Hugo (2026-09-15) : le client complète son SIREN, il ne le corrige pas. */
+  it('le SIREN n’est un champ que s’il est vide ; renseigné, il se lit', () => {
+    fixture = boot({ ...FILLED, siren: '' });
+    expect(() => field(FR.account.identitySiren)).not.toThrow();
+
+    fixture = boot(FILLED);
+    expect(() => field(FR.account.identitySiren)).toThrow();
+    expect(el().querySelector('.locked')?.textContent).toContain('552100554');
+  });
+
+  it('propose le SIREN que porte le SIRET saisi, s’il forme un SIREN valide', () => {
+    fixture = boot(BARE);
+
+    type(FR.account.identitySiret, '73282932000009');
+    expect(field(FR.account.identitySiren).value).toBe('732829320');
+
+    // Un préfixe qui n'est pas un SIREN valide ne propose rien, et retire la proposition.
+    type(FR.account.identitySiret, '81245678900021');
+    expect(field(FR.account.identitySiren).value).toBe('');
+  });
+
+  it('ne réécrit jamais un SIREN tapé par le client', () => {
+    fixture = boot(BARE);
+
+    type(FR.account.identitySiren, '552100554');
+    type(FR.account.identitySiret, '73282932000009');
+    expect(field(FR.account.identitySiren).value).toBe('552100554');
   });
 
   it('n’arme Enregistrer que lorsque quelque chose a changé', () => {
@@ -154,6 +190,7 @@ describe('IdentityPanel', () => {
           raisonSociale: '',
           formeJuridique: '',
           siret: '81245678900021',
+          siren: '',
         },
       },
     ]);
@@ -231,6 +268,7 @@ describe('IdentityPanel', () => {
         raisonSociale: TOMMEUSES.raisonSociale,
         formeJuridique: TOMMEUSES.formeJuridique,
         siret: TOMMEUSES.siret,
+        siren: TOMMEUSES.siren,
         editable: true,
       });
 

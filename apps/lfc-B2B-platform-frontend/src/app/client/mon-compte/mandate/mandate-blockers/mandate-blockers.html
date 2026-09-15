@@ -1,0 +1,36 @@
+<fold-callout appearance="inset" variant="warning">
+  <p class="lead">{{ t().account.mandateBlockedLead }}</p>
+  <ul class="list">
+    @for (line of lines(); track line.code) {
+      <li>{{ line.label }}</li>
+    }
+  </ul>
+  @if (needsIdentity()) {
+    <button
+      actions
+      foldButton
+      class="to-identity"
+      size="sm"
+      intent="warning"
+      emphasis="soft"
+      type="button"
+      (click)="openIdentity()"
+    >
+      {{ t().account.mandateBlockersIdentity }}
+    </button>
+  }
+  @if (needsBank()) {
+    <button
+      actions
+      foldButton
+      class="to-bank"
+      size="sm"
+      intent="warning"
+      emphasis="soft"
+      type="button"
+      (click)="openBank()"
+    >
+      {{ t().account.mandateBlockersBank }}
+    </button>
+  }
+</fold-callout>

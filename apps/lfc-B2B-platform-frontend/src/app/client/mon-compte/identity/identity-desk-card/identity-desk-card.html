@@ -19,6 +19,8 @@
          papiers. Un tiret le dit ; un SIRET d'exemple serait celui d'une autre
          maison. -->
     <dd class="num">{{ identity.siret || t().account.identityUnknown }}</dd>
+    <dt>{{ t().account.identitySiren }}</dt>
+    <dd class="num">{{ identity.siren || t().account.identityUnknown }}</dd>
     <dt>{{ t().account.identityVat }}</dt>
     <dd class="num">{{ identity.vatNumber || t().account.identityUnknown }}</dd>
   </dl>

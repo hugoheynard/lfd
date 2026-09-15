@@ -40,6 +40,9 @@
     @if (fetchFailed()) {
       <fold-callout variant="alert" announce>{{ t().account.mandateFetchFailed }}</fold-callout>
     }
+    @if (blocked()) {
+      <app-mandate-blockers [blockers]="mandates.mintBlockers()" />
+    }
     <div class="gestures">
       <button
         foldButton
@@ -47,6 +50,7 @@
         emphasis="soft"
         intent="primary"
         type="button"
+        [disabled]="blocked()"
         (click)="open()"
       >
         {{ action() }}

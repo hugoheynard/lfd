@@ -23,6 +23,7 @@ import { NotifyService } from '../../../../notify.service';
 import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
+import { MandateBlockers } from '../mandate-blockers/mandate-blockers';
 import { downloadMandate, openMandate } from '../mandate-document';
 import {
   mandateBody,
@@ -74,6 +75,7 @@ interface Refusal {
     FoldFileDropzoneComponent,
     FoldPanelBodyComponent,
     FoldPanelHeaderComponent,
+    MandateBlockers,
   ],
   templateUrl: './mandate-panel.html',
   styleUrl: './mandate-panel.scss',
@@ -120,25 +122,38 @@ export class MandatePanel {
 
   protected readonly accept = PROOF_ACCEPT;
 
+  /** Les mentions qui manquent pour générer — vide quand la génération passerait. */
+  protected readonly blockers = computed(() => this.mandates.mintBlockers());
+
   constructor() {
     // Une entrée requise n'est pas posée quand le constructeur tourne.
+    // Sans génération possible (une mention manque), le panneau s'ouvre sur la
+    // liste au lieu de partir vers un refus certain.
     effect(() => {
       if (this.data().generate) {
-        untracked(() => void this.generate());
+        untracked(() => {
+          if (this.blockers().length === 0) {
+            void this.generate();
+          }
+        });
       }
     });
   }
 
   protected async generate(): Promise<void> {
-    if (this.generating()) {
+    if (this.generating() || this.blockers().length > 0) {
       return;
     }
+    const companyId = this.data().companyId;
     this.generating.set(true);
     this.refusal.set(null);
-    const refusal = await this.mandates.generate(this.data().companyId);
+    const refusal = await this.mandates.generate(companyId);
     this.generating.set(false);
     if (refusal !== null) {
+      // Un refus malgré tout (`MandateMentionsMissingError`, 409, si une mention
+      // a disparu entre-temps) : son message s'affiche, et la liste se relit.
       this.refusal.set({ lead: this.t().account.mandateGenerateFailed, message: refusal });
+      await this.mandates.refresh(companyId);
     }
   }
 

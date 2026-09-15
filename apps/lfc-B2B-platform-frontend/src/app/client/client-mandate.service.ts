@@ -4,6 +4,7 @@ import type {
   CustomerMandateOptionsSectionView,
   CustomerMandateOptionsView,
   CustomerMandateView,
+  MintBlocker,
   SepaScheme,
   SetMandateOptionsPayload,
 } from '@lfd/contracts';
@@ -59,6 +60,16 @@ export class ClientMandate {
    */
   readonly issuerScheme = this._issuerScheme.asReadonly();
 
+  private readonly _mintBlockers = signal<readonly MintBlocker[]>([]);
+
+  /**
+   * Ce qui empêche aujourd'hui de générer le mandat — vide quand la génération
+   * passerait, ou tant que l'enveloppe des options n'est pas lue. Calculé par le
+   * serveur avec la fonction même qui refuse la génération : l'écran traduit,
+   * il ne recompte pas.
+   */
+  readonly mintBlockers = this._mintBlockers.asReadonly();
+
   /**
    * Lit le mandat si ce n'est pas déjà fait. Paresseux, comme le RIB : seules
    * les cartes montrées le demandent, et elles ne le sont que drapeau ouvert —
@@ -106,7 +117,9 @@ export class ClientMandate {
    */
   async refresh(companyId: string): Promise<void> {
     if (this.readFor === companyId) {
-      await this.reload(companyId);
+      // Les options AUSSI depuis le 2026-09-15 : leur enveloppe porte les
+      // mentions manquantes, et un RIB ou une identité enregistrés les changent.
+      await Promise.all([this.reload(companyId), this.loadOptions(companyId)]);
     }
   }
 
@@ -169,13 +182,14 @@ export class ClientMandate {
   async loadOptions(companyId: string): Promise<void> {
     this._optionsStatus.set('loading');
     try {
-      const { options, issuerScheme } = await firstValueFrom(
+      const { options, issuerScheme, mintBlockers } = await firstValueFrom(
         this.http.get<CustomerMandateOptionsSectionView>(this.optionsUrl(companyId), {
           headers: await this.headers(),
         }),
       );
       this._options.set(options);
       this._issuerScheme.set(issuerScheme);
+      this._mintBlockers.set(mintBlockers);
       this._optionsStatus.set('ready');
     } catch {
       this._optionsStatus.set('failed');

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { FoldPanelHostService } from 'fold-ng';
 import {
   CompanyIdentityCard,
+  formatSiren,
   formatSiret,
   type CompanyBadgeTone,
   type CompanyIdentityView,
@@ -61,6 +62,7 @@ export class EntrepriseIdentite {
       enseigne: c.enseigne,
       formeJuridique: c.formeJuridique,
       siret: formatSiret(c.siret),
+      siren: formatSiren(c.siren),
       vatNumber: c.vatNumber,
       vatMissing: c.vatNumberRequired && c.vatNumber.trim() === '',
       // Côté client, l'identité légale est exigée à la création : rien ne peut

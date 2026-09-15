@@ -8,6 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { sirenFollowingSiret } from '@lfd/b2b-ui/company';
 import type { CompanyView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -26,13 +27,17 @@ import { ClientCopyService } from '../../../copy/client-copy.service';
 import { dialogSide } from '../../../panel-side';
 import { canEditIdentity } from '../identity-section';
 
-/** Les trois mentions du greffe : le client les COMBLE, il ne les corrige pas. */
-const LEGAL_FIELDS = ['raisonSociale', 'formeJuridique', 'siret'] as const;
+/**
+ * Les mentions du greffe : le client les COMBLE, il ne les corrige pas. Le SIREN
+ * les a rejointes le 2026-09-15 — sous le SIRET, et au même régime (décision de
+ * Hugo : compléter seulement, la correction passe par le commercial).
+ */
+const LEGAL_FIELDS = ['raisonSociale', 'formeJuridique', 'siret', 'siren'] as const;
 type LegalField = (typeof LEGAL_FIELDS)[number];
 
 type LegalDraft = Record<LegalField, string>;
 
-const EMPTY_LEGAL: LegalDraft = { raisonSociale: '', formeJuridique: '', siret: '' };
+const EMPTY_LEGAL: LegalDraft = { raisonSociale: '', formeJuridique: '', siret: '', siren: '' };
 
 /** Charge d'ouverture : la société visée et ce que la carte en montrait. */
 export interface IdentityPanelData extends LegalDraft {
@@ -99,9 +104,14 @@ export class IdentityPanel {
    * `data` au moment du clic : le panneau édite ce que la carte montrait, et
    * la relecture de `/me` qui suit un succès ne le réécrit pas sous les doigts.
    */
-  static open(panels: FoldPanelHostService, company: CompanyView): void {
-    panels.open(IdentityPanel, {
+  static async open(
+    panels: FoldPanelHostService,
+    company: CompanyView,
+    stack = false,
+  ): Promise<boolean> {
+    const ref = panels.open<IdentityPanelData, boolean>(IdentityPanel, {
       side: dialogSide(),
+      stack,
       data: {
         companyId: company.id,
         enseigne: company.enseigne,
@@ -109,9 +119,11 @@ export class IdentityPanel {
         raisonSociale: company.raisonSociale,
         formeJuridique: company.formeJuridique,
         siret: company.siret,
+        siren: company.siren,
         editable: canEditIdentity(company),
       },
     });
+    return (await ref.closed) === true;
   }
 
   readonly data = input.required<IdentityPanelData>();
@@ -136,6 +148,7 @@ export class IdentityPanel {
       raisonSociale: copy.identityCompany,
       formeJuridique: copy.identityForm,
       siret: copy.identitySiret,
+      siren: copy.identitySiren,
     };
     return LEGAL_FIELDS.map((key) => {
       const current = data[key].trim();
@@ -190,6 +203,30 @@ export class IdentityPanel {
     this.legal.update((draft) => ({ ...draft, [key]: value }));
   }
 
+  /**
+   * Le SIRET, et le SIREN qu'il **propose** quand ses neuf premiers chiffres en
+   * forment un valide — seulement si le SIREN est encore à compléter, et tant
+   * que le client ne l'a pas tapé lui-même (`sirenFollowingSiret`). Le serveur
+   * fait foi et refuse une paire qui se contredit.
+   */
+  protected setSiret(value: string): void {
+    const sirenOpen = this.openFields().some((field) => field.key === 'siren');
+    this.legal.update((draft) => ({
+      ...draft,
+      siret: value,
+      siren: sirenOpen ? sirenFollowingSiret(draft.siren, draft.siret, value) : draft.siren,
+    }));
+  }
+
+  /** Le champ tapé : le SIRET passe par {@link setSiret}, qui fait suivre le SIREN. */
+  protected type(key: LegalField, value: string): void {
+    if (key === 'siret') {
+      this.setSiret(value);
+    } else {
+      this.setLegal(key, value);
+    }
+  }
+
   protected async save(): Promise<void> {
     if (!this.canSave()) {
       return;
@@ -224,6 +261,7 @@ export class IdentityPanel {
       raisonSociale: legal('raisonSociale'),
       formeJuridique: legal('formeJuridique'),
       siret: legal('siret'),
+      siren: legal('siren'),
     };
   }
 }

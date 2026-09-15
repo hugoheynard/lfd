@@ -29,6 +29,7 @@ interface Situation {
 /** Un RIB enregistré, sans IBAN : la lecture n'en rend que `last4`. */
 const RIB: CustomerBankAccountView = {
   holder: 'SAS Les Tommeuses',
+  holderLegalForm: 'SAS',
   addressLine1: '12 rue des Alpages',
   addressLine2: '',
   postalCode: '73150',
@@ -92,6 +93,7 @@ function boot(
           status: signal('ready'),
           mandate: signal(null),
           issuerScheme: signal(null),
+          mintBlockers: signal([]),
           ensure: (): void => undefined,
           reload: (): Promise<void> => Promise.resolve(),
         },

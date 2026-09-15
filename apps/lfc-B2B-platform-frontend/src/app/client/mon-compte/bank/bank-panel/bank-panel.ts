@@ -14,6 +14,8 @@ import {
   bankAccountDraftFrom,
   EMPTY_BANK_ACCOUNT_DRAFT,
   hasCountryCode,
+  holderLegalFormFits,
+  holderLegalFormProvided,
   isBankAccountComplete,
   toBankAccountPayload,
   type BankAccountDraft,
@@ -100,15 +102,20 @@ export class BankPanel {
    * serveur (plan `plan-mandat-client.md` §8), dont le papier nommerait un
    * compte qui n'est plus le RIB. Sans relecture, la carte mandat proposerait
    * encore de télécharger un brouillon que l'API refuse désormais.
+   *
+   * `stack` quand il s'ouvre depuis un panneau (les mentions manquantes du
+   * mandat) : le panneau reste dessous, et relit ce qu'il montre.
    */
   static async open(
     panels: FoldPanelHostService,
     accounts: ClientBankAccount,
     mandates: ClientMandate,
     companyId: string,
+    stack = false,
   ): Promise<void> {
     const ref = panels.open<BankPanelData, boolean>(BankPanel, {
       side: dialogSide(),
+      stack,
       data: { companyId, account: accounts.account() },
     });
     if ((await ref.closed) === true) {
@@ -120,6 +127,7 @@ export class BankPanel {
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly accounts = inject(ClientBankAccount);
+  private readonly mandates = inject(ClientMandate);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef);
 
@@ -141,12 +149,22 @@ export class BankPanel {
     });
   }
 
+  /**
+   * La civilité ou forme juridique est exigée quand l'émetteur frappe en
+   * interentreprises. `null` (schéma pas encore lu, ou lecture échouée) ⇒ non
+   * requise : le serveur reste le garde, par `holder_legal_form_missing`.
+   */
+  protected readonly holderLegalFormRequired = computed(
+    () => this.mandates.issuerScheme() === 'B2B',
+  );
+
   /** « RIB enregistré · •••• 3041 », ou l'absence — l'en-tête dit ce qu'on remplace. */
   protected readonly saved = computed(() => bankLine(this.data().account, this.t().account));
 
   /**
    * Quelque chose a changé depuis la lecture, ET le compte se recopie **en
-   * entier** (complément excepté), pays en deux lettres : ce panneau désarme le
+   * entier** (complément excepté), forme juridique présente si le mandat
+   * interentreprises l'exige, pays en deux lettres : ce panneau désarme le
    * bouton sur un pays mal formé, là où la fiche staff laisse le serveur refuser.
    */
   protected readonly canSave = computed(() => {
@@ -155,6 +173,8 @@ export class BankPanel {
       !this.saving() &&
       bankAccountDraftChanged(draft, this.data().account) &&
       isBankAccountComplete(draft) &&
+      holderLegalFormFits(draft) &&
+      holderLegalFormProvided(draft, this.holderLegalFormRequired()) &&
       hasCountryCode(draft)
     );
   });

@@ -8,7 +8,7 @@ import { IdentityPanel } from '../identity-panel/identity-panel';
 import { canEditIdentity } from '../identity-section';
 
 /**
- * La carte **Identité légale** en pile : enseigne, raison sociale, SIRET — ce
+ * La carte **Identité légale** en pile : enseigne, raison sociale, SIRET, SIREN — ce
  * qu'on veut savoir sans ouvrir. La forme, la TVA et la règle sont dans le
  * panneau, que le bouton ouvre en écriture aux rôles qui écrivent, en lecture
  * aux autres.

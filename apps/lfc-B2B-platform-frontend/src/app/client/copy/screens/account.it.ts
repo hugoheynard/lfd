@@ -76,6 +76,7 @@ export const ACCOUNT_IT: AccountCopy = {
   identityCompany: 'Ragione sociale',
   identityForm: 'Forma giuridica',
   identitySiret: 'SIRET',
+  identitySiren: 'SIREN',
   identityVat: 'Partita IVA intracom.',
   identityNote:
     'L’insegna si cambia qui. Le menzioni del registro passano da noi: verifichiamo, poi aggiorniamo — sono quelle che figurano sulle vostre fatture.',
@@ -283,6 +284,9 @@ export const ACCOUNT_IT: AccountCopy = {
     'Il titolare e l’indirizzo sono quelli noti alla vostra banca: possono differire dalla ragione sociale. Se su questo conto è attivo un addebito, sostituirlo lo interrompe: vi ricontatteremo per il seguito.',
   bankForm: {
     holder: 'Titolare del conto',
+    holderLegalForm: 'Titolo (Sig., Sig.ra) o forma giuridica (SAS, SARL…)',
+    holderLegalFormHint:
+      'Richiesto dal mandato tra imprese, che il titolare sia una società o una persona — al massimo 40 caratteri.',
     line1: 'Indirizzo',
     line2: 'Complemento',
     postalCode: 'CAP',
@@ -327,6 +331,16 @@ export const ACCOUNT_IT: AccountCopy = {
   mandateDropHint: 'PDF o foto (JPEG, PNG, HEIC), massimo 10 MB.',
   mandateUploading: 'Invio del mandato…',
   mandateUploadedToast: 'Mandato firmato ricevuto.',
+  mandateBlockedLead: 'Per generare il mandato manca:',
+  mandateBlockers: {
+    bank_account_missing: 'le coordinate bancarie',
+    issuer_missing: 'i nostri dati di creditore — ce ne occupiamo noi',
+    company_name_missing: 'la ragione sociale della sua impresa',
+    siren_missing: 'il numero SIREN della sua impresa',
+    holder_legal_form_missing: 'il titolo o la forma giuridica del titolare del conto',
+  },
+  mandateBlockersIdentity: 'Completa l’identità legale',
+  mandateBlockersBank: 'Completa le coordinate bancarie',
   mandateGenerateFailed: 'Il mandato non è stato generato.',
   mandateUploadFailed: 'Il mandato firmato non è stato caricato.',
   mandateFetchFailed: 'Il mandato non è stato aperto. Riprovate tra un istante.',

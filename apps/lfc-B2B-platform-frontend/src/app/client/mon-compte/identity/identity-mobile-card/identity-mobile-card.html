@@ -13,6 +13,10 @@
       <dt>{{ t().account.identitySiret }}</dt>
       <dd class="num">{{ identity.siret || t().account.identityUnknown }}</dd>
     </div>
+    <div class="fact">
+      <dt>{{ t().account.identitySiren }}</dt>
+      <dd class="num">{{ identity.siren || t().account.identityUnknown }}</dd>
+    </div>
   </dl>
 }
 <app-card-foot [label]="action()" (pressed)="open()" />

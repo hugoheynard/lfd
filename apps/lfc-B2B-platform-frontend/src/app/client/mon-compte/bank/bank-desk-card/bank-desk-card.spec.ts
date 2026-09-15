@@ -13,6 +13,7 @@ import { BankDeskCard } from './bank-desk-card';
 
 const SAVED: CustomerBankAccountView = {
   holder: 'Refuge du Col SARL',
+  holderLegalForm: 'SARL',
   addressLine1: '12 rue des Alpages',
   addressLine2: '',
   postalCode: '73150',

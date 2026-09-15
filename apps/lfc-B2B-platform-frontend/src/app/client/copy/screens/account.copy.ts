@@ -1,7 +1,7 @@
 import type { AddressFormLabels } from '@lfd/b2b-ui/address';
 import type { ContactFieldsLabels, DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
 import type { BankAccountFormLabels, MandateOptionsFormLabels } from '@lfd/b2b-ui/payment';
-import type { SepaScheme } from '@lfd/contracts';
+import type { MintBlocker, SepaScheme } from '@lfd/contracts';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
@@ -81,6 +81,8 @@ export interface AccountCopy {
   readonly identityCompany: string;
   readonly identityForm: string;
   readonly identitySiret: string;
+  /** Sous le SIRET : saisi à part, le mandat interentreprises l'exige. */
+  readonly identitySiren: string;
   readonly identityVat: string;
   readonly identityNote: string;
   /**
@@ -274,7 +276,10 @@ export interface AccountCopy {
   readonly bankLast4: string;
   /** Le titulaire est celui que la BANQUE connaît, et un compte mandaté ne se remplace pas sans nouveau mandat. */
   readonly bankNotice: string;
-  /** Les champs du RIB — le formulaire partagé avec la fiche staff. */
+  /**
+   * Les champs du RIB — le formulaire partagé avec la fiche staff, civilité ou
+   * forme juridique du titulaire comprise (exigée par le mandat interentreprises).
+   */
   readonly bankForm: BankAccountFormLabels;
   readonly bankSave: string;
   readonly bankReplace: string;
@@ -324,6 +329,15 @@ export interface AccountCopy {
   readonly mandateDropHint: string;
   readonly mandateUploading: string;
   readonly mandateUploadedToast: string;
+  /**
+   * Ce qui empêche de générer le mandat — en tête de la liste, puis une ligne
+   * par code rendu par le serveur (`MintBlocker`), et les deux gestes qui
+   * ouvrent le dialogue où la mention se saisit.
+   */
+  readonly mandateBlockedLead: string;
+  readonly mandateBlockers: Readonly<Record<MintBlocker, string>>;
+  readonly mandateBlockersIdentity: string;
+  readonly mandateBlockersBank: string;
   /** En tête du message du serveur, quand la génération est refusée. */
   readonly mandateGenerateFailed: string;
   /** En tête du message du serveur, quand le dépôt est refusé. */

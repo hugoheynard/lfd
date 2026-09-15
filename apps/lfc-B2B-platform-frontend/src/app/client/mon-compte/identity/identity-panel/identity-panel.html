@@ -43,7 +43,7 @@
         [label]="field.label"
         [hint]="t().account.identityLegalHint"
         [value]="legal()[field.key]"
-        (valueChange)="setLegal(field.key, $event)"
+        (valueChange)="type(field.key, $event)"
       />
     }
 

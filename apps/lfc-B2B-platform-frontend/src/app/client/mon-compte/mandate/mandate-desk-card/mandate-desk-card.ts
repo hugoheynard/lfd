@@ -18,6 +18,7 @@ import {
 import { ClientCompany } from '../../../client-company.service';
 import { ClientMandate } from '../../../client-mandate.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
+import { MandateBlockers } from '../mandate-blockers/mandate-blockers';
 import { downloadMandate, openMandate } from '../mandate-document';
 import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
@@ -45,6 +46,7 @@ import {
   selector: 'app-mandate-desk-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    MandateBlockers,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
@@ -82,6 +84,14 @@ export class MandateDeskCard {
 
   /** L'ouverture ou le téléchargement du PDF a échoué : dit sous l'état, qui reste lisible. */
   protected readonly fetchFailed = signal(false);
+
+  /**
+   * Aucun mandat en cours, et une mention manque : « Générer mon mandat » reste
+   * visible mais inerte, et la liste dit quoi compléter — le serveur refuserait.
+   */
+  protected readonly blocked = computed(
+    () => this.stage() === 'none' && this.mandates.mintBlockers().length > 0,
+  );
 
   constructor() {
     effect(() => {

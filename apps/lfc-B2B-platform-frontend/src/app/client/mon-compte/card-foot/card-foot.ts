@@ -19,5 +19,7 @@ import { FoldButtonComponent } from 'fold-ng';
 })
 export class CardFoot {
   readonly label = input.required<string>();
+  /** Le geste existe mais ne peut pas aboutir — la carte dit pourquoi, au-dessus. */
+  readonly disabled = input(false);
   readonly pressed = output<void>();
 }
