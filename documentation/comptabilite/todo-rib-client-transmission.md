@@ -1,7 +1,7 @@
 # Revoir la sécurité de la transmission du RIB saisi par le client
 
 > Ouverte le 2026-09-14, à la demande de Hugo, en bâtissant
-> [`../b2b/plan-rib-client.md`](../b2b/plan-rib-client.md) **sans** passage par
+> [`plan-rib-client.md`](plan-rib-client.md) **sans** passage par
 > `vitruve`. Rien de ce qui suit n'est décidé.
 
 ## Ce qui est en place
@@ -22,7 +22,7 @@
   client.
 - Passage par `vitruve` avant d'ouvrir le geste à tous les clients.
 - **Le PDF du mandat rend l'IBAN à qui porte un jeton owner/billing**
-  (ajouté le 2026-09-14, plan `../b2b/plan-mandat-client.md` §6 #3). Assumé :
+  (ajouté le 2026-09-14, plan `plan-mandat-client.md` §6 #3). Assumé :
   un mandat EPC porte l'IBAN du débiteur. Mais un jeton volé permet désormais
   de LIRE le compte, plus seulement de le remplacer — la question « prise de
   compte » ci-dessus s'élargit d'autant.

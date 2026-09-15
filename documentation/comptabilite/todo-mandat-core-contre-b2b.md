@@ -2,14 +2,18 @@
 
 **Ouvert le 2026-09-13.**
 
-> 🔄 **Dépassé le 2026-09-15** par [`../b2b/plan-mandat-deux-schemas.md`](../b2b/plan-mandat-deux-schemas.md) :
-> Hugo veut les deux schémas, choisis par l'entité. Le mandat fige désormais son
-> schéma **et** son type de paiement à la frappe (colonnes
-> `payment_mandates.scheme` / `payment_type`, migration `20260915090000`) — ce qui
-> ferme le trou « le réglage COURANT, pas ce qui a été imprimé » ci-dessous. La
-> constante unique `SEPA_SCHEME` est abandonnée. Restent ouverts ici : le second
-> débit d'un mandat ponctuel, le RIB changé sous un actif, et les questions à la
-> banque.
+> 🔄 **État au 2026-09-15 — ce qui est fermé :**
+>
+> - les deux schémas existent, choisis par l'entité et **figés sur chaque mandat**
+>   avec son type de paiement ([`plan-mandat-deux-schemas.md`](plan-mandat-deux-schemas.md)) ;
+> - un RIB ne se remplace plus sous un mandat actif, ni par le client ni par le
+>   staff (409) — l'amendement est suivi dans
+>   [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md).
+>
+> **Ce qui reste ouvert ici :** le libellé exact du mandat interentreprises à
+> confronter au modèle de la Caisse d'Épargne, la mention « 13 mois », le second
+> débit d'un mandat ponctuel (pas d'historique des débits), et les questions à la
+> banque. Les sections plus bas décrivent l'état du 2026-09-13/14.
 > 🔴 Bloque le premier prélèvement réel, et engage juridiquement.
 
 Ce fichier **remplace** le TODO précédent de ce dossier, livré le même jour : la
@@ -18,7 +22,7 @@ courriel.
 
 > ✅ **Tranché par Hugo le 2026-09-14 : on fait INTERENTREPRISES (B2B).** Le
 > lot déclare déjà `B2B` : c'est le **formulaire** qui bascule, pas le lot. La
-> bascule est le lot 0 de [`../b2b/plan-mandat-client.md`](../b2b/plan-mandat-client.md).
+> bascule est le lot 0 de [`plan-mandat-client.md`](plan-mandat-client.md).
 > ✅ **Le contrat SDD B2B avec la Caisse d'Épargne est signé** (dit par Hugo le
 > 2026-09-14) : la bascule n'attend plus de réponse. ~~Mécanisme retenu : le schéma
 > devient une propriété de chaque mandat (plan §7).~~ Abandonné le même jour pour
@@ -92,7 +96,7 @@ question « quel schéma ? » n'ait plus qu'une réponse dans le dépôt.
 ⚠️ **Le schéma B2B s'ouvre sur contrat séparé avec la banque du créancier.**
 C'est la Caisse d'Épargne qui confirmera le formulaire qu'elle attend — et c'est
 une des questions déjà en attente (cf.
-[`../comptabilite/prelevement-sepa.md`](../comptabilite/prelevement-sepa.md)
+[`prelevement-sepa.md`](prelevement-sepa.md)
 §12). Basculer le formulaire avant sa réponse, c'est risquer de le refaire.
 
 **La question à lui poser**, en une phrase : _le contrat SDD B2B est-il ouvert
@@ -142,7 +146,7 @@ zone 12 selon ce même réglage. Ce que la bascule laisse ouvert :
 
 ## Un mandat ACTIF dont le staff change le RIB — aucun mécanisme
 
-**Ajouté le 2026-09-14** (plan [`../b2b/plan-mandat-client.md`](../b2b/plan-mandat-client.md)
+**Ajouté le 2026-09-14** (plan [`plan-mandat-client.md`](plan-mandat-client.md)
 §9 #5), hors du Lot A qui l'a constaté.
 
 Le mandat ne fige pas le compte qu'il nomme : le PDF et le lot lisent le RIB

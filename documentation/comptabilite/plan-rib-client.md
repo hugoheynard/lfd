@@ -1,8 +1,8 @@
 # Le RIB, côté client — `/mon-compte`
 
-> Décidé le 2026-09-14 avec Hugo. **Pas de `vitruve` pour l'instant**, à sa
-> demande : la sécurité de la transmission de l'IBAN sera revue plus tard
-> ([`../todos/todo-rib-client-transmission.md`](../todos/todo-rib-client-transmission.md)).
+> Décidé le 2026-09-14 avec Hugo. ✅ **Construit et en production.** **Pas de
+> `vitruve`**, à sa demande : la sécurité de la transmission de l'IBAN sera revue plus tard
+> ([`todo-rib-client-transmission.md`](todo-rib-client-transmission.md)).
 
 ## 0. La demande
 

@@ -1,7 +1,8 @@
 # Plan — l'entité choisit le schéma de ses mandats : CORE ou interentreprises
 
-> **Ouvert le 2026-09-15** à la demande de Hugo. 🟠 **Doc-first : rien n'est
-> construit.** Soumis à `vitruve` avant Hugo (argent + migration), voir §9.
+> **Ouvert le 2026-09-15** à la demande de Hugo, soumis à `vitruve` (§9).
+> ✅ **Construit et en production le 2026-09-15** (merge `174dae4c`). Les écarts
+> restés à trancher sont au §11.
 
 ## 0. La demande
 

@@ -1,7 +1,7 @@
 # Plan — SIREN de la société, forme juridique du titulaire, et pas de mandat sans ses mentions
 
-> **Ouvert le 2026-09-15** à la demande de Hugo. 🟠 **Doc-first.** Porte une
-> migration de données : soumis à `vitruve` avant construction (§8).
+> **Ouvert le 2026-09-15** à la demande de Hugo, soumis à `vitruve` (§8).
+> 🟡 **Construit et commité le 2026-09-15, pas encore déployé** ; écarts au §10.
 
 ## 0. La demande
 

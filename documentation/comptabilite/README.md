@@ -15,6 +15,28 @@ propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`prelevement-sepa.md`](prelevement-sepa.md) | **Toujours.** C'est le document unique du sujet : l'objectif, l'état des lieux vérifié, le mandat, l'IBAN, le fichier `pain.008`, les objections ouvertes et le découpage. |
 | [`rum.md`](rum.md)                           | Quand on touche à la **référence unique de mandat** : ses contraintes, comment elle est frappée, et pourquoi ce n'est plus l'identifiant du mandat.                        |
+| [`lexique.md`](lexique.md)                   | Quand un sigle bloque la lecture : ICS, RUM, SDD, `pain.008`, séquences.                                                                                                   |
+
+### Les plans du mandat et du RIB
+
+| Doc                                                                                  | État                                                                                            |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| [`plan-rib-client.md`](plan-rib-client.md)                                           | ✅ en production — le client voit et saisit le RIB de sa société                                |
+| [`plan-mandat-client.md`](plan-mandat-client.md)                                     | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                 |
+| [`plan-mandat-deux-schemas.md`](plan-mandat-deux-schemas.md)                         | ✅ en production — CORE ou interentreprises au choix de l'entité, figé sur le mandat            |
+| [`plan-mentions-obligatoires-du-mandat.md`](plan-mentions-obligatoires-du-mandat.md) | 🟡 commité, pas déployé — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions |
+| [`plan-restes-du-mandat.md`](plan-restes-du-mandat.md)                               | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé           |
+
+### Les todos du sujet
+
+Elles vivent **ici** et non dans `../todos/` (décidé par Hugo le 2026-09-15) :
+tout ce qui touche la RUM et le SEPA se lit au même endroit.
+
+| Todo                                                                       | Ce qui reste                                                                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md) | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                                     |
+| [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md)         | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel, questions à la banque |
+| [`todo-rib-client-transmission.md`](todo-rib-client-transmission.md)       | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                                   |
 
 > **Fusion du 2026-09-12.** Trois documents se partageaient le prélèvement — le
 > socle Stripe, la conception directe, et le format du fichier. Ils se
@@ -47,11 +69,11 @@ juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 
 ### Le mandat SEPA — trois choses portent ce nom
 
-| Ce qui existe                   | Où                                               | État                                                                                                               |
-| ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| Le mandat **Stripe**            | `src/b2b/payments/`                              | **gelé** — plus aucun n'est créé depuis le 2026-09-10                                                              |
-| Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                      |
-| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans `../todos/todo-mandat-restes-de-la-frappe.md` |
+| Ce qui existe                   | Où                                               | État                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le mandat **Stripe**            | `src/b2b/payments/`                              | **gelé** — plus aucun n'est créé depuis le 2026-09-10                                                                                           |
+| Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                                                   |
+| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md) |
 
 ### La RUM
 
