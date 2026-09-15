@@ -1,3 +1,5 @@
+import { DELIVERY_CLOSED_FOR_AUDIENCE } from "@lfd/contracts";
+
 import {
   BusinessError,
   DomainError,
@@ -80,6 +82,24 @@ export class NoDeliveryZoneForPostalCodeError extends BusinessError {
     super(
       "orders.delivery_zone.not_served",
       `Aucune zone de livraison ne dessert le code postal ${codePostal}. Choisissez le retrait, ou contactez-nous.`,
+    );
+  }
+}
+
+/**
+ * La livraison n'est pas proposée à la clientèle de cette requête (**409**) —
+ * l'admin l'a fermée dans « Réglages → Livraison ».
+ *
+ * Un GARDE : la boutique ne propose pas une livraison fermée, et ce refus
+ * n'arrive que d'un écran resté ouvert ou d'un appel direct. Un seul message,
+ * sans condition : aucun chemin qui le lève ne connaît les rattachements, donc
+ * aucun ne pourrait composer « basculez sur votre société » (plan, D5).
+ */
+export class DeliveryClosedForAudienceError extends BusinessError {
+  constructor() {
+    super(
+      DELIVERY_CLOSED_FOR_AUDIENCE,
+      "La livraison n'est pas proposée pour cet espace. Choisissez le retrait.",
     );
   }
 }

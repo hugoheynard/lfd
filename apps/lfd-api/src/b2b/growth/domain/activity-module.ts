@@ -22,9 +22,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "volume_ladder.",
     "volume_commitment.",
   ],
-  // Zones, points de retrait et heures limites décident où et quand une
-  // commande part : ils se lisent avec les commandes, pas avec les prix.
-  commandes: ["order.", "delivery_zone.", "pickup_address.", "order_cutoff."],
+  // Zones, points de retrait, heures limites et ouverture de la livraison
+  // décident où et quand une commande part : ils se lisent avec les commandes,
+  // pas avec les prix.
+  commandes: ["order.", "delivery_zone.", "pickup_address.", "order_cutoff.", "delivery_settings."],
   comptes: ["user.", "company.", "subscription.", "support."],
 };
 

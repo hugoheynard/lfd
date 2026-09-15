@@ -1019,3 +1019,24 @@ export type {
 } from "./delivery-procedure.js";
 
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./account.js";
+
+export { audienceOf } from "./customer-audience.js";
+export type { CustomerAudience } from "./customer-audience.js";
+export {
+  DEFAULT_DELIVERY_SETTINGS,
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  deliveryOpenTo,
+  deliverySettingsPatchSchema,
+} from "./delivery-settings.js";
+export type {
+  DeliverySettingsPatch,
+  DeliverySettingsView,
+  PublicDeliverySettingsView,
+} from "./delivery-settings.js";
+export {
+  ALL_DISCOUNT_AUDIENCES,
+  pickupAddressUpdatePayloadSchema,
+  pickupDiscountAudiencesSchema,
+  pickupDiscountFor,
+} from "./pickup.js";
+export type { PickupAddressUpdatePayload, PickupDiscountAudiences } from "./pickup.js";

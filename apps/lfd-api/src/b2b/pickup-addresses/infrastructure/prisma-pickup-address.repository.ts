@@ -1,9 +1,4 @@
-import {
-  type PickupAddressPayload,
-  type PickupAddressView,
-  type PickupOpening,
-  pickupOpeningSchema,
-} from "@lfd/contracts";
+import { type PickupAddressView, type PickupOpening, pickupOpeningSchema } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
@@ -12,11 +7,14 @@ import {
   fromAdjustmentColumns,
   toAdjustmentColumns,
 } from "../../pricing/cart-adjustment.mapper.js";
-import { PickupAddressRepository } from "../domain/pickup-address.repository.js";
+import {
+  PickupAddressRepository,
+  type PickupAddressWrite,
+} from "../domain/pickup-address.repository.js";
 import { LastPickupAddressError, PickupAddressNotFoundError } from "../domain/pickup-errors.js";
 
-/** Colonnes postales + remise d'une charge (hors `isDefault`, géré à part). */
-function writable(payload: PickupAddressPayload): {
+/** Colonnes postales + remise et clientèles (hors `isDefault`, géré à part). */
+function writable(point: PickupAddressWrite): {
   label: string;
   ligne1: string;
   ligne2: string;
@@ -25,19 +23,23 @@ function writable(payload: PickupAddressPayload): {
   pays: string;
   discountMode: "percent" | "amount" | null;
   discountValue: number | null;
+  discountForB2b: boolean;
+  discountForB2c: boolean;
   opening: Prisma.InputJsonValue;
 } {
-  const discount = toAdjustmentColumns(payload.discount);
+  const discount = toAdjustmentColumns(point.discount.adjustment);
   return {
-    label: payload.label,
-    ligne1: payload.ligne1,
-    ligne2: payload.ligne2,
-    codePostal: payload.codePostal,
-    ville: payload.ville,
-    pays: payload.pays,
-    opening: payload.opening,
+    label: point.label,
+    ligne1: point.ligne1,
+    ligne2: point.ligne2,
+    codePostal: point.codePostal,
+    ville: point.ville,
+    pays: point.pays,
+    opening: point.opening,
     discountMode: discount.mode,
     discountValue: discount.value,
+    discountForB2b: point.discount.audiences.b2b,
+    discountForB2c: point.discount.audiences.b2c,
   };
 }
 
@@ -52,6 +54,8 @@ interface PickupRow {
   readonly isDefault: boolean;
   readonly discountMode: "percent" | "amount" | null;
   readonly discountValue: number | null;
+  readonly discountForB2b: boolean;
+  readonly discountForB2c: boolean;
   readonly opening: Prisma.JsonValue | null;
 }
 
@@ -77,6 +81,7 @@ function toView(row: PickupRow): PickupAddressView {
     pays: row.pays,
     isDefault: row.isDefault,
     discount: fromAdjustmentColumns(row.discountMode, row.discountValue),
+    discountAudiences: { b2b: row.discountForB2b, b2c: row.discountForB2c },
   };
 }
 
@@ -91,6 +96,8 @@ const SELECT = {
   isDefault: true,
   discountMode: true,
   discountValue: true,
+  discountForB2b: true,
+  discountForB2c: true,
   opening: true,
 } as const;
 
@@ -120,22 +127,22 @@ export class PrismaPickupAddressRepository extends PickupAddressRepository {
     return row === null ? null : toView(row);
   }
 
-  async create(payload: PickupAddressPayload): Promise<string> {
+  async create(point: PickupAddressWrite): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
       const count = await tx.pickupAddress.count();
-      const makeDefault = payload.isDefault || count === 0;
+      const makeDefault = point.isDefault || count === 0;
       if (makeDefault) {
         await tx.pickupAddress.updateMany({ data: { isDefault: false } });
       }
       const created = await tx.pickupAddress.create({
-        data: { ...writable(payload), isDefault: makeDefault },
+        data: { ...writable(point), isDefault: makeDefault },
         select: { id: true },
       });
       return created.id;
     });
   }
 
-  async update(id: string, payload: PickupAddressPayload): Promise<void> {
+  async update(id: string, point: PickupAddressWrite): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const current = await tx.pickupAddress.findUnique({
         where: { id },
@@ -145,13 +152,13 @@ export class PrismaPickupAddressRepository extends PickupAddressRepository {
         throw new PickupAddressNotFoundError(id);
       }
       // Cocher « défaut » promeut ; décocher ne démote pas (on promeut un autre).
-      const promote = payload.isDefault && !current.isDefault;
+      const promote = point.isDefault && !current.isDefault;
       if (promote) {
         await tx.pickupAddress.updateMany({ data: { isDefault: false } });
       }
       await tx.pickupAddress.update({
         where: { id },
-        data: { ...writable(payload), ...(promote ? { isDefault: true } : {}) },
+        data: { ...writable(point), ...(promote ? { isDefault: true } : {}) },
       });
     });
   }

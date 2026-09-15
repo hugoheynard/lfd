@@ -5,6 +5,7 @@ import { AppService } from "./app.service.js";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { AlertsModule } from "../b2b/alerts/alerts.module.js";
 import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module.js";
+import { DeliverySettingsModule } from "../b2b/delivery-settings/delivery-settings.module.js";
 import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
 import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
@@ -89,6 +90,8 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     PickupAddressesModule,
     CatalogModule,
     DeliveryZonesModule,
+    // À qui la livraison est proposée — lu par la caisse et le devis.
+    DeliverySettingsModule,
     // L'accès aux fonctionnalités : ce qu'on peut faire de la boutique, réglé en admin.
     FeatureAccessModule,
     PlatformContentModule,

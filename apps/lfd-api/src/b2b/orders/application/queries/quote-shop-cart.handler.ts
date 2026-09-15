@@ -8,6 +8,7 @@ import { DELIVERY_VAT_RATE, lineTotalCents, ventilateVat, type VatLine } from "@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CartAdjustments } from "../services/cart-adjustments.service.js";
+import { CustomerAudiences } from "../services/customer-audiences.service.js";
 import { OrderLinePricing } from "../services/order-line-pricing.service.js";
 
 /**
@@ -25,7 +26,9 @@ export class QuoteShopCartQuery {
      *
      * Résolue au serveur et transmise par le contrôleur — jamais reçue du
      * client. La route publique passe `null` ; la route reconnue passe ce que
-     * le guard a résolu depuis les rattachements.
+     * le guard a résolu depuis les rattachements. Elle décide aussi la
+     * CLIENTÈLE (remise du point, livraison ouverte) : B2B pour une société
+     * active, B2C sinon.
      */
     readonly companyId: string | null = null,
   ) {}
@@ -49,6 +52,7 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
   constructor(
     private readonly pricing: OrderLinePricing,
     private readonly adjustments: CartAdjustments,
+    private readonly audiences: CustomerAudiences,
   ) {}
 
   /**
@@ -63,7 +67,8 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
    *    plausible ;
    * 2. **la remise et les frais viennent de la base**, par le même service que
    *    la caisse — donc un point de retrait dont la remise est un MONTANT est
-   *    servi juste, ce que le front ne savait pas représenter ;
+   *    servi juste, ce que le front ne savait pas représenter ; et pour la même
+   *    clientèle que la caisse, déduite du statut de la société ;
    * 3. **la TVA se ventile par `ventilateVat`**, la fonction même dont
    *    `Order.draft` se sert. Un devis qui ne prédit pas la facture ne sert à
    *    rien, et deux implémentations finissent toujours par diverger.
@@ -91,7 +96,7 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
     // ligne. C'est ce que fait `Order.draft`, et c'est ce qui fait qu'un seuil
     // de remise se déclenche au même centime des deux côtés.
     const subtotalHtCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-    const terms = await this.termsOf(query.payload.fulfillment, subtotalHtCents);
+    const terms = await this.termsOf(query.payload.fulfillment, subtotalHtCents, query.companyId);
 
     const ventilated = ventilateVat({
       lines: lines.map((line): VatLine => ({
@@ -125,18 +130,26 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
    * avant d'avoir dit où l'on est servi, et le décompte est alors celui des
    * marchandises seules. Inventer une remise ou des frais à ce moment-là
    * annoncerait un total que le choix suivant contredirait.
+   *
+   * La clientèle n'est lue qu'une fois un service choisi : sans acheminement,
+   * elle ne change rien au décompte, et le devis se relance à chaque ligne.
+   *
+   * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
    */
   private async termsOf(
     fulfillment: ShopQuoteFulfillment | null,
     subtotalHtCents: number,
+    companyId: string | null,
   ): Promise<CartTerms> {
     if (fulfillment === null) {
       return NO_TERMS;
     }
+    const audience = await this.audiences.of(companyId);
     if (fulfillment.method === "pickup") {
       const retrait = await this.adjustments.forPickup(
         fulfillment.pickupAddressId,
         subtotalHtCents,
+        audience,
       );
       return {
         discountCents: retrait.discountCents,
@@ -144,7 +157,11 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
         deliveryFeeCents: 0,
       };
     }
-    const coursier = await this.adjustments.forDelivery(fulfillment.codePostal, subtotalHtCents);
+    const coursier = await this.adjustments.forDelivery(
+      fulfillment.codePostal,
+      subtotalHtCents,
+      audience,
+    );
     // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
     return { discountCents: 0, discountAdjustment: null, deliveryFeeCents: coursier.feeCents };
   }

@@ -1,5 +1,18 @@
 import type { PickupAddressPayload, PickupAddressView } from "@lfd/contracts";
 
+import type { PickupDiscount } from "./pickup-discount.js";
+
+/**
+ * Ce qu'on écrit d'un point : ses champs, et sa remise **déjà validée**.
+ *
+ * La remise est un {@link PickupDiscount} et non les deux champs du contrat :
+ * une réduction qui ne vise aucune clientèle ne peut donc pas atteindre
+ * l'adaptateur, quel que soit le handler qui écrit.
+ */
+export type PickupAddressWrite = Omit<PickupAddressPayload, "discount" | "discountAudiences"> & {
+  readonly discount: PickupDiscount;
+};
+
 /**
  * Port des **points de retrait** (globaux). Un seul `isDefault` ; **au moins un**
  * point doit subsister — le repository tient ces invariants (promotion d'un
@@ -16,13 +29,13 @@ export abstract class PickupAddressRepository {
   abstract resolve(id: string | null): Promise<PickupAddressView | null>;
 
   /** Ajoute un point ; devient le défaut si demandé ou si c'est le premier. */
-  abstract create(payload: PickupAddressPayload): Promise<string>;
+  abstract create(point: PickupAddressWrite): Promise<string>;
 
   /**
    * Remplace un point.
    * @throws {PickupAddressNotFoundError} l'`id` n'existe pas.
    */
-  abstract update(id: string, payload: PickupAddressPayload): Promise<void>;
+  abstract update(id: string, point: PickupAddressWrite): Promise<void>;
 
   /**
    * Supprime un point ; réattribue le défaut si besoin.

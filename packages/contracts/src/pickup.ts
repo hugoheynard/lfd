@@ -7,6 +7,33 @@ import {
 } from "./address.js";
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
 import { minutesOfDay, timeOfMinutes } from "./paris-time.js";
+import type { CustomerAudience } from "./customer-audience.js";
+
+/**
+ * **À qui s'applique la remise d'un point** : les pros, les particuliers, ou les
+ * deux. Sans réduction, ces cases ne sont pas lues. Une réduction qui ne vise
+ * aucune clientèle est refusée par le serveur.
+ * Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`, D2.
+ */
+export const pickupDiscountAudiencesSchema = z.object({
+  b2b: z.boolean(),
+  b2c: z.boolean(),
+});
+export type PickupDiscountAudiences = z.infer<typeof pickupDiscountAudiencesSchema>;
+
+/** Le défaut à la création, et l'existant : toute clientèle reçoit la remise. */
+export const ALL_DISCOUNT_AUDIENCES: PickupDiscountAudiences = { b2b: true, b2c: true };
+
+/** La remise du point pour cette clientèle, ou `null` si elle ne la reçoit pas. */
+export function pickupDiscountFor(
+  point: {
+    readonly discount: CartAdjustment | null;
+    readonly discountAudiences: PickupDiscountAudiences;
+  },
+  audience: CustomerAudience,
+): CartAdjustment | null {
+  return point.discount !== null && point.discountAudiences[audience] ? point.discount : null;
+}
 
 /**
  * Contrat de fil des **points de retrait** (laboratoires) — adresses **globales**
@@ -51,9 +78,21 @@ export function pickupWindows(opening: PickupOpening): readonly FulfillmentWindo
 export const pickupAddressPayloadSchema = billingAddressPayloadSchema.extend({
   isDefault: z.boolean().default(false),
   discount: cartAdjustmentSchema.nullable().default(null),
+  discountAudiences: pickupDiscountAudiencesSchema.default(ALL_DISCOUNT_AUDIENCES),
   opening: pickupOpeningSchema.default({ publicOpening: null, proPickup: null }),
 });
 export type PickupAddressPayload = z.infer<typeof pickupAddressPayloadSchema>;
+
+/**
+ * La charge d'une **modification** : la même, sauf les clientèles de la remise,
+ * **absentes = inchangées**. Avec le défaut de la création, un onglet du
+ * back-office ouvert avant leur existence rouvrirait en silence une remise
+ * fermée au public (vitruve, S2 du plan).
+ */
+export const pickupAddressUpdatePayloadSchema = pickupAddressPayloadSchema.extend({
+  discountAudiences: pickupDiscountAudiencesSchema.optional(),
+});
+export type PickupAddressUpdatePayload = z.infer<typeof pickupAddressUpdatePayloadSchema>;
 
 /** Un point de retrait tel que renvoyé (le défaut en tête). */
 export interface PickupAddressView {
@@ -67,6 +106,8 @@ export interface PickupAddressView {
   readonly isDefault: boolean;
   /** Remise appliquée au panier en cas de retrait ici, ou `null`. */
   readonly discount: CartAdjustment | null;
+  /** À qui la remise s'applique ; sans remise, sans effet. */
+  readonly discountAudiences: PickupDiscountAudiences;
   /** Quand on peut venir — cf. {@link pickupOpeningSchema}. */
   readonly opening: PickupOpening;
 }

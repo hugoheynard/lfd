@@ -81,6 +81,12 @@ partagé par les deux passations. Prix ré-résolus au catalogue, remise de retr
 du point choisi, zone déduite du code postal — une seconde implémentation aurait
 fini par diverger, et sur le chemin qu'on teste le moins.
 
+La **clientèle** suit la même règle que pour le client (depuis le 2026-09-15,
+`b2b/plan-remise-et-livraison-par-clientele.md`) : B2B si la société portée est
+**active**, B2C sinon. Une remise réservée à l'autre clientèle n'est pas
+appliquée, et une livraison fermée aux pros est refusée en 409 — le staff ne
+livre pas là où le client ne le pourrait pas (Q1).
+
 ### 2.1 Le mur porte sur l'ACHETEUR, pas sur l'acteur
 
 Un commercial n'est membre d'aucune société cliente. Vérifier **son**
@@ -195,11 +201,12 @@ La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`
   jamais. L'ajout se fait **après** la commande, et son échec ne la remet pas en
   cause — annoncer une erreur enverrait le commercial la ressaisir.
 
-  ⚠️ `DELIVERY_SERVICE_OPEN` reste à **faux** et ne gouverne plus que la carte
-  Adresses et la checklist d'activation : les zones se règlent dans Réglages →
-  Livraisons & retraits, et le panier client offre les deux acheminements depuis
-  le pivot « zéro friction ». Le drapeau et la réalité ont divergé ; c'est la
-  réalité que le back-office suit.
+  ⚠️ **La livraison s'ouvre par clientèle** depuis le 2026-09-15 : un réglage
+  (`delivery_settings`) posé dans « E-commerce LFC → Réglages → Livraison », qui a
+  remplacé la constante `DELIVERY_SERVICE_OPEN`. Une commande saisie par
+  l'équipe suit la clientèle de la société — B2B si elle est active, B2C sinon —
+  et « Coursier » se grise quand la livraison y est fermée
+  (`documentation/b2b/plan-remise-et-livraison-par-clientele.md`).
 
 - **Modifier une commande passée.** Ajouter un fait n'est pas en réécrire un.
   Faire avancer ou annuler viendront avec les avenants.

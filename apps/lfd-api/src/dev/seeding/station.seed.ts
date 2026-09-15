@@ -1,4 +1,5 @@
 import {
+  ALL_DISCOUNT_AUDIENCES,
   type CartAdjustment,
   type DeliveryZonePayload,
   type OrderCutoffPayload,
@@ -147,6 +148,7 @@ async function seedPickupPoints({ prisma, commands }: StationContext): Promise<v
       // à la fois », et c'est pour cela qu'on le laisse décider.
       isDefault: point.isDefault,
       discount: point.discount,
+      discountAudiences: ALL_DISCOUNT_AUDIENCES,
       opening: point.opening,
     };
     await commands.execute(new CreatePickupAddressCommand(payload));

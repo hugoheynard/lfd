@@ -3,6 +3,8 @@ import {
   type CreatedPickupResponse,
   type PickupAddressPayload,
   pickupAddressPayloadSchema,
+  type PickupAddressUpdatePayload,
+  pickupAddressUpdatePayloadSchema,
 } from "@lfd/contracts";
 import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
@@ -35,11 +37,15 @@ export class AdminPickupAddressesController {
     return { id };
   }
 
+  /**
+   * Schéma de MODIFICATION, sans défaut sur les clientèles : absentes, elles
+   * restent telles quelles (plan, D2 — vitruve S2).
+   */
   @Patch(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   async update(
     @Param("id") id: string,
-    @Body(new ZodBody(pickupAddressPayloadSchema)) payload: PickupAddressPayload,
+    @Body(new ZodBody(pickupAddressUpdatePayloadSchema)) payload: PickupAddressUpdatePayload,
   ): Promise<void> {
     await this.commands.execute<UpdatePickupAddressCommand, void>(
       new UpdatePickupAddressCommand(id, payload),

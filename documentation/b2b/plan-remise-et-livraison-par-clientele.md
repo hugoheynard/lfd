@@ -1,6 +1,8 @@
 # Plan — la remise de retrait et la livraison, par clientèle
 
-> **Statut : 📐 doc-first, 2026-09-15.** Rien n'est codé. Touche **l'argent** (la
+> **Statut : 🟡 partiel, 2026-09-15.** Le **lot A (serveur)** est bâti : migration,
+> `PickupDiscount`, `CartAdjustments` par clientèle, module `delivery-settings`.
+> Les lots **B** (back-office) et **C** (boutique) ne le sont pas. Touche **l'argent** (la
 > remise appliquée au panier) et porte une **migration**. **Contredit par
 > `vitruve` le 2026-09-15** (§7) : le `BLOQUANT` est tranché par Hugo le même jour (Q3 : société **active** seulement).
 >
@@ -47,7 +49,7 @@ Hugo, le 2026-09-15 : dans le back-office,
 **D1 — La clientèle d'une requête** (confirmé par Hugo le 2026-09-15 : « B2B une
 société, B2C visiteur ou perso »). **B2B** quand une société agit ; **B2C** pour
 un visiteur et en perso — y compris une personne sans société. Une commande
-saisie par le staff est toujours B2B. La clientèle se **déduit** de ce que le
+saisie par le staff suit la même règle : B2B si la société est active, B2C sinon (Q3). La clientèle se **déduit** de ce que le
 serveur résout déjà, par une fonction pure unique `audienceOf(…)` ; elle ne se
 déclare jamais, ni dans un corps ni dans un en-tête.
 
@@ -99,7 +101,7 @@ qui porte déjà la société).
   classement du journal (`b2b/growth/domain/activity-module.ts`, rangé sous
   `commandes` avec les zones et les points) — sinon le fait n'apparaît dans aucun
   filtre (vitruve, S6).
-- 🔴 **La constante `DELIVERY_SERVICE_OPEN` disparaît** (`packages/b2b-ui/src/flags.ts`) :
+- 🔴 **La constante `DELIVERY_SERVICE_OPEN` disparaît** (`@lfd/b2b-ui/flags`, retirée le 2026-09-15) :
   seconde source de vérité, lue par les préférences d'acheminement de Mon compte,
   la fiche client staff et des écrans `legacy/`. Tous lisent le réglage — en
   **B2B**, puisque ce sont des contextes de société. Sans ça, une livraison fermée
