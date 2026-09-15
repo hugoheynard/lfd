@@ -126,6 +126,14 @@ vide = le perso, comme les commandes.
   (1 → 2) change l'espace servi, et le panier d'avant semble perdu jusqu'au lot B
   (vitruve, S3). La fenêtre se tient courte ; elle n'efface rien en base.
 
+**D10 — En perso, pas d'écran de société** (Hugo, 2026-09-15, constaté en dev
+après la bascule). « Mon compte » (le dossier) et « Mes factures » (le relevé)
+quittent le menu en perso, et `companyWorkspaceGuard` renvoie leurs adresses
+vers `/mon-espace`. **Seulement pour qui a une société** : sans aucune,
+`/mon-compte` reste ouvert, parce que c'est là que revient la porte pro avant
+que la société existe. Pas de renvoi quand la boutique est fermée — l'accueil
+renverrait vers `/mon-compte`, et les deux gardes boucleraient.
+
 **D8 — Le menu.** **Le sélecteur n'existe que si la personne a au moins une
 société** (Hugo, 2026-09-15) : sans rattachement, le menu reste tel
 qu'aujourd'hui. Sinon : « Perso », puis une entrée par société (enseigne, raison

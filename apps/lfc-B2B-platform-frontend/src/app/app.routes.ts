@@ -3,6 +3,7 @@ import { type Route, type Routes } from '@angular/router';
 import { authenticatedGuard } from './auth/authenticated.guard';
 import { DEV_BYPASS_AUTH } from './auth/dev-flags';
 import { featureAccessGuard } from './client/feature-access/feature-access.guard';
+import { companyWorkspaceGuard } from './client/client-workspace.guard';
 import { ClientShell } from './client/shell/client-shell';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
@@ -184,7 +185,7 @@ export const routes: Routes = [
         // elle rassemble les commandes telles qu'elles partent en comptabilité,
         // et le comptable dépose le PDF après la clôture.
         path: 'mes-factures',
-        canActivate: [featureAccessGuard('invoices', 'visible')],
+        canActivate: [featureAccessGuard('invoices', 'visible'), companyWorkspaceGuard],
         title: 'Mes factures — La Folie Coffee',
         loadComponent: () =>
           import('./client/mes-factures/factures-page/factures-page').then((m) => m.FacturesPage),
@@ -194,6 +195,8 @@ export const routes: Routes = [
         // écrans : le back-office a des onglets parce qu'un commercial y passe
         // la journée ; un client y passe deux fois par an.
         path: 'mon-compte',
+        // En perso, pour qui a une société : fermé (cf. la garde).
+        canActivate: [companyWorkspaceGuard],
         title: 'Mon compte — La Folie Coffee',
         loadComponent: () =>
           import('./client/mon-compte/compte-page/compte-page').then((m) => m.ComptePage),
