@@ -40,20 +40,34 @@
     [value]="value().formeJuridique"
     (selectionChange)="setFormeJuridique($event)"
   />
-  <fold-input
-    class="siret"
-    label="SIRET"
-    placeholder="812 456 789 00021"
-    [hint]="
-      legalDeferred()
-        ? 'à compléter plus tard s’il n’est pas connu — la clé de contrôle est vérifiée'
-        : '14 chiffres — la clé de contrôle est vérifiée'
-    "
-    [required]="!legalDeferred()"
-    [optional]="legalDeferred()"
-    [value]="value().siret"
-    (valueChange)="setSiret($event)"
-  />
+  <!-- Le SIREN SOUS le SIRET : il en est le préfixe quand celui-ci le porte, et
+       le formulaire le propose alors. Saisi à part parce qu'il ne l'est pas
+       toujours — et exigé par le mandat interentreprises. -->
+  <div class="ids">
+    <fold-input
+      class="siret"
+      label="SIRET"
+      placeholder="812 456 789 00021"
+      [hint]="
+        legalDeferred()
+          ? 'à compléter plus tard s’il n’est pas connu — la clé de contrôle est vérifiée'
+          : '14 chiffres — la clé de contrôle est vérifiée'
+      "
+      [required]="!legalDeferred()"
+      [optional]="legalDeferred()"
+      [value]="value().siret"
+      (valueChange)="setSiret($event)"
+    />
+    <fold-input
+      class="siren"
+      label="SIREN"
+      placeholder="732 829 320"
+      hint="9 chiffres — proposé depuis le SIRET quand il le porte ; exigé par le mandat interentreprises"
+      [optional]="true"
+      [value]="value().siren"
+      (valueChange)="setSiren($event)"
+    />
+  </div>
 </div>
 
 <!-- Le caractère obligatoire suit la forme choisie : on ne le devine plus, on

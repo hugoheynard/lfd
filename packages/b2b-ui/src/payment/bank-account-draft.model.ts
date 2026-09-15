@@ -24,10 +24,22 @@ const IBAN_LAST4 = 4;
 /** Longueur d'un code pays ISO 3166-1 alpha-2, ce que le contrat exige. */
 const COUNTRY_CODE_LENGTH = 2;
 
+/**
+ * La case « civilité ou forme juridique du titulaire » du mandat imprimé : 40
+ * caractères, la borne que le contrat pose (tranché par Hugo le 2026-09-15).
+ */
+export const HOLDER_LEGAL_FORM_MAX_LENGTH = 40;
+
 export interface BankAccountDraft {
   readonly iban: string;
   readonly bic: string;
   readonly holder: string;
+  /**
+   * Civilité ou forme juridique du **titulaire** — celui que la banque connaît,
+   * pas la société du registre. Exigée par le mandat interentreprises
+   * ({@link holderLegalFormProvided}), vide permis sinon.
+   */
+  readonly holderLegalForm: string;
   readonly line1: string;
   readonly line2: string;
   readonly postalCode: string;
@@ -39,6 +51,7 @@ export const EMPTY_BANK_ACCOUNT_DRAFT: BankAccountDraft = {
   iban: '',
   bic: '',
   holder: '',
+  holderLegalForm: '',
   line1: '',
   line2: '',
   postalCode: '',
@@ -52,7 +65,14 @@ export const EMPTY_BANK_ACCOUNT_DRAFT: BankAccountDraft = {
  */
 export type BankAccountReadView = Pick<
   CustomerBankAccountView,
-  'holder' | 'addressLine1' | 'addressLine2' | 'postalCode' | 'city' | 'countryCode' | 'bic'
+  | 'holder'
+  | 'holderLegalForm'
+  | 'addressLine1'
+  | 'addressLine2'
+  | 'postalCode'
+  | 'city'
+  | 'countryCode'
+  | 'bic'
 >;
 
 /** Préremplit depuis la lecture — **IBAN vide**, pays par défaut si la ligne n'en porte pas. */
@@ -61,6 +81,7 @@ export function bankAccountDraftFrom(view: BankAccountReadView): BankAccountDraf
     iban: '',
     bic: view.bic,
     holder: view.holder,
+    holderLegalForm: view.holderLegalForm,
     line1: view.addressLine1,
     line2: view.addressLine2,
     postalCode: view.postalCode,
@@ -97,12 +118,39 @@ export function hasCountryCode(draft: BankAccountDraft): boolean {
   return draft.countryCode.trim().length === COUNTRY_CODE_LENGTH;
 }
 
-/** Le payload d'écriture : champs rognés, pays en capitales. */
+/**
+ * La civilité ou forme juridique tient-elle dans sa case ? Le serveur refuse
+ * au-delà ; l'écran désarme plutôt que de laisser tomber un refus.
+ */
+export function holderLegalFormFits(draft: BankAccountDraft): boolean {
+  return draft.holderLegalForm.trim().length <= HOLDER_LEGAL_FORM_MAX_LENGTH;
+}
+
+/**
+ * La civilité ou forme juridique est-elle là quand le mandat l'exige ?
+ *
+ * `required` vient de l'écran, qui seul connaît le schéma de l'émetteur :
+ * interentreprises (`B2B`) ⇒ exigée, CORE ou inconnu ⇒ facultative. Le serveur
+ * reste le garde (`holder_legal_form_missing` à la frappe) ; l'écran désarme
+ * pour que le refus ne tombe pas au moment de frapper.
+ */
+export function holderLegalFormProvided(draft: BankAccountDraft, required: boolean): boolean {
+  return !required || draft.holderLegalForm.trim() !== '';
+}
+
+/**
+ * Le payload d'écriture : champs rognés, pays en capitales.
+ *
+ * `holderLegalForm` part **toujours**, vide compris : cet écran le montre, donc
+ * un champ vidé est une intention. C'est l'écran d'avant, qui ne le connaît
+ * pas, qui l'omet — et le serveur garde alors la valeur (`.optional()`).
+ */
 export function toBankAccountPayload(draft: BankAccountDraft): SetCompanyBankAccountPayload {
   return {
     iban: draft.iban.trim(),
     bic: draft.bic.trim(),
     holder: draft.holder.trim(),
+    holderLegalForm: draft.holderLegalForm.trim(),
     line1: draft.line1.trim(),
     line2: draft.line2.trim(),
     postalCode: draft.postalCode.trim(),
@@ -172,6 +220,10 @@ export interface BankAccountFormLabels {
    * (`client-copy.spec.ts`). Absent = pas d'exemple.
    */
   readonly holderPlaceholder?: string;
+  readonly holderLegalForm: string;
+  /** Sous le champ : pourquoi le mandat interentreprises l'exige, et sa borne — sans répéter le libellé. */
+  readonly holderLegalFormHint: string;
+  readonly holderLegalFormPlaceholder?: string;
   readonly line1: string;
   readonly line1Placeholder?: string;
   readonly line2: string;
@@ -193,6 +245,10 @@ export interface BankAccountFormLabels {
 export const BANK_ACCOUNT_FORM_LABELS_FR: BankAccountFormLabels = {
   holder: 'Titulaire du compte',
   holderPlaceholder: 'Refuge du Col SARL',
+  holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',
+  holderLegalFormHint:
+    'Exigée par le mandat interentreprises, que le titulaire soit une société ou une personne — 40 caractères au plus.',
+  holderLegalFormPlaceholder: 'Ex. SAS ou M.',
   line1: 'Adresse',
   line1Placeholder: '12 rue des Alpages',
   line2: 'Complément',

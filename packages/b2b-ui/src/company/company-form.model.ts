@@ -13,6 +13,11 @@ export interface CompanyIdentityDraft {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
+  /**
+   * Le SIREN de l'entreprise — saisi à part (décision de Hugo, 2026-09-15),
+   * parce qu'un SIRET dont le préfixe n'est pas un SIREN valide existe.
+   */
+  readonly siren: string;
   readonly vatNumber: string;
 }
 
@@ -41,8 +46,86 @@ export const EMPTY_COMPANY_IDENTITY_DRAFT: CompanyIdentityDraft = {
   enseigne: '',
   formeJuridique: '',
   siret: '',
+  siren: '',
   vatNumber: '',
 };
+
+/** Longueur d'un SIREN : les neuf premiers chiffres d'un SIRET. */
+const SIREN_LENGTH = 9;
+
+/** `000000000` passe la clé de Luhn et ne désigne personne : le serveur le refuse aussi. */
+const NULL_SIREN = '000000000';
+
+/**
+ * Clé de Luhn sur une suite de chiffres. Un chiffre sur deux, en partant de la
+ * droite, est doublé ; la somme doit être un multiple de dix.
+ */
+function passesLuhn(digits: string): boolean {
+  let sum = 0;
+  for (let index = 0; index < digits.length; index += 1) {
+    let digit = Number(digits[digits.length - 1 - index]);
+    if (index % 2 === 1) {
+      digit *= 2;
+      if (digit > 9) {
+        digit -= 9;
+      }
+    }
+    sum += digit;
+  }
+  return sum % 10 === 0;
+}
+
+/**
+ * Le SIREN que ces chiffres forment, espaces retirés — ou `null` s'ils n'en
+ * forment pas un : neuf chiffres, clé de Luhn, jamais `000000000`.
+ *
+ * ⚠️ Ce n'est pas une seconde validation : le serveur fait foi et refuse ce
+ * qu'il refuse. L'écran s'en sert pour une seule chose — PROPOSER le SIREN
+ * qu'un SIRET porte, sans jamais proposer un préfixe que le serveur rejetterait.
+ */
+export function sirenOf(value: string): string | null {
+  const digits = value.replace(/\s/gu, '');
+  const shaped = digits.length === SIREN_LENGTH && /^\d+$/u.test(digits);
+  return shaped && digits !== NULL_SIREN && passesLuhn(digits) ? digits : null;
+}
+
+/**
+ * Le SIREN que porte un SIRET : ses neuf premiers chiffres, **seulement** s'ils
+ * forment un SIREN valide. La clé du SIRET ne garantit pas celle de son préfixe
+ * (plan mentions obligatoires du mandat, §8 #1) : `81245678900021` est un SIRET
+ * valide dont le préfixe n'est pas un SIREN.
+ */
+export function sirenPrefixOf(siret: string): string | null {
+  const digits = siret.replace(/\s/gu, '');
+  return /^\d{14}$/u.test(digits) ? sirenOf(digits.slice(0, SIREN_LENGTH)) : null;
+}
+
+/**
+ * Le SIREN à montrer quand le SIRET passe de `previousSiret` à `nextSiret`.
+ *
+ * Il **suit** le SIRET tant qu'il n'a pas été saisi à la main — vide, ou égal à
+ * ce que l'ancien SIRET proposait : il prend alors le préfixe du nouveau s'il
+ * est valide, et se vide s'il ne l'est plus (une proposition qui ne tient plus
+ * ne reste pas affichée comme une saisie). Un SIREN tapé par quelqu'un ne se
+ * réécrit jamais : si les deux se contredisent, c'est le serveur qui le dit.
+ */
+export function sirenFollowingSiret(
+  siren: string,
+  previousSiret: string,
+  nextSiret: string,
+): string {
+  const typed = siren.replace(/\s/gu, '');
+  const proposed = sirenPrefixOf(previousSiret);
+  if (typed !== '' && typed !== proposed) {
+    return siren;
+  }
+  return sirenPrefixOf(nextSiret) ?? '';
+}
+
+/** Le brouillon avec ce SIRET, et le SIREN qui le suit ({@link sirenFollowingSiret}). */
+export function withSiret(draft: CompanyIdentityDraft, siret: string): CompanyIdentityDraft {
+  return { ...draft, siret, siren: sirenFollowingSiret(draft.siren, draft.siret, siret) };
+}
 
 /** Brouillon de contact vide. */
 export const EMPTY_COMPANY_CONTACT_DRAFT: CompanyContactDraft = {

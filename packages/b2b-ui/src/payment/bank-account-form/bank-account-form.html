@@ -9,6 +9,18 @@
     [value]="value().holder"
     (valueChange)="set('holder', $event)"
   />
+  <!-- Facultative en CORE, exigée en interentreprises : c'est l'écran qui sait
+       sous quel schéma le mandat sera frappé, et qui le dit par
+       `holderLegalFormRequired`. Requise, elle se présente comme les autres
+       champs obligatoires : sans marque « facultatif ». -->
+  <fold-input
+    [label]="labels().holderLegalForm"
+    [placeholder]="labels().holderLegalFormPlaceholder ?? ''"
+    [hint]="labels().holderLegalFormHint"
+    [optional]="!holderLegalFormRequired()"
+    [value]="value().holderLegalForm"
+    (valueChange)="set('holderLegalForm', $event)"
+  />
 </div>
 <div class="row">
   <fold-input

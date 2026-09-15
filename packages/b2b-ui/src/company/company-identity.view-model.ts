@@ -25,6 +25,8 @@ export interface CompanyIdentityView {
   readonly formeJuridique: string;
   /** Déjà formaté pour l'affichage (groupes SIRET). */
   readonly siret: string;
+  /** Déjà formaté pour l'affichage (groupes de trois) ; vide tant qu'inconnu. */
+  readonly siren: string;
   readonly vatNumber: string;
   /** TVA requise par la forme juridique mais absente → zone à compléter. */
   readonly vatMissing: boolean;

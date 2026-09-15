@@ -7,7 +7,7 @@ import {
 } from '@lfd/contracts';
 import { FoldInputComponent, FoldListboxComponent, type FoldSelectOption } from 'fold-ng';
 
-import type { CompanyIdentityDraft } from '../company-form.model';
+import { withSiret, type CompanyIdentityDraft } from '../company-form.model';
 
 /**
  * Champs d'**identité légale** d'une société — fragment de formulaire pur,
@@ -89,8 +89,16 @@ export class CompanyIdentityFields {
   protected setFormeJuridique(formeJuridique: string): void {
     this.value.update((draft) => ({ ...draft, formeJuridique }));
   }
+  /**
+   * Le SIRET, et le SIREN qu'il **propose** : ses neuf premiers chiffres quand
+   * ils forment un SIREN valide, tant que personne n'a tapé le SIREN à la main
+   * (`withSiret`). Le serveur fait foi, et refuse une paire qui se contredit.
+   */
   protected setSiret(siret: string): void {
-    this.value.update((draft) => ({ ...draft, siret }));
+    this.value.update((draft) => withSiret(draft, siret));
+  }
+  protected setSiren(siren: string): void {
+    this.value.update((draft) => ({ ...draft, siren }));
   }
   protected setVatNumber(vatNumber: string): void {
     this.value.update((draft) => ({ ...draft, vatNumber }));
