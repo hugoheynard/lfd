@@ -1,3 +1,4 @@
+import { provideHttpClient } from '@angular/common/http';
 import { Component, effect, inject, viewChild, ViewContainerRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
@@ -10,6 +11,8 @@ import { fill } from '../../../client/copy/client-copy.service';
 import { FR } from '../../../client/copy/fr';
 import { IT } from '../../../client/copy/it';
 import { ClientIdentity } from '../../../client/client-identity.service';
+import { ServicePoints } from '../../../client/shop/pickup-points.store';
+import type { PickupAddressView } from '@lfd/contracts';
 
 import { CommandePage } from './commande-page';
 
@@ -28,6 +31,28 @@ const PROFILE = {
   email: 'camille@lestommeuses.fr',
   phone: '06 11 22 33 44',
 };
+
+/**
+ * Deux points, dont UN seul remis — à 20 %, et pas au 10 % que la copie portait.
+ */
+const POINT = (over: Partial<PickupAddressView>): PickupAddressView => ({
+  id: 'pick_labo',
+  label: 'Le Labo',
+  ligne1: 'Route de la Balme',
+  ligne2: '',
+  codePostal: '73150',
+  ville: 'Val d’Isère',
+  pays: 'France',
+  isDefault: true,
+  discount: { mode: 'percent', bp: 2_000 },
+  opening: { proPickup: null, publicOpening: null },
+  ...over,
+});
+
+const POINTS: readonly PickupAddressView[] = [
+  POINT({}),
+  POINT({ id: 'pick_village', label: 'Le Village', isDefault: false, discount: null }),
+];
 
 /**
  * Le shell fournit au bandeau l'endroit où atterrir. Sans lui, le gabarit que
@@ -72,7 +97,8 @@ describe('CommandePage', () => {
   };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [CommandePage] });
+    TestBed.configureTestingModule({ imports: [CommandePage], providers: [provideHttpClient()] });
+    TestBed.inject(ServicePoints).receive(POINTS, []);
     const slot = TestBed.createComponent(BannerSlotHost);
     slot.detectChanges();
     banner = slot.nativeElement as HTMLElement;
@@ -103,6 +129,26 @@ describe('CommandePage', () => {
     const delivery = el().querySelector('app-offer-card[data-tone="butter"]');
     expect(delivery?.textContent).toContain(FR.commande.deliveryBadge);
     expect(delivery?.textContent).toContain('l’apporte');
+  });
+
+  /**
+   * Régression : la carte annonçait « Jusqu’à −10 % », écrit dans la copie,
+   * quand le back-office remettait 20 % — et le dialogue, lui, disait 20 %.
+   */
+  it('la carte du retrait annonce la remise du back-office, pas un chiffre de copie', () => {
+    const pickup = el().querySelector('app-offer-card[data-photo="labo"]');
+    expect(pickup?.textContent).toContain(fill(FR.commande.pickupNoteWide, { value: '20 %' }));
+    expect(pickup?.textContent).not.toContain('10 %');
+  });
+
+  it("sans remise publiée, la carte n'invente aucun chiffre", () => {
+    TestBed.inject(ServicePoints).receive(
+      POINTS.map((p) => ({ ...p, discount: null })),
+      [],
+    );
+    fixture.detectChanges();
+    const pickup = el().querySelector('app-offer-card[data-photo="labo"]');
+    expect(pickup?.textContent).not.toContain('%');
   });
 
   it('range les offres en DEUX sections, au même gabarit', () => {

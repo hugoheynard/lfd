@@ -166,7 +166,7 @@ export const EN: ClientCopy = {
     pickupNote: 'Tomorrow from 6 am',
     pickupDetailWide: 'At the Labo or in the village, tomorrow at the hour I pick.',
     pickupCta: 'Choose a pickup point',
-    pickupNoteWide: 'Up to −10 %',
+    pickupNoteWide: 'Up to −{value}',
     deliveryBadge: 'Courier',
     deliveryTitle: 'We bring it\nto you',
     deliveryDetail: 'Tomorrow, in the time slot you pick.',
@@ -310,7 +310,6 @@ export const EN: ClientCopy = {
     discountTag: '−{value} on everything',
     shopPrice: 'Shop price',
     cta: 'Pick my time',
-    ctaDiscount: 'Pick my time · −{value}',
   },
   addressDialog: {
     kicker: 'Courier',

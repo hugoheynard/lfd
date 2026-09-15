@@ -16,6 +16,8 @@ import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
 import { OrderContextStore, type ServiceChoice } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
+import { bestPickupDiscount, discountLabel } from '../../../client/shop/pickup-discount';
+import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import { RappelPanel } from '../../../login/accueil-page/rappel-panel/rappel-panel';
 
 import { AddressDialog } from './address-dialog/address-dialog';
@@ -99,6 +101,22 @@ export class CommandePage {
     this.panelOpen() ? this.t().hero.rappelIntro : this.t().commande.intro,
   );
 
+  private readonly service = inject(ServicePoints);
+
+  /**
+   * « Jusqu’à −20 % » : la remise que le back-office pose, pas un libellé.
+   *
+   * 🔴 Elle était écrite dans la copie (« −10 % ») pendant que le dialogue ouvert
+   * par cette carte lisait 20 % du serveur. Sans remise publiée, `null` rend la
+   * note du téléphone plutôt qu'un chiffre inventé.
+   */
+  protected readonly pickupNoteWide = computed(() => {
+    const best = bestPickupDiscount(this.service.pickups());
+    return best === null
+      ? null
+      : fill(this.t().commande.pickupNoteWide, { value: discountLabel(best) });
+  });
+
   /** Les deux sections du carrousel, nommées pour les technologies d'assistance. */
   protected readonly sections = computed(() => [
     this.t().commande.newOrderTitle,
@@ -106,6 +124,7 @@ export class CommandePage {
   ]);
 
   constructor() {
+    void this.service.hydrate();
     effect(() => {
       this.chrome.kicker.set(
         this.panelOpen() ? this.t().chrome.kickerRappel : this.t().chrome.kickerCommande,

@@ -27,7 +27,7 @@
             [note]="t().commande.pickupNote"
             [detailWide]="t().commande.pickupDetailWide"
             [ctaLabel]="t().commande.pickupCta"
-            [noteWide]="t().commande.pickupNoteWide"
+            [noteWide]="pickupNoteWide()"
             (chosen)="openDialog('pickup')"
           />
           <app-offer-card

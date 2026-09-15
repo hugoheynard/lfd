@@ -169,7 +169,7 @@ export const IT: ClientCopy = {
     pickupNote: 'Domani dalle 6',
     pickupDetailWide: 'Al Labo o al villaggio, domani all’ora che scelgo io.',
     pickupCta: 'Scegliere un punto di ritiro',
-    pickupNoteWide: 'Fino a −10 %',
+    pickupNoteWide: 'Fino a −{value}',
     deliveryBadge: 'Corriere',
     deliveryTitle: 'Glielo\nportiamo noi',
     deliveryDetail: 'Domani, nella fascia oraria che sceglie lei.',
@@ -313,7 +313,6 @@ export const IT: ClientCopy = {
     discountTag: '−{value} su tutto',
     shopPrice: 'Prezzo bottega',
     cta: 'Scegliere l’ora',
-    ctaDiscount: 'Scegliere l’ora · −{value}',
   },
   addressDialog: {
     kicker: 'Corriere',

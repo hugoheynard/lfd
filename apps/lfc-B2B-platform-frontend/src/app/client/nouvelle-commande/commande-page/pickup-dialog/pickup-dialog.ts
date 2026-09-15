@@ -13,14 +13,9 @@ import { FoldButtonComponent } from 'fold-ng';
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
-import {
-  type CartAdjustment,
-  type PickupAddressView,
-  type PickupSlot,
-  pickupSlots,
-} from '@lfd/contracts';
+import { type PickupSlot, pickupSlots } from '@lfd/contracts';
 
-import { formatCents, formatRate } from '../../../../client/format-money';
+import { bestPickupDiscount, discountLabel } from '../../../../client/shop/pickup-discount';
 import { formatWindow } from '../../../../client/format-hour';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 import { SlotStep } from '../slot-step/slot-step';
@@ -29,8 +24,8 @@ import { SlotStep } from '../slot-step/slot-step';
  * « Vous venez où ? » — le choix du point de retrait.
  *
  * La remise n'est pas un argument collé après coup : elle est ATTACHÉE au point,
- * et elle voyage jusque dans le bouton. Choisir Le Village, c'est voir le
- * bouton perdre son « −10 % » — le renoncement se lit avant d'être confirmé.
+ * sur sa ligne. Le bouton, lui, ne nomme que l'action — il répétait la remise du
+ * point retenu, ce que Hugo a retiré le 2026-09-15 : la ligne la dit déjà.
  *
  * Le créneau est le SECOND VOLET du même dialogue, pas une seconde surface : où
  * et quand sont deux temps d'une même question, et le lieu retenu reste sous les
@@ -98,17 +93,17 @@ export class PickupDialog {
       offer:
         point.discount === null
           ? c.shopPrice
-          : fill(c.discountTag, { value: valueOf(point.discount) }),
+          : fill(c.discountTag, { value: discountLabel(point.discount) }),
       hasOffer: point.discount !== null,
     }));
   });
 
   /** La meilleure remise de la station : c'est elle que la phrase d'accueil vend. */
   protected readonly lead = computed(() => {
-    const best = bestDiscountOf(this.available());
+    const best = bestPickupDiscount(this.available());
     return best === null
       ? this.t().pickupDialog.title
-      : fill(this.t().pickupDialog.lead, { value: valueOf(best) });
+      : fill(this.t().pickupDialog.lead, { value: discountLabel(best) });
   });
 
   private readonly picked = computed(
@@ -144,9 +139,7 @@ export class PickupDialog {
       const c = this.t().slotStep;
       return this.slot() ? c.cta : c.ctaIdle;
     }
-    const c = this.t().pickupDialog;
-    const discount = this.picked()?.discount ?? null;
-    return discount === null ? c.cta : fill(c.ctaDiscount, { value: valueOf(discount) });
+    return this.t().pickupDialog.cta;
   });
 
   /**
@@ -199,30 +192,4 @@ export class PickupDialog {
   private labelOf(slot: PickupSlot): string {
     return formatWindow(slot.start, slot.end, this.t().slotStep.before);
   }
-}
-
-/** Un ajustement, tel qu'il se lit : « 10 % » ou « 2,00 € ». */
-function valueOf(adjustment: CartAdjustment): string {
-  return adjustment.mode === 'percent'
-    ? formatRate(adjustment.bp / 100)
-    : formatCents(adjustment.cents);
-}
-
-/**
- * La meilleure remise proposée, ou `null`.
- *
- * Comparer un pourcentage à un montant n'a pas de sens sans panier : on retient
- * donc la meilleure de chaque nature, en préférant le pourcentage — c'est ce que
- * la phrase d'accueil vend, et la seule forme qui parle sans connaître le total.
- */
-function bestDiscountOf(points: readonly PickupAddressView[]): CartAdjustment | null {
-  const offers = points.map((point) => point.discount).filter((d) => d !== null);
-  const percents = offers.filter((d) => d.mode === 'percent');
-  if (percents.length > 0) {
-    return percents.reduce((best, d) => (d.bp > best.bp ? d : best));
-  }
-  const amounts = offers.filter((d) => d.mode === 'amount');
-  return amounts.length === 0
-    ? null
-    : amounts.reduce((best, d) => (d.cents > best.cents ? d : best));
 }

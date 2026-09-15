@@ -198,6 +198,10 @@ export interface ClientCopy {
     /** Au-delà du pli : le bouton nomme l'action, la condition porte la remise. */
     readonly pickupDetailWide: string;
     readonly pickupCta: string;
+    /**
+     * `{value}` = la meilleure remise que le back-office pose sur un point. Sans
+     * remise, la carte garde la note du téléphone : aucune valeur par défaut.
+     */
     readonly pickupNoteWide: string;
     readonly deliveryBadge: string;
     /** Deux lignes, séparées par un retour. */
@@ -425,12 +429,10 @@ export interface ClientCopy {
     readonly habit: string;
     /** `{time}` est remplacé par l'heure de mise à disposition. */
     readonly readyFrom: string;
-    /** `{pct}` est remplacé par la remise du point. */
+    /** `{value}` est remplacé par la remise du point : « 10 % » ou « 2,00 € ». */
     readonly discountTag: string;
     readonly shopPrice: string;
     readonly cta: string;
-    /** `{pct}` est remplacé par la remise retenue. */
-    readonly ctaDiscount: string;
   };
   readonly addressDialog: {
     readonly kicker: string;

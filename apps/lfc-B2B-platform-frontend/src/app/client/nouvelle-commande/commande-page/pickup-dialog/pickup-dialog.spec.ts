@@ -72,7 +72,9 @@ describe('PickupDialog', () => {
     const on = el().querySelector('.point.on');
     expect(on?.textContent).toContain('Le Labo');
     expect(on?.textContent).toContain(FR.pickupDialog.habit);
-    expect(cta().textContent).toContain(fill(FR.pickupDialog.ctaDiscount, { value: '10 %' }));
+    expect(on?.textContent).toContain(fill(FR.pickupDialog.discountTag, { value: '10 %' }));
+    // Le bouton nomme l'action, sans répéter la remise que la ligne porte déjà.
+    expect(cta().textContent?.trim()).toBe(FR.pickupDialog.cta);
   });
 
   it('le bouton mène au CRÉNEAU, puis au panier', () => {
