@@ -244,10 +244,10 @@ export class OrderContextStore {
       // Idempotent : les écrans qui montrent les points l'ont souvent déjà fait.
       untracked(() => void this.points.hydrate());
       const audience = this.audience.current();
-      if (audience === null || !this.points.deliverySettingsKnown()) {
+      if (audience === null || !this.points.deliveryAvailabilityKnown()) {
         return;
       }
-      if (!deliveryOpenTo(this.points.deliverySettings(), audience)) {
+      if (!deliveryOpenTo(this.points.deliveryAvailability(), audience)) {
         this.choice.set(null);
       }
     });

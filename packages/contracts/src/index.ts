@@ -1023,16 +1023,16 @@ export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./account.js";
 export { audienceOf } from "./customer-audience.js";
 export type { CustomerAudience } from "./customer-audience.js";
 export {
-  DEFAULT_DELIVERY_SETTINGS,
+  DEFAULT_DELIVERY_AVAILABILITY,
   DELIVERY_CLOSED_FOR_AUDIENCE,
   deliveryOpenTo,
-  deliverySettingsPatchSchema,
-} from "./delivery-settings.js";
+  deliveryAvailabilityPatchSchema,
+} from "./delivery-availability.js";
 export type {
-  DeliverySettingsPatch,
-  DeliverySettingsView,
-  PublicDeliverySettingsView,
-} from "./delivery-settings.js";
+  DeliveryAvailabilityPatch,
+  DeliveryAvailabilityView,
+  PublicDeliveryAvailabilityView,
+} from "./delivery-availability.js";
 export {
   ALL_DISCOUNT_AUDIENCES,
   pickupAddressUpdatePayloadSchema,

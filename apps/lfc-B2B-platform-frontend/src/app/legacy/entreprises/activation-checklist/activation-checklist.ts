@@ -97,7 +97,7 @@ export class ActivationChecklist {
       });
     }
     // Livraison fermée aux pros par le back-office : on ne la demande pas.
-    const deliveryOpen = deliveryOpenTo(this.servicePoints.deliverySettings(), 'b2b');
+    const deliveryOpen = deliveryOpenTo(this.servicePoints.deliveryAvailability(), 'b2b');
     if (view !== null && view.deliveries.length === 0 && deliveryOpen) {
       steps.push({
         key: 'delivery',

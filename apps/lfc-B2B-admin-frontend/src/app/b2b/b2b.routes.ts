@@ -96,8 +96,8 @@ export const b2bRoutes: Routes = [
             path: 'livraison',
             title: 'Livraison — LFC B2B admin',
             loadComponent: () =>
-              import('./reglages/delivery-settings-page/delivery-settings-page').then(
-                (m) => m.DeliverySettingsPage,
+              import('./reglages/delivery-availability-page/delivery-availability-page').then(
+                (m) => m.DeliveryAvailabilityPage,
               ),
           },
           {

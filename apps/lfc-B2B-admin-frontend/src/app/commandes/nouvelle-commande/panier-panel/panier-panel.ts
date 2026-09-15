@@ -4,7 +4,7 @@ import type {
   CompanyMemberView,
   CustomerAudience,
   DeliveryAddressView,
-  DeliverySettingsView,
+  DeliveryAvailabilityView,
   DeliveryZoneView,
   PickupAddressView,
 } from '@lfd/contracts';
@@ -22,7 +22,7 @@ export interface PanierPanelData {
   readonly pickups: readonly PickupAddressView[];
   readonly addresses: readonly DeliveryAddressView[];
   readonly zones: readonly DeliveryZoneView[];
-  readonly deliverySettings: DeliverySettingsView;
+  readonly deliveryAvailability: DeliveryAvailabilityView;
   readonly audience: CustomerAudience;
   readonly settlesOnAccount: boolean;
 }

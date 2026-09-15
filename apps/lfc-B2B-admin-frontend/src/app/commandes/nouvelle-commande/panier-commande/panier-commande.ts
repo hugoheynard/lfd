@@ -6,7 +6,7 @@ import {
   type CompanyMemberView,
   type CustomerAudience,
   type DeliveryAddressView,
-  type DeliverySettingsView,
+  type DeliveryAvailabilityView,
   type DeliveryZoneView,
   type FulfillmentMethod,
   type FulfillmentWindow,
@@ -95,7 +95,7 @@ export class PanierCommande {
   readonly addresses = input.required<readonly DeliveryAddressView[]>();
   readonly zones = input.required<readonly DeliveryZoneView[]>();
   /** Le réglage de livraison et la clientèle de la société — relayés à l'acheminement. */
-  readonly deliverySettings = input.required<DeliverySettingsView>();
+  readonly deliveryAvailability = input.required<DeliveryAvailabilityView>();
   readonly audience = input.required<CustomerAudience>();
   /**
    * La société règle-t-elle au compte ? Faux ⇒ seul le lien est proposé. Le

@@ -35,8 +35,8 @@ import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.rea
 import { CompanyMercurialeReader } from "../../../../pricing/domain/ports/company-mercuriale.reader.js";
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
 import { CustomerAudiences } from "../../services/customer-audiences.service.js";
-import { DeliverySettingsReader } from "../../../../delivery-settings/domain/ports/delivery-settings.reader.js";
-import { DEFAULT_DELIVERY_SETTINGS, type DeliverySettingsView } from "@lfd/contracts";
+import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
+import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
@@ -209,9 +209,9 @@ const pickups: PickupAddressRepository = {
 };
 
 /** Le réglage de livraison ; par défaut, ligne absente = ouvert aux deux. */
-function deliverySettings(
-  view: DeliverySettingsView = DEFAULT_DELIVERY_SETTINGS,
-): DeliverySettingsReader {
+function deliveryAvailability(
+  view: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
+): DeliveryAvailabilityReader {
   return { current: () => Promise.resolve(view) };
 }
 
@@ -294,7 +294,7 @@ function handler(
     readonly payments?: PaymentGateway;
     readonly events?: RecordingPublisher;
     readonly clientBaseUrl?: string | null;
-    readonly delivery?: DeliverySettingsView;
+    readonly delivery?: DeliveryAvailabilityView;
   } = {},
 ): PlaceOrderForCustomerHandler {
   // `in` et non `??` : `null` est une valeur que les tests passent EXPRÈS, et
@@ -324,7 +324,7 @@ function handler(
         new FixedClock(PRICED_AT),
       ),
       currentCatalogVersion,
-      new CartAdjustments(pickups, zones, deliverySettings(options.delivery)),
+      new CartAdjustments(pickups, zones, deliveryAvailability(options.delivery)),
       noDeliveryDefaults(),
       noOrderCutoffs,
       new FixedClock(PRICED_AT),
@@ -401,7 +401,7 @@ describe("PlaceOrderForCustomerHandler — la livraison par clientèle", () => {
 
     await expect(
       handler(guard("orders"), sink, {
-        delivery: { ...DEFAULT_DELIVERY_SETTINGS, openToB2b: false },
+        delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false },
       }).execute(
         new PlaceOrderForCustomerCommand(
           "staff_1",
@@ -555,7 +555,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           new FixedClock(PRICED_AT),
         ),
         currentCatalogVersion,
-        new CartAdjustments(pickups, zones, deliverySettings()),
+        new CartAdjustments(pickups, zones, deliveryAvailability()),
         noDeliveryDefaults(),
         noOrderCutoffs,
         new FixedClock(PRICED_AT),

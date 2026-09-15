@@ -2,8 +2,8 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   type CompanyAddressesView,
-  DEFAULT_DELIVERY_SETTINGS,
-  type DeliverySettingsView,
+  DEFAULT_DELIVERY_AVAILABILITY,
+  type DeliveryAvailabilityView,
   type FulfillmentPreferenceView,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -61,7 +61,7 @@ interface Harness {
 
 function render(
   over: Partial<Company> = {},
-  settings: DeliverySettingsView = DEFAULT_DELIVERY_SETTINGS,
+  settings: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
 ): Harness {
   const saved: FulfillmentPreferenceView[] = [];
   // Les écritures restent EN VOL tant qu'on ne les fait pas retomber : c'est la
@@ -93,7 +93,7 @@ function render(
       {
         provide: ServicePoints,
         useValue: {
-          deliverySettings: signal(settings),
+          deliveryAvailability: signal(settings),
           hydrate: (): Promise<void> => Promise.resolve(),
         },
       },
@@ -216,11 +216,11 @@ describe("section Préférences d'acheminement (client)", () => {
     expect(render()['section']['deliveryOffered']()).toBe(true);
 
     TestBed.resetTestingModule();
-    const closed = render({}, { ...DEFAULT_DELIVERY_SETTINGS, openToB2b: false });
+    const closed = render({}, { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false });
     expect(closed.section['deliveryOffered']()).toBe(false);
 
     TestBed.resetTestingModule();
-    const closedToB2c = render({}, { ...DEFAULT_DELIVERY_SETTINGS, openToB2c: false });
+    const closedToB2c = render({}, { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false });
     expect(closedToB2c.section['deliveryOffered']()).toBe(true);
   });
 });

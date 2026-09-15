@@ -2,9 +2,9 @@ import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
-  DEFAULT_DELIVERY_SETTINGS,
+  DEFAULT_DELIVERY_AVAILABILITY,
   type DeliveryAddressView,
-  type DeliverySettingsView,
+  type DeliveryAvailabilityView,
   type FulfillmentPreferenceView,
 } from '@lfd/contracts';
 import { FoldListboxComponent, FoldPanelRef } from 'fold-ng';
@@ -71,7 +71,7 @@ let wire: Wire;
 
 function boot(
   data: PreferencesPanelData,
-  settings: DeliverySettingsView = DEFAULT_DELIVERY_SETTINGS,
+  settings: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
 ): ComponentFixture<PreferencesPanel> {
   wire = { saves: [], answer: null, closes: [], hydrated: 0 };
   TestBed.resetTestingModule();
@@ -95,7 +95,7 @@ function boot(
         provide: ServicePoints,
         useValue: {
           pickups: signal([LABO, BASTILLE]),
-          deliverySettings: signal(settings),
+          deliveryAvailability: signal(settings),
           hydrate: (): Promise<void> => {
             wire.hydrated += 1;
             return Promise.resolve();
@@ -189,14 +189,14 @@ describe('PreferencesPanel', () => {
    * préférence d'acheminement est celle d'une société.
    */
   it('ne propose plus la livraison quand le réglage la ferme aux pros', () => {
-    const closedToB2b = { ...DEFAULT_DELIVERY_SETTINGS, openToB2b: false };
+    const closedToB2b = { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false };
     fixture = boot(OWNER, closedToB2b);
 
     expect(options(0).map((o) => o.value)).toEqual(['none', 'pickup']);
   });
 
   it('fermée aux particuliers seulement, la livraison reste proposée à la société', () => {
-    fixture = boot(OWNER, { ...DEFAULT_DELIVERY_SETTINGS, openToB2c: false });
+    fixture = boot(OWNER, { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false });
 
     expect(options(0).map((o) => o.value)).toContain('delivery');
   });
@@ -205,7 +205,7 @@ describe('PreferencesPanel', () => {
     const posed: FulfillmentPreferenceView = { ...NONE, method: 'delivery' };
     fixture = boot(
       { ...OWNER, preference: posed },
-      { ...DEFAULT_DELIVERY_SETTINGS, openToB2b: false },
+      { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false },
     );
 
     expect(options(0).map((o) => o.value)).toContain('delivery');

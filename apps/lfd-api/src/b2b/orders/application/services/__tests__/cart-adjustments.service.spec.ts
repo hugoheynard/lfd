@@ -1,12 +1,12 @@
 import {
-  DEFAULT_DELIVERY_SETTINGS,
-  type DeliverySettingsView,
+  DEFAULT_DELIVERY_AVAILABILITY,
+  type DeliveryAvailabilityView,
   type DeliveryZoneView,
   type PickupAddressView,
   type PickupDiscountAudiences,
 } from "@lfd/contracts";
 
-import { DeliverySettingsReader } from "../../../../delivery-settings/domain/ports/delivery-settings.reader.js";
+import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
 import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
@@ -86,16 +86,16 @@ class OneZone extends DeliveryZoneRepository {
   }
 }
 
-class Settings extends DeliverySettingsReader {
-  constructor(private readonly view: DeliverySettingsView) {
+class Settings extends DeliveryAvailabilityReader {
+  constructor(private readonly view: DeliveryAvailabilityView) {
     super();
   }
-  current(): Promise<DeliverySettingsView> {
+  current(): Promise<DeliveryAvailabilityView> {
     return Promise.resolve(this.view);
   }
 }
 
-const OPEN = new Settings(DEFAULT_DELIVERY_SETTINGS);
+const OPEN = new Settings(DEFAULT_DELIVERY_AVAILABILITY);
 
 describe("CartAdjustments — la remise du point, par clientèle", () => {
   it("applique une remise réservée aux pros à une société active", async () => {
@@ -153,7 +153,7 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
 
   it("refuse la livraison fermée à la clientèle, AVANT de chercher la zone", async () => {
     const zones = new OneZone();
-    const closedToB2c = new Settings({ ...DEFAULT_DELIVERY_SETTINGS, openToB2c: false });
+    const closedToB2c = new Settings({ ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false });
     const adjustments = new CartAdjustments(
       new OnePoint(point({ b2b: true, b2c: true })),
       zones,
@@ -169,7 +169,7 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
   });
 
   it("laisse passer l'autre clientèle quand une seule est fermée", async () => {
-    const closedToB2c = new Settings({ ...DEFAULT_DELIVERY_SETTINGS, openToB2c: false });
+    const closedToB2c = new Settings({ ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false });
     const adjustments = new CartAdjustments(
       new OnePoint(point({ b2b: true, b2c: true })),
       new OneZone(),

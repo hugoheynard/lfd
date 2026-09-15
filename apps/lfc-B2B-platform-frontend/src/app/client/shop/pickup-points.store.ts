@@ -2,8 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   ALL_DISCOUNT_AUDIENCES,
-  DEFAULT_DELIVERY_SETTINGS,
-  type PublicDeliverySettingsView,
+  DEFAULT_DELIVERY_AVAILABILITY,
+  type PublicDeliveryAvailabilityView,
   type DeliveryZoneView,
   type FulfillmentDayView,
   type PickupAddressView,
@@ -36,7 +36,7 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
  * seule attente : l'écran n'en subit pas le prix, et aucune des trois ne peut
  * répondre pour une station différente des deux autres.
  *
- * 🔴 **Le réglage de livraison vient d'ici aussi** (`GET /delivery-settings`) :
+ * 🔴 **Le réglage de livraison vient d'ici aussi** (`GET /delivery-availability`) :
  * à quelle clientèle la livraison est proposée. Il se lit avec les points et
  * les zones parce qu'il répond à la même question — où et comment l'on est
  * servi — mais son échec ne fait pas tomber les trois autres : sans lui, la
@@ -50,7 +50,7 @@ export class ServicePoints {
   private readonly pickupList = signal<readonly PickupAddressView[]>([]);
   private readonly zoneList = signal<readonly DeliveryZoneView[]>([]);
   private readonly dayList = signal<readonly FulfillmentDayView[]>([]);
-  private readonly settingsHeld = signal<PublicDeliverySettingsView | null>(null);
+  private readonly settingsHeld = signal<PublicDeliveryAvailabilityView | null>(null);
   private asked = false;
 
   readonly pickups = this.pickupList.asReadonly();
@@ -60,14 +60,16 @@ export class ServicePoints {
    * Le réglage de livraison, **ouvert aux deux** tant qu'il n'est pas lu ou que
    * sa lecture a échoué : c'est l'existant, et le serveur garde la porte.
    */
-  readonly deliverySettings = computed(() => this.settingsHeld() ?? DEFAULT_DELIVERY_SETTINGS);
+  readonly deliveryAvailability = computed(
+    () => this.settingsHeld() ?? DEFAULT_DELIVERY_AVAILABILITY,
+  );
 
   /**
    * Vrai une fois le réglage RÉELLEMENT servi. Un défaut n'autorise pas à
    * effacer quoi que ce soit : seul un réglage lu peut dire qu'une livraison
    * est fermée.
    */
-  readonly deliverySettingsKnown = computed(() => this.settingsHeld() !== null);
+  readonly deliveryAvailabilityKnown = computed(() => this.settingsHeld() !== null);
 
   /**
    * Pose des listes déjà obtenues, et considère l'hydratation faite.
@@ -81,7 +83,7 @@ export class ServicePoints {
     pickups: readonly ServedPickup[],
     zones: readonly DeliveryZoneView[],
     days: readonly FulfillmentDayView[] = [],
-    settings: ServedDeliverySettings | null = null,
+    settings: ServedDeliveryAvailability | null = null,
   ): void {
     this.pickupList.set(pickups.map(servedPickup));
     this.zoneList.set(zones);
@@ -112,7 +114,7 @@ export class ServicePoints {
         firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
         firstValueFrom(this.http.get<readonly FulfillmentDayView[]>(`${base}/fulfillment-days`)),
         firstValueFrom(
-          this.http.get<PublicDeliverySettingsView>(`${base}/delivery-settings`),
+          this.http.get<PublicDeliveryAvailabilityView>(`${base}/delivery-availability`),
         ).catch(() => null),
       ]);
       this.pickupList.set(pickups.map(servedPickup));
@@ -166,7 +168,7 @@ type ServedPickup = Omit<PickupAddressView, 'discountAudiences'> & {
 };
 
 /** Le réglage tel qu'une API partiellement à jour peut le rendre. */
-type ServedDeliverySettings = Partial<PublicDeliverySettingsView>;
+type ServedDeliveryAvailability = Partial<PublicDeliveryAvailabilityView>;
 
 /** Un point sans clientèles déclarées reçoit la remise pour tous : l'existant. */
 function servedPickup(point: ServedPickup): PickupAddressView {
@@ -174,9 +176,9 @@ function servedPickup(point: ServedPickup): PickupAddressView {
 }
 
 /** Une clientèle absente de la vue est tenue pour ouverte : l'existant. */
-function servedSettings(settings: ServedDeliverySettings): PublicDeliverySettingsView {
+function servedSettings(settings: ServedDeliveryAvailability): PublicDeliveryAvailabilityView {
   return {
-    openToB2b: settings.openToB2b ?? DEFAULT_DELIVERY_SETTINGS.openToB2b,
-    openToB2c: settings.openToB2c ?? DEFAULT_DELIVERY_SETTINGS.openToB2c,
+    openToB2b: settings.openToB2b ?? DEFAULT_DELIVERY_AVAILABILITY.openToB2b,
+    openToB2c: settings.openToB2c ?? DEFAULT_DELIVERY_AVAILABILITY.openToB2c,
   };
 }

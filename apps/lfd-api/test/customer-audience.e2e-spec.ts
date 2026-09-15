@@ -215,7 +215,7 @@ describe("la livraison fermée à une clientèle", () => {
   it("fermée aux particuliers : 409 au devis ET à la commande, ouverte à une société active", async () => {
     await seedPeople();
     await seedZone();
-    await staff().patch("/admin/delivery-settings").send({ openToB2c: false }).expect(204);
+    await staff().patch("/admin/delivery-availability").send({ openToB2c: false }).expect(204);
 
     const anonymous = await ctx.http().post("/shop/quote").send(DELIVERY_QUOTE).expect(409);
     expect((anonymous.body as { code?: string }).code).toBe(CLOSED_FOR_AUDIENCE);
@@ -234,7 +234,7 @@ describe("la livraison fermée à une clientèle", () => {
   it("fermée aux pros : la commande saisie par l'équipe pour une société active est refusée (409)", async () => {
     const { activeCompanyId, activeBuyerId } = await seedPeople();
     await seedZone();
-    await staff().patch("/admin/delivery-settings").send({ openToB2b: false }).expect(204);
+    await staff().patch("/admin/delivery-availability").send({ openToB2b: false }).expect(204);
 
     const response = await staff()
       .post("/admin/orders")

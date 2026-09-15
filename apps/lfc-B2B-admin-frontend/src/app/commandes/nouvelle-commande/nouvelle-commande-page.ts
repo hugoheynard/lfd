@@ -38,7 +38,7 @@ import {
 import {
   audienceOf,
   companyDisplayName,
-  DEFAULT_DELIVERY_SETTINGS,
+  DEFAULT_DELIVERY_AVAILABILITY,
   type AdminOrderRow,
   type BillingAddressPayload,
   type DeliverySpecs,
@@ -46,7 +46,7 @@ import {
   type CatalogItemView,
   type CustomerSkuStat,
   type DeliveryAddressView,
-  type DeliverySettingsView,
+  type DeliveryAvailabilityView,
   type DeliveryZoneView,
   type OrderDraftView,
   type OrderView,
@@ -56,7 +56,7 @@ import {
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
-import { DeliverySettingsService } from '../../b2b/reglages/delivery-settings.service';
+import { DeliveryAvailabilityService } from '../../b2b/reglages/delivery-availability.service';
 import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
@@ -144,7 +144,7 @@ export class NouvelleCommandePage {
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly zonesService = inject(DeliveryZonesService);
-  private readonly deliverySettingsService = inject(DeliverySettingsService);
+  private readonly deliveryAvailabilityService = inject(DeliveryAvailabilityService);
   private readonly draftsService = inject(OrderDraftsService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
@@ -174,7 +174,9 @@ export class NouvelleCommandePage {
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
   protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
   /** À quelles clientèles la livraison est proposée — le coursier en dépend. */
-  protected readonly deliverySettings = signal<DeliverySettingsView>(DEFAULT_DELIVERY_SETTINGS);
+  protected readonly deliveryAvailability = signal<DeliveryAvailabilityView>(
+    DEFAULT_DELIVERY_AVAILABILITY,
+  );
   protected readonly submitting = signal(false);
 
   /**
@@ -335,22 +337,31 @@ export class NouvelleCommandePage {
     try {
       // Sept lectures indépendantes : les enchaîner aurait multiplié l'attente
       // par sept devant un commercial qui a le client en ligne.
-      const [company, history, catalogue, habits, buyers, pickups, zones, saved, deliverySettings] =
-        await Promise.all([
-          this.companies.getById(companyId),
-          this.orders.list({ companyId, limit: HISTORY_SIZE }),
-          this.catalogService.list(),
-          this.catalogService.habitsOf(companyId),
-          this.companies.listMembers(companyId),
-          this.pickupsService.list(),
-          this.zonesService.list(),
-          this.draftsService.find(companyId),
-          // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
-          // serveur refuse de toute façon une livraison fermée, et ce refus-là
-          // est montré. Faire tomber tout l'écran pour ce réglage serait
-          // disproportionné devant un client en ligne.
-          this.deliverySettingsService.read().catch(() => DEFAULT_DELIVERY_SETTINGS),
-        ]);
+      const [
+        company,
+        history,
+        catalogue,
+        habits,
+        buyers,
+        pickups,
+        zones,
+        saved,
+        deliveryAvailability,
+      ] = await Promise.all([
+        this.companies.getById(companyId),
+        this.orders.list({ companyId, limit: HISTORY_SIZE }),
+        this.catalogService.list(),
+        this.catalogService.habitsOf(companyId),
+        this.companies.listMembers(companyId),
+        this.pickupsService.list(),
+        this.zonesService.list(),
+        this.draftsService.find(companyId),
+        // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
+        // serveur refuse de toute façon une livraison fermée, et ce refus-là
+        // est montré. Faire tomber tout l'écran pour ce réglage serait
+        // disproportionné devant un client en ligne.
+        this.deliveryAvailabilityService.read().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
+      ]);
       if (company === undefined) {
         this.state.set('error');
         return;
@@ -362,7 +373,7 @@ export class NouvelleCommandePage {
       this.buyers.set(buyers);
       this.pickups.set(pickups);
       this.zones.set(zones);
-      this.deliverySettings.set(deliverySettings);
+      this.deliveryAvailability.set(deliveryAvailability);
       this.resume(saved, catalogue, company.addresses.deliveries);
       this.state.set('ready');
     } catch {
@@ -446,7 +457,7 @@ export class NouvelleCommandePage {
         pickups: this.pickups(),
         addresses: this.addresses(),
         zones: this.zones(),
-        deliverySettings: this.deliverySettings(),
+        deliveryAvailability: this.deliveryAvailability(),
         audience: this.audience(),
         settlesOnAccount: this.settlesOnAccount(),
       },
@@ -591,7 +602,7 @@ export class NouvelleCommandePage {
           error,
           "La livraison n'est pas proposée pour ce compte. Choisissez le retrait.",
         );
-        void this.refreshDeliverySettings();
+        void this.refreshDeliveryAvailability();
       } else {
         this.lateDraft.set(null);
         this.notify.error(error, "La commande n'a pas pu être enregistrée.");
@@ -602,9 +613,9 @@ export class NouvelleCommandePage {
   }
 
   /** Relit le réglage de livraison ; un échec garde celui qu'on avait. */
-  private async refreshDeliverySettings(): Promise<void> {
+  private async refreshDeliveryAvailability(): Promise<void> {
     try {
-      this.deliverySettings.set(await this.deliverySettingsService.read());
+      this.deliveryAvailability.set(await this.deliveryAvailabilityService.read());
     } catch {
       // Rien à dire de plus : le refus vient d'être montré.
     }

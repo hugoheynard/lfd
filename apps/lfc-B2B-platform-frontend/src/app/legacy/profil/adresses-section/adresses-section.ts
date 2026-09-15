@@ -44,7 +44,7 @@ export class AdressesSection {
   protected readonly canManage = computed(() => canManageCompany(this.company().role));
   /** Masque le bloc livraison quand le back-office la ferme aux pros. */
   protected readonly deliveryHidden = computed(
-    () => !deliveryOpenTo(this.servicePoints.deliverySettings(), 'b2b'),
+    () => !deliveryOpenTo(this.servicePoints.deliveryAvailability(), 'b2b'),
   );
   /** Le point de retrait par défaut, montré à la place de la livraison masquée. */
   protected readonly defaultPickup = this.pickups.defaultPickup;

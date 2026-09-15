@@ -2,7 +2,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type {
   CustomerAudience,
   DeliveryAddressView,
-  DeliverySettingsView,
+  DeliveryAvailabilityView,
   DeliveryZoneView,
   PickupAddressView,
 } from '@lfd/contracts';
@@ -56,7 +56,7 @@ const ZONE_92: DeliveryZoneView = {
 };
 
 /** La livraison ouverte aux deux : l'existant, et le défaut du réglage. */
-const OPEN_TO_ALL: DeliverySettingsView = {
+const OPEN_TO_ALL: DeliveryAvailabilityView = {
   openToB2b: true,
   openToB2c: true,
   updatedAt: null,
@@ -70,7 +70,7 @@ function mount(pickups: readonly PickupAddressView[]): ComponentFixture<Achemine
   fixture.componentRef.setInput('pickups', pickups);
   fixture.componentRef.setInput('addresses', [ADRESSE]);
   fixture.componentRef.setInput('zones', [ZONE_92]);
-  fixture.componentRef.setInput('deliverySettings', OPEN_TO_ALL);
+  fixture.componentRef.setInput('deliveryAvailability', OPEN_TO_ALL);
   fixture.componentRef.setInput('audience', 'b2b');
   fixture.detectChanges();
   return fixture;
@@ -84,7 +84,7 @@ function choiceOf(options: {
   courier?: boolean;
   dictate?: { ligne1: string; codePostal: string; ville: string };
   keep?: boolean;
-  settings?: DeliverySettingsView;
+  settings?: DeliveryAvailabilityView;
   audience?: CustomerAudience;
 }): FulfillmentChoice {
   const fixture = TestBed.createComponent(AcheminementCommande);
@@ -94,7 +94,7 @@ function choiceOf(options: {
   fixture.componentRef.setInput('pickups', options.pickups ?? [LABO]);
   fixture.componentRef.setInput('addresses', options.addresses ?? [ADRESSE]);
   fixture.componentRef.setInput('zones', options.zones ?? [ZONE_92]);
-  fixture.componentRef.setInput('deliverySettings', options.settings ?? OPEN_TO_ALL);
+  fixture.componentRef.setInput('deliveryAvailability', options.settings ?? OPEN_TO_ALL);
   fixture.componentRef.setInput('audience', options.audience ?? 'b2b');
 
   let last: FulfillmentChoice | null = null;
@@ -231,11 +231,11 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
    * refuse de toute façon une livraison fermée (409).
    */
   describe('la livraison fermée à la clientèle', () => {
-    const CLOSED_TO_PROS: DeliverySettingsView = { ...OPEN_TO_ALL, openToB2b: false };
-    const CLOSED_TO_PUBLIC: DeliverySettingsView = { ...OPEN_TO_ALL, openToB2c: false };
+    const CLOSED_TO_PROS: DeliveryAvailabilityView = { ...OPEN_TO_ALL, openToB2b: false };
+    const CLOSED_TO_PUBLIC: DeliveryAvailabilityView = { ...OPEN_TO_ALL, openToB2c: false };
 
     function mountWith(
-      settings: DeliverySettingsView,
+      settings: DeliveryAvailabilityView,
       audience: CustomerAudience,
     ): ComponentFixture<AcheminementCommande> {
       const fixture = TestBed.createComponent(AcheminementCommande);
@@ -243,7 +243,7 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       fixture.componentRef.setInput('pickups', [LABO]);
       fixture.componentRef.setInput('addresses', [ADRESSE]);
       fixture.componentRef.setInput('zones', [ZONE_92]);
-      fixture.componentRef.setInput('deliverySettings', settings);
+      fixture.componentRef.setInput('deliveryAvailability', settings);
       fixture.componentRef.setInput('audience', audience);
       fixture.detectChanges();
       return fixture;

@@ -7,7 +7,7 @@ import type {
   BillingAddressPayload,
   CustomerAudience,
   DeliveryAddressView,
-  DeliverySettingsView,
+  DeliveryAvailabilityView,
   DeliveryZoneView,
   FulfillmentMethod,
   FulfillmentWindow,
@@ -77,8 +77,8 @@ export class AcheminementCommande {
   readonly addresses = input.required<readonly DeliveryAddressView[]>();
   readonly zones = input.required<readonly DeliveryZoneView[]>();
   /** À quelles clientèles la livraison est proposée. */
-  readonly deliverySettings =
-    input.required<Pick<DeliverySettingsView, 'openToB2b' | 'openToB2c'>>();
+  readonly deliveryAvailability =
+    input.required<Pick<DeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>>();
   /** La clientèle de la société : `audienceOf(son statut)`, calculée par la page. */
   readonly audience = input.required<CustomerAudience>();
   /** Le brouillon de l'écran : c'est LUI qui garde le choix, pas ce composant. */
@@ -98,7 +98,7 @@ export class AcheminementCommande {
    * pourquoi « les pros » sont pourtant ouverts.
    */
   protected readonly deliveryClosedReason = computed<string | null>(() => {
-    if (deliveryOpenTo(this.deliverySettings(), this.audience())) {
+    if (deliveryOpenTo(this.deliveryAvailability(), this.audience())) {
       return null;
     }
     return this.audience() === 'b2b'

@@ -138,7 +138,7 @@ export class CommandePage {
    * qu'il a fermé.
    */
   protected readonly deliveryOffered = computed(() =>
-    deliveryOpenTo(this.service.deliverySettings(), this.audience.shown()),
+    deliveryOpenTo(this.service.deliveryAvailability(), this.audience.shown()),
   );
 
   /**

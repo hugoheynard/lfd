@@ -1,7 +1,7 @@
 # Plan — la remise de retrait et la livraison, par clientèle
 
 > **Statut : 🟡 partiel, 2026-09-15.** Le **lot A (serveur)** est bâti : migration,
-> `PickupDiscount`, `CartAdjustments` par clientèle, module `delivery-settings`.
+> `PickupDiscount`, `CartAdjustments` par clientèle, module `delivery-availability`.
 > Les lots **B** (back-office) et **C** (boutique) ne le sont pas. Touche **l'argent** (la
 > remise appliquée au panier) et porte une **migration**. **Contredit par
 > `vitruve` le 2026-09-15** (§7) : le `BLOQUANT` est tranché par Hugo le même jour (Q3 : société **active** seulement).
@@ -95,9 +95,9 @@ qui porte déjà la société).
   `FeatureAccessOverride`).
 - **Ligne absente = ouverte aux deux**, sans semis ; la vue rend alors
   `updatedAt: null`, `updatedBy: null`.
-- Routes : `GET` et **`PATCH`** `/admin/delivery-settings` (comme les réglages
-  voisins), `GET /delivery-settings` public.
-- Fait journalisé `delivery_settings.updated`, **et son préfixe ajouté** au
+- Routes : `GET` et **`PATCH`** `/admin/delivery-availability` (comme les réglages
+  voisins), `GET /delivery-availability` public.
+- Fait journalisé `delivery_availability.updated`, **et son préfixe ajouté** au
   classement du journal (`b2b/growth/domain/activity-module.ts`, rangé sous
   `commandes` avec les zones et les points) — sinon le fait n'apparaît dans aucun
   filtre (vitruve, S6).
@@ -192,7 +192,7 @@ sans les nouveaux champs et doit les **tenir pour ouverts**.
 
 **A — serveur** : migration ; contrats ; `audienceOf` (selon Q3) ;
 `PickupDiscount` et son refus ; `PATCH` sans défaut ; `CartAdjustments` à trois
-arguments et ses deux appelants ; le module `delivery-settings` (port, adaptateur,
+arguments et ses deux appelants ; le module `delivery-availability` (port, adaptateur,
 trois routes, fait journalisé, préfixe du journal) ; e2e : remise B2B seule
 absente en perso et appliquée dans la société, au devis ET à la commande ;
 livraison fermée au B2C → 409 aux deux ; ligne absente = ouverte ; `PATCH` d'un
@@ -228,7 +228,7 @@ jusqu'à l'activation de son dossier.
 | **S3** le refus 400 sans mécanisme, trois états non tranchés                                                                                        | corrigée — D2, value object, cases ignorées sans réduction      |
 | **S4** `DELIVERY_SERVICE_OPEN`, seconde source de vérité                                                                                            | corrigée — D4, constante retirée, lecteurs en B2B               |
 | **S5** le 409 jamais lu au devis ; la seconde phrase sans auteur                                                                                    | corrigée — D5, message unique, refus montré                     |
-| **S6** `delivery_settings.` absent du classement du journal                                                                                         | corrigée — D4                                                   |
+| **S6** `delivery_availability.` absent du classement du journal                                                                                     | corrigée — D4                                                   |
 | **S7** tests, troisième importeur, accueil du droit, titre de route, docs                                                                           | corrigée — D6, lot B                                            |
 | Mineures : remise inexistante à l'écran staff, `PickupAccess`, `PUT`/`PATCH`, vue sans ligne, espace non déclaré, `bestPickupDiscount`              | corrigées — D4, D6, D7, §3                                      |
 | Non vérifiés : portes du prix (`lint:dated-decisions`, `lint:price-door`, `lint:price-pipeline`), specs `toEqual` sur la vue, vérification du SIRET | à lever au lot A ; le SIRET borne le coût de B1, pas sa réalité |

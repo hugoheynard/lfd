@@ -129,7 +129,7 @@ export class PreferencesPanel {
     // préférence d'acheminement est celle d'une SOCIÉTÉ (plan remise et
     // livraison par clientèle, D4).
     const delivery =
-      deliveryOpenTo(this.service.deliverySettings(), 'b2b') ||
+      deliveryOpenTo(this.service.deliveryAvailability(), 'b2b') ||
       this.data().preference.method === 'delivery';
     return [
       { value: 'none', label: copy.prefMethodNone },

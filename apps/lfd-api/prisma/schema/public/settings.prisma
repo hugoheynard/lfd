@@ -73,9 +73,9 @@ model DeliveryZone {
 ///
 /// Ligne absente = ouverte aux deux : c'est l'existant, et aucun semis n'est
 /// nécessaire pour le reproduire. Clé NATURELLE comme `PlatformContent` ; auteur
-/// figé comme `FeatureAccessOverride`. Propriétaire : `src/b2b/delivery-settings/`.
+/// figé comme `FeatureAccessOverride`. Propriétaire : `src/b2b/delivery-availability/`.
 /// Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`, D4.
-model DeliverySettings {
+model DeliveryAvailability {
   /// Toujours `delivery` : il n'y a qu'un réglage, et son nom est connu d'avance.
   key String @id
 

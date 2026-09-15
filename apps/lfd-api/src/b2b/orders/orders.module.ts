@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { CatalogModule } from "../catalog/catalog.module.js";
-import { DeliverySettingsModule } from "../delivery-settings/delivery-settings.module.js";
+import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repository.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
@@ -100,7 +100,7 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     PickupAddressesModule,
     DeliveryZonesModule,
     // À qui la livraison est proposée : `CartAdjustments` le refuse au serveur.
-    DeliverySettingsModule,
+    DeliveryAvailabilityModule,
     OrderCutoffsModule,
     OrderWaiversModule,
     PaymentsModule,

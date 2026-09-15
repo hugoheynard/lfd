@@ -41,12 +41,12 @@ import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.rea
 import { CompanyMercurialeReader } from "../../../../pricing/domain/ports/company-mercuriale.reader.js";
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
 import { CustomerAudiences } from "../../services/customer-audiences.service.js";
-import { DeliverySettingsReader } from "../../../../delivery-settings/domain/ports/delivery-settings.reader.js";
+import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
 import {
   CompanyStatusReader,
   type OrderCompanyStatus as CompanyStatusOf,
 } from "../../../domain/ports/company-status.reader.js";
-import { DEFAULT_DELIVERY_SETTINGS, type DeliverySettingsView } from "@lfd/contracts";
+import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
@@ -340,9 +340,9 @@ function companiesAt(status: CompanyStatusOf | null): CompanyStatusReader {
 }
 
 /** Le réglage de livraison ; par défaut, ligne absente = ouvert aux deux. */
-function deliverySettings(
-  view: DeliverySettingsView = DEFAULT_DELIVERY_SETTINGS,
-): DeliverySettingsReader {
+function deliveryAvailability(
+  view: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
+): DeliveryAvailabilityReader {
   return { current: () => Promise.resolve(view) };
 }
 
@@ -352,7 +352,7 @@ function drafting(
   versions: CatalogVersionReader = versionsAt(CURRENT_VERSION),
   audience: {
     readonly status?: CompanyStatusOf | null;
-    readonly delivery?: DeliverySettingsView;
+    readonly delivery?: DeliveryAvailabilityView;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -377,7 +377,7 @@ function drafting(
       new FixedClock(PRICED_AT),
     ),
     versions,
-    new CartAdjustments(pickupsDouble, zonesDouble, deliverySettings(audience.delivery)),
+    new CartAdjustments(pickupsDouble, zonesDouble, deliveryAvailability(audience.delivery)),
     noDeliveryDefaults(),
     noOrderCutoffs,
     new FixedClock(PRICED_AT),
@@ -829,7 +829,7 @@ describe("PlaceOrderHandler", () => {
     const handler = new PlaceOrderHandler(
       guard(null, null, false),
       drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
-        delivery: { ...DEFAULT_DELIVERY_SETTINGS, openToB2c: false },
+        delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false },
       }),
       capturingRepo(sink),
       payments(),

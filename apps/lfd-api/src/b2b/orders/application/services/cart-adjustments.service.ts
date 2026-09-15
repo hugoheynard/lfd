@@ -9,7 +9,7 @@ import {
 import type { DeliveryZoneView, PickupAddressView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { DeliverySettingsReader } from "../../../delivery-settings/domain/ports/delivery-settings.reader.js";
+import { DeliveryAvailabilityReader } from "../../../delivery-availability/domain/ports/delivery-availability.reader.js";
 import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
@@ -79,7 +79,7 @@ export class CartAdjustments {
   constructor(
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
-    private readonly delivery: DeliverySettingsReader,
+    private readonly delivery: DeliveryAvailabilityReader,
   ) {}
 
   /**

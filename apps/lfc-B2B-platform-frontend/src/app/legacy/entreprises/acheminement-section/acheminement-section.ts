@@ -59,7 +59,7 @@ export class AcheminementSection {
    * Le réglage du back-office, lu en B2B : c'est une société qui règle ici.
    */
   protected readonly deliveryOffered = computed(() =>
-    deliveryOpenTo(this.servicePoints.deliverySettings(), 'b2b'),
+    deliveryOpenTo(this.servicePoints.deliveryAvailability(), 'b2b'),
   );
 
   /** Une écriture est en vol — la carte désarme ce qui écrit le temps qu'elle dure. */
