@@ -56,6 +56,26 @@
     [value]="feeAlteration()"
     (valueChange)="setFee($event)"
   />
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  <!-- En correction seulement : on supprime ce qu'on regarde. -->
+  @if (!isCreate()) {
+    <fold-danger-zone
+      appearance="section"
+      title="Supprimer cette zone de livraison"
+      actionLabel="Supprimer définitivement"
+      [confirmPhrase]="confirmPhrase()"
+      (confirmed)="remove()"
+    >
+      <p>
+        Les codes postaux de «&nbsp;{{ confirmPhrase() }}&nbsp;» ne porteront plus de frais de
+        livraison.
+      </p>
+    </fold-danger-zone>
+  }
 </div>
 
 <footer class="foot">

@@ -8,9 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import type { CartAdjustment, DeliveryZonePayload, DeliveryZoneView } from '@lfd/contracts';
+import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
+  FoldCalloutComponent,
+  FoldDangerZoneComponent,
   FoldInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
@@ -64,6 +67,8 @@ function isRowValid(row: PrefixRow): boolean {
   imports: [
     FoldPanelHeaderComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldDangerZoneComponent,
     FoldButtonIconComponent,
     FoldInputComponent,
     FoldSelectComponent,
@@ -85,6 +90,8 @@ export class ZonePanel {
   protected readonly label = signal('');
   protected readonly fee = signal<CartAdjustment | null>(null);
   protected readonly saving = signal(false);
+  /** Le dernier refus du serveur, en clair : il reste DANS le panneau. */
+  protected readonly refusal = signal<string | null>(null);
 
   /**
    * Le frais vu comme une altération de prix. Le sens est **structurel** — un
@@ -155,6 +162,7 @@ export class ZonePanel {
       return;
     }
     this.saving.set(true);
+    this.refusal.set(null);
     const payload: DeliveryZonePayload = {
       postalPrefixes: this.prefixes(),
       label: this.label().trim(),
@@ -170,7 +178,42 @@ export class ZonePanel {
       }
       this.ref.close(true);
     } catch (error) {
-      this.notify.error(error);
+      this.refusal.set(
+        httpErrorMessage(error, "La zone de livraison n'a pas pu être enregistrée."),
+      );
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  /** Ce qu'il faut taper pour supprimer : le libellé de la zone, ou ses codes. */
+  protected readonly confirmPhrase = computed(() => {
+    const zone = this.data()?.zone ?? null;
+    if (zone === null) {
+      return '';
+    }
+    return zone.label.trim() || zone.postalPrefixes.join(', ');
+  });
+
+  /**
+   * 🔴 **La suppression était une entrée du menu de la liste**, confirmée d'un
+   * clic, jusqu'au 2026-09-15 (Hugo). Elle vit désormais ici, dans une zone
+   * dangereuse qui fait taper le libellé. Aucune zone n'est obligatoire : sans
+   * zone, la livraison n'ajoute aucun frais — la dernière se supprime aussi.
+   */
+  protected async remove(): Promise<void> {
+    const zone = this.data()?.zone ?? null;
+    if (zone === null || this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    this.refusal.set(null);
+    try {
+      await this.zones.remove(zone.id);
+      this.notify.success('Zone de livraison supprimée.');
+      this.ref.close(true);
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, "La zone de livraison n'a pas pu être supprimée."));
     } finally {
       this.saving.set(false);
     }
