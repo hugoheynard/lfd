@@ -19,7 +19,7 @@
 }
 
 // Déclencheur du menu — bouton icône discret (même que les adresses de livraison).
-.menu-trigger {
+.edit-trigger {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -31,7 +31,7 @@
   color: var(--fold-color-text-muted);
   cursor: pointer;
 }
-.menu-trigger:hover {
+.edit-trigger:hover {
   background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
   color: var(--fold-color-text);
 }

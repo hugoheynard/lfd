@@ -50,11 +50,4 @@ export class PickupAddressesService {
   async remove(id: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${B2B_API_BASE}/admin/pickup-addresses/${id}`));
   }
-
-  /** Désigne un point comme défaut (staff). */
-  async setDefault(id: string): Promise<void> {
-    await firstValueFrom(
-      this.http.patch<void>(`${B2B_API_BASE}/admin/pickup-addresses/${id}/default`, {}),
-    );
-  }
 }

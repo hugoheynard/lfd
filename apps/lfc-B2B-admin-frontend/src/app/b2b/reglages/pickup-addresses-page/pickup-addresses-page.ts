@@ -9,17 +9,13 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCardComponent,
-  FoldDropdownComponent,
-  FoldDropdownItemComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
-  FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
-import { NotifyService } from '../../../notify.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
 import { discountAudienceSuffix } from '../pickup-discount-audience';
 import { openingRows } from '../pickup-opening.model';
@@ -51,10 +47,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldLoadingStateComponent,
     FoldButtonComponent,
     FoldIconComponent,
-    FoldDropdownComponent,
-    FoldDropdownItemComponent,
     FoldPageLayoutComponent,
-    FoldPopoverTriggerDirective,
   ],
   templateUrl: './pickup-addresses-page.html',
   styleUrl: './pickup-addresses-page.scss',
@@ -62,7 +55,6 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class PickupAddressesPage {
   private readonly pickups = inject(PickupAddressesService);
   private readonly panels = inject(FoldPanelHostService);
-  private readonly notify = inject(NotifyService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly addresses = signal<readonly PickupAddressView[]>([]);
@@ -122,15 +114,6 @@ export class PickupAddressesPage {
     const saved = await ref.closed;
     if (saved === true) {
       await this.load();
-    }
-  }
-
-  protected async setDefault(address: PickupAddressView): Promise<void> {
-    try {
-      await this.pickups.setDefault(address.id);
-      await this.load();
-    } catch (error) {
-      this.notify.error(error);
     }
   }
 }

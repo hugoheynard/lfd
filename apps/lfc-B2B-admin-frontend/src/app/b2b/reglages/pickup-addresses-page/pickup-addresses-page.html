@@ -32,24 +32,16 @@
                 }
               </lfd-address>
 
-              <fold-dropdown placement="bottom-end" ariaLabel="Actions du point de retrait">
-                <button
-                  foldPopoverTrigger="menu"
-                  type="button"
-                  class="menu-trigger"
-                  aria-label="Actions du point de retrait"
-                >
-                  <fold-icon name="more-vertical" [size]="18" />
-                </button>
-                @if (!point.isDefault) {
-                  <fold-dropdown-item icon="star" (selected)="setDefault(point)">
-                    Définir par défaut
-                  </fold-dropdown-item>
-                }
-                <fold-dropdown-item icon="edit" (selected)="edit(point)"
-                  >Modifier</fold-dropdown-item
-                >
-              </fold-dropdown>
+              <!-- Pas de menu : tout ce qu'on fait d'un point — le modifier, le
+                   mettre par défaut, le supprimer — se fait dans son panneau. -->
+              <button
+                type="button"
+                class="edit-trigger"
+                aria-label="Ouvrir le point de retrait"
+                (click)="edit(point)"
+              >
+                <fold-icon name="more-vertical" [size]="18" />
+              </button>
             </div>
 
             <lfd-hours
