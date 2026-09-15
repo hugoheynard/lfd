@@ -259,6 +259,24 @@
    `[data-theme="navi"] [data-surface="chrome"]` a la MÊME spécificité et matche
    le même élément (l'app tourne sous `<html data-theme="navi">`). Ce qu'on
    n'écrit pas ici, navi l'écrit à notre place. */
+/* ── La face de la marque, héritée par TOUT l'écran ──────────────────────────
+   Les tokens ne posent qu'une VARIABLE : un texte qu'aucun composant fold ne
+   style (une note, un libellé d'encart) héritait du `system-ui` que `body`
+   déclare en dur, et le texte d'un `<button>` natif de la face du navigateur
+   (Arial). Constaté à l'écran le 2026-09-15, après le passage à Pogonia.
+
+   Posé sur l'hôte du thème, qui est aussi celui qui porte les tokens : hors de
+   lui, `--fold-font-sans` n'existe pas. Les contrôles natifs n'héritent pas de
+   la police par défaut — `:where()` les y oblige sans aucune spécificité, donc
+   tout composant qui choisit sa face la garde. */
+[data-theme='lfc-app'] {
+  font-family: var(--fold-font-sans);
+}
+
+[data-theme='lfc-app'] :where(button, input, select, textarea) {
+  font-family: inherit;
+}
+
 [data-theme='lfc-app'] [data-surface='chrome'] {
   /* ── Fonds ── */
   --fold-color-bg-page: var(--lfc-ink-800);
