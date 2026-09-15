@@ -22,8 +22,8 @@ import {
   DeliveryStepPhoto,
   deliveryStepPhotoContentType,
   deliveryStepPhotoKey,
-  deliveryStepPhotoRevision,
 } from "../delivery-step-photo.js";
+import { photoCardRevision } from "../../../../shared/photo-cards/domain/value-objects/photo-revision.js";
 
 /**
  * **La photo et le contenu d'une étape.** Refusé : le vide, le trop lourd, ce
@@ -91,10 +91,12 @@ describe("DeliveryStepPhoto", () => {
 });
 
 describe("la clé d'une photo d'étape", () => {
+  // La relecture de la révision est au socle depuis le 2026-09-15 :
+  // `shared/photo-cards/domain/value-objects/__tests__/photo-revision.spec.ts`.
   it("s'ancre sur la société et porte une révision relisible", () => {
     const key = deliveryStepPhotoKey("c1", "a1", "01STEP", "01REV");
     expect(key).toBe("companies/c1/delivery-procedures/a1/01STEP-01REV");
-    expect(deliveryStepPhotoRevision(key)).toBe("01REV");
+    expect(photoCardRevision(key)).toBe("01REV");
   });
 });
 

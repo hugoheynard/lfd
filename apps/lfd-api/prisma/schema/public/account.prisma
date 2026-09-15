@@ -230,6 +230,9 @@ model Company {
   /// Alertes déclenchées sur ce compte (cf. alerts/).
   alerts AccountAlert[]
 
+  /// Le carnet de notes du commercial — au plus un (cf. b2b/client-notes/).
+  clientNotebook ClientNotebook?
+
   // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
   // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.
   // Le SIRET est facultatif à l'ouverture ; les chaînes vides sont des absences,

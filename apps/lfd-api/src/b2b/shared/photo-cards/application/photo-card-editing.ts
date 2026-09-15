@@ -3,6 +3,7 @@ import type { PhotoCardText } from "../domain/entities/photo-card-list.js";
 import type { PhotoChange } from "../domain/value-objects/photo-change.js";
 import type {
   InTransaction,
+  InTransactionForNewCard,
   OrphanPhotoReason,
   PhotoCardPorts,
   PhotoCardUsage,
@@ -50,7 +51,7 @@ export async function addPhotoCard<T, A, C extends PhotoCardText>(
   usage: PhotoCardUsage<T, A, C>,
   target: T,
   card: NewPhotoCard<C>,
-  inTransaction: InTransaction,
+  inTransaction: InTransactionForNewCard,
 ): Promise<string> {
   await usage.identity.ensure(target);
 
@@ -62,7 +63,7 @@ export async function addPhotoCard<T, A, C extends PhotoCardText>(
       (await usage.aggregates.load(target)) ?? usage.aggregates.open(target, ports.ids.next());
     usage.gestures.add(aggregate, cardId, card.content, photoKey);
     await usage.aggregates.save(aggregate);
-    await inTransaction();
+    await inTransaction(cardId);
   });
   return cardId;
 }

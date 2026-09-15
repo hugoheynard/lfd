@@ -23,6 +23,15 @@ export interface PhotoCardPorts {
 /** Ce qui s'écrit dans la même transaction que les cartes — un fait tracé, ou rien. */
 export type InTransaction = () => Promise<void>;
 
+/**
+ * Ce qui s'écrit dans la transaction d'un AJOUT, qui reçoit l'id de la carte
+ * neuve : il n'est tiré qu'à l'intérieur de la séquence, et un fait qui nomme la
+ * carte ajoutée doit le connaître avant le commit (les notes du commercial le
+ * nomment, la procédure de livraison non). Un {@link InTransaction} s'y passe
+ * tel quel.
+ */
+export type InTransactionForNewCard = (cardId: string) => Promise<void>;
+
 /** La porte qui ne trace rien : quelqu'un qui agit sur son propre compte. */
 export const NOTHING_TO_TRACE: InTransaction = () => Promise.resolve();
 

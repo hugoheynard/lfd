@@ -1019,6 +1019,27 @@ export type {
   DeliveryStepRevisionFields,
 } from "./delivery-procedure.js";
 
+export {
+  CLIENT_NOTEBOOK_MAX_NOTES,
+  CLIENT_NOTE_BODY_MAX,
+  CLIENT_NOTE_PHOTO_LONG_EDGE,
+  CLIENT_NOTE_PHOTO_MAX_BYTES,
+  CLIENT_NOTE_THUMBNAIL_LONG_EDGE,
+  CLIENT_NOTE_THUMBNAIL_MAX_BYTES,
+  CLIENT_NOTE_TITLE_MAX,
+  clientNotebookOrderPayloadSchema,
+  clientNoteFieldsSchema,
+  clientNoteRevisionFieldsSchema,
+} from "./client-notes.js";
+export type {
+  ClientNotebookOrderPayload,
+  ClientNotebookView,
+  ClientNoteFields,
+  ClientNoteRevisionFields,
+  ClientNoteView,
+  CreatedClientNoteResponse,
+} from "./client-notes.js";
+
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./account.js";
 
 export { audienceOf } from "./customer-audience.js";

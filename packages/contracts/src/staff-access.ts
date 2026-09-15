@@ -150,6 +150,14 @@ export const staffResourceSchema = z.enum([
    * un frais pour un secteur ; l'autre décide si quelqu'un peut commander.
    */
   "b2b_feature_access",
+  /**
+   * Les **notes du commercial** sur un compte client — photos de notes papier.
+   *
+   * Détachée de `b2b_companies` (Hugo, 2026-09-15) : `comptabilite` et `support`
+   * lisent la fiche client, et ne doivent pas lire les notes internes de la
+   * commerciale. Cf. `documentation/b2b/plan-notes-photo-du-commercial.md`.
+   */
+  "b2b_client_notes",
   /** Le reste du paramétrage : contenu, zones de livraison, créneaux, retraits. */
   "b2b_settings",
 
@@ -233,6 +241,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_alerts: "Alertes",
   b2b_order_waivers: "Dérogations d'heure limite",
   b2b_feature_access: "Accès aux fonctionnalités",
+  b2b_client_notes: "Notes du commercial",
   b2b_settings: "Réglages plateforme",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
@@ -308,6 +317,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_alerts: "write",
     b2b_order_waivers: "write",
     b2b_feature_access: "write",
+    b2b_client_notes: "write",
     b2b_settings: "write",
     staff_access: "write",
     staff_notifications: "write",
@@ -348,6 +358,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // doit pouvoir dire à un client si la boutique est ouverte, mais ouvrir ou
     // couper la vente en ligne reste une décision d'administrateur.
     b2b_feature_access: "read",
+    // Les notes papier de la commerciale : elle les écrit (Hugo, 2026-09-15).
+    b2b_client_notes: "write",
     b2b_settings: "read",
     // Il VOIT le référentiel, il n'y touche pas. C'est exactement la séparation
     // que le découpage rend exprimable : avant, le même mot désignait le

@@ -99,12 +99,3 @@ export function deliveryStepPhotoKey(
 ): string {
   return `companies/${companyId}/delivery-procedures/${addressId}/${stepId}-${revision}`;
 }
-
-/**
- * La révision portée par une clé — ce qui suit le dernier `-`. Les identifiants
- * sont des ULID, sans tiret : le dernier est donc celui que
- * {@link deliveryStepPhotoKey} a posé.
- */
-export function deliveryStepPhotoRevision(photoKey: string): string {
-  return photoKey.slice(photoKey.lastIndexOf("-") + 1);
-}

@@ -4,6 +4,7 @@ import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { AlertsModule } from "../b2b/alerts/alerts.module.js";
+import { ClientNotesModule } from "../b2b/client-notes/client-notes.module.js";
 import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module.js";
 import { DeliveryAvailabilityModule } from "../b2b/delivery-availability/delivery-availability.module.js";
 import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
@@ -113,6 +114,8 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     JournalModule,
     // Contextes métier.
     AccountModule,
+    // Les notes du commercial : staff seulement, sur `StaffDirectory` d'AccountModule.
+    ClientNotesModule,
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
     PaymentsModule,
     AccountingModule,

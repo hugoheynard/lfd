@@ -1,0 +1,17 @@
+-- **La ressource d'accès des notes du commercial** — plan
+-- `documentation/b2b/plan-notes-photo-du-commercial.md`, D5.
+--
+-- Une ressource à elle, et pas `b2b_companies` : `comptabilite` et `support`
+-- lisent la fiche client, et ne doivent pas lire les notes internes de la
+-- commerciale (Hugo, 2026-09-15).
+--
+-- **Seule dans sa migration**, comme `b2b_order_waivers`
+-- (20260904170000_ressource_derogations) : Postgres refuse d'utiliser une valeur
+-- d'enum dans la transaction qui l'ajoute. Les droits des rôles de référence et
+-- les tables viennent dans la migration suivante.
+--
+-- **Additif et irréversible en pratique** : Postgres sait ajouter une valeur à
+-- un type énuméré, il ne sait pas en retirer une sans reconstruire le type. Une
+-- valeur en trop n'est portée par aucune ligne tant que personne ne l'accorde en
+-- dérogation staff ; le retour arrière consiste à ne pas s'en servir.
+ALTER TYPE "public"."StaffResource" ADD VALUE IF NOT EXISTS 'b2b_client_notes' BEFORE 'b2b_settings';
