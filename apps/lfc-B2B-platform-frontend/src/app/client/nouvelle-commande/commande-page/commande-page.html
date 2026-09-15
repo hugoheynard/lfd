@@ -46,14 +46,13 @@
               (chosen)="openDialog('address')"
             />
           } @else {
-            <!-- Retrait seul : la place du coursier va aux boutiques. -->
+            <!-- Retrait seul : les boutiques se posent sur la photo du retrait. -->
             <div class="shops" role="group" [attr.aria-label]="t().pickupDialog.title">
               @for (shop of shops(); track shop.point.id) {
                 <app-pickup-point-card
                   [point]="shop.point"
                   [tag]="shop.tag"
                   [offer]="shop.offer"
-                  [cta]="t().pickupDialog.cta"
                   (chosen)="openShop(shop.point.id)"
                 />
               }

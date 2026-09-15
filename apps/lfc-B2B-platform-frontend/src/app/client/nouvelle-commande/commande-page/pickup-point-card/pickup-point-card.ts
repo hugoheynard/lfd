@@ -5,12 +5,14 @@ import { FoldIconComponent } from 'fold-ng';
 import type { PickupOffer } from '../../../../client/shop/pickup-discount';
 
 /**
- * Une boutique de retrait, en carte carrée — posée à côté de « Je passe la
- * prendre » quand la livraison n'est pas proposée à la clientèle de l'écran.
+ * Une boutique de retrait, en petite carte beige — posée sur la photo de « Je
+ * passe la prendre » quand la livraison n'est pas proposée à la clientèle de
+ * l'écran (sous elle en pile, où la photo n'est qu'un bandeau).
  *
- * Sans livraison, la seule question qui reste est « où » : la moitié d'écran
- * qu'occupait le coursier y répond directement, une carte par point, au lieu de
- * rester vide ou d'étirer le retrait sur toute la largeur (Hugo, 2026-09-15).
+ * Sans livraison, la seule question qui reste est « où » : le retrait reprend
+ * toute la largeur, et les boutiques y répondent directement, une carte par
+ * point (Hugo, 2026-09-15 — une première version en carrés d'encre prenait la
+ * moitié du coursier, et disputait la place au retrait).
  *
  * La carte ne décide rien : elle dit le lieu et ce qu'il promet, et remonte le
  * geste. C'est l'écran qui ouvre le dialogue, déjà placé sur l'heure.
@@ -29,9 +31,6 @@ export class PickupPointCard {
   readonly tag = input<string>('');
 
   readonly offer = input.required<PickupOffer>();
-
-  /** L'action, nommée au bureau — le téléphone n'a que le chevron. */
-  readonly cta = input.required<string>();
 
   readonly chosen = output<void>();
 }

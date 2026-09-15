@@ -23,7 +23,6 @@ describe('PickupPointCard', () => {
     fixture.componentRef.setInput('point', VILLAGE);
     fixture.componentRef.setInput('tag', tag);
     fixture.componentRef.setInput('offer', { label: 'Prix boutique', hasOffer: false });
-    fixture.componentRef.setInput('cta', 'Choisir mon heure');
     fixture.detectChanges();
     return fixture;
   };

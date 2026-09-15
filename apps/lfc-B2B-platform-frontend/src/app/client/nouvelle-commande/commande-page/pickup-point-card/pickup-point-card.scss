@@ -2,21 +2,20 @@
   display: block;
 }
 
-/* Le carré est l'encre du retrait, sans photo : c'est la carte « Je passe la
-   prendre » continuée, pas une offre de plus. */
+/* Le beurre pâle, arrondi, posé SUR la photo du retrait : la carte le continue
+   au lieu de lui disputer la place. */
 .card {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  aspect-ratio: 1;
-  padding: 14px;
-  border: 0;
+  height: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--lfc-color-accent-border);
   border-radius: var(--lfc-radius-2xl);
-  background: var(--fold-color-primary);
+  background: var(--lfc-color-accent-surface);
   box-shadow: var(--lfc-shadow-card);
-  color: var(--lfc-paper-50);
+  color: var(--lfc-color-on-accent);
   text-align: start;
   cursor: pointer;
   transition: var(--lfc-motion-tap);
@@ -26,23 +25,23 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--lfc-color-accent);
-    outline-offset: -4px;
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 2px;
   }
 }
 
-/* L'étiquette reste en haut ; le lieu et sa promesse tombent en bas, où la
-   carte du retrait pose aussi les siens. */
+/* L'étiquette reste en haut, la promesse tombe en bas : deux cartes voisines
+   alignent leurs pieds même quand l'une n'a pas d'habitude. */
 .top {
-  margin-bottom: auto;
+  min-height: 0;
 }
 
 .tag {
   display: inline-flex;
   padding: 2px 8px;
   border-radius: var(--fold-radius-pill);
-  background: var(--lfc-paper-50);
-  color: var(--fold-color-primary);
+  background: var(--fold-color-primary);
+  color: var(--lfc-paper-50);
   font-family: var(--fold-font-label);
   font-size: var(--lfc-text-kicker);
   font-weight: var(--lfc-weight-black);
@@ -53,15 +52,15 @@
 .text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
 .name {
   font-family: var(--fold-font-label);
-  font-size: 1.25rem;
+  font-size: var(--fold-text-lg);
   font-weight: var(--lfc-weight-black);
-  line-height: 1;
+  line-height: 1.1;
   letter-spacing: var(--lfc-tracking-block);
   text-transform: uppercase;
   overflow-wrap: anywhere;
@@ -69,21 +68,21 @@
 
 .where {
   font-size: var(--fold-text-sm);
-  color: var(--lfc-color-on-well-muted);
+  color: var(--fold-color-text-secondary);
 }
 
 .foot {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-top: auto;
 }
 
 .offer {
   display: inline-flex;
   padding: 3px 9px;
-  border: 1px solid var(--lfc-color-on-well-muted);
+  border: 1px solid var(--lfc-color-accent-border);
   border-radius: var(--fold-radius-pill);
   font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-bold);
@@ -91,12 +90,7 @@
   &.deal {
     border-color: var(--lfc-color-accent);
     background: var(--lfc-color-accent);
-    color: var(--lfc-color-on-accent);
   }
-}
-
-.cta {
-  display: none;
 }
 
 .chevron {
@@ -106,42 +100,7 @@
 /* ── Au-delà du pli ───────────────────────────────────────────────────────── */
 
 @media (min-width: 900px) {
-  /* Bord à bord, comme la demi-page du retrait : le filet entre les carrés est
-     le puits vu par l'interstice. */
   .card {
-    gap: 18px;
-    padding: 28px;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .name {
-    font-size: clamp(1.5rem, 2.2vw, 2rem);
-    letter-spacing: var(--lfc-tracking-display);
-  }
-
-  .where {
-    font-size: var(--fold-text-md);
-  }
-
-  .offer {
-    padding: 6px 12px;
-    font-family: var(--fold-font-label);
-    font-weight: var(--lfc-weight-black);
-    letter-spacing: var(--lfc-tracking-label);
-    text-transform: uppercase;
-  }
-
-  .cta {
-    display: inline-flex;
-    font-family: var(--fold-font-label);
-    font-size: var(--fold-text-xs);
-    font-weight: var(--lfc-weight-black);
-    letter-spacing: var(--lfc-tracking-label);
-    text-transform: uppercase;
-  }
-
-  .chevron {
-    display: none;
+    padding: 16px 18px;
   }
 }

@@ -31,9 +31,8 @@ app-offer-carousel {
   margin-bottom: var(--fold-space-xs);
 }
 
-/* Retrait seul : les boutiques, deux carrés par rang, sous la carte du retrait
-   en pile et à côté d'elle au bureau. Projetées dans le puits, elles restent
-   stylées ici. */
+/* Retrait seul : les boutiques en petites cartes beiges, deux par rang sous la
+   carte du retrait en pile. Projetées dans le puits, elles restent stylées ici. */
 .shops {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -95,10 +94,21 @@ app-callback-block {
     gap: 0;
   }
 
-  /* La moitié du coursier : les carrés s'y touchent au même filet que les deux
-     demi-pages, et la carte du retrait prend leur hauteur. */
+  /* Sur la photo : le retrait garde toute la largeur, et les boutiques
+     occupent LA MÊME cellule, calées à droite, centrées en hauteur — le texte du
+     retrait tient le bas à gauche. Les deux sont placés explicitement : un
+     élément auto-placé éviterait la cellule prise et partirait en colonne 2. */
+  app-offer-card[data-photo='labo']:has(+ .shops),
   .shops {
-    gap: 2px;
+    grid-area: 1 / 1;
+  }
+
+  .shops {
+    z-index: 1;
+    grid-template-columns: repeat(2, 11.5rem);
+    align-self: center;
+    justify-self: end;
+    padding: 40px;
   }
 
   .resume {
