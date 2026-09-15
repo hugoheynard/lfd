@@ -1,13 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
+import type { DeliveryZoneView, FulfillmentDayView, PickupAddressView } from '@lfd/contracts';
+// Valeurs par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
 import {
   ALL_DISCOUNT_AUDIENCES,
   DEFAULT_DELIVERY_AVAILABILITY,
   type PublicDeliveryAvailabilityView,
-  type DeliveryZoneView,
-  type FulfillmentDayView,
-  type PickupAddressView,
-} from '@lfd/contracts';
+} from '@lfd/contracts/shop-values';
 import { firstValueFrom } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';

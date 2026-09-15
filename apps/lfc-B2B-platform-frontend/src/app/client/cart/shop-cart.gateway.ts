@@ -1,11 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import {
-  WORKSPACE_HEADER,
-  type ShopCartPayload,
-  type ShopCartResponse,
-  type ShopCartView,
-} from '@lfd/contracts';
+import type { ShopCartPayload, ShopCartResponse, ShopCartView } from '@lfd/contracts';
+// Valeur par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
+import { WORKSPACE_HEADER } from '@lfd/contracts/shop-values';
 import { map, switchMap, type Observable } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';

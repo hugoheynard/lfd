@@ -1,6 +1,8 @@
 import type { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { WORKSPACE_HEADER } from '@lfd/contracts';
+// Par le sous-chemin sans zod : l'intercepteur est chargé au démarrage, et le
+// baril embarquait zod dans le bundle initial (déploiement échoué le 2026-09-15).
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { ClientWorkspace } from './client-workspace.service';

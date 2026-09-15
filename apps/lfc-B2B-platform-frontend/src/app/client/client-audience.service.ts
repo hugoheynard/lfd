@@ -1,5 +1,6 @@
 import { computed, inject, Injectable } from '@angular/core';
-import { audienceOf, type CustomerAudience } from '@lfd/contracts';
+// Par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
+import { audienceOf, type CustomerAudience } from '@lfd/contracts/shop-values';
 
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientWorkspace } from './client-workspace.service';

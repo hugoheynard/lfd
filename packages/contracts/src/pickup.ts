@@ -8,6 +8,10 @@ import {
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
 import { minutesOfDay, timeOfMinutes } from "./paris-time.js";
 import type { CustomerAudience } from "./customer-audience.js";
+import { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
+
+// Le défaut vit sans zod, pour le démarrage de la boutique : on le réexporte.
+export { ALL_DISCOUNT_AUDIENCES };
 
 /**
  * **À qui s'applique la remise d'un point** : les pros, les particuliers, ou les
@@ -22,7 +26,6 @@ export const pickupDiscountAudiencesSchema = z.object({
 export type PickupDiscountAudiences = z.infer<typeof pickupDiscountAudiencesSchema>;
 
 /** Le défaut à la création, et l'existant : toute clientèle reçoit la remise. */
-export const ALL_DISCOUNT_AUDIENCES: PickupDiscountAudiences = { b2b: true, b2c: true };
 
 /** La remise du point pour cette clientèle, ou `null` si elle ne la reçoit pas. */
 export function pickupDiscountFor(

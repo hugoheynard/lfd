@@ -43,19 +43,10 @@ export interface NavPreferences {
 }
 
 /**
- * L'en-tête par lequel le front déclare **dans quel espace il travaille**.
- *
- * Il ne porte aucune autorité : le serveur le confronte aux rattachements de la
- * personne, et ignore ce qui n'en est pas un.
+ * L'en-tête d'espace et la valeur du perso vivent dans `workspace.ts`, sans zod,
+ * pour qu'un front les charge au démarrage sans embarquer le baril.
  */
-export const WORKSPACE_HEADER = "x-lfc-company";
-
-/**
- * La valeur réservée de l'espace **perso** : agir pour aucune société, quel que
- * soit le nombre de rattachements. Un identifiant de société est un `cuid()`,
- * qui ne peut pas la valoir.
- */
-export const PERSONAL_WORKSPACE = "personal";
+export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";
 
 /** Le profil de la personne, tel que l'écran « Mon profil » l'affiche. */
 export interface ProfileView {
