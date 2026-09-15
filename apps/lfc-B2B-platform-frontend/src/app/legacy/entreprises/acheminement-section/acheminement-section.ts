@@ -7,11 +7,15 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
-import type { DeliveryAddressView, FulfillmentPreferenceView } from '@lfd/contracts';
+import {
+  type DeliveryAddressView,
+  deliveryOpenTo,
+  type FulfillmentPreferenceView,
+} from '@lfd/contracts';
 import { CompanyFulfillmentCard } from '@lfd/b2b-ui/company';
 
 import { AccountService } from '../../../account/account.service';
+import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import type { Company } from '../../../account/account.model';
 import { canManageCompany } from '../../../account/account.model';
 import { AddressesService } from '../addresses.service';
@@ -40,6 +44,7 @@ export class AcheminementSection {
   private readonly account = inject(AccountService);
   private readonly addresses = inject(AddressesService);
   private readonly pickupsService = inject(PickupAddressesService);
+  private readonly servicePoints = inject(ServicePoints);
 
   readonly company = input.required<Company>();
 
@@ -49,8 +54,13 @@ export class AcheminementSection {
     () => this.addresses.view()?.deliveries ?? [],
   );
 
-  /** La livraison est-elle un service ouvert ? Sinon, seul le retrait a un sens. */
-  protected readonly deliveryOffered = DELIVERY_SERVICE_OPEN;
+  /**
+   * La livraison est-elle proposée aux pros ? Sinon, seul le retrait a un sens.
+   * Le réglage du back-office, lu en B2B : c'est une société qui règle ici.
+   */
+  protected readonly deliveryOffered = computed(() =>
+    deliveryOpenTo(this.servicePoints.deliverySettings(), 'b2b'),
+  );
 
   /** Une écriture est en vol — la carte désarme ce qui écrit le temps qu'elle dure. */
   protected readonly saving = signal(false);
@@ -62,6 +72,7 @@ export class AcheminementSection {
     // Les adresses vivent dans leur propre service : la carte a besoin d'elles
     // pour proposer une destination, on les demande donc pour cette société.
     effect(() => this.addresses.loadFor(this.company().id));
+    void this.servicePoints.hydrate();
   }
 
   /**

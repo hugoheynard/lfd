@@ -10,10 +10,11 @@ import {
 } from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
 
+import { ClientAudience } from '../../../../client/client-audience.service';
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
-import { type PickupSlot, pickupSlots } from '@lfd/contracts';
+import { type PickupSlot, pickupDiscountFor, pickupSlots } from '@lfd/contracts';
 
 import { bestPickupDiscount, discountLabel } from '../../../../client/shop/pickup-discount';
 import { formatWindow } from '../../../../client/format-hour';
@@ -69,6 +70,7 @@ export class PickupDialog {
   protected readonly slot = signal<PickupSlot | null>(null);
 
   private readonly service = inject(ServicePoints);
+  private readonly audience = inject(ClientAudience);
 
   /**
    * Les points **de la plateforme**, et eux seuls.
@@ -85,22 +87,35 @@ export class PickupDialog {
    */
   protected readonly pickedId = signal<string>('');
 
+  /**
+   * Chaque point avec ce qu'il remet **à la clientèle de l'écran**.
+   *
+   * Sans remise pour elle, la ligne dit le tarif qu'on y paie : « Prix pro » à
+   * une société active, « Prix boutique » à un particulier (Hugo, 2026-09-15,
+   * Q2 du plan remise et livraison par clientèle).
+   */
   protected readonly points = computed(() => {
     const c = this.t().pickupDialog;
-    return this.available().map((point) => ({
-      point,
-      tag: point.isDefault ? c.habit : '',
-      offer:
-        point.discount === null
-          ? c.proPrice
-          : fill(c.discountTag, { value: discountLabel(point.discount) }),
-      hasOffer: point.discount !== null,
-    }));
+    const audience = this.audience.shown();
+    return this.available().map((point) => {
+      const discount = pickupDiscountFor(point, audience);
+      return {
+        point,
+        tag: point.isDefault ? c.habit : '',
+        offer:
+          discount === null
+            ? audience === 'b2b'
+              ? c.proPrice
+              : c.shopPrice
+            : fill(c.discountTag, { value: discountLabel(discount) }),
+        hasOffer: discount !== null,
+      };
+    });
   });
 
-  /** La meilleure remise de la station : c'est elle que la phrase d'accueil vend. */
+  /** La meilleure remise de la station pour cette clientèle : c'est elle que la phrase d'accueil vend. */
   protected readonly lead = computed(() => {
-    const best = bestPickupDiscount(this.available());
+    const best = bestPickupDiscount(this.available(), this.audience.shown());
     return best === null
       ? this.t().pickupDialog.title
       : fill(this.t().pickupDialog.lead, { value: discountLabel(best) });

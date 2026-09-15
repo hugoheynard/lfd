@@ -2,8 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import type { FulfillmentDayView, PickupAddressView } from '@lfd/contracts';
 
+import { provideRecognised } from '../../../../client/client-orders.fixture';
+import { provideWorkspace, workspaceDouble } from '../../../../client/client-workspace.fixture';
 import { fill } from '../../../../client/copy/client-copy.service';
 import { FR } from '../../../../client/copy/fr';
+import { TOMMEUSES } from '../../../../client/mon-compte/account.fixture';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 import { PickupDialog } from './pickup-dialog';
 
@@ -24,6 +27,7 @@ const POINT = (over: Partial<PickupAddressView>): PickupAddressView => ({
   pays: 'France',
   isDefault: true,
   discount: { mode: 'percent', bp: 1_000 },
+  discountAudiences: { b2b: true, b2c: true },
   // De vraies heures : la grille de créneaux s'en déduit, et le trou entre les
   // deux fenêtres est celui qu'aucune maquette ne savait montrer.
   opening: {
@@ -61,7 +65,15 @@ describe('PickupDialog', () => {
   };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [PickupDialog], providers: [provideHttpClient()] });
+    // Une société ACTIVE : la clientèle est B2B (plan remise et livraison par clientèle, D1).
+    TestBed.configureTestingModule({
+      imports: [PickupDialog],
+      providers: [
+        provideHttpClient(),
+        provideRecognised(),
+        provideWorkspace(workspaceDouble(TOMMEUSES.id, [{ ...TOMMEUSES, status: 'active' }])),
+      ],
+    });
     TestBed.inject(ServicePoints).receive(POINTS, [], DAYS);
     fixture = TestBed.createComponent(PickupDialog);
     fixture.componentRef.setInput('open', true);
@@ -160,13 +172,54 @@ describe('PickupDialog', () => {
   });
 
   it('un point sans remise se dit « prix pro », et le bouton ne change pas', () => {
-    // Le Village n'a pas de remise : sa ligne annonce le tarif pro plutôt qu'un
-    // « prix boutique » qui laissait croire au tarif public (Hugo, 2026-09-15).
+    // Le Village n'a pas de remise : à une société active, sa ligne annonce le
+    // tarif pro (Hugo, 2026-09-15). Un particulier lit « Prix boutique » — cf.
+    // la suite B2C plus bas.
     const points = el().querySelectorAll('button.point');
     (points[1] as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(el().textContent).toContain(FR.pickupDialog.proPrice);
     expect(cta().textContent?.trim()).toBe(FR.pickupDialog.cta);
+  });
+});
+
+/**
+ * **Le même dialogue, vu d'un particulier** — visiteur, perso, ou société non
+ * active (Hugo, 2026-09-15).
+ */
+describe('PickupDialog — en B2C', () => {
+  let fixture: ComponentFixture<PickupDialog>;
+  const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+
+  function open(points: readonly PickupAddressView[]): void {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [PickupDialog],
+      providers: [
+        provideHttpClient(),
+        provideRecognised(),
+        // Une société en ATTENTE de validation compte B2C (Q3).
+        provideWorkspace(workspaceDouble(TOMMEUSES.id, [{ ...TOMMEUSES, status: 'pending' }])),
+      ],
+    });
+    TestBed.inject(ServicePoints).receive(points, [], DAYS);
+    fixture = TestBed.createComponent(PickupDialog);
+    fixture.componentRef.setInput('open', true);
+    fixture.detectChanges();
+  }
+
+  it('un point sans remise se dit « Prix boutique », pas « Prix pro »', () => {
+    open(POINTS);
+    const village = el().querySelectorAll('button.point')[1];
+    expect(village?.textContent).toContain(FR.pickupDialog.shopPrice);
+    expect(el().textContent).not.toContain(FR.pickupDialog.proPrice);
+  });
+
+  it('une remise réservée aux pros ne s’annonce ni sur la ligne ni en accueil', () => {
+    open(POINTS.map((p) => ({ ...p, discountAudiences: { b2b: true, b2c: false } })));
+    const labo = el().querySelectorAll('button.point')[0];
+    expect(labo?.textContent).toContain(FR.pickupDialog.shopPrice);
+    expect(el().textContent).not.toContain('10 %');
   });
 });

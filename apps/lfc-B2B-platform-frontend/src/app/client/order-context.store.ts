@@ -1,8 +1,10 @@
-import { effect, inject, Injectable, signal } from '@angular/core';
+import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 
-import type { BillingAddressPayload, FulfillmentWindow } from '@lfd/contracts';
+import { type BillingAddressPayload, deliveryOpenTo, type FulfillmentWindow } from '@lfd/contracts';
 
+import { ClientAudience } from './client-audience.service';
 import { ClientWorkspace } from './client-workspace.service';
+import { ServicePoints } from './shop/pickup-points.store';
 import { isRecord, readLocal, readString, writeLocal } from './local-store';
 
 /**
@@ -185,6 +187,8 @@ function parseAddress(raw: unknown): BillingAddressPayload | null {
 @Injectable({ providedIn: 'root' })
 export class OrderContextStore {
   private readonly workspace = inject(ClientWorkspace);
+  private readonly audience = inject(ClientAudience);
+  private readonly points = inject(ServicePoints);
 
   readonly choice = signal<ServiceChoice | null>(readLocal(KEY, parseChoice));
 
@@ -217,6 +221,35 @@ export class OrderContextStore {
         this.choice.set(null);
       }
       this.seen = current;
+    });
+
+    /**
+     * 🔴 **Une livraison devenue interdite s'efface** (plan remise et livraison
+     * par clientèle, D7).
+     *
+     * Le choix est relu du navigateur : il a pu être posé avant que le
+     * back-office ferme la livraison à cette clientèle, ou dans une société
+     * qui n'est plus active. Le garder ferait composer un panier que le devis
+     * puis la commande refuseront.
+     *
+     * Rien ne s'efface sur une supposition : ni tant que la clientèle est
+     * inconnue (un pro pris pour un particulier le temps de `/me`), ni tant que
+     * le réglage n'a pas été LU — son défaut ouvert n'est pas une réponse.
+     */
+    effect(() => {
+      const choice = this.choice();
+      if (choice?.mode !== 'delivery') {
+        return;
+      }
+      // Idempotent : les écrans qui montrent les points l'ont souvent déjà fait.
+      untracked(() => void this.points.hydrate());
+      const audience = this.audience.current();
+      if (audience === null || !this.points.deliverySettingsKnown()) {
+        return;
+      }
+      if (!deliveryOpenTo(this.points.deliverySettings(), audience)) {
+        this.choice.set(null);
+      }
     });
   }
 }

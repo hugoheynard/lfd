@@ -12,6 +12,7 @@ const POINT = (over: Partial<PickupAddressView>): PickupAddressView => ({
   pays: 'France',
   isDefault: true,
   discount: { mode: 'percent', bp: 2_000 },
+  discountAudiences: { b2b: true, b2c: true },
   opening: { proPickup: null, publicOpening: null },
   ...over,
 });
@@ -45,6 +46,7 @@ describe('discountRows', () => {
         }),
       ],
       'Remise retrait · {place}',
+      'b2b',
     );
     expect(rows).toEqual([
       { id: 'pick_labo', label: 'Remise retrait · Le Labo', value: '−20 %' },
@@ -57,7 +59,14 @@ describe('discountRows', () => {
   });
 
   it("un point sans remise n'a pas de ligne", () => {
-    expect(discountRows([POINT({ discount: null })], '{place}')).toEqual([]);
+    expect(discountRows([POINT({ discount: null })], '{place}', 'b2b')).toEqual([]);
+  });
+
+  /** Plan remise et livraison par clientèle, D7 : une remise pros seulement ne s'annonce pas en perso. */
+  it('une remise réservée aux pros n’a pas de ligne en perso', () => {
+    const proOnly = POINT({ discountAudiences: { b2b: true, b2c: false } });
+    expect(discountRows([proOnly], '{place}', 'b2c')).toEqual([]);
+    expect(discountRows([proOnly], '{place}', 'b2b')).toHaveLength(1);
   });
 });
 

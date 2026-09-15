@@ -135,6 +135,9 @@ export class ClientCart {
    */
   readonly pricing = this.quote.status;
 
+  /** Le refus du serveur que le décompte doit montrer à la place de ses montants. */
+  readonly refusal = this.quote.refusal;
+
   quantityOf(productId: string): number {
     return this.store.quantityOf(productId);
   }

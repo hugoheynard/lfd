@@ -311,6 +311,7 @@ export const FR: ClientCopy = {
     readyFrom: 'Prêt dès {time}',
     discountTag: '−{value} sur tout',
     proPrice: 'Prix pro',
+    shopPrice: 'Prix boutique',
     cta: 'Choisir mon heure',
   },
   addressDialog: {

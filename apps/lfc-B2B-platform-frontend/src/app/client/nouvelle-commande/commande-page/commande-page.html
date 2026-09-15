@@ -30,20 +30,22 @@
             [noteWide]="pickupNoteWide()"
             (chosen)="openDialog('pickup')"
           />
-          <app-offer-card
-            shape="hero"
-            tone="butter"
-            photo="coursier"
-            noteTone="accent"
-            [badge]="t().commande.deliveryBadge"
-            [title]="t().commande.deliveryTitle"
-            [detail]="t().commande.deliveryDetail"
-            [note]="t().commande.deliveryNote"
-            [detailWide]="t().commande.deliveryDetailWide"
-            [ctaLabel]="t().commande.deliveryCta"
-            [noteWide]="t().commande.deliveryNoteWide"
-            (chosen)="openDialog('address')"
-          />
+          @if (deliveryOffered()) {
+            <app-offer-card
+              shape="hero"
+              tone="butter"
+              photo="coursier"
+              noteTone="accent"
+              [badge]="t().commande.deliveryBadge"
+              [title]="t().commande.deliveryTitle"
+              [detail]="t().commande.deliveryDetail"
+              [note]="t().commande.deliveryNote"
+              [detailWide]="t().commande.deliveryDetailWide"
+              [ctaLabel]="t().commande.deliveryCta"
+              [noteWide]="t().commande.deliveryNoteWide"
+              (chosen)="openDialog('address')"
+            />
+          }
         </app-section-panel>
 
         <app-section-panel tone="band" sign="★" [title]="t().commande.nowTitle">

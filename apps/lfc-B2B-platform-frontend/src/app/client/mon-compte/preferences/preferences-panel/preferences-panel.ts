@@ -15,9 +15,9 @@ import {
   preferenceForDestination,
   preferenceForMethod,
 } from '@lfd/b2b-ui/company';
-import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 import {
   type CompanyView,
+  deliveryOpenTo,
   type FulfillmentMethod,
   type FulfillmentPreferenceView,
   NO_FULFILLMENT_PREFERENCE,
@@ -125,8 +125,12 @@ export class PreferencesPanel {
   protected readonly methods = computed<readonly FoldSelectOption<MethodChoice>[]>(() => {
     const copy = this.t().account;
     // La livraison fermée ne se propose plus — sauf à qui l'a déjà posée, qui
-    // doit pouvoir la lire avant d'en changer.
-    const delivery = DELIVERY_SERVICE_OPEN || this.data().preference.method === 'delivery';
+    // doit pouvoir la lire avant d'en changer. Le réglage se lit en B2B : une
+    // préférence d'acheminement est celle d'une SOCIÉTÉ (plan remise et
+    // livraison par clientèle, D4).
+    const delivery =
+      deliveryOpenTo(this.service.deliverySettings(), 'b2b') ||
+      this.data().preference.method === 'delivery';
     return [
       { value: 'none', label: copy.prefMethodNone },
       { value: 'pickup', label: copy.prefMethodPickup },

@@ -4,6 +4,7 @@ import { FoldIconComponent } from 'fold-ng';
 
 import { instantToLocal } from '@lfd/contracts';
 
+import { ClientAudience } from '../../client-audience.service';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCompany } from '../../client-company.service';
 import { ClientIdentity } from '../../client-identity.service';
@@ -71,12 +72,13 @@ export class EspacePage {
   private readonly identity = inject(ClientIdentity);
   private readonly chrome = inject(ClientChrome);
   private readonly points = inject(ServicePoints);
+  private readonly audience = inject(ClientAudience);
   private readonly client = inject(ClientCompany);
   private readonly history = inject(ClientOrderHistory);
 
-  /** La remise de chaque point, telle que le back-office la pose. */
+  /** La remise de chaque point pour la clientèle de l'espace, telle que le back-office la pose. */
   protected readonly discounts = computed(() =>
-    discountRows(this.points.pickups(), this.t().espace.proDiscount),
+    discountRows(this.points.pickups(), this.t().espace.proDiscount, this.audience.shown()),
   );
 
   /**

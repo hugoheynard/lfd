@@ -48,6 +48,7 @@ const POINT = (over: Partial<PickupAddressView>): PickupAddressView => ({
   pays: 'France',
   isDefault: true,
   discount: { mode: 'percent', bp: 2_000 },
+  discountAudiences: { b2b: true, b2c: true },
   opening: { proPickup: null, publicOpening: null },
   ...over,
 });
@@ -155,6 +156,30 @@ describe('CommandePage', () => {
     fixture.detectChanges();
     const pickup = el().querySelector('app-offer-card[data-photo="labo"]');
     expect(pickup?.textContent).not.toContain('%');
+  });
+
+  /** Plan remise et livraison par clientèle, D4 et D7 : fermer la livraison est un réglage. */
+  it('sans livraison ouverte à la clientèle, la carte « On vous l’apporte » ne paraît pas', () => {
+    TestBed.inject(ServicePoints).receive(POINTS, [], [], { openToB2b: false, openToB2c: false });
+    fixture.detectChanges();
+
+    expect(
+      el().querySelector('app-offer-card[data-photo="coursier"][data-shape="hero"]'),
+    ).toBeNull();
+    // Le retrait reste, seul dans sa section.
+    const well = el().querySelector('app-section-panel[data-tone="well"]');
+    expect(well?.querySelectorAll('app-offer-card')).toHaveLength(1);
+  });
+
+  it('une remise réservée aux pros ne s’annonce pas sur la carte d’un particulier', () => {
+    // La suite n'a pas de `/me` : la clientèle montrée est B2C.
+    TestBed.inject(ServicePoints).receive(
+      POINTS.map((p) => ({ ...p, discountAudiences: { b2b: true, b2c: false } })),
+      [],
+    );
+    fixture.detectChanges();
+    const pickup = el().querySelector('app-offer-card[data-photo="labo"]');
+    expect(pickup?.textContent).not.toContain('20 %');
   });
 
   it('range les offres en DEUX sections, au même gabarit', () => {

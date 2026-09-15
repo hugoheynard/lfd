@@ -448,10 +448,16 @@ export interface ClientCopy {
     /** `{value}` est remplacé par la remise du point : « 10 % » ou « 2,00 € ». */
     readonly discountTag: string;
     /**
-     * La ligne d'un point SANS remise : le client y paie le tarif pro, rien de
-     * moins. « Prix boutique » laissait croire au tarif public.
+     * La ligne d'un point SANS remise pour un pro (société active) : il y paie
+     * le tarif pro, rien de moins.
      */
     readonly proPrice: string;
+    /**
+     * La même ligne pour un particulier — visiteur, perso ou société non
+     * active : il y paie le prix de la boutique (Hugo, 2026-09-15). « Prix
+     * pro » lui promettrait un tarif qui n'est pas le sien.
+     */
+    readonly shopPrice: string;
     readonly cta: string;
   };
   readonly addressDialog: {

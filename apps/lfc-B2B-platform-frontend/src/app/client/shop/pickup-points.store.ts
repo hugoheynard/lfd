@@ -1,6 +1,13 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
-import type { DeliveryZoneView, FulfillmentDayView, PickupAddressView } from '@lfd/contracts';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import {
+  ALL_DISCOUNT_AUDIENCES,
+  DEFAULT_DELIVERY_SETTINGS,
+  type PublicDeliverySettingsView,
+  type DeliveryZoneView,
+  type FulfillmentDayView,
+  type PickupAddressView,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
@@ -28,6 +35,13 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
  * navigateur du client, et sans regarder l'heure limite. Trois requêtes en une
  * seule attente : l'écran n'en subit pas le prix, et aucune des trois ne peut
  * répondre pour une station différente des deux autres.
+ *
+ * 🔴 **Le réglage de livraison vient d'ici aussi** (`GET /delivery-settings`) :
+ * à quelle clientèle la livraison est proposée. Il se lit avec les points et
+ * les zones parce qu'il répond à la même question — où et comment l'on est
+ * servi — mais son échec ne fait pas tomber les trois autres : sans lui, la
+ * livraison reste ouverte, ce qui est l'existant, et le serveur refuse de
+ * toute façon ce qu'il a fermé (plan remise et livraison par clientèle, D5).
  */
 @Injectable({ providedIn: 'root' })
 export class ServicePoints {
@@ -36,10 +50,24 @@ export class ServicePoints {
   private readonly pickupList = signal<readonly PickupAddressView[]>([]);
   private readonly zoneList = signal<readonly DeliveryZoneView[]>([]);
   private readonly dayList = signal<readonly FulfillmentDayView[]>([]);
+  private readonly settingsHeld = signal<PublicDeliverySettingsView | null>(null);
   private asked = false;
 
   readonly pickups = this.pickupList.asReadonly();
   readonly zones = this.zoneList.asReadonly();
+
+  /**
+   * Le réglage de livraison, **ouvert aux deux** tant qu'il n'est pas lu ou que
+   * sa lecture a échoué : c'est l'existant, et le serveur garde la porte.
+   */
+  readonly deliverySettings = computed(() => this.settingsHeld() ?? DEFAULT_DELIVERY_SETTINGS);
+
+  /**
+   * Vrai une fois le réglage RÉELLEMENT servi. Un défaut n'autorise pas à
+   * effacer quoi que ce soit : seul un réglage lu peut dire qu'une livraison
+   * est fermée.
+   */
+  readonly deliverySettingsKnown = computed(() => this.settingsHeld() !== null);
 
   /**
    * Pose des listes déjà obtenues, et considère l'hydratation faite.
@@ -50,13 +78,15 @@ export class ServicePoints {
    * doublé aurait pu dériver de ce qu'il prétend jouer sans que rien ne rougisse.
    */
   receive(
-    pickups: readonly PickupAddressView[],
+    pickups: readonly ServedPickup[],
     zones: readonly DeliveryZoneView[],
     days: readonly FulfillmentDayView[] = [],
+    settings: ServedDeliverySettings | null = null,
   ): void {
-    this.pickupList.set(pickups);
+    this.pickupList.set(pickups.map(servedPickup));
     this.zoneList.set(zones);
     this.dayList.set(days);
+    this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     this.asked = true;
   }
 
@@ -65,6 +95,10 @@ export class ServicePoints {
    *
    * Un échec les laisse vides : l'écran montre alors qu'il n'a rien à proposer,
    * ce qui est vrai, plutôt qu'une station de démonstration.
+   *
+   * Le réglage de livraison a son propre repli : son échec le laisse au défaut
+   * ouvert sans vider les listes — une API d'avant le réglage ne sert pas la
+   * route, et la boutique doit rester celle d'hier.
    */
   async hydrate(): Promise<void> {
     if (this.asked) {
@@ -73,14 +107,18 @@ export class ServicePoints {
     this.asked = true;
     const base = AUTH_CONFIG.apiBaseUrl;
     try {
-      const [pickups, zones, days] = await Promise.all([
+      const [pickups, zones, days, settings] = await Promise.all([
         firstValueFrom(this.http.get<readonly PickupAddressView[]>(`${base}/pickup-addresses`)),
         firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
         firstValueFrom(this.http.get<readonly FulfillmentDayView[]>(`${base}/fulfillment-days`)),
+        firstValueFrom(
+          this.http.get<PublicDeliverySettingsView>(`${base}/delivery-settings`),
+        ).catch(() => null),
       ]);
-      this.pickupList.set(pickups);
+      this.pickupList.set(pickups.map(servedPickup));
       this.zoneList.set(zones);
       this.dayList.set(days);
+      this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     } catch {
       this.asked = false;
     }
@@ -109,4 +147,36 @@ export class ServicePoints {
       ) ?? null
     );
   }
+}
+
+/**
+ * Un point tel qu'une API servie AVANT les clientèles de remise peut le rendre :
+ * sans `discountAudiences`.
+ *
+ * Ce n'est pas une copie du contrat : l'appel HTTP est typé par
+ * `PickupAddressView`, et ce type n'élargit que le PARAMÈTRE du normaliseur —
+ * la vue du contrat y entre telle quelle.
+ *
+ * Le plan (§4) fait partir l'API et les fronts dans le même merge, mais un front
+ * servi avant l'API lit une vue sans les nouveaux champs — et doit les tenir
+ * pour ouverts, c'est-à-dire pour ce qui s'appliquait jusque-là.
+ */
+type ServedPickup = Omit<PickupAddressView, 'discountAudiences'> & {
+  readonly discountAudiences?: PickupAddressView['discountAudiences'];
+};
+
+/** Le réglage tel qu'une API partiellement à jour peut le rendre. */
+type ServedDeliverySettings = Partial<PublicDeliverySettingsView>;
+
+/** Un point sans clientèles déclarées reçoit la remise pour tous : l'existant. */
+function servedPickup(point: ServedPickup): PickupAddressView {
+  return { ...point, discountAudiences: point.discountAudiences ?? ALL_DISCOUNT_AUDIENCES };
+}
+
+/** Une clientèle absente de la vue est tenue pour ouverte : l'existant. */
+function servedSettings(settings: ServedDeliverySettings): PublicDeliverySettingsView {
+  return {
+    openToB2b: settings.openToB2b ?? DEFAULT_DELIVERY_SETTINGS.openToB2b,
+    openToB2c: settings.openToB2c ?? DEFAULT_DELIVERY_SETTINGS.openToB2c,
+  };
 }

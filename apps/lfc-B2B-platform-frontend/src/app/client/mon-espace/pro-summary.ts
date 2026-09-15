@@ -1,4 +1,10 @@
-import { type CustomerOrderView, instantToLocal, type PickupAddressView } from '@lfd/contracts';
+import {
+  type CustomerAudience,
+  type CustomerOrderView,
+  instantToLocal,
+  type PickupAddressView,
+  pickupDiscountFor,
+} from '@lfd/contracts';
 
 import { fill } from '../copy/client-copy.service';
 import { discountLabel } from '../shop/pickup-discount';
@@ -20,27 +26,30 @@ export interface DiscountRow {
 }
 
 /**
- * Une ligne par point **remisé**, dans l'ordre du serveur.
+ * Une ligne par point **remisé pour cette clientèle**, dans l'ordre du serveur.
  *
  * Par point et non « la meilleure » : le libellé nommait « au Labo », et un
  * client qui retire au village doit lire ce que SON point lui remet. Un point
- * sans remise n'a pas de ligne — « −0 % » ne dit rien.
+ * sans remise n'a pas de ligne — « −0 % » ne dit rien —, et une remise réservée
+ * aux pros n'en a pas en perso (plan remise et livraison par clientèle, D7).
  */
 export function discountRows(
   points: readonly PickupAddressView[],
   template: string,
+  audience: CustomerAudience,
 ): readonly DiscountRow[] {
-  return points.flatMap((point) =>
-    point.discount === null
+  return points.flatMap((point) => {
+    const discount = pickupDiscountFor(point, audience);
+    return discount === null
       ? []
       : [
           {
             id: point.id,
             label: fill(template, { place: point.label }),
-            value: `−${discountLabel(point.discount)}`,
+            value: `−${discountLabel(discount)}`,
           },
-        ],
-  );
+        ];
+  });
 }
 
 /**

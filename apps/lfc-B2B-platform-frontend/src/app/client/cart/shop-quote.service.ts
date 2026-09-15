@@ -1,7 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import type { ShopQuoteFulfillment, ShopQuotePayload, ShopQuoteView } from '@lfd/contracts';
+import {
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  type ShopQuoteFulfillment,
+  type ShopQuotePayload,
+  type ShopQuoteView,
+} from '@lfd/contracts';
+import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
   catchError,
   debounceTime,
@@ -37,8 +43,20 @@ const QUOTE_DEBOUNCE_MS = 300;
 /** Le lecteur d'un visiteur non reconnu — la route publique. */
 const VISITOR = 'visiteur';
 
-/** Où en est le décompte. `idle` = rien à chiffrer, le panier est vide. */
-export type QuoteStatus = 'idle' | 'loading' | 'ready' | 'failed';
+/**
+ * Où en est le décompte. `idle` = rien à chiffrer, le panier est vide.
+ * `refused` = le serveur refuse ce panier tel quel, et {@link ShopQuote.refusal}
+ * dit pourquoi.
+ */
+export type QuoteStatus = 'idle' | 'loading' | 'ready' | 'failed' | 'refused';
+
+/**
+ * Le repli quand le refus arrive sans message lisible. Le serveur en porte un
+ * (plan remise et livraison par clientèle, D5) ; celui-ci ne sert qu'à ne pas
+ * rester muet.
+ */
+const DELIVERY_CLOSED_FALLBACK =
+  "La livraison n'est pas proposée pour cet espace. Choisissez le retrait.";
 
 /** Le décompte d'un panier vide — ce qu'on montre avant la première réponse. */
 const EMPTY: ShopQuoteView = {
@@ -92,9 +110,20 @@ export class ShopQuote {
 
   private readonly view = signal<ShopQuoteView>(EMPTY);
   private readonly state = signal<QuoteStatus>('idle');
+  private readonly refused = signal<string | null>(null);
 
   readonly totals = this.view.asReadonly();
   readonly status = this.state.asReadonly();
+
+  /**
+   * Le refus du serveur à MONTRER, ou `null`.
+   *
+   * Aujourd'hui un seul : la livraison fermée à la clientèle (409
+   * `DELIVERY_CLOSED_FOR_AUDIENCE`). Tout autre échec reste un `failed` qui
+   * garde le dernier décompte — celui-ci non : ses frais de coursier sont ceux
+   * d'une livraison que la commande refusera.
+   */
+  readonly refusal = this.refused.asReadonly();
 
   /**
    * Ce dont le décompte dépend, et **rien d'autre**.
@@ -165,6 +194,7 @@ export class ShopQuote {
     if (lines.length === 0) {
       this.view.set(EMPTY);
       this.state.set('idle');
+      this.refused.set(null);
       return of(null);
     }
     if (readerIn(key) === null) {
@@ -177,8 +207,17 @@ export class ShopQuote {
       tap((view) => {
         this.view.set(view);
         this.state.set('ready');
+        this.refused.set(null);
       }),
-      catchError(() => {
+      catchError((error: unknown) => {
+        if (httpErrorCode(error) === DELIVERY_CLOSED_FOR_AUDIENCE) {
+          // 🔴 Le dernier décompte NE reste PAS : il porte des frais de
+          // coursier pour une livraison que la commande refusera (plan D5).
+          this.view.set(EMPTY);
+          this.state.set('refused');
+          this.refused.set(httpErrorMessage(error, DELIVERY_CLOSED_FALLBACK));
+          return of(null);
+        }
         this.state.set('failed');
         return of(null);
       }),

@@ -318,6 +318,7 @@ export const IT: ClientCopy = {
     readyFrom: 'Pronto dalle {time}',
     discountTag: '−{value} su tutto',
     proPrice: 'Prezzo pro',
+    shopPrice: 'Prezzo bottega',
     cta: 'Scegliere l’ora',
   },
   addressDialog: {

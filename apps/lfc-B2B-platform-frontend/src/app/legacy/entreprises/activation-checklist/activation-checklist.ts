@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
+import { deliveryOpenTo } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { CompanyActivationChecklist, type CompanyActivationStep } from '@lfd/b2b-ui/company';
 
 import type { Company } from '../../../account/account.model';
 import { canManageCompany } from '../../../account/account.model';
 import { AccountService } from '../../../account/account.service';
+import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import {
   BillingAddressPanel,
   DeliveryAddressPanel,
@@ -47,6 +48,7 @@ export class ActivationChecklist {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly account = inject(AccountService);
   private readonly addresses = inject(AddressesService);
+  private readonly servicePoints = inject(ServicePoints);
 
   readonly company = input.required<Company>();
 
@@ -60,6 +62,8 @@ export class ActivationChecklist {
   constructor() {
     // S'assure que les adresses sont chargées (idempotent) pour connaître les manquants.
     effect(() => this.addresses.loadFor(this.company().id));
+    // Le réglage de livraison dit si l'étape « livraison » a lieu d'être.
+    void this.servicePoints.hydrate();
   }
 
   /** Les étapes restantes (les faites disparaissent). */
@@ -92,8 +96,9 @@ export class ActivationChecklist {
         cta: 'Ajouter la facturation',
       });
     }
-    // Livraison masquée (service absent, config globale) : on ne la demande pas.
-    if (view !== null && view.deliveries.length === 0 && DELIVERY_SERVICE_OPEN) {
+    // Livraison fermée aux pros par le back-office : on ne la demande pas.
+    const deliveryOpen = deliveryOpenTo(this.servicePoints.deliverySettings(), 'b2b');
+    if (view !== null && view.deliveries.length === 0 && deliveryOpen) {
       steps.push({
         key: 'delivery',
         title: 'Adresse de livraison',

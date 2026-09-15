@@ -7,9 +7,11 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { deliveryOpenTo } from '@lfd/contracts';
 import { FoldCalloutComponent } from 'fold-ng';
 
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
+import { ClientAudience } from '../../../client/client-audience.service';
 import { ClientBannerBlock } from '../../../client/nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../../client/nav/client-banner';
 import { ClientChrome } from '../../../client/client-chrome.service';
@@ -104,6 +106,7 @@ export class CommandePage {
   );
 
   private readonly service = inject(ServicePoints);
+  private readonly audience = inject(ClientAudience);
 
   /**
    * « Jusqu’à −20 % » : la remise que le back-office pose, pas un libellé.
@@ -111,13 +114,26 @@ export class CommandePage {
    * 🔴 Elle était écrite dans la copie (« −10 % ») pendant que le dialogue ouvert
    * par cette carte lisait 20 % du serveur. Sans remise publiée, `null` rend la
    * note du téléphone plutôt qu'un chiffre inventé.
+   *
+   * La remise est celle de la CLIENTÈLE de l'écran : une remise réservée aux
+   * pros ne s'annonce pas en perso (plan remise et livraison par clientèle, D7).
    */
   protected readonly pickupNoteWide = computed(() => {
-    const best = bestPickupDiscount(this.service.pickups());
+    const best = bestPickupDiscount(this.service.pickups(), this.audience.shown());
     return best === null
       ? null
       : fill(this.t().commande.pickupNoteWide, { value: discountLabel(best) });
   });
+
+  /**
+   * La carte « On vous l'apporte » ne paraît que si la livraison est proposée à
+   * la clientèle de l'écran — un réglage du back-office (plan D4, D7). Ouverte
+   * tant que le réglage n'est pas lu : c'est l'existant, et le serveur refuse ce
+   * qu'il a fermé.
+   */
+  protected readonly deliveryOffered = computed(() =>
+    deliveryOpenTo(this.service.deliverySettings(), this.audience.shown()),
+  );
 
   /** Les deux sections du carrousel, nommées pour les technologies d'assistance. */
   protected readonly sections = computed(() => [

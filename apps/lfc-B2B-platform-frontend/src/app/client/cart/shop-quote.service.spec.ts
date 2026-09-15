@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { ShopQuoteView } from '@lfd/contracts';
+import { DELIVERY_CLOSED_FOR_AUDIENCE, type ShopQuoteView } from '@lfd/contracts';
 import { of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -177,6 +177,61 @@ describe('ShopQuote', () => {
     http.expectOne(QUOTE).flush(ANSWER);
 
     expect(quote.status()).toBe('ready');
+    http.verify();
+  });
+
+  /**
+   * Plan remise et livraison par clientèle, D5 : le devis avalait TOUTE erreur
+   * et gardait l'ancien décompte — frais de coursier compris, pour une
+   * livraison que la commande refuserait.
+   */
+  it('montre le refus d’une livraison fermée, sans garder les anciens frais', () => {
+    const { cart, quote, http } = boot();
+
+    cart.setQuantity(SKU, 1);
+    quiet();
+    http.expectOne(QUOTE).flush({ ...ANSWER, deliveryFeeCents: 900, totalCents: 2_166 });
+    expect(quote.totals().deliveryFeeCents).toBe(900);
+
+    cart.setQuantity(SKU, 2);
+    quiet();
+    http.expectOne(QUOTE).flush(
+      {
+        code: DELIVERY_CLOSED_FOR_AUDIENCE,
+        message: 'La livraison n’est pas proposée pour cet espace.',
+      },
+      { status: 409, statusText: 'Conflict' },
+    );
+
+    expect(quote.status()).toBe('refused');
+    expect(quote.refusal()).toBe('La livraison n’est pas proposée pour cet espace.');
+    expect(quote.totals().deliveryFeeCents).toBe(0);
+    expect(quote.totals().totalCents).toBe(0);
+
+    // Le refus s'efface au décompte suivant qui passe.
+    cart.setQuantity(SKU, 3);
+    quiet();
+    http.expectOne(QUOTE).flush(ANSWER);
+    expect(quote.refusal()).toBeNull();
+    http.verify();
+  });
+
+  it('un autre refus reste un échec qui garde le dernier décompte', () => {
+    const { cart, quote, http } = boot();
+
+    cart.setQuantity(SKU, 1);
+    quiet();
+    http.expectOne(QUOTE).flush(ANSWER);
+
+    cart.setQuantity(SKU, 2);
+    quiet();
+    http
+      .expectOne(QUOTE)
+      .flush({ code: 'orders.other', message: 'Autre.' }, { status: 409, statusText: 'Conflict' });
+
+    expect(quote.status()).toBe('failed');
+    expect(quote.refusal()).toBeNull();
+    expect(quote.totals().totalCents).toBe(1_266);
     http.verify();
   });
 });

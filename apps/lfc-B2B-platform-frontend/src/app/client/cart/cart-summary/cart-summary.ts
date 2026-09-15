@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldCalloutComponent, FoldIconComponent } from 'fold-ng';
 
 import { formatCents, formatRate } from '../../format-money';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
@@ -26,7 +26,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 @Component({
   selector: 'app-cart-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CartProductLine, FoldIconComponent],
+  imports: [CartProductLine, FoldCalloutComponent, FoldIconComponent],
   templateUrl: './cart-summary.html',
   styleUrl: './cart-summary.scss',
 })
@@ -40,6 +40,13 @@ export class CartSummary {
   private readonly order = inject(OrderContextStore);
 
   protected readonly totals = this.cart.totals;
+
+  /**
+   * Le refus du devis, montré À LA PLACE des montants : un total chiffré pour
+   * une livraison refusée annoncerait ce qu'on ne paiera jamais. Les lignes
+   * restent — c'est un échec partiel, le panier est toujours là.
+   */
+  protected readonly refusal = this.cart.refusal;
 
   /**
    * Les lignes telles quelles : `CartProductLine` formate les siennes.
