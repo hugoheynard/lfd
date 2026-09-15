@@ -160,7 +160,7 @@ export const FR: ClientCopy = {
     newOrderSub: 'Une seule question pour démarrer : vous venez, ou on vient ?',
     nowTitle: 'En ce moment',
     pickupBadge: 'Retrait',
-    pickupTitle: 'Je passe\nle prendre',
+    pickupTitle: 'Je passe\nla prendre',
     pickupDetail: 'Au Labo ou dans une boutique de station.',
     pickupNote: 'Demain à partir de 6 h',
     pickupDetailWide: 'Au Labo ou au village, demain à l’heure de mon choix.',
