@@ -1,8 +1,9 @@
 # Plan — l'espace de travail : perso ou pro
 
 > **Statut : 📐 doc-first, 2026-09-15.** Rien n'est codé. **Contredit par
-> `vitruve` le 2026-09-15** (§7) : deux `BLOQUANT` corrigés, deux décisions
-> d'argent remontées à Hugo (Q1, Q2) — le plan ne se bâtit pas avant.
+> `vitruve` le 2026-09-15** (§7) : deux `BLOQUANT` traités. **Q1 et Q2
+> tranchées par Hugo le même jour** (§6) ; migration en un seul passage, faute
+> de panier en production (§4).
 >
 > Lu avant : [`analyse-boutique-publique.md`](analyse-boutique-publique.md), dont
 > ce plan réalise le **lot 1** (le sélecteur d'espace) et une partie de ce qui
@@ -69,8 +70,9 @@ Le front en production, qui n'envoie que `{ catalogueView }`, reste valide.
 écriture concurrente sur une autre clé ne peut plus en effacer une.
 
 **D5 — L'espace par défaut, côté front.** La préférence si elle désigne encore
-`personal` ou un rattachement ; sinon la **seule** société ; sinon, à plusieurs
-sociétés, **→ Q2** ; sans société, `personal` (et pas de sélecteur, D8).
+`personal` ou un rattachement ; sinon la **seule** société ; à plusieurs
+sociétés, **`personal`** (Q2) ; sans société, `personal` (et pas de sélecteur,
+D8).
 
 **D6 — L'en-tête, et quand il part.**
 
@@ -107,10 +109,9 @@ vide = le perso, comme les commandes.
   et un `findFirst` puis `create` lèverait `P2002` sur deux écritures simultanées
   (la reprise et le débounce).
 - `GET` et `PUT /shop/cart` prennent l'espace de `@ActingCompany()`.
-- **Les paniers existants** vont à l'espace que le serveur leur servait : **un**
-  rattachement → sa société ; zéro ou plusieurs → le perso.
-- **L'ancienne unicité `user_id` ne tombe pas avec la colonne** (vitruve, B1) :
-  voir §4.
+- **Aucun panier existant** en production (Hugo, 2026-09-15) : pas de backfill.
+- L'ancienne unicité `user_id` tombe dans la même migration : §4 dit ce que ça
+  coûte pendant la bascule.
 - **Côté navigateur** (vitruve, B2) : la synchronisation est **réécrite** — une
   reprise **par espace** et non une fois par session ; clé locale par espace ; à
   la bascule, le débounce en attente est **abandonné**, le magasin local est
@@ -137,29 +138,30 @@ même sélecteur.
   l'analyse).
 - **Pas de réponse à D1 de l'analyse** : un rattachement `pending` donne
   toujours le contexte pro.
-- **Pas la faille des consignes de livraison** (vitruve, S6) : le lecteur des
-  consignes d'adresse ne vérifie pas que l'adresse appartient à la société qui
-  commande. Préexistante, sans rapport avec l'espace — **tâche séparée**, à
-  traiter avant, pas dans ce plan.
+- **La faille des consignes de livraison** (vitruve, S6) n'en fait pas partie :
+  préexistante, sans rapport avec l'espace, elle est **corrigée à part le
+  2026-09-15**, avant ce plan — le lecteur des consignes porte désormais la
+  société dans sa requête.
 
 ## 4. L'ordre de déploiement
 
-1. **Lot 0 — compter** (lecture seule, par Hugo) : personnes à au moins deux
-   rattachements, paniers existants par cas du backfill. C'est l'ampleur de Q2.
-2. **Lot A1 — serveur, additif** : `personal`, préférence `workspace`, fusion du
-   sac ; colonne `company_id`, backfill, **nouvelle** unicité composée **à côté**
-   de l'ancienne ; le dépôt écrit par `ON CONFLICT (user_id, company_id)`.
-   L'ancienne image, pendant la bascule, écrit encore par `ON CONFLICT
-(user_id)` : l'index qu'elle vise existe toujours. `lecteur-de-migrations`
-   avant le push.
-3. **Lot A2 — resserrer** : retirer l'unicité `user_id`, dans un déploiement
-   ultérieur, une fois A1 seul en ligne.
-4. **Lot B — front**, après A2. Envoyer `personal` à un serveur d'avant A1
-   servirait « Perso » au prix de la société : un écran qui ment.
+**Hugo, le 2026-09-15 : « on peut migrer comme des brutes, pas de paniers en
+prod ».** Aucune ligne dans `shop_carts` : ni backfill, ni déploiement de
+resserrage.
+
+1. **Lot A — serveur** : `personal`, préférence `workspace`, fusion du sac ;
+   colonne `company_id`, l'unicité `user_id` remplacée par l'unicité composée,
+   **dans la même migration**. Pendant la bascule, l'ancienne image écrit par
+   `ON CONFLICT (user_id)` sur un index retiré : ses `PUT /shop/cart` échouent
+   quelques secondes, en silence côté front, et **sans panier à perdre** — c'est
+   le prix assumé de B1. `lecteur-de-migrations` avant le push.
+2. **Lot B — front**, dans le même merge ou juste après. Un front servi avant le
+   serveur enverrait `personal` à un serveur qui l'ignore : quelques secondes
+   d'écran faux, sans commande possible à un autre prix que celui du serveur.
 
 ## 5. Les lots
 
-**A1 — serveur**
+**A — serveur**
 
 1. `resolveCompany` : la branche `personal` ; `PERSONAL_WORKSPACE` à côté de
    `COMPANY_HEADER`. Spec aux trois nombres de rattachements.
@@ -168,14 +170,12 @@ même sélecteur.
 4. Le port d'écriture devient `merge(userId, patch)`, en une instruction (D4).
    Non-régression : poser une vue de catalogue ne perd pas l'espace.
 5. Le handler refuse une société hors rattachements.
-6. Migration D9 additive ; dépôt du panier par espace (D9) ; routes par
+6. Migration D9 (colonne, unicité remplacée) ; dépôt du panier par espace (D9) ; routes par
    `@ActingCompany()`. E2e : deux espaces, deux paniers ; le perso unique ; deux
    `PUT` simultanés ne lèvent rien.
 7. E2e : `personal` sur `/shop/catalogue/mine` rend le tarif catalogue à
    quelqu'un qui a **une** société négociée ; `PATCH /me/nav-prefs` vers une
    autre maison → 409.
-
-**A2 — serveur** : la migration qui retire `shop_carts_user_id_key`.
 
 **B — front** (`pablo`)
 
@@ -193,36 +193,30 @@ même sélecteur.
 6. **Vérification à l'écran**, compte à deux sociétés, et pré-vol CORS en
    production après déploiement.
 
-## 6. Questions pour Hugo
+## 6. Les réponses de Hugo (2026-09-15)
 
-**Q1 — Le perso est-il ouvert à tout rattaché, sans condition ?** Il lui ouvre le
+**Q1 — Le perso est ouvert à tout rattaché, sans condition : oui.** Il ouvre le
 tarif catalogue et ses promotions hors mercuriale, hors engagement de volume, et
-reste ouvert si sa société est suspendue. Proposition : **oui** — c'est ce que
-voit déjà n'importe qui sans société, et le tarif public le remplacera — **à
-condition** que Hugo confirme qu'aucune mercuriale `replace` au-dessus du
-catalogue n'existe (sinon le perso devient la voie la moins chère).
+reste ouvert quand la société est suspendue. ⚠️ **Non vérifié** : qu'aucune
+mercuriale `replace` ne fixe un prix au-dessus du catalogue — sinon le perso est
+la voie la moins chère.
 
-**Q2 — À plusieurs sociétés et sans préférence, quel espace par défaut ?**
-
-- **Perso** (proposé) : c'est ce que le serveur sert et encaisse **aujourd'hui**
-  (`null`, carte, tarif catalogue). Aucun changement d'argent ; la personne
-  choisit sa société.
-- **La première société** : l'écran et le serveur s'accordent sur ce que l'écran
-  montre déjà, mais la commande **change de règlement** — au compte, donc au
-  prélèvement, au prix de la mercuriale — sans que la personne l'ait demandé
-  (vitruve, S1).
+**Q2 — L'espace par défaut, sans préférence : la société si elle est la seule,
+le perso s'il y en a plusieurs.** C'est ce que le serveur sert et encaisse déjà
+aujourd'hui : aucun changement de règlement ni de prix ; la personne choisit sa
+société dans le menu.
 
 ## 7. La contradiction de `vitruve` (2026-09-15) et son sort
 
-| Objection                                                                                                  | Sort                                                                 |
-| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| **B1** la migration retire l'unicité visée par `ON CONFLICT (user_id)` de l'image encore en ligne          | corrigée — §4, A1 additif puis A2 resserre                           |
-| **B2** la course reprise / `/me`, la relecture vide qui pousse, le débounce après bascule                  | corrigée — D6 (attente, espace capturé au geste), D9 (sync réécrite) |
-| **S1** « la première société » change règlement et prix                                                    | remontée — Q2, lot 0                                                 |
-| **S2** « un cran qui retire » est faux en prix                                                             | corrigée dans D1, remontée — Q1                                      |
-| **S3** entre A et B, le panier suit le nombre de rattachements                                             | assumée et écrite — D9                                               |
-| **S4** pas d'`upsert` atomique pour le perso                                                               | corrigée — `ON CONFLICT` en SQL brut, avertissement du précédent     |
-| **S5** commandes locales, clé de tentative, sélecteur `legacy`                                             | corrigée — D7                                                        |
-| **S6** consignes de livraison lues sans le mur                                                             | **vérifiée**, hors plan — tâche séparée (§3)                         |
-| Mineures : fold-ng 0.27.2, e2e qui envoie l'en-tête, type de `workspace`, transaction inutile, « retrait » | corrigées                                                            |
-| Non vérifiés : CORS rejoué, comptes en production, SQL généré par Prisma, SSR                              | CORS et SSR au lot B ; comptes au lot 0 ; SQL relu au lot A1         |
+| Objection                                                                                                  | Sort                                                                  |
+| ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **B1** la migration retire l'unicité visée par `ON CONFLICT (user_id)` de l'image encore en ligne          | assumée — aucun panier en production (Hugo) ; §4 dit la fenêtre       |
+| **B2** la course reprise / `/me`, la relecture vide qui pousse, le débounce après bascule                  | corrigée — D6 (attente, espace capturé au geste), D9 (sync réécrite)  |
+| **S1** « la première société » change règlement et prix                                                    | tranchée — Q2 : perso à plusieurs sociétés, aucun changement d'argent |
+| **S2** « un cran qui retire » est faux en prix                                                             | corrigée dans D1, tranchée — Q1 : oui                                 |
+| **S3** entre A et B, le panier suit le nombre de rattachements                                             | sans objet avant le lot B — A et B partent ensemble (§4)              |
+| **S4** pas d'`upsert` atomique pour le perso                                                               | corrigée — `ON CONFLICT` en SQL brut, avertissement du précédent      |
+| **S5** commandes locales, clé de tentative, sélecteur `legacy`                                             | corrigée — D7                                                         |
+| **S6** consignes de livraison lues sans le mur                                                             | **vérifiée et corrigée à part**, avant ce plan (§3)                   |
+| Mineures : fold-ng 0.27.2, e2e qui envoie l'en-tête, type de `workspace`, transaction inutile, « retrait » | corrigées                                                             |
+| Non vérifiés : CORS rejoué, comptes en production, SQL généré par Prisma, SSR                              | CORS et SSR au lot B ; comptes au lot 0 ; SQL relu au lot A1          |
