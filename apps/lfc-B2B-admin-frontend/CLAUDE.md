@@ -70,7 +70,8 @@ en-tête, ni pastille de portée, ni encadré d'aparté.
 
 Une entrée de menu doit être ajoutée **deux fois** : au rail `fold-menu-item`
 _et_ aux tuiles `fold-nav-launcher` (le menu mobile). Les deux ne partagent pas
-leur modèle, et les tuiles n'ont pas de `badge`. Une entrée ajoutée d'un seul
+leur modèle. (Les tuiles ont désormais un `badge`, comme le rail — vérifié dans
+`fold-ng.d.ts` le 2026-09-15 ; cette ligne disait le contraire.) Une entrée ajoutée d'un seul
 côté est invisible sur l'autre — c'est arrivé pour « Accès à remettre ».
 L'unification est un chantier fold, pas applicatif.
 
