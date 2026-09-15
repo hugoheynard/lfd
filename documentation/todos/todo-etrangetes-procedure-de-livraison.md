@@ -66,4 +66,25 @@ expected array to have >=1 items`.
 16. **Le README de `@lfd/b2b-ui` cite un sous-dossier `flags`** qui n'existe
     plus dans `src/` (retiré avec `DELIVERY_SERVICE_OPEN`).
 17. **Avertissements de budget** aux builds des deux fronts (bundle initial ;
-    `order/order-detail.scss` pour l'admin) — non comparés à l'état d'avant.
+    `packages/b2b-ui/src/order/order-detail/order-detail.scss` pour l'admin) — non comparés à l'état d'avant.
+18. **Le journal n'a pas de phrase pour `company.delivery_procedure_edited_by_staff`**
+    (`apps/lfc-B2B-admin-frontend/src/app/admin/journal/journal-line.ts`) : les
+    gestes du staff sur une procédure de livraison s'y affichent sans libellé. Les
+    notes, elles, ont reçu les leurs au lot 4.
+19. **Le README de `@lfd/b2b-ui` dit « n'ouvre aucun panneau »** : faux depuis le
+    lot 4 — l'éditeur `photo-cards` ouvre la vue en grand par
+    `FoldPanelHostService`. L'éditeur écrivait déjà lui-même : la phrase décrivait
+    un paquet de pure présentation qu'il n'est plus.
+20. **Aucune icône de note dans fold** : l'onglet « Notes » et son état vide
+    portent l'icône `edit`. Une icône dédiée est un chantier fold, pas applicatif.
+21. **Les droits des rôles de référence ne viennent pas de la base.** Pour
+    `admin`, `commercial`, `comptabilite`, `support` et `dev`, l'accès se résout
+    depuis `ROLE_GRANTS` du code (`apps/lfd-api/src/staff/permissions/prisma-staff-access.resolver.ts`) ;
+    le JSON de `staff_role_definitions` ne sert qu'à l'écran des rôles. Une
+    migration qui le met à jour ne donne aucun droit.
+22. **Ce JSON n'a jamais reçu `b2b_order_waivers` ni `b2b_feature_access`** :
+    leurs migrations ne l'ont pas touché. L'écran des rôles doit donc montrer
+    `admin` sans ces deux droits, qu'il exerce pourtant (non vérifié en
+    production).
+23. **`admin-delivery-procedure-commands.ts` regroupe quatre commandes dans un
+    seul fichier**, alors que le B2B sépare commande et handler par fichier.
