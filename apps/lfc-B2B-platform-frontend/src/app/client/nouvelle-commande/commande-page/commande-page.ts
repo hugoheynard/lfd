@@ -18,7 +18,11 @@ import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
 import { OrderContextStore, type ServiceChoice } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { bestPickupDiscount, discountLabel } from '../../../client/shop/pickup-discount';
+import {
+  bestPickupDiscount,
+  discountLabel,
+  pickupOffer,
+} from '../../../client/shop/pickup-discount';
 import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import { RappelPanel } from '../../../login/accueil-page/rappel-panel/rappel-panel';
 
@@ -26,6 +30,7 @@ import { AddressDialog } from './address-dialog/address-dialog';
 import { OfferCard } from './offer-card/offer-card';
 import { OfferCarousel } from './offer-carousel/offer-carousel';
 import { PickupDialog } from './pickup-dialog/pickup-dialog';
+import { PickupPointCard } from './pickup-point-card/pickup-point-card';
 import { returnsToCart } from './return-to-cart';
 import { SectionPanel } from './section-panel/section-panel';
 import { ShortcutRow } from './shortcut-row/shortcut-row';
@@ -54,6 +59,7 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
     ClientBannerOutlet,
     FoldCalloutComponent,
     PickupDialog,
+    PickupPointCard,
     OfferCard,
     OfferCarousel,
     RappelPanel,
@@ -135,6 +141,23 @@ export class CommandePage {
     deliveryOpenTo(this.service.deliverySettings(), this.audience.shown()),
   );
 
+  /**
+   * Retrait seul : une carte par boutique, à la place du coursier. Chacune porte
+   * l'étiquette que le dialogue donne à sa ligne — la même écriture.
+   */
+  protected readonly shops = computed(() => {
+    const copy = this.t().pickupDialog;
+    const audience = this.audience.shown();
+    return this.service.pickups().map((point) => ({
+      point,
+      tag: point.isDefault ? copy.habit : '',
+      offer: pickupOffer(point, audience, copy),
+    }));
+  });
+
+  /** La boutique d'où le dialogue part, quand on l'a ouvert par sa carte. */
+  protected readonly pickupStart = signal<string | null>(null);
+
   /** Les deux sections du carrousel, nommées pour les technologies d'assistance. */
   protected readonly sections = computed(() => [
     this.t().commande.newOrderTitle,
@@ -170,7 +193,15 @@ export class CommandePage {
 
   protected openDialog(which: 'pickup' | 'address'): void {
     this.pending.set(false);
+    this.pickupStart.set(null);
     this.dialog.set(which);
+  }
+
+  /** Une carte de boutique : le lieu est pris, le dialogue demande l'heure. */
+  protected openShop(pickupAddressId: string): void {
+    this.pending.set(false);
+    this.pickupStart.set(pickupAddressId);
+    this.dialog.set('pickup');
   }
 
   /**

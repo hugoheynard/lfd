@@ -31,6 +31,15 @@ app-offer-carousel {
   margin-bottom: var(--fold-space-xs);
 }
 
+/* Retrait seul : les boutiques, deux carrés par rang, sous la carte du retrait
+   en pile et à côté d'elle au bureau. Projetées dans le puits, elles restent
+   stylées ici. */
+.shops {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 /* En pile, les deux raccourcis restent deux blocs — et la boutique passe
    DEVANT la reprise : on propose d'abord de voir, ensuite de refaire. */
 .resume {
@@ -84,6 +93,12 @@ app-callback-block {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  /* La moitié du coursier : les carrés s'y touchent au même filet que les deux
+     demi-pages, et la carte du retrait prend leur hauteur. */
+  .shops {
+    gap: 2px;
   }
 
   .resume {

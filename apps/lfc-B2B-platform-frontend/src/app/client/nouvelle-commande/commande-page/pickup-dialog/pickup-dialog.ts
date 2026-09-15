@@ -7,6 +7,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
 
@@ -14,9 +15,13 @@ import { ClientAudience } from '../../../../client/client-audience.service';
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
-import { type PickupSlot, pickupDiscountFor, pickupSlots } from '@lfd/contracts';
+import { type PickupSlot, pickupSlots } from '@lfd/contracts';
 
-import { bestPickupDiscount, discountLabel } from '../../../../client/shop/pickup-discount';
+import {
+  bestPickupDiscount,
+  discountLabel,
+  pickupOffer,
+} from '../../../../client/shop/pickup-discount';
 import { formatWindow } from '../../../../client/format-hour';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 import { SlotStep } from '../slot-step/slot-step';
@@ -41,6 +46,15 @@ import { SlotStep } from '../slot-step/slot-step';
 })
 export class PickupDialog {
   readonly open = input.required<boolean>();
+
+  /**
+   * Le point déjà choisi sur l'écran — une carte de boutique — ou `null`.
+   *
+   * Donné, le dialogue s'ouvre sur l'HEURE de ce point : le lieu est dit, le
+   * redemander serait une question de trop. Sans lui, il part du lieu.
+   */
+  readonly startAt = input<string | null>(null);
+
   readonly closed = output<void>();
 
   /**
@@ -62,6 +76,23 @@ export class PickupDialog {
       if (this.pickedId() === '' && points.length > 0) {
         this.pickedId.set((points.find((p) => p.isDefault) ?? points[0])?.id ?? '');
       }
+    });
+    // À chaque ouverture, le volet suit la porte : une boutique mène à son
+    // heure, « Je passe la prendre » au lieu.
+    effect(() => {
+      if (!this.open()) {
+        return;
+      }
+      const start = this.startAt();
+      untracked(() => {
+        if (start === null) {
+          this.step.set(0);
+          return;
+        }
+        this.pickedId.set(start);
+        this.slot.set(null);
+        this.step.set(1);
+      });
     });
   }
 
@@ -98,17 +129,12 @@ export class PickupDialog {
     const c = this.t().pickupDialog;
     const audience = this.audience.shown();
     return this.available().map((point) => {
-      const discount = pickupDiscountFor(point, audience);
+      const offer = pickupOffer(point, audience, c);
       return {
         point,
         tag: point.isDefault ? c.habit : '',
-        offer:
-          discount === null
-            ? audience === 'b2b'
-              ? c.proPrice
-              : c.shopPrice
-            : fill(c.discountTag, { value: discountLabel(discount) }),
-        hasOffer: discount !== null,
+        offer: offer.label,
+        hasOffer: offer.hasOffer,
       };
     });
   });

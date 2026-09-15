@@ -5,6 +5,7 @@ import {
   pickupDiscountFor,
 } from '@lfd/contracts';
 
+import { fill } from '../copy/client-copy.service';
 import { formatCents, formatRate } from '../format-money';
 
 /**
@@ -20,6 +21,40 @@ import { formatCents, formatRate } from '../format-money';
  * s'annonce pas en perso. Tout lecteur passe par `pickupDiscountFor`, la règle
  * que le serveur applique au devis.
  */
+
+/** Ce qu'un point promet à une clientèle, en une étiquette. */
+export interface PickupOffer {
+  readonly label: string;
+  /** Vrai quand l'étiquette annonce une remise, et non un tarif. */
+  readonly hasOffer: boolean;
+}
+
+/** Les trois libellés dont l'étiquette est faite. */
+export interface PickupOfferCopy {
+  readonly discountTag: string;
+  readonly proPrice: string;
+  readonly shopPrice: string;
+}
+
+/**
+ * « −20 % sur tout », ou le tarif qu'on y paie sans remise : « Prix pro » à une
+ * société active, « Prix boutique » à un particulier (Hugo, 2026-09-15).
+ *
+ * Une seule écriture pour le dialogue et les cartes de boutique : deux
+ * étiquettes calculées chacune de son côté finiraient par se contredire, comme
+ * la carte et le dialogue l'ont déjà fait sur le pourcentage.
+ */
+export function pickupOffer(
+  point: PickupAddressView,
+  audience: CustomerAudience,
+  copy: PickupOfferCopy,
+): PickupOffer {
+  const discount = pickupDiscountFor(point, audience);
+  if (discount === null) {
+    return { label: audience === 'b2b' ? copy.proPrice : copy.shopPrice, hasOffer: false };
+  }
+  return { label: fill(copy.discountTag, { value: discountLabel(discount) }), hasOffer: true };
+}
 
 /** Un ajustement, tel qu'il se lit : « 10 % » ou « 2,00 € ». */
 export function discountLabel(adjustment: CartAdjustment): string {

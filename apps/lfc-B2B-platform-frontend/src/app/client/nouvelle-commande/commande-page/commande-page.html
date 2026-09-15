@@ -45,6 +45,19 @@
               [noteWide]="t().commande.deliveryNoteWide"
               (chosen)="openDialog('address')"
             />
+          } @else {
+            <!-- Retrait seul : la place du coursier va aux boutiques. -->
+            <div class="shops" role="group" [attr.aria-label]="t().pickupDialog.title">
+              @for (shop of shops(); track shop.point.id) {
+                <app-pickup-point-card
+                  [point]="shop.point"
+                  [tag]="shop.tag"
+                  [offer]="shop.offer"
+                  [cta]="t().pickupDialog.cta"
+                  (chosen)="openShop(shop.point.id)"
+                />
+              }
+            </div>
           }
         </app-section-panel>
 
@@ -114,6 +127,7 @@
 
     <app-pickup-dialog
       [open]="dialog() === 'pickup'"
+      [startAt]="pickupStart()"
       (closed)="dialog.set(null)"
       (done)="fillBasket($event)"
     />

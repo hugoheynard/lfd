@@ -171,6 +171,43 @@ describe('CommandePage', () => {
     expect(well?.querySelectorAll('app-offer-card')).toHaveLength(1);
   });
 
+  it('retrait seul : une carte par boutique, qui ouvre le dialogue sur SON heure', () => {
+    TestBed.inject(ServicePoints).receive(POINTS, [], [], { openToB2b: false, openToB2c: false });
+    fixture.detectChanges();
+
+    const shops = el().querySelectorAll(
+      'app-section-panel[data-tone="well"] app-pickup-point-card',
+    );
+    expect(shops).toHaveLength(2);
+    expect(shops[1]?.textContent).toContain('Le Village');
+
+    (shops[1]?.querySelector('button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const dialog = fixture.debugElement.query(By.directive(PickupDialog))
+      .nativeElement as HTMLElement;
+    expect(dialog.querySelector('h2.title')?.textContent).toBe(FR.pickupDialog.whenTitle);
+    expect(dialog.querySelector('app-slot-step')?.textContent).toContain('Le Village');
+  });
+
+  it('« Je passe la prendre » ouvre toujours sur le lieu, même après une boutique', () => {
+    TestBed.inject(ServicePoints).receive(POINTS, [], [], { openToB2b: false, openToB2c: false });
+    fixture.detectChanges();
+    (el().querySelector('app-pickup-point-card button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    (el().querySelector('app-offer-card[data-photo="labo"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const dialog = fixture.debugElement.query(By.directive(PickupDialog))
+      .nativeElement as HTMLElement;
+    expect(dialog.querySelector('h2.title')?.textContent).toBe(FR.pickupDialog.title);
+  });
+
+  it('livraison proposée : aucune carte de boutique', () => {
+    expect(el().querySelector('app-pickup-point-card')).toBeNull();
+  });
+
   it('une remise réservée aux pros ne s’annonce pas sur la carte d’un particulier', () => {
     // La suite n'a pas de `/me` : la clientèle montrée est B2C.
     TestBed.inject(ServicePoints).receive(

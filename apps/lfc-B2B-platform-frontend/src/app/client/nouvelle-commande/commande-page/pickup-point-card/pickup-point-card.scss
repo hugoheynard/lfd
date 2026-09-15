@@ -1,0 +1,147 @@
+:host {
+  display: block;
+}
+
+/* Le carré est l'encre du retrait, sans photo : c'est la carte « Je passe la
+   prendre » continuée, pas une offre de plus. */
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 14px;
+  border: 0;
+  border-radius: var(--lfc-radius-2xl);
+  background: var(--fold-color-primary);
+  box-shadow: var(--lfc-shadow-card);
+  color: var(--lfc-paper-50);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.975);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--lfc-color-accent);
+    outline-offset: -4px;
+  }
+}
+
+/* L'étiquette reste en haut ; le lieu et sa promesse tombent en bas, où la
+   carte du retrait pose aussi les siens. */
+.top {
+  margin-bottom: auto;
+}
+
+.tag {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-50);
+  color: var(--fold-color-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: 1.25rem;
+  font-weight: var(--lfc-weight-black);
+  line-height: 1;
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.where {
+  font-size: var(--fold-text-sm);
+  color: var(--lfc-color-on-well-muted);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.offer {
+  display: inline-flex;
+  padding: 3px 9px;
+  border: 1px solid var(--lfc-color-on-well-muted);
+  border-radius: var(--fold-radius-pill);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+
+  &.deal {
+    border-color: var(--lfc-color-accent);
+    background: var(--lfc-color-accent);
+    color: var(--lfc-color-on-accent);
+  }
+}
+
+.cta {
+  display: none;
+}
+
+.chevron {
+  flex: none;
+}
+
+/* ── Au-delà du pli ───────────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  /* Bord à bord, comme la demi-page du retrait : le filet entre les carrés est
+     le puits vu par l'interstice. */
+  .card {
+    gap: 18px;
+    padding: 28px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .name {
+    font-size: clamp(1.5rem, 2.2vw, 2rem);
+    letter-spacing: var(--lfc-tracking-display);
+  }
+
+  .where {
+    font-size: var(--fold-text-md);
+  }
+
+  .offer {
+    padding: 6px 12px;
+    font-family: var(--fold-font-label);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-label);
+    text-transform: uppercase;
+  }
+
+  .cta {
+    display: inline-flex;
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-xs);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-label);
+    text-transform: uppercase;
+  }
+
+  .chevron {
+    display: none;
+  }
+}
