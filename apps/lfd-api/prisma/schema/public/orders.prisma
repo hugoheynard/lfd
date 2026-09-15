@@ -48,6 +48,18 @@ enum PaymentStatus {
   @@schema("public")
 }
 
+/// **Qui a passé la commande** : `pro` = pour une société, `public` = sans.
+///
+/// ⚠️ Ce n'est PAS la clientèle TARIFÉE B2B/B2C (`CustomerAudiences`, B2B =
+/// société active) : les deux divergent sur une société en attente et sur un
+/// rattaché en espace perso. Cf. documentation/order/plan-nature-du-client-sur-la-commande.md (D1, D2).
+enum OrderClientele {
+  pro
+  public
+
+  @@schema("public")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Order — une commande, tenant-scoped
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +95,18 @@ model Order {
   // lecture (self_service | back_office | recurring). Un `kind` discriminé
   // aurait dupliqué la même information dans une troisième forme.
   placedByStaffId String? @map("placed_by_staff_id")
+
+  /// **QUI commande, figé à la passation** — pas le tarif appliqué.
+  ///
+  /// Déduite par l'agrégat (`Order.toPersistence()` : société posée → `pro`,
+  /// sinon `public`), et NON contrainte en base : une société supprimée remet
+  /// `company_id` à nul sous une commande `pro`, et c'est `pro` qui reste vrai.
+  ///
+  /// `NULL` = commande d'avant la distinction, **pour toujours** : jamais
+  /// rattrapée, parce que « sans société » ne voulait pas dire « public »
+  /// (multi-sociétés sans en-tête, pro sans société déclarée). Le rapatriement
+  /// ne la réécrit pas non plus (plan, D4 et D7).
+  clientele OrderClientele?
 
   /// **De quelle version du catalogue venaient ces articles.**
   ///

@@ -23,6 +23,7 @@ function entry(
     handedOverAt: state === 'handed_over' ? '2026-09-12T09:00:00.000Z' : null,
     handedOverVia: state === 'handed_over' ? 'scan' : null,
     readyAt: null,
+    clientele: 'pro',
   };
 }
 

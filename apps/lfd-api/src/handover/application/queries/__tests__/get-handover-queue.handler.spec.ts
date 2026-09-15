@@ -26,6 +26,7 @@ function entry(overrides: Partial<HandoverQueueEntry> = {}): HandoverQueueEntry 
     reference: "ORD-ABCD-1234",
     customerLabel: "Les Halles",
     tradeName: null,
+    clientele: "pro",
     pickupLabel: "Le labo",
     fulfillmentMethod: "pickup",
     window: null,
@@ -185,5 +186,26 @@ describe("GetHandoverQueueHandler — la vue", () => {
     const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
 
     expect(view.day).toBe("2026-09-10");
+  });
+
+  it.each(["pro", "public"] as const)(
+    "porte la clientèle `%s` telle que la file la lit",
+    async (clientele) => {
+      const { handler } = handlerOf([entry({ clientele })], new Map());
+
+      const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+      expect(view.entries[0]?.clientele).toBe(clientele);
+    },
+  );
+
+  it("🔴 garde `null` sur une commande d'avant la distinction — jamais redéduite", async () => {
+    // Une ligne nulle sans société ressemble à du `public` : la déduire ici
+    // écrirait « public » sur la commande d'un pro multi-sociétés (plan, D4/D5).
+    const { handler } = handlerOf([entry({ clientele: null })], new Map());
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries[0]?.clientele).toBeNull();
   });
 });

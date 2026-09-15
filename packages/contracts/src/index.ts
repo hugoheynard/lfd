@@ -625,6 +625,7 @@ export type {
   HandoverVia,
   HandoverQueueView,
   HandoverQueueWindowView,
+  OrderClientele,
   OrderHandoverLine,
   OrderHandoverView,
 } from "./order-handover.js";

@@ -40,6 +40,7 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
     handedOverAt: null,
     handedOverVia: null,
     readyAt: null,
+    clientele: 'pro',
     ...over,
   };
 }

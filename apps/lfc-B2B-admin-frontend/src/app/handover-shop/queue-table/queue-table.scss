@@ -30,6 +30,15 @@
   color: var(--fold-color-warning-text);
 }
 
+/* Le nom et sa clientèle sur une ligne. Ils passent à la ligne plutôt que de
+   déborder quand la carte (`narrowLayout="cards"`) est étroite. */
+.qt-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
 .qt-name {
   display: block;
   color: var(--fold-color-text);

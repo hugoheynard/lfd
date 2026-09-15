@@ -52,6 +52,9 @@ export class PrismaOrderRepository extends OrderRepository {
         // le coursier scanne aussi. La fonction reste pour NOMMER la décision.
         handoverToken: issuesHandoverToken() ? this.secrets.next() : null,
         companyId: state.companyId,
+        // Qui commande, déduit par l'agrégat et figé : jamais relu depuis la
+        // société, qui peut changer ou disparaître après la passation.
+        clientele: state.clientele,
         placedByUserId: state.placedByUserId,
         placedByStaffId: state.placedByStaffId,
         requestedDeliveryDate: state.requestedDeliveryDate,

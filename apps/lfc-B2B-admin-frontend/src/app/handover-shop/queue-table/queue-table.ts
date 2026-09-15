@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import type { HandoverQueueEntryView } from '@lfd/contracts';
+import type { HandoverQueueEntryView, OrderClientele } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -27,6 +27,16 @@ import {
   stillRemittable,
   stateVariant,
 } from '../handover-queue';
+
+/**
+ * Les libellés de clientèle. Le badge est carré (`radius="square"`) quand
+ * celui d'état est une pastille : une catégorie de client n'est pas un état de
+ * la commande, et les deux ne doivent pas se lire comme un même signal.
+ */
+const CLIENTELE_LABELS: Readonly<Record<OrderClientele, string>> = {
+  pro: 'Pro',
+  public: 'Public',
+};
 
 /**
  * **La file, dessinée** — les lignes du comptoir et rien d'autre.
@@ -190,6 +200,25 @@ export class QueueTable {
       return null;
     }
     return `retirée ${formatHour(clockOf(new Date(entry.handedOverAt)))}`;
+  }
+
+  /**
+   * « Pro » ou « Public » — QUI a commandé, figé à la passation, et non le
+   * tarif appliqué (plan `order/plan-nature-du-client-sur-la-commande.md`, D1).
+   *
+   * 🔴 `null` sur une commande d'avant la distinction : pas de badge plutôt
+   * qu'un badge déduit de l'absence de société, qui n'a jamais voulu dire
+   * « public ».
+   */
+  protected clienteleLabel(entry: HandoverQueueEntryView): string | null {
+    if (entry.clientele === null) {
+      return null;
+    }
+    return CLIENTELE_LABELS[entry.clientele];
+  }
+
+  protected clienteleVariant(entry: HandoverQueueEntryView): FoldBadgeVariant {
+    return entry.clientele === 'pro' ? 'info' : 'neutral';
   }
 
   protected label(entry: HandoverQueueEntryView): string {

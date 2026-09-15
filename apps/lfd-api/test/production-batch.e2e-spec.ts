@@ -1100,14 +1100,18 @@ describe("la file de remise", () => {
   let leLabo = "";
   let leVillage = "";
 
-  async function placePickup(quantity: number, pickupAddressId = leLabo): Promise<string> {
+  async function placePickup(
+    quantity: number,
+    pickupAddressId = leLabo,
+    companyId: string | null = null,
+  ): Promise<string> {
     const placed = jsonBody<{ orderNumber: string }>(
       await ctx
         .asSub(MEMBER)
         .post(`/orders`)
         .send({
           idempotencyKey: randomUUID(),
-          companyId: null,
+          companyId,
           requestedDeliveryDate: SERVICE_DAY,
           fulfillmentMethod: "pickup",
           pickupAddressId,
@@ -1210,6 +1214,38 @@ describe("la file de remise", () => {
     // La masquer laisserait quelqu'un chercher une commande « disparue » devant
     // un client qui, lui, est bien là.
     expect(entry?.state).toBe("cancelled");
+  });
+
+  it("dit QUI commande, lu sur la commande : `pro` pour une société, `public` sans", async () => {
+    // La commande publique AVANT le rattachement : un membre d'une seule
+    // société agit pour elle même sans la nommer (`resolveCompany`), si bien
+    // qu'après, `companyId: null` passerait encore pour la société.
+    const sansSociete = await placePickup(1);
+    const member = await ctx.prisma.user.findUniqueOrThrow({
+      where: { auth0Sub: MEMBER },
+      select: { id: true },
+    });
+    const company = await createCompany(ctx.prisma, { status: "active" });
+    await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
+    const pourLaSociete = await placePickup(1, leLabo, company.id);
+
+    const clienteles = new Map((await file()).entries.map((row) => [row.reference, row.clientele]));
+
+    expect(clienteles.get(pourLaSociete)).toBe("pro");
+    expect(clienteles.get(sansSociete)).toBe("public");
+  });
+
+  it("🔴 rend `null` sur une commande d'avant la distinction, sans la redéduire", async () => {
+    const reference = await placePickup(1);
+    // Écriture directe, et c'est la SEULE façon d'obtenir cette ligne : la
+    // fabrique pose toujours la clientèle, alors que les commandes antérieures à
+    // la colonne — sans société, comme celle-ci — sont restées nulles. Les
+    // redéduire écrirait `public` sur celles de pros (plan, D4).
+    await ctx.prisma.order.update({ where: { orderNumber: reference }, data: { clientele: null } });
+
+    const entry = (await file()).entries.find((line) => line.reference === reference);
+
+    expect(entry?.clientele).toBeNull();
   });
 
   it("n'affiche PAS un brouillon — il n'attend personne", async () => {

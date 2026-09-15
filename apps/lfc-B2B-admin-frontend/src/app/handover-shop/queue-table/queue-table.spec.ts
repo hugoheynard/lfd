@@ -43,6 +43,7 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
     handedOverAt: null,
     handedOverVia: null,
     readyAt: null,
+    clientele: 'pro',
     ...over,
   };
 }
@@ -80,6 +81,12 @@ const note = (fixture: ComponentFixture<QueueTable>): string =>
   (fixture.nativeElement as HTMLElement).querySelector('tbody tr.folddt-note-row')?.textContent ??
   '';
 
+/** Les badges posés à côté du nom — et seulement là, pas celui d'état. */
+const clienteleBadges = (fixture: ComponentFixture<QueueTable>): readonly string[] =>
+  [...(fixture.nativeElement as HTMLElement).querySelectorAll('.qt-who fold-badge')].map((badge) =>
+    (badge.textContent ?? '').trim(),
+  );
+
 /** Une tranche demandée et dépassée, jugée à une heure que le cas choisit. */
 const LATE = { start: '06:00', end: '06:30', source: 'override' } as const;
 
@@ -92,6 +99,25 @@ describe('QueueTable', () => {
     expect(body).toContain('12');
     expect(body).toContain('Attendue');
     expect(body).toContain('6 h 00 – 8 h 00');
+  });
+
+  it('une commande passée pour une société porte « Pro » à côté du nom', () => {
+    expect(clienteleBadges(render([entry({ clientele: 'pro' })]))).toEqual(['Pro']);
+  });
+
+  it('une commande passée sans société porte « Public » à côté du nom', () => {
+    expect(clienteleBadges(render([entry({ clientele: 'public' })]))).toEqual(['Public']);
+  });
+
+  it('🔴 une commande d’avant la distinction ne porte AUCUN badge de clientèle', () => {
+    // `null` = la colonne n'existait pas à la passation. Déduire « Public » de
+    // l'absence de société mentirait sur les pros multi-sociétés.
+    const fixture = render([entry({ clientele: null })]);
+
+    expect(clienteleBadges(fixture)).toEqual([]);
+    expect(text(fixture)).toContain('Boulangerie Marin');
+    // Le badge d'état, lui, reste.
+    expect(text(fixture)).toContain('Attendue');
   });
 
   it('🔴 une commande sans créneau reste à l’écran et le DIT', () => {

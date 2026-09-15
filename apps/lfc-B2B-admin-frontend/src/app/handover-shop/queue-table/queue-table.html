@@ -27,9 +27,18 @@
   <!-- Le nom, et sous lui l'heure du retrait une fois le sac parti. Une ligne
        barrée reste DANS la file — une contestation se règle avec l'heure sous
        les yeux, pas en cherchant ailleurs. -->
+  <!-- La clientèle à côté du nom : « Pro » ou « Public », telle que figée à la
+       passation. 🔴 Sur une commande d'avant la distinction (`null`), AUCUN
+       badge — rien n'est deviné. Le badge reste hors du barré : une ligne
+       retirée se relit entière. -->
   <ng-template foldCell="customer" let-row>
-    <span class="qt-name" [class.qt-struck]="row.state === 'handed_over'">
-      {{ row.customerLabel }}
+    <span class="qt-who">
+      <span class="qt-name" [class.qt-struck]="row.state === 'handed_over'">
+        {{ row.customerLabel }}
+      </span>
+      @if (clienteleLabel(row); as who) {
+        <fold-badge radius="square" [variant]="clienteleVariant(row)" [content]="who" />
+      }
     </span>
     @if (handedOverAt(row); as done) {
       <span class="qt-sub">{{ done }}</span>

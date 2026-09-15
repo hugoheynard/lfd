@@ -165,6 +165,7 @@ export const HANDOVER_QUEUE_SELECT = {
   readyAt: true,
   createdAt: true,
   companyId: true,
+  clientele: true,
   company: { select: { raisonSociale: true, enseigne: true } },
   placedBy: { select: { email: true, firstName: true, lastName: true } },
   lines: { select: { quantity: true } },
@@ -216,6 +217,7 @@ export function toQueueEntry(row: QueueRow): {
   readonly reference: string;
   readonly customerLabel: string;
   readonly tradeName: string | null;
+  readonly clientele: QueueRow["clientele"];
   readonly pickupLabel: string | null;
   readonly fulfillmentMethod: QueueRow["fulfillmentMethod"];
   readonly window: HandoverQueueWindow | null;
@@ -230,6 +232,9 @@ export function toQueueEntry(row: QueueRow): {
     reference: row.orderNumber,
     customerLabel: label,
     tradeName: tradeNameOf(row.company, label),
+    // La colonne telle quelle, jamais redéduite de `companyId` : une ligne
+    // nulle est d'avant la distinction, et le dire vaut mieux que deviner (D5).
+    clientele: row.clientele,
     pickupLabel: pickupLabelOf(row.pickupAddress),
     fulfillmentMethod: row.fulfillmentMethod,
     window: windowOf(fulfillmentOf(row.fulfillment)),
