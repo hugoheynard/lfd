@@ -10,7 +10,9 @@ import {
 } from '@lfd/b2b-ui/company';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
+import { adminDeliveryProcedureGateway } from '../../comptes-clients/admin-delivery-procedure.gateway';
 import { AdminContactPanel, type AdminContactTarget } from '../panels/contact-panel/contact-panel';
+import { AdminDeliveryProcedurePanel } from '../panels/delivery-procedure-panel/delivery-procedure-panel';
 import { AdminDetenteurPanel } from '../panels/detenteur-panel/detenteur-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
 import type { HolderChoice } from '../holder-picker/holder-picker';
@@ -88,6 +90,23 @@ export class FicheClientPanels {
   /** Une adresse de livraison à corriger — le même panneau, prérempli. */
   openDelivery(company: AdminCompanyDetail, address: DeliveryAddressView): Promise<unknown> {
     return this.panels.open(DeliveryAddressPanel, { data: deliveryData(company, address) }).closed;
+  }
+
+  /**
+   * La procédure de livraison d'une adresse. Rend `true` si son nombre
+   * d'étapes a changé pendant l'ouverture : c'est ce que la carte d'adresses
+   * affiche, et la seule raison de relire la fiche.
+   *
+   * La passerelle est fournie au panneau, liée à cette société — pas à la
+   * racine, où elle tirerait l'éditeur dans le bundle initial.
+   */
+  async openProcedure(company: AdminCompanyDetail, address: DeliveryAddressView): Promise<boolean> {
+    let changed = false;
+    await this.panels.open(AdminDeliveryProcedurePanel, {
+      data: { address, onStepCountChange: () => (changed = true) },
+      providers: [adminDeliveryProcedureGateway(company.id)],
+    }).closed;
+    return changed;
   }
 
   /**
