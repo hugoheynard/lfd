@@ -20,7 +20,7 @@ export type MandateReadStatus = 'loading' | 'failed' | 'ready';
 /**
  * **Le mandat SEPA de la société**, tel que le client le génère, le télécharge
  * et le renvoie signé depuis `/mon-compte` (plan
- * `documentation/b2b/plan-mandat-client.md`, lot B ; contrat en fin de §9).
+ * `documentation/comptabilite/plan-mandat-client.md`, lot B ; contrat en fin de §9).
  *
  * Même forme que `ClientBankAccount` : **une** lecture partagée, parce que la
  * carte bureau et la carte mobile sont toutes deux dans le DOM, et le panneau
