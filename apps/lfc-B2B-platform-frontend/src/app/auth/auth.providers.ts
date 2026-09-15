@@ -16,8 +16,9 @@ import { AUTH_CONFIG } from './auth.config';
  * d'injection (NG0203).
  *
  * `redirect_uri` = {@link appBaseUrl}, évalué à l'appel : l'origine ET le chemin
- * de déploiement. La même build sert localhost:7316, lfc-b2b.pages.dev et
- * lafoliecoffee.info/pro — chaque adresse juste listée côté Auth0. **Pas de SSR =
+ * de déploiement. La même build sert localhost:7316, lfc-b2b-eu7.pages.dev et
+ * lafoliecoffee.info (à la racine depuis le 2026-09-15, sous /pro avant) —
+ * chaque adresse listée côté Auth0. **Pas de SSR =
  * le SDK capte le `?code&state` du callback dans son APP_INITIALIZER avant toute
  * redirection de route.**
  */

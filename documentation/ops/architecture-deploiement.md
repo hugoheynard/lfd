@@ -193,22 +193,34 @@ sous-domaines **sans toucher aux backends**.
 - [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md) — le mur, ce qu'il tient et ce qu'il ne tient pas
 - [`runbook.md`](runbook.md) — déployer, revenir en arrière, rouvrir une porte
 
-## Le front client sous `lafoliecoffee.info/pro`
+## Le front client à la racine de `lafoliecoffee.info`
 
-> 🟡 **En bascule vers la racine depuis le 2026-09-15** (décision de Hugo : la
-> boutique accueille aussi le public, son adresse ne doit plus dire « pro »).
-> Deux déploiements, dans cet ordre :
->
-> 1. **La passerelle** sert la racine de la zone (`ZONE_HOSTNAME` dans
->    `gateway/src/routes.ts`, route `lafoliecoffee.info/*`) **et** garde `/pro`.
->    Compatible avec le front actuel comme avec le suivant.
-> 2. **Le front** passe à `baseHref: "/"`, et `/pro/…` devient une redirection
->    vers le même chemin sans préfixe. 🔴 **Avant**, ajouter
->    `https://lafoliecoffee.info` aux URL de rappel **et** de déconnexion de
->    l'application Auth0 : `redirect_uri` et `returnTo` valent `appBaseUrl()`,
->    qui perdra son `/pro`.
->
-> La suite de cette section décrit l'état d'avant l'étape 2.
+**État au 2026-09-15.** La boutique est servie à la **racine** de la zone
+(décision de Hugo : elle accueille aussi le public, son adresse ne doit plus
+dire « pro ») :
+
+- **Passerelle.** Route de zone `lafoliecoffee.info/*`. Sur l'hôte de la zone
+  (`ZONE_HOSTNAME`, `gateway/src/routes.ts`), les API passent d'abord, puis tout
+  le reste part au projet Pages, chemin intact.
+- **`/pro/…` renvoie** en **302** vers le même chemin sans préfixe, requête
+  comprise (`redirectTo`, `gateway/src/index.ts`) : le lien de la commerciale,
+  les favoris et les courriels mènent au bon écran. 302 et non 301, tant que la
+  racine n'a pas fait ses preuves : un 301 se garde en cache sans limite.
+- **L'app** : `baseHref: "/"` dans la config de build `cloudflare`, comme
+  `capacitor`. `appBaseUrl()` rend donc `https://lafoliecoffee.info`, qui doit
+  figurer dans les URL de **rappel** et de **déconnexion** de l'application
+  Auth0.
+- **Hors zone** (`workers.dev`), la racine ne sert rien et `/pro` sert encore le
+  front : rien n'y mène, rien n'y casse.
+
+La bascule s'est faite en **deux déploiements**, dans cet ordre : la passerelle
+d'abord (racine servie **en plus** de `/pro`, compatible avec les deux bases),
+puis le front et la redirection. L'ordre inverse aurait privé le front de tous
+ses assets entre les deux.
+
+### Historique : sous `/pro`, du 2026-08-27 au 2026-09-15
+
+Ce qui suit décrit ce choix-là, au présent de l'époque.
 
 `/pro` est un **chemin**, pas un sous-domaine. Le choix a un coût qu'il vaut
 mieux connaître :
@@ -223,10 +235,10 @@ Les deux moitiés — le préfixe retiré par la passerelle, le `base href` port
 l'app — doivent rester d'accord. L'une sans l'autre, ce sont des 404 sur tous
 les assets.
 
-### Ce qui est fait, et ce qui ne l'est pas
+#### Ce qui avait été fait le 2026-08-27
 
 ✅ Côté dépôt, tout est en place : `FRONT_PREFIXES` dans `gateway/src/routes.ts`,
-la variable `PRO_FRONT_ORIGIN`, et la build de l'app sous `/pro`. Quatre tests
+la variable `PRO_FRONT_ORIGIN`, et la build de l'app sous `/pro` (base `/` depuis le 2026-09-15). Quatre tests
 couvrent le routage, dont le cas `/production` qui ne doit PAS être capté.
 
 ✅ Côté compte, fait le 2026-08-27 :
@@ -244,7 +256,7 @@ couvrent le routage, dont le cas `/production` qui ne doit PAS être capté.
 ⚠️ Elle ne s'attache qu'au **déploiement** de la passerelle : tant que le
 dépôt n'est pas poussé, `lafoliecoffee.info/pro` ne répond pas.
 
-### Deux pièges désamorcés en écrivant ceci
+#### Deux pièges désamorcés à l'époque, toujours vrais
 
 **L'adresse du projet Pages.** Le nom est `lfc-b2b`, mais Cloudflare a suffixé
 son sous-domaine en silence : c'est `lfc-b2b-eu7.pages.dev` qui sert, et
@@ -255,7 +267,7 @@ différents. La passerelle ne réécrit donc pas l'adresse : elle lit
 a déjà payé ce piège une fois par une panne CORS complète et silencieuse ; deux
 endroits qui écrivent l'adresse à la main le paieraient une deuxième.
 
-**L'origine vue par le navigateur.** Servie sous `lafoliecoffee.info/pro`, l'app
+**L'origine vue par le navigateur.** Servie par la zone — sous `/pro` hier, à la racine aujourd'hui —, l'app
 présente `https://lafoliecoffee.info` — une origine n'a pas de chemin. Cette
 entrée est ajoutée à `PROD_CORS_ORIGINS`.
 

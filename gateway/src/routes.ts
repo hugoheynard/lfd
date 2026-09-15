@@ -59,10 +59,10 @@ export type BackendKey = keyof typeof API_PREFIXES;
 /**
  * Le préfixe qui désigne un FRONT servi par la zone, retiré avant transmission.
  *
- * `lafoliecoffee.info/pro` est un CHEMIN, pas un sous-domaine — c'est ce qui a
- * été demandé, et la nuance a un coût : un sous-domaine se règle par un domaine
- * personnalisé sur le projet Pages, sans une ligne de code ; un chemin oblige la
- * passerelle à le porter, et l'app à connaître son préfixe (`base href`).
+ * `lafoliecoffee.info/pro` était un CHEMIN, pas un sous-domaine. Depuis le
+ * 2026-09-15 la boutique est à la racine (`ZONE_HOSTNAME`) et ce préfixe ne sert
+ * plus qu'à RENVOYER les anciennes adresses — sur la zone. Hors zone il sert
+ * encore le front en retirant le préfixe : rien n'y mène, mais rien n'y casse.
  *
  * ⚠️ Contrairement aux backends, la destination est un `fetch()` PUBLIC et non
  * un *service binding* : un projet Pages ne peut pas être la cible d'un binding.
@@ -132,11 +132,11 @@ export type FrontKey = keyof typeof FRONT_PREFIXES;
  * L'hôte de la zone, dont la **racine** sert aussi la boutique.
  *
  * Décidé par Hugo le 2026-09-15 : la boutique n'est plus seulement pro, et son
- * adresse ne doit plus le dire. La bascule se fait en deux déploiements, et
- * celui-ci est le premier : la racine sert le front **et** `/pro` reste servi
- * comme avant. Les deux marchent avec le front actuel (`base href` à `/pro/`,
- * ses assets repassent par `/pro`) comme avec le suivant (`base href` à `/`).
- * L'inverse — le front sur la racine avant la route — casserait tous les assets.
+ * adresse ne doit plus le dire. La bascule s'est faite en deux déploiements :
+ * d'abord la racine servie en plus de `/pro` (le front gardait `base href` à
+ * `/pro/`), puis le front passé à `/` et `/pro/…` changé en redirection. Dans
+ * cet ordre et pas l'inverse : un front sur la racine avant la route aurait
+ * perdu tous ses assets.
  *
  * Réservé à la zone : la racine de `workers.dev` ne sert rien. Le front y
  * chargerait sous une origine absente du CORS, donc cassé, et une seconde
@@ -157,7 +157,8 @@ const DEV_ROUTES: Readonly<Record<string, string>> = {
 export type Target =
   | { readonly kind: "url"; readonly url: string }
   | { readonly kind: "backend"; readonly backend: BackendKey; readonly path: string }
-  | { readonly kind: "front"; readonly front: FrontKey; readonly path: string };
+  | { readonly kind: "front"; readonly front: FrontKey; readonly path: string }
+  | { readonly kind: "redirect"; readonly path: string };
 
 /**
  * Résout la destination d'une requête. `undefined` ⇒ rien ne répond ici.
@@ -182,7 +183,12 @@ export function resolveTarget(hostname: string, pathname: string): Target | unde
   for (const [front, prefix] of entriesOf(FRONT_PREFIXES)) {
     const path = stripPrefix(pathname, prefix);
     if (path !== undefined) {
-      return { kind: "front", front, path };
+      // Sur la zone, l'ancienne adresse RENVOIE vers la nouvelle (étape 2 du
+      // retrait de `/pro`) : les liens déjà donnés — celui de la commerciale,
+      // un favori, un courriel — continuent de mener au bon écran.
+      return hostname === ZONE_HOSTNAME
+        ? { kind: "redirect", path }
+        : { kind: "front", front, path };
     }
   }
   // Tout le reste de la zone part au front, chemin intact : Pages sert depuis sa

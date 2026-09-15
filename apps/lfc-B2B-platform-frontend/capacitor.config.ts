@@ -14,8 +14,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * Contrepartie assumée, la même que l'admin : **aucun mode hors-ligne**.
  *
- * ⚠️ `server.url` pointera sur `https://lafoliecoffee.info/pro` dès que la zone
- * y routera le projet Pages. En attendant, l'adresse du projet lui-même — celle
+ * ⚠️ `server.url` pointera sur `https://lafoliecoffee.info` (la racine, depuis
+ * le 2026-09-15 ; c'était `/pro` avant) quand on basculera la coque. En attendant, l'adresse du projet lui-même — celle
  * que nos déploiements mettent à jour, cf. la note sous `url`. C'est la seule
  * ligne à changer.
  *

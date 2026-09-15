@@ -58,19 +58,22 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
   });
 });
 
-describe("resolveTarget — le front client sous /pro", () => {
-  it("route le préfixe, et retire le préfixe", () => {
-    const target = resolveTarget("lafoliecoffee.info", `${FRONT_PREFIXES.pro}/bienvenue`);
-    expect(target).toEqual({ kind: "front", front: "pro", path: "/bienvenue" });
+describe("resolveTarget — le front client : la racine de la zone, et /pro qui y renvoie", () => {
+  it("sur la zone, l'ancienne adresse /pro RENVOIE vers la même page sans préfixe", () => {
+    const target = resolveTarget(ZONE_HOSTNAME, `${FRONT_PREFIXES.pro}/ouverture-compte-pro`);
+    expect(target).toEqual({ kind: "redirect", path: "/ouverture-compte-pro" });
   });
 
-  it("le préfixe nu mène à la racine du front, pas à la chaîne vide", () => {
-    // `/pro` seul doit rendre `/`, sinon l'URL construite côté Pages est invalide.
-    expect(resolveTarget("lafoliecoffee.info", FRONT_PREFIXES.pro)).toEqual({
-      kind: "front",
-      front: "pro",
+  it("le préfixe nu renvoie vers la racine, pas vers la chaîne vide", () => {
+    expect(resolveTarget(ZONE_HOSTNAME, FRONT_PREFIXES.pro)).toEqual({
+      kind: "redirect",
       path: "/",
     });
+  });
+
+  it("hors zone, /pro sert encore le front en retirant le préfixe", () => {
+    const target = resolveTarget("gw.example", `${FRONT_PREFIXES.pro}/bienvenue`);
+    expect(target).toEqual({ kind: "front", front: "pro", path: "/bienvenue" });
   });
 
   it("ne vole pas un chemin qui COMMENCE par le préfixe sans lui appartenir", () => {
