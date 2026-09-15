@@ -149,7 +149,7 @@
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-extrabold);
-  letter-spacing: -0.012em;
+  letter-spacing: var(--lfc-tracking-block);
   text-transform: uppercase;
   line-height: 1.14;
   color: var(--fold-color-text);
@@ -182,7 +182,7 @@
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-md);
   font-weight: var(--lfc-weight-black);
-  letter-spacing: -0.015em;
+  letter-spacing: var(--lfc-tracking-block);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text);
 }

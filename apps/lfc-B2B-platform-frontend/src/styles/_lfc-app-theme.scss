@@ -202,8 +202,12 @@
   --fold-button-radius: 12px;
   --fold-button-min-height: 44px;
 
-  --lfc-tracking-display: -0.03em; /* titre d'écran */
-  --lfc-tracking-block: -0.015em; /* titre de bloc */
+  /* Resserrés pour Archivo (−0,03 et −0,015) ; Chunk est une face noire et
+     large de fût, dont les lettres se touchaient à ces valeurs sur un titre
+     de 44 px. Desserrés d'un poil le 2026-09-15, comparés à l'écran à −0,03,
+     0 et +0,02 em. */
+  --lfc-tracking-display: 0.01em; /* titre d'écran */
+  --lfc-tracking-block: 0.005em; /* titre de bloc */
   --lfc-tracking-cta: 0.02em;
   --lfc-tracking-label: 0.04em; /* titre d'encart, bouton secondaire */
   --lfc-tracking-eyebrow: 0.1em; /* sur-titre de section */

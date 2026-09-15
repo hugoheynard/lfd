@@ -213,13 +213,13 @@
      menu, 40 px de langue, 40 px de cloche, 66 px de panier et leurs écarts,
      soit ~260 px — le budget vise l'écran le PLUS chargé (celui qui porte la
      cloche), sinon le nom s'y coupe de deux pixels. « LA
-     FOLIE COFFEE » en Chunk mesure 8 px de large par pixel de corps,
-     interlettrage compris (7,95 mesuré dans le fichier de la face le
-     2026-09-15 ; Archivo 900 en mesurait 9), d'où `(100vw - 260px) / 8`,
-     plafonné au cran de la réf. Le plancher
+     FOLIE COFFEE » en Chunk mesure 8,6 px de large par pixel de corps à
+     l'interlettrage `display` de +0,01 em (7,95 dans le fichier de la face,
+     plus 15 × 0,04 em de desserrage — mesuré le 2026-09-15 ; Archivo 900 en
+     mesurait 9), d'où `(100vw - 260px) / 8,6`, plafonné au cran de la réf. Le plancher
      descend d'un cran pour la même raison : à 375 px, quatre commandes et un
      nom entier ne tiennent pas ensemble à 16 px. */
-  font-size: clamp(0.75rem, calc(12.5vw - 32.5px), var(--fold-text-xl));
+  font-size: clamp(0.75rem, calc(11.63vw - 30.2px), var(--fold-text-xl));
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-display);
   text-transform: uppercase;
