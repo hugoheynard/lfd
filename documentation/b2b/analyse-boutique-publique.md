@@ -2,7 +2,8 @@
 
 > **Ouverte le 2026-09-15** à la demande de Hugo. 📐 Analyse, rien n'est bâti.
 > Décrit l'existant tel que lu ce jour-là, le travail à faire, et les décisions
-> à prendre avant d'écrire un plan.
+> à prendre avant d'écrire un plan. **Contredite par `vitruve` le même jour** :
+> ses objections sont intégrées, et leur sort est au §8.
 
 ## 0. La demande
 
@@ -15,254 +16,265 @@
 
 ## 1. En une page
 
-**La moitié du chemin existe déjà, par accident heureux.** Le pivot « zéro
-friction » du 2026-08-06 a rendu la commande possible **sans société** : un
-compte sans rattachement commande, paie par carte, retire avec son QR, et sa
-commande n'est jamais facturée. Un particulier est donc, pour le code, « un
-client qui n'a pas de société » — ce que la demande appelle un compte public.
+**Une partie du chemin existe déjà.** Le pivot « zéro friction » du 2026-08-06
+a rendu la commande possible **sans société** : un compte sans rattachement
+commande, paie par carte, retire avec son QR, et le cycle de prélèvement
+l'ignore. Pour le code, un particulier est « un client qui n'a pas de société ».
 
-**Ce qui manque tient en trois sujets, de poids très inégal :**
+**Ce qui manque tient en quatre sujets :**
 
-| Sujet                                                        | Poids    | Pourquoi                                                                                                                                                                              |
-| ------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Le tarif public** n'arrive pas à la boutique               | 🔴 lourd | Le référentiel saisit le TTC public, mais **seul le HT pro traverse la frontière**. Aujourd'hui un compte sans société voit et paie **le prix pro**.                                  |
-| **L'audience « pro / public »** n'est écrite nulle part      | 🟠 moyen | Elle se déduit de l'absence de rattachement, à la volée, à chaque requête. Rien ne la fige sur la commande : ni le badge du comptoir, ni les stats, ni la facture ne peuvent la lire. |
-| **L'accueil du public** (inscription, Mon compte, documents) | 🟡 léger | Les écrans présupposent un pro : Mon compte n'offre à un compte sans société que « Compléter mon dossier », le bon de commande est un document HT, « Mes factures » est visible.      |
+| Sujet                                                        | Poids    | Pourquoi                                                                                                                                                                                            |
+| ------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Le tarif public** n'arrive pas à la boutique               | 🔴 lourd | Le référentiel saisit le TTC public, mais **seul le HT pro traverse la frontière**. Aujourd'hui un compte sans société voit et paie **le prix pro**.                                                |
+| **Un prix TTC dans une chaîne HT**                           | 🔴 lourd | Toute la commande — remise de retrait, frais, TVA, devis, facturation, croissance — est calculée et stockée en HT. Un prix d'étiquette TTC ne s'y glisse pas sans décider qui calcule quoi (§3.2).  |
+| **Pro ou public** n'est écrit nulle part, et se résout mal   | 🟠 moyen | L'audience se déduit de l'absence de société ; une personne rattachée à **plusieurs** sociétés commande déjà sans société, faute de sélecteur d'espace (§4).                                        |
+| **L'accueil du public** (inscription, Mon compte, documents) | 🟡 moyen | L'inscription publique perd le profil en production, le bon de commande et le courriel sont en HT, « Mes factures » est visible, la croissance compterait les particuliers comme des acheteurs pro. |
 
-Le badge du comptoir, que la demande présente comme le seul geste côté retrait,
-est effectivement petit — **à condition** que l'audience soit d'abord figée sur
-la commande (§4).
+Le badge du comptoir est effectivement petit — une fois l'audience figée sur la
+commande.
+
+🔴 **Une contradiction à trancher d'abord** : `architecture-facturation.md`
+décide « **une facture pour toute vente** (carte ET terme) » (l. 17) ; la
+demande dit « pas de factures » pour le public (§6, D0).
 
 ## 2. L'existant (lu et vérifié le 2026-09-15)
 
-### 2.1 Identité : un compte sans société est déjà un citoyen de plein droit
+### 2.1 Identité
 
-| Fait                                                                                                                                                                                                                      | Où                                                                                                                            |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `User` ne porte aucune société ; `Membership` relie 0..N personnes à 0..N sociétés                                                                                                                                        | `prisma/schema/public/account.prisma` (`User`, `Membership`)                                                                  |
-| Au premier appel authentifié d'un inconnu, le serveur crée un `User` **actif sans société** (provisioning JIT)                                                                                                            | `b2b/account/infrastructure/customer-principal.resolver.ts`                                                                   |
-| « Pour quelle société agit cette requête » : aucun rattachement → `null` ; un seul → celui-là ; **plusieurs sans déclaration (`x-lfc-company`) → `null`**, commenté « le tarif public est la réponse honnête »            | `platform/auth/resolve-company.ts`                                                                                            |
-| Deux portes d'entrée : `/bienvenue` (trois champs, passkey) et `/ouverture-compte-pro` (déclare une société `pending`) ; l'index signale que `/bienvenue` **perd le profil en production** (nom vide refusé, non corrigé) | `documentation/b2b/plan-inscription-pro-seule.md`, `documentation/README.md` (ligne `architecture-inscription-zero-friction`) |
-| Mon compte sans société : seule la carte « Compléter mon dossier » s'affiche — elle sert à devenir pro                                                                                                                    | `apps/lfc-B2B-platform-frontend/src/app/client/mon-compte/compte-page/compte-page.html`                                       |
-| L'accès à la boutique est un flag **global** `shop` (`closed` / `browse` / `order`), sans notion d'audience                                                                                                               | `b2b/feature-access/`                                                                                                         |
+| Fait                                                                                                                                                                                  | Où                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `User` ne porte aucune société ; `Membership` relie 0..N personnes à 0..N sociétés                                                                                                    | `apps/lfd-api/prisma/schema/public/account.prisma`                                |
+| Au premier appel authentifié d'un inconnu, le serveur crée un `User` **actif sans société**                                                                                           | `b2b/account/infrastructure/customer-principal.resolver.ts`                       |
+| Le rattachement chargé ne porte que `{ companyId, role }` — **pas le statut de la société**                                                                                           | `customer-principal.resolver.ts:122`                                              |
+| Société agissante : aucun rattachement → `null` ; un seul → celui-là ; **plusieurs sans en-tête `x-lfc-company` → `null`**                                                            | `platform/auth/resolve-company.ts`                                                |
+| **Aucun front n'envoie `x-lfc-company`** et aucun écran client ne lit les rattachements : une personne à plusieurs sociétés agit toujours « sans société »                            | grep sur `apps/*-frontend` et `packages` : vide (vérifié le 2026-09-15)           |
+| `POST /orders` prend la société par `@ActingCompany()`, donc par ce même repli                                                                                                        | `b2b/orders/http/orders.controller.ts:73`                                         |
+| Portes d'entrée : `/bienvenue` (trois champs, passkey) et `/ouverture-compte-pro` (déclare une société `pending`) ; l'index signale que `/bienvenue` **perd le profil en production** | `apps/lfc-B2B-platform-frontend/src/app/app.routes.ts`, `documentation/README.md` |
+| Mon compte sans société : seule la carte « Compléter mon dossier » s'affiche                                                                                                          | `client/mon-compte/compte-page/compte-page.html`                                  |
+| L'accès à la boutique est un flag **global** `shop` (`closed` / `browse` / `order`)                                                                                                   | `b2b/feature-access/`                                                             |
+| La saisie de commande par le staff **exige une société** : une commande publique au téléphone n'existe pas                                                                            | `b2b/orders/application/commands/place-order-for-customer.handler.ts:62-66`       |
 
-### 2.2 Commande et règlement : le chemin sans société est complet
+### 2.2 Commande, règlement, facturation
 
-| Fait                                                                                                                                 | Où                                                                                              |
-| ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `Order.companyId` est **nullable** ; sans société, le mur est `placed_by_user_id`                                                    | `prisma/schema/public/orders.prisma:59-63`, `b2b/orders/domain/services/order-access.ts`        |
-| Sans société (ou société non active, ou sans crédit accordé), la **carte est obligatoire** ; le compte n'est jamais possible         | `b2b/orders/application/commands/place-order.handler.ts` (`requiresCard`, `maySettleOnAccount`) |
-| Le chemin est documenté et marqué ✅ : register → panier → retrait/coursier → carte                                                  | `documentation/order/architecture-flux-commande-zero-friction.md`                               |
-| La **facturation n'est pas codée** (doc-first) ; la doc exclut déjà « la commande zéro friction tant qu'elle n'a pas été rapatriée » | `documentation/b2b/architecture-facturation.md`                                                 |
-| Un « rapatriement » des commandes sans société vers une société créée après coup est prévu (TODO, non codé)                          | `documentation/order/architecture-flux-commande-zero-friction.md`                               |
-| Le bon de commande PDF est rendu et archivé pour toute commande                                                                      | `b2b/orders/domain/services/order-sheet-pdf.ts`                                                 |
+| Fait                                                                                                                                                                              | Où                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `Order.companyId` est **nullable** ; sans société, le mur est `placed_by_user_id`                                                                                                 | `prisma/schema/public/orders.prisma:59-63`, `b2b/orders/domain/services/order-access.ts`               |
+| Sans société (ou société non active, ou sans crédit), **carte obligatoire**                                                                                                       | `place-order.handler.ts` (`requiresCard`, `maySettleOnAccount`)                                        |
+| Montants stockés **HT** : `unitPriceMillicents`, `lineTotalCents`, `subtotalCents` ; la TVA est ventilée par taux par `ventilateVat` de `@lfd/money`, qui **n'accepte que du HT** | `orders.prisma` (commentaire des montants), `packages/money/src/vat.ts`                                |
+| La **remise du point de retrait** se calcule sur le sous-total **HT**, et l'agrégat la revérifie contre lui                                                                       | `b2b/orders/application/services/cart-adjustments.service.ts:84`, `order.ts` (`ensureDiscountMatches`) |
+| Le **devis** calcule ses totaux de son côté par `ventilateVat` ; une e2e tient la parité devis / commande                                                                         | `quote-shop-cart.handler.ts`, `test/quote-order-parity.e2e-spec.ts`                                    |
+| Un **cycle de prélèvement** est codé ; son assiette exclut déjà `companyId = null`                                                                                                | `b2b/accounting/infrastructure/prisma-billable-orders.reader.ts:47-56`                                 |
+| La facture elle-même n'est pas codée ; sa doc décide « une facture pour toute vente »                                                                                             | `documentation/b2b/architecture-facturation.md:17`                                                     |
+| Le bon PDF porte « PU HT / Total HT » ; il est archivé à sa **première lecture**                                                                                                  | `b2b/orders/domain/services/order-sheet-pdf.ts:333-334`, `get-order-sheet-pdf.handler.ts:86`           |
+| Le courriel de commande existe                                                                                                                                                    | `send-order-placed-mail.handler.ts`                                                                    |
+| Les alertes ignorent déjà les commandes sans société                                                                                                                              | `evaluate-order-alerts.service.ts:35`                                                                  |
+| La croissance compte les acheteurs `user:` dans la concentration, et **toutes** les commandes dans le chiffre d'affaires                                                          | `prisma-order-metrics.reader.ts:55`                                                                    |
 
-### 2.3 Prix : le TTC public existe à la source, et s'arrête à la frontière
+### 2.3 Prix
 
-| Fait                                                                                                                                                                                                                             | Où                                                                                                                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Un seul prix saisi : le **TTC public**, sur la déclinaison. Le TTC pro = public × rapport (`ratioBp`, ex. 9 000) ; le HT B2B se déduit du TTC pro et du taux `b2b`                                                               | `documentation/pricing/architecture-prix-ancre-ttc.md` §A.2, `packages/pim-contracts/src/accounting-rules.ts` (`proPriceOf`) |
-| La projection vers la plateforme ne pousse que ce **HT pro** (`htMillicents`) et le taux `b2b`                                                                                                                                   | `pim/channels/b2b-platform/products/projection.ts` (`proPriceOf` → `projectVariant`)                                         |
-| Trois contextes de vente : `takeaway` (à emporter), `eatIn` (sur place), `b2b` ; le taux se pose par famille et **déroge par fiche, contexte par contexte** (« 20 % en B2B et le taux familial au comptoir est le cas courant ») | `documentation/pim/contextes-et-points-de-vente.md` §2-3                                                                     |
-| Le TTC public part **tel quel** vers Shopify                                                                                                                                                                                     | `documentation/pricing/architecture-prix-ancre-ttc.md` §A.2                                                                  |
-| `resolvePrice` est **HT de bout en bout** (mercuriale → volume → promotion → geste, plancher) ; sans société, seule la promotion publique s'applique                                                                             | `b2b/pricing/domain/resolve-price.ts`, `b2b/pricing/application/pricer.ts`                                                   |
-| La vitrine d'un client reconnu sans société rend « le tarif catalogue, comme la vitrine publique » — **c'est-à-dire le HT pro**                                                                                                  | `b2b/orders/http/my-shop-catalogue.controller.ts`                                                                            |
-| Le contrat catalogue et le devis portent un HT unitaire en millicentimes et un taux ; le TTC unitaire n'est jamais servi, le total TTC l'est                                                                                     | `packages/contracts/src/shop-catalogue.ts`, `shop-quote.ts`                                                                  |
+| Fait                                                                                                                                                                                | Où                                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Un seul prix saisi : le **TTC public**. TTC pro = public × rapport (`ratioBp` ≤ 10 000) ; le HT B2B se déduit du TTC pro et du taux `b2b`                                           | `documentation/pricing/architecture-prix-ancre-ttc.md` §A.2, `packages/pim-contracts/src/accounting-rules.ts` (`proPriceOf`) |
+| La projection ne pousse que ce HT pro, dans le champ de fil `priceMillicents` ; snapshot en **version 8** (versions acceptées 5 à 8)                                                | `pim/channels/b2b-platform/products/projection.ts`, `packages/catalog-sync/src/snapshot.ts:24,135,355`                       |
+| Trois contextes : `takeaway`, `eatIn`, `b2b` ; le taux se pose par famille et **déroge par fiche, contexte par contexte**                                                           | `documentation/pim/contextes-et-points-de-vente.md` §2-3                                                                     |
+| `resolvePrice` est **HT de bout en bout** ; trois portes le tiennent : `lint:price-pipeline`, `lint:catalogue-authority`, `lint:price-door`                                         | `b2b/pricing/domain/resolve-price.ts`, `CLAUDE.md` §0                                                                        |
+| Le mot **audience** est déjà pris par les règles de prix : `PriceAudience = all                                                                                                     | segment                                                                                                                      | company`; une promotion`all` touche pros et public | `b2b/pricing/domain/price-rule.ts:42`, `specificity.ts:32` |
+| La vitrine anonyme (`GET /shop/catalogue`) et le devis (`POST /shop/quote`) sont `@Public()` ; leur contrat nomme ses montants HT (`subtotalHtCents`, `unitPriceMillicents` « HT ») | `shop-catalogue.controller.ts:39`, `shop-quote.controller.ts:47`, `packages/contracts/src/shop-quote.ts:94-122`              |
 
-🔴 **Conséquence directe** : si la boutique ouvrait demain au public, un
-particulier paierait le prix pro, au taux de TVA B2B.
+🔴 Si la boutique ouvrait demain au public, un particulier paierait le prix
+pro, au taux de TVA B2B.
 
 ### 2.4 Retrait et production
 
-| Fait                                                                                                                                     | Où                                                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Le jeton de retrait est émis à la passation pour **toute** commande, retrait comme livraison ; l'écran client du QR existe               | `b2b/orders/infrastructure/prisma-order.repository.ts`, `apps/lfc-B2B-platform-frontend/src/app/client/mes-commandes/retrait-page/` |
-| La ligne de file porte `customerLabel` et `tradeName` (enseigne), **ni société ni audience**                                             | `handover/channels/commerce/handover-queue.reader.ts`, `packages/contracts/src/order-handover.ts` (`HandoverQueueEntryView`)        |
-| `customerLabel` = enseigne, sinon raison sociale, sinon nom de la personne                                                               | `b2b/orders/infrastructure/prisma-day-orders.reader.ts` (`labelOf`)                                                                 |
-| La fiche atelier (`ProductionOrder`) ne porte ni société ni audience                                                                     | `prisma/schema/production.prisma`                                                                                                   |
-| Le journal d'activité accepte une commande sans société (`establishmentId: null`) ; les découpes NAF / code postal du cockpit l'ignorent | `b2b/growth/application/handlers/on-order-placed.handler.ts`, `documentation/b2b/commercial-data-analytics.md`                      |
+| Fait                                                                                          | Où                                                                                                |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Le jeton de retrait est émis à la passation pour toute commande ; l'écran client du QR existe | `prisma-order.repository.ts`, `client/mes-commandes/retrait-page/`                                |
+| La ligne de file porte `customerLabel` et `tradeName`, **ni société ni audience**             | `handover/channels/commerce/handover-queue.reader.ts`, `packages/contracts/src/order-handover.ts` |
+| Son adaptateur et sa projection                                                               | `b2b/orders/infrastructure/prisma-handover-queue.reader.ts`, `handover-order.query.ts:158`        |
+| La fiche atelier ne porte ni société ni audience                                              | `apps/lfd-api/prisma/schema/production.prisma`                                                    |
 
-## 3. Le tarif public — le vrai chantier
+## 3. Le tarif public
 
 ### 3.1 Ce qu'il faut faire traverser
 
-Pour chaque déclinaison vendue au public, la plateforme doit connaître **le TTC
-public** et **le taux qui s'applique à la vente publique**. Le TTC existe au
-référentiel ; le taux dépend d'une décision (§6, D2) : un particulier qui
-retire en boutique achète **à emporter** — ce n'est pas le taux `b2b`, qui peut
-différer par fiche.
+Le TTC public et le taux de la vente publique, par déclinaison :
 
-Travail :
+1. **Snapshot en version 9** (`catalog-sync`), champs **ajoutés** — la
+   plateforme continue d'accepter les versions antérieures.
+2. **Projection** : un article sans taux public est écarté du rayon public
+   seulement, avec sa raison ; jamais de taux inventé.
+3. **Miroir** : colonnes neuves, migration additive. Vides, l'article n'est pas
+   vendable au public — pas de repli sur le prix pro.
+4. **Le taux** est une **qualification fiscale**, pas un choix de conception
+   (taux « à emporter » pour une commande passée la veille et retirée) : à
+   faire valider (§5.5). L'index du référentiel signale que la plupart des
+   familles n'ont pas encore de taux posé : le rayon public serait vide tant
+   qu'elles ne le sont pas.
 
-1. **Projection** (`pim/channels/b2b-platform`) : pousser, en plus du HT pro, le
-   TTC public et le taux du contexte public retenu. Un article sans taux public
-   est écarté **du rayon public** seulement, avec sa raison (même règle que
-   `variant_sans_taux` : jamais de taux inventé).
-2. **Miroir** (`catalog_items`) : colonnes neuves — migration **additive**,
-   remplie au prochain push. Tant qu'elles sont vides, un article n'est pas
-   vendable au public (refus explicite, pas un repli sur le prix pro).
-3. **Contrats** : le catalogue et le devis servent un prix par audience. Le
-   public voit du TTC unitaire ; le pro continue de voir son HT.
+### 3.2 Le point dur : un prix d'étiquette TTC dans une chaîne HT
 
-### 3.2 Le point dur : un prix ancré TTC dans une chaîne HT
+Pour un pro, tout est juste en HT. Pour le public, **le prix décidé est le TTC
+d'étiquette**. Trois faits empêchent de le traiter comme un simple autre prix :
 
-Toute la chaîne de la plateforme est **HT** : `resolvePrice`, la ligne de
-commande (`unitPriceMillicents`, `lineTotalCents` HT), puis la TVA ventilée
-**par taux, arrondie une fois**. Pour un pro c'est juste : sa facture est HT.
+- **La remise de retrait est HT**, calculée sur le sous-total HT et répartie par
+  taux dans `ventilateVat`. Tant qu'un point de retrait porte une remise, le
+  total d'une commande publique ne peut pas être « la somme des étiquettes ».
+- **Le devis et la commande doivent rester identiques** au centime ; ils
+  calculent chacun de leur côté, et une e2e tient la parité.
+- **Les colonnes HT sont lues ailleurs** : cycle de prélèvement, croissance, bon
+  de commande.
 
-Pour le public, **le prix décidé est le TTC d'étiquette**. Le faire passer par
-un HT puis revenir au TTC par ventilation expose à un écart d'un centime entre
-l'étiquette et le total payé (arrondi du HT, puis arrondi de la TVA par taux).
-Un croissant à 1,20 € qui coûte 1,21 € au panier est un défaut visible et, pour
-un consommateur, un affichage de prix inexact.
+Ce que le plan devra trancher, et où :
 
-Deux façons de faire, à trancher en plan (§6, D3) :
+| Question                                                  | Contrainte                                                                                                             |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Le public a-t-il la remise de retrait ? En TTC ou en HT ? | si oui, le total cesse d'être la somme des étiquettes ; il faut dire comment on l'affiche                              |
+| Où vit le calcul TTC-d'abord ?                            | dans **`@lfd/money`**, à côté de `ventilateVat`, pour que le devis et la commande le partagent — pas dans `Order` seul |
+| Que stocke une commande publique dans les colonnes HT ?   | un HT **déduit** du TTC, arrondi à un endroit nommé ; ou des colonnes TTC neuves                                       |
+| Par quelle porte sort un prix public ?                    | la même que le prix pro (`Pricer` → `resolvePrice`), sous les trois portes — qui résout alors en TTC ou en HT ?        |
 
-| Option                                                                                                                 | Pour                                            | Contre                                                                                                                 |
-| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **A. Totaux TTC d'abord** pour une commande publique : Σ TTC des lignes = total ; la TVA se **déduit** du TTC par taux | le total égale toujours la somme des étiquettes | une seconde méthode de calcul des totaux dans l'agrégat `Order` — c'est de l'argent, à prouver par des tests de parité |
-| **B. HT millicentimes assez fin** pour que l'aller-retour tombe juste, prouvé sur le catalogue réel                    | une seule méthode de totaux                     | une propriété empirique : un prix saisi demain peut la casser, et rien ne le refusera                                  |
-
-Recommandation : **A**, en le rendant **structurel** (l'audience de la commande
-choisit la méthode dans l'agrégat, pas le handler). B repose sur une
-vérification, A sur une construction.
+L'option « aller-retour HT assez fin » reste écartée : c'est une propriété
+empirique qu'un prix saisi demain peut casser sans que rien ne le refuse.
 
 ### 3.3 Les étages de résolution
 
-| Étage      | Pro            | Public (proposition)                                                                                                                                    |
-| ---------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| mercuriale | oui            | **non** — elle se négocie avec une société                                                                                                              |
-| volume     | oui            | **à décider** (D4)                                                                                                                                      |
-| promotion  | oui (publique) | oui, mais une promotion est aujourd'hui exprimée sur un prix HT ; son effet sur un TTC doit être défini, ou le public doit avoir ses propres promotions |
-| geste      | oui (staff)    | à décider — un geste sur une commande publique existe-t-il ?                                                                                            |
-| plancher   | oui            | le plancher protège une marge **HT pro** ; le prix public est au-dessus par construction (rapport ≤ 100 %), à vérifier en test                          |
+| Étage      | Pro | Public                                                                                                                                                                                                            |
+| ---------- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mercuriale | oui | non                                                                                                                                                                                                               |
+| volume     | oui | à décider                                                                                                                                                                                                         |
+| promotion  | oui | une promotion `all` s'applique **déjà** aux deux. Une promotion propre au public demande un nouveau type d'`PriceAudience` (rang de spécificité, chevauchements, fenêtre datée)                                   |
+| geste      | oui | pas de saisie staff publique aujourd'hui (§2.1)                                                                                                                                                                   |
+| plancher   | oui | **pas garanti par construction** : HT public < HT pro dès que (1 + t_b2b) / (1 + t_public) < rapport. Ex. rapport 90 %, b2b 5,5 %, public 20 % → 0,879. Le plancher est HT ; sa règle pour le public est à écrire |
 
-## 4. L'audience figée sur la commande
+## 4. Pro ou public, figé sur la commande
 
-**Aujourd'hui l'audience est une déduction** : `companyId === null`. Elle suffit
-à router le règlement, mais pas au reste :
+### 4.1 Pourquoi `companyId = null` ne suffit plus
 
-- **Deux sens pour `null`.** Une commande sans société est aujourd'hui aussi
-  celle d'un pro qui a commandé avant de créer sa société — c'est le cas que le
-  « rapatriement » vise. Après le pivot, `null` voudrait dire « public » **et**
-  « pro pas encore rattaché ». Un badge, une statistique ou une exclusion de
-  facturation qui lit `null` se tromperont sur le second.
-- **Plusieurs rattachements sans déclaration → `null`** (`resolve-company.ts`).
-  Aujourd'hui ce repli sert un tarif ; après le pivot il ferait **d'un pro une
-  commande publique, non facturée, au prix public**. Vérifié le 2026-09-15 :
-  `POST /orders` prend la société par `@ActingCompany()`
-  (`b2b/orders/http/orders.controller.ts:73`), donc par ce même repli.
+- Une commande sans société est aujourd'hui aussi celle d'une **personne
+  rattachée à plusieurs sociétés** (aucun front n'envoie l'en-tête) et celle
+  d'un pro qui a commandé avant de déclarer sa société.
+- **Toutes les commandes passées ont été payées au prix pro.** Aucune n'est
+  « publique » au sens du nouveau tarif.
 
-Travail :
+### 4.2 Ce qu'il faut
 
-1. **Une audience explicite, figée à la passation** : `Order.audience` (`pro` |
-   `public`), écrite par l'agrégat depuis le contexte résolu, jamais recalculée.
-   Migration **de données** pour l'existant (les commandes `companyId = null`
-   déjà en production : combien, et lesquelles sont en fait des pros ?) — à
-   compter avant d'écrire la bascule.
-2. **Refuser l'ambiguïté plutôt que la résoudre en public** : une personne
-   rattachée à plusieurs sociétés qui passe commande sans déclarer laquelle est
-   refusée (409, message qui dit de choisir l'espace). La vitrine peut garder
-   son repli ; la **commande** ne doit pas.
-3. **Qui est public ?** Proposition v1 : un compte **sans aucun rattachement**.
-   Un pro qui veut acheter pour lui-même utilise un autre compte (D1).
+1. **Un sélecteur d'espace** côté front qui envoie `x-lfc-company`, **avant**
+   tout refus de commande ambiguë. Sans lui, refuser bloquerait en production
+   toute personne rattachée à plusieurs sociétés.
+2. **Puis** refuser la commande d'une personne à plusieurs rattachements qui ne
+   déclare pas son espace (409, message qui dit de choisir).
+3. **Une colonne de clientèle figée à la passation**, écrite par l'agrégat.
+   Nom à choisir pour **ne pas** entrer en collision avec `PriceAudience`
+   (ex. `Order.clientele`). **Nullable** : `NULL` = « commande d'avant la
+   distinction », comme `catalogVersionId` ou `vatShares` ; **aucun rattrapage**
+   des commandes antérieures — ce serait fabriquer une affirmation.
+4. **Trois déploiements** (§0 de `CLAUDE.md`) : étendre (colonne nullable,
+   écrite par le nouveau code), basculer (les lecteurs la lisent), resserrer
+   seulement si un jour on sait quoi dire de `NULL`.
 
-## 5. Le reste du travail, surface par surface
+### 4.3 Qui est public ? (D1)
 
-### 5.1 Retrait (la demande : un badge, rien d'autre)
+Proposition : **aucun rattachement**. Mais un rattachement à une société
+**`pending`** donne aujourd'hui le contexte pro, sans vérification : après le
+pivot, le lien « Vous êtes un professionnel ? » ferait basculer un particulier
+au prix pro d'un seul geste. Le plan doit dire si `pending` vaut pro — ce qui
+touche le résolveur de principal, donc une frontière d'argent et de sécurité.
 
-- Porter `audience` dans `HandoverQueueEntry` (`handover/channels/commerce/`),
-  lu depuis la commande par l'adaptateur du commerce.
-- L'ajouter à `HandoverQueueEntryView` (contrat, champ neuf : additif).
-- L'écran comptoir de l'admin (`handover-shop/`) pose un `fold-badge` « Pro » /
-  « Public » sur la ligne. La file, l'ordre, le scan, l'attestation : inchangés.
-- Même geste, optionnel, sur le détail d'une commande scannée et sur la fiche
-  atelier (qui n'en a pas besoin pour produire).
+## 5. Le reste, surface par surface
+
+### 5.1 Retrait
+
+- Porter la clientèle dans `HandoverQueueEntry`
+  (`handover/channels/commerce/handover-queue.reader.ts`), lue par
+  `prisma-handover-queue.reader.ts` / `handover-order.query.ts`.
+- L'ajouter à `HandoverQueueEntryView` (champ neuf).
+- Badge « Pro » / « Public » sur la ligne de l'écran comptoir. File, ordre,
+  scan, attestation : inchangés. Une commande `NULL` (d'avant) n'a pas de badge.
 
 ### 5.2 Inscription et Mon compte
 
-- **La porte publique** : `/bienvenue` existe ; corriger d'abord la perte du
-  profil en production signalée à l'index. Le profil public = prénom, nom,
-  e-mail, téléphone — ce que `UserProfile` porte déjà (à confirmer au plan).
-- **Mon compte public** : une carte Profil, le lien vers ses commandes et son QR.
-  Pas d'identité légale, d'adresses de facturation, de RIB, de mandat, de KBIS,
-  d'utilisateurs, ni de callouts d'activation. La carte « Compléter mon dossier »
-  devient un lien discret « Vous êtes un professionnel ? » vers la porte pro.
-- **Navigation** : masquer « Mes factures » pour le public.
-- **Accès** : le flag `shop` est global. S'il faut ouvrir aux pros avant le
-  public (ou l'inverse), il faut un flag par audience (D6).
+- Corriger d'abord la perte du profil sur `/bienvenue`.
+- Mon compte public : Profil, commandes, QR. Rien de ce qui concerne une
+  société. « Vous êtes un professionnel ? » → porte pro (sous réserve de D1).
+- Masquer « Mes factures ».
+- Flag `shop` global : un flag par audience si les ouvertures diffèrent (D6).
 
-### 5.3 Commande
+### 5.3 Commande, documents, facturation
 
-- **Acheminement** : la demande dit « il retire avec un QR ». Le chemin coursier
-  existe aussi sans société (adresse saisie à la volée). Retrait seul pour le
-  public en v1 ? (D5)
-- **Règlement** : carte, déjà obligatoire sans société. Rien à faire.
-- **Heure limite / dérogations** : les dérogations se posent sur une société ;
-  le public a la règle générale. Rien à faire, à confirmer en test.
-- **Bon de commande** : le document actuel est un bon pro (HT). Le public a
-  besoin d'un récapitulatif TTC, ou d'aucun document (D7).
-- **Facturation** (quand elle sera codée) : exclure `audience = public`, et non
-  plus `companyId = null`.
-- **Rapatriement** (TODO) : ne s'applique qu'aux commandes `pro` sans société ;
-  une commande publique ne se rattache jamais.
+- **Acheminement** : retrait seul en v1 ? (D5)
+- **Règlement** : carte, déjà obligatoire. Rien à faire.
+- **Bon de commande et courriel de commande** : en HT aujourd'hui ; version TTC
+  pour le public, ou aucun document (D7).
+- **Cycle de prélèvement** : exclut déjà `companyId = null` ; à reformuler sur
+  la clientèle quand elle existera.
+- **Facture** : contradiction D0.
+- **Rapatriement** (TODO) : ne vise jamais une commande publique.
 
 ### 5.4 Back-office et chiffres
 
-- **Liste des commandes admin** : badge et filtre d'audience.
-- **Clients publics** : la liste clients est une liste de **sociétés** ; un
-  compte public n'y apparaît pas. Faut-il un écran « comptes publics » (support,
-  RGPD) ou la recherche par commande suffit-elle en v1 ? (D8)
-- **Cockpit commercial / momentum / leads** : ils raisonnent par société. Les
-  commandes publiques doivent en être exclues explicitement, ou segmentées, et
-  le chiffre d'affaires séparé pro / public.
+- Liste des commandes admin : badge et filtre.
+- Comptes publics : pas d'écran en v1 ? (D8)
+- **Croissance** : exclure ou segmenter le public **dès la première commande
+  publique** (concentration, CA) — pas après l'ouverture.
 
-### 5.5 Juridique et fiscal — à faire valider, non vérifié ici
+### 5.5 Juridique et fiscal — à faire valider, hors dépôt
 
-Rien de ce qui suit n'est écrit dans le dépôt ; ce sont les questions qu'une
-vente au consommateur ouvre, à poser au comptable ou au juriste :
-
-- conditions générales de vente **consommateur** distinctes des CGV pro ;
-- affichage des prix TTC au consommateur ;
-- droit de rétractation et son éventuelle exception pour les denrées
-  périssables ;
-- ce qui remplace la facture (ticket, note sur demande) et ses mentions ;
-- information RGPD d'un compte de particulier.
+- le **taux de TVA** d'une vente en ligne retirée ou livrée ;
+- CGV consommateur ; affichage TTC ; droit de rétractation et son exception
+  éventuelle pour les denrées périssables ;
+- ce qui remplace la facture, s'il n'y en a pas (D0) ; information RGPD.
 
 ### 5.6 Shopify
 
-Le référentiel pousse aujourd'hui le TTC public vers Shopify. Si la boutique
-publique remplace Shopify, le canal se retire **après** l'ouverture ; sinon les
-deux vitrines coexistent et doivent afficher le même prix — ce que l'ancrage TTC
-garantit à la source, pas à l'affichage (D9).
+Le référentiel pousse le TTC public vers Shopify. Non vérifié : quel taux la
+projection Shopify applique. Remplacé ou conservé ? (D9)
 
 ## 6. Décisions à prendre avant le plan
 
-| #      | Question                                                                  | Proposition                                                    |
-| ------ | ------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **D1** | Qui est public ? Un pro peut-il acheter en public avec le même compte ?   | public = aucun rattachement ; pas de double casquette en v1    |
-| **D2** | Quel taux de TVA pour la vente publique en ligne ?                        | celui du contexte **à emporter** (`takeaway`), fiche par fiche |
-| **D3** | Totaux d'une commande publique : TTC d'abord (A) ou aller-retour HT (B) ? | **A**, porté par l'agrégat                                     |
-| **D4** | Le public a-t-il volume, promotions, gestes ?                             | promotions publiques seulement, définies sur le TTC            |
-| **D5** | Livraison pour le public ?                                                | retrait seul en v1                                             |
-| **D6** | Ouvrir la boutique aux deux audiences en même temps ?                     | un flag par audience                                           |
-| **D7** | Quel document pour une commande publique ?                                | un récapitulatif TTC, sans mention pro                         |
-| **D8** | Un écran « comptes publics » au back-office ?                             | non en v1 ; recherche par commande                             |
-| **D9** | Shopify : remplacé ou conservé ?                                          | à trancher par Hugo                                            |
+| #       | Question                                                                              | Proposition                                                             |
+| ------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **D0**  | Le public reçoit-il une facture ? (`architecture-facturation.md` dit « toute vente ») | à trancher par Hugo, avec le comptable                                  |
+| **D1**  | Qui est public ? Un rattachement `pending` vaut-il pro ?                              | public = aucun rattachement ; `pending` = **public** jusqu'à activation |
+| **D2**  | La remise de retrait s'applique-t-elle au public ?                                    | non en v1 — le total reste la somme des étiquettes                      |
+| **D3**  | Où vit le calcul TTC d'abord, et que stocke une commande publique ?                   | `@lfd/money`, partagé devis / commande ; HT déduit, arrondi nommé       |
+| **D4**  | Volume, promotions propres, gestes pour le public ?                                   | aucun en v1 ; promotions `all` seulement                                |
+| **D5**  | Livraison pour le public ?                                                            | retrait seul en v1                                                      |
+| **D6**  | Ouvrir aux deux audiences en même temps ?                                             | un flag par audience                                                    |
+| **D7**  | Quel document pour une commande publique ?                                            | récapitulatif TTC, bon et courriel                                      |
+| **D8**  | Un écran « comptes publics » ?                                                        | non en v1                                                               |
+| **D9**  | Shopify : remplacé ou conservé ?                                                      | à trancher par Hugo                                                     |
+| **D10** | Que voit la vitrine anonyme : prix public ou pro ?                                    | public ; le pro voit son prix une fois connecté                         |
 
 ## 7. Découpage proposé
 
-Chaque lot se déploie seul, dans cet ordre ; les migrations sont additives,
-la seule bascule de données est au lot 1.
+**Aucune ouverture au public avant la fin du lot 5.**
 
-| Lot | Contenu                                                                                                                                     | Risque               | `vitruve` |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | --------- |
-| 0   | Compter en production les commandes `companyId = null` et identifier les pros parmi elles ; compter les personnes à plusieurs rattachements | aucun (lecture)      | —         |
-| 1   | `Order.audience` figée + bascule de l'existant ; refus de la commande ambiguë ; badge dans la file de retrait et la liste admin             | migration de données | oui       |
-| 2   | Tarif public à la frontière : projection, miroir, contrats catalogue / devis, rayon public qui écarte l'article sans taux public            | argent               | oui       |
-| 3   | Totaux TTC d'abord pour une commande publique, étages de résolution publics, plancher                                                       | argent               | oui       |
-| 4   | Porte publique (correction du profil), Mon compte public, navigation, récapitulatif TTC                                                     | faible               | —         |
-| 5   | Flag par audience, cockpit et chiffres segmentés, CGV consommateur (après validation juridique)                                             | faible               | —         |
+| Lot | Contenu                                                                                                                                          | Risque          | `vitruve` |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- | --------- |
+| 0   | Compter en production : commandes sans société, comptes à plusieurs rattachements, points de retrait avec remise, familles sans taux public      | aucun (lecture) | —         |
+| 1   | Sélecteur d'espace côté front (en-tête `x-lfc-company`)                                                                                          | faible          | —         |
+| 2   | Refus de la commande ambiguë ; colonne de clientèle nullable écrite à la passation ; badge au comptoir et dans la liste admin                    | frontière       | oui       |
+| 3   | Tarif public **et** totaux TTC d'abord, ensemble : snapshot v9, projection, miroir, `@lfd/money`, devis, commande, champs de contrat **ajoutés** | argent          | oui       |
+| 4   | Porte publique (profil), Mon compte public, navigation, bon et courriel TTC, croissance segmentée                                                | faible          | —         |
+| 5   | Flag par audience, CGV consommateur et décisions fiscales validées                                                                               | juridique       | —         |
 
-**Rien ne s'ouvre au public avant les lots 1 à 3** : sans eux, un particulier
-paie le prix pro et sa commande ne se distingue pas de celle d'un pro.
+Les lots 2 et 3 du premier jet (tarif, puis totaux) sont **fusionnés** : séparés,
+le devis coterait en TTC public pendant que la commande calcule encore en HT, et
+la parité devis / commande casserait entre les deux déploiements.
+
+## 8. La contradiction de `vitruve` (2026-09-15) et son sort
+
+| Objection                                                                                                                                | Sort                                                              |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **B1** « Σ TTC = total » faux avec la remise de retrait ; calcul hors `@lfd/money` = seconde définition du TTC ; portes du prix ignorées | corrigée — §3.2, D2, D3                                           |
+| **B2** le refus de la commande ambiguë bloque les comptes à plusieurs sociétés (aucun front n'envoie l'en-tête)                          | corrigée — §4.2, lot 1 avant le lot 2 ; vérifié par grep          |
+| **S1** rattrapage de l'audience = affirmation fabriquée, un seul déploiement                                                             | corrigée — colonne nullable, aucun rattrapage, trois déploiements |
+| **S2** `pending` donne le prix pro sans vérification ; saisie staff sans commande publique                                               | corrigée — §4.3, D1, §2.1                                         |
+| **S3** plancher « par construction » faux                                                                                                | corrigée — §3.3                                                   |
+| **S4** « audience » déjà pris par `PriceAudience`                                                                                        | corrigée — `Order.clientele` proposé, §3.3                        |
+| **S5** vitrine anonyme oubliée ; contrat nommé HT                                                                                        | corrigée — D10, champs ajoutés (lot 3)                            |
+| **S6** ordre des lots faux                                                                                                               | corrigée — §7                                                     |
+| **S7** cycle de prélèvement mal décrit ; contradiction avec « une facture pour toute vente »                                             | corrigée — §2.2, D0 ; citation vérifiée l. 17                     |
+| **S8** snapshot v9, nom du champ de fil ; taux = qualification fiscale                                                                   | corrigée — §3.1, §5.5                                             |
+| Mineures (chemins, libellé de file, archivage du bon, courriel, alertes)                                                                 | corrigées                                                         |
+| Non vérifié : données de production, taux Shopify, abonnements, écrans HT exhaustifs                                                     | assumé — lot 0 et plan                                            |
