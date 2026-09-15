@@ -1,0 +1,21 @@
+/* Même montage que `billing-address-dialog` : l'hôte se borne, `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.esign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

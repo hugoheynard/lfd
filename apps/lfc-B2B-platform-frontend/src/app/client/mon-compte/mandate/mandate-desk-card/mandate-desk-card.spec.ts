@@ -9,6 +9,7 @@ import { FR } from '../../../copy/fr';
 import { bootCard, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
+import { MandateProofDialog } from '../mandate-proof-dialog/mandate-proof-dialog';
 import { MandateDeskCard } from './mandate-desk-card';
 
 const DRAFT: CustomerMandateView = {
@@ -133,7 +134,8 @@ describe('MandateDeskCard', () => {
     }
   });
 
-  it('brouillon sans scan : la consigne, la RUM, les deux icônes, et le panneau sans générer', () => {
+  /** Règle « Saisir » : renvoyer le mandat signé est une saisie, donc un dialogue centré au bureau. */
+  it('brouillon sans scan : la consigne, la RUM, les deux icônes, et le dialogue de dépôt centré', () => {
     vi.stubGlobal('matchMedia', matchMediaAt(false));
     const el = render('ready', DRAFT);
 
@@ -145,9 +147,13 @@ describe('MandateDeskCard', () => {
       FR.account.mandateDownload,
     ]);
 
-    el.querySelector<HTMLButtonElement>('button.action')?.click();
-    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', generate: false });
-    // Le texte détaillé et le dépôt sont dans le panneau, pas sur la carte.
+    const action = el.querySelector<HTMLButtonElement>('button.action');
+    expect(action?.textContent).toContain(FR.account.mandateSend);
+    action?.click();
+    expect(openedPanel()?.component).toBe(MandateProofDialog);
+    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1' });
+    expect(openedPanel()?.side).toBe('center');
+    // Le texte détaillé et le dépôt sont dans le dialogue, pas sur la carte.
     expect(el.textContent).not.toContain(FR.account.mandateAwaitingBody.CORE);
     expect(el.querySelector('fold-file-dropzone')).toBeNull();
   });
@@ -178,13 +184,19 @@ describe('MandateDeskCard', () => {
     vi.restoreAllMocks();
   });
 
-  it('brouillon avec scan : « en vérification », le nom du fichier, et toujours les icônes', () => {
+  it('brouillon avec scan : « en vérification », le nom du fichier, les icônes, et le panneau', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
     const el = render('ready', { ...DRAFT, hasProof: true, proofFileName: 'mandat-signe.pdf' });
 
     expect(text(el, '.state')).toBe(FR.account.mandateInReview);
     expect(text(el, '.meta')).toBe('Fichier déposé : mandat-signe.pdf');
     expect(el.querySelectorAll('fold-button-icon').length).toBe(2);
-    expect(el.querySelector('button.action')?.textContent).toContain(FR.account.details);
+    const action = el.querySelector<HTMLButtonElement>('button.action');
+    expect(action?.textContent).toContain(FR.account.details);
+    // Consulter : le panneau sur le côté, d'où l'on remplace le scan.
+    action?.click();
+    expect(openedPanel()?.component).toBe(MandatePanel);
+    expect(openedPanel()?.side).toBe('right');
   });
 
   it('actif : « Mandat actif », la RUM et la date du papier — sans PDF à rendre', () => {

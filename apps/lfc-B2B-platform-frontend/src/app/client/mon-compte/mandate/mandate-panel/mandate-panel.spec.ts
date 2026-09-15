@@ -1,12 +1,13 @@
 import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import type { CustomerMandateView, MintBlocker, SepaScheme } from '@lfd/contracts';
-import { FoldFileDropzoneComponent } from 'fold-ng';
+import { FoldPanelHostService } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
-import { NotifyService } from '../../../../notify.service';
 import { ClientMandate } from '../../../client-mandate.service';
 import { FR } from '../../../copy/fr';
+import { matchMediaAt, openedPanel } from '../../account.fixture';
+import { MandateProofDialog } from '../mandate-proof-dialog/mandate-proof-dialog';
 import { MandatePanel, type MandatePanelData } from './mandate-panel';
 
 const DRAFT: CustomerMandateView = {
@@ -25,10 +26,8 @@ interface Wire {
   mintBlockers: WritableSignal<readonly MintBlocker[]>;
   refreshes: string[];
   generates: string[];
-  proofs: { companyId: string; name: string }[];
   /** Ce que le serveur répond : `null` accepté, sinon son message. */
   answer: string | null;
-  toasts: string[];
 }
 
 let wire: Wire;
@@ -45,9 +44,7 @@ function boot(
     mintBlockers: signal(mintBlockers),
     refreshes: [],
     generates: [],
-    proofs: [],
     answer: null,
-    toasts: [],
   };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -70,19 +67,8 @@ function boot(
             }
             return Promise.resolve(wire.answer);
           },
-          attachProof: (companyId: string, file: File): Promise<string | null> => {
-            wire.proofs.push({ companyId, name: file.name });
-            if (wire.answer === null) {
-              wire.mandate.set({ ...DRAFT, hasProof: true, proofFileName: file.name });
-            }
-            return Promise.resolve(wire.answer);
-          },
           document: () => Promise.resolve(new Blob(['%PDF'])),
         },
-      },
-      {
-        provide: NotifyService,
-        useValue: { success: (m: string) => wire.toasts.push(m), error: () => undefined },
       },
     ],
   });
@@ -100,13 +86,10 @@ async function settle(fixture: ComponentFixture<MandatePanel>): Promise<void> {
 const el = (fixture: ComponentFixture<MandatePanel>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
-function drop(fixture: ComponentFixture<MandatePanel>, file: File): void {
-  fixture.debugElement
-    .query(By.directive(FoldFileDropzoneComponent))
-    .triggerEventHandler('filesPicked', [file]);
-}
-
-const SCAN = new File(['%PDF-1.7'], 'mandat-signe.pdf', { type: 'application/pdf' });
+afterEach(() => {
+  TestBed.inject(FoldPanelHostService).dismissAll();
+  vi.unstubAllGlobals();
+});
 
 describe('MandatePanel', () => {
   describe('le texte suit le schéma', () => {
@@ -199,7 +182,7 @@ describe('MandatePanel', () => {
     expect(el(fixture).querySelector('button.generate')).not.toBeNull();
   });
 
-  it('brouillon sans scan : consigne, voir et télécharger, dépôt, signature électronique inerte', () => {
+  it('brouillon sans scan : consigne, voir et télécharger, et « Renvoyer le mandat signé »', () => {
     const fixture = boot(DRAFT);
     const host = el(fixture);
 
@@ -209,50 +192,36 @@ describe('MandatePanel', () => {
     expect(host.querySelector('button.download')?.textContent).toContain(
       FR.account.mandateDownload,
     );
-    expect(host.querySelector('fold-file-dropzone')?.textContent).toContain(FR.account.mandateDrop);
-
-    const esign = host.querySelector<HTMLButtonElement>('button.esign-button');
-    expect(esign?.textContent).toContain(FR.account.mandateEsign);
-    expect(esign?.disabled).toBe(true);
-    expect(host.querySelector('.esign fold-badge')?.textContent).toContain(
-      FR.account.mandateEsignSoon,
-    );
+    expect(host.querySelector('button.send')?.textContent).toContain(FR.account.mandateSend);
+    // Déposer est une saisie : la zone et la signature électronique sont dans le dialogue.
+    expect(host.querySelector('fold-file-dropzone')).toBeNull();
+    expect(host.querySelector('button.esign-button')).toBeNull();
   });
 
-  it('déposer le scan passe à « en vérification », le dit, et reste ouvert', async () => {
+  /** Règle « Saisir » : le dépôt s'ouvre en dialogue, empilé sur le panneau qui reste dessous. */
+  it('« Renvoyer le mandat signé » empile le dialogue de dépôt, centré au bureau', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
     const fixture = boot(DRAFT);
-    drop(fixture, SCAN);
-    await settle(fixture);
+    el(fixture).querySelector<HTMLButtonElement>('button.send')?.click();
 
-    expect(wire.proofs).toEqual([{ companyId: 'cmp_1', name: 'mandat-signe.pdf' }]);
-    expect(wire.toasts).toEqual([FR.account.mandateUploadedToast]);
-    expect(el(fixture).textContent).toContain(FR.account.mandateInReview);
-    expect(el(fixture).textContent).toContain('Fichier déposé : mandat-signe.pdf');
+    expect(openedPanel()?.component).toBe(MandateProofDialog);
+    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1' });
+    expect(openedPanel()?.side).toBe('center');
   });
 
-  it('un dépôt refusé s’affiche tel quel, sans toast de succès', async () => {
-    const fixture = boot(DRAFT);
-    wire.answer = 'Le fichier doit être un PDF ou une image.';
-    drop(fixture, SCAN);
-    await settle(fixture);
-
-    const alert = el(fixture).querySelector('fold-callout[variant="alert"]');
-    expect(alert?.textContent).toContain(FR.account.mandateUploadFailed);
-    expect(alert?.textContent).toContain('Le fichier doit être un PDF ou une image.');
-    expect(wire.toasts).toEqual([]);
-    expect(el(fixture).textContent).toContain(FR.account.mandateAwaiting);
-  });
-
-  it('brouillon avec scan : le fichier, un dépôt qui remplace, plus de signature électronique', () => {
+  it('brouillon avec scan : le fichier, et un geste qui ouvre le dépôt pour le remplacer', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(true));
     const fixture = boot({ ...DRAFT, hasProof: true, proofFileName: 'mandat-signe.pdf' });
     const host = el(fixture);
 
     expect(host.textContent).toContain(FR.account.mandateInReviewBody);
     expect(host.textContent).toContain('Fichier déposé : mandat-signe.pdf');
-    expect(host.querySelector('fold-file-dropzone')?.textContent).toContain(
-      FR.account.mandateDropReplace,
-    );
-    expect(host.querySelector('button.esign-button')).toBeNull();
+    const send = host.querySelector<HTMLButtonElement>('button.send');
+    expect(send?.textContent).toContain(FR.account.mandateDropReplace);
+
+    send?.click();
+    expect(openedPanel()?.component).toBe(MandateProofDialog);
+    expect(openedPanel()?.side).toBe('bottom');
   });
 
   it('actif : la RUM et la date du papier, ni PDF, ni dépôt, ni génération', () => {
@@ -262,7 +231,7 @@ describe('MandatePanel', () => {
     expect(host.textContent).toContain(FR.account.mandateActive);
     expect(host.textContent).toContain(FR.account.mandateActiveBody);
     expect(host.textContent).toContain('Signé le 10/09/2026');
-    expect(host.querySelector('fold-file-dropzone')).toBeNull();
+    expect(host.querySelector('button.send')).toBeNull();
     expect(host.querySelector('button.view')).toBeNull();
     expect(host.querySelector('button.generate')).toBeNull();
   });

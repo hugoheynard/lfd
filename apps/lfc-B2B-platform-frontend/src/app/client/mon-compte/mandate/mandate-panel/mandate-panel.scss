@@ -28,12 +28,12 @@
   overflow-wrap: anywhere;
 }
 
-.generate {
+.generate,
+.send {
   align-self: flex-start;
 }
 
-.acts,
-.esign {
+.acts {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

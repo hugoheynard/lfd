@@ -23,6 +23,7 @@ import { MandateBlockers } from '../mandate-blockers/mandate-blockers';
 import { downloadMandate, openMandate } from '../mandate-document';
 import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
+import { MandateProofDialog } from '../mandate-proof-dialog/mandate-proof-dialog';
 import {
   mandateActionLabel,
   mandateDetailLabel,
@@ -36,8 +37,9 @@ import {
 /**
  * La carte **Mandat SEPA** en pile, son propre panneau du rail juste après le
  * RIB : l'état, la RUM, les deux icônes du brouillon, et le bouton pleine
- * largeur qui ouvre le panneau. La consigne détaillée, le dépôt et la
- * signature électronique sont dans le panneau.
+ * largeur qui ouvre le panneau — ou, pour renvoyer le brouillon signé, le
+ * dialogue de dépôt. La consigne détaillée est dans l'un et l'autre ; le dépôt
+ * et la signature électronique, dans le dialogue.
  *
  * La lecture est PARTAGÉE (`ClientMandate`) ; un échec de lecture se dit —
  * montré comme « aucun mandat », il inviterait à en générer un second.
@@ -109,10 +111,20 @@ export class MandateMobileCard {
     }
   }
 
-  /** Sans mandat en cours, le panneau s'ouvre en générant : un seul geste pour « Générer mon mandat ». */
+  /**
+   * Sans mandat en cours, le panneau s'ouvre en générant : un seul geste pour
+   * « Générer mon mandat ». « Renvoyer le mandat signé » est une saisie, et
+   * ouvre directement le dialogue de dépôt (règle « Saisir ») ; « Détails »
+   * ouvre le panneau, où l'on remplace un scan déjà déposé.
+   */
   protected open(): void {
     const id = this.companyId();
-    if (id !== null) {
+    if (id === null) {
+      return;
+    }
+    if (this.stage() === 'awaiting') {
+      MandateProofDialog.open(this.panels, id);
+    } else {
       MandatePanel.open(this.panels, id, this.stage() === 'none');
     }
   }

@@ -9,6 +9,7 @@ import { FR } from '../../../copy/fr';
 import { bootCard, footButton, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
 import { MandatePanel } from '../mandate-panel/mandate-panel';
+import { MandateProofDialog } from '../mandate-proof-dialog/mandate-proof-dialog';
 import { MandateMobileCard } from './mandate-mobile-card';
 
 const DRAFT: CustomerMandateView = {
@@ -110,7 +111,8 @@ describe('MandateMobileCard', () => {
     expect(openedPanel()?.side).toBe('bottom');
   });
 
-  it('brouillon : la consigne, la RUM et les deux icônes ; le détail reste au panneau', () => {
+  /** Règle « Saisir » : en pile, le dialogue de dépôt est la feuille du bas. */
+  it('brouillon : la consigne, la RUM et les deux icônes ; le bouton du bas ouvre le dépôt en feuille', () => {
     vi.stubGlobal('matchMedia', matchMediaAt(true));
     const el = render('ready', DRAFT);
 
@@ -123,7 +125,9 @@ describe('MandateMobileCard', () => {
     const button = footButton(el);
     expect(button.textContent).toContain(FR.account.mandateSend);
     button.click();
-    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', generate: false });
+    expect(openedPanel()?.component).toBe(MandateProofDialog);
+    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1' });
+    expect(openedPanel()?.side).toBe('bottom');
   });
 
   it('« Options du mandat » ouvre leur panneau depuis le bas', () => {

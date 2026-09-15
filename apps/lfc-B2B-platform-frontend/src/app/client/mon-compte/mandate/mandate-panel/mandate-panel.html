@@ -42,8 +42,8 @@
     }
     @case ('active') {}
     @default {
-      <!-- Le brouillon, avec ou sans scan : son PDF se rend, et un scan se dépose
-           ou se remplace. -->
+      <!-- Le brouillon, avec ou sans scan : son PDF se rend, et le dialogue de
+           dépôt s'ouvre pour déposer ou remplacer le scan. -->
       <div class="acts">
         <button
           foldButton
@@ -71,33 +71,9 @@
         </button>
       </div>
 
-      <fold-file-dropzone
-        [accept]="accept"
-        [multiple]="false"
-        [label]="dropLabel()"
-        [hint]="t().account.mandateDropHint"
-        [busy]="uploading()"
-        [busyLabel]="t().account.mandateUploading"
-        (filesPicked)="upload($event)"
-      />
-
-      <!-- Aucun prestataire n'est branché : visible, désactivé, et dit pourquoi
-           (plan §5.1). -->
-      @if (stage() === 'awaiting') {
-        <div class="esign">
-          <button
-            foldButton
-            class="esign-button"
-            emphasis="outline"
-            intent="neutral"
-            type="button"
-            [disabled]="true"
-          >
-            {{ t().account.mandateEsign }}
-          </button>
-          <fold-badge variant="neutral" [content]="t().account.mandateEsignSoon" />
-        </div>
-      }
+      <button foldButton class="send" intent="primary" type="button" (click)="sendProof()">
+        {{ proofLabel() }}
+      </button>
     }
   }
 </fold-panel-body>
