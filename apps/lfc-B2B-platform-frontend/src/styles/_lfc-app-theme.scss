@@ -158,8 +158,8 @@
   --lfc-color-accent-border: var(--lfc-butter-300);
 
   /* ── Typographie : les deux familles ── */
-  --fold-font-sans: 'Outfit', system-ui, sans-serif;
-  --fold-font-label: 'Archivo', system-ui, sans-serif;
+  --fold-font-sans: 'Pogonia', system-ui, sans-serif;
+  --fold-font-label: 'Chunk', system-ui, sans-serif;
 
   /* ── Tailles : l'échelle fold recalée sur la réf ──
      Les huit crans de fold prennent les valeurs de la réf ; les rôles que la
@@ -188,7 +188,7 @@
 
   /* ── Interlettrages nommés par la réf, absents de l'échelle fold ── */
   /* ── LA VOIX DES BOUTONS ──────────────────────────────────────────────
-     Le registre des CTA de la maison, déclaré UNE fois : capitales d'Archivo,
+     Le registre des CTA de la maison, déclaré UNE fois : capitales de Chunk,
      noir, un angle et un plancher tactile. Chaque écran le réécrivait à la
      main faute de pouvoir le dire — les préréglages de taille de fold portent
      un attribut ET une classe, qu'aucune classe d'app ne surclasse. Les six

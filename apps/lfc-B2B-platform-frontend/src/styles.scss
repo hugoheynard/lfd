@@ -17,6 +17,9 @@
    ne peut pas descendre ici : Sass l'exige en tête de fichier. */
 @import './styles/lfc-app-theme';
 
+/* Les faces de la marque, auto-hébergées (cf. le fichier pour le pourquoi). */
+@import './styles/lfc-fonts';
+
 /* Tokens applicatifs LFD, dérivés des tokens fold (donc théma-agnostiques).
    `--lfd-backdrop-navi` : lavis bleu pâle de l'accent de marque, posé derrière
    une section pour la mettre en avant sans l'inverser. */

@@ -1,0 +1,42 @@
+/* ── Les faces de la marque : Pogonia (courant) et Chunk (registre gras) ──────
+   Les polices officielles de La Folie Coffee, sous licence web (confirmé par
+   Hugo le 2026-09-15). Elles remplacent Outfit et Archivo, qui étaient une
+   interprétation du site public servie par Google Fonts.
+
+   AUTO-HÉBERGÉES, et en chemin RELATIF à ce fichier : le builder copie les
+   fichiers dans le bundle et réécrit l'URL contre la feuille de styles. Elles
+   se chargent donc sous n'importe quelle base — `/pro/`, la racine, la coque
+   Capacitor — là où un chemin absolu `/fonts/…` casserait sous `/pro/`.
+
+   SOUS-ENSEMBLE LATIN (plage Google « latin ») converti en WOFF2 : environ
+   20 Ko par graisse contre 115 Ko pour le TTF d'origine. Les TTF/OTF sources ne
+   sont pas dans le dépôt — seuls les fichiers servis le sont.
+
+   ⚠️ Ni l'une ni l'autre n'a de chiffres tabulaires (`tnum`) : une colonne de
+   prix ne s'aligne pas au pixel. Outfit n'en avait pas non plus.
+
+   `font-display: swap` : le texte s'affiche tout de suite dans la face système,
+   puis bascule. Un écran vide le temps d'un téléchargement coûte plus qu'un
+   reflow. */
+
+@each $weight in 100, 200, 300, 400, 500, 600, 700, 800, 900 {
+  @font-face {
+    font-family: 'Pogonia';
+    font-style: normal;
+    font-weight: $weight;
+    font-display: swap;
+    src: url('./fonts/pogonia-#{$weight}.woff2') format('woff2');
+  }
+}
+
+/* Chunk n'existe qu'en UNE graisse, et le registre qu'elle reprend demande 800
+   et 900. Déclarée sur toute la plage : le navigateur sert ce fichier pour
+   chaque graisse demandée au lieu de SYNTHÉTISER un faux gras, qui épaissit
+   les traits d'une face déjà noire et la rend baveuse. */
+@font-face {
+  font-family: 'Chunk';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/chunk-400.woff2') format('woff2');
+}
