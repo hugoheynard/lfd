@@ -82,6 +82,20 @@
         <app-shop-promise class="page-promise" [level]="level" />
       }
 
+      <!-- CE QUI MANQUE, en tête du dossier, comme la fiche staff : la synthèse
+           et un raccourci par élément, qui ouvre le dialogue de la carte. Rien
+           quand rien ne manque — ni quand le verdict n'a pas pu être lu. -->
+      @if (completionSteps().length > 0) {
+        <lfd-company-activation-checklist
+          class="completion"
+          [steps]="completionSteps()"
+          [optionalNote]="t().account.completion.optionalNote"
+          (stepAction)="completeStep($event)"
+        >
+          <p intro class="completion-head">{{ completionCount() }}</p>
+        </lfd-company-activation-checklist>
+      }
+
       <div class="body">
         <!-- LE SOMMAIRE fait défiler, il ne change pas d'écran. -->
         <!-- L'ASIDE DU BUREAU : le sommaire, puis de quoi nous joindre — un seul
@@ -116,31 +130,71 @@
                  du pli, la carte mobile en deçà. `display: none` sur l'autre, donc
                  un lecteur d'écran n'en lit qu'une. L'ancre reste sur la section. -->
             <section class="card identity" id="compte-identity">
-              <app-identity-desk-card class="desk" />
-              <app-identity-mobile-card class="mobile" />
+              <app-identity-desk-card
+                class="desk"
+                [completion]="cardCompletion().identity"
+                (completionAction)="complete($event)"
+              />
+              <app-identity-mobile-card
+                class="mobile"
+                [completion]="cardCompletion().identity"
+                (completionAction)="complete($event)"
+              />
             </section>
 
             <section class="card kbis" id="compte-kbis">
-              <app-kbis-desk-card class="desk" />
-              <app-kbis-mobile-card class="mobile" />
+              <app-kbis-desk-card
+                class="desk"
+                [completion]="cardCompletion().kbis"
+                (completionAction)="complete($event)"
+              />
+              <app-kbis-mobile-card
+                class="mobile"
+                [completion]="cardCompletion().kbis"
+                (completionAction)="complete($event)"
+              />
             </section>
 
             <section class="card users" id="compte-users">
-              <app-users-desk-card class="desk" />
-              <app-users-mobile-card class="mobile" />
+              <app-users-desk-card
+                class="desk"
+                [completion]="cardCompletion().users"
+                (completionAction)="complete($event)"
+              />
+              <app-users-mobile-card
+                class="mobile"
+                [completion]="cardCompletion().users"
+                (completionAction)="complete($event)"
+              />
             </section>
 
             <section class="card addresses" id="compte-addresses">
-              <app-addresses-desk-card class="desk" />
-              <app-addresses-mobile-card class="mobile" />
+              <app-addresses-desk-card
+                class="desk"
+                [completion]="cardCompletion().addresses"
+                (completionAction)="complete($event)"
+              />
+              <app-addresses-mobile-card
+                class="mobile"
+                [completion]="cardCompletion().addresses"
+                (completionAction)="complete($event)"
+              />
             </section>
 
             <!-- Le RIB : au détenteur et au rôle comptable seulement (plan
                `plan-rib-client.md` §2). Le sommaire se renumérote sans lui. -->
             @if (showsBank()) {
               <section class="card bank" id="compte-bank" [class.paired]="showsMandate()">
-                <app-bank-desk-card class="desk" />
-                <app-bank-mobile-card class="mobile" />
+                <app-bank-desk-card
+                  class="desk"
+                  [completion]="cardCompletion().bank"
+                  (completionAction)="complete($event)"
+                />
+                <app-bank-mobile-card
+                  class="mobile"
+                  [completion]="cardCompletion().bank"
+                  (completionAction)="complete($event)"
+                />
               </section>
             }
 

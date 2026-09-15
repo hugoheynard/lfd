@@ -364,9 +364,51 @@ export interface AccountCopy {
   readonly mandateOptionsSavedToast: string;
   /** En tête du message du serveur, quand l'enregistrement est refusé. */
   readonly mandateOptionsSaveFailed: string;
+  /** Ce qui manque au dossier — la synthèse du haut et les encarts des cartes. */
+  readonly completion: CompletionCopy;
   /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
   readonly supportTitle: string;
   /** Le titre du panneau que la carte ouvre. */
   readonly supportPanelTitle: string;
   readonly supportBody: string;
+}
+
+/** Le texte d'un élément à compléter : ce qui manque, pourquoi, et le geste. */
+export interface CompletionItemCopy {
+  readonly title: string;
+  readonly detail: string;
+  readonly action: string;
+}
+
+/**
+ * **Ce qui manque au dossier**, dit au client (plan
+ * `documentation/b2b/plan-mon-compte-a-completer.md` §2.2). Les clés d'`items`
+ * sont les éléments de la table du plan, et la liste est fermée : un élément de
+ * plus est une ligne de plus dans les trois langues, pas une chaîne composée.
+ */
+export interface CompletionCopy {
+  /** La synthèse du haut, au singulier. */
+  readonly countOne: string;
+  /** La synthèse du haut, `{n}` le nombre d'éléments. */
+  readonly count: string;
+  /**
+   * Une ligne bloquante d'une société EN ATTENTE : `{detail}` est le détail de
+   * l'élément. Seulement alors — un compte actif ne « s'active » plus.
+   */
+  readonly blocksActivation: string;
+  /** La mention d'une ligne non bloquante, sur une société en attente. */
+  readonly optionalNote: string;
+  /** L'en-tête de l'encart d'une carte. */
+  readonly cardLead: string;
+  /** `{fields}` : les mentions que le mandat SEPA réclame (`mandateBlockers`), séparées par une virgule. */
+  readonly mandateFields: string;
+  readonly items: {
+    readonly identity: CompletionItemCopy;
+    readonly vat: CompletionItemCopy;
+    readonly telephone: CompletionItemCopy;
+    readonly billing: CompletionItemCopy;
+    readonly delivery: CompletionItemCopy;
+    readonly kbis: CompletionItemCopy;
+    readonly bank: CompletionItemCopy;
+  };
 }

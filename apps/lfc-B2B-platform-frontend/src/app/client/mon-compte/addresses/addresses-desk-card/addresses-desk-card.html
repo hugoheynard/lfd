@@ -1,4 +1,5 @@
 <h2 class="title">{{ t().account.sections.addresses }}</h2>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 <div class="row">
   <div class="block">
     <p class="sub">{{ t().account.billingHead }}</p>

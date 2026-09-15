@@ -1,4 +1,5 @@
 <h2 class="title">{{ t().account.sections.bank }}</h2>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 @switch (accounts.status()) {
   @case ('loading') {
     <fold-loading [message]="t().account.bankLoading" />

@@ -1,4 +1,5 @@
 <h2 class="title">{{ t().account.sections.identity }}</h2>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 @if (client.company(); as identity) {
   <dl class="facts">
     <div class="fact">

@@ -6,6 +6,7 @@
     </button>
   }
 </header>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 @if (client.company(); as identity) {
   <dl class="facts">
     <dt>{{ t().account.identityBrand }}</dt>

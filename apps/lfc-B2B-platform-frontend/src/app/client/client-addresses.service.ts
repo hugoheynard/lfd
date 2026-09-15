@@ -13,6 +13,7 @@ import { firstValueFrom, type Observable } from 'rxjs';
 import { AccountService } from '../account/account.service';
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { ClientActivation } from './client-activation.service';
 
 /**
  * **Le carnet d'adresses du client**, tel que notre base le porte.
@@ -45,6 +46,7 @@ export class ClientAddresses {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly account = inject(AccountService);
+  private readonly activation = inject(ClientActivation);
 
   private readonly known = signal<CompanyAddressesView | null>(null);
 
@@ -87,11 +89,19 @@ export class ClientAddresses {
    * puis relit le carnet. `null` au succès, le **message du serveur** au refus
    * (écriture réservée à `owner`/`admin`, vérifié le 2026-09-14 dans
    * `company-addresses.controller.ts`).
+   *
+   * Seule écriture du carnet qui relit AUSSI le verdict d'activation : il lit
+   * la facturation, jamais les livraisons (vérifié le 2026-09-15,
+   * `activation-gate.ts`). La relecture ne part que si le verdict a été lu.
    */
-  saveBilling(companyId: string, payload: BillingAddressPayload): Promise<string | null> {
-    return this.write(companyId, (headers) =>
+  async saveBilling(companyId: string, payload: BillingAddressPayload): Promise<string | null> {
+    const refusal = await this.write(companyId, (headers) =>
       this.http.patch(`${this.url(companyId)}/billing-address`, payload, { headers }),
     );
+    if (refusal === null) {
+      await this.activation.refresh(companyId);
+    }
+    return refusal;
   }
 
   /** `POST /companies/:id/delivery-addresses` — même contrat que {@link saveBilling}. */

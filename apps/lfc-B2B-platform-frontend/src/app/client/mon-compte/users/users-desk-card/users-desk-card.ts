@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldButtonComponent, FoldIconComponent, FoldPanelHostService } from 'fold-ng';
 
+import { CompletionCallout } from '../../completion/completion-callout/completion-callout';
+import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { UserAddPanel } from '../user-add-panel/user-add-panel';
@@ -15,11 +17,16 @@ import { canManageContacts, contactCount } from '../users-section';
 @Component({
   selector: 'app-users-desk-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldIconComponent, UsersList],
+  imports: [CompletionCallout, FoldButtonComponent, FoldIconComponent, UsersList],
   templateUrl: './users-desk-card.html',
   styleUrl: './users-desk-card.scss',
 })
 export class UsersDeskCard {
+  /** Ce qui manque dans cette carte (plan `plan-mon-compte-a-completer.md` §2.3) — la page le calcule. */
+  readonly completion = input<readonly CompletionItem[]>([]);
+  /** Compléter un élément : la page ouvre le dialogue de sa cible, le même que la synthèse du haut. */
+  readonly completionAction = output<CompletionTarget>();
+
   protected readonly t = inject(ClientCopyService).t;
   private readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);

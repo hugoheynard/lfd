@@ -364,6 +364,52 @@ export const ACCOUNT_FR: AccountCopy = {
   mandateOptionsSave: 'Enregistrer les options',
   mandateOptionsSavedToast: 'Options du mandat enregistrées.',
   mandateOptionsSaveFailed: 'Les options du mandat n’ont pas été enregistrées.',
+  completion: {
+    countOne: '1 élément à compléter',
+    count: '{n} éléments à compléter',
+    blocksActivation: 'Empêche l’activation : {detail}',
+    optionalNote: 'n’empêche pas l’activation',
+    cardLead: 'À compléter :',
+    mandateFields: 'Pour générer votre mandat SEPA : {fields}.',
+    items: {
+      identity: {
+        title: 'Identité légale',
+        detail: 'La raison sociale, la forme juridique ou le SIRET manquent.',
+        action: 'Compléter l’identité',
+      },
+      vat: {
+        title: 'Numéro de TVA',
+        detail: 'Votre numéro de TVA intracommunautaire est requis.',
+        action: 'Renseigner la TVA',
+      },
+      telephone: {
+        title: 'Numéro joignable',
+        detail:
+          'Un livreur doit pouvoir appeler : renseignez un téléphone, le vôtre ou celui d’un contact.',
+        action: 'Ajouter un numéro',
+      },
+      billing: {
+        title: 'Adresse de facturation',
+        detail: 'Vos factures ont besoin d’une adresse.',
+        action: 'Ajouter la facturation',
+      },
+      delivery: {
+        title: 'Adresse de livraison',
+        detail: 'Vous préférez être livré : ajoutez au moins une adresse de livraison.',
+        action: 'Ajouter une livraison',
+      },
+      kbis: {
+        title: 'Extrait KBIS',
+        detail: 'Déposez l’extrait KBIS de votre entreprise.',
+        action: 'Déposer le KBIS',
+      },
+      bank: {
+        title: 'RIB',
+        detail: 'Votre RIB est incomplet.',
+        action: 'Compléter le RIB',
+      },
+    },
+  },
   supportTitle: 'Contacter le service commercial',
   supportPanelTitle: 'Service commercial',
   supportBody: 'Une question sur votre compte, une commande ou une facture : nous vous répondons.',

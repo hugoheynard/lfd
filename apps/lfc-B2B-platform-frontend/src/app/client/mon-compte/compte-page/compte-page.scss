@@ -92,6 +92,18 @@
   padding: 0 var(--lfc-inset) var(--fold-space-4xl);
 }
 
+/* La synthèse de ce qui manque : un bloc de la colonne, qui garde sa hauteur —
+   en pile, c'est le rail qui cède la place, pas l'encart qui s'écrase. */
+.completion {
+  display: block;
+  flex: none;
+}
+
+.completion-head {
+  margin: 0;
+  font-weight: var(--fold-weight-bold);
+}
+
 .body {
   display: flex;
   flex-direction: column;

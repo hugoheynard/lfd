@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldPanelHostService } from 'fold-ng';
 
+import { CompletionCallout } from '../../completion/completion-callout/completion-callout';
+import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
@@ -17,11 +19,16 @@ import { type AddressesView, deliveryCountLabel, postalLine } from '../addresses
 @Component({
   selector: 'app-addresses-mobile-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardFoot],
+  imports: [CompletionCallout, CardFoot],
   templateUrl: './addresses-mobile-card.html',
   styleUrl: './addresses-mobile-card.scss',
 })
 export class AddressesMobileCard {
+  /** Ce qui manque dans cette carte (plan `plan-mon-compte-a-completer.md` §2.3) — la page le calcule. */
+  readonly completion = input<readonly CompletionItem[]>([]);
+  /** Compléter un élément : la page ouvre le dialogue de sa cible, le même que la synthèse du haut. */
+  readonly completionAction = output<CompletionTarget>();
+
   protected readonly t = inject(ClientCopyService).t;
   private readonly client = inject(ClientCompany);
   private readonly addresses = inject(ClientAddresses);

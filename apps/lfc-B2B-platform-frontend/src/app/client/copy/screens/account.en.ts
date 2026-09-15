@@ -360,6 +360,51 @@ export const ACCOUNT_EN: AccountCopy = {
   mandateOptionsSave: 'Save the options',
   mandateOptionsSavedToast: 'Mandate options saved.',
   mandateOptionsSaveFailed: 'The mandate options were not saved.',
+  completion: {
+    countOne: '1 item to complete',
+    count: '{n} items to complete',
+    blocksActivation: 'Prevents activation: {detail}',
+    optionalNote: 'does not prevent activation',
+    cardLead: 'To complete:',
+    mandateFields: 'To generate your SEPA mandate: {fields}.',
+    items: {
+      identity: {
+        title: 'Legal identity',
+        detail: 'The company name, legal form or SIRET is missing.',
+        action: 'Complete the identity',
+      },
+      vat: {
+        title: 'VAT number',
+        detail: 'Your intra-community VAT number is required.',
+        action: 'Enter the VAT number',
+      },
+      telephone: {
+        title: 'Phone number',
+        detail: 'A driver must be able to call: enter a phone number, yours or a contact’s.',
+        action: 'Add a number',
+      },
+      billing: {
+        title: 'Billing address',
+        detail: 'Your invoices need an address.',
+        action: 'Add the billing address',
+      },
+      delivery: {
+        title: 'Delivery address',
+        detail: 'You prefer delivery: add at least one delivery address.',
+        action: 'Add a delivery address',
+      },
+      kbis: {
+        title: 'KBIS extract',
+        detail: 'Upload your company’s KBIS extract.',
+        action: 'Upload the KBIS',
+      },
+      bank: {
+        title: 'Bank details',
+        detail: 'Your bank details are incomplete.',
+        action: 'Complete the bank details',
+      },
+    },
+  },
   supportTitle: 'Contact our sales team',
   supportPanelTitle: 'Sales team',
   supportBody: 'A question about your account, an order or an invoice: we will get back to you.',

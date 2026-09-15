@@ -364,6 +364,52 @@ export const ACCOUNT_IT: AccountCopy = {
   mandateOptionsSave: 'Registra le opzioni',
   mandateOptionsSavedToast: 'Opzioni del mandato registrate.',
   mandateOptionsSaveFailed: 'Le opzioni del mandato non sono state registrate.',
+  completion: {
+    countOne: '1 elemento da completare',
+    count: '{n} elementi da completare',
+    blocksActivation: 'Impedisce l’attivazione: {detail}',
+    optionalNote: 'non impedisce l’attivazione',
+    cardLead: 'Da completare:',
+    mandateFields: 'Per generare il vostro mandato SEPA: {fields}.',
+    items: {
+      identity: {
+        title: 'Identità legale',
+        detail: 'Mancano la ragione sociale, la forma giuridica o il SIRET.',
+        action: 'Completare l’identità',
+      },
+      vat: {
+        title: 'Partita IVA',
+        detail: 'È richiesta la vostra partita IVA intracomunitaria.',
+        action: 'Indicare la partita IVA',
+      },
+      telephone: {
+        title: 'Numero di telefono',
+        detail:
+          'Un corriere deve poter chiamare: indicate un telefono, il vostro o quello di un contatto.',
+        action: 'Aggiungere un numero',
+      },
+      billing: {
+        title: 'Indirizzo di fatturazione',
+        detail: 'Le vostre fatture hanno bisogno di un indirizzo.',
+        action: 'Aggiungere la fatturazione',
+      },
+      delivery: {
+        title: 'Indirizzo di consegna',
+        detail: 'Preferite la consegna: aggiungete almeno un indirizzo di consegna.',
+        action: 'Aggiungere una consegna',
+      },
+      kbis: {
+        title: 'Visura KBIS',
+        detail: 'Caricate la visura KBIS della vostra impresa.',
+        action: 'Caricare il KBIS',
+      },
+      bank: {
+        title: 'Coordinate bancarie',
+        detail: 'Le vostre coordinate bancarie sono incomplete.',
+        action: 'Completare le coordinate',
+      },
+    },
+  },
   supportTitle: 'Contattare il servizio commerciale',
   supportPanelTitle: 'Servizio commerciale',
   supportBody: 'Una domanda sul vostro conto, un ordine o una fattura: vi rispondiamo.',
