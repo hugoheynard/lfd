@@ -339,9 +339,9 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
  * son catalogue et sa tarification. Un espace séparé aurait fait deux portes
  * pour une seule maison.
  *
- * Trois sections d'une vue chacune pour l'instant. Elles ne sont pas
- * décoratives : elles disent les trois natures de ce qu'on règle ici — ce qu'on
- * vend, à quel prix, et ce qu'on en dit — et chacune grandira de son côté.
+ * Quatre sections. Elles ne sont pas décoratives : elles disent les natures de
+ * ce qu'on règle ici — ce qu'on vend, à quel prix, ce qu'on en dit, et comment
+ * on le remet — et chacune grandira de son côté.
  */
 export const B2B_VIEWS: readonly WorkspaceView[] = [
   {
@@ -388,6 +388,31 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'contracts',
     section: 'Contenu',
   })),
+  // LES RÉGLAGES DE L'E-COMMERCE — où retirer, à qui livrer, jusqu'à quand
+  // commander. Ils étaient un onglet des Réglages ; sous le droit qui ouvre
+  // déjà l'espace, donc sans `needs` (plan « remise et livraison par
+  // clientèle », D6).
+  {
+    key: 'points-de-retrait',
+    label: 'Points de retrait',
+    link: '/b2b/reglages/points-de-retrait',
+    icon: 'map-pin',
+    section: 'Réglages',
+  },
+  {
+    key: 'livraison',
+    label: 'Livraison',
+    link: '/b2b/reglages/livraison',
+    icon: 'truck',
+    section: 'Réglages',
+  },
+  {
+    key: 'heures-limites',
+    label: 'Heures limites de commande',
+    link: '/b2b/reglages/heures-limites',
+    icon: 'clock',
+    section: 'Réglages',
+  },
 ];
 
 /**
@@ -550,7 +575,9 @@ export const WORKSPACES = {
     views: PRODUCTION_VIEWS,
   },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
-  b2b: { key: 'b2b', title: 'B2B', icon: 'store', views: B2B_VIEWS },
+  // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`
+  // restent — elles vivent dans des favoris (précédent `journee`).
+  b2b: { key: 'b2b', title: 'E-commerce LFC', icon: 'store', views: B2B_VIEWS },
   comptabilite: {
     key: 'comptabilite',
     title: 'Comptabilité',

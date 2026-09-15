@@ -131,6 +131,24 @@ export class EmailAlreadyUsedError extends BusinessError {
   }
 }
 
+/**
+ * L'espace de travail qu'on veut ranger dans ses préférences n'est ni « perso »
+ * ni une société de la personne.
+ *
+ * Le cas réel le plus probable n'est pas une attaque : c'est un rattachement
+ * retiré entre l'affichage du menu et le clic, ou un onglet ouvert depuis la
+ * veille. Le message dit donc de recharger avant de choisir à nouveau.
+ */
+export class WorkspaceOutOfReachError extends BusinessError {
+  constructor(readonly workspace: string) {
+    super(
+      "account.nav_preferences.workspace_out_of_reach",
+      `L'espace « ${workspace} » ne peut pas être choisi : vous n'êtes pas rattaché à cette société. ` +
+        "Rechargez la page pour relire vos sociétés, puis choisissez « Perso » ou l'une d'elles.",
+    );
+  }
+}
+
 // ─── Introuvable (404) ───────────────────────────────────────────────────────
 
 export class UserProfileNotFoundError extends ResourceNotFoundError {

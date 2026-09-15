@@ -11,6 +11,7 @@ import {
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
 import {
+  DeliveryClosedForAudienceError,
   AccountSettlementNotGrantedError,
   OrderCompanyNotFoundError,
 } from "../../../domain/errors/order-errors.js";
@@ -33,6 +34,9 @@ import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.rea
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { CompanyMercurialeReader } from "../../../../pricing/domain/ports/company-mercuriale.reader.js";
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
+import { CustomerAudiences } from "../../services/customer-audiences.service.js";
+import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
+import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
@@ -168,6 +172,7 @@ const LABO: PickupAddressView = {
   pays: "France",
   isDefault: true,
   discount: null,
+  discountAudiences: { b2b: true, b2c: true },
   // Aucune heure déclarée : le point n'oppose alors rien à la tranche demandée.
   // Les cas d'ouverture sont couverts par `agreed-fulfillment.spec`.
   opening: { publicOpening: null, proPickup: null },
@@ -202,6 +207,13 @@ const pickups: PickupAddressRepository = {
   remove: () => Promise.resolve(),
   setDefault: () => Promise.resolve(),
 };
+
+/** Le réglage de livraison ; par défaut, ligne absente = ouvert aux deux. */
+function deliveryAvailability(
+  view: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
+): DeliveryAvailabilityReader {
+  return { current: () => Promise.resolve(view) };
+}
 
 const zones: DeliveryZoneRepository = {
   list: () => Promise.resolve([]),
@@ -282,6 +294,7 @@ function handler(
     readonly payments?: PaymentGateway;
     readonly events?: RecordingPublisher;
     readonly clientBaseUrl?: string | null;
+    readonly delivery?: DeliveryAvailabilityView;
   } = {},
 ): PlaceOrderForCustomerHandler {
   // `in` et non `??` : `null` est une valeur que les tests passent EXPRÈS, et
@@ -311,13 +324,14 @@ function handler(
         new FixedClock(PRICED_AT),
       ),
       currentCatalogVersion,
-      new CartAdjustments(pickups, zones),
+      new CartAdjustments(pickups, zones, deliveryAvailability(options.delivery)),
       noDeliveryDefaults(),
       noOrderCutoffs,
       new FixedClock(PRICED_AT),
       catalog,
       noWaivers,
       noLateFee,
+      new CustomerAudiences(guardDouble),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -373,6 +387,39 @@ describe("PlaceOrderForCustomerHandler — le mur", () => {
     await expect(
       handler(guard(null), sink).execute(new PlaceOrderForCustomerCommand("staff_1", payload())),
     ).rejects.toBeInstanceOf(OrderCompanyNotFoundError);
+    expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * Plan `remise-et-livraison-par-clientele`, Q1 (Hugo, 2026-09-15) : le staff ne
+ * livre pas quand la livraison est fermée au B2B — même règle pour tous.
+ */
+describe("PlaceOrderForCustomerHandler — la livraison par clientèle", () => {
+  it("refuse le coursier pour une société active quand la livraison est fermée aux pros", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      handler(guard("orders"), sink, {
+        delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false },
+      }).execute(
+        new PlaceOrderForCustomerCommand(
+          "staff_1",
+          payload({
+            fulfillmentMethod: "delivery",
+            pickupAddressId: null,
+            deliveryAddress: {
+              label: "",
+              ligne1: "12 rue du Test",
+              ligne2: "",
+              codePostal: "73150",
+              ville: "Val d'Isère",
+              pays: "France",
+            },
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(DeliveryClosedForAudienceError);
     expect(sink.placed).toBeNull();
   });
 });
@@ -508,13 +555,14 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           new FixedClock(PRICED_AT),
         ),
         currentCatalogVersion,
-        new CartAdjustments(pickups, zones),
+        new CartAdjustments(pickups, zones, deliveryAvailability()),
         noDeliveryDefaults(),
         noOrderCutoffs,
         new FixedClock(PRICED_AT),
         catalog,
         noWaivers,
         noLateFee,
+        new CustomerAudiences(guard("orders")),
       ),
       repo(sink),
       payments(intents),

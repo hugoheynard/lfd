@@ -11,7 +11,11 @@ function boot(status: AccountStatus, companies: readonly CompanyView[]): ClientC
     providers: [
       {
         provide: AccountService,
-        useValue: { status: signal(status).asReadonly(), companies: () => companies },
+        useValue: {
+          status: signal(status).asReadonly(),
+          companies: () => companies,
+          account: () => ({ companies, navPrefs: { catalogueView: null, workspace: null } }),
+        },
       },
     ],
   });
@@ -19,7 +23,7 @@ function boot(status: AccountStatus, companies: readonly CompanyView[]): ClientC
 }
 
 const company = (status: CompanyView['status']): CompanyView =>
-  ({ status, enseigne: 'La Maison', raisonSociale: 'SAS La Maison' }) as CompanyView;
+  ({ id: 'cmp_1', status, enseigne: 'La Maison', raisonSociale: 'SAS La Maison' }) as CompanyView;
 
 /**
  * Régression (2026-09-14) : la pastille de Mon compte disait « Compte actif ·

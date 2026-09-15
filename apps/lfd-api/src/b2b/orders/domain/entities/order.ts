@@ -8,6 +8,7 @@ import {
   type CartAdjustment,
   type FulfillmentMethod,
   type LateFeeAdjustment,
+  type OrderClientele,
   type PaymentStatus,
 } from "@lfd/contracts";
 
@@ -85,6 +86,8 @@ export interface DraftOrderInput {
 /** État de la commande sérialisé pour la persistance — aucun type Prisma ici. */
 export interface OrderToPlace {
   readonly companyId: string | null;
+  /** Qui commande, déduit par l'agrégat — cf. {@link clienteleOf}. */
+  readonly clientele: OrderClientele;
   readonly placedByUserId: string;
   readonly placedByStaffId: string | null;
   readonly fulfillmentMethod: FulfillmentMethod;
@@ -310,6 +313,7 @@ export class Order {
     }
     return {
       companyId: this.companyId,
+      clientele: clienteleOf(this.companyId),
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,
       fulfillmentMethod: this.fulfillment.method,
@@ -335,6 +339,22 @@ export class Order {
       lines: this.lines.map((line) => line.toSnapshot()),
     };
   }
+}
+
+/**
+ * **Qui commande** : `pro` quand la commande est passée pour une société,
+ * `public` sinon — quel que soit le statut de la société.
+ *
+ * C'est QUI commande, pas le tarif : une société en attente est `pro` ici et
+ * B2C au tarif (plan `documentation/order/plan-nature-du-client-sur-la-commande.md`,
+ * D1 et D2). Aucun appelant ne la passe, pour qu'aucun ne puisse la contredire.
+ *
+ * ⚠️ Règle **appliquée par l'agrégat**, pas une impossibilité : la base ne la
+ * contraint pas, et une société supprimée remet `company_id` à nul sous une
+ * commande restée `pro` (D3).
+ */
+function clienteleOf(companyId: string | null): OrderClientele {
+  return companyId === null ? "public" : "pro";
 }
 
 /**

@@ -1,3 +1,4 @@
+import { WORKSPACE_HEADER } from "@lfd/contracts";
 import {
   Injectable,
   UnauthorizedException,
@@ -6,7 +7,7 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { attachActor, attachCompany } from "../context/request-context.store.js";
-import { COMPANY_HEADER, resolveCompany } from "./resolve-company.js";
+import { resolveCompany } from "./resolve-company.js";
 import { AccessTokenVerifier } from "./access-token.verifier.js";
 import { PrincipalResolver } from "./principal.resolver.js";
 import { DevImpersonation } from "./dev-impersonation.js";
@@ -125,12 +126,17 @@ function bearerToken(header: string | undefined): string | undefined {
 /**
  * L'espace de travail déclaré par l'appelant, ou `null`.
  *
+ * Un en-tête et non un paramètre de route : le contexte vaut pour TOUTE la
+ * requête — la vitrine, le panier, la commande — et le répéter dans chaque URL
+ * en ferait un argument qu'on peut oublier à un endroit.
+ *
  * Lu ici et nulle part ailleurs : c'est une chaîne venue du réseau, elle n'a
- * aucune autorité, et `resolveCompany` la confronte aux rattachements avant
- * qu'elle ne serve à quoi que ce soit. Un tableau d'en-têtes (le cas d'un
- * doublon) est refusé plutôt que réduit au premier — on ne devine pas.
+ * aucune autorité, et `resolveCompany` y reconnaît la valeur réservée « perso »
+ * ou la confronte aux rattachements avant qu'elle ne serve à quoi que ce soit.
+ * Un tableau d'en-têtes (le cas d'un doublon) est refusé plutôt que réduit au
+ * premier — on ne devine pas.
  */
 function declaredCompany(request: AuthenticatedRequest): string | null {
-  const raw = request.headers[COMPANY_HEADER];
+  const raw = request.headers[WORKSPACE_HEADER];
   return typeof raw === "string" && raw.trim() !== "" ? raw.trim() : null;
 }

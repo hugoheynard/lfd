@@ -1,3 +1,9 @@
+/* `sass:meta` pour `load-css` : les feuilles de l'app se chargent À LEUR PLACE
+   dans l'ordre du fichier, ce qu'un `@use` ne sait pas faire (Sass l'exige en
+   tête). `@import` le faisait, et il est déprécié — Dart Sass 3 le retire
+   (remplacé le 2026-09-15). */
+@use 'sass:meta';
+
 /* fold-ng design tokens — the single source of truth (primitives + scales +
    semantic). The `navi` theme is selected via `data-theme="navi"` on <html>;
    the app-shell paints the navy chrome + ivory page from these. Imported in the
@@ -8,17 +14,18 @@
    posé écran par écran via `data-theme="lfc-app"` sur l'hôte routé, tant que la
    refonte n'a pas remplacé l'espace pro.
 
-   ⚠️ IMPÉRATIVEMENT APRÈS les tokens fold, et en `@import` pour cette raison :
+   ⚠️ IMPÉRATIVEMENT APRÈS les tokens fold, et chargé en place pour cette raison :
    le sous-bloc `[data-theme="lfc-app"] [data-surface="chrome"]` a EXACTEMENT la
    même spécificité que le `[data-theme="navi"] [data-surface="chrome"]` de fold,
    et les deux matchent le même élément (l'app tourne sous `<html
    data-theme="navi">`). À égalité, c'est l'ordre du fichier qui tranche — placé
    avant, le thème client perdait sa bande de marque au profit de navi. Un `@use`
-   ne peut pas descendre ici : Sass l'exige en tête de fichier. */
-@import './styles/lfc-app-theme';
+   ne peut pas descendre ici : Sass l'exige en tête de fichier — d'où
+   `meta.load-css`, qui charge la feuille à cet endroit précis. */
+@include meta.load-css('./styles/lfc-app-theme');
 
 /* Les faces de la marque, auto-hébergées (cf. le fichier pour le pourquoi). */
-@import './styles/lfc-fonts';
+@include meta.load-css('./styles/lfc-fonts');
 
 /* Tokens applicatifs LFD, dérivés des tokens fold (donc théma-agnostiques).
    `--lfd-backdrop-navi` : lavis bleu pâle de l'accent de marque, posé derrière

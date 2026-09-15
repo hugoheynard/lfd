@@ -43,7 +43,7 @@ export interface RequestContext {
    *
    * ⚠️ Elle ne se déduit **jamais d'office** quand il y a plusieurs
    * rattachements — c'est le raccourci que `principal.ts` interdit, et il fuit.
-   * Cf. `resolveCompany` pour les trois branches.
+   * Cf. `resolveCompany` pour la déclaration « perso » et les trois branches.
    */
   readonly companyId: string | null;
 }

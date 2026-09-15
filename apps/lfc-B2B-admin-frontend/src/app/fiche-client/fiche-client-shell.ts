@@ -38,6 +38,8 @@ import { CompteChiffres } from '../shared/compte-chiffres/compte-chiffres';
  *   fiche qu'on avait construite dans la page rendez-vous ;
  * - **Informations** — l'état civil du compte : pièces d'activation, identité,
  *   contacts, adresses. Ce qu'on ouvre pour *corriger* quelque chose ;
+ * - **Notes** — les photos des notes papier du commercial, qu'il classe à la
+ *   main. Derrière `b2b_client_notes:read` : ni la comptabilité ni le support ;
  * - **Commandes** — ce qu'il a acheté, et à quel rythme ;
  * - **Facturation** — ce qui reste à facturer (au compte, par mois) face à ce
  *   qui est déjà réglé à la commande. Un **relevé**, pas des factures : la
@@ -75,6 +77,15 @@ const ALL_TABS: readonly GuardedTab[] = [
     link: 'informations',
     icon: 'company',
     permission: null,
+  },
+  // Entre Informations et Commandes, et derrière son propre droit : la
+  // comptabilité et le support lisent la fiche, pas les notes de la commerciale.
+  {
+    key: 'notes',
+    label: 'Notes',
+    link: 'notes',
+    icon: 'edit',
+    permission: 'b2b_client_notes:read',
   },
   {
     key: 'commandes',
@@ -159,7 +170,8 @@ export class FicheClientShell {
    * 🔴 **Un `computed`, parce qu'un onglet dépend d'un droit.**
    *
    * « Tarifs » lit les prix négociés du compte, derrière `b2b_pricing:read` —
-   * que la fiche, ouverte à `b2b_companies:read`, ne garantit pas. Le garde de
+   * que la fiche, ouverte à `b2b_companies:read`, ne garantit pas. « Notes »
+   * de même, derrière `b2b_client_notes:read`. Le garde de
    * route referme l'URL tapée ; ce filtre évite de proposer une destination qui
    * redirigerait ailleurs sans rien dire.
    *

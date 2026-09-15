@@ -1,21 +1,22 @@
+import { CompanyStatusReader } from "./company-status.reader.js";
+
+export type { OrderCompanyStatus } from "./company-status.reader.js";
+
 /** Rôle du demandeur dans l'entreprise visée (miroir de `CustomerRole` Prisma). */
 export type OrderRole = "owner" | "admin" | "orders" | "billing";
-
-/** Cycle de vie de l'entreprise (miroir de `CompanyStatus` Prisma). */
-export type OrderCompanyStatus = "pending" | "active" | "suspended" | "terminated";
 
 /**
  * Port de **lecture** des garde-fous d'une commande : le rôle du demandeur dans
  * l'entreprise (mur de tenancy), le statut d'activation (droit de commander) et le
  * terme de règlement (qui décide si une carte est exigée au checkout). Le contexte
  * `orders` lit ce dont il a besoin sans dépendre des internes du contexte `account`.
+ *
+ * Le statut est hérité de {@link CompanyStatusReader}, le port étroit que lit la
+ * clientèle d'un devis ou d'une commande.
  */
-export abstract class OrderGuardReader {
+export abstract class OrderGuardReader extends CompanyStatusReader {
   /** Rôle du demandeur dans l'entreprise, ou `null` s'il n'en est pas membre. */
   abstract roleOf(userId: string, companyId: string): Promise<OrderRole | null>;
-
-  /** Statut de l'entreprise, ou `null` si elle n'existe pas. */
-  abstract companyStatusOf(companyId: string): Promise<OrderCompanyStatus | null>;
 
   /**
    * Cette société règle-t-elle **au compte** ? (Faux si elle n'existe pas.)

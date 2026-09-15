@@ -50,8 +50,9 @@ vérification, ni le remplacement de l'extrait. Ces deux gestes menaient au mêm
 propre société) ne suspendait déjà pas. C'était l'incohérence, pas la règle.
 
 **La livraison** n'est plus une pièce. Le jour où le service ouvre, elle revient
-dans un commit avec ses tests. Côté écrans, une seule ligne commande son
-affichage : `DELIVERY_SERVICE_OPEN` (`@lfd/b2b-ui/flags`), lue par cinq écrans.
+dans un commit avec ses tests. Côté écrans, son affichage suit le réglage de
+livraison par clientèle (« E-commerce LFC → Réglages → Livraison ») — il a
+remplacé la constante `DELIVERY_SERVICE_OPEN` le 2026-09-15.
 
 ## 3. Ce qui reste à construire : la ligne d'avertissements
 

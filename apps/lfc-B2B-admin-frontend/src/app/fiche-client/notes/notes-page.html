@@ -1,0 +1,19 @@
+<lfd-photo-cards-editor
+  emptyIcon="edit"
+  addSide="start"
+  [gateway]="gateway()"
+  [labels]="labels"
+  [limits]="limits"
+  [photoDisplay]="photoDisplay"
+  [canEdit]="canEdit()"
+>
+  <ng-template lfdPhotoCardForm let-form>
+    <lfd-photo-card-form
+      [(value)]="form.draft"
+      [labels]="formLabels"
+      [limits]="limits"
+      [photoPolicy]="photoPolicy"
+      [currentPhotoUrl]="form.currentPhotoUrl()"
+    />
+  </ng-template>
+</lfd-photo-cards-editor>

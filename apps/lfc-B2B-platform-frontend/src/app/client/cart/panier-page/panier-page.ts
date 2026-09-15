@@ -1,19 +1,23 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { instantToLocal } from '@lfd/contracts';
 
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
 import { ClientChrome } from '../../client-chrome.service';
+import { ClientLocale } from '../../client-locale.service';
+import { serviceDayLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { CartSummary } from '../cart-summary/cart-summary';
+import { RETURN_TO_CART } from '../../nouvelle-commande/commande-page/return-to-cart';
 
 /**
  * Le panier, en pile — ce que le bureau montre dans sa colonne de droite.
  *
  * Il ne redemande rien : le lieu et le créneau sont déjà pris, ils se rappellent
- * en tête de page. Le seul geste qui reste est de régler, et le bouton porte le
+ * en tête de page — et « Modifier » les rouvre sans perdre le panier. Le seul geste qui reste est de régler, et le bouton porte le
  * montant plutôt que de le laisser deviner.
  */
 @Component({
@@ -32,6 +36,32 @@ export class PanierPage {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   protected readonly choice = this.order.choice;
+  private readonly locale = inject(ClientLocale);
+
+  /**
+   * « demain · créneau choisi », avec la VRAIE journée : celle que le serveur a
+   * accordée au point, et non « demain » écrit en dur.
+   *
+   * Aujourd'hui se lit à l'horloge du navigateur, à Paris : c'est un libellé, et
+   * seul un onglet laissé ouvert passé minuit pourrait le décaler d'un mot.
+   */
+  protected readonly slotNote = computed(() => {
+    const service = this.choice();
+    if (service === null) {
+      return '';
+    }
+    const c = this.t().cart;
+    const day = serviceDayLabel(
+      service.date,
+      instantToLocal(new Date()).day,
+      this.locale.current(),
+      {
+        today: c.dayToday,
+        tomorrow: c.dayTomorrow,
+      },
+    );
+    return fill(c.slotNote, { day });
+  });
 
   /**
    * Le bouton nomme la SUITE, et elle dépend de ce qui manque : un panier vide
@@ -55,6 +85,16 @@ export class PanierPage {
 
   protected pickService(): void {
     void this.router.navigate(['/nouvelle-commande']);
+  }
+
+  /**
+   * Rouvre le mode et l'heure, et **revient ici** une fois choisis.
+   *
+   * Sans le retour, l'écran de commande enchaîne sur le rayon : on aurait changé
+   * d'heure pour se retrouver à recomposer un panier qui était déjà fait.
+   */
+  protected changeService(): void {
+    void this.router.navigate(['/nouvelle-commande'], { queryParams: RETURN_TO_CART });
   }
 
   protected backToShop(): void {

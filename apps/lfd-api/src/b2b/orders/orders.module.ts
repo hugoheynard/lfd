@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { CatalogModule } from "../catalog/catalog.module.js";
+import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repository.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
@@ -27,6 +28,8 @@ import { PlaceOrderHandler } from "./application/commands/place-order.handler.js
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
+import { CustomerAudiences } from "./application/services/customer-audiences.service.js";
+import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
 import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
@@ -96,6 +99,8 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
   imports: [
     PickupAddressesModule,
     DeliveryZonesModule,
+    // À qui la livraison est proposée : `CartAdjustments` le refuse au serveur.
+    DeliveryAvailabilityModule,
     OrderCutoffsModule,
     OrderWaiversModule,
     PaymentsModule,
@@ -126,6 +131,7 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     OrderDrafting,
     OrderLinePricing,
     CartAdjustments,
+    CustomerAudiences,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,
@@ -185,6 +191,10 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     // d'ajouter un cache à l'une et pas à l'autre.
     { provide: OrderCutoffReader, useExisting: OrderCutoffRepository },
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
+    // Le port étroit du statut, sur la MÊME instance que le garde : la clientèle
+    // n'a besoin que de lui, et deux lecteurs du statut n'auraient aucune raison
+    // de diverger — donc aucune raison d'exister deux fois.
+    { provide: CompanyStatusReader, useExisting: OrderGuardReader },
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.

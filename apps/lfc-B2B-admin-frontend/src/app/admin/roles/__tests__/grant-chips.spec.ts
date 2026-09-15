@@ -47,8 +47,10 @@ describe('grantGroups', () => {
    * reçoit l'argent de l'entreprise ne peuvent pas s'ouvrir ensemble.
    * `b2b_feature_access` l'a fait passer de 21 à 22 le 2026-09-14 : ouvrir ou
    * couper la vente en ligne pèse plus que corriger une zone de livraison.
+   * `b2b_client_notes` l'a fait passer à 23 le 2026-09-15 : les notes de la
+   * commerciale ne suivent pas la lecture de la fiche client.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(22);
+    expect(RESOURCE_COUNT).toBe(23);
   });
 });

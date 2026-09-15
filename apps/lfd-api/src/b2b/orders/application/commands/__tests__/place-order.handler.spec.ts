@@ -14,6 +14,7 @@ import {
 } from "../../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
+  DeliveryClosedForAudienceError,
   NoDeliveryZoneForPostalCodeError,
   OrderCompanyNotFoundError,
   PickupNotConfiguredError,
@@ -39,6 +40,13 @@ import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.rea
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { CompanyMercurialeReader } from "../../../../pricing/domain/ports/company-mercuriale.reader.js";
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
+import { CustomerAudiences } from "../../services/customer-audiences.service.js";
+import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
+import {
+  CompanyStatusReader,
+  type OrderCompanyStatus as CompanyStatusOf,
+} from "../../../domain/ports/company-status.reader.js";
+import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
@@ -326,10 +334,26 @@ const noReader: OrderReader = {
 /** L'unité de travail, réduite à ce qu'elle promet ici : exécuter. */
 const directWork: UnitOfWork = { run: <T>(work: () => Promise<T>): Promise<T> => work() };
 
+/** Le statut de la société portée, tel que la clientèle le lit. */
+function companiesAt(status: CompanyStatusOf | null): CompanyStatusReader {
+  return { companyStatusOf: () => Promise.resolve(status) };
+}
+
+/** Le réglage de livraison ; par défaut, ligne absente = ouvert aux deux. */
+function deliveryAvailability(
+  view: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
+): DeliveryAvailabilityReader {
+  return { current: () => Promise.resolve(view) };
+}
+
 function drafting(
   pickupsDouble: PickupAddressRepository,
   zonesDouble: DeliveryZoneRepository,
   versions: CatalogVersionReader = versionsAt(CURRENT_VERSION),
+  audience: {
+    readonly status?: CompanyStatusOf | null;
+    readonly delivery?: DeliveryAvailabilityView;
+  } = {},
 ): OrderDrafting {
   return new OrderDrafting(
     new OrderLinePricing(
@@ -353,13 +377,14 @@ function drafting(
       new FixedClock(PRICED_AT),
     ),
     versions,
-    new CartAdjustments(pickupsDouble, zonesDouble),
+    new CartAdjustments(pickupsDouble, zonesDouble, deliveryAvailability(audience.delivery)),
     noDeliveryDefaults(),
     noOrderCutoffs,
     new FixedClock(PRICED_AT),
     catalog,
     noWaivers,
     noLateFee,
+    new CustomerAudiences(companiesAt(audience.status === undefined ? "active" : audience.status)),
   );
 }
 
@@ -373,6 +398,7 @@ const LABO_POINT: PickupAddressView = {
   pays: "France",
   isDefault: true,
   discount: null,
+  discountAudiences: { b2b: true, b2c: true },
   // Aucune heure déclarée : le point n'oppose alors rien à la tranche demandée.
   // Les cas d'ouverture sont couverts par `agreed-fulfillment.spec`.
   opening: { publicOpening: null, proPickup: null },
@@ -764,6 +790,67 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.discountCents).toBe(80);
     expect(sink.placed?.deliveryFeeCents).toBe(0);
     expect(sink.placed?.totalCents).toBe(320);
+  });
+
+  /**
+   * Plan `remise-et-livraison-par-clientele`, Q3 : une société qui n'est pas
+   * ACTIVE suit les règles B2C. Une remise réservée aux pros ne s'obtient pas en
+   * déclarant une société.
+   */
+  it("en RETRAIT, ne remise pas une société en attente quand la remise est réservée aux pros", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const point: PickupAddressView = {
+      ...LABO_POINT,
+      discount: { mode: "percent", bp: 2000 },
+      discountAudiences: { b2b: true, b2c: false },
+    };
+    const handler = new PlaceOrderHandler(
+      guard("orders", "pending", false),
+      drafting(pickups(point), zones(), versionsAt(CURRENT_VERSION), { status: "pending" }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+    );
+
+    await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
+
+    expect(sink.placed?.discountCents).toBe(0);
+    expect(sink.placed?.discountAdjustment).toBeNull();
+    expect(sink.placed?.totalCents).toBe(400);
+  });
+
+  it("en COURSIER, refuse la livraison fermée aux particuliers pour une commande perso, sans rien écrire", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const handler = new PlaceOrderHandler(
+      guard(null, null, false),
+      drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
+        delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false },
+      }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+    );
+
+    await expect(
+      handler.execute(
+        new PlaceOrderCommand(
+          "u1",
+          payload({ fulfillmentMethod: "delivery", deliveryAddress: COURIER_ADDR }),
+          null,
+        ),
+      ),
+    ).rejects.toBeInstanceOf(DeliveryClosedForAudienceError);
+    expect(sink.placed).toBeNull();
   });
 
   it("en COURSIER, fige l'adresse livrée et déduit le frais de SON code postal", async () => {

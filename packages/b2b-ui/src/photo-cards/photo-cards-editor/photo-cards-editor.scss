@@ -1,0 +1,92 @@
+// Fragment transparent : l'usage qui l'enveloppe (`lfd-delivery-procedure-editor`) garde sa place dans la mise en page.
+:host {
+  display: contents;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--fold-space-md);
+}
+
+// Le rang ou la qualification est dit par le sous-titre de chaque carte ; la liste reste une `ol` pour l'assistance.
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+// Les retours à la ligne saisis font partie du texte : « 1er étage\nporte de gauche ».
+.card-body {
+  margin: 0;
+  white-space: pre-line;
+  color: var(--fold-color-text);
+}
+
+.card-photo {
+  display: block;
+  max-width: 100%;
+  max-height: 12rem;
+  object-fit: contain;
+  border-radius: var(--fold-radius-md);
+  border: 1px solid var(--fold-color-border-subtle);
+}
+
+// La vignette est un déclencheur, pas un bouton d'action : un cadre à la taille de l'image, qui promet l'agrandissement.
+.card-thumb {
+  display: block;
+  align-self: flex-start;
+  padding: 0;
+  inline-size: 10rem;
+  block-size: 10rem;
+  overflow: hidden;
+  cursor: zoom-in;
+  border-radius: var(--fold-radius-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  background: var(--fold-color-surface-sunken);
+}
+
+.card-thumb:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+.card-thumb-image {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.danger-text {
+  margin: 0;
+}

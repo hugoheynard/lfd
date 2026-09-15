@@ -48,6 +48,18 @@ enum PaymentStatus {
   @@schema("public")
 }
 
+/// **Qui a passé la commande** : `pro` = pour une société, `public` = sans.
+///
+/// ⚠️ Ce n'est PAS la clientèle TARIFÉE B2B/B2C (`CustomerAudiences`, B2B =
+/// société active) : les deux divergent sur une société en attente et sur un
+/// rattaché en espace perso. Cf. documentation/order/plan-nature-du-client-sur-la-commande.md (D1, D2).
+enum OrderClientele {
+  pro
+  public
+
+  @@schema("public")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Order — une commande, tenant-scoped
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +95,18 @@ model Order {
   // lecture (self_service | back_office | recurring). Un `kind` discriminé
   // aurait dupliqué la même information dans une troisième forme.
   placedByStaffId String? @map("placed_by_staff_id")
+
+  /// **QUI commande, figé à la passation** — pas le tarif appliqué.
+  ///
+  /// Déduite par l'agrégat (`Order.toPersistence()` : société posée → `pro`,
+  /// sinon `public`), et NON contrainte en base : une société supprimée remet
+  /// `company_id` à nul sous une commande `pro`, et c'est `pro` qui reste vrai.
+  ///
+  /// `NULL` = commande d'avant la distinction, **pour toujours** : jamais
+  /// rattrapée, parce que « sans société » ne voulait pas dire « public »
+  /// (multi-sociétés sans en-tête, pro sans société déclarée). Le rapatriement
+  /// ne la réécrit pas non plus (plan, D4 et D7).
+  clientele OrderClientele?
 
   /// **De quelle version du catalogue venaient ces articles.**
   ///
@@ -610,9 +634,19 @@ model OrderDraft {
 ///
 /// Frère de `OrderDraft`, et la différence est tout le sujet : le brouillon
 /// appartient à une SOCIÉTÉ et se partage dans l'équipe qui la sert ; ce
-/// panier-ci appartient à la PERSONNE qui le compose. D'où `user_id @unique` et
-/// non `company_id` — un client qui commande pour deux sociétés compose un
-/// panier à la fois, et c'est son écran, pas leur dossier.
+/// panier-ci appartient à la PERSONNE qui le compose, **dans un espace de
+/// travail** (depuis le 2026-09-15). `company_id` vide = le perso, comme les
+/// commandes ; sinon la société pour laquelle elle compose. Un client qui
+/// travaille pour deux sociétés a donc trois paniers, et en changer d'espace ne
+/// mélange pas ses lignes. Cf. `documentation/b2b/plan-espace-de-travail.md`, D9.
+///
+/// L'unicité `(user_id, company_id) NULLS NOT DISTINCT` n'est PAS déclarée ici :
+/// Prisma ne sait pas l'exprimer, et un `@@unique` ordinaire laisserait passer
+/// deux paniers perso (deux `NULL` sont distincts par défaut). Elle vit dans
+/// `migrations/20260915180000_panier_par_espace` sous le nom
+/// `shop_carts_user_company_unique`, et l'écriture en `ON CONFLICT` s'appuie
+/// dessus. ⚠️ Une `prisma migrate dev` ultérieure proposera de la SUPPRIMER
+/// (elle ne voit que ce fichier) : refuser la ligne.
 ///
 /// `payload` en `jsonb` pour la même raison que le brouillon : un panier n'a
 /// aucun invariant à protéger en base, et une table de lignes ne rendrait ici
@@ -623,17 +657,19 @@ model OrderDraft {
 /// **abandonné** reconnaissable, ce qu'aucune clé de `localStorage` ne pouvait
 /// faire.
 model ShopCart {
-  id      String @id @default(uuid())
-  userId  String @unique @map("user_id")
-  payload Json
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  companyId String? @map("company_id")
+  payload   Json
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // `Cascade` : un compte effacé n'a pas de panier en cours. Il n'y a rien à
   // conserver ici — la commande PASSÉE, elle, vit dans `orders` et ne dépend pas
-  // de cette ligne.
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // de cette ligne. Même règle pour la société de l'espace.
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("shop_carts")
   @@schema("public")

@@ -100,6 +100,16 @@ const PRICING_ACT = /VolumeCommitmentHandler$/;
 const FEATURE_ACCESS_ZONE = "feature-access";
 
 /**
+ * **Les notes du commercial** sur un compte client (2026-09-15, plan
+ * `documentation/b2b/plan-notes-photo-du-commercial.md`, D6). Une note se
+ * supprime DÉFINITIVEMENT, photo comprise : le journal est la seule mémoire de
+ * « qui a retiré cette note, et quand » — sans jamais en garder le contenu.
+ *
+ * Tous ses handlers, sans tri par nom : le module n'a aucun chemin client.
+ */
+const CLIENT_NOTES_ZONE = "client-notes";
+
+/**
  * La dette déclarée — **vide depuis le 2026-08-25**.
  *
  * Elle a compté quatorze handlers : ceux qui écrivaient déjà sans tracer le
@@ -217,6 +227,10 @@ const ZONES = [
   })),
   {
     root: join(SRC, "b2b", FEATURE_ACCESS_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
+  {
+    root: join(SRC, "b2b", CLIENT_NOTES_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {

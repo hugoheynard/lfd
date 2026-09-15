@@ -3,6 +3,10 @@ import {
   DeliveryProcedureOrderStaleError,
   DeliveryStepNotFoundError,
 } from "../errors/delivery-procedure-errors.js";
+import {
+  PhotoCardList,
+  type PhotoCardListRules,
+} from "../../../shared/photo-cards/domain/entities/photo-card-list.js";
 import { DeliveryStepContent } from "../value-objects/delivery-step-content.js";
 
 /**
@@ -35,12 +39,20 @@ export interface DeliveryProcedureState extends DeliveryProcedureIdentity {
   readonly steps: readonly DeliveryStepState[];
 }
 
-/** L'étape telle que l'agrégat la mute. */
-interface Step {
-  readonly id: string;
-  content: DeliveryStepContent;
-  photoKey: string | null;
-}
+/**
+ * La règle de la liste d'étapes : vingt au plus, ajoutées **en fin**, et les
+ * refus dans les mots de la procédure — ceux que le client et le staff lisent
+ * aujourd'hui.
+ */
+const STEP_LIST_RULES: PhotoCardListRules = {
+  max: DELIVERY_PROCEDURE_MAX_STEPS,
+  insertAt: "end",
+  refusals: {
+    full: (max) => new DeliveryProcedureFullError(max),
+    cardNotFound: (stepId) => new DeliveryStepNotFoundError(stepId),
+    orderStale: () => new DeliveryProcedureOrderStaleError(),
+  },
+};
 
 /**
  * **La procédure de livraison d'une adresse** — les étapes qu'un livreur suit
@@ -58,11 +70,16 @@ interface Step {
  * L'agrégat ne connaît pas le stockage objet : il porte des **clés**. Chaque
  * geste qui rend une photo orpheline rend son ancienne clé, et c'est le handler
  * qui la supprime du bucket — après la transaction, jamais avant.
+ *
+ * Les trois règles sont celles de {@link PhotoCardList}, que la procédure porte
+ * en champ privé depuis le 2026-09-15 : le carnet de notes du commercial a la
+ * même (plan `documentation/b2b/plan-notes-photo-du-commercial.md`, D8). Le
+ * vocabulaire public, lui, reste celui des étapes.
  */
 export class DeliveryProcedure {
   private constructor(
     private readonly identity: DeliveryProcedureIdentity,
-    private steps: Step[],
+    private readonly steps: PhotoCardList<DeliveryStepContent>,
   ) {}
 
   /**
@@ -70,7 +87,7 @@ export class DeliveryProcedure {
    * aussitôt sa première étape : aucun geste ne l'enregistre sans étape.
    */
   static openFor(identity: DeliveryProcedureIdentity): DeliveryProcedure {
-    return new DeliveryProcedure({ ...identity }, []);
+    return new DeliveryProcedure({ ...identity }, PhotoCardList.empty(STEP_LIST_RULES));
   }
 
   /**
@@ -85,7 +102,7 @@ export class DeliveryProcedure {
     }));
     return new DeliveryProcedure(
       { id: state.id, companyId: state.companyId, addressId: state.addressId },
-      steps,
+      PhotoCardList.of(STEP_LIST_RULES, steps),
     );
   }
 
@@ -94,7 +111,7 @@ export class DeliveryProcedure {
   }
 
   get stepCount(): number {
-    return this.steps.length;
+    return this.steps.size;
   }
 
   /**
@@ -103,10 +120,7 @@ export class DeliveryProcedure {
    * @throws {DeliveryProcedureFullError} la procédure a déjà son maximum.
    */
   addStep(stepId: string, content: DeliveryStepContent, photoKey: string | null): void {
-    if (this.steps.length >= DELIVERY_PROCEDURE_MAX_STEPS) {
-      throw new DeliveryProcedureFullError(DELIVERY_PROCEDURE_MAX_STEPS);
-    }
-    this.steps.push({ id: stepId, content, photoKey });
+    this.steps.add(stepId, content, photoKey);
   }
 
   /**
@@ -116,7 +130,7 @@ export class DeliveryProcedure {
    * @throws {DeliveryStepNotFoundError} l'étape n'est pas dans la procédure.
    */
   reviseStep(stepId: string, content: DeliveryStepContent): void {
-    this.require(stepId).content = content;
+    this.steps.revise(stepId, content);
   }
 
   /**
@@ -126,10 +140,7 @@ export class DeliveryProcedure {
    * @throws {DeliveryStepNotFoundError} l'étape n'est pas dans la procédure.
    */
   attachPhoto(stepId: string, photoKey: string): string | null {
-    const step = this.require(stepId);
-    const previous = step.photoKey;
-    step.photoKey = photoKey;
-    return previous;
+    return this.steps.attachPhoto(stepId, photoKey);
   }
 
   /**
@@ -138,10 +149,7 @@ export class DeliveryProcedure {
    * @throws {DeliveryStepNotFoundError} l'étape n'est pas dans la procédure.
    */
   detachPhoto(stepId: string): string | null {
-    const step = this.require(stepId);
-    const previous = step.photoKey;
-    step.photoKey = null;
-    return previous;
+    return this.steps.detachPhoto(stepId);
   }
 
   /**
@@ -158,9 +166,7 @@ export class DeliveryProcedure {
    * @throws {DeliveryStepNotFoundError} l'étape n'est pas dans la procédure.
    */
   removeStep(stepId: string): string | null {
-    const step = this.require(stepId);
-    this.steps = this.steps.filter((candidate) => candidate.id !== stepId);
-    return step.photoKey;
+    return this.steps.remove(stepId);
   }
 
   /**
@@ -173,41 +179,19 @@ export class DeliveryProcedure {
    *   permutation exacte des étapes présentes.
    */
   reorder(stepIds: readonly string[]): void {
-    const byId = new Map(this.steps.map((step) => [step.id, step]));
-    const unique = new Set(stepIds);
-    if (stepIds.length !== this.steps.length || unique.size !== stepIds.length) {
-      throw new DeliveryProcedureOrderStaleError();
-    }
-    const ordered: Step[] = [];
-    for (const stepId of stepIds) {
-      const step = byId.get(stepId);
-      if (step === undefined) {
-        throw new DeliveryProcedureOrderStaleError();
-      }
-      ordered.push(step);
-    }
-    this.steps = ordered;
+    this.steps.reorder(stepIds);
   }
 
   /** L'état à écrire, étapes dans l'ordre. */
   toPersistence(): DeliveryProcedureState {
     return {
       ...this.identity,
-      steps: this.steps.map((step) => ({
+      steps: this.steps.snapshot().map((step) => ({
         id: step.id,
         title: step.content.title,
         body: step.content.body,
         photoKey: step.photoKey,
       })),
     };
-  }
-
-  /** L'étape visée, ou le refus. */
-  private require(stepId: string): Step {
-    const step = this.steps.find((candidate) => candidate.id === stepId);
-    if (step === undefined) {
-      throw new DeliveryStepNotFoundError(stepId);
-    }
-    return step;
   }
 }

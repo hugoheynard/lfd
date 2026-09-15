@@ -625,6 +625,7 @@ export type {
   HandoverVia,
   HandoverQueueView,
   HandoverQueueWindowView,
+  OrderClientele,
   OrderHandoverLine,
   OrderHandoverView,
 } from "./order-handover.js";
@@ -1017,3 +1018,47 @@ export type {
   DeliveryStepFields,
   DeliveryStepRevisionFields,
 } from "./delivery-procedure.js";
+
+export {
+  CLIENT_NOTEBOOK_MAX_NOTES,
+  CLIENT_NOTE_BODY_MAX,
+  CLIENT_NOTE_PHOTO_LONG_EDGE,
+  CLIENT_NOTE_PHOTO_MAX_BYTES,
+  CLIENT_NOTE_THUMBNAIL_LONG_EDGE,
+  CLIENT_NOTE_THUMBNAIL_MAX_BYTES,
+  CLIENT_NOTE_TITLE_MAX,
+  clientNotebookOrderPayloadSchema,
+  clientNoteFieldsSchema,
+  clientNoteRevisionFieldsSchema,
+} from "./client-notes.js";
+export type {
+  ClientNotebookOrderPayload,
+  ClientNotebookView,
+  ClientNoteFields,
+  ClientNoteRevisionFields,
+  ClientNoteView,
+  CreatedClientNoteResponse,
+} from "./client-notes.js";
+
+export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./account.js";
+
+export { audienceOf } from "./customer-audience.js";
+export type { CustomerAudience } from "./customer-audience.js";
+export {
+  DEFAULT_DELIVERY_AVAILABILITY,
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  deliveryOpenTo,
+  deliveryAvailabilityPatchSchema,
+} from "./delivery-availability.js";
+export type {
+  DeliveryAvailabilityPatch,
+  DeliveryAvailabilityView,
+  PublicDeliveryAvailabilityView,
+} from "./delivery-availability.js";
+export {
+  ALL_DISCOUNT_AUDIENCES,
+  pickupAddressUpdatePayloadSchema,
+  pickupDiscountAudiencesSchema,
+  pickupDiscountFor,
+} from "./pickup.js";
+export type { PickupAddressUpdatePayload, PickupDiscountAudiences } from "./pickup.js";

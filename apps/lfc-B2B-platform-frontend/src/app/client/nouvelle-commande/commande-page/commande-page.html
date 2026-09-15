@@ -24,26 +24,41 @@
             [badge]="t().commande.pickupBadge"
             [title]="t().commande.pickupTitle"
             [detail]="t().commande.pickupDetail"
-            [note]="t().commande.pickupNote"
+            [note]="deliveryOffered() ? t().commande.pickupNote : null"
             [detailWide]="t().commande.pickupDetailWide"
-            [ctaLabel]="t().commande.pickupCta"
-            [noteWide]="t().commande.pickupNoteWide"
+            [ctaLabel]="deliveryOffered() ? t().commande.pickupCta : null"
+            [align]="deliveryOffered() ? 'end' : 'center'"
+            [noteWide]="pickupNoteWide()"
             (chosen)="openDialog('pickup')"
           />
-          <app-offer-card
-            shape="hero"
-            tone="butter"
-            photo="coursier"
-            noteTone="accent"
-            [badge]="t().commande.deliveryBadge"
-            [title]="t().commande.deliveryTitle"
-            [detail]="t().commande.deliveryDetail"
-            [note]="t().commande.deliveryNote"
-            [detailWide]="t().commande.deliveryDetailWide"
-            [ctaLabel]="t().commande.deliveryCta"
-            [noteWide]="t().commande.deliveryNoteWide"
-            (chosen)="openDialog('address')"
-          />
+          @if (deliveryOffered()) {
+            <app-offer-card
+              shape="hero"
+              tone="butter"
+              photo="coursier"
+              noteTone="accent"
+              [badge]="t().commande.deliveryBadge"
+              [title]="t().commande.deliveryTitle"
+              [detail]="t().commande.deliveryDetail"
+              [note]="t().commande.deliveryNote"
+              [detailWide]="t().commande.deliveryDetailWide"
+              [ctaLabel]="t().commande.deliveryCta"
+              [noteWide]="t().commande.deliveryNoteWide"
+              (chosen)="openDialog('address')"
+            />
+          } @else {
+            <!-- Retrait seul : les boutiques se posent sur la photo du retrait. -->
+            <div class="shops" role="group" [attr.aria-label]="t().pickupDialog.title">
+              @for (shop of shops(); track shop.point.id) {
+                <app-pickup-point-card
+                  [point]="shop.point"
+                  [tag]="shop.tag"
+                  [offer]="shop.offer"
+                  (chosen)="openShop(shop.point.id)"
+                />
+              }
+            </div>
+          }
         </app-section-panel>
 
         <app-section-panel tone="band" sign="★" [title]="t().commande.nowTitle">
@@ -112,6 +127,7 @@
 
     <app-pickup-dialog
       [open]="dialog() === 'pickup'"
+      [startAt]="pickupStart()"
       (closed)="dialog.set(null)"
       (done)="fillBasket($event)"
     />

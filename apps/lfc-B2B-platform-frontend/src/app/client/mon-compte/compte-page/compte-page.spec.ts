@@ -80,6 +80,11 @@ function boot(
           companies: () => companies,
           profile: () => PROFILE,
           status: () => status,
+          account: () => ({
+            profile: PROFILE,
+            companies,
+            navPrefs: { catalogueView: null, workspace: null },
+          }),
           load: (): void => {
             loads += 1;
           },

@@ -59,6 +59,7 @@ const PICKUP: PickupAddressPayload = {
   pays: "France",
   isDefault: false,
   discount: { mode: "percent", bp: 500 },
+  discountAudiences: { b2b: true, b2c: false },
   opening: { publicOpening: null, proPickup: null },
 };
 
@@ -81,10 +82,17 @@ function zones(): DeliveryZoneRepository {
   };
 }
 
+/** Le point tel qu'il est en base avant la modification. */
+const STORED_PICKUP: PickupAddressView = {
+  ...PICKUP,
+  id: "pickup_2",
+  discountAudiences: { b2b: true, b2c: true },
+};
+
 function pickups(): PickupAddressRepository {
   return {
     list: () => Promise.resolve([] as readonly PickupAddressView[]),
-    resolve: () => Promise.resolve(null),
+    resolve: () => Promise.resolve(STORED_PICKUP),
     create: () => Promise.resolve("pickup_2"),
     update: () => Promise.resolve(),
     remove: () => Promise.resolve(),
@@ -132,7 +140,7 @@ describe("Les réglages commerciaux au journal", () => {
     expect(events.factTypes()).toEqual(["delivery_zone.updated"]);
   });
 
-  it("emporte la REMISE d'un point de retrait — c'est la décision commerciale", async () => {
+  it("emporte la REMISE d'un point de retrait et ses clientèles — c'est la décision commerciale", async () => {
     const events = new RecordingPublisher();
 
     await new UpdatePickupAddressHandler(pickups(), events, new DirectUnitOfWork()).execute(
@@ -142,6 +150,9 @@ describe("Les réglages commerciaux au journal", () => {
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       ville: "Paris",
       discount: { bp: 500 },
+      // « à qui » fait partie de la décision : 5 % pour les pros seulement
+      // n'est pas 5 % pour tout le monde.
+      discountAudiences: { b2b: true, b2c: false },
     });
   });
 

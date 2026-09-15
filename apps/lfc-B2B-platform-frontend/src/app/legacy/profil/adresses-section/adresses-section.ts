@@ -1,11 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
-import type { BillingAddressView, DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
+import {
+  type BillingAddressView,
+  type DeliveryAddressView,
+  type DeliveryContact,
+  deliveryOpenTo,
+} from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { CompanyAddressesCard } from '@lfd/b2b-ui/company';
 
 import type { Company } from '../../../account/account.model';
 import { canManageCompany } from '../../../account/account.model';
+import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import { AddressesService } from '../../entreprises/addresses.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
 import {
@@ -32,12 +37,15 @@ export class AdressesSection {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly addresses = inject(AddressesService);
   private readonly pickups = inject(PickupAddressesService);
+  private readonly servicePoints = inject(ServicePoints);
 
   readonly company = input.required<Company>();
 
   protected readonly canManage = computed(() => canManageCompany(this.company().role));
-  /** Masque le bloc livraison tant que le service n'existe pas. */
-  protected readonly deliveryHidden = !DELIVERY_SERVICE_OPEN;
+  /** Masque le bloc livraison quand le back-office la ferme aux pros. */
+  protected readonly deliveryHidden = computed(
+    () => !deliveryOpenTo(this.servicePoints.deliveryAvailability(), 'b2b'),
+  );
   /** Le point de retrait par défaut, montré à la place de la livraison masquée. */
   protected readonly defaultPickup = this.pickups.defaultPickup;
   protected readonly view = this.addresses.view;
@@ -61,6 +69,7 @@ export class AdressesSection {
   constructor() {
     // Charge (ou recharge) les adresses de l'entreprise affichée.
     effect(() => this.addresses.loadFor(this.company().id));
+    void this.servicePoints.hydrate();
   }
 
   protected editBilling(): void {

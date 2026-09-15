@@ -6,10 +6,18 @@
       </p>
       <h1 class="service-place">{{ service.place }}</h1>
       <p class="service-address">{{ service.address }}</p>
-      <p class="service-slot">
-        <span class="slot">{{ service.slot }}</span>
-        <span class="slot-note">{{ t().cart.slotNote }}</span>
-      </p>
+      <!-- Le bas de la carte : l'heure à gauche, le geste de la changer à droite.
+           « Modifier » rouvre la question entière — le mode ET l'heure —, parce
+           qu'une heure dépend du lieu qui la sert. -->
+      <div class="service-foot">
+        <p class="service-slot">
+          <span class="slot">{{ service.slot }}</span>
+          <span class="slot-note">{{ slotNote() }}</span>
+        </p>
+        <button class="change" type="button" (click)="changeService()">
+          {{ t().cart.changeService }}
+        </button>
+      </div>
     </section>
   } @else {
     <button class="ask" type="button" (click)="pickService()">

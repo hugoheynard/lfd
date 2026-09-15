@@ -54,6 +54,7 @@ enum StaffResource {
   b2b_alerts
   b2b_order_waivers
   b2b_feature_access
+  b2b_client_notes
   b2b_settings
 
   staff_access

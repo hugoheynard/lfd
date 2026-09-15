@@ -1,0 +1,17 @@
+<button class="card" type="button" (click)="chosen.emit()">
+  <span class="top">
+    @if (tag(); as label) {
+      <span class="tag">{{ label }}</span>
+    }
+  </span>
+
+  <span class="text">
+    <span class="name">{{ point().label }}</span>
+    <span class="where">{{ point().ville }}</span>
+  </span>
+
+  <span class="foot">
+    <span class="offer" [class.deal]="offer().hasOffer">{{ offer().label }}</span>
+    <fold-icon class="chevron" name="chevron-right" aria-hidden="true" />
+  </span>
+</button>

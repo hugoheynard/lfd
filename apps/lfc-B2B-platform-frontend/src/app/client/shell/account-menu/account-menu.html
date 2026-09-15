@@ -8,6 +8,20 @@
       <span class="who-chip" aria-hidden="true">{{ initials() }}</span>
     </button>
 
+    <!-- Le sélecteur d'espace n'existe qu'à partir d'une société (plan D8). -->
+    @if (workspace.hasChoice()) {
+      @for (space of spaces(); track space.value) {
+        <fold-dropdown-item
+          [icon]="space.current ? 'check' : undefined"
+          (selected)="choose(space.value)"
+        >
+          {{ space.label }}
+        </fold-dropdown-item>
+      }
+      <!-- Non cliquable : ce n'est pas une entrée, c'est là où l'on est. -->
+      <p class="space-current">{{ currentSpace() }}</p>
+    }
+
     <fold-dropdown-item icon="user" [disabled]="!hasProfile()" (selected)="openProfile()">
       {{ t().chrome.myProfile }}
     </fold-dropdown-item>

@@ -171,6 +171,12 @@ laquelle elle travaille (un en-tête), et la déclaration est **vérifiée** con
 ses rattachements — cf. `resolveCompany`. Une société déclarée à laquelle elle
 n'appartient pas est ignorée, jamais servie.
 
+Depuis le 2026-09-15, l'en-tête accepte aussi la valeur réservée `personal` :
+elle résout « aucune société » **quel que soit** le nombre de rattachements, une
+seule société comprise. En accès, ça ne franchit aucun mur ; en prix, ça ouvre
+le tarif catalogue hors mercuriale, par décision
+([`plan-espace-de-travail.md`](plan-espace-de-travail.md), D1 et Q1).
+
 ## 6. Back-office admin (privilégié) — 2 portes + pas de backdoor
 
 - **Porte 1 — Cloudflare Access** devant l'app admin : elle n'est **pas joignable**

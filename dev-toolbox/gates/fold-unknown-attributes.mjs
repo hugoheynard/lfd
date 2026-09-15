@@ -110,10 +110,7 @@ const DEBT = new Map([
     "apps/lfc-B2B-admin-frontend/src/app/commercial/calendrier/customer-sheet/customer-sheet.html",
     5,
   ],
-  [
-    "apps/lfc-B2B-admin-frontend/src/app/reglages/retraits-livraisons/cutoffs-section/cutoffs-section.html",
-    1,
-  ],
+  ["apps/lfc-B2B-admin-frontend/src/app/b2b/reglages/cutoffs-section/cutoffs-section.html", 1],
 
   // `fold-badge` ne déclare que content/radius/variant.
   [

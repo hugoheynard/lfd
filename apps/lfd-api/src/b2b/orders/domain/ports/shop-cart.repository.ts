@@ -17,19 +17,28 @@ import type { ShopCartPayload, ShopCartView } from "@lfd/contracts";
  * l'ordinateur ressusciterait le panier de la veille. Le compte effacé, lui,
  * emporte la ligne par cascade.
  *
- * **Un panier par personne**, jamais un par société : c'est celui qui compose
- * qu'on sert. Le brouillon du back-office fait l'inverse, et c'est la seule
- * différence entre les deux — là-bas une équipe sert un compte, ici une personne
- * remplit son propre panier.
+ * **Un panier par personne ET par espace de travail** (depuis le 2026-09-15) :
+ * `companyId` `null` est le perso, sinon la société pour laquelle elle compose.
+ * C'est toujours celui qui compose qu'on sert — le brouillon du back-office, lui,
+ * appartient à la société et se partage dans l'équipe —, mais changer d'espace
+ * ne mélange plus les lignes d'une maison avec celles d'une autre.
+ *
+ * `companyId` vient de la société agissante résolue par la porte, jamais d'un
+ * corps de requête : ce port ne revérifie pas le rattachement.
  */
 export abstract class ShopCartRepository {
-  /** Le panier de cette personne, ou `null` si elle n'en a jamais posé. */
-  abstract find(userId: string): Promise<ShopCartView | null>;
+  /** Le panier de cette personne dans cet espace, ou `null` s'il n'y en a pas. */
+  abstract find(userId: string, companyId: string | null): Promise<ShopCartView | null>;
 
   /**
-   * Écrit le panier — création ou remplacement. Rend la vue enregistrée, sans
-   * relire : l'écran affiche la date de mise de côté sans un aller-retour de
-   * plus.
+   * Écrit le panier de cet espace — création ou remplacement, atomique : deux
+   * écritures simultanées du même espace ne lèvent rien, la dernière gagne. Rend
+   * la vue enregistrée, sans relire : l'écran affiche la date de mise de côté
+   * sans un aller-retour de plus.
    */
-  abstract save(userId: string, payload: ShopCartPayload): Promise<ShopCartView>;
+  abstract save(
+    userId: string,
+    companyId: string | null,
+    payload: ShopCartPayload,
+  ): Promise<ShopCartView>;
 }

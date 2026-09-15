@@ -7,20 +7,21 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
 
+import { ClientAudience } from '../../../../client/client-audience.service';
 import { ClientDialog } from '../../../../client/dialog/client-dialog';
 import type { ServiceChoice } from '../../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../../client/copy/client-copy.service';
-import {
-  type CartAdjustment,
-  type PickupAddressView,
-  type PickupSlot,
-  pickupSlots,
-} from '@lfd/contracts';
+import { type PickupSlot, pickupSlots } from '@lfd/contracts';
 
-import { formatCents, formatRate } from '../../../../client/format-money';
+import {
+  bestPickupDiscount,
+  discountLabel,
+  pickupOffer,
+} from '../../../../client/shop/pickup-discount';
 import { formatWindow } from '../../../../client/format-hour';
 import { ServicePoints } from '../../../../client/shop/pickup-points.store';
 import { SlotStep } from '../slot-step/slot-step';
@@ -29,8 +30,8 @@ import { SlotStep } from '../slot-step/slot-step';
  * « Vous venez où ? » — le choix du point de retrait.
  *
  * La remise n'est pas un argument collé après coup : elle est ATTACHÉE au point,
- * et elle voyage jusque dans le bouton. Choisir Le Village, c'est voir le
- * bouton perdre son « −10 % » — le renoncement se lit avant d'être confirmé.
+ * sur sa ligne. Le bouton, lui, ne nomme que l'action — il répétait la remise du
+ * point retenu, ce que Hugo a retiré le 2026-09-15 : la ligne la dit déjà.
  *
  * Le créneau est le SECOND VOLET du même dialogue, pas une seconde surface : où
  * et quand sont deux temps d'une même question, et le lieu retenu reste sous les
@@ -45,6 +46,15 @@ import { SlotStep } from '../slot-step/slot-step';
 })
 export class PickupDialog {
   readonly open = input.required<boolean>();
+
+  /**
+   * Le point déjà choisi sur l'écran — une carte de boutique — ou `null`.
+   *
+   * Donné, le dialogue s'ouvre sur l'HEURE de ce point : le lieu est dit, le
+   * redemander serait une question de trop. Sans lui, il part du lieu.
+   */
+  readonly startAt = input<string | null>(null);
+
   readonly closed = output<void>();
 
   /**
@@ -67,6 +77,23 @@ export class PickupDialog {
         this.pickedId.set((points.find((p) => p.isDefault) ?? points[0])?.id ?? '');
       }
     });
+    // À chaque ouverture, le volet suit la porte : une boutique mène à son
+    // heure, « Je passe la prendre » au lieu.
+    effect(() => {
+      if (!this.open()) {
+        return;
+      }
+      const start = this.startAt();
+      untracked(() => {
+        if (start === null) {
+          this.step.set(0);
+          return;
+        }
+        this.pickedId.set(start);
+        this.slot.set(null);
+        this.step.set(1);
+      });
+    });
   }
 
   /** 0 : où. 1 : quand. */
@@ -74,6 +101,7 @@ export class PickupDialog {
   protected readonly slot = signal<PickupSlot | null>(null);
 
   private readonly service = inject(ServicePoints);
+  private readonly audience = inject(ClientAudience);
 
   /**
    * Les points **de la plateforme**, et eux seuls.
@@ -90,29 +118,42 @@ export class PickupDialog {
    */
   protected readonly pickedId = signal<string>('');
 
+  /**
+   * Chaque point avec ce qu'il remet **à la clientèle de l'écran**.
+   *
+   * Sans remise pour elle, la ligne dit le tarif qu'on y paie : « Prix pro » à
+   * une société active, « Prix boutique » à un particulier (Hugo, 2026-09-15,
+   * Q2 du plan remise et livraison par clientèle).
+   */
   protected readonly points = computed(() => {
     const c = this.t().pickupDialog;
-    return this.available().map((point) => ({
-      point,
-      tag: point.isDefault ? c.habit : '',
-      offer:
-        point.discount === null
-          ? c.shopPrice
-          : fill(c.discountTag, { value: valueOf(point.discount) }),
-      hasOffer: point.discount !== null,
-    }));
+    const audience = this.audience.shown();
+    return this.available().map((point) => {
+      const offer = pickupOffer(point, audience, c);
+      return {
+        point,
+        tag: point.isDefault ? c.habit : '',
+        offer: offer.label,
+        hasOffer: offer.hasOffer,
+      };
+    });
   });
 
-  /** La meilleure remise de la station : c'est elle que la phrase d'accueil vend. */
+  /** La meilleure remise de la station pour cette clientèle : c'est elle que la phrase d'accueil vend. */
   protected readonly lead = computed(() => {
-    const best = bestDiscountOf(this.available());
+    const best = bestPickupDiscount(this.available(), this.audience.shown());
     return best === null
       ? this.t().pickupDialog.title
-      : fill(this.t().pickupDialog.lead, { value: valueOf(best) });
+      : fill(this.t().pickupDialog.lead, { value: discountLabel(best) });
   });
 
   private readonly picked = computed(
     () => this.available().find((p) => p.id === this.pickedId()) ?? null,
+  );
+
+  /** Le titre suit le volet : « où » puis « quand ». */
+  protected readonly title = computed(() =>
+    this.step() === 0 ? this.t().pickupDialog.title : this.t().pickupDialog.whenTitle,
   );
 
   /** Le lieu retenu, que le second volet rappelle. */
@@ -144,9 +185,7 @@ export class PickupDialog {
       const c = this.t().slotStep;
       return this.slot() ? c.cta : c.ctaIdle;
     }
-    const c = this.t().pickupDialog;
-    const discount = this.picked()?.discount ?? null;
-    return discount === null ? c.cta : fill(c.ctaDiscount, { value: valueOf(discount) });
+    return this.t().pickupDialog.cta;
   });
 
   /**
@@ -199,30 +238,4 @@ export class PickupDialog {
   private labelOf(slot: PickupSlot): string {
     return formatWindow(slot.start, slot.end, this.t().slotStep.before);
   }
-}
-
-/** Un ajustement, tel qu'il se lit : « 10 % » ou « 2,00 € ». */
-function valueOf(adjustment: CartAdjustment): string {
-  return adjustment.mode === 'percent'
-    ? formatRate(adjustment.bp / 100)
-    : formatCents(adjustment.cents);
-}
-
-/**
- * La meilleure remise proposée, ou `null`.
- *
- * Comparer un pourcentage à un montant n'a pas de sens sans panier : on retient
- * donc la meilleure de chaque nature, en préférant le pourcentage — c'est ce que
- * la phrase d'accueil vend, et la seule forme qui parle sans connaître le total.
- */
-function bestDiscountOf(points: readonly PickupAddressView[]): CartAdjustment | null {
-  const offers = points.map((point) => point.discount).filter((d) => d !== null);
-  const percents = offers.filter((d) => d.mode === 'percent');
-  if (percents.length > 0) {
-    return percents.reduce((best, d) => (d.bp > best.bp ? d : best));
-  }
-  const amounts = offers.filter((d) => d.mode === 'amount');
-  return amounts.length === 0
-    ? null
-    : amounts.reduce((best, d) => (d.cents > best.cents ? d : best));
 }

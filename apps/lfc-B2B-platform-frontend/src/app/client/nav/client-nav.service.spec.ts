@@ -2,7 +2,12 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { ShopLevel, SubscriptionView } from '@lfd/contracts';
+import {
+  PERSONAL_WORKSPACE,
+  type CompanyView,
+  type ShopLevel,
+  type SubscriptionView,
+} from '@lfd/contracts';
 
 import { ClientSubscriptions } from '../client-subscriptions.service';
 
@@ -15,6 +20,8 @@ import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { DEFAULT_SURFACES, openShopAt } from '../feature-access/feature-access.fixture';
 import { ClientNav } from './client-nav.service';
+import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
+import { TOMMEUSES } from '../mon-compte/account.fixture';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
@@ -224,5 +231,41 @@ describe('Les destinations du menu, selon la boutique', () => {
     boot();
     openShopAt('order');
     expect(await asked()).toBe(1);
+  });
+});
+
+/**
+ * En perso, les écrans d'une SOCIÉTÉ n'ont rien à montrer (Hugo, 2026-09-15) —
+ * mais seulement pour qui en a une : sans société, Mon compte est la porte pro.
+ */
+describe('Les destinations du menu, selon l’espace', () => {
+  const idsIn = (current: string, companies: readonly CompanyView[]): readonly string[] => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(ROUTES),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+        provideWorkspace(workspaceDouble(current, companies)),
+      ],
+    });
+    openShopAt('order');
+    return TestBed.inject(ClientNav)
+      .items()
+      .map((i) => i.id);
+  };
+
+  it('retire Mon compte, Mes factures et les paniers récurrents en perso, pour qui a une société', () => {
+    expect(idsIn(PERSONAL_WORKSPACE, [TOMMEUSES])).toEqual(['espace', 'shop', 'orders']);
+  });
+
+  it('les rend dans l’espace de la société', () => {
+    expect(idsIn(TOMMEUSES.id, [TOMMEUSES])).toEqual(ORDER);
+  });
+
+  it('les garde à qui n’a aucune société', () => {
+    expect(idsIn(PERSONAL_WORKSPACE, [])).toEqual(ORDER);
   });
 });

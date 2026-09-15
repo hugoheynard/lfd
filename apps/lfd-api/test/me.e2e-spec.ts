@@ -9,6 +9,8 @@
  * l'autorisation, donc révoquer en base bloque *immédiatement* même avec un
  * jeton encore parfaitement valide.
  */
+import { PERSONAL_WORKSPACE } from "@lfd/contracts";
+
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
@@ -134,7 +136,7 @@ describe("GET /me — le cycle se joue en base", () => {
       },
       companies: [],
       // Préférences de navigation (bag nav_prefs) : défaut sans choix explicite.
-      navPrefs: { catalogueView: null },
+      navPrefs: { catalogueView: null, workspace: null },
     });
   });
 
@@ -205,5 +207,70 @@ describe("GET /me — mes entreprises", () => {
     ]);
     expect(JSON.stringify(mine.body)).not.toContain(laSienne.id);
     expect(JSON.stringify(mine.body)).not.toContain("La Sienne");
+  });
+});
+
+describe("PATCH /me/nav-prefs — un patch, pas un remplacement", () => {
+  const patch = (body: Record<string, unknown>) => ctx.asSub(SUB).patch("/me/nav-prefs").send(body);
+
+  it("accepte la vue seule — ce qu'envoie le front déjà en production", async () => {
+    await createUser(ctx.prisma, { auth0Sub: SUB });
+
+    const response = await patch({ catalogueView: "list" }).expect(200);
+
+    expect(jsonBody<AccountView>(response).navPrefs).toEqual({
+      catalogueView: "list",
+      workspace: null,
+    });
+  });
+
+  /**
+   * Régression : l'écriture remplaçait le sac `nav_prefs` entier, si bien que
+   * poser une vue de catalogue effaçait l'espace de travail choisi (2026-09-15).
+   */
+  it("🔴 poser une vue de catalogue ne perd pas l'espace", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: SUB });
+    const company = await createCompany(ctx.prisma);
+    await attachTo(ctx.prisma, user.id, company.id);
+
+    await patch({ workspace: company.id }).expect(200);
+    const response = await patch({ catalogueView: "shelves" }).expect(200);
+
+    expect(jsonBody<AccountView>(response).navPrefs).toEqual({
+      catalogueView: "shelves",
+      workspace: company.id,
+    });
+  });
+
+  it("choisit « perso » sans société, et l'efface avec `null`", async () => {
+    await createUser(ctx.prisma, { auth0Sub: SUB });
+
+    const chosen = await patch({ workspace: PERSONAL_WORKSPACE }).expect(200);
+    expect(jsonBody<AccountView>(chosen).navPrefs.workspace).toBe(PERSONAL_WORKSPACE);
+
+    const cleared = await patch({ workspace: null }).expect(200);
+    expect(jsonBody<AccountView>(cleared).navPrefs.workspace).toBeNull();
+  });
+
+  it("🔴 refuse en 409 l'espace d'une société à laquelle on n'appartient pas", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: SUB });
+    const mine = await createCompany(ctx.prisma, { raisonSociale: "La Mienne SAS" });
+    const theirs = await createCompany(ctx.prisma, {
+      raisonSociale: "La Sienne SARL",
+      siret: "98765432100023",
+    });
+    await attachTo(ctx.prisma, user.id, mine.id);
+
+    await patch({ catalogueView: "list", workspace: theirs.id }).expect(409);
+
+    // Rien n'est écrit, pas même la vue qui accompagnait le refus.
+    const me = await ctx.asSub(SUB).get("/me").expect(200);
+    expect(jsonBody<AccountView>(me).navPrefs).toEqual({ catalogueView: null, workspace: null });
+  });
+
+  it("refuse un patch vide — au moins une préférence à changer", async () => {
+    await createUser(ctx.prisma, { auth0Sub: SUB });
+
+    await patch({}).expect(400);
   });
 });

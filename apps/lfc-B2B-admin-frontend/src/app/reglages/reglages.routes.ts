@@ -10,7 +10,7 @@ export const reglagesRoutes: Routes = [
     title: 'Réglages — LFC B2B admin',
     loadComponent: () => import('./reglages-page').then((m) => m.ReglagesPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'retraits-livraisons' },
+      { path: '', pathMatch: 'full', redirectTo: 'surtaxe-de-retard' },
 
       // Le catalogue et la tarification B2B ont DÉMÉNAGÉ dans l'espace B2B : on
       // ne va pas dans les réglages pour travailler. Les anciennes adresses
@@ -24,15 +24,12 @@ export const reglagesRoutes: Routes = [
       { path: 'tarification', pathMatch: 'full', redirectTo: '/b2b/tarification' },
       { path: 'tarification/frise', redirectTo: '/b2b/tarification/frise' },
       { path: 'tarification/simulateur', redirectTo: '/b2b/tarification/simulateur' },
+      // « Retraits & livraisons » a suivi, découpé en trois pages de
+      // « E-commerce LFC → Réglages ». L'ancienne adresse mène à la première.
+      { path: 'retraits-livraisons', redirectTo: '/b2b/reglages/points-de-retrait' },
 
       {
-        path: 'retraits-livraisons',
-        title: 'Retraits & livraisons — LFC B2B admin',
-        loadComponent: () =>
-          import('./retraits-livraisons/reglages-pickup-page').then((m) => m.ReglagesPickupPage),
-      },
-      {
-        // 🔴 PAS une carte de « Retraits & livraisons », où vivent pourtant les
+        // 🔴 PAS une carte des réglages de l'e-commerce, où vivent pourtant les
         // deux autres ajustements de panier (la remise d'un point, le frais
         // d'une zone). Ces deux-là appartiennent à un objet d'acheminement ; la
         // surtaxe n'appartient à rien de tel. L'heure limite globale a vécu là

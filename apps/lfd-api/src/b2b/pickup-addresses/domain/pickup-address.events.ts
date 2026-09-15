@@ -1,6 +1,5 @@
-import type { PickupAddressPayload } from "@lfd/contracts";
-
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
+import type { PickupAddressWrite } from "./pickup-address.repository.js";
 
 /**
  * **Les faits des points de retrait.**
@@ -20,26 +19,32 @@ export const PICKUP_ADDRESS_FACTS = {
   defaultSet: "pickup_address.default_set",
 } as const;
 
-/** Ce qu'on relit d'un point de retrait : où il est, et ce qu'il remise. */
-function placeAndDiscount(payload: PickupAddressPayload): Record<string, unknown> {
-  const { discount } = payload;
+/**
+ * Ce qu'on relit d'un point de retrait : où il est, ce qu'il remise, et à qui.
+ *
+ * Les clientèles partent même sans remise : ce sont les cases que l'admin a
+ * laissées, et une remise reposée plus tard s'appliquera à elles.
+ */
+function placeAndDiscount(point: PickupAddressWrite): Record<string, unknown> {
+  const { adjustment, audiences } = point.discount;
   return {
-    label: payload.label,
-    ville: payload.ville,
-    codePostal: payload.codePostal,
+    label: point.label,
+    ville: point.ville,
+    codePostal: point.codePostal,
     discount:
-      discount === null
+      adjustment === null
         ? null
-        : discount.mode === "percent"
-          ? { bp: discount.bp }
-          : { cents: discount.cents },
+        : adjustment.mode === "percent"
+          ? { bp: adjustment.bp }
+          : { cents: adjustment.cents },
+    discountAudiences: { b2b: audiences.b2b, b2c: audiences.b2c },
   };
 }
 
 export class PickupAddressCreatedEvent implements JournaledEvent {
   constructor(
     readonly pickupId: string,
-    readonly payload: PickupAddressPayload,
+    readonly point: PickupAddressWrite,
   ) {}
 
   journalFact(): JournalFact {
@@ -47,7 +52,7 @@ export class PickupAddressCreatedEvent implements JournaledEvent {
       type: PICKUP_ADDRESS_FACTS.created,
       subjectType: "pickup_address",
       subjectId: this.pickupId,
-      payload: placeAndDiscount(this.payload),
+      payload: placeAndDiscount(this.point),
     };
   }
 }
@@ -55,7 +60,7 @@ export class PickupAddressCreatedEvent implements JournaledEvent {
 export class PickupAddressUpdatedEvent implements JournaledEvent {
   constructor(
     readonly pickupId: string,
-    readonly payload: PickupAddressPayload,
+    readonly point: PickupAddressWrite,
   ) {}
 
   journalFact(): JournalFact {
@@ -63,7 +68,7 @@ export class PickupAddressUpdatedEvent implements JournaledEvent {
       type: PICKUP_ADDRESS_FACTS.updated,
       subjectType: "pickup_address",
       subjectId: this.pickupId,
-      payload: placeAndDiscount(this.payload),
+      payload: placeAndDiscount(this.point),
     };
   }
 }

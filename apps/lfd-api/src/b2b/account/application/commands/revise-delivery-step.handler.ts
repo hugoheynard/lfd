@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { NOTHING_TO_TRACE } from "../../../shared/photo-cards/application/photo-card-usage.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
@@ -9,11 +10,7 @@ import { DeliveryProcedureRepository } from "../../domain/ports/delivery-procedu
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ReviseDeliveryStepCommand } from "./delivery-procedure-commands.js";
-import {
-  reviseDeliveryStep,
-  NOTHING_TO_TRACE,
-  type ProcedureEditingPorts,
-} from "./delivery-procedure-editing.js";
+import { reviseDeliveryStep, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
 
 /**
  * Refait une étape — titre, texte, photo, réservé au **gestionnaire** (`ensureCompanyAdmin`).

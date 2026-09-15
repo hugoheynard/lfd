@@ -25,6 +25,13 @@ model PickupAddress {
   discountMode  CartAdjustmentMode? @map("discount_mode")
   discountValue Int?                @map("discount_value")
 
+  // À QUI la remise s'applique : les pros (société active) et/ou les
+  // particuliers. Défaut `true` = l'existant, où toute requête la reçoit. Sans
+  // remise, ces cases ne sont pas lues ; une remise qui n'en coche aucune est
+  // refusée par `PickupDiscount`. Cf. `plan-remise-et-livraison-par-clientele.md`, D2.
+  discountForB2b Boolean @default(true) @map("discount_for_b2b")
+  discountForB2c Boolean @default(true) @map("discount_for_b2c")
+
   // Quand un pro peut venir : ouverture au public ET créneau réservé aux pros,
   // deux fenêtres NOMMÉES et jamais fusionnées — leur union peut avoir un trou
   // (pros 5h–6h30, public 7h–20h), et l'aplatir inventerait une demi-heure
@@ -59,6 +66,32 @@ model DeliveryZone {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("delivery_zones")
+  @@schema("public")
+}
+
+/// **À qui la livraison est proposée** — un réglage global, UNE ligne.
+///
+/// Ligne absente = ouverte aux deux : c'est l'existant, et aucun semis n'est
+/// nécessaire pour le reproduire. Clé NATURELLE comme `PlatformContent` ; auteur
+/// figé comme `FeatureAccessOverride`. Propriétaire : `src/b2b/delivery-availability/`.
+/// Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`, D4.
+model DeliveryAvailability {
+  /// Toujours `delivery` : il n'y a qu'un réglage, et son nom est connu d'avance.
+  key String @id
+
+  openToB2b Boolean @map("open_to_b2b")
+  openToB2c Boolean @map("open_to_b2c")
+
+  /// Instant du geste, lu du `Clock` — pas `@updatedAt`, qui lirait l'horloge
+  /// de la base au lieu de celle de la requête.
+  updatedAt     DateTime @map("updated_at")
+  /// Qui l'a posé, figé à l'instant du geste : le `sub` survit à tout, le nom
+  /// et le rôle sont un instantané.
+  updatedBySub  String   @map("updated_by_sub")
+  updatedByName String   @map("updated_by_name")
+  updatedByRole String   @map("updated_by_role")
+
+  @@map("delivery_settings")
   @@schema("public")
 }
 

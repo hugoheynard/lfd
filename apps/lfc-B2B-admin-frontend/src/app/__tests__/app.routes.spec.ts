@@ -67,6 +67,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,
+  // Les notes de la commerciale : ni la comptabilité ni le support, qui lisent pourtant la fiche.
+  'comptes-clients/:id/notes': 'b2b_client_notes:read',
   'comptes-clients/:id/commandes': null,
   // La MÊME commande que `commandes/:orderId`, sous le bandeau de son compte, et
   // derrière le MÊME droit : la coquille n'ouvre que `b2b_companies:read`, et
@@ -108,7 +110,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   sante: 'ops_health:read',
 
   reglages: 'b2b_settings:read',
-  'reglages/retraits-livraisons': null,
   // Hérite du mur de `reglages` (`b2b_settings:read`) : ce que coûte une
   // dérogation est une politique tarifaire de la maison, au même rang que le
   // frais d'une zone. Décider COMBIEN n'est pas décider QUI peut en accorder
@@ -133,6 +134,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La frise LIT la même chose que la grille, à d'autres dates : même mur.
   'b2b/tarification/frise': null,
   'b2b/tarification/simulateur': null,
+  // Les réglages de l'e-commerce, venus de l'onglet « Retraits & livraisons »
+  // des Réglages : même mur que celui qu'ils quittent, hérité de l'espace.
+  'b2b/reglages/points-de-retrait': null,
+  'b2b/reglages/livraison': null,
+  'b2b/reglages/heures-limites': null,
 
   // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
   // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
@@ -287,8 +293,9 @@ describe("l'arbre de routes du back-office", () => {
     expect(wrong).toEqual([]);
   });
 
-  it('garde les anciennes adresses des deux écrans déménagés', () => {
-    // Catalogue et Tarification ont quitté les Réglages pour l'espace B2B.
+  it('garde les anciennes adresses des écrans déménagés', () => {
+    // Catalogue et Tarification ont quitté les Réglages pour l'espace B2B, puis
+    // « Retraits & livraisons », découpé en trois pages de ses réglages.
     // Leurs URL vivent dans des favoris et des liens collés : un rangement qui
     // rend 404 se paie par celui qui ne l'a pas fait.
     const reglages = routes.find((route) => route.path === 'reglages');
@@ -297,11 +304,12 @@ describe("l'arbre de routes du back-office", () => {
       .map((child) => [child.path, child.redirectTo]);
 
     expect(moved).toEqual([
-      ['', 'retraits-livraisons'],
+      ['', 'surtaxe-de-retard'],
       ['catalogue', '/b2b/catalogue'],
       ['tarification', '/b2b/tarification'],
       ['tarification/frise', '/b2b/tarification/frise'],
       ['tarification/simulateur', '/b2b/tarification/simulateur'],
+      ['retraits-livraisons', '/b2b/reglages/points-de-retrait'],
     ]);
   });
 

@@ -1,7 +1,10 @@
-import { effect, Injectable, signal } from '@angular/core';
+import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 
-import type { BillingAddressPayload, FulfillmentWindow } from '@lfd/contracts';
+import { type BillingAddressPayload, deliveryOpenTo, type FulfillmentWindow } from '@lfd/contracts';
 
+import { ClientAudience } from './client-audience.service';
+import { ClientWorkspace } from './client-workspace.service';
+import { ServicePoints } from './shop/pickup-points.store';
 import { isRecord, readLocal, readString, writeLocal } from './local-store';
 
 /**
@@ -183,11 +186,70 @@ function parseAddress(raw: unknown): BillingAddressPayload | null {
  */
 @Injectable({ providedIn: 'root' })
 export class OrderContextStore {
+  private readonly workspace = inject(ClientWorkspace);
+  private readonly audience = inject(ClientAudience);
+  private readonly points = inject(ServicePoints);
+
   readonly choice = signal<ServiceChoice | null>(readLocal(KEY, parseChoice));
+
+  /** Le dernier espace CONNU — `null` tant que `/me` n'a pas répondu. */
+  private seen: string | null = null;
 
   constructor() {
     effect(() => {
       writeLocal(KEY, this.choice());
+    });
+
+    /**
+     * 🔴 **Un changement d'espace efface le mode de service** (plan D7).
+     *
+     * Une adresse de livraison appartient à une société, et la remise de
+     * retrait d'un point peut changer d'un espace à l'autre : garder le choix
+     * ferait livrer une commande perso chez l'employeur, ou annoncer une remise
+     * qui ne s'applique plus.
+     *
+     * La PREMIÈRE résolution n'efface rien : passer de « inconnu » à un espace
+     * n'est pas une bascule, c'est la page qui se charge — et le choix relu du
+     * navigateur a été fait dans cet espace-là.
+     */
+    effect(() => {
+      const current = this.workspace.current();
+      if (current === null) {
+        return;
+      }
+      if (this.seen !== null && this.seen !== current) {
+        this.choice.set(null);
+      }
+      this.seen = current;
+    });
+
+    /**
+     * 🔴 **Une livraison devenue interdite s'efface** (plan remise et livraison
+     * par clientèle, D7).
+     *
+     * Le choix est relu du navigateur : il a pu être posé avant que le
+     * back-office ferme la livraison à cette clientèle, ou dans une société
+     * qui n'est plus active. Le garder ferait composer un panier que le devis
+     * puis la commande refuseront.
+     *
+     * Rien ne s'efface sur une supposition : ni tant que la clientèle est
+     * inconnue (un pro pris pour un particulier le temps de `/me`), ni tant que
+     * le réglage n'a pas été LU — son défaut ouvert n'est pas une réponse.
+     */
+    effect(() => {
+      const choice = this.choice();
+      if (choice?.mode !== 'delivery') {
+        return;
+      }
+      // Idempotent : les écrans qui montrent les points l'ont souvent déjà fait.
+      untracked(() => void this.points.hydrate());
+      const audience = this.audience.current();
+      if (audience === null || !this.points.deliveryAvailabilityKnown()) {
+        return;
+      }
+      if (!deliveryOpenTo(this.points.deliveryAvailability(), audience)) {
+        this.choice.set(null);
+      }
     });
   }
 }

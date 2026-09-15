@@ -245,6 +245,12 @@ projection Shopify applique. Remplacé ou conservé ? (D9)
 | **D9**  | Shopify : remplacé ou conservé ?                                                      | à trancher par Hugo                                                     |
 | **D10** | Que voit la vitrine anonyme : prix public ou pro ?                                    | public ; le pro voit son prix une fois connecté                         |
 
+> ⚠️ **D2 et D5 ne sont plus des règles de code (2026-09-15).** Ce sont des
+> **réglages** du back-office : la remise d'un point porte ses clientèles, et la
+> livraison s'ouvre par clientèle. Les défauts reproduisent l'existant (tout
+> ouvert) ; fermer au public est un geste de l'admin. Le serveur l'applique
+> depuis le lot A de [`plan-remise-et-livraison-par-clientele.md`](plan-remise-et-livraison-par-clientele.md), D8.
+
 ## 7. Découpage proposé
 
 **Aucune ouverture au public avant la fin du lot 5.**

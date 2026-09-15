@@ -66,6 +66,15 @@ export interface HandoverQueueEntry {
    * laissé à l'écran, chaque écran le referait, et un seul l'oublierait.
    */
   readonly tradeName: string | null;
+  /**
+   * **Qui commande**, figé à la passation : `pro` pour une société, `public`
+   * sans — pas le tarif appliqué.
+   *
+   * 🔴 `null` = commande d'avant la distinction, et c'est une réponse, pas un
+   * trou : « sans société » ne voulait pas dire « public » avant elle. L'écran
+   * n'affiche alors rien plutôt qu'un badge deviné.
+   */
+  readonly clientele: "pro" | "public" | null;
   /** Le point de retrait figé à la commande, ou `null` — cf. `HandoverWindow`. */
   readonly pickupLabel: string | null;
   /** L'acheminement : le coursier charge ici, le client vient ici. */

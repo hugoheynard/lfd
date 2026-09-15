@@ -70,7 +70,14 @@ valeur enregistrée.
 
 Un dossier par domaine, exporté en subpath (liste vérifiée le 2026-09-14) :
 `address`, `appointment`, `cart`, `catalog`, `company`, `flags`, `hours`,
-`order`, `panel`, `payment`, `pricing`, `subscription`.
+`order`, `panel`, `payment`, `photo-cards`, `pricing`, `subscription`.
+
+`photo-cards` est le socle d'une liste ordonnée de cartes photo (titre, texte,
+photo facultative) : brouillon pur, réduction de photo, port de passerelle,
+formulaire et éditeur. Il ne connaît aucun usage — bornes, politique de photo,
+libellés, côté d'ajout et passerelle sont en entrée. La procédure de livraison
+(`company/delivery-procedure/`) en est le premier consommateur, et garde ses
+noms publiés.
 
 `payment` porte le RIB d'une société et les zones facultatives de son mandat :
 ni une adresse, ni une fiche société — le compte qu'on débite, et ce que le

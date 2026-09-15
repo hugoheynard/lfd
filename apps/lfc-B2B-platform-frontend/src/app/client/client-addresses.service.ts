@@ -10,10 +10,10 @@ import type {
 import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
 
-import { AccountService } from '../account/account.service';
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientActivation } from './client-activation.service';
+import { ClientWorkspace } from './client-workspace.service';
 
 /**
  * **Le carnet d'adresses du client**, tel que notre base le porte.
@@ -36,16 +36,16 @@ import { ClientActivation } from './client-activation.service';
  *
  * ## Quelle entreprise
  *
- * La première de `GET /me`. La boutique n'a pas encore de sélecteur
- * d'entreprise — elle commande à titre personnel (`companyId: null`), et le
- * carnet n'est ici qu'une commodité de saisie, pas le titulaire de la commande.
- * C'est exactement ici que ce sélecteur se branchera le jour où il existera.
+ * Celle de l'**espace de travail** (`ClientWorkspace`), et rien en perso : une
+ * adresse appartient à une société, et en proposer une à qui commande pour
+ * lui-même serait livrer chez son employeur. Le carnet **attend** l'espace
+ * connu, et se vide à une bascule avant de relire.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientAddresses {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly account = inject(AccountService);
+  private readonly workspace = inject(ClientWorkspace);
   private readonly activation = inject(ClientActivation);
 
   private readonly known = signal<CompanyAddressesView | null>(null);
@@ -58,17 +58,26 @@ export class ClientAddresses {
   /** L'adresse de facturation, ou `null` — l'entreprise n'en a pas encore posé. */
   readonly billing = computed<BillingAddressView | null>(() => this.known()?.billing ?? null);
 
-  /** L'entreprise déjà lue : sans ce garde, l'effet rechargerait à chaque signal. */
+  /**
+   * L'espace déjà lu (ou en lecture) : sans ce garde, l'effet rechargerait à
+   * chaque signal. C'est aussi lui qui écarte une réponse arrivée après une
+   * bascule — elle serait le carnet d'une autre maison.
+   */
   private loadedFor: string | null = null;
 
   constructor() {
     effect(() => {
-      const company = this.account.companies()[0] ?? null;
-      if (company === null || company.id === this.loadedFor) {
+      const current = this.workspace.current();
+      if (current === null || current === this.loadedFor) {
         return;
       }
-      this.loadedFor = company.id;
-      void this.load(company.id);
+      this.loadedFor = current;
+      // Le carnet de l'espace quitté ne reste pas affiché pendant la relecture.
+      this.known.set(null);
+      const company = this.workspace.company();
+      if (company !== null) {
+        void this.load(company.id);
+      }
     });
   }
 
@@ -186,17 +195,29 @@ export class ClientAddresses {
   private async load(companyId: string): Promise<void> {
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
-      this.known.set(
-        await firstValueFrom(
-          this.http.get<CompanyAddressesView>(`${this.url(companyId)}/addresses`, {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          }),
-        ),
+      const addresses = await firstValueFrom(
+        this.http.get<CompanyAddressesView>(`${this.url(companyId)}/addresses`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
       );
+      if (this.stillFor(companyId)) {
+        this.known.set(addresses);
+      }
     } catch {
       // Vide, et relisible : l'écran retombe sur la saisie libre, qui marche.
-      this.loadedFor = null;
+      if (this.stillFor(companyId)) {
+        this.loadedFor = null;
+      }
     }
+  }
+
+  /**
+   * La lecture vaut-elle encore ? Oui si l'espace n'a pas changé pendant le vol
+   * — ou si aucun espace ne pilote le carnet (suites qui le posent à la main).
+   */
+  private stillFor(companyId: string): boolean {
+    const current = this.workspace.current();
+    return current === null || current === companyId || this.loadedFor === 'posé-par-la-suite';
   }
 }
 

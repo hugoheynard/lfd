@@ -8,6 +8,7 @@ import { ClientOrderHistory } from '../mes-commandes/client-order-history.servic
 import { ClientSubscriptions } from '../client-subscriptions.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { ClientWorkspace } from '../client-workspace.service';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
@@ -33,6 +34,12 @@ interface Destination {
   readonly shop: ShopLevel;
   /** La surface masquable en admin qui la porte, s'il y en a une. Masquée, elle disparaît. */
   readonly surface?: VisibilityFeatureKey;
+  /**
+   * Un écran de SOCIÉTÉ : retiré en perso pour qui en a une (Hugo, 2026-09-15) —
+   * le dossier, le relevé, les paniers récurrents. `companyWorkspaceGuard` ferme
+   * les adresses qui ont une route.
+   */
+  readonly companyOnly?: true;
 }
 
 /**
@@ -66,9 +73,16 @@ const DESTINATIONS: readonly Destination[] = [
   { id: 'espace', route: '/mon-espace', ready: true, shop: 'browse' },
   { id: 'shop', route: '/nouvelle-commande/boutique', ready: true, shop: 'browse' },
   { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
-  { id: 'invoices', route: '/mes-factures', ready: true, shop: 'closed', surface: 'invoices' },
-  { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order' },
-  { id: 'account', route: '/mon-compte', ready: true, shop: 'closed' },
+  {
+    id: 'invoices',
+    route: '/mes-factures',
+    ready: true,
+    shop: 'closed',
+    surface: 'invoices',
+    companyOnly: true,
+  },
+  { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order', companyOnly: true },
+  { id: 'account', route: '/mon-compte', ready: true, shop: 'closed', companyOnly: true },
 ];
 
 /** Une destination prête à être dessinée, dans l'une ou l'autre des deux formes. */
@@ -108,6 +122,7 @@ export interface NavItem {
 export class ClientNav {
   private readonly orders = inject(ClientOrderHistory);
   private readonly access = inject(ClientFeatureAccess);
+  private readonly workspace = inject(ClientWorkspace);
   private readonly injector = inject(Injector);
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
@@ -135,7 +150,9 @@ export class ClientNav {
   readonly items = computed<readonly NavItem[]>(() =>
     DESTINATIONS.filter(
       (d) =>
-        this.access.atLeast(d.shop) && (d.surface === undefined || this.access.visible(d.surface)),
+        this.access.atLeast(d.shop) &&
+        (d.surface === undefined || this.access.visible(d.surface)) &&
+        !(d.companyOnly === true && this.companyScreensClosed()),
     ).map((d) => ({
       id: d.id,
       route: d.route,
@@ -146,6 +163,14 @@ export class ClientNav {
   );
 
   /** Le nombre d'items porteurs d'un compteur — ce que la cloche du menu annonce. */
+  /**
+   * En perso, pour qui a une société : ses écrans de société n'ont rien à
+   * montrer. Sans aucune société, Mon compte reste — c'est la porte pro.
+   */
+  private readonly companyScreensClosed = computed(
+    () => this.workspace.isPersonal() && this.workspace.hasChoice(),
+  );
+
   readonly pending = computed(() => this.items().filter((i) => i.countShort !== '').length);
 
   private counts(id: Destination['id']): Pick<NavItem, 'count' | 'countShort' | 'warn'> {

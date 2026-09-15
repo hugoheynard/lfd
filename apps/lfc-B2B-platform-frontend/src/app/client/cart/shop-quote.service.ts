@@ -1,7 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import type { ShopQuoteFulfillment, ShopQuotePayload, ShopQuoteView } from '@lfd/contracts';
+import {
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  type ShopQuoteFulfillment,
+  type ShopQuotePayload,
+  type ShopQuoteView,
+} from '@lfd/contracts';
+import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
   catchError,
   debounceTime,
@@ -14,6 +20,7 @@ import {
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -33,8 +40,23 @@ import { ShopCatalogue } from '../shop/shop-catalogue.store';
  */
 const QUOTE_DEBOUNCE_MS = 300;
 
-/** Où en est le décompte. `idle` = rien à chiffrer, le panier est vide. */
-export type QuoteStatus = 'idle' | 'loading' | 'ready' | 'failed';
+/** Le lecteur d'un visiteur non reconnu — la route publique. */
+const VISITOR = 'visiteur';
+
+/**
+ * Où en est le décompte. `idle` = rien à chiffrer, le panier est vide.
+ * `refused` = le serveur refuse ce panier tel quel, et {@link ShopQuote.refusal}
+ * dit pourquoi.
+ */
+export type QuoteStatus = 'idle' | 'loading' | 'ready' | 'failed' | 'refused';
+
+/**
+ * Le repli quand le refus arrive sans message lisible. Le serveur en porte un
+ * (plan remise et livraison par clientèle, D5) ; celui-ci ne sert qu'à ne pas
+ * rester muet.
+ */
+const DELIVERY_CLOSED_FALLBACK =
+  "La livraison n'est pas proposée pour cet espace. Choisissez le retrait.";
 
 /** Le décompte d'un panier vide — ce qu'on montre avant la première réponse. */
 const EMPTY: ShopQuoteView = {
@@ -84,12 +106,24 @@ export class ShopQuote {
   private readonly store = inject(CartStore);
   private readonly order = inject(OrderContextStore);
   private readonly catalogue = inject(ShopCatalogue);
+  private readonly workspace = inject(ClientWorkspace);
 
   private readonly view = signal<ShopQuoteView>(EMPTY);
   private readonly state = signal<QuoteStatus>('idle');
+  private readonly refused = signal<string | null>(null);
 
   readonly totals = this.view.asReadonly();
   readonly status = this.state.asReadonly();
+
+  /**
+   * Le refus du serveur à MONTRER, ou `null`.
+   *
+   * Aujourd'hui un seul : la livraison fermée à la clientèle (409
+   * `DELIVERY_CLOSED_FOR_AUDIENCE`). Tout autre échec reste un `failed` qui
+   * garde le dernier décompte — celui-ci non : ses frais de coursier sont ceux
+   * d'une livraison que la commande refusera.
+   */
+  readonly refusal = this.refused.asReadonly();
 
   /**
    * Ce dont le décompte dépend, et **rien d'autre**.
@@ -101,7 +135,11 @@ export class ShopQuote {
   private readonly key = computed(() => {
     const lines = this.payloadLines();
     const service = this.fulfillmentOf();
-    return JSON.stringify({ lines, service });
+    // L'espace est dans la clé : le même panier ne coûte pas pareil en perso et
+    // sous la mercuriale d'une société, donc une bascule redemande le décompte.
+    // `null` = reconnu, espace pas encore connu — cf. `ask`.
+    const reader = this.auth.isAuthenticated() ? this.workspace.current() : VISITOR;
+    return JSON.stringify({ lines, service, reader });
   });
 
   constructor() {
@@ -156,6 +194,12 @@ export class ShopQuote {
     if (lines.length === 0) {
       this.view.set(EMPTY);
       this.state.set('idle');
+      this.refused.set(null);
+      return of(null);
+    }
+    if (readerIn(key) === null) {
+      // Reconnu, espace inconnu : un décompte sans en-tête serait chiffré pour
+      // l'espace que le serveur choisit. L'arrivée de l'espace change la clé.
       return of(null);
     }
     const body = { lines, fulfillment: fulfillmentIn(key) };
@@ -163,8 +207,17 @@ export class ShopQuote {
       tap((view) => {
         this.view.set(view);
         this.state.set('ready');
+        this.refused.set(null);
       }),
-      catchError(() => {
+      catchError((error: unknown) => {
+        if (httpErrorCode(error) === DELIVERY_CLOSED_FOR_AUDIENCE) {
+          // 🔴 Le dernier décompte NE reste PAS : il porte des frais de
+          // coursier pour une livraison que la commande refusera (plan D5).
+          this.view.set(EMPTY);
+          this.state.set('refused');
+          this.refused.set(httpErrorMessage(error, DELIVERY_CLOSED_FALLBACK));
+          return of(null);
+        }
         this.state.set('failed');
         return of(null);
       }),
@@ -237,6 +290,11 @@ export class ShopQuote {
 /** Les lignes encodées dans la clé — la clé EST la charge, pas son résumé. */
 function linesOf(key: string): ShopQuotePayload['lines'] {
   return (JSON.parse(key) as { lines: ShopQuotePayload['lines'] }).lines;
+}
+
+/** Le lecteur encodé dans la clé : l'espace, {@link VISITOR}, ou `null` s'il n'est pas connu. */
+function readerIn(key: string): string | null {
+  return (JSON.parse(key) as { reader: string | null }).reader;
 }
 
 /** Le service encodé dans la clé. */

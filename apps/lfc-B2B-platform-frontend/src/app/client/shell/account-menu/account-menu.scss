@@ -36,3 +36,13 @@
   font-size: var(--fold-text-sm);
   font-weight: var(--lfc-weight-black);
 }
+
+/* L'espace en cours, sous le sélecteur : une ligne qu'on lit, pas une entrée. Le
+   filet la sépare des gestes de la personne qui suivent. */
+.space-current {
+  margin: 0;
+  padding: var(--fold-space-xs) var(--fold-space-md) var(--fold-space-sm);
+  border-bottom: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

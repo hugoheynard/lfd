@@ -13,10 +13,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
  * n'offrait plus qu'un « Retirer la préférence » sans dire de quoi on sortait,
  * ni que le réglage était devenu inerte.
  *
- * Aucun container ne peut produire ce cas aujourd'hui — `DELIVERY_SERVICE_OPEN`
- * est une constante, et elle est à vrai. C'est précisément pourquoi la carte se
- * teste ici directement : ce chemin ne se voit qu'au moment où le drapeau
- * rebascule, c'est-à-dire trop tard.
+ * Ce cas se produit dès qu'un admin ferme la livraison aux pros, dans
+ * « E-commerce LFC → Réglages → Livraison » : la constante `DELIVERY_SERVICE_OPEN`,
+ * toujours à vrai, a laissé la place à ce réglage le 2026-09-15. La carte se
+ * teste ici directement parce que ce chemin ne se voit qu'une fois la case
+ * décochée.
  */
 @Component({
   imports: [CompanyFulfillmentCard],

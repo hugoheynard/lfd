@@ -1,0 +1,26 @@
+// La scène défile dans les deux sens quand l'image est à sa taille réelle ; ajustée, elle tient d'un bloc.
+.stage {
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  max-block-size: 75vh;
+}
+
+.photo {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 75vh;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+// Centrer un contenu qui déborde en rognerait le bord gauche : à taille réelle, on part du coin.
+.stage.actual {
+  justify-content: flex-start;
+}
+
+.stage.actual .photo {
+  max-inline-size: none;
+  max-block-size: none;
+  cursor: zoom-out;
+}

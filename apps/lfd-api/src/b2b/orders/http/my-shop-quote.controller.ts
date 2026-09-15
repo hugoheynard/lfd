@@ -27,8 +27,9 @@ import { QuoteShopCartQuery } from "../application/queries/quote-shop-cart.handl
  * rattachements. Un client ne peut donc pas chiffrer un panier au tarif d'un
  * concurrent — il n'y a pas de paramètre à deviner.
  *
- * ⚠️ Sans société résolue (personne rattachée à rien, ou à plusieurs sans avoir
- * déclaré laquelle), le décompte est celui de la vitrine publique. C'est la
+ * ⚠️ Sans société résolue (personne rattachée à rien, à plusieurs sans avoir
+ * déclaré laquelle, ou espace « perso » déclaré), le décompte est celui de la
+ * vitrine publique. C'est la
  * réponse honnête à « je ne sais pas encore pour qui », et elle est la même que
  * celle de `/shop/catalogue/mine` — les deux écrans ne peuvent pas se
  * contredire.

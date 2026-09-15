@@ -1,0 +1,51 @@
+// Les notes photo du commercial sur un compte client — plan
+// `documentation/b2b/plan-notes-photo-du-commercial.md`.
+//
+// Racine d'agrégat (`ClientNotebook`, `src/b2b/client-notes/`) : le carnet d'UNE
+// société, qui naît à la première note et ne se supprime jamais. Ses notes, elles,
+// se suppriment physiquement (D4). Staff seulement : ressource `b2b_client_notes`.
+model ClientNotebook {
+  id String @id
+
+  // Le mur : chaque lecture et écriture le porte dans son `where`.
+  companyId String  @unique @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  notes ClientNote[]
+
+  @@map("client_notebooks")
+  @@schema("public")
+}
+
+model ClientNote {
+  id String @id
+
+  notebookId String         @map("notebook_id")
+  notebook   ClientNotebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  // Rang 0-based, tenu par l'agrégat — la nouvelle note est en tête. Pas
+  // d'unique sur (notebook_id, position) : un unique non différé ferait échouer
+  // l'échange de deux lignes lors d'un réordonnancement.
+  position Int
+
+  title    String
+  body     String  @default("")
+  // Clé de la photo lisible dans le bucket des pièces (`kbis`) ; sa vignette vit
+  // sous `…/client-notes/thumbs/` avec la même révision. `null` sans photo.
+  photoKey String? @map("photo_key")
+
+  // L'auteur, FIGÉ au dépôt : le `sub` reste résolvable, le nom est un instantané
+  // (vide quand l'annuaire ne connaît pas le `sub` — on n'invente pas un nom).
+  createdBySub  String @map("created_by_sub")
+  createdByName String @map("created_by_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([notebookId, position])
+  @@map("client_notes")
+  @@schema("public")
+}

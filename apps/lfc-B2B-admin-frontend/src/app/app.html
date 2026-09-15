@@ -45,6 +45,7 @@
           fold-menu-item
           icon="production"
           label="Production"
+          badge="app"
           routerLink="/production"
           routerLinkActive
           #prodRla="routerLinkActive"
@@ -61,6 +62,7 @@
           fold-menu-item
           icon="package-check"
           label="Retrait boutique"
+          badge="app"
           routerLink="/remises"
           routerLinkActive
           #remisesRla="routerLinkActive"
@@ -78,6 +80,7 @@
           fold-menu-item
           icon="truck"
           label="Livraison"
+          badge="app"
           routerLink="/livraison"
           routerLinkActive
           #livraisonRla="routerLinkActive"
@@ -112,7 +115,7 @@
         <a
           fold-menu-item
           icon="store"
-          label="B2B"
+          label="E-commerce LFC"
           routerLink="/b2b"
           routerLinkActive
           #b2bRla="routerLinkActive"
@@ -431,7 +434,12 @@
              MÊME catalogue que le rail secondaire — le lanceur les montre
              toutes, le rail seulement celles de l'espace ouvert, mais aucune ne
              se déclare deux fois. -->
-        <fold-nav-group icon="production" label="Production" [entryCountLabel]="entriesLabel">
+        <fold-nav-group
+          icon="production"
+          label="Production"
+          badge="app"
+          [entryCountLabel]="entriesLabel"
+        >
           @for (view of productionViews(); track view.key) {
             <a
               fold-nav-tile
@@ -454,6 +462,7 @@
           fold-nav-tile
           icon="package-check"
           label="Retrait boutique"
+          badge="app"
           routerLink="/remises"
           routerLinkActive
           #remisesTile="routerLinkActive"
@@ -466,6 +475,7 @@
           fold-nav-tile
           icon="truck"
           label="Livraison"
+          badge="app"
           routerLink="/livraison"
           routerLinkActive
           #livraisonTile="routerLinkActive"
@@ -494,7 +504,7 @@
              secondaire, donc nulle part sous 768px. Les deux arbres ne partagent
              pas leur modèle — une entrée posée d'un seul côté est invisible de
              l'autre. -->
-        <fold-nav-group icon="store" label="B2B" [entryCountLabel]="entriesLabel">
+        <fold-nav-group icon="store" label="E-commerce LFC" [entryCountLabel]="entriesLabel">
           @for (view of b2bViews(); track view.key) {
             <a
               fold-nav-tile

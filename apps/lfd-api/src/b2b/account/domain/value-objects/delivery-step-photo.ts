@@ -1,5 +1,9 @@
-import { imageDimensions } from "@lfd/storage";
-
+import {
+  CardPhoto,
+  type CardPhotoRules,
+  cardPhotoContentType,
+  megabytes,
+} from "../../../shared/photo-cards/domain/value-objects/card-photo.js";
 import { InvalidDeliveryStepPhotoError } from "../errors/delivery-procedure-errors.js";
 
 /**
@@ -12,26 +16,27 @@ import { InvalidDeliveryStepPhotoError } from "../errors/delivery-procedure-erro
  */
 export const DELIVERY_STEP_PHOTO_MAX_BYTES = 1024 * 1024;
 
-/**
- * Un format accepté, reconnu à ses octets de tête — le `mimetype` annoncé par
- * le client se falsifie d'un champ de formulaire, les octets non.
- */
-interface AcceptedFormat {
-  readonly contentType: "image/jpeg" | "image/png";
-  readonly matches: (bytes: Buffer) => boolean;
-}
-
-const ACCEPTED_FORMATS: readonly AcceptedFormat[] = [
-  {
-    contentType: "image/jpeg",
-    matches: (bytes) => startsWith(bytes, Buffer.from([0xff, 0xd8, 0xff])),
+/** La borne d'une étape, et ses refus dans les mots de la procédure. */
+const STEP_PHOTO_RULES: CardPhotoRules = {
+  maxBytes: DELIVERY_STEP_PHOTO_MAX_BYTES,
+  refusals: {
+    empty: () => new InvalidDeliveryStepPhotoError("le fichier est vide. Reprenez la photo."),
+    tooHeavy: (size, max) =>
+      new InvalidDeliveryStepPhotoError(
+        `elle pèse ${megabytes(size)} Mo, la limite est de ${megabytes(max)} Mo. ` +
+          "Reprenez-la depuis l'écran de la procédure, qui la réduit avant l'envoi.",
+      ),
+    unsupportedFormat: () =>
+      new InvalidDeliveryStepPhotoError(
+        "un JPEG ou un PNG est attendu (ni HEIC, ni PDF). Enregistrez la photo dans l'un " +
+          "de ces deux formats, puis déposez-la à nouveau.",
+      ),
+    truncated: () =>
+      new InvalidDeliveryStepPhotoError(
+        "l'image est tronquée : ses dimensions ne se lisent pas. Reprenez la photo.",
+      ),
   },
-  {
-    contentType: "image/png",
-    matches: (bytes) =>
-      startsWith(bytes, Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
-  },
-];
+};
 
 /**
  * **La photo d'une étape de procédure de livraison** — le portail, la porte de
@@ -53,36 +58,16 @@ export class DeliveryStepPhoto {
   ) {}
 
   /**
-   * Valide des octets déposés. Vide puis poids d'abord — avant de faire
-   * travailler quoi que ce soit dessus —, format ensuite, dimensions enfin.
+   * Valide des octets déposés, selon la règle du socle des cartes à photo
+   * (vide, poids, format aux octets, dimensions — dans cet ordre) et la borne
+   * de l'étape.
    *
    * @throws {InvalidDeliveryStepPhotoError} vide, trop lourde, format refusé ou
    *   dimensions illisibles.
    */
   static create(bytes: Buffer): DeliveryStepPhoto {
-    if (bytes.length === 0) {
-      throw new InvalidDeliveryStepPhotoError("le fichier est vide. Reprenez la photo.");
-    }
-    if (bytes.length > DELIVERY_STEP_PHOTO_MAX_BYTES) {
-      throw new InvalidDeliveryStepPhotoError(
-        `elle pèse ${megabytes(bytes.length)} Mo, la limite est de ` +
-          `${megabytes(DELIVERY_STEP_PHOTO_MAX_BYTES)} Mo. Reprenez-la depuis l'écran de ` +
-          "la procédure, qui la réduit avant l'envoi.",
-      );
-    }
-    const format = ACCEPTED_FORMATS.find((candidate) => candidate.matches(bytes));
-    if (format === undefined) {
-      throw new InvalidDeliveryStepPhotoError(
-        "un JPEG ou un PNG est attendu (ni HEIC, ni PDF). Enregistrez la photo dans l'un " +
-          "de ces deux formats, puis déposez-la à nouveau.",
-      );
-    }
-    if (imageDimensions(bytes) === null) {
-      throw new InvalidDeliveryStepPhotoError(
-        "l'image est tronquée : ses dimensions ne se lisent pas. Reprenez la photo.",
-      );
-    }
-    return new DeliveryStepPhoto(bytes, format.contentType);
+    const photo = CardPhoto.create(bytes, STEP_PHOTO_RULES);
+    return new DeliveryStepPhoto(photo.bytes, photo.contentType);
   }
 }
 
@@ -95,7 +80,7 @@ export class DeliveryStepPhoto {
  * bucket et la base.
  */
 export function deliveryStepPhotoContentType(bytes: Buffer): string | null {
-  return ACCEPTED_FORMATS.find((candidate) => candidate.matches(bytes))?.contentType ?? null;
+  return cardPhotoContentType(bytes);
 }
 
 /**
@@ -113,23 +98,4 @@ export function deliveryStepPhotoKey(
   revision: string,
 ): string {
   return `companies/${companyId}/delivery-procedures/${addressId}/${stepId}-${revision}`;
-}
-
-/**
- * La révision portée par une clé — ce qui suit le dernier `-`. Les identifiants
- * sont des ULID, sans tiret : le dernier est donc celui que
- * {@link deliveryStepPhotoKey} a posé.
- */
-export function deliveryStepPhotoRevision(photoKey: string): string {
-  return photoKey.slice(photoKey.lastIndexOf("-") + 1);
-}
-
-/** Ces octets commencent-ils par cette signature ? */
-function startsWith(bytes: Buffer, magic: Buffer): boolean {
-  return bytes.subarray(0, magic.length).equals(magic);
-}
-
-/** Une taille en Mo, à une décimale. */
-function megabytes(bytes: number): string {
-  return (bytes / (1024 * 1024)).toFixed(1);
 }

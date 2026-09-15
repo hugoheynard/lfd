@@ -1,5 +1,10 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { DELIVERY_CLOSED_FOR_AUDIENCE } from '@lfd/contracts';
+
+import { AuthFacade } from '../../../auth/auth.facade';
+import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
 
 import { ClientCart } from '../client-cart.service';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
@@ -89,5 +94,52 @@ describe('CartSummary', () => {
 
     expect(labels[0]).toBe('Sous-total HT');
     expect(labels.at(-1)).toBe('Total TTC');
+  });
+});
+
+/** Plan remise et livraison par clientèle, D5 : le refus se MONTRE dans le récapitulatif. */
+describe('CartSummary — une livraison refusée', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('montre le message du serveur à la place des montants, et garde les lignes', () => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // Un visiteur : la route publique, sans attendre `/me` ni un jeton.
+        provideWorkspace(workspaceDouble()),
+        { provide: AuthFacade, useValue: { isAuthenticated: () => false } },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    const cart = TestBed.inject(ClientCart);
+    cart.add('VIE-001');
+    const fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    TestBed.tick();
+    vi.advanceTimersByTime(400);
+    TestBed.tick();
+
+    TestBed.inject(HttpTestingController)
+      .expectOne((r) => r.url.endsWith('/shop/quote'))
+      .flush(
+        { code: DELIVERY_CLOSED_FOR_AUDIENCE, message: 'Choisissez le retrait.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('fold-callout')?.textContent).toContain('Choisissez le retrait.');
+    expect(el.querySelector('dl.count')).toBeNull();
+    expect(el.querySelectorAll('.lines > li')).toHaveLength(1);
   });
 });

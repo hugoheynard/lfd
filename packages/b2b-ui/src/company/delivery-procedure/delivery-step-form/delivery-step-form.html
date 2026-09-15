@@ -1,71 +1,7 @@
-<div class="step-form">
-  <fold-input
-    required
-    [label]="labels().title"
-    [hint]="titleHint()"
-    [value]="value().title"
-    (valueChange)="setTitle($event)"
-  />
-
-  <fold-textarea
-    optional
-    [optionalLabel]="labels().optional"
-    [label]="labels().body"
-    [hint]="bodyHint()"
-    [rows]="4"
-    [value]="value().body"
-    (valueChange)="setBody($event)"
-  />
-
-  <fold-fieldset
-    optional
-    legendVariant="eyebrow"
-    [legend]="labels().photoLegend"
-    [optionalLabel]="labels().optional"
-    [hint]="labels().photoHint"
-  >
-    <!-- Caché : le bouton fold l'ouvre. `accept="image/*"` laisse un téléphone
-         proposer l'appareil photo à côté de la galerie. -->
-    <input #photoInput type="file" accept="image/*" hidden (change)="onPicked($event)" />
-
-    <div class="photo">
-      @if (previewUrl(); as url) {
-        <img class="preview" [src]="url" [alt]="labels().photoPreviewAlt" />
-      }
-      @if (reducing()) {
-        <fold-loading size="sm" [message]="labels().photoReducing" />
-      }
-      @if (refusalMessage(); as message) {
-        <fold-callout variant="alert">{{ message }}</fold-callout>
-      }
-      <div class="photo-actions">
-        <button
-          foldButton
-          type="button"
-          emphasis="outline"
-          intent="neutral"
-          size="sm"
-          icon="upload"
-          [disabled]="reducing()"
-          (click)="photoInput.click()"
-        >
-          {{ hasPhoto() ? labels().replacePhoto : labels().choosePhoto }}
-        </button>
-        @if (hasPhoto()) {
-          <button
-            foldButton
-            type="button"
-            emphasis="soft"
-            intent="neutral"
-            size="sm"
-            icon="close"
-            [disabled]="reducing()"
-            (click)="removePhoto()"
-          >
-            {{ labels().removePhoto }}
-          </button>
-        }
-      </div>
-    </div>
-  </fold-fieldset>
-</div>
+<lfd-photo-card-form
+  [(value)]="value"
+  [labels]="labels()"
+  [limits]="limits"
+  [photoPolicy]="photoPolicy"
+  [currentPhotoUrl]="currentPhotoUrl()"
+/>

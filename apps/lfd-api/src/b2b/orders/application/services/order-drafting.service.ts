@@ -11,6 +11,7 @@ import { Injectable } from "@nestjs/common";
 
 import { CatalogVersionReader } from "../../../catalog/domain/ports/catalog-version.reader.js";
 import { CartAdjustments } from "./cart-adjustments.service.js";
+import { CustomerAudiences } from "./customer-audiences.service.js";
 import { type DeliveryContact, type FulfillmentWindow } from "@lfd/contracts";
 import {
   DeliveryDefaultsReader,
@@ -116,6 +117,7 @@ export class OrderDrafting {
     private readonly catalog: ProductCatalogReader,
     private readonly waivers: OrderCutoffWaiverGate,
     private readonly lateFees: OrderLateFeeReader,
+    private readonly audiences: CustomerAudiences,
   ) {}
 
   /**
@@ -145,7 +147,7 @@ export class OrderDrafting {
       (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
       0,
     );
-    const acheminement = await this.resolveFulfillment(content, subtotalCents);
+    const acheminement = await this.resolveFulfillment(content, subtotalCents, parties.companyId);
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
@@ -161,7 +163,7 @@ export class OrderDrafting {
         contact: content.deliveryContact,
         signatureRequired: content.signatureRequired,
       },
-      await this.defaultsFor(content),
+      await this.defaultsFor(content, parties),
     );
     const order = Order.draft({
       agreed,
@@ -300,12 +302,22 @@ export class OrderDrafting {
    * En retrait il n'y a **aucun défaut** : le point est partagé entre tous les
    * clients, ses heures sont une contrainte d'ouverture et non une préférence de
    * ce client-là. Ce que le client demande y est donc toujours un choix.
+   *
+   * **Sans société, aucun défaut non plus** : une adresse du carnet appartient
+   * toujours à une société, et une commande perso n'en a aucune à reprendre.
    */
-  private async defaultsFor(content: OrderContent): Promise<FulfillmentDefaults> {
-    if (content.fulfillmentMethod === "pickup" || content.deliveryAddressId === null) {
+  private async defaultsFor(
+    content: OrderContent,
+    parties: OrderParties,
+  ): Promise<FulfillmentDefaults> {
+    if (
+      content.fulfillmentMethod === "pickup" ||
+      content.deliveryAddressId === null ||
+      parties.companyId === null
+    ) {
       return NO_DELIVERY_DEFAULTS;
     }
-    return this.deliveryDefaults.of(content.deliveryAddressId);
+    return this.deliveryDefaults.of(content.deliveryAddressId, parties.companyId);
   }
 
   /**
@@ -313,16 +325,28 @@ export class OrderDrafting {
    * par le client). **Retrait** : snapshot du point (choisi ou défaut) + sa remise.
    * **Coursier** : adresse livrée figée + zone **déduite de son code postal**,
    * dont on tire le frais.
+   *
+   * Les deux pour la **clientèle** de la société portée — le client pour
+   * lui-même comme l'équipe à sa place : B2B si elle est active, B2C sinon
+   * (plan `remise-et-livraison-par-clientele`, D1 et Q1).
+   *
+   * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
    */
   private async resolveFulfillment(
     content: OrderContent,
     subtotalCents: number,
+    companyId: string | null,
   ): Promise<ResolvedFulfillment> {
+    const audience = await this.audiences.of(companyId);
     if (content.fulfillmentMethod === "pickup") {
       // La remise vient du service PARTAGÉ avec le devis de la boutique : deux
       // implémentations de « quelle remise s'applique » finiraient par annoncer
       // un montant que la caisse contredit.
-      const retrait = await this.adjustments.forPickup(content.pickupAddressId, subtotalCents);
+      const retrait = await this.adjustments.forPickup(
+        content.pickupAddressId,
+        subtotalCents,
+        audience,
+      );
       // La tranche demandée doit tenir dans l'une des fenêtres du point — jamais
       // dans leur union : entre le créneau pro et l'ouverture publique il peut y
       // avoir porte close, et l'accepter serait promettre une remise impossible.
@@ -353,7 +377,11 @@ export class OrderDrafting {
     // La zone se DÉDUIT du code postal livré : c'est une propriété de l'adresse,
     // pas un choix. Personne ne peut donc annoncer un secteur moins cher que le
     // sien — et le devis de la boutique le déduit par la même fonction.
-    const coursier = await this.adjustments.forDelivery(address.codePostal, subtotalCents);
+    const coursier = await this.adjustments.forDelivery(
+      address.codePostal,
+      subtotalCents,
+      audience,
+    );
     return {
       pickupAddressId: null,
       deliveryZoneId: coursier.zone.id,

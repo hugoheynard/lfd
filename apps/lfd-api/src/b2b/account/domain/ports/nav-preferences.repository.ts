@@ -1,4 +1,4 @@
-import type { CatalogueView } from "../value-objects/nav-preferences.js";
+import type { NavPreferencesPatch } from "../value-objects/nav-preferences.js";
 
 /**
  * Port d'**écriture** des préférences de navigation. Volontairement minuscule et
@@ -12,5 +12,13 @@ import type { CatalogueView } from "../value-objects/nav-preferences.js";
  * Classe abstraite = aussi le **token d'injection** Nest.
  */
 export abstract class NavPreferencesRepository {
-  abstract saveCatalogueView(userId: string, view: CatalogueView): Promise<void>;
+  /**
+   * Fusionne les clés présentes du patch dans le sac, **en une instruction**.
+   *
+   * Une lecture suivie d'une écriture perdrait une clé posée entre les deux par
+   * un autre appareil (la vue du catalogue d'un côté, l'espace de l'autre) ; un
+   * remplacement du sac l'effaçait même sans concurrence — c'était le cas
+   * jusqu'au 2026-09-15.
+   */
+  abstract merge(userId: string, patch: NavPreferencesPatch): Promise<void>;
 }

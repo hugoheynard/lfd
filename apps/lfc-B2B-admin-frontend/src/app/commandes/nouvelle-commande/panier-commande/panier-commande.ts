@@ -4,7 +4,9 @@ import {
   STAFF_SETTLEMENT_LABELS,
   type BillingAddressPayload,
   type CompanyMemberView,
+  type CustomerAudience,
   type DeliveryAddressView,
+  type DeliveryAvailabilityView,
   type DeliveryZoneView,
   type FulfillmentMethod,
   type FulfillmentWindow,
@@ -92,6 +94,9 @@ export class PanierCommande {
   readonly pickups = input.required<readonly PickupAddressView[]>();
   readonly addresses = input.required<readonly DeliveryAddressView[]>();
   readonly zones = input.required<readonly DeliveryZoneView[]>();
+  /** Le réglage de livraison et la clientèle de la société — relayés à l'acheminement. */
+  readonly deliveryAvailability = input.required<DeliveryAvailabilityView>();
+  readonly audience = input.required<CustomerAudience>();
   /**
    * La société règle-t-elle au compte ? Faux ⇒ seul le lien est proposé. Le
    * serveur refuse de toute façon, mais un bouton qui échoue toujours est un

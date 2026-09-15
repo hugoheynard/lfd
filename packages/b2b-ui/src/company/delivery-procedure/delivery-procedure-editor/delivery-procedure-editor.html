@@ -1,148 +1,16 @@
-@switch (state()) {
-  @case ('loading') {
-    <fold-loading [message]="labels().loading" />
-  }
-  @case ('error') {
-    <fold-empty-state tone="alert" [title]="labels().loadError">
-      <button foldButton type="button" emphasis="outline" icon="reload" (click)="retry()">
-        {{ labels().retry }}
-      </button>
-    </fold-empty-state>
-  }
-  @default {
-    <div class="editor">
-      @if (notice(); as n) {
-        <fold-callout [variant]="n.variant">{{ n.message }}</fold-callout>
-      }
-
-      @if (mode().kind === 'list') {
-        @if (steps().length === 0) {
-          <fold-empty-state
-            [title]="labels().emptyTitle"
-            [subtitle]="canEdit() ? labels().emptySubtitleEditable : labels().emptySubtitleReadOnly"
-          >
-            <fold-icon empty-icon name="door" [size]="40" />
-          </fold-empty-state>
-        } @else {
-          <ol class="steps">
-            @for (step of steps(); track step.id; let first = $first, last = $last) {
-              <li>
-                <fold-card>
-                  <fold-element-title
-                    variant="title"
-                    [title]="step.title"
-                    [subtitle]="labels().stepNumber(step.number)"
-                  >
-                    @if (canEdit()) {
-                      <div titleAction class="step-actions">
-                        <fold-button-icon
-                          icon="chevron-up"
-                          size="sm"
-                          [tooltip]="labels().moveUp"
-                          [disabled]="first || busy()"
-                          (clicked)="move(step, -1)"
-                        />
-                        <fold-button-icon
-                          icon="chevron-down"
-                          size="sm"
-                          [tooltip]="labels().moveDown"
-                          [disabled]="last || busy()"
-                          (clicked)="move(step, 1)"
-                        />
-                        <button
-                          foldButton
-                          type="button"
-                          emphasis="outline"
-                          intent="neutral"
-                          size="sm"
-                          icon="edit"
-                          [disabled]="busy()"
-                          (click)="openRevise(step)"
-                        >
-                          {{ labels().revise }}
-                        </button>
-                      </div>
-                    }
-                  </fold-element-title>
-
-                  @if (step.body || step.photoRevision) {
-                    <div class="step-content">
-                      @if (step.body) {
-                        <p class="step-body">{{ step.body }}</p>
-                      }
-                      @if (thumbOf(step); as url) {
-                        <img class="step-photo" [src]="url" [alt]="labels().photoAlt(step.title)" />
-                      }
-                    </div>
-                  }
-                </fold-card>
-              </li>
-            }
-          </ol>
-        }
-
-        @if (canAdd()) {
-          <button
-            foldButton
-            type="button"
-            emphasis="outline"
-            intent="neutral"
-            icon="plus"
-            [disabled]="busy()"
-            (click)="openAdd()"
-          >
-            {{ labels().addStep }}
-          </button>
-        } @else if (atLimit()) {
-          <fold-callout variant="info">{{ labels().limitReached }}</fold-callout>
-        }
-      } @else {
-        <fold-card>
-          <fold-element-title variant="title" [title]="formHeading()" />
-          <div class="form">
-            <lfd-delivery-step-form
-              [(value)]="draft"
-              [labels]="labels().form"
-              [currentPhotoUrl]="currentPhotoUrl()"
-            />
-
-            <div class="form-actions">
-              <button
-                foldButton
-                type="button"
-                emphasis="outline"
-                intent="neutral"
-                [disabled]="busy()"
-                (click)="cancel()"
-              >
-                {{ labels().cancel }}
-              </button>
-              <button
-                foldButton
-                type="button"
-                intent="primary"
-                [disabled]="!canSubmit()"
-                [loading]="busy()"
-                (click)="submit()"
-              >
-                {{ revising() === null ? labels().add : labels().save }}
-              </button>
-            </div>
-
-            @if (revising(); as step) {
-              <fold-danger-zone
-                appearance="section"
-                [title]="labels().removeTitle"
-                [actionLabel]="labels().removeAction"
-                [message]="labels().removeConfirm"
-                (confirmed)="remove(step)"
-              >
-                <p class="danger-text">{{ labels().removeExplanation }}</p>
-              </fold-danger-zone>
-            }
-          </div>
-        </fold-card>
-      }
-    </div>
-  }
-}
+<lfd-photo-cards-editor
+  emptyIcon="door"
+  [gateway]="steps()"
+  [labels]="cardLabels()"
+  [limits]="limits"
+  [canEdit]="canEdit()"
+  (countChange)="stepCountChange.emit($event)"
+>
+  <ng-template lfdPhotoCardForm let-form>
+    <lfd-delivery-step-form
+      [(value)]="form.draft"
+      [labels]="labels().form"
+      [currentPhotoUrl]="form.currentPhotoUrl()"
+    />
+  </ng-template>
+</lfd-photo-cards-editor>

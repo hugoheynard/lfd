@@ -347,6 +347,23 @@ describe("Order — la version du catalogue", () => {
   });
 });
 
+describe("Order — la clientèle", () => {
+  /**
+   * Déduite par l'agrégat, jamais passée par l'appelant : c'est QUI commande,
+   * quel que soit le statut de la société (plan clientèle, D1 et D3).
+   */
+  it("rend `pro` quand la commande est passée pour une société", () => {
+    expect(deferred({ companyId: "cmp_1" })).toMatchObject({
+      companyId: "cmp_1",
+      clientele: "pro",
+    });
+  });
+
+  it("rend `public` quand la commande est passée sans société", () => {
+    expect(deferred({ companyId: null })).toMatchObject({ companyId: null, clientele: "public" });
+  });
+});
+
 describe("Order — règlement", () => {
   it("différé : not_required, sans intention", () => {
     const state = deferred();

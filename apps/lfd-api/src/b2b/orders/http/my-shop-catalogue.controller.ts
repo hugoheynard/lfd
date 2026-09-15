@@ -22,10 +22,11 @@ import { ReadMyShopCatalogueQuery } from "../application/queries/read-my-shop-ca
  * première version de cette route le vérifiait, ce qui marchait, mais laissait
  * exister la question.
  *
- * Sans société résolue — visiteur rattaché à rien, ou personne rattachée à
- * plusieurs sans avoir déclaré laquelle — la route rend le **tarif catalogue**,
- * comme la vitrine publique. C'est la réponse honnête à « je ne sais pas encore
- * pour qui » : ni refus, ni prix de quelqu'un d'autre.
+ * Sans société résolue — visiteur rattaché à rien, personne rattachée à
+ * plusieurs sans avoir déclaré laquelle, ou espace « perso » déclaré (même avec
+ * une seule société) — la route rend le **tarif catalogue**, comme la vitrine
+ * publique. C'est la réponse honnête à « je ne sais pas encore pour qui » ou
+ * « pour moi » : ni refus, ni prix de quelqu'un d'autre.
  */
 @Controller("shop/catalogue")
 export class MyShopCatalogueController {

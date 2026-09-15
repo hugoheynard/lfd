@@ -1,0 +1,64 @@
+<fold-page-layout icon="map-pin" title="Points de retrait">
+  <p description>
+    Les laboratoires où le client vient chercher sa commande. Le point
+    <strong>par défaut</strong> est présélectionné au checkout ; une réduction de retrait précise à
+    quelle clientèle elle s'applique.
+  </p>
+
+  @if (state() === 'ready') {
+    <button pageActions foldButton size="sm" icon="plus" (click)="add()">Ajouter un point</button>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des points de retrait…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les points de retrait">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <div class="points">
+        @for (point of addresses(); track point.id) {
+          <fold-card class="point" [class.is-default]="point.isDefault">
+            <div class="point-row">
+              <lfd-address [address]="postal(point)">
+                @if (point.isDefault) {
+                  <fold-badge content="Par défaut" variant="success" />
+                }
+                @if (point.discount !== null) {
+                  <fold-badge [content]="discountLabel(point)" variant="accent" />
+                }
+              </lfd-address>
+
+              <!-- Pas de menu : tout ce qu'on fait d'un point — le modifier, le
+                   mettre par défaut, le supprimer — se fait dans son panneau. -->
+              <button
+                type="button"
+                class="edit-trigger"
+                aria-label="Ouvrir le point de retrait"
+                (click)="edit(point)"
+              >
+                <fold-icon name="more-vertical" [size]="18" />
+              </button>
+            </div>
+
+            <lfd-hours
+              [entries]="hours(point.opening)"
+              hideEmpty
+              noneText="Aucune heure déclarée — toute heure de retrait est acceptée."
+            />
+          </fold-card>
+        } @empty {
+          <fold-empty-state
+            title="Aucun point de retrait"
+            subtitle="Ajoutez-en un pour que les clients puissent retirer leurs commandes."
+          >
+            <fold-icon empty-icon name="map-pin" [size]="28" />
+          </fold-empty-state>
+        }
+      </div>
+    }
+  }
+</fold-page-layout>

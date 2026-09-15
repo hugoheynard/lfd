@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
-import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
+import { DeliveryAvailabilityService } from '../../b2b/reglages/delivery-availability.service';
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { FicheClientFacade } from '../informations/fiche-client.facade';
 import { InformationsPage } from '../informations/informations-page';
 
@@ -49,6 +50,13 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
         useValue: {
           list: (): Promise<readonly PickupAddressView[]> => Promise.resolve([]),
         } satisfies Pick<PickupAddressesService, 'list'>,
+      },
+      {
+        provide: DeliveryAvailabilityService,
+        useValue: {
+          read: () =>
+            Promise.resolve({ openToB2b: true, openToB2c: true, updatedAt: null, updatedBy: null }),
+        } satisfies Pick<DeliveryAvailabilityService, 'read'>,
       },
       {
         provide: NotifyService,

@@ -1,3 +1,5 @@
+import { PERSONAL_WORKSPACE } from "@lfd/contracts";
+
 import { resolveCompany } from "../resolve-company.js";
 import type { PrincipalMembership } from "../principal.js";
 
@@ -65,5 +67,28 @@ describe("plusieurs rattachements", () => {
 
   it("ne se laisse pas prendre par une déclaration vide", () => {
     expect(resolveCompany(both, "")).toBeNull();
+  });
+});
+
+describe("« perso » déclaré", () => {
+  // Branche en tête : elle vaut quel que soit le nombre de rattachements. Sans
+  // elle, l'espace perso était inexprimable pour qui a exactement une société.
+
+  it("n'agit pour personne quand la personne n'appartient à rien", () => {
+    expect(resolveCompany([], PERSONAL_WORKSPACE)).toBeNull();
+  });
+
+  it("🔴 n'agit pour personne même avec UNE seule société", () => {
+    expect(resolveCompany([membership("co_1")], PERSONAL_WORKSPACE)).toBeNull();
+  });
+
+  it("n'agit pour personne avec plusieurs sociétés", () => {
+    expect(resolveCompany([membership("co_1"), membership("co_2")], PERSONAL_WORKSPACE)).toBeNull();
+  });
+
+  it("reste distinct d'une société étrangère déclarée, toujours ignorée", () => {
+    // Une valeur qui n'est ni « perso » ni un rattachement ne change rien : la
+    // seule société reste servie.
+    expect(resolveCompany([membership("co_1")], "co_etrangere")).toBe("co_1");
   });
 });

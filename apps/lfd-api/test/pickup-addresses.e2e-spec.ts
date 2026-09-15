@@ -92,3 +92,109 @@ describe("points de retrait", () => {
     expect(await list()).toHaveLength(1);
   });
 });
+
+/**
+ * Les clientèles de la remise d'un point (plan `remise-et-livraison-par-clientele`, D2).
+ */
+describe("points de retrait — clientèles de la remise", () => {
+  const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
+
+  async function createWith(body: Record<string, unknown>): Promise<string> {
+    const response = await staff()
+      .post("/admin/pickup-addresses")
+      .send({ ...point("Labo Paris"), ...body })
+      .expect(201);
+    return jsonBody<CreatedPickupResponse>(response).id;
+  }
+
+  async function only(): Promise<PickupAddressView> {
+    const [first] = await list();
+    if (first === undefined) {
+      throw new Error("aucun point servi");
+    }
+    return first;
+  }
+
+  it("à la création, sans clientèles : la remise vaut pour les deux — l'existant", async () => {
+    await createWith({ discount: TEN_PERCENT });
+
+    expect((await only()).discountAudiences).toEqual({ b2b: true, b2c: true });
+  });
+
+  it("sert les clientèles posées, sur la liste publique", async () => {
+    await createWith({ discount: TEN_PERCENT, discountAudiences: { b2b: true, b2c: false } });
+
+    const served = await only();
+    expect(served.discount).toEqual(TEN_PERCENT);
+    expect(served.discountAudiences).toEqual({ b2b: true, b2c: false });
+  });
+
+  /**
+   * Régression (vitruve, S2) : un onglet du back-office ouvert avant le
+   * déploiement renvoie une charge SANS clientèles. Validée avec le schéma de
+   * création, elle prenait le défaut « les deux » et rouvrait au public une
+   * remise fermée, en silence.
+   */
+  it("un PATCH sans discountAudiences ne rouvre rien", async () => {
+    const id = await createWith({
+      discount: TEN_PERCENT,
+      discountAudiences: { b2b: true, b2c: false },
+    });
+
+    await staff()
+      .patch(`/admin/pickup-addresses/${id}`)
+      .send({ ...point("Labo Paris — renommé"), discount: TEN_PERCENT })
+      .expect(204);
+
+    const served = await only();
+    expect(served.label).toBe("Labo Paris — renommé");
+    expect(served.discountAudiences).toEqual({ b2b: true, b2c: false });
+  });
+
+  it("refuse (400) une réduction qui ne vise aucune clientèle, à la création", async () => {
+    const response = await staff()
+      .post("/admin/pickup-addresses")
+      .send({
+        ...point("Labo Paris"),
+        discount: TEN_PERCENT,
+        discountAudiences: { b2b: false, b2c: false },
+      })
+      .expect(400);
+
+    expect((response.body as { code?: string }).code).toBe("pickup.discount.no_audience");
+    expect(await list()).toHaveLength(0);
+  });
+
+  it("refuse (400) la même chose en modification, et n'écrit rien", async () => {
+    const id = await createWith({ discount: TEN_PERCENT });
+
+    const response = await staff()
+      .patch(`/admin/pickup-addresses/${id}`)
+      .send({
+        ...point("Labo Paris"),
+        discount: { mode: "amount", cents: 300 },
+        discountAudiences: { b2b: false, b2c: false },
+      })
+      .expect(400);
+
+    expect((response.body as { code?: string }).code).toBe("pickup.discount.no_audience");
+    expect((await only()).discount).toEqual(TEN_PERCENT);
+  });
+
+  it("sans réduction, accepte les deux cases décochées et les conserve", async () => {
+    const id = await createWith({ discount: TEN_PERCENT });
+
+    await staff()
+      .patch(`/admin/pickup-addresses/${id}`)
+      .send({
+        ...point("Labo Paris"),
+        discount: null,
+        discountAudiences: { b2b: false, b2c: false },
+      })
+      .expect(204);
+
+    const served = await only();
+    expect(served.discount).toBeNull();
+    expect(served.discountAudiences).toEqual({ b2b: false, b2c: false });
+  });
+});

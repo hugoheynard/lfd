@@ -217,6 +217,8 @@ model Company {
   /// Les dérogations d'heure limite accordées à ce client.
   orderCutoffWaivers OrderCutoffWaiver[]
   orderDraft         OrderDraft?
+  // Les paniers en cours composés POUR cette société — un par personne.
+  shopCarts          ShopCart[]
   supportRequests    SupportRequest[]
   mandates           PaymentMandate[]
   // Le RIB du client — au plus un (`company_id` est unique côté table).
@@ -227,6 +229,9 @@ model Company {
 
   /// Alertes déclenchées sur ce compte (cf. alerts/).
   alerts AccountAlert[]
+
+  /// Le carnet de notes du commercial — au plus un (cf. b2b/client-notes/).
+  clientNotebook ClientNotebook?
 
   // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
   // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.
@@ -281,7 +286,8 @@ model User {
   ordersPlaced     Order[]
   subscriptions    Subscription[]
   supportRequests  SupportRequest[]
-  shopCart         ShopCart?
+  // Un panier par espace de travail : le perso, puis un par société.
+  shopCarts        ShopCart[]
   orderIdempotency OrderIdempotency[]
 
   @@map("users")

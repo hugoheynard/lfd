@@ -1,11 +1,16 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
-import type { CompanyAddressesView, FulfillmentPreferenceView } from '@lfd/contracts';
+import {
+  type CompanyAddressesView,
+  DEFAULT_DELIVERY_AVAILABILITY,
+  type DeliveryAvailabilityView,
+  type FulfillmentPreferenceView,
+} from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { Company } from '../../../account/account.model';
 import { AccountService } from '../../../account/account.service';
+import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import { AddressesService } from '../addresses.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
 import { AcheminementSection } from './acheminement-section';
@@ -54,7 +59,10 @@ interface Harness {
   readonly section: AcheminementSection;
 }
 
-function render(over: Partial<Company> = {}): Harness {
+function render(
+  over: Partial<Company> = {},
+  settings: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
+): Harness {
   const saved: FulfillmentPreferenceView[] = [];
   // Les écritures restent EN VOL tant qu'on ne les fait pas retomber : c'est la
   // seule façon d'observer ce que fait un second clic pendant le premier.
@@ -82,6 +90,13 @@ function render(over: Partial<Company> = {}): Harness {
         },
       },
       { provide: PickupAddressesService, useValue: { addresses: signal([]) } },
+      {
+        provide: ServicePoints,
+        useValue: {
+          deliveryAvailability: signal(settings),
+          hydrate: (): Promise<void> => Promise.resolve(),
+        },
+      },
     ],
   });
 
@@ -192,18 +207,20 @@ describe("section Préférences d'acheminement (client)", () => {
     ]);
   });
 
-  it('offre la livraison exactement quand le service est ouvert', () => {
-    // Ce qui est tenu ici n'est pas la valeur du jour — elle a déjà changé une
-    // fois — mais le fait qu'UN SEUL interrupteur la gouverne. Proposer un
+  it('offre la livraison exactement quand le réglage l’ouvre aux pros', () => {
+    // Ce qui est tenu ici est qu'UN SEUL interrupteur la gouverne. Proposer un
     // acheminement que la plateforme ne rend pas serait une promesse que
     // personne ne peut tenir ; le masquer alors qu'elle le rend ferait perdre
-    // une commande. `DELIVERY_SERVICE_OPEN` tranche, pour les cinq écrans.
-    //
-    // Une valeur recopiée en dur passerait tant qu'elle coïncide — et
-    // tomberait ici au prochain basculement, c'est-à-dire au moment où ça
-    // compte.
-    const { section } = render();
+    // une commande. Depuis le 2026-09-15, c'est le réglage du back-office, lu
+    // en B2B (plan remise et livraison par clientèle, D4) — plus la constante.
+    expect(render()['section']['deliveryOffered']()).toBe(true);
 
-    expect(section['deliveryOffered']).toBe(DELIVERY_SERVICE_OPEN);
+    TestBed.resetTestingModule();
+    const closed = render({}, { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false });
+    expect(closed.section['deliveryOffered']()).toBe(false);
+
+    TestBed.resetTestingModule();
+    const closedToB2c = render({}, { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false });
+    expect(closedToB2c.section['deliveryOffered']()).toBe(true);
   });
 });

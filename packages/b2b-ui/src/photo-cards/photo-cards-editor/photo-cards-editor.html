@@ -1,0 +1,173 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading [message]="labels().loading" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" [title]="labels().loadError">
+      <button foldButton type="button" emphasis="outline" icon="reload" (click)="retry()">
+        {{ labels().retry }}
+      </button>
+    </fold-empty-state>
+  }
+  @default {
+    <div class="editor">
+      @if (notice(); as n) {
+        <fold-callout [variant]="n.variant">{{ n.message }}</fold-callout>
+      }
+
+      @if (mode().kind === 'list') {
+        @if (addSide() === 'start') {
+          <ng-container [ngTemplateOutlet]="addGesture" />
+        }
+
+        @if (cards().length === 0) {
+          <fold-empty-state
+            [title]="labels().emptyTitle"
+            [subtitle]="canEdit() ? labels().emptySubtitleEditable : labels().emptySubtitleReadOnly"
+          >
+            <fold-icon empty-icon [name]="emptyIcon()" [size]="40" />
+          </fold-empty-state>
+        } @else {
+          <ol class="cards">
+            @for (card of cards(); track card.id; let first = $first, last = $last) {
+              <li>
+                <fold-card>
+                  <fold-element-title
+                    variant="title"
+                    [title]="card.title"
+                    [subtitle]="labels().cardSubtitle(card)"
+                  >
+                    @if (canEdit()) {
+                      <div titleAction class="card-actions">
+                        <fold-button-icon
+                          icon="chevron-up"
+                          size="sm"
+                          [tooltip]="labels().moveUp"
+                          [disabled]="first || busy()"
+                          (clicked)="move(card, -1)"
+                        />
+                        <fold-button-icon
+                          icon="chevron-down"
+                          size="sm"
+                          [tooltip]="labels().moveDown"
+                          [disabled]="last || busy()"
+                          (clicked)="move(card, 1)"
+                        />
+                        <button
+                          foldButton
+                          type="button"
+                          emphasis="outline"
+                          intent="neutral"
+                          size="sm"
+                          icon="edit"
+                          [disabled]="busy()"
+                          (click)="openRevise(card)"
+                        >
+                          {{ labels().revise }}
+                        </button>
+                      </div>
+                    }
+                  </fold-element-title>
+
+                  @if (card.body || card.photoRevision) {
+                    <div class="card-content">
+                      @if (card.body) {
+                        <p class="card-body">{{ card.body }}</p>
+                      }
+                      @if (viewerLabels(); as viewer) {
+                        @if (card.photoRevision) {
+                          <!-- La vignette ne se télécharge qu'à son passage à l'écran ; la cliquer ouvre la photo lisible. -->
+                          <button
+                            type="button"
+                            class="card-thumb"
+                            [attr.aria-label]="viewer.enlarge(card.title)"
+                            (lfdPhotoCardInView)="cardInView(card)"
+                            (click)="openPhoto(card)"
+                          >
+                            @if (thumbOf(card); as url) {
+                              <img class="card-thumb-image" [src]="url" alt="" />
+                            }
+                          </button>
+                        }
+                      } @else if (thumbOf(card); as url) {
+                        <img class="card-photo" [src]="url" [alt]="labels().photoAlt(card)" />
+                      }
+                    </div>
+                  }
+                </fold-card>
+              </li>
+            }
+          </ol>
+        }
+
+        @if (addSide() === 'end') {
+          <ng-container [ngTemplateOutlet]="addGesture" />
+        }
+      } @else {
+        <fold-card>
+          <fold-element-title variant="title" [title]="formHeading()" />
+          <div class="form">
+            <ng-container
+              [ngTemplateOutlet]="formSlot().template"
+              [ngTemplateOutletContext]="formContext"
+            />
+
+            <div class="form-actions">
+              <button
+                foldButton
+                type="button"
+                emphasis="outline"
+                intent="neutral"
+                [disabled]="busy()"
+                (click)="cancel()"
+              >
+                {{ labels().cancel }}
+              </button>
+              <button
+                foldButton
+                type="button"
+                intent="primary"
+                [disabled]="!canSubmit()"
+                [loading]="busy()"
+                (click)="submit()"
+              >
+                {{ revising() === null ? labels().submitNew : labels().save }}
+              </button>
+            </div>
+
+            @if (revising(); as card) {
+              <fold-danger-zone
+                appearance="section"
+                [title]="labels().removeTitle"
+                [actionLabel]="labels().removeAction"
+                [message]="labels().removeConfirm"
+                (confirmed)="remove(card)"
+              >
+                <p class="danger-text">{{ labels().removeExplanation }}</p>
+              </fold-danger-zone>
+            }
+          </div>
+        </fold-card>
+      }
+    </div>
+  }
+}
+
+<!-- Le geste d'ajout, posé du côté où la carte neuve apparaîtra. -->
+<ng-template #addGesture>
+  @if (canAdd()) {
+    <button
+      foldButton
+      type="button"
+      emphasis="outline"
+      intent="neutral"
+      icon="plus"
+      [disabled]="busy()"
+      (click)="openAdd()"
+    >
+      {{ labels().addCard }}
+    </button>
+  } @else if (atLimit()) {
+    <fold-callout variant="info">{{ labels().limitReached }}</fold-callout>
+  }
+</ng-template>

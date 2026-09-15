@@ -31,6 +31,14 @@ app-offer-carousel {
   margin-bottom: var(--fold-space-xs);
 }
 
+/* Retrait seul : les boutiques en petites cartes beiges, deux par rang sous la
+   carte du retrait en pile. Projetées dans le puits, elles restent stylées ici. */
+.shops {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 /* En pile, les deux raccourcis restent deux blocs — et la boutique passe
    DEVANT la reprise : on propose d'abord de voir, ensuite de refaire. */
 .resume {
@@ -84,6 +92,24 @@ app-callback-block {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  /* Sur la photo : le retrait garde toute la largeur, et les boutiques
+     occupent LA MÊME cellule, calées à droite, centrées en hauteur — le texte du
+     retrait tient le bas à gauche. Les deux sont placés explicitement : un
+     élément auto-placé éviterait la cellule prise et partirait en colonne 2. */
+  app-offer-card[data-photo='labo']:has(+ .shops),
+  .shops {
+    grid-area: 1 / 1;
+  }
+
+  .shops {
+    z-index: 1;
+    grid-template-columns: repeat(2, 15rem);
+    gap: var(--fold-space-md);
+    align-self: center;
+    justify-self: end;
+    padding: 40px;
   }
 
   .resume {

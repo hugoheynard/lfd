@@ -1,7 +1,22 @@
-import { effect, Injectable, signal, type Signal } from '@angular/core';
+import { Injectable, signal, type Signal } from '@angular/core';
 
-import { isRecord, readLocal, readNumber, readString, writeLocal } from '../local-store';
+import {
+  clearLocal,
+  isRecord,
+  readLocal,
+  readNumber,
+  readString,
+  writeLocal,
+} from '../local-store';
 
+/**
+ * La clé du panier d'un **visiteur non reconnu** — celle qui portait jusqu'au
+ * 2026-09-15 le panier de tout le monde, reconnu ou non.
+ *
+ * Elle garde son nom : c'est elle que les navigateurs des clients ont déjà, et
+ * c'est ce panier-là qui remonte, une fois, dans l'espace par défaut à la
+ * reconnaissance (cf. {@link CartStore.switchTo}).
+ */
 const KEY = 'cart';
 
 /**
@@ -14,6 +29,17 @@ const KEY = 'cart';
  * d'avant ce chantier.
  */
 const SAVED_AT_KEY = 'cart.savedAt';
+
+/**
+ * Les clés d'un espace de travail — une copie locale par espace (plan espace
+ * de travail, D9). `ws.` sépare l'espace du suffixe : un identifiant de société
+ * ne peut pas valoir `savedAt`, mais la clé ne doit pas avoir à le savoir.
+ */
+function keysOf(workspace: string | null): { readonly cart: string; readonly savedAt: string } {
+  return workspace === null
+    ? { cart: KEY, savedAt: SAVED_AT_KEY }
+    : { cart: `cart.ws.${workspace}`, savedAt: `cart.ws.${workspace}.savedAt` };
+}
 
 /**
  * Le panier relu du navigateur : des quantités entières positives, et rien
@@ -74,9 +100,28 @@ function parseCart(raw: unknown): Readonly<Record<string, number>> | null {
  * Ce dépôt ne sait rien de cette bascule : il porte un état, sa persistance
  * locale, et **la date du dernier geste** — la seule chose que la fusion ait
  * besoin de savoir pour trancher entre deux copies.
+ *
+ * ## Une copie par espace (2026-09-15)
+ *
+ * Un panier par espace de travail, perso compris : le dépôt porte celui de
+ * l'espace **courant** ({@link scope}), et `ShopCartSync` le fait changer
+ * d'espace AVANT de relire le serveur — sans quoi une relecture vide pousserait
+ * les lignes de l'espace quitté dans le nouveau (vitruve, B2).
+ *
+ * Les écritures locales sont **synchrones**, et c'est ce que la bascule exige :
+ * un effet d'écriture en attente au moment du changement d'espace aurait écrit
+ * les lignes du geste sous la clé du NOUVEL espace, ou les aurait perdues.
  */
 @Injectable({ providedIn: 'root' })
 export class CartStore {
+  private readonly scope$ = signal<string | null>(null);
+
+  /**
+   * L'espace dont ce panier est la copie — `null` = le visiteur non reconnu, ou
+   * la personne dont l'espace n'est pas encore connu.
+   */
+  readonly scope: Signal<string | null> = this.scope$.asReadonly();
+
   private readonly quantities$ = signal<Readonly<Record<string, number>>>(
     readLocal(KEY, parseCart) ?? {},
   );
@@ -98,23 +143,6 @@ export class CartStore {
    */
   readonly savedAt: Signal<string | null> = this.savedAt$.asReadonly();
 
-  constructor() {
-    // 🔴 Ce commentaire annonçait qu'« un vrai agrégat serveur ne changerait
-    // que cette ligne-ci, et rien d'autre ». Le jour est venu, et la prédiction
-    // était fausse : cette ligne n'a PAS bougé. Ce qui a bougé, c'est tout
-    // autour — un stockage local est synchrone à la construction, un stockage
-    // serveur arrive plus tard et peut contredire ce qui est déjà à l'écran. Il
-    // a donc fallu une DATE pour trancher, et un service pour la reprise
-    // (`ShopCartSync`). Une écriture locale reste juste : elle est la mémoire
-    // immédiate, la seule dont dispose un visiteur non reconnu.
-    effect(() => {
-      writeLocal(KEY, this.quantities$());
-    });
-    effect(() => {
-      writeLocal(SAVED_AT_KEY, this.savedAt$());
-    });
-  }
-
   quantityOf(productId: string): number {
     return this.quantities$()[productId] ?? 0;
   }
@@ -135,11 +163,13 @@ export class CartStore {
       }
       return next;
     });
+    this.persist();
   }
 
   clear(at: string = now()): void {
     this.savedAt$.set(at);
     this.quantities$.set({});
+    this.persist();
   }
 
   /**
@@ -151,9 +181,35 @@ export class CartStore {
    * de la copie relue la plus récente à chaque chargement de page, et le
    * panier composé ailleurs entre-temps ne gagnerait plus jamais.
    */
-  replaceAll(quantities: Readonly<Record<string, number>>, at: string): void {
+  replaceAll(quantities: Readonly<Record<string, number>>, at: string | null): void {
     this.savedAt$.set(at);
     this.quantities$.set(parseCart(quantities) ?? {});
+    this.persist();
+  }
+
+  /**
+   * Passe à la copie d'un espace : relit ses quantités et sa date, telles que
+   * ce navigateur les a gardées.
+   *
+   * 🔴 **Quitter le visiteur l'OUBLIE** : ses clés sont effacées. C'est ce qui
+   * fait remonter son panier une seule fois — l'appelant l'a lu avant, et le
+   * pose dans l'espace par défaut ; le laisser sous la clé visiteur le ferait
+   * remonter à nouveau à la prochaine reconnaissance, dans un espace qui l'a
+   * peut-être déjà vidé.
+   */
+  switchTo(workspace: string): void {
+    const from = this.scope$();
+    if (from === workspace) {
+      return;
+    }
+    if (from === null) {
+      clearLocal(KEY);
+      clearLocal(SAVED_AT_KEY);
+    }
+    const keys = keysOf(workspace);
+    this.scope$.set(workspace);
+    this.quantities$.set(readLocal(keys.cart, parseCart) ?? {});
+    this.savedAt$.set(readLocal(keys.savedAt, readString));
   }
 
   /**
@@ -171,6 +227,14 @@ export class CartStore {
     this.quantities$.update((current) =>
       Object.fromEntries(Object.entries(current).filter(([sku]) => known.has(sku))),
     );
+    this.persist();
+  }
+
+  /** Écrit la copie de l'espace courant, sous SES clés. */
+  private persist(): void {
+    const keys = keysOf(this.scope$());
+    writeLocal(keys.cart, this.quantities$());
+    writeLocal(keys.savedAt, this.savedAt$());
   }
 }
 

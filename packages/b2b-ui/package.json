@@ -5,10 +5,6 @@
   "private": true,
   "sideEffects": false,
   "exports": {
-    "./flags": {
-      "types": "./src/flags.ts",
-      "default": "./src/flags.ts"
-    },
     "./address": {
       "types": "./src/address/index.ts",
       "default": "./src/address/index.ts"
@@ -52,6 +48,10 @@
     "./payment": {
       "types": "./src/payment/index.ts",
       "default": "./src/payment/index.ts"
+    },
+    "./photo-cards": {
+      "types": "./src/photo-cards/index.ts",
+      "default": "./src/photo-cards/index.ts"
     }
   },
   "scripts": {

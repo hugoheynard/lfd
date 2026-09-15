@@ -6,22 +6,32 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { deliveryOpenTo } from '@lfd/contracts';
 import { FoldCalloutComponent } from 'fold-ng';
 
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
+import { ClientAudience } from '../../../client/client-audience.service';
 import { ClientBannerBlock } from '../../../client/nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../../client/nav/client-banner';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientIdentity } from '../../../client/client-identity.service';
 import { OrderContextStore, type ServiceChoice } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
+import {
+  bestPickupDiscount,
+  discountLabel,
+  pickupOffer,
+} from '../../../client/shop/pickup-discount';
+import { ServicePoints } from '../../../client/shop/pickup-points.store';
 import { RappelPanel } from '../../../login/accueil-page/rappel-panel/rappel-panel';
 
 import { AddressDialog } from './address-dialog/address-dialog';
 import { OfferCard } from './offer-card/offer-card';
 import { OfferCarousel } from './offer-carousel/offer-carousel';
 import { PickupDialog } from './pickup-dialog/pickup-dialog';
+import { PickupPointCard } from './pickup-point-card/pickup-point-card';
+import { returnsToCart } from './return-to-cart';
 import { SectionPanel } from './section-panel/section-panel';
 import { ShortcutRow } from './shortcut-row/shortcut-row';
 
@@ -49,6 +59,7 @@ import { ShortcutRow } from './shortcut-row/shortcut-row';
     ClientBannerOutlet,
     FoldCalloutComponent,
     PickupDialog,
+    PickupPointCard,
     OfferCard,
     OfferCarousel,
     RappelPanel,
@@ -63,6 +74,7 @@ export class CommandePage {
    *  sources se seraient désaccordées le jour où le panneau de rappel s'ouvre. */
   protected readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly order = inject(OrderContextStore);
 
   protected readonly t = inject(ClientCopyService).t;
@@ -99,6 +111,56 @@ export class CommandePage {
     this.panelOpen() ? this.t().hero.rappelIntro : this.t().commande.intro,
   );
 
+  private readonly service = inject(ServicePoints);
+  private readonly audience = inject(ClientAudience);
+
+  /**
+   * « Jusqu’à −20 % » : la remise que le back-office pose, pas un libellé.
+   *
+   * 🔴 Elle était écrite dans la copie (« −10 % ») pendant que le dialogue ouvert
+   * par cette carte lisait 20 % du serveur. Sans remise publiée, `null` rend la
+   * note du téléphone plutôt qu'un chiffre inventé.
+   *
+   * La remise est celle de la CLIENTÈLE de l'écran : une remise réservée aux
+   * pros ne s'annonce pas en perso (plan remise et livraison par clientèle, D7).
+   */
+  protected readonly pickupNoteWide = computed(() => {
+    const best = bestPickupDiscount(this.service.pickups(), this.audience.shown());
+    return best === null
+      ? null
+      : fill(this.t().commande.pickupNoteWide, { value: discountLabel(best) });
+  });
+
+  /**
+   * La carte « On vous l'apporte » ne paraît que si la livraison est proposée à
+   * la clientèle de l'écran — un réglage du back-office (plan D4, D7). Ouverte
+   * tant que le réglage n'est pas lu : c'est l'existant, et le serveur refuse ce
+   * qu'il a fermé.
+   */
+  protected readonly deliveryOffered = computed(() =>
+    deliveryOpenTo(this.service.deliveryAvailability(), this.audience.shown()),
+  );
+
+  /**
+   * Retrait seul : une carte par boutique, à la place du coursier. Chacune porte
+   * l'étiquette que le dialogue donne à sa ligne — la même écriture.
+   */
+  protected readonly shops = computed(() => {
+    const copy = this.t().pickupDialog;
+    const audience = this.audience.shown();
+    return this.service.pickups().map((point) => ({
+      point,
+      // « votre habitude » ne parle qu'à un pro : un particulier n'a pas encore
+      // d'habitude, et le point par défaut de la plateforme n'en est pas une
+      // (Hugo, 2026-09-15).
+      tag: audience === 'b2b' && point.isDefault ? copy.habit : '',
+      offer: pickupOffer(point, audience, copy),
+    }));
+  });
+
+  /** La boutique d'où le dialogue part, quand on l'a ouvert par sa carte. */
+  protected readonly pickupStart = signal<string | null>(null);
+
   /** Les deux sections du carrousel, nommées pour les technologies d'assistance. */
   protected readonly sections = computed(() => [
     this.t().commande.newOrderTitle,
@@ -106,6 +168,7 @@ export class CommandePage {
   ]);
 
   constructor() {
+    void this.service.hydrate();
     effect(() => {
       this.chrome.kicker.set(
         this.panelOpen() ? this.t().chrome.kickerRappel : this.t().chrome.kickerCommande,
@@ -133,7 +196,15 @@ export class CommandePage {
 
   protected openDialog(which: 'pickup' | 'address'): void {
     this.pending.set(false);
+    this.pickupStart.set(null);
     this.dialog.set(which);
+  }
+
+  /** Une carte de boutique : le lieu est pris, le dialogue demande l'heure. */
+  protected openShop(pickupAddressId: string): void {
+    this.pending.set(false);
+    this.pickupStart.set(pickupAddressId);
+    this.dialog.set('pickup');
   }
 
   /**
@@ -142,11 +213,17 @@ export class CommandePage {
    * Le choix est PUBLIÉ avant la navigation, parce que le rayon en dépend pour
    * exister : il porte le mode dans sa barre, la remise dans son décompte, et
    * sans lui il renvoie ici même.
+   *
+   * Venu du panier par « Modifier », on y retourne : le panier est composé, il
+   * ne manquait qu'à changer le mode ou l'heure.
    */
   protected fillBasket(choice: ServiceChoice): void {
     this.order.choice.set(choice);
     this.dialog.set(null);
-    void this.router.navigate(['/nouvelle-commande/boutique']);
+    const next = returnsToCart(this.route.snapshot.queryParamMap)
+      ? '/nouvelle-commande/panier'
+      : '/nouvelle-commande/boutique';
+    void this.router.navigate([next]);
   }
 
   /**

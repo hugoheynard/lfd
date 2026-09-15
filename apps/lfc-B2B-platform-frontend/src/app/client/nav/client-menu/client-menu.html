@@ -17,6 +17,27 @@
       <p class="who"><span class="who-rule" aria-hidden="true"></span>{{ email }}</p>
     }
 
+    <!-- Le sélecteur d'espace, le même qu'au bureau : à partir d'une société (plan D8). -->
+    @if (workspace.hasChoice()) {
+      <div class="spaces" role="group" [attr.aria-label]="t().chrome.workspaceChoice">
+        @for (space of spaces(); track space.value) {
+          <button
+            class="space"
+            type="button"
+            [class.is-on]="space.current"
+            [attr.aria-pressed]="space.current"
+            (click)="choose(space.value)"
+          >
+            <span class="space-label">{{ space.label }}</span>
+            @if (space.current) {
+              <fold-icon name="check" />
+            }
+          </button>
+        }
+        <p class="space-current">{{ currentSpace() }}</p>
+      </div>
+    }
+
     <!-- Ouvrir une commande n'a de sens que si la boutique la permet : la tuile
          mènerait sinon à une garde qui renvoie au dossier. -->
     @if (access.atLeast('order')) {

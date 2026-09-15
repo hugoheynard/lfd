@@ -19,13 +19,15 @@ import { PermissionsStore } from '../auth/permissions.store';
  * transparent — le 3ᵉ rail : app → workspace → vues en page) lit cet état par DI
  * et bascule son orientation seul. Chaque onglet est une sous-page routée :
  *
- * - **Retraits & livraisons** — les points de retrait (laboratoires), fallback
- *   d'acheminement tant que la livraison n'existe pas.
  * - **Surtaxe de retard** — ce qu'une dérogation à la limite de commande coûte
  *   au client. Un onglet à elle, et pas une carte sous les retraits : c'est
  *   précisément en rangeant l'heure limite là-bas qu'on a fait croire pendant
  *   des mois qu'elle était une affaire d'acheminement.
+ * - **Facturation** — la documentation de la tarification.
  * - **Commercial** — les seuils d'alerte du pipeline d'acquisition.
+ *
+ * Points de retrait, livraison et heures limites n'y sont plus : ils ont rejoint
+ * « E-commerce LFC → Réglages » le 2026-09-15, et l'ancien onglet redirige.
  */
 @Component({
   selector: 'app-reglages-page',
@@ -46,17 +48,10 @@ export class ReglagesPage {
    * Montré sans le droit, un onglet offre une porte fermée à clé — on clique,
    * la page s’ouvre, et chaque appel rend 403.
    *
-   * Ces cinq-là portent tous sur le COMMERCE. Ce qui porte sur les GENS — qui
+   * Ces quatre-là portent tous sur le COMMERCE. Ce qui porte sur les GENS — qui
    * entre, qui tient l'outil — a quitté ces réglages pour le module Admin.
    */
   private readonly allTabs: readonly (FoldViewNavItem & { readonly needs: StaffPermission })[] = [
-    {
-      key: 'retraits-livraisons',
-      label: 'Retraits & livraisons',
-      link: 'retraits-livraisons',
-      icon: 'briefcase',
-      needs: 'b2b_settings:read',
-    },
     {
       key: 'surtaxe-de-retard',
       label: 'Surtaxe de retard',

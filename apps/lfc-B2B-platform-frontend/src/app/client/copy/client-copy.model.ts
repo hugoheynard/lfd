@@ -39,6 +39,14 @@ export interface ClientCopy {
     readonly accountMenu: string;
     /** L'entrée qui ouvre le profil de la personne — et le titre de son dialogue. */
     readonly myProfile: string;
+    /** Le nom du groupe d'entrées qui bascule d'espace de travail (plan espace de travail, D8). */
+    readonly workspaceChoice: string;
+    /** L'entrée de l'espace perso, en tête du sélecteur. */
+    readonly workspacePersonal: string;
+    /** La ligne sous le sélecteur quand on travaille en perso. */
+    readonly workspaceCurrentPersonal: string;
+    /** Ce qui précède, pour un lecteur d'écran, l'enseigne en cours sous le sélecteur. */
+    readonly workspaceCurrentFor: string;
   };
 
   readonly nav: {
@@ -115,10 +123,12 @@ export interface ClientCopy {
     readonly write: string;
     readonly habitsHead: string;
     readonly proHead: string;
+    /** `{place}` = le point de retrait remisé : une ligne par point. */
     readonly proDiscount: string;
+    /** Affiché seulement quand la société règle sur terme : sans terme, rien n'est en compte. */
     readonly proMonth: string;
+    /** L'état se lit dans les libellés de « Mon compte » : un seul mot par état. */
     readonly proKbis: string;
-    readonly proKbisState: string;
   };
   readonly hero: {
     readonly welcomeTitle: string;
@@ -198,6 +208,10 @@ export interface ClientCopy {
     /** Au-delà du pli : le bouton nomme l'action, la condition porte la remise. */
     readonly pickupDetailWide: string;
     readonly pickupCta: string;
+    /**
+     * `{value}` = la meilleure remise que le back-office pose sur un point. Sans
+     * remise, la carte garde la note du téléphone : aucune valeur par défaut.
+     */
     readonly pickupNoteWide: string;
     readonly deliveryBadge: string;
     /** Deux lignes, séparées par un retour. */
@@ -307,7 +321,13 @@ export interface ClientCopy {
     readonly intro: string;
     readonly pickupGroup: string;
     readonly deliveryGroup: string;
+    /** `{day}` = la journée de service du serveur : « demain », « jeudi 17 septembre ». */
     readonly slotNote: string;
+    /** La journée de service quand c'est aujourd'hui, puis demain — un mot plutôt qu'une date. */
+    readonly dayToday: string;
+    readonly dayTomorrow: string;
+    /** Le lien du rappel de service : rouvre le mode ET l'heure, puis ramène au panier. */
+    readonly changeService: string;
     readonly subtotal: string;
     /** `{at}` porte le complément du lieu, `{pct}` la remise. */
     readonly discount: string;
@@ -420,17 +440,27 @@ export interface ClientCopy {
   readonly pickupDialog: {
     readonly kicker: string;
     readonly title: string;
-    /** `{pct}` est remplacé par la remise du meilleur point. */
+    /** Le titre du second volet, celui de l'heure. */
+    readonly whenTitle: string;
+    /** `{value}` est remplacé par la remise du meilleur point. */
     readonly lead: string;
     readonly habit: string;
     /** `{time}` est remplacé par l'heure de mise à disposition. */
     readonly readyFrom: string;
-    /** `{pct}` est remplacé par la remise du point. */
+    /** `{value}` est remplacé par la remise du point : « 10 % » ou « 2,00 € ». */
     readonly discountTag: string;
+    /**
+     * La ligne d'un point SANS remise pour un pro (société active) : il y paie
+     * le tarif pro, rien de moins.
+     */
+    readonly proPrice: string;
+    /**
+     * La même ligne pour un particulier — visiteur, perso ou société non
+     * active : il y paie le prix de la boutique (Hugo, 2026-09-15). « Prix
+     * pro » lui promettrait un tarif qui n'est pas le sien.
+     */
     readonly shopPrice: string;
     readonly cta: string;
-    /** `{pct}` est remplacé par la remise retenue. */
-    readonly ctaDiscount: string;
   };
   readonly addressDialog: {
     readonly kicker: string;

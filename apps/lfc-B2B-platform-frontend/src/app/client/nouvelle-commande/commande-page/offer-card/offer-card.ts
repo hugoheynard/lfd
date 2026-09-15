@@ -22,6 +22,9 @@ export type OfferPhoto = 'labo' | 'coursier' | 'noel';
  */
 export type OfferShape = 'stack' | 'hero' | 'row';
 
+/** Le calage vertical du texte d'une demi-page. Sans effet sur les autres formes. */
+export type OfferAlign = 'end' | 'center';
+
 /**
  * Une offre proposée en pleine largeur : un mode de service, une opération
  * datée, le traiteur.
@@ -42,6 +45,7 @@ export type OfferShape = 'stack' | 'hero' | 'row';
     '[attr.data-tone]': 'tone()',
     '[attr.data-photo]': 'photo()',
     '[attr.data-shape]': 'shape()',
+    '[attr.data-align]': 'align()',
   },
   templateUrl: './offer-card.html',
   styleUrl: './offer-card.scss',
@@ -59,12 +63,21 @@ export class OfferCard {
   /** Ce que c'est, sous la photo. */
   readonly detail = input.required<string>();
 
-  /** Le délai, l'échéance, la remise — ce qui décide vraiment. */
-  readonly note = input.required<string>();
+  /**
+   * Le délai, l'échéance, la remise — ce qui décide vraiment. `null` quand la
+   * carte n'a rien à en dire : le retrait seul laisse ses boutiques le dire.
+   */
+  readonly note = input<string | null>(null);
 
   readonly noteTone = input<OfferNoteTone>('info');
 
   readonly shape = input<OfferShape>('stack');
+
+  /**
+   * Où le texte d'une demi-page se pose : en bas, ou au milieu quand d'autres
+   * cartes sont posées sur sa photo et qu'il doit s'aligner sur elles.
+   */
+  readonly align = input<OfferAlign>('end');
 
   /**
    * Ce que dit le bouton, en forme `hero` — le bureau nomme l'action au lieu de

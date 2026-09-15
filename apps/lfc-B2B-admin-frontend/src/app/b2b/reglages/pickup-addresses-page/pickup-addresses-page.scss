@@ -1,0 +1,37 @@
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+// Chaque point est sa propre carte ; l'accent signale le défaut.
+.point.is-default {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, transparent);
+}
+
+// L'adresse à gauche, le menu dropover à droite.
+.point-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+// Déclencheur du menu — bouton icône discret (même que les adresses de livraison).
+.edit-trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm, 6px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+.edit-trigger:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}

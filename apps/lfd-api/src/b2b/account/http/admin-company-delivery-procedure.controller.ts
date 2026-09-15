@@ -25,7 +25,6 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
-import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
@@ -40,11 +39,12 @@ import type { DeliveryStepPhotoDownload } from "../application/queries/delivery-
 import { GetDeliveryProcedureForStaffQuery } from "../application/queries/get-delivery-procedure-for-staff.query.js";
 import { GetDeliveryStepPhotoForStaffQuery } from "../application/queries/get-delivery-step-photo-for-staff.query.js";
 import {
-  DELIVERY_STEP_UPLOAD_HARD_LIMIT,
   photoBytesOf,
+  photoUpload,
   servePhoto,
   type UploadedPhotoPart,
-} from "./delivery-procedure-http.js";
+} from "../../shared/photo-cards/http/photo-card-http.js";
+import { DELIVERY_STEP_UPLOAD_HARD_LIMIT } from "./delivery-procedure-http.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
 
@@ -76,9 +76,7 @@ export class AdminCompanyDeliveryProcedureController {
 
   @Post(`${PROCEDURE}/steps`)
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FileInterceptor("photo", { limits: { fileSize: DELIVERY_STEP_UPLOAD_HARD_LIMIT } }),
-  )
+  @UseInterceptors(photoUpload(DELIVERY_STEP_UPLOAD_HARD_LIMIT))
   async addStep(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,
@@ -93,9 +91,7 @@ export class AdminCompanyDeliveryProcedureController {
 
   @Patch(`${PROCEDURE}/steps/:stepId`)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseInterceptors(
-    FileInterceptor("photo", { limits: { fileSize: DELIVERY_STEP_UPLOAD_HARD_LIMIT } }),
-  )
+  @UseInterceptors(photoUpload(DELIVERY_STEP_UPLOAD_HARD_LIMIT))
   async reviseStep(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,

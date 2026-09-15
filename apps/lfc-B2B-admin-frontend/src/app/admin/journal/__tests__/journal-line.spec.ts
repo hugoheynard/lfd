@@ -116,3 +116,41 @@ describe('toLine — une commande, telle qu’un humain la lit', () => {
     expect(line.forWhom).toBe('');
   });
 });
+
+describe('toLine — les notes du commercial', () => {
+  it.each([
+    ['note_added', 'Note du commercial ajoutée'],
+    ['note_revised', 'Note du commercial modifiée'],
+    ['note_removed', 'Note du commercial supprimée définitivement'],
+    ['notes_reordered', 'Notes du commercial reclassées'],
+  ])('nomme le geste « %s »', (action, sentence) => {
+    const line = toLine(
+      event({
+        type: 'company.client_note_edited_by_staff',
+        payload: { companyId: 'co_1', noteId: 'note_1', action },
+      }),
+    );
+
+    expect(line.sentence).toBe(sentence);
+  });
+
+  it('ne lit aucun contenu de note, même si une charge en portait', () => {
+    // Le fait n'en porte pas (D6) ; si un jour il en portait, l'écran ne le montrerait pas.
+    const line = toLine(
+      event({
+        type: 'company.client_note_edited_by_staff',
+        payload: { action: 'note_added', title: 'Rendez-vous secret', body: 'Remise de 30 %' },
+      }),
+    );
+
+    expect(line.sentence).toBe('Note du commercial ajoutée');
+  });
+
+  it('une action inconnue reste une phrase, pas un type brut', () => {
+    const line = toLine(
+      event({ type: 'company.client_note_edited_by_staff', payload: { action: 'note_archived' } }),
+    );
+
+    expect(line.sentence).toBe('Notes du commercial modifiées');
+  });
+});

@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { DeliveryProcedureReader } from "../domain/ports/delivery-procedure.reader.js";
-import { deliveryStepPhotoRevision } from "../domain/value-objects/delivery-step-photo.js";
+import { photoCardRevision } from "../../shared/photo-cards/domain/value-objects/photo-revision.js";
 
 /**
  * Lecture de la procédure pour l'écran. Le numéro est le rang dans la liste
@@ -31,7 +31,7 @@ export class PrismaDeliveryProcedureReader extends DeliveryProcedureReader {
       number: index + 1,
       title: step.title,
       body: step.body,
-      photoRevision: step.photoKey === null ? null : deliveryStepPhotoRevision(step.photoKey),
+      photoRevision: step.photoKey === null ? null : photoCardRevision(step.photoKey),
     }));
     return { addressId, steps };
   }

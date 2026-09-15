@@ -119,6 +119,9 @@ export interface HandoverQueueView {
   readonly entries: readonly HandoverQueueEntryView[];
 }
 
+/** Qui commande : une société (`pro`) ou un particulier (`public`). */
+export type OrderClientele = "pro" | "public";
+
 /** Une ligne de la file. **Aucun montant** : on ne facture pas au comptoir. */
 export interface HandoverQueueEntryView {
   /** Pour ouvrir le bon quand le comptoir ne suffit pas. */
@@ -136,6 +139,15 @@ export interface HandoverQueueEntryView {
    * laissé à l'écran, chaque écran le referait, et un seul l'oublierait.
    */
   readonly tradeName: string | null;
+  /**
+   * QUI a commandé, figé à la passation : `pro` pour une société, `public`
+   * sinon — ou `null` pour une commande d'avant la distinction, qui n'a pas de
+   * badge (rien n'a été rattrapé : « sans société » ne voulait pas dire public).
+   *
+   * ⚠️ Pas la clientèle TARIFÉE B2B/B2C : une société en attente est `pro` ici
+   * et B2C au tarif. Cf. `documentation/order/plan-nature-du-client-sur-la-commande.md`.
+   */
+  readonly clientele: OrderClientele | null;
   /** Le point de retrait figé à la commande, ou `null` en livraison. */
   readonly pickupLabel: string | null;
   readonly fulfillmentMethod: FulfillmentMethod;

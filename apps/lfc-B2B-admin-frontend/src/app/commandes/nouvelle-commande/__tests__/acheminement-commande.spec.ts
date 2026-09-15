@@ -1,5 +1,11 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import type { DeliveryAddressView, DeliveryZoneView, PickupAddressView } from '@lfd/contracts';
+import type {
+  CustomerAudience,
+  DeliveryAddressView,
+  DeliveryAvailabilityView,
+  DeliveryZoneView,
+  PickupAddressView,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -18,6 +24,7 @@ const LABO: PickupAddressView = {
   pays: 'France',
   isDefault: true,
   discount: null,
+  discountAudiences: { b2b: true, b2c: true },
   // Aucune heure déclarée : le point n'oppose rien à la tranche demandée.
   opening: { publicOpening: null, proPickup: null },
 };
@@ -48,6 +55,14 @@ const ZONE_92: DeliveryZoneView = {
   fee: { mode: 'amount', cents: 800 },
 };
 
+/** La livraison ouverte aux deux : l'existant, et le défaut du réglage. */
+const OPEN_TO_ALL: DeliveryAvailabilityView = {
+  openToB2b: true,
+  openToB2c: true,
+  updatedAt: null,
+  updatedBy: null,
+};
+
 /** Monte le sélecteur sur ces points, sans rien toucher d'autre. */
 function mount(pickups: readonly PickupAddressView[]): ComponentFixture<AcheminementCommande> {
   const fixture = TestBed.createComponent(AcheminementCommande);
@@ -55,6 +70,8 @@ function mount(pickups: readonly PickupAddressView[]): ComponentFixture<Achemine
   fixture.componentRef.setInput('pickups', pickups);
   fixture.componentRef.setInput('addresses', [ADRESSE]);
   fixture.componentRef.setInput('zones', [ZONE_92]);
+  fixture.componentRef.setInput('deliveryAvailability', OPEN_TO_ALL);
+  fixture.componentRef.setInput('audience', 'b2b');
   fixture.detectChanges();
   return fixture;
 }
@@ -67,6 +84,8 @@ function choiceOf(options: {
   courier?: boolean;
   dictate?: { ligne1: string; codePostal: string; ville: string };
   keep?: boolean;
+  settings?: DeliveryAvailabilityView;
+  audience?: CustomerAudience;
 }): FulfillmentChoice {
   const fixture = TestBed.createComponent(AcheminementCommande);
   // Le brouillon de l'écran : c'est lui qui garde le choix, le composant n'en
@@ -75,6 +94,8 @@ function choiceOf(options: {
   fixture.componentRef.setInput('pickups', options.pickups ?? [LABO]);
   fixture.componentRef.setInput('addresses', options.addresses ?? [ADRESSE]);
   fixture.componentRef.setInput('zones', options.zones ?? [ZONE_92]);
+  fixture.componentRef.setInput('deliveryAvailability', options.settings ?? OPEN_TO_ALL);
+  fixture.componentRef.setInput('audience', options.audience ?? 'b2b');
 
   let last: FulfillmentChoice | null = null;
   fixture.componentInstance.choiceChange.subscribe((choice) => (last = choice));
@@ -128,7 +149,7 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       // nommant le réglage. Le parcours CLIENT refuse déjà sur un tel point.
       window: null,
       issue:
-        'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Livraisons & retraits).',
+        'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (E-commerce LFC → Réglages → Points de retrait).',
     });
   });
 
@@ -202,6 +223,68 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     // La case n'est pas rendue dans ce cas ; le choix le redit, pour que le jour
     // où le gabarit changerait, le carnet ne se duplique pas en silence.
     expect(choiceOf({ courier: true, keep: true }).saveToBook).toBe(false);
+  });
+
+  /**
+   * **Le coursier suit le réglage de l'e-commerce** (plan « remise et livraison
+   * par clientèle », Q1) : le staff n'a pas de passe-droit, et le serveur
+   * refuse de toute façon une livraison fermée (409).
+   */
+  describe('la livraison fermée à la clientèle', () => {
+    const CLOSED_TO_PROS: DeliveryAvailabilityView = { ...OPEN_TO_ALL, openToB2b: false };
+    const CLOSED_TO_PUBLIC: DeliveryAvailabilityView = { ...OPEN_TO_ALL, openToB2c: false };
+
+    function mountWith(
+      settings: DeliveryAvailabilityView,
+      audience: CustomerAudience,
+    ): ComponentFixture<AcheminementCommande> {
+      const fixture = TestBed.createComponent(AcheminementCommande);
+      fixture.componentRef.setInput('draft', new DraftStore());
+      fixture.componentRef.setInput('pickups', [LABO]);
+      fixture.componentRef.setInput('addresses', [ADRESSE]);
+      fixture.componentRef.setInput('zones', [ZONE_92]);
+      fixture.componentRef.setInput('deliveryAvailability', settings);
+      fixture.componentRef.setInput('audience', audience);
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    const courierDisabled = (fixture: ComponentFixture<AcheminementCommande>): boolean =>
+      fixture.componentInstance['methods']().find((option) => option.value === 'delivery')
+        ?.disabled === true;
+
+    it('propose le coursier quand la livraison est ouverte à la clientèle', () => {
+      const fixture = mountWith(CLOSED_TO_PUBLIC, 'b2b');
+
+      expect(courierDisabled(fixture)).toBe(false);
+      expect(fixture.nativeElement.textContent).not.toContain('n’est pas proposée');
+    });
+
+    it('désactive le coursier fermé aux pros, et écrit la raison', () => {
+      const fixture = mountWith(CLOSED_TO_PROS, 'b2b');
+
+      expect(courierDisabled(fixture)).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain(
+        'La livraison n’est pas proposée aux pros',
+      );
+    });
+
+    it('suit les règles des particuliers pour un compte qui n’est pas actif', () => {
+      // Pros ouverts, particuliers fermés : un compte en attente d'activation
+      // est un particulier pour la livraison (Q3), et la phrase le dit.
+      const fixture = mountWith(CLOSED_TO_PUBLIC, 'b2c');
+
+      expect(courierDisabled(fixture)).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('Ce compte n’est pas actif');
+    });
+
+    it('🔴 un brouillon repris en coursier ne part pas quand la livraison est fermée', () => {
+      const choice = choiceOf({ courier: true, settings: CLOSED_TO_PROS, audience: 'b2b' });
+
+      expect(choice.method).toBe('delivery');
+      expect(choice.deliveryAddress).toBeNull();
+      expect(choice.issue).toContain('La livraison n’est pas proposée aux pros');
+    });
   });
 
   /**
