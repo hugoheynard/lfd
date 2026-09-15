@@ -23,6 +23,20 @@ describe('IdentityDeskCard', () => {
     expect(el.querySelectorAll('input').length).toBe(0);
   });
 
+  it('lit la forme juridique par son libellé, et une saisie inconnue telle quelle', () => {
+    const form = (formeJuridique: string): string => {
+      const el = bootCard(IdentityDeskCard, [{ ...TOMMEUSES, formeJuridique }])
+        .nativeElement as HTMLElement;
+      const dts = Array.from(el.querySelectorAll('.facts dt'));
+      const dt = dts.find((node) => node.textContent?.trim() === FR.account.identityForm);
+      return dt?.nextElementSibling?.textContent?.trim() ?? '';
+    };
+
+    expect(form('sarl')).toBe('SARL');
+    expect(form('micro')).toBe('Micro-entreprise');
+    expect(form('GIE du Col')).toBe('GIE du Col');
+  });
+
   /** L'API n'écrit l'identité que pour `owner` et `admin` : aux autres, pas de « Modifier ». */
   it('n’offre « Modifier » qu’aux rôles qui écrivent, et ouvre le panneau d’identité', () => {
     for (const role of ['orders', 'billing'] as const) {

@@ -9,11 +9,17 @@ import {
   untracked,
 } from '@angular/core';
 import { sirenFollowingSiret } from '@lfd/b2b-ui/company';
-import type { CompanyView } from '@lfd/contracts';
+import {
+  LEGAL_FORM_OPTIONS,
+  legalFormRequiresVat,
+  toLegalForm,
+  type CompanyView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldInputComponent,
+  FoldListboxComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -25,7 +31,7 @@ import {
 import { AccountService, type IdentityDraft } from '../../../../account/account.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { dialogSide } from '../../../panel-side';
-import { canEditIdentity } from '../identity-section';
+import { canEditIdentity, legalFormLabelOf } from '../identity-section';
 
 /**
  * Les mentions du greffe : le client les COMBLE, il ne les corrige pas. Le SIREN
@@ -73,6 +79,17 @@ export interface IdentityPanelData extends LegalDraft {
  * resterait figé sur « enregistrement ». La promesse retombe dans les deux cas,
  * et rend le message du serveur — un SIRET refusé se corrige ici, pas après un
  * toast déjà parti.
+ *
+ * ## La forme juridique est une liste, et elle décide de la TVA
+ *
+ * Le catalogue fermé de `@lfd/contracts`, comme dans l'admin : la valeur
+ * écrite est la clé (`sas`, `micro`…), la même que `company-identity-fields`.
+ * La forme retenue — choisie ici si elle manque, enregistrée sinon — MARQUE la
+ * TVA obligatoire ou facultative. Le marqueur n'est qu'une invitation :
+ * aucune écriture d'identité ne refuse l'absence de TVA côté serveur (vérifié
+ * le 2026-09-15, `Company` et `update-company-identity.handler.ts`), donc
+ * Enregistrer ne l'attend jamais — sans quoi un client sans son numéro sous
+ * la main ne pourrait plus poser ni sa forme ni son enseigne.
  */
 @Component({
   selector: 'app-identity-panel',
@@ -81,6 +98,7 @@ export interface IdentityPanelData extends LegalDraft {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldInputComponent,
+    FoldListboxComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -151,8 +169,10 @@ export class IdentityPanel {
       siren: copy.identitySiren,
     };
     return LEGAL_FIELDS.map((key) => {
-      const current = data[key].trim();
-      return { key, label: labels[key], current, locked: current !== '' };
+      const raw = data[key].trim();
+      // La forme se lit par son libellé ; ce que le catalogue ne reconnaît pas, tel quel.
+      const current = key === 'formeJuridique' ? legalFormLabelOf(raw) : raw;
+      return { key, label: labels[key], current, locked: raw !== '' };
     });
   });
 
@@ -170,6 +190,43 @@ export class IdentityPanel {
 
   protected readonly lockedFields = computed(() => this.legalFields().filter((f) => f.locked));
   protected readonly openFields = computed(() => this.legalFields().filter((f) => !f.locked));
+
+  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
+  protected readonly legalForms = LEGAL_FORM_OPTIONS;
+
+  /** Le choix en cours : seule la liste l'écrit, il est donc toujours une clé du catalogue. */
+  protected readonly formChoice = computed(() => toLegalForm(this.legal().formeJuridique));
+
+  private readonly formOpen = computed(() =>
+    this.openFields().some((field) => field.key === 'formeJuridique'),
+  );
+
+  /** La forme qui décide de la TVA : celle qu'on choisit si elle manque, celle enregistrée sinon. */
+  private readonly formForVat = computed(() =>
+    this.formOpen() ? this.legal().formeJuridique : this.data().formeJuridique,
+  );
+
+  /** La forme retenue, si le catalogue la reconnaît. */
+  private readonly knownForm = computed(() => toLegalForm(this.formForVat()));
+
+  /**
+   * Obligatoire seulement pour une forme CONNUE et assujettie. Vide ou hors
+   * catalogue, le champ reste facultatif : `isVatRequiredFor` y répond `true`
+   * par prudence (l'admin en dépend), mais ce serait affirmer une obligation
+   * que rien ne permet d'établir.
+   */
+  protected readonly vatRequired = computed(() => {
+    const form = this.knownForm();
+    return form !== null && legalFormRequiresVat(form);
+  });
+
+  protected readonly vatHint = computed(() => {
+    const copy = this.t().account;
+    if (this.knownForm() === null) {
+      return copy.identityVatUndecidedHint;
+    }
+    return this.vatRequired() ? copy.identityVatRequiredHint : copy.identityVatOptionalHint;
+  });
 
   /** Rien à envoyer tant que le brouillon dit ce que la base dit déjà. */
   protected readonly changed = computed(() => {

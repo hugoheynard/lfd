@@ -14,7 +14,7 @@
     <dt>{{ t().account.identityCompany }}</dt>
     <dd>{{ identity.raisonSociale }}</dd>
     <dt>{{ t().account.identityForm }}</dt>
-    <dd>{{ identity.formeJuridique }}</dd>
+    <dd>{{ formLabel(identity.formeJuridique) }}</dd>
     <dt>{{ t().account.identitySiret }}</dt>
     <!-- Vide tant qu'inconnu, et c'est un ÉTAT : une société peut ouvrir sans
          papiers. Un tiret le dit ; un SIRET d'exemple serait celui d'une autre

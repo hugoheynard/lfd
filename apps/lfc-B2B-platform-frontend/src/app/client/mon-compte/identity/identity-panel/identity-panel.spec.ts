@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
+import { By } from '@angular/platform-browser';
+import type { LegalForm } from '@lfd/contracts';
+import { FoldListboxComponent, FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
 import { AccountService, type IdentityDraft } from '../../../../account/account.service';
@@ -100,6 +102,23 @@ describe('IdentityPanel', () => {
     return found;
   };
 
+  /**
+   * Choisir une forme comme le fait la liste : par sa sortie `selectionChange`,
+   * qui rend la clé du catalogue — celle que l'admin écrit aussi.
+   */
+  const choose = (form: LegalForm): void => {
+    const listbox = fixture.debugElement.query(By.directive(FoldListboxComponent));
+    (listbox.componentInstance as FoldListboxComponent<LegalForm>).selectionChange.emit(form);
+    fixture.detectChanges();
+  };
+
+  /** Ce que montre la ligne « Forme juridique » des mentions en lecture. */
+  const lockedForm = (): string => {
+    const dts = Array.from(el().querySelectorAll('.locked dt'));
+    const dt = dts.find((node) => node.textContent?.trim() === FR.account.identityForm);
+    return dt?.nextElementSibling?.textContent?.trim() ?? '';
+  };
+
   const save = async (): Promise<void> => {
     button(FR.account.save).click();
     await fixture.whenStable();
@@ -128,6 +147,81 @@ describe('IdentityPanel', () => {
     expect(() => field(FR.account.identityCompany)).not.toThrow();
     expect(() => field(FR.account.identitySiret)).not.toThrow();
     expect(el().querySelector('.locked')?.textContent).toContain(FR.account.identityForm);
+  });
+
+  /** La forme décide de la TVA : une LISTE, et seulement quand elle est à compléter. */
+  it('la forme juridique est une liste si elle est vide, et n’est plus un champ une fois posée', () => {
+    fixture = boot(BARE);
+    const listbox = el().querySelector('fold-listbox');
+    expect(listbox?.textContent).toContain(FR.account.identityForm);
+    expect(() => field(FR.account.identityForm)).toThrow();
+
+    fixture = boot({ ...BARE, formeJuridique: 'sarl' });
+    expect(el().querySelector('fold-listbox')).toBeNull();
+  });
+
+  it('montre une forme posée par son libellé, et une saisie inconnue telle quelle', () => {
+    fixture = boot({ ...FILLED, formeJuridique: 'SAS' });
+    expect(lockedForm()).toBe('SAS');
+
+    fixture = boot({ ...FILLED, formeJuridique: 'sarl' });
+    expect(lockedForm()).toBe('SARL');
+
+    fixture = boot({ ...FILLED, formeJuridique: 'GIE du Col' });
+    expect(lockedForm()).toBe('GIE du Col');
+  });
+
+  /**
+   * Le marqueur invite, il ne bloque pas : le serveur accepte une identité sans
+   * TVA, et un client sans son numéro doit pouvoir poser sa forme.
+   */
+  it('marque la TVA obligatoire pour une SAS, sans désarmer Enregistrer', () => {
+    fixture = boot({ ...BARE, vatNumber: '' });
+
+    choose('sas');
+    expect(field(FR.account.identityVatField).required).toBe(true);
+    expect(el().textContent).toContain(FR.account.identityVatRequiredHint);
+    expect(button(FR.account.save).disabled).toBe(false);
+  });
+
+  it('laisse la TVA facultative à une micro-entreprise', () => {
+    fixture = boot({ ...BARE, vatNumber: '' });
+
+    choose('micro');
+    expect(field(FR.account.identityVatField).required).toBe(false);
+    expect(el().textContent).toContain(FR.account.identityVatOptionalHint);
+    expect(button(FR.account.save).disabled).toBe(false);
+  });
+
+  it('lit la règle de TVA sur la forme déjà enregistrée, ancienne saisie comprise', () => {
+    fixture = boot({ ...FILLED, formeJuridique: 'Micro entreprise', vatNumber: '' });
+    expect(field(FR.account.identityVatField).required).toBe(false);
+
+    fixture = boot({ ...FILLED, formeJuridique: 'S.A.S.', vatNumber: '' });
+    expect(field(FR.account.identityVatField).required).toBe(true);
+  });
+
+  it('laisse la TVA facultative tant que la forme est vide ou inconnue, et dit pourquoi', () => {
+    fixture = boot({ ...BARE, vatNumber: '' });
+    expect(field(FR.account.identityVatField).required).toBe(false);
+    expect(el().textContent).toContain(FR.account.identityVatUndecidedHint);
+
+    fixture = boot({ ...FILLED, formeJuridique: 'GIE du Col', vatNumber: '' });
+    expect(field(FR.account.identityVatField).required).toBe(false);
+    expect(el().textContent).toContain(FR.account.identityVatUndecidedHint);
+  });
+
+  /**
+   * L'admin écrit la clé que rend `selectionChange` (`company-identity-fields`
+   * → `identite-panel`, `formeJuridique.trim()`) : le client envoie la même.
+   */
+  it('envoie la clé du catalogue, comme l’admin', async () => {
+    fixture = boot(BARE);
+
+    choose('auto_entrepreneur');
+    await save();
+
+    expect(wire.saves[0]?.draft.formeJuridique).toBe('auto_entrepreneur');
   });
 
   /** Décision de Hugo (2026-09-15) : le client complète son SIREN, il ne le corrige pas. */

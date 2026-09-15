@@ -97,6 +97,16 @@ export interface AccountCopy {
    * corrige plus d'ici — le serveur ignore un champ déjà renseigné.
    */
   readonly identityLegalHint: string;
+  /** Dans la liste des formes juridiques, tant qu'aucune n'est choisie. */
+  readonly identityFormPlaceholder: string;
+  /** Sous la TVA quand la forme l'impose — une invitation : Enregistrer ne l'attend pas. */
+  readonly identityVatRequiredHint: string;
+  /** Sous la TVA quand la forme ne l'impose pas (franchise en base). */
+  readonly identityVatOptionalHint: string;
+  /** Sous la TVA quand la forme est vide ou inconnue : l'obligation en dépend. */
+  readonly identityVatUndecidedHint: string;
+  /** Le mot du marqueur « facultatif » — fold parle anglais par défaut. */
+  readonly identityOptional: string;
   /** Sous les mentions déjà renseignées, montrées en lecture. */
   readonly identityLegalLocked: string;
   /** En tête du message du serveur, quand l'écriture est refusée. */

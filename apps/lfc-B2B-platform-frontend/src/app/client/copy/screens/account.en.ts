@@ -84,6 +84,11 @@ export const ACCOUNT_EN: AccountCopy = {
   identityVatField: 'Intra-EU VAT number',
   identityLegalHint:
     'Fill in once: after saving, this detail can only be corrected through our sales team.',
+  identityFormPlaceholder: 'Choose',
+  identityVatRequiredHint: 'Required for this legal form.',
+  identityVatOptionalHint: 'Optional for this legal form — VAT franchise.',
+  identityVatUndecidedHint: 'Required or not depending on the legal form.',
+  identityOptional: 'optional',
   identityLegalLocked:
     'These details come from the company registry. To correct them, contact our sales team.',
   identitySaveFailed: 'Your identity was not saved.',

@@ -32,19 +32,36 @@
       [value]="enseigne()"
       (valueChange)="enseigne.set($event)"
     />
+    <!-- Le caractère obligatoire suit la forme juridique : la même règle que l'admin. -->
     <fold-input
       [label]="t().account.identityVatField"
+      [hint]="vatHint()"
+      [required]="vatRequired()"
+      [optional]="!vatRequired()"
+      [optionalLabel]="t().account.identityOptional"
       [value]="vatNumber()"
       (valueChange)="vatNumber.set($event)"
     />
 
     @for (field of openFields(); track field.key) {
-      <fold-input
-        [label]="field.label"
-        [hint]="t().account.identityLegalHint"
-        [value]="legal()[field.key]"
-        (valueChange)="type(field.key, $event)"
-      />
+      @if (field.key === 'formeJuridique') {
+        <!-- Une LISTE, pas un champ libre : c'est la forme qui décide de la TVA. -->
+        <fold-listbox
+          [label]="field.label"
+          [hint]="t().account.identityLegalHint"
+          [placeholder]="t().account.identityFormPlaceholder"
+          [options]="legalForms"
+          [value]="formChoice()"
+          (selectionChange)="setLegal('formeJuridique', $event)"
+        />
+      } @else {
+        <fold-input
+          [label]="field.label"
+          [hint]="t().account.identityLegalHint"
+          [value]="legal()[field.key]"
+          (valueChange)="type(field.key, $event)"
+        />
+      }
     }
 
     <!-- Une mention déjà renseignée n'est PAS un champ : le serveur ignorerait

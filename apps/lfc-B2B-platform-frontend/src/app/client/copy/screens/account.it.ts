@@ -85,6 +85,11 @@ export const ACCOUNT_IT: AccountCopy = {
   identityVatField: 'Partita IVA intracomunitaria',
   identityLegalHint:
     'Da completare una sola volta: una volta registrata, questa menzione si corregge solo tramite il nostro servizio commerciale.',
+  identityFormPlaceholder: 'Da scegliere',
+  identityVatRequiredHint: 'Obbligatoria per questa forma giuridica.',
+  identityVatOptionalHint: 'Facoltativa per questa forma giuridica — franchigia IVA.',
+  identityVatUndecidedHint: 'Obbligatoria o no a seconda della forma giuridica.',
+  identityOptional: 'facoltativo',
   identityLegalLocked:
     'Queste menzioni provengono dal registro delle imprese. Per correggerle, passate dal nostro servizio commerciale.',
   identitySaveFailed: 'L’identità non è stata registrata.',

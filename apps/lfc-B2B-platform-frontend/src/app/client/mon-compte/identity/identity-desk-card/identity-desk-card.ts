@@ -6,7 +6,7 @@ import type { CompletionItem, CompletionTarget } from '../../completion/completi
 import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { IdentityPanel } from '../identity-panel/identity-panel';
-import { canEditIdentity } from '../identity-section';
+import { canEditIdentity, legalFormLabelOf } from '../identity-section';
 
 /**
  * La carte **Identité légale** du bureau : les cinq mentions, la règle écrite
@@ -32,6 +32,9 @@ export class IdentityDeskCard {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);
+
+  /** `sarl` se lit « SARL » ; une saisie que le catalogue ne reconnaît pas, telle quelle. */
+  protected readonly formLabel = legalFormLabelOf;
 
   protected readonly canEdit = computed(() => canEditIdentity(this.client.company()));
 

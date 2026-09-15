@@ -85,6 +85,11 @@ export const ACCOUNT_FR: AccountCopy = {
   identityVatField: 'TVA intracommunautaire',
   identityLegalHint:
     'À compléter une seule fois : une fois enregistrée, cette mention ne se corrige plus qu’avec notre service commercial.',
+  identityFormPlaceholder: 'À choisir',
+  identityVatRequiredHint: 'Obligatoire pour cette forme juridique.',
+  identityVatOptionalHint: 'Facultatif pour cette forme juridique — franchise en base de TVA.',
+  identityVatUndecidedHint: 'Obligatoire ou non selon la forme juridique.',
+  identityOptional: 'facultatif',
   identityLegalLocked:
     'Ces mentions viennent du greffe. Pour les corriger, passez par notre service commercial.',
   identitySaveFailed: 'L’identité n’a pas été enregistrée.',
