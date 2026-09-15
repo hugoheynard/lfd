@@ -1,8 +1,10 @@
 # Plan — la clientèle, figée sur la commande
 
-> **État au 2026-09-15** : décidé par Hugo, **rien n'est bâti**. **Contredit par
-> `vitruve` le même jour** : un BLOQUANT (le rattrapage de l'existant) a renversé
-> une décision, et le sort de chaque objection est au §5.
+> **État au 2026-09-15** : décidé par Hugo, **bâti** le même jour (lots A et B,
+> commit `ffb4ec01`), migration relue par `lecteur-de-migrations`, batterie
+> complète verte. **Contredit par `vitruve` avant construction** : un BLOQUANT
+> (le rattrapage de l'existant) a renversé une décision, et le sort de chaque
+> objection est au §5.
 >
 > Il bâtit un morceau de ce que
 > [`../b2b/analyse-boutique-publique.md`](../b2b/analyse-boutique-publique.md)
