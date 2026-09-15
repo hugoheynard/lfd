@@ -49,6 +49,13 @@ class FakePickups {
     this.updated.push(payload);
     return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
   }
+
+  readonly removed: string[] = [];
+
+  remove(id: string): Promise<void> {
+    this.removed.push(id);
+    return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
+  }
 }
 
 interface Harness {
@@ -57,7 +64,7 @@ interface Harness {
   readonly ref: FoldPanelRef<boolean>;
 }
 
-async function mount(address: PickupAddressView | null): Promise<Harness> {
+async function mount(address: PickupAddressView | null, removable = false): Promise<Harness> {
   const pickups = new FakePickups();
   const ref = new FoldPanelRef<boolean>(1, () => undefined);
   TestBed.configureTestingModule({
@@ -69,7 +76,7 @@ async function mount(address: PickupAddressView | null): Promise<Harness> {
     ],
   });
   const fixture = TestBed.createComponent(PickupPanel);
-  fixture.componentRef.setInput('data', { address });
+  fixture.componentRef.setInput('data', { address, removable });
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -162,5 +169,68 @@ describe('PickupPanel — les clientèles de la réduction', () => {
     expect(close).not.toHaveBeenCalled();
     const alert: HTMLElement | null = fixture.nativeElement.querySelector('fold-callout.v-alert');
     expect(alert?.textContent).toContain('Cochez au moins une clientèle, ou retirez la réduction');
+  });
+});
+
+/**
+ * **La suppression d'un point** vit dans une zone dangereuse du panneau, qui fait
+ * taper le nom du point — elle était une entrée du menu de la liste, confirmée
+ * d'un clic, jusqu'au 2026-09-15.
+ */
+describe('PickupPanel — la zone dangereuse', () => {
+  const zone = (fixture: ComponentFixture<PickupPanel>): HTMLElement | null =>
+    fixture.nativeElement.querySelector('fold-danger-zone');
+
+  it('n’existe pas à la création : il n’y a rien à supprimer', async () => {
+    const { fixture } = await mount(null, true);
+
+    expect(zone(fixture)).toBeNull();
+  });
+
+  it('fait taper le nom du point pour supprimer', async () => {
+    const { fixture } = await mount(LABO, true);
+
+    expect(zone(fixture)).not.toBeNull();
+    expect(fixture.componentInstance['deleteAction']()).toBe('Supprimer définitivement');
+    expect(fixture.componentInstance['confirmPhrase']()).toBe('Labo');
+  });
+
+  it('un point sans nom se confirme par sa ville', async () => {
+    const { fixture } = await mount({ ...LABO, label: '' }, true);
+
+    expect(fixture.componentInstance['confirmPhrase']()).toBe('Paris');
+  });
+
+  it('supprime, puis ferme en demandant de recharger la liste', async () => {
+    const { fixture, pickups, ref } = await mount(LABO, true);
+    const close = vi.spyOn(ref, 'close');
+
+    await fixture.componentInstance['remove']();
+
+    expect(pickups.removed).toEqual(['pick_1']);
+    expect(close).toHaveBeenCalledWith(true);
+  });
+
+  it('le dernier point : la zone explique, et rien ne part', async () => {
+    const { fixture, pickups } = await mount(LABO, false);
+
+    expect(fixture.componentInstance['deleteAction']()).toBeUndefined();
+    expect(zone(fixture)?.textContent).toContain('Le dernier point de retrait ne se supprime pas');
+
+    await fixture.componentInstance['remove']();
+    expect(pickups.removed).toEqual([]);
+  });
+
+  it('un refus reste dans le panneau, sans le fermer', async () => {
+    const { fixture, pickups, ref } = await mount(LABO, true);
+    const close = vi.spyOn(ref, 'close');
+    pickups.refusal = { status: 409, error: { message: 'Point encore utilisé.' } };
+
+    await fixture.componentInstance['remove']();
+    fixture.detectChanges();
+
+    expect(close).not.toHaveBeenCalled();
+    const alert: HTMLElement | null = fixture.nativeElement.querySelector('fold-callout.v-alert');
+    expect(alert?.textContent).toContain('Point encore utilisé.');
   });
 });

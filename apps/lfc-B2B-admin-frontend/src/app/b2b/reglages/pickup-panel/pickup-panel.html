@@ -59,6 +59,30 @@
   @if (refusal(); as message) {
     <fold-callout variant="alert" announce>{{ message }}</fold-callout>
   }
+
+  <!-- En correction seulement : on supprime ce qu'on regarde. Sans libellé
+       d'action (le dernier point), la zone explique sans rien offrir. -->
+  @if (!isCreate()) {
+    <fold-danger-zone
+      appearance="section"
+      title="Supprimer ce point de retrait"
+      [actionLabel]="deleteAction()"
+      [confirmPhrase]="confirmPhrase()"
+      (confirmed)="remove()"
+    >
+      @if (deleteAction()) {
+        <p>
+          «&nbsp;{{ confirmPhrase() }}&nbsp;» ne sera plus proposé aux clients comme point de
+          retrait.
+        </p>
+      } @else {
+        <p>
+          <strong>Le dernier point de retrait ne se supprime pas.</strong> Sans lui, aucun client ne
+          pourrait retirer sa commande&nbsp;: ajoutez-en un autre d'abord.
+        </p>
+      }
+    </fold-danger-zone>
+  }
 </fold-panel-body>
 
 <fold-panel-footer>

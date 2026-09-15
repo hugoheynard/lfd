@@ -19,6 +19,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCheckboxComponent,
+  FoldDangerZoneComponent,
   FoldFieldsetComponent,
   FoldPanelBodyComponent,
   FoldPanelFooterComponent,
@@ -51,6 +52,11 @@ import { EMPTY_OPENING, openingEntries, toPickupOpening } from '../pickup-openin
 /** Charge d'ouverture du panneau : le point à éditer, ou `null` pour en créer un. */
 export interface PickupPanelData {
   readonly address: PickupAddressView | null;
+  /**
+   * Le point peut-il être supprimé ? Faux pour le dernier : la page en garde
+   * toujours un. Absent = non — une zone qui n'offre rien ne supprime rien.
+   */
+  readonly removable?: boolean;
 }
 
 /**
@@ -79,6 +85,7 @@ export interface PickupPanelData {
     HoursForm,
     PriceAlterationField,
     FoldPanelBodyComponent,
+    FoldDangerZoneComponent,
   ],
   templateUrl: './pickup-panel.html',
   styleUrl: './pickup-panel.scss',
@@ -205,6 +212,43 @@ export class PickupPanel {
       this.ref.close(true);
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, "Le point de retrait n'a pas pu être enregistré."));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  /**
+   * Le libellé d'action de la zone dangereuse, ou `undefined` pour le dernier
+   * point : la zone reste alors un cadre qui explique sans rien offrir.
+   */
+  protected readonly deleteAction = computed(() =>
+    this.data()?.removable === true ? 'Supprimer définitivement' : undefined,
+  );
+
+  /** Ce qu'il faut taper pour supprimer : le nom du point, ou sa ville sans nom. */
+  protected readonly confirmPhrase = computed(() => {
+    const address = this.data()?.address ?? null;
+    return address === null ? '' : address.label || address.ville;
+  });
+
+  /**
+   * 🔴 **La suppression était une entrée du menu de la liste**, confirmée d'un
+   * seul clic, jusqu'au 2026-09-15 (Hugo). Elle vit désormais ici, dans une zone
+   * dangereuse qui fait taper le nom du point. Un refus reste dans le panneau.
+   */
+  protected async remove(): Promise<void> {
+    const address = this.data()?.address ?? null;
+    if (address === null || this.deleteAction() === undefined || this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    this.refusal.set(null);
+    try {
+      await this.pickups.remove(address.id);
+      this.notify.success('Point de retrait supprimé.');
+      this.ref.close(true);
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, "Le point de retrait n'a pas pu être supprimé."));
     } finally {
       this.saving.set(false);
     }

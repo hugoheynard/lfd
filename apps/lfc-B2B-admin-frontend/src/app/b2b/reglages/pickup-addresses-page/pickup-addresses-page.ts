@@ -14,7 +14,6 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
-  FoldInlineConfirmComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
   FoldPopoverTriggerDirective,
@@ -30,9 +29,10 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * **Points de retrait** — « E-commerce LFC → Réglages ». Les laboratoires où le
- * client vient chercher sa commande : ajouter, éditer, supprimer (au moins un
- * gardé), désigner le défaut. La saisie passe par `PickupPanel` ; ici on liste,
- * on ouvre le panneau et on recharge.
+ * client vient chercher sa commande : ajouter, éditer, désigner le défaut. La
+ * saisie ET la suppression passent par `PickupPanel` — la seconde dans sa zone
+ * dangereuse, depuis le 2026-09-15 (un clic dans le menu de la liste suffisait
+ * avant) ; ici on liste, on ouvre le panneau et on recharge.
  *
  * Elle était la première carte d'un onglet « Retraits & livraisons » des
  * Réglages, avec les zones et les heures limites. Les trois se sont séparées le
@@ -53,7 +53,6 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldIconComponent,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
-    FoldInlineConfirmComponent,
     FoldPageLayoutComponent,
     FoldPopoverTriggerDirective,
   ],
@@ -67,9 +66,6 @@ export class PickupAddressesPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly addresses = signal<readonly PickupAddressView[]>([]);
-  /** Point dont la confirmation de suppression est ouverte (état UI local). */
-  protected readonly confirmingId = signal<string | null>(null);
-
   /** On garde toujours au moins un point : le dernier n'est pas supprimable. */
   protected readonly canRemove = computed(() => this.addresses().length > 1);
 
@@ -114,7 +110,7 @@ export class PickupAddressesPage {
   }
 
   protected edit(address: PickupAddressView): void {
-    void this.openPanel({ address });
+    void this.openPanel({ address, removable: this.canRemove() });
   }
 
   /** Ouvre le panneau, puis recharge la liste si une sauvegarde a eu lieu. */
@@ -132,21 +128,6 @@ export class PickupAddressesPage {
   protected async setDefault(address: PickupAddressView): Promise<void> {
     try {
       await this.pickups.setDefault(address.id);
-      await this.load();
-    } catch (error) {
-      this.notify.error(error);
-    }
-  }
-
-  protected askRemove(address: PickupAddressView): void {
-    this.confirmingId.set(address.id);
-  }
-
-  protected async confirmRemove(address: PickupAddressView): Promise<void> {
-    this.confirmingId.set(null);
-    try {
-      await this.pickups.remove(address.id);
-      this.notify.success('Point de retrait supprimé.');
       await this.load();
     } catch (error) {
       this.notify.error(error);

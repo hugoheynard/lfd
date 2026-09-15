@@ -49,11 +49,6 @@
                 <fold-dropdown-item icon="edit" (selected)="edit(point)"
                   >Modifier</fold-dropdown-item
                 >
-                @if (canRemove()) {
-                  <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove(point)">
-                    Supprimer
-                  </fold-dropdown-item>
-                }
               </fold-dropdown>
             </div>
 
@@ -62,18 +57,6 @@
               hideEmpty
               noneText="Aucune heure déclarée — toute heure de retrait est acceptée."
             />
-
-            @if (confirmingId() === point.id) {
-              <fold-inline-confirm
-                [open]="true"
-                intent="danger"
-                message="Supprimer ce point de retrait ?"
-                (confirmed)="confirmRemove(point)"
-                (cancelled)="confirmingId.set(null)"
-              >
-                <span hidden></span>
-              </fold-inline-confirm>
-            }
           </fold-card>
         } @empty {
           <fold-empty-state
