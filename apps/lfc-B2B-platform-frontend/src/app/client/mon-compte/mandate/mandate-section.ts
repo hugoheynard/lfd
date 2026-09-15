@@ -1,4 +1,4 @@
-import type { CustomerMandateView } from '@lfd/contracts';
+import type { CustomerMandateView, SepaScheme } from '@lfd/contracts';
 
 import { fill } from '../../copy/client-copy.service';
 import type { AccountCopy } from '../../copy/screens/account.copy';
@@ -82,9 +82,41 @@ export function mandatePrintable(mandate: CustomerMandateView | null): boolean {
 /**
  * Les zones facultatives se règlent tant qu'aucun mandat n'est ACTIF : son
  * papier signé les porte déjà, et l'API refuse en 409.
+ *
+ * Et jamais sous un émetteur interentreprises : son mandat n'imprime ni la zone
+ * 14 ni la 19 (plan-mandat-deux-schemas §10, Q2). Un schéma encore inconnu
+ * (`null`) laisse le geste — le masquer ferait disparaître une fonction sur une
+ * lecture lente ou manquée.
  */
-export function mandateOptionsEditable(stage: MandateStage): boolean {
-  return stage !== 'active';
+export function mandateOptionsEditable(
+  stage: MandateStage,
+  issuerScheme: SepaScheme | null,
+): boolean {
+  return stage !== 'active' && issuerScheme !== 'B2B';
+}
+
+/**
+ * Le texte détaillé du panneau.
+ *
+ * - **sans mandat** : selon le schéma de l'ÉMETTEUR, qui frappera le suivant.
+ *   Tant qu'il n'est pas lu, le texte CORE — il ne dit rien que le schéma
+ *   interentreprises démentirait, alors que l'inverse réclamerait une
+ *   déclaration bancaire à qui n'en a pas besoin ;
+ * - **brouillon sans scan** : selon le schéma FIGÉ sur le mandat, pas celui de
+ *   l'émetteur — c'est ce papier-là que le client signe.
+ */
+export function mandateBody(
+  mandate: CustomerMandateView | null,
+  issuerScheme: SepaScheme | null,
+  copy: AccountCopy,
+): string {
+  if (mandate?.status === 'active') {
+    return copy.mandateActiveBody;
+  }
+  if (mandate?.status === 'draft') {
+    return mandate.hasProof ? copy.mandateInReviewBody : copy.mandateAwaitingBody[mandate.scheme];
+  }
+  return copy.mandateNoneBody[issuerScheme ?? 'CORE'];
 }
 
 /** Le bouton du bas : générer, renvoyer signé, ou lire le détail. */

@@ -4,6 +4,7 @@ import type {
   CustomerMandateOptionsSectionView,
   CustomerMandateOptionsView,
   CustomerMandateView,
+  SepaScheme,
   SetMandateOptionsPayload,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -49,14 +50,30 @@ export class ClientMandate {
   /** Les zones facultatives, ou `null` tant qu'aucun RIB n'est déposé : elles vivent sur sa ligne. */
   readonly options = this._options.asReadonly();
 
+  private readonly _issuerScheme = signal<SepaScheme | null>(null);
+
+  /**
+   * Le schéma des mandats que l'émetteur frappe — `null` tant qu'il n'est pas
+   * lu, ou sans émetteur. Rendu par l'enveloppe des options : c'est là que le
+   * serveur le sert (plan-mandat-deux-schemas §10.4).
+   */
+  readonly issuerScheme = this._issuerScheme.asReadonly();
+
   /**
    * Lit le mandat si ce n'est pas déjà fait. Paresseux, comme le RIB : seules
    * les cartes montrées le demandent, et elles ne le sont que drapeau ouvert —
    * une lecture drapeau fermé partirait en 409.
+   *
+   * Les options partent avec lui depuis le 2026-09-15 : leur enveloppe porte le
+   * schéma de l'émetteur, et la carte en a besoin AVANT tout panneau — pour
+   * taire « Options du mandat » en interentreprises, et pour dire ce que le
+   * mandat à générer autorisera. Une requête de plus par ouverture de
+   * `/mon-compte`, pas par élément.
    */
   ensure(companyId: string): void {
     if (this.readFor !== companyId) {
       void this.reload(companyId);
+      void this.loadOptions(companyId);
     }
   }
 
@@ -152,12 +169,13 @@ export class ClientMandate {
   async loadOptions(companyId: string): Promise<void> {
     this._optionsStatus.set('loading');
     try {
-      const { options } = await firstValueFrom(
+      const { options, issuerScheme } = await firstValueFrom(
         this.http.get<CustomerMandateOptionsSectionView>(this.optionsUrl(companyId), {
           headers: await this.headers(),
         }),
       );
       this._options.set(options);
+      this._issuerScheme.set(issuerScheme);
       this._optionsStatus.set('ready');
     } catch {
       this._optionsStatus.set('failed');

@@ -91,6 +91,7 @@ function boot(
         useValue: {
           status: signal('ready'),
           mandate: signal(null),
+          issuerScheme: signal(null),
           ensure: (): void => undefined,
           reload: (): Promise<void> => Promise.resolve(),
         },

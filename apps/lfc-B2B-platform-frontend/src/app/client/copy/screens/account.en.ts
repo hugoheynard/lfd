@@ -306,10 +306,14 @@ export const ACCOUNT_EN: AccountCopy = {
   mandateSend: 'Send back the signed mandate',
   mandateView: 'View the mandate',
   mandateDownload: 'Download the mandate',
-  mandateNoneBody:
-    'The SEPA business-to-business direct debit mandate authorises us to debit your invoices from the account in your bank details. Generate it: you can then print it, date it, sign it and send it back here.',
-  mandateAwaitingBody:
-    'Print the mandate, date and sign it, then upload a scan or photo here. Also register it with your bank: a business-to-business direct debit is only accepted once your bank has the mandate on record.',
+  mandateNoneBody: {
+    CORE: 'The SEPA direct debit mandate authorises us to debit your invoices from the account in your bank details. Generate it: you can then print it, date it, sign it and send it back here.',
+    B2B: 'The SEPA business-to-business direct debit mandate authorises us to debit your invoices from the account in your bank details. Generate it: you can then print it, date it, sign it and send it back here.',
+  },
+  mandateAwaitingBody: {
+    CORE: 'Print the mandate, date and sign it, then upload a scan or photo here.',
+    B2B: 'Print the mandate, date and sign it, then upload a scan or photo here. Also register it with your bank: a business-to-business direct debit is only accepted once your bank has the mandate on record.',
+  },
   mandateInReviewBody:
     'We are checking the signed mandate: it becomes active once our team has reviewed it. You can still replace the uploaded file.',
   mandateActiveBody:

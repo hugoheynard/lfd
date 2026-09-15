@@ -1,6 +1,7 @@
 import type { AddressFormLabels } from '@lfd/b2b-ui/address';
 import type { ContactFieldsLabels, DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
 import type { BankAccountFormLabels, MandateOptionsFormLabels } from '@lfd/b2b-ui/payment';
+import type { SepaScheme } from '@lfd/contracts';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
@@ -303,10 +304,17 @@ export interface AccountCopy {
   /** Voir / télécharger : les libellés des deux icônes, pour qui ne les voit pas. */
   readonly mandateView: string;
   readonly mandateDownload: string;
-  /** Le panneau, sans mandat en cours : ce que le mandat autorise, avant de le générer. */
-  readonly mandateNoneBody: string;
-  /** Le panneau, brouillon sans scan : imprimer, dater, signer, renvoyer, déclarer à sa banque. */
-  readonly mandateAwaitingBody: string;
+  /**
+   * Le panneau, sans mandat en cours : ce que le mandat autorise, avant de le
+   * générer — selon le schéma de l'ÉMETTEUR, puisque c'est lui qui frappera.
+   */
+  readonly mandateNoneBody: Readonly<Record<SepaScheme, string>>;
+  /**
+   * Le panneau, brouillon sans scan : imprimer, dater, signer, renvoyer — selon
+   * le schéma FIGÉ sur le mandat. 🔴 En CORE, ni « interentreprises » ni
+   * déclaration à la banque : elle n'existe qu'en B2B.
+   */
+  readonly mandateAwaitingBody: Readonly<Record<SepaScheme, string>>;
   readonly mandateInReviewBody: string;
   /** Un mandat actif ne se remplace pas d'ici : le changement de banque passe par le commercial. */
   readonly mandateActiveBody: string;

@@ -19,6 +19,7 @@ const DRAFT: CustomerMandateView = {
   id: 'mdt_1',
   reference: 'LFD-MDT-0001',
   status: 'draft',
+  scheme: 'CORE',
   hasProof: false,
   proofFileName: '',
   acceptedAt: null,

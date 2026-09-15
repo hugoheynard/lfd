@@ -310,10 +310,14 @@ export const ACCOUNT_IT: AccountCopy = {
   mandateSend: 'Rinvia il mandato firmato',
   mandateView: 'Vedi il mandato',
   mandateDownload: 'Scarica il mandato',
-  mandateNoneBody:
-    'Il mandato di addebito diretto SEPA B2B autorizza l’addebito delle vostre fatture sul conto delle vostre coordinate bancarie. Generatelo: potrete poi stamparlo, datarlo, firmarlo e rinviarcelo qui.',
-  mandateAwaitingBody:
-    'Stampate il mandato, datatelo e firmatelo, poi caricate qui la scansione o la foto. Registratelo anche presso la vostra banca: un addebito B2B è accettato solo quando la banca ha registrato il mandato.',
+  mandateNoneBody: {
+    CORE: 'Il mandato di addebito diretto SEPA autorizza l’addebito delle vostre fatture sul conto delle vostre coordinate bancarie. Generatelo: potrete poi stamparlo, datarlo, firmarlo e rinviarcelo qui.',
+    B2B: 'Il mandato di addebito diretto SEPA B2B autorizza l’addebito delle vostre fatture sul conto delle vostre coordinate bancarie. Generatelo: potrete poi stamparlo, datarlo, firmarlo e rinviarcelo qui.',
+  },
+  mandateAwaitingBody: {
+    CORE: 'Stampate il mandato, datatelo e firmatelo, poi caricate qui la scansione o la foto.',
+    B2B: 'Stampate il mandato, datatelo e firmatelo, poi caricate qui la scansione o la foto. Registratelo anche presso la vostra banca: un addebito B2B è accettato solo quando la banca ha registrato il mandato.',
+  },
   mandateInReviewBody:
     'Stiamo verificando il mandato firmato: sarà attivo appena il nostro servizio lo avrà controllato. Potete ancora sostituire il file caricato.',
   mandateActiveBody:

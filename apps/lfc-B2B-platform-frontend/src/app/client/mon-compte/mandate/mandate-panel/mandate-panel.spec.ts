@@ -1,7 +1,7 @@
 import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import type { CustomerMandateView } from '@lfd/contracts';
+import type { CustomerMandateView, SepaScheme } from '@lfd/contracts';
 import { FoldFileDropzoneComponent } from 'fold-ng';
 
 import { NotifyService } from '../../../../notify.service';
@@ -13,6 +13,7 @@ const DRAFT: CustomerMandateView = {
   id: 'mdt_1',
   reference: 'LFD-MDT-0001',
   status: 'draft',
+  scheme: 'CORE',
   hasProof: false,
   proofFileName: '',
   acceptedAt: null,
@@ -20,6 +21,7 @@ const DRAFT: CustomerMandateView = {
 
 interface Wire {
   mandate: WritableSignal<CustomerMandateView | null>;
+  issuerScheme: WritableSignal<SepaScheme | null>;
   generates: string[];
   proofs: { companyId: string; name: string }[];
   /** Ce que le serveur répond : `null` accepté, sinon son message. */
@@ -32,8 +34,16 @@ let wire: Wire;
 function boot(
   mandate: CustomerMandateView | null,
   data: MandatePanelData = { companyId: 'cmp_1', generate: false },
+  issuerScheme: SepaScheme | null = null,
 ): ComponentFixture<MandatePanel> {
-  wire = { mandate: signal(mandate), generates: [], proofs: [], answer: null, toasts: [] };
+  wire = {
+    mandate: signal(mandate),
+    issuerScheme: signal(issuerScheme),
+    generates: [],
+    proofs: [],
+    answer: null,
+    toasts: [],
+  };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [MandatePanel],
@@ -42,6 +52,7 @@ function boot(
         provide: ClientMandate,
         useValue: {
           mandate: wire.mandate,
+          issuerScheme: wire.issuerScheme,
           generate: (companyId: string): Promise<string | null> => {
             wire.generates.push(companyId);
             if (wire.answer === null) {
@@ -88,19 +99,52 @@ function drop(fixture: ComponentFixture<MandatePanel>, file: File): void {
 const SCAN = new File(['%PDF-1.7'], 'mandat-signe.pdf', { type: 'application/pdf' });
 
 describe('MandatePanel', () => {
+  describe('le texte suit le schéma', () => {
+    it('sans mandat, sous un émetteur interentreprises : le texte interentreprises', () => {
+      const fixture = boot(null, { companyId: 'cmp_1', generate: false }, 'B2B');
+
+      expect(el(fixture).textContent).toContain(FR.account.mandateNoneBody.B2B);
+    });
+
+    it('sans mandat, sous un émetteur CORE : rien sur « interentreprises »', () => {
+      const fixture = boot(null, { companyId: 'cmp_1', generate: false }, 'CORE');
+
+      expect(el(fixture).textContent).toContain(FR.account.mandateNoneBody.CORE);
+      expect(el(fixture).textContent).not.toContain('interentreprises');
+    });
+
+    it('brouillon B2B : la déclaration à la banque', () => {
+      const fixture = boot({ ...DRAFT, scheme: 'B2B' });
+
+      expect(el(fixture).textContent).toContain(FR.account.mandateAwaitingBody.B2B);
+    });
+
+    /**
+     * 🔴 Le schéma du MANDAT l'emporte sur celui de l'émetteur : le client signe
+     * le papier qu'il a imprimé, pas le réglage d'aujourd'hui.
+     */
+    it('brouillon CORE sous un émetteur passé B2B : le texte du papier, sans banque', () => {
+      const fixture = boot(DRAFT, { companyId: 'cmp_1', generate: false }, 'B2B');
+
+      expect(el(fixture).textContent).toContain(FR.account.mandateAwaitingBody.CORE);
+      expect(el(fixture).textContent).not.toContain('banque');
+      expect(el(fixture).textContent).not.toContain('interentreprises');
+    });
+  });
+
   it('ouvert depuis « Générer mon mandat », génère aussitôt et montre le brouillon', async () => {
     const fixture = boot(null, { companyId: 'cmp_1', generate: true });
     await settle(fixture);
 
     expect(wire.generates).toEqual(['cmp_1']);
     expect(el(fixture).textContent).toContain('RUM · LFD-MDT-0001');
-    expect(el(fixture).textContent).toContain(FR.account.mandateAwaitingBody);
+    expect(el(fixture).textContent).toContain(FR.account.mandateAwaitingBody.CORE);
   });
 
   it('sans mandat et sans génération demandée, explique et propose de générer', async () => {
     const fixture = boot(null);
     expect(wire.generates).toEqual([]);
-    expect(el(fixture).textContent).toContain(FR.account.mandateNoneBody);
+    expect(el(fixture).textContent).toContain(FR.account.mandateNoneBody.CORE);
 
     el(fixture).querySelector<HTMLButtonElement>('button.generate')?.click();
     await settle(fixture);
@@ -124,7 +168,7 @@ describe('MandatePanel', () => {
     const host = el(fixture);
 
     expect(host.textContent).toContain(FR.account.mandateAwaiting);
-    expect(host.textContent).toContain(FR.account.mandateAwaitingBody);
+    expect(host.textContent).toContain(FR.account.mandateAwaitingBody.CORE);
     expect(host.querySelector('button.view')?.textContent).toContain(FR.account.mandateView);
     expect(host.querySelector('button.download')?.textContent).toContain(
       FR.account.mandateDownload,

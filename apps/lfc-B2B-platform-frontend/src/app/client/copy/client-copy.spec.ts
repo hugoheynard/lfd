@@ -74,6 +74,28 @@ describe('dictionnaires de l’app cliente', () => {
     }
   });
 
+  /**
+   * 🔴 **Un mandat CORE ne se déclare pas à la banque.** Le texte d'avant les
+   * deux schémas le demandait à tout le monde : sous CORE, c'est réclamer au
+   * client une démarche que sa banque ne connaît pas (plan-mandat-deux-schemas §3.5).
+   */
+  it('en CORE, ni « interentreprises » ni déclaration à la banque, dans les trois langues', () => {
+    const forbidden = {
+      fr: /interentreprises|banque/iu,
+      en: /business-to-business|B2B|register it with your bank/iu,
+      it: /B2B|presso la vostra banca/iu,
+    } as const;
+    for (const [code, dict] of Object.entries(DICTS)) {
+      const pattern = forbidden[code as keyof typeof forbidden];
+      expect(dict.account.mandateNoneBody.CORE, `${code}.mandateNoneBody.CORE`).not.toMatch(
+        pattern,
+      );
+      expect(dict.account.mandateAwaitingBody.CORE, `${code}.mandateAwaitingBody.CORE`).not.toMatch(
+        pattern,
+      );
+    }
+  });
+
   it('remplace les jetons, et laisse le reste intact', () => {
     expect(fill('Ouvrez le message envoyé à {email} — une heure.', { email: 'a@b.fr' })).toBe(
       'Ouvrez le message envoyé à a@b.fr — une heure.',

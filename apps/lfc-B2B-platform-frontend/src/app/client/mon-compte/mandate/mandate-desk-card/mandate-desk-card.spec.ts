@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { CustomerMandateView } from '@lfd/contracts';
+import type { CustomerMandateView, SepaScheme } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
@@ -15,6 +15,7 @@ const DRAFT: CustomerMandateView = {
   id: 'mdt_1',
   reference: 'LFD-MDT-0001',
   status: 'draft',
+  scheme: 'CORE',
   hasProof: false,
   proofFileName: '',
   acceptedAt: null,
@@ -28,7 +29,11 @@ interface Wire {
 
 let wire: Wire;
 
-function render(status: MandateReadStatus, mandate: CustomerMandateView | null): HTMLElement {
+function render(
+  status: MandateReadStatus,
+  mandate: CustomerMandateView | null,
+  issuerScheme: SepaScheme | null = null,
+): HTMLElement {
   wire = { ensured: [], reloads: [], documents: [] };
   const fixture = bootCard(
     MandateDeskCard,
@@ -39,6 +44,7 @@ function render(status: MandateReadStatus, mandate: CustomerMandateView | null):
         useValue: {
           status: signal(status),
           mandate: signal(mandate),
+          issuerScheme: signal(issuerScheme),
           ensure: (id: string) => wire.ensured.push(id),
           reload: (id: string) => {
             wire.reloads.push(id);
@@ -64,6 +70,21 @@ afterEach(() => {
 });
 
 describe('MandateDeskCard', () => {
+  /** Plan-mandat-deux-schemas §10 Q2 : le mandat interentreprises n'imprime ni la zone 14 ni la 19. */
+  it('sous un émetteur interentreprises, ne propose pas les options', () => {
+    for (const mandate of [null, DRAFT]) {
+      const el = render('ready', mandate, 'B2B');
+      expect(el.querySelector('button.options')).toBeNull();
+    }
+  });
+
+  it('sous un émetteur CORE, ou tant que le schéma n’est pas lu, propose les options', () => {
+    for (const scheme of ['CORE', null] as const) {
+      const el = render('ready', DRAFT, scheme);
+      expect(el.querySelector('button.options')).not.toBeNull();
+    }
+  });
+
   it('lit le mandat partagé, et sans mandat propose « Générer mon mandat »', () => {
     const el = render('ready', null);
 
@@ -107,7 +128,7 @@ describe('MandateDeskCard', () => {
     el.querySelector<HTMLButtonElement>('button.action')?.click();
     expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', generate: false });
     // Le texte détaillé et le dépôt sont dans le panneau, pas sur la carte.
-    expect(el.textContent).not.toContain(FR.account.mandateAwaitingBody);
+    expect(el.textContent).not.toContain(FR.account.mandateAwaitingBody.CORE);
     expect(el.querySelector('fold-file-dropzone')).toBeNull();
   });
 
