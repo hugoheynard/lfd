@@ -1,7 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { DeferredTerm, MandateSectionView, PaymentMandateView } from '@lfd/contracts';
+import type {
+  DeferredTerm,
+  MandateSectionView,
+  MintBlocker,
+  PaymentMandateView,
+  SepaScheme,
+} from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { MandatesService } from '../mandat/mandates.service';
@@ -38,10 +44,14 @@ function activateButton(host: HTMLElement): HTMLButtonElement | undefined {
 }
 
 /** Service de mandat doublé — aucun appel réseau, aucun Stripe. */
-function fakeMandates(mandate: PaymentMandateView | null): Partial<MandatesService> {
+function fakeMandates(
+  mandate: PaymentMandateView | null,
+  mintBlockers: readonly MintBlocker[] = [],
+  issuerScheme: SepaScheme | null = null,
+): Partial<MandatesService> {
   return {
     section: (): Promise<MandateSectionView> =>
-      Promise.resolve({ mandate, publishableKey: 'pk_test' }),
+      Promise.resolve({ mandate, publishableKey: 'pk_test', mintBlockers, issuerScheme }),
   };
 }
 
@@ -50,12 +60,21 @@ function render(options: {
   readonly requestedTerm?: DeferredTerm | null;
   readonly companyId?: string | null;
   readonly mandate?: PaymentMandateView | null;
+  readonly mintBlockers?: readonly MintBlocker[];
+  readonly issuerScheme?: SepaScheme | null;
 }): Rendered {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
-      { provide: MandatesService, useValue: fakeMandates(options.mandate ?? null) },
+      {
+        provide: MandatesService,
+        useValue: fakeMandates(
+          options.mandate ?? null,
+          options.mintBlockers ?? [],
+          options.issuerScheme ?? null,
+        ),
+      },
     ],
   });
 
@@ -360,5 +379,99 @@ describe('section Moyens de paiement — le schéma du mandat', () => {
     await settle();
 
     expect(host.querySelector('fold-badge.pm-scheme')?.textContent).toContain('SEPA CORE');
+  });
+});
+
+describe('section Moyens de paiement — les mentions manquantes du mandat', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  /** Le bouton « Frapper le mandat », s'il est rendu. */
+  const mintButton = (host: HTMLElement): HTMLButtonElement | undefined =>
+    Array.from(host.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Frapper le mandat'),
+    );
+
+  it('désactive « Frapper » et nomme chaque mention manquante, avec l’endroit où la saisir', async () => {
+    const { host, section, settle } = render({
+      companyId: 'cmp_1',
+      mintBlockers: ['siren_missing', 'holder_legal_form_missing'],
+    });
+    await settle();
+
+    expect(mintButton(host)?.disabled).toBe(true);
+    const callout = host.querySelector('fold-callout[variant="warning"]');
+    expect(callout?.textContent).toContain('le SIREN — Identité légale');
+    expect(callout?.textContent).toContain(
+      'la civilité ou forme juridique du titulaire du compte — Coordonnées bancaires',
+    );
+    expect(section['canMint']()).toBe(false);
+  });
+
+  it('propose le geste qui saisit chaque mention : l’identité légale, et le RIB', async () => {
+    const { host, section, settle } = render({
+      companyId: 'cmp_1',
+      mintBlockers: ['company_name_missing', 'bank_account_missing'],
+    });
+    await settle();
+    const asked: string[] = [];
+    section.editIdentity.subscribe(() => asked.push('identity'));
+
+    const gestures = Array.from(host.querySelectorAll('fold-callout button'));
+    expect(gestures.map((button) => button.textContent?.trim())).toEqual([
+      "Compléter l'identité légale",
+      'Aller au RIB',
+    ]);
+    (gestures[0] as HTMLButtonElement).click();
+    expect(asked).toEqual(['identity']);
+  });
+
+  it('sans mention manquante, « Frapper » est armé et aucune liste ne s’affiche', async () => {
+    const { host, section, settle } = render({ companyId: 'cmp_1' });
+    await settle();
+
+    expect(mintButton(host)?.disabled).toBe(false);
+    expect(host.querySelector('fold-callout[variant="warning"]')).toBeNull();
+    expect(section['canMint']()).toBe(true);
+  });
+
+  it('l’émetteur manquant se dit, sans geste : il ne se saisit pas sur la fiche client', async () => {
+    const { host, settle } = render({ companyId: 'cmp_1', mintBlockers: ['issuer_missing'] });
+    await settle();
+
+    const callout = host.querySelector('fold-callout[variant="warning"]');
+    expect(callout?.textContent).toContain('Comptabilité › Entités juridiques');
+    expect(callout?.querySelectorAll('button').length).toBe(0);
+  });
+
+  describe('la forme juridique du titulaire, exigée selon le schéma de l’émetteur', () => {
+    it('interentreprises : le RIB l’exige', async () => {
+      const { section, settle } = render({ companyId: 'cmp_1', issuerScheme: 'B2B' });
+      await settle();
+
+      expect(section['holderLegalFormRequired']()).toBe(true);
+    });
+
+    it('CORE ou schéma inconnu : le RIB ne l’exige pas, le serveur reste le garde', async () => {
+      for (const issuerScheme of ['CORE', null] as const) {
+        TestBed.resetTestingModule();
+        const { section, settle } = render({ companyId: 'cmp_1', issuerScheme });
+        await settle();
+
+        expect(section['holderLegalFormRequired']()).toBe(false);
+      }
+    });
+  });
+
+  it('ne liste rien sous un brouillon : il n’y a rien à frapper', async () => {
+    const { host, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, status: 'draft', acceptedAt: null },
+      mintBlockers: ['siren_missing'],
+    });
+    await settle();
+
+    expect(host.querySelector('fold-callout[variant="warning"]')).toBeNull();
   });
 });

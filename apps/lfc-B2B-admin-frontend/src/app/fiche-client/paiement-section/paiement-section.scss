@@ -151,3 +151,9 @@ fold-danger-zone {
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
+
+/* Les mentions manquantes, une par ligne : une liste se relit, une phrase à virgules non. */
+.pm-blockers {
+  margin: 0;
+  padding-left: var(--fold-space-lg);
+}

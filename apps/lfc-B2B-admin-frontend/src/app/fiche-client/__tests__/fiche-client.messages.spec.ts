@@ -69,6 +69,7 @@ describe('rognage de la saisie', () => {
         enseigne: ' Le Comptoir  ',
         formeJuridique: ' SAS ',
         siret: ' 81245678900021 ',
+        siren: ' 732829320 ',
         vatNumber: '  ',
       }),
     ).toEqual({
@@ -76,6 +77,7 @@ describe('rognage de la saisie', () => {
       enseigne: 'Le Comptoir',
       formeJuridique: 'SAS',
       siret: '81245678900021',
+      siren: '732829320',
       vatNumber: '',
     });
   });

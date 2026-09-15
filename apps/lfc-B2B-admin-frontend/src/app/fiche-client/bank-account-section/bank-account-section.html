@@ -11,6 +11,9 @@
 <p class="ba-account">
   @if (account(); as saved) {
     Compte enregistré&nbsp;: •••• {{ saved.last4 }} · BIC {{ saved.bic }} · {{ saved.holder }}
+    @if (saved.holderLegalForm) {
+      ({{ saved.holderLegalForm }})
+    }
   } @else {
     Aucun RIB enregistré pour ce client.
   }
@@ -31,7 +34,7 @@
 
 <!-- Les champs : le formulaire partagé avec le panneau RIB du client. L'IBAN y
      entre vide, le reste se réaffiche (`bankAccountDraftFrom`). -->
-<lfd-bank-account-form [(value)]="draft" />
+<lfd-bank-account-form [(value)]="draft" [holderLegalFormRequired]="holderLegalFormRequired()" />
 
 <div class="ba-actions">
   <button

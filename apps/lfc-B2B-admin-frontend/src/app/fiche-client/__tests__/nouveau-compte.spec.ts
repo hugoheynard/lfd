@@ -81,6 +81,7 @@ function fill(page: InformationsPage): void {
     enseigne: '  Le Comptoir  ',
     formeJuridique: '',
     siret: '',
+    siren: '',
     vatNumber: '',
   });
   page['holder'].set({
@@ -128,6 +129,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
       enseigne: 'Le Comptoir',
       formeJuridique: '',
       siret: '',
+      siren: '',
       vatNumber: '',
     });
 
@@ -143,6 +145,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
       enseigne: 'Le Comptoir',
       formeJuridique: '',
       siret: '',
+      siren: '',
       vatNumber: '',
     });
 
@@ -154,6 +157,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
         enseigne: 'Le Comptoir',
         formeJuridique: '',
         siret: '',
+        siren: '',
         vatNumber: '',
       },
       contact: undefined,
@@ -171,6 +175,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
         enseigne: 'Le Comptoir',
         formeJuridique: '',
         siret: '',
+        siren: '',
         vatNumber: '',
       },
       contact: {

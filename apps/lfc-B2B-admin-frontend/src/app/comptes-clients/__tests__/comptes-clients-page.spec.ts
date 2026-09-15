@@ -23,6 +23,7 @@ function makeCompany(
     enseigne: '',
     formeJuridique: 'SAS',
     siret: '12345678901234',
+    siren: '',
     vatNumber: 'FR12345678901',
     status,
     grantedTerms: [],

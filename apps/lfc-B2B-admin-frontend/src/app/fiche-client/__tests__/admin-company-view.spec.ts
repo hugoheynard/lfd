@@ -16,6 +16,7 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     enseigne: '',
     formeJuridique: 'SAS',
     siret: '81245678900021',
+    siren: '',
     vatNumber: '',
     status: 'pending',
     grantedTerms: [],

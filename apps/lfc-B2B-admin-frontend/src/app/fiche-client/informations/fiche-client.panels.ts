@@ -45,6 +45,7 @@ export class FicheClientPanels {
           raisonSociale: company.raisonSociale,
           formeJuridique: company.formeJuridique,
           siret: company.siret,
+          siren: company.siren,
         },
       }).closed;
     }

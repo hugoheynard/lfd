@@ -320,6 +320,7 @@ export function trimIdentity(draft: CompanyIdentityDraft): CompanyIdentityDraft 
     enseigne: draft.enseigne.trim(),
     formeJuridique: draft.formeJuridique.trim(),
     siret: draft.siret.trim(),
+    siren: draft.siren.trim(),
     vatNumber: draft.vatNumber.trim(),
   };
 }

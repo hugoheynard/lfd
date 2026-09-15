@@ -1,5 +1,6 @@
 import { COMPANY_ROLE_LABELS, type CompanyMemberRole } from '@lfd/contracts';
 import {
+  formatSiren,
   formatSiret,
   type CompanyBadgeTone,
   type CompanyContactCardView,
@@ -37,6 +38,7 @@ export function toIdentityView(company: AdminCompanyDetail): CompanyIdentityView
     enseigne: company.enseigne,
     formeJuridique: company.formeJuridique,
     siret: formatSiret(company.siret),
+    siren: formatSiren(company.siren),
     vatNumber: company.vatNumber,
     vatMissing: company.vatNumberRequired && company.vatNumber.trim() === '',
     // Ce qui manque au greffe — la même liste que la synthèse du haut de page,

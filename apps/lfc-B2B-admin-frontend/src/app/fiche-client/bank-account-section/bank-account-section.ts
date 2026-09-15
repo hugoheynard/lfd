@@ -13,6 +13,8 @@ import {
   bankAccountDraftFrom,
   changesMandatedAccount,
   EMPTY_BANK_ACCOUNT_DRAFT,
+  holderLegalFormFits,
+  holderLegalFormProvided,
   isBankAccountComplete,
   toBankAccountPayload,
   withoutIban,
@@ -72,6 +74,13 @@ export class BankAccountSection {
   readonly companyId = input<string | null>(null);
   /** Les 4 chiffres du compte que le mandat ACTIF nomme, `''` s'il n'y en a pas. */
   readonly mandateLast4 = input('');
+  /**
+   * La civilité ou forme juridique du titulaire est-elle exigée ? Vrai quand
+   * l'émetteur frappe en interentreprises — la section paiement le lit déjà
+   * sur la section mandat (`issuerScheme`). Faux par défaut : inconnu ⇒ non
+   * requise, le serveur reste le garde.
+   */
+  readonly holderLegalFormRequired = input(false);
 
   /**
    * Le RIB connu, à chaque lecture et après chaque écriture — `null` s'il n'y
@@ -100,8 +109,19 @@ export class BankAccountSection {
     });
   }
 
-  /** Le RIB se recopie en entier, complément excepté (`isBankAccountComplete`). */
-  protected readonly canSave = computed(() => isBankAccountComplete(this.draft()));
+  /**
+   * Le RIB se recopie en entier, complément excepté (`isBankAccountComplete`),
+   * et la civilité ou forme juridique tient dans sa case de 40 caractères —
+   * présente, quand le mandat interentreprises l'exige.
+   */
+  protected readonly canSave = computed(() => {
+    const draft = this.draft();
+    return (
+      isBankAccountComplete(draft) &&
+      holderLegalFormFits(draft) &&
+      holderLegalFormProvided(draft, this.holderLegalFormRequired())
+    );
+  });
 
   /** Enregistrer va-t-il désigner un autre compte que celui du mandat actif ? */
   protected readonly changesMandatedAccount = computed(() =>
