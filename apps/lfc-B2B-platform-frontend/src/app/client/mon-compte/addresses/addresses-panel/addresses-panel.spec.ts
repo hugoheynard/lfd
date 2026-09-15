@@ -12,10 +12,12 @@ import { afterEach, vi } from 'vitest';
 import { NotifyService } from '../../../../notify.service';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { FR } from '../../../copy/fr';
+import { DELIVERY_PROCEDURE_FR } from '../../../copy/screens/delivery-procedure.fr';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { accountWith, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
+import { DeliveryProcedureDialog } from '../delivery-procedure-dialog/delivery-procedure-dialog';
 import { AddressesPanel, type AddressesPanelData } from './addresses-panel';
 
 const CHALET: DeliveryAddressView = {
@@ -27,6 +29,7 @@ const CHALET: DeliveryAddressView = {
   ville: "Val d'Isère",
   pays: 'France',
   isDefault: true,
+  procedureStepCount: 0,
   specs: {
     note: '',
     slots: { mode: 'everyday', slot: null },
@@ -336,10 +339,11 @@ describe('AddressesPanel', () => {
     ]);
     expect(el().querySelectorAll('.delivery button, .delivery fold-inline-confirm').length).toBe(0);
     expect(el().textContent).not.toContain(FR.account.addressRemove);
-    // Le seul geste du carnet : ajouter.
+    // Les seuls gestes du carnet : la procédure de chaque adresse, et ajouter.
+    const toWrite = `${DELIVERY_PROCEDURE_FR.entry} · ${DELIVERY_PROCEDURE_FR.toWrite}`;
     expect(
       Array.from(el().querySelectorAll('button[foldButton]')).map((b) => b.textContent?.trim()),
-    ).toEqual([FR.account.addressAdd]);
+    ).toEqual([toWrite, toWrite, FR.account.addressAdd]);
   });
 
   it('aux rôles qui ne gèrent pas, une ligne ne s’ouvre pas', () => {
@@ -349,6 +353,30 @@ describe('AddressesPanel', () => {
     );
     expect(el().querySelectorAll('button.delivery').length).toBe(0);
     expect(el().querySelectorAll('div.delivery').length).toBe(2);
+  });
+
+  /**
+   * Plan `procedure-de-livraison` §2.6. En pile, c'est ici que se lisent les
+   * livraisons une par une : l'entrée de la procédure y suit chaque ligne, et
+   * s'ouvre à tout membre — empilée, la liste reste dessous.
+   */
+  it('la procédure de chaque livraison s’ouvre, empilée, même sans gérer la société', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(true));
+    fixture = boot(
+      { ...DELIVERY, canManage: false },
+      { billing: SIEGE, deliveries: [{ ...CHALET, procedureStepCount: 2 }, BUREAU] },
+    );
+
+    const entries = Array.from(el().querySelectorAll<HTMLButtonElement>('button.procedure'));
+    expect(entries.map((b) => b.textContent?.trim())).toEqual([
+      `${DELIVERY_PROCEDURE_FR.entry} · 2 étapes`,
+      `${DELIVERY_PROCEDURE_FR.entry} · ${DELIVERY_PROCEDURE_FR.stepsNone}`,
+    ]);
+
+    entries[0]?.click();
+    expect(openedPanel()?.component).toBe(DeliveryProcedureDialog);
+    expect(openedPanel()?.side).toBe('bottom');
+    expect(openedPanel()?.data).toMatchObject({ companyId: 'cmp_1', address: { id: 'adr_1' } });
   });
 
   it('accorde le décompte : « 2 adresses », puis « 1 adresse »', () => {

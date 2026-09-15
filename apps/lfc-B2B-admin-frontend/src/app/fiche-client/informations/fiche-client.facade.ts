@@ -206,6 +206,17 @@ export class FicheClientFacade {
     this.afterPanel((company) => this.panels.openDelivery(company, address));
   }
 
+  /** La procédure de livraison d'une adresse ; relit la fiche si son nombre d'étapes a bougé. */
+  async openProcedure(address: DeliveryAddressView): Promise<void> {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    if (await this.panels.openProcedure(company, address)) {
+      await this.store.load();
+    }
+  }
+
   /** Le panneau d'un interlocuteur existant (`null` = le détenteur). */
   editContact(contactId: string | null): void {
     this.afterPanel((company) => this.panels.openContact(company, contactId, false));

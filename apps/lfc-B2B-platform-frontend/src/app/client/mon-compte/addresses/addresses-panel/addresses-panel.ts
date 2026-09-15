@@ -11,7 +11,9 @@ import {
 
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
+import { ClientLocale } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
+import { deliveryProcedureCopy } from '../../../copy/screens/delivery-procedure.copy';
 import { panelSide } from '../../../panel-side';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
@@ -21,8 +23,10 @@ import {
   deliveryCountLabel,
   deliveryRows,
   postalLine,
+  procedureEntryLabel,
 } from '../addresses-section';
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
+import { DeliveryProcedureDialog } from '../delivery-procedure-dialog/delivery-procedure-dialog';
 
 /** Charge d'ouverture : la société, et si l'on peut écrire son carnet. */
 export interface AddressesPanelData {
@@ -61,6 +65,12 @@ export interface AddressesPanelData {
  * compris la défaut qu'il promeut quand on archive la précédente.
  *
  * Le refus d'une écriture d'adresse s'affiche dans son dialogue.
+ *
+ * ## La procédure de livraison, sous chaque ligne
+ *
+ * « Procédure de livraison · N étapes » suit chaque livraison, en bouton frère
+ * de la ligne (un bouton ne se niche pas dans un bouton), et ouvre son dialogue
+ * à TOUS les membres : c'est ici que la pile lit les livraisons une par une.
  */
 @Component({
   selector: 'app-addresses-panel',
@@ -87,6 +97,8 @@ export class AddressesPanel {
   readonly data = input.required<AddressesPanelData>();
 
   protected readonly t = inject(ClientCopyService).t;
+  private readonly locale = inject(ClientLocale);
+  private readonly procedureCopy = computed(() => deliveryProcedureCopy(this.locale.current()));
   private readonly addresses = inject(ClientAddresses);
   private readonly client = inject(ClientCompany);
   private readonly service = inject(ServicePoints);
@@ -102,7 +114,14 @@ export class AddressesPanel {
       this.addresses.deliveries(),
       (codePostal) => this.service.zoneFor(codePostal),
       this.t().account.addressNoZone,
-    ),
+    ).map((row) => ({
+      ...row,
+      procedure: procedureEntryLabel(
+        row.procedureStepCount,
+        this.data().canManage,
+        this.procedureCopy(),
+      ),
+    })),
   );
 
   protected readonly deliveryCount = computed(() =>
@@ -122,6 +141,19 @@ export class AddressesPanel {
   protected editDelivery(addressId: string): Promise<void> {
     const address = this.addresses.deliveries().find((a) => a.id === addressId);
     return address === undefined ? Promise.resolve() : this.openDelivery(address);
+  }
+
+  /**
+   * La procédure de livraison d'une adresse, empilée sur la liste — pour TOUT
+   * membre : qui ne gère pas la lit, sans écrire. Le dialogue relit le carnet
+   * quand le nombre d'étapes change.
+   */
+  protected openProcedure(addressId: string): void {
+    const company = this.client.company();
+    const address = this.addresses.deliveries().find((a) => a.id === addressId);
+    if (company !== null && address !== undefined) {
+      DeliveryProcedureDialog.open(this.panels, company, address, true);
+    }
   }
 
   /**

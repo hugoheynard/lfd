@@ -34,6 +34,18 @@
           <span class="delivery-line"
             >{{ address.line }} · {{ address.zone }} · {{ address.fee }}</span
           >
+          <button
+            foldButton
+            class="procedure"
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            icon="door"
+            type="button"
+            (click)="openProcedure(address.id)"
+          >
+            {{ address.procedure }}
+          </button>
           @if (canWrite()) {
             <button
               foldButton

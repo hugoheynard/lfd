@@ -48,6 +48,16 @@ export const ACCOUNT_FACTS = {
   deliveryAddressRemoved: "company.delivery_address_removed",
   /** Où l'on livre par défaut — donc où partira la prochaine commande. */
   defaultDeliverySet: "company.default_delivery_set",
+  /**
+   * Un agent a modifié la procédure de livraison d'une adresse — ajouté,
+   * refait, supprimé ou réordonné une étape. Un livreur envoyé à la mauvaise
+   * porte se remonte à qui a écrit la consigne. Préfixé `company.` comme les
+   * autres : le journal range un fait dans son module PAR SON PRÉFIXE
+   * (`growth/domain/activity-module.ts`), et un `delivery_procedure.` n'aurait
+   * appartenu à aucun — invisible dans le filtre « comptes » (vérifié le
+   * 2026-09-15).
+   */
+  deliveryProcedureEdited: "company.delivery_procedure_edited_by_staff",
   /** Retrait ou livraison par défaut, réglé par un agent. */
   fulfillmentPreferenceSet: "company.fulfillment_preference_set",
   contactAdded: "company.contact_added",

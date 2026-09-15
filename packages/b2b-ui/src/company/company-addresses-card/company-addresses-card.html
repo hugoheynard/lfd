@@ -51,7 +51,7 @@
                   }
                 </lfd-address>
 
-                @if (canManage()) {
+                @if (canManage() || a.procedureStepCount > 0) {
                   <fold-dropdown placement="bottom-end" ariaLabel="Actions de l'adresse">
                     <button
                       foldPopoverTrigger="menu"
@@ -61,15 +61,22 @@
                     >
                       <fold-icon name="more-vertical" [size]="18" />
                     </button>
-                    @if (!a.isDefault) {
-                      <fold-dropdown-item icon="star" (selected)="setDefault.emit(a)">
-                        Définir par défaut
+                    @if (canManage()) {
+                      @if (!a.isDefault) {
+                        <fold-dropdown-item icon="star" (selected)="setDefault.emit(a)">
+                          Définir par défaut
+                        </fold-dropdown-item>
+                      }
+                      <fold-dropdown-item icon="edit" (selected)="editDelivery.emit(a)">
+                        Modifier
                       </fold-dropdown-item>
                     }
-                    <fold-dropdown-item icon="edit" (selected)="editDelivery.emit(a)">
-                      Modifier
+                    <!-- Hors gestion, la procédure se consulte encore quand elle existe :
+                         le livreur qui appelle pour un code d'accès n'attend pas un gestionnaire. -->
+                    <fold-dropdown-item icon="list" (selected)="openProcedure.emit(a)">
+                      Procédure de livraison
                     </fold-dropdown-item>
-                    @if (canRemove(a)) {
+                    @if (canManage() && canRemove(a)) {
                       <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove(a)">
                         Supprimer
                       </fold-dropdown-item>
@@ -77,6 +84,13 @@
                   </fold-dropdown>
                 }
               </div>
+
+              @if (a.procedureStepCount > 0) {
+                <p class="detail-line">
+                  <fold-icon name="list" [size]="15" />
+                  <span>{{ procedureLine(a) }}</span>
+                </p>
+              }
 
               @if (!isUsable(a)) {
                 <fold-callout variant="warning">

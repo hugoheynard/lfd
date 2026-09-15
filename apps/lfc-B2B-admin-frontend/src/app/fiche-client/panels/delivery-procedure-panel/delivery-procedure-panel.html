@@ -1,0 +1,15 @@
+<fold-panel-header title="Procédure de livraison" [subtitle]="subtitle()" />
+
+<fold-panel-body>
+  <lfd-delivery-procedure-editor
+    [addressId]="data().address.id"
+    [canEdit]="true"
+    (stepCountChange)="data().onStepCountChange($event)"
+  />
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton type="button" emphasis="outline" intent="neutral" (click)="close()">
+    Fermer
+  </button>
+</fold-panel-footer>

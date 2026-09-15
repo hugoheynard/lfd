@@ -26,6 +26,7 @@ const CHALET: DeliveryAddressView = {
   ville: "Val d'Isère",
   pays: 'France',
   isDefault: true,
+  procedureStepCount: 0,
   specs: {
     note: '',
     slots: { mode: 'everyday', slot: null },

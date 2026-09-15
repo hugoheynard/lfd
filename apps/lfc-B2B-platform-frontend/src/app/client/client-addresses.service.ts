@@ -152,6 +152,15 @@ export class ClientAddresses {
   }
 
   /**
+   * Relit le carnet d'une société. Pour ce qui change une adresse sans passer
+   * par ce service — la procédure de livraison écrit par sa propre passerelle,
+   * et c'est ici que se lit son nombre d'étapes (`procedureStepCount`).
+   */
+  refresh(companyId: string): Promise<void> {
+    return this.load(companyId);
+  }
+
+  /**
    * Écrit, puis relit le carnet : c'est la relecture qui fait apparaître
    * l'adresse, avec le tri du serveur (la défaut en tête), pas une insertion
    * locale qui pourrait s'en écarter.

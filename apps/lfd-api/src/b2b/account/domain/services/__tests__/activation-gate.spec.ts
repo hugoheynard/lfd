@@ -85,6 +85,7 @@ const COMPLETE: Partial<AdminCompanyDetailView> = {
         ville: "Paris",
         pays: "France",
         isDefault: true,
+        procedureStepCount: 0,
       },
     ],
   },
