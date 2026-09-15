@@ -355,16 +355,16 @@ résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes d
 
 ### Ce qu'on sait remplir — au 2026-09-12 au soir
 
-| Champ XML                                          | Source                                      | État |
-| -------------------------------------------------- | ------------------------------------------- | ---- |
-| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                               | ✅   |
-| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                   | ✅   |
-| `Dbtr/Nm`                                          | `Company`                                   | ✅   |
-| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture | ✅   |
-| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)         | ✅   |
-| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt`                 | ✅   |
-| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                  | ✅   |
-| `EndToEndId`                                       | cycle + rang dans le lot                    | ✅   |
+| Champ XML                                          | Source                                                          | État |
+| -------------------------------------------------- | --------------------------------------------------------------- | ---- |
+| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                                                   | ✅   |
+| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                                       | ✅   |
+| `Dbtr/Nm`                                          | `Company`                                                       | ✅   |
+| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture                     | ✅   |
+| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)                             | ✅   |
+| `MndtRltdInf/DtOfSgntr`                            | ❌ non écrit — `../todos/todo-mandat-restes-de-la-frappe.md` §1 | ❌   |
+| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                                      | ✅   |
+| `EndToEndId`                                       | cycle + rang dans le lot                                        | ✅   |
 
 Les deux tables du débiteur appartiennent à `payments` : le lot les lit par le
 port `DebtorMandateReader`, déclaré par la comptabilité et implémenté côté

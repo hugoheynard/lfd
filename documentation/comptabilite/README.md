@@ -47,18 +47,17 @@ juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 
 ### Le mandat SEPA — trois choses portent ce nom
 
-| Ce qui existe                     | Où                                               | État                                                                                              |
-| --------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Le mandat **Stripe**              | `src/b2b/payments/`                              | **gelé** — plus aucun n'est créé depuis le 2026-09-10                                             |
-| La **fiche vierge** au modèle EPC | `accounting/domain/services/sepa-mandate-pdf.ts` | **livrée** — préremplie de notre bloc créancier, marquée EXEMPLE, donc **non signable à dessein** |
-| Le mandat **direct**, nominatif   | —                                                | **à faire** : c'est lui qui débloque tout le reste                                                |
+| Ce qui existe                   | Où                                               | État                                                                                                               |
+| ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Le mandat **Stripe**            | `src/b2b/payments/`                              | **gelé** — plus aucun n'est créé depuis le 2026-09-10                                                              |
+| Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                      |
+| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans `../todos/todo-mandat-restes-de-la-frappe.md` |
 
-### La RUM — écrite, branchée à rien
+### La RUM
 
-🔴 `src/b2b/payments/domain/value-objects/rum.ts` est complet et testé, et
-**aucun fichier du dépôt ne l'importe** _(vérifié le 2026-09-12)_. Né avec le
-socle direct, puis le chantier a été mis en pause. **Ne pas le réécrire en
-croyant qu'il manque.**
+Frappée à chaque mandat par `Rum.mint`
+(`src/b2b/payments/domain/value-objects/rum.ts`) — sa forme et ses bornes sont
+dans [`rum.md`](rum.md).
 
 ## Ce qui n'est pas ici
 
