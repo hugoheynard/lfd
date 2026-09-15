@@ -1,9 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { instantToLocal } from '@lfd/contracts';
 
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
 import { ClientChrome } from '../../client-chrome.service';
+import { ClientLocale } from '../../client-locale.service';
+import { serviceDayLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
@@ -33,6 +36,32 @@ export class PanierPage {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   protected readonly choice = this.order.choice;
+  private readonly locale = inject(ClientLocale);
+
+  /**
+   * « demain · créneau choisi », avec la VRAIE journée : celle que le serveur a
+   * accordée au point, et non « demain » écrit en dur.
+   *
+   * Aujourd'hui se lit à l'horloge du navigateur, à Paris : c'est un libellé, et
+   * seul un onglet laissé ouvert passé minuit pourrait le décaler d'un mot.
+   */
+  protected readonly slotNote = computed(() => {
+    const service = this.choice();
+    if (service === null) {
+      return '';
+    }
+    const c = this.t().cart;
+    const day = serviceDayLabel(
+      service.date,
+      instantToLocal(new Date()).day,
+      this.locale.current(),
+      {
+        today: c.dayToday,
+        tomorrow: c.dayTomorrow,
+      },
+    );
+    return fill(c.slotNote, { day });
+  });
 
   /**
    * Le bouton nomme la SUITE, et elle dépend de ce qui manque : un panier vide

@@ -313,7 +313,11 @@ export interface ClientCopy {
     readonly intro: string;
     readonly pickupGroup: string;
     readonly deliveryGroup: string;
+    /** `{day}` = la journée de service du serveur : « demain », « jeudi 17 septembre ». */
     readonly slotNote: string;
+    /** La journée de service quand c'est aujourd'hui, puis demain — un mot plutôt qu'une date. */
+    readonly dayToday: string;
+    readonly dayTomorrow: string;
     /** Le lien du rappel de service : rouvre le mode ET l'heure, puis ramène au panier. */
     readonly changeService: string;
     readonly subtotal: string;
