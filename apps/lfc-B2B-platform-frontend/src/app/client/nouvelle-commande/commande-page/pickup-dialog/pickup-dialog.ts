@@ -92,7 +92,7 @@ export class PickupDialog {
       tag: point.isDefault ? c.habit : '',
       offer:
         point.discount === null
-          ? c.shopPrice
+          ? c.proPrice
           : fill(c.discountTag, { value: discountLabel(point.discount) }),
       hasOffer: point.discount !== null,
     }));

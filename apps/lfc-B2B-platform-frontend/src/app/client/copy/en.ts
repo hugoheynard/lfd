@@ -307,7 +307,7 @@ export const EN: ClientCopy = {
     habit: 'your usual',
     readyFrom: 'Ready from {time}',
     discountTag: '−{value} on everything',
-    shopPrice: 'Shop price',
+    proPrice: 'Trade price',
     cta: 'Pick my time',
   },
   addressDialog: {

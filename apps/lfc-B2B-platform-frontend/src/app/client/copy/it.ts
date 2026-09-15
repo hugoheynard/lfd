@@ -310,7 +310,7 @@ export const IT: ClientCopy = {
     habit: 'la sua abitudine',
     readyFrom: 'Pronto dalle {time}',
     discountTag: '−{value} su tutto',
-    shopPrice: 'Prezzo bottega',
+    proPrice: 'Prezzo pro',
     cta: 'Scegliere l’ora',
   },
   addressDialog: {

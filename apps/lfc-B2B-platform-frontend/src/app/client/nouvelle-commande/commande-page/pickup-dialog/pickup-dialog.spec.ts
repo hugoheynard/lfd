@@ -159,13 +159,14 @@ describe('PickupDialog', () => {
     expect(cta().disabled).toBe(true);
   });
 
-  it('changer de point fait perdre la remise au BOUTON, avant de confirmer', () => {
-    // C'est tout l'intérêt de la porter jusque-là : le renoncement se lit.
+  it('un point sans remise se dit « prix pro », et le bouton ne change pas', () => {
+    // Le Village n'a pas de remise : sa ligne annonce le tarif pro plutôt qu'un
+    // « prix boutique » qui laissait croire au tarif public (Hugo, 2026-09-15).
     const points = el().querySelectorAll('button.point');
     (points[1] as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(el().textContent).toContain(FR.pickupDialog.shopPrice);
+    expect(el().textContent).toContain(FR.pickupDialog.proPrice);
     expect(cta().textContent?.trim()).toBe(FR.pickupDialog.cta);
   });
 });

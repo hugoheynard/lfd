@@ -303,7 +303,7 @@ export const FR: ClientCopy = {
     habit: 'votre habitude',
     readyFrom: 'Prêt dès {time}',
     discountTag: '−{value} sur tout',
-    shopPrice: 'Prix boutique',
+    proPrice: 'Prix pro',
     cta: 'Choisir mon heure',
   },
   addressDialog: {

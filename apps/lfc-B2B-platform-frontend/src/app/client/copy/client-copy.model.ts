@@ -426,14 +426,18 @@ export interface ClientCopy {
   readonly pickupDialog: {
     readonly kicker: string;
     readonly title: string;
-    /** `{pct}` est remplacé par la remise du meilleur point. */
+    /** `{value}` est remplacé par la remise du meilleur point. */
     readonly lead: string;
     readonly habit: string;
     /** `{time}` est remplacé par l'heure de mise à disposition. */
     readonly readyFrom: string;
     /** `{value}` est remplacé par la remise du point : « 10 % » ou « 2,00 € ». */
     readonly discountTag: string;
-    readonly shopPrice: string;
+    /**
+     * La ligne d'un point SANS remise : le client y paie le tarif pro, rien de
+     * moins. « Prix boutique » laissait croire au tarif public.
+     */
+    readonly proPrice: string;
     readonly cta: string;
   };
   readonly addressDialog: {
