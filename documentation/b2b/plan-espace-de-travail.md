@@ -1,6 +1,9 @@
 # Plan — l'espace de travail : perso ou pro
 
-> **Statut : 📐 doc-first, 2026-09-15.** Rien n'est codé. **Contredit par
+> **Statut : 🟡 bâti le 2026-09-15, non déployé.** Lots A (serveur) et B
+> (front) bâtis, batterie complète verte, bascule vérifiée par Hugo en dev.
+> Reste : le contrôle à l'écran d'un compte à deux sociétés, et le pré-vol CORS
+> de `x-lfc-company` en production. **Contredit par
 > `vitruve` le 2026-09-15** (§7) : deux `BLOQUANT` traités. **Q1 et Q2
 > tranchées par Hugo le même jour** (§6) ; migration en un seul passage, faute
 > de panier en production (§4).
