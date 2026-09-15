@@ -21,6 +21,7 @@ import type request from "supertest";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { DELIVERY, photoOf, pngOf } from "./delivery-procedure-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { storageKeys } from "./storage.js";
 
@@ -34,35 +35,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: STAFF, scopes: [] }),
 };
 
-/** Un PNG minimal aux dimensions lisibles — `DeliveryStepPhoto` n'exige rien de plus. */
-function pngOf(width: number, height: number): Buffer {
-  const header = Buffer.alloc(25);
-  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(header, 0);
-  header.write("IHDR", 12, "latin1");
-  header.writeUInt32BE(width, 16);
-  header.writeUInt32BE(height, 20);
-  return header;
-}
-
 const PORTAIL = pngOf(40, 30);
 const COUR = pngOf(30, 40);
-
-const DELIVERY = {
-  label: "Boutique",
-  ligne1: "9 rue de la Roquette",
-  ligne2: "",
-  codePostal: "75011",
-  ville: "Paris",
-  pays: "France",
-  isDefault: false,
-  specs: {
-    signatureRequired: false,
-    note: "",
-    slots: { mode: "everyday", slot: null },
-    deliveryContact: null,
-    gps: null,
-  },
-};
 
 let ctx: E2eContext;
 let companyId: string;
@@ -134,19 +108,6 @@ async function addStep(
 
 async function read(agent: request.Agent, base: string): Promise<DeliveryProcedureView> {
   return jsonBody<DeliveryProcedureView>(await agent.get(base).expect(200));
-}
-
-/** Les octets de la photo servie, et la réponse pour ses en-têtes. */
-async function photoOf(agent: request.Agent, url: string): Promise<request.Response> {
-  return agent
-    .get(url)
-    .buffer()
-    .parse((res, callback) => {
-      const chunks: Buffer[] = [];
-      res.on("data", (chunk: Buffer) => chunks.push(chunk));
-      res.on("end", () => callback(null, Buffer.concat(chunks)));
-    })
-    .expect(200);
 }
 
 /** Les objets du bucket des pièces client rangés sous cette adresse. */

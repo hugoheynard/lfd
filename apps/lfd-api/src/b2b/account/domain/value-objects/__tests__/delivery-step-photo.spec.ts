@@ -106,12 +106,33 @@ describe("DeliveryStepContent", () => {
     });
   });
 
+  /**
+   * Les messages sont écrits en clair : en HTTP, le schéma du contrat refuse ces
+   * trois cas AVANT le value object (vérifié le 2026-09-15), si bien que seul ce
+   * test les tient — le socle partagé du plan des notes photo ne doit pas les
+   * changer.
+   */
   it.each([
-    ["un titre vide", { title: "   ", body: "" }],
-    ["un titre trop long", { title: "x".repeat(DELIVERY_STEP_TITLE_MAX + 1), body: "" }],
-    ["un texte trop long", { title: "Portail", body: "x".repeat(DELIVERY_STEP_BODY_MAX + 1) }],
-  ])("refuse %s", (_, input) => {
+    [
+      "un titre vide",
+      { title: "   ", body: "" },
+      "Étape de livraison : le titre est vide. Donnez un titre à l'étape.",
+    ],
+    [
+      "un titre trop long",
+      { title: "x".repeat(DELIVERY_STEP_TITLE_MAX + 1), body: "" },
+      "Étape de livraison : le titre fait 81 caractères, 80 au plus. " +
+        "Raccourcissez-le et mettez le détail dans le texte.",
+    ],
+    [
+      "un texte trop long",
+      { title: "Portail", body: "x".repeat(DELIVERY_STEP_BODY_MAX + 1) },
+      "Étape de livraison : le texte fait 1001 caractères, 1000 au plus. " +
+        "Découpez-le en deux étapes.",
+    ],
+  ])("refuse %s, en le disant", (_, input, message) => {
     expect(() => DeliveryStepContent.create(input)).toThrow(InvalidDeliveryStepError);
+    expect(() => DeliveryStepContent.create(input)).toThrow(message);
   });
 
   it("accepte les bornes exactes, et garde celles que l'écran énonce", () => {
