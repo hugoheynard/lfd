@@ -289,6 +289,19 @@ fait métier — résoudre un principal, un accès staff — elle déclare un **
 et c'est `appBootstrap/` qui le relie à son adaptateur. Personne n'importe
 `appBootstrap`.
 
+🔴 **`src/b2b/shared/` est le premier dossier partagé au niveau d'un bloc
+métier** (2026-09-15, `shared/photo-cards/` — plan
+[`documentation/b2b/plan-notes-photo-du-commercial.md`](documentation/b2b/plan-notes-photo-du-commercial.md), D8).
+Il est admis parce que la **règle** est commune, pas seulement le code : une
+liste ordonnée de cartes à photo, bornée, permutée exactement, dont les
+étapes de livraison et les notes du commercial obéissent à la même mécanique.
+Ce qui diverge — borne, côté d'ajout, longueurs, mots des refus, identité,
+verrou, clé de stockage, trace — y entre en **paramètre**, et chaque contexte
+garde son vocabulaire public (`DeliveryProcedure.addStep` délègue, il ne
+disparaît pas). Du code seulement semblable n'y a pas sa place : deux usages
+qui divergeront se dupliquent. Il reste dans le bloc — `b2b/shared` n'est
+importé que par `b2b/`, et n'importe que `platform/`.
+
 ⚠️ **Une frontière qu'on ne franchit qu'en SQL est franchie quand même.** Le
 gate lit les imports ; il ne verra pas une classe de `platform/` qui interroge
 les tables d'un domaine en Prisma direct. C'est arrivé deux fois.
