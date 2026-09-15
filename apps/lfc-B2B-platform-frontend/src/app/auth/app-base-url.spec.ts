@@ -8,6 +8,11 @@ describe('appBaseUrl', () => {
     expect(appBaseUrl('http://localhost:7316/')).toBe('http://localhost:7316');
   });
 
+  it("rend l'origine nue de la zone, servie à la racine depuis le 2026-09-15", () => {
+    // C'est CETTE valeur qu'Auth0 doit lister en rappel et en déconnexion.
+    expect(appBaseUrl('https://lafoliecoffee.info/')).toBe('https://lafoliecoffee.info');
+  });
+
   it('porte le chemin de déploiement quand il y en a un', () => {
     expect(appBaseUrl('https://lafoliecoffee.info/pro/')).toBe('https://lafoliecoffee.info/pro');
   });

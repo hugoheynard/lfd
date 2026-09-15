@@ -81,8 +81,9 @@ port = 8787
 #      qui répond. Sans elle, une route de zone ne reçoit jamais de trafic.
 #
 # ⚠️ Élargie à TOUTE la zone le 2026-09-15 (décision de Hugo : la boutique n'est
-# plus seulement pro). La racine sert le front, `/pro` reste servi le temps que
-# le front soit reconstruit sur `/` — cf. `ZONE_HOSTNAME` dans src/routes.ts.
+# plus seulement pro). La racine sert le front (`baseHref: "/"`), et `/pro/…`
+# renvoie en 302 vers le même chemin sans préfixe — cf. `ZONE_HOSTNAME` et
+# `redirectTo` dans src/.
 # `lafoliecoffee.info/api/lfd` atteint donc aussi l'API : même passerelle, mêmes
 # gardes, même CORS.
 [[routes]]

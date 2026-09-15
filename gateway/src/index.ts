@@ -79,6 +79,9 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
   if (target === undefined) {
     return gatewayFault(404, `rien ne répond sur « ${url.pathname} »`, "unrouted", url.pathname);
   }
+  if (target.kind === "redirect") {
+    return redirectTo(target.path + url.search);
+  }
   const node = nodeOf(target);
   const forwardedPath = target.kind === "url" ? url.pathname : target.path;
   const destination = destinationFor(target, url, env);
@@ -103,6 +106,21 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
     // détail interne, on rend un 502 clair (comme la sonde AppFrame côté shell).
     return gatewayFault(502, `upstream injoignable pour « ${url.pathname} »`, node, forwardedPath);
   }
+}
+
+/**
+ * L'ancienne adresse `/pro/…` renvoie vers la même page sans le préfixe.
+ *
+ * **302 et pas 301**, délibérément : un navigateur garde une redirection
+ * permanente en cache sans limite, et la défaire demanderait à chaque client de
+ * vider le sien. Temporaire tant que la racine n'a pas fait ses preuves ; la
+ * passer en 301 ensuite est un geste d'une ligne. La requête (`?code=…`) suit.
+ */
+function redirectTo(location: string): Handled {
+  return {
+    response: new Response(null, { status: 302, headers: { location } }),
+    observation: { node: "pro", status: 302, forwardedPath: location, origin: "gateway" },
+  };
 }
 
 /** Une réponse fabriquée par la gateway elle-même — jamais par un backend. */
@@ -163,12 +181,20 @@ function nodeOf(target: Target): TrafficObservation["node"] {
       return target.backend;
     case "front":
       return target.front;
+    case "redirect":
+      return "pro";
     default:
       return "dev";
   }
 }
 
-function destinationFor(target: Target, url: URL, env: Env): Destination | undefined {
+/**
+ * Une redirection ne va nulle part : `handle` l'a déjà rendue. Le type le dit,
+ * plutôt qu'une branche morte qui ferait semblant de la traiter.
+ */
+type Forwardable = Exclude<Target, { readonly kind: "redirect" }>;
+
+function destinationFor(target: Forwardable, url: URL, env: Env): Destination | undefined {
   if (target.kind === "url") {
     return { url: new URL(url.pathname + url.search, target.url).toString(), send: fetch };
   }

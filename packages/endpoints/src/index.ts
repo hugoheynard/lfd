@@ -187,11 +187,12 @@ const LEGACY_B2B_FRONT = "https://lfc-b2b.pages.dev";
 const LEGACY_B2B_ADMIN_FRONT = "https://lfc-b2b-admin.pages.dev";
 
 /**
- * L'app CLIENT servie par la ZONE, sous `lafoliecoffee.info/pro`.
+ * L'app CLIENT servie par la ZONE, à la racine de `lafoliecoffee.info` (sous
+ * `/pro` jusqu'au 2026-09-15).
  *
  * Le navigateur envoie l'origine du site réellement visité, et une origine n'a
- * pas de chemin : c'est `https://lafoliecoffee.info` qu'il présente, pas
- * `…/pro`. Sans cette entrée, tous les appels d'API seraient refusés — la même
+ * pas de chemin : c'est `https://lafoliecoffee.info` qu'il présente, quel que
+ * soit le chemin. Sans cette entrée, tous les appels d'API seraient refusés — la même
  * panne complète et silencieuse que `lfc-b2b-eu7` a déjà causée.
  *
  * ⚠️ Auth0 a le même besoin, et lui n'est pas dans ce dépôt : `redirect_uri`

@@ -78,7 +78,7 @@
                   "maximumError": "10kB"
                 }
               ],
-              "baseHref": "/pro/"
+              "baseHref": "/"
             },
             "capacitor": {
               "outputMode": "static",

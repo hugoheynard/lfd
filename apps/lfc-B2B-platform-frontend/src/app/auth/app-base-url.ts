@@ -1,11 +1,11 @@
 /**
  * L'adresse à laquelle l'app RÉPOND — origine et chemin de déploiement.
  *
- * `window.location.origin` a suffi tant que l'app vivait à la racine. Elle n'y
- * vit plus partout : la build `cloudflare` pose `baseHref: /pro/`, et une origine
- * nue renverrait Auth0 à la racine du domaine, où la passerelle ne route rien —
- * le `?code` du callback tomberait à côté. Invisible en développement, et
- * systématique en production.
+ * Écrite quand la build `cloudflare` posait `baseHref: /pro/` : une origine nue
+ * aurait renvoyé Auth0 à la racine du domaine, où la passerelle ne routait rien.
+ * Depuis le 2026-09-15 l'app est servie à la racine (`baseHref: /`) et la
+ * fonction rend l'origine nue — mais elle reste la seule source de l'adresse :
+ * le jour où un chemin de déploiement revient, rien d'autre n'est à changer.
  *
  * `document.baseURI` résout le `<base href>` de la page contre l'origine : c'est
  * exactement l'adresse cherchée, dans les deux cas.

@@ -268,8 +268,9 @@ export class AuthFacade {
   /**
    * Déconnexion Auth0 puis retour à l'app (le guard renverra vers /login).
    *
-   * `appBaseUrl()` et non l'origine nue : sous `/pro`, une origine nue déposerait
-   * la personne à la racine du domaine, hors de l'app.
+   * `appBaseUrl()` et non l'origine nue : sous un chemin de déploiement (c'était
+   * `/pro` jusqu'au 2026-09-15), une origine nue déposerait la personne hors de
+   * l'app. À la racine les deux coïncident ; la fonction reste la seule source.
    *
    * En bypass dev, aucun aller-retour Auth0 : on pose la déconnexion et on
    * revient sur la porte d'entrée, où l'on reste jusqu'à `login()`.

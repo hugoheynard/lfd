@@ -195,7 +195,8 @@ sous-domaines **sans toucher aux backends**.
 
 ## Le front client sous `lafoliecoffee.info/pro`
 
-> 🟡 **En bascule vers la racine depuis le 2026-09-15** (décision de Hugo : la
+> ✅ **Servi à la racine depuis le 2026-09-15** (étape 2 comprise, sous réserve
+> de son déploiement) (décision de Hugo : la
 > boutique accueille aussi le public, son adresse ne doit plus dire « pro »).
 > Deux déploiements, dans cet ordre :
 >

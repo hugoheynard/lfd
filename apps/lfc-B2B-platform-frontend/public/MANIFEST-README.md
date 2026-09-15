@@ -1,8 +1,9 @@
 # `manifest.webmanifest` — pourquoi tout y est RELATIF
 
-L'app cliente n'est pas servie à la racine. `lafoliecoffee.info/pro` est un
-**chemin**, pas un sous-domaine : la passerelle porte le préfixe, et la
-configuration de build `cloudflare` pose `baseHref: /pro/`.
+L'app cliente a été servie sous `lafoliecoffee.info/pro` jusqu'au 2026-09-15 ;
+elle l'est désormais à la racine (`baseHref: /`), et `/pro/…` redirige. Les
+chemins relatifs restent la bonne écriture : ils ont survécu à ce déménagement
+sans une ligne changée, et survivront au suivant.
 
 Conséquence, et c'est le piège :
 
