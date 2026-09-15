@@ -1,7 +1,7 @@
 /**
  * E2E des **mentions obligatoires du mandat** — pas de frappe sans elles.
  *
- * Plan : `documentation/b2b/plan-mentions-obligatoires-du-mandat.md` §9.
+ * Plan : `documentation/comptabilite/plan-mentions-obligatoires-du-mandat.md` §9.
  *
  * Ce que seul le vrai SQL prouve : le SIREN et la raison sociale lus sont ceux
  * de la **colonne** `companies`, la forme juridique du titulaire celle de

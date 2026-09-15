@@ -23,7 +23,7 @@ import { GetMyCompanyMandateOptionsQuery } from "./get-my-company-mandate-option
  *
  * L'enveloppe porte `issuerScheme`, lu par `soleIssuer()` — le même émetteur que
  * la frappe et le rendu. Le mandat interentreprises n'imprime pas ces zones, et
- * l'écran masque la carte en `B2B` (plan `documentation/b2b/plan-mandat-deux-schemas.md`
+ * l'écran masque la carte en `B2B` (plan `documentation/comptabilite/plan-mandat-deux-schemas.md`
  * §10, Q2). Lu APRÈS le mur et le drapeau : rien de l'émetteur ne sort vers
  * quelqu'un qui n'a pas droit aux zones.
  *

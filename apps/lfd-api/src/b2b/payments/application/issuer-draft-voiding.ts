@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import {
   IssuedDraftMandates,
@@ -8,13 +8,17 @@ import {
 } from "../../accounting/domain/ports/issued-draft-mandates.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffNotifier } from "../../../staff/notifications/domain/ports/staff-notifier.js";
 import type { PaymentMandate } from "../domain/entities/payment-mandate.js";
 import { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { IssuedDraftsReader } from "../domain/ports/issued-drafts.reader.js";
 import { voidDrafts } from "./draft-mandate-voiding.js";
+import { purgeVoidedDraftProof } from "./mandate-proof-purge.js";
 import { ringDraftVoided } from "./mandate-staff-bell.js";
+
+const LOGGER = new Logger("IssuerDraftVoiding");
 
 /**
  * `payments` répond au port que la comptabilité déclare : **révoquer les
@@ -34,6 +38,7 @@ export class IssuerDraftVoiding extends IssuedDraftMandates {
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly notifier: StaffNotifier,
+    private readonly store: DocumentStore,
   ) {
     super();
   }
@@ -71,6 +76,32 @@ export class IssuerDraftVoiding extends IssuedDraftMandates {
     const deps = { notifier: this.notifier, mandates: this.mandates, clock: this.clock };
     for (const draft of voided) {
       await ringDraftVoided(deps, draft, cause);
+      await this.purgeProofOf(draft.id);
+    }
+  }
+
+  /**
+   * Purge la pièce d'un brouillon révoqué, **relu après la transaction** du
+   * réglage (plan `documentation/comptabilite/plan-restes-du-mandat.md` §7 #10).
+   *
+   * Relu plutôt que transporté par `VoidedDraftMandate` : ce type appartient à
+   * la comptabilité, et y faire passer une clé de stockage lui apprendrait un
+   * détail du bucket des mandats. La relecture rend l'état validé, et c'est
+   * l'agrégat relu qui dit si la pièce peut partir. Comme la cloche, la purge
+   * ne fait jamais échouer le réglage : une relecture en panne va au log.
+   */
+  private async purgeProofOf(mandateId: string): Promise<void> {
+    let reloaded: PaymentMandate | null;
+    try {
+      reloaded = await this.mandates.findById(mandateId);
+    } catch (error) {
+      LOGGER.warn(
+        `Brouillon ${mandateId} révoqué, pièce non purgée (relecture impossible) : ${String(error)}`,
+      );
+      return;
+    }
+    if (reloaded !== null) {
+      await purgeVoidedDraftProof({ store: this.store, events: this.events }, reloaded);
     }
   }
 }

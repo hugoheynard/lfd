@@ -1,7 +1,7 @@
 /**
  * E2E du **mandat SEPA côté client** — la carte mandat de `/mon-compte`.
  *
- * Plan : `documentation/b2b/plan-mandat-client.md`, contrat en fin de §9.
+ * Plan : `documentation/comptabilite/plan-mandat-client.md`, contrat en fin de §9.
  *
  * Ce que seul le vrai SQL prouve, et que les unitaires ne peuvent pas :
  *
@@ -304,7 +304,7 @@ describe("le parcours complet — frappe, dépôt client, activation staff", () 
     expect(Buffer.from(proof.body as Buffer).equals(PDF)).toBe(true);
     await staff()
       .put(`/admin/companies/${companyId}/mandate/${draft.id}/signature`)
-      .send({ signedAt: ON_PAPER })
+      .send({ signedAt: ON_PAPER, proofRevision: await staffProofRevision() })
       .expect(204);
 
     const active = jsonBody<CustomerMandateView>(await ctx.asSub(OWNER).get(base()).expect(200));
@@ -425,3 +425,9 @@ describe("l'index d'unicité du brouillon, traduit par l'adaptateur", () => {
     );
   });
 });
+
+/** La révision de la pièce que le staff relit avant de déclarer le mandat signé. */
+async function staffProofRevision(): Promise<string | undefined> {
+  const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
+  return jsonBody<MandateSectionView>(response).mandate?.proofRevision;
+}

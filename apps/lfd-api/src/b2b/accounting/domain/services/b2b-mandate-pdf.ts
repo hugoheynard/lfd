@@ -31,7 +31,7 @@ import { SEPA_MANDATE_WORDING } from "./sepa-mandate-wording.js";
  * **Le mandat interentreprises (SDD B2B)** — d'après le gabarit de la DGFiP
  * (`mandat_prelevement_sepa_interentreprise.pdf`), dans le même ordre de blocs.
  *
- * Ce qui en est retiré, et pourquoi (§3.2 de `documentation/b2b/plan-mandat-deux-schemas.md`) :
+ * Ce qui en est retiré, et pourquoi (§3.2 de `documentation/comptabilite/plan-mandat-deux-schemas.md`) :
  *
  * - **Marianne, logo et nom de la DGFiP, service gestionnaire, préfixe `DGFIP`
  *   de la RUM** : ils désignent le créancier du gabarit, pas nous. Notre logo

@@ -13,8 +13,11 @@ import type { MandateSectionView, PaymentMandateView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MandateGateway } from "../src/b2b/payments/domain/mandate-gateway.js";
+import { MandateProofChangedError } from "../src/b2b/payments/domain/errors/mandate-proof-errors.js";
+import { PaymentMandateRepository } from "../src/b2b/payments/domain/payment-mandate.repository.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { storageKeys } from "./storage.js";
 
 const PDF = Buffer.from("%PDF-1.4\nmandat signé", "latin1");
 /**
@@ -217,7 +220,8 @@ describe("Mandat — la preuve", () => {
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
-      .send({ signedAt: ON_PAPER })
+      // Aucune pièce : la révision n'a rien à désigner, le refus est l'absence de scan.
+      .send({ signedAt: ON_PAPER, proofRevision: "sans-piece" })
       .expect(409);
 
     const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
@@ -235,12 +239,152 @@ describe("Mandat — la preuve", () => {
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
-      .send({ signedAt: ON_PAPER })
+      .send({ signedAt: ON_PAPER, proofRevision: (await currentView()).proofRevision })
       .expect(204);
 
     const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
     const mandate = jsonBody<MandateSectionView>(response).mandate as PaymentMandateView;
     expect(mandate.status).toBe("active");
     expect(mandate.hasProof).toBe(true);
+  });
+});
+
+/** La vue du mandat courant — de quoi lire sa révision de pièce. */
+async function currentView(): Promise<PaymentMandateView> {
+  const response = await staff().get(`/admin/companies/${companyId}/mandate`).expect(200);
+  return jsonBody<MandateSectionView>(response).mandate as PaymentMandateView;
+}
+
+/** Dépose un scan sur le brouillon de la société. */
+async function deposit(fileName = "mandat-signe.pdf"): Promise<void> {
+  await staff()
+    .put(`/admin/companies/${companyId}/mandate/proof`)
+    .attach("file", PDF, fileName)
+    .expect(204);
+}
+
+/** Les pièces de mandat de la société dans le bucket réel. */
+async function mandateObjects(): Promise<string[]> {
+  return (await storageKeys()).filter((key) => key.startsWith(`companies/${companyId}/mandates/`));
+}
+
+async function factCount(type: string): Promise<number> {
+  return ctx.prisma.activityEvent.count({ where: { type } });
+}
+
+/** Un RIB valide — le réécrire rend caduc le brouillon en cours. */
+const RIB = {
+  iban: "FR1420041010050500013M02606",
+  bic: "CEPAFRPP751",
+  holder: "Refuge du Col SARL",
+  line1: "12 rue des Alpages",
+  line2: "",
+  postalCode: "73150",
+  city: "Val d'Isère",
+  countryCode: "FR",
+};
+
+/** Plan `documentation/comptabilite/plan-restes-du-mandat.md` §4 et §7 #3, #9. */
+describe("Mandat — la purge des pièces jamais valides", () => {
+  it("purge le scan remplacé d'un brouillon, et l'écrit au journal", async () => {
+    await seedMandate("pm_e2e", "draft");
+    await deposit("premier.pdf");
+    const [first] = await mandateObjects();
+
+    await deposit("second.pdf");
+
+    const remaining = await mandateObjects();
+    expect(remaining).toHaveLength(1);
+    expect(remaining).not.toContain(first);
+    const row = await ctx.prisma.paymentMandate.findFirstOrThrow({ where: { companyId } });
+    expect(remaining).toEqual([row.proofStorageKey]);
+    expect(await factCount("payment_mandate.proof_purged")).toBe(1);
+    const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "payment_mandate.proof_purged" },
+    });
+    expect(JSON.stringify(fact.payload)).not.toContain("companies/");
+  });
+
+  it("purge le scan d'un brouillon devenu caduc", async () => {
+    await seedMandate("pm_e2e", "draft");
+    await deposit();
+
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+
+    expect((await currentView()).status).toBe("revoked");
+    expect(await mandateObjects()).toEqual([]);
+    expect(await factCount("payment_mandate.proof_purged")).toBe(1);
+  });
+
+  it("garde le scan d'un mandat signé, même révoqué ensuite", async () => {
+    const mandateId = await seedMandate("pm_e2e", "draft");
+    await deposit();
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
+      .send({ signedAt: ON_PAPER, proofRevision: (await currentView()).proofRevision })
+      .expect(204);
+
+    await staff().delete(`/admin/companies/${companyId}/mandate`).expect(204);
+
+    expect(await mandateObjects()).toHaveLength(1);
+    expect(await factCount("payment_mandate.proof_purged")).toBe(0);
+  });
+
+  it("refuse une signature sur une révision de pièce périmée", async () => {
+    const mandateId = await seedMandate("pm_e2e", "draft");
+    await deposit("premier.pdf");
+    const read = (await currentView()).proofRevision;
+    await deposit("second.pdf");
+
+    const response = await staff()
+      .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
+      .send({ signedAt: ON_PAPER, proofRevision: read })
+      .expect(409);
+
+    expect(jsonBody<{ code: string }>(response).code).toBe("payments.mandate.proof_revision_stale");
+    const view = await currentView();
+    expect(view.status).toBe("draft");
+    expect(view.proofRevision).not.toBe(read);
+  });
+
+  it("refuse une signature sans révision de pièce", async () => {
+    const mandateId = await seedMandate("pm_e2e", "draft");
+    await deposit();
+
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
+      .send({ signedAt: ON_PAPER })
+      .expect(400);
+  });
+
+  /**
+   * Régression (plan §7 #3) : l'écriture de la pièce était inconditionnelle.
+   * Un dépôt chargé avant une signature réécrivait le mandat activé, et la
+   * purge qui suit détruisait sa pièce. Éprouvé contre le vrai SQL : le dépôt
+   * lit le brouillon, la signature passe, puis le dépôt tente d'écrire.
+   */
+  it("un redépôt concurrent d'une signature ne détruit pas la pièce signée", async () => {
+    const mandateId = await seedMandate("pm_e2e", "draft");
+    await deposit();
+    const signedView = await currentView();
+    const repository = ctx.app.get(PaymentMandateRepository);
+    const stale = await repository.findById(mandateId);
+    if (stale === null) {
+      throw new Error(`Le brouillon semé ${mandateId} est introuvable.`);
+    }
+    const previousKey = stale.proofStorageKey();
+
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/${mandateId}/signature`)
+      .send({ signedAt: ON_PAPER, proofRevision: signedView.proofRevision })
+      .expect(204);
+    stale.attachProof({ storageKey: `${String(previousKey)}-concurrent`, fileName: "tardif.pdf" });
+
+    await expect(repository.depositProof(stale, previousKey)).rejects.toBeInstanceOf(
+      MandateProofChangedError,
+    );
+    const after = await currentView();
+    expect(after).toMatchObject({ status: "active", proofRevision: signedView.proofRevision });
+    expect(await mandateObjects()).toEqual([previousKey]);
   });
 });

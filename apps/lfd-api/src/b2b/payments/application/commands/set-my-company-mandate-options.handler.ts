@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
 import { MandateOptionsBoundToActiveMandateError } from "../../domain/errors/mandate-errors.js";
@@ -38,6 +39,7 @@ export class SetMyCompanyMandateOptionsHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly notifier: StaffNotifier,
+    private readonly store: DocumentStore,
   ) {}
 
   async execute({
@@ -62,6 +64,7 @@ export class SetMyCompanyMandateOptionsHandler implements ICommandHandler<
         events: this.events,
         uow: this.uow,
         notifier: this.notifier,
+        store: this.store,
       },
       () => this.refuseUnderActiveMandate(companyId),
     );

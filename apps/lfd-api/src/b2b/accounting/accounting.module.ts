@@ -20,6 +20,7 @@ import { GetLegalEntityHandler } from "./application/queries/get-legal-entity.ha
 import { ListLegalEntitiesHandler } from "./application/queries/list-legal-entities.handler.js";
 import { BillableOrdersReader } from "./domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "./domain/ports/creditor.reader.js";
+import { FirstMandateLedger } from "./domain/ports/first-mandate-ledger.js";
 import { LegalEntityLogoReader } from "./domain/ports/legal-entity-logo.reader.js";
 import { LegalEntityReader } from "./domain/ports/legal-entity.reader.js";
 import { LegalEntityRepository } from "./domain/ports/legal-entity.repository.js";
@@ -29,6 +30,7 @@ import { AdminLegalEntityBankingController } from "./http/admin-legal-entity-ban
 import { AdminLegalEntityDocumentsController } from "./http/admin-legal-entity-documents.controller.js";
 import { PrismaBillableOrdersReader } from "./infrastructure/prisma-billable-orders.reader.js";
 import { PrismaCreditorReader } from "./infrastructure/prisma-creditor.reader.js";
+import { PrismaFirstMandateLedger } from "./infrastructure/prisma-first-mandate-ledger.js";
 import { PrismaLegalEntityLogoReader } from "./infrastructure/prisma-legal-entity-logo.reader.js";
 import { PrismaLegalEntityReader } from "./infrastructure/prisma-legal-entity.reader.js";
 import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entity.repository.js";
@@ -36,9 +38,10 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
 /**
  * Contexte **comptabilité** — qui encaisse, et sous quelle identité.
  *
- * **Quatre** ports sur une seule table, et l'ISP n'est pas ici une élégance :
- * `CreditorReader` est le **seul** exporté, parce qu'il est le seul que d'autres
- * contextes ont le droit de consommer. Il rend une copie figée. Exporter le port
+ * **Cinq** ports sur une seule table, et l'ISP n'est pas ici une élégance :
+ * `CreditorReader` est le seul port de LECTURE de l'émetteur qui sort, parce
+ * qu'il est le seul que d'autres contextes ont le droit de consommer. Il rend une
+ * copie figée. Exporter le port
  * d'écriture laisserait `payments` charger l'agrégat et le muter depuis chez
  * lui — et l'immuabilité de l'ICS ne serait plus tenue par personne.
  *
@@ -46,6 +49,11 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
  * rend une clé de stockage. Les deux chemins qui LISENT un logo — la vignette de
  * la fiche et le dessin du mandat — n'ont besoin que d'elle, et leur donner le
  * port d'écriture leur donnerait `save()` sur un trajet de lecture.
+ *
+ * Le cinquième, `FirstMandateLedger`, est le seul port d'ÉCRITURE qui sort, et
+ * il ne pose qu'un fait : « un mandat a été frappé sous cet émetteur ». La frappe
+ * l'appelle dans sa transaction (plan `plan-restes-du-mandat.md` §8, lot B) ;
+ * elle ne reçoit pas pour autant le droit de charger l'entité.
  *
  * `DocumentStore` n'est pas déclaré ici : il vient de `ContextModule`, qui est
  * `@Global` et décide du bucket à la racine de composition. Un contexte métier
@@ -67,6 +75,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: CreditorReader, useClass: PrismaCreditorReader },
     { provide: BillableOrdersReader, useClass: PrismaBillableOrdersReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
+    { provide: FirstMandateLedger, useClass: PrismaFirstMandateLedger },
     DeclareLegalEntityHandler,
     CorrectLegalEntityHandler,
     AssignCreditorIdentifierHandler,
@@ -90,6 +99,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
   // consommateur extérieur est l'aperçu de mandat d'un client (`payments`), qui
   // a besoin des deux pour dessiner le MÊME document que la fiche d'exemple.
   // Exporter le lecteur de logo sans l'émetteur n'aurait aucun usage.
-  exports: [CreditorReader, LegalEntityLogoReader],
+  // `FirstMandateLedger` sort pour la frappe, seule à savoir qu'un mandat naît.
+  exports: [CreditorReader, LegalEntityLogoReader, FirstMandateLedger],
 })
 export class AccountingModule {}

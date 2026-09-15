@@ -80,6 +80,12 @@ class InMemoryStore extends DocumentStore {
   readIfPresent(key: string): Promise<Buffer | null> {
     return Promise.resolve(this.objects.get(key)?.bytes ?? null);
   }
+
+  /** Absent = succès, comme le port le promet. */
+  delete(key: string): Promise<void> {
+    this.objects.delete(key);
+    return Promise.resolve();
+  }
 }
 
 /** Stockage en panne — ce qu'un bucket mal nommé fait vraiment. */
@@ -93,6 +99,10 @@ class BrokenStore extends DocumentStore {
   }
 
   readIfPresent(): Promise<Buffer | null> {
+    return Promise.reject(new DocumentStorageUnavailableError("bucket introuvable."));
+  }
+
+  delete(): Promise<void> {
     return Promise.reject(new DocumentStorageUnavailableError("bucket introuvable."));
   }
 }

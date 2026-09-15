@@ -22,7 +22,7 @@ import { SetMandateSchemeCommand } from "./set-mandate-scheme.command.js";
  *
  * L'entité, le fait `legal_entity.mandate_scheme_changed` (avant → après) et la
  * révocation de **tous** ses brouillons partent ensemble (plan
- * `documentation/b2b/plan-mandat-deux-schemas.md` §3.3 et §9 objection 8). Sans
+ * `documentation/comptabilite/plan-mandat-deux-schemas.md` §3.3 et §9 objection 8). Sans
  * la caducité, un client imprimerait un brouillon CORE alors que l'entité est
  * passée interentreprises — et c'est ce papier-là que le staff activerait.
  *

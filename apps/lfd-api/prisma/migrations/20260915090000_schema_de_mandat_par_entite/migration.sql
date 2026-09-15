@@ -1,5 +1,5 @@
 -- Le schéma SEPA devient un réglage de l'entité, FIGÉ sur chaque mandat à la
--- frappe — plan `documentation/b2b/plan-mandat-deux-schemas.md`.
+-- frappe — plan `documentation/comptabilite/plan-mandat-deux-schemas.md`.
 --
 -- Additive et réversible (§0) : un type, trois colonnes, aucune suppression.
 --

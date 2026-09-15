@@ -1,5 +1,5 @@
 -- Les deux mentions qu'un mandat interentreprises exige et que la base ne
--- portait pas — plan `documentation/b2b/plan-mentions-obligatoires-du-mandat.md`
+-- portait pas — plan `documentation/comptabilite/plan-mentions-obligatoires-du-mandat.md`
 -- (§9, contrat de construction).
 --
 -- Additive et réversible (§0) : deux colonnes, un index, un remplissage.

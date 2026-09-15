@@ -19,6 +19,7 @@ import {
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
+import { RecordingFirstMandateLedger } from "../../__tests__/recording-first-mandate-ledger.js";
 import {
   mintMandate,
   PaymentMandate,
@@ -97,6 +98,7 @@ function build(
     },
     save: () => Promise.resolve(),
     findStripeCustomerId: () => Promise.resolve(null),
+    depositProof: () => Promise.resolve(),
   };
 
   const issuer = options.issuer === undefined ? CREDITOR : options.issuer;
@@ -116,6 +118,7 @@ function build(
     accounts.stored = bankAccount();
   }
   const events = new StepPublisher(steps);
+  const ledger = new RecordingFirstMandateLedger(steps);
   return {
     handler: new MintMandateHandler(
       mandates,
@@ -125,14 +128,63 @@ function build(
       accounts,
       events,
       new StepUnitOfWork(steps),
+      ledger,
     ),
     written,
     steps,
     events,
+    ledger,
   };
 }
 
 describe("MintMandateHandler — frapper sans signer", () => {
+  /**
+   * Plan `plan-restes-du-mandat.md` §3 et §8 (lot B) : le verrou du créancier
+   * imprimé et le mandat s'écrivent ensemble, ou pas du tout. Hors de la
+   * transaction, un brouillon pourrait exister sous un créancier encore
+   * corrigeable.
+   */
+  it("gèle le créancier imprimé DANS l'unité de travail, à l'instant de la frappe", async () => {
+    const { handler, steps, ledger } = build();
+
+    await handler.execute(new MintMandateCommand("cmp_1"));
+
+    expect(steps.log).toEqual([
+      "uow:begin",
+      "mandate:create",
+      "ledger:note",
+      "journal:payment_mandate.minted",
+      "uow:end",
+    ]);
+    expect(ledger.noted).toEqual([{ creditorId: "ent_1", at: NOW }]);
+  });
+
+  it("ne pose PAS le verrou quand la frappe est refusée", async () => {
+    const { handler, ledger } = build({ issuer: null });
+
+    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow(
+      MandateMentionsMissingError,
+    );
+    expect(ledger.noted).toHaveLength(0);
+  });
+
+  it("ne pose PAS le verrou quand l'index rend le brouillon d'un autre onglet", async () => {
+    const winner = PaymentMandate.reconstitute({
+      ...mintMandate({
+        scheme: "B2B",
+        paymentType: "recurrent",
+        companyId: "cmp_1",
+        creditorId: "ent_1",
+        reference: "LFC-GAGNANT",
+      }),
+      id: "mdt_gagnant",
+    });
+    const { handler, ledger } = build({ raceWinner: winner });
+
+    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow("LFC-GAGNANT");
+    expect(ledger.noted).toHaveLength(0);
+  });
+
   it("écrit un brouillon sans date de signature", async () => {
     const { handler, written } = build();
 
@@ -167,9 +219,12 @@ describe("MintMandateHandler — frapper sans signer", () => {
 
     await handler.execute(new MintMandateCommand("cmp_1"));
 
+    // `ledger:note` depuis le 2026-09-15 : le verrou du créancier imprimé part
+    // dans la même transaction que le brouillon (plan restes du mandat §8).
     expect(steps.log).toEqual([
       "uow:begin",
       "mandate:create",
+      "ledger:note",
       "journal:payment_mandate.minted",
       "uow:end",
     ]);

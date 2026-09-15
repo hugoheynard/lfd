@@ -52,7 +52,7 @@ interface UploadedFilePart {
 /**
  * Surface **client** du mandat de prélèvement — la carte mandat de `/mon-compte`.
  *
- * Plan : `documentation/b2b/plan-mandat-client.md`, contrat en fin de §9. Le mur
+ * Plan : `documentation/comptabilite/plan-mandat-client.md`, contrat en fin de §9. Le mur
  * (détenteur ou facturation), le drapeau `customerMandate` et les règles vivent
  * dans les handlers, dans cet ordre : 404 → 403 → 409 drapeau → règle métier.
  * Ce contrôleur ne fait que le transport.

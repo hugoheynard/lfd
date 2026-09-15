@@ -61,4 +61,18 @@ export abstract class DocumentStore {
    * @throws {DocumentStorageUnavailableError} stockage non configuré ou en échec.
    */
   abstract readIfPresent(key: string): Promise<Buffer | null>;
+
+  /**
+   * Retire la pièce rangée sous cette clé. **Une clé absente est un succès** :
+   * rejouer une suppression, ou supprimer ce qu'un geste précédent a déjà
+   * retiré, rend la même réponse.
+   *
+   * Idempotente parce que ses appelants la lancent APRÈS une transaction
+   * validée, sans pouvoir la rejouer dans la même unité : une absence n'y dit
+   * rien d'anormal, elle dit que le travail est fait. Une panne, elle, lève —
+   * l'appelant décide s'il la tolère (plan `documentation/comptabilite/plan-restes-du-mandat.md` §4).
+   *
+   * @throws {DocumentStorageUnavailableError} stockage non configuré ou en échec.
+   */
+  abstract delete(key: string): Promise<void>;
 }

@@ -8,7 +8,7 @@ import type { BankAccountRole } from "../ports/bank-account-guard.reader.js";
  * Les rôles qui voient et déposent le RIB : le **détenteur**, et le rôle
  * **comptable**. `admin` administre l'espace (interlocuteurs, adresses) et
  * `orders` passe les commandes — ni l'un ni l'autre n'a à lire le compte qu'on
- * prélève (plan `documentation/b2b/plan-rib-client.md`, §2).
+ * prélève (plan `documentation/comptabilite/plan-rib-client.md`, §2).
  */
 const BANK_ACCOUNT_ROLES: ReadonlySet<BankAccountRole> = new Set(["owner", "billing"]);
 

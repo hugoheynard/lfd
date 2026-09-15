@@ -12,7 +12,7 @@ export interface CustomerMandateAccessDeps {
 /**
  * Le **seuil commun** des gestes client sur le mandat : le mur, puis le drapeau.
  *
- * L'ordre est la règle (plan `documentation/b2b/plan-mandat-client.md`, fin du
+ * L'ordre est la règle (plan `documentation/comptabilite/plan-mandat-client.md`, fin du
  * §9) : non-membre **404** → rôle **403** → drapeau fermé **409** → règle
  * métier. Lire le drapeau d'abord dirait à un curieux « fermé » sur une société
  * qui n'est pas la sienne — donc qu'elle existe.

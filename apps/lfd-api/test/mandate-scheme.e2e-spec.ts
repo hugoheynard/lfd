@@ -1,7 +1,7 @@
 /**
  * E2E du **schéma de mandat de l'entité émettrice** — CORE ou interentreprises.
  *
- * Plan : `documentation/b2b/plan-mandat-deux-schemas.md` §10.4.
+ * Plan : `documentation/comptabilite/plan-mandat-deux-schemas.md` §10.4.
  *
  * Ce que seul le vrai SQL prouve : la colonne de l'entité bascule, le fait entre
  * au journal avec son acteur, les brouillons de TOUTES les sociétés émis par
@@ -19,6 +19,7 @@ import type {
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { storageKeys } from "./storage.js";
 
 const RIB = {
   iban: "FR1420041010050500013M02606",
@@ -105,9 +106,10 @@ async function activate(company: string): Promise<string> {
     .put(`/admin/companies/${company}/mandate/proof`)
     .attach("file", PDF, "scan.pdf")
     .expect(204);
+  const proofRevision = (await mandateOf(company))?.proofRevision;
   await staff()
     .put(`/admin/companies/${company}/mandate/${id}/signature`)
-    .send({ signedAt: ON_PAPER })
+    .send({ signedAt: ON_PAPER, proofRevision })
     .expect(204);
   return id;
 }
@@ -222,6 +224,30 @@ describe("PUT mandate-scheme — la bascule", () => {
     // Le mandat suivant se frappe sous le nouveau schéma.
     await mint(companyId);
     expect(await mandateOf(companyId)).toMatchObject({ status: "draft", scheme: "CORE" });
+  });
+
+  /**
+   * Plan `documentation/comptabilite/plan-restes-du-mandat.md` §4 et §7 #10 : la
+   * pièce d'un brouillon rendu caduc par l'émetteur est purgée APRÈS la
+   * transaction du réglage ; celle d'un mandat signé reste.
+   */
+  it("purge le scan du brouillon rendu caduc, garde celui du mandat signé", async () => {
+    await activate(neighbourId);
+    await mint(companyId);
+    await staff()
+      .put(`/admin/companies/${companyId}/mandate/proof`)
+      .attach("file", PDF, "scan.pdf")
+      .expect(204);
+
+    await staff().put(schemeUrl()).send({ scheme: "CORE" }).expect(204);
+
+    expect(await mandateOf(companyId)).toMatchObject({ status: "revoked" });
+    const keys = await storageKeys();
+    expect(keys.filter((key) => key.startsWith(`companies/${companyId}/`))).toEqual([]);
+    expect(keys.filter((key) => key.startsWith(`companies/${neighbourId}/`))).toHaveLength(1);
+    expect(
+      await ctx.prisma.activityEvent.count({ where: { type: "payment_mandate.proof_purged" } }),
+    ).toBe(1);
   });
 });
 

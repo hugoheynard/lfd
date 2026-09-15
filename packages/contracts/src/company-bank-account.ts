@@ -109,11 +109,11 @@ export interface CompanyBankAccountSectionView {
  *
  * ⚠️ Amendé le 2026-09-14 : cette phrase justifiait l'absence des zones par
  * « des réglages du mandat que le staff pose ». Hugo a décidé ce jour-là que le
- * client les règle lui-même (plan `documentation/b2b/plan-mandat-client.md`
+ * client les règle lui-même (plan `documentation/comptabilite/plan-mandat-client.md`
  * §10). La vue ne change pas : les zones ne s'y ajoutent pas, elles ont leur
  * route, pour la même raison que côté staff.
  *
- * Plan : `documentation/b2b/plan-rib-client.md`.
+ * Plan : `documentation/comptabilite/plan-rib-client.md`.
  */
 export type CustomerBankAccountView = Omit<
   CompanyBankAccountView,

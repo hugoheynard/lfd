@@ -15,6 +15,7 @@ import {
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
+import { RecordingFirstMandateLedger } from "../../__tests__/recording-first-mandate-ledger.js";
 import { MintMandateCommand } from "../../commands/mint-mandate.command.js";
 import { MintMandateHandler } from "../../commands/mint-mandate.handler.js";
 import { GetMandateMintBlockersHandler } from "../get-mandate-mint-blockers.handler.js";
@@ -53,6 +54,7 @@ function world(setup: {
         accounts,
         new StepPublisher(steps),
         new StepUnitOfWork(steps),
+        new RecordingFirstMandateLedger(),
       ).execute(new MintMandateCommand("cmp_1")),
     mandates,
   };

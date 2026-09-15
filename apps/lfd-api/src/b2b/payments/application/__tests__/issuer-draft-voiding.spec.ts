@@ -6,6 +6,7 @@ import {
   activeMandate,
   InMemoryMandates,
   mandate,
+  MemoryStore,
   RecordingNotifier,
   StepPublisher,
   Steps,
@@ -13,6 +14,7 @@ import {
 } from "./payment-doubles.js";
 
 const NOW = new Date("2026-09-15T09:00:00.000Z");
+const PROOF_KEY = "companies/cmp_1/mandates/mdt_1/mandat-signe-1";
 
 /** Plusieurs mandats par identifiant — le doublé partagé n'en tient que deux. */
 class MandatesById extends InMemoryMandates {
@@ -45,6 +47,7 @@ function harness(stored: readonly PaymentMandate[], ids = stored.map((m) => m.id
   }
   const events = new StepPublisher(steps);
   const notifier = new RecordingNotifier(steps);
+  const store = new MemoryStore(steps);
   const port = new IssuerDraftVoiding(
     new FixedIssuedDrafts(steps, ids),
     mandates,
@@ -52,8 +55,9 @@ function harness(stored: readonly PaymentMandate[], ids = stored.map((m) => m.id
     events,
     new StepUnitOfWork(steps),
     notifier,
+    store,
   );
-  return { steps, mandates, events, notifier, port };
+  return { steps, mandates, events, notifier, store, port };
 }
 
 describe("IssuerDraftVoiding — les brouillons d'un émetteur deviennent caducs", () => {
@@ -139,5 +143,52 @@ describe("IssuerDraftVoiding — les brouillons d'un émetteur deviennent caducs
         "mandate_defaults_changed",
       ),
     ).resolves.toBeUndefined();
+  });
+
+  /** Plan `plan-restes-du-mandat.md` §7 #10 : la purge part de l'annonce, après la transaction. */
+  it("ne supprime aucune pièce DANS la transaction du réglage", async () => {
+    const draft = mandate({ id: "mdt_1", proofStorageKey: PROOF_KEY, proofFileName: "scan.pdf" });
+    const h = harness([draft]);
+
+    await h.port.voidDraftsOf("ent_1", "mandate_scheme_changed", "staff");
+
+    expect(h.steps.log.some((step) => step.startsWith("store:delete"))).toBe(false);
+  });
+
+  it("purge à l'annonce la pièce du brouillon révoqué, relu après la transaction", async () => {
+    const draft = mandate({ id: "mdt_1", proofStorageKey: PROOF_KEY, proofFileName: "scan.pdf" });
+    const h = harness([draft]);
+    const voided = await h.port.voidDraftsOf("ent_1", "mandate_scheme_changed", "staff");
+
+    await h.port.announceVoided(voided, "mandate_scheme_changed");
+
+    expect(h.steps.log.slice(-3)).toEqual([
+      "bell",
+      `store:delete:${PROOF_KEY}`,
+      "journal:payment_mandate.proof_purged",
+    ]);
+  });
+
+  it("garde à l'annonce la pièce d'un mandat qui a été signé", async () => {
+    const signed = activeMandate({ id: "mdt_1", proofStorageKey: PROOF_KEY });
+    signed.revoke(NOW);
+    const h = harness([signed]);
+
+    await h.port.announceVoided(
+      [{ id: "mdt_1", companyId: "cmp_1", reference: "LFC-1" }],
+      "mandate_defaults_changed",
+    );
+
+    expect(h.steps.log.some((step) => step.startsWith("store:delete"))).toBe(false);
+  });
+
+  it("ne fait jamais échouer l'annonce quand la suppression échoue", async () => {
+    const draft = mandate({ id: "mdt_1", proofStorageKey: PROOF_KEY, proofFileName: "scan.pdf" });
+    const h = harness([draft]);
+    const voided = await h.port.voidDraftsOf("ent_1", "mandate_scheme_changed", "staff");
+    h.store.failDeletes = true;
+
+    await expect(h.port.announceVoided(voided, "mandate_scheme_changed")).resolves.toBeUndefined();
+    expect(h.steps.log).not.toContain("journal:payment_mandate.proof_purged");
   });
 });

@@ -30,7 +30,7 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  *
  * Tant qu'un brouillon existe, **toute** écriture du RIB le révoque, dans la
  * même unité de travail, fait au journal ; l'équipe est prévenue ensuite, hors
- * transaction (plan `documentation/b2b/plan-mandat-client.md` §9 #4).
+ * transaction (plan `documentation/comptabilite/plan-mandat-client.md` §9 #4).
  *
  * ## La forme juridique du titulaire se fusionne (depuis le 2026-09-15)
  *
@@ -44,8 +44,12 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  * Il dit si le **compte bancaire** a réellement changé, par opposition à une
  * correction de titulaire ou d'adresse. Le brouillon n'en a pas besoin — tout
  * ce qui change est imprimé. Il reste calculé et **ignoré** pour le seul cas
- * qu'il servira : un mandat ACTIF dont le compte change, geste en attente de la
- * banque (amendement ou nouveau mandat).
+ * qu'il servira : un mandat ACTIF dont le compte change.
+ *
+ * Ce cas n'atteint pas cette fonction : les deux appelants refusent sous un
+ * mandat actif (`BankAccountBoundToActiveMandateError`, le staff depuis le
+ * 2026-09-15). L'amendement est différé jusqu'à la réponse de la banque (plan
+ * `documentation/comptabilite/plan-restes-du-mandat.md` §8).
  */
 export async function recordCompanyBankAccount(
   companyId: string,

@@ -22,7 +22,7 @@
 /// Le schéma SEPA d'un mandat : `CORE` (tout débiteur, remboursement sous 8
 /// semaines) ou `B2B` (interentreprises, aucun remboursement d'un prélèvement
 /// autorisé, mandat déclaré à la banque du débiteur). Plan
-/// `documentation/b2b/plan-mandat-deux-schemas.md`.
+/// `documentation/comptabilite/plan-mandat-deux-schemas.md`.
 enum SepaScheme {
   CORE
   B2B
@@ -372,6 +372,12 @@ model PaymentMandate {
   //   · une RUM unique par créancier
   // Le `COALESCE` n'est pas décoratif : `NULL` étant distinct de `NULL` dans un
   // index d'unicité, la colonne nue laisserait les mandats hérités sans garantie.
+  //
+  // 🔴 Et une contrainte CHECK, invisible pour la même raison (migration
+  // `20260915140000_mandat_actif_signe`) :
+  //   · `payment_mandates_active_is_signed` — un ACTIF a toujours `accepted_at`.
+  // Le `pain.008` écrit cette date en `DtOfSgntr` ; sans la contrainte, un
+  // actif écrit par Prisma direct l'obligerait à en inventer une.
   @@index([companyId, status])
   @@map("payment_mandates")
   @@schema("public")

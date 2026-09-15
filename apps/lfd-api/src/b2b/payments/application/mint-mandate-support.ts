@@ -1,4 +1,5 @@
 import type { CreditorReader } from "../../accounting/domain/ports/creditor.reader.js";
+import type { FirstMandateLedger } from "../../accounting/domain/ports/first-mandate-ledger.js";
 import type { MandatePaymentType } from "../../accounting/domain/value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../../accounting/domain/value-objects/sepa-scheme.js";
 import type { UnitOfWork } from "../../../platform/database/unit-of-work.js";
@@ -20,6 +21,8 @@ export interface MintMandateDeps {
   readonly mandates: PaymentMandateRepository;
   readonly accounts: CompanyBankAccountRepository;
   readonly creditors: CreditorReader;
+  /** Le verrou du créancier imprimé, posé dans la transaction de la frappe. */
+  readonly ledger: FirstMandateLedger;
   readonly clock: Clock;
   readonly secrets: SecretGenerator;
   readonly events: DomainEventPublisher;
@@ -108,16 +111,26 @@ async function mintPreconditions(deps: MintMandateDeps, companyId: string): Prom
   };
 }
 
-/** Tire la RUM, écrit le brouillon ET sa trace dans la même transaction. */
+/**
+ * Tire la RUM, écrit le brouillon, **gèle le créancier imprimé** et trace — le
+ * tout dans la même transaction.
+ *
+ * 🔴 Le verrou part avec le mandat, ou pas du tout (plan
+ * `plan-restes-du-mandat.md` §3) : un brouillon écrit sans lui laisserait
+ * corriger le nom du créancier sous un papier déjà imprimable. Le port est
+ * idempotent, donc la seconde frappe ne déplace pas le moment du gel. Un seul
+ * instant pour la RUM et le verrou : les deux disent la même frappe.
+ */
 async function writeMinted(
   deps: MintMandateDeps,
   companyId: string,
   issuer: MintIssuer,
   via: MandateActorChannel,
 ): Promise<string> {
+  const mintedAt = deps.clock.now();
   const rum = Rum.mint({
     customerReference: issuer.customer,
-    at: deps.clock.now(),
+    at: mintedAt,
     secret: deps.secrets.next(),
   });
   return deps.uow.run(async () => {
@@ -130,6 +143,7 @@ async function writeMinted(
         paymentType: issuer.paymentType,
       }),
     );
+    await deps.ledger.note(issuer.creditorId, mintedAt);
     await deps.events.publishTraced(new MandateMintedEvent(mandateId, companyId, rum.value, via));
     return mandateId;
   });

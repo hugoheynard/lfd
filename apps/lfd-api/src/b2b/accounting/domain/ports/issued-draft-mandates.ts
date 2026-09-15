@@ -21,7 +21,7 @@ export interface VoidedDraftMandate {
 /**
  * Port d'**écriture** des brouillons émis par une entité, déclaré par la
  * comptabilité et implémenté par `payments` (plan
- * `documentation/b2b/plan-mandat-deux-schemas.md` §9 objection 8).
+ * `documentation/comptabilite/plan-mandat-deux-schemas.md` §9 objection 8).
  *
  * 🔴 Un port, et pas un import : les mandats appartiennent à `payments`, qui
  * importe déjà `accounting`. Faire charger et révoquer des `PaymentMandate`

@@ -1,7 +1,7 @@
 /**
  * E2E des **zones 14 et 19 réglées par le client** — `/mon-compte`.
  *
- * Plan : `documentation/b2b/plan-mandat-client.md` §10 (décidé le 2026-09-14).
+ * Plan : `documentation/comptabilite/plan-mandat-client.md` §10 (décidé le 2026-09-14).
  *
  * Voisin de `customer-mandate.e2e-spec.ts`, et pas une section de plus : ce
  * fichier-là dépasse déjà la taille d'un fichier. Même mécanique de semis.
@@ -12,7 +12,11 @@
  */
 import { Buffer } from "node:buffer";
 
-import type { CustomerMandateOptionsSectionView, CustomerMandateView } from "@lfd/contracts";
+import type {
+  CustomerMandateOptionsSectionView,
+  CustomerMandateView,
+  MandateSectionView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
@@ -274,9 +278,12 @@ describe("les zones — drapeau ouvert", () => {
     await declareIssuer();
     const draft = await mint();
     await ctx.asSub(OWNER).put(`${mandateUrl()}/proof`).attach("file", PDF, "scan.pdf").expect(204);
+    const section = jsonBody<MandateSectionView>(
+      await staff().get(`/admin/companies/${companyId}/mandate`).expect(200),
+    );
     await staff()
       .put(`/admin/companies/${companyId}/mandate/${draft.id}/signature`)
-      .send({ signedAt: ON_PAPER })
+      .send({ signedAt: ON_PAPER, proofRevision: section.mandate?.proofRevision })
       .expect(204);
 
     const response = await ctx.asSub(OWNER).put(optionsUrl()).send(OPTIONS).expect(409);

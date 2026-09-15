@@ -38,6 +38,12 @@ const CYCLE_START = new Date("2026-08-31T22:00:00.000Z");
 const CYCLE_END = new Date("2026-09-30T22:00:00.000Z");
 const CREATED_AT = new Date("2026-09-30T21:05:00.000Z");
 
+/**
+ * Dates de signature : comparées au fichier rendu, jamais à l'horloge — le rendu
+ * n'en lit aucune. Elles peuvent donc rester absolues (CLAUDE.md §5).
+ */
+const SIGNED_JUST_AFTER_MIDNIGHT = new Date("2026-08-31T22:30:00.000Z");
+
 const LINES: readonly BillableCompany[] = [
   {
     companyId: "cmp_tommeuses",
@@ -59,6 +65,8 @@ const TOMMEUSES: DebtorMandate = {
   bic: "BNPAFRPP",
   scheme: "B2B",
   paymentType: "recurrent",
+  // Le 1er septembre à 00h30 à Paris — la veille à 22h30 en UTC.
+  signedAt: SIGNED_JUST_AFTER_MIDNIGHT,
 };
 const ISERE: DebtorMandate = {
   reference: "LFC-7K2M4P-260912-B4X9RD",
@@ -66,6 +74,7 @@ const ISERE: DebtorMandate = {
   bic: null,
   scheme: "B2B",
   paymentType: "recurrent",
+  signedAt: new Date("2026-06-12T10:00:00.000Z"),
 };
 
 /** Les deux lignes, toutes deux prélevables en B2B. */
@@ -415,5 +424,61 @@ describe("renderPain008 — le lot VIDE", () => {
     expect(isDepositable([], ALL_MANDATES)).toBe(false);
     expect(isDepositable(LINES, ALL_MANDATES)).toBe(true);
     expect(isDepositable(LINES, new Map())).toBe(false);
+  });
+});
+
+describe("renderPain008 — la date de signature du mandat", () => {
+  /**
+   * La date déclarée à la banque est celle du PAPIER. Ni l'instant de
+   * fabrication du fichier, ni un jour lu en UTC : la RUM et la date de
+   * signature sont ce que la banque du débiteur confronte au mandat qu'elle a
+   * enregistré.
+   */
+  it("écrit le jour de la signature, pas celui du fichier", () => {
+    const xml = render(LINES, ALL_MANDATES);
+
+    expect(values(xml, "DtOfSgntr")).toEqual(["2026-09-01", "2026-06-12"]);
+    // `CREATED_AT` tombe le 30 septembre à Paris.
+    expect(values(xml, "DtOfSgntr")).not.toContain("2026-09-30");
+  });
+
+  /**
+   * 00h30 à Paris le 1er septembre vaut 22h30 UTC le 31 août. Un
+   * `toISOString().slice(0, 10)` aurait daté le consentement de la veille.
+   */
+  it("un mandat signé le 1er à 00h30 à Paris écrit le 1er", () => {
+    const xml = render([LINES[0]!], new Map([["cmp_tommeuses", TOMMEUSES]]));
+
+    expect(SIGNED_JUST_AFTER_MIDNIGHT.toISOString().slice(0, 10)).toBe("2026-08-31");
+    expect(values(xml, "DtOfSgntr")).toEqual(["2026-09-01"]);
+  });
+
+  /**
+   * La date telle que la commande de signature la fabrique à partir de la
+   * saisie `AAAA-MM-JJ` : suffixée de `T00:00:00` puis passée à `new Date`, minuit du fuseau
+   * du processus (`sign-mandate.handler.ts`, vérifié le 2026-09-15). Minuit à
+   * Paris ou minuit UTC, le jour de Paris reste le 1er octobre.
+   */
+  it("une signature saisie 2026-10-01 s'écrit 2026-10-01", () => {
+    const typed = "2026-10-01";
+    const signedAt = new Date(`${typed}T00:00:00`);
+    const xml = render([LINES[0]!], new Map([["cmp_tommeuses", { ...TOMMEUSES, signedAt }]]));
+
+    expect(values(xml, "DtOfSgntr")).toEqual([typed]);
+  });
+
+  /**
+   * L'ordre des éléments de `MndtRltdInf` est imposé par le schéma XSD : une
+   * balise déplacée fait rejeter le message, pas seulement la ligne.
+   */
+  it("place DtOfSgntr entre MndtId et AmdmntInd", () => {
+    const xml = render(LINES, ALL_MANDATES);
+    const blocks = [...xml.matchAll(/<MndtRltdInf>([\s\S]*?)<\/MndtRltdInf>/gu)];
+
+    expect(blocks).toHaveLength(2);
+    for (const block of blocks) {
+      const order = [...(block[1] ?? "").matchAll(/<([A-Za-z]+)>/gu)].map((m) => m[1]);
+      expect(order).toEqual(["MndtId", "DtOfSgntr", "AmdmntInd"]);
+    }
   });
 });

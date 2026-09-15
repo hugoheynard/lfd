@@ -29,7 +29,7 @@ const NO_PRECONDITION: MandateOptionsPrecondition = () => Promise.resolve();
  * (staff, ou client détenteur / facturation) a déjà décidé du droit d'agir.
  *
  * Extrait le 2026-09-14, quand le client a reçu le même geste que le staff
- * (plan `documentation/b2b/plan-mandat-client.md` §10) : la séquence ne s'écrit
+ * (plan `documentation/comptabilite/plan-mandat-client.md` §10) : la séquence ne s'écrit
  * qu'une fois, comme `recordCompanyBankAccount` pour le RIB.
  *
  * - **Refus 404 sans RIB** : les zones vivent sur sa ligne ; en créer une sans
@@ -42,7 +42,7 @@ const NO_PRECONDITION: MandateOptionsPrecondition = () => Promise.resolve();
  *   révoqué dans la même unité de travail, et l'équipe prévenue ensuite, hors
  *   transaction (plan §9 #4).
  * - 🔴 **Sauf un brouillon interentreprises** (depuis le 2026-09-15, plan
- *   `documentation/b2b/plan-mandat-deux-schemas.md` §10, Q2) : son formulaire
+ *   `documentation/comptabilite/plan-mandat-deux-schemas.md` §10, Q2) : son formulaire
  *   n'imprime pas ces zones, son papier ne change donc pas. Le schéma lu est
  *   celui **du brouillon**, figé à sa frappe — pas le réglage courant de
  *   l'entité. La réécriture reste journalisée.

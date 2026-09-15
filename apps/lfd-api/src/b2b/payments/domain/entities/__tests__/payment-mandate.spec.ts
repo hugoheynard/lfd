@@ -12,8 +12,13 @@ import {
   type MandateSnapshot,
   type RegisteredMandate,
 } from "../payment-mandate.js";
+import { MandateProofRevisionStaleError } from "../../errors/mandate-proof-errors.js";
+import { proofRevisionOf } from "../../services/proof-revision.js";
 
 const NOW = new Date("2026-08-11T10:00:00.000Z");
+/** La pièce que porte le brouillon des cas de signature, et la révision que l'écran en a lue. */
+const DRAFT_PROOF_KEY = "companies/cmp_1/mandates/mdt_1/mandat-signe-1";
+const SIGNED_REVISION = proofRevisionOf(DRAFT_PROOF_KEY);
 
 const REGISTRATION: RegisteredMandate = {
   stripeCustomerId: "cus_1",
@@ -239,7 +244,7 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     );
 
     expect(() => {
-      mandate.sign(new Date(NOW.getTime() - 86_400_000), NOW);
+      mandate.sign(new Date(NOW.getTime() - 86_400_000), NOW, SIGNED_REVISION);
     }).toThrow(MandateUnprovenError);
     expect(mandate.status).toBe("draft");
     expect(mandate.acceptedAt).toBeNull();
@@ -251,7 +256,7 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     // `NOW` et non écrite en dur — c'est la même constante que la comparaison.
     const onPaper = new Date(NOW.getTime() - 9 * 86_400_000);
 
-    mandate.sign(onPaper, NOW);
+    mandate.sign(onPaper, NOW, SIGNED_REVISION);
 
     expect(mandate.acceptedAt).toEqual(onPaper);
     expect(mandate.status).toBe("active");
@@ -262,7 +267,7 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     const tomorrow = new Date(NOW.getTime() + 86_400_000);
 
     expect(() => {
-      mandate.sign(tomorrow, NOW);
+      mandate.sign(tomorrow, NOW, SIGNED_REVISION);
     }).toThrow(MandateAcceptanceInFutureError);
   });
 
@@ -270,7 +275,7 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     const mandate = PaymentMandate.reconstitute(snapshot({ status: "active" }));
 
     expect(() => {
-      mandate.sign(new Date(NOW.getTime() - 9 * 86_400_000), NOW);
+      mandate.sign(new Date(NOW.getTime() - 9 * 86_400_000), NOW, SIGNED_REVISION);
     }).toThrow(MandateNotSignableError);
   });
 
@@ -278,7 +283,7 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     const mandate = PaymentMandate.reconstitute(snapshot({ status: "revoked" }));
 
     expect(() => {
-      mandate.sign(new Date(NOW.getTime() - 9 * 86_400_000), NOW);
+      mandate.sign(new Date(NOW.getTime() - 9 * 86_400_000), NOW, SIGNED_REVISION);
     }).toThrow(MandateNotSignableError);
   });
 
@@ -344,5 +349,104 @@ describe("toCustomerView — ce que le client voit de son mandat", () => {
 
   it("expose la RUM, qui ne bouge jamais", () => {
     expect(PaymentMandate.reconstitute(snapshot()).reference).toBe("RUM-123");
+  });
+});
+
+describe("PaymentMandate — la révision de la pièce relue", () => {
+  it("refuse d'activer quand la pièce a changé depuis la lecture, et reste brouillon", () => {
+    const mandate = PaymentMandate.reconstitute(
+      snapshot({
+        status: "draft",
+        acceptedAt: null,
+        proofStorageKey: "companies/cmp_1/mandates/mdt_1/mandat-signe-2",
+        proofFileName: "v2.pdf",
+      }),
+    );
+
+    expect(() => {
+      mandate.sign(new Date(NOW.getTime() - 86_400_000), NOW, SIGNED_REVISION);
+    }).toThrow(MandateProofRevisionStaleError);
+    expect(mandate.status).toBe("draft");
+    expect(mandate.acceptedAt).toBeNull();
+  });
+
+  it("montre une empreinte de la pièce, jamais sa clé, et vide sans pièce", () => {
+    const proven = PaymentMandate.reconstitute(
+      snapshot({
+        status: "draft",
+        acceptedAt: null,
+        proofStorageKey: DRAFT_PROOF_KEY,
+        proofFileName: "m.pdf",
+      }),
+    ).toView();
+    const naked = PaymentMandate.reconstitute(
+      snapshot({ status: "draft", acceptedAt: null, proofStorageKey: null, proofFileName: null }),
+    ).toView();
+
+    expect(proven.proofRevision).toBe(SIGNED_REVISION);
+    expect(proven.proofRevision).not.toBe("");
+    expect(JSON.stringify(proven)).not.toContain(DRAFT_PROOF_KEY);
+    expect(naked.proofRevision).toBe("");
+  });
+
+  it("change de révision quand la pièce change", () => {
+    expect(proofRevisionOf("k/v1")).not.toBe(proofRevisionOf("k/v2"));
+  });
+});
+
+/**
+ * Décision de Hugo du 2026-09-15 (plan `plan-restes-du-mandat.md` §4) : seul un
+ * scan qui n'a jamais prouvé de consentement se détruit.
+ */
+describe("PaymentMandate — la pièce qu'on a le droit de purger", () => {
+  const KEY = "companies/cmp_1/mandates/mdt_1/mandat-signe-1";
+
+  it("rend la clé d'un brouillon", () => {
+    const draft = PaymentMandate.reconstitute(
+      snapshot({ status: "draft", acceptedAt: null, proofStorageKey: KEY, proofFileName: "m.pdf" }),
+    );
+
+    expect(draft.purgeableProofKey()).toBe(KEY);
+  });
+
+  it("rend la clé d'un brouillon révoqué qui n'a jamais été signé", () => {
+    const voided = PaymentMandate.reconstitute(
+      snapshot({ status: "draft", acceptedAt: null, proofStorageKey: KEY, proofFileName: "m.pdf" }),
+    );
+    voided.revoke(NOW);
+
+    expect(voided.purgeableProofKey()).toBe(KEY);
+  });
+
+  it("garde la pièce d'un mandat ACTIF", () => {
+    const active = PaymentMandate.reconstitute(
+      snapshot({
+        status: "active",
+        acceptedAt: new Date(NOW.getTime() - 86_400_000),
+        proofStorageKey: KEY,
+        proofFileName: "m.pdf",
+      }),
+    );
+
+    expect(active.purgeableProofKey()).toBeNull();
+  });
+
+  it("garde la pièce d'un mandat RÉVOQUÉ après avoir été signé — c'est la preuve opposable", () => {
+    const signed = PaymentMandate.reconstitute(
+      snapshot({ status: "draft", acceptedAt: null, proofStorageKey: KEY, proofFileName: "m.pdf" }),
+    );
+    signed.sign(new Date(NOW.getTime() - 86_400_000), NOW, proofRevisionOf(KEY));
+    signed.revoke(NOW);
+
+    expect(signed.status).toBe("revoked");
+    expect(signed.purgeableProofKey()).toBeNull();
+  });
+
+  it("rend `null` sans pièce", () => {
+    const draft = PaymentMandate.reconstitute(
+      snapshot({ status: "draft", acceptedAt: null, proofStorageKey: null, proofFileName: null }),
+    );
+
+    expect(draft.purgeableProofKey()).toBeNull();
   });
 });

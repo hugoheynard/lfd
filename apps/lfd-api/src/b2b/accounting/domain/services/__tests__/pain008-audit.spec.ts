@@ -38,7 +38,14 @@ const DEBTOR_IBAN = "FR7630004000031234567890143";
 const MANDATES = new Map<string, DebtorMandate>([
   [
     "c1",
-    { reference: "RUM-C1", iban: DEBTOR_IBAN, bic: null, scheme: "B2B", paymentType: "recurrent" },
+    {
+      reference: "RUM-C1",
+      iban: DEBTOR_IBAN,
+      bic: null,
+      scheme: "B2B",
+      paymentType: "recurrent",
+      signedAt: new Date("2026-03-02T09:00:00.000Z"),
+    },
   ],
   [
     "c2",
@@ -48,6 +55,7 @@ const MANDATES = new Map<string, DebtorMandate>([
       bic: null,
       scheme: "B2B",
       paymentType: "one_off",
+      signedAt: new Date("2026-04-20T09:00:00.000Z"),
     },
   ],
 ]);
@@ -119,6 +127,21 @@ describe("auditCsv — ce qu'il lit dans le fichier", () => {
     expect(rows[1]).toMatch(/;"B2B"$/u);
     expect(rows[2]).toMatch(/;"B2B"$/u);
     expect(auditCsv(XML.replaceAll("<Cd>B2B</Cd>", "<Cd>CORE</Cd>"))).toContain(';"CORE"');
+  });
+
+  /**
+   * `DtOfSgntr` entre dans `MndtRltdInf` le 2026-09-15, juste après `MndtId`. Le
+   * lecteur cherche chaque balise par son nom exact : la date ne doit ni prendre
+   * la place de la RUM, ni apparaître dans une colonne, ni décaler les montants.
+   */
+  it("ne lit pas la date de signature comme une autre colonne", () => {
+    expect(XML).toContain("<DtOfSgntr>2026-03-02</DtOfSgntr>");
+    const rows = auditCsv(XML).split("\r\n");
+
+    expect(rows[0]?.split(";")).toHaveLength(7);
+    expect(rows[1]).toMatch(/;"RUM-C1";1516,48;"B2B"$/u);
+    expect(rows[2]).toMatch(/;"RUM-C2";420,50;"B2B"$/u);
+    expect(auditCsv(XML)).not.toContain("2026-03-02");
   });
 
   it("s'ouvre par un BOM et se termine par des CRLF — sinon le tableur ment", () => {

@@ -8,7 +8,7 @@
  * l'ouvre à elle seule.
  *
  * Contrôlé DANS les handlers, après le mur tenant, plutôt que par une garde
- * HTTP (plan `documentation/b2b/plan-mandat-client.md` §8) : un non-membre
+ * HTTP (plan `documentation/comptabilite/plan-mandat-client.md` §8) : un non-membre
  * reçoit son 404 avant d'apprendre quoi que ce soit de l'état du drapeau.
  */
 export abstract class CustomerMandateGate {

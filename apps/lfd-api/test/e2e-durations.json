@@ -35,6 +35,7 @@
   "test/devis-comptable.e2e-spec.ts": 15708,
   "test/feature-access-guards.e2e-spec.ts": 21646,
   "test/feature-access.e2e-spec.ts": 4340,
+  "test/first-mandate-ledger.e2e-spec.ts": 5000,
   "test/fulfillment-days.e2e-spec.ts": 11757,
   "test/growth-stats.e2e-spec.ts": 4803,
   "test/kbis.e2e-spec.ts": 7093,

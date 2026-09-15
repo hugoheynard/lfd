@@ -8,6 +8,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import type { JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { SecretGenerator } from "../../../../platform/secret/secret-generator.js";
+import { DocumentStorageUnavailableError } from "../../../../platform/shared/errors/storage-errors.js";
 import { DocumentStore, type StoredDocument } from "../../../../platform/storage/document-store.js";
 import {
   StaffNotifier,
@@ -20,6 +21,7 @@ import {
   type MandateToCreate,
 } from "../../domain/entities/payment-mandate.js";
 import { MandateDraftAlreadyExistsError } from "../../domain/errors/mandate-errors.js";
+import { MandateProofChangedError } from "../../domain/errors/mandate-proof-errors.js";
 import {
   PaymentMandateRepository,
   type MandateHolder,
@@ -205,6 +207,26 @@ export class InMemoryMandates extends PaymentMandateRepository {
     return Promise.resolve();
   }
 
+  /**
+   * Ce que la base porte À L'INSTANT de l'écriture, quand un autre geste est
+   * passé depuis la lecture. `null` : rien n'a bougé, l'écriture tient.
+   */
+  concurrent: {
+    readonly status: MandateSnapshot["status"];
+    readonly proofStorageKey: string | null;
+  } | null = null;
+
+  depositProof(deposited: PaymentMandate, previousProofKey: string | null): Promise<void> {
+    const base = this.concurrent;
+    if (base !== null && (base.status !== "draft" || base.proofStorageKey !== previousProofKey)) {
+      this.steps.log.push("mandate:deposit-refused");
+      return Promise.reject(new MandateProofChangedError());
+    }
+    this.steps.log.push("mandate:deposit");
+    this.saved.push(deposited);
+    return Promise.resolve();
+  }
+
   findHolder(): Promise<MandateHolder | null> {
     return Promise.resolve(this.holder);
   }
@@ -357,5 +379,17 @@ export class MemoryStore extends DocumentStore {
 
   readIfPresent(key: string): Promise<Buffer | null> {
     return Promise.resolve(this.objects.get(key)?.bytes ?? null);
+  }
+
+  /** Tombe en panne sur demande — ce que fait un bucket dont le jeton a expiré. */
+  failDeletes = false;
+
+  delete(key: string): Promise<void> {
+    this.steps.log.push(`store:delete:${key}`);
+    if (this.failDeletes) {
+      return Promise.reject(new DocumentStorageUnavailableError("suppression refusée (doublé)."));
+    }
+    this.objects.delete(key);
+    return Promise.resolve();
   }
 }

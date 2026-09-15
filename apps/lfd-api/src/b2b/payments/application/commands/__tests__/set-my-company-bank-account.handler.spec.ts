@@ -19,6 +19,7 @@ import {
   mandate,
   RecordingNotifier,
   StepPublisher,
+  MemoryStore,
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
@@ -68,6 +69,7 @@ function build(role: BankAccountRole | null) {
     events,
     new StepUnitOfWork(steps),
     notifier,
+    new MemoryStore(steps),
   );
   return { handler, guard, repo, mandates, events, notifier };
 }
@@ -155,6 +157,23 @@ describe("SetMyCompanyBankAccountHandler", () => {
     ).rejects.toBeInstanceOf(BankAccountBoundToActiveMandateError);
     expect(repo.reads).toBe(0);
     expect(repo.saved).toHaveLength(0);
+  });
+
+  /** Le client ne révoque rien : son message ne lui dit pas de le faire. */
+  it("dit au client de nous contacter, pas de révoquer", async () => {
+    const { handler, mandates } = build("owner");
+    mandates.current = activeMandate();
+
+    const refusal: unknown = await handler
+      .execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD))
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+
+    expect(refusal).toBeInstanceOf(BankAccountBoundToActiveMandateError);
+    expect(String(refusal)).toMatch(/contactez-nous/u);
+    expect(String(refusal)).not.toMatch(/révoquez/u);
   });
 
   it("oppose le mur AVANT le mandat actif : un non-membre reçoit 404, pas 409", async () => {

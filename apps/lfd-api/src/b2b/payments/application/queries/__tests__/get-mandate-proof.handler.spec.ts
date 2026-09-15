@@ -47,11 +47,13 @@ function build(options: {
     save: () => Promise.resolve(),
     findHolder: () => Promise.resolve(null),
     findStripeCustomerId: () => Promise.resolve(null),
+    depositProof: () => Promise.resolve(),
   };
   const store: DocumentStore = {
     save: (key) => Promise.resolve(key),
     read: () => Promise.resolve(Buffer.alloc(0)),
     readIfPresent: () => Promise.resolve(options.stored ?? null),
+    delete: () => Promise.resolve(),
   };
   return new GetMandateProofHandler(mandates, store, CIPHER);
 }

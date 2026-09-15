@@ -5,7 +5,7 @@ import type { Buffer } from "node:buffer";
  *
  * Le statut ne bouge pas : le client prouve, il ne s'active pas lui-même.
  * Activer autorise un débit, et reste le geste d'un commercial qui a relu la
- * pièce (plan `documentation/b2b/plan-mandat-client.md` §2).
+ * pièce (plan `documentation/comptabilite/plan-mandat-client.md` §2).
  */
 export class AttachMyCompanyMandateProofCommand {
   constructor(

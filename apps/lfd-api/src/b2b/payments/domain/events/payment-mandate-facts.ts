@@ -3,7 +3,7 @@
  * autorisation de débit.
  *
  * Tous partent par `publishTraced`, dans la transaction de l'écriture qu'ils
- * décrivent, **client comme staff** (plan `documentation/b2b/plan-mandat-client.md`
+ * décrivent, **client comme staff** (plan `documentation/comptabilite/plan-mandat-client.md`
  * §7 #7 et §9 #3). La raison est celle d'`ACCOUNTING_FACTS` : chacun de ces
  * gestes finit opposé en contestation, et « qui a frappé cette RUM, qui a
  * déposé ce scan, qui l'a activé » doit avoir une réponse.
@@ -30,7 +30,24 @@ export const PAYMENT_MANDATE_FACTS = {
    * du client n'aurait ni auteur ni date.
    */
   optionsChanged: "payment_mandate.options_changed",
+  /**
+   * Le scan d'un mandat **jamais signé** est détruit du stockage — remplacé sur
+   * le brouillon, ou brouillon devenu caduc (plan
+   * `documentation/comptabilite/plan-restes-du-mandat.md` §4).
+   *
+   * 🔴 Écrit **seulement après une suppression réussie**, et hors transaction :
+   * la suppression ne se restaure pas, elle part donc après la validation. Un
+   * fait écrit avant, ou malgré un échec, dirait détruite une pièce toujours
+   * dans le bucket (plan §7 #11). Aucune clé de stockage au payload.
+   */
+  proofPurged: "payment_mandate.proof_purged",
 } as const;
+
+/**
+ * Pourquoi un scan a été détruit : remplacé par un autre sur le même brouillon,
+ * ou porté par un brouillon devenu caduc.
+ */
+export type ProofPurgeCause = "proof_replaced" | "draft_voided";
 
 /** Qui a fait le geste : un agent du back-office, ou le client depuis « Mon compte ». */
 export type MandateActorChannel = "staff" | "customer";
@@ -39,7 +56,7 @@ export type MandateActorChannel = "staff" | "customer";
  * Ce qui a changé sur le papier et rendu le brouillon caduc.
  *
  * Les deux dernières viennent d'un réglage de l'**entité émettrice** (plan
- * `documentation/b2b/plan-mandat-deux-schemas.md` §10.4) : elles révoquent tous
+ * `documentation/comptabilite/plan-mandat-deux-schemas.md` §10.4) : elles révoquent tous
  * ses brouillons d'un coup, et non celui d'une société.
  */
 export type DraftVoidingCause =

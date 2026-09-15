@@ -24,6 +24,7 @@ import {
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
+import { RecordingFirstMandateLedger } from "../../__tests__/recording-first-mandate-ledger.js";
 import { MintMyCompanyMandateCommand } from "../mint-my-company-mandate.command.js";
 import { MintMyCompanyMandateHandler } from "../mint-my-company-mandate.handler.js";
 
@@ -45,6 +46,7 @@ function harness(
     accounts.stored = bankAccount();
   }
   const events = new StepPublisher(steps);
+  const ledger = new RecordingFirstMandateLedger(steps);
   const handler = new MintMyCompanyMandateHandler(
     new FixedGuard(steps, options.role === undefined ? "owner" : options.role),
     new FixedGate(steps, options.open ?? true),
@@ -55,9 +57,10 @@ function harness(
     new FixedSecrets(),
     events,
     new StepUnitOfWork(steps),
+    ledger,
   );
   const run = () => handler.execute(new MintMyCompanyMandateCommand("usr_1", "cmp_1"));
-  return { steps, mandates, accounts, events, run };
+  return { steps, mandates, accounts, events, ledger, run };
 }
 
 describe("MintMyCompanyMandateHandler — le client génère son mandat", () => {
@@ -70,12 +73,16 @@ describe("MintMyCompanyMandateHandler — le client génère son mandat", () => 
 
       expect(h.mandates.created[0]?.status).toBe("draft");
       expect(h.mandates.created[0]?.reference).toContain("9P2X4B");
-      expect(h.steps.log.slice(-4)).toEqual([
+      // Le verrou du créancier imprimé tombe dans la même transaction : la
+      // frappe client gèle l'émetteur comme celle du staff (plan restes §8).
+      expect(h.steps.log.slice(-5)).toEqual([
         "uow:begin",
         "mandate:create",
+        "ledger:note",
         "journal:payment_mandate.minted",
         "uow:end",
       ]);
+      expect(h.ledger.noted).toEqual([{ creditorId: "ent_1", at: NOW }]);
       expect(h.events.traced[0]?.journalFact().payload).toEqual({
         companyId: "cmp_1",
         reference: h.mandates.created[0]?.reference,

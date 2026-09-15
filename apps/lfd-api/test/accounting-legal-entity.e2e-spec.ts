@@ -15,10 +15,10 @@
  * Une seule frontière doublée : le verifier staff. Tout le reste est réel — le
  * SQL, les contraintes, le filtre d'erreurs, la résolution d'accès.
  */
-import type { BillingCycleView, LegalEntityView } from "@lfd/contracts";
+import { instantToLocal, type BillingCycleView, type LegalEntityView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
 import { storageKeys } from "./storage.js";
 
@@ -409,6 +409,14 @@ const DEBTOR_RIB = {
 let orderSeq = 0;
 
 /**
+ * La signature du papier, bien avant la frappe de la ligne (`created_at` = now) :
+ * un lot qui écrirait la date de frappe se verrait. Relative, parce que la
+ * commande du cycle, elle, prend l'instant de la base.
+ */
+const SIGNED_ON_PAPER = new Date(daysAgo(40));
+const SIGNED_DAY = instantToLocal(SIGNED_ON_PAPER).day;
+
+/**
  * Une société qui doit quelque chose sur le cycle en cours, et — si `scheme`
  * n'est pas `null` — un mandat ACTIF frappé sous ce schéma, avec son RIB.
  *
@@ -444,6 +452,9 @@ async function billedCompany(
       creditorId: legalEntityId,
       reference: `RUM-${scheme}-E2E`,
       status: "active",
+      // Un actif sans date de signature est refusé par la base depuis la
+      // migration `20260915140000_mandat_actif_signe`.
+      acceptedAt: SIGNED_ON_PAPER,
       scheme,
       paymentType: "recurrent",
     },
@@ -464,6 +475,10 @@ describe("Le brouillon de prélèvement — un fichier par schéma", () => {
     const b2b = await draftXml(id, "&scheme=B2B").expect(200);
 
     expect(core.text).toContain("<MndtId>RUM-CORE-E2E</MndtId>");
+    // La date du PAPIER, pas celle de la frappe (aujourd'hui) : lue sur `accepted_at`.
+    expect(core.text).toContain(`<DtOfSgntr>${SIGNED_DAY}</DtOfSgntr>`);
+    expect(b2b.text).toContain(`<DtOfSgntr>${SIGNED_DAY}</DtOfSgntr>`);
+    expect(core.text).not.toContain(`<DtOfSgntr>${instantToLocal(new Date(daysAgo(0))).day}<`);
     expect(core.text).not.toContain("RUM-B2B-E2E");
     expect(core.text).toContain("<LclInstrm><Cd>CORE</Cd></LclInstrm>");
     expect(b2b.text).toContain("<MndtId>RUM-B2B-E2E</MndtId>");
@@ -503,6 +518,29 @@ describe("Le brouillon de prélèvement — un fichier par schéma", () => {
     expect(legacy.text).toContain("<MndtId>RUM-B2B-E2E</MndtId>");
     expect(legacy.text).not.toContain("RUM-CORE-E2E");
     expect(legacy.headers["content-disposition"]).toContain("prelevement-B2B-");
+  });
+
+  /**
+   * Ce que seul le vrai SQL prouve : la contrainte existe en base. Sans elle, un
+   * actif écrit par Prisma direct obligerait le lecteur du lot à inventer une
+   * date de signature — il lève plutôt, mais c'est la base qui doit refuser.
+   */
+  it("la base refuse un mandat actif sans date de signature", async () => {
+    const id = await collectingEntity();
+    const company = await createCompany(ctx.prisma, { raisonSociale: "Chalet Non Signe SAS" });
+
+    await expect(
+      ctx.prisma.paymentMandate.create({
+        data: {
+          companyId: company.id,
+          creditorId: id,
+          reference: "RUM-SANS-SIGNATURE",
+          status: "active",
+          scheme: "B2B",
+          paymentType: "recurrent",
+        },
+      }),
+    ).rejects.toThrow(/payment_mandates_active_is_signed|check constraint/iu);
   });
 
   it("refuse un schéma inconnu en 400", async () => {

@@ -19,7 +19,7 @@ import { Buffer } from "node:buffer";
 import type { CompanyBankAccountSectionView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 /** IBAN d'exemple de la documentation bancaire française — clé mod-97 correcte. */
@@ -144,6 +144,63 @@ describe("PUT /admin/companies/:id/bank-account", () => {
 
   it("refuse un appel sans jeton", async () => {
     await ctx.http().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(401);
+  });
+});
+
+/**
+ * Sème un mandat en base, faute de porte d'entrée stable pour un ACTIF : la
+ * signature réclame une pièce, et son contrat bouge avec la purge (plan
+ * `plan-restes-du-mandat.md` §8, lot C). Ce qui est éprouvé ici est en AVAL —
+ * le refus du RIB —, donc la dette de `factories.ts` est acceptable.
+ */
+async function seedMandate(status: "active" | "draft"): Promise<void> {
+  await ctx.prisma.paymentMandate.create({
+    data: {
+      scheme: "B2B",
+      paymentType: "recurrent",
+      companyId,
+      reference: `RUM-E2E-${status}`,
+      status,
+      // Un actif est signé ; un brouillon ne l'est pas.
+      acceptedAt: status === "active" ? new Date(daysAgo(30)) : null,
+    },
+  });
+}
+
+/**
+ * Décidé par Hugo le 2026-09-15 (plan `plan-restes-du-mandat.md` §8) : le staff
+ * est refusé comme le client quand un mandat actif désigne le compte, tant que
+ * l'amendement attend la réponse de la banque.
+ */
+describe("PUT /admin/companies/:id/bank-account — sous un mandat", () => {
+  it("refuse en 409 le remplacement sous un mandat actif, et le RIB ne bouge pas", async () => {
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await seedMandate("active");
+
+    const response = await staff()
+      .put(`/admin/companies/${companyId}/bank-account`)
+      .send({ ...RIB, iban: OTHER_IBAN })
+      .expect(409);
+
+    const refusal = jsonBody<{ code: string; message: string }>(response);
+    expect(refusal.code).toBe("payments.bank_account.bound_to_active_mandate");
+    // Le message est celui du STAFF : il nomme le geste, pas « contactez-nous ».
+    expect(refusal.message).toMatch(/révoquez-le/u);
+    const row = await ctx.prisma.companyBankAccount.findUniqueOrThrow({ where: { companyId } });
+    expect(row.ibanLast4).toBe("2606");
+  });
+
+  it("accepte le remplacement sans mandat actif — un brouillon ne bloque rien (204)", async () => {
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await seedMandate("draft");
+
+    await staff()
+      .put(`/admin/companies/${companyId}/bank-account`)
+      .send({ ...RIB, iban: OTHER_IBAN })
+      .expect(204);
+
+    const row = await ctx.prisma.companyBankAccount.findUniqueOrThrow({ where: { companyId } });
+    expect(row.ibanLast4).toBe("3000");
   });
 });
 

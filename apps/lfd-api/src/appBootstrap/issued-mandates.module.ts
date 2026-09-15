@@ -11,7 +11,7 @@ import { PrismaPaymentMandateRepository } from "../b2b/payments/infrastructure/p
 
 /**
  * Le fil qui relie **les réglages de l'entité émettrice aux mandats qu'elle a
- * émis** (plan `documentation/b2b/plan-mandat-deux-schemas.md` §9 objection 8).
+ * émis** (plan `documentation/comptabilite/plan-mandat-deux-schemas.md` §9 objection 8).
  *
  * La comptabilité déclare deux ports — compter ce qu'elle a émis, rendre caducs
  * ses brouillons — et `payments` y répond, parce qu'il possède les mandats.

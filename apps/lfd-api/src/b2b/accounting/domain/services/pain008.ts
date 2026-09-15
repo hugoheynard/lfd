@@ -18,7 +18,7 @@ import { CreditorBicMissingError } from "../errors/accounting-errors.js";
  * ## UN FICHIER PAR SCHÉMA — 2026-09-15
  *
  * Le schéma n'est plus une constante : chaque mandat fige le sien à la frappe
- * (plan `documentation/b2b/plan-mandat-deux-schemas.md`, §10.2). Un cycle rend
+ * (plan `documentation/comptabilite/plan-mandat-deux-schemas.md`, §10.2). Un cycle rend
  * donc un fichier `CORE` et un fichier `B2B`, et chacun ne porte QUE les lignes
  * dont le mandat a ce schéma. Mélanger les deux dans un message ferait rejeter
  * le tout par la banque du débiteur qui n'a rien déclaré.
@@ -247,6 +247,9 @@ function transaction(debit: Debit, endToEndId: string, period: string): string {
     `        <InstdAmt Ccy="EUR">${euros(line.totalCents)}</InstdAmt>`,
     `        <DrctDbtTx><MndtRltdInf>`,
     `          <MndtId>${mandate.reference}</MndtId>`,
+    // Le jour du PAPIER, en heure de Paris : minuit local vaut 22h ou 23h UTC
+    // la veille, et un jour lu en UTC daterait le consentement d'un jour trop tôt.
+    `          <DtOfSgntr>${localDay(mandate.signedAt)}</DtOfSgntr>`,
     `          <AmdmntInd>false</AmdmntInd>`,
     `        </MndtRltdInf></DrctDbtTx>`,
     `        <DbtrAgt><FinInstnId>${debtorAgent(mandate.bic)}</FinInstnId></DbtrAgt>`,

@@ -20,7 +20,7 @@
  * un **mandat** (le schéma sous lequel il a été frappé, figé). Jusqu'au
  * 2026-09-14, le lot écrivait `B2B` en dur pendant que le formulaire imprimait
  * le texte CORE ; lire le réglage courant pour un mandat déjà signé
- * reproduirait la même divergence — cf. `documentation/b2b/plan-mandat-deux-schemas.md`.
+ * reproduirait la même divergence — cf. `documentation/comptabilite/plan-mandat-deux-schemas.md`.
  *
  * ⚠️ Changer de schéma n'est pas une retouche : l'interentreprises exige un
  * contrat avec la banque du créancier et prive le débiteur du remboursement d'un

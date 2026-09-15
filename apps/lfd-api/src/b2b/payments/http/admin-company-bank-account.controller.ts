@@ -44,7 +44,7 @@ import { PreviewCustomerMandateQuery } from "../application/queries/preview-cust
  *
  * Surface du **back-office** — ce n'est plus la seule. Cette phrase disait
  * jusqu'au 2026-09-14 que la clientèle ne saisit pas ses coordonnées bancaires ;
- * c'est faux depuis le RIB client (`documentation/b2b/plan-rib-client.md`) : le
+ * c'est faux depuis le RIB client (`documentation/comptabilite/plan-rib-client.md`) : le
  * détenteur et le rôle facturation déposent le leur, et règlent les zones 14/19,
  * par `company-bank-account.controller.ts` (vérifié le 2026-09-14). Ce
  * contrôleur-ci reste celui du commercial qui reporte un RIB papier ; il n'a pas
