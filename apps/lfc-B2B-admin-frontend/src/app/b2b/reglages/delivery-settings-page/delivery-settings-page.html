@@ -14,12 +14,13 @@
       </fold-empty-state>
     }
     @case ('ready') {
-      @if (settings(); as current) {
-        <fold-card>
+      @if (draft(); as current) {
+        <fold-card class="availability">
           <fold-element-title
+            cardHeader
             variant="title"
-            title="Livraison"
-            subtitle="Chaque case s'enregistre dès qu'on la coche ou la décoche."
+            title="Disponibilité de la livraison"
+            subtitle="Rien ne change tant que le réglage n'est pas enregistré."
           />
 
           <div class="body">
@@ -29,25 +30,54 @@
                 [disabled]="saving()"
                 [checked]="current.openToB2b"
                 [hint]="closedSentence('b2b', current.openToB2b)"
-                (checkedChange)="toggle('b2b', $event)"
+                (checkedChange)="set('b2b', $event)"
               />
               <fold-checkbox
                 label="B2C"
                 [disabled]="saving()"
                 [checked]="current.openToB2c"
                 [hint]="closedSentence('b2c', current.openToB2c)"
-                (checkedChange)="toggle('b2c', $event)"
+                (checkedChange)="set('b2c', $event)"
               />
             </fold-fieldset>
 
-            @if (failure(); as message) {
-              <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+            @if (closingLabel(); as clientele) {
+              <fold-callout class="v-warning" variant="warning">
+                Enregistrer <strong>retire la livraison {{ clientele }}</strong
+                >. Elle disparaît de leur boutique, et une commande en livraison qui n'est pas
+                encore validée sera refusée — y compris quand l'équipe la saisit. Les commandes déjà
+                passées ne changent pas.
+              </fold-callout>
             }
 
-            <app-delivery-zones-section />
+            @if (failure(); as message) {
+              <fold-callout class="v-alert" variant="alert" announce>{{ message }}</fold-callout>
+            }
+          </div>
+
+          <div cardFooter class="foot">
+            <button
+              foldButton
+              emphasis="outline"
+              intent="neutral"
+              [disabled]="!dirty() || saving()"
+              (click)="reset()"
+            >
+              Annuler
+            </button>
+            <button
+              foldButton
+              [intent]="closing().length > 0 ? 'warning' : 'primary'"
+              [disabled]="!dirty() || saving()"
+              (click)="save()"
+            >
+              Enregistrer
+            </button>
           </div>
         </fold-card>
       }
+
+      <app-delivery-zones-section />
     }
   }
 </fold-page-layout>

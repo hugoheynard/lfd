@@ -7,9 +7,10 @@ import { DeliveryZonesService } from '../delivery-zones.service';
 import { DeliverySettingsPage } from './delivery-settings-page';
 
 /**
- * **La carte « Livraison »** (plan « remise et livraison par clientèle », D4 et
- * D6) : deux cases enregistrées au geste, une phrase en clair sous une case
- * décochée, et une case qui revient à ce que tient le serveur quand il refuse.
+ * **L'encart « Disponibilité de la livraison »** (plan « remise et livraison
+ * par clientèle », D4 et D6) : les cases posent un brouillon, seul
+ * « Enregistrer » écrit, et retirer la livraison à une clientèle s'annonce
+ * avant d'être enregistré.
  */
 
 const OPEN: DeliverySettingsView = {
@@ -66,11 +67,26 @@ async function mount(settings: FakeSettings): Promise<ComponentFixture<DeliveryS
 const text = (fixture: ComponentFixture<DeliverySettingsPage>): string =>
   fixture.nativeElement.textContent ?? '';
 
-describe('DeliverySettingsPage — la carte « Livraison »', () => {
-  it('ne dit rien de fermé quand la livraison est ouverte aux deux', async () => {
+const warning = (fixture: ComponentFixture<DeliverySettingsPage>): HTMLElement | null =>
+  fixture.nativeElement.querySelector('fold-callout.v-warning');
+
+const saveButton = (fixture: ComponentFixture<DeliverySettingsPage>): HTMLButtonElement => {
+  const found = Array.from<HTMLButtonElement>(
+    fixture.nativeElement.querySelectorAll('button'),
+  ).find((b) => b.textContent?.trim() === 'Enregistrer');
+  if (!found) {
+    throw new Error('Pas de bouton Enregistrer.');
+  }
+  return found;
+};
+
+describe('DeliverySettingsPage — la disponibilité de la livraison', () => {
+  it('ne dit rien de fermé, et n’a rien à enregistrer, quand rien ne change', async () => {
     const fixture = await mount(new FakeSettings(OPEN));
 
     expect(text(fixture)).not.toContain('ne peuvent plus choisir la livraison');
+    expect(warning(fixture)).toBeNull();
+    expect(saveButton(fixture).disabled).toBe(true);
   });
 
   it('écrit en clair ce qu’une case décochée retire', async () => {
@@ -81,33 +97,68 @@ describe('DeliverySettingsPage — la carte « Livraison »', () => {
   });
 
   /**
-   * Régression (2026-09-15) : le corps vide du `204` était pris pour le réglage,
-   * qui passait à `null` — l'écran restait blanc au premier clic sur une case.
+   * Régression (2026-09-15) : un clic sur une case enregistrait tout de suite, et
+   * retirait la livraison à toute une clientèle sans rien pour l'arrêter.
    */
-  it('garde l’écran après un geste accepté, et montre le réglage relu', async () => {
+  it('🔴 décocher n’écrit rien, et avertit AVANT d’enregistrer', async () => {
     const settings = new FakeSettings(OPEN);
     const fixture = await mount(settings);
 
-    await fixture.componentInstance['toggle']('b2b', false);
+    fixture.componentInstance['set']('b2c', false);
+    fixture.detectChanges();
+
+    expect(settings.patches).toEqual([]);
+    expect(warning(fixture)?.textContent).toContain('retire la livraison aux particuliers');
+    expect(saveButton(fixture).disabled).toBe(false);
+  });
+
+  it('enregistre la seule case changée, relit, et retire l’avertissement', async () => {
+    const settings = new FakeSettings(OPEN);
+    const fixture = await mount(settings);
+
+    fixture.componentInstance['set']('b2b', false);
+    await fixture.componentInstance['save']();
     fixture.detectChanges();
 
     expect(settings.patches).toEqual([{ openToB2b: false }]);
-    expect(fixture.nativeElement.querySelector('fold-card')).not.toBeNull();
     expect(fixture.componentInstance['settings']()?.updatedBy).toBe('Hugo');
+    expect(warning(fixture)).toBeNull();
+    expect(saveButton(fixture).disabled).toBe(true);
     expect(text(fixture)).toContain('Les pros ne peuvent plus choisir la livraison.');
   });
 
-  it('🔴 remet la case à ce que tient le serveur quand il refuse, et le dit', async () => {
-    // Une case laissée décochée affirmerait un réglage qui n'existe pas.
+  it('rouvrir une clientèle n’avertit de rien', async () => {
+    const fixture = await mount(new FakeSettings({ ...OPEN, openToB2c: false }));
+
+    fixture.componentInstance['set']('b2c', true);
+    fixture.detectChanges();
+
+    expect(warning(fixture)).toBeNull();
+    expect(saveButton(fixture).disabled).toBe(false);
+  });
+
+  it('recocher ce qu’on vient de décocher n’a plus rien à enregistrer', async () => {
+    const fixture = await mount(new FakeSettings(OPEN));
+
+    fixture.componentInstance['set']('b2c', false);
+    fixture.componentInstance['set']('b2c', true);
+    fixture.detectChanges();
+
+    expect(warning(fixture)).toBeNull();
+    expect(saveButton(fixture).disabled).toBe(true);
+  });
+
+  it('un refus garde le brouillon à l’écran, et le dit', async () => {
     const settings = new FakeSettings(OPEN);
     settings.refusal = { status: 403, error: { message: 'Droit insuffisant.' } };
     const fixture = await mount(settings);
 
-    await fixture.componentInstance['toggle']('b2c', false);
+    fixture.componentInstance['set']('b2c', false);
+    await fixture.componentInstance['save']();
     fixture.detectChanges();
 
     expect(fixture.componentInstance['settings']()).toEqual(OPEN);
-    expect(text(fixture)).not.toContain('Les particuliers ne peuvent plus choisir la livraison.');
+    expect(fixture.componentInstance['draft']()).toEqual({ openToB2b: true, openToB2c: false });
     const alert: HTMLElement | null = fixture.nativeElement.querySelector('fold-callout.v-alert');
     expect(alert?.textContent).toContain('Droit insuffisant.');
   });

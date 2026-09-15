@@ -1,7 +1,14 @@
-// Les cases, un refus éventuel, puis les zones : l'écart vient d'ici, pas des
-// blocs eux-mêmes.
+// Les cases, l'avertissement, puis un refus éventuel : l'écart vient d'ici,
+// pas des blocs eux-mêmes.
 .body {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
+}
+
+// Annuler à gauche d'Enregistrer, le tout à droite du pied.
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
 }
