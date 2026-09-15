@@ -27,7 +27,10 @@ Plan : [`plan-procedure-de-livraison.md`](plan-procedure-de-livraison.md).
   rend la clé), `reorder` (permutation EXACTE, sinon 409). Maximum 20.
 - **Contenu** `DeliveryStepContent` : titre ≤ 80, texte ≤ 1000. **Photo**
   `DeliveryStepPhoto` : ≤ 1 Mo, JPEG/PNG aux octets, dimensions lisibles. Les
-  messages de refus parlent d'« étape » et de « procédure ».
+  messages de refus de la PHOTO et de l'ordre parlent d'« étape » et de
+  « procédure » ; ceux du CONTENU ne sortent jamais en HTTP — le schéma Zod du
+  contrat refuse avant le value object, en « Requête invalide : title : … »,
+  en anglais pour les longueurs (constaté par le filet du lot 0, 2026-09-15).
 - **Identité** : une procédure par **adresse**, vérifiée active
   (`ensureDeliveryAddress`), unique sur `address_id`, clé étrangère vers
   l'adresse seulement.
@@ -50,12 +53,15 @@ Plan : [`plan-procedure-de-livraison.md`](plan-procedure-de-livraison.md).
 - **Filet de tests, et ses trous** :
   - API : 5 specs, et `test/delivery-procedure.e2e-spec.ts`. Celui-ci vérifie
     les **statuts** des refus, jamais leurs **messages** — qui sont affichés
-    tels quels — et `nosniff` mais pas `Cache-Control`.
+    tels quels — et `Cache-Control` côté client seulement, pas côté staff.
   - Écran : 2 specs `b2b-ui` (brouillon, arithmétique photo). **L'éditeur (327
     lignes) et le formulaire (143) n'ont aucune spec propre** ; ils ne sont
     traversés que par le panneau admin et le dialogue client, et **aucun test
     ne choisit, remplace ni retire une photo**.
   - Fronts : 2 specs admin, 3 plateforme (passerelle, dialogue, libellés).
+- **Le numéro affiché vient du serveur** (`number` de la vue), l'éditeur ne le
+  recalcule pas depuis le rang : le socle écran du lot 2 le garde tel quel
+  (constaté par le filet du lot 0, 2026-09-15).
 
 ### 1.2 Ailleurs
 
@@ -104,10 +110,37 @@ Sans ça, une note « supprimée définitivement » resterait lisible dans un jo
 qu'on ne peut pas effacer. `b2b/client-notes` entre dans `lint:journal-tracked`.
 
 **D7 — Stockage** : `DocumentStore` (bucket `kbis`), **comme les photos
-d'étapes**, clé `companies/{companyId}/client-notes/{noteId}-{ulid}`. Choisi en
+d'étapes**, deux clés par photo : `companies/{companyId}/client-notes/{noteId}-{ulid}`
+et sa vignette `companies/{companyId}/client-notes/thumbs/{noteId}-{ulid}` (même
+révision, rangées et supprimées ensemble). Pas de suffixe `-thumb` : la révision
+se lit après le DERNIER tiret (`deliveryStepPhotoRevision`), un suffixe la
+ferait lire `thumb`. Choisi en
 connaissance de cause : c'est le bucket des pièces que le staff dépose sur une
 société, et aucun code ne liste le préfixe `companies/{id}/`. Le changer après
 le premier dépôt demanderait une migration d'objets.
+
+**D7 bis — La définition : de quoi LIRE une écriture, sans peser sur le web.**
+Hugo, 2026-09-15 : « ça me paraît énorme 2 Mo pour du web, même 1 Mo pour les
+images en livraison ». Le poids qui compte
+est celui qui TRANSITE, et l'éditeur actuel télécharge chaque photo en pleine
+taille pour en faire une vignette (§1.1). Pour les notes :
+
+- **La photo lisible** : 2400 px de grand côté — environ 200 points par pouce
+  sur une A4, de quoi zoomer dans une petite écriture ; les 1600 px des étapes
+  n'en donnent que ~135. JPEG en passes décroissantes (0,75 puis 0,6 puis
+  0,5), **plafond 600 Ko**. Une page blanche écrite se compresse bien : le poids
+  typique est **estimé** à quelques centaines de Ko, et **se mesure au lot 3**
+  sur de vraies photos de notes avant de figer les passes et le plafond.
+- **La vignette** : ~320 px, fabriquée par le navigateur au même envoi,
+  plafond 60 Ko. **La liste ne charge que les vignettes** ; la photo lisible ne
+  part qu'à l'ouverture de la note en grand.
+- **La vue en grand** : un clic sur la vignette ouvre la photo pleine taille,
+  zoomable (lot 4).
+- **Les étapes de livraison ne changent pas ici** (1600 px, plafond 1 Mo) : les
+  alléger et leur donner une vignette est un changement observable, à faire
+  APRÈS le socle, comme les défauts figés par le filet du lot 0.
+- Le socle porte donc la borne, la taille et les passes **en paramètres**, et
+  la vignette comme une option que les étapes n'activent pas.
 
 **D8 — Le socle partagé d'abord** (Hugo), et une **convention neuve dite en
 clair** : `src/b2b/shared/photo-cards/` est le premier dossier partagé au niveau
@@ -135,8 +168,15 @@ pose sur le code actuel les tests qui manquent, et ils doivent passer avant
 comme après.
 
 - e2e : les **messages** de chaque refus (étape inconnue, borne, ordre périmé,
-  photo trop lourde, format, tronquée) et `Cache-Control` ;
-- `b2b-ui` : une spec de l'éditeur et une du formulaire — ajouter, refaire,
+  photo trop lourde, format, tronquée, contenu), `Cache-Control` des deux
+  portes, et le garde-fou multipart au-delà de 2 Mo. **Ce qui est figé est
+  l'observable**, messages Zod anglais compris : le socle les rend à
+  l'identique, et les rendre plus lisibles sera un changement voulu, après ;
+- écran : une spec de l'éditeur et une du formulaire, **dans l'admin**
+  (`fiche-client/__tests__/`) et non dans `b2b-ui` : le Jest du paquet ne
+  teste que de la logique pure (`@angular/core` n'y charge pas), et ses
+  composants sont déjà éprouvés dans les apps qui les montent (constaté par
+  `pablo` le 2026-09-15) — ajouter, refaire,
   monter/descendre aux bornes, supprimer, **choisir, remplacer et retirer une
   photo**.
 
@@ -153,9 +193,9 @@ photographiée plus tôt doit pouvoir se choisir.
   contenu de la note touchée, et la position des lignes qui ont bougé — au lieu
   d'un `upsert` par ligne. Une note en tête décale toutes les positions : c'est
   un `UPDATE` par rang, pas une réécriture du contenu.
-- Écran : les vignettes se chargent **quand elles entrent à l'écran**, pas
-  toutes à l'ouverture — cinquante photos d'un Mo sur le téléphone de la
-  commerciale ne partent pas d'un coup.
+- Écran : la liste ne charge que les **vignettes** (D7 bis), et seulement
+  **quand elles entrent à l'écran** — cinquante notes, c'est au plus ~3 Mo de
+  vignettes, pas cinquante photos lisibles.
 
 **D12 — Migration additive** : `client_notebooks` (`company_id` **unique** et
 clé étrangère `RESTRICT` vers `companies`), `client_notes` (`notebook_id` clé
@@ -167,20 +207,21 @@ c'est détruire les notes d'une commerciale.
 
 ## 3. Ce que ce plan ne fait pas
 
-- Pas de recherche dans les notes, pas d'OCR, pas de miniature côté serveur.
+- Pas de recherche dans les notes, pas d'OCR, pas de miniature fabriquée par le
+  serveur (la vignette l'est par le navigateur, D7 bis).
 - Pas de notes sur un prospect (`Lead`).
 - Pas de note visible par le client, ni exportée dans « Données ».
 - Pas de glisser-déposer.
 
 ## 4. Lots
 
-| Lot | Contenu                                                                                                                                                             | Agent             |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| 0   | **Le filet** (D9) sur le code actuel : messages de refus et `Cache-Control` en e2e ; specs de l'éditeur et du formulaire `b2b-ui`. Vert AVANT toute extraction.     | batisseur + pablo |
-| 1   | **Socle API** `src/b2b/shared/photo-cards/`, tests à son niveau ; `DeliveryProcedure` et sa séquence délèguent. Filet du lot 0 inchangé et vert. Mention CLAUDE.md. | batisseur         |
-| 2   | **Socle écran** `b2b-ui/src/photo-cards/` (+ entrée `exports` du `package.json`) ; l'éditeur de procédure le consomme. Filet du lot 0 inchangé et vert.             | pablo             |
-| 3   | **Notes API** : migration, permission `b2b_client_notes`, agrégat, handlers staff, contrôleur, fait sans contenu, zone de `journal-tracked`, contrat, tests.        | batisseur         |
-| 4   | **Notes écran** : passerelle admin, onglet « Notes » gardé par la permission, vignettes à la demande.                                                               | pablo             |
+| Lot | Contenu                                                                                                                                                                                                                                    | Agent             |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| 0   | **Le filet** (D9) sur le code actuel : messages de refus et `Cache-Control` en e2e ; specs de l'éditeur et du formulaire `b2b-ui`, posées dans l'admin. Vert AVANT toute extraction.                                                       | batisseur + pablo |
+| 1   | **Socle API** `src/b2b/shared/photo-cards/`, tests à son niveau ; `DeliveryProcedure` et sa séquence délèguent. Filet du lot 0 inchangé et vert. Mention CLAUDE.md.                                                                        | batisseur         |
+| 2   | **Socle écran** `b2b-ui/src/photo-cards/` (+ entrée `exports` du `package.json`) ; l'éditeur de procédure le consomme. Filet du lot 0 inchangé et vert.                                                                                    | pablo             |
+| 3   | **Notes API** : **mesure du poids sur de vraies photos de notes** (D7 bis), migration, permission `b2b_client_notes`, agrégat, photo + vignette, handlers staff, contrôleur, fait sans contenu, zone de `journal-tracked`, contrat, tests. | batisseur         |
+| 4   | **Notes écran** : passerelle admin, onglet « Notes » gardé par la permission, vignette fabriquée à l'envoi, vignettes à la demande, **vue en grand zoomable**.                                                                             | pablo             |
 
 Chaque lot passe `cerberus` et reçoit son commit. **Les lots 0 à 2 ne partent
 pas seuls vers `main`** (merger déploie, CLAUDE.md §0) : ils y vont avec les lots
