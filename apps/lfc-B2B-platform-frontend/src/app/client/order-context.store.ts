@@ -1,6 +1,8 @@
 import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 
-import { type BillingAddressPayload, deliveryOpenTo, type FulfillmentWindow } from '@lfd/contracts';
+import type { BillingAddressPayload, FulfillmentWindow } from '@lfd/contracts';
+// Valeur par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
+import { deliveryOpenTo } from '@lfd/contracts/shop-values';
 
 import { ClientAudience } from './client-audience.service';
 import { ClientWorkspace } from './client-workspace.service';

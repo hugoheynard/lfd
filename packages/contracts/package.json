@@ -17,6 +17,16 @@
       "types": "./src/feature-access.levels.ts",
       "import": "./dist/feature-access.levels.js",
       "require": "./dist/feature-access.levels.js"
+    },
+    "./workspace": {
+      "types": "./src/workspace.ts",
+      "import": "./dist/workspace.js",
+      "require": "./dist/workspace.js"
+    },
+    "./shop-values": {
+      "types": "./src/shop-values.ts",
+      "import": "./dist/shop-values.js",
+      "require": "./dist/shop-values.js"
     }
   },
   "private": true,

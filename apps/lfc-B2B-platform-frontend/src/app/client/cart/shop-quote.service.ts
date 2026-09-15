@@ -1,12 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import {
-  DELIVERY_CLOSED_FOR_AUDIENCE,
-  type ShopQuoteFulfillment,
-  type ShopQuotePayload,
-  type ShopQuoteView,
-} from '@lfd/contracts';
+import type { ShopQuoteFulfillment, ShopQuotePayload, ShopQuoteView } from '@lfd/contracts';
+// Valeur par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
+import { DELIVERY_CLOSED_FOR_AUDIENCE } from '@lfd/contracts/shop-values';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
   catchError,

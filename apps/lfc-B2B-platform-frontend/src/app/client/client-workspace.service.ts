@@ -1,5 +1,8 @@
 import { computed, inject, Injectable } from '@angular/core';
-import { PERSONAL_WORKSPACE, type CompanyView } from '@lfd/contracts';
+import type { CompanyView } from '@lfd/contracts';
+// Par le sous-chemin sans zod : ce service est chargé au démarrage, par
+// l'intercepteur (déploiement échoué le 2026-09-15 sur le budget du bundle).
+import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 
 import { AccountService } from '../account/account.service';
 
