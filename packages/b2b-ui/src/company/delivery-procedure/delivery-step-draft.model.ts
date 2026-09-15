@@ -6,130 +6,88 @@ import {
   type DeliveryStepFields,
 } from '@lfd/contracts';
 
+import {
+  canAddCard,
+  EMPTY_PHOTO_CARD_DRAFT,
+  isPhotoCardDraftChanged,
+  movedCardIds,
+  newPhotoOf,
+  photoCardChangeOf,
+  photoCardDraftFrom,
+  photoCardIssueOf,
+  toPhotoCardFields,
+  type PhotoCardDraft,
+  type PhotoCardIssue,
+  type PhotoCardLimits,
+  type PhotoDraft,
+} from '../../photo-cards/photo-card-draft.model';
 import type { DeliveryStepPhotoChange } from './delivery-procedure.gateway';
 
 /**
- * Le brouillon d'une étape et ses dérivations — fonctions pures, testées sans
- * Angular. Le formulaire et l'éditeur n'en sont que l'affichage.
+ * Le brouillon d'une étape : le brouillon du socle photo-cartes, **aux bornes
+ * de la procédure**. Ce module ne décide rien — il lie la règle commune aux
+ * nombres du contrat, et sa spec prouve que la liaison est la bonne.
  */
 
-/**
- * La photo telle qu'on la voit dans le formulaire : aucune, celle déjà
- * enregistrée (reconnue à sa révision), ou une nouvelle, déjà allégée.
- */
-export type StepPhotoDraft =
-  | { readonly kind: 'none' }
-  | { readonly kind: 'kept'; readonly revision: string }
-  | { readonly kind: 'picked'; readonly photo: Blob };
+export type StepPhotoDraft = PhotoDraft;
 
-export interface DeliveryStepDraft {
-  readonly title: string;
-  readonly body: string;
-  readonly photo: StepPhotoDraft;
-}
+export type DeliveryStepDraft = PhotoCardDraft;
 
-export const EMPTY_DELIVERY_STEP_DRAFT: DeliveryStepDraft = {
-  title: '',
-  body: '',
-  photo: { kind: 'none' },
-};
+export const EMPTY_DELIVERY_STEP_DRAFT: DeliveryStepDraft = EMPTY_PHOTO_CARD_DRAFT;
 
 /** Ce qui empêche d'enregistrer, ou `''`. */
-export type DeliveryStepIssue = '' | 'title-required' | 'title-too-long' | 'body-too-long';
+export type DeliveryStepIssue = PhotoCardIssue;
+
+/** Les bornes d'une procédure, celles du contrat : 80 / 1000 caractères, 20 étapes. */
+export const DELIVERY_STEP_LIMITS: PhotoCardLimits = {
+  titleMax: DELIVERY_STEP_TITLE_MAX,
+  bodyMax: DELIVERY_STEP_BODY_MAX,
+  maxCards: DELIVERY_PROCEDURE_MAX_STEPS,
+};
 
 /** Le brouillon prérempli d'une étape qu'on refait. */
 export function stepDraftFrom(step: DeliveryProcedureStepView): DeliveryStepDraft {
-  return {
-    title: step.title,
-    body: step.body,
-    photo:
-      step.photoRevision === null
-        ? { kind: 'none' }
-        : { kind: 'kept', revision: step.photoRevision },
-  };
+  return photoCardDraftFrom(step);
 }
 
-/**
- * Le premier reproche du brouillon. Les longueurs se mesurent **après**
- * `trim()`, comme le contrat : des espaces de fin ne doivent pas faire refuser
- * un titre que le serveur accepterait.
- */
+/** Le premier reproche du brouillon, longueurs mesurées après `trim()`. */
 export function stepIssueOf(draft: DeliveryStepDraft): DeliveryStepIssue {
-  const title = draft.title.trim();
-  if (title === '') {
-    return 'title-required';
-  }
-  if (title.length > DELIVERY_STEP_TITLE_MAX) {
-    return 'title-too-long';
-  }
-  if (draft.body.trim().length > DELIVERY_STEP_BODY_MAX) {
-    return 'body-too-long';
-  }
-  return '';
+  return photoCardIssueOf(draft, DELIVERY_STEP_LIMITS);
 }
 
 /** Les champs texte envoyés. */
 export function toStepFields(draft: DeliveryStepDraft): DeliveryStepFields {
-  return { title: draft.title.trim(), body: draft.body.trim() };
+  return toPhotoCardFields(draft);
 }
 
 /** La photo d'une étape qu'on ajoute : la nouvelle, ou aucune. */
 export function newStepPhotoOf(draft: DeliveryStepDraft): Blob | null {
-  return draft.photo.kind === 'picked' ? draft.photo.photo : null;
+  return newPhotoOf(draft);
 }
 
-/**
- * Ce qu'on fait de la photo d'une étape qu'on refait, par comparaison à
- * l'ouverture : une nouvelle la remplace, l'avoir retirée la retire, sinon on
- * n'y touche pas.
- */
+/** Ce qu'on fait de la photo d'une étape qu'on refait, par comparaison à l'ouverture. */
 export function photoChangeOf(
   draft: DeliveryStepDraft,
   initial: DeliveryStepDraft,
 ): DeliveryStepPhotoChange {
-  if (draft.photo.kind === 'picked') {
-    return { kind: 'replace', photo: draft.photo.photo };
-  }
-  if (draft.photo.kind === 'none' && initial.photo.kind !== 'none') {
-    return { kind: 'remove' };
-  }
-  return { kind: 'keep' };
+  return photoCardChangeOf(draft, initial);
 }
 
-/**
- * Le brouillon diffère-t-il de l'ouverture ? Enregistrer n'est cliquable qu'à
- * cette condition : rien à envoyer, rien à cliquer.
- */
+/** Le brouillon diffère-t-il de l'ouverture ? */
 export function isStepDraftChanged(draft: DeliveryStepDraft, initial: DeliveryStepDraft): boolean {
-  return (
-    draft.title.trim() !== initial.title.trim() ||
-    draft.body.trim() !== initial.body.trim() ||
-    draft.photo.kind === 'picked' ||
-    draft.photo.kind !== initial.photo.kind
-  );
+  return isPhotoCardDraftChanged(draft, initial);
 }
 
-/**
- * L'ordre obtenu en déplaçant une étape d'un rang, ou `null` si le geste sort
- * des bornes (monter la première, descendre la dernière) ou vise une étape
- * inconnue.
- */
+/** L'ordre obtenu en déplaçant une étape d'un rang, ou `null` hors des bornes. */
 export function movedStepIds(
   steps: readonly DeliveryProcedureStepView[],
   stepId: string,
   offset: -1 | 1,
 ): readonly string[] | null {
-  const from = steps.findIndex((step) => step.id === stepId);
-  const to = from + offset;
-  if (from < 0 || to < 0 || to >= steps.length) {
-    return null;
-  }
-  const ids = steps.map((step) => step.id);
-  [ids[from], ids[to]] = [ids[to] ?? '', ids[from] ?? ''];
-  return ids;
+  return movedCardIds(steps, stepId, offset);
 }
 
 /** Une étape de plus tient-elle encore sous la borne ? */
 export function canAddStep(count: number): boolean {
-  return count < DELIVERY_PROCEDURE_MAX_STEPS;
+  return canAddCard(count, DELIVERY_STEP_LIMITS);
 }

@@ -48,6 +48,10 @@
     "./payment": {
       "types": "./src/payment/index.ts",
       "default": "./src/payment/index.ts"
+    },
+    "./photo-cards": {
+      "types": "./src/photo-cards/index.ts",
+      "default": "./src/photo-cards/index.ts"
     }
   },
   "scripts": {

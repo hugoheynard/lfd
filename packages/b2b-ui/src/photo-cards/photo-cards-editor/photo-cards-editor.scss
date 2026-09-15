@@ -1,3 +1,8 @@
+// Fragment transparent : l'usage qui l'enveloppe (`lfd-delivery-procedure-editor`) garde sa place dans la mise en page.
+:host {
+  display: contents;
+}
+
 .editor {
   display: flex;
   flex-direction: column;
@@ -5,8 +10,8 @@
   gap: var(--fold-space-md);
 }
 
-// Le rang est dit par le sous-titre de chaque carte ; la liste reste une `ol` pour l'assistance.
-.steps {
+// Le rang ou la qualification est dit par le sous-titre de chaque carte ; la liste reste une `ol` pour l'assistance.
+.cards {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -15,26 +20,26 @@
   gap: var(--fold-space-sm);
 }
 
-.step-actions {
+.card-actions {
   display: flex;
   align-items: center;
   gap: var(--fold-space-xs);
 }
 
-.step-content {
+.card-content {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
 }
 
-// Les retours à la ligne saisis sont la consigne : « 1er étage\nporte de gauche ».
-.step-body {
+// Les retours à la ligne saisis font partie du texte : « 1er étage\nporte de gauche ».
+.card-body {
   margin: 0;
   white-space: pre-line;
   color: var(--fold-color-text);
 }
 
-.step-photo {
+.card-photo {
   display: block;
   max-width: 100%;
   max-height: 12rem;

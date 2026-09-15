@@ -2,32 +2,21 @@ import {
   DELIVERY_PROCEDURE_MAX_STEPS,
   DELIVERY_STEP_BODY_MAX,
   DELIVERY_STEP_TITLE_MAX,
+  type DeliveryProcedureStepView,
 } from '@lfd/contracts';
 
+import type {
+  PhotoCardFormLabels,
+  PhotoCardsEditorLabels,
+} from '../../photo-cards/photo-cards.labels';
+
 /**
- * Les libellés du formulaire d'une étape (`lfd-delivery-step-form`).
+ * Les libellés du formulaire d'une étape (`lfd-delivery-step-form`) : ceux du
+ * formulaire photo-cartes, sous le nom que la procédure a publié.
  *
  * Pur, sans Angular : le runner du paquet (Jest, Node) les lit.
  */
-export interface DeliveryStepFormLabels {
-  readonly title: string;
-  readonly titleHint: string;
-  readonly body: string;
-  readonly bodyHint: string;
-  readonly optional: string;
-  readonly photoLegend: string;
-  readonly photoHint: string;
-  readonly choosePhoto: string;
-  readonly replacePhoto: string;
-  readonly removePhoto: string;
-  readonly photoPreviewAlt: string;
-  readonly photoReducing: string;
-  readonly photoTooHeavy: string;
-  readonly photoUnreadable: string;
-  readonly titleRequired: string;
-  readonly titleTooLong: string;
-  readonly bodyTooLong: string;
-}
+export type DeliveryStepFormLabels = PhotoCardFormLabels;
 
 /**
  * Les libellés de `lfd-delivery-procedure-editor`, formulaire compris.
@@ -114,3 +103,41 @@ export const DELIVERY_PROCEDURE_EDITOR_LABELS_FR: DeliveryProcedureEditorLabels 
   removeConfirm: 'Supprimer définitivement cette étape ?',
   form: DELIVERY_STEP_FORM_LABELS_FR,
 };
+
+/**
+ * Les libellés de la procédure, dits dans la langue de l'éditeur photo-cartes.
+ *
+ * La procédure a publié ses noms (`addStep`, `stepNumber`…) avant le socle, et
+ * les copies fr/en/it de la plateforme les portent : on traduit ici plutôt que
+ * de les renommer. Le sous-titre est le `number` servi, pas le rang.
+ */
+export function photoCardsLabelsOf(
+  labels: DeliveryProcedureEditorLabels,
+): PhotoCardsEditorLabels<DeliveryProcedureStepView> {
+  return {
+    loading: labels.loading,
+    loadError: labels.loadError,
+    retry: labels.retry,
+    emptyTitle: labels.emptyTitle,
+    emptySubtitleEditable: labels.emptySubtitleEditable,
+    emptySubtitleReadOnly: labels.emptySubtitleReadOnly,
+    addCard: labels.addStep,
+    limitReached: labels.limitReached,
+    cardSubtitle: (step) => labels.stepNumber(step.number),
+    moveUp: labels.moveUp,
+    moveDown: labels.moveDown,
+    revise: labels.revise,
+    photoAlt: (step) => labels.photoAlt(step.title),
+    conflict: labels.conflict,
+    writeFailed: labels.writeFailed,
+    newHeading: labels.newStepHeading,
+    reviseHeading: (step) => labels.reviseHeading(step.number),
+    save: labels.save,
+    submitNew: labels.add,
+    cancel: labels.cancel,
+    removeTitle: labels.removeTitle,
+    removeAction: labels.removeAction,
+    removeExplanation: labels.removeExplanation,
+    removeConfirm: labels.removeConfirm,
+  };
+}

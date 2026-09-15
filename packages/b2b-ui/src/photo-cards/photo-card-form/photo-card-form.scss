@@ -1,4 +1,9 @@
-.step-form {
+// Fragment transparent : l'usage qui l'enveloppe (`lfd-delivery-step-form`) garde sa place dans la mise en page.
+:host {
+  display: contents;
+}
+
+.card-form {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
