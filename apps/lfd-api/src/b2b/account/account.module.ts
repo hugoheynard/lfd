@@ -43,6 +43,7 @@ import { ExportCustomersCsvHandler } from "./application/queries/export-customer
 import { GetCustomerPortfolioHandler } from "./application/queries/get-customer-portfolio.handler.js";
 import { ListAllCompaniesHandler } from "./application/queries/list-all-companies.handler.js";
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
+import { GetMyCompanyActivationHandler } from "./application/queries/get-my-company-activation.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
 import { AdminCompanyReader } from "./domain/ports/admin-company.reader.js";
 import { PendingAccessReader } from "./domain/ports/pending-access.reader.js";
@@ -183,6 +184,7 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     RemoveDeliveryAddressHandler,
     SetDefaultDeliveryAddressHandler,
     ListCompanyAddressesHandler,
+    GetMyCompanyActivationHandler,
     GetCompanyForStaffHandler,
     UpdateCompanyIdentityHandler,
     RequestPaymentTermHandler,
