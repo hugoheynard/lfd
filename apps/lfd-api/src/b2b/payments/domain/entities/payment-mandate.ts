@@ -1,5 +1,8 @@
 import type { CustomerMandateView, MandateStatus, PaymentMandateView } from "@lfd/contracts";
 
+import type { MandatePaymentType } from "../../../accounting/domain/value-objects/mandate-defaults.js";
+import type { SepaScheme } from "../../../accounting/domain/value-objects/sepa-scheme.js";
+
 import {
   MandateAcceptanceInFutureError,
   MandateNotProvableError,
@@ -53,6 +56,12 @@ export interface MandateSnapshot {
   readonly proofFileName: string | null;
   /** Laquelle de NOS entités a émis. `null` pour l'ère Stripe. */
   readonly creditorId: string | null;
+  /**
+   * 🔴 Le schéma et le type de paiement FIGÉS à la frappe. Le papier et le lot
+   * lisent ceux-ci, jamais le réglage courant de l'émetteur.
+   */
+  readonly scheme: SepaScheme;
+  readonly paymentType: MandatePaymentType;
 }
 
 /** Un mandat prêt à être écrit : tout sauf l'identité, que la base donne. */
@@ -88,6 +97,10 @@ export function draftMandate(input: {
     proofStorageKey: null,
     proofFileName: null,
     creditorId: null,
+    // Un mandat enregistré chez Stripe est un SEPA CORE récurrent : c'est le
+    // seul prélèvement que Stripe propose.
+    scheme: "CORE",
+    paymentType: "recurrent",
   };
 }
 
@@ -117,11 +130,15 @@ export function mintMandate(input: {
   readonly companyId: string;
   readonly creditorId: string;
   readonly reference: string;
+  readonly scheme: SepaScheme;
+  readonly paymentType: MandatePaymentType;
 }): MandateToCreate {
   return {
     companyId: input.companyId,
     creditorId: input.creditorId,
     reference: input.reference,
+    scheme: input.scheme,
+    paymentType: input.paymentType,
     status: "draft",
     stripeCustomerId: null,
     paymentMethodId: null,
@@ -355,6 +372,7 @@ export class PaymentMandate {
       id: this.id,
       reference: this.identity.reference,
       status: this.statusValue,
+      scheme: this.identity.scheme,
       last4: this.identity.last4,
       bankCode: this.identity.bankCode,
       country: this.identity.country,
@@ -375,6 +393,7 @@ export class PaymentMandate {
       id: this.id,
       reference: this.identity.reference,
       status: this.statusValue,
+      scheme: this.identity.scheme,
       hasProof: this.proven(),
       proofFileName: this.proofValue?.fileName ?? "",
       acceptedAt: this.acceptedAtValue?.toISOString() ?? null,

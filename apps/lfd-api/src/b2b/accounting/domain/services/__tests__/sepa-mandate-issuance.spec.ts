@@ -19,7 +19,11 @@ const CREDITOR: CreditorSnapshot = {
   preNotificationDays: 14,
   mandateContractDescription: "Fourniture de pains",
   mandatePaymentType: "recurrent",
+  mandateScheme: "B2B",
 };
+
+const CORE = { scheme: "CORE", paymentType: "recurrent" } as const;
+const B2B = { scheme: "B2B", paymentType: "recurrent" } as const;
 
 const RUM = "LFC-9P2X4B-260912-K7M3QT";
 
@@ -31,13 +35,13 @@ const RUM = "LFC-9P2X4B-260912-K7M3QT";
  */
 describe("renderSepaMandatePdf — l'émission", () => {
   it("nomme le document par sa RUM dans ses métadonnées", async () => {
-    const pdf = await renderSepaMandatePdf(CREDITOR, null, null, { reference: RUM });
+    const pdf = await renderSepaMandatePdf(CORE, CREDITOR, null, null, { reference: RUM });
 
     expect(pdf.toString("latin1")).toContain(RUM);
   });
 
   it("reste un EXEMPLE sans référence", async () => {
-    const pdf = await renderSepaMandatePdf(CREDITOR, null, null, null);
+    const pdf = await renderSepaMandatePdf(CORE, CREDITOR, null, null, null);
 
     expect(pdf.toString("latin1")).toContain("exemple");
   });
@@ -54,8 +58,8 @@ describe("renderSepaMandatePdf — l'émission", () => {
    */
   it("produit un document différent, sans la mention « exemple »", async () => {
     const [vierge, emis] = await Promise.all([
-      renderSepaMandatePdf(CREDITOR, null, null, null),
-      renderSepaMandatePdf(CREDITOR, null, null, { reference: RUM }),
+      renderSepaMandatePdf(CORE, CREDITOR, null, null, null),
+      renderSepaMandatePdf(CORE, CREDITOR, null, null, { reference: RUM }),
     ]);
 
     expect(emis.equals(vierge)).toBe(false);
@@ -63,12 +67,22 @@ describe("renderSepaMandatePdf — l'émission", () => {
   });
 
   /**
-   * Le peigne du formulaire fait 26 cases. Une RUM plus longue serait tronquée
+   * Le peigne du mandat CORE fait 26 cases. Une RUM plus longue serait tronquée
    * en SILENCE par le dessin — donc imprimée fausse sur un papier signé.
    */
-  it("refuse une référence qui déborde du peigne, plutôt que de la tronquer", async () => {
+  it("CORE refuse une référence qui déborde de ses 26 cases, plutôt que de la tronquer", async () => {
     await expect(
-      renderSepaMandatePdf(CREDITOR, null, null, { reference: "X".repeat(27) }),
+      renderSepaMandatePdf(CORE, CREDITOR, null, null, { reference: "X".repeat(27) }),
+    ).rejects.toThrow(MandateFieldTooLongError);
+  });
+
+  /** Le gabarit interentreprises a 35 cases : la borne EPC d'une RUM. */
+  it("l'interentreprises accepte 35 caractères et refuse le 36e", async () => {
+    await expect(
+      renderSepaMandatePdf(B2B, CREDITOR, null, null, { reference: "X".repeat(35) }),
+    ).resolves.toBeDefined();
+    await expect(
+      renderSepaMandatePdf(B2B, CREDITOR, null, null, { reference: "X".repeat(36) }),
     ).rejects.toThrow(MandateFieldTooLongError);
   });
 });

@@ -1,4 +1,5 @@
 import type { MandatePaymentType } from "./value-objects/mandate-defaults.js";
+import type { SepaScheme } from "./value-objects/sepa-scheme.js";
 
 /**
  * L'émetteur, **figé au jour où le document a été produit**.
@@ -60,4 +61,9 @@ export interface CreditorSnapshot {
 
   /** **Zone 12** du mandat — récurrent, ou ponctuel. */
   readonly mandatePaymentType: MandatePaymentType;
+  /**
+   * Le schéma que l'émetteur donne à ses frappes À VENIR. Un mandat le recopie
+   * à la frappe ; ensuite, seul le sien compte.
+   */
+  readonly mandateScheme: SepaScheme;
 }

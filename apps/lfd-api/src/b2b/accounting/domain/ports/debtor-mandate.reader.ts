@@ -1,16 +1,32 @@
+import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
+import type { SepaScheme } from "../value-objects/sepa-scheme.js";
+
 /**
- * Ce qu'il faut d'un débiteur pour le prélever : **sa RUM et son compte**.
+ * Ce qu'il faut d'un débiteur pour le prélever : **sa RUM, son compte, et le
+ * régime que son papier autorise**.
  *
- * Les deux voyagent ensemble parce qu'ils ne valent rien séparément — une RUM
- * sans IBAN ne dit pas où débiter, un IBAN sans RUM n'a aucune autorisation
- * derrière lui. Les séparer en deux lectures laisserait écrire un lot qui a
- * l'un sans l'autre.
+ * Ils voyagent ensemble parce qu'ils ne valent rien séparément — une RUM sans
+ * IBAN ne dit pas où débiter, un IBAN sans RUM n'a aucune autorisation derrière
+ * lui, et l'un comme l'autre sans le schéma du mandat ferait prélever sous un
+ * régime que le débiteur n'a pas signé.
  */
 export interface DebtorMandate {
   /** La RUM, telle qu'elle est imprimée sur le papier signé. */
   readonly reference: string;
   /** L'IBAN du compte à débiter, en clair — il vient d'être déscellé. */
   readonly iban: string;
+  /**
+   * Le BIC de la banque du débiteur, lu sur son RIB recopié. `null` quand il
+   * n'est pas renseigné : le lot écrit alors `NOTPROVIDED`, jamais un BIC deviné.
+   */
+  readonly bic: string | null;
+  /**
+   * 🔴 Le schéma **du mandat**, figé à sa frappe — jamais le réglage courant de
+   * l'entité. C'est lui qui décide dans quel fichier la ligne sort.
+   */
+  readonly scheme: SepaScheme;
+  /** Le type de paiement **du mandat** (zone 12 de son papier) : il fait le `SeqTp`. */
+  readonly paymentType: MandatePaymentType;
 }
 
 /**
@@ -36,6 +52,9 @@ export abstract class DebtorMandateReader {
    * Une société absente de la réponse n'a pas de mandat prélevable — brouillon
    * non signé, mandat révoqué, ou RIB jamais recopié. L'absence est une réponse,
    * pas une panne : c'est au lot de décider ce qu'il en fait, et il refuse.
+   *
+   * Tous schémas confondus : c'est le lot qui découpe, après avoir jugé le cycle
+   * ENTIER — une lecture filtrée par schéma cacherait les sociétés sans mandat.
    *
    * En lot plutôt qu'un appel par société : un cycle porte autant de lignes que
    * de clients, et une lecture par ligne ferait payer au serveur ce qu'un écran

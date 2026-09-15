@@ -1,6 +1,5 @@
 import {
   type CustomerMandateOptionsSectionView,
-  type CustomerMandateOptionsView,
   type CustomerMandateView,
   type SetMandateOptionsPayload,
   setMandateOptionsPayloadSchema,
@@ -153,19 +152,18 @@ export class CompanyMandateController {
   }
 
   /**
-   * Les zones 14 et 19, ou `{ options: null }` tant qu'aucun RIB n'est déposé.
-   * Enveloppé : un `null` de contrôleur partirait en corps vide.
+   * Les zones 14 et 19, ou `{ options: null }` tant qu'aucun RIB n'est déposé,
+   * avec le schéma de l'émetteur. Enveloppé : un `null` de contrôleur partirait
+   * en corps vide.
    */
   @Get(":companyId/mandate-options")
   async readOptions(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
   ): Promise<CustomerMandateOptionsSectionView> {
-    const options = await this.queries.execute<
-      GetMyCompanyMandateOptionsQuery,
-      CustomerMandateOptionsView | null
-    >(new GetMyCompanyMandateOptionsQuery(user.userId, companyId));
-    return { options };
+    return this.queries.execute<GetMyCompanyMandateOptionsQuery, CustomerMandateOptionsSectionView>(
+      new GetMyCompanyMandateOptionsQuery(user.userId, companyId),
+    );
   }
 
   /**

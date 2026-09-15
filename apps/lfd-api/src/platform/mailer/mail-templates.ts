@@ -8,6 +8,7 @@ import {
 } from "@lfd/mailer";
 
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { qrPng } from "./qr-image.js";
 
 /**
@@ -75,6 +76,11 @@ export interface B2bMails {
    * pièce jointe pour recopier une référence au téléphone.
    */
   "customer.mandate-to-sign": {
+    /**
+     * Le schéma SEPA **du mandat joint**, figé à sa frappe — pas le réglage
+     * courant de l'entité : le courriel décrit le papier qu'il porte.
+     */
+    readonly scheme: MandateMailScheme;
     readonly companyName: string;
     /** La RUM, dictable au téléphone. */
     readonly reference: string;
@@ -456,47 +462,33 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         footer: "Vous n'attendiez pas ce rattachement ? Répondez à cet e-mail, nous le retirerons.",
       }),
     }),
-    "customer.mandate-to-sign": (data) => ({
-      subject: sanitiseSubject(
-        `Votre mandat de prélèvement SEPA interentreprises — ${data.reference}`,
-      ),
-      html: person({
-        title: "Votre mandat de prélèvement SEPA interentreprises à signer",
-        body:
-          `Bonjour,\n\nVous trouverez en pièce jointe le mandat de prélèvement SEPA ` +
-          `interentreprises établi pour ${data.companyName}. Il est prérempli : il ne vous ` +
-          `reste qu'à le dater, le signer, et nous le renvoyer scanné ou photographié.`,
-        // 🔴 La déclaration à la banque est une ÉTAPE, pas une remarque. En SDD
-        // B2B, la banque du débiteur refuse le premier prélèvement tant que le
-        // mandat ne lui a pas été déclaré — un client qui signe sans le faire
-        // croit avoir fini, et c'est le débit qui le lui apprend.
-        //
-        // Même vocabulaire que le formulaire joint (`sepa-mandate-wording.ts`,
-        // aligné le 2026-09-14) : un courriel qui dit « interentreprises » sur
-        // un papier qui dirait autre chose ferait douter du papier. Le texte est
-        // recopié et non importé — le mailer est une brique de `platform/`, qui
-        // ne connaît pas la comptabilité.
-        rows: [
-          { label: "Référence du mandat (RUM)", value: data.reference },
-          { label: "Identifiant créancier (ICS)", value: data.creditorIdentifier },
-          { label: "Créancier", value: data.creditorName },
+    "customer.mandate-to-sign": (data) => {
+      // Le texte qui dépend du schéma vit dans `mandate-to-sign-wording.ts`.
+      const wording = MANDATE_TO_SIGN_WORDING[data.scheme];
+      return {
+        subject: sanitiseSubject(`Votre ${wording.documentName} — ${data.reference}`),
+        html: person({
+          title: `Votre ${wording.documentName} à signer`,
+          body:
+            `Bonjour,\n\nVous trouverez en pièce jointe le ${wording.documentName} ` +
+            `établi pour ${data.companyName}. Il est prérempli : il ne vous ` +
+            `reste qu'à le dater, le signer, et nous le renvoyer scanné ou photographié.`,
+          rows: [
+            { label: "Référence du mandat (RUM)", value: data.reference },
+            { label: "Identifiant créancier (ICS)", value: data.creditorIdentifier },
+            { label: "Créancier", value: data.creditorName },
+          ],
+          footer: wording.footer,
+        }),
+        attachments: [
+          {
+            filename: data.fileName,
+            contentBase64: data.pdfBase64,
+            contentType: "application/pdf",
+          },
         ],
-        footer:
-          "Important : ce mandat relève du schéma SEPA interentreprises (B2B). Il est " +
-          "destiné uniquement à des transactions interentreprises et ne donne droit à " +
-          "aucun remboursement une fois votre compte débité. Avant le premier " +
-          "prélèvement, déclarez-le à votre banque avec la référence du mandat et " +
-          "l'identifiant du créancier ci-dessus — sans cette déclaration, votre banque " +
-          "refusera le prélèvement.",
-      }),
-      attachments: [
-        {
-          filename: data.fileName,
-          contentBase64: data.pdfBase64,
-          contentType: "application/pdf",
-        },
-      ],
-    }),
+      };
+    },
     "staff.appointment-booked": (data) => ({
       subject: sanitiseSubject(`Nouveau rendez-vous — ${data.contactName} · ${data.when}`),
       html: renderLayout({

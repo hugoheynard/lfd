@@ -1,6 +1,12 @@
+import type { Buffer } from "node:buffer";
+
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { DebtorSnapshot } from "../../debtor-snapshot.js";
-import { renderSepaMandatePdf, sampleMandateFileName } from "../sepa-mandate-pdf.js";
+import {
+  type MandateIssuance,
+  renderSepaMandatePdf,
+  sampleMandateFileName,
+} from "../sepa-mandate-pdf.js";
 import { drawnText } from "./pdf-drawn-text.js";
 
 const CREDITOR: CreditorSnapshot = {
@@ -20,24 +26,40 @@ const CREDITOR: CreditorSnapshot = {
   preNotificationDays: 14,
   mandateContractDescription: "Fourniture de cafe et de viennoiseries",
   mandatePaymentType: "recurrent" as const,
+  mandateScheme: "B2B",
 };
 
-describe("renderSepaMandatePdf", () => {
+/**
+ * Ces suites éprouvent la mise en page CORE — le modèle EPC à zones numérotées.
+ * L'interentreprises a la sienne : `sepa-mandate-scheme.spec.ts`.
+ */
+function core(
+  creditor: CreditorSnapshot,
+  debtor: DebtorSnapshot | null = null,
+  issuance: MandateIssuance | null = null,
+): Promise<Buffer> {
+  return renderSepaMandatePdf(
+    { scheme: "CORE", paymentType: "recurrent" },
+    creditor,
+    null,
+    debtor,
+    issuance,
+  );
+}
+
+describe("renderSepaMandatePdf — CORE", () => {
   it("rend un PDF", async () => {
-    const pdf = await renderSepaMandatePdf(CREDITOR, null);
+    const pdf = await core(CREDITOR);
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
   it("rend les MÊMES octets deux fois — sans quoi rien ne serait comparable", async () => {
-    const [first, second] = await Promise.all([
-      renderSepaMandatePdf(CREDITOR, null),
-      renderSepaMandatePdf(CREDITOR, null),
-    ]);
+    const [first, second] = await Promise.all([core(CREDITOR), core(CREDITOR)]);
     expect(first.equals(second)).toBe(true);
   });
 
   it("imprime l'ICS, le nom et l'adresse du créancier", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     expect(text).toContain("FR00ZZZ900001");
     // Le TITULAIRE du compte, pas la raison sociale — cf. le describe dédié.
     expect(text).toContain("CRAZEATIVITY");
@@ -54,13 +76,13 @@ describe("renderSepaMandatePdf", () => {
    * elle prouve que `drawnText` lit vraiment ce qui est dessiné.
    */
   it("n'imprime JAMAIS l'IBAN du créancier", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     expect(text).not.toContain("FR7630006000011234567890189");
     expect(text).not.toContain("FR76 3000 6000 0112 3456 7890 189");
   });
 
   it("laisse le bloc du débiteur et la signature vides", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     // Les légendes sont là — donc les zones sont dessinées — mais rien n'y est
     // écrit : la fiche est un exemplaire vierge, pas un mandat prérempli.
     expect(text).toContain("Nom / Pr\u00e9noms du d\u00e9biteur");
@@ -73,7 +95,7 @@ describe("renderSepaMandatePdf", () => {
    * légendes sont ce qu'un chargé de clientèle et un banquier citent.
    */
   it("porte les zones indicatives 14 à 20, dessinées et vides", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     expect(text).toContain("Informations relatives au contrat");
     expect(text).toContain("Code identifiant du tiers d\u00e9biteur");
     expect(text).toContain("Description du contrat");
@@ -84,14 +106,14 @@ describe("renderSepaMandatePdf", () => {
    * qu'à nous identifier : elle dit au client où poster la fiche signée.
    */
   it("prérempli l'adresse de retour, et rappelle la borne des 35 caractères", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     expect(text).toContain("A retourner \u00e0 :");
     expect(text).toContain("Zone r\u00e9serv\u00e9e \u00e0 l'usage exclusif du cr\u00e9ancier");
     expect(text).toContain("longueur maximum de 35 caract\u00e8res");
   });
 
   it("porte la mention EXEMPLE, pour qu'une signature apposée dessus ne trompe personne", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     expect(text).toContain("EXEMPLE");
   });
 });
@@ -119,10 +141,11 @@ describe("sampleMandateFileName", () => {
 describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
   it("imprime le TITULAIRE du compte, et PAS la raison sociale, quand ils diffèrent", async () => {
     const text = drawnText(
-      await renderSepaMandatePdf(
-        { ...CREDITOR, name: "Ancienne Raison Sociale", accountHolder: "CRAZEATIVITY SAS" },
-        null,
-      ),
+      await core({
+        ...CREDITOR,
+        name: "Ancienne Raison Sociale",
+        accountHolder: "CRAZEATIVITY SAS",
+      }),
     );
 
     expect(text).toContain("CRAZEATIVITY SAS");
@@ -131,14 +154,11 @@ describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
 
   it("imprime l'adresse DU RIB, et pas celle du siège, quand elles diffèrent", async () => {
     const text = drawnText(
-      await renderSepaMandatePdf(
-        {
-          ...CREDITOR,
-          addressLines: ["Siège social", "75001 Paris", "FR"],
-          accountAddressLines: ["Agence de la Balme", "73150 Val d'Isère", "FR"],
-        },
-        null,
-      ),
+      await core({
+        ...CREDITOR,
+        addressLines: ["Siège social", "75001 Paris", "FR"],
+        accountAddressLines: ["Agence de la Balme", "73150 Val d'Isère", "FR"],
+      }),
     );
 
     expect(text).toContain("Agence de la Balme");
@@ -151,9 +171,7 @@ describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
    * en nommerait un autre plus bas serait contestable.
    */
   it("emploie le MÊME nom dans l'autorisation et dans la zone du créancier", async () => {
-    const text = drawnText(
-      await renderSepaMandatePdf({ ...CREDITOR, accountHolder: "TITULAIRE UNIQUE" }, null),
-    );
+    const text = drawnText(await core({ ...CREDITOR, accountHolder: "TITULAIRE UNIQUE" }));
 
     expect(text.split("TITULAIRE UNIQUE").length - 1).toBeGreaterThan(1);
   });
@@ -161,10 +179,7 @@ describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
   /** Repli pour les entités renseignées avant que le bloc du RIB existe. */
   it("retombe sur la raison sociale et le siège quand aucun RIB n'est recopié", async () => {
     const text = drawnText(
-      await renderSepaMandatePdf(
-        { ...CREDITOR, accountHolder: null, accountAddressLines: [] },
-        null,
-      ),
+      await core({ ...CREDITOR, accountHolder: null, accountAddressLines: [] }),
     );
 
     expect(text).toContain("Crazeativity");
@@ -180,7 +195,7 @@ describe("renderSepaMandatePdf — quel créancier est imprimé", () => {
  */
 describe("renderSepaMandatePdf — l'ICS en cases", () => {
   it("imprime les 13 caractères d'un ICS français", async () => {
-    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: "FR00ZZZ900001" }, null));
+    const text = drawnText(await core({ ...CREDITOR, ics: "FR00ZZZ900001" }));
 
     expect(text).toContain("FR00ZZZ900001");
   });
@@ -192,7 +207,7 @@ describe("renderSepaMandatePdf — l'ICS en cases", () => {
   it("imprime EN ENTIER un ICS étranger plus long, sans en perdre un caractère", async () => {
     const long = "DE98ZZZ09999999999";
 
-    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: long }, null));
+    const text = drawnText(await core({ ...CREDITOR, ics: long }));
 
     expect(text).toContain(long);
   });
@@ -205,7 +220,7 @@ describe("renderSepaMandatePdf — l'ICS en cases", () => {
   it("garde le numéro entier même au-delà de ce que les cases admettent", async () => {
     const veryLong = `BE69ZZZ${"9".repeat(28)}`;
 
-    const text = drawnText(await renderSepaMandatePdf({ ...CREDITOR, ics: veryLong }, null));
+    const text = drawnText(await core({ ...CREDITOR, ics: veryLong }));
 
     expect(veryLong).toHaveLength(35);
     expect(text).toContain(veryLong);
@@ -214,6 +229,8 @@ describe("renderSepaMandatePdf — l'ICS en cases", () => {
 
 /** Le RIB d'un client, tel que l'aperçu le remplit. */
 const DEBTOR: DebtorSnapshot = {
+  companyName: "SARL Refuge du Col",
+  siren: "812456789",
   holder: "Refuge du Col SARL",
   addressLine1: "12 rue des Alpages",
   addressLine2: "",
@@ -228,12 +245,12 @@ const DEBTOR: DebtorSnapshot = {
 
 describe("renderSepaMandatePdf — le côté du débiteur", () => {
   it("laisse les zones 1 à 6 VIERGES sans débiteur : c'est la fiche d'exemple", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     expect(text).not.toContain("Refuge du Col");
   });
 
   it("imprime le titulaire, son adresse et son pays", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    const text = drawnText(await core(CREDITOR, DEBTOR));
     expect(text).toContain("Refuge du Col SARL");
     expect(text).toContain("12 rue des Alpages");
     expect(text).toContain("Val d'Isere");
@@ -242,14 +259,12 @@ describe("renderSepaMandatePdf — le côté du débiteur", () => {
   it("recolle le complément d'adresse plutôt que de le perdre", async () => {
     // « Bâtiment B » perdu, le courrier de la banque n'arrive pas — et le
     // formulaire n'a qu'UNE ligne d'adresse.
-    const text = drawnText(
-      await renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, addressLine2: "Batiment B" }),
-    );
+    const text = drawnText(await core(CREDITOR, { ...DEBTOR, addressLine2: "Batiment B" }));
     expect(text).toContain("12 rue des Alpages, Batiment B");
   });
 
   it("remplit les zones facultatives propres à CE client", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    const text = drawnText(await core(CREDITOR, DEBTOR));
     expect(text).toContain("C-9P2X4B");
     expect(text).toContain("CT-42");
   });
@@ -261,7 +276,7 @@ describe("renderSepaMandatePdf — le côté du débiteur", () => {
    * dossier.
    */
   it("imprime la description du contrat MÊME sans débiteur", async () => {
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null));
+    const text = drawnText(await core(CREDITOR));
     expect(text).toContain("Fourniture de cafe et de viennoiseries");
   });
 
@@ -269,7 +284,7 @@ describe("renderSepaMandatePdf — le côté du débiteur", () => {
     // 🔴 Aucune RUM n'est frappée : une signature apposée sur cet aperçu
     // créerait un mandat sans référence, inutilisable, mais que le client
     // croirait avoir donné.
-    const text = drawnText(await renderSepaMandatePdf(CREDITOR, null, DEBTOR));
+    const text = drawnText(await core(CREDITOR, DEBTOR));
     expect(text).toContain("EXEMPLE");
   });
 
@@ -283,23 +298,17 @@ describe("renderSepaMandatePdf — le côté du débiteur", () => {
     const tooLong = "MT84MALT011000012345MTLCAST001S";
     expect(tooLong.length).toBeGreaterThan(27);
 
-    await expect(
-      renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, iban: tooLong }),
-    ).rejects.toThrow(/27/u);
+    await expect(core(CREDITOR, { ...DEBTOR, iban: tooLong })).rejects.toThrow(/27/u);
   });
 
   it("accepte un IBAN plus court que le peigne", async () => {
     // La Norvège en a 15 : le peigne garde ses cases vides à droite, ce qui est
     // le rendu normal d'un formulaire à cases.
-    const text = drawnText(
-      await renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, iban: "NO9386011117947" }),
-    );
+    const text = drawnText(await core(CREDITOR, { ...DEBTOR, iban: "NO9386011117947" }));
     expect(text).toContain("Refuge du Col SARL");
   });
 
   it("REFUSE un BIC plus long que ses 11 cases", async () => {
-    await expect(
-      renderSepaMandatePdf(CREDITOR, null, { ...DEBTOR, bic: "CEPAFRPP751XXXX" }),
-    ).rejects.toThrow(/11/u);
+    await expect(core(CREDITOR, { ...DEBTOR, bic: "CEPAFRPP751XXXX" })).rejects.toThrow(/11/u);
   });
 });

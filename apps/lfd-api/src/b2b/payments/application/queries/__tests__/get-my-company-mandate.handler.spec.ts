@@ -44,6 +44,7 @@ describe("GetMyCompanyMandateHandler — la carte mandat du client", () => {
       id: "mdt_actif",
       reference: "LFC-9P2X4B-260914-K7M3QT",
       status: "active",
+      scheme: "B2B",
       hasProof: true,
       proofFileName: "mandat-actif.pdf",
       acceptedAt: "2026-01-15T00:00:00.000Z",

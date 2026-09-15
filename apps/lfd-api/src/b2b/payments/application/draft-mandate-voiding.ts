@@ -21,6 +21,12 @@ export interface DraftVoidingDeps {
 export interface DraftVoidingTrigger {
   readonly cause: DraftVoidingCause;
   readonly via: MandateActorChannel;
+  /**
+   * Le brouillon trouvé est-il concerné ? Absent = toujours. Sert à épargner un
+   * brouillon dont le papier n'imprime pas ce qui change (zones 14/19 sous un
+   * formulaire interentreprises, depuis le 2026-09-15).
+   */
+  readonly appliesTo?: (draft: PaymentMandate) => boolean;
 }
 
 /**
@@ -49,24 +55,62 @@ export async function writeVoidingDraft(
   trigger: DraftVoidingTrigger,
   write: () => Promise<void>,
 ): Promise<PaymentMandate | null> {
-  const draft = await deps.mandates.findDraft(companyId);
+  const found = await deps.mandates.findDraft(companyId);
+  const draft = found !== null && (trigger.appliesTo?.(found) ?? true) ? found : null;
   // L'agrégat refuse la transition AVANT toute écriture : révoquer d'abord en
   // mémoire, écrire ensuite.
   draft?.revoke(deps.clock.now());
   await deps.uow.run(async () => {
     await write();
     if (draft !== null) {
-      await deps.mandates.save(draft);
-      await deps.events.publishTraced(
-        new MandateDraftVoidedEvent(
-          draft.id,
-          companyId,
-          draft.reference,
-          trigger.cause,
-          trigger.via,
-        ),
-      );
+      await recordVoided(deps, draft, trigger);
     }
   });
   return draft;
+}
+
+/**
+ * Révoque **plusieurs** brouillons d'un coup — ceux d'une entité émettrice dont
+ * un réglage imprimé vient de changer (plan
+ * `documentation/b2b/plan-mandat-deux-schemas.md` §10.4).
+ *
+ * Même séquence que {@link writeVoidingDraft}, sans écriture propre : l'appelant
+ * est déjà dans l'unité de travail de son réglage, que celle-ci **rejoint**. Tous
+ * sont révoqués en mémoire avant la première écriture — un refus de l'agrégat
+ * n'en laisse aucun à moitié.
+ */
+export async function voidDrafts(
+  deps: DraftVoidingDeps,
+  drafts: readonly PaymentMandate[],
+  trigger: DraftVoidingTrigger,
+): Promise<void> {
+  if (drafts.length === 0) {
+    return;
+  }
+  const now = deps.clock.now();
+  for (const draft of drafts) {
+    draft.revoke(now);
+  }
+  await deps.uow.run(async () => {
+    for (const draft of drafts) {
+      await recordVoided(deps, draft, trigger);
+    }
+  });
+}
+
+async function recordVoided(
+  deps: DraftVoidingDeps,
+  draft: PaymentMandate,
+  trigger: DraftVoidingTrigger,
+): Promise<void> {
+  await deps.mandates.save(draft);
+  await deps.events.publishTraced(
+    new MandateDraftVoidedEvent(
+      draft.id,
+      draft.companyId,
+      draft.reference,
+      trigger.cause,
+      trigger.via,
+    ),
+  );
 }

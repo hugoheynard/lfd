@@ -1,5 +1,5 @@
 /**
- * **Le débiteur, figé** — ce qu'un mandat imprime aux zones 1 à 6.
+ * **Le débiteur, figé** — ce qu'un mandat imprime de la société et de son compte.
  *
  * ## Pourquoi une copie, et pas le RIB du client
  *
@@ -11,7 +11,7 @@
  *
  * ## 🔴 L'IBAN est ici EN CLAIR, et c'est le seul endroit qui l'exige
  *
- * Il faut bien l'imprimer : les zones 5 et 6 du modèle EPC sont faites pour ça,
+ * Il faut bien l'imprimer : les deux formulaires ont un peigne fait pour ça,
  * et c'est le compte que le débiteur reconnaît sur son relevé. La copie est donc
  * de courte vie — le temps d'un rendu — et ne se range nulle part.
  *
@@ -19,6 +19,18 @@
  * le fait sortir est un PDF, et un seul.
  */
 export interface DebtorSnapshot {
+  /**
+   * La **société** débitrice — sa raison sociale, imprimée par le mandat
+   * interentreprises. Distincte de {@link holder} : le titulaire du compte peut
+   * être une autre personne que le débiteur (le gabarit le dit en toutes lettres).
+   */
+  readonly companyName: string;
+  /**
+   * Le SIREN du débiteur, **dérivé** du SIRET par {@link sirenOfSiret} ; vide
+   * quand la société n'a pas de SIRET exploitable (le peigne reste à remplir à
+   * la main, décision Q3 du plan `plan-mandat-deux-schemas.md`).
+   */
+  readonly siren: string;
   /** Le titulaire tel que sa banque le connaît. */
   readonly holder: string;
   readonly addressLine1: string;
@@ -48,3 +60,23 @@ export interface DebtorSnapshot {
  * sur tous les mandats d'une entité. La chercher ici est le réflexe naturel —
  * d'où cette note.
  */
+
+/** La longueur d'un SIRET : le SIREN (9) suivi du NIC (5). */
+const SIRET_LENGTH = 14;
+const SIREN_LENGTH = 9;
+
+/**
+ * Le SIREN tiré d'un SIRET — ses **neuf premiers chiffres**.
+ *
+ * Vide dès que le SIRET n'a pas la forme d'un SIRET (quatorze chiffres, blancs
+ * ignorés) : il est **facultatif** à l'ouverture d'une société (chaîne vide =
+ * absence), et un SIRET ancien n'a pas forcément été revalidé. Neuf caractères
+ * pris sur une valeur abîmée imprimeraient un SIREN faux sur un papier signé ;
+ * un peigne vide, lui, se remplit à la main.
+ */
+export function sirenOfSiret(siret: string): string {
+  const digits = siret.replace(/\s/gu, "");
+  return digits.length === SIRET_LENGTH && /^\d+$/u.test(digits)
+    ? digits.slice(0, SIREN_LENGTH)
+    : "";
+}

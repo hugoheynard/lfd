@@ -35,5 +35,15 @@ export const PAYMENT_MANDATE_FACTS = {
 /** Qui a fait le geste : un agent du back-office, ou le client depuis « Mon compte ». */
 export type MandateActorChannel = "staff" | "customer";
 
-/** Ce qui a changé sur le papier et rendu le brouillon caduc. */
-export type DraftVoidingCause = "bank_account_changed" | "mandate_options_changed";
+/**
+ * Ce qui a changé sur le papier et rendu le brouillon caduc.
+ *
+ * Les deux dernières viennent d'un réglage de l'**entité émettrice** (plan
+ * `documentation/b2b/plan-mandat-deux-schemas.md` §10.4) : elles révoquent tous
+ * ses brouillons d'un coup, et non celui d'une société.
+ */
+export type DraftVoidingCause =
+  | "bank_account_changed"
+  | "mandate_options_changed"
+  | "mandate_scheme_changed"
+  | "mandate_defaults_changed";

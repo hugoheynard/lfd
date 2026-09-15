@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { SepaScheme } from "./legal-entity.js";
+
 /**
  * Le **RIB d'une société cliente** — le compte que nous débitons.
  *
@@ -145,4 +147,11 @@ export type CustomerMandateOptionsView = Pick<
 export interface CustomerMandateOptionsSectionView {
   /** `null` tant qu'aucun RIB n'est déposé : les zones vivent sur sa ligne. */
   readonly options: CustomerMandateOptionsView | null;
+  /**
+   * Le schéma sous lequel l'émetteur unique frappe désormais, ou `null` sans
+   * émetteur actif. Champ ajouté le 2026-09-15 (plan mandat deux schémas §10,
+   * Q2) : le mandat interentreprises n'imprime pas les zones 14 et 19, et la
+   * carte qui les règle se masque quand il vaut `B2B`.
+   */
+  readonly issuerScheme: SepaScheme | null;
 }

@@ -27,6 +27,8 @@ const REGISTRATION: RegisteredMandate = {
 
 function snapshot(overrides: Partial<MandateSnapshot> = {}): MandateSnapshot {
   return {
+    scheme: "B2B",
+    paymentType: "recurrent",
     ...REGISTRATION,
     id: "mdt_1",
     companyId: "cmp_1",
@@ -175,6 +177,8 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
     // L'invariant du lot. Poser la date de frappe ici daterait l'autorisation
     // du jour où on l'a DEMANDÉE, et c'est cette date qu'un débiteur conteste.
     const draft = mintMandate({
+      scheme: "B2B",
+      paymentType: "recurrent",
       companyId: "cmp_1",
       creditorId: "ent_1",
       reference: "LFC-9P2X4B-260912-K7M3QT",
@@ -185,14 +189,26 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
   });
 
   it("ne porte aucun rattachement au prestataire", () => {
-    const draft = mintMandate({ companyId: "cmp_1", creditorId: "ent_1", reference: "LFC-X" });
+    const draft = mintMandate({
+      scheme: "B2B",
+      paymentType: "recurrent",
+      companyId: "cmp_1",
+      creditorId: "ent_1",
+      reference: "LFC-X",
+    });
 
     expect(draft.stripeCustomerId).toBeNull();
     expect(draft.paymentMethodId).toBeNull();
   });
 
   it("nomme son émetteur — sans lui, le papier ne peut pas être imprimé", () => {
-    const draft = mintMandate({ companyId: "cmp_1", creditorId: "ent_1", reference: "LFC-X" });
+    const draft = mintMandate({
+      scheme: "B2B",
+      paymentType: "recurrent",
+      companyId: "cmp_1",
+      creditorId: "ent_1",
+      reference: "LFC-X",
+    });
 
     expect(draft.creditorId).toBe("ent_1");
   });
@@ -306,6 +322,7 @@ describe("toCustomerView — ce que le client voit de son mandat", () => {
       id: "mdt_1",
       reference: "RUM-123",
       status: "active",
+      scheme: "B2B",
       hasProof: true,
       proofFileName: "scan.pdf",
       acceptedAt: "2024-03-12T00:00:00.000Z",

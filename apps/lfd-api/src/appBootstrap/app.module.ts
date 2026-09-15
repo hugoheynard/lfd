@@ -24,6 +24,7 @@ import { HandoverModule } from "../handover/handover.module.js";
 import { ProductionModule } from "../production/production.module.js";
 import { HandoverFeedModule } from "./handover-feed.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
+import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
@@ -118,6 +119,7 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     HandoverModule,
     HandoverFeedModule,
     DebtorMandateModule,
+    IssuedMandatesModule,
     PricingAdminModule,
     OrderPricingModule,
     // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.

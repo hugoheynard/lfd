@@ -202,6 +202,7 @@ describe("le mur — drapeau ouvert", () => {
       id: first.id,
       reference: first.reference,
       status: "draft",
+      scheme: "B2B",
       hasProof: false,
       proofFileName: "",
       acceptedAt: null,
@@ -370,7 +371,13 @@ describe("le brouillon devient caduc quand son papier change", () => {
     expect((await mint()).reference).not.toBe(draft.reference);
   });
 
-  it("révoque le brouillon sur une réécriture des zones 14/19 par le staff", async () => {
+  it("révoque le brouillon CORE sur une réécriture des zones 14/19 par le staff", async () => {
+    // Seul le formulaire CORE imprime ces zones (plan mandat deux schémas §10, Q2).
+    const entity = await ctx.prisma.legalEntity.findFirstOrThrow();
+    await staff()
+      .put(`/admin/accounting/legal-entities/${entity.id}/mandate-scheme`)
+      .send({ scheme: "CORE" })
+      .expect(204);
     const draft = await mint();
 
     await staff()
@@ -401,7 +408,13 @@ describe("l'index d'unicité du brouillon, traduit par l'adaptateur", () => {
     const repository = ctx.app.get(PaymentMandateRepository);
     const issuer = await ctx.prisma.legalEntity.findFirstOrThrow({ select: { id: true } });
     const draft = (reference: string) =>
-      mintMandate({ companyId, creditorId: issuer.id, reference });
+      mintMandate({
+        scheme: "B2B",
+        paymentType: "recurrent",
+        companyId,
+        creditorId: issuer.id,
+        reference,
+      });
 
     await repository.create(draft("LFC-E2E-000001-AAAAAA"));
 

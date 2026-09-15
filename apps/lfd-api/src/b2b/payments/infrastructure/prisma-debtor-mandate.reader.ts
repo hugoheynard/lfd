@@ -32,26 +32,32 @@ export class PrismaDebtorMandateReader extends DebtorMandateReader {
     const [mandates, accounts] = await Promise.all([
       this.prisma.paymentMandate.findMany({
         where: { companyId: { in: [...companyIds] }, status: "active" },
-        select: { companyId: true, reference: true },
+        // Schéma et type lus SUR LE MANDAT : figés à la frappe, ils disent ce que
+        // le papier signé autorise, quel que soit le réglage courant de l'entité.
+        select: { companyId: true, reference: true, scheme: true, paymentType: true },
       }),
       this.prisma.companyBankAccount.findMany({
         where: { companyId: { in: [...companyIds] } },
-        select: { companyId: true, ibanSealed: true },
+        select: { companyId: true, ibanSealed: true, bic: true },
       }),
     ]);
 
-    const ibanOf = new Map(accounts.map((row) => [row.companyId, row.ibanSealed]));
+    const accountOf = new Map(accounts.map((row) => [row.companyId, row]));
     const found = new Map<string, DebtorMandate>();
     for (const mandate of mandates) {
-      const sealed = ibanOf.get(mandate.companyId);
-      if (sealed === undefined) {
+      const account = accountOf.get(mandate.companyId);
+      if (account === undefined) {
         // Mandat signé, compte jamais recopié. Une absence, pas une panne : la
         // société sort du lot en étant nommée, plutôt que d'y entrer sans IBAN.
         continue;
       }
       found.set(mandate.companyId, {
         reference: mandate.reference,
-        iban: this.cipher.open(sealed),
+        iban: this.cipher.open(account.ibanSealed),
+        // Chaîne vide = absent : le lot écrit alors `NOTPROVIDED`, pas un BIC vide.
+        bic: account.bic === "" ? null : account.bic,
+        scheme: mandate.scheme,
+        paymentType: mandate.paymentType,
       });
     }
     return found;

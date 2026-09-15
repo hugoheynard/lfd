@@ -89,6 +89,8 @@ async function seedMandate(
 ): Promise<string> {
   const row = await ctx.prisma.paymentMandate.create({
     data: {
+      scheme: "B2B",
+      paymentType: "recurrent",
       companyId,
       stripeCustomerId: "cus_e2e",
       paymentMethodId,

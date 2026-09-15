@@ -30,6 +30,12 @@ export const ACCOUNTING_FACTS = {
   creditorAccountChanged: "legal_entity.creditor_account_changed",
   /** Le délai annoncé entre pré-notification et débit est renégocié. */
   preNotificationChanged: "legal_entity.pre_notification_changed",
+  /**
+   * Le schéma des mandats à venir bascule — CORE ↔ interentreprises. Les
+   * brouillons de l'entité deviennent caducs dans la même transaction ; les
+   * actifs gardent le leur.
+   */
+  mandateSchemeChanged: "legal_entity.mandate_scheme_changed",
   /** L'entité n'émet plus rien ; ses documents passés restent. */
   legalEntityArchived: "legal_entity.archived",
   legalEntityRestored: "legal_entity.restored",

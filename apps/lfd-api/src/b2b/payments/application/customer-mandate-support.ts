@@ -4,9 +4,16 @@ import { NoIssuerError } from "../../accounting/domain/errors/accounting-errors.
 import type { CreditorReader } from "../../accounting/domain/ports/creditor.reader.js";
 import type { LegalEntityLogoReader } from "../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { readEntityLogo } from "../../accounting/application/legal-entity-support.js";
-import { renderSepaMandatePdf } from "../../accounting/domain/services/sepa-mandate-pdf.js";
+import { sirenOfSiret } from "../../accounting/domain/debtor-snapshot.js";
+import {
+  type MandateForm,
+  renderSepaMandatePdf,
+} from "../../accounting/domain/services/sepa-mandate-pdf.js";
 import type { DocumentStore } from "../../../platform/storage/document-store.js";
-import { CompanyBankAccountNotFoundError } from "../domain/errors/mandate-errors.js";
+import {
+  CompanyBankAccountNotFoundError,
+  CompanyNotFoundForMandateError,
+} from "../domain/errors/mandate-errors.js";
 import type { CompanyBankAccountRepository } from "../domain/ports/company-bank-account.repository.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 
@@ -46,6 +53,7 @@ export interface CustomerMandateDocument {
  * @throws {CompanyBankAccountNotFoundError} aucun RIB recopié — un mandat à
  *   zones vides est l'exemplaire, qui existe déjà ailleurs.
  * @throws {NoIssuerError} aucune entité émettrice.
+ * @throws {CompanyNotFoundForMandateError} la société a disparu entre-temps.
  */
 export async function buildCustomerMandate(
   deps: CustomerMandateDeps,
@@ -54,6 +62,10 @@ export async function buildCustomerMandate(
   const account = await deps.accounts.findByCompany(companyId);
   if (account === null) {
     throw new CompanyBankAccountNotFoundError(companyId);
+  }
+  const holder = await deps.mandates.findHolder(companyId);
+  if (holder === null) {
+    throw new CompanyNotFoundForMandateError(companyId);
   }
 
   const creditor = await deps.creditors.soleIssuer();
@@ -72,13 +84,24 @@ export async function buildCustomerMandate(
   const printable = issued !== null && issued.status === "draft" ? issued : null;
   const reference = printable === null ? null : printable.toSnapshot().reference;
 
-  const { holder, address, iban, bic } = account.account;
-  const options = account.options;
+  // 🔴 La forme d'un brouillon est la SIENNE, figée à la frappe (objection 2 du
+  // plan `plan-mandat-deux-schemas.md`) : l'entité peut être passée à un autre
+  // schéma depuis, et c'est ce brouillon-là que le staff activera. Sans
+  // brouillon, l'aperçu montre ce que l'entité frapperait aujourd'hui.
+  const form: MandateForm =
+    printable === null
+      ? { scheme: creditor.mandateScheme, paymentType: creditor.mandatePaymentType }
+      : { scheme: printable.toSnapshot().scheme, paymentType: printable.toSnapshot().paymentType };
+
+  const { address, iban, bic } = account.account;
   const bytes = await renderSepaMandatePdf(
+    form,
     creditor,
     logo,
     {
-      holder,
+      companyName: holder.companyName,
+      siren: sirenOfSiret(holder.siret),
+      holder: account.account.holder,
       addressLine1: address.line1,
       addressLine2: address.line2,
       postalCode: address.postalCode,
@@ -86,15 +109,15 @@ export async function buildCustomerMandate(
       countryCode: address.countryCode,
       iban: iban.value,
       bic: bic.value,
-      debtorReference: options.debtorReference,
-      contractNumber: options.contractNumber,
+      debtorReference: account.options.debtorReference,
+      contractNumber: account.options.contractNumber,
     },
     reference === null ? null : { reference },
   );
 
   return {
     bytes,
-    fileName: mandateFileName(holder, reference !== null),
+    fileName: mandateFileName(account.account.holder, reference !== null),
     issued: reference !== null,
     reference,
     creditorIdentifier: creditor.ics,

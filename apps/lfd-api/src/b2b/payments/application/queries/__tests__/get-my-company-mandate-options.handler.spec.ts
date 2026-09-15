@@ -1,3 +1,8 @@
+import type { CreditorSnapshot } from "../../../../accounting/domain/creditor-snapshot.js";
+import {
+  EntityCannotCollectError,
+  SeveralIssuersError,
+} from "../../../../accounting/domain/errors/accounting-errors.js";
 import {
   BankAccountCompanyNotFoundError,
   BankAccountRoleRequiredError,
@@ -7,6 +12,8 @@ import { MandateOptions } from "../../../domain/value-objects/mandate-options.js
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
   bankAccount,
+  CREDITOR,
+  FixedCreditors,
   FixedGate,
   FixedGuard,
   InMemoryBankAccounts,
@@ -15,13 +22,18 @@ import {
 import { GetMyCompanyMandateOptionsHandler } from "../get-my-company-mandate-options.handler.js";
 import { GetMyCompanyMandateOptionsQuery } from "../get-my-company-mandate-options.query.js";
 
-function harness(role: BankAccountRole | null = "owner", open = true) {
+function harness(
+  role: BankAccountRole | null = "owner",
+  open = true,
+  issuer: CreditorSnapshot | null = CREDITOR,
+) {
   const steps = new Steps();
   const accounts = new InMemoryBankAccounts(steps);
   const handler = new GetMyCompanyMandateOptionsHandler(
     new FixedGuard(steps, role),
     new FixedGate(steps, open),
     accounts,
+    new FixedCreditors(issuer),
   );
   return {
     steps,
@@ -31,8 +43,8 @@ function harness(role: BankAccountRole | null = "owner", open = true) {
 }
 
 describe("GetMyCompanyMandateOptionsHandler — les zones 14 et 19 lues par le client", () => {
-  it("rend null tant qu'aucun RIB n'est déposé", async () => {
-    await expect(harness().run()).resolves.toBeNull();
+  it("rend des options nulles tant qu'aucun RIB n'est déposé", async () => {
+    await expect(harness().run()).resolves.toMatchObject({ options: null });
   });
 
   it("rend les deux zones, et rien du compte", async () => {
@@ -41,7 +53,9 @@ describe("GetMyCompanyMandateOptionsHandler — les zones 14 et 19 lues par le c
     account.setOptions(MandateOptions.create({ debtorReference: "C-1", contractNumber: "CT-7" }));
     h.accounts.stored = account;
 
-    await expect(h.run()).resolves.toEqual({ debtorReference: "C-1", contractNumber: "CT-7" });
+    const section = await h.run();
+
+    expect(section.options).toEqual({ debtorReference: "C-1", contractNumber: "CT-7" });
   });
 
   it.each<BankAccountRole>(["admin", "orders"])("refuse %s en 403", async (role) => {
@@ -60,5 +74,52 @@ describe("GetMyCompanyMandateOptionsHandler — les zones 14 et 19 lues par le c
 
     await expect(h.run()).rejects.toBeInstanceOf(CustomerMandateClosedError);
     expect(h.accounts.reads).toBe(0);
+  });
+});
+
+/**
+ * Plan mandat deux schémas §10, Q2 : l'écran masque la carte des zones quand
+ * l'émetteur frappe en interentreprises, dont le formulaire ne les imprime pas.
+ */
+describe("GetMyCompanyMandateOptionsHandler — le schéma de l'émetteur", () => {
+  it.each(["CORE", "B2B"] as const)("rend issuerScheme = %s, avec ou sans RIB", async (scheme) => {
+    const h = harness("owner", true, { ...CREDITOR, mandateScheme: scheme });
+
+    await expect(h.run()).resolves.toEqual({ options: null, issuerScheme: scheme });
+  });
+
+  it("rend issuerScheme = null sans émetteur actif", async () => {
+    await expect(harness("owner", true, null).run()).resolves.toEqual({
+      options: null,
+      issuerScheme: null,
+    });
+  });
+});
+
+/**
+ * Régression : l'émetteur lu pour `issuerScheme` levait tel quel ses refus de
+ * configuration (entité incomplète, deux émetteurs), et l'écran Mon compte,
+ * qui lit ces options à chaque ouverture, recevait un 409 pour une fiche staff
+ * mal remplie (2026-09-15).
+ */
+describe("GetMyCompanyMandateOptionsHandler — un émetteur mal configuré ne casse pas la lecture", () => {
+  it.each([
+    ["incomplet", new EntityCannotCollectError(["ICS"])],
+    ["en double", new SeveralIssuersError(2)],
+  ])("rend issuerScheme = null quand l'émetteur est %s", async (_label, refusal) => {
+    const creditors = {
+      snapshot: () => Promise.resolve(null),
+      soleIssuer: () => Promise.reject(refusal),
+    };
+    const handler = new GetMyCompanyMandateOptionsHandler(
+      new FixedGuard(new Steps(), "owner"),
+      new FixedGate(new Steps(), true),
+      new InMemoryBankAccounts(new Steps()),
+      creditors,
+    );
+
+    await expect(
+      handler.execute(new GetMyCompanyMandateOptionsQuery("usr_1", "cmp_1")),
+    ).resolves.toEqual({ options: null, issuerScheme: null });
   });
 });

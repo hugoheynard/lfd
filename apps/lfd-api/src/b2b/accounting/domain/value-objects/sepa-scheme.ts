@@ -1,28 +1,29 @@
 /**
- * **Le schéma SEPA sous lequel nous prélevons** — `LclInstrm` du `pain.008`, et
- * mention du formulaire de mandat.
+ * **Le schéma SEPA d'un mandat** — `LclInstrm` du `pain.008`, et forme du
+ * formulaire imprimé.
  *
- * ## 🔴 UNE seule réponse à « quel schéma ? », et c'est ici
+ * ## Deux schémas, deux documents — depuis le 2026-09-15
  *
- * Jusqu'au 2026-09-14, le lot écrivait `B2B` en dur pendant que le formulaire
- * imprimait le texte CORE (remboursement à 8 semaines) : deux fichiers qui ne se
- * lisaient pas, donc rien pour empêcher qu'ils divergent. Ils divergeaient. Le
- * lot (`pain008.ts`) et le formulaire (`sepa-mandate-pdf.ts`) lisent désormais
- * tous deux cette constante — cf. `documentation/todos/todo-mandat-core-contre-b2b.md`.
+ * - `CORE` — le mandat du modèle EPC (`core-mandate-pdf.ts`) : le débiteur peut
+ *   se faire rembourser un prélèvement autorisé pendant 8 semaines ;
+ * - `B2B` — le mandat interentreprises d'après le gabarit DGFiP
+ *   (`b2b-mandate-pdf.ts`) : aucun remboursement, et le mandat se transmet à la
+ *   banque du débiteur avant le premier prélèvement.
  *
- * ## Pourquoi le type ne connaît QUE `B2B`
+ * Le texte de chaque formulaire est indexé par ce type (`SEPA_MANDATE_WORDING`),
+ * et chaque mise en page aussi (`sepa-mandate-pdf.ts`) : ajouter un schéma ici
+ * sans écrire son texte ni son dessin ne compile pas.
  *
- * Parce que c'est le seul schéma dont ce dépôt sait imprimer le mandat. Le texte
- * du formulaire est indexé par ce type (`SEPA_MANDATE_WORDING`) : ajouter `CORE`
- * ici sans écrire son texte d'autorisation ne compile pas. Basculer la constante
- * sans le formulaire est donc **inexprimable**, pas seulement testé.
+ * ## Il n'y a plus de réponse globale à « quel schéma ? »
  *
- * ⚠️ Changer de schéma n'est pas un réglage : le schéma interentreprises exige
- * un contrat avec la banque du créancier (signé avec la Caisse d'Épargne, dit par
- * Hugo le 2026-09-14) et prive le débiteur du remboursement d'un prélèvement
- * autorisé. Tout mandat signé sous un schéma se refait sous l'autre.
+ * La question se pose à une **entité** (le réglage de ses frappes à venir) ou à
+ * un **mandat** (le schéma sous lequel il a été frappé, figé). Jusqu'au
+ * 2026-09-14, le lot écrivait `B2B` en dur pendant que le formulaire imprimait
+ * le texte CORE ; lire le réglage courant pour un mandat déjà signé
+ * reproduirait la même divergence — cf. `documentation/b2b/plan-mandat-deux-schemas.md`.
+ *
+ * ⚠️ Changer de schéma n'est pas une retouche : l'interentreprises exige un
+ * contrat avec la banque du créancier et prive le débiteur du remboursement d'un
+ * prélèvement autorisé. Tout mandat signé sous un schéma se refait sous l'autre.
  */
-export type SepaScheme = "B2B";
-
-/** Le schéma de tous les prélèvements et de tous les mandats imprimés. */
-export const SEPA_SCHEME: SepaScheme = "B2B";
+export type SepaScheme = "CORE" | "B2B";

@@ -2,10 +2,10 @@ import { addDays, instantToLocal } from "@lfd/contracts";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
+import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { DebtorMandate } from "../ports/debtor-mandate.reader.js";
 import type { BillableCompany } from "../ports/billable-orders.reader.js";
 import { CreditorBicMissingError } from "../errors/accounting-errors.js";
-import { SEPA_SCHEME } from "../value-objects/sepa-scheme.js";
 
 /**
  * **Le `pain.008`** — le message ISO 20022 qui demande les prélèvements.
@@ -15,52 +15,32 @@ import { SEPA_SCHEME } from "../value-objects/sepa-scheme.js";
  * format, ses pièges et les questions encore ouvertes vivent dans
  * [`prelevement-sepa.md`](../../../../../../documentation/comptabilite/prelevement-sepa.md).
  *
- * ## 🔴 LE BROUILLON EST DÉSORMAIS CONDITIONNEL — 2026-09-12
+ * ## UN FICHIER PAR SCHÉMA — 2026-09-15
  *
- * L'IBAN du débiteur et la RUM de son mandat n'existaient **nulle part** dans
- * le système. Ils existent depuis ce jour : la RUM est frappée par nous
- * (`MintMandateHandler`), et le compte est recopié scellé dans
- * `company_bank_accounts`. Le rendu les écrit donc pour de vrai.
+ * Le schéma n'est plus une constante : chaque mandat fige le sien à la frappe
+ * (plan `documentation/b2b/plan-mandat-deux-schemas.md`, §10.2). Un cycle rend
+ * donc un fichier `CORE` et un fichier `B2B`, et chacun ne porte QUE les lignes
+ * dont le mandat a ce schéma. Mélanger les deux dans un message ferait rejeter
+ * le tout par la banque du débiteur qui n'a rien déclaré.
  *
- * Ce qui n'a PAS changé, et qui est le cœur de ce fichier : **il n'invente
- * jamais**. Une ligne dont le mandat ou le compte manque reçoit toujours des
- * marqueurs qu'aucun schéma n'accepte — `IBAN-INCONNU` ne passe pas le motif
- * d'un IBAN — et le fichier garde alors son bandeau d'avertissement.
+ * 🔴 **Le caractère déposable se calcule sur TOUT le cycle, avant la découpe.**
+ * Une société sans mandat actif n'a pas de schéma, donc n'appartient à aucun
+ * fichier : calculé par fichier, chacun des deux se serait dit complet en
+ * l'omettant en silence. Elle retire le caractère déposable des deux, et le
+ * bandeau de chacun la NOMME (objection 3 de vitruve).
  *
- * **Un lot incomplet qui RESSEMBLE à un lot valide est exactement ce qui finit
- * déposé un vendredi soir.** Le bandeau tombe quand, et seulement quand, chaque
- * ligne porte son mandat. C'est la seule façon d'avoir un fichier déposable
- * sans jamais en produire un qui trompe.
+ * ## La séquence suit le TYPE DE PAIEMENT DU MANDAT
  *
- * ## La séquence suit le TYPE DE PAIEMENT de l'entité — 2026-09-14
+ * `RCUR` pour un mandat `recurrent`, `OOFF` pour un `one_off` — la case cochée
+ * sur SON papier, figée à la frappe, et non le réglage courant de l'entité : un
+ * réglage changé après signature ferait prélever sous un régime que le papier
+ * n'autorise pas. Un `PmtInf` par séquence présente : la norme veut un bloc par
+ * couple (séquence, date), et un bloc mélangé se fait rejeter en entier.
  *
- * `RCUR` pour une entité réglée en `recurrent`, `OOFF` pour `one_off` : c'est le
- * même réglage (`CreditorSnapshot.mandatePaymentType`) qui coche la zone 12 du
- * formulaire. Le lot écrivait `RCUR` en dur jusqu'à ce jour, et une entité
- * réglée en ponctuel aurait fait signer « Paiement ponctuel » puis prélevé en
- * récurrent (tranché par Hugo le 2026-09-14, plan §9 #6).
- *
- * ⚠️ **C'est le réglage COURANT de l'entité, pas ce qui a été imprimé.** Le
- * mandat ne mémorise pas la case cochée sur son papier : si le réglage change
- * après signature, le fichier contredit le papier. Accepté parce qu'aucun
- * mandat n'existe en production ; le trou est écrit dans
- * `documentation/todos/todo-mandat-core-contre-b2b.md`. Un mandat ponctuel ne
- * sert qu'à UN débit, et rien ici ne refuse le second : le lot ne connaît aucun
- * débit déjà présenté (même todo).
- *
- * ⚠️ **Pas de `FRST`, et un seul `PmtInf`.** Le CFONB recommande
- * d'émettre systématiquement un `FRST` après un changement d'IBAN, le créancier
- * ne pouvant pas savoir s'il s'agit d'un changement de banque ou d'une
- * renumérotation — et un changement de banque impose en plus
- * `OrgnlDbtrAgt = SMNDA`. Rien de tout cela n'est écrit ici : il faudrait un
- * `PmtInf` par couple (séquence, date), et nous ne gardons pas encore
- * l'historique des changements de compte que la norme exige par ailleurs.
- * C'est la tranche suivante, et elle est nommée dans `prelevement-sepa.md`.
- *
- * Ce qui est réel, en revanche, l'est entièrement : notre bloc créancier (ICS,
- * IBAN, raison sociale), la fenêtre du cycle, et **les montants**, sommés depuis
- * les vraies commandes. C'est ce qui rend le brouillon utile — il montre ce que
- * la banque recevra, et il se relit avec un conseiller.
+ * ⚠️ **Pas de `FRST`.** Le CFONB le recommande après un changement d'IBAN, avec
+ * `OrgnlDbtrAgt = SMNDA` si la banque change ; nous ne gardons pas l'historique
+ * des comptes que cela demande. Un mandat ponctuel ne sert qu'à UN débit, et
+ * rien ici ne refuse le second (`todo-mandat-core-contre-b2b.md`).
  *
  * ## Déterministe
  *
@@ -68,36 +48,35 @@ import { SEPA_SCHEME } from "../value-objects/sepa-scheme.js";
  * mêmes entrées donnent le même fichier, ce qui le rend comparable en test.
  */
 
-/** Ce qu'aucun IBAN ne peut valoir — le motif du schéma le refuse. */
-export const UNKNOWN_IBAN = "IBAN-INCONNU";
-/** Idem pour la référence de mandat, tant qu'aucune RUM n'est frappée. */
-export const UNKNOWN_MANDATE = "MANDAT-INCONNU";
 /** Ce que la norme accepte dans un texte SEPA : ni accent, ni symbole exotique. */
 const SEPA_ALLOWED = /[^A-Za-z0-9/\-?:().,'+ ]/gu;
+/** Ce qu'on écrit dans `DbtrAgt` quand le BIC du débiteur est inconnu. */
+export const BIC_NOT_PROVIDED = "NOTPROVIDED";
+
+type SequenceType = "RCUR" | "OOFF";
 
 export interface Pain008Input {
   readonly creditor: CreditorSnapshot;
-  /**
-   * Les mandats prélevables, par société. Une société absente sort en
-   * marqueurs, et le fichier garde son bandeau.
-   */
+  /** Le schéma du fichier rendu : seules les lignes dont le MANDAT l'a y entrent. */
+  readonly scheme: SepaScheme;
+  /** Les mandats prélevables, par société. Une société absente garde le bandeau. */
   readonly mandates: ReadonlyMap<string, DebtorMandate>;
   /** Bornes du cycle — la seconde est **exclusive**. */
   readonly cycleStart: Date;
   readonly cycleEnd: Date;
   /** L'instant de fabrication du fichier, venu du port `Clock`. */
   readonly createdAt: Date;
+  /** TOUTES les lignes du cycle, tous schémas confondus. */
   readonly lines: readonly BillableCompany[];
 }
 
 /**
- * Le lot est-il **déposable** ? Même règle que le rendu, exposée pour que le NOM
- * du fichier ne puisse pas contredire son contenu.
+ * Le **cycle** est-il prélevable en entier ? Chaque ligne porte son mandat, et il
+ * y a au moins une ligne.
  *
- * ⚠️ Le nom portait `BROUILLON-` en dur jusqu'au 2026-09-13 : un lot complet
- * serait sorti avec un corps sans avertissement sous un nom qui en criait un.
- * Deux vérités sur le même fichier, dont une fausse — et c'est le NOM qu'on lit
- * en premier dans un dossier de téléchargements.
+ * 🔴 `lines.length > 0` et pas seulement `every` — corrigé le 2026-09-13 : sur
+ * un lot vide, `every` rend `true` par vacuité, et un cycle sans rien à prélever
+ * sortait « déposable » avec `NbOfTxs` à zéro.
  */
 export function isDepositable(
   lines: readonly BillableCompany[],
@@ -106,195 +85,257 @@ export function isDepositable(
   return lines.length > 0 && lines.every((line) => mandates.has(line.companyId));
 }
 
-/** Rend le XML. Déterministe : mêmes entrées, même fichier. */
-export function renderPain008(input: Pain008Input): string {
-  const { creditor, lines, mandates } = input;
+/**
+ * Le FICHIER d'un schéma est-il déposable ? Le cycle entier doit l'être, et le
+ * fichier doit contenir au moins une ligne — la même vacuité qu'au-dessus, un
+ * cran plus bas : un cycle tout en B2B rendrait sinon un fichier CORE vide et
+ * « déposable ».
+ *
+ * Exposé pour que le NOM du fichier ne puisse pas contredire son contenu.
+ */
+export function isSchemeFileDepositable(
+  lines: readonly BillableCompany[],
+  mandates: ReadonlyMap<string, DebtorMandate>,
+  scheme: SepaScheme,
+): boolean {
+  return isDepositable(lines, mandates) && linesOfScheme(lines, mandates, scheme).length > 0;
+}
 
-  // 🔴 Le BIC du créancier est exigé ICI, et nulle part avant. Le JSDoc de
-  // `CreditorSnapshot` l'annonçait : une entité renseignée avant que la colonne
-  // existe reste parfaitement capable d'émettre un MANDAT — ce document-là ne
-  // porte pas de BIC. C'est le lot qui en a besoin, donc le lot qui refuse, en
-  // nommant l'entité à compléter plutôt qu'en écrivant un `CdtrAgt` vide que la
-  // banque rejetterait sans dire lequel des deux manquait.
+/** Une ligne du fichier : la dette et le mandat qui l'autorise, jamais l'un sans l'autre. */
+interface Debit {
+  readonly line: BillableCompany;
+  readonly mandate: DebtorMandate;
+}
+
+function linesOfScheme(
+  lines: readonly BillableCompany[],
+  mandates: ReadonlyMap<string, DebtorMandate>,
+  scheme: SepaScheme,
+): readonly Debit[] {
+  return lines.flatMap((line) => {
+    const mandate = mandates.get(line.companyId);
+    return mandate?.scheme === scheme ? [{ line, mandate }] : [];
+  });
+}
+
+/** Rend le XML du fichier d'un schéma. Déterministe : mêmes entrées, même fichier. */
+export function renderPain008(input: Pain008Input): string {
+  const { creditor, lines, mandates, scheme } = input;
+
+  // 🔴 Le BIC du créancier est exigé ICI, et nulle part avant : le mandat n'en
+  // porte pas, le lot si. Le refus nomme l'entité plutôt que d'écrire un
+  // `CdtrAgt` vide que la banque rejetterait sans dire lequel manquait.
   if (creditor.creditorBic === null || creditor.creditorBic === "") {
     throw new CreditorBicMissingError(creditor.name);
   }
 
-  const total = lines.reduce((sum, line) => sum + line.totalCents, 0);
-  // Une seule ligne incomplète suffit à garder le bandeau : un fichier
-  // partiellement vrai est plus dangereux qu'un fichier entièrement faux, parce
-  // qu'il passe la relecture humaine.
-  //
-  // 🔴 `lines.length > 0` et pas seulement `every` — corrigé le 2026-09-13,
-  // après un échec en e2e. Sur un lot VIDE, `every` rend `true` par vacuité :
-  // un cycle sans aucune société à prélever sortait donc en fichier
-  // « déposable », sans bandeau, avec `NbOfTxs` à zéro. Un lot qui ne demande
-  // rien n'est pas un lot complet, c'est un lot qui n'existe pas — et le
-  // présenter comme prêt à déposer est exactement le genre de fichier qu'on
-  // dépose un vendredi soir en croyant avoir fait quelque chose.
-  const complete = isDepositable(lines, mandates);
-  const collectionDay = requestedCollectionDay(input.cycleEnd, creditor.preNotificationDays);
+  const debits = linesOfScheme(lines, mandates, scheme);
+  const complete = isSchemeFileDepositable(lines, mandates, scheme);
   const cycleTag = cycleTagOf(input.cycleEnd);
-  const messageId = complete ? cycleTag : `BROUILLON-${cycleTag}`;
-  const sequence = sequenceTypeOf(creditor.mandatePaymentType);
-  const period = `${localDay(input.cycleStart)} au ${localDay(dayBefore(input.cycleEnd))}`;
+  const messageId = `${complete ? "" : "BROUILLON-"}${cycleTag}-${scheme}`;
+  const unmandated = lines.filter((line) => !mandates.has(line.companyId));
+  const context: BlockContext = {
+    input,
+    creditorBic: creditor.creditorBic,
+    messageId,
+    endToEndPrefix: `${cycleTag}-${scheme}`,
+  };
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    ...(complete ? [] : [draftBanner()]),
+    ...(complete ? [] : [draftBanner(unmandated, debits.length === 0)]),
     `<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.02">`,
     `  <CstmrDrctDbtInitn>`,
     `    <GrpHdr>`,
     `      <MsgId>${messageId}</MsgId>`,
     // Sans décalage horaire : beaucoup de banques françaises refusent l'offset.
     `      <CreDtTm>${localDateTime(input.createdAt)}</CreDtTm>`,
-    `      <NbOfTxs>${String(lines.length)}</NbOfTxs>`,
-    `      <CtrlSum>${euros(total)}</CtrlSum>`,
+    `      <NbOfTxs>${String(debits.length)}</NbOfTxs>`,
+    `      <CtrlSum>${euros(sumOf(debits))}</CtrlSum>`,
     `      <InitgPty><Nm>${sepa(creditor.name)}</Nm></InitgPty>`,
     `    </GrpHdr>`,
-    `    <PmtInf>`,
-    `      <PmtInfId>${messageId}-${sequence}</PmtInfId>`,
-    `      <PmtMtd>DD</PmtMtd>`,
-    `      <NbOfTxs>${String(lines.length)}</NbOfTxs>`,
-    `      <CtrlSum>${euros(total)}</CtrlSum>`,
-    `      <PmtTpInf>`,
-    `        <SvcLvl><Cd>SEPA</Cd></SvcLvl>`,
-    // 🔴 Le schéma n'est PAS écrit ici : il vient de `SEPA_SCHEME`, que le
-    // formulaire de mandat lit aussi (`sepa-mandate-pdf.ts`). Jusqu'au
-    // 2026-09-14, ce fichier portait `B2B` en dur pendant que le papier
-    // imprimait le texte CORE — remboursement à 8 semaines, que le schéma
-    // interentreprises refuse. Le lot et le mandat signé se contredisaient, et
-    // c'est le papier qui fait foi en litige. Un test tient désormais qu'ils
-    // disent la même chose (`sepa-mandate-scheme.spec.ts`).
-    `        <LclInstrm><Cd>${SEPA_SCHEME}</Cd></LclInstrm>`,
-    // ⚠️ UNE séquence pour toutes les lignes — celle du type de paiement de
-    // l'entité —, et un seul `PmtInf` par conséquent. Le jour où un premier
-    // prélèvement exigera `FRST`, il faudra un SECOND bloc : la norme veut un
-    // `PmtInf` par couple (SeqTp, date), et un bloc mélangé se fait rejeter EN
-    // ENTIER. C'est la question 4 posée à la banque.
-    `        <SeqTp>${sequence}</SeqTp>`,
-    `      </PmtTpInf>`,
-    `      <ReqdColltnDt>${collectionDay}</ReqdColltnDt>`,
-    `      <Cdtr><Nm>${sepa(creditor.name)}</Nm></Cdtr>`,
-    `      <CdtrAcct><Id><IBAN>${creditor.creditorIban}</IBAN></Id></CdtrAcct>`,
-    `      <CdtrAgt><FinInstnId><BIC>${creditor.creditorBic}</BIC></FinInstnId></CdtrAgt>`,
-    `      <ChrgBr>SLEV</ChrgBr>`,
-    `      <CdtrSchmeId><Id><PrvtId><Othr>`,
-    `        <Id>${creditor.ics}</Id>`,
-    `        <SchmeNm><Prtry>SEPA</Prtry></SchmeNm>`,
-    `      </Othr></PrvtId></Id></CdtrSchmeId>`,
-    ...lines.map((line, rank) =>
-      transaction(line, mandates.get(line.companyId) ?? null, cycleTag, rank, period),
-    ),
-    `    </PmtInf>`,
+    ...paymentBlocks(context, debits),
     `  </CstmrDrctDbtInitn>`,
     `</Document>`,
     ``,
   ].join("\n");
 }
 
+interface BlockContext {
+  readonly input: Pain008Input;
+  readonly creditorBic: string;
+  readonly messageId: string;
+  readonly endToEndPrefix: string;
+}
+
+/**
+ * Un `PmtInf` par séquence présente, dans un ordre fixe (`RCUR` puis `OOFF`).
+ * Le rang de bout en bout court sur tout le fichier, pas par bloc : deux blocs
+ * du même message ne doivent pas partager une référence.
+ *
+ * ⚠️ Un fichier SANS ligne garde un bloc, à la séquence du réglage de l'entité :
+ * il n'est pas déposable (bandeau), mais il sert encore à relire notre bloc
+ * créancier avec un conseiller — c'est l'usage du brouillon.
+ */
+function paymentBlocks(context: BlockContext, debits: readonly Debit[]): readonly string[] {
+  if (debits.length === 0) {
+    return paymentBlock(context, sequenceTypeOf(context.input.creditor.mandatePaymentType), [], 0);
+  }
+  let rank = 0;
+  return SEQUENCE_ORDER.flatMap((sequence) => {
+    const block = debits.filter((debit) => sequenceTypeOf(debit.mandate.paymentType) === sequence);
+    if (block.length === 0) {
+      return [];
+    }
+    const rendered = paymentBlock(context, sequence, block, rank);
+    rank += block.length;
+    return rendered;
+  });
+}
+
+function paymentBlock(
+  context: BlockContext,
+  sequence: SequenceType,
+  debits: readonly Debit[],
+  firstRank: number,
+): readonly string[] {
+  const { creditor, scheme } = context.input;
+  const period = `${localDay(context.input.cycleStart)} au ${localDay(dayBefore(context.input.cycleEnd))}`;
+  return [
+    `    <PmtInf>`,
+    `      <PmtInfId>${context.messageId}-${sequence}</PmtInfId>`,
+    `      <PmtMtd>DD</PmtMtd>`,
+    `      <NbOfTxs>${String(debits.length)}</NbOfTxs>`,
+    `      <CtrlSum>${euros(sumOf(debits))}</CtrlSum>`,
+    `      <PmtTpInf>`,
+    `        <SvcLvl><Cd>SEPA</Cd></SvcLvl>`,
+    // Le schéma du fichier, c'est-à-dire celui de CHAQUE mandat qu'il contient.
+    `        <LclInstrm><Cd>${scheme}</Cd></LclInstrm>`,
+    `        <SeqTp>${sequence}</SeqTp>`,
+    `      </PmtTpInf>`,
+    `      <ReqdColltnDt>${requestedCollectionDay(context.input.cycleEnd, creditor.preNotificationDays)}</ReqdColltnDt>`,
+    `      <Cdtr><Nm>${sepa(creditor.name)}</Nm></Cdtr>`,
+    `      <CdtrAcct><Id><IBAN>${creditor.creditorIban}</IBAN></Id></CdtrAcct>`,
+    `      <CdtrAgt><FinInstnId><BIC>${context.creditorBic}</BIC></FinInstnId></CdtrAgt>`,
+    `      <ChrgBr>SLEV</ChrgBr>`,
+    `      <CdtrSchmeId><Id><PrvtId><Othr>`,
+    `        <Id>${creditor.ics}</Id>`,
+    `        <SchmeNm><Prtry>SEPA</Prtry></SchmeNm>`,
+    `      </Othr></PrvtId></Id></CdtrSchmeId>`,
+    ...debits.map((debit, index) =>
+      transaction(debit, `${context.endToEndPrefix}-${rankOf(firstRank + index)}`, period),
+    ),
+    `    </PmtInf>`,
+  ];
+}
+
 /**
  * Une ligne = **un débiteur**, jamais une commande. Un client à trente commandes
  * voit un seul prélèvement sur son relevé, et nous payons un seul frais
  * d'opération (décision de Hugo, 2026-09-10).
+ *
+ * 🔴 `EndToEndId` = `<cycle>-<schéma>-<rang>`, borné à 35 caractères. Le RANG et
+ * non l'identifiant de la société : préfixé, un cuid dépasse et se fait tronquer,
+ * et deux débiteurs partageraient la référence. Le schéma y entre parce que les
+ * deux fichiers du même cycle numérotent chacun à partir de 1 (objection 4).
  */
-function transaction(
-  line: BillableCompany,
-  mandate: DebtorMandate | null,
-  cycleTag: string,
-  rank: number,
-  period: string,
-): string {
-  // 🔴 Le RANG dans le lot, pas l'identifiant de la société. `EndToEndId` est
-  // borné à 35 caractères : un cuid ou un ULID de société, préfixé du cycle,
-  // dépasse et se fait TRONQUER — deux débiteurs pourraient alors partager la
-  // même référence, et un fichier de retour deviendrait inexploitable. Le rang
-  // est court, unique dans le lot, et ne contient que des chiffres (l'underscore
-  // d'un identifiant n'est même pas dans le jeu SEPA).
-  //
-  // ⚠️ Il n'est stable que tant que la composition du lot ne change pas. Le vrai
-  // `EndToEndId` devra porter le numéro de TENTATIVE pour rester traçable après
-  // une re-présentation — c'est la tranche 9, et le budget de 35 caractères y
-  // sera serré (voir `prelevement-sepa.md`).
-  const endToEndId = `${cycleTag}-${String(rank + 1).padStart(3, "0")}`;
+function transaction(debit: Debit, endToEndId: string, period: string): string {
+  const { line, mandate } = debit;
   return [
     `      <DrctDbtTxInf>`,
     `        <PmtId><EndToEndId>${endToEndId}</EndToEndId></PmtId>`,
     `        <InstdAmt Ccy="EUR">${euros(line.totalCents)}</InstdAmt>`,
     `        <DrctDbtTx><MndtRltdInf>`,
-    `          <MndtId>${mandate?.reference ?? UNKNOWN_MANDATE}</MndtId>`,
+    `          <MndtId>${mandate.reference}</MndtId>`,
     `          <AmdmntInd>false</AmdmntInd>`,
     `        </MndtRltdInf></DrctDbtTx>`,
+    `        <DbtrAgt><FinInstnId>${debtorAgent(mandate.bic)}</FinInstnId></DbtrAgt>`,
     `        <Dbtr><Nm>${sepa(line.companyName)}</Nm></Dbtr>`,
-    `        <DbtrAcct><Id><IBAN>${mandate?.iban ?? UNKNOWN_IBAN}</IBAN></Id></DbtrAcct>`,
-    // 140 caractères au maximum : les commandes du cycle se résument, elles ne
-    // se listent pas.
+    `        <DbtrAcct><Id><IBAN>${mandate.iban}</IBAN></Id></DbtrAcct>`,
+    // 140 caractères au maximum : les commandes se résument, elles ne se listent pas.
     `        <RmtInf><Ustrd>${sepa(`Commandes du ${period} (${String(line.orderCount)})`).slice(0, 140)}</Ustrd></RmtInf>`,
     `      </DrctDbtTxInf>`,
   ].join("\n");
 }
 
 /**
- * La séquence `pain.008` d'un type de paiement de mandat.
- *
- * Exhaustive sur `MandatePaymentType` : un troisième type de paiement ne
- * compile pas tant qu'il n'a pas sa séquence. `FRST` et `FNAL` n'en font pas
- * partie — ils décrivent le RANG d'une échéance dans une série, que rien ne
- * mémorise encore (cf. l'en-tête).
+ * La banque du débiteur. ⚠️ `NOTPROVIDED` sans BIC : c'est la valeur que les
+ * guides de mise en œuvre EPC donnent quand le BIC n'est pas exigé — que la
+ * Caisse d'Épargne l'accepte reste à confirmer (objection 10, non vérifié).
  */
-const SEQUENCE_TYPES: Readonly<Record<MandatePaymentType, "RCUR" | "OOFF">> = {
+function debtorAgent(bic: string | null): string {
+  return bic === null ? `<Othr><Id>${BIC_NOT_PROVIDED}</Id></Othr>` : `<BIC>${bic}</BIC>`;
+}
+
+/**
+ * Exhaustive sur `MandatePaymentType` : un troisième type ne compile pas tant
+ * qu'il n'a pas sa séquence. `FRST`/`FNAL` décrivent un RANG dans une série, que
+ * rien ne mémorise encore (cf. l'en-tête).
+ */
+const SEQUENCE_TYPES: Readonly<Record<MandatePaymentType, SequenceType>> = {
   recurrent: "RCUR",
   one_off: "OOFF",
 };
+const SEQUENCE_ORDER: readonly SequenceType[] = ["RCUR", "OOFF"];
 
-/** La séquence du lot, pour le type de paiement que le formulaire a coché. */
-function sequenceTypeOf(paymentType: MandatePaymentType): "RCUR" | "OOFF" {
+function sequenceTypeOf(paymentType: MandatePaymentType): SequenceType {
   return SEQUENCE_TYPES[paymentType];
 }
 
-/** L'avertissement, en tête du fichier et en toutes lettres. */
-function draftBanner(): string {
+/**
+ * L'avertissement, en tête du fichier et en toutes lettres. Il NOMME chaque
+ * société du cycle sans mandat prélevable, et il est le même dans les deux
+ * fichiers : ce qui manque manque au cycle, pas à un schéma.
+ */
+function draftBanner(unmandated: readonly BillableCompany[], empty: boolean): string {
   return [
     `<!--`,
     `  BROUILLON — CE FICHIER NE PEUT PAS ETRE DEPOSE.`,
+    ...(unmandated.length === 0
+      ? []
+      : [
+          ``,
+          `  Societes du cycle sans mandat actif (ou sans compte recopie), absentes de`,
+          `  ce fichier comme de l'autre schema :`,
+          ...unmandated.map((line) => `  - ${commentSafe(line.companyName)}`),
+        ]),
+    ...(empty ? [``, `  Ce fichier ne contient aucune ligne a prelever.`] : []),
     ``,
-    `  Le bloc creancier et les montants sont REELS. Le bloc debiteur ne l'est`,
-    `  pas : l'IBAN et la reference de mandat (RUM) n'existent pas encore dans`,
-    `  le systeme, et ce rendu ecrit a leur place des marqueurs qu'aucun schema`,
-    `  n'accepte, plutot que d'inventer des valeurs plausibles.`,
-    ``,
-    `  Il sert a relire notre bloc creancier et la forme du lot, avec un`,
-    `  conseiller bancaire. Voir documentation/comptabilite/prelevement-sepa.md.`,
+    `  Le bloc creancier et les montants sont REELS. Voir`,
+    `  documentation/comptabilite/prelevement-sepa.md.`,
     `-->`,
   ].join("\n");
+}
+
+/** Un nom dans un commentaire XML : jeu SEPA, et jamais `--`, qui le fermerait. */
+function commentSafe(raw: string): string {
+  return sepa(raw).replace(/-{2,}/gu, "-");
 }
 
 /**
  * L'étiquette du cycle — `202609` pour un cycle clos le 1er octobre.
  *
- * 🔴 Dérivée du **dernier jour COMPRIS**, pas de l'instant de clôture. La borne
- * haute est exclusive : un cycle qui ferme le 1er octobre à 00h00 est celui de
- * SEPTEMBRE. Étiqueter par la clôture donnait `202610` sur le fichier et
- * `2026-09` sur son nom — deux identifiants du même fichier qui se
- * contredisent, ce qu'on ne remarque qu'en les comparant à la main.
- *
- * Elle est exportée pour que le NOM du fichier vienne d'ici aussi : c'est la
- * seule façon qu'ils ne divergent plus.
+ * 🔴 Dérivée du **dernier jour COMPRIS**, pas de l'instant de clôture : la borne
+ * haute est exclusive. Exportée pour que le NOM du fichier vienne d'ici aussi.
  */
 export function cycleTagOf(cycleEnd: Date): string {
   return localDay(dayBefore(cycleEnd)).slice(0, 7).replace("-", "");
 }
 
 /**
- * La date de règlement demandée : la clôture, plus le délai de pré-notification
- * annoncé au débiteur.
- *
- * ⚠️ Elle ne tient pas compte des jours ouvrés ni du délai de présentation de la
- * banque — deux inconnues de `prelevement-sepa.md` (questions 3 et 8). C'est une
- * raison de plus pour que ce fichier reste un brouillon.
+ * La clôture plus le délai de pré-notification. ⚠️ Sans jours ouvrés ni délai de
+ * présentation de la banque (questions 3 et 8 de `prelevement-sepa.md`).
  */
 function requestedCollectionDay(cycleEnd: Date, preNotificationDays: number): string {
   return addDays(localDay(cycleEnd), preNotificationDays);
+}
+
+function sumOf(debits: readonly Debit[]): number {
+  return debits.reduce((sum, debit) => sum + debit.line.totalCents, 0);
+}
+
+function rankOf(index: number): string {
+  return String(index + 1).padStart(3, "0");
 }
 
 function localDay(instant: Date): string {
@@ -320,12 +361,9 @@ function euros(cents: number): string {
 }
 
 /**
- * Le jeu restreint SEPA — et l'échappement XML par la même occasion.
- *
- * Les accents sont **décomposés puis retirés** plutôt que remplacés par un
- * espace : « Val d'Isère » doit rester « Val d Isere » et pas « Val d Is re ».
- * Ce qui reste hors du jeu devient une espace, jamais rien — deux mots collés
- * seraient plus faux qu'un mot amputé.
+ * Le jeu restreint SEPA — et l'échappement XML par la même occasion. Les accents
+ * sont décomposés puis retirés (« Isère » → « Isere »), le reste hors du jeu
+ * devient une espace, jamais rien.
  */
 function sepa(raw: string): string {
   return raw

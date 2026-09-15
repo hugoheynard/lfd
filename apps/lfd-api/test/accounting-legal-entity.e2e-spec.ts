@@ -19,6 +19,7 @@ import type { BillingCycleView, LegalEntityView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { createCompany, createUser } from "./factories.js";
 import { storageKeys } from "./storage.js";
 
 /** SIREN dont la clé de Luhn est bonne : un SIREN inventé se fait refuser. */
@@ -376,6 +377,172 @@ describe("Le brouillon de fichier de prélèvement", () => {
     // Et le total qu'il rapporte est bien celui que le XML DÉCLARE.
     const declared = /<CtrlSum>([^<]*)</u.exec(xml.text)?.[1] ?? "";
     expect(csv.text).toContain(declared.replace(".", ","));
+  });
+});
+
+/** Une entité capable d'encaisser : ICS et compte posés. */
+async function collectingEntity(): Promise<string> {
+  const id = await declare();
+  await staff()
+    .put(`/admin/accounting/legal-entities/${id}/creditor-identifier`)
+    .send({ ics: ICS })
+    .expect(204);
+  await staff()
+    .put(`/admin/accounting/legal-entities/${id}/creditor-account`)
+    .send(ACCOUNT)
+    .expect(204);
+  return id;
+}
+
+/** RIB d'un client — un IBAN d'exemple à clé mod-97 valide, un BIC. */
+const DEBTOR_RIB = {
+  iban: "FR7630004000031234567890143",
+  bic: "BNPAFRPP",
+  holder: "Client e2e",
+  line1: "1 rue du Test",
+  line2: "",
+  postalCode: "73000",
+  city: "Chambéry",
+  countryCode: "FR",
+};
+
+let orderSeq = 0;
+
+/**
+ * Une société qui doit quelque chose sur le cycle en cours, et — si `scheme`
+ * n'est pas `null` — un mandat ACTIF frappé sous ce schéma, avec son RIB.
+ *
+ * ⚠️ Commande et mandat écrits par Prisma : même dette que `test/factories.ts`
+ * et `mandate.e2e-spec.ts`. Ce qui est éprouvé est en AVAL — la découpe du lot
+ * par schéma sur le vrai SQL. La commande prend l'instant de la base, donc tombe
+ * dans le cycle courant sans aucune date écrite ici.
+ */
+async function billedCompany(
+  legalEntityId: string,
+  name: string,
+  scheme: "CORE" | "B2B" | null,
+): Promise<void> {
+  orderSeq += 1;
+  const company = await createCompany(ctx.prisma, { raisonSociale: name });
+  const user = await createUser(ctx.prisma, { auth0Sub: `billed-${String(orderSeq)}` });
+  await ctx.prisma.order.create({
+    data: {
+      orderNumber: `CMD-CYCLE-${String(orderSeq)}`,
+      companyId: company.id,
+      placedByUserId: user.id,
+      subtotalCents: 12_345,
+      totalCents: 12_345,
+    },
+  });
+  if (scheme === null) {
+    return;
+  }
+  await staff().put(`/admin/companies/${company.id}/bank-account`).send(DEBTOR_RIB).expect(204);
+  await ctx.prisma.paymentMandate.create({
+    data: {
+      companyId: company.id,
+      creditorId: legalEntityId,
+      reference: `RUM-${scheme}-E2E`,
+      status: "active",
+      scheme,
+      paymentType: "recurrent",
+    },
+  });
+}
+
+function draftXml(id: string, query = ""): ReturnType<ReturnType<typeof staff>["get"]> {
+  return staff().get(`/admin/accounting/billing-cycle/draft.xml?legalEntityId=${id}${query}`);
+}
+
+describe("Le brouillon de prélèvement — un fichier par schéma", () => {
+  it("rend chaque mandat dans le fichier de son schéma, sous un nom qui le dit", async () => {
+    const id = await collectingEntity();
+    await billedCompany(id, "Refuge Core SAS", "CORE");
+    await billedCompany(id, "Chalet Interentreprises SAS", "B2B");
+
+    const core = await draftXml(id, "&scheme=CORE").expect(200);
+    const b2b = await draftXml(id, "&scheme=B2B").expect(200);
+
+    expect(core.text).toContain("<MndtId>RUM-CORE-E2E</MndtId>");
+    expect(core.text).not.toContain("RUM-B2B-E2E");
+    expect(core.text).toContain("<LclInstrm><Cd>CORE</Cd></LclInstrm>");
+    expect(b2b.text).toContain("<MndtId>RUM-B2B-E2E</MndtId>");
+    expect(b2b.text).toContain("<LclInstrm><Cd>B2B</Cd></LclInstrm>");
+    // Le BIC du RIB recopié arrive jusqu'au fichier — normalisé à 11 par `Bic`.
+    expect(b2b.text).toContain(
+      "<DbtrAgt><FinInstnId><BIC>BNPAFRPPXXX</BIC></FinInstnId></DbtrAgt>",
+    );
+
+    // Tout le cycle est mandaté : aucun des deux n'est un brouillon.
+    expect(core.headers["content-disposition"]).toMatch(/prelevement-CORE-552100554-\d{6}\.xml/u);
+    expect(b2b.headers["content-disposition"]).toMatch(/prelevement-B2B-552100554-\d{6}\.xml/u);
+    expect(core.headers["content-disposition"]).not.toContain("BROUILLON");
+    expect(b2b.text).not.toContain("BROUILLON");
+  });
+
+  /** Régression : le lot écrivait tout sous un schéma global, CORE compris. */
+  it("un mandat CORE ne sort jamais dans le fichier B2B", async () => {
+    const id = await collectingEntity();
+    await billedCompany(id, "Refuge Core SAS", "CORE");
+
+    const b2b = await draftXml(id, "&scheme=B2B").expect(200);
+
+    expect(b2b.text).not.toContain("RUM-CORE-E2E");
+    expect(b2b.text).toContain("<NbOfTxs>0</NbOfTxs>");
+    // Vide : il ne se présente pas comme déposable.
+    expect(b2b.headers["content-disposition"]).toContain("BROUILLON-prelevement-B2B-");
+  });
+
+  it("garde le B2B sans paramètre — l'écran déjà en ligne n'en envoie pas", async () => {
+    const id = await collectingEntity();
+    await billedCompany(id, "Refuge Core SAS", "CORE");
+    await billedCompany(id, "Chalet Interentreprises SAS", "B2B");
+
+    const legacy = await draftXml(id).expect(200);
+
+    expect(legacy.text).toContain("<MndtId>RUM-B2B-E2E</MndtId>");
+    expect(legacy.text).not.toContain("RUM-CORE-E2E");
+    expect(legacy.headers["content-disposition"]).toContain("prelevement-B2B-");
+  });
+
+  it("refuse un schéma inconnu en 400", async () => {
+    const id = await collectingEntity();
+    await draftXml(id, "&scheme=SEPA").expect(400);
+  });
+
+  /**
+   * 🔴 Objection 3 : une société sans mandat n'appartient à aucun fichier. Elle
+   * rend les DEUX indéposables, et chaque bandeau la nomme.
+   */
+  it("une société sans mandat rend les deux fichiers indéposables, et y est nommée", async () => {
+    const id = await collectingEntity();
+    await billedCompany(id, "Refuge Core SAS", "CORE");
+    await billedCompany(id, "Chalet Interentreprises SAS", "B2B");
+    await billedCompany(id, "Auberge Sans Mandat SARL", null);
+
+    for (const scheme of ["CORE", "B2B"]) {
+      const response = await draftXml(id, `&scheme=${scheme}`).expect(200);
+      expect(response.headers["content-disposition"]).toContain(`BROUILLON-prelevement-${scheme}-`);
+      expect(response.text).toContain("CE FICHIER NE PEUT PAS ETRE DEPOSE");
+      expect(response.text).toContain("- Auberge Sans Mandat SARL");
+    }
+  });
+
+  it("rend le contrôle du fichier CORE, avec la colonne schéma", async () => {
+    const id = await collectingEntity();
+    await billedCompany(id, "Refuge Core SAS", "CORE");
+    await billedCompany(id, "Chalet Interentreprises SAS", "B2B");
+
+    const csv = await staff()
+      .get(`/admin/accounting/billing-cycle/draft-audit.csv?legalEntityId=${id}&scheme=CORE`)
+      .expect(200);
+
+    expect(csv.headers["content-disposition"]).toContain("CONTROLE-prelevement-CORE-552100554-");
+    expect(csv.text).toContain('"RUM-CORE-E2E"');
+    expect(csv.text).not.toContain("RUM-B2B-E2E");
+    expect(csv.text).toContain(';"CORE"');
+    expect(csv.text).toContain("COHÉRENT");
+    expect(csv.text).not.toContain("INCOHÉRENT");
   });
 });
 

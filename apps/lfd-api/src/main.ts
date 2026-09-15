@@ -52,6 +52,10 @@ async function bootstrap(): Promise<void> {
   // site tiers) est refusée par le navigateur.
   app.enableCors({
     origin: config.isProduction() ? PROD_CORS_ORIGINS : DEV_CORS_ORIGINS,
+    // Le nom d'un fichier exporté (lot de prélèvement par schéma, 2026-09-15) est
+    // décidé par le SERVEUR. Sans cette exposition, un front d'une autre origine
+    // ne lit pas `Content-Disposition` et réinvente le nom de son côté.
+    exposedHeaders: ["Content-Disposition"],
   });
 
   // Le port passe par AppConfig comme toute autre valeur d'environnement.

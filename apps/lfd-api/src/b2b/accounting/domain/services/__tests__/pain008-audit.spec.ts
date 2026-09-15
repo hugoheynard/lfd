@@ -1,5 +1,6 @@
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { BillableCompany } from "../../ports/billable-orders.reader.js";
+import type { DebtorMandate } from "../../ports/debtor-mandate.reader.js";
 import { auditCsv } from "../pain008-audit.js";
 import { renderPain008 } from "../pain008.js";
 
@@ -23,6 +24,7 @@ const CREDITOR: CreditorSnapshot = {
   // donc la fixture les porte plutôt que de mentir sur sa forme.
   mandateContractDescription: "Fourniture de pains et viennoiseries",
   mandatePaymentType: "recurrent",
+  mandateScheme: "B2B",
 };
 
 const LINES: readonly BillableCompany[] = [
@@ -30,14 +32,39 @@ const LINES: readonly BillableCompany[] = [
   { companyId: "c2", companyName: "Boulangerie Émile & Fils", orderCount: 3, totalCents: 42_050 },
 ];
 
-const XML = renderPain008({
-  creditor: CREDITOR,
-  cycleStart: new Date("2026-08-31T22:00:00.000Z"),
-  cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
-  createdAt: new Date("2026-09-30T21:05:00.000Z"),
-  mandates: new Map(),
-  lines: LINES,
-});
+const DEBTOR_IBAN = "FR7630004000031234567890143";
+
+/** Deux mandats B2B : le lot n'écrit une ligne que pour une société mandatée. */
+const MANDATES = new Map<string, DebtorMandate>([
+  [
+    "c1",
+    { reference: "RUM-C1", iban: DEBTOR_IBAN, bic: null, scheme: "B2B", paymentType: "recurrent" },
+  ],
+  [
+    "c2",
+    {
+      reference: "RUM-C2",
+      iban: "FR7612548029980123456789161",
+      bic: null,
+      scheme: "B2B",
+      paymentType: "one_off",
+    },
+  ],
+]);
+
+function renderB2b(lines: readonly BillableCompany[]): string {
+  return renderPain008({
+    creditor: CREDITOR,
+    scheme: "B2B",
+    cycleStart: new Date("2026-08-31T22:00:00.000Z"),
+    cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
+    createdAt: new Date("2026-09-30T21:05:00.000Z"),
+    mandates: MANDATES,
+    lines,
+  });
+}
+
+const XML = renderB2b(LINES);
 
 describe("auditCsv — ce qu'il lit dans le fichier", () => {
   it("rend une ligne par transaction, montants en virgule décimale", () => {
@@ -55,8 +82,8 @@ describe("auditCsv — ce qu'il lit dans le fichier", () => {
    */
   it("lit l'IBAN du DÉBITEUR, jamais celui du créancier", () => {
     const csv = auditCsv(XML);
-    expect(csv).toContain('"IBAN-INCONNU"');
-    expect(csv).not.toContain(CREDITOR.creditorIban);
+    expect(csv).toContain(`"••••${DEBTOR_IBAN.slice(-4)}"`);
+    expect(csv).not.toContain(`••••${CREDITOR.creditorIban.slice(-4)}`);
   });
 
   /**
@@ -65,11 +92,9 @@ describe("auditCsv — ce qu'il lit dans le fichier", () => {
    * recompose ce que le coffre scelle le défait par la porte de service.
    */
   it("masque l'IBAN du débiteur — jamais en clair dans un fichier qui circule", () => {
-    const csv = auditCsv(
-      XML.replace(/<IBAN>IBAN-INCONNU<\/IBAN>/, "<IBAN>FR7630006000011234567890189</IBAN>"),
-    );
-    expect(csv).not.toContain("FR7630006000011234567890189");
-    expect(csv).toContain("••••0189");
+    const csv = auditCsv(XML);
+    expect(csv).not.toContain(DEBTOR_IBAN);
+    expect(csv).toContain("••••0143");
   });
 
   /**
@@ -78,7 +103,22 @@ describe("auditCsv — ce qu'il lit dans le fichier", () => {
    * a pas. Le masque ne s'applique qu'à ce qui a la forme d'un IBAN.
    */
   it("ne masque PAS la sentinelle du lot non branché", () => {
-    expect(auditCsv(XML)).toContain('"IBAN-INCONNU"');
+    const sentinel = XML.replace(`<IBAN>${DEBTOR_IBAN}</IBAN>`, "<IBAN>IBAN-INCONNU</IBAN>");
+    expect(auditCsv(sentinel)).toContain('"IBAN-INCONNU"');
+  });
+
+  /**
+   * Un cycle rend deux fichiers depuis le 2026-09-15 : le contrôle dit, ligne par
+   * ligne, sous quel schéma le fichier la présente — lu sur le bloc, pas supposé.
+   */
+  it("dit le schéma de chaque ligne, lu dans le LclInstrm de son bloc", () => {
+    const rows = auditCsv(XML).split("\r\n");
+
+    // Les en-têtes ne sont pas cités, les valeurs si.
+    expect(rows[0]).toMatch(/;Schéma$/u);
+    expect(rows[1]).toMatch(/;"B2B"$/u);
+    expect(rows[2]).toMatch(/;"B2B"$/u);
+    expect(auditCsv(XML.replaceAll("<Cd>B2B</Cd>", "<Cd>CORE</Cd>"))).toContain(';"CORE"');
   });
 
   it("s'ouvre par un BOM et se termine par des CRLF — sinon le tableur ment", () => {
@@ -132,28 +172,14 @@ describe("auditCsv — ce qu'il CONTRÔLE", () => {
       { companyId: "c1", companyName: "A", orderCount: 1, totalCents: 151_648 },
       { companyId: "c2", companyName: "B", orderCount: 1, totalCents: 1 },
     ];
-    const xml = renderPain008({
-      creditor: CREDITOR,
-      cycleStart: new Date("2026-08-31T22:00:00.000Z"),
-      cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
-      createdAt: new Date("2026-09-30T21:05:00.000Z"),
-      mandates: new Map(),
-      lines: centimes,
-    });
+    const xml = renderB2b(centimes);
     const csv = auditCsv(xml);
     expect(csv).toContain("COHÉRENT");
     expect(csv).toContain(";0,01");
   });
 
   it("ne s'effondre pas sur un fichier vide de transactions", () => {
-    const xml = renderPain008({
-      creditor: CREDITOR,
-      cycleStart: new Date("2026-08-31T22:00:00.000Z"),
-      cycleEnd: new Date("2026-09-30T22:00:00.000Z"),
-      createdAt: new Date("2026-09-30T21:05:00.000Z"),
-      mandates: new Map(),
-      lines: [],
-    });
+    const xml = renderB2b([]);
     expect(auditCsv(xml)).toContain("COHÉRENT");
   });
 });

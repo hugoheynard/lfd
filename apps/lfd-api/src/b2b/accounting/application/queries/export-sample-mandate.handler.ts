@@ -58,7 +58,15 @@ export class ExportSampleMandateHandler implements IQueryHandler<
     }
     const logo = await readEntityLogo(this.logos, this.store, query.legalEntityId);
     return {
-      bytes: await renderSepaMandatePdf(creditor, logo),
+      // L'exemplaire d'une entité prend SES réglages : il montre le papier que
+      // ses prochaines frappes feront signer.
+      bytes: await renderSepaMandatePdf(
+        { scheme: creditor.mandateScheme, paymentType: creditor.mandatePaymentType },
+        creditor,
+        logo,
+        null,
+        null,
+      ),
       fileName: sampleMandateFileName(creditor),
     };
   }
