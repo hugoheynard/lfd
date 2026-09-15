@@ -100,6 +100,12 @@ export class CompanyAddressesCard {
   readonly setDefault = output<DeliveryAddressView>();
   /** Supprimer une adresse de livraison (confirmé). */
   readonly remove = output<DeliveryAddressView>();
+  /**
+   * Ouvrir la procédure de livraison d'une adresse. Proposé aussi hors
+   * `canManage` quand la procédure existe : la consulter n'est pas la gérer,
+   * et c'est au conteneur de l'ouvrir en lecture seule.
+   */
+  readonly openProcedure = output<DeliveryAddressView>();
 
   /**
    * Ce que la section contient **vraiment**.
@@ -155,6 +161,12 @@ export class CompanyAddressesCard {
 
   protected gpsLink(gps: GpsPoint): string {
     return gpsMapUrl(gps);
+  }
+
+  /** « Procédure de livraison · 3 étapes » — lu seulement quand N > 0. */
+  protected procedureLine(address: DeliveryAddressView): string {
+    const count = address.procedureStepCount;
+    return `Procédure de livraison · ${count} ${count > 1 ? 'étapes' : 'étape'}`;
   }
 
   protected toggleDetails(address: DeliveryAddressView): void {

@@ -95,3 +95,30 @@ export {
   preferenceForSignature,
 } from './fulfillment-preference.model';
 export type { FulfillmentDestination } from './fulfillment-preference.model';
+export { DeliveryProcedureEditor } from './delivery-procedure/delivery-procedure-editor/delivery-procedure-editor';
+export { DeliveryStepForm } from './delivery-procedure/delivery-step-form/delivery-step-form';
+export {
+  DeliveryProcedureConflictError,
+  DeliveryProcedureGateway,
+  DeliveryProcedureWriteError,
+} from './delivery-procedure/delivery-procedure.gateway';
+export type { DeliveryStepPhotoChange } from './delivery-procedure/delivery-procedure.gateway';
+export {
+  DELIVERY_PROCEDURE_EDITOR_LABELS_FR,
+  DELIVERY_STEP_FORM_LABELS_FR,
+} from './delivery-procedure/delivery-procedure.labels';
+export type {
+  DeliveryProcedureEditorLabels,
+  DeliveryStepFormLabels,
+} from './delivery-procedure/delivery-procedure.labels';
+export {
+  DELIVERY_STEP_PHOTO_QUALITIES,
+  reduceStepPhoto,
+  stepPhotoFrame,
+} from './delivery-procedure/step-photo';
+export type {
+  StepPhotoEncoder,
+  StepPhotoFrame,
+  StepPhotoReduction,
+} from './delivery-procedure/step-photo';
+export { shrinkStepPhoto } from './delivery-procedure/step-photo-canvas';
