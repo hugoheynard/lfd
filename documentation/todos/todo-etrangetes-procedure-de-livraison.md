@@ -88,3 +88,6 @@ expected array to have >=1 items`.
     production).
 23. **`admin-delivery-procedure-commands.ts` regroupe quatre commandes dans un
     seul fichier**, alors que le B2B sépare commande et handler par fichier.
+24. **La boutique (`apps/lfc-B2B-platform-frontend`) n'a pas de script `lint`** :
+    `turbo run lint` la liste sans rien exécuter. Un front qui n'entre jamais dans
+    `pnpm lint` ne peut pas le faire échouer — relevé par `cerberus`.

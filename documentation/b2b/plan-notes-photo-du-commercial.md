@@ -1,6 +1,9 @@
 # Plan — les notes photo du commercial sur un compte client
 
-> **État au 2026-09-15** : 📐 plan, **rien n'est bâti**. **Contredit par
+> **État au 2026-09-15** : ✅ **bâti le même jour**, lots 0 à 4 (`46d2c656`,
+> `db1e7f33`, `040fd24b`, `fd87444c`, `ca7bb258`), batterie complète verte.
+> **Reste** : mesurer le poids sur de vraies photos de notes (D7 bis) — les
+> bornes 600 Ko / 60 Ko sont estimées. **Contredit par
 > `vitruve` le même jour** : un BLOQUANT (qui lit la fiche client) et onze
 > objections sérieuses, toutes intégrées ou tranchées — leur sort est au §6.
 > Décisions de Hugo reçues le même jour, Q1 confirmée comprise. Lot 0 lancé.
