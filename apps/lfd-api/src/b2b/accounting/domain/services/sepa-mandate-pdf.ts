@@ -25,7 +25,7 @@ export type { MandateForm, MandateIssuance } from "./mandate-pdf-drawing.js";
  * Jusqu'au 2026-09-14, ce fichier dessinait UN formulaire (la mise en page EPC
  * CORE) et y posait le texte d'un schéma global. Le schéma est désormais un
  * réglage de l'entité, figé sur chaque mandat à la frappe
- * (`documentation/b2b/plan-mandat-deux-schemas.md`) :
+ * (`documentation/comptabilite/plan-mandat-deux-schemas.md`) :
  *
  * - `CORE` → `core-mandate-pdf.ts`, le modèle EPC à zones numérotées ;
  * - `B2B` → `b2b-mandate-pdf.ts`, d'après le gabarit interentreprises DGFiP.

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
@@ -6,6 +14,8 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
+import { CompletionCallout } from '../../completion/completion-callout/completion-callout';
+import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientBankAccount } from '../../../client-bank-account.service';
 import { ClientCompany } from '../../../client-company.service';
 import { ClientMandate } from '../../../client-mandate.service';
@@ -25,11 +35,22 @@ import { bankActionLabel, bankLine } from '../bank-section';
 @Component({
   selector: 'app-bank-mobile-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardFoot, FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent],
+  imports: [
+    CompletionCallout,
+    CardFoot,
+    FoldButtonComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
+  ],
   templateUrl: './bank-mobile-card.html',
   styleUrl: './bank-mobile-card.scss',
 })
 export class BankMobileCard {
+  /** Ce qui manque dans cette carte (plan `plan-mon-compte-a-completer.md` §2.3) — la page le calcule. */
+  readonly completion = input<readonly CompletionItem[]>([]);
+  /** Compléter un élément : la page ouvre le dialogue de sa cible, le même que la synthèse du haut. */
+  readonly completionAction = output<CompletionTarget>();
+
   protected readonly t = inject(ClientCopyService).t;
   protected readonly accounts = inject(ClientBankAccount);
   private readonly mandates = inject(ClientMandate);

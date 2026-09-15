@@ -1,9 +1,17 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { DeferredTerm, MandateSectionView, PaymentMandateView } from '@lfd/contracts';
+import type {
+  DeferredTerm,
+  MandateSectionView,
+  MintBlocker,
+  PaymentMandateView,
+  SepaScheme,
+} from '@lfd/contracts';
+import { httpErrorMessage } from '@lfd/endpoints';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { NotifyService } from '../../notify.service';
 import { MandatesService } from '../mandat/mandates.service';
 import { PaiementSection } from '../paiement-section/paiement-section';
 
@@ -12,6 +20,12 @@ interface Rendered {
   /** Ce que la section a demandé d'accorder, à chaque bascule. */
   readonly granted: (readonly DeferredTerm[])[];
   readonly section: PaiementSection;
+  /** Les appels de signature : `[companyId, mandateId, signedAt, proofRevision]`. */
+  readonly signed: string[][];
+  /** Combien de fois la section a été lue. */
+  readonly reads: () => number;
+  /** Les messages de refus et d'erreur annoncés, dans l'ordre. */
+  readonly refusals: string[];
   /** Rejoue un cycle de rendu (le chargement du mandat est asynchrone). */
   readonly settle: () => Promise<void>;
 }
@@ -28,6 +42,7 @@ const ACTIVE_MANDATE: PaymentMandateView = {
   revokedAt: null,
   hasProof: false,
   proofFileName: '',
+  proofRevision: '',
 };
 
 /** Le bouton « Activer le mandat », s'il est rendu. */
@@ -38,10 +53,22 @@ function activateButton(host: HTMLElement): HTMLButtonElement | undefined {
 }
 
 /** Service de mandat doublé — aucun appel réseau, aucun Stripe. */
-function fakeMandates(mandate: PaymentMandateView | null): Partial<MandatesService> {
+function fakeMandates(
+  mandate: PaymentMandateView | null,
+  mintBlockers: readonly MintBlocker[],
+  issuerScheme: SepaScheme | null,
+  calls: { reads: number; readonly signed: string[][] },
+  signRefusal: HttpErrorResponse | null,
+): Partial<MandatesService> {
   return {
-    section: (): Promise<MandateSectionView> =>
-      Promise.resolve({ mandate, publishableKey: 'pk_test' }),
+    section: (): Promise<MandateSectionView> => {
+      calls.reads += 1;
+      return Promise.resolve({ mandate, publishableKey: 'pk_test', mintBlockers, issuerScheme });
+    },
+    sign: (...args: [string, string, string, string]): Promise<void> => {
+      calls.signed.push(args);
+      return signRefusal === null ? Promise.resolve() : Promise.reject(signRefusal);
+    },
   };
 }
 
@@ -50,12 +77,34 @@ function render(options: {
   readonly requestedTerm?: DeferredTerm | null;
   readonly companyId?: string | null;
   readonly mandate?: PaymentMandateView | null;
+  readonly mintBlockers?: readonly MintBlocker[];
+  readonly issuerScheme?: SepaScheme | null;
+  /** Le refus que le serveur rend à la signature ; `null` = elle passe. */
+  readonly signRefusal?: HttpErrorResponse | null;
 }): Rendered {
+  const calls = { reads: 0, signed: [] as string[][] };
+  const refusals: string[] = [];
+  const announce = (error: unknown, fallback?: string): void => {
+    refusals.push(httpErrorMessage(error, fallback));
+  };
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
-      { provide: MandatesService, useValue: fakeMandates(options.mandate ?? null) },
+      {
+        provide: MandatesService,
+        useValue: fakeMandates(
+          options.mandate ?? null,
+          options.mintBlockers ?? [],
+          options.issuerScheme ?? null,
+          calls,
+          options.signRefusal ?? null,
+        ),
+      },
+      {
+        provide: NotifyService,
+        useValue: { success: (): void => undefined, error: announce, refused: announce },
+      },
     ],
   });
 
@@ -70,6 +119,9 @@ function render(options: {
     host: fixture.nativeElement as HTMLElement,
     granted,
     section: fixture.componentInstance,
+    signed: calls.signed,
+    reads: (): number => calls.reads,
+    refusals,
     settle: async (): Promise<void> => {
       await fixture.whenStable();
       fixture.detectChanges();
@@ -321,6 +373,80 @@ describe('section Moyens de paiement — le mandat', () => {
     expect(activateButton(proven.host)?.disabled).toBe(false);
   });
 
+  describe('la signature atteste la pièce relue', () => {
+    const PROVEN_DRAFT: PaymentMandateView = {
+      ...ACTIVE_MANDATE,
+      status: 'draft',
+      acceptedAt: null,
+      last4: '',
+      hasProof: true,
+      proofFileName: 'mandat-signe.pdf',
+      proofRevision: 'rev-lue',
+    };
+
+    it('envoie la `proofRevision` de la vue que le staff regarde', async () => {
+      const { section, signed, settle } = render({ companyId: 'cmp_1', mandate: PROVEN_DRAFT });
+      await settle();
+      section['signedAt'].set('2026-09-10');
+
+      await section['sign']();
+
+      expect(signed).toEqual([['cmp_1', 'mdt_1', '2026-09-10', 'rev-lue']]);
+    });
+
+    /**
+     * Plan `plan-restes-du-mandat.md` §7 #9 : sans ce refus, le staff activait un
+     * mandat sur un scan remplacé entre-temps, qu'il n'avait jamais regardé.
+     */
+    it('sur une pièce remplacée entre-temps, le dit clairement et relit la section', async () => {
+      const { section, refusals, reads, settle } = render({
+        companyId: 'cmp_1',
+        mandate: PROVEN_DRAFT,
+        signRefusal: new HttpErrorResponse({
+          status: 409,
+          error: {
+            code: 'payments.mandate.proof_revision_stale',
+            message: 'Le scan de ce mandat a été remplacé depuis que la fiche a été ouverte.',
+          },
+        }),
+      });
+      await settle();
+      const before = reads();
+      section['signedAt'].set('2026-09-10');
+
+      await section['sign']();
+
+      expect(refusals).toEqual([
+        "La pièce a été remplacée depuis que vous l'avez ouverte : relisez-la avant d'activer.",
+      ]);
+      expect(reads()).toBe(before + 1);
+      // La date du papier reste saisie : relire le scan puis réactiver suffit.
+      expect(section['signedAt']()).toBe('2026-09-10');
+    });
+
+    it('un autre refus garde le message du serveur et ne relit pas', async () => {
+      const { section, refusals, reads, settle } = render({
+        companyId: 'cmp_1',
+        mandate: PROVEN_DRAFT,
+        signRefusal: new HttpErrorResponse({
+          status: 400,
+          error: {
+            code: 'payments.mandate.acceptance_in_future',
+            message: 'La date de signature est dans le futur.',
+          },
+        }),
+      });
+      await settle();
+      const before = reads();
+      section['signedAt'].set('2099-01-01');
+
+      await section['sign']();
+
+      expect(refusals).toEqual(['La date de signature est dans le futur.']);
+      expect(reads()).toBe(before);
+    });
+  });
+
   it('ne propose plus de déposer un scan sur un mandat actif', async () => {
     const { host, settle } = render({ companyId: 'cmp_1', mandate: ACTIVE_MANDATE });
     await settle();
@@ -360,5 +486,99 @@ describe('section Moyens de paiement — le schéma du mandat', () => {
     await settle();
 
     expect(host.querySelector('fold-badge.pm-scheme')?.textContent).toContain('SEPA CORE');
+  });
+});
+
+describe('section Moyens de paiement — les mentions manquantes du mandat', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  /** Le bouton « Frapper le mandat », s'il est rendu. */
+  const mintButton = (host: HTMLElement): HTMLButtonElement | undefined =>
+    Array.from(host.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Frapper le mandat'),
+    );
+
+  it('désactive « Frapper » et nomme chaque mention manquante, avec l’endroit où la saisir', async () => {
+    const { host, section, settle } = render({
+      companyId: 'cmp_1',
+      mintBlockers: ['siren_missing', 'holder_legal_form_missing'],
+    });
+    await settle();
+
+    expect(mintButton(host)?.disabled).toBe(true);
+    const callout = host.querySelector('fold-callout[variant="warning"]');
+    expect(callout?.textContent).toContain('le SIREN — Identité légale');
+    expect(callout?.textContent).toContain(
+      'la civilité ou forme juridique du titulaire du compte — Coordonnées bancaires',
+    );
+    expect(section['canMint']()).toBe(false);
+  });
+
+  it('propose le geste qui saisit chaque mention : l’identité légale, et le RIB', async () => {
+    const { host, section, settle } = render({
+      companyId: 'cmp_1',
+      mintBlockers: ['company_name_missing', 'bank_account_missing'],
+    });
+    await settle();
+    const asked: string[] = [];
+    section.editIdentity.subscribe(() => asked.push('identity'));
+
+    const gestures = Array.from(host.querySelectorAll('fold-callout button'));
+    expect(gestures.map((button) => button.textContent?.trim())).toEqual([
+      "Compléter l'identité légale",
+      'Aller au RIB',
+    ]);
+    (gestures[0] as HTMLButtonElement).click();
+    expect(asked).toEqual(['identity']);
+  });
+
+  it('sans mention manquante, « Frapper » est armé et aucune liste ne s’affiche', async () => {
+    const { host, section, settle } = render({ companyId: 'cmp_1' });
+    await settle();
+
+    expect(mintButton(host)?.disabled).toBe(false);
+    expect(host.querySelector('fold-callout[variant="warning"]')).toBeNull();
+    expect(section['canMint']()).toBe(true);
+  });
+
+  it('l’émetteur manquant se dit, sans geste : il ne se saisit pas sur la fiche client', async () => {
+    const { host, settle } = render({ companyId: 'cmp_1', mintBlockers: ['issuer_missing'] });
+    await settle();
+
+    const callout = host.querySelector('fold-callout[variant="warning"]');
+    expect(callout?.textContent).toContain('Comptabilité › Entités juridiques');
+    expect(callout?.querySelectorAll('button').length).toBe(0);
+  });
+
+  describe('la forme juridique du titulaire, exigée selon le schéma de l’émetteur', () => {
+    it('interentreprises : le RIB l’exige', async () => {
+      const { section, settle } = render({ companyId: 'cmp_1', issuerScheme: 'B2B' });
+      await settle();
+
+      expect(section['holderLegalFormRequired']()).toBe(true);
+    });
+
+    it('CORE ou schéma inconnu : le RIB ne l’exige pas, le serveur reste le garde', async () => {
+      for (const issuerScheme of ['CORE', null] as const) {
+        TestBed.resetTestingModule();
+        const { section, settle } = render({ companyId: 'cmp_1', issuerScheme });
+        await settle();
+
+        expect(section['holderLegalFormRequired']()).toBe(false);
+      }
+    });
+  });
+
+  it('ne liste rien sous un brouillon : il n’y a rien à frapper', async () => {
+    const { host, settle } = render({
+      companyId: 'cmp_1',
+      mandate: { ...ACTIVE_MANDATE, status: 'draft', acceptedAt: null },
+      mintBlockers: ['siren_missing'],
+    });
+    await settle();
+
+    expect(host.querySelector('fold-callout[variant="warning"]')).toBeNull();
   });
 });

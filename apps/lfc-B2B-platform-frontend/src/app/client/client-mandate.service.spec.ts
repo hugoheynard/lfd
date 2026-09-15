@@ -70,14 +70,20 @@ describe('ClientMandate', () => {
     http.expectOne((r) => MANDATE_URL.test(r.url)).flush(DRAFT);
     http
       .expectOne((r) => r.url.endsWith('/mandate-options'))
-      .flush({ options: null, issuerScheme: 'CORE' });
+      .flush({ options: null, issuerScheme: 'CORE', mintBlockers: [] });
     await tick();
 
     const refreshing = mandates.refresh('cmp_1');
     await tick();
     http.expectOne((r) => MANDATE_URL.test(r.url)).flush({ ...DRAFT, status: 'revoked' });
+    // Les options aussi (2026-09-15) : leur enveloppe porte les mentions manquantes,
+    // qu'un RIB ou une identité enregistrés changent.
+    http
+      .expectOne((r) => r.url.endsWith('/mandate-options'))
+      .flush({ options: null, issuerScheme: 'B2B', mintBlockers: ['siren_missing'] });
     await refreshing;
     expect(mandates.mandate()?.status).toBe('revoked');
+    expect(mandates.mintBlockers()).toEqual(['siren_missing']);
   });
 
   it('générer pose la vue rendue par le `POST` comme lecture partagée', async () => {
@@ -146,7 +152,7 @@ describe('ClientMandate', () => {
     const request = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/mandate-options'));
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.get('Authorization')).toBe('Bearer jeton-de-test');
-    request.flush({ options: null, issuerScheme: null });
+    request.flush({ options: null, issuerScheme: null, mintBlockers: [] });
     await reading;
 
     expect(mandates.optionsStatus()).toBe('ready');
@@ -165,10 +171,12 @@ describe('ClientMandate', () => {
     http.expectOne((r) => MANDATE_URL.test(r.url)).flush(null);
     http
       .expectOne((r) => r.url.endsWith('/companies/cmp_1/mandate-options'))
-      .flush({ options: null, issuerScheme: 'B2B' });
+      .flush({ options: null, issuerScheme: 'B2B', mintBlockers: ['siren_missing'] });
     await tick();
 
     expect(mandates.issuerScheme()).toBe('B2B');
+    // Les mentions manquantes voyagent dans la même enveloppe : la carte les montre avant tout clic.
+    expect(mandates.mintBlockers()).toEqual(['siren_missing']);
   });
 
   /** Plan §9 #4 : réécrire les zones révoque le brouillon — le mandat se relit avec elles. */
@@ -189,6 +197,7 @@ describe('ClientMandate', () => {
       .flush({
         options: { debtorReference: 'C-9P2X4B', contractNumber: '' },
         issuerScheme: 'CORE',
+        mintBlockers: [],
       });
     expect(await saving).toBeNull();
     expect(mandates.mandate()?.status).toBe('revoked');

@@ -127,6 +127,7 @@ export class AdminCompaniesController {
         payload.enseigne,
         payload.formeJuridique,
         payload.siret,
+        payload.siren,
         payload.vatNumber,
         payload.primaryContact ?? null,
         staffSub,

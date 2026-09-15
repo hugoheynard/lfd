@@ -4,6 +4,7 @@ import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import {
   addressLine,
   cell,
+  fittedValue,
   heading,
   HINT_GRAY,
   LABEL_GRAY,
@@ -111,14 +112,18 @@ export function debtorBlock(doc: Doc, top: number, debtor: DebtorSnapshot | null
 /**
  * Le titulaire du compte — **pouvant être différent du débiteur**.
  *
- * La forme juridique reste vide (décision Q4 du plan) : le RIB n'en porte pas,
- * et celle de la société serait fausse dès que le titulaire en diffère.
+ * La civilité ou forme juridique est celle **du titulaire**, recopiée du RIB
+ * (`holderLegalForm`) — jamais celle de la société, qui serait fausse dès que
+ * le titulaire en diffère. ⚠️ Elle restait vide jusqu'au 2026-09-15 (décision
+ * Q4 du plan `plan-mandat-deux-schemas.md`, périmée par
+ * `plan-mentions-obligatoires-du-mandat.md` §9).
  */
 export function holderBlock(doc: Doc, top: number, debtor: DebtorSnapshot | null): number {
   let y = heading(doc, top, "Titulaire du compte bancaire (pouvant être différent du débiteur) *");
   const height = ROW + 1 * MM;
   labelCell(doc, LEFT, y, 32 * MM, height, "Civilité / Forme\njuridique *", null);
   cell(doc, LEFT + 32 * MM, y, 28 * MM, height);
+  fittedValue(doc, debtor?.holderLegalForm ?? "", LEFT + 33 * MM, y, 26 * MM, height);
   labelCell(doc, LEFT + 60 * MM, y, 38 * MM, height, "Nom / Prénom\nou Raison sociale *", null);
   cell(doc, LEFT + 98 * MM, y, WIDTH - 98 * MM, height);
   value(doc, debtor?.holder ?? "", LEFT + 100 * MM, y, height);

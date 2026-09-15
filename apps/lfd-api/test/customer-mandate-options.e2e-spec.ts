@@ -1,7 +1,7 @@
 /**
  * E2E des **zones 14 et 19 réglées par le client** — `/mon-compte`.
  *
- * Plan : `documentation/b2b/plan-mandat-client.md` §10 (décidé le 2026-09-14).
+ * Plan : `documentation/comptabilite/plan-mandat-client.md` §10 (décidé le 2026-09-14).
  *
  * Voisin de `customer-mandate.e2e-spec.ts`, et pas une section de plus : ce
  * fichier-là dépasse déjà la taille d'un fichier. Même mécanique de semis.
@@ -12,7 +12,11 @@
  */
 import { Buffer } from "node:buffer";
 
-import type { CustomerMandateOptionsSectionView, CustomerMandateView } from "@lfd/contracts";
+import type {
+  CustomerMandateOptionsSectionView,
+  CustomerMandateView,
+  MandateSectionView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
@@ -23,6 +27,8 @@ const RIB = {
   iban: "FR1420041010050500013M02606",
   bic: "CEPAFRPP751",
   holder: "Refuge du Col SARL",
+  // Exigée par le mandat interentreprises (plan mentions obligatoires §9).
+  holderLegalForm: "SARL",
   line1: "12 rue des Alpages",
   line2: "",
   postalCode: "73150",
@@ -179,7 +185,11 @@ describe("les zones — drapeau ouvert", () => {
   beforeEach(openFlag);
 
   it("rend `{ options: null }` sans RIB, et refuse le PUT en 404", async () => {
-    expect(await readOptions()).toEqual({ options: null, issuerScheme: null });
+    expect(await readOptions()).toEqual({
+      options: null,
+      issuerScheme: null,
+      mintBlockers: ["bank_account_missing", "issuer_missing"],
+    });
 
     const response = await ctx.asSub(OWNER).put(optionsUrl()).send(OPTIONS).expect(404);
     expect(jsonBody<{ code: string }>(response).code).toBe("payments.bank_account.missing");
@@ -194,11 +204,16 @@ describe("les zones — drapeau ouvert", () => {
     expect(await readOptions(sub)).toEqual({
       options: { debtorReference: "", contractNumber: "" },
       issuerScheme: null,
+      mintBlockers: ["issuer_missing"],
     });
 
     await ctx.asSub(sub).put(optionsUrl()).send(OPTIONS).expect(204);
 
-    expect(await readOptions(sub)).toEqual({ options: OPTIONS, issuerScheme: null });
+    expect(await readOptions(sub)).toEqual({
+      options: OPTIONS,
+      issuerScheme: null,
+      mintBlockers: ["issuer_missing"],
+    });
     // Plan §10 (2026-09-14) : journalisé même sans brouillon, avec qui et quoi.
     expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
   });
@@ -247,7 +262,11 @@ describe("les zones — drapeau ouvert", () => {
       await ctx.asSub(OWNER).get(mandateUrl()).expect(200),
     );
     expect(after).toMatchObject({ id: draft.id, status: "draft" });
-    expect(await readOptions()).toEqual({ options: OPTIONS, issuerScheme: "B2B" });
+    expect(await readOptions()).toEqual({
+      options: OPTIONS,
+      issuerScheme: "B2B",
+      mintBlockers: [],
+    });
     expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
     expect(
       await ctx.prisma.activityEvent.count({ where: { type: "payment_mandate.draft_voided" } }),
@@ -259,9 +278,12 @@ describe("les zones — drapeau ouvert", () => {
     await declareIssuer();
     const draft = await mint();
     await ctx.asSub(OWNER).put(`${mandateUrl()}/proof`).attach("file", PDF, "scan.pdf").expect(204);
+    const section = jsonBody<MandateSectionView>(
+      await staff().get(`/admin/companies/${companyId}/mandate`).expect(200),
+    );
     await staff()
       .put(`/admin/companies/${companyId}/mandate/${draft.id}/signature`)
-      .send({ signedAt: ON_PAPER })
+      .send({ signedAt: ON_PAPER, proofRevision: section.mandate?.proofRevision })
       .expect(204);
 
     const response = await ctx.asSub(OWNER).put(optionsUrl()).send(OPTIONS).expect(409);
@@ -272,6 +294,7 @@ describe("les zones — drapeau ouvert", () => {
     expect(await readOptions()).toEqual({
       options: { debtorReference: "", contractNumber: "" },
       issuerScheme: "B2B",
+      mintBlockers: [],
     });
     expect(await optionsFacts()).toEqual([]);
     const mandate = jsonBody<CustomerMandateView>(

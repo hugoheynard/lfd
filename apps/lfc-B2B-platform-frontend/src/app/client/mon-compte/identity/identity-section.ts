@@ -1,4 +1,20 @@
-import type { CompanyMemberRole, CompanyView } from '@lfd/contracts';
+import {
+  LEGAL_FORM_LABELS,
+  toLegalForm,
+  type CompanyMemberRole,
+  type CompanyView,
+} from '@lfd/contracts';
+
+/**
+ * Le mot lu d'une forme juridique enregistrée : `sarl` et une ancienne saisie
+ * « S.A.R.L. » se lisent tous deux « SARL ». Ce que le catalogue ne reconnaît
+ * pas s'affiche TEL QUEL — jamais un libellé deviné ni une valeur de repli,
+ * qui feraient lire une forme que la société n'a pas déclarée.
+ */
+export function legalFormLabelOf(raw: string): string {
+  const form = toLegalForm(raw);
+  return form === null ? raw : LEGAL_FORM_LABELS[form];
+}
 
 /**
  * Les rôles qui éditent l'identité : ceux que l'API laisse écrire (vérifié le

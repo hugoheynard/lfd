@@ -24,7 +24,7 @@ const schemeQuerySchema = sepaSchemeSchema.optional();
  * @deprecated L'absence du paramètre ne survit que pour le front admin déjà
  * déployé, qui n'appelle qu'un seul `draft.xml`. Tout nouvel appelant passe
  * `?scheme=` ; ce repli disparaît quand l'écran à deux téléchargements est en
- * ligne (plan `documentation/b2b/plan-mandat-deux-schemas.md`, objection 9).
+ * ligne (plan `documentation/comptabilite/plan-mandat-deux-schemas.md`, objection 9).
  */
 const LEGACY_DEFAULT_SCHEME: SepaScheme = "B2B";
 

@@ -18,6 +18,8 @@ export interface CompanyBankAccountSnapshot {
   readonly id: string;
   readonly companyId: string;
   readonly holder: string;
+  /** Civilité ou forme juridique du titulaire, `""` quand non renseignée. */
+  readonly holderLegalForm: string;
   readonly addressLine1: string;
   readonly addressLine2: string;
   readonly postalCode: string;
@@ -86,6 +88,7 @@ export class CompanyBankAccount {
       snapshot.companyId,
       DebtorAccount.create({
         holder: snapshot.holder,
+        holderLegalForm: snapshot.holderLegalForm,
         address: LegalAddress.create({
           line1: snapshot.addressLine1,
           line2: snapshot.addressLine2,
@@ -145,11 +148,12 @@ export class CompanyBankAccount {
 
   /** Agrégat → ligne. L'IBAN en sort **en clair** : c'est l'adaptateur qui scelle. */
   toPersistence(): CompanyBankAccountSnapshot {
-    const { holder, address, iban, bic } = this.accountValue;
+    const { holder, holderLegalForm, address, iban, bic } = this.accountValue;
     return {
       id: this.id,
       companyId: this.companyId,
       holder,
+      holderLegalForm,
       addressLine1: address.line1,
       addressLine2: address.line2,
       postalCode: address.postalCode,

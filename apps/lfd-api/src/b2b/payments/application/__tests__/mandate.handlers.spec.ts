@@ -76,11 +76,16 @@ function doubles(options: {
               companyName: "Café des Halles SAS",
               email: "camille@halles.fr",
               reference: "C-7K2M4P",
-              siret: "",
+              siren: "",
             }
           : options.holder,
       ),
     findStripeCustomerId: () => Promise.resolve(options.customerId ?? null),
+    depositProof: (mandate) => {
+      trace.steps.push("deposit");
+      trace.saved = mandate;
+      return Promise.resolve();
+    },
   };
 
   const gateway: MandateGateway = {
@@ -169,6 +174,7 @@ function tracingStore(trace: Trace): DocumentStore {
     // Toujours ABSENT : rien n'a été rangé par ce doublé, donc chaque lecture
     // doit dire « pas encore » plutôt que rendre une pièce.
     readIfPresent: () => Promise.resolve(null),
+    delete: () => Promise.resolve(),
   };
 }
 
@@ -188,7 +194,7 @@ describe("AttachMandateProofHandler", () => {
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
 
-    expect(trace.steps).toEqual(["store", "save"]);
+    expect(trace.steps).toEqual(["store", "deposit"]);
     expect(trace.saved?.proven()).toBe(true);
   });
 

@@ -1,0 +1,15 @@
+/* Un bloc dans la colonne de la carte, qui en gouverne l'écart — la même forme
+   que `mandate-blockers`. */
+:host {
+  display: block;
+}
+
+.lead {
+  margin: 0;
+}
+
+/* Un élément par ligne : une liste se relit, une phrase à virgules non. */
+.list {
+  margin: 0;
+  padding-left: var(--fold-space-lg);
+}

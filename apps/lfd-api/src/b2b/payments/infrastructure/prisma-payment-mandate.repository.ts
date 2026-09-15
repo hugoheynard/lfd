@@ -8,6 +8,7 @@ import {
   type MandateToCreate,
 } from "../domain/entities/payment-mandate.js";
 import { MandateDraftAlreadyExistsError } from "../domain/errors/mandate-errors.js";
+import { MandateProofChangedError } from "../domain/errors/mandate-proof-errors.js";
 import {
   PaymentMandateRepository,
   type MandateHolder,
@@ -125,7 +126,7 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   }
 
   /**
-   * Écrit **tout ce qui peut bouger**.
+   * Écrit **tout ce qui peut bouger** — sauf la pièce.
    *
    * 🔴 Il n'écrivait que quatre colonnes jusqu'au 2026-09-12 — statut, date de
    * révocation, et les deux de la pièce. C'était suffisant tant qu'un mandat
@@ -135,14 +136,22 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
    * consentement restée `null`, et l'écran affichant un mandat actif que
    * personne n'a jamais signé.
    *
+   * 🔴 **La pièce n'y est plus depuis le 2026-09-15**, elle sert de condition.
+   * Écrite sans condition, elle laissait une signature concurrente d'un redépôt
+   * réécrire l'ancienne clé par-dessus la nouvelle — et la purge de l'ancienne,
+   * qui suit le dépôt, détruisait alors la preuve du mandat activé (plan
+   * `documentation/comptabilite/plan-restes-du-mandat.md` §7 #3). Le `WHERE`
+   * sur la clé chargée fait échouer l'un des deux gestes, jamais les deux à
+   * moitié : Postgres réévalue la condition après le verrou de ligne.
+   *
    * L'identité — référence, émetteur, rattachement au prestataire — n'y est
    * pas : elle ne bouge pas, et une RUM qui se réécrirait invaliderait le
    * papier qui la porte.
    */
   async save(mandate: PaymentMandate): Promise<void> {
     const snapshot = mandate.toSnapshot();
-    await this.prisma.paymentMandate.update({
-      where: { id: snapshot.id },
+    const written = await this.prisma.paymentMandate.updateMany({
+      where: { id: snapshot.id, proofStorageKey: snapshot.proofStorageKey },
       data: {
         status: snapshot.status,
         acceptedAt: snapshot.acceptedAt,
@@ -150,16 +159,35 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
         last4: snapshot.last4,
         bankCode: snapshot.bankCode,
         country: snapshot.country,
+      },
+    });
+    if (written.count === 0) {
+      throw new MandateProofChangedError();
+    }
+  }
+
+  /**
+   * `proofStorageKey: null` dans un `where` Prisma s'écrit `IS NULL` : la
+   * condition tient donc aussi pour un premier dépôt.
+   */
+  async depositProof(mandate: PaymentMandate, previousProofKey: string | null): Promise<void> {
+    const snapshot = mandate.toSnapshot();
+    const written = await this.prisma.paymentMandate.updateMany({
+      where: { id: snapshot.id, status: "draft", proofStorageKey: previousProofKey },
+      data: {
         proofStorageKey: snapshot.proofStorageKey,
         proofFileName: snapshot.proofFileName,
       },
     });
+    if (written.count === 0) {
+      throw new MandateProofChangedError();
+    }
   }
 
   async findHolder(companyId: string): Promise<MandateHolder | null> {
     const row = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { raisonSociale: true, contactEmail: true, reference: true, siret: true },
+      select: { raisonSociale: true, contactEmail: true, reference: true, siren: true },
     });
     return row === null
       ? null
@@ -167,7 +195,7 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
           companyName: row.raisonSociale,
           email: row.contactEmail,
           reference: row.reference,
-          siret: row.siret,
+          siren: row.siren,
         };
   }
 

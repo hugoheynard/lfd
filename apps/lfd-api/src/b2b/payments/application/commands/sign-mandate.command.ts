@@ -12,5 +12,7 @@ export class SignMandateCommand {
     readonly mandateId: string,
     /** La date portée par le PAPIER, `YYYY-MM-DD`. */
     readonly signedAt: string,
+    /** La révision de la pièce RELUE — la signature est refusée si elle a changé. */
+    readonly proofRevision: string,
   ) {}
 }

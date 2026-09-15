@@ -11,6 +11,7 @@ function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
     enseigne: 'Le Fournil du Coin',
     formeJuridique: 'SARL',
     siret: '81234567800019',
+    siren: '',
     vatNumber: '',
     status: 'active',
     grantedTerms: [],

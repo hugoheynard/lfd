@@ -76,6 +76,7 @@ export const ACCOUNT_IT: AccountCopy = {
   identityCompany: 'Ragione sociale',
   identityForm: 'Forma giuridica',
   identitySiret: 'SIRET',
+  identitySiren: 'SIREN',
   identityVat: 'Partita IVA intracom.',
   identityNote:
     'L’insegna si cambia qui. Le menzioni del registro passano da noi: verifichiamo, poi aggiorniamo — sono quelle che figurano sulle vostre fatture.',
@@ -84,6 +85,11 @@ export const ACCOUNT_IT: AccountCopy = {
   identityVatField: 'Partita IVA intracomunitaria',
   identityLegalHint:
     'Da completare una sola volta: una volta registrata, questa menzione si corregge solo tramite il nostro servizio commerciale.',
+  identityFormPlaceholder: 'Da scegliere',
+  identityVatRequiredHint: 'Obbligatoria per questa forma giuridica.',
+  identityVatOptionalHint: 'Facoltativa per questa forma giuridica — franchigia IVA.',
+  identityVatUndecidedHint: 'Obbligatoria o no a seconda della forma giuridica.',
+  identityOptional: 'facoltativo',
   identityLegalLocked:
     'Queste menzioni provengono dal registro delle imprese. Per correggerle, passate dal nostro servizio commerciale.',
   identitySaveFailed: 'L’identità non è stata registrata.',
@@ -283,6 +289,9 @@ export const ACCOUNT_IT: AccountCopy = {
     'Il titolare e l’indirizzo sono quelli noti alla vostra banca: possono differire dalla ragione sociale. Se su questo conto è attivo un addebito, sostituirlo lo interrompe: vi ricontatteremo per il seguito.',
   bankForm: {
     holder: 'Titolare del conto',
+    holderLegalForm: 'Titolo (Sig., Sig.ra) o forma giuridica (SAS, SARL…)',
+    holderLegalFormHint:
+      'Richiesto dal mandato tra imprese, che il titolare sia una società o una persona — al massimo 40 caratteri.',
     line1: 'Indirizzo',
     line2: 'Complemento',
     postalCode: 'CAP',
@@ -327,6 +336,16 @@ export const ACCOUNT_IT: AccountCopy = {
   mandateDropHint: 'PDF o foto (JPEG, PNG, HEIC), massimo 10 MB.',
   mandateUploading: 'Invio del mandato…',
   mandateUploadedToast: 'Mandato firmato ricevuto.',
+  mandateBlockedLead: 'Per generare il mandato manca:',
+  mandateBlockers: {
+    bank_account_missing: 'le coordinate bancarie',
+    issuer_missing: 'i nostri dati di creditore — ce ne occupiamo noi',
+    company_name_missing: 'la ragione sociale della sua impresa',
+    siren_missing: 'il numero SIREN della sua impresa',
+    holder_legal_form_missing: 'il titolo o la forma giuridica del titolare del conto',
+  },
+  mandateBlockersIdentity: 'Completa l’identità legale',
+  mandateBlockersBank: 'Completa le coordinate bancarie',
   mandateGenerateFailed: 'Il mandato non è stato generato.',
   mandateUploadFailed: 'Il mandato firmato non è stato caricato.',
   mandateFetchFailed: 'Il mandato non è stato aperto. Riprovate tra un istante.',
@@ -350,6 +369,52 @@ export const ACCOUNT_IT: AccountCopy = {
   mandateOptionsSave: 'Registra le opzioni',
   mandateOptionsSavedToast: 'Opzioni del mandato registrate.',
   mandateOptionsSaveFailed: 'Le opzioni del mandato non sono state registrate.',
+  completion: {
+    countOne: '1 elemento da completare',
+    count: '{n} elementi da completare',
+    blocksActivation: 'Impedisce l’attivazione: {detail}',
+    optionalNote: 'non impedisce l’attivazione',
+    cardLead: 'Da completare:',
+    mandateFields: 'Per generare il vostro mandato SEPA: {fields}.',
+    items: {
+      identity: {
+        title: 'Identità legale',
+        detail: 'Mancano la ragione sociale, la forma giuridica o il SIRET.',
+        action: 'Completare l’identità',
+      },
+      vat: {
+        title: 'Partita IVA',
+        detail: 'È richiesta la vostra partita IVA intracomunitaria.',
+        action: 'Indicare la partita IVA',
+      },
+      telephone: {
+        title: 'Numero di telefono',
+        detail:
+          'Un corriere deve poter chiamare: indicate un telefono, il vostro o quello di un contatto.',
+        action: 'Aggiungere un numero',
+      },
+      billing: {
+        title: 'Indirizzo di fatturazione',
+        detail: 'Le vostre fatture hanno bisogno di un indirizzo.',
+        action: 'Aggiungere la fatturazione',
+      },
+      delivery: {
+        title: 'Indirizzo di consegna',
+        detail: 'Preferite la consegna: aggiungete almeno un indirizzo di consegna.',
+        action: 'Aggiungere una consegna',
+      },
+      kbis: {
+        title: 'Visura KBIS',
+        detail: 'Caricate la visura KBIS della vostra impresa.',
+        action: 'Caricare il KBIS',
+      },
+      bank: {
+        title: 'Coordinate bancarie',
+        detail: 'Le vostre coordinate bancarie sono incomplete.',
+        action: 'Completare le coordinate',
+      },
+    },
+  },
   supportTitle: 'Contattare il servizio commerciale',
   supportPanelTitle: 'Servizio commerciale',
   supportBody: 'Una domanda sul vostro conto, un ordine o una fattura: vi rispondiamo.',

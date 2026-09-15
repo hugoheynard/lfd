@@ -1,13 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import {
-  LEGAL_FORM_OPTIONS,
-  legalFormRequiresVat,
-  toLegalForm,
-  type LegalForm,
-} from '@lfd/contracts';
+import { LEGAL_FORM_OPTIONS, toLegalForm, type LegalForm } from '@lfd/contracts';
 import { FoldInputComponent, FoldListboxComponent, type FoldSelectOption } from 'fold-ng';
 
-import type { CompanyIdentityDraft } from '../company-form.model';
+import { isVatRequiredFor, withSiret, type CompanyIdentityDraft } from '../company-form.model';
 
 /**
  * Champs d'**identité légale** d'une société — fragment de formulaire pur,
@@ -37,10 +32,7 @@ export class CompanyIdentityFields {
    * laisser manquer en silence pour une société assujettie — le même défaut
    * prudent que côté serveur.
    */
-  protected readonly vatRequired = computed(() => {
-    const form = toLegalForm(this.value().formeJuridique);
-    return form === null ? true : legalFormRequiresVat(form);
-  });
+  protected readonly vatRequired = computed(() => isVatRequiredFor(this.value().formeJuridique));
 
   /**
    * Vrai tant qu'AUCUNE forme juridique n'est choisie.
@@ -89,8 +81,16 @@ export class CompanyIdentityFields {
   protected setFormeJuridique(formeJuridique: string): void {
     this.value.update((draft) => ({ ...draft, formeJuridique }));
   }
+  /**
+   * Le SIRET, et le SIREN qu'il **propose** : ses neuf premiers chiffres quand
+   * ils forment un SIREN valide, tant que personne n'a tapé le SIREN à la main
+   * (`withSiret`). Le serveur fait foi, et refuse une paire qui se contredit.
+   */
   protected setSiret(siret: string): void {
-    this.value.update((draft) => ({ ...draft, siret }));
+    this.value.update((draft) => withSiret(draft, siret));
+  }
+  protected setSiren(siren: string): void {
+    this.value.update((draft) => ({ ...draft, siren }));
   }
   protected setVatNumber(vatNumber: string): void {
     this.value.update((draft) => ({ ...draft, vatNumber }));

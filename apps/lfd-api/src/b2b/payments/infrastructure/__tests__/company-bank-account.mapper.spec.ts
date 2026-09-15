@@ -21,6 +21,7 @@ function aggregate(): CompanyBankAccount {
     companyId: "cmp_1",
     account: DebtorAccount.create({
       holder: "Refuge du Col SARL",
+      holderLegalForm: "SARL",
       address: LegalAddress.create({
         line1: "12 rue des Alpages",
         line2: "",
@@ -52,6 +53,13 @@ function row(over: Partial<CompanyBankAccountRow> = {}): CompanyBankAccountRow {
 }
 
 describe("company-bank-account.mapper", () => {
+  it("fait l'aller-retour de la forme juridique du titulaire, en clair", () => {
+    const columns = toColumns(aggregate().toPersistence(), cipher);
+
+    expect(columns.holderLegalForm).toBe("SARL");
+    expect(toDomain(row(), cipher).account.holderLegalForm).toBe("SARL");
+  });
+
   describe("toColumns — le seul endroit qui scelle", () => {
     /**
      * 🔴 Le test qui justifie la colonne. Si l'IBAN apparaît en clair dans ce

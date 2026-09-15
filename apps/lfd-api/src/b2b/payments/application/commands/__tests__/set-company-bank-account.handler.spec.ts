@@ -3,6 +3,7 @@ import type { SetCompanyBankAccountPayload } from "@lfd/contracts";
 import { InvalidIbanError } from "../../../../accounting/domain/errors/accounting-errors.js";
 import type { IdGenerator } from "../../../../../platform/id/id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { BankAccountBoundToActiveMandateError } from "../../../domain/errors/mandate-errors.js";
 import { MandateOptions } from "../../../domain/value-objects/mandate-options.js";
 import {
   activeMandate,
@@ -11,6 +12,7 @@ import {
   mandate,
   RecordingNotifier,
   StepPublisher,
+  MemoryStore,
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
@@ -54,6 +56,7 @@ function build() {
     events,
     new StepUnitOfWork(steps),
     notifier,
+    new MemoryStore(steps),
   );
   return { handler, repo, steps, mandates, events, notifier };
 }
@@ -92,6 +95,47 @@ describe("SetCompanyBankAccountHandler", () => {
 
     expect(repo.stored?.account.holder).toBe("Refuge du Col SAS");
     expect(repo.stored?.account.iban.value).toBe(IBAN);
+  });
+
+  /**
+   * Régression prévenue (plan `plan-mentions-obligatoires-du-mandat.md` §8 #7) :
+   * le RIB se réécrit en entier, et un écran encore ouvert sur un bundle qui
+   * ignore le champ l'aurait effacé à chaque enregistrement — rendant une frappe
+   * interentreprises impossible sans que personne l'ait voulu.
+   */
+  it("un RIB réenregistré sans le champ n'efface pas la forme juridique du titulaire", async () => {
+    const { handler, repo } = build();
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holderLegalForm: "SARL" }),
+    );
+
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holder: "Refuge du Col SAS" }),
+    );
+
+    expect(repo.stored?.account.holderLegalForm).toBe("SARL");
+    expect(repo.stored?.account.holder).toBe("Refuge du Col SAS");
+  });
+
+  it("efface la forme juridique quand l'écran envoie une chaîne vide — c'est une saisie", async () => {
+    const { handler, repo } = build();
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holderLegalForm: "SARL" }),
+    );
+
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holderLegalForm: "" }),
+    );
+
+    expect(repo.stored?.account.holderLegalForm).toBe("");
+  });
+
+  it("pose une forme juridique vide sur un premier RIB qui ne l'envoie pas", async () => {
+    const { handler, repo } = build();
+
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+
+    expect(repo.stored?.account.holderLegalForm).toBe("");
   });
 
   /**
@@ -175,7 +219,10 @@ describe("SetCompanyBankAccountHandler", () => {
 
     await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
 
+    // `find-current` d'abord depuis le 2026-09-15 : le staff est refusé sous un
+    // mandat actif avant toute écriture (plan restes du mandat §8).
     expect(steps.log).toEqual([
+      "mandate:find-current",
       "mandate:find-draft",
       "uow:begin",
       "account:save",
@@ -219,14 +266,33 @@ describe("SetCompanyBankAccountHandler", () => {
     expect(notifier.notices).toHaveLength(0);
   });
 
-  /** Hors lot (plan §9 #5) : l'actif changé par le staff n'a pas encore de mécanisme. */
-  it("ne touche PAS au mandat actif", async () => {
+  /**
+   * Décidé par Hugo le 2026-09-15 (plan `plan-restes-du-mandat.md` §8) : le staff
+   * est refusé comme le client sous un mandat actif, tant que l'amendement
+   * attend la banque. ⚠️ Ce cas affirmait l'inverse — « ne touche PAS au mandat
+   * actif » en laissant passer l'écriture — quand il n'avait aucun mécanisme.
+   */
+  it("refuse en 409 sous un mandat actif, sans lire ni écrire le RIB", async () => {
+    const { handler, repo, mandates, events } = build();
+    mandates.current = activeMandate();
+
+    await expect(
+      handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD)),
+    ).rejects.toBeInstanceOf(BankAccountBoundToActiveMandateError);
+    expect(repo.reads).toBe(0);
+    expect(repo.saved).toHaveLength(0);
+    expect(mandates.saved).toHaveLength(0);
+    expect(events.traced).toHaveLength(0);
+  });
+
+  /** Lu par du personnel sans le code : le refus nomme le geste de sortie du STAFF. */
+  it("dit au staff de révoquer, recopier le RIB, puis frapper un nouveau mandat", async () => {
     const { handler, mandates } = build();
     mandates.current = activeMandate();
 
-    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
-
-    expect(mandates.saved).toHaveLength(0);
+    await expect(
+      handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD)),
+    ).rejects.toThrow(/révoquez-le, enregistrez le nouveau RIB, puis frappez un nouveau mandat/u);
   });
 
   it("garde le RIB et la révocation quand la cloche tombe en panne", async () => {

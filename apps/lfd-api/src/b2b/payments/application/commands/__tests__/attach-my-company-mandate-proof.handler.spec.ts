@@ -68,7 +68,7 @@ describe("AttachMyCompanyMandateProofHandler — le client renvoie son mandat si
       "mandate:find-draft",
       "store",
       "uow:begin",
-      "mandate:save:draft",
+      "mandate:deposit",
       "journal:payment_mandate.proof_attached",
       "uow:end",
       "bell",

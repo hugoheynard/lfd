@@ -18,6 +18,7 @@ import {
   SEPA_SCHEME_LABELS,
   type CompanyBankAccountView,
   type DeferredTerm,
+  type MintBlocker,
   type PaymentMandateView,
 } from '@lfd/contracts';
 import {
@@ -45,6 +46,8 @@ import { BankAccountSection } from '../bank-account-section/bank-account-section
 import { MandateOptionsSection } from '../mandate-options-section/mandate-options-section';
 import { NotifyService } from '../../notify.service';
 import { MandatesService } from '../mandat/mandates.service';
+import { mintBlockerLines } from '../mandat/mint-blockers';
+import { isProofConflict } from '../mandat/proof-conflict';
 
 /** Une ligne de la section : un moyen de règlement, et où il en est. */
 interface PaymentMeanRow {
@@ -100,6 +103,14 @@ interface DangerousAction {
  */
 const RUM_CONFIRM_LENGTH = 6;
 
+/**
+ * Ce que l'écran dit quand la signature vise une pièce remplacée entre-temps.
+ * Le message du serveur parle de « recharger la fiche » : la section se relit
+ * d'elle-même, il ne reste donc que le geste qui compte — relire le scan.
+ */
+const PROOF_REPLACED_ON_SIGN =
+  "La pièce a été remplacée depuis que vous l'avez ouverte : relisez-la avant d'activer.";
+
 @Component({
   selector: 'app-paiement-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -135,9 +146,17 @@ export class PaiementSection {
   readonly grantedTerms = input.required<readonly DeferredTerm[]>();
   /** Le crédit **demandé** par le client, en attente d'arbitrage ; `null` = aucun. */
   readonly requestedTerm = input<DeferredTerm | null>(null);
+  /**
+   * Le SIREN de la société. Pas affiché ici : lu pour **relire** la section quand
+   * l'identité change, parce que les mentions du mandat en dépendent — la raison
+   * sociale (`companyName`) joue le même rôle.
+   */
+  readonly siren = input('');
 
   /** Le staff change l'ensemble complet des crédits accordés. */
   readonly grantedTermsChange = output<readonly DeferredTerm[]>();
+  /** Une mention d'identité manque au mandat : la fiche ouvre le panneau d'identité. */
+  readonly editIdentity = output<void>();
 
   protected readonly mandate = signal<PaymentMandateView | null>(null);
   /** Le schéma FIGÉ sur le mandat, pas celui de l'entité : c'est lui que le lot prélève. */
@@ -151,18 +170,65 @@ export class PaiementSection {
    * divergeraient à la première écriture.
    */
   protected readonly bankAccount = signal<CompanyBankAccountView | null>(null);
+  /** Le RIB a-t-il déjà été lu une fois ? Sa première lecture ne relit pas la section. */
+  private bankRead = false;
+
+  /**
+   * Ce qui empêche aujourd'hui de frapper, tel que le serveur le calcule — par la
+   * même fonction que la frappe. Vide tant que la section n'est pas lue.
+   */
+  protected readonly mintBlockers = signal<readonly MintBlocker[]>([]);
+  /**
+   * Le schéma sous lequel l'émetteur frapperait un mandat, lu sur la même
+   * section. Interentreprises ⇒ le RIB exige la civilité ou forme juridique du
+   * titulaire. `null` (inconnu, ou lecture échouée) ⇒ non exigée à l'écran.
+   */
+  protected readonly holderLegalFormRequired = signal(false);
+  /** Les mentions manquantes en clair, chacune avec l'endroit où la saisir. */
+  protected readonly blockerLines = computed(() => mintBlockerLines(this.mintBlockers()));
+  protected readonly needsIdentity = computed(() =>
+    this.blockerLines().some((line) => line.place === 'identity'),
+  );
+  protected readonly needsBank = computed(() =>
+    this.blockerLines().some((line) => line.place === 'bank'),
+  );
   /** Clé publique Stripe, rendue avec le mandat ; vide si le canal n'est pas configuré. */
   private readonly publishableKey = signal('');
   protected readonly busy = signal(false);
 
   constructor() {
+    // La raison sociale et le SIREN sont LUS ici : quand le panneau d'identité
+    // les complète, la fiche relit la société, et les mentions du mandat changent.
     effect(() => {
       const id = this.companyId();
+      this.companyName();
+      this.siren();
       if (id !== null) {
         void this.load(id);
       }
     });
   }
+
+  /**
+   * Le RIB remonté par son bloc. Après sa première lecture, chaque remontée suit
+   * une écriture — et le RIB porte deux mentions du mandat (le compte, la forme
+   * juridique du titulaire) : la section se relit pour les recompter.
+   */
+  protected onBankAccount(account: CompanyBankAccountView | null): void {
+    this.bankAccount.set(account);
+    const id = this.companyId();
+    if (this.bankRead && id !== null) {
+      void this.load(id);
+    }
+    this.bankRead = true;
+  }
+
+  /** Amène l'étape du RIB sous les yeux : c'est là que se saisissent ses mentions. */
+  protected goToBank(): void {
+    this.bankStep()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  private readonly bankStep = viewChild('bankStep', { read: ElementRef<HTMLElement> });
 
   protected readonly rows = computed<readonly PaymentMeanRow[]>(() => {
     const granted = this.grantedTerms();
@@ -179,18 +245,6 @@ export class PaiementSection {
 
   /** Un mandat sur lequel on peut prélever aujourd'hui. */
   protected readonly debitable = computed(() => this.mandate()?.status === 'active');
-
-  /**
-   * Les 4 chiffres du compte que le mandat **actif** nomme, `''` sinon.
-   *
-   * Passé au bloc du RIB pour qu'il puisse avertir quand on s'apprête à
-   * enregistrer un autre compte. Seuls les quatre derniers sont disponibles des
-   * deux côtés — c'est grossier, et c'est suffisant : l'avertissement invite à
-   * vérifier, il ne bloque rien.
-   */
-  protected readonly mandatedLast4 = computed(() =>
-    this.debitable() ? (this.mandate()?.last4 ?? '') : '',
-  );
 
   /**
    * **La frise : les coordonnées, l'autorisation, l'ouverture.**
@@ -370,16 +424,21 @@ export class PaiementSection {
    */
   protected async mint(): Promise<void> {
     const id = this.companyId();
-    if (id === null) {
+    if (id === null || !this.canMint()) {
       return;
     }
-    await this.run(
+    const minted = await this.run(
       id,
       async () => {
         await this.mandates.mint(id);
       },
       "Mandat frappé. Il reste à l'imprimer et à le faire signer.",
     );
+    // Un refus (`MandateMentionsMissingError`, 409) a dit son message en toast ;
+    // la relecture remet la liste des mentions à jour sous le bouton.
+    if (!minted) {
+      await this.load(id);
+    }
   }
 
   /**
@@ -390,14 +449,20 @@ export class PaiementSection {
    * bouton dont la seule issue est un message d'erreur vaut moins que pas de
    * bouton du tout.
    *
-   * 🔴 Sans RIB aussi, depuis le 2026-09-14 : le serveur refuse la frappe en
-   * 409 (décision de Hugo — un mandat nomme le compte qu'il autorise à débiter).
+   * Ce qui manque au mandat ne cache PLUS le geste (2026-09-15) : le bouton
+   * reste là, désactivé par {@link canMint}, et la liste dit quoi saisir.
    */
   protected readonly mintable = computed(() => {
     const status = this.mandate()?.status;
-    const dead = status === undefined || status === 'revoked' || status === 'failed';
-    return dead && this.bankAccount() !== null;
+    return status === undefined || status === 'revoked' || status === 'failed';
   });
+
+  /**
+   * Le bouton « Frapper » est-il armé ? Quand rien ne manque, d'après le serveur
+   * (`mintBlockers`) — RIB, émetteur et mentions interentreprises compris. Il
+   * refuserait en 409 sinon.
+   */
+  protected readonly canMint = computed(() => this.mintable() && this.mintBlockers().length === 0);
 
   /**
    * Récupère la pièce déposée et la remet à l'utilisateur.
@@ -504,6 +569,10 @@ export class PaiementSection {
    * refuse la forme ET le fond (une date à venir, un mandat qui n'est pas un
    * brouillon). Revalider à l'écran ferait une seconde définition de « date
    * acceptable », et c'est celle que l'utilisateur lit qui dériverait.
+   *
+   * La date saisie reste en place après un refus : sur une pièce remplacée, le
+   * geste suivant est de relire le nouveau scan puis de réactiver, pas de
+   * retaper la date du papier.
    */
   protected async sign(): Promise<void> {
     const id = this.companyId();
@@ -512,8 +581,17 @@ export class PaiementSection {
     if (id === null || mandate === null || at === '') {
       return;
     }
-    await this.run(id, () => this.mandates.sign(id, mandate.id, at), 'Mandat signé et actif.');
-    this.signedAt.set('');
+    // La révision part de la vue AFFICHÉE, pas d'une relecture : c'est la pièce
+    // que le staff a regardée qu'il atteste.
+    const signed = await this.run(
+      id,
+      () => this.mandates.sign(id, mandate.id, at, mandate.proofRevision),
+      'Mandat signé et actif.',
+      PROOF_REPLACED_ON_SIGN,
+    );
+    if (signed) {
+      this.signedAt.set('');
+    }
   }
 
   private async revoke(): Promise<void> {
@@ -524,15 +602,40 @@ export class PaiementSection {
     await this.run(id, () => this.mandates.revoke(id), 'Mandat révoqué.');
   }
 
-  /** Mute, annonce, recharge — le trio est le même pour les deux gestes. */
-  private async run(companyId: string, mutate: () => Promise<void>, done: string): Promise<void> {
+  /**
+   * Mute, annonce, recharge — le trio est le même pour tous les gestes. Rend
+   * `true` au succès.
+   *
+   * Un refus « la pièce a changé » (`isProofConflict`) relit aussi la section :
+   * la vue est périmée, et la garder ferait recommencer sur la même. Le geste
+   * peut nommer ce cas par `conflictMessage` ; sinon le message du serveur
+   * s'affiche.
+   */
+  private async run(
+    companyId: string,
+    mutate: () => Promise<void>,
+    done: string,
+    conflictMessage?: string,
+  ): Promise<boolean> {
     this.busy.set(true);
     try {
       await mutate();
       this.notify.success(done);
       await this.load(companyId);
+      return true;
     } catch (error) {
-      this.notify.error(error, "L'opération a échoué.");
+      if (!isProofConflict(error)) {
+        this.notify.error(error, "L'opération a échoué.");
+        return false;
+      }
+      // Le message de l'écran PRIME sur celui de l'enveloppe quand le geste en
+      // donne un : `httpErrorMessage` ne rend le repli qu'à défaut de message.
+      this.notify.refused(
+        conflictMessage === undefined ? error : null,
+        conflictMessage ?? "L'opération a échoué.",
+      );
+      await this.load(companyId);
+      return false;
     } finally {
       this.busy.set(false);
     }
@@ -548,9 +651,13 @@ export class PaiementSection {
       const section = await this.mandates.section(companyId);
       this.mandate.set(section.mandate);
       this.publishableKey.set(section.publishableKey);
+      this.mintBlockers.set(section.mintBlockers);
+      this.holderLegalFormRequired.set(section.issuerScheme === 'B2B');
     } catch {
       this.mandate.set(null);
       this.publishableKey.set('');
+      this.mintBlockers.set([]);
+      this.holderLegalFormRequired.set(false);
     }
   }
 }

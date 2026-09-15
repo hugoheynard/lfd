@@ -10,7 +10,7 @@
  *   réglages du mandat qui restent au staff ;
  * - que le client et le staff écrivent la **même** ligne.
  *
- * Plan : `documentation/b2b/plan-rib-client.md`. Aucune frontière doublée : le
+ * Plan : `documentation/comptabilite/plan-rib-client.md`. Aucune frontière doublée : le
  * jeton porteur EST le `sub`, et tout le reste se joue en base.
  */
 import type { CustomerBankAccountSectionView } from "@lfd/contracts";
@@ -85,6 +85,7 @@ describe.each([
 
     expect(account).toEqual({
       holder: "Refuge du Col SARL",
+      holderLegalForm: "",
       addressLine1: "12 rue des Alpages",
       addressLine2: "",
       postalCode: "73150",

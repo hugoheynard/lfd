@@ -41,7 +41,7 @@ export type UpdateNavPrefsPayload = z.infer<typeof updateNavPrefsPayload>;
  * règle de nom tenue à deux endroits finit toujours par se contredire ; elle
  * n'est plus tenue qu'une fois, et pas ici.
  *
- * Forme juridique et SIRET restent **facultatifs à l'ouverture** — un compte se
+ * Forme juridique, SIRET et SIREN restent **facultatifs à l'ouverture** — un compte se
  * crée souvent chez le client, qui n'a pas ses papiers sous la main — et se
  * complètent ensuite. L'activation, elle, les exige.
  */
@@ -50,6 +50,8 @@ export const createCompanyPayload = z.object({
   enseigne: z.string().default(""),
   formeJuridique: z.string().default(""),
   siret: z.string().default(""),
+  /** SIREN — vide = repris du SIRET quand son préfixe en est un valide. */
+  siren: z.string().default(""),
   vatNumber: z.string().default(""),
 });
 

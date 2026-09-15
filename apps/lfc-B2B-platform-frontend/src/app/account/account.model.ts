@@ -115,7 +115,7 @@ export type UserProfileDraft = Pick<UserProfile, 'firstName' | 'lastName' | 'ema
 /** Ce que le formulaire « Créer une entreprise » envoie. */
 export type CompanyDraft = Pick<
   Company,
-  'raisonSociale' | 'enseigne' | 'formeJuridique' | 'siret' | 'vatNumber'
+  'raisonSociale' | 'enseigne' | 'formeJuridique' | 'siret' | 'siren' | 'vatNumber'
 >;
 
 /**

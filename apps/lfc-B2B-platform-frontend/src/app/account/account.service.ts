@@ -33,7 +33,7 @@ import type {
  * facultatives : absentes, le serveur les lit vides et n'y touche pas.
  */
 export type IdentityDraft = Pick<UpdateIdentityPayload, 'enseigne' | 'vatNumber'> &
-  Partial<Pick<UpdateIdentityPayload, 'raisonSociale' | 'formeJuridique' | 'siret'>>;
+  Partial<Pick<UpdateIdentityPayload, 'raisonSociale' | 'formeJuridique' | 'siret' | 'siren'>>;
 
 const IDENTITY_SAVED = 'Identité mise à jour.';
 const KBIS_SAVED = 'KBIS déposé.';

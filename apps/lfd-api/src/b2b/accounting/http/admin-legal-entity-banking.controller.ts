@@ -122,7 +122,7 @@ export class AdminLegalEntityBankingController {
    * 🔴 Sa propre route, et pas un champ de `mandate-defaults` : ce payload-là a
    * des défauts, et un écran chargé avant la bascule rebasculerait le régime de
    * prélèvement sans que personne l'ait décidé (plan
-   * `documentation/b2b/plan-mandat-deux-schemas.md` §3.3). Si le schéma change,
+   * `documentation/comptabilite/plan-mandat-deux-schemas.md` §3.3). Si le schéma change,
    * les brouillons de l'entité deviennent caducs ; les actifs gardent le leur.
    */
   @Put(":id/mandate-scheme")

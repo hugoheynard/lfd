@@ -6,10 +6,15 @@ import { InvalidDebtorAccountError } from "../errors/mandate-errors.js";
 /** Ce qu'on recopie du RIB d'un client, avant validation. */
 export interface DebtorAccountInput {
   readonly holder: string;
+  /** Civilité ou forme juridique du titulaire — `""` quand non renseignée. */
+  readonly holderLegalForm: string;
   readonly address: LegalAddress;
   readonly iban: Iban;
   readonly bic: Bic;
 }
+
+/** La case « Civilité / Forme juridique » du mandat interentreprises (plan §9, décidé le 2026-09-15). */
+const HOLDER_LEGAL_FORM_MAX_LENGTH = 40;
 
 /**
  * **Le compte du débiteur — la recopie du RIB d'un client.**
@@ -49,6 +54,13 @@ export interface DebtorAccountInput {
 export class DebtorAccount {
   private constructor(
     readonly holder: string,
+    /**
+     * Civilité ou forme juridique du **titulaire** — pas de la société : le
+     * titulaire peut en différer, et le mandat interentreprises imprime la
+     * sienne. Vide permis ici ; c'est la frappe qui l'exige, et seulement en
+     * interentreprises (`mintBlockersOf`).
+     */
+    readonly holderLegalForm: string,
     readonly address: LegalAddress,
     readonly iban: Iban,
     readonly bic: Bic,
@@ -62,7 +74,8 @@ export class DebtorAccount {
    * après l'envoi — et un rejet de prélèvement se paie en frais bancaires et en
    * appel du client. L'état incomplet est rendu inexprimable plutôt que gardé.
    *
-   * @throws {InvalidDebtorAccountError} titulaire vide.
+   * @throws {InvalidDebtorAccountError} titulaire vide, ou forme juridique du
+   *   titulaire plus longue que sa case.
    */
   static create(input: DebtorAccountInput): DebtorAccount {
     const holder = input.holder.trim();
@@ -72,7 +85,30 @@ export class DebtorAccount {
         "obligatoire — c'est le nom que la banque du débiteur compare au mandat",
       );
     }
-    return new DebtorAccount(holder, input.address, input.iban, input.bic);
+    const holderLegalForm = input.holderLegalForm.trim();
+    if (holderLegalForm.length > HOLDER_LEGAL_FORM_MAX_LENGTH) {
+      throw new InvalidDebtorAccountError(
+        "Civilité ou forme juridique du titulaire",
+        `${String(HOLDER_LEGAL_FORM_MAX_LENGTH)} caractères au plus — c'est ce que tient la case du mandat`,
+      );
+    }
+    return new DebtorAccount(holder, holderLegalForm, input.address, input.iban, input.bic);
+  }
+
+  /**
+   * Le même compte, avec une autre forme juridique du titulaire — revalidée.
+   *
+   * Sert la fusion du RIB : un écran qui n'envoie pas le champ ne doit pas
+   * l'effacer (`recordCompanyBankAccount`).
+   */
+  withHolderLegalForm(holderLegalForm: string): DebtorAccount {
+    return DebtorAccount.create({
+      holder: this.holder,
+      holderLegalForm,
+      address: this.address,
+      iban: this.iban,
+      bic: this.bic,
+    });
   }
 
   /** Les quatre derniers caractères de l'IBAN — de quoi reconnaître, pas débiter. */

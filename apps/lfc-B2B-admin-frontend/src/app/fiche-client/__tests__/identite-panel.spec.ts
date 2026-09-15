@@ -17,6 +17,7 @@ const PARTIELLE: AdminIdentitePanelData = {
   raisonSociale: 'Le Comptoir SAS',
   formeJuridique: 'SAS',
   siret: '',
+  siren: '',
 };
 
 /** Un compte ouvert à l'enseigne seule : aucun papier. */
@@ -27,6 +28,7 @@ const SANS_PAPIERS: AdminIdentitePanelData = {
   raisonSociale: '',
   formeJuridique: '',
   siret: '',
+  siren: '',
 };
 
 function mount(data: AdminIdentitePanelData): ComponentFixture<AdminIdentitePanel> {
@@ -64,6 +66,7 @@ describe('AdminIdentitePanel', () => {
       raisonSociale: 'Le Comptoir SAS',
       formeJuridique: 'SAS',
       siret: '',
+      siren: '',
     });
   });
 

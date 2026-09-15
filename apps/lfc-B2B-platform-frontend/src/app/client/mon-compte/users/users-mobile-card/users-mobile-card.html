@@ -1,4 +1,5 @@
 <h2 class="title">{{ t().account.sections.users }}</h2>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 <app-users-list [people]="false" />
 <div class="feet">
   <app-card-foot [label]="t().account.details" (pressed)="openList()" />

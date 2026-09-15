@@ -74,9 +74,11 @@
       <fold-element-title variant="caps" icon="banknote" title="1 · Coordonnées bancaires" />
       @if (companyId(); as id) {
         <app-bank-account-section
+          #bankStep
           [companyId]="id"
-          [mandateLast4]="mandatedLast4()"
-          (accountChange)="bankAccount.set($event)"
+          [mandateActive]="debitable()"
+          [holderLegalFormRequired]="holderLegalFormRequired()"
+          (accountChange)="onBankAccount($event)"
         />
       } @else {
         <p class="pm-later">
@@ -246,7 +248,13 @@
                 </span>
               </div>
               <div class="pm-state">
-                <button foldButton type="button" [loading]="busy()" (click)="mint()">
+                <button
+                  foldButton
+                  type="button"
+                  [disabled]="!canMint()"
+                  [loading]="busy()"
+                  (click)="mint()"
+                >
                   Frapper un mandat
                 </button>
               </div>
@@ -270,26 +278,60 @@
               </span>
             </div>
             <div class="pm-state">
-              <!-- Sans RIB, pas de bouton : le serveur refuse la frappe (2026-09-14),
-                   et l'écran dit pourquoi plutôt que de laisser tomber un 409. -->
-              @if (bankAccount() !== null) {
-                <button
-                  foldButton
-                  type="button"
-                  intent="primary"
-                  [loading]="busy()"
-                  (click)="mint()"
-                >
-                  Frapper le mandat
-                </button>
-              } @else {
-                <span class="pm-note">
-                  Enregistrez d'abord le RIB&nbsp;: le mandat nomme le compte qu'il autorise à
-                  débiter.
-                </span>
-              }
+              <!-- Désactivé tant qu'une mention manque (2026-09-15) : le serveur
+                   refuserait en 409, et la liste en dessous dit quoi saisir. -->
+              <button
+                foldButton
+                type="button"
+                intent="primary"
+                [disabled]="!canMint()"
+                [loading]="busy()"
+                (click)="mint()"
+              >
+                Frapper le mandat
+              </button>
             </div>
           </div>
+        }
+
+        <!-- Ce qui manque au mandat, nommé, avec le geste pour le saisir. Les codes
+             viennent de la fonction même qui refuse la frappe : l'écran ne devine
+             rien. -->
+        @if (mintable() && blockerLines().length > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Le mandat ne peut pas encore être frappé.</strong> Il manque&nbsp;:
+            <ul class="pm-blockers">
+              @for (line of blockerLines(); track line.code) {
+                <li>{{ line.label }}</li>
+              }
+            </ul>
+            @if (needsIdentity()) {
+              <button
+                actions
+                foldButton
+                type="button"
+                size="sm"
+                intent="warning"
+                emphasis="soft"
+                (click)="editIdentity.emit()"
+              >
+                Compléter l'identité légale
+              </button>
+            }
+            @if (needsBank()) {
+              <button
+                actions
+                foldButton
+                type="button"
+                size="sm"
+                intent="warning"
+                emphasis="soft"
+                (click)="goToBank()"
+              >
+                Aller au RIB
+              </button>
+            }
+          </fold-callout>
         }
 
         <app-mandate-options-section

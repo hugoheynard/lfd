@@ -11,15 +11,17 @@ import {
 import {
   BankAccountForm,
   bankAccountDraftFrom,
-  changesMandatedAccount,
   EMPTY_BANK_ACCOUNT_DRAFT,
+  holderLegalFormFits,
+  holderLegalFormProvided,
   isBankAccountComplete,
   toBankAccountPayload,
   withoutIban,
   type BankAccountDraft,
 } from '@lfd/b2b-ui/payment';
 import type { CompanyBankAccountView } from '@lfd/contracts';
-import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
+import { httpErrorCode } from '@lfd/endpoints';
+import { FoldButtonComponent, FoldCalloutComponent, FoldFieldsetComponent } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { BankAccountService } from '../bank-account/bank-account.service';
@@ -50,17 +52,26 @@ import { BankAccountService } from '../bank-account/bank-account.service';
  * rappel d'impression, le compte enregistré, l'avertissement de compte mandaté,
  * le bouton et l'écriture.
  *
- * ## Ce que l'écran NE promet pas
+ * ## 🔴 Sous un mandat actif, le RIB ne se remplace pas
  *
- * Il n'annonce pas ce qu'un changement de compte fait au mandat en cours.
- * Nouveau mandat, ou amendement sous la même RUM : la question est chez la
- * banque et sans réponse. L'avertissement se limite donc à ce qui est **certain**
- * — un mandat ne vaut que pour le compte qu'il nomme.
+ * Le serveur refuse au staff, comme au client, de remplacer le RIB d'une
+ * société dont le mandat est actif (`BankAccountBoundToActiveMandateError`,
+ * plan `documentation/comptabilite/plan-restes-du-mandat.md` §8) : le papier
+ * signé nomme l'ancien compte, et l'amendement sous la même RUM attend la
+ * réponse de la banque. Le formulaire se désarme donc, et dit le seul geste de
+ * sortie — révoquer, puis frapper un mandat neuf sur le nouveau RIB.
+ *
+ * Il remplace l'avertissement « ce compte n'est pas celui du mandat en cours »,
+ * qui ne s'allumait que sous un mandat actif — c'est-à-dire exactement là où
+ * l'écriture est désormais refusée.
  */
+/** Le code du refus « un mandat actif désigne ce compte » (409). */
+const BOUND_TO_ACTIVE_MANDATE = 'payments.bank_account.bound_to_active_mandate';
+
 @Component({
   selector: 'app-bank-account-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BankAccountForm, FoldCalloutComponent, FoldButtonComponent],
+  imports: [BankAccountForm, FoldCalloutComponent, FoldButtonComponent, FoldFieldsetComponent],
   templateUrl: './bank-account-section.html',
   styleUrl: './bank-account-section.scss',
 })
@@ -70,8 +81,18 @@ export class BankAccountSection {
 
   /** La société concernée ; `null` tant qu'elle n'existe pas (mode ouverture). */
   readonly companyId = input<string | null>(null);
-  /** Les 4 chiffres du compte que le mandat ACTIF nomme, `''` s'il n'y en a pas. */
-  readonly mandateLast4 = input('');
+  /**
+   * Un mandat **actif** couvre-t-il ce compte ? Vrai ⇒ le formulaire se désarme.
+   * L'écran ne fait qu'anticiper le refus : le serveur reste le garde.
+   */
+  readonly mandateActive = input(false);
+  /**
+   * La civilité ou forme juridique du titulaire est-elle exigée ? Vrai quand
+   * l'émetteur frappe en interentreprises — la section paiement le lit déjà
+   * sur la section mandat (`issuerScheme`). Faux par défaut : inconnu ⇒ non
+   * requise, le serveur reste le garde.
+   */
+  readonly holderLegalFormRequired = input(false);
 
   /**
    * Le RIB connu, à chaque lecture et après chaque écriture — `null` s'il n'y
@@ -100,13 +121,20 @@ export class BankAccountSection {
     });
   }
 
-  /** Le RIB se recopie en entier, complément excepté (`isBankAccountComplete`). */
-  protected readonly canSave = computed(() => isBankAccountComplete(this.draft()));
-
-  /** Enregistrer va-t-il désigner un autre compte que celui du mandat actif ? */
-  protected readonly changesMandatedAccount = computed(() =>
-    changesMandatedAccount(this.draft(), this.mandateLast4()),
-  );
+  /**
+   * Le RIB se recopie en entier, complément excepté (`isBankAccountComplete`),
+   * et la civilité ou forme juridique tient dans sa case de 40 caractères —
+   * présente, quand le mandat interentreprises l'exige.
+   */
+  protected readonly canSave = computed(() => {
+    const draft = this.draft();
+    return (
+      !this.mandateActive() &&
+      isBankAccountComplete(draft) &&
+      holderLegalFormFits(draft) &&
+      holderLegalFormProvided(draft, this.holderLegalFormRequired())
+    );
+  });
 
   /** Y a-t-il un compte enregistré à afficher ? */
   protected readonly hasAccount = computed(() => this.account() !== null);
@@ -127,6 +155,12 @@ export class BankAccountSection {
       await this.load(id);
     } catch (error) {
       this.notify.error(error, "Le RIB n'a pas été enregistré.");
+      // Refusé malgré le formulaire désarmé : le mandat est devenu actif depuis
+      // la lecture. Relire remonte le RIB, et la section parente se relit avec
+      // lui — le mandat actif désarme alors le formulaire.
+      if (httpErrorCode(error) === BOUND_TO_ACTIVE_MANDATE) {
+        await this.load(id);
+      }
     } finally {
       this.busy.set(false);
     }

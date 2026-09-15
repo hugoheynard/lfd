@@ -26,7 +26,7 @@ import { SetMandateDefaultsCommand } from "./legal-entity-commands.js";
  *
  * ## Les brouillons deviennent caducs quand leur papier change (2026-09-15)
  *
- * Plan `documentation/b2b/plan-mandat-deux-schemas.md` §10.4 : le type de
+ * Plan `documentation/comptabilite/plan-mandat-deux-schemas.md` §10.4 : le type de
  * paiement s'imprime sous les deux schémas, la description sous CORE seulement.
  * Chaque brouillon révoqué a SON fait `payment_mandate.draft_voided`, dans la
  * transaction du réglage — la trace du geste est donc là où elle compte, sur le

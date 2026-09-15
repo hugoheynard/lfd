@@ -11,6 +11,7 @@ export class CreateCompanyCommand {
     readonly enseigne: string,
     readonly formeJuridique: string,
     readonly siret: string,
+    readonly siren: string,
     readonly vatNumber: string,
   ) {}
 }

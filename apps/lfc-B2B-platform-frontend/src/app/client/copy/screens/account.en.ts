@@ -76,6 +76,7 @@ export const ACCOUNT_EN: AccountCopy = {
   identityCompany: 'Registered name',
   identityForm: 'Legal form',
   identitySiret: 'SIRET',
+  identitySiren: 'SIREN',
   identityVat: 'VAT number',
   identityNote:
     'The trading name changes here. Registry details go through us: we check, then we update — these are the mentions that appear on your invoices.',
@@ -83,6 +84,11 @@ export const ACCOUNT_EN: AccountCopy = {
   identityVatField: 'Intra-EU VAT number',
   identityLegalHint:
     'Fill in once: after saving, this detail can only be corrected through our sales team.',
+  identityFormPlaceholder: 'Choose',
+  identityVatRequiredHint: 'Required for this legal form.',
+  identityVatOptionalHint: 'Optional for this legal form — VAT franchise.',
+  identityVatUndecidedHint: 'Required or not depending on the legal form.',
+  identityOptional: 'optional',
   identityLegalLocked:
     'These details come from the company registry. To correct them, contact our sales team.',
   identitySaveFailed: 'Your identity was not saved.',
@@ -279,6 +285,9 @@ export const ACCOUNT_EN: AccountCopy = {
     'The account holder and address are the ones your bank knows: they may differ from your registered company name. If a direct debit runs on this account, replacing it stops the debit: we will get back to you on what comes next.',
   bankForm: {
     holder: 'Account holder',
+    holderLegalForm: 'Title (Mr, Ms) or legal form (SAS, SARL…)',
+    holderLegalFormHint:
+      'Required by the business-to-business mandate, whether the holder is a company or a person — 40 characters at most.',
     line1: 'Address',
     line2: 'Address line 2',
     postalCode: 'Postcode',
@@ -323,6 +332,16 @@ export const ACCOUNT_EN: AccountCopy = {
   mandateDropHint: 'PDF or photo (JPEG, PNG, HEIC), 10 MB max.',
   mandateUploading: 'Uploading the mandate…',
   mandateUploadedToast: 'Signed mandate received.',
+  mandateBlockedLead: 'To generate your mandate, we still need:',
+  mandateBlockers: {
+    bank_account_missing: 'your bank details',
+    issuer_missing: 'our creditor details — we are taking care of it',
+    company_name_missing: 'your company’s registered name',
+    siren_missing: 'your company’s SIREN number',
+    holder_legal_form_missing: 'the account holder’s title or legal form',
+  },
+  mandateBlockersIdentity: 'Complete legal identity',
+  mandateBlockersBank: 'Complete bank details',
   mandateGenerateFailed: 'The mandate was not generated.',
   mandateUploadFailed: 'The signed mandate was not uploaded.',
   mandateFetchFailed: 'The mandate could not be opened. Try again in a moment.',
@@ -346,6 +365,51 @@ export const ACCOUNT_EN: AccountCopy = {
   mandateOptionsSave: 'Save the options',
   mandateOptionsSavedToast: 'Mandate options saved.',
   mandateOptionsSaveFailed: 'The mandate options were not saved.',
+  completion: {
+    countOne: '1 item to complete',
+    count: '{n} items to complete',
+    blocksActivation: 'Prevents activation: {detail}',
+    optionalNote: 'does not prevent activation',
+    cardLead: 'To complete:',
+    mandateFields: 'To generate your SEPA mandate: {fields}.',
+    items: {
+      identity: {
+        title: 'Legal identity',
+        detail: 'The company name, legal form or SIRET is missing.',
+        action: 'Complete the identity',
+      },
+      vat: {
+        title: 'VAT number',
+        detail: 'Your intra-community VAT number is required.',
+        action: 'Enter the VAT number',
+      },
+      telephone: {
+        title: 'Phone number',
+        detail: 'A driver must be able to call: enter a phone number, yours or a contact’s.',
+        action: 'Add a number',
+      },
+      billing: {
+        title: 'Billing address',
+        detail: 'Your invoices need an address.',
+        action: 'Add the billing address',
+      },
+      delivery: {
+        title: 'Delivery address',
+        detail: 'You prefer delivery: add at least one delivery address.',
+        action: 'Add a delivery address',
+      },
+      kbis: {
+        title: 'KBIS extract',
+        detail: 'Upload your company’s KBIS extract.',
+        action: 'Upload the KBIS',
+      },
+      bank: {
+        title: 'Bank details',
+        detail: 'Your bank details are incomplete.',
+        action: 'Complete the bank details',
+      },
+    },
+  },
   supportTitle: 'Contact our sales team',
   supportPanelTitle: 'Sales team',
   supportBody: 'A question about your account, an order or an invoice: we will get back to you.',

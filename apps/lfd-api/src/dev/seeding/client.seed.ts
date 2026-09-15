@@ -165,8 +165,13 @@ export async function seedClient(
         CLIENT_RAISON_SOCIALE,
         CLIENT_ENSEIGNE,
         "SAS",
-        "81245678900021",
-        "FR45812456789",
+        // Un SIRET dont le préfixe EST un SIREN valide : `81245678900021`, semé
+        // jusqu'au 2026-09-15, n'en portait pas, et la frappe d'un mandat
+        // interentreprises exige le SIREN. Le SIREN est laissé vide : le
+        // domaine le prend du SIRET, et c'est ce chemin qu'on sème.
+        "81245678800023",
+        "",
+        "FR63812456788",
       ),
     ),
   );

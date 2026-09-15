@@ -163,3 +163,56 @@ describe("S3DocumentStore — l'ABSENCE n'est pas une panne", () => {
     );
   });
 });
+
+/**
+ * La suppression sert la purge des scans jamais valides (plan
+ * `plan-restes-du-mandat.md` §4) : elle part APRÈS une transaction validée, et
+ * doit pouvoir se rejouer sans lever sur un travail déjà fait.
+ */
+describe("S3DocumentStore — la suppression est idempotente", () => {
+  function storeWhoseDelete(outcome: () => Promise<void>): S3DocumentStore {
+    const store = new S3DocumentStore(configWith(CONFIGURED), "kbis");
+    Reflect.set(store, "cached", { delete: outcome });
+    return store;
+  }
+
+  it("réussit quand l'objet est retiré", async () => {
+    const removed: string[] = [];
+    const store = new S3DocumentStore(configWith(CONFIGURED), "kbis");
+    Reflect.set(store, "cached", {
+      delete: (key: string) => {
+        removed.push(key);
+        return Promise.resolve();
+      },
+    });
+
+    await expect(store.delete("companies/1/mandates/2/scan")).resolves.toBeUndefined();
+    expect(removed).toEqual(["companies/1/mandates/2/scan"]);
+  });
+
+  it.each(["NoSuchKey", "NotFound"])(
+    "tient %s pour un succès — l'objet est déjà parti",
+    async (name) => {
+      await expect(
+        storeWhoseDelete(() => Promise.reject(s3Error(name))).delete("companies/1/mandates/2/scan"),
+      ).resolves.toBeUndefined();
+    },
+  );
+
+  it.each(["NoSuchBucket", "InvalidAccessKeyId"])(
+    "lève sur %s — une panne n'est pas une absence",
+    async (name) => {
+      await expect(
+        storeWhoseDelete(() => Promise.reject(s3Error(name))).delete("companies/1/mandates/2/scan"),
+      ).rejects.toBeInstanceOf(DocumentStorageUnavailableError);
+    },
+  );
+
+  it("refuse clairement quand le canal n'est pas configuré", async () => {
+    const store = new S3DocumentStore(configWith(null), "kbis");
+
+    await expect(store.delete("companies/1/mandates/2/scan")).rejects.toBeInstanceOf(
+      DocumentStorageUnavailableError,
+    );
+  });
+});

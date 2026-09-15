@@ -29,6 +29,8 @@ export interface AdminIdentitePanelData {
   readonly raisonSociale: string;
   readonly formeJuridique: string;
   readonly siret: string;
+  /** Vide tant qu'inconnu — le staff le saisit et le corrige, comme le reste. */
+  readonly siren: string;
 }
 
 /**
@@ -80,6 +82,7 @@ export class AdminIdentitePanel {
     enseigne: '',
     formeJuridique: '',
     siret: '',
+    siren: '',
     vatNumber: '',
   });
   protected readonly submitting = signal(false);
@@ -110,6 +113,7 @@ export class AdminIdentitePanel {
         enseigne: data.enseigne,
         formeJuridique: data.formeJuridique,
         siret: data.siret,
+        siren: data.siren,
         vatNumber: data.vatNumber,
       });
     });
@@ -128,6 +132,9 @@ export class AdminIdentitePanel {
         raisonSociale: draft.raisonSociale.trim(),
         formeJuridique: draft.formeJuridique.trim(),
         siret: draft.siret.trim(),
+        // Toujours envoyé, prérempli : un SIRET corrigé fait suivre le SIREN
+        // qu'il proposait (`withSiret`), et le serveur refuse une contradiction.
+        siren: draft.siren.trim(),
       });
       this.notify.success('Identité mise à jour.');
       this.ref.close(true);

@@ -33,6 +33,31 @@ export const MANDATE_STATUS_LABELS: Readonly<Record<MandateStatus, string>> = {
 };
 
 /**
+ * Ce qui **empêche de frapper** un mandat — un code par mention manquante.
+ *
+ * Des codes et non des phrases : l'écran en fait un libellé ET un lien vers le
+ * dialogue qui saisit la mention, et une phrase ne se relie à rien.
+ *
+ * - `bank_account_missing` — aucun RIB : il se saisit dans « RIB » ;
+ * - `issuer_missing` — aucune entité émettrice, ou incomplète, ou en double :
+ *   Comptabilité › Entités juridiques ;
+ * - `company_name_missing`, `siren_missing` — la raison sociale et le SIREN du
+ *   débiteur, que seul le mandat **interentreprises** exige : Identité légale ;
+ * - `holder_legal_form_missing` — la civilité ou forme juridique du titulaire
+ *   du compte, exigée par le seul interentreprises : RIB.
+ *
+ * Plan `documentation/comptabilite/plan-mentions-obligatoires-du-mandat.md` §9.2.
+ */
+export const mintBlockerSchema = z.enum([
+  "bank_account_missing",
+  "issuer_missing",
+  "company_name_missing",
+  "siren_missing",
+  "holder_legal_form_missing",
+]);
+export type MintBlocker = z.infer<typeof mintBlockerSchema>;
+
+/**
  * Ce que le back-office montre d'un mandat.
  *
  * **Aucune coordonnée bancaire n'y figure**, et jamais dans une réponse d'API.
@@ -81,12 +106,23 @@ export interface PaymentMandateView {
   readonly hasProof: boolean;
   /** Nom du fichier de preuve déposé, vide s'il n'y en a pas. */
   readonly proofFileName: string;
+  /**
+   * La **révision** de la pièce déposée : une empreinte opaque, vide sans pièce.
+   * Ajoutée le 2026-09-15 (plan `documentation/comptabilite/plan-restes-du-mandat.md`
+   * §7 #9).
+   *
+   * L'écran la renvoie telle quelle en déclarant le mandat signé : le serveur
+   * refuse alors si le scan a été remplacé depuis que la fiche a été ouverte.
+   * Ce n'est **jamais** la clé de stockage — elle ne désigne rien, elle se
+   * compare.
+   */
+  readonly proofRevision: string;
 }
 
 /**
  * Ce que le **client** voit de son mandat — `GET /companies/:companyId/mandate`.
  *
- * Plan `documentation/b2b/plan-mandat-client.md`, fin du §9 (2026-09-14).
+ * Plan `documentation/comptabilite/plan-mandat-client.md`, fin du §9 (2026-09-14).
  *
  * Plus étroite que {@link PaymentMandateView}, et chaque absence est voulue :
  * ni `last4`, ni `bankCode`, ni `country` — le client a déjà sa carte RIB, et
@@ -121,6 +157,21 @@ export interface CustomerMandateView {
 export interface MandateSectionView {
   readonly mandate: PaymentMandateView | null;
   readonly publishableKey: string;
+  /**
+   * Ce qui empêche aujourd'hui de **frapper** un mandat pour cette société —
+   * vide quand la frappe passerait. Champ ajouté le 2026-09-15 (plan
+   * `documentation/comptabilite/plan-mentions-obligatoires-du-mandat.md` §9).
+   *
+   * Calculé par la même fonction que la frappe : l'écran ne peut pas annoncer
+   * « prêt » quand le serveur refuserait, ni l'inverse.
+   */
+  readonly mintBlockers: readonly MintBlocker[];
+  /**
+   * Le schéma de l'émetteur, ou `null` s'il est absent, incomplet ou en double.
+   * L'écran RIB en déduit que la forme juridique du titulaire est EXIGÉE
+   * (interentreprises) — ajouté le 2026-09-15, même lecture que `mintBlockers`.
+   */
+  readonly issuerScheme: SepaScheme | null;
 }
 
 /**
@@ -133,8 +184,16 @@ export interface MandateSectionView {
  *
  * Une date seule (`YYYY-MM-DD`), sans heure : le papier n'en porte pas, et en
  * inventer une donnerait une précision que la pièce ne soutient pas.
+ *
+ * ⚠️ « Une seule donnée » était vrai jusqu'au 2026-09-15 : s'y ajoute la
+ * révision de la pièce relue, qui n'est pas une saisie mais un témoin.
  */
 export const signMandatePayloadSchema = z.object({
   signedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "une date au format AAAA-MM-JJ est attendue"),
+  /**
+   * La `proofRevision` de la pièce **relue** (depuis le 2026-09-15). Obligatoire :
+   * une signature qui ne dit pas quelle pièce elle atteste ne prouve rien.
+   */
+  proofRevision: z.string().min(1, "la révision de la pièce relue est attendue"),
 });
 export type SignMandatePayload = z.infer<typeof signMandatePayloadSchema>;

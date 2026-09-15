@@ -27,6 +27,15 @@ export interface DebtorMandate {
   readonly scheme: SepaScheme;
   /** Le type de paiement **du mandat** (zone 12 de son papier) : il fait le `SeqTp`. */
   readonly paymentType: MandatePaymentType;
+  /**
+   * La date de signature **du papier** — `accepted_at`, jamais la frappe ni la
+   * saisie. Le lot l'écrit en `DtOfSgntr`, au jour local de Paris.
+   *
+   * Jamais nulle : un mandat actif la porte toujours, et la base le tient
+   * (`payment_mandates_active_is_signed`). Un adaptateur qui ne la trouve pas
+   * lève plutôt que d'en inventer une.
+   */
+  readonly signedAt: Date;
 }
 
 /**

@@ -39,6 +39,14 @@ import { SignMandateCommand } from "./sign-mandate.command.js";
  * débit, et « qui a activé ce mandat, sur quelle date de papier » doit avoir
  * une réponse le jour d'une contestation.
  *
+ * ## La pièce relue (depuis le 2026-09-15)
+ *
+ * La commande porte la `proofRevision` que l'écran a lue, et l'agrégat refuse
+ * si la pièce a changé depuis (plan `plan-restes-du-mandat.md` §7 #9). La
+ * fenêtre entre ce contrôle et l'écriture est fermée en base : `save` est
+ * conditionné à la pièce chargée, un dépôt concurrent fait donc échouer la
+ * signature plutôt que de passer dessous.
+ *
  * ## La date
  *
  * Elle vient du PAPIER et non de l'horloge : un mandat posté revient signé
@@ -65,7 +73,7 @@ export class SignMandateHandler implements ICommandHandler<SignMandateCommand, v
     // une en UTC la ferait basculer la veille pour les signatures de début de
     // journée — la RUM imprimée contredirait alors la date affichée.
     const signedAt = new Date(`${command.signedAt}T00:00:00`);
-    mandate.sign(signedAt, now);
+    mandate.sign(signedAt, now, command.proofRevision);
 
     const current = await this.mandates.findCurrent(command.companyId);
     const replaced =

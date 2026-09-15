@@ -1,0 +1,14 @@
+/* Un bloc dans la colonne de la carte ou du panneau, qui en gouverne l'écart. */
+:host {
+  display: block;
+}
+
+.lead {
+  margin: 0;
+}
+
+/* Une mention par ligne : une liste se relit, une phrase à virgules non. */
+.list {
+  margin: 0;
+  padding-left: var(--fold-space-lg);
+}

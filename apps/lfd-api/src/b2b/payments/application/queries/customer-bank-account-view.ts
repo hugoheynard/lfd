@@ -8,7 +8,7 @@ import type { CompanyBankAccount } from "../../domain/entities/company-bank-acco
  *
  * ⚠️ Amendé le 2026-09-14 : cette phrase disait que les zones étaient « des
  * réglages du staff ». Le client les règle désormais lui-même (plan
- * `documentation/b2b/plan-mandat-client.md` §10) ; elles restent hors de cette
+ * `documentation/comptabilite/plan-mandat-client.md` §10) ; elles restent hors de cette
  * vue parce qu'elles ont leur propre lecture (`GetMyCompanyMandateOptions`).
  *
  * Partagé par les deux lectures : la vue staff l'étend de ces deux zones. Écrire
@@ -21,12 +21,13 @@ import type { CompanyBankAccount } from "../../domain/entities/company-bank-acco
  * ⚠️ Amendé le 2026-09-14 : l'invariant vaut pour les réponses JSON. Le PDF du
  * mandat à signer rend l'IBAN entier au détenteur ou au rôle facturation —
  * assumé par Hugo, un mandat EPC porte l'IBAN du débiteur (plan
- * `documentation/b2b/plan-mandat-client.md` §6 #3). Cette vue-ci n'en change pas.
+ * `documentation/comptabilite/plan-mandat-client.md` §6 #3). Cette vue-ci n'en change pas.
  */
 export function customerBankAccountView(found: CompanyBankAccount): CustomerBankAccountView {
-  const { holder, address, bic } = found.account;
+  const { holder, holderLegalForm, address, bic } = found.account;
   return {
     holder,
+    holderLegalForm,
     addressLine1: address.line1,
     addressLine2: address.line2,
     postalCode: address.postalCode,

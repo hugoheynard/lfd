@@ -3,6 +3,7 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../platform/shared/errors/app-error.js";
+import type { MandateActorChannel } from "../events/payment-mandate-facts.js";
 
 /**
  * Aucun mandat n'est enregistré pour cette société — **404**.
@@ -268,20 +269,11 @@ export class CompanyBankAccountNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * On a voulu frapper un mandat pour une société **sans RIB** — **409**.
- *
- * Décidé par Hugo le 2026-09-14, pour le staff comme pour le client : un mandat
- * nomme le compte qu'il autorise à débiter. Sans compte, il n'autorise rien, et
- * la RUM frappée pour rien serait une référence perdue.
+ * ⚠️ `MandateWithoutBankAccountError` a vécu ici jusqu'au 2026-09-15. La frappe
+ * refuse toujours sans RIB, mais par `MandateMentionsMissingError`
+ * (`mint-blocker-errors.ts`), code `bank_account_missing` : le RIB y est une
+ * mention parmi les autres (plan `plan-mentions-obligatoires-du-mandat.md` §9).
  */
-export class MandateWithoutBankAccountError extends BusinessError {
-  constructor(readonly companyId: string) {
-    super(
-      "payments.mandate.bank_account_missing",
-      "Aucun RIB n'est enregistré pour cette société : enregistrez les coordonnées bancaires avant de générer le mandat, qui doit nommer le compte à débiter.",
-    );
-  }
-}
 
 /**
  * Le client demande un mandat alors que le sien est **déjà actif** — **409**.
@@ -316,17 +308,30 @@ export class MandateDocumentNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * Le client remplace son RIB alors qu'un mandat **actif** désigne ce compte — **409**.
+ * Le RIB est remplacé alors qu'un mandat **actif** désigne ce compte — **409**.
  *
  * Le papier signé nomme l'ancien compte : le prélèvement partirait sur une
- * autorisation qui ne le couvre pas. Le changement de banque passe par le
- * staff, qui fait signer un nouveau mandat (plan §8).
+ * autorisation qui ne le couvre pas.
+ *
+ * 🔴 **Le staff est refusé comme le client** depuis le 2026-09-15 (plan
+ * `documentation/comptabilite/plan-restes-du-mandat.md` §8) : l'amendement d'un
+ * mandat actif attend la réponse de la banque, et rien d'autre ne sait encore
+ * annoncer un changement de compte.
+ *
+ * Le message dépend de qui lit, parce que le geste de sortie diffère : le client
+ * ne révoque rien et doit nous contacter ; le staff, lui, révoque le mandat actif,
+ * enregistre le nouveau RIB, puis frappe un nouveau mandat à faire signer.
  */
 export class BankAccountBoundToActiveMandateError extends BusinessError {
-  constructor(readonly companyId: string) {
+  constructor(
+    readonly companyId: string,
+    readonly via: MandateActorChannel,
+  ) {
     super(
       "payments.bank_account.bound_to_active_mandate",
-      "Votre mandat de prélèvement actif désigne ce compte : pour changer de banque, contactez-nous, un nouveau mandat devra être signé.",
+      via === "staff"
+        ? "Le mandat de prélèvement actif de cette société désigne ce compte : révoquez-le, enregistrez le nouveau RIB, puis frappez un nouveau mandat à faire signer."
+        : "Votre mandat de prélèvement actif désigne ce compte : pour changer de banque, contactez-nous, un nouveau mandat devra être signé.",
     );
   }
 }

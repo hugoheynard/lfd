@@ -15,6 +15,7 @@ import {
   BOLD,
   BOLD_OBLIQUE,
   box,
+  creditorAddressOn,
   creditorNameOn,
   type Doc,
   type MandateDrawing,
@@ -23,13 +24,14 @@ import {
   REGULAR,
   watermark,
 } from "./mandate-pdf-drawing.js";
+import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import { SEPA_MANDATE_WORDING } from "./sepa-mandate-wording.js";
 
 /**
  * **Le mandat interentreprises (SDD B2B)** — d'après le gabarit de la DGFiP
  * (`mandat_prelevement_sepa_interentreprise.pdf`), dans le même ordre de blocs.
  *
- * Ce qui en est retiré, et pourquoi (§3.2 de `documentation/b2b/plan-mandat-deux-schemas.md`) :
+ * Ce qui en est retiré, et pourquoi (§3.2 de `documentation/comptabilite/plan-mandat-deux-schemas.md`) :
  *
  * - **Marianne, logo et nom de la DGFiP, service gestionnaire, préfixe `DGFIP`
  *   de la RUM** : ils désignent le créancier du gabarit, pas nous. Notre logo
@@ -68,8 +70,7 @@ export function drawB2bMandate(doc: Doc, drawing: MandateDrawing): void {
   if (issuance === null) {
     watermark(doc);
   }
-  logoCell(doc, drawing.logo);
-  let y = title(doc, 28 * MM, issuance !== null);
+  let y = title(doc, letterhead(doc, creditor, drawing.logo), issuance !== null);
   y = instructions(doc, y);
   y = authorization(doc, y, creditorNameOn(creditor));
 
@@ -86,14 +87,77 @@ export function drawB2bMandate(doc: Doc, drawing: MandateDrawing): void {
   box(doc, LEFT, creditorTop, WIDTH, y - creditorTop);
 }
 
+/** Le côté du carré où le logo s'inscrit ; le texte du bandeau se centre sur lui. */
+const LETTERHEAD_SIDE = 22 * MM;
+const LETTERHEAD_TOP = 10 * MM;
+/** Le gris des lignes secondaires du bandeau : lisible, et qui laisse le nom devant. */
+const LETTERHEAD_GRAY = "#4D4D4D";
+
 /**
- * Notre logo, là où le gabarit porte la Marianne. Sans logo, rien — une place
- * vide, jamais un « logo manquant » imprimé.
+ * **L'en-tête du créancier** — logo à gauche, identité à sa droite, un filet
+ * dessous. Là où le gabarit DGFiP porte la Marianne et le logo des Finances
+ * publiques : ils désignent SON créancier, et les recopier ferait croire à un
+ * document de l'administration.
+ *
+ * Le nom imprimé est celui que la banque connaît (`creditorNameOn`), le même que
+ * dans le pavé d'autorisation : un en-tête qui dirait la raison sociale du
+ * registre au-dessus d'une autorisation donnée au titulaire du compte montrerait
+ * deux noms au débiteur pour une seule autorisation.
+ *
+ * Sans logo, l'identité prend la place à gauche — jamais une case vide ni un
+ * « logo manquant » imprimé. Le logo garde ses proportions (`fit`) : le VO le
+ * garantit sensiblement carré, pas exactement.
+ *
+ * @returns l'ordonnée où le titre commence.
  */
-function logoCell(doc: Doc, logo: Buffer | null): void {
+function letterhead(doc: Doc, creditor: CreditorSnapshot, logo: Buffer | null): number {
+  const top = LETTERHEAD_TOP;
+  let textX = LEFT;
   if (logo !== null) {
-    doc.image(logo, LEFT, 8 * MM, { width: 16 * MM, height: 16 * MM });
+    doc.image(logo, LEFT, top, {
+      fit: [LETTERHEAD_SIDE, LETTERHEAD_SIDE],
+      align: "center",
+      valign: "center",
+    });
+    textX = LEFT + LETTERHEAD_SIDE + 6 * MM;
   }
+  const width = RIGHT - textX;
+  const lines = [
+    { text: creditorNameOn(creditor), size: 13, font: BOLD, color: BLACK },
+    {
+      text: creditorAddressOn(creditor).join(" · "),
+      size: 8.5,
+      font: REGULAR,
+      color: LETTERHEAD_GRAY,
+    },
+    {
+      text: `Identifiant créancier SEPA : ${creditor.ics}`,
+      size: 8.5,
+      font: REGULAR,
+      color: LETTERHEAD_GRAY,
+    },
+  ];
+  const gap = 1.2 * MM;
+  let total = gap * (lines.length - 1);
+  for (const line of lines) {
+    total += doc.font(line.font).fontSize(line.size).heightOfString(line.text, { width });
+  }
+
+  let y = top + Math.max(0, (LETTERHEAD_SIDE - total) / 2);
+  for (const line of lines) {
+    doc
+      .font(line.font)
+      .fontSize(line.size)
+      .fillColor(line.color)
+      .text(line.text, textX, y, { width });
+    y = doc.y + gap;
+  }
+  doc.fillColor(BLACK);
+
+  const rule = Math.max(top + LETTERHEAD_SIDE, y) + 3 * MM;
+  doc.moveTo(LEFT, rule).lineTo(RIGHT, rule).lineWidth(0.6).strokeColor(BAND_GRAY).stroke();
+  doc.strokeColor(BLACK);
+  return rule + 4 * MM;
 }
 
 /** Le titre encadré. Le sous-titre « exemple » tombe avec le filigrane. */

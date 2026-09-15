@@ -3,6 +3,7 @@ import {
   PAYMENT_MANDATE_FACTS,
   type DraftVoidingCause,
   type MandateActorChannel,
+  type ProofPurgeCause,
 } from "./payment-mandate-facts.js";
 
 /** Le sujet commun : le mandat, par son identifiant. */
@@ -151,6 +152,31 @@ export class MandateOptionsChangedEvent implements JournaledEvent {
         contractNumber: this.contractNumber,
         via: this.via,
       },
+    };
+  }
+}
+
+/**
+ * Fait : **le scan d'un mandat jamais signé a quitté le stockage**.
+ *
+ * Il ne porte ni la clé ni le nom du fichier : la clé désigne un objet qui
+ * n'existe plus, et `payment_mandate.proof_attached` a déjà dit quel fichier
+ * était entré. Ce fait-ci répond à « où est passé le premier scan ? ».
+ */
+export class MandateProofPurgedEvent implements JournaledEvent {
+  constructor(
+    readonly mandateId: string,
+    readonly companyId: string,
+    readonly reference: string,
+    readonly cause: ProofPurgeCause,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PAYMENT_MANDATE_FACTS.proofPurged,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.mandateId,
+      payload: { companyId: this.companyId, reference: this.reference, cause: this.cause },
     };
   }
 }

@@ -292,6 +292,19 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
     return entity;
   }
 
+  /**
+   * L'entité telle que la relit la base après une frappe. L'agrégat ne pose plus
+   * le verrou lui-même : `FirstMandateLedger` l'écrit en base, sous condition,
+   * dans la transaction de la frappe (plan `plan-restes-du-mandat.md` §7 #6).
+   * Son idempotence s'éprouve donc en e2e, là où elle vit.
+   */
+  function frozen(entity: LegalEntity): LegalEntity {
+    return LegalEntity.reconstitute({
+      ...entity.toPersistence(),
+      firstMandateIssuedAt: new Date("2026-09-12T08:00:00.000Z"),
+    });
+  }
+
   it("se corrige librement TANT QU'AUCUN mandat n'est frappé", () => {
     const entity = withAccount();
 
@@ -302,8 +315,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   });
 
   it("refuse de changer le TITULAIRE une fois le premier mandat frappé", () => {
-    const entity = withAccount();
-    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+    const entity = frozen(withAccount());
 
     expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
       CreditorIdentityIsFrozenError,
@@ -311,8 +323,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   });
 
   it("refuse aussi de changer l'ADRESSE : elle est imprimée à côté du nom", () => {
-    const entity = withAccount();
-    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+    const entity = frozen(withAccount());
 
     expect(() => entity.setCreditorAccount(accountWith({ city: "Tignes" }))).toThrow(
       CreditorIdentityIsFrozenError,
@@ -321,8 +332,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
 
   /** Le cas qui distingue cette règle de celle de l'ICS : on change de banque. */
   it("LAISSE changer d'IBAN après le premier mandat — aucun mandat ne le porte", () => {
-    const entity = withAccount();
-    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+    const entity = frozen(withAccount());
 
     entity.setCreditorAccount(accountWith({ iban: "FR7630006000011234567890189" }));
 
@@ -330,8 +340,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   });
 
   it("nomme l'ancien créancier ET le nouveau, pour qu'on sache lequel est sur le papier", () => {
-    const entity = withAccount();
-    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+    const entity = frozen(withAccount());
 
     expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
       /Crazeativity.*Autre Société/su,
@@ -339,32 +348,15 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   });
 
   it("dit la sortie : une seconde entité, pas une correction en douce", () => {
-    const entity = withAccount();
-    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+    const entity = frozen(withAccount());
 
     expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
       /seconde entité juridique/u,
     );
   });
 
-  /**
-   * Le fait arrivera par un ABONNÉ à un événement de `payments`, donc rejouable.
-   * Écraser la date au second mandat déplacerait le moment du gel — la seule
-   * chose que ce champ sert à dire.
-   */
-  it("garde la date du PREMIER mandat, même rejouée", () => {
-    const entity = withAccount();
-    const first = new Date("2026-09-12T08:00:00.000Z");
-
-    entity.noteFirstMandateIssued(first);
-    entity.noteFirstMandateIssued(new Date("2026-10-01T08:00:00.000Z"));
-
-    expect(entity.toPersistence().firstMandateIssuedAt).toEqual(first);
-  });
-
   it("se relit gelée depuis la base — le verrou survit au rechargement", () => {
-    const entity = withAccount();
-    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+    const entity = frozen(withAccount());
 
     const reloaded = LegalEntity.reconstitute(entity.toPersistence());
 
@@ -379,9 +371,9 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
    * pas de nom imprimé avant lui. Refuser là ferait un cul-de-sac.
    */
   it("laisse POSER un premier compte même si un mandat existe déjà", () => {
-    const entity = LegalEntity.declare(declaration());
-    entity.assignCreditorIdentifier(ICS);
-    entity.noteFirstMandateIssued(new Date("2026-09-12T08:00:00.000Z"));
+    const declared = LegalEntity.declare(declaration());
+    declared.assignCreditorIdentifier(ICS);
+    const entity = frozen(declared);
 
     expect(() => entity.setCreditorAccount(ACCOUNT)).not.toThrow();
   });

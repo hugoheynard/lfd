@@ -1,5 +1,10 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CustomerBankAccountView, SetCompanyBankAccountPayload } from '@lfd/contracts';
+import type {
+  CustomerBankAccountView,
+  SepaScheme,
+  SetCompanyBankAccountPayload,
+} from '@lfd/contracts';
 import { BankAccountForm } from '@lfd/b2b-ui/payment';
 import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
@@ -14,6 +19,7 @@ import { BankPanel, type BankPanelData } from './bank-panel';
 
 const SAVED: CustomerBankAccountView = {
   holder: 'Refuge du Col SARL',
+  holderLegalForm: 'SARL',
   addressLine1: '12 rue des Alpages',
   addressLine2: '',
   postalCode: '73150',
@@ -34,7 +40,10 @@ interface Wire {
 
 let wire: Wire;
 
-function boot(data: BankPanelData): ComponentFixture<BankPanel> {
+function boot(
+  data: BankPanelData,
+  issuerScheme: SepaScheme | null = null,
+): ComponentFixture<BankPanel> {
   wire = { saves: [], rereads: [], answer: null, closes: [], toasts: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -60,6 +69,7 @@ function boot(data: BankPanelData): ComponentFixture<BankPanel> {
       {
         provide: ClientMandate,
         useValue: {
+          issuerScheme: signal(issuerScheme),
           refresh: (companyId: string): Promise<void> => {
             wire.rereads.push(`mandat:${companyId}`);
             return Promise.resolve();
@@ -86,7 +96,10 @@ describe('BankPanel', () => {
   const submit = (): HTMLButtonElement | undefined =>
     Array.from(el().querySelectorAll<HTMLButtonElement>('fold-panel-footer button')).at(-1);
 
-  /** Les champs, dans l'ordre : titulaire, adresse, complément, CP, ville, pays, IBAN, BIC. */
+  /**
+   * Les champs, dans l'ordre : titulaire, civilité ou forme juridique, adresse,
+   * complément, CP, ville, pays, IBAN, BIC.
+   */
   const type = (index: number, value: string): void => {
     const input = inputs()[index];
     if (!input) {
@@ -122,11 +135,51 @@ describe('BankPanel', () => {
     expect(el().querySelector('input[placeholder="Refuge du Col SARL"]')).toBeNull();
   });
 
+  it('montre la civilité ou forme juridique du titulaire, dans les mots de l’écran', () => {
+    fixture = boot({ companyId: 'cmp_1', account: null });
+
+    expect(el().textContent).toContain(FR.account.bankForm.holderLegalForm);
+    expect(el().textContent).toContain(FR.account.bankForm.holderLegalFormHint);
+  });
+
+  describe('la civilité ou forme juridique, exigée selon le schéma de l’émetteur', () => {
+    const IBAN = 'FR14 2004 1010 0505 0001 3M02 606';
+    const optionalMarks = (): number => el().querySelectorAll('.opt').length;
+
+    it('interentreprises : vide, Enregistrer reste désarmé, et le champ n’est pas « facultatif »', () => {
+      fixture = boot({ companyId: 'cmp_1', account: { ...SAVED, holderLegalForm: '' } }, 'B2B');
+      type(7, IBAN);
+      expect(submit()?.disabled).toBe(true);
+      expect(optionalMarks()).toBe(0);
+
+      type(1, 'SARL');
+      expect(submit()?.disabled).toBe(false);
+    });
+
+    it('CORE ou schéma inconnu : vide, rien ne bloque, et le champ reste « facultatif »', () => {
+      for (const scheme of ['CORE', null] as const) {
+        fixture = boot({ companyId: 'cmp_1', account: { ...SAVED, holderLegalForm: '' } }, scheme);
+        type(7, IBAN);
+        expect(submit()?.disabled).toBe(false);
+        expect(optionalMarks()).toBe(1);
+      }
+    });
+  });
+
+  it('au-delà de 40 caractères pour la forme juridique, Enregistrer reste désarmé', () => {
+    fixture = boot({ companyId: 'cmp_1', account: SAVED });
+    type(7, 'FR14 2004 1010 0505 0001 3M02 606');
+    expect(submit()?.disabled).toBe(false);
+
+    type(1, 'x'.repeat(41));
+    expect(submit()?.disabled).toBe(true);
+  });
+
   it('sans RIB, propose « Enregistrer », le pays par défaut, et reste fermé tant que tout manque', () => {
     fixture = boot({ companyId: 'cmp_1', account: null });
 
     expect(submit()?.textContent).toContain(FR.account.bankSave);
-    expect(inputs()[5]?.value).toBe('FR');
+    expect(inputs()[6]?.value).toBe('FR');
     expect(submit()?.disabled).toBe(true);
   });
 
@@ -135,6 +188,7 @@ describe('BankPanel', () => {
 
     expect(inputs().map((input) => input.value)).toEqual([
       'Refuge du Col SARL',
+      'SARL',
       '12 rue des Alpages',
       '',
       '73150',
@@ -150,8 +204,8 @@ describe('BankPanel', () => {
 
   it('écrit le compte entier, nettoyé, annonce et se ferme avec `true`', async () => {
     fixture = boot({ companyId: 'cmp_1', account: SAVED });
-    type(5, 'fr');
-    type(6, '  FR14 2004 1010 0505 0001 3M02 606 ');
+    type(6, 'fr');
+    type(7, '  FR14 2004 1010 0505 0001 3M02 606 ');
     await save();
 
     expect(wire.saves).toEqual([
@@ -161,6 +215,7 @@ describe('BankPanel', () => {
           iban: 'FR14 2004 1010 0505 0001 3M02 606',
           bic: 'CEPAFRPP751',
           holder: 'Refuge du Col SARL',
+          holderLegalForm: 'SARL',
           line1: '12 rue des Alpages',
           line2: '',
           postalCode: '73150',
@@ -176,7 +231,7 @@ describe('BankPanel', () => {
   it('sur un refus, reste ouvert et montre le message du serveur', async () => {
     fixture = boot({ companyId: 'cmp_1', account: SAVED });
     wire.answer = 'IBAN invalide.';
-    type(6, 'FR00');
+    type(7, 'FR00');
     await save();
 
     expect(wire.closes).toEqual([]);
@@ -194,10 +249,10 @@ describe('BankPanel', () => {
     fixture = boot({ companyId: 'cmp_1', account: SAVED });
     expect(submit()?.disabled).toBe(true);
 
-    type(2, 'Bâtiment B');
+    type(3, 'Bâtiment B');
     expect(submit()?.disabled).toBe(true);
 
-    type(6, 'FR14 2004 1010 0505 0001 3M02 606');
+    type(7, 'FR14 2004 1010 0505 0001 3M02 606');
     expect(submit()?.disabled).toBe(false);
   });
 

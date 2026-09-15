@@ -4,6 +4,7 @@ import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   InMemoryMandates,
+  MemoryStore,
   RecordingNotifier,
   StepPublisher,
   Steps,
@@ -74,6 +75,7 @@ async function repoWithAccount(): Promise<FakeRepository> {
     events: new StepPublisher(steps),
     uow: new StepUnitOfWork(steps),
     notifier: new RecordingNotifier(steps),
+    store: new MemoryStore(steps),
   });
   repo.stored?.setOptions(
     MandateOptions.create({ debtorReference: "C-9P2X4B", contractNumber: "CT-42" }),
@@ -93,6 +95,7 @@ describe("GetMyCompanyBankAccountHandler", () => {
 
       expect(view).toEqual({
         holder: "Refuge du Col SARL",
+        holderLegalForm: "",
         addressLine1: "12 rue des Alpages",
         addressLine2: "",
         postalCode: "73150",

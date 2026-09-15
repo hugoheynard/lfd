@@ -1,6 +1,7 @@
 <h2 class="title">
   {{ t().account.sections.users }} <span class="count">({{ count() }})</span>
 </h2>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 <app-users-list />
 @if (canAdd()) {
   <button

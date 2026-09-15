@@ -12,6 +12,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     enseigne: "Le Pain Quotidien",
     formeJuridique: "SAS",
     siret: "12345678901234",
+    siren: "",
     vatNumber: "",
     status: "pending",
     grantedTerms: [],

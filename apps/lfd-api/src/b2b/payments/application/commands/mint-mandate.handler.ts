@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CreditorReader } from "../../../accounting/domain/ports/creditor.reader.js";
+import { FirstMandateLedger } from "../../../accounting/domain/ports/first-mandate-ledger.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -46,6 +47,7 @@ export class MintMandateHandler implements ICommandHandler<MintMandateCommand, s
     private readonly accounts: CompanyBankAccountRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly ledger: FirstMandateLedger,
   ) {}
 
   async execute(command: MintMandateCommand): Promise<string> {
@@ -58,6 +60,7 @@ export class MintMandateHandler implements ICommandHandler<MintMandateCommand, s
         secrets: this.secrets,
         events: this.events,
         uow: this.uow,
+        ledger: this.ledger,
       },
       command.companyId,
       "staff",

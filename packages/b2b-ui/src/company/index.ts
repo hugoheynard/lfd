@@ -34,14 +34,19 @@ export type {
   CompanyKbisView,
 } from './company-identity.view-model';
 export type { CompanyContactCardView } from './company-contacts.view-model';
-export { formatSiret } from './format';
+export { formatSiren, formatSiret } from './format';
 export {
   EMPTY_COMPANY_IDENTITY_DRAFT,
   EMPTY_COMPANY_CONTACT_DRAFT,
   isCompanyIdentityValid,
   isCompanyIdentityOpenable,
+  isVatRequiredFor,
   isAdditionalContactValid,
   isCompanyContactValid,
+  sirenFollowingSiret,
+  sirenOf,
+  sirenPrefixOf,
+  withSiret,
 } from './company-form.model';
 export type { CompanyIdentityDraft, CompanyContactDraft } from './company-form.model';
 export {

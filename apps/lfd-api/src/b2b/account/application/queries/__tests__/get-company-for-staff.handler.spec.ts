@@ -19,6 +19,7 @@ const detail: AdminCompanyDetailView = {
   enseigne: "Chez Léa",
   formeJuridique: "SAS",
   siret: "12345678901234",
+  siren: "",
   vatNumber: "",
   status: "pending",
   grantedTerms: [],

@@ -1,4 +1,5 @@
 import { InvalidSiretError } from "../errors/account-errors.js";
+import { isLuhnValid } from "./luhn.js";
 
 export const SIRET_LENGTH = 14;
 
@@ -56,21 +57,4 @@ export class Siret {
   toString(): string {
     return this.value;
   }
-}
-
-/**
- * Clé de Luhn, calculée de droite à gauche : un chiffre sur deux est doublé, et
- * un doublement au-delà de 9 se réduit en lui retirant 9. La somme doit être un
- * multiple de 10.
- */
-function isLuhnValid(digits: string): boolean {
-  let sum = 0;
-  for (let i = 0; i < digits.length; i++) {
-    const fromRight = digits.length - 1 - i;
-    // `digits` est déjà prouvé numérique et l'index est dans les bornes.
-    const digit = Number(digits[fromRight]);
-    const doubled = i % 2 === 1 ? digit * 2 : digit;
-    sum += doubled > 9 ? doubled - 9 : doubled;
-  }
-  return sum % 10 === 0;
 }

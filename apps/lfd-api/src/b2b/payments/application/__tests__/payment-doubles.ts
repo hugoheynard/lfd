@@ -8,6 +8,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import type { JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { SecretGenerator } from "../../../../platform/secret/secret-generator.js";
+import { DocumentStorageUnavailableError } from "../../../../platform/shared/errors/storage-errors.js";
 import { DocumentStore, type StoredDocument } from "../../../../platform/storage/document-store.js";
 import {
   StaffNotifier,
@@ -20,6 +21,7 @@ import {
   type MandateToCreate,
 } from "../../domain/entities/payment-mandate.js";
 import { MandateDraftAlreadyExistsError } from "../../domain/errors/mandate-errors.js";
+import { MandateProofChangedError } from "../../domain/errors/mandate-proof-errors.js";
 import {
   PaymentMandateRepository,
   type MandateHolder,
@@ -53,6 +55,7 @@ export const RIB_PAYLOAD: SetCompanyBankAccountPayload = {
   iban: IBAN,
   bic: "CEPAFRPP751",
   holder: "Refuge du Col SARL",
+  holderLegalForm: "SARL",
   line1: "12 rue des Alpages",
   line2: "",
   postalCode: "73150",
@@ -64,7 +67,7 @@ export const HOLDER: MandateHolder = {
   companyName: "Refuge du Col SARL",
   email: "compta@refuge.fr",
   reference: "C-9P2X4B",
-  siret: "81245678900017",
+  siren: "732829320",
 };
 
 /** Un émetteur complet : il peut imprimer un mandat. */
@@ -131,6 +134,7 @@ export function bankAccount(companyId = "cmp_1"): CompanyBankAccount {
     id: "cba_1",
     companyId,
     holder: RIB_PAYLOAD.holder,
+    holderLegalForm: "SARL",
     addressLine1: RIB_PAYLOAD.line1,
     addressLine2: RIB_PAYLOAD.line2,
     postalCode: RIB_PAYLOAD.postalCode,
@@ -140,6 +144,14 @@ export function bankAccount(companyId = "cmp_1"): CompanyBankAccount {
     bic: RIB_PAYLOAD.bic,
     debtorReference: "",
     contractNumber: "",
+  });
+}
+
+/** Le même RIB, déposé par un écran qui ne connaissait pas la forme juridique du titulaire. */
+export function bankAccountWithoutLegalForm(companyId = "cmp_1"): CompanyBankAccount {
+  return CompanyBankAccount.reconstitute({
+    ...bankAccount(companyId).toPersistence(),
+    holderLegalForm: "",
   });
 }
 
@@ -192,6 +204,26 @@ export class InMemoryMandates extends PaymentMandateRepository {
   save(saved: PaymentMandate): Promise<void> {
     this.steps.log.push(`mandate:save:${saved.status}`);
     this.saved.push(saved);
+    return Promise.resolve();
+  }
+
+  /**
+   * Ce que la base porte À L'INSTANT de l'écriture, quand un autre geste est
+   * passé depuis la lecture. `null` : rien n'a bougé, l'écriture tient.
+   */
+  concurrent: {
+    readonly status: MandateSnapshot["status"];
+    readonly proofStorageKey: string | null;
+  } | null = null;
+
+  depositProof(deposited: PaymentMandate, previousProofKey: string | null): Promise<void> {
+    const base = this.concurrent;
+    if (base !== null && (base.status !== "draft" || base.proofStorageKey !== previousProofKey)) {
+      this.steps.log.push("mandate:deposit-refused");
+      return Promise.reject(new MandateProofChangedError());
+    }
+    this.steps.log.push("mandate:deposit");
+    this.saved.push(deposited);
     return Promise.resolve();
   }
 
@@ -347,5 +379,17 @@ export class MemoryStore extends DocumentStore {
 
   readIfPresent(key: string): Promise<Buffer | null> {
     return Promise.resolve(this.objects.get(key)?.bytes ?? null);
+  }
+
+  /** Tombe en panne sur demande — ce que fait un bucket dont le jeton a expiré. */
+  failDeletes = false;
+
+  delete(key: string): Promise<void> {
+    this.steps.log.push(`store:delete:${key}`);
+    if (this.failDeletes) {
+      return Promise.reject(new DocumentStorageUnavailableError("suppression refusée (doublé)."));
+    }
+    this.objects.delete(key);
+    return Promise.resolve();
   }
 }

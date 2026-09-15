@@ -1,4 +1,5 @@
 <h2 class="title">{{ t().account.sections.kbis }}</h2>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 <p class="line state">{{ state() }}</p>
 @if (kbis(); as extrait) {
   <p class="line name">{{ extrait.fileName }}</p>

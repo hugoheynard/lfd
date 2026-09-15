@@ -4,6 +4,7 @@
   emphasis="soft"
   intent="primary"
   type="button"
+  [disabled]="disabled()"
   (click)="pressed.emit()"
 >
   {{ label() }}

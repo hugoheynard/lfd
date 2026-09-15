@@ -8,6 +8,7 @@ import {
   mandate,
   RecordingNotifier,
   StepPublisher,
+  MemoryStore,
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
@@ -31,6 +32,7 @@ function harness() {
     events,
     new StepUnitOfWork(steps),
     notifier,
+    new MemoryStore(steps),
   );
   return {
     steps,

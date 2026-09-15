@@ -1,5 +1,6 @@
 import { drawnText } from "../../../accounting/domain/services/__tests__/pdf-drawn-text.js";
 import { LegalEntityLogoReader } from "../../../accounting/domain/ports/legal-entity-logo.reader.js";
+import { CompanyBankAccount } from "../../domain/entities/company-bank-account.js";
 import { CompanyNotFoundForMandateError } from "../../domain/errors/mandate-errors.js";
 import { buildCustomerMandate } from "../customer-mandate-support.js";
 import {
@@ -34,7 +35,7 @@ function harness(issuerScheme: "CORE" | "B2B") {
     logos: new NoLogo(),
     store: new MemoryStore(steps),
   };
-  return { mandates, build: () => buildCustomerMandate(deps, "cmp_1") };
+  return { mandates, accounts, build: () => buildCustomerMandate(deps, "cmp_1") };
 }
 
 describe("buildCustomerMandate — quelle forme est imprimée", () => {
@@ -71,14 +72,24 @@ describe("buildCustomerMandate — quelle forme est imprimée", () => {
     expect(text).toContain("MANDAT SEPA INTERENTREPRISES");
   });
 
-  it("imprime le SIREN tiré du SIRET et la raison sociale de la société", async () => {
+  /**
+   * Plan mentions obligatoires §9 (2026-09-15) : le SIREN imprimé est celui
+   * STOCKÉ, plus un préfixe de SIRET — et la forme juridique du titulaire,
+   * vide jusque-là, vient du RIB.
+   */
+  it("imprime le SIREN stocké, la raison sociale et la forme juridique du titulaire", async () => {
     const h = harness("B2B");
-    h.mandates.holder = { ...HOLDER, siret: "81245678900017", companyName: "SAS Débitrice" };
+    h.mandates.holder = { ...HOLDER, siren: "732829320", companyName: "SAS Débitrice" };
+    h.accounts.stored = CompanyBankAccount.reconstitute({
+      ...bankAccount().toPersistence(),
+      holderLegalForm: "Madame",
+    });
 
     const text = drawnText((await h.build()).bytes);
 
-    expect(text.replace(/\s/gu, "")).toContain("812456789");
+    expect(text.replace(/\s/gu, "")).toContain("732829320");
     expect(text).toContain("SAS Débitrice");
+    expect(text).toContain("Madame");
   });
 
   it("refuse en 404 quand la société a disparu, sans rien composer", async () => {

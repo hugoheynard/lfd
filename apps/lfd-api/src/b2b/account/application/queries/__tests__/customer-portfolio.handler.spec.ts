@@ -19,6 +19,7 @@ function company(over: Partial<AdminCompanyView>): AdminCompanyView {
     enseigne: "",
     formeJuridique: "SARL",
     siret: "81245678900021",
+    siren: "",
     vatNumber: "",
     status: "active",
     grantedTerms: [],

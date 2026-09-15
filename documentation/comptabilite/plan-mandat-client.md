@@ -1,8 +1,10 @@
 # Le mandat SEPA, côté client — `/mon-compte`
 
-> Écrit le 2026-09-14 à la demande de Hugo. **Soumis à `vitruve`** (argent +
-> frontière de sécurité, `CLAUDE.md` §9 bis) avant toute ligne de code.
-> Rien de ce qui suit n'est construit.
+> Écrit le 2026-09-14 à la demande de Hugo, soumis à `vitruve`.
+> ✅ **Construit et en production** : génération, aperçu, téléchargement, dépôt du
+> scan, options 14/19 côté client ; activation staff sur preuve. Visible par les
+> clients seulement quand le drapeau `customerMandate` est ouvert (fermé au
+> 2026-09-15). Les sections datées ci-dessous gardent la trace des décisions.
 
 ## 0. La demande
 
@@ -33,7 +35,7 @@ Faits porteurs :
   jumeau, « la clientèle ne saisira jamais ses coordonnées bancaires ». Le
   2026-09-14, le RIB client a été ouvert (`plan-rib-client.md`) : cette phrase
   est désormais fausse et devra être corrigée dans le même lot.
-- 🔴 **Bloqueur connu** : `todos/todo-mandat-core-contre-b2b.md` — le lot déclare
+- 🔴 **Bloqueur connu** : `todo-mandat-core-contre-b2b.md` — le lot déclare
   `LclInstrm = B2B`, le formulaire imprimé est un **CORE** (remboursement à 8
   semaines). La Caisse d'Épargne n'a pas répondu. Tout mandat signé avant la
   bascule est à refaire.
@@ -57,7 +59,7 @@ Faits porteurs :
 ## 3. Les lots
 
 **Lot 0 — le formulaire devient INTERENTREPRISES** (tranché par Hugo le
-2026-09-14 ; todo `todos/todo-mandat-core-contre-b2b.md`). Préalable à tout le
+2026-09-14 ; todo `todo-mandat-core-contre-b2b.md`). Préalable à tout le
 reste : aucun client ne doit signer le texte CORE.
 
 - **Une seule source du schéma** : une constante du domaine comptable (ex.
@@ -118,7 +120,7 @@ Hugo, le reste décidé en suivant ce que le back fait déjà.
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1 🔴   | Le drapeau ne ferme aucune route (`feature-access.levels.ts` : « masquer n'est pas fermer »)                                        | **Une vraie garde serveur** (Hugo) : un marqueur sur les routes client du mandat, refus 409 nommé drapeau fermé, sur le modèle de `@RequiresShop` / `FeatureAccessGuard`. E2e « drapeau fermé → 409 sur POST, GET PDF, PUT preuve ». La clé `customerMandate` n'est donc PAS une clé masquable : elle a ses propres niveaux (`closed` / `open`), défaut `closed`, et `ALL_VISIBLE` des fixtures n'est pas touché |
 | 2 🔴   | Le client peut écraser la preuve d'un mandat actif ou révoqué (`findAwaitingProof` retombe sur `findCurrent`, clé de stockage fixe) | Le dépôt client **ne vise que le brouillon** (`findDraft`, 404 sinon) ; l'agrégat refuse `attachProof` hors `draft` pour le chemin client ; la clé de stockage porte l'identifiant du mandat **et** un horodatage : un dépôt ne recouvre jamais le précédent                                                                                                                                                     |
-| 3 🔴   | Le PDF nominatif rend l'IBAN entier (`customer-mandate-support.ts:75-88`)                                                           | **Assumé par Hugo** : un mandat EPC porte l'IBAN du débiteur. L'invariant « l'IBAN ne redescend jamais » du RIB client est **amendé et daté** dans `company-bank-account.controller.ts` et `customer-bank-account-view.ts` (la vue JSON reste `last4`), et `todos/todo-rib-client-transmission.md` gagne la ligne « le PDF du mandat rend l'IBAN à qui porte un jeton owner/billing »                            |
+| 3 🔴   | Le PDF nominatif rend l'IBAN entier (`customer-mandate-support.ts:75-88`)                                                           | **Assumé par Hugo** : un mandat EPC porte l'IBAN du débiteur. L'invariant « l'IBAN ne redescend jamais » du RIB client est **amendé et daté** dans `company-bank-account.controller.ts` et `customer-bank-account-view.ts` (la vue JSON reste `last4`), et `todo-rib-client-transmission.md` gagne la ligne « le PDF du mandat rend l'IBAN à qui porte un jeton owner/billing »                                  |
 | 4 🔴   | « Brouillon ou actif, nominatif » est faux : la RUM ne s'imprime que pour un `draft`                                                | Le client **ne voit et ne télécharge que le brouillon**. Pour un mandat actif, la carte montre la RUM, la date du papier et « pièce déposée » — pas de PDF recomposé                                                                                                                                                                                                                                             |
 | 5      | Pas de mécanisme pour « rendre le brouillon », course → 500 (P2002 non traduit)                                                     | Le handler client lit `findDraft` avant de frapper et, sur violation de `payment_mandates_one_draft_per_company`, relit et rend le brouillon. L'adaptateur traduit P2002 en `MandateDraftAlreadyExistsError` (le staff garde son 409)                                                                                                                                                                            |
 | 6      | Le client peut frapper le remplaçant d'un actif ; l'activation ne lit pas la preuve                                                 | Frappe client **refusée 409 quand un mandat est actif** (le remplacement reste staff, comme l'écran staff le fait déjà). `SignMandateHandler` **exige une preuve sur CE mandat** avant d'activer — staff compris                                                                                                                                                                                                 |
@@ -226,7 +228,7 @@ pièce). Les e2e et specs cassés par cette règle sont réécrits. **Ne pas ref
 | 2   | Le résolveur exige un `FeatureSubject` que les handlers n'ont pas                                    | Une méthode **sans sujet** pour une clé non exemptible, nommée. `resolveFeatureLevel`, le tableau admin des exemptions et `AddFeatureExemptionHandler` ignorent/refusent `customerMandate`                                                                                                                                 |
 | 3   | Journal : aucun handler de `payments` n'injecte `Journal`                                            | Suivre un handler existant qui écrit un fait dans la transaction de son écriture (le citer dans le rapport). Faits : frappe (staff/client), dépôt de scan (staff/client), activation, révocation par changement de RIB. Si le mécanisme demande plus que l'injection de `Journal` + `UnitOfWork`, **s'arrêter et le dire** |
 | 4   | Ce qui déclenche la révocation du brouillon                                                          | **Toute** écriture du RIB (IBAN, BIC, titulaire, adresse) ou des options du mandat (zones 14/19) tant qu'un brouillon existe : tout est imprimé sur le papier. La fonction partagée `recordCompanyBankAccount` prend les ports nécessaires ; la notification staff reste hors transaction                                  |
-| 5   | RIB d'un **actif** changé par le staff : aucun mécanisme                                             | **Hors lot**, entrée datée dans `todos/todo-mandat-core-contre-b2b.md` (aucun actif en production ; l'écran staff avertit déjà sur un autre compte). Côté client : refus 409, §8                                                                                                                                           |
+| 5   | RIB d'un **actif** changé par le staff : aucun mécanisme                                             | **Hors lot**, entrée datée dans `todo-mandat-core-contre-b2b.md` (aucun actif en production ; l'écran staff avertit déjà sur un autre compte). Côté client : refus 409, §8                                                                                                                                                 |
 | 6   | `RCUR` en dur contre `one_off` proposé en admin                                                      | **Tranché par Hugo le 2026-09-14 : le lot SUIT le réglage** (`OOFF` si `one_off`, `RCUR` sinon), le choix ponctuel reste proposé en admin. Bâti au Lot 0. Trou écrit dans la todo : le mandat ne mémorise pas le type imprimé                                                                                              |
 | 7   | « 13 mois » retiré sans source                                                                       | Retiré avec le paragraphe CORE (§8), **et** noté « à confirmer avec la banque » dans la todo, avec la raison : ce délai vise les opérations non autorisées, pas le remboursement                                                                                                                                           |
 | 8   | `MintMandateHandler` sans port RIB                                                                   | Il en reçoit un ; sa spec est refaite                                                                                                                                                                                                                                                                                      |

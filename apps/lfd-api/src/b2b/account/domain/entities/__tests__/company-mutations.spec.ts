@@ -90,6 +90,7 @@ describe("Company — reconstitution + mutations souples", () => {
         enseigne: "Le Pain Quotidien",
         formeJuridique: "SARL",
         siret: "81245678900021",
+        siren: "",
         vatNumber: "",
       },
       ContactDetails.create(CONTACT),

@@ -8,13 +8,18 @@ import {
   MandateUnprovenError,
 } from "../../../domain/errors/mandate-errors.js";
 import { PaymentMandate, type MandateSnapshot } from "../../../domain/entities/payment-mandate.js";
+import { MandateProofRevisionStaleError } from "../../../domain/errors/mandate-proof-errors.js";
 import type { PaymentMandateRepository } from "../../../domain/payment-mandate.repository.js";
+import { proofRevisionOf } from "../../../domain/services/proof-revision.js";
 import { SignMandateCommand } from "../sign-mandate.command.js";
 import { SignMandateHandler } from "../sign-mandate.handler.js";
 
 const NOW = new Date("2026-09-12T09:00:00.000Z");
 /** Le papier revient signé neuf jours après l'envoi — le cas ordinaire. */
 const ON_PAPER = "2026-09-03";
+const PROOF_KEY = "companies/cmp_1/mandates/mdt_draft/mandat-signe-1";
+/** La révision que l'écran a lue : celle de la pièce que porte le brouillon. */
+const READ_REVISION = proofRevisionOf(PROOF_KEY);
 
 function snapshot(overrides: Partial<MandateSnapshot>): MandateSnapshot {
   return {
@@ -33,7 +38,7 @@ function snapshot(overrides: Partial<MandateSnapshot>): MandateSnapshot {
     revokedAt: null,
     // Prouvé par défaut : l'activation l'exige, et les cas qui suivent éprouvent
     // autre chose. Le brouillon nu a son propre cas.
-    proofStorageKey: "companies/cmp_1/mandates/mdt_draft/mandat-signe-1",
+    proofStorageKey: PROOF_KEY,
     proofFileName: "mandat-signe.pdf",
     creditorId: "ent_1",
     ...overrides,
@@ -57,6 +62,7 @@ function build(options: {
     },
     findHolder: () => Promise.resolve(null),
     findStripeCustomerId: () => Promise.resolve(null),
+    depositProof: () => Promise.resolve(),
   };
   const clock: Clock = { now: () => NOW };
   const uow: UnitOfWork = { run: (work) => work() };
@@ -69,7 +75,7 @@ describe("SignMandateHandler", () => {
     const draft = PaymentMandate.reconstitute(snapshot({}));
     const { handler, saved } = build({ target: draft, current: draft });
 
-    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER));
+    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION));
 
     expect(draft.status).toBe("active");
     expect(draft.acceptedAt?.getDate()).toBe(3);
@@ -88,7 +94,7 @@ describe("SignMandateHandler", () => {
     );
     const { handler, saved } = build({ target: draft, current: active });
 
-    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER));
+    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION));
 
     expect(active.status).toBe("revoked");
     expect(saved).toHaveLength(2);
@@ -102,7 +108,7 @@ describe("SignMandateHandler", () => {
     );
     const { handler, events } = build({ target: draft, current: active });
 
-    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER));
+    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION));
 
     expect(events.factTypes()).toEqual(["payment_mandate.signed"]);
     expect(events.traced[0]?.journalFact()).toMatchObject({
@@ -118,7 +124,7 @@ describe("SignMandateHandler", () => {
     const { handler, events } = build({ target: naked, current: naked });
 
     await expect(
-      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION)),
     ).rejects.toThrow(MandateUnprovenError);
     expect(events.traced).toHaveLength(0);
   });
@@ -127,7 +133,7 @@ describe("SignMandateHandler", () => {
     const draft = PaymentMandate.reconstitute(snapshot({}));
     const { handler, saved } = build({ target: draft, current: draft });
 
-    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER));
+    await handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION));
 
     expect(saved).toHaveLength(1);
   });
@@ -142,7 +148,7 @@ describe("SignMandateHandler", () => {
     const { handler, saved } = build({ target: other });
 
     await expect(
-      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION)),
     ).rejects.toThrow(MandateNotFoundError);
     expect(saved).toHaveLength(0);
   });
@@ -154,7 +160,7 @@ describe("SignMandateHandler", () => {
     const { handler } = build({ target: active });
 
     await expect(
-      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION)),
     ).rejects.toThrow(MandateNotSignableError);
   });
 
@@ -170,7 +176,7 @@ describe("SignMandateHandler", () => {
     const { handler, saved } = build({ target: naked, current: naked });
 
     await expect(
-      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER)),
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION)),
     ).rejects.toThrow(MandateUnprovenError);
     expect(naked.status).toBe("draft");
     expect(saved).toHaveLength(0);
@@ -181,7 +187,26 @@ describe("SignMandateHandler", () => {
     const { handler } = build({ target: draft });
 
     await expect(
-      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", "2026-12-25")),
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", "2026-12-25", READ_REVISION)),
     ).rejects.toThrow(MandateAcceptanceInFutureError);
+  });
+
+  /**
+   * Plan `plan-restes-du-mandat.md` §7 #9 : le scan a été remplacé entre
+   * l'ouverture de la fiche et la déclaration de signature. Activer sur une
+   * pièce que personne n'a relue est refusé, et rien ne s'écrit.
+   */
+  it("refuse une signature dont la révision de pièce est périmée", async () => {
+    const replaced = PaymentMandate.reconstitute(
+      snapshot({ proofStorageKey: "companies/cmp_1/mandates/mdt_draft/mandat-signe-2" }),
+    );
+    const { handler, saved, events } = build({ target: replaced, current: replaced });
+
+    await expect(
+      handler.execute(new SignMandateCommand("cmp_1", "mdt_draft", ON_PAPER, READ_REVISION)),
+    ).rejects.toThrow(MandateProofRevisionStaleError);
+    expect(replaced.status).toBe("draft");
+    expect(saved).toHaveLength(0);
+    expect(events.traced).toHaveLength(0);
   });
 });

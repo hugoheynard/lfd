@@ -2,9 +2,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
+import { BankAccountBoundToActiveMandateError } from "../../domain/errors/mandate-errors.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { recordCompanyBankAccount } from "./record-company-bank-account.js";
@@ -25,8 +27,11 @@ import { SetCompanyBankAccountCommand } from "./set-company-bank-account.command
  * propre, la surface staff le pose en amont. Elle révoque aussi le brouillon de
  * mandat en cours (2026-09-14).
  *
- * ⚠️ Un mandat ACTIF dont le staff change le compte n'a encore aucun mécanisme :
- * hors lot, écrit dans `todo-mandat-core-contre-b2b.md` (plan §9 #5).
+ * 🔴 **Refusé en 409 tant qu'un mandat est actif**, comme le client (décidé par
+ * Hugo le 2026-09-15, plan `documentation/comptabilite/plan-restes-du-mandat.md`
+ * §8). L'amendement d'un mandat actif attend la réponse de la banque ; d'ici là,
+ * le seul chemin est de révoquer, recopier le RIB, et frapper un nouveau mandat.
+ * Même garde que `SetMyCompanyBankAccountHandler`, message écrit pour le staff.
  *
  * La commande ne rend rien : CQRS, le client relit.
  */
@@ -43,9 +48,15 @@ export class SetCompanyBankAccountHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly notifier: StaffNotifier,
+    private readonly store: DocumentStore,
   ) {}
 
   async execute({ companyId, payload }: SetCompanyBankAccountCommand): Promise<void> {
+    const current = await this.mandates.findCurrent(companyId);
+    if (current?.debitable() === true) {
+      throw new BankAccountBoundToActiveMandateError(companyId, "staff");
+    }
+
     await recordCompanyBankAccount(companyId, payload, "staff", {
       accounts: this.accounts,
       ids: this.ids,
@@ -54,6 +65,7 @@ export class SetCompanyBankAccountHandler implements ICommandHandler<
       events: this.events,
       uow: this.uow,
       notifier: this.notifier,
+      store: this.store,
     });
   }
 }

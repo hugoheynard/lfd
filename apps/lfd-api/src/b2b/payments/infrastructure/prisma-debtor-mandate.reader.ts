@@ -6,6 +6,7 @@ import {
 } from "../../accounting/domain/ports/debtor-mandate.reader.js";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Adaptateur du port que la comptabilité déclare, **rangé côté `payments`**
@@ -34,7 +35,14 @@ export class PrismaDebtorMandateReader extends DebtorMandateReader {
         where: { companyId: { in: [...companyIds] }, status: "active" },
         // Schéma et type lus SUR LE MANDAT : figés à la frappe, ils disent ce que
         // le papier signé autorise, quel que soit le réglage courant de l'entité.
-        select: { companyId: true, reference: true, scheme: true, paymentType: true },
+        select: {
+          id: true,
+          companyId: true,
+          reference: true,
+          scheme: true,
+          paymentType: true,
+          acceptedAt: true,
+        },
       }),
       this.prisma.companyBankAccount.findMany({
         where: { companyId: { in: [...companyIds] } },
@@ -58,8 +66,38 @@ export class PrismaDebtorMandateReader extends DebtorMandateReader {
         bic: account.bic === "" ? null : account.bic,
         scheme: mandate.scheme,
         paymentType: mandate.paymentType,
+        signedAt: signedAtOf(mandate),
       });
     }
     return found;
+  }
+}
+
+/**
+ * La date du papier d'un mandat actif. Le type Prisma la rend nullable parce que
+ * la colonne l'est pour un brouillon ; pour un ACTIF, la contrainte
+ * `payment_mandates_active_is_signed` l'exige (migration
+ * `20260915140000_mandat_actif_signe`).
+ */
+function signedAtOf(mandate: { readonly id: string; readonly acceptedAt: Date | null }): Date {
+  if (mandate.acceptedAt === null) {
+    throw new ActiveMandateWithoutSignatureError(mandate.id);
+  }
+  return mandate.acceptedAt;
+}
+
+/**
+ * Un mandat actif sans date de signature a été lu.
+ *
+ * Inatteignable tant que la contrainte existe. Écrite quand même, et en
+ * `TechnicalError`, parce que l'alternative — une date de frappe ou du jour —
+ * ferait déclarer à la banque un consentement à une date où personne n'a signé.
+ */
+class ActiveMandateWithoutSignatureError extends TechnicalError {
+  constructor(readonly mandateId: string) {
+    super(
+      "payments.debtor_mandate.active_without_signature",
+      `Le mandat actif ${mandateId} n'a pas de date de signature : le lot de prélèvement ne peut pas l'écrire. Vérifier que la migration « mandat_actif_signe » est déployée, puis corriger la ligne en base.`,
+    );
   }
 }

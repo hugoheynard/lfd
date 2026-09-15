@@ -1,5 +1,6 @@
 <h2 class="title">{{ t().account.sections.kbis }}</h2>
 <p class="sub">{{ t().account.kbisHead }}</p>
+<app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
 
 @if (kbis(); as extrait) {
   <!-- L'ÉTAT D'ABORD : certifié ou en attente, c'est la question qu'on se pose

@@ -93,6 +93,43 @@ export function value(doc: Doc, text: string, x: number, y: number, height: numb
   }
 }
 
+/** Le plus petit corps qu'une valeur s'autorise pour tenir dans sa case. */
+const MIN_FITTED_SIZE = 6;
+const FITTED_STEP = 0.5;
+
+/**
+ * Une valeur préremplie dans une **case étroite** : le corps descend jusqu'à ce
+ * qu'elle tienne sur une ligne, sans passer sous 6 pt ; au-delà, elle passe à
+ * la ligne dans la largeur de la case.
+ *
+ * Existe pour la civilité ou forme juridique du titulaire, bornée à 40
+ * caractères pour une case de 28 mm : {@link value}, sans largeur, la ferait
+ * déborder sur le libellé voisin.
+ */
+export function fittedValue(
+  doc: Doc,
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): void {
+  if (text === "") {
+    return;
+  }
+  const widthAt = (size: number): number => doc.font(BOLD).fontSize(size).widthOfString(text);
+  let size = VALUE_SIZE;
+  while (size > MIN_FITTED_SIZE && widthAt(size) > width) {
+    size -= FITTED_STEP;
+  }
+  if (widthAt(size) <= width) {
+    put(doc, text, x, middle(y, height, size), { size, font: BOLD });
+    return;
+  }
+  const wrapped = doc.font(BOLD).fontSize(size).heightOfString(text, { width });
+  put(doc, text, x, y + (height - wrapped) / 2, { size, font: BOLD, width });
+}
+
 /**
  * Une ligne d'adresse : l'amorce en romain (« Code postal et ville : ») puis la
  * valeur. Rend l'abscisse où la valeur commence.

@@ -1,6 +1,7 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import {
   signMandatePayloadSchema,
+  type SignMandatePayload,
   type CreatedIdResponse,
   type MandateSectionView,
   type PaymentMandateView,
@@ -31,6 +32,7 @@ import {
 import type { Response } from "express";
 
 import { InvalidScannedDocumentError } from "../../../platform/shared/errors/storage-errors.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   AttachMandateProofCommand,
   RevokeMandateCommand,
@@ -40,6 +42,8 @@ import { SendMandateCommand } from "../application/commands/send-mandate.command
 import { SignMandateCommand } from "../application/commands/sign-mandate.command.js";
 import { type MandateProofFile } from "../application/queries/get-mandate-proof.handler.js";
 import { GetMandateProofQuery } from "../application/queries/get-mandate-proof.query.js";
+import type { MandateMintReadinessView } from "../application/queries/get-mandate-mint-blockers.handler.js";
+import { GetMandateMintBlockersQuery } from "../application/queries/get-mandate-mint-blockers.query.js";
 import {
   MandateNotFoundError,
   MandateProofNotFoundError,
@@ -84,13 +88,26 @@ export class AdminMandatesController {
    *
    * Les deux ensemble plutôt qu'en deux appels : l'écran n'est utilisable
    * qu'avec les deux, et un second aller-retour ne lui apprendrait rien.
+   *
+   * Depuis le 2026-09-15, la section porte aussi `mintBlockers` — ce qui
+   * empêcherait de frapper, jugé par la lecture de la frappe elle-même. Une
+   * société inconnue y répond donc 404, là où le mandat seul rendait `null`.
    */
   @Get(":companyId/mandate")
   async mandate(@Param("companyId") companyId: string): Promise<MandateSectionView> {
     const mandate = await this.queries.execute<GetCompanyMandateQuery, PaymentMandateView | null>(
       new GetCompanyMandateQuery(companyId),
     );
-    return { mandate, publishableKey: this.payments.publishableKey() };
+    const readiness = await this.queries.execute<
+      GetMandateMintBlockersQuery,
+      MandateMintReadinessView
+    >(new GetMandateMintBlockersQuery(companyId));
+    return {
+      mandate,
+      publishableKey: this.payments.publishableKey(),
+      mintBlockers: readiness.blockers,
+      issuerScheme: readiness.issuerScheme,
+    };
   }
 
   /** Dépose (ou remplace) le **mandat signé scanné**. Multipart `file`. */
@@ -122,6 +139,10 @@ export class AdminMandatesController {
    * où l'ambiguïté coûte le plus cher, un mandat actif pouvant être en vigueur
    * pendant qu'on fait signer son remplaçant.
    *
+   * `ZodBody` et non un `.parse` nu depuis le 2026-09-15 : une charge mal formée
+   * — un écran encore en ligne qui n'envoie pas `proofRevision` — rendait une
+   * `ZodError` non catégorisée, donc un 500 « erreur inattendue ».
+   *
    * La validation Zod ne porte que la FORME de la date. Qu'elle soit dans le
    * futur, ou que le mandat ne soit pas un brouillon, est refusé par l'agrégat —
    * la règle métier n'a pas à exister à deux endroits.
@@ -131,11 +152,11 @@ export class AdminMandatesController {
   async sign(
     @Param("companyId") companyId: string,
     @Param("mandateId") mandateId: string,
-    @Body() body: unknown,
+    @Body(new ZodBody(signMandatePayloadSchema)) payload: SignMandatePayload,
   ): Promise<void> {
-    const { signedAt } = signMandatePayloadSchema.parse(body);
+    const { signedAt, proofRevision } = payload;
     await this.commands.execute<SignMandateCommand, void>(
-      new SignMandateCommand(companyId, mandateId, signedAt),
+      new SignMandateCommand(companyId, mandateId, signedAt, proofRevision),
     );
   }
 

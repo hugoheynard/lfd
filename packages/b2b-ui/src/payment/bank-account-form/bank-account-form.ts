@@ -40,6 +40,16 @@ export class BankAccountForm {
   /** Les mots du formulaire ; le défaut est le texte de la fiche staff. */
   readonly labels = input<BankAccountFormLabels>(BANK_ACCOUNT_FORM_LABELS_FR);
 
+  /**
+   * La civilité ou forme juridique du titulaire est-elle exigée ? Vrai quand
+   * l'émetteur frappe en interentreprises (`B2B`) — seul l'écran le sait.
+   * Faux par défaut : schéma inconnu ⇒ facultative, le serveur reste le garde.
+   * Le champ perd alors sa mention « facultatif », comme les autres champs
+   * obligatoires ; désarmer « Enregistrer » est le travail de l'écran
+   * (`holderLegalFormProvided`).
+   */
+  readonly holderLegalFormRequired = input(false);
+
   protected set<K extends keyof BankAccountDraft>(key: K, value: BankAccountDraft[K]): void {
     this.value.update((draft) => ({ ...draft, [key]: value }));
   }

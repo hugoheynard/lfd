@@ -37,7 +37,7 @@ export type VisibilityLevel = (typeof VISIBILITY_LEVELS)[number];
  * ferme rien, `closed` si. Réutiliser `hidden`/`visible` pour une clé gardée
  * ferait lire « masqué » là où la route refuse — la confusion même que la
  * contradiction du plan mandat client a relevée (plan
- * `documentation/b2b/plan-mandat-client.md` §6 #1, 2026-09-14).
+ * `documentation/comptabilite/plan-mandat-client.md` §6 #1, 2026-09-14).
  */
 export const GATE_LEVELS = ["closed", "open"] as const;
 export type GateLevel = (typeof GATE_LEVELS)[number];

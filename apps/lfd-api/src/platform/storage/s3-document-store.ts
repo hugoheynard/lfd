@@ -84,6 +84,23 @@ export class S3DocumentStore extends DocumentStore {
   }
 
   /**
+   * Même forme que {@link readIfPresent}, et pour la même raison : l'absence
+   * s'écarte sur l'erreur BRUTE, avant `refuse()`. S3 rend déjà un succès pour
+   * une clé inconnue ; certains implémenteurs rendent un 404, qui serait
+   * sinon une panne pour un travail déjà fait.
+   */
+  async delete(key: string): Promise<void> {
+    try {
+      await this.service().delete(key);
+    } catch (error) {
+      if (isMissingObject(error)) {
+        return;
+      }
+      throw this.refuse("nettoyage", key, error);
+    }
+  }
+
+  /**
    * Exécute une opération de stockage, et **catégorise ses pannes**.
    *
    * Le port promet `DocumentStorageUnavailableError` pour un stockage « non

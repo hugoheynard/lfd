@@ -14,7 +14,7 @@ export interface MandateMailWording {
 
 /**
  * Le texte du courriel `customer.mandate-to-sign`, **indexé par le schéma du
- * mandat** (plan `documentation/b2b/plan-mandat-deux-schemas.md` §3.5) : ajouter
+ * mandat** (plan `documentation/comptabilite/plan-mandat-deux-schemas.md` §3.5) : ajouter
  * un schéma sans son texte ne compile pas.
  *
  * Même vocabulaire que le formulaire joint (`sepa-mandate-wording.ts`, vérifié

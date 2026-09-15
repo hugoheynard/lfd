@@ -1,4 +1,5 @@
 import {
+  type ActivationGate,
   type UpdateIdentityPayload,
   updateIdentityPayloadSchema,
   type UpdatePaymentTermPayload,
@@ -6,8 +7,8 @@ import {
   fulfillmentPreferencePayloadSchema,
   type FulfillmentPreferencePayload,
 } from "@lfd/contracts";
-import { Body, Controller, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
@@ -18,6 +19,7 @@ import {
   UpdateCompanyIdentityCommand,
 } from "../application/commands/company-settings-commands.js";
 import { CreateCompanyCommand } from "../application/commands/create-company.command.js";
+import { GetMyCompanyActivationQuery } from "../application/queries/get-my-company-activation.query.js";
 import { createCompanyPayload, type CreateCompanyPayload } from "./payloads.js";
 
 /** Ce que la création renvoie : de quoi router, rien de plus. */
@@ -32,11 +34,15 @@ export interface CreatedCompanyResponse {
  * logique : il dispatche au bus.
  *
  * Création : aucune garde de rôle (chacun déclare la sienne). Réglages sur une
- * entreprise existante : **murés gestionnaire** (le handler s'en charge).
+ * entreprise existante : **murés gestionnaire** (le handler s'en charge). Le
+ * verdict d'activation se lit en **membre**.
  */
 @Controller("companies")
 export class CompaniesController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -51,10 +57,26 @@ export class CompaniesController {
         payload.enseigne,
         payload.formeJuridique,
         payload.siret,
+        payload.siren,
         payload.vatNumber,
       ),
     );
     return { id };
+  }
+
+  /**
+   * Le verdict d'activation de l'entreprise — membre. Le même que celui du
+   * staff, calculé par la même fonction : l'écran client l'affiche, il ne
+   * rejoue pas la règle.
+   */
+  @Get(":companyId/activation")
+  async activation(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+  ): Promise<ActivationGate> {
+    return this.queries.execute<GetMyCompanyActivationQuery, ActivationGate>(
+      new GetMyCompanyActivationQuery(user.userId, companyId),
+    );
   }
 
   /** Édite l'identité souple (enseigne + n° de TVA) — gestionnaire. */

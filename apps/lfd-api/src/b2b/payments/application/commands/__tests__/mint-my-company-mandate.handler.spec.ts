@@ -1,4 +1,3 @@
-import { NoIssuerError } from "../../../../accounting/domain/errors/accounting-errors.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   BankAccountCompanyNotFoundError,
@@ -7,12 +6,13 @@ import {
 import {
   CustomerMandateClosedError,
   MandateAlreadyInForceError,
-  MandateWithoutBankAccountError,
 } from "../../../domain/errors/mandate-errors.js";
+import { MandateMentionsMissingError } from "../../../domain/errors/mint-blocker-errors.js";
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
   activeMandate,
   bankAccount,
+  bankAccountWithoutLegalForm,
   FixedCreditors,
   FixedGate,
   FixedGuard,
@@ -24,6 +24,7 @@ import {
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
+import { RecordingFirstMandateLedger } from "../../__tests__/recording-first-mandate-ledger.js";
 import { MintMyCompanyMandateCommand } from "../mint-my-company-mandate.command.js";
 import { MintMyCompanyMandateHandler } from "../mint-my-company-mandate.handler.js";
 
@@ -45,6 +46,7 @@ function harness(
     accounts.stored = bankAccount();
   }
   const events = new StepPublisher(steps);
+  const ledger = new RecordingFirstMandateLedger(steps);
   const handler = new MintMyCompanyMandateHandler(
     new FixedGuard(steps, options.role === undefined ? "owner" : options.role),
     new FixedGate(steps, options.open ?? true),
@@ -55,9 +57,10 @@ function harness(
     new FixedSecrets(),
     events,
     new StepUnitOfWork(steps),
+    ledger,
   );
   const run = () => handler.execute(new MintMyCompanyMandateCommand("usr_1", "cmp_1"));
-  return { steps, mandates, accounts, events, run };
+  return { steps, mandates, accounts, events, ledger, run };
 }
 
 describe("MintMyCompanyMandateHandler — le client génère son mandat", () => {
@@ -70,12 +73,16 @@ describe("MintMyCompanyMandateHandler — le client génère son mandat", () => 
 
       expect(h.mandates.created[0]?.status).toBe("draft");
       expect(h.mandates.created[0]?.reference).toContain("9P2X4B");
-      expect(h.steps.log.slice(-4)).toEqual([
+      // Le verrou du créancier imprimé tombe dans la même transaction : la
+      // frappe client gèle l'émetteur comme celle du staff (plan restes §8).
+      expect(h.steps.log.slice(-5)).toEqual([
         "uow:begin",
         "mandate:create",
+        "ledger:note",
         "journal:payment_mandate.minted",
         "uow:end",
       ]);
+      expect(h.ledger.noted).toEqual([{ creditorId: "ent_1", at: NOW }]);
       expect(h.events.traced[0]?.journalFact().payload).toEqual({
         companyId: "cmp_1",
         reference: h.mandates.created[0]?.reference,
@@ -113,21 +120,41 @@ describe("MintMyCompanyMandateHandler — le client génère son mandat", () => 
   it("refuse en 409 sans RIB, sans tirer de RUM", async () => {
     const h = harness({ withAccount: false });
 
-    await expect(h.run()).rejects.toBeInstanceOf(MandateWithoutBankAccountError);
+    await expect(h.run()).rejects.toMatchObject({ blockers: ["bank_account_missing"] });
     expect(h.mandates.created).toHaveLength(0);
     expect(h.events.traced).toHaveLength(0);
   });
 
-  it("dit « RIB manquant » avant « aucun émetteur » — le seul des deux que le client corrige", async () => {
+  /** ⚠️ Affirmait « RIB avant émetteur » jusqu'au 2026-09-15 : les mentions se disent ensemble. */
+  it("nomme ensemble le RIB et l'émetteur manquants", async () => {
     const h = harness({ withAccount: false, issuer: false });
 
-    await expect(h.run()).rejects.toBeInstanceOf(MandateWithoutBankAccountError);
+    await expect(h.run()).rejects.toMatchObject({
+      blockers: ["bank_account_missing", "issuer_missing"],
+    });
   });
 
   it("refuse quand aucune entité n'émet", async () => {
     const h = harness({ issuer: false });
 
-    await expect(h.run()).rejects.toBeInstanceOf(NoIssuerError);
+    await expect(h.run()).rejects.toBeInstanceOf(MandateMentionsMissingError);
+    expect(h.mandates.created).toHaveLength(0);
+  });
+
+  /** Plan mentions obligatoires §9 : le client est refusé comme le staff, avec les mêmes codes. */
+  it("refuse une frappe B2B sans SIREN ni forme juridique du titulaire, sans rien frapper", async () => {
+    const h = harness();
+    h.mandates.holder = {
+      companyName: "Refuge du Col SARL",
+      email: "",
+      reference: "C-9P2X4B",
+      siren: "",
+    };
+    h.accounts.stored = bankAccountWithoutLegalForm();
+
+    await expect(h.run()).rejects.toMatchObject({
+      blockers: ["siren_missing", "holder_legal_form_missing"],
+    });
     expect(h.mandates.created).toHaveLength(0);
   });
 

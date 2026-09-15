@@ -54,7 +54,7 @@ export function exemptionLookupEmail(subject: FeatureSubject): string | null {
  * 🔴 Une clé **non exemptible** (`customerMandate`) saute l'étape 1 même si
  * l'appelant dit « exempté » : c'est ici, et pas chez chaque appelant, que la
  * règle tient — une ligne d'exemption posée en base à la main n'ouvrirait
- * donc rien (plan `documentation/b2b/plan-mandat-client.md` §9 #2).
+ * donc rien (plan `documentation/comptabilite/plan-mandat-client.md` §9 #2).
  *
  * Une dérogation dont la valeur n'est plus un niveau de la clé est **ignorée**,
  * jamais interprétée : deviner ce qu'un niveau disparu voulait dire ouvrirait ou

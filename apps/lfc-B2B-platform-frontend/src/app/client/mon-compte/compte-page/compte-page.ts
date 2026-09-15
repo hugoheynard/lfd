@@ -5,12 +5,15 @@ import {
   DestroyRef,
   effect,
   inject,
+  untracked,
 } from '@angular/core';
+import { CompanyActivationChecklist } from '@lfd/b2b-ui/company';
 import type { CompanyMemberRole } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
   FoldSurfaceDirective,
 } from 'fold-ng';
 
@@ -21,7 +24,10 @@ import { AuthFacade } from '../../../auth/auth.facade';
 type AccountView = 'loading' | 'signed-out' | 'failed' | 'incomplete' | 'dossier';
 
 import { ClientBannerOutlet } from '../../nav/client-banner';
+import { ClientActivation } from '../../client-activation.service';
+import { ClientAddresses } from '../../client-addresses.service';
 import { ClientBankAccount } from '../../client-bank-account.service';
+import { ClientMandate } from '../../client-mandate.service';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -35,6 +41,14 @@ import { AddressesDeskCard } from '../addresses/addresses-desk-card/addresses-de
 import { AddressesMobileCard } from '../addresses/addresses-mobile-card/addresses-mobile-card';
 import { BankDeskCard } from '../bank/bank-desk-card/bank-desk-card';
 import { BankMobileCard } from '../bank/bank-mobile-card/bank-mobile-card';
+import {
+  completionCount,
+  completionFor,
+  completionItems,
+  completionSteps,
+  type CompletionTarget,
+} from '../completion/completion-items';
+import { openCompletion } from '../completion/completion-open';
 import { DataDeskCard } from '../data/data-desk-card/data-desk-card';
 import { DataMobileCard } from '../data/data-mobile-card/data-mobile-card';
 import { DossierCard } from '../dossier-card/dossier-card';
@@ -42,6 +56,7 @@ import { IdentityDeskCard } from '../identity/identity-desk-card/identity-desk-c
 import { IdentityMobileCard } from '../identity/identity-mobile-card/identity-mobile-card';
 import { KbisDeskCard } from '../kbis/kbis-desk-card/kbis-desk-card';
 import { KbisMobileCard } from '../kbis/kbis-mobile-card/kbis-mobile-card';
+import { mandateStage } from '../mandate/mandate-section';
 import { MandateDeskCard } from '../mandate/mandate-desk-card/mandate-desk-card';
 import { MandateMobileCard } from '../mandate/mandate-mobile-card/mandate-mobile-card';
 import { PaymentDeskCard } from '../payment/payment-desk-card/payment-desk-card';
@@ -118,6 +133,7 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
     BankDeskCard,
     BankMobileCard,
     ClientBannerBlock,
+    CompanyActivationChecklist,
     ClientBannerOutlet,
     DataDeskCard,
     DataMobileCard,
@@ -246,6 +262,77 @@ export class ComptePage {
       this.showsBank() && this.bank.account() !== null && this.access.customerMandate() === 'open',
   );
 
+  private readonly activation = inject(ClientActivation);
+  private readonly addresses = inject(ClientAddresses);
+  private readonly mandates = inject(ClientMandate);
+  private readonly panels = inject(FoldPanelHostService);
+
+  /**
+   * **Ce qui manque au dossier** (plan `plan-mon-compte-a-completer.md` §2.2) —
+   * la synthèse du haut et les encarts des cartes lisent cette seule liste.
+   * Vide tant que le verdict du serveur n'est pas lu, et s'il ne l'est jamais.
+   */
+  private readonly completion = computed(() => {
+    const company = this.company();
+    if (company === null) {
+      return [];
+    }
+    return completionItems(
+      {
+        gate: this.activation.gate(),
+        company,
+        deliveryCount: this.addresses.deliveries().length,
+        mintBlockers: this.mandates.mintBlockers(),
+        mandateShown: this.showsMandate(),
+        mandateActive: mandateStage(this.mandates.mandate()) === 'active',
+      },
+      this.t().account,
+    );
+  });
+
+  /** Les lignes de la synthèse : « empêche l'activation » seulement sur une société en attente. */
+  protected readonly completionSteps = computed(() =>
+    completionSteps(this.completion(), this.company()?.status === 'pending', this.t().account),
+  );
+
+  protected readonly completionCount = computed(() =>
+    completionCount(this.completion().length, this.t().account),
+  );
+
+  /** Les éléments de chaque carte, calculés une fois pour les dix cartes. */
+  protected readonly cardCompletion = computed(() => {
+    const items = this.completion();
+    return {
+      identity: completionFor(items, 'identity'),
+      users: completionFor(items, 'users'),
+      kbis: completionFor(items, 'kbis'),
+      addresses: completionFor(items, 'addresses'),
+      bank: completionFor(items, 'bank'),
+    };
+  });
+
+  /** Un raccourci de la synthèse : le dialogue de l'élément. */
+  protected completeStep(key: string): void {
+    const item = this.completion().find((candidate) => candidate.key === key);
+    if (item !== undefined) {
+      this.complete(item.target);
+    }
+  }
+
+  /** Le geste d'un encart ou d'un raccourci : le même dialogue que la carte. */
+  protected complete(target: CompletionTarget): void {
+    const company = this.company();
+    if (company !== null) {
+      openCompletion(target, {
+        panels: this.panels,
+        company,
+        addresses: this.addresses,
+        accounts: this.bank,
+        mandates: this.mandates,
+      });
+    }
+  }
+
   /** Le libellé de la pastille du rail : « Section 2 sur 7 ». */
   protected railPosition(active: number): string {
     return this.t()
@@ -280,6 +367,13 @@ export class ComptePage {
 
   constructor() {
     effect(() => this.chrome.kicker.set(this.t().nav.destinations.account));
+    // Le verdict suit la société de `/me` : relue après chaque écriture, elle le relit.
+    effect(() => {
+      const company = this.company();
+      if (company !== null) {
+        untracked(() => this.activation.follow(company));
+      }
+    });
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
     this.chrome.bell.set(null);

@@ -235,10 +235,12 @@
             <app-paiement-section
               [companyId]="c.id"
               [companyName]="c.raisonSociale"
+              [siren]="c.siren"
               [holderEmail]="c.primaryContact.email"
               [grantedTerms]="c.grantedTerms"
               [requestedTerm]="c.requestedTerm"
               (grantedTermsChange)="fiche.grantTerms($event)"
+              (editIdentity)="fiche.editIdentity()"
             />
           }
         }

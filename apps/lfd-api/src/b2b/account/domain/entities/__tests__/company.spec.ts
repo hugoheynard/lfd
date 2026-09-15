@@ -22,6 +22,7 @@ const identity: CompanyIdentityInput = {
   enseigne: "Le Pain Quotidien du Marais",
   formeJuridique: "SAS",
   siret: "812 456 789 00021",
+  siren: "",
   vatNumber: "FR32812456789",
 };
 
@@ -87,12 +88,18 @@ describe("Company.declare", () => {
       raisonSociale: "Boulangerie du Marais SAS",
       formeJuridique: "SARL",
       siret: "812 456 789 00021",
+      siren: "",
     });
     expect(company.raisonSociale).toBe("Boulangerie du Marais SAS");
     expect(company.formeJuridique).toBe("SARL");
     expect(company.siretDigits).toBe("81245678900021");
 
-    company.completeLegalIdentity({ raisonSociale: "Autre SAS", formeJuridique: "SAS", siret: "" });
+    company.completeLegalIdentity({
+      raisonSociale: "Autre SAS",
+      formeJuridique: "SAS",
+      siret: "",
+      siren: "",
+    });
     expect(company.raisonSociale).toBe("Boulangerie du Marais SAS");
     expect(company.formeJuridique).toBe("SARL");
   });
@@ -102,7 +109,12 @@ describe("Company.declare", () => {
     // comptoir, une faute de frappe restait gravée sans recours.
     const company = Company.declare({ ...identity, formeJuridique: "SARL" }, contact);
 
-    company.correctLegalIdentity({ raisonSociale: "", formeJuridique: "SAS", siret: "" });
+    company.correctLegalIdentity({
+      raisonSociale: "",
+      formeJuridique: "SAS",
+      siret: "",
+      siren: "",
+    });
 
     expect(company.formeJuridique).toBe("SAS");
     // Un champ vide ne réécrit rien : corriger la forme n'efface pas le reste.

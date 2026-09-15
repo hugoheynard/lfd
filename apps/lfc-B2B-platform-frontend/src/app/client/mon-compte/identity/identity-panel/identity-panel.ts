@@ -8,11 +8,18 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { CompanyView } from '@lfd/contracts';
+import { sirenFollowingSiret } from '@lfd/b2b-ui/company';
+import {
+  LEGAL_FORM_OPTIONS,
+  legalFormRequiresVat,
+  toLegalForm,
+  type CompanyView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldInputComponent,
+  FoldListboxComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -24,15 +31,19 @@ import {
 import { AccountService, type IdentityDraft } from '../../../../account/account.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { dialogSide } from '../../../panel-side';
-import { canEditIdentity } from '../identity-section';
+import { canEditIdentity, legalFormLabelOf } from '../identity-section';
 
-/** Les trois mentions du greffe : le client les COMBLE, il ne les corrige pas. */
-const LEGAL_FIELDS = ['raisonSociale', 'formeJuridique', 'siret'] as const;
+/**
+ * Les mentions du greffe : le client les COMBLE, il ne les corrige pas. Le SIREN
+ * les a rejointes le 2026-09-15 — sous le SIRET, et au même régime (décision de
+ * Hugo : compléter seulement, la correction passe par le commercial).
+ */
+const LEGAL_FIELDS = ['raisonSociale', 'formeJuridique', 'siret', 'siren'] as const;
 type LegalField = (typeof LEGAL_FIELDS)[number];
 
 type LegalDraft = Record<LegalField, string>;
 
-const EMPTY_LEGAL: LegalDraft = { raisonSociale: '', formeJuridique: '', siret: '' };
+const EMPTY_LEGAL: LegalDraft = { raisonSociale: '', formeJuridique: '', siret: '', siren: '' };
 
 /** Charge d'ouverture : la société visée et ce que la carte en montrait. */
 export interface IdentityPanelData extends LegalDraft {
@@ -68,6 +79,17 @@ export interface IdentityPanelData extends LegalDraft {
  * resterait figé sur « enregistrement ». La promesse retombe dans les deux cas,
  * et rend le message du serveur — un SIRET refusé se corrige ici, pas après un
  * toast déjà parti.
+ *
+ * ## La forme juridique est une liste, et elle décide de la TVA
+ *
+ * Le catalogue fermé de `@lfd/contracts`, comme dans l'admin : la valeur
+ * écrite est la clé (`sas`, `micro`…), la même que `company-identity-fields`.
+ * La forme retenue — choisie ici si elle manque, enregistrée sinon — MARQUE la
+ * TVA obligatoire ou facultative. Le marqueur n'est qu'une invitation :
+ * aucune écriture d'identité ne refuse l'absence de TVA côté serveur (vérifié
+ * le 2026-09-15, `Company` et `update-company-identity.handler.ts`), donc
+ * Enregistrer ne l'attend jamais — sans quoi un client sans son numéro sous
+ * la main ne pourrait plus poser ni sa forme ni son enseigne.
  */
 @Component({
   selector: 'app-identity-panel',
@@ -76,6 +98,7 @@ export interface IdentityPanelData extends LegalDraft {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldInputComponent,
+    FoldListboxComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -99,9 +122,14 @@ export class IdentityPanel {
    * `data` au moment du clic : le panneau édite ce que la carte montrait, et
    * la relecture de `/me` qui suit un succès ne le réécrit pas sous les doigts.
    */
-  static open(panels: FoldPanelHostService, company: CompanyView): void {
-    panels.open(IdentityPanel, {
+  static async open(
+    panels: FoldPanelHostService,
+    company: CompanyView,
+    stack = false,
+  ): Promise<boolean> {
+    const ref = panels.open<IdentityPanelData, boolean>(IdentityPanel, {
       side: dialogSide(),
+      stack,
       data: {
         companyId: company.id,
         enseigne: company.enseigne,
@@ -109,9 +137,11 @@ export class IdentityPanel {
         raisonSociale: company.raisonSociale,
         formeJuridique: company.formeJuridique,
         siret: company.siret,
+        siren: company.siren,
         editable: canEditIdentity(company),
       },
     });
+    return (await ref.closed) === true;
   }
 
   readonly data = input.required<IdentityPanelData>();
@@ -136,10 +166,13 @@ export class IdentityPanel {
       raisonSociale: copy.identityCompany,
       formeJuridique: copy.identityForm,
       siret: copy.identitySiret,
+      siren: copy.identitySiren,
     };
     return LEGAL_FIELDS.map((key) => {
-      const current = data[key].trim();
-      return { key, label: labels[key], current, locked: current !== '' };
+      const raw = data[key].trim();
+      // La forme se lit par son libellé ; ce que le catalogue ne reconnaît pas, tel quel.
+      const current = key === 'formeJuridique' ? legalFormLabelOf(raw) : raw;
+      return { key, label: labels[key], current, locked: raw !== '' };
     });
   });
 
@@ -157,6 +190,43 @@ export class IdentityPanel {
 
   protected readonly lockedFields = computed(() => this.legalFields().filter((f) => f.locked));
   protected readonly openFields = computed(() => this.legalFields().filter((f) => !f.locked));
+
+  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
+  protected readonly legalForms = LEGAL_FORM_OPTIONS;
+
+  /** Le choix en cours : seule la liste l'écrit, il est donc toujours une clé du catalogue. */
+  protected readonly formChoice = computed(() => toLegalForm(this.legal().formeJuridique));
+
+  private readonly formOpen = computed(() =>
+    this.openFields().some((field) => field.key === 'formeJuridique'),
+  );
+
+  /** La forme qui décide de la TVA : celle qu'on choisit si elle manque, celle enregistrée sinon. */
+  private readonly formForVat = computed(() =>
+    this.formOpen() ? this.legal().formeJuridique : this.data().formeJuridique,
+  );
+
+  /** La forme retenue, si le catalogue la reconnaît. */
+  private readonly knownForm = computed(() => toLegalForm(this.formForVat()));
+
+  /**
+   * Obligatoire seulement pour une forme CONNUE et assujettie. Vide ou hors
+   * catalogue, le champ reste facultatif : `isVatRequiredFor` y répond `true`
+   * par prudence (l'admin en dépend), mais ce serait affirmer une obligation
+   * que rien ne permet d'établir.
+   */
+  protected readonly vatRequired = computed(() => {
+    const form = this.knownForm();
+    return form !== null && legalFormRequiresVat(form);
+  });
+
+  protected readonly vatHint = computed(() => {
+    const copy = this.t().account;
+    if (this.knownForm() === null) {
+      return copy.identityVatUndecidedHint;
+    }
+    return this.vatRequired() ? copy.identityVatRequiredHint : copy.identityVatOptionalHint;
+  });
 
   /** Rien à envoyer tant que le brouillon dit ce que la base dit déjà. */
   protected readonly changed = computed(() => {
@@ -188,6 +258,30 @@ export class IdentityPanel {
 
   protected setLegal(key: LegalField, value: string): void {
     this.legal.update((draft) => ({ ...draft, [key]: value }));
+  }
+
+  /**
+   * Le SIRET, et le SIREN qu'il **propose** quand ses neuf premiers chiffres en
+   * forment un valide — seulement si le SIREN est encore à compléter, et tant
+   * que le client ne l'a pas tapé lui-même (`sirenFollowingSiret`). Le serveur
+   * fait foi et refuse une paire qui se contredit.
+   */
+  protected setSiret(value: string): void {
+    const sirenOpen = this.openFields().some((field) => field.key === 'siren');
+    this.legal.update((draft) => ({
+      ...draft,
+      siret: value,
+      siren: sirenOpen ? sirenFollowingSiret(draft.siren, draft.siret, value) : draft.siren,
+    }));
+  }
+
+  /** Le champ tapé : le SIRET passe par {@link setSiret}, qui fait suivre le SIREN. */
+  protected type(key: LegalField, value: string): void {
+    if (key === 'siret') {
+      this.setSiret(value);
+    } else {
+      this.setLegal(key, value);
+    }
   }
 
   protected async save(): Promise<void> {
@@ -224,6 +318,7 @@ export class IdentityPanel {
       raisonSociale: legal('raisonSociale'),
       formeJuridique: legal('formeJuridique'),
       siret: legal('siret'),
+      siren: legal('siren'),
     };
   }
 }

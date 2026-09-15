@@ -83,9 +83,12 @@ importé par personne pendant une journée. Il est importé par
 le spec)_.
 
 ✅ **Le `pain.008` lit les vraies valeurs.** `MndtId` porte la RUM du mandat
-actif, `DbtrAcct/Id/IBAN` l'IBAN descellé du client, `CdtrAgt` notre BIC. Les
-sentinelles `IBAN-INCONNU` et `MANDAT-INCONNU` existent toujours et ne sortent
-que pour une ligne dont le mandat manque.
+actif, `DbtrAcct/Id/IBAN` l'IBAN descellé du client, `CdtrAgt` notre BIC.
+
+⚠️ Ce paragraphe disait que les sentinelles `IBAN-INCONNU` et `MANDAT-INCONNU`
+sortaient encore pour une ligne sans mandat. Elles ont disparu avec le lot par
+schéma (2026-09-15) : une société sans mandat prélevable sort des deux fichiers
+et le bandeau la nomme (`pain008.ts`, vérifié le 2026-09-15).
 
 ✅ **Les quatre blocages du cycle de vie sont levés** : `accepted_at`,
 `stripe_customer_id` et `payment_method_id` sont nullable ; `save()` écrit
@@ -108,7 +111,7 @@ La forme de la RUM, ses deux bornes et la raison de chacune vivent dans
   pendant que le lot déclarait `B2B` _(constaté le 2026-09-13)_. Basculé le
   2026-09-14 : le formulaire est « interentreprises », sans remboursement, et
   lit la même constante que le lot. Voir le §4 et le TODO :
-  [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md).
+  [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md).
 
 ✅ **Le mandat imprimable est livré le 2026-09-13** : `renderSepaMandatePdf`
 prend une émission, la RUM s'imprime dans le peigne de 26, et le filigrane tombe
@@ -164,7 +167,7 @@ soit le format : un mandat Stripe ne porte que `last4`, `bankCode` et `country`
 > sa banque** avant le premier prélèvement.
 >
 > ⚠️ Deux points restent à confirmer avec la banque, écrits dans
-> [`../todos/todo-mandat-core-contre-b2b.md`](../todos/todo-mandat-core-contre-b2b.md) :
+> [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md) :
 > le libellé exact du modèle B2B qu'elle attend, et le retrait de la mention
 > « 13 mois » (qui vise les opérations non autorisées, pas le remboursement).
 
@@ -355,16 +358,17 @@ résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes d
 
 ### Ce qu'on sait remplir — au 2026-09-12 au soir
 
-| Champ XML                                          | Source                                      | État |
-| -------------------------------------------------- | ------------------------------------------- | ---- |
-| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                               | ✅   |
-| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                   | ✅   |
-| `Dbtr/Nm`                                          | `Company`                                   | ✅   |
-| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture | ✅   |
-| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)         | ✅   |
-| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt`                 | ✅   |
-| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                  | ✅   |
-| `EndToEndId`                                       | cycle + rang dans le lot                    | ✅   |
+| Champ XML                                          | Source                                                                                                             | État |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---- |
+| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                                                                                                      | ✅   |
+| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                                                                                          | ✅   |
+| `Dbtr/Nm`                                          | `Company`                                                                                                          | ✅   |
+| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture                                                                        | ✅   |
+| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)                                                                                | ✅   |
+| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt` (date du papier), jour local de Paris — depuis le 2026-09-15                           | ✅   |
+| `MndtRltdInf/AmdmntInd`                            | `false` en dur — amendement non écrit, **différé jusqu'à la réponse de la banque** (`plan-restes-du-mandat.md` §8) | ⚠️   |
+| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                                                                                         | ✅   |
+| `EndToEndId`                                       | cycle + rang dans le lot                                                                                           | ✅   |
 
 Les deux tables du débiteur appartiennent à `payments` : le lot les lit par le
 port `DebtorMandateReader`, déclaré par la comptabilité et implémenté côté
@@ -386,20 +390,31 @@ les garde pour tout le fichier.
 qu'un lot entièrement faux. Le second est refusé par le portail ; le premier
 passe la relecture humaine.
 
-Une ligne sans mandat prélevable — brouillon non signé, mandat révoqué, ou RIB
-jamais recopié — reçoit `IBAN-INCONNU` et `MANDAT-INCONNU`, marqueurs qu'aucun
-schéma n'accepte.
+Une société sans mandat prélevable — brouillon non signé, mandat révoqué, ou RIB
+jamais recopié — **n'entre dans aucun des deux fichiers** : elle n'a pas de
+schéma. Elle rend les deux indéposables, et le bandeau de chacun la nomme. Les
+marqueurs `IBAN-INCONNU` et `MANDAT-INCONNU` qu'elle recevait avant le lot par
+schéma (2026-09-15) n'existent plus.
+
+La date de signature écrite est celle du **papier** (`accepted_at`), jamais celle
+de la frappe. Un mandat actif la porte toujours : la contrainte
+`payment_mandates_active_is_signed` le tient en base
+(`20260915140000_mandat_actif_signe`), et le lecteur lève plutôt que d'en
+inventer une.
 
 Le CSV d'audit **relit le XML** au lieu de recalculer, et **masque l'IBAN du
 débiteur** (`••••1234`) depuis le 2026-09-12 : un fichier qui recompose en clair
 ce que la base scelle défait le coffre par la porte de service. Le masque ne
-s'applique qu'à ce qui a la forme d'un IBAN — masquer `IBAN-INCONNU` le
+s'applique qu'à ce qui a la forme d'un IBAN — une sentinelle masquée se
 déguiserait en compte.
 
-⚠️ **La séquence reste `RCUR` pour tout le lot.** Le CFONB impose `FRST` et
-`OrgnlDbtrAgt = SMNDA` après un changement de banque du débiteur. Ni l'un ni
-l'autre n'est écrit, et l'historique des changements de compte que la norme
-exige n'est pas conservé — remplacer un RIB écrase l'ancien sans trace.
+⚠️ **La séquence suit le type de paiement DU MANDAT** : `RCUR` pour un mandat
+`recurrent`, `OOFF` pour un `one_off` — la case cochée sur son papier, figée à
+la frappe, avec un `PmtInf` par séquence présente. `FRST` n'est jamais écrit.
+Le CFONB impose `FRST` et `OrgnlDbtrAgt = SMNDA` après un changement de banque
+du débiteur : ni l'un ni l'autre n'est écrit, l'amendement est **différé jusqu'à
+la réponse de la banque** (`plan-restes-du-mandat.md` §8), et l'historique des
+changements de compte que la norme exige n'est pas conservé.
 
 ### Les pièges qui font rejeter un fichier
 

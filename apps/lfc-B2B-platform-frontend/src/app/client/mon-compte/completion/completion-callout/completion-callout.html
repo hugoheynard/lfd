@@ -1,0 +1,26 @@
+@if (items().length > 0) {
+  <fold-callout appearance="inset" variant="warning">
+    <p class="lead">{{ t().account.completion.cardLead }}</p>
+    <ul class="list">
+      @for (item of items(); track item.key) {
+        <li>
+          <strong>{{ item.title }}</strong> — {{ item.detail }}
+        </li>
+      }
+    </ul>
+    @for (gesture of gestures(); track gesture.target) {
+      <button
+        actions
+        foldButton
+        class="gesture"
+        size="sm"
+        intent="warning"
+        emphasis="soft"
+        type="button"
+        (click)="act.emit(gesture.target)"
+      >
+        {{ gesture.action }}
+      </button>
+    }
+  </fold-callout>
+}

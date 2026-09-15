@@ -12,3 +12,10 @@
   flex: 1;
   min-width: 12rem;
 }
+
+// SIRET et SIREN l'un sous l'autre, dans la colonne voisine de la forme.
+.ids {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}

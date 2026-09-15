@@ -26,13 +26,21 @@ export interface DebtorSnapshot {
    */
   readonly companyName: string;
   /**
-   * Le SIREN du débiteur, **dérivé** du SIRET par {@link sirenOfSiret} ; vide
-   * quand la société n'a pas de SIRET exploitable (le peigne reste à remplir à
-   * la main, décision Q3 du plan `plan-mandat-deux-schemas.md`).
+   * Le SIREN **stocké** de la société ; vide quand il n'est pas connu. La frappe
+   * interentreprises le refuse vide, mais l'exemplaire et un brouillon CORE
+   * peuvent s'imprimer sans — le peigne reste alors à remplir à la main.
+   *
+   * ⚠️ Il était dérivé du SIRET jusqu'au 2026-09-15 (`sirenOfSiret`, supprimé) :
+   * plan `plan-mentions-obligatoires-du-mandat.md` §9.
    */
   readonly siren: string;
   /** Le titulaire tel que sa banque le connaît. */
   readonly holder: string;
+  /**
+   * Civilité ou forme juridique du **titulaire**, recopiée du RIB — imprimée
+   * par le seul mandat interentreprises ; vide quand non renseignée.
+   */
+  readonly holderLegalForm: string;
   readonly addressLine1: string;
   readonly addressLine2: string;
   readonly postalCode: string;
@@ -60,23 +68,3 @@ export interface DebtorSnapshot {
  * sur tous les mandats d'une entité. La chercher ici est le réflexe naturel —
  * d'où cette note.
  */
-
-/** La longueur d'un SIRET : le SIREN (9) suivi du NIC (5). */
-const SIRET_LENGTH = 14;
-const SIREN_LENGTH = 9;
-
-/**
- * Le SIREN tiré d'un SIRET — ses **neuf premiers chiffres**.
- *
- * Vide dès que le SIRET n'a pas la forme d'un SIRET (quatorze chiffres, blancs
- * ignorés) : il est **facultatif** à l'ouverture d'une société (chaîne vide =
- * absence), et un SIRET ancien n'a pas forcément été revalidé. Neuf caractères
- * pris sur une valeur abîmée imprimeraient un SIREN faux sur un papier signé ;
- * un peigne vide, lui, se remplit à la main.
- */
-export function sirenOfSiret(siret: string): string {
-  const digits = siret.replace(/\s/gu, "");
-  return digits.length === SIRET_LENGTH && /^\d+$/u.test(digits)
-    ? digits.slice(0, SIREN_LENGTH)
-    : "";
-}

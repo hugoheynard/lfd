@@ -53,6 +53,13 @@ export class CompanyActivationChecklist {
   readonly ready = input(false);
   /** Texte de la bannière « prêt » (formulé par app). */
   readonly readyNote = input('Toutes les pièces sont complètes.');
+  /**
+   * La mention d'une étape **non bloquante**. Elle était écrite en dur dans le
+   * gabarit, en français : l'espace client la traduit. Vide, rien ne s'affiche
+   * — c'est ce que passe l'espace client quand le compte est déjà actif, où
+   * « n'empêche pas l'activation » ne voudrait plus rien dire.
+   */
+  readonly optionalNote = input("n'empêche pas l'activation");
 
   /** L'utilisateur déclenche l'action d'une étape (clé de l'étape). */
   readonly stepAction = output<string>();

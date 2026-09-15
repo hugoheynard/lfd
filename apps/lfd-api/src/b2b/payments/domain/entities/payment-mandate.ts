@@ -10,6 +10,8 @@ import {
   MandateNotSignableError,
   MandateUnprovenError,
 } from "../errors/mandate-errors.js";
+import { MandateProofRevisionStaleError } from "../errors/mandate-proof-errors.js";
+import { proofRevisionOf } from "../services/proof-revision.js";
 
 /** Ce que le prestataire rend une fois le mandat créé chez lui. */
 export interface RegisteredMandate {
@@ -122,7 +124,8 @@ export function draftMandate(input: {
  *
  * ⚠️ Cette phrase disait « le RIB peut être recopié après la frappe » jusqu'au
  * 2026-09-14. Ce n'est plus vrai : la frappe EXIGE un RIB, staff comme client
- * (`MandateWithoutBankAccountError`, décision de Hugo). Le mandat ne fige pas
+ * (décision de Hugo ; depuis le 2026-09-15, code `bank_account_missing` de
+ * `MandateMentionsMissingError`). Le mandat ne fige pas
  * pour autant le compte (plan mandat client §8) : réécrire le RIB révoque le
  * brouillon, qui ne peut plus nommer un compte qui n'est plus le bon.
  */
@@ -281,7 +284,7 @@ export class PaymentMandate {
    * transaction — un agrégat ne connaît pas ses voisins, et c'est ce qui
    * l'empêche de faire semblant de les gérer.
    */
-  sign(at: Date, now: Date): void {
+  sign(at: Date, now: Date, proofRevision: string): void {
     if (this.statusValue !== "draft") {
       throw new MandateNotSignableError(this.statusValue);
     }
@@ -290,6 +293,11 @@ export class PaymentMandate {
     // c'est ce qui permet de refuser le dépôt sur un mandat actif.
     if (this.proofValue === null) {
       throw new MandateUnprovenError();
+    }
+    // Depuis le 2026-09-15 : on active sur la pièce RELUE, pas sur celle que la
+    // base porte au moment du clic (plan `plan-restes-du-mandat.md` §7 #9).
+    if (proofRevision !== proofRevisionOf(this.proofValue.storageKey)) {
+      throw new MandateProofRevisionStaleError();
     }
     if (at.getTime() > now.getTime()) {
       throw new MandateAcceptanceInFutureError();
@@ -363,6 +371,29 @@ export class PaymentMandate {
   }
 
   /**
+   * La clé de la pièce **qu'on a le droit de détruire**, ou `null`.
+   *
+   * Décidé par Hugo le 2026-09-15 (plan `plan-restes-du-mandat.md` §4 et §7
+   * #8) : seul un scan qui n'a **jamais** prouvé un consentement se supprime —
+   * celui d'un brouillon qu'on remplace, ou d'un brouillon devenu caduc. Un
+   * mandat qui a été signé, même révoqué depuis, garde sa pièce : c'est elle
+   * qu'on oppose en contestation, parfois des années après.
+   *
+   * `acceptedAt` et non le statut seul, et c'est le sujet : un révoqué peut
+   * avoir été actif. Le statut écarte `pending` et `failed`, qui viennent d'un
+   * prestataire et dont la pièce n'est pas la nôtre à juger.
+   */
+  purgeableProofKey(): string | null {
+    if (this.acceptedAtValue !== null) {
+      return null;
+    }
+    if (this.statusValue !== "draft" && this.statusValue !== "revoked") {
+      return null;
+    }
+    return this.proofValue?.storageKey ?? null;
+  }
+
+  /**
    * Ce que le back-office montre. Ni l'identifiant du moyen de paiement ni celui
    * du client Stripe n'en font partie : ils servent à débiter, pas à afficher, et
    * ce qui ne sort pas ne fuit pas.
@@ -380,6 +411,7 @@ export class PaymentMandate {
       revokedAt: this.revokedAtValue?.toISOString() ?? null,
       hasProof: this.proven(),
       proofFileName: this.proofValue?.fileName ?? "",
+      proofRevision: proofRevisionOf(this.proofStorageKey()),
     };
   }
 

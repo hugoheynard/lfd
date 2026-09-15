@@ -19,6 +19,7 @@ import {
   mandate,
   RecordingNotifier,
   StepPublisher,
+  MemoryStore,
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
@@ -68,6 +69,7 @@ function build(role: BankAccountRole | null) {
     events,
     new StepUnitOfWork(steps),
     notifier,
+    new MemoryStore(steps),
   );
   return { handler, guard, repo, mandates, events, notifier };
 }
@@ -157,6 +159,23 @@ describe("SetMyCompanyBankAccountHandler", () => {
     expect(repo.saved).toHaveLength(0);
   });
 
+  /** Le client ne révoque rien : son message ne lui dit pas de le faire. */
+  it("dit au client de nous contacter, pas de révoquer", async () => {
+    const { handler, mandates } = build("owner");
+    mandates.current = activeMandate();
+
+    const refusal: unknown = await handler
+      .execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD))
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+
+    expect(refusal).toBeInstanceOf(BankAccountBoundToActiveMandateError);
+    expect(String(refusal)).toMatch(/contactez-nous/u);
+    expect(String(refusal)).not.toMatch(/révoquez/u);
+  });
+
   it("oppose le mur AVANT le mandat actif : un non-membre reçoit 404, pas 409", async () => {
     const { handler, mandates } = build(null);
     mandates.current = activeMandate();
@@ -184,6 +203,18 @@ describe("SetMyCompanyBankAccountHandler", () => {
       via: "customer",
     });
     expect(notifier.notices).toHaveLength(1);
+  });
+
+  /** Même fusion que le staff : la séquence est partagée (plan mentions obligatoires §8 #7). */
+  it("un RIB réenregistré sans le champ n'efface pas la forme juridique du titulaire", async () => {
+    const { handler, repo } = build("owner");
+    await handler.execute(
+      new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", { ...PAYLOAD, holderLegalForm: "SAS" }),
+    );
+
+    await handler.execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD));
+
+    expect(repo.stored?.account.holderLegalForm).toBe("SAS");
   });
 
   it("remplace le RIB existant sans en frapper un second", async () => {

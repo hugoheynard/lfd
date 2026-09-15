@@ -66,9 +66,15 @@ export interface LegalEntitySnapshot {
   /**
    * Quand le PREMIER mandat a été frappé sous cette entité, ou `null`.
    *
-   * Posé par un abonné au fait publié par `payments` — `accounting` ne lit pas
-   * ses tables. Tant qu'il est nul, le créancier imprimé se corrige librement ;
-   * après, il est gelé (cf. {@link LegalEntity.setCreditorAccount}).
+   * Posé par la frappe elle-même, dans sa transaction, via `FirstMandateLedger`
+   * — `accounting` ne lit pas les tables de `payments`. Tant qu'il est nul, le
+   * créancier imprimé se corrige librement ; après, il est gelé (cf.
+   * {@link LegalEntity.setCreditorAccount}).
+   *
+   * ⚠️ **L'agrégat le LIT, il ne l'écrit jamais** : aucune méthode ne le pose, et
+   * `save` ne réécrit pas la colonne. Une entité chargée avant une frappe et
+   * sauvée après ne peut donc pas effacer le verrou (plan
+   * `plan-restes-du-mandat.md` §7 #6).
    */
   readonly firstMandateIssuedAt: Date | null;
   readonly preNotificationDays: number;
@@ -117,7 +123,7 @@ export class LegalEntity {
     private vatNumberValue: string,
     private icsValue: CreditorIdentifier | null,
     private creditorAccountValue: CreditorAccount | null,
-    private firstMandateIssuedAtValue: Date | null,
+    private readonly firstMandateIssuedAtValue: Date | null,
     private preNotificationDaysValue: number,
     private mandateDefaultsValue: MandateDefaults,
     private mandateSchemeValue: SepaScheme,
@@ -286,18 +292,6 @@ export class LegalEntity {
       throw new CreditorIdentityIsFrozenError(current.holder, account.holder);
     }
     this.creditorAccountValue = account;
-  }
-
-  /**
-   * Le premier mandat vient d'être frappé : le créancier imprimé se fige.
-   *
-   * **Idempotent, et volontairement** : c'est le PREMIER qui compte, et ce fait
-   * arrivera par un abonné à un événement — donc rejouable. Écraser la date au
-   * second mandat déplacerait le moment du gel, c'est-à-dire la seule chose que
-   * ce champ sert à dire.
-   */
-  noteFirstMandateIssued(at: Date): void {
-    this.firstMandateIssuedAtValue ??= at;
   }
 
   /**

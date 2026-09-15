@@ -76,6 +76,7 @@ export const ACCOUNT_FR: AccountCopy = {
   identityCompany: 'Raison sociale',
   identityForm: 'Forme juridique',
   identitySiret: 'SIRET',
+  identitySiren: 'SIREN',
   identityVat: 'TVA intracom.',
   identityNote:
     'L’enseigne se change ici. Les mentions du greffe passent par nous : on vérifie, puis on met à jour — c’est ce qui figure sur vos factures.',
@@ -84,6 +85,11 @@ export const ACCOUNT_FR: AccountCopy = {
   identityVatField: 'TVA intracommunautaire',
   identityLegalHint:
     'À compléter une seule fois : une fois enregistrée, cette mention ne se corrige plus qu’avec notre service commercial.',
+  identityFormPlaceholder: 'À choisir',
+  identityVatRequiredHint: 'Obligatoire pour cette forme juridique.',
+  identityVatOptionalHint: 'Facultatif pour cette forme juridique — franchise en base de TVA.',
+  identityVatUndecidedHint: 'Obligatoire ou non selon la forme juridique.',
+  identityOptional: 'facultatif',
   identityLegalLocked:
     'Ces mentions viennent du greffe. Pour les corriger, passez par notre service commercial.',
   identitySaveFailed: 'L’identité n’a pas été enregistrée.',
@@ -283,6 +289,9 @@ export const ACCOUNT_FR: AccountCopy = {
     'Le titulaire et l’adresse sont ceux que connaît votre banque : ils peuvent différer de votre raison sociale. Si un prélèvement est en place sur ce compte, le remplacer l’interrompt : nous revenons vers vous pour la suite.',
   bankForm: {
     holder: 'Titulaire du compte',
+    holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',
+    holderLegalFormHint:
+      'Exigée par le mandat interentreprises, que le titulaire soit une société ou une personne — 40 caractères au plus.',
     line1: 'Adresse',
     line2: 'Complément',
     postalCode: 'Code postal',
@@ -327,6 +336,16 @@ export const ACCOUNT_FR: AccountCopy = {
   mandateDropHint: 'PDF ou photo (JPEG, PNG, HEIC), 10 Mo au plus.',
   mandateUploading: 'Envoi du mandat…',
   mandateUploadedToast: 'Mandat signé reçu.',
+  mandateBlockedLead: 'Pour générer votre mandat, il manque :',
+  mandateBlockers: {
+    bank_account_missing: 'votre RIB',
+    issuer_missing: 'nos coordonnées de créancier — nous nous en occupons',
+    company_name_missing: 'la raison sociale de votre entreprise',
+    siren_missing: 'le SIREN de votre entreprise',
+    holder_legal_form_missing: 'la civilité ou forme juridique du titulaire du compte',
+  },
+  mandateBlockersIdentity: 'Compléter l’identité légale',
+  mandateBlockersBank: 'Compléter le RIB',
   mandateGenerateFailed: 'Le mandat n’a pas été généré.',
   mandateUploadFailed: 'Le mandat signé n’a pas été déposé.',
   mandateFetchFailed: 'Le mandat n’a pas pu être ouvert. Réessayez dans un instant.',
@@ -350,6 +369,52 @@ export const ACCOUNT_FR: AccountCopy = {
   mandateOptionsSave: 'Enregistrer les options',
   mandateOptionsSavedToast: 'Options du mandat enregistrées.',
   mandateOptionsSaveFailed: 'Les options du mandat n’ont pas été enregistrées.',
+  completion: {
+    countOne: '1 élément à compléter',
+    count: '{n} éléments à compléter',
+    blocksActivation: 'Empêche l’activation : {detail}',
+    optionalNote: 'n’empêche pas l’activation',
+    cardLead: 'À compléter :',
+    mandateFields: 'Pour générer votre mandat SEPA : {fields}.',
+    items: {
+      identity: {
+        title: 'Identité légale',
+        detail: 'La raison sociale, la forme juridique ou le SIRET manquent.',
+        action: 'Compléter l’identité',
+      },
+      vat: {
+        title: 'Numéro de TVA',
+        detail: 'Votre numéro de TVA intracommunautaire est requis.',
+        action: 'Renseigner la TVA',
+      },
+      telephone: {
+        title: 'Numéro joignable',
+        detail:
+          'Un livreur doit pouvoir appeler : renseignez un téléphone, le vôtre ou celui d’un contact.',
+        action: 'Ajouter un numéro',
+      },
+      billing: {
+        title: 'Adresse de facturation',
+        detail: 'Vos factures ont besoin d’une adresse.',
+        action: 'Ajouter la facturation',
+      },
+      delivery: {
+        title: 'Adresse de livraison',
+        detail: 'Vous préférez être livré : ajoutez au moins une adresse de livraison.',
+        action: 'Ajouter une livraison',
+      },
+      kbis: {
+        title: 'Extrait KBIS',
+        detail: 'Déposez l’extrait KBIS de votre entreprise.',
+        action: 'Déposer le KBIS',
+      },
+      bank: {
+        title: 'RIB',
+        detail: 'Votre RIB est incomplet.',
+        action: 'Compléter le RIB',
+      },
+    },
+  },
   supportTitle: 'Contacter le service commercial',
   supportPanelTitle: 'Service commercial',
   supportBody: 'Une question sur votre compte, une commande ou une facture : nous vous répondons.',

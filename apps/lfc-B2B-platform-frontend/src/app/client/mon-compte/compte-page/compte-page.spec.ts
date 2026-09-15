@@ -1,10 +1,19 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { CompanyView, CustomerBankAccountView, GateLevel, ShopLevel } from '@lfd/contracts';
+import type {
+  ActivationGate,
+  CompanyView,
+  CustomerBankAccountView,
+  GateLevel,
+  ShopLevel,
+} from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
+import { afterEach, vi } from 'vitest';
 
 import { AccountService, type AccountStatus } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
+import { ClientActivation } from '../../client-activation.service';
 import { ClientBankAccount } from '../../client-bank-account.service';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientMandate } from '../../client-mandate.service';
@@ -13,7 +22,9 @@ import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { DEFAULT_SURFACES, openShopAt } from '../../feature-access/feature-access.fixture';
 import { ProOnboarding } from '../../pro-onboarding.service';
-import { asRole, PROFILE, TOMMEUSES } from '../account.fixture';
+import { asRole, matchMediaAt, openedPanel, PROFILE, TOMMEUSES } from '../account.fixture';
+import { IdentityPanel } from '../identity/identity-panel/identity-panel';
+import { ContactEditPanel } from '../users/contact-edit-panel/contact-edit-panel';
 import { ComptePage } from './compte-page';
 
 /** Ce que le test fait croire à l'écran : qui est entré, et ce que `/me` a rendu. */
@@ -24,11 +35,14 @@ interface Situation {
   readonly mandate?: GateLevel;
   /** Le RIB que ses cartes ont lu — aucun par défaut. */
   readonly bank?: CustomerBankAccountView | null;
+  /** Le verdict d'activation lu — aucun par défaut, comme une lecture en échec. */
+  readonly gate?: ActivationGate | null;
 }
 
 /** Un RIB enregistré, sans IBAN : la lecture n'en rend que `last4`. */
 const RIB: CustomerBankAccountView = {
   holder: 'SAS Les Tommeuses',
+  holderLegalForm: 'SAS',
   addressLine1: '12 rue des Alpages',
   addressLine2: '',
   postalCode: '73150',
@@ -45,7 +59,13 @@ let signIns: string[] = [];
 function boot(
   companies: readonly CompanyView[],
   shop: ShopLevel = 'order',
-  { authenticated = true, status = 'ready', mandate = 'closed', bank = null }: Situation = {},
+  {
+    authenticated = true,
+    status = 'ready',
+    mandate = 'closed',
+    bank = null,
+    gate = null,
+  }: Situation = {},
 ): ComponentFixture<ComptePage> {
   loads = 0;
   signIns = [];
@@ -92,9 +112,15 @@ function boot(
           status: signal('ready'),
           mandate: signal(null),
           issuerScheme: signal(null),
+          mintBlockers: signal([]),
           ensure: (): void => undefined,
           reload: (): Promise<void> => Promise.resolve(),
         },
+      },
+      // Le verdict d'activation a sa propre suite : ici, celui que le test pose.
+      {
+        provide: ClientActivation,
+        useValue: { gate: signal(gate), follow: (): void => undefined },
       },
       // La carte « Compléter mon dossier » a sa propre suite : ici, le dossier existe.
       { provide: ProOnboarding, useValue: { needsDossier: () => false } },
@@ -130,6 +156,11 @@ const SECTIONS = [
  * son SIRET, son KBIS « vérifié par Léa », ses cinq utilisateurs, son mandat
  * SEPA — tout écrit en dur. Il lit désormais `GET /me`.
  */
+afterEach(() => {
+  TestBed.inject(FoldPanelHostService).dismissAll();
+  vi.unstubAllGlobals();
+});
+
 describe('ComptePage', () => {
   let fixture: ComponentFixture<ComptePage>;
 
@@ -384,5 +415,89 @@ describe('ComptePage', () => {
     expect(el().querySelector('app-account-card')).toBeNull();
     expect(el().querySelector('app-identity-desk-card')).toBeNull();
     expect(el().textContent).toContain(PRO_ACCOUNT_FR.promise.closed);
+  });
+  /**
+   * Plan `plan-mon-compte-a-completer.md` §2.3 : comme la fiche staff, une
+   * synthèse en tête avec un raccourci par élément, et un encart dans chaque
+   * carte concernée.
+   */
+  describe('ce qui manque au dossier', () => {
+    const MISSING: ActivationGate = {
+      canActivate: false,
+      blocking: ['identite_legale', 'telephone'],
+      checklist: [{ piece: 'kbis', blocking: false, done: true }],
+    };
+    const COPY = FR.account.completion;
+
+    it('ne montre aucune synthèse sans verdict lu', () => {
+      expect(el().querySelector('lfd-company-activation-checklist')).toBeNull();
+      expect(el().querySelector('app-completion-callout fold-callout')).toBeNull();
+    });
+
+    it('ne montre aucune synthèse quand rien ne manque', () => {
+      fixture = boot([TOMMEUSES], 'order', {
+        gate: { canActivate: false, blocking: [], checklist: [] },
+      });
+      expect(el().querySelector('lfd-company-activation-checklist')).toBeNull();
+    });
+
+    it('annonce le nombre d’éléments en tête, au-dessus des cartes', () => {
+      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+
+      const synthesis = el().querySelector('.page > lfd-company-activation-checklist + .body');
+      expect(synthesis).not.toBeNull();
+      expect(el().querySelector('.completion-head')?.textContent?.trim()).toBe(
+        COPY.count.replace('{n}', '2'),
+      );
+      expect(el().querySelectorAll('lfd-company-activation-checklist .step').length).toBe(2);
+    });
+
+    it('ne dit « empêche l’activation » que sur une société en attente', () => {
+      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+      expect(el().querySelector('lfd-company-activation-checklist')?.textContent).not.toContain(
+        'Empêche l’activation',
+      );
+
+      fixture = boot([{ ...TOMMEUSES, status: 'pending' }], 'order', { gate: MISSING });
+      expect(el().querySelector('lfd-company-activation-checklist')?.textContent).toContain(
+        'Empêche l’activation',
+      );
+    });
+
+    it('un raccourci ouvre le dialogue de la carte', () => {
+      vi.stubGlobal('matchMedia', matchMediaAt(false));
+      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+
+      const buttons = el().querySelectorAll<HTMLButtonElement>(
+        'lfd-company-activation-checklist .step button',
+      );
+      expect(buttons[0]?.textContent?.trim()).toBe(COPY.items.identity.action);
+      buttons[0]?.click();
+      expect(openedPanel()?.component).toBe(IdentityPanel);
+
+      TestBed.inject(FoldPanelHostService).dismissAll();
+      buttons[1]?.click();
+      expect(openedPanel()?.component).toBe(ContactEditPanel);
+      expect(openedPanel()?.data).toMatchObject({ contactId: null });
+    });
+
+    it('pose un encart dans chaque carte concernée, et seulement là', () => {
+      vi.stubGlobal('matchMedia', matchMediaAt(false));
+      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+
+      for (const kind of ['desk', 'mobile']) {
+        const identity = el().querySelector(`app-identity-${kind}-card app-completion-callout`);
+        expect(identity?.querySelectorAll('li').length).toBe(1);
+        expect(identity?.textContent).toContain(COPY.items.identity.title);
+        const users = el().querySelector(`app-users-${kind}-card app-completion-callout`);
+        expect(users?.textContent).toContain(COPY.items.telephone.title);
+        expect(el().querySelector(`app-kbis-${kind}-card app-completion-callout li`)).toBeNull();
+      }
+
+      el()
+        .querySelector<HTMLButtonElement>('app-identity-desk-card app-completion-callout button')
+        ?.click();
+      expect(openedPanel()?.component).toBe(IdentityPanel);
+    });
   });
 });

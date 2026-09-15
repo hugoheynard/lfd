@@ -1,7 +1,7 @@
 import type { AddressFormLabels } from '@lfd/b2b-ui/address';
 import type { ContactFieldsLabels, DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
 import type { BankAccountFormLabels, MandateOptionsFormLabels } from '@lfd/b2b-ui/payment';
-import type { SepaScheme } from '@lfd/contracts';
+import type { MintBlocker, SepaScheme } from '@lfd/contracts';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
@@ -81,6 +81,8 @@ export interface AccountCopy {
   readonly identityCompany: string;
   readonly identityForm: string;
   readonly identitySiret: string;
+  /** Sous le SIRET : saisi à part, le mandat interentreprises l'exige. */
+  readonly identitySiren: string;
   readonly identityVat: string;
   readonly identityNote: string;
   /**
@@ -95,6 +97,16 @@ export interface AccountCopy {
    * corrige plus d'ici — le serveur ignore un champ déjà renseigné.
    */
   readonly identityLegalHint: string;
+  /** Dans la liste des formes juridiques, tant qu'aucune n'est choisie. */
+  readonly identityFormPlaceholder: string;
+  /** Sous la TVA quand la forme l'impose — une invitation : Enregistrer ne l'attend pas. */
+  readonly identityVatRequiredHint: string;
+  /** Sous la TVA quand la forme ne l'impose pas (franchise en base). */
+  readonly identityVatOptionalHint: string;
+  /** Sous la TVA quand la forme est vide ou inconnue : l'obligation en dépend. */
+  readonly identityVatUndecidedHint: string;
+  /** Le mot du marqueur « facultatif » — fold parle anglais par défaut. */
+  readonly identityOptional: string;
   /** Sous les mentions déjà renseignées, montrées en lecture. */
   readonly identityLegalLocked: string;
   /** En tête du message du serveur, quand l'écriture est refusée. */
@@ -274,7 +286,10 @@ export interface AccountCopy {
   readonly bankLast4: string;
   /** Le titulaire est celui que la BANQUE connaît, et un compte mandaté ne se remplace pas sans nouveau mandat. */
   readonly bankNotice: string;
-  /** Les champs du RIB — le formulaire partagé avec la fiche staff. */
+  /**
+   * Les champs du RIB — le formulaire partagé avec la fiche staff, civilité ou
+   * forme juridique du titulaire comprise (exigée par le mandat interentreprises).
+   */
   readonly bankForm: BankAccountFormLabels;
   readonly bankSave: string;
   readonly bankReplace: string;
@@ -324,6 +339,15 @@ export interface AccountCopy {
   readonly mandateDropHint: string;
   readonly mandateUploading: string;
   readonly mandateUploadedToast: string;
+  /**
+   * Ce qui empêche de générer le mandat — en tête de la liste, puis une ligne
+   * par code rendu par le serveur (`MintBlocker`), et les deux gestes qui
+   * ouvrent le dialogue où la mention se saisit.
+   */
+  readonly mandateBlockedLead: string;
+  readonly mandateBlockers: Readonly<Record<MintBlocker, string>>;
+  readonly mandateBlockersIdentity: string;
+  readonly mandateBlockersBank: string;
   /** En tête du message du serveur, quand la génération est refusée. */
   readonly mandateGenerateFailed: string;
   /** En tête du message du serveur, quand le dépôt est refusé. */
@@ -350,9 +374,51 @@ export interface AccountCopy {
   readonly mandateOptionsSavedToast: string;
   /** En tête du message du serveur, quand l'enregistrement est refusé. */
   readonly mandateOptionsSaveFailed: string;
+  /** Ce qui manque au dossier — la synthèse du haut et les encarts des cartes. */
+  readonly completion: CompletionCopy;
   /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
   readonly supportTitle: string;
   /** Le titre du panneau que la carte ouvre. */
   readonly supportPanelTitle: string;
   readonly supportBody: string;
+}
+
+/** Le texte d'un élément à compléter : ce qui manque, pourquoi, et le geste. */
+export interface CompletionItemCopy {
+  readonly title: string;
+  readonly detail: string;
+  readonly action: string;
+}
+
+/**
+ * **Ce qui manque au dossier**, dit au client (plan
+ * `documentation/b2b/plan-mon-compte-a-completer.md` §2.2). Les clés d'`items`
+ * sont les éléments de la table du plan, et la liste est fermée : un élément de
+ * plus est une ligne de plus dans les trois langues, pas une chaîne composée.
+ */
+export interface CompletionCopy {
+  /** La synthèse du haut, au singulier. */
+  readonly countOne: string;
+  /** La synthèse du haut, `{n}` le nombre d'éléments. */
+  readonly count: string;
+  /**
+   * Une ligne bloquante d'une société EN ATTENTE : `{detail}` est le détail de
+   * l'élément. Seulement alors — un compte actif ne « s'active » plus.
+   */
+  readonly blocksActivation: string;
+  /** La mention d'une ligne non bloquante, sur une société en attente. */
+  readonly optionalNote: string;
+  /** L'en-tête de l'encart d'une carte. */
+  readonly cardLead: string;
+  /** `{fields}` : les mentions que le mandat SEPA réclame (`mandateBlockers`), séparées par une virgule. */
+  readonly mandateFields: string;
+  readonly items: {
+    readonly identity: CompletionItemCopy;
+    readonly vat: CompletionItemCopy;
+    readonly telephone: CompletionItemCopy;
+    readonly billing: CompletionItemCopy;
+    readonly delivery: CompletionItemCopy;
+    readonly kbis: CompletionItemCopy;
+    readonly bank: CompletionItemCopy;
+  };
 }

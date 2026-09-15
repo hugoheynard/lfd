@@ -48,6 +48,9 @@
         {{ t().account.mandateOptions }}
       </button>
     }
-    <app-card-foot [label]="action()" (pressed)="open()" />
+    @if (blocked()) {
+      <app-mandate-blockers [blockers]="mandates.mintBlockers()" />
+    }
+    <app-card-foot [label]="action()" [disabled]="blocked()" (pressed)="open()" />
   }
 }

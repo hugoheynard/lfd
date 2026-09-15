@@ -8,9 +8,11 @@ import type { DocumentStore } from "../../../platform/storage/document-store.js"
 import type { Clock } from "../../../platform/time/clock.js";
 import type { PaymentMandate } from "../domain/entities/payment-mandate.js";
 import { MandateNotFoundError } from "../domain/errors/mandate-errors.js";
+import { MandateProofChangedError } from "../domain/errors/mandate-proof-errors.js";
 import type { MandateActorChannel } from "../domain/events/payment-mandate-facts.js";
 import { MandateProofAttachedEvent } from "../domain/events/payment-mandate.events.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
+import { discardUnrecordedProof, purgeProof } from "./mandate-proof-purge.js";
 
 /** Les ports du dépôt de scan — partagés par le staff et le client. */
 export interface MandateProofDeps {
@@ -35,18 +37,29 @@ export interface MandateProofUpload {
  * a déjà décidé du droit d'agir. Extrait le 2026-09-14 d'`AttachMandateProofHandler`
  * pour servir aussi le client.
  *
- * Trois temps, dans cet ordre, et chacun ferme une panne :
+ * Quatre temps, dans cet ordre, et chacun ferme une panne :
  *
  * 1. **Refuser avant de ranger.** Le refus hors brouillon tombait, jusqu'au
  *    2026-09-14, APRÈS l'écriture dans le bucket.
  * 2. **Ranger sous une clé neuve.** Une clé fixe faisait qu'un dépôt dont
  *    l'écriture en base échoue écrasait la pièce que la base désignait encore.
- * 3. **Écrire la référence et sa trace, ensemble.** `@hors-transaction` pour le
- *    rangement, comme le KBIS : le stockage objet n'a pas de transaction. Si
- *    la transaction échoue, la pièce déposée reste orpheline dans le bucket —
- *    dit et accepté (plan §8), aucune archive n'est promise.
+ * 3. **Écrire la référence sous condition, et sa trace, ensemble** (depuis le
+ *    2026-09-15) : le mandat doit être encore brouillon et porter la pièce
+ *    chargée. Sinon `MandateProofChangedError`, et la pièce qu'on vient de
+ *    ranger est retirée — personne ne la désignera jamais.
+ * 4. **Purger l'ancienne pièce, après la validation seulement** — un scan de
+ *    brouillon remplacé n'a jamais prouvé de consentement (plan
+ *    `documentation/comptabilite/plan-restes-du-mandat.md` §4).
+ *
+ * `@hors-transaction` pour le rangement et la purge, comme le KBIS : le stockage
+ * objet n'a pas de transaction. Une transaction qui échoue pour une autre
+ * raison laisse la pièce rangée orpheline — dit et accepté (plan mandat client
+ * §8) : une erreur de validation ne dit pas si la ligne a été écrite, et
+ * retirer l'objet sur un doute pourrait détruire une pièce désignée.
  *
  * @returns le brouillon prouvé, pour que l'appelant puisse prévenir l'équipe.
+ * @throws {MandateProofChangedError} un autre geste est passé entre la lecture
+ *   et l'écriture.
  */
 export async function attachProofToDraft(
   deps: MandateProofDeps,
@@ -56,6 +69,10 @@ export async function attachProofToDraft(
   // Le domaine valide le fichier EN CLAIR — type réel, taille, nom. Sceller
   // avant validerait des octets chiffrés, c'est-à-dire rien.
   const document = ScannedDocument.create(upload.fileName, upload.bytes);
+  const previousKey = mandate.proofStorageKey();
+  // Lue AVANT le dépôt, sur l'agrégat : c'est lui qui dit si l'ancienne pièce
+  // a le droit de partir.
+  const replacedKey = mandate.purgeableProofKey();
 
   // Scellé : le scan porte le nom du client, sa banque, son IBAN et sa
   // signature. `octet-stream` et non le vrai type — ce qui est rangé n'est plus
@@ -65,19 +82,43 @@ export async function attachProofToDraft(
     { bytes: deps.cipher.sealBytes(document.bytes), contentType: "application/octet-stream" },
   );
   mandate.attachProof({ storageKey, fileName: document.fileName });
-  await deps.uow.run(async () => {
-    await deps.mandates.save(mandate);
-    await deps.events.publishTraced(
-      new MandateProofAttachedEvent(
-        mandate.id,
-        upload.companyId,
-        mandate.reference,
-        document.fileName,
-        upload.via,
-      ),
-    );
-  });
+  await recordDeposit(deps, mandate, previousKey, upload);
+  if (replacedKey !== null) {
+    await purgeProof(deps, mandate, replacedKey, "proof_replaced");
+  }
   return mandate;
+}
+
+/**
+ * L'écriture conditionnelle et son fait, dans une unité de travail. Sur le
+ * refus nommé, la pièce neuve est retirée avant que le refus ne remonte.
+ */
+async function recordDeposit(
+  deps: MandateProofDeps,
+  mandate: PaymentMandate,
+  previousKey: string | null,
+  upload: MandateProofUpload,
+): Promise<void> {
+  try {
+    await deps.uow.run(async () => {
+      await deps.mandates.depositProof(mandate, previousKey);
+      await deps.events.publishTraced(
+        new MandateProofAttachedEvent(
+          mandate.id,
+          upload.companyId,
+          mandate.reference,
+          mandate.toView().proofFileName,
+          upload.via,
+        ),
+      );
+    });
+  } catch (error) {
+    const deposited = mandate.proofStorageKey();
+    if (error instanceof MandateProofChangedError && deposited !== null) {
+      await discardUnrecordedProof(deps.store, mandate.id, deposited);
+    }
+    throw error;
+  }
 }
 
 /**

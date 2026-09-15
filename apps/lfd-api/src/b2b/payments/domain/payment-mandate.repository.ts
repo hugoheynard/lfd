@@ -14,11 +14,14 @@ export interface MandateHolder {
    */
   readonly reference: string;
   /**
-   * Le SIRET tel qu'enregistré — **chaîne vide** quand la société n'en a pas
-   * déclaré (il est facultatif à l'ouverture). Le mandat interentreprises en
-   * tire le SIREN du débiteur ; ce port le rend brut, sans le revalider.
+   * Le SIREN **stocké** de la société — chaîne vide quand il n'est pas connu.
+   * Le mandat interentreprises l'imprime, et sa frappe l'exige.
+   *
+   * ⚠️ Il était tiré du SIRET jusqu'au 2026-09-15 (`sirenOfSiret`, supprimé) :
+   * le préfixe d'un SIRET n'est pas toujours un SIREN valide, et le SIREN est
+   * désormais une colonne saisie (plan `plan-mentions-obligatoires-du-mandat.md`).
    */
-  readonly siret: string;
+  readonly siren: string;
 }
 
 /**
@@ -81,14 +84,41 @@ export abstract class PaymentMandateRepository {
   /** Écrit un mandat neuf et rend son id. */
   abstract create(mandate: MandateToCreate): Promise<string>;
 
-  /** Réécrit un mandat existant (révocation, dépôt de la preuve). */
+  /**
+   * Réécrit un mandat existant — statut, dates, compte reconnu. **Jamais sa
+   * pièce** : elle ne s'écrit que par {@link depositProof}.
+   *
+   * 🔴 Conditionnée à la pièce CHARGÉE (depuis le 2026-09-15) : si un dépôt est
+   * passé entre la lecture et l'écriture, rien n'est écrit. Sans cette
+   * condition, une signature concurrente d'un redépôt activait le mandat sur
+   * un scan que personne n'avait relu (plan `plan-restes-du-mandat.md` §7 #3, #9).
+   *
+   * @throws {MandateProofChangedError} la pièce a changé depuis la lecture.
+   */
   abstract save(mandate: PaymentMandate): Promise<void>;
+
+  /**
+   * Écrit la pièce que le brouillon vient de recevoir — **seulement si** le
+   * mandat est encore un brouillon et porte toujours `previousProofKey`
+   * (`null` = aucune pièce).
+   *
+   * Une écriture ciblée, et elle est justifiée : l'invariant « un scan ne se
+   * dépose que sur un brouillon » est déjà vérifié par l'agrégat en mémoire ;
+   * ce qui manque est de le tenir **au moment de l'écriture**. Un
+   * `load`→`save` ne le peut pas : entre les deux, une signature peut passer,
+   * et la purge de l'ancienne clé détruirait alors la preuve du mandat activé
+   * (plan `plan-restes-du-mandat.md` §7 #3).
+   *
+   * @throws {MandateProofChangedError} zéro ligne écrite : la pièce a changé,
+   *   ou le mandat n'est plus un brouillon.
+   */
+  abstract depositProof(mandate: PaymentMandate, previousProofKey: string | null): Promise<void>;
 
   /**
    * L'identité de la société pour le prestataire, ou `null` si l'id est inconnu.
    *
    * Ici plutôt que par un import du contexte `account` : le paiement n'a besoin
-   * que de deux chaînes, et dépendre de tout l'agrégat société pour les obtenir
+   * que de quelques chaînes, et dépendre de tout l'agrégat société pour les obtenir
    * couplerait deux contextes pour rien (ISP).
    */
   abstract findHolder(companyId: string): Promise<MandateHolder | null>;

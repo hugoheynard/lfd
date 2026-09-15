@@ -44,7 +44,7 @@ describe("legalEntityColumns", () => {
    * Ce test échoue au prochain oubli, au lieu de le laisser se découvrir devant
    * un écran qui ment.
    */
-  it("écrit TOUT l'état, sauf l'identité", () => {
+  it("écrit TOUT l'état, sauf l'identité et le verrou du premier mandat", () => {
     const snapshot = declared().toPersistence();
     const written = Object.keys(legalEntityColumns(snapshot, CIPHER)).sort();
     // `creditorIban` sort de la liste et `creditorIbanSealed` y entre : c'est la
@@ -52,8 +52,15 @@ describe("legalEntityColumns", () => {
     // ne plus servir que de retour arrière. Le test dit la substitution plutôt
     // que de la subir — sans quoi il suffirait de retirer une colonne pour le
     // faire passer.
+    //
+    // `firstMandateIssuedAt` sort aussi, et c'est une EXCLUSION voulue, pas un
+    // oubli (plan `plan-restes-du-mandat.md` §7 #6, 2026-09-15) : le verrou n'a
+    // qu'un auteur, `FirstMandateLedger`, qui l'écrit sous condition dans la
+    // transaction de la frappe. Réécrit par `save`, il serait remis à `null` par
+    // tout geste staff ayant chargé l'entité avant une frappe concurrente.
+    const excluded = new Set(["id", "creditorIban", "firstMandateIssuedAt"]);
     const expected = Object.keys(snapshot)
-      .filter((key) => key !== "id" && key !== "creditorIban")
+      .filter((key) => !excluded.has(key))
       .concat("creditorIbanSealed")
       .sort();
 
@@ -92,6 +99,22 @@ describe("legalEntityColumns", () => {
     expect(columns.creditorIbanSealed).not.toContain("FR7630006000011234567890189");
     expect(columns.creditorIbanSealed?.startsWith("v1.")).toBe(true);
     expect(CIPHER.open(columns.creditorIbanSealed!)).toBe("FR7630006000011234567890189");
+  });
+
+  /**
+   * 🔴 Régression prévenue (plan `plan-restes-du-mandat.md` §7 #6) : `save`
+   * réécrivait toute la ligne, verrou compris. Une entité chargée avant la
+   * frappe et sauvée après effaçait `first_mandate_issued_at`.
+   */
+  it("n'écrit PAS le verrou du premier mandat, même posé sur l'état", () => {
+    const frozen = LegalEntity.reconstitute({
+      ...declared().toPersistence(),
+      firstMandateIssuedAt: new Date("2026-09-12T08:00:00.000Z"),
+    });
+
+    expect(Object.keys(legalEntityColumns(frozen.toPersistence(), CIPHER))).not.toContain(
+      "firstMandateIssuedAt",
+    );
   });
 
   it("laisse le scellé à null quand aucun IBAN n'est renseigné", () => {

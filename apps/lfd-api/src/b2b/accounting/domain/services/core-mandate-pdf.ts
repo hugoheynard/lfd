@@ -42,7 +42,7 @@ import { SEPA_MANDATE_WORDING } from "./sepa-mandate-wording.js";
  * 1 à 20, phrase (A)/(B), cases de type de paiement, zones de contrat.
  *
  * C'était LE rendu jusqu'au 2026-09-15, quand le schéma est devenu un réglage
- * de l'entité (`documentation/b2b/plan-mandat-deux-schemas.md`). Son texte est
+ * de l'entité (`documentation/comptabilite/plan-mandat-deux-schemas.md`). Son texte est
  * celui de `SEPA_MANDATE_WORDING.CORE` — droit au remboursement, 8 semaines,
  * 13 mois —, restauré depuis `dfeca850^`. Le mandat interentreprises a sa propre
  * mise en page (`b2b-mandate-pdf.ts`), d'après le gabarit DGFiP.

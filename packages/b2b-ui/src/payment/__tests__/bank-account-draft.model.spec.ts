@@ -7,6 +7,9 @@ import {
   changesMandatedAccount,
   EMPTY_BANK_ACCOUNT_DRAFT,
   hasCountryCode,
+  HOLDER_LEGAL_FORM_MAX_LENGTH,
+  holderLegalFormFits,
+  holderLegalFormProvided,
   isBankAccountComplete,
   toBankAccountPayload,
   withoutIban,
@@ -14,6 +17,7 @@ import {
 
 const CUSTOMER: CustomerBankAccountView = {
   holder: 'Refuge du Col SARL',
+  holderLegalForm: 'SARL',
   addressLine1: '12 rue des Alpages',
   addressLine2: '',
   postalCode: '73150',
@@ -39,6 +43,7 @@ describe('brouillon du RIB', () => {
         iban: '',
         bic: 'CEPAFRPP751',
         holder: 'Refuge du Col SARL',
+        holderLegalForm: 'SARL',
         line1: '12 rue des Alpages',
         line2: '',
         postalCode: '73150',
@@ -73,6 +78,18 @@ describe('brouillon du RIB', () => {
       expect(isBankAccountComplete({ ...bankAccountDraftFrom(CUSTOMER), iban: '   ' })).toBe(false);
     });
 
+    it('la civilité ou forme juridique du titulaire est facultative pour la complétude', () => {
+      const typed = { ...bankAccountDraftFrom(CUSTOMER), iban: IBAN, holderLegalForm: '' };
+      expect(isBankAccountComplete(typed)).toBe(true);
+    });
+
+    it('la civilité ou forme juridique tient en 40 caractères, espaces rognés', () => {
+      const draft = bankAccountDraftFrom(CUSTOMER);
+      const fits = 'x'.repeat(HOLDER_LEGAL_FORM_MAX_LENGTH);
+      expect(holderLegalFormFits({ ...draft, holderLegalForm: ` ${fits} ` })).toBe(true);
+      expect(holderLegalFormFits({ ...draft, holderLegalForm: `${fits}x` })).toBe(false);
+    });
+
     it('le pays tient en deux lettres, espaces rognés', () => {
       const draft = bankAccountDraftFrom(CUSTOMER);
       expect(hasCountryCode({ ...draft, countryCode: ' fr ' })).toBe(true);
@@ -88,6 +105,7 @@ describe('brouillon du RIB', () => {
           iban: '  FR14 2004 1010 0505 0001 3M02 606 ',
           bic: ' CEPAFRPP751 ',
           holder: ' Refuge du Col SARL ',
+          holderLegalForm: ' SARL ',
           line1: ' 12 rue des Alpages ',
           line2: ' ',
           postalCode: ' 73150 ',
@@ -98,12 +116,22 @@ describe('brouillon du RIB', () => {
         iban: 'FR14 2004 1010 0505 0001 3M02 606',
         bic: 'CEPAFRPP751',
         holder: 'Refuge du Col SARL',
+        holderLegalForm: 'SARL',
         line1: '12 rue des Alpages',
         line2: '',
         postalCode: '73150',
         city: "Val d'Isère",
         countryCode: 'FR',
       });
+    });
+
+    /**
+     * Le champ part même vide : cet écran le montre, donc le vider est voulu.
+     * C'est l'ancien écran, qui ne le connaît pas, qui l'omet.
+     */
+    it('envoie la civilité ou forme juridique même vide', () => {
+      const payload = toBankAccountPayload({ ...EMPTY_BANK_ACCOUNT_DRAFT, holderLegalForm: '  ' });
+      expect(payload.holderLegalForm).toBe('');
     });
 
     it('après un enregistrement, seul l’IBAN se vide', () => {
@@ -141,6 +169,7 @@ describe('brouillon du RIB', () => {
       expect(bankAccountDraftChanged({ ...draft, line2: 'Bâtiment B' }, CUSTOMER)).toBe(true);
       expect(bankAccountDraftChanged({ ...draft, city: " Val d'Isère " }, CUSTOMER)).toBe(false);
       expect(bankAccountDraftChanged({ ...draft, countryCode: 'fr' }, CUSTOMER)).toBe(false);
+      expect(bankAccountDraftChanged({ ...draft, holderLegalForm: 'SAS' }, CUSTOMER)).toBe(true);
     });
 
     /** 🔴 L'IBAN ne redescend jamais : en saisir un est toujours un changement. */
@@ -165,10 +194,33 @@ describe('brouillon du RIB', () => {
     });
   });
 
+  describe('holderLegalFormProvided — exigée seulement en interentreprises', () => {
+    const draft = bankAccountDraftFrom(CUSTOMER);
+
+    it('requise, un champ vide ou blanc désarme', () => {
+      expect(holderLegalFormProvided({ ...draft, holderLegalForm: '' }, true)).toBe(false);
+      expect(holderLegalFormProvided({ ...draft, holderLegalForm: '   ' }, true)).toBe(false);
+      expect(holderLegalFormProvided({ ...draft, holderLegalForm: 'M.' }, true)).toBe(true);
+    });
+
+    it('facultative, un champ vide passe', () => {
+      expect(holderLegalFormProvided({ ...draft, holderLegalForm: '' }, false)).toBe(true);
+    });
+  });
+
+  it('le libellé donne des exemples sans répéter l’aide, et l’exemple de saisie ne passe pas pour une valeur', () => {
+    expect(BANK_ACCOUNT_FORM_LABELS_FR.holderLegalFormHint).not.toContain(
+      BANK_ACCOUNT_FORM_LABELS_FR.holderLegalForm,
+    );
+    expect(BANK_ACCOUNT_FORM_LABELS_FR.holderLegalFormPlaceholder).toMatch(/^Ex\. /u);
+  });
+
   it('les libellés par défaut sont ceux de la fiche staff', () => {
     expect(BANK_ACCOUNT_FORM_LABELS_FR).toMatchObject({
       holder: 'Titulaire du compte',
       holderPlaceholder: 'Refuge du Col SARL',
+      holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',
+      holderLegalFormPlaceholder: 'Ex. SAS ou M.',
       line2Placeholder: 'Bâtiment, étage…',
       country: 'Pays',
       countryPlaceholder: 'FR',
