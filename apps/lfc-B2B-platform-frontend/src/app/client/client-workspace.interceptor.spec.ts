@@ -4,13 +4,19 @@ import { TestBed } from '@angular/core/testing';
 import { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { AUTH_CONFIG } from '../auth/auth.config';
 import {
   provideWorkspace,
   workspaceDouble,
   type WorkspaceDouble,
 } from './client-workspace.fixture';
-import { targetsApi, workspaceInterceptor } from './client-workspace.interceptor';
+import { targetsApi, workspaceInterceptorFor } from './client-workspace.interceptor';
+
+/**
+ * Régression (2026-09-15) : la suite lisait `AUTH_CONFIG.apiBaseUrl`, qui vient
+ * du `.env` du poste — vide en CI, où trois cas rougissaient alors que le code
+ * était juste. La racine est désormais celle de la suite, et de personne d'autre.
+ */
+const API = 'https://api.suite.test';
 
 function boot(current: string | null): {
   http: HttpClient;
@@ -21,7 +27,7 @@ function boot(current: string | null): {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      provideHttpClient(withInterceptors([workspaceInterceptor])),
+      provideHttpClient(withInterceptors([workspaceInterceptorFor(API)])),
       provideHttpClientTesting(),
       provideWorkspace(workspace),
     ],
@@ -32,8 +38,6 @@ function boot(current: string | null): {
     workspace,
   };
 }
-
-const API = AUTH_CONFIG.apiBaseUrl;
 
 describe('workspaceInterceptor', () => {
   it('pose l’espace connu sur une requête vers l’API', () => {

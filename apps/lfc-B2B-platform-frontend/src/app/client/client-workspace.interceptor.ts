@@ -23,16 +23,31 @@ import { ClientWorkspace } from './client-workspace.service';
  * Rendu serveur : aucune lecture de `window` ici, et `ClientWorkspace` rend
  * `null` tant qu'aucun compte n'est lu — l'en-tête n'y part donc pas.
  */
-export const workspaceInterceptor: HttpInterceptorFn = (request, next) => {
-  if (!targetsApi(request.url, AUTH_CONFIG.apiBaseUrl) || request.headers.has(WORKSPACE_HEADER)) {
-    return next(request);
-  }
-  const workspace = inject(ClientWorkspace).current();
-  if (workspace === null) {
-    return next(request);
-  }
-  return next(request.clone({ setHeaders: { [WORKSPACE_HEADER]: workspace } }));
-};
+export const workspaceInterceptor: HttpInterceptorFn = (request, next) =>
+  workspaceInterceptorFor(AUTH_CONFIG.apiBaseUrl)(request, next);
+
+/**
+ * Le même intercepteur, pour une racine d'API donnée.
+ *
+ * 🔴 **Exporté pour les suites, et c'est une correction.** La racine vient de
+ * `auth.env.generated.ts`, fabriqué depuis l'environnement : présente dans le
+ * `.env` d'un poste, VIDE en CI. La suite lisait `AUTH_CONFIG.apiBaseUrl` —
+ * verte partout où un `.env` existe, rouge en CI, où une racine vide ne vise
+ * rien (constaté le 2026-09-15, run CI `35023149500`). Une suite qui dépend du
+ * `.env` du poste ne prouve rien.
+ */
+export function workspaceInterceptorFor(apiBaseUrl: string): HttpInterceptorFn {
+  return (request, next) => {
+    if (!targetsApi(request.url, apiBaseUrl) || request.headers.has(WORKSPACE_HEADER)) {
+      return next(request);
+    }
+    const workspace = inject(ClientWorkspace).current();
+    if (workspace === null) {
+      return next(request);
+    }
+    return next(request.clone({ setHeaders: { [WORKSPACE_HEADER]: workspace } }));
+  };
+}
 
 /**
  * La requête vise-t-elle l'API ? Sur une **frontière de chemin** : un simple
