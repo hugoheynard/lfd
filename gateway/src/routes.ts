@@ -1,4 +1,9 @@
-import { DEV_PORTS, GATEWAY_SUBDOMAINS, PROD_FRONT_ORIGINS } from "@lfd/endpoints";
+import {
+  DEV_PORTS,
+  GATEWAY_SUBDOMAINS,
+  PROD_FRONT_ORIGINS,
+  ZONE_CLIENT_FRONT,
+} from "@lfd/endpoints";
 
 /**
  * Où va une requête — **la seule décision de la gateway**, isolée ici pour
@@ -123,6 +128,22 @@ export const FRONT_PREFIXES = {
 
 export type FrontKey = keyof typeof FRONT_PREFIXES;
 
+/**
+ * L'hôte de la zone, dont la **racine** sert aussi la boutique.
+ *
+ * Décidé par Hugo le 2026-09-15 : la boutique n'est plus seulement pro, et son
+ * adresse ne doit plus le dire. La bascule se fait en deux déploiements, et
+ * celui-ci est le premier : la racine sert le front **et** `/pro` reste servi
+ * comme avant. Les deux marchent avec le front actuel (`base href` à `/pro/`,
+ * ses assets repassent par `/pro`) comme avec le suivant (`base href` à `/`).
+ * L'inverse — le front sur la racine avant la route — casserait tous les assets.
+ *
+ * Réservé à la zone : la racine de `workers.dev` ne sert rien. Le front y
+ * chargerait sous une origine absente du CORS, donc cassé, et une seconde
+ * adresse de la boutique qu'aucun lien ne donne n'aide personne.
+ */
+export const ZONE_HOSTNAME = new URL(ZONE_CLIENT_FRONT).hostname;
+
 /** Table dev : sous-domaine `*.localhost` → serveur local. */
 const local = (port: number): string => `http://127.0.0.1:${port}`;
 
@@ -163,6 +184,11 @@ export function resolveTarget(hostname: string, pathname: string): Target | unde
     if (path !== undefined) {
       return { kind: "front", front, path };
     }
+  }
+  // Tout le reste de la zone part au front, chemin intact : Pages sert depuis sa
+  // racine. APRÈS les API et `/pro`, pour qu'aucun des deux ne soit capté.
+  if (hostname === ZONE_HOSTNAME) {
+    return { kind: "front", front: "pro", path: pathname };
   }
   return undefined;
 }

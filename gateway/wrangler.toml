@@ -79,8 +79,14 @@ port = 8787
 #      → 100::`, PROXIFIÉ. L'adresse est celle du bloc de rebut IPv6 : elle ne
 #      mène nulle part et n'a pas à mener quelque part, puisque c'est le Worker
 #      qui répond. Sans elle, une route de zone ne reçoit jamais de trafic.
+#
+# ⚠️ Élargie à TOUTE la zone le 2026-09-15 (décision de Hugo : la boutique n'est
+# plus seulement pro). La racine sert le front, `/pro` reste servi le temps que
+# le front soit reconstruit sur `/` — cf. `ZONE_HOSTNAME` dans src/routes.ts.
+# `lafoliecoffee.info/api/lfd` atteint donc aussi l'API : même passerelle, mêmes
+# gardes, même CORS.
 [[routes]]
-pattern = "lafoliecoffee.info/pro*"
+pattern = "lafoliecoffee.info/*"
 zone_name = "lafoliecoffee.info"
 
 # Service bindings vers les backends : appels INTERNES au compte, sans passer par

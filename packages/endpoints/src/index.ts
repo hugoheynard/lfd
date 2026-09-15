@@ -199,7 +199,7 @@ const LEGACY_B2B_ADMIN_FRONT = "https://lfc-b2b-admin.pages.dev";
  * déclarée dans les URL de rappel autorisées de l'application Auth0. Oubliée,
  * la connexion échoue au retour, après avoir semblé partir.
  */
-const ZONE_CLIENT_FRONT = "https://lafoliecoffee.info";
+export const ZONE_CLIENT_FRONT = "https://lafoliecoffee.info";
 
 /**
  * Origines CORS autorisées **en prod**. Une seule liste, pour la même raison
