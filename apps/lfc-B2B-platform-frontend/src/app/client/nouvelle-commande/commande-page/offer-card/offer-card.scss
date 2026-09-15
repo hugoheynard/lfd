@@ -356,6 +356,11 @@ $photo-noel: url('https://images.unsplash.com/photo-1608780720006-9e691b227f46?f
     }
   }
 
+  /* Au milieu : le texte s'aligne sur les cartes posées sur la photo. */
+  :host([data-shape='hero'][data-align='center']) .card {
+    justify-content: center;
+  }
+
   /* Le retrait : le bouton est de PAPIER, la condition porte le beurre. */
   :host([data-shape='hero'][data-tone='ink']) {
     .cta {

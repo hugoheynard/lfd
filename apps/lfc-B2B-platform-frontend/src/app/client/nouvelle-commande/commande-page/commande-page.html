@@ -27,6 +27,7 @@
             [note]="deliveryOffered() ? t().commande.pickupNote : null"
             [detailWide]="t().commande.pickupDetailWide"
             [ctaLabel]="deliveryOffered() ? t().commande.pickupCta : null"
+            [align]="deliveryOffered() ? 'end' : 'center'"
             [noteWide]="pickupNoteWide()"
             (chosen)="openDialog('pickup')"
           />

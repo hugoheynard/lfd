@@ -101,6 +101,16 @@
 
 @media (min-width: 900px) {
   .card {
-    padding: 16px 18px;
+    gap: 14px;
+    min-height: 11rem;
+    padding: 22px 24px;
+  }
+
+  .name {
+    font-size: 1.5rem;
+  }
+
+  .where {
+    font-size: var(--fold-text-md);
   }
 }
