@@ -6,7 +6,8 @@ import { currentRequestContext } from "../context/request-context.store.js";
  * **La société pour laquelle la requête agit**, ou `null`.
  *
  * Résolue par `AuthGuard` à partir des rattachements du principal, jamais reçue
- * d'un client — cf. `resolve-company.ts` pour les trois branches.
+ * d'un client — cf. `resolve-company.ts` pour la déclaration « perso » et les
+ * trois branches.
  *
  * Un décorateur de paramètre plutôt qu'une lecture du contexte au fond du code :
  * le contrôleur est la frontière, et c'est là qu'on doit voir d'un coup d'œil

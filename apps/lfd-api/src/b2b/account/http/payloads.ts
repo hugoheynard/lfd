@@ -20,13 +20,26 @@ export const updateProfilePayload = z.object({
 
 export type UpdateProfilePayload = z.infer<typeof updateProfilePayload>;
 
+/** Un identifiant de société est un `cuid()` ; la borne ne refuse que l'absurde. */
+const WORKSPACE_MAX_LENGTH = 64;
+
 /**
- * Préférence d'affichage du catalogue. Union fermée : le front n'a que ces trois
- * vues, et une valeur hors-liste n'aurait aucun sens à persister.
+ * Un **patch** des préférences de navigation : seules les clés présentes
+ * changent, et il en faut au moins une.
+ *
+ * `{ catalogueView }` seul reste valide — c'est ce qu'envoie le front déjà en
+ * production. La vue est une union fermée : le front n'a que ces trois vues.
+ * `workspace` ne vérifie ici que la FORME ; qu'il désigne « perso » ou une
+ * société de la personne est la règle du domaine. `null` efface le choix.
  */
-export const updateNavPrefsPayload = z.object({
-  catalogueView: z.enum(["cards", "shelves", "list"]),
-});
+export const updateNavPrefsPayload = z
+  .object({
+    catalogueView: z.enum(["cards", "shelves", "list"]).optional(),
+    workspace: z.string().trim().min(1).max(WORKSPACE_MAX_LENGTH).nullable().optional(),
+  })
+  .refine((patch) => patch.catalogueView !== undefined || patch.workspace !== undefined, {
+    message: "au moins une préférence à changer : catalogueView ou workspace",
+  });
 
 export type UpdateNavPrefsPayload = z.infer<typeof updateNavPrefsPayload>;
 

@@ -1017,3 +1017,5 @@ export type {
   DeliveryStepFields,
   DeliveryStepRevisionFields,
 } from "./delivery-procedure.js";
+
+export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./account.js";

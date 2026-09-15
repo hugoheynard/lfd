@@ -30,7 +30,32 @@ export type CatalogueView = "cards" | "shelves" | "list";
 export interface NavPreferences {
   /** Vue choisie ; `null` = aucun choix explicite (le front applique son défaut). */
   readonly catalogueView: CatalogueView | null;
+  /**
+   * L'espace dans lequel la personne travaille : {@link PERSONAL_WORKSPACE}, ou
+   * l'identifiant d'une société à laquelle elle est rattachée ; `null` = aucun
+   * choix, le front applique son défaut (la seule société, sinon le perso).
+   *
+   * Une préférence et non une autorité : le serveur revérifie l'en-tête
+   * {@link WORKSPACE_HEADER} contre les rattachements à chaque requête.
+   * Cf. `documentation/b2b/plan-espace-de-travail.md`.
+   */
+  readonly workspace: string | null;
 }
+
+/**
+ * L'en-tête par lequel le front déclare **dans quel espace il travaille**.
+ *
+ * Il ne porte aucune autorité : le serveur le confronte aux rattachements de la
+ * personne, et ignore ce qui n'en est pas un.
+ */
+export const WORKSPACE_HEADER = "x-lfc-company";
+
+/**
+ * La valeur réservée de l'espace **perso** : agir pour aucune société, quel que
+ * soit le nombre de rattachements. Un identifiant de société est un `cuid()`,
+ * qui ne peut pas la valoir.
+ */
+export const PERSONAL_WORKSPACE = "personal";
 
 /** Le profil de la personne, tel que l'écran « Mon profil » l'affiche. */
 export interface ProfileView {

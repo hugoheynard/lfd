@@ -2,8 +2,9 @@
  * E2E du **panier en cours du client** (`/shop/cart`).
  *
  * Ce que seul le vrai SQL prouve, et qui est toute la raison de sortir le panier
- * du navigateur : qu'il est bien **un par personne** (l'index unique tient, un
- * second enregistrement remplace au lieu d'empiler) ; qu'il se relit **depuis un
+ * du navigateur : qu'il est bien **un par personne et par espace** (l'index
+ * unique `NULLS NOT DISTINCT` tient, perso compris, et un second enregistrement
+ * remplace au lieu d'empiler, même simultané) ; qu'il se relit **depuis un
  * autre appareil**, c'est-à-dire depuis une seconde requête portant le même
  * jeton et rien d'autre ; qu'il ne fuit pas d'une personne à l'autre ; et qu'un
  * panier VIDÉ se relit comme vide plutôt que comme absent — sans quoi la reprise
@@ -12,10 +13,16 @@
  * Frontière doublée : la signature du jeton Auth0. Le reste — guard global, bus,
  * domaine, `jsonb`, contrainte d'unicité — est réel.
  */
-import type { ShopCartPayload, ShopCartResponse, ShopCartView } from "@lfd/contracts";
+import {
+  PERSONAL_WORKSPACE,
+  WORKSPACE_HEADER,
+  type ShopCartPayload,
+  type ShopCartResponse,
+  type ShopCartView,
+} from "@lfd/contracts";
 
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 
 let ctx: E2eContext;
 
@@ -187,5 +194,86 @@ describe("Le panier du client, gardé chez nous", () => {
     );
 
     expect(Date.parse(second.savedAt)).toBeGreaterThanOrEqual(Date.parse(first.savedAt));
+  });
+});
+
+describe("Un panier par espace de travail", () => {
+  const SUB = "client-deux-maisons";
+  const lines = (sku: string) => ({ lines: [{ sku, quantity: 1 }] });
+
+  /** Une personne rattachée à deux sociétés : trois espaces, dont le perso. */
+  async function seedTwoCompanies(): Promise<{ userId: string; first: string; second: string }> {
+    const userId = await seedPerson(SUB);
+    const first = await createCompany(ctx.prisma, { raisonSociale: "Maison A SAS" });
+    const second = await createCompany(ctx.prisma, {
+      raisonSociale: "Maison B SARL",
+      siret: "98765432100023",
+    });
+    await attachTo(ctx.prisma, userId, first.id);
+    await attachTo(ctx.prisma, userId, second.id);
+    return { userId, first: first.id, second: second.id };
+  }
+
+  const inSpace = (space: string) => ({
+    put: (payload: ShopCartPayload) =>
+      ctx.asSub(SUB).put("/shop/cart").set(WORKSPACE_HEADER, space).send(payload),
+    get: async () =>
+      jsonBody<ShopCartResponse>(
+        await ctx.asSub(SUB).get("/shop/cart").set(WORKSPACE_HEADER, space).expect(200),
+      ).cart,
+  });
+
+  it("garde un panier distinct par société et un pour le perso", async () => {
+    const { userId, first, second } = await seedTwoCompanies();
+
+    await inSpace(first).put(lines("VIE-001")).expect(200);
+    await inSpace(second).put(lines("SAL-001")).expect(200);
+    await inSpace(PERSONAL_WORKSPACE).put(lines("PAT-001")).expect(200);
+
+    expect((await inSpace(first).get())?.lines).toEqual(lines("VIE-001").lines);
+    expect((await inSpace(second).get())?.lines).toEqual(lines("SAL-001").lines);
+    expect((await inSpace(PERSONAL_WORKSPACE).get())?.lines).toEqual(lines("PAT-001").lines);
+    expect(await ctx.prisma.shopCart.count({ where: { userId } })).toBe(3);
+  });
+
+  it("🔴 n'a qu'UN panier perso — deux `company_id` vides se heurtent", async () => {
+    // Sans `NULLS NOT DISTINCT`, deux NULL sont distincts pour l'index : chaque
+    // enregistrement perso empilerait une ligne au lieu de remplacer.
+    const { userId } = await seedTwoCompanies();
+
+    await inSpace(PERSONAL_WORKSPACE).put(lines("VIE-001")).expect(200);
+    // Sans en-tête, à deux sociétés : la même société agissante `null`.
+    await ctx.asSub(SUB).put("/shop/cart").send(lines("SAL-001")).expect(200);
+
+    expect(await ctx.prisma.shopCart.count({ where: { userId, companyId: null } })).toBe(1);
+    expect((await inSpace(PERSONAL_WORKSPACE).get())?.lines).toEqual(lines("SAL-001").lines);
+  });
+
+  it("🔴 deux écritures simultanées du même espace ne lèvent rien", async () => {
+    // La reprise et l'écriture amortie du front partent ensemble. Un
+    // `findFirst` suivi d'un `create` lèverait une violation d'unicité : 500.
+    const { userId, first } = await seedTwoCompanies();
+
+    for (const space of [PERSONAL_WORKSPACE, first]) {
+      const statuses = await Promise.all(
+        ["VIE-001", "SAL-001", "PAT-001"].map(
+          async (sku) => (await inSpace(space).put(lines(sku))).status,
+        ),
+      );
+      expect(statuses).toEqual([200, 200, 200]);
+    }
+    expect(await ctx.prisma.shopCart.count({ where: { userId } })).toBe(2);
+  });
+
+  it("ne sert pas le panier d'une société à qui déclare une maison étrangère", async () => {
+    // L'en-tête qui ment est ignoré : à deux sociétés, il retombe sur le perso.
+    const { first } = await seedTwoCompanies();
+    await inSpace(first).put(lines("VIE-001")).expect(200);
+    const stranger = await createCompany(ctx.prisma, {
+      raisonSociale: "Concurrent SAS",
+      siret: "11122233300044",
+    });
+
+    expect(await inSpace(stranger.id).get()).toBeNull();
   });
 });

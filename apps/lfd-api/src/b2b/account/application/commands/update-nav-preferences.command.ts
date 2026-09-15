@@ -1,14 +1,16 @@
-import type { CatalogueView } from "../../domain/value-objects/nav-preferences.js";
+import type { NavPreferencesPatch } from "../../domain/value-objects/nav-preferences.js";
 
 /**
- * Enregistre la vue de catalogue choisie par la personne connectée.
+ * Change une ou plusieurs préférences de navigation de la personne connectée.
  *
- * `userId` vient du `Principal` (jamais du corps) : on ne persiste une
- * préférence que pour soi-même.
+ * `userId` et `companyIds` viennent du `Principal` (jamais du corps) : on ne
+ * persiste une préférence que pour soi-même, et l'espace choisi se confronte
+ * aux rattachements relus en base, pas à ce que le client en affirme.
  */
 export class UpdateNavPreferencesCommand {
   constructor(
     readonly userId: string,
-    readonly catalogueView: CatalogueView,
+    readonly companyIds: readonly string[],
+    readonly patch: NavPreferencesPatch,
   ) {}
 }

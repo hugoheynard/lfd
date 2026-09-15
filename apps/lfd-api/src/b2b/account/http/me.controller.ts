@@ -9,6 +9,7 @@ import { UpdateMyProfileCommand } from "../application/commands/update-my-profil
 import { UpdateNavPreferencesCommand } from "../application/commands/update-nav-preferences.command.js";
 import { GetMyAccountQuery } from "../application/queries/get-my-account.query.js";
 import type { AccountView } from "../domain/ports/account.reader.js";
+import type { NavPreferencesPatch } from "../domain/value-objects/nav-preferences.js";
 import {
   declareEstablishmentPayload,
   type DeclareEstablishmentPayload,
@@ -94,9 +95,10 @@ export class MeController {
   }
 
   /**
-   * Enregistre une préférence d'affichage (vue du catalogue). Renvoie le compte
-   * relu, comme les autres écritures de `/me` : l'appelant garde une seule source
-   * de vérité après l'écriture.
+   * Change une ou plusieurs préférences (vue du catalogue, espace de travail) —
+   * un patch, les clés absentes restent telles quelles. Renvoie le compte relu,
+   * comme les autres écritures de `/me` : l'appelant garde une seule source de
+   * vérité après l'écriture. 409 si l'espace désigne une société étrangère.
    */
   @Patch("nav-prefs")
   async updateNavPrefs(
@@ -104,8 +106,24 @@ export class MeController {
     @Body(new ZodBody(updateNavPrefsPayload)) payload: UpdateNavPrefsPayload,
   ): Promise<AccountView> {
     await this.commands.execute<UpdateNavPreferencesCommand, void>(
-      new UpdateNavPreferencesCommand(user.userId, payload.catalogueView),
+      new UpdateNavPreferencesCommand(
+        user.userId,
+        user.memberships.map((membership) => membership.companyId),
+        toNavPreferencesPatch(payload),
+      ),
     );
     return this.queries.execute<GetMyAccountQuery, AccountView>(new GetMyAccountQuery(user.userId));
   }
+}
+
+/**
+ * Ne garde que les clés présentes : Zod rend `undefined` pour une clé absente,
+ * et `exactOptionalPropertyTypes` distingue les deux — un `undefined` passé au
+ * dépôt n'aurait rien d'un « ne pas toucher ».
+ */
+function toNavPreferencesPatch(payload: UpdateNavPrefsPayload): NavPreferencesPatch {
+  return {
+    ...(payload.catalogueView === undefined ? {} : { catalogueView: payload.catalogueView }),
+    ...(payload.workspace === undefined ? {} : { workspace: payload.workspace }),
+  };
 }

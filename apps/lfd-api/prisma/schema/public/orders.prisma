@@ -610,9 +610,19 @@ model OrderDraft {
 ///
 /// Frère de `OrderDraft`, et la différence est tout le sujet : le brouillon
 /// appartient à une SOCIÉTÉ et se partage dans l'équipe qui la sert ; ce
-/// panier-ci appartient à la PERSONNE qui le compose. D'où `user_id @unique` et
-/// non `company_id` — un client qui commande pour deux sociétés compose un
-/// panier à la fois, et c'est son écran, pas leur dossier.
+/// panier-ci appartient à la PERSONNE qui le compose, **dans un espace de
+/// travail** (depuis le 2026-09-15). `company_id` vide = le perso, comme les
+/// commandes ; sinon la société pour laquelle elle compose. Un client qui
+/// travaille pour deux sociétés a donc trois paniers, et en changer d'espace ne
+/// mélange pas ses lignes. Cf. `documentation/b2b/plan-espace-de-travail.md`, D9.
+///
+/// L'unicité `(user_id, company_id) NULLS NOT DISTINCT` n'est PAS déclarée ici :
+/// Prisma ne sait pas l'exprimer, et un `@@unique` ordinaire laisserait passer
+/// deux paniers perso (deux `NULL` sont distincts par défaut). Elle vit dans
+/// `migrations/20260915180000_panier_par_espace` sous le nom
+/// `shop_carts_user_company_unique`, et l'écriture en `ON CONFLICT` s'appuie
+/// dessus. ⚠️ Une `prisma migrate dev` ultérieure proposera de la SUPPRIMER
+/// (elle ne voit que ce fichier) : refuser la ligne.
 ///
 /// `payload` en `jsonb` pour la même raison que le brouillon : un panier n'a
 /// aucun invariant à protéger en base, et une table de lignes ne rendrait ici
@@ -623,17 +633,19 @@ model OrderDraft {
 /// **abandonné** reconnaissable, ce qu'aucune clé de `localStorage` ne pouvait
 /// faire.
 model ShopCart {
-  id      String @id @default(uuid())
-  userId  String @unique @map("user_id")
-  payload Json
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  companyId String? @map("company_id")
+  payload   Json
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // `Cascade` : un compte effacé n'a pas de panier en cours. Il n'y a rien à
   // conserver ici — la commande PASSÉE, elle, vit dans `orders` et ne dépend pas
-  // de cette ligne.
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // de cette ligne. Même règle pour la société de l'espace.
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("shop_carts")
   @@schema("public")

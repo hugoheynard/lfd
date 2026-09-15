@@ -13,7 +13,13 @@ import { randomUUID } from "node:crypto";
  *    pas une modification du premier.
  */
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import type { PlacedOrderResponse, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
+import {
+  PERSONAL_WORKSPACE,
+  WORKSPACE_HEADER,
+  type PlacedOrderResponse,
+  type ShopCatalogueView,
+  type ShopItemView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
@@ -139,6 +145,24 @@ describe("le mur", () => {
     );
 
     expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
+  });
+
+  it("🔴 sert le tarif catalogue en « perso », même à qui a UNE société négociée", async () => {
+    // Sans la valeur réservée, une seule société était servie quoi qu'on
+    // déclare : le perso était inexprimable. Il ouvre le tarif catalogue, hors
+    // mercuriale — par décision (plan-espace-de-travail, Q1).
+    await poseMercuriale();
+
+    const seen = jsonBody<ShopCatalogueView>(
+      await ctx
+        .asSub(MEMBER)
+        .get("/shop/catalogue/mine")
+        .set(WORKSPACE_HEADER, PERSONAL_WORKSPACE)
+        .expect(200),
+    );
+
+    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
+    expect(itemOf(seen, SKU)?.catalogPriceMillicents).toBeUndefined();
   });
 
   it("refuse un visiteur sans jeton — la vitrine PUBLIQUE est ailleurs", async () => {
