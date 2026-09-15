@@ -85,6 +85,7 @@ describe.each([
 
     expect(account).toEqual({
       holder: "Refuge du Col SARL",
+      holderLegalForm: "",
       addressLine1: "12 rue des Alpages",
       addressLine2: "",
       postalCode: "73150",

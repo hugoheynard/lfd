@@ -26,6 +26,7 @@ import { SetMandateOptionsHandler } from "./application/commands/set-mandate-opt
 import { GetCompanyBankAccountHandler } from "./application/queries/get-company-bank-account.handler.js";
 import { GetMyCompanyBankAccountHandler } from "./application/queries/get-my-company-bank-account.handler.js";
 import { GetMandateProofHandler } from "./application/queries/get-mandate-proof.handler.js";
+import { GetMandateMintBlockersHandler } from "./application/queries/get-mandate-mint-blockers.handler.js";
 import { PreviewCustomerMandateHandler } from "./application/queries/preview-customer-mandate.handler.js";
 import {
   AttachMandateProofHandler,
@@ -88,6 +89,7 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     AttachMandateProofHandler,
     GetCompanyMandateHandler,
     GetMandateProofHandler,
+    GetMandateMintBlockersHandler,
     SetCompanyBankAccountHandler,
     SetMandateOptionsHandler,
     GetCompanyBankAccountHandler,

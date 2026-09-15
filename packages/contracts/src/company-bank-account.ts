@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { SepaScheme } from "./legal-entity.js";
+import type { MintBlocker } from "./payment-mandate.js";
 
 /**
  * Le **RIB d'une société cliente** — le compte que nous débitons.
@@ -41,6 +42,16 @@ export const setCompanyBankAccountPayloadSchema = z.object({
   postalCode: z.string().trim().min(1),
   city: z.string().trim().min(1),
   countryCode: z.string().trim().length(2).default("FR"),
+  /**
+   * Civilité ou forme juridique du **titulaire** — exigée par le mandat
+   * interentreprises, facultative sinon. Bornée à la case imprimée (40).
+   *
+   * 🔴 `.optional()` et **pas** `.default("")` : le RIB se réécrit en entier,
+   * et un écran encore ouvert sur un bundle qui ignore ce champ l'effacerait à
+   * chaque enregistrement. Absent = inchangé ; le serveur relit le RIB existant
+   * et fusionne (plan `plan-mentions-obligatoires-du-mandat.md` §8 #7).
+   */
+  holderLegalForm: z.string().trim().max(40).optional(),
 });
 export type SetCompanyBankAccountPayload = z.infer<typeof setCompanyBankAccountPayloadSchema>;
 
@@ -54,6 +65,8 @@ export type SetCompanyBankAccountPayload = z.infer<typeof setCompanyBankAccountP
 export interface CompanyBankAccountView {
   /** Titulaire tel que la banque du client le connaît. */
   readonly holder: string;
+  /** Civilité ou forme juridique du titulaire, `""` quand non renseignée. */
+  readonly holderLegalForm: string;
   readonly addressLine1: string;
   readonly addressLine2: string;
   readonly postalCode: string;
@@ -154,4 +167,10 @@ export interface CustomerMandateOptionsSectionView {
    * carte qui les règle se masque quand il vaut `B2B`.
    */
   readonly issuerScheme: SepaScheme | null;
+  /**
+   * Ce qui empêche aujourd'hui de générer le mandat — vide quand la génération
+   * passerait. Champ ajouté le 2026-09-15 : sans lui, un client sans mandat ne
+   * saurait pas quoi compléter avant de cliquer. Même fonction que la frappe.
+   */
+  readonly mintBlockers: readonly MintBlocker[];
 }

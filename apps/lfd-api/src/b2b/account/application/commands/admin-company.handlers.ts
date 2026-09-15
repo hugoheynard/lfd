@@ -91,6 +91,7 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
       raisonSociale: command.payload.raisonSociale,
       formeJuridique: command.payload.formeJuridique,
       siret: command.payload.siret,
+      siren: command.payload.siren,
     };
     company.correctLegalIdentity(identity);
     await this.uow.run(async () => {

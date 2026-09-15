@@ -51,6 +51,7 @@ export class CompaniesController {
         payload.enseigne,
         payload.formeJuridique,
         payload.siret,
+        payload.siren,
         payload.vatNumber,
       ),
     );

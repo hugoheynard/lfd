@@ -4,7 +4,6 @@ import { NoIssuerError } from "../../accounting/domain/errors/accounting-errors.
 import type { CreditorReader } from "../../accounting/domain/ports/creditor.reader.js";
 import type { LegalEntityLogoReader } from "../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { readEntityLogo } from "../../accounting/application/legal-entity-support.js";
-import { sirenOfSiret } from "../../accounting/domain/debtor-snapshot.js";
 import {
   type MandateForm,
   renderSepaMandatePdf,
@@ -100,8 +99,9 @@ export async function buildCustomerMandate(
     logo,
     {
       companyName: holder.companyName,
-      siren: sirenOfSiret(holder.siret),
+      siren: holder.siren,
       holder: account.account.holder,
+      holderLegalForm: account.account.holderLegalForm,
       addressLine1: address.line1,
       addressLine2: address.line2,
       postalCode: address.postalCode,

@@ -1,4 +1,3 @@
-import { NoIssuerError } from "../../accounting/domain/errors/accounting-errors.js";
 import type { CreditorReader } from "../../accounting/domain/ports/creditor.reader.js";
 import type { MandatePaymentType } from "../../accounting/domain/value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../../accounting/domain/value-objects/sepa-scheme.js";
@@ -7,16 +6,14 @@ import type { DomainEventPublisher } from "../../../platform/events/domain-event
 import type { SecretGenerator } from "../../../platform/secret/secret-generator.js";
 import type { Clock } from "../../../platform/time/clock.js";
 import { mintMandate, type PaymentMandate } from "../domain/entities/payment-mandate.js";
-import {
-  CompanyNotFoundForMandateError,
-  MandateDraftAlreadyExistsError,
-  MandateWithoutBankAccountError,
-} from "../domain/errors/mandate-errors.js";
+import { MandateDraftAlreadyExistsError } from "../domain/errors/mandate-errors.js";
+import { MandateMentionsMissingError } from "../domain/errors/mint-blocker-errors.js";
 import type { MandateActorChannel } from "../domain/events/payment-mandate-facts.js";
 import { MandateMintedEvent } from "../domain/events/payment-mandate.events.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import type { CompanyBankAccountRepository } from "../domain/ports/company-bank-account.repository.js";
 import { Rum } from "../domain/value-objects/rum.js";
+import { readMintReadiness } from "./mint-readiness.js";
 
 /** Les ports de la frappe — partagés par le staff et le client. */
 export interface MintMandateDeps {
@@ -51,10 +48,15 @@ export type MintOutcome =
  *
  * ## L'ordre des refus
  *
- * Société → **RIB** → émetteur → brouillon (plan §6 #8), tous AVANT le tirage :
- * une RUM fabriquée puis jetée porterait l'horodatage d'une frappe qui n'a pas
- * eu lieu. Le RIB passe avant l'émetteur parce que c'est le seul des deux que
- * la personne devant l'écran peut corriger elle-même.
+ * Société (404) → **mentions** (409) → brouillon, tous AVANT le tirage : une
+ * RUM fabriquée puis jetée porterait l'horodatage d'une frappe qui n'a pas eu
+ * lieu.
+ *
+ * ⚠️ Depuis le 2026-09-15, le RIB et l'émetteur ne se refusent plus un par un
+ * (`MandateWithoutBankAccountError`, puis `NoIssuerError`) : ils sont deux
+ * mentions parmi celles de `mintBlockersOf`, toutes opposées ensemble par
+ * `MandateMentionsMissingError`. Les dire une à une ferait recommencer autant de
+ * fois qu'il en manque (plan `plan-mentions-obligatoires-du-mandat.md` §9).
  *
  * ## La course
  *
@@ -85,20 +87,16 @@ export async function mintDraftMandate(
 }
 
 /**
- * Les trois gardes qui précèdent le brouillon. Rend la référence client et
- * l'émetteur utiles au tirage.
+ * Les gardes qui précèdent le brouillon — la société, puis toutes les mentions
+ * obligatoires d'un coup, jugées comme les lectures les annoncent. Rend la
+ * référence client et l'émetteur utiles au tirage.
  */
 async function mintPreconditions(deps: MintMandateDeps, companyId: string): Promise<MintIssuer> {
-  const holder = await deps.mandates.findHolder(companyId);
-  if (holder === null) {
-    throw new CompanyNotFoundForMandateError(companyId);
-  }
-  if ((await deps.accounts.findByCompany(companyId)) === null) {
-    throw new MandateWithoutBankAccountError(companyId);
-  }
-  const creditor = await deps.creditors.soleIssuer();
-  if (creditor === null) {
-    throw new NoIssuerError();
+  const { holder, issuer: creditor, blockers } = await readMintReadiness(deps, companyId);
+  // `creditor === null` implique `issuer_missing` dans `blockers` : la seconde
+  // condition ne sert qu'à le dire au compilateur.
+  if (blockers.length > 0 || creditor === null) {
+    throw new MandateMentionsMissingError(blockers);
   }
   // 🔴 Le schéma et le type sont RECOPIÉS ici, une fois : le mandat les fige, et
   // un réglage changé demain ne touche plus ce papier.

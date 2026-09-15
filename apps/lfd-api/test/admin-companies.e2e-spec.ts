@@ -283,7 +283,7 @@ describe("GET /admin/companies/:id", () => {
 describe("GET /admin/companies/portfolio", () => {
   it("sépare les statuts — « 84 clients » tairait ce qui attend un geste", async () => {
     await createCompany(ctx.prisma, { siret: "81245678900021", status: CompanyStatus.active });
-    await createCompany(ctx.prisma, { siret: "81245678900038", status: CompanyStatus.pending });
+    await createCompany(ctx.prisma, { siret: "81245678900005", status: CompanyStatus.pending });
 
     const response = await staff().get("/admin/companies/portfolio").expect(200);
 

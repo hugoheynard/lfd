@@ -42,6 +42,7 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
       raisonSociale: command.payload.raisonSociale,
       formeJuridique: command.payload.formeJuridique,
       siret: command.payload.siret,
+      siren: command.payload.siren,
     });
     await this.companies.save(company);
 

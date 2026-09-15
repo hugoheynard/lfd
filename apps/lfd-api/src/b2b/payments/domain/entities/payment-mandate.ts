@@ -122,7 +122,8 @@ export function draftMandate(input: {
  *
  * ⚠️ Cette phrase disait « le RIB peut être recopié après la frappe » jusqu'au
  * 2026-09-14. Ce n'est plus vrai : la frappe EXIGE un RIB, staff comme client
- * (`MandateWithoutBankAccountError`, décision de Hugo). Le mandat ne fige pas
+ * (décision de Hugo ; depuis le 2026-09-15, code `bank_account_missing` de
+ * `MandateMentionsMissingError`). Le mandat ne fige pas
  * pour autant le compte (plan mandat client §8) : réécrire le RIB révoque le
  * brouillon, qui ne peut plus nommer un compte qui n'est plus le bon.
  */

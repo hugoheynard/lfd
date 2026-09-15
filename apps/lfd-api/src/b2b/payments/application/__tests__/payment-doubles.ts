@@ -53,6 +53,7 @@ export const RIB_PAYLOAD: SetCompanyBankAccountPayload = {
   iban: IBAN,
   bic: "CEPAFRPP751",
   holder: "Refuge du Col SARL",
+  holderLegalForm: "SARL",
   line1: "12 rue des Alpages",
   line2: "",
   postalCode: "73150",
@@ -64,7 +65,7 @@ export const HOLDER: MandateHolder = {
   companyName: "Refuge du Col SARL",
   email: "compta@refuge.fr",
   reference: "C-9P2X4B",
-  siret: "81245678900017",
+  siren: "732829320",
 };
 
 /** Un émetteur complet : il peut imprimer un mandat. */
@@ -131,6 +132,7 @@ export function bankAccount(companyId = "cmp_1"): CompanyBankAccount {
     id: "cba_1",
     companyId,
     holder: RIB_PAYLOAD.holder,
+    holderLegalForm: "SARL",
     addressLine1: RIB_PAYLOAD.line1,
     addressLine2: RIB_PAYLOAD.line2,
     postalCode: RIB_PAYLOAD.postalCode,
@@ -140,6 +142,14 @@ export function bankAccount(companyId = "cmp_1"): CompanyBankAccount {
     bic: RIB_PAYLOAD.bic,
     debtorReference: "",
     contractNumber: "",
+  });
+}
+
+/** Le même RIB, déposé par un écran qui ne connaissait pas la forme juridique du titulaire. */
+export function bankAccountWithoutLegalForm(companyId = "cmp_1"): CompanyBankAccount {
+  return CompanyBankAccount.reconstitute({
+    ...bankAccount(companyId).toPersistence(),
+    holderLegalForm: "",
   });
 }
 

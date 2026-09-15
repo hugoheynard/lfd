@@ -14,11 +14,14 @@ export interface MandateHolder {
    */
   readonly reference: string;
   /**
-   * Le SIRET tel qu'enregistré — **chaîne vide** quand la société n'en a pas
-   * déclaré (il est facultatif à l'ouverture). Le mandat interentreprises en
-   * tire le SIREN du débiteur ; ce port le rend brut, sans le revalider.
+   * Le SIREN **stocké** de la société — chaîne vide quand il n'est pas connu.
+   * Le mandat interentreprises l'imprime, et sa frappe l'exige.
+   *
+   * ⚠️ Il était tiré du SIRET jusqu'au 2026-09-15 (`sirenOfSiret`, supprimé) :
+   * le préfixe d'un SIRET n'est pas toujours un SIREN valide, et le SIREN est
+   * désormais une colonne saisie (plan `plan-mentions-obligatoires-du-mandat.md`).
    */
-  readonly siret: string;
+  readonly siren: string;
 }
 
 /**
@@ -88,7 +91,7 @@ export abstract class PaymentMandateRepository {
    * L'identité de la société pour le prestataire, ou `null` si l'id est inconnu.
    *
    * Ici plutôt que par un import du contexte `account` : le paiement n'a besoin
-   * que de deux chaînes, et dépendre de tout l'agrégat société pour les obtenir
+   * que de quelques chaînes, et dépendre de tout l'agrégat société pour les obtenir
    * couplerait deux contextes pour rien (ISP).
    */
   abstract findHolder(companyId: string): Promise<MandateHolder | null>;

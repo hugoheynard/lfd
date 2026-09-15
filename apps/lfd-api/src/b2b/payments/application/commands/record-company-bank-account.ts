@@ -32,6 +32,13 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  * même unité de travail, fait au journal ; l'équipe est prévenue ensuite, hors
  * transaction (plan `documentation/b2b/plan-mandat-client.md` §9 #4).
  *
+ * ## La forme juridique du titulaire se fusionne (depuis le 2026-09-15)
+ *
+ * Le RIB se réécrit en entier, sauf ce champ : **absent de la charge =
+ * inchangé**. Un écran encore ouvert sur un bundle qui l'ignore l'effacerait
+ * sinon à chaque enregistrement (plan `plan-mentions-obligatoires-du-mandat.md`
+ * §8 #7). Une chaîne vide envoyée, elle, efface : c'est une saisie.
+ *
  * ## 🔴 Ce que le booléen de `replaceWith` ne fait pas encore
  *
  * Il dit si le **compte bancaire** a réellement changé, par opposition à une
@@ -48,8 +55,12 @@ export async function recordCompanyBankAccount(
 ): Promise<void> {
   // Les value objects valident AVANT toute lecture : un IBAN mal recopié se
   // refuse sans avoir touché la base.
-  const account = debtorAccountFrom(payload);
+  const submitted = debtorAccountFrom(payload);
   const existing = await deps.accounts.findByCompany(companyId);
+  const account =
+    payload.holderLegalForm === undefined
+      ? submitted.withHolderLegalForm(existing?.account.holderLegalForm ?? "")
+      : submitted;
   // 🔴 Les zones facultatives d'un RIB remplacé ne sont PAS touchées : changer
   // de banque ne change ni le contrat ni sa description. Vides à la création :
   // elles ont leur propre route.
@@ -75,6 +86,7 @@ export async function recordCompanyBankAccount(
 function debtorAccountFrom(payload: SetCompanyBankAccountPayload): DebtorAccount {
   return DebtorAccount.create({
     holder: payload.holder,
+    holderLegalForm: payload.holderLegalForm ?? "",
     address: LegalAddress.create({
       line1: payload.line1,
       line2: payload.line2,

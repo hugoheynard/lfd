@@ -40,6 +40,37 @@ export class InvalidSiretError extends DomainError {
   }
 }
 
+export class InvalidSirenError extends DomainError {
+  constructor(
+    readonly raw: string,
+    readonly reason: string,
+  ) {
+    super("account.siren.invalid", `SIREN « ${raw} » : ${reason}`);
+  }
+}
+
+/**
+ * Un SIREN saisi qui contredit le SIRET de la société.
+ *
+ * Le SIREN est l'entreprise, le SIRET l'un de ses établissements : ses neuf
+ * premiers chiffres SONT le SIREN. Accepter deux valeurs qui se contredisent
+ * ferait imprimer sur un mandat une entreprise que le compte bancaire ne
+ * connaît pas. Le message nomme les deux valeurs et le geste : corriger l'une ou
+ * l'autre, ou laisser le SIREN vide pour qu'il soit repris du SIRET.
+ */
+export class SirenSiretMismatchError extends DomainError {
+  constructor(
+    readonly siren: string,
+    readonly siret: string,
+  ) {
+    super(
+      "account.company.siren_siret_mismatch",
+      `Le SIREN ${siren} ne correspond pas au SIRET ${siret}, qui commence par ${siret.slice(0, 9)}. ` +
+        "Corrigez l'un des deux, ou laissez le SIREN vide : il sera repris du SIRET.",
+    );
+  }
+}
+
 export class InvalidCompanyIdentityError extends DomainError {
   constructor(
     readonly field: string,

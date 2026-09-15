@@ -103,11 +103,13 @@ export type {
 export {
   mandateStatusSchema,
   MANDATE_STATUS_LABELS,
+  mintBlockerSchema,
   signMandatePayloadSchema,
 } from "./payment-mandate.js";
 export type {
   CustomerMandateView,
   MandateStatus,
+  MintBlocker,
   PaymentMandateView,
   MandateSectionView,
   SignMandatePayload,

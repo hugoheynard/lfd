@@ -16,6 +16,7 @@ function company(over: Partial<AdminCompanyView> = {}): AdminCompanyView {
     enseigne: "Le Fournil",
     formeJuridique: "SARL",
     siret: "81245678900021",
+    siren: "",
     vatNumber: "FR12812456789",
     status: "active",
     grantedTerms: [],
@@ -70,6 +71,14 @@ describe("customersCsv", () => {
     const line = firstBodyLine(customersCsv([company()]));
 
     expect(line).toContain('"81245678900021"');
+  });
+
+  it("met aussi le SIREN entre guillemets, juste après le SIRET", () => {
+    // Même panne que le SIRET : un identifiant lu comme un nombre perd sa forme.
+    const csv = customersCsv([company({ siret: "81245678800023", siren: "812456788" })]);
+
+    expect(csv.split("\r\n")[0]).toContain("SIRET;SIREN;");
+    expect(firstBodyLine(csv)).toContain('"81245678800023";"812456788";');
   });
 
   it("ouvre par un BOM et sépare au point-virgule", () => {

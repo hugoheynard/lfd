@@ -35,6 +35,8 @@ const RIB = {
   iban: IBAN,
   bic: "CEPAFRPP751",
   holder: "Refuge du Col SARL",
+  // Exigée par le mandat interentreprises (plan mentions obligatoires §9).
+  holderLegalForm: "SARL",
   line1: "12 rue des Alpages",
   line2: "",
   postalCode: "73150",

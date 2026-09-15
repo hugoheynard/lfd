@@ -14,7 +14,9 @@ import type { SuspensionCause } from "../value-objects/suspension-cause.js";
 import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
-import { Siret } from "../value-objects/siret.js";
+import { LegalRegistration } from "../value-objects/legal-registration.js";
+import type { Siren } from "../value-objects/siren.js";
+import type { Siret } from "../value-objects/siret.js";
 import {
   KbisDeposit,
   type KbisCertification,
@@ -31,6 +33,11 @@ export interface CompanyIdentityInput {
   /** SAS, SARL, EI… */
   readonly formeJuridique: string;
   readonly siret: string;
+  /**
+   * SIREN de l'entreprise — vide si inconnu. Pris du SIRET quand son préfixe est
+   * un SIREN valide ; refusé s'il le contredit (cf. `LegalRegistration`).
+   */
+  readonly siren: string;
   /** N° de TVA intracommunautaire — vide si non assujetti / inconnu. */
   readonly vatNumber: string;
 }
@@ -62,6 +69,12 @@ export interface ReconstituteCompanyInput {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
+  /**
+   * SIREN stocké, **facultatif** comme la préférence et le KBIS : absent ou
+   * vide, il est repris d'un préfixe de SIRET valide. La relecture ne refuse
+   * jamais la paire (cf. `LegalRegistration.reconstitute`).
+   */
+  readonly siren?: string;
   readonly vatNumber: string;
   /** `null` tant qu'aucun détenteur n'a été rattaché. */
   readonly contact: CompanyContact | null;
@@ -112,6 +125,7 @@ export interface CompanySoftState {
   readonly raisonSociale: string;
   readonly formeJuridique: string;
   readonly siret: string;
+  readonly siren: string;
   readonly vatNumber: string;
   /** `null` tant qu'aucun détenteur n'est rattaché — pas un contact vide. */
   readonly contact: {
@@ -161,7 +175,8 @@ export class Company {
     private raisonSocialeValue: string,
     private enseigneValue: string,
     private formeJuridiqueValue: string,
-    private siretValue: Siret | null,
+    /** SIRET et SIREN, et la règle qui les lie. */
+    private registrationValue: LegalRegistration,
     private vatNumberValue: string,
     private contactValue: CompanyContact | null,
     private grantedTermsValue: readonly DeferredTerm[],
@@ -189,7 +204,7 @@ export class Company {
       // crée souvent chez le client, qui n'a pas ses papiers sous la main. Ils
       // se complètent ensuite, et l'activation les exige (cf. `activate`).
       optional(identity.formeJuridique, "Forme juridique"),
-      Siret.createOptional(identity.siret),
+      LegalRegistration.declare(identity.siret, identity.siren),
       optional(identity.vatNumber, "TVA intracommunautaire"),
       contact,
       // Déclarée : aucun crédit accordé (elle paie à la commande), aucune demande,
@@ -216,7 +231,7 @@ export class Company {
       input.raisonSociale,
       input.enseigne,
       input.formeJuridique,
-      Siret.createOptional(input.siret),
+      LegalRegistration.reconstitute(input.siret, input.siren ?? ""),
       input.vatNumber,
       input.contact,
       input.grantedTerms,
@@ -249,19 +264,27 @@ export class Company {
 
   /** Le SIRET, ou `null` tant qu'on ne l'a pas. */
   get siret(): Siret | null {
-    return this.siretValue;
+    return this.registrationValue.siret;
   }
 
   /** Les 14 chiffres, ou la chaîne vide — la forme que la persistance attend. */
   get siretDigits(): string {
-    return this.siretValue?.value ?? "";
+    return this.registrationValue.siretDigits;
+  }
+
+  /** Le SIREN, ou `null` tant qu'on ne l'a pas. */
+  get siren(): Siren | null {
+    return this.registrationValue.siren;
+  }
+
+  /** Les 9 chiffres, ou la chaîne vide. */
+  get sirenDigits(): string {
+    return this.registrationValue.sirenDigits;
   }
 
   /** Vrai quand forme juridique **et** SIRET sont là : de quoi facturer. */
   get hasLegalIdentity(): boolean {
-    return (
-      this.raisonSocialeValue !== "" && this.formeJuridiqueValue !== "" && this.siretValue !== null
-    );
+    return this.raisonSocialeValue !== "" && this.formeJuridiqueValue !== "" && this.siret !== null;
   }
 
   /**
@@ -277,15 +300,15 @@ export class Company {
     raisonSociale: string;
     formeJuridique: string;
     siret: string;
+    siren: string;
   }): void {
+    // La paire d'abord : si elle refuse, rien d'autre n'a bougé.
+    this.registrationValue = this.registrationValue.complete(input.siret, input.siren);
     if (this.raisonSocialeValue === "") {
       this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
     }
     if (this.formeJuridiqueValue === "") {
       this.formeJuridiqueValue = optional(input.formeJuridique, "Forme juridique");
-    }
-    if (this.siretValue === null) {
-      this.siretValue = Siret.createOptional(input.siret);
     }
   }
 
@@ -307,15 +330,15 @@ export class Company {
     raisonSociale: string;
     formeJuridique: string;
     siret: string;
+    siren: string;
   }): void {
+    // Un SIRET envoyé sans SIREN recalcule le SIREN (cf. `LegalRegistration.correct`).
+    this.registrationValue = this.registrationValue.correct(input.siret, input.siren);
     if (input.raisonSociale.trim() !== "") {
       this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
     }
     if (input.formeJuridique.trim() !== "") {
       this.formeJuridiqueValue = optional(input.formeJuridique, "Forme juridique");
-    }
-    if (input.siret.trim() !== "") {
-      this.siretValue = Siret.createOptional(input.siret);
     }
   }
 
@@ -616,6 +639,7 @@ export class Company {
       raisonSociale: this.raisonSocialeValue,
       formeJuridique: this.formeJuridiqueValue,
       siret: this.siretDigits,
+      siren: this.sirenDigits,
       vatNumber: this.vatNumberValue,
       contact: serializeContact(this.contactValue),
       grantedTerms: this.grantedTermsValue,

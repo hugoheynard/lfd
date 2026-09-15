@@ -248,6 +248,10 @@ model CompanyBankAccount {
   /// sans que personne se trompe — et c'est ce bloc-là qui s'imprime sur le
   /// mandat que le client signe.
   holder       String
+  /// Civilité ou forme juridique du titulaire — mention obligatoire d'un mandat
+  /// interentreprises. Vide = inconnue : on ne sait pas qui est le titulaire, et
+  /// on ne le devine pas depuis la société (le titulaire peut en différer).
+  holderLegalForm String @default("") @map("holder_legal_form")
   addressLine1 String @map("address_line1")
   addressLine2 String @default("") @map("address_line2")
   postalCode   String @map("postal_code")

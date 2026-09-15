@@ -95,6 +95,47 @@ describe("SetCompanyBankAccountHandler", () => {
   });
 
   /**
+   * Régression prévenue (plan `plan-mentions-obligatoires-du-mandat.md` §8 #7) :
+   * le RIB se réécrit en entier, et un écran encore ouvert sur un bundle qui
+   * ignore le champ l'aurait effacé à chaque enregistrement — rendant une frappe
+   * interentreprises impossible sans que personne l'ait voulu.
+   */
+  it("un RIB réenregistré sans le champ n'efface pas la forme juridique du titulaire", async () => {
+    const { handler, repo } = build();
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holderLegalForm: "SARL" }),
+    );
+
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holder: "Refuge du Col SAS" }),
+    );
+
+    expect(repo.stored?.account.holderLegalForm).toBe("SARL");
+    expect(repo.stored?.account.holder).toBe("Refuge du Col SAS");
+  });
+
+  it("efface la forme juridique quand l'écran envoie une chaîne vide — c'est une saisie", async () => {
+    const { handler, repo } = build();
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holderLegalForm: "SARL" }),
+    );
+
+    await handler.execute(
+      new SetCompanyBankAccountCommand("cmp_1", { ...PAYLOAD, holderLegalForm: "" }),
+    );
+
+    expect(repo.stored?.account.holderLegalForm).toBe("");
+  });
+
+  it("pose une forme juridique vide sur un premier RIB qui ne l'envoie pas", async () => {
+    const { handler, repo } = build();
+
+    await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
+
+    expect(repo.stored?.account.holderLegalForm).toBe("");
+  });
+
+  /**
    * Les value objects valident AVANT toute lecture : un IBAN mal recopié se
    * refuse sans avoir touché la base. L'inverse ferait une requête par saisie
    * fautive, et laisserait croire que la donnée a été vue.

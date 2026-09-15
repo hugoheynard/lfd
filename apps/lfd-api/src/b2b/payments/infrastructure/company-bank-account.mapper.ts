@@ -11,6 +11,7 @@ const LAST4_LENGTH = 4;
 /** Les colonnes qu'une écriture pose — sans l'identité, commune à create et update. */
 export interface CompanyBankAccountColumns {
   readonly holder: string;
+  readonly holderLegalForm: string;
   readonly addressLine1: string;
   readonly addressLine2: string;
   readonly postalCode: string;
@@ -43,6 +44,7 @@ export function toColumns(
 ): CompanyBankAccountColumns {
   return {
     holder: snapshot.holder,
+    holderLegalForm: snapshot.holderLegalForm,
     addressLine1: snapshot.addressLine1,
     addressLine2: snapshot.addressLine2,
     postalCode: snapshot.postalCode,
@@ -69,6 +71,7 @@ export function toDomain(row: CompanyBankAccountRow, cipher: FieldCipher): Compa
     id: row.id,
     companyId: row.companyId,
     holder: row.holder,
+    holderLegalForm: row.holderLegalForm,
     addressLine1: row.addressLine1,
     addressLine2: row.addressLine2,
     postalCode: row.postalCode,

@@ -115,7 +115,7 @@ async function declare(
   try {
     return await harness.runAt(at, customer(ownerId), () =>
       harness.commands.execute<CreateCompanyCommand, string>(
-        new CreateCompanyCommand(ownerId, raisonSociale, "", "SAS", siret, ""),
+        new CreateCompanyCommand(ownerId, raisonSociale, "", "SAS", siret, "", ""),
       ),
     );
   } catch {

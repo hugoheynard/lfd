@@ -76,7 +76,7 @@ function doubles(options: {
               companyName: "Café des Halles SAS",
               email: "camille@halles.fr",
               reference: "C-7K2M4P",
-              siret: "",
+              siren: "",
             }
           : options.holder,
       ),

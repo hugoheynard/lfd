@@ -29,6 +29,7 @@ const DEBTOR: DebtorSnapshot = {
   companyName: "SARL Refuge du Col",
   siren: "812456789",
   holder: "Refuge du Col SARL",
+  holderLegalForm: "Société à responsabilité limitée",
   addressLine1: "12 rue des Alpages",
   addressLine2: "",
   postalCode: "73150",
@@ -173,6 +174,16 @@ describe("renderSepaMandatePdf — l'interentreprises, adapté du gabarit DGFiP"
     expect(compact(text)).toContain("812456789");
     expect(text).toContain("SARL Refuge du Col");
     expect(text).toContain("Refuge du Col SARL");
+  });
+
+  /**
+   * Plan mentions obligatoires §9 (2026-09-15) : la case restait vide (Q4).
+   * Trente-deux caractères dans une case de 28 mm : la valeur s'y resserre au
+   * lieu de déborder, et l'extracteur la rend encore entière.
+   */
+  it("imprime la civilité ou forme juridique du titulaire — et le CORE ne l'imprime pas", async () => {
+    expect(compact(await textOf("B2B"))).toContain("Sociétéàresponsabilitélimitée");
+    expect(compact(await textOf("CORE"))).not.toContain("Sociétéàresponsabilitélimitée");
   });
 
   /** Décision Q2 : le gabarit n'a pas de zones 14, 19, 20. */

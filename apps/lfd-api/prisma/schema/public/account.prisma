@@ -96,6 +96,11 @@ model Company {
   enseigne       String @default("") // nom commercial si différent
   formeJuridique String @map("forme_juridique") // SAS, SARL, EI…
   siret          String
+  // SIREN de l'ENTREPRISE (9 chiffres) — plusieurs établissements (SIRET) le
+  // partagent, d'où l'index NON unique. Vide = inconnu. Quand le SIRET est
+  // connu et que son préfixe est un SIREN valide, le SIREN EST ce préfixe :
+  // l'agrégat `Company` tient la règle (plan-mentions-obligatoires-du-mandat §9).
+  siren          String @default("")
   vatNumber      String @default("") @map("tva_intracom")
 
   // Code NAF (activité principale) résolu depuis le SIRET via l'API entreprises —
@@ -228,6 +233,7 @@ model Company {
   // Le SIRET est facultatif à l'ouverture ; les chaînes vides sont des absences,
   // pas des doublons.
   @@index([siret])
+  @@index([siren])
   @@map("companies")
   @@schema("public")
 }

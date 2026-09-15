@@ -1,4 +1,3 @@
-import { NoIssuerError } from "../../../../accounting/domain/errors/accounting-errors.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   BankAccountCompanyNotFoundError,
@@ -7,12 +6,13 @@ import {
 import {
   CustomerMandateClosedError,
   MandateAlreadyInForceError,
-  MandateWithoutBankAccountError,
 } from "../../../domain/errors/mandate-errors.js";
+import { MandateMentionsMissingError } from "../../../domain/errors/mint-blocker-errors.js";
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
   activeMandate,
   bankAccount,
+  bankAccountWithoutLegalForm,
   FixedCreditors,
   FixedGate,
   FixedGuard,
@@ -113,21 +113,41 @@ describe("MintMyCompanyMandateHandler — le client génère son mandat", () => 
   it("refuse en 409 sans RIB, sans tirer de RUM", async () => {
     const h = harness({ withAccount: false });
 
-    await expect(h.run()).rejects.toBeInstanceOf(MandateWithoutBankAccountError);
+    await expect(h.run()).rejects.toMatchObject({ blockers: ["bank_account_missing"] });
     expect(h.mandates.created).toHaveLength(0);
     expect(h.events.traced).toHaveLength(0);
   });
 
-  it("dit « RIB manquant » avant « aucun émetteur » — le seul des deux que le client corrige", async () => {
+  /** ⚠️ Affirmait « RIB avant émetteur » jusqu'au 2026-09-15 : les mentions se disent ensemble. */
+  it("nomme ensemble le RIB et l'émetteur manquants", async () => {
     const h = harness({ withAccount: false, issuer: false });
 
-    await expect(h.run()).rejects.toBeInstanceOf(MandateWithoutBankAccountError);
+    await expect(h.run()).rejects.toMatchObject({
+      blockers: ["bank_account_missing", "issuer_missing"],
+    });
   });
 
   it("refuse quand aucune entité n'émet", async () => {
     const h = harness({ issuer: false });
 
-    await expect(h.run()).rejects.toBeInstanceOf(NoIssuerError);
+    await expect(h.run()).rejects.toBeInstanceOf(MandateMentionsMissingError);
+    expect(h.mandates.created).toHaveLength(0);
+  });
+
+  /** Plan mentions obligatoires §9 : le client est refusé comme le staff, avec les mêmes codes. */
+  it("refuse une frappe B2B sans SIREN ni forme juridique du titulaire, sans rien frapper", async () => {
+    const h = harness();
+    h.mandates.holder = {
+      companyName: "Refuge du Col SARL",
+      email: "",
+      reference: "C-9P2X4B",
+      siren: "",
+    };
+    h.accounts.stored = bankAccountWithoutLegalForm();
+
+    await expect(h.run()).rejects.toMatchObject({
+      blockers: ["siren_missing", "holder_legal_form_missing"],
+    });
     expect(h.mandates.created).toHaveLength(0);
   });
 

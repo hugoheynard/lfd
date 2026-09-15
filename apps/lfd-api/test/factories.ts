@@ -19,6 +19,7 @@ import {
   type Membership,
   type User,
 } from "../src/platform/database/client/client.js";
+import { Siren } from "../src/b2b/account/domain/value-objects/siren.js";
 import { Siret } from "../src/b2b/account/domain/value-objects/siret.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";
 
@@ -26,6 +27,8 @@ import type { PrismaService } from "../src/platform/database/prisma.service.js";
 export interface CompanySeed {
   readonly raisonSociale?: string;
   readonly siret?: string;
+  /** Absent ⇒ repris du SIRET quand son préfixe est un SIREN valide, vide sinon. */
+  readonly siren?: string;
   readonly status?: CompanyStatus;
 }
 
@@ -50,15 +53,19 @@ let referenceSeq = 0;
 
 export function createCompany(prisma: PrismaService, seed: CompanySeed = {}): Promise<Company> {
   referenceSeq += 1;
+  // SIRET distinct par appel : la base en garantit désormais l'unicité, et
+  // deux sociétés témoins d'un même test sont deux vraies sociétés.
+  const siret = seed.siret ?? nextValidSiret();
   return prisma.company.create({
     data: {
       // Référence unique par appel (la base est purgée entre les tests).
       reference: `C-T${referenceSeq.toString().padStart(5, "0")}`,
       raisonSociale: seed.raisonSociale ?? "Café de Test SAS",
       formeJuridique: "SAS",
-      // SIRET distinct par appel : la base en garantit désormais l'unicité, et
-      // deux sociétés témoins d'un même test sont deux vraies sociétés.
-      siret: seed.siret ?? nextValidSiret(),
+      siret,
+      // La règle de l'agrégat, demandée au domaine : un SIREN que `Company`
+      // n'aurait pas posé est une ligne que la production ne verra jamais.
+      siren: seed.siren ?? sirenOfSiret(siret),
       contactPrenom: "Camille",
       contactNom: "Durand",
       contactEmail: "camille@test.fr",
@@ -112,20 +119,44 @@ export function attachTo(
  * tests, ce serait la maintenir à deux endroits — et la voir diverger.
  */
 function nextValidSiret(): string {
-  const base = `1234${referenceSeq.toString().padStart(9, "0")}`;
+  // Le préfixe est lui-même un SIREN valide : la clé d'un SIRET ne garantit
+  // pas celle de ses neuf premiers chiffres, et une société témoin sans SIREN
+  // ne pourrait pas signer de mandat interentreprises (plan
+  // plan-mentions-obligatoires-du-mandat §8.1).
+  const siren = withDomainKey(`1234${referenceSeq.toString().padStart(4, "0")}`, isSiren);
+  return withDomainKey(`${siren}0001`, isSiret);
+}
+
+/** Le SIREN que le domaine tirerait de ce SIRET, ou la chaîne vide. */
+function sirenOfSiret(siret: string): string {
+  const parsed = Siret.createOptional(siret);
+  return parsed === null ? "" : (Siren.prefixOf(parsed)?.value ?? "");
+}
+
+/** Complète `base` du chiffre de clé que le domaine accepte. */
+function withDomainKey(base: string, accepted: (candidate: string) => boolean): string {
   for (let key = 0; key <= 9; key += 1) {
     const candidate = `${base}${key.toString()}`;
-    if (isAcceptedByDomain(candidate)) {
+    if (accepted(candidate)) {
       return candidate;
     }
   }
   throw new Error(`Aucune clé de contrôle valide pour ${base} — la règle a changé.`);
 }
 
+/** Le domaine accepte-t-il ce SIREN ? Seule autorité en la matière. */
+function isSiren(candidate: string): boolean {
+  return accepts(() => Siren.create(candidate));
+}
+
 /** Le domaine accepte-t-il ce SIRET ? Seule autorité en la matière. */
-function isAcceptedByDomain(candidate: string): boolean {
+function isSiret(candidate: string): boolean {
+  return accepts(() => Siret.create(candidate));
+}
+
+function accepts(parse: () => unknown): boolean {
   try {
-    Siret.createOptional(candidate);
+    parse();
     return true;
   } catch {
     return false;

@@ -33,6 +33,31 @@ export const MANDATE_STATUS_LABELS: Readonly<Record<MandateStatus, string>> = {
 };
 
 /**
+ * Ce qui **empêche de frapper** un mandat — un code par mention manquante.
+ *
+ * Des codes et non des phrases : l'écran en fait un libellé ET un lien vers le
+ * dialogue qui saisit la mention, et une phrase ne se relie à rien.
+ *
+ * - `bank_account_missing` — aucun RIB : il se saisit dans « RIB » ;
+ * - `issuer_missing` — aucune entité émettrice, ou incomplète, ou en double :
+ *   Comptabilité › Entités juridiques ;
+ * - `company_name_missing`, `siren_missing` — la raison sociale et le SIREN du
+ *   débiteur, que seul le mandat **interentreprises** exige : Identité légale ;
+ * - `holder_legal_form_missing` — la civilité ou forme juridique du titulaire
+ *   du compte, exigée par le seul interentreprises : RIB.
+ *
+ * Plan `documentation/b2b/plan-mentions-obligatoires-du-mandat.md` §9.2.
+ */
+export const mintBlockerSchema = z.enum([
+  "bank_account_missing",
+  "issuer_missing",
+  "company_name_missing",
+  "siren_missing",
+  "holder_legal_form_missing",
+]);
+export type MintBlocker = z.infer<typeof mintBlockerSchema>;
+
+/**
  * Ce que le back-office montre d'un mandat.
  *
  * **Aucune coordonnée bancaire n'y figure**, et jamais dans une réponse d'API.
@@ -121,6 +146,21 @@ export interface CustomerMandateView {
 export interface MandateSectionView {
   readonly mandate: PaymentMandateView | null;
   readonly publishableKey: string;
+  /**
+   * Ce qui empêche aujourd'hui de **frapper** un mandat pour cette société —
+   * vide quand la frappe passerait. Champ ajouté le 2026-09-15 (plan
+   * `documentation/b2b/plan-mentions-obligatoires-du-mandat.md` §9).
+   *
+   * Calculé par la même fonction que la frappe : l'écran ne peut pas annoncer
+   * « prêt » quand le serveur refuserait, ni l'inverse.
+   */
+  readonly mintBlockers: readonly MintBlocker[];
+  /**
+   * Le schéma de l'émetteur, ou `null` s'il est absent, incomplet ou en double.
+   * L'écran RIB en déduit que la forme juridique du titulaire est EXIGÉE
+   * (interentreprises) — ajouté le 2026-09-15, même lecture que `mintBlockers`.
+   */
+  readonly issuerScheme: SepaScheme | null;
 }
 
 /**

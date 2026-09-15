@@ -186,6 +186,18 @@ describe("SetMyCompanyBankAccountHandler", () => {
     expect(notifier.notices).toHaveLength(1);
   });
 
+  /** Même fusion que le staff : la séquence est partagée (plan mentions obligatoires §8 #7). */
+  it("un RIB réenregistré sans le champ n'efface pas la forme juridique du titulaire", async () => {
+    const { handler, repo } = build("owner");
+    await handler.execute(
+      new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", { ...PAYLOAD, holderLegalForm: "SAS" }),
+    );
+
+    await handler.execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD));
+
+    expect(repo.stored?.account.holderLegalForm).toBe("SAS");
+  });
+
   it("remplace le RIB existant sans en frapper un second", async () => {
     const { handler, repo } = build("billing");
     await handler.execute(new SetMyCompanyBankAccountCommand("usr_1", "cmp_1", PAYLOAD));

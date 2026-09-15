@@ -20,6 +20,7 @@ const ADDRESS = LegalAddress.create({
 function account(over: Partial<DebtorAccountInput> = {}): DebtorAccount {
   return DebtorAccount.create({
     holder: "Refuge du Col SARL",
+    holderLegalForm: "SARL",
     address: ADDRESS,
     iban: Iban.create(IBAN),
     bic: Bic.create("CEPAFRPP751"),
@@ -43,6 +44,29 @@ describe("DebtorAccount", () => {
     // Un compte incomplet ne se découvrirait qu'au rejet du lot, cinq jours
     // après l'envoi — donc en frais bancaires et en appel du client.
     expect(() => account({ holder: "   " })).toThrow(InvalidDebtorAccountError);
+  });
+
+  describe("holderLegalForm — la civilité ou forme juridique du titulaire", () => {
+    it("coupe les espaces, et accepte le vide : c'est la frappe qui l'exige", () => {
+      expect(account({ holderLegalForm: "  SAS  " }).holderLegalForm).toBe("SAS");
+      expect(account({ holderLegalForm: "   " }).holderLegalForm).toBe("");
+    });
+
+    it("accepte 40 caractères, refuse le 41e — la case du mandat n'en tient pas plus", () => {
+      expect(account({ holderLegalForm: "x".repeat(40) }).holderLegalForm).toHaveLength(40);
+      expect(() => account({ holderLegalForm: "x".repeat(41) })).toThrow(InvalidDebtorAccountError);
+    });
+
+    it("se remplace sans toucher au reste du compte, et revalide", () => {
+      const renamed = account().withHolderLegalForm(" Madame ");
+
+      expect(renamed.holderLegalForm).toBe("Madame");
+      expect(renamed.sameAccountAs(account())).toBe(true);
+      expect(renamed.holder).toBe("Refuge du Col SARL");
+      expect(() => account().withHolderLegalForm("x".repeat(41))).toThrow(
+        InvalidDebtorAccountError,
+      );
+    });
   });
 
   it("ne laisse sortir que de quoi reconnaître le compte", () => {

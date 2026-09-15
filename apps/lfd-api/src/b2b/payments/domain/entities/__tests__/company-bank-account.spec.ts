@@ -21,6 +21,7 @@ function address(line1 = "12 rue des Alpages", city = "Val d'Isère"): LegalAddr
 function debtor(over: { holder?: string; iban?: string; line1?: string } = {}): DebtorAccount {
   return DebtorAccount.create({
     holder: over.holder ?? "Refuge du Col SARL",
+    holderLegalForm: "SARL",
     address: address(over.line1),
     iban: Iban.create(over.iban ?? IBAN),
     bic: Bic.create("CEPAFRPP751"),
@@ -94,6 +95,7 @@ describe("CompanyBankAccount", () => {
       id: "cba_1",
       companyId: "cmp_1",
       holder: "Refuge du Col SARL",
+      holderLegalForm: "SARL",
       addressLine1: "12 rue des Alpages",
       addressLine2: "",
       postalCode: "73150",

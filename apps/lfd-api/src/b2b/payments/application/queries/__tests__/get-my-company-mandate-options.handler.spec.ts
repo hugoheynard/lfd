@@ -12,11 +12,13 @@ import { MandateOptions } from "../../../domain/value-objects/mandate-options.js
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
   bankAccount,
+  bankAccountWithoutLegalForm,
   CREDITOR,
   FixedCreditors,
   FixedGate,
   FixedGuard,
   InMemoryBankAccounts,
+  InMemoryMandates,
   Steps,
 } from "../../__tests__/payment-doubles.js";
 import { GetMyCompanyMandateOptionsHandler } from "../get-my-company-mandate-options.handler.js";
@@ -34,6 +36,7 @@ function harness(
     new FixedGate(steps, open),
     accounts,
     new FixedCreditors(issuer),
+    new InMemoryMandates(steps),
   );
   return {
     steps,
@@ -85,13 +88,14 @@ describe("GetMyCompanyMandateOptionsHandler — le schéma de l'émetteur", () =
   it.each(["CORE", "B2B"] as const)("rend issuerScheme = %s, avec ou sans RIB", async (scheme) => {
     const h = harness("owner", true, { ...CREDITOR, mandateScheme: scheme });
 
-    await expect(h.run()).resolves.toEqual({ options: null, issuerScheme: scheme });
+    await expect(h.run()).resolves.toMatchObject({ options: null, issuerScheme: scheme });
   });
 
   it("rend issuerScheme = null sans émetteur actif", async () => {
     await expect(harness("owner", true, null).run()).resolves.toEqual({
       options: null,
       issuerScheme: null,
+      mintBlockers: ["bank_account_missing", "issuer_missing"],
     });
   });
 });
@@ -116,10 +120,35 @@ describe("GetMyCompanyMandateOptionsHandler — un émetteur mal configuré ne c
       new FixedGate(new Steps(), true),
       new InMemoryBankAccounts(new Steps()),
       creditors,
+      new InMemoryMandates(new Steps()),
     );
 
     await expect(
       handler.execute(new GetMyCompanyMandateOptionsQuery("usr_1", "cmp_1")),
-    ).resolves.toEqual({ options: null, issuerScheme: null });
+    ).resolves.toEqual({
+      options: null,
+      issuerScheme: null,
+      mintBlockers: ["bank_account_missing", "issuer_missing"],
+    });
+  });
+});
+
+/** Plan mentions obligatoires §9 (2026-09-15) : l'écran sait quoi compléter avant de cliquer. */
+describe("GetMyCompanyMandateOptionsHandler — ce qui empêche de générer", () => {
+  it("rend une liste vide quand la génération passerait", async () => {
+    const h = harness();
+    h.accounts.stored = bankAccount();
+
+    await expect(h.run()).resolves.toMatchObject({ issuerScheme: "B2B", mintBlockers: [] });
+  });
+
+  it("rend la forme juridique du titulaire manquante sous un émetteur B2B, pas sous CORE", async () => {
+    const b2b = harness();
+    b2b.accounts.stored = bankAccountWithoutLegalForm();
+    const core = harness("owner", true, { ...CREDITOR, mandateScheme: "CORE" });
+    core.accounts.stored = bankAccountWithoutLegalForm();
+
+    await expect(b2b.run()).resolves.toMatchObject({ mintBlockers: ["holder_legal_form_missing"] });
+    await expect(core.run()).resolves.toMatchObject({ mintBlockers: [] });
   });
 });

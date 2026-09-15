@@ -159,7 +159,7 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   async findHolder(companyId: string): Promise<MandateHolder | null> {
     const row = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { raisonSociale: true, contactEmail: true, reference: true, siret: true },
+      select: { raisonSociale: true, contactEmail: true, reference: true, siren: true },
     });
     return row === null
       ? null
@@ -167,7 +167,7 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
           companyName: row.raisonSociale,
           email: row.contactEmail,
           reference: row.reference,
-          siret: row.siret,
+          siren: row.siren,
         };
   }
 

@@ -15,7 +15,7 @@ import type { AdminCompanyView } from "@lfd/contracts";
  * fichier part par courriel, se copie sur des clés, se retrouve dans des
  * dossiers partagés — chaque colonne qu'on y met est une donnée personnelle
  * qu'on répand. Les colonnes retenues sont celles sans lesquelles une écriture
- * comptable ne se passe pas : qui est la personne morale, sous quel SIRET, avec
+ * comptable ne se passe pas : qui est la personne morale, sous quels SIRET et SIREN, avec
  * quelle TVA, à quel régime de règlement, et un interlocuteur pour appeler
  * quand une facture coince.
  *
@@ -31,6 +31,7 @@ const HEADERS = [
   "Enseigne",
   "Forme juridique",
   "SIRET",
+  "SIREN",
   "TVA intracom.",
   "Statut",
   "Délais accordés",
@@ -69,6 +70,7 @@ function row(company: AdminCompanyView): string {
     // « 8,12457E+13 ». Le zéro de tête d'un code postal disparaît de la même
     // façon. C'est la panne la plus courante d'un CSV, et la plus silencieuse.
     quoted(company.siret),
+    quoted(company.siren),
     field(company.vatNumber),
     field(STATUS[company.status] ?? company.status),
     // Vide plutôt que « aucun » : la colonne dit ce qui a été ACCORDÉ, et un

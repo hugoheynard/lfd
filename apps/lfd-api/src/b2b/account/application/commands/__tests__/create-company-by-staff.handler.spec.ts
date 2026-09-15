@@ -75,7 +75,7 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
 
 /** La même commande, **sans** détenteur : l'ouverture sur la seule enseigne. */
 function commandWithoutHolder(): CreateCompanyByStaffCommand {
-  return new CreateCompanyByStaffCommand("", "Café des Halles", "", "", "", null, "staff-sub");
+  return new CreateCompanyByStaffCommand("", "Café des Halles", "", "", "", "", null, "staff-sub");
 }
 
 function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyByStaffCommand {
@@ -84,6 +84,7 @@ function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyBySta
     "Café des Halles",
     "SAS",
     "812 456 789 00021",
+    "",
     "",
     {
       firstName: "Camille",

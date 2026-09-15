@@ -72,6 +72,8 @@ export class CompanyIdentityCorrectedEvent extends CompanyStaffAct {
       readonly raisonSociale: string;
       readonly formeJuridique: string;
       readonly siret: string;
+      /** Tel que SAISI : vide quand l'agent ne l'a pas envoyé — le recalcul est en base. */
+      readonly siren: string;
     },
   ) {
     super(companyId);

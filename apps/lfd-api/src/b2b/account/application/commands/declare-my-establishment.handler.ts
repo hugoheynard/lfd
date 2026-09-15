@@ -62,6 +62,7 @@ export class DeclareMyEstablishmentHandler implements ICommandHandler<
         enseigne: command.enseigne,
         formeJuridique: "",
         siret: "",
+        siren: "",
         vatNumber: "",
       },
       contactFrom(profile),

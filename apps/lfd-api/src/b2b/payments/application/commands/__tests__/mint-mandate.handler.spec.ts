@@ -1,4 +1,7 @@
-import { NoIssuerError } from "../../../../accounting/domain/errors/accounting-errors.js";
+import {
+  EntityCannotCollectError,
+  SeveralIssuersError,
+} from "../../../../accounting/domain/errors/accounting-errors.js";
 import type { CreditorReader } from "../../../../accounting/domain/ports/creditor.reader.js";
 import type { CreditorSnapshot } from "../../../../accounting/domain/creditor-snapshot.js";
 import type { Clock } from "../../../../../platform/time/clock.js";
@@ -6,8 +9,9 @@ import type { SecretGenerator } from "../../../../../platform/secret/secret-gene
 import {
   CompanyNotFoundForMandateError,
   MandateDraftAlreadyExistsError,
-  MandateWithoutBankAccountError,
 } from "../../../domain/errors/mandate-errors.js";
+import { MandateMentionsMissingError } from "../../../domain/errors/mint-blocker-errors.js";
+import type { MintBlocker } from "../../../domain/services/mint-blockers.js";
 import {
   bankAccount,
   InMemoryBankAccounts,
@@ -54,7 +58,7 @@ const HOLDER: MandateHolder = {
   companyName: "SAS Les Tommeuses",
   email: "x@y.fr",
   reference: "C-9P2X4B",
-  siret: "",
+  siren: "732829320",
 };
 
 function build(
@@ -63,6 +67,8 @@ function build(
     readonly issuer?: CreditorSnapshot | null;
     readonly draft?: PaymentMandate | null;
     readonly withAccount?: boolean;
+    /** Le refus de configuration que lève `soleIssuer` (entité incomplète, en double). */
+    readonly issuerRefusal?: Error;
     /** Le brouillon qu'un second onglet a frappé entre la lecture et l'écriture. */
     readonly raceWinner?: PaymentMandate;
   } = {},
@@ -93,9 +99,13 @@ function build(
     findStripeCustomerId: () => Promise.resolve(null),
   };
 
+  const issuer = options.issuer === undefined ? CREDITOR : options.issuer;
   const creditors: CreditorReader = {
-    snapshot: () => Promise.resolve(options.issuer === undefined ? CREDITOR : options.issuer),
-    soleIssuer: () => Promise.resolve(options.issuer === undefined ? CREDITOR : options.issuer),
+    snapshot: () => Promise.resolve(issuer),
+    soleIssuer: () =>
+      options.issuerRefusal === undefined
+        ? Promise.resolve(issuer)
+        : Promise.reject(options.issuerRefusal),
   };
 
   const clock: Clock = { now: () => NOW };
@@ -176,18 +186,19 @@ describe("MintMandateHandler — frapper sans signer", () => {
   it("refuse en 409 sans RIB, sans tirer de RUM", async () => {
     const { handler, written } = build({ withAccount: false });
 
-    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow(
-      MandateWithoutBankAccountError,
-    );
+    expect(await blockersOf(handler)).toEqual(["bank_account_missing"]);
     expect(written).toHaveLength(0);
   });
 
-  it("oppose le RIB manquant avant l'émetteur manquant (société → RIB → émetteur)", async () => {
+  /**
+   * ⚠️ Ce test affirmait l'ORDRE « RIB avant émetteur » jusqu'au 2026-09-15.
+   * Les mentions se refusent désormais ensemble : les dire une à une ferait
+   * recommencer autant de fois qu'il en manque (plan mentions obligatoires §9).
+   */
+  it("nomme ensemble le RIB et l'émetteur manquants", async () => {
     const { handler } = build({ withAccount: false, issuer: null });
 
-    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow(
-      MandateWithoutBankAccountError,
-    );
+    expect(await blockersOf(handler)).toEqual(["bank_account_missing", "issuer_missing"]);
   });
 
   /**
@@ -222,7 +233,17 @@ describe("MintMandateHandler — frapper sans signer", () => {
   it("refuse quand aucune entité ne peut émettre", async () => {
     const { handler } = build({ issuer: null });
 
-    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow(NoIssuerError);
+    expect(await blockersOf(handler)).toEqual(["issuer_missing"]);
+  });
+
+  it.each([
+    ["incomplet", new EntityCannotCollectError(["ICS"])],
+    ["en double", new SeveralIssuersError(2)],
+  ])("dit « émetteur manquant » quand il est %s, sans rien frapper", async (_label, refusal) => {
+    const { handler, written } = build({ issuerRefusal: refusal });
+
+    expect(await blockersOf(handler)).toEqual(["issuer_missing"]);
+    expect(written).toHaveLength(0);
   });
 
   /**
@@ -259,5 +280,53 @@ describe("MintMandateHandler — frapper sans signer", () => {
 
     await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow();
     expect(written).toHaveLength(0);
+  });
+});
+
+/** Les codes du refus de frappe — l'échec du test si la frappe passe. */
+async function blockersOf(handler: MintMandateHandler): Promise<readonly MintBlocker[]> {
+  const refusal: unknown = await handler.execute(new MintMandateCommand("cmp_1")).then(
+    () => null,
+    (error: unknown) => error,
+  );
+  expect(refusal).toBeInstanceOf(MandateMentionsMissingError);
+  return refusal instanceof MandateMentionsMissingError ? refusal.blockers : [];
+}
+
+/**
+ * Plan `plan-mentions-obligatoires-du-mandat.md` §9 (2026-09-15) : le mandat
+ * interentreprises exige le SIREN, la raison sociale du débiteur et la forme
+ * juridique du titulaire. Le CORE, rien de plus qu'avant.
+ */
+describe("MintMandateHandler — les mentions obligatoires par schéma", () => {
+  const bare = { ...HOLDER, companyName: "  ", siren: "" };
+
+  it("refuse une frappe B2B sans raison sociale, SIREN ni forme juridique, et les nomme", async () => {
+    const { handler, written } = build({ holder: bare, withAccount: false });
+
+    expect(await blockersOf(handler)).toEqual([
+      "bank_account_missing",
+      "company_name_missing",
+      "siren_missing",
+    ]);
+    expect(written).toHaveLength(0);
+  });
+
+  it("frappe en CORE sans raison sociale ni SIREN : ce formulaire ne les imprime pas", async () => {
+    const { handler, written } = build({
+      holder: bare,
+      issuer: { ...CREDITOR, mandateScheme: "CORE" },
+    });
+
+    await expect(handler.execute(new MintMandateCommand("cmp_1"))).resolves.toBe("mdt_neuf");
+    expect(written[0]?.scheme).toBe("CORE");
+  });
+
+  it("dit où saisir chaque mention, pour qui n'a pas le code sous les yeux", async () => {
+    const { handler } = build({ holder: bare });
+
+    await expect(handler.execute(new MintMandateCommand("cmp_1"))).rejects.toThrow(
+      /SIREN de la société \(à saisir dans « Identité légale »\)/u,
+    );
   });
 });

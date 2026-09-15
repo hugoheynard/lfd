@@ -24,9 +24,10 @@ import type { CompanyBankAccount } from "../../domain/entities/company-bank-acco
  * `documentation/b2b/plan-mandat-client.md` §6 #3). Cette vue-ci n'en change pas.
  */
 export function customerBankAccountView(found: CompanyBankAccount): CustomerBankAccountView {
-  const { holder, address, bic } = found.account;
+  const { holder, holderLegalForm, address, bic } = found.account;
   return {
     holder,
+    holderLegalForm,
     addressLine1: address.line1,
     addressLine2: address.line2,
     postalCode: address.postalCode,

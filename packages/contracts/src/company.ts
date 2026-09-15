@@ -49,22 +49,34 @@ export const settlementSchema = z.enum(["account", "card"]);
 export type Settlement = z.infer<typeof settlementSchema>;
 
 /**
- * Édition de l'identité **souple** : l'enseigne (nom commercial) et le n° de TVA
- * intracommunautaire. La raison sociale, la forme juridique et le SIRET (identité
- * légale) restent fixés à la création — les changer, c'est une autre société.
+ * Édition de l'identité : l'enseigne (nom commercial), le n° de TVA
+ * intracommunautaire, et l'identité **légale** (raison sociale, forme juridique,
+ * SIRET, SIREN).
+ *
+ * La même charge sert deux écritures, et le vide y veut dire la même chose —
+ * « ne réécrit rien » : le client **complète** ce qui manque, le back-office
+ * **corrige**. Un écran encore ouvert sur un bundle qui n'envoie pas `siren`
+ * n'efface donc rien (plan-mentions-obligatoires-du-mandat §9).
  */
 export const updateIdentityPayloadSchema = z.object({
   enseigne: z.string().default(""),
   vatNumber: z.string().default(""),
   /**
-   * Identité légale — envoyée seulement quand elle **manque** : un compte peut
-   * s'ouvrir sans papiers (le commercial est chez le client), et ils arrivent
-   * ensuite. Un champ déjà renseigné est ignoré côté serveur : on comble un
-   * trou, on ne réécrit pas un SIRET.
+   * Identité légale. Un compte peut s'ouvrir sans papiers (le commercial est
+   * chez le client), et ils arrivent ensuite. Côté client, un champ déjà
+   * renseigné est ignoré : on comble un trou. Côté back-office, un champ
+   * renseigné **réécrit** — c'est la correction d'une faute de saisie, que seul
+   * le staff peut faire (`Company.correctLegalIdentity`, vérifié le 2026-09-15).
    */
   raisonSociale: z.string().default(""),
   formeJuridique: z.string().default(""),
   siret: z.string().default(""),
+  /**
+   * SIREN de l'entreprise. Vide = « ne réécrit rien ». Un SIRET dont le préfixe
+   * est un SIREN valide le fixe côté serveur ; un SIREN qui le contredit est
+   * refusé.
+   */
+  siren: z.string().default(""),
 });
 export type UpdateIdentityPayload = z.infer<typeof updateIdentityPayloadSchema>;
 

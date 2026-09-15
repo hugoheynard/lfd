@@ -23,6 +23,8 @@ const RIB = {
   iban: "FR1420041010050500013M02606",
   bic: "CEPAFRPP751",
   holder: "Refuge du Col SARL",
+  // Exigée par le mandat interentreprises (plan mentions obligatoires §9).
+  holderLegalForm: "SARL",
   line1: "12 rue des Alpages",
   line2: "",
   postalCode: "73150",
@@ -179,7 +181,11 @@ describe("les zones — drapeau ouvert", () => {
   beforeEach(openFlag);
 
   it("rend `{ options: null }` sans RIB, et refuse le PUT en 404", async () => {
-    expect(await readOptions()).toEqual({ options: null, issuerScheme: null });
+    expect(await readOptions()).toEqual({
+      options: null,
+      issuerScheme: null,
+      mintBlockers: ["bank_account_missing", "issuer_missing"],
+    });
 
     const response = await ctx.asSub(OWNER).put(optionsUrl()).send(OPTIONS).expect(404);
     expect(jsonBody<{ code: string }>(response).code).toBe("payments.bank_account.missing");
@@ -194,11 +200,16 @@ describe("les zones — drapeau ouvert", () => {
     expect(await readOptions(sub)).toEqual({
       options: { debtorReference: "", contractNumber: "" },
       issuerScheme: null,
+      mintBlockers: ["issuer_missing"],
     });
 
     await ctx.asSub(sub).put(optionsUrl()).send(OPTIONS).expect(204);
 
-    expect(await readOptions(sub)).toEqual({ options: OPTIONS, issuerScheme: null });
+    expect(await readOptions(sub)).toEqual({
+      options: OPTIONS,
+      issuerScheme: null,
+      mintBlockers: ["issuer_missing"],
+    });
     // Plan §10 (2026-09-14) : journalisé même sans brouillon, avec qui et quoi.
     expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
   });
@@ -247,7 +258,11 @@ describe("les zones — drapeau ouvert", () => {
       await ctx.asSub(OWNER).get(mandateUrl()).expect(200),
     );
     expect(after).toMatchObject({ id: draft.id, status: "draft" });
-    expect(await readOptions()).toEqual({ options: OPTIONS, issuerScheme: "B2B" });
+    expect(await readOptions()).toEqual({
+      options: OPTIONS,
+      issuerScheme: "B2B",
+      mintBlockers: [],
+    });
     expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
     expect(
       await ctx.prisma.activityEvent.count({ where: { type: "payment_mandate.draft_voided" } }),
@@ -272,6 +287,7 @@ describe("les zones — drapeau ouvert", () => {
     expect(await readOptions()).toEqual({
       options: { debtorReference: "", contractNumber: "" },
       issuerScheme: "B2B",
+      mintBlockers: [],
     });
     expect(await optionsFacts()).toEqual([]);
     const mandate = jsonBody<CustomerMandateView>(

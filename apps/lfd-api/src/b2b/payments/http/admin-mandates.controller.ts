@@ -40,6 +40,8 @@ import { SendMandateCommand } from "../application/commands/send-mandate.command
 import { SignMandateCommand } from "../application/commands/sign-mandate.command.js";
 import { type MandateProofFile } from "../application/queries/get-mandate-proof.handler.js";
 import { GetMandateProofQuery } from "../application/queries/get-mandate-proof.query.js";
+import type { MandateMintReadinessView } from "../application/queries/get-mandate-mint-blockers.handler.js";
+import { GetMandateMintBlockersQuery } from "../application/queries/get-mandate-mint-blockers.query.js";
 import {
   MandateNotFoundError,
   MandateProofNotFoundError,
@@ -84,13 +86,26 @@ export class AdminMandatesController {
    *
    * Les deux ensemble plutôt qu'en deux appels : l'écran n'est utilisable
    * qu'avec les deux, et un second aller-retour ne lui apprendrait rien.
+   *
+   * Depuis le 2026-09-15, la section porte aussi `mintBlockers` — ce qui
+   * empêcherait de frapper, jugé par la lecture de la frappe elle-même. Une
+   * société inconnue y répond donc 404, là où le mandat seul rendait `null`.
    */
   @Get(":companyId/mandate")
   async mandate(@Param("companyId") companyId: string): Promise<MandateSectionView> {
     const mandate = await this.queries.execute<GetCompanyMandateQuery, PaymentMandateView | null>(
       new GetCompanyMandateQuery(companyId),
     );
-    return { mandate, publishableKey: this.payments.publishableKey() };
+    const readiness = await this.queries.execute<
+      GetMandateMintBlockersQuery,
+      MandateMintReadinessView
+    >(new GetMandateMintBlockersQuery(companyId));
+    return {
+      mandate,
+      publishableKey: this.payments.publishableKey(),
+      mintBlockers: readiness.blockers,
+      issuerScheme: readiness.issuerScheme,
+    };
   }
 
   /** Dépose (ou remplace) le **mandat signé scanné**. Multipart `file`. */

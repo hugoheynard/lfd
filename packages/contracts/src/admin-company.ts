@@ -44,6 +44,11 @@ export interface AdminCompanyView {
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
+  /**
+   * SIREN de l'entreprise (9 chiffres), ou vide tant qu'inconnu. Égal au préfixe
+   * du SIRET quand ce préfixe est un SIREN valide — l'agrégat le tient.
+   */
+  readonly siren: string;
   readonly vatNumber: string;
   readonly status: CompanyStatus;
   /** Condition de règlement **convenue** (écrite par le staff). */

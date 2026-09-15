@@ -268,20 +268,11 @@ export class CompanyBankAccountNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * On a voulu frapper un mandat pour une société **sans RIB** — **409**.
- *
- * Décidé par Hugo le 2026-09-14, pour le staff comme pour le client : un mandat
- * nomme le compte qu'il autorise à débiter. Sans compte, il n'autorise rien, et
- * la RUM frappée pour rien serait une référence perdue.
+ * ⚠️ `MandateWithoutBankAccountError` a vécu ici jusqu'au 2026-09-15. La frappe
+ * refuse toujours sans RIB, mais par `MandateMentionsMissingError`
+ * (`mint-blocker-errors.ts`), code `bank_account_missing` : le RIB y est une
+ * mention parmi les autres (plan `plan-mentions-obligatoires-du-mandat.md` §9).
  */
-export class MandateWithoutBankAccountError extends BusinessError {
-  constructor(readonly companyId: string) {
-    super(
-      "payments.mandate.bank_account_missing",
-      "Aucun RIB n'est enregistré pour cette société : enregistrez les coordonnées bancaires avant de générer le mandat, qui doit nommer le compte à débiter.",
-    );
-  }
-}
 
 /**
  * Le client demande un mandat alors que le sien est **déjà actif** — **409**.
