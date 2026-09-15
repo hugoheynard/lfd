@@ -5,10 +5,6 @@
   "private": true,
   "sideEffects": false,
   "exports": {
-    "./flags": {
-      "types": "./src/flags.ts",
-      "default": "./src/flags.ts"
-    },
     "./address": {
       "types": "./src/address/index.ts",
       "default": "./src/address/index.ts"
