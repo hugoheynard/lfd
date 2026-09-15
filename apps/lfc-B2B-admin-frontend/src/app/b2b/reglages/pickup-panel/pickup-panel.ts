@@ -7,10 +7,19 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { CartAdjustment, PickupAddressPayload, PickupAddressView } from '@lfd/contracts';
+import {
+  ALL_DISCOUNT_AUDIENCES,
+  type CartAdjustment,
+  type PickupAddressPayload,
+  type PickupAddressView,
+  type PickupDiscountAudiences,
+} from '@lfd/contracts';
+import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldCheckboxComponent,
+  FoldFieldsetComponent,
   FoldPanelBodyComponent,
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
@@ -63,7 +72,9 @@ export interface PickupPanelData {
     FoldPanelHeaderComponent,
     FoldPanelFooterComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldCheckboxComponent,
+    FoldFieldsetComponent,
     AddressForm,
     HoursForm,
     PriceAlterationField,
@@ -84,6 +95,18 @@ export class PickupPanel {
   protected readonly isDefault = signal(false);
   /** Remise du point (retirer ici coûte moins cher), ou `null`. */
   protected readonly discount = signal<CartAdjustment | null>(null);
+  /**
+   * À qui va la réduction. Conservées telles quelles quand la réduction est
+   * retirée : sans réduction, le serveur ne les lit pas, et les remettre à zéro
+   * ferait perdre un choix qu'on retrouverait en rouvrant la réduction.
+   */
+  protected readonly audiences = signal<PickupDiscountAudiences>(ALL_DISCOUNT_AUDIENCES);
+  /**
+   * Le refus du serveur, en clair. Il reste DANS le panneau : un toast
+   * disparaîtrait pendant qu'on cherche quoi corriger, et le panneau reste
+   * ouvert sur la saisie.
+   */
+  protected readonly refusal = signal<string | null>(null);
   /** Heures d'ouverture du point — deux fenêtres nommées, jamais fusionnées. */
   protected readonly opening = signal<readonly HoursEntry[]>(openingEntries(EMPTY_OPENING));
   protected readonly saving = signal(false);
@@ -110,9 +133,24 @@ export class PickupPanel {
   /** L'adresse postale, dans la langue neutre du fragment de saisie. */
   protected readonly postal = computed(() => toPostal(this.draft()));
 
-  /** Une adresse postable, et des heures cohérentes. */
+  /** Les cases de clientèle ne se lisent que s'il y a une réduction à attribuer. */
+  protected readonly audiencesDisabled = computed(() => this.discount() === null);
+
+  /**
+   * Une réduction qui ne vise personne. Le serveur la refuse (400) ; l'écran le
+   * dit AVANT l'envoi, avec la même phrase, plutôt que d'attendre le refus.
+   */
+  protected readonly audienceIssue = computed(() => {
+    const audiences = this.audiences();
+    return this.discount() !== null && !audiences.b2b && !audiences.b2c
+      ? 'Cochez au moins une clientèle, ou retirez la réduction.'
+      : '';
+  });
+
+  /** Une adresse postable, des heures cohérentes, une réduction qui vise quelqu'un. */
   protected readonly canSubmit = computed(
-    () => postalIssue(this.draft()) === '' && this.openingIssue() === '',
+    () =>
+      postalIssue(this.draft()) === '' && this.openingIssue() === '' && this.audienceIssue() === '',
   );
 
   constructor() {
@@ -125,12 +163,17 @@ export class PickupPanel {
       this.draft.set(postalDraftFrom(address));
       this.isDefault.set(address.isDefault);
       this.discount.set(address.discount);
+      this.audiences.set(address.discountAudiences);
       this.opening.set(openingEntries(address.opening));
     });
   }
 
   protected setDiscount(alteration: PriceAlteration | null): void {
     this.discount.set(toCartAdjustment(alteration));
+  }
+
+  protected setAudience(audience: keyof PickupDiscountAudiences, checked: boolean): void {
+    this.audiences.update((current) => ({ ...current, [audience]: checked }));
   }
 
   protected setPostal(postal: PostalAddress): void {
@@ -143,10 +186,12 @@ export class PickupPanel {
     }
     const address = this.data()?.address ?? null;
     this.saving.set(true);
+    this.refusal.set(null);
     const payload: PickupAddressPayload = {
       ...toBillingPayload(this.draft()),
       isDefault: this.isDefault(),
       discount: this.discount(),
+      discountAudiences: this.audiences(),
       opening: toPickupOpening(this.opening()),
     };
     try {
@@ -159,7 +204,7 @@ export class PickupPanel {
       }
       this.ref.close(true);
     } catch (error) {
-      this.notify.error(error);
+      this.refusal.set(httpErrorMessage(error, "Le point de retrait n'a pas pu être enregistré."));
     } finally {
       this.saving.set(false);
     }

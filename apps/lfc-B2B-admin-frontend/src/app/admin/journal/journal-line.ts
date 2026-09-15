@@ -208,6 +208,8 @@ function settingSentence(event: ActivityEventView): string | null {
       return 'Point de retrait supprimé';
     case 'pickup_address.default_set':
       return 'Point de retrait par défaut changé';
+    case 'delivery_settings.updated':
+      return 'Livraison par clientèle réglée';
     case 'order_cutoff.created':
       return `Heure limite posée à ${text(p['time'])}`;
     case 'order_cutoff.updated':

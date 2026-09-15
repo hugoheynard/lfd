@@ -1,5 +1,6 @@
 import { PermissionsStore } from '../../auth/permissions.store';
 import { isGraceRefusal } from './grace-refusal';
+import { isDeliveryClosedRefusal } from './delivery-closed-refusal';
 import { OrderCutoffWaiversService } from '../order-cutoff-waivers.service';
 import {
   ChangeDetectionStrategy,
@@ -35,7 +36,9 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 import {
+  audienceOf,
   companyDisplayName,
+  DEFAULT_DELIVERY_SETTINGS,
   type AdminOrderRow,
   type BillingAddressPayload,
   type DeliverySpecs,
@@ -43,6 +46,7 @@ import {
   type CatalogItemView,
   type CustomerSkuStat,
   type DeliveryAddressView,
+  type DeliverySettingsView,
   type DeliveryZoneView,
   type OrderDraftView,
   type OrderView,
@@ -52,8 +56,9 @@ import {
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
-import { DeliveryZonesService } from '../../reglages/retraits-livraisons/delivery-zones.service';
-import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
+import { DeliverySettingsService } from '../../b2b/reglages/delivery-settings.service';
+import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
 import { AdminOrdersService } from '../orders.service';
 import { OrderDraftsService } from '../order-drafts.service';
@@ -139,6 +144,7 @@ export class NouvelleCommandePage {
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly zonesService = inject(DeliveryZonesService);
+  private readonly deliverySettingsService = inject(DeliverySettingsService);
   private readonly draftsService = inject(OrderDraftsService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
@@ -167,6 +173,8 @@ export class NouvelleCommandePage {
   protected readonly buyers = signal<readonly CompanyMemberView[]>([]);
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
   protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
+  /** À quelles clientèles la livraison est proposée — le coursier en dépend. */
+  protected readonly deliverySettings = signal<DeliverySettingsView>(DEFAULT_DELIVERY_SETTINGS);
   protected readonly submitting = signal(false);
 
   /**
@@ -207,6 +215,13 @@ export class NouvelleCommandePage {
 
   /** Le carnet de livraison du compte — vide tant que la fiche n'en porte aucune. */
   protected readonly addresses = computed(() => this.company()?.addresses.deliveries ?? []);
+
+  /**
+   * La clientèle de la société : pro si elle est **active**, particulier sinon
+   * (Q3 du plan). La même fonction que le serveur — deux définitions de « qui
+   * est pro » finiraient par proposer un coursier que la commande refuse.
+   */
+  protected readonly audience = computed(() => audienceOf(this.company()?.status ?? null));
 
   protected readonly companyName = computed(() => {
     const company = this.company();
@@ -320,7 +335,7 @@ export class NouvelleCommandePage {
     try {
       // Sept lectures indépendantes : les enchaîner aurait multiplié l'attente
       // par sept devant un commercial qui a le client en ligne.
-      const [company, history, catalogue, habits, buyers, pickups, zones, saved] =
+      const [company, history, catalogue, habits, buyers, pickups, zones, saved, deliverySettings] =
         await Promise.all([
           this.companies.getById(companyId),
           this.orders.list({ companyId, limit: HISTORY_SIZE }),
@@ -330,6 +345,11 @@ export class NouvelleCommandePage {
           this.pickupsService.list(),
           this.zonesService.list(),
           this.draftsService.find(companyId),
+          // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
+          // serveur refuse de toute façon une livraison fermée, et ce refus-là
+          // est montré. Faire tomber tout l'écran pour ce réglage serait
+          // disproportionné devant un client en ligne.
+          this.deliverySettingsService.read().catch(() => DEFAULT_DELIVERY_SETTINGS),
         ]);
       if (company === undefined) {
         this.state.set('error');
@@ -342,6 +362,7 @@ export class NouvelleCommandePage {
       this.buyers.set(buyers);
       this.pickups.set(pickups);
       this.zones.set(zones);
+      this.deliverySettings.set(deliverySettings);
       this.resume(saved, catalogue, company.addresses.deliveries);
       this.state.set('ready');
     } catch {
@@ -425,6 +446,8 @@ export class NouvelleCommandePage {
         pickups: this.pickups(),
         addresses: this.addresses(),
         zones: this.zones(),
+        deliverySettings: this.deliverySettings(),
+        audience: this.audience(),
         settlesOnAccount: this.settlesOnAccount(),
       },
     });
@@ -559,12 +582,31 @@ export class NouvelleCommandePage {
       if (isGraceRefusal(error)) {
         this.lateDraft.set(draft);
         this.notify.refused(error, "L'heure limite est passée pour cette date.");
+      } else if (isDeliveryClosedRefusal(error)) {
+        // La livraison a été fermée pendant la saisie. Le refus se dit, et le
+        // réglage se relit : le coursier se grise alors avec sa raison, et le
+        // commercial bascule en retrait sans rien ressaisir.
+        this.lateDraft.set(null);
+        this.notify.refused(
+          error,
+          "La livraison n'est pas proposée pour ce compte. Choisissez le retrait.",
+        );
+        void this.refreshDeliverySettings();
       } else {
         this.lateDraft.set(null);
         this.notify.error(error, "La commande n'a pas pu être enregistrée.");
       }
     } finally {
       this.submitting.set(false);
+    }
+  }
+
+  /** Relit le réglage de livraison ; un échec garde celui qu'on avait. */
+  private async refreshDeliverySettings(): Promise<void> {
+    try {
+      this.deliverySettings.set(await this.deliverySettingsService.read());
+    } catch {
+      // Rien à dire de plus : le refus vient d'être montré.
     }
   }
 

@@ -174,7 +174,7 @@ matrice de rôles : ils se reportent sur une autre route `b2b_settings`.
 
 ### Déploiement B — l'écran et les routes
 
-- back-office : `reglages/retraits-livraisons/cutoffs-section/` et
+- back-office : `b2b/reglages/cutoffs-section/` et
   `order-cutoffs.service.ts` ;
 - backend : `src/b2b/order-cutoffs/` en entier — contrôleur
   (`@Controller("admin/order-cutoffs")`), handlers, repository, module, et son

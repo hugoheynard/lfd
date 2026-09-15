@@ -1,0 +1,53 @@
+<fold-page-layout icon="truck" title="Livraison">
+  <p description>
+    À quelle clientèle la livraison est proposée, et ce qu'elle coûte selon le code postal. Une
+    livraison fermée à une clientèle est refusée à la commande, y compris quand l'équipe la saisit.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement du réglage de livraison…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger le réglage de livraison">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (settings(); as current) {
+        <fold-card>
+          <fold-element-title
+            variant="title"
+            title="Livraison"
+            subtitle="Chaque case s'enregistre dès qu'on la coche ou la décoche."
+          />
+
+          <div class="body">
+            <fold-fieldset legend="Proposer la livraison aux" direction="horizontal">
+              <fold-checkbox
+                label="B2B"
+                [disabled]="saving()"
+                [checked]="current.openToB2b"
+                [hint]="closedSentence('b2b', current.openToB2b)"
+                (checkedChange)="toggle('b2b', $event)"
+              />
+              <fold-checkbox
+                label="B2C"
+                [disabled]="saving()"
+                [checked]="current.openToB2c"
+                [hint]="closedSentence('b2c', current.openToB2c)"
+                (checkedChange)="toggle('b2c', $event)"
+              />
+            </fold-fieldset>
+
+            @if (failure(); as message) {
+              <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+            }
+
+            <app-delivery-zones-section />
+          </div>
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>

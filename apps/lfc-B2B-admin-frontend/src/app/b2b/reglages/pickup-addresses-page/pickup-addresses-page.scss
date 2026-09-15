@@ -1,36 +1,4 @@
-:host {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
-}
-
-// En-tête de section : texte à gauche, bouton « Ajouter » à droite.
-.head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
-  flex-wrap: wrap;
-  margin-bottom: var(--fold-space-md);
-}
-.head-text {
-  min-width: 0;
-  flex: 1 1 18rem;
-}
-
-.section-title {
-  margin: 0 0 var(--fold-space-xs);
-  font-size: var(--fold-text-lg, 1.125rem);
-}
-.section-desc {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-}
-
 .points {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);

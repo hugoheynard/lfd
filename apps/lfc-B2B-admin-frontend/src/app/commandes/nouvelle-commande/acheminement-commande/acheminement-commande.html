@@ -2,10 +2,14 @@
   class="ach-toggle"
   activeStyle="accent"
   ariaLabel="Mode d'acheminement"
-  [options]="methods"
+  [options]="methods()"
   [value]="method()"
   (valueChange)="onMethod($event)"
 />
+
+@if (deliveryClosedReason(); as reason) {
+  <p class="ach-line">{{ reason }}</p>
+}
 
 @if (isCourier()) {
   <!-- Le carnet de la société d'abord, la saisie ensuite. -->
@@ -93,7 +97,7 @@
   } @else if (pickup() !== null) {
     <p class="ach-line">
       Ce point n’a aucune heure d’ouverture déclarée — aucun créneau ne peut être convenu, et le
-      client non plus ne peut pas y commander (Réglages → Livraisons &amp; retraits).
+      client non plus ne peut pas y commander (E-commerce LFC → Réglages → Points de retrait).
     </p>
   }
 }

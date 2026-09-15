@@ -29,7 +29,6 @@ function tabsFor(permissions: readonly StaffPermission[]): string[] {
 describe('les onglets de Réglages', () => {
   it("n'offre à un administrateur aucune porte de moins", () => {
     expect(tabsFor(['b2b_settings:read', 'b2b_growth:read', 'staff_access:read'])).toEqual([
-      'retraits-livraisons',
       'surtaxe-de-retard',
       'facturation',
       'commercial',
@@ -38,11 +37,8 @@ describe('les onglets de Réglages', () => {
 
   it('cache « Commercial » à la comptabilité', () => {
     // Catalogue et Tarification n'y sont plus : ils ont leur espace, sous le
-    // même droit. On ne va pas dans les Réglages pour travailler.
-    expect(tabsFor(['b2b_settings:read'])).toEqual([
-      'retraits-livraisons',
-      'surtaxe-de-retard',
-      'facturation',
-    ]);
+    // même droit. On ne va pas dans les Réglages pour travailler. Retraits et
+    // livraisons ont suivi, dans « E-commerce LFC → Réglages ».
+    expect(tabsFor(['b2b_settings:read'])).toEqual(['surtaxe-de-retard', 'facturation']);
   });
 });

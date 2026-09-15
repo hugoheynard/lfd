@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import type {
   CreatedPickupResponse,
   PickupAddressPayload,
+  PickupAddressUpdatePayload,
   PickupAddressView,
 } from '@lfd/contracts';
 
@@ -34,8 +35,12 @@ export class PickupAddressesService {
     );
   }
 
-  /** Édite un point de retrait (staff). */
-  async update(id: string, payload: PickupAddressPayload): Promise<void> {
+  /**
+   * Édite un point de retrait (staff). Les clientèles de la remise y sont
+   * facultatives côté serveur (absentes = inchangées) ; l'écran les envoie
+   * toujours, puisqu'il les montre.
+   */
+  async update(id: string, payload: PickupAddressUpdatePayload): Promise<void> {
     await firstValueFrom(
       this.http.patch<void>(`${B2B_API_BASE}/admin/pickup-addresses/${id}`, payload),
     );

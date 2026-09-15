@@ -34,7 +34,9 @@ export const b2bRoutes: Routes = [
   {
     path: 'b2b',
     canActivate: [permissionGuard('b2b_settings:read')],
-    title: 'B2B — LFC B2B admin',
+    // Le titre suit le libellé de l'espace (« E-commerce LFC ») ; la clé et les
+    // adresses `/b2b/…` restent, elles vivent dans des favoris.
+    title: 'E-commerce LFC — LFC B2B admin',
     loadComponent: () => import('./b2b-page/b2b-page').then((m) => m.B2bPage),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'catalogue' },
@@ -70,6 +72,41 @@ export const b2bRoutes: Routes = [
             title: legalMentionTitle,
             loadComponent: () =>
               import('../contenu/mentions/mentions-page').then((m) => m.MentionsPage),
+          },
+        ],
+      },
+      {
+        // LES RÉGLAGES DE L'E-COMMERCE — ce que la boutique propose à l'achat :
+        // où retirer, à qui livrer, jusqu'à quand commander. Ils vivaient dans
+        // un onglet « Retraits & livraisons » des Réglages ; ils ont rejoint
+        // l'espace dont ils règlent la vente (plan « remise et livraison par
+        // clientèle », D6). L'ancienne adresse redirige.
+        path: 'reglages',
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'points-de-retrait' },
+          {
+            path: 'points-de-retrait',
+            title: 'Points de retrait — LFC B2B admin',
+            loadComponent: () =>
+              import('./reglages/pickup-addresses-page/pickup-addresses-page').then(
+                (m) => m.PickupAddressesPage,
+              ),
+          },
+          {
+            path: 'livraison',
+            title: 'Livraison — LFC B2B admin',
+            loadComponent: () =>
+              import('./reglages/delivery-settings-page/delivery-settings-page').then(
+                (m) => m.DeliverySettingsPage,
+              ),
+          },
+          {
+            path: 'heures-limites',
+            title: 'Heures limites de commande — LFC B2B admin',
+            loadComponent: () =>
+              import('./reglages/order-cutoffs-page/order-cutoffs-page').then(
+                (m) => m.OrderCutoffsPage,
+              ),
           },
         ],
       },

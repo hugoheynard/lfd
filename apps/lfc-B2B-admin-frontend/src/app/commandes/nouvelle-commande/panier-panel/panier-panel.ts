@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { FoldPanelHeaderComponent, FoldPanelRef, type FoldPanelDefaults } from 'fold-ng';
 import type {
   CompanyMemberView,
+  CustomerAudience,
   DeliveryAddressView,
+  DeliverySettingsView,
   DeliveryZoneView,
   PickupAddressView,
 } from '@lfd/contracts';
@@ -20,6 +22,8 @@ export interface PanierPanelData {
   readonly pickups: readonly PickupAddressView[];
   readonly addresses: readonly DeliveryAddressView[];
   readonly zones: readonly DeliveryZoneView[];
+  readonly deliverySettings: DeliverySettingsView;
+  readonly audience: CustomerAudience;
   readonly settlesOnAccount: boolean;
 }
 

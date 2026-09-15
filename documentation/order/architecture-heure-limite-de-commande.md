@@ -109,7 +109,7 @@ testée et administrable** depuis le back-office :
 | `packages/contracts/src/order-cutoff.ts`                          | payload Zod, vue, et **deux fonctions pures** de résolution |
 | `packages/contracts/src/__tests__/order-cutoff.spec.ts`           | 12 tests                                                    |
 | `GET/POST/PATCH/DELETE /admin/order-cutoffs`                      | muré `@AdminSurface("b2b_settings")`                        |
-| `reglages/retraits-livraisons/cutoffs-section/`                   | l'écran de saisie                                           |
+| `b2b/reglages/cutoffs-section/`                                   | l'écran de saisie                                           |
 
 Une règle dit : « pour tel **point de retrait**, tel **jour d'acheminement**, il
 faut avoir commandé `daysBefore` jours avant à telle **heure locale** ».
@@ -997,7 +997,7 @@ Deux écarts subsistent, et ils sont assumés :
 | Résolution en quatre rangs, 12 tests                                         | `packages/contracts/src/order-cutoff.ts`, `__tests__/order-cutoff.spec.ts`                        |
 | **Aucun appelant** hors spec                                                 | grep `resolveOrderCutoff\|orderCutoffInstant`, hors client généré                                 |
 | `PlaceOrderHandler` ne vérifie que l'appartenance                            | `src/b2b/orders/application/commands/place-order.handler.ts`                                      |
-| La page réglages porte déjà retraits + limites + zones                       | `apps/lfc-B2B-admin-frontend/src/app/reglages/retraits-livraisons/`                               |
+| La page réglages porte déjà retraits + limites + zones                       | `apps/lfc-B2B-admin-frontend/src/app/b2b/reglages/`                                               |
 | `PickupAddress` (public) et `PointOfSale` (pim) sans lien                    | `public/orders.prisma:250` et `:3124` ; grep `PointOfSale` dans `src/b2b` : vide                  |
 | `PriceScopeType` = global/category/product/variant                           | `packages/contracts/src/pricing.ts:83`                                                            |
 | `Category.parentId` auto-relation                                            | `public/pricing.prisma:118-2845`                                                                  |

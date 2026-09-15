@@ -1,10 +1,12 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
-import type {
-  BillingAddressView,
-  CompanyStatus,
-  DeliveryAddressView,
-  PickupAddressView,
+import {
+  DEFAULT_DELIVERY_SETTINGS,
+  deliveryOpenTo,
+  type BillingAddressView,
+  type CompanyStatus,
+  type DeliveryAddressView,
+  type DeliverySettingsView,
+  type PickupAddressView,
 } from '@lfd/contracts';
 import type {
   CompanyActivationStep,
@@ -14,7 +16,8 @@ import type {
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
-import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
+import { DeliverySettingsService } from '../../b2b/reglages/delivery-settings.service';
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { toContactCards, toIdentityView } from '../admin-company-view';
 import { activationSteps, blockedReason, type ActivationStep } from './activation-steps';
 
@@ -38,6 +41,7 @@ export type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
 export class FicheClientStore {
   private readonly service = inject(AdminCompaniesService);
   private readonly pickupsService = inject(PickupAddressesService);
+  private readonly deliverySettingsService = inject(DeliverySettingsService);
 
   /** L'identifiant de la société, `null` quand on est en train de l'ouvrir. */
   readonly companyId = signal<string | null>(null);
@@ -62,8 +66,19 @@ export class FicheClientStore {
    * client.
    */
 
-  /** La livraison est-elle masquée (service absent) ? Cache la carte livraison. */
-  readonly deliveryHidden = !DELIVERY_SERVICE_OPEN;
+  /** À quelles clientèles la livraison est proposée — le réglage de l'e-commerce. */
+  readonly deliverySettings = signal<DeliverySettingsView>(DEFAULT_DELIVERY_SETTINGS);
+
+  /**
+   * La livraison est-elle fermée à cette fiche ? Cache l'offre de livraison
+   * (préférence d'acheminement) et montre le point de retrait à la place.
+   *
+   * Lue en **B2B** : la fiche est celle d'une société. Elle lisait la constante
+   * `DELIVERY_SERVICE_OPEN`, seconde source de vérité qui laissait choisir en
+   * préférence une livraison que la commande refuserait (plan « remise et
+   * livraison par clientèle », D4).
+   */
+  readonly deliveryHidden = computed(() => !deliveryOpenTo(this.deliverySettings(), 'b2b'));
 
   readonly identity = computed<CompanyIdentityView | null>(() => {
     const company = this.company();
@@ -156,9 +171,14 @@ export class FicheClientStore {
       this.state.set('loading');
     }
     try {
-      const [company, pickups] = await Promise.all([
+      const [company, pickups, deliverySettings] = await Promise.all([
         id === null ? Promise.resolve(undefined) : this.service.getById(id),
         this.pickupsService.list().catch(() => [] as readonly PickupAddressView[]),
+        // Illisible = le défaut du contrat, ouverte aux deux : c'est ce que vaut
+        // le réglage tant que personne ne l'a posé, et ce qu'un front servi
+        // avant l'API doit supposer (plan, §4). Le serveur refuse de toute
+        // façon une livraison fermée à la commande.
+        this.deliverySettingsService.read().catch(() => DEFAULT_DELIVERY_SETTINGS),
       ]);
       // Un compte qu'on ouvre n'a pas d'id : l'absence est ATTENDUE, elle ne
       // vaut pas « introuvable ».
@@ -168,6 +188,7 @@ export class FicheClientStore {
       }
       this.company.set(company ?? null);
       this.pickups.set(pickups);
+      this.deliverySettings.set(deliverySettings);
       this.state.set('ready');
     } catch {
       this.state.set('error');

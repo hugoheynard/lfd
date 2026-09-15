@@ -8,7 +8,6 @@ import type { PostalAddress } from '@lfd/b2b-ui/address';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
@@ -16,28 +15,32 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldInlineConfirmComponent,
+  FoldPageLayoutComponent,
   FoldPanelHostService,
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
-import { NotifyService } from '../../notify.service';
-import { CutoffsSection } from './cutoffs-section/cutoffs-section';
-import { DeliveryZonesSection } from './delivery-zones-section/delivery-zones-section';
-import { PickupAddressesService } from './pickup-addresses.service';
-import { openingRows } from './pickup-opening.model';
-import { PickupPanel, type PickupPanelData } from './pickup-panel/pickup-panel';
+import { NotifyService } from '../../../notify.service';
+import { PickupAddressesService } from '../pickup-addresses.service';
+import { discountAudienceSuffix } from '../pickup-discount-audience';
+import { openingRows } from '../pickup-opening.model';
+import { PickupPanel, type PickupPanelData } from '../pickup-panel/pickup-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * Sous-page **Retraits & livraisons** des Réglages (staff) — gère les **points de
- * retrait** (laboratoires) : ajouter, éditer, supprimer (au moins un gardé),
- * désigner le défaut. La livraison à domicile n'existe pas encore ; le retrait
- * est le fallback d'acheminement, présélectionné au checkout. La saisie passe par
- * `PickupPanel` (side-panel) ; ici on liste, on ouvre le panneau et on recharge.
+ * **Points de retrait** — « E-commerce LFC → Réglages ». Les laboratoires où le
+ * client vient chercher sa commande : ajouter, éditer, supprimer (au moins un
+ * gardé), désigner le défaut. La saisie passe par `PickupPanel` ; ici on liste,
+ * on ouvre le panneau et on recharge.
+ *
+ * Elle était la première carte d'un onglet « Retraits & livraisons » des
+ * Réglages, avec les zones et les heures limites. Les trois se sont séparées le
+ * 2026-09-15 (plan « remise et livraison par clientèle », D6) : chacune a sa
+ * page, et l'ancienne adresse redirige ici.
  */
 @Component({
-  selector: 'app-reglages-pickup-page',
+  selector: 'app-pickup-addresses-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AddressView,
@@ -47,19 +50,17 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldIconComponent,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
     FoldInlineConfirmComponent,
+    FoldPageLayoutComponent,
     FoldPopoverTriggerDirective,
-    CutoffsSection,
-    DeliveryZonesSection,
   ],
-  templateUrl: './reglages-pickup-page.html',
-  styleUrl: './reglages-pickup-page.scss',
+  templateUrl: './pickup-addresses-page.html',
+  styleUrl: './pickup-addresses-page.scss',
 })
-export class ReglagesPickupPage {
+export class PickupAddressesPage {
   private readonly pickups = inject(PickupAddressesService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
@@ -72,10 +73,19 @@ export class ReglagesPickupPage {
   /** On garde toujours au moins un point : le dernier n'est pas supprimable. */
   protected readonly canRemove = computed(() => this.addresses().length > 1);
 
-  /** Formate la remise d'un point de retrait pour l'affichage. */
-  protected readonly fee = formatAdjustmentValue;
   /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
   protected readonly hours = openingRows;
+
+  /**
+   * « − 10 % · B2B » : la remise ET à qui elle va. Sans la clientèle, une remise
+   * fermée aux particuliers se lirait comme offerte à tous.
+   */
+  protected discountLabel(point: PickupAddressView): string {
+    if (point.discount === null) {
+      return '';
+    }
+    return `− ${formatAdjustmentValue(point.discount)}${discountAudienceSuffix(point.discountAudiences)}`;
+  }
 
   /**
    * L'adresse à afficher. Un point sans nom d'usage prend celui de sa ville :

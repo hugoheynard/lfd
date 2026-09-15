@@ -2,10 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, effect, input, output } f
 import { FoldListboxComponent, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 import { formatAdjustment, resolveZoneForPostalCode } from '@lfd/b2b-ui/order';
 import { NEW_ADDRESS, type DraftAddress, type DraftStore } from '../draft.store';
-import { pickupSlots } from '@lfd/contracts';
+import { deliveryOpenTo, pickupSlots } from '@lfd/contracts';
 import type {
   BillingAddressPayload,
+  CustomerAudience,
   DeliveryAddressView,
+  DeliverySettingsView,
   DeliveryZoneView,
   FulfillmentMethod,
   FulfillmentWindow,
@@ -42,8 +44,8 @@ export interface FulfillmentChoice {
  * panier du client.
  *
  * L'écran de saisie ne proposait que le retrait, en s'appuyant sur un fait qui
- * n'en est plus un : LFC livre, ses zones se règlent dans Réglages → Livraisons &
- * retraits, et le panier client offre les deux depuis le pivot « zéro friction ».
+ * n'en est plus un : LFC livre, ses zones se règlent dans E-commerce LFC →
+ * Réglages → Livraison, et le panier client offre les deux depuis le pivot « zéro friction ».
  * Un back-office qui ne sait pas commander ce que le client sait commander force
  * le commercial à raccrocher.
  *
@@ -52,6 +54,11 @@ export interface FulfillmentChoice {
  * est figée dans le fil, et n'entre pas au carnet, qui se tient depuis la fiche.
  * Le carnet vide ouvre donc directement la saisie plutôt que d'immobiliser
  * l'appel.
+ *
+ * **Le coursier suit le réglage de l'e-commerce**, comme au panier du client :
+ * fermée à la clientèle de la société — les pros pour une société active, les
+ * particuliers sinon —, l'option est désactivée et la raison écrite. Le staff
+ * n'a pas de passe-droit (Hugo, 2026-09-15) ; le serveur refuse de toute façon.
  *
  * **La zone n'est pas un choix** : elle se déduit du code postal livré, ici comme
  * au serveur, qui la re-déduira à la passation. L'annoncer avant sert à dire le
@@ -69,6 +76,11 @@ export class AcheminementCommande {
   /** Le carnet de livraison de la société — la défaut en tête. */
   readonly addresses = input.required<readonly DeliveryAddressView[]>();
   readonly zones = input.required<readonly DeliveryZoneView[]>();
+  /** À quelles clientèles la livraison est proposée. */
+  readonly deliverySettings =
+    input.required<Pick<DeliverySettingsView, 'openToB2b' | 'openToB2c'>>();
+  /** La clientèle de la société : `audienceOf(son statut)`, calculée par la page. */
+  readonly audience = input.required<CustomerAudience>();
   /** Le brouillon de l'écran : c'est LUI qui garde le choix, pas ce composant. */
   readonly draft = input.required<DraftStore>();
 
@@ -77,10 +89,32 @@ export class AcheminementCommande {
   protected readonly method = computed(() => this.draft().method());
   protected readonly keepAddress = computed(() => this.draft().keepAddress());
 
-  protected readonly methods: readonly FoldViewToggleOption[] = [
+  /**
+   * Pourquoi le coursier est fermé, en clair — `null` quand il est proposé.
+   *
+   * Deux phrases parce que deux causes : une société active se heurte au
+   * réglage des pros ; une société qui ne l'est pas suit les règles des
+   * particuliers, et le commercial doit l'apprendre ici plutôt que chercher
+   * pourquoi « les pros » sont pourtant ouverts.
+   */
+  protected readonly deliveryClosedReason = computed<string | null>(() => {
+    if (deliveryOpenTo(this.deliverySettings(), this.audience())) {
+      return null;
+    }
+    return this.audience() === 'b2b'
+      ? 'La livraison n’est pas proposée aux pros (E-commerce LFC → Réglages → Livraison).'
+      : 'Ce compte n’est pas actif : il suit les règles des particuliers, à qui la livraison n’est pas proposée (E-commerce LFC → Réglages → Livraison).';
+  });
+
+  protected readonly methods = computed<readonly FoldViewToggleOption[]>(() => [
     { value: 'pickup', icon: 'store', label: 'Retrait' },
-    { value: 'delivery', icon: 'truck', label: 'Coursier' },
-  ];
+    {
+      value: 'delivery',
+      icon: 'truck',
+      label: 'Coursier',
+      disabled: this.deliveryClosedReason() !== null,
+    },
+  ]);
 
   protected readonly isCourier = computed(() => this.method() === 'delivery');
 
@@ -213,7 +247,7 @@ export class AcheminementCommande {
    */
   private windowIssue(): string | null {
     if (this.slots().length === 0) {
-      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Livraisons & retraits).';
+      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (E-commerce LFC → Réglages → Points de retrait).';
     }
     return this.slotId() === '' ? 'Créneau de retrait à choisir.' : null;
   }
@@ -247,12 +281,25 @@ export class AcheminementCommande {
       window: this.chosenWindow(),
       issue:
         point === null
-          ? 'Aucun point de retrait n’est configuré (Réglages → Livraisons & retraits).'
+          ? 'Aucun point de retrait n’est configuré (E-commerce LFC → Réglages → Points de retrait).'
           : this.windowIssue(),
     };
   }
 
   private courierChoice(): FulfillmentChoice {
+    // Un brouillon repris peut rouvrir en coursier alors que la livraison a été
+    // fermée depuis : l'option est grisée, et le choix refuse en disant pourquoi.
+    const closed = this.deliveryClosedReason();
+    if (closed !== null) {
+      return {
+        method: 'delivery',
+        pickupAddressId: null,
+        deliveryAddress: null,
+        saveToBook: false,
+        window: null,
+        issue: closed,
+      };
+    }
     const address = this.address();
     if (!this.addressComplete()) {
       return {

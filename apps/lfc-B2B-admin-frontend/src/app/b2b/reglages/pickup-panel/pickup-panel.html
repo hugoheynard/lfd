@@ -29,6 +29,36 @@
     [value]="discountAlteration()"
     (valueChange)="setDiscount($event)"
   />
+
+  <!-- Sous la réduction qu'elles qualifient, et grisées sans elle : une case
+       qu'on coche sans réduction ne changerait rien, et le laisser croire
+       serait mentir sur ce qu'on règle. -->
+  <fold-fieldset
+    legend="La réduction s'applique à"
+    direction="horizontal"
+    [hint]="audiencesDisabled() ? 'Sans réduction, il n’y a rien à attribuer.' : ''"
+  >
+    <fold-checkbox
+      label="B2B"
+      [disabled]="audiencesDisabled()"
+      [checked]="audiences().b2b"
+      (checkedChange)="setAudience('b2b', $event)"
+    />
+    <fold-checkbox
+      label="B2C"
+      [disabled]="audiencesDisabled()"
+      [checked]="audiences().b2c"
+      (checkedChange)="setAudience('b2c', $event)"
+    />
+  </fold-fieldset>
+
+  @if (audienceIssue(); as issue) {
+    <fold-callout variant="warning">{{ issue }}</fold-callout>
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
 </fold-panel-body>
 
 <fold-panel-footer>

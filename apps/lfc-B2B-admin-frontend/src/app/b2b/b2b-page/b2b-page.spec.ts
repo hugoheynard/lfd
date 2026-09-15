@@ -59,7 +59,7 @@ async function render(
       },
       {
         provide: WorkspaceCatalogue,
-        useValue: { rail: () => signal({ title: 'B2B', icon: 'store', items: [] }) },
+        useValue: { rail: () => signal({ title: 'E-commerce LFC', icon: 'store', items: [] }) },
       },
     ],
   });

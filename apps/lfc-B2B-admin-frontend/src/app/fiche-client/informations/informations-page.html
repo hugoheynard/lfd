@@ -192,7 +192,7 @@
                fermé : c'est le carnet d'adresses du client, pas une promesse de
                tournée. Le commercial les récupère au téléphone bien avant qu'on
                livre, et les perdre obligerait à tout resaisir le jour de
-               l'ouverture. Ce que `DELIVERY_SERVICE_OPEN` ferme, c'est l'OFFRE
+               l'ouverture. Ce que le réglage de livraison ferme, c'est l'OFFRE
                — le choix au panier, la préférence d'acheminement — pas la
                fiche. -->
           <lfd-company-addresses-card
@@ -207,7 +207,7 @@
             (remove)="fiche.removeDelivery($event)"
             (openProcedure)="fiche.openProcedure($event)"
             [showDeliveries]="true"
-            [showPickup]="fiche.deliveryHidden"
+            [showPickup]="fiche.deliveryHidden()"
             [pickup]="fiche.defaultPickup()"
           />
 
@@ -221,7 +221,7 @@
               [preference]="c.fulfillmentPreference"
               [pickups]="fiche.pickups()"
               [deliveries]="fiche.deliveries()"
-              [deliveryOffered]="!fiche.deliveryHidden"
+              [deliveryOffered]="!fiche.deliveryHidden()"
               [saving]="fiche.preferring()"
               description="Comment ce client est servi d'habitude. C'est le point de départ de ses commandes — il pourra en changer au panier."
               noPreferenceHint="Aucune préférence : ce client choisit son acheminement à chaque commande, comme aujourd'hui."
