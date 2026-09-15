@@ -161,7 +161,7 @@ export class OrderDrafting {
         contact: content.deliveryContact,
         signatureRequired: content.signatureRequired,
       },
-      await this.defaultsFor(content),
+      await this.defaultsFor(content, parties),
     );
     const order = Order.draft({
       agreed,
@@ -300,12 +300,22 @@ export class OrderDrafting {
    * En retrait il n'y a **aucun défaut** : le point est partagé entre tous les
    * clients, ses heures sont une contrainte d'ouverture et non une préférence de
    * ce client-là. Ce que le client demande y est donc toujours un choix.
+   *
+   * **Sans société, aucun défaut non plus** : une adresse du carnet appartient
+   * toujours à une société, et une commande perso n'en a aucune à reprendre.
    */
-  private async defaultsFor(content: OrderContent): Promise<FulfillmentDefaults> {
-    if (content.fulfillmentMethod === "pickup" || content.deliveryAddressId === null) {
+  private async defaultsFor(
+    content: OrderContent,
+    parties: OrderParties,
+  ): Promise<FulfillmentDefaults> {
+    if (
+      content.fulfillmentMethod === "pickup" ||
+      content.deliveryAddressId === null ||
+      parties.companyId === null
+    ) {
       return NO_DELIVERY_DEFAULTS;
     }
-    return this.deliveryDefaults.of(content.deliveryAddressId);
+    return this.deliveryDefaults.of(content.deliveryAddressId, parties.companyId);
   }
 
   /**

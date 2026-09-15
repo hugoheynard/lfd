@@ -24,9 +24,16 @@ export const NO_DELIVERY_DEFAULTS: DeliveryDefaults = {
 
 export abstract class DeliveryDefaultsReader {
   /**
-   * Les consignes d'une adresse du carnet. Rend {@link NO_DELIVERY_DEFAULTS}
-   * quand l'adresse n'existe pas ou n'a rien de renseigné — une commande ne se
-   * refuse pas parce qu'un réglage est vide.
+   * Les consignes d'une adresse du carnet **de cette société**. Rend
+   * {@link NO_DELIVERY_DEFAULTS} quand l'adresse n'existe pas, n'appartient pas
+   * à `companyId`, ou n'a rien de renseigné — une commande ne se refuse pas
+   * parce qu'un réglage est vide.
+   *
+   * 🔴 **La société est un argument, et pas une option.** L'identifiant
+   * d'adresse vient du corps de la commande : lu sans le mur, il importait dans
+   * la commande de n'importe quel client le contact de livraison (nom,
+   * téléphone), la signature et le créneau d'une AUTRE maison (corrigé le
+   * 2026-09-15).
    */
-  abstract of(addressId: string): Promise<DeliveryDefaults>;
+  abstract of(addressId: string, companyId: string): Promise<DeliveryDefaults>;
 }

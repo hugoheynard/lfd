@@ -199,6 +199,66 @@ describe("la fiche de production lit ce qui a été convenu", () => {
     expect(sheet?.revision).toBe(0);
     expect(sheet?.fulfillment.signatureRequired).toBe(false);
   });
+
+  /**
+   * Régression (2026-09-15) : l'identifiant d'adresse vient du CORPS de la
+   * commande, et ses consignes étaient lues sans le mur. Un client important
+   * l'adresse d'une autre maison repartait avec son contact, son téléphone et
+   * son exigence de signature.
+   */
+  it("n'importe jamais les consignes de l'adresse d'une AUTRE société", async () => {
+    const { companyId } = await seedSociete();
+    const other = await createCompany(ctx.prisma, { status: "active" });
+    const foreign = await ctx.prisma.address.create({
+      data: {
+        ...SITE,
+        companyId: other.id,
+        kind: "delivery",
+        isDefault: true,
+        deliverySpecs: {
+          note: "",
+          slots: { mode: "everyday", slot: null },
+          deliveryContact: CONTACT_D_APRES,
+          gps: null,
+          signatureRequired: true,
+        },
+      },
+      select: { id: true },
+    });
+    // Sa propre adresse n'exige pas de signature : seule l'autre maison la
+    // demande, et c'est donc elle qui trahirait la fuite.
+    await ctx.prisma.address.updateMany({
+      where: { companyId },
+      data: {
+        deliverySpecs: {
+          note: "",
+          slots: { mode: "everyday", slot: null },
+          deliveryContact: null,
+          gps: null,
+          signatureRequired: false,
+        },
+      },
+    });
+
+    await ctx
+      .asSub(MEMBER)
+      .post(`/orders`)
+      .send({
+        idempotencyKey: randomUUID(),
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "delivery",
+        deliveryAddress: SITE,
+        deliveryAddressId: foreign.id,
+        note: "",
+        lines: [{ sku: "VIE-001", quantity: 2 }],
+      })
+      .expect(201);
+
+    const sheet = (await batch()).sheets[0];
+    expect(sheet?.fulfillment.contact?.name).not.toBe("Yanis Delorme");
+    expect(sheet?.fulfillment.contact?.phone).not.toBe(CONTACT_D_APRES.telephone);
+    expect(sheet?.fulfillment.signatureRequired).toBe(false);
+  });
 });
 
 /**

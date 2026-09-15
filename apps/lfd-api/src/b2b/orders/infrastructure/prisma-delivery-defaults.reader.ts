@@ -23,13 +23,15 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
     super();
   }
 
-  async of(addressId: string): Promise<DeliveryDefaults> {
+  async of(addressId: string, companyId: string): Promise<DeliveryDefaults> {
     // La société vient avec l'adresse : la signature se résout ICI, et c'est le
     // seul endroit où les deux étages sont visibles ensemble. Les lire en deux
     // requêtes laisserait à l'appelant le soin de les composer — donc à chaque
     // appelant, donc un jour à un appelant qui l'oublie.
-    const row = await this.prisma.address.findUnique({
-      where: { id: addressId },
+    // 🔴 Le mur est DANS la requête : une adresse d'une autre société n'est pas
+    // trouvée, et retombe sur « aucun réglage » comme une adresse inconnue.
+    const row = await this.prisma.address.findFirst({
+      where: { id: addressId, companyId },
       select: {
         deliverySpecs: true,
         company: { select: { deliverySignatureRequired: true } },
