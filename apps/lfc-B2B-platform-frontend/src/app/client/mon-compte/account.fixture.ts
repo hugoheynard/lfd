@@ -81,7 +81,17 @@ export function accountWith(
 ): Provider {
   return {
     provide: AccountService,
-    useValue: { companies: () => companies, profile: () => profile, status: () => 'ready' },
+    useValue: {
+      companies: () => companies,
+      profile: () => profile,
+      status: () => 'ready',
+      // Le compte relu, dont `ClientWorkspace` tire l'espace : sans préférence,
+      // une société seule est l'espace courant (plan D5).
+      account: () =>
+        profile === null
+          ? null
+          : { profile, companies, navPrefs: { catalogueView: null, workspace: null } },
+    },
   };
 }
 

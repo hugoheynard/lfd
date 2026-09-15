@@ -84,7 +84,7 @@ export class AccountService {
 
   /** Préférences d'affichage persistées ; défaut « aucun choix » avant chargement. */
   readonly navPrefs = computed<NavPreferences>(
-    () => this.state()?.navPrefs ?? { catalogueView: null },
+    () => this.state()?.navPrefs ?? { catalogueView: null, workspace: null },
   );
 
   /**
@@ -176,6 +176,55 @@ export class AccountService {
         next: (account) => this.state.set(account),
         error: (error: unknown) => {
           this.state.set(current);
+          this.notify.error(error);
+        },
+      });
+  }
+
+  /**
+   * Persiste l'**espace de travail** choisi — optimiste, sur le modèle de
+   * {@link setCatalogueView} : le choix se reflète tout de suite, l'écriture
+   * part en arrière-plan, et un échec revient en arrière avec un toast.
+   *
+   * Une différence, et elle compte : deux bascules rapprochées font deux
+   * écritures, et la réponse de la PREMIÈRE peut revenir après la seconde. On
+   * n'installe donc le compte relu que si la préférence affichée est encore
+   * celle que cette écriture a posée, et l'échec ne revient en arrière que dans
+   * le même cas — sans quoi une réponse tardive rebasculerait l'écran.
+   *
+   * Aucune validation ici : c'est `ClientWorkspace` qui sait ce qu'est un
+   * espace, et le serveur refuse une société hors rattachements.
+   */
+  setWorkspace(workspace: string): void {
+    const before = this.state();
+    if (before === null || before.navPrefs.workspace === workspace) {
+      return;
+    }
+    const previous = before.navPrefs.workspace ?? null;
+    this.state.set({ ...before, navPrefs: { ...before.navPrefs, workspace } });
+    const stillMine = (): boolean => this.state()?.navPrefs.workspace === workspace;
+    this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.patch<Account>(
+            `${AUTH_CONFIG.apiBaseUrl}/me/nav-prefs`,
+            { workspace },
+            headers(token),
+          ),
+        ),
+      )
+      .subscribe({
+        next: (account) => {
+          if (stillMine()) {
+            this.state.set(account);
+          }
+        },
+        error: (error: unknown) => {
+          const now = this.state();
+          if (now !== null && stillMine()) {
+            this.state.set({ ...now, navPrefs: { ...now.navPrefs, workspace: previous } });
+          }
           this.notify.error(error);
         },
       });

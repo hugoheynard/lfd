@@ -29,7 +29,14 @@ function bootWith(companies: readonly { id: string }[]): HttpTestingController {
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: AuthFacade, useValue: { accessToken$: () => of('jeton') } },
-      { provide: AccountService, useValue: { companies: () => companies } },
+      {
+        provide: AccountService,
+        useValue: {
+          companies: () => companies,
+          // Le compte relu : une société seule est l'espace, et c'est son carnet qui se lit.
+          account: () => ({ companies, navPrefs: { catalogueView: null, workspace: null } }),
+        },
+      },
     ],
   });
   return TestBed.inject(HttpTestingController);
@@ -112,7 +119,9 @@ describe('les écritures du carnet', () => {
   };
 
   it('modifie une livraison par PATCH, relit le carnet, et rend `null`', async () => {
-    const http = bootWith([]);
+    // L'espace est la société écrite : un carnet relu pour une AUTRE maison que
+    // celle de l'espace est écarté, et c'est voulu (cf. `ClientAddresses.stillFor`).
+    const http = bootWith([{ id: 'cmp_1' }]);
     const addresses = TestBed.inject(ClientAddresses);
 
     const done = addresses.updateDelivery('cmp_1', 'adr_1', PAYLOAD);
@@ -174,7 +183,9 @@ describe('les écritures du carnet', () => {
   });
 
   it('désigne la défaut par PATCH …/default, sans corps, relit le carnet, et rend `null`', async () => {
-    const http = bootWith([]);
+    // L'espace est la société écrite : un carnet relu pour une AUTRE maison que
+    // celle de l'espace est écarté, et c'est voulu (cf. `ClientAddresses.stillFor`).
+    const http = bootWith([{ id: 'cmp_1' }]);
     const addresses = TestBed.inject(ClientAddresses);
 
     const done = addresses.makeDefaultDelivery('cmp_1', 'adr_2');

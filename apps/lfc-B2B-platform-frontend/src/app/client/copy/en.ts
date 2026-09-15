@@ -29,6 +29,10 @@ export const EN: ClientCopy = {
       'We couldn’t check what the shop offers right now, so some pages stay closed. Reload the page to try again.',
     accountMenu: 'My personal account',
     myProfile: 'My profile',
+    workspaceChoice: 'Workspace',
+    workspacePersonal: 'Personal',
+    workspaceCurrentPersonal: 'Personal account',
+    workspaceCurrentFor: 'Working for',
   },
 
   nav: {

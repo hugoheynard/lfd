@@ -31,6 +31,10 @@ export const IT: ClientCopy = {
       'Non siamo riusciti a verificare cosa offre il negozio in questo momento: alcune pagine restano chiuse. Ricarica la pagina per riprovare.',
     accountMenu: 'Il mio account personale',
     myProfile: 'Il mio profilo',
+    workspaceChoice: 'Spazio di lavoro',
+    workspacePersonal: 'Personale',
+    workspaceCurrentPersonal: 'Account personale',
+    workspaceCurrentFor: 'Lavori per',
   },
 
   nav: {

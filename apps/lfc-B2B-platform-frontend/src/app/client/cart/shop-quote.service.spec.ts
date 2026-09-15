@@ -10,6 +10,7 @@ import { CartStore } from './cart.store';
 import { ShopQuote } from './shop-quote.service';
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 
 const SKU = TEST_ITEMS[0]?.sku ?? '';
 
@@ -26,7 +27,11 @@ const ANSWER: ShopQuoteView = {
 function boot(): { quote: ShopQuote; cart: CartStore; http: HttpTestingController } {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [provideHttpClient(), provideHttpClientTesting()],
+    providers: [
+      provideWorkspace(workspaceDouble()),
+      provideHttpClient(),
+      provideHttpClientTesting(),
+    ],
   });
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   return {
@@ -201,6 +206,8 @@ describe('la route du devis', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        // L'espace connu : sans lui, la vitrine et le devis d'un client reconnu attendent `/me`.
+        provideWorkspace(workspaceDouble()),
         {
           provide: AuthFacade,
           useValue: { isAuthenticated: () => recognised, accessToken$: () => of('jeton-de-test') },

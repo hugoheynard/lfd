@@ -23,6 +23,10 @@ export const FR: ClientCopy = {
       'Nous n’avons pas pu vérifier ce que la boutique propose en ce moment : certaines pages restent fermées. Rechargez la page pour réessayer.',
     accountMenu: 'Mon compte personnel',
     myProfile: 'Mon profil',
+    workspaceChoice: 'Espace de travail',
+    workspacePersonal: 'Perso',
+    workspaceCurrentPersonal: 'Compte perso',
+    workspaceCurrentFor: 'Vous travaillez pour',
   },
 
   nav: {

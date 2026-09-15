@@ -14,6 +14,7 @@ import {
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -32,6 +33,9 @@ import { ShopCatalogue } from '../shop/shop-catalogue.store';
  * millisecondes entre deux paniers n'aurait eu aucune justification.
  */
 const QUOTE_DEBOUNCE_MS = 300;
+
+/** Le lecteur d'un visiteur non reconnu — la route publique. */
+const VISITOR = 'visiteur';
 
 /** Où en est le décompte. `idle` = rien à chiffrer, le panier est vide. */
 export type QuoteStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -84,6 +88,7 @@ export class ShopQuote {
   private readonly store = inject(CartStore);
   private readonly order = inject(OrderContextStore);
   private readonly catalogue = inject(ShopCatalogue);
+  private readonly workspace = inject(ClientWorkspace);
 
   private readonly view = signal<ShopQuoteView>(EMPTY);
   private readonly state = signal<QuoteStatus>('idle');
@@ -101,7 +106,11 @@ export class ShopQuote {
   private readonly key = computed(() => {
     const lines = this.payloadLines();
     const service = this.fulfillmentOf();
-    return JSON.stringify({ lines, service });
+    // L'espace est dans la clé : le même panier ne coûte pas pareil en perso et
+    // sous la mercuriale d'une société, donc une bascule redemande le décompte.
+    // `null` = reconnu, espace pas encore connu — cf. `ask`.
+    const reader = this.auth.isAuthenticated() ? this.workspace.current() : VISITOR;
+    return JSON.stringify({ lines, service, reader });
   });
 
   constructor() {
@@ -156,6 +165,11 @@ export class ShopQuote {
     if (lines.length === 0) {
       this.view.set(EMPTY);
       this.state.set('idle');
+      return of(null);
+    }
+    if (readerIn(key) === null) {
+      // Reconnu, espace inconnu : un décompte sans en-tête serait chiffré pour
+      // l'espace que le serveur choisit. L'arrivée de l'espace change la clé.
       return of(null);
     }
     const body = { lines, fulfillment: fulfillmentIn(key) };
@@ -237,6 +251,11 @@ export class ShopQuote {
 /** Les lignes encodées dans la clé — la clé EST la charge, pas son résumé. */
 function linesOf(key: string): ShopQuotePayload['lines'] {
   return (JSON.parse(key) as { lines: ShopQuotePayload['lines'] }).lines;
+}
+
+/** Le lecteur encodé dans la clé : l'espace, {@link VISITOR}, ou `null` s'il n'est pas connu. */
+function readerIn(key: string): string | null {
+  return (JSON.parse(key) as { reader: string | null }).reader;
 }
 
 /** Le service encodé dans la clé. */

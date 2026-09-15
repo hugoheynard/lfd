@@ -4,13 +4,14 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
+import { workspaceInterceptor } from './client/client-workspace.interceptor';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
 import { AddressesService } from './legacy/entreprises/addresses.service';
@@ -38,7 +39,9 @@ export const appConfig: ApplicationConfig = {
     }),
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withFetch()),
+    // L'espace de travail déclaré sur chaque requête vers l'API, une fois connu
+    // (`documentation/b2b/plan-espace-de-travail.md`, D6).
+    provideHttpClient(withFetch(), withInterceptors([workspaceInterceptor])),
     provideAuth(),
     // Ce que la boutique permet, lu au DÉMARRAGE et sans attendre la réponse :
     // le premier écran se dessine tout de suite, seules les gardes qui en

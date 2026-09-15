@@ -10,6 +10,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { openShopAt } from '../feature-access/feature-access.fixture';
+import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 
 /** Le rang d'une référence dans le rayon — l'ordre que le panier doit suivre. */
 const order = (sku: string): number => TEST_ITEMS.findIndex((item) => item.sku === sku);
@@ -29,7 +30,13 @@ const AT_THE_LABO: ServiceChoice = {
 function reload(): { cart: ClientCart; order: OrderContextStore; orders: ClientOrders } {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [provideHttpClient(), provideHttpClientTesting(), provideRecognised()],
+    providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      // L'espace connu : sans lui, la vitrine et le devis d'un client reconnu attendent `/me`.
+      provideWorkspace(workspaceDouble()),
+      provideRecognised(),
+    ],
   });
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   return {
@@ -52,7 +59,11 @@ describe('Le panier au premier écran venu', () => {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspaceDouble()),
+      ],
     });
     const catalogue = TestBed.inject(ShopCatalogue);
     expect(catalogue.status()).toBe('idle');
@@ -85,7 +96,13 @@ describe('Le panier, selon la boutique', () => {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRecognised()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // L'espace connu : sans lui, la vitrine et le devis d'un client reconnu attendent `/me`.
+        provideWorkspace(workspaceDouble()),
+        provideRecognised(),
+      ],
     });
     return TestBed.inject(HttpTestingController);
   }
@@ -131,7 +148,13 @@ describe('Les règles du panier', () => {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRecognised()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // L'espace connu : sans lui, la vitrine et le devis d'un client reconnu attendent `/me`.
+        provideWorkspace(workspaceDouble()),
+        provideRecognised(),
+      ],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   });

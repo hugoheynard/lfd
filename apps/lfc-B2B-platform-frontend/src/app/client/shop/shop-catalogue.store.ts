@@ -1,11 +1,15 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import type { ShopCatalogueView, ShopItemView, ShopShelfView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { ClientWorkspace } from '../client-workspace.service';
+
+/** La clé de la photo d'un visiteur non reconnu — la vitrine publique. */
+const VISITOR = 'visiteur';
 
 /** Où en est l'hydratation. `idle` = personne n'a encore ouvert la boutique. */
 export type CatalogueStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -49,21 +53,34 @@ export type CatalogueStatus = 'idle' | 'loading' | 'ready' | 'failed';
  * ci-dessus : là il s'agissait du catalogue qui bouge sous un client immobile ;
  * ici c'est le client qui change, et lui montrer encore le tarif public serait
  * lui cacher ce qu'on lui a négocié.
+ *
+ * _(2026-09-15)_ Le lecteur, c'est désormais **un espace** : la photo est prise
+ * pour le perso, pour une société, ou pour un visiteur. Changer d'espace change
+ * de tarif — la mercuriale d'une maison n'est pas celle d'une autre, et le perso
+ * paie le catalogue — donc la photo se rejoue, et pour la même raison. Tant que
+ * l'espace d'une personne reconnue n'est pas connu, la vitrine **attend** au
+ * lieu de partir sans en-tête (plan espace de travail, D6).
  */
 @Injectable({ providedIn: 'root' })
 export class ShopCatalogue {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
+  private readonly workspace = inject(ClientWorkspace);
+
   private readonly state = signal<CatalogueStatus>('idle');
   /**
-   * Pour QUI la photo a été prise. `null` = personne (vitrine publique).
+   * Pour QUEL lecteur la photo a été prise (ou est en cours) : l'espace, ou
+   * {@link VISITOR}. `null` = aucune photo.
    *
-   * On garde le fait d'être reconnu, pas l'identité : le serveur seul sait pour
-   * quelle société il a résolu, et le front n'a pas à le redevenir. Ce drapeau
-   * ne sert qu'à savoir si la photo est encore la bonne.
+   * Il ne sert qu'à deux choses : savoir si la photo est encore la bonne, et
+   * écarter une réponse revenue après une bascule — elle porterait le tarif
+   * d'un autre espace.
    */
-  private readonly loadedForMember = signal(false);
+  private photoFor: string | null = null;
+
+  /** Quelqu'un a-t-il demandé la vitrine ? Sans demande, une bascule ne relit rien. */
+  private wanted = false;
   private readonly catalogue = signal<ShopCatalogueView>({ shelves: [], items: [] });
 
   readonly status = this.state.asReadonly();
@@ -84,6 +101,27 @@ export class ShopCatalogue {
    */
   itemOf(sku: string): ShopItemView | null {
     return this.bySku().get(sku) ?? null;
+  }
+
+  constructor() {
+    // Le lecteur change — reconnaissance, espace résolu, bascule : la photo se
+    // rejoue, mais seulement si quelqu'un l'a déjà demandée.
+    effect(() => {
+      this.readerKey();
+      if (this.wanted) {
+        untracked(() => {
+          void this.hydrate();
+        });
+      }
+    });
+  }
+
+  /**
+   * Le lecteur du moment : {@link VISITOR}, l'espace de la personne reconnue,
+   * ou `null` tant que cet espace n'est pas connu.
+   */
+  private readerKey(): string | null {
+    return this.auth.isAuthenticated() ? this.workspace.current() : VISITOR;
   }
 
   /**
@@ -110,24 +148,38 @@ export class ShopCatalogue {
     // le rejetait et redemandait le réseau, sur des tests qui n'attendaient
     // aucun appel. La réponse juste est la même dans les deux cas — la photo
     // vaut pour le lecteur du moment.
-    this.loadedForMember.set(this.auth.isAuthenticated());
+    this.photoFor = this.readerKey();
   }
 
   async hydrate(): Promise<void> {
-    const member = this.auth.isAuthenticated();
-    // Idempotent tant que le LECTEUR n'a pas changé. Une photo prise pour un
-    // visiteur ne vaut plus rien dès qu'il se reconnaît : elle porte le tarif
-    // public, et son tarif à lui est peut-être ailleurs.
-    const settled = this.state() === 'ready' || this.state() === 'loading';
-    if (settled && this.loadedForMember() === member) {
+    this.wanted = true;
+    const reader = this.readerKey();
+    if (reader === null) {
+      // Reconnu, espace pas encore connu : on attend, et l'effet relancera.
+      // Une photo déjà posée reste — elle ne se remplace que par la bonne.
+      if (this.state() === 'idle') {
+        this.state.set('loading');
+      }
       return;
     }
+    // Idempotent tant que le LECTEUR n'a pas changé. Une photo prise pour un
+    // visiteur ne vaut plus rien dès qu'il se reconnaît, ni celle d'un espace
+    // dès qu'il en change : elle porte un autre tarif.
+    const settled = this.state() === 'ready' || this.state() === 'loading';
+    if (settled && this.photoFor === reader) {
+      return;
+    }
+    this.photoFor = reader;
     this.state.set('loading');
     try {
-      this.receive(member ? await this.mine() : await this.publicShelf());
-      this.loadedForMember.set(member);
+      const view = reader === VISITOR ? await this.publicShelf() : await this.mine();
+      if (this.photoFor === reader) {
+        this.receive(view);
+      }
     } catch {
-      this.state.set('failed');
+      if (this.photoFor === reader) {
+        this.state.set('failed');
+      }
     }
   }
 
@@ -142,9 +194,8 @@ export class ShopCatalogue {
    * La vitrine du client reconnu : son prix, et le tarif catalogue à barrer là
    * où il a négocié.
    *
-   * Aucun identifiant de société n'est passé — le serveur la résout depuis les
-   * rattachements. Le front ne choisit plus pour qui il parle, et ne peut donc
-   * plus se tromper de maison.
+   * Aucun identifiant de société dans l'URL : l'espace part dans l'en-tête que
+   * pose `workspaceInterceptor`, et le serveur le confronte aux rattachements.
    */
   private async mine(): Promise<ShopCatalogueView> {
     return firstValueFrom(

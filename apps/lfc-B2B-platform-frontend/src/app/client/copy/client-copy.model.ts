@@ -39,6 +39,14 @@ export interface ClientCopy {
     readonly accountMenu: string;
     /** L'entrée qui ouvre le profil de la personne — et le titre de son dialogue. */
     readonly myProfile: string;
+    /** Le nom du groupe d'entrées qui bascule d'espace de travail (plan espace de travail, D8). */
+    readonly workspaceChoice: string;
+    /** L'entrée de l'espace perso, en tête du sélecteur. */
+    readonly workspacePersonal: string;
+    /** La ligne sous le sélecteur quand on travaille en perso. */
+    readonly workspaceCurrentPersonal: string;
+    /** Ce qui précède, pour un lecteur d'écran, l'enseigne en cours sous le sélecteur. */
+    readonly workspaceCurrentFor: string;
   };
 
   readonly nav: {

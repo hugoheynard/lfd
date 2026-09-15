@@ -147,3 +147,49 @@ describe('La date du dernier geste', () => {
     expect(store.quantities()).toEqual({ 'PAT-001': 3 });
   });
 });
+
+/**
+ * Une copie locale par espace de travail (plan espace de travail, D9) — et la
+ * copie du visiteur, qui ne survit pas à la reconnaissance.
+ */
+describe('Le panier par espace', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+  });
+
+  it('chaque espace relit sa propre copie', () => {
+    const store = TestBed.inject(CartStore);
+    store.switchTo('cmp_a');
+    store.setQuantity('VIE-001', 2);
+    store.switchTo('cmp_b');
+    expect(store.quantities()).toEqual({});
+    store.setQuantity('PAI-001', 1);
+
+    store.switchTo('cmp_a');
+    expect(store.quantities()).toEqual({ 'VIE-001': 2 });
+    expect(store.scope()).toBe('cmp_a');
+  });
+
+  /** Écrite au geste, pas par un effet : une bascule juste après ne la perd pas. */
+  it('le geste est écrit sous l’espace où il a eu lieu, même sans laisser passer un effet', () => {
+    const store = TestBed.inject(CartStore);
+    store.switchTo('cmp_a');
+    store.setQuantity('VIE-001', 3);
+    store.switchTo('cmp_b');
+
+    expect(JSON.parse(localStorage.getItem('lfc.cart.ws.cmp_a') ?? '{}')).toEqual({ 'VIE-001': 3 });
+    expect(localStorage.getItem('lfc.cart.ws.cmp_b')).toBeNull();
+  });
+
+  it('quitter le visiteur efface sa copie', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('VIE-001', 1);
+
+    store.switchTo('personal');
+
+    expect(localStorage.getItem('lfc.cart')).toBeNull();
+    expect(localStorage.getItem('lfc.cart.savedAt')).toBeNull();
+  });
+});

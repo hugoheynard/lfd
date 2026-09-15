@@ -3,7 +3,7 @@ import { effect, inject, Injectable, signal } from '@angular/core';
 import type { CustomerOrderView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
-import { AccountService } from '../../account/account.service';
+import { ClientWorkspace } from '../client-workspace.service';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 
@@ -15,15 +15,17 @@ import { AuthFacade } from '../../auth/auth.facade';
  * montrait donc les commandes de personne, à côté d'un panier qui, lui, partait
  * vraiment au serveur.
  *
- * ## Deux listes, parce qu'il y a deux natures de commande
+ * ## Une liste par espace de travail
  *
  * Une commande appartient à une **entreprise** (`GET /companies/:id/orders`), ou
- * à **personne d'autre que son auteur** — le parcours « zéro friction », où le
- * client paie par carte sans société (`GET /orders/mine`). Les deux existent, et
- * n'en lire qu'une ferait disparaître de l'écran des commandes réellement
- * passées.
+ * à **personne d'autre que son auteur** — le perso, où le client paie par carte
+ * sans société (`GET /orders/mine`, qui ne rend que celles-là : vérifié le
+ * 2026-09-15, `ListPersonalOrdersQuery`).
  *
- * Les deux partent **ensemble** : l'écran n'attend pas deux fois.
+ * L'historique suit l'**espace** (`ClientWorkspace`, plan D7) : en perso les
+ * commandes perso, dans une société les siennes. Il les mêlait tant que
+ * l'espace n'existait pas ; il **attend** désormais l'espace connu, et se vide
+ * à une bascule avant de relire.
  *
  * ## Rien pour un visiteur anonyme
  *
@@ -35,7 +37,7 @@ import { AuthFacade } from '../../auth/auth.facade';
 export class ClientOrderHistory {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly account = inject(AccountService);
+  private readonly workspace = inject(ClientWorkspace);
 
   private readonly rows = signal<readonly CustomerOrderView[]>([]);
 
@@ -47,18 +49,16 @@ export class ClientOrderHistory {
 
   constructor() {
     effect(() => {
-      if (!this.auth.isAuthenticated()) {
+      const current = this.workspace.current();
+      if (!this.auth.isAuthenticated() || current === null || current === this.loadedFor) {
         return;
       }
-      // `null` est une clé légitime : quelqu'un sans entreprise n'a que ses
-      // commandes personnelles, et il faut les lire aussi.
-      const company = this.account.companies()[0]?.id ?? null;
-      const key = company ?? 'personnel';
-      if (key === this.loadedFor) {
-        return;
+      if (this.loadedFor !== null && this.loadedFor !== 'posé-par-la-suite') {
+        // Les commandes de l'espace quitté ne restent pas à l'écran pendant la relecture.
+        this.rows.set([]);
       }
-      this.loadedFor = key;
-      void this.load(company);
+      this.loadedFor = current;
+      void this.load(current, this.workspace.company()?.id ?? null);
     });
   }
 
@@ -96,26 +96,26 @@ export class ClientOrderHistory {
     }
   }
 
-  private async load(companyId: string | null): Promise<void> {
+  private async load(workspace: string, companyId: string | null): Promise<void> {
     const base = AUTH_CONFIG.apiBaseUrl;
+    const url =
+      companyId === null ? `${base}/orders/mine` : `${base}/companies/${companyId}/orders`;
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
-      const headers = { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) };
-      const [personal, company] = await Promise.all([
-        firstValueFrom(this.http.get<readonly CustomerOrderView[]>(`${base}/orders/mine`, headers)),
-        companyId === null
-          ? Promise.resolve<readonly CustomerOrderView[]>([])
-          : firstValueFrom(
-              this.http.get<readonly CustomerOrderView[]>(
-                `${base}/companies/${companyId}/orders`,
-                headers,
-              ),
-            ),
-      ]);
-      this.rows.set(sorted([...personal, ...company]));
+      const orders = await firstValueFrom(
+        this.http.get<readonly CustomerOrderView[]>(url, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
+      );
+      // Une réponse revenue après une bascule est l'historique d'un autre espace.
+      if (this.loadedFor === workspace) {
+        this.rows.set(sorted(orders));
+      }
     } catch {
       // Relisible : un échec ne doit pas condamner l'écran pour la session.
-      this.loadedFor = null;
+      if (this.loadedFor === workspace) {
+        this.loadedFor = null;
+      }
     }
   }
 }

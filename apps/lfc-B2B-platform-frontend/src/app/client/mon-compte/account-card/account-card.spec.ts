@@ -28,7 +28,19 @@ function boot(companies: readonly CompanyView[]): ComponentFixture<AccountCard> 
   TestBed.configureTestingModule({
     imports: [AccountCard],
     providers: [
-      { provide: AccountService, useValue: { companies: () => companies, status: () => 'ready' } },
+      {
+        provide: AccountService,
+        useValue: {
+          companies: () => companies,
+          status: () => 'ready',
+          // Le compte relu, dont `ClientWorkspace` tire l'espace : une société seule est l'espace.
+          account: () => ({
+            profile: null,
+            companies,
+            navPrefs: { catalogueView: null, workspace: null },
+          }),
+        },
+      },
     ],
   });
   // Le VRAI dépôt, pas un doublé : c'est lui qui choisit l'enseigne plutôt que

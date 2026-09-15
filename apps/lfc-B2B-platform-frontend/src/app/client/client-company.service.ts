@@ -2,6 +2,7 @@ import { computed, inject, Injectable } from '@angular/core';
 import type { CompanyStatus, CompanyView } from '@lfd/contracts';
 
 import { AccountService } from '../account/account.service';
+import { ClientWorkspace, companyName } from './client-workspace.service';
 
 /** L'état d'un dossier client : à compléter, ou le statut de sa société. */
 export type DossierState = 'incomplete' | CompanyStatus;
@@ -16,9 +17,10 @@ export type DossierState = 'incomplete' | CompanyStatus;
  *
  * ## Quelle société
  *
- * La première de `GET /me`. La boutique n'a pas encore de sélecteur — le même
- * point de branchement que le carnet d'adresses, et pour la même raison
- * (cf. `ClientAddresses`).
+ * Celle de l'**espace de travail** courant (`ClientWorkspace`), `null` en perso.
+ * C'était la première de `GET /me`, pendant que le serveur chiffrait et
+ * encaissait pour `null` dès la deuxième société : l'écran montrait une maison,
+ * la caisse en servait une autre (plan espace de travail, §1).
  *
  * ## Rien pour un visiteur anonyme
  *
@@ -29,9 +31,10 @@ export type DossierState = 'incomplete' | CompanyStatus;
 @Injectable({ providedIn: 'root' })
 export class ClientCompany {
   private readonly account = inject(AccountService);
+  private readonly workspace = inject(ClientWorkspace);
 
-  /** La société, ou `null` — anonyme, ou compte sans entreprise. */
-  readonly company = computed<CompanyView | null>(() => this.account.companies()[0] ?? null);
+  /** La société de l'espace, ou `null` — anonyme, perso, ou compte sans entreprise. */
+  readonly company = computed<CompanyView | null>(() => this.workspace.company());
 
   /**
    * Le nom sous lequel la maison se reconnaît : son **enseigne** si elle en a
@@ -43,7 +46,7 @@ export class ClientCompany {
     if (company === null) {
       return '';
     }
-    return company.enseigne.trim() === '' ? company.raisonSociale : company.enseigne;
+    return companyName(company);
   });
 
   /** Le compte est-il ouvert ? La pastille de la carte n'affirme plus « Actif » à l'aveugle. */

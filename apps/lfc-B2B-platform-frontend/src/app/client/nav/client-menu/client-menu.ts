@@ -15,6 +15,11 @@ import { FoldIconComponent, FoldPanelHostService } from 'fold-ng';
 import { AccountService } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientIdentity } from '../../client-identity.service';
+import {
+  ClientWorkspace,
+  currentWorkspaceLabel,
+  workspaceEntries,
+} from '../../client-workspace.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { LangSwitch } from '../../lang-switch/lang-switch';
@@ -36,11 +41,14 @@ import { ClientNav } from '../client-nav.service';
  * pied projetés, là où le menu porte son propre chrome de haut en bas. Deux
  * usages d'un `<dialog>`, pas deux emplois d'un même dialogue.
  *
- * Le SÉLECTEUR D'ESPACE de la réf n'est pas ici : il n'existe qu'à partir de
- * deux espaces (`multiOrg`), et le compte de la maquette n'en a qu'un. La réf
- * est explicite — « à un seul espace, la ligne redevient le sous-titre
- * statique » — donc la ligne d'identité porte l'adresse du compte, et rien ne
- * se déroule vers nulle part.
+ * Le SÉLECTEUR D'ESPACE est le même que dans le menu de l'initiale (plan
+ * espace de travail, D8) : « Perso », puis une entrée par société, l'espace
+ * courant marqué, et dessous l'enseigne en cours. Il n'existe qu'à partir d'une
+ * société (Hugo, 2026-09-15) — sans rattachement, la ligne d'identité porte
+ * l'adresse du compte, et rien ne se déroule vers nulle part.
+ *
+ * Le menu reste ouvert après un choix : la coche se déplace sous le pouce, et
+ * c'est ce qui confirme la bascule avant qu'on retourne à la page.
  */
 @Component({
   selector: 'app-client-menu',
@@ -57,6 +65,7 @@ export class ClientMenu {
   protected readonly nav = inject(ClientNav);
   protected readonly access = inject(ClientFeatureAccess);
   protected readonly identity = inject(ClientIdentity);
+  protected readonly workspace = inject(ClientWorkspace);
   private readonly auth = inject(AuthFacade);
   private readonly account = inject(AccountService);
   private readonly panels = inject(FoldPanelHostService);
@@ -64,6 +73,24 @@ export class ClientMenu {
 
   /** Le profil n'est pas encore relu : l'entrée attend plutôt que d'ouvrir un dialogue vide. */
   protected readonly hasProfile = computed(() => this.account.profile() !== null);
+
+  /** Les espaces proposés, le courant marqué — les mêmes que le menu du bureau. */
+  protected readonly spaces = computed(() =>
+    workspaceEntries(
+      this.workspace.options(),
+      this.workspace.current(),
+      this.t().chrome.workspacePersonal,
+    ),
+  );
+
+  /** La ligne sous le sélecteur : l'enseigne en cours, ou « Compte perso ». */
+  protected readonly currentSpace = computed(() =>
+    currentWorkspaceLabel(this.workspace.company(), this.t().chrome.workspaceCurrentPersonal),
+  );
+
+  protected choose(workspace: string): void {
+    this.workspace.choose(workspace);
+  }
 
   /** Le salut nomme, ou ne nomme pas — jamais du prénom de quelqu'un d'autre. */
   protected readonly hello = computed(() => {

@@ -14,6 +14,7 @@ import {
   provideRecognised,
   RECOGNISED,
 } from './client-orders.fixture';
+import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { hydrateWith, TEST_CATALOGUE } from './shop/shop-catalogue.fixture';
 import { ShopCatalogue } from './shop/shop-catalogue.store';
@@ -56,6 +57,8 @@ function boot(auth: unknown = RECOGNISED): HttpTestingController {
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
+      // L'espace connu : sans lui, la passation attend `/me` et ne part pas.
+      provideWorkspace(workspaceDouble()),
       auth === RECOGNISED ? provideRecognised() : { provide: AuthFacade, useValue: auth },
     ],
   });

@@ -1,11 +1,12 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
-import type {
-  OrderPaymentIntent,
-  OrderSettlement,
-  PlaceOrderPayload,
-  PlacedOrderResponse,
-  ShopQuoteView,
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
+import {
+  WORKSPACE_HEADER,
+  type OrderPaymentIntent,
+  type OrderSettlement,
+  type PlaceOrderPayload,
+  type PlacedOrderResponse,
+  type ShopQuoteView,
 } from '@lfd/contracts';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { unitPriceCents } from '@lfd/money';
@@ -16,6 +17,7 @@ import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
 import { ClientCart } from './cart/client-cart.service';
+import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
 
@@ -60,7 +62,15 @@ export interface PlacedOrder {
   readonly settlement: Settlement;
 }
 
+/**
+ * La clé des commandes gardées — **par espace de travail** depuis le 2026-09-15
+ * (plan espace de travail, D7) : la confirmation d'une commande perso n'a pas à
+ * s'afficher dans l'espace d'une société.
+ *
+ * `orders` seul est la clé d'avant : cf. {@link adoptLegacy}.
+ */
 const KEY = 'orders';
+const ordersKey = (workspace: string): string => `${KEY}.${workspace}`;
 
 /**
  * Où vit la **clé d'idempotence** de la tentative en cours.
@@ -74,6 +84,39 @@ const KEY = 'orders';
  * la commande suivante est une commande suivante.
  */
 const ATTEMPT_KEY = 'order-attempt';
+
+/**
+ * La clé de tentative, **par espace** : l'empreinte d'idempotence du serveur
+ * inclut la société. Une tentative ratée en perso, rejouée sous la même clé dans
+ * une société, porterait une autre empreinte — refusée en
+ * `IdempotencyKeyReusedError` au lieu de passer.
+ */
+const attemptKeyOf = (workspace: string): string => `${ATTEMPT_KEY}.${workspace}`;
+
+/**
+ * Range sous l'espace les clés écrites avant qu'il existe, **une fois**.
+ *
+ * Elles appartiennent à l'espace que le serveur résolvait sans en-tête — la
+ * seule société, ou le perso — c'est-à-dire exactement l'espace par défaut
+ * d'aujourd'hui, et la première résolution y tombe faute de préférence. La clé
+ * de tentative surtout ne se jette pas : une passation ratée avant le
+ * déploiement, rejouée sous une clé neuve, pourrait passer deux fois.
+ */
+function adoptLegacy(workspace: string): void {
+  for (const [legacy, scoped] of [
+    [KEY, ordersKey(workspace)],
+    [ATTEMPT_KEY, attemptKeyOf(workspace)],
+  ] as const) {
+    const held = readLocal<unknown>(legacy, (raw) => raw);
+    if (held === null) {
+      continue;
+    }
+    if (readLocal<unknown>(scoped, (raw) => raw) === null) {
+      writeLocal(scoped, held);
+    }
+    clearLocal(legacy);
+  }
+}
 
 /** Le refus que le serveur oppose à un appel identique encore en vol. */
 const IN_FLIGHT = 'orders.idempotency.in_flight';
@@ -152,8 +195,23 @@ export class ClientOrders {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly notify = inject(NotifyService);
+  private readonly workspace = inject(ClientWorkspace);
 
-  private readonly placed = signal<readonly PlacedOrder[]>(readLocal(KEY, parseOrders) ?? []);
+  /** Les commandes gardées pour l'espace COURANT — vide tant qu'il n'est pas connu. */
+  private readonly placed = signal<readonly PlacedOrder[]>([]);
+
+  constructor() {
+    effect(() => {
+      const current = this.workspace.current();
+      if (current === null) {
+        return;
+      }
+      untracked(() => {
+        adoptLegacy(current);
+        this.placed.set(readLocal(ordersKey(current), parseOrders) ?? []);
+      });
+    });
+  }
 
   /**
    * L'intention rendue à la passation, gardée le temps d'un écran.
@@ -179,13 +237,13 @@ export class ClientOrders {
    * tentative — et qu'un panier corrigé, lui, part sous la même clé mais avec
    * une empreinte différente, que le serveur refuse plutôt que d'honorer.
    */
-  private attemptKey(): string {
-    const held = readLocal(ATTEMPT_KEY, readString);
+  private attemptKey(workspace: string): string {
+    const held = readLocal(attemptKeyOf(workspace), readString);
     if (held !== null) {
       return held;
     }
     const fresh = crypto.randomUUID();
-    writeLocal(ATTEMPT_KEY, fresh);
+    writeLocal(attemptKeyOf(workspace), fresh);
     return fresh;
   }
 
@@ -207,10 +265,14 @@ export class ClientOrders {
   async place(settlement: OrderSettlement | null = null): Promise<PlacedOrder | null> {
     const service = this.order.choice();
     const lines = this.cart.lines();
-    if (service === null || lines.length === 0) {
+    // L'espace est CAPTURÉ ici : c'est celui dans lequel le client a composé et
+    // cliqué, et c'est sous lui que la tentative et la commande se rangent.
+    // Inconnu, `/me` n'a pas répondu — l'intercepteur ne déclarerait rien.
+    const workspace = this.workspace.current();
+    if (service === null || lines.length === 0 || workspace === null) {
       return null;
     }
-    const placed = await this.send(service, lines, settlement);
+    const placed = await this.send(service, lines, settlement, workspace);
     if (placed === null) {
       return null;
     }
@@ -240,10 +302,15 @@ export class ClientOrders {
     this.intent.set(payment === null ? null : { orderId: placed.id, payment });
     // La tentative est close : la commande suivante en ouvrira une autre. Gardée
     // au-delà, elle ferait rendre CETTE commande au prochain panier.
-    clearLocal(ATTEMPT_KEY);
-    this.placed.update((all) => [order, ...all]);
-    writeLocal(KEY, this.placed());
-    this.cart.clear();
+    clearLocal(attemptKeyOf(workspace));
+    const kept = [order, ...(readLocal(ordersKey(workspace), parseOrders) ?? [])];
+    writeLocal(ordersKey(workspace), kept);
+    // Une bascule pendant la passation : la commande est rangée dans SON espace,
+    // et ni la liste ni le panier de l'espace où l'on est passé n'en sont touchés.
+    if (this.workspace.current() === workspace) {
+      this.placed.set(kept);
+      this.cart.clear();
+    }
     return order;
   }
 
@@ -297,7 +364,10 @@ export class ClientOrders {
     this.placed.update((all) =>
       all.map((order) => (order.id === orderId ? { ...order, settlement: 'paid' } : order)),
     );
-    writeLocal(KEY, this.placed());
+    const current = this.workspace.current();
+    if (current !== null) {
+      writeLocal(ordersKey(current), this.placed());
+    }
   }
 
   /**
@@ -311,19 +381,22 @@ export class ClientOrders {
     service: ServiceChoice,
     lines: readonly { product: { sku: string }; quantity: number }[],
     settlement: OrderSettlement | null,
+    workspace: string,
   ): Promise<PlacedOrderResponse | null> {
     if (!this.auth.isAuthenticated()) {
       // Pas un échec : une étape. L'écran envoie se connecter, et le panier
       // survit — il vit en base pour qui a déjà un compte.
       return null;
     }
-    const payload = payloadOf(service, lines, this.attemptKey(), settlement);
+    const payload = payloadOf(service, lines, this.attemptKey(workspace), settlement);
     try {
       return await firstValueFrom(
         this.auth.accessToken$().pipe(
           switchMap((token) =>
+            // L'espace capturé au clic, posé ici : l'intercepteur lirait celui
+            // du moment de l'envoi, après l'arrivée du jeton.
             this.http.post<PlacedOrderResponse>(`${AUTH_CONFIG.apiBaseUrl}/orders`, payload, {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Bearer ${token}`, [WORKSPACE_HEADER]: workspace },
             }),
           ),
         ),
