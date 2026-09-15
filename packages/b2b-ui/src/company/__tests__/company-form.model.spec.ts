@@ -1,5 +1,6 @@
 import {
   EMPTY_COMPANY_IDENTITY_DRAFT,
+  isVatRequiredFor,
   sirenFollowingSiret,
   sirenOf,
   sirenPrefixOf,
@@ -72,5 +73,24 @@ describe('SIREN d’une identité', () => {
         siren: ITS_SIREN,
       });
     });
+  });
+});
+
+describe('TVA exigée selon la forme juridique', () => {
+  it('l’exige d’une société, pas d’une micro-entreprise ni d’une association', () => {
+    expect(isVatRequiredFor('sas')).toBe(true);
+    expect(isVatRequiredFor('sarl')).toBe(true);
+    expect(isVatRequiredFor('micro')).toBe(false);
+    expect(isVatRequiredFor('association')).toBe(false);
+  });
+
+  it('reconnaît une ancienne saisie libre', () => {
+    expect(isVatRequiredFor('S.A.S.')).toBe(true);
+    expect(isVatRequiredFor('Micro entreprise')).toBe(false);
+  });
+
+  it('l’exige par prudence tant que la forme est vide ou inconnue', () => {
+    expect(isVatRequiredFor('')).toBe(true);
+    expect(isVatRequiredFor('GIE du Col')).toBe(true);
   });
 });

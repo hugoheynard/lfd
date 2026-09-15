@@ -1,13 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import {
-  LEGAL_FORM_OPTIONS,
-  legalFormRequiresVat,
-  toLegalForm,
-  type LegalForm,
-} from '@lfd/contracts';
+import { LEGAL_FORM_OPTIONS, toLegalForm, type LegalForm } from '@lfd/contracts';
 import { FoldInputComponent, FoldListboxComponent, type FoldSelectOption } from 'fold-ng';
 
-import { withSiret, type CompanyIdentityDraft } from '../company-form.model';
+import { isVatRequiredFor, withSiret, type CompanyIdentityDraft } from '../company-form.model';
 
 /**
  * Champs d'**identité légale** d'une société — fragment de formulaire pur,
@@ -37,10 +32,7 @@ export class CompanyIdentityFields {
    * laisser manquer en silence pour une société assujettie — le même défaut
    * prudent que côté serveur.
    */
-  protected readonly vatRequired = computed(() => {
-    const form = toLegalForm(this.value().formeJuridique);
-    return form === null ? true : legalFormRequiresVat(form);
-  });
+  protected readonly vatRequired = computed(() => isVatRequiredFor(this.value().formeJuridique));
 
   /**
    * Vrai tant qu'AUCUNE forme juridique n'est choisie.

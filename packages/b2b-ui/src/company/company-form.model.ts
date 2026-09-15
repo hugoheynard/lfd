@@ -5,7 +5,21 @@
  * duplique pas ici, on ne vérifie que la présence et le gabarit.
  */
 
-import type { AssignableRole } from '@lfd/contracts';
+import { legalFormRequiresVat, toLegalForm, type AssignableRole } from '@lfd/contracts';
+
+/**
+ * Le numéro de TVA est-il **obligatoire** pour cette forme juridique ?
+ *
+ * Une forme hors catalogue, ou pas encore choisie, répond OUI : mieux vaut
+ * inviter à renseigner un numéro que le laisser manquer en silence pour une
+ * société assujettie. C'est le défaut prudent du serveur (`requiresVatNumber`,
+ * vérifié le 2026-09-15), et les deux fronts le lisent ici plutôt que de le
+ * recopier dans chaque formulaire.
+ */
+export function isVatRequiredFor(formeJuridique: string): boolean {
+  const form = toLegalForm(formeJuridique);
+  return form === null ? true : legalFormRequiresVat(form);
+}
 
 /** Identité légale saisissable d'une société. */
 export interface CompanyIdentityDraft {

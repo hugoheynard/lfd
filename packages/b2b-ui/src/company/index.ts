@@ -40,6 +40,7 @@ export {
   EMPTY_COMPANY_CONTACT_DRAFT,
   isCompanyIdentityValid,
   isCompanyIdentityOpenable,
+  isVatRequiredFor,
   isAdditionalContactValid,
   isCompanyContactValid,
   sirenFollowingSiret,
