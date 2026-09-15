@@ -1,8 +1,8 @@
 # Plan — la remise de retrait et la livraison, par clientèle
 
 > **Statut : 📐 doc-first, 2026-09-15.** Rien n'est codé. Touche **l'argent** (la
-> remise appliquée au panier) et porte une **migration** : contredit par
-> `vitruve` avant d'être bâti (§7).
+> remise appliquée au panier) et porte une **migration**. **Contredit par
+> `vitruve` le 2026-09-15** (§7) : un `BLOQUANT` attend la décision de Hugo (Q3).
 >
 > Lu avant : [`plan-espace-de-travail.md`](plan-espace-de-travail.md) (l'espace
 > perso ou pro, bâti le même jour) et
@@ -44,46 +44,82 @@ Hugo, le 2026-09-15 : dans le back-office,
 
 ## 2. Décisions
 
-**D1 — La clientèle d'une requête.** **B2B** quand une société agit
-(`companyId` non nul) ; **B2C** sinon — visiteur anonyme, espace perso, personne
-sans société. Une commande saisie par le staff est toujours B2B (§1). La
-clientèle se **déduit** de ce que le serveur résout déjà ; elle ne se déclare
-jamais, ni dans un corps ni dans un en-tête.
+**D1 — La clientèle d'une requête** (confirmé par Hugo le 2026-09-15 : « B2B une
+société, B2C visiteur ou perso »). **B2B** quand une société agit ; **B2C** pour
+un visiteur et en perso — y compris une personne sans société. Une commande
+saisie par le staff est toujours B2B. La clientèle se **déduit** de ce que le
+serveur résout déjà, par une fonction pure unique `audienceOf(…)` ; elle ne se
+déclare jamais, ni dans un corps ni dans un en-tête.
+
+🔴 **Non tranché — Q3.** Déclarer une société ne demande aucune vérification
+(`POST /companies` sans garde de rôle, société créée `pending` **avec** son
+rattachement, `resolveCompany` la rend agissante dès qu'elle est seule —
+vitruve, B1). Si « une société » suffit, une remise « B2B seulement » s'obtient
+en tapant un SIRET. D'où la question du statut, §6.
 
 **D2 — La remise d'un point porte ses clientèles.** Deux colonnes
 `discount_for_b2b` et `discount_for_b2c`, `BOOLEAN NOT NULL DEFAULT true` sur
-`pickup_addresses`. Le défaut à `true` **reproduit l'existant** : aujourd'hui
-toute requête reçoit la remise. Contrat : `discountAudiences: { b2b, b2c }` dans
-le payload (défaut les deux à `true`, donc un client qui ne l'envoie pas reste
-valide) et dans la vue. Une réduction qui ne vise **aucune** clientèle est
-refusée (400) : c'est une absence de réduction mal dite, et l'écran doit le dire.
+`pickup_addresses` : le défaut **reproduit l'existant**, où toute requête reçoit
+la remise.
+
+- **Création** (`POST`) : `discountAudiences` facultatif, défaut les deux à
+  `true`.
+- **Modification** (`PATCH`) : **absent = inchangé**, jamais « les deux à `true` »
+  — sinon un onglet du back-office ouvert avant le déploiement rouvrirait en
+  silence une remise fermée au public (vitruve, S2). Le schéma du `PATCH` perd
+  donc son défaut.
+- **La règle vit dans le domaine**, dans un value object `PickupDiscount`
+  (ajustement + clientèles) : une réduction **non nulle** qui ne vise aucune
+  clientèle est refusée (`DomainError`, 400, « Cochez au moins une clientèle, ou
+  retirez la réduction »). **Sans réduction, les cases ne sont pas lues** : elles
+  sont conservées telles quelles, et `{false, false}` avec `discount: null` est
+  valide. Un value object, pas un agrégat : une seule règle, sans transition.
 
 **D3 — Le serveur applique, à un seul endroit.** `forPickup(id, subtotal,
 audience)` rend la remise seulement si la clientèle en fait partie ; sinon
 `discountCents = 0` et `discountAdjustment = null` — ce qui est **figé** sur la
-commande, comme aujourd'hui. Le devis et la commande passent la même clientèle,
-dérivée par une même fonction pure (`audienceOf(companyId)`).
+commande, comme aujourd'hui. Vitruve l'a vérifié : **aucun chemin** ne compose
+remise ou frais hors de `CartAdjustments` (un seul `Order.draft`, estimation
+staff au sous-total, abonnements sans commande générée, empreinte d'idempotence
+qui porte déjà la société).
 
-**D4 — La livraison ouverte par clientèle : un réglage, pas une zone.** Une
-table `delivery_settings`, **une ligne** à clé naturelle (précédent
-`PlatformContent`), `open_to_b2b` et `open_to_b2c`, avec l'instant (`Clock`) et
-l'auteur figé du geste (précédent `FeatureAccessOverride`). **Ligne absente =
-ouverte aux deux** : l'existant, sans semis. Routes : `GET`/`PUT
-/admin/delivery-settings` (droit du réglage des points et zones), `GET
-/delivery-settings` public. Fait journalisé `delivery_settings.updated`.
+**D4 — La livraison ouverte par clientèle : un réglage, pas une zone.**
+
+- Table `delivery_settings`, **une ligne** à clé naturelle (précédent
+  `PlatformContent`) : `open_to_b2b`, `open_to_b2c`, l'instant du geste
+  (`Clock`) et son auteur figé en `sub` / nom / rôle (précédent
+  `FeatureAccessOverride`).
+- **Ligne absente = ouverte aux deux**, sans semis ; la vue rend alors
+  `updatedAt: null`, `updatedBy: null`.
+- Routes : `GET` et **`PATCH`** `/admin/delivery-settings` (comme les réglages
+  voisins), `GET /delivery-settings` public.
+- Fait journalisé `delivery_settings.updated`, **et son préfixe ajouté** au
+  classement du journal (`b2b/growth/domain/activity-module.ts`, rangé sous
+  `commandes` avec les zones et les points) — sinon le fait n'apparaît dans aucun
+  filtre (vitruve, S6).
+- 🔴 **La constante `DELIVERY_SERVICE_OPEN` disparaît** (`packages/b2b-ui/src/flags.ts`) :
+  seconde source de vérité, lue par les préférences d'acheminement de Mon compte,
+  la fiche client staff et des écrans `legacy/`. Tous lisent le réglage — en
+  **B2B**, puisque ce sont des contextes de société. Sans ça, une livraison fermée
+  resterait choisissable comme préférence, puis refusée à la commande (vitruve,
+  S4).
 
 **D5 — Une livraison fermée se refuse au serveur.** `forDelivery(codePostal,
-subtotal, audience)` lève `DeliveryClosedForAudienceError` (`BusinessError`, 409) quand la clientèle n'y a pas droit — au devis comme à la commande. Le
-message nomme le cas réel et la sortie : « La livraison n'est pas proposée pour
-cet espace. Choisissez le retrait, ou basculez sur votre société. » (la seconde
-phrase seulement en B2C pour qui a une société — sinon elle est omise).
+subtotal, audience)` lève `DeliveryClosedForAudienceError` (`BusinessError`, 409)
+au devis comme à la commande. **Un message, sans condition** : « La livraison
+n'est pas proposée pour cet espace. Choisissez le retrait. » — aucun de ces
+chemins ne connaît les rattachements, et la variante « basculez sur votre
+société » n'avait personne pour la composer (vitruve, S5). Ce refus est un
+**garde** : la boutique ne propose pas la livraison fermée (D7). Le devis, qui
+avale aujourd'hui toute erreur (`shop-quote.service.ts`), **montre ce refus-là**
+au lieu de garder l'ancien décompte, frais de coursier compris.
 
 **D6 — Le back-office : trois pages dans « E-commerce LFC → Réglages ».**
 
 - **Le rail.** L'espace `b2b` prend le titre **« E-commerce LFC »** — le libellé
-  seul : la clé et les adresses `/b2b/…` restent, une URL n'est pas un libellé
-  (précédent : `journee` / « Fournée du jour »). Une section **« Réglages »**
-  s'ajoute après « Contenu », avec trois vues sous `b2b_settings:read` :
+  seul : la clé et les adresses `/b2b/…` restent (précédent `journee` /
+  « Fournée du jour ») ; le titre de route `B2B — LFC B2B admin` suit. Une
+  section **« Réglages »** après « Contenu », trois vues sous `b2b_settings:read` :
 
   | Vue                        | Adresse                           | Contenu                                                               |
   | -------------------------- | --------------------------------- | --------------------------------------------------------------------- |
@@ -92,80 +128,110 @@ phrase seulement en B2C pour qui a une société — sinon elle est omise).
   | Heures limites de commande | `/b2b/reglages/heures-limites`    | la section actuelle des heures limites, telle quelle                  |
 
 - **Ce qui déménage.** Le dossier `reglages/retraits-livraisons/` part sous
-  `b2b/reglages/` et se découpe en trois pages ; les imports de l'écran de
-  commande staff et de la fiche client suivent. L'onglet « Retraits &
-  livraisons » quitte `/reglages`, dont la redirection par défaut passe à
-  « Surtaxe de retard ». L'**ancienne adresse redirige** vers
-  `/b2b/reglages/points-de-retrait` (elle vit dans des favoris). La page
-  `/livraison` « À venir » pointe vers `/b2b/reglages/livraison`.
+  `b2b/reglages/` ; ses **trois** importeurs suivent (écran de commande staff,
+  fiche client, `fiche-client/__tests__/nouveau-compte.spec.ts`). L'onglet quitte
+  `/reglages`, dont la redirection par défaut passe à « Surtaxe de retard » ;
+  **l'accueil du droit `b2b_settings:read`** (`auth/permission.guard.ts`) reste
+  `/reglages`. L'**ancienne adresse redirige** vers
+  `/b2b/reglages/points-de-retrait`. La page `/livraison` pointe vers
+  `/b2b/reglages/livraison`. **Tests** à suivre :
+  `__tests__/app.routes.spec.ts` (registre des écrans et table exacte des
+  redirections), `reglages/__tests__/reglages-page.spec.ts`,
+  `b2b/b2b-page/b2b-page.spec.ts`. **Docs** qui citent l'ancien chemin :
+  `documentation/order/architecture-heure-limite-de-commande.md`,
+  `documentation/order/demontage-order-cutoff.md`,
+  `documentation/plan-demo-2026-09-19.md` (vitruve, S7).
 - **Dans les pages.** Panneau du point : sous « Réduction de retrait », deux cases
-  **B2B** et **B2C**, grisées tant qu'il n'y a pas de réduction ; la carte du point
-  affiche la remise avec sa clientèle (« −10 % · B2B »). Carte « Livraison » : les
-  deux cases en tête, enregistrées au geste, et en clair sous une case décochée
-  « Les particuliers ne peuvent plus choisir la livraison. » ; les zones dessous.
-- **Écran de commande staff** (toujours B2B) : l'option « Coursier » suit
-  `open_to_b2b`, la remise affichée suit `discount_for_b2b` — **→ Q1**.
-- **Surtaxe de retard, Facturation, Commercial** restent dans `/reglages` : la
-  demande ne vise que les trois pages de l'acheminement.
+  **B2B** et **B2C**, grisées tant qu'il n'y a pas de réduction ; la carte du
+  point affiche la remise avec sa clientèle (« −10 % · B2B »). Carte
+  « Livraison » : les deux cases en tête, enregistrées au geste, et en clair sous
+  une case décochée « Les particuliers ne peuvent plus choisir la livraison. » ;
+  les zones dessous.
+- **Écran de commande staff** (toujours B2B) : l'option « Coursier » est grisée
+  quand la livraison est fermée au B2B, et le serveur la refuse (Q1). L'écran
+  n'affiche aucune remise — il n'y a rien d'autre à y suivre.
+- **Surtaxe de retard, Facturation, Commercial** restent dans `/reglages`.
 
 **D7 — La boutique suit l'espace.** Clientèle de l'écran : B2C pour un visiteur
-et en perso, B2B dans une société. Une fonction unique `discountFor(point,
-audience)` sert la carte de retrait, le dialogue et Mon espace. La carte
-« On vous l'apporte » ne paraît pas quand la livraison est fermée à la clientèle ;
-un mode de service « livraison » gardé en local et devenu interdit s'efface (le
-serveur, lui, refuserait). Un point sans remise pour la clientèle affiche
-« Prix pro » en B2B — **→ Q2** pour le B2C.
+et en perso, B2B dans une société. `discountFor(point, audience)` et
+`bestPickupDiscount(points, audience)` servent la carte de retrait, le dialogue et
+Mon espace. La carte « On vous l'apporte » ne paraît pas quand la livraison est
+fermée à la clientèle ; un mode de service « livraison » gardé en local et devenu
+interdit s'efface. Un point sans remise pour la clientèle affiche **« Prix pro »
+en B2B, « Prix boutique » en B2C** (Q2). La passation attend l'espace connu
+(`ClientOrders.place`, lot B de l'espace de travail) : un pro à plusieurs
+sociétés ne passe jamais en B2C faute d'en-tête.
 
 **D8 — Ce que ça remplace dans l'analyse.** D2 et D5 de
 `analyse-boutique-publique.md` ne sont plus des règles de code : ce sont des
-**réglages**. Les défauts reproduisent l'existant (remise et livraison ouvertes
-aux deux) ; fermer au public avant son ouverture est un geste d'Hugo dans le
-back-office.
+**réglages**. Les défauts reproduisent l'existant ; fermer au public est un geste
+de Hugo dans le back-office.
 
 ## 3. Ce que ce plan ne fait pas
 
-- **Pas de tarif public ni de TTC** : la remise reste calculée en HT (analyse §3).
-- **Pas de clientèle par zone** ni de livraison par point : un seul réglage de
-  livraison, global.
-- **Pas de reprise des commandes passées** : une remise déjà figée ne se
-  recalcule pas.
+- **Pas de tarif public ni de TTC** : la remise reste calculée en HT.
+- **Pas de clientèle par zone** ni de livraison par point.
+- **Pas de reprise des commandes passées** : une remise figée ne se recalcule pas.
+- **Pas de lien avec `PickupAccess`** (`public` / `pro`, les créneaux d'un
+  point) : un particulier peut toujours réserver un créneau pro. Deux oppositions
+  voisines, pas encore la même ; à rapprocher le jour où le public ouvre.
 
 ## 4. L'ordre de déploiement
 
 Une migration **additive** : deux colonnes à défaut `true`, une table neuve. Les
-contrats ne font qu'**ajouter** des champs. L'API part avec les fronts dans le
-même merge ; un front servi quelques secondes avant l'API lit une vue sans les
-nouveaux champs et doit les **tenir pour ouverts** (défaut de l'existant).
+contrats ajoutent des champs ; le `PATCH` d'un point devient « absent =
+inchangé », ce qui ne refuse rien de ce qu'envoie le back-office en ligne. L'API
+part avec les fronts dans le même merge ; un front servi avant l'API lit une vue
+sans les nouveaux champs et doit les **tenir pour ouverts**.
 
 ## 5. Les lots
 
-**A — serveur** : migration ; contrats (`discountAudiences`, vue et payload des
-réglages de livraison) ; `audienceOf` ; `CartAdjustments` à trois arguments et
-ses deux appelants ; le refus 400 d'une réduction sans clientèle ; le module
-`delivery-settings` (port, adaptateur, deux routes, fait journalisé) ; e2e :
-remise B2B seule refusée en perso et appliquée dans la société, au devis ET à la
-commande ; livraison fermée au B2C → 409 au devis et à la commande, ouverte en
-B2B ; ligne absente = ouverte.
+**A — serveur** : migration ; contrats ; `audienceOf` (selon Q3) ;
+`PickupDiscount` et son refus ; `PATCH` sans défaut ; `CartAdjustments` à trois
+arguments et ses deux appelants ; le module `delivery-settings` (port, adaptateur,
+trois routes, fait journalisé, préfixe du journal) ; e2e : remise B2B seule
+absente en perso et appliquée dans la société, au devis ET à la commande ;
+livraison fermée au B2C → 409 aux deux ; ligne absente = ouverte ; `PATCH` d'un
+point sans `discountAudiences` ne rouvre rien.
 
-**B — back-office** : le rail (titre, section « Réglages », trois vues) ; les
-trois pages sous `/b2b/reglages/` et leur routage ; le déménagement du dossier et
-ses imports ; la redirection de l'ancienne adresse et l'onglet retiré de
-`/reglages` ; le lien de `/livraison` ; les cases du panneau du point, le badge de
-clientèle, la carte « Livraison », l'écran de commande staff.
+**B — back-office** : le rail et le titre ; les trois pages et leur routage ; le
+déménagement et ses importeurs ; redirection, onglet retiré, lien de
+`/livraison` ; cases du point, badge, carte « Livraison », « Coursier » grisé ;
+`DELIVERY_SERVICE_OPEN` remplacé dans la fiche client ; tests et docs du §D6.
 
-**C — boutique** : `discountFor`, carte et dialogue de retrait, Mon espace, carte
-de livraison masquée, mode de service effacé, libellés trois langues.
+**C — boutique** : `discountFor` / `bestPickupDiscount` par clientèle ; carte et
+dialogue de retrait, Mon espace ; carte de livraison masquée, mode de service
+effacé ; le refus 409 montré au devis ; préférences d'acheminement de Mon compte
+sur le réglage ; libellés « Prix boutique » en trois langues.
 
 ## 6. Questions pour Hugo
 
 **Q1 — Le staff peut-il livrer quand la livraison est fermée au B2B ?**
-Proposition : **non**, même règle — un réglage que le back-office contourne
-n'est plus un réglage, et le client verrait sur sa commande ce qu'il ne peut pas
-choisir lui-même.
+**Non** (Hugo, 2026-09-15) : même règle pour tous.
 
-**Q2 — Que dit la ligne d'un point sans remise en B2C ?** « Prix pro » y serait
-faux. Proposition : **« Prix boutique »** — c'est le prix que paie le particulier.
+**Q2 — Un point sans remise en B2C ?** **« Prix boutique »** (Hugo, 2026-09-15).
 
-## 7. La contradiction de `vitruve`
+**Q3 — Une société non active compte-t-elle B2B ?** Aujourd'hui, n'importe qui
+crée une société `pending` d'un appel, et elle agit aussitôt.
 
-_À venir._
+- **Proposé : B2B = société agissante `active`.** `pending`, `suspended` et
+  `terminated` suivent les règles **B2C** (remise et livraison). La lecture du
+  statut existe déjà côté commande (`OrderGuardReader`) ; il faut l'ajouter au
+  devis. Coût : un pro en cours de validation voit la remise publique, le temps
+  qu'on valide son dossier.
+- **Alternative : toute société agissante.** Assumé par écrit : une remise
+  « B2B seulement » s'obtient en déclarant un SIRET.
+
+## 7. La contradiction de `vitruve` (2026-09-15) et son sort
+
+| Objection                                                                                                                                           | Sort                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **B1** « B2B = société agissante » : n'importe qui devient B2B en déclarant une société                                                             | **remontée — Q3**                                               |
+| **S2** le `PATCH` à défaut `true` rouvre en silence une remise fermée                                                                               | corrigée — D2, absent = inchangé                                |
+| **S3** le refus 400 sans mécanisme, trois états non tranchés                                                                                        | corrigée — D2, value object, cases ignorées sans réduction      |
+| **S4** `DELIVERY_SERVICE_OPEN`, seconde source de vérité                                                                                            | corrigée — D4, constante retirée, lecteurs en B2B               |
+| **S5** le 409 jamais lu au devis ; la seconde phrase sans auteur                                                                                    | corrigée — D5, message unique, refus montré                     |
+| **S6** `delivery_settings.` absent du classement du journal                                                                                         | corrigée — D4                                                   |
+| **S7** tests, troisième importeur, accueil du droit, titre de route, docs                                                                           | corrigée — D6, lot B                                            |
+| Mineures : remise inexistante à l'écran staff, `PickupAccess`, `PUT`/`PATCH`, vue sans ligne, espace non déclaré, `bestPickupDiscount`              | corrigées — D4, D6, D7, §3                                      |
+| Non vérifiés : portes du prix (`lint:dated-decisions`, `lint:price-door`, `lint:price-pipeline`), specs `toEqual` sur la vue, vérification du SIRET | à lever au lot A ; le SIRET borne le coût de B1, pas sa réalité |
