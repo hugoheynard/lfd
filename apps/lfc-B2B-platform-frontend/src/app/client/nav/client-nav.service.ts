@@ -35,8 +35,9 @@ interface Destination {
   /** La surface masquable en admin qui la porte, s'il y en a une. Masquée, elle disparaît. */
   readonly surface?: VisibilityFeatureKey;
   /**
-   * Un écran de SOCIÉTÉ : retiré en perso pour qui en a une (Hugo, 2026-09-15).
-   * `companyWorkspaceGuard` ferme la même adresse.
+   * Un écran de SOCIÉTÉ : retiré en perso pour qui en a une (Hugo, 2026-09-15) —
+   * le dossier, le relevé, les paniers récurrents. `companyWorkspaceGuard` ferme
+   * les adresses qui ont une route.
    */
   readonly companyOnly?: true;
 }
@@ -80,7 +81,7 @@ const DESTINATIONS: readonly Destination[] = [
     surface: 'invoices',
     companyOnly: true,
   },
-  { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order' },
+  { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order', companyOnly: true },
   { id: 'account', route: '/mon-compte', ready: true, shop: 'closed', companyOnly: true },
 ];
 

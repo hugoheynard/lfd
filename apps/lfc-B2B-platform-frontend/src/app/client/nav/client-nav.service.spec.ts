@@ -257,8 +257,8 @@ describe('Les destinations du menu, selon l’espace', () => {
       .map((i) => i.id);
   };
 
-  it('retire Mon compte et Mes factures en perso, pour qui a une société', () => {
-    expect(idsIn(PERSONAL_WORKSPACE, [TOMMEUSES])).toEqual(['espace', 'shop', 'orders', 'baskets']);
+  it('retire Mon compte, Mes factures et les paniers récurrents en perso, pour qui a une société', () => {
+    expect(idsIn(PERSONAL_WORKSPACE, [TOMMEUSES])).toEqual(['espace', 'shop', 'orders']);
   });
 
   it('les rend dans l’espace de la société', () => {
