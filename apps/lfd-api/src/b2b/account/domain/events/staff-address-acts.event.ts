@@ -123,3 +123,30 @@ export class FulfillmentPreferenceSetByStaffEvent extends CompanyStaffAct {
     return { ...this.preference };
   }
 }
+
+/** Ce que l'agent a fait à la procédure de livraison. */
+export type DeliveryProcedureStaffAction =
+  "step_added" | "step_revised" | "step_removed" | "reordered";
+
+/**
+ * Un agent a modifié la procédure de livraison d'une adresse.
+ *
+ * La charge dit **quel geste**, pas ce qui a été écrit : un titre d'étape peut
+ * porter un code de portail, et le journal se garde des années. L'état courant
+ * de la procédure dit le reste ; le fait dit qui, quand, et sur quelle adresse.
+ */
+export class DeliveryProcedureEditedByStaffEvent extends CompanyStaffAct {
+  constructor(
+    companyId: string,
+    readonly addressId: string,
+    readonly action: DeliveryProcedureStaffAction,
+  ) {
+    super(companyId);
+  }
+  protected type(): string {
+    return ACCOUNT_FACTS.deliveryProcedureEdited;
+  }
+  protected override details(): Record<string, unknown> {
+    return { companyId: this.companyId, addressId: this.addressId, action: this.action };
+  }
+}

@@ -190,6 +190,8 @@ export interface BillingAddressView {
 export interface DeliveryAddressView extends BillingAddressView {
   readonly isDefault: boolean;
   readonly specs: DeliverySpecs;
+  /** Le nombre d'étapes de sa procédure de livraison — `0` sans procédure. */
+  readonly procedureStepCount: number;
 }
 
 /** Les adresses d'une entreprise : une facturation (ou aucune) + N livraisons. */

@@ -66,14 +66,36 @@ export class PrismaCompanyAddressReader extends CompanyAddressReader {
     });
 
     const billingRow = rows.find((row) => row.kind === "billing") ?? null;
-    const deliveries = rows
-      .filter((row) => row.kind === "delivery")
-      .map((row) => toDeliveryView(row));
+    const deliveryRows = rows.filter((row) => row.kind === "delivery");
+    const stepCounts = await this.procedureStepCounts(
+      companyId,
+      deliveryRows.map((row) => row.id),
+    );
+    const deliveries = deliveryRows.map((row) => toDeliveryView(row, stepCounts.get(row.id) ?? 0));
 
     return {
       billing: billingRow === null ? null : toBillingView(billingRow),
       deliveries,
     };
+  }
+
+  /**
+   * Le nombre d'étapes de procédure de chaque adresse, en **une** requête pour
+   * tout le carnet — pas une par adresse. Le mur `companyId` y est aussi : la
+   * jointure par adresse suffirait, mais une lecture murée le porte toujours.
+   */
+  private async procedureStepCounts(
+    companyId: string,
+    addressIds: readonly string[],
+  ): Promise<ReadonlyMap<string, number>> {
+    if (addressIds.length === 0) {
+      return new Map();
+    }
+    const procedures = await this.prisma.deliveryProcedure.findMany({
+      where: { companyId, addressId: { in: [...addressIds] } },
+      select: { addressId: true, _count: { select: { steps: true } } },
+    });
+    return new Map(procedures.map((procedure) => [procedure.addressId, procedure._count.steps]));
   }
 }
 
@@ -91,10 +113,10 @@ function toBillingView(row: AddressRow): BillingAddressView {
 }
 
 /** Une livraison → la vue, consignes JSON parsées (défaut si absentes). */
-function toDeliveryView(row: AddressRow): DeliveryAddressView {
+function toDeliveryView(row: AddressRow, procedureStepCount: number): DeliveryAddressView {
   const specs =
     row.deliverySpecs === null || row.deliverySpecs === undefined
       ? EMPTY_SPECS
       : deliverySpecsSchema.parse(row.deliverySpecs);
-  return { ...toBillingView(row), isDefault: row.isDefault, specs };
+  return { ...toBillingView(row), isDefault: row.isDefault, specs, procedureStepCount };
 }

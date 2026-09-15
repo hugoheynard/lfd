@@ -402,7 +402,57 @@ model Address {
 
   deliveredOrders Order[] @relation("OrderDeliveryAddress")
 
+  /// La procédure que suit le livreur à cette adresse — au plus une.
+  deliveryProcedure DeliveryProcedure?
+
   @@index([companyId, kind])
   @@map("addresses")
+  @@schema("public")
+}
+
+// La procédure de livraison d'une adresse — plan
+// `documentation/b2b/plan-procedure-de-livraison.md` §2.1.
+//
+// Racine d'agrégat (`DeliveryProcedure`) : elle naît à la première étape et ne
+// se supprime jamais. Ses étapes, elles, se suppriment physiquement (§2.2).
+model DeliveryProcedure {
+  id String @id
+
+  // Le mur : chaque lecture et écriture le porte dans son `where`.
+  companyId String @map("company_id")
+
+  addressId String  @unique @map("address_id")
+  address   Address @relation(fields: [addressId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  steps DeliveryProcedureStep[]
+
+  @@map("delivery_procedures")
+  @@schema("public")
+}
+
+model DeliveryProcedureStep {
+  id String @id
+
+  procedureId String            @map("procedure_id")
+  procedure   DeliveryProcedure @relation(fields: [procedureId], references: [id], onDelete: Cascade)
+
+  // Rang 0-based, RÉÉCRIT à chaque enregistrement par l'agrégat. Pas d'unique
+  // sur (procedure_id, position) : un unique non différé ferait échouer
+  // l'échange de deux lignes lors d'un réordonnancement.
+  position Int
+
+  title    String
+  body     String  @default("")
+  // Clé du bucket des pièces client ; `null` sans photo.
+  photoKey String? @map("photo_key")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([procedureId, position])
+  @@map("delivery_procedure_steps")
   @@schema("public")
 }

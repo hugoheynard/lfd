@@ -1,5 +1,28 @@
 import { Module } from "@nestjs/common";
 
+import { AddDeliveryStepHandler } from "./application/commands/add-delivery-step.handler.js";
+import { AddDeliveryStepByStaffHandler } from "./application/commands/add-delivery-step-by-staff.handler.js";
+import { RemoveDeliveryStepHandler } from "./application/commands/remove-delivery-step.handler.js";
+import { RemoveDeliveryStepByStaffHandler } from "./application/commands/remove-delivery-step-by-staff.handler.js";
+import { ReorderDeliveryStepsHandler } from "./application/commands/reorder-delivery-steps.handler.js";
+import { ReorderDeliveryStepsByStaffHandler } from "./application/commands/reorder-delivery-steps-by-staff.handler.js";
+import { ReviseDeliveryStepHandler } from "./application/commands/revise-delivery-step.handler.js";
+import { ReviseDeliveryStepByStaffHandler } from "./application/commands/revise-delivery-step-by-staff.handler.js";
+import { GetDeliveryProcedureHandler } from "./application/queries/get-delivery-procedure.handler.js";
+import { GetDeliveryProcedureForStaffHandler } from "./application/queries/get-delivery-procedure-for-staff.handler.js";
+import { GetDeliveryStepPhotoHandler } from "./application/queries/get-delivery-step-photo.handler.js";
+import { GetDeliveryStepPhotoForStaffHandler } from "./application/queries/get-delivery-step-photo-for-staff.handler.js";
+import { DeliveryProcedureLock } from "./domain/ports/delivery-procedure.lock.js";
+import { DeliveryProcedureReader } from "./domain/ports/delivery-procedure.reader.js";
+import { PrismaDeliveryProcedureLock } from "./infrastructure/prisma-delivery-procedure.lock.js";
+import { DeliveryProcedureRepository } from "./domain/ports/delivery-procedure.repository.js";
+import { DeliveryStepPhotoLocator } from "./domain/ports/delivery-step-photo.locator.js";
+import { PrismaDeliveryProcedureReader } from "./infrastructure/prisma-delivery-procedure.reader.js";
+import { PrismaDeliveryProcedureRepository } from "./infrastructure/prisma-delivery-procedure.repository.js";
+import { PrismaDeliveryStepPhotoLocator } from "./infrastructure/prisma-delivery-step-photo.locator.js";
+import { AdminCompanyDeliveryProcedureController } from "./http/admin-company-delivery-procedure.controller.js";
+import { CompanyDeliveryProcedureController } from "./http/company-delivery-procedure.controller.js";
+
 import { ActivateCompanyByStaffHandler } from "./application/commands/activate-company.handler.js";
 import { AddCompanyContactHandler } from "./application/commands/add-company-contact.handler.js";
 import {
@@ -148,6 +171,8 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     AdminCompanyMembersController,
     AdminCompanyContactsController,
     AdminCompanyPiecesController,
+    CompanyDeliveryProcedureController,
+    AdminCompanyDeliveryProcedureController,
   ],
   providers: [
     UpdateMyProfileHandler,
@@ -221,6 +246,25 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
     { provide: CompanyAddressRepository, useClass: PrismaCompanyAddressRepository },
     { provide: CompanyAddressReader, useClass: PrismaCompanyAddressReader },
+    // La procédure de livraison d'une adresse (plan `plan-procedure-de-livraison.md`) :
+    // un dépôt pour l'agrégat, deux lectures étroites pour l'écran et la photo.
+    { provide: DeliveryProcedureRepository, useClass: PrismaDeliveryProcedureRepository },
+    // Sérialise les écritures d'une même procédure : il ne vit que sous l'unité de travail.
+    { provide: DeliveryProcedureLock, useClass: PrismaDeliveryProcedureLock },
+    { provide: DeliveryProcedureReader, useClass: PrismaDeliveryProcedureReader },
+    { provide: DeliveryStepPhotoLocator, useClass: PrismaDeliveryStepPhotoLocator },
+    GetDeliveryProcedureHandler,
+    GetDeliveryStepPhotoHandler,
+    AddDeliveryStepHandler,
+    ReviseDeliveryStepHandler,
+    RemoveDeliveryStepHandler,
+    ReorderDeliveryStepsHandler,
+    GetDeliveryProcedureForStaffHandler,
+    GetDeliveryStepPhotoForStaffHandler,
+    AddDeliveryStepByStaffHandler,
+    ReviseDeliveryStepByStaffHandler,
+    RemoveDeliveryStepByStaffHandler,
+    ReorderDeliveryStepsByStaffHandler,
     { provide: MembershipReader, useClass: PrismaMembershipReader },
     { provide: AccountReader, useClass: PrismaAccountReader },
     {

@@ -998,3 +998,22 @@ export type {
   VisibilityFeatureKey,
   VisibilityLevel,
 } from "./feature-access.js";
+
+export {
+  DELIVERY_PROCEDURE_MAX_STEPS,
+  DELIVERY_STEP_BODY_MAX,
+  DELIVERY_STEP_PHOTO_LONG_EDGE,
+  DELIVERY_STEP_PHOTO_MAX_BYTES,
+  DELIVERY_STEP_TITLE_MAX,
+  deliveryProcedureOrderPayloadSchema,
+  deliveryStepFieldsSchema,
+  deliveryStepRevisionFieldsSchema,
+} from "./delivery-procedure.js";
+export type {
+  CreatedDeliveryStepResponse,
+  DeliveryProcedureOrderPayload,
+  DeliveryProcedureStepView,
+  DeliveryProcedureView,
+  DeliveryStepFields,
+  DeliveryStepRevisionFields,
+} from "./delivery-procedure.js";
