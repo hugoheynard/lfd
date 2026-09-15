@@ -2,7 +2,7 @@
 
 > **Statut : 📐 doc-first, 2026-09-15.** Rien n'est codé. Touche **l'argent** (la
 > remise appliquée au panier) et porte une **migration**. **Contredit par
-> `vitruve` le 2026-09-15** (§7) : un `BLOQUANT` attend la décision de Hugo (Q3).
+> `vitruve` le 2026-09-15** (§7) : le `BLOQUANT` est tranché par Hugo le même jour (Q3 : société **active** seulement).
 >
 > Lu avant : [`plan-espace-de-travail.md`](plan-espace-de-travail.md) (l'espace
 > perso ou pro, bâti le même jour) et
@@ -51,11 +51,13 @@ saisie par le staff est toujours B2B. La clientèle se **déduit** de ce que le
 serveur résout déjà, par une fonction pure unique `audienceOf(…)` ; elle ne se
 déclare jamais, ni dans un corps ni dans un en-tête.
 
-🔴 **Non tranché — Q3.** Déclarer une société ne demande aucune vérification
-(`POST /companies` sans garde de rôle, société créée `pending` **avec** son
-rattachement, `resolveCompany` la rend agissante dès qu'elle est seule —
-vitruve, B1). Si « une société » suffit, une remise « B2B seulement » s'obtient
-en tapant un SIRET. D'où la question du statut, §6.
+🔴 **Une société ACTIVE seulement** (Hugo, 2026-09-15, Q3). Déclarer une société
+ne demande aucune vérification (`POST /companies` sans garde de rôle, société
+créée `pending` **avec** son rattachement, agissante dès qu'elle est seule —
+vitruve, B1). La clientèle est donc **B2B si la société agissante est `active`**,
+**B2C** sinon : `pending`, `suspended` et `terminated` suivent les règles B2C pour
+la remise et la livraison. Le statut se lit côté serveur, au devis comme à la
+commande (`OrderGuardReader` le lit déjà à la passation).
 
 **D2 — La remise d'un point porte ses clientèles.** Deux colonnes
 `discount_for_b2b` et `discount_for_b2c`, `BOOLEAN NOT NULL DEFAULT true` sur
@@ -211,22 +213,15 @@ sur le réglage ; libellés « Prix boutique » en trois langues.
 
 **Q2 — Un point sans remise en B2C ?** **« Prix boutique »** (Hugo, 2026-09-15).
 
-**Q3 — Une société non active compte-t-elle B2B ?** Aujourd'hui, n'importe qui
-crée une société `pending` d'un appel, et elle agit aussitôt.
-
-- **Proposé : B2B = société agissante `active`.** `pending`, `suspended` et
-  `terminated` suivent les règles **B2C** (remise et livraison). La lecture du
-  statut existe déjà côté commande (`OrderGuardReader`) ; il faut l'ajouter au
-  devis. Coût : un pro en cours de validation voit la remise publique, le temps
-  qu'on valide son dossier.
-- **Alternative : toute société agissante.** Assumé par écrit : une remise
-  « B2B seulement » s'obtient en déclarant un SIRET.
+**Q3 — Une société non active compte-t-elle B2B ?** **Non : société active
+seulement** (Hugo, 2026-09-15). Un pro en cours de validation voit les règles B2C
+jusqu'à l'activation de son dossier.
 
 ## 7. La contradiction de `vitruve` (2026-09-15) et son sort
 
 | Objection                                                                                                                                           | Sort                                                            |
 | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **B1** « B2B = société agissante » : n'importe qui devient B2B en déclarant une société                                                             | **remontée — Q3**                                               |
+| **B1** « B2B = société agissante » : n'importe qui devient B2B en déclarant une société                                                             | tranchée — Q3 : société active seulement (D1)                   |
 | **S2** le `PATCH` à défaut `true` rouvre en silence une remise fermée                                                                               | corrigée — D2, absent = inchangé                                |
 | **S3** le refus 400 sans mécanisme, trois états non tranchés                                                                                        | corrigée — D2, value object, cases ignorées sans réduction      |
 | **S4** `DELIVERY_SERVICE_OPEN`, seconde source de vérité                                                                                            | corrigée — D4, constante retirée, lecteurs en B2B               |
