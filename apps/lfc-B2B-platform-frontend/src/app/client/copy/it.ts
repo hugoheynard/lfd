@@ -87,10 +87,9 @@ export const IT: ClientCopy = {
     write: 'Scrivere',
     habitsHead: 'Le vostre abitudini',
     proHead: 'Il vostro account pro',
-    proDiscount: 'Sconto ritiro al Labo',
+    proDiscount: 'Sconto ritiro · {place}',
     proMonth: 'Esposizione del mese',
     proKbis: 'Verifica KBIS',
-    proKbisState: 'In corso',
   },
   hero: {
     welcomeTitle: 'Il tuo ordine in stazione, pronto in due minuti.',

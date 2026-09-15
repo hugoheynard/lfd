@@ -79,10 +79,9 @@ export const FR: ClientCopy = {
     write: 'Écrire',
     habitsHead: 'Vos habitudes',
     proHead: 'Votre compte pro',
-    proDiscount: 'Remise retrait au Labo',
+    proDiscount: 'Remise retrait · {place}',
     proMonth: 'Encours du mois',
     proKbis: 'Vérification KBIS',
-    proKbisState: 'En cours',
   },
   hero: {
     welcomeTitle: 'Votre commande en station, réservée en deux minutes.',

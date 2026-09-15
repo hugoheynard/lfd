@@ -85,10 +85,9 @@ export const EN: ClientCopy = {
     write: 'Write',
     habitsHead: 'Your habits',
     proHead: 'Your trade account',
-    proDiscount: 'Pickup discount at Le Labo',
+    proDiscount: 'Pickup discount · {place}',
     proMonth: 'Outstanding this month',
     proKbis: 'KBIS verification',
-    proKbisState: 'In progress',
   },
   hero: {
     welcomeTitle: 'Your resort order, ready in two minutes.',

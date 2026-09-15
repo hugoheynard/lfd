@@ -43,18 +43,29 @@
       </div>
     </section>
 
-    <section class="block">
-      <h2 class="block-head">{{ t().espace.proHead }}</h2>
-      <dl class="pro">
-        <dt>{{ t().espace.proDiscount }}</dt>
-        <dd class="pro-good">−10 %</dd>
-        <dt>{{ t().espace.proMonth }}</dt>
-        <dd>312,40 €</dd>
-        <dt>{{ t().espace.proKbis }}</dt>
-        <dd>
-          <span class="pro-state">{{ t().espace.proKbisState }}</span>
-        </dd>
-      </dl>
-    </section>
+    <!-- Chaque ligne n'existe que si sa donnée existe : pas de remise, pas de
+         ligne ; pas de terme, pas d'encours ; pas de société, pas de KBIS. Et
+         sans aucune ligne, pas de bloc. -->
+    @if (hasPro()) {
+      <section class="block">
+        <h2 class="block-head">{{ t().espace.proHead }}</h2>
+        <dl class="pro">
+          @for (row of discounts(); track row.id) {
+            <dt>{{ row.label }}</dt>
+            <dd class="pro-good">{{ row.value }}</dd>
+          }
+          @if (outstanding(); as amount) {
+            <dt>{{ t().espace.proMonth }}</dt>
+            <dd>{{ amount }}</dd>
+          }
+          @if (kbisState(); as state) {
+            <dt>{{ t().espace.proKbis }}</dt>
+            <dd>
+              <span class="pro-state">{{ state }}</span>
+            </dd>
+          }
+        </dl>
+      </section>
+    }
   </div>
 </div>

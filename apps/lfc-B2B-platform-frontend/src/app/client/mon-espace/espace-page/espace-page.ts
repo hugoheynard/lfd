@@ -2,9 +2,16 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { RouterLink } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
+import { instantToLocal } from '@lfd/contracts';
+
 import { ClientChrome } from '../../client-chrome.service';
+import { ClientCompany } from '../../client-company.service';
 import { ClientIdentity } from '../../client-identity.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { formatCents } from '../../format-money';
+import { ClientOrderHistory } from '../../mes-commandes/client-order-history.service';
+import { kbisStateLabel } from '../../mon-compte/kbis/kbis-section';
+import { ServicePoints } from '../../shop/pickup-points.store';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../nav/client-banner';
@@ -14,6 +21,7 @@ import { ContactCard } from '../contact-card/contact-card';
 import { EventBanner } from '../event-banner/event-banner';
 import { ClientEspace } from '../espace.service';
 import { ReadyWell } from '../ready-well/ready-well';
+import { discountRows, monthOutstandingCents } from '../pro-summary';
 
 /**
  * `/mon-espace` — l'accueil du client reconnu.
@@ -62,6 +70,39 @@ export class EspacePage {
   protected readonly espace = inject(ClientEspace);
   private readonly identity = inject(ClientIdentity);
   private readonly chrome = inject(ClientChrome);
+  private readonly points = inject(ServicePoints);
+  private readonly client = inject(ClientCompany);
+  private readonly history = inject(ClientOrderHistory);
+
+  /** La remise de chaque point, telle que le back-office la pose. */
+  protected readonly discounts = computed(() =>
+    discountRows(this.points.pickups(), this.t().espace.proDiscount),
+  );
+
+  /**
+   * L'encours du mois, ou `null` quand la société ne règle pas sur terme : payée
+   * à la commande, elle n'a rien en compte, et « 0,00 € » le ferait croire.
+   *
+   * Le mois se lit à l'horloge du navigateur, à Paris : c'est une consultation,
+   * et seul le passage de minuit d'un fin de mois pourrait la décaler.
+   */
+  protected readonly outstanding = computed(() => {
+    if (!this.client.hasDeferredTerm()) {
+      return null;
+    }
+    const today = instantToLocal(new Date()).day;
+    return formatCents(monthOutstandingCents(this.history.orders(), today));
+  });
+
+  /** L'état du KBIS avec les mots de « Mon compte », ou `null` sans société. */
+  protected readonly kbisState = computed(() => {
+    const company = this.client.company();
+    return company === null ? null : kbisStateLabel(company.kbis, this.t().account);
+  });
+
+  protected readonly hasPro = computed(
+    () => this.discounts().length > 0 || this.outstanding() !== null || this.kbisState() !== null,
+  );
 
   /** Le salut nomme, ou ne nomme pas — jamais du prénom de quelqu'un d'autre. */
   protected readonly hello = computed(() => {
@@ -74,6 +115,7 @@ export class EspacePage {
   protected readonly bannerTitle = computed(() => `${this.hello()}\n${this.espace.todayLine()}`);
 
   constructor() {
+    void this.points.hydrate();
     // Le sur-titre de la barre nomme la page, et il le fait avec le MÊME mot que
     // la destination du menu : renommer l'une renomme l'autre, et la barre ne
     // peut pas se mettre à annoncer un écran qui ne s'appelle plus comme ça.

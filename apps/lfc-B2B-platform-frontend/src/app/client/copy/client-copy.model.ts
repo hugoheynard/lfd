@@ -115,10 +115,12 @@ export interface ClientCopy {
     readonly write: string;
     readonly habitsHead: string;
     readonly proHead: string;
+    /** `{place}` = le point de retrait remisé : une ligne par point. */
     readonly proDiscount: string;
+    /** Affiché seulement quand la société règle sur terme : sans terme, rien n'est en compte. */
     readonly proMonth: string;
+    /** L'état se lit dans les libellés de « Mon compte » : un seul mot par état. */
     readonly proKbis: string;
-    readonly proKbisState: string;
   };
   readonly hero: {
     readonly welcomeTitle: string;
