@@ -209,6 +209,16 @@ describe('CommandePage', () => {
     expect(dialog.querySelector('h2.title')?.textContent).toBe(FR.pickupDialog.title);
   });
 
+  it('en perso, les cartes de boutique ne disent pas « votre habitude »', () => {
+    // La suite n'a pas de `/me` : la clientèle montrée est B2C.
+    TestBed.inject(ServicePoints).receive(POINTS, [], [], { openToB2b: false, openToB2c: false });
+    fixture.detectChanges();
+
+    const shops = el().querySelector('.shops');
+    expect(shops?.querySelectorAll('app-pickup-point-card')).toHaveLength(2);
+    expect(shops?.textContent).not.toContain(FR.pickupDialog.habit);
+  });
+
   it('livraison proposée : aucune carte de boutique', () => {
     expect(el().querySelector('app-pickup-point-card')).toBeNull();
   });

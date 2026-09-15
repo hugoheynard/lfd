@@ -150,7 +150,10 @@ export class CommandePage {
     const audience = this.audience.shown();
     return this.service.pickups().map((point) => ({
       point,
-      tag: point.isDefault ? copy.habit : '',
+      // « votre habitude » ne parle qu'à un pro : un particulier n'a pas encore
+      // d'habitude, et le point par défaut de la plateforme n'en est pas une
+      // (Hugo, 2026-09-15).
+      tag: audience === 'b2b' && point.isDefault ? copy.habit : '',
       offer: pickupOffer(point, audience, copy),
     }));
   });
