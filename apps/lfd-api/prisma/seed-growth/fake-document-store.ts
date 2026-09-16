@@ -25,4 +25,13 @@ export class FakeDocumentStore extends DocumentStore {
   readIfPresent(): Promise<Buffer | null> {
     return Promise.resolve(null);
   }
+
+  /**
+   * Ne fait rien, et rend un succès : le port promet qu'« une clé absente est un
+   * succès », et ici elles le sont toutes — rien n'a jamais été rangé. Un semis
+   * qui remplace une photo appelle donc `delete` sans conséquence.
+   */
+  delete(): Promise<void> {
+    return Promise.resolve();
+  }
 }
