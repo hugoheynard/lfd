@@ -51,6 +51,7 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
 import { EMPTY_OPENING, openingEntries, toPickupOpening } from '../pickup-opening.model';
+import { PublicSlotsCard } from './public-slots-card/public-slots-card';
 
 /** La liste dont cette page est le détail — et le retour de tous ses gestes. */
 const LIST_PATH = '/b2b/reglages/points-de-retrait';
@@ -83,6 +84,7 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
     AddressForm,
     HoursForm,
     PriceAlterationField,
+    PublicSlotsCard,
     FoldBackLinkComponent,
     FoldBadgeComponent,
     FoldButtonComponent,

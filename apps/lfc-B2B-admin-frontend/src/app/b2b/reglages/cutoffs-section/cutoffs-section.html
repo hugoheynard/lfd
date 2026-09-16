@@ -67,9 +67,13 @@
 
               <div class="rule-actions">
                 @if (pendingRemoval() === rule.id) {
+                  <!-- `confirmLabel` N'EXISTE PAS sur ce composant : il posait un
+                       attribut muet, et le bouton disait « Confirmer », le mot du
+                       fournisseur global. Le libellé passe par `labels` (corrigé
+                       le 2026-09-16). -->
                   <fold-inline-confirm
                     message="Supprimer cette règle ?"
-                    confirmLabel="Supprimer"
+                    [labels]="{ confirm: 'Supprimer' }"
                     (confirmed)="remove(rule)"
                     (cancelled)="cancelRemove()"
                   />

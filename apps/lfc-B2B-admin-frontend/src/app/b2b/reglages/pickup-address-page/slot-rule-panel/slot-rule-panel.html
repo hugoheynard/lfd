@@ -1,0 +1,64 @@
+<fold-panel-header
+  [title]="heading()"
+  subtitle="Les créneaux se déduisent de ces bornes et de la durée."
+/>
+
+<div class="body">
+  <fold-select label="S'applique à" [value]="weekday() ?? any" (valueChange)="onWeekday($event)">
+    <option [value]="any">Tous les jours</option>
+    @for (day of weekdays; track day.value) {
+      <option [value]="day.value">{{ day.label }}</option>
+    }
+  </fold-select>
+
+  <div class="row">
+    <fold-time label="Premier créneau" [(value)]="startTime" required />
+    <fold-time label="Fin de la plage" [(value)]="endTime" required />
+  </div>
+
+  <fold-number-input
+    label="Durée d'un créneau"
+    hint="En minutes. C'est le pas de découpe : la plage se remplit de créneaux de cette longueur."
+    [min]="minStep"
+    [max]="maxStep"
+    [step]="5"
+    [(value)]="slotMinutes"
+  />
+
+  <fold-input
+    label="Badge"
+    optional
+    hint="Ce que vous dites au client de cette heure-là — « Tout est chaud », « Première fournée »."
+    [(value)]="badge"
+  />
+
+  <fold-number-input
+    label="Places par créneau"
+    optional
+    optionalLabel="sans limite"
+    hint="Laissée vide, cette plage ne refuse personne. C'est le défaut, et c'est voulu."
+    [min]="1"
+    [(value)]="serviceCapacity"
+  />
+
+  <!-- ⚠️ Le reste tombé de la découpe, dit AVANT d'enregistrer. Une plage
+       07:00–12:00 par 45 min s'arrête à 11:30 : personne ne pourra venir à
+       11:45, et rien d'autre ne le signalerait. -->
+  @if (leftover() > 0 && slotCount() > 0) {
+    <fold-callout variant="warning">
+      Les {{ leftover() }} dernières minutes n'ouvrent aucun créneau : la plage s'arrête à
+      {{ lastSlot() }}.
+    </fold-callout>
+  }
+
+  <!-- Une plage se relit en une phrase avant d'être posée : c'est là qu'on voit
+       qu'on a écrit 15 min en pensant 1 h 15. -->
+  <fold-callout [variant]="slotCount() === 0 ? 'alert' : 'info'">{{ recap() }}</fold-callout>
+</div>
+
+<div class="actions">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter la plage' : 'Enregistrer' }}
+  </button>
+</div>

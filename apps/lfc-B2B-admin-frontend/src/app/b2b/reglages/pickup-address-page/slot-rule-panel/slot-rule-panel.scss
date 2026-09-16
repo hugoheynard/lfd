@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Les deux bornes sur une ligne : elles se lisent ensemble, et les séparer
+   ferait chercher la seconde. Elles s'empilent quand la colonne se resserre. */
+.row {
+  display: flex;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.row fold-time {
+  flex: 1 1 10rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}

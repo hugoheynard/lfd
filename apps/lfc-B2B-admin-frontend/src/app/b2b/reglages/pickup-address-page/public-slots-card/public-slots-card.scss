@@ -1,0 +1,137 @@
+:host {
+  display: block;
+}
+
+.ps-save {
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+/* Trois blocs dans une même carte — plages, fermetures, aperçu. Ils se lisent
+   dans cet ordre : ce qu'on ouvre, ce qu'on ferme, ce que ça donne. */
+.ps-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.ps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.ps-title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--fold-tracking-wide, 0.04em);
+  color: var(--fold-color-text-muted);
+}
+
+.ps-said {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.ps-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Une plage par rang, séparée d'un filet. */
+.ps-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.ps-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+/* Les heures s'alignent en colonne : chasse tabulaire, sinon 07:00 et 11:15
+   dansent l'un sous l'autre. */
+.ps-when {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-sub {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.ps-tags {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  flex-wrap: wrap;
+}
+
+.ps-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+/* L'aperçu : une grille de pastilles, pas une liste — on la balaie du regard
+   pour juger d'un coup ce que la journée offre. */
+.ps-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.ps-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm, 6px);
+  font-size: var(--fold-text-sm);
+}
+
+/* Un créneau complet reste VISIBLE et se lit comme fermé : le faire disparaître
+   serait un refus muet (plan, D3). */
+.ps-slot.is-closed {
+  opacity: 0.6;
+  background: var(--fold-color-surface-sunken, transparent);
+}
+
+.ps-slot-time {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-slot-badge {
+  color: var(--fold-color-text-muted);
+}
+
+.ps-slot-full {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+@media (max-width: 44rem) {
+  .ps-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}

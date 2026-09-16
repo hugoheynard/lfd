@@ -110,7 +110,9 @@ const DEBT = new Map([
     "apps/lfc-B2B-admin-frontend/src/app/commercial/calendrier/customer-sheet/customer-sheet.html",
     5,
   ],
-  ["apps/lfc-B2B-admin-frontend/src/app/b2b/reglages/cutoffs-section/cutoffs-section.html", 1],
+  // (`cutoffs-section.html` est sorti de cette liste le 2026-09-16 : son
+  // `confirmLabel` muet est devenu `[labels]`, et la porte refuse — à juste
+  // titre — qu'une dette payée reste inscrite.)
 
   // `fold-badge` ne déclare que content/radius/variant.
   [

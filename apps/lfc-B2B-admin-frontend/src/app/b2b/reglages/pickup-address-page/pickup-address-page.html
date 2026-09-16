@@ -100,6 +100,15 @@
       </fold-page-section>
     </fold-card>
 
+    <!-- Les créneaux PUBLICS, juste après les heures PRO : deux horaires qui se
+         lisent l'un après l'autre, et qui ne se mélangent jamais. La carte a
+         son propre enregistrement — son refus (le chevauchement) ne doit pas
+         faire échouer l'adresse. Absente à la création : sa route porte un
+         identifiant, et un point qui n'existe pas encore ne porte rien. -->
+    @if (!isCreate()) {
+      <app-public-slots-card [pickupId]="id() ?? ''" />
+    }
+
     <fold-card>
       <fold-page-section title="Réduction de retrait" separator>
         <lfd-price-alteration-field

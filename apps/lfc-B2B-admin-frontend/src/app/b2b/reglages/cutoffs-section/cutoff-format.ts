@@ -1,22 +1,12 @@
-import type { OrderCutoffView, Weekday } from '@lfd/contracts';
+import type { OrderCutoffView } from '@lfd/contracts';
 
-/** Les jours, dans l'ordre où on les propose (lundi d'abord, usage FR). */
-export const WEEKDAY_CHOICES: readonly { readonly value: Weekday; readonly label: string }[] = [
-  { value: 'mon', label: 'Lundi' },
-  { value: 'tue', label: 'Mardi' },
-  { value: 'wed', label: 'Mercredi' },
-  { value: 'thu', label: 'Jeudi' },
-  { value: 'fri', label: 'Vendredi' },
-  { value: 'sat', label: 'Samedi' },
-  { value: 'sun', label: 'Dimanche' },
-];
-
-const LABELS = new Map(WEEKDAY_CHOICES.map((choice) => [choice.value, choice.label]));
-
-/** « Mercredi », ou « Tous les jours » quand la règle ne vise aucun jour. */
-export function weekdayLabel(weekday: Weekday | null): string {
-  return weekday === null ? 'Tous les jours' : (LABELS.get(weekday) ?? weekday);
-}
+/**
+ * Les jours vivaient ICI et n'y servaient qu'aux heures limites. Les créneaux
+ * publics en ont le même besoin, alors ils sont montés d'un cran — les recopier
+ * aurait fait deux vérités sur les jours de la semaine. Réexportés pour que les
+ * lecteurs de ce module n'aient rien à changer.
+ */
+export { WEEKDAY_CHOICES, weekdayLabel } from '../weekday-choices';
 
 /** À qui s'applique la règle : un point nommé, ou le défaut de la plateforme. */
 export function scopeLabel(rule: OrderCutoffView): string {

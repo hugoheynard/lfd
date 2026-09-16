@@ -210,6 +210,14 @@ function settingSentence(event: ActivityEventView): string | null {
       return 'Point de retrait supprimé';
     case 'pickup_address.default_set':
       return 'Point de retrait par défaut changé';
+    case 'public_pickup_schedule.updated': {
+      // Le nombre de plages dit l'essentiel : passer de zéro à une ouvre les
+      // créneaux publics du point, et c'est ce qu'un visiteur verra changer.
+      const rules = count(p['ruleCount']);
+      return `Créneaux publics de « ${text(p['label'])} » réglés${
+        rules === null ? '' : ` (${rules} plage(s))`
+      }`;
+    }
     case 'delivery_availability.updated':
       return 'Livraison par clientèle réglée';
     case 'order_cutoff.created':
