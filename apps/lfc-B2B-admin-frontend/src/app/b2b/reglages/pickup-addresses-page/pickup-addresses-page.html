@@ -33,14 +33,16 @@
               </lfd-address>
 
               <!-- Pas de menu : tout ce qu'on fait d'un point — le modifier, le
-                   mettre par défaut, le supprimer — se fait dans son panneau. -->
+                   mettre par défaut, le supprimer — se fait sur SA PAGE. Le
+                   chevron dit qu'on s'y rend ; trois points auraient promis un
+                   menu qui n'existe pas. -->
               <button
                 type="button"
                 class="edit-trigger"
                 aria-label="Ouvrir le point de retrait"
                 (click)="edit(point)"
               >
-                <fold-icon name="more-vertical" [size]="18" />
+                <fold-icon name="chevron-right" [size]="18" />
               </button>
             </div>
 

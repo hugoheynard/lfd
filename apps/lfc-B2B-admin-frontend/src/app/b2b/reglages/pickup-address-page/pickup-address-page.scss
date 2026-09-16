@@ -1,0 +1,16 @@
+/* Annuler et Enregistrer sur une ligne, dans l'en-tête — même patron que les
+   deux gestes du détail d'entité juridique. */
+.pa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+/* La phrase qui dit ce qu'une absence de plage produit : elle porte le
+   POURQUOI, qui se lit une fois puis s'ignore. Encre secondaire, donc, pour
+   qu'elle ne dispute pas la lecture aux champs. */
+.pa-said {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

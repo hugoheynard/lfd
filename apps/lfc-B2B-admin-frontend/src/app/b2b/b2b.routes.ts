@@ -93,6 +93,29 @@ export const b2bRoutes: Routes = [
               ),
           },
           {
+            // AVANT `:id` : sans cela le segment `nouveau` serait lu comme un
+            // identifiant, et « Ajouter un point » ouvrirait une fiche
+            // introuvable. Même précaution que `commandes/:id/regler`.
+            path: 'points-de-retrait/nouveau',
+            title: 'Nouveau point de retrait — LFC B2B admin',
+            loadComponent: () =>
+              import('./reglages/pickup-address-page/pickup-address-page').then(
+                (m) => m.PickupAddressPage,
+              ),
+          },
+          {
+            // LE DÉTAIL D'UN POINT — une page, et non un panneau : il porte six
+            // sujets (adresse, rang, heures, réduction, clientèles, suppression)
+            // et en recevra deux de plus avec les créneaux publics. Cf. le
+            // JSDoc du composant et le CLAUDE.md de cette app.
+            path: 'points-de-retrait/:id',
+            title: 'Point de retrait — LFC B2B admin',
+            loadComponent: () =>
+              import('./reglages/pickup-address-page/pickup-address-page').then(
+                (m) => m.PickupAddressPage,
+              ),
+          },
+          {
             path: 'livraison',
             title: 'Livraison — LFC B2B admin',
             loadComponent: () =>

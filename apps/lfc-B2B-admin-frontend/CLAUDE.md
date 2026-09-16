@@ -66,6 +66,34 @@ Balayage fait le 2026-08-14 : plus aucun `<select>` dans l'app (les quatre
 derniers étaient dans Croissance), et cette page ne dessine plus ni carte, ni
 en-tête, ni pastille de portée, ni encadré d'aparté.
 
+## Une page, ou un panneau ? (2026-09-16)
+
+La règle **« Saisir »** du fichier ci-dessus — toute saisie dans un panneau
+fold, pas de panneau de détail intermédiaire — a été décidée le 2026-09-14 pour
+la **boutique** (commit `6902e7a8`, `feat(boutique)`), où ce qu'on saisit tient
+en un formulaire : une adresse, un RIB, une identité.
+
+Le back-office a des objets qui n'y tiennent pas, et il leur ouvre une **page
+de détail** avec `fold-back-link` : entités juridiques, fiche produit, fiche
+catégorie, rendez-vous, révisions. Le critère n'est pas le type d'objet, c'est
+le **nombre de sujets** :
+
+|                | Panneau                                         | Page de détail                                                        |
+| -------------- | ----------------------------------------------- | --------------------------------------------------------------------- |
+| Ce qu'on règle | un sujet, lu de haut en bas                     | plusieurs, dont on va droit à un seul                                 |
+| Ce qu'on garde | la liste visible derrière                       | une adresse partageable, un retour nommé                              |
+| La forme       | `fold-panel-*`, pied avec Annuler / Enregistrer | `fold-page-layout`, une `fold-card` par sujet, actions dans l'en-tête |
+
+Le **point de retrait** a basculé le 2026-09-16 pour cette raison : il porte
+l'adresse, le rang par défaut, les heures, la réduction, ses clientèles et sa
+suppression — et recevra les créneaux publics, leurs badges, leurs capacités et
+les fermetures datées
+([`plan-creneaux-de-retrait.md`](../../documentation/b2b/plan-creneaux-de-retrait.md)).
+
+⚠️ Ce qui ne change pas en basculant : **supprimer reste une `fold-danger-zone`**
+(`appearance="section"`), et ses mots de confirmation viennent du fournisseur
+global d'`app.config.ts` — sans lui, fold les dirait en anglais.
+
 ## Deux arbres de navigation (dette connue)
 
 Une entrée de menu doit être ajoutée **deux fois** : au rail `fold-menu-item`

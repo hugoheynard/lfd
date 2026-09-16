@@ -137,6 +137,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Les réglages de l'e-commerce, venus de l'onglet « Retraits & livraisons »
   // des Réglages : même mur que celui qu'ils quittent, hérité de l'espace.
   'b2b/reglages/points-de-retrait': null,
+  // Le détail d'un point, et sa création : même ressource que la liste, donc
+  // même mur. `nouveau` est déclaré AVANT `:id` dans les routes, sans quoi il
+  // s'y lirait comme un identifiant.
+  'b2b/reglages/points-de-retrait/nouveau': null,
+  'b2b/reglages/points-de-retrait/:id': null,
   'b2b/reglages/livraison': null,
   'b2b/reglages/heures-limites': null,
 

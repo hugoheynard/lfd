@@ -1,4 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { PickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -31,6 +32,9 @@ async function mount(
   TestBed.configureTestingModule({
     imports: [PickupAddressesPage],
     providers: [
+      // La liste NAVIGUE vers la page d'un point depuis le 2026-09-16 : sans
+      // routeur, l'injection échoue avant le premier rendu.
+      provideRouter([]),
       {
         provide: PickupAddressesService,
         useValue: {
