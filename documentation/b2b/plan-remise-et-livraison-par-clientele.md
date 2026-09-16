@@ -2,7 +2,10 @@
 
 > **Statut : 🟡 partiel, 2026-09-15.** Le **lot A (serveur)** est bâti : migration,
 > `PickupDiscount`, `CartAdjustments` par clientèle, module `delivery-availability`.
-> Les lots **B** (back-office) et **C** (boutique) ne le sont pas. Touche **l'argent** (la
+> Les lots **B** (back-office) et **C** (boutique) **le sont aussi** — vérifié le
+> 2026-09-16 : les trois pages de `/b2b/reglages/` existent (`04e0d15a`, puis
+> cinq commits d'affinage), et `pickupOffer` lit `pickupDiscountFor` côté
+> boutique. La phrase disait le contraire depuis le 2026-09-15. Touche **l'argent** (la
 > remise appliquée au panier) et porte une **migration**. **Contredit par
 > `vitruve` le 2026-09-15** (§7) : le `BLOQUANT` est tranché par Hugo le même jour (Q3 : société **active** seulement).
 >
