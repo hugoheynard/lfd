@@ -98,8 +98,8 @@ services:
   #                  des années — et parce qu'une borne au fournil qui
   #                  recevrait le jeton customers lirait aussi les factures.
   #
-  #                  ⚠️ Aucun écrivain à ce jour : le tuyau est posé, pas le
-  #                  débit. Cf. `env-readers.ts`.
+  #                  Écrit depuis `985d21bf` (2026-09-16) : les deux papiers
+  #                  du fournil y sont archivés au premier tirage.
   #   lfc-media-dev  visuels PUBLICS du catalogue. Ouvert en LECTURE ANONYME,
   #                  parce que c'est la moitié du stockage qui ne passe pas par
   #                  nous : le navigateur va chercher l'image droit sur le

@@ -3,13 +3,14 @@
 **Ouvert le 2026-09-07**, complété le jour même. Les deux buckets **existent en
 code, en dev et en test** ; ce qui les sépare est ci-dessous.
 
-⚠️ **`production` n'a encore aucun écrivain.** Il est configuré, créé par
-`docker-compose.dev.yml`, posé par le harnais e2e — et rien dans `src/` n'y range
-quoi que ce soit. Le tuyau est posé, pas le débit : la question « faut-il
-archiver la feuille d'atelier ? » (§2) n'est pas tranchée, et le compte à
-produire n'a pas encore de chemin qui l'écrive. C'est aussi pourquoi il ne
-figure pas au bulletin de démarrage — celui-ci nomme ce que le produit PERD, et
-aujourd'hui il ne perd rien.
+⚠️ **Relu le 2026-09-16 : `production` a ses écrivains.** La question « faut-il
+archiver la feuille d'atelier ? » (§2) a été tranchée par l'affirmative, et
+`ProductionPapers` range les deux papiers au premier tirage — comme le bon de
+commande, et pour la même raison. **Deux écarts subsistent entre ce document et
+le code** : la feuille d'atelier est rangée sous `orders/{orderId}/fiche-atelier.pdf`,
+**sans révision** (le tableau du §3 en annonce une), et le bulletin de démarrage
+ignore toujours ce stockage. La carte complète du stockage objet est dans
+[`../ops/architecture-stockage-r2.md`](../ops/architecture-stockage-r2.md).
 
 Ce document dit comment les deux sont organisés, et ce qui viendra s'y ajouter :
 l'écrire avant que le comptable dépose sa première facture coûte une page ;
@@ -81,7 +82,7 @@ customers/                                  ✅ existe
 └── companies/{companyId}/invoices/{AAAA-MM}/
     └── facture-{numero}.pdf                déposée par le comptable
 
-production/                                 ⚠️ configuré, aucun écrivain
+production/                                 ✅ écrit depuis le 2026-09-16
 ├── {AAAA-MM-JJ}/
 │   └── compte-a-produire.pdf               le récapitulatif du jour
 └── orders/{orderId}/
@@ -124,13 +125,13 @@ lisible.
 
 ## 3. Ce qui s'y range, pièce par pièce
 
-| Pièce                      | Bucket       | Clé                                           | Qui l'écrit      | Quand                                  | État |
-| -------------------------- | ------------ | --------------------------------------------- | ---------------- | -------------------------------------- | ---- |
-| **Bon de commande** client | `customers`  | `orders/{id}/bon-de-commande-r{n}.pdf`        | l'API            | au 1ᵉʳ téléchargement                  | ✅   |
-| **Bon staff**              | `customers`  | `orders/{id}/bon-staff-r{n}.pdf`              | l'API            | au 1ᵉʳ téléchargement                  | ⛔   |
-| **Facture**                | `customers`  | `companies/{id}/invoices/{mois}/facture-…pdf` | **le comptable** | au dépôt                               | ⛔   |
-| **Compte à produire**      | `production` | `{jour}/compte-a-produire.pdf`                | l'API            | à la clôture du plan du soir           | ⛔   |
-| **Fiche d'atelier**        | `production` | `orders/{id}/fiche-atelier-r{n}.pdf`          | l'API            | au tirage du lot — **si on l'archive** | ⛔   |
+| Pièce                      | Bucket       | Clé                                             | Qui l'écrit      | Quand                           | État |
+| -------------------------- | ------------ | ----------------------------------------------- | ---------------- | ------------------------------- | ---- |
+| **Bon de commande** client | `customers`  | `orders/{id}/bon-de-commande-r{n}.pdf`          | l'API            | au 1ᵉʳ téléchargement           | ✅   |
+| **Bon staff**              | `customers`  | `orders/{id}/bon-staff-r{n}.pdf`                | l'API            | au 1ᵉʳ téléchargement           | ⛔   |
+| **Facture**                | `customers`  | `companies/{id}/invoices/{mois}/facture-…pdf`   | **le comptable** | au dépôt                        | ⛔   |
+| **Compte à produire**      | `production` | `{jour}/compte-a-produire.pdf`                  | l'API            | au 1ᵉʳ tirage, après la clôture | ✅   |
+| **Fiche d'atelier**        | `production` | `orders/{id}/fiche-atelier.pdf` — sans révision | l'API            | au 1ᵉʳ tirage                   | ✅   |
 
 ### Le bon de commande — le seul livré
 

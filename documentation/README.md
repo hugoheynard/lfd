@@ -65,6 +65,7 @@ lignes et les trois pièges qui reviennent.
 | [`ops/build-des-fronts.md`](ops/build-des-fronts.md)                               | ✅   | Les 2 réglages communs aux 4 fronts : **par où entrent les tokens fold**, et ce qu'un budget de bundle attrape (et ce qu'il ne dit pas).                                                                                                           |
 | [`ops/mailer-resend.md`](ops/mailer-resend.md)                                     | ✅   | La mise en service du courrier : **un mailer mal configuré ressemble à un mailer qui marche**. Domaine à vérifier, DNS, 4 réglages, contrôles.                                                                                                     |
 | [`ops/architecture-stockage-media.md`](ops/architecture-stockage-media.md)         | 🟡   | Où vivent les images produit : R2 + domaine sur la zone. **Ce que « CDN » recouvre**, pourquoi rien ne marche sans domaine, le coût réel. Dépôt codé ; **bucket à créer**.                                                                         |
+| [`ops/architecture-stockage-r2.md`](ops/architecture-stockage-r2.md)               | ✅   | **La carte du stockage objet** : quatre buckets, quatre ports, la clé de chaque pièce. Ce que `kbis` contient vraiment, les trois verbes de lecture, ce qui est ramassé et ce qui ne l'est pas.                                                    |
 
 ## B2B — la plateforme client et son back-office
 
