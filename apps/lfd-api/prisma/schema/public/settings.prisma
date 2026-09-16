@@ -45,6 +45,11 @@ model PickupAddress {
   /// Sociétés qui ont fait de ce point leur retrait préféré (cf. Company).
   preferredBy Company[]
 
+  /// Les créneaux PUBLICS du point, et leurs fermetures datées. Structure NEUVE,
+  /// à côté d'`opening` : elle ne concerne que le visiteur, jamais le pro.
+  publicSlotRules PublicPickupSlotRule[]
+  publicClosures  PublicPickupClosure[]
+
   @@map("pickup_addresses")
   @@schema("public")
 }
@@ -127,5 +132,90 @@ model PlatformContent {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("platform_content")
+  @@schema("public")
+}
+
+/// **Une règle de créneaux publics** — une plage homogène d'un point de retrait,
+/// découpée à pas constant pour le VISITEUR.
+///
+/// 🔴 Elle ne remplace rien : `PickupAddress.opening` porte toujours les heures
+/// PRO, et ce plan n'y touche pas (`documentation/b2b/plan-creneaux-de-retrait.md`,
+/// §3). Les créneaux restent DÉRIVÉS (D1) — rien d'enregistré ici ne peut
+/// diverger de l'horaire réel, seule la règle est stockée.
+///
+/// **Plusieurs règles par (point, jour)**, et c'est la différence avec
+/// l'unicité d'`OrderCutoff` : c'est ce qui donne deux badges dans la même
+/// matinée. Le chevauchement est refusé par l'agrégat `PickupSchedule`, pas par
+/// un index — l'écriture est un geste d'administration, rare, à un opérateur (D8).
+model PublicPickupSlotRule {
+  /// ULID préfixé `ppslot_`.
+  id String @id
+
+  /// Un créneau appartient TOUJOURS à un comptoir.
+  pickupAddressId String        @map("pickup_address_id")
+  pickupAddress   PickupAddress @relation(fields: [pickupAddressId], references: [id], onDelete: Cascade)
+
+  /// `null` = tous les jours ; sinon la clé du jour (`mon`…`sun`), celle du
+  /// contrat (`Weekday`, `packages/contracts/src/address.ts`).
+  weekday String?
+
+  /// Bornes locales `HH:MM`, pendule d'Europe/Paris, `start` avant `end`.
+  startTime String @map("start_time")
+  endTime   String @map("end_time")
+
+  /// Le pas de découpe, en minutes — le « générateur avec une durée ».
+  slotMinutes Int @map("slot_minutes")
+
+  /// Texte LIBRE, argument commercial et non vérité de production (§2.4).
+  /// `null` = pas de pastille ; la chaîne vide est refusée à la saisie (D2).
+  badge String?
+
+  /// Combien de personnes on sert sur CE créneau. `null` = aucune limite, et
+  /// c'est le défaut voulu : on ne refuse jamais un client (D3). Jamais `0`.
+  ///
+  /// ⚠️ La capacité de STOCK (ce que le four a sorti) n'a volontairement aucune
+  /// colonne : personne ne sait encore la remplir, et une colonne qu'on ne sait
+  /// pas remplir est une dette, pas une préparation (D3).
+  serviceCapacity Int? @map("service_capacity")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([pickupAddressId, weekday])
+  @@map("public_pickup_slot_rules")
+  @@schema("public")
+}
+
+/// **Une fermeture datée** du retrait public — congés, jour sans fournée, four
+/// en panne (D4).
+///
+/// Un INTERVALLE de jours et non un jour unique comme `AvailabilityException` :
+/// une semaine de congés est une ligne, pas sept. Bornes horaires facultatives —
+/// absentes, la journée entière est fermée. Une fermeture **prime** sur toute
+/// règle.
+model PublicPickupClosure {
+  /// ULID préfixé `ppclose_`.
+  id String @id
+
+  pickupAddressId String        @map("pickup_address_id")
+  pickupAddress   PickupAddress @relation(fields: [pickupAddressId], references: [id], onDelete: Cascade)
+
+  /// Jours locaux inclusifs, `AAAA-MM-JJ`. Stockés en `DATE` pour qu'aucun
+  /// fuseau ne puisse les décaler — un jour de calendrier, pas un instant.
+  fromDay DateTime @map("from_day") @db.Date
+  toDay   DateTime @map("to_day") @db.Date
+
+  /// Bornes locales `HH:MM`, ou `null` des deux côtés pour la journée entière.
+  startTime String? @map("start_time")
+  endTime   String? @map("end_time")
+
+  /// Motif libre — il est lu par du personnel qui n'a pas le réglage sous les yeux.
+  reason String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([pickupAddressId, fromDay])
+  @@map("public_pickup_closures")
   @@schema("public")
 }

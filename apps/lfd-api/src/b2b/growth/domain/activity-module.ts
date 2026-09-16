@@ -29,6 +29,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "order.",
     "delivery_zone.",
     "pickup_address.",
+    // Les créneaux PUBLICS d'un point : même famille que le point lui-même —
+    // ils décident de l'heure à laquelle une commande change de mains.
+    "public_pickup_schedule.",
     "order_cutoff.",
     "delivery_availability.",
   ],

@@ -1062,3 +1062,19 @@ export {
   pickupDiscountFor,
 } from "./pickup.js";
 export type { PickupAddressUpdatePayload, PickupDiscountAudiences } from "./pickup.js";
+export {
+  publicPickupClosurePayloadSchema,
+  publicPickupSchedulePayloadSchema,
+  publicPickupSlotRulePayloadSchema,
+  publicPickupSlotsFor,
+} from "./public-pickup-slots.js";
+export type {
+  PublicPickupClosurePayload,
+  PublicPickupClosureView,
+  PublicPickupSchedulePayload,
+  PublicPickupScheduleView,
+  PublicPickupSlot,
+  PublicPickupSlotRulePayload,
+  PublicPickupSlotRuleView,
+  PublicPickupSlotTaken,
+} from "./public-pickup-slots.js";

@@ -85,6 +85,7 @@
   "test/production-packing.e2e-spec.ts": 14228,
   "test/production-worksheet.e2e-spec.ts": 5384,
   "test/prospects.e2e-spec.ts": 12203,
+  "test/public-pickup-slots.e2e-spec.ts": 9058,
   "test/quote-order-parity.e2e-spec.ts": 8147,
   "test/recompute.e2e-spec.ts": 15730,
   "test/resend-webhook.e2e-spec.ts": 69739,

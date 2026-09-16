@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 
+import { GetPublicPickupScheduleHandler } from "./application/get-public-pickup-schedule.handler.js";
 import { ListPickupAddressesHandler } from "./application/list-pickup-addresses.handler.js";
+import { SavePublicPickupScheduleHandler } from "./application/save-public-pickup-schedule.handler.js";
 import {
   CreatePickupAddressHandler,
   RemovePickupAddressHandler,
@@ -8,7 +10,11 @@ import {
   UpdatePickupAddressHandler,
 } from "./application/pickup-address.handlers.js";
 import { PickupAddressRepository } from "./domain/pickup-address.repository.js";
+import { PickupScheduleRepository } from "./domain/pickup-schedule.repository.js";
+import { PublicPickupScheduleReader } from "./domain/public-pickup-schedule.reader.js";
 import { PrismaPickupAddressRepository } from "./infrastructure/prisma-pickup-address.repository.js";
+import { PrismaPickupScheduleRepository } from "./infrastructure/prisma-pickup-schedule.repository.js";
+import { PrismaPublicPickupScheduleReader } from "./infrastructure/prisma-public-pickup-schedule.reader.js";
 import { AdminPickupAddressesController } from "./http/admin-pickup-addresses.controller.js";
 import { PickupAddressesController } from "./http/pickup-addresses.controller.js";
 
@@ -21,11 +27,17 @@ import { PickupAddressesController } from "./http/pickup-addresses.controller.js
   controllers: [PickupAddressesController, AdminPickupAddressesController],
   providers: [
     { provide: PickupAddressRepository, useClass: PrismaPickupAddressRepository },
+    // L'horaire PUBLIC : deux ports, un par sens (ISP). Un écran qui affiche une
+    // grille n'a rien à faire d'un port capable de la réécrire.
+    { provide: PickupScheduleRepository, useClass: PrismaPickupScheduleRepository },
+    { provide: PublicPickupScheduleReader, useClass: PrismaPublicPickupScheduleReader },
     ListPickupAddressesHandler,
     CreatePickupAddressHandler,
     UpdatePickupAddressHandler,
     RemovePickupAddressHandler,
     SetDefaultPickupAddressHandler,
+    SavePublicPickupScheduleHandler,
+    GetPublicPickupScheduleHandler,
   ],
   exports: [PickupAddressRepository],
 })
