@@ -362,6 +362,18 @@ export interface ClientCopy {
     readonly payHint: string;
     readonly browse: string;
     readonly back: string;
+    /**
+     * L'invite qui remplace le règlement tant qu'on ne sait pas QUI commande.
+     *
+     * Elle ne paraît que pour un visiteur — jamais pendant que la session se
+     * résout, sans quoi elle clignoterait devant un client déjà connecté.
+     */
+    readonly whoTitle: string;
+    readonly whoHint: string;
+    /** La porte de qui n'a pas de compte. */
+    readonly whoRegister: string;
+    /** La porte de qui en a un. */
+    readonly whoSignIn: string;
   };
   /** L'écran du **QR de retrait** — celui que le client présente au comptoir. */
   readonly qr: {

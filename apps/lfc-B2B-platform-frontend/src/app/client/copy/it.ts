@@ -265,6 +265,10 @@ export const IT: ClientCopy = {
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
     browse: 'Vedi il banco',
+    whoTitle: 'Chi effettua questo ordine?',
+    whoHint: 'Ci servono un nome e un indirizzo per inviarle il QR di ritiro.',
+    whoRegister: 'È il mio primo ordine',
+    whoSignIn: 'Ho già un account',
     back: 'Torna alla bottega',
   },
   qr: {

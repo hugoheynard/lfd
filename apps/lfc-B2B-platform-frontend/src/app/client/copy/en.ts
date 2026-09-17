@@ -262,6 +262,10 @@ export const EN: ClientCopy = {
     pay: 'Pay for my order · {total}',
     payHint: 'Paid online. You show your QR at the counter, nothing to settle there.',
     browse: 'See the counter',
+    whoTitle: 'Who is placing this order?',
+    whoHint: 'We need a name and an address to send you your pickup QR.',
+    whoRegister: 'This is my first order',
+    whoSignIn: 'I already have an account',
     back: 'Back to the shop',
   },
   qr: {

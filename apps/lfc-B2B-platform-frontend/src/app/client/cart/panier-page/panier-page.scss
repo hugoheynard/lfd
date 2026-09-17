@@ -50,6 +50,50 @@
   color: var(--lfc-color-accent-text);
 }
 
+/* « Qui passe cette commande ? » — la forme de l'invite du dessus, sans son
+   `cursor` : deux gestes vivent dedans, la carte elle-même n'en est pas un. */
+.who {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--lfc-color-accent-border);
+  border-radius: var(--lfc-radius-xl);
+  background: var(--lfc-color-accent-surface);
+}
+
+.who .ask-title,
+.who .ask-hint {
+  margin: 0;
+}
+
+.who-doors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Les deux portes ont le MÊME poids : on ne pousse pas vers la création de
+   compte quelqu'un qui en a déjà un, et l'inverse non plus. Seul le fond les
+   distingue. */
+.who-door {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--lfc-color-accent-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--lfc-weight-black);
+  cursor: pointer;
+}
+
+.who-door.is-quiet {
+  background: transparent;
+  color: var(--lfc-color-on-accent);
+}
+
 /* Le rappel du service : à l'ENCRE, parce que c'est le cadre de la commande et
    pas une de ses lignes. */
 .service {

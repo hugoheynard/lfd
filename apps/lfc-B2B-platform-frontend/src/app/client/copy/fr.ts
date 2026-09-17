@@ -258,6 +258,10 @@ export const FR: ClientCopy = {
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
     browse: 'Voir le rayon',
+    whoTitle: 'Qui passe cette commande ?',
+    whoHint: 'Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait.',
+    whoRegister: 'Je commande pour la première fois',
+    whoSignIn: "J'ai déjà un compte",
     back: 'Retour à la boutique',
   },
   qr: {
