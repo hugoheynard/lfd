@@ -11,6 +11,7 @@ import { PricerModule } from "../pricing/pricer.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { MarkOrderFulfilledHandler } from "./application/commands/mark-order-fulfilled.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
+import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-notice.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
 import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
@@ -73,6 +74,8 @@ import { PrismaOrderIdempotencyStore } from "./infrastructure/prisma-order-idemp
 import { PrismaShopOrderIdempotencyStore } from "./infrastructure/prisma-shop-order-idempotency.store.js";
 import { PrismaGuestBuyerRegistrar } from "./infrastructure/prisma-guest-buyer.registrar.js";
 import { GuestBuyerRegistrar } from "./domain/ports/guest-buyer.registrar.js";
+import { PrismaGuestOrderNoticeReader } from "./infrastructure/prisma-guest-order-notice.reader.js";
+import { GuestOrderNoticeReader } from "./domain/ports/guest-order-notice.reader.js";
 import { ShopOrderIdempotencyStore } from "./domain/ports/shop-order-idempotency.store.js";
 import { PlaceShopOrderHandler } from "./application/commands/place-shop-order.handler.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
@@ -159,6 +162,10 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     GetProductionBatchHandler,
     GetPackingHandler,
     SendOrderPlacedMail,
+    // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a
+    // utilisée (D7). Abonné au MÊME événement que l'accusé de réception, et
+    // c'est voulu : l'un écrit à qui commande, l'autre à qui ne commande pas.
+    SendGuestOrderNotice,
     SendOrderReadyMail,
     // Le composeur du courriel de retrait, partagé par le colisage (qui
     // l'annonce) et par le rappel du comptoir (qui le renvoie).
@@ -214,6 +221,7 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     PlaceShopOrderHandler,
     { provide: ShopOrderIdempotencyStore, useClass: PrismaShopOrderIdempotencyStore },
     { provide: GuestBuyerRegistrar, useClass: PrismaGuestBuyerRegistrar },
+    { provide: GuestOrderNoticeReader, useClass: PrismaGuestOrderNoticeReader },
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },

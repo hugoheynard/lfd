@@ -146,6 +146,25 @@ export interface B2bMails {
     readonly companyName: string;
   };
   /**
+   * **Une commande vient d'être passée avec votre adresse** — destinataire : le
+   * propriétaire du compte, jamais celui qui commande (plan
+   * `plan-commande-sans-compte.md`, D7).
+   *
+   * 🔴 **C'est le seul canal par lequel cette information peut sortir.** Une
+   * surface publique qui répondrait « ce compte existe » laisserait n'importe
+   * qui apprendre qui se fournit ici en testant des adresses — de l'énumération
+   * de comptes, et chez nous elle est commerciale. La boîte, elle, n'est lue
+   * que par son propriétaire.
+   *
+   * ⚠️ Il ne porte **ni lien, ni jeton, ni détail de la commande** : le lecteur
+   * n'est pas forcément celui qui a commandé, et lui montrer ce qu'un autre a
+   * acheté serait fuiter dans l'autre sens. Il dit qu'une commande existe, et
+   * quoi faire si ce n'est pas lui.
+   */
+  "customer.order-placed-with-your-email": {
+    readonly firstName: string;
+  };
+  /**
    * Un accès au **back-office** vient d'être ouvert. Destinataire : **le membre
    * de l'équipe**.
    *
@@ -448,6 +467,21 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
         footer:
           "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert.",
+      }),
+    }),
+    "customer.order-placed-with-your-email": (data) => ({
+      subject: sanitiseSubject("Une commande vient d'être passée avec votre adresse"),
+      html: person({
+        title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
+        body:
+          "Une commande vient d'être passée sur notre boutique en indiquant votre adresse " +
+          "e-mail, sans passer par votre compte.\n\n" +
+          "Si c'est vous, il n'y a rien à faire : la confirmation et le code de retrait sont " +
+          "partis à cette même adresse.",
+        footer:
+          "Si ce n'est pas vous, quelqu'un a sans doute tapé votre adresse par erreur. " +
+          "Aucun accès à votre compte n'a été ouvert, et rien n'a été modifié. " +
+          "Répondez à cet e-mail si vous voulez qu'on regarde.",
       }),
     }),
     "customer.company-attached": (data) => ({
