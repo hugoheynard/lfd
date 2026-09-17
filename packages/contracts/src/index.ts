@@ -394,6 +394,8 @@ export {
   shopQuoteFulfillmentSchema,
   shopQuotePayloadSchema,
 } from "./shop-quote.js";
+export { guestBuyerSchema, placeShopOrderPayloadSchema } from "./shop-order.js";
+export type { GuestBuyerPayload, PlaceShopOrderPayload } from "./shop-order.js";
 export { shopCartPayloadSchema } from "./shop-cart.js";
 export type { ShopCartPayload, ShopCartResponse, ShopCartView } from "./shop-cart.js";
 export type {

@@ -70,6 +70,11 @@ import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.
 import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repository.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderIdempotencyStore } from "./infrastructure/prisma-order-idempotency.store.js";
+import { PrismaShopOrderIdempotencyStore } from "./infrastructure/prisma-shop-order-idempotency.store.js";
+import { PrismaGuestBuyerRegistrar } from "./infrastructure/prisma-guest-buyer.registrar.js";
+import { GuestBuyerRegistrar } from "./domain/ports/guest-buyer.registrar.js";
+import { ShopOrderIdempotencyStore } from "./domain/ports/shop-order-idempotency.store.js";
+import { PlaceShopOrderHandler } from "./application/commands/place-shop-order.handler.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
@@ -199,6 +204,16 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.
     { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
+    // La commande **sans compte** — plan `plan-commande-sans-compte.md`, lot C.
+    //
+    // 🔴 Le handler et ses deux ports sont branchés ; `ShopOrdersController` ne
+    // l'est PAS (cf. son en-tête). La route n'existe donc pas à l'exécution,
+    // pendant que tout ce qu'elle appellerait est monté, éprouvé contre le vrai
+    // Postgres, et prêt à servir le jour de l'arbitrage de prix (§6). Ouvrir
+    // tient en une ligne : ajouter le contrôleur aux `controllers`.
+    PlaceShopOrderHandler,
+    { provide: ShopOrderIdempotencyStore, useClass: PrismaShopOrderIdempotencyStore },
+    { provide: GuestBuyerRegistrar, useClass: PrismaGuestBuyerRegistrar },
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },

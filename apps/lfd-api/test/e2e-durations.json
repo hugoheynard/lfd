@@ -93,6 +93,7 @@
   "test/schema.e2e-spec.ts": 14259,
   "test/shop-cart.e2e-spec.ts": 20492,
   "test/shop-catalogue.e2e-spec.ts": 4150,
+  "test/shop-order.e2e-spec.ts": 6500,
   "test/shop-quote.e2e-spec.ts": 9056,
   "test/staff-access.e2e-spec.ts": 9064,
   "test/staff-invitation.e2e-spec.ts": 8265,
