@@ -6,6 +6,7 @@ import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/pl
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { createUser } from "./factories.js";
 
 /**
  * E2E de la **commande sans compte** — plan
@@ -177,10 +178,18 @@ describe("la commande sans compte — le porteur", () => {
     expect(order.placedBy.email).toBe("camille@visiteur.fr");
   });
 
-  it("fait DEUX lignes pour deux visiteurs d'une même adresse", async () => {
-    // D2, assumé : `email` n'a aucune unicité, et rapprocher deux commandes sur
-    // la foi d'une adresse tapée au panier reviendrait à décider que le second
-    // visiteur est le premier.
+  /**
+   * 🔴 **Ce cas affirmait l'inverse jusqu'au 2026-09-17** — « fait DEUX lignes
+   * pour deux visiteurs d'une même adresse », au nom de D2. Il est retourné,
+   * pas supprimé : c'est lui qui tient la règle désormais.
+   *
+   * Ce que la dispersion coûtait, et que D2 n'avait pas chiffré : l'historique
+   * d'un client fidèle éclaté, la croissance qui le comptait comme **N
+   * acheteurs distincts** (`subjectId: placedByUserId`, agrégé sur
+   * `user:<id>`), et D6 incapable de le rattacher — « à défaut, un invité
+   * unique » ne tranche pas entre trois.
+   */
+  it("RETROUVE l'invité d'une même adresse au lieu d'en recréer un", async () => {
     const first = await place();
     const second = await place();
 
@@ -189,7 +198,32 @@ describe("la commande sans compte — le porteur", () => {
       select: { placedByUserId: true },
     });
 
-    expect(new Set(orders.map((order) => order.placedByUserId)).size).toBe(2);
+    expect(new Set(orders.map((order) => order.placedByUserId)).size).toBe(1);
+  });
+
+  /**
+   * 🔴 **La garde qui sépare D8 de la voie écartée (§3.2), et le seul cas qui
+   * la prouve.** Réutiliser un invité est sûr parce qu'il n'a rien à quoi se
+   * connecter ; réutiliser un COMPTE donnerait littéralement celui d'un autre à
+   * qui tape son adresse au panier.
+   *
+   * Seule la base peut le dire : la condition vit dans un `where` Prisma, et un
+   * double la tiendrait pour vraie sans jamais l'exercer.
+   */
+  it("ne réutilise JAMAIS un compte connectable portant la même adresse", async () => {
+    const vraie = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|la_vraie_camille",
+      email: "camille@visiteur.fr",
+    });
+
+    const placed = await place();
+
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: placed.id },
+      select: { placedByUserId: true, placedBy: { select: { auth0Sub: true } } },
+    });
+    expect(order.placedByUserId).not.toBe(vraie.id);
+    expect(order.placedBy.auth0Sub).toBeNull();
   });
 });
 
