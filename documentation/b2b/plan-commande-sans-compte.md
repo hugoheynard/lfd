@@ -510,19 +510,30 @@ sait livrer une route publique éteinte (§6).
 
 ### ⬜ Reste à faire
 
-1. **D6 — un compte connectable gagne.** Dans `findAccountByEmail`
-   (`b2b/account/infrastructure/prisma-company-member.repository.ts`) : un
-   compte connectable gagne ; à défaut, un invité unique ; sinon on refuse.
-   ⚠️ `AccountEmailAmbiguousError` n'est couverte par **aucun test** du dépôt —
-   la règle ne sera donc garantie que par ceux qu'on écrira.
-2. **D7 — le courriel « est-ce vous ? ».** Un gabarit de plus dans
-   `platform/mailer/mail-templates.ts`, parti par `work.track(...)` hors du temps
-   de réponse, et **borné par adresse** via `MailJournal.rememberEvent` — dont le
-   commentaire prévoit exactement ce second consommateur.
-3. **L'ouverture**, et elle ne dépend pas du code : l'arbitrage de prix du §6.
+1. 🔴 **D9, point 1 — confirmer l'adresse à l'écran avant de régler.** Le seul
+   geste qui _empêche_ la faute de frappe au lieu de la rattraper. ⚠️ **Bloqué,
+   et pas par choix** : il suppose un formulaire de saisie que l'écran n'a pas
+   — le panier mène aujourd'hui à l'inscription (lot A). Il s'écrit donc **avec**
+   le branchement de la route, jamais avant.
+2. **L'ouverture**, et elle ne dépend pas du code : l'arbitrage de prix du §6.
    Le jour venu, trois gestes — enregistrer `ShopOrdersController`, faire pointer
    la porte « première commande » du panier vers la route publique au lieu de
    l'inscription, et trancher le tarif public.
+
+### Ce qui a été bâti le 2026-09-17, après les lots
+
+| Décision | Ce qui a été fait                                                            | Commit      |
+| -------- | ---------------------------------------------------------------------------- | ----------- |
+| **D6**   | Un compte connectable gagne sur un invité, à la résolution par adresse       | `6e9e3fe5`  |
+| **D8**   | Un invité qui revient est retrouvé, jamais recréé                            | `753b7609`  |
+| **D9.2** | Le téléphone devient obligatoire — schéma **et** domaine                     | `51b63ed1`  |
+| **D7**   | Le courriel « une commande a été passée avec votre adresse », borné par jour | à committer |
+
+⚠️ **Ce que D7 ne fait pas**, et qui est assumé : il n'est éprouvé qu'en
+unitaire. L'envoi réel n'est pas traversé de bout en bout par une e2e — le
+mailer y est à blanc, et l'abonné tourne en tâche de fond. Ce sont les six cas
+de `send-guest-order-notice.spec.ts` qui tiennent la règle : qui l'on prévient,
+qui l'on ne prévient pas, et le bornage par adresse et par jour.
 
 ### Ce qui n'a toujours pas été ouvert
 
