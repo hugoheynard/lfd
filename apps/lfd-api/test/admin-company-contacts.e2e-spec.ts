@@ -12,7 +12,7 @@ import type { CompanyContactView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { attachTo, createCompany, createGuest, createUser } from "./factories.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -206,6 +206,63 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
       where: { userId: karim.id, companyId },
     });
     expect(membership.role).toBe(CustomerRole.admin);
+  });
+
+  /**
+   * 🔴 **D6 — un compte connectable gagne, toujours.** Le cas qui manquait, et
+   * il manquait doublement : `AccountEmailAmbiguousError` n'était éprouvée nulle
+   * part avant le 2026-09-17.
+   *
+   * Sans ce tri, n'importe qui bloquait un vrai client **depuis une route
+   * publique** : une commande sans compte passée avec son adresse créait une
+   * seconde ligne, l'adresse devenait ambiguë, et les deux gestes qui la
+   * résolvent — ouvrir un accès, aligner un rôle — refusaient définitivement.
+   *
+   * Un invité n'est pas un candidat : il n'a aucune identité de connexion,
+   * donc aucun droit à aligner.
+   */
+  it("aligne le rôle malgré un INVITÉ portant la même adresse", async () => {
+    const created = await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .send(KARIM)
+      .expect(201);
+    const contactId = jsonBody<{ readonly id: string }>(created).id;
+    const karim = await createUser(ctx.prisma, { auth0Sub: "auth0|karim", email: KARIM.email });
+    await attachTo(ctx.prisma, karim.id, companyId, CustomerRole.orders);
+    // La ligne qu'une commande sans compte aurait laissée : même adresse, aucun
+    // sujet de connexion.
+    await createGuest(ctx.prisma, { email: KARIM.email });
+
+    await staff()
+      .patch(`/admin/companies/${companyId}/contacts/${contactId}`)
+      .send({ ...KARIM, role: "admin" })
+      .expect(200);
+
+    const membership = await ctx.prisma.membership.findFirstOrThrow({
+      where: { userId: karim.id, companyId },
+    });
+    expect(membership.role).toBe(CustomerRole.admin);
+  });
+
+  /**
+   * ⚠️ L'ambiguïté entre deux COMPTES reste refusée, exactement comme avant :
+   * D6 écarte ce qui n'a jamais été un candidat, il ne fait pas passer un cas
+   * douteux. Sans ce second cas, on ne saurait pas distinguer « le tri marche »
+   * de « le refus a disparu ».
+   */
+  it("REFUSE toujours quand deux comptes connectables portent l'adresse", async () => {
+    const created = await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .send(KARIM)
+      .expect(201);
+    const contactId = jsonBody<{ readonly id: string }>(created).id;
+    await createUser(ctx.prisma, { auth0Sub: "auth0|karim_un", email: KARIM.email });
+    await createUser(ctx.prisma, { auth0Sub: "auth0|karim_deux", email: KARIM.email });
+
+    await staff()
+      .patch(`/admin/companies/${companyId}/contacts/${contactId}`)
+      .send({ ...KARIM, role: "admin" })
+      .expect(409);
   });
 
   it("laisse le rôle à `null` sur un contact d'avant les rôles", async () => {
