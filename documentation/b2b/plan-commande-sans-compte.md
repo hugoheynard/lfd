@@ -327,6 +327,49 @@ externalId)` (`platform/mailer/journal/mail-journal.port.ts`) est un
   commande publique l'alimente en conséquence ; **à confirmer contre les valeurs
   réelles de l'énuméré au moment de bâtir** — elles n'ont pas été ouvertes ici.
 
+- **D8 — un invité qui revient est RETROUVÉ, jamais recréé.** ✅ Tranché par
+  Hugo le 2026-09-17, après la question « et si ce même client revient ? ».
+
+  L'inscription du porteur créait une ligne neuve à chaque commande. Trois
+  conséquences, dont deux que ce plan n'avait pas vues : l'historique d'un
+  client fidèle se dispersait ; la croissance le comptait comme **N acheteurs
+  distincts** (`on-order-placed.handler` journalise `subjectId: placedByUserId`,
+  `prisma-order-metrics.reader` agrège sur `user:<id>`) ; et **D6 ne pouvait
+  plus le rattacher** — « à défaut, un invité unique » ne tranche pas entre
+  trois.
+
+  🔴 **On réutilise un invité, JAMAIS un compte connectable.** C'est toute la
+  différence avec la voie §3.2 : elle réutilisait une identité **Auth0**, donc
+  elle donnait le compte d'un autre à qui tapait son adresse. Ici la ligne n'a
+  aucun `auth0Sub` — se connecter dessus est inexprimable, et la réutiliser
+  n'ouvre d'accès à personne.
+
+- **D9 — le téléphone devient obligatoire, et l'adresse se confirme à
+  l'écran.** ✅ Tranché par Hugo le 2026-09-17, après la question « et si la
+  personne s'est trompée d'adresse ? ».
+
+  Ce qu'on a établi en cherchant le rattrapage : il n'y en a presque pas. Le QR
+  vit dans l'app, donc **l'onglet fermé l'emporte** — sans compte, il n'y a ni
+  « mes commandes » ni second envoi. Au comptoir, une commande publique
+  s'affiche par son **prénom seul** (`customerLabelOf` : raison sociale, sinon
+  prénom + nom, et un invité n'a pas de nom). La sonde de courrier n'agrège que
+  des compteurs sur sept jours — « trois rebonds », jamais lesquels — et
+  `MailSend` ne porte **aucune référence de commande**.
+
+  D'où les deux gestes, dans cet ordre de valeur :
+
+  1. **Confirmer l'adresse à l'écran avant de régler.** C'est le seul qui
+     _empêche_ au lieu de rattraper. ⚠️ Il suppose un formulaire de saisie que
+     l'écran n'a pas encore — le panier mène aujourd'hui à l'inscription — donc
+     il s'écrit **avec** le branchement de la route publique, pas avant.
+  2. **Rendre le téléphone obligatoire** : déjà collecté, jusqu'ici facultatif.
+     Il devient le second canal et la clé de recherche au comptoir. Refusé au
+     schéma **et** au domaine — tous les appelants n'entrent pas par HTTP.
+
+  Ce qui n'est **pas** retenu pour l'instant : alerter le staff sur le rebond
+  d'une commande publique. Plus cher, parce que rien ne relie un envoi à une
+  commande.
+
 ## 8. Le sort des objections de `vitruve`
 
 > _Archive._ Ce que la contradiction a trouvé, et ce que la refonte en a fait.
