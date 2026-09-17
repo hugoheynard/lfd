@@ -1,21 +1,30 @@
-@if (compact()) {
-  <button
-    class="globe"
-    type="button"
-    [title]="name()"
-    [attr.aria-label]="t().chrome.lang + ' — ' + name()"
-    (click)="cycle()"
-  >
-    <fold-icon name="globe" />
-    <span class="code" aria-hidden="true">{{ code() }}</span>
-  </button>
-} @else {
-  <fold-view-toggle
-    [ariaLabel]="t().chrome.lang"
-    activeStyle="solid"
-    [size]="size()"
-    [options]="options"
-    [value]="locale.current()"
-    (valueChange)="pick($event)"
-  />
-}
+<!-- 🔴 Les DEUX formes sont rendues, et c'est le CSS qui n'en montre qu'une.
+     Ce shell n'a aucun signal de largeur — il tranche son responsive en CSS
+     (`wide-only`, `narrow-only`), et introduire un `matchMedia` ici pour un
+     seul composant ferait vivre le pli à deux endroits qui finiraient par
+     diverger.
+
+     Au téléphone : le globe, toujours, quel que soit l'état de connexion. Trois
+     segments plus le panier et l'entrée du visiteur ne tiennent pas sur 390 px,
+     et ça ne dépend pas de qui regarde. Au-delà du pli : les segments, sauf si
+     `compact` les refuse encore (barre déjà pleine d'un client reconnu). -->
+<button
+  class="globe"
+  type="button"
+  [title]="name()"
+  [attr.aria-label]="t().chrome.lang + ' — ' + name()"
+  (click)="cycle()"
+>
+  <fold-icon name="globe" />
+  <span class="code" aria-hidden="true">{{ code() }}</span>
+</button>
+
+<fold-view-toggle
+  class="segments"
+  [ariaLabel]="t().chrome.lang"
+  activeStyle="solid"
+  [size]="size()"
+  [options]="options"
+  [value]="locale.current()"
+  (valueChange)="pick($event)"
+/>

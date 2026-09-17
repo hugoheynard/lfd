@@ -38,14 +38,42 @@
   line-height: 2.3;
 }
 
+/* ── Quelle forme paraît, et quand ────────────────────────────────────────────
+   🔴 **Au téléphone, TOUJOURS le globe** (2026-09-17, Hugo). Il ne dépend plus
+   de l'état de connexion : trois segments plus le panier et l'entrée du
+   visiteur ne tiennent pas sur 390 px, et ça ne dépend pas de qui regarde. La
+   condition était le client reconnu — un proxy, et il s'est désaccordé de ce
+   qu'il représentait dès que la boutique s'est ouverte aux visiteurs.
+
+   Au-delà du pli (900 px, celui de la barre), les segments reviennent — sauf
+   si `compact` les refuse encore, c'est-à-dire quand la barre d'un client
+   reconnu porte déjà son menu. */
+.segments {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  :host(:not(.is-compact)) .globe {
+    display: none;
+  }
+
+  :host(:not(.is-compact)) .segments {
+    display: block;
+  }
+}
+
 /* ── Le mode compact : un globe qui porte sa langue ───────────────────────── */
 
+/* 38 px, le gabarit commun de la rangée — celui que le panier tient, que
+   l'entrée du visiteur tient, et que l'interligne ci-dessus vise pour les trois
+   segments. Le globe était à 40 : deux pixels qui faisaient lire la barre comme
+   mal alignée sans qu'on voie lequel des blocs était en cause. */
 .globe {
   position: relative;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 2.375rem;
+  height: 2.375rem;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-hover);
