@@ -1,0 +1,395 @@
+# Commander sans compte obligatoire
+
+**Statut** : 📐 conception, rien n'est bâti. Écrit le 2026-09-17, **contredit par
+`vitruve` le même jour** (cinq BLOQUANTS, six SÉRIEUX), puis **refondu** sur une
+décision de Hugo. Le sort de chaque objection est au §8.
+**Portée** : la **passation** d'un client public. Ni l'inscription, ni le tarif
+public, ni l'audience — ils ont leurs documents.
+
+> 🔴 **Ce plan ne s'ouvre pas quand il est bâti.** La route peut être écrite et
+> éprouvée ; sa mise en service dépend d'un arbitrage de prix qui n'est pas
+> technique. Voir §6 — c'est la seule objection de la contradiction que la
+> refonte **ne fait pas disparaître**, mais sa nature a changé le 2026-09-17.
+
+## 0. La demande
+
+> « dans la page nouvelle-commande-panier, si client non connecté, il faut soit
+> entrer prénom mail téléphone pour un client public jamais enregistré, soit
+> proposer la connexion, tant qu'on a pas ces infos on ne peut pas faire régler
+> ma commande » — Hugo, 2026-09-17.
+>
+> « **il faut qu'on puisse commander sans compte obligatoire** » — après un
+> premier exposé qui présentait l'inscription en trois champs comme la seule voie
+> réalisable. Elle ne l'était pas ; l'exposé était incomplet.
+>
+> « je pense qu'il nous faut donc **une route complète** pour répondre à ce cas
+> de figure et **ne pas polluer notre travail qui marchait bien pour les porteurs
+> d'identité** » — la décision qui a refondu ce plan.
+
+## 1. Ce qui existe (ouvert et vérifié le 2026-09-17)
+
+### 1.1 Les verrous
+
+| Fait                                                                  | Où                                                          |
+| --------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `placedByUserId String` **non nullable**, FK vers `User`              | `prisma/schema/public/orders.prisma`                        |
+| `auth0Sub String @unique` **non nullable**                            | `prisma/schema/public/account.prisma`                       |
+| `email` **sans aucune unicité** — ni `@unique`, ni `@@unique`         | `prisma/schema/public/account.prisma`                       |
+| `OrderIdempotency.userId` non nullable, FK, `@@unique([userId, key])` | `prisma/schema/public/orders.prisma`                        |
+| `MemberToCreate.invitedBy: string` **obligatoire**                    | `b2b/account/domain/ports/company-member.repository.ts`     |
+| Le compte naît **du JWT**                                             | `b2b/account/infrastructure/customer-principal.resolver.ts` |
+| `POST /orders` : `@CurrentUser()` **et** `@RequiresShop("order")`     | `b2b/orders/http/orders.controller.ts`                      |
+
+### 1.2 Les appuis
+
+| Fait                                                                          | Où                                                                                  | Ce qu'il permet                                                                   |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `companyId String?`                                                           | `prisma/schema/public/orders.prisma`                                                | Une commande sans société — déjà le cas                                           |
+| `PersonName.optional()`                                                       | `b2b/account/domain/value-objects/person-name.ts`                                   | Une personne sans nom : le domaine sait déjà                                      |
+| `CreateIntentParams { amountCents, currency, companyId \| null }`             | `b2b/payments/domain/payment-gateway.ts`                                            | Payer par carte sans compte                                                       |
+| `markPaid` filtre sur l'intention, **ne touche jamais `User`**                | `b2b/orders/infrastructure/prisma-order.repository.ts`                              | Le règlement d'une commande sans porteur fonctionne                               |
+| `ThrottlerGuard` global, `@Throttle` par route, `getTracker` = **IP cliente** | `platform/security/security.module.ts`                                              | Borner une route publique sans rien inventer                                      |
+| `/me` **inatteignable sans jeton** (aucun `@Public()`)                        | `b2b/account/http/me.controller.ts`                                                 | `ProfileView.subject` n'est jamais servi à un invité                              |
+| Le mailer prend une **adresse libre** — `readonly to: string`                 | `packages/mailer/src/types.ts:118`                                                  | L'obstacle n'a jamais été le mailer, mais le **port** qui cherche le destinataire |
+| `handoverToken` est émis pour **toute** commande, sans condition              | `b2b/orders/infrastructure/prisma-order.repository.ts:53` (`issuesHandoverToken()`) | Le secret de retrait existe déjà, inutile d'en inventer un second                 |
+
+**La précision de débit** compte : `@Throttle({ default: { limit: 60, ttl: 60_000 } })`
+sur `b2b/pickup-addresses/http/pickup-addresses.controller.ts:28` est le
+précédent du dépôt pour une route publique de **lecture**. Une route qui
+**écrit** doit être bien plus serrée — d'où les 5/60 s du §5, qui restent à
+éprouver (§10).
+
+### 1.3 Ce qui n'existe pas
+
+⚠️ **Aucune route publique du dépôt n'écrit au nom d'un client.** `POST /shop/quote`
+est `@Public()` mais ne fait que **lire un prix**. Les routes publiques qui
+écrivent — `payments-webhook`, `resend-webhook`, `media-sweep` — sont toutes
+machine-à-machine, protégées par **signature** ou par un garde dédié. La route de
+ce plan n'aurait ni l'une ni l'autre : c'est la première de son espèce, et c'est
+ce qui justifie sa contradiction.
+
+## 2. La décision
+
+**Une surface complète et séparée**, et un porteur **sans identité de connexion**.
+
+- Sa route, son handler, son contrat, sa table d'idempotence. Le chemin
+  authentifié n'est pas touché : `PlaceOrderHandler`, `placeOrderPayloadSchema`
+  et `OrderIdempotency` restent exactement ce qu'ils sont.
+- La commande reste un **`Order`**, sans une colonne de plus. C'est non
+  négociable : la file du comptoir, le prévisionnel du fournil et le colisage
+  lisent tous `Order`, et une commande publique qui ne serait pas un `Order`
+  obligerait à dupliquer le fournil entier.
+- Le porteur est un **`User` sans `auth0Sub`** : une personne connue par son
+  adresse, jamais connectable. `auth0Sub` devient nullable.
+
+## 3. Pourquoi pas les deux autres voies
+
+### 3.1 Porteur de commande nullable — écartée, chiffrée
+
+`placedByUserId` nullable touche **29 fichiers** de `src/` hors tests : les
+lecteurs de commande, la file de retrait, le prévisionnel, **un contrat de canal
+publié** (`handover/channels/commerce/handover-subject.reader.ts`) et **trois
+événements de domaine** (`order-placed`, `order-ready`, `order-handed-over`).
+S'y ajoutent **trois abonnés de croissance** qui écrivent
+`subjectType: "user", subjectId: event.placedByUserId` — `ActivityEvent.subjectId`
+est `String` **non nullable** (`prisma/schema/growth.prisma:36`) :
+
+- `b2b/growth/application/handlers/on-order-placed.handler.ts:48`
+- `b2b/growth/application/handlers/on-order-ready.handler.ts:36`
+- `b2b/growth/application/handlers/on-order-handed-over.handler.ts:60`
+
+et `b2b/growth/infrastructure/prisma-order-metrics.reader.ts:55`, qui construit
+`user:${order.placedByUserId}` : toutes les commandes publiques s'effondreraient
+sur **un seul acheteur fictif** dans le calcul de concentration. Un chiffre faux,
+pas une erreur de compilation — donc rien ne l'aurait signalé.
+
+Les sites exacts qui déréférencent sans garde, pour mémoire si la voie devait
+être rouverte : `prisma-order.reader.ts` (interfaces l. 87-90, 456, 496, 523 ;
+`customerLabelOf` l. 539-540 ; quatre `select` l. 130, 213, 263, 327),
+`handover-order.query.ts` (l. 47-52, 63-64, 153, 170),
+`prisma-day-orders.reader.ts` (l. 65, 98-105),
+`handover/channels/commerce/handover-subject.reader.ts:22`,
+`order-placed.event.ts:13`, `order-ready.event.ts:14`,
+`order-handed-over.event.ts:17`, `domain/services/order-access.ts:40`.
+
+C'est exactement la pollution que la décision du §0 refuse.
+
+### 3.2 Provisionner une identité Auth0 au vol — écartée, de sécurité
+
+`CustomerIdentityPort.provision()` est **idempotent sur l'e-mail** : « si une
+identité existe déjà pour cette adresse, elle est réutilisée ». Une route
+publique qui l'appelle laisserait n'importe qui commander **sous le compte d'un
+autre** en tapant son adresse. Le dépôt a déjà refusé ce raisonnement une fois —
+`AccountEmailUnverifiedError` : « actif sans preuve = inscription libre :
+n'importe qui a pu taper cette adresse ».
+
+## 4. Ce que la voie retenue coûte, exactement
+
+`auth0Sub` nullable est lu dans **6 fichiers**, dont le semis de dev — donc
+**5 en production**, tous dans `b2b/account/infrastructure/`. Une couche, un
+dossier, aucun contrat de canal, aucun événement de domaine.
+
+| Site                                  | Ce qu'il en fait               | Ce qu'il devient                                            |
+| ------------------------------------- | ------------------------------ | ----------------------------------------------------------- |
+| `prisma-company-member.repository.ts` | `subject: user.auth0Sub`       | `string \| null` dans `KnownAccount`                        |
+| `prisma-account.reader.ts`            | `subject: row.auth0Sub`        | Repli `?? ''` — jamais servi à un invité                    |
+| `prisma-pending-access.reader.ts`     | `user?.auth0Sub ?? null`       | **Rien** : absorbe déjà le nul                              |
+| `prisma-impersonation-subjects.ts`    | Recherche par sujet            | **Rien** : un sujet non nul ne matche jamais un invité      |
+| `customer-principal.resolver.ts`      | `where: { auth0Sub: subject }` | **Rien**, et c'est souhaitable : un invité ne se résout pas |
+
+**Trois points à traiter, et ils sont le vrai travail :**
+
+1. 🔴 **La récupération de compte.** `grant-account-access` appelle
+   `issuePasswordLink(known.subject)` : face à un invité sans sujet, il doit
+   **provisionner** l'identité plutôt que d'émettre un lien pour un sujet nul.
+   C'est le chemin « le commercial ouvre un accès à quelqu'un qui a déjà
+   commandé en public » — il existera.
+2. **Les doublons d'adresse.** `email` n'a aucune unicité : un visiteur qui tape
+   l'adresse d'un autre crée une seconde ligne, sans collision de base. À
+   assumer (deux lignes, deux histoires) ou à réconcilier (D2, §7).
+3. **Distinguer les invités.** `UserStatus` vaut `invited | active | disabled`,
+   et `invited` désigne déjà « provisionné par nous, jamais connecté ». Un
+   `User` sans `auth0Sub` n'est pas la même chose : il n'a **rien** à quoi se
+   connecter. Le distinguer par l'absence de sujet, ou par une valeur de plus
+   (D1, §7).
+
+## 5. La surface
+
+`POST /shop/orders`, `@Public()`, `@Throttle({ default: { limit: 5, ttl: 60_000 } })`.
+
+- **Son contrat**, pas celui de `POST /orders` : les lignes, l'acheminement,
+  l'identité publique (prénom, e-mail, téléphone). Pas de `settlement` — c'est
+  la carte, toujours. Pas de société.
+- **Son idempotence.** La table existante est murée par `userId` avec FK et
+  `@@unique([userId, key])` ; on n'y touche pas. La surface publique a la
+  sienne, murée par la **commande créée**, jamais par un couple devinable.
+  🔴 Le couple (clé, e-mail) est écarté : `PrismaOrderIdempotencyStore.decideOnExisting`
+  rend `{kind:"replayed", orderId}` dès que l'empreinte concorde, et
+  `PlaceOrderHandler.replay()` re-demande alors le `clientSecret` à
+  `retrieveIntent` — détenir le couple rendrait donc **une commande et un secret
+  de paiement vivant**. La clé est choisie par le client
+  (`packages/contracts/src/order.ts:366`, un UUID) et l'adresse se tape : ce
+  serait la voie 3.2 déguisée.
+- **La relecture** passe par le `User` invité, qui existe : les courriels, le QR
+  et la fiche de commande fonctionnent **sans une ligne de changement**.
+  `OrderRecipientReader.findById(userId)`
+  (`b2b/orders/infrastructure/prisma-order-recipient.reader.ts:16`) lit
+  `prisma.user.findUnique` et trouve son adresse ; les deux envois —
+  `send-order-placed-mail.handler.ts` et
+  `application/services/order-ready-mail.service.ts` — sortaient **en silence**
+  sans destinataire. C'est le gain décisif de cette voie sur la précédente : sans
+  `User`, le client public n'aurait eu **ni confirmation, ni QR**.
+- ⚠️ Le QR reste une **surface staff** : `HandoverController` est
+  `@AdminSurface("b2b_orders")` (`handover/http/handover.controller.ts:63-64`) et
+  ses routes prennent `AuthenticatedStaffRequest`. Le client l'**affiche**, le
+  comptoir le **scanne**.
+
+## 6. 🔴 La précondition : le tarif public
+
+**Ce plan peut être bâti ; il ne peut pas être ouvert.**
+
+⚠️ **Ce paragraphe affirmait « un prix résolu sans société est le prix pro »
+et en faisait un verrou technique. C'est inexact, vérifié dans le code le
+2026-09-17** (détail et diagrammes :
+[`flux-de-commande.md`](flux-de-commande.md) §6.1) :
+
+- `matchesAudience` (`b2b/pricing/domain/specificity.ts`) n'applique une règle
+  `segment` ou `company` que sur correspondance — `companyId: null` n'en
+  déclenche **aucune** ;
+- sans société, **aucune mercuriale** n'entre dans la chaîne
+  (`b2b/pricing/domain/resolve-price.ts`) ;
+- et `GET /shop/catalogue` **sert déjà** ce prix-là à des prospects depuis le
+  2026-09-09, en l'assumant par écrit.
+
+Ce qu'un visiteur paierait est donc le **tarif de liste du catalogue**, moins
+les seules promotions ouvertes à tous — pas un tarif négocié.
+
+**Ce qui reste entier, et qui n'est pas technique :** ce tarif de liste est-il
+destiné au public ? Et à quel **taux de TVA** —
+[`analyse-boutique-publique.md`](analyse-boutique-publique.md) §2.3 pose « au
+taux de TVA B2B », et ce point-là n'a **pas** été revérifié ici. La précondition
+survit donc, mais comme **arbitrage de prix et de fiscalité**, pas comme verrou
+de code : elle n'empêche plus d'écrire ni d'éprouver la route.
+
+Et il n'y a pas de porte pour la lancer éteinte : `@RequiresShop("order")` sur
+une route publique donne `featureSubjectOf(undefined) = null`
+(`b2b/feature-access/http/feature-subject.ts`), donc la route suit le niveau
+**global** — `feature-access.guard.ts` l. 16-20 le dit explicitement. Le même
+flag `shop=order` qui ouvre la boutique pro ouvrirait celle-ci. Le flag **par
+audience** est le D6 de l'analyse, et il n'est pas bâti.
+
+[`analyse-boutique-publique.md`](analyse-boutique-publique.md) §7 l'avait déjà
+posé : « **Aucune ouverture au public avant la fin du lot 5** », le tarif public
+et les totaux TTC étant son lot 3, marqué « argent ». Ce plan s'insère **avant**
+son lot 4, et ne se met en service qu'après son lot 5.
+
+## 7. Les décisions (tranchées par Hugo le 2026-09-17)
+
+- **D1 — un invité se reconnaît à l'ABSENCE d'`auth0Sub`.** ✅ Tranché. Pas de
+  valeur de `UserStatus` en plus. La raison est celle de
+  `interdiction-plutot-que-verification` : sans identité de connexion, se
+  connecter est **inexprimable**, là où un statut déclaratif peut diverger du
+  fait qu'il prétend décrire. Le `WHERE` s'écrit `auth0Sub IS NULL`.
+  ⚠️ Conséquence à tenir : `UserStatus` d'un invité vaut `active` — il ne faut
+  donc **jamais** déduire « peut se connecter » d'un statut.
+- **D2 — deux lignes pour une adresse : on ASSUME.** ✅ Tranché par défaut, et
+  c'est cohérent avec l'existant — `email` n'a aucune unicité aujourd'hui. Deux
+  lignes, deux histoires. La réconciliation n'est pas dans ce plan.
+- **D3 — le rapatriement n'est PAS dans ce plan.** ✅ Il n'existe pas :
+  [`../order/plan-nature-du-client-sur-la-commande.md`](../order/plan-nature-du-client-sur-la-commande.md)
+  §1 — « aucun code ne rattache une société à une commande existante » — et son
+  **D7 décide que le rapatriement ne réécrit pas** ce qui est figé à la
+  passation. Un invité qui crée un compte ne reprend donc pas ses commandes sans
+  un geste explicite, à concevoir ailleurs.
+- **D4 — un règlement interrompu perd le PAIEMENT, pas la COMMANDE.** ✅
+  Tranché. Aucune route publique de reprise : le `clientSecret` n'est pas
+  persisté, et en rendre un depuis une surface publique serait la passoire que
+  le §5 écarte pour l'idempotence, par le même mécanisme (`retrieveIntent` rend
+  un secret vivant). La commande existe, elle se règle au comptoir ou sur
+  relance. On rouvrira si le cas se produit vraiment.
+- **D5 — la clientèle.** `Order.clientele` existe depuis le 2026-09-15. Une
+  commande publique l'alimente en conséquence ; **à confirmer contre les valeurs
+  réelles de l'énuméré au moment de bâtir** — elles n'ont pas été ouvertes ici.
+
+## 8. Le sort des objections de `vitruve`
+
+| #                                                  | Sort                                                                                                                       |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **B1** le `CHECK` n'interdit pas (`FALSE OR NULL`) | **disparue** — plus de colonnes invitées sur `Order`, donc plus de `CHECK`. L'objection reste juste, et elle a tué la voie |
+| **B2** 29 fichiers, contrat de canal, 3 événements | **disparue** — `Order` n'est plus touché ; c'est ce qui a fait changer de voie (§3.1)                                      |
+| **B3** la table d'idempotence absente des lots     | **disparue** — la surface publique a la sienne, l'existante n'est pas touchée (§5)                                         |
+| **B4** le couple (clé, e-mail) est une passoire    | **corrigée** — écarté explicitement, avec la raison : le rejeu rend un `clientSecret` vivant (§5)                          |
+| **B5** le prix pro                                 | 🔴 **entière, et assumée** — elle ne dépend pas de la voie. Devient le §6 : bâtir oui, ouvrir non                          |
+| **S6** aucun canal pour le secret                  | **disparue** — le `User` invité a une adresse, les courriels marchent sans changement (§5)                                 |
+| **S7** la croissance perd son sujet                | **disparue** — `placedByUserId` reste un `User` réel, `subjectId` est alimenté                                             |
+| **S8** le rapatriement déjà tranché ailleurs       | **corrigée** — D3 : il n'existe pas, et D7 du plan voisin décide l'inverse de ce que je supposais                          |
+| **S9** « réversible » était faux                   | **disparue** — plus de migration sur `Order` ; `auth0Sub` nullable reste irréversible en pratique, et c'est écrit ici      |
+| **S10** deux secrets sur la même ligne             | **disparue** — plus de `publicToken` : `handoverToken` reste le seul secret, et il est déjà émis pour toute commande       |
+| **S11** le règlement interrompu                    | **ouverte** — devient D4, au lieu du « rien à décider » de la première version                                             |
+
+Les mineurs sont intégrés : `placeOrderPayloadSchema` ne portait déjà pas de
+`companyId` (la société vient de `@ActingCompany()`), `@RequiresShop("order")`
+est cité au §1.1, et la distinction machine-à-machine des routes publiques qui
+écrivent est au §1.3.
+
+## 8 bis. L'écran du panier (lu le 2026-09-17)
+
+C'est par là que la demande est arrivée, et l'état est établi :
+
+- `client/cart/panier-page/panier-page.ts` — `proceed()` (l. ~117) vérifie
+  **deux** choses : panier vide → retour au rayon ; pas de mode de service →
+  `/nouvelle-commande`. Il ne vérifie **pas** l'authentification.
+- `ClientOrders.place()` (l. 265-274) exige `service`, des lignes **et un
+  `workspace` non nul**. `ClientWorkspace.current()` vaut `null` tant que `/me`
+  n'a pas répondu — donc pour un visiteur, `place()` rend `null` **en silence**.
+  L'écran ne dit rien : c'est le défaut que la demande a fait remonter.
+- `.pay:disabled` **existe déjà** dans `panier-page.scss` : le bouton sait se
+  griser, il n'a jamais eu de condition pour le faire.
+- Le motif d'invite existe aussi : `.ask` / `.ask-title` / `.ask-hint`, utilisé
+  par « Où êtes-vous servi ? ». C'est la forme à reprendre pour « Qui
+  êtes-vous ? » plutôt que d'en inventer une.
+- Côté façade, `AuthFacade.register(target, profile)` accepte déjà un
+  `PendingProfile { firstName, email, phone }` — **exactement les trois champs**.
+  C'est la porte de qui **veut** un compte ; elle reste, à côté de la commande
+  sans compte, et non à sa place.
+
+Le lot d'écran doit donc : bloquer le règlement tant qu'on ne sait pas qui
+commande, offrir les deux portes (les trois champs, ou la connexion), et n'écrire
+le choix qu'une fois l'un des deux obtenu.
+
+## 9. Ce que ce plan ne fait pas
+
+- Le tarif public et les totaux TTC — §6, et ce sont eux qui commandent la date.
+- L'inscription : elle marche, elle reste la voie de qui veut un compte.
+- Mon compte, Mes commandes, Mes factures pour un client public.
+- Le badge pro/public au comptoir : `Order.clientele` existe déjà (D5).
+
+## 10. Ce qui n'a pas été vérifié
+
+Ce que **je** n'ai pas ouvert :
+
+- **La passerelle.** Un `POST /shop/orders` non authentifié est-il routé sans
+  configuration supplémentaire ? Aucune liste blanche de chemins n'a été trouvée
+  dans `gateway/src`, mais l'absence n'a pas été établie.
+- **La production** : combien de commandes existent, quelle volumétrie publique
+  est attendue. C'est le lot 0 de l'analyse (« compter en production »), et il
+  n'a pas été fait.
+- **Le débit** : 5 appels/60 s par **IP** (`getTracker`) borne-t-il réellement
+  l'abus, sachant qu'une IP peut être partagée et qu'un attaquant en change ?
+- **`@lfd/money` et le plancher public** : ce que coûte le TTC-d'abord n'est
+  connu qu'à travers l'analyse, pas lu dans le code.
+- **Le juridique et le fiscal** : CGV consommateur, taux applicable — hors de
+  portée, comme l'analyse le note en §5.5.
+
+Ce que la **contradiction** a signalé ne pas avoir ouvert : aucun fichier du
+front (`apps/lfc-B2B-platform-frontend`) — le §8 bis ci-dessus comble ce trou,
+par des lectures faites après son passage.
+
+## 11. Les précédents du dépôt, pour qui bâtira
+
+- **Une contrainte `CHECK` insensible au `NULL`** :
+  `prisma/migrations/20260904160000_derogation_d_heure_limite/migration.sql:58`
+  compare `("used_by_order_id" IS NULL) = ("used_at" IS NULL)` ;
+  `20260915140000_mandat_actif_signe/migration.sql:30` compare avec `IS NOT NULL`,
+  jamais avec `<> ''`. La première version de ce plan avait écrit
+  `guestEmail <> ''`, qui laissait passer la ligne interdite (`FALSE OR NULL` =
+  `NULL`) — l'erreur est morte avec la voie, la leçon reste.
+- **Un plan voisin qui a vécu la même contradiction** :
+  [`../order/plan-nature-du-client-sur-la-commande.md`](../order/plan-nature-du-client-sur-la-commande.md)
+  — un BLOQUANT y a renversé une décision, et le sort de chaque objection est
+  consigné à son §5. C'est la forme suivie ici au §8.
+- **Une migration irréversible assumée par écrit** : son D4 — « il n'y en a pas :
+  nullable pour toujours ». `auth0Sub` nullable est dans le même cas, et il faut
+  le dire plutôt que d'invoquer la réversibilité du §0 du `CLAUDE.md`.
+
+## 12. Les lots
+
+Découpage arrêté le 2026-09-17, après les décisions du §7. Les deux premiers
+sont **indépendants** et se bâtissent en parallèle.
+
+### Lot A — l'écran du panier (front, indépendant)
+
+Ce que le §8 bis a établi. Il répare un défaut **réel aujourd'hui**, sans rien
+attendre du serveur : un visiteur clique « Régler ma commande » et rien ne
+bouge.
+
+1. `proceed()` ne part plus quand on ne sait pas qui commande.
+2. Le bouton se grise — `.pay:disabled` existe déjà.
+3. Le motif `.ask` (celui de « Où êtes-vous servi ? ») porte « Qui êtes-vous ? »
+   et ses deux portes : les trois champs, ou la connexion.
+4. Tant que la route publique n'existe pas, la porte « trois champs » mène à
+   `AuthFacade.register(target, profile)` — l'inscription, qui marche.
+
+🔴 **Le lot A ne doit rien préempter du lot C.** Quand la route publique
+existera, seule la cible du bouton change.
+
+### Lot B — `auth0Sub` nullable (migration + 5 sites)
+
+Additive, en un seul déploiement — une colonne qui devient nullable n'exige pas
+les trois temps du `CLAUDE.md` §0. **Irréversible en pratique** (§11), et c'est
+assumé par écrit.
+
+Les cinq sites sont au §4. Deux seulement changent (`prisma-company-member`,
+`prisma-account.reader`) ; les trois autres absorbent déjà le nul.
+
+🔴 Le point 1 du §4 — la récupération de compte (`grant-account-access` face à
+un invité sans sujet) — est dans ce lot, pas dans un autre : c'est le seul
+endroit où l'absence de sujet **casse** un chemin qui marche.
+
+### Lot C — `POST /shop/orders` (serveur)
+
+La surface du §5 : son contrat, son handler, sa table d'idempotence murée par
+la commande créée. `Order` intact, `PlaceOrderHandler` intact.
+
+Dépend du lot B (le porteur doit pouvoir exister).
+
+### Lot D — rien à faire
+
+Les courriels, le QR et la fiche de commande fonctionnent **sans une ligne de
+changement** dès que le porteur est un `User` réel (§5). Ce lot n'existe que
+pour dire qu'il a été cherché.
+
+### Ce qui reste hors des lots
+
+La **mise en service**, qui dépend de l'arbitrage du §6 — prix de liste public
+et taux de TVA. Elle n'appartient à aucun de ces lots.
