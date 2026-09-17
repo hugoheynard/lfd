@@ -1,10 +1,17 @@
 # Commander sans compte obligatoire
 
-**Statut** : 📐 conception, rien n'est bâti. Écrit le 2026-09-17, **contredit par
-`vitruve` le même jour** (cinq BLOQUANTS, six SÉRIEUX), puis **refondu** sur une
-décision de Hugo. Le sort de chaque objection est au §8.
+**Statut** : ✅ **bâti le 2026-09-17, et fermé** — les trois lots existent, la
+route publique n'est pas joignable. **L'état à jour est au [§12](#12-létat--ce-qui-est-fait-ce-qui-reste)** :
+ce qui est fait, ce qui reste, et ce qu'ouvrir demandera.
 **Portée** : la **passation** d'un client public. Ni l'inscription, ni le tarif
 public, ni l'audience — ils ont leurs documents.
+
+⚠️ **Les sections 1 à 11 sont l'archive de conception.** Elles disent POURQUOI
+cette voie plutôt qu'une autre, et ce qui a été vérifié pour le décider. Elles
+ne décrivent plus le travail restant — on n'y revient que pour contester une
+décision. Écrites le 2026-09-17, **contredites par `vitruve` le même jour**
+(cinq BLOQUANTS, six SÉRIEUX), puis refondues ; le sort de chaque objection est
+au §8.
 
 > 🔴 **Ce plan ne s'ouvre pas quand il est bâti.** La route peut être écrite et
 > éprouvée ; sa mise en service dépend d'un arbitrage de prix qui n'est pas
@@ -83,6 +90,10 @@ ce qui justifie sa contradiction.
   adresse, jamais connectable. `auth0Sub` devient nullable.
 
 ## 3. Pourquoi pas les deux autres voies
+
+> _Archive._ Les deux voies écartées et leur chiffrage. À rouvrir seulement si
+> quelqu'un propose de revenir dessus — la §3.2 en particulier, qui est une
+> raison de **sécurité** et non de coût.
 
 ### 3.1 Porteur de commande nullable — écartée, chiffrée
 
@@ -235,6 +246,71 @@ son lot 4, et ne se met en service qu'après son lot 5.
 - **D2 — deux lignes pour une adresse : on ASSUME.** ✅ Tranché par défaut, et
   c'est cohérent avec l'existant — `email` n'a aucune unicité aujourd'hui. Deux
   lignes, deux histoires. La réconciliation n'est pas dans ce plan.
+
+  🔴 **Sa conséquence n'avait pas été chiffrée** (trouvée le 2026-09-17, en
+  relisant le lot bâti). `findAccountByEmail`
+  (`b2b/account/infrastructure/prisma-company-member.repository.ts`) **refuse**
+  dès que plusieurs comptes portent l'adresse — `AccountEmailAmbiguousError`, et
+  ce refus est juste : il ne veut pas choisir au hasard. Mais deux gestes
+  commerciaux en dépendent — ouvrir un accès
+  (`grant-account-access.service.ts`) et le carnet de contacts
+  (`company-contact-book.service.ts`). Un inconnu qui tape l'adresse d'un vrai
+  client au panier public les **bloquerait donc tous les deux**, sans compte,
+  depuis une route anonyme. D2 disait « deux lignes, deux histoires » ; il ne
+  disait pas « deux lignes, un geste commercial mort ».
+
+- **D6 — un compte connectable GAGNE, toujours.** ✅ Tranché par Hugo le
+  2026-09-17. La résolution par adresse cesse de compter les invités comme des
+  candidats : **un compte connectable gagne ; à défaut, un invité unique ;
+  sinon seulement, on refuse.**
+
+  La raison tient en une phrase : **un invité n'est pas un compte.** Il n'a pas
+  d'identité de connexion, aucun droit, rien à quoi se rattacher — et les deux
+  appelants cherchent précisément un compte au sens de l'accès. Aligner le rôle
+  d'un invité n'a aucun sens : il n'a pas de droits à aligner.
+
+  Ce n'est pas un contournement du refus : l'ambiguïté entre deux **comptes**
+  reste refusée, exactement comme aujourd'hui.
+
+- **D7 — prévenir par courriel, jamais par le web.** ✅ Tranché par Hugo le
+  2026-09-17 : « pas de fuite directe web, mais prévenir le client ».
+
+  🔴 **Dire « cette adresse existe » à un anonyme est une fuite** — de
+  l'énumération de comptes. En B2B elle est pire qu'ailleurs : elle est
+  **commerciale**. Qui teste `contact@restaurant-untel.fr` apprend que ce
+  restaurant se fournit chez nous. Aucune route publique ne doit donc répondre
+  « existe / n'existe pas », sous aucune forme.
+
+  Ce qui est décidé à la place : quand une commande publique porte une adresse
+  qui correspond à un compte existant, un courriel part **à cette adresse** —
+  « une commande a été passée avec votre adresse, est-ce vous ? ». Le canal de
+  vérité est la boîte, dont seul le propriétaire a la clé.
+
+  **Trois contraintes, et aucune n'est optionnelle :**
+
+  1. **La réponse HTTP ne bouge pas d'un octet** — même statut, même corps, et
+     l'envoi part en tâche de fond (`BackgroundWork`), jamais dans le temps de
+     réponse. Un écart de durée rouvrirait la fuite par la bande.
+  2. **La commande reste rattachée à l'invité neuf**, jamais au compte trouvé.
+     La rattacher serait la voie §3.2 : commander sous le compte d'un autre.
+  3. 🔴 **L'envoi doit être borné par adresse.** Un courriel déclenché par un
+     anonyme est une arme : sans borne, on harcèle un vrai client en enchaînant
+     les commandes. ⚠️ `SendMailArgs.idempotencyKey` **ne suffit pas** — elle
+     dédoublonne « une reprise du même envoi » chez le fournisseur et est
+     « ignorée par les adaptateurs qui ne savent pas dédoublonner »
+     (`packages/mailer/src/types.ts`). S'appuyer dessus serait bâtir une
+     protection sur une promesse que le port ne tient pas.
+
+     **Le dépôt a déjà la pièce** : `MailJournal.rememberEvent(provider,
+externalId)` (`platform/mailer/journal/mail-journal.port.ts`) est un
+     registre d'unicité générique, et son commentaire dit lui-même « ce registre
+     n'a rien de spécifiquement postal […] on le sortira au SECOND consommateur,
+     pas avant ». **Nous sommes ce second.** Une clé par adresse et par jour
+     rend `false` au deuxième passage, et l'envoi n'a pas lieu.
+
+     ⚠️ Le registre ne dit pas encore où il vit une fois sorti : le geste de
+     l'extraire est à concevoir au moment de bâtir, pas à supposer fait.
+
 - **D3 — le rapatriement n'est PAS dans ce plan.** ✅ Il n'existe pas :
   [`../order/plan-nature-du-client-sur-la-commande.md`](../order/plan-nature-du-client-sur-la-commande.md)
   §1 — « aucun code ne rattache une société à une commande existante » — et son
@@ -252,6 +328,10 @@ son lot 4, et ne se met en service qu'après son lot 5.
   réelles de l'énuméré au moment de bâtir** — elles n'ont pas été ouvertes ici.
 
 ## 8. Le sort des objections de `vitruve`
+
+> _Archive._ Ce que la contradiction a trouvé, et ce que la refonte en a fait.
+> Une seule objection reste vivante — **B5**, le prix —, et elle a sa section
+> au §6 ainsi que sa ligne au §12.
 
 | #                                                  | Sort                                                                                                                       |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -327,6 +407,10 @@ par des lectures faites après son passage.
 
 ## 11. Les précédents du dépôt, pour qui bâtira
 
+> _Archive._ Les pièges du dépôt relevés avant de bâtir. Le lot est fait ; ce
+> qui reste utile ici est la **fenêtre de réversibilité** de la migration, plus
+> bas — à lire si l'on doit revenir en arrière sous pression.
+
 - **Une contrainte `CHECK` insensible au `NULL`** :
   `prisma/migrations/20260904160000_derogation_d_heure_limite/migration.sql:58`
   compare `("used_by_order_id" IS NULL) = ("used_at" IS NULL)` ;
@@ -342,54 +426,64 @@ par des lectures faites après son passage.
   nullable pour toujours ». `auth0Sub` nullable est dans le même cas, et il faut
   le dire plutôt que d'invoquer la réversibilité du §0 du `CLAUDE.md`.
 
-## 12. Les lots
+  🔴 **La fenêtre exacte, pour qui lirait ceci pendant un déploiement**
+  (relecture des deux migrations, 2026-09-17) : le retour arrière est possible
+  **jusqu'au premier invité écrit**, impossible ensuite. `ALTER COLUMN
+auth0_sub SET NOT NULL` échoue dès qu'une ligne est nulle, et il n'y a **rien
+  à inventer** pour la réparer — un `auth0Sub` est une identité réelle chez
+  Auth0, pas un remplissage. Le seul « rollback » restant serait de supprimer
+  des clients réels, ce que le §0 du `CLAUDE.md` interdit. L'irréversibilité
+  est donc **conditionnelle au trafic**, pas absolue au déploiement.
 
-Découpage arrêté le 2026-09-17, après les décisions du §7. Les deux premiers
-sont **indépendants** et se bâtissent en parallèle.
+  Ce que la relecture confirme par ailleurs : `DROP NOT NULL` sur une colonne
+  `@unique` ne demande **aucune** recréation d'index — un index unique Postgres
+  admet autant de `NULL` qu'on veut, et continue d'interdire deux valeurs non
+  nulles identiques. Et aucun contrat n'expose `auth0Sub` : vérifié à zéro
+  occurrence dans `packages/` et dans les deux fronts.
 
-### Lot A — l'écran du panier (front, indépendant)
+## 12. L'état : ce qui est fait, ce qui reste
 
-Ce que le §8 bis a établi. Il répare un défaut **réel aujourd'hui**, sans rien
-attendre du serveur : un visiteur clique « Régler ma commande » et rien ne
-bouge.
+Découpage arrêté le 2026-09-17, bâti le même jour. **Les sections 1 à 11 sont
+désormais l'archive de conception** — elles expliquent POURQUOI, et on n'y
+revient que pour contester une décision. Ce qui suit est le seul état à jour.
 
-1. `proceed()` ne part plus quand on ne sait pas qui commande.
-2. Le bouton se grise — `.pay:disabled` existe déjà.
-3. Le motif `.ask` (celui de « Où êtes-vous servi ? ») porte « Qui êtes-vous ? »
-   et ses deux portes : les trois champs, ou la connexion.
-4. Tant que la route publique n'existe pas, la porte « trois champs » mène à
-   `AuthFacade.register(target, profile)` — l'inscription, qui marche.
+### ✅ Fait
 
-🔴 **Le lot A ne doit rien préempter du lot C.** Quand la route publique
-existera, seule la cible du bouton change.
+| Lot   | Ce qui a été bâti                                                                    | Commit     |
+| ----- | ------------------------------------------------------------------------------------ | ---------- |
+| **A** | Le panier retient le règlement tant qu'il ignore qui commande, et le dit             | `9fddf8d9` |
+| **B** | `auth0Sub` nullable : un client existe sans identité de connexion                    | `3c8f20f3` |
+| **C** | `POST /shop/orders` — écrite, éprouvée, **pas ouverte**                              | `d83da52e` |
+| **D** | Rien à faire : courriels, QR et fiche marchent dès que le porteur est un `User` réel |            |
 
-### Lot B — `auth0Sub` nullable (migration + 5 sites)
+**Ce que le lot A fait déjà, et qu'il ne faut pas défaire** : il offre les deux
+portes **ensemble**, sans jamais regarder l'adresse saisie. C'est D7 appliqué —
+une surface publique ne répond jamais « ce compte existe ».
 
-Additive, en un seul déploiement — une colonne qui devient nullable n'exige pas
-les trois temps du `CLAUDE.md` §0. **Irréversible en pratique** (§11), et c'est
-assumé par écrit.
+🔴 **Le lot C est fermé par l'absence de son contrôleur dans `orders.module.ts`.**
+La route n'existe pas à l'exécution ; tout ce qu'elle appellerait est monté et
+éprouvé. C'est le seul « fermé » qui ne mente pas — aucune porte du dépôt ne
+sait livrer une route publique éteinte (§6).
 
-Les cinq sites sont au §4. Deux seulement changent (`prisma-company-member`,
-`prisma-account.reader`) ; les trois autres absorbent déjà le nul.
+### ⬜ Reste à faire
 
-🔴 Le point 1 du §4 — la récupération de compte (`grant-account-access` face à
-un invité sans sujet) — est dans ce lot, pas dans un autre : c'est le seul
-endroit où l'absence de sujet **casse** un chemin qui marche.
+1. **D6 — un compte connectable gagne.** Dans `findAccountByEmail`
+   (`b2b/account/infrastructure/prisma-company-member.repository.ts`) : un
+   compte connectable gagne ; à défaut, un invité unique ; sinon on refuse.
+   ⚠️ `AccountEmailAmbiguousError` n'est couverte par **aucun test** du dépôt —
+   la règle ne sera donc garantie que par ceux qu'on écrira.
+2. **D7 — le courriel « est-ce vous ? ».** Un gabarit de plus dans
+   `platform/mailer/mail-templates.ts`, parti par `work.track(...)` hors du temps
+   de réponse, et **borné par adresse** via `MailJournal.rememberEvent` — dont le
+   commentaire prévoit exactement ce second consommateur.
+3. **L'ouverture**, et elle ne dépend pas du code : l'arbitrage de prix du §6.
+   Le jour venu, trois gestes — enregistrer `ShopOrdersController`, faire pointer
+   la porte « première commande » du panier vers la route publique au lieu de
+   l'inscription, et trancher le tarif public.
 
-### Lot C — `POST /shop/orders` (serveur)
+### Ce qui n'a toujours pas été ouvert
 
-La surface du §5 : son contrat, son handler, sa table d'idempotence murée par
-la commande créée. `Order` intact, `PlaceOrderHandler` intact.
-
-Dépend du lot B (le porteur doit pouvoir exister).
-
-### Lot D — rien à faire
-
-Les courriels, le QR et la fiche de commande fonctionnent **sans une ligne de
-changement** dès que le porteur est un `User` réel (§5). Ce lot n'existe que
-pour dire qu'il a été cherché.
-
-### Ce qui reste hors des lots
-
-La **mise en service**, qui dépend de l'arbitrage du §6 — prix de liste public
-et taux de TVA. Elle n'appartient à aucun de ces lots.
+Le §10 reste vrai sur deux points : la **passerelle** (un `POST /shop/orders`
+non authentifié y est-il routé ?) et le **débit** (5 appels/60 s par IP
+borne-t-il réellement l'abus ?). Les deux se vérifient avant l'ouverture, pas
+avant le code.
