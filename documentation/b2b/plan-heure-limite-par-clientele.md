@@ -36,10 +36,14 @@ tarif public, ni la commande sans compte — ils ont leurs documents.
 
 **La règle voulue tient en deux lignes** :
 
-| Quand               | Limite B2C                                           |
-| ------------------- | ---------------------------------------------------- |
-| **J** (aujourd'hui) | ce qu'il reste **en stock**, rien d'autre            |
-| **J+1 et au-delà**  | **aucune** — c'est de la production, elle a le temps |
+| Quand               | Limite B2C                                                       |
+| ------------------- | ---------------------------------------------------------------- |
+| **J** (aujourd'hui) | ce qu'il reste **en stock**, rien d'autre                        |
+| **J+1 et au-delà**  | **aucune du commerce** — c'est de la production, elle a le temps |
+
+⚠️ **« Aucune » a d'abord été lu comme « aucune limite du tout »**, et le §1.1
+le corrige : le **délai propre à un article** (le gâteau qui se sait deux jours
+avant) reste opposable. Ce qui s'efface, c'est la règle du comptoir.
 
 ## 1. Pourquoi la limite du B2B ne convient pas au B2C
 
@@ -145,7 +149,7 @@ ce qui sera **fabriqué pour lui**.
 flowchart TD
     V["Un particulier veut<br/>être servi le JJ"] --> WHEN{"JJ, c'est quand ?"}
 
-    WHEN -->|"J+1 ou plus tard"| LIBRE["✅ AUCUNE limite<br/>la commande entre dans la production"]
+    WHEN -->|"J+1 ou plus tard"| LIBRE["✅ aucune limite du COMMERCE<br/>— le délai de l'article, lui, s'oppose (§1.1)"]
     WHEN -->|"aujourd'hui"| STOCK{"reste-t-il<br/>du stock ?"}
 
     STOCK -->|oui| VEND["✅ vendable, à concurrence<br/>de ce qui reste"]
