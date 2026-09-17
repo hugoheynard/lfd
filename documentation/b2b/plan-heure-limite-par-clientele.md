@@ -1,16 +1,20 @@
 # La limite du B2C : pas de limite à J+N, le stock à J
 
 **Statut** : 📐 conception, rien n'est bâti. Écrit le 2026-09-17, **contredit
-par `vitruve`** le même jour (quatre BLOQUANTS), refondu, puis **réécrit** après
-deux précisions métier de Hugo qui en ont déplacé l'objet. Le sort des
-objections est au §9.
+par `vitruve`** le même jour (quatre BLOQUANTS), refondu, **réécrit** après deux
+précisions métier de Hugo qui en ont déplacé l'objet, puis **refondu une
+troisième fois** le même jour : le lot 1 n'est plus une colonne d'audience, mais
+un **aiguillage** (§4). Le sort des objections est au §9 — trois des quatre
+BLOQUANTS y sont devenus **sans objet**, ce qui n'est pas la même chose que
+corrigés.
 **Portée** : **quelle journée un client peut demander, et pourquoi**. Ni le
 tarif public, ni la commande sans compte — ils ont leurs documents.
 
-> 🔴 **Ce document décrit maintenant DEUX lots de tailles très différentes.**
-> Le premier se livre (§4). Le second n'a pas de fondation dans le système et
-> demande sa propre conception (§5). Les confondre ferait promettre à J0 ce que
-> seul J+1 peut tenir.
+> 🔴 **Ce document décrit DEUX lots, et l'écart entre eux s'est creusé.**
+> Le premier se livre (§4) et **ne touche plus la base du tout** : l'aiguillage
+> a supprimé la colonne, ses sept index et son point de non-retour. Le second
+> n'a aucune fondation dans le système et demande sa propre conception (§5).
+> Les confondre ferait promettre à J0 ce que seul J+1 peut tenir.
 
 ## 0. La demande
 
@@ -145,47 +149,86 @@ est déjà parti.
 `apps/lfd-api/prisma/schema/growth.prisma` porte « Stock : décision _source de
 vérité_ reportée (Shopify vs nous) ».
 
-## 4. Lot 1 — J+N sans limite pour le B2C (livrable)
+## 4. Lot 1 — un aiguillage, pas une colonne
 
-Ce lot **n'attend pas le stock**, et il livre la moitié de la demande : un
-particulier peut commander pour demain et au-delà, sans heure limite.
+🔴 **Cette section a été entièrement refondue le 2026-09-17**, sur une
+proposition de Hugo : « l'ordre de résolution serait clientèle → date, pour
+définir si J — et donc résolution sur stock — ou J+1, limite qu'on a déjà
+écrite ».
 
-La clientèle entre dans **l'identité** de la règle — il faut bien deux règles
-concurrentes sur un même point, l'une pour les pros, l'autre pour le public.
+La version précédente faisait entrer la clientèle dans **l'identité d'une règle
+`order_cutoffs`** : une colonne, sept index partiels, un journal à étendre, un
+back-office à rouvrir. Elle répondait à une question que personne n'a posée —
+« quelle heure limite pour le public ? » — alors que la réponse voulue est
+**aucune**. Et une valeur qui n'a rien à régler n'a pas besoin d'être stockée.
 
-🔴 **Et non comme un simple filtre** (des booléens `{b2b, b2c}` sur une règle
-unique) : ce serait le précédent `pickupDiscountFor`, mais une remise est unique
-par point et s'applique ou non, alors qu'ici on veut **deux limites
-différentes** au même endroit.
+### 4.1 Ce que l'aiguillage dit
 
-### 4.1 Le coût réel : reconstruire l'unicité
+Deux questions, dans cet ordre, **avant** toute résolution de règle :
 
-Trois colonnes nullables d'identité = **sept** index partiels (2³ − 1) là où il
-y en a trois, plus le `@@unique` à refaire. Sur une table servie, ce n'est pas
-un `ADD COLUMN`.
+```mermaid
+flowchart TD
+    D["Une commande demande<br/>la journée JJ"] --> A{"clientèle ?"}
 
-⚠️ **Sans cette reconstruction, la fonctionnalité ne sert pas une seule fois** :
-la première règle publique entre en collision avec le défaut existant sur
-`order_cutoffs_default_all_days`, Postgres rend `P2002`, et l'écran affiche
-« règle en double ».
+    A -->|"pro (B2B)"| B2B["resolveOrderCutoff<br/>— inchangé, §2"]
+    A -->|"particulier (B2C)"| WHEN{"JJ = aujourd'hui ?"}
 
-### 4.2 L'ordre de spécificité : la clientèle vient EN DERNIER
+    WHEN -->|"non — J+1 et au-delà"| LIBRE["✅ open, sans condition<br/>aucune règle n'est consultée"]
+    WHEN -->|"oui — J0"| STOCK["résolution sur le STOCK<br/>🔴 lot 2, §5 — inexistant"]
 
-Point, puis jour, puis clientèle. La clientèle **départage** deux règles de même
-portée ; elle n'en renverse aucune.
+    STOCK -.->|"tant que le lot 2 n'existe pas"| FERME["❌ fermé, et l'écran le DIT<br/>« aujourd'hui, passez au comptoir »"]
+```
 
-La première version la mettait en tête. C'était faux : une seule règle « public,
-défaut, tous les jours » aurait rendu inatteignable **toute** règle existante —
-y compris « ce point, ce dimanche ». On croit ajouter une ligne, on éteint la
-configuration. La raison empruntée au tarif ne se transpose pas : l'audience y
-va jusqu'à une société **nommée**, ici elle s'arrête à « les particuliers ».
+La clientèle ne **départage** plus deux règles : elle choisit **quel mécanisme
+décide**. C'est pourquoi l'objection B2 du §9 — « la clientèle en tête éteint la
+configuration » — tombe au lieu d'être corrigée : la branche publique ne
+consulte aucune règle, elle n'en éteint donc aucune.
 
-### 4.3 L'égalité devient atteignable, et rien ne la signale
+### 4.2 Ce que ça supprime, et c'est presque tout le lot
 
-`resolveOrderCutoff` est une suite de `rules.find(...)` : à rang égal, **le
-premier du tableau gagne**, et ce tableau est trié par le libellé du comptoir.
-Renommer « Le Village » changerait la règle appliquée. Il faut donc **refuser
-explicitement** et poser la contrainte en base.
+| Ce que la version à colonne demandait                 | Sort           |
+| ----------------------------------------------------- | -------------- |
+| une colonne d'audience sur `order_cutoffs`            | **supprimé**   |
+| la reconstruction de l'unicité en sept index partiels | **supprimé**   |
+| le refus d'égalité + sa contrainte en base            | **supprimé**   |
+| le fait de journal étendu (`order-cutoff.events.ts`)  | **supprimé**   |
+| la garde d'idempotence du semis (`station.seed.ts`)   | **supprimé**   |
+| les cinq écrans du back-office                        | **supprimé**   |
+| le point de non-retour (§10)                          | **supprimé**   |
+| **D1** — valeur `all` explicite ou `NULL`             | **sans objet** |
+
+Il ne reste **aucune migration**. Ce qui se livre tient en trois endroits :
+
+- **le contrat** — une fonction d'aiguillage à côté de `decideOrderCutoff`,
+  qui prend l'audience et la date du jour, et n'appelle la résolution existante
+  que sur la branche pro ;
+- **le serveur** — `order-cutoff-guard.ts` prend l'audience en entrée, et
+  `order-drafting.service.ts` la **hisse** hors de `resolveFulfillment`, où elle
+  est déjà calculée sans être rendue (sinon : une seconde lecture du statut de
+  société par commande) ;
+- **la route** — `list-fulfillment-days.handler.ts` et le §7, inchangé : une
+  route, **deux dates**.
+
+⚠️ Le §7 reste entier, et c'est le seul coût qui ne bouge pas. `GET
+/fulfillment-days` est déjà servie à des pros connectés ; leur servir la date du
+public serait une régression sur un contrat en service.
+
+### 4.3 Le prix : la règle publique vit dans le CODE
+
+Une limite publique ne sera plus saisissable. Le jour où quelqu'un voudra
+« commande pour demain avant 22 h », il faudra un déploiement là où une règle
+B2B se saisit à l'écran.
+
+**C'est assumé, parce que c'est la demande** : « J+N pas de limite » n'a pas de
+valeur à régler. Le geste qui redeviendrait nécessaire est celui qu'on vient de
+supprimer — il se retrouve dans l'historique de ce document, et la table est
+toujours là pour l'accueillir.
+
+⚠️ Le vrai risque de ce choix n'est pas le déploiement, c'est le **silence** :
+une règle qui n'apparaît sur aucun écran est une règle que personne ne sait
+opposable. L'écran de réglages doit donc **afficher** la branche publique comme
+un fait — « les particuliers : aucune limite à partir de demain » — même sans
+rien à y modifier.
 
 ## 5. Lot 2 — le stock temps réel (à concevoir, pas à bâtir ici)
 
@@ -210,18 +253,28 @@ Trois questions, dans cet ordre, et aucune n'est technique au départ :
 stock affiché. Vendre ce qui vient d'être vendu au comptoir coûte plus qu'une
 journée fermée : c'est un client qui se déplace pour rien, avec un QR valide.
 
-## 6. 🔴 Ce qui peut vider les deux lots : la limite d'article
+## 6. 🔴 La limite d'article : l'aiguillage la règle au lieu de la subir
 
 `order-cutoff-guard.ts` le dit en rouge : **« L'article ne peut pas RELÂCHER la
 règle du commerce, il la remplace. »** Un article portant son `orderTimeLimit`
-ignore la règle du commerce — donc la clientèle, donc « pas de limite ».
+ignore la règle du commerce — donc, dans la version à colonne, il ignorait aussi
+la clientèle. Une seule limite d'article de portée globale suffisait à ce que le
+public se voie refuser à la caisse ce que l'écran venait de lui proposer.
 
-Une seule limite d'article de portée globale suffirait à ce que le public se
-voie refuser à la caisse ce que l'écran vient de lui proposer — la pathologie
-« proposer puis refuser » que `nextFulfillmentDay` a été écrite pour supprimer.
+**L'aiguillage du §4 règle ça par sa position**, et c'est son second gain :
+placé **au-dessus de `ensureWithinOrderCutoff` en entier** — et non dans le
+repli du commerce —, la branche publique à J+N rend `open` sans consulter ni les
+règles du commerce, ni les limites d'article.
 
-**Vérification requise avant de bâtir le lot 1** : existe-t-il une
-`OrderTimeLimit` de portée globale en production ?
+🔴 **C'est une décision, pas une conséquence.** Elle dit qu'un article
+n'est **jamais** en retard pour le public à J+1, y compris un article
+volontairement déclaré « à commander trois jours avant ». Si un tel article
+existe, la décision est fausse et il faut la renverser — auquel cas la branche
+publique retombe sur les limites d'article seules.
+
+**Vérification requise avant de bâtir** : existe-t-il une `OrderTimeLimit` de
+portée globale, ou une limite d'article à `daysBefore > 0`, en production ? Elle
+ne vide plus le lot — elle dit si ce paragraphe est juste.
 
 ## 7. La route publique sert LES DEUX dates
 
@@ -237,79 +290,90 @@ caisse. `FulfillmentDayView` porte donc **une date par clientèle** : une seule
 route, cachable, et il devient **impossible** qu'un pro appelle la mauvaise.
 
 ⚠️ Ce n'est pas un confort : cette route est **déjà servie** à des pros
-connectés. Le jour où une règle publique est posée, ce sont eux qui verraient
-des journées qui ne sont pas les leurs — sur un contrat déjà servi.
+connectés. Le jour où la branche publique s'ouvre, ce sont eux qui verraient des
+journées qui ne sont pas les leurs — sur un contrat déjà servi.
+
+🔴 **La date publique est « demain », toujours**, tant que le lot 2 n'existe
+pas : la branche J+N n'oppose rien, et J0 reste fermé faute de stock
+observable. Le sélecteur de créneaux ouvre donc une semaine à partir de demain,
+et l'écran nomme la raison du jour manquant plutôt que de le taire.
 
 ## 8. Le coût du lot 1, fichier par fichier
 
-**La règle** : `packages/contracts/src/order-cutoff.ts` (champ, résolution,
-refus d'égalité) et `packages/contracts/src/__tests__/order-cutoff.spec.ts`.
+**La règle** : `packages/contracts/src/order-cutoff.ts` — l'aiguillage, à côté
+de `decideOrderCutoff`, et `packages/contracts/src/__tests__/order-cutoff.spec.ts`.
+Les 25 cas existants portent tous sur la branche pro et doivent rester verts
+sans retouche : c'est la preuve que rien n'a bougé pour les clients en service.
 
-**La base** : la migration d'unicité du §4.1.
+**Le serveur** : `order-cutoff-guard.ts` (l'audience en entrée, l'aiguillage
+au-dessus de tout — §6), `order-drafting.service.ts` (hisser l'audience hors de
+`resolveFulfillment`), `list-fulfillment-days.handler.ts`.
 
-**Le serveur** : `order-cutoff-guard.ts` (l'audience en entrée),
-`apps/lfd-api/src/b2b/orders/application/services/order-drafting.service.ts`
-(elle y est calculée, mais **dans** `resolveFulfillment` et non rendue — il faut
-la hisser, sinon c'est une seconde lecture du statut de société par commande),
-`list-fulfillment-days.handler.ts`, `admin-order-cutoffs.controller.ts`, le
-dépôt Prisma et ses ports.
+**La base** : **rien**. C'est le changement le plus important de cette refonte.
 
-🔴 **Le journal** :
-`apps/lfd-api/src/b2b/order-cutoffs/domain/order-cutoff.events.ts` fige **cinq
-champs**, et dit pourquoi — « quand un client réclame, la question est de savoir
-ce que la règle disait ce jour-là ». Une règle de clientèle dont le fait tait la
-clientèle rend le journal inapte à sa raison d'être.
+**Le journal, le semis, le back-office** : **rien** à changer, sauf l'affichage
+du §4.3 — dire la branche publique sur l'écran de réglages, sans rien y rendre
+modifiable.
 
-🔴 **Le semis** : `apps/lfd-api/src/dev/seeding/station.seed.ts` garde son
-idempotence par `findFirst({ pickupAddressId: null, weekday: null })` — cette
-garde devient fausse dès qu'une clientèle existe.
-
-**Le back-office** : `order-cutoffs.service.ts`, `cutoffs-section/`,
-`cutoff-format.ts`, `cutoff-panel/`, `order-cutoffs-page/`. Deux règles qui
-s'afficheraient identiques en donnant des résultats différents seraient pires
-que pas de fonctionnalité.
+**Le front public** : le §7 — une date par clientèle, et la phrase du jour
+absent.
 
 ## 9. Le sort des objections de `vitruve`
 
-| #                                                      | Sort                                                                                              |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| **B1** la migration refuserait la première règle       | **assumée** — devenue le §4.1, c'est le travail                                                   |
-| **B2** l'ordre proposé éteint la configuration         | **corrigée** — la clientèle en DERNIER (§4.2)                                                     |
-| **B3** le précédent cité est un filtre, pas un rang    | **contestée et tranchée** (§4) — un filtre ne rend pas deux limites différentes sur un même point |
-| **B4** les égalités deviennent atteignables            | **corrigée** — refus explicite + contrainte en base (§4.3)                                        |
-| **S5** la limite d'article court-circuite la clientèle | 🔴 **entière** — §6, et elle peut vider les deux lots                                             |
-| **S6** `/mine` est le mauvais motif                    | **corrigée** — une route, deux dates (§7)                                                         |
-| **S7** sites omis (journal, semis, dépôt, tests)       | **corrigée** — §8                                                                                 |
-| **S8** D3 n'est pas un lotissement                     | **corrigée** — non-régression pour les pros en service (§7)                                       |
-| **S9** l'irréversibilité n'est pas dite                | **corrigée** — §10                                                                                |
-| D4 (`graceMinutes`)                                    | **retirée** : le rattrapage est un champ de la règle, il la suit                                  |
+Les quatre BLOQUANTS visaient la conception **à colonne**. La refonte du §4 en
+supprime trois par disparition de leur objet — ce qui est le meilleur sort qu'un
+BLOQUANT puisse connaître, et une raison de ne pas confondre « objection
+corrigée » et « objection devenue sans objet ».
 
-## 10. Ce que le lot 1 rend irréversible, et à partir de quand
+| #                                                      | Sort                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| **B1** la migration refuserait la première règle       | **sans objet** — il n'y a plus de migration (§4.2)                                    |
+| **B2** l'ordre proposé éteint la configuration         | **sans objet** — la branche publique ne consulte aucune règle (§4.1)                  |
+| **B3** le précédent cité est un filtre, pas un rang    | **sans objet** — ce n'est plus un rang de spécificité                                 |
+| **B4** les égalités deviennent atteignables            | **sans objet** — aucune règle nouvelle n'est écrite                                   |
+| **S5** la limite d'article court-circuite la clientèle | **tranchée** — l'aiguillage passe AU-DESSUS (§6), et c'est une décision, pas un effet |
+| **S6** `/mine` est le mauvais motif                    | **corrigée** — une route, deux dates (§7)                                             |
+| **S7** sites omis (journal, semis, dépôt, tests)       | **sans objet** — aucun d'eux n'est touché (§8)                                        |
+| **S8** D3 n'est pas un lotissement                     | **corrigée** — non-régression pour les pros en service (§7, §8)                       |
+| D4 (`graceMinutes`)                                    | **retirée** : le rattrapage est un champ de la règle, il la suit                      |
 
-Le point de non-retour est **la première règle portant une clientèle**. Avant :
-tout se défait. Après : la colonne ne se retire plus sans perdre une décision
-commerciale, et **l'ordre de spécificité du §4.2 ne se change plus** sans
-modifier silencieusement quelles commandes passent — sans qu'aucun test ne
-rougisse, puisque les 25 cas existants portent tous sur des règles à clientèle
-nulle.
+⚠️ Le plan n'a **pas** été resoumis à `vitruve` après cette refonte. Il touche
+une frontière de décision commerciale sans toucher ni l'argent, ni une migration
+de données, ni une frontière de sécurité, ni un runbook — la règle du `CLAUDE.md`
+demande alors de vérifier ses propres affirmations, ce qui a été fait : contrat,
+garde et plan rouverts le 2026-09-17.
+
+## 10. Ce que le lot 1 rend irréversible
+
+**Rien en base.** C'est la conséquence la plus utile de la refonte : sans
+colonne ni règle stockée, le lot se défait en retirant du code.
+
+Ce qui devient difficile à reprendre est ailleurs, et c'est du **commerce** :
+une fois que le public commande pour demain sans limite, fermer à nouveau se
+verra. La marche arrière est technique ; elle n'est pas gratuite pour autant.
 
 ## 11. Ce qui reste à trancher
 
-- **D1 — une valeur `all` explicite, ou un `NULL` ?** Le dépôt a un précédent
-  nommé côté prix (`all` / `segment` / `company`) plutôt qu'une absence.
-- **D2 — la limite d'article (§6)** : on la laisse court-circuiter la clientèle,
-  ou le lot 1 attend qu'elle soit traitée ?
+- **D2 — la limite d'article (§6)** : l'aiguillage passe-t-il au-dessus des
+  limites d'article, ou la branche publique doit-elle les respecter ? La
+  recommandation est **au-dessus** — c'est ce qui rend la promesse « pas de
+  limite » vraie sans exception —, et elle se renverse si un article
+  volontairement contraint existe.
 - **D3 — le lot 2 se conçoit-il maintenant ?** J0 restera fermé au public tant
   qu'il n'existe pas. Le dire à l'écran (« aujourd'hui, passez au comptoir »)
-  est peut-être la bonne réponse provisoire.
+  est la réponse provisoire, et le §7 la porte.
+
+**D1 est retirée** : sans valeur stockée, il n'y a plus de choix entre `all`
+explicite et `NULL`.
 
 ## 12. Ce qui n'a PAS été ouvert
 
 - **Les règles d'heure limite en production** et leurs `daysBefore` — c'est ce
-  qui dit ce qui change pour un client réel le jour du déploiement.
-- **Une `OrderTimeLimit` de portée globale en production** : le §6 est établi
-  comme mécanisme, pas comme fait.
+  qui dit ce qui change pour un client réel le jour du déploiement. La refonte
+  en réduit l'enjeu : la branche pro est inchangée.
+- **Une limite d'article contraignante en production** : le §6 est établi comme
+  mécanisme, pas comme fait, et c'est lui qui décide de D2.
 - **La caisse du comptoir** : ce qui s'y passe aujourd'hui, avec quel outil, et
   ce qu'il en reste comme trace. Le §5 affirme qu'il n'en reste rien **dans ce
   système** ; il ne dit pas qu'il n'en existe aucune ailleurs.
-- **La passerelle** et le rendu des deux composants d'admin.
+- **La passerelle**.
