@@ -136,5 +136,8 @@ flowchart TD
 - **La facturation** — l'émission des documents comptables :
   [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md).
 - **Le paiement** — Stripe, mandats SEPA, termes négociés : `../b2b/`.
+  ⚠️ Le **règlement d'une commande** (qui paie, quand, et quelles commandes
+  entrent au compte de production) est décrit ici :
+  [`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md).
 - **La livraison** — l'application de tournées :
   [`../b2b/architecture-road-livraison-tournees.md`](../b2b/architecture-road-livraison-tournees.md).
