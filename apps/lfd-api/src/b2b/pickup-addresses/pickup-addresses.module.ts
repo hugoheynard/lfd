@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { GetPublicPickupScheduleHandler } from "./application/get-public-pickup-schedule.handler.js";
 import { ListPickupAddressesHandler } from "./application/list-pickup-addresses.handler.js";
+import { ListPublicPickupSlotsHandler } from "./application/list-public-pickup-slots.handler.js";
 import { SavePublicPickupScheduleHandler } from "./application/save-public-pickup-schedule.handler.js";
 import {
   CreatePickupAddressHandler,
@@ -38,6 +39,9 @@ import { PickupAddressesController } from "./http/pickup-addresses.controller.js
     SetDefaultPickupAddressHandler,
     SavePublicPickupScheduleHandler,
     GetPublicPickupScheduleHandler,
+    // La surface PUBLIQUE des créneaux : elle ne sert que des heures, jamais
+    // les règles qui les produisent.
+    ListPublicPickupSlotsHandler,
   ],
   exports: [PickupAddressRepository],
 })
