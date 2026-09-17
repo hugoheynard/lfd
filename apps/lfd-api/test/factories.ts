@@ -96,6 +96,39 @@ export function createUser(prisma: PrismaService, seed: UserSeed): Promise<User>
   });
 }
 
+/** Ce qu'un test peut vouloir imposer sur un invité. */
+export interface GuestSeed {
+  readonly email: string;
+  readonly firstName?: string;
+  readonly phone?: string;
+}
+
+/**
+ * Crée un **invité** : une personne **sans identité de connexion**.
+ *
+ * C'est le porteur d'une commande passée sans compte (plan
+ * `documentation/b2b/plan-commande-sans-compte.md`, D1). Une fabrique distincte
+ * plutôt qu'un `auth0Sub` facultatif sur {@link createUser} : l'absence de sujet
+ * n'est pas un détail qu'on omet, c'est ce qui définit la personne — et un test
+ * qui l'obtient par omission ne dit plus ce qu'il exerce.
+ *
+ * `status: active` et non `invited` : D1 l'impose, et c'est le piège à garder
+ * sous les yeux — on ne déduit jamais « peut se connecter » d'un statut.
+ */
+export function createGuest(prisma: PrismaService, seed: GuestSeed): Promise<User> {
+  return prisma.user.create({
+    data: {
+      email: seed.email,
+      firstName: seed.firstName ?? "Camille",
+      lastName: "",
+      phone: seed.phone ?? "",
+      status: UserStatus.active,
+      // Jamais prouvée : personne ne la lui a fait confirmer.
+      emailVerified: false,
+    },
+  });
+}
+
 /** Rattache une personne à une société, avec son rôle dans celle-ci. */
 export function attachTo(
   prisma: PrismaService,

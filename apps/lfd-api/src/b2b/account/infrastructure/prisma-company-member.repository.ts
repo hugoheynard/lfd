@@ -23,10 +23,17 @@ const KNOWN_ACCOUNT_SELECT = {
   emailVerified: true,
 } as const;
 
-/** Ligne Prisma → personne connue. */
+/**
+ * Ligne Prisma → personne connue.
+ *
+ * `auth0Sub` est **nullable depuis le 2026-09-17** : un invité — quelqu'un qui a
+ * commandé sans compte — n'a aucune identité de connexion. Le nul traverse tel
+ * quel jusqu'au port, qui en fait le cas nommé ; le remplacer par une chaîne
+ * vide ici ferait demander un lien de mot de passe pour le sujet `""`.
+ */
 function toKnownAccount(user: {
   id: string;
-  auth0Sub: string;
+  auth0Sub: string | null;
   firstName: string;
   status: KnownAccount["status"];
   emailVerified: boolean;
