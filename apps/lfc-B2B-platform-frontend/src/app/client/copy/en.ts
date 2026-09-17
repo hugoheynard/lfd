@@ -16,6 +16,8 @@ export const EN: ClientCopy = {
     menu: 'Menu',
     notifications: 'Notifications',
     lang: 'Language',
+    signIn: 'Sign in',
+    createAccount: 'Create my account',
     kickerWelcome: 'Welcome',
     kickerRappel: 'Call back',
     kickerCommande: 'New order',

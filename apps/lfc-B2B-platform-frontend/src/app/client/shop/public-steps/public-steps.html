@@ -1,0 +1,21 @@
+<ol class="steps">
+  @for (step of steps(); track step.rank) {
+    <li class="step" [class.is-current]="step.current" [class.is-done]="step.done">
+      <!-- 🔴 La coche REMPLACE le rang une fois la réponse donnée : le numéro
+           servait à situer, il n'a plus d'usage. Le rang reste lisible pour un
+           lecteur d'écran par le libellé de l'étape ; la coche, elle, est
+           nommée, sans quoi une étape franchie s'annoncerait comme les autres. -->
+      <span class="step-mark">
+        @if (step.done) {
+          <span class="tick" [attr.aria-label]="doneLabel()">✓</span>
+        } @else {
+          {{ step.rank }}
+        }
+      </span>
+      <span class="step-main">
+        <span class="step-label">{{ step.label }}</span>
+        <span class="step-hint">{{ step.hint }}</span>
+      </span>
+    </li>
+  }
+</ol>

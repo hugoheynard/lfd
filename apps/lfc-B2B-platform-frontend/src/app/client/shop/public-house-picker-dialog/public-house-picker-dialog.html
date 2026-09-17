@@ -1,0 +1,28 @@
+<!-- Le sur-titre prend l'en-tête à lui seul, en `eyebrow` — le grand titre ouvre
+     le corps, comme au sélecteur d'heure. `fold-panel-header` rend son
+     sous-titre APRÈS le titre et n'a pas de slot avant lui. -->
+<fold-panel-header variant="eyebrow" [title]="c().kicker" [closeLabel]="c().close" />
+
+<fold-panel-body>
+  <h2 class="screen">{{ c().title }}</h2>
+  <p class="lead">{{ c().lead }}</p>
+
+  <ul class="houses">
+    @for (house of houses(); track house.point.id) {
+      <li>
+        <button class="house" type="button" [class.on]="house.current" (click)="pick(house)">
+          <span class="head">
+            <span class="name">{{ house.name }}</span>
+            @if (house.current) {
+              <span class="tag">{{ c().current }}</span>
+            }
+          </span>
+          <span class="place">{{ house.place }}</span>
+          <span class="offer" [class.is-plain]="!house.offer.hasOffer">{{
+            house.offer.label
+          }}</span>
+        </button>
+      </li>
+    }
+  </ul>
+</fold-panel-body>

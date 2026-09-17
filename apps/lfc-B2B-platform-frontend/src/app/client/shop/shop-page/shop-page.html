@@ -1,15 +1,38 @@
 <!-- LE BANDEAU — la boutique a le même en-tête que les autres écrans. Le titre
      du rayon y monte : il l'écrivait une seconde fois sous la recherche, dans un
      registre plus faible que celui de la page qu'il nomme. -->
+<!-- 🔴 TOUT CE QUI CHEVAUCHE LA DESCENTE VIT DANS LA DESCENTE.
+     Les termes ont d'abord été posés dans la page, avec une marge négative pour
+     mordre sur le bandeau : ils passaient dessous, et ni `z-index: 1` ni `3`
+     n'y changeaient rien. La cause n'est pas l'empilement mais le CLIPPING —
+     la page vit dans un conteneur qui défile (`.content-scroll`), et rien n'en
+     déborde (mesuré le 2026-09-17 : 32 px masqués, sur toute la remontée).
+     C'est la même leçon que l'accueil, prise par l'autre bout. -->
 <ng-template clientBanner>
-  <app-client-banner-block [kicker]="chrome.kicker()" [title]="shop.heading()">
-    <app-cart-banner-card
-      banner-action
-      (opened)="cartOpen.set(true)"
-      (serviceRequested)="backToService()"
-      (paid)="pay()"
-    />
+  <app-client-banner-block titleAlign="start" [kicker]="chrome.kicker()" [title]="shop.heading()">
+    <!-- Le rail SOUS le titre, pleine largeur — le layout de l'accueil, à
+         l'identique. `banner-below` et non `banner-action` : l'action se range
+         à DROITE du titre, ce qui est une autre grammaire, et laisser le slot
+         d'action vide recentrait le titre.
+         `3` : où l'on en est — les deux premières sont franchies, puisqu'on
+         n'arrive ici qu'en y ayant répondu, ou en les ayant volontairement
+         sautées par « je visite la boutique ». -->
+    <app-public-steps banner-below [current]="3" [answers]="stepAnswers()" />
   </app-client-banner-block>
+
+  <!-- LES TERMES DE LA COMMANDE, au bas de la descente — juste avant le rayon.
+       Ils ont REMPLACÉ la carte de panier qui vivait ici : les deux rappelaient
+       le même service, et ce fichier avait déjà corrigé ce doublon une fois
+       (« deux surfaces pour le même contexte, une de trop »).
+       Ce qu'elle portait en plus — pièces, total, régler — est dans la barre du
+       bas, qui suit le rayon à toutes les largeurs. Seul « porter au compte »
+       disparaît : il était explicitement marqué MAQUETTE dans son propre code,
+       faute de condition de règlement sur un écran servi sans jeton. -->
+  <app-public-command-terms-summary
+    class="terms"
+    (houseRequested)="changeHouse()"
+    (timeRequested)="changeTime()"
+  />
 </ng-template>
 
 <div class="shop">

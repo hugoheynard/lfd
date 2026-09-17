@@ -18,6 +18,8 @@ export const IT: ClientCopy = {
     menu: 'Menu',
     notifications: 'Notifiche',
     lang: 'Lingua',
+    signIn: 'Accedi',
+    createAccount: 'Crea il mio account',
     kickerWelcome: 'Benvenuto',
     kickerRappel: 'Richiamo',
     kickerCommande: 'Nuovo ordine',

@@ -11,12 +11,18 @@
 /* Le dégradé qui va de l'encre de la barre à celle de la sous-barre. Il
    s'arrête EXACTEMENT sur `--lfc-ink-950`, qui est aussi le fond de la
    sous-barre juste en dessous : c'est ce qui fait la couture à zéro. */
+/* 🔴 LE BAS DU DÉGRADÉ EST ATTÉNUÉ (2026-09-17) : il finissait sur
+   `--lfc-ink-950`, l'encre la plus profonde, et les cartes posées là — le rail
+   des étapes et les termes de la commande — s'y enfonçaient au lieu d'y
+   flotter. Il s'arrête désormais entre les deux encres, assez sombre pour que
+   la descente reste une descente, assez clair pour que ce qui s'y superpose se
+   détache. La couture avec la lèvre suit la même valeur, plus bas. */
 .descent {
   background: linear-gradient(
     to bottom,
     var(--lfc-ink-800) 0%,
-    var(--lfc-ink-900) 55%,
-    var(--lfc-ink-950) 100%
+    var(--lfc-ink-900) 60%,
+    color-mix(in srgb, var(--lfc-ink-950) 55%, var(--lfc-ink-900)) 100%
   );
   color: var(--fold-color-text);
 }
@@ -56,7 +62,10 @@
    profonde : la bande de la lèvre doit la continuer, sinon le raccord fait une
    marche à l'endroit précis où l'on veut qu'il n'y en ait pas. */
 .descent:not(:empty) ~ .lip {
-  background: var(--lfc-ink-950);
+  /* La MÊME valeur que la fin du dégradé, atténuée avec lui : la lèvre ne vit
+     qu'en pile, mais là, un écart d'encre ferait une marche exactement à
+     l'endroit qu'on veut invisible. */
+  background: color-mix(in srgb, var(--lfc-ink-950) 55%, var(--lfc-ink-900));
 }
 
 .lip::after {

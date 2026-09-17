@@ -137,11 +137,33 @@ export const routes: Routes = [
         redirectTo: 'bienvenue',
       },
       {
-        // La page d'entrée : inscription en trois champs, connexion par lien
-        // e-mail, rappel commercial. Maquette — rien ne part sur le réseau, et
-        // `/login` (Auth0) reste la porte réelle en attendant.
+        // 🔴 BIENVENUE A CHANGÉ DE SENS le 2026-09-16 (Hugo). L'adresse portait
+        // l'INSCRIPTION — trois champs, une connexion, un rappel commercial ;
+        // elle porte désormais l'ACCUEIL PUBLIC, ce que voit un visiteur qui
+        // arrive sans compte.
+        //
+        // Le mot dit enfin ce qu'il désigne : on n'accueille pas quelqu'un en
+        // lui tendant un formulaire. L'inscription, elle, a pris le nom de ce
+        // qu'elle fait — `/inscription`, juste dessous.
+        //
+        // ⚠️ Ce qui se paie : un lien déjà distribué vers `/bienvenue` ouvre
+        // maintenant autre chose. C'est assumé, et c'est la raison pour
+        // laquelle `/inscription` est une route À PART et non une redirection
+        // depuis ici — sans quoi les deux sens du mot coexisteraient sans que
+        // rien ne les départage.
         path: 'bienvenue',
-        title: 'Bienvenue — La Folie Coffee',
+        title: 'La Folie Coffee — commander, retirer, déguster',
+        loadComponent: () =>
+          import('./client/accueil-public/accueil-public').then((m) => m.AccueilPublic),
+      },
+      {
+        // L'INSCRIPTION : trois champs, connexion par lien e-mail, rappel
+        // commercial. Elle vivait sur `/bienvenue` et n'a pas changé d'un
+        // caractère — seule son adresse dit maintenant ce qu'elle fait.
+        // Maquette : rien ne part sur le réseau, et `/login` (Auth0) reste la
+        // porte réelle en attendant.
+        path: 'inscription',
+        title: 'Inscription — La Folie Coffee',
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
@@ -261,7 +283,11 @@ export const routes: Routes = [
             (m) => m.ConfirmationPage,
           ),
       },
-      { path: 'connexion', pathMatch: 'full', redirectTo: 'bienvenue' },
+      // `/connexion` mène là où l'on se connecte — donc à l'INSCRIPTION depuis
+      // le 2026-09-16, et non plus à `/bienvenue`, qui porte maintenant
+      // l'accueil public. Y envoyer qui clique « se connecter » l'aurait déposé
+      // devant un bandeau de retrait.
+      { path: 'connexion', pathMatch: 'full', redirectTo: 'inscription' },
       // Les anciennes adresses restent valides : un lien partagé ou un signet
       // pris avant le renommage doit continuer d'ouvrir le même écran.
       { path: 'commande', pathMatch: 'full', redirectTo: 'nouvelle-commande' },

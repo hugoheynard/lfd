@@ -1,0 +1,136 @@
+/* Les termes de la commande — une RANGÉE, pas une carte empilée : ce qu'on a
+   décidé d'un côté, ce qu'on peut en changer de l'autre. Les tokens viennent du
+   thème `lfc-app` que pose le shell. */
+
+:host {
+  display: block;
+}
+
+/* 🔴 REGISTRE SOMBRE, et non une carte crème. Elle est à cheval sur la couture :
+   en papier, elle se lisait comme le premier objet de la boutique, alors qu'elle
+   récapitule ce qui vient d'être décidé au-dessus. L'encre la rattache à la
+   descente, et le débord sur la crème suffit à la détacher. */
+.terms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  border-radius: var(--lfc-radius-2xl);
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+  box-shadow: var(--lfc-shadow-promo);
+}
+
+/* La maison et le moment se lisent d'un trait, sur UNE ligne : c'est une phrase
+   (« Le Labo · demain 7 h 15 »), pas une fiche à deux champs. */
+.said {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+/* « MA COMMANDE » : une pastille, pas un sur-titre. Elle étiquette la ligne
+   plutôt que de la surmonter — la carte n'a qu'une seule chose à dire. */
+.label {
+  flex: none;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-primary-tile);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-ink-100);
+}
+
+.value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+/* Le fait, en toutes lettres : c'est lui qu'on vient vérifier. */
+.place,
+.when {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+}
+
+.when {
+  font-variant-numeric: tabular-nums;
+}
+
+.sep {
+  color: var(--lfc-ink-300);
+}
+
+/* La remise porte le BEURRE — la seule couleur chaude de la carte, et elle est
+   réservée à ce qui se gagne. Le reste de la ligne est un constat ; celle-ci
+   est un avantage. */
+.offer {
+  flex: none;
+  align-self: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-butter-300);
+  color: var(--lfc-butter-900);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+/* Des boutons de CORRECTION : ils défont un choix, ils n'en poussent aucun. Sur
+   l'encre, le contour clair suffit à les rendre cliquables sans les faire
+   rivaliser avec le geste d'acheter, qui vit dans le rayon. */
+.act {
+  display: inline-flex;
+  align-items: center;
+  block-size: 2.375rem;
+  padding: 0 var(--fold-space-lg);
+  border: 1.5px solid var(--lfc-color-border-strong);
+  border-radius: var(--fold-radius-md);
+  background: transparent;
+  color: var(--lfc-paper-0);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+/* 🔴 L'HEURE est le seul des deux qu'on change sans quitter le rayon : elle
+   porte donc le plein, et la maison le contour. La hiérarchie dit le COÛT du
+   geste, pas son importance. */
+.act.is-primary {
+  border-color: var(--lfc-paper-0);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+}
+
+.act:hover {
+  border-color: var(--lfc-paper-0);
+}
+
+.act:active {
+  transform: scale(0.985);
+}

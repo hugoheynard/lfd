@@ -10,6 +10,8 @@ export const FR: ClientCopy = {
     menu: 'Menu',
     notifications: 'Notifications',
     lang: 'Langue',
+    signIn: 'Se connecter',
+    createAccount: 'Créer mon compte',
     kickerWelcome: 'Bienvenue',
     kickerRappel: 'Rappel',
     kickerCommande: 'Nouvelle commande',

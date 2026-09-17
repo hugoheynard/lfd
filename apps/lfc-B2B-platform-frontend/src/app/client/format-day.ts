@@ -20,6 +20,27 @@ export interface NearDays {
  * `day` et `today` sont des jours `AAAA-MM-JJ` d'Europe/Paris. La date se met en
  * forme à midi UTC, fuseau UTC : aucun décalage ne peut la faire changer de jour.
  */
+/**
+ * **Le moment retenu**, tel qu'on le dit : « Demain 7 h 15 ».
+ *
+ * 🔴 Une seule fonction pour les deux surfaces qui l'affichent — le rail des
+ * étapes et le récapitulatif de commande. Elles le composaient chacune de leur
+ * côté, et deux formulations du même fait à trente pixels l'une de l'autre
+ * finissent toujours par diverger d'un séparateur ou d'une majuscule.
+ *
+ * `slot` est le libellé DÉJÀ mis en forme par celui qui a posé le choix — on ne
+ * le reformate pas ici : il peut dire « 7 h 15 » comme « avant 8 h ».
+ */
+export function serviceWhenLabel(
+  day: string,
+  slot: string,
+  today: string,
+  locale: LocaleCode,
+  near: NearDays,
+): string {
+  return `${serviceDayLabel(day, today, locale, near)} ${slot}`;
+}
+
 export function serviceDayLabel(
   day: string,
   today: string,

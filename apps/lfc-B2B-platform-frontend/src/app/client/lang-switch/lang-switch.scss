@@ -28,8 +28,14 @@
   letter-spacing: 0.05em;
   /* La hauteur des segments, sans toucher à leur largeur : fold fixe leur
      rembourrage en rem, mais `all: unset` leur fait hériter l'interligne. C'est
-     donc lui qui remonte les pastilles aux 26 px de la réf. */
-  line-height: 1.85;
+     donc lui qui commande la hauteur du boîtier.
+     🔴 Relevé de 1,85 à 2,30 le 2026-09-17 : le boîtier mesurait 32 px dans une
+     barre où le panier en fait 38, et les deux se lisaient comme un défaut
+     d'alignement. La largeur des segments, elle, ne bouge pas — c'est bien
+     l'interligne qu'on règle, pas le rembourrage.
+     La valeur est CALÉE sur une mesure et non déduite : 1,85 donnait 32 px et
+     2,45 en donnait 40, soit 1 px par 0,075 — d'où 2,30 pour les 38 visés. */
+  line-height: 2.3;
 }
 
 /* ── Le mode compact : un globe qui porte sa langue ───────────────────────── */

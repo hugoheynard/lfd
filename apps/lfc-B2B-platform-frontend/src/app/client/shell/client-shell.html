@@ -60,15 +60,20 @@
 
     <!-- Le panier vit ICI et plus dans le menu : une quantité qui change en
          permanence appartient au chrome permanent, pas à une liste qu'on
-         parcourt. Il ne paraît qu'à un client reconnu — la même condition que
-         le menu, parce que c'est la même chose : avoir des affaires ici. -->
-    @if (chrome.menu()) {
-      <!-- Pas de panier là où l'on ne commande pas (plan §4) : il mènerait à
-           une garde, et le compterait sur un catalogue que rien ne demande. -->
-      @if (access.atLeast('order')) {
-        <app-client-cart-pill />
-      }
+         parcourt.
 
+         🔴 LE PANIER PRÉCÈDE L'ENTRÉE, et ne dépend plus du menu.
+         Il était conditionné au client reconnu, « parce que c'est la même chose :
+         avoir des affaires ici ». C'était faux pour la boutique publique : un
+         visiteur remplit un panier SANS compte — c'est la promesse de l'écran
+         d'accueil — et le sien disparaissait de la barre.
+         Ce qui reste conditionné, c'est de COMMANDER : pas de panier là où l'on
+         ne commande pas (plan §4), il mènerait à une garde. -->
+    @if (access.atLeast('order')) {
+      <app-client-cart-pill />
+    }
+
+    @if (chrome.menu()) {
       <!-- L'identité ferme la rangée. Pas de sélecteur d'espace : il n'existe
            qu'à partir de deux espaces, et le compte n'en a qu'un — la réf
            interdit d'ouvrir un déroulant qui ne mène nulle part. -->
@@ -76,6 +81,22 @@
            « Se déconnecter » — la personne, pas la société. En pile, le menu
            de poche porte les mêmes gestes, et ce bloc reste masqué. -->
       <app-account-menu class="account wide-only" />
+    }
+
+    <!-- 🔴 L'ENTRÉE DU VISITEUR, au bout de la barre — la place qu'elle occupe
+         dans la référence. Elle ne paraît QU'À un visiteur non reconnu : au
+         client déjà connecté, le même coin sert son menu de personne, et lui
+         proposer de se connecter lui dirait qu'il ne l'est pas.
+         La phrase dessous mène à l'onglet INSCRIPTION d'Auth0 (`register`), pas
+         au même écran que le bouton : deux portes, deux gestes. -->
+    @if (!recognised()) {
+      <span class="sign">
+        <button class="sign-cta" type="button" (click)="signIn()">{{ t().chrome.signIn }}</button>
+        <button class="sign-link" type="button" (click)="createAccount()">
+          {{ t().chrome.createAccount }}
+          <span aria-hidden="true">→</span>
+        </button>
+      </span>
     }
   </div>
 

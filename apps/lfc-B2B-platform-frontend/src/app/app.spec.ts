@@ -47,7 +47,10 @@ describe('Le chrome de l’app', () => {
   it('reconnaît TOUS les écrans clients, pas seulement ceux d’une liste', async () => {
     for (const url of [
       '/',
+      // `/bienvenue` porte l'ACCUEIL PUBLIC depuis le 2026-09-16 ;
+      // `/inscription` porte les trois champs qui y vivaient.
       '/bienvenue',
+      '/inscription',
       '/connexion',
       '/nouvelle-commande',
       '/nouvelle-commande/boutique',

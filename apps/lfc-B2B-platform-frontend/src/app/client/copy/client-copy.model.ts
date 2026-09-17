@@ -20,6 +20,17 @@ export interface ClientCopy {
     readonly menu: string;
     readonly notifications: string;
     readonly lang: string;
+
+    /**
+     * L'entrée du VISITEUR, dans la barre : se connecter, et la porte d'à côté
+     * pour qui n'a pas encore de compte.
+     *
+     * 🔴 Elle ne paraît qu'à un visiteur non reconnu. Un client déjà connecté a
+     * son menu de personne au même endroit — lui proposer de se connecter
+     * serait lui dire qu'il ne l'est pas.
+     */
+    readonly signIn: string;
+    readonly createAccount: string;
     readonly kickerWelcome: string;
     readonly kickerRappel: string;
     readonly kickerCommande: string;

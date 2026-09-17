@@ -77,6 +77,104 @@
   flex: 1;
 }
 
+/* ── LA BARRE DU BUREAU ────────────────────────────────────────────────────
+   Plus haute, pour que ses objets portent les tailles de la référence : la
+   marque à 52 px et les commandes à 44. À 64 px de barre, tout y était
+   compressé d'un tiers et l'en-tête se lisait comme une bande d'outils.
+
+   ⚠️ L'entrée du visiteur n'est PAS dans cette liste : elle tient le gabarit
+   des blocs de la rangée — 38 px, comme le panier et le sélecteur de langue —
+   parce qu'elle doit s'aligner sur eux, pas sur la référence.
+
+   🔴 En pile, RIEN ne change. Un téléphone n'a pas 32 px à donner au chrome —
+   c'est l'écran où la barre doit s'effacer devant le contenu, et la hauteur est
+   la seule chose qu'on ne peut pas lui reprendre ailleurs. */
+@media (min-width: 900px) {
+  :host {
+    --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 96px);
+  }
+
+  /* 🔴 `:host` en tête, et ce n'est pas décoratif : `.mark`, `.menu` et `.bell`
+     sont déclarés PLUS BAS dans ce fichier, et à spécificité égale c'est la
+     dernière règle qui gagne. Sans ce cran, la marque restait à 44 px — mesuré
+     à l'écran le 2026-09-17, alors que le reste de la barre avait bien grandi. */
+  :host .mark {
+    width: 52px;
+    height: 52px;
+  }
+
+  :host .menu,
+  :host .bell {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ── L'ENTRÉE DU VISITEUR ──────────────────────────────────────────────────
+   Le bouton crème de la référence, et sous lui la porte d'à côté.
+
+   🔴 SEUL LE BOUTON EST DANS LE FLUX, et c'est ce qui l'aligne sur le panier.
+   Empilés, le bouton et la phrase faisaient un bloc de 51 px, et c'est ce BLOC
+   qui se centrait dans la barre : le bouton partait 6 px plus haut que le
+   panier (mesuré le 2026-09-17). La phrase est donc posée SOUS lui, hors flux —
+   elle pend du bouton au lieu de le pousser. */
+.sign {
+  position: relative;
+  flex: none;
+}
+
+/* Fond clair sur l'encre : le seul objet plein de la barre, donc le seul que
+   l'œil y cherche. Hauteur et rayon écrits ici et non lus sur `--fold-button-*`,
+   qui sont des crochets que le thème POSE pour fold — les lire marcherait par
+   accident, et `lint:fold-tokens` a raison de le refuser. */
+/* 38 px : le gabarit commun des blocs de la barre — celui que le panier tient
+   déjà, et que le sélecteur de langue rejoint. Trois hauteurs différentes sur
+   une même rangée se voyaient comme un défaut d'alignement. */
+.sign-cta {
+  display: inline-flex;
+  align-items: center;
+  block-size: 2.375rem;
+  padding: 0 var(--fold-space-lg);
+  border: 0;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+.sign-cta:active {
+  transform: scale(0.985);
+}
+
+/* La phrase : un LIEN, pas un bouton — elle mène ailleurs, et la hiérarchie doit
+   se voir sans lire. La flèche est décorative ; elle est donc cachée du lecteur
+   d'écran, qui entendrait « flèche vers la droite » au milieu de la phrase. */
+.sign-link {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-on-primary-muted);
+  font-family: inherit;
+  font-size: var(--fold-text-2xs);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sign-link:hover {
+  color: var(--lfc-paper-0);
+}
+
 /* L'échec de lecture des niveaux : aligné sur la gouttière de la page, pour se
    lire comme le haut de l'écran et non comme un débordement du bandeau. */
 .feature-access-failed {
