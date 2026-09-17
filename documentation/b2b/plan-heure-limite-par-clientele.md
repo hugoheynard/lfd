@@ -61,6 +61,73 @@ de société à chaque commande. La dépendance est là ; le geste ne l'est pas.
 C'est écrit dans le schéma : « deux règles concurrentes rendraient la résolution
 dépendante de l'ordre de lecture ».
 
+### 1.4 Le schéma : qui décide qu'une journée est ouverte
+
+**Deux décisions, à deux moments, et elles peuvent se contredire.** L'une ouvre
+l'écran, l'autre refuse la commande — et c'est entre les deux que le plan se
+joue.
+
+```mermaid
+flowchart TD
+    V["Un visiteur ouvre<br/>le sélecteur de créneau"] --> FD["GET /fulfillment-days<br/>route PUBLIQUE, sans paramètre"]
+    FD --> NFD["nextFulfillmentDay<br/>essaie ahead = 0, 1, 2…"]
+    NFD --> RES["resolveOrderCutoff<br/>la règle la plus spécifique"]
+    RES --> OPEN{"la journée<br/>est-elle ouverte ?"}
+    OPEN -->|non| NEXT["jour suivant"] --> NFD
+    OPEN -->|oui| ECRAN["journée proposée<br/>à l'écran"]
+
+    ECRAN --> PANIER["le client compose<br/>son panier"]
+    PANIER --> GARDE["ensureWithinOrderCutoff<br/>panier en main"]
+    GARDE --> ART{"un article porte-t-il<br/>sa PROPRE limite ?"}
+    ART -->|oui| REMPLACE["🔴 elle REMPLACE celle du commerce<br/>— la clientèle n'est plus lue"]
+    ART -->|non| COMMERCE["la règle du commerce<br/>s'applique"]
+    REMPLACE --> VERDICT{"refus ?"}
+    COMMERCE --> VERDICT
+    VERDICT -->|oui| PIEGE["🔴 PROPOSÉ PUIS REFUSÉ"]
+    VERDICT -->|non| OK["commande passée"]
+```
+
+🔴 **La branche de gauche est le §5.** Seule la caisse lit la limite d'article ;
+l'écran ne la connaît pas. Une limite d'article de portée globale ferait donc
+proposer « aujourd'hui » au public et refuser sa commande — la pathologie même
+que `nextFulfillmentDay` a été écrite pour supprimer.
+
+### 1.5 Le schéma : la règle qui gagne, avant et après
+
+La résolution prend **la plus spécifique**. Aujourd'hui, quatre passages ; avec
+une clientèle, huit — et leur ORDRE décide quelles commandes passent.
+
+```mermaid
+flowchart TB
+    subgraph AV["Aujourd'hui — 4 passages"]
+        direction TB
+        A1["1 · ce point, ce jour"] --> A2["2 · ce point, tous les jours"]
+        A2 --> A3["3 · défaut, ce jour"] --> A4["4 · défaut, tous les jours"]
+    end
+
+    subgraph REJETE["❌ Premier jet — la clientèle EN TÊTE"]
+        direction TB
+        R1["1 · public, ce point, ce jour"] --> R2["2 · public, ce point, tous"]
+        R2 --> R3["3 · public, défaut, ce jour"] --> R4["4 · public, défaut, TOUS"]
+        R4 --> R5["5…8 · les règles sans clientèle,<br/>🔴 JAMAIS ATTEINTES dès que 4 existe"]
+    end
+
+    subgraph RETENU["✅ Retenu — la clientèle EN DERNIER"]
+        direction TB
+        K1["1 · ce point, ce jour, public"] --> K2["2 · ce point, ce jour, toutes"]
+        K2 --> K3["3 · ce point, tous les jours, public"] --> K4["4 · … toutes"]
+        K4 --> K5["5…8 · le défaut, de même"]
+    end
+```
+
+**Ce que le jet rejeté produisait** : une seule règle « public, défaut, tous les
+jours » rendait inatteignables **toutes** les règles existantes. On croit
+ajouter une ligne, on éteint la configuration.
+
+**Ce que le retenu produit** : la clientèle départage deux règles de même
+portée, elle n'en renverse aucune. Une règle « ce point, ce dimanche » continue
+de s'appliquer à tout le monde tant que personne n'a écrit sa variante publique.
+
 ## 2. La décision
 
 La clientèle entre dans **l'identité** de la règle, à côté du point et du jour.
