@@ -49,7 +49,12 @@
          représentait. -->
     <app-lang-switch [compact]="chrome.menu()" />
 
-    @if (chrome.bell()) {
+    <!-- 🔴 La cloche exige le CLIENT RECONNU, en plus de la demande d'écran.
+         `chrome.bell()` dit qu'un écran en pose une ; il ne dit pas qu'il y a
+         quelqu'un à notifier. Un visiteur voyait donc une cloche qui ne
+         pouvait rien lui annoncer — et dont le geste mène à un espace où il
+         n'est pas. Ce qui se notifie appartient à un compte. -->
+    @if (chrome.bell() && recognised()) {
       <button class="bell" type="button" [attr.aria-label]="bellLabel()" (click)="openBell()">
         <fold-icon name="bell" />
         @if (chrome.bellCount(); as count) {

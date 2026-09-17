@@ -239,13 +239,18 @@
 /* La cloche partage le gabarit du menu — même trou dans la barre, de l'autre
    côté. Sa pastille DÉBORDE, et son liseré reprend le fond de la barre : c'est
    ce qui la détache de l'encre sans lui donner d'ombre. */
+/* 38 px, comme tout ce qui occupe cette rangée — le panier, l'entrée du
+   visiteur, le sélecteur de langue. Elle était à 40, deux pixels au-dessus du
+   gabarit que le commentaire de `.sign-cta` déclare juste plus haut : assez
+   pour que la rangée se lise comme mal alignée, pas assez pour qu'on voie
+   pourquoi. */
 .bell {
   position: relative;
   flex: none;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 2.375rem;
+  height: 2.375rem;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-hover);
