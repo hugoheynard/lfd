@@ -55,12 +55,30 @@ describe("placeShopOrderPayloadSchema — qui commande", () => {
     ).toThrow();
   });
 
-  it("laisse le téléphone facultatif — il sert à rappeler, pas à identifier", () => {
-    const parsed = placeShopOrderPayloadSchema.parse(
-      payload({ buyer: { firstName: "Camille", email: "camille@exemple.fr" } }),
-    );
+  /**
+   * 🔴 **Ce cas affirmait l'inverse jusqu'au 2026-09-17** — « laisse le
+   * téléphone facultatif, il sert à rappeler, pas à identifier ». Il est
+   * retourné, pas supprimé : c'est lui qui tient la règle désormais.
+   *
+   * Un client public n'a **aucun autre recours** : pas de compte, donc pas de
+   * « mes commandes » ; une adresse mal tapée emporte la confirmation et le QR
+   * chez un inconnu ; et au comptoir sa commande s'affiche par son prénom seul.
+   * Le numéro est le dernier fil qui reste (D9).
+   */
+  it("REFUSE une commande sans téléphone — c'est le seul second canal", () => {
+    expect(() =>
+      placeShopOrderPayloadSchema.parse(
+        payload({ buyer: { firstName: "Camille", email: "camille@exemple.fr" } }),
+      ),
+    ).toThrow();
+  });
 
-    expect(parsed.buyer.phone).toBe("");
+  it("REFUSE un téléphone vide tout autant qu'absent", () => {
+    expect(() =>
+      placeShopOrderPayloadSchema.parse(
+        payload({ buyer: { firstName: "Camille", email: "camille@exemple.fr", phone: "   " } }),
+      ),
+    ).toThrow();
   });
 });
 

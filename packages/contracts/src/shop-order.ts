@@ -48,10 +48,17 @@ const EMAIL_MAX_LENGTH = 254;
  * connexion, donc rien de ce qui est tapé au panier ne donne accès à quoi que
  * ce soit.
  *
- * L'adresse est **obligatoire**, et c'est le seul champ qui l'est vraiment :
- * sans elle, pas de confirmation, pas de QR de retrait, pas de code à présenter
- * au comptoir. Le téléphone reste facultatif — il sert à rappeler, pas à
- * identifier.
+ * L'adresse est **obligatoire** : sans elle, pas de confirmation, pas de QR de
+ * retrait, pas de code à présenter au comptoir.
+ *
+ * 🔴 **Le téléphone l'est aussi depuis le 2026-09-17** (D9, décidé par Hugo).
+ * Ce paragraphe disait le contraire — « il sert à rappeler, pas à identifier » —
+ * et c'était vrai tant qu'un client public avait un autre recours. Il n'en a
+ * pas : pas de compte, donc pas de « mes commandes » ; une adresse mal tapée et
+ * la confirmation part chez un inconnu, avec le QR. Au comptoir, une commande
+ * publique s'affiche par son **prénom seul** (`customerLabelOf` : la raison
+ * sociale, sinon prénom + nom, et un invité n'a pas de nom) — « Jean » ne
+ * retrouve personne. Le téléphone est le seul second canal qui reste.
  */
 export const guestBuyerSchema = z.object({
   firstName: z
@@ -65,8 +72,12 @@ export const guestBuyerSchema = z.object({
     .min(1, "e-mail requis")
     .max(EMAIL_MAX_LENGTH, `e-mail : au plus ${String(EMAIL_MAX_LENGTH)} caractères`)
     .email("e-mail invalide"),
-  /** Vide = non communiqué. Une chaîne vide, jamais `null` : comme en base. */
-  phone: z.string().trim().max(32, "téléphone : au plus 32 caractères").default(""),
+  /**
+   * **Requis** (D9). Le schéma exige qu'il soit LÀ ; ce qui fait un numéro
+   * valable — les chiffres admis, leur nombre — reste au domaine
+   * (`PhoneNumber`), pour que la règle ne vive pas à deux endroits.
+   */
+  phone: z.string().trim().min(1, "téléphone requis").max(32, "téléphone : au plus 32 caractères"),
 });
 export type GuestBuyerPayload = z.infer<typeof guestBuyerSchema>;
 

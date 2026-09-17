@@ -1,3 +1,4 @@
+import { InvalidPhoneError } from "../../../account/domain/errors/account-errors.js";
 import { EmailAddress } from "../../../account/domain/value-objects/email-address.js";
 import { PersonName } from "../../../account/domain/value-objects/person-name.js";
 import { PhoneNumber } from "../../../account/domain/value-objects/phone-number.js";
@@ -34,11 +35,19 @@ import type { GuestBuyer } from "../ports/guest-buyer.registrar.js";
  * redéclarer une copie ici ferait diverger le jour où l'une des deux se
  * corrigerait.
  *
- * L'**adresse est obligatoire**, et c'est le seul champ qui le soit vraiment :
- * sans elle, pas de confirmation, pas de QR de retrait, pas de code à présenter
- * au comptoir. Le téléphone reste facultatif — il sert à rappeler, pas à
- * identifier —, et le prénom est exigé parce qu'un courriel qui commence par
- * « Bonjour , » se remarque plus qu'il ne coûte à demander.
+ * L'**adresse est obligatoire** : sans elle, pas de confirmation, pas de QR de
+ * retrait, pas de code à présenter au comptoir. Le prénom est exigé parce qu'un
+ * courriel qui commence par « Bonjour , » se remarque plus qu'il ne coûte à
+ * demander.
+ *
+ * 🔴 **Le téléphone est obligatoire depuis le 2026-09-17** (D9, Hugo). Ce
+ * paragraphe disait « il sert à rappeler, pas à identifier », et c'était vrai
+ * tant qu'un client public gardait un autre recours. Il n'en a aucun : sans
+ * compte, il n'a ni « mes commandes » ni second envoi, et une adresse mal tapée
+ * emporte la confirmation ET le QR chez un inconnu. Au comptoir, une commande
+ * publique s'affiche par son **prénom seul** — `customerLabelOf` prend la raison
+ * sociale, sinon prénom + nom, et un invité n'a pas de nom de famille (vérifié
+ * le 2026-09-17). « Jean » ne retrouve personne ; le numéro, si.
  */
 export class GuestIdentity {
   private constructor(
@@ -53,14 +62,28 @@ export class GuestIdentity {
    *
    * @throws {InvalidEmailError} l'adresse n'en est pas une.
    * @throws {InvalidPersonNameError} le prénom est vide ou trop long.
-   * @throws {InvalidPhoneError} le téléphone ne ressemble pas à un numéro.
+   * @throws {InvalidPhoneError} le téléphone manque, ou ne ressemble pas à un
+   *   numéro.
    */
-  static declare(raw: { firstName: string; email: string; phone?: string }): GuestIdentity {
-    return new GuestIdentity(
+  static declare(raw: { firstName: string; email: string; phone: string }): GuestIdentity {
+    const declared = new GuestIdentity(
       PersonName.create(raw.firstName, "Prénom"),
       EmailAddress.create(raw.email),
-      PhoneNumber.create(raw.phone ?? ""),
+      PhoneNumber.create(raw.phone),
     );
+    // 🔴 `PhoneNumber` ADMET le vide : il rend `empty()` sans lever, parce qu'il
+    // sert aussi des personnes dont on n'a légitimement pas le numéro — un
+    // contact noté par un commercial, par exemple. Le refus vit donc ICI, où la
+    // règle est vraie, et non dans le value object partagé qu'il faudrait alors
+    // durcir pour tout le monde.
+    //
+    // ⚠️ Et pas seulement dans le schéma Zod : tous les appelants n'entrent pas
+    // par HTTP (semis, tests, futur import), et un domaine qui compte sur sa
+    // porte d'entrée finit par être appelé par une autre.
+    if (declared.phone.isEmpty) {
+      throw new InvalidPhoneError(raw.phone, "obligatoire pour une commande sans compte");
+    }
+    return declared;
   }
 
   /**

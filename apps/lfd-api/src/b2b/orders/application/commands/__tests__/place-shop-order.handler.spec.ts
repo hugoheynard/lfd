@@ -403,14 +403,22 @@ describe("PlaceShopOrderHandler — le porteur", () => {
 
     await handler.execute(
       new PlaceShopOrderCommand(
-        payload({ buyer: { firstName: " Camille ", email: "  Camille@Exemple.FR ", phone: "" } }),
+        payload({
+          buyer: {
+            firstName: " Camille ",
+            email: "  Camille@Exemple.FR ",
+            // Le numéro passe par la même mise en forme : les blancs multiples
+            // se réduisent, et c'est ce qui est écrit qui est comparé.
+            phone: " 06  00 00 00 00 ",
+          },
+        }),
       ),
     );
 
     expect(buyers.registered[0]).toEqual({
       firstName: "Camille",
       email: "camille@exemple.fr",
-      phone: "",
+      phone: "06 00 00 00 00",
     });
   });
 
@@ -423,7 +431,9 @@ describe("PlaceShopOrderHandler — le porteur", () => {
     await expect(
       handler.execute(
         new PlaceShopOrderCommand(
-          payload({ buyer: { firstName: "Camille", email: "camille", phone: "" } }),
+          // Le téléphone est VALABLE : sans ça, le refus pourrait venir de lui
+          // (obligatoire depuis D9) et ce cas ne prouverait plus ce qu'il dit.
+          payload({ buyer: { firstName: "Camille", email: "camille", phone: "0600000000" } }),
         ),
       ),
     ).rejects.toBeInstanceOf(InvalidEmailError);
