@@ -65,8 +65,12 @@ describe('ShopPage', () => {
   /**
    * Le rappel du service et le panier sont montés dans le BANDEAU, qui vit
    * dans le shell — un écran monté seul n'en a pas. Ce qui se vérifie ici,
-   * c'est donc que la page ne les dessine plus elle-même : c'est
-   * `CartBannerCard` qui les porte, et son propre spec les éprouve.
+   * c'est donc que la page ne les dessine plus elle-même.
+   *
+   * ⚠️ Cette note désignait `CartBannerCard` comme leur porteur et renvoyait à
+   * son spec. Ce composant a été **supprimé le 2026-09-17** : le bandeau a
+   * perdu sa carte, plus rien ne l'importait, et laisser la phrase aurait
+   * envoyé chercher l'épreuve dans un fichier qui n'existe plus.
    */
   it('ne dessine plus le panier dans la page : il est au bandeau et en tiroir', () => {
     expect(el().querySelector('.basket')).toBeNull();
