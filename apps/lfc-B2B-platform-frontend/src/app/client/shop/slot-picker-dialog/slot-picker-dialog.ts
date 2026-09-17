@@ -28,8 +28,20 @@ import { serviceDayLabel } from '../../format-day';
 import { dialogSide } from '../../panel-side';
 import { PublicSlots } from '../public-slots.gateway';
 
-/** Combien de journées le visiteur peut regarder d'un coup. */
-const DAYS_SHOWN = 3;
+/**
+ * Combien de journées le visiteur peut regarder d'un coup.
+ *
+ * 🔴 **Une semaine depuis le 2026-09-17** (Hugo), contre trois journées avant.
+ * Un visiteur qui prépare un week-end ou un départ n'a pas de raison d'être
+ * borné à après-demain : la rangée défile, et une journée sans créneau le dit
+ * elle-même plutôt que d'être cachée.
+ *
+ * ⚠️ Ce nombre est une largeur d'ÉCRAN, pas une promesse du serveur : les
+ * onglets sont fabriqués par `addDays` à partir de la première journée
+ * accordée. Chaque onglet interroge ensuite ses propres créneaux, et c'est le
+ * serveur qui dit s'il y en a.
+ */
+const DAYS_SHOWN = 7;
 
 /** Ce qu'il faut pour ouvrir le sélecteur : la maison, et d'où partent les jours. */
 export interface SlotPickerData {

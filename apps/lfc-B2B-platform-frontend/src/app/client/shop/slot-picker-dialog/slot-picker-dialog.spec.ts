@@ -204,11 +204,29 @@ describe('SlotPickerDialog — les créneaux', () => {
 });
 
 describe('SlotPickerDialog — les journées', () => {
-  it('offre trois journées à partir de celle que le serveur accorde', async () => {
+  /**
+   * 🔴 **Une semaine depuis le 2026-09-17**, contre trois journées avant : un
+   * visiteur qui prépare un départ n'a pas de raison d'être borné à
+   * après-demain.
+   *
+   * ⚠️ Le point de DÉPART ne change pas, et c'est ce que ce cas tient vraiment :
+   * les sept journées partent de celle que le SERVEUR accorde, jamais d'un
+   * « aujourd'hui » calculé dans le navigateur. Élargir la fenêtre n'ouvre donc
+   * aucune journée que l'heure limite refuse — elle en montre davantage après.
+   */
+  it('offre une semaine à partir de la journée que le serveur accorde', async () => {
     const { fixture } = await mount();
 
     const days = fixture.componentInstance['days']();
 
-    expect(days.map((tab) => tab.day)).toEqual(['2026-09-17', '2026-09-18', '2026-09-19']);
+    expect(days.map((tab) => tab.day)).toEqual([
+      '2026-09-17',
+      '2026-09-18',
+      '2026-09-19',
+      '2026-09-20',
+      '2026-09-21',
+      '2026-09-22',
+      '2026-09-23',
+    ]);
   });
 });

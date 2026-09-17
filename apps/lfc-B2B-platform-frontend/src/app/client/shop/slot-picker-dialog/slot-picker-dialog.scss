@@ -43,10 +43,31 @@ fold-panel-header {
 }
 
 /* ── Les journées, en onglets ────────────────────────────────────────────── */
+/* 🔴 La rangée DÉFILE, elle ne se replie plus (2026-09-17). À trois journées,
+   `wrap` tenait sur une ligne ; à sept, il en faisait trois et poussait les
+   créneaux hors de vue — c'est-à-dire ce qu'on est venu choisir.
+
+   Le défilement est horizontal et le reste : `nowrap` empêche les pastilles de
+   se comprimer, `flex: none` sur chacune les garde à leur largeur de texte, et
+   l'accroche par jour fait qu'on s'arrête sur une journée entière plutôt
+   qu'entre deux. */
 .days {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--fold-space-sm);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  /* Deux pixels sous la rangée : sans eux, l'anneau de focus d'une pastille est
+     rogné par le conteneur qui défile. */
+  padding-bottom: 2px;
+  /* La barre reste disponible au trackpad et à la souris, mais discrète : c'est
+     une rangée de sept pastilles, pas une zone de texte. */
+  scrollbar-width: thin;
+}
+
+.days > .day {
+  flex: none;
+  scroll-snap-align: start;
 }
 
 .day {
