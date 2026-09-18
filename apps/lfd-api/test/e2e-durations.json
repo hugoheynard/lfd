@@ -97,6 +97,7 @@
   "test/shop-quote.e2e-spec.ts": 9056,
   "test/staff-access.e2e-spec.ts": 9064,
   "test/staff-invitation.e2e-spec.ts": 8265,
+  "test/staff-journal-backfill.e2e-spec.ts": 6984,
   "test/staff-journal.e2e-spec.ts": 6600,
   "test/staff-lockout.e2e-spec.ts": 11514,
   "test/staff-roles.e2e-spec.ts": 12533,

@@ -7,7 +7,7 @@
 > changé ».
 >
 > Suite de [`plan-journal-de-l-annuaire.md`](plan-journal-de-l-annuaire.md),
-> déployé le même jour. État : 📐 plan, contredit par `vitruve` (§5) ; bâti ensuite.
+> déployé le même jour. État : 🟡 bâti ; l'écran est déployé (promotion 1, `0adac7f4`), la migration attend la promotion 2. Contredit par `vitruve` (§5).
 
 ## 0. Résumé
 
@@ -92,6 +92,13 @@ lirait « Un membre de l'équipe a créé … » le temps du décalage.
 | `staff_user.created` | chaque fiche sans `staff_user.created` au journal, sauf la racine                                                                  | `created_at` | la racine (D4)  | `{ person, roleLabel }` — rôle actuel, inchangé (Hugo) |
 | `staff_user.created` | la racine                                                                                                                          | `created_at` | le système (D5) | `{ person, roleLabel }`                                |
 | `staff_user.invited` | chaque fiche, **sauf la racine**, sans `staff_user.invited` au journal, et dont `invited_at` suit `created_at` de **60 s au plus** | `invited_at` | la racine (D4)  | `{ person, kind: "invitation" }`                       |
+
+**Tranché en bâtissant (2026-09-18)** : la route fige `invited_at` à l'instant de
+la requête, **avant** l'`INSERT` qui pose `created_at` — l'invitation de la
+création la précède de quelques millisecondes (29 ms mesurées). La fenêtre est
+donc « `invited_at` au plus 60 s après `created_at` », sans borne basse ; et
+l'invitation reprise est datée de `GREATEST(invited_at, created_at + 1 ms)`,
+pour que l'écran montre créer puis inviter, dans l'ordre du geste.
 
 La règle des 60 s : la création ouvre l'accès dans la foulée
 (`create-staff-user.handler.ts`), donc un `invited_at` collé à `created_at` est
