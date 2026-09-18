@@ -13,8 +13,7 @@
 > - l'auteur d'un acte —
 >   [`../staff/plan-l-auteur-est-la-fiche.md`](../staff/plan-l-auteur-est-la-fiche.md).
 >
-> Ce qui reste à faire est dans [`todo-journal-activite.md`](todo-journal-activite.md)
-> et [`todo-doublon-du-journal-dans-une-transaction.md`](todo-doublon-du-journal-dans-une-transaction.md),
+> Ce qui reste à faire est dans [`todo-journal-activite.md`](todo-journal-activite.md),
 > et nulle part ailleurs.
 
 ## Table des matières
@@ -193,16 +192,20 @@ nomment quand même par leur `actor_name` figé.
 
 La clé est `type:subjectId:traceId`, dérivée par
 `b2b/growth/domain/activity-event.ts`, unique en base. Un fait rejoué **par la
-même requête** (même `traceparent`) retombe sur la même clé, et le recorder
-traite la violation d'unicité (`P2002`) comme « déjà journalisé ».
+même requête** (même `traceparent`) retombe sur la même clé, et l'`INSERT`
+**n'écrit rien, sans erreur** : `createMany({ skipDuplicates: true })`, soit
+`INSERT … ON CONFLICT DO NOTHING`.
 
 La clé est la **trace**, pas l'horloge : deux gestes identiques à la même
 seconde, venus de deux requêtes, sont deux faits.
 
-> 🟠 **Limite connue** : ce `P2002` avalé est juste hors transaction ; **dans**
-> une `UnitOfWork`, l'`INSERT` refusé met la transaction Postgres en échec et le
-> geste est annulé au commit —
-> [`todo-doublon-du-journal-dans-une-transaction.md`](todo-doublon-du-journal-dans-une-transaction.md).
+> **Pourquoi pas d'erreur, et pas un `catch`** : jusqu'au 2026-09-18, le
+> recorder attrapait la violation d'unicité (`P2002`) après coup. C'était juste
+> hors transaction ; **dans** une `UnitOfWork`, l'`INSERT` refusé mettait la
+> transaction Postgres en échec, et le geste que le `catch` devait épargner
+> était annulé au commit. Le test qui le prouve :
+> `test/activity-events.e2e-spec.ts` (« un fait rejoué DANS une transaction
+> n'annule pas le geste qui suit »).
 
 ---
 

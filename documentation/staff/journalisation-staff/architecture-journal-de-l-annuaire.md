@@ -305,7 +305,6 @@ phrases à relire ont été rangées le 2026-09-18 avec tous les points de
 journalisation :
 [`../../journalisation/todo-journal-activite.md`](../../journalisation/todo-journal-activite.md) §7 et §8.
 
-### Ouvert en TODO
-
-- [`../../journalisation/todo-doublon-du-journal-dans-une-transaction.md`](../../journalisation/todo-doublon-du-journal-dans-une-transaction.md)
-  — un fait rejoué dans une transaction la ferait échouer au lieu d'être ignoré.
+Le doublon du journal dans une transaction, qui figurait ici, est corrigé
+depuis le 2026-09-18
+([`../../journalisation/architecture-journalisation.md`](../../journalisation/architecture-journalisation.md) §6).

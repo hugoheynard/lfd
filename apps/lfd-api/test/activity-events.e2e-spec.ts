@@ -8,6 +8,7 @@
  * vérifie ici (les émetteurs réels, en requête, porteront customer/staff).
  */
 import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
+import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import type { RecordActivityInput } from "../src/b2b/growth/domain/activity-event.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
@@ -67,6 +68,27 @@ describe("journal activity_events (e2e SQL)", () => {
     await recorder.record(input({ idempotencyKey: "k1" }));
     await recorder.record(input({ idempotencyKey: "k2", subjectId: "user_2" }));
     expect(await ctx.prisma.activityEvent.count()).toBe(2);
+  });
+
+  /**
+   * Régression : le doublon était attrapé APRÈS l'échec de l'`INSERT` (P2002
+   * avalé). Hors transaction, c'est inoffensif ; DANS une `UnitOfWork`, l'échec
+   * met la transaction Postgres en état d'échec — toute requête suivante est
+   * refusée et le commit devient un rollback. Le geste que le `catch` devait
+   * épargner était annulé (TODO du doublon, corrigé le 2026-09-18).
+   */
+  it("un fait rejoué DANS une transaction n'annule pas le geste qui suit", async () => {
+    const uow = ctx.app.get(UnitOfWork);
+
+    await uow.run(async () => {
+      await recorder.recordOrFail(input());
+      await recorder.recordOrFail(input()); // le même fait, la même clé
+      // L'écriture métier qui suit : refusée si la transaction a avorté.
+      await recorder.recordOrFail(input({ idempotencyKey: "apres-le-doublon" }));
+    });
+
+    const keys = (await ctx.prisma.activityEvent.findMany()).map((row) => row.idempotencyKey);
+    expect(keys.sort()).toEqual(["apres-le-doublon", "order.placed:order_1"]);
   });
 
   it("porte l'establishmentId quand il est fourni (identity resolution future)", async () => {

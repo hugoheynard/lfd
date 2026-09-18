@@ -5,8 +5,9 @@
 > fichier réunit désormais les points ouverts sur **tous** les journaux — le
 > journal d'activité, celui de l'annuaire staff, celui du référentiel, le
 > journal tarifaire —, chacun avec un renvoi vers le doc d'où il vient. Le
-> bug de l'idempotence a son propre fichier :
-> [`todo-doublon-du-journal-dans-une-transaction.md`](todo-doublon-du-journal-dans-une-transaction.md).
+> bug de l'idempotence — un doublon qui annulait la transaction qu'il devait
+> épargner — avait son propre fichier ; il est **corrigé le 2026-09-18**, et
+> le fichier supprimé.
 
 > **État au 2026-08-21** : le journal **existe et se lit**. Le référentiel y
 > écrit sept faits avec leur portée, `GET /admin/activity` l'expose filtré et

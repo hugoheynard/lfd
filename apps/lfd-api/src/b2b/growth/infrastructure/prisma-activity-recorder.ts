@@ -18,7 +18,8 @@ import { ActorNamer, type ActorIdentity } from "../domain/ports/actor-namer.js";
  * l'ALS (fallback `system` + trace neuve hors requête, pour un émetteur cron).
  *
  * **Best-effort + idempotent**, comme l'exige le port : un doublon (même
- * `idempotencyKey`, émission rejouée) est un **no-op silencieux** ; toute autre
+ * `idempotencyKey`, émission rejouée) est un **no-op silencieux**, sans erreur
+ * Postgres — donc sans avorter la transaction qui l'englobe ; toute autre
  * panne est **journalisée puis avalée** — jamais propagée à l'appelant, pour ne
  * pas casser la transaction métier qui a déclenché l'événement.
  */
@@ -76,16 +77,15 @@ export class PrismaActivityRecorder extends ActivityRecorder {
       actorName: actor.name,
       actorRole: actor.role,
     });
-    try {
-      await this.prisma.activityEvent.create({
-        data: { ...row, payload: row.payload as Prisma.InputJsonValue },
-      });
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        return; // déjà journalisé (émission rejouée) — idempotent, rien à faire.
-      }
-      throw error;
-    }
+    // `skipDuplicates` = `INSERT … ON CONFLICT DO NOTHING` : un fait rejoué
+    // (même `idempotency_key`) n'écrit rien, SANS erreur Postgres. Attraper le
+    // P2002 après coup ne suffisait pas : dans une `UnitOfWork`, l'`INSERT`
+    // refusé met la transaction en échec, et le geste qu'on voulait épargner
+    // était annulé au commit (TODO du doublon, corrigé le 2026-09-18).
+    await this.prisma.activityEvent.createMany({
+      data: [{ ...row, payload: row.payload as Prisma.InputJsonValue }],
+      skipDuplicates: true,
+    });
   }
 
   /**
@@ -103,16 +103,6 @@ export class PrismaActivityRecorder extends ActivityRecorder {
       return { name: null, role: null };
     }
   }
-}
-
-/** Vrai si l'erreur est une violation d'unicité Prisma (P2002), sans importer ses classes. */
-function isUniqueViolation(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) {
-    return false;
-  }
-  const name: unknown = Reflect.get(error, "name");
-  const code: unknown = Reflect.get(error, "code");
-  return name === "PrismaClientKnownRequestError" && code === "P2002";
 }
 
 /** Message lisible d'une erreur inconnue, sans exposer la stack. */
