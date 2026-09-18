@@ -137,23 +137,31 @@ ligne`) disparaît : elle couvrait le cas rare, laissait le fréquent, et
 comparait un `timestamp` sans fuseau à des `timestamptz` sur des colonnes
 `updatedAt` qui avancent.
 
-**D6 — Les contenus empreintés du catalogue ne se convertissent pas.**
-`catalog_content` est adressé par son empreinte ; y changer `readyBy`
+**D6 — `readyBy` sort du contenu empreinté du catalogue.** Décidé par Hugo
+le 2026-09-18 : « ok un gros diff, mais j'ai besoin que ready by reste
+journalisé avec l'id de qui a déclaré ready ».
+
+`catalog_content` est adressé par son empreinte : y convertir `readyBy`
 changerait des clés primaires, des clés étrangères et les empreintes des
-révisions — ce serait falsifier les ancres. Deux choix :
+révisions. Qui a validé une fiche n'est pas un fait du catalogue, c'est une
+trace de l'atelier. Donc :
 
-- **(recommandé) sortir `readyBy` / `readyAt` du contenu empreinté** : qui a
-  validé une fiche n'est pas un fait du catalogue, c'est une trace de
-  l'atelier, et `ProductReadiness` la garde. Coût : la révision qui suit le
-  déploiement voit **une fois** chaque article changer d'empreinte, sans
-  changement de contenu — à annoncer, et à marquer dans la révision
-  (« format »), pour qu'on ne cherche pas ce qui a bougé ;
-- laisser `readyBy` dans le contenu, ne pas convertir `ProductReadiness.readyBy`
-  (sinon chaque SKU validé change d'empreinte au premier passage, avec un diff
-  « `readyBy` a changé » qui ment).
+- `readyBy` / `readyAt` **sortent du contenu** que `prisma-catalog-revision.source.ts`
+  empreinte. La révision qui suit le déploiement voit **une fois** chaque article
+  changer d'empreinte sans changement de contenu — un gros diff, accepté, et
+  marqué dans la révision (« format ») pour qu'on ne cherche pas ce qui a bougé ;
+- **la déclaration reste tracée deux fois, avec l'id de fiche** :
+  `ProductReadiness.readyBy` (converti comme le reste), et le fait
+  `product.declared_ready`, que `declare-product-ready.ts` écrit dans
+  `activity_events` dans la même transaction — son `actor_id` devient l'id de
+  fiche par D1, son nom reste figé ;
+- les contenus **déjà figés** gardent leur `sub` : on ne réécrit pas une ancre.
+  Le diff les nomme par D4.
 
-Dans les deux cas, les contenus déjà figés gardent leur `sub`, et le diff les
-nomme par D4.
+Écarté : réécrire les contenus passés (pas de diff, mais un script de
+production pour recalculer des empreintes que le SQL ne sait pas reproduire,
+les révisions et le journal qui les cite à réécrire, et la garantie « une
+empreinte ne change jamais » perdue).
 
 **D7 — Les deux journaux se traduisent.** `activity_events.actor_id` (où
 `actor_type = 'staff'`), les deux clés de charge utile, et `PricingEvent.actor`.
@@ -177,6 +185,10 @@ abonnements d'une fiche partie sont retirés à son départ).
 
 ## 3. Avant d'écrire une ligne : l'inventaire de production
 
+Hugo, le 2026-09-18 : **aucun `sub` Google** n'existe encore. La table sera
+donc courte ; l'inventaire reste nécessaire pour le `sub` de la racine, qui a pu
+changer avant le 2026-09-17 sans être Google.
+
 La requête du D5.1, en lecture seule, proposée à Hugo et lancée par lui. Elle
 rend la liste des `sub` et leurs indices, plus les valeurs qui ne sont pas des
 `sub` (`unknown-staff`, `dev-staff`, `system`). **C'est sur ce document que
@@ -193,8 +205,8 @@ Hugo valide les correspondances** ; le plan ne suppose pas le résultat.
 2. **La table de correspondance** (D5.2), remplie de ce que Hugo a validé. Les
    lecteurs et le filtre la lisent.
 3. **Écrire l'id** (D1, D2, D8 côté code, D9 côté code), avec
-   `lint:subject-readers`. Si D6 (recommandé) est retenu, `readyBy` sort du
-   contenu empreinté dans ce même déploiement.
+   `lint:subject-readers`. `readyBy` sort du contenu empreinté dans ce même
+   déploiement (D6).
 4. **Convertir** (D5.3, D7) — une migration, livrée **dans le déploiement
    suivant** l'étape 3 : l'ancienne instance, qui répond encore une à deux
    minutes après le basculement (`deploy_lfd_api.yml`), a fini d'écrire des
@@ -221,7 +233,7 @@ fait naître une génération d'empreintes qu'on ne défait pas.
   une à id se nomment pareil et sortent sous le même filtre.
 - **Conversion** (e2e sur la migration) : un `sub` de la table devient l'id ; un
   `sub` absent reste ; rejouer ne change rien ; `catalog_content` intact.
-- **Révision PIM** (si D6 recommandé) : la première révision après la sortie
+- **Révision PIM** (D6) : la première révision après la sortie
   de `readyBy` est marquée « format » ; la suivante ne voit aucun changement.
 - **Contrôle après l'étape 4**, en lecture seule : aucune valeur hors table
   dans les colonnes converties — le motif cherche les `sub` (`…|…`) **et**
@@ -270,14 +282,14 @@ Hugo : « dans la foulée, pour les clients, ce serait la même mécanique ? » 
 
 ## 9. Ce que `vitruve` a changé (2026-09-18)
 
-| Objection                                                                                                     | Ce qui a changé                                                                                      |
-| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| BLOQUANT — `readyBy` est dans un contenu adressé par son empreinte ; la conversion casse les ancres           | D6 : les contenus figés ne se convertissent pas ; sortir `readyBy` du contenu empreinté (recommandé) |
-| BLOQUANT — inventaire court : `User.invitedBy`, `PricingEvent.actor`, 16 colonnes tarifaires, vues et export  | §1 refait ; D7 traite le journal tarifaire ; D3 couvre l'export CSV                                  |
-| SÉRIEUX — une fiche a eu plusieurs `sub` ; « zéro, le plus probable » était une décision esquivée             | D5 : table de correspondance validée par Hugo sur un inventaire, avant toute conversion              |
-| SÉRIEUX — D6 (push) promettait un ciblage qui n'existe pas                                                    | D9 : trace seulement ; le ciblage rejoint le plan de départ                                          |
-| SÉRIEUX — la « relance » de la conversion n'avait pas de mécanisme, et l'ordre se contredisait                | §4 : conversion dans le déploiement suivant ; un reste = une nouvelle migration                      |
-| SÉRIEUX — le filtre par acteur coupait l'histoire d'une personne                                              | D4 : filtre sur l'id et ses `sub` connus ; `actorId` reste servi                                     |
-| SÉRIEUX — une regex ne rend pas le `sub` inexprimable                                                         | D2 : le `sub` sort du type après résolution ; la porte ne garde que le côté client                   |
-| SÉRIEUX — « aucun `DELETE` entre 3 et 5 » tenu par rien                                                       | §4, étape 0 : `DELETE` répond `409` d'abord                                                          |
-| MINEUR — comptes, sources, déjà-propres, fuseaux, `unknown-staff`, champs `sub` du code, 19 e2e, log d'erreur | Corrigés dans le §1, D5, D8, §5, §8                                                                  |
+| Objection                                                                                                     | Ce qui a changé                                                                              |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| BLOQUANT — `readyBy` est dans un contenu adressé par son empreinte ; la conversion casse les ancres           | D6 : les contenus figés ne se convertissent pas ; `readyBy` sort du contenu empreinté (Hugo) |
+| BLOQUANT — inventaire court : `User.invitedBy`, `PricingEvent.actor`, 16 colonnes tarifaires, vues et export  | §1 refait ; D7 traite le journal tarifaire ; D3 couvre l'export CSV                          |
+| SÉRIEUX — une fiche a eu plusieurs `sub` ; « zéro, le plus probable » était une décision esquivée             | D5 : table de correspondance validée par Hugo sur un inventaire, avant toute conversion      |
+| SÉRIEUX — D6 (push) promettait un ciblage qui n'existe pas                                                    | D9 : trace seulement ; le ciblage rejoint le plan de départ                                  |
+| SÉRIEUX — la « relance » de la conversion n'avait pas de mécanisme, et l'ordre se contredisait                | §4 : conversion dans le déploiement suivant ; un reste = une nouvelle migration              |
+| SÉRIEUX — le filtre par acteur coupait l'histoire d'une personne                                              | D4 : filtre sur l'id et ses `sub` connus ; `actorId` reste servi                             |
+| SÉRIEUX — une regex ne rend pas le `sub` inexprimable                                                         | D2 : le `sub` sort du type après résolution ; la porte ne garde que le côté client           |
+| SÉRIEUX — « aucun `DELETE` entre 3 et 5 » tenu par rien                                                       | §4, étape 0 : `DELETE` répond `409` d'abord                                                  |
+| MINEUR — comptes, sources, déjà-propres, fuseaux, `unknown-staff`, champs `sub` du code, 19 e2e, log d'erreur | Corrigés dans le §1, D5, D8, §5, §8                                                          |
