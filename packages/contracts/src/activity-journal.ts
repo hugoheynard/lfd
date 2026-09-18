@@ -37,6 +37,15 @@ export const activityQuerySchema = z.object({
   /** Bornes de temps, en ISO. `since` incluse, `until` exclue. */
   since: z.string().datetime().optional(),
   until: z.string().datetime().optional(),
+  /**
+   * Recherche libre (2026-09-18) : un nom, un prénom, un morceau de numéro, un
+   * identifiant. Retient le fait dont le nom figé de l'auteur OU la charge
+   * utile contient le texte (casse ignorée), ou dont le sujet EST ce texte.
+   * Les accents comptent : « cecile » ne trouve pas « Cécile ».
+   *
+   * Deux caractères au moins : un seul ramènerait presque tout le journal.
+   */
+  q: z.string().trim().min(2).max(100).optional(),
   /** Pagination par curseur : l'`id` ULID de la dernière ligne rendue. */
   before: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),

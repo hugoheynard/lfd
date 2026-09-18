@@ -88,7 +88,7 @@ enum StaffOverrideEffect {
 /// suite : identité, **rôle**, et l'état de sa connexion. Source de vérité
 /// **locale** : on ne dépend pas d'Auth0 pour administrer sa propre suite.
 ///
-/// Modèle et invariants : `documentation/auth-inscription/architecture-acces-staff.md`.
+/// Modèle et invariants : `documentation/staff/architecture-acces-staff.md`.
 model StaffUser {
   id String @id @default(cuid())
 

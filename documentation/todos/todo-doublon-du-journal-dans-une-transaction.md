@@ -1,7 +1,7 @@
 # TODO — un doublon du journal fait échouer la transaction qu'il devait épargner
 
 > Ouvert le 2026-09-18, relevé en bâtissant
-> [`../auth-inscription/plan-journal-de-l-annuaire.md`](../auth-inscription/plan-journal-de-l-annuaire.md).
+> [`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`](../staff/journalisation-staff/architecture-journal-de-l-annuaire.md).
 > **Non reproduit par un test** : c'est une déduction du code et du comportement
 > de Postgres.
 

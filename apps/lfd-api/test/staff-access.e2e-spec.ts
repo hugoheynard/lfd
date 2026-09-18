@@ -5,7 +5,7 @@
  * C'est la suite qui prouve que le modèle d'accès existe pour de bon. Sans elle,
  * `@AdminSurface` serait une annotation dont on espère qu'elle sert à quelque
  * chose. Chaque cas ici correspond à une décision de
- * `documentation/auth-inscription/architecture-acces-staff.md`.
+ * `documentation/staff/architecture-acces-staff.md`.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";

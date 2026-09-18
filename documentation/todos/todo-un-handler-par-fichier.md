@@ -43,7 +43,7 @@ par nombre décroissant :
 > **2026-09-18** — l'ancien `staff-user.handlers` de `staff/directory/application/` (4) et
 > l'ancien `staff-role.handlers` de `staff/permissions/application/` (5) sont découpés, un
 > fichier par handler, le jour où le journal de l'annuaire les a rouverts
-> (`documentation/auth-inscription/plan-journal-de-l-annuaire.md`, lot 3).
+> (`documentation/staff/journalisation-staff/architecture-journal-de-l-annuaire.md`, lot 3).
 > **22 restants**, retirés du tableau ci-dessous.
 
 | Fichier (sous `apps/lfd-api/src/`)                                | Handlers |

@@ -6,6 +6,14 @@
   </p>
 
   <div class="jr-filters">
+    <!-- Un seul champ pour tout ce qu'on sait d'un fait : le nom de l'auteur,
+         celui de la personne visée, une valeur, un identifiant. -->
+    <fold-search
+      size="sm"
+      ariaLabel="Rechercher dans le journal"
+      placeholder="Nom, prénom, valeur, identifiant…"
+      (searchChange)="onSearch($event)"
+    />
     <fold-listbox
       label="Module"
       [options]="modules"
@@ -29,6 +37,13 @@
 
   @if (loading() && lines().length === 0) {
     <div class="jr-loading"><fold-spinner /> Lecture du journal…</div>
+  } @else if (lines().length === 0 && query()) {
+    <fold-empty-state
+      [title]="'Aucun fait ne correspond à « ' + query() + ' »'"
+      subtitle="Vérifiez l’orthographe, élargissez la période, ou retirez le filtre de module."
+    >
+      <fold-icon empty-icon name="search" [size]="40" />
+    </fold-empty-state>
   } @else if (lines().length === 0) {
     <fold-empty-state
       title="Rien sur cette période"

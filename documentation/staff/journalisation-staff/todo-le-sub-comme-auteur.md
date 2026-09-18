@@ -1,7 +1,7 @@
 # TODO — le `sub` Auth0 sert encore d'auteur un peu partout
 
 > Ouvert le 2026-09-18. Sorti volontairement de
-> [`plan-journal-de-l-annuaire.md`](plan-journal-de-l-annuaire.md) §8, sur
+> [`architecture-journal-de-l-annuaire.md`](architecture-journal-de-l-annuaire.md) §8, sur
 > l'objection de `vitruve` : changer l'acteur du contexte aurait changé **en
 > silence** l'unité de toutes les colonnes ci-dessous.
 

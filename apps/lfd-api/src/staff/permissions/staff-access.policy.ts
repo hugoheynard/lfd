@@ -22,7 +22,7 @@ import {
  * dans le domaine, pas dans un écran, qui n'est qu'une suggestion — et elles se
  * testent sans base ni HTTP.
  *
- * Modèle complet : `documentation/auth-inscription/architecture-acces-staff.md` §6.
+ * Modèle complet : `documentation/staff/architecture-acces-staff.md` §6.
  */
 
 /** Ce qu'il faut savoir de la personne visée pour trancher une mutation. */

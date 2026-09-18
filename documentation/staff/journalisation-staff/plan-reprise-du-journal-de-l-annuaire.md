@@ -6,8 +6,8 @@
 > « pour admin dev racine on l'attribue au système, les rôles n'ont pas
 > changé ».
 >
-> Suite de [`plan-journal-de-l-annuaire.md`](plan-journal-de-l-annuaire.md),
-> déployé le même jour. État : 📐 plan, contredit par `vitruve` (§5) ; bâti ensuite.
+> Suite de [`architecture-journal-de-l-annuaire.md`](architecture-journal-de-l-annuaire.md),
+> déployé le même jour. État : 🟡 bâti ; l'écran est déployé (promotion 1, `0adac7f4`), la migration attend la promotion 2. Contredit par `vitruve` (§5).
 
 ## 0. Résumé
 
@@ -19,17 +19,17 @@ jour de l'acte, et rangés à leur place dans le journal.
 
 ## 1. Ce qui existe (vérifié le 2026-09-18)
 
-| Fait                                                                                                                                                | Où                                                      |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| L'écran Journal trie par `id` décroissant et pagine par `id < before`                                                                               | `prisma-activity-journal.reader.ts:44,92`               |
-| `id` est un ULID fabriqué par `monotonicFactory()` **à l'instant du geste** : son préfixe temporel dit quand le fait a eu lieu                      | `platform/id/ulid-generator.ts`                         |
-| Une ligne porte `occurred_at`, `recorded_at` (défaut `now()`), `actor_type/id/name/role` figés, `trace_id`, `idempotency_key` **unique**, `payload` | `prisma/schema/growth.prisma`, `ActivityEvent`          |
-| Un fait staff porte le `sub` de l'auteur en `actor_id` (conversion prévue par [`todo-le-sub-comme-auteur.md`](todo-le-sub-comme-auteur.md))         | `admin-auth.guard.ts`                                   |
-| `staff_user.created` = `{ person, roleLabel }` ; `staff_user.invited` = `{ person, kind }`, `kind` absent lu comme une invitation par l'écran       | `plan-journal-de-l-annuaire.md` §5 bis, `staff-line.ts` |
-| L'écran nomme l'auteur par `actorName`, et à défaut écrit « Un membre de l'équipe » — **quel que soit** `actor_type`                                | `staff-line.ts:98`                                      |
-| `staff_users` porte `created_at`, `invited_at` (dernière invitation seulement), `first_name`, `last_name`, `role`, `email`, `auth0_id`              | `staff.prisma`                                          |
-| Libellés des rôles : Administrateur, Commercial, Comptabilité, Support, Technique                                                                   | `STAFF_ROLE_LABELS`                                     |
-| La porte `cross-schema-join` ne lit que `apps/lfd-api/src` : elle ne voit pas les migrations                                                        | `dev-toolbox/gates/cross-schema-join.mjs`               |
+| Fait                                                                                                                                                | Où                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| L'écran Journal trie par `id` décroissant et pagine par `id < before`                                                                               | `prisma-activity-journal.reader.ts:44,92`                       |
+| `id` est un ULID fabriqué par `monotonicFactory()` **à l'instant du geste** : son préfixe temporel dit quand le fait a eu lieu                      | `platform/id/ulid-generator.ts`                                 |
+| Une ligne porte `occurred_at`, `recorded_at` (défaut `now()`), `actor_type/id/name/role` figés, `trace_id`, `idempotency_key` **unique**, `payload` | `prisma/schema/growth.prisma`, `ActivityEvent`                  |
+| Un fait staff porte le `sub` de l'auteur en `actor_id` (conversion prévue par [`todo-le-sub-comme-auteur.md`](todo-le-sub-comme-auteur.md))         | `admin-auth.guard.ts`                                           |
+| `staff_user.created` = `{ person, roleLabel }` ; `staff_user.invited` = `{ person, kind }`, `kind` absent lu comme une invitation par l'écran       | `architecture-journal-de-l-annuaire.md` §5 bis, `staff-line.ts` |
+| L'écran nomme l'auteur par `actorName`, et à défaut écrit « Un membre de l'équipe » — **quel que soit** `actor_type`                                | `staff-line.ts:98`                                              |
+| `staff_users` porte `created_at`, `invited_at` (dernière invitation seulement), `first_name`, `last_name`, `role`, `email`, `auth0_id`              | `staff.prisma`                                                  |
+| Libellés des rôles : Administrateur, Commercial, Comptabilité, Support, Technique                                                                   | `STAFF_ROLE_LABELS`                                             |
+| La porte `cross-schema-join` ne lit que `apps/lfd-api/src` : elle ne voit pas les migrations                                                        | `dev-toolbox/gates/cross-schema-join.mjs`                       |
 
 ## 2. Décisions
 
@@ -92,6 +92,13 @@ lirait « Un membre de l'équipe a créé … » le temps du décalage.
 | `staff_user.created` | chaque fiche sans `staff_user.created` au journal, sauf la racine                                                                  | `created_at` | la racine (D4)  | `{ person, roleLabel }` — rôle actuel, inchangé (Hugo) |
 | `staff_user.created` | la racine                                                                                                                          | `created_at` | le système (D5) | `{ person, roleLabel }`                                |
 | `staff_user.invited` | chaque fiche, **sauf la racine**, sans `staff_user.invited` au journal, et dont `invited_at` suit `created_at` de **60 s au plus** | `invited_at` | la racine (D4)  | `{ person, kind: "invitation" }`                       |
+
+**Tranché en bâtissant (2026-09-18)** : la route fige `invited_at` à l'instant de
+la requête, **avant** l'`INSERT` qui pose `created_at` — l'invitation de la
+création la précède de quelques millisecondes (29 ms mesurées). La fenêtre est
+donc « `invited_at` au plus 60 s après `created_at` », sans borne basse ; et
+l'invitation reprise est datée de `GREATEST(invited_at, created_at + 1 ms)`,
+pour que l'écran montre créer puis inviter, dans l'ordre du geste.
 
 La règle des 60 s : la création ouvre l'accès dans la foulée
 (`create-staff-user.handler.ts`), donc un `invited_at` collé à `created_at` est

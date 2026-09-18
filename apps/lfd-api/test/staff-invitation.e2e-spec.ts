@@ -10,7 +10,7 @@
  * Le fournisseur d'identité, lui, reste un double : appeler Auth0 depuis une
  * suite de tests créerait de vraies identités dans un vrai tenant. La preuve
  * du chaînon réel est un geste manuel, décrit dans
- * `documentation/auth-inscription/architecture-acces-staff.md` §13.
+ * `documentation/staff/architecture-acces-staff.md` §13.
  */
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 

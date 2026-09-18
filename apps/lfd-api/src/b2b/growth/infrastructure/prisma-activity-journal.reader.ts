@@ -4,8 +4,9 @@ import type { ActivityEventView, ActivityPageView, ActivityQuery } from "@lfd/co
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { moduleOf, prefixesOf } from "../domain/activity-module.js";
+import { moduleOf } from "../domain/activity-module.js";
 import { ActivityJournalReader } from "../domain/ports/activity-journal.reader.js";
+import { activityWhereOf } from "./activity-journal.where.js";
 
 /** Une ligne du journal, réduite aux colonnes que la vue expose. */
 const COLUMNS = {
@@ -39,60 +40,27 @@ export class PrismaActivityJournalReader extends ActivityJournalReader {
   async page(query: ActivityQuery): Promise<ActivityPageView> {
     // Une ligne de plus que demandé : sa présence dit qu'il y a une suite, sans
     // second `count` sur une table qui grossit.
+    const ids = await this.prisma.$queryRaw<readonly { readonly id: string }[]>`
+      SELECT id FROM growth.activity_events
+      WHERE ${activityWhereOf(query)}
+      ORDER BY id DESC
+      LIMIT ${query.limit + 1}
+    `;
+    // Les filtres sont en SQL (cf. `activityWhereOf`) ; les colonnes, elles,
+    // se relisent par Prisma — par clé primaire, donc sans coût — pour rester
+    // typées jusqu'à la vue.
+    const page = ids.slice(0, query.limit).map((row) => row.id);
     const rows = await this.prisma.activityEvent.findMany({
-      where: whereOf(query),
+      where: { id: { in: page } },
       orderBy: { id: "desc" },
-      take: query.limit + 1,
       select: COLUMNS,
     });
 
-    const page = rows.slice(0, query.limit);
     return {
-      events: page.map(toView),
-      nextBefore: rows.length > query.limit ? (page.at(-1)?.id ?? null) : null,
+      events: rows.map(toView),
+      nextBefore: ids.length > query.limit ? (page.at(-1) ?? null) : null,
     };
   }
-}
-
-/**
- * Les filtres, assemblés sous un `AND` **explicite**.
- *
- * Deux clés `OR` dans un même objet `where` s'écrasent silencieusement — la
- * seconde gagne, la première ne filtre rien. Ici le module et la fenêtre de
- * temps produisent chacun leur clause, d'où le tableau.
- */
-function whereOf(query: ActivityQuery): Prisma.ActivityEventWhereInput {
-  const clauses: Prisma.ActivityEventWhereInput[] = [];
-
-  if (query.module !== undefined) {
-    clauses.push({
-      OR: prefixesOf(query.module).map((prefix) => ({ type: { startsWith: prefix } })),
-    });
-  }
-  if (query.type !== undefined) {
-    clauses.push({ type: query.type });
-  }
-  if (query.subjectType !== undefined) {
-    clauses.push({ subjectType: query.subjectType });
-  }
-  if (query.subjectId !== undefined) {
-    clauses.push({ subjectId: query.subjectId });
-  }
-  if (query.actorId !== undefined) {
-    clauses.push({ actorId: query.actorId });
-  }
-  if (query.since !== undefined) {
-    clauses.push({ occurredAt: { gte: new Date(query.since) } });
-  }
-  if (query.until !== undefined) {
-    clauses.push({ occurredAt: { lt: new Date(query.until) } });
-  }
-  // Le curseur : strictement AVANT la dernière ligne rendue (ULID décroissant).
-  if (query.before !== undefined) {
-    clauses.push({ id: { lt: query.before } });
-  }
-
-  return clauses.length === 0 ? {} : { AND: clauses };
 }
 
 function toView(row: {

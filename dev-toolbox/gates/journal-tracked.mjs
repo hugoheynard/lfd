@@ -115,7 +115,7 @@ const CLIENT_NOTES_ZONE = "client-notes";
 
 /**
  * **L'équipe** (`src/staff/**`, 2026-09-18, plan
- * `documentation/auth-inscription/plan-journal-de-l-annuaire.md` D3) : qui
+ * `documentation/staff/journalisation-staff/architecture-journal-de-l-annuaire.md` D3) : qui
  * entre dans le back-office, avec quels droits, et qui l'a décidé. Tous ses
  * handlers d'écriture, sans tri par nom — un membre de l'équipe n'y agit que
  * sur l'accès des autres, ou sur un réglage à lui qu'il déclare

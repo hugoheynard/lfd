@@ -33,7 +33,7 @@ le décide**, société par société, sans attendre l'activation.
 - **Ce qu'elle devient à l'activation** (sans objet) et à la suspension
   (retombe-t-elle ?).
 - **Qui peut la poser** : droit d'écriture du commercial, cf.
-  [`todo-droits-ecriture-backoffice.md`](todo-droits-ecriture-backoffice.md).
+  [`../staff/todo-droits-ecriture-backoffice.md`](../staff/todo-droits-ecriture-backoffice.md).
 
 ⚠️ Le sujet déplace une frontière d'accès et touche le tarif si la remise suit :
 le plan passe par `vitruve` avant d'être soumis (CLAUDE.md §9 bis).

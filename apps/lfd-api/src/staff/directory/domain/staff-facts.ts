@@ -14,17 +14,24 @@ import type { StaffUserEdit } from "./staff-user-state.js";
  * Les **faits de l'annuaire** — ce que le journal retient des gestes posés sur
  * une fiche de l'équipe. Sur le modèle d'`ACCOUNT_FACTS`.
  *
- * Plan : `documentation/auth-inscription/plan-journal-de-l-annuaire.md` §5 bis,
+ * Plan : `documentation/staff/journalisation-staff/architecture-journal-de-l-annuaire.md` §5 bis,
  * qui est le contrat entre ce fichier et l'écran Journal.
  *
  * Deux règles tiennent toute la forme des charges utiles :
  *
  * - **des libellés figés**, jamais des clés seules : une fiche supprimée ou un
  *   rôle renommé ne doit pas changer la phrase d'hier ;
- * - **ni e-mail, ni lien** (D5) : le journal est derrière `activity`,
- *   l'annuaire derrière `staff_access`. Quelqu'un qui aurait le premier sans le
- *   second lirait sinon les adresses de l'équipe. La phrase nomme les gens par
- *   leur nom ; l'adresse reste dans l'annuaire.
+ * - **pas de lien**, et pas d'e-mail **hors d'une édition** (D5) : le journal
+ *   est derrière `activity`, l'annuaire derrière `staff_access`. La phrase
+ *   nomme les gens par leur nom.
+ *
+ * ⚠️ **Une édition d'identité porte l'avant/après, e-mail compris** — décidé
+ * par Hugo le 2026-09-18 (« c'est important qu'on ait la trace complète sur
+ * les events ») : `changes` fige chaque champ modifié avec sa valeur d'avant et
+ * d'après, telles qu'écrites en base. C'est une entorse assumée à D5 : un
+ * détenteur d'`activity` sans `staff_access` lit désormais l'ancienne et la
+ * nouvelle adresse d'une personne dont l'e-mail a changé. Les invitations, les
+ * liens et les autres faits restent sans adresse.
  *
  * L'acteur n'y figure pas : la ligne de journal le fige déjà (nom, fonction).
  */
@@ -60,12 +67,23 @@ export type StaffInvitationKind = "invitation" | "password_reset";
  */
 const IDENTITY_FIELDS = ["firstName", "lastName", "email", "phone", "jobTitle"] as const;
 
-const IDENTITY_FIELD_LABELS: Readonly<Record<(typeof IDENTITY_FIELDS)[number], string>> = {
+/** La clé d'un champ d'identité — une colonne de la fiche. */
+export type StaffIdentityField = (typeof IDENTITY_FIELDS)[number];
+
+const IDENTITY_FIELD_LABELS: Readonly<Record<StaffIdentityField, string>> = {
   firstName: "prénom",
   lastName: "nom",
   email: "e-mail",
   phone: "téléphone",
   jobTitle: "fonction",
+};
+
+/** Un champ d'identité modifié : sa clé, son libellé figé, et l'avant/après écrit en base. */
+export type StaffIdentityChange = {
+  readonly field: StaffIdentityField;
+  readonly label: string;
+  readonly from: string;
+  readonly to: string;
 };
 
 export function personOf(identity: StaffPerson): StaffPerson {
@@ -151,7 +169,15 @@ function identityEditedFact(
   return fact(STAFF_FACTS.identityEdited, id, {
     person,
     previous: renamed ? personOf(edit.before) : null,
+    // `fields` et `previous` restent : les faits déjà écrits les portent, et
+    // `staff-line.ts` (écran Journal) les lit (vérifié le 2026-09-18).
     fields: fields.map((field) => IDENTITY_FIELD_LABELS[field]),
+    changes: fields.map((field): StaffIdentityChange => ({
+      field,
+      label: IDENTITY_FIELD_LABELS[field],
+      from: edit.before[field],
+      to: edit.after[field],
+    })),
   });
 }
 

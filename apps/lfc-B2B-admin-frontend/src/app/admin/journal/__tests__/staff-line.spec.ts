@@ -215,6 +215,69 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
   });
 
+  it('dit l’avant et l’après de chaque champ modifié, et nomme une valeur vide', () => {
+    const line = toLine(
+      event('staff_user.identity_edited', {
+        person: CECILE,
+        previous: null,
+        fields: ['téléphone', 'fonction'],
+        changes: [
+          { field: 'phone', label: 'téléphone', from: '06 11 22 33 44', to: '07 55 66 77 88' },
+          { field: 'jobTitle', label: 'fonction', from: '', to: 'Vendeuse' },
+        ],
+      }),
+    );
+
+    expect(line.sentence).toBe(
+      'Hugo Heynard a modifié la fiche de Cécile Martin : téléphone 06 11 22 33 44 → 07 55 66 77 88 ; fonction (vide) → Vendeuse',
+    );
+  });
+
+  it('ne rappelle pas l’ancien nom quand l’avant/après le dit déjà', () => {
+    const line = toLine(
+      event('staff_user.identity_edited', {
+        person: CECILE,
+        previous: { firstName: 'Cécile', lastName: 'Dupont' },
+        fields: ['nom'],
+        changes: [{ field: 'lastName', label: 'nom', from: 'Dupont', to: 'Martin' }],
+      }),
+    );
+
+    expect(line.sentence).toBe(
+      'Hugo Heynard a modifié la fiche de Cécile Martin : nom Dupont → Martin',
+    );
+  });
+
+  it('dit « (vide) » d’une valeur effacée ou mal formée, et tait une entrée sans libellé', () => {
+    const line = toLine(
+      event('staff_user.identity_edited', {
+        person: CECILE,
+        changes: [
+          { field: 'phone', label: 'téléphone', from: '06 11 22 33 44', to: '   ' },
+          { field: 'email', from: 'a@x.fr', to: 'b@x.fr' },
+          { field: 'jobTitle', label: 'fonction', from: 42, to: null },
+          'pas un objet',
+        ],
+      }),
+    );
+
+    expect(line.sentence).toBe(
+      'Hugo Heynard a modifié la fiche de Cécile Martin : téléphone 06 11 22 33 44 → (vide) ; fonction (vide) → (vide)',
+    );
+  });
+
+  it('retombe sur la liste des champs quand `changes` est vide ou illisible', () => {
+    const line = toLine(
+      event('staff_user.identity_edited', {
+        person: CECILE,
+        fields: ['téléphone'],
+        changes: 'illisible',
+      }),
+    );
+
+    expect(line.sentence).toBe('Hugo Heynard a modifié la fiche de Cécile Martin : téléphone');
+  });
+
   it('rappelle l’ancien libellé d’un rôle renommé, et dit une action changée', () => {
     const line = toLine(
       event('staff_role.updated', {
