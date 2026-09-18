@@ -7,14 +7,13 @@
 >
 > Remplace le TODO « le `sub` Auth0 sert encore d'auteur », supprimé le
 > 2026-09-18 une fois ce plan livré (son texte reste dans l'historique git).
-> État : 🚧 **en construction** depuis le 2026-09-18 (« go tout le plan »).
-> Étapes 0, 1 et 3 **déployées** le même jour (`58b9c80e`), puis l'étape 4
-> (`20260918190000_conversion_des_auteurs_staff`) dans le déploiement suivant.
-> Étape 5 : **5A et 5B déployées** le 2026-09-18 (`0c08da82`, `c506f655`) ;
-> **5C bâtie** (`20260918220000_resserrement_des_colonnes_d_auteur`), à
-> déployer après 5B. **Deuxième version**, réécrite après une
-> contradiction de `vitruve` (§9) qui a trouvé une empreinte que la conversion
-> casserait, et un inventaire trop court.
+> État : ✅ **livré en production le 2026-09-18**, en six déploiements :
+> étapes 0, 1 et 3 (`58b9c80e`), 4 — la conversion (`bd11ff78`), puis le
+> renommage des colonnes en trois temps, 5A (`5dcdf856`), 5B (`5622ef93`) et
+> 5C (`48998834`). Plus une porte ajoutée après coup, `lint:auth0-id-readers`
+> (§4, fin). **Deuxième version** du plan, réécrite après une contradiction de
+> `vitruve` (§9) qui a trouvé une empreinte que la conversion casserait, et un
+> inventaire trop court.
 
 ## 0. Résumé
 
