@@ -19,7 +19,7 @@
 // affirmation que personne ne vérifie.
 //
 // Contexte : clients pros (customers) qui commandent à La Folie Coffee.
-// Doc d'archi : documentation/b2b/architecture-identite-auth-tenancy.md
+// Doc d'archi : documentation/auth-inscription/architecture-identite-auth-tenancy.md
 //              documentation/order/architecture-flux-commande-prod.md
 //
 // Conventions (alignées sur le PIM) :

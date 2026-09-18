@@ -19,7 +19,7 @@ import { REQUIRES_SHOP_KEY, type ShopRequirement } from "../requires-shop.decora
 
 /**
  * **La table des routes de la boutique** — plan
- * `documentation/b2b/plan-inscription-pro-seule.md` §2.3.
+ * `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.3.
  *
  * Chaque route CLIENTE des commandes, de la boutique, des paniers récurrents et
  * du contrôle de panier porte `@RequiresShop`, ou figure ci-dessous avec sa

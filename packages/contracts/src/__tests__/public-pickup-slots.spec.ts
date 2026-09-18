@@ -7,7 +7,7 @@ import {
 
 /**
  * Les créneaux publics d'une journée — plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, D2 à D4.
+ * `documentation/order/plan-creneaux-de-retrait.md`, D2 à D4.
  *
  * ⚠️ Les jours et instants de ces fixtures sont ABSOLUS, et c'est l'exception
  * étroite de `CLAUDE.md` §5 : ils ne sont jamais comparés à l'horloge du

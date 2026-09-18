@@ -1,4 +1,10 @@
-import { EMAIL_CLAIM, EMAIL_VERIFIED_CLAIM, readStringClaim } from "../auth0-claims.js";
+import {
+  EMAIL_CLAIM,
+  EMAIL_VERIFIED_CLAIM,
+  isOutsideDatabaseConnection,
+  readBooleanClaim,
+  readStringClaim,
+} from "../auth0-claims.js";
 
 /**
  * Ces noms de claims sont la moitié d'un contrat dont **l'autre moitié vit hors
@@ -46,5 +52,41 @@ describe("readStringClaim", () => {
 
   it("rend `undefined` quand le claim est absent", () => {
     expect(readStringClaim({}, EMAIL_CLAIM)).toBeUndefined();
+  });
+});
+
+describe("readBooleanClaim", () => {
+  it("rend le booléen tel quel, `false` compris", () => {
+    expect(readBooleanClaim({ [EMAIL_VERIFIED_CLAIM]: true }, EMAIL_VERIFIED_CLAIM)).toBe(true);
+    expect(readBooleanClaim({ [EMAIL_VERIFIED_CLAIM]: false }, EMAIL_VERIFIED_CLAIM)).toBe(false);
+  });
+
+  it('ne coerce pas une chaîne `"true"` en preuve', () => {
+    // Une adresse « vérifiée » par erreur de type ouvrirait le rapprochement staff.
+    expect(
+      readBooleanClaim({ [EMAIL_VERIFIED_CLAIM]: "true" }, EMAIL_VERIFIED_CLAIM),
+    ).toBeUndefined();
+    expect(readBooleanClaim({}, EMAIL_VERIFIED_CLAIM)).toBeUndefined();
+  });
+});
+
+describe("isOutsideDatabaseConnection", () => {
+  it("refuse Google et Facebook", () => {
+    expect(isOutsideDatabaseConnection("google-oauth2|104233")).toBe(true);
+    expect(isOutsideDatabaseConnection("facebook|10158")).toBe(true);
+  });
+
+  it("admet la connexion base de données", () => {
+    expect(isOutsideDatabaseConnection("auth0|64f1c2")).toBe(false);
+  });
+
+  it("refuse aussi le sans-mot-de-passe et les sujets de développement", () => {
+    expect(isOutsideDatabaseConnection("email|66a1")).toBe(true);
+    expect(isOutsideDatabaseConnection("dev-staff|sophie@lfc.test")).toBe(true);
+  });
+
+  it("laisse à l'annuaire un sujet sans fournisseur (bypass, doubles, machine)", () => {
+    expect(isOutsideDatabaseConnection("dev-staff")).toBe(false);
+    expect(isOutsideDatabaseConnection("|orphelin")).toBe(false);
   });
 });

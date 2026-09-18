@@ -11,6 +11,7 @@ import {
   workspaceDouble,
   type WorkspaceDouble,
 } from '../../client-workspace.fixture';
+import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { FR } from '../../copy/fr';
 import { openShopAt } from '../../feature-access/feature-access.fixture';
 import { PROFILE, TOMMEUSES } from '../../mon-compte/account.fixture';
@@ -56,6 +57,17 @@ function boot(
       // Les destinations ont leur propre suite : ici, aucune.
       { provide: ClientNav, useValue: { items: signal([]), current: signal('') } },
       provideWorkspace(wire.workspace),
+      // La navigation de la bascule a sa propre suite : ici, on vérifie que le
+      // menu la déclenche, et le choix arrive à l'espace par elle.
+      {
+        provide: ClientWorkspaceSwitch,
+        useValue: {
+          switchTo: (value: string): Promise<void> => {
+            wire.workspace.choose(value);
+            return Promise.resolve();
+          },
+        },
+      },
     ],
   });
   openShopAt('order');

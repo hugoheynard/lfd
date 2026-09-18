@@ -6,7 +6,7 @@ import type { Weekday } from '@lfd/contracts';
  *
  * Ils vivaient dans `cutoffs-section/cutoff-format.ts` et n'y servaient qu'aux
  * heures limites. Les **créneaux publics** en ont exactement le même besoin
- * (plan `documentation/b2b/plan-creneaux-de-retrait.md`, D2) : une règle vise un
+ * (plan `documentation/order/plan-creneaux-de-retrait.md`, D2) : une règle vise un
  * jour, ou tous. Les importer d'une section sœur aurait couplé deux écrans qui
  * n'ont rien à se dire ; les recopier aurait fait **deux vérités sur les jours
  * de la semaine**, dont l'une finirait par dériver. Ils montent donc d'un cran,

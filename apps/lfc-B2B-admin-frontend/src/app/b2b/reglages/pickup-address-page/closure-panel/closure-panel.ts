@@ -26,7 +26,7 @@ export interface ClosurePanelData {
 
 /**
  * **Une fermeture datée** du retrait public (plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, D4).
+ * `documentation/order/plan-creneaux-de-retrait.md`, D4).
  *
  * 🔴 Un **intervalle**, et non un jour : une semaine de congés est une ligne,
  * pas sept. C'est la différence assumée avec `AvailabilityException`, qui ne

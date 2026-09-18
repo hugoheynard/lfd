@@ -85,9 +85,8 @@ export class OuvertureCompteProPage {
       }
     });
     this.chrome.back.set(null);
-    // Mêmes réglages que `/bienvenue`, et pour les mêmes raisons : la marque
-    // remonte dans la colonne bleue, un visiteur n'a ni menu ni cloche.
-    this.chrome.barOnDesktop.set(false);
+    // Un visiteur n'a ni menu ni cloche. La barre, elle, est l'affaire du
+    // châssis (`ClientPage`), qui l'éteint au-delà du pli et la rallume.
     this.chrome.menu.set(false);
     this.chrome.bell.set(null);
   }

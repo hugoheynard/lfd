@@ -9,7 +9,7 @@ import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
 import { appBaseUrl } from './app-base-url';
-import { CUSTOMER_CONNECTION } from './auth.config';
+import { CUSTOMER_CONNECTION, GOOGLE_CONNECTION } from './auth.config';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
 /**
@@ -233,6 +233,27 @@ export class AuthFacade {
           screen_hint: 'signup',
           ...loginHint(profile?.email),
         },
+      })
+      .subscribe();
+  }
+
+  /**
+   * **Entrer par Google** — connexion et inscription à la fois : le premier
+   * passage crée le compte (provisionné par l'API à la première requête).
+   *
+   * Aucun profil ne voyage : prénom et téléphone ne viennent pas de Google, et
+   * le parcours d'accueil les demande ensuite. En bypass dev, même geste que
+   * {@link login} — il n'y a pas de Google à ouvrir.
+   */
+  continueWithGoogle(target: string): void {
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      this.login(target);
+      return;
+    }
+    void this.auth0
+      ?.loginWithRedirect({
+        appState: { target },
+        authorizationParams: { connection: GOOGLE_CONNECTION },
       })
       .subscribe();
   }

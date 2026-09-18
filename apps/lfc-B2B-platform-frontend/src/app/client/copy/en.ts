@@ -12,6 +12,8 @@ import { ORDERS_EN } from './screens/orders.copy';
  */
 export const EN: ClientCopy = {
   chrome: {
+    identityConflict: 'An account already uses this Google address. Sign in with your usual email.',
+    identityConflictDismiss: 'Got it',
     back: 'Back',
     menu: 'Menu',
     notifications: 'Notifications',
@@ -110,6 +112,7 @@ export const EN: ClientCopy = {
     address: 'Le Labo · Route de la Balme — open 7am to 7pm.',
   },
   signup: {
+    google: 'Continue with Google',
     eyebrow: 'First time ? 3 details and you’re in',
     alreadyLead: 'Already a customer ?',
     alreadyLink: 'Sign in',
@@ -267,6 +270,18 @@ export const EN: ClientCopy = {
     whoRegister: 'This is my first order',
     whoSignIn: 'I already have an account',
     back: 'Back to the shop',
+    guestTitle: 'Who is collecting?',
+    guestSubtitle: 'No account to create. We just need a way to send you your QR.',
+    guestFirstName: 'First name',
+    guestFirstNameHint: 'This is the name we will call at the counter.',
+    guestEmail: 'Email address',
+    guestEmailHint: 'Your confirmation and pickup QR land there.',
+    guestEmailAgain: 'Confirm your address',
+    guestEmailMismatch: 'The two addresses are not the same.',
+    guestPhone: 'Phone',
+    guestPhoneHint: 'So we can reach you if something is wrong with your order.',
+    guestCancel: 'Cancel',
+    guestConfirm: 'Continue',
   },
   qr: {
     title: 'Your handover code',

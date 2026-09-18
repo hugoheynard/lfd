@@ -37,14 +37,25 @@ export abstract class OrderRepository {
    * Marque **payée** la commande portant cette intention Stripe. **Idempotent** :
    * ne touche que les commandes encore `pending` (déjà `paid`, ou intent inconnu ⇒
    * no-op) — Stripe peut réémettre l'événement.
+   *
+   * 🔴 **Rend l'identifiant de la commande FRANCHIE, ou `null`** (2026-09-17).
+   * Elle rendait `void`, et c'est ce qui rendait le fait impossible à publier :
+   * l'appelant savait qu'il avait demandé une bascule, jamais si elle avait eu
+   * lieu ni sur quoi. Le `null` porte donc une information précise — « aucune
+   * ligne n'était encore en vol » —, et c'est LUI qui interdit deux courriels
+   * pour un seul paiement quand Stripe réémet.
    */
-  abstract markPaid(paymentIntentId: string): Promise<void>;
+  abstract markPaid(paymentIntentId: string): Promise<string | null>;
 
   /**
    * Marque **échoué** le règlement de la commande portant cette intention. Même
    * idempotence : ne passe à `failed` que ce qui était `pending`.
+   *
+   * 🔴 Rend l'identifiant franchi, ou `null` — même raison que {@link markPaid},
+   * et le même enjeu : c'est ce retour qui permet de prévenir le client d'un
+   * refus, ce que le système ne faisait pas du tout.
    */
-  abstract markPaymentFailed(paymentIntentId: string): Promise<void>;
+  abstract markPaymentFailed(paymentIntentId: string): Promise<string | null>;
 
   /**
    * Recopie la remise **annoncée par le fournil** et ferme la commande.

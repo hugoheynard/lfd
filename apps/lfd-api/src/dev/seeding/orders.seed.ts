@@ -248,7 +248,11 @@ export interface OrdersReport {
   readonly today: string;
   /** Combien de lignes la file de remise porte aujourd'hui, tous points confondus. */
   readonly counterToday: number;
-  readonly tomorrow: string;
+  /**
+   * La journée des deux commandes en attente — **J+2 depuis le 2026-09-17**, et
+   * le pic du prévisionnel. Cf. le bloc qui les pose pour la raison du décalage.
+   */
+  readonly peakDay: string;
 }
 
 /** Le minimum dont ce module a besoin : la base, le bus, et de quoi dater. */
@@ -310,17 +314,33 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   // 🔴 AUJOURD'HUI — la file du comptoir, sur les deux points.
   await seedCounter(context, target, today);
 
-  // 🔴 DEMAIN — deux en attente, une par mode d'acheminement, et **tout le
-  // catalogue** réparti entre les deux. C'est la journée que la fiche d'atelier
-  // ouvre dès qu'on arrête son plan : elle doit montrer ce que fait un rayon
-  // plein, pas six références qui tiennent sans défiler.
+  // 🔴 **J+2 — et c'est le PIC** (Hugo, 2026-09-17).
+  //
+  // Deux en attente, une par mode d'acheminement, et **tout le catalogue**
+  // réparti entre les deux. C'est la journée que la fiche d'atelier ouvre dès
+  // qu'on arrête son plan : elle doit montrer ce que fait un rayon plein, pas
+  // six références qui tiennent sans défiler.
   //
   // Deux moitiés COMPLÉMENTAIRES, et pas deux fois la même : le compte à
   // produire somme les commandes, et deux sacs identiques ne prouveraient pas
   // qu'il somme — ils doubleraient simplement chaque ligne.
+  //
+  // ## Pourquoi J+2 et non plus demain
+  //
+  // Le prévisionnel s'appelle « le mur qui arrive » : il sert à voir monter une
+  // charge, pas à constater celle du jour. Tant que ces deux commandes tombaient
+  // à J+1, le jour le plus chargé était AUJOURD'HUI — le comptoir et son sac
+  // long — et l'écran ne montrait aucune montée. À J+2, la colonne teintée est
+  // devant, et la fenêtre de sept jours la nomme (`J+2`).
+  //
+  // ⚠️ Elles sont DÉPLACÉES, pas ajoutées : le semis pose le même nombre de
+  // commandes qu'avant. Demain reste donc vide de commandes pro, et c'est le
+  // prix assumé de ce choix — la fiche d'atelier de J+1 n'a plus de rayon plein
+  // à montrer, celle de J+2 l'a.
+  const PEAK_AHEAD = 2;
   await place(context, target, {
     at: today,
-    forDay: isoDay(shiftDays(today, 1)),
+    forDay: isoDay(shiftDays(today, PEAK_AHEAD)),
     method: "delivery",
     point: null,
     window: null,
@@ -329,7 +349,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   });
   await place(context, target, {
     at: today,
-    forDay: isoDay(shiftDays(today, 1)),
+    forDay: isoDay(shiftDays(today, PEAK_AHEAD)),
     method: "pickup",
     point: null,
     window: PICKUP_WINDOW,
@@ -344,7 +364,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
     yesterday: isoDay(shiftDays(today, -1)),
     today: isoDay(today),
     counterToday: COUNTER.length,
-    tomorrow: isoDay(shiftDays(today, 1)),
+    peakDay: isoDay(shiftDays(today, PEAK_AHEAD)),
   };
 }
 

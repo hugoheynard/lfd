@@ -4,7 +4,7 @@ import { z } from "zod";
  * **L'accès aux fonctionnalités** : ce qu'on peut faire d'une surface de la
  * plateforme, réglé en admin sans redéployer.
  *
- * Plan et décisions : `documentation/b2b/plan-inscription-pro-seule.md` §2.
+ * Plan et décisions : `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.
  *
  * Trois règles tiennent ce contrat :
  *

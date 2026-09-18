@@ -14,6 +14,7 @@ import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lf
 import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
+import { AuthFacade } from '../../auth/auth.facade';
 import { ClientChrome } from '../client-chrome.service';
 import { EventCard } from '../event-card/event-card';
 import { EventBanner } from '../mon-espace/event-banner/event-banner';
@@ -65,7 +66,7 @@ interface House {
  *
  * 🔴 **L'étape 2 — le créneau — n'est pas branchée.** Les créneaux publics
  * existent côté serveur sur une surface **admin** seulement
- * (`documentation/b2b/plan-creneaux-de-retrait.md`, lot A) ; aucune route ne
+ * (`documentation/order/plan-creneaux-de-retrait.md`, lot A) ; aucune route ne
  * les sert à un visiteur. Le rail montre donc l'étape comme À VENIR, et le
  * choix d'une maison mène à l'écran de commande, qui pose déjà la question du
  * mode de service. Simuler une grille d'heures ferait promettre une fournée que
@@ -201,10 +202,12 @@ export class AccueilPublic {
   constructor() {
     const chrome = inject(ClientChrome);
     chrome.kicker.set(this.c().kicker);
-    // Pas de menu : le visiteur n'est pas reconnu, la barre lui donne la marque
-    // — il a besoin de savoir OÙ IL EST, pas d'accéder à des affaires qu'il n'a
-    // pas encore.
-    chrome.menu.set(false);
+    // Le menu suit la RECONNAISSANCE. Un visiteur n'en a pas : la barre lui
+    // donne la marque — il a besoin de savoir OÙ IL EST. Mais cet écran est
+    // aussi, depuis le 2026-09-17, l'accueil d'un client connecté en perso
+    // (`workspaceHomeGuard`) : lui a des affaires, et doit pouvoir y aller.
+    const auth = inject(AuthFacade);
+    effect(() => chrome.menu.set(auth.isAuthenticated()));
     // La lèvre s'éteint : ce qui suit la barre n'est pas une feuille crème mais
     // l'accroche d'encre de cet écran, et les deux ensemble dessinent une
     // languette au-dessus du titre (relevé le 2026-09-14 sur deux écrans).

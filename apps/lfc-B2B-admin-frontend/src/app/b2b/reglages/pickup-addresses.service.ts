@@ -58,7 +58,7 @@ export class PickupAddressesService {
    *
    * 🔴 Une surface à part, et non un champ de plus sur le point : les heures
    * **pro** (`opening`) ne passent pas par là et ce chantier n'y touche pas
-   * (plan `documentation/b2b/plan-creneaux-de-retrait.md`, §3). Deux listes
+   * (plan `documentation/order/plan-creneaux-de-retrait.md`, §3). Deux listes
    * vides = le point n'est pas réglé, et il se comporte alors exactement comme
    * avant (D6).
    */

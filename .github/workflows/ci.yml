@@ -12,7 +12,7 @@ name: CI
 # LUI qu'on met en statut requis sur la branche, pas les trois — ainsi ajouter un
 # job plus tard ne demande pas de retoucher les réglages du dépôt.
 #
-# Ce que cette CI ne couvre PAS, et pourquoi (cf. documentation/todos/todo-qualite-tests.md) :
+# Ce que cette CI ne couvre PAS, et pourquoi (cf. documentation/ci-cd/todo-qualite-tests.md) :
 #   · les 4 apps Angular n'ont **aucune configuration ESLint** — il n'y a rien à
 #     lancer. Elles sont couvertes par le typecheck, les tests et le build ;
 #   · plus rien pour les specs : le typecheck de `tsconfig.test.json` est passé

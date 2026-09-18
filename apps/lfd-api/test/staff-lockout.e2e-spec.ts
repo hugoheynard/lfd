@@ -12,7 +12,7 @@
  * repository et la vraie base. C'est la seule preuve qui compte le jour où on
  * se trompe.
  *
- * Modèle : `documentation/b2b/architecture-acces-staff.md` §6.
+ * Modèle : `documentation/auth-inscription/architecture-acces-staff.md` §6.
  */
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 

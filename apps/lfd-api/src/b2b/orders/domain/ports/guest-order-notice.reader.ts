@@ -1,7 +1,7 @@
 /**
  * **De quoi décider s'il faut prévenir quelqu'un** qu'une commande vient d'être
  * passée avec son adresse — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, D7.
+ * `documentation/order/plan-commande-sans-compte.md`, D7.
  *
  * ## Pourquoi un port de plus, et pas `OrderRecipientReader`
  *

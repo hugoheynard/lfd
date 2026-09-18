@@ -14,6 +14,9 @@ import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.h
 import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-notice.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
+import { SendOrderSettledMail } from "./application/handlers/send-order-settled-mail.handler.js";
+import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
+import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
 import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
 import { SendHandoverReminderHandler } from "./application/commands/send-handover-reminder.handler.js";
 import { AppConfig } from "../../platform/config/app-config.js";
@@ -161,7 +164,18 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     OnOrderHandedOver,
     GetProductionBatchHandler,
     GetPackingHandler,
+    // L'accusé de réception à la passation. 🔴 Il se TAIT quand le règlement est
+    // encore en vol (2026-09-17) : une commande carte n'est pas payée quand elle
+    // est écrite, et lui annoncer la fournée de demain serait un message faux.
     SendOrderPlacedMail,
+    // Le même accusé, quand la carte a répondu OUI. Deux gestes, un seul
+    // composeur — et la même clé d'idempotence, donc jamais deux accusés.
+    SendOrderSettledMail,
+    // Et quand elle a répondu NON. Ce courriel n'existait pas : un refus était
+    // écrit dans une colonne que personne ne relisait.
+    SendPaymentFailedMail,
+    // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
+    OrderPlacedMail,
     // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a
     // utilisée (D7). Abonné au MÊME événement que l'accusé de réception, et
     // c'est voulu : l'un écrit à qui commande, l'autre à qui ne commande pas.

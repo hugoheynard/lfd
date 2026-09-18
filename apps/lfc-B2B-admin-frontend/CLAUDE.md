@@ -88,7 +88,7 @@ Le **point de retrait** a basculé le 2026-09-16 pour cette raison : il porte
 l'adresse, le rang par défaut, les heures, la réduction, ses clientèles et sa
 suppression — et recevra les créneaux publics, leurs badges, leurs capacités et
 les fermetures datées
-([`plan-creneaux-de-retrait.md`](../../documentation/b2b/plan-creneaux-de-retrait.md)).
+([`plan-creneaux-de-retrait.md`](../../documentation/order/plan-creneaux-de-retrait.md)).
 
 ⚠️ Ce qui ne change pas en basculant : **supprimer reste une `fold-danger-zone`**
 (`appearance="section"`), et ses mots de confirmation viennent du fournisseur

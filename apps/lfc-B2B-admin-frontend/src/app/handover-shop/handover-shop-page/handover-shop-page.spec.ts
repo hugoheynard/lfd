@@ -318,3 +318,99 @@ describe('HandoverShopPage', () => {
     }
   });
 });
+
+/**
+ * **La navigation par jour**, rendue à l'écran le 2026-09-17 (Hugo).
+ *
+ * Elle avait été retirée le 2026-09-11 pour une raison qui reste vraie — « le
+ * seul geste qui peut faire tendre un sac en croyant être un autre jour ». Ce
+ * qui la rend acceptable n'est donc pas le déplacement lui-même, c'est que
+ * l'écran DISE où l'on est : ces cas tiennent l'avertissement autant que les
+ * flèches.
+ */
+describe('HandoverShopPage — changer de journée', () => {
+  const step = (fixture: ComponentFixture<HandoverShopPage>, label: string): HTMLButtonElement => {
+    const found = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      `button[aria-label="${label}"]`,
+    );
+    if (found === null) {
+      throw new Error(`Pas de bouton « ${label} ».`);
+    }
+    return found;
+  };
+
+  const press = async (
+    fixture: ComponentFixture<HandoverShopPage>,
+    button: HTMLButtonElement,
+  ): Promise<void> => {
+    button.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+
+  it('demande la veille au serveur, et le dit à l’écran', async () => {
+    const api = new FakeQueue();
+    const fixture = await render(api);
+    const first = api.days[0];
+
+    await press(fixture, step(fixture, 'Journée précédente'));
+
+    expect(api.days.at(-1)).not.toBe(first);
+    expect(text(fixture)).toContain('Vous consultez une autre journée');
+  });
+
+  it('🔴 ne CRIE pas sur la journée en cours — un avertissement permanent cesse d’être lu', async () => {
+    const fixture = await render(new FakeQueue());
+
+    expect(text(fixture)).not.toContain('Vous consultez une autre journée');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.day-today')).toBeNull();
+  });
+
+  it('revient à aujourd’hui, et le retour disparaît avec l’avertissement', async () => {
+    const api = new FakeQueue();
+    const fixture = await render(api);
+
+    await press(fixture, step(fixture, 'Journée précédente'));
+    const back = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '.day-today',
+    );
+    expect(back).not.toBeNull();
+
+    back?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(text(fixture)).not.toContain('Vous consultez une autre journée');
+  });
+
+  /**
+   * 🔴 **Le cas qui justifie `followingClock`.** L'horloge de comptoir remet la
+   * file sur le jour courant toutes les trente secondes. Sans distinguer « je
+   * suis l'horloge » de « je consulte une autre journée », quelqu'un venu relire
+   * la veille pour une contestation se ferait ramener à aujourd'hui en une
+   * demi-minute — l'écran sauterait sous ses doigts, sans rien expliquer.
+   */
+  it('🔴 la bascule de minuit n’ANNULE PAS une journée choisie à la main', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    try {
+      const api = new FakeQueue();
+      const fixture = await render(api);
+
+      await press(fixture, step(fixture, 'Journée précédente'));
+      const chosen = api.days.at(-1);
+
+      // Le même saut que le cas de minuit ci-dessus : plusieurs battements ET
+      // un changement de date.
+      vi.setSystemTime(new Date(Date.now() + 26 * 60 * 60 * 1000));
+      vi.advanceTimersByTime(31_000);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      // Aucune relecture n'a été demandée, et l'écran est resté où on l'avait mis.
+      expect(api.days.at(-1)).toBe(chosen);
+      expect(text(fixture)).toContain('Vous consultez une autre journée');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

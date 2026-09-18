@@ -2,9 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import {
   WORKSPACE_HEADER,
+  type GuestBuyerPayload,
   type OrderPaymentIntent,
   type OrderSettlement,
   type PlaceOrderPayload,
+  type PlaceShopOrderPayload,
   type PlacedOrderResponse,
   type ShopQuoteView,
 } from '@lfd/contracts';
@@ -71,6 +73,20 @@ export interface PlacedOrder {
  */
 const KEY = 'orders';
 const ordersKey = (workspace: string): string => `${KEY}.${workspace}`;
+
+/**
+ * Le tiroir d'un visiteur **sans compte**, dans CE navigateur.
+ *
+ * 🔴 Ce n'est pas une identité et ça ne voyage jamais au serveur : c'est un nom
+ * d'étagère. Les commandes gardées et la clé de tentative sont rangées par
+ * espace de travail, et un visiteur n'en a aucun — sans cette constante, la
+ * confirmation lirait une liste vide et renverrait au rayon une personne dont
+ * la commande vient d'être écrite.
+ *
+ * Il ne peut entrer en collision avec aucun espace réel : ceux-là sont des
+ * identifiants de société ou le mot `perso`, jamais celui-ci.
+ */
+const GUEST_WORKSPACE = 'invite';
 
 /**
  * Où vit la **clé d'idempotence** de la tentative en cours.
@@ -315,6 +331,118 @@ export class ClientOrders {
   }
 
   /**
+   * **Passe la commande d'un visiteur sans compte** — `POST /shop/orders`, plan
+   * `documentation/order/plan-commande-sans-compte.md`, lot C.
+   *
+   * ## Pourquoi une seconde voie, et pas un paramètre de {@link place}
+   *
+   * Parce que le chemin connecté marche, et que trois de ses mécanismes n'ont
+   * ici aucun sens : il n'y a **pas de jeton** (la route est publique), **pas
+   * d'espace de travail** (on n'appartient à aucune société), et **pas de
+   * règlement à choisir** (c'est la carte, toujours — il n'y a pas de crédit à
+   * accorder à un panier). Les faire cohabiter dans {@link place} aurait mis
+   * trois branches dans le chemin que tous les clients pro empruntent.
+   *
+   * ## L'espace fictif
+   *
+   * 🔴 Les commandes gardées et la clé de tentative sont rangées **par espace**
+   * (`ordersKey`), et un visiteur n'en a aucun. On lui en donne un, constant :
+   * {@link GUEST_WORKSPACE}. Sans lui, l'écran de confirmation lirait une liste
+   * vide et renverrait au rayon — la commande existerait au serveur, et l'écran
+   * dirait qu'il ne s'est rien passé.
+   *
+   * ⚠️ Cet espace n'est **pas** une identité : il ne nomme personne, ne voyage
+   * jamais au serveur, et sert uniquement de tiroir dans ce navigateur.
+   *
+   * @returns la commande passée, ou `null` — le refus a déjà été dit.
+   */
+  async placeAsGuest(buyer: GuestBuyerPayload): Promise<PlacedOrder | null> {
+    const service = this.order.choice();
+    const lines = this.cart.lines();
+    if (service === null || lines.length === 0) {
+      return null;
+    }
+    const payload: PlaceShopOrderPayload = {
+      ...guestContentOf(service, lines, this.attemptKey(GUEST_WORKSPACE)),
+      buyer,
+    };
+    const placed = await this.sendAsGuest(payload);
+    if (placed === null) {
+      return null;
+    }
+    const order = this.rememberGuest(placed, service, lines);
+    return order;
+  }
+
+  /**
+   * L'envoi public : **aucun en-tête**, ni jeton ni espace.
+   *
+   * Les deux seraient au mieux inutiles — la route est `@Public()` — et au pire
+   * trompeurs : un en-tête d'espace sur une commande qui n'appartient à aucune
+   * société ferait croire à une appartenance que rien n'établit.
+   */
+  private async sendAsGuest(payload: PlaceShopOrderPayload): Promise<PlacedOrderResponse | null> {
+    try {
+      return await firstValueFrom(
+        this.http.post<PlacedOrderResponse>(`${AUTH_CONFIG.apiBaseUrl}/shop/orders`, payload),
+      );
+    } catch (error) {
+      // Même lecture que le chemin connecté : une commande déjà en vol n'est pas
+      // une panne, et l'annoncer comme telle inquiéterait au pire moment.
+      if (httpErrorCode(error) === IN_FLIGHT) {
+        this.notify.info(httpErrorMessage(error, ''));
+        return null;
+      }
+      this.notify.error(error, "La commande n'a pas pu être passée.");
+      return null;
+    }
+  }
+
+  /** Range la commande du visiteur dans son tiroir, et vide le panier. */
+  private rememberGuest(
+    placed: PlacedOrderResponse,
+    service: ServiceChoice,
+    lines: readonly { product: { name: string; unitPriceMillicents: number }; quantity: number }[],
+  ): PlacedOrder {
+    const payment = placed.payment ?? null;
+    const order: PlacedOrder = {
+      id: placed.id,
+      reference: placed.orderNumber,
+      service,
+      lines: lines.map((line) => ({
+        name: line.product.name,
+        quantity: line.quantity,
+        unitPriceCents: unitPriceCents(line.product.unitPriceMillicents),
+      })),
+      pieces: this.cart.count(),
+      totals: this.cart.totals(),
+      // `due` dès qu'il y a une intention : la commande publique se règle par
+      // carte, et le serveur n'en rend aucune sur un total nul.
+      settlement: payment === null ? 'not_required' : 'due',
+    };
+    // 🔴 **L'INTENTION EST GARDÉE, et c'est ce qui rend le règlement possible
+    // sans compte.** `POST /shop/orders` la rend avec la commande ; gardée ici,
+    // `paymentFor` la restitue telle quelle et n'appelle JAMAIS
+    // `GET /orders/:id/payment` — une route murée, inatteignable à un visiteur.
+    //
+    // ⚠️ Elle ne survit pas à un rechargement, et c'est délibéré : un secret de
+    // paiement n'a rien à faire dans le stockage du navigateur. Rouvrir
+    // l'adresse de règlement plus tard mène donc à « indisponible », et la
+    // confirmation dit alors la vérité — la commande est enregistrée, le
+    // règlement reste dû.
+    this.intent.set(payment === null ? null : { orderId: placed.id, payment });
+    clearLocal(attemptKeyOf(GUEST_WORKSPACE));
+    const kept = [order, ...(readLocal(ordersKey(GUEST_WORKSPACE), parseOrders) ?? [])];
+    writeLocal(ordersKey(GUEST_WORKSPACE), kept);
+    // Posé SANS condition, contrairement au chemin connecté : l'espace courant
+    // d'un visiteur est `null`, donc aucune comparaison ne passerait — et la
+    // confirmation n'aurait rien à montrer.
+    this.placed.set(kept);
+    this.cart.clear();
+    return order;
+  }
+
+  /**
    * De quoi régler cette commande-ci : l'intention gardée si c'est la bonne,
    * sinon celle que le serveur veut bien redonner.
    *
@@ -493,4 +621,27 @@ function payloadOf(
     pickupAddressId: null,
     deliveryAddress: service.deliveryAddress,
   };
+}
+
+/**
+ * Le même panier, **sans le règlement** — ce que `POST /shop/orders` attend.
+ *
+ * Il DÉRIVE de {@link payloadOf} au lieu de le recopier, et c'est tout l'objet
+ * de cette fonction : les deux surfaces décrivent le même panier
+ * (`orderContentShape`, partagé au contrat), et deux constructions parallèles
+ * auraient fini par diverger sur un champ — la tranche horaire omise d'un côté,
+ * l'adresse du carnet de l'autre. L'écart entre les deux routes se lit alors
+ * ici, en une ligne, plutôt que d'être à retrouver en comparant deux blocs.
+ *
+ * `settlement` est retiré parce qu'il est **inexprimable** sur la route
+ * publique : une commande de visiteur se règle par carte, il n'y a pas de
+ * crédit à accorder à un panier.
+ */
+function guestContentOf(
+  service: ServiceChoice,
+  lines: readonly { product: { sku: string }; quantity: number }[],
+  idempotencyKey: string,
+): Omit<PlaceOrderPayload, 'settlement'> {
+  const { settlement, ...content } = payloadOf(service, lines, idempotencyKey, null);
+  return content;
 }

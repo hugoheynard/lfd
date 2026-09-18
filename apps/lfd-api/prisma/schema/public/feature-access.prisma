@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Propriétaire : `src/b2b/feature-access/`. Plan :
-// `documentation/b2b/plan-inscription-pro-seule.md` §2.1.
+// `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.1.
 //
 // Le catalogue (clés, niveaux ordonnés, défauts) vit dans `@lfd/contracts`. Ces
 // deux tables ne portent que ce qui s'en écarte : « revenir au défaut » et

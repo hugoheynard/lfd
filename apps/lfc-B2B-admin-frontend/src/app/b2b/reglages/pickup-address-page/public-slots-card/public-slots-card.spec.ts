@@ -12,7 +12,7 @@ import { PublicSlotsCard } from './public-slots-card';
 
 /**
  * **Les créneaux publics d'un point**, côté écran (plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, lot B).
+ * `documentation/order/plan-creneaux-de-retrait.md`, lot B).
  *
  * Ce qui s'y joue vraiment : la grille d'aperçu est dérivée de ce qui est À
  * L'ÉCRAN — donc d'un brouillon non enregistré —, et l'enregistrement renvoie

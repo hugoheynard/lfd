@@ -6,6 +6,9 @@ import { ORDERS_FR } from './screens/orders.copy';
 /** La langue de référence : c'est elle que la maquette écrit. */
 export const FR: ClientCopy = {
   chrome: {
+    identityConflict:
+      'Un compte existe déjà avec cette adresse Google. Connectez-vous avec votre e-mail habituel.',
+    identityConflictDismiss: 'Compris',
     back: 'Retour',
     menu: 'Menu',
     notifications: 'Notifications',
@@ -104,6 +107,7 @@ export const FR: ClientCopy = {
     address: 'Le Labo · Route de la Balme — ouvert de 7 h à 19 h.',
   },
   signup: {
+    google: 'Continuer avec Google',
     eyebrow: 'Première visite ? 3 infos et c’est parti',
     alreadyLead: 'Déjà client ?',
     alreadyLink: 'Se connecter',
@@ -263,6 +267,18 @@ export const FR: ClientCopy = {
     whoRegister: 'Je commande pour la première fois',
     whoSignIn: "J'ai déjà un compte",
     back: 'Retour à la boutique',
+    guestTitle: 'Qui vient chercher ?',
+    guestSubtitle: 'Pas de compte à créer. Il nous faut de quoi vous envoyer votre QR.',
+    guestFirstName: 'Prénom',
+    guestFirstNameHint: 'C’est le nom qu’on appellera au comptoir.',
+    guestEmail: 'Adresse e-mail',
+    guestEmailHint: 'Votre confirmation et votre QR de retrait y arrivent.',
+    guestEmailAgain: 'Confirmez votre adresse',
+    guestEmailMismatch: 'Les deux adresses ne sont pas identiques.',
+    guestPhone: 'Téléphone',
+    guestPhoneHint: 'Pour vous joindre si quelque chose cloche avec votre commande.',
+    guestCancel: 'Annuler',
+    guestConfirm: 'Continuer',
   },
   qr: {
     title: 'Votre code de remise',

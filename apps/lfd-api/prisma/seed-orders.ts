@@ -32,7 +32,7 @@ async function main(): Promise<void> {
         `${report.production.handovers} attestation(s) de remise.\n` +
         `✔ ${report.placed} commande(s) posées, dont 1 pour hier (${report.yesterday}), ` +
         `${report.counterToday} au comptoir aujourd'hui (${report.today}, Le Labo + Le Village) ` +
-        `et 2 en attente pour demain (${report.tomorrow}, livraison + retrait).`,
+        `et 2 en attente à J+2 (${report.peakDay}, livraison + retrait) — le PIC du prévisionnel.`,
     );
   } finally {
     await harness.close();

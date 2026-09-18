@@ -10,7 +10,7 @@ import { createUser } from "./factories.js";
 
 /**
  * E2E de la **commande sans compte** — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, lot C.
+ * `documentation/order/plan-commande-sans-compte.md`, lot C.
  *
  * ## Ce que seule la base prouve
  *

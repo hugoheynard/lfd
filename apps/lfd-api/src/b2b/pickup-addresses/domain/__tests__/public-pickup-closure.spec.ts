@@ -2,7 +2,7 @@ import { PublicPickupClosurePeriodError } from "../pickup-errors.js";
 import { PublicPickupClosure, type PublicPickupClosureState } from "../public-pickup-closure.js";
 
 /**
- * Les fermetures datées (plan `documentation/b2b/plan-creneaux-de-retrait.md`,
+ * Les fermetures datées (plan `documentation/order/plan-creneaux-de-retrait.md`,
  * D4). Ces jours sont ABSOLUS et ne sont comparés qu'entre eux — jamais à
  * l'horloge : c'est l'exception étroite de `CLAUDE.md` §5.
  */

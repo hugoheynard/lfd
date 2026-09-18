@@ -12,7 +12,7 @@
  * baril n'y voient aucune différence. Un front importe ses valeurs par
  * `@lfd/contracts/feature-access-levels`.
  *
- * Plan et décisions : `documentation/b2b/plan-inscription-pro-seule.md` §2.
+ * Plan et décisions : `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.
  */
 
 /** Les niveaux de la boutique, du plus fermé au plus ouvert. L'ordre EST la règle. */

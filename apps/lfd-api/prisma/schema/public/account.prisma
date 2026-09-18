@@ -14,7 +14,7 @@ enum DeferredTerm {
 /// `pending` = société déclarée par le client depuis « Mes entreprises », pas
 /// encore validée commercialement (défaut à la création). L'activation reste
 /// **manuelle côté commercial** — décision verrouillée dans
-/// `documentation/b2b/architecture-compte-client-cycle-de-vie.md`.
+/// `documentation/auth-inscription/architecture-compte-client-cycle-de-vie.md`.
 ///
 /// `suspended` ≠ `terminated` : `suspended` coupe l'accès **temporairement**
 /// (impayé, litige) et se lève ; `terminated` acte la **fin de la relation
@@ -255,7 +255,7 @@ model User {
   //
   // 🔴 **NULL = un INVITÉ** : une personne connue par son adresse, qui n'a
   // **rien** à quoi se connecter. C'est la porte de la commande sans compte —
-  // plan `documentation/b2b/plan-commande-sans-compte.md`, D1.
+  // plan `documentation/order/plan-commande-sans-compte.md`, D1.
   //
   // Se connecter lui est **inexprimable**, et c'est tout l'intérêt de porter la
   // distinction ici plutôt que sur `status` : un statut déclaratif peut diverger

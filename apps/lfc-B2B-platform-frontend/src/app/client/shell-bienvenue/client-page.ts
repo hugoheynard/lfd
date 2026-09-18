@@ -58,6 +58,14 @@ export class ClientPage {
     // en partant — l'écran suivant est une feuille crème, qui en a besoin.
     const chrome = inject(ClientChrome);
     chrome.bandLip.set(false);
-    inject(DestroyRef).onDestroy(() => chrome.bandLip.set(true));
+    // 🔴 La barre du shell aussi s'efface au-delà du pli : la marque remonte dans
+    // la colonne bleue de ce châssis. Rallumée en partant (2026-09-17) — les
+    // écrans qui l'éteignaient eux-mêmes ne la rallumaient pas, et `/bienvenue`,
+    // où l'on arrive désormais après la connexion en perso, restait sans barre.
+    chrome.barOnDesktop.set(false);
+    inject(DestroyRef).onDestroy(() => {
+      chrome.bandLip.set(true);
+      chrome.barOnDesktop.set(true);
+    });
   }
 }

@@ -43,7 +43,7 @@ const PREVIEW_DAYS = 7;
 
 /**
  * **Les créneaux publics d'un point de retrait** — plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, lot B.
+ * `documentation/order/plan-creneaux-de-retrait.md`, lot B.
  *
  * 🔴 **Rien à voir avec les heures de retrait pro.** Celles-ci vivent dans leur
  * carte, dans `opening`, et ce chantier n'y touche pas (§3 du plan). Ici on

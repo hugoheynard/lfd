@@ -57,7 +57,7 @@ describe('AccueilPage', () => {
   };
 
   /** Ce que l'écran demande à Auth0 — la seule chose qu'on veuille observer. */
-  let asked: { kind: 'register' | 'login'; target: string; payload: unknown }[];
+  let asked: { kind: 'register' | 'login' | 'google'; target: string; payload: unknown }[];
 
   beforeEach(() => {
     asked = [];
@@ -69,6 +69,9 @@ describe('AccueilPage', () => {
       },
       login: (target: string, hint?: string): void => {
         asked.push({ kind: 'login', target, payload: hint });
+      },
+      continueWithGoogle: (target: string): void => {
+        asked.push({ kind: 'google', target, payload: undefined });
       },
     };
     TestBed.configureTestingModule({
@@ -129,7 +132,7 @@ describe('AccueilPage', () => {
     expect(asked).toEqual([
       {
         kind: 'register',
-        target: '/nouvelle-commande',
+        target: '/accueil',
         payload: {
           firstName: 'Pierre',
           email: 'pierre@brasserie-marchand.fr',
@@ -139,6 +142,35 @@ describe('AccueilPage', () => {
     ]);
   });
 
+  /**
+   * Régression : l'écran éteignait la barre de bureau sans la rallumer, et
+   * `/bienvenue` — où l'on arrive après la connexion en perso — restait sans
+   * en-tête (Hugo, 2026-09-17).
+   */
+  it('🔴 rallume la barre du shell en partant', () => {
+    expect(chrome.barOnDesktop()).toBe(false);
+
+    fixture.destroy();
+
+    expect(chrome.barOnDesktop()).toBe(true);
+  });
+
+  /** Le panneau d'entrée à la Sushi Shop (Hugo, 2026-09-17) : Google d'abord. */
+  it('« Continuer avec Google » part chez Google, vers l’accueil de l’espace', () => {
+    click(FR.signup.google);
+
+    expect(asked).toEqual([{ kind: 'google', target: '/accueil', payload: undefined }]);
+  });
+
+  it('montre Google AVANT le formulaire', () => {
+    const labels = Array.from(el().querySelectorAll('button')).map((b) => b.textContent ?? '');
+    const google = labels.findIndex((label) => label.includes(FR.signup.google));
+    const signup = labels.findIndex((label) => label.includes(FR.signup.open));
+
+    expect(google).toBeGreaterThanOrEqual(0);
+    expect(google).toBeLessThan(signup);
+  });
+
   it("« Déjà client ? » souffle l'e-mail déjà tapé à l'écran de connexion", () => {
     // Ce n'est plus un lien à attendre : Auth0 reconnaît la passkey. Mais qui
     // vient de taper son adresse chez nous n'a pas à la retaper chez lui.
@@ -146,7 +178,7 @@ describe('AccueilPage', () => {
     click(FR.doors.alreadyTitle);
 
     expect(asked).toEqual([
-      { kind: 'login', target: '/nouvelle-commande', payload: 'pierre@brasserie-marchand.fr' },
+      { kind: 'login', target: '/accueil', payload: 'pierre@brasserie-marchand.fr' },
     ]);
   });
 

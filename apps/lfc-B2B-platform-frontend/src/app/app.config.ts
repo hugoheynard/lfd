@@ -12,6 +12,7 @@ import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
 import { workspaceInterceptor } from './client/client-workspace.interceptor';
+import { identityConflictInterceptor } from './auth/identity-conflict';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
 import { AddressesService } from './legacy/entreprises/addresses.service';
@@ -41,7 +42,10 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     // L'espace de travail déclaré sur chaque requête vers l'API, une fois connu
     // (`documentation/b2b/plan-espace-de-travail.md`, D6).
-    provideHttpClient(withFetch(), withInterceptors([workspaceInterceptor])),
+    provideHttpClient(
+      withFetch(),
+      withInterceptors([workspaceInterceptor, identityConflictInterceptor]),
+    ),
     provideAuth(),
     // Ce que la boutique permet, lu au DÉMARRAGE et sans attendre la réponse :
     // le premier écran se dessine tout de suite, seules les gardes qui en

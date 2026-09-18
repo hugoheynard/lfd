@@ -1,6 +1,6 @@
 /**
  * E2E des **créneaux de retrait public** d'un point — plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, lot A.
+ * `documentation/order/plan-creneaux-de-retrait.md`, lot A.
  *
  * Ce que seule cette suite peut prouver : que les deux tables neuves existent
  * vraiment, que l'horaire fait l'aller-retour par le vrai SQL sans rien perdre,

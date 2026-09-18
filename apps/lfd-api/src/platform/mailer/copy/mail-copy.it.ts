@@ -47,4 +47,16 @@ export const MAIL_IT: MailCopy = {
     cta: "Vedere il mio ordine",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 – 19",
   },
+  paymentFailed: {
+    subject: "Pagamento rifiutato — il suo ordine {ref}",
+    kicker: "Pagamento rifiutato",
+    title: "Il suo pagamento non è andato a buon fine.",
+    intro: "La sua banca ha rifiutato il pagamento di questo ordine.",
+    consequence:
+      "Il suo ordine non entra quindi in produzione e nulla la attende al banco. " +
+      "Riprenda il pagamento qui sotto per rilanciarlo.",
+    amountLabel: "Importo da saldare",
+    cta: "Riprendere il pagamento",
+    footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
+  },
 };

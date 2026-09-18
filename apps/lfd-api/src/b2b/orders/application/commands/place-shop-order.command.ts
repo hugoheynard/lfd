@@ -2,7 +2,7 @@ import type { OrderPaymentIntent, PlaceShopOrderPayload } from "@lfd/contracts";
 
 /**
  * Passe une commande **sans compte** — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, lot C.
+ * `documentation/order/plan-commande-sans-compte.md`, lot C.
  *
  * 🔴 **Aucun acteur en paramètre, et c'est la différence avec
  * `PlaceOrderCommand`.** Là-bas, `actorUserId` vient du jeton et `companyId` du

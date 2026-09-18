@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { Router } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
+import { AuthFacade } from '../../../auth/auth.facade';
 import { formatCents, formatRate } from '../../../client/format-money';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
@@ -34,6 +35,8 @@ export class ConfirmationPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly orders = inject(ClientOrders);
+  /** Reconnu ou non : c'est ce qui décide si le QR est atteignable ici. */
+  private readonly auth = inject(AuthFacade);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly order = this.orders.latest;
@@ -86,9 +89,18 @@ export class ConfirmationPage {
    * restait « en cours » pour toujours. Le destinataire montre désormais le même
    * code, et c'est le coursier qui le scanne.
    *
-   * Il ne reste donc plus de condition : toute commande passée a son code.
+   * 🔴 **Mais il faut un COMPTE pour le rouvrir ici** (Hugo, 2026-09-17).
+   *
+   * L'écran du QR relit la commande au serveur, derrière le mur du demandeur
+   * (`GET /orders/:id`). Un visiteur sans compte n'y arrive jamais : il lisait
+   * « Cette commande est introuvable » — une phrase juste, sous un bouton qui
+   * n'aurait pas dû exister.
+   *
+   * Pour lui, **le courriel est le seul porteur du code**, et il suffit : il
+   * part à la passation, il contient le QR, et il ne demande aucune connexion.
+   * Le bouton disparaît donc plutôt que de promettre une porte fermée.
    */
-  protected readonly hasCode = computed(() => this.order() !== null);
+  protected readonly hasCode = computed(() => this.order() !== null && this.auth.isAuthenticated());
 
   protected readonly piecesLabel = computed(() =>
     fill(this.t().done.recapPieces, { count: String(this.order()?.pieces ?? 0) }),

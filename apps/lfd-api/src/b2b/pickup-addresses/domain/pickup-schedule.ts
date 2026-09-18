@@ -15,7 +15,7 @@ export interface PickupScheduleState {
  *
  * 🔴 Un agrégat pour **un seul** invariant, et il faut le dire : le
  * **chevauchement** entre deux règles du même point et du même jour (plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, D7). Les autres refus — plage
+ * `documentation/order/plan-creneaux-de-retrait.md`, D7). Les autres refus — plage
  * vide, découpe qui n'ouvre rien, badge vide, capacité qui ne sert personne —
  * portent sur UNE règle et vivent dans {@link PublicPickupSlotRule} : les
  * invoquer ici aurait justifié l'agrégat par des règles qui n'en demandent pas

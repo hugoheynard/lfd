@@ -24,7 +24,7 @@ const CURRENCY = "eur";
 
 /**
  * **Commander sans compte** — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, §5 et lot C.
+ * `documentation/order/plan-commande-sans-compte.md`, §5 et lot C.
  *
  * ## Ce qu'il partage avec la passation connectée, et ce qu'il ne partage pas
  *

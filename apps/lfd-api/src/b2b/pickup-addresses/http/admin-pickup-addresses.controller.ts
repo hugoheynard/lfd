@@ -92,7 +92,7 @@ export class AdminPickupAddressesController {
    *
    * 🔴 Une surface à part, et non un champ de plus sur le point : les heures
    * PRO (`opening`) ne sont ni lues ni écrites ici, et ce plan n'y touche pas
-   * (`documentation/b2b/plan-creneaux-de-retrait.md`, §3). Un point dont cette
+   * (`documentation/order/plan-creneaux-de-retrait.md`, §3). Un point dont cette
    * route rend deux listes vides se comporte exactement comme avant (D6).
    */
   @Get(":id/creneaux-publics")

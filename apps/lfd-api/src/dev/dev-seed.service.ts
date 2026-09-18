@@ -6,7 +6,7 @@ import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
 import { Clock } from "../platform/time/clock.js";
 import { seedAccounting } from "./seeding/accounting.seed.js";
-import { seedClient } from "./seeding/client.seed.js";
+import { seedClient, seedImpersonatedAccess, seedPendingCompany } from "./seeding/client.seed.js";
 import { seedOrders } from "./seeding/orders.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
 import { seedLegalDocuments } from "./seeding/legal-documents.seed.js";
@@ -70,7 +70,15 @@ export class DevSeedService {
     // dépendent d'aucun client et ne sont touchées par aucune coupe —
     // `resetToSeed` ne connaît que les sociétés et leurs commandes.
     await seedLegalDocuments(context);
-    await seedClient(context);
+    const client = await seedClient(context);
+    // 🔴 Le SECOND espace pro, laissé « en cours » (2026-09-17). Le poste ne
+    // portait que le perso et une société active : rien ne montrait un dossier
+    // en constitution, ni la bascule d'espace à trois entrées.
+    const pendingCompanyId = await seedPendingCompany(context, client.userId);
+    // 🔴 Et l'accès pour le compte d'IMPERSONATION : c'est sous lui qu'on
+    // développe, et il n'était membre d'aucune des deux — son sélecteur d'espace
+    // ne montrait donc jamais ce que le semis venait de poser.
+    await seedImpersonatedAccess(context, [client.companyId, pendingCompanyId]);
     const reset = await resetToSeed(this.prisma);
     // Les buckets APRÈS la coupe et AVANT le semis : les commandes qui
     // possédaient ces documents n'existent plus, et celles qu'on va poser n'en

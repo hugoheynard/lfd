@@ -17,7 +17,7 @@ import {
 
 /**
  * **Commander sans compte** — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, §5 et lot C.
+ * `documentation/order/plan-commande-sans-compte.md`, §5 et lot C.
  *
  * 🔴 **CE CONTRÔLEUR N'EST PAS BRANCHÉ**, et c'est délibéré (§6, §12).
  *

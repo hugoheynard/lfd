@@ -22,7 +22,7 @@
 # /etc/hosts. Les service bindings sont absents en dev, et un binding manquant
 # rend un 503 explicite plutôt qu'un repli silencieux sur un appel public.
 #
-# Détail et diagrammes : documentation/ops/architecture-deploiement.md
+# Détail et diagrammes : documentation/ci-cd/architecture-deploiement.md
 # Renommée `lfc-suite-gateway` → `lfd-gateway` le 2026-08-20. Le nom disait
 # « suite » pour une passerelle qui n'a jamais été une pièce de la suite mais la
 # frontière de confiance des backends — et il survivait au retrait de celle-ci.

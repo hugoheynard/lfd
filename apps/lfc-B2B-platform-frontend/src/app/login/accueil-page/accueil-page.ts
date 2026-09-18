@@ -13,12 +13,17 @@ import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientPage } from '../../client/shell-bienvenue/client-page';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../client/client-identity.service';
+import { WORKSPACE_HOME_ROUTE } from '../../client/client-workspace-switch.service';
 
 import { RappelPanel } from './rappel-panel/rappel-panel';
 import { WelcomeStep } from './welcome-step/welcome-step';
 
-/** Là où l'on va une fois entré. */
-const AFTER_ENTRY = '/nouvelle-commande';
+/**
+ * Là où l'on va une fois entré : l'accueil de l'ESPACE, décidé au retour
+ * (`workspaceHomeGuard`). C'était `/nouvelle-commande` pour tout le monde
+ * jusqu'au 2026-09-17 — y compris en perso, où l'accueil est `/bienvenue`.
+ */
+const AFTER_ENTRY = WORKSPACE_HOME_ROUTE;
 
 /**
  * La porte d'entrée : trois champs, aucun document, et deux chemins.
@@ -81,9 +86,8 @@ export class AccueilPage {
         void this.router.navigateByUrl(AFTER_ENTRY);
       }
     });
-    // Au-delà du pli, la marque remonte dans la colonne bleue de cet écran : la
-    // barre du shell s'efface plutôt que de faire doublon.
-    this.chrome.barOnDesktop.set(false);
+    // La barre du shell s'efface au-delà du pli : c'est le châssis
+    // (`ClientPage`) qui l'éteint, et qui la rallume en partant.
     // Un visiteur n'a pas de menu : il a besoin de savoir OÙ il est, donc la
     // barre garde la pastille de marque.
     this.chrome.menu.set(false);
@@ -103,6 +107,11 @@ export class AccueilPage {
   /** Déjà client : l'écran d'Auth0 reconnaîtra la passkey, ou le mot de passe. */
   protected signIn(email: string): void {
     this.auth.login(AFTER_ENTRY, email);
+  }
+
+  /** Google, et la même destination que les deux autres portes. */
+  protected continueWithGoogle(): void {
+    this.auth.continueWithGoogle(AFTER_ENTRY);
   }
 
   protected openPanel(): void {

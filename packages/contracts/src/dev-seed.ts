@@ -43,8 +43,21 @@ export interface DevSeedOrdersReport {
    * diverger du semis. Un nombre que le serveur compte ne diverge pas.
    */
   readonly counterToday: number;
-  /** `AAAA-MM-JJ` — celle des deux commandes en attente. */
-  readonly tomorrow: string;
+  /**
+   * `AAAA-MM-JJ` — la journée des deux commandes en attente, et **le pic** du
+   * prévisionnel.
+   *
+   * 🔴 Elle s'appelait `tomorrow` et valait J+1 jusqu'au 2026-09-17. Les deux
+   * commandes ont été déplacées à **J+2** pour que « le mur qui arrive » montre
+   * une montée devant soi plutôt que la charge du jour : tant qu'elles tombaient
+   * demain, le jour le plus chargé restait aujourd'hui, et la colonne teintée
+   * n'apprenait rien.
+   *
+   * Renommée plutôt que laissée telle quelle : l'écran de rechargement AFFICHE
+   * cette date, et un champ nommé `tomorrow` qui porterait J+2 est exactement la
+   * divergence que `counterToday` existe pour éviter.
+   */
+  readonly peakDay: string;
 }
 
 /**

@@ -18,6 +18,20 @@
   gap: var(--fold-space-xl);
 }
 
+/* Les fournisseurs, en colonne : un bouton par ligne, pleine largeur, comme
+   la référence — ajouter Facebook ou Apple ne changera pas la mise en page. */
+.social {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Le logo garde ses proportions et sa taille : la charte Google les impose. */
+.social-logo {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
 .head {
   display: flex;
   align-items: baseline;

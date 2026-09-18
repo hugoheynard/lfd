@@ -16,7 +16,7 @@ import {
  * **pro** d'un comptoir. Les deux structures cohabitent à dessein : le public a
  * besoin d'un badge, d'une capacité de service et d'un pas de découpe réglable,
  * le pro n'a besoin d'aucun des trois. Plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, §3.
+ * `documentation/order/plan-creneaux-de-retrait.md`, §3.
  *
  * ⚠️ Le piège de nommage, tenu ici : `publicOpening` est l'**amplitude**
  * d'ouverture au public d'un point ; ce fichier parle de **créneaux**

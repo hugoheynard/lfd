@@ -1,6 +1,6 @@
 /**
  * E2E de l'**accès aux fonctionnalités** — plan
- * `documentation/b2b/plan-inscription-pro-seule.md`, lot 1.
+ * `documentation/auth-inscription/plan-inscription-pro-seule.md`, lot 1.
  *
  * Ce que seul le vrai SQL prouve :
  * - « revenir au défaut » SUPPRIME la ligne, et la trace reste au journal ;

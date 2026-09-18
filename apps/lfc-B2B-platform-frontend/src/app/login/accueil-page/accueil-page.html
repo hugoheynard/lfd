@@ -21,6 +21,7 @@
       [bookedSlot]="bookedSlot()"
       (signedUp)="signUp($event)"
       (wantsLogin)="signIn($event)"
+      (wantsGoogle)="continueWithGoogle()"
       (wantsCallback)="openPanel()"
       [quotePending]="quotePending()"
       (wantsQuote)="openQuote()"

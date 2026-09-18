@@ -9,6 +9,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import type { Order } from "../domain/entities/order.js";
 import { OrderRepository, type PlacedOrder } from "../domain/ports/order.repository.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
+import { planWhere } from "./plan-filter.js";
 
 /** Adaptateur Prisma des commandes. */
 @Injectable()
@@ -145,22 +146,52 @@ export class PrismaOrderRepository extends OrderRepository {
     });
   }
 
-  async markPaid(paymentIntentId: string): Promise<void> {
+  async markPaid(paymentIntentId: string): Promise<string | null> {
     // `updateMany` + filtre `pending` = idempotence : un webhook rejoué (déjà
     // `paid`) ou un intent inconnu ne matche aucune ligne, l'appel est un no-op.
-    await this.prisma.order.updateMany({
-      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
-      data: { paymentStatus: PaymentStatus.paid, paidAt: this.clock.now() },
-    });
+    return this.settle(paymentIntentId, PaymentStatus.paid);
   }
 
-  async markPaymentFailed(paymentIntentId: string): Promise<void> {
+  async markPaymentFailed(paymentIntentId: string): Promise<string | null> {
     // Même idempotence : on ne rétrograde que ce qui était encore `pending` (un
     // paiement déjà `paid` n'est jamais repassé à `failed`).
-    await this.prisma.order.updateMany({
-      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
-      data: { paymentStatus: PaymentStatus.failed },
+    return this.settle(paymentIntentId, PaymentStatus.failed);
+  }
+
+  /**
+   * **La bascule de règlement, et l'identifiant de ce qui a franchi.**
+   *
+   * 🔴 Les deux transitions rendaient `void`, et c'est ce qui rendait le fait
+   * impossible à publier : on savait qu'une bascule avait été DEMANDÉE, jamais
+   * si elle avait eu lieu ni sur quoi. Le client n'était donc prévenu de rien —
+   * ni d'un encaissement, ni d'un refus (2026-09-17).
+   *
+   * L'identité se lit AVANT l'écriture : `stripePaymentIntentId` est `@unique`,
+   * donc au plus une ligne, et `updateMany` ne rend qu'un compte. C'est ce
+   * compte — et lui seul — qui dit s'il y a eu franchissement.
+   *
+   * ⚠️ **`count === 0` rend `null`, et c'est le cœur de l'idempotence.** Stripe
+   * réémet jusqu'à obtenir un 2xx : un second passage ne trouve plus rien en
+   * `pending`, ne publie donc aucun fait, et le client ne reçoit pas deux fois
+   * le même message. La garantie tient dans le `where`, pas dans un garde ajouté
+   * par-dessus.
+   */
+  private async settle(paymentIntentId: string, to: PaymentStatus): Promise<string | null> {
+    const order = await this.prisma.order.findUnique({
+      where: { stripePaymentIntentId: paymentIntentId },
+      select: { id: true },
     });
+    if (order === null) {
+      return null;
+    }
+    const { count } = await this.prisma.order.updateMany({
+      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
+      data:
+        to === PaymentStatus.paid
+          ? { paymentStatus: PaymentStatus.paid, paidAt: this.clock.now() }
+          : { paymentStatus: PaymentStatus.failed },
+    });
+    return count === 0 ? null : order.id;
   }
 
   async absorbIntoPlan(serviceDay: string, at: Date): Promise<number> {
@@ -171,7 +202,11 @@ export class PrismaOrderRepository extends OrderRepository {
     const { count } = await this.prisma.order.updateMany({
       where: {
         requestedDeliveryDate: new Date(`${serviceDay}T00:00:00.000Z`),
-        status: OrderStatus.placed,
+        // 🔴 **Le fragment PARTAGÉ** (2026-09-17). C'est ICI que la règle
+        // s'écrivait en dur, et les trois autres surfaces la recopiaient — mal.
+        // Les quatre lisent la même fonction désormais : `absorbedByPlan` ne se
+        // contente plus de NOMMER la règle, `planWhere` la fournit.
+        ...planWhere(),
       },
       data: { status: OrderStatus.confirmed, confirmedAt: at },
     });

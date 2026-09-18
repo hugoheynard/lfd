@@ -25,7 +25,7 @@ const SIGNED_OUT_FALLBACK = '/bienvenue';
 /**
  * **N'ouvre la route qu'au niveau demandé**, ou renvoie vers un écran ouvert.
  *
- * Plan : `documentation/b2b/plan-inscription-pro-seule.md` §4. Ce n'est pas une
+ * Plan : `documentation/auth-inscription/plan-inscription-pro-seule.md` §4. Ce n'est pas une
  * protection — l'API refuse d'elle-même — mais une adresse qui mène à un écran
  * dont chaque requête partirait en 409 n'a rien à montrer.
  *

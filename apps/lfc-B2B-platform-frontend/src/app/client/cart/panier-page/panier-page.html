@@ -34,10 +34,12 @@
       <p class="ask-title">{{ t().cart.whoTitle }}</p>
       <p class="ask-hint">{{ t().cart.whoHint }}</p>
       <div class="who-doors">
-        <button class="who-door" type="button" (click)="register()">
+        <!-- Commander SANS créer de compte : la porte mène au dialogue de
+             saisie, plus à l'inscription Auth0. -->
+        <button class="who-door" type="button" (click)="orderAsGuest()">
           {{ t().cart.whoRegister }}
         </button>
-        <button class="who-door is-quiet" type="button" (click)="signIn()">
+        <button class="who-door is-quiet" type="button" (click)="signInFirst()">
           {{ t().cart.whoSignIn }}
         </button>
       </div>

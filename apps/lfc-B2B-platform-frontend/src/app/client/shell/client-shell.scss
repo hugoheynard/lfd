@@ -144,6 +144,7 @@
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
+  text-decoration: none;
   cursor: pointer;
   transition: var(--lfc-motion-tap);
 }
@@ -177,7 +178,8 @@
 
 /* L'échec de lecture des niveaux : aligné sur la gouttière de la page, pour se
    lire comme le haut de l'écran et non comme un débordement du bandeau. */
-.feature-access-failed {
+.feature-access-failed,
+.shell-notice {
   padding: var(--fold-space-md) var(--lfc-inset) 0;
 }
 
@@ -342,9 +344,21 @@
 
 /* ── L'identité, en fin de rangée ────────────────────────────────────────── */
 
+/* 🔴 VISIBLE PAR DÉFAUT depuis le 2026-09-17, et c'est le motif de `.mark` :
+   c'est la variante `wide-only` qui se masque, pas le bloc lui-même.
+
+   Il valait `display: none` et ne s'allumait qu'en `.account.wide-only` au-delà
+   de 1100 px — or le gabarit posait `wide-only` en DUR. Rendre la condition
+   dynamique sans toucher à ce bloc aurait donc laissé l'identité invisible
+   partout : la règle qui l'allumait exigeait la classe qu'on venait de retirer. */
 .account {
-  display: none;
+  display: block;
   flex: none;
+}
+
+/* Là où un menu de poche existe, il porte déjà le salut et l'identité en pile. */
+.account.wide-only {
+  display: none;
 }
 
 /* Un écran peut demander que la barre s'efface au-delà du pli — l'accueil le

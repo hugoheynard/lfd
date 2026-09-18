@@ -68,7 +68,7 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
  * Un point de retrait n'est plus une adresse : il porte l'adresse, son rang par
  * défaut, ses heures, sa réduction et les clientèles de cette réduction — et il
  * recevra ses créneaux publics, leurs badges, leurs capacités et les fermetures
- * datées (`documentation/b2b/plan-creneaux-de-retrait.md`). Six sujets, bientôt
+ * datées (`documentation/order/plan-creneaux-de-retrait.md`). Six sujets, bientôt
  * huit, qu'on ne lit pas de haut en bas : on va directement à celui qu'on vient
  * régler. C'est le critère qui sépare une page d'un panneau dans ce
  * back-office, où six pages de détail suivent déjà ce motif. Décidé avec Hugo

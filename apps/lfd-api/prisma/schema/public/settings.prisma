@@ -139,7 +139,7 @@ model PlatformContent {
 /// découpée à pas constant pour le VISITEUR.
 ///
 /// 🔴 Elle ne remplace rien : `PickupAddress.opening` porte toujours les heures
-/// PRO, et ce plan n'y touche pas (`documentation/b2b/plan-creneaux-de-retrait.md`,
+/// PRO, et ce plan n'y touche pas (`documentation/order/plan-creneaux-de-retrait.md`,
 /// §3). Les créneaux restent DÉRIVÉS (D1) — rien d'enregistré ici ne peut
 /// diverger de l'horaire réel, seule la règle est stockée.
 ///

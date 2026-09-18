@@ -18,7 +18,12 @@ const verifierStub = {
   verify: (jeton: string): Promise<StaffPrincipal> =>
     jeton.startsWith("bad")
       ? Promise.reject(new Error("signature refusée"))
-      : Promise.resolve({ subject: jeton, email: undefined, scopes: ["read:companies"] }),
+      : Promise.resolve({
+          subject: jeton,
+          email: undefined,
+          emailVerified: undefined,
+          scopes: ["read:companies"],
+        }),
 };
 
 /** Contrôleur sonde : route admin, gardée staff, publique vis-à-vis du guard client. */
@@ -67,6 +72,7 @@ describe("AdminAuthGuard — bypass de dev", () => {
     expect(response.body).toEqual({
       subject: "dev-staff",
       email: DEFAULT_BOOTSTRAP_ADMIN_EMAIL,
+      emailVerified: true,
       scopes: [],
     });
   });

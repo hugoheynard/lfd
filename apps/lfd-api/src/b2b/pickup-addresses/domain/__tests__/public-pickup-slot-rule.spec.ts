@@ -11,7 +11,7 @@ import {
 
 /**
  * Les quatre refus qui ne concernent qu'UNE règle (plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, D2 et D7). Le chevauchement,
+ * `documentation/order/plan-creneaux-de-retrait.md`, D2 et D7). Le chevauchement,
  * lui, est l'affaire de l'agrégat.
  */
 const VALID: PublicPickupSlotRuleState = {

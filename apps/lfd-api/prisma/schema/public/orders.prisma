@@ -534,7 +534,7 @@ model OrderIdempotency {
 }
 
 /// **Une clé de passation de la boutique PUBLIQUE** — plan
-/// `documentation/b2b/plan-commande-sans-compte.md` §5.
+/// `documentation/order/plan-commande-sans-compte.md` §5.
 ///
 /// Séparée d'`OrderIdempotency`, et ce n'est pas une duplication de confort :
 /// celle-ci est murée par `user_id`, avec clé étrangère et `@@unique(user_id,

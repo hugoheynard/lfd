@@ -11,7 +11,7 @@ import {
 
 /**
  * **Commander sans compte** — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, §5 et lot C.
+ * `documentation/order/plan-commande-sans-compte.md`, §5 et lot C.
  *
  * ## Pourquoi un contrat de plus, et pas un champ de plus sur `placeOrderPayloadSchema`
  *

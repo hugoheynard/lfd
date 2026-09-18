@@ -69,7 +69,7 @@ import { PlaceShopOrderHandler } from "../place-shop-order.handler.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, lot C.
+ * `documentation/order/plan-commande-sans-compte.md`, lot C.
  *
  * Ce que ces cas mesurent est ce qui DISTINGUE ce chemin de la passation
  * connectée : l'inscription du porteur, la carte sans alternative, la clientèle
@@ -316,8 +316,9 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
       sink.placed = order.toPersistence();
       return Promise.resolve({ id: "order_public_1", orderNumber: "ORD-PUBLIC" });
     },
-    markPaid: () => Promise.resolve(),
-    markPaymentFailed: () => Promise.resolve(),
+    // `null` = aucune ligne n'a franchi — cf. `OrderRepository.markPaid`.
+    markPaid: () => Promise.resolve(null),
+    markPaymentFailed: () => Promise.resolve(null),
     markFulfilled: () => Promise.reject(new Error("non utilisé")),
     markReady: () => Promise.reject(new Error("non utilisé")),
     absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),

@@ -30,6 +30,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { settlementWhere } from "./plan-filter.js";
 import {
   OrderReader,
   type OrderAuthor,
@@ -292,7 +293,19 @@ export class PrismaOrderReader extends OrderReader {
     const rows = await this.prisma.order.findMany({
       where: {
         requestedDeliveryDate: new Date(`${date}T00:00:00.000Z`),
-        status: { not: "cancelled" },
+        // 🔴 **La CINQUIÈME surface de production** (2026-09-17). Les quatre
+        // autres lisaient `planWhere` ; celle-ci écartait les seules annulées et
+        // imprimait donc des bons que le compte à produire avait refusés.
+        //
+        // Son statut reste le sien — `settlementWhere` et non `planWhere` — et
+        // c'est délibéré : une commande déjà prête ou déjà remise RESTE dans son
+        // lot, sans quoi la pile maigrirait entre deux tirages et la numérotation
+        // « fiche 3/14 » cesserait de désigner la même feuille.
+        status: { notIn: ["cancelled", "draft"] },
+        // Un brouillon n'existe pas encore : la file du comptoir l'écarte déjà
+        // (« n'affiche PAS un brouillon — il n'attend personne »), le fournil
+        // n'a pas de raison d'en fabriquer le contenu.
+        ...settlementWhere(),
       },
       orderBy: { orderNumber: "asc" },
       select: {

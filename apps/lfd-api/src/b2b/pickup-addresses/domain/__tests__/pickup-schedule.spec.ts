@@ -9,7 +9,7 @@ import {
 /**
  * L'agrégat n'a **qu'un** invariant, et c'est lui qui le justifie : deux règles
  * du même point ne peuvent pas viser le même jour à la même heure (plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, D7).
+ * `documentation/order/plan-creneaux-de-retrait.md`, D7).
  */
 const POINT = "pickup_1";
 

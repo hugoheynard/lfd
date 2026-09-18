@@ -51,6 +51,24 @@ export interface B2bMails {
     readonly handoverUrl: string;
     readonly locale: ContentLocale;
   };
+  /**
+   * **Le paiement a été refusé.** Destinataire : le client.
+   *
+   * 🔴 Le seul courriel du parcours qui annonce une mauvaise nouvelle, et le
+   * seul que le client recevait *jamais* avant le 2026-09-17 : le dépôt écrivait
+   * `failed` dans une colonne que personne ne relisait. Il avait en revanche
+   * reçu, à la passation, un message lui annonçant que sa commande entrait en
+   * fabrication.
+   *
+   * ⚠️ **Aucun QR ici.** Une commande impayée ne se retire pas, et lui joindre
+   * un code à présenter contredirait la phrase qui la précède.
+   */
+  "customer.payment-failed": {
+    readonly sheet: ClientSheet;
+    /** L'app cliente, pour reprendre le règlement. Vide = pas de bouton. */
+    readonly settleUrl: string;
+    readonly locale: ContentLocale;
+  };
   "customer.order-placed": {
     readonly sheet: ClientSheet;
     /** Le jeton de retrait, ou `null` — une livraison n'a pas de comptoir. */
@@ -442,6 +460,26 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         cta: { label: "Ouvrir le compte", url: data.accountUrl },
       }),
     }),
+    "customer.payment-failed": (data) => {
+      const copy = mailCopyOf(data.locale).paymentFailed;
+      return {
+        subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
+        html: person({
+          title: copy.title,
+          // La conséquence SUIT la cause, dans le corps et pas dans un encadré :
+          // c'est la phrase qui dit quoi faire, et un client qui ne lit qu'un
+          // paragraphe doit tomber dessus.
+          body: `${copy.intro}\n\n${copy.consequence}\n\n${data.sheet.reference}`,
+          rows: [
+            { label: copy.amountLabel, value: money(data.sheet.money.totalCents, data.locale) },
+          ],
+          // Pas de bouton quand l'origine cliente est inconnue : un lien relatif
+          // est inerte dans une boîte mail, et le recours reste dans le pied.
+          ...(data.settleUrl === "" ? {} : { cta: { label: copy.cta, url: data.settleUrl } }),
+          footer: copy.footer,
+        }),
+      };
+    },
     "customer.access-opened": (data) => ({
       subject: sanitiseSubject(`Votre accès à l'espace pro ${data.companyName}`),
       html: person({

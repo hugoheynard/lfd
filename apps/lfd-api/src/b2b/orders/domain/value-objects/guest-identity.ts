@@ -6,7 +6,7 @@ import type { GuestBuyer } from "../ports/guest-buyer.registrar.js";
 
 /**
  * **Qui commande, quand personne ne peut le dire à notre place** — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, D1.
+ * `documentation/order/plan-commande-sans-compte.md`, D1.
  *
  * ## Ce que ce value object garantit, et ce qu'il ne garantit pas
  *

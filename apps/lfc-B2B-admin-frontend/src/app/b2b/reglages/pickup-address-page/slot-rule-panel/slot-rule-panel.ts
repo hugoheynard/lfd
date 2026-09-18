@@ -42,7 +42,7 @@ const MAX_STEP = 240;
 
 /**
  * **Une plage de créneaux publics** — le « générateur avec une durée » du plan
- * (`documentation/b2b/plan-creneaux-de-retrait.md`, D2).
+ * (`documentation/order/plan-creneaux-de-retrait.md`, D2).
  *
  * 🔴 Le panneau EST le générateur : on y saisit deux bornes et un pas, et il dit
  * ce qu'il produira avant qu'on enregistre. Un générateur SÉPARÉ de l'édition

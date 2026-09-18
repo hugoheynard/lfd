@@ -3,7 +3,12 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 
 import { AppConfig } from "../config/app-config.js";
 import { AuthConfig } from "./auth.config.js";
-import { EMAIL_CLAIM, readStringClaim } from "./auth0-claims.js";
+import {
+  EMAIL_CLAIM,
+  EMAIL_VERIFIED_CLAIM,
+  readBooleanClaim,
+  readStringClaim,
+} from "./auth0-claims.js";
 import type { StaffPrincipal } from "./staff-principal.js";
 
 type RemoteKeySet = ReturnType<typeof createRemoteJWKSet>;
@@ -62,5 +67,10 @@ function toStaffPrincipal(payload: JWTPayload): StaffPrincipal {
   // silence tout claim nu d'un access token. Lire `payload["email"]` rendrait
   // donc toujours `undefined`, et chaque membre du staff prendrait un `403`
   // inexplicable à sa première connexion.
-  return { subject, email: readStringClaim(payload, EMAIL_CLAIM), scopes };
+  return {
+    subject,
+    email: readStringClaim(payload, EMAIL_CLAIM),
+    emailVerified: readBooleanClaim(payload, EMAIL_VERIFIED_CLAIM),
+    scopes,
+  };
 }

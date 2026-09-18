@@ -8,7 +8,7 @@ import {
 
 /**
  * Lit, dans l'annuaire des clients, s'il y a quelqu'un à prévenir — plan
- * `documentation/b2b/plan-commande-sans-compte.md`, D7.
+ * `documentation/order/plan-commande-sans-compte.md`, D7.
  *
  * Il écrit dans `users`, que possède `b2b/account`, et le lit par un port
  * étroit déclaré ici : c'est le voisinage que `PrismaOrderRecipientReader` suit

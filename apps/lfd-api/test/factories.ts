@@ -107,7 +107,7 @@ export interface GuestSeed {
  * Crée un **invité** : une personne **sans identité de connexion**.
  *
  * C'est le porteur d'une commande passée sans compte (plan
- * `documentation/b2b/plan-commande-sans-compte.md`, D1). Une fabrique distincte
+ * `documentation/order/plan-commande-sans-compte.md`, D1). Une fabrique distincte
  * plutôt qu'un `auth0Sub` facultatif sur {@link createUser} : l'absence de sujet
  * n'est pas un détail qu'on omet, c'est ce qui définit la personne — et un test
  * qui l'obtient par omission ne dit plus ce qu'il exerce.

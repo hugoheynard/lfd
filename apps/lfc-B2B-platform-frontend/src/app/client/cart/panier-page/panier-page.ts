@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
+
+import { GuestIdentityDialog } from '../guest-identity-dialog/guest-identity-dialog';
 
 import { AuthFacade } from '../../../auth/auth.facade';
 import { formatCents } from '../../format-money';
@@ -41,6 +44,8 @@ export class PanierPage {
   private readonly router = inject(Router);
   private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
+  /** L'hôte des panneaux fold : c'est lui qui ouvre la saisie du visiteur. */
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
@@ -136,19 +141,49 @@ export class PanierPage {
   }
 
   /**
-   * Les deux portes de l'invite, et elles ramènent ICI.
+   * **La porte de qui n'a pas de compte : commander sans en créer un.**
    *
-   * Le panier survit au départ chez Auth0 — il est dans le stockage local — donc
-   * la personne revient sur sa commande composée, pas sur un rayon vide.
+   * 🔴 Elle menait à l'inscription Auth0, faute de route publique — c'est ce que
+   * disait ce JSDoc, et ce n'est plus vrai : `POST /shop/orders` est branchée.
+   * Un visiteur déclare qui il est, et repart avec sa commande ; il n'a aucune
+   * identité de connexion, et rien de ce qu'il tape ici n'ouvre quoi que ce soit.
    *
-   * ⚠️ **Provisoire, et c'est écrit dans le plan** (`plan-commande-sans-compte.md`
-   * §12, lot A) : tant que `POST /shop/orders` n'existe pas, commander exige un
-   * compte, et la porte de qui n'en a pas est l'inscription. Le jour où la route
-   * publique existe, c'est la cible de {@link register} qui change — le reste de
-   * cet écran, non.
+   * ⚠️ **Le dialogue peut se fermer sans rien rendre**, et fermer n'est pas
+   * commander : on reste alors sur le panier, intact, sans rien avoir envoyé.
+   *
+   * ## La suite : on PAIE, puis on confirme
+   *
+   * Exactement le chemin du client connecté ({@link proceed}), et il est
+   * praticable sans compte parce que `POST /shop/orders` rend l'intention
+   * Stripe **avec** la commande : l'écran de règlement la reçoit de la mémoire
+   * et ne redemande rien à `GET /orders/:id/payment`, qui est murée.
+   *
+   * ⚠️ **La commande existe AVANT le paiement**, des deux côtés : écrite au
+   * serveur par le `201`, rangée dans le navigateur par `placeAsGuest`. Un
+   * règlement qui aboutit ne peut donc pas retomber sur une commande
+   * introuvable, et un règlement abandonné laisse une commande à payer — pas un
+   * panier fantôme.
    */
-  protected register(): void {
-    this.auth.register(CART);
+  protected async orderAsGuest(): Promise<void> {
+    const buyer = await GuestIdentityDialog.open(this.panels).closed;
+    if (buyer === undefined) {
+      return;
+    }
+    const placed = await this.orders.placeAsGuest(buyer);
+    if (placed === null) {
+      // Le refus a déjà été dit, et le panier est intact.
+      return;
+    }
+    void this.router.navigate(
+      placed.settlement === 'due'
+        ? ['/nouvelle-commande/reglement', placed.id]
+        : ['/nouvelle-commande/confirmee'],
+    );
+  }
+
+  /** La porte de qui a déjà un compte. Elle ramène ICI, panier compris. */
+  protected signInFirst(): void {
+    this.auth.login(CART);
   }
 
   protected signIn(): void {

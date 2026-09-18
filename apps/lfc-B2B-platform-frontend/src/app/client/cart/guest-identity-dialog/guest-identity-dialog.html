@@ -1,0 +1,58 @@
+<fold-panel-header
+  [title]="t().cart.guestTitle"
+  [subtitle]="t().cart.guestSubtitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  <!-- L'écart entre les deux adresses se dit PENDANT la frappe. Il reste dans le
+       dialogue, comme tout refus : c'est ici qu'on corrige. -->
+  @if (mismatch()) {
+    <fold-callout variant="alert" announce>{{ t().cart.guestEmailMismatch }}</fold-callout>
+  }
+
+  <fold-input
+    [label]="t().cart.guestFirstName"
+    [hint]="t().cart.guestFirstNameHint"
+    [required]="true"
+    [value]="firstName()"
+    (valueChange)="firstName.set($event)"
+  />
+
+  <fold-input
+    type="email"
+    [label]="t().cart.guestEmail"
+    [hint]="t().cart.guestEmailHint"
+    [required]="true"
+    [value]="email()"
+    (valueChange)="email.set($event)"
+  />
+
+  <!-- 🔴 Le second champ est la SEULE barrière avant un envoi irréversible :
+       le QR part par courriel, et un visiteur n'a pas d'espace où le retrouver. -->
+  <fold-input
+    type="email"
+    [label]="t().cart.guestEmailAgain"
+    [required]="true"
+    [value]="emailAgain()"
+    (valueChange)="emailAgain.set($event)"
+  />
+
+  <fold-input
+    type="tel"
+    [label]="t().cart.guestPhone"
+    [hint]="t().cart.guestPhoneHint"
+    [required]="true"
+    [value]="phone()"
+    (valueChange)="phone.set($event)"
+  />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().cart.guestCancel }}
+  </button>
+  <button foldButton intent="primary" type="button" [disabled]="!canConfirm()" (click)="confirm()">
+    {{ t().cart.guestConfirm }}
+  </button>
+</fold-panel-footer>

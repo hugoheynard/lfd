@@ -37,7 +37,7 @@ export class PickupDiscountWithoutAudienceError extends DomainError {
 
 /**
  * Les refus des **créneaux publics** — plan
- * `documentation/b2b/plan-creneaux-de-retrait.md`, D2 et D7.
+ * `documentation/order/plan-creneaux-de-retrait.md`, D2 et D7.
  *
  * Quatre d'entre eux portent sur UNE règle et vivent donc dans son value object ;
  * seul le chevauchement porte sur l'ensemble, et c'est lui qui justifie

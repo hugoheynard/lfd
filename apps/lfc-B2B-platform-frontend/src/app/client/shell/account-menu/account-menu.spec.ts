@@ -11,6 +11,7 @@ import {
   workspaceDouble,
   type WorkspaceDouble,
 } from '../../client-workspace.fixture';
+import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { FR } from '../../copy/fr';
 import { PROFILE, TOMMEUSES } from '../../mon-compte/account.fixture';
 import { ProfilePanel } from '../../profile/profile-panel/profile-panel';
@@ -56,6 +57,17 @@ function boot(
       { provide: AccountService, useValue: { profile: wire.profile } },
       { provide: ClientIdentity, useValue: { firstName: signal('Hugo') } },
       provideWorkspace(wire.workspace),
+      // La navigation de la bascule a sa propre suite : ici, on vérifie que le
+      // menu la déclenche, et le choix arrive à l'espace par elle.
+      {
+        provide: ClientWorkspaceSwitch,
+        useValue: {
+          switchTo: (value: string): Promise<void> => {
+            wire.workspace.choose(value);
+            return Promise.resolve();
+          },
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(AccountMenu);

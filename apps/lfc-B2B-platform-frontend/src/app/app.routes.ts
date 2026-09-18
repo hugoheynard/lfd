@@ -3,7 +3,7 @@ import { type Route, type Routes } from '@angular/router';
 import { authenticatedGuard } from './auth/authenticated.guard';
 import { DEV_BYPASS_AUTH } from './auth/dev-flags';
 import { featureAccessGuard } from './client/feature-access/feature-access.guard';
-import { companyWorkspaceGuard } from './client/client-workspace.guard';
+import { companyWorkspaceGuard, workspaceHomeGuard } from './client/client-workspace.guard';
 import { ClientShell } from './client/shell/client-shell';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
@@ -282,6 +282,24 @@ export const routes: Routes = [
           import('./client/nouvelle-commande/confirmation-page/confirmation-page').then(
             (m) => m.ConfirmationPage,
           ),
+      },
+      {
+        // L'ENTRÉE : la cible de la connexion. Elle n'a pas d'écran — la garde
+        // redirige toujours vers l'accueil de l'espace (`/bienvenue` en perso,
+        // `/nouvelle-commande` dans une société), qu'on ne connaît qu'au retour
+        // d'Auth0.
+        path: 'accueil',
+        canActivate: [workspaceHomeGuard],
+        loadComponent: () =>
+          import('./client/workspace-reload/workspace-reload').then((m) => m.WorkspaceReload),
+      },
+      {
+        // Le détour de la bascule d'espace : un écran vide, traversé sans
+        // toucher à l'adresse, pour que la page de destination se remonte à
+        // neuf (cf. `ClientWorkspaceSwitch`). Aucun menu n'y mène.
+        path: 'changement-d-espace',
+        loadComponent: () =>
+          import('./client/workspace-reload/workspace-reload').then((m) => m.WorkspaceReload),
       },
       // `/connexion` mène là où l'on se connecte — donc à l'INSCRIPTION depuis
       // le 2026-09-16, et non plus à `/bienvenue`, qui porte maintenant

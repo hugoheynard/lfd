@@ -12,7 +12,7 @@
 import { PERSONAL_WORKSPACE } from "@lfd/contracts";
 
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { attachTo, createCompany, createGuest, createUser } from "./factories.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
@@ -69,6 +69,48 @@ describe("PrincipalResolver — la preuve d'adresse", () => {
     expect(principal.emailProven).toBe(true);
     const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: SUB } });
     expect(stored.emailVerified).toBe(true);
+  });
+});
+
+/**
+ * Régression : « Continuer avec Google » sous l'adresse de son compte ouvrait un
+ * SECOND compte, vide (2026-09-17). Par le vrai resolver, sur la vraie base :
+ * c'est le pré-filtre `ILIKE` et le mur « connectable » qui comptent ici.
+ */
+describe("PrincipalResolver — une connexion sociale sous une adresse connue", () => {
+  const GOOGLE = "google-oauth2|e2e";
+
+  function resolveGoogle(email: string) {
+    return ctx.app
+      .get(PrincipalResolver)
+      .resolve({ subject: GOOGLE, scopes: [], email, emailVerified: true });
+  }
+
+  it("🔴 refuse, sans créer de compte, quand un compte connectable porte l'adresse", async () => {
+    await createUser(ctx.prisma, { auth0Sub: SUB, email: "gerant@client-cycle.fr" });
+
+    await expect(resolveGoogle("Gerant@Client-Cycle.fr")).rejects.toMatchObject({
+      code: "account.identity.link_required",
+    });
+    expect(await ctx.prisma.user.count({ where: { auth0Sub: GOOGLE } })).toBe(0);
+  });
+
+  it("crée le compte quand l'adresse n'appartient qu'à un acheteur sans compte", async () => {
+    // Un acheteur de la boutique n'a pas d'identité de connexion : ce n'est pas
+    // un compte, et il ne doit pas fermer la porte à qui prouve la même boîte.
+    await createGuest(ctx.prisma, { email: "gerant@client-cycle.fr" });
+
+    await resolveGoogle("gerant@client-cycle.fr");
+
+    expect(await ctx.prisma.user.count({ where: { auth0Sub: GOOGLE } })).toBe(1);
+  });
+
+  it("ne confond pas deux adresses que `ILIKE` rapprocherait", async () => {
+    await createUser(ctx.prisma, { auth0Sub: SUB, email: "jeanxdupont@client.fr" });
+
+    await resolveGoogle("jean_dupont@client.fr");
+
+    expect(await ctx.prisma.user.count({ where: { auth0Sub: GOOGLE } })).toBe(1);
   });
 });
 
