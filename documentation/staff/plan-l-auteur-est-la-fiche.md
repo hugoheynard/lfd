@@ -6,7 +6,7 @@
 > été inventoriés dans la foulée (§8) — rien à convertir.
 >
 > Remplace [`journalisation-staff/todo-le-sub-comme-auteur.md`](journalisation-staff/todo-le-sub-comme-auteur.md).
-> État : 📐 plan, rien n'est codé. **Deuxième version**, réécrite après une
+> État : 🚧 **en construction** depuis le 2026-09-18 (« go tout le plan »). **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§9) qui a trouvé une empreinte que la conversion
 > casserait, et un inventaire trop court.
 
@@ -27,9 +27,9 @@ Après ce plan :
    journaux, charges utiles.
 3. **Le front et les exports reçoivent des noms.** Les identifiants restent
    servis là où un filtre en a besoin.
-4. **L'histoire est convertie** par une **table de correspondance** `sub → fiche`
-   que Hugo valide avant qu'elle serve (§3) — parce qu'une fiche a pu avoir
-   plusieurs `sub` et qu'aucune table ne les a gardés.
+4. **L'histoire est convertie** par une **table des `sub`** de chaque fiche
+   (D5), tenue à jour à chaque liaison — parce qu'une fiche peut avoir
+   plusieurs `sub` et qu'aucune table ne les gardait.
 5. **Une exception assumée** : les contenus empreintés du catalogue PIM
    gardent leur `sub` pour toujours (D6).
 
@@ -104,11 +104,11 @@ journal reste servi pour toujours — le filtre par personne en a besoin.
 **D4 — Pendant la bascule, on lit les deux formes, y compris pour filtrer.**
 `PrismaStaffDirectory`, `PrismaActorNamer` et les nouveaux résolveurs de nom
 cherchent **par `id`, puis par `sub`** (celui de la fiche **et** ceux de la
-table de correspondance, D5). Le filtre par acteur du journal devient
+table des `sub`, D5). Le filtre par acteur du journal devient
 `actor_id IN (<id>, <ses sub connus>)` : l'histoire d'une personne ne se coupe
 pas entre deux identifiants.
 
-**D5 — L'histoire se convertit par une table de correspondance validée.**
+**D5 — L'histoire se convertit par une table des `sub` de chaque fiche.**
 Une fiche a pu porter **plusieurs `sub`** : le résolveur réécrivait `auth0Id`
 sans condition jusqu'au 2026-09-17, la réinvitation en relie un neuf, et la
 migration de reprise du journal note que celui de la racine « a pu changer ».
@@ -117,20 +117,26 @@ la plupart, la racine étant l'auteur de presque tout.
 
 Donc :
 
-1. une **requête d'inventaire** (lecture seule, production) liste chaque `sub`
-   distinct trouvé dans les colonnes du §1, avec ses indices : fiche dont
-   c'est l'`auth0_id` actuel, `actor_name` / `actor_role` que le journal lui a
-   figés, première et dernière apparition ;
-2. une **migration** crée `staff_subject_aliases (sub PK, staff_user_id,
-source)` et y inscrit, **en données**, les couples que Hugo a validés sur cet
-   inventaire — l'`auth0_id` actuel de chaque fiche d'office, les autres un à
-   un ;
-3. la **conversion** joint sur cette table, et seulement sur elle. Ce qui n'y
-   est pas reste tel quel, et se compte.
+1. une **table** `staff_subject_aliases (sub PK, staff_user_id, source,
+recorded_at)` garde **chaque `sub` qu'une fiche a porté**. La migration qui
+   la crée y inscrit l'`auth0_id` actuel de chaque fiche (`source =
+'current'`). Ensuite, **tout** geste qui relie un `sub` à une fiche
+   (`markInvited`, le rapprochement du résolveur) y ajoute sa ligne dans la
+   même écriture (`source = 'linked'`) : l'histoire des `sub` ne se perd plus ;
+2. la **conversion** joint sur cette table, et seulement sur elle. Ce qui n'y
+   est pas reste tel quel, et se compte (§5, contrôle).
 
 La table reste : c'est elle qui rend D4 possible pour toujours si un résidu
 existe, et qui dit d'où vient chaque rattachement. Elle ne contient **que des
-correspondances validées** — pas de valeur inventée.
+liens que la base a elle-même établis** — pas de valeur inventée.
+
+**Sans inventaire préalable** — Hugo, le 2026-09-18 : « pas besoin de
+l'inventaire, go tout le plan ». Un ancien `sub` de la racine, s'il existe, ne
+sera donc pas converti : ses lignes restent en `sub`, se nomment quand même
+(D4 relit le nom figé du journal quand il existe) et apparaissent au contrôle.
+La requête ([`requetes/inventaire-des-auteurs-staff.sql`](requetes/inventaire-des-auteurs-staff.sql))
+reste disponible pour ce contrôle, et pour ajouter plus tard un alias par une
+nouvelle migration si Hugo en reconnaît un.
 
 La condition de date de la première version (`created_at <= instant de la
 ligne`) disparaît : elle couvrait le cas rare, laissait le fréquent, et
@@ -180,26 +186,17 @@ aujourd'hui **tout** abonnement reçoit **toute** notification, y compris
 celui d'une personne partie — ce point rejoint le plan de départ (les
 abonnements d'une fiche partie sont retirés à son départ).
 
-## 3. Avant d'écrire une ligne : l'inventaire de production
+## 3. L'inventaire de production — écarté
 
-Hugo, le 2026-09-18 : **aucun `sub` Google** n'existe encore. La table sera
-donc courte ; l'inventaire reste nécessaire pour le `sub` de la racine, qui a pu
-changer avant le 2026-09-17 sans être Google.
+Hugo, le 2026-09-18 : **aucun `sub` Google** n'existe encore, et « pas besoin
+de l'inventaire ». La table D5 part des `sub` actuels. La requête écrite pour
+l'inventaire sert de **contrôle** après l'étape 4.
 
-La requête du D5.1 est écrite :
-[`requetes/inventaire-des-auteurs-staff.sql`](requetes/inventaire-des-auteurs-staff.sql)
-— transaction `READ ONLY` terminée par `ROLLBACK`, éprouvée sur la base de
-développement le 2026-09-18. Hugo la lance en production.
-
-Ce que la base de développement a montré, et que le plan n'avait pas prévu :
-des colonnes d'auteur staff portent des **marqueurs** qui ne sont ni un `sub`
-ni une fiche — `seed-pim`, `import-plaquette-hiver-2026`, `sonde`, `semis de
-développement`. Ils ne désignent personne : **ils restent tels quels**, la
-conversion ne les touche pas, et les lecteurs de nom les affichent comme
-aujourd'hui. Elle
-rend la liste des `sub` et leurs indices, plus les valeurs qui ne sont pas des
-`sub` (`unknown-staff`, `dev-staff`, `system`). **C'est sur ce document que
-Hugo valide les correspondances** ; le plan ne suppose pas le résultat.
+Ce que la base de développement a montré en l'éprouvant : des colonnes
+d'auteur staff portent des **marqueurs** qui ne sont ni un `sub` ni une fiche —
+`seed-pim`, `import-plaquette-hiver-2026`, `sonde`, `semis de développement`.
+Ils ne désignent personne : **ils restent tels quels**, la conversion ne les
+touche pas, et les lecteurs de nom les affichent comme aujourd'hui.
 
 ## 4. L'ordre des déploiements
 
@@ -207,13 +204,14 @@ Hugo valide les correspondances** ; le plan ne suppose pas le résultat.
    avancé ici). Une fiche supprimée entre deux étapes emporterait la seule
    trace de ses `sub`. Hugo l'a déjà décidé : « pas possible de supprimer une
    fiche staff ».
-1. **Lire les deux formes, servir des noms** (D3, D4 sans table). Aucun
-   changement d'écriture. La fuite visible s'arrête ici, export compris.
-2. **La table de correspondance** (D5.2), remplie de ce que Hugo a validé. Les
-   lecteurs et le filtre la lisent.
+1. **La table des `sub`, lire les deux formes, servir des noms** (D5.1, D3,
+   D4). Aucun changement d'auteur écrit. La fuite visible s'arrête ici, export
+   compris.
+2. _(fusionnée dans 1 : sans inventaire, la table n'attend plus de
+   validation.)_
 3. **Écrire l'id** (D1, D2, D8 côté code, D9 côté code), avec
    `lint:subject-readers`.
-4. **Convertir** (D5.3, D7) — une migration, livrée **dans le déploiement
+4. **Convertir** (D5.2, D7) — une migration, livrée **dans le déploiement
    suivant** l'étape 3 : l'ancienne instance, qui répond encore une à deux
    minutes après le basculement (`deploy_lfd_api.yml`), a fini d'écrire des
    `sub`. Si le contrôle (§5) trouve un reste, c'est une **nouvelle**
@@ -294,7 +292,7 @@ Hugo : « dans la foulée, pour les clients, ce serait la même mécanique ? » 
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | BLOQUANT — `readyBy` est dans un contenu adressé par son empreinte ; la conversion casse les ancres           | D6 : les contenus figés ne se convertissent pas ; `readyBy` reste, avec l'id de fiche ; les contenus figés ne sont pas réécrits (Hugo) |
 | BLOQUANT — inventaire court : `User.invitedBy`, `PricingEvent.actor`, 16 colonnes tarifaires, vues et export  | §1 refait ; D7 traite le journal tarifaire ; D3 couvre l'export CSV                                                                    |
-| SÉRIEUX — une fiche a eu plusieurs `sub` ; « zéro, le plus probable » était une décision esquivée             | D5 : table de correspondance validée par Hugo sur un inventaire, avant toute conversion                                                |
+| SÉRIEUX — une fiche a eu plusieurs `sub` ; « zéro, le plus probable » était une décision esquivée             | D5 : table des `sub` de chaque fiche, tenue à jour à chaque liaison (inventaire écarté par Hugo)                                       |
 | SÉRIEUX — D6 (push) promettait un ciblage qui n'existe pas                                                    | D9 : trace seulement ; le ciblage rejoint le plan de départ                                                                            |
 | SÉRIEUX — la « relance » de la conversion n'avait pas de mécanisme, et l'ordre se contredisait                | §4 : conversion dans le déploiement suivant ; un reste = une nouvelle migration                                                        |
 | SÉRIEUX — le filtre par acteur coupait l'histoire d'une personne                                              | D4 : filtre sur l'id et ses `sub` connus ; `actorId` reste servi                                                                       |
