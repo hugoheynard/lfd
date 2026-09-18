@@ -4,8 +4,8 @@
 > déploiement réel (« pas encore validé par un build Docker »). Depuis, tout a
 > changé : les backends sont en production, leurs Workers n'ont **plus aucune
 > adresse publique**, et la topologie passe par une passerelle. La référence à
-> jour est [`../ops/architecture-deploiement.md`](../ops/architecture-deploiement.md)
-> et [`../ops/pipelines.md`](../ops/pipelines.md).
+> jour est [`architecture-deploiement.md`](architecture-deploiement.md)
+> et [`pipelines.md`](pipelines.md).
 >
 > Conservé pour l'historique du raisonnement (choix d'audiences Auth0, chemins
 > des secrets), **pas comme description de l'état actuel**.
@@ -430,4 +430,4 @@ Le rate-limit vit sur les **Workers backend** (pas la gateway) : la sécurité e
 | `apps/lfd-api/Dockerfile`                   | Image NestJS (build contexte racine)         |
 | `apps/lfd-api/.env.example`                 | Liste **autoritaire** des variables runtime  |
 | `.github/workflows/deploy_lfd_api.yml`      | Pipeline CI (build → push → deploy → sync)   |
-| `documentation/suite/CONTAINERIZE-NOTES.md` | Points à valider au 1er build Docker         |
+| `documentation/ci-cd/CONTAINERIZE-NOTES.md` | Points à valider au 1er build Docker         |

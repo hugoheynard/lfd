@@ -4,7 +4,7 @@
 > chemins les envoient — l'ouverture d'un accès client
 > (`grant-account-access.service`), l'invitation staff
 > (`open-staff-access.service`), la création et la mise à jour d'un membre de
-> l'équipe (`staff-user.handlers`), les alertes de compte
+> l'équipe (`create-staff-user.handler`, `update-staff-user.handler`), les alertes de compte
 > (`dispatch-alert-channels.service`) et le contrôle du courrier
 > (`admin-mail-check.controller`).
 >
@@ -122,7 +122,7 @@ container. Deux chemins, tous deux chers :
 
 - terminer le WS **dans le container** — il hérite de l'instance unique tuée à
   chaque déploiement, sans drain (cf.
-  [`todo-deploiement-en-exploitation.md`](todo-deploiement-en-exploitation.md)) ;
+  [`../ci-cd/todo-deploiement-en-exploitation.md`](../ci-cd/todo-deploiement-en-exploitation.md)) ;
 - faire du DO un **vrai acteur** qui tient les connexions — propre, mais c'est un
   chantier : lui faire remonter les écritures Postgres, gérer la
   resynchronisation.

@@ -28,7 +28,7 @@ rien une fois la personne entrée.
   `contactAccessSchema = none | invited | expired | active` et
   `CompanyContactView` (`packages/contracts/src/company-member.ts`), calculés par
   `projectContacts` (`company-contacts.projection.ts`) — rapprochement sur
-  l'adresse normalisée, échéance par `isInvitationExpired` (14 jours,
+  l'adresse normalisée, échéance par `isInvitationExpired` (7 jours depuis le 2026-09-18, 14 avant —
   `platform/shared/invitation/invitation-expiry.ts`). **Lu par le staff
   seulement.** Côté client, `/me` sert `ContactView`, sans accès, à **tous** les
   membres de la société, quel que soit leur rôle (`prisma-account.reader.ts`).

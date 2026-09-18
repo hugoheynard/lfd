@@ -1,7 +1,7 @@
 # Les accès client — l'invitation et le transfert de détenteur, à reprendre
 
 > Ouvert le 2026-09-14 à la demande de Hugo, pendant le plan
-> [`../b2b/plan-invitation-client.md`](../b2b/plan-invitation-client.md). Les
+> [`plan-invitation-client.md`](plan-invitation-client.md). Les
 > décisions prises ce jour-là sont **volontairement prudentes** : elles ferment
 > des failles et un oracle, sans prétendre avoir dessiné le modèle définitif des
 > accès. Ce document dit ce qu'il faudra rouvrir.
@@ -10,7 +10,7 @@
 
 **Marqué important par Hugo le 2026-09-14.** La demande : un lien « Envoyer une
 invitation » sous chaque contact de Mon compte. Le plan
-[`../b2b/plan-invitation-client.md`](../b2b/plan-invitation-client.md) a subi
+[`plan-invitation-client.md`](plan-invitation-client.md) a subi
 **trois contradictions de `vitruve` le même jour — dix objections bloquantes** —
 et **rien n'est construit**.
 

@@ -4,7 +4,7 @@ Décisions figées avant d'écrire le schéma. Contexte : LaFolieDouce B2B, ~20 
 (peak < 200), Auth0 pour l'auth, Postgres + Prisma, Cloudflare (statique + Workers).
 
 > **Config concrète du tenant Auth0** (réglages exacts du dashboard, valeurs,
-> pièges rencontrés) : [`auth0-setup-b2b.md`](auth0-setup-b2b.md) — runbook daté.
+> pièges rencontrés) : [`auth0-setup.md`](auth0-setup.md) — runbook daté.
 >
 > **Onboarding & provisioning** (comment un client entre : self-signup + porte
 > commerciale, états, activation) : [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md).
@@ -175,7 +175,7 @@ Depuis le 2026-09-15, l'en-tête accepte aussi la valeur réservée `personal` :
 elle résout « aucune société » **quel que soit** le nombre de rattachements, une
 seule société comprise. En accès, ça ne franchit aucun mur ; en prix, ça ouvre
 le tarif catalogue hors mercuriale, par décision
-([`plan-espace-de-travail.md`](plan-espace-de-travail.md), D1 et Q1).
+([`../b2b/plan-espace-de-travail.md`](../b2b/plan-espace-de-travail.md), D1 et Q1).
 
 ## 6. Back-office admin (privilégié) — 2 portes + pas de backdoor
 

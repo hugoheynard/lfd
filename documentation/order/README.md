@@ -1,6 +1,6 @@
 # La commande — du rayon à la remise
 
-**Ouvert le 2026-09-07.** L'entrée du dossier. Onze documents décrivent la vie
+**Ouvert le 2026-09-07.** L'entrée du dossier. Les documents qui suivent décrivent la vie
 d'une commande ; celui-ci dit **de quoi elle est faite** et **par quelle porte
 entrer**. Il ne remplace aucun d'eux.
 
@@ -9,6 +9,11 @@ entrer**. Il ne remplace aucun d'eux.
 > `todos/`. Rangée ainsi, elle se lisait en sept morceaux dont aucun ne disait
 > le tout — exactement ce qui rendait le sujet illisible. Le prix a fait la même
 > sortie une semaine plus tôt ([`../pricing/`](../pricing/README.md)).
+>
+> **Depuis le 2026-09-17, les plans et les TODO de la commande vivent ici
+> aussi** (Hugo) : `flux-de-commande`, `plan-commande-sans-compte`,
+> `plan-heure-limite-par-clientele` et `plan-creneaux-de-retrait` venaient de
+> `b2b/`, les deux `todo-*` de `todos/` — même règle que `comptabilite/`.
 
 ---
 
@@ -42,7 +47,7 @@ flowchart TD
 
   subgraph Apres["Après"]
     Ecrite --> Prod["Plan de production<br/>GET /admin/production/batch"]
-    Ecrite --> QR["Jeton de remise<br/>(retrait uniquement)"]
+    Ecrite --> QR["Jeton de retrait<br/>(retrait et livraison)"]
     QR --> Scan["Scan au comptoir<br/>POST /admin/production/handover/:token"]
     Scan --> Fulfilled[("fulfilled")]
   end
@@ -70,7 +75,7 @@ flowchart TD
 | **Convenu**         | la tranche, le contact, la signature — figés **avec leur provenance** (défaut du réglage, ou choix).                                            |
 | **Dérogation**      | l'autorisation, à usage unique, de passer après l'heure limite. Se **consomme** après persistance.                                              |
 | **Surtaxe**         | ce que le retard coûte. Terme de panier, jamais un prix d'article. Ne s'applique qu'avec une dérogation.                                        |
-| **Jeton de remise** | un secret aléatoire, pas le numéro de commande. Émis pour le **retrait seul** — la livraison devrait en avoir un, cf. le bon de commande.       |
+| **Jeton de remise** | un secret aléatoire, pas le numéro de commande. Émis pour **les deux** acheminements depuis le 2026-09-07 — le coursier scanne aussi.           |
 | **Colisage**        | le scan qui déclare une commande **prête**. Se lit par le NUMÉRO, pas par un secret : c'est un fait interne, sans seconde partie à représenter. |
 
 ---
@@ -84,9 +89,15 @@ flowchart TD
 | Comment on commande sans avoir d'entreprise ?                | [`architecture-flux-commande-zero-friction.md`](architecture-flux-commande-zero-friction.md)        |
 | Comment un commercial commande **pour** un client ?          | [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)      |
 | Jusqu'à quand on prend commande, et que coûte le retard ?    | [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)              |
+| Comment on annule une commande, et ce que devient l'argent ? | [`plan-annulation-de-commande.md`](plan-annulation-de-commande.md) — doc-first                      |
 | Que se passe-t-il quand un client veut changer sa commande ? | [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)          |
+| Que porte une commande, et d'où vient chaque information ?   | [`architecture-ce-que-porte-la-commande.md`](architecture-ce-que-porte-la-commande.md)              |
 | Quels états une commande traverse, et qui les écrit ?        | [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md)                    |
 | Comment la commande alimente le plan de production ?         | [`architecture-flux-commande-prod.md`](architecture-flux-commande-prod.md) — **topologie obsolète** |
+| Quels parcours existent, par profil de client ?              | [`flux-de-commande.md`](flux-de-commande.md)                                                        |
+| Comment un visiteur commande sans compte ?                   | [`plan-commande-sans-compte.md`](plan-commande-sans-compte.md)                                      |
+| Quelle journée un client public peut demander ?              | [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md) — doc-first              |
+| Quel créneau de retrait un visiteur peut choisir ?           | [`plan-creneaux-de-retrait.md`](plan-creneaux-de-retrait.md)                                        |
 | Quels écrans le client traverse, et avec quels mots ?        | [`parcours-client-compte-actif.md`](parcours-client-compte-actif.md)                                |
 | De quoi est faite la pièce qu'on imprime, envoie, affiche ?  | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                |
 | Où sont rangés les papiers d'un client, et sous quelle clé ? | [`architecture-pieces-en-r2.md`](architecture-pieces-en-r2.md)                                      |
@@ -104,11 +115,14 @@ flowchart TD
 
 **Je veux savoir CE QUI CLOCHE.**
 
-|                                          |                                                                                                                                                                            |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| L'état du flux, de bout en bout          | [`audit-flux-de-commande.md`](audit-flux-de-commande.md) — **douze défauts** relevés le 2026-09-07, **quatre fermés** le jour même (§6). Lire le §6 avant d'agir sur un T. |
-| Le calcul du prix et du panier           | [`../pricing/audit-fable.md`](../pricing/audit-fable.md)                                                                                                                   |
-| Ce que la plateforme laisse sans réponse | [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md)                                                                                           |
+|                                          |                                                                                                                                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| L'état du flux, de bout en bout          | [`audit-flux-de-commande.md`](audit-flux-de-commande.md) — **nettoyé contre le code le 2026-09-18** : sept défauts fermés, sept ouverts dont deux nouveaux (T13, T14). Le §2 est l'état du jour. |
+| Le calcul du prix et du panier           | [`../pricing/audit-fable.md`](../pricing/audit-fable.md)                                                                                                                                         |
+| Où en est l'annulation d'une commande    | [`todo-annulation-de-commande.md`](todo-annulation-de-commande.md)                                                                                                                               |
+| Combien de temps on garde les bons en R2 | [`todo-conservation-des-bons-en-r2.md`](todo-conservation-des-bons-en-r2.md)                                                                                                                     |
+| L'export des commandes pour le comptable | [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md)                                                                                               |
+| Ce que la plateforme laisse sans réponse | [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md)                                                                                                                 |
 
 ---
 

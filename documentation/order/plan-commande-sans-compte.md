@@ -217,7 +217,7 @@ les seules promotions ouvertes à tous — pas un tarif négocié.
 
 **Ce qui reste entier, et qui n'est pas technique :** ce tarif de liste est-il
 destiné au public ? Et à quel **taux de TVA** —
-[`analyse-boutique-publique.md`](analyse-boutique-publique.md) §2.3 pose « au
+[`analyse-boutique-publique.md`](../b2b/analyse-boutique-publique.md) §2.3 pose « au
 taux de TVA B2B », et ce point-là n'a **pas** été revérifié ici. La précondition
 survit donc, mais comme **arbitrage de prix et de fiscalité**, pas comme verrou
 de code : elle n'empêche plus d'écrire ni d'éprouver la route.
@@ -229,7 +229,7 @@ une route publique donne `featureSubjectOf(undefined) = null`
 flag `shop=order` qui ouvre la boutique pro ouvrirait celle-ci. Le flag **par
 audience** est le D6 de l'analyse, et il n'est pas bâti.
 
-[`analyse-boutique-publique.md`](analyse-boutique-publique.md) §7 l'avait déjà
+[`analyse-boutique-publique.md`](../b2b/analyse-boutique-publique.md) §7 l'avait déjà
 posé : « **Aucune ouverture au public avant la fin du lot 5** », le tarif public
 et les totaux TTC étant son lot 3, marqué « argent ». Ce plan s'insère **avant**
 son lot 4, et ne se met en service qu'après son lot 5.
@@ -312,7 +312,7 @@ externalId)` (`platform/mailer/journal/mail-journal.port.ts`) est un
      l'extraire est à concevoir au moment de bâtir, pas à supposer fait.
 
 - **D3 — le rapatriement n'est PAS dans ce plan.** ✅ Il n'existe pas :
-  [`../order/plan-nature-du-client-sur-la-commande.md`](../order/plan-nature-du-client-sur-la-commande.md)
+  [`../order/plan-nature-du-client-sur-la-commande.md`](plan-nature-du-client-sur-la-commande.md)
   §1 — « aucun code ne rattache une société à une commande existante » — et son
   **D7 décide que le rapatriement ne réécrit pas** ce qui est figé à la
   passation. Un invité qui crée un compte ne reprend donc pas ses commandes sans
@@ -462,7 +462,7 @@ par des lectures faites après son passage.
   `guestEmail <> ''`, qui laissait passer la ligne interdite (`FALSE OR NULL` =
   `NULL`) — l'erreur est morte avec la voie, la leçon reste.
 - **Un plan voisin qui a vécu la même contradiction** :
-  [`../order/plan-nature-du-client-sur-la-commande.md`](../order/plan-nature-du-client-sur-la-commande.md)
+  [`../order/plan-nature-du-client-sur-la-commande.md`](plan-nature-du-client-sur-la-commande.md)
   — un BLOQUANT y a renversé une décision, et le sort de chaque objection est
   consigné à son §5. C'est la forme suivie ici au §8.
 - **Une migration irréversible assumée par écrit** : son D4 — « il n'y en a pas :

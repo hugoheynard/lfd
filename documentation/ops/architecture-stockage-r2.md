@@ -285,8 +285,10 @@ passer sur un montage où les deux se confondraient.
 
 - **Ce que contient chaque pièce**, audience par audience :
   [`../order/architecture-bon-de-commande.md`](../order/architecture-bon-de-commande.md).
-- **Combien de temps on garde** :
-  [`../todos/todo-conservation-des-bons-en-r2.md`](../todos/todo-conservation-des-bons-en-r2.md).
+- **Combien de temps on garde les bons de commande** — sans limite : un bon
+  émis à juste titre ne se supprime pas (Hugo, 2026-09-17) ; aucune règle de
+  cycle de vie ne doit viser `orders/` :
+  [`../order/todo-conservation-des-bons-en-r2.md`](../order/todo-conservation-des-bons-en-r2.md).
 - **Le cache, le domaine et ce que « CDN » recouvre** :
   [`architecture-stockage-media.md`](architecture-stockage-media.md).
 - **Ce qui est vérifié à chaque déploiement** :

@@ -6,7 +6,7 @@
 > Hugo**. Ce qui suit n'est pas urgent : ce sont les gestes qu'on a
 > délibérément laissés pour plus tard.
 >
-> Le contexte : [`../ops/architecture-deploiement.md`](../ops/architecture-deploiement.md),
+> Le contexte : [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md),
 > section « Le front client à la racine de `lafoliecoffee.info` ».
 
 ## 1. Passer la redirection de `/pro` en 301

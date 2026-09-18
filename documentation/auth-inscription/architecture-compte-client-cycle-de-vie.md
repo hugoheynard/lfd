@@ -17,7 +17,7 @@
 >
 > Prérequis lus : [`architecture-identite-auth-tenancy.md`](architecture-identite-auth-tenancy.md)
 > (Auth0 authentifie, notre base autorise ; le mur `company_id`) et
-> [`architecture-activation-configuration-b2b.md`](architecture-activation-configuration-b2b.md)
+> [`../b2b/architecture-activation-configuration-b2b.md`](../b2b/architecture-activation-configuration-b2b.md)
 > (quelles pièces sont exigées — la config que le verdict d'activation consomme).
 >
 > **Statut : ✅ livré**, sauf §8 (gestes de fin de vie) et §9 (branchements prod,
@@ -272,7 +272,7 @@ stateDiagram-v2
     [*] --> none : interlocuteur noté, aucune clé
     none --> invited : on lui ouvre l'accès
     invited --> active : PREMIÈRE REQUÊTE AUTHENTIFIÉE
-    invited --> expired : 14 jours sans être réclamé
+    invited --> expired : 7 jours sans être réclamé
     expired --> invited : relance (nouveau lien)
     active --> [*]
 
@@ -286,10 +286,10 @@ stateDiagram-v2
 **L'entrée se constate.** `invited → active` se fait tout seul, à la première
 requête authentifiée (`customer-principal.resolver.ts`). Rien à instrumenter.
 
-**L'invitation périme au bout de 14 jours** (`INVITATION_LIFETIME_DAYS`). Ce
-n'est pas une contrainte inventée : le lien de mot de passe du fournisseur a
-**déjà** une durée de vie limitée. Une invitation qui traîne trois semaines est
-donc déjà morte — simplement, rien ne le disait.
+**L'invitation périme au bout de 7 jours** (`INVITATION_LIFETIME_DAYS`), la
+durée de vie du lien de mot de passe chez le fournisseur, dont elle est
+**dérivée** depuis le 2026-09-18. Elle valait 14 jours avant, sur un lien qui en
+vivait 7 : du 8ᵉ au 14ᵉ jour, l'écran annonçait un lien déjà mort.
 
 Le compteur est le `createdAt` du **membership**, pas celui du compte : la même
 personne a pu être invitée ailleurs il y a un an et ici hier.

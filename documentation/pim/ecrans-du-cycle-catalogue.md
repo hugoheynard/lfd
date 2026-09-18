@@ -187,7 +187,7 @@ table en double survit.
 
 ⚠️ Ce retrait est une **migration de données** : la décision existante (une
 ligne) doit être portée dans la matrice avant que la lecture bascule, en trois
-déploiements — étendre, basculer, resserrer (`documentation/ops/pipelines.md`).
+déploiements — étendre, basculer, resserrer (`documentation/ci-cd/pipelines.md`).
 
 ---
 
@@ -465,5 +465,5 @@ retirée sans trace se refait.
 ## Références
 
 - [`cycle-catalogue-du-pim-a-la-vente.md`](cycle-catalogue-du-pim-a-la-vente.md) — comment le code marche aujourd'hui
-- [`../ops/pipelines.md`](../ops/pipelines.md) — étendre → basculer → resserrer
+- [`../ci-cd/pipelines.md`](../ci-cd/pipelines.md) — étendre → basculer → resserrer
 - [`../langue-du-code.md`](../langue-du-code.md) — le lexique

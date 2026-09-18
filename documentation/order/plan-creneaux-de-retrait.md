@@ -11,12 +11,12 @@
 > table de règles). **Elle n'en porte plus.** Ce plan est **purement additif** :
 > rien n'est converti, rien n'est supprimé, le retrait pro n'est pas touché.
 >
-> Lu avant, et cité : [`plan-remise-et-livraison-par-clientele.md`](plan-remise-et-livraison-par-clientele.md)
+> Lu avant, et cité : [`plan-remise-et-livraison-par-clientele.md`](../b2b/plan-remise-et-livraison-par-clientele.md)
 > (le voisin immédiat, sur le même écran),
-> [`architecture-prise-de-rendez-vous.md`](architecture-prise-de-rendez-vous.md)
+> [`architecture-prise-de-rendez-vous.md`](../b2b/architecture-prise-de-rendez-vous.md)
 > §2.1 (le précédent « règle, pas liste »),
-> [`../order/architecture-heure-limite-de-commande.md`](../order/architecture-heure-limite-de-commande.md)
-> et [`../order/demontage-order-cutoff.md`](../order/demontage-order-cutoff.md)
+> [`../order/architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)
+> et [`../order/demontage-order-cutoff.md`](demontage-order-cutoff.md)
 > (la dimension « point × jour », et pourquoi elle a été abandonnée),
 > et le dossier de handoff `handoff-bienvenue/` — **hors dépôt**, lu le
 > 2026-09-16 : l'écran public qui consommera ceci.

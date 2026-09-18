@@ -87,7 +87,7 @@ sous-domaine, rien ne changera de son côté.
 passerelle le pose parce qu'elle est la première à voir le client ; le Worker
 backend le réécrit parce qu'il reste la frontière de confiance de son propre
 périmètre. Si demain la passerelle disparaissait du chemin, le Worker
-tiendrait toujours. Cf. [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md).
+tiendrait toujours. Cf. [`../ops/securite-frontiere-de-confiance.md`](../ops/securite-frontiere-de-confiance.md).
 
 ## 3. Où tournent les containers, et pourquoi c'est écrit
 
@@ -189,9 +189,9 @@ sous-domaines **sans toucher aux backends**.
 ## 7. À lire ensuite
 
 - [`pipelines.md`](pipelines.md) — qui déclenche quoi, et dans quel ordre
-- [`secrets-et-variables.md`](secrets-et-variables.md) — où vit chaque valeur
-- [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md) — le mur, ce qu'il tient et ce qu'il ne tient pas
-- [`runbook.md`](runbook.md) — déployer, revenir en arrière, rouvrir une porte
+- [`../ops/secrets-et-variables.md`](../ops/secrets-et-variables.md) — où vit chaque valeur
+- [`../ops/securite-frontiere-de-confiance.md`](../ops/securite-frontiere-de-confiance.md) — le mur, ce qu'il tient et ce qu'il ne tient pas
+- [`../ops/runbook.md`](../ops/runbook.md) — déployer, revenir en arrière, rouvrir une porte
 
 ## Le front client à la racine de `lafoliecoffee.info`
 

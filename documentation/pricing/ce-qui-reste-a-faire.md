@@ -616,7 +616,7 @@ vers le **type** — donc le seul qui tienne un champ appelé `value`.
 
 ⚠️ Le renommer serait plus simple, et c'est un piège : le nom d'une colonne se
 change par **migration**, en trois déploiements
-([`ops/pipelines.md`](../ops/pipelines.md)), pour un défaut que le type ferme
+([`ci-cd/pipelines.md`](../ci-cd/pipelines.md)), pour un défaut que le type ferme
 sans toucher aux données.
 
 ### ~~R8~~ ✅ Aucune porte sur `prisma.<modèle>` — **close le 2026-09-09**

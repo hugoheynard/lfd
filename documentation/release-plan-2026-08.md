@@ -153,7 +153,7 @@ elles font mal :
   backend sur un vrai Postgres) et build AOT des deux fronts B2B. Mettre
   **`ci-gate`** en statut requis sur `main` dans les réglages du dépôt : sans
   ça, la CI informe mais n'empêche rien. Ce qu'elle ne couvre volontairement pas
-  est écrit dans [`todos/todo-qualite-tests.md`](todos/todo-qualite-tests.md).
+  est écrit dans [`ci-cd/todo-qualite-tests.md`](ci-cd/todo-qualite-tests.md).
 - Les migrations Prisma s'appliquent sur la base de production **avant** la
   bascule de l'image.
 - Prévoir le retour arrière : la version précédente reste déployable, et on sait

@@ -5,7 +5,7 @@
 > L'ancien lien `/pro/ouverture-compte-pro`, que la commerciale a déjà donné,
 > **renvoie** vers elle (302, passerelle). Le reste de ce plan dit `/pro` : c'était
 > l'adresse au moment où il a été écrit. Cf.
-> [`../ops/architecture-deploiement.md`](../ops/architecture-deploiement.md).
+> [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md).
 
 **Statut** : 🟡 lots 1 à 6 bâtis le 2026-09-14, non commités à l'écriture de
 cette ligne ; lot 0 retiré. Ce que la construction a changé au plan est au §11.
@@ -81,7 +81,7 @@ société, sans le lui dire.** C'est ce qui justifie une porte pro distincte.
 
 ### 1.5 Les flags : décrits, pas codés — et un précédent qui marche
 
-`architecture-feature-flags.md` est **doc-first**. Il pose les règles suivantes :
+`../b2b/architecture-feature-flags.md` est **doc-first**. Il pose les règles suivantes :
 
 - le catalogue vit dans le code, et la base ne porte **que les écarts** ;
 - « revenir au défaut » supprime la ligne ;
@@ -440,7 +440,7 @@ Une ligne dont la clé n'est plus au catalogue est signalée, jamais interprét�
 | 4   | `pablo`     | **Écran admin** (§5).                                                                                                                                                                                                                                                                                                                                                                 | 1                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 5   | `pablo`     | **App cliente** : `ClientFeatureAccess`, gardes, menu, panier conditionnel (§4). Specs dans les trois niveaux, et en échec de lecture.                                                                                                                                                                                                                                                | 1                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 6   | `pablo`     | **Page `/ouverture-compte-pro`**, `ClientOnboarding`, carte « Compléter mon dossier », promesse « la boutique ouvre bientôt » selon le niveau (§3.1). Specs : un appel par retour, champs rendus en cas d'échec, carte affichée si et seulement si aucune société et aucune déclaration en vol.                                                                                       | 2                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| 7   | moi         | **Documentation.** Écarts datés dans `architecture-feature-flags.md` (§1.5) ; parcours pro dans `architecture-inscription-zero-friction.md` ; bandeau sur le §2 du cycle de vie ; geste de fermeture dans `documentation/ops/runbook.md` ; todo de l'oracle SIRET ; index.                                                                                                            | 1 à 6                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 7   | moi         | **Documentation.** Écarts datés dans `../b2b/architecture-feature-flags.md` (§1.5) ; parcours pro dans `architecture-inscription-zero-friction.md` ; bandeau sur le §2 du cycle de vie ; geste de fermeture dans `documentation/ops/runbook.md` ; todo de l'oracle SIRET ; index.                                                                                                     | 1 à 6                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 **Le lot 1 démarre seul** (le lot 0, correctif de `/bienvenue`, est retiré le
 2026-09-14 avec elle). Ensuite 2, 4 et 5 dès que le contrat du lot 1

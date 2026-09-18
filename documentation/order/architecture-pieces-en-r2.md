@@ -138,10 +138,11 @@ lisible.
 Écrit au **premier téléchargement**, pas à la passation : l'immense majorité des
 commandes ne verra jamais son PDF demandé.
 
-⚠️ **Ce pari tombe le jour où le courriel de confirmation joint le bon**, ce qui
-est l'étape suivante. On passera d'une fraction des commandes à leur totalité —
-et c'est ce qui rend la question de la conservation pressante
-([`../todos/todo-conservation-des-bons-en-r2.md`](../todos/todo-conservation-des-bons-en-r2.md)).
+⚠️ **Ce pari tomberait le jour où le courriel de confirmation joindrait le
+bon** — ce qu'il ne fait toujours pas (vérifié le 2026-09-17 : il ne porte que
+le QR). La conservation, elle, est tranchée : **un bon émis à juste titre ne se
+supprime pas**
+([`todo-conservation-des-bons-en-r2.md`](todo-conservation-des-bons-en-r2.md)).
 
 La course entre deux téléchargements simultanés est **inoffensive**, et pour une
 raison qui vaut pour tout ce document : le rendu est **déterministe**. Deux
@@ -208,15 +209,16 @@ est **dans le chemin**.
 
 **Ce qui est archivé ne se réécrit pas.** Un avenant ajoute une révision ; il
 n'écrase rien. C'est la propriété qui fait qu'un client peut opposer un document,
-et c'est aussi celle qui fait croître le stockage sans fin — d'où le TODO de
-conservation, dont la réponse sera **comptable avant d'être technique**.
+et c'est aussi celle qui fait croître le stockage sans fin — ce qui est
+**assumé** : Hugo a tranché le 2026-09-17 qu'un bon émis à juste titre ne se
+supprime pas.
 
 ---
 
 ## 5. Ce que ce document ne dit pas
 
-- **Combien de temps on garde** :
-  [`../todos/todo-conservation-des-bons-en-r2.md`](../todos/todo-conservation-des-bons-en-r2.md).
+- **Comment l'interdiction de supprimer devient structurelle** :
+  [`todo-conservation-des-bons-en-r2.md`](todo-conservation-des-bons-en-r2.md).
 - **Ce que contient chaque pièce**, audience par audience :
   [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md).
 - **Comment une facture est émise** :

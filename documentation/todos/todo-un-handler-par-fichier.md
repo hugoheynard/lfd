@@ -40,10 +40,15 @@ le B2B garde ses fichiers séparés.
 244 fichiers portent un handler ; **220 n'en portent qu'un**. Les 24 restants,
 par nombre décroissant :
 
+> **2026-09-18** — `staff/directory/application/staff-user.handlers.ts` (4) et
+> `staff/permissions/application/staff-role.handlers.ts` (5) sont découpés, un
+> fichier par handler, le jour où le journal de l'annuaire les a rouverts
+> (`documentation/auth-inscription/plan-journal-de-l-annuaire.md`, lot 3).
+> **22 restants**, retirés du tableau ci-dessous.
+
 | Fichier (sous `apps/lfd-api/src/`)                                | Handlers |
 | ----------------------------------------------------------------- | -------- |
 | `b2b/account/application/commands/admin-address.handlers.ts`      | 6        |
-| `staff/permissions/application/staff-role.handlers.ts`            | 5        |
 | `b2b/account/application/commands/admin-contact.handlers.ts`      | 4        |
 | `b2b/catalog/application/commands/catalog-decision.handlers.ts`   | 4        |
 | `b2b/order-cutoffs/application/order-cutoff.handlers.ts`          | 4        |
@@ -52,7 +57,6 @@ par nombre décroissant :
 | `b2b/pricing/application/commands/pricing.handlers.ts`            | 4        |
 | `b2b/pricing/application/commands/rule-lifecycle.handlers.ts`     | 4        |
 | `b2b/pricing/application/commands/volume-ladder.handlers.ts`      | 4        |
-| `staff/directory/application/staff-user.handlers.ts`              | 4        |
 | `b2b/account/application/commands/admin-company.handlers.ts`      | 3        |
 | `b2b/delivery-zones/application/delivery-zone.handlers.ts`        | 3        |
 | `b2b/order-waivers/application/order-cutoff-waiver.handlers.ts`   | 3        |
