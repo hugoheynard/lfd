@@ -99,6 +99,11 @@ admin » compte désormais les admins **`active`** seulement : ni suspendus, ni
 partis, ni `pending`/`invited` — un admin qui n'est pas encore entré ne peut
 rattraper personne.
 
+Au départ, les **abonnements push** de la fiche sont retirés : aujourd'hui
+tout abonnement reçoit toute notification (`prisma-staff-push-subscriptions.ts`,
+`all()`), et l'appareil d'une personne partie continuerait de les recevoir
+(relevé par la contradiction de [`plan-l-auteur-est-la-fiche.md`](plan-l-auteur-est-la-fiche.md), D9).
+
 Après chaque geste (départ, passation, retour), le cache d'accès est vidé
 (`forgetAll`), comme le font déjà les handlers de statut.
 
