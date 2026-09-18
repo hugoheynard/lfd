@@ -42,7 +42,6 @@ export class PrismaAccountReader extends AccountReader {
       where: { id: userId },
       select: {
         id: true,
-        auth0Sub: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -147,15 +146,6 @@ export class PrismaAccountReader extends AccountReader {
     return {
       profile: {
         userId: row.id,
-        // Repli sur la chaîne vide : `auth0Sub` est nullable depuis le
-        // 2026-09-17 (un invité n'a pas d'identité de connexion), mais cette
-        // vue-ci n'est **jamais servie à un invité** — `/me` n'a aucun
-        // `@Public()` et exige un jeton, qu'un invité ne peut pas obtenir
-        // (`me.controller.ts`, vérifié le 2026-09-17). Le repli est donc une
-        // défense de type, pas un cas fonctionnel : élargir `ProfileView.subject`
-        // en `string | null` ferait porter aux deux fronts une possibilité que
-        // la route ne produit pas.
-        subject: row.auth0Sub ?? "",
         firstName: row.firstName,
         lastName: row.lastName,
         email: row.email,

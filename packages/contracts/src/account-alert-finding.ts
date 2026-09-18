@@ -43,11 +43,10 @@ export interface AccountAlertView {
   /**
    * L'id de fiche du staff qui l'a acquittée (un `sub` avant le 2026-09-18), ou `null`.
    *
-   * @deprecated depuis le 2026-09-18 — afficher `acknowledgedByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `acknowledgedByName` et ne lit ce
+   * champ que quand le nom manque.
    */
   readonly acknowledgedBy: string | null;
   /**

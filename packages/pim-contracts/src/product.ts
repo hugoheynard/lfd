@@ -234,12 +234,10 @@ export type ProductMediaView = AttachedMediaView;
 export interface ProductReadinessView {
   readonly readyAt: string;
   /**
-   * L'auteur tel qu'écrit : un `sub` Auth0 ou un id de fiche staff.
-   *
-   * @deprecated depuis le 2026-09-18 — afficher {@link readyByName}. Servi
-   *   encore pendant la bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `readyByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly readyBy: string;
   /**

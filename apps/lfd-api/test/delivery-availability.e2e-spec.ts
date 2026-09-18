@@ -73,9 +73,10 @@ describe("le réglage de livraison", () => {
     const row = await ctx.prisma.deliveryAvailability.findUniqueOrThrow({
       where: { key: "delivery" },
     });
-    // L'id de fiche, dans une colonne encore nommée `*_by_sub` (plan de
-    // l'auteur, étape 3 ; renommée à l'étape 5).
+    // L'id de fiche, dans l'ancienne colonne ET sa jumelle, le temps de la
+    // bascule (plan de l'auteur, étape 5A).
     expect(row.updatedBySub).toBe(E2E_STAFF_ID);
+    expect(row.updatedByStaffId).toBe(E2E_STAFF_ID);
   });
 
   /**

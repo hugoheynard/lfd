@@ -21,12 +21,13 @@ export class PrismaStaffPushSubscriptions extends StaffPushSubscriptions {
   }
 
   async save(target: StaffPushTarget, staffUserId: string): Promise<void> {
+    // L'id de fiche va dans `staff_sub` (le nom d'avant) ET `staff_user_id`
+    // (le sien) jusqu'à la bascule (plan de l'auteur, 5A ; D8, D9).
+    const owner = { staffSub: staffUserId, staffUserId };
     await this.prisma.staffPushSubscription.upsert({
       where: { endpoint: target.endpoint },
-      // La colonne s'appelle encore `staff_sub` : elle reçoit l'id de fiche
-      // depuis l'étape 3 du plan de l'auteur, et se renomme à l'étape 5 (D8, D9).
-      create: { id: this.ids.next(), ...target, staffSub: staffUserId },
-      update: { p256dh: target.p256dh, auth: target.auth, staffSub: staffUserId },
+      create: { id: this.ids.next(), ...target, ...owner },
+      update: { p256dh: target.p256dh, auth: target.auth, ...owner },
     });
   }
 

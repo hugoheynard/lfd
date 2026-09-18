@@ -85,7 +85,7 @@ describe("la cloche — qui a lu", () => {
 });
 
 describe("l'abonnement push — une trace de qui a abonné", () => {
-  it("écrit l'id de fiche dans la colonne encore nommée staff_sub", async () => {
+  it("écrit l'id de fiche dans staff_sub ET staff_user_id, le temps de la bascule", async () => {
     await operator()
       .post("/admin/notifications/push")
       .send({ endpoint: ENDPOINT, keys: { p256dh: "cle-publique", auth: "secret" } })
@@ -95,5 +95,6 @@ describe("l'abonnement push — une trace de qui a abonné", () => {
       where: { endpoint: ENDPOINT },
     });
     expect(subscription.staffSub).toBe(E2E_STAFF_ID);
+    expect(subscription.staffUserId).toBe(E2E_STAFF_ID);
   });
 });

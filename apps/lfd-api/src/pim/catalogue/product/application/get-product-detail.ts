@@ -16,7 +16,7 @@ export type ProductDetail = ProductRecord & {
   /** `null` = personne ne s'est prononcé sur cette fiche. */
   readonly readiness: {
     readonly readyAt: string;
-    /** @deprecated depuis le 2026-09-18 — lire `readyByName` (plan `plan-l-auteur-est-la-fiche.md`, D3). */
+    /** L'id de fiche, ou une valeur qui ne désigne personne : l'écran s'en sert quand le nom manque. */
     readonly readyBy: string;
     /** « Prénom Nom » du signataire ; `null` = l'auteur ne désigne aucune fiche. */
     readonly readyByName: string | null;

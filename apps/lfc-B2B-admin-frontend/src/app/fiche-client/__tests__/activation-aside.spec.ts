@@ -90,7 +90,7 @@ describe('rail Activation du compte', () => {
       status: 'active',
       activation: {
         at: '2026-08-12T09:50:00.000Z',
-        by: { sub: 'auth0|x', name: 'Camille Rousseau', role: 'commercial' },
+        by: { name: 'Camille Rousseau', role: 'commercial' },
       },
     });
 

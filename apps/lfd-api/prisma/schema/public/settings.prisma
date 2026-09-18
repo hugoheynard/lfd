@@ -89,16 +89,21 @@ model DeliveryAvailability {
 
   /// Instant du geste, lu du `Clock` — pas `@updatedAt`, qui lirait l'horloge
   /// de la base au lieu de celle de la requête.
-  updatedAt     DateTime @map("updated_at")
+  updatedAt        DateTime @map("updated_at")
   /// Qui l'a posé, figé à l'instant du geste : l'identifiant survit à tout, le
   /// nom et le rôle sont un instantané. La colonne reçoit l'id de fiche depuis
   /// le 2026-09-18 malgré son nom (`*_by_sub`, renommée à l'étape 5 du plan de
   /// l'auteur). Les lignes plus anciennes portaient un `sub` Auth0, converti par
   /// la migration `20260918190000_conversion_des_auteurs_staff` ; seul y reste
   /// un `sub` que la table des `sub` ne connaît pas.
-  updatedBySub  String   @map("updated_by_sub")
-  updatedByName String   @map("updated_by_name")
-  updatedByRole String   @map("updated_by_role")
+  updatedBySub     String   @map("updated_by_sub")
+  /// La même valeur, sous le nom de ce qu'elle contient (plan de
+  /// l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
+  /// lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
+  /// lectures ici. Nullable tant que dure la bascule.
+  updatedByStaffId String?  @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
 
   @@map("delivery_settings")
   @@schema("public")

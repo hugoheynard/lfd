@@ -30,7 +30,6 @@ const COMPANY_SELECT = {
   kbisFileName: true,
   kbisUploadedAt: true,
   kbisCertifiedAt: true,
-  kbisCertifiedBySub: true,
   kbisCertifiedByName: true,
   kbisCertifiedByRole: true,
   contactPrenom: true,
@@ -169,7 +168,6 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
                 row.activatedBySub === null
                   ? null
                   : {
-                      sub: row.activatedBySub,
                       name: row.activatedByName ?? "",
                       role: row.activatedByRole ?? "",
                     },
@@ -222,7 +220,6 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
               company.kbisCertifiedAt === null
                 ? null
                 : {
-                    sub: company.kbisCertifiedBySub ?? "",
                     name: company.kbisCertifiedByName ?? "",
                     role: company.kbisCertifiedByRole ?? "",
                   },

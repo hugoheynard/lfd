@@ -343,9 +343,10 @@ describe("certification du KBIS", () => {
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.kbisCertifiedAt).not.toBeNull();
-    // L'id de fiche, dans une colonne encore nommée `*_by_sub` (plan de
-    // l'auteur, étape 3 ; renommée à l'étape 5).
+    // L'id de fiche, dans l'ancienne colonne ET sa jumelle, le temps de la
+    // bascule (plan de l'auteur, étape 5A).
     expect(company.kbisCertifiedBySub).toBe(E2E_STAFF_ID);
+    expect(company.kbisCertifiedByStaffId).toBe(E2E_STAFF_ID);
   });
 
   it("un NOUVEAU dépôt décertifie — la trace ne survit pas au fichier qu'elle visait", async () => {
@@ -363,6 +364,7 @@ describe("certification du KBIS", () => {
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.kbisCertifiedAt).toBeNull();
     expect(company.kbisCertifiedBySub).toBeNull();
+    expect(company.kbisCertifiedByStaffId).toBeNull();
   });
 
   it("se retire — un clic de trop doit pouvoir se défaire", async () => {
@@ -409,6 +411,7 @@ describe("certification du KBIS", () => {
     // Ouvrir la commande à un client est un ENGAGEMENT : il se signe.
     expect(company.activatedAt).not.toBeNull();
     expect(company.activatedBySub).toBe(E2E_STAFF_ID);
+    expect(company.activatedByStaffId).toBe(E2E_STAFF_ID);
   });
 
   it("retirer la vérification NE COUPE PAS l'accès", async () => {

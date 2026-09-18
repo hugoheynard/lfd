@@ -65,14 +65,14 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
 
     expect(board.features[0]).toMatchObject({
       effectiveLevel: "browse",
-      // Le contrat garde son champ `sub` jusqu'à l'étape 5 du plan de l'auteur :
-      // il porte l'id de fiche.
-      override: {
-        value: "browse",
-        updatedAt: AT.toISOString(),
-        updatedBy: { sub: "staff_1", name: "Camille Admin", role: "admin" },
-      },
+      override: { value: "browse", updatedAt: AT.toISOString() },
       exemptions: [{ email: "testeur@exemple.fr", accountState: "none" }],
+    });
+    // Un nom et un rôle, sans identifiant : le `sub` n'est plus servi (plan de
+    // l'auteur, étape 5A).
+    expect(board.features[0]?.override?.updatedBy).toEqual({
+      name: "Camille Admin",
+      role: "admin",
     });
   });
 

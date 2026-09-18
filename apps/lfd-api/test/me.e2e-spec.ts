@@ -166,11 +166,11 @@ describe("GET /me — le cycle se joue en base", () => {
 
     const response = await ctx.asSub(SUB).get("/me").expect(200);
 
-    // Chaque champ vient de la LIGNE en base, pas d'un claim du jeton.
+    // Chaque champ vient de la LIGNE en base, pas d'un claim du jeton. Le `sub`
+    // Auth0 n'y est plus (plan de l'auteur, étape 5A) : `toEqual` le prouve.
     expect(response.body).toEqual({
       profile: {
         userId: user.id,
-        subject: SUB,
         firstName: "Camille",
         lastName: "Rousseau",
         email: "gerant@client-cycle.fr",

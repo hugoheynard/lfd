@@ -28,7 +28,6 @@ import type { ServiceChoice } from '../../../client/order-context.store';
  */
 const PROFILE = {
   userId: 'usr_1',
-  subject: 'auth0|1',
   firstName: 'Camille',
   lastName: 'Vallet',
   email: 'camille@lestommeuses.fr',

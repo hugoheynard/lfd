@@ -313,7 +313,12 @@ model StaffPushSubscription {
   /// table des `sub` ; la colonne garde son nom `staff_sub` jusqu'à
   /// l'étape 5 du plan de l'auteur. Une TRACE : sert à couper les abonnements
   /// de quelqu'un qui part, pas à cibler — la cloche est commune à l'équipe (D9).
-  staffSub String @map("staff_sub")
+  staffSub    String  @map("staff_sub")
+  /// La même valeur, sous le nom de ce qu'elle contient (plan de
+  /// l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
+  /// lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
+  /// lectures ici. Nullable tant que dure la bascule.
+  staffUserId String? @map("staff_user_id")
 
   createdAt  DateTime  @default(now()) @map("created_at")
   /// Dernier envoi ACCEPTÉ par le service de push. Un abonnement muet depuis
@@ -335,6 +340,7 @@ model StaffPushSubscription {
   failingSince DateTime? @map("failing_since")
 
   @@index([staffSub])
+  @@index([staffUserId])
   @@map("staff_push_subscriptions")
   @@schema("public")
 }

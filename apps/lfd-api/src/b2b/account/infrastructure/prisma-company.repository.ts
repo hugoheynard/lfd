@@ -237,7 +237,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
         requestedTerm: state.requestedTerm,
         status: state.status,
         activatedAt: state.activatedAt,
+        // Les deux colonnes, même valeur, jusqu'à la bascule (plan de l'auteur, 5A).
         activatedBySub: state.activatedBy?.staffUserId ?? null,
+        activatedByStaffId: state.activatedBy?.staffUserId ?? null,
         activatedByName: state.activatedBy?.name ?? null,
         activatedByRole: state.activatedBy?.role ?? null,
         suspensionCause: state.suspensionCause,
@@ -400,6 +402,7 @@ function kbisColumns(kbis: KbisDeposit | null): {
   kbisUploadedAt: Date | null;
   kbisCertifiedAt: Date | null;
   kbisCertifiedBySub: string | null;
+  kbisCertifiedByStaffId: string | null;
   kbisCertifiedByName: string | null;
   kbisCertifiedByRole: string | null;
 } {
@@ -411,7 +414,9 @@ function kbisColumns(kbis: KbisDeposit | null): {
     kbisSize: kbis?.file.size ?? null,
     kbisUploadedAt: kbis?.file.uploadedAt ?? null,
     kbisCertifiedAt: certification?.at ?? null,
+    // Les deux colonnes, même valeur, jusqu'à la bascule (plan de l'auteur, 5A).
     kbisCertifiedBySub: certification?.byStaffUserId ?? null,
+    kbisCertifiedByStaffId: certification?.byStaffUserId ?? null,
     // Chaîne vide ⇒ `null` en base : « aucun nom connu » est une absence, pas
     // un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
     kbisCertifiedByName: blankToNull(certification?.byName),

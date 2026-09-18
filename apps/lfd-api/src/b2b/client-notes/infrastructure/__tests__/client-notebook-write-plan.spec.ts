@@ -46,6 +46,7 @@ describe("planNotebookWrites", () => {
           body: "",
           photoKey: "k3",
           createdBySub: "staff-maya",
+          createdByStaffId: "staff-maya",
           createdByName: "Maya",
         },
       ],
