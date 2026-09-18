@@ -7,7 +7,7 @@
 > changé ».
 >
 > Suite de [`architecture-journal-de-l-annuaire.md`](architecture-journal-de-l-annuaire.md),
-> déployé le même jour. État : 🟡 bâti ; l'écran est déployé (promotion 1, `0adac7f4`), la migration attend la promotion 2. Contredit par `vitruve` (§5).
+> déployé le même jour. État : ✅ déployé le 2026-09-18 — l'écran avec `0adac7f4`, la migration avec `68a54034` (« Migrer la base » l'a appliquée). Contredit par `vitruve` (§5).
 
 ## 0. Résumé
 

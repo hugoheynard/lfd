@@ -284,11 +284,13 @@ le commit ; la porte `journal-tracked` couvre `staff/`.
 
 ## 9. En cours, et ce qui reste ouvert
 
-### En cours (2026-09-18)
+### Déployé depuis
 
-- **La reprise de l'histoire d'avant le journal** : bâtie, relue « SÛRE », elle
-  part avec l'avant/après et la recherche —
+- **L'avant/après, la recherche et la reprise de l'histoire** sont partis
+  ensemble le 2026-09-18 (fusion `68a54034`) — la reprise :
   [`plan-reprise-du-journal-de-l-annuaire.md`](plan-reprise-du-journal-de-l-annuaire.md).
+- **Le départ d'un membre et les adresses de fonction** sont en plan :
+  [`../plan-depart-et-adresses-de-fonction.md`](../plan-depart-et-adresses-de-fonction.md).
 
 ### Les limites de la recherche
 
