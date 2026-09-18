@@ -40,8 +40,8 @@ le B2B garde ses fichiers séparés.
 244 fichiers portent un handler ; **220 n'en portent qu'un**. Les 24 restants,
 par nombre décroissant :
 
-> **2026-09-18** — `staff/directory/application/staff-user.handlers.ts` (4) et
-> `staff/permissions/application/staff-role.handlers.ts` (5) sont découpés, un
+> **2026-09-18** — l'ancien `staff-user.handlers` de `staff/directory/application/` (4) et
+> l'ancien `staff-role.handlers` de `staff/permissions/application/` (5) sont découpés, un
 > fichier par handler, le jour où le journal de l'annuaire les a rouverts
 > (`documentation/auth-inscription/plan-journal-de-l-annuaire.md`, lot 3).
 > **22 restants**, retirés du tableau ci-dessous.

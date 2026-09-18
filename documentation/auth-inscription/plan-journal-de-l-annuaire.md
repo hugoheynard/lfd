@@ -196,7 +196,7 @@ Et trois règles :
 - **La première entrée** (`invited → active`, constatée dans un garde à chaque
   requête) n'est pas journalisée ici.
 
-`staff-user.handlers.ts`, `staff-role.handlers.ts` et `pending-staff-access.ts`
+`staff-user.handlers`, `staff-role.handlers` (depuis découpés) et `pending-staff-access.ts`
 sont dans l'inventaire gelé de `lint:handler-per-file` ; les toucher se fait
 dans le respect de la porte (ce lot peut être l'occasion de les découper).
 
@@ -352,7 +352,7 @@ Là où le plan était muet, voici ce qui a été décidé en bâtissant — à 
 - **La fonction de l'auteur n'apparaît plus** sur une ligne de l'équipe : la
   phrase nomme l'auteur, la méta ne répète plus « par Hugo Heynard
   (Administrateur) ». Conforme au §6, mais c'est une information en moins.
-- **Les handlers découpés** : `staff-user.handlers.ts` et `staff-role.handlers.ts`
+- **Les handlers découpés** : les anciens `staff-user.handlers` et `staff-role.handlers`
   sont devenus un fichier par handler ; ils sortent de l'inventaire gelé de
   `lint:handler-per-file` (dette 24 → 22).
 
