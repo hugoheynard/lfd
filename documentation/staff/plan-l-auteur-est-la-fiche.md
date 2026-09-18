@@ -166,7 +166,7 @@ C'est l'exception de CLAUDE.md §8 pour les valeurs d'un journal : une
 **traduction** d'un identifiant vers un autre de la même personne, qui
 n'altère ni le fait, ni le sujet, ni l'instant — et dont la table D5 garde le
 chemin inverse. Elle s'écrit dans le JSDoc de `PricingEvent`, qui dit
-aujourd'hui « non réinscriptible ». `actor_name` / `actor_role` ne bougent pas.
+aujourd'hui « non réinscriptible ». Accordé par Hugo pour `PricingEvent.actor` le 2026-09-18. `actor_name` / `actor_role` ne bougent pas.
 
 **D8 — Les champs nommés `sub` sont renommés.** Colonnes `*_by_sub` →
 `*_by_staff_id` (trois temps, à la fin) ; dans le code, `StaffTrace.sub` et les
@@ -186,7 +186,17 @@ Hugo, le 2026-09-18 : **aucun `sub` Google** n'existe encore. La table sera
 donc courte ; l'inventaire reste nécessaire pour le `sub` de la racine, qui a pu
 changer avant le 2026-09-17 sans être Google.
 
-La requête du D5.1, en lecture seule, proposée à Hugo et lancée par lui. Elle
+La requête du D5.1 est écrite :
+[`requetes/inventaire-des-auteurs-staff.sql`](requetes/inventaire-des-auteurs-staff.sql)
+— transaction `READ ONLY` terminée par `ROLLBACK`, éprouvée sur la base de
+développement le 2026-09-18. Hugo la lance en production.
+
+Ce que la base de développement a montré, et que le plan n'avait pas prévu :
+des colonnes d'auteur staff portent des **marqueurs** qui ne sont ni un `sub`
+ni une fiche — `seed-pim`, `import-plaquette-hiver-2026`, `sonde`, `semis de
+développement`. Ils ne désignent personne : **ils restent tels quels**, la
+conversion ne les touche pas, et les lecteurs de nom les affichent comme
+aujourd'hui. Elle
 rend la liste des `sub` et leurs indices, plus les valeurs qui ne sont pas des
 `sub` (`unknown-staff`, `dev-staff`, `system`). **C'est sur ce document que
 Hugo valide les correspondances** ; le plan ne suppose pas le résultat.
