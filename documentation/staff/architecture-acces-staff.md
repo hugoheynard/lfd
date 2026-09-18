@@ -291,13 +291,13 @@ parfaitement, et enfermer tout le monde dehors. Cinq garde-fous l'empêchent,
 tous **dans le domaine** (`staff/permissions/staff-access.policy.ts`), testés
 sans base ni HTTP.
 
-| Garde-fou                                                                                                   | Où                                                             | Erreur                      |
-| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------- |
-| **L'admin racine** est semé au démarrage s'il manque, ineffaçable, non rétrogradable, non renommable        | `bootstrap-admin.ts`, `assertEdit/Removal/StatusChangeAllowed` | `ProtectedStaffUserError`   |
-| **Il reste toujours au moins un admin actif** — vérifié à l'édition, à la suppression, à la suspension      | la même politique                                              | `LastStaffAdminError`       |
-| **On ne se retire pas son propre `admin`**, ni en se rétrogradant, ni en se supprimant, ni en se suspendant | la même politique                                              | `SelfDemotionError`         |
-| **Une dérogation n'ouvre jamais `staff_access`** à qui son rôle ne l'ouvre pas                              | `assertOverridesAllowed` (via `assertEditAllowed`)             | `StaffGrantByOverrideError` |
-| **Une dérogation ne ferme jamais `staff_access`** à un administrateur                                       | la même                                                        | `AdminOverrideRefusedError` |
+| Garde-fou                                                                                            | Où                                                     | Erreur                      |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------- |
+| **L'admin racine** est semé au démarrage s'il manque, ineffaçable, non rétrogradable, non renommable | `bootstrap-admin.ts`, `assertEdit/StatusChangeAllowed` | `ProtectedStaffUserError`   |
+| **Il reste toujours au moins un admin actif** — vérifié à l'édition et à la suspension               | la même politique                                      | `LastStaffAdminError`       |
+| **On ne se retire pas son propre `admin`**, ni en se rétrogradant, ni en se suspendant               | la même politique                                      | `SelfDemotionError`         |
+| **Une dérogation n'ouvre jamais `staff_access`** à qui son rôle ne l'ouvre pas                       | `assertOverridesAllowed` (via `assertEditAllowed`)     | `StaffGrantByOverrideError` |
+| **Une dérogation ne ferme jamais `staff_access`** à un administrateur                                | la même                                                | `AdminOverrideRefusedError` |
 
 Les deux dernières gardent la même chose par les deux bouts : **l'annuaire ne
 s'ouvre ni ne se ferme par un écart.** L'ouvrir par dérogation permettrait de
@@ -333,7 +333,7 @@ sequenceDiagram
 
     N->>G: PATCH /admin/companies/:id (Bearer)
     G->>G: vérifie le jeton contre l'audience staff
-    G-->>A: StaffPrincipal { sub, email, email_verified }
+    G-->>A: identité vérifiée { sub, email, email_verified }<br/>(canal interne à platform/auth)
     A->>A: exigence = @RequirePermission<br/>sinon ressource + verbe → b2b_companies:write
     A->>R: résous ce sub
     alt sub hors connexion base (google-oauth2|…)
@@ -348,9 +348,10 @@ sequenceDiagram
         alt aucune fiche, ou suspendue
             R-->>A: null
         else
-            R->>D: lie auth0Id / passe en active (si ça change)
+            R->>D: lie auth0Id + table des sub / passe en active (si ça change)
             R->>R: effectif = rôle ∪ allow \ deny
-            R-->>A: permissions[]
+            R-->>A: permissions[] + id de la fiche
+            A->>A: acteur de la requête = id de la fiche
         end
     end
     A-->>N: 403 « Accès refusé. » ou la route
@@ -368,6 +369,21 @@ sequenceDiagram
 **Fail-closed sur trois plans** : pas d'identité staff sur la requête, pas de
 ressource déclarée, ou fiche inconnue ou suspendue — chaque cas donne `403`. Le
 message ne distingue pas l'inconnu du non-autorisé.
+
+**Le `sub` ne dépasse pas l'authentification.** `AdminAuthGuard` vérifie le
+jeton et remet l'identité à `StaffAccessGuard` par un canal interne à
+`platform/auth/` (`verified-staff-identity.ts`) ; une fois la fiche résolue, la
+requête ne porte plus que `access`, et **l'acteur de la requête est l'id de la
+fiche** — c'est lui que le journal et toutes les colonnes d'auteur écrivent
+(plan [`plan-l-auteur-est-la-fiche.md`](plan-l-auteur-est-la-fiche.md), déployé
+le 2026-09-18). Aucun contrôleur ne peut lire un `sub` : `@StaffSub()` n'existe
+plus, et `@StaffUserId()` est le seul moyen de nommer l'auteur. Une requête
+refusée n'attache aucun acteur.
+
+**Chaque `sub` qu'une fiche a porté est gardé** dans `staff_subject_aliases` :
+la liaison (`markInvited`, le rapprochement ci-dessous) y ajoute le sien dans la
+même écriture. C'est ce qui permet de nommer un acte écrit sous un `sub`
+ancien, et de filtrer le journal par personne sans couper son histoire.
 
 **Le rapprochement par e-mail ne vole jamais une fiche.** Il ne sert qu'à une
 fiche **jamais liée**, et seulement si le jeton atteste une adresse **vérifiée**
@@ -405,9 +421,9 @@ stateDiagram-v2
     active --> suspended: suspension
     invited --> suspended: suspension
     suspended --> active: réintégration
-    active --> [*]: suppression
-    suspended --> [*]: suppression
 ```
+
+Pas d'état final : **une fiche ne se supprime plus** (§13.2).
 
 - **La fiche précède le compte.** `pending` est l'état par défaut : créer
   quelqu'un ne lui ouvre aucune porte tant que l'invitation n'est pas partie.
@@ -584,14 +600,18 @@ Conséquences tant que ce n'est pas fait :
 qu'elle soit faite. En attendant, les commentaires de `staff-role.ts` et de la
 table décrivent un état qui n'est pas celui du résolveur.
 
-### 13.2 La suppression d'une fiche est physique
+### 13.2 Le départ d'un membre n'a pas encore son geste
 
-`DELETE /admin/staff-users/:id` fait un `staffUser.delete` : la fiche et ses
-dérogations disparaissent. CLAUDE.md interdit le DELETE physique sur les agrégats
-métier, et `suspended` existe précisément pour qu'un départ ne détruise rien.
-Les traces qui citent la personne la citent par une chaîne, sans clé étrangère :
-elles survivent, mais pointent vers une fiche qui n'existe plus — et, faute de
-journal, seule la trace `staff_user.deleted` dit encore qui elle était.
+**La suppression n'existe plus** depuis le 2026-09-18 :
+`DELETE /admin/staff-users/:id` répond `409` (`StaffUserRemovalRetiredError`)
+et l'écran n'a plus de bouton « Supprimer ». Une fiche porte l'auteur de tout
+ce que la personne a fait ; la supprimer l'aurait effacé.
+
+Ce qui manque : **un départ définitif**. Aujourd'hui, se séparer de quelqu'un,
+c'est le suspendre. L'état `departed`, « Passer le relais » sur une adresse de
+fonction et « Faire revenir » sont en plan :
+[`plan-depart-et-adresses-de-fonction.md`](plan-depart-et-adresses-de-fonction.md)
+(v3, à valider).
 
 ### 13.3 Le bypass de dev sur une base clonée de la production
 
