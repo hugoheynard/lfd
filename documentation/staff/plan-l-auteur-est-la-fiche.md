@@ -137,31 +137,28 @@ ligne`) disparaît : elle couvrait le cas rare, laissait le fréquent, et
 comparait un `timestamp` sans fuseau à des `timestamptz` sur des colonnes
 `updatedAt` qui avancent.
 
-**D6 — `readyBy` sort du contenu empreinté du catalogue.** Décidé par Hugo
-le 2026-09-18 : « ok un gros diff, mais j'ai besoin que ready by reste
-journalisé avec l'id de qui a déclaré ready ».
+**D6 — `readyBy` reste dans le contenu empreinté du catalogue, avec l'id de
+fiche.** Décidé par Hugo le 2026-09-18, en deux temps : « ok un gros diff »,
+puis « on garde readyBy avec l'id ».
 
-`catalog_content` est adressé par son empreinte : y convertir `readyBy`
-changerait des clés primaires, des clés étrangères et les empreintes des
-révisions. Qui a validé une fiche n'est pas un fait du catalogue, c'est une
-trace de l'atelier. Donc :
+Une révision est la photo du catalogue publié ; la signature de chaque fiche
+(`readyAt` / `readyBy`) en fait partie
+([`../pim/mecanique-revisions-catalogue.md`](../pim/mecanique-revisions-catalogue.md) §4) :
+elle dit **qui avait validé l'article au moment de la publication**, ce que
+`ProductReadiness` ne sait plus dès qu'une fiche est revalidée. On la garde.
 
-- `readyBy` / `readyAt` **sortent du contenu** que `prisma-catalog-revision.source.ts`
-  empreinte. La révision qui suit le déploiement voit **une fois** chaque article
-  changer d'empreinte sans changement de contenu — un gros diff, accepté, et
-  marqué dans la révision (« format ») pour qu'on ne cherche pas ce qui a bougé ;
-- **la déclaration reste tracée deux fois, avec l'id de fiche** :
-  `ProductReadiness.readyBy` (converti comme le reste), et le fait
-  `product.declared_ready`, que `declare-product-ready.ts` écrit dans
-  `activity_events` dans la même transaction — son `actor_id` devient l'id de
-  fiche par D1, son nom reste figé ;
-- les contenus **déjà figés** gardent leur `sub` : on ne réécrit pas une ancre.
-  Le diff les nomme par D4.
-
-Écarté : réécrire les contenus passés (pas de diff, mais un script de
-production pour recalculer des empreintes que le SQL ne sait pas reproduire,
-les révisions et le journal qui les cite à réécrire, et la garantie « une
-empreinte ne change jamais » perdue).
+- `ProductReadiness.readyBy` est converti comme le reste (D5) ; les nouvelles
+  déclarations écrivent l'id de fiche (D1).
+- **La révision qui suit la conversion voit, une fois, chaque article signé
+  changer d'empreinte** — `readyBy` passe du `sub` à l'id, sans que personne
+  n'ait revalidé. C'est le gros diff accepté par Hugo ; il est **marqué dans la
+  révision** (« format ») pour qu'on ne cherche pas ce qui a bougé.
+- Les contenus **déjà figés** gardent leur `sub` : on ne réécrit pas une ancre
+  (ce serait recalculer des clés primaires, des clés étrangères et les
+  empreintes des révisions, par un script, et perdre la garantie « une
+  empreinte ne change jamais »). Le diff et l'écran les nomment par D4.
+- La déclaration reste aussi au journal : `product.declared_ready`, écrit par
+  `declare-product-ready.ts` dans la même transaction, avec l'id de fiche par D1.
 
 **D7 — Les deux journaux se traduisent.** `activity_events.actor_id` (où
 `actor_type = 'staff'`), les deux clés de charge utile, et `PricingEvent.actor`.
@@ -205,8 +202,7 @@ Hugo valide les correspondances** ; le plan ne suppose pas le résultat.
 2. **La table de correspondance** (D5.2), remplie de ce que Hugo a validé. Les
    lecteurs et le filtre la lisent.
 3. **Écrire l'id** (D1, D2, D8 côté code, D9 côté code), avec
-   `lint:subject-readers`. `readyBy` sort du contenu empreinté dans ce même
-   déploiement (D6).
+   `lint:subject-readers`.
 4. **Convertir** (D5.3, D7) — une migration, livrée **dans le déploiement
    suivant** l'étape 3 : l'ancienne instance, qui répond encore une à deux
    minutes après le basculement (`deploy_lfd_api.yml`), a fini d'écrire des
@@ -215,8 +211,8 @@ Hugo valide les correspondances** ; le plan ne suppose pas le résultat.
 5. **Renommer** les `*_by_sub` (trois temps) ; **resserrer** les contrats.
 
 **Allers simples, à savoir avant de commencer** : la conversion (4) ne se
-défait que par la table D5 ; la sortie de `readyBy` du contenu empreinté (3)
-fait naître une génération d'empreintes qu'on ne défait pas.
+défait que par la table D5 ; la conversion de `ProductReadiness.readyBy`
+(4) fait naître une génération d'empreintes qu'on ne défait pas (D6).
 
 ## 5. Tests et contrôles
 
@@ -233,8 +229,10 @@ fait naître une génération d'empreintes qu'on ne défait pas.
   une à id se nomment pareil et sortent sous le même filtre.
 - **Conversion** (e2e sur la migration) : un `sub` de la table devient l'id ; un
   `sub` absent reste ; rejouer ne change rien ; `catalog_content` intact.
-- **Révision PIM** (D6) : la première révision après la sortie
-  de `readyBy` est marquée « format » ; la suivante ne voit aucun changement.
+- **Révision PIM** (D6) : après conversion, un article signé change
+  d'empreinte avec pour seul écart `readyBy` (`sub` → id) ; une révision
+  suivante sans revalidation ne voit aucun changement ; les contenus figés
+  avant la conversion sont intacts.
 - **Contrôle après l'étape 4**, en lecture seule : aucune valeur hors table
   dans les colonnes converties — le motif cherche les `sub` (`…|…`) **et**
   `unknown-staff` / `dev-staff`.
@@ -282,14 +280,14 @@ Hugo : « dans la foulée, pour les clients, ce serait la même mécanique ? » 
 
 ## 9. Ce que `vitruve` a changé (2026-09-18)
 
-| Objection                                                                                                     | Ce qui a changé                                                                              |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| BLOQUANT — `readyBy` est dans un contenu adressé par son empreinte ; la conversion casse les ancres           | D6 : les contenus figés ne se convertissent pas ; `readyBy` sort du contenu empreinté (Hugo) |
-| BLOQUANT — inventaire court : `User.invitedBy`, `PricingEvent.actor`, 16 colonnes tarifaires, vues et export  | §1 refait ; D7 traite le journal tarifaire ; D3 couvre l'export CSV                          |
-| SÉRIEUX — une fiche a eu plusieurs `sub` ; « zéro, le plus probable » était une décision esquivée             | D5 : table de correspondance validée par Hugo sur un inventaire, avant toute conversion      |
-| SÉRIEUX — D6 (push) promettait un ciblage qui n'existe pas                                                    | D9 : trace seulement ; le ciblage rejoint le plan de départ                                  |
-| SÉRIEUX — la « relance » de la conversion n'avait pas de mécanisme, et l'ordre se contredisait                | §4 : conversion dans le déploiement suivant ; un reste = une nouvelle migration              |
-| SÉRIEUX — le filtre par acteur coupait l'histoire d'une personne                                              | D4 : filtre sur l'id et ses `sub` connus ; `actorId` reste servi                             |
-| SÉRIEUX — une regex ne rend pas le `sub` inexprimable                                                         | D2 : le `sub` sort du type après résolution ; la porte ne garde que le côté client           |
-| SÉRIEUX — « aucun `DELETE` entre 3 et 5 » tenu par rien                                                       | §4, étape 0 : `DELETE` répond `409` d'abord                                                  |
-| MINEUR — comptes, sources, déjà-propres, fuseaux, `unknown-staff`, champs `sub` du code, 19 e2e, log d'erreur | Corrigés dans le §1, D5, D8, §5, §8                                                          |
+| Objection                                                                                                     | Ce qui a changé                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| BLOQUANT — `readyBy` est dans un contenu adressé par son empreinte ; la conversion casse les ancres           | D6 : les contenus figés ne se convertissent pas ; `readyBy` reste, avec l'id de fiche ; les contenus figés ne sont pas réécrits (Hugo) |
+| BLOQUANT — inventaire court : `User.invitedBy`, `PricingEvent.actor`, 16 colonnes tarifaires, vues et export  | §1 refait ; D7 traite le journal tarifaire ; D3 couvre l'export CSV                                                                    |
+| SÉRIEUX — une fiche a eu plusieurs `sub` ; « zéro, le plus probable » était une décision esquivée             | D5 : table de correspondance validée par Hugo sur un inventaire, avant toute conversion                                                |
+| SÉRIEUX — D6 (push) promettait un ciblage qui n'existe pas                                                    | D9 : trace seulement ; le ciblage rejoint le plan de départ                                                                            |
+| SÉRIEUX — la « relance » de la conversion n'avait pas de mécanisme, et l'ordre se contredisait                | §4 : conversion dans le déploiement suivant ; un reste = une nouvelle migration                                                        |
+| SÉRIEUX — le filtre par acteur coupait l'histoire d'une personne                                              | D4 : filtre sur l'id et ses `sub` connus ; `actorId` reste servi                                                                       |
+| SÉRIEUX — une regex ne rend pas le `sub` inexprimable                                                         | D2 : le `sub` sort du type après résolution ; la porte ne garde que le côté client                                                     |
+| SÉRIEUX — « aucun `DELETE` entre 3 et 5 » tenu par rien                                                       | §4, étape 0 : `DELETE` répond `409` d'abord                                                                                            |
+| MINEUR — comptes, sources, déjà-propres, fuseaux, `unknown-staff`, champs `sub` du code, 19 e2e, log d'erreur | Corrigés dans le §1, D5, D8, §5, §8                                                                                                    |
