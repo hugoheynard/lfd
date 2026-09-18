@@ -395,11 +395,14 @@ describe("suspendre, reprendre, archiver", () => {
     const { id } = jsonBody<{ id: string }>(await postRule());
     await pause(id, "Four en panne");
 
-    const [entry] = jsonBody<{ actor: string; reason: string | null }[]>(
+    const [entry] = jsonBody<{ actor: string; actorName: string | null; reason: string | null }[]>(
       await staff().get(`/admin/pricing/journal/rule/${id}`),
     );
 
     expect(entry?.actor).toBe("staff-e2e");
+    // Le nom, résolu par l'annuaire : le journal affichait le `sub` (plan
+    // `plan-l-auteur-est-la-fiche.md`, D3).
+    expect(entry?.actorName).toBe("Opérateur E2E");
     expect(entry?.reason).toBe("Four en panne");
   });
 

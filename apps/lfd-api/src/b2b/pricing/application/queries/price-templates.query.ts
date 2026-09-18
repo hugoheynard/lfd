@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { PriceTemplateKind, PriceTemplateView } from "@lfd/contracts";
 
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { PriceTemplatesReader, type StoredPriceTemplate } from "../ports/price-templates.reader.js";
 
@@ -20,6 +21,7 @@ export class PriceTemplatesQuery {
   constructor(
     private readonly templates: PriceTemplatesReader,
     private readonly catalog: ProductCatalogReader,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async list(kind: PriceTemplateKind): Promise<readonly PriceTemplateView[]> {
@@ -41,7 +43,10 @@ export class PriceTemplatesQuery {
   ): Promise<readonly PriceTemplateView[]> {
     const states = stored.map((entry) => entry.state);
     const skus = [...new Set(states.flatMap((state) => state.lines.map((line) => line.sku)))];
-    const catalogue = await this.catalog.resolveMany(skus);
+    const [catalogue, authors] = await Promise.all([
+      this.catalog.resolveMany(skus),
+      this.staffAuthors.identify(states.map((state) => state.createdBy)),
+    ]);
 
     return states.map((state, index) => {
       const row = stored[index];
@@ -62,6 +67,7 @@ export class PriceTemplatesQuery {
           };
         }),
         createdBy: state.createdBy,
+        createdByName: authors.nameOf(state.createdBy),
         createdAt: row?.createdAt.toISOString() ?? "",
         updatedAt: row?.updatedAt.toISOString() ?? "",
         archivedAt: state.archivedAt?.toISOString() ?? null,

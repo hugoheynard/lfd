@@ -2,6 +2,10 @@ import { Injectable } from "@nestjs/common";
 import type { CatalogAdminItemView, CatalogAllergenView } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import {
+  StaffAuthorDirectory,
+  type StaffAuthors,
+} from "../../../staff/directory/domain/staff-author-directory.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
@@ -34,7 +38,10 @@ interface AdminRow {
 
 @Injectable()
 export class PrismaCatalogAdminReader extends CatalogAdminReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly staffAuthors: StaffAuthorDirectory,
+  ) {
     super();
   }
 
@@ -57,7 +64,12 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
       // égalités n'est pas un tri.
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
     });
-    return rows.map(toView);
+    // Les auteurs des décisions, en une résolution pour toute la liste (plan
+    // `plan-l-auteur-est-la-fiche.md`, D3).
+    const authors = await this.staffAuthors.identify(
+      rows.map((row) => row.override?.decidedBy ?? null),
+    );
+    return rows.map((row) => toView(row, authors));
   }
 }
 
@@ -68,7 +80,7 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
  * c'est nous qui l'avons posé », ni proposer d'y renoncer — et un prix sans
  * provenance ne se défend pas devant un client qui le conteste.
  */
-function toView(row: AdminRow): CatalogAdminItemView {
+function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
   const b2bPriceMillicents = row.override?.priceMillicents ?? null;
   return {
     sku: row.sku,
@@ -98,6 +110,7 @@ function toView(row: AdminRow): CatalogAdminItemView {
     isHidden: row.override?.isHidden ?? false,
     isFeatured: row.override?.isFeatured ?? false,
     decidedBy: row.override?.decidedBy ?? null,
+    decidedByName: authors.nameOf(row.override?.decidedBy ?? null),
     decidedAt: row.override?.decidedAt.toISOString() ?? null,
     receivedAt: row.receivedAt.toISOString(),
   };

@@ -3,6 +3,10 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.reader.js";
+import {
+  StaffAuthorDirectory,
+  type StaffAuthors,
+} from "../../../staff/directory/domain/staff-author-directory.js";
 import type { OrderHandover } from "../../domain/entities/order-handover.js";
 import { HandoverTokenNotFoundError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
@@ -29,6 +33,7 @@ export class GetHandoverHandler implements IQueryHandler<GetHandoverQuery, Order
   constructor(
     private readonly subjects: HandoverSubjectReader,
     private readonly handovers: OrderHandoverRepository,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(query: GetHandoverQuery): Promise<OrderHandoverView> {
@@ -36,14 +41,28 @@ export class GetHandoverHandler implements IQueryHandler<GetHandoverQuery, Order
     if (subject === null) {
       throw new HandoverTokenNotFoundError();
     }
-    return toHandoverView(subject, await this.handovers.findByOrderId(subject.orderId));
+    const handover = await this.handovers.findByOrderId(subject.orderId);
+    return toHandoverView(subject, handover, await authorsOf(this.staffAuthors, handover));
   }
+}
+
+/**
+ * Les auteurs d'une attestation — celui qui a remis le sac, s'il y en a un
+ * (plan `plan-l-auteur-est-la-fiche.md`, D3). Partagé par les trois lectures
+ * qui projettent la vue de comptoir.
+ */
+export function authorsOf(
+  directory: StaffAuthorDirectory,
+  handover: OrderHandover | null,
+): Promise<StaffAuthors> {
+  return directory.identify([handover?.handedOverBy ?? null]);
 }
 
 /** Projette la commande et son attestation en vue de comptoir, refus compris. */
 export function toHandoverView(
   subject: HandoverSubject,
   handover: OrderHandover | null,
+  authors: StaffAuthors,
 ): OrderHandoverView {
   return {
     orderId: subject.orderId,
@@ -61,6 +80,7 @@ export function toHandoverView(
     lines: subject.lines,
     handedOverAt: handover === null ? null : handover.handedOverAt.toISOString(),
     handedOverBy: handover === null ? null : handover.handedOverBy,
+    handedOverByName: handover === null ? null : authors.nameOf(handover.handedOverBy),
     handedOverVia: handover === null ? null : handover.via,
     blockedReason: handoverBlocker({
       status: subject.status,

@@ -7,6 +7,7 @@ import { ProductionDayRepository } from "../../../domain/ports/production-day.re
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { GetProductionPackingHandler } from "../get-production-packing.handler.js";
 import { GetProductionPackingQuery } from "../get-production-packing.query.js";
+import { FixedStaffAuthorDirectory } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 
 /**
  * Aucune date absolue comparée à l'horloge : les jours sont DÉRIVÉS de
@@ -76,6 +77,7 @@ describe("GetProductionPackingHandler", () => {
     const handler = new GetProductionPackingHandler(
       new Days(closedDay(TODAY)),
       new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
     );
 
     const view = await handler.execute(new GetProductionPackingQuery(TODAY));
@@ -103,6 +105,7 @@ describe("GetProductionPackingHandler", () => {
     const handler = new GetProductionPackingHandler(
       new Days(closedDay(TODAY)),
       new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
     );
 
     expect((await handler.execute(new GetProductionPackingQuery(TODAY))).relativeDay).toBe("today");
@@ -113,6 +116,7 @@ describe("GetProductionPackingHandler", () => {
     const handler = new GetProductionPackingHandler(
       new Days(closedDay(tomorrow)),
       new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
     );
 
     expect((await handler.execute(new GetProductionPackingQuery(tomorrow))).relativeDay).toBe(
@@ -126,6 +130,7 @@ describe("GetProductionPackingHandler", () => {
     const handler = new GetProductionPackingHandler(
       new Days(ProductionDay.open(ServiceDay.of(TODAY))),
       new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
     );
 
     const view = await handler.execute(new GetProductionPackingQuery(TODAY));
@@ -147,6 +152,7 @@ describe("GetProductionPackingHandler", () => {
     const handler = new GetProductionPackingHandler(
       new Days(closedDay(TODAY)),
       new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
     );
 
     await expect(handler.execute(new GetProductionPackingQuery("08/09/2026"))).rejects.toThrow();

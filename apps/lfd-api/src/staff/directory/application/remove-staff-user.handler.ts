@@ -1,33 +1,26 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { Journal } from "../../../platform/journal/journal.js";
-import { StaffAccessCache } from "../../permissions/staff-access-cache.port.js";
-import { staffUserDeletedFact } from "../domain/staff-facts.js";
-import { StaffUserRepository } from "../domain/staff-user.repository.js";
+import { StaffUserRemovalRetiredError } from "../domain/staff-user-errors.js";
 import { RemoveStaffUserCommand } from "./staff-user.commands.js";
 
 /**
- * Supprime une fiche — et **fige qui elle était** dans la trace : une fois la
- * ligne partie, le journal est le seul endroit qui sache encore la nommer.
+ * La suppression d'une fiche **n'existe plus** : ce handler refuse, toujours.
  *
- * La suppression et son fait partent ensemble ; le cache d'accès est oublié
- * après le commit.
+ * Une fiche est l'auteur de ce que la personne a fait, et la table des `sub`
+ * qui convertira l'histoire en ids de fiche s'appuie sur elle (plan
+ * `plan-l-auteur-est-la-fiche.md`, étape 0). Une fiche supprimée entre deux
+ * étapes de ce plan emporterait la seule trace de ses identifiants.
+ *
+ * La route reste servie — elle répond `409` en nommant le geste de sortie —
+ * jusqu'à ce que « Retirer de l'équipe » la remplace (plan de départ, D8).
+ * Le dépôt de fiches n'a plus de méthode de suppression : ce refus n'est pas
+ * une garde devant une écriture, c'est l'absence de l'écriture.
+ *
+ * @throws {StaffUserRemovalRetiredError} toujours.
  */
 @CommandHandler(RemoveStaffUserCommand)
 export class RemoveStaffUserHandler implements ICommandHandler<RemoveStaffUserCommand, void> {
-  constructor(
-    private readonly staff: StaffUserRepository,
-    private readonly journal: Journal,
-    private readonly uow: UnitOfWork,
-    private readonly cache: StaffAccessCache,
-  ) {}
-
-  async execute(command: RemoveStaffUserCommand): Promise<void> {
-    await this.uow.run(async () => {
-      const removed = await this.staff.remove(command.id, command.actorId);
-      await this.journal.append(staffUserDeletedFact(command.id, removed));
-    });
-    this.cache.forgetAll();
+  execute(_command: RemoveStaffUserCommand): Promise<void> {
+    return Promise.reject(new StaffUserRemovalRetiredError());
   }
 }

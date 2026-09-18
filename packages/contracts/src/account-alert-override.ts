@@ -48,8 +48,22 @@ export interface AccountAlertRuleView {
   readonly globalUpdatedAt: string | null;
   /** Dernière écriture de la **dérogation** (ISO), ou `null` s'il n'y en a pas. */
   readonly overrideUpdatedAt: string | null;
-  /** Qui a posé cette dérogation (`sub` staff), ou `null`. */
+  /**
+   * Qui a posé cette dérogation (`sub` staff), ou `null`.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `overrideUpdatedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly overrideUpdatedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `overrideUpdatedBy` tel quel.
+   */
+  readonly overrideUpdatedByName: string | null;
   /**
    * Le global a bougé **après** la dérogation. C'est le prix du tout-ou-rien :
    * un compte dérogé ne suit plus les évolutions de la plateforme, et sans ce

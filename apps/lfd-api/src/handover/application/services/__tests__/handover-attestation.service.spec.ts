@@ -6,6 +6,10 @@ import { OrderHandover } from "../../../domain/entities/order-handover.js";
 import { HandoverRefusedError } from "../../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { HandoverAttestation } from "../handover-attestation.service.js";
+import {
+  authorsKnownAs,
+  FixedStaffAuthorDirectory,
+} from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 
 /**
  * Le geste commun aux deux portes de retrait, éprouvé sur ce qui compte : **qui
@@ -69,10 +73,15 @@ class FixedClock extends Clock {
   }
 }
 
+/** L'annuaire du comptoir : `staff-1` est Inès. */
+const AUTHORS = new FixedStaffAuthorDirectory(
+  authorsKnownAs({ firstName: "Inès", lastName: "Moreau" }, "staff-1"),
+);
+
 function attestationOf(existing: OrderHandover | null, won: boolean) {
   const { repository, written } = repositoryOf(existing, won);
   const events = new CollectingPublisher();
-  const service = new HandoverAttestation(repository, new FixedClock(), events);
+  const service = new HandoverAttestation(repository, new FixedClock(), events, AUTHORS);
   return { service, written, events };
 }
 
@@ -110,6 +119,8 @@ describe("HandoverAttestation", () => {
 
     expect(written).toHaveLength(1);
     expect(view.handedOverBy).toBe("staff-1");
+    // Le nom, résolu par l'annuaire (plan `plan-l-auteur-est-la-fiche.md`, D3).
+    expect(view.handedOverByName).toBe("Inès Moreau");
     expect(view.handedOverVia).toBe("scan");
     expect(view.handedOverAt).toBe(AT.toISOString());
     expect(events.published).toEqual([
@@ -213,7 +224,7 @@ describe("HandoverAttestation", () => {
     );
     const repository = new SequentialOrderHandoverRepository([null, winner], false);
     const events = new CollectingPublisher();
-    const service = new HandoverAttestation(repository, new FixedClock(), events);
+    const service = new HandoverAttestation(repository, new FixedClock(), events, AUTHORS);
 
     await expect(service.attest(subject(), "staff-2", "manual")).rejects.toBeInstanceOf(
       HandoverRefusedError,

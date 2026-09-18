@@ -4,6 +4,7 @@ import type { CatalogPendingDiffView } from "@lfd/pim-contracts";
 import { Clock } from "../../../../platform/time/clock.js";
 import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { GLOBAL_CAUSE_TYPES, causesOf } from "../domain/attribution.js";
 import { diffItem, headerDiff, planDiff } from "../domain/diff.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
@@ -59,6 +60,7 @@ export class DiffCatalogSinceLastHandler implements IQueryHandler<
     private readonly accounting: AccountingRulesRepository,
     private readonly journal: PimJournalReader,
     private readonly clock: Clock,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(): Promise<CatalogPendingDiffView> {
@@ -106,16 +108,17 @@ export class DiffCatalogSinceLastHandler implements IQueryHandler<
     // Les causes globales se lisent UNE fois pour tout le diff, pas une fois
     // par article : un taux révisé est un seul fait, et le relire cent fois
     // coûterait cent requêtes pour cent copies de la même ligne.
-    const [beforePayloads, causes] = await Promise.all([
+    const [beforePayloads, causes, authors] = await Promise.all([
       this.revisions.payloadsOf(latest.id, plan.changed),
       this.journal
         .factsBetween(GLOBAL_CAUSE_TYPES, latest.takenAt, at)
         .then((facts) => causesOf(facts)),
+      this.staffAuthors.identify([latest.takenBy]),
     ]);
     const afterPayloads = new Map(current.items.map((item) => [item.sku, item.payload]));
 
     return {
-      from: summaryOf(latest),
+      from: summaryOf(latest, authors),
       at: at.toISOString(),
       causes: causeViews(causes),
       header: headerDiff(beforeIndex, afterIndex),

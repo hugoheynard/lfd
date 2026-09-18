@@ -203,6 +203,18 @@ describe("Ancre de publication du catalogue", () => {
     expect(rows[0]).toMatchObject({ articles: 1 });
   });
 
+  it("nomme qui a posé chaque ancre — le `sub` reste servi, déprécié", async () => {
+    // Plan `plan-l-auteur-est-la-fiche.md`, D3 : l'écran affichait `takenBy`
+    // brut, c'est-à-dire un identifiant chez Auth0.
+    await aProduct("Croissant");
+    await take("première");
+
+    const [row] = jsonBody<{ takenBy: string; takenByName: string | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+    expect(row).toMatchObject({ takenBy: E2E_STAFF_SUB, takenByName: "Opérateur E2E" });
+  });
+
   it("trace le fait, avec la portée de ce qu'il fige", async () => {
     await aProduct("Croissant");
     await take("rentrée");

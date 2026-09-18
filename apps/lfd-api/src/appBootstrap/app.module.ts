@@ -34,6 +34,7 @@ import { StaffAccessModule } from "./staff-access.module.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { StaffNotificationsModule } from "../staff/notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "../staff/staff.module.js";
+import { StaffAuthorsModule } from "../staff/directory/staff-authors.module.js";
 import { SubscriptionsModule } from "../b2b/subscriptions/subscriptions.module.js";
 import { AuthModule } from "../platform/auth/auth.module.js";
 import { AppConfigModule } from "../platform/config/config.module.js";
@@ -104,6 +105,9 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     // Cloche du back-office (@Global) : socle générique dont les alertes sont le
     // premier consommateur, J2 (RDV, demandes de contact) le second.
     StaffNotificationsModule,
+    // Nommer l'auteur d'un acte staff (@Global) : id de fiche, `sub` actuel ou
+    // ancien — pour tous les blocs qui servent un auteur au back-office.
+    StaffAuthorsModule,
     // Le référentiel produit — même processus, **sa** base (cf. PimDatabaseModule),
     // ses routes sous `pim/`.
     OpsModule,

@@ -3,6 +3,7 @@ import type { CatalogRevisionRowView } from "@lfd/pim-contracts";
 
 import { planDiff } from "../domain/diff.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { summaryOf } from "./revision-diff-support.js";
 
 /** Au-delà, un écran pagine — il ne déroule pas trois ans d'ancres. */
@@ -37,13 +38,19 @@ export class ListCatalogRevisionsHandler implements IQueryHandler<
   ListCatalogRevisionsQuery,
   readonly CatalogRevisionRowView[]
 > {
-  constructor(private readonly revisions: CatalogRevisionRepository) {}
+  constructor(
+    private readonly revisions: CatalogRevisionRepository,
+    private readonly staffAuthors: StaffAuthorDirectory,
+  ) {}
 
   async execute(): Promise<readonly CatalogRevisionRowView[]> {
     const records = await this.revisions.list(MAX + 1);
     // DEUX requêtes pour toute la page, quelle que soit sa longueur. Boucler
     // sur `indexOf` en ferait cinquante — chacune rapide, leur somme non.
-    const indexes = await this.revisions.indexesOf(records.map((record) => record.id));
+    const [indexes, authors] = await Promise.all([
+      this.revisions.indexesOf(records.map((record) => record.id)),
+      this.staffAuthors.identify(records.map((record) => record.takenBy)),
+    ]);
 
     return records.slice(0, MAX).map((record, position) => {
       // La suivante dans la liste est la PRÉCÉDENTE dans le temps : l'ordre est
@@ -52,7 +59,7 @@ export class ListCatalogRevisionsHandler implements IQueryHandler<
       const after = indexes.get(record.id);
       const before = older === undefined ? undefined : indexes.get(older.id);
       return {
-        ...summaryOf(record),
+        ...summaryOf(record, authors),
         changes:
           after === undefined || before === undefined ? null : countOf(planDiff(before, after)),
       };

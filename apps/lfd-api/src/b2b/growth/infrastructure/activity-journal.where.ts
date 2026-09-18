@@ -14,14 +14,23 @@ import { prefixesOf } from "../domain/activity-module.js";
  * que rien ne rougisse. Il n'y en a donc qu'un, ici.
  *
  * Toute valeur passe en **paramètre** lié, jamais concaténée.
+ *
+ * `actorIds` : toutes les références sous lesquelles l'acteur filtré a pu
+ * écrire — son id de fiche et ses `sub`, actuel et anciens (plan
+ * `plan-l-auteur-est-la-fiche.md`, D4). Sans elles, le filtre retombe sur la
+ * seule égalité à `query.actorId`, et l'histoire d'une personne se coupe
+ * entre ses identifiants.
  */
-export function activityWhereOf(query: ActivityQuery): Prisma.Sql {
+export function activityWhereOf(
+  query: ActivityQuery,
+  actorIds: readonly string[] | null = null,
+): Prisma.Sql {
   const clauses = [
     moduleClause(query),
     query.type === undefined ? null : Prisma.sql`type = ${query.type}`,
     query.subjectType === undefined ? null : Prisma.sql`subject_type = ${query.subjectType}`,
     query.subjectId === undefined ? null : Prisma.sql`subject_id = ${query.subjectId}`,
-    query.actorId === undefined ? null : Prisma.sql`actor_id = ${query.actorId}`,
+    actorClause(query.actorId, actorIds),
     // Les bornes arrivent en ISO (le contrat l'impose) ; la colonne est un
     // `timestamp` sans fuseau écrit en UTC, d'où la conversion explicite.
     query.since === undefined ? null : Prisma.sql`occurred_at >= ${utc(query.since)}`,
@@ -32,6 +41,18 @@ export function activityWhereOf(query: ActivityQuery): Prisma.Sql {
   ].filter((clause): clause is Prisma.Sql => clause !== null);
 
   return clauses.length === 0 ? Prisma.sql`TRUE` : Prisma.join(clauses, " AND ");
+}
+
+/** L'acteur, sous TOUTES ses références connues — l'id demandé toujours compris. */
+function actorClause(
+  actorId: string | undefined,
+  actorIds: readonly string[] | null,
+): Prisma.Sql | null {
+  if (actorId === undefined) {
+    return null;
+  }
+  const ids = [...new Set([actorId, ...(actorIds ?? [])])];
+  return Prisma.sql`actor_id IN (${Prisma.join(ids)})`;
 }
 
 /**

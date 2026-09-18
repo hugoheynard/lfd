@@ -39,7 +39,11 @@ const staff = (): ReturnType<E2eContext["http"]> =>
   ctx.http().set("Authorization", "Bearer staff-e2e");
 
 interface Detail {
-  readonly readiness: { readonly readyAt: string; readonly readyBy: string } | null;
+  readonly readiness: {
+    readonly readyAt: string;
+    readonly readyBy: string;
+    readonly readyByName: string | null;
+  } | null;
   readonly readinessStale: boolean;
   readonly contentUpdatedAt: string;
   readonly categoryId: string;
@@ -95,7 +99,13 @@ describe("Déclaration publiable", () => {
     const readyAt = await declareReady(id);
     const view = await detail(id);
 
-    expect(view.readiness).toEqual({ readyAt, readyBy: E2E_STAFF_SUB });
+    // Le nom, résolu par l'annuaire depuis le `sub` : l'écran ne montre plus
+    // l'identifiant (plan `plan-l-auteur-est-la-fiche.md`, D3).
+    expect(view.readiness).toEqual({
+      readyAt,
+      readyBy: E2E_STAFF_SUB,
+      readyByName: "Opérateur E2E",
+    });
     expect(isStale(view)).toBe(false);
   });
 

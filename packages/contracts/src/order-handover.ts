@@ -71,8 +71,22 @@ export interface OrderHandoverView {
   readonly lines: readonly OrderHandoverLine[];
   /** ISO du retrait déjà effectué, ou `null` s'il reste à faire. */
   readonly handedOverAt: string | null;
-  /** Qui l'a remis — l'identité staff figée (claim `sub`) —, ou `null`. */
+  /**
+   * Qui l'a remis — l'identité staff figée (claim `sub`) —, ou `null`.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `handedOverByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly handedOverBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `handedOverBy` tel quel.
+   */
+  readonly handedOverByName: string | null;
   /**
    * **Comment** elle a été constatée : `scan` (les deux parties étaient là) ou
    * `manual` (le scan était impossible, l'équipe a saisi). `null` tant qu'elle

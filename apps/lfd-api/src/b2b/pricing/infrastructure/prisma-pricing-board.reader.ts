@@ -21,6 +21,7 @@ import {
 } from "../application/ports/pricing-decisions.reader.js";
 import { actsAt, categoryView, groupByCategory } from "../application/board-category.js";
 import { ruleViewFromRow } from "./price-rows.js";
+import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 
 /** Au-delà, ce n'est plus une mémoire consultable, c'est un export. */
 const ARCHIVED_PAGE = 100;
@@ -65,6 +66,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     private readonly ladders: VolumeLadderReader,
     private readonly history: CanonicalPriceHistoryReader,
     private readonly clock: Clock,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {
     super();
   }
@@ -75,7 +77,10 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       orderBy: { archivedAt: "desc" },
       take: ARCHIVED_PAGE,
     });
-    return rows.map(ruleViewFromRow);
+    const authors = await this.staffAuthors.identify(
+      rows.flatMap((row) => [row.createdBy, row.pausedBy, row.archivedBy]),
+    );
+    return rows.map((row) => ruleViewFromRow(row, authors));
   }
 
   async read(instant?: Date): Promise<PricingBoardView> {

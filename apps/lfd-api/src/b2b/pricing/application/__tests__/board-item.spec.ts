@@ -13,6 +13,7 @@ import {
 // pas — et n'a pas à le faire pour un test.
 import type { LoadedFloor, LoadedRule } from "../ports/pricing-decisions.reader.js";
 import type { PriceScope, PriceStage } from "../../domain/price-rule.js";
+import { StaffAuthors } from "../../../../staff/directory/domain/staff-author-directory.js";
 
 /**
  * **Le montage d'un nœud du tableau, éprouvé sans base.**
@@ -70,7 +71,10 @@ function ruleRow(
 }
 
 function loadedRules(rows: readonly RuleRow[]): LoadedRule[] {
-  return rows.map((row) => ({ rule: ruleFromRow(row), view: ruleViewFromRow(row) }));
+  return rows.map((row) => ({
+    rule: ruleFromRow(row),
+    view: ruleViewFromRow(row, StaffAuthors.none()),
+  }));
 }
 
 function loadedFloor(id: string, scope: PriceScope, bp: number): LoadedFloor {
@@ -90,7 +94,7 @@ function loadedFloor(id: string, scope: PriceScope, bp: number): LoadedFloor {
     createdBy: "staff|test",
     updatedAt: AT,
   };
-  return { floor: floorFromRow(row), view: floorViewFromRow(row, null, AT) };
+  return { floor: floorFromRow(row), view: floorViewFromRow(row, null, AT, StaffAuthors.none()) };
 }
 
 describe("un nœud du tableau", () => {

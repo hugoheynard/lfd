@@ -1,6 +1,10 @@
 import type { OrderPackingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import {
+  StaffAuthorDirectory,
+  type StaffAuthors,
+} from "../../../../staff/directory/domain/staff-author-directory.js";
 import { OrderReferenceNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderReader, type PackingOrder } from "../../domain/ports/order.reader.js";
 import { packingBlocker } from "../../domain/services/packing.js";
@@ -17,19 +21,25 @@ import { GetPackingQuery } from "./get-packing.query.js";
  */
 @QueryHandler(GetPackingQuery)
 export class GetPackingHandler implements IQueryHandler<GetPackingQuery, OrderPackingView> {
-  constructor(private readonly orders: OrderReader) {}
+  constructor(
+    private readonly orders: OrderReader,
+    private readonly staffAuthors: StaffAuthorDirectory,
+  ) {}
 
   async execute(query: GetPackingQuery): Promise<OrderPackingView> {
     const order = await this.orders.findForPacking(query.reference);
     if (order === null) {
       throw new OrderReferenceNotFoundError(query.reference);
     }
-    return toPackingView(order);
+    return toPackingView(order, await this.staffAuthors.identify([order.readyBy]));
   }
 }
 
-/** Projette l'état lu en vue de fournil, refus compris. */
-export function toPackingView(order: PackingOrder): OrderPackingView {
+/**
+ * Projette l'état lu en vue de fournil, refus compris. `authors` nomme qui l'a
+ * déclarée prête (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ */
+export function toPackingView(order: PackingOrder, authors: StaffAuthors): OrderPackingView {
   return {
     orderId: order.orderId,
     reference: order.orderNumber,
@@ -42,6 +52,7 @@ export function toPackingView(order: PackingOrder): OrderPackingView {
     lines: order.lines,
     readyAt: order.readyAt === null ? null : order.readyAt.toISOString(),
     readyBy: order.readyBy,
+    readyByName: authors.nameOf(order.readyBy),
     blockedReason: packingBlocker(order),
   };
 }

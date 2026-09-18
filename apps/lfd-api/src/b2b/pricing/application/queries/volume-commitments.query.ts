@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { VolumeCommitmentView } from "@lfd/contracts";
 
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.js";
 import { commitmentView } from "../volume-commitment-view.js";
 import {
@@ -28,12 +29,16 @@ export class VolumeCommitmentsQuery {
   constructor(
     private readonly commitments: VolumeCommitmentsReader,
     private readonly volumes: CustomerVolumeReader,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async forCompany(companyId: string): Promise<readonly VolumeCommitmentView[]> {
     const stored = await this.commitments.allFor(companyId);
+    const authors = await this.staffAuthors.identify(
+      stored.flatMap(({ state }) => [state.createdBy, state.archivedBy]),
+    );
     return Promise.all(
-      stored.map(async (entry) => commitmentView(entry, await this.reached(entry))),
+      stored.map(async (entry) => commitmentView(entry, await this.reached(entry), authors)),
     );
   }
 

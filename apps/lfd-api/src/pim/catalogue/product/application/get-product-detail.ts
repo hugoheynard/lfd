@@ -7,13 +7,20 @@ import { EditorialReader } from "../domain/ports/editorial-reader.js";
 import type { ProductEditorialView, ProductMediaRecord } from "../domain/ports/editorial-reader.js";
 import { ProductRepository, type ProductRecord } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 
 /** Détail complet : le socle, sa couche éditoriale, ses visuels et sa signature. */
 export type ProductDetail = ProductRecord & {
   readonly editorial: ProductEditorialView | null;
   readonly media: readonly ProductMediaRecord[];
   /** `null` = personne ne s'est prononcé sur cette fiche. */
-  readonly readiness: { readonly readyAt: string; readonly readyBy: string } | null;
+  readonly readiness: {
+    readonly readyAt: string;
+    /** @deprecated depuis le 2026-09-18 — lire `readyByName` (plan `plan-l-auteur-est-la-fiche.md`, D3). */
+    readonly readyBy: string;
+    /** « Prénom Nom » du signataire ; `null` = l'auteur ne désigne aucune fiche. */
+    readonly readyByName: string | null;
+  } | null;
   /**
    * Quand le contenu de la fiche a bougé pour la dernière fois.
    *
@@ -60,6 +67,7 @@ export class GetProductDetailHandler implements IQueryHandler<
     private readonly readiness: ReadinessRepository,
     private readonly journal: PimJournalReader,
     private readonly clock: Clock,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(query: GetProductDetailQuery): Promise<ProductDetail | null> {
@@ -73,6 +81,7 @@ export class GetProductDetailHandler implements IQueryHandler<
       this.readiness.read(query.id),
       this.readiness.contentUpdatedAt(query.id),
     ]);
+    const authors = await this.staffAuthors.identify([readiness?.readyBy ?? null]);
     return {
       ...product.snapshot(),
       editorial,
@@ -80,7 +89,11 @@ export class GetProductDetailHandler implements IQueryHandler<
       readiness:
         readiness === null
           ? null
-          : { readyAt: readiness.readyAt.toISOString(), readyBy: readiness.readyBy },
+          : {
+              readyAt: readiness.readyAt.toISOString(),
+              readyBy: readiness.readyBy,
+              readyByName: authors.nameOf(readiness.readyBy),
+            },
       readinessStale: await this.staleSince(query.id, readiness?.readyAt ?? null),
       // Les dates sortent en ISO ici, comme partout dans les vues : le port les
       // manipule en `Date` parce qu'il compare, la vue en chaînes parce qu'elle

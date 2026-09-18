@@ -114,7 +114,7 @@ import { PrismaCompanyAddressReader } from "./infrastructure/prisma-company-addr
 import { PrismaCompanyAddressRepository } from "./infrastructure/prisma-company-address.repository.js";
 import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-contact.repository.js";
 import { PrismaCompanyRepository } from "./infrastructure/prisma-company.repository.js";
-import { PrismaStaffDirectory } from "./infrastructure/prisma-staff-directory.js";
+import { StaffBlockDirectory } from "./infrastructure/staff-block-directory.js";
 import { StaffDirectory } from "./domain/ports/staff-directory.js";
 import {
   CertifyKbisHandler,
@@ -242,7 +242,7 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     IssuePasswordLinkHandler,
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
-    { provide: StaffDirectory, useClass: PrismaStaffDirectory },
+    { provide: StaffDirectory, useClass: StaffBlockDirectory },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
     { provide: CompanyAddressRepository, useClass: PrismaCompanyAddressRepository },
     { provide: CompanyAddressReader, useClass: PrismaCompanyAddressReader },

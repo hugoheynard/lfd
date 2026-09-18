@@ -5,6 +5,7 @@ import type {
   CatalogRevisionSummaryView,
 } from "@lfd/pim-contracts";
 
+import type { StaffAuthors } from "../../../../staff/directory/domain/staff-author-directory.js";
 import type { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { attributeFields, coveredBy, type GlobalCause } from "../domain/attribution.js";
 import type { ItemDiff } from "../domain/diff.js";
@@ -105,7 +106,14 @@ export function causeViews(causes: readonly GlobalCause[]): readonly CatalogRevi
   }));
 }
 
-export function summaryOf(record: RevisionRecord): CatalogRevisionSummaryView {
+/**
+ * Le résumé d'une ancre. `authors` nomme celui qui l'a posée — résolu d'un coup
+ * pour toute la vue par l'appelant (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ */
+export function summaryOf(
+  record: RevisionRecord,
+  authors: StaffAuthors,
+): CatalogRevisionSummaryView {
   return {
     id: record.id,
     reference: record.reference,
@@ -114,6 +122,7 @@ export function summaryOf(record: RevisionRecord): CatalogRevisionSummaryView {
     hash: record.hash,
     takenAt: record.takenAt.toISOString(),
     takenBy: record.takenBy,
+    takenByName: authors.nameOf(record.takenBy),
     articles: record.articles,
   };
 }

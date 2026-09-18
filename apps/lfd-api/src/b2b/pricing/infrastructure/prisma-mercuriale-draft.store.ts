@@ -1,8 +1,11 @@
-import type { MercurialeDraftView, SaveMercurialeDraftPayload } from "@lfd/contracts";
+import type { SaveMercurialeDraftPayload } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { MercurialeDraftStore } from "../application/ports/mercuriale-draft.store.js";
+import {
+  MercurialeDraftStore,
+  type StoredMercurialeDraft,
+} from "../application/ports/mercuriale-draft.store.js";
 
 /**
  * **Le brouillon de mercuriale, en base.**
@@ -19,7 +22,7 @@ export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
   }
 
   /** Le brouillon en cours, ou `null` — il n'y en a jamais eu, ou il est posé. */
-  async forCompany(companyId: string): Promise<MercurialeDraftView | null> {
+  async forCompany(companyId: string): Promise<StoredMercurialeDraft | null> {
     const row = await this.prisma.mercurialeDraft.findUnique({ where: { companyId } });
     if (row === null) {
       return null;

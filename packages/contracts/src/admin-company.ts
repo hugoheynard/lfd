@@ -164,6 +164,13 @@ export interface AdminKbisView extends KbisView {
  * plutôt qu'un nom inventé.
  */
 export interface StaffActorView {
+  /**
+   * L'identifiant de l'agent tel qu'écrit — aujourd'hui son `sub` Auth0.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `name`, figé au geste. Le
+   *   champ sera renommé à la bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D8).
+   */
   readonly sub: string;
   readonly name: string;
   readonly role: string;

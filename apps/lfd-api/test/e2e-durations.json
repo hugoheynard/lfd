@@ -97,6 +97,7 @@
   "test/shop-order.e2e-spec.ts": 6500,
   "test/shop-quote.e2e-spec.ts": 9056,
   "test/staff-access.e2e-spec.ts": 9064,
+  "test/staff-authors.e2e-spec.ts": 6429,
   "test/staff-invitation.e2e-spec.ts": 8265,
   "test/staff-journal-backfill.e2e-spec.ts": 6984,
   "test/staff-journal.e2e-spec.ts": 6600,

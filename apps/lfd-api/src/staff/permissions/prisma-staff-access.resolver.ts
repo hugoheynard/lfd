@@ -6,6 +6,7 @@ import { Clock } from "../../platform/time/clock.js";
 import { isOutsideDatabaseConnection } from "../../platform/auth/auth0-claims.js";
 import { StaffAccessResolver } from "../../platform/auth/staff-access.resolver.js";
 import type { StaffAccess, StaffPrincipal } from "../../platform/auth/staff-principal.js";
+import { linkedSubject } from "../directory/infrastructure/staff-subject-aliases.js";
 
 /** Durée de vie d'une entrée de cache, en millisecondes. */
 const CACHE_TTL_MS = 30_000;
@@ -160,11 +161,7 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     subject: string,
   ): Promise<boolean> {
     if (row.auth0Id === null) {
-      const linked = await this.prisma.staffUser.updateMany({
-        where: { id: row.id, auth0Id: null },
-        data: { auth0Id: subject, status: "active" },
-      });
-      return linked.count === 1;
+      return this.link(row.id, subject);
     }
     if (row.status !== "active") {
       await this.prisma.staffUser.update({
@@ -173,5 +170,27 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
       });
     }
     return true;
+  }
+
+  /**
+   * Relie la fiche à ce `sub` et l'inscrit dans la table des `sub`, dans la
+   * même transaction (plan `plan-l-auteur-est-la-fiche.md`, D5.1).
+   *
+   * L'inscription n'a lieu que si la liaison a GAGNÉ : un `sub` qui a perdu la
+   * course n'est pas celui de cette fiche, et l'inscrire lui attribuerait des
+   * actes qu'elle n'a pas faits.
+   */
+  private async link(staffUserId: string, subject: string): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const linked = await tx.staffUser.updateMany({
+        where: { id: staffUserId, auth0Id: null },
+        data: { auth0Id: subject, status: "active" },
+      });
+      if (linked.count !== 1) {
+        return false;
+      }
+      await tx.staffSubjectAlias.createMany(linkedSubject(subject, staffUserId));
+      return true;
+    });
   }
 }

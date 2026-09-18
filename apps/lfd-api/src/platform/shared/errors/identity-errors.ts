@@ -46,10 +46,17 @@ export class IdentityProviderUnavailableError extends TechnicalError {
  * tout seul, et chaque tentative échoue exactement pareil.
  */
 export class IdentitySubjectUnknownError extends TechnicalError {
+  /**
+   * `subject` reste porté par l'objet, pour l'appelant qui répare ; il n'entre
+   * plus dans le MESSAGE, que `AppErrorFilter` écrit au journal de production
+   * (plan `plan-l-auteur-est-la-fiche.md`, §8 — un identifiant chez un tiers
+   * n'a rien à faire dans nos logs).
+   */
   constructor(readonly subject: string) {
     super(
       "identity_provider.subject_unknown",
-      `Le fournisseur d'identité ne connaît pas « ${subject} ».`,
+      "Le fournisseur d'identité ne connaît plus l'identité de connexion enregistrée pour ce compte : " +
+        "elle a divergé de la nôtre (compte supprimé chez lui, ou ouvert en développement).",
     );
   }
 }

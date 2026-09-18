@@ -1,4 +1,3 @@
-import type { StaffNotificationView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { IdGenerator } from "../../../platform/id/id-generator.js";
@@ -7,6 +6,7 @@ import {
   StaffNoticeStore,
   StaffNotificationReader,
   type StaffNotice,
+  type StoredStaffNotification,
 } from "../domain/ports/staff-notifier.js";
 
 /** Une ligne `staff_notifications`, vue d'ici seulement. */
@@ -59,7 +59,7 @@ export class PrismaStaffNotificationReader extends StaffNotificationReader {
     super();
   }
 
-  async recent(limit: number): Promise<StaffNotificationView[]> {
+  async recent(limit: number): Promise<StoredStaffNotification[]> {
     const rows = await this.prisma.staffNotification.findMany({
       orderBy: { occurredAt: "desc" },
       take: limit,
@@ -88,7 +88,7 @@ export class PrismaStaffNotificationReader extends StaffNotificationReader {
   }
 }
 
-function toView(row: NotificationRow): StaffNotificationView {
+function toView(row: NotificationRow): StoredStaffNotification {
   return {
     id: row.id,
     kind: row.kind,

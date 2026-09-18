@@ -53,6 +53,13 @@ export type FeatureLevelsView = { readonly [Key in FeatureKey]: FeatureLevel<Key
 
 /** Qui a posé un écart, figé à l'instant du geste. */
 export interface FeatureAccessAuthorView {
+  /**
+   * L'identifiant de l'auteur tel qu'écrit — aujourd'hui son `sub` Auth0.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `name`, figé au geste. Le
+   *   champ sera renommé à la bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D8).
+   */
   readonly sub: string;
   /** Vide quand l'annuaire ne connaissait pas le `sub` ce jour-là. */
   readonly name: string;

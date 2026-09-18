@@ -38,3 +38,31 @@ describe("activityWhereOf — un seul jeu de filtres, en paramètres liés", () 
     expect(where.sql.match(/ AND /g)).toHaveLength(2);
   });
 });
+
+describe("activityWhereOf — le filtre par acteur ne coupe pas une histoire", () => {
+  it("sans synonymes connus, ne vise que l'acteur demandé", () => {
+    const where = activityWhereOf({ limit: 50, actorId: "staff_1" });
+
+    expect(where.sql).toBe("actor_id IN (?)");
+    expect(where.values).toEqual(["staff_1"]);
+  });
+
+  it("vise l'id de fiche ET tous les `sub` que la personne a portés", () => {
+    // Plan `plan-l-auteur-est-la-fiche.md`, D4 : pendant la bascule, un même
+    // membre du staff a écrit sous son `sub` puis sous l'id de sa fiche.
+    const where = activityWhereOf({ limit: 50, actorId: "auth0|ancien" }, [
+      "auth0|ancien",
+      "staff_1",
+      "auth0|actuel",
+    ]);
+
+    expect(where.sql).toBe("actor_id IN (?,?,?)");
+    expect(where.values).toEqual(["auth0|ancien", "staff_1", "auth0|actuel"]);
+  });
+
+  it("garde toujours l'acteur demandé, même absent des synonymes", () => {
+    const where = activityWhereOf({ limit: 50, actorId: "staff_1" }, ["auth0|actuel"]);
+
+    expect(where.values).toEqual(["staff_1", "auth0|actuel"]);
+  });
+});

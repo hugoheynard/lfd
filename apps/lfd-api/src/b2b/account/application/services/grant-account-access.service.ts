@@ -221,8 +221,10 @@ export class GrantAccountAccess extends AccountAccessGranter {
       if (!(error instanceof IdentitySubjectUnknownError)) {
         throw error;
       }
+      // L'id LOCAL, jamais le `sub` : un identifiant chez un tiers n'a rien à
+      // faire dans un journal de production (plan `plan-l-auteur-est-la-fiche.md`, §8).
       this.logger.warn(
-        `Sujet d'identité périmé pour ${email} (${known.subject}) — réalignement sur le fournisseur.`,
+        `Sujet d'identité périmé pour ${email} (compte ${known.userId}) — réalignement sur le fournisseur.`,
       );
       return this.adoptIdentity(known, email);
     }

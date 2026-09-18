@@ -1,5 +1,3 @@
-import type { VolumeCommitmentView } from "@lfd/contracts";
-
 import { CorruptedPriceRuleError } from "../domain/pricing-errors.js";
 import type { VolumeCommitmentState } from "../domain/entities/volume-commitment.js";
 import type { PriceScopeType } from "../domain/price-rule.js";
@@ -43,35 +41,5 @@ export function commitmentStateFromRow(row: CommitmentRow): VolumeCommitmentStat
     archivedAt: row.archivedAt,
     archivedBy: row.archivedBy,
     archiveReason: row.archiveReason,
-  };
-}
-
-/**
- * La même ligne, telle que l'écran la lit.
- *
- * `orderedQuantity` est **mesuré** et passé par l'appelant : ce fichier convertit
- * des lignes, il n'interroge pas les commandes. C'est aussi ce qui garde le
- * suivi honnête — le volume atteint n'est jamais dérivé de la promesse.
- *
- * `null` = rien à mesurer à cette portée, et c'est un fait distinct de zéro.
- */
-export function commitmentViewFromRow(
-  row: CommitmentRow,
-  orderedQuantity: number | null,
-): VolumeCommitmentView {
-  const state = commitmentStateFromRow(row);
-  return {
-    id: state.id,
-    companyId: state.companyId,
-    scope: state.scope,
-    promisedQuantity: state.promisedQuantity,
-    validFrom: state.validFrom.toISOString(),
-    validTo: state.validTo.toISOString(),
-    createdBy: state.createdBy,
-    createdAt: row.createdAt.toISOString(),
-    archivedAt: state.archivedAt?.toISOString() ?? null,
-    archivedBy: state.archivedBy,
-    archiveReason: state.archiveReason,
-    orderedQuantity,
   };
 }

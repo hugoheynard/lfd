@@ -2,6 +2,7 @@ import type { OrderPackingView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import {
   OrderReferenceNotFoundError,
   PackingRefusedError,
@@ -35,6 +36,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
     private readonly events: DomainEventPublisher,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(command: MarkOrderReadyCommand): Promise<OrderPackingView> {
@@ -72,6 +74,9 @@ export class MarkOrderReadyHandler implements ICommandHandler<
       ),
     );
 
-    return toPackingView({ ...order, status: "ready", readyAt: at, readyBy: command.staffSubject });
+    return toPackingView(
+      { ...order, status: "ready", readyAt: at, readyBy: command.staffSubject },
+      await this.staffAuthors.identify([command.staffSubject]),
+    );
   }
 }

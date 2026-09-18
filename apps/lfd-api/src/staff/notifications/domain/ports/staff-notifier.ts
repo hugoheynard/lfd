@@ -40,9 +40,16 @@ export abstract class StaffNoticeStore {
   abstract save(notices: readonly StaffNotice[]): Promise<readonly StaffNotice[]>;
 }
 
+/**
+ * Une notification telle que la base la garde : la vue, sans le nom de qui l'a
+ * lue — résolu par le handler auprès de l'annuaire (plan
+ * `plan-l-auteur-est-la-fiche.md`, D3).
+ */
+export type StoredStaffNotification = Omit<StaffNotificationView, "readByName">;
+
 /** La lecture de la cloche — séparée de l'émission (ISP). */
 export abstract class StaffNotificationReader {
-  abstract recent(limit: number): Promise<StaffNotificationView[]>;
+  abstract recent(limit: number): Promise<StoredStaffNotification[]>;
   abstract countUnread(): Promise<number>;
   /** Marquer lu est idempotent : le premier lecteur fait foi. */
   abstract markRead(id: string, staffSub: string, at: Date): Promise<void>;

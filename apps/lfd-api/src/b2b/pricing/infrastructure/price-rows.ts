@@ -1,5 +1,7 @@
 import type { PriceFloorView, PriceRuleView } from "@lfd/contracts";
 
+import type { StaffAuthors } from "../../../staff/directory/domain/staff-author-directory.js";
+
 import type { PricingRuleState } from "../domain/entities/pricing-rule.js";
 
 import { CorruptedPriceFloorError, CorruptedPriceRuleError } from "../domain/pricing-errors.js";
@@ -152,8 +154,12 @@ export function ruleStateFromRow(row: RuleRow): PricingRuleState {
   };
 }
 
-/** La même ligne, telle que l'écran la lit — avec sa provenance. */
-export function ruleViewFromRow(row: RuleRow): PriceRuleView {
+/**
+ * La même ligne, telle que l'écran la lit — avec sa provenance. `authors` nomme
+ * ses trois auteurs, résolus d'un coup pour toute la lecture par l'appelant
+ * (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ */
+export function ruleViewFromRow(row: RuleRow, authors: StaffAuthors): PriceRuleView {
   const rule = ruleFromRow(row);
   return {
     id: rule.id,
@@ -175,12 +181,15 @@ export function ruleViewFromRow(row: RuleRow): PriceRuleView {
     validFrom: rule.validFrom.toISOString(),
     validTo: rule.validTo?.toISOString() ?? null,
     createdBy: row.createdBy,
+    createdByName: authors.nameOf(row.createdBy),
     createdAt: row.createdAt.toISOString(),
     status: statusOf(lifecycleFromRow(row)),
     pausedAt: row.pausedAt?.toISOString() ?? null,
     pausedBy: row.pausedBy,
+    pausedByName: authors.nameOf(row.pausedBy),
     archivedAt: row.archivedAt?.toISOString() ?? null,
     archivedBy: row.archivedBy,
+    archivedByName: authors.nameOf(row.archivedBy),
     archiveReason: row.archiveReason,
   };
 }
@@ -244,11 +253,13 @@ function dynamicOf(row: FloorRow): DynamicFloor | null {
  *   trouvait calculé contre un instant que rien ne gelait. Personne ne s'en
  *   servait — les deux appelants passaient déjà les trois arguments — donc ce
  *   défaut n'était qu'un piège en attente. Sans lui, l'oubli ne compile plus.
+ * @param authors les auteurs de la lecture, résolus d'un coup par l'appelant.
  */
 export function floorViewFromRow(
   row: FloorRow,
   currentCanonicalMillicents: number | null,
   now: Date,
+  authors: StaffAuthors,
 ): PriceFloorView {
   const scoped = floorFromRow(row);
   const dynamic = scoped.policy.dynamic;
@@ -273,6 +284,7 @@ export function floorViewFromRow(
       now,
     ),
     createdBy: row.createdBy,
+    createdByName: authors.nameOf(row.createdBy),
     updatedAt: row.updatedAt.toISOString(),
   };
 }

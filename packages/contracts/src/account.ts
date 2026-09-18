@@ -51,6 +51,14 @@ export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";
 /** Le profil de la personne, tel que l'écran « Mon profil » l'affiche. */
 export interface ProfileView {
   readonly userId: string;
+  /**
+   * Le `sub` Auth0 de la personne — un identifiant chez un tiers, qu'aucun
+   * écran ne lit.
+   *
+   * @deprecated depuis le 2026-09-18 — servi encore, retiré à l'étape 5 du
+   *   plan `documentation/staff/plan-l-auteur-est-la-fiche.md` (§8). Le
+   *   profil se désigne par `userId`.
+   */
   readonly subject: string;
   readonly firstName: string;
   readonly lastName: string;

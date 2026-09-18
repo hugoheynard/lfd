@@ -1,4 +1,4 @@
-import { alertKindSchema, type AccountAlertView, type AlertFinding } from "@lfd/contracts";
+import { alertKindSchema, type AlertFinding } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -7,6 +7,7 @@ import { alertIdempotencyKey } from "../domain/evaluate-order.js";
 import {
   AccountAlertRepository,
   type AlertToRecord,
+  type StoredAccountAlert,
 } from "../domain/ports/account-alert.repository.js";
 
 /** Une ligne `account_alerts`, vue d'ici seulement. */
@@ -60,7 +61,7 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
     });
   }
 
-  async listForCompany(companyId: string): Promise<AccountAlertView[]> {
+  async listForCompany(companyId: string): Promise<StoredAccountAlert[]> {
     const rows = await this.prisma.accountAlert.findMany({
       where: { companyId },
       orderBy: { occurredAt: "desc" },
@@ -90,12 +91,12 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
   }
 }
 
-function isKnown(view: AccountAlertView | null): view is AccountAlertView {
+function isKnown(view: StoredAccountAlert | null): view is StoredAccountAlert {
   return view !== null;
 }
 
 /** `null` = type inconnu : l'alerte ne désigne plus rien qu'on sache nommer. */
-function toView(row: AlertRow): AccountAlertView | null {
+function toView(row: AlertRow): StoredAccountAlert | null {
   const kind = alertKindSchema.safeParse(row.kind);
   if (!kind.success) {
     return null;

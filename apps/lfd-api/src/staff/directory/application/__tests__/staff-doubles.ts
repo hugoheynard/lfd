@@ -107,11 +107,6 @@ export class ScriptedStaffUsers extends StaffUserRepository {
     return Promise.resolve(this.edit);
   }
 
-  remove(_id: string, _actorId: string): Promise<StaffUserSnapshot> {
-    this.note("remove");
-    return Promise.resolve(this.snapshot);
-  }
-
   setStatus(_id: string, _change: StaffStatusChange, _actorId: string): Promise<StaffUserSnapshot> {
     this.note("setStatus");
     return Promise.resolve(this.snapshot);

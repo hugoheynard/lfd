@@ -2,6 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { CatalogRevisionDiffView } from "@lfd/pim-contracts";
 
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { GLOBAL_CAUSE_TYPES, causesOf } from "../domain/attribution.js";
 
 import { diffItem, headerDiff, planDiff } from "../domain/diff.js";
@@ -36,6 +37,7 @@ export class DiffCatalogRevisionsHandler implements IQueryHandler<
   constructor(
     private readonly revisions: CatalogRevisionRepository,
     private readonly journal: PimJournalReader,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(query: DiffCatalogRevisionsQuery): Promise<CatalogRevisionDiffView> {
@@ -52,17 +54,18 @@ export class DiffCatalogRevisionsHandler implements IQueryHandler<
     // Les causes globales se lisent UNE fois pour tout le diff, pas une fois par
     // article : un taux révisé est un seul fait, et le relire cent fois
     // coûterait cent requêtes pour cent copies de la même ligne.
-    const [beforePayloads, afterPayloads, causes] = await Promise.all([
+    const [beforePayloads, afterPayloads, causes, authors] = await Promise.all([
       this.revisions.payloadsOf(from.id, plan.changed),
       this.revisions.payloadsOf(to.id, plan.changed),
       this.journal
         .factsBetween(GLOBAL_CAUSE_TYPES, from.takenAt, to.takenAt)
         .then((facts) => causesOf(facts)),
+      this.staffAuthors.identify([from.takenBy, to.takenBy]),
     ]);
 
     return {
-      from: summaryOf(from),
-      to: summaryOf(to),
+      from: summaryOf(from, authors),
+      to: summaryOf(to, authors),
       header: headerDiff(beforeIndex, afterIndex),
       causes: causeViews(causes),
       added: plan.added,
