@@ -153,8 +153,9 @@ par personne.
 
 Chaque dérogation porte **`grantedByStaffId`** — l'id de la fiche de l'auteur,
 jamais son `sub` Auth0 — et `grantedAt`. Une édition de fiche n'écrit que ce qui
-change : une dérogation inchangée garde son auteur et sa date. (L'ancienne
-colonne `grantedBy`, qui stockait le `sub`, est nullable et vouée à disparaître.)
+change : une dérogation inchangée garde son auteur et sa date. L'ancienne
+colonne `grantedBy`, qui stockait le `sub`, est supprimée par la migration
+`20260918140000_retrait_du_sub_des_derogations`.
 
 ### La formule
 

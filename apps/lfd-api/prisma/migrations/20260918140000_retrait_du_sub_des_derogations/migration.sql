@@ -1,0 +1,40 @@
+-- ───────────────────────────────────────────────────────────────────────────
+-- LE `sub` QUITTE LES DÉROGATIONS.
+--
+-- Cf. documentation/auth-inscription/plan-journal-de-l-annuaire.md — D1, lot 2,
+-- second temps. Le premier (`20260918100000_auteur_de_derogation_par_fiche`) a
+-- ajouté `granted_by_staff_id`, l'a rétro-rempli, et rendu `granted_by`
+-- nullable ; il est déployé depuis la fusion `cd4cab2a` (2026-09-18).
+--
+-- RESSERRER — second et dernier des deux déploiements. `granted_by` contient le
+-- `sub` Auth0 de l'auteur, identifiant du fournisseur qui n'a rien à faire dans
+-- nos données (Hugo, 2026-09-18 : « fuite de donnée »). Le code ne la lit ni ne
+-- l'écrit plus depuis le premier temps (vérifié le 2026-09-18 : aucune
+-- occurrence hors du client Prisma généré).
+--
+-- 🔴 DESTRUCTIVE, et c'est le but : les `sub` disparaissent. À ne déployer
+-- QU'APRÈS avoir contrôlé le rétro-remplissage du premier temps en production —
+-- une fois la colonne partie, il n'y a plus rien d'où rejouer la jointure :
+--
+--   SELECT count(*) FILTER (WHERE granted_by_staff_id IS NULL) AS sans_auteur,
+--          count(*) FILTER (WHERE granted_by_staff_id IS NULL
+--                             AND granted_by IS NOT NULL
+--                             AND granted_by IN (SELECT auth0_id FROM public.staff_users
+--                                                WHERE auth0_id IS NOT NULL)) AS rate,
+--          count(*) AS total
+--     FROM public.staff_permission_overrides;
+--
+-- `rate` doit valoir 0 : un `sub` qui correspond à une fiche mais n'a pas été
+-- rempli serait un défaut de jointure. `sans_auteur` compte les écarts dont
+-- l'auteur n'était lié à aucune fiche — inconnus, et c'est ce que la base dit.
+--
+-- RETOUR ARRIÈRE — la colonne se recrée, pas son contenu :
+--
+--   ALTER TABLE "public"."staff_permission_overrides" ADD COLUMN "granted_by" TEXT;
+--
+-- Nullable : l'ancien code du premier temps n'y écrit plus, et aucun code ne la
+-- lit. Les `sub` supprimés ne reviennent pas — c'est ce que cette migration
+-- existe pour garantir.
+-- ───────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "public"."staff_permission_overrides" DROP COLUMN "granted_by";
