@@ -11,8 +11,8 @@
 > [§13](#s13), et nulle part ailleurs.
 >
 > Le pendant client — le mur `company_id`, la personne et la société — est dans
-> [`architecture-identite-auth-tenancy.md`](architecture-identite-auth-tenancy.md).
-> Le réglage du tenant Auth0 est dans [`auth0-setup.md`](auth0-setup.md).
+> [`../auth-inscription/architecture-identite-auth-tenancy.md`](../auth-inscription/architecture-identite-auth-tenancy.md).
+> Le réglage du tenant Auth0 est dans [`../auth-inscription/auth0-setup.md`](../auth-inscription/auth0-setup.md).
 
 ## Table des matières
 
@@ -483,7 +483,7 @@ porteur de droits, qu'un `GET` ferait précharger et mettre en cache.
 
 L'identité passe par `Auth0IdentityGateway` (`platform/identity/`), partagée avec
 le client, la connexion étant un paramètre. Les droits de l'application M2M sont
-dans [`auth0-setup.md`](auth0-setup.md) §6.
+dans [`../auth-inscription/auth0-setup.md`](../auth-inscription/auth0-setup.md) §6.
 
 ---
 
@@ -616,7 +616,7 @@ le bypass rend alors `403`. Non constaté à l'écran ; déduit du code.
   (« Hugo Heynard a créé Cécile Martin, Commercial »). Les dérogations désignent
   leur auteur par l'id de sa fiche, et ne sont plus réécrites quand elles ne
   changent pas. Plan et limites :
-  [`plan-journal-de-l-annuaire.md`](plan-journal-de-l-annuaire.md).
+  [`journalisation-staff/architecture-journal-de-l-annuaire.md`](journalisation-staff/architecture-journal-de-l-annuaire.md).
 
 - **L'invitation affichée valable 14 jours sur un lien qui en vit 7.** La règle
   (`invitation-expiry.ts`) est désormais **dérivée** de la durée de vie du lien

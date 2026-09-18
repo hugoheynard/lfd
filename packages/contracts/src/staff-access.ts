@@ -9,7 +9,7 @@ import type { StaffNavPreferences } from "./staff-user.js";
 /**
  * Contrat d'**accès staff** : qui peut quoi dans le back-office.
  *
- * Modèle et justifications : `documentation/auth-inscription/architecture-acces-staff.md`.
+ * Modèle et justifications : `documentation/staff/architecture-acces-staff.md`.
  * Trois notions et une formule — un **rôle** est un paquet nommé de
  * **permissions**, qu'une **dérogation** par personne ajuste :
  *

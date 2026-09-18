@@ -11,7 +11,7 @@ import type { StaffRoleSnapshot } from "./staff-role-definition.js";
 /**
  * Les **faits des rôles** — ce que le journal retient de leur définition.
  *
- * Plan : `documentation/auth-inscription/plan-journal-de-l-annuaire.md` §5 bis.
+ * Plan : `documentation/staff/journalisation-staff/architecture-journal-de-l-annuaire.md` §5 bis.
  * Préfixe `staff_role.` : le journal range un fait dans son module par son
  * préfixe (`growth/domain/activity-module.ts`), ici le module `equipe`.
  *

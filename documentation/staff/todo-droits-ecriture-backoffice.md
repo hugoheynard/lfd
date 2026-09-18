@@ -2,7 +2,7 @@
 
 **État : 🟢 le modèle tient, il reste des trous de couverture.** Ce document ne
 redécrit pas le mur staff — il vit dans
-[`../auth-inscription/architecture-acces-staff.md`](../auth-inscription/architecture-acces-staff.md). Il
+[`architecture-acces-staff.md`](architecture-acces-staff.md). Il
 tient la liste de ce qui reste à **décider ou à câbler**, ressource par
 ressource, à mesure qu'on finalise les domaines.
 

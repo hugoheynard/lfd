@@ -1,7 +1,7 @@
 /**
  * E2E de la **reprise du journal de l'annuaire** — la migration
  * `20260918160000_reprise_du_journal_de_l_annuaire`, rejouée sur une base
- * semée. Plan : `documentation/auth-inscription/plan-reprise-du-journal-de-l-annuaire.md` §4.
+ * semée. Plan : `documentation/staff/journalisation-staff/plan-reprise-du-journal-de-l-annuaire.md` §4.
  *
  * Ce que seul le vrai SQL prouve : que l'ULID fabriqué en SQL range chaque fait
  * à sa date — tri ET pagination de l'écran Journal, au milieu des faits vécus

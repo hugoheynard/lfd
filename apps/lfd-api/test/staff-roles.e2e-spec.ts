@@ -12,7 +12,7 @@
  * matrice du contrat et celle du test divergeraient, et c'est la seconde qu'on
  * croirait.
  *
- * Modèle : `documentation/auth-inscription/architecture-acces-staff.md` §4 et §5.
+ * Modèle : `documentation/staff/architecture-acces-staff.md` §4 et §5.
  */
 import {
   hasStaffPermission,

@@ -1,7 +1,7 @@
 -- ───────────────────────────────────────────────────────────────────────────
 -- L'HISTOIRE DE L'ANNUAIRE D'AVANT LE JOURNAL, REPRISE AU JOURNAL.
 --
--- Cf. documentation/auth-inscription/plan-reprise-du-journal-de-l-annuaire.md
+-- Cf. documentation/staff/journalisation-staff/plan-reprise-du-journal-de-l-annuaire.md
 -- — §2 (D0–D7) et §3.
 --
 -- QUOI. Le journal de l'annuaire n'existe que depuis le déploiement `cd4cab2a`
