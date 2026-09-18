@@ -6,10 +6,10 @@
 > mes entrées de journal soient lisibles avec des phrases humaines ».
 > Point de départ : [`architecture-acces-staff.md`](architecture-acces-staff.md) §13.2.
 >
-> État : 🟡 **lots 1 à 4 bâtis le 2026-09-18**, non commités, non déployés. Reste
-> le second déploiement du lot 2 (suppression de `granted_by`). **Contredit par
-> `vitruve` le 2026-09-18** — ce qu'il a changé est au §9 ; ce que la
-> construction a tranché est au §10.
+> État : 🟡 **lots 1 à 4 déployés en production le 2026-09-18** (fusion
+> `cd4cab2a`). Reste le second temps du lot 2 (suppression de `granted_by`).
+> **Contredit par `vitruve` le 2026-09-18** — ce qu'il a changé est au §9 ; ce
+> que la construction a tranché est au §10.
 
 ## 0. Résumé
 
@@ -29,7 +29,9 @@ chantier plus large, décrit au §8, à ouvrir séparément.
 
 ## Avancement — tenu à jour
 
-_Dernière mise à jour : 2026-09-18._ Rien n'est commité ni déployé.
+_Dernière mise à jour : 2026-09-18._ **Déployé** : fusion `cd4cab2a` sur `main`,
+les quatre déploiements verts, et l'étape « Migrer la base » a appliqué
+`20260918100000_auteur_de_derogation_par_fiche`.
 
 | Lot                                     | État       | Où c'est                                                                                                                                                                                                                                    | Prouvé par                                                                                                                                      |
 | --------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -49,21 +51,22 @@ les seules suites rouges sont hors de ce chantier (`shop-order`,
 
 **Reste à faire, dans l'ordre :**
 
-1. **Relire les choix du §10** — surtout la phrase d'une activation manuelle
-   (« a rétabli l'accès ») et la fonction de l'auteur absente des lignes de
+1. **Contrôler le rétro-remplissage en production** : compter les lignes de
+   `staff_permission_overrides` dont `granted_by_staff_id` est resté `NULL`,
+   et vérifier qu'elles correspondent à des `sub` jamais liés à une fiche, pas à
+   un défaut de jointure.
+2. **Constater une ligne « Équipe » dans l'écran Journal** après un geste réel
+   (créer ou modifier une fiche) : la phrase, l'auteur, la date.
+3. **Relire les choix du §10** — la phrase d'une activation manuelle (« a
+   rétabli l'accès »), et la fonction de l'auteur absente des lignes de
    l'équipe.
-2. **Suivre les nouveaux fichiers dans git** (migration, handlers, specs,
-   `staff-line.ts`, ce plan) : `lint:doc-references` échoue tant qu'ils ne le
-   sont pas.
-3. **Commiter**, par sujet, après `cerberus` ; **déployer** le temps 1 du lot 2.
-4. **Le temps 2 du lot 2** : supprimer `granted_by` — et les `sub` qu'elle
-   contient — dans un déploiement suivant.
+4. **Le second temps du lot 2** : supprimer `granted_by` — et les `sub` qu'elle
+   contient — dans une migration et un déploiement à part. Puis retirer de
+   [`architecture-acces-staff.md`](architecture-acces-staff.md) la mention de
+   l'ancienne colonne « vouée à disparaître ».
 5. **Hors de ce plan, ouverts en TODO** :
    [`todo-le-sub-comme-auteur.md`](todo-le-sub-comme-auteur.md) (§8) et
    [`../todos/todo-doublon-du-journal-dans-une-transaction.md`](../todos/todo-doublon-du-journal-dans-une-transaction.md) (§10).
-6. **Mettre à jour la doc d'architecture** quand le temps 2 sera fait :
-   [`architecture-acces-staff.md`](architecture-acces-staff.md) mentionne
-   encore l'ancienne colonne comme « vouée à disparaître ».
 
 ## 1. Ce qui existe (vérifié le 2026-09-18, revérifié par `vitruve`)
 
