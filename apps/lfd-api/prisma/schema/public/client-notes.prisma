@@ -42,14 +42,10 @@ model ClientNote {
   // un nom). L'id de fiche depuis le 2026-09-18 ; les lignes plus anciennes
   // portaient un `sub`, converti par la migration
   // `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
-  // la table des `sub` ne connaît pas.
-  //
-  // NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
-  // aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
-  // supprime aussi `created_by_sub` — l'ancien nom, que plus rien ne lit ni
-  // n'écrit depuis 5B.
-  createdByStaffId String? @map("created_by_staff_id")
-  createdByName    String  @map("created_by_name")
+  // la table des `sub` ne connaît pas. La colonne s'appelait `created_by_sub`
+  // jusqu'au renommage en trois temps du plan de l'auteur (étape 5).
+  createdByStaffId String @map("created_by_staff_id")
+  createdByName    String @map("created_by_name")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -17,7 +17,6 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
-import { legacyAuthorOf } from "./legacy-author-columns.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -74,12 +73,7 @@ describe("le réglage de livraison", () => {
     const row = await ctx.prisma.deliveryAvailability.findUniqueOrThrow({
       where: { key: "delivery" },
     });
-    // L'id de fiche dans la nouvelle colonne seule ; l'ancienne, que Prisma ne
-    // connaît plus, n'est plus écrite (plan de l'auteur, étape 5B).
     expect(row.updatedByStaffId).toBe(E2E_STAFF_ID);
-    expect(
-      await legacyAuthorOf(ctx.prisma, "delivery_settings.updated_by_sub", "delivery"),
-    ).toBeNull();
   });
 
   /**

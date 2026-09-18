@@ -52,12 +52,7 @@ export class PrismaClientNotebookRepository extends ClientNotebookRepository {
         title: note.title,
         body: note.body,
         photoKey: note.photoKey,
-        // La colonne est nullable jusqu'à l'étape 5C du plan de l'auteur, mais
-        // aucune ligne n'y est vide : 5A et 5B l'ont recopiée depuis
-        // `created_by_sub`, qui était NOT NULL, et tout ce qui s'écrit depuis
-        // la remplit. Le repli ne sert que le type (vérifié le
-        // 2026-09-18) ; il part avec le NOT NULL.
-        author: { staffUserId: note.createdByStaffId ?? "", name: note.createdByName },
+        author: { staffUserId: note.createdByStaffId, name: note.createdByName },
       })),
     });
   }

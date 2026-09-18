@@ -311,13 +311,10 @@ model StaffPushSubscription {
   /// `sub` avant le 2026-09-18, converti par
   /// `20260918190000_conversion_des_auteurs_staff` sauf s'il est inconnu de la
   /// table des `sub`. Une TRACE : sert à couper les abonnements de quelqu'un
-  /// qui part, pas à cibler — la cloche est commune à l'équipe (D9).
-  ///
-  /// NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
-  /// aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
-  /// supprime aussi `staff_sub` — l'ancien nom, que plus rien ne lit ni
-  /// n'écrit depuis 5B.
-  staffUserId String? @map("staff_user_id")
+  /// qui part, pas à cibler — la cloche est commune à l'équipe (D9). La
+  /// colonne s'appelait `staff_sub` jusqu'au renommage du plan de l'auteur
+  /// (étape 5).
+  staffUserId String @map("staff_user_id")
 
   createdAt  DateTime  @default(now()) @map("created_at")
   /// Dernier envoi ACCEPTÉ par le service de push. Un abonnement muet depuis
@@ -338,7 +335,6 @@ model StaffPushSubscription {
   /// bout d'une semaine. Remis à `null` au premier envoi accepté.
   failingSince DateTime? @map("failing_since")
 
-  // L'index de `staff_sub` reste en base avec sa colonne jusqu'à 5C.
   @@index([staffUserId])
   @@map("staff_push_subscriptions")
   @@schema("public")
