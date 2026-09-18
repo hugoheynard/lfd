@@ -1,4 +1,5 @@
 import type { StaffOverride, StaffUserPayload } from "@lfd/contracts";
+import { Logger } from "@nestjs/common";
 
 import { RecordingJournal } from "../../../../platform/journal/__tests__/recording-journal.js";
 import { StaffIdentityPort } from "../../../invitations/staff-identity.port.js";
@@ -178,5 +179,37 @@ describe("UpdateStaffUserHandler — l'adresse de connexion suit l'annuaire", ()
 
     await expect(run(h)).rejects.toThrow("fournisseur indisponible");
     expect(h.journal.types()).toEqual([STAFF_FACTS.identityEdited]);
+  });
+
+  /**
+   * Régression : l'échec de propagation écrivait le `sub` Auth0 de la fiche dans
+   * le log de production (« Adresse désynchronisée pour auth0|… ») — un
+   * identifiant chez un tiers dans nos logs (fix 2026-09-18).
+   */
+  it("désigne la fiche par son id dans le log d'échec, jamais par son `sub`", async () => {
+    // Le dépôt tourne en ESM, sans `jest` global : on remplace la méthode du
+    // Logger à la main, et on la rend quoi qu'il arrive.
+    const logged: string[] = [];
+    const original = Object.getOwnPropertyDescriptor(Logger.prototype, "error");
+    Object.defineProperty(Logger.prototype, "error", {
+      configurable: true,
+      writable: true,
+      value: (message: unknown): void => {
+        logged.push(String(message));
+      },
+    });
+    try {
+      const h = harness({ after: { email: "c.martin@lfc.test" }, identityFails: true });
+      await expect(run(h)).rejects.toThrow("fournisseur indisponible");
+    } finally {
+      if (original !== undefined) {
+        Object.defineProperty(Logger.prototype, "error", original);
+      }
+    }
+
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toContain(CECILE.id);
+    expect(CECILE.auth0Id).not.toBeNull();
+    expect(logged[0]).not.toContain(CECILE.auth0Id ?? "");
   });
 });

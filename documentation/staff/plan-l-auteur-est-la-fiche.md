@@ -254,6 +254,14 @@ touche pas, et les lecteurs de nom les affichent comme aujourd'hui.
 défait que par la table D5 ; la conversion de `ProductReadiness.readyBy`
 (4) fait naître une génération d'empreintes qu'on ne défait pas (D6).
 
+**Après 5C — la colonne elle-même** (2026-09-18, Hugo : « on est certain
+qu'on ne pourra plus avoir de fuite de sub ? »). `lint:subject-readers` tient
+le `sub` du jeton ; rien ne tenait le même identifiant **relu en base**. La
+porte `lint:auth0-id-readers` tient la liste admise des lecteurs de
+`auth0_id`, `auth0_sub` et de la table des `sub`, et refuse partout qu'on
+l'interpole dans un message. Elle a trouvé en naissant un log de production
+qui l'écrivait en clair (`update-staff-user.handler.ts`, corrigé avec son test).
+
 ## 5. Tests et contrôles
 
 - **Type** : un contrôleur staff ne peut plus lire un `sub` — le test est la
