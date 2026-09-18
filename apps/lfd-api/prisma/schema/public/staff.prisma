@@ -308,7 +308,9 @@ model StaffPushSubscription {
   auth   String
 
   /// L'id de fiche du staff qui s'est abonné — un identifiant, pas un nom. Un
-  /// `sub` avant le 2026-09-18 ; la colonne garde son nom `staff_sub` jusqu'à
+  /// `sub` avant le 2026-09-18, converti par
+  /// `20260918190000_conversion_des_auteurs_staff` sauf s'il est inconnu de la
+  /// table des `sub` ; la colonne garde son nom `staff_sub` jusqu'à
   /// l'étape 5 du plan de l'auteur. Une TRACE : sert à couper les abonnements
   /// de quelqu'un qui part, pas à cibler — la cloche est commune à l'équipe (D9).
   staffSub String @map("staff_sub")

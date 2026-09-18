@@ -480,6 +480,15 @@ model VolumeCommitment {
 /// jour ou un effacement. Un journal réinscriptible ne prouve rien — le premier
 /// jour où il servirait vraiment serait celui où quelqu'un aurait intérêt à le
 /// corriger.
+///
+/// **Une exception, une seule, datée** : la migration
+/// `20260918190000_conversion_des_auteurs_staff` a réécrit `actor` — le `sub`
+/// Auth0 d'un auteur staff remplacé par l'id de SA fiche (plan de l'auteur,
+/// D7 ; accordé par Hugo le 2026-09-18). C'est une TRADUCTION : un identifiant
+/// de la même personne en remplace un autre, ni l'acte, ni son sujet, ni son
+/// instant, ni son résumé ne bougent, et la table des `sub`
+/// (`staff_subject_aliases`) garde le chemin inverse. Elle ne vaut pas
+/// précédent pour autre chose que l'auteur.
 model PricingEvent {
   /// ULID : triable par le temps, donc paginable de façon stable sur un flux
   /// qui ne fait que grandir.
@@ -494,8 +503,9 @@ model PricingEvent {
   /// `posed` | `paused` | `resumed` | `archived` | `confirmed` | `replaced`.
   act String
 
-  /// L'id de la fiche du membre du staff, ou `system`. Un `sub` Auth0 pour les
-  /// actes écrits avant le 2026-09-18 (plan de l'auteur, étape 3).
+  /// L'id de la fiche du membre du staff, ou `system`. Les actes écrits avant le
+  /// 2026-09-18 portaient un `sub` Auth0, traduit par la conversion (ci-dessus) ;
+  /// seul y reste un `sub` que la table des `sub` ne connaît pas.
   ///
   /// Le NOM n'est pas figé ici, à la différence des traces client : l'annuaire
   /// staff est à nous et un id de fiche est stable. Afficher le nom d'aujourd'hui est
