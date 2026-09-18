@@ -193,12 +193,6 @@ model StaffPermissionOverride {
   action   StaffAction
   effect   StaffOverrideEffect
 
-  /// ⚠️ DÉPRÉCIÉE (2026-09-18) : le `sub` Auth0 de l'auteur. Plus écrite par
-  /// le code, gardée le temps d'un retour arrière, puis supprimée dans un
-  /// déploiement séparé — et avec elle les `sub` qu'elle contient.
-  /// Plan : `documentation/auth-inscription/plan-journal-de-l-annuaire.md` §4.
-  grantedBy String? @map("granted_by")
-
   /// L'auteur de l'écart : l'id de SA FICHE d'annuaire (`StaffUser.id`), jamais
   /// son `sub` — un identifiant du fournisseur n'a rien à faire dans nos
   /// données. **Pas de clé étrangère**, comme `grantedByStaffId` des

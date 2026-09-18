@@ -187,9 +187,8 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
     });
     expect(after.id).toBe(first.id);
     expect(after.grantedAt).toEqual(first.grantedAt);
+    // L'auteur est la fiche : le `sub` n'a plus de colonne où s'écrire.
     expect(after.grantedByStaffId).toBe(await operatorId());
-    // Le `sub` ne s'écrit plus nulle part.
-    expect(after.grantedBy).toBeNull();
   });
 
   it("suppression : le fait fige qui elle était", async () => {

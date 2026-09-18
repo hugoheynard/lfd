@@ -239,7 +239,7 @@ describe("le mur staff — la dérogation, en vrai", () => {
         resource: "b2b_growth",
         action: "read",
         effect: "allow",
-        // Ni `grantedBy` (le `sub`, déprécié le 2026-09-18) ni auteur inventé :
+        // Aucun auteur inventé (le `sub` n'a plus de colonne depuis le 2026-09-18) :
         // cette suite éprouve le mur, pas l'imputation.
       },
     });
