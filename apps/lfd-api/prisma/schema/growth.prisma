@@ -42,8 +42,10 @@ model ActivityEvent {
   /// Nature de l'acteur : `customer` | `staff` | `system` (lu du RequestContext).
   actorType String @map("actor_type")
 
-  /// QUI, précisément. `actor_id` est l'id de fiche staff — un `sub` Auth0 pour
-  /// les faits staff écrits avant le 2026-09-18 (plan de l'auteur) — ou l'id
+  /// QUI, précisément. `actor_id` est l'id de fiche staff — les faits staff
+  /// écrits avant le 2026-09-18 portaient un `sub` Auth0, TRADUIT par
+  /// `20260918190000_conversion_des_auteurs_staff` (plan de l'auteur, D7) ; seul
+  /// y reste un `sub` que la table des `sub` ne connaît pas — ou l'id
   /// client (nul pour `system`) ; `actor_name` est un INSTANTANÉ du nom au moment de l'acte —
   /// figé, comme toute trace, parce qu'un journal doit dire ce qui était vrai ce
   /// jour-là. Nuls pour les événements antérieurs à cette trace, et quand

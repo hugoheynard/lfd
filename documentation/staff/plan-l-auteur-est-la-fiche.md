@@ -7,8 +7,9 @@
 >
 > Remplace [`journalisation-staff/todo-le-sub-comme-auteur.md`](journalisation-staff/todo-le-sub-comme-auteur.md).
 > État : 🚧 **en construction** depuis le 2026-09-18 (« go tout le plan »).
-> Étapes 0, 1 et 3 bâties le même jour (`530b83a8`, `f4b35223`, et le commit
-> suivant) ; l'étape 4 part dans le déploiement d'après ; l'étape 5 reste. **Deuxième version**, réécrite après une
+> Étapes 0, 1 et 3 **déployées** le même jour (`58b9c80e`) ; l'étape 4
+> (`20260918190000_conversion_des_auteurs_staff`) part dans le déploiement
+> suivant ; l'étape 5 (renommer les `*_by_sub`, resserrer les contrats) reste. **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§9) qui a trouvé une empreinte que la conversion
 > casserait, et un inventaire trop court.
 

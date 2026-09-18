@@ -29,7 +29,10 @@ model FeatureAccessOverride {
   /// Qui l'a posée, figé à l'instant du geste : l'identifiant survit à tout, le
   /// nom et le rôle sont un instantané (cf. l'activation d'une société). La
   /// colonne reçoit l'id de fiche depuis le 2026-09-18 malgré son nom
-  /// (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur) ; avant, un `sub`.
+  /// (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur). Les lignes plus
+  /// anciennes portaient un `sub`, converti par la migration
+  /// `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
+  /// la table des `sub` ne connaît pas.
   updatedBySub  String   @map("updated_by_sub")
   updatedByName String   @map("updated_by_name")
   updatedByRole String   @map("updated_by_role")
@@ -50,7 +53,10 @@ model FeatureAccessExemption {
 
   createdAt     DateTime @map("created_at")
   /// L'id de fiche de l'auteur depuis le 2026-09-18 malgré le nom de colonne
-  /// (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur) ; avant, un `sub`.
+  /// (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur). Les lignes plus
+  /// anciennes portaient un `sub`, converti par la migration
+  /// `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
+  /// la table des `sub` ne connaît pas.
   createdBySub  String   @map("created_by_sub")
   createdByName String   @map("created_by_name")
   createdByRole String   @map("created_by_role")

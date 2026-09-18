@@ -93,7 +93,9 @@ model DeliveryAvailability {
   /// Qui l'a posé, figé à l'instant du geste : l'identifiant survit à tout, le
   /// nom et le rôle sont un instantané. La colonne reçoit l'id de fiche depuis
   /// le 2026-09-18 malgré son nom (`*_by_sub`, renommée à l'étape 5 du plan de
-  /// l'auteur) ; avant, un `sub` Auth0.
+  /// l'auteur). Les lignes plus anciennes portaient un `sub` Auth0, converti par
+  /// la migration `20260918190000_conversion_des_auteurs_staff` ; seul y reste
+  /// un `sub` que la table des `sub` ne connaît pas.
   updatedBySub  String   @map("updated_by_sub")
   updatedByName String   @map("updated_by_name")
   updatedByRole String   @map("updated_by_role")
