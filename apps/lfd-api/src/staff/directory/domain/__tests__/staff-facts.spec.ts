@@ -80,6 +80,36 @@ describe("les faits de l'annuaire — un par changement réel", () => {
       person: { firstName: "Cécile", lastName: "Martin" },
       previous: null,
       fields: ["téléphone", "fonction"],
+      changes: [
+        { field: "phone", label: "téléphone", from: "", to: "0600000000" },
+        { field: "jobTitle", label: "fonction", from: "", to: "Vendeuse" },
+      ],
+    });
+  });
+
+  it("fige l'avant ET l'après d'un champ vidé — la chaîne vide est une valeur", () => {
+    const before = { ...BEFORE, phone: "0600000000" };
+    const [fact] = staffUserEditFacts("s1", {
+      before,
+      after: { ...IDENTITY, phone: "" },
+      overrides: NO_OVERRIDE_CHANGE,
+    });
+
+    expect(fact?.payload).toMatchObject({
+      fields: ["téléphone"],
+      changes: [{ field: "phone", label: "téléphone", from: "0600000000", to: "" }],
+    });
+  });
+
+  it("ne trace QUE les champs modifiés, dans l'ordre de la fiche", () => {
+    const [fact] = staffUserEditFacts("s1", edit({ jobTitle: "Vendeuse", firstName: "Cléa" }));
+
+    expect(fact?.payload).toMatchObject({
+      fields: ["prénom", "fonction"],
+      changes: [
+        { field: "firstName", label: "prénom", from: "Cécile", to: "Cléa" },
+        { field: "jobTitle", label: "fonction", from: "", to: "Vendeuse" },
+      ],
     });
   });
 
@@ -90,14 +120,26 @@ describe("les faits de l'annuaire — un par changement réel", () => {
       person: { firstName: "Cécile", lastName: "Durand" },
       previous: { firstName: "Cécile", lastName: "Martin" },
       fields: ["nom"],
+      changes: [{ field: "lastName", label: "nom", from: "Martin", to: "Durand" }],
     });
   });
 
-  it("dit qu'une adresse a changé, sans jamais l'écrire", () => {
+  /**
+   * Hugo a tranché le 2026-09-18 : une édition trace l'avant/après, e-mail
+   * compris. Ce cas affirmait l'inverse (D5) jusqu'à cette date.
+   */
+  it("trace l'ancienne et la nouvelle adresse d'un changement d'e-mail — sans lien ni `sub`", () => {
     const [fact] = staffUserEditFacts("s1", edit({ email: "c.martin@lfc.test" }));
 
-    expect(fact?.payload).toMatchObject({ fields: ["e-mail"] });
-    assertNoContactLeak(fact?.payload ?? {});
+    expect(fact?.payload).toMatchObject({
+      fields: ["e-mail"],
+      changes: [
+        { field: "email", label: "e-mail", from: "cecile@lfc.test", to: "c.martin@lfc.test" },
+      ],
+    });
+    const text = JSON.stringify(fact?.payload ?? {});
+    expect(text).not.toContain("http");
+    expect(text).not.toContain("auth0|");
   });
 
   it("fige les libellés des rôles, pas leurs clés", () => {

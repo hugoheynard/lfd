@@ -2,7 +2,7 @@
  * E2E du **journal de l'annuaire** : chaque geste de l'équipe laisse sa trace,
  * dans la même transaction que lui, et nommée par celui qui l'a posé.
  *
- * Plan : `documentation/auth-inscription/plan-journal-de-l-annuaire.md`, lots
+ * Plan : `documentation/staff/journalisation-staff/architecture-journal-de-l-annuaire.md`, lots
  * 1 à 3. Les handlers sont éprouvés avec des doubles ; ici on traverse la
  * route, le mur, le dépôt, le journal réel et Postgres — le seul niveau où un
  * rollback existe, où le nom de l'auteur est figé par l'adaptateur réel, et où
@@ -168,6 +168,37 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
       "staff_user.overrides_changed",
     ]);
     expect(facts[3]?.payload).toMatchObject({ fromLabel: "Commercial", toLabel: "Comptabilité" });
+  });
+
+  it("changement de téléphone : le fait porte l'avant ET l'après, tels qu'écrits en base", async () => {
+    const id = await createColleague();
+    await operator()
+      .patch(`/admin/staff-users/${id}`)
+      .send({ ...EDIT, phone: "0600000000" })
+      .expect(204);
+
+    await operator()
+      .patch(`/admin/staff-users/${id}`)
+      .send({ ...EDIT, phone: "0611223344" })
+      .expect(204);
+
+    const edits = (await factsAbout(id)).filter(
+      (fact) => fact.type === "staff_user.identity_edited",
+    );
+    expect(edits.map((fact) => fact.payload)).toEqual([
+      {
+        person: { firstName: "Cécile", lastName: "Martin" },
+        previous: null,
+        fields: ["téléphone"],
+        changes: [{ field: "phone", label: "téléphone", from: "", to: "0600000000" }],
+      },
+      {
+        person: { firstName: "Cécile", lastName: "Martin" },
+        previous: null,
+        fields: ["téléphone"],
+        changes: [{ field: "phone", label: "téléphone", from: "0600000000", to: "0611223344" }],
+      },
+    ]);
   });
 
   it("les dérogations inchangées gardent leur auteur — la fiche de l'opérateur — et leur date", async () => {

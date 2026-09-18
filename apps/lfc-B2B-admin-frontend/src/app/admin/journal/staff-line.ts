@@ -134,15 +134,40 @@ function personOf(value: unknown): string {
 }
 
 /**
- * « … a modifié la fiche de Cécile Martin (anciennement Cécile Dupont) : nom ».
- * `previous` n'est figé que si le nom a changé : sans lui, rien à rappeler.
+ * « … a modifié la fiche de Cécile Martin : téléphone 06 11 22 33 44 → 07 55 66
+ * 77 88 ; fonction (vide) → Vendeuse ».
+ *
+ * `changes` porte l'avant/après de chaque champ ; les faits écrits avant lui
+ * n'ont que `fields` (les libellés) et `previous` (l'ancien nom, figé seulement
+ * s'il a changé) — ils se lisent comme avant. Avec `changes`, l'ancien nom est
+ * déjà dans l'avant/après : le rappeler en plus le dirait deux fois.
  */
 function identitySentence(who: string, person: string, p: Payload): string {
+  const changes = entries(p['changes'])
+    .map(changeOf)
+    .filter((c): c is string => c !== null);
+  if (changes.length > 0) {
+    return `${who} a modifié la fiche de ${person} : ${changes.join(' ; ')}`;
+  }
   const previous = recordOf(p['previous']) === null ? null : personOf(p['previous']);
   const formerly = previous === null || previous === '—' ? '' : ` (anciennement ${previous})`;
   const fields = strings(p['fields']);
   const which = fields.length === 0 ? '' : ` : ${fields.join(', ')}`;
   return `${who} a modifié la fiche de ${person}${formerly}${which}`;
+}
+
+/**
+ * « téléphone 06 11 22 33 44 → 07 55 66 77 88 ». Sans libellé figé, l'entrée
+ * est tue : la clé du champ n'est pas un mot pour celui qui lit.
+ */
+function changeOf(change: Payload): string | null {
+  const label = optional(change['label']);
+  return label === null ? null : `${label} ${valueOf(change['from'])} → ${valueOf(change['to'])}`;
+}
+
+/** Une valeur vide se dit, sinon « fonction  → Vendeuse » se lirait comme une coquille. */
+function valueOf(value: unknown): string {
+  return optional(value) ?? '(vide)';
 }
 
 /**
