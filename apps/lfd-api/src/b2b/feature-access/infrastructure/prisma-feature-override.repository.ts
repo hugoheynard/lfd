@@ -24,7 +24,7 @@ export class PrismaFeatureOverrideRepository extends FeatureOverrideRepository {
     const row = {
       value: override.value,
       updatedAt: override.at,
-      updatedBySub: override.author.sub,
+      updatedBySub: override.author.staffUserId,
       updatedByName: override.author.name,
       updatedByRole: override.author.role,
     };

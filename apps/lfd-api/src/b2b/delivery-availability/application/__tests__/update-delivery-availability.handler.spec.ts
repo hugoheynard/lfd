@@ -64,14 +64,14 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
     const events = new RecordingPublisher();
 
     await handler(DEFAULT_DELIVERY_AVAILABILITY, written, events).execute(
-      new UpdateDeliveryAvailabilityCommand({ openToB2c: false }, "auth0|agent"),
+      new UpdateDeliveryAvailabilityCommand({ openToB2c: false }, "staff_agent"),
     );
 
     expect(written.last?.openToB2b).toBe(true);
     expect(written.last?.openToB2c).toBe(false);
     expect(written.last?.at).toBe(AT);
     expect(written.last?.author).toEqual({
-      sub: "auth0|agent",
+      staffUserId: "staff_agent",
       name: "Camille Durand",
       role: "commercial",
     });
@@ -84,7 +84,7 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
       { openToB2b: false, openToB2c: false, updatedAt: AT.toISOString(), updatedBy: "Alex" },
       written,
       new RecordingPublisher(),
-    ).execute(new UpdateDeliveryAvailabilityCommand({ openToB2c: true }, "auth0|agent"));
+    ).execute(new UpdateDeliveryAvailabilityCommand({ openToB2c: true }, "staff_agent"));
 
     expect([written.last?.openToB2b, written.last?.openToB2c]).toEqual([false, true]);
   });
@@ -93,7 +93,7 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
     const events = new RecordingPublisher();
 
     await handler(DEFAULT_DELIVERY_AVAILABILITY, new Written(), events).execute(
-      new UpdateDeliveryAvailabilityCommand({ openToB2b: false }, "auth0|agent"),
+      new UpdateDeliveryAvailabilityCommand({ openToB2b: false }, "staff_agent"),
     );
 
     expect(events.factTypes()).toEqual(["delivery_availability.updated"]);
@@ -108,10 +108,10 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
     const written = new Written();
 
     await handler(DEFAULT_DELIVERY_AVAILABILITY, written, new RecordingPublisher(), null).execute(
-      new UpdateDeliveryAvailabilityCommand({ openToB2b: false }, "auth0|inconnu"),
+      new UpdateDeliveryAvailabilityCommand({ openToB2b: false }, "staff_inconnu"),
     );
 
-    expect(written.last?.author).toEqual({ sub: "auth0|inconnu", name: "", role: "" });
+    expect(written.last?.author).toEqual({ staffUserId: "staff_inconnu", name: "", role: "" });
   });
 });
 

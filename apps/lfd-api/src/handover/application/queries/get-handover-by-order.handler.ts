@@ -5,7 +5,8 @@ import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.
 import { HandoverTokenNotFoundError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import { GetHandoverByOrderQuery } from "./get-handover-by-order.query.js";
-import { toHandoverView } from "./get-handover.handler.js";
+import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
+import { authorsOf, toHandoverView } from "./get-handover.handler.js";
 
 /**
  * **Le sac d'une commande ouverte depuis la file** — mêmes octets que l'écran
@@ -37,6 +38,7 @@ export class GetHandoverByOrderHandler implements IQueryHandler<
   constructor(
     private readonly subjects: HandoverSubjectReader,
     private readonly handovers: OrderHandoverRepository,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(query: GetHandoverByOrderQuery): Promise<OrderHandoverView> {
@@ -47,6 +49,7 @@ export class GetHandoverByOrderHandler implements IQueryHandler<
       // donner deux formulations ne l'aiderait pas.
       throw new HandoverTokenNotFoundError();
     }
-    return toHandoverView(subject, await this.handovers.findByOrderId(subject.orderId));
+    const handover = await this.handovers.findByOrderId(subject.orderId);
+    return toHandoverView(subject, handover, await authorsOf(this.staffAuthors, handover));
   }
 }

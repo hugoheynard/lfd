@@ -10,7 +10,11 @@ import type { StoredOverride } from "../account-alert-rules.js";
 export abstract class AccountAlertOverridesStore {
   abstract readForCompany(companyId: string): Promise<StoredOverride[]>;
 
-  abstract save(companyId: string, override: AccountAlertOverride, staffSub: string): Promise<void>;
+  abstract save(
+    companyId: string,
+    override: AccountAlertOverride,
+    staffUserId: string,
+  ): Promise<void>;
 
   /** Revenir au réglage global = **supprimer** la ligne, pas en écrire une neutre. */
   abstract clear(companyId: string, kind: AlertKind): Promise<void>;

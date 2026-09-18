@@ -1,5 +1,9 @@
 # TODO — le `sub` Auth0 sert encore d'auteur un peu partout
 
+> ⚪ **Remplacé le 2026-09-18** par [`../plan-l-auteur-est-la-fiche.md`](../plan-l-auteur-est-la-fiche.md) :
+> cet inventaire manquait la moitié des colonnes, un second journal et une
+> empreinte du catalogue. Gardé pour l'histoire de la décision.
+
 > Ouvert le 2026-09-18. Sorti volontairement de
 > [`architecture-journal-de-l-annuaire.md`](architecture-journal-de-l-annuaire.md) §8, sur
 > l'objection de `vitruve` : changer l'acteur du contexte aurait changé **en

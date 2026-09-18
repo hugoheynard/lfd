@@ -114,15 +114,21 @@ describe("annuaire staff", () => {
     expect(response.status).toBe(409);
   });
 
-  it("supprime un user", async () => {
+  /**
+   * Régression : la suppression effaçait l'auteur de tout ce que la personne
+   * avait fait (plan `plan-l-auteur-est-la-fiche.md`, étape 0, 2026-09-18).
+   */
+  it("refuse de supprimer une fiche (409), qui reste dans l'annuaire", async () => {
     const id = await create();
-    await staff().delete(`/admin/staff-users/${id}`).expect(204);
-    expect(await list()).toHaveLength(0);
+
+    const response = await staff().delete(`/admin/staff-users/${id}`).expect(409);
+
+    expect(response.body).toMatchObject({ code: "staff_user.removal_retired" });
+    expect((await list()).map((row) => row.id)).toEqual([id]);
   });
 
-  it("404 sur édition/suppression d'un id inconnu", async () => {
+  it("404 sur édition d'un id inconnu", async () => {
     await staff().patch("/admin/staff-users/nope").send(user()).expect(404);
-    await staff().delete("/admin/staff-users/nope").expect(404);
   });
 });
 
@@ -162,11 +168,15 @@ describe("annuaire staff — on ne se verrouille pas dehors", () => {
   });
 
   it("laisse partir un administrateur qui n'est pas soi", async () => {
+    // Partir, c'est être suspendu : la suppression n'existe plus (étape 0).
     const other = await create({ email: "two@lfc.test", firstName: "Bea", role: "admin" });
 
-    await staff().delete(`/admin/staff-users/${other}`).expect(204);
+    await staff()
+      .patch(`/admin/staff-users/${other}/status`)
+      .send({ status: "suspended" })
+      .expect(204);
 
-    expect(await list()).toHaveLength(0);
+    expect((await list()).map((row) => row.status)).toEqual(["suspended"]);
   });
 
   it("refuse une dérogation qui priverait un admin de l'annuaire (409)", async () => {

@@ -35,6 +35,19 @@ export type StoredAlertRule =
     };
 
 /**
+ * Le nom d'un auteur staff, résolu par l'appelant auprès de l'annuaire — `null`
+ * s'il ne désigne personne (plan `plan-l-auteur-est-la-fiche.md`, D3). Une
+ * fonction et non un port : ces résolutions restent pures.
+ */
+export type AuthorNamer = (reference: string | null) => string | null;
+
+/**
+ * Le défaut des chemins qui n'affichent rien — l'évaluation d'un panier ne
+ * montre pas qui a réglé la règle. Un écran, lui, passe l'annuaire.
+ */
+export const NAMELESS: AuthorNamer = () => null;
+
+/**
  * Les règles globales, **tous les types connus servis**, dans l'ordre de
  * l'énuméré.
  *
@@ -46,18 +59,26 @@ export type StoredAlertRule =
  * Fonction **pure** : c'est elle qui garantit qu'ajouter un type au contrat le
  * rend immédiatement visible et actif, sans migration ni écriture.
  */
-export function resolveGlobalRules(stored: readonly StoredAlertRule[]): AlertRuleView[] {
+export function resolveGlobalRules(
+  stored: readonly StoredAlertRule[],
+  nameOf: AuthorNamer = NAMELESS,
+): AlertRuleView[] {
   const byKind = new Map(stored.map((row) => [row.kind, row]));
-  return ALERT_KIND_ORDER.map((kind) => toView(kind, byKind.get(kind)));
+  return ALERT_KIND_ORDER.map((kind) => toView(kind, byKind.get(kind), nameOf));
 }
 
-function toView(kind: AlertKind, row: StoredAlertRule | undefined): AlertRuleView {
+function toView(
+  kind: AlertKind,
+  row: StoredAlertRule | undefined,
+  nameOf: AuthorNamer,
+): AlertRuleView {
   if (row === undefined) {
     return {
       kind,
       ...ALERT_KINDS[kind].defaults,
       updatedAt: null,
       updatedBy: null,
+      updatedByName: null,
       degraded: false,
     };
   }
@@ -67,6 +88,7 @@ function toView(kind: AlertKind, row: StoredAlertRule | undefined): AlertRuleVie
       ...silenced(ALERT_KINDS[kind].defaults),
       updatedAt: row.updatedAt.toISOString(),
       updatedBy: row.updatedBy,
+      updatedByName: nameOf(row.updatedBy),
       degraded: true,
     };
   }
@@ -77,6 +99,7 @@ function toView(kind: AlertKind, row: StoredAlertRule | undefined): AlertRuleVie
     delivery: row.delivery,
     updatedAt: row.updatedAt.toISOString(),
     updatedBy: row.updatedBy,
+    updatedByName: nameOf(row.updatedBy),
     degraded: false,
   };
 }

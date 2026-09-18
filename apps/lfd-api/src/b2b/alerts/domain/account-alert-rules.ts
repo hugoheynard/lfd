@@ -7,6 +7,8 @@ import {
   type AlertRuleView,
 } from "@lfd/contracts";
 
+import { NAMELESS, type AuthorNamer } from "./alert-rules.js";
+
 /**
  * Une dérogation telle qu'elle **sort de la base**.
  *
@@ -45,14 +47,16 @@ export type StoredOverride =
 export function resolveAccountRules(
   globals: readonly AlertRuleView[],
   overrides: readonly StoredOverride[],
+  nameOf: AuthorNamer = NAMELESS,
 ): AccountAlertRuleView[] {
   const byKind = new Map(overrides.map((row) => [kindOf(row), row]));
-  return globals.map((view) => toAccountView(view, byKind.get(view.kind)));
+  return globals.map((view) => toAccountView(view, byKind.get(view.kind), nameOf));
 }
 
 function toAccountView(
   view: AlertRuleView,
   stored: StoredOverride | undefined,
+  nameOf: AuthorNamer,
 ): AccountAlertRuleView {
   const global = toRule(view);
   const override = resolveOverride(view.kind, stored);
@@ -64,6 +68,7 @@ function toAccountView(
     globalUpdatedAt: view.updatedAt,
     overrideUpdatedAt: stored?.updatedAt.toISOString() ?? null,
     overrideUpdatedBy: stored?.updatedBy ?? null,
+    overrideUpdatedByName: nameOf(stored?.updatedBy ?? null),
     // Le prix du tout-ou-rien : un compte dérogé ne suit plus les évolutions de
     // la plateforme. Sans ce drapeau, personne ne s'en apercevrait avant des
     // mois — on ne remarque pas une alerte qui n'arrive pas.

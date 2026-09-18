@@ -9,7 +9,13 @@
  * donc il lui faut un test qui touche chaque table, une par une.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  E2E_STAFF_SUB,
+  jsonBody,
+  type E2eContext,
+} from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -39,7 +45,11 @@ const staff = (): ReturnType<E2eContext["http"]> =>
   ctx.http().set("Authorization", "Bearer staff-e2e");
 
 interface Detail {
-  readonly readiness: { readonly readyAt: string; readonly readyBy: string } | null;
+  readonly readiness: {
+    readonly readyAt: string;
+    readonly readyBy: string;
+    readonly readyByName: string | null;
+  } | null;
   readonly readinessStale: boolean;
   readonly contentUpdatedAt: string;
   readonly categoryId: string;
@@ -95,7 +105,14 @@ describe("Déclaration publiable", () => {
     const readyAt = await declareReady(id);
     const view = await detail(id);
 
-    expect(view.readiness).toEqual({ readyAt, readyBy: E2E_STAFF_SUB });
+    // L'id de fiche, posé comme acteur par `StaffAccessGuard` (plan
+    // `plan-l-auteur-est-la-fiche.md`, D1), et le nom résolu par l'annuaire :
+    // l'écran ne montre plus l'identifiant (D3).
+    expect(view.readiness).toEqual({
+      readyAt,
+      readyBy: E2E_STAFF_ID,
+      readyByName: "Opérateur E2E",
+    });
     expect(isStale(view)).toBe(false);
   });
 

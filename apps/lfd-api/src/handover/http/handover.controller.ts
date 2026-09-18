@@ -1,9 +1,9 @@
 import { type HandoverQueueView, type OrderHandoverView } from "@lfd/contracts";
-import { Controller, Get, Param, Post, Query, Req, UnauthorizedException } from "@nestjs/common";
+import { Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
-import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ConfirmHandoverCommand } from "../application/commands/confirm-handover.command.js";
 import { ConfirmManualHandoverCommand } from "../application/commands/confirm-manual-handover.command.js";
 import { GetHandoverByOrderQuery } from "../application/queries/get-handover-by-order.query.js";
@@ -96,10 +96,10 @@ export class HandoverController {
   @Post("manual/:reference")
   async confirmManually(
     @Param("reference") reference: string,
-    @Req() request: AuthenticatedStaffRequest,
+    @StaffUserId() staffUserId: string,
   ): Promise<OrderHandoverView> {
     return this.commands.execute<ConfirmManualHandoverCommand, OrderHandoverView>(
-      new ConfirmManualHandoverCommand(reference, staffSubjectOf(request)),
+      new ConfirmManualHandoverCommand(reference, staffUserId),
     );
   }
 
@@ -135,23 +135,10 @@ export class HandoverController {
   @Post(":token")
   async confirm(
     @Param("token") token: string,
-    @Req() request: AuthenticatedStaffRequest,
+    @StaffUserId() staffUserId: string,
   ): Promise<OrderHandoverView> {
     return this.commands.execute<ConfirmHandoverCommand, OrderHandoverView>(
-      new ConfirmHandoverCommand(token, staffSubjectOf(request)),
+      new ConfirmHandoverCommand(token, staffUserId),
     );
   }
-}
-
-/**
- * L'identité staff posée par le guard. Le `?` du type l'autorise à manquer ;
- * en pratique le guard a couru avant nous, mais on refuse plutôt que d'écrire
- * une attestation anonyme — une preuve sans auteur n'est pas une preuve.
- */
-function staffSubjectOf(request: AuthenticatedStaffRequest): string {
-  const subject = request.staff?.subject;
-  if (subject === undefined || subject === "") {
-    throw new UnauthorizedException("Identité staff absente de la requête.");
-  }
-  return subject;
 }

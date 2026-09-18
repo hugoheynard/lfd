@@ -2,6 +2,7 @@ import type { ProductionPackingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { packingBoardOf } from "../../domain/services/production-packing.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -33,17 +34,22 @@ export class GetProductionPackingHandler implements IQueryHandler<
   constructor(
     private readonly days: ProductionDayRepository,
     private readonly clock: Clock,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(query: GetProductionPackingQuery): Promise<ProductionPackingView> {
     const day = ServiceDay.of(query.serviceDay);
     const current = await this.days.load(day);
+    const authors = await this.staffAuthors.identify(
+      current.orders.map((order) => order.packed?.by ?? null),
+    );
     return packingBoardOf({
       date: day.value,
       closedAt: current.closedAt,
       orders: current.orders,
       counts: current.counts,
       now: this.clock.now(),
+      authorName: (reference) => authors.nameOf(reference),
     });
   }
 }

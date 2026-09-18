@@ -55,15 +55,6 @@ export abstract class StaffUserRepository {
   abstract update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit>;
 
   /**
-   * Supprime un user, et rend ce qu'il était — la trace doit pouvoir le nommer.
-   * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
-   * @throws {ProtectedStaffUserError} la cible est l'admin racine (ineffaçable).
-   * @throws {SelfDemotionError} l'auteur se supprime lui-même alors qu'il est admin.
-   * @throws {LastStaffAdminError} la cible est le dernier administrateur.
-   */
-  abstract remove(id: string, actorId: string): Promise<StaffUserSnapshot>;
-
-  /**
    * Suspend une personne, ou la réintègre. Suspendre **ferme tout, tout de
    * suite, sans rien détruire** : c'est le geste du départ, et on ne supprime
    * pas quelqu'un dont le nom est attaché à des décisions datées ailleurs.

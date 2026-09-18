@@ -208,7 +208,7 @@
         </ng-template>
 
         <ng-template foldCell="takenBy" let-row>
-          <span class="rp-meta">{{ row.takenBy }}</span>
+          <span class="rp-meta">{{ author(row.takenBy, row.takenByName) }}</span>
         </ng-template>
       </fold-data-table>
     </fold-page-section>

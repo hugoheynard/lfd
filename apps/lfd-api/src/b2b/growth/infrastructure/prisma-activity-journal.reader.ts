@@ -37,12 +37,12 @@ export class PrismaActivityJournalReader extends ActivityJournalReader {
     super();
   }
 
-  async page(query: ActivityQuery): Promise<ActivityPageView> {
+  async page(query: ActivityQuery, actorIds: readonly string[] | null): Promise<ActivityPageView> {
     // Une ligne de plus que demandé : sa présence dit qu'il y a une suite, sans
     // second `count` sur une table qui grossit.
     const ids = await this.prisma.$queryRaw<readonly { readonly id: string }[]>`
       SELECT id FROM growth.activity_events
-      WHERE ${activityWhereOf(query)}
+      WHERE ${activityWhereOf(query, actorIds)}
       ORDER BY id DESC
       LIMIT ${query.limit + 1}
     `;

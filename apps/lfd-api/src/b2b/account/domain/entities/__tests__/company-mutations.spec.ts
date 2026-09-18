@@ -33,7 +33,7 @@ function reconstituted(): Company {
   });
 }
 
-const AGENT = { sub: "auth0|staff", name: "Camille Rousseau", role: "commercial" };
+const AGENT = { staffUserId: "staff_camille", name: "Camille Rousseau", role: "commercial" };
 
 describe("Company — reconstitution + mutations souples", () => {
   it("reconstitue une société avec son id et sérialise ses champs mutables", () => {

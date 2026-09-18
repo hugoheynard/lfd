@@ -5,6 +5,7 @@ import { AccountingRulesRepository } from "../../../accounting-rules/domain/port
 import { planDiff } from "../domain/diff.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { buildRevision } from "../domain/revision.js";
 import { summaryOf } from "./revision-diff-support.js";
 
@@ -38,6 +39,7 @@ export class GetCatalogOverviewHandler implements IQueryHandler<
     private readonly source: CatalogRevisionSource,
     private readonly revisions: CatalogRevisionRepository,
     private readonly accounting: AccountingRulesRepository,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(): Promise<CatalogOverviewView> {
@@ -70,7 +72,10 @@ export class GetCatalogOverviewHandler implements IQueryHandler<
       drafts: products.size - published,
       signed,
       articles: items.length,
-      lastRevision: latest === null ? null : summaryOf(latest),
+      lastRevision:
+        latest === null
+          ? null
+          : summaryOf(latest, await this.staffAuthors.identify([latest.takenBy])),
       sinceLastRevision:
         latest === null
           ? null

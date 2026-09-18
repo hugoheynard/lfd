@@ -26,7 +26,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   CloseCompanyMercurialeCommand,
@@ -88,10 +88,10 @@ export class AdminCompanyPricingController {
   async pose(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(poseCompanyMercurialePayloadSchema)) payload: PoseCompanyMercurialePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<AffectedRulesResponse> {
     const affectedRules = await this.commands.execute<PoseCompanyMercurialeCommand, number>(
-      new PoseCompanyMercurialeCommand(companyId, payload, staffSub),
+      new PoseCompanyMercurialeCommand(companyId, payload, staffUserId),
     );
     return { affectedRules };
   }
@@ -106,10 +106,10 @@ export class AdminCompanyPricingController {
   async close(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(closeCompanyMercurialePayloadSchema)) payload: CloseCompanyMercurialePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<AffectedRulesResponse> {
     const affectedRules = await this.commands.execute<CloseCompanyMercurialeCommand, number>(
-      new CloseCompanyMercurialeCommand(companyId, payload, staffSub),
+      new CloseCompanyMercurialeCommand(companyId, payload, staffUserId),
     );
     return { affectedRules };
   }
@@ -128,10 +128,10 @@ export class AdminCompanyPricingController {
     @Param("companyId") companyId: string,
     @Body(new ZodBody(renameCompanyMercurialePayloadSchema))
     payload: RenameCompanyMercurialePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<AffectedRulesResponse> {
     const affectedRules = await this.commands.execute<RenameCompanyMercurialeCommand, number>(
-      new RenameCompanyMercurialeCommand(companyId, payload, staffSub),
+      new RenameCompanyMercurialeCommand(companyId, payload, staffUserId),
     );
     return { affectedRules };
   }
@@ -165,10 +165,10 @@ export class AdminCompanyPricingController {
   async saveDraft(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(saveMercurialeDraftPayloadSchema)) payload: SaveMercurialeDraftPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SaveMercurialeDraftCommand, void>(
-      new SaveMercurialeDraftCommand(companyId, payload, staffSub),
+      new SaveMercurialeDraftCommand(companyId, payload, staffUserId),
     );
   }
 

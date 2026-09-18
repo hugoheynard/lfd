@@ -28,6 +28,7 @@ function overview(over: Partial<CatalogOverviewView> = {}): CatalogOverviewView 
       hash: 'h',
       takenAt: '2026-08-31T09:00:00.000Z',
       takenBy: 'staff_hugo',
+      takenByName: null,
       articles: 12,
     },
     sinceLastRevision: { added: 0, removed: 0, changed: 0 },
@@ -69,6 +70,17 @@ describe('CatalogueOverviewPage', () => {
     expect(text(host)).toContain('Fiches');
     expect(text(host)).toContain('R-TEST4');
     expect(text(host)).toContain('rentrée');
+  });
+
+  it('nomme qui a posé la dernière révision, sans montrer son identifiant', async () => {
+    const base = overview();
+    const lastRevision =
+      base.lastRevision === null ? null : { ...base.lastRevision, takenByName: 'Hugo Heynard' };
+    setup({ ...base, lastRevision });
+
+    const shown = text(await render());
+    expect(shown).toContain('par Hugo Heynard');
+    expect(shown).not.toContain('staff_hugo');
   });
 
   it('dit combien de fiches ne sont pas validées', async () => {

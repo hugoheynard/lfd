@@ -35,7 +35,7 @@ export class SetVolumeLadderHandler implements ICommandHandler<SetVolumeLadderCo
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
   async execute(command: SetVolumeLadderCommand): Promise<string> {
-    const ladder = VolumeLadderAggregate.pose(this.ids.next(), command.draft, command.staffSub);
+    const ladder = VolumeLadderAggregate.pose(this.ids.next(), command.draft, command.staffUserId);
     // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
     // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
     // avec un barème en cours, jamais avec un rangé. Depuis que clore borne
@@ -54,7 +54,7 @@ export class SetVolumeLadderHandler implements ICommandHandler<SetVolumeLadderCo
       subjectType: "ladder",
       subjectId: ladder.id,
       kind: "posed",
-      actor: command.staffSub,
+      actor: command.staffUserId,
       at: this.clock.now(),
       reason: null,
       summary: describeLadder(ladder.asLadder),
@@ -85,8 +85,8 @@ export class PauseVolumeLadderHandler implements ICommandHandler<PauseVolumeLadd
     const now = this.clock.now();
     const ladder = await mustLoadLadder(this.ladders, command.id);
     await this.ladders.update(
-      ladder.pause(command.staffSub, now),
-      ladderAct(ladder, "paused", command.staffSub, now, command.reason),
+      ladder.pause(command.staffUserId, now),
+      ladderAct(ladder, "paused", command.staffUserId, now, command.reason),
     );
   }
 }
@@ -103,7 +103,7 @@ export class ResumeVolumeLadderHandler implements ICommandHandler<ResumeVolumeLa
     const ladder = await mustLoadLadder(this.ladders, command.id);
     await this.ladders.update(
       ladder.resume(),
-      ladderAct(ladder, "resumed", command.staffSub, now, null),
+      ladderAct(ladder, "resumed", command.staffUserId, now, null),
     );
   }
 }
@@ -122,8 +122,8 @@ export class ArchiveVolumeLadderHandler implements ICommandHandler<
     const now = this.clock.now();
     const ladder = await mustLoadLadder(this.ladders, command.id);
     await this.ladders.update(
-      ladder.archive(command.staffSub, now, command.reason),
-      ladderAct(ladder, "archived", command.staffSub, now, command.reason),
+      ladder.archive(command.staffUserId, now, command.reason),
+      ladderAct(ladder, "archived", command.staffUserId, now, command.reason),
     );
   }
 }

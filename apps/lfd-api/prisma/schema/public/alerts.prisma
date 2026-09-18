@@ -26,7 +26,7 @@ model AlertRuleSetting {
   delivery Json
 
   updatedAt DateTime @updatedAt @map("updated_at")
-  /// Le `sub` du staff qui a écrit ce réglage. Un identifiant, pas un nom : il
+  /// L'id de fiche du staff qui a écrit ce réglage (un `sub` avant le 2026-09-18). Un identifiant, pas un nom : il
   /// reste résolvable après un changement de nom.
   updatedBy String?  @map("updated_by")
 
@@ -56,7 +56,7 @@ model AccountAlertOverride {
   delivery Json?
 
   updatedAt DateTime @updatedAt @map("updated_at")
-  /// Le `sub` du staff qui a posé cette dérogation — « qui a coupé les alertes
+  /// L'id de fiche du staff (un `sub` avant le 2026-09-18) qui a posé cette dérogation — « qui a coupé les alertes
   /// sur ce compte » doit rester répondable dans six mois.
   updatedBy String?  @map("updated_by")
 
@@ -99,7 +99,7 @@ model AccountAlert {
   findings Json
 
   acknowledgedAt DateTime? @map("acknowledged_at")
-  /// Le `sub` staff qui a acquitté — figé, résolvable même après un changement de nom.
+  /// L'id de fiche du staff qui a acquitté (un `sub` avant le 2026-09-18) — figé, résolvable même après un changement de nom.
   acknowledgedBy String?   @map("acknowledged_by")
 
   createdAt DateTime @default(now()) @map("created_at")

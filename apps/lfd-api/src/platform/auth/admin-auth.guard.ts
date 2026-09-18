@@ -6,9 +6,9 @@ import {
 } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
-import { attachActor } from "../context/request-context.store.js";
 import { AdminTokenVerifier } from "./admin-token.verifier.js";
 import type { AuthenticatedStaffRequest } from "./staff-principal.js";
+import { depositVerifiedStaff } from "./verified-staff-identity.js";
 
 /** Le `sub` synthétique du bypass de dev — jamais atteint en prod. */
 const DEV_STAFF_SUBJECT = "dev-staff";
@@ -24,6 +24,11 @@ const DEV_STAFF_SUBJECT = "dev-staff";
  *   prod via `AppConfig`) : on saute la vérification et on pose un staff
  *   synthétique — pour travailler en local sans tenant Auth0 staff.
  * - **prod** : vérifie le bearer contre l'audience staff (`AdminTokenVerifier`).
+ *
+ * Il **n'attache pas d'acteur** et ne pose rien de lisible sur la requête : ce
+ * qu'il prouve est un `sub`, et un `sub` n'est pas un auteur. Il le dépose dans
+ * le canal interne des deux gardes ; `StaffAccessGuard` en fait une fiche, et
+ * c'est lui qui pose l'acteur — l'id de cette fiche (plan de l'auteur, D1/D2).
  */
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
@@ -40,15 +45,14 @@ export class AdminAuthGuard implements CanActivate {
       // résolution d'accès emprunte le chemin normal (rapprochement par adresse)
       // et rende un vrai périmètre. Sans ça, poser le mur aurait fermé le poste
       // de travail local le jour même.
-      request.staff = {
+      depositVerifiedStaff(request, {
         subject: DEV_STAFF_SUBJECT,
         email: this.config.bootstrapAdminEmail(),
         // Le poste local n'a pas de boîte à prouver : l'adresse est celle que
         // la configuration désigne, pas celle qu'un inconnu a tapée.
         emailVerified: true,
         scopes: [],
-      };
-      attachActor({ type: "staff", id: DEV_STAFF_SUBJECT });
+      });
       return true;
     }
 
@@ -57,14 +61,11 @@ export class AdminAuthGuard implements CanActivate {
       throw new UnauthorizedException("Jeton Bearer staff manquant.");
     }
     try {
-      request.staff = await this.verifier.verify(token);
+      depositVerifiedStaff(request, await this.verifier.verify(token));
     } catch {
       // On ne relaie jamais le détail interne (fuite d'information).
       throw new UnauthorizedException("Jeton staff invalide ou expiré.");
     }
-    // Acteur `staff` dans le RequestContext → les mutations back-office seront
-    // attribuées au bon sujet dans le journal d'événements.
-    attachActor({ type: "staff", id: request.staff.subject });
     return true;
   }
 }

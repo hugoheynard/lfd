@@ -7,6 +7,6 @@
 export class ConfirmManualHandoverCommand {
   constructor(
     readonly reference: string,
-    readonly staffSubject: string,
+    readonly staffUserId: string,
   ) {}
 }

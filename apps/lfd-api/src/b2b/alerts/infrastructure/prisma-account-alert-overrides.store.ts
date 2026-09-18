@@ -51,7 +51,11 @@ export class PrismaAccountAlertOverridesStore extends AccountAlertOverridesStore
     return parsed.filter(isKnown);
   }
 
-  async save(companyId: string, override: AccountAlertOverride, staffSub: string): Promise<void> {
+  async save(
+    companyId: string,
+    override: AccountAlertOverride,
+    staffUserId: string,
+  ): Promise<void> {
     // `Prisma.DbNull` et non `null` : sur une colonne Json nullable, `null` est
     // ambigu (le littéral JSON `null` ou l'absence de valeur ?), et Prisma refuse
     // de trancher à notre place. Ici c'est bien l'absence — une règle éteinte n'a
@@ -63,14 +67,14 @@ export class PrismaAccountAlertOverridesStore extends AccountAlertOverridesStore
             enabled: null,
             params: Prisma.DbNull,
             delivery: Prisma.DbNull,
-            updatedBy: staffSub,
+            updatedBy: staffUserId,
           }
         : {
             mode: "custom",
             enabled: override.rule.enabled,
             params: override.rule.params,
             delivery: override.rule.delivery,
-            updatedBy: staffSub,
+            updatedBy: staffUserId,
           };
     await this.prisma.accountAlertOverride.upsert({
       where: { companyId_kind: { companyId, kind: override.kind } },

@@ -56,9 +56,9 @@ export class PackOrderHandler implements ICommandHandler<PackOrderCommand, Produ
     const at = this.clock.now();
     // La mutation en mémoire ne sert qu'à faire jouer les invariants : c'est
     // l'écriture conditionnée qui fait foi.
-    current.pack(command.reference, at, command.staffSubject);
+    current.pack(command.reference, at, command.staffUserId);
 
-    const won = await this.days.markPacked(day, command.reference, at, command.staffSubject);
+    const won = await this.days.markPacked(day, command.reference, at, command.staffUserId);
     if (!won) {
       // Course perdue entre la lecture et l'écriture. On ne réécrit rien — le
       // colisage de l'autre poste est le seul vrai —, mais on le RELIT pour le
@@ -67,7 +67,7 @@ export class PackOrderHandler implements ICommandHandler<PackOrderCommand, Produ
       return this.announce(command.reference, await this.winnerMark(day, command.reference), true);
     }
 
-    return this.announce(command.reference, { at, by: command.staffSubject }, false);
+    return this.announce(command.reference, { at, by: command.staffUserId }, false);
   }
 
   /**

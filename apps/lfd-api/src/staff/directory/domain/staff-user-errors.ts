@@ -111,3 +111,23 @@ export class SuspendedStaffInviteError extends BusinessError {
     );
   }
 }
+
+/**
+ * Suppression d'une fiche refusée — **toujours** : le geste n'existe plus.
+ *
+ * Une fiche est l'auteur de tout ce que la personne a fait : commandes
+ * remises, tarifs posés, fiches validées, journal. La supprimer effacerait
+ * ce nom de chacune de ces lignes, et avec elle la seule trace des
+ * identifiants de connexion qu'elle a portés (plan
+ * `plan-l-auteur-est-la-fiche.md`, étape 0 ; plan de départ, D8). Le geste de
+ * sortie sera « Retirer de l'équipe » ; en attendant, « Suspendre » ferme tout
+ * sans rien détruire. Refus **métier** (409).
+ */
+export class StaffUserRemovalRetiredError extends BusinessError {
+  constructor() {
+    super(
+      "staff_user.removal_retired",
+      "On ne supprime plus une fiche : elle signe tout ce que la personne a fait, et la supprimer effacerait son nom de ces actes. Pour lui couper l'accès, suspendez-la — « Retirer de l'équipe » remplacera bientôt ce geste.",
+    );
+  }
+}

@@ -16,6 +16,7 @@ import type {
 import { ALERT_KIND_LABELS } from '../../../shared/alerts/alert-kind-labels';
 import { AlertRuleRow } from '../../../shared/alerts/alert-rule-row/alert-rule-row';
 import { describeRule } from '../../../shared/alerts/describe-rule';
+import { staffAuthor } from '../../../shared/staff-author';
 
 /** L'état d'une règle sur ce compte, tel que l'écran doit le dire. */
 type AccountRuleState = 'inherited' | 'off' | 'custom';
@@ -105,9 +106,8 @@ export class AccountAlertCard {
       return null;
     }
     const when = new Date(view.overrideUpdatedAt).toLocaleDateString('fr-FR');
-    return view.overrideUpdatedBy === null
-      ? `Posée le ${when}`
-      : `Posée le ${when} par ${view.overrideUpdatedBy}`;
+    const author = staffAuthor(view.overrideUpdatedBy, view.overrideUpdatedByName);
+    return author === null ? `Posée le ${when}` : `Posée le ${when} par ${author}`;
   });
 
   /**
@@ -124,6 +124,7 @@ export class AccountAlertCard {
       // répéter dans le formulaire laisserait croire qu'ils s'éditent.
       updatedAt: null,
       updatedBy: null,
+      updatedByName: null,
       degraded: view.degraded,
     };
   });

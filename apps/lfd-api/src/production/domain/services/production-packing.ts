@@ -36,6 +36,12 @@ export interface PackingSources {
    * de fournil n'est pas une autorité, et la fonction reste pure.
    */
   readonly now: Date;
+  /**
+   * Le nom de qui a fermé un bac, résolu par le handler auprès de l'annuaire
+   * (plan `plan-l-auteur-est-la-fiche.md`, D3). Une fonction et non un port :
+   * la fonction reste pure, et ne sait pas qu'un annuaire existe.
+   */
+  readonly authorName: (reference: string | null) => string | null;
 }
 
 /**
@@ -76,7 +82,7 @@ export function packingBoardOf(sources: PackingSources): ProductionPackingView {
     date: sources.date,
     closedAt: sources.closedAt.toISOString(),
     sheets: [...sources.orders]
-      .map((order) => sheetOf(order, awaiting))
+      .map((order) => sheetOf(order, awaiting, sources.authorName))
       .sort((left, right) => left.reference.localeCompare(right.reference)),
     resources: resourcesOf(sources, awaiting),
     orderCount: sources.orders.length,
@@ -141,7 +147,11 @@ function awaitingOf(counts: readonly ProducedItemSnapshot[]): (sku: string) => b
  * `pieces` compte en PIÈCES, l'unité de la marchandise à répartir — un compte
  * de lignes ne se compare à rien.
  */
-function sheetOf(order: ProductionOrderSnapshot, awaiting: (sku: string) => boolean): PackingSheet {
+function sheetOf(
+  order: ProductionOrderSnapshot,
+  awaiting: (sku: string) => boolean,
+  authorName: PackingSources["authorName"],
+): PackingSheet {
   const packed = order.lines.filter((line) => line.packed !== null);
   return {
     reference: order.reference,
@@ -158,6 +168,7 @@ function sheetOf(order: ProductionOrderSnapshot, awaiting: (sku: string) => bool
     canDeclareReady: canDeclareReady(order),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,
+    packedByName: authorName(order.packed?.by ?? null),
   };
 }
 

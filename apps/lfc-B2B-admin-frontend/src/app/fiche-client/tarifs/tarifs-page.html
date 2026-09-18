@@ -90,7 +90,7 @@
                 Du <strong>{{ day(mercuriale.validFrom) }}</strong> au
                 <strong>{{ day(mercuriale.validTo) }}</strong>
                 · {{ mercuriale.skuCount }} article(s) · établie par
-                <strong>{{ mercuriale.createdBy }}</strong>
+                <strong>{{ author(mercuriale.createdBy, mercuriale.createdByName) }}</strong>
               </p>
               <div class="tf-head-actions">
                 <button foldButton size="sm" emphasis="outline" (click)="exportCsv(mercuriale)">

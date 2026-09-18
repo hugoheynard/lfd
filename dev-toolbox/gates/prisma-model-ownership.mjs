@@ -86,20 +86,10 @@ const READ = /\bprisma\s*\.\s*([a-z][A-Za-z0-9]*)\s*\.\s*(?:find\w*|count|aggreg
  * `lint:code-language` et `lint:no-type-escapes`.
  */
 const DEROGATIONS = [
-  {
-    model: "staffUser",
-    block: "b2b",
-    // 2026-09-09 — La matrice AUTORISE `b2b → staff` (autorisation). Ce qui est
-    // en cause n'est donc pas la direction mais le MOYEN : deux fichiers lisent
-    // la table au lieu de passer par un port du bloc staff.
-    //   b2b/growth/infrastructure/prisma-actor-namer.ts   — nommer l'acte
-    //   b2b/account/infrastructure/prisma-staff-directory.ts — la fiche staff
-    // Les deux ne lisent qu'un nom et un rôle : un port de lecture d'annuaire
-    // les couvrirait tous les deux. À faire quand `staff/directory` en exposera
-    // un ; pas avant, sous peine d'un port taillé pour un seul appelant.
-    raison:
-      "b2b lit l'annuaire staff en direct — direction autorisée, moyen à corriger (2026-09-09)",
-  },
+  // Vide depuis le 2026-09-18. La dernière entrée (`staffUser` lu par `b2b`,
+  // posée le 2026-09-09) attendait « un port de lecture d'annuaire » côté
+  // staff : c'est `StaffAuthorDirectory` (`staff/directory/`), et les deux
+  // lecteurs du commerce passent désormais par lui.
 ];
 
 function sourceFiles(directory) {

@@ -36,10 +36,15 @@ export interface StaffAccess {
 }
 
 /**
- * Requête HTTP enrichie par les deux portes : `AdminAuthGuard` pose `staff`
- * (qui se présente), `StaffAccessGuard` pose `access` (ce qu'il peut faire).
+ * Requête HTTP vue par une surface admin : **l'accès, et lui seul**.
+ *
+ * `StaffAccessGuard` pose `access` — la fiche, son rôle, ses permissions. Le
+ * `StaffPrincipal` que le jeton a prouvé n'y figure **pas** : il passe d'un
+ * garde à l'autre par un canal interne à `platform/auth/`
+ * (`verified-staff-identity.ts`) et s'efface une fois la fiche résolue. Un
+ * contrôleur ne peut donc plus lire un `sub` staff, ni l'écrire comme auteur —
+ * par le type, pas par une règle (plan de l'auteur, D2, 2026-09-18).
  */
 export type AuthenticatedStaffRequest = Request & {
-  staff?: StaffPrincipal;
   access?: StaffAccess;
 };

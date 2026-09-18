@@ -153,7 +153,11 @@ describe('PublishRail — la déclaration « publiable »', () => {
   it('affiche la signature, sa date et son auteur', () => {
     const store = setup();
     fill(store);
-    store['readinessValue'].set({ readyAt: '2026-08-31T09:00:00.000Z', readyBy: 'staff_hugo' });
+    store['readinessValue'].set({
+      readyAt: '2026-08-31T09:00:00.000Z',
+      readyBy: 'staff_hugo',
+      readyByName: null,
+    });
     store['readinessStaleValue'].set(false);
 
     const host = render();
@@ -163,10 +167,29 @@ describe('PublishRail — la déclaration « publiable »', () => {
     expect(readyButton(host)).toBeUndefined();
   });
 
+  it('signe du nom de la personne quand le serveur la connaît', () => {
+    const store = setup();
+    fill(store);
+    store['readinessValue'].set({
+      readyAt: '2026-08-31T09:00:00.000Z',
+      readyBy: 'staff_hugo',
+      readyByName: 'Hugo Heynard',
+    });
+    store['readinessStaleValue'].set(false);
+
+    const host = render();
+    expect(text(host)).toContain('par Hugo Heynard');
+    expect(text(host)).not.toContain('staff_hugo');
+  });
+
   it('dit que la fiche a bougé depuis, au lieu d’effacer la signature', () => {
     const store = setup();
     fill(store);
-    store['readinessValue'].set({ readyAt: '2026-08-31T08:00:00.000Z', readyBy: 'staff_hugo' });
+    store['readinessValue'].set({
+      readyAt: '2026-08-31T08:00:00.000Z',
+      readyBy: 'staff_hugo',
+      readyByName: null,
+    });
     store['readinessStaleValue'].set(true);
 
     const host = render();
@@ -229,7 +252,11 @@ describe('PublishRail — la déclaration « publiable »', () => {
     it('laisse la signature en place, et refuse qu’on la repose', () => {
       const store = setup();
       fill(store);
-      store['readinessValue'].set({ readyAt: '2026-08-31T09:00:00.000Z', readyBy: 'staff_hugo' });
+      store['readinessValue'].set({
+        readyAt: '2026-08-31T09:00:00.000Z',
+        readyBy: 'staff_hugo',
+        readyByName: null,
+      });
       store['readinessStaleValue'].set(false);
       contradict(store);
 

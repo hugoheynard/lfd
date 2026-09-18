@@ -26,6 +26,6 @@ export class SetProductionContainerHandler implements ICommandHandler<
   constructor(private readonly containers: ProductionContainerRepository) {}
 
   async execute(command: SetProductionContainerCommand): Promise<void> {
-    await this.containers.save(command.sku, command.rule, command.staffSubject);
+    await this.containers.save(command.sku, command.rule, command.staffUserId);
   }
 }

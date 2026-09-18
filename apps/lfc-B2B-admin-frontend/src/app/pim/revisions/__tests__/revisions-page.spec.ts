@@ -30,6 +30,7 @@ function revision(over: Partial<CatalogRevisionRowView> = {}): CatalogRevisionRo
     hash: 'h2',
     takenAt: '2026-08-31T09:00:00.000Z',
     takenBy: 'staff_hugo',
+    takenByName: null,
     articles: 12,
     changes: 3,
     ...over,

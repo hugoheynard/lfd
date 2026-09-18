@@ -38,8 +38,20 @@ function scene() {
     id: "nb1",
     companyId: COMPANY,
     notes: [
-      { id: "n1", title: "Visite", body: "", photoKey: PHOTO_KEY, author: { sub: "s", name: "" } },
-      { id: "n2", title: "Tarifs", body: "", photoKey: null, author: { sub: "s", name: "" } },
+      {
+        id: "n1",
+        title: "Visite",
+        body: "",
+        photoKey: PHOTO_KEY,
+        author: { staffUserId: "s", name: "" },
+      },
+      {
+        id: "n2",
+        title: "Tarifs",
+        body: "",
+        photoKey: null,
+        author: { staffUserId: "s", name: "" },
+      },
     ],
   });
   const store = new InMemoryStore([]);

@@ -92,6 +92,7 @@ class FakeHandovers {
       lines: this.lines,
       handedOverAt: null,
       handedOverBy: null,
+      handedOverByName: null,
       handedOverVia: null,
       blockedReason: null,
     });

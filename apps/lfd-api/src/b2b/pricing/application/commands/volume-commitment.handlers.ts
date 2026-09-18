@@ -19,7 +19,7 @@ import { VolumeCommitmentNotFoundError } from "../../domain/pricing-errors.js";
 export class SignVolumeCommitmentCommand {
   constructor(
     readonly payload: CreateVolumeCommitmentPayload,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -34,7 +34,7 @@ export class CloseVolumeCommitmentCommand {
   constructor(
     readonly id: string,
     readonly reason: string | null,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -62,7 +62,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
         validFrom: new Date(payload.validFrom),
         validTo: new Date(payload.validTo),
       },
-      command.staffSub,
+      command.staffUserId,
     );
     // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
     // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
@@ -105,7 +105,7 @@ export class CloseVolumeCommitmentHandler implements ICommandHandler<
     }
     await this.uow.run(async () => {
       await this.commitments.save(
-        commitment.close(command.staffSub, this.clock.now(), command.reason),
+        commitment.close(command.staffUserId, this.clock.now(), command.reason),
       );
       await this.events.publishTraced(new VolumeCommitmentClosedEvent(command.id, command.reason));
     });

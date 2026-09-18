@@ -24,6 +24,7 @@ function alert(overrides: Partial<AccountAlertView> = {}): AccountAlertView {
     ],
     acknowledgedAt: null,
     acknowledgedBy: null,
+    acknowledgedByName: null,
     ...overrides,
   };
 }

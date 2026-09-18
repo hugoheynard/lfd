@@ -84,7 +84,7 @@ function creationOf(note: ClientNoteState, position: number): NoteToCreate {
     title: note.title,
     body: note.body,
     photoKey: note.photoKey,
-    createdBySub: note.author.sub,
+    createdBySub: note.author.staffUserId,
     createdByName: note.author.name,
   };
 }

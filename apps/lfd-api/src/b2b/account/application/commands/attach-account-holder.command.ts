@@ -15,7 +15,7 @@ import type { ContactDetailsInput } from "../../domain/value-objects/contact-det
  * `Company.attachHolder`). Changer de détenteur est une autre décision, qui
  * mérite son propre geste.
  *
- * `invitedBy` est le `sub` du staff : une **trace**, pas une autorisation.
+ * `invitedBy` est l'id de la fiche du staff : une **trace**, pas une autorisation.
  */
 export class AttachAccountHolderCommand {
   constructor(

@@ -30,7 +30,7 @@ const REPLACEMENT: KbisFile = {
 
 const CERTIFICATION: KbisCertification = {
   at: new Date("2026-02-04T09:00:00Z"),
-  bySub: "auth0|staff_1",
+  byStaffUserId: "staff_1",
   byName: "Marc Rousseau",
   byRole: "comptabilite",
 };

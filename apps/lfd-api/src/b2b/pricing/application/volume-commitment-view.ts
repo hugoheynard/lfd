@@ -1,5 +1,6 @@
 import type { VolumeCommitmentView } from "@lfd/contracts";
 
+import type { StaffAuthors } from "../../../staff/directory/domain/staff-author-directory.js";
 import type { StoredVolumeCommitment } from "./ports/volume-commitments.reader.js";
 
 /**
@@ -20,10 +21,14 @@ import type { StoredVolumeCommitment } from "./ports/volume-commitments.reader.j
  * la seconde. C'est ce qui a permis de sortir Prisma de la query : une ligne ne
  * franchit pas `infrastructure/` (`CLAUDE.md` §3), donc tant que la vue se
  * fabriquait depuis une ligne, la query devait la lire elle-même.
+ *
+ * `authors` nomme ses deux auteurs, résolus d'un coup par l'appelant (plan
+ * `plan-l-auteur-est-la-fiche.md`, D3).
  */
 export function commitmentView(
   { state, createdAt }: StoredVolumeCommitment,
   orderedQuantity: number | null,
+  authors: StaffAuthors,
 ): VolumeCommitmentView {
   return {
     id: state.id,
@@ -33,9 +38,11 @@ export function commitmentView(
     validFrom: state.validFrom.toISOString(),
     validTo: state.validTo.toISOString(),
     createdBy: state.createdBy,
+    createdByName: authors.nameOf(state.createdBy),
     createdAt: createdAt.toISOString(),
     archivedAt: state.archivedAt?.toISOString() ?? null,
     archivedBy: state.archivedBy,
+    archivedByName: authors.nameOf(state.archivedBy),
     archiveReason: state.archiveReason,
     orderedQuantity,
   };

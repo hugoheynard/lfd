@@ -28,7 +28,7 @@ export class PrismaFeatureExemptionRepository extends FeatureExemptionRepository
         key: exemption.key,
         email: exemption.email,
         createdAt: exemption.at,
-        createdBySub: exemption.author.sub,
+        createdBySub: exemption.author.staffUserId,
         createdByName: exemption.author.name,
         createdByRole: exemption.author.role,
       },

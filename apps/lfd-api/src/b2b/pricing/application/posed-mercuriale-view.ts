@@ -4,6 +4,8 @@ import type {
   PosedMercurialeView,
 } from "@lfd/contracts";
 
+import type { StaffAuthors } from "../../../staff/directory/domain/staff-author-directory.js";
+
 import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 
 /**
@@ -80,11 +82,14 @@ function linesOf(
  * @param nameOf retombe sur le SKU nu quand le catalogue ne connaît plus
  *   l'article : la mercuriale garde sa ligne, et l'écran doit pouvoir dire
  *   qu'elle ne vise plus rien.
+ * @param authors nomme qui l'a établie — résolu d'un coup pour toutes les
+ *   mercuriales de la lecture (plan `plan-l-auteur-est-la-fiche.md`, D3).
  */
 export function posedMercurialeView(
   mercuriale: CompanyMercuriale,
   at: Date,
   nameOf: ProductNamer,
+  authors: StaffAuthors,
 ): PosedMercurialeView {
   const state = mercuriale.toPersistence();
   const lines = linesOf(mercuriale, nameOf);
@@ -102,6 +107,7 @@ export function posedMercurialeView(
     // nombre de paliers pour l'étendue de la négociation.
     skuCount: state.lines.length,
     createdBy: state.createdBy,
+    createdByName: authors.nameOf(state.createdBy),
     lines,
   };
 }

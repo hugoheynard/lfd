@@ -16,6 +16,6 @@ export class AcknowledgeAlertHandler implements ICommandHandler<AcknowledgeAlert
   ) {}
 
   async execute(command: AcknowledgeAlertCommand): Promise<void> {
-    await this.journal.acknowledge(command.alertId, command.staffSub, this.clock.now());
+    await this.journal.acknowledge(command.alertId, command.staffUserId, this.clock.now());
   }
 }

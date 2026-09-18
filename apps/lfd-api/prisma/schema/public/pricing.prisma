@@ -494,10 +494,11 @@ model PricingEvent {
   /// `posed` | `paused` | `resumed` | `archived` | `confirmed` | `replaced`.
   act String
 
-  /// Le `sub` du membre du staff, ou `system`.
+  /// L'id de la fiche du membre du staff, ou `system`. Un `sub` Auth0 pour les
+  /// actes écrits avant le 2026-09-18 (plan de l'auteur, étape 3).
   ///
   /// Le NOM n'est pas figé ici, à la différence des traces client : l'annuaire
-  /// staff est à nous et un `sub` est stable. Afficher le nom d'aujourd'hui est
+  /// staff est à nous et un id de fiche est stable. Afficher le nom d'aujourd'hui est
   /// même la réponse utile — on cherche qui aller voir, pas comment il
   /// s'appelait à l'époque.
   actor String

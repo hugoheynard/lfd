@@ -7,9 +7,12 @@ import {
   isFeatureLevel,
   type AdminFeatureAccessView,
   type AdminFeatureView,
+  type FeatureAccessAuthorView,
   type FeatureKey,
   type IgnoredFeatureRowView,
 } from "@lfd/contracts";
+
+import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 
 import type {
   StoredExemptionRow,
@@ -56,7 +59,7 @@ function featureView(key: FeatureKey, stored: StoredFeatureAccess): AdminFeature
         : {
             value: override.value,
             updatedAt: override.updatedAt.toISOString(),
-            updatedBy: override.updatedBy,
+            updatedBy: authorView(override.updatedBy),
           },
     exemptions: stored.exemptions
       .filter((exemption) => exemption.key === key)
@@ -64,10 +67,18 @@ function featureView(key: FeatureKey, stored: StoredFeatureAccess): AdminFeature
         id: exemption.id,
         email: exemption.email,
         createdAt: exemption.createdAt.toISOString(),
-        createdBy: exemption.createdBy,
+        createdBy: authorView(exemption.createdBy),
         accountState: exemption.accountState,
       })),
   };
+}
+
+/**
+ * Le champ de contrat s'appelle encore `sub` : il porte l'id de fiche depuis le
+ * 2026-09-18, et se renomme au resserrement des contrats (plan de l'auteur, D8).
+ */
+function authorView(trace: StaffTrace): FeatureAccessAuthorView {
+  return { sub: trace.staffUserId, name: trace.name, role: trace.role };
 }
 
 function ignoredOverride(row: StoredOverrideRow): readonly IgnoredFeatureRowView[] {

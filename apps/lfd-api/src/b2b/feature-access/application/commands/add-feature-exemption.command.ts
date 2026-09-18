@@ -3,6 +3,6 @@ export class AddFeatureExemptionCommand {
   constructor(
     readonly key: string,
     readonly email: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }

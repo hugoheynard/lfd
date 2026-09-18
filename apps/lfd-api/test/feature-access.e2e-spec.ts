@@ -16,7 +16,13 @@ import type { AdminFeatureAccessView, CreatedIdResponse, FeatureLevelsView } fro
 
 import { FeatureLevelResolver } from "../src/b2b/feature-access/application/feature-level.resolver.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  E2E_STAFF_SUB,
+  jsonBody,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 
 const COMMERCIAL_SUB = "staff-commercial";
@@ -99,7 +105,9 @@ describe("la dérogation — posée, puis retirée", () => {
       effectiveLevel: "browse",
       override: {
         value: "browse",
-        updatedBy: { sub: E2E_STAFF_SUB, name: "Opérateur E2E", role: "admin" },
+        // Le champ de contrat `sub` porte l'id de fiche jusqu'à son renommage
+        // (plan de l'auteur, D8, étape 5).
+        updatedBy: { sub: E2E_STAFF_ID, name: "Opérateur E2E", role: "admin" },
       },
     });
     await expect(publicLevels()).resolves.toEqual({ shop: "browse", ...OTHER_DEFAULTS });
@@ -137,7 +145,7 @@ describe("la dérogation — posée, puis retirée", () => {
         key: "legacy_flag",
         value: "on",
         updatedAt: new Date(),
-        updatedBySub: E2E_STAFF_SUB,
+        updatedBySub: E2E_STAFF_ID,
         updatedByName: "",
         updatedByRole: "",
       },

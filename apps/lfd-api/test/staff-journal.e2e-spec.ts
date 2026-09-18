@@ -222,17 +222,16 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
     expect(after.grantedByStaffId).toBe(await operatorId());
   });
 
-  it("suppression : le fait fige qui elle était", async () => {
+  it("suppression refusée : aucun fait, la fiche reste", async () => {
+    // La suppression n'existe plus (plan `plan-l-auteur-est-la-fiche.md`,
+    // étape 0) : un refus n'écrit rien au journal.
     const id = await createColleague();
 
-    await operator().delete(`/admin/staff-users/${id}`).expect(204);
+    await operator().delete(`/admin/staff-users/${id}`).expect(409);
 
     const facts = await factsAbout(id);
-    expect(facts.at(-1)).toMatchObject({
-      type: "staff_user.deleted",
-      actorName: OPERATOR_NAME,
-      payload: { person: { firstName: "Cécile", lastName: "Martin" }, roleLabel: "Commercial" },
-    });
+    expect(facts.map((fact) => fact.type)).not.toContain("staff_user.deleted");
+    await expect(ctx.prisma.staffUser.findUnique({ where: { id } })).resolves.not.toBeNull();
   });
 
   it("rôles : création, modification, archivage, restauration", async () => {

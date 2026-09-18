@@ -16,7 +16,7 @@ import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-i
 import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 
@@ -94,6 +94,17 @@ describe("POST /admin/companies", () => {
     expect(company.siret).toBe("81245678900021");
     expect(company.contactEmail).toBe("camille@halles.fr");
     expect(company.contactFonction).toBe("Gérante");
+  });
+
+  /** Régression : `invitedBy` recevait le `sub` du jeton staff (plan de l'auteur, D2). */
+  it("trace le détenteur comme provisionné par la FICHE de l'agent", async () => {
+    const created = await staff().post("/admin/companies").send(valide).expect(201);
+
+    const holder = await ctx.prisma.user.findFirstOrThrow({
+      where: { memberships: { some: { companyId: jsonBody<CreatedCompanyResponse>(created).id } } },
+      select: { invitedBy: true },
+    });
+    expect(holder.invitedBy).toBe(E2E_STAFF_ID);
   });
 
   it("refuse un SIRET déjà enregistré (unicité globale)", async () => {

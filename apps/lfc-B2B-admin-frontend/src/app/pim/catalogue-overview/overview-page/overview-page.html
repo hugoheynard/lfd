@@ -62,7 +62,8 @@
           <p class="ov-last">
             <strong>{{ o.lastRevision.reference }}</strong>
             {{ o.lastRevision.label ?? 'sans nom' }} · {{ o.lastRevision.articles }} articles ·
-            {{ when(o.lastRevision.takenAt) }} par {{ o.lastRevision.takenBy }}
+            {{ when(o.lastRevision.takenAt) }} par
+            {{ author(o.lastRevision.takenBy, o.lastRevision.takenByName) }}
           </p>
           @if (o.sinceLastRevision; as since) {
             @if (moved()) {

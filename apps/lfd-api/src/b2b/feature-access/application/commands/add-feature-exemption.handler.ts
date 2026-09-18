@@ -38,7 +38,7 @@ export class AddFeatureExemptionHandler implements ICommandHandler<
       key: command.key,
       email: command.email,
       at: this.clock.now(),
-      author: await authorOf(this.staff, command.staffSub),
+      author: await authorOf(this.staff, command.staffUserId),
     });
     return this.uow.run(async () => {
       const outcome = await this.exemptions.addIfAbsent(exemption);

@@ -20,6 +20,7 @@ describe("resolveGlobalRules", () => {
       ...ALERT_KINDS["product.first_order"].defaults,
       updatedAt: null,
       updatedBy: null,
+      updatedByName: null,
       degraded: false,
     });
   });
@@ -43,7 +44,13 @@ describe("resolveGlobalRules", () => {
       updatedAt: AT,
     };
 
-    const drift = resolveGlobalRules([stored]).find((r) => r.kind === "product.quantity_drift");
+    // L'annuaire nomme l'auteur : l'écran ne montre plus son identifiant
+    // (plan `plan-l-auteur-est-la-fiche.md`, D3).
+    const nameOf = (reference: string | null): string | null =>
+      reference === "staff|hugo" ? "Hugo Heynard" : null;
+    const drift = resolveGlobalRules([stored], nameOf).find(
+      (r) => r.kind === "product.quantity_drift",
+    );
 
     expect(drift).toEqual({
       kind: "product.quantity_drift",
@@ -52,6 +59,7 @@ describe("resolveGlobalRules", () => {
       delivery: stored.readable ? stored.delivery : null,
       updatedAt: AT.toISOString(),
       updatedBy: "staff|hugo",
+      updatedByName: "Hugo Heynard",
       degraded: false,
     });
   });

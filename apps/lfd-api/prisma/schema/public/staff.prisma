@@ -141,6 +141,35 @@ model StaffUser {
   @@schema("public")
 }
 
+/// **Chaque `sub` qu'une fiche a porté** — la table qui relie l'histoire écrite
+/// sous un identifiant de connexion à la PERSONNE qui l'a écrite.
+///
+/// Une fiche a pu avoir plusieurs `sub` : le résolveur réécrivait `auth0Id`
+/// sans condition jusqu'au 2026-09-17, et la réinvitation en relie un neuf.
+/// `auth0Id` ne garde que le dernier ; cette table les garde tous (plan
+/// `documentation/staff/plan-l-auteur-est-la-fiche.md`, D5).
+///
+/// - `sub` en clé : un `sub` ne désigne qu'une personne — le premier lien
+///   établi fait foi, un second est ignoré (`ON CONFLICT DO NOTHING`).
+/// - **Sans clé étrangère** vers `staff_users` : la ligne doit survivre à tout,
+///   c'est elle qui dit d'où vient chaque rattachement.
+/// - Elle ne contient **que des liens que la base a elle-même établis** : la
+///   migration qui la crée y inscrit l'`auth0_id` de chaque fiche
+///   (`current`), puis chaque liaison y ajoute la sienne (`linked`) dans la
+///   même écriture. Jamais de valeur saisie à la main.
+model StaffSubjectAlias {
+  sub         String   @id
+  staffUserId String   @map("staff_user_id")
+  /// `current` (semé par la migration) ou `linked` (écrit à la liaison) —
+  /// contrainte `CHECK` en base.
+  source      String
+  recordedAt  DateTime @default(now()) @map("recorded_at") @db.Timestamptz(3)
+
+  @@index([staffUserId])
+  @@map("staff_subject_aliases")
+  @@schema("public")
+}
+
 /// Un **rôle**, tel qu'il se définit désormais à l'écran.
 ///
 /// Les cinq rôles historiques (`admin`, `commercial`, `comptabilite`, `support`,
@@ -240,7 +269,8 @@ model StaffNotification {
   occurredAt DateTime @map("occurred_at")
 
   readAt DateTime? @map("read_at")
-  /// Le `sub` staff qui l'a lue — un identifiant, pas un nom.
+  /// L'id de fiche du staff qui l'a lue (un `sub` avant le 2026-09-18) — un
+  /// identifiant, pas un nom.
   readBy String?   @map("read_by")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -277,9 +307,10 @@ model StaffPushSubscription {
   /// Secret d'authentification, en base64url.
   auth   String
 
-  /// Le `sub` staff qui s'est abonné — un identifiant, pas un nom. Sert à
-  /// couper les abonnements de quelqu'un qui part, pas à cibler : la cloche est
-  /// commune à l'équipe.
+  /// L'id de fiche du staff qui s'est abonné — un identifiant, pas un nom. Un
+  /// `sub` avant le 2026-09-18 ; la colonne garde son nom `staff_sub` jusqu'à
+  /// l'étape 5 du plan de l'auteur. Une TRACE : sert à couper les abonnements
+  /// de quelqu'un qui part, pas à cibler — la cloche est commune à l'équipe (D9).
   staffSub String @map("staff_sub")
 
   createdAt  DateTime  @default(now()) @map("created_at")

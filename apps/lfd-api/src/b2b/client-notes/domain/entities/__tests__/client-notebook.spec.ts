@@ -19,8 +19,8 @@ import {
  * les refus dans les mots du carnet.
  */
 
-const MAYA: ClientNoteAuthor = { sub: "staff-maya", name: "Maya Commerciale" };
-const HUGO: ClientNoteAuthor = { sub: "staff-hugo", name: "Hugo Admin" };
+const MAYA: ClientNoteAuthor = { staffUserId: "staff-maya", name: "Maya Commerciale" };
+const HUGO: ClientNoteAuthor = { staffUserId: "staff-hugo", name: "Hugo Admin" };
 
 function content(title: string, body = ""): ClientNoteContent {
   return ClientNoteContent.create({ title, body });
@@ -158,7 +158,9 @@ describe("ClientNotebook — la relecture", () => {
     });
     notebook.addNote("n3", content("Rappel"), null, MAYA);
 
-    expect(notebook.toPersistence().notes.map((note) => [note.id, note.author.sub])).toEqual([
+    expect(
+      notebook.toPersistence().notes.map((note) => [note.id, note.author.staffUserId]),
+    ).toEqual([
       ["n3", "staff-maya"],
       ["n2", "staff-hugo"],
       ["n1", "staff-maya"],

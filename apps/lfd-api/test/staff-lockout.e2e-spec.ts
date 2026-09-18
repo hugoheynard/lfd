@@ -236,9 +236,13 @@ describe("porte de secours — il reste toujours un administrateur", () => {
 
   it("laisse partir un administrateur dès qu'un autre reste debout", async () => {
     // Le pendant : la garde protège l'accès, elle ne fige pas l'annuaire.
+    // Partir, c'est être suspendu : la suppression n'existe plus (étape 0).
     const id = await create({ role: "admin", email: "partant@lfc.test" });
 
-    await admin().delete(`/admin/staff-users/${id}`).expect(204);
+    await admin()
+      .patch(`/admin/staff-users/${id}/status`)
+      .send({ status: "suspended" })
+      .expect(204);
   });
 });
 

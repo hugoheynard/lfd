@@ -1,6 +1,7 @@
 import type { AccountAlertRuleView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { resolveAccountRules } from "../../domain/account-alert-rules.js";
 import { resolveGlobalRules } from "../../domain/alert-rules.js";
 import { AccountAlertOverridesStore } from "../../domain/ports/account-alert-overrides.store.js";
@@ -21,6 +22,7 @@ export class GetAccountAlertRulesHandler implements IQueryHandler<
   constructor(
     private readonly rules: AlertRulesStore,
     private readonly overrides: AccountAlertOverridesStore,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(query: GetAccountAlertRulesQuery): Promise<AccountAlertRuleView[]> {
@@ -28,6 +30,13 @@ export class GetAccountAlertRulesHandler implements IQueryHandler<
       this.rules.readAll(),
       this.overrides.readForCompany(query.companyId),
     ]);
-    return resolveAccountRules(resolveGlobalRules(stored), overrides);
+    // Les auteurs du global ET des dérogations, en une résolution (plan
+    // `plan-l-auteur-est-la-fiche.md`, D3).
+    const authors = await this.staffAuthors.identify([
+      ...stored.map((row) => row.updatedBy),
+      ...overrides.map((row) => row.updatedBy),
+    ]);
+    const nameOf = (reference: string | null): string | null => authors.nameOf(reference);
+    return resolveAccountRules(resolveGlobalRules(stored, nameOf), overrides, nameOf);
   }
 }

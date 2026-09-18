@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import {
   PricingDecisionsReader,
   type LoadedDecisions,
@@ -21,7 +22,10 @@ import { floorFromRow, floorViewFromRow, ruleFromRow, ruleViewFromRow } from "./
  */
 @Injectable()
 export class PrismaPricingDecisionsReader extends PricingDecisionsReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly staffAuthors: StaffAuthorDirectory,
+  ) {
     super();
   }
 
@@ -57,15 +61,21 @@ export class PrismaPricingDecisionsReader extends PricingDecisionsReader {
       }),
     ]);
 
+    // Les auteurs de toute la lecture, en une résolution (plan
+    // `plan-l-auteur-est-la-fiche.md`, D3) — pas une par ligne.
+    const authors = await this.staffAuthors.identify([
+      ...ruleRows.flatMap((row) => [row.createdBy, row.pausedBy, row.archivedBy]),
+      ...floorRows.map((row) => row.createdBy),
+    ]);
     const rules: LoadedRule[] = ruleRows.map((row) => ({
       rule: ruleFromRow(row),
-      view: ruleViewFromRow(row),
+      view: ruleViewFromRow(row, authors),
     }));
     const floors: LoadedFloor[] = floorRows.map((row) => {
       const floor = floorFromRow(row);
       return {
         floor,
-        view: floorViewFromRow(row, referenceCanonicalFor(floor.scope, articles), at),
+        view: floorViewFromRow(row, referenceCanonicalFor(floor.scope, articles), at, authors),
       };
     });
     return { rules, floors };

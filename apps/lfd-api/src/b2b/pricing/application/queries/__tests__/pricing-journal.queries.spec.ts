@@ -24,6 +24,10 @@ import {
 import { ReadPricingJournalHandler } from "../read-pricing-journal.handler.js";
 import { ReadSubjectJournalHandler } from "../read-subject-journal.handler.js";
 import { ReadSubjectJournalQuery } from "../read-subject-journal.query.js";
+import {
+  authorsKnownAs,
+  FixedStaffAuthorDirectory,
+} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 
 const POSED_AT = new Date("2026-06-15T09:00:00.000Z");
 
@@ -61,6 +65,11 @@ class RecordingPricingJournal extends PricingJournalReader {
   }
 }
 
+/** L'annuaire : `auth0|staff` est Camille ; `system` n'est personne. */
+const AUTHORS = new FixedStaffAuthorDirectory(
+  authorsKnownAs({ firstName: "Camille", lastName: "Durand" }, "auth0|staff"),
+);
+
 describe("ReadPricingJournalHandler", () => {
   it("borne le fil général à cinquante actes", async () => {
     const journal = new RecordingPricingJournal([]);
@@ -68,15 +77,23 @@ describe("ReadPricingJournalHandler", () => {
     // `execute()` ne prend rien : la profondeur du fil est une décision de
     // lecture, pas une option de l'appelant (cf. `ReadPricingJournalQuery`, qui
     // est vide).
-    await new ReadPricingJournalHandler(journal).execute();
+    await new ReadPricingJournalHandler(journal, AUTHORS).execute();
 
     expect(journal.recentLimit).toBe(50);
+  });
+
+  it("ne nomme pas l'acteur `system` : l'écran garde la valeur brute", async () => {
+    const journal = new RecordingPricingJournal([act({ actor: "system" })]);
+
+    const [view] = await new ReadPricingJournalHandler(journal, AUTHORS).execute();
+
+    expect(view).toMatchObject({ actor: "system", actorName: null });
   });
 
   it("traduit l'acte en vue de fil — la date en ISO, `kind` en `act`", async () => {
     const journal = new RecordingPricingJournal([act({ reason: "fin de promo" })]);
 
-    const view = await new ReadPricingJournalHandler(journal).execute();
+    const view = await new ReadPricingJournalHandler(journal, AUTHORS).execute();
 
     expect(view).toEqual([
       {
@@ -85,6 +102,9 @@ describe("ReadPricingJournalHandler", () => {
         subjectId: "rule_1",
         act: "posed",
         actor: "auth0|staff",
+        // Le nom, résolu par l'annuaire — l'écran ne montre plus le `sub`
+        // (plan `plan-l-auteur-est-la-fiche.md`, D3).
+        actorName: "Camille Durand",
         occurredAt: POSED_AT.toISOString(),
         reason: "fin de promo",
         summary: "Mercuriale — produit, 0,80 €",
@@ -97,7 +117,7 @@ describe("ReadSubjectJournalHandler", () => {
   it("interroge le sujet demandé, sans le réinterpréter", async () => {
     const journal = new RecordingPricingJournal([]);
 
-    await new ReadSubjectJournalHandler(journal).execute(
+    await new ReadSubjectJournalHandler(journal, AUTHORS).execute(
       new ReadSubjectJournalQuery("ladder", "ladder_7"),
     );
 
@@ -109,7 +129,7 @@ describe("ReadSubjectJournalHandler", () => {
       act({ subjectType: "floor", subjectId: "floor_2" }),
     ]);
 
-    const view = await new ReadSubjectJournalHandler(journal).execute(
+    const view = await new ReadSubjectJournalHandler(journal, AUTHORS).execute(
       new ReadSubjectJournalQuery("floor", "floor_2"),
     );
 

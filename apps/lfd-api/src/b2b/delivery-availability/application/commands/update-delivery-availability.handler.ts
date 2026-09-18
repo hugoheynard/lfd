@@ -31,7 +31,7 @@ export class UpdateDeliveryAvailabilityHandler implements ICommandHandler<
   ) {}
 
   async execute(command: UpdateDeliveryAvailabilityCommand): Promise<void> {
-    const author = await authorOf(this.staff, command.staffSub);
+    const author = await authorOf(this.staff, command.staffUserId);
     await this.uow.run(async () => {
       const previous = await this.reader.current();
       const next = DeliveryAvailability.pose({

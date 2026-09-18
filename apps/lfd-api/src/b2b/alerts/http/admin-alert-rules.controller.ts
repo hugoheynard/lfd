@@ -7,7 +7,7 @@ import {
 import { Body, Controller, Get, HttpCode, HttpStatus, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SaveAlertRuleCommand } from "../application/commands/save-alert-rule.command.js";
 import { ListAlertRulesQuery } from "../application/queries/list-alert-rules.query.js";
@@ -40,12 +40,12 @@ export class AdminAlertRulesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async save(
     @Body(new ZodBody(saveAlertRulePayloadSchema)) payload: SaveAlertRulePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SaveAlertRuleCommand, void>(
       new SaveAlertRuleCommand(
         payload.rule,
-        staffSub,
+        staffUserId,
         payload.expectedUpdatedAt === null ? null : new Date(payload.expectedUpdatedAt),
       ),
     );

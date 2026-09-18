@@ -8,8 +8,8 @@ import type { AlertRule } from "@lfd/contracts";
 export class SaveAlertRuleCommand {
   constructor(
     readonly rule: AlertRule,
-    /** Le `sub` du staff qui écrit — figé pour que la trace reste répondable. */
-    readonly staffSub: string,
+    /** L'id de la fiche du staff qui écrit — figé pour que la trace reste répondable. */
+    readonly staffUserId: string,
     /** La version que l'appelant avait sous les yeux (`null` = jamais réglé). */
     readonly expectedUpdatedAt: Date | null,
   ) {}

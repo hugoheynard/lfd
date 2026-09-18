@@ -35,7 +35,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ChangeCompanyStatusCommand } from "../application/commands/change-company-status.command.js";
 import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
@@ -136,10 +136,10 @@ export class AdminCompanyPiecesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async certifyKbis(
     @Param("companyId") companyId: string,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<CertifyKbisCommand, void>(
-      new CertifyKbisCommand(companyId, staffSub),
+      new CertifyKbisCommand(companyId, staffUserId),
     );
   }
 
@@ -241,10 +241,10 @@ export class AdminCompanyPiecesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async activate(
     @Param("companyId") companyId: string,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<ActivateCompanyByStaffCommand, void>(
-      new ActivateCompanyByStaffCommand(companyId, staffSub),
+      new ActivateCompanyByStaffCommand(companyId, staffUserId),
     );
   }
 

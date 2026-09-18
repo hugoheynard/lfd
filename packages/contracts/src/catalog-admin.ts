@@ -71,8 +71,22 @@ export interface CatalogAdminItemView {
   readonly isHidden: boolean;
   readonly isFeatured: boolean;
 
-  /** Qui a décidé, et quand. `null` tant que personne n'a rien décidé. */
+  /**
+   * Qui a décidé, et quand. `null` tant que personne n'a rien décidé.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `decidedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly decidedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `decidedBy` tel quel.
+   */
+  readonly decidedByName: string | null;
   readonly decidedAt: string | null;
   /** Quand le PIM a envoyé ces faits pour la dernière fois. */
   readonly receivedAt: string;

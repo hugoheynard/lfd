@@ -166,8 +166,20 @@ export interface AlertRuleView extends AlertRule {
    * Le `sub` du staff qui a écrit ce réglage, ou `null` — jamais touché, ou
    * écrit avant qu'on sache le dire. Un identifiant, pas un nom : il reste
    * résolvable après un changement de nom.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `updatedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
    */
   readonly updatedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `updatedBy` tel quel.
+   */
+  readonly updatedByName: string | null;
   /**
    * Le réglage stocké était illisible (type retiré, forme changée) : ce qui est
    * rendu ici, ce sont les **défauts**. L'écran doit le dire — la première

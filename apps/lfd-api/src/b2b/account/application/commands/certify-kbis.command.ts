@@ -2,14 +2,14 @@
  * Certifier — ou décertifier — le KBIS d'une société. Acte **staff** (Porte B),
  * sans mur membership : `AdminAuthGuard` porte l'autorisation en amont.
  *
- * `staffSub` n'est pas de la décoration : c'est ce qui transforme un booléen en
+ * `staffUserId` n'est pas de la décoration : c'est ce qui transforme un booléen en
  * engagement. Un compte s'active parce que quelqu'un a regardé l'extrait ; on
  * garde qui, et à quel titre.
  */
 export class CertifyKbisCommand {
   constructor(
     readonly companyId: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 

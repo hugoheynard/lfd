@@ -10,7 +10,13 @@
 import type { B2bProductDeliveryView } from "@lfd/pim-contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  E2E_STAFF_SUB,
+  jsonBody,
+  type E2eContext,
+} from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -203,6 +209,19 @@ describe("Ancre de publication du catalogue", () => {
     expect(rows[0]).toMatchObject({ articles: 1 });
   });
 
+  it("nomme qui a posé chaque ancre — l'identifiant reste servi, déprécié", async () => {
+    // Plan `plan-l-auteur-est-la-fiche.md`, D3 : l'écran affichait `takenBy`
+    // brut, c'est-à-dire un identifiant chez Auth0.
+    await aProduct("Croissant");
+    await take("première");
+
+    const [row] = jsonBody<{ takenBy: string; takenByName: string | null }[]>(
+      await staff().get(REVISIONS).expect(200),
+    );
+    // L'id de fiche depuis l'étape 3 du plan de l'auteur, jamais le `sub`.
+    expect(row).toMatchObject({ takenBy: E2E_STAFF_ID, takenByName: "Opérateur E2E" });
+  });
+
   it("trace le fait, avec la portée de ce qu'il fige", async () => {
     await aProduct("Croissant");
     await take("rentrée");
@@ -213,6 +232,23 @@ describe("Ancre de publication du catalogue", () => {
     });
     expect(events).toHaveLength(1);
     expect(events[0]?.payload).toMatchObject({ label: "rentrée", blast: { articles: 1 } });
+  });
+
+  /**
+   * Régression : l'acteur du contexte était le `sub` du jeton, posé par
+   * `AdminAuthGuard` ; il finissait en base ET au journal (plan de l'auteur, D1).
+   */
+  it("signe l'ancre et le fait de l'id de fiche, en base comme au journal", async () => {
+    await aProduct("Croissant");
+    await take("rentrée");
+    await ctx.drain();
+
+    const revision = await ctx.prisma.catalogRevision.findFirstOrThrow();
+    const event = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "catalog_revision.taken" },
+    });
+    expect(revision.takenBy).toBe(E2E_STAFF_ID);
+    expect(event).toMatchObject({ actorType: "staff", actorId: E2E_STAFF_ID });
   });
 });
 
@@ -394,7 +430,10 @@ describe("Diff entre deux ancres", () => {
     expect(fields).toContain("readyBy");
     const by = diff.changed[0]?.fields.find((field) => field.field === "readyBy");
     expect(by?.before).toBe("null");
+    // Le signataire est NOMMÉ, jamais servi en identifiant (plan de l'auteur, D6).
     expect(by?.after).not.toBe("null");
+    expect(by?.after).not.toMatch(/\|/);
+    expect(by?.after).toMatch(/\S+ \S+/);
   });
 
   it("nomme un article entré au catalogue", async () => {

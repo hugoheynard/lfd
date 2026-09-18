@@ -41,7 +41,22 @@ export interface CatalogRevisionSummaryView {
   readonly note: string | null;
   readonly hash: string;
   readonly takenAt: string;
+  /**
+   * L'auteur tel qu'écrit : un `sub` Auth0, un id de fiche staff, ou un
+   * marqueur (`system`, `seed-pim`).
+   *
+   * @deprecated depuis le 2026-09-18 — afficher {@link takenByName}. Servi
+   *   encore pendant la bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly takenBy: string;
+  /**
+   * « Prénom Nom » de la personne qui l'a posée, résolu au serveur. `null` =
+   * l'auteur ne désigne aucune fiche (marqueur, `sub` jamais lié) : l'écran
+   * affiche alors `takenBy` tel quel.
+   */
+  readonly takenByName: string | null;
   /** Combien d'articles elle fige. */
   readonly articles: number;
 }

@@ -50,6 +50,7 @@ function order(over: Partial<OrderHandoverView> = {}): OrderHandoverView {
     lines: [line()],
     handedOverAt: null,
     handedOverBy: null,
+    handedOverByName: null,
     handedOverVia: null,
     blockedReason: null,
     ...over,

@@ -32,7 +32,7 @@ export class OrderPackedEvent {
     readonly reference: string,
     /** L'instant du colisage, pris au port d'horloge. */
     readonly packedAt: Date,
-    /** L'identité staff qui a scanné (claim `sub`), figée. */
+    /** L'id de la fiche staff qui a scanné, figé. */
     readonly packedBy: string,
   ) {}
 }

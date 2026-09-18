@@ -40,6 +40,7 @@ function sheet(reference: string, lines: readonly PackingLine[]): PackingSheet {
     canDeclareReady: false,
     packedAt: null,
     packedBy: null,
+    packedByName: null,
   };
 }
 

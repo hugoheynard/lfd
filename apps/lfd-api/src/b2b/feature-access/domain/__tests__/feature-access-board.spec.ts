@@ -4,7 +4,7 @@ import type {
   StoredOverrideRow,
 } from "../ports/feature-access-board.reader.js";
 
-const AUTHOR = { sub: "staff|1", name: "Camille Admin", role: "admin" };
+const AUTHOR = { staffUserId: "staff_1", name: "Camille Admin", role: "admin" };
 const AT = new Date("2026-09-14T09:00:00.000Z");
 
 function override(key: string, value: string): StoredOverrideRow {
@@ -65,7 +65,13 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
 
     expect(board.features[0]).toMatchObject({
       effectiveLevel: "browse",
-      override: { value: "browse", updatedAt: AT.toISOString(), updatedBy: AUTHOR },
+      // Le contrat garde son champ `sub` jusqu'à l'étape 5 du plan de l'auteur :
+      // il porte l'id de fiche.
+      override: {
+        value: "browse",
+        updatedAt: AT.toISOString(),
+        updatedBy: { sub: "staff_1", name: "Camille Admin", role: "admin" },
+      },
       exemptions: [{ email: "testeur@exemple.fr", accountState: "none" }],
     });
   });

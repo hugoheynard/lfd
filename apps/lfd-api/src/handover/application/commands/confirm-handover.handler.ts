@@ -33,6 +33,6 @@ export class ConfirmHandoverHandler implements ICommandHandler<
     if (subject === null) {
       throw new HandoverTokenNotFoundError();
     }
-    return this.attestation.attest(subject, command.staffSubject, "scan");
+    return this.attestation.attest(subject, command.staffUserId, "scan");
   }
 }

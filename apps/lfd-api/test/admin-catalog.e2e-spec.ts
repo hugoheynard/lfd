@@ -10,7 +10,7 @@ import { millicentsFromCents } from "@lfd/money";
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -270,7 +270,8 @@ describe("PUT /admin/catalog/:sku/price", () => {
     const item = await listOne();
     expect(item?.b2bPriceMillicents).toBe(180_000);
     expect(item?.effectivePriceMillicents).toBe(180_000);
-    expect(item?.decidedBy).toBe("staff-e2e");
+    // L'id de fiche, plus le `sub` (plan de l'auteur, étape 3).
+    expect(item?.decidedBy).toBe(E2E_STAFF_ID);
   });
 
   it("refuse un prix nul — le refus de l'agrégat ressort en 400", async () => {

@@ -16,6 +16,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
+import { staffAuthor } from '../../../shared/staff-author';
 import { TarificationService } from '../tarification.service';
 
 /** Charge d'ouverture : de quoi on veut l'histoire, et comment l'appeler. */
@@ -57,6 +58,9 @@ export class JournalPanel {
   protected readonly entries = signal<readonly PricingJournalEntryView[]>([]);
 
   protected readonly target = computed(() => this.data()?.target ?? '');
+
+  /** Le nom de l'auteur de l'acte ; `system` et les marqueurs restent tels quels. */
+  protected readonly author = staffAuthor;
 
   constructor() {
     effect(() => {

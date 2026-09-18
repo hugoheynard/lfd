@@ -90,8 +90,10 @@ model DeliveryAvailability {
   /// Instant du geste, lu du `Clock` — pas `@updatedAt`, qui lirait l'horloge
   /// de la base au lieu de celle de la requête.
   updatedAt     DateTime @map("updated_at")
-  /// Qui l'a posé, figé à l'instant du geste : le `sub` survit à tout, le nom
-  /// et le rôle sont un instantané.
+  /// Qui l'a posé, figé à l'instant du geste : l'identifiant survit à tout, le
+  /// nom et le rôle sont un instantané. La colonne reçoit l'id de fiche depuis
+  /// le 2026-09-18 malgré son nom (`*_by_sub`, renommée à l'étape 5 du plan de
+  /// l'auteur) ; avant, un `sub` Auth0.
   updatedBySub  String   @map("updated_by_sub")
   updatedByName String   @map("updated_by_name")
   updatedByRole String   @map("updated_by_role")

@@ -7,7 +7,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from "@nestjs/comm
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { UpdateDeliveryAvailabilityCommand } from "../application/commands/update-delivery-availability.command.js";
 import { GetDeliveryAvailabilityQuery } from "../application/queries/get-delivery-availability.query.js";
@@ -37,10 +37,10 @@ export class AdminDeliveryAvailabilityController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async update(
     @Body(new ZodBody(deliveryAvailabilityPatchSchema)) patch: DeliveryAvailabilityPatch,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<UpdateDeliveryAvailabilityCommand, void>(
-      new UpdateDeliveryAvailabilityCommand(patch, staffSub),
+      new UpdateDeliveryAvailabilityCommand(patch, staffUserId),
     );
   }
 }

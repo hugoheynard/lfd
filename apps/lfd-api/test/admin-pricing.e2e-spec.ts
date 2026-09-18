@@ -16,7 +16,13 @@ import type { PricingBoardView, PricingComparisonView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, serviceDay, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  serviceDay,
+  jsonBody,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -395,11 +401,15 @@ describe("suspendre, reprendre, archiver", () => {
     const { id } = jsonBody<{ id: string }>(await postRule());
     await pause(id, "Four en panne");
 
-    const [entry] = jsonBody<{ actor: string; reason: string | null }[]>(
+    const [entry] = jsonBody<{ actor: string; actorName: string | null; reason: string | null }[]>(
       await staff().get(`/admin/pricing/journal/rule/${id}`),
     );
 
-    expect(entry?.actor).toBe("staff-e2e");
+    // L'id de fiche, plus le `sub` (plan de l'auteur, étape 3).
+    expect(entry?.actor).toBe(E2E_STAFF_ID);
+    // Le nom, résolu par l'annuaire : le journal affichait le `sub` (plan
+    // `plan-l-auteur-est-la-fiche.md`, D3).
+    expect(entry?.actorName).toBe("Opérateur E2E");
     expect(entry?.reason).toBe("Four en panne");
   });
 

@@ -1,6 +1,7 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductReadinessView } from "@lfd/pim-contracts";
 
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 
 export class GetProductReadinessQuery {
@@ -21,10 +22,21 @@ export class GetProductReadinessHandler implements IQueryHandler<
   GetProductReadinessQuery,
   ProductReadinessView | null
 > {
-  constructor(private readonly readiness: ReadinessRepository) {}
+  constructor(
+    private readonly readiness: ReadinessRepository,
+    private readonly staffAuthors: StaffAuthorDirectory,
+  ) {}
 
   async execute(query: GetProductReadinessQuery): Promise<ProductReadinessView | null> {
     const found = await this.readiness.read(query.id);
-    return found === null ? null : { readyAt: found.readyAt.toISOString(), readyBy: found.readyBy };
+    if (found === null) {
+      return null;
+    }
+    const authors = await this.staffAuthors.identify([found.readyBy]);
+    return {
+      readyAt: found.readyAt.toISOString(),
+      readyBy: found.readyBy,
+      readyByName: authors.nameOf(found.readyBy),
+    };
   }
 }

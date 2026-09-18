@@ -28,7 +28,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import type { StoredDocument } from "../../../platform/storage/document-store.js";
 import { servePhoto } from "../../shared/photo-cards/http/photo-card-http.js";
@@ -73,7 +73,7 @@ export class AdminClientNotesController {
     @Param("companyId") companyId: string,
     @Body(new ZodBody(clientNoteFieldsSchema)) fields: ClientNoteFields,
     @UploadedFiles() files: UploadedNoteImages | undefined,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<CreatedClientNoteResponse> {
     const id = await this.commands.execute<AddClientNoteCommand, string>(
       new AddClientNoteCommand(
@@ -81,7 +81,7 @@ export class AdminClientNotesController {
         fields,
         noteImageBytes(files, "photo"),
         noteImageBytes(files, "thumbnail"),
-        staffSub,
+        staffUserId,
       ),
     );
     return { id };

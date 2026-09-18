@@ -37,8 +37,8 @@ export class PausePriceRuleHandler implements ICommandHandler<PausePriceRuleComm
     const now = this.clock.now();
     const rule = await mustLoad(this.rules, command.id);
     await this.rules.update(
-      rule.pause(command.staffSub, now),
-      actOf(rule, "paused", command.staffSub, now, command.reason),
+      rule.pause(command.staffUserId, now),
+      actOf(rule, "paused", command.staffUserId, now, command.reason),
     );
   }
 }
@@ -57,7 +57,10 @@ export class ResumePriceRuleHandler implements ICommandHandler<ResumePriceRuleCo
   async execute(command: ResumePriceRuleCommand): Promise<void> {
     const now = this.clock.now();
     const rule = await mustLoad(this.rules, command.id);
-    await this.rules.update(rule.resume(now), actOf(rule, "resumed", command.staffSub, now, null));
+    await this.rules.update(
+      rule.resume(now),
+      actOf(rule, "resumed", command.staffUserId, now, null),
+    );
   }
 }
 
@@ -72,8 +75,8 @@ export class ArchivePriceRuleHandler implements ICommandHandler<ArchivePriceRule
     const now = this.clock.now();
     const rule = await mustLoad(this.rules, command.id);
     await this.rules.update(
-      rule.archive(command.staffSub, now, command.reason),
-      actOf(rule, "archived", command.staffSub, now, command.reason),
+      rule.archive(command.staffUserId, now, command.reason),
+      actOf(rule, "archived", command.staffUserId, now, command.reason),
     );
   }
 }
@@ -137,7 +140,7 @@ export class RenamePriceRuleHandler implements ICommandHandler<RenamePriceRuleCo
     const rule = await mustLoad(this.rules, command.id);
     await this.rules.rename(
       rule.rename(command.label),
-      actOf(rule, "renamed", command.staffSub, now, null),
+      actOf(rule, "renamed", command.staffUserId, now, null),
     );
   }
 }

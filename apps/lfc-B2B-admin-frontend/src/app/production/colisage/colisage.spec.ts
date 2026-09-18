@@ -80,6 +80,7 @@ function bac(over: Partial<PackingSheet> = {}): PackingSheet {
     canDeclareReady: false,
     packedAt: null,
     packedBy: null,
+    packedByName: null,
     ...over,
   };
 }
@@ -127,6 +128,7 @@ function readyBac(over: Partial<PackingSheet> = {}): PackingSheet {
     packedPieces: 12,
     packedAt: `${today()}T05:12:00`,
     packedBy: 'Paul',
+    packedByName: null,
     ...over,
   });
 }
@@ -484,6 +486,7 @@ describe('le poste de colisage', () => {
           destination: 'Comptoir Bastille',
           packedAt: null,
           packedBy: null,
+          packedByName: null,
         }),
       ],
     });

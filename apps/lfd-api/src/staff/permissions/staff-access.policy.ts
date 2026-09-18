@@ -76,22 +76,6 @@ export function assertEditAllowed(target: StaffMutationTarget, intent: StaffMuta
 }
 
 /**
- * Autorise (ou refuse) une **suppression**.
- *
- * @throws {ProtectedStaffUserError} la cible est l'admin racine (ineffaçable).
- * @throws {SelfDemotionError} l'auteur se supprime lui-même alors qu'il est admin.
- * @throws {LastStaffAdminError} la cible est le dernier administrateur.
- */
-export function assertRemovalAllowed(target: StaffMutationTarget): void {
-  if (target.isRoot) {
-    throw new ProtectedStaffUserError();
-  }
-  if (target.role === "admin") {
-    assertAdminRemovable(target);
-  }
-}
-
-/**
  * Autorise (ou refuse) un changement d'**état de connexion**. Seule la suspension
  * retire un accès ; les autres transitions se constatent et ne menacent personne.
  *

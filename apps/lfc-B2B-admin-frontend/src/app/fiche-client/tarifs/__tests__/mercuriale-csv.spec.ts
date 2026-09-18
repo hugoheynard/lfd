@@ -22,6 +22,7 @@ const MERCURIALE: PosedMercurialeView = {
   ruleCount: 1,
   skuCount: 1,
   createdBy: 'staff|marie',
+  createdByName: null,
   lines: [],
 };
 
@@ -89,6 +90,17 @@ describe('ce qui rattache le fichier à quelqu’un', () => {
     expect(first).toContain('Mercuriale Club Med');
     expect(first).toContain('du 01/01/2026 au 31/12/2026');
     expect(first).toContain('staff|marie');
+  });
+
+  it('écrit le nom de l’auteur, jamais son identifiant, quand il est connu', () => {
+    // Plan `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 : l'export
+    // écrivait « établie par auth0|… » dans un fichier qui quitte la maison.
+    const [first] = mercurialeCsv({ ...MERCURIALE, createdByName: 'Marie Curie' }, [row()]).split(
+      '\r\n',
+    );
+
+    expect(first).toContain('établie par Marie Curie');
+    expect(first).not.toContain('staff|marie');
   });
 
   it('dit « sans terme » plutôt que de laisser un vide', () => {

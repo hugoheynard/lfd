@@ -39,6 +39,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     isHidden: false,
     isFeatured: false,
     decidedBy: null,
+    decidedByName: null,
     decidedAt: null,
     receivedAt: '2026-09-01T08:00:00.000Z',
     ...over,

@@ -20,7 +20,7 @@ export class SaveAlertRuleHandler implements ICommandHandler<SaveAlertRuleComman
     const written = await this.store.save({
       kind: command.rule.params.kind,
       rule: command.rule,
-      staffSub: command.staffSub,
+      staffUserId: command.staffUserId,
       expectedUpdatedAt: command.expectedUpdatedAt,
     });
     if (!written) {

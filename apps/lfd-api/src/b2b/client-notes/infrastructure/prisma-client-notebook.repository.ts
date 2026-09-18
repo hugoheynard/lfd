@@ -52,7 +52,7 @@ export class PrismaClientNotebookRepository extends ClientNotebookRepository {
         title: note.title,
         body: note.body,
         photoKey: note.photoKey,
-        author: { sub: note.createdBySub, name: note.createdByName },
+        author: { staffUserId: note.createdBySub, name: note.createdByName },
       })),
     });
   }

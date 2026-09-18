@@ -26,6 +26,7 @@ const FLOOR: PriceFloorView = {
   dynamic: null,
   drift: null,
   createdBy: 'staff',
+  createdByName: null,
   updatedAt: '2026-08-01T00:00:00.000Z',
 };
 

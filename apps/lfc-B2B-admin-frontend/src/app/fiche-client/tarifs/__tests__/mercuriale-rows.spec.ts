@@ -50,6 +50,7 @@ function mercuriale(lines: PosedMercurialeView['lines']): PosedMercurialeView {
     ruleCount: lines.length,
     skuCount: lines.length,
     createdBy: 'staff|marie',
+    createdByName: null,
     lines,
   };
 }

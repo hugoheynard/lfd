@@ -3,7 +3,7 @@ import type { AccountAlertView, PendingAlertCounts } from "@lfd/contracts";
 import { Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { AcknowledgeAlertCommand } from "../application/commands/acknowledge-alert.command.js";
 import { CountPendingAlertsQuery } from "../application/queries/count-pending-alerts.query.js";
 import { ListAccountAlertsQuery } from "../application/queries/list-account-alerts.query.js";
@@ -12,7 +12,7 @@ import { ListAccountAlertsQuery } from "../application/queries/list-account-aler
  * Le **journal d'alertes** d'un compte (fiche client, onglet Alertes) et son
  * acquittement.
  *
- * L'acquitteur est le `sub` posé par l'`AdminAuthGuard` — un identifiant, pas un
+ * L'acquitteur est l'id de fiche posé par `StaffAccessGuard` — un identifiant, pas un
  * nom, pour que « qui a vu cette alerte » reste répondable après un changement
  * de nom ou de rôle.
  */
@@ -48,10 +48,10 @@ export class AdminAccountAlertsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async acknowledge(
     @Param("alertId") alertId: string,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<AcknowledgeAlertCommand, void>(
-      new AcknowledgeAlertCommand(alertId, staffSub),
+      new AcknowledgeAlertCommand(alertId, staffUserId),
     );
   }
 }

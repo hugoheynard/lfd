@@ -2,6 +2,7 @@ import type { OrderPackingView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import {
   OrderReferenceNotFoundError,
   PackingRefusedError,
@@ -35,6 +36,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
     private readonly events: DomainEventPublisher,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   async execute(command: MarkOrderReadyCommand): Promise<OrderPackingView> {
@@ -50,7 +52,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     // L'instant vient de la COMMANDE — donc du fait constaté au fournil — et
     // non de l'horloge d'ici. Cf. `MarkOrderReadyCommand.at`.
     const at = command.at;
-    const won = await this.repository.markReady(command.reference, at, command.staffSubject);
+    const won = await this.repository.markReady(command.reference, at, command.staffUserId);
     if (!won) {
       // Perdu la course : un autre poste a scanné la même feuille entre notre
       // lecture et notre écriture. On ne réécrit rien — le colisage de l'autre
@@ -67,11 +69,14 @@ export class MarkOrderReadyHandler implements ICommandHandler<
         order.orderId,
         order.orderNumber,
         order.placedByUserId,
-        command.staffSubject,
+        command.staffUserId,
         at,
       ),
     );
 
-    return toPackingView({ ...order, status: "ready", readyAt: at, readyBy: command.staffSubject });
+    return toPackingView(
+      { ...order, status: "ready", readyAt: at, readyBy: command.staffUserId },
+      await this.staffAuthors.identify([command.staffUserId]),
+    );
   }
 }

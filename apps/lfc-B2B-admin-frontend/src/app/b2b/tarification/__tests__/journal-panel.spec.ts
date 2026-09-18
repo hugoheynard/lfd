@@ -29,6 +29,7 @@ function entry(overrides: Partial<PricingJournalEntryView> = {}): PricingJournal
     subjectId: 'rule_1',
     act: 'paused',
     actor: 'auth0|marc',
+    actorName: null,
     occurredAt: '2026-08-12T14:05:00.000Z',
     reason: null,
     summary: 'Promotion « Promo de rentrée » · −10 % · tout le catalogue, tous clients',
@@ -82,7 +83,14 @@ describe('lire le journal', () => {
   });
 
   it("nomme l'auteur de l'acte", async () => {
-    expect(await settled(mount([entry()]))).toContain('auth0|marc');
+    const text = await settled(mount([entry({ actorName: 'Marc Dupont' })]));
+
+    expect(text).toContain('par Marc Dupont');
+    expect(text).not.toContain('auth0|marc');
+  });
+
+  it('garde la valeur brute quand elle ne désigne personne', async () => {
+    expect(await settled(mount([entry({ actor: 'system' })]))).toContain('par system');
   });
 
   /**

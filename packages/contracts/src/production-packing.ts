@@ -131,7 +131,20 @@ export interface PackingSheet {
   readonly canDeclareReady: boolean;
   /** `null` = le bac n'est pas fermé. */
   readonly packedAt: string | null;
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `packedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly packedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `packedBy` tel quel.
+   */
+  readonly packedByName: string | null;
 }
 
 /**

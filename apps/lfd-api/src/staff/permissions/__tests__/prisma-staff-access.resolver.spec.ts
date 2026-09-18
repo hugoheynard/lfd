@@ -33,6 +33,8 @@ interface Recorder {
   readonly prisma: object;
   readonly lookups: string[];
   readonly updates: { id: string; auth0Id?: string; status: string }[];
+  /** Les lignes inscrites dans la table des `sub`. */
+  readonly aliases: { sub: string; staffUserId: string; source: string }[];
 }
 
 /**
@@ -61,7 +63,18 @@ function fakePrisma(
 ): Recorder {
   const lookups: string[] = [];
   const updates: { id: string; auth0Id?: string; status: string }[] = [];
+  const aliases: { sub: string; staffUserId: string; source: string }[] = [];
   const prisma = {
+    // La forme CALLBACK : le fake se passe lui-même comme client de transaction.
+    $transaction: <T>(work: (tx: object) => Promise<T>): Promise<T> => work(prisma),
+    staffSubjectAlias: {
+      createMany: (args: {
+        data: { sub: string; staffUserId: string; source: string };
+      }): Promise<{ count: number }> => {
+        aliases.push(args.data);
+        return Promise.resolve({ count: 1 });
+      },
+    },
     staffUser: {
       findUnique: (args: {
         where: { auth0Id?: string; email?: string };
@@ -86,7 +99,7 @@ function fakePrisma(
       },
     },
   };
-  return { prisma, lookups, updates };
+  return { prisma, lookups, updates, aliases };
 }
 
 function row(overrides: Partial<StaffRow> = {}): StaffRow {
@@ -170,11 +183,14 @@ describe("PrismaStaffAccessResolver — 🔴 une adresse ne vole pas une fiche",
 
   it("refuse la seconde de deux premières connexions simultanées", async () => {
     // La fiche était libre à la lecture, et liée par l'autre à l'écriture.
-    const { prisma } = fakePrisma(null, row({ status: "pending" }), true);
+    const { prisma, aliases } = fakePrisma(null, row({ status: "pending" }), true);
 
     const access = await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
 
     expect(access).toBeNull();
+    // Le `sub` perdant n'est pas celui de cette fiche : l'inscrire lui
+    // attribuerait les actes d'un autre (plan `plan-l-auteur-est-la-fiche.md`, D5).
+    expect(aliases).toEqual([]);
   });
 
   it("traite une vérification inconnue comme un refus", async () => {
@@ -225,6 +241,16 @@ describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
     expect(access?.role).toBe("comptabilite");
   });
 
+  it("inscrit le `sub` lié dans la table des `sub`, avec la liaison", async () => {
+    // `auth0_id` ne garde que le dernier `sub` d'une fiche ; la table les garde
+    // tous, pour que l'histoire écrite sous un ancien reste à la personne.
+    const { prisma, aliases } = fakePrisma(null, row({ status: "pending" }));
+
+    await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
+
+    expect(aliases).toEqual([{ sub: TOKEN.subject, staffUserId: "s1", source: "linked" }]);
+  });
+
   it("active une fiche invitée déjà liée, sans toucher au lien", async () => {
     const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "invited" }));
 
@@ -236,11 +262,14 @@ describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
   it("n'écrit rien quand la fiche est déjà liée et active", async () => {
     // Une écriture par requête serait un coût permanent pour un fait qui ne
     // bouge qu'une fois.
-    const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "active" }));
+    const { prisma, updates, aliases } = fakePrisma(
+      row({ auth0Id: TOKEN.subject, status: "active" }),
+    );
 
     await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
 
     expect(updates).toEqual([]);
+    expect(aliases).toEqual([]);
   });
 
   it("applique les dérogations par-dessus le rôle", async () => {

@@ -170,7 +170,10 @@ export interface ResolvedActivityContext {
   readonly now: Date;
   readonly traceId: string;
   readonly actorType: ActivityActorType;
-  /** Le `sub` staff ou l'id client — `null` pour `system` (cron, boot). */
+  /**
+   * L'id de fiche staff ou l'id client — `null` pour `system` (cron, boot).
+   * Les faits staff écrits avant le 2026-09-18 portent un `sub` Auth0.
+   */
   readonly actorId: string | null;
   /**
    * Instantané du nom au moment de l'acte, `null` quand l'annuaire ne connaît

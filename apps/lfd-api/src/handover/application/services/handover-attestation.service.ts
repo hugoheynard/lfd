@@ -9,7 +9,8 @@ import { OrderHandover } from "../../domain/entities/order-handover.js";
 import { HandoverRefusedError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import type { HandoverVia } from "../../domain/services/handover.js";
-import { toHandoverView } from "../queries/get-handover.handler.js";
+import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
+import { authorsOf, toHandoverView } from "../queries/get-handover.handler.js";
 
 /**
  * **Graver un retrait** — le geste commun au scan et à la saisie.
@@ -34,6 +35,7 @@ export class HandoverAttestation {
     private readonly handovers: OrderHandoverRepository,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   /**
@@ -91,7 +93,7 @@ export class HandoverAttestation {
     // base en porte exactement une.
     this.events.publish(new OrderHandedOverEvent(handover.reference, at, by, via));
 
-    return toHandoverView(subject, handover);
+    return toHandoverView(subject, handover, await authorsOf(this.staffAuthors, handover));
   }
 
   /**

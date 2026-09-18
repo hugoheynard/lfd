@@ -284,7 +284,20 @@ export interface PriceRuleView {
   readonly stacksOverMercuriale: boolean;
   readonly validFrom: string;
   readonly validTo: string | null;
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly createdBy: string;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `createdBy` tel quel.
+   */
+  readonly createdByName: string | null;
   readonly createdAt: string;
   /**
    * Où en est la décision — cf. {@link ruleStatusSchema}.
@@ -296,10 +309,36 @@ export interface PriceRuleView {
   readonly status: RuleStatus;
   /** Quand, et par qui, elle a été suspendue. `null` = elle ne l'est pas. */
   readonly pausedAt: string | null;
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `pausedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly pausedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `pausedBy` tel quel.
+   */
+  readonly pausedByName: string | null;
   /** Quand, par qui, et pourquoi elle a été archivée. */
   readonly archivedAt: string | null;
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `archivedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly archivedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `archivedBy` tel quel.
+   */
+  readonly archivedByName: string | null;
   readonly archiveReason: string | null;
 }
 
@@ -407,8 +446,22 @@ export interface PricingJournalEntryView {
   readonly subjectType: PricingSubjectType;
   readonly subjectId: string;
   readonly act: PricingActKind;
-  /** Le `sub` du membre du staff, ou `system`. */
+  /**
+   * L'id de fiche du membre du staff (un `sub` avant le 2026-09-18), ou `system`.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `actorName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly actor: string;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `actor` tel quel.
+   */
+  readonly actorName: string | null;
   readonly occurredAt: string;
   readonly reason: string | null;
   readonly summary: string;
@@ -451,7 +504,20 @@ export interface PriceFloorView {
   readonly dynamic: DynamicFloorPayload | null;
   /** L'intention a-t-elle vieilli ? Cf. {@link FloorDriftView}. */
   readonly drift: FloorDriftView | null;
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly createdBy: string;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `createdBy` tel quel.
+   */
+  readonly createdByName: string | null;
   readonly updatedAt: string;
 }
 
@@ -1256,10 +1322,36 @@ export interface VolumeCommitmentView {
   readonly promisedQuantity: number;
   readonly validFrom: string;
   readonly validTo: string;
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly createdBy: string;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `createdBy` tel quel.
+   */
+  readonly createdByName: string | null;
   readonly createdAt: string;
   readonly archivedAt: string | null;
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `archivedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly archivedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `archivedBy` tel quel.
+   */
+  readonly archivedByName: string | null;
   readonly archiveReason: string | null;
   /**
    * Le volume **déjà commandé** sur la période, à l'instant de la lecture.
@@ -1415,7 +1507,20 @@ export interface PriceTemplateView {
   readonly kind: PriceTemplateKind;
   readonly label: string;
   readonly lines: readonly PriceTemplateLineView[];
+  /**
+   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly createdBy: string;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `createdBy` tel quel.
+   */
+  readonly createdByName: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly archivedAt: string | null;
@@ -1568,8 +1673,20 @@ export interface PosedMercurialeView {
    * Sur un tarif négocié, la question posée six mois plus tard est toujours
    * « qui a accordé ça ». La réponse vit déjà sur chaque règle ; elle remonte
    * ici pour être lisible sans ouvrir le journal.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
    */
   readonly createdBy: string;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `createdBy` tel quel.
+   */
+  readonly createdByName: string | null;
   /**
    * **Ce qu'elle accorde**, article par article, du moins cher au plus cher.
    *
@@ -1742,8 +1859,22 @@ export const saveMercurialeDraftPayloadSchema = z.object({
 export type SaveMercurialeDraftPayload = z.infer<typeof saveMercurialeDraftPayloadSchema>;
 
 export interface MercurialeDraftView extends SaveMercurialeDraftPayload {
-  /** Qui l'a touché en dernier — une négociation se reprend souvent à deux. */
+  /**
+   * Qui l'a touché en dernier — une négociation se reprend souvent à deux.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `updatedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly updatedBy: string;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `updatedBy` tel quel.
+   */
+  readonly updatedByName: string | null;
   readonly updatedAt: string;
 }
 

@@ -41,7 +41,7 @@ export class SaveAccountAlertOverrideHandler implements ICommandHandler<
       await this.overrides.clear(command.companyId, command.override.kind);
       return;
     }
-    await this.overrides.save(command.companyId, command.override, command.staffSub);
+    await this.overrides.save(command.companyId, command.override, command.staffUserId);
   }
 
   /** La règle proposée dit-elle exactement ce que dit déjà la plateforme ? */

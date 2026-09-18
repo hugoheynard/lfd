@@ -7,51 +7,40 @@
        colonne, la carte mobile le pose dans son coin. Deux copies auraient
        divergé au premier ajout d'action. -->
   <ng-template #rowActions let-row>
-    @if (confirmingId() === row.id) {
-      <fold-inline-confirm
-        [open]="true"
-        intent="danger"
-        message="Supprimer cet utilisateur ?"
-        (confirmed)="confirmRemove(row)"
-        (cancelled)="confirmingId.set(null)"
+    <!-- Pas de « Supprimer » : une fiche staff ne se supprime plus, le serveur
+         répond 409 (plan documentation/staff/plan-l-auteur-est-la-fiche.md,
+         §4 étape 0). Elle porte l'auteur de ce que la personne a fait ; on
+         suspend l'accès, on ne détruit pas la fiche. -->
+    <fold-dropdown
+      *appCan="'staff_access:write'"
+      placement="bottom-end"
+      ariaLabel="Actions de l'utilisateur"
+    >
+      <button
+        foldPopoverTrigger="menu"
+        type="button"
+        class="menu-trigger"
+        aria-label="Actions de l'utilisateur"
       >
-        <span hidden></span>
-      </fold-inline-confirm>
-    } @else {
-      <fold-dropdown
-        *appCan="'staff_access:write'"
-        placement="bottom-end"
-        ariaLabel="Actions de l'utilisateur"
+        <fold-icon name="more-vertical" [size]="18" />
+      </button>
+      <fold-dropdown-item icon="edit" (selected)="edit(row)">Modifier</fold-dropdown-item>
+      @if (canInvite(row)) {
+        <fold-dropdown-item icon="mail" (selected)="invite(row)">
+          {{ inviteLabel(row) }}
+        </fold-dropdown-item>
+        <!-- Le repli quand le courrier est muet — et le dépannage au téléphone. -->
+        <fold-dropdown-item icon="copy" (selected)="copyLink(row)">
+          {{ linkLabel(row) }}
+        </fold-dropdown-item>
+      }
+      <fold-dropdown-item
+        [icon]="isSuspended(row) ? 'check' : 'lock'"
+        (selected)="toggleSuspension(row)"
       >
-        <button
-          foldPopoverTrigger="menu"
-          type="button"
-          class="menu-trigger"
-          aria-label="Actions de l'utilisateur"
-        >
-          <fold-icon name="more-vertical" [size]="18" />
-        </button>
-        <fold-dropdown-item icon="edit" (selected)="edit(row)">Modifier</fold-dropdown-item>
-        @if (canInvite(row)) {
-          <fold-dropdown-item icon="mail" (selected)="invite(row)">
-            {{ inviteLabel(row) }}
-          </fold-dropdown-item>
-          <!-- Le repli quand le courrier est muet — et le dépannage au téléphone. -->
-          <fold-dropdown-item icon="copy" (selected)="copyLink(row)">
-            {{ linkLabel(row) }}
-          </fold-dropdown-item>
-        }
-        <fold-dropdown-item
-          [icon]="isSuspended(row) ? 'check' : 'lock'"
-          (selected)="toggleSuspension(row)"
-        >
-          {{ isSuspended(row) ? "Réactiver l'accès" : "Suspendre l'accès" }}
-        </fold-dropdown-item>
-        <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove(row)">
-          Supprimer
-        </fold-dropdown-item>
-      </fold-dropdown>
-    }
+        {{ isSuspended(row) ? "Réactiver l'accès" : "Suspendre l'accès" }}
+      </fold-dropdown-item>
+    </fold-dropdown>
   </ng-template>
 
   <fold-card>

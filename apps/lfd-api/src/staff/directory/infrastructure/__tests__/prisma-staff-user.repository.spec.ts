@@ -4,25 +4,21 @@ import {
   ProtectedStaffUserError,
   SelfDemotionError,
 } from "../../domain/staff-user-errors.js";
-import { ACTOR, buildRepo, fakePrisma, row } from "./fake-staff-prisma.js";
+import { ACTOR, buildRepo, fakePrisma, row, TODAY } from "./fake-staff-prisma.js";
 
-describe("PrismaStaffUserRepository — admin racine ineffaçable", () => {
-  it("refuse de supprimer l'admin racine et ne touche pas la base", async () => {
-    const { prisma, deleted } = fakePrisma(
+const SUSPEND = { status: "suspended" } as const;
+
+describe("PrismaStaffUserRepository — admin racine protégé", () => {
+  it("refuse de suspendre l'admin racine et ne touche pas la base", async () => {
+    const { prisma, updated } = fakePrisma(
       row({ id: "root", email: BOOTSTRAP_ADMIN_EMAIL, role: "admin" }),
     );
     const repo = await buildRepo(prisma);
 
-    await expect(repo.remove("root", ACTOR)).rejects.toBeInstanceOf(ProtectedStaffUserError);
-    expect(deleted).toHaveLength(0);
-  });
-
-  it("supprime un user staff ordinaire", async () => {
-    const { prisma, deleted } = fakePrisma(row());
-    const repo = await buildRepo(prisma);
-
-    await repo.remove("u1", ACTOR);
-    expect(deleted).toEqual(["u1"]);
+    await expect(repo.setStatus("root", SUSPEND, ACTOR)).rejects.toBeInstanceOf(
+      ProtectedStaffUserError,
+    );
+    expect(updated).toHaveLength(0);
   });
 
   it("ensureBootstrapAdmin crée l'admin racine s'il manque", async () => {
@@ -45,14 +41,14 @@ describe("PrismaStaffUserRepository — admin racine ineffaçable", () => {
 });
 
 describe("PrismaStaffUserRepository — les faits que la politique attend", () => {
-  it("refuse de supprimer le dernier administrateur", async () => {
+  it("refuse de suspendre le dernier administrateur", async () => {
     // Le repo ne décide pas : il compte, et la politique tranche. Le zéro ici est
     // le seul fait qui manquait avant cette tranche.
-    const { prisma, deleted } = fakePrisma(row({ role: "admin" }), 0);
+    const { prisma, updated } = fakePrisma(row({ role: "admin" }), 0);
     const repo = await buildRepo(prisma);
 
-    await expect(repo.remove("u1", ACTOR)).rejects.toBeInstanceOf(LastStaffAdminError);
-    expect(deleted).toHaveLength(0);
+    await expect(repo.setStatus("u1", SUSPEND, ACTOR)).rejects.toBeInstanceOf(LastStaffAdminError);
+    expect(updated).toHaveLength(0);
   });
 
   it("reconnaît l'auteur par l'id de sa fiche, plus par sa liaison Auth0", async () => {
@@ -62,14 +58,28 @@ describe("PrismaStaffUserRepository — les faits que la politique attend", () =
     const { prisma } = fakePrisma(row({ id: ACTOR, role: "admin", auth0Id: null }));
     const repo = await buildRepo(prisma);
 
-    await expect(repo.remove(ACTOR, ACTOR)).rejects.toBeInstanceOf(SelfDemotionError);
+    await expect(repo.setStatus(ACTOR, SUSPEND, ACTOR)).rejects.toBeInstanceOf(SelfDemotionError);
   });
 
   it("n'est plus dupe d'un `sub` égal à l'identifiant de l'auteur", async () => {
-    const { prisma, deleted } = fakePrisma(row({ role: "admin", auth0Id: ACTOR }));
+    const { prisma, updated } = fakePrisma(row({ role: "admin", auth0Id: ACTOR }));
     const repo = await buildRepo(prisma);
 
-    await repo.remove("u1", ACTOR);
-    expect(deleted).toEqual(["u1"]);
+    await repo.setStatus("u1", SUSPEND, ACTOR);
+    expect(updated.map((args) => args.where.id)).toEqual(["u1"]);
+  });
+});
+
+describe("PrismaStaffUserRepository — la table des `sub`", () => {
+  it("inscrit le `sub` d'une invitation, dans la même écriture que la liaison", async () => {
+    // `auth0_id` ne garde que le dernier `sub` ; la table les garde tous (plan
+    // `plan-l-auteur-est-la-fiche.md`, D5.1).
+    const { prisma, updated, aliases } = fakePrisma(row({ status: "pending" }));
+    const repo = await buildRepo(prisma);
+
+    await repo.markInvited("u1", "auth0|camille", TODAY);
+
+    expect(updated.map((args) => args.data["auth0Id"])).toEqual(["auth0|camille"]);
+    expect(aliases).toEqual([{ sub: "auth0|camille", staffUserId: "u1", source: "linked" }]);
   });
 });

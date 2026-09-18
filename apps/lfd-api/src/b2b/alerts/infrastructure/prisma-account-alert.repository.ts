@@ -1,4 +1,4 @@
-import { alertKindSchema, type AccountAlertView, type AlertFinding } from "@lfd/contracts";
+import { alertKindSchema, type AlertFinding } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -7,6 +7,7 @@ import { alertIdempotencyKey } from "../domain/evaluate-order.js";
 import {
   AccountAlertRepository,
   type AlertToRecord,
+  type StoredAccountAlert,
 } from "../domain/ports/account-alert.repository.js";
 
 /** Une ligne `account_alerts`, vue d'ici seulement. */
@@ -60,7 +61,7 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
     });
   }
 
-  async listForCompany(companyId: string): Promise<AccountAlertView[]> {
+  async listForCompany(companyId: string): Promise<StoredAccountAlert[]> {
     const rows = await this.prisma.accountAlert.findMany({
       where: { companyId },
       orderBy: { occurredAt: "desc" },
@@ -73,10 +74,10 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
    * Acquitter est **idempotent** et ne réécrit pas l'auteur d'origine : le `where`
    * exclut les alertes déjà acquittées. Deux clics ne changent pas qui a vu quoi.
    */
-  async acknowledge(id: string, staffSub: string, at: Date): Promise<void> {
+  async acknowledge(id: string, staffUserId: string, at: Date): Promise<void> {
     await this.prisma.accountAlert.updateMany({
       where: { id, acknowledgedAt: null },
-      data: { acknowledgedAt: at, acknowledgedBy: staffSub },
+      data: { acknowledgedAt: at, acknowledgedBy: staffUserId },
     });
   }
 
@@ -90,12 +91,12 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
   }
 }
 
-function isKnown(view: AccountAlertView | null): view is AccountAlertView {
+function isKnown(view: StoredAccountAlert | null): view is StoredAccountAlert {
   return view !== null;
 }
 
 /** `null` = type inconnu : l'alerte ne désigne plus rien qu'on sache nommer. */
-function toView(row: AlertRow): AccountAlertView | null {
+function toView(row: AlertRow): StoredAccountAlert | null {
   const kind = alertKindSchema.safeParse(row.kind);
   if (!kind.success) {
     return null;

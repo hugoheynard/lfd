@@ -32,7 +32,7 @@ export class OrderHandedOverEvent {
     readonly reference: string,
     /** L'instant du retrait, pris au port d'horloge du fournil. */
     readonly handedOverAt: Date,
-    /** L'identité staff qui a constaté (claim `sub`), figée. */
+    /** L'id de la fiche staff qui a constaté, figé. */
     readonly handedOverBy: string,
     /** `scan` ou `manual` — l'attestation forte ou l'honnête. */
     readonly via: HandoverVia,

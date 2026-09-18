@@ -9,6 +9,7 @@ import {
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.js";
 import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
@@ -67,6 +68,7 @@ export class CompanyPricingQuery {
     private readonly elasticity: BoardElasticityService,
     private readonly customerVolumes: CustomerVolumeReader,
     private readonly clock: Clock,
+    private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 
   /** @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société. */
@@ -133,6 +135,9 @@ export class CompanyPricingQuery {
       () => true,
     );
 
+    const mercurialeAuthors = await this.staffAuthors.identify(
+      mercuriales.map((mercuriale) => mercuriale.toPersistence().createdBy),
+    );
     const sealed = measured.flatMap((category) =>
       category.items.filter((item) => item.sealedByRuleId !== null),
     );
@@ -151,6 +156,7 @@ export class CompanyPricingQuery {
           // quand un article cesse d'être publié, et l'écran doit pouvoir dire
           // qu'elle ne vise plus rien.
           (sku) => names.get(sku) ?? sku,
+          mercurialeAuthors,
         ),
       ),
       negotiatedSkuCount: sealed.length,

@@ -55,6 +55,7 @@ import { mercurialeCsv, mercurialeFileName } from './mercuriale-csv';
 import { mercurialeRows, type MercurialeRowView } from './mercuriale-rows';
 import { openRoomMillicents } from './negotiation-room';
 import { businessDayStart } from '../../shared/business-day';
+import { staffAuthor } from '../../shared/staff-author';
 import {
   draftFromLines,
   draftFromView,
@@ -165,6 +166,7 @@ export class ClientTarifsPage {
   protected readonly direction = impactDirection;
   // `nativeValue` et non `$any($event.target)` : le second ment au compilateur.
   protected readonly nativeValue = nativeValue;
+  protected readonly author = staffAuthor;
   protected readonly statusLabel = POSED_MERCURIALE_STATUS_LABELS;
   protected readonly statusTone = STATUS_TONE;
 

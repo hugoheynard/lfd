@@ -68,6 +68,14 @@ export interface FakePrisma {
   readonly created: string[];
   readonly updated: UpdateArgs[];
   readonly overrideWrites: OverrideWrite[];
+  /** Les lignes inscrites dans la table des `sub`. */
+  readonly aliases: AliasRow[];
+}
+
+export interface AliasRow {
+  readonly sub: string;
+  readonly staffUserId: string;
+  readonly source: string;
 }
 
 /**
@@ -79,6 +87,7 @@ export function fakePrisma(found: Row | null, otherAdmins = 1): FakePrisma {
   const created: string[] = [];
   const updated: UpdateArgs[] = [];
   const overrideWrites: OverrideWrite[] = [];
+  const aliases: AliasRow[] = [];
   const record = (op: OverrideWrite["op"]) => (args: Record<string, unknown>) => {
     overrideWrites.push({ op, args });
     return Promise.resolve({});
@@ -103,13 +112,19 @@ export function fakePrisma(found: Row | null, otherAdmins = 1): FakePrisma {
         return Promise.resolve({ id: "created" });
       },
     },
+    staffSubjectAlias: {
+      createMany: (args: { data: AliasRow }): Promise<{ count: number }> => {
+        aliases.push(args.data);
+        return Promise.resolve({ count: 1 });
+      },
+    },
     staffPermissionOverride: {
       create: record("create"),
       update: record("update"),
       delete: record("delete"),
     },
   };
-  return { prisma, deleted, created, updated, overrideWrites };
+  return { prisma, deleted, created, updated, overrideWrites, aliases };
 }
 
 /** L'instant « du jour » que les écritures d'écart doivent porter. */

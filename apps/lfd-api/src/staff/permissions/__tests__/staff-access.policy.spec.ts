@@ -2,7 +2,6 @@ import type { StaffOverride, StaffRole } from "@lfd/contracts";
 
 import {
   assertEditAllowed,
-  assertRemovalAllowed,
   assertStatusChangeAllowed,
   type StaffMutationTarget,
 } from "../staff-access.policy.js";
@@ -51,8 +50,7 @@ describe("l'admin racine", () => {
     );
   });
 
-  it("ne peut être ni supprimé ni suspendu", () => {
-    expect(() => assertRemovalAllowed(root)).toThrow(ProtectedStaffUserError);
+  it("ne peut pas être suspendu", () => {
     expect(() => assertStatusChangeAllowed(root, "suspended")).toThrow(ProtectedStaffUserError);
   });
 
@@ -72,21 +70,20 @@ describe("le dernier administrateur", () => {
     expect(() => assertEditAllowed(alone, intent("support"))).toThrow(LastStaffAdminError);
   });
 
-  it("ne peut être ni supprimé ni suspendu", () => {
-    expect(() => assertRemovalAllowed(alone)).toThrow(LastStaffAdminError);
+  it("ne peut pas être suspendu", () => {
     expect(() => assertStatusChangeAllowed(alone, "suspended")).toThrow(LastStaffAdminError);
   });
 
   it("s'efface dès qu'un autre existe", () => {
     expect(() => assertEditAllowed(admin(), intent("support"))).not.toThrow();
-    expect(() => assertRemovalAllowed(admin())).not.toThrow();
+    expect(() => assertStatusChangeAllowed(admin(), "suspended")).not.toThrow();
   });
 
   it("ne compte pas les suspendus comme un recours", () => {
     // `otherLivingAdmins` compte les non-suspendus : quelqu'un qui n'a jamais
     // ouvert sa session reste un recours (il lui suffit de se connecter), un
     // suspendu non.
-    expect(() => assertRemovalAllowed(admin({ otherLivingAdmins: 0 }))).toThrow(
+    expect(() => assertStatusChangeAllowed(admin({ otherLivingAdmins: 0 }), "suspended")).toThrow(
       LastStaffAdminError,
     );
   });
@@ -99,7 +96,6 @@ describe("l'auto-rétrogradation", () => {
     // C'est le seul geste qu'on ne peut pas réparer soi-même : il faut alors
     // déranger quelqu'un d'autre.
     expect(() => assertEditAllowed(me, intent("commercial"))).toThrow(SelfDemotionError);
-    expect(() => assertRemovalAllowed(me)).toThrow(SelfDemotionError);
     expect(() => assertStatusChangeAllowed(me, "suspended")).toThrow(SelfDemotionError);
   });
 
@@ -111,9 +107,9 @@ describe("l'auto-rétrogradation", () => {
     // Deux causes possibles, un seul message : on dit « c'est vous », pas
     // « il n'en reste plus » — le second enverrait chercher une solution qui
     // n'est pas le problème.
-    expect(() => assertRemovalAllowed(admin({ isSelf: true, otherLivingAdmins: 0 }))).toThrow(
-      SelfDemotionError,
-    );
+    expect(() =>
+      assertStatusChangeAllowed(admin({ isSelf: true, otherLivingAdmins: 0 }), "suspended"),
+    ).toThrow(SelfDemotionError);
   });
 });
 

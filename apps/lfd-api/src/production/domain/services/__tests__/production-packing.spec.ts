@@ -80,8 +80,21 @@ function count(
   };
 }
 
+/** L'annuaire du poste : Karim est connu sous son `sub`, personne d'autre. */
+function authorName(reference: string | null): string | null {
+  return reference === "auth0|karim" ? "Karim Benali" : null;
+}
+
 function sources(overrides: Partial<PackingSources> = {}): PackingSources {
-  return { date: DATE, closedAt: CLOSED_AT, orders: [], counts: [], now: NOW, ...overrides };
+  return {
+    date: DATE,
+    closedAt: CLOSED_AT,
+    orders: [],
+    counts: [],
+    now: NOW,
+    authorName,
+    ...overrides,
+  };
 }
 
 describe("une journée qui n'est pas arrêtée", () => {
@@ -177,8 +190,27 @@ describe("les bacs", () => {
     expect(board.sheets[0]).toMatchObject({
       packedAt: PACKED.at.toISOString(),
       packedBy: "auth0|karim",
+      // Le nom, résolu par l'annuaire : l'écran ne montre plus le `sub`
+      // (plan `plan-l-auteur-est-la-fiche.md`, D3).
+      packedByName: "Karim Benali",
     });
     expect(board.sheets[0]?.lines[0]?.packed).toBe(false);
+  });
+
+  it("ne nomme pas un bac ouvert, ni un auteur que l'annuaire ignore", () => {
+    const board = packingBoardOf(
+      sources({
+        orders: [
+          sheet("CMD-0001", [line("VIE-001", "Croissant", 12)]),
+          sheet("CMD-0002", [line("VIE-001", "Croissant", 12)], { at: PACKED.at, by: "sonde" }),
+        ],
+      }),
+    );
+
+    expect(board.sheets.map((entry) => [entry.packedBy, entry.packedByName])).toEqual([
+      [null, null],
+      ["sonde", null],
+    ]);
   });
 });
 

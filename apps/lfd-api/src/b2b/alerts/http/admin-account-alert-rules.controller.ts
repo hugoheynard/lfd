@@ -19,7 +19,7 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ClearAccountAlertOverrideCommand } from "../application/commands/clear-account-alert-override.command.js";
 import { SaveAccountAlertOverrideCommand } from "../application/commands/save-account-alert-override.command.js";
@@ -54,10 +54,10 @@ export class AdminAccountAlertRulesController {
   async save(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(accountAlertOverrideSchema)) override: AccountAlertOverride,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SaveAccountAlertOverrideCommand, void>(
-      new SaveAccountAlertOverrideCommand(companyId, override, staffSub),
+      new SaveAccountAlertOverrideCommand(companyId, override, staffUserId),
     );
   }
 

@@ -13,7 +13,6 @@ import { Clock } from "../../../platform/time/clock.js";
 import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
 import {
   assertEditAllowed,
-  assertRemovalAllowed,
   assertStatusChangeAllowed,
 } from "../../permissions/staff-access.policy.js";
 import { parseStaffNavPreferences } from "../domain/staff-nav-preferences.js";
@@ -21,6 +20,7 @@ import { diffOverrides, isEmptyOverrideDiff, type OverrideDiff } from "../domain
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
 import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
 import type { StaffUserEdit, StaffUserSnapshot } from "../domain/staff-user-state.js";
+import { linkedSubject } from "./staff-subject-aliases.js";
 import {
   identityColumns,
   sameIdentity,
@@ -112,13 +112,6 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     return { before: target.snapshot, after, overrides: diff };
   }
 
-  async remove(id: string, actorId: string): Promise<StaffUserSnapshot> {
-    const target = await this.loadTarget(id, actorId);
-    assertRemovalAllowed(target.policy);
-    await this.prisma.staffUser.delete({ where: { id } });
-    return target.snapshot;
-  }
-
   async setStatus(
     id: string,
     change: StaffStatusChange,
@@ -158,16 +151,22 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     if (current === null) {
       throw new StaffUserNotFoundError(id);
     }
-    await this.prisma.staffUser.update({
-      where: { id },
-      data: {
-        auth0Id: subject,
-        invitedAt,
-        // Renvoyer un lien à quelqu'un déjà entré ne le remet pas en attente :
-        // il n'a rien perdu, il a juste oublié son mot de passe.
-        ...(current.status === "active" ? {} : { status: "invited" as const }),
-      },
-    });
+    // La liaison et sa trace dans la table des `sub` partent ensemble : un
+    // `sub` relié à une fiche ne doit plus pouvoir se perdre quand un suivant
+    // l'écrase dans `auth0_id` (plan `plan-l-auteur-est-la-fiche.md`, D5.1).
+    await this.prisma.$transaction([
+      this.prisma.staffUser.update({
+        where: { id },
+        data: {
+          auth0Id: subject,
+          invitedAt,
+          // Renvoyer un lien à quelqu'un déjà entré ne le remet pas en attente :
+          // il n'a rien perdu, il a juste oublié son mot de passe.
+          ...(current.status === "active" ? {} : { status: "invited" as const }),
+        },
+      }),
+      this.prisma.staffSubjectAlias.createMany(linkedSubject(subject, id)),
+    ]);
   }
 
   async ensureBootstrapAdmin(): Promise<void> {

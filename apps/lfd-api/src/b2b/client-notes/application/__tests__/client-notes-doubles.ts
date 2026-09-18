@@ -40,8 +40,8 @@ export class FixedStaffDirectory extends StaffDirectory {
     super();
   }
 
-  identify(subject: string): Promise<StaffIdentity | null> {
-    const name = this.names[subject];
+  identify(reference: string): Promise<StaffIdentity | null> {
+    const name = this.names[reference];
     return Promise.resolve(name === undefined ? null : { name, role: "commercial" });
   }
 }

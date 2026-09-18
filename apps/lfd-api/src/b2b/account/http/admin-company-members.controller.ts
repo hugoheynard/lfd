@@ -8,7 +8,7 @@ import {
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { InviteCompanyMemberCommand } from "../application/commands/invite-company-member.command.js";
 import { ListCompanyMembersQuery } from "../application/queries/list-company-members.query.js";
@@ -46,7 +46,7 @@ export class AdminCompanyMembersController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   invite(
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
     @Param("companyId") companyId: string,
     @Body(new ZodBody(inviteCompanyMemberPayloadSchema)) payload: InviteCompanyMemberPayload,
   ): Promise<CompanyMemberInvitedView> {
@@ -58,7 +58,7 @@ export class AdminCompanyMembersController {
         payload.lastName,
         payload.phone,
         payload.role,
-        staffSub,
+        staffUserId,
       ),
     );
   }

@@ -18,9 +18,9 @@ export const CLIENT_NOTEBOOK_MAX_NOTES = 50;
 
 /** Qui a déposé une note, figé au dépôt. */
 export interface ClientNoteAuthor {
-  /** Le `sub` du staff — il reste résolvable après un changement de nom. */
-  readonly sub: string;
-  /** Le nom ce jour-là ; vide quand l'annuaire ne connaît pas le `sub`. */
+  /** L'id de la fiche du staff — il reste résolvable après un changement de nom. */
+  readonly staffUserId: string;
+  /** Le nom ce jour-là ; vide quand l'annuaire ne connaît pas l'auteur. */
   readonly name: string;
 }
 

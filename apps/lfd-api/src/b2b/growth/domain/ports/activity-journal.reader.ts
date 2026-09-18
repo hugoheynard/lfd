@@ -6,5 +6,13 @@ import type { ActivityQuery, ActivityPageView } from "@lfd/contracts";
  * pouvoir écrire — la table est append-only, alimentée par les handlers.
  */
 export abstract class ActivityJournalReader {
-  abstract page(query: ActivityQuery): Promise<ActivityPageView>;
+  /**
+   * Une page du journal. `actorIds` élargit le filtre `query.actorId` à toutes
+   * les références de la même personne (id de fiche, `sub` actuel et anciens) ;
+   * `null` = filtre par égalité stricte.
+   */
+  abstract page(
+    query: ActivityQuery,
+    actorIds: readonly string[] | null,
+  ): Promise<ActivityPageView>;
 }

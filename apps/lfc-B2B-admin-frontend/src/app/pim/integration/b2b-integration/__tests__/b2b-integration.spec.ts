@@ -31,6 +31,7 @@ const OVERVIEW: CatalogOverviewView = {
     hash: 'empreinte-A',
     takenAt: '2026-01-01T09:00:00.000Z',
     takenBy: 'staff_1',
+    takenByName: null,
     articles: 3,
   },
   sinceLastRevision: { added: 0, removed: 0, changed: 0 },

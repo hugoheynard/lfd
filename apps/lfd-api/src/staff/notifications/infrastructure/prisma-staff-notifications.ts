@@ -1,4 +1,3 @@
-import type { StaffNotificationView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { IdGenerator } from "../../../platform/id/id-generator.js";
@@ -7,6 +6,7 @@ import {
   StaffNoticeStore,
   StaffNotificationReader,
   type StaffNotice,
+  type StoredStaffNotification,
 } from "../domain/ports/staff-notifier.js";
 
 /** Une ligne `staff_notifications`, vue d'ici seulement. */
@@ -59,7 +59,7 @@ export class PrismaStaffNotificationReader extends StaffNotificationReader {
     super();
   }
 
-  async recent(limit: number): Promise<StaffNotificationView[]> {
+  async recent(limit: number): Promise<StoredStaffNotification[]> {
     const rows = await this.prisma.staffNotification.findMany({
       orderBy: { occurredAt: "desc" },
       take: limit,
@@ -72,23 +72,23 @@ export class PrismaStaffNotificationReader extends StaffNotificationReader {
   }
 
   /** `updateMany` avec `readAt: null` : le premier lecteur fait foi. */
-  async markRead(id: string, staffSub: string, at: Date): Promise<void> {
+  async markRead(id: string, staffUserId: string, at: Date): Promise<void> {
     await this.prisma.staffNotification.updateMany({
       where: { id, readAt: null },
-      data: { readAt: at, readBy: staffSub },
+      data: { readAt: at, readBy: staffUserId },
     });
   }
 
-  async markAllRead(staffSub: string, at: Date): Promise<number> {
+  async markAllRead(staffUserId: string, at: Date): Promise<number> {
     const marked = await this.prisma.staffNotification.updateMany({
       where: { readAt: null },
-      data: { readAt: at, readBy: staffSub },
+      data: { readAt: at, readBy: staffUserId },
     });
     return marked.count;
   }
 }
 
-function toView(row: NotificationRow): StaffNotificationView {
+function toView(row: NotificationRow): StoredStaffNotification {
   return {
     id: row.id,
     kind: row.kind,

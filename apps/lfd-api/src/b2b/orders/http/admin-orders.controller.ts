@@ -31,6 +31,7 @@ import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 
 import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-principal.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   PlaceOrderForCustomerCommand,
@@ -88,12 +89,9 @@ export class AdminOrdersController {
    */
   @Post(":id/rappel-retrait")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remindHandover(
-    @Param("id") id: string,
-    @Req() request: AuthenticatedStaffRequest,
-  ): Promise<void> {
+  async remindHandover(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<SendHandoverReminderCommand, void>(
-      new SendHandoverReminderCommand(id, staffSubjectOf(request)),
+      new SendHandoverReminderCommand(id, staffUserId),
     );
   }
 
@@ -203,17 +201,4 @@ function staffUserIdOf(request: AuthenticatedStaffRequest): string {
     throw new UnauthorizedException("Identité staff absente de la requête.");
   }
   return staffUserId;
-}
-
-/**
- * L'identité staff posée par le guard. Le `?` du type l'autorise à manquer ;
- * en pratique le guard a couru avant nous, mais on refuse plutôt que d'envoyer
- * un rappel anonyme — un message part au nom de quelqu'un.
- */
-function staffSubjectOf(request: AuthenticatedStaffRequest): string {
-  const subject = request.staff?.subject;
-  if (subject === undefined || subject === "") {
-    throw new UnauthorizedException("Identité staff absente de la requête.");
-  }
-  return subject;
 }

@@ -82,9 +82,4 @@ export class StaffUsersService {
       ),
     );
   }
-
-  /** Supprime un user staff. */
-  async remove(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(`${B2B_API_BASE}/admin/staff-users/${id}`));
-  }
 }

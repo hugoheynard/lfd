@@ -41,6 +41,6 @@ export class ConfirmManualHandoverHandler implements ICommandHandler<
     if (subject === null) {
       throw new HandoverReferenceNotFoundError(command.reference);
     }
-    return this.attestation.attest(subject, command.staffSubject, "manual");
+    return this.attestation.attest(subject, command.staffUserId, "manual");
   }
 }

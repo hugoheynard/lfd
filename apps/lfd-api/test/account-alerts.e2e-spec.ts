@@ -18,7 +18,13 @@ import {
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, type CompanyStatus } from "../src/platform/database/client/client.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -248,6 +254,8 @@ describe("le journal", () => {
 
     // Deux clics ne réécrivent pas qui a vu quoi, ni quand.
     expect((await alertsOf(companyId))[0]?.acknowledgedAt).toBe(first);
+    // Et qui, c'est la fiche — plus le `sub` du jeton (plan de l'auteur, D2).
+    expect((await alertsOf(companyId))[0]?.acknowledgedBy).toBe(E2E_STAFF_ID);
   });
 
   /**

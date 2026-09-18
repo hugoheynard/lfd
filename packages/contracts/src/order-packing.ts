@@ -32,8 +32,23 @@ export interface OrderPackingView {
   readonly lines: readonly OrderHandoverLine[];
   /** ISO du colisage déjà déclaré, ou `null` s'il reste à faire. */
   readonly readyAt: string | null;
-  /** Qui l'a déclarée prête — l'identité staff figée (claim `sub`) —, ou `null`. */
+  /**
+   * Qui l'a déclarée prête — l'id de fiche staff figé (un `sub` avant le
+   * 2026-09-18) —, ou `null`.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `readyByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly readyBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `readyBy` tel quel.
+   */
+  readonly readyByName: string | null;
   /** `null` = le colisage est possible ; sinon la raison du refus, en clair. */
   readonly blockedReason: string | null;
 }

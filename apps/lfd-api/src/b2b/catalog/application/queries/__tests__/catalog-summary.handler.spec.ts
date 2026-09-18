@@ -22,6 +22,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     isHidden: false,
     isFeatured: false,
     decidedBy: null,
+    decidedByName: null,
     decidedAt: null,
     // Rien de ce qui est testé ici ne LIT cette date — mais le contrat l'exige,
     // et une date en dur dans une fixture est une bombe à retardement même

@@ -15,6 +15,6 @@ export class SaveMercurialeDraftHandler implements ICommandHandler<
   constructor(private readonly drafts: MercurialeDraftStore) {}
 
   execute(command: SaveMercurialeDraftCommand): Promise<void> {
-    return this.drafts.save(command.companyId, command.payload, command.staffSub);
+    return this.drafts.save(command.companyId, command.payload, command.staffUserId);
   }
 }

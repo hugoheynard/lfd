@@ -27,13 +27,13 @@ import type { MercurialeDraftView, SaveMercurialeDraftPayload } from "@lfd/contr
  */
 export abstract class MercurialeDraftStore {
   /** Le brouillon en cours, ou `null` — il n'y en a jamais eu, ou il est posé. */
-  abstract forCompany(companyId: string): Promise<MercurialeDraftView | null>;
+  abstract forCompany(companyId: string): Promise<StoredMercurialeDraft | null>;
 
   /** Enregistre — remplace ce qui s'y trouvait. */
   abstract save(
     companyId: string,
     payload: SaveMercurialeDraftPayload,
-    staffSub: string,
+    staffUserId: string,
   ): Promise<void>;
 
   /**
@@ -43,3 +43,10 @@ export abstract class MercurialeDraftStore {
    */
   abstract discard(companyId: string): Promise<void>;
 }
+
+/**
+ * Le brouillon tel que la base le garde : la vue, sans le nom de son dernier
+ * auteur — résolu par le handler de lecture, pas par la persistance (plan
+ * `plan-l-auteur-est-la-fiche.md`, D3).
+ */
+export type StoredMercurialeDraft = Omit<MercurialeDraftView, "updatedByName">;

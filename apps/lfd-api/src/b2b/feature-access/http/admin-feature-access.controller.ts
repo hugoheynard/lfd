@@ -20,7 +20,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AddFeatureExemptionCommand } from "../application/commands/add-feature-exemption.command.js";
 import { ClearFeatureOverrideCommand } from "../application/commands/clear-feature-override.command.js";
@@ -55,10 +55,10 @@ export class AdminFeatureAccessController {
   async setOverride(
     @Param("key") key: string,
     @Body(new ZodBody(featureOverridePayloadSchema)) payload: FeatureOverridePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetFeatureOverrideCommand, void>(
-      new SetFeatureOverrideCommand(key, payload.value, staffSub),
+      new SetFeatureOverrideCommand(key, payload.value, staffUserId),
     );
   }
 
@@ -77,10 +77,10 @@ export class AdminFeatureAccessController {
   async addExemption(
     @Param("key") key: string,
     @Body(new ZodBody(featureExemptionPayloadSchema)) payload: FeatureExemptionPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<AddFeatureExemptionCommand, string>(
-      new AddFeatureExemptionCommand(key, payload.email, staffSub),
+      new AddFeatureExemptionCommand(key, payload.email, staffUserId),
     );
     return { id };
   }

@@ -5,7 +5,7 @@ import {
 } from "../feature-level-resolution.js";
 import { FeatureExemption } from "../feature-exemption.js";
 
-const AUTHOR = { sub: "staff|1", name: "Camille Admin", role: "admin" };
+const AUTHOR = { staffUserId: "staff_1", name: "Camille Admin", role: "admin" };
 const AT = new Date("2026-09-14T09:00:00.000Z");
 
 describe("resolveFeatureLevel — l'ordre de la résolution", () => {

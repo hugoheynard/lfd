@@ -1,14 +1,15 @@
 /**
  * Déclare une commande **prête** — le scan du QR de colisage.
  *
- * `staffSubject` n'est jamais dans la charge utile : il vient du `Principal`
- * résolu par le guard. Le porteur du code ne peut pas se désigner lui-même comme
- * auteur du colisage — et le code, lui, est imprimé en clair sur la feuille.
+ * `staffUserId` n'est jamais dans la charge utile : il vient de la fiche
+ * résolue par `StaffAccessGuard`. Le porteur du code ne peut pas se désigner
+ * lui-même comme auteur du colisage — et le code, lui, est imprimé en clair
+ * sur la feuille.
  */
 export class MarkOrderReadyCommand {
   constructor(
     readonly reference: string,
-    readonly staffSubject: string,
+    readonly staffUserId: string,
     /**
      * L'instant du COLISAGE, tel que le fournil l'a constaté.
      *

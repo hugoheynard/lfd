@@ -7,7 +7,7 @@ import {
 import { FeatureExemption } from "../feature-exemption.js";
 import { FeatureOverride } from "../feature-override.js";
 
-const AUTHOR = { sub: "staff|1", name: "Camille Admin", role: "admin" };
+const AUTHOR = { staffUserId: "staff_1", name: "Camille Admin", role: "admin" };
 const AT = new Date("2026-09-14T09:00:00.000Z");
 
 describe("FeatureOverride.pose — la valeur est confrontée au catalogue", () => {

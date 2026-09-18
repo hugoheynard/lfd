@@ -40,8 +40,22 @@ export interface AccountAlertView {
   readonly findings: readonly AlertFinding[];
   /** ISO, ou `null` tant que personne ne l'a prise en compte. */
   readonly acknowledgedAt: string | null;
-  /** Le `sub` staff qui l'a acquittée, ou `null`. */
+  /**
+   * L'id de fiche du staff qui l'a acquittée (un `sub` avant le 2026-09-18), ou `null`.
+   *
+   * @deprecated depuis le 2026-09-18 — afficher `acknowledgedByName`.
+   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
+   *   bascule vers l'id de fiche (plan
+   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
+   *   l'étape 5).
+   */
   readonly acknowledgedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu au serveur par l'annuaire. `null` =
+   * la valeur ne désigne aucune fiche (marqueur, `sub` jamais lié) :
+   * l'écran affiche alors `acknowledgedBy` tel quel.
+   */
+  readonly acknowledgedByName: string | null;
 }
 
 /**
