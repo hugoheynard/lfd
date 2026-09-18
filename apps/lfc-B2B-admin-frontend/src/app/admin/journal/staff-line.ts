@@ -25,7 +25,18 @@ type Payload = ActivityEventView['payload'];
 export function staffLineOf(event: ActivityEventView): StaffLine | null {
   const p = event.payload;
   const who = actorOf(event);
-  return userLine(event.type, who, p) ?? roleLine(event.type, who, p);
+  const line = userLine(event.type, who, p) ?? roleLine(event.type, who, p);
+  return line === null ? null : { ...line, sentence: `${line.sentence}${backfillMark(p)}` };
+}
+
+/**
+ * « (reprise) » au bout d'une phrase **reconstituée** après coup (plan « reprise
+ * du journal de l'annuaire », D1) : une trace attestée ne doit pas se lire
+ * comme une trace vécue. Seul `true` marque — un champ mal formé n'invente pas
+ * une reprise.
+ */
+function backfillMark(p: Payload): string {
+  return p['backfilled'] === true ? ' (reprise)' : '';
 }
 
 function userLine(type: string, who: string, p: Payload): StaffLine | null {
@@ -91,11 +102,23 @@ function roleLine(type: string, who: string, p: Payload): StaffLine | null {
 }
 
 /**
+ * L'auteur sans nom, dit par sa NATURE. Un `Record` exhaustif : une nature
+ * ajoutée au contrat ne compile pas tant qu'elle n'a pas sa tournure ici.
+ * Avant ce repli, tout auteur sans nom devenait « Un membre de l'équipe »,
+ * y compris le système qui a créé l'admin racine (plan « reprise », D5).
+ */
+const UNNAMED_ACTORS: Readonly<Record<ActivityEventView['actorType'], string>> = {
+  staff: 'Un membre de l’équipe',
+  system: 'Le système',
+  customer: 'Un client',
+};
+
+/**
  * L'auteur, tel que l'adaptateur l'a figé. S'il manque, sa NATURE — jamais le
  * `sub` ni l'id de sa fiche, qui ne diraient rien à celui qui lit.
  */
 function actorOf(event: ActivityEventView): string {
-  return optional(event.actorName) ?? 'Un membre de l’équipe';
+  return optional(event.actorName) ?? UNNAMED_ACTORS[event.actorType];
 }
 
 /** « Cécile Martin ». Un prénom seul reste un nom ; rien du tout rend `—`. */
