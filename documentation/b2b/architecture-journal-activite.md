@@ -258,4 +258,4 @@ best-effort, et par décision : le parcours du client, le chemin de commande et
 les webhooks de paiement — là, le client passe avant la mémoire.
 
 Le détail, les seuils et l'ordre :
-[`../todos/todo-journal-activite.md`](../todos/todo-journal-activite.md).
+[`../journalisation/todo-journal-activite.md`](../journalisation/todo-journal-activite.md).

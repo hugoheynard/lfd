@@ -298,28 +298,14 @@ le commit ; la porte `journal-tracked` couvre `staff/`.
 - **Le départ d'un membre et les adresses de fonction** sont en plan :
   [`../plan-depart-et-adresses-de-fonction.md`](../plan-depart-et-adresses-de-fonction.md).
 
-### Les limites de la recherche
+### Les points ouverts
 
-- **Sensible aux accents** : l'extension `unaccent` n'est pas installée, et
-  « cecile » ne trouve pas « Cécile ».
-- **Elle lit aussi les clés de la charge** : chercher « person », « label » ou
-  « changes » ramène presque tout le journal. Chercher un nom, un numéro ou un
-  libellé n'a pas ce défaut.
-- **Aucun index ne la sert** : chaque recherche parcourt la table, paginée.
-  Un index trigramme demanderait une migration — à faire le jour où le journal
-  grossit assez pour que ça se sente.
-
-### À relire
-
-- **Une fiche en attente ou invitée passée à « active » à la main** écrit
-  `staff_user.reinstated` : l'écran dit « a rétabli l'accès », approximatif pour
-  une première activation manuelle.
-- **La fonction de l'auteur n'apparaît pas** sur une ligne de l'équipe : la
-  phrase nomme l'auteur, la méta ne répète plus « par Hugo Heynard
-  (Administrateur) ».
-- **Les noms ne sont pas en gras** : la phrase est une chaîne simple.
+Les limites de la recherche (accents, clés de la charge, pas d'index) et les
+phrases à relire ont été rangées le 2026-09-18 avec tous les points de
+journalisation :
+[`../../journalisation/todo-journal-activite.md`](../../journalisation/todo-journal-activite.md) §7 et §8.
 
 ### Ouvert en TODO
 
-- [`../../todos/todo-doublon-du-journal-dans-une-transaction.md`](../../todos/todo-doublon-du-journal-dans-une-transaction.md)
+- [`../../journalisation/todo-doublon-du-journal-dans-une-transaction.md`](../../journalisation/todo-doublon-du-journal-dans-une-transaction.md)
   — un fait rejoué dans une transaction la ferait échouer au lieu d'être ignoré.

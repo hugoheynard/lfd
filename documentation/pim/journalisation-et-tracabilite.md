@@ -538,7 +538,8 @@ ORDER BY occurred_at DESC;
 ```
 
 > 🟡 **L'écran n'existe pas encore.** Les faits sont écrits et lisibles ; l'onglet
-> « Historique » de la fiche reste à faire.
+> « Historique » de la fiche reste à faire — suivi dans
+> [`../journalisation/todo-journal-activite.md`](../journalisation/todo-journal-activite.md) §9.
 
 ---
 
