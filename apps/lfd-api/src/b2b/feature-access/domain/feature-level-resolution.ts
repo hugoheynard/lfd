@@ -13,7 +13,7 @@ import {
  *
  * Délibérément PAS le `Principal` : la résolution n'a besoin que de ces deux
  * champs, et le `Principal` ne porte pas encore la preuve d'adresse (lot 2 du
- * plan `documentation/b2b/plan-inscription-pro-seule.md`).
+ * plan `documentation/auth-inscription/plan-inscription-pro-seule.md`).
  */
 export type FeatureSubject = {
   readonly email: string;

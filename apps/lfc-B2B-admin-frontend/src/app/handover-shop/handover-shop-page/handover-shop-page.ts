@@ -8,7 +8,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { HandoverQueueEntryView } from '@lfd/contracts';
+import { addDays, type HandoverQueueEntryView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldElementTitleComponent,
@@ -44,6 +44,20 @@ import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-di
 import { AdminOrdersService } from '../../commandes/orders.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/**
+ * « samedi 16 août » — la journée regardée, en toutes lettres.
+ *
+ * Déclaré ICI et non repris de `production/worksheet-day.ts`, qui porte le même
+ * format : ce sont deux blocs, et le comptoir n'a pas à dépendre du fournil pour
+ * écrire une date. Trois lignes dupliquées coûtent moins qu'un import qui
+ * traverse une frontière.
+ */
+const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 
 /** `AAAA-MM-JJ` d'un instant, en heure locale — le jour tel que l'équipe le dit. */
 function isoDay(date: Date): string {
@@ -159,21 +173,45 @@ export class HandoverShopPage {
 
   protected readonly state = signal<LoadState>('loading');
   /**
-   * Le jour de service — **aujourd'hui, et rien d'autre**.
+   * Le jour de service affiché.
    *
-   * 🔴 Un sélecteur de date vivait dans la bande jusqu'au 2026-09-11. Il a été
-   * retiré : un comptoir travaille sur le jour qu'il est en train de vivre, et
-   * l'offrir en tête d'écran mettait à portée du doigt le seul geste qui peut
-   * faire tendre un sac en croyant être un autre jour.
+   * ## L'histoire de ce champ, parce qu'elle explique sa forme
    *
-   * ⚠️ Ce qui part avec lui, et qui n'est PAS remplacé : relire la file d'hier
-   * pour régler une contestation. Le besoin est réel — il est écrit dans cette
-   * page — mais il appartient à une recherche de commande, pas à une file de
-   * service. Un signal plutôt qu'une constante parce que la journée bascule sur
-   * un poste qui reste ouvert la nuit, et parce que l'écran qui rendra ce jour
-   * lira une route.
+   * Un sélecteur de date vivait dans la bande jusqu'au **2026-09-11**, puis il a
+   * été retiré, avec une raison qui reste vraie : « un comptoir travaille sur le
+   * jour qu'il est en train de vivre, et l'offrir en tête d'écran mettait à
+   * portée du doigt le seul geste qui peut faire tendre un sac en croyant être
+   * un autre jour ». Ce retrait laissait un besoin ouvert, et la page le disait
+   * elle-même — relire la file d'hier pour régler une contestation.
+   *
+   * 🔴 **La navigation revient le 2026-09-17** (Hugo), et le garde-fou avec
+   * elle : ce n'est plus un calendrier — deux flèches, un jour à la fois — et
+   * l'écran **crie** dès qu'on n'est pas sur aujourd'hui ({@link isToday}). Le
+   * risque nommé en septembre n'était pas le déplacement, c'était de ne pas
+   * savoir où l'on est ; un sélecteur muet le permettait, une bande qui affiche
+   * « VOUS N'ÊTES PAS SUR AUJOURD'HUI » ne le permet plus.
    */
   protected readonly day = signal<string>(isoDay(new Date()));
+
+  /**
+   * Suit-on l'horloge, ou consulte-t-on une autre journée ?
+   *
+   * 🔴 **C'est ce drapeau qui empêche la bascule de minuit d'annuler un geste.**
+   * L'horloge de comptoir remet la file sur le jour courant toutes les trente
+   * secondes ; sans distinguer les deux situations, quelqu'un qui ouvre la
+   * veille pour une contestation se ferait ramener à aujourd'hui en une
+   * demi-minute, sans comprendre pourquoi. On ne suit l'horloge que tant que
+   * personne n'a demandé autre chose — et {@link backToToday} y ramène.
+   */
+  private readonly followingClock = signal<boolean>(true);
+
+  /** Sommes-nous sur la journée en cours ? La bande en dépend entièrement. */
+  protected readonly isToday = computed(() => this.day() === isoDay(this.now()));
+
+  /** « samedi 16 août » — la journée regardée, écrite en toutes lettres. */
+  protected readonly dayLabel = computed(() =>
+    DAY_LABEL.format(new Date(`${this.day()}T00:00:00`)),
+  );
   private readonly entries = signal<readonly HandoverQueueEntryView[]>([]);
 
   /**
@@ -322,7 +360,10 @@ export class HandoverShopPage {
       const instant = new Date();
       this.now.set(instant);
       const today = isoDay(instant);
-      if (today !== this.day()) {
+      // ⚠️ **Seulement si l'on suit l'horloge.** Sinon cette ligne annulerait,
+      // au plus tard trente secondes après, le geste de quelqu'un venu relire
+      // la veille — et l'écran sauterait sous ses doigts sans rien expliquer.
+      if (this.followingClock() && today !== this.day()) {
         this.day.set(today);
         this.clearSelection();
       }
@@ -411,6 +452,35 @@ export class HandoverShopPage {
     } finally {
       this.reminding.set(null);
     }
+  }
+
+  /**
+   * **Change de journée**, d'un jour à la fois.
+   *
+   * Deux flèches et non un calendrier : au comptoir, le besoin est « la veille »
+   * ou « demain », et un champ de date ouvre la porte à un saut de trois
+   * semaines qu'on ne relit pas. La sélection tombe — le sac ouvert appartenait
+   * à la journée qu'on quitte — et la recherche aussi, pour la raison écrite
+   * dans {@link onTab} : un terme qui survit laisse une file amputée sous un
+   * onglet qu'on vient d'ouvrir.
+   */
+  protected shiftDay(days: number): void {
+    const target = addDays(this.day(), days);
+    // On ne « suit l'horloge » que si le geste ramène exactement sur le jour
+    // courant : revenir à aujourd'hui par la flèche doit rendre à l'écran son
+    // comportement de comptoir, bascule de minuit comprise.
+    this.followingClock.set(target === isoDay(this.now()));
+    this.day.set(target);
+    this.clearSelection();
+    this.query.set('');
+  }
+
+  /** Revient au jour de service, et **rend la main à l'horloge**. */
+  protected backToToday(): void {
+    this.followingClock.set(true);
+    this.day.set(isoDay(this.now()));
+    this.clearSelection();
+    this.query.set('');
   }
 
   /** Referme le rail. Il reste à l'écran, vide — rien ne disparaît. */

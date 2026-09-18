@@ -8,6 +8,29 @@
   </p>
 </div>
 
+<!-- 🔴 LE PANNEAU D'ENTRÉE (Hugo, 2026-09-17 : « le même panel que Sushi
+     Shop »). Le fournisseur d'abord, l'e-mail ensuite : un clic suffit à qui a
+     un compte Google, et le formulaire reste là pour les autres.
+     Aucun rattachement : une adresse Google déjà portée par un compte est
+     refusée par l'API, pas doublée (plan `plan-connexion-sociale.md`). -->
+<div class="social">
+  <button
+    foldButton
+    class="social-button"
+    emphasis="outline"
+    intent="neutral"
+    size="lg"
+    type="button"
+    [block]="true"
+    (click)="wantsGoogle.emit()"
+  >
+    <img class="social-logo" src="brand/google-g.svg" alt="" width="20" height="20" />
+    {{ t().signup.google }}
+  </button>
+</div>
+
+<app-rule-ou />
+
 <fold-card class="signup">
   <form class="form" [class.folded]="!expanded()" (submit)="$event.preventDefault(); submit()">
     <p class="pitch">{{ t().signup.pitch }}</p>

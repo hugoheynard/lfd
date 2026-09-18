@@ -16,10 +16,24 @@ import type { OrdersCopy } from './screens/orders.copy';
 
 export interface ClientCopy {
   readonly chrome: {
+    /** L'avis après une connexion Google refusée : un compte porte déjà l'adresse. */
+    readonly identityConflict: string;
+    readonly identityConflictDismiss: string;
     readonly back: string;
     readonly menu: string;
     readonly notifications: string;
     readonly lang: string;
+
+    /**
+     * L'entrée du VISITEUR, dans la barre : se connecter, et la porte d'à côté
+     * pour qui n'a pas encore de compte.
+     *
+     * 🔴 Elle ne paraît qu'à un visiteur non reconnu. Un client déjà connecté a
+     * son menu de personne au même endroit — lui proposer de se connecter
+     * serait lui dire qu'il ne l'est pas.
+     */
+    readonly signIn: string;
+    readonly createAccount: string;
     readonly kickerWelcome: string;
     readonly kickerRappel: string;
     readonly kickerCommande: string;
@@ -141,6 +155,8 @@ export interface ClientCopy {
     readonly address: string;
   };
   readonly signup: {
+    /** Le bouton du fournisseur — le libellé qu'imposent ses règles de marque. */
+    readonly google: string;
     readonly eyebrow: string;
     readonly alreadyLead: string;
     readonly alreadyLink: string;
@@ -351,6 +367,41 @@ export interface ClientCopy {
     readonly payHint: string;
     readonly browse: string;
     readonly back: string;
+    /**
+     * L'invite qui remplace le règlement tant qu'on ne sait pas QUI commande.
+     *
+     * Elle ne paraît que pour un visiteur — jamais pendant que la session se
+     * résout, sans quoi elle clignoterait devant un client déjà connecté.
+     */
+    readonly whoTitle: string;
+    readonly whoHint: string;
+    /** La porte de qui n'a pas de compte. */
+    readonly whoRegister: string;
+    /** La porte de qui en a un. */
+    readonly whoSignIn: string;
+    /**
+     * **La saisie d'un visiteur sans compte** — le dialogue « Qui commande ? ».
+     *
+     * L'adresse s'y écrit DEUX fois, et ce n'est pas de la cérémonie : le QR de
+     * retrait part par courriel, et un visiteur n'a pas d'espace où le
+     * retrouver. C'est la seule barrière avant un envoi irréversible.
+     */
+    readonly guestTitle: string;
+    readonly guestSubtitle: string;
+    readonly guestFirstName: string;
+    /** Pourquoi le prénom suffit : c'est lui qu'on appelle au comptoir. */
+    readonly guestFirstNameHint: string;
+    readonly guestEmail: string;
+    readonly guestEmailHint: string;
+    /** Le second champ, celui qui empêche la faute de frappe. */
+    readonly guestEmailAgain: string;
+    /** Dit pendant la frappe, jamais au clic. */
+    readonly guestEmailMismatch: string;
+    readonly guestPhone: string;
+    /** Le téléphone est requis : c'est le seul recours si l'adresse est fausse. */
+    readonly guestPhoneHint: string;
+    readonly guestCancel: string;
+    readonly guestConfirm: string;
   };
   /** L'écran du **QR de retrait** — celui que le client présente au comptoir. */
   readonly qr: {

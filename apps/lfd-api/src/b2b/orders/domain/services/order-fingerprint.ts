@@ -1,6 +1,25 @@
 import { createHash } from "node:crypto";
 
-import type { PlaceOrderPayload } from "@lfd/contracts";
+import type { BillingAddressPayload, FulfillmentMethod } from "@lfd/contracts";
+
+/**
+ * **Ce dont l'empreinte est faite** — et donc tout ce que cette fonction lit.
+ *
+ * Un type structurel plutôt que `PlaceOrderPayload` : les deux surfaces de
+ * passation portent le même panier sans porter le même contrat — la publique
+ * n'a ni `settlement` ni société, et en ajouterait-on une troisième qu'elle
+ * décrirait encore le même acheminement. Nommer les champs lus plutôt qu'un
+ * payload entier est aussi ce qui rend visible la règle du dessous : ce qui
+ * n'est pas ici ne compte pas dans l'empreinte.
+ */
+export interface OrderFingerprintMaterial {
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly pickupAddressId: string | null;
+  readonly deliveryAddressId: string | null;
+  readonly deliveryAddress: BillingAddressPayload | null;
+  readonly requestedDeliveryDate: string;
+  readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
+}
 
 /**
  * **L'empreinte de ce qui a été demandé** — ce qui distingue un rejeu d'une
@@ -29,7 +48,10 @@ import type { PlaceOrderPayload } from "@lfd/contracts";
  * table une seconde copie des commandes — avec ses adresses et ses quantités —
  * pour un besoin qui tient en 64 caractères.
  */
-export function orderFingerprint(payload: PlaceOrderPayload, companyId: string | null): string {
+export function orderFingerprint(
+  payload: OrderFingerprintMaterial,
+  companyId: string | null,
+): string {
   const lines = [...payload.lines]
     .map((line) => `${line.sku}:${String(line.quantity)}`)
     .sort((a, b) => a.localeCompare(b));

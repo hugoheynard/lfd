@@ -6,6 +6,7 @@ import type { CustomerRole } from "../../../platform/database/client/client.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { PrincipalResolver } from "../../../platform/auth/principal.resolver.js";
 import type { Principal, VerifiedToken } from "../../../platform/auth/principal.js";
+import { SocialSignInAccountExistsError } from "../domain/errors/account-errors.js";
 
 /** La personne + ses rattachements, réduits à ce que la résolution lit. */
 interface ResolvedUser {
@@ -113,6 +114,39 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     return { ...user, ...facts };
   }
 
+  /**
+   * 🔴 **Pas de second compte pour une connexion sociale** sous une adresse
+   * qu'un compte connectable porte déjà (cf. {@link SocialSignInAccountExistsError}).
+   *
+   * Réservé aux sujets **qui ne viennent pas de la base de données** Auth0.
+   * Celle-ci refuse déjà une seconde inscription sous la même adresse ; un
+   * `auth0|…` inconnu sous une adresse connue est donc un compte dont le sujet a
+   * vieilli (identité recréée chez Auth0), et le refuser l'enfermerait dehors
+   * sans geste de sortie. Il garde le comportement d'avant.
+   *
+   * ⚠️ Le préfixe du sujet est lu ici, et c'est assumé : il ne sert qu'à
+   * REFUSER. Un format d'identifiant n'est pas un contrat, mais s'il changeait,
+   * l'effet serait de laisser passer un doublon — le comportement d'hier —,
+   * jamais d'ouvrir un accès.
+   *
+   * La comparaison est refaite en mémoire : `mode: "insensitive"` compile en
+   * `ILIKE` sans échapper `_` ni `%` (constaté le 2026-09-14, Prisma 7.8).
+   */
+  private async refuseSecondAccount(token: VerifiedToken): Promise<void> {
+    const email = token.email?.trim() ?? "";
+    if (token.subject.startsWith(DATABASE_SUBJECT_PREFIX) || email === "") {
+      return;
+    }
+    const candidates = await this.prisma.user.findMany({
+      where: { auth0Sub: { not: null }, email: { equals: email, mode: "insensitive" } },
+      select: { email: true },
+    });
+    const target = normalizeEmail(email);
+    if (candidates.some((candidate) => normalizeEmail(candidate.email) === target)) {
+      throw new SocialSignInAccountExistsError();
+    }
+  }
+
   /** La personne d'`auth0Sub`, rattachements inclus, ou `null`. */
   private findBySub(subject: string): Promise<ResolvedUser | null> {
     return this.prisma.user.findUnique({
@@ -130,6 +164,7 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
    * d'`auth0Sub` ; on retombe alors sur le re-lookup.
    */
   private async provision(token: VerifiedToken): Promise<ResolvedUser> {
+    await this.refuseSecondAccount(token);
     let createdHere = false;
     try {
       await this.prisma.user.create({
@@ -180,6 +215,13 @@ function tokenProvesAddress(token: VerifiedToken, storedEmail: string): boolean 
     normalizeEmail(token.email) === normalizeEmail(storedEmail)
   );
 }
+
+/**
+ * Le préfixe des sujets de la connexion **base de données** d'Auth0
+ * (`lfc-b2b-customers`) — `auth0|…`. Les connexions sociales en portent un
+ * autre (`google-oauth2|…`, `facebook|…`, `apple|…`).
+ */
+const DATABASE_SUBJECT_PREFIX = "auth0|";
 
 /** Forme de comparaison d'une adresse : la casse et les blancs ne font pas une autre adresse. */
 function normalizeEmail(raw: string): string {

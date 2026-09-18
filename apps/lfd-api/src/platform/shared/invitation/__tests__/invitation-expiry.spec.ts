@@ -1,3 +1,4 @@
+import { PASSWORD_TICKET_TTL_SECONDS } from "../../../identity/auth0-identity.gateway.js";
 import {
   INVITATION_LIFETIME_DAYS,
   invitationExpiresAt,
@@ -55,6 +56,18 @@ describe("invitationExpiresAt", () => {
     const expected = new Date(INVITED_AT.getTime() + INVITATION_LIFETIME_DAYS * DAY_MS);
 
     expect(invitationExpiresAt(INVITED_AT).toISOString()).toBe(expected.toISOString());
+  });
+
+  /**
+   * Régression : l'écran déclarait une invitation valable 14 jours, alors que le
+   * lien qu'elle porte meurt au bout de 7 chez Auth0 — et les e-mails le disent.
+   * Du 8ᵉ au 14ᵉ jour, la fiche affichait « invitée » sur un lien mort
+   * (corrigé le 2026-09-18).
+   */
+  it("expire à la seconde où son lien de mot de passe meurt", () => {
+    const linkDiesAt = new Date(INVITED_AT.getTime() + PASSWORD_TICKET_TTL_SECONDS * 1000);
+
+    expect(invitationExpiresAt(INVITED_AT).toISOString()).toBe(linkDiesAt.toISOString());
   });
 
   it("ne mute pas la date qu'on lui donne", () => {

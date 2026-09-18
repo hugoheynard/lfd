@@ -5,7 +5,7 @@
 > fermée**. Mise en œuvre phasée :
 > [`todos/todo-commercial-acquisition.md`](../todos/todo-commercial-acquisition.md).
 > Étage client (sociétés) :
-> [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md).
+> [`../auth-inscription/architecture-compte-client-cycle-de-vie.md`](../auth-inscription/architecture-compte-client-cycle-de-vie.md).
 >
 > **v3 (post-review adversariale)** — retire deux faux garde-fous de la v2
 > (« zéro écriture », « pas de ML ») remplacés par : **journal d'événements dès le

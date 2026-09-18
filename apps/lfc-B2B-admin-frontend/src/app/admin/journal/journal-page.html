@@ -40,20 +40,31 @@
     <ol class="jr-list">
       @for (line of lines(); track line.event.id) {
         <li class="jr-row">
+          <!-- Un fait de l'équipe a un TITRE (le geste) au-dessus de sa phrase ;
+               les autres n'ont que leur phrase, en tête de ligne. -->
           <div class="jr-head">
-            <span class="jr-sentence">{{ line.sentence }}</span>
-            @if (line.event.module; as m) {
-              <fold-badge [content]="m" variant="neutral" />
+            @if (line.title) {
+              <span class="jr-title">{{ line.title }}</span>
+            } @else {
+              <span class="jr-sentence">{{ line.sentence }}</span>
+            }
+            @if (line.moduleLabel) {
+              <fold-badge [content]="line.moduleLabel" variant="neutral" />
             }
           </div>
+          @if (line.title) {
+            <span class="jr-sentence">{{ line.sentence }}</span>
+          }
           <!-- La seconde ligne : quand, par qui, pour qui. Elle se lit comme
                une phrase — « 21 août 2026 à 14:32, par Hugo Heynard
                (Commercial) pour Boulangerie Martin (SARL MARTIN) ». -->
           <p class="jr-meta">
             <span>{{ line.when }}</span>
-            <span
-              >, par <span class="jr-actor">{{ line.actor }}</span></span
-            >
+            @if (!line.sentenceNamesActor) {
+              <span
+                >, par <span class="jr-actor">{{ line.actor }}</span></span
+              >
+            }
             @if (line.forWhom) {
               <span>
                 pour <span class="jr-actor">{{ line.forWhom }}</span>

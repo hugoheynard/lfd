@@ -21,7 +21,7 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ListStaffUsersQuery } from "../application/list-staff-users.query.js";
 import { SetStaffStatusCommand } from "../application/set-staff-status.command.js";
@@ -56,10 +56,10 @@ export class AdminStaffUsersController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body(new ZodBody(staffUserPayloadSchema)) payload: StaffUserPayload,
-    @StaffSub() actorSub: string,
+    @StaffUserId() actorId: string,
   ): Promise<CreatedStaffUserResponse> {
     const id = await this.commands.execute<CreateStaffUserCommand, string>(
-      new CreateStaffUserCommand(payload, actorSub),
+      new CreateStaffUserCommand(payload, actorId),
     );
     return { id };
   }
@@ -69,10 +69,10 @@ export class AdminStaffUsersController {
   async update(
     @Param("id") id: string,
     @Body(new ZodBody(staffUserPayloadSchema)) payload: StaffUserPayload,
-    @StaffSub() actorSub: string,
+    @StaffUserId() actorId: string,
   ): Promise<void> {
     await this.commands.execute<UpdateStaffUserCommand, void>(
-      new UpdateStaffUserCommand(id, payload, actorSub),
+      new UpdateStaffUserCommand(id, payload, actorId),
     );
   }
 
@@ -85,10 +85,10 @@ export class AdminStaffUsersController {
   async setStatus(
     @Param("id") id: string,
     @Body(new ZodBody(staffStatusChangeSchema)) change: StaffStatusChange,
-    @StaffSub() actorSub: string,
+    @StaffUserId() actorId: string,
   ): Promise<void> {
     await this.commands.execute<SetStaffStatusCommand, void>(
-      new SetStaffStatusCommand(id, change, actorSub),
+      new SetStaffStatusCommand(id, change, actorId),
     );
   }
 
@@ -109,17 +109,17 @@ export class AdminStaffUsersController {
   // rien dire, et l'écran annonçait donc un envoi qu'il n'avait pas constaté.
   @Post(":id/invitation")
   @HttpCode(HttpStatus.OK)
-  invite(@Param("id") id: string, @StaffSub() actorSub: string): Promise<StaffInvited> {
+  invite(@Param("id") id: string, @StaffUserId() actorId: string): Promise<StaffInvited> {
     return this.commands.execute<InviteStaffUserCommand, StaffInvited>(
-      new InviteStaffUserCommand(id, actorSub),
+      new InviteStaffUserCommand(id, actorId),
     );
   }
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("id") id: string, @StaffSub() actorSub: string): Promise<void> {
+  async remove(@Param("id") id: string, @StaffUserId() actorId: string): Promise<void> {
     await this.commands.execute<RemoveStaffUserCommand, void>(
-      new RemoveStaffUserCommand(id, actorSub),
+      new RemoveStaffUserCommand(id, actorId),
     );
   }
 }

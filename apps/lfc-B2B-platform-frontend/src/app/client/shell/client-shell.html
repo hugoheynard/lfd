@@ -49,7 +49,12 @@
          représentait. -->
     <app-lang-switch [compact]="chrome.menu()" />
 
-    @if (chrome.bell()) {
+    <!-- 🔴 La cloche exige le CLIENT RECONNU, en plus de la demande d'écran.
+         `chrome.bell()` dit qu'un écran en pose une ; il ne dit pas qu'il y a
+         quelqu'un à notifier. Un visiteur voyait donc une cloche qui ne
+         pouvait rien lui annoncer — et dont le geste mène à un espace où il
+         n'est pas. Ce qui se notifie appartient à un compte. -->
+    @if (chrome.bell() && recognised()) {
       <button class="bell" type="button" [attr.aria-label]="bellLabel()" (click)="openBell()">
         <fold-icon name="bell" />
         @if (chrome.bellCount(); as count) {
@@ -60,22 +65,59 @@
 
     <!-- Le panier vit ICI et plus dans le menu : une quantité qui change en
          permanence appartient au chrome permanent, pas à une liste qu'on
-         parcourt. Il ne paraît qu'à un client reconnu — la même condition que
-         le menu, parce que c'est la même chose : avoir des affaires ici. -->
-    @if (chrome.menu()) {
-      <!-- Pas de panier là où l'on ne commande pas (plan §4) : il mènerait à
-           une garde, et le compterait sur un catalogue que rien ne demande. -->
-      @if (access.atLeast('order')) {
-        <app-client-cart-pill />
-      }
+         parcourt.
 
-      <!-- L'identité ferme la rangée. Pas de sélecteur d'espace : il n'existe
-           qu'à partir de deux espaces, et le compte n'en a qu'un — la réf
-           interdit d'ouvrir un déroulant qui ne mène nulle part. -->
-      <!-- Depuis le 2026-09-14, l'identité est un MENU : « Mon profil » et
-           « Se déconnecter » — la personne, pas la société. En pile, le menu
-           de poche porte les mêmes gestes, et ce bloc reste masqué. -->
-      <app-account-menu class="account wide-only" />
+         🔴 LE PANIER PRÉCÈDE L'ENTRÉE, et ne dépend plus du menu.
+         Il était conditionné au client reconnu, « parce que c'est la même chose :
+         avoir des affaires ici ». C'était faux pour la boutique publique : un
+         visiteur remplit un panier SANS compte — c'est la promesse de l'écran
+         d'accueil — et le sien disparaissait de la barre.
+         Ce qui reste conditionné, c'est de COMMANDER : pas de panier là où l'on
+         ne commande pas (plan §4), il mènerait à une garde. -->
+    @if (access.atLeast('order')) {
+      <app-client-cart-pill />
+    }
+
+    <!-- L'identité ferme la rangée. Pas de sélecteur d'espace : il n'existe
+         qu'à partir de deux espaces, et le compte n'en a qu'un — la réf
+         interdit d'ouvrir un déroulant qui ne mène nulle part.
+         Depuis le 2026-09-14, l'identité est un MENU : « Mon profil » et
+         « Se déconnecter » — la personne, pas la société.
+
+         🔴 **ELLE NE DÉPEND PLUS DE `chrome.menu()`** (Hugo, 2026-09-17).
+         Elle y était enfermée, et la barre devenait alors MUETTE sur l'état :
+         l'entrée du visiteur ne paraît qu'à qui n'est pas reconnu, l'identité
+         qu'aux écrans qui posent un menu — un client connecté sur un écran sans
+         menu n'avait donc ni l'une ni l'autre, et plus rien ne lui disait s'il
+         était connecté. Les deux blocs sont symétriques : `recognised()` décide,
+         et lui seul.
+
+         ⚠️ `wide-only` reste CONDITIONNÉ au menu, comme la marque juste au-dessus
+         et pour la même raison : là où un menu de poche existe, il porte déjà le
+         salut et l'identité en pile, et les répéter coûterait la place du panier.
+         Là où il n'y en a pas, l'identité doit paraître à toutes les largeurs —
+         sans quoi on aurait rendu la barre muette sur les petits écrans. -->
+    @if (recognised()) {
+      <app-account-menu class="account" [class.wide-only]="!!chrome.menu()" />
+    }
+
+    <!-- 🔴 L'ENTRÉE DU VISITEUR, au bout de la barre — la place qu'elle occupe
+         dans la référence. Elle ne paraît QU'À un visiteur non reconnu : au
+         client déjà connecté, le même coin sert son menu de personne, et lui
+         proposer de se connecter lui dirait qu'il ne l'est pas.
+         Les DEUX mènent au panneau d'entrée (`/inscription`) depuis le
+         2026-09-17 (Hugo : « le même panel que Sushi Shop en connexion ») :
+         Google d'abord, puis l'e-mail — un seul écran, qu'on ait un compte ou
+         non. Le bouton ouvrait jusque-là l'écran d'Auth0 directement, et la
+         phrase son onglet inscription, en sautant les trois champs. -->
+    @if (!recognised()) {
+      <span class="sign">
+        <a class="sign-cta" routerLink="/inscription">{{ t().chrome.signIn }}</a>
+        <a class="sign-link" routerLink="/inscription">
+          {{ t().chrome.createAccount }}
+          <span aria-hidden="true">→</span>
+        </a>
+      </span>
     }
   </div>
 
@@ -95,6 +137,28 @@
   @if (access.state() === 'failed') {
     <div class="feature-access-failed">
       <fold-callout variant="alert">{{ t().chrome.featureAccessFailed }}</fold-callout>
+    </div>
+  }
+
+  <!-- LE COMPTE QUI EXISTE DÉJÀ : une connexion Google a été refusée, parce que
+       son adresse porte un compte (plan `plan-connexion-sociale.md`). La
+       personne a été sortie ; cet avis lui dit pourquoi et par où revenir. -->
+  @if (identityConflict.pending() && !recognised()) {
+    <div class="shell-notice">
+      <fold-callout variant="warning">
+        {{ t().chrome.identityConflict }}
+        <button
+          actions
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          type="button"
+          (click)="identityConflict.dismiss()"
+        >
+          {{ t().chrome.identityConflictDismiss }}
+        </button>
+      </fold-callout>
     </div>
   }
 

@@ -98,3 +98,51 @@ export class DefaultPickupAddressSetEvent implements JournaledEvent {
     };
   }
 }
+
+/**
+ * **Le fait de l'horaire public d'un point** — plan
+ * `documentation/order/plan-creneaux-de-retrait.md`, lot A.
+ *
+ * Il se journalise pour la même raison que la remise : ce réglage décide de ce
+ * qu'un visiteur peut choisir — et une capacité posée trop serrée, un jour
+ * fermé par erreur, se lisent le lendemain comme des ventes qui n'ont pas eu
+ * lieu, sans que rien ne dise qui l'a décidé.
+ *
+ * ⚠️ Son préfixe est inscrit dans les **deux** classements du journal (serveur
+ * `growth/domain/activity-module.ts`, front `admin/journal/journal-line.ts`) :
+ * sans le premier il n'apparaît dans aucun filtre, sans le second la ligne
+ * affiche le type brut.
+ */
+export const PUBLIC_PICKUP_SCHEDULE_FACTS = {
+  updated: "public_pickup_schedule.updated",
+} as const;
+
+/**
+ * L'horaire public d'un point a été réécrit **en bloc**.
+ *
+ * La charge dit ce qu'on veut relire sans rouvrir la base : combien de plages,
+ * combien de fermetures, et si le point est désormais réglé — c'est cette
+ * dernière bascule qui change le comportement vu par un visiteur (D6).
+ */
+export class PublicPickupScheduleUpdatedEvent implements JournaledEvent {
+  constructor(
+    readonly pickupId: string,
+    readonly label: string,
+    readonly ruleCount: number,
+    readonly closureCount: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PUBLIC_PICKUP_SCHEDULE_FACTS.updated,
+      subjectType: "public_pickup_schedule",
+      subjectId: this.pickupId,
+      payload: {
+        label: this.label,
+        ruleCount: this.ruleCount,
+        closureCount: this.closureCount,
+        configured: this.ruleCount > 0,
+      },
+    };
+  }
+}

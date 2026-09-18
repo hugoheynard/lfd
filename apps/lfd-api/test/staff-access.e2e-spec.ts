@@ -5,7 +5,7 @@
  * C'est la suite qui prouve que le modèle d'accès existe pour de bon. Sans elle,
  * `@AdminSurface` serait une annotation dont on espère qu'elle sert à quelque
  * chose. Chaque cas ici correspond à une décision de
- * `documentation/b2b/architecture-acces-staff.md`.
+ * `documentation/auth-inscription/architecture-acces-staff.md`.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
@@ -239,7 +239,8 @@ describe("le mur staff — la dérogation, en vrai", () => {
         resource: "b2b_growth",
         action: "read",
         effect: "allow",
-        grantedBy: "test",
+        // Ni `grantedBy` (le `sub`, déprécié le 2026-09-18) ni auteur inventé :
+        // cette suite éprouve le mur, pas l'imputation.
       },
     });
 

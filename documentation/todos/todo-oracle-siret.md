@@ -1,7 +1,7 @@
 # TODO — `SiretAlreadyRegisteredError` dit qui est client
 
 **Statut** : 🟠 relevé le 2026-09-14, rien n'est décidé.
-**Origine** : `documentation/b2b/plan-inscription-pro-seule.md` §1.7 et §3.4.
+**Origine** : `documentation/auth-inscription/plan-inscription-pro-seule.md` §1.7 et §3.4.
 
 ## Le constat
 
@@ -16,7 +16,7 @@ l'inscription client est ouverte à tous depuis le 2026-08-27 — pour demander,
 SIRET par SIRET, « cette maison est-elle cliente de La Folie Coffee ? ».
 
 C'est exactement ce que le cycle de vie refuse pour les adresses
-(`documentation/b2b/architecture-compte-client-cycle-de-vie.md` §5) : **savoir
+(`documentation/auth-inscription/architecture-compte-client-cycle-de-vie.md` §5) : **savoir
 qui travaille avec qui est une information commerciale**, et aucune réponse
 d'API ne doit révéler l'existence d'un client.
 

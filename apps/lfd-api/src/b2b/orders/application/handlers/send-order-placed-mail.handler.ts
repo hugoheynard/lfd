@@ -1,3 +1,4 @@
+import type { PaymentStatus } from "@lfd/contracts";
 import { Inject } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
@@ -52,6 +53,25 @@ export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
     void this.work.track(this.run(event), "send-order-placed-mail");
   }
 
+  /**
+   * 🔴 **Rien ne part tant que le règlement n'est pas DÉCIDÉ** (Hugo,
+   * 2026-09-17 : « je ne veux pas que pour un paiement carte, order placed parte
+   * à la passation »).
+   *
+   * Une commande au compte est décidée dès l'écriture — il n'y a rien à
+   * encaisser, l'accusé part avec elle. Une commande par carte, non : elle est
+   * écrite `pending`, et Stripe répond après. Envoyer ici revenait à écrire
+   * « votre commande entre dans la fournée de demain matin » à quelqu'un dont la
+   * carte serait refusée trente secondes plus tard — et c'était le seul message
+   * qu'il recevait jamais.
+   *
+   * L'accusé d'une commande carte part donc sur {@link OrderPaymentSettledEvent},
+   * par le MÊME service, avec la MÊME clé d'idempotence.
+   */
+  private awaitingPayment(payment: PaymentStatus): boolean {
+    return payment === "pending";
+  }
+
   private async run(event: OrderPlacedEvent): Promise<void> {
     const [owned, recipient] = await Promise.all([
       this.orders.findById(event.orderId),
@@ -62,6 +82,11 @@ export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
     // abonné qui jette une exception sur une commande valide remplit les
     // journaux d'alertes qui ne désignent rien à corriger.
     if (owned === null || recipient === null) {
+      return;
+    }
+    // 🔴 La carte n'a pas encore répondu : l'accusé attend {@link
+    // OrderPaymentSettledEvent}. Cf. `awaitingPayment` pour la raison.
+    if (this.awaitingPayment(owned.view.paymentStatus)) {
       return;
     }
 

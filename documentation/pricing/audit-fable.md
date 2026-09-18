@@ -199,7 +199,7 @@ infrastructure/prisma-catalog.reader}.ts`,
 shop-quote.service}.ts`,
   `apps/lfc-B2B-admin-frontend/src/app/commandes/nouvelle-commande/cart.store.ts` ;
 - `dev-toolbox/gates/{money-units,clock-port,doc-references}.mjs`,
-  `documentation/ops/architecture-deploiement.md` §4.
+  `documentation/ci-cd/architecture-deploiement.md` §4.
 
 **Exécuté :** `pnpm lint:gates` (rouge, §1) ; `pnpm --filter @lfd/money test`
 (31/31) ; l'unitaire de `lfd-api` (264 suites, 2 347/2 347) ; `pnpm test` à la

@@ -242,8 +242,10 @@ function repo(sink: { placed: OrderToPlace | null }): OrderRepository {
       sink.placed = order.toPersistence();
       return Promise.resolve({ id: "order_1", orderNumber: "ORD-1" });
     },
-    markPaid: () => Promise.resolve(),
-    markPaymentFailed: () => Promise.resolve(),
+    // `null` = aucune ligne n'a franchi. Ce spec n'éprouve pas le règlement :
+    // c'est la valeur qui dit « rien à publier », pas un bouchon vide.
+    markPaid: () => Promise.resolve(null),
+    markPaymentFailed: () => Promise.resolve(null),
     markFulfilled: () => Promise.resolve(true),
     markReady: () => Promise.reject(new Error("non utilisé")),
     absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),

@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { instantToLocal, type PickupAddressView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
 } from 'fold-ng';
 
@@ -18,7 +20,15 @@ import { ClientFeatureAccess } from '../../feature-access/client-feature-access.
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { Shop } from '../shop.service';
 import { ShopStore } from '../shop.store';
-import { CartBannerCard } from '../../cart/cart-banner-card/cart-banner-card';
+import { ClientLocale } from '../../client-locale.service';
+import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
+import { serviceWhenLabel } from '../../format-day';
+import { formatHour } from '../../format-hour';
+import { ServicePoints } from '../pickup-points.store';
+import { SlotPickerDialog } from '../slot-picker-dialog/slot-picker-dialog';
+import { PublicCommandTermsSummary } from '../public-command-terms-summary/public-command-terms-summary';
+import { PublicHousePickerDialog } from '../public-house-picker-dialog/public-house-picker-dialog';
+import { PublicSteps } from '../public-steps/public-steps';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { CartPanel } from '../../cart/cart-panel/cart-panel';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
@@ -54,8 +64,9 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
   selector: 'app-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CartBannerCard,
     CartBar,
+    PublicCommandTermsSummary,
+    PublicSteps,
     CartPanel,
     ClientBannerBlock,
     ClientBannerOutlet,
@@ -83,6 +94,9 @@ export class ShopPage {
   protected readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly order = inject(OrderContextStore);
+  private readonly panels = inject(FoldPanelHostService);
+  private readonly points = inject(ServicePoints);
+  private readonly locale = inject(ClientLocale);
   private readonly orders = inject(ClientOrders);
   private readonly auth = inject(AuthFacade);
 
@@ -112,6 +126,31 @@ export class ShopPage {
   protected readonly payLabel = computed(() =>
     fill(this.t().cart.pay, { total: formatCents(this.cart.totals().totalCents) }),
   );
+
+  /**
+   * **Ce qui a été répondu**, pour le rail des étapes — la maison, puis le
+   * moment. La troisième reste `null` : on est en train d'y répondre.
+   *
+   * 🔴 Une réponse remplace la promesse de l'étape. « La maison qui vous
+   * arrange » situe tant qu'on n'a pas choisi ; une fois Le Labo retenu, c'est
+   * « Le Labo » qu'on vient relire. Sans service pris, rien n'est répondu et le
+   * rail garde ses promesses.
+   */
+  protected readonly stepAnswers = computed<readonly (string | null)[]>(() => {
+    const service = this.choice();
+    if (service === null) {
+      return [];
+    }
+    const copy = commandTermsCopy(this.locale.current());
+    const when = serviceWhenLabel(
+      service.date,
+      service.slot,
+      instantToLocal(new Date()).day,
+      this.locale.current(),
+      { today: copy.today, tomorrow: copy.tomorrow },
+    );
+    return [service.place, when, null];
+  });
 
   /** Le rappel du service, sur une ligne — vide tant qu'aucun n'est pris. */
   protected readonly whereLabel = computed(() => {
@@ -159,6 +198,79 @@ export class ShopPage {
 
   protected backToService(): void {
     void this.router.navigate(['/nouvelle-commande']);
+  }
+
+  /**
+   * Changer de maison ouvre un DIALOGUE, sans quitter le rayon : le panier est
+   * composé, et partir le ferait perdre de vue.
+   *
+   * 🔴 Puis l'heure est REDEMANDÉE, toujours. Les créneaux appartiennent à un
+   * point : une heure retenue au Labo n'existe pas forcément au Village, et la
+   * garder poserait une commande que le serveur refuserait au règlement.
+   */
+  protected async changeHouse(): Promise<void> {
+    const service = this.choice();
+    const ref = PublicHousePickerDialog.open(this.panels, {
+      currentId: service?.mode === 'pickup' ? service.pickupAddressId : null,
+    });
+    const point = await ref.closed;
+    if (point === undefined) {
+      return;
+    }
+    await this.askTime(point);
+  }
+
+  /**
+   * Changer l'heure se fait SANS quitter le rayon, et sans redemander la maison.
+   *
+   * Le repli sur l'écran du mode de service couvre la livraison et le point par
+   * défaut : il n'y a alors pas de maison sur laquelle rouvrir le sélecteur, et
+   * c'est là-bas que la question se pose entièrement.
+   */
+  protected async changeTime(): Promise<void> {
+    const service = this.choice();
+    const point =
+      service?.mode === 'pickup' && service.pickupAddressId !== null
+        ? this.points.pickups().find((candidate) => candidate.id === service.pickupAddressId)
+        : undefined;
+    if (point === undefined) {
+      this.backToService();
+      return;
+    }
+    await this.askTime(point);
+  }
+
+  /**
+   * Le sélecteur d'heure, puis le choix posé — la fin commune aux deux gestes.
+   *
+   * 🔴 Le choix ne s'écrit QU'APRÈS l'heure. Poser la maison d'abord laisserait,
+   * le temps du dialogue, une maison avec l'heure de la précédente ; et refermer
+   * sans choisir figerait cet état-là. Renoncer en cours de route ne change
+   * donc rien : c'est ce qu'on attend d'un dialogue qu'on ferme.
+   */
+  private async askTime(point: PickupAddressView): Promise<void> {
+    const place = point.label || point.ville;
+    const ref = SlotPickerDialog.open(this.panels, {
+      pickupAddressId: point.id,
+      place,
+      firstDay: this.points.nextDayFor(point.id),
+    });
+    const slot = await ref.closed;
+    if (slot === undefined) {
+      return;
+    }
+    // La même forme que `pickup-dialog` et que l'accueil : l'identité du point,
+    // jamais un montant ; le libellé pour l'écran, la fenêtre pour le serveur.
+    this.order.choice.set({
+      mode: 'pickup',
+      place,
+      at: `au ${place}`,
+      address: `${point.ligne1}, ${point.ville}`,
+      pickupAddressId: point.id,
+      slot: formatHour(slot.time),
+      window: { start: slot.time, end: instantToLocal(new Date(slot.endAt)).time },
+      date: slot.day,
+    });
   }
 
   /**

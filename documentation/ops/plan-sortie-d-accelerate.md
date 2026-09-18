@@ -148,7 +148,7 @@ vers le container.
   `local-target.ts`, `clone-dev.ts`, `seed-fiche.ts`, `exclusion-violation.ts`,
   `postgres.probe.ts`, `dev-db-url.ts` ;
 - **Docs** : `.env.example`, `secrets-et-variables.md`, `runbook.md`,
-  `architecture-deploiement.md`, et les **quatorze** docs qui citent Accelerate
+  `../ci-cd/architecture-deploiement.md`, et les **quatorze** docs qui citent Accelerate
   (dont `adr.md` ADR-04/06/09, `caching-usage/cache-compte-client.md`) —
   `auditeur-de-justifications` sur le diff.
 

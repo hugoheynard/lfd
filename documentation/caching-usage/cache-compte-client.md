@@ -129,7 +129,7 @@ portent aucune date **en SQL** — mais leur _vue_ en dépend :
 
 - `companyWarnings(row, now)` fait naître `attente_prolongee` **au seul passage
   du temps**, à 14 jours ;
-- `projectContacts(row, …, now)` fait périmer une invitation à la même heure.
+- `projectContacts(row, …, now)` fait périmer une invitation, à 7 jours.
 
 Cacher la **vue** ferait donc disparaître un avertissement qui devait apparaître
 tout seul un vendredi soir — exactement ce pour quoi on refuse de cacher la
@@ -237,7 +237,7 @@ sequenceDiagram
 ## 5. Où le cache doit vivre : en mémoire d'abord
 
 Le déploiement porte **une seule instance** de l'API
-(`ops/architecture-deploiement.md` §4, « Instances max : 1 » — un choix de
+([`ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md) §4, « Instances max : 1 » — un choix de
 routage, pas un plafond de capacité), et le back-office compte cinq personnes.
 
 - un cache **en mémoire** touché coûte **zéro** : ni réseau, ni facture, ni

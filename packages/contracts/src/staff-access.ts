@@ -9,7 +9,7 @@ import type { StaffNavPreferences } from "./staff-user.js";
 /**
  * Contrat d'**accès staff** : qui peut quoi dans le back-office.
  *
- * Modèle et justifications : `documentation/b2b/architecture-acces-staff.md`.
+ * Modèle et justifications : `documentation/auth-inscription/architecture-acces-staff.md`.
  * Trois notions et une formule — un **rôle** est un paquet nommé de
  * **permissions**, qu'une **dérogation** par personne ajuste :
  *
@@ -145,7 +145,7 @@ export const staffResourceSchema = z.enum([
    * pour tester en production.
    *
    * Une ressource à elle, et pas `b2b_settings` (décidé le 2026-09-14, plan
-   * `documentation/b2b/plan-inscription-pro-seule.md` §2.4) : ouvrir ou couper
+   * `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.4) : ouvrir ou couper
    * la vente en ligne pèse plus que corriger une zone de livraison. L'un change
    * un frais pour un secteur ; l'autre décide si quelqu'un peut commander.
    */
@@ -544,8 +544,9 @@ export function hasStaffPermission(
  * La réponse de `GET /admin/me` — **le seul point** par lequel un écran apprend
  * ce qu'il a le droit de montrer.
  *
- * C'est la couture de sortie vers un futur backend IAM : le jour où les droits
- * viennent d'ailleurs, on change qui répond à cette question, pas un écran.
+ * Un seul point, pour que le jour où le calcul des droits change — les rôles
+ * définis en base, par exemple —, on change qui répond à cette question, pas un
+ * écran.
  *
  * Le `role` n'est là que pour être **affiché**. Un écran qui teste
  * `role === "admin"` pour décider quoi montrer est un écran qu'il faudra rouvrir

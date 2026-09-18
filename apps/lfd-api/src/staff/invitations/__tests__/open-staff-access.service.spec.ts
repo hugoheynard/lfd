@@ -1,5 +1,12 @@
 import type { StaffStatus } from "@lfd/contracts";
 
+import { RecordingJournal } from "../../../platform/journal/__tests__/recording-journal.js";
+import { IdentitySubjectUnknownError } from "../../../platform/shared/errors/identity-errors.js";
+import {
+  RecordingAccessCache,
+  TrackingUnitOfWork,
+} from "../../directory/application/__tests__/staff-doubles.js";
+import { STAFF_FACTS } from "../../directory/domain/staff-facts.js";
 import { StaffIdentityPort } from "../staff-identity.port.js";
 import { SuspendedStaffInviteError } from "../../directory/domain/staff-user-errors.js";
 import type { StaffIdentityFacts } from "../../directory/domain/staff-user.repository.js";
@@ -9,6 +16,9 @@ import type { SendMailArgs } from "@lfd/mailer";
 import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
+
+/** Un `sub` que le fournisseur ne connaît plus : identité supprimée puis recréée. */
+const DEAD_SUBJECT = "auth0|supprime";
 
 function target(overrides: Partial<StaffIdentityFacts> = {}): StaffIdentityFacts {
   return {
@@ -28,6 +38,10 @@ interface Harness {
   readonly relinked: string[];
   readonly marked: { id: string; subject: string; at: Date }[];
   readonly mails: { to: string; url: string }[];
+  readonly journal: RecordingJournal;
+  readonly cache: RecordingAccessCache;
+  /** Chaque `markInvited`, avec l'état de la transaction au moment de l'appel. */
+  readonly markedInside: boolean[];
 }
 
 type Deps = ConstructorParameters<typeof OpenStaffAccess>;
@@ -39,7 +53,16 @@ class IdentityDown extends Error {
   }
 }
 
-function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true): Harness {
+function harness(
+  row: StaffIdentityFacts,
+  identityFails = false,
+  mailerOn = true,
+  journalDown = false,
+): Harness {
+  const uow = new TrackingUnitOfWork();
+  const journal = new RecordingJournal(journalDown ? new Error("journal en panne") : null);
+  const cache = new RecordingAccessCache(uow);
+  const markedInside: boolean[] = [];
   const provisioned: string[] = [];
   const relinked: string[] = [];
   const marked: { id: string; subject: string; at: Date }[] = [];
@@ -49,6 +72,7 @@ function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true
     identityOf: (): Promise<StaffIdentityFacts> => Promise.resolve(row),
     markInvited: (id: string, subject: string, at: Date): Promise<void> => {
       marked.push({ id, subject, at });
+      markedInside.push(uow.inside);
       return Promise.resolve();
     },
   };
@@ -62,6 +86,9 @@ function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true
       return Promise.resolve({ subject: "auth0|neuf", passwordSetupUrl: "https://lien/neuf" });
     },
     issuePasswordLink: (subject) => {
+      if (subject === DEAD_SUBJECT) {
+        return Promise.reject(new IdentitySubjectUnknownError(subject));
+      }
       if (identityFails) {
         return Promise.reject(new IdentityDown());
       }
@@ -87,8 +114,11 @@ function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true
     identities,
     { now: (): Date => NOW },
     mailer,
+    journal,
+    uow,
+    cache,
   );
-  return { handler, provisioned, relinked, marked, mails };
+  return { handler, provisioned, relinked, marked, mails, journal, cache, markedInside };
 }
 
 const SUBJECT = "s1";
@@ -125,6 +155,33 @@ describe("OpenStaffAccess — renvoi", () => {
     await h.handler.open(SUBJECT);
 
     expect(h.mails).toHaveLength(1);
+  });
+});
+
+/**
+ * Régression : depuis que l'accès staff ne relie plus une fiche liée par son
+ * adresse (2026-09-17), la réinvitation est la seule sortie d'un `sub` refusé —
+ * et elle rendait un 500 en réclamant un lien pour ce `sub`.
+ */
+describe("OpenStaffAccess — 🔴 la réinvitation relie à nouveau", () => {
+  it("rouvre par l'adresse un `sub` que le fournisseur ne connaît plus", async () => {
+    const h = harness(target({ auth0Id: DEAD_SUBJECT, status: "active" }));
+
+    await h.handler.open(SUBJECT);
+
+    expect(h.provisioned).toEqual(["sophie@lfc.test"]);
+    expect(h.marked).toEqual([{ id: "s1", subject: "auth0|neuf", at: NOW }]);
+    expect(h.mails).toEqual([{ to: "sophie@lfc.test", url: "https://lien/neuf" }]);
+  });
+
+  it("rouvre par l'adresse une fiche liée à un `sub` Google, sans lui demander de lien", async () => {
+    const h = harness(target({ auth0Id: "google-oauth2|104233", status: "active" }));
+
+    await h.handler.open(SUBJECT);
+
+    expect(h.relinked).toEqual([]);
+    expect(h.provisioned).toEqual(["sophie@lfc.test"]);
+    expect(h.marked).toEqual([{ id: "s1", subject: "auth0|neuf", at: NOW }]);
   });
 });
 
@@ -171,5 +228,46 @@ describe("OpenStaffAccess — ce que l'écran a le droit d'annoncer", () => {
     const h = harness(target(), false, false);
 
     await expect(h.handler.open(SUBJECT)).resolves.toEqual({ mailSent: false });
+  });
+});
+
+describe("OpenStaffAccess — la trace de l'invitation", () => {
+  it("écrit `markInvited` ET le fait ensemble, puis oublie le cache après le commit", async () => {
+    const h = harness(target());
+
+    await h.handler.open(SUBJECT);
+
+    expect(h.markedInside).toEqual([true]);
+    expect(h.journal.facts).toEqual([
+      {
+        type: STAFF_FACTS.invited,
+        subjectType: "staff_user",
+        subjectId: "s1",
+        // Ni l'adresse, ni le lien : le lien vaut prise de contrôle du compte.
+        payload: { person: { firstName: "Sophie", lastName: "Martin" }, kind: "invitation" },
+      },
+    ]);
+    expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);
+  });
+
+  it("dit « mot de passe » quand la personne est déjà entrée", async () => {
+    const h = harness(target({ auth0Id: "auth0|deja", status: "active" }));
+
+    await h.handler.open(SUBJECT);
+
+    expect(h.journal.facts[0]?.payload).toMatchObject({ kind: "password_reset" });
+  });
+
+  /**
+   * Jamais un e-mail envoyé derrière un 500 : si la trace ne s'écrit pas,
+   * l'invitation n'a pas eu lieu, et un nouvel essai frappera un lien neuf.
+   */
+  it("n'envoie AUCUN e-mail quand le journal tombe", async () => {
+    const h = harness(target(), false, true, true);
+
+    await expect(h.handler.open(SUBJECT)).rejects.toThrow("journal en panne");
+
+    expect(h.mails).toEqual([]);
+    expect(h.cache.forgotten).toEqual([]);
   });
 });

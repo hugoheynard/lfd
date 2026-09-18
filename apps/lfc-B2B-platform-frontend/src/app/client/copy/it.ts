@@ -14,10 +14,15 @@ import { ORDERS_IT } from './screens/orders.copy';
  */
 export const IT: ClientCopy = {
   chrome: {
+    identityConflict:
+      'Esiste già un account con questo indirizzo Google. Accedi con la tua email abituale.',
+    identityConflictDismiss: 'Ho capito',
     back: 'Indietro',
     menu: 'Menu',
     notifications: 'Notifiche',
     lang: 'Lingua',
+    signIn: 'Accedi',
+    createAccount: 'Crea il mio account',
     kickerWelcome: 'Benvenuto',
     kickerRappel: 'Richiamo',
     kickerCommande: 'Nuovo ordine',
@@ -110,6 +115,7 @@ export const IT: ClientCopy = {
     address: 'Le Labo · Route de la Balme — aperto dalle 7 alle 19.',
   },
   signup: {
+    google: 'Continua con Google',
     eyebrow: 'Prima volta ? 3 informazioni e si parte',
     alreadyLead: 'Sei già cliente ?',
     alreadyLink: 'Accedere',
@@ -263,7 +269,23 @@ export const IT: ClientCopy = {
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
     browse: 'Vedi il banco',
+    whoTitle: 'Chi effettua questo ordine?',
+    whoHint: 'Ci servono un nome e un indirizzo per inviarle il QR di ritiro.',
+    whoRegister: 'È il mio primo ordine',
+    whoSignIn: 'Ho già un account',
     back: 'Torna alla bottega',
+    guestTitle: 'Chi viene a ritirare?',
+    guestSubtitle: 'Nessun account da creare. Ci serve solo come inviarle il suo QR.',
+    guestFirstName: 'Nome',
+    guestFirstNameHint: 'È il nome che chiameremo al banco.',
+    guestEmail: 'Indirizzo e-mail',
+    guestEmailHint: 'La conferma e il QR di ritiro arrivano lì.',
+    guestEmailAgain: 'Confermi il suo indirizzo',
+    guestEmailMismatch: 'I due indirizzi non coincidono.',
+    guestPhone: 'Telefono',
+    guestPhoneHint: 'Per contattarla se qualcosa non va con il suo ordine.',
+    guestCancel: 'Annulla',
+    guestConfirm: 'Continua',
   },
   qr: {
     title: 'Il suo codice di consegna',

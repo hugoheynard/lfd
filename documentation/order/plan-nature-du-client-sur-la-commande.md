@@ -12,6 +12,15 @@
 > passation, `Order.clientele`, nullable, **sans rattrapage**. La première
 > version de ce plan l'ignorait, et proposait l'inverse.
 
+> 🟠 **Un second lecteur depuis le 2026-09-17**, que ce plan ne prévoyait pas :
+> la **règle de production**. Un règlement en vol (`pending`) n'est plus fabriqué
+> pour une commande `public` ; il l'est pour `pro` et pour `NULL`. C'est D1 qui
+> le permet — la colonne dit QUI commande — et D4 qui l'oblige à traiter `NULL`
+> comme « pas public ». Cf.
+> [`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md), §6.
+> Le §3 (« afficher ailleurs que dans la file ») reste vrai : ce second lecteur
+> filtre, il n'affiche rien.
+
 ## 0. La demande
 
 Au comptoir (« Retrait boutique »), chaque ligne de la file doit dire si le

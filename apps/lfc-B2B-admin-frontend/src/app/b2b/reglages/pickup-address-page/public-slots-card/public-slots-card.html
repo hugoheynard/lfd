@@ -1,0 +1,228 @@
+<fold-card>
+  <fold-page-section title="Créneaux publics" separator>
+    <span sectionSubtitle>
+      Ce qu'un visiteur pourra choisir. Sans rapport avec les heures de retrait pro ci-dessus.
+    </span>
+
+    <!-- L'enregistrement de CETTE carte, séparé de celui de la page : l'horaire
+         a sa propre route, et son refus propre — le chevauchement. Un
+         chevauchement refusé ne doit pas faire échouer l'adresse. -->
+    <div sectionActions class="ps-save">
+      <button
+        foldButton
+        size="sm"
+        [disabled]="!dirty() || saving()"
+        [loading]="saving()"
+        (click)="save()"
+      >
+        Enregistrer les créneaux
+      </button>
+    </div>
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des créneaux publics…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible de charger les créneaux publics">
+          <button foldButton (click)="load(pickupId())">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (refusal(); as message) {
+          <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+        }
+
+        <!-- 🔴 La bascule se dit AVANT d'être franchie. Dès la première plage, ce
+             point cesse d'accepter n'importe quelle heure d'un visiteur : une
+             conséquence pareille ne se découvre pas après coup. -->
+        @if (!configured()) {
+          <fold-callout variant="info">
+            Aucune plage : ce point n'est pas réglé pour le public, et se comporte comme
+            aujourd'hui. <strong>Dès la première plage</strong>, un visiteur devra choisir l'un de
+            ces créneaux.
+          </fold-callout>
+        }
+
+        <div class="ps-block">
+          <div class="ps-head">
+            <h3 class="ps-title">Plages</h3>
+            <button foldButton size="sm" emphasis="soft" icon="plus" (click)="addRule()">
+              Ajouter une plage
+            </button>
+          </div>
+
+          @if (rules().length === 0) {
+            <fold-empty-state
+              title="Aucune plage"
+              subtitle="Une plage se découpe en créneaux d'une durée fixe — c'est ce qu'un visiteur choisira."
+            >
+              <fold-icon empty-icon name="clock" [size]="28" />
+            </fold-empty-state>
+          } @else {
+            <ul class="ps-list">
+              @for (rule of rules(); track rule.id) {
+                <li class="ps-row">
+                  <div class="ps-main">
+                    <span class="ps-when">{{ rule.startTime }}–{{ rule.endTime }}</span>
+                    <span class="ps-sub">{{ label(rule) }} · {{ countOf(rule) }}</span>
+                  </div>
+
+                  <div class="ps-tags">
+                    @if (rule.badge !== null) {
+                      <fold-badge [content]="rule.badge" variant="accent" />
+                    }
+                    <fold-badge [content]="placesOf(rule)" variant="neutral" />
+                  </div>
+
+                  <div class="ps-actions">
+                    @if (pendingRule() === rule.id) {
+                      <fold-inline-confirm
+                        message="Retirer cette plage ?"
+                        [labels]="{ confirm: 'Retirer' }"
+                        (confirmed)="removeRule(rule)"
+                        (cancelled)="cancelRemove()"
+                      />
+                    } @else {
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        size="sm"
+                        icon="edit"
+                        (click)="editRule(rule)"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        intent="danger"
+                        size="sm"
+                        icon="bin"
+                        (click)="askRemoveRule(rule)"
+                      >
+                        Retirer
+                      </button>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <div class="ps-block">
+          <div class="ps-head">
+            <h3 class="ps-title">Fermetures</h3>
+            <button foldButton size="sm" emphasis="soft" icon="plus" (click)="addClosure()">
+              Ajouter une fermeture
+            </button>
+          </div>
+
+          @if (closures().length === 0) {
+            <p class="ps-said">
+              Aucune fermeture. Une période fermée prime sur toutes les plages — congés, four en
+              révision.
+            </p>
+          } @else {
+            <ul class="ps-list">
+              @for (closure of closures(); track closure.id) {
+                <li class="ps-row">
+                  <div class="ps-main">
+                    <span class="ps-when">{{ spanOf(closure) }}</span>
+                    <span class="ps-sub">
+                      {{ hoursOf(closure) }}
+                      @if (closure.reason !== '') {
+                        · {{ closure.reason }}
+                      }
+                    </span>
+                  </div>
+
+                  <div class="ps-actions">
+                    @if (pendingClosure() === closure.id) {
+                      <fold-inline-confirm
+                        message="Retirer cette fermeture ?"
+                        [labels]="{ confirm: 'Retirer' }"
+                        (confirmed)="removeClosure(closure)"
+                        (cancelled)="cancelRemove()"
+                      />
+                    } @else {
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        size="sm"
+                        icon="edit"
+                        (click)="editClosure(closure)"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        intent="danger"
+                        size="sm"
+                        icon="bin"
+                        (click)="askRemoveClosure(closure)"
+                      >
+                        Retirer
+                      </button>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <!-- L'APERÇU, dérivé par la même fonction que l'accueil public : ce que
+             l'admin voit ici est ce que verra le visiteur, badge compris. Un
+             jour à la fois, parce qu'une plage posée sur un seul jour de semaine
+             ne se vérifie qu'en changeant de jour. -->
+        <div class="ps-block">
+          <div class="ps-head">
+            <h3 class="ps-title">Aperçu</h3>
+            <!-- `ariaLabel` et non `label` : le titre « Aperçu » est à trois
+                 centimètres, un libellé visible « Jour » ne dirait rien de plus.
+                 ⚠️ PAS de `hideLabel` — cet attribut n'existe pas sur
+                 `fold-select`, et Angular l'aurait ignoré en silence. -->
+            <fold-select
+              ariaLabel="Jour de l'aperçu"
+              size="sm"
+              [value]="previewDay()"
+              (valueChange)="previewDay.set($event)"
+            >
+              @for (day of previewDays(); track day.value) {
+                <option [value]="day.value">{{ day.label }}</option>
+              }
+            </fold-select>
+          </div>
+
+          @if (preview().length === 0) {
+            <p class="ps-said">
+              Aucun créneau ce jour-là — aucune plage ne le vise, ou une fermeture le couvre.
+            </p>
+          } @else {
+            <ul class="ps-slots">
+              @for (slot of preview(); track slot.startAt) {
+                <li class="ps-slot" [class.is-closed]="!slot.open">
+                  <span class="ps-slot-time">{{ slot.time }}</span>
+                  @if (slot.badge !== null) {
+                    <span class="ps-slot-badge">{{ slot.badge }}</span>
+                  }
+                  @if (!slot.open) {
+                    <span class="ps-slot-full">
+                      Complet
+                      @if (slot.nextOpenTime !== null) {
+                        · place à {{ slot.nextOpenTime }}
+                      }
+                    </span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    }
+  </fold-page-section>
+</fold-card>

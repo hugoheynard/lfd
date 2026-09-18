@@ -12,13 +12,14 @@ import { MyShopCatalogueController } from "../../../orders/http/my-shop-catalogu
 import { MyShopQuoteController } from "../../../orders/http/my-shop-quote.controller.js";
 import { OrdersController } from "../../../orders/http/orders.controller.js";
 import { ShopCartController } from "../../../orders/http/shop-cart.controller.js";
+import { ShopOrdersController } from "../../../orders/http/shop-orders.controller.js";
 import { ShopQuoteController } from "../../../orders/http/shop-quote.controller.js";
 import { SubscriptionsController } from "../../../subscriptions/http/subscriptions.controller.js";
 import { REQUIRES_SHOP_KEY, type ShopRequirement } from "../requires-shop.decorator.js";
 
 /**
  * **La table des routes de la boutique** — plan
- * `documentation/b2b/plan-inscription-pro-seule.md` §2.3.
+ * `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.3.
  *
  * Chaque route CLIENTE des commandes, de la boutique, des paniers récurrents et
  * du contrôle de panier porte `@RequiresShop`, ou figure ci-dessous avec sa
@@ -39,6 +40,16 @@ const MARKED: Readonly<Record<string, ShopRequirement>> = {
   "GET /shop/cart": "browse",
   "PUT /shop/cart": "browse",
   "POST /orders": "order",
+  // La commande sans compte. Marquée comme sa jumelle connectée : boutique
+  // fermée, aucune des deux ne passe.
+  //
+  // ⚠️ Son contrôleur n'est **pas enregistré** dans `OrdersModule` tant que
+  // l'arbitrage de prix n'a pas eu lieu (plan `plan-commande-sans-compte.md`
+  // §6) — la route n'existe donc pas à l'exécution. Ce test-ci lit les
+  // métadonnées de la CLASSE, pas la table de routage de l'application : il
+  // continue donc de tenir la décision, et c'est ce qu'on veut — le jour où
+  // quelqu'un branchera le contrôleur, la décision sera déjà écrite.
+  "POST /shop/orders": "order",
   "POST /orders/quote": "order",
   "POST /orders/preflight": "order",
   "POST /subscriptions": "order",
@@ -68,6 +79,7 @@ const CONTROLLERS = [
   ShopQuoteController,
   MyShopQuoteController,
   ShopCartController,
+  ShopOrdersController,
   OrdersController,
   CompanyOrdersController,
   SubscriptionsController,
@@ -82,6 +94,7 @@ const CLIENT_CONTROLLER_FILES: Readonly<Record<string, readonly string[]>> = {
     "my-shop-quote.controller.ts",
     "orders.controller.ts",
     "shop-cart.controller.ts",
+    "shop-orders.controller.ts",
     "shop-quote.controller.ts",
   ],
   "b2b/subscriptions/http": ["subscriptions.controller.ts"],

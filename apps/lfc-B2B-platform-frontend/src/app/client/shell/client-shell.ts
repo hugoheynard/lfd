@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
+  FoldButtonComponent,
   FoldCalloutComponent,
   FoldIconComponent,
   FoldPanelHostComponent,
 } from 'fold-ng';
 
+import { AuthFacade } from '../../auth/auth.facade';
+import { IdentityConflictNotice } from '../../auth/identity-conflict';
 import { ClientChrome } from '../client-chrome.service';
 import { AccountMenu } from './account-menu/account-menu';
 import { ClientFoot } from '../foot/client-foot';
@@ -41,10 +44,12 @@ import { LangSwitch } from '../lang-switch/lang-switch';
     ClientFoot,
     ClientMenu,
     FoldAppShellComponent,
+    FoldButtonComponent,
     FoldCalloutComponent,
     FoldIconComponent,
     FoldPanelHostComponent,
     LangSwitch,
+    RouterLink,
     RouterOutlet,
   ],
   templateUrl: './client-shell.html',
@@ -54,6 +59,11 @@ export class ClientShell {
   protected readonly chrome = inject(ClientChrome);
   protected readonly t = inject(ClientCopyService).t;
   protected readonly access = inject(ClientFeatureAccess);
+  protected readonly identityConflict = inject(IdentityConflictNotice);
+  private readonly auth = inject(AuthFacade);
+
+  /** Reconnu = la barre sert son menu de personne ; sinon, elle sert l'entrée. */
+  protected readonly recognised = computed(() => this.auth.isAuthenticated());
 
   constructor() {
     // Instancié pour son EFFET, pas pour son API : c'est lui qui repose prénom

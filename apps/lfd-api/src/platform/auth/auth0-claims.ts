@@ -45,6 +45,40 @@ export const EMAIL_CLAIM = `${NAMESPACE}/email`;
  */
 export const EMAIL_VERIFIED_CLAIM = `${NAMESPACE}/email_verified`;
 
+/**
+ * Le fournisseur de la connexion **base de données** du tenant, tel qu'il
+ * préfixe le `sub` : `auth0|…`. Google écrit `google-oauth2|…`, Facebook
+ * `facebook|…`, et ainsi de suite.
+ */
+export const DATABASE_CONNECTION_PROVIDER = "auth0";
+
+/**
+ * Le `sub` vient-il d'une **autre** connexion que la base de données ?
+ *
+ * Refus par défaut : Google et Facebook, mais aussi le sans-mot-de-passe
+ * (`email|`, `sms|`), l'entreprise (`samlp|`, `waad|`) et les `sub` de
+ * développement (`dev|`, `dev-staff|`). Le staff n'entre que par la connexion
+ * base de données ; ajouter une autre porte est une décision, pas un réglage.
+ *
+ * Un sujet **sans** barre n'a pas la forme d'une connexion utilisateur : bypass
+ * de dev, doubles de test, ou jeton machine (`…@clients`), qu'aucune fiche ne
+ * porte. Il n'est pas refusé ici — c'est l'annuaire qui le refuse, faute de
+ * fiche liée.
+ */
+export function isOutsideDatabaseConnection(subject: string): boolean {
+  const separator = subject.indexOf("|");
+  return separator > 0 && subject.slice(0, separator) !== DATABASE_CONNECTION_PROVIDER;
+}
+
+/** Lit un claim de type booléen ; tout autre type vaut absence. */
+export function readBooleanClaim(
+  payload: Readonly<Record<string, unknown>>,
+  claim: string,
+): boolean | undefined {
+  const value = payload[claim];
+  return typeof value === "boolean" ? value : undefined;
+}
+
 /** Lit un claim de type chaîne, en traitant la chaîne vide comme une absence. */
 export function readStringClaim(
   payload: Readonly<Record<string, unknown>>,

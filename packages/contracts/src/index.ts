@@ -394,6 +394,8 @@ export {
   shopQuoteFulfillmentSchema,
   shopQuotePayloadSchema,
 } from "./shop-quote.js";
+export { guestBuyerSchema, placeShopOrderPayloadSchema } from "./shop-order.js";
+export type { GuestBuyerPayload, PlaceShopOrderPayload } from "./shop-order.js";
 export { shopCartPayloadSchema } from "./shop-cart.js";
 export type { ShopCartPayload, ShopCartResponse, ShopCartView } from "./shop-cart.js";
 export type {
@@ -1062,3 +1064,19 @@ export {
   pickupDiscountFor,
 } from "./pickup.js";
 export type { PickupAddressUpdatePayload, PickupDiscountAudiences } from "./pickup.js";
+export {
+  publicPickupClosurePayloadSchema,
+  publicPickupSchedulePayloadSchema,
+  publicPickupSlotRulePayloadSchema,
+  publicPickupSlotsFor,
+} from "./public-pickup-slots.js";
+export type {
+  PublicPickupClosurePayload,
+  PublicPickupClosureView,
+  PublicPickupSchedulePayload,
+  PublicPickupScheduleView,
+  PublicPickupSlot,
+  PublicPickupSlotRulePayload,
+  PublicPickupSlotRuleView,
+  PublicPickupSlotTaken,
+} from "./public-pickup-slots.js";

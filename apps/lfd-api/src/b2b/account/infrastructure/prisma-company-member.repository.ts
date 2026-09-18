@@ -23,10 +23,17 @@ const KNOWN_ACCOUNT_SELECT = {
   emailVerified: true,
 } as const;
 
-/** Ligne Prisma → personne connue. */
+/**
+ * Ligne Prisma → personne connue.
+ *
+ * `auth0Sub` est **nullable depuis le 2026-09-17** : un invité — quelqu'un qui a
+ * commandé sans compte — n'a aucune identité de connexion. Le nul traverse tel
+ * quel jusqu'au port, qui en fait le cas nommé ; le remplacer par une chaîne
+ * vide ici ferait demander un lien de mot de passe pour le sujet `""`.
+ */
 function toKnownAccount(user: {
   id: string;
-  auth0Sub: string;
+  auth0Sub: string | null;
   firstName: string;
   status: KnownAccount["status"];
   emailVerified: boolean;
@@ -95,14 +102,30 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
     });
     const target = normalizeEmail(email);
     const matching = candidates.filter((user) => normalizeEmail(user.email) === target);
+    // 🔴 **Un compte CONNECTABLE gagne, toujours** (D6, Hugo, 2026-09-17), et
+    // un invité n'est pas un compte : il n'a aucune identité de connexion,
+    // aucun droit, rien à quoi se rattacher. Or les deux appelants d'ici
+    // cherchent précisément un compte au sens de l'ACCÈS — ouvrir un accès
+    // (`grant-account-access`) et aligner un rôle (`company-contact-book`).
+    // Aligner le rôle d'un invité n'a aucun sens : il n'a pas de droits.
+    //
+    // Sans ce tri, n'importe qui bloquait un vrai client en tapant son adresse
+    // au panier public : la ligne invitée créée là rendait l'adresse ambiguë,
+    // et les deux gestes commerciaux devenaient impossibles sur cette personne.
+    const connectable = matching.filter((user) => user.auth0Sub !== null);
+    const chosen = connectable.length > 0 ? connectable : matching;
     // Aucune unicité en base : l'inscription libre crée un compte par sujet
     // d'identité, pas par adresse. Plusieurs comptes pour une boîte, c'est ne
     // pas savoir lequel est le bon — et `findFirst` sans ordre le tranchait par
     // l'ordre physique des lignes. On refuse plutôt que de choisir.
-    if (matching.length > 1) {
+    //
+    // ⚠️ L'ambiguïté entre deux COMPTES reste refusée, exactement comme avant :
+    // le tri ci-dessus ne fait pas passer un cas douteux, il écarte ce qui n'a
+    // jamais été un candidat.
+    if (chosen.length > 1) {
       throw new AccountEmailAmbiguousError(target);
     }
-    const [user] = matching;
+    const [user] = chosen;
     return user === undefined ? null : toKnownAccount(user);
   }
 

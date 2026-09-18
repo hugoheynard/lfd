@@ -441,8 +441,9 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
       sink.placed = order.toPersistence();
       return Promise.resolve({ id: "order_1", orderNumber: "ORD-TEST" });
     },
-    markPaid: () => Promise.resolve(),
-    markPaymentFailed: () => Promise.resolve(),
+    // `null` = aucune ligne n'a franchi — cf. `OrderRepository.markPaid`.
+    markPaid: () => Promise.resolve(null),
+    markPaymentFailed: () => Promise.resolve(null),
     markFulfilled: () => Promise.reject(new Error("non utilisé")),
     markReady: () => Promise.reject(new Error("non utilisé")),
     absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),

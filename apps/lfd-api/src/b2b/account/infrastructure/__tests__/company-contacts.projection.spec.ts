@@ -38,7 +38,7 @@ const NOW = new Date("2026-08-12T10:00:00.000Z");
 /** Rattachée hier : l'invitation est fraîche. */
 const YESTERDAY = new Date("2026-08-11T10:00:00.000Z");
 
-/** Rattachée il y a 20 jours : au-delà des 14 jours de validité. */
+/** Rattachée il y a 20 jours : au-delà de la validité d'une invitation. */
 const LONG_AGO = new Date("2026-07-23T10:00:00.000Z");
 
 const ACTIVE: AccessRow = {

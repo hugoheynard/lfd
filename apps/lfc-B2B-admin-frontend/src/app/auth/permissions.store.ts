@@ -12,9 +12,9 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'denied';
  * Ce que la personne connectée a le droit de faire — **la seule source** dont
  * l'écran dispose pour décider ce qu'il montre.
  *
- * Elle vient de `GET /admin/me`, et de nulle part ailleurs. C'est la couture de
- * sortie vers un futur backend IAM : le jour où les droits viennent d'ailleurs,
- * on change qui répond à cette question, pas un écran.
+ * Elle vient de `GET /admin/me`, et de nulle part ailleurs. Le jour où le calcul
+ * des droits change — les rôles définis en base, par exemple —, on change qui
+ * répond à cette question, pas un écran.
  *
  * **Le front cache, le serveur refuse.** Ce magasin ne protège rien : il évite
  * seulement d'offrir des boutons qui rendraient `403`. Le mur est

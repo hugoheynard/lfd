@@ -179,7 +179,7 @@ curl -s https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/feature-access
 ```
 
 (La passerelle est la seule porte publique et retire le préfixe `/api/lfd` —
-`documentation/ops/architecture-deploiement.md`.)
+`documentation/ci-cd/architecture-deploiement.md`.)
 
 Attendu : `{"shop":"browse","orders":"visible","invoices":"visible","desktopMenu":"visible"}`
 (ou les niveaux posés — les trois dernières clés ne font que masquer des écrans
@@ -298,6 +298,41 @@ détenteur est celui dont l'adresse a ouvert le compte, et se tromper donne les
 clés de l'espace à la mauvaise personne. Remonter la liste, faire trancher, puis
 rétrograder les perdants (`role = 'admin'`, qui garde l'accès sans la détention)
 dans une migration qui précède celle-ci.
+
+## Avant de déployer « le staff n'entre plus par son adresse »
+
+Lot 0 de [`plan-connexion-sociale.md`](../auth-inscription/plan-connexion-sociale.md)
+(2026-09-17). L'accès au back-office refuse désormais un `sub` hors connexion
+base de données (Google, Facebook, sans-mot-de-passe…), et ne relie une fiche
+par son adresse que si elle est **vérifiée** et **jamais liée**.
+
+**Avant le merge, lire en production** :
+
+```sql
+select count(*) from staff_users
+where auth0_id is not null and auth0_id not like 'auth0|%';
+```
+
+Chaque ligne comptée est un membre qui prendra un `403` au déploiement. Le
+geste de sortie est dans le back-office : **renvoyer son invitation**. Elle
+rouvre une identité par l'adresse de la fiche, relie la fiche au nouveau `sub`
+et envoie un lien de mot de passe — le même geste répare un `sub` mort
+(identité supprimée puis recréée chez Auth0).
+
+**L'admin racine** (`BOOTSTRAP_ADMIN_EMAIL`) naît sans lien : c'est le seul
+qui entre encore par son adresse. Si elle n'est pas vérifiée chez Auth0 (un
+compte créé à la main l'est rarement), il prend un `403` et personne ne peut
+l'inviter. Sortie : Auth0 → User Management → l'utilisateur → marquer l'adresse
+vérifiée (ou lui envoyer la vérification), puis **se reconnecter** — le claim
+n'est relu qu'à la connexion suivante.
+
+**Le tenant** : l'Action `add-email-claim` doit poser `…/email_verified` sur
+le jeton de l'audience admin, et Google doit rester coupé sur l'application
+admin (fait le 2026-09-17).
+
+**En local** : le bypass (`dev-staff`) et un vrai login Auth0 ne se volent
+plus la fiche de l'admin racine. Celle qui l'a liée en premier la garde ;
+pour changer, remettre `auth0_id` à `NULL` sur la base **locale**.
 
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 

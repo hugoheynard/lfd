@@ -66,8 +66,13 @@
           <fold-field label="Au comptoir aujourd'hui">
             {{ done.orders.today }} · {{ done.orders.counterToday }} à remettre
           </fold-field>
-          <fold-field label="En attente pour demain">
-            {{ done.orders.tomorrow }} · livraison + retrait
+          <!-- 🔴 J+2 depuis le 2026-09-17, et c'est le PIC du prévisionnel. Ces
+               deux commandes tombaient à J+1 : le jour le plus chargé restait
+               alors AUJOURD'HUI, et « le mur qui arrive » ne montrait aucune
+               montée. Le libellé nomme la distance, parce que c'est elle qu'on
+               vient vérifier ici. -->
+          <fold-field label="En attente à J+2 (le pic)">
+            {{ done.orders.peakDay }} · livraison + retrait
           </fold-field>
         </fold-field-list>
       </fold-card>

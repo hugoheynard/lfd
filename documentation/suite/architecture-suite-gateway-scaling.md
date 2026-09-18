@@ -5,7 +5,7 @@
 > chemin** vers des _service bindings_, et non par sous-domaine : le compte
 > Cloudflare n'a aucune zone. La « Phase 4 » (routes sur la zone réelle) attend
 > toujours un domaine. Les trois invariants du plan (origine stable, sans état,
-> JWT) tiennent. État réel : [`../ops/architecture-deploiement.md`](../ops/architecture-deploiement.md).
+> JWT) tiennent. État réel : [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md).
 
 Ce document fixe la **cible de topologie réseau** de la suite interne
 (`lfc-suite-shell` + apps hostées + backends) et le **plan de bataille** pour y

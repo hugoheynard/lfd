@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { Clock } from "../../platform/time/clock.js";
+import { isOutsideDatabaseConnection } from "../../platform/auth/auth0-claims.js";
 import { StaffAccessResolver } from "../../platform/auth/staff-access.resolver.js";
 import type { StaffAccess, StaffPrincipal } from "../../platform/auth/staff-principal.js";
 
@@ -40,6 +41,20 @@ const STAFF_SELECT = {
  *   e-mail et on **lie `auth0Id`** ; ensuite c'est le `sub` qui relie, et il ne
  *   bouge plus même si l'adresse change. Une fiche `pending`/`invited` devient
  *   `active` à cette occasion : présenter un jeton prouve qu'on est entré.
+ * - **Le rapprochement par e-mail ne vole jamais une fiche** (2026-09-17). Il
+ *   ne vaut que pour une fiche **jamais liée**, et que si le jeton atteste
+ *   une adresse **vérifiée**. Avant, il réécrivait `auth0Id` sans condition :
+ *   quiconque ouvrait un compte Auth0 sous l'adresse d'un membre — inscription
+ *   sans confirmation — prenait ses droits et le mettait dehors.
+ * - **Pas de connexion sociale** (Hugo, 2026-09-17). Un `sub` Google ou
+ *   Facebook n'entre pas au back-office, même lié : le staff se connecte par
+ *   e-mail et mot de passe, ceux que l'invitation a ouverts. Google est coupé
+ *   sur l'application admin du tenant le même jour ; ceci tient si ce réglage
+ *   se perd. ⚠️ Ce n'est PAS le mur client/staff : un `auth0|` client passe
+ *   cette règle, et c'est l'audience du jeton qui le tient.
+ *
+ * La sortie d'une fiche liée à un `sub` mort ou refusé est la **réinvitation**
+ * (`OpenStaffAccess`), qui rouvre une identité par l'adresse et relie la fiche.
  * - **Fail-closed.** Un `sub` inconnu de l'annuaire n'obtient **rien**. Porter un
  *   jeton valide prouve qu'on est authentifié, pas qu'on est de l'équipe — et
  *   c'est exactement l'inverse de ce que faisait la surface admin jusqu'ici.
@@ -60,6 +75,9 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
   }
 
   async resolve(principal: StaffPrincipal): Promise<StaffAccess | null> {
+    if (isOutsideDatabaseConnection(principal.subject)) {
+      return null;
+    }
     const cached = this.cached(principal.subject);
     if (cached !== null) {
       return cached;
@@ -68,7 +86,9 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     if (row === null || row.status === "suspended") {
       return null;
     }
-    await this.recordEntry(row, principal.subject);
+    if (!(await this.recordEntry(row, principal.subject))) {
+      return null;
+    }
 
     const overrides: StaffOverride[] = row.overrides.map((entry) => ({ ...entry }));
     const access: StaffAccess = {
@@ -99,21 +119,30 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     return entry.access;
   }
 
-  /** Par `sub` d'abord (le lien durable), par e-mail ensuite (le premier contact). */
+  /**
+   * Par `sub` d'abord (le lien durable), par e-mail ensuite (le premier
+   * contact) — et ce second chemin ne rend qu'une fiche **sans lien**, à qui
+   * prouve son adresse.
+   */
   private async findStaff(principal: StaffPrincipal) {
     const bySub = await this.prisma.staffUser.findUnique({
       where: { auth0Id: principal.subject },
       select: STAFF_SELECT,
     });
-    if (bySub !== null || principal.email === undefined) {
+    if (bySub !== null || principal.email === undefined || principal.emailVerified !== true) {
       return bySub;
     }
     // Trimée autant que minusculée : une clé e-mail se normalise en entier, et
     // un espace parasite dans un claim rendrait la personne introuvable.
-    return this.prisma.staffUser.findUnique({
+    const byEmail = await this.prisma.staffUser.findUnique({
       where: { email: principal.email.trim().toLowerCase() },
       select: STAFF_SELECT,
     });
+    // Une fiche déjà liée appartient à son `sub`. Un autre `sub` sous la même
+    // adresse est un autre compte Auth0 — pas la même personne, jusqu'à preuve
+    // du contraire, et cette preuve se fait par une nouvelle invitation.
+    // `recordEntry` le revérifie en base : ce test-ci ne tient pas une course.
+    return byEmail?.auth0Id === null ? byEmail : null;
   }
 
   /**
@@ -121,19 +150,28 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
    * identité, et la personne est entrée. N'écrit que si quelque chose change —
    * une écriture par requête serait un coût permanent pour un fait qui ne bouge
    * qu'une fois.
+   *
+   * La liaison est **conditionnée en base** à une fiche encore sans lien : deux
+   * premières connexions simultanées ne se la disputent pas, la seconde est
+   * refusée. Rend `false` quand elle a perdu.
    */
   private async recordEntry(
     row: { id: string; status: string; auth0Id: string | null },
     subject: string,
-  ): Promise<void> {
-    const linkChanged = row.auth0Id !== subject;
-    const entered = row.status !== "active";
-    if (!linkChanged && !entered) {
-      return;
+  ): Promise<boolean> {
+    if (row.auth0Id === null) {
+      const linked = await this.prisma.staffUser.updateMany({
+        where: { id: row.id, auth0Id: null },
+        data: { auth0Id: subject, status: "active" },
+      });
+      return linked.count === 1;
     }
-    await this.prisma.staffUser.update({
-      where: { id: row.id },
-      data: { auth0Id: subject, status: "active" },
-    });
+    if (row.status !== "active") {
+      await this.prisma.staffUser.update({
+        where: { id: row.id },
+        data: { status: "active" },
+      });
+    }
+    return true;
   }
 }

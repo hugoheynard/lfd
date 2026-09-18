@@ -1,0 +1,108 @@
+/* Le sélecteur de maison public. Même registre que le sélecteur d'heure : le
+   titre ouvre le corps, les cartes portent le beurre de la maison. */
+
+.screen {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.lead {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+}
+
+.houses {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.house {
+  inline-size: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+  border: 2px solid transparent;
+  border-radius: var(--lfc-radius-2xl);
+  background: var(--lfc-butter-100);
+  color: var(--lfc-soot-900);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+/* La maison DÉJÀ retenue se signale sans se fermer : on doit pouvoir la
+   reprendre — c'est la façon de refermer sans rien changer. */
+.house.on {
+  border-color: var(--lfc-ink-800);
+}
+
+.house:active {
+  transform: scale(0.985);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+
+.place {
+  color: var(--lfc-soot-700);
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-tight);
+}
+
+/* Les deux pastilles : l'offre, et le rappel du choix courant. */
+.offer,
+.tag {
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.offer {
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+}
+
+/* Un point sans remise dit son TARIF, jamais rien — mais en gris : ce n'est pas
+   un gain. */
+.offer.is-plain {
+  background: var(--lfc-paper-200);
+  color: var(--lfc-soot-700);
+}
+
+.tag {
+  background: var(--lfc-butter-300);
+  color: var(--lfc-butter-900);
+}

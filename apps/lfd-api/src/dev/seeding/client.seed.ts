@@ -15,6 +15,7 @@ import { SetMandateOptionsCommand } from "../../b2b/payments/application/command
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import {
+  CustomerRole,
   DeferredTerm,
   type PrismaClient,
   UserStatus,
@@ -193,6 +194,143 @@ export async function seedClient(
   await activate(context, companyId);
 
   return { userId, companyId, reference: company.reference };
+}
+
+/**
+ * **Le compte d'impersonation du poste**, quand il existe.
+ *
+ * 🔴 Le semis rattache tout à {@link DEFAULT_IDENTITY}, c'est-à-dire au compte
+ * Auth0 du poste. Or le développement se fait souvent sous l'IMPERSONATION
+ * (`AUTH_DEV_IMPERSONATE`), qui est un AUTRE utilisateur : il ne voyait donc
+ * aucune des sociétés semées, et son sélecteur d'espace restait vide ou
+ * n'affichait que ce qu'il avait créé lui-même à la main (constaté le
+ * 2026-09-17).
+ *
+ * Repéré par son ADRESSE et non par son sujet : `src/` n'a pas le droit de lire
+ * `process.env`, et faire descendre la valeur jusqu'ici demanderait d'élargir le
+ * contexte du semis et ses deux orchestrations — beaucoup de mécanique pour un
+ * confort de poste.
+ */
+const IMPERSONATED_EMAIL = "test-ocp@test.com";
+
+/** La seconde société du poste — celle dont le dossier n'est pas fini. */
+export const PENDING_RAISON_SOCIALE = "SARL Le Refuge des Marmottes";
+
+/** Son enseigne, telle qu'un écran la nomme. */
+export const PENDING_ENSEIGNE = "Le Refuge";
+
+/**
+ * **Un second espace PRO, laissé « en cours »** (Hugo, 2026-09-17).
+ *
+ * ## Ce qu'il sert
+ *
+ * Le poste ne portait que deux espaces : le perso, et une société **active**.
+ * Tout ce qui distingue un dossier en cours de constitution — la bascule
+ * d'espace à trois entrées, les écrans qui refusent une commande tant que la
+ * société n'est pas activée, la phrase qui dit ce qu'il manque — n'était donc
+ * jamais visible sans fabriquer la situation à la main.
+ *
+ * ## Pourquoi elle n'a NI adresse, NI terme, NI activation
+ *
+ * Parce que c'est précisément ce qui la rend « en cours ». `Company.declare`
+ * l'autorise : forme juridique et SIRET sont facultatifs à l'ouverture — « le
+ * compte se crée souvent chez le client, qui n'a pas ses papiers sous la main »
+ * — et l'activation les exige. Une société semée complète puis laissée
+ * `pending` mentirait sur la raison de son état.
+ *
+ * ⚠️ **Le semis des COMMANDES ne la voit pas**, et c'est voulu : `resolveTarget`
+ * cherche `CLIENT_RAISON_SOCIALE`, donc l'historique reste porté par la société
+ * active. Une société sans adresse ni terme ne pourrait pas passer commande.
+ *
+ * Idempotente par sa raison sociale, comme sa voisine : la référence est frappée
+ * par le domaine, donc inconnue avant la création.
+ */
+export async function seedPendingCompany(
+  context: ClientContext,
+  ownerUserId: string,
+): Promise<string> {
+  const existing = await context.prisma.company.findFirst({
+    where: { raisonSociale: PENDING_RAISON_SOCIALE },
+    select: { id: true },
+  });
+  if (existing) {
+    console.log(`· Société « ${PENDING_ENSEIGNE} » déjà présente — inchangée (en cours).`);
+    return existing.id;
+  }
+  const companyId = await asCustomer(context.now, ownerUserId, () =>
+    context.commands.execute<CreateCompanyCommand, string>(
+      new CreateCompanyCommand(
+        ownerUserId,
+        PENDING_RAISON_SOCIALE,
+        PENDING_ENSEIGNE,
+        // Volontairement SANS forme juridique, SIRET ni TVA : c'est ce qui
+        // manque qui fait le dossier en cours, et ce sont exactement les champs
+        // que l'activation réclamera.
+        "",
+        "",
+        "",
+        "",
+      ),
+    ),
+  );
+  console.log(`✓ Société « ${PENDING_ENSEIGNE} » déclarée — laissée EN COURS (non activée).`);
+  return companyId;
+}
+
+/**
+ * **Donne au compte d'impersonation l'accès aux sociétés du poste.**
+ *
+ * ## Le problème qu'il ferme
+ *
+ * On développe sous impersonation, donc sous un utilisateur qui n'est membre de
+ * rien : le sélecteur d'espace ne proposait que ce qu'il avait créé lui-même, et
+ * jamais la société semée. Les trois espaces qu'on veut voir — le perso, un pro
+ * ACTIF, un pro EN COURS — n'étaient jamais réunis sur un même compte.
+ *
+ * ## Pourquoi une écriture directe, et pas `InviteCompanyMemberCommand`
+ *
+ * Parce que cette commande ouvre un **accès** : elle passe par
+ * `AccountAccessGranter`, donc par Auth0 et par un courriel — et son handler dit
+ * qu'un échec du fournisseur d'identité **remonte**. Sur un poste sans Auth0
+ * joignable, elle ferait échouer tout le semis. C'est la même entorse, et la
+ * même raison, que la création directe de la personne quelques lignes plus bas :
+ * « fabriquer un faux jeton serait un contournement plus lourd que la ligne
+ * qu'il évite ».
+ *
+ * ## Le rôle
+ *
+ * `admin`, jamais `owner` : le détenteur n'est pas attribué, il est constaté —
+ * c'est celui dont l'adresse a ouvert le compte, et le dépôt refuse un second
+ * détenteur. `AssignableRole` l'exclut d'ailleurs par construction.
+ *
+ * ⚠️ **Sans effet sur un poste qui n'a pas ce compte**, et idempotent :
+ * `@@unique([userId, companyId])` garantit qu'un rattachement existant n'est ni
+ * dupliqué ni réécrit.
+ */
+export async function seedImpersonatedAccess(
+  { prisma }: ClientContext,
+  companyIds: readonly string[],
+): Promise<void> {
+  const impersonated = await prisma.user.findFirst({
+    where: { email: IMPERSONATED_EMAIL },
+    select: { id: true },
+  });
+  if (impersonated === null) {
+    return;
+  }
+  for (const companyId of companyIds) {
+    const existing = await prisma.membership.findUnique({
+      where: { userId_companyId: { userId: impersonated.id, companyId } },
+      select: { id: true },
+    });
+    if (existing !== null) {
+      continue;
+    }
+    await prisma.membership.create({
+      data: { userId: impersonated.id, companyId, role: CustomerRole.admin },
+    });
+  }
+  console.log(`✓ Accès donné à ${IMPERSONATED_EMAIL} sur ${String(companyIds.length)} société(s).`);
 }
 
 /**

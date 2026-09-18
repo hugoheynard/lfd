@@ -1,7 +1,13 @@
 import "dotenv/config";
 
 import { seedAccounting } from "../src/dev/seeding/accounting.seed.js";
-import { CLIENT_ENSEIGNE, DEFAULT_IDENTITY, seedClient } from "../src/dev/seeding/client.seed.js";
+import {
+  CLIENT_ENSEIGNE,
+  DEFAULT_IDENTITY,
+  seedClient,
+  seedImpersonatedAccess,
+  seedPendingCompany,
+} from "../src/dev/seeding/client.seed.js";
 import { seedLegalDocuments } from "../src/dev/seeding/legal-documents.seed.js";
 import { seedStation } from "../src/dev/seeding/station.seed.js";
 import { refuseNonLocalTarget } from "./local-target.js";
@@ -63,7 +69,14 @@ async function main(): Promise<void> {
       auth0Sub: process.env["SEED_AUTH0_SUB"] ?? DEFAULT_IDENTITY.auth0Sub,
       email: process.env["SEED_EMAIL"] ?? DEFAULT_IDENTITY.email,
     });
-    console.log(`\n✔ Base prête — ${CLIENT_ENSEIGNE} (${client.reference}).`);
+    // Le second espace pro, laissé EN COURS — les mêmes fonctions que le bouton
+    // de rechargement, dans le même ordre : deux corpus qui divergent seraient
+    // pires que pas de bouton du tout.
+    const pendingCompanyId = await seedPendingCompany(context, client.userId);
+    // Le compte d'impersonation doit voir les deux espaces, sinon on développe
+    // sous un utilisateur membre de rien.
+    await seedImpersonatedAccess(context, [client.companyId, pendingCompanyId]);
+    console.log(`\n✔ Base prête — ${CLIENT_ENSEIGNE} (${client.reference}) + un dossier EN COURS.`);
     console.log("  Étape suivante : pnpm --filter lfd-api seed:orders");
   } finally {
     await harness.close();

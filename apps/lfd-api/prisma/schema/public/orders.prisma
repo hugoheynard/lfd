@@ -533,6 +533,50 @@ model OrderIdempotency {
   @@schema("public")
 }
 
+/// **Une clé de passation de la boutique PUBLIQUE** — plan
+/// `documentation/order/plan-commande-sans-compte.md` §5.
+///
+/// Séparée d'`OrderIdempotency`, et ce n'est pas une duplication de confort :
+/// celle-ci est murée par `user_id`, avec clé étrangère et `@@unique(user_id,
+/// key)`. Ce mur repose sur une identité que la surface publique n'a pas, et le
+/// desserrer pour lui faire de la place en aurait fait perdre le bénéfice **aux
+/// clients connectés** — c'est-à-dire aux seuls qui en profitent aujourd'hui.
+///
+/// 🔴 **Ce qui remplace le mur : il n'y a rien à gagner à deviner une clé.** Un
+/// rejeu ne rend que l'identifiant et le numéro de la commande, jamais un
+/// `clientSecret` — `PlaceShopOrderHandler.replay()` ne redemande aucune
+/// intention, là où le chemin connecté en redemande une (légitimement, derrière
+/// un jeton). Le couple (clé, e-mail) a été écarté pour exactement ce motif :
+/// la clé est choisie par le client, l'adresse se tape.
+model ShopOrderIdempotency {
+  id String @id
+
+  /// La clé, un UUID que le contrat impose (`placeShopOrderPayloadSchema`).
+  /// **Unique à elle seule** : il n'y a pas de personne à qui la rattacher.
+  key String @unique
+
+  /// **L'empreinte du panier demandé** — ce qui distingue un rejeu d'une clé
+  /// réutilisée sur un panier corrigé. Sans elle, une correction renverrait
+  /// l'ancienne commande et le front la perdrait en silence.
+  requestFingerprint String @map("request_fingerprint")
+
+  /// La commande qui en est sortie, ou `NULL` — la clé est réclamée, l'appel est
+  /// en vol. Écrite **dans la même transaction** que la commande.
+  ///
+  /// Pas de clé étrangère, comme sur l'autre registre : la ligne naît avant la
+  /// commande, et une contrainte qu'on ne peut pas honorer au moment où l'on
+  /// écrit n'en est pas une.
+  orderId String? @map("order_id")
+
+  /// Le **bail** : une clé réclamée et non résolue depuis plus de deux minutes
+  /// est réputée abandonnée, et la tentative suivante la reprend. Sûr parce que
+  /// rien n'a pu être écrit sous une clé non résolue.
+  claimedAt DateTime @default(now()) @map("claimed_at")
+
+  @@map("shop_order_idempotency")
+  @@schema("public")
+}
+
 model OrderCutoffWaiver {
   id String @id @default(cuid())
 

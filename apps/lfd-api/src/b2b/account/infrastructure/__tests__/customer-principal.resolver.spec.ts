@@ -50,6 +50,7 @@ interface PrismaDouble {
   readonly prisma: {
     user: {
       findUnique: () => Promise<UserWithMemberships | null>;
+      findMany: () => Promise<{ email: string }[]>;
       create: (args: {
         data: { auth0Sub: string; email: string; status: UserStatus };
       }) => Promise<unknown>;
@@ -63,7 +64,7 @@ interface PrismaDouble {
 
 function prismaDouble(
   results: (UserWithMemberships | null)[],
-  options: { createError?: Error } = {},
+  options: { createError?: Error; connectableEmails?: readonly string[] } = {},
 ): PrismaDouble {
   let index = 0;
   const createCalls: PrismaDouble["createCalls"] = [];
@@ -74,6 +75,10 @@ function prismaDouble(
     prisma: {
       user: {
         findUnique: () => Promise.resolve(results[Math.min(index++, results.length - 1)] ?? null),
+        // Le pré-filtre `ILIKE` de Prisma est simulé large : il rend TOUT ce qu'on
+        // lui donne, et c'est au resolver de trancher l'égalité.
+        findMany: () =>
+          Promise.resolve((options.connectableEmails ?? []).map((email) => ({ email }))),
         create: ({ data }) => {
           createCalls.push(data);
           return options.createError === undefined
@@ -388,6 +393,71 @@ describe("CustomerPrincipalResolver", () => {
       await expect(resolver.resolve({ subject: "auth0|boom", scopes: [] })).rejects.toThrow(
         "db down",
       );
+    });
+  });
+
+  /**
+   * Régression : cliquer « Continuer avec Google » avec l'adresse de son compte
+   * ouvrait un SECOND compte, vide (2026-09-17, panneau d'entrée).
+   */
+  describe("connexion sociale sous une adresse déjà connue", () => {
+    const google: VerifiedToken = {
+      subject: "google-oauth2|987",
+      email: "Jean@Client.fr ",
+      emailVerified: true,
+      scopes: [],
+    };
+
+    it("🔴 refuse de créer un second compte, sans rien écrire", async () => {
+      const double = prismaDouble([null], { connectableEmails: ["jean@client.fr"] });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(google)).rejects.toMatchObject({
+        code: "account.identity.link_required",
+      });
+      expect(double.createCalls).toEqual([]);
+    });
+
+    it("crée le compte quand l'adresse n'appartient à personne", async () => {
+      const double = prismaDouble([null, activeUser], { connectableEmails: [] });
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve(google);
+
+      expect(double.createCalls).toHaveLength(1);
+    });
+
+    it("ne confond pas deux adresses que le pré-filtre `ILIKE` rapproche", async () => {
+      // `_` est un joker pour `ILIKE` : `jean_client.fr` y trouverait `jeanxclient.fr`.
+      const double = prismaDouble([null, activeUser], {
+        connectableEmails: ["jeanxclient@x.fr"],
+      });
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ ...google, email: "jean_client@x.fr" });
+
+      expect(double.createCalls).toHaveLength(1);
+    });
+
+    it("laisse passer une connexion sociale sans adresse", async () => {
+      const double = prismaDouble([null, activeUser], { connectableEmails: ["jean@client.fr"] });
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ subject: "facebook|1", scopes: [] });
+
+      expect(double.createCalls).toHaveLength(1);
+    });
+
+    it("ne touche pas à la base de données Auth0 : un sujet vieilli garde son compte neuf", async () => {
+      // Auth0 refuse déjà une seconde inscription sous la même adresse sur cette
+      // connexion ; un `auth0|…` inconnu est une identité recréée, et la
+      // refuser l'enfermerait dehors.
+      const double = prismaDouble([null, activeUser], { connectableEmails: ["jean@client.fr"] });
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ ...google, subject: "auth0|neuf" });
+
+      expect(double.createCalls).toHaveLength(1);
     });
   });
 });

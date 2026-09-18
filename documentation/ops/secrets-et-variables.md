@@ -138,7 +138,7 @@ réglage est branché.
 ⚠️ **Une variable qui change ne redémarre pas le container.** Les `envVars` ne
 sont lues qu'à son démarrage, et un changement de secret ne déclenche **aucun**
 rollout — seule une image neuve le fait. Cf.
-[`../todos/todo-deploiement-en-exploitation.md`](../todos/todo-deploiement-en-exploitation.md).
+[`../ci-cd/todo-deploiement-en-exploitation.md`](../ci-cd/todo-deploiement-en-exploitation.md).
 
 ## 3 ter. La paire VAPID — ce qu'elle est, et ce qu'elle n'est pas
 

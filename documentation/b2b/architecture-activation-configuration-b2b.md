@@ -126,5 +126,5 @@ deux jointures complètes. Le KBIS et l'ancienneté, eux, y sont déjà
 
 ## 4. À lire ensuite
 
-- [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md) — ouverture, activation, suspension
+- [`../auth-inscription/architecture-compte-client-cycle-de-vie.md`](../auth-inscription/architecture-compte-client-cycle-de-vie.md) — ouverture, activation, suspension
 - [`architecture-alertes-compte-client.md`](architecture-alertes-compte-client.md) — les alertes de **commande** (à ne pas confondre avec ces avertissements de **dossier**)

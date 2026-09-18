@@ -14,15 +14,15 @@ import {
 } from 'fold-ng';
 
 import { JournalService, type JournalLine } from './journal.service';
-import { toLine } from './journal-line';
+import { MODULE_LABELS, toLine } from './journal-line';
 
-/** Les modules qui écrivent au journal, plus « tous ». */
+/**
+ * Les modules qui écrivent au journal, plus « tous ». Dérivés des libellés du
+ * badge : le filtre et la ligne disent le même mot.
+ */
 const MODULES: FoldSelectOption<string>[] = [
   { value: '', label: 'Tous les modules' },
-  { value: 'pim', label: 'Référentiel' },
-  { value: 'commercial', label: 'Commercial' },
-  { value: 'commandes', label: 'Commandes' },
-  { value: 'comptes', label: 'Comptes clients' },
+  ...Object.entries(MODULE_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
 /** Les fenêtres de temps proposées, en jours. `0` = depuis toujours. */
@@ -141,8 +141,11 @@ export class JournalPage {
   }
 }
 
-/** Le `<select>` rend une chaîne ; seules ces quatre valeurs sont des modules. */
+/** La liste rend une chaîne ; seules les clés de `MODULE_LABELS` sont des modules. */
 function asModule(value: string): ActivityModule | undefined {
-  const known: readonly ActivityModule[] = ['pim', 'commercial', 'commandes', 'comptes'];
-  return known.find((module) => module === value);
+  return isModule(value) ? value : undefined;
+}
+
+function isModule(value: string): value is ActivityModule {
+  return Object.hasOwn(MODULE_LABELS, value);
 }

@@ -14,7 +14,7 @@ enum DeferredTerm {
 /// `pending` = société déclarée par le client depuis « Mes entreprises », pas
 /// encore validée commercialement (défaut à la création). L'activation reste
 /// **manuelle côté commercial** — décision verrouillée dans
-/// `documentation/b2b/architecture-compte-client-cycle-de-vie.md`.
+/// `documentation/auth-inscription/architecture-compte-client-cycle-de-vie.md`.
 ///
 /// `suspended` ≠ `terminated` : `suspended` coupe l'accès **temporairement**
 /// (impayé, litige) et se lève ; `terminated` acte la **fin de la relation
@@ -252,7 +252,25 @@ model User {
 
   // Identité Auth0 (aucun mot de passe stocké ici). `email` est la clé humaine ;
   // Auth0 en reste propriétaire, on le synchronise (cf. CustomerIdentityPort).
-  auth0Sub String @unique @map("auth0_sub")
+  //
+  // 🔴 **NULL = un INVITÉ** : une personne connue par son adresse, qui n'a
+  // **rien** à quoi se connecter. C'est la porte de la commande sans compte —
+  // plan `documentation/order/plan-commande-sans-compte.md`, D1.
+  //
+  // Se connecter lui est **inexprimable**, et c'est tout l'intérêt de porter la
+  // distinction ici plutôt que sur `status` : un statut déclaratif peut diverger
+  // du fait qu'il prétend décrire, une identité de connexion absente ne le peut
+  // pas. Corollaire à tenir : le `status` d'un invité vaut `active`, et on ne
+  // déduit donc JAMAIS « peut se connecter » d'un statut.
+  //
+  // L'unicité tient toujours sur les sujets RÉELS : Postgres n'apparie pas deux
+  // `NULL`, donc autant d'invités qu'on veut, et jamais deux personnes pour un
+  // même `sub`.
+  //
+  // ⚠️ Irréversible en pratique : resserrer la colonne exigerait d'inventer un
+  // sujet à chaque invité, c'est-à-dire une identité de connexion que personne
+  // n'a ouverte. Assumé par écrit (plan §11).
+  auth0Sub String? @unique @map("auth0_sub")
   email    String
 
   // Profil de la personne — DISTINCT du contact de la société. Chaîne vide et

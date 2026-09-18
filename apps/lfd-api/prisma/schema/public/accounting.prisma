@@ -247,16 +247,16 @@ model CompanyBankAccount {
   /// client les connaît**. Ils peuvent diverger de la raison sociale déclarée
   /// sans que personne se trompe — et c'est ce bloc-là qui s'imprime sur le
   /// mandat que le client signe.
-  holder       String
+  holder          String
   /// Civilité ou forme juridique du titulaire — mention obligatoire d'un mandat
   /// interentreprises. Vide = inconnue : on ne sait pas qui est le titulaire, et
   /// on ne le devine pas depuis la société (le titulaire peut en différer).
   holderLegalForm String @default("") @map("holder_legal_form")
-  addressLine1 String @map("address_line1")
-  addressLine2 String @default("") @map("address_line2")
-  postalCode   String @map("postal_code")
-  city         String
-  countryCode  String @default("FR") @map("country_code")
+  addressLine1    String @map("address_line1")
+  addressLine2    String @default("") @map("address_line2")
+  postalCode      String @map("postal_code")
+  city            String
+  countryCode     String @default("FR") @map("country_code")
 
   /// 🔴 Le scellé, jamais l'IBAN. Illisible sans `FIELD_ENCRYPTION_KEY`.
   ibanSealed String @map("iban_sealed")

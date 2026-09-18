@@ -40,6 +40,9 @@ function isLocale(value: string): value is LocaleCode {
 @Component({
   selector: 'app-lang-switch',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Le mode compact passe en CLASSE : c'est le CSS qui choisit la forme, et il
+  // a besoin de connaître ce refus au-delà du pli (cf. le gabarit).
+  host: { '[class.is-compact]': 'compact()' },
   imports: [FoldIconComponent, FoldViewToggleComponent],
   templateUrl: './lang-switch.html',
   styleUrl: './lang-switch.scss',

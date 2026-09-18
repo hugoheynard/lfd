@@ -92,9 +92,17 @@ export abstract class OrderReader {
    * réimprime, et deux tirages doivent rendre exactement la même pile — sinon la
    * numérotation « fiche 3/14 » cesse de désigner la même feuille.
    *
-   * Seules les **annulées** sont écartées. Une commande déjà remise reste dans
-   * son lot : la retirer ferait maigrir la pile entre deux tirages, et c'est
-   * précisément le compte qui sert de preuve qu'il ne manque rien.
+   * Une commande déjà remise reste dans son lot : la retirer ferait maigrir la
+   * pile entre deux tirages, et c'est précisément le compte qui sert de preuve
+   * qu'il ne manque rien. Sont écartées les **annulées**, les **brouillons** —
+   * qui n'existent pas encore — et 🔴 **ce que le compte à produire refuse**.
+   *
+   * Cette dernière condition manquait jusqu'au 2026-09-17 : le lot écartait les
+   * seules annulées, et le fournil recevait des bons pour des règlements morts
+   * ou pour des visiteurs dont la carte était restée en l'air. Il partage
+   * désormais la moitié « argent » de la règle du plan (`settlementWhere`), mais
+   * garde son propre statut — lui donner celui du plan le viderait dès l'arrêt
+   * de la journée, c'est-à-dire au moment où on l'imprime.
    */
   abstract listForProduction(date: string): Promise<readonly AtelierSheet[]>;
 }

@@ -115,12 +115,26 @@ export class GrantAccountAccess extends AccountAccessGranter {
       // la renverse pas au passage.
       throw new AccountDisabledError(input.email);
     }
-    if (known.status === "invited") {
-      // Pas de garde d'adresse ici, et c'est délibéré : un compte `invited` n'est
-      // créé que par nous (`createInvited`, l'inscription libre crée `active`),
-      // et on n'y ouvre rien — on envoie un lien À L'ADRESSE. Seule la personne
-      // qui lit la boîte peut s'en servir, et le ticket marque alors l'adresse
-      // vérifiée (vérifié le 2026-09-14).
+    // 🔴 **Deux situations, un seul chemin : personne ne peut se connecter.**
+    //
+    // `invited` — l'identité existe, le mot de passe n'a jamais été posé.
+    // `subject === null` — un INVITÉ au sens du plan `plan-commande-sans-compte.md`
+    // (D1) : il a commandé sans compte, et il n'a **rien** à quoi se connecter.
+    //
+    // Pas de garde d'adresse ici, et c'est délibéré dans les deux cas : on
+    // n'ouvre rien à personne, on envoie un lien À L'ADRESSE. Seule la personne
+    // qui lit la boîte peut s'en servir, et le ticket marque alors l'adresse
+    // vérifiée (vérifié le 2026-09-14). Le rattachement posé avant n'est donc
+    // pas exploitable par qui a tapé l'adresse de quelqu'un d'autre au panier :
+    // il ne lui donne aucun moyen d'entrer.
+    //
+    // ⚠️ Sans cette seconde condition, un invité tomberait sur la garde
+    // `emailVerified` plus bas — son statut vaut `active` (D1) et son adresse
+    // n'a jamais été prouvée — et « ouvrir un accès à quelqu'un qui a déjà
+    // commandé en public » serait un refus définitif, sans geste de sortie. Le
+    // plan §4.1 ne nomme que `issuePasswordLink` ; c'est le même chemin, une
+    // garde plus tôt.
+    if (known.status === "invited" || known.subject === null) {
       return this.reissueLink(known, input);
     }
     if (!known.emailVerified) {
@@ -187,6 +201,20 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * humaine — et le prochain passage n'aura plus rien à réparer.
    */
   private async linkForKnown(known: KnownAccount, email: string): Promise<string> {
+    // 🔴 **Un INVITÉ n'a pas de sujet du tout** — il a commandé sans compte, et
+    // son identité de connexion n'existe nulle part (plan
+    // `plan-commande-sans-compte.md`, D1 et §4.1). Lui demander un lien pour un
+    // sujet nul n'est pas un cas limite : c'est le seul endroit où l'absence de
+    // sujet CASSE un chemin qui marche — « le commercial ouvre un accès à
+    // quelqu'un qui a déjà commandé en public ».
+    //
+    // On ouvre donc son identité, au lieu d'en réclamer une qui n'a jamais été
+    // ouverte. Rien à distinguer du cas du sujet périmé ci-dessous : les deux se
+    // réparent par le même geste, et `provision` est idempotent sur l'adresse.
+    if (known.subject === null) {
+      this.logger.log(`Ouverture d'une identité pour ${email} — invité sans sujet.`);
+      return this.adoptIdentity(known, email);
+    }
     try {
       return await this.identity.issuePasswordLink(known.subject);
     } catch (error) {
@@ -196,16 +224,35 @@ export class GrantAccountAccess extends AccountAccessGranter {
       this.logger.warn(
         `Sujet d'identité périmé pour ${email} (${known.subject}) — réalignement sur le fournisseur.`,
       );
-      // Son prénom à ELLE : `provision` ne sert ici qu'à retrouver l'identité,
-      // il ne doit pas la renommer avec ce qu'un commercial vient de taper.
-      const provisioned = await this.identity.provision({
-        email,
-        firstName: known.firstName,
-        lastName: "",
-      });
-      await this.members.rebindSubject(known.userId, provisioned.subject);
-      return provisioned.passwordSetupUrl;
+      return this.adoptIdentity(known, email);
     }
+  }
+
+  /**
+   * Ouvre — ou **retrouve** — l'identité de cette adresse, et la rattache chez
+   * nous.
+   *
+   * `provision` est idempotent sur l'e-mail : il crée si rien n'existe, rend
+   * l'existant sinon. C'est ce qui permet au même geste de servir les deux cas
+   * qui l'appellent — l'invité qui n'a jamais eu de sujet, et celui dont le
+   * nôtre a vieilli. On réécrit le pointeur technique, jamais la clé humaine.
+   *
+   * ⚠️ Appelé **uniquement** depuis {@link linkForKnown}, c'est-à-dire sur une
+   * personne que le commercial vient de désigner par son adresse — jamais depuis
+   * une surface publique. L'idempotence sur l'e-mail est un service ici et
+   * serait une faille là-bas : elle laisserait n'importe qui commander sous le
+   * compte d'un autre en tapant son adresse (plan §3.2).
+   */
+  private async adoptIdentity(known: KnownAccount, email: string): Promise<string> {
+    // Son prénom à ELLE : `provision` ne sert ici qu'à ouvrir ou retrouver
+    // l'identité, il ne doit pas la renommer avec ce qu'un commercial a tapé.
+    const provisioned = await this.identity.provision({
+      email,
+      firstName: known.firstName,
+      lastName: "",
+    });
+    await this.members.rebindSubject(known.userId, provisioned.subject);
+    return provisioned.passwordSetupUrl;
   }
 
   /** Cliente active : une société de plus dans son espace, pas un second compte. */

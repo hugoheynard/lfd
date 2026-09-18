@@ -76,7 +76,7 @@ export const adminRoutes: Routes = [
       {
         // Sa PROPRE ressource, pas `b2b_settings` ni le `companies:read` du
         // parent : ouvrir ou couper la vente en ligne pèse plus qu'une zone de
-        // livraison (plan `documentation/b2b/plan-inscription-pro-seule.md` §2.4).
+        // livraison (plan `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.4).
         // Le commercial la lit, seul l'administrateur l'écrit — l'écran le suit.
         path: 'feature-access',
         canActivate: [permissionGuard('b2b_feature_access:read')],

@@ -1,0 +1,33 @@
+-- ───────────────────────────────────────────────────────────────────────────
+-- UN INVITÉ N'A RIEN À QUOI SE CONNECTER.
+--
+-- Cf. documentation/b2b/plan-commande-sans-compte.md — décision D1, lot B.
+--
+-- ADDITIVE, en UN SEUL passage : une colonne qui devient nullable n'exige pas
+-- les trois temps du CLAUDE.md §0. Rien n'est supprimé, rien n'est renommé,
+-- rien n'est resserré, aucune ligne existante n'est réécrite — toutes portent
+-- déjà un sujet, et elles le gardent.
+--
+-- 🔴 CE QUE `NULL` VEUT DIRE, ET RIEN D'AUTRE : cette personne n'a AUCUNE
+-- identité de connexion. Pas « pas encore » — `UserStatus.invited` dit déjà ça
+-- d'un compte que nous avons provisionné. Se connecter devient INEXPRIMABLE
+-- pour elle, là où un statut déclaratif peut diverger du fait qu'il décrit.
+-- Corollaire à tenir dans le code : son `status` vaut `active`, et on ne déduit
+-- donc jamais « peut se connecter » d'un statut.
+--
+-- L'UNICITÉ SURVIT, et c'est ce qui rend la bascule sûre : Postgres n'apparie
+-- pas deux `NULL` dans un index unique. `users_auth0_sub_key` continue donc
+-- d'interdire que deux personnes partagent un `sub` réel — la garantie sur
+-- laquelle repose la résolution du principal — tout en laissant coexister
+-- autant d'invités qu'il en viendra. Rien à recréer : l'index reste le même,
+-- seule la contrainte `NOT NULL` tombe.
+--
+-- ⚠️ RETOUR ARRIÈRE : `ALTER TABLE ... SET NOT NULL` n'est PAS un retour
+-- arrière une fois le premier invité écrit — il échouerait sur ses lignes, et
+-- les « réparer » demanderait d'inventer un sujet, c'est-à-dire une identité de
+-- connexion que personne n'a ouverte. Cette migration est donc IRRÉVERSIBLE en
+-- pratique, et c'est assumé par écrit (plan §11), comme le D4 du plan voisin
+-- `documentation/order/plan-nature-du-client-sur-la-commande.md`.
+-- ───────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "public"."users" ALTER COLUMN "auth0_sub" DROP NOT NULL;

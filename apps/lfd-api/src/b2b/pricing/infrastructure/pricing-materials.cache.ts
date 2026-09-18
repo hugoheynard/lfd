@@ -48,7 +48,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
  * ## 🔴 L'estampille — ce qui le rend sûr à PLUSIEURS instances
  *
  * Ce cache a supposé **une seule instance de l'API** jusqu'au 2026-09-09.
- * C'était le cas par décision de routage — `documentation/ops/architecture-deploiement.md`
+ * C'était le cas par décision de routage — `documentation/ci-cd/architecture-deploiement.md`
  * §4, « Instances max : 1 » — et non par plafond de capacité. Le jour du passage
  * à deux, il serait devenu **faux** : une règle posée sur l'instance A
  * n'invalide pas l'instance B, qui aurait continué de facturer l'ancien prix

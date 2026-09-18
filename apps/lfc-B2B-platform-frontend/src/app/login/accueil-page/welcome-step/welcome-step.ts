@@ -78,6 +78,8 @@ export class WelcomeStep {
 
   /** L'e-mail déjà tapé, s'il y en a un : il préremplira l'écran d'Auth0. */
   readonly wantsLogin = output<string>();
+  /** Entrer par Google — qu'on ait un compte ou non : le premier passage le crée. */
+  readonly wantsGoogle = output<void>();
   readonly wantsCallback = output<void>();
   readonly wantsQuote = output<void>();
   readonly cancelledCallback = output<void>();

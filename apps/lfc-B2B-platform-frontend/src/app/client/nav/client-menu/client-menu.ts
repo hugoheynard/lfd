@@ -20,6 +20,7 @@ import {
   currentWorkspaceLabel,
   workspaceEntries,
 } from '../../client-workspace.service';
+import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { LangSwitch } from '../../lang-switch/lang-switch';
@@ -66,6 +67,7 @@ export class ClientMenu {
   protected readonly access = inject(ClientFeatureAccess);
   protected readonly identity = inject(ClientIdentity);
   protected readonly workspace = inject(ClientWorkspace);
+  private readonly switcher = inject(ClientWorkspaceSwitch);
   private readonly auth = inject(AuthFacade);
   private readonly account = inject(AccountService);
   private readonly panels = inject(FoldPanelHostService);
@@ -88,8 +90,9 @@ export class ClientMenu {
     currentWorkspaceLabel(this.workspace.company(), this.t().chrome.workspaceCurrentPersonal),
   );
 
+  /** L'espace change, et l'écran suit — cf. `ClientWorkspaceSwitch`. */
   protected choose(workspace: string): void {
-    this.workspace.choose(workspace);
+    void this.switcher.switchTo(workspace);
   }
 
   /** Le salut nomme, ou ne nomme pas — jamais du prénom de quelqu'un d'autre. */

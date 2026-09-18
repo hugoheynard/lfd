@@ -48,4 +48,19 @@ export const MAIL_FR: MailCopy = {
     cta: "Voir ma commande",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
   },
+  paymentFailed: {
+    subject: "Paiement refusé — votre commande {ref}",
+    kicker: "Paiement refusé",
+    title: "Votre paiement n'est pas passé.",
+    intro: "Votre banque a refusé le règlement de cette commande.",
+    // 🔴 La phrase qui décide : sans elle, on ne sait pas s'il faut repasser
+    // commande, attendre, ou se présenter au comptoir.
+    consequence:
+      "Votre commande n'entre donc pas en fabrication, et rien ne vous attend au comptoir. " +
+      "Reprenez le règlement ci-dessous pour la relancer.",
+    amountLabel: "Montant à régler",
+    cta: "Reprendre le règlement",
+    footer:
+      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
+  },
 };

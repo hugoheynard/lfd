@@ -6,6 +6,7 @@ import {
   type ExpectedDayProduction,
   type ServiceRange,
 } from "../../../production/channels/commerce/index.js";
+import { planWhere } from "./plan-filter.js";
 
 /**
  * **Ce que le commerce annonce au fournil pour les jours qui viennent.**
@@ -51,7 +52,11 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
           gte: new Date(`${range.from.value}T00:00:00.000Z`),
           lte: new Date(`${range.to.value}T00:00:00.000Z`),
         },
-        status: "placed",
+        // 🔴 **Le fragment PARTAGÉ** (2026-09-17). Ce `where` posait « placed » à
+        // la main et ignorait le règlement : le prévisionnel annonçait donc au
+        // fournil des commandes que la clôture, elle, n'absorbait plus. Deux
+        // écrans, deux chiffres, aucun moyen de savoir lequel croire.
+        ...planWhere(),
       },
       select: {
         requestedDeliveryDate: true,

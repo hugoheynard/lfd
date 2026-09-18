@@ -10,6 +10,7 @@ import { AppConfig } from "../config/app-config.js";
 import { CustomerDocumentStore } from "../storage/customer-document-store.js";
 import { ProductionDocumentStore } from "../storage/production-document-store.js";
 import { DocumentStore } from "../storage/document-store.js";
+import { KeptDocumentStore } from "../storage/kept-document-store.js";
 import { MediaStore } from "../storage/media-store.js";
 import { R2MediaStore } from "../storage/r2-media-store.js";
 import { S3DocumentStore } from "../storage/s3-document-store.js";
@@ -55,8 +56,10 @@ import { SystemClock } from "../time/system-clock.js";
     {
       provide: CustomerDocumentStore,
       inject: [AppConfig],
+      // Enveloppé : ce bucket garde ce qu'un client peut nous opposer, et rien
+      // ne doit pouvoir y supprimer (cf. `KeptDocumentStore`).
       useFactory: (config: AppConfig): CustomerDocumentStore =>
-        new S3DocumentStore(config, "customers"),
+        new KeptDocumentStore(new S3DocumentStore(config, "customers")),
     },
     {
       // Le fournil. Le bucket était configuré depuis le 2026-09-07 et n'avait

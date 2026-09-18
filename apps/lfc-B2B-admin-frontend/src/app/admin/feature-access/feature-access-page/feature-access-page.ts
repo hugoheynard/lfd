@@ -85,7 +85,7 @@ function toCard(key: FeatureKey, feature: AdminFeatureView): FeatureCard {
 
 /**
  * **Accès aux fonctionnalités** — ce qu'on peut faire de la boutique, réglé
- * sans redéployer. Plan : `documentation/b2b/plan-inscription-pro-seule.md` §5.
+ * sans redéployer. Plan : `documentation/auth-inscription/plan-inscription-pro-seule.md` §5.
  *
  * ## Le serveur décide, l'écran relit
  *

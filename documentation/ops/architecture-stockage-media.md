@@ -352,7 +352,7 @@ se nettoie pas tout seul (§7).
 
 ## 8. À lire ensuite
 
-- [`architecture-deploiement.md`](architecture-deploiement.md) — la carte, et le
+- [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md) — la carte, et le
   placement WEUR des containers, décidé pour les mêmes raisons de latence.
 - [`secrets-et-variables.md`](secrets-et-variables.md) — où vit une valeur, et
   laquelle doit résoudre.

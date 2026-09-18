@@ -14,6 +14,7 @@ import {
   currentWorkspaceLabel,
   workspaceEntries,
 } from '../../client-workspace.service';
+import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ProfilePanel } from '../../profile/profile-panel/profile-panel';
 
@@ -54,6 +55,7 @@ export class AccountMenu {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly identity = inject(ClientIdentity);
   protected readonly workspace = inject(ClientWorkspace);
+  private readonly switcher = inject(ClientWorkspaceSwitch);
   private readonly auth = inject(AuthFacade);
   private readonly account = inject(AccountService);
   private readonly panels = inject(FoldPanelHostService);
@@ -98,8 +100,9 @@ export class AccountMenu {
   /** Le profil n'est pas encore relu : l'entrée attend plutôt que d'ouvrir un dialogue vide. */
   protected readonly hasProfile = computed(() => this.account.profile() !== null);
 
+  /** L'espace change, et l'écran suit — cf. `ClientWorkspaceSwitch`. */
   protected choose(workspace: string): void {
-    this.workspace.choose(workspace);
+    void this.switcher.switchTo(workspace);
   }
 
   protected openProfile(): void {

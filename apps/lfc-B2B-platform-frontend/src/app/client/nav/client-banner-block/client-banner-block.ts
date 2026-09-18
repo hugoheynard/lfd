@@ -18,6 +18,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 @Component({
   selector: 'app-client-banner-block',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.align-start]': "titleAlign() === 'start'" },
   templateUrl: './client-banner-block.html',
   styleUrl: './client-banner-block.scss',
 })
@@ -36,4 +37,24 @@ export class ClientBannerBlock {
 
   /** La ligne sous le titre. Vide, elle ne prend pas de place. */
   readonly lead = input('');
+
+  /**
+   * Où se range le texte quand rien n'est projeté **à côté** de lui.
+   *
+   * `auto` — le défaut, et le comportement de tous les écrans jusqu'ici : un
+   * titre seul se centre, parce qu'aligné à gauche il laisserait une moitié de
+   * bandeau vide qui ne dit rien.
+   *
+   * 🔴 `start` existe pour l'écran qui projette SOUS le titre (`banner-below`).
+   * Là, le bandeau n'est pas vide — il porte un rail pleine largeur — et un
+   * titre centré au-dessus d'un rail aligné à gauche fait deux grammaires dans
+   * le même bloc.
+   *
+   * ⚠️ C'est une ENTRÉE et non un `:has()` sur le contenu projeté : Angular
+   * ajoute son attribut d'encapsulation à chaque compound du sélecteur, et un
+   * nœud projeté porte celui du composant qui l'a DÉCLARÉ, pas le nôtre — la
+   * règle ne matcherait jamais. Le composant ne peut donc pas deviner ce qu'on
+   * lui projette ; l'écran le lui dit.
+   */
+  readonly titleAlign = input<'auto' | 'start'>('auto');
 }

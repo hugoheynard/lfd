@@ -12,6 +12,6 @@ export class SetStaffStatusCommand {
   constructor(
     readonly id: string,
     readonly change: StaffStatusChange,
-    readonly actorSub: string,
+    readonly actorId: string,
   ) {}
 }

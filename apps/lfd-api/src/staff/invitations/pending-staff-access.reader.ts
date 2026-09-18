@@ -25,6 +25,16 @@ export interface PendingStaffAccessView {
  */
 export abstract class PendingStaffAccessReader {
   abstract list(): Promise<readonly PendingStaffAccessView[]>;
-  /** Le sujet d'identité d'un invité, ou `null` s'il n'attend plus. */
-  abstract subjectOf(staffUserId: string): Promise<string | null>;
+  /**
+   * L'invité qui attend encore — son sujet d'identité et son nom, pour que la
+   * trace du lien fabriqué puisse le nommer —, ou `null` s'il n'attend plus.
+   */
+  abstract pendingOf(staffUserId: string): Promise<PendingStaffSubject | null>;
+}
+
+/** Ce qu'il faut pour frapper un lien, et pour dire à qui il était destiné. */
+export interface PendingStaffSubject {
+  readonly subject: string;
+  readonly firstName: string;
+  readonly lastName: string;
 }

@@ -73,6 +73,16 @@ export interface AuthConfig {
  */
 export const CUSTOMER_CONNECTION = 'lfc-b2b-customers';
 
+/**
+ * La connexion Auth0 de **Google** — son nom par défaut dans le tenant.
+ *
+ * Nommée comme `CUSTOMER_CONNECTION`, et pour la même raison : le bouton mène
+ * droit chez Google, sans passer par l'écran d'Auth0. La nommer est de
+ * l'ergonomie, pas un contrôle — c'est l'API qui refuse un second compte sous
+ * une adresse connue (`SocialSignInAccountExistsError`).
+ */
+export const GOOGLE_CONNECTION = 'google-oauth2';
+
 export const AUTH_CONFIG: AuthConfig = {
   domain: AUTH_ENV.domain,
   clientId: AUTH_ENV.clientId,

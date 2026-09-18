@@ -45,7 +45,7 @@ const UNKNOWN_MANDATE_LEVEL: GateLevel = 'closed';
 /**
  * **Ce que l'app cliente peut faire de la boutique**, tel que le serveur le dit.
  *
- * Plan : `documentation/b2b/plan-inscription-pro-seule.md` §4.
+ * Plan : `documentation/auth-inscription/plan-inscription-pro-seule.md` §4.
  *
  * Ce service ne FERME rien : c'est l'API qui refuse. Il évite seulement que
  * l'écran promette ce que le serveur refusera — une destination de menu, un

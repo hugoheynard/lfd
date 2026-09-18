@@ -1,6 +1,6 @@
 /**
  * E2E des **gardes de la boutique** — plan
- * `documentation/b2b/plan-inscription-pro-seule.md`, lot 3.
+ * `documentation/auth-inscription/plan-inscription-pro-seule.md`, lot 3.
  *
  * Ce que seul le module entier prouve :
  * - l'ordre réel des gardes globales de `AppModule` : la garde de la boutique

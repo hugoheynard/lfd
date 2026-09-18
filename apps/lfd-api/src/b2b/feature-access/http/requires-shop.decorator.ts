@@ -13,7 +13,7 @@ export type ShopRequirement = Exclude<ShopLevel, "closed">;
 
 /**
  * Marque une route comme **coupée tant que la boutique n'est pas au moins à ce
- * niveau** — plan `documentation/b2b/plan-inscription-pro-seule.md` §2.3.
+ * niveau** — plan `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.3.
  *
  * Un marqueur plutôt qu'un `if` dans chaque handler, comme `@PublicationGesture` :
  * le refus a besoin de l'exemption, donc du `Principal`, que les commandes ne

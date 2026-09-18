@@ -21,6 +21,29 @@
   grid-area: grid;
 }
 
+/* 🔴 LES TERMES SONT À CHEVAL SUR LA COUTURE — moitié sur l'encre de la
+   descente, moitié sur la crème de la page. C'est ce qui en fait le lien entre
+   ce qu'on vient de décider et ce qu'on va composer, plutôt qu'un pied de
+   bandeau.
+   La carte DÉBORDE vers le bas, et c'est le seul sens qui marche : elle vit
+   dans la descente, qui ne clippe pas, là où la région de contenu clippe tout
+   ce qui en sort (mesuré le 2026-09-17 — 32 px avalés). La marge négative
+   remonte d'autant la fin de la descente.
+   `z-index: 3` la place devant la LÈVRE du bandeau, posée à 2 pour passer
+   devant la page : sans ce cran, la couture repasserait par-dessus la carte. */
+.terms {
+  display: block;
+  position: relative;
+  z-index: 3;
+  /* `top` et NON `margin-bottom` : la marge négative remontait la fin de la
+     descente d'autant, si bien que la carte finissait pile sur la couture au
+     lieu de la franchir (mesuré le 2026-09-17 — bas de carte et bas de bande
+     tous deux à 364). Un décalage visuel, lui, ne touche pas au flux : la
+     descente garde sa hauteur, et la carte déborde vraiment. */
+  top: var(--fold-space-2xl);
+  padding: 0 var(--lfc-inset);
+}
+
 .shop {
   display: grid;
   /* `minmax(0, 1fr)` et pas `auto` : le rail des rayons ne se coupe PAS

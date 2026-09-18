@@ -44,6 +44,10 @@
  * Une exception silencieuse serait indiscernable d'un oubli — c'est exactement
  * ce que cette porte existe pour empêcher.
  *
+ * **L'équipe** (`src/staff/**`) : tout `@CommandHandler` doit APPELER
+ * `journal.append` sous `UnitOfWork`, ou déléguer à `OpenStaffAccess` qui le
+ * fait — cf. `STAFF_ZONE` plus bas.
+ *
  * Usage : `pnpm lint:journal-tracked` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -108,6 +112,28 @@ const FEATURE_ACCESS_ZONE = "feature-access";
  * Tous ses handlers, sans tri par nom : le module n'a aucun chemin client.
  */
 const CLIENT_NOTES_ZONE = "client-notes";
+
+/**
+ * **L'équipe** (`src/staff/**`, 2026-09-18, plan
+ * `documentation/auth-inscription/plan-journal-de-l-annuaire.md` D3) : qui
+ * entre dans le back-office, avec quels droits, et qui l'a décidé. Tous ses
+ * handlers d'écriture, sans tri par nom — un membre de l'équipe n'y agit que
+ * sur l'accès des autres, ou sur un réglage à lui qu'il déclare
+ * `@sans-journal`.
+ *
+ * La discipline est celle du référentiel, pas celle des comptes : les faits de
+ * l'annuaire portent des DIFFS (« un fait par changement réel ») que seul le
+ * handler sait calculer. Il APPELLE donc `journal.append` lui-même, dans une
+ * `UnitOfWork`.
+ *
+ * Une délégation est admise, et une seule : `OpenStaffAccess`, que l'invitation
+ * et la création partagent. Elle n'est pas un chèque en blanc — la porte vérifie
+ * que le service délégué journalise lui-même, sous unité de travail.
+ */
+const STAFF_ZONE = "staff";
+const STAFF_DELEGATES = new Map([
+  ["OpenStaffAccess", join("staff", "invitations", "open-staff-access.service.ts")],
+]);
 
 /**
  * La dette déclarée — **vide depuis le 2026-08-25**.
@@ -218,7 +244,27 @@ function auditTraced(source, index, params, handler) {
   return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
 }
 
+/** Zone de l'équipe : APPELER `journal.append`, dans une transaction — ou déléguer à un service qui le fait. */
+function auditStaff(source, index, params, handler) {
+  checked += 1;
+  const body = handlerBody(source, index);
+  const delegate = [...STAFF_DELEGATES.keys()].find((name) => params.includes(name));
+  if (delegate !== undefined) {
+    const service = readFileSync(join(SRC, STAFF_DELEGATES.get(delegate)), "utf8");
+    const traced = service.includes("journal.append(") && service.includes("UnitOfWork");
+    return traced
+      ? { traced: true }
+      : { traced: false, missing: [`un ${delegate} qui journalise sous UnitOfWork`], handler };
+  }
+  const missing = [
+    body.includes("journal.append(") ? null : "un appel à journal.append",
+    params.includes("UnitOfWork") ? null : "UnitOfWork",
+  ].filter(Boolean);
+  return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
+}
+
 const ZONES = [
+  { root: join(SRC, STAFF_ZONE), audit: auditStaff },
   { root: join(SRC, "pim"), audit: auditPim },
   { root: join(SRC, "b2b", "account"), audit: auditStaffAct },
   ...SETTINGS_ZONES.map((zone) => ({
@@ -279,7 +325,8 @@ if (offenders.length > 0) {
       "les tests passent, l'écran fonctionne. Ça se découvre le jour où l'on\n" +
       "demande « qui a changé ça » — et ce jour-là, le blanc ne se comble plus.\n\n" +
       "Soit il journalise — `PimJournal` + `UnitOfWork` au référentiel,\n" +
-      "`publishTraced` sous unité de travail pour un acte du staff — soit il\n" +
+      "`publishTraced` sous unité de travail pour un acte du staff,\n" +
+      "`journal.append` sous unité de travail dans l'équipe — soit il\n" +
       "déclare `@sans-journal <raison>` dans son commentaire : visible,\n" +
       "motivée, relisible.\n",
   );

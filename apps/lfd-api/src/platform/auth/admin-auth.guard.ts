@@ -43,6 +43,9 @@ export class AdminAuthGuard implements CanActivate {
       request.staff = {
         subject: DEV_STAFF_SUBJECT,
         email: this.config.bootstrapAdminEmail(),
+        // Le poste local n'a pas de boîte à prouver : l'adresse est celle que
+        // la configuration désigne, pas celle qu'un inconnu a tapée.
+        emailVerified: true,
         scopes: [],
       };
       attachActor({ type: "staff", id: DEV_STAFF_SUBJECT });

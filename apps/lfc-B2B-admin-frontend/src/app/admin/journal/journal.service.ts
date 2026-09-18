@@ -49,8 +49,14 @@ function paramsOf(filters: JournalFilters): HttpParams {
  */
 export interface JournalLine {
   readonly event: ActivityEventView;
+  /** « Création d'un membre de l'équipe » — le geste ; vide quand la phrase suffit. */
+  readonly title: string;
   /** « Commande ORD-142 passée » — la phrase, dérivée du type et du payload. */
   readonly sentence: string;
+  /** Vrai quand la phrase nomme déjà l'auteur : la méta ne répète pas « par … ». */
+  readonly sentenceNamesActor: boolean;
+  /** « Comptes clients » — le libellé du module, jamais sa clé ; vide sans module. */
+  readonly moduleLabel: string;
   /** « 21 août 2026 à 14:32 » — jamais l'ISO brut. */
   readonly when: string;
   /** « Hugo Heynard (Commercial) », ou la NATURE de l'acteur si l'annuaire l'ignorait. */

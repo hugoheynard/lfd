@@ -22,7 +22,7 @@ import {
  * dans le domaine, pas dans un écran, qui n'est qu'une suggestion — et elles se
  * testent sans base ni HTTP.
  *
- * Modèle complet : `documentation/b2b/architecture-acces-staff.md` §6.
+ * Modèle complet : `documentation/auth-inscription/architecture-acces-staff.md` §6.
  */
 
 /** Ce qu'il faut savoir de la personne visée pour trancher une mutation. */
@@ -44,9 +44,9 @@ export interface StaffMutationTarget {
    */
   readonly otherLivingAdmins: number;
   /**
-   * Vrai si l'auteur de la mutation est la personne visée. Reste `false` tant que
-   * la résolution d'identité staff n'existe pas (tranche 3) : le garde-fou est
-   * alors inerte, jamais faux.
+   * Vrai si l'auteur de la mutation est la personne visée — comparé par **id de
+   * fiche** depuis le 2026-09-18 (l'auteur arrive par `@StaffUserId()`, plus par
+   * son `sub`), donc vrai même pour une fiche jamais liée à une identité.
    */
   readonly isSelf: boolean;
 }

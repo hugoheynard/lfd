@@ -399,4 +399,30 @@ export class AccountEmailAmbiguousError extends BusinessError {
   }
 }
 
+/**
+ * **Une connexion sociale arrive sous l'adresse d'un compte qui existe déjà.**
+ *
+ * 🔴 Refusée plutôt que doublée (Hugo, 2026-09-17 — le panneau d'entrée à la
+ * Sushi Shop, première version sans rattachement). Sans ce refus, cliquer
+ * « Continuer avec Google » avec l'adresse de son compte ouvrait un SECOND
+ * compte, vide : ni sociétés, ni commandes, et rien ne disait pourquoi.
+ *
+ * Aucun rattachement n'est tenté : rattacher par adresse ouvre la prise de
+ * compte que le plan décrit (`documentation/auth-inscription/plan-connexion-sociale.md`,
+ * §10 et §11). Le geste de sortie est dans le message : l'e-mail habituel.
+ *
+ * ⚠️ Le refus confirme qu'un compte existe sous cette adresse. C'est déjà ce
+ * que dit l'inscription d'Auth0 à qui la retape — l'information n'est pas
+ * nouvelle, et la taire coûtait un compte fantôme à chaque client.
+ */
+export class SocialSignInAccountExistsError extends BusinessError {
+  constructor() {
+    super(
+      "account.identity.link_required",
+      "Un compte existe déjà avec cette adresse. Connectez-vous avec votre e-mail " +
+        "habituel : la connexion par Google n'est pas encore reliée à ce compte.",
+    );
+  }
+}
+
 // ─── Panne technique (500) ───────────────────────────────────────────────────

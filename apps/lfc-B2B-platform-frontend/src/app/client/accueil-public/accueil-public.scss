@@ -1,0 +1,757 @@
+/* L'accueil public — le bandeau de retrait, les maisons, les opérations.
+
+   Toutes les couleurs viennent du thème `lfc-app` que pose le shell : encre
+   pour la marque, papier chaud pour la page, beurre pour l'événement. Aucune
+   valeur en dur — le handoff en donne, mais elles SONT ces primitives.
+
+   La photo du fournil est celle que le site public sert déjà pour Le Labo. Le
+   handoff la montre en emplacement à remplir ; en inventer l'URL aurait été une
+   valeur fabriquée.
+
+   🔴 LES SÉLECTEURS SONT GROUPÉS, et ce n'est pas une coquetterie : écrite bloc
+   par bloc, la voix des libellés pesait 10,39 kB compilés, et le budget de la
+   configuration `cloudflare` — celle par laquelle la boutique se déploie — est
+   une ERREUR à 10 kB. Le build de déploiement échouait (constaté le
+   2026-09-16). Un `@mixin`, la façon habituelle du dépôt, aurait RECOPIÉ ses
+   déclarations à chaque inclusion et n'aurait rien rendu ; seul le groupement
+   les fusionne. */
+$fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-1595801106239-faefa2cdcf75.jpg');
+
+:host {
+  display: block;
+}
+
+/* ══ LA CHARPENTE ══════════════════════════════════════════════════════════
+   Douze blocs empilent leurs enfants ; la déclaration est écrite UNE fois, pour
+   la même raison que « LA VOIX » plus bas — le budget de la configuration
+   `cloudflare` est une ERREUR à 10 kB, et cet écran l'a franchie de dix octets
+   le 2026-09-17. Groupée, la même règle en rend une centaine.
+
+   ⚠️ Le rail des étapes n'y est plus : il est parti dans `app-public-steps`,
+   que la boutique montre aussi. */
+.page,
+.intro,
+.sheet,
+.pitch,
+.proof-item,
+.picker,
+.house,
+.house-head,
+.house-tail,
+.empty,
+.events {
+  flex-direction: column;
+}
+
+/* Aucun padding ici : l'accroche va de bord à bord pour prolonger la barre du
+   shell. Chaque étage pose le sien, sur la gouttière de l'app. */
+.page {
+  display: flex;
+}
+
+/* ── L'accroche, sur l'encre ───────────────────────────────────────────────
+   Le dégradé est celui de la descente du shell — même départ, même arrivée : la
+   couture avec la barre ne doit pas se voir. C'est elle que le bandeau de
+   retrait vient mordre, et c'est pour ça qu'elle doit vivre ICI : dans la
+   descente, le bandeau passait dessous. */
+.intro {
+  display: flex;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg) var(--lfc-inset) var(--fold-space-2xl);
+  background: linear-gradient(
+    to bottom,
+    var(--lfc-ink-800) 0%,
+    var(--lfc-ink-900) 60%,
+    color-mix(in srgb, var(--lfc-ink-950) 55%, var(--lfc-ink-900)) 100%
+  );
+  color: var(--lfc-paper-50);
+}
+
+/* Le sur-titre : les tokens de l'en-tête de page du dépôt, à la lettre. */
+.screen-kicker {
+  margin: 0;
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.screen-title {
+  margin: 0;
+  font-size: var(--lfc-text-screen);
+  line-height: var(--lfc-leading-display);
+  letter-spacing: var(--lfc-tracking-display);
+  /* La COUPE vient du dictionnaire : une traduction n'a pas à connaître le
+     HTML, et l'italien ne se coupe pas comme le français. */
+  white-space: pre-line;
+}
+
+/* ══ LA VOIX ═══════════════════════════════════════════════════════════════
+   Le registre de la maison, déclaré UNE fois pour tous ceux qui le portent —
+   comme le thème déclare celui des boutons. */
+
+.screen-kicker,
+.screen-title,
+.banner-tag,
+.banner-title,
+.proof-value,
+.proof-label,
+.house-flag,
+.house-name,
+.house-offer,
+.house-state,
+.houses-note,
+.empty-title,
+.browse-mark,
+.browse-cta,
+.events-title {
+  font-family: var(--fold-font-label);
+}
+
+/* Le noir de la face. `.proof-label` et `.houses-note` en sont exclus : ce sont
+   des sous-titres, et les mettre en noir les ferait rivaliser avec la valeur
+   qu'ils qualifient. */
+.screen-title,
+.banner-tag,
+.banner-title,
+.proof-value,
+.house-flag,
+.house-name,
+.house-offer,
+.house-state,
+.empty-title,
+.browse-mark,
+.browse-cta,
+.events-title {
+  font-weight: var(--lfc-weight-black);
+}
+
+.screen-kicker,
+.screen-title,
+.banner-tag,
+.banner-title,
+.proof-label,
+.house-flag,
+.house-name,
+.house-offer,
+.house-state,
+.houses-note,
+.empty-title,
+.browse-cta,
+.events-title {
+  text-transform: uppercase;
+}
+
+/* Le sur-titre de section : le plus desserré, parce qu'il est le plus petit. */
+.banner-tag,
+.proof-label,
+.house-flag,
+.houses-note {
+  font-size: var(--fold-text-2xs);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+}
+
+/* L'encart et le bouton secondaire. */
+.house-offer,
+.house-state,
+.browse-cta,
+.events-title {
+  letter-spacing: var(--lfc-tracking-label);
+}
+
+/* Les titres, resserrés pour Chunk. */
+.banner-title,
+.house-name {
+  letter-spacing: var(--lfc-tracking-display);
+}
+
+/* Les chiffres s'alignent en colonne : l'heure de première ouverture. */
+.proof-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Les pastilles rondes — entrée, offre, puce. */
+.banner-tag,
+.house-flag,
+.house-offer,
+.dot {
+  border-radius: var(--fold-radius-pill);
+}
+
+/* Les jetons carrés à angle doux, tous centrés sur leur contenu. */
+.house-chevron,
+.browse-mark,
+.events-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--fold-radius-md);
+}
+
+/* Les grands blocs de la feuille. */
+.banner,
+.events {
+  border-radius: var(--lfc-radius-sheet);
+}
+
+/* Les calques du bandeau : photo et voile, à plat sur toute sa surface. */
+.banner-photo,
+.banner-veil {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* ══ LA FEUILLE CRÈME ══════════════════════════════════════════════════════ */
+.sheet {
+  display: flex;
+  flex: 1 0 auto;
+  gap: var(--fold-space-2xl);
+  /* La même gouttière que le bandeau de page, le pied et tous les écrans
+     clients : le contenu s'aligne alors au pixel sur la barre. */
+  padding: var(--fold-space-2xl) var(--lfc-inset);
+  background: var(--lfc-paper-50);
+}
+
+/* ── Le bandeau de retrait ─────────────────────────────────────────────────
+   ⚠️ Aucun chevauchement EN PILE : sur un téléphone, une remontée de cette
+   ampleur mangerait le rail des étapes, qui est la seule chose disant au
+   visiteur où il en est. Le bandeau s'y enchaîne simplement, et c'est la même
+   règle que la lèvre du shell — un effet de raccord n'a de sens que là où il y
+   a deux registres à raccorder. */
+.banner {
+  position: relative;
+  overflow: hidden;
+  background: var(--lfc-ink-950);
+  color: var(--lfc-paper-0);
+  box-shadow: var(--lfc-shadow-promo);
+}
+
+.banner-photo {
+  background: var(--lfc-ink-950) $fournil center / cover;
+}
+
+/* UN SEUL dégradé diagonal : opaque là où vit le texte, presque clair là où
+   l'on veut voir la vitrine. Deux voiles superposés auraient sali la photo. */
+.banner-veil {
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--lfc-ink-950) 94%, transparent) 0%,
+    color-mix(in srgb, var(--lfc-ink-950) 88%, transparent) 30%,
+    color-mix(in srgb, var(--lfc-ink-800) 55%, transparent) 58%,
+    color-mix(in srgb, var(--lfc-ink-950) 26%, transparent) 100%
+  );
+}
+
+/* UNE GRILLE, et pas un flex à bases : c'est elle qui met le haut des cartes à
+   hauteur du titre. La pastille occupe sa propre rangée, le texte et le rail
+   partagent la suivante — l'alignement est alors CALCULÉ, là où un
+   `padding-top` sur le rail aurait recopié la hauteur de la pastille en dur. */
+.banner-inner {
+  position: relative;
+  display: grid;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-2xl) var(--fold-space-xl);
+}
+
+.pitch {
+  display: flex;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+/* `justify-self` et non `align-self` : sortie du bloc de texte, la pastille est
+   une cellule de grille, et c'est l'axe INLINE qui décide de sa largeur.
+   `align-self` la laissait s'étirer sur toute la colonne — 431 px au bureau,
+   295 px en pile (mesuré le 2026-09-17). En flex, c'était l'inverse. */
+.banner-tag {
+  justify-self: start;
+  padding: 0.35rem 0.875rem;
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+}
+
+.banner-title {
+  margin: 0;
+  font-size: clamp(2.25rem, 6vw, 3.625rem);
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.banner-intro {
+  margin: 0;
+  max-width: 24em;
+  color: var(--lfc-ink-100);
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+}
+
+/* Les preuves, sous un filet : des faits courts, pas des arguments. */
+.proof {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  padding-top: var(--fold-space-lg);
+  border-top: 1px solid var(--lfc-color-border-strong);
+}
+
+.proof-item {
+  display: flex;
+  gap: 0.1875rem;
+}
+
+.proof-rule {
+  inline-size: 1px;
+  block-size: 2.125rem;
+  background: var(--lfc-color-border-strong);
+}
+
+.proof-value {
+  font-size: var(--fold-text-xl);
+}
+
+.proof-label {
+  color: var(--lfc-ink-300);
+}
+
+/* ── Le rail des maisons ───────────────────────────────────────────────────
+   Deux entières, la suivante qui dépasse : une grille qui répartit tout ce
+   qu'elle a se dégrade dès la quatrième, un rail non. */
+.picker {
+  display: flex;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+.rail {
+  position: relative;
+}
+
+.houses {
+  display: flex;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0 0 var(--fold-space-xs);
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+/* 🔴 La base fixe et le calage vivent sur le `li`, pas sur le bouton : le `li`
+   est le seul ENFANT DIRECT du rail, donc le seul que son flex gouverne. Posés
+   sur le bouton, ils étaient inertes — le `li` se comprimait librement et une
+   carte tombait à 128 px au lieu de 320, ce qui coupait le nom de la maison en
+   deux. Ni le typecheck, ni les tests, ni les portes ne peuvent le dire : seule
+   la largeur calculée à l'écran le pouvait (constaté le 2026-09-16). */
+.houses > li {
+  flex: 0 0 20rem;
+  max-inline-size: 100%;
+  scroll-snap-align: start;
+  display: flex;
+}
+
+/* Le voile de bord : il dit qu'il reste quelque chose à droite, là où une carte
+   coupée net donnerait une liste finie. */
+.rail-edge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: var(--fold-space-xs);
+  inline-size: 3.25rem;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--lfc-ink-950) 55%, transparent)
+  );
+}
+
+.house {
+  inline-size: 100%;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+  border: 0;
+  border-radius: var(--lfc-radius-3xl);
+  background: var(--lfc-butter-100);
+  color: var(--lfc-soot-900);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+.house:active {
+  transform: scale(0.985);
+}
+
+/* 🔴 Une maison fermée est GRISÉE et non cliquable, dès l'étape 1 : faire
+   choisir une heure pour une boutique fermée ferait arriver le refus après
+   l'effort. Le refus doit précéder l'effort. */
+.house:disabled {
+  background: var(--lfc-paper-100);
+  color: var(--lfc-soot-500);
+  cursor: not-allowed;
+}
+
+.house-head,
+.house-tail {
+  display: flex;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.house-flag {
+  align-self: start;
+  padding: 0.2rem 0.65rem;
+  background: var(--lfc-butter-300);
+  color: var(--lfc-butter-900);
+}
+
+.house-flag.is-off {
+  background: var(--lfc-paper-200);
+  color: var(--lfc-soot-700);
+}
+
+.house-name {
+  font-size: var(--fold-text-2xl);
+  line-height: 0.98;
+}
+
+.house-place {
+  color: var(--lfc-soot-700);
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-tight);
+}
+
+/* La pastille d'offre : calculée UNE fois, par la même fonction que le dialogue
+   et le panier. Un point sans remise dit son tarif, jamais rien. */
+.house-offer {
+  align-self: start;
+  padding: 0.35rem 0.9rem;
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+  font-size: var(--fold-text-xs);
+}
+
+.house-offer.is-plain {
+  background: var(--lfc-paper-200);
+  color: var(--lfc-soot-700);
+}
+
+.house-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--lfc-butter-300);
+}
+
+.house-state {
+  min-width: 0;
+  font-size: var(--fold-text-xs);
+}
+
+/* 🔴 GRIS AU REPOS, encre quand on la vise — le même code que la pastille
+   d'offre : gris = rien de particulier, encre = ce qui vous concerne. Toutes
+   les flèches en encre faisaient trois appels à l'action de force égale, et le
+   regard n'avait plus de point d'entrée.
+   Le gris de repos rend la règle « désactivé » superflue : elle disait déjà ce
+   gris-là. La retirer paie l'ajout du survol — le style de cet écran est à
+   9,98 kB pour une ERREUR de budget à 10. */
+.house-chevron {
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  background: var(--lfc-paper-200);
+  color: var(--lfc-soot-700);
+}
+
+.house:hover .house-chevron,
+.house:focus-visible .house-chevron {
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+}
+
+.houses-note {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  margin: 0;
+  color: var(--lfc-ink-300);
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+}
+
+/* La puce de la maison qu'on regarde s'ALLONGE. Une pastille qui change de
+   couleur seule se perd sur l'encre ; une longueur se voit du coin de l'œil. */
+.dot {
+  inline-size: 0.4375rem;
+  block-size: 0.4375rem;
+  background: var(--lfc-color-border-strong);
+  transition: inline-size 160ms ease;
+}
+
+.dot.is-here {
+  inline-size: 1.25rem;
+  background: var(--lfc-paper-0);
+}
+
+/* Aucune maison — l'état vit sur l'encre du bandeau, pas sur la feuille. */
+.empty {
+  display: flex;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-lg);
+  border: 1px solid var(--lfc-color-border-strong);
+  border-radius: var(--lfc-radius-2xl);
+}
+
+.empty-title {
+  font-size: var(--lfc-text-heading);
+}
+
+.empty-text {
+  color: var(--lfc-ink-100);
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-body);
+}
+
+/* ── La sortie, dans le bas du bandeau ─────────────────────────────────────
+   Demander la maison avant d'avoir montré un croissant est un péage : on laisse
+   une porte. */
+.browse {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg) var(--fold-space-xl);
+  background: var(--lfc-ink-950);
+  color: var(--lfc-ink-100);
+}
+
+.browse-said {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+.browse-mark {
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
+  border: 1px solid var(--lfc-color-border-strong);
+  background: var(--lfc-color-on-primary-tile);
+  color: var(--lfc-ink-300);
+}
+
+.browse-text {
+  min-width: 0;
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+}
+
+.browse-text strong {
+  color: var(--lfc-paper-0);
+  font-weight: 600;
+}
+
+/* Un bouton natif et non `foldButton` : celui-ci vit sur l'encre la plus
+   profonde, en contour clair, et le registre de la maison le peindrait en crème
+   plein.
+   Hauteur et rayon ÉCRITS ICI, et pas lus sur `--fold-button-*` : ces
+   variables-là sont des crochets que le thème POSE pour que fold les consomme,
+   pas des tokens qu'un composant lit. Les lire marcherait — et
+   `lint:fold-tokens` a raison de le refuser, parce que ça marcherait par
+   accident. Le plancher tactile reste celui de la maison (44 px). */
+.browse-cta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  block-size: 2.75rem;
+  padding: 0 var(--fold-space-xl);
+  border: 1.5px solid var(--lfc-color-border-strong);
+  border-radius: var(--fold-radius-md);
+  background: transparent;
+  color: var(--lfc-paper-0);
+  font-size: var(--fold-text-xs);
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+.browse-cta:hover {
+  background: var(--lfc-paper-0);
+  border-color: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+}
+
+/* ── Les opérations datées ─────────────────────────────────────────────────
+   L'or est réservé à ce bloc, et c'est le PANNEAU qui le porte : sans lui, les
+   deux cartes flottaient sur la feuille sans rien qui les rassemble. `null` est
+   un état de première classe — hors période, la section n'existe pas. */
+.events {
+  display: flex;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-xl);
+  background: var(--lfc-color-accent-surface);
+}
+
+.events-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.events-mark {
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}
+
+.events-title {
+  margin: 0;
+  font-size: var(--lfc-text-heading);
+}
+
+.events-lead {
+  margin: 0;
+  flex: 1 1 18rem;
+  min-width: 0;
+  color: var(--lfc-soot-700);
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-note);
+}
+
+.events-grid {
+  display: grid;
+  gap: var(--fold-space-md);
+}
+
+/* ── Au-delà du pli ────────────────────────────────────────────────────────
+   La bascule est celle du dépôt (900 px), la même que `event-card` : deux
+   grammaires qui changeraient de gabarit à des largeurs différentes feraient un
+   décalage visible dans le même bloc. */
+@media (min-width: 900px) {
+  /* LE CHEVAUCHEMENT. L'accroche se creuse d'autant pour que le bandeau remonte
+     dessus SANS manger le rail : c'est ce qui fait du bandeau l'objet le plus
+     lourd de la page, celui qu'on lit avant le reste. */
+  .intro {
+    padding-bottom: 7rem;
+  }
+
+  .sheet {
+    padding-top: 0;
+  }
+
+  /* La seule marge externe que les conventions tolèrent : un chevauchement
+     délibéré. */
+  .banner {
+    margin-top: -6rem;
+  }
+
+  .banner-inner {
+    padding: var(--fold-space-2xl);
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+  }
+}
+
+/* ── Le bandeau en DEUX colonnes ───────────────────────────────────────────
+   1100 px et non 900 : ce point-là existait déjà, en creux. Les anciennes bases
+   (20 rem pour le texte, 27 rem pour le rail) ne tenaient pas côte à côte
+   en-dessous, et le flex les repliait de lui-même — la grille ne se replie pas,
+   elle déborderait. Le seuil n'est donc pas nouveau, il est écrit. */
+@media (min-width: 1100px) {
+  .banner-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    column-gap: var(--fold-space-2xl);
+    row-gap: var(--fold-space-md);
+  }
+
+  .banner-tag,
+  .pitch {
+    grid-column: 1;
+  }
+
+  /* 🔴 LE HAUT DES CARTES À HAUTEUR DU TITRE. `start` et non `end` : calées en
+     bas, elles s'alignaient sur le filet des preuves, dont la hauteur dépend du
+     nombre de preuves affichées — donc sur rien de stable. */
+  /* 🔴 `stretch` et non `start` : c'est le pied de la colonne de texte —
+     « PREMIÈRE OUVERTURE » — qui donne sa hauteur à la carte. Calé en `start`,
+     le rail s'arrêtait 136 px plus haut que les preuves (mesuré le 2026-09-17)
+     et « 2 MAISONS » flottait au milieu du bandeau. La hauteur de carte n'est
+     donc écrite NULLE PART : elle est ce qui reste entre le titre et la ligne
+     des preuves. */
+  .picker {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: stretch;
+  }
+
+  /* Le rail absorbe ce que la note ne prend pas ; la note se pose au bas de la
+     colonne, à hauteur du dernier libellé des preuves. */
+  .rail {
+    display: flex;
+    flex: 1;
+  }
+
+  .houses {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Le bandeau, d'un QUART plus ample ───────────────────────────────────
+     Il porte le seul choix de la page ; à taille d'écran de bureau, il se
+     lisait comme un encart. Tout passe par les crans de l'échelle — aucune
+     valeur intermédiaire : une taille inventée ici se désaccorderait du reste
+     de la page au premier changement de thème. */
+  .banner-inner {
+    padding: var(--fold-space-3xl);
+  }
+
+  .banner-title {
+    font-size: clamp(2.75rem, 6vw, 4.5rem);
+  }
+
+  .banner-intro,
+  .house-place {
+    font-size: var(--fold-text-lg);
+  }
+
+  .proof-value {
+    font-size: var(--fold-text-2xl);
+  }
+
+  /* La carte de retrait passe de 20 à 25 rem — le quart demandé, exactement. */
+  .houses > li {
+    flex-basis: 25rem;
+  }
+
+  .house {
+    padding: var(--fold-space-xl);
+  }
+
+  .house-name {
+    font-size: var(--lfc-text-screen-sm);
+  }
+
+  .house-offer,
+  .house-state {
+    font-size: var(--fold-text-sm);
+  }
+}

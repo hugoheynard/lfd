@@ -166,6 +166,19 @@ function account(status: MemberStatus, userId = "user_known", emailVerified = tr
   return { userId, subject: "auth0|known", firstName: "Claire", status, emailVerified };
 }
 
+/**
+ * Un **invité** : quelqu'un qui a commandé sans compte (plan
+ * `plan-commande-sans-compte.md`, D1).
+ *
+ * Les trois traits comptent ensemble, et c'est leur combinaison qui piège :
+ * `subject: null` (aucune identité de connexion), `status: "active"` — D1
+ * l'impose, il n'y a pas de quatrième valeur d'énuméré — et une adresse jamais
+ * prouvée, puisque personne ne la lui a fait confirmer.
+ */
+function guest(userId = "user_guest"): KnownAccount {
+  return { userId, subject: null, firstName: "Claire", status: "active", emailVerified: false };
+}
+
 const INPUT: AccessToGrant = {
   companyId: "cmp_1",
   companyName: "Café des Halles",
@@ -342,6 +355,70 @@ describe("GrantAccountAccess — une adresse jamais prouvée", () => {
       outcome: "link_reissued",
     });
     expect(sent[0]?.carriesPasswordLink).toBe(true);
+  });
+});
+
+describe("GrantAccountAccess — un invité, qui n'a JAMAIS eu d'identité", () => {
+  it("OUVRE son identité au lieu de demander un lien pour un sujet nul", async () => {
+    // C'est « le commercial ouvre un accès à quelqu'un qui a déjà commandé en
+    // public » — le seul chemin que l'absence de sujet casse (plan §4.1). Sans
+    // ce traitement, `issuePasswordLink(null)` ne compile même pas, et l'écrire
+    // avec un repli `?? ""` réclamerait un ticket pour le sujet vide.
+    const members = new FakeMembers({ account: guest() });
+    const { mailer, sent } = fakeMailer();
+    const { service, identity } = granter(members, mailer);
+
+    const granted = await service.grant(INPUT);
+
+    expect(granted).toEqual({ userId: "user_guest", outcome: "link_reissued", mailSent: true });
+    // Jamais de lien réclamé : il n'y a aucune identité à qui en demander un.
+    expect(identity.reissuedFor).toEqual([]);
+    // L'adresse est la clé, et son prénom À ELLE voyage avec.
+    expect(identity.provisioned).toEqual([
+      { email: "camille@halles.fr", firstName: "Claire", lastName: "" },
+    ]);
+    // Le pointeur est écrit : au prochain passage, elle est une personne comme
+    // les autres.
+    expect(members.rebound).toEqual([{ userId: "user_guest", subject: "auth0|1" }]);
+    expect(sent[0]?.carriesPasswordLink).toBe(true);
+  });
+
+  it("rattache la société au passage, comme pour un compte invité", async () => {
+    const members = new FakeMembers({ account: guest() });
+    const { mailer } = fakeMailer();
+
+    await granter(members, mailer).service.grant(INPUT);
+
+    expect(members.attached).toEqual([{ userId: "user_guest", companyId: "cmp_1", role: "owner" }]);
+  });
+
+  it("ne le REFUSE pas pour une adresse non prouvée", async () => {
+    // Le piège de D1 : son statut vaut `active` et son adresse n'a jamais été
+    // prouvée — il tombait donc sur `AccountEmailUnverifiedError`, c'est-à-dire
+    // un refus définitif sans geste de sortie, pour la personne même que ce lot
+    // existe à servir. La garde d'adresse protège le rattachement d'un compte
+    // sur lequel quelqu'un peut ENTRER ; un invité n'en est pas un.
+    const members = new FakeMembers({ account: guest() });
+    const { mailer } = fakeMailer();
+
+    await expect(granter(members, mailer).service.grant(INPUT)).resolves.toMatchObject({
+      outcome: "link_reissued",
+    });
+  });
+
+  it("refuse quand même de rétrograder le détenteur", async () => {
+    // Le chemin de l'invité n'est pas une porte dérobée : il passe par les mêmes
+    // gardes de rôle, et AVANT toute identité ouverte chez le fournisseur.
+    const known = guest();
+    const members = new FakeMembers({ account: known, owner: known });
+    const { mailer } = fakeMailer();
+    const { service, identity } = granter(members, mailer);
+
+    await expect(service.grant({ ...INPUT, role: "billing" })).rejects.toBeInstanceOf(
+      HolderRoleLockedError,
+    );
+    expect(identity.provisioned).toEqual([]);
+    expect(members.attached).toEqual([]);
   });
 });
 

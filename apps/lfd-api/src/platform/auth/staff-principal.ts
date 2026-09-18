@@ -15,6 +15,12 @@ export interface StaffPrincipal {
   readonly subject: string;
   /** Claim `email`, quand le tenant la pose. Sert au **premier** rapprochement. */
   readonly email: string | undefined;
+  /**
+   * Claim `email_verified`. Le premier rapprochement l'**exige** à `true` :
+   * sans preuve de la boîte, une adresse n'est qu'une chaîne que n'importe qui
+   * peut taper à l'inscription. Absent vaut refus.
+   */
+  readonly emailVerified: boolean | undefined;
   /** Scopes du token staff. Conservés pour la trace, jamais pour autoriser. */
   readonly scopes: readonly string[];
 }

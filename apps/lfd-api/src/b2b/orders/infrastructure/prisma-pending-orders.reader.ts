@@ -4,6 +4,7 @@ import { OrderStatus } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PendingCommerceOrdersReader } from "../../../production/channels/commerce/index.js";
 import type { ServiceDay } from "../../../production/channels/commerce/index.js";
+import { planWhere } from "./plan-filter.js";
 
 /**
  * Ce que le commerce n'a pas encore basculé — **les trois retards possibles**.
@@ -34,7 +35,12 @@ export class PrismaPendingOrdersReader extends PendingCommerceOrdersReader {
     return this.prisma.order.count({
       where: {
         requestedDeliveryDate: new Date(`${day.value}T00:00:00.000Z`),
-        status: "placed",
+        // 🔴 **Le fragment PARTAGÉ** (2026-09-17). Le JSDoc au-dessus promettait
+        // déjà que cette condition était « la MÊME que celle du `where`
+        // d'`absorbIntoPlan` » — c'était une promesse tenue par la vigilance, et
+        // elle a cédé le jour où l'une des deux a gagné le règlement. Les deux
+        // lisent désormais la même fonction : la promesse est devenue un fait.
+        ...planWhere(),
         // Bornée à ce que la clôture a VU. Une commande arrivée après est en
         // retard, pas perdue — la compter ferait crier une divergence qui
         // n'existe pas, et l'alerte deviendrait du bruit.

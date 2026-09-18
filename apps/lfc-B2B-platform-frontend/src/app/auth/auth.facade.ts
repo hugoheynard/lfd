@@ -9,7 +9,7 @@ import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
 import { appBaseUrl } from './app-base-url';
-import { CUSTOMER_CONNECTION } from './auth.config';
+import { CUSTOMER_CONNECTION, GOOGLE_CONNECTION } from './auth.config';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
 /**
@@ -238,6 +238,27 @@ export class AuthFacade {
   }
 
   /**
+   * **Entrer par Google** — connexion et inscription à la fois : le premier
+   * passage crée le compte (provisionné par l'API à la première requête).
+   *
+   * Aucun profil ne voyage : prénom et téléphone ne viennent pas de Google, et
+   * le parcours d'accueil les demande ensuite. En bypass dev, même geste que
+   * {@link login} — il n'y a pas de Google à ouvrir.
+   */
+  continueWithGoogle(target: string): void {
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      this.login(target);
+      return;
+    }
+    void this.auth0
+      ?.loginWithRedirect({
+        appState: { target },
+        authorizationParams: { connection: GOOGLE_CONNECTION },
+      })
+      .subscribe();
+  }
+
+  /**
    * L'inscription par la porte pro : le même geste que {@link register}
    * (onglet inscription, connexion nommée, e-mail soufflé), mais la déclaration
    * entière fait l'aller-retour, pour être déposée au retour par
@@ -314,7 +335,15 @@ export class AuthFacade {
 /** L'écran d'Auth0 simulé, en dev — la route n'existe pas en production. */
 export const DEV_AUTH0_SIGNUP_SCREEN = '/dev/inscription-auth0';
 
-/** Où l'on atterrit en se déconnectant en dev : la porte d'entrée. */
+/**
+ * Où l'on atterrit en se déconnectant en dev : **l'accueil public**.
+ *
+ * ⚠️ L'adresse n'a pas changé, son sens si (2026-09-16) : `/bienvenue` portait
+ * l'inscription — d'où « la porte d'entrée », ce que disait cette ligne — et
+ * porte désormais ce que voit un visiteur sans compte. Qui se déconnecte
+ * retombe donc sur la boutique plutôt que sur un formulaire, ce qui est mieux.
+ * La porte d'entrée, elle, est `/inscription`.
+ */
 const DEV_SIGNED_OUT_LANDING = '/bienvenue';
 
 /** La clé de stockage local de la déconnexion dev. */

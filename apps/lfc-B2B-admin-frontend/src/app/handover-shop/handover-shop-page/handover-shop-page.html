@@ -46,7 +46,48 @@
           <span class="mc-clock">{{ clock() }}</span>
         </p>
       }
+
+      <!-- 🔴 **La journée se change ici, et elle a son histoire** (2026-09-17).
+           Un sélecteur de date a vécu dans cette bande jusqu'au 2026-09-11, puis
+           a été retiré : il mettait à portée du doigt « le seul geste qui peut
+           faire tendre un sac en croyant être un autre jour ». Le besoin qu'il
+           servait — relire la file d'hier pour une contestation — est resté
+           ouvert, et c'est lui qu'on rouvre.
+
+           Ce qui change par rapport à l'ancien : deux flèches au lieu d'un
+           calendrier (le besoin est « la veille », pas « le 3 du mois »), la
+           journée écrite en toutes lettres plutôt qu'en chiffres, et un retour
+           à aujourd'hui qui n'apparaît QUE lorsqu'on s'en est éloigné. -->
+      <div class="masthead-day">
+        <button
+          class="day-step"
+          type="button"
+          aria-label="Journée précédente"
+          (click)="shiftDay(-1)"
+        >
+          ‹
+        </button>
+        <span class="day-label">{{ dayLabel() }}</span>
+        <button class="day-step" type="button" aria-label="Journée suivante" (click)="shiftDay(1)">
+          ›
+        </button>
+        @if (!isToday()) {
+          <button class="day-today" type="button" (click)="backToToday()">Aujourd’hui</button>
+        }
+      </div>
     </div>
+
+    <!-- 🔴 **L'avertissement qui rend la navigation sûre.** Le risque nommé en
+         septembre n'était pas de se déplacer, c'était de ne pas SAVOIR qu'on
+         s'était déplacé : un comptoir qui tend un sac en croyant être un autre
+         jour. Un sélecteur muet le permettait ; cette bande ne le permet plus.
+         Elle ne paraît jamais sur la journée en cours — sinon on cesserait de
+         la voir. -->
+    @if (!isToday()) {
+      <p class="masthead-warning" role="status">
+        Vous consultez une autre journée — ne remettez rien depuis cet écran.
+      </p>
+    }
   </fold-page-section>
 
   <!--

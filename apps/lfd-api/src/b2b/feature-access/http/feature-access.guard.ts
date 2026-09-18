@@ -10,7 +10,7 @@ import { REQUIRES_SHOP_KEY, type ShopRequirement } from "./requires-shop.decorat
 
 /**
  * Coupe les routes marquées `@RequiresShop` quand la boutique n'atteint pas le
- * niveau exigé — plan `documentation/b2b/plan-inscription-pro-seule.md` §2.3.
+ * niveau exigé — plan `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.3.
  *
  * Globale (`APP_GUARD`) et enregistrée **après** `AuthGuard` : c'est ce qui lui
  * donne le `Principal`, donc l'exemption. Sur une route `@Public()`, il n'y en a

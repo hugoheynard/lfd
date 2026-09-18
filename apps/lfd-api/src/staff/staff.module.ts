@@ -6,12 +6,10 @@ import { GetStaffMeHandler } from "./directory/application/get-staff-me.handler.
 import { InviteStaffUserHandler } from "./invitations/invite-staff-user.handler.js";
 import { OpenStaffAccess } from "./invitations/open-staff-access.service.js";
 import { ListStaffUsersHandler } from "./directory/application/list-staff-users.handler.js";
-import {
-  CreateStaffUserHandler,
-  RemoveStaffUserHandler,
-  SetStaffStatusHandler,
-  UpdateStaffUserHandler,
-} from "./directory/application/staff-user.handlers.js";
+import { CreateStaffUserHandler } from "./directory/application/create-staff-user.handler.js";
+import { RemoveStaffUserHandler } from "./directory/application/remove-staff-user.handler.js";
+import { SetStaffStatusHandler } from "./directory/application/set-staff-status.handler.js";
+import { UpdateStaffUserHandler } from "./directory/application/update-staff-user.handler.js";
 import { PrismaStaffAccessResolver } from "./permissions/prisma-staff-access.resolver.js";
 import { StaffAccessCache } from "./permissions/staff-access-cache.port.js";
 import { StaffIdentityPort } from "./invitations/staff-identity.port.js";
@@ -32,13 +30,11 @@ import {
 import { AdminStaffUsersController } from "./directory/http/admin-staff-users.controller.js";
 import { PrismaStaffUserRepository } from "./directory/infrastructure/prisma-staff-user.repository.js";
 import { AdminStaffRolesController } from "./permissions/http/admin-staff-roles.controller.js";
-import {
-  ArchiveStaffRoleHandler,
-  CreateStaffRoleHandler,
-  ListStaffRolesHandler,
-  RestoreStaffRoleHandler,
-  UpdateStaffRoleHandler,
-} from "./permissions/application/staff-role.handlers.js";
+import { ArchiveStaffRoleHandler } from "./permissions/application/archive-staff-role.handler.js";
+import { CreateStaffRoleHandler } from "./permissions/application/create-staff-role.handler.js";
+import { ListStaffRolesHandler } from "./permissions/application/list-staff-roles.handler.js";
+import { RestoreStaffRoleHandler } from "./permissions/application/restore-staff-role.handler.js";
+import { UpdateStaffRoleHandler } from "./permissions/application/update-staff-role.handler.js";
 import { StaffRoleReader } from "./permissions/domain/staff-role.reader.js";
 import { StaffRoleRepository } from "./permissions/domain/staff-role.repository.js";
 import {

@@ -12,8 +12,15 @@ import { formatTimeRange, type HoursEntry } from '@lfd/b2b-ui/hours';
  * jamais non plus : il rend les lignes qu'on lui donne, dans l'ordre donné.
  */
 
-/** Le créneau pro en tête : c'est celui qui concerne le client B2B. */
-export const OPENING_KEYS = { pro: 'pro', public: 'public' } as const;
+/**
+ * Le créneau pro en tête : c'est celui qui concerne le client B2B.
+ *
+ * **Non exporté** depuis le 2026-09-16 : le panneau des points de retrait en
+ * était le seul lecteur du dehors, et il a cédé la place à une page. Les deux
+ * fonctions de ce fichier s'en servent encore — c'est l'export qui est mort,
+ * pas la constante.
+ */
+const OPENING_KEYS = { pro: 'pro', public: 'public' } as const;
 
 /** Les heures vides — un point neuf n'oppose aucune plage. */
 export const EMPTY_OPENING: PickupOpening = { publicOpening: null, proPickup: null };

@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
 
+import { GuestIdentityDialog } from '../guest-identity-dialog/guest-identity-dialog';
+
+import { AuthFacade } from '../../../auth/auth.facade';
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
 import { ClientChrome } from '../../client-chrome.service';
@@ -12,6 +16,14 @@ import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { RETURN_TO_CART } from '../../nouvelle-commande/commande-page/return-to-cart';
+
+/**
+ * Où Auth0 ramène, une fois l'identité obtenue : **ici**.
+ *
+ * Le panier vit dans le stockage local et survit à la redirection — on revient
+ * donc sur la commande composée, pas sur un rayon vide.
+ */
+const CART = '/nouvelle-commande/panier';
 
 /**
  * Le panier, en pile — ce que le bureau montre dans sa colonne de droite.
@@ -32,11 +44,42 @@ export class PanierPage {
   private readonly router = inject(Router);
   private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
+  /** L'hôte des panneaux fold : c'est lui qui ouvre la saisie du visiteur. */
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   protected readonly choice = this.order.choice;
   private readonly locale = inject(ClientLocale);
+  private readonly auth = inject(AuthFacade);
+
+  /**
+   * **Ce qui manque pour régler : savoir qui commande.**
+   *
+   * 🔴 `isLoading()` passe AVANT `isAuthenticated()`, et ce n'est pas un détail
+   * de prudence. Le SDK Auth0 résout la session au premier chargement, et
+   * `isAuthenticated` vaut `false` pendant ce temps-là **pour un client bel et
+   * bien connecté** : sans cette garde, l'invite « Qui passe cette commande ? »
+   * clignoterait devant un abonné, à l'écran le plus sensible du tunnel.
+   *
+   * C'est la même précaution que `featureAccessGuard` prend, pour la même
+   * raison — et elle y est écrite.
+   */
+  private readonly unknownCustomer = computed(
+    () => !this.auth.isLoading() && !this.auth.isAuthenticated(),
+  );
+
+  /**
+   * Le règlement est-il retenu faute de savoir qui commande ?
+   *
+   * La question ne se pose que devant une commande réglable : un panier vide
+   * rouvre le rayon, un panier sans mode de service mène à la question du lieu.
+   * Réclamer une identité avant ces deux-là demanderait qui vous êtes à
+   * quelqu'un qui n'a encore rien à acheter.
+   */
+  protected readonly identityNeeded = computed(
+    () => this.unknownCustomer() && !this.cart.isEmpty() && this.choice() !== null,
+  );
 
   /**
    * « demain · créneau choisi », avec la VRAIE journée : celle que le serveur a
@@ -95,6 +138,56 @@ export class PanierPage {
    */
   protected changeService(): void {
     void this.router.navigate(['/nouvelle-commande'], { queryParams: RETURN_TO_CART });
+  }
+
+  /**
+   * **La porte de qui n'a pas de compte : commander sans en créer un.**
+   *
+   * 🔴 Elle menait à l'inscription Auth0, faute de route publique — c'est ce que
+   * disait ce JSDoc, et ce n'est plus vrai : `POST /shop/orders` est branchée.
+   * Un visiteur déclare qui il est, et repart avec sa commande ; il n'a aucune
+   * identité de connexion, et rien de ce qu'il tape ici n'ouvre quoi que ce soit.
+   *
+   * ⚠️ **Le dialogue peut se fermer sans rien rendre**, et fermer n'est pas
+   * commander : on reste alors sur le panier, intact, sans rien avoir envoyé.
+   *
+   * ## La suite : on PAIE, puis on confirme
+   *
+   * Exactement le chemin du client connecté ({@link proceed}), et il est
+   * praticable sans compte parce que `POST /shop/orders` rend l'intention
+   * Stripe **avec** la commande : l'écran de règlement la reçoit de la mémoire
+   * et ne redemande rien à `GET /orders/:id/payment`, qui est murée.
+   *
+   * ⚠️ **La commande existe AVANT le paiement**, des deux côtés : écrite au
+   * serveur par le `201`, rangée dans le navigateur par `placeAsGuest`. Un
+   * règlement qui aboutit ne peut donc pas retomber sur une commande
+   * introuvable, et un règlement abandonné laisse une commande à payer — pas un
+   * panier fantôme.
+   */
+  protected async orderAsGuest(): Promise<void> {
+    const buyer = await GuestIdentityDialog.open(this.panels).closed;
+    if (buyer === undefined) {
+      return;
+    }
+    const placed = await this.orders.placeAsGuest(buyer);
+    if (placed === null) {
+      // Le refus a déjà été dit, et le panier est intact.
+      return;
+    }
+    void this.router.navigate(
+      placed.settlement === 'due'
+        ? ['/nouvelle-commande/reglement', placed.id]
+        : ['/nouvelle-commande/confirmee'],
+    );
+  }
+
+  /** La porte de qui a déjà un compte. Elle ramène ICI, panier compris. */
+  protected signInFirst(): void {
+    this.auth.login(CART);
+  }
+
+  protected signIn(): void {
+    this.auth.login(CART);
   }
 
   protected backToShop(): void {

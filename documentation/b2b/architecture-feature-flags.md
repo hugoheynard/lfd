@@ -19,7 +19,7 @@
 
 > 🟡 **Bâti en partie le 2026-09-14, et pas tout à fait comme ce document le
 > dit.** Le premier consommateur est arrivé par
-> [`plan-inscription-pro-seule.md`](plan-inscription-pro-seule.md) : un seul
+> [`../auth-inscription/plan-inscription-pro-seule.md`](../auth-inscription/plan-inscription-pro-seule.md) : un seul
 > flag, **boutique** (`closed` · `browse` · `order`), sous le nom
 > **« accès aux fonctionnalités »** (`b2b/feature-access/`, contrat
 > `feature-access`). Ce qui suit reste le design d'origine ; voici ce qui en

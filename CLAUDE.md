@@ -695,7 +695,7 @@ la même bombe, déguisée en donnée métier.
 - **Zéro `any`, zéro `as unknown as T`, zéro `@ts-ignore`, zéro
   `eslint-disable`.** `pnpm lint:no-type-escapes` tient les trois derniers
   depuis le 2026-09-03 — le premier l'était déjà par ESLint. Directives : zéro,
-  partout. `as unknown as` : **seize fichiers**, tous des tests, comptés et
+  partout. `as unknown as` : **quinze fichiers** (seize jusqu'au 2026-09-18), tous des tests, comptés et
   affichés ; un fichier hors liste qui en gagne un échoue, un fichier nettoyé
   qui reste inscrit échoue aussi. Un cast compte **plus** dans un test que dans
   du code de production : c'est lui qui laisse un doublé dériver du port qu'il
@@ -832,7 +832,7 @@ pas, une exception tacite si :
   qui rattache une collection Shopify à son taux. Même règle pour les clés
   d'un `jsonb`, les valeurs d'enum Postgres et les noms de dossiers de
   migration. Les renommer est une **migration**, pas un renommage — et elle se
-  fait en trois déploiements (`documentation/ops/pipelines.md`).
+  fait en trois déploiements (`documentation/ci-cd/pipelines.md`).
 - **Les valeurs du journal font exception à l'exception.** `category.tva_changed`
   a été renommé `product_category.vat_changed` le 2026-08-25, avec `tax_rate.*`
   → `vat_rate.*`, par migration de données. Un fait mal nommé ne vieillit pas
@@ -910,6 +910,10 @@ d'appel qui compte).
 - Docs d'architecture et décisions → `documentation/<projet>/` — `b2b/`,
   `pim/`, `suite/`. La racine ne porte que l'index et le plan de release courant.
 - TODO / roadmaps / inventaires de dette → `documentation/todos/`.
+  **Exception : un sujet qui a son dossier y garde ses TODO** (`todo-*.md`).
+  C'est le cas de `comptabilite/`, et de `order/` depuis le 2026-09-17 (Hugo :
+  « tous les documents et todos de commande vont dans `order/` ») — plans
+  compris, même quand ils touchent la boutique.
 - Un doc technique **ship dans le même commit que le code** qu'il décrit, ou dans
   un commit `docs:` immédiatement suivant. Jamais de doc obsolète : si un
   changement invalide une phrase, on corrige la phrase.

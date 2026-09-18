@@ -1,6 +1,21 @@
-import type { ActivityEventView } from '@lfd/contracts';
+import type { ActivityEventView, ActivityModule } from '@lfd/contracts';
 
 import type { JournalLine } from './journal.service';
+import { staffLineOf } from './staff-line';
+
+/**
+ * Le nom lisible de chaque module. Le badge affichait la clé brute (`comptes`,
+ * `pim`) : une valeur de contrat, pas un mot pour celui qui lit. Un `Record`
+ * exhaustif : un module ajouté au contrat ne compile pas tant qu'il n'a pas
+ * son libellé ici.
+ */
+export const MODULE_LABELS: Readonly<Record<ActivityModule, string>> = {
+  pim: 'Référentiel',
+  commercial: 'Commercial',
+  commandes: 'Commandes',
+  comptes: 'Comptes clients',
+  equipe: 'Équipe',
+};
 
 /**
  * Traduit un fait du journal en **phrase**.
@@ -15,9 +30,15 @@ import type { JournalLine } from './journal.service';
  * lui-même, ce qui reste vrai.
  */
 export function toLine(event: ActivityEventView): JournalLine {
+  // Les faits de l'équipe se lisent en titre + phrase à la voix active, qui
+  // nomme déjà l'auteur : la méta ne le répète pas.
+  const staff = staffLineOf(event);
   return {
     event,
-    sentence: sentenceOf(event),
+    title: staff?.title ?? '',
+    sentence: staff?.sentence ?? sentenceOf(event),
+    sentenceNamesActor: staff !== null,
+    moduleLabel: event.module === null ? '' : MODULE_LABELS[event.module],
     when: whenOf(event.occurredAt),
     actor: actorOf(event),
     forWhom: forWhomOf(event),
@@ -210,6 +231,14 @@ function settingSentence(event: ActivityEventView): string | null {
       return 'Point de retrait supprimé';
     case 'pickup_address.default_set':
       return 'Point de retrait par défaut changé';
+    case 'public_pickup_schedule.updated': {
+      // Le nombre de plages dit l'essentiel : passer de zéro à une ouvre les
+      // créneaux publics du point, et c'est ce qu'un visiteur verra changer.
+      const rules = count(p['ruleCount']);
+      return `Créneaux publics de « ${text(p['label'])} » réglés${
+        rules === null ? '' : ` (${rules} plage(s))`
+      }`;
+    }
     case 'delivery_availability.updated':
       return 'Livraison par clientèle réglée';
     case 'order_cutoff.created':

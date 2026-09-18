@@ -166,17 +166,16 @@ export interface R2StorageState {
  *   jetons — et le jour où une borne au fournil doit lire des documents, lui
  *   donner le jeton `customers` lui donnerait aussi toutes les factures.
  *
- * ⚠️ **`production` n'a encore AUCUN écrivain.** Il est configuré, créé en dev
- * et en test, et le harnais e2e sait le vider — mais rien dans `src/` n'y range
- * quoi que ce soit, parce que la question « faut-il archiver la feuille
- * d'atelier ? » n'est pas tranchée (elle est déterministe, donc refabricable ;
- * le compte à produire, lui, est un instantané arrêté à la clôture, et celui-là
- * ne se refabrique pas). Le tuyau est posé, pas le débit.
+ * ⚠️ **`production` a ses écrivains depuis `985d21bf`** (2026-09-16) : la
+ * question « faut-il archiver la feuille d'atelier ? » a été tranchée par
+ * l'affirmative, et `ProductionPapers` y range les deux papiers du fournil au
+ * premier tirage. Cette page a dit « aucun écrivain » jusque-là, et le disait
+ * encore le jour où le débit est arrivé.
  *
- * C'est aussi pourquoi il ne figure PAS dans le bulletin de démarrage : ce
- * bulletin nomme ce que le produit PERD quand un réglage manque, et aujourd'hui
- * il ne perd rien. L'y inscrire ferait signaler une dégradation qui n'existe
- * pas — et un bulletin qui crie pour rien cesse d'être lu.
+ * Il ne figure toujours PAS dans le bulletin de démarrage, et ce n'est plus
+ * justifié : un `R2_PRODUCTION_*` à moitié posé se découvre désormais au premier
+ * tirage, devant un four, et non au démarrage. Noté dans
+ * `documentation/todos/todo-etrangetes-procedure-de-livraison.md`, point 25.
  *
  * Ce qui protège un client d'un autre n'est jamais le bucket : c'est le préfixe
  * de clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.

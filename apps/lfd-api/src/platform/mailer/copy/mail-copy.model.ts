@@ -110,10 +110,42 @@ export interface OrderReadyCopy {
   readonly footer: string;
 }
 
+/**
+ * Ce que dit le courriel d'un **paiement refusé**.
+ *
+ * 🔴 Le seul courriel du parcours qui annonce une **mauvaise** nouvelle, et il
+ * doit donc faire trois choses qu'aucun autre ne fait : dire sans détour que le
+ * paiement n'est pas passé, dire ce que devient la commande, et donner le geste
+ * de sortie. Une formule feutrée ferait relire deux fois pour comprendre qu'il
+ * faut agir.
+ */
+export interface PaymentFailedCopy {
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  /** Sur-titre de l'en-tête, en capitales. */
+  readonly kicker: string;
+  readonly title: string;
+  /** Ce qui s'est passé, en une phrase. */
+  readonly intro: string;
+  /**
+   * 🔴 Ce que devient la commande. La phrase la plus importante du message :
+   * sans elle, le client ne sait pas s'il doit repasser commande, attendre, ou
+   * se présenter au comptoir.
+   */
+  readonly consequence: string;
+  /** Le libellé de la ligne de montant. */
+  readonly amountLabel: string;
+  /** Le geste de sortie — reprendre le règlement. */
+  readonly cta: string;
+  /** Le recours, quand le bouton ne mène nulle part. */
+  readonly footer: string;
+}
+
 /** Tout ce qu'un e-mail sait dire, dans une langue. */
 export interface MailCopy {
   readonly orderPlaced: OrderPlacedCopy;
   readonly orderReady: OrderReadyCopy;
+  readonly paymentFailed: PaymentFailedCopy;
 }
 
 /**

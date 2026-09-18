@@ -76,7 +76,7 @@ elle est précise. C'est **l'exception nommée**, pas un oubli : une exception
 | **P4 — la base** : tables, colonnes, **et valeurs** (`AddressKind`, clés `jsonb`)                                                                                                  | ~2–3 j | élevé — étendre / basculer / resserrer par champ |
 
 **P1, P2 et P3 sont faits** (2026-08-24), sans rien casser en production. P4 est
-le seul palier qui demande la discipline de C0 : `documentation/ops/pipelines.md`
+le seul palier qui demande la discipline de C0 : `documentation/ci-cd/pipelines.md`
 la pose comme **non négociable** — « un déplacement de données sur une base
 vivante se fait en trois déploiements, jamais en une migration qui `DROP` ce que
 le code en ligne lit encore ». Un palier ne s'y compte donc pas en journées mais
@@ -237,7 +237,7 @@ forme vue de la base. Seul l'appelant sait lequel des deux il est.
 Et un garde qui se déclenche sur chaque machine de développement ne se corrige
 pas, il se contourne — puis il ne protège plus rien le jour où il aurait servi.
 **L'ordre des déploiements est le travail de la chaîne de livraison**
-(`documentation/ops/pipelines.md`), pas d'une migration. Le palier 2 porte donc
+(`documentation/ci-cd/pipelines.md`), pas d'une migration. Le palier 2 porte donc
 un avertissement en tête de fichier, et rien d'autre.
 
 ### Ce que la bascule a révélé

@@ -85,6 +85,15 @@ const DESTINATIONS: readonly Destination[] = [
   { id: 'account', route: '/mon-compte', ready: true, shop: 'closed', companyOnly: true },
 ];
 
+/**
+ * Les adresses des écrans de SOCIÉTÉ — lues sur la même liste que le menu, pour
+ * que la bascule d'espace (`ClientWorkspaceSwitch`) quitte exactement ce que le
+ * menu retire en perso.
+ */
+export const COMPANY_ONLY_ROUTES: readonly string[] = DESTINATIONS.filter(
+  (destination) => destination.companyOnly === true,
+).map((destination) => destination.route);
+
 /** Une destination prête à être dessinée, dans l'une ou l'autre des deux formes. */
 export interface NavItem {
   readonly id: string;

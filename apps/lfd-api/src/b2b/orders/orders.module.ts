@@ -11,8 +11,12 @@ import { PricerModule } from "../pricing/pricer.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { MarkOrderFulfilledHandler } from "./application/commands/mark-order-fulfilled.handler.js";
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
+import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-notice.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
+import { SendOrderSettledMail } from "./application/handlers/send-order-settled-mail.handler.js";
+import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
+import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
 import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
 import { SendHandoverReminderHandler } from "./application/commands/send-handover-reminder.handler.js";
 import { AppConfig } from "../../platform/config/app-config.js";
@@ -70,6 +74,13 @@ import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.
 import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repository.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderIdempotencyStore } from "./infrastructure/prisma-order-idempotency.store.js";
+import { PrismaShopOrderIdempotencyStore } from "./infrastructure/prisma-shop-order-idempotency.store.js";
+import { PrismaGuestBuyerRegistrar } from "./infrastructure/prisma-guest-buyer.registrar.js";
+import { GuestBuyerRegistrar } from "./domain/ports/guest-buyer.registrar.js";
+import { PrismaGuestOrderNoticeReader } from "./infrastructure/prisma-guest-order-notice.reader.js";
+import { GuestOrderNoticeReader } from "./domain/ports/guest-order-notice.reader.js";
+import { ShopOrderIdempotencyStore } from "./domain/ports/shop-order-idempotency.store.js";
+import { PlaceShopOrderHandler } from "./application/commands/place-shop-order.handler.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
@@ -153,7 +164,22 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     OnOrderHandedOver,
     GetProductionBatchHandler,
     GetPackingHandler,
+    // L'accusé de réception à la passation. 🔴 Il se TAIT quand le règlement est
+    // encore en vol (2026-09-17) : une commande carte n'est pas payée quand elle
+    // est écrite, et lui annoncer la fournée de demain serait un message faux.
     SendOrderPlacedMail,
+    // Le même accusé, quand la carte a répondu OUI. Deux gestes, un seul
+    // composeur — et la même clé d'idempotence, donc jamais deux accusés.
+    SendOrderSettledMail,
+    // Et quand elle a répondu NON. Ce courriel n'existait pas : un refus était
+    // écrit dans une colonne que personne ne relisait.
+    SendPaymentFailedMail,
+    // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
+    OrderPlacedMail,
+    // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a
+    // utilisée (D7). Abonné au MÊME événement que l'accusé de réception, et
+    // c'est voulu : l'un écrit à qui commande, l'autre à qui ne commande pas.
+    SendGuestOrderNotice,
     SendOrderReadyMail,
     // Le composeur du courriel de retrait, partagé par le colisage (qui
     // l'annonce) et par le rappel du comptoir (qui le renvoie).
@@ -199,6 +225,17 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.
     { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
+    // La commande **sans compte** — plan `plan-commande-sans-compte.md`, lot C.
+    //
+    // 🔴 Le handler et ses deux ports sont branchés ; `ShopOrdersController` ne
+    // l'est PAS (cf. son en-tête). La route n'existe donc pas à l'exécution,
+    // pendant que tout ce qu'elle appellerait est monté, éprouvé contre le vrai
+    // Postgres, et prêt à servir le jour de l'arbitrage de prix (§6). Ouvrir
+    // tient en une ligne : ajouter le contrôleur aux `controllers`.
+    PlaceShopOrderHandler,
+    { provide: ShopOrderIdempotencyStore, useClass: PrismaShopOrderIdempotencyStore },
+    { provide: GuestBuyerRegistrar, useClass: PrismaGuestBuyerRegistrar },
+    { provide: GuestOrderNoticeReader, useClass: PrismaGuestOrderNoticeReader },
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import type { PickupAddressView } from '@lfd/contracts';
 import { AddressView } from '@lfd/b2b-ui/address';
 import { HoursView } from '@lfd/b2b-ui/hours';
@@ -13,22 +14,25 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
-  FoldPanelHostService,
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../pickup-addresses.service';
 import { discountAudienceSuffix } from '../pickup-discount-audience';
 import { openingRows } from '../pickup-opening.model';
-import { PickupPanel, type PickupPanelData } from '../pickup-panel/pickup-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+/** Cette liste, et la racine des pages de détail qu'elle ouvre. */
+const LIST_PATH = '/b2b/reglages/points-de-retrait';
+
 /**
  * **Points de retrait** — « E-commerce LFC → Réglages ». Les laboratoires où le
- * client vient chercher sa commande : ajouter, éditer, désigner le défaut. La
- * saisie ET la suppression passent par `PickupPanel` — la seconde dans sa zone
- * dangereuse, depuis le 2026-09-15 (un clic dans le menu de la liste suffisait
- * avant) ; ici on liste, on ouvre le panneau et on recharge.
+ * client vient chercher sa commande.
+ *
+ * Elle ne fait que **lister et mener** : la saisie et la suppression vivent sur
+ * la page d'un point (`PickupAddressPage`), depuis le 2026-09-16. Elles
+ * passaient par un panneau, qui portait déjà six sujets ; un septième et un
+ * huitième arrivent avec les créneaux publics.
  *
  * Elle était la première carte d'un onglet « Retraits & livraisons » des
  * Réglages, avec les zones et les heures limites. Les trois se sont séparées le
@@ -54,12 +58,10 @@ type LoadState = 'loading' | 'ready' | 'error';
 })
 export class PickupAddressesPage {
   private readonly pickups = inject(PickupAddressesService);
-  private readonly panels = inject(FoldPanelHostService);
+  private readonly router = inject(Router);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly addresses = signal<readonly PickupAddressView[]>([]);
-  /** On garde toujours au moins un point : le dernier n'est pas supprimable. */
-  protected readonly canRemove = computed(() => this.addresses().length > 1);
 
   /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
   protected readonly hours = openingRows;
@@ -98,22 +100,15 @@ export class PickupAddressesPage {
   }
 
   protected add(): void {
-    void this.openPanel({ address: null });
+    void this.router.navigate([LIST_PATH, 'nouveau']);
   }
 
+  /**
+   * Ouvre la page du point. Pas de rechargement à prévoir au retour : la page
+   * relit la liste elle-même, et c'est de là qu'elle tire aussi le fait qu'un
+   * point soit le dernier — un compte que cette liste n'a plus à lui passer.
+   */
   protected edit(address: PickupAddressView): void {
-    void this.openPanel({ address, removable: this.canRemove() });
-  }
-
-  /** Ouvre le panneau, puis recharge la liste si une sauvegarde a eu lieu. */
-  private async openPanel(data: PickupPanelData): Promise<void> {
-    const ref = this.panels.open<PickupPanelData | undefined, boolean>(PickupPanel, {
-      data,
-      width: 'md',
-    });
-    const saved = await ref.closed;
-    if (saved === true) {
-      await this.load();
-    }
+    void this.router.navigate([LIST_PATH, address.id]);
   }
 }

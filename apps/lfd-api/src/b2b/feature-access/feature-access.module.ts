@@ -23,7 +23,7 @@ import { PrismaFeatureOverrideRepository } from "./infrastructure/prisma-feature
 
 /**
  * **Accès aux fonctionnalités** — le catalogue du code, ses écarts en base, et
- * leur pilotage staff. Plan : `documentation/b2b/plan-inscription-pro-seule.md`.
+ * leur pilotage staff. Plan : `documentation/auth-inscription/plan-inscription-pro-seule.md`.
  *
  * Importe `AccountModule` pour le seul `StaffDirectory` : l'auteur d'un écart
  * est figé comme celui d'une certification de KBIS, par le même port.

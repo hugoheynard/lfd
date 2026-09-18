@@ -1,0 +1,48 @@
+<fold-panel-header
+  [title]="heading()"
+  subtitle="Une fermeture prime sur toutes les plages : ces jours-là, aucun créneau n'est offert."
+/>
+
+<div class="body">
+  <div class="row">
+    <fold-date label="Premier jour fermé" [(value)]="fromDay" required />
+    <fold-date label="Dernier jour fermé" [(value)]="toDay" required />
+  </div>
+
+  <!-- Le cas courant est la journée entière. Les deux bornes vont PAR DEUX ou
+       pas du tout — le contrat le refuse autrement, et pour une bonne raison :
+       « fermé à partir de 14 h » et « fermé jusqu'à 14 h » s'écriraient de la
+       même façon avec une seule borne. D'où une case, et non deux champs qu'on
+       pourrait remplir à moitié. -->
+  <fold-checkbox
+    label="Journée entière"
+    hint="Décochez pour ne fermer qu'une tranche d'heures, le même horaire sur toute la période."
+    [checked]="wholeDay()"
+    (checkedChange)="wholeDay.set($event)"
+  />
+
+  @if (!wholeDay()) {
+    <div class="row">
+      <fold-time label="Fermé à partir de" [(value)]="startTime" required />
+      <fold-time label="Jusqu'à" [(value)]="endTime" required />
+    </div>
+  }
+
+  <fold-input
+    label="Motif"
+    optional
+    hint="Pour vous et l'équipe — congés, four en révision, jour de marché."
+    [(value)]="reason"
+  />
+
+  <!-- La fermeture se relit avant d'être posée : c'est là qu'on voit qu'on a
+       saisi le mauvais mois. -->
+  <fold-callout [variant]="canSubmit() ? 'info' : 'alert'">{{ recap() }}</fold-callout>
+</div>
+
+<div class="actions">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter la fermeture' : 'Enregistrer' }}
+  </button>
+</div>

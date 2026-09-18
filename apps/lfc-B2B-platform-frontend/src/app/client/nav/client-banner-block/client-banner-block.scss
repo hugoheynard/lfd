@@ -9,6 +9,15 @@
   padding: var(--fold-space-xl) var(--lfc-inset) var(--fold-space-2xl);
 }
 
+/* La rangée titre + action. En pile elle s'empile comme avant ; c'est au-delà
+   du pli qu'elle devient une vraie ligne. */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  min-width: 0;
+}
+
 .kicker {
   margin: 0 0 var(--fold-space-sm);
   font-family: var(--fold-font-label);
@@ -41,11 +50,17 @@
 
 @media (min-width: 900px) {
   .banner {
+    padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-3xl);
+  }
+
+  /* ⚠️ C'est la RANGÉE qui passe en ligne, plus le bandeau : lui reste une
+     colonne, sans quoi ce qui se projette dessous se rangerait à côté du
+     titre. Le reste — l'alignement, l'écart — est celui qu'il avait. */
+  .row {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     gap: var(--fold-space-2xl);
-    padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-3xl);
   }
 
   .titles {
@@ -71,5 +86,14 @@
   .titles:only-child {
     margin-inline: auto;
     text-align: center;
+  }
+
+  /* 🔴 Sauf quand l'écran le demande : un bandeau qui porte un rail sous son
+     titre n'est pas un bandeau vide, et le titre doit s'aligner sur ce rail.
+     Il reste seul dans sa rangée — le centrage ci-dessus s'appliquerait donc —
+     d'où cette reprise explicite plutôt qu'une condition sur le contenu. */
+  :host(.align-start) .titles:only-child {
+    margin-inline: 0;
+    text-align: start;
   }
 }

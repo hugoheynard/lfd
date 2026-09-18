@@ -91,3 +91,9 @@ expected array to have >=1 items`.
 24. **La boutique (`apps/lfc-B2B-platform-frontend`) n'a pas de script `lint`** :
     `turbo run lint` la liste sans rien exécuter. Un front qui n'entre jamais dans
     `pnpm lint` ne peut pas le faire échouer — relevé par `cerberus`.
+25. **Le bulletin de démarrage ignore le stockage `production`** :
+    `apps/lfd-api/src/platform/startup/startup-report.service.ts` ne lit que
+    `kbis`, `media` et `customers`. L'exclusion était juste quand rien n'écrivait
+    dans ce bucket ; elle ne l'est plus depuis `985d21bf` (les deux papiers du
+    fournil sont archivés). Un `R2_PRODUCTION_*` mal posé se découvre donc au
+    premier tirage, devant un four, et non au démarrage.

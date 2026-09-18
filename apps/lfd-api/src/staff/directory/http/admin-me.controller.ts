@@ -16,8 +16,8 @@ import { UpdateStaffNavPrefsCommand } from "../application/update-staff-nav-pref
  * « Qui suis-je, et que puis-je faire » — **le seul point** par lequel un écran
  * admin apprend ses droits.
  *
- * C'est aussi la couture de sortie vers un futur backend IAM : le jour où les
- * droits viennent d'ailleurs, on change qui répond à cette question, pas un
+ * Un seul point, pour que le jour où le calcul des droits change — les rôles
+ * définis en base, par exemple —, on change qui répond à cette question, pas un
  * écran. Surface réflexive : elle exige une fiche connue et non suspendue, mais
  * aucune permission — il faudrait sinon un droit pour apprendre qu'on n'en a
  * aucun.

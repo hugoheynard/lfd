@@ -3,17 +3,20 @@
 Tout ce qui concerne le **déploiement, l'infrastructure et la sécurité d'accès**.
 Le reste de `documentation/` décrit le métier ; ici on décrit la machine.
 
+Depuis le 2026-09-18, les pipelines, la carte du déploiement et le build des
+fronts vivent dans [`../ci-cd/`](../ci-cd/) ; la table ci-dessous y renvoie.
+
 ## Par où entrer
 
-| Doc                                                                        | Quand l'ouvrir                                                                                   |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [`architecture-deploiement.md`](architecture-deploiement.md)               | « Qu'est-ce qui tourne, et où ? » — la carte, le chemin d'une requête, les containers, les bases |
-| [`pipelines.md`](pipelines.md)                                             | « Pourquoi ça s'est déployé (ou pas) ? » — déclencheurs, ordre des étapes, aléas connus          |
-| [`secrets-et-variables.md`](secrets-et-variables.md)                       | « Où vit cette valeur ? » — Secret ou Variable, qui la lit, laquelle doit résoudre               |
-| [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md) | « Qu'est-ce qui nous protège vraiment ? » — les trois couches, dont une inerte                   |
-| [`runbook.md`](runbook.md)                                                 | « Comment je fais, et comment je sais que ça a marché ? » — les gestes et leurs contrôles        |
-| [`mailer-resend.md`](mailer-resend.md)                                     | « Pourquoi l'e-mail n'est pas arrivé ? » — le domaine à vérifier, les 4 réglages, les contrôles  |
-| [`architecture-stockage-media.md`](architecture-stockage-media.md)         | « Où vivent les images, et pourquoi il faut un domaine ? » — R2, cache, ce que « CDN » recouvre  |
+| Doc                                                                            | Quand l'ouvrir                                                                                   |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md) | « Qu'est-ce qui tourne, et où ? » — la carte, le chemin d'une requête, les containers, les bases |
+| [`../ci-cd/pipelines.md`](../ci-cd/pipelines.md)                               | « Pourquoi ça s'est déployé (ou pas) ? » — déclencheurs, ordre des étapes, aléas connus          |
+| [`secrets-et-variables.md`](secrets-et-variables.md)                           | « Où vit cette valeur ? » — Secret ou Variable, qui la lit, laquelle doit résoudre               |
+| [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md)     | « Qu'est-ce qui nous protège vraiment ? » — les trois couches, dont une inerte                   |
+| [`runbook.md`](runbook.md)                                                     | « Comment je fais, et comment je sais que ça a marché ? » — les gestes et leurs contrôles        |
+| [`mailer-resend.md`](mailer-resend.md)                                         | « Pourquoi l'e-mail n'est pas arrivé ? » — le domaine à vérifier, les 4 réglages, les contrôles  |
+| [`architecture-stockage-media.md`](architecture-stockage-media.md)             | « Où vivent les images, et pourquoi il faut un domaine ? » — R2, cache, ce que « CDN » recouvre  |
 
 Voir aussi, hors de ce dossier :
 [`b2b/admin-app-ios-capacitor.md`](../b2b/admin-app-ios-capacitor.md) (l'admin en

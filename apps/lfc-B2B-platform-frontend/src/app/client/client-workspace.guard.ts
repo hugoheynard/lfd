@@ -6,6 +6,7 @@ import { filter, firstValueFrom, of, timeout, catchError } from 'rxjs';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
 import { ClientWorkspace } from './client-workspace.service';
+import { COMPANY_HOME, PERSONAL_HOME } from './client-workspace-switch.service';
 
 /** Où va qui est en perso : l'accueil, ouvert dès que la boutique se visite. */
 const PERSONAL_FALLBACK = '/mon-espace';
@@ -42,15 +43,7 @@ export const companyWorkspaceGuard: CanActivateFn = async () => {
   if (!(await firstValueFrom(auth.authGate$()))) {
     return true;
   }
-  if (workspace.current() === null) {
-    await firstValueFrom(
-      toObservable(workspace.current, { injector }).pipe(
-        filter((current) => current !== null),
-        timeout(WORKSPACE_WAIT_MS),
-        catchError(() => of(null)),
-      ),
-    );
-  }
+  await workspaceKnown(workspace, injector);
   if (!workspace.isPersonal() || !workspace.hasChoice()) {
     return true;
   }
@@ -58,3 +51,47 @@ export const companyWorkspaceGuard: CanActivateFn = async () => {
   await access.settled();
   return access.atLeast('browse') ? router.parseUrl(PERSONAL_FALLBACK) : true;
 };
+
+/**
+ * **L'accueil de l'espace où l'on entre** — l'adresse que vise la connexion
+ * (Hugo, 2026-09-17 : « la co en perso doit envoyer sur bienvenue »).
+ *
+ * La connexion part vers Auth0 avant qu'on sache dans quel espace la personne
+ * reviendra : l'espace se lit sur `/me`, au retour. La cible ne peut donc pas
+ * être écrite au départ ; elle se décide ici, une fois l'espace connu —
+ * `/bienvenue` en perso, `/nouvelle-commande` dans une société, les mêmes
+ * accueils que la bascule d'espace.
+ *
+ * Si `/me` ne répond pas à temps, on retombe sur la prise de commande : c'était
+ * la cible de la connexion jusqu'ici, et son écran sait dire qu'il n'a pas pu
+ * lire le compte.
+ */
+export const workspaceHomeGuard: CanActivateFn = async () => {
+  const workspace = inject(ClientWorkspace);
+  const auth = inject(AuthFacade);
+  const router = inject(Router);
+  const injector = inject(Injector);
+
+  if (!(await firstValueFrom(auth.authGate$()))) {
+    return router.parseUrl(PERSONAL_HOME);
+  }
+  await workspaceKnown(workspace, injector);
+  if (workspace.current() === null) {
+    return router.parseUrl(COMPANY_HOME);
+  }
+  return router.parseUrl(workspace.isPersonal() ? PERSONAL_HOME : COMPANY_HOME);
+};
+
+/** Attend que `/me` ait dit l'espace — au plus {@link WORKSPACE_WAIT_MS}. */
+async function workspaceKnown(workspace: ClientWorkspace, injector: Injector): Promise<void> {
+  if (workspace.current() !== null) {
+    return;
+  }
+  await firstValueFrom(
+    toObservable(workspace.current, { injector }).pipe(
+      filter((current) => current !== null),
+      timeout(WORKSPACE_WAIT_MS),
+      catchError(() => of(null)),
+    ),
+  );
+}
