@@ -286,10 +286,11 @@ rend possible ensemble.
 
 ## 6. Ce que ce plan ne fait pas
 
-- **Convertir l'auteur du journal** ou les autres colonnes d'auteur : le `sub`
-  reste un identifiant exact (D3). Le
-  [TODO du `sub`](journalisation-staff/todo-le-sub-comme-auteur.md) ne reste
-  ouvert que pour la fuite de donnée.
+- **Convertir l'auteur du journal** ou les autres colonnes d'auteur : c'est fait
+  à part, et livré le 2026-09-18 —
+  [`plan-l-auteur-est-la-fiche.md`](plan-l-auteur-est-la-fiche.md). Tout auteur
+  est l'id d'une fiche ; le D3 de ce plan garde sa seule raison de sécurité
+  (un jeton d'accès ne se révoque pas).
 - Les rôles éditables à l'écran, non lus par l'accès
   ([`architecture-acces-staff.md`](architecture-acces-staff.md) §13.1).
 

@@ -5,7 +5,8 @@
 > que ce soit basé sur le staff id ». Périmètre : **le staff** ; les clients ont
 > été inventoriés dans la foulée (§8) — rien à convertir.
 >
-> Remplace [`journalisation-staff/todo-le-sub-comme-auteur.md`](journalisation-staff/todo-le-sub-comme-auteur.md).
+> Remplace le TODO « le `sub` Auth0 sert encore d'auteur », supprimé le
+> 2026-09-18 une fois ce plan livré (son texte reste dans l'historique git).
 > État : 🚧 **en construction** depuis le 2026-09-18 (« go tout le plan »).
 > Étapes 0, 1 et 3 **déployées** le même jour (`58b9c80e`), puis l'étape 4
 > (`20260918190000_conversion_des_auteurs_staff`) dans le déploiement suivant.

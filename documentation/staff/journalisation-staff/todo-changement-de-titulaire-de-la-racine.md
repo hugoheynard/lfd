@@ -37,8 +37,7 @@ personne d'avant, et tout ce qui sera fait ensuite à la nouvelle.
   le même identifiant. Seule la date les sépare.
 - ~~**`actor_id` du journal est le `sub` Auth0**~~ — réglé le 2026-09-18 :
   c'est l'id de la fiche ([`../plan-l-auteur-est-la-fiche.md`](../plan-l-auteur-est-la-fiche.md)).
-  Le reste de ce point ne vaut plus que pour l'histoire :
-  ([`todo-le-sub-comme-auteur.md`](todo-le-sub-comme-auteur.md)) : si la
+  Le reste de ce point ne vaut plus que pour l'histoire : si la
   nouvelle personne garde la même identité Auth0 — même boîte, nouveau mot de
   passe —, le `sub` ne change pas, et le filtre par acteur mélange les deux.
 - **La racine est reconnue par son adresse** : `isRoot` compare l'e-mail de la
