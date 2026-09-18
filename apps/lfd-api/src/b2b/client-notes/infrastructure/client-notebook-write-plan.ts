@@ -16,8 +16,6 @@ export interface NoteToCreate {
   readonly title: string;
   readonly body: string;
   readonly photoKey: string | null;
-  readonly createdBySub: string;
-  /** Même valeur que `createdBySub`, sous son vrai nom (plan de l'auteur, 5A). */
   readonly createdByStaffId: string;
   readonly createdByName: string;
 }
@@ -86,7 +84,6 @@ function creationOf(note: ClientNoteState, position: number): NoteToCreate {
     title: note.title,
     body: note.body,
     photoKey: note.photoKey,
-    createdBySub: note.author.staffUserId,
     createdByStaffId: note.author.staffUserId,
     createdByName: note.author.name,
   };

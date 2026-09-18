@@ -28,8 +28,6 @@ export class PrismaFeatureExemptionRepository extends FeatureExemptionRepository
         key: exemption.key,
         email: exemption.email,
         createdAt: exemption.at,
-        // Les deux colonnes, même valeur, jusqu'à la bascule (plan de l'auteur, 5A).
-        createdBySub: exemption.author.staffUserId,
         createdByStaffId: exemption.author.staffUserId,
         createdByName: exemption.author.name,
         createdByRole: exemption.author.role,

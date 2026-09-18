@@ -27,17 +27,16 @@ model FeatureAccessOverride {
   /// de la base au lieu de celle de la requête.
   updatedAt        DateTime @map("updated_at")
   /// Qui l'a posée, figé à l'instant du geste : l'identifiant survit à tout, le
-  /// nom et le rôle sont un instantané (cf. l'activation d'une société). La
-  /// colonne reçoit l'id de fiche depuis le 2026-09-18 malgré son nom
-  /// (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur). Les lignes plus
-  /// anciennes portaient un `sub`, converti par la migration
+  /// nom et le rôle sont un instantané (cf. l'activation d'une société). L'id
+  /// de fiche depuis le 2026-09-18 ; les lignes plus anciennes portaient un
+  /// `sub`, converti par la migration
   /// `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
   /// la table des `sub` ne connaît pas.
-  updatedBySub     String   @map("updated_by_sub")
-  /// La même valeur, sous le nom de ce qu'elle contient (plan de
-  /// l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
-  /// lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
-  /// lectures ici. Nullable tant que dure la bascule.
+  ///
+  /// NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
+  /// aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
+  /// supprime aussi `updated_by_sub` — l'ancien nom, que plus rien ne lit ni
+  /// n'écrit depuis 5B.
   updatedByStaffId String?  @map("updated_by_staff_id")
   updatedByName    String   @map("updated_by_name")
   updatedByRole    String   @map("updated_by_role")
@@ -57,16 +56,15 @@ model FeatureAccessExemption {
   email String
 
   createdAt        DateTime @map("created_at")
-  /// L'id de fiche de l'auteur depuis le 2026-09-18 malgré le nom de colonne
-  /// (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur). Les lignes plus
+  /// L'id de fiche de l'auteur depuis le 2026-09-18 ; les lignes plus
   /// anciennes portaient un `sub`, converti par la migration
   /// `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
   /// la table des `sub` ne connaît pas.
-  createdBySub     String   @map("created_by_sub")
-  /// La même valeur, sous le nom de ce qu'elle contient (plan de
-  /// l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
-  /// lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
-  /// lectures ici. Nullable tant que dure la bascule.
+  ///
+  /// NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
+  /// aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
+  /// supprime aussi `created_by_sub` — l'ancien nom, que plus rien ne lit ni
+  /// n'écrit depuis 5B.
   createdByStaffId String?  @map("created_by_staff_id")
   createdByName    String   @map("created_by_name")
   createdByRole    String   @map("created_by_role")

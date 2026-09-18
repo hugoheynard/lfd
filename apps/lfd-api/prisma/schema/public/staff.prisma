@@ -310,14 +310,13 @@ model StaffPushSubscription {
   /// L'id de fiche du staff qui s'est abonné — un identifiant, pas un nom. Un
   /// `sub` avant le 2026-09-18, converti par
   /// `20260918190000_conversion_des_auteurs_staff` sauf s'il est inconnu de la
-  /// table des `sub` ; la colonne garde son nom `staff_sub` jusqu'à
-  /// l'étape 5 du plan de l'auteur. Une TRACE : sert à couper les abonnements
-  /// de quelqu'un qui part, pas à cibler — la cloche est commune à l'équipe (D9).
-  staffSub    String  @map("staff_sub")
-  /// La même valeur, sous le nom de ce qu'elle contient (plan de
-  /// l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
-  /// lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
-  /// lectures ici. Nullable tant que dure la bascule.
+  /// table des `sub`. Une TRACE : sert à couper les abonnements de quelqu'un
+  /// qui part, pas à cibler — la cloche est commune à l'équipe (D9).
+  ///
+  /// NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
+  /// aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
+  /// supprime aussi `staff_sub` — l'ancien nom, que plus rien ne lit ni
+  /// n'écrit depuis 5B.
   staffUserId String? @map("staff_user_id")
 
   createdAt  DateTime  @default(now()) @map("created_at")
@@ -339,7 +338,7 @@ model StaffPushSubscription {
   /// bout d'une semaine. Remis à `null` au premier envoi accepté.
   failingSince DateTime? @map("failing_since")
 
-  @@index([staffSub])
+  // L'index de `staff_sub` reste en base avec sa colonne jusqu'à 5C.
   @@index([staffUserId])
   @@map("staff_push_subscriptions")
   @@schema("public")

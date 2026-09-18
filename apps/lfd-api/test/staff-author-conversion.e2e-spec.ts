@@ -29,6 +29,7 @@ import {
   E2E_STAFF_SUB,
   type E2eContext,
 } from "./e2e-harness.js";
+import { legacyAuthorOf } from "./legacy-author-columns.js";
 
 const MIGRATION = join(
   process.cwd(),
@@ -188,16 +189,12 @@ describe("la conversion — un `sub` connu devient l'id de sa fiche", () => {
   });
 
   it("une colonne `*_by_sub`, le journal, les deux clés de charge utile, le journal tarifaire", async () => {
-    await ctx.prisma.featureAccessOverride.create({
-      data: {
-        key: "shop",
-        value: "order",
-        updatedAt: new Date(daysAgo(6)),
-        updatedBySub: E2E_STAFF_SUB,
-        updatedByName: "Opérateur E2E",
-        updatedByRole: "Administrateur",
-      },
-    });
+    // En SQL : depuis l'étape 5B, Prisma ne connaît plus `updated_by_sub`, la
+    // colonne que CETTE migration convertit.
+    await ctx.prisma.$executeRaw`
+      INSERT INTO "public"."feature_access_overrides"
+        ("key", "value", "updated_at", "updated_by_sub", "updated_by_name", "updated_by_role")
+      VALUES ('shop', 'order', ${new Date(daysAgo(6))}, ${E2E_STAFF_SUB}, 'Opérateur E2E', 'Administrateur')`;
     await seedFact({
       id: "f-ready",
       type: "order.ready",
@@ -219,8 +216,10 @@ describe("la conversion — un `sub` connu devient l'id de sa fiche", () => {
     const override = await ctx.prisma.featureAccessOverride.findUniqueOrThrow({
       where: { key: "shop" },
     });
+    expect(
+      await legacyAuthorOf(ctx.prisma, "feature_access_overrides.updated_by_sub", "shop"),
+    ).toBe(E2E_STAFF_ID);
     expect(override).toMatchObject({
-      updatedBySub: E2E_STAFF_ID,
       updatedByName: "Opérateur E2E",
       updatedByRole: "Administrateur",
     });

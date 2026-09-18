@@ -24,6 +24,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { legacyAuthorOf } from "./legacy-author-columns.js";
 
 const COMMERCIAL_SUB = "staff-commercial";
 const TESTER_EMAIL = "testeur@exemple.fr";
@@ -111,13 +112,17 @@ describe("la dérogation — posée, puis retirée", () => {
       name: "Opérateur E2E",
       role: "admin",
     });
-    // L'id de fiche dans les DEUX colonnes, le temps de la bascule (étape 5A).
+    // L'id de fiche dans la nouvelle colonne seule ; l'ancienne, que Prisma ne
+    // connaît plus, n'est plus écrite (plan de l'auteur, étape 5B).
     await expect(
       ctx.prisma.featureAccessOverride.findUniqueOrThrow({
         where: { key: "shop" },
-        select: { updatedBySub: true, updatedByStaffId: true },
+        select: { updatedByStaffId: true },
       }),
-    ).resolves.toEqual({ updatedBySub: E2E_STAFF_ID, updatedByStaffId: E2E_STAFF_ID });
+    ).resolves.toEqual({ updatedByStaffId: E2E_STAFF_ID });
+    expect(
+      await legacyAuthorOf(ctx.prisma, "feature_access_overrides.updated_by_sub", "shop"),
+    ).toBeNull();
     await expect(publicLevels()).resolves.toEqual({ shop: "browse", ...OTHER_DEFAULTS });
 
     await admin().delete("/admin/feature-access/shop").expect(204);
@@ -153,7 +158,7 @@ describe("la dérogation — posée, puis retirée", () => {
         key: "legacy_flag",
         value: "on",
         updatedAt: new Date(),
-        updatedBySub: E2E_STAFF_ID,
+        updatedByStaffId: E2E_STAFF_ID,
         updatedByName: "",
         updatedByRole: "",
       },
@@ -187,13 +192,16 @@ describe("la liste d'exemption", () => {
     expect((await board()).features[0]?.exemptions).toEqual([
       expect.objectContaining({ id: first.id, email: TESTER_EMAIL, accountState: "none" }),
     ]);
-    // L'id de fiche dans les DEUX colonnes, le temps de la bascule (étape 5A).
+    // L'id de fiche dans la nouvelle colonne seule (plan de l'auteur, étape 5B).
     await expect(
       ctx.prisma.featureAccessExemption.findUniqueOrThrow({
         where: { id: first.id },
-        select: { createdBySub: true, createdByStaffId: true },
+        select: { createdByStaffId: true },
       }),
-    ).resolves.toEqual({ createdBySub: E2E_STAFF_ID, createdByStaffId: E2E_STAFF_ID });
+    ).resolves.toEqual({ createdByStaffId: E2E_STAFF_ID });
+    expect(
+      await legacyAuthorOf(ctx.prisma, "feature_access_exemptions.created_by_sub", first.id),
+    ).toBeNull();
 
     await admin().delete(`/admin/feature-access/shop/exemptions/${first.id}`).expect(204);
 

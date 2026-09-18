@@ -24,8 +24,6 @@ export class PrismaFeatureOverrideRepository extends FeatureOverrideRepository {
     const row = {
       value: override.value,
       updatedAt: override.at,
-      // Les deux colonnes, même valeur, jusqu'à la bascule (plan de l'auteur, 5A).
-      updatedBySub: override.author.staffUserId,
       updatedByStaffId: override.author.staffUserId,
       updatedByName: override.author.name,
       updatedByRole: override.author.role,

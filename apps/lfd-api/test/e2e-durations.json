@@ -99,6 +99,7 @@
   "test/staff-access.e2e-spec.ts": 9064,
   "test/staff-author-columns.e2e-spec.ts": 2000,
   "test/staff-author-conversion.e2e-spec.ts": 5678,
+  "test/staff-author-switch.e2e-spec.ts": 5189,
   "test/staff-authors.e2e-spec.ts": 6429,
   "test/staff-invitation.e2e-spec.ts": 8265,
   "test/staff-journal-backfill.e2e-spec.ts": 6984,
