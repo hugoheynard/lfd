@@ -22,6 +22,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { settleCardPayments } from "./card-payments.js";
 
 const MEMBER = "auth0|member";
 const STAFF = "staff-e2e";
@@ -48,10 +49,13 @@ const stubAdminVerifier = {
 };
 
 let intentCount = 0;
+/** Les intentions émises et pas encore réglées — vidées par `settleCardPayments`. */
+const issuedIntents: string[] = [];
 const fakeGateway = {
   createIntent: () => {
     intentCount += 1;
     const id = `pi_e2e_${String(intentCount)}`;
+    issuedIntents.push(id);
     return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
   },
   publishableKey: () => "pk_e2e",
@@ -96,6 +100,7 @@ async function place(lines: readonly { sku: string; quantity: number }[]): Promi
       lines,
     })
     .expect(201);
+  await settleCardPayments(ctx, issuedIntents);
 }
 
 async function closePlan(): Promise<void> {

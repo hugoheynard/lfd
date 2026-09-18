@@ -18,6 +18,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { settleCardPayments } from "./card-payments.js";
 
 const MEMBER = "auth0|member";
 const SERVICE_DAY = serviceDay();
@@ -59,10 +60,13 @@ const stubAdminVerifier = {
  * imprévisible, ce dont aucun test n'a besoin ici.
  */
 let intentCount = 0;
+/** Les intentions émises et pas encore réglées — vidées par `settleCardPayments`. */
+const issuedIntents: string[] = [];
 const fakeGateway = {
   createIntent: () => {
     intentCount += 1;
     const id = `pi_e2e_${String(intentCount)}`;
+    issuedIntents.push(id);
     return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
   },
   publishableKey: () => "pk_e2e",
@@ -141,6 +145,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         lines: [{ sku: "VIE-001", quantity: 2 }],
       })
       .expect(201);
+    await settleCardPayments(ctx, issuedIntents);
 
     // Le client change son contact sur place — après avoir commandé.
     await ctx.prisma.address.update({
@@ -188,6 +193,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         lines: [{ sku: "VIE-001", quantity: 2 }],
       })
       .expect(201);
+    await settleCardPayments(ctx, issuedIntents);
 
     const sheet = (await batch()).sheets[0];
     // Commande personnelle : pas de société, donc pas de détenteur à qui se
@@ -253,6 +259,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         lines: [{ sku: "VIE-001", quantity: 2 }],
       })
       .expect(201);
+    await settleCardPayments(ctx, issuedIntents);
 
     const sheet = (await batch()).sheets[0];
     expect(sheet?.fulfillment.contact?.name).not.toBe("Yanis Delorme");
@@ -311,6 +318,7 @@ describe("le colisage", () => {
         lines: [{ sku: "VIE-001", quantity: 2 }],
       })
       .expect(201);
+    await settleCardPayments(ctx, issuedIntents);
     return jsonBody<{ orderNumber: string }>(response).orderNumber;
   }
 
@@ -540,6 +548,7 @@ describe("les courriels d'une commande", () => {
         lines: [{ sku: "VIE-001", quantity: 2 }],
       })
       .expect(201);
+    await settleCardPayments(ctx, issuedIntents);
     return jsonBody<{ orderNumber: string }>(response).orderNumber;
   }
 
@@ -629,6 +638,7 @@ describe("le journal d'une commande", () => {
         })
         .expect(201),
     );
+    await settleCardPayments(ctx, issuedIntents);
     return placed.orderNumber;
   }
 
@@ -731,6 +741,7 @@ describe("le plan du soir", () => {
         })
         .expect(201),
     );
+    await settleCardPayments(ctx, issuedIntents);
     return placed.orderNumber;
   }
 
@@ -1003,6 +1014,7 @@ describe("la remise en livraison", () => {
         })
         .expect(201),
     );
+    await settleCardPayments(ctx, issuedIntents);
     return placed.orderNumber;
   }
 
@@ -1120,6 +1132,7 @@ describe("la file de remise", () => {
         })
         .expect(201),
     );
+    await settleCardPayments(ctx, issuedIntents);
     return placed.orderNumber;
   }
 
