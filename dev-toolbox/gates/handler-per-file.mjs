@@ -65,6 +65,9 @@ const DECORATOR = /^[^\S\n]*@(?:CommandHandler|QueryHandler|EventsHandler)\s*\(/
 /**
  * **Les fichiers qui portent plusieurs handlers au 2026-09-09.**
  *
+ * `staff-user.handlers.ts` et `staff-role.handlers.ts` en sont sortis le
+ * 2026-09-18, découpés quand le journal de l'annuaire les a rouverts.
+ *
  * Chemins relatifs à `apps/lfd-api/src`, séparateur `/` quel que soit l'OS.
  * En baisse seulement.
  */
@@ -90,9 +93,7 @@ const KNOWN_MULTI = new Set([
   "pim/ingredients/application/appellation-handlers.ts",
   "pim/ingredients/application/ingredient-handlers.ts",
   "production/application/queries/get-production-paper.handler.ts",
-  "staff/directory/application/staff-user.handlers.ts",
   "staff/invitations/pending-staff-access.ts",
-  "staff/permissions/application/staff-role.handlers.ts",
 ]);
 
 /** Tous les `.ts` de production sous `src`, les `__tests__/` exclus. */

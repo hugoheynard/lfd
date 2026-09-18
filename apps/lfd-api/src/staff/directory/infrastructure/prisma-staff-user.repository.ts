@@ -1,11 +1,7 @@
 import {
   dedupeStaffOverrides,
-  resolveStaffPermissions,
   type StaffMeView,
   type StaffStatusChange,
-  type StaffOverride,
-  type StaffRole,
-  type StaffStatus,
   type StaffUserPayload,
   type StaffUserView,
 } from "@lfd/contracts";
@@ -14,93 +10,26 @@ import { Injectable } from "@nestjs/common";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { isInvitationExpired } from "../../../platform/shared/invitation/invitation-expiry.js";
 import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
-import { StaffAccessCache } from "../../permissions/staff-access-cache.port.js";
 import {
   assertEditAllowed,
   assertRemovalAllowed,
   assertStatusChangeAllowed,
-  type StaffMutationTarget,
 } from "../../permissions/staff-access.policy.js";
 import { parseStaffNavPreferences } from "../domain/staff-nav-preferences.js";
+import { diffOverrides, isEmptyOverrideDiff, type OverrideDiff } from "../domain/override-diff.js";
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
 import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
-
-interface OverrideRow {
-  readonly resource: StaffOverride["resource"];
-  readonly action: StaffOverride["action"];
-  readonly effect: StaffOverride["effect"];
-}
-
-interface StaffRow {
-  readonly id: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly email: string;
-  readonly phone: string;
-  readonly jobTitle: string;
-  readonly role: StaffRole;
-  readonly status: StaffStatus;
-  readonly invitedAt: Date | null;
-  readonly overrides: readonly OverrideRow[];
-}
-
-const SELECT = {
-  id: true,
-  firstName: true,
-  lastName: true,
-  email: true,
-  phone: true,
-  jobTitle: true,
-  role: true,
-  status: true,
-  invitedAt: true,
-  overrides: { select: { resource: true, action: true, effect: true } },
-} as const;
-
-/**
- * La vue porte l'**effectif** déjà résolu : l'écran affiche ce qu'on lui donne au
- * lieu de rejouer la formule. Deux implémentations de la même règle divergent.
- */
-function toView(row: StaffRow, now: Date): StaffUserView {
-  const overrides = row.overrides.map((entry) => ({ ...entry }));
-  return {
-    id: row.id,
-    firstName: row.firstName,
-    lastName: row.lastName,
-    email: row.email,
-    phone: row.phone,
-    jobTitle: row.jobTitle,
-    role: row.role,
-    status: row.status,
-    invitedAt: row.invitedAt?.toISOString() ?? null,
-    // La péremption ne vaut que pour une invitation en attente : une fois
-    // entrée, la personne n'a plus de lien à réclamer, et un « invitation
-    // expirée » sur un compte actif serait une alarme mensongère.
-    invitationExpired:
-      row.status === "invited" && row.invitedAt !== null && isInvitationExpired(row.invitedAt, now),
-    overrides,
-    permissions: resolveStaffPermissions(row.role, overrides),
-  };
-}
-
-/** E-mail normalisé (clé d'unicité) : trimé (zod) + minuscule. */
-function normalizeEmail(email: string): string {
-  return email.toLowerCase();
-}
-
-/** Colonnes d'identité d'une charge. Les dérogations vivent dans leur table. */
-function identityColumns(payload: StaffUserPayload) {
-  return {
-    firstName: payload.firstName,
-    lastName: payload.lastName,
-    email: normalizeEmail(payload.email),
-    phone: payload.phone,
-    jobTitle: payload.jobTitle,
-    role: payload.role,
-  };
-}
+import type { StaffUserEdit, StaffUserSnapshot } from "../domain/staff-user-state.js";
+import {
+  identityColumns,
+  sameIdentity,
+  SELECT,
+  SNAPSHOT,
+  toView,
+  type LoadedTarget,
+  type OverrideRow,
+} from "./staff-user.rows.js";
 
 /** Adaptateur Prisma de l'annuaire staff. Tient l'unicité de l'e-mail. */
 @Injectable()
@@ -109,7 +38,6 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
     private readonly clock: Clock,
-    private readonly cache: StaffAccessCache,
   ) {
     super();
   }
@@ -148,52 +76,60 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     };
   }
 
-  async create(payload: StaffUserPayload, actorSub: string): Promise<string> {
+  async create(payload: StaffUserPayload, actorId: string): Promise<string> {
     const data = identityColumns(payload);
     const overrides = dedupeStaffOverrides(payload.overrides);
     await this.assertEmailFree(data.email, null);
+    const granted = { grantedByStaffId: actorId, grantedAt: this.clock.now() };
     const created = await this.prisma.staffUser.create({
-      data: { ...data, overrides: { create: overrideRows(overrides, actorSub) } },
+      data: {
+        ...data,
+        overrides: { create: overrides.map((override) => ({ ...override, ...granted })) },
+      },
       select: { id: true },
     });
     return created.id;
   }
 
-  async update(id: string, payload: StaffUserPayload, actorSub: string): Promise<void> {
-    const target = await this.loadTarget(id, actorSub);
-    const data = identityColumns(payload);
+  async update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit> {
+    const target = await this.loadTarget(id, actorId);
+    const after = identityColumns(payload);
     // Normalisé AVANT de valider : on refuse ou on accepte exactement l'état
     // qu'on s'apprête à écrire, jamais un autre.
     const overrides = dedupeStaffOverrides(payload.overrides);
-    assertEditAllowed(target, { email: data.email, role: data.role, overrides });
-    await this.assertEmailFree(data.email, id);
-    // Les dérogations se remplacent en bloc : le formulaire décrit un état, pas
-    // une suite d'ajouts, et un delta partiel laisserait des lignes fantômes.
+    assertEditAllowed(target.policy, { email: after.email, role: after.role, overrides });
+    await this.assertEmailFree(after.email, id);
+    // Le formulaire décrit un ÉTAT ; on n'écrit que le CHANGEMENT. Recréer
+    // toutes les lignes réattribuait chaque écart à son dernier éditeur et en
+    // effaçait la date (plan `plan-journal-de-l-annuaire.md` §3).
+    const diff = diffOverrides(target.overrides, overrides);
     await this.prisma.$transaction([
-      this.prisma.staffPermissionOverride.deleteMany({ where: { staffUserId: id } }),
-      this.prisma.staffUser.update({
-        where: { id },
-        data: { ...data, overrides: { create: overrideRows(overrides, actorSub) } },
-      }),
+      ...this.overrideWrites(id, diff, actorId),
+      ...(sameIdentity(target.snapshot, after)
+        ? []
+        : [this.prisma.staffUser.update({ where: { id }, data: after })]),
     ]);
-    this.cache.forgetAll();
+    return { before: target.snapshot, after, overrides: diff };
   }
 
-  async remove(id: string, actorSub: string): Promise<void> {
-    const target = await this.loadTarget(id, actorSub);
-    assertRemovalAllowed(target);
+  async remove(id: string, actorId: string): Promise<StaffUserSnapshot> {
+    const target = await this.loadTarget(id, actorId);
+    assertRemovalAllowed(target.policy);
     await this.prisma.staffUser.delete({ where: { id } });
-    this.cache.forgetAll();
+    return target.snapshot;
   }
 
-  async setStatus(id: string, change: StaffStatusChange, actorSub: string): Promise<void> {
-    const target = await this.loadTarget(id, actorSub);
-    assertStatusChangeAllowed(target, change.status);
-    await this.prisma.staffUser.update({ where: { id }, data: { status: change.status } });
-    // Le geste le plus urgent de tous : sans cet oubli, une suspension mettrait
-    // jusqu'à trente secondes à mordre. C'est ici, juste après l'écriture, que
-    // la décision doit devenir vraie.
-    this.cache.forgetAll();
+  async setStatus(
+    id: string,
+    change: StaffStatusChange,
+    actorId: string,
+  ): Promise<StaffUserSnapshot> {
+    const target = await this.loadTarget(id, actorId);
+    assertStatusChangeAllowed(target.policy, change.status);
+    if (target.snapshot.status !== change.status) {
+      await this.prisma.staffUser.update({ where: { id }, data: { status: change.status } });
+    }
+    return target.snapshot;
   }
 
   async identityOf(id: string): Promise<StaffIdentityFacts> {
@@ -232,7 +168,6 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
         ...(current.status === "active" ? {} : { status: "invited" as const }),
       },
     });
-    this.cache.forgetAll();
   }
 
   async ensureBootstrapAdmin(): Promise<void> {
@@ -248,25 +183,71 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   }
 
   /**
-   * Rassemble les faits dont la politique a besoin. `isSelf` se déduit de la
-   * liaison Auth0 : tant qu'elle est nulle (personne n'est jamais entré), le
-   * garde-fou est inerte — jamais faux.
+   * Rassemble l'état complet d'avant — la fiche et ses dérogations — et les
+   * faits dont la politique a besoin.
+   *
+   * `isSelf` compare les **id de fiche** : l'auteur arrive par son id
+   * d'annuaire (`@StaffUserId()`), plus par son `sub`. Une fiche jamais liée
+   * à une identité se reconnaît donc elle aussi — le garde-fou n'est plus
+   * inerte tant que personne n'est entré.
    */
-  private async loadTarget(id: string, actorSub: string): Promise<StaffMutationTarget> {
+  private async loadTarget(id: string, actorId: string): Promise<LoadedTarget> {
     const existing = await this.prisma.staffUser.findUnique({
       where: { id },
-      select: { id: true, email: true, role: true, auth0Id: true },
+      select: {
+        ...SNAPSHOT,
+        overrides: { select: { resource: true, action: true, effect: true } },
+      },
     });
     if (existing === null) {
       throw new StaffUserNotFoundError(id);
     }
+    const { overrides, ...snapshot } = existing;
     return {
-      email: existing.email,
-      isRoot: existing.email === this.config.bootstrapAdminEmail(),
-      role: existing.role,
-      otherLivingAdmins: await this.countOtherLivingAdmins(id),
-      isSelf: existing.auth0Id !== null && existing.auth0Id === actorSub,
+      snapshot,
+      overrides,
+      policy: {
+        email: existing.email,
+        isRoot: existing.email === this.config.bootstrapAdminEmail(),
+        role: existing.role,
+        otherLivingAdmins: await this.countOtherLivingAdmins(id),
+        isSelf: existing.id === actorId,
+      },
     };
+  }
+
+  /**
+   * Les écritures du diff, et elles seules. Les écarts inchangés gardent leur
+   * auteur et leur date : c'est tout l'objet du lot 1.
+   */
+  private overrideWrites(id: string, diff: OverrideDiff, actorId: string) {
+    if (isEmptyOverrideDiff(diff)) {
+      return [];
+    }
+    const granted = { grantedByStaffId: actorId, grantedAt: this.clock.now() };
+    const where = (entry: OverrideRow) => ({
+      staffUserId_resource_action: {
+        staffUserId: id,
+        resource: entry.resource,
+        action: entry.action,
+      },
+    });
+    return [
+      ...diff.removed.map((entry) =>
+        this.prisma.staffPermissionOverride.delete({ where: where(entry) }),
+      ),
+      ...diff.changed.map((entry) =>
+        this.prisma.staffPermissionOverride.update({
+          where: where(entry),
+          data: { effect: entry.effect, ...granted },
+        }),
+      ),
+      ...diff.added.map((entry) =>
+        this.prisma.staffPermissionOverride.create({
+          data: { staffUserId: id, ...entry, ...granted },
+        }),
+      ),
+    ];
   }
 
   /** Les administrateurs encore en état d'entrer, la cible exclue. */
@@ -286,9 +267,4 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       throw new DuplicateStaffEmailError(email);
     }
   }
-}
-
-/** Lignes de dérogation, attribuées à leur auteur. Déjà dédoublonnées en amont. */
-function overrideRows(overrides: readonly StaffOverride[], grantedBy: string) {
-  return overrides.map((override) => ({ ...override, grantedBy }));
 }

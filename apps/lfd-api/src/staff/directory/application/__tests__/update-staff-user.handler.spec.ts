@@ -1,125 +1,182 @@
-import type { StaffUserPayload } from "@lfd/contracts";
+import type { StaffOverride, StaffUserPayload } from "@lfd/contracts";
 
+import { RecordingJournal } from "../../../../platform/journal/__tests__/recording-journal.js";
 import { StaffIdentityPort } from "../../../invitations/staff-identity.port.js";
-import type { StaffIdentityFacts } from "../../domain/staff-user.repository.js";
+import { STAFF_FACTS } from "../../domain/staff-facts.js";
+import type { StaffUserIdentity, StaffUserSnapshot } from "../../domain/staff-user-state.js";
 import { UpdateStaffUserCommand } from "../staff-user.commands.js";
-import { UpdateStaffUserHandler } from "../staff-user.handlers.js";
+import { UpdateStaffUserHandler } from "../update-staff-user.handler.js";
+import {
+  CECILE,
+  RecordingAccessCache,
+  ScriptedStaffUsers,
+  TrackingUnitOfWork,
+} from "./staff-doubles.js";
 
-type Deps = ConstructorParameters<typeof UpdateStaffUserHandler>;
+/** Le fournisseur d'identité : on note les propagations, ou il tombe. */
+class RecordingIdentities extends StaffIdentityPort {
+  readonly propagated: { subject: string; email: string }[] = [];
 
-const LINKED: StaffIdentityFacts = {
-  id: "s1",
-  email: "sophie@lfc.test",
-  firstName: "Sophie",
+  constructor(private readonly fails: boolean) {
+    super();
+  }
+
+  provision(): Promise<{ subject: string; passwordSetupUrl: string }> {
+    return Promise.reject(new Error("non attendu"));
+  }
+
+  issuePasswordLink(): Promise<string> {
+    return Promise.reject(new Error("non attendu"));
+  }
+
+  changeEmail(subject: string, email: string): Promise<void> {
+    if (this.fails) {
+      return Promise.reject(new Error("fournisseur indisponible"));
+    }
+    this.propagated.push({ subject, email });
+    return Promise.resolve();
+  }
+}
+
+const PAYLOAD: StaffUserPayload = {
+  firstName: "Cécile",
   lastName: "Martin",
-  auth0Id: "auth0|sophie",
-  status: "active",
+  email: "cecile@lfc.test",
+  phone: "",
+  jobTitle: "",
+  role: "commercial",
+  overrides: [],
 };
 
-function payload(email: string): StaffUserPayload {
-  return {
-    firstName: "Sophie",
-    lastName: "Martin",
-    email,
-    phone: "",
-    jobTitle: "",
-    role: "support",
-    overrides: [],
-  };
-}
+const IDENTITY: StaffUserIdentity = {
+  firstName: CECILE.firstName,
+  lastName: CECILE.lastName,
+  email: CECILE.email,
+  phone: CECILE.phone,
+  jobTitle: CECILE.jobTitle,
+  role: CECILE.role,
+};
 
 interface Harness {
   readonly handler: UpdateStaffUserHandler;
-  readonly propagated: { subject: string; email: string }[];
-  readonly written: string[];
+  readonly staff: ScriptedStaffUsers;
+  readonly journal: RecordingJournal;
+  readonly identities: RecordingIdentities;
+  readonly cache: RecordingAccessCache;
 }
 
-function harness(before: StaffIdentityFacts, identityFails = false): Harness {
-  const propagated: { subject: string; email: string }[] = [];
-  const written: string[] = [];
-
-  const staff: Pick<Deps[0], "identityOf" | "update"> = {
-    identityOf: (): Promise<StaffIdentityFacts> => Promise.resolve(before),
-    update: (id: string): Promise<void> => {
-      written.push(id);
-      return Promise.resolve();
-    },
+function harness(
+  options: {
+    before?: StaffUserSnapshot;
+    after?: Partial<StaffUserIdentity>;
+    added?: readonly StaffOverride[];
+    identityFails?: boolean;
+    journalDown?: boolean;
+  } = {},
+): Harness {
+  const uow = new TrackingUnitOfWork();
+  const before = options.before ?? CECILE;
+  const staff = new ScriptedStaffUsers(uow, before);
+  staff.edit = {
+    before,
+    after: { ...IDENTITY, ...options.after },
+    overrides: { added: options.added ?? [], removed: [], changed: [] },
   };
-  const identities: Pick<StaffIdentityPort, "changeEmail"> = {
-    changeEmail: (subject: string, email: string): Promise<void> => {
-      if (identityFails) {
-        return Promise.reject(new Error("fournisseur indisponible"));
-      }
-      propagated.push({ subject, email });
-      return Promise.resolve();
-    },
-  };
-
-  return {
-    handler: new UpdateStaffUserHandler(staff as Deps[0], identities as StaffIdentityPort),
-    propagated,
-    written,
-  };
+  const journal = new RecordingJournal(options.journalDown ? new Error("journal en panne") : null);
+  const identities = new RecordingIdentities(options.identityFails ?? false);
+  const cache = new RecordingAccessCache(uow);
+  const handler = new UpdateStaffUserHandler(staff, identities, journal, uow, cache);
+  return { handler, staff, journal, identities, cache };
 }
+
+const run = (h: Harness): Promise<void> =>
+  h.handler.execute(new UpdateStaffUserCommand("s1", PAYLOAD, "staff_moi"));
+
+describe("UpdateStaffUserHandler — un fait par changement réel", () => {
+  it("n'écrit AUCUN fait pour une édition vide", async () => {
+    const h = harness();
+
+    await run(h);
+
+    expect(h.journal.facts).toEqual([]);
+  });
+
+  it("écrit trois faits quand identité, rôle et dérogations changent", async () => {
+    const h = harness({
+      after: { jobTitle: "Vendeuse", role: "comptabilite" },
+      added: [{ resource: "b2b_pricing", action: "write", effect: "allow" }],
+    });
+
+    await run(h);
+
+    expect(h.journal.types()).toEqual([
+      STAFF_FACTS.identityEdited,
+      STAFF_FACTS.roleChanged,
+      STAFF_FACTS.overridesChanged,
+    ]);
+  });
+
+  it("écrit dans la transaction, et oublie le cache APRÈS le commit", async () => {
+    // Vidé dedans, une requête concurrente le remplirait avec l'état d'avant.
+    const h = harness({ after: { role: "support" } });
+
+    await run(h);
+
+    expect(h.staff.writes).toEqual([{ method: "update", insideTransaction: true }]);
+    expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);
+  });
+
+  it("ne propage rien et n'oublie rien quand le journal tombe", async () => {
+    const h = harness({ after: { email: "c.martin@lfc.test" }, journalDown: true });
+
+    await expect(run(h)).rejects.toThrow("journal en panne");
+    expect(h.identities.propagated).toEqual([]);
+    expect(h.cache.forgotten).toEqual([]);
+  });
+});
 
 describe("UpdateStaffUserHandler — l'adresse de connexion suit l'annuaire", () => {
   it("propage une adresse changée sur une identité déjà liée", async () => {
     // Sans ça, la personne se connecterait avec son ancienne adresse pendant
     // que l'écran en afficherait une autre.
-    const h = harness(LINKED);
+    const h = harness({ after: { email: "c.martin@lfc.test" } });
 
-    await h.handler.execute(new UpdateStaffUserCommand("s1", payload("s.martin@lfc.test"), "moi"));
+    await run(h);
 
-    expect(h.propagated).toEqual([{ subject: "auth0|sophie", email: "s.martin@lfc.test" }]);
+    expect(h.identities.propagated).toEqual([
+      { subject: "auth0|cecile", email: "c.martin@lfc.test" },
+    ]);
   });
 
   it("ne propage rien quand l'adresse n'a pas bougé", async () => {
     // Un appel inutile au fournisseur n'est pas neutre : il repasse l'adresse
-    // en « non vérifiée » et déclenche un e-mail de vérification. Enregistrer un
-    // formulaire ne doit pas faire ça.
-    const h = harness(LINKED);
+    // en « non vérifiée » et déclenche un e-mail de vérification.
+    const h = harness({ after: { phone: "0600000000" } });
 
-    await h.handler.execute(new UpdateStaffUserCommand("s1", payload("sophie@lfc.test"), "moi"));
+    await run(h);
 
-    expect(h.propagated).toEqual([]);
-  });
-
-  it("compare après normalisation — la casse n'est pas un changement", async () => {
-    const h = harness(LINKED);
-
-    await h.handler.execute(new UpdateStaffUserCommand("s1", payload("  SOPHIE@LFC.TEST "), "moi"));
-
-    expect(h.propagated).toEqual([]);
+    expect(h.identities.propagated).toEqual([]);
   });
 
   it("ne propage rien pour une fiche jamais liée", async () => {
     // Rien à réparer : l'adresse servira au premier rapprochement, et
     // l'invitation ouvrira l'identité avec la bonne.
-    const h = harness({ ...LINKED, auth0Id: null, status: "pending" });
+    const h = harness({
+      before: { ...CECILE, auth0Id: null, status: "pending" },
+      after: { email: "autre@lfc.test" },
+    });
 
-    await h.handler.execute(new UpdateStaffUserCommand("s1", payload("autre@lfc.test"), "moi"));
+    await run(h);
 
-    expect(h.propagated).toEqual([]);
+    expect(h.identities.propagated).toEqual([]);
   });
 
-  it("écrit chez nous AVANT de propager", async () => {
-    // L'ordre est un compromis assumé : l'écriture locale fait tourner la
-    // politique de domaine, qui peut encore refuser (admin racine renommé).
-    // Propager d'abord validerait chez Auth0 un changement refusé chez nous.
-    const h = harness(LINKED);
-
-    await h.handler.execute(new UpdateStaffUserCommand("s1", payload("s.martin@lfc.test"), "moi"));
-
-    expect(h.written).toEqual(["s1"]);
-  });
-
-  it("remonte l'échec de propagation plutôt que de l'avaler", async () => {
+  it("remonte l'échec de propagation plutôt que de l'avaler — l'écriture, elle, est faite", async () => {
     // Le désaccord résiduel est tracé et l'appelant le voit : silencieux, il se
     // découvrirait des mois plus tard, le jour où quelqu'un ne peut plus entrer.
-    const h = harness(LINKED, true);
+    const h = harness({ after: { email: "c.martin@lfc.test" }, identityFails: true });
 
-    await expect(
-      h.handler.execute(new UpdateStaffUserCommand("s1", payload("s.martin@lfc.test"), "moi")),
-    ).rejects.toThrow("fournisseur indisponible");
+    await expect(run(h)).rejects.toThrow("fournisseur indisponible");
+    expect(h.journal.types()).toEqual([STAFF_FACTS.identityEdited]);
   });
 });

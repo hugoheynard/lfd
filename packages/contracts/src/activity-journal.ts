@@ -9,7 +9,11 @@ import { z } from "zod";
  */
 
 /** Le module d'où vient un fait — dérivé du préfixe de son `type`. */
-export const activityModuleSchema = z.enum(["pim", "commercial", "commandes", "comptes"]);
+/**
+ * `equipe` — l'annuaire staff et ses rôles (2026-09-18). Un module à lui : sous
+ * `comptes`, le filtre aurait mêlé l'équipe et les clients.
+ */
+export const activityModuleSchema = z.enum(["pim", "commercial", "commandes", "comptes", "equipe"]);
 export type ActivityModule = z.infer<typeof activityModuleSchema>;
 
 /**

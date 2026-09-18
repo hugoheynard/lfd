@@ -4,6 +4,7 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import {
   PendingStaffAccessReader,
   type PendingStaffAccessView,
+  type PendingStaffSubject,
 } from "./pending-staff-access.reader.js";
 
 /** Les invités, du plus ancien au plus récent — l'attente la plus longue d'abord. */
@@ -46,14 +47,17 @@ export class PrismaPendingStaffAccessReader extends PendingStaffAccessReader {
     );
   }
 
-  async subjectOf(staffUserId: string): Promise<string | null> {
+  async pendingOf(staffUserId: string): Promise<PendingStaffSubject | null> {
     // Statut relu ici : entre l'affichage et le clic, la personne a pu entrer.
     // Lui fabriquer un lien reviendrait alors à offrir de quoi réinitialiser
     // son mot de passe sans qu'elle ait rien demandé.
     const row = await this.prisma.staffUser.findFirst({
       where: { id: staffUserId, status: "invited" },
-      select: { auth0Id: true },
+      select: { auth0Id: true, firstName: true, lastName: true },
     });
-    return row?.auth0Id ?? null;
+    if (row === null || row.auth0Id === null) {
+      return null;
+    }
+    return { subject: row.auth0Id, firstName: row.firstName, lastName: row.lastName };
   }
 }

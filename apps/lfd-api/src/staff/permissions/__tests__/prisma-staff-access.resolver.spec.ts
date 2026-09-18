@@ -32,7 +32,7 @@ class MovableClock extends Clock {
 interface Recorder {
   readonly prisma: object;
   readonly lookups: string[];
-  readonly updates: { id: string; auth0Id: string; status: string }[];
+  readonly updates: { id: string; auth0Id?: string; status: string }[];
 }
 
 /**
@@ -54,9 +54,13 @@ async function buildResolver(prisma: object, clock: Clock): Promise<PrismaStaffA
 }
 
 /** Fake Prisma à closures : compte les lectures pour prouver le cache. */
-function fakePrisma(bySub: StaffRow | null, byEmail: StaffRow | null = null): Recorder {
+function fakePrisma(
+  bySub: StaffRow | null,
+  byEmail: StaffRow | null = null,
+  linkLost = false,
+): Recorder {
   const lookups: string[] = [];
-  const updates: { id: string; auth0Id: string; status: string }[] = [];
+  const updates: { id: string; auth0Id?: string; status: string }[] = [];
   const prisma = {
     staffUser: {
       findUnique: (args: {
@@ -66,12 +70,19 @@ function fakePrisma(bySub: StaffRow | null, byEmail: StaffRow | null = null): Re
         lookups.push(byAuth0 ? "sub" : "email");
         return Promise.resolve(byAuth0 ? bySub : byEmail);
       },
-      update: (args: {
-        where: { id: string };
-        data: { auth0Id: string; status: string };
-      }): Promise<StaffRow> => {
+      update: (args: { where: { id: string }; data: { status: string } }): Promise<StaffRow> => {
         updates.push({ id: args.where.id, ...args.data });
         return Promise.resolve(bySub ?? byEmail ?? row());
+      },
+      updateMany: (args: {
+        where: { id: string; auth0Id: null };
+        data: { auth0Id: string; status: string };
+      }): Promise<{ count: number }> => {
+        if (linkLost) {
+          return Promise.resolve({ count: 0 });
+        }
+        updates.push({ id: args.where.id, ...args.data });
+        return Promise.resolve({ count: 1 });
       },
     },
   };
@@ -90,7 +101,12 @@ function row(overrides: Partial<StaffRow> = {}): StaffRow {
 }
 
 const NOW = new Date("2026-08-12T10:00:00.000Z");
-const TOKEN: StaffPrincipal = { subject: "auth0|colette", email: "compta@lfc.test", scopes: [] };
+const TOKEN: StaffPrincipal = {
+  subject: "auth0|colette",
+  email: "compta@lfc.test",
+  emailVerified: true,
+  scopes: [],
+};
 
 describe("PrismaStaffAccessResolver — qui entre", () => {
   it("refuse un sujet que l'annuaire ignore", async () => {
@@ -125,6 +141,79 @@ describe("PrismaStaffAccessResolver — qui entre", () => {
   });
 });
 
+/**
+ * Régression : le rapprochement par e-mail réécrivait `auth0Id` sans condition.
+ * Un compte Auth0 ouvert sous l'adresse d'un membre prenait ses droits et le
+ * mettait dehors (lot 0 de `plan-connexion-sociale.md`, 2026-09-17).
+ */
+describe("PrismaStaffAccessResolver — 🔴 une adresse ne vole pas une fiche", () => {
+  it("refuse un autre `sub` sous l'adresse d'une fiche déjà liée, sans la toucher", async () => {
+    const { prisma, updates } = fakePrisma(null, row({ auth0Id: "auth0|la-vraie-colette" }));
+
+    const access = await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
+
+    expect(access).toBeNull();
+    expect(updates).toEqual([]);
+  });
+
+  it("ne rapproche pas une adresse que le jeton ne dit pas vérifiée", async () => {
+    const { prisma, lookups, updates } = fakePrisma(null, row({ status: "pending" }));
+
+    const access = await (
+      await buildResolver(prisma, new MovableClock(NOW))
+    ).resolve({ ...TOKEN, emailVerified: false });
+
+    expect(access).toBeNull();
+    expect(lookups).toEqual(["sub"]);
+    expect(updates).toEqual([]);
+  });
+
+  it("refuse la seconde de deux premières connexions simultanées", async () => {
+    // La fiche était libre à la lecture, et liée par l'autre à l'écriture.
+    const { prisma } = fakePrisma(null, row({ status: "pending" }), true);
+
+    const access = await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
+
+    expect(access).toBeNull();
+  });
+
+  it("traite une vérification inconnue comme un refus", async () => {
+    // « On ne sait pas » ne vaut pas preuve : un tenant sans le claim ne lie rien.
+    const { prisma, updates } = fakePrisma(null, row({ status: "pending" }));
+
+    const access = await (
+      await buildResolver(prisma, new MovableClock(NOW))
+    ).resolve({ ...TOKEN, emailVerified: undefined });
+
+    expect(access).toBeNull();
+    expect(updates).toEqual([]);
+  });
+});
+
+describe("PrismaStaffAccessResolver — pas de connexion sociale", () => {
+  it("refuse un `sub` Google, même lié à une fiche active, sans lire l'annuaire", async () => {
+    const google = "google-oauth2|104233";
+    const { prisma, lookups } = fakePrisma(row({ auth0Id: google }));
+
+    const access = await (
+      await buildResolver(prisma, new MovableClock(NOW))
+    ).resolve({ ...TOKEN, subject: google });
+
+    expect(access).toBeNull();
+    expect(lookups).toEqual([]);
+  });
+
+  it("laisse passer un sujet hors Auth0 (bypass de dev, doubles de test)", async () => {
+    const { prisma } = fakePrisma(row({ auth0Id: "dev-staff" }));
+
+    const access = await (
+      await buildResolver(prisma, new MovableClock(NOW))
+    ).resolve({ ...TOKEN, subject: "dev-staff" });
+
+    expect(access?.role).toBe("comptabilite");
+  });
+});
+
 describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
   it("lie l'identité au premier rapprochement par e-mail, et active la fiche", async () => {
     const { prisma, lookups, updates } = fakePrisma(null, row({ status: "pending" }));
@@ -134,6 +223,14 @@ describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
     expect(lookups).toEqual(["sub", "email"]);
     expect(updates).toEqual([{ id: "s1", auth0Id: TOKEN.subject, status: "active" }]);
     expect(access?.role).toBe("comptabilite");
+  });
+
+  it("active une fiche invitée déjà liée, sans toucher au lien", async () => {
+    const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "invited" }));
+
+    await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
+
+    expect(updates).toEqual([{ id: "s1", status: "active" }]);
   });
 
   it("n'écrit rien quand la fiche est déjà liée et active", async () => {

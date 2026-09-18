@@ -14,6 +14,10 @@ export type StaffInvited = StaffAccessOpened;
  * membre l'ouvre elle aussi : deux entrées, un seul comportement. Ce handler
  * reste la porte du renvoi, qui garde tout son sens — un lien est daté et à
  * usage unique, on en refait un, on n'en retrouve pas.
+ *
+ * Sa trace (`staff_user.invited`) est écrite par {@link OpenStaffAccess}, dans
+ * la même transaction que `markInvited` et AVANT l'e-mail — c'est la seule
+ * délégation que `lint:journal-tracked` admet dans l'équipe.
  */
 @CommandHandler(InviteStaffUserCommand)
 export class InviteStaffUserHandler implements ICommandHandler<

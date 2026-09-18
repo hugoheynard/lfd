@@ -4,7 +4,12 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { StaffNotificationReader } from "../../domain/ports/staff-notifier.js";
 import { MarkNotificationReadCommand } from "./mark-notification-read.command.js";
 
-/** Marquer lu. Idempotent, et **le premier lecteur fait foi**. */
+/**
+ * Marquer lu. Idempotent, et **le premier lecteur fait foi**.
+ *
+ * @sans-journal la notification porte déjà `readBy` et la date : c'est un
+ * accusé de lecture, pas une décision sur l'accès de quelqu'un.
+ */
 @CommandHandler(MarkNotificationReadCommand)
 export class MarkNotificationReadHandler implements ICommandHandler<
   MarkNotificationReadCommand,

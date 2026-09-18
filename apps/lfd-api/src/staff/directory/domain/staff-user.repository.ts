@@ -6,6 +6,8 @@ import type {
   StaffUserView,
 } from "@lfd/contracts";
 
+import type { StaffUserEdit, StaffUserSnapshot } from "./staff-user-state.js";
+
 /**
  * Port des **utilisateurs staff** (annuaire back-office). Source de vérité
  * **locale** ; le provisioning de connexion (Auth0) est différé. L'e-mail est la
@@ -22,16 +24,26 @@ export abstract class StaffUserRepository {
   abstract me(id: string): Promise<StaffMeView>;
 
   /**
-   * Ajoute un user. `actorSub` attribue ses éventuelles dérogations à leur auteur.
+   * Ajoute un user. `actorId` — l'id de la **fiche** de l'auteur, jamais son
+   * `sub` — attribue ses éventuelles dérogations à leur auteur.
    * @throws {DuplicateStaffEmailError} l'e-mail est déjà pris.
    */
-  abstract create(payload: StaffUserPayload, actorSub: string): Promise<string>;
+  abstract create(payload: StaffUserPayload, actorId: string): Promise<string>;
 
   /**
-   * Remplace un user — identité, rôle et dérogations, ces dernières en bloc.
+   * Remplace l'identité et le rôle d'un user, et **applique le diff** de ses
+   * dérogations : les retirées sont supprimées, les nouvelles créées, celles
+   * dont l'effet change mises à jour — auteur et date du jour pour ces deux
+   * dernières —, les autres **ne sont pas touchées**. Une édition sans aucun
+   * changement n'écrit rien.
    *
-   * `actorSub` sert deux fois : il attribue les dérogations, et il permet de
-   * reconnaître que l'auteur se vise **lui-même** (garde-fou d'auto-rétrogradation).
+   * `actorId` (id de fiche de l'auteur) sert deux fois : il attribue les
+   * dérogations, et il permet de reconnaître que l'auteur se vise **lui-même**
+   * (garde-fou d'auto-rétrogradation).
+   *
+   * Rend l'état d'avant, l'état écrit et le diff des écarts : c'est la matière
+   * des faits du journal. N'oublie PAS le cache d'accès — c'est à l'appelant de
+   * le faire, **après** le commit (plan `plan-journal-de-l-annuaire.md` §5).
    *
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    * @throws {DuplicateStaffEmailError} l'e-mail est pris par un autre user.
@@ -40,28 +52,35 @@ export abstract class StaffUserRepository {
    * @throws {LastStaffAdminError} la mutation retirerait le dernier administrateur.
    * @throws {AdminOverrideRefusedError} une dérogation priverait un admin de `staff:write`.
    */
-  abstract update(id: string, payload: StaffUserPayload, actorSub: string): Promise<void>;
+  abstract update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit>;
 
   /**
-   * Supprime un user.
+   * Supprime un user, et rend ce qu'il était — la trace doit pouvoir le nommer.
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    * @throws {ProtectedStaffUserError} la cible est l'admin racine (ineffaçable).
    * @throws {SelfDemotionError} l'auteur se supprime lui-même alors qu'il est admin.
    * @throws {LastStaffAdminError} la cible est le dernier administrateur.
    */
-  abstract remove(id: string, actorSub: string): Promise<void>;
+  abstract remove(id: string, actorId: string): Promise<StaffUserSnapshot>;
 
   /**
    * Suspend une personne, ou la réintègre. Suspendre **ferme tout, tout de
    * suite, sans rien détruire** : c'est le geste du départ, et on ne supprime
    * pas quelqu'un dont le nom est attaché à des décisions datées ailleurs.
    *
+   * Rend l'état d'AVANT : un fait ne s'écrit que si le statut a bougé. Le
+   * cache d'accès est à vider par l'appelant, après le commit.
+   *
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    * @throws {ProtectedStaffUserError} la cible est l'admin racine.
    * @throws {SelfDemotionError} l'auteur se suspend lui-même alors qu'il est admin.
    * @throws {LastStaffAdminError} suspendre laisserait le back-office sans admin.
    */
-  abstract setStatus(id: string, change: StaffStatusChange, actorSub: string): Promise<void>;
+  abstract setStatus(
+    id: string,
+    change: StaffStatusChange,
+    actorId: string,
+  ): Promise<StaffUserSnapshot>;
 
   /**
    * Garantit l'existence de l'**admin racine** (`BOOTSTRAP_ADMIN`) : le crée s'il
@@ -91,6 +110,8 @@ export abstract class StaffUserRepository {
    * entré ne doit pas lui retirer son accès pour le remettre en attente. Le
    * geste reste utile — il sert à qui a perdu son mot de passe — mais il ne
    * change pas l'état.
+   *
+   * Le cache d'accès est à vider par l'appelant, après le commit.
    */
   abstract markInvited(id: string, subject: string, invitedAt: Date): Promise<void>;
 }

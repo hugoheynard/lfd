@@ -10,6 +10,10 @@ import { UpdateStaffNavPrefsCommand } from "./update-staff-nav-prefs.command.js"
  *
  * Rend `void` : le client relit `/admin/me`. Une commande ne produit pas de
  * modèle de lecture.
+ *
+ * @sans-journal un réglage d'affichage que la personne pose POUR ELLE-MÊME :
+ * il n'ouvre ni ne ferme aucun accès, et personne n'aura à demander « qui l'a
+ * changé ».
  */
 @CommandHandler(UpdateStaffNavPrefsCommand)
 export class UpdateStaffNavPrefsHandler implements ICommandHandler<

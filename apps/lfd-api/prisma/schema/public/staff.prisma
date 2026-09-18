@@ -88,7 +88,7 @@ enum StaffOverrideEffect {
 /// suite : identité, **rôle**, et l'état de sa connexion. Source de vérité
 /// **locale** : on ne dépend pas d'Auth0 pour administrer sa propre suite.
 ///
-/// Modèle et invariants : `documentation/b2b/architecture-acces-staff.md`.
+/// Modèle et invariants : `documentation/auth-inscription/architecture-acces-staff.md`.
 model StaffUser {
   id String @id @default(cuid())
 
@@ -179,10 +179,10 @@ model StaffRoleDefinition {
 /// Un **écart au rôle**, pour une personne, sur une permission. Une ligne = un
 /// écart ; l'absence de ligne vaut « hérite du rôle ».
 ///
-/// `grantedAt`/`grantedBy` rendent l'écart **imputable** : la question « qui a
-/// ouvert la compta à Marc, et quand » doit rester répondable dans six mois. Un
-/// tableau de scopes sur la personne ne savait rien en dire — c'est la raison
-/// première de cette table.
+/// `grantedAt`/`grantedByStaffId` rendent l'écart **imputable** : la question
+/// « qui a ouvert la compta à Marc, et quand » doit rester répondable dans six
+/// mois. Un tableau de scopes sur la personne ne savait rien en dire — c'est la
+/// raison première de cette table.
 model StaffPermissionOverride {
   id String @id @default(cuid())
 
@@ -193,10 +193,20 @@ model StaffPermissionOverride {
   action   StaffAction
   effect   StaffOverrideEffect
 
-  /// Le `sub` du staff qui a posé l'écart — un identifiant, pas un nom : il
-  /// reste résolvable après un changement de nom ou de rôle.
-  grantedBy String   @map("granted_by")
-  grantedAt DateTime @default(now()) @map("granted_at")
+  /// ⚠️ DÉPRÉCIÉE (2026-09-18) : le `sub` Auth0 de l'auteur. Plus écrite par
+  /// le code, gardée le temps d'un retour arrière, puis supprimée dans un
+  /// déploiement séparé — et avec elle les `sub` qu'elle contient.
+  /// Plan : `documentation/auth-inscription/plan-journal-de-l-annuaire.md` §4.
+  grantedBy String? @map("granted_by")
+
+  /// L'auteur de l'écart : l'id de SA FICHE d'annuaire (`StaffUser.id`), jamais
+  /// son `sub` — un identifiant du fournisseur n'a rien à faire dans nos
+  /// données. **Pas de clé étrangère**, comme `grantedByStaffId` des
+  /// dérogations d'heure limite : une fiche se supprime, la trace doit
+  /// survivre. `NULL` sur les écarts d'avant la colonne dont l'auteur n'a pas
+  /// pu être retrouvé — on ne fabrique pas d'auteur.
+  grantedByStaffId String?  @map("granted_by_staff_id")
+  grantedAt        DateTime @default(now()) @map("granted_at")
 
   /// Un seul écart par permission : deux lignes contradictoires sur le même
   /// couple seraient une question sans réponse.

@@ -40,6 +40,11 @@
   gap: var(--fold-space-sm);
 }
 
+.jr-title {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
 .jr-sentence {
   color: var(--fold-color-text);
 }
