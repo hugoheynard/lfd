@@ -20,7 +20,13 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { randomUUID } from "node:crypto";
 
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 /** Passerelle de paiement doublée : intention fixe, aucun appel réseau. */
@@ -622,7 +628,7 @@ describe("qui a établi la mercuriale", () => {
 
     const view = await read(company.id);
 
-    expect(view.mercuriales[0]?.createdBy).toBe("staff-e2e");
+    expect(view.mercuriales[0]?.createdBy).toBe(E2E_STAFF_ID);
     // Et son NOM — c'est lui que l'écran et l'export CSV doivent écrire (plan
     // `plan-l-auteur-est-la-fiche.md`, D3).
     expect(view.mercuriales[0]?.createdByName).toBe("Opérateur E2E");

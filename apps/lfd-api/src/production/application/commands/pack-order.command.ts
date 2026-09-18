@@ -10,6 +10,6 @@ export class PackOrderCommand {
     readonly serviceDay: string,
     readonly reference: string,
     /** L'identité staff, résolue par le guard. Jamais dans la charge utile. */
-    readonly staffSubject: string,
+    readonly staffUserId: string,
   ) {}
 }

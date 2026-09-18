@@ -32,7 +32,7 @@ export const activityQuerySchema = z.object({
   /** Ce dont on veut l'histoire : un régime, un produit, une société… */
   subjectType: z.string().min(1).optional(),
   subjectId: z.string().min(1).optional(),
-  /** Qui a agi — le `sub` staff ou l'id client. */
+  /** Qui a agi — l'id de fiche staff (ou l'un de ses anciens `sub`) ou l'id client. */
   actorId: z.string().min(1).optional(),
   /** Bornes de temps, en ISO. `since` incluse, `until` exclue. */
   since: z.string().datetime().optional(),

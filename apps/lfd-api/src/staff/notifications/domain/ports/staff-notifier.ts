@@ -52,6 +52,6 @@ export abstract class StaffNotificationReader {
   abstract recent(limit: number): Promise<StoredStaffNotification[]>;
   abstract countUnread(): Promise<number>;
   /** Marquer lu est idempotent : le premier lecteur fait foi. */
-  abstract markRead(id: string, staffSub: string, at: Date): Promise<void>;
-  abstract markAllRead(staffSub: string, at: Date): Promise<number>;
+  abstract markRead(id: string, staffUserId: string, at: Date): Promise<void>;
+  abstract markAllRead(staffUserId: string, at: Date): Promise<number>;
 }

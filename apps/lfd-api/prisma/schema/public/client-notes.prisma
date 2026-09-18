@@ -37,8 +37,10 @@ model ClientNote {
   // sous `…/client-notes/thumbs/` avec la même révision. `null` sans photo.
   photoKey String? @map("photo_key")
 
-  // L'auteur, FIGÉ au dépôt : le `sub` reste résolvable, le nom est un instantané
-  // (vide quand l'annuaire ne connaît pas le `sub` — on n'invente pas un nom).
+  // L'auteur, FIGÉ au dépôt : l'identifiant reste résolvable, le nom est un
+  // instantané (vide quand l'annuaire ne connaît pas l'auteur — on n'invente pas
+  // un nom). La colonne reçoit l'id de fiche depuis le 2026-09-18 malgré son nom
+  // (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur) ; avant, un `sub`.
   createdBySub  String @map("created_by_sub")
   createdByName String @map("created_by_name")
 

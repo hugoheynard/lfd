@@ -30,7 +30,7 @@ export abstract class AccountAlertRepository {
   abstract listForCompany(companyId: string): Promise<StoredAccountAlert[]>;
 
   /** Acquitter est idempotent : ré-acquitter ne réécrit pas l'auteur d'origine. */
-  abstract acknowledge(id: string, staffSub: string, at: Date): Promise<void>;
+  abstract acknowledge(id: string, staffUserId: string, at: Date): Promise<void>;
 
   /** Le compte d'alertes **non acquittées**, par société — pour la pastille. */
   abstract countUnacknowledged(): Promise<ReadonlyMap<string, number>>;

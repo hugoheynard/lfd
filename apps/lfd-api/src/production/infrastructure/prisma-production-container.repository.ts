@@ -53,11 +53,11 @@ export class PrismaProductionContainerRepository extends ProductionContainerRepo
     super();
   }
 
-  async save(sku: string, rule: ContainerRule, staffSubject: string): Promise<void> {
+  async save(sku: string, rule: ContainerRule, staffUserId: string): Promise<void> {
     await this.prisma.productionContainer.upsert({
       where: { sku },
-      create: { sku, ...rule, updatedBy: staffSubject },
-      update: { ...rule, updatedBy: staffSubject },
+      create: { sku, ...rule, updatedBy: staffUserId },
+      update: { ...rule, updatedBy: staffUserId },
     });
   }
 

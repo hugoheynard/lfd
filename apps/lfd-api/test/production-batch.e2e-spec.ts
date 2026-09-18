@@ -16,7 +16,13 @@ import type { HandoverQueueView, OrderHandoverView, ProductionBatchView } from "
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
 
@@ -374,7 +380,7 @@ describe("le colisage", () => {
       select: { packedAt: true, packedBy: true },
     });
     expect(packed.packedAt).not.toBeNull();
-    expect(packed.packedBy).toBe("staff-e2e");
+    expect(packed.packedBy).toBe(E2E_STAFF_ID);
     expect(await eventuallyReady(reference)).toBe("ready");
   });
 
@@ -396,7 +402,24 @@ describe("le colisage", () => {
       select: { readyAt: true, readyBy: true },
     });
     expect(order.readyAt?.toISOString()).toBe(packed.packedAt?.toISOString());
-    expect(order.readyBy).toBe("staff-e2e");
+    expect(order.readyBy).toBe(E2E_STAFF_ID);
+  });
+
+  /**
+   * Régression : `readyBy` passait le `sub` du jeton de la route de colisage à
+   * la commande, puis à la charge utile du journal (plan de l'auteur, D2).
+   */
+  it("écrit l'id de fiche dans la charge utile de `order.ready`", async () => {
+    const reference = await placeAndClose();
+    await packing(reference).expect(201);
+    await eventuallyReady(reference);
+    await ctx.drain();
+
+    const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "order.ready" },
+      select: { payload: true },
+    });
+    expect(fact.payload).toMatchObject({ readyBy: E2E_STAFF_ID });
   });
 
   it("RÉANNONCE au second scan, sans toucher à l'attestation", async () => {
@@ -693,7 +716,8 @@ describe("le journal d'une commande", () => {
       select: { payload: true, subjectType: true },
     });
     expect(fact?.subjectType).toBe("user");
-    expect(JSON.stringify(fact?.payload)).toContain("staff-e2e");
+    // L'id de fiche, plus le `sub` (plan de l'auteur, étape 3).
+    expect(fact?.payload).toMatchObject({ handedOverBy: E2E_STAFF_ID });
     expect(JSON.stringify(fact?.payload)).toContain(reference);
   });
 
@@ -1066,7 +1090,7 @@ describe("la remise en livraison", () => {
     );
 
     expect(view.handedOverVia).toBe("manual");
-    expect(view.handedOverBy).toBe("staff-e2e");
+    expect(view.handedOverBy).toBe(E2E_STAFF_ID);
   });
 
   it("ne confond PAS une remise saisie avec un scan", async () => {

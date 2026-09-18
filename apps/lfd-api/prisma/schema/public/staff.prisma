@@ -269,7 +269,8 @@ model StaffNotification {
   occurredAt DateTime @map("occurred_at")
 
   readAt DateTime? @map("read_at")
-  /// Le `sub` staff qui l'a lue — un identifiant, pas un nom.
+  /// L'id de fiche du staff qui l'a lue (un `sub` avant le 2026-09-18) — un
+  /// identifiant, pas un nom.
   readBy String?   @map("read_by")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -306,9 +307,10 @@ model StaffPushSubscription {
   /// Secret d'authentification, en base64url.
   auth   String
 
-  /// Le `sub` staff qui s'est abonné — un identifiant, pas un nom. Sert à
-  /// couper les abonnements de quelqu'un qui part, pas à cibler : la cloche est
-  /// commune à l'équipe.
+  /// L'id de fiche du staff qui s'est abonné — un identifiant, pas un nom. Un
+  /// `sub` avant le 2026-09-18 ; la colonne garde son nom `staff_sub` jusqu'à
+  /// l'étape 5 du plan de l'auteur. Une TRACE : sert à couper les abonnements
+  /// de quelqu'un qui part, pas à cibler — la cloche est commune à l'équipe (D9).
   staffSub String @map("staff_sub")
 
   createdAt  DateTime  @default(now()) @map("created_at")

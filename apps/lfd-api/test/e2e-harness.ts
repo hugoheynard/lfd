@@ -286,6 +286,17 @@ export function serviceDay(inDays = 7): string {
 
 export const E2E_STAFF_SUB = "staff-e2e";
 
+/**
+ * L'id de la **fiche** de l'opérateur des tests — fixé plutôt que tiré, pour
+ * qu'une suite puisse l'attendre comme auteur.
+ *
+ * Depuis le 2026-09-18, c'est lui qu'un acte staff écrit comme auteur, jamais
+ * {@link E2E_STAFF_SUB} (plan de l'auteur, D1/D2). Deux valeurs distinctes à
+ * dessein : une suite qui attendrait encore le `sub` ne peut pas passer par
+ * coïncidence.
+ */
+export const E2E_STAFF_ID = "fiche-operateur-e2e";
+
 /** L'e-mail de la fiche d'annuaire qui incarne l'opérateur des tests. */
 export const E2E_STAFF_EMAIL = "e2e@lfc.test";
 
@@ -306,6 +317,7 @@ async function seedE2eStaff(prisma: PrismaService): Promise<void> {
       email: E2E_STAFF_EMAIL,
       role: "admin",
       status: "active",
+      id: E2E_STAFF_ID,
       auth0Id: E2E_STAFF_SUB,
     },
   });

@@ -12,6 +12,6 @@ export class SetProductionContainerCommand {
     readonly sku: string,
     readonly rule: ContainerRule,
     /** L'identité staff, résolue par le guard. Jamais dans la charge utile. */
-    readonly staffSubject: string,
+    readonly staffUserId: string,
   ) {}
 }

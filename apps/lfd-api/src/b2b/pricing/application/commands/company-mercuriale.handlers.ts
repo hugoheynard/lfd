@@ -48,7 +48,7 @@ export class PoseCompanyMercurialeCommand {
   constructor(
     readonly companyId: string,
     readonly payload: PoseCompanyMercurialePayload,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -57,7 +57,7 @@ export class CloseCompanyMercurialeCommand {
   constructor(
     readonly companyId: string,
     readonly payload: CloseCompanyMercurialePayload,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -66,7 +66,7 @@ export class RenameCompanyMercurialeCommand {
   constructor(
     readonly companyId: string,
     readonly payload: RenameCompanyMercurialePayload,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -165,7 +165,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
    * @throws {RunningMercurialeError} une mercuriale couvre déjà cette période.
    */
   async execute(command: PoseCompanyMercurialeCommand): Promise<number> {
-    const { companyId, payload, staffSub } = command;
+    const { companyId, payload, staffUserId } = command;
     await this.assertCompanyExists(companyId);
 
     const validFrom = new Date(payload.validFrom);
@@ -211,14 +211,14 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
         validFrom,
         validTo,
       },
-      staffSub,
+      staffUserId,
     );
 
     await this.mercuriales.save(mercuriale, {
       subjectType: "mercuriale",
       subjectId: mercuriale.id,
       kind: "posed",
-      actor: staffSub,
+      actor: staffUserId,
       at: mercuriale.toPersistence().validFrom,
       reason: `Mercuriale « ${payload.label} » posée sur la fiche du compte`,
       summary: describe(mercuriale),
@@ -270,16 +270,16 @@ export class CloseCompanyMercurialeHandler implements ICommandHandler<
    * @throws {ArchivedMercurialeIsSealedError} elle est déjà close.
    */
   async execute(command: CloseCompanyMercurialeCommand): Promise<number> {
-    const { companyId, payload, staffSub } = command;
+    const { companyId, payload, staffUserId } = command;
     const mercuriale = await designated(this.reader, companyId, payload);
     const now = this.clock.now();
-    const closed = mercuriale.close(staffSub, now, payload.reason);
+    const closed = mercuriale.close(staffUserId, now, payload.reason);
 
     await this.mercuriales.update(closed, {
       subjectType: "mercuriale",
       subjectId: closed.id,
       kind: "archived",
-      actor: staffSub,
+      actor: staffUserId,
       at: now,
       reason: payload.reason,
       // Le résumé décrit la mercuriale d'AVANT, comme partout dans ce journal :
@@ -316,7 +316,7 @@ export class RenameCompanyMercurialeHandler implements ICommandHandler<
    *   terminée garde la phrase qu'elle portait.
    */
   async execute(command: RenameCompanyMercurialeCommand): Promise<number> {
-    const { companyId, payload, staffSub } = command;
+    const { companyId, payload, staffUserId } = command;
     const mercuriale = await designated(this.reader, companyId, payload);
     const label = payload.newLabel.trim();
     const renamed = mercuriale.rename(label);
@@ -325,7 +325,7 @@ export class RenameCompanyMercurialeHandler implements ICommandHandler<
       subjectType: "mercuriale",
       subjectId: renamed.id,
       kind: "renamed",
-      actor: staffSub,
+      actor: staffUserId,
       at: this.clock.now(),
       reason: `Mercuriale « ${mercuriale.label} » renommée « ${label} »`,
       summary: describe(mercuriale),

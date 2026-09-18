@@ -41,14 +41,14 @@ export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
   async save(
     companyId: string,
     payload: SaveMercurialeDraftPayload,
-    staffSub: string,
+    staffUserId: string,
   ): Promise<void> {
     const data = {
       label: payload.label,
       validFrom: payload.validFrom === null ? null : new Date(payload.validFrom),
       validTo: payload.validTo === null ? null : new Date(payload.validTo),
       lines: [...payload.lines],
-      updatedBy: staffSub,
+      updatedBy: staffUserId,
     };
     await this.prisma.mercurialeDraft.upsert({
       where: { companyId },

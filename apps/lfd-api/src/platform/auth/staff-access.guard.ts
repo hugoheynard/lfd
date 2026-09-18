@@ -13,9 +13,11 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 
+import { attachActor } from "../context/request-context.store.js";
 import { ADMIN_PERMISSION_KEY, ADMIN_RESOURCE_KEY, ADMIN_SELF_KEY } from "./admin-surface.keys.js";
 import { StaffAccessResolver } from "./staff-access.resolver.js";
 import type { AuthenticatedStaffRequest } from "./staff-principal.js";
+import { takeVerifiedStaff } from "./verified-staff-identity.js";
 
 /** Les verbes qui ne modifient rien. Tout le reste demande l'écriture. */
 const READ_ONLY_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -31,6 +33,11 @@ const READ_ONLY_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
  * - `sub` inconnu de l'annuaire, ou fiche suspendue ⇒ refus.
  *
  * Un `403` faux est réparable ; un `200` faux ne l'est pas.
+ *
+ * C'est aussi **la seule porte qui pose l'auteur** : une fois la fiche résolue,
+ * l'acteur du contexte devient son id — jamais le `sub` du jeton, identifiant
+ * chez un tiers. Une requête refusée n'attache rien : elle reste `system`, et
+ * rien de ce qu'elle n'a pas pu faire ne lui sera attribué (plan de l'auteur, D1).
  */
 @Injectable()
 export class StaffAccessGuard implements CanActivate {
@@ -41,7 +48,7 @@ export class StaffAccessGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedStaffRequest>();
-    const principal = request.staff;
+    const principal = takeVerifiedStaff(request);
     if (principal === undefined) {
       throw new ForbiddenException("Identité staff absente.");
     }
@@ -67,6 +74,7 @@ export class StaffAccessGuard implements CanActivate {
       throw new ForbiddenException("Accès refusé.");
     }
     request.access = access;
+    attachActor({ type: "staff", id: access.staffUserId });
     return true;
   }
 

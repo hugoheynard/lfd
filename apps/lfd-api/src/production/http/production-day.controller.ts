@@ -7,24 +7,14 @@ import {
   productionBatchQuerySchema,
   productionForecastQuerySchema,
 } from "@lfd/contracts";
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  Req,
-  Res,
-  StreamableFile,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { Controller, Get, Param, Post, Query, Res, StreamableFile } from "@nestjs/common";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
-import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
 import { PackOrderCommand } from "../application/commands/pack-order.command.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
@@ -94,14 +84,10 @@ export class ProductionDayController {
   async pack(
     @Param("date") date: string,
     @Param("reference") reference: string,
-    @Req() request: AuthenticatedStaffRequest,
+    @StaffUserId() staffUserId: string,
   ): Promise<ProductionPackingAck> {
     return this.commands.execute<PackOrderCommand, ProductionPackingAck>(
-      new PackOrderCommand(
-        productionBatchQuerySchema.parse({ date }).date,
-        reference,
-        staffSubjectOf(request),
-      ),
+      new PackOrderCommand(productionBatchQuerySchema.parse({ date }).date, reference, staffUserId),
     );
   }
 
@@ -212,17 +198,4 @@ export class ProductionDayController {
       new CloseProductionDayCommand(productionBatchQuerySchema.parse({ date }).date),
     );
   }
-}
-
-/**
- * L'identité staff posée par le guard. Le `?` du type l'autorise à manquer ; en
- * pratique le guard a couru avant nous, mais on refuse plutôt que d'écrire un
- * colisage anonyme — un fait daté sans auteur ne se conteste pas, il s'efface.
- */
-function staffSubjectOf(request: AuthenticatedStaffRequest): string {
-  const subject = request.staff?.subject;
-  if (subject === undefined) {
-    throw new UnauthorizedException("Session staff requise.");
-  }
-  return subject;
 }

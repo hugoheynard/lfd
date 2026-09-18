@@ -58,9 +58,9 @@ export class StepPublisher extends DomainEventPublisher {
 }
 
 export class KnownStaff extends StaffDirectory {
-  identify(subject: string): Promise<StaffIdentity | null> {
+  identify(reference: string): Promise<StaffIdentity | null> {
     return Promise.resolve(
-      subject === "staff|admin" ? { name: "Camille Admin", role: "admin" } : null,
+      reference === "staff_admin" ? { name: "Camille Admin", role: "admin" } : null,
     );
   }
 }

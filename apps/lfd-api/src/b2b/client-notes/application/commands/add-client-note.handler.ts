@@ -33,7 +33,7 @@ export class AddClientNoteHandler implements ICommandHandler<AddClientNoteComman
   ) {}
 
   async execute(command: AddClientNoteCommand): Promise<string> {
-    const author = await noteAuthorOf(this.staff, command.staffSub);
+    const author = await noteAuthorOf(this.staff, command.staffUserId);
     const ports = {
       companies: this.companies,
       notebooks: this.notebooks,

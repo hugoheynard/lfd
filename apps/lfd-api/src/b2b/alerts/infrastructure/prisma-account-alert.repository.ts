@@ -74,10 +74,10 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
    * Acquitter est **idempotent** et ne réécrit pas l'auteur d'origine : le `where`
    * exclut les alertes déjà acquittées. Deux clics ne changent pas qui a vu quoi.
    */
-  async acknowledge(id: string, staffSub: string, at: Date): Promise<void> {
+  async acknowledge(id: string, staffUserId: string, at: Date): Promise<void> {
     await this.prisma.accountAlert.updateMany({
       where: { id, acknowledgedAt: null },
-      data: { acknowledgedAt: at, acknowledgedBy: staffSub },
+      data: { acknowledgedAt: at, acknowledgedBy: staffUserId },
     });
   }
 

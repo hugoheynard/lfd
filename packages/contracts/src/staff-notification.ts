@@ -22,7 +22,7 @@ export interface StaffNotificationView {
   readonly occurredAt: string;
   readonly readAt: string | null;
   /**
-   * Le `sub` staff qui l'a lue, ou `null`.
+   * L'id de fiche du staff qui l'a lue (un `sub` avant le 2026-09-18), ou `null`.
    *
    * @deprecated depuis le 2026-09-18 — afficher `readByName`.
    *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la

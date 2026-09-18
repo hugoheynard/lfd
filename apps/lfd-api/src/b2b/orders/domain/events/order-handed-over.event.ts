@@ -15,7 +15,7 @@ export class OrderHandedOverEvent {
     readonly orderNumber: string,
     /** Le client à qui la commande appartient — le sujet de la trace. */
     readonly placedByUserId: string,
-    /** L'identité staff qui a scanné (claim `sub`), figée. */
+    /** L'id de la fiche staff qui a scanné, figé. */
     readonly handedOverBy: string,
     /** L'instant de la remise, tel que l'horloge du serveur l'a donné. */
     readonly handedOverAt: Date,

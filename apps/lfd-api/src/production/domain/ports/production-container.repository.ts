@@ -17,11 +17,11 @@ import type { ContainerRule } from "../services/production-worksheet.js";
  */
 export abstract class ProductionContainerRepository {
   /**
-   * Pose ou remplace le réglage d'un SKU. `staffSubject` est gardé pour savoir
+   * Pose ou remplace le réglage d'un SKU. `staffUserId` est gardé pour savoir
    * **qui** a réglé : un nombre qui fait sortir la mauvaise quantité se discute
    * avec quelqu'un, pas avec une table.
    */
-  abstract save(sku: string, rule: ContainerRule, staffSubject: string): Promise<void>;
+  abstract save(sku: string, rule: ContainerRule, staffUserId: string): Promise<void>;
 
   /**
    * Retire le réglage — la fiche cessera d'afficher un contenant pour ce SKU.

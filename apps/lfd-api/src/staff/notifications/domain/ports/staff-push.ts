@@ -14,8 +14,13 @@ export interface StaffPushTarget {
  * et l'émetteur n'a rien à savoir de la persistance.
  */
 export abstract class StaffPushSubscriptions {
-  /** Idempotent par `endpoint` : un navigateur qui se réabonne remplace. */
-  abstract save(target: StaffPushTarget, staffSub: string): Promise<void>;
+  /**
+   * Idempotent par `endpoint` : un navigateur qui se réabonne remplace.
+   * `staffUserId` est une **trace** — qui a abonné cette installation — et non
+   * un ciblage : toute notification part vers tout abonnement (plan de
+   * l'auteur, D9).
+   */
+  abstract save(target: StaffPushTarget, staffUserId: string): Promise<void>;
   abstract forget(endpoint: string): Promise<void>;
   abstract all(): Promise<readonly StaffPushTarget[]>;
   /**

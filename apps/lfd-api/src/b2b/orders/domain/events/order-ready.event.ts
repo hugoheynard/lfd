@@ -12,7 +12,7 @@ export class OrderReadyEvent {
     readonly orderNumber: string,
     /** Le client à qui elle appartient — le sujet de la trace. */
     readonly placedByUserId: string,
-    /** L'identité staff qui a scanné le colisage (claim `sub`), figée. */
+    /** L'id de la fiche staff qui a scanné le colisage, figé. */
     readonly readyBy: string,
     readonly readyAt: Date,
   ) {}

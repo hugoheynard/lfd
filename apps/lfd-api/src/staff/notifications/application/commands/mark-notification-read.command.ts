@@ -7,6 +7,6 @@
 export class MarkNotificationReadCommand {
   constructor(
     readonly id: string | null,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }

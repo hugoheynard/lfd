@@ -11,6 +11,6 @@ export class SaveMercurialeDraftCommand {
   constructor(
     readonly companyId: string,
     readonly payload: SaveMercurialeDraftPayload,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }

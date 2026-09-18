@@ -10,7 +10,13 @@ import {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  E2E_STAFF_SUB,
+  jsonBody,
+  type E2eContext,
+} from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -67,7 +73,9 @@ describe("le réglage de livraison", () => {
     const row = await ctx.prisma.deliveryAvailability.findUniqueOrThrow({
       where: { key: "delivery" },
     });
-    expect(row.updatedBySub).toBe(E2E_STAFF_SUB);
+    // L'id de fiche, dans une colonne encore nommée `*_by_sub` (plan de
+    // l'auteur, étape 3 ; renommée à l'étape 5).
+    expect(row.updatedBySub).toBe(E2E_STAFF_ID);
   });
 
   /**

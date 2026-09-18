@@ -15,7 +15,7 @@ import type { ContactDetailsInput } from "../../domain/value-objects/contact-det
  * pour ouvrir ferait perdre l'appel — alors que le dossier se complète ensuite
  * (`AttachAccountHolderCommand`), et que l'activation, elle, l'exigera.
  *
- * `invitedBy` est le `sub` du staff : une **trace**, pas une autorisation (la
+ * `invitedBy` est l'id de la fiche du staff : une **trace**, pas une autorisation (la
  * porte est le guard).
  */
 export class CreateCompanyByStaffCommand {

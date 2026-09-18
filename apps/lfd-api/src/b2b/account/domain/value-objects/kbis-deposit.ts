@@ -16,9 +16,9 @@ export interface KbisFile {
 export interface KbisCertification {
   /** L'instant du geste — jamais résolu à la lecture : une trace dit ce qui était vrai ce jour-là. */
   readonly at: Date;
-  /** Le `sub` du token staff — l'identifiant qui survit à un changement de nom. */
-  readonly bySub: string;
-  /** Instantané du nom d'usage, vide si le `sub` n'est dans aucune fiche. */
+  /** L'id de la fiche de l'agent — l'identifiant qui survit à un changement de nom. */
+  readonly byStaffUserId: string;
+  /** Instantané du nom d'usage, vide si l'annuaire ne connaît pas l'agent. */
   readonly byName: string;
   /** Instantané du périmètre, vide de même. */
   readonly byRole: string;

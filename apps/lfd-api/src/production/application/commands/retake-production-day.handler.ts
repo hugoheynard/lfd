@@ -49,7 +49,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
     const current = await this.days.load(day);
     const producible = await this.orders.producibleFor(day);
 
-    const absorbed = current.retake(producible, this.clock.now(), command.staffSubject);
+    const absorbed = current.retake(producible, this.clock.now(), command.staffUserId);
     if (absorbed > 0) {
       await this.days.save(current);
     }

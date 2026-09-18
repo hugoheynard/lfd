@@ -31,7 +31,7 @@ import { ComparePricingBoardQuery } from "../application/queries/compare-pricing
 import { ListArchivedPriceRulesQuery } from "../application/queries/list-archived-price-rules.query.js";
 import { ProjectPriceQuery } from "../application/queries/project-price.query.js";
 import { ReadPricingBoardQuery } from "../application/queries/read-pricing-board.query.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   ArchivePriceRuleCommand,
@@ -134,7 +134,7 @@ export class AdminPricingController {
   @HttpCode(HttpStatus.CREATED)
   async setVolumeLadder(
     @Body(new ZodBody(setVolumeLadderPayloadSchema)) payload: SetVolumeLadderPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SetVolumeLadderCommand, string>(
       new SetVolumeLadderCommand(
@@ -147,7 +147,7 @@ export class AdminPricingController {
           validFrom: new Date(payload.validFrom),
           validTo: payload.validTo === null ? null : new Date(payload.validTo),
         },
-        staffSub,
+        staffUserId,
       ),
     );
     return { id };
@@ -167,19 +167,19 @@ export class AdminPricingController {
   async pauseLadder(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<PauseVolumeLadderCommand, void>(
-      new PauseVolumeLadderCommand(id, staffSub, payload.reason),
+      new PauseVolumeLadderCommand(id, staffUserId, payload.reason),
     );
   }
 
   /** **Reprendre** : le barème réagit à partir de maintenant. */
   @Post("volume-ladders/:id/resume")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async resumeLadder(@Param("id") id: string, @StaffSub() staffSub: string): Promise<void> {
+  async resumeLadder(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ResumeVolumeLadderCommand, void>(
-      new ResumeVolumeLadderCommand(id, staffSub),
+      new ResumeVolumeLadderCommand(id, staffUserId),
     );
   }
 
@@ -194,10 +194,10 @@ export class AdminPricingController {
   async archiveLadder(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<ArchiveVolumeLadderCommand, void>(
-      new ArchiveVolumeLadderCommand(id, staffSub, payload.reason),
+      new ArchiveVolumeLadderCommand(id, staffUserId, payload.reason),
     );
   }
 
@@ -224,10 +224,10 @@ export class AdminPricingController {
   @HttpCode(HttpStatus.CREATED)
   async createRule(
     @Body(new ZodBody(createPriceRulePayloadSchema)) payload: CreatePriceRulePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<CreatePriceRuleCommand, string>(
-      new CreatePriceRuleCommand(toDraft(payload), staffSub),
+      new CreatePriceRuleCommand(toDraft(payload), staffUserId),
     );
     return { id };
   }
@@ -248,10 +248,10 @@ export class AdminPricingController {
   async renameRule(
     @Param("id") id: string,
     @Body(new ZodBody(renamePriceRulePayloadSchema)) payload: RenamePriceRulePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<RenamePriceRuleCommand, void>(
-      new RenamePriceRuleCommand(id, payload.label, staffSub),
+      new RenamePriceRuleCommand(id, payload.label, staffUserId),
     );
   }
 
@@ -268,19 +268,19 @@ export class AdminPricingController {
   async pauseRule(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<PausePriceRuleCommand, void>(
-      new PausePriceRuleCommand(id, staffSub, payload.reason),
+      new PausePriceRuleCommand(id, staffUserId, payload.reason),
     );
   }
 
   /** **Reprendre** : la règle réagit à partir de maintenant. */
   @Post("rules/:id/resume")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async resumeRule(@Param("id") id: string, @StaffSub() staffSub: string): Promise<void> {
+  async resumeRule(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ResumePriceRuleCommand, void>(
-      new ResumePriceRuleCommand(id, staffSub),
+      new ResumePriceRuleCommand(id, staffUserId),
     );
   }
 
@@ -296,10 +296,10 @@ export class AdminPricingController {
   async archiveRule(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<ArchivePriceRuleCommand, void>(
-      new ArchivePriceRuleCommand(id, staffSub, payload.reason),
+      new ArchivePriceRuleCommand(id, staffUserId, payload.reason),
     );
   }
 
@@ -312,9 +312,9 @@ export class AdminPricingController {
    */
   @Delete("rules/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeRule(@Param("id") id: string, @StaffSub() staffSub: string): Promise<void> {
+  async removeRule(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchivePriceRuleCommand, void>(
-      new ArchivePriceRuleCommand(id, staffSub, null),
+      new ArchivePriceRuleCommand(id, staffUserId, null),
     );
   }
 }

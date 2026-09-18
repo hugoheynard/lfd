@@ -22,7 +22,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   ApplyPriceTemplateCommand,
@@ -89,10 +89,10 @@ export class AdminPriceTemplatesController {
   @HttpCode(HttpStatus.CREATED)
   async compose(
     @Body(new ZodBody(savePriceTemplatePayloadSchema)) payload: SavePriceTemplatePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SavePriceTemplateCommand, string>(
-      new SavePriceTemplateCommand(null, payload, staffSub),
+      new SavePriceTemplateCommand(null, payload, staffUserId),
     );
     return { id };
   }
@@ -109,10 +109,10 @@ export class AdminPriceTemplatesController {
   async revise(
     @Param("id") id: string,
     @Body(new ZodBody(savePriceTemplatePayloadSchema)) payload: SavePriceTemplatePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SavePriceTemplateCommand, string>(
-      new SavePriceTemplateCommand(id, payload, staffSub),
+      new SavePriceTemplateCommand(id, payload, staffUserId),
     );
   }
 
@@ -126,10 +126,10 @@ export class AdminPriceTemplatesController {
   async apply(
     @Param("id") id: string,
     @Body(new ZodBody(applyPriceTemplatePayloadSchema)) payload: ApplyPriceTemplatePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<PosedRulesResponse> {
     const posedRules = await this.commands.execute<ApplyPriceTemplateCommand, number>(
-      new ApplyPriceTemplateCommand(id, payload, staffSub),
+      new ApplyPriceTemplateCommand(id, payload, staffUserId),
     );
     return { posedRules };
   }

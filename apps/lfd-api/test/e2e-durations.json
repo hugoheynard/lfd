@@ -102,6 +102,7 @@
   "test/staff-journal-backfill.e2e-spec.ts": 6984,
   "test/staff-journal.e2e-spec.ts": 6600,
   "test/staff-lockout.e2e-spec.ts": 11514,
+  "test/staff-notification-authors.e2e-spec.ts": 5200,
   "test/staff-roles.e2e-spec.ts": 12533,
   "test/staff-users.e2e-spec.ts": 11560,
   "test/subscriptions.e2e-spec.ts": 8669,

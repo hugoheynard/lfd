@@ -25,7 +25,7 @@ import {
   THUMBNAIL,
   tokenIsSubject,
 } from "./client-notes-scene.js";
-import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 let ctx: E2eContext;
@@ -120,7 +120,8 @@ describe("le journal", () => {
       { companyId, action: "notes_reordered" },
       { companyId, noteId: first, action: "note_removed" },
     ]);
-    expect(journal.every((entry) => entry.actorId === E2E_STAFF_SUB)).toBe(true);
+    // Nominatif par la FICHE, plus par le `sub` du jeton (plan de l'auteur, D1).
+    expect(journal.every((entry) => entry.actorId === E2E_STAFF_ID)).toBe(true);
 
     const written = JSON.stringify(journal);
     expect(written).not.toContain("code portail");

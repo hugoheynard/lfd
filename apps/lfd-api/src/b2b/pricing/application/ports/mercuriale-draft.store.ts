@@ -33,7 +33,7 @@ export abstract class MercurialeDraftStore {
   abstract save(
     companyId: string,
     payload: SaveMercurialeDraftPayload,
-    staffSub: string,
+    staffUserId: string,
   ): Promise<void>;
 
   /**

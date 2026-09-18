@@ -6,7 +6,9 @@
 > été inventoriés dans la foulée (§8) — rien à convertir.
 >
 > Remplace [`journalisation-staff/todo-le-sub-comme-auteur.md`](journalisation-staff/todo-le-sub-comme-auteur.md).
-> État : 🚧 **en construction** depuis le 2026-09-18 (« go tout le plan »). **Deuxième version**, réécrite après une
+> État : 🚧 **en construction** depuis le 2026-09-18 (« go tout le plan »).
+> Étapes 0, 1 et 3 bâties le même jour (`530b83a8`, `f4b35223`, et le commit
+> suivant) ; l'étape 4 part dans le déploiement d'après ; l'étape 5 reste. **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§9) qui a trouvé une empreinte que la conversion
 > casserait, et un inventaire trop court.
 

@@ -8,7 +8,7 @@ import {
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { StaffPushSender, StaffPushSubscriptions } from "../domain/ports/staff-push.js";
 
@@ -44,11 +44,11 @@ export class AdminStaffPushController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async subscribe(
     @Body(new ZodBody(pushSubscriptionSchema)) body: PushSubscriptionPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.subscriptions.save(
       { endpoint: body.endpoint, p256dh: body.keys.p256dh, auth: body.keys.auth },
-      staffSub,
+      staffUserId,
     );
   }
 

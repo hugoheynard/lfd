@@ -72,17 +72,17 @@ export class PrismaStaffNotificationReader extends StaffNotificationReader {
   }
 
   /** `updateMany` avec `readAt: null` : le premier lecteur fait foi. */
-  async markRead(id: string, staffSub: string, at: Date): Promise<void> {
+  async markRead(id: string, staffUserId: string, at: Date): Promise<void> {
     await this.prisma.staffNotification.updateMany({
       where: { id, readAt: null },
-      data: { readAt: at, readBy: staffSub },
+      data: { readAt: at, readBy: staffUserId },
     });
   }
 
-  async markAllRead(staffSub: string, at: Date): Promise<number> {
+  async markAllRead(staffUserId: string, at: Date): Promise<number> {
     const marked = await this.prisma.staffNotification.updateMany({
       where: { readAt: null },
-      data: { readAt: at, readBy: staffSub },
+      data: { readAt: at, readBy: staffUserId },
     });
     return marked.count;
   }

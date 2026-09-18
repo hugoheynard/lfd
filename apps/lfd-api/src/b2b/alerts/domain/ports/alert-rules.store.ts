@@ -26,7 +26,7 @@ export abstract class AlertRulesStore {
   abstract save(input: {
     readonly kind: AlertKind;
     readonly rule: AlertRule;
-    readonly staffSub: string;
+    readonly staffUserId: string;
     readonly expectedUpdatedAt: Date | null;
   }): Promise<boolean>;
 }

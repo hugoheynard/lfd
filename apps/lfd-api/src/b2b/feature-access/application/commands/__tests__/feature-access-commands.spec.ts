@@ -59,7 +59,7 @@ describe("SetFeatureOverrideHandler", () => {
   it("écrit la dérogation puis sa trace, DANS l'unité de travail", async () => {
     const h = harness();
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "browse", "staff|admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("shop", "browse", "staff_admin"));
 
     expect(h.steps.log).toEqual([
       "uow:begin",
@@ -74,23 +74,27 @@ describe("SetFeatureOverrideHandler", () => {
     });
   });
 
-  it("fige l'auteur (sub, nom, rôle) et l'instant du Clock", async () => {
+  it("fige l'auteur (id de fiche, nom, rôle) et l'instant du Clock", async () => {
     const h = harness();
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff|admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_admin"));
 
     const row = h.overrides.rows.get("shop");
-    expect(row?.author).toEqual({ sub: "staff|admin", name: "Camille Admin", role: "admin" });
+    expect(row?.author).toEqual({
+      staffUserId: "staff_admin",
+      name: "Camille Admin",
+      role: "admin",
+    });
     expect(row?.at).toBe(NOW);
   });
 
-  it("garde le sub seul quand l'annuaire ne connaît pas l'agent", async () => {
+  it("garde l'id de fiche seul quand l'annuaire ne connaît pas l'agent", async () => {
     const h = harness();
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff|inconnu"));
+    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_inconnu"));
 
     expect(h.overrides.rows.get("shop")?.author).toEqual({
-      sub: "staff|inconnu",
+      staffUserId: "staff_inconnu",
       name: "",
       role: "",
     });
@@ -98,9 +102,9 @@ describe("SetFeatureOverrideHandler", () => {
 
   it("dit au journal la valeur remplacée", async () => {
     const h = harness();
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "browse", "staff|admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("shop", "browse", "staff_admin"));
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff|admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_admin"));
 
     expect(h.events.traced[1]?.journalFact().payload).toEqual({
       value: "closed",
@@ -112,7 +116,7 @@ describe("SetFeatureOverrideHandler", () => {
     const h = harness();
 
     await expect(
-      h.set.execute(new SetFeatureOverrideCommand("shop", "open", "staff|admin")),
+      h.set.execute(new SetFeatureOverrideCommand("shop", "open", "staff_admin")),
     ).rejects.toThrow(UnknownFeatureLevelError);
 
     expect(h.steps.log).toEqual([]);
@@ -122,7 +126,7 @@ describe("SetFeatureOverrideHandler", () => {
     const h = harness();
 
     await expect(
-      h.set.execute(new SetFeatureOverrideCommand("legacy_flag", "order", "staff|admin")),
+      h.set.execute(new SetFeatureOverrideCommand("legacy_flag", "order", "staff_admin")),
     ).rejects.toThrow(UnknownFeatureError);
 
     expect(h.steps.log).toEqual([]);
@@ -132,7 +136,7 @@ describe("SetFeatureOverrideHandler", () => {
 describe("ClearFeatureOverrideHandler", () => {
   it("supprime la dérogation et trace la valeur retirée", async () => {
     const h = harness();
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff|admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_admin"));
     h.steps.log.length = 0;
 
     await h.clear.execute(new ClearFeatureOverrideCommand("shop"));
@@ -163,7 +167,7 @@ describe("AddFeatureExemptionHandler", () => {
     const h = harness();
 
     const id = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", " Testeur@Exemple.FR ", "staff|admin"),
+      new AddFeatureExemptionCommand("shop", " Testeur@Exemple.FR ", "staff_admin"),
     );
 
     expect(id).toBe("ex_000001");
@@ -174,7 +178,7 @@ describe("AddFeatureExemptionHandler", () => {
       "uow:end",
     ]);
     expect(h.exemptions.rows[0]?.author).toEqual({
-      sub: "staff|admin",
+      staffUserId: "staff_admin",
       name: "Camille Admin",
       role: "admin",
     });
@@ -183,11 +187,11 @@ describe("AddFeatureExemptionHandler", () => {
   it("est idempotent sur (clé, adresse) : même id, une seule ligne, une seule trace", async () => {
     const h = harness();
     const first = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff|admin"),
+      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff_admin"),
     );
 
     const second = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "TESTEUR@exemple.fr", "staff|admin"),
+      new AddFeatureExemptionCommand("shop", "TESTEUR@exemple.fr", "staff_admin"),
     );
 
     expect(second).toBe(first);
@@ -201,7 +205,7 @@ describe("AddFeatureExemptionHandler", () => {
 
     await expect(
       h.add.execute(
-        new AddFeatureExemptionCommand("customerMandate", "testeur@exemple.fr", "staff|admin"),
+        new AddFeatureExemptionCommand("customerMandate", "testeur@exemple.fr", "staff_admin"),
       ),
     ).rejects.toThrow(FeatureNotExemptibleError);
 
@@ -212,7 +216,7 @@ describe("AddFeatureExemptionHandler", () => {
     const h = harness();
 
     await expect(
-      h.add.execute(new AddFeatureExemptionCommand("shop", "pas-une-adresse", "staff|admin")),
+      h.add.execute(new AddFeatureExemptionCommand("shop", "pas-une-adresse", "staff_admin")),
     ).rejects.toThrow(InvalidEmailError);
 
     expect(h.steps.log).toEqual([]);
@@ -223,7 +227,7 @@ describe("RemoveFeatureExemptionHandler", () => {
   it("retire l'exemption et trace l'adresse retirée", async () => {
     const h = harness();
     const id = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff|admin"),
+      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff_admin"),
     );
 
     await h.remove.execute(new RemoveFeatureExemptionCommand("shop", id));
@@ -238,7 +242,7 @@ describe("RemoveFeatureExemptionHandler", () => {
   it("refuse en 404 un id inconnu, ou rangé sous une autre clé", async () => {
     const h = harness();
     const id = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff|admin"),
+      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff_admin"),
     );
 
     await expect(

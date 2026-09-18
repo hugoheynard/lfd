@@ -9,23 +9,11 @@ import {
   productionContainerSchema,
   productionWorksheetQuerySchema,
 } from "@lfd/contracts";
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
-import type { AuthenticatedStaffRequest } from "../../platform/auth/staff-principal.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { RemoveProductionContainerCommand } from "../application/commands/remove-production-container.command.js";
 import { MarkWorksheetLineCommand } from "../application/commands/mark-worksheet-line.command.js";
@@ -114,10 +102,10 @@ export class ProductionWorksheetController {
     @Param("date") date: string,
     @Param("sku") sku: string,
     @Body(new ZodBody(markWorkshopLineSchema)) body: MarkWorkshopLine,
-    @Req() request: AuthenticatedStaffRequest,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<MarkWorksheetLineCommand, void>(
-      new MarkWorksheetLineCommand(dayOf(date), sku, body.initials, staffSubjectOf(request)),
+      new MarkWorksheetLineCommand(dayOf(date), sku, body.initials, staffUserId),
     );
   }
 
@@ -150,10 +138,10 @@ export class ProductionWorksheetController {
   @Post("worksheet/:date/retake")
   async retake(
     @Param("date") date: string,
-    @Req() request: AuthenticatedStaffRequest,
+    @StaffUserId() staffUserId: string,
   ): Promise<ProductionWorksheetRetake> {
     return this.commands.execute<RetakeProductionDayCommand, ProductionWorksheetRetake>(
-      new RetakeProductionDayCommand(dayOf(date), staffSubjectOf(request)),
+      new RetakeProductionDayCommand(dayOf(date), staffUserId),
     );
   }
 
@@ -174,10 +162,10 @@ export class ProductionWorksheetController {
   async setContainer(
     @Param("sku") sku: string,
     @Body(new ZodBody(productionContainerSchema)) body: ProductionContainerRule,
-    @Req() request: AuthenticatedStaffRequest,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetProductionContainerCommand, void>(
-      new SetProductionContainerCommand(sku, body, staffSubjectOf(request)),
+      new SetProductionContainerCommand(sku, body, staffUserId),
     );
   }
 
@@ -201,21 +189,4 @@ export class ProductionWorksheetController {
  */
 function dayOf(date: string): string {
   return productionWorksheetQuerySchema.parse({ date }).date;
-}
-
-/**
- * L'identité staff posée par le guard. Le `?` du type l'autorise à manquer ; en
- * pratique le guard a couru avant nous, mais on refuse plutôt que d'écrire une
- * coche anonyme — un fait daté sans auteur ne se conteste pas, il s'efface.
- *
- * Jumeau de celui de `production-day.controller.ts` (vérifié le 2026-09-13) :
- * six lignes recopiées plutôt qu'un module d'utilitaires HTTP partagé, que rien
- * d'autre ne justifierait aujourd'hui.
- */
-function staffSubjectOf(request: AuthenticatedStaffRequest): string {
-  const subject = request.staff?.subject;
-  if (subject === undefined) {
-    throw new UnauthorizedException("Session staff requise.");
-  }
-  return subject;
 }

@@ -41,7 +41,7 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
   async execute(command: CreatePriceRuleCommand): Promise<string> {
-    const rule = PricingRule.create(this.ids.next(), command.draft, command.staffSub);
+    const rule = PricingRule.create(this.ids.next(), command.draft, command.staffUserId);
     // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
     // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
     // avec une règle en cours, jamais avec une rangé. Depuis que clore borne
@@ -60,7 +60,7 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
       subjectType: "rule",
       subjectId: rule.id,
       kind: "posed",
-      actor: command.staffSub,
+      actor: command.staffUserId,
       at: this.clock.now(),
       reason: null,
       summary: describeRule(rule.asPriceRule),
@@ -93,7 +93,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
     await this.pose(
       command.scope,
       command.policy,
-      command.staffSub,
+      command.staffUserId,
       existing === null ? "posed" : "replaced",
       now,
     );
@@ -102,7 +102,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
   private async pose(
     scope: PriceScope,
     policy: PriceFloorPolicy,
-    staffSub: string,
+    staffUserId: string,
     kind: PricingActKind,
     at: Date,
   ): Promise<void> {
@@ -110,7 +110,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
       this.ids.next(),
       scope,
       policy,
-      staffSub,
+      staffUserId,
       at,
       referenceCanonicalFor(scope, await this.catalog.all()),
     );
@@ -125,7 +125,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
       // article, et qui l'a décidé ? ». Son sujet est la cible, pas la ligne.
       subjectId: floorScopeKey(scope),
       kind,
-      actor: staffSub,
+      actor: staffUserId,
       at,
       reason: null,
       summary: describeFloorPolicy(policy),
@@ -164,7 +164,7 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
       this.ids.next(),
       state.scope,
       state.policy,
-      command.staffSub,
+      command.staffUserId,
       now,
       referenceCanonicalFor(state.scope, await this.catalog.all()),
     );
@@ -172,7 +172,7 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
       subjectType: "floor",
       subjectId: floorScopeKey(state.scope),
       kind: "confirmed",
-      actor: command.staffSub,
+      actor: command.staffUserId,
       at: now,
       reason: null,
       summary: describeFloorPolicy(state.policy),
@@ -205,7 +205,7 @@ export class ArchivePriceFloorHandler implements ICommandHandler<ArchivePriceFlo
       subjectType: "floor",
       subjectId: floorScopeKey(command.scope),
       kind: "archived",
-      actor: command.staffSub,
+      actor: command.staffUserId,
       at: now,
       reason: command.reason,
       summary: describeFloorPolicy(existing.toPersistence().policy),

@@ -3,7 +3,7 @@ import type { StaffNotificationsSummary } from "@lfd/contracts";
 import { Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { MarkNotificationReadCommand } from "../application/commands/mark-notification-read.command.js";
 import { GetStaffNotificationsQuery } from "../application/queries/get-staff-notifications.query.js";
 
@@ -30,17 +30,17 @@ export class AdminStaffNotificationsController {
 
   @Post("read")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async readAll(@StaffSub() staffSub: string): Promise<void> {
+  async readAll(@StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<MarkNotificationReadCommand, void>(
-      new MarkNotificationReadCommand(null, staffSub),
+      new MarkNotificationReadCommand(null, staffUserId),
     );
   }
 
   @Post(":id/read")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async read(@Param("id") id: string, @StaffSub() staffSub: string): Promise<void> {
+  async read(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<MarkNotificationReadCommand, void>(
-      new MarkNotificationReadCommand(id, staffSub),
+      new MarkNotificationReadCommand(id, staffUserId),
     );
   }
 }

@@ -30,7 +30,7 @@ import type { HandoverVia } from "@lfd/contracts";
 /** Ce qu'on sait d'un retrait déjà fait, pour l'afficher — pas pour le rejouer. */
 export interface AttestedHandover {
   readonly handedOverAt: Date;
-  /** L'identité staff figée (claim `sub`). Une preuve sans auteur n'en est pas. */
+  /** L'id de la fiche staff qui a constaté, figé. Une preuve sans auteur n'en est pas. */
   readonly handedOverBy: string;
   /**
    * `scan` ou `manual` — l'écran les distingue, et le TYPE le garantit.

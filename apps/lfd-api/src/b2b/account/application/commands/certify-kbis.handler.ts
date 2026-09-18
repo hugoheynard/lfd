@@ -22,7 +22,7 @@ import { CertifyKbisCommand, RevokeKbisCertificationCommand } from "./certify-kb
  *    compte activable dont personne n'a jamais vu l'extrait — exactement ce que
  *    la certification est censée empêcher. L'absence de fichier est un 404 : il
  *    n'y a rien à certifier.
- * 2. **On garde qui.** Le `sub` toujours ; le nom et le titre quand l'annuaire
+ * 2. **On garde qui.** L'id de fiche toujours ; le nom et le titre quand l'annuaire
  *    les connaît. Ils sont figés ici, pas résolus à la lecture : une trace dit
  *    ce qui était vrai ce jour-là, pas ce qui est vrai aujourd'hui.
  */
@@ -42,7 +42,7 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
       throw new CompanyNotFoundError(command.companyId);
     }
 
-    const agent = await this.staff.identify(command.staffSub);
+    const agent = await this.staff.identify(command.staffUserId);
     const at = this.clock.now();
     // Au journal, DANS la transaction : l'état courant dira « vérifié », mais
     // pas QUAND ni par qui le jour où la vérification sera retirée. Une panne
@@ -52,7 +52,7 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
     // port de LECTURE lu juste avant une écriture nue. Une vue ne garantit rien.
     company.certifyKbis({
       at,
-      bySub: command.staffSub,
+      byStaffUserId: command.staffUserId,
       byName: agent?.name ?? "",
       byRole: agent?.role ?? "",
     });

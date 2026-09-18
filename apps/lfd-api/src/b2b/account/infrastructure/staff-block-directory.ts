@@ -22,8 +22,8 @@ export class StaffBlockDirectory extends StaffDirectory {
     super();
   }
 
-  async identify(subject: string): Promise<StaffIdentity | null> {
-    const author = (await this.authors.identify([subject])).find(subject);
+  async identify(reference: string): Promise<StaffIdentity | null> {
+    const author = (await this.authors.identify([reference])).find(reference);
     if (author === null) {
       return null;
     }

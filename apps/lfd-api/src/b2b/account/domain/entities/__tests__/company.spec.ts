@@ -26,7 +26,7 @@ const identity: CompanyIdentityInput = {
   vatNumber: "FR32812456789",
 };
 
-const AGENT = { sub: "auth0|staff", name: "Camille Rousseau", role: "commercial" };
+const AGENT = { staffUserId: "staff_camille", name: "Camille Rousseau", role: "commercial" };
 
 describe("Company.declare", () => {
   it("normalise les textes et le SIRET", () => {

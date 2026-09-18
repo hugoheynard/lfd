@@ -7,7 +7,7 @@ import type { CompanyRole } from "../../domain/value-objects/company-role.js";
  * seul geste : ce qui les distingue est le rôle, pas l'action. En faire deux
  * obligerait l'appelant à savoir d'avance lequel il crée.
  *
- * `invitedBy` est le `sub` du staff : une **trace**, pas une autorisation (la
+ * `invitedBy` est l'id de la fiche du staff : une **trace**, pas une autorisation (la
  * porte est le guard).
  */
 export class InviteCompanyMemberCommand {

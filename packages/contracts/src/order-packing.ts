@@ -33,7 +33,8 @@ export interface OrderPackingView {
   /** ISO du colisage déjà déclaré, ou `null` s'il reste à faire. */
   readonly readyAt: string | null;
   /**
-   * Qui l'a déclarée prête — l'identité staff figée (claim `sub`) —, ou `null`.
+   * Qui l'a déclarée prête — l'id de fiche staff figé (un `sub` avant le
+   * 2026-09-18) —, ou `null`.
    *
    * @deprecated depuis le 2026-09-18 — afficher `readyByName`.
    *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la

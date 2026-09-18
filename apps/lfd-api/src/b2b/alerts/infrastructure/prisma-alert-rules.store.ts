@@ -56,14 +56,14 @@ export class PrismaAlertRulesStore extends AlertRulesStore {
   async save(input: {
     readonly kind: AlertKind;
     readonly rule: AlertRule;
-    readonly staffSub: string;
+    readonly staffUserId: string;
     readonly expectedUpdatedAt: Date | null;
   }): Promise<boolean> {
     const values = {
       enabled: input.rule.enabled,
       params: input.rule.params,
       delivery: input.rule.delivery,
-      updatedBy: input.staffSub,
+      updatedBy: input.staffUserId,
     };
     if (input.expectedUpdatedAt === null) {
       // L'appelant croyait le type jamais réglé. `createMany` + `skipDuplicates`

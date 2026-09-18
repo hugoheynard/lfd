@@ -17,7 +17,7 @@ import {
   CompanyStatus,
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
@@ -343,7 +343,9 @@ describe("certification du KBIS", () => {
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.kbisCertifiedAt).not.toBeNull();
-    expect(company.kbisCertifiedBySub).toBe("staff-e2e");
+    // L'id de fiche, dans une colonne encore nommée `*_by_sub` (plan de
+    // l'auteur, étape 3 ; renommée à l'étape 5).
+    expect(company.kbisCertifiedBySub).toBe(E2E_STAFF_ID);
   });
 
   it("un NOUVEAU dépôt décertifie — la trace ne survit pas au fichier qu'elle visait", async () => {
@@ -406,7 +408,7 @@ describe("certification du KBIS", () => {
     expect(company.status).toBe(CompanyStatus.active);
     // Ouvrir la commande à un client est un ENGAGEMENT : il se signe.
     expect(company.activatedAt).not.toBeNull();
-    expect(company.activatedBySub).toBe("staff-e2e");
+    expect(company.activatedBySub).toBe(E2E_STAFF_ID);
   });
 
   it("retirer la vérification NE COUPE PAS l'accès", async () => {
@@ -462,7 +464,7 @@ describe("certification du KBIS", () => {
       "company.kbis_revoked",
     ]);
     // Nominatif : « un membre du staff » n'engage personne.
-    expect(journal[0]?.actorId).toBe("staff-e2e");
+    expect(journal[0]?.actorId).toBe(E2E_STAFF_ID);
     // Plus aucun retrait ne suspend : le journal le dit aussi.
     expect(journal[2]?.payload).toMatchObject({ suspended: false });
   });

@@ -12,6 +12,6 @@ export class MarkWorksheetLineCommand {
     /** Deux lettres au crayon. Vide autorisé : on coche d'abord, on signe si on veut. */
     readonly initials: string,
     /** L'identité staff, résolue par le guard. Jamais dans la charge utile. */
-    readonly staffSubject: string,
+    readonly staffUserId: string,
   ) {}
 }

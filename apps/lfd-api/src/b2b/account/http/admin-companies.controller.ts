@@ -4,7 +4,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachAccountHolderCommand } from "../application/commands/attach-account-holder.command.js";
 import type { HolderAttached } from "../application/commands/attach-account-holder.handler.js";
@@ -118,7 +118,7 @@ export class AdminCompaniesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
     @Body(new ZodBody(adminCreateCompanyPayload)) payload: AdminCreateCompanyPayload,
   ): Promise<CompanyOpened> {
     return await this.commands.execute<CreateCompanyByStaffCommand, CompanyOpened>(
@@ -130,7 +130,7 @@ export class AdminCompaniesController {
         payload.siren,
         payload.vatNumber,
         payload.primaryContact ?? null,
-        staffSub,
+        staffUserId,
       ),
     );
   }
@@ -148,12 +148,12 @@ export class AdminCompaniesController {
   @Post(":companyId/holder")
   @HttpCode(HttpStatus.CREATED)
   attachHolder(
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
     @Param("companyId") companyId: string,
     @Body(new ZodBody(accountHolderPayloadSchema)) payload: AccountHolderPayload,
   ): Promise<HolderAttached> {
     return this.commands.execute<AttachAccountHolderCommand, HolderAttached>(
-      new AttachAccountHolderCommand(companyId, payload, staffSub),
+      new AttachAccountHolderCommand(companyId, payload, staffUserId),
     );
   }
 }

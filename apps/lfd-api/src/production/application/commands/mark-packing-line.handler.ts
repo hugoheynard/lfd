@@ -44,7 +44,7 @@ export class MarkPackingLineHandler implements ICommandHandler<MarkPackingLineCo
     current.lineToFill(command.reference, command.sku);
     await this.days.markPackedLine(day, command.reference, command.sku, {
       at: this.clock.now(),
-      by: command.staffSubject,
+      by: command.staffUserId,
       initials: command.initials,
     });
   }

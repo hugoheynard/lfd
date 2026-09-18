@@ -2,7 +2,7 @@ import { DeliveryAvailability } from "../delivery-availability.js";
 import { DeliveryAvailabilityUpdatedEvent } from "../delivery-availability.events.js";
 
 const AT = new Date(0);
-const AUTHOR = { sub: "auth0|agent", name: "Camille Durand", role: "commercial" };
+const AUTHOR = { staffUserId: "staff_agent", name: "Camille Durand", role: "commercial" };
 const OPEN = { openToB2b: true, openToB2c: true };
 
 describe("DeliveryAvailability.pose", () => {

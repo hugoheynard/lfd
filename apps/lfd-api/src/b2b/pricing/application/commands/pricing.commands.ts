@@ -14,7 +14,7 @@ import type { VolumeLadderDraft } from "../../domain/entities/volume-ladder.js";
 export class CreatePriceRuleCommand {
   constructor(
     readonly draft: PricingRuleDraft,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -29,7 +29,7 @@ export class CreatePriceRuleCommand {
 export class PausePriceRuleCommand {
   constructor(
     readonly id: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
     readonly reason: string | null,
   ) {}
 }
@@ -38,7 +38,7 @@ export class PausePriceRuleCommand {
 export class ResumePriceRuleCommand {
   constructor(
     readonly id: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -52,7 +52,7 @@ export class ResumePriceRuleCommand {
 export class ArchivePriceRuleCommand {
   constructor(
     readonly id: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
     readonly reason: string | null,
   ) {}
 }
@@ -66,7 +66,7 @@ export class ArchivePriceRuleCommand {
 export class SetVolumeLadderCommand {
   constructor(
     readonly draft: VolumeLadderDraft,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -74,7 +74,7 @@ export class SetPriceFloorCommand {
   constructor(
     readonly scope: PriceScope,
     readonly policy: PriceFloorPolicy,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -89,7 +89,7 @@ export class SetPriceFloorCommand {
 export class ConfirmPriceFloorCommand {
   constructor(
     readonly scope: PriceScope,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -97,7 +97,7 @@ export class ConfirmPriceFloorCommand {
 export class ArchivePriceFloorCommand {
   constructor(
     readonly scope: PriceScope,
-    readonly staffSub: string,
+    readonly staffUserId: string,
     readonly reason: string | null,
   ) {}
 }
@@ -114,7 +114,7 @@ export class RenamePriceRuleCommand {
   constructor(
     readonly id: string,
     readonly label: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -128,7 +128,7 @@ export class RenamePriceRuleCommand {
 export class PauseVolumeLadderCommand {
   constructor(
     readonly id: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
     readonly reason: string | null,
   ) {}
 }
@@ -136,14 +136,14 @@ export class PauseVolumeLadderCommand {
 export class ResumeVolumeLadderCommand {
   constructor(
     readonly id: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
 export class ArchiveVolumeLadderCommand {
   constructor(
     readonly id: string,
-    readonly staffSub: string,
+    readonly staffUserId: string,
     readonly reason: string | null,
   ) {}
 }

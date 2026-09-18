@@ -29,7 +29,7 @@ export interface AccessToGrant {
   readonly lastName: string;
   readonly phone: string;
   readonly role: CompanyRole;
-  /** Le `sub` du staff qui provisionne — trace, pas autorisation. */
+  /** L'id de la fiche du staff qui provisionne — trace, pas autorisation. */
   readonly invitedBy: string;
 }
 

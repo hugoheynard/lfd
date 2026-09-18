@@ -88,7 +88,7 @@ model Order {
   // du personnel de l'annuaire. Et un identifiant plutôt qu'un instantané du
   // nom — un annuaire corrigé doit corriger l'affichage, pas laisser un ancien
   // nom figé sur la commande (le raisonnement inverse de `handedOverBy`, qui
-  // fige le `sub` parce que c'est une ATTESTATION, pas un affichage).
+  // fige l'auteur parce que c'est une ATTESTATION, pas un affichage).
   //
   // Ce n'est pas une nature de commande, c'est une porte d'entrée : avec
   // `fromSubscriptionId`, ces deux colonnes produisent l'`origin` des vues de
@@ -249,8 +249,10 @@ model Order {
   // recopie ce que le fournil lui annonce, il ne le lui rend jamais. Les lire
   // comme la source rouvrirait les deux vérités que la table a fermées.
   //
-  // Le `sub` staff y est figé : un annuaire réécrit ne doit pas réécrire une
-  // preuve, et le `sub` reste résolvable même après un changement de nom.
+  // L'auteur staff y est figé : un annuaire réécrit ne doit pas réécrire une
+  // preuve, et l'identifiant reste résolvable même après un changement de nom.
+  // C'est l'id de la fiche depuis le 2026-09-18 ; avant, un `sub` Auth0 (plan
+  // de l'auteur).
   handoverToken String?   @unique @map("handover_token")
   handedOverAt  DateTime? @map("handed_over_at")
   handedOverBy  String?   @map("handed_over_by")

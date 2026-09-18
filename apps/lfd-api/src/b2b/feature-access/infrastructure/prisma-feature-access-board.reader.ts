@@ -53,14 +53,22 @@ export class PrismaFeatureAccessBoardReader extends FeatureAccessBoardReader {
         key: row.key,
         value: row.value,
         updatedAt: row.updatedAt,
-        updatedBy: { sub: row.updatedBySub, name: row.updatedByName, role: row.updatedByRole },
+        updatedBy: {
+          staffUserId: row.updatedBySub,
+          name: row.updatedByName,
+          role: row.updatedByRole,
+        },
       })),
       exemptions: exemptions.map((row) => ({
         id: row.id,
         key: row.key,
         email: row.email,
         createdAt: row.createdAt,
-        createdBy: { sub: row.createdBySub, name: row.createdByName, role: row.createdByRole },
+        createdBy: {
+          staffUserId: row.createdBySub,
+          name: row.createdByName,
+          role: row.createdByRole,
+        },
         accountState: accountStateOf(row.email, accounts),
       })),
     };

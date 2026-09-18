@@ -9,7 +9,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from 
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   CloseVolumeCommitmentCommand,
@@ -47,10 +47,10 @@ export class AdminVolumeCommitmentsController {
   @HttpCode(HttpStatus.CREATED)
   async sign(
     @Body(new ZodBody(createVolumeCommitmentPayloadSchema)) payload: CreateVolumeCommitmentPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SignVolumeCommitmentCommand, string>(
-      new SignVolumeCommitmentCommand(payload, staffSub),
+      new SignVolumeCommitmentCommand(payload, staffUserId),
     );
     return { id };
   }
@@ -64,10 +64,10 @@ export class AdminVolumeCommitmentsController {
   async close(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<CloseVolumeCommitmentCommand, void>(
-      new CloseVolumeCommitmentCommand(id, payload.reason, staffSub),
+      new CloseVolumeCommitmentCommand(id, payload.reason, staffUserId),
     );
   }
 }

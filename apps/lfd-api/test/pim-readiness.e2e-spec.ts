@@ -9,7 +9,13 @@
  * donc il lui faut un test qui touche chaque table, une par une.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  E2E_STAFF_SUB,
+  jsonBody,
+  type E2eContext,
+} from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -99,11 +105,12 @@ describe("Déclaration publiable", () => {
     const readyAt = await declareReady(id);
     const view = await detail(id);
 
-    // Le nom, résolu par l'annuaire depuis le `sub` : l'écran ne montre plus
-    // l'identifiant (plan `plan-l-auteur-est-la-fiche.md`, D3).
+    // L'id de fiche, posé comme acteur par `StaffAccessGuard` (plan
+    // `plan-l-auteur-est-la-fiche.md`, D1), et le nom résolu par l'annuaire :
+    // l'écran ne montre plus l'identifiant (D3).
     expect(view.readiness).toEqual({
       readyAt,
-      readyBy: E2E_STAFF_SUB,
+      readyBy: E2E_STAFF_ID,
       readyByName: "Opérateur E2E",
     });
     expect(isStale(view)).toBe(false);

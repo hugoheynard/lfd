@@ -17,7 +17,7 @@ export class PrismaDeliveryAvailabilityRepository extends DeliveryAvailabilityRe
       openToB2b: settings.openToB2b,
       openToB2c: settings.openToB2c,
       updatedAt: settings.at,
-      updatedBySub: settings.author.sub,
+      updatedBySub: settings.author.staffUserId,
       updatedByName: settings.author.name,
       updatedByRole: settings.author.role,
     };

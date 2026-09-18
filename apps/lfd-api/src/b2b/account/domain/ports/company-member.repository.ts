@@ -25,7 +25,7 @@ export interface MemberToCreate {
   readonly firstName: string;
   readonly lastName: string;
   readonly phone: string;
-  /** Le `sub` du staff qui provisionne — trace, pas autorisation. */
+  /** L'id de la fiche du staff qui provisionne — trace, pas autorisation. */
   readonly invitedBy: string;
 }
 

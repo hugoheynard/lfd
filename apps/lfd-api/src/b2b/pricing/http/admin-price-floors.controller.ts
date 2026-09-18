@@ -9,7 +9,7 @@ import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post, Put } from
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   ArchivePriceFloorCommand,
@@ -40,10 +40,10 @@ export class AdminPriceFloorsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async setFloor(
     @Body(new ZodBody(setPriceFloorPayloadSchema)) payload: SetPriceFloorPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetPriceFloorCommand, void>(
-      new SetPriceFloorCommand(toScope(payload.scope), toPolicy(payload), staffSub),
+      new SetPriceFloorCommand(toScope(payload.scope), toPolicy(payload), staffUserId),
     );
   }
 
@@ -57,8 +57,8 @@ export class AdminPriceFloorsController {
    */
   @Post("floors/global/confirm")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async confirmGlobalFloor(@StaffSub() staffSub: string): Promise<void> {
-    await this.confirmFloorOn({ type: "global", id: null }, staffSub);
+  async confirmGlobalFloor(@StaffUserId() staffUserId: string): Promise<void> {
+    await this.confirmFloorOn({ type: "global", id: null }, staffUserId);
   }
 
   @Post("floors/:scopeType/:scopeId/confirm")
@@ -66,14 +66,14 @@ export class AdminPriceFloorsController {
   async confirmFloor(
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.confirmFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffSub);
+    await this.confirmFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffUserId);
   }
 
-  private async confirmFloorOn(scope: PriceScopePayload, staffSub: string): Promise<void> {
+  private async confirmFloorOn(scope: PriceScopePayload, staffUserId: string): Promise<void> {
     await this.commands.execute<ConfirmPriceFloorCommand, void>(
-      new ConfirmPriceFloorCommand(toScope(scope), staffSub),
+      new ConfirmPriceFloorCommand(toScope(scope), staffUserId),
     );
   }
 
@@ -98,9 +98,9 @@ export class AdminPriceFloorsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async archiveGlobalFloor(
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.archiveFloorOn({ type: "global", id: null }, staffSub, payload.reason);
+    await this.archiveFloorOn({ type: "global", id: null }, staffUserId, payload.reason);
   }
 
   @Post("floors/:scopeType/:scopeId/archive")
@@ -109,19 +109,19 @@ export class AdminPriceFloorsController {
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.archiveFloorOn(
       { type: parseScopeType(scopeType), id: scopeId },
-      staffSub,
+      staffUserId,
       payload.reason,
     );
   }
 
   @Delete("floors/global")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeGlobalFloor(@StaffSub() staffSub: string): Promise<void> {
-    await this.archiveFloorOn({ type: "global", id: null }, staffSub);
+  async removeGlobalFloor(@StaffUserId() staffUserId: string): Promise<void> {
+    await this.archiveFloorOn({ type: "global", id: null }, staffUserId);
   }
 
   @Delete("floors/:scopeType/:scopeId")
@@ -129,19 +129,19 @@ export class AdminPriceFloorsController {
   async removeFloor(
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.archiveFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffSub);
+    await this.archiveFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffUserId);
   }
 
   /** Retirer une limite l'**archive** : rien ne s'efface, ici non plus. */
   private async archiveFloorOn(
     scope: PriceScopePayload,
-    staffSub: string,
+    staffUserId: string,
     reason: string | null = null,
   ): Promise<void> {
     await this.commands.execute<ArchivePriceFloorCommand, void>(
-      new ArchivePriceFloorCommand(toScope(scope), staffSub, reason),
+      new ArchivePriceFloorCommand(toScope(scope), staffUserId, reason),
     );
   }
 }

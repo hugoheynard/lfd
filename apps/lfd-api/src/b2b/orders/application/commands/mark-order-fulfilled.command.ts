@@ -11,7 +11,7 @@ import type { HandoverVia } from "../../domain/services/handover.js";
 export class MarkOrderFulfilledCommand {
   constructor(
     readonly reference: string,
-    readonly staffSubject: string,
+    readonly staffUserId: string,
     readonly at: Date,
     readonly via: HandoverVia,
   ) {}

@@ -33,7 +33,11 @@
 >   passé d'un fichier de 4846 lignes à un dossier rangé par schéma Postgres, et
 >   Prisma ne regarde pas où vit un fichier — un modèle rangé sous `pim/` qui
 >   déclare `@@schema("public")` compile, `validate` est vert, la migration est
->   juste, et l'arborescence ment. C'est la
+>   juste, et l'arborescence ment. Et **37** depuis le 2026-09-18 avec
+>   `lint:subject-readers` — la 36ᵉ, `lint:spec-types`, était branchée depuis le
+>   2026-09-12 sans que le compte suive : le `sub` d'une personne est un
+>   identifiant chez un tiers, il a servi d'auteur pendant des mois, et la
+>   porte tient la liste admise de ceux qui le lisent encore côté client. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1061,7 +1065,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 35 portes du dépôt, d'un coup
+pnpm lint:gates         # les 37 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

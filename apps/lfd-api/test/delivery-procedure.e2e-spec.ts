@@ -20,7 +20,7 @@ import type request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { DELIVERY, photoOf, pngOf } from "./delivery-procedure-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { storageKeys } from "./storage.js";
@@ -316,7 +316,8 @@ describe("le staff tient la procédure d'un client", () => {
         action,
       })),
     );
-    expect(journal.every((entry) => entry.actorId === STAFF)).toBe(true);
+    // Nominatif par la FICHE, plus par le `sub` du jeton (plan de l'auteur, D1).
+    expect(journal.every((entry) => entry.actorId === E2E_STAFF_ID)).toBe(true);
   });
 
   it("le gestionnaire ne laisse aucun fait staff au journal", async () => {

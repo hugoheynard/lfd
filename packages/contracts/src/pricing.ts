@@ -447,7 +447,7 @@ export interface PricingJournalEntryView {
   readonly subjectId: string;
   readonly act: PricingActKind;
   /**
-   * Le `sub` du membre du staff, ou `system`.
+   * L'id de fiche du membre du staff (un `sub` avant le 2026-09-18), ou `system`.
    *
    * @deprecated depuis le 2026-09-18 — afficher `actorName`.
    *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la

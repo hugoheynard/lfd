@@ -7,7 +7,7 @@ import { planNotebookWrites, type StoredNoteRow } from "../client-notebook-write
  * chaque geste est ce que le plan refuse.
  */
 
-const MAYA = { sub: "staff-maya", name: "Maya" };
+const MAYA = { staffUserId: "staff-maya", name: "Maya" };
 
 function note(id: string, title: string, photoKey: string | null = null): ClientNoteState {
   return { id, title, body: "", photoKey, author: MAYA };

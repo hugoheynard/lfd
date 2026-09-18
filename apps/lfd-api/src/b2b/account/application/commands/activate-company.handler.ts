@@ -71,11 +71,11 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     // Joignabilité : le détenteur, ou n'importe lequel de ses interlocuteurs.
     // C'est souvent le responsable réception qui a le numéro utile — exiger
     // celui du gérant bloquerait un dossier complet par ailleurs.
-    // La trace suit le même patron que la certification du KBIS : le `sub`
-    // toujours, le nom et le titre quand l'annuaire les connaît, figés ici.
-    const agent = await this.staff.identify(command.staffSub);
+    // La trace suit le même patron que la certification du KBIS : l'id de
+    // fiche toujours, le nom et le titre quand l'annuaire les connaît, figés ici.
+    const agent = await this.staff.identify(command.staffUserId);
     company.activate(activatedAt, isReachable(view), {
-      sub: command.staffSub,
+      staffUserId: command.staffUserId,
       name: agent?.name ?? "",
       role: agent?.role ?? "",
     });

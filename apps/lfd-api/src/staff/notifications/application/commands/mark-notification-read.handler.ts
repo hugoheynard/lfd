@@ -23,9 +23,9 @@ export class MarkNotificationReadHandler implements ICommandHandler<
   async execute(command: MarkNotificationReadCommand): Promise<void> {
     const now = this.clock.now();
     if (command.id === null) {
-      await this.reader.markAllRead(command.staffSub, now);
+      await this.reader.markAllRead(command.staffUserId, now);
       return;
     }
-    await this.reader.markRead(command.id, command.staffSub, now);
+    await this.reader.markRead(command.id, command.staffUserId, now);
   }
 }

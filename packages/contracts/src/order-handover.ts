@@ -72,7 +72,8 @@ export interface OrderHandoverView {
   /** ISO du retrait déjà effectué, ou `null` s'il reste à faire. */
   readonly handedOverAt: string | null;
   /**
-   * Qui l'a remis — l'identité staff figée (claim `sub`) —, ou `null`.
+   * Qui l'a remis — l'id de fiche staff figé (un `sub` avant le 2026-09-18) —,
+   * ou `null`.
    *
    * @deprecated depuis le 2026-09-18 — afficher `handedOverByName`.
    *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la

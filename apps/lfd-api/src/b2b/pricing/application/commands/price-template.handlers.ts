@@ -13,7 +13,7 @@ export class SavePriceTemplateCommand {
   constructor(
     readonly id: string | null,
     readonly payload: SavePriceTemplatePayload,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -22,7 +22,7 @@ export class ApplyPriceTemplateCommand {
   constructor(
     readonly id: string,
     readonly payload: ApplyPriceTemplatePayload,
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
 
@@ -45,7 +45,7 @@ export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTempla
         plannedVolume: line.plannedVolume,
       })),
     };
-    const template = await this.resolve(command.id, draft, command.staffSub);
+    const template = await this.resolve(command.id, draft, command.staffUserId);
     await this.templates.save(template);
     return template.id;
   }
@@ -58,10 +58,10 @@ export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTempla
   private async resolve(
     id: string | null,
     draft: Parameters<typeof PriceTemplate.compose>[1],
-    staffSub: string,
+    staffUserId: string,
   ): Promise<PriceTemplate> {
     if (id === null) {
-      return PriceTemplate.compose(this.ids.next(), draft, staffSub);
+      return PriceTemplate.compose(this.ids.next(), draft, staffUserId);
     }
     const existing = await this.templates.load(id);
     if (existing === null) {
@@ -130,14 +130,14 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
         validFrom,
         validTo,
       },
-      command.staffSub,
+      command.staffUserId,
     );
 
     await this.mercuriales.save(mercuriale, {
       subjectType: "mercuriale",
       subjectId: mercuriale.id,
       kind: "posed",
-      actor: command.staffSub,
+      actor: command.staffUserId,
       at: validFrom,
       // Le journal dit d'OÙ elle vient : six mois plus tard, « pourquoi ce
       // prix ? » se répond mieux par « le gabarit Club Med » que par une

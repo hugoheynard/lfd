@@ -39,7 +39,7 @@ export class MarkWorksheetLineHandler implements ICommandHandler<MarkWorksheetLi
 
     await this.days.markProduced(day, command.sku, {
       at: this.clock.now(),
-      by: command.staffSubject,
+      by: command.staffUserId,
       initials: command.initials,
     });
   }

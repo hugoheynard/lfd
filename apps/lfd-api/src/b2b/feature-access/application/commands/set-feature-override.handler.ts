@@ -29,7 +29,7 @@ export class SetFeatureOverrideHandler implements ICommandHandler<SetFeatureOver
       key: command.key,
       value: command.value,
       at: this.clock.now(),
-      author: await authorOf(this.staff, command.staffSub),
+      author: await authorOf(this.staff, command.staffUserId),
     });
     await this.uow.run(async () => {
       const previous = await this.overrides.put(override);

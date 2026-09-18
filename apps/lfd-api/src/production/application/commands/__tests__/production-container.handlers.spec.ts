@@ -16,8 +16,8 @@ class Containers extends ProductionContainerRepository {
   readonly rules = new Map<string, { rule: ContainerRule; by: string }>();
   readonly removed: string[] = [];
 
-  save(sku: string, rule: ContainerRule, staffSubject: string): Promise<void> {
-    this.rules.set(sku, { rule, by: staffSubject });
+  save(sku: string, rule: ContainerRule, staffUserId: string): Promise<void> {
+    this.rules.set(sku, { rule, by: staffUserId });
     return Promise.resolve();
   }
 

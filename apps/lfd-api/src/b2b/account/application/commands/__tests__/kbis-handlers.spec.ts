@@ -121,7 +121,7 @@ describe("UploadKbisHandler", () => {
     await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
     company.certifyKbis({
       at: DEPOSITED_AT,
-      bySub: "staff_1",
+      byStaffUserId: "staff_1",
       byName: "Marc",
       byRole: "comptabilite",
     });

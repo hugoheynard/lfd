@@ -50,7 +50,7 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
     const won = await this.repository.markFulfilled(
       command.reference,
       command.at,
-      command.staffSubject,
+      command.staffUserId,
       command.via,
     );
     if (!won) {
@@ -62,7 +62,7 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
         order.orderId,
         order.orderNumber,
         order.placedByUserId,
-        command.staffSubject,
+        command.staffUserId,
         command.at,
         command.via,
       ),

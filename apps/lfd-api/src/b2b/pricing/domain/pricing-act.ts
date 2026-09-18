@@ -42,7 +42,10 @@ export interface PricingAct {
   readonly subjectType: PricingSubjectType;
   readonly subjectId: string;
   readonly kind: PricingActKind;
-  /** Le `sub` du membre du staff. `system` pour un acte non humain. */
+  /**
+   * L'id de la fiche du membre du staff (un `sub` Auth0 pour les actes écrits
+   * avant le 2026-09-18). `system` pour un acte non humain.
+   */
   readonly actor: string;
   readonly at: Date;
   /** Ce que l'auteur a écrit, quand l'écran le lui a demandé. */

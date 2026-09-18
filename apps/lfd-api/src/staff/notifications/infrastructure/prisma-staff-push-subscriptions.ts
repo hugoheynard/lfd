@@ -20,11 +20,13 @@ export class PrismaStaffPushSubscriptions extends StaffPushSubscriptions {
     super();
   }
 
-  async save(target: StaffPushTarget, staffSub: string): Promise<void> {
+  async save(target: StaffPushTarget, staffUserId: string): Promise<void> {
     await this.prisma.staffPushSubscription.upsert({
       where: { endpoint: target.endpoint },
-      create: { id: this.ids.next(), ...target, staffSub },
-      update: { p256dh: target.p256dh, auth: target.auth, staffSub },
+      // La colonne s'appelle encore `staff_sub` : elle reçoit l'id de fiche
+      // depuis l'étape 3 du plan de l'auteur, et se renomme à l'étape 5 (D8, D9).
+      create: { id: this.ids.next(), ...target, staffSub: staffUserId },
+      update: { p256dh: target.p256dh, auth: target.auth, staffSub: staffUserId },
     });
   }
 

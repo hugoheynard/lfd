@@ -22,7 +22,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffSub } from "../../../platform/auth/staff.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   AlignOnPimPriceCommand,
@@ -102,10 +102,10 @@ export class AdminCatalogController {
   async setPrice(
     @Param("sku") sku: string,
     @Body(new ZodBody(setB2bPricePayloadSchema)) payload: SetB2bPricePayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetB2bPriceCommand, void>(
-      new SetB2bPriceCommand(sku, payload.priceMillicents, staffSub),
+      new SetB2bPriceCommand(sku, payload.priceMillicents, staffUserId),
     );
   }
 
@@ -121,10 +121,10 @@ export class AdminCatalogController {
   async setVisibility(
     @Param("sku") sku: string,
     @Body(new ZodBody(setCatalogVisibilityPayloadSchema)) payload: SetCatalogVisibilityPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetCatalogVisibilityCommand, void>(
-      new SetCatalogVisibilityCommand(sku, payload.hidden, staffSub),
+      new SetCatalogVisibilityCommand(sku, payload.hidden, staffUserId),
     );
   }
 
@@ -133,10 +133,10 @@ export class AdminCatalogController {
   async setFeatured(
     @Param("sku") sku: string,
     @Body(new ZodBody(setCatalogFeaturedPayloadSchema)) payload: SetCatalogFeaturedPayload,
-    @StaffSub() staffSub: string,
+    @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetCatalogFeaturedCommand, void>(
-      new SetCatalogFeaturedCommand(sku, payload.featured, staffSub),
+      new SetCatalogFeaturedCommand(sku, payload.featured, staffUserId),
     );
   }
 }

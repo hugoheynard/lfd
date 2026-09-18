@@ -199,7 +199,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         row.activatedBySub === null
           ? null
           : {
-              sub: row.activatedBySub,
+              staffUserId: row.activatedBySub,
               name: row.activatedByName ?? "",
               role: row.activatedByRole ?? "",
             },
@@ -237,7 +237,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         requestedTerm: state.requestedTerm,
         status: state.status,
         activatedAt: state.activatedAt,
-        activatedBySub: state.activatedBy?.sub ?? null,
+        activatedBySub: state.activatedBy?.staffUserId ?? null,
         activatedByName: state.activatedBy?.name ?? null,
         activatedByRole: state.activatedBy?.role ?? null,
         suspensionCause: state.suspensionCause,
@@ -379,7 +379,7 @@ function kbisOf(row: KbisRow): KbisDeposit | null {
       ? null
       : {
           at: row.kbisCertifiedAt,
-          bySub: row.kbisCertifiedBySub ?? "",
+          byStaffUserId: row.kbisCertifiedBySub ?? "",
           byName: row.kbisCertifiedByName ?? "",
           byRole: row.kbisCertifiedByRole ?? "",
         },
@@ -411,7 +411,7 @@ function kbisColumns(kbis: KbisDeposit | null): {
     kbisSize: kbis?.file.size ?? null,
     kbisUploadedAt: kbis?.file.uploadedAt ?? null,
     kbisCertifiedAt: certification?.at ?? null,
-    kbisCertifiedBySub: certification?.bySub ?? null,
+    kbisCertifiedBySub: certification?.byStaffUserId ?? null,
     // Chaîne vide ⇒ `null` en base : « aucun nom connu » est une absence, pas
     // un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
     kbisCertifiedByName: blankToNull(certification?.byName),

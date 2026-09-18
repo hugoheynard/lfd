@@ -74,9 +74,11 @@ function addNote(
   current: Scene,
   photo: Buffer | null = null,
   thumbnail: Buffer | null = null,
-  sub = MAYA,
+  staffUserId = MAYA,
 ): Promise<string> {
-  return current.add.execute(new AddClientNoteCommand(COMPANY, FIELDS, photo, thumbnail, sub));
+  return current.add.execute(
+    new AddClientNoteCommand(COMPANY, FIELDS, photo, thumbnail, staffUserId),
+  );
 }
 
 function revision(
@@ -95,8 +97,8 @@ describe("ajouter une note", () => {
     const second = await addNote(current, null, null, "staff-inconnu");
 
     expect(current.notebooks.state()?.notes.map((note) => [note.id, note.author])).toEqual([
-      [second, { sub: "staff-inconnu", name: "" }],
-      [first, { sub: MAYA, name: "Maya Commerciale" }],
+      [second, { staffUserId: "staff-inconnu", name: "" }],
+      [first, { staffUserId: MAYA, name: "Maya Commerciale" }],
     ]);
   });
 

@@ -9,6 +9,6 @@ export class RetakeProductionDayCommand {
   constructor(
     readonly serviceDay: string,
     /** L'identité staff, résolue par le guard. Jamais dans la charge utile. */
-    readonly staffSubject: string,
+    readonly staffUserId: string,
   ) {}
 }

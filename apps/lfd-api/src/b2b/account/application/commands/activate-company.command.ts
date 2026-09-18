@@ -10,6 +10,6 @@ export class ActivateCompanyByStaffCommand {
      * Qui active. Ouvrir la commande à un client est un **engagement** — au même
      * titre que vérifier son extrait — et un engagement se signe.
      */
-    readonly staffSub: string,
+    readonly staffUserId: string,
   ) {}
 }
