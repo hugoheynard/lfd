@@ -220,6 +220,24 @@ touche pas, et les lecteurs de nom les affichent comme aujourd'hui.
    `sub`. Si le contrôle (§5) trouve un reste, c'est une **nouvelle**
    migration, proposée à Hugo — pas du SQL à la main.
 5. **Renommer** les `*_by_sub` (trois temps) ; **resserrer** les contrats.
+   Détaillé le 2026-09-18, au moment de la bâtir :
+   - **5A — étendre** : chaque `*_by_sub` gagne son `*_by_staff_id` (nullable),
+     `staff_push_subscriptions.staff_sub` gagne `staff_user_id` (et son index) ;
+     la migration recopie ; le code **écrit les deux**, lit l'ancienne. Dans le
+     même déploiement, les contrats perdent ce qu'aucun front ne lit (vérifié le
+     2026-09-18) : les champs `sub` de `feature-access.ts` et `admin-company.ts`,
+     et `ProfileView.subject`. Les champs d'identifiant d'auteur (`takenBy`,
+     `readyBy`…) **restent** : ils portent l'id de fiche ou un marqueur, ce n'est
+     plus une fuite, et l'écran s'en sert quand le nom manque — leur
+     `@deprecated` part ;
+   - **5B — basculer** : le schéma Prisma ne connaît plus que la nouvelle
+     colonne ; le code lit et écrit la nouvelle seule ; la migration recopie ce
+     que l'instance d'avant 5A a pu écrire, et rend l'ancienne colonne nullable
+     (sans quoi les insertions de 5B, qui ne la remplissent plus, échoueraient) ;
+   - **5C — resserrer** : dernière recopie, la nouvelle colonne devient
+     `NOT NULL` là où l'ancienne l'était, l'ancienne est supprimée. Le code
+     n'y lit plus rien depuis 5B : l'instance qui répond pendant le déploiement
+     ne la voit pas disparaître.
 
 **Allers simples, à savoir avant de commencer** : la conversion (4) ne se
 défait que par la table D5 ; la conversion de `ProductReadiness.readyBy`
