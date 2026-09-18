@@ -17,8 +17,6 @@ export class PrismaDeliveryAvailabilityRepository extends DeliveryAvailabilityRe
       openToB2b: settings.openToB2b,
       openToB2c: settings.openToB2c,
       updatedAt: settings.at,
-      // Les deux colonnes, même valeur, jusqu'à la bascule (plan de l'auteur, 5A).
-      updatedBySub: settings.author.staffUserId,
       updatedByStaffId: settings.author.staffUserId,
       updatedByName: settings.author.name,
       updatedByRole: settings.author.role,

@@ -39,7 +39,7 @@ const COMPANY_SELECT = {
   contactTelephone: true,
   createdAt: true,
   activatedAt: true,
-  activatedBySub: true,
+  activatedByStaffId: true,
   activatedByName: true,
   activatedByRole: true,
   suspensionCause: true,
@@ -165,7 +165,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
           : {
               at: row.activatedAt.toISOString(),
               by:
-                row.activatedBySub === null
+                row.activatedByStaffId === null
                   ? null
                   : {
                       name: row.activatedByName ?? "",

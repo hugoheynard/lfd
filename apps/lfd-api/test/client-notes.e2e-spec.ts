@@ -29,6 +29,7 @@ import {
 import { photoOf, refusalOf } from "./delivery-procedure-scene.js";
 import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { legacyAuthorOf } from "./legacy-author-columns.js";
 
 let ctx: E2eContext;
 let companyId: string;
@@ -69,14 +70,15 @@ describe("le carnet, de bout en bout", () => {
     });
     expect(view.notes[0]?.photoRevision).toBeNull();
     expect(Number.isNaN(Date.parse(view.notes[1]?.createdAt ?? ""))).toBe(false);
-    // L'id de fiche dans les DEUX colonnes, le temps de la bascule (plan de
-    // l'auteur, étape 5A).
+    // L'id de fiche dans la nouvelle colonne seule ; l'ancienne, que Prisma ne
+    // connaît plus, n'est plus écrite (plan de l'auteur, étape 5B).
     await expect(
       ctx.prisma.clientNote.findUniqueOrThrow({
         where: { id: first },
-        select: { createdBySub: true, createdByStaffId: true },
+        select: { createdByStaffId: true },
       }),
-    ).resolves.toEqual({ createdBySub: E2E_STAFF_ID, createdByStaffId: E2E_STAFF_ID });
+    ).resolves.toEqual({ createdByStaffId: E2E_STAFF_ID });
+    expect(await legacyAuthorOf(ctx.prisma, "client_notes.created_by_sub", first)).toBeNull();
 
     const revision = view.notes[1]?.photoRevision ?? "";
     expect(revision).not.toBe("");

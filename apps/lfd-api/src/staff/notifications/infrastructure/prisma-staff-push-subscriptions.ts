@@ -21,13 +21,12 @@ export class PrismaStaffPushSubscriptions extends StaffPushSubscriptions {
   }
 
   async save(target: StaffPushTarget, staffUserId: string): Promise<void> {
-    // L'id de fiche va dans `staff_sub` (le nom d'avant) ET `staff_user_id`
-    // (le sien) jusqu'à la bascule (plan de l'auteur, 5A ; D8, D9).
-    const owner = { staffSub: staffUserId, staffUserId };
+    // Une trace de qui a abonné l'installation, pas un ciblage (plan de
+    // l'auteur, D9) : `all()` pousse à toutes.
     await this.prisma.staffPushSubscription.upsert({
       where: { endpoint: target.endpoint },
-      create: { id: this.ids.next(), ...target, ...owner },
-      update: { p256dh: target.p256dh, auth: target.auth, ...owner },
+      create: { id: this.ids.next(), ...target, staffUserId },
+      update: { p256dh: target.p256dh, auth: target.auth, staffUserId },
     });
   }
 

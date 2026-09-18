@@ -19,6 +19,7 @@ import {
 } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { legacyAuthorOf } from "./legacy-author-columns.js";
 
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
 
@@ -343,10 +344,12 @@ describe("certification du KBIS", () => {
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.kbisCertifiedAt).not.toBeNull();
-    // L'id de fiche, dans l'ancienne colonne ET sa jumelle, le temps de la
-    // bascule (plan de l'auteur, étape 5A).
-    expect(company.kbisCertifiedBySub).toBe(E2E_STAFF_ID);
+    // L'id de fiche dans la nouvelle colonne seule ; l'ancienne, que Prisma ne
+    // connaît plus, n'est plus écrite (plan de l'auteur, étape 5B).
     expect(company.kbisCertifiedByStaffId).toBe(E2E_STAFF_ID);
+    expect(
+      await legacyAuthorOf(ctx.prisma, "companies.kbis_certified_by_sub", companyId),
+    ).toBeNull();
   });
 
   it("un NOUVEAU dépôt décertifie — la trace ne survit pas au fichier qu'elle visait", async () => {
@@ -363,7 +366,6 @@ describe("certification du KBIS", () => {
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.kbisCertifiedAt).toBeNull();
-    expect(company.kbisCertifiedBySub).toBeNull();
     expect(company.kbisCertifiedByStaffId).toBeNull();
   });
 
@@ -410,8 +412,9 @@ describe("certification du KBIS", () => {
     expect(company.status).toBe(CompanyStatus.active);
     // Ouvrir la commande à un client est un ENGAGEMENT : il se signe.
     expect(company.activatedAt).not.toBeNull();
-    expect(company.activatedBySub).toBe(E2E_STAFF_ID);
+    // Dans la nouvelle colonne seule (plan de l'auteur, étape 5B).
     expect(company.activatedByStaffId).toBe(E2E_STAFF_ID);
+    expect(await legacyAuthorOf(ctx.prisma, "companies.activated_by_sub", companyId)).toBeNull();
   });
 
   it("retirer la vérification NE COUPE PAS l'accès", async () => {

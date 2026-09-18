@@ -196,10 +196,10 @@ export class PrismaCompanyRepository extends CompanyRepository {
       // Trace absente ⇒ `null` entier, jamais un objet à champs vides : « on ne
       // sait pas qui » et « quelqu'un sans nom » ne disent pas la même chose.
       activatedBy:
-        row.activatedBySub === null
+        row.activatedByStaffId === null
           ? null
           : {
-              staffUserId: row.activatedBySub,
+              staffUserId: row.activatedByStaffId,
               name: row.activatedByName ?? "",
               role: row.activatedByRole ?? "",
             },
@@ -237,8 +237,6 @@ export class PrismaCompanyRepository extends CompanyRepository {
         requestedTerm: state.requestedTerm,
         status: state.status,
         activatedAt: state.activatedAt,
-        // Les deux colonnes, même valeur, jusqu'à la bascule (plan de l'auteur, 5A).
-        activatedBySub: state.activatedBy?.staffUserId ?? null,
         activatedByStaffId: state.activatedBy?.staffUserId ?? null,
         activatedByName: state.activatedBy?.name ?? null,
         activatedByRole: state.activatedBy?.role ?? null,
@@ -343,7 +341,7 @@ interface KbisRow {
   readonly kbisSize: number | null;
   readonly kbisUploadedAt: Date | null;
   readonly kbisCertifiedAt: Date | null;
-  readonly kbisCertifiedBySub: string | null;
+  readonly kbisCertifiedByStaffId: string | null;
   readonly kbisCertifiedByName: string | null;
   readonly kbisCertifiedByRole: string | null;
 }
@@ -381,7 +379,7 @@ function kbisOf(row: KbisRow): KbisDeposit | null {
       ? null
       : {
           at: row.kbisCertifiedAt,
-          byStaffUserId: row.kbisCertifiedBySub ?? "",
+          byStaffUserId: row.kbisCertifiedByStaffId ?? "",
           byName: row.kbisCertifiedByName ?? "",
           byRole: row.kbisCertifiedByRole ?? "",
         },
@@ -401,7 +399,6 @@ function kbisColumns(kbis: KbisDeposit | null): {
   kbisSize: number | null;
   kbisUploadedAt: Date | null;
   kbisCertifiedAt: Date | null;
-  kbisCertifiedBySub: string | null;
   kbisCertifiedByStaffId: string | null;
   kbisCertifiedByName: string | null;
   kbisCertifiedByRole: string | null;
@@ -414,8 +411,6 @@ function kbisColumns(kbis: KbisDeposit | null): {
     kbisSize: kbis?.file.size ?? null,
     kbisUploadedAt: kbis?.file.uploadedAt ?? null,
     kbisCertifiedAt: certification?.at ?? null,
-    // Les deux colonnes, même valeur, jusqu'à la bascule (plan de l'auteur, 5A).
-    kbisCertifiedBySub: certification?.byStaffUserId ?? null,
     kbisCertifiedByStaffId: certification?.byStaffUserId ?? null,
     // Chaîne vide ⇒ `null` en base : « aucun nom connu » est une absence, pas
     // un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.

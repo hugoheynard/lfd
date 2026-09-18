@@ -39,16 +39,15 @@ model ClientNote {
 
   // L'auteur, FIGÉ au dépôt : l'identifiant reste résolvable, le nom est un
   // instantané (vide quand l'annuaire ne connaît pas l'auteur — on n'invente pas
-  // un nom). La colonne reçoit l'id de fiche depuis le 2026-09-18 malgré son nom
-  // (`*_by_sub`, renommée à l'étape 5 du plan de l'auteur). Les lignes plus
-  // anciennes portaient un `sub`, converti par la migration
+  // un nom). L'id de fiche depuis le 2026-09-18 ; les lignes plus anciennes
+  // portaient un `sub`, converti par la migration
   // `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
   // la table des `sub` ne connaît pas.
-  createdBySub     String  @map("created_by_sub")
-  // La même valeur, sous le nom de ce qu'elle contient (plan de
-  // l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
-  // lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
-  // lectures ici. Nullable tant que dure la bascule.
+  //
+  // NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
+  // aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
+  // supprime aussi `created_by_sub` — l'ancien nom, que plus rien ne lit ni
+  // n'écrit depuis 5B.
   createdByStaffId String? @map("created_by_staff_id")
   createdByName    String  @map("created_by_name")
 

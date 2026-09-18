@@ -3,9 +3,9 @@
  * `documentation/staff/plan-l-auteur-est-la-fiche.md`, étape 3 (D2, D9).
  *
  * Deux écritures qui passaient le `sub` à la main (`@StaffSub()`, retiré le
- * 2026-09-18) : `StaffNotification.readBy` et `StaffPushSubscription.staffSub`.
- * La colonne de la seconde garde son nom jusqu'à l'étape 5 ; ce qu'elle reçoit
- * change maintenant, et seul le vrai Postgres le montre.
+ * 2026-09-18) : `StaffNotification.readBy` et l'auteur d'un abonnement push. La colonne de
+ * ce dernier s'appelait `staff_sub` ; depuis l'étape 5B, seule sa jumelle
+ * `staff_user_id` est écrite, et seul le vrai Postgres le montre.
  *
  * Doublée, et elle seule : la signature du jeton (le jeton EST le `sub`).
  */
@@ -19,6 +19,7 @@ import {
   E2E_STAFF_SUB,
   type E2eContext,
 } from "./e2e-harness.js";
+import { legacyAuthorOf } from "./legacy-author-columns.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<StaffPrincipal> =>
@@ -85,7 +86,7 @@ describe("la cloche — qui a lu", () => {
 });
 
 describe("l'abonnement push — une trace de qui a abonné", () => {
-  it("écrit l'id de fiche dans staff_sub ET staff_user_id, le temps de la bascule", async () => {
+  it("écrit l'id de fiche dans staff_user_id, et plus rien dans staff_sub", async () => {
     await operator()
       .post("/admin/notifications/push")
       .send({ endpoint: ENDPOINT, keys: { p256dh: "cle-publique", auth: "secret" } })
@@ -94,7 +95,9 @@ describe("l'abonnement push — une trace de qui a abonné", () => {
     const subscription = await ctx.prisma.staffPushSubscription.findUniqueOrThrow({
       where: { endpoint: ENDPOINT },
     });
-    expect(subscription.staffSub).toBe(E2E_STAFF_ID);
     expect(subscription.staffUserId).toBe(E2E_STAFF_ID);
+    expect(
+      await legacyAuthorOf(ctx.prisma, "staff_push_subscriptions.staff_sub", subscription.id),
+    ).toBeNull();
   });
 });
