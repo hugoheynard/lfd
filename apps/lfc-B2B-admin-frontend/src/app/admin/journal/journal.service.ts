@@ -11,6 +11,12 @@ export interface JournalFilters {
   readonly type?: string;
   readonly actorId?: string;
   readonly since?: string;
+  /**
+   * Recherche libre — nom de l'auteur, texte de la charge, identifiant du
+   * sujet. Typée ici plutôt que tirée de `ActivityQuery` : la clé part en
+   * paramètre de requête, et l'écran n'en dépend pas pour compiler.
+   */
+  readonly q?: string;
   /** Curseur : l'`id` de la dernière ligne déjà affichée. */
   readonly before?: string;
 }

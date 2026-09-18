@@ -9,6 +9,7 @@ import {
   FoldIconComponent,
   FoldListboxComponent,
   FoldPageLayoutComponent,
+  FoldSearchComponent,
   FoldSpinnerComponent,
   type FoldSelectOption,
 } from 'fold-ng';
@@ -34,6 +35,12 @@ const WINDOWS: FoldSelectOption<string>[] = [
 ];
 
 /**
+ * En deçà, une lettre ramènerait presque tout le journal : le terme ne part
+ * pas, et le serveur le refuserait de toute façon (`q` : 2 caractères minimum).
+ */
+const MIN_QUERY_LENGTH = 2;
+
+/**
  * Le **journal d'activité** — qui a fait quoi, tous modules confondus.
  *
  * Il existait en écriture seule depuis la croissance : alimenté depuis
@@ -54,6 +61,7 @@ const WINDOWS: FoldSelectOption<string>[] = [
     FoldIconComponent,
     FoldListboxComponent,
     FoldPageLayoutComponent,
+    FoldSearchComponent,
     FoldSpinnerComponent,
   ],
   templateUrl: './journal-page.html',
@@ -67,6 +75,8 @@ export class JournalPage {
 
   protected readonly module = signal('');
   protected readonly windowDays = signal('7');
+  /** Le terme effectivement envoyé — vide tant qu'il fait moins de deux caractères. */
+  protected readonly query = signal('');
 
   protected readonly lines = signal<readonly JournalLine[]>([]);
   protected readonly nextBefore = signal<string | null>(null);
@@ -75,6 +85,13 @@ export class JournalPage {
 
   /** Vrai quand on sait qu'il reste de la matière sous la dernière ligne. */
   protected readonly hasMore = computed(() => this.nextBefore() !== null);
+
+  /**
+   * Numéro de la dernière lecture lancée. Une réponse plus ancienne qui arrive
+   * après est jetée : sans ça, taper « mart » puis « martin » pouvait afficher
+   * les résultats de « mart » sous le champ qui dit « martin ».
+   */
+  private requestSeq = 0;
 
   constructor() {
     void this.reload();
@@ -91,6 +108,18 @@ export class JournalPage {
     void this.reload();
   }
 
+  /**
+   * `fold-search` rend le terme déjà trimé, après 300 ms de calme. Un terme
+   * trop court vaut « pas de recherche » ; on ne relit que si ce qui part change.
+   */
+  protected onSearch(term: string): void {
+    const query = term.length >= MIN_QUERY_LENGTH ? term : '';
+    if (query !== this.query()) {
+      this.query.set(query);
+      void this.reload();
+    }
+  }
+
   protected async reload(): Promise<void> {
     await this.fetch(undefined, true);
   }
@@ -103,6 +132,7 @@ export class JournalPage {
   }
 
   private async fetch(before: string | undefined, replace: boolean): Promise<void> {
+    const seq = ++this.requestSeq;
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -111,18 +141,27 @@ export class JournalPage {
       // appel, et la clé repart avec un `| undefined` que la cible refuse.
       const module = this.moduleFilter();
       const since = this.sinceFilter();
+      const q = this.query();
       const page = await this.journal.page({
         ...(module === undefined ? {} : { module }),
         ...(since === undefined ? {} : { since }),
+        ...(q === '' ? {} : { q }),
         ...(before === undefined ? {} : { before }),
       });
+      if (seq !== this.requestSeq) {
+        return;
+      }
       const fresh = page.events.map(toLine);
       this.lines.set(replace ? fresh : [...this.lines(), ...fresh]);
       this.nextBefore.set(page.nextBefore);
     } catch {
-      this.error.set('Journal illisible — API injoignable, ou droit manquant.');
+      if (seq === this.requestSeq) {
+        this.error.set('Journal illisible — API injoignable, ou droit manquant.');
+      }
     } finally {
-      this.loading.set(false);
+      if (seq === this.requestSeq) {
+        this.loading.set(false);
+      }
     }
   }
 
