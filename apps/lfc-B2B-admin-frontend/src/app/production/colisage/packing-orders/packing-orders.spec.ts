@@ -39,6 +39,7 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     canDeclareReady: false,
     packedAt: null,
     packedBy: null,
+    packedByName: null,
     ...over,
   };
 }

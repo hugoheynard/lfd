@@ -5,7 +5,10 @@ import type {
   CatalogRevisionSummaryView,
 } from "@lfd/pim-contracts";
 
-import type { StaffAuthors } from "../../../../staff/directory/domain/staff-author-directory.js";
+import type {
+  StaffAuthorDirectory,
+  StaffAuthors,
+} from "../../../../staff/directory/domain/staff-author-directory.js";
 import type { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { attributeFields, coveredBy, type GlobalCause } from "../domain/attribution.js";
 import type { ItemDiff } from "../domain/diff.js";
@@ -125,4 +128,45 @@ export function summaryOf(
     takenByName: authors.nameOf(record.takenBy),
     articles: record.articles,
   };
+}
+
+/** Le champ du contenu figé qui porte la signature d'une fiche. */
+const SIGNATORY_FIELD = "readyBy";
+
+/**
+ * **Nomme le signataire d'une fiche dans les lignes du diff.**
+ *
+ * La signature (`readyBy`) fait partie de la photo d'une révision, et elle y
+ * reste sous la forme où elle a été figée — un `sub` avant la bascule, un id de
+ * fiche après (plan `plan-l-auteur-est-la-fiche.md`, D6 : on ne réécrit pas une
+ * ancre). Le diff, lui, est une lecture : il montre le nom. Une valeur qui ne
+ * désigne personne (`null`, un marqueur) reste telle quelle.
+ *
+ * Une seule résolution pour tout le diff, et aucune s'il n'a pas de signature.
+ */
+export async function nameSignatories(
+  items: readonly CatalogRevisionItemDiffView[],
+  directory: StaffAuthorDirectory,
+): Promise<CatalogRevisionItemDiffView[]> {
+  const references = items.flatMap((item) =>
+    item.fields
+      .filter((field) => field.field === SIGNATORY_FIELD)
+      .flatMap((field) => [field.before, field.after]),
+  );
+  if (references.length === 0) {
+    return [...items];
+  }
+  const authors = await directory.identify(references);
+  return items.map((item) => ({
+    ...item,
+    fields: item.fields.map((field) =>
+      field.field === SIGNATORY_FIELD
+        ? {
+            ...field,
+            before: authors.nameOf(field.before) ?? field.before,
+            after: authors.nameOf(field.after) ?? field.after,
+          }
+        : field,
+    ),
+  }));
 }

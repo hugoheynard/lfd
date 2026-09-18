@@ -17,6 +17,7 @@ import {
   type FoldTableEmpty,
 } from 'fold-ng';
 
+import { staffAuthor } from '../../../shared/staff-author';
 import { RevisionDiff } from '../revision-diff/revision-diff';
 import { PimCapabilitiesStore } from '../../capabilities/pim-capabilities.store';
 import { RevisionsStore } from '../revisions.store';
@@ -149,6 +150,9 @@ export class RevisionsPage {
     const [from, to] = [this.from(), this.to()];
     return from !== null && to !== null && from !== to;
   });
+
+  /** Le nom de qui a posé l'ancre, ou la valeur brute d'un marqueur. */
+  protected readonly author = staffAuthor;
 
   constructor() {
     void this.refresh();

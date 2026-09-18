@@ -18,6 +18,7 @@ function notification(overrides: Partial<StaffNotificationView> = {}): StaffNoti
     occurredAt: '2026-08-11T09:00:00.000Z',
     readAt: null,
     readBy: null,
+    readByName: null,
     ...overrides,
   };
 }

@@ -10,7 +10,7 @@ import { diffItem, headerDiff, planDiff } from "../domain/diff.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
 import { buildRevision } from "../domain/revision.js";
-import { attributeItem, causeViews, summaryOf } from "./revision-diff-support.js";
+import { attributeItem, causeViews, nameSignatories, summaryOf } from "./revision-diff-support.js";
 
 export class DiffCatalogSinceLastQuery {}
 
@@ -124,27 +124,30 @@ export class DiffCatalogSinceLastHandler implements IQueryHandler<
       header: headerDiff(beforeIndex, afterIndex),
       added: plan.added,
       removed: plan.removed,
-      changed: await Promise.all(
-        plan.changed.flatMap((sku) => {
-          const before = beforePayloads.get(sku);
-          const after = afterPayloads.get(sku);
-          // Les deux existent : le plan les a désignés parce que les DEUX index
-          // les portent. Un manque côté ancre signalerait une ligne
-          // d'appartenance sans contenu, que la clé étrangère interdit.
-          if (before === undefined || after === undefined) {
-            return [];
-          }
-          return [
-            attributeItem(
-              this.journal,
-              diffItem(sku, before, after),
-              after,
-              latest.takenAt,
-              at,
-              causes,
-            ),
-          ];
-        }),
+      changed: await nameSignatories(
+        await Promise.all(
+          plan.changed.flatMap((sku) => {
+            const before = beforePayloads.get(sku);
+            const after = afterPayloads.get(sku);
+            // Les deux existent : le plan les a désignés parce que les DEUX index
+            // les portent. Un manque côté ancre signalerait une ligne
+            // d'appartenance sans contenu, que la clé étrangère interdit.
+            if (before === undefined || after === undefined) {
+              return [];
+            }
+            return [
+              attributeItem(
+                this.journal,
+                diffItem(sku, before, after),
+                after,
+                latest.takenAt,
+                at,
+                causes,
+              ),
+            ];
+          }),
+        ),
+        this.staffAuthors,
       ),
     };
   }

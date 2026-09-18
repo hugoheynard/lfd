@@ -11,7 +11,7 @@ import {
   type RevisionRecord,
 } from "../domain/ports/catalog-revision.repository.js";
 import { RevisionNotFoundError } from "../domain/errors/revision-errors.js";
-import { attributeItem, causeViews, summaryOf } from "./revision-diff-support.js";
+import { attributeItem, causeViews, nameSignatories, summaryOf } from "./revision-diff-support.js";
 
 export class DiffCatalogRevisionsQuery {
   constructor(
@@ -70,27 +70,30 @@ export class DiffCatalogRevisionsHandler implements IQueryHandler<
       causes: causeViews(causes),
       added: plan.added,
       removed: plan.removed,
-      changed: await Promise.all(
-        plan.changed.flatMap((sku) => {
-          const before = beforePayloads.get(sku);
-          const after = afterPayloads.get(sku);
-          // Les deux existent : le plan les a désignés parce que les DEUX index
-          // les portent. Un manque signalerait une ligne d'appartenance sans
-          // contenu, que la clé étrangère interdit.
-          if (before === undefined || after === undefined) {
-            return [];
-          }
-          return [
-            attributeItem(
-              this.journal,
-              diffItem(sku, before, after),
-              after,
-              from.takenAt,
-              to.takenAt,
-              causes,
-            ),
-          ];
-        }),
+      changed: await nameSignatories(
+        await Promise.all(
+          plan.changed.flatMap((sku) => {
+            const before = beforePayloads.get(sku);
+            const after = afterPayloads.get(sku);
+            // Les deux existent : le plan les a désignés parce que les DEUX index
+            // les portent. Un manque signalerait une ligne d'appartenance sans
+            // contenu, que la clé étrangère interdit.
+            if (before === undefined || after === undefined) {
+              return [];
+            }
+            return [
+              attributeItem(
+                this.journal,
+                diffItem(sku, before, after),
+                after,
+                from.takenAt,
+                to.takenAt,
+                causes,
+              ),
+            ];
+          }),
+        ),
+        this.staffAuthors,
       ),
     };
   }

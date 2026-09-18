@@ -1,5 +1,6 @@
 import type { PosedMercurialeView } from '@lfd/contracts';
 
+import { staffAuthor } from '../../shared/staff-author';
 import type { MercurialeRowView } from './mercuriale-rows';
 
 /**
@@ -71,7 +72,11 @@ export function mercurialeCsv(
 ): string {
   const window = `du ${day(mercuriale.validFrom)} au ${day(mercuriale.validTo)}`;
   const lines = [
-    [cell(mercuriale.label), cell(window), cell(`établie par ${mercuriale.createdBy}`)].join(';'),
+    [
+      cell(mercuriale.label),
+      cell(window),
+      cell(`établie par ${staffAuthor(mercuriale.createdBy, mercuriale.createdByName)}`),
+    ].join(';'),
     '',
     HEADER.join(';'),
     ...rows.map((row) =>

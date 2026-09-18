@@ -14,7 +14,6 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldInfoComponent,
-  FoldInlineConfirmComponent,
   FoldPaginatorComponent,
   FoldPanelHostService,
   FoldPopoverTriggerDirective,
@@ -33,7 +32,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 /**
  * Sous-page **Utilisateurs** des Réglages (staff) — l'annuaire du back-office
  * dans une `fold-data-table` : identité, **rôle**, état de la connexion, plus les
- * actions par ligne (éditer / inviter / suspendre / supprimer). La saisie passe
+ * actions par ligne (éditer / inviter / suspendre). La saisie passe
  * par `StaffUserPanel` (side-panel) ; ici on liste, on ouvre le panneau et on
  * recharge.
  */
@@ -54,7 +53,6 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldDataTableRowCardDirective,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
-    FoldInlineConfirmComponent,
     FoldPopoverTriggerDirective,
     CanDirective,
     FoldEmptyStateComponent,
@@ -69,9 +67,6 @@ export class ReglagesStaffUsersPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly users = signal<readonly StaffUserView[]>([]);
-  /** User dont la confirmation de suppression est ouverte (état UI local). */
-  protected readonly confirmingId = signal<string | null>(null);
-
   /**
    * Une page tient dans un écran sans molette. Au-delà, on pagine plutôt que
    * de dérouler : une équipe se lit, elle ne se parcourt pas.
@@ -269,10 +264,6 @@ export class ReglagesStaffUsersPage {
     }
   }
 
-  protected askRemove(user: StaffUserView): void {
-    this.confirmingId.set(user.id);
-  }
-
   /** Suspendre ferme tout sans rien détruire ; réintégrer rouvre. */
   protected async toggleSuspension(user: StaffUserView): Promise<void> {
     const suspended = user.status === 'suspended';
@@ -287,16 +278,5 @@ export class ReglagesStaffUsersPage {
 
   protected isSuspended(user: StaffUserView): boolean {
     return user.status === 'suspended';
-  }
-
-  protected async confirmRemove(user: StaffUserView): Promise<void> {
-    this.confirmingId.set(null);
-    try {
-      await this.service.remove(user.id);
-      this.notify.success('Utilisateur supprimé.');
-      await this.load();
-    } catch (error) {
-      this.notify.error(error);
-    }
   }
 }

@@ -122,7 +122,11 @@ describe('la composition en regard de la déclaration', () => {
    */
   describe('la signature après un enregistrement', () => {
     it('se périme dès qu’une section de contenu part', async () => {
-      store['readinessValue'].set({ readyAt: '2026-08-31T09:00:00.000Z', readyBy: 'staff' });
+      store['readinessValue'].set({
+        readyAt: '2026-08-31T09:00:00.000Z',
+        readyBy: 'staff',
+        readyByName: null,
+      });
       store['readinessStaleValue'].set(false);
 
       await store['save']('fiche', () => Promise.resolve());
@@ -131,7 +135,11 @@ describe('la composition en regard de la déclaration', () => {
     });
 
     it('ne se périme pas quand l’enregistrement échoue', async () => {
-      store['readinessValue'].set({ readyAt: '2026-08-31T09:00:00.000Z', readyBy: 'staff' });
+      store['readinessValue'].set({
+        readyAt: '2026-08-31T09:00:00.000Z',
+        readyBy: 'staff',
+        readyByName: null,
+      });
       store['readinessStaleValue'].set(false);
 
       await store['save']('fiche', () => Promise.reject(new Error('boum')));

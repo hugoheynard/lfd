@@ -27,13 +27,16 @@ function archived(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
     validFrom: '2026-08-01T00:00:00.000Z',
     validTo: null,
     createdBy: 'staff',
+    createdByName: null,
     stacksOverMercuriale: false,
     createdAt: '2026-07-20T00:00:00.000Z',
     status: 'archived',
     pausedAt: null,
     pausedBy: null,
+    pausedByName: null,
     archivedAt: '2026-09-02T09:00:00.000Z',
     archivedBy: 'auth0|marc',
+    archivedByName: null,
     archiveReason: null,
     ...overrides,
   };
@@ -85,6 +88,14 @@ describe('les archives', () => {
 
     expect(text).toContain('auth0|marc');
     expect(text).toContain('02/09/2026');
+  });
+
+  /** Plan `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 : le nom, plus le `sub`. */
+  it('nomme la personne quand le serveur la connaît, sans montrer son identifiant', async () => {
+    const text = await settled(mount([archived({ archivedByName: 'Marc Dupont' })]));
+
+    expect(text).toContain('par Marc Dupont');
+    expect(text).not.toContain('auth0|marc');
   });
 
   it('cite le motif quand il a été écrit', async () => {

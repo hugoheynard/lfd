@@ -11,6 +11,7 @@ import {
   FoldPageSectionComponent,
 } from 'fold-ng';
 
+import { staffAuthor } from '../../../shared/staff-author';
 import { CatalogueOverviewHttpApi } from '../catalogue-overview-http-api';
 
 /** Le format d'une date d'ancre : le jour ET l'heure — on en pose plusieurs par jour. */
@@ -61,6 +62,9 @@ export class CatalogueOverviewPage {
     const since = this.overview()?.sinceLastRevision;
     return since !== undefined && since !== null && since.added + since.removed + since.changed > 0;
   });
+
+  /** Le nom de qui a posé la révision, ou la valeur brute d'un marqueur. */
+  protected readonly author = staffAuthor;
 
   constructor() {
     void this.load();

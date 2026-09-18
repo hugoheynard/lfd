@@ -174,11 +174,14 @@ describe('ruleSentence · le franchissement du scellement', () => {
     status: 'active',
     stacksOverMercuriale: false,
     createdBy: 'staff',
+    createdByName: null,
     createdAt: '2026-08-01T00:00:00.000Z',
     pausedAt: null,
     pausedBy: null,
+    pausedByName: null,
     archivedAt: null,
     archivedBy: null,
+    archivedByName: null,
     archiveReason: null,
   };
 

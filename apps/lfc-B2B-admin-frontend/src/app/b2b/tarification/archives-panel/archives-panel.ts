@@ -10,6 +10,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
+import { staffAuthor } from '../../../shared/staff-author';
 import { JournalPanel, type JournalPanelData } from '../journal-panel/journal-panel';
 import { TarificationService } from '../tarification.service';
 
@@ -64,7 +65,7 @@ export class ArchivesPanel {
   protected archivedLine(rule: PriceRuleView): string {
     const when =
       rule.archivedAt === null ? '' : new Date(rule.archivedAt).toLocaleDateString('fr-FR');
-    return `Archivée le ${when} par ${rule.archivedBy ?? 'un membre du staff'}`;
+    return `Archivée le ${when} par ${staffAuthor(rule.archivedBy, rule.archivedByName) ?? 'un membre du staff'}`;
   }
 
   protected openJournal(rule: PriceRuleView): void {

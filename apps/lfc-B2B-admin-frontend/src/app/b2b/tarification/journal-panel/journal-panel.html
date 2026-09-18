@@ -31,7 +31,7 @@
               <!-- La phrase FIGÉE au moment de l'acte : elle dit ce que la
                    décision valait ce jour-là, pas ce qu'elle vaut aujourd'hui. -->
               <p class="act-summary">{{ entry.summary }}</p>
-              <p class="act-actor">par {{ entry.actor }}</p>
+              <p class="act-actor">par {{ author(entry.actor, entry.actorName) }}</p>
               @if (entry.reason !== null) {
                 <p class="act-reason">« {{ entry.reason }} »</p>
               }
