@@ -146,6 +146,61 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     expect(line.sentence).not.toContain('auth0');
   });
 
+  it('dit « Le système » quand l’auteur sans nom est le système', () => {
+    // Plan « reprise du journal », D5 : la racine est créée par le système, et
+    // se lisait « Un membre de l’équipe » faute de regarder `actorType`.
+    const line = toLine({
+      ...event('staff_user.created', {
+        person: { firstName: 'Admin', lastName: 'La Folie Coffee' },
+        roleLabel: 'Administrateur',
+      }),
+      actorType: 'system',
+      actorId: null,
+      actorName: null,
+      actorRole: null,
+    });
+
+    expect(line.sentence).toBe('Le système a créé Admin La Folie Coffee, Administrateur');
+  });
+
+  it('dit « Un client » quand l’auteur sans nom est un client', () => {
+    const line = toLine({
+      ...event('staff_user.suspended', { person: CECILE }),
+      actorType: 'customer',
+      actorName: null,
+    });
+
+    expect(line.sentence).toBe('Un client a suspendu l’accès de Cécile Martin');
+  });
+
+  it('marque « (reprise) » une ligne reprise après coup, invitation comprise', () => {
+    const line = toLine({
+      ...event('staff_user.invited', {
+        person: CECILE,
+        kind: 'invitation',
+        backfilled: true,
+        source: 'reprise attestée par Hugo le 2026-09-18',
+      }),
+      actorId: null,
+      actorName: 'Admin La Folie Coffee',
+    });
+
+    expect(line.title).toBe('Invitation');
+    expect(line.sentence).toBe(
+      'Admin La Folie Coffee a invité Cécile Martin à rejoindre le back-office (reprise)',
+    );
+  });
+
+  it('ne marque pas une ligne vécue, ni un `backfilled` qui n’est pas `true`', () => {
+    const lived = toLine(event('staff_user.created', { person: CECILE, roleLabel: 'Commercial' }));
+    const malformed = toLine(
+      event('staff_user.created', { person: CECILE, roleLabel: 'Commercial', backfilled: 'true' }),
+    );
+
+    expect(lived.sentence).toBe('Hugo Heynard a créé Cécile Martin, Commercial');
+    expect(malformed.sentence).not.toContain('(reprise)');
+  });
+
   it('rappelle l’ancien nom quand l’identité a changé de nom', () => {
     const line = toLine(
       event('staff_user.identity_edited', {
