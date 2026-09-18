@@ -21,6 +21,12 @@ taux, une publication et une commande appartiennent à la même histoire.
 Le journal est donc **un**, et « PIM » n'est pas un emplacement mais un
 **filtre**.
 
+> ⚠️ **Précisé le 2026-09-18** : la tarification garde en plus sa propre table,
+> `public.pricing_events`, append-only — mais chaque acte tarifaire y est écrit
+> **et** au journal commun, dans la même transaction. Ce n'est pas une seconde
+> vérité, c'est une preuve de domaine doublée d'une chronique commune. La vue
+> d'ensemble : [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §7.
+
 ```mermaid
 flowchart LR
   subgraph Émetteurs

@@ -66,11 +66,12 @@ seconde question.
 
 ### 3. La promotion du journal en `platform/`
 
-Le port du référentiel (`pim/journal/pim-journal.ts`) est branché par la racine
-sur `ActivityRecorder`, qui vit dans `b2b/growth`. **Seuil déclencheur : le
-troisième bloc émetteur — atteint le 2026-09-18**, quand l'annuaire staff
-(`staff/`) s'est mis à écrire après `b2b/` et `pim/`. La promotion est donc
-due, plus seulement prévue. À deux, un port et un binding de racine coûtent moins
+**Le port est promu depuis le 2026-08-25** (`9785f834`) : `Journal` vit dans
+`platform/journal/`, et les blocs métier n'écrivent plus qu'à lui (vérifié le
+2026-09-18). **Ce qui reste en `b2b/growth`** : l'implémentation
+(`ActivityRecorder`, `PrismaActivityRecorder`, `ActorNamer`), la lecture de
+l'écran, et la table dans le schéma `growth` — que quatre blocs écrivent
+désormais (`b2b/`, `pim/`, `staff/`, la tarification). À deux, un port et un binding de racine coûtaient moins
 qu'un déménagement de quarante-trois fichiers ; à trois, la fiction « la
 croissance possède le journal » ne tient plus — et le schéma Postgres `growth`
 devient un nom trompeur pour une table que tout le monde écrit.

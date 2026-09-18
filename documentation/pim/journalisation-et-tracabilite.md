@@ -1,10 +1,16 @@
 # Journalisation & traçabilité — qui écrit quoi, et ce qui l'y oblige
 
-> **État : ✅ pour le référentiel (PIM).** Le mécanisme (contexte de requête,
-> unité de travail, laissez-passer) vit dans `platform/` et pourra servir
-> ailleurs ; aujourd'hui **seul le PIM s'en sert**. Le B2B garde son journal
-> analytique, best-effort et non bloquant — c'est un arbitrage, pas un oubli
-> (cf. [§ Ce qui n'est PAS journalisé](#ce-qui-nest-pas-journalisé)).
+> **État : ✅ pour le référentiel (PIM).** Ce document décrit la mécanique vue
+> du référentiel, où elle est née.
+>
+> ⚠️ **Mis à jour le 2026-09-18** : ce bandeau disait que « seul le PIM » se
+> servait de l'écriture bloquante. Ce n'est plus vrai — les comptes clients
+> (`publishTraced`), la tarification et l'annuaire staff l'emploient aussi, par
+> le port `Journal` de la plateforme. La vue d'ensemble, tous émetteurs
+> confondus, est dans
+> [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md).
+> La croissance, elle, garde son écriture analytique, best-effort (cf.
+> [§ Ce qui n'est PAS journalisé](#ce-qui-nest-pas-journalisé)).
 
 ---
 
