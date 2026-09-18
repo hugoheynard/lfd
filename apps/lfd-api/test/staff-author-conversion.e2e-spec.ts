@@ -18,6 +18,12 @@
  *
  * Aucune date du calendrier : chaque instant est relatif à maintenant
  * (`daysAgo`).
+ *
+ * ⚠️ Rejouée SANS ses sept instructions sur les anciennes colonnes d'auteur
+ * (`*_by_sub`, `staff_sub`) : l'étape 5C les a supprimées, et la base de test
+ * est migrée jusqu'au bout. Ce qu'elles y avaient converti a été recopié dans
+ * les nouvelles colonnes par 5A, 5B et 5C ; le reste de la conversion — une
+ * cinquantaine de colonnes, les journaux — s'éprouve toujours ici.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -29,7 +35,6 @@ import {
   E2E_STAFF_SUB,
   type E2eContext,
 } from "./e2e-harness.js";
-import { legacyAuthorOf } from "./legacy-author-columns.js";
 
 const MIGRATION = join(
   process.cwd(),
@@ -58,9 +63,28 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
+/** Les anciennes colonnes d'auteur, supprimées par l'étape 5C. */
+const DROPPED_COLUMNS = [
+  "updated_by_sub",
+  "created_by_sub",
+  "kbis_certified_by_sub",
+  "activated_by_sub",
+  "staff_sub",
+] as const;
+
+/** Autant d'instructions de la migration visent une colonne supprimée. */
+const STATEMENTS_ON_DROPPED_COLUMNS = 7;
+
+function targetsDroppedColumn(statement: string): boolean {
+  return DROPPED_COLUMNS.some((column) => statement.includes(`"${column}"`));
+}
+
 /**
  * Les instructions de la migration, dans l'ordre : commentaires `--` retirés,
- * découpées sur le `;` de fin de ligne. On éprouve CE SQL-là, pas une copie.
+ * découpées sur le `;` de fin de ligne. On éprouve CE SQL-là, pas une copie —
+ * moins les instructions sur les colonnes que 5C a supprimées, et exactement
+ * elles : un compte qui bouge fait échouer la suite plutôt que d'en retirer
+ * davantage.
  */
 function migrationStatements(): readonly string[] {
   const code = readFileSync(MIGRATION, "utf8")
@@ -74,7 +98,13 @@ function migrationStatements(): readonly string[] {
   if (statements.length === 0 || !statements.every((s) => /^(INSERT|UPDATE)\b/.test(s))) {
     throw new Error("Découpage de la migration de conversion inattendu : relire le fichier.");
   }
-  return statements;
+  const kept = statements.filter((statement) => !targetsDroppedColumn(statement));
+  if (statements.length - kept.length !== STATEMENTS_ON_DROPPED_COLUMNS) {
+    throw new Error(
+      `La conversion ne porte plus ${String(STATEMENTS_ON_DROPPED_COLUMNS)} instructions sur les colonnes supprimées : relire le fichier.`,
+    );
+  }
+  return kept;
 }
 
 /** Joue la migration entière dans UNE transaction, comme `migrate deploy`. */
@@ -188,13 +218,7 @@ describe("la conversion — un `sub` connu devient l'id de sa fiche", () => {
     ).toMatchObject({ staffUserId: E2E_STAFF_ID, source: "current" });
   });
 
-  it("une colonne `*_by_sub`, le journal, les deux clés de charge utile, le journal tarifaire", async () => {
-    // En SQL : depuis l'étape 5B, Prisma ne connaît plus `updated_by_sub`, la
-    // colonne que CETTE migration convertit.
-    await ctx.prisma.$executeRaw`
-      INSERT INTO "public"."feature_access_overrides"
-        ("key", "value", "updated_at", "updated_by_sub", "updated_by_name", "updated_by_role")
-      VALUES ('shop', 'order', ${new Date(daysAgo(6))}, ${E2E_STAFF_SUB}, 'Opérateur E2E', 'Administrateur')`;
+  it("le journal, les deux clés de charge utile, le journal tarifaire", async () => {
     await seedFact({
       id: "f-ready",
       type: "order.ready",
@@ -213,16 +237,6 @@ describe("la conversion — un `sub` connu devient l'id de sa fiche", () => {
 
     await runConversion();
 
-    const override = await ctx.prisma.featureAccessOverride.findUniqueOrThrow({
-      where: { key: "shop" },
-    });
-    expect(
-      await legacyAuthorOf(ctx.prisma, "feature_access_overrides.updated_by_sub", "shop"),
-    ).toBe(E2E_STAFF_ID);
-    expect(override).toMatchObject({
-      updatedByName: "Opérateur E2E",
-      updatedByRole: "Administrateur",
-    });
     expect(await fact("f-ready")).toMatchObject({
       actorId: E2E_STAFF_ID,
       actorName: "Nom figé",

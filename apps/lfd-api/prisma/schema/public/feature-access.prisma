@@ -31,13 +31,9 @@ model FeatureAccessOverride {
   /// de fiche depuis le 2026-09-18 ; les lignes plus anciennes portaient un
   /// `sub`, converti par la migration
   /// `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
-  /// la table des `sub` ne connaît pas.
-  ///
-  /// NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
-  /// aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
-  /// supprime aussi `updated_by_sub` — l'ancien nom, que plus rien ne lit ni
-  /// n'écrit depuis 5B.
-  updatedByStaffId String?  @map("updated_by_staff_id")
+  /// la table des `sub` ne connaît pas. La colonne s'appelait `updated_by_sub`
+  /// jusqu'au renommage du plan de l'auteur (étape 5).
+  updatedByStaffId String   @map("updated_by_staff_id")
   updatedByName    String   @map("updated_by_name")
   updatedByRole    String   @map("updated_by_role")
 
@@ -59,13 +55,9 @@ model FeatureAccessExemption {
   /// L'id de fiche de l'auteur depuis le 2026-09-18 ; les lignes plus
   /// anciennes portaient un `sub`, converti par la migration
   /// `20260918190000_conversion_des_auteurs_staff` ; seul y reste un `sub` que
-  /// la table des `sub` ne connaît pas.
-  ///
-  /// NULLABLE le temps de la bascule seulement (plan de l'auteur, étape 5B) :
-  /// aucune ligne n'y est vide, et la colonne devient NOT NULL en 5C, qui
-  /// supprime aussi `created_by_sub` — l'ancien nom, que plus rien ne lit ni
-  /// n'écrit depuis 5B.
-  createdByStaffId String?  @map("created_by_staff_id")
+  /// la table des `sub` ne connaît pas. La colonne s'appelait `created_by_sub`
+  /// jusqu'au renommage du plan de l'auteur (étape 5).
+  createdByStaffId String   @map("created_by_staff_id")
   createdByName    String   @map("created_by_name")
   createdByRole    String   @map("created_by_role")
 

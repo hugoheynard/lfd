@@ -163,10 +163,8 @@ model Company {
   // d'audit : « qui a engagé sa parole, à quel titre, à cette date » — pas « qui
   // porte ce rôle aujourd'hui ». Vides quand l'auteur n'est rattaché à aucune
   // fiche de l'annuaire staff : on n'invente pas un nom.
-  //
-  // La colonne `kbis_certified_by_sub`, qui portait la même valeur sous un nom
-  // qui mentait, reste en base jusqu'à l'étape 5C du plan de l'auteur ; plus
-  // rien ne la lit ni ne l'écrit depuis 5B.
+  // La colonne s'appelait `kbis_certified_by_sub` jusqu'au renommage du plan de
+  // l'auteur (étape 5).
   kbisCertifiedByStaffId String? @map("kbis_certified_by_staff_id")
   kbisCertifiedByName    String? @map("kbis_certified_by_name")
   kbisCertifiedByRole    String? @map("kbis_certified_by_role")
@@ -211,10 +209,8 @@ model Company {
   // inconnu de la table des `sub`) survit aux changements de nom ; le nom et
   // le périmètre sont un instantané de ce qui était vrai ce jour-là. Nuls pour
   // les comptes activés avant cette trace, et pour un auteur hors annuaire staff.
-  //
-  // La colonne `activated_by_sub`, qui portait la même valeur sous un nom qui
-  // mentait, reste en base jusqu'à l'étape 5C du plan de l'auteur ; plus rien
-  // ne la lit ni ne l'écrit depuis 5B.
+  // La colonne s'appelait `activated_by_sub` jusqu'au renommage du plan de
+  // l'auteur (étape 5).
   activatedByStaffId String? @map("activated_by_staff_id")
   activatedByName    String? @map("activated_by_name")
   activatedByRole    String? @map("activated_by_role")

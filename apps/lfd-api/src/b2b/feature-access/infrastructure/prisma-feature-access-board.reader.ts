@@ -48,18 +48,13 @@ export class PrismaFeatureAccessBoardReader extends FeatureAccessBoardReader {
       this.prisma.featureAccessExemption.findMany({ orderBy: [{ key: "asc" }, { email: "asc" }] }),
     ]);
     const accounts = await this.accountsFor(exemptions.map((exemption) => exemption.email));
-    // Les colonnes d'auteur sont nullables jusqu'à l'étape 5C du plan de
-    // l'auteur, mais aucune ligne n'y est vide : 5A et 5B les ont recopiées
-    // depuis les `*_by_sub`, qui étaient NOT NULL, et tout ce qui s'écrit depuis
-    // les remplit. Le repli ne sert que le type (vérifié le
-    // 2026-09-18) ; il part avec le NOT NULL.
     return {
       overrides: overrides.map((row) => ({
         key: row.key,
         value: row.value,
         updatedAt: row.updatedAt,
         updatedBy: {
-          staffUserId: row.updatedByStaffId ?? "",
+          staffUserId: row.updatedByStaffId,
           name: row.updatedByName,
           role: row.updatedByRole,
         },
@@ -70,7 +65,7 @@ export class PrismaFeatureAccessBoardReader extends FeatureAccessBoardReader {
         email: row.email,
         createdAt: row.createdAt,
         createdBy: {
-          staffUserId: row.createdByStaffId ?? "",
+          staffUserId: row.createdByStaffId,
           name: row.createdByName,
           role: row.createdByRole,
         },

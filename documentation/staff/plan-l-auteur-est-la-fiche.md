@@ -7,9 +7,11 @@
 >
 > Remplace [`journalisation-staff/todo-le-sub-comme-auteur.md`](journalisation-staff/todo-le-sub-comme-auteur.md).
 > État : 🚧 **en construction** depuis le 2026-09-18 (« go tout le plan »).
-> Étapes 0, 1 et 3 **déployées** le même jour (`58b9c80e`) ; l'étape 4
-> (`20260918190000_conversion_des_auteurs_staff`) part dans le déploiement
-> suivant ; l'étape 5 (renommer les `*_by_sub`, resserrer les contrats) reste. **Deuxième version**, réécrite après une
+> Étapes 0, 1 et 3 **déployées** le même jour (`58b9c80e`), puis l'étape 4
+> (`20260918190000_conversion_des_auteurs_staff`) dans le déploiement suivant.
+> Étape 5 : **5A et 5B déployées** le 2026-09-18 (`0c08da82`, `c506f655`) ;
+> **5C bâtie** (`20260918220000_resserrement_des_colonnes_d_auteur`), à
+> déployer après 5B. **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§9) qui a trouvé une empreinte que la conversion
 > casserait, et un inventaire trop court.
 
@@ -238,6 +240,15 @@ touche pas, et les lecteurs de nom les affichent comme aujourd'hui.
      `NOT NULL` là où l'ancienne l'était, l'ancienne est supprimée. Le code
      n'y lit plus rien depuis 5B : l'instance qui répond pendant le déploiement
      ne la voit pas disparaître.
+
+   **État (2026-09-18)** : 5A (`0c08da82`) et 5B (`c506f655`) déployées ; 5C
+   bâtie — `20260918220000_resserrement_des_colonnes_d_auteur`. `NOT NULL` sur
+   les cinq colonnes dont l'ancienne l'était à sa création
+   (`feature_access_overrides`, `feature_access_exemptions`,
+   `delivery_settings`, `client_notes`, `staff_push_subscriptions`) ; les deux
+   de `companies` restent nullables, comme leurs anciennes. Le retour arrière
+   vers un code qui lirait les anciennes colonnes est une migration additive
+   qui les recrée et les remplit depuis les nouvelles.
 
 **Allers simples, à savoir avant de commencer** : la conversion (4) ne se
 défait que par la table D5 ; la conversion de `ProductReadiness.readyBy`
