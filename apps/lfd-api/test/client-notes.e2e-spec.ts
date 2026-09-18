@@ -27,7 +27,7 @@ import {
   tokenIsSubject,
 } from "./client-notes-scene.js";
 import { photoOf, refusalOf } from "./delivery-procedure-scene.js";
-import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 let ctx: E2eContext;
@@ -69,6 +69,14 @@ describe("le carnet, de bout en bout", () => {
     });
     expect(view.notes[0]?.photoRevision).toBeNull();
     expect(Number.isNaN(Date.parse(view.notes[1]?.createdAt ?? ""))).toBe(false);
+    // L'id de fiche dans les DEUX colonnes, le temps de la bascule (plan de
+    // l'auteur, étape 5A).
+    await expect(
+      ctx.prisma.clientNote.findUniqueOrThrow({
+        where: { id: first },
+        select: { createdBySub: true, createdByStaffId: true },
+      }),
+    ).resolves.toEqual({ createdBySub: E2E_STAFF_ID, createdByStaffId: E2E_STAFF_ID });
 
     const revision = view.notes[1]?.photoRevision ?? "";
     expect(revision).not.toBe("");

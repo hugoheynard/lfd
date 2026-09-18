@@ -56,7 +56,7 @@ const COMPLETE: Partial<AdminCompanyDetailView> = {
     uploadedAt: "2026-08-01T10:00:00.000Z",
     certified: true,
     certifiedAt: "2026-08-02T10:00:00.000Z",
-    certifiedBy: { sub: "auth0|s", name: "Camille", role: "commercial" },
+    certifiedBy: { name: "Camille", role: "commercial" },
   },
   addresses: {
     billing: {

@@ -164,9 +164,14 @@ model Company {
   // d'audit : « qui a engagé sa parole, à quel titre, à cette date » — pas « qui
   // porte ce rôle aujourd'hui ». Vides quand l'auteur n'est rattaché à aucune
   // fiche de l'annuaire staff : on n'invente pas un nom.
-  kbisCertifiedBySub  String? @map("kbis_certified_by_sub")
-  kbisCertifiedByName String? @map("kbis_certified_by_name")
-  kbisCertifiedByRole String? @map("kbis_certified_by_role")
+  kbisCertifiedBySub     String? @map("kbis_certified_by_sub")
+  // La même valeur, sous le nom de ce qu'elle contient (plan de
+  // l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
+  // lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
+  // lectures ici.
+  kbisCertifiedByStaffId String? @map("kbis_certified_by_staff_id")
+  kbisCertifiedByName    String? @map("kbis_certified_by_name")
+  kbisCertifiedByRole    String? @map("kbis_certified_by_role")
 
   // Préférence d'ACHEMINEMENT : comment ce client est servi d'habitude. Ce n'est
   // pas une contrainte — la commande s'ouvre dessus, le client peut en changer
@@ -210,9 +215,14 @@ model Company {
   // changements de nom ; le nom et
   // le périmètre sont un instantané de ce qui était vrai ce jour-là. Nuls pour
   // les comptes activés avant cette trace, et pour un auteur hors annuaire staff.
-  activatedBySub  String? @map("activated_by_sub")
-  activatedByName String? @map("activated_by_name")
-  activatedByRole String? @map("activated_by_role")
+  activatedBySub     String? @map("activated_by_sub")
+  // La même valeur, sous le nom de ce qu'elle contient (plan de
+  // l'auteur, étape 5A) : écrite avec la colonne d'à côté, pas encore
+  // lue. L'ancienne disparaîtra en 5C, après que 5B aura basculé les
+  // lectures ici.
+  activatedByStaffId String? @map("activated_by_staff_id")
+  activatedByName    String? @map("activated_by_name")
+  activatedByRole    String? @map("activated_by_role")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

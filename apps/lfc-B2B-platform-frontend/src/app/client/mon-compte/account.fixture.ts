@@ -67,7 +67,6 @@ export function asRole(role: CompanyMemberRole, company: CompanyView = TOMMEUSES
 /** La personne connectée : le détenteur de TOMMEUSES, sous son profil à elle. */
 export const PROFILE: ProfileView = {
   userId: 'usr_1',
-  subject: 'auth0|hugo',
   firstName: 'Hugo',
   lastName: 'Heynard',
   email: 'hheynard@gmail.com',

@@ -42,13 +42,10 @@ export interface CatalogRevisionSummaryView {
   readonly hash: string;
   readonly takenAt: string;
   /**
-   * L'auteur tel qu'écrit : un `sub` Auth0, un id de fiche staff, ou un
-   * marqueur (`system`, `seed-pim`).
-   *
-   * @deprecated depuis le 2026-09-18 — afficher {@link takenByName}. Servi
-   *   encore pendant la bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `takenByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly takenBy: string;
   /**

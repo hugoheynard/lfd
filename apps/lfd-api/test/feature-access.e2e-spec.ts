@@ -103,13 +103,21 @@ describe("la dérogation — posée, puis retirée", () => {
     const posed = await board();
     expect(posed.features[0]).toMatchObject({
       effectiveLevel: "browse",
-      override: {
-        value: "browse",
-        // Le champ de contrat `sub` porte l'id de fiche jusqu'à son renommage
-        // (plan de l'auteur, D8, étape 5).
-        updatedBy: { sub: E2E_STAFF_ID, name: "Opérateur E2E", role: "admin" },
-      },
+      override: { value: "browse" },
     });
+    // Un nom et un rôle, plus d'identifiant : le champ `sub` n'est plus servi
+    // (plan de l'auteur, étape 5A).
+    expect(posed.features[0]?.override?.updatedBy).toEqual({
+      name: "Opérateur E2E",
+      role: "admin",
+    });
+    // L'id de fiche dans les DEUX colonnes, le temps de la bascule (étape 5A).
+    await expect(
+      ctx.prisma.featureAccessOverride.findUniqueOrThrow({
+        where: { key: "shop" },
+        select: { updatedBySub: true, updatedByStaffId: true },
+      }),
+    ).resolves.toEqual({ updatedBySub: E2E_STAFF_ID, updatedByStaffId: E2E_STAFF_ID });
     await expect(publicLevels()).resolves.toEqual({ shop: "browse", ...OTHER_DEFAULTS });
 
     await admin().delete("/admin/feature-access/shop").expect(204);
@@ -179,6 +187,13 @@ describe("la liste d'exemption", () => {
     expect((await board()).features[0]?.exemptions).toEqual([
       expect.objectContaining({ id: first.id, email: TESTER_EMAIL, accountState: "none" }),
     ]);
+    // L'id de fiche dans les DEUX colonnes, le temps de la bascule (étape 5A).
+    await expect(
+      ctx.prisma.featureAccessExemption.findUniqueOrThrow({
+        where: { id: first.id },
+        select: { createdBySub: true, createdByStaffId: true },
+      }),
+    ).resolves.toEqual({ createdBySub: E2E_STAFF_ID, createdByStaffId: E2E_STAFF_ID });
 
     await admin().delete(`/admin/feature-access/shop/exemptions/${first.id}`).expect(204);
 

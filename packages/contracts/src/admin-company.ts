@@ -160,21 +160,11 @@ export interface AdminKbisView extends KbisView {
 /**
  * L'agent qui a engagé sa parole — sur un extrait vérifié comme sur un compte
  * ouvert. `name` et `role` peuvent être **vides** quand l'auteur n'était
- * rattaché à aucune fiche de l'annuaire : on n'invente pas de nom.
+ * rattaché à aucune fiche de l'annuaire : on n'invente pas de nom. Le champ
+ * `sub` qu'elle portait n'était lu par aucun écran (vérifié le 2026-09-18) ;
+ * retiré à l'étape 5A du plan `documentation/staff/plan-l-auteur-est-la-fiche.md`.
  */
 export interface StaffActorView {
-  /**
-   * L'identifiant de l'agent tel qu'écrit : l'id de sa fiche d'annuaire pour
-   * les gestes posés depuis le 2026-09-18, un `sub` Auth0 avant (jusqu'à la
-   * conversion, étape 4 du plan). Le nom du champ ment donc sur sa valeur, le
-   * temps d'un déploiement : un contrat servi ne se renomme pas dans le même
-   * passage.
-   *
-   * @deprecated depuis le 2026-09-18 — afficher `name`, figé au geste. Le
-   *   champ sera renommé au resserrement des contrats (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D8, étape 5).
-   */
-  readonly sub: string;
   readonly name: string;
   readonly role: string;
 }

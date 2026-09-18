@@ -51,20 +51,13 @@ export type FeatureExemptionPayload = z.infer<typeof featureExemptionPayloadSche
 /** `GET /feature-access` — les niveaux GLOBAUX, sans exemption. Public. */
 export type FeatureLevelsView = { readonly [Key in FeatureKey]: FeatureLevel<Key> };
 
-/** Qui a posé un écart, figé à l'instant du geste. */
+/**
+ * Qui a posé un écart, figé à l'instant du geste : un nom et un rôle, pas un
+ * identifiant. Le champ `sub` qu'elle portait n'était lu par aucun écran
+ * (vérifié le 2026-09-18) ; il est retiré à l'étape 5A du plan
+ * `documentation/staff/plan-l-auteur-est-la-fiche.md`.
+ */
 export interface FeatureAccessAuthorView {
-  /**
-   * L'identifiant de l'auteur tel qu'écrit : l'id de sa fiche d'annuaire pour
-   * les gestes posés depuis le 2026-09-18, un `sub` Auth0 avant (jusqu'à la
-   * conversion, étape 4 du plan). Le nom du champ ment donc sur sa valeur, et
-   * c'est assumé le temps d'un déploiement : un contrat servi ne se renomme pas
-   * dans le même passage.
-   *
-   * @deprecated depuis le 2026-09-18 — afficher `name`, figé au geste. Le
-   *   champ sera renommé au resserrement des contrats (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D8, étape 5).
-   */
-  readonly sub: string;
   /** Vide quand l'annuaire ne connaissait pas l'auteur ce jour-là. */
   readonly name: string;
   readonly role: string;

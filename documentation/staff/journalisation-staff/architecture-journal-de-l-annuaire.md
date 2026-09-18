@@ -39,20 +39,20 @@ Les types vivent dans `staff/directory/domain/staff-facts.ts` (`STAFF_FACTS`) et
 Ils se rangent dans le module **« Équipe »** du journal, par leurs préfixes
 `staff_user.` et `staff_role.` (`b2b/growth/domain/activity-module.ts`).
 
-| Type                                | Le geste                                                   | Sujet              |
-| ----------------------------------- | ---------------------------------------------------------- | ------------------ |
-| `staff_user.created`                | une fiche est créée                                        | `staff_user` / id  |
-| `staff_user.invited`                | un lien d'accès part — invitation, ou nouveau mot de passe | `staff_user` / id  |
-| `staff_user.password_link_issued`   | un lien est fabriqué pour être remis à la main             | `staff_user` / id  |
-| `staff_user.identity_edited`        | nom, prénom, e-mail, téléphone ou fonction changent        | `staff_user` / id  |
-| `staff_user.role_changed`           | le rôle change                                             | `staff_user` / id  |
-| `staff_user.overrides_changed`      | les droits individuels changent                            | `staff_user` / id  |
-| `staff_user.suspended`              | l'accès est suspendu                                       | `staff_user` / id  |
-| `staff_user.reinstated`             | l'accès est rétabli                                        | `staff_user` / id  |
-| `staff_user.deleted`                | la fiche est supprimée                                     | `staff_user` / id  |
-| `staff_role.created`                | un rôle est créé à l'écran                                 | `staff_role` / clé |
-| `staff_role.updated`                | ses droits ou son libellé changent                         | `staff_role` / clé |
-| `staff_role.archived` / `.restored` | il est archivé, ou restauré                                | `staff_role` / clé |
+| Type                                | Le geste                                                                                                                        | Sujet              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `staff_user.created`                | une fiche est créée                                                                                                             | `staff_user` / id  |
+| `staff_user.invited`                | un lien d'accès part — invitation, ou nouveau mot de passe                                                                      | `staff_user` / id  |
+| `staff_user.password_link_issued`   | un lien est fabriqué pour être remis à la main                                                                                  | `staff_user` / id  |
+| `staff_user.identity_edited`        | nom, prénom, e-mail, téléphone ou fonction changent                                                                             | `staff_user` / id  |
+| `staff_user.role_changed`           | le rôle change                                                                                                                  | `staff_user` / id  |
+| `staff_user.overrides_changed`      | les droits individuels changent                                                                                                 | `staff_user` / id  |
+| `staff_user.suspended`              | l'accès est suspendu                                                                                                            | `staff_user` / id  |
+| `staff_user.reinstated`             | l'accès est rétabli                                                                                                             | `staff_user` / id  |
+| `staff_user.deleted`                | la fiche est supprimée — **plus écrit depuis le 2026-09-18** : la suppression n'existe plus ; les faits passés restent lisibles | `staff_user` / id  |
+| `staff_role.created`                | un rôle est créé à l'écran                                                                                                      | `staff_role` / clé |
+| `staff_role.updated`                | ses droits ou son libellé changent                                                                                              | `staff_role` / clé |
+| `staff_role.archived` / `.restored` | il est archivé, ou restauré                                                                                                     | `staff_role` / clé |
 
 **Un fait par changement réel.** Une édition de fiche qui ne change rien n'écrit
 rien ; une édition qui change l'identité, le rôle et les dérogations en écrit
@@ -105,7 +105,7 @@ Ce que ce placement garantit, geste par geste :
 | Invitation, renvoi         | `markInvited` + `invited`       | l'e-mail                         | **aucun e-mail ne part** ; un nouvel essai frappe un lien neuf |
 | Édition                    | l'écriture locale + ses faits   | propagation de l'adresse à Auth0 | rien n'est modifié                                             |
 | Suspension, rétablissement | le changement d'état + son fait | l'e-mail à la personne           | la porte ne bouge pas                                          |
-| Suppression                | la suppression + `deleted`      | —                                | la fiche reste                                                 |
+| ~~Suppression~~            | retirée le 2026-09-18 (`409`)   | —                                | —                                                              |
 
 - **Le cache d'accès se vide après le commit**, jamais dedans : vidé avant, une
   requête concurrente le remplirait avec l'état d'avant, et une suspension
@@ -164,11 +164,14 @@ défensivement (`admin/journal/staff-line.ts`). Ce tableau est le seul contrat
 - **Dans le journal**, l'auteur est l'acteur du contexte de requête : son nom et
   sa fonction sont **figés à l'écriture** (`actor_name`, `actor_role`, par
   `PrismaActorNamer`) — le journal dit qui a agi ce jour-là et à quel titre.
-  `actor_id` porte encore le `sub` Auth0 pour un acte staff : c'est le chantier
-  ouvert au §9.
+  `actor_id` est **l'id de la fiche** de l'auteur, posé par `StaffAccessGuard`
+  depuis le 2026-09-18 ; les faits antérieurs, écrits sous un `sub`, ont été
+  traduits par `20260918190000_conversion_des_auteurs_staff` (plan
+  [`../plan-l-auteur-est-la-fiche.md`](../plan-l-auteur-est-la-fiche.md)).
+  Le filtre par acteur suit une personne sous tous ses identifiants.
 - **Sur un droit individuel**, l'auteur est `granted_by_staff_id` — l'id de la
-  **fiche** de l'auteur, lu par `@StaffUserId()`, **sans clé étrangère** (une
-  fiche se supprime, sa trace doit survivre), comme `grantedByStaffId` des
+  **fiche** de l'auteur, lu par `@StaffUserId()`, **sans clé étrangère** (la
+  trace ne dépend pas de la fiche ; une fiche ne se supprime d'ailleurs plus), comme `grantedByStaffId` des
   dérogations d'heure limite. L'ancienne colonne `granted_by`, qui stockait le
   `sub`, est supprimée (`20260918140000_retrait_du_sub_des_derogations`).
 - **Les droits individuels d'avant le 2026-09-18** ont reçu la fiche de leur
@@ -289,6 +292,9 @@ le commit ; la porte `journal-tracked` couvre `staff/`.
 - **L'avant/après, la recherche et la reprise de l'histoire** sont partis
   ensemble le 2026-09-18 (fusion `68a54034`) — la reprise :
   [`plan-reprise-du-journal-de-l-annuaire.md`](plan-reprise-du-journal-de-l-annuaire.md).
+- **L'auteur est la fiche, plus le `sub`** — journal et colonnes d'auteur,
+  déployé le 2026-09-18 (fusions `58b9c80e` et `bd11ff78`) :
+  [`../plan-l-auteur-est-la-fiche.md`](../plan-l-auteur-est-la-fiche.md).
 - **Le départ d'un membre et les adresses de fonction** sont en plan :
   [`../plan-depart-et-adresses-de-fonction.md`](../plan-depart-et-adresses-de-fonction.md).
 
@@ -315,7 +321,5 @@ le commit ; la porte `journal-tracked` couvre `staff/`.
 
 ### Ouvert en TODO
 
-- [`todo-le-sub-comme-auteur.md`](todo-le-sub-comme-auteur.md) — le `sub` Auth0
-  sert encore d'auteur dans le journal (`actor_id`) et dans d'autres colonnes.
 - [`../../todos/todo-doublon-du-journal-dans-une-transaction.md`](../../todos/todo-doublon-du-journal-dans-une-transaction.md)
   — un fait rejoué dans une transaction la ferait échouer au lieu d'être ignoré.

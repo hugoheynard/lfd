@@ -26,7 +26,7 @@ import { FeatureAccessService } from '../feature-access.service';
  *   geste refusé.
  */
 
-const AUTHOR = { sub: 'auth0|admin', name: 'Hugo Heynard', role: 'admin' };
+const AUTHOR = { name: 'Hugo Heynard', role: 'admin' };
 
 function exemption(over: Partial<FeatureExemptionView> = {}): FeatureExemptionView {
   return {

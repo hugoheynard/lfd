@@ -132,11 +132,10 @@ export interface PackingSheet {
   /** `null` = le bac n'est pas fermé. */
   readonly packedAt: string | null;
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `packedByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `packedByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly packedBy: string | null;
   /**

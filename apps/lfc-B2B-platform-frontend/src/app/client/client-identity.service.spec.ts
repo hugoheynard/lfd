@@ -5,7 +5,6 @@ import { ClientIdentity } from './client-identity.service';
 
 const PROFILE: UserProfile = {
   userId: 'usr_1',
-  subject: 'auth0|1',
   firstName: 'Camille',
   lastName: 'Vallet',
   email: 'camille@chalet-barmettes.fr',

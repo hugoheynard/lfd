@@ -285,11 +285,10 @@ export interface PriceRuleView {
   readonly validFrom: string;
   readonly validTo: string | null;
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `createdByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly createdBy: string;
   /**
@@ -310,11 +309,10 @@ export interface PriceRuleView {
   /** Quand, et par qui, elle a été suspendue. `null` = elle ne l'est pas. */
   readonly pausedAt: string | null;
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `pausedByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `pausedByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly pausedBy: string | null;
   /**
@@ -326,11 +324,10 @@ export interface PriceRuleView {
   /** Quand, par qui, et pourquoi elle a été archivée. */
   readonly archivedAt: string | null;
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `archivedByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `archivedByName` et ne lit ce
+   * champ que quand le nom manque.
    */
   readonly archivedBy: string | null;
   /**
@@ -449,11 +446,10 @@ export interface PricingJournalEntryView {
   /**
    * L'id de fiche du membre du staff (un `sub` avant le 2026-09-18), ou `system`.
    *
-   * @deprecated depuis le 2026-09-18 — afficher `actorName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `actorName` et ne lit ce champ que
+   * quand le nom manque.
    */
   readonly actor: string;
   /**
@@ -505,11 +501,10 @@ export interface PriceFloorView {
   /** L'intention a-t-elle vieilli ? Cf. {@link FloorDriftView}. */
   readonly drift: FloorDriftView | null;
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `createdByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly createdBy: string;
   /**
@@ -1323,11 +1318,10 @@ export interface VolumeCommitmentView {
   readonly validFrom: string;
   readonly validTo: string;
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `createdByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly createdBy: string;
   /**
@@ -1339,11 +1333,10 @@ export interface VolumeCommitmentView {
   readonly createdAt: string;
   readonly archivedAt: string | null;
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `archivedByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `archivedByName` et ne lit ce
+   * champ que quand le nom manque.
    */
   readonly archivedBy: string | null;
   /**
@@ -1508,11 +1501,10 @@ export interface PriceTemplateView {
   readonly label: string;
   readonly lines: readonly PriceTemplateLineView[];
   /**
-   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `createdByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly createdBy: string;
   /**
@@ -1668,17 +1660,16 @@ export interface PosedMercurialeView {
   /** Sur combien d'articles distincts elle porte. */
   readonly skuCount: number;
   /**
-   * **Qui l'a établie** — le `sub` du membre du staff qui l'a posée.
+   * **Qui l'a établie** — le membre du staff qui l'a posée.
    *
    * Sur un tarif négocié, la question posée six mois plus tard est toujours
    * « qui a accordé ça ». La réponse vit déjà sur chaque règle ; elle remonte
    * ici pour être lisible sans ouvrir le journal.
    *
-   * @deprecated depuis le 2026-09-18 — afficher `createdByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `createdByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly createdBy: string;
   /**
@@ -1862,11 +1853,10 @@ export interface MercurialeDraftView extends SaveMercurialeDraftPayload {
   /**
    * Qui l'a touché en dernier — une négociation se reprend souvent à deux.
    *
-   * @deprecated depuis le 2026-09-18 — afficher `updatedByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `updatedByName` et ne lit ce champ
+   * que quand le nom manque.
    */
   readonly updatedBy: string;
   /**

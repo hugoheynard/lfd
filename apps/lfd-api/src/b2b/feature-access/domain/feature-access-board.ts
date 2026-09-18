@@ -73,12 +73,9 @@ function featureView(key: FeatureKey, stored: StoredFeatureAccess): AdminFeature
   };
 }
 
-/**
- * Le champ de contrat s'appelle encore `sub` : il porte l'id de fiche depuis le
- * 2026-09-18, et se renomme au resserrement des contrats (plan de l'auteur, D8).
- */
+/** L'auteur tel que l'écran le montre : un nom et un rôle, pas un identifiant. */
 function authorView(trace: StaffTrace): FeatureAccessAuthorView {
-  return { sub: trace.staffUserId, name: trace.name, role: trace.role };
+  return { name: trace.name, role: trace.role };
 }
 
 function ignoredOverride(row: StoredOverrideRow): readonly IgnoredFeatureRowView[] {

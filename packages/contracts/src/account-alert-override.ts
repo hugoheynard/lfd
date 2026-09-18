@@ -49,13 +49,12 @@ export interface AccountAlertRuleView {
   /** Dernière écriture de la **dérogation** (ISO), ou `null` s'il n'y en a pas. */
   readonly overrideUpdatedAt: string | null;
   /**
-   * Qui a posé cette dérogation (`sub` staff), ou `null`.
+   * Qui a posé cette dérogation, ou `null`.
    *
-   * @deprecated depuis le 2026-09-18 — afficher `overrideUpdatedByName`.
-   *   L'identifiant brut (`sub` Auth0 ou id de fiche) reste servi pendant la
-   *   bascule vers l'id de fiche (plan
-   *   `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 ; retiré à
-   *   l'étape 5).
+   * L'id de la fiche staff de l'auteur, ou une valeur qui ne désigne personne —
+   * un marqueur (`system`, `seed-pim`…) ou un `sub` que la conversion n'a
+   * rattaché à aucune fiche. L'écran affiche `overrideUpdatedByName` et ne lit
+   * ce champ que quand le nom manque.
    */
   readonly overrideUpdatedBy: string | null;
   /**
