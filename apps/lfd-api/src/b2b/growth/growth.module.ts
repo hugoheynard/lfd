@@ -87,6 +87,8 @@ import { ActivityJournalReader } from "./domain/ports/activity-journal.reader.js
 import { PrismaActivityJournalReader } from "./infrastructure/prisma-activity-journal.reader.js";
 import { AdminActivityController } from "./http/admin-activity.controller.js";
 import { ReadActivityJournalHandler } from "./application/queries/read-activity-journal.handler.js";
+import { AdminTaxActivityController } from "./http/admin-tax-activity.controller.js";
+import { ReadTaxActivityJournalHandler } from "./application/queries/read-tax-activity-journal.handler.js";
 import { ActorNamer } from "./domain/ports/actor-namer.js";
 import { PrismaAppointmentReader } from "./infrastructure/prisma-appointment.reader.js";
 import { PrismaAppointmentRepository } from "./infrastructure/prisma-appointment.repository.js";
@@ -133,6 +135,9 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     // sa surface de lecture aussi, tant que le journal n'a pas été promu en
     // `platform/` (cf. `pim/journal/pim-journal.ts`).
     AdminActivityController,
+    // Sa tranche fiscale, sous `pim_tax:write` : la comptabilité relit ce
+    // qu'elle écrit sans recevoir le journal entier (lot 4, 2026-09-19).
+    AdminTaxActivityController,
   ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
@@ -140,6 +145,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     { provide: CompanyNamer, useClass: PrismaCompanyNamer },
     { provide: ActivityJournalReader, useClass: PrismaActivityJournalReader },
     ReadActivityJournalHandler,
+    ReadTaxActivityJournalHandler,
     { provide: ProspectReader, useClass: PrismaProspectReader },
     { provide: ActivationReader, useClass: PrismaActivationReader },
     { provide: LeadEventSource, useClass: PrismaLeadEventSource },

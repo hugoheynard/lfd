@@ -36,57 +36,83 @@ export type ActivityModule = z.infer<typeof activityModuleSchema>;
  * schéma les convertit, et c'est lui qui décide qu'une limite de 500 est un
  * refus plutôt qu'une page géante.
  */
-export const activityQuerySchema = z
-  .object({
-    /** Module émetteur (`pim`, `commercial`…). */
-    module: activityModuleSchema.optional(),
-    /** Type exact (`tax_regime.rate_changed`) — le filtre le plus précis. */
-    type: z.string().min(1).optional(),
-    /** Ce dont on veut l'histoire : un régime, un produit, une société… */
-    subjectType: z.string().min(1).optional(),
-    subjectId: z.string().min(1).optional(),
-    /** Qui a agi — l'id de fiche staff (ou l'un de ses anciens `sub`) ou l'id client. */
-    actorId: z.string().min(1).optional(),
-    /** Bornes de temps, en ISO. `since` incluse, `until` exclue. */
-    since: z.string().datetime().optional(),
-    until: z.string().datetime().optional(),
-    /**
-     * Recherche libre (2026-09-18) : un nom, un prénom, un morceau de numéro, un
-     * identifiant. Retient le fait dont le nom figé de l'auteur OU la charge
-     * utile contient le texte (casse ignorée), ou dont le sujet EST ce texte.
-     * Les accents comptent : « cecile » ne trouve pas « Cécile ».
-     *
-     * Deux caractères au moins : un seul ramènerait presque tout le journal.
-     */
-    q: z.string().trim().min(2).max(100).optional(),
-    /**
-     * Pagination par curseur : l'`id` ULID de la dernière ligne rendue.
-     *
-     * Servi pour le front en ligne, qui le lit encore ; les pages numérotées
-     * (`page`) sont l'autre façon de lire, et les deux ne se combinent pas.
-     */
-    before: z.string().min(1).optional(),
-    /**
-     * Pagination NUMÉROTÉE (2026-09-19), à partir de 1 — pour un paginateur qui
-     * saute à la page 3 et annonce un total. `limit` en est la taille.
-     */
-    page: z.coerce.number().int().min(1).optional(),
-    /**
-     * L'**ancre** de l'instantané parcouru : l'`id` du fait le plus récent que la
-     * première page a vu, rendu par elle dans `asOf`. Sans elle, un numéro de
-     * page glisse d'un rang à chaque fait écrit pendant la lecture. Absente, la
-     * réponse en fixe une.
-     */
-    asOf: z.string().min(1).optional(),
-    limit: z.coerce.number().int().min(1).max(200).default(50),
-  })
-  .refine((query) => query.page === undefined || query.before === undefined, {
-    // Refusé plutôt que départagé : une règle de priorité silencieuse ferait lire
-    // une autre page que celle que l'écran croit demander.
-    message: "`page` et `before` ne se combinent pas : lisez par numéro de page OU par curseur.",
-    path: ["page"],
-  });
+const activityFiltersSchema = z.object({
+  /** Module émetteur (`pim`, `commercial`…). */
+  module: activityModuleSchema.optional(),
+  /** Type exact (`tax_regime.rate_changed`) — le filtre le plus précis. */
+  type: z.string().min(1).optional(),
+  /** Ce dont on veut l'histoire : un régime, un produit, une société… */
+  subjectType: z.string().min(1).optional(),
+  subjectId: z.string().min(1).optional(),
+  /** Qui a agi — l'id de fiche staff (ou l'un de ses anciens `sub`) ou l'id client. */
+  actorId: z.string().min(1).optional(),
+  /** Bornes de temps, en ISO. `since` incluse, `until` exclue. */
+  since: z.string().datetime().optional(),
+  until: z.string().datetime().optional(),
+  /**
+   * Recherche libre (2026-09-18) : un nom, un prénom, un morceau de numéro, un
+   * identifiant. Retient le fait dont le nom figé de l'auteur OU la charge
+   * utile contient le texte (casse ignorée), ou dont le sujet EST ce texte.
+   * Les accents comptent : « cecile » ne trouve pas « Cécile ».
+   *
+   * Deux caractères au moins : un seul ramènerait presque tout le journal.
+   */
+  q: z.string().trim().min(2).max(100).optional(),
+  /**
+   * Pagination par curseur : l'`id` ULID de la dernière ligne rendue.
+   *
+   * Servi pour le front en ligne, qui le lit encore ; les pages numérotées
+   * (`page`) sont l'autre façon de lire, et les deux ne se combinent pas.
+   */
+  before: z.string().min(1).optional(),
+  /**
+   * Pagination NUMÉROTÉE (2026-09-19), à partir de 1 — pour un paginateur qui
+   * saute à la page 3 et annonce un total. `limit` en est la taille.
+   */
+  page: z.coerce.number().int().min(1).optional(),
+  /**
+   * L'**ancre** de l'instantané parcouru : l'`id` du fait le plus récent que la
+   * première page a vu, rendu par elle dans `asOf`. Sans elle, un numéro de
+   * page glisse d'un rang à chaque fait écrit pendant la lecture. Absente, la
+   * réponse en fixe une.
+   */
+  asOf: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+/**
+ * Refusé plutôt que départagé : une règle de priorité silencieuse ferait lire
+ * une autre page que celle que l'écran croit demander.
+ */
+const PAGE_OR_CURSOR = {
+  message: "`page` et `before` ne se combinent pas : lisez par numéro de page OU par curseur.",
+  path: ["page"],
+};
+
+function pageOrCursor(query: {
+  readonly page?: number | undefined;
+  readonly before?: string | undefined;
+}): boolean {
+  return query.page === undefined || query.before === undefined;
+}
+
+export const activityQuerySchema = activityFiltersSchema.refine(pageOrCursor, PAGE_OR_CURSOR);
 export type ActivityQuery = z.infer<typeof activityQuerySchema>;
+
+/**
+ * Les filtres de la **tranche fiscale** (`GET /admin/activity/tax`, 2026-09-19) :
+ * ceux du journal, **sans `module`**.
+ *
+ * La tranche est bornée au serveur par une liste fermée de types — taux de TVA,
+ * TVA d'une famille ou d'une fiche, règles comptables. Un module n'y ajouterait
+ * rien qu'une intersection vide ou redondante ; il est donc retiré du contrat
+ * plutôt qu'accepté et ignoré. Un `module` envoyé quand même est écarté par le
+ * schéma, comme tout paramètre inconnu : il ne peut pas élargir la tranche.
+ */
+export const taxActivityQuerySchema = activityFiltersSchema
+  .omit({ module: true })
+  .refine(pageOrCursor, PAGE_OR_CURSOR);
+export type TaxActivityQuery = z.infer<typeof taxActivityQuerySchema>;
 
 /** Un fait du journal, tel que l'écran le reçoit. */
 export interface ActivityEventView {

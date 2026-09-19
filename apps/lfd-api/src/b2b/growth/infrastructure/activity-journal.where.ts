@@ -2,6 +2,7 @@ import type { ActivityQuery } from "@lfd/contracts";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { prefixesOf } from "../domain/activity-module.js";
+import type { ActivitySlice } from "../domain/activity-slice.js";
 
 /**
  * Les filtres du journal, en **SQL** — un fragment par filtre, joints par `AND`.
@@ -20,13 +21,19 @@ import { prefixesOf } from "../domain/activity-module.js";
  * `architecture-journalisation.md` §12, D4). Sans elles, le filtre retombe sur la
  * seule égalité à `query.actorId`, et l'histoire d'une personne se coupe
  * entre ses identifiants.
+ *
+ * `slice` : le bord fermé d'une lecture restreinte (la tranche fiscale), posé
+ * par le serveur. Il est joint par `AND` à tout le reste — les filtres de
+ * l'appelant ne peuvent que le resserrer.
  */
 export function activityWhereOf(
   query: ActivityQuery,
   actorIds: readonly string[] | null = null,
   asOf: string | null = null,
+  slice: ActivitySlice | null = null,
 ): Prisma.Sql {
   return joined([
+    sliceClause(slice),
     ...filterClauses(query, actorIds),
     anchorClause(asOf),
     // Le curseur : strictement AVANT la dernière ligne rendue (ULID décroissant).
@@ -45,8 +52,27 @@ export function activitySnapshotWhereOf(
   query: ActivityQuery,
   actorIds: readonly string[] | null = null,
   asOf: string | null = null,
+  slice: ActivitySlice | null = null,
 ): Prisma.Sql {
-  return joined([...filterClauses(query, actorIds), anchorClause(asOf)]);
+  return joined([sliceClause(slice), ...filterClauses(query, actorIds), anchorClause(asOf)]);
+}
+
+/**
+ * La tranche : un type exact de sa liste, ou un de ses préfixes. Une tranche
+ * vide ne laisse RIEN passer — `FALSE`, et pas l'absence de clause, qui
+ * ouvrirait le journal entier.
+ */
+function sliceClause(slice: ActivitySlice | null): Prisma.Sql | null {
+  if (slice === null) {
+    return null;
+  }
+  const alternatives = [
+    ...slice.types.map((type) => Prisma.sql`type = ${type}`),
+    ...slice.prefixes.map((prefix) => Prisma.sql`starts_with(type, ${prefix})`),
+  ];
+  return alternatives.length === 0
+    ? Prisma.sql`FALSE`
+    : Prisma.sql`(${Prisma.join(alternatives, " OR ")})`;
 }
 
 function filterClauses(

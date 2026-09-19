@@ -263,7 +263,14 @@ autres par la bande.
 
 - **Module** — dérivé du préfixe du `type` (`b2b/growth/domain/activity-module.ts`),
   pas stocké : `pim`, `commercial` (dont les prix négociés), `commandes`,
-  `comptes`, `equipe`. Un type qui ne se range plus sous un préfixe se renomme.
+  `comptes`, `equipe`, `production`. Un type qui ne se range plus sous un
+  préfixe se renomme. Depuis le 2026-09-19, les règles comptables
+  (`accounting_rules.`) et les points de vente (`point_of_sale.`) se rangent
+  sous `pim`, les mandats SEPA (`payment_mandate.`) sous `comptes`, à côté du
+  RIB. **`legal_entity.` n'est rangé nulle part**, délibérément : notre entité
+  émettrice n'est pas un compte client, et la ranger sous `comptes` l'afficherait
+  « Comptes clients ». Elle se lit sous « tous les modules » en attendant une
+  décision.
 - **Filtres** — `module`, `type`, `subjectType`, `subjectId`, `actorId`,
   période ; un seul constructeur SQL (`activity-journal.where.ts`). Le filtre par
   acteur suit une personne sous **tous** ses identifiants (id de fiche et `sub`
@@ -285,6 +292,36 @@ autres par la bande.
 - **Le rendu** en phrases françaises vit au front
   (`lfc-B2B-admin-frontend/src/app/admin/journal/`) : `journal-line.ts` pour
   tous les faits, `staff-line.ts` pour ceux de l'équipe.
+
+### La tranche fiscale
+
+`GET /admin/activity/tax` (`b2b/growth/http/admin-tax-activity.controller.ts`,
+2026-09-19) : la même page que le journal — mêmes filtres **sauf `module`**,
+même recherche, mêmes pages figées —, bornée **au serveur** à une liste fermée
+de types (`TAX_JOURNAL_SLICE`, `b2b/growth/domain/activity-slice.ts`) :
+`vat_rate.*`, `accounting_rules.*`, `product_category.vat_changed`,
+`product.vat_changed`.
+
+- **La permission est `pim_tax:write`, exigée explicitement**
+  (`@RequirePermission`) — décision de Hugo, 2026-09-19 : « qui écrit les taux
+  relit leur histoire ». Déduite du verbe, un `GET` demanderait `pim_tax:read`,
+  que portent `commercial` et `dev`. Au 2026-09-19, elle appartient à `admin`
+  et `comptabilite` ; la comptabilité n'a toujours **pas** `activity:read`, et
+  le journal entier lui reste fermé.
+- **Une liste de types, pas un module** : le module `pim` ouvrirait tout le
+  référentiel — fiches, familles, points de vente —, alors que seuls la TVA et
+  les règles comptables sont à elle. Les familles et les fiches n'y entrent
+  que par leur fait de TVA.
+- **La tranche n'est pas un filtre, c'est un bord.** Elle est posée par le
+  handler et jointe par `AND` en tête du `WHERE` (`activity-journal.where.ts`,
+  le même constructeur que le journal) : ancre, total et pages se calculent
+  dedans, et aucun paramètre ne l'élargit. `module` est retiré du contrat
+  (`taxActivityQuerySchema`) ; envoyé quand même, le schéma l'écarte comme tout
+  paramètre inconnu. Une tranche vide ne rend rien (`FALSE`), elle n'ouvre pas
+  le journal.
+- **Hors de la tranche, et c'est une décision à prendre plutôt qu'un oubli** :
+  les contextes de vente (`sales_context.*`) portent un taux par contexte, mais
+  s'écrivent sous `pim_settings`, que la comptabilité n'a pas.
 
 Ailleurs, des lecteurs ciblés : l'attribution d'un diff de révision PIM
 (`PimJournalReader`, qui lit le journal d'un produit sur un intervalle), le
@@ -349,6 +386,7 @@ Pour ne pas les confondre :
 | Le référentiel                   | `apps/lfd-api/src/pim/journal/`                                                                                                          |
 | La tarification                  | `apps/lfd-api/src/b2b/pricing/infrastructure/pricing-act.writer.ts`                                                                      |
 | La lecture                       | `apps/lfd-api/src/b2b/growth/http/admin-activity.controller.ts`, `infrastructure/activity-journal.where.ts`, `domain/activity-module.ts` |
+| La tranche fiscale               | `apps/lfd-api/src/b2b/growth/http/admin-tax-activity.controller.ts`, `domain/activity-slice.ts`                                          |
 | Le contrat                       | `packages/contracts/src/activity-journal.ts`                                                                                             |
 | La table                         | `apps/lfd-api/prisma/schema/growth.prisma` (`ActivityEvent`)                                                                             |
 

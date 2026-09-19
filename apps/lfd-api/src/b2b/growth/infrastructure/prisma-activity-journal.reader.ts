@@ -5,6 +5,7 @@ import type { ActivityEventView, ActivityPageView, ActivityQuery } from "@lfd/co
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { moduleOf } from "../domain/activity-module.js";
+import type { ActivitySlice } from "../domain/activity-slice.js";
 import { ActivityJournalReader } from "../domain/ports/activity-journal.reader.js";
 import { activitySnapshotWhereOf, activityWhereOf } from "./activity-journal.where.js";
 
@@ -22,6 +23,17 @@ const COLUMNS = {
   traceId: true,
   payload: true,
 } as const;
+
+/**
+ * Ce qui borne une lecture sans venir de la requête : les références de
+ * l'acteur filtré, et la tranche posée par le serveur. L'ancre, le total et les
+ * pages les partagent — un bord oublié dans l'un annoncerait des pages qui
+ * n'existent pas, ou en montrerait qui ne sont pas à lui.
+ */
+interface Scope {
+  readonly actorIds: readonly string[] | null;
+  readonly slice: ActivitySlice | null;
+}
 
 /**
  * Lecture paginée du journal (`growth.activity_events`), de deux façons.
@@ -43,8 +55,13 @@ export class PrismaActivityJournalReader extends ActivityJournalReader {
     super();
   }
 
-  async page(query: ActivityQuery, actorIds: readonly string[] | null): Promise<ActivityPageView> {
-    const asOf = query.asOf ?? (await this.latestMatching(query, actorIds));
+  async page(
+    query: ActivityQuery,
+    actorIds: readonly string[] | null,
+    slice: ActivitySlice | null,
+  ): Promise<ActivityPageView> {
+    const scope = { actorIds, slice };
+    const asOf = query.asOf ?? (await this.latestMatching(query, scope));
     const page = query.page ?? null;
     if (asOf === null) {
       // Aucun fait ne répond aux filtres : pas d'instantané à lire.
@@ -55,11 +72,11 @@ export class PrismaActivityJournalReader extends ActivityJournalReader {
     const [ids, total] = await Promise.all([
       this.prisma.$queryRaw<readonly { readonly id: string }[]>`
         SELECT id FROM growth.activity_events
-        WHERE ${activityWhereOf(query, actorIds, asOf)}
+        WHERE ${activityWhereOf(query, actorIds, asOf, slice)}
         ORDER BY id DESC
         LIMIT ${query.limit + 1} OFFSET ${offset}
       `,
-      this.countOf(query, actorIds, asOf),
+      this.countOf(query, scope, asOf),
     ]);
     // Les filtres sont en SQL (cf. `activityWhereOf`) ; les colonnes, elles,
     // se relisent par Prisma — par clé primaire, donc sans coût — pour rester
@@ -81,13 +98,10 @@ export class PrismaActivityJournalReader extends ActivityJournalReader {
   }
 
   /** L'ancre d'un instantané neuf : le fait le plus récent qui répond aux filtres. */
-  private async latestMatching(
-    query: ActivityQuery,
-    actorIds: readonly string[] | null,
-  ): Promise<string | null> {
+  private async latestMatching(query: ActivityQuery, scope: Scope): Promise<string | null> {
     const [latest] = await this.prisma.$queryRaw<readonly { readonly id: string }[]>`
       SELECT id FROM growth.activity_events
-      WHERE ${activitySnapshotWhereOf(query, actorIds)}
+      WHERE ${activitySnapshotWhereOf(query, scope.actorIds, null, scope.slice)}
       ORDER BY id DESC
       LIMIT 1
     `;
@@ -95,14 +109,10 @@ export class PrismaActivityJournalReader extends ActivityJournalReader {
   }
 
   /** Le total de l'instantané — filtres et recherche compris, curseur exclu. */
-  private async countOf(
-    query: ActivityQuery,
-    actorIds: readonly string[] | null,
-    asOf: string,
-  ): Promise<number> {
+  private async countOf(query: ActivityQuery, scope: Scope, asOf: string): Promise<number> {
     const [row] = await this.prisma.$queryRaw<readonly { readonly total: bigint }[]>`
       SELECT count(*) AS total FROM growth.activity_events
-      WHERE ${activitySnapshotWhereOf(query, actorIds, asOf)}
+      WHERE ${activitySnapshotWhereOf(query, scope.actorIds, asOf, scope.slice)}
     `;
     return Number(row?.total ?? 0n);
   }

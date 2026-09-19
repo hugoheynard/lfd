@@ -8,9 +8,25 @@ import type { ActivityModule } from "@lfd/contracts";
  * la remplir pour tous les faits déjà écrits — alors que le préfixe la porte
  * déjà. Le jour où un type ne se range plus sous un préfixe, c'est le type
  * qu'il faut renommer, pas une colonne qu'il faut ajouter.
+ *
+ * ⚠️ `legal_entity.` n'est rangé nulle part, et c'est délibéré (2026-09-19) :
+ * notre propre entité émettrice n'est ni un compte client, ni une commande, ni
+ * le référentiel. La ranger sous `comptes` l'afficherait « Comptes clients ».
+ * Elle attend une décision — un module à elle, ou un libellé élargi —, et se
+ * lit en attendant sous « tous les modules ».
  */
 const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
-  pim: ["vat_rate.", "product.", "product_category."],
+  pim: [
+    "vat_rate.",
+    "product.",
+    "product_category.",
+    // Le rapport et la méthode du prix pro s'écrivent au référentiel, sous le
+    // même droit que les taux (`pim_tax`) : ils retarifent tout son catalogue.
+    "accounting_rules.",
+    // Les points de vente sont du référentiel : ses familles les citent dans
+    // leur matrice de canaux (2026-09-19).
+    "point_of_sale.",
+  ],
   // La tarification négociée est du COMMERCIAL : c'est le même métier que le
   // lead et le rendez-vous — ce qu'on consent à un client pour qu'il achète.
   commercial: [
@@ -48,7 +64,15 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   ],
   // Le RIB d'une société s'écrit `company.bank_account_changed` : il se range
   // ici par son préfixe, sans entrée propre.
-  comptes: ["user.", "company.", "subscription.", "support."],
+  comptes: [
+    "user.",
+    "company.",
+    "subscription.",
+    "support.",
+    // Le mandat SEPA d'une société cliente se lit avec son RIB, déjà ici : c'est
+    // l'autorisation de prélever SON compte (2026-09-19).
+    "payment_mandate.",
+  ],
   // L'annuaire staff et ses rôles : qui entre, avec quels droits, et qui l'a décidé.
   equipe: ["staff_user.", "staff_role."],
   // Le fournil : arrêter et reprendre une journée, régler le contenant d'un

@@ -70,3 +70,31 @@ describe("moduleOf — le fournil", () => {
     expect(prefixesOf("production")).toEqual(["production_day.", "production_container."]);
   });
 });
+
+/**
+ * Les préfixes orphelins (plan du journal, lot 4, 2026-09-19) : un fait sans
+ * module ne se retrouve qu'en fouillant « tous les modules ».
+ */
+describe("moduleOf — les préfixes qui n'étaient rangés nulle part", () => {
+  it.each([
+    ["accounting_rules.pro_ratio_changed", "pim"],
+    ["accounting_rules.method_changed", "pim"],
+    ["point_of_sale.created", "pim"],
+    ["point_of_sale.table_qr_generated", "pim"],
+    ["payment_mandate.signed", "comptes"],
+    ["payment_mandate.revoked", "comptes"],
+  ])("%s se range sous %s", (type, module) => {
+    expect(moduleOf(type)).toBe(module);
+  });
+
+  /** Notre entité émettrice n'est pas un compte client : elle attend sa décision. */
+  it("laisse l'entité émettrice hors de tout module", () => {
+    expect(moduleOf("legal_entity.creditor_account_changed")).toBeNull();
+  });
+
+  /** Le point fait partie du préfixe : `product.` ne capte pas `product_category.`. */
+  it("garde les familles et les fiches sous le référentiel sans se confondre", () => {
+    expect(moduleOf("product_category.vat_changed")).toBe("pim");
+    expect(moduleOf("production_day.closed")).toBe("production");
+  });
+});

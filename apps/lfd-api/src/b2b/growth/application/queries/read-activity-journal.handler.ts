@@ -27,6 +27,7 @@ export class ReadActivityJournalHandler implements IQueryHandler<
   async execute(query: ReadActivityJournalQuery): Promise<ActivityPageView> {
     const { actorId } = query.filters;
     const actorIds = actorId === undefined ? null : await this.authors.referencesOf(actorId);
-    return this.journal.page(query.filters, actorIds);
+    // Le journal entier : `activity:read` n'a pas de tranche.
+    return this.journal.page(query.filters, actorIds, null);
   }
 }

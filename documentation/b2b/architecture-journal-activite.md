@@ -250,6 +250,11 @@ traverse les modules, donc le ranger sous l'un d'eux donnerait son activité aux
 autres par la bande. Élargir plus tard — la tranche fiscale à la comptabilité,
 par exemple — reste facile ; reprendre un accès déjà donné, non.
 
+La tranche fiscale a pris cette voie le 2026-09-19, **sans** élargir
+`activity` : une route à part, `GET /admin/activity/tax`, sous `pim_tax:write`
+exigée explicitement, bornée au serveur à une liste fermée de types
+([`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §8).
+
 `admin` porte aussi `activity:write`, qu'aucune route ne vérifiera jamais : le
 journal est append-only. C'est le prix de l'invariant qui compte le plus,
 « l'administrateur couvre tout le catalogue, sans trou », qu'un test attrape.

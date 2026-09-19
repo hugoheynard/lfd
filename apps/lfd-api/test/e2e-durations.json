@@ -7,6 +7,7 @@
   "test/activity-events.e2e-spec.ts": 7956,
   "test/activity-pages.e2e-spec.ts": 6935,
   "test/activity-search.e2e-spec.ts": 9275,
+  "test/activity-tax-journal.e2e-spec.ts": 5504,
   "test/addresses.e2e-spec.ts": 4080,
   "test/admin-catalog.e2e-spec.ts": 14265,
   "test/admin-companies.e2e-spec.ts": 11240,

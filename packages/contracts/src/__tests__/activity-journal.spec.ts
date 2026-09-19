@@ -1,4 +1,4 @@
-import { activityQuerySchema } from "../activity-journal.js";
+import { activityQuerySchema, taxActivityQuerySchema } from "../activity-journal.js";
 
 describe("activityQuerySchema — la recherche libre `q`", () => {
   it("est facultative : sans elle, la question reste celle d'hier", () => {
@@ -22,5 +22,42 @@ describe("activityQuerySchema — la recherche libre `q`", () => {
 
   it("laisse passer les jokers SQL tels quels — c'est la lecture qui les neutralise", () => {
     expect(activityQuerySchema.parse({ q: "50%_\\" }).q).toBe("50%_\\");
+  });
+});
+
+/** La tranche fiscale (lot 4 du plan du journal, 2026-09-19). */
+describe("taxActivityQuerySchema — les filtres de la tranche fiscale", () => {
+  it("écarte `module` : aucun paramètre ne peut élargir la tranche", () => {
+    expect(taxActivityQuerySchema.parse({ module: "comptes", q: "tva" })).toEqual({
+      limit: 50,
+      q: "tva",
+    });
+  });
+
+  it("garde les filtres qui la resserrent, et la pagination figée", () => {
+    const query = taxActivityQuerySchema.parse({
+      subjectId: "vat_1",
+      actorId: "staff_1",
+      page: "2",
+      asOf: "01K00000000000000000000009",
+      limit: "20",
+    });
+
+    expect(query).toEqual({
+      subjectId: "vat_1",
+      actorId: "staff_1",
+      page: 2,
+      asOf: "01K00000000000000000000009",
+      limit: 20,
+    });
+  });
+
+  it("refuse `page` et `before` ensemble, comme le journal", () => {
+    const parsed = taxActivityQuerySchema.safeParse({
+      page: "2",
+      before: "01K00000000000000000000000",
+    });
+
+    expect(parsed.success).toBe(false);
   });
 });

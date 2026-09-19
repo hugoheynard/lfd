@@ -1,3 +1,4 @@
+import { TAX_JOURNAL_SLICE } from "../../domain/activity-slice.js";
 import { activitySnapshotWhereOf, activityWhereOf, escapeLike } from "../activity-journal.where.js";
 
 describe("escapeLike — un joker tapé dans la recherche reste un caractère", () => {
@@ -138,5 +139,68 @@ describe("activitySnapshotWhereOf — le total compte l'instantané, pas la page
 
   it("sans ancre ni filtre, ne restreint rien — c'est la recherche de l'ancre", () => {
     expect(activitySnapshotWhereOf({ limit: 50 }).sql).toBe("TRUE");
+  });
+});
+
+/**
+ * La tranche fiscale (plan du journal, lot 4, 2026-09-19) : un bord posé par le
+ * serveur, que les filtres de l'appelant ne peuvent que resserrer.
+ */
+describe("activityWhereOf — une tranche bornée au serveur", () => {
+  const ANCHOR = "01K00000000000000000000009";
+  const SLICE_SQL = "(type = ? OR type = ? OR starts_with(type, ?) OR starts_with(type, ?))";
+
+  it("pose la tranche seule quand l'appelant ne filtre rien", () => {
+    const where = activityWhereOf({ limit: 50 }, null, null, TAX_JOURNAL_SLICE);
+
+    expect(where.sql).toBe(SLICE_SQL);
+    expect(where.values).toEqual([
+      "product_category.vat_changed",
+      "product.vat_changed",
+      "vat_rate.",
+      "accounting_rules.",
+    ]);
+  });
+
+  it("la joint par AND à chaque filtre, jamais par OR", () => {
+    const where = activityWhereOf(
+      {
+        limit: 50,
+        module: "comptes",
+        q: "taux",
+        subjectId: "company_1",
+        actorId: "staff_1",
+        before: "01K00000000000000000000005",
+      },
+      ["auth0|actuel"],
+      ANCHOR,
+      TAX_JOURNAL_SLICE,
+    );
+
+    // La tranche en tête, entre parenthèses : aucun `OR` de la recherche ni du
+    // module ne peut s'y accrocher.
+    expect(where.sql.startsWith(`${SLICE_SQL} AND `)).toBe(true);
+    // Tranche, module, sujet, acteur, recherche, ancre, curseur : sept clauses.
+    expect(where.sql.match(/\) AND |\? AND /g)).toHaveLength(6);
+  });
+
+  it("borne aussi le total et la recherche de l'ancre", () => {
+    const snapshot = activitySnapshotWhereOf(
+      { limit: 50, q: "taux" },
+      null,
+      ANCHOR,
+      TAX_JOURNAL_SLICE,
+    );
+
+    expect(snapshot.sql.startsWith(`${SLICE_SQL} AND `)).toBe(true);
+    expect(activitySnapshotWhereOf({ limit: 50 }, null, null, TAX_JOURNAL_SLICE).sql).toBe(
+      SLICE_SQL,
+    );
+  });
+
+  it("ne laisse rien passer d'une tranche vide — elle n'ouvre pas le journal", () => {
+    const where = activityWhereOf({ limit: 50 }, null, null, { types: [], prefixes: [] });
+
+    expect(where.sql).toBe("FALSE");
   });
 });
