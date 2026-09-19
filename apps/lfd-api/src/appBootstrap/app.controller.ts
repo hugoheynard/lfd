@@ -2,7 +2,7 @@ import { Controller, Get } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
 import { AppService } from "./app.service.js";
 import { Public } from "../platform/auth/public.decorator.js";
-import { AppConfig } from "../platform/config/app-config.js";
+import { AppConfig, type DatabaseTransport } from "../platform/config/app-config.js";
 import { StartupReport } from "../platform/startup/startup-report.service.js";
 
 /**
@@ -52,16 +52,26 @@ export class AppController {
    *
    * Elle répond au passage à la question qu'on se pose à 7 h du matin quand
    * quelque chose cloche : qu'est-ce qui tourne, là, maintenant ? — et depuis le
-   * 2026-08-16, **avec quels canaux éteints**, en compteurs. Le détail se
+   * 2026-08-16, **avec quels canaux éteints**, en compteurs ; depuis la sortie
+   * d'Accelerate, **par quel transport** la base est jointe. Le détail se
    * demande à `GET /admin/ops/capabilities`, derrière le jeton d'exploitation.
    */
   @Public()
   @Get("health")
-  health(): { status: "ok"; revision: string; capabilities: HealthCapabilities } {
+  health(): {
+    status: "ok";
+    revision: string;
+    database: DatabaseTransport;
+    capabilities: HealthCapabilities;
+  } {
     const missing = this.startup.missing();
     return {
       status: "ok",
       revision: this.config.revision(),
+      // Le TRANSPORT, un mot — ni hôte, ni utilisateur. Le déploiement échoue
+      // s'il ne lit pas celui qu'il attend : c'est ce qui prouve la sortie
+      // d'Accelerate, qu'un secret changé ne permet pas de relire.
+      database: this.config.databaseTransport(),
       // `status` reste `"ok"` même avec des canaux éteints, et c'est voulu : la
       // sonde de liveness répond à « ce process tourne-t-il ? ». Passer au rouge
       // parce que Stripe n'est pas configuré ferait redémarrer en boucle une

@@ -293,22 +293,22 @@ Ce qu'il faut retenir ici, et qui appartient bien au constat :
 
 ## 8. Ce qui a été vérifié, et où
 
-| Affirmation                                                                     | Vérifiée dans                                                             |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 3 lectures par article, dans `resolveOne`                                       | `order-line-pricing.service.ts`, le `Promise.all` de `resolveOne`         |
-| +1 si un engagement couvre l'article                                            | `commitmentDecision` → `customerVolumes.volumesFor`                       |
-| +2 si le plancher a une porte de volume                                         | `observedRatio` → deux `skuVolumes.volumesFor`                            |
-| Les articles et les trois lecteurs sont en **parallèle**                        | `priceAll` et `resolveOne`, deux `Promise.all`                            |
-| L'unité facturée est l'appel ORM, et le dépôt la compte                         | `schema-ops.counter.ts`, `counted-prisma.ts`                              |
-| Le `WHERE` des **règles** est un élagage rejoué en mémoire                      | `prisma-price-rule.reader.ts` ; `isSuspended`                             |
-| Le `WHERE` des **planchers** est portant                                        | `prisma-price-floor.reader.ts` ; `ScopedPriceFloor` ; `resolveFloor`      |
-| Le simulateur hisse déjà ses trois lecteurs                                     | `price-projection.query.ts`                                               |
-| Le tableau de bord charge en lot                                                | `prisma-pricing-board.reader.ts`, `load()`                                |
-| Les index de la forme du `WHERE` existent                                       | migration `20260817160000_plancher_de_prix`                               |
-| Le transport dépend du schéma d'URL ; le dev est en `postgresql://`             | `prisma.service.ts` ; `apps/lfd-api/.env`                                 |
-| Le panier back-office redemande un devis à **chaque** changement, sans debounce | `nouvelle-commande-page.ts`, l'`effect()` sur les lignes → `refreshQuote` |
-| Chaque palier est une résolution complète à sa quantité                         | `volume-tier-prices.ts` ; JSDoc d'`OrderQuoteLineView.volumeTiers`        |
-| La production est en `prisma+postgres://`                                       | `documentation/ops/secrets-et-variables.md`                               |
+| Affirmation                                                                                                                                                        | Vérifiée dans                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| 3 lectures par article, dans `resolveOne`                                                                                                                          | `order-line-pricing.service.ts`, le `Promise.all` de `resolveOne`                             |
+| +1 si un engagement couvre l'article                                                                                                                               | `commitmentDecision` → `customerVolumes.volumesFor`                                           |
+| +2 si le plancher a une porte de volume                                                                                                                            | `observedRatio` → deux `skuVolumes.volumesFor`                                                |
+| Les articles et les trois lecteurs sont en **parallèle**                                                                                                           | `priceAll` et `resolveOne`, deux `Promise.all`                                                |
+| L'unité facturée est l'appel ORM, et le dépôt la compte                                                                                                            | `schema-ops.counter.ts`, `counted-prisma.ts`                                                  |
+| Le `WHERE` des **règles** est un élagage rejoué en mémoire                                                                                                         | `prisma-price-rule.reader.ts` ; `isSuspended`                                                 |
+| Le `WHERE` des **planchers** est portant                                                                                                                           | `prisma-price-floor.reader.ts` ; `ScopedPriceFloor` ; `resolveFloor`                          |
+| Le simulateur hisse déjà ses trois lecteurs                                                                                                                        | `price-projection.query.ts`                                                                   |
+| Le tableau de bord charge en lot                                                                                                                                   | `prisma-pricing-board.reader.ts`, `load()`                                                    |
+| Les index de la forme du `WHERE` existent                                                                                                                          | migration `20260817160000_plancher_de_prix`                                                   |
+| Le transport dépend du schéma d'URL ; le dev est en `postgresql://`                                                                                                | `prisma.service.ts` ; `apps/lfd-api/.env`                                                     |
+| Le panier back-office redemande un devis à **chaque** changement, sans debounce                                                                                    | `nouvelle-commande-page.ts`, l'`effect()` sur les lignes → `refreshQuote`                     |
+| Chaque palier est une résolution complète à sa quantité                                                                                                            | `volume-tier-prices.ts` ; JSDoc d'`OrderQuoteLineView.volumeTiers`                            |
+| La production est en `prisma+postgres://` — jusqu'à la sortie d'Accelerate (bascule prévue le week-end du 2026-09-19), puis `postgres://` vers le pooler mutualisé | `documentation/ops/secrets-et-variables.md` ; `documentation/ops/plan-sortie-d-accelerate.md` |
 
 **Non vérifié, et à ne pas présenter comme acquis** : toute latence, toute part
 du forfait, tout volume réel de règles, et le comportement de la concurrence sous
@@ -320,3 +320,9 @@ retiré : le transport n'est pas la seule différence — l'adaptateur `pg` loca
 plafonne à dix connexions, ce qu'Accelerate ne fait pas de la même façon. Le sens
 de l'écart n'est pas établi, et il n'a pas besoin de l'être : l'argument qui tient
 est celui du **compte d'opérations**, identique des deux côtés.
+
+⚠️ **2026-09-19** — « dix connexions » est périmé : le pool `pg` est désormais
+réglé à **cinq** par instance (`prisma.service.ts`, sortie d'Accelerate), en
+local comme en production une fois la bascule faite. Les deux transports se
+rejoignent alors — `pg` des deux côtés, le pooler mutualisé en plus côté
+production. L'argument du compte d'opérations n'en dépend pas.

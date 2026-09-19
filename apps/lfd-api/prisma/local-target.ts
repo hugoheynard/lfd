@@ -16,8 +16,13 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 /**
  * Refuse toute cible qui n'est pas un Postgres **direct et local**.
  *
- * Une URL Accelerate est refusée en tant que telle : elle désigne une base
- * distante, et le schéma suffit à le dire sans avoir à en lire l'hôte.
+ * 🔴 **C'est l'HÔTE qui décide, pas le schéma.** Tant que la production passait
+ * par Accelerate (`prisma+postgres://`), le schéma suffisait à la reconnaître,
+ * et plusieurs outils s'en contentaient. Depuis la sortie d'Accelerate
+ * (`documentation/ops/plan-sortie-d-accelerate.md`), la production s'écrit
+ * `postgres://…@pooled.db.prisma.io` : un outil qui ne lirait que le schéma
+ * la prendrait pour un conteneur local. L'URL Accelerate reste refusée par le
+ * même test, jusqu'au resserrement.
  *
  * @param what ce que le script fera à cette base — le message d'erreur le cite,
  * parce qu'un refus qui ne dit pas ce qu'il a évité s'apprend mal.
@@ -29,7 +34,7 @@ export function refuseNonLocalTarget(url: string, what: string): void {
   if (!url.startsWith("postgresql://") && !url.startsWith("postgres://")) {
     throw new Error(
       "Cible refusée : ce script n'écrit QUE vers un Postgres direct local " +
-        "(postgresql://). Une URL Accelerate désigne une base distante.",
+        "(postgresql://localhost…). Une URL Accelerate désigne une base distante.",
     );
   }
   const host = new URL(url).hostname;

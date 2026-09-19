@@ -70,7 +70,7 @@ En `postgres://`, le schéma ne dit plus rien.
    au geste 2, **tranche la valeur de `max`** avant la bascule.
 3. **Deux URL, deux secrets, aucun repli** :
    - `DATABASE_LFD_URL` → URL **mutualisée**, pour le container ;
-   - `DATABASE_LFD_DIRECT_URL` → URL **directe**, pour `migrate deploy`. Le
+   - `DATABASE_LFD_PROD_DIRECT_URL` → URL **directe**, pour `migrate deploy`. Le
      workflow la passe **inconditionnellement** à l'étape de migration. Le secret
      est donc **créé avant** le merge du code (geste 3 avant geste 4) : un nom mal
      saisi fait échouer la migration, ce qu'on veut voir.
@@ -98,6 +98,11 @@ En `postgres://`, le schéma ne dit plus rien.
    - **B** — assumer que le premier essai du pooler a lieu en production, un
      week-end, avec les gestes 6–7 prêts.
      Recommandation : **A**, si le plan Prisma le permet sans coût.
+
+   ✅ **Tranché par Hugo le 2026-09-19 : B.** Le premier essai du pooler a lieu
+   en production ; le geste 5 est sans objet, et les gestes 7 / 7′ sont la
+   seule répétition.
+
 7. **Identifiants neufs** générés pour la bascule ; **l'ancienne clé Accelerate
    est révoquée ensuite** (elle a fui, action ouverte). Vérifier dans la console,
    avant de révoquer, que les nouveaux identifiants ne dépendent pas de la clé.
@@ -107,21 +112,24 @@ En `postgres://`, le schéma ne dit plus rien.
 
 ## 3. Ordre des gestes
 
-| #   | Geste                                                                                                                                                                                            | Qui           | Effet en production                |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- | ---------------------------------- |
-| 1   | **Code** : outils (§2.5), pool réglé (§2.2), `P2037`, `/health` publie le transport (§2.4), workflow (migration par l'URL directe, contrôle du transport), JSDoc et docs (§5)                    | Claude        | aucun tant que non mergé           |
-| 2   | Console Prisma : URL mutualisée, URL directe ; **région** et **limite de connexions** ; option A du §2.6 si retenue                                                                              | Hugo          | aucun                              |
-| 3   | GitHub : **créer `DATABASE_LFD_DIRECT_URL`** ; copier la valeur actuelle de `DATABASE_LFD_URL` dans le gestionnaire de mots de passe                                                             | Hugo          | aucun                              |
-| 4   | Merger le geste 1 : l'API se redéploie **encore sur Accelerate**, migration par l'URL directe, `/health` doit publier `accelerate`                                                               | Claude        | nouveau pool réglé, même transport |
-| 5   | (option A) répétition sur la seconde base                                                                                                                                                        | Claude + Hugo | aucun                              |
-| 6   | **La bascule** : Hugo remplace `DATABASE_LFD_URL` par l'URL mutualisée ; Claude pousse un commit (le passage du contrôle attendu à `pg`) ; le déploiement échoue si `/health` ne publie pas `pg` | Hugo + Claude | **le container passe en TCP**      |
-| 7   | Vérifier : contrôle du mur, sonde `postgres-b2b`, écran admin, connexion client, commande de test, vitals avant / après, console Prisma sans trafic Accelerate                                   | Claude + Hugo | —                                  |
-| 7′  | **Retour arrière** : recoller la valeur Accelerate, pousser le retour du contrôle à `accelerate`. Possible **jusqu'à la révocation** de la clé, et au plus tard le 1er décembre                  | Hugo + Claude | retour à Accelerate                |
-| 8   | Quelques jours plus tard : révoquer la clé Accelerate ; retirer la branche `accelerateUrl` (service et scripts) et la valeur `accelerate` du contrôle                                            | Hugo, Claude  | resserrement, irréversible         |
+| #   | Geste                                                                                                                                                                                                                                     | Qui           | Effet en production                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------- |
+| 1   | **Code** : outils (§2.5), pool réglé (§2.2), `P2037`, `/health` publie le transport (§2.4), workflow (migration par l'URL directe, contrôle du transport), JSDoc et docs (§5)                                                             | Claude        | aucun tant que non mergé           |
+| 2   | Console Prisma : URL mutualisée, URL directe ; **région** et **limite de connexions** ; option A du §2.6 si retenue                                                                                                                       | Hugo          | aucun                              |
+| 3   | GitHub : **créer `DATABASE_LFD_PROD_DIRECT_URL`** ; copier la valeur actuelle de `DATABASE_LFD_URL` dans le gestionnaire de mots de passe                                                                                                 | Hugo          | aucun                              |
+| 4   | Merger le geste 1 : l'API se redéploie **encore sur Accelerate**, migration par l'URL directe, `/health` doit publier `accelerate`                                                                                                        | Claude        | nouveau pool réglé, même transport |
+| 5   | (option A) répétition sur la seconde base                                                                                                                                                                                                 | Claude + Hugo | aucun                              |
+| 6   | **La bascule** : Claude pousse UN commit — la synchro alimente `DATABASE_LFD_URL` du container depuis le secret `DATABASE_LFD_PROD_URL` (URL mutualisée), le contrôle attend `pg` ; le déploiement échoue si `/health` ne publie pas `pg` | Hugo + Claude | **le container passe en TCP**      |
+| 7   | Vérifier : contrôle du mur, sonde `postgres-b2b`, écran admin, connexion client, commande de test, vitals avant / après, console Prisma sans trafic Accelerate                                                                            | Claude + Hugo | —                                  |
+| 7′  | **Retour arrière** : `git revert` du commit de bascule — `DATABASE_LFD_URL` a gardé la valeur Accelerate. Possible **jusqu'à la révocation** de la clé, et au plus tard le 1er décembre                                                   | Hugo + Claude | retour à Accelerate                |
+| 8   | Quelques jours plus tard : révoquer la clé Accelerate ; retirer la branche `accelerateUrl` (service et scripts) et la valeur `accelerate` du contrôle                                                                                     | Hugo, Claude  | resserrement, irréversible         |
 
-⚠️ **Entre les gestes 3 et 6, ne pas modifier `DATABASE_LFD_URL`** : tout push
-sur `main` qui touche `apps/lfd-api/**` ou `packages/**` resynchronise ce secret
-vers le container.
+⚠️ **Ne pas modifier `DATABASE_LFD_URL` avant le resserrement** : c'est le
+retour arrière. ✅ **Changé par Hugo le 2026-09-19** : au lieu d'écraser ce
+secret au geste 6, l'URL mutualisée vit dans un secret à part,
+`DATABASE_LFD_PROD_URL`, et la bascule comme son retour sont chacun un commit
+(§2.8 : la copie au gestionnaire de mots de passe devient une ceinture). Au
+geste 8, `DATABASE_LFD_URL` se supprime de GitHub.
 
 ## 4. Ce qui reste à vérifier, et où
 
@@ -132,8 +140,8 @@ vers le container.
   certificat Prisma le permet.
 - **Le délai des transactions interactives** (5 s par défaut, `maxWait` 2 s) face
   à l'acquisition d'une connexion du pool : à éprouver en option A.
-- **Un environnement de dev applicatif sur Accelerate** : Hugo confirme qu'il
-  n'en existe pas d'autre que la production.
+- ~~**Un environnement de dev applicatif sur Accelerate**~~ — aucun, la
+  production est la seule (Hugo, 2026-09-19).
 - **Ce que fait Cloudflare d'un `wrangler secret put`** sur une instance en
   cours : sans importance si la bascule passe par un commit (§2.4), à savoir
   pour le runbook.

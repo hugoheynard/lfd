@@ -14,8 +14,10 @@ import { DevSeedController } from "./http/dev-seed.controller.js";
  *
  * Ce qui protège n'est donc pas l'absence du module mais l'**impossibilité du
  * geste** : le service refuse toute base qui n'est pas un Postgres direct et
- * local, et l'URL de production est une URL Accelerate. Ajouté à cela le mur
- * staff du contrôleur et le refus sur `NODE_ENV=production`.
+ * local — schéma ET hôte, parce qu'une fois sortie d'Accelerate l'URL de
+ * production s'écrit elle aussi `postgres://` (`pooled.db.prisma.io`) et que
+ * seul l'hôte la distingue du poste. Ajouté à cela le mur staff du contrôleur
+ * et le refus sur `NODE_ENV=production`.
  */
 @Module({
   controllers: [DevSeedController],

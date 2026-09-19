@@ -31,7 +31,10 @@ describe("AppController", () => {
         AppService,
         // Doubles : la vraie AppConfig exigerait un environnement complet, et la
         // sonde n'en lit qu'une chose.
-        { provide: AppConfig, useValue: { revision: () => "abc1234" } },
+        {
+          provide: AppConfig,
+          useValue: { revision: () => "abc1234", databaseTransport: () => "pg" },
+        },
         { provide: StartupReport, useValue: { missing: () => MISSING } },
       ],
     }).compile();
@@ -51,6 +54,12 @@ describe("AppController", () => {
       // « ok » nu est vrai de l'ancienne image comme de la nouvelle, et ne
       // permet donc pas d'attendre un déploiement.
       expect(appController.health()).toMatchObject({ status: "ok", revision: "abc1234" });
+    });
+
+    it("publie le transport vers la base, en un mot", () => {
+      // C'est sur ce mot que le déploiement attend la sortie d'Accelerate : un
+      // secret changé ne se relit pas, le transport servi si.
+      expect(appController.health().database).toBe("pg");
     });
 
     it("compte les canaux éteints par gravité", () => {

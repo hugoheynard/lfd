@@ -14,9 +14,13 @@ import { runInTransaction, currentTransaction } from "./transaction.store.js";
  * annule l'enregistrement — c'est la contrepartie voulue, et elle doit se
  * lire, parce qu'elle fait du journal un point de panne du métier.
  *
- * **Garder la transaction COURTE.** La production passe par Accelerate : chaque
- * requête traverse le proxy et une transaction interactive y a un délai
- * maximal. On n'enveloppe donc que l'écriture et sa trace — jamais un appel
+ * **Garder la transaction COURTE.** Une transaction interactive a un délai
+ * maximal, quel que soit le transport : la production passe par Accelerate
+ * jusqu'à sa bascule vers le pooler mutualisé
+ * (`documentation/ops/plan-sortie-d-accelerate.md`), et derrière le pooler une
+ * transaction tient en plus, tout le temps qu'elle dure, l'une des cinq
+ * connexions du pool de l'instance (`prisma.service.ts`, vérifié le
+ * 2026-09-19). On n'enveloppe donc que l'écriture et sa trace — jamais un appel
  * réseau tiers (Shopify, mailer), qui tiendrait la transaction ouverte le temps
  * d'un aller-retour hors de notre contrôle.
  *

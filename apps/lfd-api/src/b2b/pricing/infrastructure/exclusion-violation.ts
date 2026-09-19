@@ -11,7 +11,8 @@
  * ## Pourquoi on descend la chaîne des causes
  *
  * Prisma emballe l'erreur du pilote, et le transport en rajoute une couche
- * (Accelerate en production, l'adaptateur `pg` en test). Le nom de la contrainte
+ * (Accelerate en production jusqu'à sa bascule vers le pooler mutualisé,
+ * l'adaptateur `pg` en test et après la bascule). Le nom de la contrainte
  * peut donc être à deux ou trois niveaux de profondeur. La borne à cinq n'est
  * pas de la prudence décorative : une chaîne de causes cyclique bloquerait le
  * processus qui facture.

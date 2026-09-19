@@ -57,6 +57,9 @@ const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
 // Ré-exporté ici pour les consommateurs qui passent par `AppConfig`.
 export type { ShopifyOAuthCredentials };
 
+/** Le transport vers la base — cf. {@link AppConfig.databaseTransport}. */
+export type DatabaseTransport = "pg" | "accelerate";
+
 @Injectable()
 export class AppConfig implements ShopifyCredentialsSource {
   private readonly database: string;
@@ -169,13 +172,30 @@ export class AppConfig implements ShopifyCredentialsSource {
    * app pour ne pas collisionner avec les autres bases (admin, PIM) si les env
    * se partagent un jour.
    *
-   * Deux schémas acceptés, et c'est le schéma qui choisit le transport côté
-   * `PrismaService` : `prisma+postgres://…` (Prisma Postgres via Accelerate —
-   * prod et dev) ou `postgresql://…` (Postgres joignable en direct — tests e2e
-   * sur base jetable).
+   * Deux schémas acceptés, et c'est le schéma qui choisit le transport (cf.
+   * {@link databaseTransport}).
    */
   databaseUrl(): string {
     return this.database;
+  }
+
+  /**
+   * Le transport vers la base, lu au schéma de l'URL :
+   *
+   * - `pg` — `postgres(ql)://…`, un Postgres joint en TCP par l'adaptateur
+   *   `pg` : les e2e, le poste, et la production une fois sortie d'Accelerate
+   *   (le pooler `pooled.db.prisma.io`) ;
+   * - `accelerate` — `prisma+postgres://…`, le proxy que Prisma retire le
+   *   1er décembre 2026 (`documentation/ops/plan-sortie-d-accelerate.md`).
+   *
+   * Un seul endroit décide, et `/health` publie ce qu'il a décidé : c'est ce
+   * qui PROUVE la bascule au déploiement, là où une URL changée dans un secret
+   * ne se relit pas.
+   */
+  databaseTransport(): DatabaseTransport {
+    return this.database.startsWith("postgresql://") || this.database.startsWith("postgres://")
+      ? "pg"
+      : "accelerate";
   }
 
   /** Tenant Auth0, sans schéma ni slash — ex. `lfc.eu.auth0.com`. */

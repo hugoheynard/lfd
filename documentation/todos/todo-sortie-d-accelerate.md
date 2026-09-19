@@ -9,44 +9,47 @@
 
 ## À trancher par Hugo avant de commencer
 
-- [ ] **Répétition** (plan §2.6) : **A** — une seconde base Prisma Postgres vide
-      pour éprouver le pooler hors production (recommandé) ; ou **B** — premier
-      essai en production, assumé.
-- [ ] **Dev applicatif** : confirmer qu'aucune autre base que la production ne
-      passe par Accelerate.
+- [x] **Répétition** (plan §2.6) : **B** — premier essai en production, assumé
+      (Hugo, 2026-09-19 : « direct B »). Pas de seconde base.
+- [x] **Dev applicatif** : aucune autre base que la production ne passe par
+      Accelerate (Hugo, 2026-09-19).
 
 ## Avant le week-end (sans effet en production)
 
-- [ ] **Code** (Claude, geste 1) : outils locaux verrouillés (`clone-dev`,
+- [x] **Code** (Claude, geste 1) — fait le 2026-09-19 (`529414d3`, docs
+      `703df520`) : outils locaux verrouillés (`clone-dev`,
       `reset-growth`, `seed-fiche`, `seed:growth`, `seed:delivery`,
       `backfill-naf`), `import-mercuriale` sur une variable de production
       dédiée ; pool `pg` réglé (`max`, délai d'acquisition) et
       `enableShutdownHooks` ; `P2037` classé « base indisponible » ; `/health`
       publie le transport ; workflow : migration par l'URL directe, contrôle du
       transport ; JSDoc, `.env.example` et docs.
-- [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe, **région**
-      et **limite de connexions** du plan.
+- [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe — ✅
+      générées le 2026-09-19 ; reste à relever la **région** et la **limite de
+      connexions** du plan.
 - [ ] **GitHub** (Hugo, geste 3, par l'interface) : créer
-      `DATABASE_LFD_DIRECT_URL` ; copier la valeur actuelle de `DATABASE_LFD_URL`
+      `DATABASE_LFD_PROD_DIRECT_URL` — ✅ créé le 2026-09-19 ; créer
+      `DATABASE_LFD_PROD_URL` (URL mutualisée) ; copier la valeur actuelle de `DATABASE_LFD_URL`
       dans le gestionnaire de mots de passe.
 - [ ] **Merge** (Claude, geste 4) : batterie verte ; l'API se redéploie **encore
       sur Accelerate**, `/health` doit publier `accelerate`.
 
 ## Le week-end
 
-- [ ] (option A) **Répétition** sur la seconde base (Claude + Hugo, geste 5).
-- [ ] **La bascule** (geste 6) : Hugo remplace `DATABASE_LFD_URL` par l'URL
-      mutualisée ; Claude pousse le commit qui attend `pg` ; le déploiement
-      échoue si `/health` ne le publie pas.
+- ~~(option A) **Répétition** sur la seconde base (geste 5)~~ — sans objet,
+  option B retenue le 2026-09-19.
+- [ ] **La bascule** (geste 6) : Claude pousse UN commit — la synchro lit
+      `DATABASE_LFD_PROD_URL` (URL mutualisée), le contrôle attend `pg` ; le
+      déploiement échoue si `/health` ne le publie pas.
 - [ ] **Vérifier** (geste 7) : contrôle du mur, sonde `postgres-b2b`, écran
       admin, connexion client, commande de test, vitals avant / après, console
       Prisma sans trafic Accelerate.
-- [ ] **Si ça ne va pas** (geste 7′) : recoller la valeur Accelerate, pousser le
-      retour du contrôle à `accelerate`.
+- [ ] **Si ça ne va pas** (geste 7′) : `git revert` du commit de bascule,
+      poussé — `DATABASE_LFD_URL` a gardé la valeur Accelerate.
 
-⚠️ Entre la création du secret direct et la bascule, **ne pas toucher
-`DATABASE_LFD_URL`** : tout push sur `main` qui touche l'API ou `packages/**`
-le resynchronise vers le container.
+⚠️ **Ne pas toucher `DATABASE_LFD_URL`** jusqu'au resserrement : c'est le
+retour arrière (Hugo, 2026-09-19 : la bascule passe par un secret à part,
+`DATABASE_LFD_PROD_URL`).
 
 ## Quelques jours après
 
