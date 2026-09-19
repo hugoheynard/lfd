@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { ACCOUNTING_FACTS } from "./accounting.js";
 import { ACCOUNTS_AND_CARTS_FACTS } from "./accounts.js";
 import { COMMERCE_FACTS } from "./commerce.js";
@@ -105,6 +106,16 @@ export function checkJournalFact(type: string, payload: unknown): JournalFactPro
     kind: "invalid_payload",
     message: `la charge de « ${type} » ne suit pas son schéma — ${issues}`,
   };
+}
+
+/**
+ * Les formes sous lesquelles une ligne de ce type peut se trouver en base : la
+ * forme courante d'abord, puis les formes antérieures. Pour le LECTEUR (le
+ * moteur de phrases) ; l'écriture ne vérifie que la forme courante.
+ */
+export function journalPayloadShapes(type: JournalFactType): readonly z.ZodType[] {
+  const entry: JournalFactEntry = JOURNAL_FACTS[type];
+  return [entry.payload, ...entry.history];
 }
 
 function keysOf<T extends object>(record: T): (keyof T)[] {

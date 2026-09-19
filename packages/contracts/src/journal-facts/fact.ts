@@ -61,16 +61,30 @@ export interface JournalValueMeta {
 export interface JournalFactEntry<S extends z.ZodType = z.ZodType, R extends boolean = boolean> {
   readonly payload: S;
   readonly retired: R;
+  /**
+   * Les formes **antérieures** de la charge, encore en base (lot B du plan
+   * `plan-phrases-du-journal.md`, 2026-09-19). Le journal ne se réécrit pas :
+   * quand une charge gagne un libellé ou perd une coordonnée, les lignes
+   * d'avant gardent leur forme, et le lecteur doit savoir la lire. L'écriture,
+   * elle, ne vérifie que `payload` — une forme ancienne ne s'écrit plus.
+   */
+  readonly history: readonly z.ZodType[];
 }
 
 /** Un type qui s'écrit aujourd'hui. */
-export function fact<S extends z.ZodType>(payload: S): JournalFactEntry<S, false> {
-  return { payload, retired: false };
+export function fact<S extends z.ZodType>(
+  payload: S,
+  history: readonly z.ZodType[] = [],
+): JournalFactEntry<S, false> {
+  return { payload, retired: false, history };
 }
 
 /** Un type qui ne s'écrit plus, avec sa charge telle qu'elle a été écrite. */
-export function retired<S extends z.ZodType>(payload: S): JournalFactEntry<S, true> {
-  return { payload, retired: true };
+export function retired<S extends z.ZodType>(
+  payload: S,
+  history: readonly z.ZodType[] = [],
+): JournalFactEntry<S, true> {
+  return { payload, retired: true, history };
 }
 
 /** Une famille : des types, et leur entrée. */
@@ -115,6 +129,22 @@ export const ref = (target: string) => z.string().min(1).meta({ ref: target });
  * paquet-ci ne dépend que de zod, et le catalogue ne doit pas tirer le
  * référentiel entier pour une forme de trois clés.
  */
+/**
+ * Un objet cité **avec son libellé du moment** (D5 du plan des phrases) : le
+ * journal dit ce qui était vrai quand c'est arrivé. L'id sert aux liens et aux
+ * filtres, le nom à la lecture ; une famille renommée depuis se lit sous
+ * l'ancien nom sur les lignes d'avant.
+ */
+export const named = (target: string) =>
+  z.strictObject({ id: ref(target), name: z.string().min(1) });
+
+/**
+ * Le **libellé du sujet** de la ligne, figé à l'écriture (D6) : le nom de la
+ * fiche, du client, de la personne. Clé conventionnelle `subjectLabel` de la
+ * charge — la recherche lit déjà les valeurs de la charge.
+ */
+export const subjectLabel = () => z.string().min(1);
+
 export const localizedText = () =>
   z.strictObject({ fr: z.string(), en: z.string().optional(), it: z.string().optional() });
 
