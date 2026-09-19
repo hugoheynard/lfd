@@ -4,7 +4,7 @@
 > toute phrase du journal devrait être humainement compréhensible ». Il prend
 > la section « Les phrases » de [`todo-journal-activite.md`](todo-journal-activite.md).
 >
-> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lots A, B et C bâtis, lot D à venir.** Le fonctionnement actuel du journal est
+> État : 🚧 **plan validé par Hugo le 2026-09-19 ; **les quatre lots sont bâtis le 2026-09-19** ; rien n'est déployé.** Le fonctionnement actuel du journal est
 > dans [`architecture-journalisation.md`](architecture-journalisation.md).
 
 ## 0. Ce qu'on veut, en une phrase par exigence
@@ -200,7 +200,11 @@ C'est le lot qui rend l'inventaire exact. Il ne change rien à l'écran.
   Journal, Historique produit, panneau tarifaire.
 - Les phrases de l'équipe (staff-line.ts) passent dans le même moteur.
 
-### Lot D — Les phrases, famille par famille (back-office)
+### Lot D — ~~Les phrases, famille par famille (back-office)~~ — fait le 2026-09-19 (`64ce765e`, `96bff571`, `481cde78`, `feb6af9a`)
+
+> Les 191 types ont leur phrase ; le registre est un `Record` complet. Reste :
+> le déployer, et un passage à l'écran. Ce qui n'est pas fait est au TODO
+> (« Les phrases, ce qui reste »).
 
 Une instance par famille de préfixes, en parallèle : référentiel, commerce et
 catalogue, comptes et paniers, commandes et production, tarification,
