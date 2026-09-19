@@ -8,6 +8,7 @@ import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-
 import { refuseUnsellableChannels } from "../../shared/application/sellable-channels.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
+import { erasedVat, type ContextVat } from "../../shared/domain/value-objects/context-vat.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
@@ -50,10 +51,12 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
     const category = await requireCategory(this.categories, product.categoryId);
 
     const before = product.channelOverride;
+    const vatBefore = product.vatByContext;
     product.setChannels(command.channels, await this.contexts.active(), category.channelPreset);
     await this.uow.run(async () => {
-      const ticket = await this.journalize(product.id, before, product.channelOverride);
-      await this.products.save(product, ticket);
+      const channelsTicket = await this.journalize(product.id, before, product.channelOverride);
+      const vatTicket = await this.journalizeErasedVat(product.id, vatBefore, product.vatByContext);
+      await this.products.save(product, vatTicket ?? channelsTicket);
     });
   }
 
@@ -79,6 +82,32 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
         from: before === null ? "inherited" : before,
         to: after === null ? "inherited" : after,
       },
+    });
+  }
+
+  /**
+   * Les dérogations de taux que le geste a effacées, en fait de TVA ordinaire
+   * (`product.vat_changed`, `{ contexte: { from, to: null } }`) — `null` si
+   * aucune n'a disparu.
+   *
+   * `channels_changed` ne porte que la matrice : sans ce second fait, un taux
+   * effacé par une fermeture de canal échappait à la comptabilité, qui relit
+   * tout ce qui touche au taux (Hugo, 2026-09-19).
+   */
+  private async journalizeErasedVat(
+    productId: string,
+    before: ContextVat,
+    after: ContextVat,
+  ): Promise<WriteTicket | null> {
+    const erased = erasedVat(before, after);
+    if (Object.keys(erased).length === 0) {
+      return null;
+    }
+    return this.journal.trace({
+      type: PIM_EVENTS.productVatChanged,
+      subjectType: "product",
+      subjectId: productId,
+      payload: erased,
     });
   }
 }

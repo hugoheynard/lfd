@@ -110,6 +110,15 @@ describe('le journal fiscal', () => {
     expect(intro).toContain('surtaxe de retard');
   });
 
+  /** Les deux trous fermés le 2026-09-19 : l'intro les nomme, sans quoi on les croirait dehors. */
+  it('nomme la fermeture d’un canal et le changement de catégorie', async () => {
+    const { fixture } = await mount();
+    const intro = String(fixture.nativeElement.textContent);
+
+    expect(intro).toContain("fermeture d'un canal");
+    expect(intro).toContain("changement de catégorie d'un produit");
+  });
+
   /** Un lien collé depuis le journal entier : le module n'élargit rien, il est retiré. */
   it('ignore un module venu de l’adresse, et l’en retire', async () => {
     const { tax, router } = await mount('/journal-fiscal?module=pim&actorId=stf_1');

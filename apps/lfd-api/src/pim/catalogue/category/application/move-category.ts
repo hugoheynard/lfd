@@ -53,9 +53,11 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
         type: PIM_EVENTS.productCategoryMoved,
         subjectType: "product_category",
         subjectId: category.id,
-        // Le parent AVANT et APRÈS : c'est de lui que la famille tient sa TVA
-        // et ses canaux, donc c'est lui qu'on vient chercher quand un tarif a
-        // changé sans que personne n'ait touché au tarif.
+        // Le parent AVANT et APRÈS : la place de la famille dans l'arbre. Elle
+        // ne tient de lui ni sa TVA ni ses canaux — `effectiveVat` ne lit que
+        // la famille directe d'une fiche, et les canaux se lisent sur son seul
+        // `channelPreset` (vérifié le 2026-09-19 ; ce commentaire affirmait
+        // l'inverse). Déplacer une famille ne change donc aucun taux.
         payload: { parentId: { from, to: command.parentId } },
       });
       await this.categories.save(category, ticket);

@@ -44,6 +44,12 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // correspondance s'écrit.
   [PIM_EVENTS.productVatChanged]: ["vatByContext"],
   [PIM_EVENTS.productChannelsChanged]: ["soldContexts"],
+  // La famille, et elle seule : `vatByContext` et `soldContexts` d'une révision
+  // sont EFFECTIFS, et un reclassement a pu les changer — ou non, si les deux
+  // familles règlent pareil, ou pour une autre cause dans le même intervalle.
+  // Il n'a donc que PU en être l'auteur, et ce module n'attribue pas un
+  // possible (cf. les causes globales, plus bas).
+  [PIM_EVENTS.productReclassified]: ["categoryId", "categoryName"],
   [PIM_EVENTS.productPublished]: ["status"],
   [PIM_EVENTS.productUnpublished]: ["status"],
   [PIM_EVENTS.productArchived]: ["status"],

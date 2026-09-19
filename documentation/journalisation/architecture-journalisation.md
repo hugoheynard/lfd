@@ -302,26 +302,26 @@ même recherche, mêmes pages figées —, bornée **au serveur** à une liste f
 de types (`TAX_JOURNAL_SLICE`, `b2b/growth/domain/activity-slice.ts`). Hugo,
 2026-09-19 : « la compta doit voir tout ce qui touche au taux ».
 
-| Dans la tranche                                       | Pourquoi                                                                                                                                                                                                                                                                                                                                     |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vat_rate.*`                                          | les taux eux-mêmes                                                                                                                                                                                                                                                                                                                           |
-| `product_category.vat_changed`, `product.vat_changed` | le taux d'une famille, ou la dérogation d'une fiche, **par contexte de vente** — la charge est indexée par la clé du contexte : c'est là que vit « un taux par contexte »                                                                                                                                                                    |
-| `accounting_rules.*`                                  | le rapport et la méthode du prix pro, sous le même droit que les taux                                                                                                                                                                                                                                                                        |
-| `sales_context.*` — le type entier                    | le contexte ne porte aucun taux, mais il est l'axe du traitement fiscal : l'ouvrir en crée un, le mettre hors service le retire du réglable et de Shopify, le supprimer efface en cascade les lignes de taux restées sur lui. `updated` mêle cette bascule au libellé et au rang, sans fait dédié : un réglage du seul libellé remonte aussi |
-| `order_late_fee.*` — le type entier                   | la surtaxe est une ligne facturée avec son propre taux, et chaque fait le porte avant et après. Un fait dédié au taux en ferait deux pour un geste que le lot 1 a voulu unique                                                                                                                                                               |
+| Dans la tranche                                       | Pourquoi                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vat_rate.*`                                          | les taux eux-mêmes                                                                                                                                                                                                                                                                                                                                                 |
+| `product_category.vat_changed`, `product.vat_changed` | le taux d'une famille, ou la dérogation d'une fiche, **par contexte de vente** — la charge est indexée par la clé du contexte : c'est là que vit « un taux par contexte ». Fermer un canal écrit **aussi** ce fait quand la fermeture efface un taux (`{ contexte: { from, to: null } }`, dans la même transaction que `*.channels_changed`, depuis le 2026-09-19) |
+| `product.reclassified`                                | la fiche change de famille (`{ from, to }`, deux identifiants), donc des taux dont elle hérite. Fait dédié du 2026-09-19, écrit à côté de `product.identity_saved` seulement quand la famille change : le diff d'identité entier inonderait la tranche de chaque nom retouché                                                                                      |
+| `accounting_rules.*`                                  | le rapport et la méthode du prix pro, sous le même droit que les taux                                                                                                                                                                                                                                                                                              |
+| `sales_context.*` — le type entier                    | le contexte ne porte aucun taux, mais il est l'axe du traitement fiscal : l'ouvrir en crée un, le mettre hors service le retire du réglable et de Shopify, le supprimer efface en cascade les lignes de taux restées sur lui. `updated` mêle cette bascule au libellé et au rang, sans fait dédié : un réglage du seul libellé remonte aussi                       |
+| `order_late_fee.*` — le type entier                   | la surtaxe est une ligne facturée avec son propre taux, et chaque fait le porte avant et après. Un fait dédié au taux en ferait deux pour un geste que le lot 1 a voulu unique                                                                                                                                                                                     |
 
-**Hors de la tranche alors qu'ils peuvent toucher un taux** — des faits mêlés,
-dont le fait dédié reste une décision (inventaire du 2026-09-19) :
+**Hors de la tranche alors qu'il peut toucher un taux** — un fait mêlé, dont
+le fait dédié reste une décision (inventaire du 2026-09-19) :
 
-- `product_category.channels_changed`, `product.channels_changed` : fermer un
-  canal **efface** les taux du contexte fermé (`forgetVatOfClosedChannels`,
-  `Product.setChannels`), et la charge ne dit que les canaux. Un fait dédié
-  toucherait les deux handlers de canaux du PIM ;
-- `product.identity_saved` avec un `categoryId` changé : la fiche change de
-  famille, donc des taux dont elle hérite. Le type entier inonderait la tranche
-  de chaque nom retouché ; un fait dédié serait un type neuf du référentiel ;
 - `catalog_revision.pushed`, `catalog_delivery.accepted` : la publication porte
   les taux jusqu'au canal, sans en porter un dans sa charge.
+
+Les deux autres trous de cet inventaire sont **fermés le 2026-09-19** (Hugo
+l'a validé le jour même) : la fermeture d'un canal écrit le fait de TVA du taux
+qu'elle efface, et le reclassement d'une fiche écrit `product.reclassified`.
+`*.channels_changed` et `product.identity_saved` restent **hors** de la
+tranche — leur part fiscale est désormais dite par ces deux faits-là.
 
 N'y entrent pas, parce qu'ils ne touchent aucun taux : `product.created` (la
 fiche hérite du taux de sa famille, elle n'en change pas), `product_category.created`

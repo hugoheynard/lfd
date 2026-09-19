@@ -274,6 +274,18 @@ describe("l'historique d'une fiche — les trois cercles", () => {
     expect(instants).toEqual([...instants].sort().reverse());
     expect(entries[0]?.type).toBe("product.identity_saved");
   });
+
+  /** Le fait dédié du 2026-09-19 entre par le préfixe `product.`, sans fil neuf. */
+  it("montre le reclassement de la fiche dans son propre cercle", async () => {
+    const scene = await aScene();
+    await renameProduct(scene.productId, scene.ancestorId, "Tarte au citron");
+
+    const { entries } = await read(scene.productId);
+    const reclassified = entries.filter((entry) => entry.type === "product.reclassified");
+
+    expect(reclassified.map((entry) => entry.circle)).toEqual(["product"]);
+    expect(reclassified[0]?.payload).toEqual({ from: scene.familyId, to: scene.ancestorId });
+  });
 });
 
 describe("l'historique d'une fiche — les pages", () => {

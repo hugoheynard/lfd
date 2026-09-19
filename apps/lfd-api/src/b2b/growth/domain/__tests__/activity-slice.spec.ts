@@ -7,9 +7,9 @@ import { TAX_JOURNAL_SLICE } from "../activity-slice.js";
  */
 describe("TAX_JOURNAL_SLICE", () => {
   /** « Tout ce qui touche au taux » (Hugo, 2026-09-19). */
-  it("porte la TVA, les règles comptables, les contextes de vente et la surtaxe", () => {
+  it("porte la TVA, le reclassement, les règles comptables, les contextes de vente et la surtaxe", () => {
     expect(TAX_JOURNAL_SLICE).toEqual({
-      types: ["product_category.vat_changed", "product.vat_changed"],
+      types: ["product_category.vat_changed", "product.vat_changed", "product.reclassified"],
       prefixes: ["vat_rate.", "accounting_rules.", "sales_context.", "order_late_fee."],
     });
   });
@@ -28,5 +28,15 @@ describe("TAX_JOURNAL_SLICE", () => {
     expect(covered("order_late_fee.set")).toBe(true);
     expect(covered("order_cutoff_waiver.granted")).toBe(false);
     expect(covered("order.placed")).toBe(false);
+  });
+
+  /**
+   * Le reclassement entre par son fait dédié, jamais par le diff d'identité
+   * qui porte aussi le `categoryId` : chaque nom retouché inonderait la tranche.
+   */
+  it("prend le reclassement d'une fiche sans prendre la sauvegarde de son identité", () => {
+    expect(TAX_JOURNAL_SLICE.types).toContain("product.reclassified");
+    expect(TAX_JOURNAL_SLICE.types).not.toContain("product.identity_saved");
+    expect(TAX_JOURNAL_SLICE.types).not.toContain("product.channels_changed");
   });
 });

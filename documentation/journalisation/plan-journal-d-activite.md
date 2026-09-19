@@ -193,7 +193,9 @@ membres.
 > doit voir tout ce qui touche au taux » — `sales_context.*` et
 > `order_late_fee.*` entrent dans la tranche, inventaire dans
 > `architecture-journalisation.md` §8 ; trois faits mêlés (fermeture d'un canal,
-> reclassement d'une fiche, publication) attendent la décision d'un fait dédié.
+> reclassement d'une fiche, publication) attendaient la décision d'un fait dédié.
+> ~~Fermeture et reclassement~~ fermés le 2026-09-19 (bâti, non commité) : le
+> fait de TVA du taux effacé, et `product.reclassified`. Reste la publication.
 > Et un module **`comptabilite`** range `legal_entity.` et `payment_mandate.`.
 
 - **Une seconde lecture**, bornée **au serveur** par une clause `AND` sur une

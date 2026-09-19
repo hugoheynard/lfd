@@ -28,7 +28,14 @@ export interface ActivitySlice {
  * - `vat_rate.*` — les taux eux-mêmes ;
  * - `product_category.vat_changed`, `product.vat_changed` — le taux d'une
  *   famille, ou la dérogation d'une fiche, **par contexte de vente** : c'est là
- *   que vit « un taux par contexte », la charge est indexée par sa clé ;
+ *   que vit « un taux par contexte », la charge est indexée par sa clé. Fermer
+ *   un canal écrit AUSSI ce fait quand la fermeture efface un taux
+ *   (`{ contexte: { from, to: null } }`, à côté de `*.channels_changed` —
+ *   depuis le 2026-09-19) ;
+ * - `product.reclassified` — la fiche change de famille (`{ from, to }`),
+ *   donc des taux dont elle hérite. Un fait dédié (2026-09-19) : y verser
+ *   `product.identity_saved`, qui porte aussi le `categoryId`, inonderait la
+ *   tranche de chaque nom retouché ;
  * - `accounting_rules.*` — le rapport et la méthode du prix pro, sous le même
  *   droit que les taux ;
  * - `sales_context.*` — le contexte est l'axe du traitement fiscal. Il ne porte
@@ -42,14 +49,15 @@ export interface ActivitySlice {
  *   après. Le type ENTIER : un fait dédié au taux ferait deux faits pour un
  *   geste que le lot 1 a voulu unique.
  *
- * Ce qui n'y entre PAS alors qu'il peut toucher un taux — des faits mêlés dont
- * le fait dédié reste à décider : la fermeture d'un canal
- * (`*.channels_changed`), qui efface les taux du contexte fermé ; le
- * reclassement d'une fiche (`product.identity_saved` avec `categoryId`), qui
- * change la famille dont elle hérite ; la publication (`catalog_revision.pushed`,
- * `catalog_delivery.accepted`), qui porte les taux jusqu'au canal.
+ * Ce qui n'y entre PAS alors qu'il peut toucher un taux — un fait mêlé dont
+ * le fait dédié reste à décider : la publication (`catalog_revision.pushed`,
+ * `catalog_delivery.accepted`), qui porte les taux jusqu'au canal. Les deux
+ * autres trous de l'inventaire du matin — la fermeture d'un canal et le
+ * reclassement d'une fiche — ont reçu leur fait le 2026-09-19 (ci-dessus) ;
+ * `*.channels_changed` et `product.identity_saved` restent dehors, leur part
+ * fiscale est désormais dite ailleurs.
  */
 export const TAX_JOURNAL_SLICE: ActivitySlice = {
-  types: ["product_category.vat_changed", "product.vat_changed"],
+  types: ["product_category.vat_changed", "product.vat_changed", "product.reclassified"],
   prefixes: ["vat_rate.", "accounting_rules.", "sales_context.", "order_late_fee."],
 };

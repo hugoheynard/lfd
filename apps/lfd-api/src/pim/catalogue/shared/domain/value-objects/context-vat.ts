@@ -36,3 +36,34 @@ export function effectiveVat<T>(
 ): Readonly<Record<string, T>> {
   return { ...family, ...product };
 }
+
+/** Un taux effacé, dans la forme des faits `*.vat_changed` : il était, il n'est plus. */
+export interface ErasedVat {
+  readonly from: string;
+  readonly to: null;
+}
+
+/**
+ * Les taux qu'un geste a **effacés** — clé de contexte → `{ from, to: null }`.
+ *
+ * La forme est celle que `product_category.vat_changed` et
+ * `product.vat_changed` portent déjà (`set-category-vat`, `set-product-vat`) :
+ * fermer un canal efface le taux du contexte fermé, et la comptabilité doit le
+ * relire comme n'importe quel autre changement de taux, sans apprendre une
+ * seconde charge. Clés triées, comme chez les deux voisins.
+ *
+ * Seules les disparitions comptent : un taux qui change de valeur n'est pas un
+ * effacement, et aucun geste de canaux n'en change.
+ */
+export function erasedVat(
+  before: ContextVat,
+  after: ContextVat,
+): Readonly<Record<string, ErasedVat>> {
+  return Object.fromEntries(
+    Object.entries(before)
+      .filter(([key]) => after[key] === undefined)
+      // L'ordre des unités de code, celui du `.sort()` des deux voisins.
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([key, from]) => [key, { from, to: null }] as const),
+  );
+}

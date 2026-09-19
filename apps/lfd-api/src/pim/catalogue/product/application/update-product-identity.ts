@@ -1,8 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { changesBetween } from "../../../journal/changes.js";
-import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { changesBetween, type FieldChanges } from "../../../journal/changes.js";
+import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 
 import {
   CategoryArchivedError,
@@ -71,6 +71,7 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     }
 
     const before = UpdateProductIdentityHandler.identityOf(product.snapshot());
+    const previousCategoryId = product.categoryId;
     product.rename(localizedText("nom", input.name));
     product.changeKind(input.kind);
     product.reclassify(input.categoryId);
@@ -83,19 +84,44 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     // de sens ici. Enregistrer une section sans rien y changer n'écrit aucun
     // fait — sinon l'historique se remplit de gestes sans effet.
     await this.uow.run(async () => {
-      // La trace d'abord : c'est elle qui délivre le laissez-passer sans lequel
-      // le dépôt refuse d'écrire. Rien n'a changé ? On le DIT, et le motif se
-      // grep — un enregistrement sans effet n'a pas de fait à nommer.
-      const ticket =
-        Object.keys(changes).length > 0
-          ? await this.journal.trace({
-              type: PIM_EVENTS.productIdentitySaved,
-              subjectType: "product",
-              subjectId: id,
-              payload: { changes },
-            })
-          : this.journal.untraced("section enregistrée sans modification");
+      const ticket = await this.journalize(id, changes, previousCategoryId, product.categoryId);
       await this.products.save(product, ticket);
     });
+  }
+
+  /**
+   * La trace d'abord : c'est elle qui délivre le laissez-passer sans lequel le
+   * dépôt refuse d'écrire. Rien n'a changé ? On le DIT, et le motif se grep —
+   * un enregistrement sans effet n'a pas de fait à nommer.
+   *
+   * Changer de famille change les taux et les canaux dont la fiche hérite : un
+   * fait à part (`product.reclassified`), que la comptabilité relit sans relire
+   * chaque nom retouché (Hugo, 2026-09-19). Le diff d'identité garde son
+   * `categoryId` — les lecteurs d'avant le lisent là.
+   */
+  private async journalize(
+    productId: string,
+    changes: FieldChanges,
+    fromCategoryId: string,
+    toCategoryId: string,
+  ): Promise<WriteTicket> {
+    if (Object.keys(changes).length === 0) {
+      return this.journal.untraced("section enregistrée sans modification");
+    }
+    const ticket = await this.journal.trace({
+      type: PIM_EVENTS.productIdentitySaved,
+      subjectType: "product",
+      subjectId: productId,
+      payload: { changes },
+    });
+    if (fromCategoryId !== toCategoryId) {
+      await this.journal.trace({
+        type: PIM_EVENTS.productReclassified,
+        subjectType: "product",
+        subjectId: productId,
+        payload: { from: fromCategoryId, to: toCategoryId },
+      });
+    }
+    return ticket;
   }
 }

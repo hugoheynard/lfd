@@ -149,7 +149,7 @@ describe("activitySnapshotWhereOf — le total compte l'instantané, pas la page
 describe("activityWhereOf — une tranche bornée au serveur", () => {
   const ANCHOR = "01K00000000000000000000009";
   const SLICE_SQL =
-    "(type = ? OR type = ? OR starts_with(type, ?) OR starts_with(type, ?)" +
+    "(type = ? OR type = ? OR type = ? OR starts_with(type, ?) OR starts_with(type, ?)" +
     " OR starts_with(type, ?) OR starts_with(type, ?))";
 
   it("pose la tranche seule quand l'appelant ne filtre rien", () => {
@@ -159,6 +159,7 @@ describe("activityWhereOf — une tranche bornée au serveur", () => {
     expect(where.values).toEqual([
       "product_category.vat_changed",
       "product.vat_changed",
+      "product.reclassified",
       "vat_rate.",
       "accounting_rules.",
       "sales_context.",

@@ -130,7 +130,14 @@ export const PIM_EVENTS = {
   catalogRevisionPushed: "catalog_revision.pushed",
   productCategoryCreated: "product_category.created",
   productCategoryRenamed: "product_category.renamed",
-  /** Change le parent, donc l'héritage de TVA et de canaux en aval. */
+  /**
+   * Change le parent — sa place dans l'arbre, et rien de ce qu'elle facture.
+   *
+   * ⚠️ Ce commentaire disait « donc l'héritage de TVA et de canaux en aval ».
+   * C'est faux : une famille ne tient ni sa TVA ni ses canaux de son parent —
+   * `effectiveVat` ne lit que la famille directe d'une fiche, et le lecteur du
+   * catalogue ne lit que son `channelPreset` (vérifié le 2026-09-19).
+   */
   productCategoryMoved: "product_category.moved",
   productCategoryArchived: "product_category.archived",
   /**
@@ -183,6 +190,22 @@ export const PIM_EVENTS = {
   variantRenamed: "variant.renamed",
   productArchived: "product.archived",
   productRestored: "product.restored",
+  /**
+   * **La fiche change de famille** — `{ from, to }`, deux identifiants de
+   * famille.
+   *
+   * Distinct de `identity_saved`, qui porte déjà `categoryId` dans son diff et
+   * le garde : ce fait-ci existe parce que changer de famille change les taux
+   * et les canaux dont la fiche HÉRITE, et la comptabilité le relit dans la
+   * tranche fiscale (Hugo, 2026-09-19 : « la compta doit voir tout ce qui
+   * touche au taux »). Y verser `identity_saved` entier l'inonderait de chaque
+   * nom retouché.
+   *
+   * Sans libellé, comme toute référence à une famille dans les charges du
+   * référentiel (`product.created`, `product_category.moved`,
+   * `identity_saved` : l'identifiant seul, vérifié le 2026-09-19).
+   */
+  productReclassified: "product.reclassified",
   /**
    * **Le point de vente** — boutique ou plateforme, son offre et sa grille de
    * tables.

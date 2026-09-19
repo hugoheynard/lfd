@@ -27,6 +27,7 @@ const stubAdminVerifier = {
 const TAX_JOURNAL = "/admin/activity/tax";
 const RATES = "/pim/vat-rates";
 const CATEGORIES = "/pim/catalogue/categories";
+const PRODUCTS = "/pim/catalogue/products";
 const CONTEXTS = "/pim/sales-contexts";
 const LATE_FEE = "/admin/order-late-fee";
 
@@ -147,7 +148,8 @@ const isFiscal = (type: string): boolean =>
   type.startsWith("sales_context.") ||
   type.startsWith("order_late_fee.") ||
   type === "product_category.vat_changed" ||
-  type === "product.vat_changed";
+  type === "product.vat_changed" ||
+  type === "product.reclassified";
 
 describe("la tranche fiscale — ce que la comptabilité relit", () => {
   it("rend tous les faits fiscaux, et rien d'autre", async () => {
@@ -254,6 +256,71 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
 
     expect(typesOf(page.events)).toEqual(["product_category.vat_changed"]);
     expect(page.events[0]?.payload).toEqual({ b2b: { from: null, to: rate } });
+  });
+
+  /**
+   * Fermer un canal efface le taux du contexte fermé : le fait de TVA l'écrit
+   * (2026-09-19), `channels_changed`, qui ne porte que les canaux, reste dehors.
+   */
+  it("rend le taux qu'efface la fermeture d'un canal, et pas le fait de canaux", async () => {
+    const category = await familySoldToProfessionals();
+    const rate = await rateWrittenByAccountant("Réduit", 5.5);
+    await as("staff-e2e")
+      .put(`${CATEGORIES}/${category}/vat`)
+      .send({ vatByContext: { b2b: rate } })
+      .expect(200);
+
+    await as("staff-e2e").put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
+
+    const page = await readTax({ subjectType: "product_category", subjectId: category });
+    expect(typesOf(page.events)).toEqual([
+      "product_category.vat_changed",
+      "product_category.vat_changed",
+    ]);
+    expect(page.events[0]?.payload).toEqual({ b2b: { from: rate, to: null } });
+  });
+
+  /** Une fiche de la famille, créée par la route réelle. */
+  async function tartIn(category: string): Promise<string> {
+    const response = await as("staff-e2e")
+      .post(PRODUCTS)
+      .send({ name: { fr: "Tarte" }, kind: "daily", categoryId: category })
+      .expect(201);
+    return jsonBody<{ id: string }>(response).id;
+  }
+
+  async function saveIdentity(product: string, nameFr: string, category: string): Promise<void> {
+    await as("staff-e2e")
+      .put(`${PRODUCTS}/${product}/identity`)
+      .send({ name: { fr: nameFr }, kind: "daily", categoryId: category })
+      .expect(200);
+  }
+
+  it("rend le reclassement d'une fiche, familles de départ et d'arrivée", async () => {
+    const from = await familySoldToProfessionals();
+    const to = jsonBody<{ id: string }>(
+      await as("staff-e2e")
+        .post(CATEGORIES)
+        .send({ name: { fr: "Gâteaux" } })
+        .expect(201),
+    ).id;
+    const product = await tartIn(from);
+
+    await saveIdentity(product, "Tarte", to);
+
+    const page = await readTax({ subjectType: "product", subjectId: product });
+    expect(typesOf(page.events)).toEqual(["product.reclassified"]);
+    expect(page.events[0]?.payload).toEqual({ from, to });
+  });
+
+  it("ne rend pas une fiche renommée sans être reclassée", async () => {
+    const category = await familySoldToProfessionals();
+    const product = await tartIn(category);
+
+    await saveIdentity(product, "Tarte aux pommes", category);
+
+    const page = await readTax({ subjectType: "product", subjectId: product });
+    expect(page.total).toBe(0);
   });
 
   it("ne rend pas les canaux d'une famille réglés sans toucher à un taux", async () => {

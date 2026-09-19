@@ -51,6 +51,10 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // et les contextes de vente — exactement ce qu'on relit avant de signer.
   [PIM_EVENTS.productVatChanged]: true,
   [PIM_EVENTS.productChannelsChanged]: true,
+  // Changer de famille change les taux et les canaux hérités. Le même geste
+  // écrit aussi `identity_saved`, déjà compté : ce fait-ci ne périme donc
+  // rien de plus, mais la table est exhaustive et il y a sa place.
+  [PIM_EVENTS.productReclassified]: true,
   // La composition CONTREDIT une déclaration d'allergènes sans jamais la
   // remplacer (cf. `ProductIngredientAllergensView`). Depuis que la section
   // réglementaire montre ce que la composition mentionne, en changer la liste

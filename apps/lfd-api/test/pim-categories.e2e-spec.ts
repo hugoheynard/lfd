@@ -198,6 +198,85 @@ describe("un taux ne tient que sur un canal vendu", () => {
   });
 });
 
+/**
+ * **Le taux qu'efface une fermeture de canal est journalisé** (2026-09-19) —
+ * la comptabilité relit tout ce qui touche au taux, et `channels_changed` ne
+ * porte que les canaux. Le fait de TVA part dans la même transaction : la
+ * technique de `pim-journal-atomicity`, une contrainte qui refuse ce type-là.
+ */
+describe("fermer un canal journalise le taux qu'il efface", () => {
+  const VAT_CHANGED = "product_category.vat_changed";
+  const REFUSAL = "e2e_journal_tva_en_panne";
+
+  async function repairJournal(): Promise<void> {
+    await ctx.prisma.$executeRawUnsafe(
+      `ALTER TABLE growth.activity_events DROP CONSTRAINT IF EXISTS ${REFUSAL}`,
+    );
+  }
+
+  /** Le journal refuse désormais tout fait de TVA de famille. */
+  async function breakJournal(): Promise<void> {
+    await ctx.prisma.$executeRawUnsafe(
+      `ALTER TABLE growth.activity_events
+         ADD CONSTRAINT ${REFUSAL} CHECK (type <> '${VAT_CHANGED}') NOT VALID`,
+    );
+  }
+
+  afterEach(repairJournal);
+
+  /** Une famille vendue en B2B, avec son taux B2B réglé. */
+  async function familyWithB2bRate(): Promise<{ category: string; rate: string }> {
+    const category = await createCategory("Viennoiseries");
+    const rate = await createRate("Réduit", 5.5);
+    await staff()
+      .put(`${CATEGORIES}/${category}/channels`)
+      .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
+      .expect(200);
+    await staff()
+      .put(`${CATEGORIES}/${category}/vat`)
+      .send({ vatByContext: { b2b: rate } })
+      .expect(200);
+    return { category, rate };
+  }
+
+  async function factsOf(category: string): Promise<{ type: string; payload: unknown }[]> {
+    return ctx.prisma.activityEvent.findMany({
+      where: { subjectType: "product_category", subjectId: category },
+      orderBy: { id: "asc" },
+      select: { type: true, payload: true },
+    });
+  }
+
+  it("écrit le fait de TVA à côté du fait de canaux", async () => {
+    const { category, rate } = await familyWithB2bRate();
+
+    await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
+
+    const facts = (await factsOf(category)).slice(-2);
+    expect(facts.map((fact) => fact.type)).toEqual([
+      "product_category.channels_changed",
+      VAT_CHANGED,
+    ]);
+    expect(facts[1]?.payload).toEqual({ b2b: { from: rate, to: null } });
+  });
+
+  it("ANNULE la fermeture quand le fait de TVA ne s'écrit pas", async () => {
+    const { category, rate } = await familyWithB2bRate();
+    const before = (await factsOf(category)).length;
+    await breakJournal();
+
+    const response = await staff().put(`${CATEGORIES}/${category}/channels`).send([]);
+
+    // Le fait de canaux, lui, passait la contrainte : il est annulé avec le
+    // reste. Pas de canal fermé sans la trace du taux qu'il efface.
+    expect(response.status).toBeGreaterThanOrEqual(500);
+    const after = await readCategory(category);
+    expect(after.vatByContext).toEqual({ b2b: rate });
+    expect(after.channelPreset).toEqual([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
+    expect(await factsOf(category)).toHaveLength(before);
+  });
+});
+
 describe("l'archivage regarde ce qui pend en dessous", () => {
   /** Le compte de sous-familles vivantes est un `COUNT` SQL, jamais joué ailleurs. */
   it("refuse d'archiver une famille qui porte une sous-famille vivante", async () => {
