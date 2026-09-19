@@ -20,11 +20,9 @@ import {
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  GrantOrderCutoffWaiverCommand,
-  ListOrderCutoffWaiversQuery,
-  RevokeOrderCutoffWaiverCommand,
-} from "../application/order-cutoff-waiver.commands.js";
+import { GrantOrderCutoffWaiverCommand } from "../application/grant-order-cutoff-waiver.command.js";
+import { ListOrderCutoffWaiversQuery } from "../application/list-order-cutoff-waivers.query.js";
+import { RevokeOrderCutoffWaiverCommand } from "../application/revoke-order-cutoff-waiver.command.js";
 
 /**
  * **Dérogations d'heure limite** — autoriser un client à commander en retard

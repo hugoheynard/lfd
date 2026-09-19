@@ -68,7 +68,8 @@ class DeliveryNotFoundError extends ResourceNotFoundError {
  * Ce JSDoc justifiait l'absence de journal par « ce contexte n'en a aucun ».
  * C'est faux depuis le 2026-09-19 : les décisions voisines — un prix négocié,
  * un article masqué — y écrivent leurs faits (`catalog-decision.handlers.ts`,
- * vérifié ce jour-là). La validation y écrit donc aussi le sien,
+ * vérifié ce jour-là ; découpé en un fichier par geste le 2026-09-19, cf.
+ * `catalog-decision-support.ts`). La validation y écrit donc aussi le sien,
  * `catalog_delivery.accepted`, dans la même transaction que la clôture : sans
  * lui, elle serait la seule décision du catalogue qu'on ne lirait pas dans le
  * journal. Il ne remplace aucune des trois traces ; il les nomme.

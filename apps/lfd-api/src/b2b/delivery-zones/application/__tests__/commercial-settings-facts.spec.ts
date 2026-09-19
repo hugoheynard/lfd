@@ -10,26 +10,20 @@ import type {
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { OrderCutoffRepository } from "../../../order-cutoffs/domain/order-cutoff.repository.js";
-import {
-  CreateOrderCutoffCommand,
-  RemoveOrderCutoffCommand,
-} from "../../../order-cutoffs/application/order-cutoff.commands.js";
-import {
-  CreateOrderCutoffHandler,
-  RemoveOrderCutoffHandler,
-} from "../../../order-cutoffs/application/order-cutoff.handlers.js";
+import { CreateOrderCutoffCommand } from "../../../order-cutoffs/application/create-order-cutoff.command.js";
+import { CreateOrderCutoffHandler } from "../../../order-cutoffs/application/create-order-cutoff.handler.js";
+import { RemoveOrderCutoffCommand } from "../../../order-cutoffs/application/remove-order-cutoff.command.js";
+import { RemoveOrderCutoffHandler } from "../../../order-cutoffs/application/remove-order-cutoff.handler.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
-import {
-  SetDefaultPickupAddressCommand,
-  UpdatePickupAddressCommand,
-} from "../../../pickup-addresses/application/pickup-address.commands.js";
-import {
-  SetDefaultPickupAddressHandler,
-  UpdatePickupAddressHandler,
-} from "../../../pickup-addresses/application/pickup-address.handlers.js";
+import { SetDefaultPickupAddressCommand } from "../../../pickup-addresses/application/set-default-pickup-address.command.js";
+import { SetDefaultPickupAddressHandler } from "../../../pickup-addresses/application/set-default-pickup-address.handler.js";
+import { UpdatePickupAddressCommand } from "../../../pickup-addresses/application/update-pickup-address.command.js";
+import { UpdatePickupAddressHandler } from "../../../pickup-addresses/application/update-pickup-address.handler.js";
 import { DeliveryZoneRepository } from "../../domain/delivery-zone.repository.js";
-import { CreateDeliveryZoneCommand, UpdateDeliveryZoneCommand } from "../delivery-zone.commands.js";
-import { CreateDeliveryZoneHandler, UpdateDeliveryZoneHandler } from "../delivery-zone.handlers.js";
+import { CreateDeliveryZoneCommand } from "../create-delivery-zone.command.js";
+import { CreateDeliveryZoneHandler } from "../create-delivery-zone.handler.js";
+import { UpdateDeliveryZoneCommand } from "../update-delivery-zone.command.js";
+import { UpdateDeliveryZoneHandler } from "../update-delivery-zone.handler.js";
 
 /**
  * **Les réglages qui décident du prix payé.**

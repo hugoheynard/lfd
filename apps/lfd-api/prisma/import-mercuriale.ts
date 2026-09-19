@@ -43,7 +43,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Test } from "@nestjs/testing";
 
 import { AppModule } from "../src/appBootstrap/app.module.js";
-import { SetB2bPriceCommand } from "../src/b2b/catalog/application/commands/catalog-decision.commands.js";
+import { SetB2bPriceCommand } from "../src/b2b/catalog/application/commands/set-b2b-price.command.js";
 import { CatalogAdminReader } from "../src/b2b/catalog/domain/ports/catalog-admin.reader.js";
 import { runWithRequestContext } from "../src/platform/context/request-context.store.js";
 import { newTraceId } from "../src/platform/context/trace-context.js";

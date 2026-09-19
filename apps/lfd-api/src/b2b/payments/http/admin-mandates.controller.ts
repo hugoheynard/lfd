@@ -33,10 +33,8 @@ import type { Response } from "express";
 
 import { InvalidScannedDocumentError } from "../../../platform/shared/errors/storage-errors.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  AttachMandateProofCommand,
-  RevokeMandateCommand,
-} from "../application/mandate-commands.js";
+import { AttachMandateProofCommand } from "../application/commands/attach-mandate-proof.command.js";
+import { RevokeMandateCommand } from "../application/commands/revoke-mandate.command.js";
 import { MintMandateCommand } from "../application/commands/mint-mandate.command.js";
 import { SendMandateCommand } from "../application/commands/send-mandate.command.js";
 import { SignMandateCommand } from "../application/commands/sign-mandate.command.js";
@@ -48,7 +46,7 @@ import {
   MandateNotFoundError,
   MandateProofNotFoundError,
 } from "../domain/errors/mandate-errors.js";
-import { GetCompanyMandateQuery } from "../application/mandate-queries.js";
+import { GetCompanyMandateQuery } from "../application/queries/get-company-mandate.query.js";
 import { PaymentGateway } from "../domain/payment-gateway.js";
 
 /** Backstop DoS du multipart, aligné sur le KBIS (le domaine tranche à 10 Mo). */

@@ -60,10 +60,10 @@ staff** qui touchent ce qui est vendu, facturé ou produit :
 
 | Geste                                                                           | Où                                                                                                                             |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| ~~poser, retirer la **surtaxe de retard**~~ — fait (`bfed73cc`)                 | `b2b/order-waivers/application/order-late-fee.handlers.ts`                                                                     |
-| ~~accorder, retirer une **dérogation d'heure limite**~~ — fait (`bfed73cc`)     | `b2b/order-waivers/application/order-cutoff-waiver.handlers.ts`                                                                |
+| ~~poser, retirer la **surtaxe de retard**~~ — fait (`bfed73cc`)                 | `b2b/order-waivers/application/save-order-late-fee.handler.ts`, `clear-order-late-fee.handler.ts`                              |
+| ~~accorder, retirer une **dérogation d'heure limite**~~ — fait (`bfed73cc`)     | `b2b/order-waivers/application/grant-order-cutoff-waiver.handler.ts`, `revoke-order-cutoff-waiver.handler.ts`                  |
 | ~~changer le **RIB** d'une société~~ — fait (`bfed73cc`)                        | `b2b/payments/`, `set-company-bank-account`                                                                                    |
-| ~~les **décisions de catalogue**~~ — fait (`8fd41f16`)                          | `b2b/catalog/application/commands/catalog-decision.handlers.ts`                                                                |
+| ~~les **décisions de catalogue**~~ — fait (`8fd41f16`)                          | `b2b/catalog/application/commands/catalog-decision-support.ts` et ses quatre handlers                                          |
 | ~~**clore**, **reprendre** une journée de production~~ — fait (`c711b85f`)      | `production/application/commands/`                                                                                             |
 | cocher, décocher une ligne **fabriquée** ou **emballée** ; compter les **bacs** | `production/application/commands/` — le JSDoc de `step-packing-containers` dit déjà « qui a appuyé se lirait dans le journal » |
 

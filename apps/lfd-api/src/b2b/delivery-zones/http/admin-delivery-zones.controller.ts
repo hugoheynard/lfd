@@ -8,11 +8,9 @@ import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } fr
 import { CommandBus } from "@nestjs/cqrs";
 
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  CreateDeliveryZoneCommand,
-  RemoveDeliveryZoneCommand,
-  UpdateDeliveryZoneCommand,
-} from "../application/delivery-zone.commands.js";
+import { CreateDeliveryZoneCommand } from "../application/create-delivery-zone.command.js";
+import { RemoveDeliveryZoneCommand } from "../application/remove-delivery-zone.command.js";
+import { UpdateDeliveryZoneCommand } from "../application/update-delivery-zone.command.js";
 
 /**
  * Gestion **staff** des zones de livraison (page Réglages → Retraits & livraisons).

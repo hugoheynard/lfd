@@ -2,12 +2,10 @@ import { Module } from "@nestjs/common";
 
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ListFulfillmentDaysHandler } from "./application/list-fulfillment-days.handler.js";
-import {
-  CreateOrderCutoffHandler,
-  ListOrderCutoffsHandler,
-  RemoveOrderCutoffHandler,
-  UpdateOrderCutoffHandler,
-} from "./application/order-cutoff.handlers.js";
+import { CreateOrderCutoffHandler } from "./application/create-order-cutoff.handler.js";
+import { ListOrderCutoffsHandler } from "./application/list-order-cutoffs.handler.js";
+import { RemoveOrderCutoffHandler } from "./application/remove-order-cutoff.handler.js";
+import { UpdateOrderCutoffHandler } from "./application/update-order-cutoff.handler.js";
 import { OrderCutoffRepository } from "./domain/order-cutoff.repository.js";
 import { AdminOrderCutoffsController } from "./http/admin-order-cutoffs.controller.js";
 import { FulfillmentDaysController } from "./http/fulfillment-days.controller.js";

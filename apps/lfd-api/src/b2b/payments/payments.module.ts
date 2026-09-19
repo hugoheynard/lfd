@@ -27,11 +27,9 @@ import { GetMyCompanyBankAccountHandler } from "./application/queries/get-my-com
 import { GetMandateProofHandler } from "./application/queries/get-mandate-proof.handler.js";
 import { GetMandateMintBlockersHandler } from "./application/queries/get-mandate-mint-blockers.handler.js";
 import { PreviewCustomerMandateHandler } from "./application/queries/preview-customer-mandate.handler.js";
-import {
-  AttachMandateProofHandler,
-  GetCompanyMandateHandler,
-  RevokeMandateHandler,
-} from "./application/mandate.handlers.js";
+import { AttachMandateProofHandler } from "./application/commands/attach-mandate-proof.handler.js";
+import { RevokeMandateHandler } from "./application/commands/revoke-mandate.handler.js";
+import { GetCompanyMandateHandler } from "./application/queries/get-company-mandate.handler.js";
 import { PrismaBankAccountGuardReader } from "./infrastructure/prisma-bank-account-guard.reader.js";
 import { PrismaCompanyBankAccountRepository } from "./infrastructure/prisma-company-bank-account.repository.js";
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";

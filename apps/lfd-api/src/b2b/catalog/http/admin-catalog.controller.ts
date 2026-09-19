@@ -24,12 +24,10 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  AlignOnPimPriceCommand,
-  SetB2bPriceCommand,
-  SetCatalogFeaturedCommand,
-  SetCatalogVisibilityCommand,
-} from "../application/commands/catalog-decision.commands.js";
+import { AlignOnPimPriceCommand } from "../application/commands/align-on-pim-price.command.js";
+import { SetB2bPriceCommand } from "../application/commands/set-b2b-price.command.js";
+import { SetCatalogFeaturedCommand } from "../application/commands/set-catalog-featured.command.js";
+import { SetCatalogVisibilityCommand } from "../application/commands/set-catalog-visibility.command.js";
 import { ExportCatalogCsvQuery } from "../application/queries/export-catalog-csv.query.js";
 import { GetCatalogSummaryQuery } from "../application/queries/get-catalog-summary.query.js";
 import { ListCatalogQuery } from "../application/queries/list-catalog.query.js";

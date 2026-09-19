@@ -3,12 +3,10 @@ import { Module } from "@nestjs/common";
 import { B2bPlatformModule } from "../../pim/channels/b2b-platform/b2b-platform.module.js";
 import { PricerModule } from "../pricing/pricer.module.js";
 
-import {
-  AlignOnPimPriceHandler,
-  SetB2bPriceHandler,
-  SetCatalogFeaturedHandler,
-  SetCatalogVisibilityHandler,
-} from "./application/commands/catalog-decision.handlers.js";
+import { AlignOnPimPriceHandler } from "./application/commands/align-on-pim-price.handler.js";
+import { SetB2bPriceHandler } from "./application/commands/set-b2b-price.handler.js";
+import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
+import { SetCatalogVisibilityHandler } from "./application/commands/set-catalog-visibility.handler.js";
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
