@@ -98,6 +98,11 @@ En `postgres://`, le schéma ne dit plus rien.
    - **B** — assumer que le premier essai du pooler a lieu en production, un
      week-end, avec les gestes 6–7 prêts.
      Recommandation : **A**, si le plan Prisma le permet sans coût.
+
+   ✅ **Tranché par Hugo le 2026-09-19 : B.** Le premier essai du pooler a lieu
+   en production ; le geste 5 est sans objet, et les gestes 7 / 7′ sont la
+   seule répétition.
+
 7. **Identifiants neufs** générés pour la bascule ; **l'ancienne clé Accelerate
    est révoquée ensuite** (elle a fui, action ouverte). Vérifier dans la console,
    avant de révoquer, que les nouveaux identifiants ne dépendent pas de la clé.
@@ -132,8 +137,8 @@ vers le container.
   certificat Prisma le permet.
 - **Le délai des transactions interactives** (5 s par défaut, `maxWait` 2 s) face
   à l'acquisition d'une connexion du pool : à éprouver en option A.
-- **Un environnement de dev applicatif sur Accelerate** : Hugo confirme qu'il
-  n'en existe pas d'autre que la production.
+- ~~**Un environnement de dev applicatif sur Accelerate**~~ — aucun, la
+  production est la seule (Hugo, 2026-09-19).
 - **Ce que fait Cloudflare d'un `wrangler secret put`** sur une instance en
   cours : sans importance si la bascule passe par un commit (§2.4), à savoir
   pour le runbook.
