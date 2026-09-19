@@ -25,6 +25,17 @@ describe("activityQuerySchema — la recherche libre `q`", () => {
   });
 });
 
+/** Le module de la comptabilité (Hugo, 2026-09-19) : un filtre comme les autres. */
+describe("activityQuerySchema — le module `comptabilite`", () => {
+  it("se filtre", () => {
+    expect(activityQuerySchema.parse({ module: "comptabilite" }).module).toBe("comptabilite");
+  });
+
+  it("refuse toujours un module inconnu", () => {
+    expect(activityQuerySchema.safeParse({ module: "compta" }).success).toBe(false);
+  });
+});
+
 /** La tranche fiscale (lot 4 du plan du journal, 2026-09-19). */
 describe("taxActivityQuerySchema — les filtres de la tranche fiscale", () => {
   it("écarte `module` : aucun paramètre ne peut élargir la tranche", () => {

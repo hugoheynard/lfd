@@ -188,9 +188,13 @@ membres.
 
 > Serveur `6259f9ef` (`GET /admin/activity/tax`, `pim_tax:write`), écran
 > `e57919b2` (`/pim/journal-fiscal`), préfixes orphelins `6259f9ef` et
-> `34ea0e97`. Reste : le déployer. Ouvert : `sales_context.*` (un taux par
-> contexte, écrit sous `pim_settings`) hors de la tranche, et `legal_entity.`
-> sans module — deux questions posées à Hugo le 2026-09-19.
+> `34ea0e97`. Reste : le déployer. Les deux questions posées à Hugo le
+> 2026-09-19 sont **tranchées le même jour** (bâti, non commité) : « la compta
+> doit voir tout ce qui touche au taux » — `sales_context.*` et
+> `order_late_fee.*` entrent dans la tranche, inventaire dans
+> `architecture-journalisation.md` §8 ; trois faits mêlés (fermeture d'un canal,
+> reclassement d'une fiche, publication) attendent la décision d'un fait dédié.
+> Et un module **`comptabilite`** range `legal_entity.` et `payment_mandate.`.
 
 - **Une seconde lecture**, bornée **au serveur** par une clause `AND` sur une
   **liste de types** — pas sur un module, qui ouvrirait tout le référentiel :

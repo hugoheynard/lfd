@@ -12,8 +12,9 @@ import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadTaxActivityJournalQuery } from "../application/queries/read-tax-activity-journal.query.js";
 
 /**
- * La **tranche fiscale** du journal d'activité — ce qui a été décidé sur la TVA
- * et les règles comptables, par qui, et quand (plan du journal, lot 4).
+ * La **tranche fiscale** du journal d'activité — ce qui a touché à un taux de
+ * TVA (taux, familles et fiches, règles comptables, contextes de vente,
+ * surtaxe de retard), par qui, et quand (plan du journal, lot 4).
  *
  * Une route à part, et pas un filtre du journal : le journal exige
  * `activity:read`, réservé à `admin` parce qu'il traverse tous les modules. La

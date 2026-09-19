@@ -148,7 +148,9 @@ describe("activitySnapshotWhereOf — le total compte l'instantané, pas la page
  */
 describe("activityWhereOf — une tranche bornée au serveur", () => {
   const ANCHOR = "01K00000000000000000000009";
-  const SLICE_SQL = "(type = ? OR type = ? OR starts_with(type, ?) OR starts_with(type, ?))";
+  const SLICE_SQL =
+    "(type = ? OR type = ? OR starts_with(type, ?) OR starts_with(type, ?)" +
+    " OR starts_with(type, ?) OR starts_with(type, ?))";
 
   it("pose la tranche seule quand l'appelant ne filtre rien", () => {
     const where = activityWhereOf({ limit: 50 }, null, null, TAX_JOURNAL_SLICE);
@@ -159,6 +161,8 @@ describe("activityWhereOf — une tranche bornée au serveur", () => {
       "product.vat_changed",
       "vat_rate.",
       "accounting_rules.",
+      "sales_context.",
+      "order_late_fee.",
     ]);
   });
 

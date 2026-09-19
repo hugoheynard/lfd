@@ -101,6 +101,15 @@ describe('le journal fiscal', () => {
     expect(String(fixture.nativeElement.textContent)).toContain('règles');
   });
 
+  /** « Tout ce qui touche au taux » (Hugo, 2026-09-19) : l'intro dit ce que la vue rend. */
+  it('nomme les contextes de vente et la surtaxe dans ce qu’elle montre', async () => {
+    const { fixture } = await mount();
+    const intro = String(fixture.nativeElement.textContent);
+
+    expect(intro).toContain('contextes de vente');
+    expect(intro).toContain('surtaxe de retard');
+  });
+
   /** Un lien collé depuis le journal entier : le module n'élargit rien, il est retiré. */
   it('ignore un module venu de l’adresse, et l’en retire', async () => {
     const { tax, router } = await mount('/journal-fiscal?module=pim&actorId=stf_1');

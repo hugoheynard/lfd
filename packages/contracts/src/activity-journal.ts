@@ -17,6 +17,13 @@ import { z } from "zod";
  * (2026-09-19). Ordre de déploiement libre : le back-office déjà servi lit la
  * réponse sans la parser (`http.get<T>`) et masque la pastille d'un module qu'il
  * ne connaît pas (`@if (line.moduleLabel)`), vérifié le 2026-09-19.
+ *
+ * `comptabilite` — notre entité émettrice et les mandats SEPA (Hugo,
+ * 2026-09-19) : le travail de la comptabilité, pas un compte client. Même
+ * déploiement que `production` : le back-office déjà servi masque la pastille
+ * d'une valeur qu'il ne connaît pas, sans casser (vérifié le 2026-09-19 pour
+ * `production`, même chemin). L'API d'abord : un back-office neuf qui filtre sur
+ * `comptabilite` devant une API ancienne recevrait un `400`.
  */
 export const activityModuleSchema = z.enum([
   "pim",
@@ -25,6 +32,7 @@ export const activityModuleSchema = z.enum([
   "comptes",
   "equipe",
   "production",
+  "comptabilite",
 ]);
 export type ActivityModule = z.infer<typeof activityModuleSchema>;
 

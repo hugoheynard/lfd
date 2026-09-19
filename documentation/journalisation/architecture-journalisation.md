@@ -263,14 +263,15 @@ autres par la bande.
 
 - **Module** — dérivé du préfixe du `type` (`b2b/growth/domain/activity-module.ts`),
   pas stocké : `pim`, `commercial` (dont les prix négociés), `commandes`,
-  `comptes`, `equipe`, `production`. Un type qui ne se range plus sous un
-  préfixe se renomme. Depuis le 2026-09-19, les règles comptables
+  `comptes`, `equipe`, `production`, `comptabilite`. Un type qui ne se range
+  plus sous un préfixe se renomme. Depuis le 2026-09-19, les règles comptables
   (`accounting_rules.`) et les points de vente (`point_of_sale.`) se rangent
-  sous `pim`, les mandats SEPA (`payment_mandate.`) sous `comptes`, à côté du
-  RIB. **`legal_entity.` n'est rangé nulle part**, délibérément : notre entité
-  émettrice n'est pas un compte client, et la ranger sous `comptes` l'afficherait
-  « Comptes clients ». Elle se lit sous « tous les modules » en attendant une
-  décision.
+  sous `pim` ; **`comptabilite`** (Hugo, 2026-09-19) porte notre entité
+  émettrice (`legal_entity.`, sans module jusque-là) et les mandats SEPA
+  (`payment_mandate.`, sous `comptes` jusque-là) — le travail de
+  `b2b_accounting` et `b2b_payments`. Le RIB d'une société cliente
+  (`company.bank_account_changed`) reste sous `comptes` par son préfixe ; les
+  règles comptables restent sous `pim`, à côté des taux.
 - **Filtres** — `module`, `type`, `subjectType`, `subjectId`, `actorId`,
   période ; un seul constructeur SQL (`activity-journal.where.ts`). Le filtre par
   acteur suit une personne sous **tous** ses identifiants (id de fiche et `sub`
@@ -298,9 +299,37 @@ autres par la bande.
 `GET /admin/activity/tax` (`b2b/growth/http/admin-tax-activity.controller.ts`,
 2026-09-19) : la même page que le journal — mêmes filtres **sauf `module`**,
 même recherche, mêmes pages figées —, bornée **au serveur** à une liste fermée
-de types (`TAX_JOURNAL_SLICE`, `b2b/growth/domain/activity-slice.ts`) :
-`vat_rate.*`, `accounting_rules.*`, `product_category.vat_changed`,
-`product.vat_changed`.
+de types (`TAX_JOURNAL_SLICE`, `b2b/growth/domain/activity-slice.ts`). Hugo,
+2026-09-19 : « la compta doit voir tout ce qui touche au taux ».
+
+| Dans la tranche                                       | Pourquoi                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vat_rate.*`                                          | les taux eux-mêmes                                                                                                                                                                                                                                                                                                                           |
+| `product_category.vat_changed`, `product.vat_changed` | le taux d'une famille, ou la dérogation d'une fiche, **par contexte de vente** — la charge est indexée par la clé du contexte : c'est là que vit « un taux par contexte »                                                                                                                                                                    |
+| `accounting_rules.*`                                  | le rapport et la méthode du prix pro, sous le même droit que les taux                                                                                                                                                                                                                                                                        |
+| `sales_context.*` — le type entier                    | le contexte ne porte aucun taux, mais il est l'axe du traitement fiscal : l'ouvrir en crée un, le mettre hors service le retire du réglable et de Shopify, le supprimer efface en cascade les lignes de taux restées sur lui. `updated` mêle cette bascule au libellé et au rang, sans fait dédié : un réglage du seul libellé remonte aussi |
+| `order_late_fee.*` — le type entier                   | la surtaxe est une ligne facturée avec son propre taux, et chaque fait le porte avant et après. Un fait dédié au taux en ferait deux pour un geste que le lot 1 a voulu unique                                                                                                                                                               |
+
+**Hors de la tranche alors qu'ils peuvent toucher un taux** — des faits mêlés,
+dont le fait dédié reste une décision (inventaire du 2026-09-19) :
+
+- `product_category.channels_changed`, `product.channels_changed` : fermer un
+  canal **efface** les taux du contexte fermé (`forgetVatOfClosedChannels`,
+  `Product.setChannels`), et la charge ne dit que les canaux. Un fait dédié
+  toucherait les deux handlers de canaux du PIM ;
+- `product.identity_saved` avec un `categoryId` changé : la fiche change de
+  famille, donc des taux dont elle hérite. Le type entier inonderait la tranche
+  de chaque nom retouché ; un fait dédié serait un type neuf du référentiel ;
+- `catalog_revision.pushed`, `catalog_delivery.accepted` : la publication porte
+  les taux jusqu'au canal, sans en porter un dans sa charge.
+
+N'y entrent pas, parce qu'ils ne touchent aucun taux : `product.created` (la
+fiche hérite du taux de sa famille, elle n'en change pas), `product_category.created`
+(une famille naît sans taux), `product_category.moved` (une famille ne tient pas
+son taux de son parent — `effectiveVat` ne lit que la famille directe), les
+prix et les déclinaisons, le numéro de TVA intracommunautaire d'une société
+(`company.identity_edited`) ou de notre entité (`legal_entity.*`), et le reste
+de `b2b/` — aucun autre fait ne porte de taux.
 
 - **La permission est `pim_tax:write`, exigée explicitement**
   (`@RequirePermission`) — décision de Hugo, 2026-09-19 : « qui écrit les taux
@@ -309,9 +338,8 @@ de types (`TAX_JOURNAL_SLICE`, `b2b/growth/domain/activity-slice.ts`) :
   et `comptabilite` ; la comptabilité n'a toujours **pas** `activity:read`, et
   le journal entier lui reste fermé.
 - **Une liste de types, pas un module** : le module `pim` ouvrirait tout le
-  référentiel — fiches, familles, points de vente —, alors que seuls la TVA et
-  les règles comptables sont à elle. Les familles et les fiches n'y entrent
-  que par leur fait de TVA.
+  référentiel — fiches, familles, points de vente. Les familles et les fiches
+  n'y entrent que par leur fait de TVA.
 - **La tranche n'est pas un filtre, c'est un bord.** Elle est posée par le
   handler et jointe par `AND` en tête du `WHERE` (`activity-journal.where.ts`,
   le même constructeur que le journal) : ancre, total et pages se calculent
@@ -319,9 +347,9 @@ de types (`TAX_JOURNAL_SLICE`, `b2b/growth/domain/activity-slice.ts`) :
   (`taxActivityQuerySchema`) ; envoyé quand même, le schéma l'écarte comme tout
   paramètre inconnu. Une tranche vide ne rend rien (`FALSE`), elle n'ouvre pas
   le journal.
-- **Hors de la tranche, et c'est une décision à prendre plutôt qu'un oubli** :
-  les contextes de vente (`sales_context.*`) portent un taux par contexte, mais
-  s'écrivent sous `pim_settings`, que la comptabilité n'a pas.
+- **Lire n'est pas écrire** : les contextes de vente s'écrivent sous
+  `pim_settings` et la surtaxe sous les droits du commerce, que la comptabilité
+  n'a pas ; elle en relit l'histoire sans pouvoir les régler.
 
 Ailleurs, des lecteurs ciblés : l'attribution d'un diff de révision PIM
 (`PimJournalReader`, qui lit le journal d'un produit sur un intervalle), le

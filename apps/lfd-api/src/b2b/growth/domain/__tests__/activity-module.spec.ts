@@ -81,15 +81,8 @@ describe("moduleOf — les préfixes qui n'étaient rangés nulle part", () => {
     ["accounting_rules.method_changed", "pim"],
     ["point_of_sale.created", "pim"],
     ["point_of_sale.table_qr_generated", "pim"],
-    ["payment_mandate.signed", "comptes"],
-    ["payment_mandate.revoked", "comptes"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
-  });
-
-  /** Notre entité émettrice n'est pas un compte client : elle attend sa décision. */
-  it("laisse l'entité émettrice hors de tout module", () => {
-    expect(moduleOf("legal_entity.creditor_account_changed")).toBeNull();
   });
 
   /** Le point fait partie du préfixe : `product.` ne capte pas `product_category.`. */
@@ -112,5 +105,37 @@ describe("moduleOf — les orphelins rangés", () => {
     ["order_time_limit.set", "commandes"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
+  });
+});
+
+/**
+ * Le module de la comptabilité (Hugo, 2026-09-19) : l'entité émettrice et les
+ * mandats SEPA sont son travail. Les règles comptables restent au référentiel,
+ * à côté des taux.
+ */
+describe("moduleOf — la comptabilité", () => {
+  it.each([
+    ["legal_entity.declared", "comptabilite"],
+    ["legal_entity.creditor_account_changed", "comptabilite"],
+    ["legal_entity.mandate_scheme_changed", "comptabilite"],
+    ["payment_mandate.minted", "comptabilite"],
+    ["payment_mandate.signed", "comptabilite"],
+    ["payment_mandate.revoked", "comptabilite"],
+  ])("%s se range sous %s", (type, module) => {
+    expect(moduleOf(type)).toBe(module);
+  });
+
+  it("le filtre du module ne ramène que ses deux préfixes", () => {
+    expect(prefixesOf("comptabilite")).toEqual(["legal_entity.", "payment_mandate."]);
+  });
+
+  /** Le mandat a quitté les comptes clients ; le RIB du client, lui, y reste. */
+  it("laisse le RIB d'une société cliente sous les comptes, sans le mandat", () => {
+    expect(moduleOf("company.bank_account_changed")).toBe("comptes");
+    expect(prefixesOf("comptes")).not.toContain("payment_mandate.");
+  });
+
+  it("garde les règles comptables au référentiel", () => {
+    expect(moduleOf("accounting_rules.method_changed")).toBe("pim");
   });
 });

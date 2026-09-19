@@ -3,7 +3,7 @@
  * du journal d'activité, lot 4 (2026-09-19).
  *
  * Ce que seul ce niveau prouve : que la comptabilité, qui n'a pas le journal,
- * relit ce qu'elle écrit sur la TVA et RIEN d'autre — la tranche est dans le
+ * relit ce qui touche à un taux de TVA et RIEN d'autre — la tranche est dans le
  * `WHERE` réel, pages, total et ancre compris — et que le mur tient sur
  * `pim_tax:write`, exigée explicitement, pas sur le `pim_tax:read` qu'un `GET`
  * aurait demandé.
@@ -26,6 +26,9 @@ const stubAdminVerifier = {
 
 const TAX_JOURNAL = "/admin/activity/tax";
 const RATES = "/pim/vat-rates";
+const CATEGORIES = "/pim/catalogue/categories";
+const CONTEXTS = "/pim/sales-contexts";
+const LATE_FEE = "/admin/order-late-fee";
 
 /** Les trois rôles non-admin qui comptent ici, chacun avec sa fiche d'annuaire. */
 const ACCOUNTANT = { sub: "staff-comptable", role: "comptabilite", id: "fiche-comptable" } as const;
@@ -100,11 +103,14 @@ const FISCAL_BY_RECORDER = [
   "product_category.vat_changed",
   "product.vat_changed",
   "accounting_rules.method_changed",
+  "sales_context.created",
+  "order_late_fee.cleared",
 ] as const;
 const OUTSIDE = [
   "product_category.renamed",
   "product.identity_saved",
-  "sales_context.updated",
+  "product_category.channels_changed",
+  "order_cutoff_waiver.granted",
   "company.identity_edited",
 ] as const;
 
@@ -138,6 +144,8 @@ const typesOf = (events: readonly ActivityEventView[]): string[] =>
 const isFiscal = (type: string): boolean =>
   type.startsWith("vat_rate.") ||
   type.startsWith("accounting_rules.") ||
+  type.startsWith("sales_context.") ||
+  type.startsWith("order_late_fee.") ||
   type === "product_category.vat_changed" ||
   type === "product.vat_changed";
 
@@ -212,6 +220,84 @@ describe("la tranche fiscale — ce que la comptabilité relit", () => {
       all,
     );
     expect((await readTax({ page: "1" })).total).toBe(FISCAL_TOTAL + 1);
+  });
+});
+
+/**
+ * « Tout ce qui touche au taux » (Hugo, 2026-09-19), par les routes réelles :
+ * le fait tel que le handler l'écrit, pas tel qu'une fixture l'imagine.
+ */
+describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", () => {
+  /** Une famille vendue en B2B — le contexte et son point de vente sont semés. */
+  async function familySoldToProfessionals(): Promise<string> {
+    const response = await as("staff-e2e")
+      .post(CATEGORIES)
+      .send({ name: { fr: "Viennoiseries" } })
+      .expect(201);
+    const id = jsonBody<{ id: string }>(response).id;
+    await as("staff-e2e")
+      .put(`${CATEGORIES}/${id}/channels`)
+      .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
+      .expect(200);
+    return id;
+  }
+
+  it("rend le taux posé pour un contexte de vente, contexte nommé", async () => {
+    const category = await familySoldToProfessionals();
+    const rate = await rateWrittenByAccountant("Réduit", 5.5);
+    await as("staff-e2e")
+      .put(`${CATEGORIES}/${category}/vat`)
+      .send({ vatByContext: { b2b: rate } })
+      .expect(200);
+
+    const page = await readTax({ subjectType: "product_category", subjectId: category });
+
+    expect(typesOf(page.events)).toEqual(["product_category.vat_changed"]);
+    expect(page.events[0]?.payload).toEqual({ b2b: { from: null, to: rate } });
+  });
+
+  it("ne rend pas les canaux d'une famille réglés sans toucher à un taux", async () => {
+    const category = await familySoldToProfessionals();
+
+    const page = await readTax({ subjectType: "product_category", subjectId: category });
+
+    expect(page.total).toBe(0);
+  });
+
+  /**
+   * Le type ENTIER : `sales_context.updated` n'a pas de fait dédié à la bascule
+   * `active`, donc un réglage du seul libellé remonte aussi — décision écrite
+   * sur `TAX_JOURNAL_SLICE`.
+   */
+  it("rend un contexte de vente ouvert puis réglé, même sur son seul libellé", async () => {
+    const opened = { key: "traiteur", label: "Traiteur", handleSuffix: "-traiteur" };
+    await as("staff-e2e")
+      .post(CONTEXTS)
+      .send({ ...opened, active: true, shopifyProjected: false })
+      .expect(201);
+    await as("staff-e2e")
+      .put(`${CONTEXTS}/traiteur`)
+      .send({
+        ...opened,
+        label: "Service traiteur",
+        active: true,
+        shopifyProjected: false,
+        position: 9,
+      })
+      .expect(200);
+
+    const page = await readTax({ subjectType: "sales_context", subjectId: "traiteur" });
+
+    expect(typesOf(page.events)).toEqual(["sales_context.updated", "sales_context.created"]);
+  });
+
+  it("rend la surtaxe de retard posée, avec son taux", async () => {
+    const fee = { fee: { mode: "amount", cents: 500 }, vatRatePercent: 20 };
+    await as("staff-e2e").put(LATE_FEE).send(fee).expect(204);
+
+    const page = await readTax({ type: "order_late_fee.set" });
+
+    expect(page.events.map((event) => event.payload)).toEqual([{ before: null, after: fee }]);
   });
 });
 

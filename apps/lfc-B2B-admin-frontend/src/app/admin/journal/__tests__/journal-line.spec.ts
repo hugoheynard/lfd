@@ -60,6 +60,13 @@ describe('toLine', () => {
     expect(line.actor).toBe('un membre de l’équipe');
   });
 
+  /** Le module de la comptabilité (Hugo, 2026-09-19) : un libellé, pas la clé brute. */
+  it('nomme le module de la comptabilité', () => {
+    const line = toLine(event({ type: 'payment_mandate.signed', module: 'comptabilite' }));
+
+    expect(line.moduleLabel).toBe('Comptabilité');
+  });
+
   it('rend le type tel quel pour un fait qu’il ne connaît pas encore', () => {
     // Le journal est ouvert : un module peut émettre un type que cet écran
     // ignore. Afficher le type reste vrai ; inventer une phrase, non.

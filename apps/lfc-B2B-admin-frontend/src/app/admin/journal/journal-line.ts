@@ -18,6 +18,7 @@ export const MODULE_LABELS: Readonly<Record<ActivityModule, string>> = {
   comptes: 'Comptes clients',
   equipe: 'Équipe',
   production: 'Production',
+  comptabilite: 'Comptabilité',
 };
 
 /**

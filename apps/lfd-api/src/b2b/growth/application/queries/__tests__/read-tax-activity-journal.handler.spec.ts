@@ -58,6 +58,8 @@ describe("ReadTaxActivityJournalHandler — le bord de la tranche est toujours p
     ["une recherche", { limit: 20, q: "taux" }],
     ["un sujet", { limit: 20, subjectType: "company", subjectId: "company_1" }],
     ["un type hors tranche", { limit: 20, type: "company.activated" }],
+    ["un type de contexte de vente", { limit: 20, type: "sales_context.updated" }],
+    ["la surtaxe pour sujet", { limit: 20, subjectType: "order_late_fee" }],
     ["une page ancrée", { limit: 20, page: 3, asOf: "01K00000000000000000000009" }],
     ["un curseur", { limit: 20, before: "01K00000000000000000000009" }],
   ])("la garde avec %s, et transmet les filtres tels quels", async (_label, filters) => {

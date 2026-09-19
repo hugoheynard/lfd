@@ -9,11 +9,9 @@ import type { ActivityModule } from "@lfd/contracts";
  * déjà. Le jour où un type ne se range plus sous un préfixe, c'est le type
  * qu'il faut renommer, pas une colonne qu'il faut ajouter.
  *
- * ⚠️ `legal_entity.` n'est rangé nulle part, et c'est délibéré (2026-09-19) :
- * notre propre entité émettrice n'est ni un compte client, ni une commande, ni
- * le référentiel. La ranger sous `comptes` l'afficherait « Comptes clients ».
- * Elle attend une décision — un module à elle, ou un libellé élargi —, et se
- * lit en attendant sous « tous les modules ».
+ * `legal_entity.` a été sans module jusqu'au 2026-09-19 : notre propre entité
+ * émettrice n'est ni un compte client, ni une commande, ni le référentiel. Elle
+ * a désormais le sien, `comptabilite` (Hugo, 2026-09-19).
  */
 const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   pim: [
@@ -76,20 +74,23 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   ],
   // Le RIB d'une société s'écrit `company.bank_account_changed` : il se range
   // ici par son préfixe, sans entrée propre.
-  comptes: [
-    "user.",
-    "company.",
-    "subscription.",
-    "support.",
-    // Le mandat SEPA d'une société cliente se lit avec son RIB, déjà ici : c'est
-    // l'autorisation de prélever SON compte (2026-09-19).
-    "payment_mandate.",
-  ],
+  comptes: ["user.", "company.", "subscription.", "support."],
   // L'annuaire staff et ses rôles : qui entre, avec quels droits, et qui l'a décidé.
   equipe: ["staff_user.", "staff_role."],
   // Le fournil : arrêter et reprendre une journée, régler le contenant d'un
   // article (2026-09-19). Les coches d'atelier n'y écrivent rien encore.
   production: ["production_day.", "production_container."],
+  // Le travail de la comptabilité (Hugo, 2026-09-19). `accounting_rules.` n'y
+  // est PAS : il reste sous `pim`, à côté des taux qu'il accompagne.
+  comptabilite: [
+    // Notre entité émettrice — raison sociale, ICS, compte créancier, schéma
+    // des mandats : ce qu'on imprime sur nos factures, écrit sous `b2b_accounting`.
+    "legal_entity.",
+    // Le mandat SEPA qui nous autorise à prélever un client : préparé, signé,
+    // envoyé, révoqué par le staff sous `b2b_payments` — le client peut aussi
+    // en préparer un et y joindre sa preuve. Sous `comptes` jusqu'au 2026-09-19.
+    "payment_mandate.",
+  ],
 };
 
 /** Les préfixes d'un module — l'entrée du filtre côté base. */
@@ -105,6 +106,7 @@ const MODULES: readonly ActivityModule[] = [
   "comptes",
   "equipe",
   "production",
+  "comptabilite",
 ];
 
 /** Le module d'un type, ou `null` si son préfixe n'est rattaché à aucun. */
