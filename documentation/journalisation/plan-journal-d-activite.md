@@ -129,11 +129,25 @@ supprimer), son profil, son RIB, ses adresses, ses membres.
 - **Fiche staff → « Voir son activité »**, affiché **seulement** à qui a
   `activity:read` — une dérogation `staff_access` sans `activity` ne doit pas
   mener à un `403`.
-- **Fiche produit → onglet « Historique »**, sous les droits du référentiel :
-  une lecture par sujet **et** par préfixe (`product.*` seulement), pour
-  qu'un fait d'un autre bloc sur un sujet `product` ne s'y montre jamais. Le
-  changement du **taux** d'un produit (sujet `vat_rate`) n'y figure pas : dit à
-  l'écran, pas deviné.
+- **Fiche produit → onglet « Historique »**, sous les droits du référentiel.
+  **Amendé le 2026-09-19** — Hugo : « tout doit être journalisé » : l'onglet
+  montre **tout ce qui a touché le produit**, pas seulement ses faits propres.
+  Trois cercles, dans une même chronologie, chacun marqué :
+  1. **le produit lui-même** — les faits `product.*` dont il est le sujet ;
+  2. **ce dont il hérite**, marqué « hérité » — les faits `product_category.*`
+     de sa famille **et de ses ancêtres** (TVA, renommage, déplacement,
+     archivage), les faits `vat_rate.*` des taux qu'il applique, les faits
+     `ingredient.*` / `appellation.*` de ce qu'il déclare. Rattachés par ce que
+     le produit porte **aujourd'hui** : un taux qu'il n'applique plus, une
+     famille qu'il a quittée, n'y figurent pas — dit à l'écran ;
+  3. **les révisions qui l'ont emporté** — `catalog_revision.taken` /
+     `.pushed` dont la photo contient une de ses déclinaisons.
+
+  **Hors de l'onglet** : les faits de la plateforme marchande sur ses SKU
+  (décisions de catalogue, prix B2B — lot 1) vivent sous les droits du
+  commerce ; l'onglet renvoie au journal filtré, pour qui a `activity:read`.
+  Un fait d'un autre bloc qui porterait un sujet `product` ne s'y montre
+  jamais : la lecture filtre par **préfixe** de type, pas seulement par sujet.
 
 ### Lot 4 — La tranche fiscale pour la comptabilité (§6)
 
@@ -184,13 +198,18 @@ ici ne suffisait pas.
 
 ## 3. Les décisions qui reviennent à Hugo
 
-1. **Les gestes d'un client sur son propre compte** — paniers récurrents,
-   profil, RIB, adresses, membres — sont hors journal par une règle écrite
-   (« le premier n'engage que lui »). Les journaliser renverserait cette règle
-   pour **tous**, pas pour un seul : le plan ne le fait pas. Et même alors,
-   **jamais leurs coordonnées** : un journal append-only ne sait pas oublier
-   une personne qui demande à disparaître, et la clientèle compte des
-   particuliers.
+1. ~~**Les gestes d'un client sur son propre compte**~~ — **tranché le
+   2026-09-19** par Hugo : « tout doit être journalisé ». Les paniers
+   récurrents (créer, suspendre, reprendre, modifier une échéance, supprimer),
+   le profil, le RIB, les adresses et les membres **entrent au journal** — et
+   la règle « le premier n'engage que lui » de `journal-tracked.mjs` est
+   réécrite en conséquence. **Jamais leurs coordonnées** : un fait dit **quels
+   champs** ont changé (« adresse e-mail », « téléphone »), pas leurs valeurs ;
+   un RIB par ses quatre derniers chiffres ; une adresse par son libellé ; un
+   membre par son id. Le changement d'adresse de connexion part chez Auth0
+   **avant** la transaction : ce geste est déclaré `@hors-transaction` avec sa
+   raison, et son fait s'écrit après la réussite d'Auth0. Ces gestes
+   **élargissent le lot 1**.
 2. **La permission de la tranche fiscale** : `pim_tax:write` (qui écrit les
    taux relit leur histoire — rien à ajouter à l'écran des rôles), ou une
    permission nouvelle, attribuée au rôle `comptabilite`. Ouvrir un accès se
