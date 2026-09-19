@@ -29,6 +29,7 @@
 10. [Ce qui s'appelle « journal » sans en être un](#s10)
 11. [Où est le code](#s11)
 12. [L'auteur est la fiche, jamais le `sub`](#s12)
+13. [Le catalogue des faits](#s13)
 
 ---
 
@@ -377,6 +378,7 @@ Ce qui la tient, du plus fort au plus faible :
 | `lint:events-tracked`                           | un abonné d'événement s'inscrit au travail de fond : sans ça, son écriture au journal échappe à `drain()` et à la gestion d'erreur                                                                                                                                                                                                                                                                                                        |
 | `lint:subject-readers`, `lint:auth0-id-readers` | le `sub` Auth0 ne redevient pas un auteur, ni ne s'écrit dans un message                                                                                                                                                                                                                                                                                                                                                                  |
 | La transaction du geste                         | un fait opposable et son geste tombent ensemble ou tiennent ensemble                                                                                                                                                                                                                                                                                                                                                                      |
+| Le catalogue des faits (§13)                    | un type hors catalogue ne compile pas ; une charge qui ne suit pas son schéma lève sous les harnais de test                                                                                                                                                                                                                                                                                                                               |
 
 **La règle pour ajouter un émetteur** : un fait mérite le journal quand il
 change ce qui est vendu, facturé, ou ce que quelqu'un a le droit de voir. Le
@@ -416,6 +418,7 @@ Pour ne pas les confondre :
 | La lecture                       | `apps/lfd-api/src/b2b/growth/http/admin-activity.controller.ts`, `infrastructure/activity-journal.where.ts`, `domain/activity-module.ts` |
 | La tranche fiscale               | `apps/lfd-api/src/b2b/growth/http/admin-tax-activity.controller.ts`, `domain/activity-slice.ts`                                          |
 | Le contrat                       | `packages/contracts/src/activity-journal.ts`                                                                                             |
+| Le catalogue des faits (§13)     | `packages/contracts/src/journal-facts/`, `apps/lfd-api/src/platform/journal/journal-fact-check.ts`                                       |
 | La table                         | `apps/lfd-api/prisma/schema/growth.prisma` (`ActivityEvent`)                                                                             |
 
 ---
@@ -506,3 +509,50 @@ messages d'erreur (`IdentitySubjectUnknownError`) ne portent de `sub`.
 seize lecteurs admis, chacun avec sa raison, et jamais interpolé dans un
 message). La requête de contrôle, en lecture seule, compte ce qui reste écrit
 sous un `sub` : [`../staff/requetes/inventaire-des-auteurs-staff.sql`](../staff/requetes/inventaire-des-auteurs-staff.sql).
+
+---
+
+<a id="s13"></a>
+
+## 13. Le catalogue des faits
+
+> Livré le 2026-09-19 — lot A du plan
+> [`plan-phrases-du-journal.md`](plan-phrases-du-journal.md) (D1, D2).
+
+**Où.** `@lfd/contracts/journal-facts` (`packages/contracts/src/journal-facts/`),
+une entrée du paquet **à part du baril** : elle embarque zod et tous les
+schémas, et le front de la plateforme n'a pas à les porter. Un fichier par
+famille (référentiel, commerce, comptes, commandes et production, tarification,
+comptabilité, équipe), réunis dans `JOURNAL_FACTS` : chaque type écrit dans
+`growth.activity_events`, avec le schéma zod **fermé** de sa charge. Les
+montants, taux et dates y portent leur unité (`.meta({ unit })` : centimes,
+millicentimes, points de base, pourcentage, instant, jour…), les identifiants
+nus ce qu'ils désignent (`.meta({ ref })`). Les types **retirés** — encore en
+base, plus écrits — y restent, marqués `retired`, avec la charge de leur époque.
+
+**Ce que le code en tire.** `JournalFact.type`, `PimJournalEntry.type` et
+`RecordActivityInput.type` sont typés `JournalFactType` : les constantes des
+contextes (`PIM_EVENTS`, `ACCOUNT_FACTS`, `ACTIVITY_TYPES`, `STAFF_FACTS`…)
+s'y confrontent par `satisfies`, et la tarification lit ses types dans une
+table sujet × geste typée par le catalogue (`pricing-act.ts`). Un type hors
+catalogue **ne compile pas**.
+
+**Ce que vérifie l'écriture.** `PrismaActivityRecorder`, le seul écrivain de
+la table — tous les chemins du §3 y passent, best-effort compris —, confronte
+chaque fait par `JournalFactCheck` (`platform/journal/`) : type inconnu, type
+retiré, charge qui ne suit pas son schéma (clé en trop comprise).
+
+| Mode                   | Où                                                                                   | Un écart                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| **strict**             | sous les harnais de test (`JOURNAL_STRICT_FACTS=true`, posé par `test/setup-env.ts`) | **lève** — le fait n'est pas écrit, et le test le voit              |
+| **indulgent** (défaut) | partout ailleurs, et **toujours** en production (la variable y est ignorée)          | une **erreur** au journal applicatif, et le fait s'écrit quand même |
+
+Indulgent en production par décision de Hugo (2026-09-19) : le journal est dans
+la transaction du geste, et une charge mal décrite ne doit jamais annuler une
+commande réelle. Les doubles partagés des tests unitaires (`RecordingJournal`,
+`RecordingPublisher`, `RecordingActivityRecorder`…) appliquent la même
+vérification stricte.
+
+⚠️ **Sur le chemin best-effort des abonnés** (croissance), un écart en mode
+strict lève dans le travail de fond, que `BackgroundWork` journalise et avale :
+le test ne le voit que s'il attend le fait.

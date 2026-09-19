@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 /**
  * Les **faits du mandat de prélèvement** — ce que le journal retient d'une
  * autorisation de débit.
@@ -59,7 +61,7 @@ export const PAYMENT_MANDATE_FACTS = {
    * dans le bucket (plan §7 #11). Aucune clé de stockage au payload.
    */
   proofPurged: "payment_mandate.proof_purged",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
  * Pourquoi un scan a été détruit : remplacé par un autre sur le même brouillon,

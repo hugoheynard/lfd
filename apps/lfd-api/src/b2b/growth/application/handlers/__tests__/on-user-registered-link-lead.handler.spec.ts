@@ -1,10 +1,9 @@
 import { UserRegisteredEvent } from "../../../../account/domain/events/user-registered.event.js";
-import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { Lead } from "../../../domain/entities/lead.js";
-import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { LeadRepository } from "../../../domain/ports/lead.repository.js";
 import { OnUserRegisteredLinkLead } from "../on-user-registered-link-lead.handler.js";
 import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 function openLead(email: string): Lead {
   return Lead.reconstitute({
@@ -41,24 +40,12 @@ class FakeRepo extends LeadRepository {
   }
 }
 
-class CapturingRecorder extends ActivityRecorder {
-  readonly records: RecordActivityInput[] = [];
-  record(input: RecordActivityInput): Promise<void> {
-    this.records.push(input);
-    return Promise.resolve();
-  }
-  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
-  recordOrFail(input: RecordActivityInput): Promise<void> {
-    return this.record(input);
-  }
-}
-
 describe("OnUserRegisteredLinkLead", () => {
   const work = new BackgroundWork();
 
   it("rattache et convertit le lead ouvert au même e-mail, et journalise via=registration", async () => {
     const repo = new FakeRepo(openLead("marie@bistrot.fr"));
-    const recorder = new CapturingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const handler = new OnUserRegisteredLinkLead(repo, recorder, work);
 
     handler.handle(new UserRegisteredEvent("user_42", "marie@bistrot.fr"));
@@ -75,7 +62,7 @@ describe("OnUserRegisteredLinkLead", () => {
 
   it("ne fait rien quand aucun lead ne correspond", async () => {
     const repo = new FakeRepo(null);
-    const recorder = new CapturingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const handler = new OnUserRegisteredLinkLead(repo, recorder, work);
 
     handler.handle(new UserRegisteredEvent("user_42", "inconnu@resto.fr"));
@@ -87,7 +74,7 @@ describe("OnUserRegisteredLinkLead", () => {
 
   it("ignore une inscription sans e-mail (pas de clé de rapprochement)", async () => {
     const repo = new FakeRepo(openLead("marie@bistrot.fr"));
-    const recorder = new CapturingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const handler = new OnUserRegisteredLinkLead(repo, recorder, work);
 
     handler.handle(new UserRegisteredEvent("user_42", ""));

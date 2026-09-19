@@ -1,22 +1,8 @@
 import { OrderPlacedEvent } from "../../../../orders/domain/events/order-placed.event.js";
-import type { RecordActivityInput } from "../../../domain/activity-event.js";
-import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { CompanyNamer, type CompanyIdentity } from "../../../domain/ports/company-namer.js";
 import { OnOrderPlaced } from "../on-order-placed.handler.js";
 import { BackgroundWork } from "../../../../../platform/events/background-work.js";
-
-/** Recorder doublé : capture les entrées (extension du port, sans cast). */
-class RecordingRecorder extends ActivityRecorder {
-  readonly records: RecordActivityInput[] = [];
-  record(input: RecordActivityInput): Promise<void> {
-    this.records.push(input);
-    return Promise.resolve();
-  }
-  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
-  recordOrFail(input: RecordActivityInput): Promise<void> {
-    return this.record(input);
-  }
-}
+import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 /** Annuaire doublé : une seule société connue, tout le reste est inconnu. */
 class StubCompanies extends CompanyNamer {
@@ -43,7 +29,7 @@ describe("OnOrderPlaced", () => {
   const work = new BackgroundWork();
 
   it("journalise order.placed sur le sujet user, clé déterministe et payload", async () => {
-    const recorder = new RecordingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const handler = new OnOrderPlaced(recorder, new StubCompanies(), work);
 
     handler.handle(new OrderPlacedEvent("order_9", "ORD-9", "user_7", "company_3", 4200));
@@ -69,7 +55,7 @@ describe("OnOrderPlaced", () => {
   });
 
   it("préserve un companyId nul, et n’interroge pas l’annuaire", async () => {
-    const recorder = new RecordingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const companies = new StubCompanies();
     new OnOrderPlaced(recorder, companies, work).handle(
       new OrderPlacedEvent("order_1", "ORD-1", "user_1", null, 400),
@@ -83,7 +69,7 @@ describe("OnOrderPlaced", () => {
   });
 
   it("n’invente pas de nom quand la société est introuvable", async () => {
-    const recorder = new RecordingRecorder();
+    const recorder = new RecordingActivityRecorder();
     new OnOrderPlaced(recorder, new StubCompanies(), work).handle(
       new OrderPlacedEvent("order_2", "ORD-2", "user_1", "company_inconnue", 400),
     );

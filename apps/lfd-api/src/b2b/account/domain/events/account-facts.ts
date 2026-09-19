@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 /**
  * Les **faits des comptes clients** — ce que le journal retient d'une société.
  *
@@ -99,4 +101,4 @@ export const ACCOUNT_FACTS = {
   profileUpdated: "user.profile_updated",
   /** Un agent fabrique un lien de mot de passe à remettre — le geste, pas le lien. */
   passwordLinkIssued: "user.password_link_issued",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;

@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 /**
  * Le **journal du référentiel** — ce que le PIM déclare vouloir tracer, sans
  * savoir qui l'écrit.
@@ -341,7 +343,7 @@ export const PIM_EVENTS = {
   orderTimeLimitSet: "order_time_limit.set",
   /** Retirée : l'article retombe sur le rang du dessus. */
   orderTimeLimitRemoved: "order_time_limit.removed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
  * **La portée** d'un fait : ce qu'il touchait, au moment où il s'est produit.
@@ -385,8 +387,8 @@ export interface PimBlastRadius {
 
 /** Ce qu'un handler du référentiel fournit pour tracer un fait. */
 export interface PimJournalEntry {
-  /** Un des {@link PIM_EVENTS}. */
-  readonly type: string;
+  /** Un des {@link PIM_EVENTS} — donc un type du catalogue des faits. */
+  readonly type: JournalFactType;
   readonly subjectType: PimSubjectType;
   readonly subjectId: string;
   /**

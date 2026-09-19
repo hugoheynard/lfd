@@ -10,6 +10,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
@@ -221,6 +222,24 @@ export class DuplicateArticleError extends DomainError {
     super(
       "pricing.request.duplicate-article",
       `L'article « ${sku} » est demandé deux fois : fusionner les quantités ou poser deux appels, mais la demande telle quelle n'a pas de prix unique.`,
+    );
+  }
+}
+
+/**
+ * Un acte tarifaire dont le couple sujet × geste n'a **pas de fait** au journal
+ * (une limite « suspendue », une mercuriale « confirmée »).
+ *
+ * `TechnicalError` : aucun écran n'envoie ce geste — c'est le code qui
+ * l'invente, et l'agent n'a rien à corriger. Le refus vient avant toute
+ * écriture : l'acte et son état partent dans la même transaction.
+ */
+export class PricingActNotJournaledError extends TechnicalError {
+  constructor(subject: string, kind: string) {
+    super(
+      "pricing.act.not_journaled",
+      `L'acte tarifaire « ${kind} » sur un sujet « ${subject} » n'a pas de fait au journal. ` +
+        `Ajoutez-le au catalogue des faits et à la table de pricing-act.ts avant de l'écrire.`,
     );
   }
 }

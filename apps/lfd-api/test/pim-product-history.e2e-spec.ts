@@ -235,13 +235,16 @@ describe("l'historique d'une fiche — les trois cercles", () => {
   });
 
   it("n'accueille pas un fait d'un autre bloc qui porte le sujet de la fiche", async () => {
+    const FOREIGN = "catalog_item.hidden";
     const scene = await aScene();
+    // Un type du catalogue des faits (le journal est strict sous le harnais) :
+    // le catalogue B2B masque un article — un autre bloc que la fiche.
     await ctx.app.get(ActivityRecorder).record({
-      type: "catalog.visibility_changed",
+      type: FOREIGN,
       subjectType: "product",
       subjectId: scene.productId,
-      idempotencyKey: `catalog.visibility_changed:${scene.productId}`,
-      payload: { visible: false },
+      idempotencyKey: `${FOREIGN}:${scene.productId}`,
+      payload: { sku: "TARTE-CITRON" },
     });
     await ctx.drain();
 
@@ -250,10 +253,10 @@ describe("l'historique d'une fiche — les trois cercles", () => {
     // Le fait étranger est bien écrit, sur le sujet de la fiche.
     expect(
       await ctx.prisma.activityEvent.count({
-        where: { type: "catalog.visibility_changed", subjectId: scene.productId },
+        where: { type: FOREIGN, subjectId: scene.productId },
       }),
     ).toBe(1);
-    expect(entries.filter((entry) => entry.type === "catalog.visibility_changed")).toEqual([]);
+    expect(entries.filter((entry) => entry.type === FOREIGN)).toEqual([]);
     expect(
       entries.every(
         (entry) =>

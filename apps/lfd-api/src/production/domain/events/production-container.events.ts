@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { ContainerRule } from "../services/production-worksheet.js";
 
@@ -14,7 +16,7 @@ import type { ContainerRule } from "../services/production-worksheet.js";
 export const PRODUCTION_CONTAINER_FACTS = {
   set: "production_container.set",
   removed: "production_container.removed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Le sujet : le réglage d'un article, désigné par son SKU — sa clé en base. */
 const SUBJECT_TYPE = "production_container";

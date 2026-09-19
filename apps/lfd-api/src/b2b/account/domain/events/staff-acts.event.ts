@@ -1,4 +1,5 @@
 import type { DeferredTerm } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
@@ -24,7 +25,7 @@ import { ACCOUNT_FACTS } from "./account-facts.js";
 export abstract class CompanyStaffAct implements JournaledEvent {
   protected constructor(readonly companyId: string) {}
 
-  protected abstract type(): string;
+  protected abstract type(): JournalFactType;
 
   /** Ce qu'il faut pour relire l'acte. Vide par défaut : le verbe suffit parfois. */
   protected details(): Record<string, unknown> {
@@ -49,7 +50,7 @@ export class KbisUploadedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.kbisUploaded;
   }
   protected override details(): Record<string, unknown> {
@@ -78,7 +79,7 @@ export class CompanyIdentityCorrectedEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.identityCorrected;
   }
   protected override details(): Record<string, unknown> {
@@ -100,7 +101,7 @@ export class PaymentTermsGrantedEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.paymentTermsGranted;
   }
   protected override details(): Record<string, unknown> {
@@ -116,7 +117,7 @@ export class CompanyStatusChangedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.statusChanged;
   }
   protected override details(): Record<string, unknown> {

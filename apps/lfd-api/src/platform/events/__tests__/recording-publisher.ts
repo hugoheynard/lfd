@@ -1,5 +1,6 @@
 import type { JournaledEvent } from "../../journal/journal-fact.js";
 import { DomainEventPublisher } from "../domain-event-publisher.js";
+import { STRICT_JOURNAL_FACTS } from "../../journal/__tests__/strict-journal-facts.js";
 
 /**
  * Publieur de test : il garde ce qu'on lui donne, des deux côtés.
@@ -20,6 +21,10 @@ export class RecordingPublisher extends DomainEventPublisher {
   }
 
   publishTraced(event: JournaledEvent): Promise<void> {
+    // Confronté au catalogue des faits, strictement — comme l'adaptateur réel
+    // sous le harnais : l'écart se voit dans le test du handler.
+    const fact = event.journalFact();
+    STRICT_JOURNAL_FACTS.verify(fact.type, fact.payload);
     this.traced.push(event);
     this.published.push(event);
     return Promise.resolve();

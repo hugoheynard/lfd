@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 
 /**
@@ -6,7 +8,8 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
  * rangé sous « comptes » — un `client_note.` n'appartiendrait à aucun module
  * (vérifié le 2026-09-15).
  */
-export const CLIENT_NOTE_EDITED_BY_STAFF = "company.client_note_edited_by_staff";
+export const CLIENT_NOTE_EDITED_BY_STAFF =
+  "company.client_note_edited_by_staff" satisfies JournalFactType;
 
 /** Ce que l'agent a fait au carnet. */
 export type ClientNoteStaffAction =

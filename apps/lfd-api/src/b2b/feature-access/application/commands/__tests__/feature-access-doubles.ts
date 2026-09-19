@@ -13,6 +13,7 @@ import {
   type RemovedExemption,
 } from "../../../domain/ports/feature-exemption.repository.js";
 import { FeatureOverrideRepository } from "../../../domain/ports/feature-override.repository.js";
+import { STRICT_JOURNAL_FACTS } from "../../../../../platform/journal/__tests__/strict-journal-facts.js";
 
 /**
  * Doublés partagés des handlers de l'accès aux fonctionnalités.
@@ -51,6 +52,8 @@ export class StepPublisher extends DomainEventPublisher {
   }
 
   publishTraced(event: JournaledEvent): Promise<void> {
+    const fact = event.journalFact();
+    STRICT_JOURNAL_FACTS.verify(fact.type, fact.payload);
     this.traced.push(event);
     this.steps.log.push(`journal:${event.journalFact().type}`);
     return Promise.resolve();

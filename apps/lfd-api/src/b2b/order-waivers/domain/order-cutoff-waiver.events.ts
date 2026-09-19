@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 
 /**
@@ -15,7 +17,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 export const ORDER_CUTOFF_WAIVER_FACTS = {
   granted: "order_cutoff_waiver.granted",
   revoked: "order_cutoff_waiver.revoked",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "order_cutoff_waiver";
 

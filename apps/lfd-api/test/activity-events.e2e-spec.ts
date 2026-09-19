@@ -8,7 +8,13 @@
  * vérifie ici (les émetteurs réels, en requête, porteront customer/staff).
  */
 import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
+import { ActorNamer } from "../src/b2b/growth/domain/ports/actor-namer.js";
+import { PrismaActivityRecorder } from "../src/b2b/growth/infrastructure/prisma-activity-recorder.js";
+import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
+import { IdGenerator } from "../src/platform/id/id-generator.js";
+import { JournalFactCheck } from "../src/platform/journal/journal-fact-check.js";
+import { Clock } from "../src/platform/time/clock.js";
 import type { RecordActivityInput } from "../src/b2b/growth/domain/activity-event.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
@@ -28,13 +34,16 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
+/** Une charge conforme au catalogue des faits : le journal est strict sous le harnais. */
+const PLACED = { orderId: "order_1", orderNumber: "CMD-0001", companyId: null, totalCents: 4200 };
+
 function input(overrides: Partial<RecordActivityInput> = {}): RecordActivityInput {
   return {
     type: "order.placed",
     subjectType: "user",
     subjectId: "user_1",
     idempotencyKey: "order.placed:order_1",
-    payload: { totalCents: 4200 },
+    payload: PLACED,
     ...overrides,
   };
 }
@@ -53,7 +62,7 @@ describe("journal activity_events (e2e SQL)", () => {
     expect(row!.traceId).toMatch(/^[0-9a-f]{32}$/);
     expect(row!.schemaVersion).toBe(1);
     expect(row!.establishmentId).toBeNull();
-    expect(row!.payload).toEqual({ totalCents: 4200 });
+    expect(row!.payload).toEqual(PLACED);
     expect(row!.id).toHaveLength(26); // ULID
     expect(row!.recordedAt).toBeInstanceOf(Date);
   });
@@ -91,9 +100,100 @@ describe("journal activity_events (e2e SQL)", () => {
     expect(keys.sort()).toEqual(["apres-le-doublon", "order.placed:order_1"]);
   });
 
+  /**
+   * Le mode strict des harnais (D2 du plan des phrases du journal) : un fait
+   * que le catalogue refuse lève AVANT d'écrire — sur les deux garanties,
+   * best-effort compris, sans quoi un test ne verrait jamais l'écart. Le type
+   * inconnu ne compile pas ; le type retiré, si, et c'est lui qu'on éprouve.
+   */
+  it("en mode strict, refuse un type retiré et n'écrit rien", async () => {
+    const retired = input({
+      type: "company.kbis_uploaded_by_staff",
+      subjectType: "company",
+      payload: { fileName: "kbis.pdf" },
+    });
+
+    await expect(recorder.recordOrFail(retired)).rejects.toThrow(/retiré/);
+    await expect(recorder.record(retired)).rejects.toThrow(/kbis_uploaded_by_staff/);
+    expect(await ctx.prisma.activityEvent.count()).toBe(0);
+  });
+
+  it("en mode strict, refuse une charge qui ne suit pas son schéma, en nommant la clé", async () => {
+    await expect(
+      recorder.recordOrFail(input({ payload: { ...PLACED, totalCents: "42 €" } })),
+    ).rejects.toThrow(/totalCents/);
+    expect(await ctx.prisma.activityEvent.count()).toBe(0);
+  });
+
   it("porte l'establishmentId quand il est fourni (identity resolution future)", async () => {
     await recorder.record(input({ establishmentId: "estab_9" }));
     const [row] = await ctx.prisma.activityEvent.findMany();
     expect(row!.establishmentId).toBe("estab_9");
+  });
+});
+
+/**
+ * Le journal **indulgent** — le mode de la production (D2 du plan
+ * `documentation/journalisation/plan-phrases-du-journal.md`, Hugo, 2026-09-19 :
+ * « en production, un fait mal décrit s'écrit quand même, avec une erreur au
+ * journal applicatif ; jamais un geste bloqué »).
+ *
+ * Le harnais est strict ; on monte donc ici le VRAI adaptateur sur les vraies
+ * dépendances de l'application, avec la vérification indulgente dont les
+ * signalements sont gardés. Ce que seul le vrai Postgres prouve : le fait est
+ * ÉCRIT, et le geste qui l'englobe dans une transaction tient.
+ */
+describe("journal activity_events — indulgent, comme en production", () => {
+  const reported: string[] = [];
+
+  function lenientRecorder(): ActivityRecorder {
+    return new PrismaActivityRecorder(
+      ctx.app.get(PrismaService),
+      ctx.app.get(Clock),
+      ctx.app.get(IdGenerator),
+      ctx.app.get(ActorNamer),
+      new JournalFactCheck(false, (message) => reported.push(message)),
+    );
+  }
+
+  beforeEach(() => {
+    reported.length = 0;
+  });
+
+  it("écrit une charge non conforme, et signale l'écart en nommant la clé", async () => {
+    await lenientRecorder().recordOrFail(input({ payload: { totalCents: 4200 } }));
+
+    const rows = await ctx.prisma.activityEvent.findMany();
+    expect(rows.map((row) => [row.type, row.payload])).toEqual([
+      ["order.placed", { totalCents: 4200 }],
+    ]);
+    expect(reported).toEqual([expect.stringMatching(/order\.placed.*orderId/)]);
+  });
+
+  it("n'annule pas le geste qui l'englobe : la transaction tient, fait retiré compris", async () => {
+    const recorder = lenientRecorder();
+
+    await ctx.app.get(UnitOfWork).run(async () => {
+      await recorder.recordOrFail(
+        input({
+          type: "company.kbis_uploaded_by_staff",
+          subjectType: "company",
+          idempotencyKey: "retire",
+          payload: { fileName: "kbis.pdf" },
+        }),
+      );
+      await recorder.recordOrFail(input({ idempotencyKey: "le-geste-qui-suit" }));
+    });
+
+    const keys = (await ctx.prisma.activityEvent.findMany()).map((row) => row.idempotencyKey);
+    expect(keys.sort()).toEqual(["le-geste-qui-suit", "retire"]);
+    expect(reported).toEqual([expect.stringMatching(/retiré/)]);
+  });
+
+  it("ne signale rien pour un fait conforme", async () => {
+    await lenientRecorder().record(input());
+
+    expect(await ctx.prisma.activityEvent.count()).toBe(1);
+    expect(reported).toEqual([]);
   });
 });

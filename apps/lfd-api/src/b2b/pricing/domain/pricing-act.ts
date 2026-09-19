@@ -1,3 +1,6 @@
+import type { ActiveJournalFactType } from "@lfd/contracts/journal-facts";
+
+import { PricingActNotJournaledError } from "./errors/shared-errors.js";
 import type { PriceFloorPolicy } from "./floor-policy.js";
 import type { VolumeLadder } from "./volume-ladder.js";
 import type { PriceFloor, PriceRule, PriceScopeType, PriceStage } from "./price-rule.js";
@@ -208,30 +211,85 @@ function day(date: Date): string {
  * transaction**, vers deux destinations qui ne répondent pas à la même question.
  * Deux lignes pour un acte, jamais deux vérités — elles ne peuvent pas diverger,
  * elles tombent ensemble.
+ *
+ * Le type est lu dans une **table sujet × geste**, et non composé à la volée
+ * (`${préfixe}.${geste}`) : chaque case est typée par le catalogue des faits
+ * (`@lfd/contracts/journal-facts`), donc un fait tarifaire qui n'y figure pas ne
+ * compile pas, et une combinaison qu'aucun écran n'écrit se dit `null`
+ * (inventaire du 2026-09-19 : seize combinaisons écrites sur vingt-huit).
  */
-const FACT_PREFIX: Readonly<Record<PricingSubjectType, string>> = {
-  rule: "price_rule",
-  floor: "price_floor",
-  ladder: "volume_ladder",
+const FACT_TYPES: {
+  readonly [S in PricingSubjectType]: Readonly<
+    Record<PricingActKind, ActiveJournalFactType | null>
+  >;
+} = {
+  rule: {
+    posed: "price_rule.posed",
+    paused: "price_rule.paused",
+    resumed: "price_rule.resumed",
+    archived: "price_rule.archived",
+    confirmed: null,
+    replaced: null,
+    renamed: "price_rule.renamed",
+  },
+  floor: {
+    posed: "price_floor.posed",
+    paused: null,
+    resumed: null,
+    archived: "price_floor.archived",
+    confirmed: "price_floor.confirmed",
+    replaced: "price_floor.replaced",
+    renamed: null,
+  },
+  ladder: {
+    posed: "volume_ladder.posed",
+    paused: "volume_ladder.paused",
+    resumed: "volume_ladder.resumed",
+    archived: "volume_ladder.archived",
+    confirmed: null,
+    replaced: null,
+    renamed: null,
+  },
   // Un sujet à part, et non `price_rule` : une mercuriale n'est plus une
   // collection de règles. Relire « pourquoi ce prix » six mois plus tard doit
   // rendre UN acte — « posée le 8 septembre » — et non les N que la pose
   // écrivait, dont aucun ne disait à quelle grille il appartenait.
-  mercuriale: "company_mercuriale",
+  mercuriale: {
+    posed: "company_mercuriale.posed",
+    paused: null,
+    resumed: null,
+    archived: "company_mercuriale.archived",
+    confirmed: null,
+    replaced: null,
+    renamed: "company_mercuriale.renamed",
+  },
 };
 
 /** Le sujet du journal général, aligné sur le préfixe du fait. */
-const FACT_SUBJECT: Readonly<Record<PricingSubjectType, string>> = FACT_PREFIX;
+const FACT_SUBJECT: Readonly<Record<PricingSubjectType, string>> = {
+  rule: "price_rule",
+  floor: "price_floor",
+  ladder: "volume_ladder",
+  mercuriale: "company_mercuriale",
+};
 
+/**
+ * @throws {PricingActNotJournaledError} un geste que ce sujet ne connaît pas
+ *   (`null` dans la table) — un appelant neuf qui l'inventerait l'apprend ici.
+ */
 export function pricingFactOf(act: PricingAct): {
-  readonly type: string;
+  readonly type: ActiveJournalFactType;
   readonly subjectType: string;
   readonly subjectId: string;
   readonly payload: Record<string, unknown>;
   readonly occurredAt: Date;
 } {
+  const type = FACT_TYPES[act.subjectType][act.kind];
+  if (type === null) {
+    throw new PricingActNotJournaledError(act.subjectType, act.kind);
+  }
   return {
-    type: `${FACT_PREFIX[act.subjectType]}.${act.kind}`,
+    type,
     subjectType: FACT_SUBJECT[act.subjectType],
     subjectId: act.subjectId,
     // La phrase figée et le motif : c'est tout ce que le journal général a à

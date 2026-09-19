@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import type { DebtorAccount } from "../value-objects/debtor-account.js";
 import type { MandateActorChannel } from "./payment-mandate-facts.js";
@@ -25,7 +27,8 @@ import type { MandateActorChannel } from "./payment-mandate-facts.js";
  * ne portent même pas `last4` (`payment-mandate-facts.ts`) : ils n'en ont pas
  * besoin, leur référence (RUM) suffit à les relier au papier.
  */
-export const COMPANY_BANK_ACCOUNT_CHANGED = "company.bank_account_changed";
+export const COMPANY_BANK_ACCOUNT_CHANGED =
+  "company.bank_account_changed" satisfies JournalFactType;
 
 /** Ce que le journal retient d'un RIB : de quoi le reconnaître, rien pour s'en servir. */
 export interface BankAccountTrace {

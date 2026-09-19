@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import { ACCOUNT_FACTS } from "../../account/domain/events/account-facts.js";
 
 /**
@@ -113,10 +115,10 @@ export const ACTIVITY_TYPES = {
   supportRequested: "support.requested",
   /** Demande de contact **traitée** par le staff — c'est ce qui la sort de la file. */
   supportHandled: "support.handled",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** L'événement à journaliser pour chaque transition de rendez-vous. */
-export const APPOINTMENT_TRANSITION_TYPES: Record<string, string> = {
+export const APPOINTMENT_TRANSITION_TYPES: Readonly<Record<string, JournalFactType>> = {
   confirmed: ACTIVITY_TYPES.appointmentConfirmed,
   cancelled: ACTIVITY_TYPES.appointmentCancelled,
   honored: ACTIVITY_TYPES.appointmentHonored,
@@ -129,8 +131,11 @@ export const APPOINTMENT_TRANSITION_TYPES: Record<string, string> = {
  * le recorder — l'appelant ne s'en occupe pas.
  */
 export interface RecordActivityInput {
-  /** Type de l'événement, ex. `order.placed` (cf. `ACTIVITY_TYPES`). */
-  readonly type: string;
+  /**
+   * Type de l'événement, ex. `order.placed` (cf. `ACTIVITY_TYPES`) — un type du
+   * catalogue des faits, qui confronte aussi la charge à l'écriture.
+   */
+  readonly type: JournalFactType;
   readonly subjectType: ActivitySubjectType;
   readonly subjectId: string;
   /** Établissement rattaché, si connu (rempli plus tard par l'identity resolution). */

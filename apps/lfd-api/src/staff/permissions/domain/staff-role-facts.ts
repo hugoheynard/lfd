@@ -4,6 +4,7 @@ import {
   type StaffAction,
   type StaffResource,
 } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact } from "../../../platform/journal/journal-fact.js";
 import type { StaffRoleSnapshot } from "./staff-role-definition.js";
@@ -24,7 +25,7 @@ export const STAFF_ROLE_FACTS = {
   updated: "staff_role.updated",
   archived: "staff_role.archived",
   restored: "staff_role.restored",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Le sujet d'un fait de rôle : sa clé, immuable. */
 const ROLE_SUBJECT = "staff_role";
@@ -101,6 +102,6 @@ function byResource(grants: readonly RoleGrant[]): ReadonlyMap<StaffResource, St
   return new Map(grants.map((grant) => [grant.resource, grant.action]));
 }
 
-function fact(type: string, key: string, payload: Record<string, unknown>): JournalFact {
+function fact(type: JournalFactType, key: string, payload: Record<string, unknown>): JournalFact {
   return { type, subjectType: ROLE_SUBJECT, subjectId: key, payload };
 }

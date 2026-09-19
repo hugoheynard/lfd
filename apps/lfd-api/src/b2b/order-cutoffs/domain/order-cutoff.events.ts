@@ -1,4 +1,5 @@
 import type { OrderCutoffPayload } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 
@@ -18,7 +19,7 @@ export const ORDER_CUTOFF_FACTS = {
   created: "order_cutoff.created",
   updated: "order_cutoff.updated",
   removed: "order_cutoff.removed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 function ruleOf(payload: OrderCutoffPayload): Record<string, unknown> {
   return {

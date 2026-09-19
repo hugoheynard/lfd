@@ -78,6 +78,8 @@ import { AdminProspectsController } from "./http/admin-prospects.controller.js";
 import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
+import { AppConfig } from "../../platform/config/app-config.js";
+import { JournalFactCheck } from "../../platform/journal/journal-fact-check.js";
 import { PrismaActorNamer } from "./infrastructure/prisma-actor-namer.js";
 import { CompanyNamer } from "./domain/ports/company-namer.js";
 import { PrismaCompanyNamer } from "./infrastructure/prisma-company-namer.js";
@@ -139,6 +141,13 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
   ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
+    // La vérification à l'écriture : stricte sous les harnais de test,
+    // indulgente en production (D2 du plan des phrases du journal).
+    {
+      provide: JournalFactCheck,
+      useFactory: (config: AppConfig) => new JournalFactCheck(config.journalFactsStrict()),
+      inject: [AppConfig],
+    },
     { provide: ActorNamer, useClass: PrismaActorNamer },
     { provide: CompanyNamer, useClass: PrismaCompanyNamer },
     { provide: ActivityJournalReader, useClass: PrismaActivityJournalReader },

@@ -14,10 +14,11 @@
  * l'adaptateur réel (`ActivityRecorder`), comme `activity-pages`.
  */
 import type { ActivityEventView, ActivityPageView } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -74,7 +75,7 @@ const accountant = (): ReturnType<E2eContext["asSub"]> => as(ACCOUNTANT.sub);
 let written = 0;
 /** Un fait écrit par l'adaptateur réel, hors requête. */
 async function fact(
-  type: string,
+  type: JournalFactType,
   subjectType: string,
   payload: Record<string, unknown>,
 ): Promise<void> {
@@ -99,35 +100,67 @@ async function rateWrittenByAccountant(name: string, percent: number): Promise<s
   return id;
 }
 
-/** Les types de la tranche, et les témoins qui n'y sont pas. */
-const FISCAL_BY_RECORDER = [
-  "product_category.vat_changed",
-  "product.vat_changed",
-  "accounting_rules.method_changed",
-  "sales_context.created",
-  "order_late_fee.cleared",
-] as const;
-const OUTSIDE = [
-  "product_category.renamed",
-  "product.identity_saved",
-  "product_category.channels_changed",
-  "order_cutoff_waiver.granted",
-  "company.identity_edited",
-] as const;
+/**
+ * Les types de la tranche, et les témoins qui n'y sont pas — chacun avec une
+ * charge **conforme au catalogue des faits** (le journal est strict sous le
+ * harnais), qui porte le mot cherché dans une de ses valeurs.
+ *
+ * Sauf la surtaxe : sa charge ne dit qu'un montant et un taux, aucun texte
+ * libre ne peut y porter le mot. Elle compte dans la tranche, pas dans la
+ * recherche.
+ */
+const FISCAL_SEARCHABLE = {
+  "product_category.vat_changed": { b2b: { from: null, to: `Taux ${WORD} appliqué` } },
+  "product.vat_changed": { b2b: { from: `Taux ${WORD} appliqué`, to: null } },
+  "accounting_rules.method_changed": { from: `Méthode ${WORD}`, to: "ratio_ttc" },
+  "sales_context.created": {
+    key: "vat_subject",
+    label: `Contexte ${WORD}`,
+    active: true,
+    shopifyProjected: false,
+  },
+} as const;
+const FISCAL_BY_RECORDER = [...keysOf(FISCAL_SEARCHABLE), "order_late_fee.cleared"] as const;
+const LATE_FEE_CLEARED = {
+  before: { fee: { mode: "percent", bp: 500 }, vatRatePercent: 20 },
+} as const;
+const OUTSIDE = {
+  "product_category.renamed": {
+    changes: { name: { from: { fr: "Rayon" }, to: { fr: `Rayon ${WORD}` } } },
+  },
+  "product.identity_saved": {
+    changes: { name: { from: { fr: "Fiche" }, to: { fr: `Rayon ${WORD}` } } },
+  },
+  "product_category.channels_changed": {
+    changes: { channels: { from: [], to: [{ pointOfSaleId: `Rayon ${WORD}`, context: "b2b" }] } },
+  },
+  "order_cutoff_waiver.granted": {
+    companyId: "company_outside",
+    fulfillmentDate: serviceDay(),
+    reason: `Rayon ${WORD}`,
+  },
+  "company.identity_edited": { fields: [`Rayon ${WORD}`] },
+} as const;
+
+/** Les clés d'un objet de fixture, typées par lui. */
+function keysOf<T extends object>(record: T): (keyof T & string)[] {
+  return Reflect.ownKeys(record).filter((key): key is keyof T & string => typeof key === "string");
+}
 
 /**
- * Deux taux par la route (quatre faits `vat_rate.*`), trois faits fiscaux par
- * l'adaptateur, et quatre témoins hors tranche — tous porteurs du mot cherché,
+ * Deux taux par la route (quatre faits `vat_rate.*`), cinq faits fiscaux par
+ * l'adaptateur, et cinq témoins hors tranche — tous porteurs du mot cherché,
  * dont deux du référentiel, voisins immédiats des types de la tranche.
  */
 async function seedJournal(): Promise<{ readonly rateId: string }> {
   const rateId = await rateWrittenByAccountant(`Taux ${WORD} test`, 5.4);
   await rateWrittenByAccountant("Taux intermédiaire test", 9.7);
-  for (const type of FISCAL_BY_RECORDER) {
-    await fact(type, "vat_subject", { label: `Taux ${WORD} appliqué` });
+  for (const type of keysOf(FISCAL_SEARCHABLE)) {
+    await fact(type, "vat_subject", FISCAL_SEARCHABLE[type]);
   }
-  for (const type of OUTSIDE) {
-    await fact(type, "other_subject", { label: `Rayon ${WORD}` });
+  await fact("order_late_fee.cleared", "vat_subject", LATE_FEE_CLEARED);
+  for (const type of keysOf(OUTSIDE)) {
+    await fact(type, "other_subject", OUTSIDE[type]);
   }
   await ctx.drain();
   return { rateId };
@@ -166,7 +199,7 @@ describe("la tranche fiscale — ce que la comptabilité relit", () => {
     const all = jsonBody<ActivityPageView>(
       await as("staff-e2e").get("/admin/activity").query({ limit: "200" }).expect(200),
     );
-    expect(typesOf(all.events)).toEqual(expect.arrayContaining([...OUTSIDE]));
+    expect(typesOf(all.events)).toEqual(expect.arrayContaining(keysOf(OUTSIDE)));
   });
 
   it("attribue au comptable les taux qu'il a posés", async () => {
@@ -183,8 +216,8 @@ describe("la tranche fiscale — ce que la comptabilité relit", () => {
 
     const found = await readTax({ q: WORD, limit: "200" });
 
-    // Le taux créé et corrigé, puis les trois faits de l'adaptateur.
-    expect(found.total).toBe(2 + FISCAL_BY_RECORDER.length);
+    // Le taux créé et corrigé, puis les faits de l'adaptateur qui portent le mot.
+    expect(found.total).toBe(2 + keysOf(FISCAL_SEARCHABLE).length);
     expect(typesOf(found.events).every(isFiscal)).toBe(true);
   });
 
@@ -206,7 +239,7 @@ describe("la tranche fiscale — ce que la comptabilité relit", () => {
     const all = (await readTax({ limit: "200" })).events.map((event) => event.id);
 
     const first = await readTax({ limit: "3", page: "1" });
-    await fact("vat_rate.renamed", "vat_rate", { name: "Arrivé pendant la lecture" });
+    await fact("vat_rate.renamed", "vat_rate", { from: "Taux", to: "Arrivé pendant la lecture" });
     await ctx.drain();
     const asOf = first.asOf ?? "";
     const second = await readTax({ limit: "3", page: "2", asOf });

@@ -1,4 +1,5 @@
 import type { BillingAddressPayload, DeferredTerm, DeliveryAddressPayload } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
@@ -30,7 +31,7 @@ import type { DeliveryProcedureStaffAction } from "./staff-address-acts.event.js
 export abstract class CompanyMemberAct implements JournaledEvent {
   protected constructor(readonly companyId: string) {}
 
-  protected abstract type(): string;
+  protected abstract type(): JournalFactType;
 
   /** Ce qu'il faut pour relire le geste. Vide par défaut : le verbe suffit parfois. */
   protected details(): Record<string, unknown> {
@@ -55,7 +56,7 @@ export class BillingAddressSavedByMemberEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.billingAddressSaved;
   }
   protected override details(): Record<string, unknown> {
@@ -81,7 +82,7 @@ export class DeliveryAddressAddedByMemberEvent extends DeliveryAddressPlacedAct 
   constructor(companyId: string, addressId: string, payload: DeliveryAddressPayload) {
     super(companyId, addressId, payload);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressAdded;
   }
 }
@@ -90,7 +91,7 @@ export class DeliveryAddressUpdatedByMemberEvent extends DeliveryAddressPlacedAc
   constructor(companyId: string, addressId: string, payload: DeliveryAddressPayload) {
     super(companyId, addressId, payload);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressUpdated;
   }
 }
@@ -103,7 +104,7 @@ export class DeliveryAddressRemovedByMemberEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressRemoved;
   }
   protected override details(): Record<string, unknown> {
@@ -118,7 +119,7 @@ export class DefaultDeliverySetByMemberEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.defaultDeliverySet;
   }
   protected override details(): Record<string, unknown> {
@@ -139,7 +140,7 @@ export class FulfillmentPreferenceSetByMemberEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.fulfillmentPreferenceSet;
   }
   protected override details(): Record<string, unknown> {
@@ -165,7 +166,7 @@ export class ContactAddedByMemberEvent extends ContactRoleAct {
   constructor(companyId: string, contactId: string, role: string) {
     super(companyId, contactId, role);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactAdded;
   }
 }
@@ -174,7 +175,7 @@ export class ContactUpdatedByMemberEvent extends ContactRoleAct {
   constructor(companyId: string, contactId: string, role: string) {
     super(companyId, contactId, role);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactUpdated;
   }
 }
@@ -186,7 +187,7 @@ export class ContactRemovedByMemberEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactRemoved;
   }
   protected override details(): Record<string, unknown> {
@@ -199,7 +200,7 @@ export class PrimaryContactChangedByMemberEvent extends CompanyMemberAct {
   constructor(companyId: string) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.primaryContactChanged;
   }
 }
@@ -217,7 +218,7 @@ export class CompanyIdentityEditedEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.identityEdited;
   }
   protected override details(): Record<string, unknown> {
@@ -238,7 +239,7 @@ export class PaymentTermRequestedEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.paymentTermRequested;
   }
   protected override details(): Record<string, unknown> {
@@ -259,7 +260,7 @@ export class DeliveryProcedureEditedByMemberEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryProcedureEdited;
   }
   protected override details(): Record<string, unknown> {
@@ -275,7 +276,7 @@ export class KbisUploadedByMemberEvent extends CompanyMemberAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.kbisUploaded;
   }
   protected override details(): Record<string, unknown> {

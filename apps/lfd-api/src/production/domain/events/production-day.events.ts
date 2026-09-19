@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 
 /**
@@ -24,7 +26,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 export const PRODUCTION_DAY_FACTS = {
   closed: "production_day.closed",
   retaken: "production_day.retaken",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Le sujet : la journée, désignée par sa date de service — sa clé en base. */
 const SUBJECT_TYPE = "production_day";

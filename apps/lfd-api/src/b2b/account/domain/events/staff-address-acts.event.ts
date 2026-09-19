@@ -1,4 +1,5 @@
 import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import { ACCOUNT_FACTS } from "./account-facts.js";
 import { placeOf } from "./address-place.js";
@@ -22,7 +23,7 @@ export class BillingAddressSavedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.billingAddressSaved;
   }
   protected override details(): Record<string, unknown> {
@@ -38,7 +39,7 @@ export class DeliveryAddressAddedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressAdded;
   }
   protected override details(): Record<string, unknown> {
@@ -54,7 +55,7 @@ export class DeliveryAddressUpdatedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressUpdated;
   }
   protected override details(): Record<string, unknown> {
@@ -73,7 +74,7 @@ export class DeliveryAddressRemovedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressRemoved;
   }
   protected override details(): Record<string, unknown> {
@@ -88,7 +89,7 @@ export class DefaultDeliverySetByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.defaultDeliverySet;
   }
   protected override details(): Record<string, unknown> {
@@ -112,7 +113,7 @@ export class FulfillmentPreferenceSetByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.fulfillmentPreferenceSet;
   }
   protected override details(): Record<string, unknown> {
@@ -139,7 +140,7 @@ export class DeliveryProcedureEditedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryProcedureEdited;
   }
   protected override details(): Record<string, unknown> {

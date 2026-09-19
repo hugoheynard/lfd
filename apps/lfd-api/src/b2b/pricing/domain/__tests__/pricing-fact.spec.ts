@@ -1,3 +1,4 @@
+import { PricingActNotJournaledError } from "../errors/shared-errors.js";
 import { pricingFactOf, type PricingAct } from "../pricing-act.js";
 
 /**
@@ -53,6 +54,20 @@ describe("pricingFactOf", () => {
       summary: "−10 % sur la gamme viennoiserie",
       reason: "fin de promotion",
     });
+  });
+
+  /**
+   * Le type se lit dans une table sujet × geste typée par le catalogue des
+   * faits : un geste qu'aucun écran n'écrit sur ce sujet n'a pas de fait, et
+   * le dire vaut mieux que composer un type que le journal refuserait.
+   */
+  it("refuse un geste sans fait au journal pour ce sujet", () => {
+    expect(() => pricingFactOf(act({ subjectType: "floor", kind: "paused" }))).toThrow(
+      PricingActNotJournaledError,
+    );
+    expect(() => pricingFactOf(act({ subjectType: "mercuriale", kind: "confirmed" }))).toThrow(
+      /mercuriale/,
+    );
   });
 
   it("range le fait sous un sujet qui se filtre", () => {

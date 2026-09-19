@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { LateFeeSetting } from "../../orders/domain/ports/order-late-fee.reader.js";
 
@@ -18,7 +20,7 @@ import type { LateFeeSetting } from "../../orders/domain/ports/order-late-fee.re
 export const ORDER_LATE_FEE_FACTS = {
   set: "order_late_fee.set",
   cleared: "order_late_fee.cleared",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
  * Le sujet des faits : le réglage, UNIQUE pour toute la maison. Son identifiant

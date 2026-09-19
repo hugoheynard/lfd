@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 /**
  * Un **fait** tel qu'un émetteur le décrit : ce qui s'est passé, sur quoi, et
  * le strict nécessaire pour le relire.
@@ -7,8 +9,12 @@
  * finirait par se tromper, ou par mentir.
  */
 export interface JournalFact {
-  /** Le fait, en vocabulaire métier : `company.payment_terms_granted`. */
-  readonly type: string;
+  /**
+   * Le fait, en vocabulaire métier : `company.payment_terms_granted`. Typé par
+   * le catalogue (`@lfd/contracts/journal-facts`) : un type qui n'y figure pas
+   * ne compile pas, et sa charge y est confrontée à l'écriture.
+   */
+  readonly type: JournalFactType;
   /** La chose dont il parle (`company`, `product`, `vat_rate`…). */
   readonly subjectType: string;
   readonly subjectId: string;

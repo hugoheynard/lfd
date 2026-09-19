@@ -32,6 +32,7 @@ import {
 } from "../../domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { CustomerMandateGate } from "../../domain/ports/customer-mandate-gate.js";
+import { STRICT_JOURNAL_FACTS } from "../../../../platform/journal/__tests__/strict-journal-facts.js";
 
 /**
  * Doublés partagés des handlers du **mandat** et du **RIB**.
@@ -308,6 +309,8 @@ export class StepPublisher extends DomainEventPublisher {
   }
 
   publishTraced(event: JournaledEvent): Promise<void> {
+    const fact = event.journalFact();
+    STRICT_JOURNAL_FACTS.verify(fact.type, fact.payload);
     this.traced.push(event);
     this.steps.log.push(`journal:${event.journalFact().type}`);
     return Promise.resolve();

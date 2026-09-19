@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 
 /**
@@ -16,7 +18,7 @@ export const FEATURE_ACCESS_FACTS = {
   overrideCleared: "feature_access.override_cleared",
   exemptionAdded: "feature_access.exemption_added",
   exemptionRemoved: "feature_access.exemption_removed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "feature_access";
 

@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 
 /**
@@ -22,7 +24,7 @@ export const CATALOG_ITEM_FACTS = {
   shown: "catalog_item.shown",
   featured: "catalog_item.featured",
   unfeatured: "catalog_item.unfeatured",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "catalog_item";
 
@@ -78,7 +80,7 @@ export class CatalogItemB2bPriceClearedEvent implements JournaledEvent {
 
 /** Un fait qui ne porte que l'article : le type dit tout le geste. */
 abstract class CatalogItemFlagEvent implements JournaledEvent {
-  protected abstract readonly type: string;
+  protected abstract readonly type: JournalFactType;
 
   constructor(readonly sku: string) {}
 

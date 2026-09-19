@@ -39,21 +39,29 @@ beforeEach(async () => {
 
 const operator = (): ReturnType<E2eContext["asSub"]> => ctx.asSub("staff-e2e");
 
-const WITNESS = "company.page_witness";
-const OTHER = "company.other_witness";
+/**
+ * Deux types témoins, pris au catalogue des faits : le journal est strict sous
+ * le harnais, et un type inventé y serait refusé. Chacun porte le nom cherché
+ * dans une valeur de sa charge — c'est tout ce que la recherche éprouve.
+ */
+const WITNESS = "lead.captured";
+const OTHER = "legal_entity.corrected";
 
 /** Le filtre éprouvé partout : un type ET une recherche, pour que les deux comptent. */
 const FILTERS = { type: WITNESS, q: "martin" };
 
 let written = 0;
-async function fact(type: string, name: string): Promise<void> {
+async function fact(type: typeof WITNESS | typeof OTHER, name: string): Promise<void> {
   written += 1;
   await ctx.app.get(ActivityRecorder).record({
     type,
-    subjectType: "company",
-    subjectId: `company_${String(written)}`,
+    subjectType: type === WITNESS ? "lead" : "legal_entity",
+    subjectId: `subject_${String(written)}`,
     idempotencyKey: `${type}:${String(written)}`,
-    payload: { contactName: `Boulangerie ${name}` },
+    payload:
+      type === WITNESS
+        ? { businessName: `Boulangerie ${name}`, email: "" }
+        : { name: `Boulangerie ${name}` },
   });
 }
 

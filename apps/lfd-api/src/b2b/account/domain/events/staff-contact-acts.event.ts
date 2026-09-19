@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import { ACCOUNT_FACTS } from "./account-facts.js";
 import { CompanyStaffAct } from "./staff-acts.event.js";
 
@@ -18,7 +20,7 @@ export class ContactAddedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactAdded;
   }
   protected override details(): Record<string, unknown> {
@@ -34,7 +36,7 @@ export class ContactUpdatedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactUpdated;
   }
   protected override details(): Record<string, unknown> {
@@ -49,7 +51,7 @@ export class ContactRemovedByStaffEvent extends CompanyStaffAct {
   ) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactRemoved;
   }
   protected override details(): Record<string, unknown> {
@@ -62,7 +64,7 @@ export class PrimaryContactChangedByStaffEvent extends CompanyStaffAct {
   constructor(companyId: string) {
     super(companyId);
   }
-  protected type(): string {
+  protected type(): JournalFactType {
     return ACCOUNT_FACTS.primaryContactChanged;
   }
 }

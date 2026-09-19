@@ -27,6 +27,11 @@
       "types": "./src/shop-values.ts",
       "import": "./dist/shop-values.js",
       "require": "./dist/shop-values.js"
+    },
+    "./journal-facts": {
+      "types": "./src/journal-facts/index.ts",
+      "import": "./dist/journal-facts/index.js",
+      "require": "./dist/journal-facts/index.js"
     }
   },
   "private": true,

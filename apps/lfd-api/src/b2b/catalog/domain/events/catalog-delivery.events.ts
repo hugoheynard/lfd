@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 
 /**
@@ -13,7 +15,7 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
  */
 export const CATALOG_DELIVERY_FACTS = {
   accepted: "catalog_delivery.accepted",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "catalog_delivery";
 

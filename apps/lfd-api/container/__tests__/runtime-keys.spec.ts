@@ -37,6 +37,10 @@ const NOT_FORWARDED: Readonly<Record<string, string>> = {
   AUTH_ADMIN_DEV_BYPASS: "développement local uniquement — jamais en production",
   AUTH_DEV_IMPERSONATE: "développement local uniquement",
   AUTH_DEV_IMPERSONATE_SUBJECT: "développement local uniquement",
+  // Le journal strict n'existe que sous les harnais de test : en production,
+  // un fait mal décrit s'écrit quand même (D2 du plan des phrases du journal),
+  // et `optionalJournalStrictFacts` ignore la variable.
+  JOURNAL_STRICT_FACTS: "tests uniquement — la production reste indulgente",
 };
 
 /** Les noms que le Worker accepte de transmettre au container. */

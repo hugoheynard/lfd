@@ -1,11 +1,10 @@
-import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { Lead } from "../../../domain/entities/lead.js";
 import { LeadNotFoundError, LeadTransitionError } from "../../../domain/errors/lead-errors.js";
-import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { LeadRepository } from "../../../domain/ports/lead.repository.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ChangeLeadStatusCommand } from "../change-lead-status.command.js";
 import { ChangeLeadStatusHandler } from "../change-lead-status.handler.js";
+import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
 
@@ -44,25 +43,13 @@ class FakeRepo extends LeadRepository {
   }
 }
 
-class CapturingRecorder extends ActivityRecorder {
-  readonly records: RecordActivityInput[] = [];
-  record(input: RecordActivityInput): Promise<void> {
-    this.records.push(input);
-    return Promise.resolve();
-  }
-  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
-  recordOrFail(input: RecordActivityInput): Promise<void> {
-    return this.record(input);
-  }
-}
-
 function handlerFor(lead: Lead | null): {
   handler: ChangeLeadStatusHandler;
-  recorder: CapturingRecorder;
+  recorder: RecordingActivityRecorder;
   repo: FakeRepo;
 } {
   const repo = new FakeRepo(lead);
-  const recorder = new CapturingRecorder();
+  const recorder = new RecordingActivityRecorder();
   return {
     handler: new ChangeLeadStatusHandler(repo, recorder, new FixedClock(NOW)),
     recorder,

@@ -220,6 +220,18 @@ process.env["PIM_PUBLICATION_ENABLED"] = "true";
  */
 process.env["B2B_DELIVERY_INBOX"] = "false";
 
+/**
+ * Le journal est **strict** dans les tests : un fait dont le type n'est pas au
+ * catalogue (`@lfd/contracts/journal-facts`), ou dont la charge ne suit pas son
+ * schéma, lève au lieu d'être signalé (D2 du plan
+ * `documentation/journalisation/plan-phrases-du-journal.md`).
+ *
+ * Écrasement dur : c'est ce qui rend le catalogue exact — tout fait qu'un test
+ * écrit y est confronté. Un `.env` local qui le fermerait laisserait passer un
+ * type oublié jusqu'au log d'erreur de la production.
+ */
+process.env["JOURNAL_STRICT_FACTS"] = "true";
+
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
   return process.env["DATABASE_LFD_URL"] ?? DEFAULT_TEST_DATABASE_URL;

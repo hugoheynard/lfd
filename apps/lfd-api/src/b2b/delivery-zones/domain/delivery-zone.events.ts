@@ -1,4 +1,5 @@
 import type { DeliveryZonePayload } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 
@@ -18,7 +19,7 @@ export const DELIVERY_ZONE_FACTS = {
   created: "delivery_zone.created",
   updated: "delivery_zone.updated",
   removed: "delivery_zone.removed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Le tarif d'une zone, tel qu'on le relit : un pourcentage ou des centimes. */
 function feeOf(payload: DeliveryZonePayload): Record<string, unknown> {

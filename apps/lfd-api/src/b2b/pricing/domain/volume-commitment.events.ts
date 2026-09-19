@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { VolumeCommitmentAggregate } from "./entities/volume-commitment.js";
 
@@ -16,7 +18,7 @@ import type { VolumeCommitmentAggregate } from "./entities/volume-commitment.js"
 export const VOLUME_COMMITMENT_FACTS = {
   signed: "volume_commitment.signed",
   closed: "volume_commitment.closed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 export class VolumeCommitmentSignedEvent implements JournaledEvent {
   constructor(readonly commitment: VolumeCommitmentAggregate) {}

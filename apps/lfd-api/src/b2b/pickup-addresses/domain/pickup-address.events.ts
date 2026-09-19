@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { PickupAddressWrite } from "./pickup-address.repository.js";
 
@@ -17,7 +19,7 @@ export const PICKUP_ADDRESS_FACTS = {
   updated: "pickup_address.updated",
   removed: "pickup_address.removed",
   defaultSet: "pickup_address.default_set",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
  * Ce qu'on relit d'un point de retrait : où il est, ce qu'il remise, et à qui.
@@ -115,7 +117,7 @@ export class DefaultPickupAddressSetEvent implements JournaledEvent {
  */
 export const PUBLIC_PICKUP_SCHEDULE_FACTS = {
   updated: "public_pickup_schedule.updated",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
  * L'horaire public d'un point a été réécrit **en bloc**.

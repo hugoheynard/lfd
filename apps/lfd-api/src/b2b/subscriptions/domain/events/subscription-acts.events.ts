@@ -1,4 +1,5 @@
 import type { SubscriptionStatus } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import type { OccurrenceOverride, SubscriptionDecision } from "../entities/subscription.js";
@@ -25,7 +26,7 @@ export const SUBSCRIPTION_FACTS = {
   statusChanged: "subscription.status_changed",
   occurrenceOverridden: "subscription.occurrence_overridden",
   deleted: "subscription.deleted",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "subscription";
 

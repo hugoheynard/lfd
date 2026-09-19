@@ -509,6 +509,28 @@ export function optionalDeliveryInboxEnabled(): boolean {
   return process.env["B2B_DELIVERY_INBOX"]?.trim().toLowerCase() === "true";
 }
 
+/**
+ * Le journal refuse-t-il un fait que son catalogue ne reconnaît pas
+ * (`JOURNAL_STRICT_FACTS`) ?
+ *
+ * **Indulgent par défaut** : l'écart part au journal applicatif en erreur et le
+ * fait s'écrit quand même — un défaut de description ne bloque jamais un geste
+ * réel (Hugo, 2026-09-19). Les harnais de test l'ouvrent (`test/setup-env.ts`),
+ * pour que chaque fait qu'un test écrit soit confronté au catalogue.
+ *
+ * **Sans effet en production**, quelle que soit la variable : un mode strict
+ * en ligne transformerait une charge mal décrite en commande annulée, et c'est
+ * exactement ce que la décision exclut. Ignorée plutôt que refusée au
+ * démarrage : l'interdit est inexprimable, il n'a pas à faire tomber un
+ * déploiement. Le Worker ne la transmet d'ailleurs pas au container
+ * (`container/__tests__/runtime-keys.spec.ts`).
+ */
+export function optionalJournalStrictFacts(): boolean {
+  const enabled = process.env["JOURNAL_STRICT_FACTS"]?.trim().toLowerCase() === "true";
+  const production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
+  return enabled && !production;
+}
+
 /** AES-256 : la clé fait 32 octets, ni plus ni moins. */
 const FIELD_ENCRYPTION_KEY_BYTES = 32;
 

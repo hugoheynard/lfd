@@ -1,9 +1,8 @@
 import type { LeadScoreView } from "@lfd/contracts";
 
-import type { RecordActivityInput } from "../../../domain/activity-event.js";
-import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { LeadScoreReader } from "../../../domain/ports/lead-score.reader.js";
 import { GetCockpitHandler } from "../get-cockpit.handler.js";
+import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 /** Reader doublé par EXTENSION : rend une queue figée. */
 class FakeReader extends LeadScoreReader {
@@ -14,19 +13,6 @@ class FakeReader extends LeadScoreReader {
   topPlays(limit: number): Promise<LeadScoreView[]> {
     this.lastLimit = limit;
     return Promise.resolve(this.rows);
-  }
-}
-
-/** Recorder doublé : capture les faits journalisés. */
-class CapturingRecorder extends ActivityRecorder {
-  readonly records: RecordActivityInput[] = [];
-  record(input: RecordActivityInput): Promise<void> {
-    this.records.push(input);
-    return Promise.resolve();
-  }
-  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
-  recordOrFail(input: RecordActivityInput): Promise<void> {
-    return this.record(input);
   }
 }
 
@@ -49,7 +35,7 @@ function lead(overrides: Partial<LeadScoreView> = {}): LeadScoreView {
 describe("GetCockpitHandler", () => {
   it("demande les 5 meilleurs coups et les rend tels quels", async () => {
     const reader = new FakeReader([lead()]);
-    const handler = new GetCockpitHandler(reader, new CapturingRecorder());
+    const handler = new GetCockpitHandler(reader, new RecordingActivityRecorder());
 
     const result = await handler.execute();
 
@@ -59,7 +45,7 @@ describe("GetCockpitHandler", () => {
   });
 
   it("journalise reco.shown pour chaque coup affiché, clé idempotente par (sujet, fenêtre)", async () => {
-    const recorder = new CapturingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const handler = new GetCockpitHandler(
       new FakeReader([
         lead({ subjectId: "u1", computedAt: "2026-08-20T04:00:00.000Z" }),
@@ -82,7 +68,7 @@ describe("GetCockpitHandler", () => {
   });
 
   it("ne journalise rien quand la queue est vide", async () => {
-    const recorder = new CapturingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const handler = new GetCockpitHandler(new FakeReader([]), recorder);
 
     const result = await handler.execute();

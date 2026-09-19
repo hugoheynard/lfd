@@ -4,6 +4,7 @@ import {
   type StaffRole,
   type StaffStatus,
 } from "@lfd/contracts";
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact } from "../../../platform/journal/journal-fact.js";
 import { grantEntry, type StaffGrantEntry } from "../../permissions/domain/staff-role-facts.js";
@@ -47,7 +48,7 @@ export const STAFF_FACTS = {
   suspended: "staff_user.suspended",
   reinstated: "staff_user.reinstated",
   deleted: "staff_user.deleted",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const STAFF_USER_SUBJECT = "staff_user";
 
@@ -216,6 +217,6 @@ function overrideEntry(override: StaffOverride): StaffOverrideEntry {
   return { ...grantEntry(override.resource, override.action), effect: override.effect };
 }
 
-function fact(type: string, id: string, payload: Record<string, unknown>): JournalFact {
+function fact(type: JournalFactType, id: string, payload: Record<string, unknown>): JournalFact {
   return { type, subjectType: STAFF_USER_SUBJECT, subjectId: id, payload };
 }
