@@ -77,25 +77,6 @@ La recherche parcourt la table, paginée. Un index trigramme (`pg_trgm` est
 plausible : Prisma Postgres accepte `btree_gist`) sur l'expression normalisée
 est une migration à part — **déclenchée par la mesure**.
 
-### Les phrases, ce qui reste
-
-Le [plan des phrases](plan-phrases-du-journal.md) est bâti (2026-09-19). Relevé
-en le bâtissant, non fait :
-
-- **L'écran de diff des révisions** nomme la portée par clé de contexte
-  (« brunch : 1 ») : `GlobalCause.blast` (`@lfd/pim-contracts`) est un contrat
-  servi ; il faudrait y ajouter les libellés à côté.
-- **Le motif d'un acte tarifaire** : pour une mercuriale, l'API écrit sa propre
-  paraphrase dans `reason` (« Mercuriale « X » posée sur la fiche du compte »),
-  que l'écran tait. La vraie correction : `reason: null` côté API.
-- **L'étage d'une règle** (Geste, Promotion…) reste au début de la phrase
-  figée, faute d'une donnée structurée dans la charge.
-- **Deux lignes `tax_regime.rate_changed`** de la base de dev (21 août) ne sont
-  au catalogue sous aucun nom : elles s'affichent comme un fait inconnu. À
-  vérifier en production avant d'envisager une migration de renommage.
-- **`delivery_availability.updated`** ne dit pas dans sa phrase ce qui a été
-  ouvert ; le détail le dit.
-
 ### Le journal tarifaire
 
 - **Une règle ne se modifie pas** : poser, suspendre, reprendre, archiver.
