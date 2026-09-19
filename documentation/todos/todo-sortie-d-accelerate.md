@@ -28,7 +28,8 @@
       générées le 2026-09-19 ; reste à relever la **région** et la **limite de
       connexions** du plan.
 - [ ] **GitHub** (Hugo, geste 3, par l'interface) : créer
-      `DATABASE_LFD_PROD_DIRECT_URL` — ✅ créé le 2026-09-19 ; copier la valeur actuelle de `DATABASE_LFD_URL`
+      `DATABASE_LFD_PROD_DIRECT_URL` — ✅ créé le 2026-09-19 ; créer
+      `DATABASE_LFD_PROD_URL` (URL mutualisée) ; copier la valeur actuelle de `DATABASE_LFD_URL`
       dans le gestionnaire de mots de passe.
 - [ ] **Merge** (Claude, geste 4) : batterie verte ; l'API se redéploie **encore
       sur Accelerate**, `/health` doit publier `accelerate`.
@@ -37,18 +38,18 @@
 
 - ~~(option A) **Répétition** sur la seconde base (geste 5)~~ — sans objet,
   option B retenue le 2026-09-19.
-- [ ] **La bascule** (geste 6) : Hugo remplace `DATABASE_LFD_URL` par l'URL
-      mutualisée ; Claude pousse le commit qui attend `pg` ; le déploiement
-      échoue si `/health` ne le publie pas.
+- [ ] **La bascule** (geste 6) : Claude pousse UN commit — la synchro lit
+      `DATABASE_LFD_PROD_URL` (URL mutualisée), le contrôle attend `pg` ; le
+      déploiement échoue si `/health` ne le publie pas.
 - [ ] **Vérifier** (geste 7) : contrôle du mur, sonde `postgres-b2b`, écran
       admin, connexion client, commande de test, vitals avant / après, console
       Prisma sans trafic Accelerate.
-- [ ] **Si ça ne va pas** (geste 7′) : recoller la valeur Accelerate, pousser le
-      retour du contrôle à `accelerate`.
+- [ ] **Si ça ne va pas** (geste 7′) : `git revert` du commit de bascule,
+      poussé — `DATABASE_LFD_URL` a gardé la valeur Accelerate.
 
-⚠️ Entre la création du secret direct et la bascule, **ne pas toucher
-`DATABASE_LFD_URL`** : tout push sur `main` qui touche l'API ou `packages/**`
-le resynchronise vers le container.
+⚠️ **Ne pas toucher `DATABASE_LFD_URL`** jusqu'au resserrement : c'est le
+retour arrière (Hugo, 2026-09-19 : la bascule passe par un secret à part,
+`DATABASE_LFD_PROD_URL`).
 
 ## Quelques jours après
 
