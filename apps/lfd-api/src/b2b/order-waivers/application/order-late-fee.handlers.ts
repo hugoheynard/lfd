@@ -23,7 +23,9 @@ import {
  *
  * Journalisé dans la transaction de l'écriture, avec le réglage d'avant (depuis
  * le 2026-09-19) : la ligne est réécrite en place, elle ne garde que le dernier.
- * Une réécriture à l'identique reste un fait — elle change l'auteur de la ligne.
+ * Une réécriture à l'identique n'est PAS un fait (Hugo, 2026-09-19) : la ligne
+ * change d'auteur, mais rien de ce qui est facturé ne bouge — même règle que
+ * les décisions de catalogue, où un geste sans effet ne s'écrit pas.
  */
 @CommandHandler(SaveOrderLateFeeCommand)
 export class SaveOrderLateFeeHandler implements ICommandHandler<SaveOrderLateFeeCommand, void> {
@@ -37,9 +39,22 @@ export class SaveOrderLateFeeHandler implements ICommandHandler<SaveOrderLateFee
     await this.uow.run(async () => {
       const before = await this.fees.read();
       await this.fees.save(command.setting, command.updatedBy);
-      await this.events.publishTraced(new OrderLateFeeSetEvent(before, command.setting));
+      if (!sameSetting(before, command.setting)) {
+        await this.events.publishTraced(new OrderLateFeeSetEvent(before, command.setting));
+      }
     });
   }
+}
+
+/** Même montant, même mode, même taux : ce que la passation facturerait est inchangé. */
+function sameSetting(before: LateFeeSetting | null, after: LateFeeSetting): boolean {
+  if (before === null || before.vatRatePercent !== after.vatRatePercent) {
+    return false;
+  }
+  const [a, b] = [before.adjustment, after.adjustment];
+  return a.mode === "amount"
+    ? b.mode === "amount" && a.cents === b.cents
+    : b.mode === "percent" && a.bp === b.bp;
 }
 
 /**

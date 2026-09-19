@@ -85,6 +85,39 @@ describe("SaveOrderLateFeeHandler", () => {
       after: { fee: { mode: "percent", bp: 1000 }, vatRatePercent: 5.5 },
     });
   });
+
+  it("n'écrit aucun fait quand le réglage reposé est identique", async () => {
+    const { save, fees, events } = build();
+    fees.current = FIVE_EUROS;
+
+    await save.execute(new SaveOrderLateFeeCommand({ ...FIVE_EUROS }, "fiche-2"));
+
+    expect(fees.log).toEqual(["read", "save:fiche-2"]);
+    expect(events.traced).toEqual([]);
+  });
+
+  it("journalise un changement de taux seul, montant inchangé", async () => {
+    const { save, fees, events } = build();
+    fees.current = FIVE_EUROS;
+
+    await save.execute(new SaveOrderLateFeeCommand({ ...FIVE_EUROS, vatRatePercent: 5.5 }, "f"));
+
+    expect(events.traced).toHaveLength(1);
+  });
+
+  it("journalise un changement de mode à valeur égale", async () => {
+    const { save, fees, events } = build();
+    fees.current = { adjustment: { mode: "amount", cents: 1000 }, vatRatePercent: 20 };
+
+    await save.execute(
+      new SaveOrderLateFeeCommand(
+        { adjustment: { mode: "percent", bp: 1000 }, vatRatePercent: 20 },
+        "f",
+      ),
+    );
+
+    expect(events.traced).toHaveLength(1);
+  });
 });
 
 describe("ClearOrderLateFeeHandler", () => {
