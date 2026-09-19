@@ -57,6 +57,12 @@ export interface RenderedFact {
    * au dictionnaire. Vide si le test de clôture passe ; c'est lui qui la lit.
    */
   readonly unlabelled: readonly string[];
+  /**
+   * Les valeurs d'ensemble fermé rendues sous leur code, faute de mot au
+   * dictionnaire des valeurs (`values/`) — `champ=valeur`. Vide si le test de
+   * clôture passe.
+   */
+  readonly unlabelledValues: readonly string[];
 }
 
 /**
@@ -91,6 +97,7 @@ export function renderFact(fact: FactInput, shownElsewhere: readonly string[] = 
     detail: detail.rows,
     consumed: named.consumed,
     unlabelled: detail.unlabelled,
+    unlabelledValues: detail.unlabelledValues,
   };
 }
 

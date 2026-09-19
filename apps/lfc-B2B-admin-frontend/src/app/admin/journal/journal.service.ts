@@ -101,6 +101,6 @@ export interface JournalLine {
   readonly actor: string;
   /** « pour Boulangerie Martin (SARL MARTIN) » — vide quand le fait n'a pas de client. */
   readonly forWhom: string;
-  /** « 3 familles à emporter · 1 sur place » — vide quand le fait n'a pas de portée. */
+  /** « touche 3 familles à emporter, 1 sur place » — vide quand le fait n’a pas de portée. */
   readonly blast: string;
 }

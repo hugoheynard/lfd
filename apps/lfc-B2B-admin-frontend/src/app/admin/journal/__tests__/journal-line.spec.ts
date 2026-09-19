@@ -26,17 +26,65 @@ describe('toLine', () => {
     const line = toLine(
       event({
         payload: {
+          subjectLabel: 'Réduit',
           name: 'Réduit',
           from: 5.5,
           to: 10,
-          blast: { familiesEmporter: 3, familiesSurPlace: 1 },
+          blast: { families: { takeaway: 12, eatIn: 3, b2b: 2 } },
         },
       }),
     );
 
     expect(line.sentence).toBe('Taux de « Réduit » passé de 5,5 % à 10 %');
-    expect(line.blast).toBe('3 famille(s) à emporter · 1 sur place');
+    expect(line.blast).toBe('touche 12 familles à emporter, 3 sur place, 2 B2B');
     expect(line.actor).toBe('Hugo Heynard (Commercial)');
+  });
+
+  /**
+   * Régression : la méta lisait `familiesEmporter` / `familiesSurPlace`, que le
+   * référentiel n'écrit plus depuis le 2026-08-24 (`5d526662`) — la portée
+   * d'un fait avait disparu de la ligne (relevé au lot C, 2026-09-19).
+   */
+  it('lit la portée sous la forme que le catalogue écrit : familles par contexte, articles', () => {
+    const line = toLine(
+      event({
+        type: 'catalog_revision.pushed',
+        subjectType: 'catalog_revision',
+        payload: {
+          subjectLabel: 'Rentrée',
+          reference: 'R-7WT4NA',
+          channel: 'b2b',
+          mode: 'live',
+          candidates: 40,
+          excluded: 0,
+          blast: { articles: 40 },
+        },
+      }),
+    );
+
+    expect(line.blast).toBe('touche 40 articles');
+    // La méta la dit : le détail ne la répète pas.
+    expect(
+      line.detail.map((row) => row.label).filter((label) => label.startsWith('Portée')),
+    ).toEqual([]);
+  });
+
+  it('lit encore les lignes d’août, écrites sous l’ancienne forme et les anciennes clés', () => {
+    // Du 2026-08-21 au 2026-08-24, trois champs nommés ; jusqu'au 2026-08-26,
+    // les clés de contexte `emporter` / `surPlace` — jamais réécrites.
+    const named = toLine(
+      event({ payload: { blast: { familiesEmporter: 3, familiesSurPlace: 1, familiesB2b: 0 } } }),
+    );
+    const keyed = toLine(event({ payload: { blast: { families: { emporter: 1, surPlace: 2 } } } }));
+
+    expect(named.blast).toBe('touche 3 familles à emporter, 1 sur place, 0 B2B');
+    expect(keyed.blast).toBe('touche 1 famille à emporter, 2 sur place');
+  });
+
+  it('garde sous sa clé un contexte créé à l’écran, que le dictionnaire ne connaît pas', () => {
+    const line = toLine(event({ payload: { blast: { families: { brunch: 2 } } } }));
+
+    expect(line.blast).toBe('touche 2 familles brunch');
   });
 
   it('ne rend pas de portée quand le fait n’en avait pas', () => {
@@ -50,7 +98,7 @@ describe('toLine', () => {
   it('garde un zéro figé, qui est un compte', () => {
     const line = toLine(event({ type: 'product.published', payload: { blast: { variants: 0 } } }));
 
-    expect(line.blast).toBe('0 article(s)');
+    expect(line.blast).toBe('touche 0 article');
   });
 
   it('rend la NATURE de l’acteur quand l’annuaire ne le connaissait pas', () => {

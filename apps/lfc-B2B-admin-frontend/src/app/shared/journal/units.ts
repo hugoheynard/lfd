@@ -43,6 +43,14 @@ export function formatNumber(value: number): string {
 }
 
 /**
+ * « 1 famille », « 12 familles ». En français, zéro et un sont au singulier :
+ * « 0 article », pas « 0 articles ».
+ */
+export function formatCount(count: number, singular: string, plural: string): string {
+  return `${formatNumber(count)} ${Math.abs(count) < 2 ? singular : plural}`;
+}
+
+/**
  * « 21 août 2026 à 14:32 ». Le journal affichait l'ISO brut, ce qui est lisible
  * par une machine et par personne d'autre — or il est fait pour être lu par des
  * humains. Heure **locale** : celui qui lit cherche « ce qui s'est passé ce

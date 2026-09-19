@@ -1,9 +1,11 @@
 import type { ActivityEventView, ActivityModule } from '@lfd/contracts';
 
-import { count, optional } from '../../shared/journal/payload-read';
-import { actorBy } from '../../shared/journal/phrase';
+import { count, optional, recordOf, type Payload } from '../../shared/journal/payload-read';
+import { actorBy, inSentence } from '../../shared/journal/phrase';
 import { renderFact } from '../../shared/journal/render-fact';
-import { factWhen } from '../../shared/journal/units';
+import { factWhen, formatCount, formatNumber } from '../../shared/journal/units';
+import { labelIn } from '../../shared/journal/values';
+import { SALES_CONTEXT } from '../../shared/journal/values/referential-values';
 
 import type { JournalLine } from './journal.service';
 
@@ -26,6 +28,9 @@ export const MODULE_LABELS: Readonly<Record<ActivityModule, string>> = {
 /** Les clés que la ligne affiche hors de la phrase : le client d'une commande. */
 const CLIENT_KEYS = ['clientName', 'clientLegalName'];
 
+/** La portée, quand la méta la dit : le détail ne la répète pas. */
+const BLAST_KEY = 'blast';
+
 /**
  * Traduit un fait du journal en **ligne** : la phrase du moteur
  * (`shared/journal/render-fact.ts`), son détail, et la méta — quand, par qui,
@@ -39,7 +44,11 @@ const CLIENT_KEYS = ['clientName', 'clientLegalName'];
  */
 export function toLine(event: ActivityEventView): JournalLine {
   const forWhom = forWhomOf(event);
-  const fact = renderFact(event, forWhom === '' ? [] : CLIENT_KEYS);
+  const blast = blastOf(event.payload);
+  const fact = renderFact(event, [
+    ...(forWhom === '' ? [] : CLIENT_KEYS),
+    ...(blast === '' ? [] : [BLAST_KEY]),
+  ]);
   return {
     event,
     title: fact.title ?? '',
@@ -52,7 +61,7 @@ export function toLine(event: ActivityEventView): JournalLine {
     when: factWhen(event.occurredAt),
     actor: actorBy(event.actorName, event.actorRole, event.actorType),
     forWhom,
-    blast: blastOf(event),
+    blast,
   };
 }
 
@@ -72,27 +81,55 @@ function forWhomOf(event: ActivityEventView): string {
 }
 
 /**
- * La portée, telle qu'elle a été figée. On n'affiche que ce qui a été compté —
- * une portée absente n'est pas un zéro, c'est un fait qui n'en avait pas.
+ * La portée, telle qu'elle a été figée : « touche 12 familles à emporter,
+ * 3 sur place, 40 articles ». On n'affiche que ce qui a été compté — une
+ * portée absente n'est pas un zéro, c'est un fait qui n'en avait pas.
+ *
+ * Trois formes en base (vérifié le 2026-09-19) :
+ *
+ * - `{ families: { <contexte>: n }, variants?, articles? }` — depuis le
+ *   2026-08-24 (`5d526662`), la forme du catalogue (`blast()`) ;
+ * - `{ familiesEmporter, familiesSurPlace, familiesB2b }` — du 2026-08-21
+ *   (`6959131d`) au 2026-08-24. Le catalogue ne la connaît PAS : une telle
+ *   ligne ne répond à aucune de ses formes, et c'est ici seulement qu'on la lit ;
+ * - les clés de contexte `emporter` / `surPlace` d'avant le 2026-08-26, que la
+ *   migration de renommage n'a pas reprises dans les charges.
  */
-function blastOf(event: ActivityEventView): string {
-  const blast = event.payload['blast'];
-  if (typeof blast !== 'object' || blast === null || Array.isArray(blast)) {
+function blastOf(payload: Payload): string {
+  const blast = recordOf(payload[BLAST_KEY]);
+  if (blast === null) {
     return '';
   }
-  const counts: Record<string, unknown> = { ...blast };
-  const parts: string[] = [];
-  const emporter = count(counts['familiesEmporter']);
-  const surPlace = count(counts['familiesSurPlace']);
-  const variants = count(counts['variants']);
-  if (emporter !== null) {
-    parts.push(`${emporter} famille(s) à emporter`);
-  }
-  if (surPlace !== null) {
-    parts.push(`${surPlace} sur place`);
-  }
-  if (variants !== null) {
-    parts.push(`${variants} article(s)`);
-  }
-  return parts.join(' · ');
+  const families = familyCounts(blast).map(
+    ([context, n], index) =>
+      `${index === 0 ? formatCount(n, 'famille', 'familles') : formatNumber(n)} ${contextOf(context)}`,
+  );
+  const articles = [count(blast['variants']), count(blast['articles'])]
+    .filter((n): n is number => n !== null)
+    .map((n) => formatCount(n, 'article', 'articles'));
+  const parts = [...families, ...articles];
+  return parts.length === 0 ? '' : `touche ${parts.join(', ')}`;
+}
+
+/** Les champs nommés de la forme d'août, et la clé de contexte que chacun comptait. */
+const LEGACY_FAMILY_FIELDS: readonly (readonly [string, string])[] = [
+  ['familiesEmporter', 'emporter'],
+  ['familiesSurPlace', 'surPlace'],
+  ['familiesB2b', 'b2b'],
+];
+
+/** Les familles comptées, par clé de contexte de vente — dans l'ordre de la charge. */
+function familyCounts(blast: Payload): readonly (readonly [string, number])[] {
+  const byContext = recordOf(blast['families']);
+  const current = byContext === null ? [] : Object.entries(byContext);
+  const legacy = LEGACY_FAMILY_FIELDS.map(([field, context]) => [context, blast[field]] as const);
+  return [...current, ...legacy].flatMap(([context, raw]) => {
+    const n = count(raw);
+    return n === null ? [] : [[context, n] as const];
+  });
+}
+
+/** « à emporter » — un contexte créé à l'écran, que le dictionnaire ignore, garde sa clé. */
+function contextOf(key: string): string {
+  return inSentence(labelIn(SALES_CONTEXT, key) ?? key);
 }

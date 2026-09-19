@@ -1,7 +1,16 @@
 import { keyLabel } from './key-labels';
 import { recordOf, type Payload } from './payload-read';
 import { payloadNode, resolve, type SchemaNode } from './schema-node';
-import { formatNumber, formatUnit } from './units';
+import {
+  closedStringText,
+  enumText,
+  literalText,
+  NONE,
+  raw,
+  recordKeyText,
+  type Field,
+} from './detail-values';
+import { formatUnit } from './units';
 
 /**
  * **Le détail sous une phrase : tout ce qu'elle n'a pas dit** (D4 du plan
@@ -11,7 +20,10 @@ import { formatNumber, formatUnit } from './units';
  * reste de la charge est rendu ici, clé par clé, **d'après le schéma qui la
  * valide** — la forme courante, ou la forme ancienne sous laquelle la ligne a
  * été écrite. Le schéma donne l'unité (un prix en euros, un taux en %), l'objet
- * cité (son nom du moment) et l'identifiant nu (« (identifiant …) »).
+ * cité (son nom du moment) et l'identifiant nu (« (identifiant …) »). Une
+ * valeur prise dans un ensemble fermé — une énumération, un littéral, la clé
+ * d'un record — se dit par le dictionnaire des valeurs (`values/`), jamais par
+ * son code.
  *
  * Une charge qu'aucune forme n'accepte n'est pas une erreur : elle est rendue
  * brute, clé par clé, avec les libellés qu'on connaît. Le journal ne se
@@ -32,6 +44,12 @@ export interface DetailOfFact {
    * s'en sert.
    */
   readonly unlabelled: readonly string[];
+  /**
+   * Les valeurs d'ensemble fermé rendues sans libellé (`champ=valeur`) : une
+   * énumération, un littéral ou une clé de record que le dictionnaire des
+   * valeurs ne nomme pas. Même rôle que `unlabelled`, pour la colonne de droite.
+   */
+  readonly unlabelledValues: readonly string[];
 }
 
 /** Ce que le détail tait de toute façon, et pourquoi il le tait. */
@@ -45,9 +63,6 @@ export interface DetailOptions {
   readonly raw: boolean;
 }
 
-/** Aucun, rien, vide : une absence se dit, elle ne se tait pas. */
-const NONE = 'aucun';
-
 /**
  * Les conteneurs qui ne sont qu'un regroupement : leurs clés se lisent sans
  * leur préfixe. « Modifications › Nom » n'apprend rien que « Nom : A → B » ne
@@ -57,6 +72,7 @@ const TRANSPARENT = new Set(['changes']);
 
 interface Walk {
   readonly unlabelled: Set<string>;
+  readonly unlabelledValues: Set<string>;
 }
 
 /**
@@ -69,16 +85,22 @@ export function factDetail(
   said: ReadonlySet<string>,
   options: DetailOptions = { raw: true },
 ): DetailOfFact {
-  const walk: Walk = { unlabelled: new Set() };
+  const walk: Walk = { unlabelled: new Set(), unlabelledValues: new Set() };
   const node = payloadNode(type, payload);
   const resolved = node === null ? null : resolve(node, payload);
   const rows =
     resolved?.kind === 'object'
       ? objectRows(null, resolved, payload, walk, said)
-      : options.raw
-        ? rawRows(payload, said)
-        : [];
-  return { rows, unlabelled: [...walk.unlabelled].sort() };
+      : resolved?.kind === 'record'
+        ? rootRecordRows(resolved, payload, walk, said)
+        : options.raw
+          ? rawRows(payload, said)
+          : [];
+  return {
+    rows,
+    unlabelled: [...walk.unlabelled].sort(),
+    unlabelledValues: [...walk.unlabelledValues].sort(),
+  };
 }
 
 function objectRows(
@@ -101,23 +123,29 @@ function objectRows(
         return objectRows(prefix, inner, record, walk);
       }
     }
-    return rows(prefix === null ? label : `${prefix} › ${label}`, child, field, walk);
+    return rows(prefix === null ? label : `${prefix} › ${label}`, child, field, walk, key);
   });
 }
 
-function rows(label: string, node: SchemaNode, value: unknown, walk: Walk): DetailRow[] {
+function rows(
+  label: string,
+  node: SchemaNode,
+  value: unknown,
+  walk: Walk,
+  field: Field,
+): DetailRow[] {
   const resolved = resolve(node, value);
   switch (resolved.kind) {
     case 'maybe':
       return value === null || value === undefined
         ? [{ label, value: NONE }]
-        : rows(label, resolved.inner, value, walk);
+        : rows(label, resolved.inner, value, walk, field);
     case 'object': {
       const record = recordOf(value);
       if (record === null) {
         return [{ label, value: raw(value) }];
       }
-      const special = specialForm(resolved, record, walk);
+      const special = specialForm(resolved, record, walk, field);
       return special === null
         ? objectRows(label, resolved, record, walk)
         : [{ label, value: special }];
@@ -127,29 +155,35 @@ function rows(label: string, node: SchemaNode, value: unknown, walk: Walk): Deta
       if (record === null || Object.keys(record).length === 0) {
         return [{ label, value: record === null ? raw(value) : NONE }];
       }
-      // Les clés d'un `record` sont des données (un contexte de vente, une
-      // option) : elles se lisent telles quelles.
       return Object.entries(record).flatMap(([key, item]) =>
-        rows(`${label} › ${key}`, resolved.value, item, walk),
+        rows(
+          `${label} › ${recordKeyText(field, key, walk.unlabelledValues)}`,
+          resolved.value,
+          item,
+          walk,
+          field,
+        ),
       );
     }
     default:
-      return [{ label, value: inline(resolved, value, walk) }];
+      return [{ label, value: inline(resolved, value, walk, field) }];
   }
 }
 
 /** Une valeur sur une ligne : ce qu'un objet imbriqué, une liste, un scalaire deviennent. */
-function inline(node: SchemaNode, value: unknown, walk: Walk): string {
+function inline(node: SchemaNode, value: unknown, walk: Walk, field: Field): string {
   const resolved = resolve(node, value);
   switch (resolved.kind) {
     case 'maybe':
-      return value === null || value === undefined ? NONE : inline(resolved.inner, value, walk);
+      return value === null || value === undefined
+        ? NONE
+        : inline(resolved.inner, value, walk, field);
     case 'object': {
       const record = recordOf(value);
       if (record === null) {
         return raw(value);
       }
-      return specialForm(resolved, record, walk) ?? genericObject(resolved, record, walk);
+      return specialForm(resolved, record, walk, field) ?? genericObject(resolved, record, walk);
     }
     case 'array': {
       if (!Array.isArray(value)) {
@@ -160,7 +194,7 @@ function inline(node: SchemaNode, value: unknown, walk: Walk): string {
       }
       const element = resolved.element;
       const separator = isComposite(element) ? ' ; ' : ', ';
-      return value.map((item: unknown) => inline(element, item, walk)).join(separator);
+      return value.map((item: unknown) => inline(element, item, walk, field)).join(separator);
     }
     case 'record': {
       const record = recordOf(value);
@@ -168,12 +202,13 @@ function inline(node: SchemaNode, value: unknown, walk: Walk): string {
         return raw(value);
       }
       const parts = Object.entries(record).map(
-        ([key, item]) => `${key} : ${inline(resolved.value, item, walk)}`,
+        ([key, item]) =>
+          `${recordKeyText(field, key, walk.unlabelledValues)} : ${inline(resolved.value, item, walk, field)}`,
       );
       return parts.length === 0 ? NONE : parts.join(' · ');
     }
     default:
-      return scalar(resolved, value);
+      return scalar(resolved, value, walk, field);
   }
 }
 
@@ -184,7 +219,9 @@ function genericObject(
 ): string {
   const parts = node.fields.flatMap(([key, child]) => {
     const field = value[key];
-    return field === undefined ? [] : [`${labelOf(key, walk)} : ${inline(child, field, walk)}`];
+    return field === undefined
+      ? []
+      : [`${labelOf(key, walk)} : ${inline(child, field, walk, key)}`];
   });
   return parts.length === 0 ? NONE : parts.join(' · ');
 }
@@ -203,13 +240,14 @@ function specialForm(
   node: Extract<SchemaNode, { kind: 'object' }>,
   value: Payload,
   walk: Walk,
+  field: Field,
 ): string | null {
   const fields = new Map(node.fields);
   const keys = [...fields.keys()].sort().join(',');
   const from = fields.get('from');
   const to = fields.get('to');
   if (keys === 'from,to' && from !== undefined && to !== undefined) {
-    return `${inline(from, value['from'], walk)} → ${inline(to, value['to'], walk)}`;
+    return `${inline(from, value['from'], walk, field)} → ${inline(to, value['to'], walk, field)}`;
   }
   if (keys === 'id,name') {
     return typeof value['name'] === 'string' && value['name'] !== ''
@@ -246,7 +284,7 @@ function localized(value: Payload): string {
   return others.length === 0 ? fr : `${fr} (${others.join(', ')})`;
 }
 
-function scalar(node: SchemaNode, value: unknown): string {
+function scalar(node: SchemaNode, value: unknown, walk: Walk, field: Field): string {
   if (value === null || value === undefined) {
     return NONE;
   }
@@ -256,39 +294,36 @@ function scalar(node: SchemaNode, value: unknown): string {
         return formatUnit(node.unit, value) ?? raw(value);
       }
       // Un identifiant nu : dit comme tel, jamais déguisé en nom (D5).
-      return node.ref !== null && typeof value === 'string' ? `(identifiant ${value})` : raw(value);
+      if (node.ref !== null && typeof value === 'string') {
+        return `(identifiant ${value})`;
+      }
+      return closedStringText(field, value);
     case 'number':
       return node.unit === null ? raw(value) : (formatUnit(node.unit, value) ?? raw(value));
+    case 'enum':
+      return enumText(node.values, value, field, walk.unlabelledValues);
+    case 'literal':
+      return literalText(value, field, walk.unlabelledValues);
     default:
       return raw(value);
   }
 }
 
-/** Une valeur hors schéma, lisible quand même. */
-function raw(value: unknown): string {
-  if (value === null || value === undefined) {
-    return NONE;
-  }
-  if (typeof value === 'string') {
-    return value.trim() === '' ? '(vide)' : value;
-  }
-  if (typeof value === 'number') {
-    return formatNumber(value);
-  }
-  if (typeof value === 'boolean') {
-    return value ? 'oui' : 'non';
-  }
-  if (Array.isArray(value)) {
-    return value.length === 0 ? NONE : value.map(raw).join(', ');
-  }
-  const record = recordOf(value);
-  if (record === null) {
-    return String(value);
-  }
-  const parts = Object.entries(record).map(
-    ([key, item]) => `${keyLabel(key) ?? key} : ${raw(item)}`,
-  );
-  return parts.length === 0 ? NONE : parts.join(' · ');
+/**
+ * Une charge qui EST un record (le taux par contexte du lot A) : une ligne par
+ * clé, sous le mot de la clé — « À emporter : Réduit → Normal ».
+ */
+function rootRecordRows(
+  node: Extract<SchemaNode, { kind: 'record' }>,
+  payload: Payload,
+  walk: Walk,
+  said: ReadonlySet<string>,
+): DetailRow[] {
+  return Object.entries(payload)
+    .filter(([key]) => !said.has(key))
+    .flatMap(([key, item]) =>
+      rows(recordKeyText(null, key, walk.unlabelledValues), node.value, item, walk, null),
+    );
 }
 
 /** Une charge qu'aucune forme n'accepte : clé par clé, sous le libellé qu'on connaît. */

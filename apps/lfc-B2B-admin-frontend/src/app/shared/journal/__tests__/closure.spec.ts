@@ -4,6 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { KEY_LABELS } from '../key-labels';
 import { renderFact } from '../render-fact';
 import { payloadNodes, type SchemaNode } from '../schema-node';
+import {
+  enumDomain,
+  labelIn,
+  literalLabel,
+  recordKeysOf,
+  ROOT_RECORD,
+  VALUE_CONFLICTS,
+  VALUE_FAMILIES,
+} from '../values';
 
 /**
  * **La clôture D4 — rien ne se perd** (plan
@@ -16,6 +25,9 @@ import { payloadNodes, type SchemaNode } from '../schema-node';
  *
  * - toute clé que la phrase ne dit pas doit être rendue au détail sous un
  *   libellé du dictionnaire — une clé sans libellé fait échouer ;
+ * - toute valeur d'ensemble fermé rendue au détail (une énumération, un
+ *   littéral, la clé d'un record) doit y paraître sous son mot — une valeur
+ *   brute fait échouer (lot D) ;
  * - toute clé que la phrase ne dit pas donne au moins une ligne de détail ;
  * - aucune phrase n'est le type brut, ni ne le contient.
  *
@@ -23,19 +35,26 @@ import { payloadNodes, type SchemaNode } from '../schema-node';
  * champ ajouté au catalogue sans libellé ni phrase ne passe pas la CI.
  */
 
-/** Une charge d'exemple qui remplit TOUT le schéma — facultatifs compris. */
-function sample(node: SchemaNode): unknown {
+/**
+ * Une charge d'exemple qui remplit TOUT le schéma — facultatifs compris. Un
+ * record dont le dictionnaire connaît les clés les reçoit TOUTES : c'est ce
+ * qui éprouve leurs mots ; un record libre, ou inconnu, reçoit `exemple`.
+ */
+function sample(node: SchemaNode, field: string | null = null): unknown {
   switch (node.kind) {
     case 'object':
-      return Object.fromEntries(node.fields.map(([key, child]) => [key, sample(child)]));
+      return Object.fromEntries(node.fields.map(([key, child]) => [key, sample(child, key)]));
     case 'maybe':
-      return sample(node.inner);
+      return sample(node.inner, field);
     case 'array':
-      return [sample(node.element)];
-    case 'record':
-      return { exemple: sample(node.value) };
+      return [sample(node.element, field)];
+    case 'record': {
+      const keys = recordKeysOf(field);
+      const names = keys === null || keys === 'free' ? ['exemple'] : Object.keys(keys.labels);
+      return Object.fromEntries(names.map((key) => [key, sample(node.value, field)]));
+    }
     case 'union':
-      return node.options[0] === undefined ? null : sample(node.options[0]);
+      return node.options[0] === undefined ? null : sample(node.options[0], field);
     case 'enum':
       return node.values[0];
     case 'literal':
@@ -109,6 +128,7 @@ describe('la clôture D4 du moteur de phrases', () => {
     });
 
     expect({ type, unlabelled: fact.unlabelled }).toEqual({ type, unlabelled: [] });
+    expect({ type, values: fact.unlabelledValues }).toEqual({ type, values: [] });
     const unsaid = Object.keys(record).filter((key) => !fact.consumed.includes(key));
     expect(fact.detail.length).toBeGreaterThanOrEqual(unsaid.length);
     expect(fact.detail.filter((row) => row.value.trim() === '')).toEqual([]);
@@ -118,6 +138,120 @@ describe('la clôture D4 du moteur de phrases', () => {
 
   it('n’a au dictionnaire que des libellés non vides', () => {
     const empty = Object.entries(KEY_LABELS).filter(([, label]) => label.trim() === '');
+
+    expect(empty).toEqual([]);
+  });
+});
+
+/**
+ * Ce que le catalogue contient d'ensembles fermés, TOUTES formes et TOUTES
+ * branches d'union comprises — l'échantillon ci-dessus ne prend que la
+ * première valeur d'une énumération et la première branche d'une union.
+ */
+interface Closed {
+  /** Chaque énumération, par les valeurs qu'elle déclare, avec le champ qui la porte. */
+  readonly enums: (readonly [string | null, readonly string[]])[];
+  readonly literals: (readonly [string | null, string])[];
+  /** Le champ qui porte chaque record — `ROOT_RECORD` pour une charge qui en est un. */
+  readonly records: Set<string>;
+}
+
+function collect(node: SchemaNode, field: string | null, into: Closed): void {
+  switch (node.kind) {
+    case 'object':
+      node.fields.forEach(([key, child]) => collect(child, key, into));
+      return;
+    case 'maybe':
+      collect(node.inner, field, into);
+      return;
+    case 'array':
+      collect(node.element, field, into);
+      return;
+    case 'record':
+      into.records.add(field ?? ROOT_RECORD);
+      collect(node.value, field, into);
+      return;
+    case 'union':
+      node.options.forEach((option) => collect(option, field, into));
+      return;
+    case 'enum':
+      into.enums.push([field, node.values]);
+      return;
+    case 'literal':
+      node.values
+        .filter((value): value is string => typeof value === 'string')
+        .forEach((value) => into.literals.push([field, value]));
+      return;
+    default:
+      return;
+  }
+}
+
+const CLOSED: Closed = { enums: [], literals: [], records: new Set() };
+CASES.forEach(({ node }) => collect(node, null, CLOSED));
+
+describe('la clôture du dictionnaire des valeurs (lot D)', () => {
+  it('trouve des ensembles fermés à éprouver', () => {
+    expect(CLOSED.enums.length).toBeGreaterThan(0);
+    expect(CLOSED.literals.length).toBeGreaterThan(0);
+    expect(CLOSED.records.size).toBeGreaterThan(0);
+  });
+
+  it('nomme chaque valeur de chaque énumération du catalogue', () => {
+    const missing = CLOSED.enums.flatMap(([field, values]) => {
+      const set = enumDomain(values);
+      return values
+        .filter((value) => set === null || labelIn(set, value) === null)
+        .map((value) => `${field ?? '(racine)'}=${value}`);
+    });
+
+    expect([...new Set(missing)]).toEqual([]);
+  });
+
+  it('nomme chaque littéral du catalogue', () => {
+    const missing = CLOSED.literals
+      .filter(([, value]) => literalLabel(value) === null)
+      .map(([field, value]) => `${field ?? '(racine)'}=${value}`);
+
+    expect([...new Set(missing)]).toEqual([]);
+  });
+
+  it('dit, pour chaque record du catalogue, si ses clés sont un ensemble ou des données', () => {
+    const unknown = [...CLOSED.records].filter((field) => recordKeysOf(field) === null);
+
+    expect(unknown).toEqual([]);
+  });
+
+  it('ne donne jamais deux mots à la même valeur, d’une famille à l’autre', () => {
+    expect(VALUE_CONFLICTS).toEqual([]);
+  });
+
+  /**
+   * L'équivalent de « zéro CSS morte » : une énumération, un littéral ou un
+   * record déclaré au dictionnaire que le catalogue ne contient plus est un mot
+   * qui ment sur ce qui existe.
+   */
+  it('ne déclare aucun ensemble que le catalogue ne contient pas', () => {
+    const inCatalogue = new Set(CLOSED.enums.map(([, values]) => enumDomain(values)));
+    const literals = new Set(CLOSED.literals.map(([, value]) => value));
+    const dead = VALUE_FAMILIES.flatMap((family) => [
+      ...family.enums.filter((set) => !inCatalogue.has(set)).map((set) => `enum ${set.name}`),
+      ...Object.keys(family.literals ?? {})
+        .filter((value) => !literals.has(value))
+        .map((value) => `littéral ${value}`),
+      ...Object.keys(family.recordKeys ?? {})
+        .filter((field) => !CLOSED.records.has(field))
+        .map((field) => `record ${field}`),
+    ]);
+
+    expect(dead).toEqual([]);
+  });
+
+  it('n’a que des mots non vides', () => {
+    const empty = VALUE_FAMILIES.flatMap((family) => [
+      ...family.enums.flatMap((set) => Object.values(set.labels)),
+      ...Object.values(family.literals ?? {}),
+    ]).filter((label) => label.trim() === '');
 
     expect(empty).toEqual([]);
   });
