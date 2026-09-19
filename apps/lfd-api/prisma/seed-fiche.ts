@@ -10,6 +10,7 @@ import {
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { localToInstant } from "../src/b2b/growth/domain/paris-time.js";
+import { refuseNonLocalTarget } from "./local-target.js";
 
 /**
  * Seed **fiche client** — les deux cas qu'on regarde en boucle en développant la
@@ -61,11 +62,14 @@ const url = process.env["DATABASE_LFD_URL"];
 if (!url) {
   throw new Error("DATABASE_LFD_URL manquante (.env) — impossible de seeder.");
 }
+refuseNonLocalTarget(url, "ce seed EFFACE puis recrée sociétés, personnes et commandes.");
 
 /**
  * Même bascule que `PrismaService` : une URL Postgres directe passe par
- * l'adaptateur, une URL Accelerate par `accelerateUrl`. Sans ça, le seed ne
- * tourne qu'en prod ou qu'en local, jamais les deux.
+ * l'adaptateur, une URL Accelerate par `accelerateUrl`. La branche Accelerate
+ * n'est plus atteignable — `refuseNonLocalTarget`, juste au-dessus, refuse
+ * tout ce qui n'est pas un Postgres local : ce seed efface, il ne vise jamais
+ * la production. Elle tombe au resserrement de la sortie d'Accelerate (geste 8).
  */
 const prisma = new PrismaClient(
   url.startsWith("postgresql://") || url.startsWith("postgres://")

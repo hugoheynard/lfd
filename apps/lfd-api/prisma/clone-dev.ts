@@ -6,10 +6,14 @@
  * donc par PrismaClient des deux côtés. On lit les **scalaires** de chaque table
  * (aucune relation) et on réécrit dans l'ordre des clés étrangères.
  *
- * - Source : `CLONE_SOURCE_URL`, sinon le `DATABASE_LFD_URL` courant (le `.env`,
- *   donc Accelerate). ⇒ lancer AVANT de basculer le `.env` sur la base locale.
+ * - Source : `CLONE_SOURCE_URL`, sinon le `DATABASE_LFD_URL` courant. Le `.env`
+ *   vise un Postgres local depuis que le dev applicatif a quitté Accelerate
+ *   (vérifié le 2026-09-19) : cloner une autre base se déclare donc par
+ *   `CLONE_SOURCE_URL`.
  * - Cible : `CLONE_TARGET_URL`, sinon `DEV_DATABASE_URL`. **Refusée si ce n'est
- *   pas un Postgres direct local** (garde-fou : on n'écrase jamais une prod).
+ *   pas un Postgres direct local** — schéma ET hôte, par `refuseNonLocalTarget`.
+ *   Le schéma seul ne suffit plus depuis la sortie d'Accelerate : la production
+ *   s'écrit elle aussi `postgres://`, et le clone PURGE sa cible.
  *
  * Idempotent : purge la cible (ordre FK inverse) puis réinsère — un re-clone
  * repart d'un état propre.
@@ -19,6 +23,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/platform/database/client/client.js";
 import { DEV_DATABASE_URL } from "./dev-db-url.js";
+import { refuseNonLocalTarget } from "./local-target.js";
 
 /** Le schéma de l'URL choisit le transport, comme `PrismaService`. */
 function makeClient(url: string): PrismaClient {
@@ -41,11 +46,7 @@ async function main(): Promise<void> {
   if (sourceUrl === targetUrl) {
     throw new Error("Source et cible identiques — refus (protection contre l'auto-écrasement).");
   }
-  if (!isDirectPostgresUrl(targetUrl)) {
-    throw new Error(
-      `Cible refusée (${targetUrl}) : le clone n'écrit QUE vers un Postgres direct local (postgresql://).`,
-    );
-  }
+  refuseNonLocalTarget(targetUrl, "le clone PURGE sa cible avant de la remplir.");
 
   const source = makeClient(sourceUrl);
   const target = makeClient(targetUrl);

@@ -9,6 +9,7 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AppModule } from "../src/appBootstrap/app.module.js";
 import { FakeKbisStore } from "./seed-growth/fake-kbis-store.js";
 import { FakePaymentGateway } from "./seed-growth/fake-payment-gateway.js";
+import { refuseNonLocalTarget } from "./local-target.js";
 
 /**
  * Backfill **one-shot** du `Company.nafCode` (doc commercial-data, décision D1) :
@@ -19,6 +20,10 @@ import { FakePaymentGateway } from "./seed-growth/fake-payment-gateway.js";
  * rejouable plus tard. Stripe/S3 sont stubés (non sollicités ici).
  */
 async function main(): Promise<void> {
+  refuseNonLocalTarget(
+    process.env["DATABASE_LFD_URL"] ?? "",
+    "le backfill réécrit le code NAF des sociétés.",
+  );
   const module = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(PaymentGateway)
     .useClass(FakePaymentGateway)

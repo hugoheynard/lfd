@@ -14,6 +14,7 @@ import { PaymentGateway } from "../../src/b2b/payments/domain/payment-gateway.js
 import { FakeEstablishmentDirectory } from "./fake-establishment-directory.js";
 import { FakeDocumentStore } from "./fake-document-store.js";
 import { FakePaymentGateway } from "./fake-payment-gateway.js";
+import { refuseNonLocalTarget } from "../local-target.js";
 
 /**
  * Harnais du seed **growth** : un contexte applicatif Nest **réel** (vrais
@@ -51,6 +52,12 @@ export interface SeedHarness {
 }
 
 export async function bootstrapHarness(): Promise<SeedHarness> {
+  // Le harnais amorce l'application ENTIÈRE devant `DATABASE_LFD_URL` : sans
+  // cette garde, un `.env` qui vise la production y sème un corpus inventé.
+  refuseNonLocalTarget(
+    process.env["DATABASE_LFD_URL"] ?? "",
+    "le seed écrit par les vrais handlers.",
+  );
   const module = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(PaymentGateway)
     .useClass(FakePaymentGateway)

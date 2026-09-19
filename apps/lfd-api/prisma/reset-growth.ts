@@ -3,6 +3,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/platform/database/client/client.js";
+import { refuseNonLocalTarget } from "./local-target.js";
 import { SEED_EMAIL_DOMAIN, SEED_SUB_PREFIX } from "./seed-growth/personas.js";
 
 /**
@@ -20,6 +21,8 @@ async function main(): Promise<void> {
   if (connectionString === undefined || connectionString === "") {
     throw new Error("DATABASE_LFD_URL manquant.");
   }
+  // Il ne pouvait pas joindre Accelerate ; il joindrait le pooler de production.
+  refuseNonLocalTarget(connectionString, "le reset SUPPRIME le corpus de démonstration.");
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
   try {
     const userIds = await ids(

@@ -25,8 +25,12 @@ import { clearSeededBuckets } from "./seeding/storage.seed.js";
  * ## Trois serrures, et une seule suffirait
  *
  * 1. **La cible.** Ce service refuse toute base qui n'est pas un Postgres direct
- *    et local. En production l'URL est une URL Accelerate (`prisma://`) : le
- *    rechargement y est **inexprimable**, pas seulement interdit.
+ *    et local — schéma **et hôte**. Le schéma seul ne suffit plus : la
+ *    production sort d'Accelerate (`prisma+postgres://`) pour le pooler
+ *    mutualisé, qui s'écrit `postgres://…@pooled.db.prisma.io`
+ *    (`documentation/ops/plan-sortie-d-accelerate.md`). C'est l'hôte, hors de
+ *    la liste blanche {@link LOCAL_HOSTS}, qui rend le rechargement
+ *    **inexprimable** contre elle, pas seulement interdit.
  * 2. **L'environnement.** `NODE_ENV=production` referme la porte, quelle que
  *    soit la base.
  * 3. **La surface.** La route vit derrière le mur staff, comme le reste de

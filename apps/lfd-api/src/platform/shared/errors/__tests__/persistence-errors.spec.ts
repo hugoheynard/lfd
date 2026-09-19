@@ -39,6 +39,26 @@ describe("mapPersistenceError", () => {
     );
   });
 
+  it("trop de connexions (P2037) → technique, injoignable — la saturation du pooler", () => {
+    // Derrière le pooler mutualisé (sortie d'Accelerate), une saturation se
+    // lisait « requête refusée par la base » : un bug, là où c'est un « réessayez ».
+    expect(
+      mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2037")),
+    ).toBeInstanceOf(DatabaseUnavailableError);
+  });
+
+  it("attente d'une connexion du pool expirée → technique, injoignable", () => {
+    // Régression : `pg-pool` lève une `Error` nue, pas une erreur Prisma ; elle
+    // finissait en `internal.unexpected` au lieu de « base indisponible ».
+    expect(
+      mapPersistenceError(new Error("timeout exceeded when trying to connect")),
+    ).toBeInstanceOf(DatabaseUnavailableError);
+  });
+
+  it("une autre `Error` nue n'est pas prise pour une saturation", () => {
+    expect(mapPersistenceError(new Error("timeout exceeded"))).toBeNull();
+  });
+
   it("unicité (P2002) → business, doublon", () => {
     const error = mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2002"));
     expect(error).toBeInstanceOf(DuplicateResourceError);

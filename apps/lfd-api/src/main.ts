@@ -27,6 +27,11 @@ async function bootstrap(): Promise<void> {
 
   const config = app.get(AppConfig);
 
+  // Au SIGTERM (un déploiement qui remplace l'instance), les crochets
+  // `onModuleDestroy` jouent : le pool `pg` se vide au lieu de laisser ses
+  // connexions ouvertes chez le pooler jusqu'à leur péremption.
+  app.enableShutdownHooks();
+
   // TOUT PREMIER : pose le RequestContext (instant gelé + traceId W3C) autour de
   // chaque requête, via AsyncLocalStorage. Avant helmet et avant les guards, pour
   // que logs, journal d'événements et filtre d'erreur voient toujours le contexte
