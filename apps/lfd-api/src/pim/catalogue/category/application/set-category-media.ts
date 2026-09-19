@@ -40,7 +40,7 @@ export class SetCategoryMediaHandler implements ICommandHandler<SetCategoryMedia
   ) {}
 
   async execute(command: SetCategoryMediaCommand): Promise<void> {
-    await requireCategory(this.categories, command.id);
+    const category = await requireCategory(this.categories, command.id);
     const before = await this.readers.mediaOf(command.id);
     const after = mediaItems(command.media);
     // UNE entrée `media`, la liste entière : réordonner EST la modification, et
@@ -55,7 +55,7 @@ export class SetCategoryMediaHandler implements ICommandHandler<SetCategoryMedia
               type: PIM_EVENTS.productCategoryMediaSaved,
               subjectType: "product_category",
               subjectId: command.id,
-              payload: { changes },
+              payload: { subjectLabel: category.name.fr, changes },
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.replaceMedia(command.id, after, ticket);

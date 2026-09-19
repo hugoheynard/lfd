@@ -101,6 +101,30 @@ async function take(label: string | null = null): Promise<Taken> {
   return jsonBody<Taken>(response);
 }
 
+interface SalesContextRow {
+  readonly key: string;
+  readonly label: string;
+  readonly position: number;
+  readonly active: boolean;
+  readonly shopifyProjected: boolean;
+  readonly handleSuffix: string;
+}
+
+/** Renomme un contexte de vente ; rend ce qu'il était AVANT. */
+async function renameContext(key: string, label: string): Promise<SalesContextRow> {
+  const rows = jsonBody<SalesContextRow[]>(await staff().get("/pim/sales-contexts").expect(200));
+  const before = rows.find((row) => row.key === key);
+  if (before === undefined) {
+    throw new Error(`contexte « ${key} » absent du registre semé`);
+  }
+  const { position, active, shopifyProjected, handleSuffix } = before;
+  await staff()
+    .put(`/pim/sales-contexts/${key}`)
+    .send({ label, position, active, shopifyProjected, handleSuffix })
+    .expect(200);
+  return before;
+}
+
 describe("Ancre de publication du catalogue", () => {
   it("pose une première révision, numérotée 1", async () => {
     await aProduct("Croissant");
@@ -210,7 +234,7 @@ describe("Ancre de publication du catalogue", () => {
   });
 
   it("nomme qui a posé chaque ancre — l'identifiant reste servi, déprécié", async () => {
-    // Plan `plan-l-auteur-est-la-fiche.md`, D3 : l'écran affichait `takenBy`
+    // Plan `architecture-journalisation.md` §12, D3 : l'écran affichait `takenBy`
     // brut, c'est-à-dire un identifiant chez Auth0.
     await aProduct("Croissant");
     await take("première");
@@ -386,10 +410,20 @@ describe("Diff entre deux ancres", () => {
       .expect(200);
     await ctx.drain();
     await take();
+    // Le contexte est renommé APRÈS le fait : sa portée doit se lire sous le
+    // nom qu'il portait au moment du changement de taux (D5).
+    const takeaway = await renameContext("takeaway", "Comptoir renommé");
 
     const [to, from] = await twoLatest();
     const diff = jsonBody<{
-      causes: { type: string; label: string; by: string | null; explains: string[] }[];
+      causes: {
+        type: string;
+        label: string;
+        by: string | null;
+        explains: string[];
+        blast: Record<string, number>;
+        contextLabels?: Record<string, string>;
+      }[];
       changed: { fields: { field: string; attributed: boolean; cause: string | null }[] }[];
     }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
 
@@ -398,6 +432,9 @@ describe("Diff entre deux ancres", () => {
     expect(cause?.explains).toContain("vatByContext");
     expect(cause?.by).not.toBeNull();
     expect(cause?.label).toContain("10");
+    // Régression (TODO des phrases, 2026-09-19) : l'écran disait « takeaway : 1 ».
+    expect(cause?.blast).toMatchObject({ takeaway: 1 });
+    expect(cause?.contextLabels).toEqual({ takeaway: takeaway.label });
 
     // La ligne reste SANS auteur — le fait a pu la produire, il ne la
     // revendique pas — mais elle porte désormais la piste.

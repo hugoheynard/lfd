@@ -14,6 +14,10 @@ import { UpdateNavPreferencesCommand } from "./update-nav-preferences.command.js
  * rouvrirait la course que la fusion en une instruction ferme.
  *
  * @throws {WorkspaceOutOfReachError} l'espace désigne une société étrangère.
+ *
+ * `@sans-journal` des préférences d'affichage de la personne : rien que le
+ * métier lise — ni ce qui est vendu ou facturé, ni ce que quelqu'un a le droit
+ * de voir (l'espace désigné reste borné à ses rattachements, relus en base).
  */
 @CommandHandler(UpdateNavPreferencesCommand)
 export class UpdateNavPreferencesHandler implements ICommandHandler<

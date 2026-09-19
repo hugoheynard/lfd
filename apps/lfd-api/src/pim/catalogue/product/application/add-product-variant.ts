@@ -88,7 +88,12 @@ export class AddProductVariantHandler implements ICommandHandler<AddProductVaria
         type: PIM_EVENTS.variantAdded,
         subjectType: "product",
         subjectId: command.productId,
-        payload: { sku: variant.sku, name, options: command.input.options ?? {} },
+        payload: {
+          subjectLabel: product.snapshot().name.fr,
+          sku: variant.sku,
+          name,
+          options: command.input.options ?? {},
+        },
       });
       await this.products.save(product, ticket);
     });

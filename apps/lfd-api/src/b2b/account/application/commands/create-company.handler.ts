@@ -13,12 +13,20 @@ import { EmailAddress } from "../../domain/value-objects/email-address.js";
 import { PersonName } from "../../domain/value-objects/person-name.js";
 import { PhoneNumber } from "../../domain/value-objects/phone-number.js";
 import { CreateCompanyCommand } from "./create-company.command.js";
+import { personName, personRef } from "../../domain/events/journal-names.js";
 
 /**
  * Déclare l'entreprise et en fait, d'un même geste, celle de son créateur.
  *
  * Retourne l'**identifiant** et rien d'autre : une commande ne renvoie pas de
  * modèle de lecture, le client relit son compte ensuite (cf. CLAUDE.md §4).
+ *
+ * `@sans-journal` le fait existe déjà, et il n'a qu'un seul auteur :
+ * `company.declared` (`via: "self"`), écrit par son abonné — même motif que
+ * `CreateCompanyByStaffHandler`. Le tracer ici en ferait un fait à deux
+ * écrivains, que les lecteurs d'entonnoir compteraient deux fois.
+ * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
+ * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
  */
 @CommandHandler(CreateCompanyCommand)
 export class CreateCompanyHandler implements ICommandHandler<CreateCompanyCommand, string> {
@@ -58,7 +66,14 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
 
     const companyId = await this.companies.declareOwnedBy(company, command.ownerUserId);
     // Déclarée par le client lui-même : signal `self` (candidat adoption+).
-    this.events.publish(new CompanyDeclaredEvent(companyId, "self", command.ownerUserId));
+    this.events.publish(
+      new CompanyDeclaredEvent(
+        companyId,
+        company.displayName(),
+        "self",
+        personRef(command.ownerUserId, personName(owner.firstName, owner.lastName)),
+      ),
+    );
     return companyId;
   }
 }

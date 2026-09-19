@@ -30,8 +30,8 @@ export class GetAccountAlertRulesHandler implements IQueryHandler<
       this.rules.readAll(),
       this.overrides.readForCompany(query.companyId),
     ]);
-    // Les auteurs du global ET des dérogations, en une résolution (plan
-    // `plan-l-auteur-est-la-fiche.md`, D3).
+    // Les auteurs du global ET des dérogations, en une résolution (
+    // `architecture-journalisation.md` §12, D3).
     const authors = await this.staffAuthors.identify([
       ...stored.map((row) => row.updatedBy),
       ...overrides.map((row) => row.updatedBy),

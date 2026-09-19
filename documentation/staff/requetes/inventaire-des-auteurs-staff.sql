@@ -1,15 +1,18 @@
 -- Inventaire des auteurs staff — LECTURE SEULE.
 --
--- Sert le plan `documentation/staff/plan-l-auteur-est-la-fiche.md`, §3 et D5 :
+-- Sert `documentation/journalisation/architecture-journalisation.md` §12 (D5) :
 -- chaque valeur distincte écrite comme auteur staff, sa forme (`sub`, id de
 -- fiche, autre), où elle apparaît, et les indices qui permettent de la
--- rattacher à une personne. Hugo valide les correspondances sur ce résultat ;
--- rien n'est converti sans elles.
+-- rattacher à une personne. Depuis la conversion du 2026-09-18, c'est un
+-- CONTRÔLE : une forme `sub` qui reste est un auteur que la table des `sub`
+-- ne connaissait pas — il se rattache par une nouvelle migration, jamais à la
+-- main.
 --
 -- La transaction est ouverte en READ ONLY et se termine par ROLLBACK : une
 -- écriture glissée ici par erreur serait refusée par Postgres.
 --
--- Colonnes : celles du §1 du plan (vérifiées le 2026-09-18). À relancer tel
+-- Colonnes : toutes les colonnes d'auteur staff (noms d'après le renommage
+-- 5C, vérifiées le 2026-09-19). À relancer tel
 -- quel après l'étape 4 comme contrôle : il ne doit plus rester de forme `sub`
 -- hors des lignes que Hugo a laissées de côté.
 
@@ -37,11 +40,11 @@ UNION ALL
 UNION ALL
   SELECT 'pim.category.updated_by', updated_by::text FROM pim.category WHERE updated_by IS NOT NULL
 UNION ALL
-  SELECT 'public.client_notes.created_by_sub', created_by_sub::text FROM public.client_notes WHERE created_by_sub IS NOT NULL
+  SELECT 'public.client_notes.created_by_staff_id', created_by_staff_id::text FROM public.client_notes WHERE created_by_staff_id IS NOT NULL
 UNION ALL
-  SELECT 'public.companies.kbis_certified_by_sub', kbis_certified_by_sub::text FROM public.companies WHERE kbis_certified_by_sub IS NOT NULL
+  SELECT 'public.companies.kbis_certified_by_staff_id', kbis_certified_by_staff_id::text FROM public.companies WHERE kbis_certified_by_staff_id IS NOT NULL
 UNION ALL
-  SELECT 'public.companies.activated_by_sub', activated_by_sub::text FROM public.companies WHERE activated_by_sub IS NOT NULL
+  SELECT 'public.companies.activated_by_staff_id', activated_by_staff_id::text FROM public.companies WHERE activated_by_staff_id IS NOT NULL
 UNION ALL
   SELECT 'public.company_mercuriales.created_by', created_by::text FROM public.company_mercuriales WHERE created_by IS NOT NULL
 UNION ALL
@@ -49,11 +52,11 @@ UNION ALL
 UNION ALL
   SELECT 'public.company_mercuriales.archived_by', archived_by::text FROM public.company_mercuriales WHERE archived_by IS NOT NULL
 UNION ALL
-  SELECT 'public.delivery_settings.updated_by_sub', updated_by_sub::text FROM public.delivery_settings WHERE updated_by_sub IS NOT NULL
+  SELECT 'public.delivery_settings.updated_by_staff_id', updated_by_staff_id::text FROM public.delivery_settings WHERE updated_by_staff_id IS NOT NULL
 UNION ALL
-  SELECT 'public.feature_access_exemptions.created_by_sub', created_by_sub::text FROM public.feature_access_exemptions WHERE created_by_sub IS NOT NULL
+  SELECT 'public.feature_access_exemptions.created_by_staff_id', created_by_staff_id::text FROM public.feature_access_exemptions WHERE created_by_staff_id IS NOT NULL
 UNION ALL
-  SELECT 'public.feature_access_overrides.updated_by_sub', updated_by_sub::text FROM public.feature_access_overrides WHERE updated_by_sub IS NOT NULL
+  SELECT 'public.feature_access_overrides.updated_by_staff_id', updated_by_staff_id::text FROM public.feature_access_overrides WHERE updated_by_staff_id IS NOT NULL
 UNION ALL
   SELECT 'public.mercuriale_drafts.updated_by', updated_by::text FROM public.mercuriale_drafts WHERE updated_by IS NOT NULL
 UNION ALL
@@ -101,7 +104,7 @@ UNION ALL
 UNION ALL
   SELECT 'public.staff_notifications.read_by', read_by::text FROM public.staff_notifications WHERE read_by IS NOT NULL
 UNION ALL
-  SELECT 'public.staff_push_subscriptions.staff_sub', staff_sub::text FROM public.staff_push_subscriptions WHERE staff_sub IS NOT NULL
+  SELECT 'public.staff_push_subscriptions.staff_user_id', staff_user_id::text FROM public.staff_push_subscriptions WHERE staff_user_id IS NOT NULL
 UNION ALL
   SELECT 'public.users.invited_by', invited_by::text FROM public.users WHERE invited_by IS NOT NULL
 UNION ALL

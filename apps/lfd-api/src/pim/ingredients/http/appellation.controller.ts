@@ -10,11 +10,9 @@ import {
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  CreateAppellationCommand,
-  RemoveAppellationCommand,
-  UpdateAppellationCommand,
-} from "../application/appellation-handlers.js";
+import { CreateAppellationCommand } from "../application/create-appellation.js";
+import { RemoveAppellationCommand } from "../application/remove-appellation.js";
+import { UpdateAppellationCommand } from "../application/update-appellation.js";
 import { ListAppellationsQuery } from "../application/list-appellations.js";
 
 /**

@@ -26,6 +26,12 @@ import type { PrismaService } from "../src/platform/database/prisma.service.js";
 /** Ce qu'un test peut vouloir imposer sur une société. */
 export interface CompanySeed {
   readonly raisonSociale?: string;
+  /**
+   * Absente ⇒ vide, et la société se nomme par sa raison sociale. Une société
+   * « sans papiers » doit en porter une : `Company.declare` l'exige, et c'est
+   * sous ce nom que le journal la cite (lot B du plan des phrases).
+   */
+  readonly enseigne?: string;
   readonly siret?: string;
   /** Absent ⇒ repris du SIRET quand son préfixe est un SIREN valide, vide sinon. */
   readonly siren?: string;
@@ -61,6 +67,7 @@ export function createCompany(prisma: PrismaService, seed: CompanySeed = {}): Pr
       // Référence unique par appel (la base est purgée entre les tests).
       reference: `C-T${referenceSeq.toString().padStart(5, "0")}`,
       raisonSociale: seed.raisonSociale ?? "Café de Test SAS",
+      enseigne: seed.enseigne ?? "",
       formeJuridique: "SAS",
       siret,
       // La règle de l'agrégat, demandée au domaine : un SIREN que `Company`

@@ -1,27 +1,18 @@
 import { UserRegisteredEvent } from "../../../../account/domain/events/user-registered.event.js";
-import type { RecordActivityInput } from "../../../domain/activity-event.js";
-import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { OnUserRegistered } from "../on-user-registered.handler.js";
 import { BackgroundWork } from "../../../../../platform/events/background-work.js";
-
-/** Recorder doublé : capture les entrées (extension du port, sans cast). */
-class RecordingRecorder extends ActivityRecorder {
-  readonly records: RecordActivityInput[] = [];
-  record(input: RecordActivityInput): Promise<void> {
-    this.records.push(input);
-    return Promise.resolve();
-  }
-  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
-  recordOrFail(input: RecordActivityInput): Promise<void> {
-    return this.record(input);
-  }
-}
+import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 describe("OnUserRegistered", () => {
   const work = new BackgroundWork();
 
-  it("journalise user.registered sur la personne, clé déterministe, e-mail en payload", async () => {
-    const recorder = new RecordingRecorder();
+  /**
+   * Régression (lot B du plan des phrases, 2026-09-19) : la charge recopiait
+   * l'e-mail de l'inscription, contre la règle « jamais de coordonnées au
+   * journal ». La file des prospects le lit désormais sur la fiche.
+   */
+  it("journalise user.registered sur la personne, clé déterministe, sans e-mail", async () => {
+    const recorder = new RecordingActivityRecorder();
     new OnUserRegistered(recorder, work).handle(new UserRegisteredEvent("user_8", "chef@resto.fr"));
     await work.whenIdle();
 
@@ -30,7 +21,8 @@ describe("OnUserRegistered", () => {
       subjectType: "user",
       subjectId: "user_8",
       idempotencyKey: "user.registered:user_8",
-      payload: { email: "chef@resto.fr" },
+      payload: {},
     });
+    expect(JSON.stringify(recorder.records)).not.toContain("chef@resto.fr");
   });
 });

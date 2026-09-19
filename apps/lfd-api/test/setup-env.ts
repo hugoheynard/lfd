@@ -166,8 +166,9 @@ export function testStorageConfig(): typeof TEST_STORAGE {
  *
  * Aucun appel réseau n'en découle : le SDK ne se connecte qu'à l'appel d'une
  * API, et les suites qui en font une doublent `PaymentGateway` (orders,
- * admin-orders, account-alerts). Celle du mandat ne double que `MandateGateway`
- * et traverse donc le vrai adaptateur — voulu : elle éprouve le vrai contrôleur.
+ * admin-orders, account-alerts). Celle du mandat ne double rien du paiement —
+ * son port Stripe (`MandateGateway`) a été supprimé le 2026-09-19 — et
+ * traverse donc le vrai adaptateur : voulu, elle éprouve le vrai contrôleur.
  */
 process.env["STRIPE_SECRET_KEY"] = "sk_test_e2e";
 process.env["STRIPE_WEBHOOK_SECRET"] = "whsec_e2e";
@@ -218,6 +219,18 @@ process.env["PIM_PUBLICATION_ENABLED"] = "true";
  * du test unitaire du driver, qui fournit sa propre `AppConfig`.
  */
 process.env["B2B_DELIVERY_INBOX"] = "false";
+
+/**
+ * Le journal est **strict** dans les tests : un fait dont le type n'est pas au
+ * catalogue (`@lfd/contracts/journal-facts`), ou dont la charge ne suit pas son
+ * schéma, lève au lieu d'être signalé (D2 du plan
+ * `documentation/journalisation/plan-phrases-du-journal.md`).
+ *
+ * Écrasement dur : c'est ce qui rend le catalogue exact — tout fait qu'un test
+ * écrit y est confronté. Un `.env` local qui le fermerait laisserait passer un
+ * type oublié jusqu'au log d'erreur de la production.
+ */
+process.env["JOURNAL_STRICT_FACTS"] = "true";
 
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {

@@ -162,7 +162,7 @@ export interface AdminKbisView extends KbisView {
  * ouvert. `name` et `role` peuvent être **vides** quand l'auteur n'était
  * rattaché à aucune fiche de l'annuaire : on n'invente pas de nom. Le champ
  * `sub` qu'elle portait n'était lu par aucun écran (vérifié le 2026-09-18) ;
- * retiré à l'étape 5A du plan `documentation/staff/plan-l-auteur-est-la-fiche.md`.
+ * retiré à l'étape 5A du `documentation/journalisation/architecture-journalisation.md` §12.
  */
 export interface StaffActorView {
   readonly name: string;

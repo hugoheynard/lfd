@@ -10,7 +10,8 @@ import type {
   StaffAuthors,
 } from "../../../../staff/directory/domain/staff-author-directory.js";
 import type { PimJournalReader } from "../../../journal/pim-journal-reader.js";
-import { attributeFields, coveredBy, type GlobalCause } from "../domain/attribution.js";
+import { attributeFields } from "../domain/attribution.js";
+import { coveredBy, type GlobalCause } from "../domain/global-causes.js";
 import type { ItemDiff } from "../domain/diff.js";
 import type { RevisionRecord } from "../domain/ports/catalog-revision.repository.js";
 
@@ -106,12 +107,13 @@ export function causeViews(causes: readonly GlobalCause[]): readonly CatalogRevi
     at: cause.at.toISOString(),
     explains: cause.explains,
     blast: cause.blast,
+    contextLabels: cause.contextLabels,
   }));
 }
 
 /**
  * Le résumé d'une ancre. `authors` nomme celui qui l'a posée — résolu d'un coup
- * pour toute la vue par l'appelant (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ * pour toute la vue par l'appelant (`architecture-journalisation.md` §12, D3).
  */
 export function summaryOf(
   record: RevisionRecord,
@@ -138,7 +140,7 @@ const SIGNATORY_FIELD = "readyBy";
  *
  * La signature (`readyBy`) fait partie de la photo d'une révision, et elle y
  * reste sous la forme où elle a été figée — un `sub` avant la bascule, un id de
- * fiche après (plan `plan-l-auteur-est-la-fiche.md`, D6 : on ne réécrit pas une
+ * fiche après (`architecture-journalisation.md` §12, D6 : on ne réécrit pas une
  * ancre). Le diff, lui, est une lecture : il montre le nom. Une valeur qui ne
  * désigne personne (`null`, un marqueur) reste telle quelle.
  *

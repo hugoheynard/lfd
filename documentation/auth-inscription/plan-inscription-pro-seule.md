@@ -114,7 +114,7 @@ points. Le lot 7 les y inscrit, datés :
 - **Unité de travail** : `PrismaService` est déjà le proxy `transactionalPrisma`
   (`database.module.ts:104`). Un `$transaction` en callback rejoint l'unité
   ouverte.
-- **Journal** : le patron est `delivery-zones/application/delivery-zone.handlers.ts`
+- **Journal** : le patron est `delivery-zones/application/create-delivery-zone.handler.ts` (découpé le 2026-09-19)
   (`UnitOfWork` puis `publishTraced`). `lint:journal-tracked` ne couvre que
   `src/pim/**` et une partie de `b2b/account/**`.
 - **`Principal`** porte `email`, lu en base. `VerifiedToken` porte un

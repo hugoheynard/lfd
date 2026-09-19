@@ -26,12 +26,10 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetPublicPickupScheduleQuery } from "../application/get-public-pickup-schedule.query.js";
 import { SavePublicPickupScheduleCommand } from "../application/save-public-pickup-schedule.command.js";
-import {
-  CreatePickupAddressCommand,
-  RemovePickupAddressCommand,
-  SetDefaultPickupAddressCommand,
-  UpdatePickupAddressCommand,
-} from "../application/pickup-address.commands.js";
+import { CreatePickupAddressCommand } from "../application/create-pickup-address.command.js";
+import { RemovePickupAddressCommand } from "../application/remove-pickup-address.command.js";
+import { SetDefaultPickupAddressCommand } from "../application/set-default-pickup-address.command.js";
+import { UpdatePickupAddressCommand } from "../application/update-pickup-address.command.js";
 
 /**
  * Gestion **staff** des points de retrait (page Réglages). Ajouter / éditer /

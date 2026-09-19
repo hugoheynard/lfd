@@ -35,6 +35,7 @@ import { RemoveDeliveryAddressHandler } from "../remove-delivery-address.handler
 import { SaveBillingAddressHandler } from "../save-billing-address.handler.js";
 import { SetDefaultDeliveryAddressHandler } from "../set-default-delivery-address.handler.js";
 import { UpdateDeliveryAddressHandler } from "../update-delivery-address.handler.js";
+import { journalNames } from "./member-acts-doubles.js";
 
 /** Publisher doublé : ignore (les étapes d'activation ne sont pas l'objet de ce spec). */
 /** Fabrique un publisher doublé frais. */
@@ -167,6 +168,8 @@ describe("handlers d'adresses — les murs member / admin", () => {
       membershipReturning("owner"),
       addressesRecorder(recorder),
       events(),
+      new DirectUnitOfWork(),
+      journalNames(companiesReturningSample()),
     ).execute(new SaveBillingAddressCommand("u1", "c1", BILLING));
     expect(recorder.writes).toEqual(["billing"]);
   });
@@ -180,6 +183,8 @@ describe("handlers d'adresses — les murs member / admin", () => {
         events(),
         new FixedIdGenerator("addr"),
         clock(),
+        new DirectUnitOfWork(),
+        journalNames(companiesReturningSample()),
       ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
@@ -191,6 +196,9 @@ describe("handlers d'adresses — les murs member / admin", () => {
       new UpdateDeliveryAddressHandler(
         membershipReturning("orders"),
         addressesRecorder(recorder),
+        events(),
+        new DirectUnitOfWork(),
+        journalNames(companiesReturningSample()),
       ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
     expect(recorder.writes).toEqual([]);
@@ -200,6 +208,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
     const recorder: Recorder = { writes: [] };
     const admin = membershipReturning("owner");
     const repo = addressesRecorder(recorder);
+    const names = journalNames(companiesReturningSample(), repo);
 
     await new AddDeliveryAddressHandler(
       admin,
@@ -207,18 +216,29 @@ describe("handlers d'adresses — les murs member / admin", () => {
       events(),
       new FixedIdGenerator("addr"),
       clock(),
+      new DirectUnitOfWork(),
+      names,
     ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
-    await new UpdateDeliveryAddressHandler(admin, repo).execute(
-      new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY),
-    );
-    await new SetDefaultDeliveryAddressHandler(admin, repo).execute(
-      new SetDefaultDeliveryAddressCommand("u1", "c1", "a1"),
-    );
+    await new UpdateDeliveryAddressHandler(
+      admin,
+      repo,
+      events(),
+      new DirectUnitOfWork(),
+      names,
+    ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY));
+    await new SetDefaultDeliveryAddressHandler(
+      admin,
+      repo,
+      events(),
+      new DirectUnitOfWork(),
+      names,
+    ).execute(new SetDefaultDeliveryAddressCommand("u1", "c1", "a1"));
     await new RemoveDeliveryAddressHandler(
       admin,
       repo,
       companiesReturningSample(),
       clock(),
+      events(),
       new DirectUnitOfWork(),
     ).execute(new RemoveDeliveryAddressCommand("u1", "c1", "a1"));
 

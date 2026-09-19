@@ -7,8 +7,8 @@ import { GetStaffNotificationsQuery } from "./get-staff-notifications.query.js";
 
 /**
  * Le compteur **et** la liste en une lecture : la cloche affiche les deux —
- * avec le NOM de qui a lu chaque fait, jamais son identifiant (plan
- * `plan-l-auteur-est-la-fiche.md`, D3).
+ * avec le NOM de qui a lu chaque fait, jamais son identifiant (
+ * `architecture-journalisation.md` §12, D3).
  */
 @QueryHandler(GetStaffNotificationsQuery)
 export class GetStaffNotificationsHandler implements IQueryHandler<

@@ -1,0 +1,9 @@
+/* Une phrase se lit en ligne : ses segments s'enchaînent sans rupture. */
+:host {
+  display: inline;
+}
+
+/* Un montant, un taux, une heure : des chiffres qui s'alignent d'une ligne à l'autre. */
+.fs-value {
+  font-variant-numeric: tabular-nums;
+}

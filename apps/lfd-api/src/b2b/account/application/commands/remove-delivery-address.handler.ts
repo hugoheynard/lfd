@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DeliveryAddressRemovedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
@@ -8,6 +10,7 @@ import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { RemoveDeliveryAddressCommand } from "./address-commands.js";
+import { companyNamed, deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Archive une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -23,6 +26,10 @@ import { RemoveDeliveryAddressCommand } from "./address-commands.js";
  *
  * Les deux écritures partent ensemble : une préférence qui survivrait à
  * l'archivage recréerait exactement le trou qu'on ferme.
+ *
+ * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
+ * sous le nom du geste staff jumeau, sans coordonnée.
  */
 @CommandHandler(RemoveDeliveryAddressCommand)
 export class RemoveDeliveryAddressHandler implements ICommandHandler<
@@ -34,6 +41,7 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
     private readonly addresses: CompanyAddressRepository,
     private readonly companies: CompanyRepository,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -42,6 +50,8 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
     ensureCompanyAdmin(role, command.companyId);
 
     const book = await this.addresses.loadDeliveryBook(command.companyId);
+    // Nommée AVANT l'archivage : après, le carnet ne la porte plus.
+    const address = deliveryAddressOf(book, command.addressId);
     book.archive(command.addressId, this.clock.now());
 
     const company = await this.companies.load(command.companyId);
@@ -60,6 +70,9 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
       if (orphaned) {
         await this.companies.save(company);
       }
+      await this.events.publishTraced(
+        new DeliveryAddressRemovedByMemberEvent(companyNamed(command.companyId, company), address),
+      );
     });
   }
 }

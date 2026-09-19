@@ -140,8 +140,6 @@ export class PaiementSection {
   readonly companyId = input<string | null>(null);
   /** Raison sociale — rappelée dans le panneau, pour ne pas mandater le mauvais compte. */
   readonly companyName = input('');
-  /** E-mail du détenteur — préremplit le champ que Stripe exige sur un mandat SEPA. */
-  readonly holderEmail = input('');
   /** Les crédits accordés — vide veut dire « paie à la commande », comme tout le monde. */
   readonly grantedTerms = input.required<readonly DeferredTerm[]>();
   /** Le crédit **demandé** par le client, en attente d'arbitrage ; `null` = aucun. */
@@ -192,8 +190,6 @@ export class PaiementSection {
   protected readonly needsBank = computed(() =>
     this.blockerLines().some((line) => line.place === 'bank'),
   );
-  /** Clé publique Stripe, rendue avec le mandat ; vide si le canal n'est pas configuré. */
-  private readonly publishableKey = signal('');
   protected readonly busy = signal(false);
 
   constructor() {
@@ -650,12 +646,10 @@ export class PaiementSection {
     try {
       const section = await this.mandates.section(companyId);
       this.mandate.set(section.mandate);
-      this.publishableKey.set(section.publishableKey);
       this.mintBlockers.set(section.mintBlockers);
       this.holderLegalFormRequired.set(section.issuerScheme === 'B2B');
     } catch {
       this.mandate.set(null);
-      this.publishableKey.set('');
       this.mintBlockers.set([]);
       this.holderLegalFormRequired.set(false);
     }

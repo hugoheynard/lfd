@@ -146,8 +146,8 @@ model StaffUser {
 ///
 /// Une fiche a pu avoir plusieurs `sub` : le résolveur réécrivait `auth0Id`
 /// sans condition jusqu'au 2026-09-17, et la réinvitation en relie un neuf.
-/// `auth0Id` ne garde que le dernier ; cette table les garde tous (plan
-/// `documentation/staff/plan-l-auteur-est-la-fiche.md`, D5).
+/// `auth0Id` ne garde que le dernier ; cette table les garde tous (
+/// `documentation/journalisation/architecture-journalisation.md` §12, D5).
 ///
 /// - `sub` en clé : un `sub` ne désigne qu'une personne — le premier lien
 ///   établi fait foi, un second est ignoré (`ON CONFLICT DO NOTHING`).

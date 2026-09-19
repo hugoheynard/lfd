@@ -46,7 +46,7 @@ export class RemoveSalesContextHandler implements ICommandHandler<RemoveSalesCon
         subjectId: key,
         // Après elle, la ligne n'est plus interrogeable : le journal est le seul
         // endroit où ce contexte a encore un nom.
-        payload: { key, label },
+        payload: { subjectLabel: label, key, label },
       });
       await this.contexts.remove(key, ticket);
     });

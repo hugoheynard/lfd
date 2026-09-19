@@ -23,12 +23,13 @@ import {
 import { RemoveDeliveryStepByStaffHandler } from "../remove-delivery-step-by-staff.handler.js";
 import { ReorderDeliveryStepsByStaffHandler } from "../reorder-delivery-steps-by-staff.handler.js";
 import { ReviseDeliveryStepByStaffHandler } from "../revise-delivery-step-by-staff.handler.js";
+import { COMPANY_LABEL, InMemoryCompanies, journalNames } from "./member-acts-doubles.js";
 
 /**
  * **Les gestes d'un agent sur la procédure de livraison d'un client.**
  *
  * Ce qu'on tient ici : aucun mur membership (l'agent n'est membre de rien), un
- * fait `company.delivery_procedure_edited_by_staff` par geste, qui nomme le geste et
+ * fait `company.delivery_procedure_edited` par geste, qui nomme le geste et
  * part DANS la transaction — et, s'il ne part pas, le geste n'a pas eu lieu.
  */
 
@@ -40,14 +41,16 @@ function scene(live: readonly string[] = [ADDRESS]) {
   const store = new InMemoryStore(log);
   const uow = new TrackingUnitOfWork();
   const events = new TransactionAwarePublisher(uow);
+  const book = addressBook(live);
   const deps = [
-    addressBook(live),
+    book,
     procedures,
     new RecordingLock([]),
     store,
     new FixedIdGenerator(),
     uow,
     events,
+    journalNames(new InMemoryCompanies(), book),
   ] as const;
   return {
     procedures,
@@ -83,8 +86,10 @@ describe("les gestes staff sur la procédure", () => {
     );
     expect(facts.map((fact) => fact.payload)).toEqual(
       ["step_added", "step_added", "step_revised", "reordered", "step_removed"].map((action) => ({
-        companyId: COMPANY,
-        addressId: ADDRESS,
+        // La société est le sujet (nommée), l'adresse citée par son id et son
+        // lieu — jamais son libellé (lot B du plan des phrases).
+        subjectLabel: COMPANY_LABEL,
+        address: { id: ADDRESS, ville: "Paris", codePostal: "75001" },
         action,
       })),
     );

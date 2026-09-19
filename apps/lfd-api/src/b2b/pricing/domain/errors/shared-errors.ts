@@ -10,6 +10,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
@@ -120,6 +121,22 @@ export class UnknownPricingSubjectError extends DomainError {
 }
 
 /**
+ * **L'ancre d'une pagination ne désigne aucun acte de ce sujet.**
+ *
+ * Refusée plutôt qu'ignorée : ignorée, elle ferait lire le journal d'aujourd'hui
+ * à un écran qui croit parcourir un instantané, et les pages glisseraient sans
+ * que rien ne le dise.
+ */
+export class UnknownJournalAnchorError extends DomainError {
+  constructor(readonly asOf: string) {
+    super(
+      "pricing.journal.anchor_unknown",
+      `L'ancre « ${asOf} » ne désigne aucun acte de ce journal : rouvrez-le à la première page.`,
+    );
+  }
+}
+
+/**
  * **La société visée n'existe pas.**
  *
  * Un 404 et non un tableau vide, et c'est ce qui compte : la tarification d'un
@@ -205,6 +222,24 @@ export class DuplicateArticleError extends DomainError {
     super(
       "pricing.request.duplicate-article",
       `L'article « ${sku} » est demandé deux fois : fusionner les quantités ou poser deux appels, mais la demande telle quelle n'a pas de prix unique.`,
+    );
+  }
+}
+
+/**
+ * Un acte tarifaire dont le couple sujet × geste n'a **pas de fait** au journal
+ * (une limite « suspendue », une mercuriale « confirmée »).
+ *
+ * `TechnicalError` : aucun écran n'envoie ce geste — c'est le code qui
+ * l'invente, et l'agent n'a rien à corriger. Le refus vient avant toute
+ * écriture : l'acte et son état partent dans la même transaction.
+ */
+export class PricingActNotJournaledError extends TechnicalError {
+  constructor(subject: string, kind: string) {
+    super(
+      "pricing.act.not_journaled",
+      `L'acte tarifaire « ${kind} » sur un sujet « ${subject} » n'a pas de fait au journal. ` +
+        `Ajoutez-le au catalogue des faits et à la table de pricing-act.ts avant de l'écrire.`,
     );
   }
 }

@@ -1,7 +1,7 @@
 /**
  * E2E de la **conversion des auteurs staff** — la migration
  * `20260918190000_conversion_des_auteurs_staff`, rejouée sur une base semée.
- * Plan : `documentation/staff/plan-l-auteur-est-la-fiche.md` — D5.2, D7,
+ * Plan : `documentation/journalisation/architecture-journalisation.md` §12 — D5.2, D7,
  * étape 4, §5 « Conversion ».
  *
  * Ce que seul le vrai SQL prouve : qu'un `sub` connu de la table des `sub`

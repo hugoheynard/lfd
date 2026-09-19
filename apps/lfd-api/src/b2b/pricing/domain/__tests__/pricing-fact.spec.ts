@@ -1,3 +1,4 @@
+import { PricingActNotJournaledError } from "../errors/shared-errors.js";
 import { pricingFactOf, type PricingAct } from "../pricing-act.js";
 
 /**
@@ -20,6 +21,7 @@ function act(over: Partial<PricingAct> = {}): PricingAct {
     at: new Date("2026-08-25T09:30:00Z"),
     reason: null,
     summary: "−10 % sur la gamme viennoiserie",
+    subjectLabel: "Remise viennoiserie",
     ...over,
   };
 }
@@ -48,11 +50,43 @@ describe("pricingFactOf", () => {
    * dans sa table, et l'y recopier ferait du journal une seconde base —
    * désynchronisée par construction.
    */
-  it("ne porte que la phrase figée et le motif", () => {
+  it("ne porte que le nom du sujet, la phrase figée et le motif", () => {
     expect(pricingFactOf(act({ reason: "fin de promotion" })).payload).toEqual({
+      subjectLabel: "Remise viennoiserie",
       summary: "−10 % sur la gamme viennoiserie",
       reason: "fin de promotion",
     });
+  });
+
+  /**
+   * L'étage d'une règle, en donnée structurée à côté de la phrase figée (TODO
+   * des phrases du journal, 2026-09-19) : l'écran le nommait en découpant le
+   * début du `summary`.
+   */
+  it("porte l'étage d'une règle, et la société qu'elle vise", () => {
+    const payload = pricingFactOf(
+      act({ stage: "geste", audience: { id: "cmp_1", name: "Club Med" } }),
+    ).payload;
+
+    expect(payload).toMatchObject({ stage: "geste", audience: { id: "cmp_1", name: "Club Med" } });
+  });
+
+  it("n'invente pas d'étage à un acte qui n'en a pas", () => {
+    expect(pricingFactOf(act({ subjectType: "floor" })).payload).not.toHaveProperty("stage");
+  });
+
+  /**
+   * Le type se lit dans une table sujet × geste typée par le catalogue des
+   * faits : un geste qu'aucun écran n'écrit sur ce sujet n'a pas de fait, et
+   * le dire vaut mieux que composer un type que le journal refuserait.
+   */
+  it("refuse un geste sans fait au journal pour ce sujet", () => {
+    expect(() => pricingFactOf(act({ subjectType: "floor", kind: "paused" }))).toThrow(
+      PricingActNotJournaledError,
+    );
+    expect(() => pricingFactOf(act({ subjectType: "mercuriale", kind: "confirmed" }))).toThrow(
+      /mercuriale/,
+    );
   });
 
   it("range le fait sous un sujet qui se filtre", () => {

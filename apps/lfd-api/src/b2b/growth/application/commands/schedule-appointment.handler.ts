@@ -8,6 +8,9 @@ import { AppointmentRepository } from "../../domain/ports/appointment.repository
 import { AvailabilityStore } from "../../domain/ports/availability.store.js";
 import { parseStartAt } from "../appointment-booking.js";
 import { ScheduleAppointmentCommand } from "./schedule-appointment.command.js";
+import { appointmentSubjectLabel } from "../appointment-subject-label.js";
+import { CompanyNamer } from "../../domain/ports/company-namer.js";
+import { LeadRepository } from "../../domain/ports/lead.repository.js";
 
 /**
  * Pose d'un rendez-vous par le staff : il vient d'avoir le prospect au
@@ -28,6 +31,8 @@ export class ScheduleAppointmentHandler implements ICommandHandler<
     private readonly appointments: AppointmentRepository,
     private readonly recorder: ActivityRecorder,
     private readonly clock: Clock,
+    private readonly companies: CompanyNamer,
+    private readonly leads: LeadRepository,
   ) {}
 
   async execute(command: ScheduleAppointmentCommand): Promise<string> {
@@ -57,7 +62,15 @@ export class ScheduleAppointmentHandler implements ICommandHandler<
       subjectType: payload.subjectType === "lead" ? "lead" : payload.subjectType,
       subjectId: payload.subjectId,
       idempotencyKey: `${ACTIVITY_TYPES.appointmentConfirmed}:${id}`,
-      payload: { appointmentId: id, startAt: startAt.toISOString(), via: "staff" },
+      payload: {
+        ...(await appointmentSubjectLabel(appointment, {
+          companies: this.companies,
+          leads: this.leads,
+        })),
+        appointmentId: id,
+        startAt: startAt.toISOString(),
+        via: "staff",
+      },
     });
     return id;
   }

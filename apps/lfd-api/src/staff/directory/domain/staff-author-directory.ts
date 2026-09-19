@@ -5,7 +5,7 @@ import type { StaffRole } from "@lfd/contracts";
  * il a été écrit.
  *
  * Un auteur staff se lit aujourd'hui sous trois formes, et c'est transitoire
- * (plan `documentation/staff/plan-l-auteur-est-la-fiche.md`, D4) :
+ * (`documentation/journalisation/architecture-journalisation.md` §12, D4) :
  *
  * 1. l'**id de la fiche** — la forme cible, déjà écrite par quelques colonnes ;
  * 2. le **`sub` actuel** de la fiche (`staff_users.auth0_id`) ;

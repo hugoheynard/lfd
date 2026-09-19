@@ -3,7 +3,7 @@
  *
  * Deux gestes relient un `sub` à une fiche — l'invitation (`markInvited`) et le
  * premier rapprochement du résolveur d'accès — et chacun y ajoute sa ligne dans
- * la même écriture que la liaison (plan `plan-l-auteur-est-la-fiche.md`,
+ * la même écriture que la liaison (`architecture-journalisation.md` §12,
  * D5.1). Les deux passent par ici pour que la valeur de `source` et la règle
  * « le premier lien fait foi » ne s'écrivent qu'une fois.
  */

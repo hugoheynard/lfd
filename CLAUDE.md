@@ -37,7 +37,11 @@
 >   `lint:subject-readers` — la 36ᵉ, `lint:spec-types`, était branchée depuis le
 >   2026-09-12 sans que le compte suive : le `sub` d'une personne est un
 >   identifiant chez un tiers, il a servi d'auteur pendant des mois, et la
->   porte tient la liste admise de ceux qui le lisent encore côté client. C'est la
+>   porte tient la liste admise de ceux qui le lisent encore côté client. Et
+>   **38** le même jour avec `lint:auth0-id-readers` : le même identifiant une
+>   fois RANGÉ en base (`auth0_id`, `auth0_sub`, la table des `sub`) — liste
+>   admise de ses lecteurs, et jamais interpolé dans un message, après un log
+>   de production qui l'écrivait en clair. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1065,7 +1069,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 37 portes du dépôt, d'un coup
+pnpm lint:gates         # les 38 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

@@ -4,12 +4,10 @@ import { GetPublicPickupScheduleHandler } from "./application/get-public-pickup-
 import { ListPickupAddressesHandler } from "./application/list-pickup-addresses.handler.js";
 import { ListPublicPickupSlotsHandler } from "./application/list-public-pickup-slots.handler.js";
 import { SavePublicPickupScheduleHandler } from "./application/save-public-pickup-schedule.handler.js";
-import {
-  CreatePickupAddressHandler,
-  RemovePickupAddressHandler,
-  SetDefaultPickupAddressHandler,
-  UpdatePickupAddressHandler,
-} from "./application/pickup-address.handlers.js";
+import { CreatePickupAddressHandler } from "./application/create-pickup-address.handler.js";
+import { RemovePickupAddressHandler } from "./application/remove-pickup-address.handler.js";
+import { SetDefaultPickupAddressHandler } from "./application/set-default-pickup-address.handler.js";
+import { UpdatePickupAddressHandler } from "./application/update-pickup-address.handler.js";
 import { PickupAddressRepository } from "./domain/pickup-address.repository.js";
 import { PickupScheduleRepository } from "./domain/pickup-schedule.repository.js";
 import { PublicPickupScheduleReader } from "./domain/public-pickup-schedule.reader.js";

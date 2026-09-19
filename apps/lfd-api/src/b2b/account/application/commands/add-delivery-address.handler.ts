@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DeliveryAddressAddedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
@@ -8,6 +10,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { AddDeliveryAddressCommand } from "./address-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Ajoute une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -15,6 +19,10 @@ import { AddDeliveryAddressCommand } from "./address-commands.js";
  * Le handler n'arbitre rien : c'est le carnet qui sait si cette adresse devient
  * le défaut — notamment quand c'est la première, cas qu'aucun écran ne demande
  * mais que le modèle exige.
+ *
+ * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
+ * sous le nom du geste staff jumeau, sans coordonnée.
  */
 @CommandHandler(AddDeliveryAddressCommand)
 export class AddDeliveryAddressHandler implements ICommandHandler<
@@ -27,6 +35,8 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: AddDeliveryAddressCommand): Promise<string> {
@@ -36,10 +46,20 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     const book = await this.addresses.loadDeliveryBook(command.companyId);
     const addressId = this.ids.next();
     book.add(addressId, command.payload, this.clock.now());
-    await this.addresses.saveDeliveryBook(book);
+    const company = await this.names.company(command.companyId);
+    await this.uow.run(async () => {
+      await this.addresses.saveDeliveryBook(book);
+      await this.events.publishTraced(
+        new DeliveryAddressAddedByMemberEvent(
+          company,
+          deliveryAddressOf(book, addressId),
+          command.payload,
+        ),
+      );
+    });
 
     // Pièce d'activation « livraison » franchie (journal idempotent par étape).
-    this.events.publish(new CompanyStepReachedEvent(command.companyId, "delivery"));
+    this.events.publish(new CompanyStepReachedEvent(company.id, company.name, "delivery"));
     return addressId;
   }
 }

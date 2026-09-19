@@ -10,7 +10,9 @@ import {
   type PimSubjectType,
 } from "../pim/journal/pim-journal.js";
 import { PimJournalReader, type PimJournalFact } from "../pim/journal/pim-journal-reader.js";
+import { ProductHistoryJournal } from "../pim/journal/product-history-journal.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
+import { PrismaProductHistoryJournal } from "./product-history.journal.js";
 
 /**
  * Branche le journal **de la plateforme** sur le journal d'activité réel.
@@ -159,7 +161,9 @@ function toFact(row: {
     { provide: Journal, useClass: ActivityJournal },
     { provide: PimJournal, useClass: PimActivityJournal },
     { provide: PimJournalReader, useClass: PimActivityJournalReader },
+    // L'historique d'une fiche : un port à lui, dans son propre fichier.
+    { provide: ProductHistoryJournal, useClass: PrismaProductHistoryJournal },
   ],
-  exports: [Journal, PimJournal, PimJournalReader],
+  exports: [Journal, PimJournal, PimJournalReader, ProductHistoryJournal],
 })
 export class JournalModule {}

@@ -42,7 +42,7 @@ export class CloseShopHandler implements ICommandHandler<CloseShopCommand, void>
         // endroit où le point de vente a encore un nom. On y verse donc le nom
         // ET le nombre de tables — c'est-à-dire combien de QR imprimés viennent
         // de cesser d'ouvrir quoi que ce soit.
-        payload: { label, tableCount: tables.length },
+        payload: { subjectLabel: label, label, tableCount: tables.length },
       });
       await this.points.remove(command.id, ticket);
     });

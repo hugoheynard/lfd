@@ -83,12 +83,21 @@ describe("IssuerDraftVoiding — les brouillons d'un émetteur deviennent caducs
     ]);
     expect(h.events.traced.map((event) => event.journalFact().payload)).toEqual([
       {
-        companyId: "cmp_1",
+        subjectLabel: first.reference,
+        company: { id: "cmp_1", name: "Le Refuge du Col" },
         reference: first.reference,
         cause: "mandate_scheme_changed",
         via: "staff",
       },
-      { companyId: "cmp_2", reference: "LFC-2", cause: "mandate_scheme_changed", via: "staff" },
+      {
+        subjectLabel: "LFC-2",
+        // Le double nomme toute société du même titulaire : c'est la lecture
+        // par société qui compte, pas le nom.
+        company: { id: "cmp_2", name: "Le Refuge du Col" },
+        reference: "LFC-2",
+        cause: "mandate_scheme_changed",
+        via: "staff",
+      },
     ]);
     expect(first.toSnapshot()).toMatchObject({ status: "revoked", revokedAt: NOW });
   });

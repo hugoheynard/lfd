@@ -11,6 +11,7 @@ import {
 import { LegalEntityRepository } from "../../../domain/ports/legal-entity.repository.js";
 import { LegalAddress } from "../../../domain/value-objects/legal-address.js";
 import { Siren } from "../../../domain/value-objects/siren.js";
+import { STRICT_JOURNAL_FACTS } from "../../../../../platform/journal/__tests__/strict-journal-facts.js";
 
 /**
  * Doublés des réglages de mandat de l'entité — schéma et défauts.
@@ -129,6 +130,8 @@ export class StepPublisher extends DomainEventPublisher {
   }
 
   publishTraced(event: JournaledEvent): Promise<void> {
+    const fact = event.journalFact();
+    STRICT_JOURNAL_FACTS.verify(fact.type, fact.payload);
     this.traced.push(event);
     this.steps.log.push(`journal:${event.journalFact().type}`);
     return Promise.resolve();

@@ -1,5 +1,6 @@
 import type { JournalFact } from "../journal-fact.js";
 import { Journal } from "../journal.js";
+import { STRICT_JOURNAL_FACTS } from "./strict-journal-facts.js";
 
 /**
  * Journal de la plateforme, en test : il garde ce qu'on lui donne — ou tombe
@@ -9,6 +10,10 @@ import { Journal } from "../journal.js";
  * celui-là double `PimJournal`, que seul le référentiel a le droit de voir. Les
  * blocs qui appellent `Journal.append` directement (l'équipe, depuis le
  * 2026-09-18) avaient besoin du leur.
+ *
+ * Il confronte chaque fait au catalogue, strictement — comme l'adaptateur réel
+ * sous le harnais : un type hors catalogue ou une charge non conforme lève ici,
+ * dans le test unitaire du handler, plutôt qu'à l'e2e.
  */
 export class RecordingJournal extends Journal {
   readonly facts: JournalFact[] = [];
@@ -22,6 +27,7 @@ export class RecordingJournal extends Journal {
     if (this.failure !== null) {
       return Promise.reject(this.failure);
     }
+    STRICT_JOURNAL_FACTS.verify(fact.type, fact.payload);
     this.facts.push(fact);
     return Promise.resolve();
   }

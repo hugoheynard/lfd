@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 /**
  * Le **journal du référentiel** — ce que le PIM déclare vouloir tracer, sans
  * savoir qui l'écrit.
@@ -130,7 +132,14 @@ export const PIM_EVENTS = {
   catalogRevisionPushed: "catalog_revision.pushed",
   productCategoryCreated: "product_category.created",
   productCategoryRenamed: "product_category.renamed",
-  /** Change le parent, donc l'héritage de TVA et de canaux en aval. */
+  /**
+   * Change le parent — sa place dans l'arbre, et rien de ce qu'elle facture.
+   *
+   * ⚠️ Ce commentaire disait « donc l'héritage de TVA et de canaux en aval ».
+   * C'est faux : une famille ne tient ni sa TVA ni ses canaux de son parent —
+   * `effectiveVat` ne lit que la famille directe d'une fiche, et le lecteur du
+   * catalogue ne lit que son `channelPreset` (vérifié le 2026-09-19).
+   */
   productCategoryMoved: "product_category.moved",
   productCategoryArchived: "product_category.archived",
   /**
@@ -183,6 +192,22 @@ export const PIM_EVENTS = {
   variantRenamed: "variant.renamed",
   productArchived: "product.archived",
   productRestored: "product.restored",
+  /**
+   * **La fiche change de famille** — `{ from, to }`, les deux familles avec
+   * leur nom du moment (`{ id, name }`, lot B du plan des phrases du journal).
+   *
+   * Distinct de `identity_saved`, qui porte déjà `categoryId` dans son diff et
+   * le garde : ce fait-ci existe parce que changer de famille change les taux
+   * et les canaux dont la fiche HÉRITE, et la comptabilité le relit dans la
+   * tranche fiscale (Hugo, 2026-09-19 : « la compta doit voir tout ce qui
+   * touche au taux »). Y verser `identity_saved` entier l'inonderait de chaque
+   * nom retouché.
+   *
+   * Les lignes écrites avant le 2026-09-19 (lot B) ne portent que les deux
+   * identifiants : elles se relisent telles quelles, le journal ne se
+   * réécrit pas.
+   */
+  productReclassified: "product.reclassified",
   /**
    * **Le point de vente** — boutique ou plateforme, son offre et sa grille de
    * tables.
@@ -318,7 +343,7 @@ export const PIM_EVENTS = {
   orderTimeLimitSet: "order_time_limit.set",
   /** Retirée : l'article retombe sur le rang du dessus. */
   orderTimeLimitRemoved: "order_time_limit.removed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
  * **La portée** d'un fait : ce qu'il touchait, au moment où il s'est produit.
@@ -362,8 +387,8 @@ export interface PimBlastRadius {
 
 /** Ce qu'un handler du référentiel fournit pour tracer un fait. */
 export interface PimJournalEntry {
-  /** Un des {@link PIM_EVENTS}. */
-  readonly type: string;
+  /** Un des {@link PIM_EVENTS} — donc un type du catalogue des faits. */
+  readonly type: JournalFactType;
   readonly subjectType: PimSubjectType;
   readonly subjectId: string;
   /**

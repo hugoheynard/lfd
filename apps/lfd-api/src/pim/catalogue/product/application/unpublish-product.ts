@@ -37,7 +37,7 @@ export class UnpublishProductHandler implements ICommandHandler<UnpublishProduct
         type: PIM_EVENTS.productUnpublished,
         subjectType: "product",
         subjectId: command.id,
-        payload: { sku, name },
+        payload: { subjectLabel: name.fr, sku, name },
         // La portée d'un retrait : les articles qui cessent d'être vendus.
         blast: { variants: variants.length },
       });

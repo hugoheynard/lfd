@@ -1,7 +1,7 @@
 import type { CommandBus } from "@nestjs/cqrs";
 
 import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/commands/activate-company.command.js";
-import { GrantTermsCommand } from "../../b2b/account/application/commands/admin-company-commands.js";
+import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-terms.command.js";
 import {
   AddDeliveryAddressCommand,
   SaveBillingAddressCommand,

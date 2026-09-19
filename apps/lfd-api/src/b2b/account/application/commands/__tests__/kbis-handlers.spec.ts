@@ -48,6 +48,7 @@ describe("UploadKbisHandler", () => {
     handler: UploadKbisHandler;
     saved: { key: string; kbis: KbisDeposit | null };
     company: Company;
+    events: RecordingPublisher;
   }
 
   function doubles(role: CompanyRole | null): Doubles {
@@ -77,8 +78,7 @@ describe("UploadKbisHandler", () => {
       declareUnowned: () => Promise.resolve("c"),
       kbisLocation: () => Promise.resolve(null),
     } satisfies CompanyRepository;
-    // La pièce d'activation n'est pas l'objet de ce spec — le double la garde
-    // sans rien en faire.
+    // Garde la pièce d'activation (best-effort) et le fait tracé du dépôt.
     const events = new RecordingPublisher();
     return {
       handler: new UploadKbisHandler(
@@ -90,6 +90,7 @@ describe("UploadKbisHandler", () => {
       ),
       saved,
       company,
+      events,
     };
   }
 
@@ -147,13 +148,30 @@ describe("UploadKbisHandler", () => {
     expect(member.saved.kbis).toBeNull();
   });
 
-  it("rejette un fichier non-PDF avant tout stockage", async () => {
-    const { handler, saved } = doubles("owner");
+  it("rejette un fichier non-PDF avant tout stockage — et n'écrit aucun fait", async () => {
+    const { handler, saved, events } = doubles("owner");
 
     await expect(
       handler.execute(new UploadKbisCommand("u1", "c1", "faux.pdf", Buffer.from("nope"))),
     ).rejects.toThrow(/PDF/u);
     expect(saved.kbis).toBeNull();
+    expect(events.traced).toHaveLength(0);
+  });
+
+  it("journalise le dépôt sous le même fait que le staff, après l'écriture", async () => {
+    const { handler, events } = doubles("owner");
+
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+
+    expect(events.traced.map((event) => event.journalFact())).toEqual([
+      {
+        type: "company.kbis_uploaded",
+        subjectType: "company",
+        subjectId: "c1",
+        // La société nommée au moment du dépôt (lot B du plan des phrases).
+        payload: { subjectLabel: "Le Pain Quotidien", fileName: "kbis.pdf" },
+      },
+    ]);
   });
 });
 

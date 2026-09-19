@@ -138,23 +138,23 @@ bord.
 
 ## B.3 Ce qui a été vérifié, et où
 
-| Affirmation                                                         | Vérifiée dans                                                                      |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `matchesScope` = `global` + trois égalités                          | `specificity.ts`                                                                   |
-| `matchesAudience` ne dépend que de `companyId` / `segmentId`        | `specificity.ts` — **trois** types d'audience, `segment` inatteignable aujourd'hui |
-| `minQuantity` est le seul prédicat par ligne, hors portée           | `applies`                                                                          |
-| `resolvePrice` filtre par étage le tableau reçu                     | `resolve-price.ts`                                                                 |
-| `supersedes` a besoin des perdants                                  | `resolve-price.ts`                                                                 |
-| La contrainte d'exclusion porte **aussi** sur `min_quantity`        | migration `20260817210000_cycle_de_vie_et_journal_tarifaire`                       |
-| Un gabarit posait **une règle par palier** (⚠️ jusqu'au 2026-09-08) | `price-template.handlers.ts` — il écrit désormais **une** `CompanyMercuriale`      |
-| `price_floors_one_per_scope` : une ligne par portée, sans temps     | migration `20260817160000_plancher_de_prix`                                        |
-| `ScopedPriceFloor` ne porte aucun cycle de vie                      | `price-rule.ts`                                                                    |
-| `price_floors` n'a ni `pausedAt` ni `pausedBy`                      | `prisma/schema/public/pricing.prisma`, modèle `PriceFloor`                         |
-| Re-poser un plancher remet `archivedAt` à `null`                    | `prisma-pricing-floor.repository.ts`                                               |
-| `VolumeLadder` replie `archivedAt`, et `ladderAsRule` le recopie    | `volume-ladder-rows.ts` ; `volume-ladder.ts`                                       |
-| `resolveScopedFloor` a trois appelants                              | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts`      |
-| `PriceProjectionQuery` hisse déjà ses trois lecteurs                | `price-projection.query.ts`                                                        |
-| `mostSpecificFirst` est une `Map` **1:1**                           | `@lfd/catalog-sync` ; `order_time_limit_one_per_scope`                             |
+| Affirmation                                                         | Vérifiée dans                                                                                              |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `matchesScope` = `global` + trois égalités                          | `specificity.ts`                                                                                           |
+| `matchesAudience` ne dépend que de `companyId` / `segmentId`        | `specificity.ts` — **trois** types d'audience, `segment` inatteignable aujourd'hui                         |
+| `minQuantity` est le seul prédicat par ligne, hors portée           | `applies`                                                                                                  |
+| `resolvePrice` filtre par étage le tableau reçu                     | `resolve-price.ts`                                                                                         |
+| `supersedes` a besoin des perdants                                  | `resolve-price.ts`                                                                                         |
+| La contrainte d'exclusion porte **aussi** sur `min_quantity`        | migration `20260817210000_cycle_de_vie_et_journal_tarifaire`                                               |
+| Un gabarit posait **une règle par palier** (⚠️ jusqu'au 2026-09-08) | `apply-price-template.handler.ts` (découpé le 2026-09-19) — il écrit désormais **une** `CompanyMercuriale` |
+| `price_floors_one_per_scope` : une ligne par portée, sans temps     | migration `20260817160000_plancher_de_prix`                                                                |
+| `ScopedPriceFloor` ne porte aucun cycle de vie                      | `price-rule.ts`                                                                                            |
+| `price_floors` n'a ni `pausedAt` ni `pausedBy`                      | `prisma/schema/public/pricing.prisma`, modèle `PriceFloor`                                                 |
+| Re-poser un plancher remet `archivedAt` à `null`                    | `prisma-pricing-floor.repository.ts`                                                                       |
+| `VolumeLadder` replie `archivedAt`, et `ladderAsRule` le recopie    | `volume-ladder-rows.ts` ; `volume-ladder.ts`                                                               |
+| `resolveScopedFloor` a trois appelants                              | `order-line-pricing.service.ts`, `board-item.ts`, `price-projection.query.ts`                              |
+| `PriceProjectionQuery` hisse déjà ses trois lecteurs                | `price-projection.query.ts`                                                                                |
+| `mostSpecificFirst` est une `Map` **1:1**                           | `@lfd/catalog-sync` ; `order_time_limit_one_per_scope`                                                     |
 
 **Non vérifié** : la mesure de **C.6**, les volumes réels, l'existence d'un plancher
 global à porte de volume, la taille de l'union des portées d'un panier.

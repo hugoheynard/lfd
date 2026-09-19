@@ -10,7 +10,7 @@ import {
   IngredientNotFoundError,
   UnknownIngredientAllergenError,
 } from "../../domain/errors/ingredient-errors.js";
-import { CreateIngredientCommand, CreateIngredientHandler } from "../ingredient-handlers.js";
+import { CreateIngredientCommand, CreateIngredientHandler } from "../create-ingredient.js";
 import {
   SetIngredientAllergensCommand,
   SetIngredientAllergensHandler,

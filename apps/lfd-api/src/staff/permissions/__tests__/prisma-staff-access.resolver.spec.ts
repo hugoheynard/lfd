@@ -1,6 +1,11 @@
 import { Test } from "@nestjs/testing";
 
+import type { Actor } from "../../../platform/context/request-context.js";
+import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { RecordingJournal } from "../../../platform/journal/__tests__/recording-journal.js";
+import type { JournalFact } from "../../../platform/journal/journal-fact.js";
+import { Journal } from "../../../platform/journal/journal.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PrismaStaffAccessResolver } from "../prisma-staff-access.resolver.js";
 import type { StaffPrincipal } from "../../../platform/auth/staff-principal.js";
@@ -8,10 +13,31 @@ import type { StaffPrincipal } from "../../../platform/auth/staff-principal.js";
 /** Ce que le résolveur lit d'une fiche. */
 interface StaffRow {
   readonly id: string;
+  readonly firstName: string;
+  readonly lastName: string;
   readonly role: "admin" | "commercial" | "comptabilite" | "support" | "dev";
   readonly status: "pending" | "invited" | "active" | "suspended";
   readonly auth0Id: string | null;
   readonly overrides: { resource: string; action: string; effect: string }[];
+}
+
+/** Le journal, qui retient aussi l'AUTEUR que le contexte lui présente à l'écriture. */
+class AuthoredJournal extends RecordingJournal {
+  readonly authors: (Actor | null)[] = [];
+
+  override append(fact: JournalFact): Promise<void> {
+    this.authors.push(currentRequestContext()?.actor ?? null);
+    return super.append(fact);
+  }
+}
+
+/** Le résolveur, dont on retient les activations perdues au lieu de les loguer. */
+class ObservedResolver extends PrismaStaffAccessResolver {
+  readonly lost: string[] = [];
+
+  protected override reportLostActivation(staffUserId: string): void {
+    this.lost.push(staffUserId);
+  }
 }
 
 /** Horloge qu'on avance à la main — le cache se teste, il ne s'attend pas. */
@@ -44,11 +70,16 @@ interface Recorder {
  * un `PrismaService`, donc un transtypage — et un transtypage dans un test, c'est
  * la porte par laquelle un fake finit par mentir sur la forme qu'il imite.
  */
-async function buildResolver(prisma: object, clock: Clock): Promise<PrismaStaffAccessResolver> {
+async function buildResolver(
+  prisma: object,
+  clock: Clock,
+  journal: Journal = new AuthoredJournal(),
+): Promise<PrismaStaffAccessResolver> {
   const moduleRef = await Test.createTestingModule({
     providers: [
       { provide: PrismaService, useValue: prisma },
       { provide: Clock, useValue: clock },
+      { provide: Journal, useValue: journal },
       PrismaStaffAccessResolver,
     ],
   }).compile();
@@ -105,6 +136,8 @@ function fakePrisma(
 function row(overrides: Partial<StaffRow> = {}): StaffRow {
   return {
     id: "s1",
+    firstName: "Colette",
+    lastName: "Bréal",
     role: "comptabilite",
     status: "active",
     auth0Id: null,
@@ -189,7 +222,7 @@ describe("PrismaStaffAccessResolver — 🔴 une adresse ne vole pas une fiche",
 
     expect(access).toBeNull();
     // Le `sub` perdant n'est pas celui de cette fiche : l'inscrire lui
-    // attribuerait les actes d'un autre (plan `plan-l-auteur-est-la-fiche.md`, D5).
+    // attribuerait les actes d'un autre (`architecture-journalisation.md` §12, D5).
     expect(aliases).toEqual([]);
   });
 
@@ -284,6 +317,88 @@ describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
 
     expect(access?.permissions).toContain("b2b_growth:read");
     expect(access?.permissions).not.toContain("staff_access:read");
+  });
+});
+
+/**
+ * D7 du plan des phrases : la première entrée d'une fiche passait à `active`
+ * sans laisser de fait — la seule activation que le journal ne voyait pas.
+ */
+describe("PrismaStaffAccessResolver — la première entrée au journal", () => {
+  it("écrit `staff_user.activated` à la liaison d'une fiche en attente, la fiche pour auteur", async () => {
+    const journal = new AuthoredJournal();
+    const { prisma } = fakePrisma(null, row({ status: "pending" }));
+
+    await (await buildResolver(prisma, new MovableClock(NOW), journal)).resolve(TOKEN);
+
+    expect(journal.facts).toEqual([
+      {
+        type: "staff_user.activated",
+        subjectType: "staff_user",
+        subjectId: "s1",
+        payload: {
+          subjectLabel: "Colette Bréal",
+          person: { firstName: "Colette", lastName: "Bréal" },
+        },
+      },
+    ]);
+    expect(journal.authors).toEqual([{ type: "staff", id: "s1" }]);
+  });
+
+  it("n'écrit rien quand la fiche liée était déjà active — ce n'est pas une activation", async () => {
+    const journal = new AuthoredJournal();
+    const { prisma } = fakePrisma(null, row({ status: "active" }));
+
+    const access = await (
+      await buildResolver(prisma, new MovableClock(NOW), journal)
+    ).resolve(TOKEN);
+
+    expect(access?.staffUserId).toBe("s1");
+    expect(journal.facts).toEqual([]);
+  });
+
+  it("n'écrit rien pour la liaison PERDUE — le `sub` perdant n'est pas celui de la fiche", async () => {
+    const journal = new AuthoredJournal();
+    const { prisma } = fakePrisma(null, row({ status: "pending" }), true);
+
+    await (await buildResolver(prisma, new MovableClock(NOW), journal)).resolve(TOKEN);
+
+    expect(journal.facts).toEqual([]);
+  });
+
+  it("écrit `activated` aussi quand la fiche était DÉJÀ liée — l'invitation relie d'avance", async () => {
+    const journal = new AuthoredJournal();
+    const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "invited" }));
+
+    await (await buildResolver(prisma, new MovableClock(NOW), journal)).resolve(TOKEN);
+
+    expect(updates).toEqual([{ id: "s1", status: "active" }]);
+    expect(journal.types()).toEqual(["staff_user.activated"]);
+    expect(journal.authors).toEqual([{ type: "staff", id: "s1" }]);
+  });
+
+  /**
+   * Décision du 2026-09-19 : l'entrée d'une personne ne dépend jamais du
+   * journal. Une panne qui refuserait la connexion se répéterait à chaque
+   * requête tant que la fiche resterait `invited`.
+   */
+  it("journal en panne : la personne entre, le fait manque, l'erreur est journalisée", async () => {
+    const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "invited" }));
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        { provide: PrismaService, useValue: prisma },
+        { provide: Clock, useValue: new MovableClock(NOW) },
+        { provide: Journal, useValue: new RecordingJournal(new Error("journal en panne")) },
+        ObservedResolver,
+      ],
+    }).compile();
+    const resolver = moduleRef.get(ObservedResolver);
+
+    const access = await resolver.resolve(TOKEN);
+
+    expect(access?.staffUserId).toBe("s1");
+    expect(updates).toEqual([{ id: "s1", status: "active" }]);
+    expect(resolver.lost).toEqual(["s1"]);
   });
 });
 

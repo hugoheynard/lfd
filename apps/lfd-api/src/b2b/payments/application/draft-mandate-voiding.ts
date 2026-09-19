@@ -9,6 +9,7 @@ import type {
 import { MandateDraftVoidedEvent } from "../domain/events/payment-mandate.events.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { purgeVoidedDraftProof, type ProofPurgeDeps } from "./mandate-proof-purge.js";
+import { mandateCompanyOf } from "./mandate-journal-names.js";
 
 /** Les ports de la révocation seule — sans la purge, qui n'appartient pas à la transaction. */
 export interface DraftRevocationDeps {
@@ -136,7 +137,7 @@ async function recordVoided(
   await deps.events.publishTraced(
     new MandateDraftVoidedEvent(
       draft.id,
-      draft.companyId,
+      await mandateCompanyOf(deps.mandates, draft.companyId),
       draft.reference,
       trigger.cause,
       trigger.via,

@@ -9,8 +9,9 @@ import { ActorNamer, type ActorIdentity } from "../domain/ports/actor-namer.js";
 
 /**
  * Résout le nom d'un acteur au moment de l'acte : la fiche staff par le port
- * d'auteurs du bloc staff — id de fiche, `sub` actuel ou `sub` ancien (plan
- * `plan-l-auteur-est-la-fiche.md`, D4) —, le profil pour un client.
+ * d'auteurs du bloc staff — id de fiche, `sub` actuel ou `sub` ancien (
+ * `architecture-journalisation.md` §12, D4) —, le profil pour un client
+ * (son nom seulement, jamais son adresse).
  *
  * Une lecture par événement journalisé, et c'est assumé : la remplacer par une
  * jointure à l'affichage supposerait que le nom d'aujourd'hui vaut pour l'acte
@@ -45,16 +46,19 @@ export class PrismaActorNamer extends ActorNamer {
     if (type === "customer") {
       const user = await this.prisma.user.findUnique({
         where: { id },
-        select: { firstName: true, lastName: true, email: true },
+        select: { firstName: true, lastName: true },
       });
       if (user === null) {
         return NOBODY;
       }
-      // L'e-mail en secours : un client sans profil complet reste identifiable,
-      // et c'est sous cette forme qu'on le retrouve dans le reste de l'app.
+      // 🔴 Plus d'e-mail en secours (lot B du plan des phrases, 2026-09-19) :
+      // `actor_name` se fige au journal, et une coordonnée n'y entre pas. Un
+      // client sans nom saisi reste sans nom ; l'écran dit alors « un client »
+      // (`ACTOR_FALLBACK`, `product-history.ts` ; `journal-line.ts`), et son id
+      // reste en `actor_id` pour le retrouver.
       const name = fullName(user.firstName, user.lastName);
       // Pas de « fonction » pour un client : il n'en a pas dans le back-office.
-      return { name: name === "" ? user.email : name, role: null };
+      return { name: name === "" ? null : name, role: null };
     }
     return NOBODY;
   }

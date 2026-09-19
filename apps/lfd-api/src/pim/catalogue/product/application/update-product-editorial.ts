@@ -38,7 +38,7 @@ export class UpdateProductEditorialHandler implements ICommandHandler<
   ) {}
 
   async execute(command: UpdateProductEditorialCommand): Promise<void> {
-    await requireProduct(this.products, command.id);
+    const product = await requireProduct(this.products, command.id);
     // Une lecture de plus, assumée : contrairement à l'identité ou au tarif, la
     // couche éditoriale n'est pas portée par l'agrégat déjà chargé. Sans elle
     // la trace dirait « Communication enregistrée » sans dire quoi — c'est
@@ -54,7 +54,7 @@ export class UpdateProductEditorialHandler implements ICommandHandler<
               type: PIM_EVENTS.productEditorialSaved,
               subjectType: "product",
               subjectId: command.id,
-              payload: { changes },
+              payload: { subjectLabel: product.snapshot().name.fr, changes },
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.save(command.id, after, [], ticket);

@@ -102,7 +102,7 @@ rattraper personne.
 Au départ, les **abonnements push** de la fiche sont retirés : aujourd'hui
 tout abonnement reçoit toute notification (`prisma-staff-push-subscriptions.ts`,
 `all()`), et l'appareil d'une personne partie continuerait de les recevoir
-(relevé par la contradiction de [`plan-l-auteur-est-la-fiche.md`](plan-l-auteur-est-la-fiche.md), D9).
+(relevé par la contradiction de [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §12, D9).
 
 Après chaque geste (départ, passation, retour), le cache d'accès est vidé
 (`forgetAll`), comme le font déjà les handlers de statut.
@@ -286,10 +286,11 @@ rend possible ensemble.
 
 ## 6. Ce que ce plan ne fait pas
 
-- **Convertir l'auteur du journal** ou les autres colonnes d'auteur : le `sub`
-  reste un identifiant exact (D3). Le
-  [TODO du `sub`](journalisation-staff/todo-le-sub-comme-auteur.md) ne reste
-  ouvert que pour la fuite de donnée.
+- **Convertir l'auteur du journal** ou les autres colonnes d'auteur : c'est fait
+  à part, et livré le 2026-09-18 —
+  [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §12. Tout auteur
+  est l'id d'une fiche ; le D3 de ce plan garde sa seule raison de sécurité
+  (un jeton d'accès ne se révoque pas).
 - Les rôles éditables à l'écran, non lus par l'accès
   ([`architecture-acces-staff.md`](architecture-acces-staff.md) §13.1).
 

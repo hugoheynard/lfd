@@ -22,11 +22,10 @@ import {
   reorderPhotoCards,
   revisePhotoCard,
 } from "../photo-card-editing.js";
-import {
-  NOTHING_TO_TRACE,
-  type OrphanPhotoReason,
-  type PhotoCardUsage,
-} from "../photo-card-usage.js";
+import type { InTransaction, OrphanPhotoReason, PhotoCardUsage } from "../photo-card-usage.js";
+
+/** Une trace qui n'écrit rien : la mécanique se teste sans journal. */
+const NOTHING_TO_TRACE: InTransaction = () => Promise.resolve();
 
 /**
  * **La séquence d'écriture des cartes à photo**, sur un usage de test : un

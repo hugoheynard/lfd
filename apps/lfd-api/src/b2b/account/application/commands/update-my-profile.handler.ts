@@ -1,13 +1,17 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { UserProfile } from "../../domain/entities/user-profile.js";
 import {
   EmailAlreadyUsedError,
   UserProfileNotFoundError,
 } from "../../domain/errors/account-errors.js";
+import { UserProfileUpdatedEvent } from "../../domain/events/person-acts.event.js";
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { UserProfileRepository } from "../../domain/ports/user-profile.repository.js";
 import { UpdateMyProfileCommand } from "./update-my-profile.command.js";
+import { personName } from "../../domain/events/journal-names.js";
 
 /**
  * Enregistre le profil, et **propage l'e-mail à Auth0 avant** de l'écrire chez
@@ -18,12 +22,23 @@ import { UpdateMyProfileCommand } from "./update-my-profile.command.js";
  * connecter avec l'ancienne adresse tout en voyant la nouvelle — un état
  * incohérent, invisible, et pénible à diagnostiquer. En échouant d'abord, on ne
  * change rien du tout.
+ *
+ * `@hors-transaction` le changement d'adresse part chez Auth0 AVANT la
+ * transaction, qui ne peut pas l'annuler (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1). Le
+ * fait `user.profile_updated` s'écrit donc après sa réussite, dans la
+ * transaction du profil : un journal en panne n'écrit pas le profil, mais
+ * laisse l'adresse déjà changée chez Auth0 — le même écart qu'une panne de base
+ * après la propagation, que l'ordre ci-dessus accepte déjà, et que la personne
+ * voit à l'erreur.
  */
 @CommandHandler(UpdateMyProfileCommand)
 export class UpdateMyProfileHandler implements ICommandHandler<UpdateMyProfileCommand, void> {
   constructor(
     private readonly profiles: UserProfileRepository,
     private readonly identity: CustomerIdentityPort,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: UpdateMyProfileCommand): Promise<void> {
@@ -39,7 +54,20 @@ export class UpdateMyProfileHandler implements ICommandHandler<UpdateMyProfileCo
       await this.identity.changeEmail(command.subject, profile.email.value);
     }
 
-    await this.profiles.save(command.userId, profile);
+    const fields = profile.changedFieldsSince(current);
+    await this.uow.run(async () => {
+      await this.profiles.save(command.userId, profile);
+      // Un envoi sans changement réel n'affirme rien : pas de fait.
+      if (fields.length > 0) {
+        await this.events.publishTraced(
+          new UserProfileUpdatedEvent(
+            command.userId,
+            personName(profile.firstName.value, profile.lastName.value),
+            fields,
+          ),
+        );
+      }
+    });
   }
 
   /**

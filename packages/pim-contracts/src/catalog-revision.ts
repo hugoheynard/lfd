@@ -147,6 +147,22 @@ export interface CatalogRevisionCauseView {
    * non enregistrée, ce qui n'est pas « ça n'a rien touché ».
    */
   readonly blast: Readonly<Record<string, number>>;
+  /**
+   * **Le libellé du moment de chaque contexte de vente que `blast` compte par
+   * sa clé** — `{ brunch: "Brunch" }`, pour que l'écran dise « Brunch : 1 »
+   * plutôt que « brunch : 1 ».
+   *
+   * Relu de la charge du fait (`contextLabels`, figée à l'écriture depuis le
+   * lot D du plan des phrases du journal, 2026-09-19), et JAMAIS résolu à la
+   * lecture : un contexte renommé depuis se lit sous l'ancien nom. Une clé
+   * absente — une ligne d'avant, un contexte que le registre ne connaissait
+   * plus — se dit par sa clé, jamais par un nom inventé ; une clé de `blast`
+   * qui n'est pas un contexte (`articles`, `variants`) n'y figure jamais.
+   *
+   * Optionnel parce qu'il s'est ajouté à un contrat déjà servi (2026-09-19) :
+   * un lecteur qui l'ignore lit ce qu'il lisait.
+   */
+  readonly contextLabels?: Readonly<Record<string, string>>;
 }
 
 export interface CatalogRevisionDiffView {

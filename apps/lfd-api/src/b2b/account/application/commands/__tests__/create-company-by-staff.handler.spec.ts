@@ -119,7 +119,7 @@ describe("CreateCompanyByStaffHandler", () => {
     const declared = event as CompanyDeclaredEvent;
     expect(declared.companyId).toBe("company_unowned");
     expect(declared.via).toBe("staff");
-    expect(declared.ownerUserId).toBeNull();
+    expect(declared.owner).toBeNull();
   });
 
   it("porte le contact saisi par le staff, fonction incluse", async () => {

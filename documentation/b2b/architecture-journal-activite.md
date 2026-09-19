@@ -21,6 +21,12 @@ taux, une publication et une commande appartiennent à la même histoire.
 Le journal est donc **un**, et « PIM » n'est pas un emplacement mais un
 **filtre**.
 
+> ⚠️ **Précisé le 2026-09-18** : la tarification garde en plus sa propre table,
+> `public.pricing_events`, append-only — mais chaque acte tarifaire y est écrit
+> **et** au journal commun, dans la même transaction. Ce n'est pas une seconde
+> vérité, c'est une preuve de domaine doublée d'une chronique commune. La vue
+> d'ensemble : [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §7.
+
 ```mermaid
 flowchart LR
   subgraph Émetteurs
@@ -244,6 +250,11 @@ traverse les modules, donc le ranger sous l'un d'eux donnerait son activité aux
 autres par la bande. Élargir plus tard — la tranche fiscale à la comptabilité,
 par exemple — reste facile ; reprendre un accès déjà donné, non.
 
+La tranche fiscale a pris cette voie le 2026-09-19, **sans** élargir
+`activity` : une route à part, `GET /admin/activity/tax`, sous `pim_tax:write`
+exigée explicitement, bornée au serveur à une liste fermée de types
+([`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §8).
+
 `admin` porte aussi `activity:write`, qu'aucune route ne vérifiera jamais : le
 journal est append-only. C'est le prix de l'invariant qui compte le plus,
 « l'administrateur couvre tout le catalogue, sans trou », qu'un test attrape.
@@ -258,4 +269,4 @@ best-effort, et par décision : le parcours du client, le chemin de commande et
 les webhooks de paiement — là, le client passe avant la mémoire.
 
 Le détail, les seuils et l'ordre :
-[`../todos/todo-journal-activite.md`](../todos/todo-journal-activite.md).
+[`../journalisation/todo-journal-activite.md`](../journalisation/todo-journal-activite.md).

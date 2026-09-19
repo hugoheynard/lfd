@@ -68,8 +68,17 @@ export function momentumOf(orderDates: readonly Date[], now: Date): MomentumTraj
  * Exclut les personnes qui **transactent pour une société** (une commande au
  * `companyId` non nul) : elles ne sont plus de simples prospects. Trie hot avant
  * mid, puis par récence (le plus frais d'abord).
+ *
+ * @param emails l'adresse de chaque personne, lue sur sa fiche
+ *   (`CustomerEmailReader`). Le journal ne la porte plus depuis le lot B du
+ *   plan des phrases (2026-09-19) ; seules les lignes `user.registered`
+ *   d'avant la recopiaient, et elles ne servent qu'en dernier recours.
  */
-export function deriveProspects(events: readonly ProspectEvent[], now: Date): ProspectView[] {
+export function deriveProspects(
+  events: readonly ProspectEvent[],
+  now: Date,
+  emails: ReadonlyMap<string, string> = new Map(),
+): ProspectView[] {
   const bySubject = new Map<string, ProspectEvent[]>();
   for (const event of events) {
     const bucket = bySubject.get(event.subjectId) ?? [];
@@ -89,7 +98,7 @@ export function deriveProspects(events: readonly ProspectEvent[], now: Date): Pr
     const lastOrderAt = orders.length > 0 ? maxDate(orders.map((order) => order.occurredAt)) : null;
     const anchor = lastOrderAt ?? firstSeenAt;
 
-    const email = latestEmail(subjectEvents);
+    const email = emails.get(subjectId) ?? registeredEmail(subjectEvents);
     prospects.push({
       subjectId,
       email,
@@ -178,8 +187,13 @@ function byTemperatureThenRecency(a: ProspectView, b: ProspectView): number {
   return a.recencyDays - b.recencyDays;
 }
 
-/** Le dernier e-mail porté par une inscription, ou chaîne vide. */
-function latestEmail(events: readonly ProspectEvent[]): string {
+/**
+ * L'e-mail qu'une inscription **ancienne** recopiait dans sa charge, ou chaîne
+ * vide. Le repli d'une personne que sa fiche ne nomme plus : les lignes
+ * écrites depuis le lot B (2026-09-19) ne le portent pas, et le journal ne se
+ * réécrit pas — celles d'avant le gardent, et c'est tout ce qu'on en lit.
+ */
+function registeredEmail(events: readonly ProspectEvent[]): string {
   const registrations = events
     .filter((event) => event.type === ACTIVITY_TYPES.userRegistered)
     .sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());

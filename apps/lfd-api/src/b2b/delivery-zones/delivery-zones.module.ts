@@ -1,10 +1,8 @@
 import { Module } from "@nestjs/common";
 
-import {
-  CreateDeliveryZoneHandler,
-  RemoveDeliveryZoneHandler,
-  UpdateDeliveryZoneHandler,
-} from "./application/delivery-zone.handlers.js";
+import { CreateDeliveryZoneHandler } from "./application/create-delivery-zone.handler.js";
+import { RemoveDeliveryZoneHandler } from "./application/remove-delivery-zone.handler.js";
+import { UpdateDeliveryZoneHandler } from "./application/update-delivery-zone.handler.js";
 import { ListDeliveryZonesHandler } from "./application/list-delivery-zones.handler.js";
 import { DeliveryZoneRepository } from "./domain/delivery-zone.repository.js";
 import { PrismaDeliveryZoneRepository } from "./infrastructure/prisma-delivery-zone.repository.js";

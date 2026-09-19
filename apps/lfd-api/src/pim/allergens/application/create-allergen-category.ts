@@ -55,7 +55,12 @@ export class CreateAllergenCategoryHandler implements ICommandHandler<
         type: PIM_EVENTS.allergenCategoryCreated,
         subjectType: "allergen_category",
         subjectId: created.id,
-        payload: { key: created.key, name: created.name, position: created.position },
+        payload: {
+          subjectLabel: created.name.fr,
+          key: created.key,
+          name: created.name,
+          position: created.position,
+        },
       });
       await this.categories.add(category, ticket);
     });

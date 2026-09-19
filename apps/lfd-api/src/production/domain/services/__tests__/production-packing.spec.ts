@@ -191,7 +191,7 @@ describe("les bacs", () => {
       packedAt: PACKED.at.toISOString(),
       packedBy: "auth0|karim",
       // Le nom, résolu par l'annuaire : l'écran ne montre plus le `sub`
-      // (plan `plan-l-auteur-est-la-fiche.md`, D3).
+      // (`architecture-journalisation.md` §12, D3).
       packedByName: "Karim Benali",
     });
     expect(board.sheets[0]?.lines[0]?.packed).toBe(false);

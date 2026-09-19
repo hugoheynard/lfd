@@ -30,17 +30,18 @@ export class ChangeLeadStatusHandler implements ICommandHandler<ChangeLeadStatus
     }
     lead.moveTo(command.status, this.clock.now());
     await this.leads.save(lead);
-    await this.journal(command.leadId, command.status);
+    await this.journal(command.leadId, lead.businessName, command.status);
   }
 
-  private journal(leadId: string, status: Exclude<LeadStatus, "new">): Promise<void> {
+  /** `name` : l'enseigne du lead au moment du geste, figée en nom du sujet. */
+  private journal(leadId: string, name: string, status: Exclude<LeadStatus, "new">): Promise<void> {
     if (status === "converted") {
       return this.recorder.record({
         type: ACTIVITY_TYPES.leadConverted,
         subjectType: "lead",
         subjectId: leadId,
         idempotencyKey: `${ACTIVITY_TYPES.leadConverted}:${leadId}`,
-        payload: { via: "manual" },
+        payload: { subjectLabel: name, via: "manual" },
       });
     }
     if (status === "lost") {
@@ -49,7 +50,7 @@ export class ChangeLeadStatusHandler implements ICommandHandler<ChangeLeadStatus
         subjectType: "lead",
         subjectId: leadId,
         idempotencyKey: `${ACTIVITY_TYPES.leadLost}:${leadId}`,
-        payload: {},
+        payload: { subjectLabel: name },
       });
     }
     return this.recorder.record({
@@ -57,7 +58,7 @@ export class ChangeLeadStatusHandler implements ICommandHandler<ChangeLeadStatus
       subjectType: "lead",
       subjectId: leadId,
       idempotencyKey: `${ACTIVITY_TYPES.leadStageChanged}:${leadId}:${status}`,
-      payload: { status },
+      payload: { subjectLabel: name, status },
     });
   }
 }

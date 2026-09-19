@@ -15,10 +15,11 @@ import type { SepaScheme } from "./legal-entity.js";
  * section paiement meurt chez quelqu'un qui n'a rien demandé. Le libellé doit
  * donc être en ligne AVANT que la base puisse produire l'état.
  *
- * `active` seul autorise un prélèvement. `pending` existe parce que Stripe peut
- * rendre un mandat non encore actif ; `revoked` est notre geste (le client
- * retire son autorisation, ou on remplace le mandat) ; `failed` vient de la
- * banque. Un mandat ne s'efface jamais : il se date — c'est ce qui permet de
+ * `active` seul autorise un prélèvement. `revoked` est notre geste (le client
+ * retire son autorisation, ou on remplace le mandat). `pending` et `failed`
+ * sont des états de l'époque Stripe : plus aucun code ne les écrit depuis la
+ * suppression des mandats Stripe (2026-09-19). Ils restent dans l'enum parce
+ * que c'est une valeur de base et un contrat servi. Un mandat ne s'efface jamais : il se date — c'est ce qui permet de
  * répondre, deux ans plus tard, à « sur quelle autorisation avez-vous prélevé ? ».
  */
 export const mandateStatusSchema = z.enum(["draft", "pending", "active", "revoked", "failed"]);
@@ -80,7 +81,7 @@ export interface PaymentMandateView {
   readonly scheme: SepaScheme;
   /** 4 derniers chiffres de l'IBAN, pour reconnaître le compte. */
   readonly last4: string;
-  /** Code banque (BIC court), vide si Stripe ne l'a pas rendu. */
+  /** Code banque (BIC court) ; vide pour un mandat frappé chez nous, qui ne le pose pas. */
   readonly bankCode: string;
   /** Pays du compte (ISO 2 lettres), vide si inconnu. */
   readonly country: string;
@@ -146,16 +147,16 @@ export interface CustomerMandateView {
 
 /**
  * Tout ce dont la section « Moyens de paiement » a besoin, en une lecture : le
- * mandat courant (`null` si la société n'en a jamais eu, le cas ordinaire) et la
- * clé **publique** Stripe pour monter l'IBAN Element.
- *
- * La clé voyage avec la vue plutôt que par une variable de build : elle suit
- * l'environnement du backend, et un back-office pointé sur le mauvais compte
- * Stripe enregistrerait des mandats dans le vide. Rien de secret — `pk_…` est
- * faite pour le bundle.
+ * mandat courant (`null` si la société n'en a jamais eu, le cas ordinaire), ce
+ * qui empêche de le frapper, et le schéma de l'émetteur.
  */
 export interface MandateSectionView {
   readonly mandate: PaymentMandateView | null;
+  /**
+   * @deprecated Vestige des mandats Stripe (supprimés le 2026-09-19) : servait
+   * à monter l'IBAN Element. Plus rien ne le lit pour un mandat ; il reste servi
+   * tant que le back-office déployé le lit, et se retire après son déploiement.
+   */
   readonly publishableKey: string;
   /**
    * Ce qui empêche aujourd'hui de **frapper** un mandat pour cette société —

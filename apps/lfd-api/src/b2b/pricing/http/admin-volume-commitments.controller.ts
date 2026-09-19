@@ -11,10 +11,8 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  CloseVolumeCommitmentCommand,
-  SignVolumeCommitmentCommand,
-} from "../application/commands/volume-commitment.handlers.js";
+import { CloseVolumeCommitmentCommand } from "../application/commands/close-volume-commitment.command.js";
+import { SignVolumeCommitmentCommand } from "../application/commands/sign-volume-commitment.command.js";
 import { ListVolumeCommitmentsQuery } from "../application/queries/list-volume-commitments.query.js";
 import type { CreatedIdResponse } from "@lfd/contracts";
 

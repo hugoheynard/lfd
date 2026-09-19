@@ -48,7 +48,11 @@ export class CorrectLegalEntityHandler implements ICommandHandler<CorrectLegalEn
       // Ce que le journal seul peut dire : QUAND la fiche a changé — ce qui date
       // les documents produits de part et d'autre de la correction.
       await this.events.publishTraced(
-        new LegalEntityCorrectedEvent(command.legalEntityId, at, payload.name),
+        new LegalEntityCorrectedEvent(
+          { id: command.legalEntityId, name: entity.name },
+          at,
+          payload.name,
+        ),
       );
     });
   }

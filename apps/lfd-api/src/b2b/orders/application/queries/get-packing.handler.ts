@@ -37,7 +37,7 @@ export class GetPackingHandler implements IQueryHandler<GetPackingQuery, OrderPa
 
 /**
  * Projette l'état lu en vue de fournil, refus compris. `authors` nomme qui l'a
- * déclarée prête (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ * déclarée prête (`architecture-journalisation.md` §12, D3).
  */
 export function toPackingView(order: PackingOrder, authors: StaffAuthors): OrderPackingView {
   return {

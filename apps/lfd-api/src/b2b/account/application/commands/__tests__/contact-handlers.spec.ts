@@ -1,3 +1,5 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import {
   CompanyAdminRequiredError,
   CompanyNotFoundError,
@@ -20,6 +22,12 @@ import {
 import { RemoveCompanyContactHandler } from "../remove-company-contact.handler.js";
 import { UpdateCompanyContactHandler } from "../update-company-contact.handler.js";
 import { UpdatePrimaryContactHandler } from "../update-primary-contact.handler.js";
+import { journalNames } from "./member-acts-doubles.js";
+
+/** Les noms que les faits figent : lus dans une société témoin, sans rien écrire. */
+function names() {
+  return journalNames(companiesRecorder({ writes: [] }));
+}
 
 /** Un interlocuteur du carnet — distinct du détenteur de la société témoin. */
 const DETAILS = {
@@ -139,6 +147,8 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const handler = new UpdatePrimaryContactHandler(
       membershipReturning("owner"),
       companiesRecorder(recorder),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
     );
 
     await handler.execute(new UpdatePrimaryContactCommand("u1", "c1", DETAILS));
@@ -147,7 +157,13 @@ describe("handlers de contacts — le mur owner/admin", () => {
 
   it("un non-membre reçoit 404 et rien n'est écrit", async () => {
     const recorder: Recorder = { writes: [] };
-    const handler = new AddCompanyContactHandler(membershipReturning(null), bookRecorder(recorder));
+    const handler = new AddCompanyContactHandler(
+      membershipReturning(null),
+      bookRecorder(recorder),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      names(),
+    );
 
     await expect(
       handler.execute(new AddCompanyContactCommand("u1", "c1", DETAILS, "orders")),
@@ -160,6 +176,9 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const handler = new UpdateCompanyContactHandler(
       membershipReturning("orders"),
       bookRecorder(recorder),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      names(),
     );
 
     await expect(
@@ -172,16 +191,22 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const recorder: Recorder = { writes: [] };
     const admin = membershipReturning("owner");
     const book = bookRecorder(recorder);
+    const events = new RecordingPublisher();
+    const uow = new DirectUnitOfWork();
 
-    await new AddCompanyContactHandler(admin, book).execute(
+    await new AddCompanyContactHandler(admin, book, events, uow, names()).execute(
       new AddCompanyContactCommand("u1", "c1", DETAILS, "orders"),
     );
-    await new UpdateCompanyContactHandler(admin, book).execute(
+    await new UpdateCompanyContactHandler(admin, book, events, uow, names()).execute(
       new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS, "orders"),
     );
-    await new RemoveCompanyContactHandler(admin, contactsRecorder(recorder)).execute(
-      new RemoveCompanyContactCommand("u1", "c1", "ct1"),
-    );
+    await new RemoveCompanyContactHandler(
+      admin,
+      contactsRecorder(recorder),
+      events,
+      uow,
+      names(),
+    ).execute(new RemoveCompanyContactCommand("u1", "c1", "ct1"));
 
     expect(recorder.writes).toEqual(["add", "update", "remove"]);
   });

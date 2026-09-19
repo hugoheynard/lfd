@@ -1,12 +1,15 @@
 import type { CompanyMemberInvitedView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { CompanyAccessOpenedEvent } from "../../domain/events/person-acts.event.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyMemberReader } from "../../domain/ports/company-member.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { toMemberView } from "../queries/company-member.view.js";
 import { AccountAccessGranter } from "../services/grant-account-access.service.js";
 import { InviteCompanyMemberCommand } from "./invite-company-member.command.js";
+import { companyNamed, personName, personRef } from "../../domain/events/journal-names.js";
 
 /**
  * Ouvre un accès, et rend **le membre tel qu'il est ensuite**.
@@ -19,6 +22,13 @@ import { InviteCompanyMemberCommand } from "./invite-company-member.command.js";
  * Ici, contrairement à l'ouverture d'un compte, un échec du fournisseur
  * d'identité **remonte** : l'invitation est le seul but de l'appel. L'avaler
  * laisserait croire à un accès ouvert qui n'existe pas.
+ *
+ * `@hors-transaction` l'ouverture d'accès appelle le fournisseur d'identité et
+ * le mailer, qu'aucune transaction de base n'annule. Le fait
+ * `company.access_opened` s'écrit donc APRÈS sa réussite (depuis le
+ * 2026-09-19 — `GrantAccountAccess` ne journalise rien, vérifié ce jour-là) :
+ * un journal en panne échoue la requête sans défaire l'accès, et le même geste
+ * repasse — l'ouverture est idempotente sur l'adresse.
  */
 @CommandHandler(InviteCompanyMemberCommand)
 export class InviteCompanyMemberHandler implements ICommandHandler<
@@ -29,6 +39,7 @@ export class InviteCompanyMemberHandler implements ICommandHandler<
     private readonly companies: CompanyRepository,
     private readonly members: CompanyMemberReader,
     private readonly access: AccountAccessGranter,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: InviteCompanyMemberCommand): Promise<CompanyMemberInvitedView> {
@@ -47,6 +58,14 @@ export class InviteCompanyMemberHandler implements ICommandHandler<
       role: command.role,
       invitedBy: command.invitedBy,
     });
+
+    await this.events.publishTraced(
+      new CompanyAccessOpenedEvent(
+        companyNamed(command.companyId, company),
+        personRef(granted.userId, personName(command.firstName, command.lastName)),
+        command.role,
+      ),
+    );
 
     // Relu depuis la liste : c'est la même source que l'écran, donc pas de
     // divergence possible entre ce qu'on annonce et ce qu'il affichera ensuite.

@@ -42,6 +42,7 @@ import { UpdateProductIdentityHandler } from "./product/application/update-produ
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
+import { PointsOfSaleModule } from "../points-of-sale/points-of-sale.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "./shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
@@ -78,6 +79,10 @@ import { PrismaEditorialRepository } from "./product/infrastructure/prisma-edito
 import { PrismaMediaLibrary } from "./product/infrastructure/prisma-media-library.js";
 import { PrismaNutritionRepository } from "./product/infrastructure/prisma-nutrition.repository.js";
 import { PrismaProductRepository } from "./product/infrastructure/prisma-product.repository.js";
+import { GetProductHistoryHandler } from "./history/application/get-product-history.js";
+import { ProductLineageReader } from "./history/domain/ports/product-lineage.reader.js";
+import { ProductHistoryController } from "./history/http/product-history.controller.js";
+import { PrismaProductLineageReader } from "./history/infrastructure/prisma-product-lineage.reader.js";
 import {
   PrismaSkuAvailability,
   SKU_AVAILABILITY,
@@ -100,6 +105,7 @@ import {
     VatRatesModule,
     SalesContextsModule,
     AccountingRulesModule,
+    PointsOfSaleModule,
   ],
   controllers: [
     CatalogRevisionController,
@@ -107,6 +113,7 @@ import {
     MediaController,
     MediaSweepController,
     ProductController,
+    ProductHistoryController,
     ReferenceController,
   ],
   providers: [
@@ -144,6 +151,9 @@ import {
     PublishProductHandler,
     UnpublishProductHandler,
     GetProductDetailHandler,
+    // L'onglet « Historique » : la lignée ici, le journal par le port global.
+    GetProductHistoryHandler,
+    { provide: ProductLineageReader, useClass: PrismaProductLineageReader },
     { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
     // Deux LECTURES posées hors du dépôt des familles : le compte de fiches

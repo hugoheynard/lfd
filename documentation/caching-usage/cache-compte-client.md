@@ -327,7 +327,7 @@ annoncer, pas à glisser.
 
 `ProductCatalogReader.all()` n'est pas un port d'affichage. Il est appelé par
 `SetPriceFloorHandler` et `ConfirmPriceFloorHandler`
-(`pricing.handlers.ts:115`), dont la médiane est **figée dans
+(`set-price-floor.handler.ts`, ex-`pricing.handlers` découpé le 2026-09-19), dont la médiane est **figée dans
 `PricingFloor.pose()`** et sert, six mois plus tard, à dire que l'intention a
 vieilli. Le même adaptateur sert aussi `place-order` par `resolveMany`.
 

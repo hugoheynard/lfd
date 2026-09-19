@@ -13,6 +13,8 @@ export type ActivationStep = "vat" | "kbis" | "billing" | "delivery";
 export class CompanyStepReachedEvent {
   constructor(
     readonly companyId: string,
+    /** Le nom de la société au moment de l'étape (lot B du plan des phrases). */
+    readonly companyName: string,
     readonly step: ActivationStep,
   ) {}
 }

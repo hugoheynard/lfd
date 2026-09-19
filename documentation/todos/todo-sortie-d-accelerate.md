@@ -27,18 +27,20 @@
 - [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe — ✅
       générées le 2026-09-19 ; reste à relever la **région** et la **limite de
       connexions** du plan.
-- [ ] **GitHub** (Hugo, geste 3, par l'interface) : créer
-      `DATABASE_LFD_PROD_DIRECT_URL` — ✅ créé le 2026-09-19 ; créer
-      `DATABASE_LFD_PROD_URL` (URL mutualisée) ; copier la valeur actuelle de `DATABASE_LFD_URL`
+- [x] **GitHub** (Hugo, geste 3, par l'interface) : créer
+      `DATABASE_LFD_PROD_DIRECT_URL` et `DATABASE_LFD_PROD_URL` (URL
+      mutualisée) — ✅ créés le 2026-09-19 ; copier la valeur actuelle de `DATABASE_LFD_URL`
       dans le gestionnaire de mots de passe.
-- [ ] **Merge** (Claude, geste 4) : batterie verte ; l'API se redéploie **encore
+- [x] **Merge** (Claude, geste 4) — déployé le 2026-09-19 (`137b063f`, sans le
+      reste de `dev`) : migration par `db.prisma.io`, `/health` → `accelerate` : batterie verte ; l'API se redéploie **encore
       sur Accelerate**, `/health` doit publier `accelerate`.
 
 ## Le week-end
 
 - ~~(option A) **Répétition** sur la seconde base (geste 5)~~ — sans objet,
   option B retenue le 2026-09-19.
-- [ ] **La bascule** (geste 6) : Claude pousse UN commit — la synchro lit
+- [x] **La bascule** (geste 6) — déployée le 2026-09-19 au soir (`07fff0c4`) :
+      `/health` → `"database":"pg"`, révision `07fff0c`, contrôles verts : Claude pousse UN commit — la synchro lit
       `DATABASE_LFD_PROD_URL` (URL mutualisée), le contrôle attend `pg` ; le
       déploiement échoue si `/health` ne le publie pas.
 - [ ] **Vérifier** (geste 7) : contrôle du mur, sonde `postgres-b2b`, écran

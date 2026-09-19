@@ -10,6 +10,10 @@ import { CaptureLeadCommand } from "./capture-lead.command.js";
  * Saisit un lead cold : construit l'agrégat (`Lead.capture`, qui valide),
  * persiste, puis **journalise `lead.captured`** (démarchage tracé dans le journal
  * comme tout le reste). Rend l'id créé.
+ *
+ * Sans l'e-mail depuis le 2026-09-19 (lot B du plan des phrases) : une
+ * coordonnée n'a rien à faire au journal, et le lead la garde sur sa ligne.
+ * L'enseigne y est deux fois — `businessName`, et le nom du sujet.
  */
 @CommandHandler(CaptureLeadCommand)
 export class CaptureLeadHandler implements ICommandHandler<CaptureLeadCommand, string> {
@@ -26,7 +30,7 @@ export class CaptureLeadHandler implements ICommandHandler<CaptureLeadCommand, s
       subjectType: "lead",
       subjectId: id,
       idempotencyKey: `${ACTIVITY_TYPES.leadCaptured}:${id}`,
-      payload: { businessName: lead.businessName, email: lead.email },
+      payload: { subjectLabel: lead.businessName, businessName: lead.businessName },
     });
     return id;
   }

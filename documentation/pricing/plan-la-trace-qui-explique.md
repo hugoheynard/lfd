@@ -397,7 +397,7 @@ parser un libellé d'affichage pour tenir un litige.
 Mais la vraie découverte est l'inverse, et elle vaut mieux : **la fenêtre,
 l'audience et la portée d'une règle ne changent jamais.** Les commandes qui
 existent sont `Create`, `Pause`, `Resume`, `Archive`, `Rename` — et rien d'autre
-(vérifié dans `pricing.commands.ts` le 2026-09-09) ; un barème ou une mercuriale
+(vérifié dans les commandes de tarification le 2026-09-09 — l'ancien fichier groupé, découpé en un fichier par commande le 2026-09-19) ; un barème ou une mercuriale
 qu'on repose prend un **nouvel identifiant** ; et `archive()` **borne `validTo`**
 au lieu de l'effacer.
 

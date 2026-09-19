@@ -15,11 +15,9 @@ import {
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  CreateIngredientCommand,
-  RemoveIngredientCommand,
-  UpdateIngredientCommand,
-} from "../application/ingredient-handlers.js";
+import { CreateIngredientCommand } from "../application/create-ingredient.js";
+import { RemoveIngredientCommand } from "../application/remove-ingredient.js";
+import { UpdateIngredientCommand } from "../application/update-ingredient.js";
 import { ListIngredientsQuery } from "../application/list-ingredients.js";
 import { ReadProductIngredientAllergensQuery } from "../application/read-product-ingredient-allergens.js";
 import { ReadProductIngredientsQuery } from "../application/read-product-ingredients.js";

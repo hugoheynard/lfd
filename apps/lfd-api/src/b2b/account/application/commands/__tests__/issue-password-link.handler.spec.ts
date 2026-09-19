@@ -1,8 +1,10 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { CustomerIdentityPort } from "../../../domain/ports/customer-identity.port.js";
 import { PendingAccessNotFoundError } from "../../../domain/errors/account-errors.js";
 import { PendingAccessReader } from "../../../domain/ports/pending-access.reader.js";
 import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
 import { IssuePasswordLinkHandler } from "../issue-password-link.handler.js";
+import { journalNames } from "./member-acts-doubles.js";
 
 function reader(subject: string | null): PendingAccessReader {
   return {
@@ -30,6 +32,8 @@ describe("fabriquer un lien à remettre à la main", () => {
       reader("auth0|abc"),
       identity("https://auth/ticket-neuf", issued),
       { now: () => new Date("2026-08-14T09:00:00.000Z") },
+      new RecordingPublisher(),
+      journalNames(),
     );
 
     const link = await handler.execute(new IssuePasswordLinkCommand("usr_1"));
@@ -45,9 +49,13 @@ describe("fabriquer un lien à remettre à la main", () => {
     // de la file et le clic. Lui fabriquer un lien reviendrait à offrir de quoi
     // le réinitialiser sans qu'elle ait rien demandé.
     const issued: string[] = [];
-    const handler = new IssuePasswordLinkHandler(reader(null), identity("https://auth/x", issued), {
-      now: () => new Date("2026-08-14T09:00:00.000Z"),
-    });
+    const handler = new IssuePasswordLinkHandler(
+      reader(null),
+      identity("https://auth/x", issued),
+      { now: () => new Date("2026-08-14T09:00:00.000Z") },
+      new RecordingPublisher(),
+      journalNames(),
+    );
 
     await expect(handler.execute(new IssuePasswordLinkCommand("usr_1"))).rejects.toThrow(
       PendingAccessNotFoundError,

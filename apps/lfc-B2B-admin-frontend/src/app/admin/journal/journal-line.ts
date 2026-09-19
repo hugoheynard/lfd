@@ -1,7 +1,12 @@
 import type { ActivityEventView, ActivityModule } from '@lfd/contracts';
 
+import { contextWord } from '../../shared/journal/context-word';
+import { count, optional, recordOf, type Payload } from '../../shared/journal/payload-read';
+import { actorBy, inSentence } from '../../shared/journal/phrase';
+import { renderFact } from '../../shared/journal/render-fact';
+import { factWhen, formatCount, formatNumber } from '../../shared/journal/units';
+
 import type { JournalLine } from './journal.service';
-import { staffLineOf } from './staff-line';
 
 /**
  * Le nom lisible de chaque module. Le badge affichait la clé brute (`comptes`,
@@ -15,52 +20,48 @@ export const MODULE_LABELS: Readonly<Record<ActivityModule, string>> = {
   commandes: 'Commandes',
   comptes: 'Comptes clients',
   equipe: 'Équipe',
+  production: 'Production',
+  comptabilite: 'Comptabilité',
 };
 
+/** Les clés que la ligne affiche hors de la phrase : le client d'une commande. */
+const CLIENT_KEYS = ['clientName', 'clientLegalName'];
+
+/** La portée, quand la méta la dit : le détail ne la répète pas. */
+const BLAST_KEY = 'blast';
+
 /**
- * Traduit un fait du journal en **phrase**.
+ * Traduit un fait du journal en **ligne** : la phrase du moteur
+ * (`shared/journal/render-fact.ts`), son détail, et la méta — quand, par qui,
+ * pour qui.
  *
  * Le journal stocke des types et des payloads ; un écran qui les affiche tels
  * quels oblige son lecteur à faire la traduction de tête, à chaque ligne. Le
  * type reste visible à côté — c'est lui qui sert à filtrer — mais ce qu'on lit
- * d'abord est ce qui s'est passé.
- *
- * Un type inconnu n'est pas une erreur : le journal est ouvert, un module peut
- * en émettre un que cet écran ne connaît pas encore. On rend alors le type
- * lui-même, ce qui reste vrai.
+ * d'abord est ce qui s'est passé. Un type que l'écran ne connaît pas encore a
+ * le repli du moteur, jamais son code seul.
  */
 export function toLine(event: ActivityEventView): JournalLine {
-  // Les faits de l'équipe se lisent en titre + phrase à la voix active, qui
-  // nomme déjà l'auteur : la méta ne le répète pas.
-  const staff = staffLineOf(event);
+  const forWhom = forWhomOf(event);
+  const blast = blastOf(event.payload);
+  const fact = renderFact(event, [
+    ...(forWhom === '' ? [] : CLIENT_KEYS),
+    ...(blast === '' ? [] : [BLAST_KEY]),
+  ]);
   return {
     event,
-    title: staff?.title ?? '',
-    sentence: staff?.sentence ?? sentenceOf(event),
-    sentenceNamesActor: staff !== null,
+    title: fact.title ?? '',
+    segments: fact.segments,
+    sentence: fact.sentence,
+    detail: fact.detail,
+    // Une phrase à la voix active nomme déjà l'auteur : la méta ne le répète pas.
+    sentenceNamesActor: fact.namesActor,
     moduleLabel: event.module === null ? '' : MODULE_LABELS[event.module],
-    when: whenOf(event.occurredAt),
-    actor: actorOf(event),
-    forWhom: forWhomOf(event),
-    blast: blastOf(event),
+    when: factWhen(event.occurredAt),
+    actor: actorBy(event.actorName, event.actorRole, event.actorType),
+    forWhom,
+    blast,
   };
-}
-
-/**
- * « 21 août 2026 à 14:32 ». Le journal affichait l'ISO brut, ce qui est lisible
- * par une machine et par personne d'autre — or il est fait pour être lu par des
- * humains. Heure **locale** : celui qui lit cherche « ce qui s'est passé ce
- * matin », pas un instant UTC.
- */
-function whenOf(iso: string): string {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) {
-    return iso;
-  }
-  return new Intl.DateTimeFormat('fr-FR', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-  }).format(at);
 }
 
 /**
@@ -78,206 +79,59 @@ function forWhomOf(event: ActivityEventView): string {
   return legal === null || legal === name ? name : `${name} (${legal})`;
 }
 
-function sentenceOf(event: ActivityEventView): string {
-  const p = event.payload;
-  switch (event.type) {
-    case 'vat_rate.created':
-      return `Taux de TVA « ${text(p['name'])} » créé à ${percent(p['percent'])}`;
-    case 'vat_rate.rate_changed':
-      return `Taux de « ${text(p['name'])} » passé de ${percent(p['from'])} à ${percent(p['to'])}`;
-    case 'vat_rate.renamed':
-      return `Taux « ${text(p['from'])} » renommé « ${text(p['to'])} »`;
-    case 'vat_rate.deleted':
-      return `Taux de TVA « ${text(p['name'])} » supprimé (${percent(p['percent'])})`;
-    case 'product_category.vat_changed':
-      return 'Taux de TVA d’une famille modifiés';
-    case 'order.placed':
-      // Le NUMÉRO d'abord : c'est par lui qu'on retrouve une commande, pas par
-      // son identifiant technique.
-      return `Commande ${text(p['orderNumber'])} passée`;
-    case 'product.published':
-      return `Produit « ${text(p['name'])} » publié au catalogue (${text(p['sku'])})`;
-    case 'product.unpublished':
-      return `Produit « ${text(p['name'])} » retiré de la vente (${text(p['sku'])})`;
-    case 'company.client_note_edited_by_staff':
-      return clientNoteSentence(p['action']);
-    default:
-      return pricingSentence(event) ?? settingSentence(event) ?? event.type;
-  }
-}
-
 /**
- * La portée, telle qu'elle a été figée. On n'affiche que ce qui a été compté —
- * une portée absente n'est pas un zéro, c'est un fait qui n'en avait pas.
+ * La portée, telle qu'elle a été figée : « touche 12 familles à emporter,
+ * 3 sur place, 40 articles ». On n'affiche que ce qui a été compté — une
+ * portée absente n'est pas un zéro, c'est un fait qui n'en avait pas.
+ *
+ * Trois formes en base (vérifié le 2026-09-19) :
+ *
+ * - `{ families: { <contexte>: n }, variants?, articles? }` — depuis le
+ *   2026-08-24 (`5d526662`), la forme du catalogue (`blast()`) ;
+ * - `{ familiesEmporter, familiesSurPlace, familiesB2b }` — du 2026-08-21
+ *   (`6959131d`) au 2026-08-24. Le catalogue ne la connaît PAS : une telle
+ *   ligne ne répond à aucune de ses formes, et c'est ici seulement qu'on la lit ;
+ * - les clés de contexte `emporter` / `surPlace` d'avant le 2026-08-26, que la
+ *   migration de renommage n'a pas reprises dans les charges.
  */
-function blastOf(event: ActivityEventView): string {
-  const blast = event.payload['blast'];
-  if (typeof blast !== 'object' || blast === null || Array.isArray(blast)) {
+function blastOf(payload: Payload): string {
+  const blast = recordOf(payload[BLAST_KEY]);
+  if (blast === null) {
     return '';
   }
-  const counts: Record<string, unknown> = { ...blast };
-  const parts: string[] = [];
-  const emporter = count(counts['familiesEmporter']);
-  const surPlace = count(counts['familiesSurPlace']);
-  const variants = count(counts['variants']);
-  if (emporter !== null) {
-    parts.push(`${emporter} famille(s) à emporter`);
-  }
-  if (surPlace !== null) {
-    parts.push(`${surPlace} sur place`);
-  }
-  if (variants !== null) {
-    parts.push(`${variants} article(s)`);
-  }
-  return parts.join(' · ');
-}
-
-/**
- * Qui a agi. Le nom a été figé au moment de l'acte ; quand l'annuaire ne le
- * connaissait pas, on rend sa **nature** — ce qui reste vrai — plutôt qu'un
- * identifiant technique au milieu d'une phrase.
- */
-function actorOf(event: ActivityEventView): string {
-  const name = optional(event.actorName);
-  if (name !== null) {
-    // La fonction entre parenthèses : « qui a fait ça, et à quel titre » est la
-    // question qu'on pose à un journal.
-    const role = optional(event.actorRole);
-    return role === null ? name : `${name} (${role})`;
-  }
-  switch (event.actorType) {
-    case 'staff':
-      return 'un membre de l’équipe';
-    case 'customer':
-      return 'un client';
-    default:
-      return 'le système';
-  }
-}
-
-function text(value: unknown): string {
-  return optional(value) ?? '—';
-}
-
-/** Une chaîne non vide, ou `null`. Le vide n'est pas une valeur à afficher. */
-function optional(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() !== '' ? value : null;
-}
-
-/** « 5,5 % ». Un taux absent rend `—` plutôt qu'un `NaN %`. */
-function percent(value: unknown): string {
-  return typeof value === 'number' ? `${value.toString().replace('.', ',')} %` : '—';
-}
-
-/** Un compte, ou `null` s'il n'a pas été figé. Zéro EST un compte. */
-function count(value: unknown): number | null {
-  return typeof value === 'number' ? value : null;
-}
-
-/**
- * Les actes de **tarification**.
- *
- * Ils portent déjà leur phrase — figée au moment de l'acte par le domaine, qui
- * seul sait dire ce que la règle affirmait. On ne la reconstruit pas : on la
- * lit, et on préfixe par le verbe. Une phrase recalculée aujourd'hui pour un
- * acte d'hier raconterait l'histoire à l'envers.
- */
-const PRICING_VERBS: Readonly<Record<string, string>> = {
-  posed: 'posée',
-  replaced: 'remplacée',
-  confirmed: 'confirmée',
-  paused: 'suspendue',
-  resumed: 'reprise',
-  archived: 'archivée',
-  renamed: 'renommée',
-};
-
-const PRICING_SUBJECTS: Readonly<Record<string, string>> = {
-  price_rule: 'Règle de prix',
-  price_floor: 'Limite de prix',
-  volume_ladder: 'Barème de volume',
-};
-
-function pricingSentence(event: ActivityEventView): string | null {
-  const [subject, act] = event.type.split('.');
-  const noun = subject === undefined ? undefined : PRICING_SUBJECTS[subject];
-  const verb = act === undefined ? undefined : PRICING_VERBS[act];
-  if (noun === undefined || verb === undefined) {
-    return null;
-  }
-  const summary = optional(event.payload['summary']);
-  const reason = optional(event.payload['reason']);
-  const said = summary === null ? '' : ` — ${summary}`;
-  // Le motif écrit par l'agent : c'est souvent la seule phrase qui explique
-  // pourquoi un prix a cessé de s'appliquer.
-  return `${noun} ${verb}${said}${reason === null ? '' : ` (${reason})`}`;
-}
-
-/** Les réglages qui décident du prix de livraison, du retrait et des heures limites. */
-function settingSentence(event: ActivityEventView): string | null {
-  const p = event.payload;
-  switch (event.type) {
-    case 'delivery_zone.created':
-      return `Zone de livraison « ${text(p['label'])} » créée`;
-    case 'delivery_zone.updated':
-      return `Zone de livraison « ${text(p['label'])} » modifiée`;
-    case 'delivery_zone.removed':
-      return 'Zone de livraison supprimée';
-    case 'pickup_address.created':
-      return `Point de retrait « ${text(p['label'])} » créé`;
-    case 'pickup_address.updated':
-      return `Point de retrait « ${text(p['label'])} » modifié`;
-    case 'pickup_address.removed':
-      return 'Point de retrait supprimé';
-    case 'pickup_address.default_set':
-      return 'Point de retrait par défaut changé';
-    case 'public_pickup_schedule.updated': {
-      // Le nombre de plages dit l'essentiel : passer de zéro à une ouvre les
-      // créneaux publics du point, et c'est ce qu'un visiteur verra changer.
-      const rules = count(p['ruleCount']);
-      return `Créneaux publics de « ${text(p['label'])} » réglés${
-        rules === null ? '' : ` (${rules} plage(s))`
-      }`;
-    }
-    case 'delivery_availability.updated':
-      return 'Livraison par clientèle réglée';
-    case 'order_cutoff.created':
-      return `Heure limite posée à ${text(p['time'])}`;
-    case 'order_cutoff.updated':
-      return `Heure limite portée à ${text(p['time'])}`;
-    case 'order_cutoff.removed':
-      return 'Heure limite supprimée';
-    case 'volume_commitment.signed': {
-      // Une quantité est un NOMBRE : `text` la rendrait « — », et un engagement
-      // sans volume promis ne veut rien dire.
-      const promised = count(p['promisedQuantity']);
-      return `Engagement de volume signé${promised === null ? '' : ` (${promised.toString()})`}`;
-    }
-    case 'volume_commitment.closed':
-      return `Engagement de volume clos${optional(p['reason']) === null ? '' : ` (${text(p['reason'])})`}`;
-    default:
-      return null;
-  }
-}
-
-/**
- * Les gestes du staff sur les **notes du commercial**.
- *
- * Le fait ne porte AUCUN contenu — ni titre, ni description, ni photo — et la
- * phrase n'en invente pas : une note supprimée définitivement ne doit rester
- * lisible nulle part, journal compris (plan « notes photo du commercial », D6).
- * Une action inconnue se dit en termes généraux plutôt que de disparaître.
- */
-const CLIENT_NOTE_ACTIONS: Readonly<Record<string, string>> = {
-  note_added: 'Note du commercial ajoutée',
-  note_revised: 'Note du commercial modifiée',
-  note_removed: 'Note du commercial supprimée définitivement',
-  notes_reordered: 'Notes du commercial reclassées',
-};
-
-function clientNoteSentence(action: unknown): string {
-  return (
-    (typeof action === 'string' ? CLIENT_NOTE_ACTIONS[action] : undefined) ??
-    'Notes du commercial modifiées'
+  const families = familyCounts(blast).map(
+    ([context, n], index) =>
+      `${index === 0 ? formatCount(n, 'famille', 'familles') : formatNumber(n)} ${contextOf(payload, context)}`,
   );
+  const articles = [count(blast['variants']), count(blast['articles'])]
+    .filter((n): n is number => n !== null)
+    .map((n) => formatCount(n, 'article', 'articles'));
+  const parts = [...families, ...articles];
+  return parts.length === 0 ? '' : `touche ${parts.join(', ')}`;
+}
+
+/** Les champs nommés de la forme d'août, et la clé de contexte que chacun comptait. */
+const LEGACY_FAMILY_FIELDS: readonly (readonly [string, string])[] = [
+  ['familiesEmporter', 'emporter'],
+  ['familiesSurPlace', 'surPlace'],
+  ['familiesB2b', 'b2b'],
+];
+
+/** Les familles comptées, par clé de contexte de vente — dans l'ordre de la charge. */
+function familyCounts(blast: Payload): readonly (readonly [string, number])[] {
+  const byContext = recordOf(blast['families']);
+  const current = byContext === null ? [] : Object.entries(byContext);
+  const legacy = LEGACY_FAMILY_FIELDS.map(([field, context]) => [context, blast[field]] as const);
+  return [...current, ...legacy].flatMap(([context, raw]) => {
+    const n = count(raw);
+    return n === null ? [] : [[context, n] as const];
+  });
+}
+
+/**
+ * « à emporter » — par le libellé figé dans la charge, puis le dictionnaire
+ * (`contextWord`) ; un contexte créé à l'écran avant `contextLabels` garde sa clé.
+ */
+function contextOf(payload: Payload, key: string): string {
+  return inSentence(contextWord(payload, key) ?? key);
 }

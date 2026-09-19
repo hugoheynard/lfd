@@ -13,5 +13,12 @@ export abstract class OrderCutoffRepository {
 
   abstract update(id: string, payload: OrderCutoffPayload): Promise<void>;
 
-  abstract remove(id: string): Promise<void>;
+  /**
+   * Supprime la règle et rend ce qu'elle décidait : la ligne disparaît, et le
+   * journal est la seule place où la règle survivra (lot B du plan des
+   * phrases, 2026-09-19).
+   *
+   * @throws {OrderCutoffNotFoundError} l'`id` n'existe pas.
+   */
+  abstract remove(id: string): Promise<OrderCutoffView>;
 }

@@ -20,9 +20,13 @@
 import {
   PricingJournalReader,
   type JournalEntry,
+  type JournalPage,
+  type JournalPageRequest,
 } from "../../../domain/ports/pricing-journal.reader.js";
 import { ReadPricingJournalHandler } from "../read-pricing-journal.handler.js";
 import { ReadSubjectJournalHandler } from "../read-subject-journal.handler.js";
+import { ReadSubjectJournalPageHandler } from "../read-subject-journal-page.handler.js";
+import { ReadSubjectJournalPageQuery } from "../read-subject-journal-page.query.js";
 import { ReadSubjectJournalQuery } from "../read-subject-journal.query.js";
 import {
   authorsKnownAs,
@@ -49,9 +53,18 @@ function act(over: Partial<JournalEntry> = {}): JournalEntry {
 class RecordingPricingJournal extends PricingJournalReader {
   recentLimit: number | null = null;
   subjectAsked: readonly [string, string] | null = null;
+  pageAsked: JournalPageRequest | null = null;
 
-  constructor(private readonly entries: JournalEntry[]) {
+  constructor(
+    private readonly entries: JournalEntry[],
+    private readonly page: Omit<JournalPage, "entries"> = { total: entries.length, asOf: null },
+  ) {
     super();
+  }
+
+  pageForSubject(request: JournalPageRequest): Promise<JournalPage> {
+    this.pageAsked = request;
+    return Promise.resolve({ ...this.page, entries: this.entries });
   }
 
   recent(limit: number): Promise<JournalEntry[]> {
@@ -103,7 +116,7 @@ describe("ReadPricingJournalHandler", () => {
         act: "posed",
         actor: "auth0|staff",
         // Le nom, résolu par l'annuaire — l'écran ne montre plus le `sub`
-        // (plan `plan-l-auteur-est-la-fiche.md`, D3).
+        // (`architecture-journalisation.md` §12, D3).
         actorName: "Camille Durand",
         occurredAt: POSED_AT.toISOString(),
         reason: "fin de promo",
@@ -139,5 +152,56 @@ describe("ReadSubjectJournalHandler", () => {
       act: "posed",
       occurredAt: POSED_AT.toISOString(),
     });
+  });
+});
+
+describe("ReadSubjectJournalPageHandler", () => {
+  it("transmet le sujet, la page, la taille et l'ancre, sans les réinterpréter", async () => {
+    const journal = new RecordingPricingJournal([]);
+
+    await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+      new ReadSubjectJournalPageQuery("mercuriale", "merc_3", 3, 20, "act_45"),
+    );
+
+    expect(journal.pageAsked).toEqual({
+      subjectType: "mercuriale",
+      subjectId: "merc_3",
+      page: 3,
+      pageSize: 20,
+      asOf: "act_45",
+    });
+  });
+
+  it("rend le total et l'ancre du lecteur, et la page et la taille demandées", async () => {
+    const journal = new RecordingPricingJournal([act()], { total: 45, asOf: "act_45" });
+
+    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+      new ReadSubjectJournalPageQuery("rule", "rule_1", 3, 20, null),
+    );
+
+    // L'ancre vient du LECTEUR, pas de la requête : sans `asOf`, c'est lui qui
+    // fixe l'instantané, et l'écran doit la recevoir pour les pages suivantes.
+    expect(view).toMatchObject({ total: 45, page: 3, pageSize: 20, asOf: "act_45" });
+  });
+
+  it("nomme les auteurs avec le même mapper que le fil", async () => {
+    const journal = new RecordingPricingJournal([act(), act({ id: "act_2", actor: "system" })]);
+
+    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+      new ReadSubjectJournalPageQuery("rule", "rule_1", 1, 20, null),
+    );
+
+    expect(view.entries.map((entry) => entry.actorName)).toEqual(["Camille Durand", null]);
+    expect(view.entries[0]).toMatchObject({ act: "posed", occurredAt: POSED_AT.toISOString() });
+  });
+
+  it("rend une page vide et une ancre nulle pour un sujet sans acte", async () => {
+    const journal = new RecordingPricingJournal([], { total: 0, asOf: null });
+
+    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+      new ReadSubjectJournalPageQuery("floor", "global:", 1, 20, null),
+    );
+
+    expect(view).toEqual({ entries: [], total: 0, page: 1, pageSize: 20, asOf: null });
   });
 });

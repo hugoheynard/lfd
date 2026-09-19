@@ -2,6 +2,7 @@ import type { Clock } from "../../../../platform/time/clock.js";
 import type { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
+import { companyNamed, type NamedRef } from "../../domain/events/journal-names.js";
 import type { CompanyRepository } from "../../domain/ports/company.repository.js";
 import type { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { ScannedDocument } from "../../../../platform/shared/documents/scanned-document.js";
@@ -14,6 +15,9 @@ import { ScannedDocument } from "../../../../platform/shared/documents/scanned-d
  * Extrait pour être partagé par le chemin **client** (mur membre) et le chemin
  * **staff** (Porte B) : la séquence — et son invariant d'ordre — n'est écrite
  * qu'une fois. Publie la pièce d'activation « KBIS » (journal idempotent par étape).
+ *
+ * Rend la société **nommée** : l'appelant trace le dépôt sous son nom du moment
+ * sans la relire (lot B du plan des phrases).
  */
 export async function ingestKbis(
   companyId: string,
@@ -23,7 +27,7 @@ export async function ingestKbis(
   companies: CompanyRepository,
   events: DomainEventPublisher,
   clock: Clock,
-): Promise<void> {
+): Promise<NamedRef> {
   // Le fichier se valide lui-même (PDF par ses octets, taille) avant de partir
   // au stockage : on ne range jamais un fichier douteux.
   const file = ScannedDocument.create(fileName, bytes);
@@ -49,7 +53,8 @@ export async function ingestKbis(
   });
   await companies.save(company);
 
-  events.publish(new CompanyStepReachedEvent(companyId, "kbis"));
+  events.publish(new CompanyStepReachedEvent(companyId, company.displayName(), "kbis"));
+  return companyNamed(companyId, company);
 }
 
 /**

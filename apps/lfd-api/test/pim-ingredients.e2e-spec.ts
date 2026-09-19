@@ -171,6 +171,51 @@ describe("le référentiel des appellations", () => {
   });
 });
 
+/**
+ * Plan des phrases du journal, lot B (D5) : l'ingrédient cite son appellation
+ * AVEC son libellé du moment, sous la même clé à la création et à la
+ * modification. Renommer l'appellation après coup ne réécrit pas la ligne.
+ */
+describe("le journal de la provenance — les noms du moment", () => {
+  const factsOf = (type: string) =>
+    ctx.prisma.activityEvent.findMany({
+      where: { type },
+      orderBy: { id: "asc" },
+      select: { payload: true },
+    });
+
+  it("garde le libellé de l'appellation tel qu'il était, même renommée depuis", async () => {
+    await anAppellation("aop-beaufort");
+    await anAppellation("igp-savoie");
+    const key = await anIngredient("beurre-de-savoie", "aop-beaufort");
+    await staff().put(`${INGREDIENTS}/${key}`).send({ appellationCode: "igp-savoie" }).expect(200);
+
+    await staff()
+      .put(`${APPELLATIONS}/aop-beaufort`)
+      .send({ label: { fr: "Beaufort d'alpage" } })
+      .expect(200);
+
+    const [created] = await factsOf("ingredient.created");
+    const [updated] = await factsOf("ingredient.updated");
+    expect(created?.payload).toMatchObject({
+      subjectLabel: "Beurre de Savoie",
+      appellation: { id: "aop-beaufort", name: "Beaufort" },
+    });
+    expect(updated?.payload).toEqual({
+      subjectLabel: "Beurre de Savoie",
+      changes: {
+        appellation: {
+          from: { id: "aop-beaufort", name: "Beaufort" },
+          to: { id: "igp-savoie", name: "Beaufort" },
+        },
+      },
+    });
+    // Le libellé de l'appellation a bien changé depuis — pour elle, pas pour la ligne.
+    const [renamed] = await factsOf("appellation.updated");
+    expect(renamed?.payload).toMatchObject({ subjectLabel: "Beaufort d'alpage" });
+  });
+});
+
 describe("les deux murs de suppression", () => {
   /**
    * Le refus vient de la clé étrangère, pas d'un compte lu avant l'ordre : un

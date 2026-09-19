@@ -141,10 +141,12 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         subjectType: "product",
         subjectId: productId,
         payload: {
+          subjectLabel: name.fr,
           sku: sku.value,
           name,
           kind: input.kind,
-          categoryId: input.categoryId,
+          // La famille NOMMÉE (D5 du plan des phrases du journal).
+          category: { id: category.id, name: category.name.fr },
           declared: declaration !== null,
         },
       });

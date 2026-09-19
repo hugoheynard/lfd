@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 
 /**
@@ -6,7 +8,8 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
  * rangé sous « comptes » — un `client_note.` n'appartiendrait à aucun module
  * (vérifié le 2026-09-15).
  */
-export const CLIENT_NOTE_EDITED_BY_STAFF = "company.client_note_edited_by_staff";
+export const CLIENT_NOTE_EDITED_BY_STAFF =
+  "company.client_note_edited_by_staff" satisfies JournalFactType;
 
 /** Ce que l'agent a fait au carnet. */
 export type ClientNoteStaffAction =
@@ -25,37 +28,48 @@ export type ClientNoteStaffAction =
  * TOUT le carnet, aucune note n'en est le sujet. En nommer une serait faux ; les
  * nommer toutes recopierait l'ordre du carnet dans le journal, qui n'a pas à le
  * garder.
+ *
+ * Lot B du plan des phrases (2026-09-19) : la société part nommée en
+ * `subjectLabel`, et ne se répète plus en `companyId` — elle est le sujet de la
+ * ligne. `noteId` reste un identifiant nu : le nom d'une note est son titre,
+ * c'est-à-dire du contenu.
  */
+
+/** La société dont on touche le carnet : son id et son nom du moment. */
+export interface ClientNoteCompany {
+  readonly id: string;
+  readonly name: string;
+}
 export class ClientNoteEditedByStaffEvent implements JournaledEvent {
   private constructor(
-    readonly companyId: string,
+    readonly company: ClientNoteCompany,
     readonly noteId: string | null,
     readonly action: ClientNoteStaffAction,
   ) {}
 
   /** Un geste sur UNE note : ajoutée, refaite, supprimée. */
   static onNote(
-    companyId: string,
+    company: ClientNoteCompany,
     noteId: string,
     action: Exclude<ClientNoteStaffAction, "notes_reordered">,
   ): ClientNoteEditedByStaffEvent {
-    return new ClientNoteEditedByStaffEvent(companyId, noteId, action);
+    return new ClientNoteEditedByStaffEvent(company, noteId, action);
   }
 
   /** Le carnet entier a été réordonné. */
-  static reordered(companyId: string): ClientNoteEditedByStaffEvent {
-    return new ClientNoteEditedByStaffEvent(companyId, null, "notes_reordered");
+  static reordered(company: ClientNoteCompany): ClientNoteEditedByStaffEvent {
+    return new ClientNoteEditedByStaffEvent(company, null, "notes_reordered");
   }
 
   journalFact(): JournalFact {
     return {
       type: CLIENT_NOTE_EDITED_BY_STAFF,
       subjectType: "company",
-      subjectId: this.companyId,
+      subjectId: this.company.id,
       payload:
         this.noteId === null
-          ? { companyId: this.companyId, action: this.action }
-          : { companyId: this.companyId, noteId: this.noteId, action: this.action },
+          ? { subjectLabel: this.company.name, action: this.action }
+          : { subjectLabel: this.company.name, noteId: this.noteId, action: this.action },
     };
   }
 }

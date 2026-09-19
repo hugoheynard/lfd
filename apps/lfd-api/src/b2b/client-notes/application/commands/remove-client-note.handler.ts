@@ -10,6 +10,7 @@ import { ClientNotebookRepository } from "../../domain/ports/client-notebook.rep
 import { NotebookCompanies } from "../../domain/ports/notebook-companies.js";
 import { removeClientNote } from "./client-notebook-editing.js";
 import { RemoveClientNoteCommand } from "./remove-client-note.command.js";
+import { namedNotebookCompany } from "../services/notebook-company-guard.js";
 
 /**
  * Supprime définitivement une note : sa ligne, puis sa photo et sa vignette du
@@ -39,9 +40,13 @@ export class RemoveClientNoteHandler implements ICommandHandler<RemoveClientNote
       ids: this.ids,
       uow: this.uow,
     };
-    await removeClientNote(ports, command.companyId, command.noteId, () =>
+    await removeClientNote(ports, command.companyId, command.noteId, async () =>
       this.events.publishTraced(
-        ClientNoteEditedByStaffEvent.onNote(command.companyId, command.noteId, "note_removed"),
+        ClientNoteEditedByStaffEvent.onNote(
+          await namedNotebookCompany(this.companies, command.companyId),
+          command.noteId,
+          "note_removed",
+        ),
       ),
     );
   }

@@ -118,8 +118,8 @@ export class SuspendedStaffInviteError extends BusinessError {
  * Une fiche est l'auteur de tout ce que la personne a fait : commandes
  * remises, tarifs posés, fiches validées, journal. La supprimer effacerait
  * ce nom de chacune de ces lignes, et avec elle la seule trace des
- * identifiants de connexion qu'elle a portés (plan
- * `plan-l-auteur-est-la-fiche.md`, étape 0 ; plan de départ, D8). Le geste de
+ * identifiants de connexion qu'elle a portés (
+ * `architecture-journalisation.md` §12, étape 0 ; plan de départ, D8). Le geste de
  * sortie sera « Retirer de l'équipe » ; en attendant, « Suspendre » ferme tout
  * sans rien détruire. Refus **métier** (409).
  */

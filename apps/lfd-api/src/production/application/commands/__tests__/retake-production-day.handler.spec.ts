@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DayOrdersReader,
@@ -91,20 +93,52 @@ function closedDay(initials: string | null = null): ProductionDay {
   return day;
 }
 
+function subject(
+  days: Days,
+  rows: readonly ProducibleOrder[],
+  events: RecordingPublisher = new RecordingPublisher(),
+): RetakeProductionDayHandler {
+  return new RetakeProductionDayHandler(
+    days,
+    new Commerce(rows),
+    new FixedClock(NOW),
+    events,
+    new DirectUnitOfWork(),
+  );
+}
+
 describe("RetakeProductionDayHandler", () => {
   it("absorbe ce qui est arrivé depuis, écrit la journée et date le retirage", async () => {
     const days = new Days(closedDay());
-    const handler = new RetakeProductionDayHandler(
-      days,
-      new Commerce([order("ord_1", 30), order("ord_2", 12)]),
-      new FixedClock(NOW),
-    );
+    const events = new RecordingPublisher();
+    const handler = subject(days, [order("ord_1", 30), order("ord_2", 12)], events);
 
     const retake = await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
     expect(retake).toEqual({ date: DAY, absorbed: 1, retakenAt: NOW.toISOString() });
     expect(days.saved).not.toBeNull();
     expect(days.saved?.counts[0]?.quantity).toBe(42);
+    expect(events.traced.map((event) => event.journalFact())).toEqual([
+      {
+        type: "production_day.retaken",
+        subjectType: "production_day",
+        subjectId: DAY,
+        payload: { subjectLabel: DAY, serviceDay: DAY, absorbed: 1 },
+      },
+    ]);
+  });
+
+  it("ne publie RIEN au commerce : le seul envoi est le fait journalisé", async () => {
+    const events = new RecordingPublisher();
+    const handler = subject(
+      new Days(closedDay()),
+      [order("ord_1", 30), order("ord_2", 12)],
+      events,
+    );
+
+    await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
+
+    expect(events.published).toEqual(events.traced);
   });
 
   it("🔴 GARDE la coche d'une ligne dont la quantité monte", async () => {
@@ -112,11 +146,7 @@ describe("RetakeProductionDayHandler", () => {
     // quand la quantité passe de 30 à 42. C'est le cas que le bandeau nomme
     // AVANT de proposer le geste.
     const days = new Days(closedDay("MB"));
-    const handler = new RetakeProductionDayHandler(
-      days,
-      new Commerce([order("ord_1", 30), order("ord_2", 12)]),
-      new FixedClock(NOW),
-    );
+    const handler = subject(days, [order("ord_1", 30), order("ord_2", 12)]);
 
     await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
@@ -128,25 +158,20 @@ describe("RetakeProductionDayHandler", () => {
     // `absorbed: 0` est une information, pas une erreur — deux personnes qui
     // pressent le même bouton, ou un écran ouvert depuis un moment.
     const days = new Days(closedDay());
-    const handler = new RetakeProductionDayHandler(
-      days,
-      new Commerce([order("ord_1", 30)]),
-      new FixedClock(NOW),
-    );
+    const events = new RecordingPublisher();
+    const handler = subject(days, [order("ord_1", 30)], events);
 
     const retake = await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
     expect(retake).toEqual({ date: DAY, absorbed: 0, retakenAt: TIRAGE.toISOString() });
     expect(days.saved).toBeNull();
+    // Ni la journée, ni un fait : un retirage vide n'a rien changé.
+    expect(events.published).toEqual([]);
   });
 
   it("refuse une journée qui n'est pas arrêtée : il n'y a pas de tirage à reprendre", async () => {
     const days = new Days(ProductionDay.open(ServiceDay.of(DAY)));
-    const handler = new RetakeProductionDayHandler(
-      days,
-      new Commerce([order("ord_1", 30)]),
-      new FixedClock(NOW),
-    );
+    const handler = subject(days, [order("ord_1", 30)]);
 
     await expect(
       handler.execute(new RetakeProductionDayCommand(DAY, "staff-1")),

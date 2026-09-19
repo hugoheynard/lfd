@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { DocumentStorageUnavailableError } from "../../../../../platform/shared/errors/storage-errors.js";
 import {
@@ -34,6 +35,7 @@ import {
 import { RemoveDeliveryStepHandler } from "../remove-delivery-step.handler.js";
 import { ReorderDeliveryStepsHandler } from "../reorder-delivery-steps.handler.js";
 import { ReviseDeliveryStepHandler } from "../revise-delivery-step.handler.js";
+import { COMPANY_LABEL, InMemoryCompanies, journalNames } from "./member-acts-doubles.js";
 
 /**
  * **Les gestes du gestionnaire sur la procédure de livraison.**
@@ -52,16 +54,21 @@ function scene(role: CompanyRole | null = "owner", archived: readonly string[] =
   const sequence: string[] = [];
   const procedures = new InMemoryProcedures(log, sequence);
   const store = new InMemoryStore(log);
+  const events = new RecordingPublisher();
+  const book = addressBook(archived.includes(ADDRESS) ? [] : [ADDRESS], archived);
   const deps = [
     membership(role),
-    addressBook(archived.includes(ADDRESS) ? [] : [ADDRESS], archived),
+    book,
     procedures,
     new RecordingLock(sequence),
     store,
     new FixedIdGenerator(),
     new DirectUnitOfWork(),
+    events,
+    journalNames(new InMemoryCompanies(), book),
   ] as const;
   return {
+    events,
     log,
     sequence,
     procedures,
@@ -303,5 +310,48 @@ describe("le verrou de procédure", () => {
       CompanyAdminRequiredError,
     );
     expect(current.sequence).toEqual([]);
+  });
+});
+
+/**
+ * Le gestionnaire écrit le même fait que l'agent (depuis le 2026-09-19) : le
+ * geste et l'adresse, jamais le contenu d'une étape — un titre peut porter un
+ * code de portail.
+ */
+describe("le journal des gestes du gestionnaire", () => {
+  it("un fait par geste, sans le contenu de l'étape", async () => {
+    const current = scene();
+    const first = await current.add.execute(addCommand(null, "Portail"));
+    const second = await current.add.execute(addCommand(null, "Cour"));
+    await current.revise.execute(reviseCommand(first, false, null));
+    await current.reorder.execute(
+      new ReorderDeliveryStepsCommand("u1", COMPANY, ADDRESS, [second, first]),
+    );
+    await current.remove.execute(new RemoveDeliveryStepCommand("u1", COMPANY, ADDRESS, second));
+
+    expect(current.events.traced.map((event) => event.journalFact().payload)).toEqual(
+      ["step_added", "step_added", "step_revised", "reordered", "step_removed"].map((action) => ({
+        // La société est le sujet (nommée), l'adresse citée par son id et son
+        // lieu — jamais son libellé (lot B du plan des phrases).
+        subjectLabel: COMPANY_LABEL,
+        address: { id: ADDRESS, ville: "Paris", codePostal: "75001" },
+        action,
+      })),
+    );
+    expect(current.events.factTypes()).toEqual(
+      Array.from({ length: 5 }, () => "company.delivery_procedure_edited"),
+    );
+    expect(JSON.stringify(current.events.traced.map((event) => event.journalFact()))).not.toContain(
+      FIELDS.body,
+    );
+  });
+
+  it("un geste refusé par le mur n'écrit aucun fait", async () => {
+    const current = scene("orders");
+
+    await expect(current.add.execute(addCommand())).rejects.toBeInstanceOf(
+      CompanyAdminRequiredError,
+    );
+    expect(current.events.traced).toHaveLength(0);
   });
 });

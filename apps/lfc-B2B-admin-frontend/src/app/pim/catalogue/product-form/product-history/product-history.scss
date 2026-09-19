@@ -1,0 +1,78 @@
+.ph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* La note et le lien vers le journal, sur une ligne quand la place le permet. */
+.ph-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.ph-note {
+  margin: 0;
+  flex: 1 1 20rem;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.ph-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ph-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.ph-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.ph-sentence {
+  color: var(--fold-color-text);
+}
+
+/* La ligne de contexte se lit comme une phrase : pas de `gap`, qui séparerait
+   « par » de son nom. */
+.ph-meta {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.ph-actor {
+  color: var(--fold-color-text-secondary);
+}
+
+.ph-type {
+  font-family: var(--fold-font-mono);
+  font-size: 0.85em;
+}
+
+.ph-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.ph-frozen {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

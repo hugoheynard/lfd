@@ -34,8 +34,8 @@ import { ensureDeliveryAddress } from "../services/delivery-address-guard.js";
 /**
  * **Les gestes sur une procédure de livraison, sans mur.** L'appelant — le
  * gestionnaire côté client, l'agent côté staff — a déjà décidé du droit d'agir ;
- * il fournit ce qui part dans la transaction avec l'écriture (la trace staff, ou
- * rien).
+ * il fournit ce qui part dans la transaction avec l'écriture : le fait
+ * `company.delivery_procedure_edited`, des deux côtés depuis le 2026-09-19.
  *
  * Depuis le 2026-09-15, la séquence (vérifier → ranger → verrou/sauver →
  * nettoyer) et son ordre sont ceux du socle des cartes à photo

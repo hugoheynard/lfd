@@ -1,248 +1,359 @@
 # Architecture Decision Records — le dépôt
 
-> **Décision → raison → conséquences.** Une entrée par choix structurant qui vaut
-> pour **tout le monorepo**, et non pour un projet en particulier.
+> Une entrée par choix structurant qui engage **tout le monorepo** — les deux
+> backends, les deux fronts, la passerelle. Les choix propres au référentiel
+> (allergènes, agrégats du catalogue, SKU, canaux) vivent dans
+> [`pim/adr.md`](pim/adr.md).
 >
-> 🔴 **Ce fichier est né le 2026-09-13 d'une scission.** Ces décisions vivaient
-> dans `pim/adr.md`, où elles se lisaient comme des choix du référentiel alors
-> qu'elles engagent les deux backends et les deux fronts. Le PIM garde ses ADR
-> propres — allergènes, agrégats du catalogue, SKU, canaux.
->
-> **Les numéros sont conservés**, pour que les citations existantes (`ADR-09`,
-> `ADR-13`) restent vraies. Les deux fichiers se partagent donc une seule
-> numérotation : 01–06, 08–10 et 12 ici, 07, 11 et 13–17 chez le PIM.
->
-> Chaque entrée a été **confrontée au code le 2026-09-13**. Ce qui avait
-> vieilli porte un bandeau ⚠️ plutôt qu'une réécriture silencieuse : une
-> décision qu'on a cessé d'appliquer est une information, et l'effacer ferait
+> **Forme d'une entrée** : la décision, sa raison, ce qu'elle implique au
+> quotidien, puis son historique — ce qui a changé depuis qu'elle a été prise,
+> daté. Une décision qu'on a cessé d'appliquer reste écrite : l'effacer ferait
 > disparaître la question qui se reposera.
+>
+> **Numérotation partagée** avec `pim/adr.md`, pour que les citations
+> existantes (`ADR-09`, `ADR-13`) restent vraies : 01–06, 08–10 et 12 ici ;
+> 07, 11 et 13–17 là-bas.
+>
+> **Réécrit le 2026-09-19**, chaque affirmation confrontée au code ce jour-là.
+> La version précédente (2026-09-13, née de la scission de `pim/adr.md`)
+> empilait des bandeaux « la v1 disait… » : leur contenu est repris dans les
+> historiques.
+
+## Vue d'ensemble
+
+```mermaid
+flowchart LR
+    subgraph Navigateur
+        B["Boutique<br/>Angular"]
+        BO["Back-office<br/>Angular"]
+    end
+    A0["Auth0<br/>identité"]
+    subgraph Cloudflare
+        GW["Passerelle<br/>Worker"]
+        API["lfd-api<br/>NestJS, conteneur"]
+    end
+    ACC["Prisma Accelerate<br/>proxy HTTP"]
+    PG[("Postgres managé<br/>une base, cinq schémas")]
+
+    B -->|connexion| A0
+    BO -->|connexion| A0
+    B -->|"jeton"| GW
+    BO -->|"jeton"| GW
+    GW --> API
+    API -->|"vérifie le jeton (JWKS)"| A0
+    API --> ACC --> PG
+```
+
+Les deux fronts sont servis en statique par Cloudflare Pages. La passerelle est
+le seul chemin public vers l'API (`gateway/`, `CLAUDE.md` en tête).
+
+Le maillon Accelerate est **en sursis** : Prisma le retire le 1er décembre 2026. La production y passe jusqu'à la bascule du week-end du 2026-09-19 ; le
+code sait déjà joindre à sa place le pooler mutualisé, en TCP
+([`ops/plan-sortie-d-accelerate.md`](ops/plan-sortie-d-accelerate.md)).
 
 ---
 
-## ADR-01 — Monolithe modulaire (pas de microservices)
+## ADR-01 — Monolithe modulaire, pas de microservices
 
-**Décision** : une seule application structurée en **blocs internes**, pas une
-constellation de microservices.
+**Décision.** Une seule application backend, découpée en **blocs** : un
+dossier de premier niveau de `apps/lfd-api/src/` par bloc.
 
-**Raison** : l'échelle d'une boulangerie ne justifie pas la complexité
-opérationnelle du distribué.
+**Pourquoi.** L'échelle d'une boulangerie ne justifie pas la complexité
+opérationnelle du distribué : réseau entre services, versions croisées,
+transactions réparties. Des frontières nettes à l'intérieur d'un seul
+processus gardent la porte ouverte à une extraction, le jour où un vrai
+déclencheur apparaît (charge, autre runtime, consommateur externe).
 
-**Conséquences** : frontières nettes entre blocs → extraction possible si un
-vrai déclencheur apparaît (montée en charge, autre runtime, consommateur
-externe).
+**Ce que ça implique.** Neuf dossiers sous `src/` (vérifié le 2026-09-19) :
 
-⚠️ **Les modules cités par la v1 n'ont jamais existé sous ces noms**
-(`catalogue`, `pricing`, `disponibilite-production`, `publication`). Le découpage
-réel est décrit par la **matrice des frontières** de `CLAUDE.md` §3 et tenu par
-`lint:context-boundaries` : `staff`, `pim`, `b2b`, `production`, `platform`,
-plus `appBootstrap`.
+```mermaid
+flowchart TB
+    AB["appBootstrap<br/>racine de composition"]
+    DEV["dev<br/>semis de démonstration"]
+    STAFF["staff<br/>qui est qui, qui peut quoi"]
+    PIM["pim<br/>le référentiel"]
+    B2B["b2b<br/>la plateforme marchande"]
+    PROD["production<br/>le fournil"]
+    HO["handover<br/>le retrait"]
+    OPS["ops<br/>la carte de santé"]
+    PLAT["platform<br/>technique pure"]
 
-⚠️ Et `src/` en porte **trois de plus** que la matrice ne nomme — `handover`,
-`ops`, `dev` (vérifié le 2026-09-13). Ce n'est pas une contradiction de l'ADR,
-c'est une matrice en retard sur son arborescence, et c'est noté ici parce que
-c'est exactement ce qu'une frontière tenue par discipline perd en premier.
+    AB --> STAFF & PIM & B2B & PROD & HO & OPS
+    DEV --> AB
+    PIM -->|autorisation| STAFF
+    B2B -->|autorisation| STAFF
+    B2B -->|"port uniquement"| PIM
+    B2B -->|"port uniquement"| PROD
+    B2B -->|"port uniquement"| HO
+    HO -->|"port uniquement"| PROD
+    STAFF & PIM & B2B & PROD & HO & OPS --> PLAT
+```
 
-## ADR-02 — Un seul déployable
+La matrice complète, avec les interdits, est dans `CLAUDE.md` §3 ; elle est
+tenue par `lint:context-boundaries`. Deux règles à retenir : `platform` ne
+connaît aucun métier, et `production → b2b` est interdit — le fournil déclare
+ce dont il a besoin, le commerce l'implémente.
 
-**Décision** : déployer en une unité.
+**Historique.**
 
-⚠️ **Le reste de cette décision a été renversé par la pratique, sans que
-personne ne la réécrive.** Elle disait : « un hôte qui tourne en continu
-(Railway / Fly / Render / VPS), **pas de serverless** », au motif que les
-**crons** et un **worker de push** supportent mal les timeouts.
+- La première version citait des modules qui n'ont jamais existé sous ces noms
+  (`catalogue`, `pricing`, `disponibilite-production`, `publication`).
+- Au 2026-09-13, la matrice de `CLAUDE.md` ne nommait pas `handover`, `ops` ni
+  `dev`, que la porte connaissait déjà ; elle les nomme depuis.
 
-Ce qui est vrai le 2026-09-13 :
+## ADR-02 — Un seul déployable pour l'API
 
-- le backend est déployé en **conteneur Cloudflare**, poussé par `wrangler`
-  (`.github/workflows/deploy_lfd_api.yml`) — ni Railway, ni Fly, ni VPS ;
-- **il n'existe aucun cron Nest** : pas de `ScheduleModule`, pas de `@Cron`. Le
-  travail périodique est déclenché **de l'extérieur**, par une route protégée
-  d'un jeton (`RECOMPUTE_TOKEN`) ;
-- il n'existe pas non plus de worker de push séparé.
+**Décision.** L'API se déploie en **une unité** : une image de conteneur,
+poussée sur Cloudflare Containers par `wrangler`
+(`.github/workflows/deploy_lfd_api.yml`). Merger `dev` dans `main` déploie.
 
-Autrement dit, les deux besoins qui justifiaient de refuser le serverless n'ont
-jamais été construits. La décision « un seul déployable » tient ; sa raison, non.
+**Pourquoi.** Un seul artefact à construire, versionner et revenir en arrière.
+Les migrations s'appliquent dans le même pipeline, avant la bascule.
 
-## ADR-03 — Angular devant, NestJS derrière, monorepo
+**Ce que ça implique.**
 
-**Décision** : fronts **Angular** (Vitest), backend **NestJS** (Jest), dans un
-monorepo.
+- Il n'y a **aucune tâche planifiée dans l'API** : ni `ScheduleModule`, ni
+  `@Cron`, ni worker séparé. Le travail périodique (recalculs) est déclenché
+  **de l'extérieur**, par une route protégée d'un jeton (`RECOMPUTE_TOKEN`,
+  `platform/auth/recompute.guard.ts`).
+- Le conteneur doit rester **sans état** : rien sur le disque local qui doive
+  survivre à un redémarrage.
 
-**Raison** : Nest et ses modules mappent le découpage du domaine ; un front SPA
-n'accède jamais à la base directement, donc la sécurité tient par construction.
+**Historique.** La première version disait « un hôte qui tourne en continu
+(Railway, Fly, Render, VPS), pas de serverless », au motif que des crons et un
+worker de push supportent mal les timeouts. Ni les crons ni le worker n'ont
+été construits, et l'hébergement est devenu Cloudflare. La décision « un seul
+déployable » tient ; sa raison d'origine, non.
 
-⚠️ **Deux affirmations de la v1 sont fausses**, et l'une est devenue une
-interdiction :
+## ADR-03 — Angular devant, NestJS derrière, dans un monorepo
 
-- « **Nest sert le build Angular** » — non. Les deux fronts sont déployés
-  séparément, sur Cloudflare Pages, derrière la gateway ;
-- « une lib **`shared-types`** » — elle n'a jamais été créée, et `CLAUDE.md` §1
-  l'**interdit** désormais : un paquet unique mélangerait les deux langages
-  métier (le `User` du référentiel est le staff, celui du B2B est le client) et
-  dupliquerait une frontière au lieu de la tenir. Les contrats partagés vivent
-  par domaine — `@lfd/contracts`, `@lfd/pim-contracts` — et un type n'y entre
-  que s'il est vraiment transverse.
+**Décision.** Fronts en **Angular** (testés avec Vitest), backend en
+**NestJS** (testé avec Jest).
 
-Ce qui survit : l'API expose des **vues**, jamais un modèle Prisma. Cette
-partie-là est tenue par `lint:context-boundaries`.
+**Pourquoi.** Les modules de Nest épousent le découpage du domaine. Un front
+SPA n'accède jamais à la base : la sécurité se tient côté serveur, par
+construction.
+
+**Ce que ça implique.**
+
+- Les deux fronts se **déploient séparément** de l'API, en statique sur
+  Cloudflare Pages (`deploy_lfc_boutique.yml`, `deploy_lfd_backoffice.yml`).
+- L'API expose des **vues**, jamais un modèle Prisma.
+- Les contrats partagés vivent **par domaine** — `@lfd/contracts`,
+  `@lfd/pim-contracts`. Un paquet unique de types est **interdit**
+  (`CLAUDE.md` §1) : il mélangerait deux langages métier (le `User` du
+  référentiel est le staff, celui du B2B est le client).
+
+**Historique.** La première version annonçait que « Nest sert le build
+Angular » et une lib `shared-types` : ni l'un ni l'autre n'a existé, et le
+second est désormais interdit.
 
 ## ADR-04 — Prisma comme ORM, SQL brut en échappatoire
 
-**Décision** : **Prisma**. Le SQL brut est réservé aux agrégations et aux champs
-`jsonb`.
+**Décision.** **Prisma** pour l'accès aux données. Le SQL brut est réservé
+aux agrégations et au `jsonb`.
 
-**Raison** : migrations, relations typées, sécurité de type — plutôt que
-réécrire une couche d'accès à la main.
+**Pourquoi.** Migrations, relations typées et sécurité de type, plutôt
+qu'une couche d'accès écrite à la main.
 
-**Conséquences** : Prisma parle à n'importe quel Postgres, donc aucun
-enfermement chez un hébergeur.
+**Ce que ça implique.** C'est **le schéma de l'URL qui choisit le transport**
+(`platform/database/prisma.service.ts`) :
 
-⚠️ **Le transport a changé, et la v1 ne nommait que la moitié.** Elle disait
-« `@prisma/adapter-pg` (TCP + pool), cohérent avec le long-running ». En réalité
-c'est **le schéma de l'URL qui choisit**, et les deux chemins coexistent
-(`prisma.service.ts`, vérifié le 2026-09-13) :
+```mermaid
+flowchart LR
+    URL{"DATABASE_LFD_URL"}
+    URL -->|"prisma+postgres://"| ACC["Accelerate<br/>proxy HTTP"]
+    URL -->|"postgresql://"| PGA["adaptateur PrismaPg<br/>TCP"]
+    ACC --> PROD["production<br/>et développement"]
+    PGA --> E2E["e2e, Postgres<br/>local jetable"]
+```
 
-- `prisma+postgres://` → **Accelerate**, un proxy HTTP. C'est le chemin de la
-  production et du développement ;
-- `postgresql://` → l'adaptateur **`PrismaPg`**. C'est le chemin des e2e, devant
-  le Postgres local jetable.
+Accelerate étant un proxy HTTP, **`psql` et `pg_dump` ne le traversent pas**,
+et `$connect()` y est paresseux : il ne prouve pas que la base répond. C'est
+ce qui a dicté la forme de `prisma/clone-dev.ts`. Le client généré vit dans
+`src/platform/database/client/`, hors de git (régénéré au `postinstall`).
 
-Cette distinction n'est pas un détail d'infrastructure : Accelerate étant un
-proxy HTTP, `psql` et `pg_dump` **ne peuvent pas le traverser**, et `$connect()`
-y est paresseux — il ne prouve donc pas que la base répond. C'est ce qui a
-dicté la forme de `prisma/clone-dev.ts`.
+**Historique.** La première version ne nommait que l'adaptateur `pg`
+(« TCP + pool, cohérent avec le long-running »), et un dossier
+`src/infra/database/client/` qui n'a jamais existé.
 
-⚠️ Le client généré n'est pas dans `src/infra/database/client/` : ce dossier
-n'existe pas. Il est en **`src/platform/database/client/`**.
+**2026-09-19** — sortie d'Accelerate
+([`ops/plan-sortie-d-accelerate.md`](ops/plan-sortie-d-accelerate.md)). Le
+schéma choisit toujours le transport, mais le schéma de gauche est déjà faux
+sur deux points : le développement n'est **pas** sur Accelerate (le `.env` vise
+un Postgres local, confirmé par Hugo ce jour-là), et la production passera en
+`postgresql://` vers le pooler mutualisé `pooled.db.prisma.io`, par
+l'adaptateur `pg` au pool réglé. Elle reste sur Accelerate jusqu'à la bascule ;
+`/health` publie le transport servi (`database`). Conséquence : le schéma de
+l'URL **ne distingue plus** la production du poste — les outils qui écrivent
+lisent l'hôte (`prisma/local-target.ts`).
 
 ## ADR-05 — PostgreSQL pour tout, catalogue compris
 
-**Décision** : **PostgreSQL**, avec `jsonb` pour les parties réellement
-variables (`options`, `attributes`, `snapshot`, `diff`).
+**Décision.** **Une seule base PostgreSQL**, découpée en **schémas**, avec
+du `jsonb` pour les parties réellement variables (`options`, `attributes`,
+`snapshot`, `diff`).
 
-**Raison** : le domaine est relationnel — jointures, agrégations, intégrité. Le
-catalogue est le point où tout se rattache ; le fragmenter dans un second store
-créerait des cohérences inter-bases à tenir à la main.
+**Pourquoi.** Le domaine est relationnel : jointures, agrégations,
+intégrité. Le catalogue est le point où tout se rattache ; le mettre dans un
+second store créerait des cohérences inter-bases à tenir à la main.
 
-**Conséquences** : une colonne vertébrale relationnelle, du `jsonb` ciblé.
+**Ce que ça implique.** Cinq schémas (`prisma/schema/datasource.prisma`,
+vérifié le 2026-09-19) : `public` (commerce), `growth` (croissance et
+journal), `ops`, `pim`, `production`. `AppConfig` ne lit qu'une URL.
 
-⚠️ **Une seule base, plusieurs schémas.** Le référentiel a eu la sienne ; il ne
-l'a plus. `prisma/schema/datasource.prisma` déclare **cinq** schémas — `public`,
-`growth`, `ops`, `pim`, `production` — et `AppConfig` ne lit qu'une URL,
-`DATABASE_LFD_URL`. La conséquence est dans `CLAUDE.md` §1, et elle est le vrai
-sujet : une jointure `b2b → pim` **marcherait** désormais. Elle reste interdite,
-mais par discipline et par porte CI (`lint:cross-schema-join`), plus par la
-physique.
+La conséquence qui compte : une jointure `b2b → pim` **marcherait**. Elle
+reste interdite, mais par discipline et par porte (`lint:cross-schema-join`,
+`lint:prisma-model-ownership`), plus par la physique (`CLAUDE.md` §1).
 
-## ADR-06 — Postgres managé, sans enfermement
+**Historique.** Le référentiel a eu sa propre base ; il l'a perdue lors de la
+fusion en une seule (étape B4).
 
-**Décision** : un Postgres **managé**, plutôt qu'une instance tenue à la main.
+## ADR-06 — Postgres managé
 
-**Raison** : sauvegardes et haute disponibilité déléguées, pour des volumes très
-en deçà de ce qui se facture.
+**Décision.** Un Postgres **managé**, plutôt qu'une instance tenue à la main.
 
-**Conséquences** : portabilité (`pg_dump`/restore et changer l'URL) et
-sauvegardes à soi ; une courte indisponibilité est survivable.
+**Pourquoi.** Sauvegardes et haute disponibilité déléguées, pour des volumes
+très en deçà de ce qui se facture.
 
-⚠️ **Le `pg_dump` de cette phrase est devenu faux** pour la base de production :
-elle est derrière Accelerate (ADR-04), qu'aucun outil du protocole Postgres ne
-traverse. La portabilité reste vraie — l'URL directe existe chez l'hébergeur —
-mais elle n'est plus à portée de commande depuis ce dépôt.
+**Ce que ça implique.** La portabilité tient par Prisma (ADR-04) : changer
+d'hébergeur, c'est restaurer une sauvegarde et changer une URL. Mais depuis ce
+dépôt, la base de production n'est joignable **que par Accelerate** : un
+`pg_dump` passe par l'URL directe de l'hébergeur, hors du dépôt.
 
-## ADR-08 — Monorepo pnpm + Turborepo (pas Nx)
+**Historique.** La première version citait `pg_dump` comme geste de
+portabilité à portée de commande ; Accelerate l'a rendu faux depuis ce dépôt.
 
-**Décision** : **pnpm workspaces + Turborepo**. Les applications sont générées
-par les CLI officiels (`ng new`, `nest new`).
+**2026-09-19** — la sortie d'Accelerate fait entrer l'URL **directe**
+(`db.prisma.io`) dans le déploiement, en secret GitHub
+(`DATABASE_LFD_PROD_DIRECT_URL`), pour `migrate deploy` seulement. Elle reste hors
+du dépôt et du poste : `pg_dump` n'est toujours pas à portée de commande
+depuis ici.
 
-**Raison** : tout est dans `package.json` et `turbo.json`, donc greppable — pas
-de cible inférée ; et zéro friction avec le découpage TypeScript d'Angular, que
-Nx bouscule.
+## ADR-08 — Monorepo pnpm + Turborepo, pas Nx
 
-**Conséquences** : `turbo run <tâche> --filter=…`, et des configurations
-`.run/` WebStorm pour lancer une console par processus.
+**Décision.** **pnpm workspaces + Turborepo.** Les applications sont
+générées par les CLI officiels (`ng new`, `nest new`).
 
-**Vérifié le 2026-09-13** : toujours exact. S'y ajoute une règle qui en découle
-et qui est tenue par une porte — toute dépendance partagée par deux paquets vit
-dans le `catalog:` de `pnpm-workspace.yaml`, épinglée exactement
-(`lint:catalog-shared-deps`, `CLAUDE.md` §6).
+**Pourquoi.** Tout est dans `package.json` et `turbo.json`, donc greppable :
+pas de cible inférée. Et aucune friction avec le découpage TypeScript
+d'Angular, que Nx bouscule.
 
-## ADR-09 — Un Postgres managé nommé
+**Ce que ça implique.**
 
-⚠️ **Cet ADR nommait Neon, et ce dépôt ne permet plus de le confirmer.** L'URL
-de production est une URL Accelerate : elle masque l'hébergeur réel, et rien
-dans le code, les workflows ou les migrations ne le nomme (vérifié le
-2026-09-13).
+- `turbo run <tâche> --filter=…`, et des configurations WebStorm dans `.run/`.
+- Toute dépendance partagée par deux paquets vit dans le `catalog:` de
+  `pnpm-workspace.yaml`, épinglée exactement (`lint:catalog-shared-deps`,
+  `CLAUDE.md` §6).
+- Un succès **mis en cache** par turbo ne prouve rien sur un paquet touché :
+  chercher `cache miss, executing` (`CLAUDE.md` §9 bis).
 
-Ce qui reste vrai du raisonnement, indépendamment du fournisseur : un modèle
-facturé **à l'opération** pénalise le travail de fond, là où un modèle
-heures-compute le tolère. Prisma parlant à n'importe quel Postgres, la bascule
-reste ouverte.
+## ADR-09 — L'hébergeur de la base
 
-**À faire** : rouvrir cette entrée en nommant l'hébergeur, ou la fermer en
-écrivant qu'on ne le documente pas ici. Une ADR qui affirme un fournisseur
-qu'on ne peut pas vérifier vaut moins qu'une ADR qui dit ne pas savoir.
+**Décision.** Aucune, à ce jour — et c'est écrit plutôt que deviné.
+
+**Pourquoi.** La première version nommait Neon. L'URL de production est une
+URL Accelerate, qui masque l'hébergeur réel, et rien dans le code, les
+workflows ou les migrations ne le nomme (vérifié le 2026-09-13).
+
+**Ce qui reste vrai quel que soit le fournisseur** : un modèle facturé à
+l'opération pénalise le travail de fond, là où un modèle au temps de calcul le
+tolère. Prisma parlant à n'importe quel Postgres, la bascule reste ouverte.
+
+**À faire.** Nommer l'hébergeur ici, ou écrire qu'on ne le documente pas dans
+le dépôt.
+
+**2026-09-19** — les URL qui remplacent Accelerate (`pooled.db.prisma.io`,
+`db.prisma.io`) désignent **Prisma Postgres**, et le déploiement les manipule
+désormais (`deploy_lfd_api.yml`, étape « Migrer la base »). La raison écrite
+plus haut — une URL qui masque l'hébergeur — tombe à la bascule ; la décision,
+elle, reste à écrire.
 
 ## ADR-10 — Backend en ESM, flags TypeScript stricts partagés
 
-**Décision** : backend en **ESM** (`"type": "module"`, imports en `.js`,
+**Décision.** Backend en **ESM** (`"type": "module"`, imports en `.js`,
 résolution NodeNext). Les flags stricts sont posés en deux couches :
 [`tsconfig.base.json`](../tsconfig.base.json) pour tout le monorepo, puis
-[`tsconfig/tsflags.backend.json`](../tsconfig/tsflags.backend.json) pour ce qui
-est propre à Node et Nest.
+[`tsconfig/tsflags.backend.json`](../tsconfig/tsflags.backend.json) pour ce
+qui est propre à Node et Nest.
 
-**Raison** : `verbatimModuleSyntax` impose l'ESM ; les flags forcent à traiter
-`undefined` et le hors-borne explicitement, donc moins de pannes silencieuses.
+**Pourquoi.** `verbatimModuleSyntax` impose l'ESM ; les flags forcent à
+traiter `undefined` et le hors-borne explicitement, donc moins de pannes
+silencieuses.
 
-**Ce qui est durci, et pourquoi ça compte** :
+**Ce qui est durci** :
 
-- `noImplicitReturns` et `allowUnusedLabels: false` — deux trous que `strict` ne
-  couvre pas ;
-- **`exactOptionalPropertyTypes`** — `{a?: T}` cesse d'être `{a: T | undefined}`.
-  C'est le flag qui coûte le plus à l'écriture et qui rend le plus : une clé
-  posée à `undefined` n'est **pas** une clé absente ;
-- **`noUncheckedIndexedAccess`** sur le backend — un accès indexé rend
-  `T | undefined` ;
-- les flags déjà impliqués par `strict` sont **épinglés explicitement**, pour que
-  l'intention survive à une couche enfant qui toucherait `strict`.
+| Flag                                            | Ce qu'il change                                                                                    |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `exactOptionalPropertyTypes`                    | `{a?: T}` n'est plus `{a: T \| undefined}` : une clé posée à `undefined` n'est pas une clé absente |
+| `noUncheckedIndexedAccess` (backend)            | un accès indexé rend `T \| undefined`                                                              |
+| `noImplicitReturns`, `allowUnusedLabels: false` | deux trous que `strict` ne couvre pas                                                              |
+| les flags de `strict`, épinglés un à un         | l'intention survit à une couche enfant qui toucherait `strict`                                     |
 
-**Écartés délibérément** : `erasableSyntaxOnly`, qui interdit les _parameter
-properties_ (`constructor(private readonly x: X)`) et casserait Nest de fond en
-comble ; `isolatedDeclarations`, dont le gain vise une bibliothèque publiée.
+**Écartés délibérément** : `erasableSyntaxOnly`, qui interdit les
+_parameter properties_ (`constructor(private readonly x: X)`) et casserait
+Nest de fond en comble ; `isolatedDeclarations`, dont le gain vise une
+bibliothèque publiée.
 
-**Conséquences** : les tests backend tournent en ESM
-(`--experimental-vm-modules`), parce que le client Prisma généré emploie
-`import.meta`. Les fronts sont en **Vitest**.
+**Ce que ça implique.**
 
-⚠️ Une conséquence non écrite en v1 et payée depuis : **esbuild n'émet pas
-`emitDecoratorMetadata`**. Tout script qui boote l'`AppModule` — donc la
-résolution de dépendances par type — doit passer par `tsc`, jamais par `tsx`.
-C'est ce que `tsconfig.seed.json` documente, et ce qui a fait échouer
-`mercuriale:import` à son premier lancement.
+- Les tests backend tournent en ESM (`--experimental-vm-modules`), parce que
+  le client Prisma généré emploie `import.meta`.
+- **esbuild n'émet pas `emitDecoratorMetadata`** : tout script qui démarre
+  l'`AppModule` passe par `tsc`, jamais par `tsx` (`apps/lfd-api/tsconfig.seed.json`).
+  C'est ce qui a fait échouer `mercuriale:import` à son premier lancement.
+- TypeScript reste en 6.x : la 7.0 n'a pas encore d'API programmatique, dont
+  dépendent `nest build`, ts-jest et ESLint (`CLAUDE.md` §6).
 
 ## ADR-12 — Authentification déléguée à Auth0, vérifiée avec `jose`
 
-**Décision** : l'authentification est **déléguée à Auth0** (OIDC). L'API valide
-les jetons d'accès **JWT RS256** contre le **JWKS** du tenant via **`jose`**, et
-non Passport. Le garde est branché en `APP_GUARD` : l'API est **fermée par
-défaut**, et s'ouvre explicitement avec `@Public()`.
+**Décision.** L'authentification est **déléguée à Auth0** (OIDC). L'API
+valide les jetons **JWT RS256** contre le **JWKS** du tenant avec **`jose`**,
+pas Passport. Le garde est un `APP_GUARD` : l'API est **fermée par défaut** et
+s'ouvre explicitement avec `@Public()`.
 
-**Raison** : connexion, réinitialisation, MFA, social — c'est du travail non
-différenciant. `jose` est ESM natif (ADR-10) et typé, sans l'échafaudage de
-Passport. Surtout, l'identité reste **hors du domaine** : l'acteur d'un fait
-n'est qu'un `sub` vérifié.
+**Pourquoi.** Connexion, réinitialisation, MFA, connexion sociale : du travail
+non différenciant. `jose` est ESM natif (ADR-10) et typé, sans l'échafaudage
+de Passport.
 
-**Conséquences** :
+**Ce que ça implique.** Le jeton n'atteste **que l'identité** ; tout le reste
+se relit en base, à chaque requête :
 
-- `AUTH0_DOMAIN` et `AUTH0_AUDIENCE` sont obligatoires — l'API **refuse de
-  démarrer** sans, parce qu'une authentification mal configurée valide des jetons
-  contre le mauvais émetteur ;
-- le JWKS est résolu paresseusement et mis en cache par `jose`, donc aucun appel
-  réseau à l'amorçage.
+```mermaid
+sequenceDiagram
+    participant N as Navigateur
+    participant A as Auth0
+    participant API as lfd-api
+    participant DB as Base
 
-✅ **Le « à faire » de la v1 est fait** (vérifié le 2026-09-13) : la table
-interne existe — `StaffUser`, dans le schéma `public` — et la résolution du
-principal passe par elle. Ce qui compte pour la sécurité y a même été poussé plus
-loin que ne le demandait l'ADR : **la base est autoritaire**. Le jeton n'atteste
-que le sujet ; le rôle, le statut et la société sont relus en base à chaque
-requête, si bien qu'un compte désactivé est bloqué immédiatement plutôt qu'à
-l'expiration du jeton.
+    N->>A: connexion
+    A-->>N: jeton (sub signé)
+    N->>API: requête + jeton
+    API->>API: vérifie la signature (JWKS en cache)
+    API->>DB: qui est ce sub ? rôle, statut, société
+    DB-->>API: la fiche, ou rien
+    API-->>N: réponse, ou 401 / 403
+```
+
+- **La base est autoritaire.** Un compte désactivé est bloqué à la requête
+  suivante, pas à l'expiration du jeton, et aucun claim forgé n'élargit la
+  portée.
+- **Le `sub` ne sort pas de la frontière d'identité.** Côté staff, la garde
+  le traduit en **id de fiche**, et c'est cette fiche qui est l'auteur de tout
+  ce qui s'écrit ensuite — journal compris
+  ([`journalisation/architecture-journalisation.md`](journalisation/architecture-journalisation.md) §12).
+  Deux portes le tiennent : `lint:subject-readers` et `lint:auth0-id-readers`.
+- `AUTH0_DOMAIN` et `AUTH0_AUDIENCE` sont obligatoires : l'API **refuse de
+  démarrer** sans, parce qu'une configuration incomplète validerait des jetons
+  contre le mauvais émetteur.
+- Le JWKS est résolu paresseusement et mis en cache par `jose` : aucun appel
+  réseau au démarrage.
+
+**Historique.**
+
+- La première version renvoyait à « une table interne à créer » : elle existe
+  (`StaffUser`) depuis, et la résolution du principal passe par elle.
+- Elle disait aussi que « l'acteur d'un fait n'est qu'un `sub` vérifié ».
+  C'était vrai jusqu'au 2026-09-18 ; depuis, l'auteur est la fiche, et le
+  `sub` ne s'écrit plus que dans les tables d'identité (la fiche et la table
+  de ses `sub`).

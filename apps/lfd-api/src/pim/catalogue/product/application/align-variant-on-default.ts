@@ -71,6 +71,7 @@ export class AlignVariantOnDefaultHandler implements ICommandHandler<
         subjectType: "product",
         subjectId: command.productId,
         payload: {
+          subjectLabel: product.snapshot().name.fr,
           sku: before?.sku ?? command.variantId,
           aspect: command.aspect,
           aligned: command.aligned,

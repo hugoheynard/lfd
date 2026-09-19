@@ -746,6 +746,7 @@ export {
   overlapKindSchema,
   pricingActSchema,
   pricingSubjectSchema,
+  pricingJournalPageQuerySchema,
   pricingReasonPayloadSchema,
   POSED_MERCURIALE_STATUS_LABELS,
   companyMercurialeLineSchema,
@@ -823,6 +824,8 @@ export type {
   PricingActKind,
   PricingSubjectType,
   PricingJournalEntryView,
+  PricingJournalPageQuery,
+  PricingJournalPageView,
   PricingReasonPayload,
   RenamePriceRulePayload,
   RuleStatus,
@@ -860,10 +863,15 @@ export type {
   MercurialeDraftResponse,
 } from "./pricing.js";
 
-export { activityModuleSchema, activityQuerySchema } from "./activity-journal.js";
+export {
+  activityModuleSchema,
+  activityQuerySchema,
+  taxActivityQuerySchema,
+} from "./activity-journal.js";
 export type {
   ActivityModule,
   ActivityQuery,
+  TaxActivityQuery,
   ActivityEventView,
   ActivityPageView,
 } from "./activity-journal.js";

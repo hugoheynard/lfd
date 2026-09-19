@@ -94,7 +94,7 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
 
     const companyId = await this.companies.declareUnowned(company);
     // Déclarée par le staff (démarchage) : signal `staff`.
-    this.events.publish(new CompanyDeclaredEvent(companyId, "staff", null));
+    this.events.publish(new CompanyDeclaredEvent(companyId, company.displayName(), "staff", null));
 
     return { id: companyId, ...(await this.openAccess(command, company, companyId)) };
   }

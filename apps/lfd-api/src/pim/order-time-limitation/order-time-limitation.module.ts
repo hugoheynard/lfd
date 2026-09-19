@@ -5,8 +5,10 @@ import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js
 import { ListOrderTimeLimitsHandler } from "./application/list-order-time-limits.js";
 import { RemoveOrderTimeLimitHandler } from "./application/remove-order-time-limit.js";
 import { SetOrderTimeLimitHandler } from "./application/set-order-time-limit.js";
+import { LimitScopeNamer } from "./domain/ports/limit-scope.namer.js";
 import { OrderTimeLimitRepository } from "./domain/ports/order-time-limit.repository.js";
 import { OrderTimeLimitController } from "./http/order-time-limit.controller.js";
+import { PrismaLimitScopeNamer } from "./infrastructure/prisma-limit-scope.namer.js";
 import { PrismaOrderTimeLimitRepository } from "./infrastructure/prisma-order-time-limit.repository.js";
 
 /**
@@ -32,6 +34,7 @@ import { PrismaOrderTimeLimitRepository } from "./infrastructure/prisma-order-ti
   providers: [
     { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: OrderTimeLimitRepository, useClass: PrismaOrderTimeLimitRepository },
+    { provide: LimitScopeNamer, useClass: PrismaLimitScopeNamer },
     SetOrderTimeLimitHandler,
     RemoveOrderTimeLimitHandler,
     ListOrderTimeLimitsHandler,

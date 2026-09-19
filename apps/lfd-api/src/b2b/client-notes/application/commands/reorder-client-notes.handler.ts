@@ -10,6 +10,7 @@ import { ClientNotebookRepository } from "../../domain/ports/client-notebook.rep
 import { NotebookCompanies } from "../../domain/ports/notebook-companies.js";
 import { reorderClientNotes } from "./client-notebook-editing.js";
 import { ReorderClientNotesCommand } from "./reorder-client-notes.command.js";
+import { namedNotebookCompany } from "../services/notebook-company-guard.js";
 
 /**
  * Range les notes du carnet dans l'ordre choisi par la commerciale. Un ordre
@@ -39,8 +40,12 @@ export class ReorderClientNotesHandler implements ICommandHandler<ReorderClientN
       ids: this.ids,
       uow: this.uow,
     };
-    await reorderClientNotes(ports, command.companyId, command.noteIds, () =>
-      this.events.publishTraced(ClientNoteEditedByStaffEvent.reordered(command.companyId)),
+    await reorderClientNotes(ports, command.companyId, command.noteIds, async () =>
+      this.events.publishTraced(
+        ClientNoteEditedByStaffEvent.reordered(
+          await namedNotebookCompany(this.companies, command.companyId),
+        ),
+      ),
     );
   }
 }

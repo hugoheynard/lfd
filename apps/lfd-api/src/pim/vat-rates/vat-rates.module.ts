@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
+import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
 import { CreateVatRateHandler } from "./application/create-vat-rate.js";
 import { ListVatRatesHandler } from "./application/list-vat-rates.js";
 import { RemoveVatRateHandler } from "./application/remove-vat-rate.js";
@@ -28,7 +29,7 @@ import { PrismaVatRateRepository } from "./infrastructure/prisma-vat-rate.reposi
  * catégories puissent valider leurs références (`emporterTvaId` / `surPlaceTvaId`).
  */
 @Module({
-  imports: [PimDatabaseModule],
+  imports: [PimDatabaseModule, SalesContextsModule],
   controllers: [VatRateController],
   providers: [
     { provide: PimIdGenerator, useClass: UuidV7Generator },

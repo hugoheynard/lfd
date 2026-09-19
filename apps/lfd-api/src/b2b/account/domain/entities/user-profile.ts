@@ -10,6 +10,9 @@ export interface UserProfileInput {
   readonly phone: string;
 }
 
+/** Un champ du profil, tel que le journal le nomme. */
+export type ProfileField = "firstName" | "lastName" | "email" | "phone";
+
 /**
  * Profil de la **personne** qui possède le compte — nom, prénom, e-mail,
  * téléphone.
@@ -55,6 +58,29 @@ export class UserProfile {
       PhoneNumber.create(input.phone),
       !email.equals(EmailAddress.create(currentEmail)),
     );
+  }
+
+  /**
+   * Les **noms** des champs que ce profil change par rapport à celui enregistré
+   * — ce que le journal en garde, jamais les valeurs. L'adresse se compare par
+   * {@link emailChanged}, qui sait qu'une casse différente n'est pas une autre
+   * adresse.
+   */
+  changedFieldsSince(recorded: UserProfileInput): readonly ProfileField[] {
+    const changed: ProfileField[] = [];
+    if (this.firstName.value !== recorded.firstName) {
+      changed.push("firstName");
+    }
+    if (this.lastName.value !== recorded.lastName) {
+      changed.push("lastName");
+    }
+    if (this.emailChanged) {
+      changed.push("email");
+    }
+    if (this.phone.value !== recorded.phone) {
+      changed.push("phone");
+    }
+    return changed;
   }
 
   /** Nom d'usage — « Prénom Nom ». */

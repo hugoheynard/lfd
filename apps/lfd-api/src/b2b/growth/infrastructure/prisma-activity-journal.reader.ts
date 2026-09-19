@@ -5,8 +5,9 @@ import type { ActivityEventView, ActivityPageView, ActivityQuery } from "@lfd/co
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { moduleOf } from "../domain/activity-module.js";
+import type { ActivitySlice } from "../domain/activity-slice.js";
 import { ActivityJournalReader } from "../domain/ports/activity-journal.reader.js";
-import { activityWhereOf } from "./activity-journal.where.js";
+import { activitySnapshotWhereOf, activityWhereOf } from "./activity-journal.where.js";
 
 /** Une ligne du journal, réduite aux colonnes que la vue expose. */
 const COLUMNS = {
@@ -24,12 +25,29 @@ const COLUMNS = {
 } as const;
 
 /**
- * Lecture paginée du journal (`growth.activity_events`).
+ * Ce qui borne une lecture sans venir de la requête : les références de
+ * l'acteur filtré, et la tranche posée par le serveur. L'ancre, le total et les
+ * pages les partagent — un bord oublié dans l'un annoncerait des pages qui
+ * n'existent pas, ou en montrerait qui ne sont pas à lui.
+ */
+interface Scope {
+  readonly actorIds: readonly string[] | null;
+  readonly slice: ActivitySlice | null;
+}
+
+/**
+ * Lecture paginée du journal (`growth.activity_events`), de deux façons.
  *
- * **Pagination par curseur, pas par offset** : le flux est append-only et se
- * lit du plus récent au plus ancien ; un `skip` glisserait d'une ligne à chaque
- * fait écrit pendant la lecture. L'`id` est un ULID, donc trier par `id`
- * décroissant trie par le temps — sans jointure ni index supplémentaire.
+ * **Par curseur** (`before`) — la première, que le front en ligne lit : le flux
+ * est append-only et se lit du plus récent au plus ancien, et un curseur ne
+ * glisse jamais.
+ *
+ * **Par numéro de page** (`page`, 2026-09-19) — pour un paginateur, qui saute à
+ * une page et annonce un total. Un `OFFSET` nu glisserait d'une ligne à chaque
+ * fait écrit pendant la lecture ; il est donc lu dans un **instantané** : tout
+ * ce qui précède l'ancre `asOf`, fixée par la première page et renvoyée par les
+ * suivantes. L'`id` est un ULID : trier par `id` décroissant trie par le temps,
+ * et borner par `id` découpe exactement ce que la première page a vu.
  */
 @Injectable()
 export class PrismaActivityJournalReader extends ActivityJournalReader {
@@ -37,30 +55,75 @@ export class PrismaActivityJournalReader extends ActivityJournalReader {
     super();
   }
 
-  async page(query: ActivityQuery, actorIds: readonly string[] | null): Promise<ActivityPageView> {
-    // Une ligne de plus que demandé : sa présence dit qu'il y a une suite, sans
-    // second `count` sur une table qui grossit.
-    const ids = await this.prisma.$queryRaw<readonly { readonly id: string }[]>`
-      SELECT id FROM growth.activity_events
-      WHERE ${activityWhereOf(query, actorIds)}
-      ORDER BY id DESC
-      LIMIT ${query.limit + 1}
-    `;
+  async page(
+    query: ActivityQuery,
+    actorIds: readonly string[] | null,
+    slice: ActivitySlice | null,
+  ): Promise<ActivityPageView> {
+    const scope = { actorIds, slice };
+    const asOf = query.asOf ?? (await this.latestMatching(query, scope));
+    const page = query.page ?? null;
+    if (asOf === null) {
+      // Aucun fait ne répond aux filtres : pas d'instantané à lire.
+      return { events: [], nextBefore: null, total: 0, page: page ?? firstPageOr(query), asOf };
+    }
+    const offset = page === null ? 0 : (page - 1) * query.limit;
+    // Une ligne de plus que demandé : sa présence dit qu'il y a une suite.
+    const [ids, total] = await Promise.all([
+      this.prisma.$queryRaw<readonly { readonly id: string }[]>`
+        SELECT id FROM growth.activity_events
+        WHERE ${activityWhereOf(query, actorIds, asOf, slice)}
+        ORDER BY id DESC
+        LIMIT ${query.limit + 1} OFFSET ${offset}
+      `,
+      this.countOf(query, scope, asOf),
+    ]);
     // Les filtres sont en SQL (cf. `activityWhereOf`) ; les colonnes, elles,
     // se relisent par Prisma — par clé primaire, donc sans coût — pour rester
     // typées jusqu'à la vue.
-    const page = ids.slice(0, query.limit).map((row) => row.id);
+    const kept = ids.slice(0, query.limit).map((row) => row.id);
     const rows = await this.prisma.activityEvent.findMany({
-      where: { id: { in: page } },
+      where: { id: { in: kept } },
       orderBy: { id: "desc" },
       select: COLUMNS,
     });
 
     return {
       events: rows.map(toView),
-      nextBefore: ids.length > query.limit ? (page.at(-1) ?? null) : null,
+      nextBefore: ids.length > query.limit ? (kept.at(-1) ?? null) : null,
+      total,
+      page: page ?? firstPageOr(query),
+      asOf,
     };
   }
+
+  /** L'ancre d'un instantané neuf : le fait le plus récent qui répond aux filtres. */
+  private async latestMatching(query: ActivityQuery, scope: Scope): Promise<string | null> {
+    const [latest] = await this.prisma.$queryRaw<readonly { readonly id: string }[]>`
+      SELECT id FROM growth.activity_events
+      WHERE ${activitySnapshotWhereOf(query, scope.actorIds, null, scope.slice)}
+      ORDER BY id DESC
+      LIMIT 1
+    `;
+    return latest?.id ?? null;
+  }
+
+  /** Le total de l'instantané — filtres et recherche compris, curseur exclu. */
+  private async countOf(query: ActivityQuery, scope: Scope, asOf: string): Promise<number> {
+    const [row] = await this.prisma.$queryRaw<readonly { readonly total: bigint }[]>`
+      SELECT count(*) AS total FROM growth.activity_events
+      WHERE ${activitySnapshotWhereOf(query, scope.actorIds, asOf, scope.slice)}
+    `;
+    return Number(row?.total ?? 0n);
+  }
+}
+
+/**
+ * Sans `page`, une lecture sans curseur est la première page ; lue par curseur,
+ * sa position n'est pas calculée — cf. `ActivityPageView.page`.
+ */
+function firstPageOr(query: ActivityQuery): number | null {
+  return query.before === undefined ? 1 : null;
 }
 
 function toView(row: {

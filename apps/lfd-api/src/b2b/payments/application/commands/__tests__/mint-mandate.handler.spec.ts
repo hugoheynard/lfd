@@ -57,6 +57,7 @@ const CREDITOR: CreditorSnapshot = {
 
 const HOLDER: MandateHolder = {
   companyName: "SAS Les Tommeuses",
+  displayName: "Les Tommeuses",
   email: "x@y.fr",
   reference: "C-9P2X4B",
   siren: "732829320",
@@ -97,7 +98,6 @@ function build(
       return Promise.resolve("mdt_neuf");
     },
     save: () => Promise.resolve(),
-    findStripeCustomerId: () => Promise.resolve(null),
     depositProof: () => Promise.resolve(),
   };
 
@@ -230,7 +230,7 @@ describe("MintMandateHandler — frapper sans signer", () => {
     ]);
     expect(events.traced[0]?.journalFact()).toMatchObject({
       subjectId: "mdt_neuf",
-      payload: { companyId: "cmp_1", via: "staff" },
+      payload: { company: { id: "cmp_1", name: "Les Tommeuses" }, via: "staff" },
     });
   });
 

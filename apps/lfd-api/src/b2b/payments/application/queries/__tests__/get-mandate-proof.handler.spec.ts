@@ -17,8 +17,6 @@ function mandate(proof: { key: string; name: string } | null): PaymentMandate {
     paymentType: "recurrent",
     id: "mdt_1",
     companyId: "cmp_1",
-    stripeCustomerId: null,
-    paymentMethodId: null,
     reference: "LFC-9P2X4B-260912-K7M3QT",
     last4: "3000",
     bankCode: "",
@@ -46,7 +44,6 @@ function build(options: {
     create: () => Promise.resolve("x"),
     save: () => Promise.resolve(),
     findHolder: () => Promise.resolve(null),
-    findStripeCustomerId: () => Promise.resolve(null),
     depositProof: () => Promise.resolve(),
   };
   const store: DocumentStore = {

@@ -2,7 +2,14 @@ import type { MandateToCreate, PaymentMandate } from "./entities/payment-mandate
 
 /** L'identité de la société, telle qu'un mandat la demande. */
 export interface MandateHolder {
+  /** La raison sociale — le nom du débiteur, celui que le mandat imprime. */
   readonly companyName: string;
+  /**
+   * Le nom qu'affichent les écrans — l'enseigne, à défaut la raison sociale —,
+   * celui sous lequel le journal cite la société (lot B du plan des phrases).
+   * Jamais imprimé : le papier porte la raison sociale.
+   */
+  readonly displayName: string;
   readonly email: string;
   /**
    * La référence lisible du client — `C-9P2X4B`.
@@ -115,17 +122,12 @@ export abstract class PaymentMandateRepository {
   abstract depositProof(mandate: PaymentMandate, previousProofKey: string | null): Promise<void>;
 
   /**
-   * L'identité de la société pour le prestataire, ou `null` si l'id est inconnu.
+   * L'identité de la société qu'un mandat imprime ou à qui on l'envoie, ou `null`
+   * si l'id est inconnu.
    *
    * Ici plutôt que par un import du contexte `account` : le paiement n'a besoin
    * que de quelques chaînes, et dépendre de tout l'agrégat société pour les obtenir
    * couplerait deux contextes pour rien (ISP).
    */
   abstract findHolder(companyId: string): Promise<MandateHolder | null>;
-
-  /**
-   * L'id du client Stripe déjà utilisé pour cette société, tous mandats
-   * confondus — un client par société, pas par autorisation. `null` si aucun.
-   */
-  abstract findStripeCustomerId(companyId: string): Promise<string | null>;
 }

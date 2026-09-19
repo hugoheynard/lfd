@@ -12,8 +12,28 @@ import { z } from "zod";
 /**
  * `equipe` — l'annuaire staff et ses rôles (2026-09-18). Un module à lui : sous
  * `comptes`, le filtre aurait mêlé l'équipe et les clients.
+ *
+ * `production` — la journée du fournil et le réglage de ses contenants
+ * (2026-09-19). Ordre de déploiement libre : le back-office déjà servi lit la
+ * réponse sans la parser (`http.get<T>`) et masque la pastille d'un module qu'il
+ * ne connaît pas (`@if (line.moduleLabel)`), vérifié le 2026-09-19.
+ *
+ * `comptabilite` — notre entité émettrice et les mandats SEPA (Hugo,
+ * 2026-09-19) : le travail de la comptabilité, pas un compte client. Même
+ * déploiement que `production` : le back-office déjà servi masque la pastille
+ * d'une valeur qu'il ne connaît pas, sans casser (vérifié le 2026-09-19 pour
+ * `production`, même chemin). L'API d'abord : un back-office neuf qui filtre sur
+ * `comptabilite` devant une API ancienne recevrait un `400`.
  */
-export const activityModuleSchema = z.enum(["pim", "commercial", "commandes", "comptes", "equipe"]);
+export const activityModuleSchema = z.enum([
+  "pim",
+  "commercial",
+  "commandes",
+  "comptes",
+  "equipe",
+  "production",
+  "comptabilite",
+]);
 export type ActivityModule = z.infer<typeof activityModuleSchema>;
 
 /**
@@ -24,7 +44,7 @@ export type ActivityModule = z.infer<typeof activityModuleSchema>;
  * schéma les convertit, et c'est lui qui décide qu'une limite de 500 est un
  * refus plutôt qu'une page géante.
  */
-export const activityQuerySchema = z.object({
+const activityFiltersSchema = z.object({
   /** Module émetteur (`pim`, `commercial`…). */
   module: activityModuleSchema.optional(),
   /** Type exact (`tax_regime.rate_changed`) — le filtre le plus précis. */
@@ -41,16 +61,67 @@ export const activityQuerySchema = z.object({
    * Recherche libre (2026-09-18) : un nom, un prénom, un morceau de numéro, un
    * identifiant. Retient le fait dont le nom figé de l'auteur OU la charge
    * utile contient le texte (casse ignorée), ou dont le sujet EST ce texte.
-   * Les accents comptent : « cecile » ne trouve pas « Cécile ».
+   * Ni la casse ni les accents ne comptent (depuis le 2026-09-19) : « cecile »
+   * trouve « Cécile ».
    *
    * Deux caractères au moins : un seul ramènerait presque tout le journal.
    */
   q: z.string().trim().min(2).max(100).optional(),
-  /** Pagination par curseur : l'`id` ULID de la dernière ligne rendue. */
+  /**
+   * Pagination par curseur : l'`id` ULID de la dernière ligne rendue.
+   *
+   * Servi pour le front en ligne, qui le lit encore ; les pages numérotées
+   * (`page`) sont l'autre façon de lire, et les deux ne se combinent pas.
+   */
   before: z.string().min(1).optional(),
+  /**
+   * Pagination NUMÉROTÉE (2026-09-19), à partir de 1 — pour un paginateur qui
+   * saute à la page 3 et annonce un total. `limit` en est la taille.
+   */
+  page: z.coerce.number().int().min(1).optional(),
+  /**
+   * L'**ancre** de l'instantané parcouru : l'`id` du fait le plus récent que la
+   * première page a vu, rendu par elle dans `asOf`. Sans elle, un numéro de
+   * page glisse d'un rang à chaque fait écrit pendant la lecture. Absente, la
+   * réponse en fixe une.
+   */
+  asOf: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
+
+/**
+ * Refusé plutôt que départagé : une règle de priorité silencieuse ferait lire
+ * une autre page que celle que l'écran croit demander.
+ */
+const PAGE_OR_CURSOR = {
+  message: "`page` et `before` ne se combinent pas : lisez par numéro de page OU par curseur.",
+  path: ["page"],
+};
+
+function pageOrCursor(query: {
+  readonly page?: number | undefined;
+  readonly before?: string | undefined;
+}): boolean {
+  return query.page === undefined || query.before === undefined;
+}
+
+export const activityQuerySchema = activityFiltersSchema.refine(pageOrCursor, PAGE_OR_CURSOR);
 export type ActivityQuery = z.infer<typeof activityQuerySchema>;
+
+/**
+ * Les filtres de la **tranche fiscale** (`GET /admin/activity/tax`, 2026-09-19) :
+ * ceux du journal, **sans `module`**.
+ *
+ * La tranche est bornée au serveur par une liste fermée de types — taux de TVA,
+ * TVA d'une famille ou d'une fiche, règles comptables. Un module n'y ajouterait
+ * rien qu'une intersection vide ou redondante ; il est donc retiré du contrat
+ * plutôt qu'accepté et ignoré. Un `module` envoyé quand même est écarté par le
+ * schéma, comme tout paramètre inconnu : il ne peut pas élargir la tranche.
+ */
+export const taxActivityQuerySchema = activityFiltersSchema
+  .omit({ module: true })
+  .refine(pageOrCursor, PAGE_OR_CURSOR);
+export type TaxActivityQuery = z.infer<typeof taxActivityQuerySchema>;
 
 /** Un fait du journal, tel que l'écran le reçoit. */
 export interface ActivityEventView {
@@ -78,8 +149,26 @@ export interface ActivityEventView {
   readonly payload: Record<string, unknown>;
 }
 
-/** Une page du flux. `nextBefore` est `null` quand on a atteint le fond. */
+/**
+ * Une page du flux. `nextBefore` est `null` quand on a atteint le fond.
+ *
+ * `total`, `page` et `asOf` sont venus le 2026-09-19, en AJOUT : le front en
+ * ligne ne lit que `events` et `nextBefore`, qui ne changent pas.
+ */
 export interface ActivityPageView {
   readonly events: readonly ActivityEventView[];
   readonly nextBefore: string | null;
+  /** Les faits de l'instantané qui répondent aux filtres — curseur exclu. */
+  readonly total: number;
+  /**
+   * Le numéro de la page rendue. `null` quand elle a été lue par curseur
+   * (`before`) : sa position n'est alors pas calculée, et un numéro inventé
+   * mentirait au paginateur.
+   */
+  readonly page: number | null;
+  /**
+   * L'ancre de l'instantané lu, à renvoyer pour les pages suivantes. `null`
+   * quand aucun fait ne répond aux filtres.
+   */
+  readonly asOf: string | null;
 }

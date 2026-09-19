@@ -7,7 +7,7 @@ import { ReadMercurialeDraftQuery } from "./read-mercuriale-draft.query.js";
 
 /**
  * Le brouillon d'un client, avec le NOM de qui l'a touché en dernier — une
- * négociation se reprend souvent à deux (plan `plan-l-auteur-est-la-fiche.md`,
+ * négociation se reprend souvent à deux (`architecture-journalisation.md` §12,
  * D3).
  */
 @QueryHandler(ReadMercurialeDraftQuery)

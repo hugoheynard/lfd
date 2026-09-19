@@ -1,13 +1,15 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { changesBetween } from "../../../journal/changes.js";
-import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { changesBetween, type FieldChanges } from "../../../journal/changes.js";
+import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
 } from "../../category/domain/errors/category-errors.js";
+import { namedCategory, requireCategory } from "../../category/application/category-support.js";
+import type { Category } from "../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";
 import {
@@ -71,6 +73,12 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     }
 
     const before = UpdateProductIdentityHandler.identityOf(product.snapshot());
+    // L'ancienne famille, lue pour son NOM : la ligne doit dire d'où la fiche
+    // venait sous le nom que sa famille portait ce jour-là.
+    const previous =
+      product.categoryId === category.id
+        ? category
+        : await requireCategory(this.categories, product.categoryId);
     product.rename(localizedText("nom", input.name));
     product.changeKind(input.kind);
     product.reclassify(input.categoryId);
@@ -83,19 +91,56 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     // de sens ici. Enregistrer une section sans rien y changer n'écrit aucun
     // fait — sinon l'historique se remplit de gestes sans effet.
     await this.uow.run(async () => {
-      // La trace d'abord : c'est elle qui délivre le laissez-passer sans lequel
-      // le dépôt refuse d'écrire. Rien n'a changé ? On le DIT, et le motif se
-      // grep — un enregistrement sans effet n'a pas de fait à nommer.
-      const ticket =
-        Object.keys(changes).length > 0
-          ? await this.journal.trace({
-              type: PIM_EVENTS.productIdentitySaved,
-              subjectType: "product",
-              subjectId: id,
-              payload: { changes },
-            })
-          : this.journal.untraced("section enregistrée sans modification");
+      const ticket = await this.journalize(product.snapshot().name.fr, id, changes, {
+        from: previous,
+        to: category,
+      });
       await this.products.save(product, ticket);
     });
+  }
+
+  /**
+   * La trace d'abord : c'est elle qui délivre le laissez-passer sans lequel le
+   * dépôt refuse d'écrire. Rien n'a changé ? On le DIT, et le motif se grep —
+   * un enregistrement sans effet n'a pas de fait à nommer.
+   *
+   * Changer de famille change les taux et les canaux dont la fiche hérite : un
+   * fait à part (`product.reclassified`), que la comptabilité relit sans relire
+   * chaque nom retouché (Hugo, 2026-09-19). Le diff d'identité garde son
+   * `categoryId` — les lecteurs d'avant le lisent là.
+   */
+  private async journalize(
+    subjectLabel: string,
+    productId: string,
+    changes: FieldChanges,
+    family: { readonly from: Category; readonly to: Category },
+  ): Promise<WriteTicket> {
+    if (Object.keys(changes).length === 0) {
+      return this.journal.untraced("section enregistrée sans modification");
+    }
+    const from = namedCategory(family.from);
+    const to = namedCategory(family.to);
+    const ticket = await this.journal.trace({
+      type: PIM_EVENTS.productIdentitySaved,
+      subjectType: "product",
+      subjectId: productId,
+      // La famille du diff, NOMMÉE (D5 du plan des phrases). La clé reste
+      // `categoryId` : l'attribution d'une révision lit les clés du diff comme
+      // des champs de révision (`revision/domain/attribution.ts`).
+      payload: {
+        subjectLabel,
+        changes:
+          changes["categoryId"] === undefined ? changes : { ...changes, categoryId: { from, to } },
+      },
+    });
+    if (family.from.id !== family.to.id) {
+      await this.journal.trace({
+        type: PIM_EVENTS.productReclassified,
+        subjectType: "product",
+        subjectId: productId,
+        payload: { subjectLabel, from, to },
+      });
+    }
+    return ticket;
   }
 }

@@ -22,8 +22,8 @@ import type { StoredVolumeCommitment } from "./ports/volume-commitments.reader.j
  * franchit pas `infrastructure/` (`CLAUDE.md` §3), donc tant que la vue se
  * fabriquait depuis une ligne, la query devait la lire elle-même.
  *
- * `authors` nomme ses deux auteurs, résolus d'un coup par l'appelant (plan
- * `plan-l-auteur-est-la-fiche.md`, D3).
+ * `authors` nomme ses deux auteurs, résolus d'un coup par l'appelant (
+ * `architecture-journalisation.md` §12, D3).
  */
 export function commitmentView(
   { state, createdAt }: StoredVolumeCommitment,

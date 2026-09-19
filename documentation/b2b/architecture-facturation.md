@@ -64,7 +64,9 @@ PDF ne peut rien produire du tout.
 - `payment_status` : `pending | paid | failed | refunded | not_required`.
 - `payment_mandates` : mandat SEPA Stripe, **un seul actif par société**,
   révocation datée. `MandateGateway` sait enregistrer et révoquer — **pas
-  débiter** : c'est le premier manque côté port.
+  débiter** : c'est le premier manque côté port. _`MandateGateway` et le mandat
+  Stripe : supprimé le 2026-09-19, aucun mandat Stripe en production (Hugo) ; le mandat est désormais frappé chez nous et traité
+  avec la banque (`documentation/comptabilite/prelevement-sepa.md`)._
 - `companies` : `siret`, `tva_intracom` (défaut `""` — donc **souvent vide**,
   cf. §4.3), adresse de facturation, raison sociale, enseigne.
 - Porte machine-à-machine : `POST /admin/recompute`, gardée par `RECOMPUTE_TOKEN`

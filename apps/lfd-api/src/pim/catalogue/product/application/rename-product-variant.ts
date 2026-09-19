@@ -64,7 +64,13 @@ export class RenameProductVariantHandler implements ICommandHandler<
               // La déclinaison est DANS la charge, pas dans le sujet :
               // l'historique se lit par fiche, et un sujet « variante » le
               // couperait en autant de fils qu'il y a de déclinaisons.
-              payload: { variantId, changes },
+              payload: {
+                subjectLabel: product.snapshot().name.fr,
+                // La déclinaison sous son nom APRÈS : c'est celui qu'elle porte
+                // depuis ; l'avant est dans le diff.
+                variant: { id: variantId, name: name.fr },
+                changes,
+              },
             })
           : this.journal.untraced("déclinaison renommée sans modification");
       await this.products.save(product, ticket);

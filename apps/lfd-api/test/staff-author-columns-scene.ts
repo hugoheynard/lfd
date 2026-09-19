@@ -1,6 +1,6 @@
 /**
- * La scène de la migration qui **resserre les colonnes d'auteur** — plan
- * `documentation/staff/plan-l-auteur-est-la-fiche.md`, étape 5C.
+ * La scène de la migration qui **resserre les colonnes d'auteur** —
+ * `documentation/journalisation/architecture-journalisation.md` §12, étape 5C.
  *
  * 🔴 La base de test est migrée JUSQU'AU BOUT : les anciennes colonnes
  * (`*_by_sub`, `staff_sub`) n'y existent plus, et les nouvelles sont déjà

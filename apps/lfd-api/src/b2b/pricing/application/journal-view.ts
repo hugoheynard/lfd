@@ -11,7 +11,7 @@ import type { JournalEntry } from "../domain/ports/pricing-journal.reader.js";
  * sur le même acte.
  *
  * `authors` nomme l'acteur — `system` et les marqueurs n'ont pas de nom, et
- * l'écran garde alors `actor` (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ * l'écran garde alors `actor` (`architecture-journalisation.md` §12, D3).
  */
 export function journalView(entry: JournalEntry, authors: StaffAuthors): PricingJournalEntryView {
   return {

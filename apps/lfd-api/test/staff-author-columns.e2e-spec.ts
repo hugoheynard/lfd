@@ -1,7 +1,7 @@
 /**
  * E2E du **resserrement des colonnes d'auteur** — la migration
  * `20260918220000_resserrement_des_colonnes_d_auteur`, rejouée sur l'état que
- * 5B laisse en production. Plan : `documentation/staff/plan-l-auteur-est-la-fiche.md`
+ * 5B laisse en production. Plan : `documentation/journalisation/architecture-journalisation.md` §12
  * — D8, D9, étape 5C.
  *
  * Ce que seul le vrai SQL prouve :

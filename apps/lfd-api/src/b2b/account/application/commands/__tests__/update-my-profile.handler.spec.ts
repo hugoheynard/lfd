@@ -1,3 +1,5 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import type { UserProfile } from "../../../domain/entities/user-profile.js";
 import {
   EmailAlreadyUsedError,
@@ -64,7 +66,15 @@ function doubles(
     },
   };
 
-  return { handler: new UpdateMyProfileHandler(profiles, identity), journal };
+  return {
+    handler: new UpdateMyProfileHandler(
+      profiles,
+      identity,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+    ),
+    journal,
+  };
 }
 
 function command(overrides: Partial<UpdateMyProfileCommand> = {}): UpdateMyProfileCommand {

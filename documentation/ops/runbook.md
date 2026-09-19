@@ -216,9 +216,10 @@ resserrer — précisément pour que chaque étape soit réversible seule.
 
 ## Sortir d'Accelerate — la bascule, et son retour arrière
 
-📐 **Pas encore jouée.** Au 2026-09-19, la production est **sur Accelerate**
-(`prisma+postgres://`) jusqu'à la bascule du week-end ; le code sait déjà servir
-le pooler mutualisé (`postgres://…@pooled.db.prisma.io`, adaptateur `pg`). Le
+✅ **Jouée le 2026-09-19 au soir** (`07fff0c4`) : la production joint le pooler
+mutualisé (`postgres://…@pooled.db.prisma.io`, adaptateur `pg`), et `/health`
+publie `"database":"pg"`. Le retour arrière ci-dessous reste possible jusqu'au
+resserrement (geste 8). Le
 plan et ses raisons : [`plan-sortie-d-accelerate.md`](plan-sortie-d-accelerate.md)
 (gestes 6, 7, 7′). Accelerate cesse de répondre le **1er décembre 2026**.
 

@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 /**
  * Les **faits du mandat de prélèvement** — ce que le journal retient d'une
  * autorisation de débit.
@@ -22,6 +24,24 @@ export const PAYMENT_MANDATE_FACTS = {
   proofAttached: "payment_mandate.proof_attached",
   /** Le staff déclare le papier signé : le mandat autorise désormais un débit. */
   signed: "payment_mandate.signed",
+  /**
+   * Le staff révoque le mandat courant — actif ou brouillon — depuis la fiche
+   * (depuis le 2026-09-19, plan `documentation/journalisation/plan-journal-d-activite.md`
+   * lot 1) : c'est le geste qui arrête les prélèvements, et il n'avait aucune
+   * trace hors de la colonne `revoked_at`.
+   */
+  revoked: "payment_mandate.revoked",
+  /**
+   * Le staff a envoyé le mandat frappé au client, par courriel (décidé par
+   * Hugo le 2026-09-19 : « je dois savoir mandat envoyé par mail »).
+   *
+   * 🔴 Écrit **après** l'envoi, hors transaction : un courriel parti ne se
+   * rattrape pas, et un fait écrit avant dirait envoyé un papier que le
+   * fournisseur a refusé. La charge porte l'identifiant du fournisseur
+   * (`null` en mode à blanc), **jamais l'adresse** : le journal se relit des
+   * années après, et l'identifiant suffit à retrouver l'envoi chez Resend.
+   */
+  sent: "payment_mandate.sent",
   /** Le brouillon est révoqué parce que ce qu'il imprime a changé. */
   draftVoided: "payment_mandate.draft_voided",
   /**
@@ -41,7 +61,7 @@ export const PAYMENT_MANDATE_FACTS = {
    * dans le bucket (plan §7 #11). Aucune clé de stockage au payload.
    */
   proofPurged: "payment_mandate.proof_purged",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
  * Pourquoi un scan a été détruit : remplacé par un autre sur le même brouillon,

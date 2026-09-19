@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { DeliveryOpening, DeliveryAvailability } from "./delivery-availability.js";
 
@@ -11,7 +13,7 @@ import type { DeliveryOpening, DeliveryAvailability } from "./delivery-availabil
  */
 export const DELIVERY_AVAILABILITY_FACTS = {
   updated: "delivery_availability.updated",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Le sujet du fait : il n'y a qu'un réglage. */
 export const DELIVERY_AVAILABILITY_SUBJECT = "delivery";

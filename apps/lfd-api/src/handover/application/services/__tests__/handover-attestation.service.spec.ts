@@ -119,7 +119,7 @@ describe("HandoverAttestation", () => {
 
     expect(written).toHaveLength(1);
     expect(view.handedOverBy).toBe("staff-1");
-    // Le nom, résolu par l'annuaire (plan `plan-l-auteur-est-la-fiche.md`, D3).
+    // Le nom, résolu par l'annuaire (`architecture-journalisation.md` §12, D3).
     expect(view.handedOverByName).toBe("Inès Moreau");
     expect(view.handedOverVia).toBe("scan");
     expect(view.handedOverAt).toBe(AT.toISOString());

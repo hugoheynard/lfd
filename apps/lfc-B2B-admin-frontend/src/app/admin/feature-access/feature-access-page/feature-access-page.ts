@@ -24,13 +24,12 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
+import { isKnownFeatureKey, levelLabel } from '../../../shared/feature-levels';
 import {
   ACCOUNT_STATE_BADGES,
   type AccountStateBadge,
   authoredLine,
   ignoredRowLine,
-  isKnownFeatureKey,
-  levelLabel,
 } from '../feature-access-labels';
 import { FeatureAccessService } from '../feature-access.service';
 

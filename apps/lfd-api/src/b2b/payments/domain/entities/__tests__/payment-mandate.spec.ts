@@ -5,13 +5,7 @@ import {
   MandateNotSignableError,
   MandateUnprovenError,
 } from "../../errors/mandate-errors.js";
-import {
-  draftMandate,
-  mintMandate,
-  PaymentMandate,
-  type MandateSnapshot,
-  type RegisteredMandate,
-} from "../payment-mandate.js";
+import { mintMandate, PaymentMandate, type MandateSnapshot } from "../payment-mandate.js";
 import { MandateProofRevisionStaleError } from "../../errors/mandate-proof-errors.js";
 import { proofRevisionOf } from "../../services/proof-revision.js";
 
@@ -20,9 +14,8 @@ const NOW = new Date("2026-08-11T10:00:00.000Z");
 const DRAFT_PROOF_KEY = "companies/cmp_1/mandates/mdt_1/mandat-signe-1";
 const SIGNED_REVISION = proofRevisionOf(DRAFT_PROOF_KEY);
 
-const REGISTRATION: RegisteredMandate = {
-  stripeCustomerId: "cus_1",
-  paymentMethodId: "pm_1",
+/** La RUM et le compte reconnu, communs à tous les cas. */
+const IDENTITY: Pick<MandateSnapshot, "reference" | "last4" | "bankCode" | "country" | "status"> = {
   reference: "RUM-123",
   last4: "3000",
   bankCode: "BNPA",
@@ -34,7 +27,7 @@ function snapshot(overrides: Partial<MandateSnapshot> = {}): MandateSnapshot {
   return {
     scheme: "B2B",
     paymentType: "recurrent",
-    ...REGISTRATION,
+    ...IDENTITY,
     id: "mdt_1",
     companyId: "cmp_1",
     acceptedAt: new Date("2024-03-12T00:00:00.000Z"),
@@ -45,49 +38,6 @@ function snapshot(overrides: Partial<MandateSnapshot> = {}): MandateSnapshot {
     ...overrides,
   };
 }
-
-describe("draftMandate — la date qu'on opposera", () => {
-  it("accepte une signature ANCIENNE", () => {
-    // Le cas central : on reprend un portefeuille dont les mandats papier ont
-    // deux ans. Exiger une date récente rendrait la reprise impossible.
-    const draft = draftMandate({
-      companyId: "cmp_1",
-      registration: REGISTRATION,
-      acceptedAt: new Date("2024-03-12T00:00:00.000Z"),
-      now: NOW,
-    });
-
-    expect(draft.acceptedAt?.getFullYear()).toBe(2024);
-    expect(draft.proofStorageKey).toBeNull();
-  });
-
-  it("refuse une signature dans le FUTUR", () => {
-    // C'est la date qu'on présentera en contestation : une faute de frappe s'y
-    // voit maintenant, ou devant la banque.
-    expect(() =>
-      draftMandate({
-        companyId: "cmp_1",
-        registration: REGISTRATION,
-        acceptedAt: new Date("2026-08-12T00:00:00.000Z"),
-        now: NOW,
-      }),
-    ).toThrow(MandateAcceptanceInFutureError);
-  });
-
-  it("ne porte AUCUNE coordonnée bancaire", () => {
-    // Le contrat central du design : ce qu'on écrit ne permet à personne de
-    // reconstituer un IBAN.
-    const draft = draftMandate({
-      companyId: "cmp_1",
-      registration: REGISTRATION,
-      acceptedAt: NOW,
-      now: NOW,
-    });
-
-    expect(JSON.stringify(draft)).not.toMatch(/iban/iu);
-    expect(draft.last4).toBe("3000");
-  });
-});
 
 describe("PaymentMandate — prélever, ou ne plus prélever", () => {
   it("n'est débitable qu'ACTIF", () => {
@@ -167,12 +117,13 @@ describe("PaymentMandate — prélever, ou ne plus prélever", () => {
 });
 
 describe("PaymentMandate — ce qui sort vers l'écran", () => {
-  it("ne laisse fuir NI le moyen de paiement NI le client Stripe", () => {
-    // Ces deux identifiants servent à débiter. Ce qui ne sort pas ne fuit pas.
+  it("montre de quoi reconnaître le compte, et aucune coordonnée bancaire", () => {
+    // Ce qui ne sort pas ne fuit pas : quatre chiffres et un code banque
+    // suffisent à reconnaître un compte, pas à le débiter.
     const view = PaymentMandate.reconstitute(snapshot()).toView();
 
-    expect(JSON.stringify(view)).not.toContain("pm_1");
-    expect(JSON.stringify(view)).not.toContain("cus_1");
+    expect(JSON.stringify(view)).not.toMatch(/iban/iu);
+    expect(view.last4).toBe("3000");
     expect(view.reference).toBe("RUM-123");
   });
 });
@@ -193,7 +144,8 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
     expect(draft.status).toBe("draft");
   });
 
-  it("ne porte aucun rattachement au prestataire", () => {
+  /** Depuis le 2026-09-19 : les colonnes Stripe du mandat ne sont plus écrites. */
+  it("ne porte aucun rattachement à un prestataire", () => {
     const draft = mintMandate({
       scheme: "B2B",
       paymentType: "recurrent",
@@ -202,8 +154,8 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
       reference: "LFC-X",
     });
 
-    expect(draft.stripeCustomerId).toBeNull();
-    expect(draft.paymentMethodId).toBeNull();
+    expect(Object.keys(draft)).not.toContain("stripeCustomerId");
+    expect(Object.keys(draft)).not.toContain("paymentMethodId");
   });
 
   it("nomme son émetteur — sans lui, le papier ne peut pas être imprimé", () => {
@@ -225,8 +177,6 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     return snapshot({
       status: "draft",
       acceptedAt: null,
-      stripeCustomerId: null,
-      paymentMethodId: null,
       creditorId: "ent_1",
       proofStorageKey: "companies/cmp_1/mandates/mdt_1/mandat-signe-1",
       proofFileName: "mandat-signe.pdf",
@@ -262,7 +212,7 @@ describe("PaymentMandate.sign — le papier revient signé", () => {
     expect(mandate.status).toBe("active");
   });
 
-  it("refuse une date à venir — la même faute de frappe que sur le chemin Stripe", () => {
+  it("refuse une date à venir — c'est la date qu'on opposera en contestation", () => {
     const mandate = PaymentMandate.reconstitute(draftSnapshot());
     const tomorrow = new Date(NOW.getTime() + 86_400_000);
 

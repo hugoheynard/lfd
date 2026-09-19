@@ -193,3 +193,26 @@ describe('ProductFormPage — en-tête', () => {
     expect(new Set(cards).size).toBe(sections.length);
   });
 });
+
+describe('ProductFormPage — onglet « Historique »', () => {
+  it('n’offre pas d’historique à la création : rien n’a encore touché la fiche', () => {
+    const { root } = render(false);
+    expect(root.querySelector('fold-tabs')).toBeNull();
+    expect(root.querySelector('fold-aside-layout')).not.toBeNull();
+  });
+
+  it('ne lit le journal qu’une fois l’onglet ouvert, et le garde monté ensuite', () => {
+    const { fixture, root } = render(true);
+    const tabs = Array.from(root.querySelectorAll<HTMLElement>('[role="tab"]'));
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Fiche', 'Historique']);
+    expect(root.querySelector('app-product-history')).toBeNull();
+
+    tabs[1]?.click();
+    fixture.detectChanges();
+    expect(root.querySelector('app-product-history')).not.toBeNull();
+
+    tabs[0]?.click();
+    fixture.detectChanges();
+    expect(root.querySelector('app-product-history')).not.toBeNull();
+  });
+});

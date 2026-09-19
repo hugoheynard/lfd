@@ -54,8 +54,8 @@ export type FeatureLevelsView = { readonly [Key in FeatureKey]: FeatureLevel<Key
 /**
  * Qui a posé un écart, figé à l'instant du geste : un nom et un rôle, pas un
  * identifiant. Le champ `sub` qu'elle portait n'était lu par aucun écran
- * (vérifié le 2026-09-18) ; il est retiré à l'étape 5A du plan
- * `documentation/staff/plan-l-auteur-est-la-fiche.md`.
+ * (vérifié le 2026-09-18) ; il est retiré à l'étape 5A du
+ * `documentation/journalisation/architecture-journalisation.md` §12.
  */
 export interface FeatureAccessAuthorView {
   /** Vide quand l'annuaire ne connaissait pas l'auteur ce jour-là. */

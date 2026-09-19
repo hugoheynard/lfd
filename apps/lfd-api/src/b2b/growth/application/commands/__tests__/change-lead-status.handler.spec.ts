@@ -1,18 +1,18 @@
-import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { Lead } from "../../../domain/entities/lead.js";
 import { LeadNotFoundError, LeadTransitionError } from "../../../domain/errors/lead-errors.js";
-import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { LeadRepository } from "../../../domain/ports/lead.repository.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ChangeLeadStatusCommand } from "../change-lead-status.command.js";
 import { ChangeLeadStatusHandler } from "../change-lead-status.handler.js";
+import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
+const BUSINESS = "Bistrot";
 
 function newLead(): Lead {
   return Lead.reconstitute({
     id: "lead_1",
-    businessName: "Bistrot",
+    businessName: BUSINESS,
     contactName: "",
     email: "",
     phone: "",
@@ -44,25 +44,13 @@ class FakeRepo extends LeadRepository {
   }
 }
 
-class CapturingRecorder extends ActivityRecorder {
-  readonly records: RecordActivityInput[] = [];
-  record(input: RecordActivityInput): Promise<void> {
-    this.records.push(input);
-    return Promise.resolve();
-  }
-  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
-  recordOrFail(input: RecordActivityInput): Promise<void> {
-    return this.record(input);
-  }
-}
-
 function handlerFor(lead: Lead | null): {
   handler: ChangeLeadStatusHandler;
-  recorder: CapturingRecorder;
+  recorder: RecordingActivityRecorder;
   repo: FakeRepo;
 } {
   const repo = new FakeRepo(lead);
-  const recorder = new CapturingRecorder();
+  const recorder = new RecordingActivityRecorder();
   return {
     handler: new ChangeLeadStatusHandler(repo, recorder, new FixedClock(NOW)),
     recorder,
@@ -79,7 +67,8 @@ describe("ChangeLeadStatusHandler", () => {
       type: "lead.stage_changed",
       subjectId: "lead_1",
       idempotencyKey: "lead.stage_changed:lead_1:contacted",
-      payload: { status: "contacted" },
+      // L'enseigne du lead au moment du geste (lot B du plan des phrases).
+      payload: { subjectLabel: BUSINESS, status: "contacted" },
     });
   });
 
@@ -88,14 +77,17 @@ describe("ChangeLeadStatusHandler", () => {
     await handler.execute(new ChangeLeadStatusCommand("lead_1", "converted"));
     expect(recorder.records[0]).toMatchObject({
       type: "lead.converted",
-      payload: { via: "manual" },
+      payload: { subjectLabel: BUSINESS, via: "manual" },
     });
   });
 
   it("journalise lead.lost lors d'une perte", async () => {
     const { handler, recorder } = handlerFor(newLead());
     await handler.execute(new ChangeLeadStatusCommand("lead_1", "lost"));
-    expect(recorder.records[0]?.type).toBe("lead.lost");
+    expect(recorder.records[0]).toMatchObject({
+      type: "lead.lost",
+      payload: { subjectLabel: BUSINESS },
+    });
   });
 
   it("404 quand le lead n'existe pas", async () => {

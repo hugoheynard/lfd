@@ -8,6 +8,8 @@ import { requireCategory } from "../../category/application/category-support.js"
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/context-vat.js";
+import { vatChangePayload } from "../../shared/application/journal-names.js";
+import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
@@ -53,7 +55,7 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
     const before = product.vatByContext;
     product.setVat(command.vat, await this.contexts.active(), category.channelPreset);
     await this.uow.run(async () => {
-      const ticket = await this.journalize(product.id, before, product.vatByContext);
+      const ticket = await this.journalize(product, before, product.vatByContext);
       await this.products.save(product, ticket);
     });
   }
@@ -64,7 +66,7 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
    * formulaire réenregistré à l'identique n'est pas un fait.
    */
   private async journalize(
-    productId: string,
+    product: Product,
     before: ContextVat,
     after: ContextVat,
   ): Promise<WriteTicket> {
@@ -76,10 +78,19 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
     return this.journal.trace({
       type: PIM_EVENTS.productVatChanged,
       subjectType: "product",
-      subjectId: productId,
-      payload: Object.fromEntries(
-        changed.map((key) => [key, { from: before[key] ?? null, to: after[key] ?? null }]),
-      ),
+      subjectId: product.id,
+      // Chaque taux et chaque contexte NOMMÉS (D5 du plan des phrases) : un
+      // taux renommé depuis se relit sous le nom qu'il portait ce jour-là.
+      payload: {
+        subjectLabel: product.snapshot().name.fr,
+        ...(await vatChangePayload(
+          Object.fromEntries(
+            changed.map((key) => [key, { from: before[key] ?? null, to: after[key] ?? null }]),
+          ),
+          this.rates,
+          this.contexts,
+        )),
+      },
     });
   }
 }

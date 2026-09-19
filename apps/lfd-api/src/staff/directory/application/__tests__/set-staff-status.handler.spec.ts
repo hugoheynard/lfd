@@ -46,7 +46,10 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
         type: STAFF_FACTS.suspended,
         subjectType: "staff_user",
         subjectId: "s1",
-        payload: { person: { firstName: "Cécile", lastName: "Martin" } },
+        payload: {
+          subjectLabel: "Cécile Martin",
+          person: { firstName: "Cécile", lastName: "Martin" },
+        },
       },
     ]);
     expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);
@@ -60,6 +63,14 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
 
     expect(h.journal.types()).toEqual([STAFF_FACTS.reinstated]);
     expect(h.mails).toEqual(["staff.access-restored"]);
+  });
+
+  it("active pour la PREMIÈRE fois une fiche en attente : `activated`, pas `reinstated` (D7)", async () => {
+    const h = harness({ ...CECILE, status: "pending" });
+
+    await h.handler.execute(new SetStaffStatusCommand("s1", { status: "active" }, "staff_moi"));
+
+    expect(h.journal.types()).toEqual([STAFF_FACTS.activated]);
   });
 
   it("n'écrit aucun fait quand l'état ne bouge pas", async () => {

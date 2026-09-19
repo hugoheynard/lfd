@@ -13,6 +13,8 @@ import {
   resolveSubject,
 } from "../appointment-booking.js";
 import { BookAppointmentCommand } from "./book-appointment.command.js";
+import { appointmentSubjectLabel } from "../appointment-subject-label.js";
+import { CompanyNamer } from "../../domain/ports/company-namer.js";
 
 /**
  * Réservation client. Compose les trois gardes qui, ensemble, font l'exclusivité :
@@ -27,6 +29,7 @@ export class BookAppointmentHandler implements ICommandHandler<BookAppointmentCo
     private readonly appointments: AppointmentRepository,
     private readonly recorder: ActivityRecorder,
     private readonly clock: Clock,
+    private readonly companies: CompanyNamer,
   ) {}
 
   async execute(command: BookAppointmentCommand): Promise<string> {
@@ -59,7 +62,12 @@ export class BookAppointmentHandler implements ICommandHandler<BookAppointmentCo
       subjectType: subject.type === "company" ? "company" : "user",
       subjectId: subject.id,
       idempotencyKey: `${ACTIVITY_TYPES.appointmentRequested}:${id}`,
-      payload: { appointmentId: id, startAt: startAt.toISOString(), channel: payload.channel },
+      payload: {
+        ...(await appointmentSubjectLabel(appointment, { companies: this.companies })),
+        appointmentId: id,
+        startAt: startAt.toISOString(),
+        channel: payload.channel,
+      },
     });
     return id;
   }

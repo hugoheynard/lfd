@@ -53,7 +53,12 @@ export class SetMandateSchemeHandler implements ICommandHandler<SetMandateScheme
     const voided = await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new MandateSchemeChangedEvent(legalEntityId, at, previous, scheme),
+        new MandateSchemeChangedEvent(
+          { id: legalEntityId, name: entity.name },
+          at,
+          previous,
+          scheme,
+        ),
       );
       return this.drafts.voidDraftsOf(legalEntityId, "mandate_scheme_changed", "staff");
     });

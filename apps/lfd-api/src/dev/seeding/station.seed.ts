@@ -8,9 +8,9 @@ import {
 } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { CreateOrderCutoffCommand } from "../../b2b/order-cutoffs/application/order-cutoff.commands.js";
-import { CreatePickupAddressCommand } from "../../b2b/pickup-addresses/application/pickup-address.commands.js";
-import { CreateDeliveryZoneCommand } from "../../b2b/delivery-zones/application/delivery-zone.commands.js";
+import { CreateOrderCutoffCommand } from "../../b2b/order-cutoffs/application/create-order-cutoff.command.js";
+import { CreatePickupAddressCommand } from "../../b2b/pickup-addresses/application/create-pickup-address.command.js";
+import { CreateDeliveryZoneCommand } from "../../b2b/delivery-zones/application/create-delivery-zone.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 
 /**

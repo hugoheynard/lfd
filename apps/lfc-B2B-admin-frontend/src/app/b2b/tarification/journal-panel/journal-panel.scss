@@ -5,12 +5,6 @@
   padding: var(--fold-space-lg);
 }
 
-.muted {
-  margin: 0;
-  font-size: var(--fold-text-sm, 0.875rem);
-  color: var(--fold-color-text-muted);
-}
-
 /* Une liste ordonnée, du plus récent au plus ancien : le journal se lit comme
    on cherche — « qu'est-ce qui vient de se passer », puis on remonte. */
 .acts {

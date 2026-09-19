@@ -83,6 +83,21 @@ describe("CatalogItem — le prix", () => {
     expect(item.effectivePriceMillicents).toBe(200);
     expect(item.toPersistence().decision).toBeNull();
   });
+
+  /**
+   * Le journal en dépend (2026-09-19) : un prix B2B que le PIM a rejoint reste
+   * une décision, et le prix effectif seul ne permet plus de la voir.
+   */
+  it("dit le prix B2B décidé, même quand le PIM l'a rejoint", () => {
+    const item = CatalogItem.receive(facts());
+    expect(item.b2bPriceMillicents).toBeNull();
+
+    item.setB2bPrice(180, "cecile");
+    const rejoined = item.refreshFromPim(facts({ priceMillicents: 180 }));
+
+    expect(rejoined.effectivePriceMillicents).toBe(rejoined.pimPriceMillicents);
+    expect(rejoined.b2bPriceMillicents).toBe(180);
+  });
 });
 
 describe("CatalogItem — la visibilité", () => {

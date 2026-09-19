@@ -7,6 +7,7 @@ import { MandateSignedEvent } from "../../domain/events/payment-mandate.events.j
 import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { SignMandateCommand } from "./sign-mandate.command.js";
+import { mandateCompanyOf } from "../mandate-journal-names.js";
 
 /**
  * Le papier est revenu signé : le brouillon devient l'autorisation.
@@ -78,6 +79,7 @@ export class SignMandateHandler implements ICommandHandler<SignMandateCommand, v
     const current = await this.mandates.findCurrent(command.companyId);
     const replaced =
       current !== null && current.id !== mandate.id && current.debitable() ? current : null;
+    const company = await mandateCompanyOf(this.mandates, command.companyId);
     await this.uow.run(async () => {
       if (replaced !== null) {
         replaced.revoke(now);
@@ -87,10 +89,11 @@ export class SignMandateHandler implements ICommandHandler<SignMandateCommand, v
       await this.events.publishTraced(
         new MandateSignedEvent(
           mandate.id,
-          command.companyId,
+          company,
           mandate.reference,
           command.signedAt,
-          replaced?.id ?? null,
+          // Nommé par sa RUM : c'est sous elle que le client connaît l'ancien papier.
+          replaced === null ? null : { id: replaced.id, name: replaced.reference },
         ),
       );
     });

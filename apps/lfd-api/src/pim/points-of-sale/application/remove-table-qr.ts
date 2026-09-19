@@ -32,7 +32,7 @@ export class RemoveTableQrHandler implements ICommandHandler<RemoveTableQrComman
         type: PIM_EVENTS.pointOfSaleTableQrRemoved,
         subjectType: "point_of_sale",
         subjectId: command.pointOfSaleId,
-        payload: { table: command.tableNumber },
+        payload: { subjectLabel: pointOfSale.snapshot().label, table: command.tableNumber },
       });
       await this.points.save(pointOfSale, ticket);
     });

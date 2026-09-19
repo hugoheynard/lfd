@@ -64,6 +64,7 @@ export class CreateSalesContextHandler implements ICommandHandler<
         // L'agrégat, pas la charge reçue : le journal doit dire ce qui a été
         // écrit. Un libellé entouré d'espaces s'y inscrirait sinon tel quel.
         payload: {
+          subjectLabel: created.label,
           key: created.key,
           label: created.label,
           active: created.active,

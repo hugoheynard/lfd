@@ -10,20 +10,17 @@ import { CompanyAddressRepository } from "../../../domain/ports/company-address.
 import { CompanyContactRepository } from "../../../domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
-import {
-  AddDeliveryAddressByStaffCommand,
-  GrantTermsCommand,
-  SaveBillingAddressByStaffCommand,
-} from "../admin-company-commands.js";
-import {
-  AddDeliveryAddressByStaffHandler,
-  SaveBillingAddressByStaffHandler,
-} from "../admin-address.handlers.js";
-import { GrantTermsHandler } from "../admin-company.handlers.js";
-import { RemoveContactByStaffCommand } from "../admin-contact-commands.js";
-import { RemoveContactByStaffHandler } from "../admin-contact.handlers.js";
+import { AddDeliveryAddressByStaffCommand } from "../add-delivery-address-by-staff.command.js";
+import { GrantTermsCommand } from "../grant-terms.command.js";
+import { SaveBillingAddressByStaffCommand } from "../save-billing-address-by-staff.command.js";
+import { AddDeliveryAddressByStaffHandler } from "../add-delivery-address-by-staff.handler.js";
+import { SaveBillingAddressByStaffHandler } from "../save-billing-address-by-staff.handler.js";
+import { GrantTermsHandler } from "../grant-terms.handler.js";
+import { RemoveContactByStaffCommand } from "../remove-contact-by-staff.command.js";
+import { RemoveContactByStaffHandler } from "../remove-contact-by-staff.handler.js";
 import { ChangeCompanyStatusCommand } from "../change-company-status.command.js";
 import { ChangeCompanyStatusHandler } from "../change-company-status.handler.js";
+import { COMPANY_LABEL, journalNames } from "./member-acts-doubles.js";
 
 /**
  * **Ce que le staff inscrit quand il touche au compte d'un client.**
@@ -32,6 +29,9 @@ import { ChangeCompanyStatusHandler } from "../change-company-status.handler.js"
  * transaction et le port s'en chargent — mais **ce qu'il affirme**, et surtout
  * ce qu'il n'affirme pas : un acte nommé, une charge utile qui suffit à relire,
  * et aucune donnée personnelle versée dans un flux qu'on garde des années.
+ *
+ * Lot B du plan des phrases (2026-09-19) : chaque acte nomme la société au
+ * moment du geste, en `subjectLabel`.
  */
 const BILLING: BillingAddressPayload = {
   label: "Siège",
@@ -121,7 +121,10 @@ describe("Les actes du staff au journal", () => {
     expect(events.factTypes()).toEqual(["company.payment_terms_granted"]);
     // La liste entière, pas le delta : un retrait est le même geste qu'un ajout,
     // et une liste vide est une décision lisible — « plus aucun délai ».
-    expect(events.traced[0]?.journalFact().payload).toEqual({ terms: ["monthly"] });
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: COMPANY_LABEL,
+      terms: ["monthly"],
+    });
   });
 
   it("nomme la suspension — c'est le fait dont on demande l'auteur le jour même", async () => {
@@ -132,7 +135,10 @@ describe("Les actes du staff au journal", () => {
     );
 
     expect(events.factTypes()).toEqual(["company.status_changed"]);
-    expect(events.traced[0]?.journalFact().payload).toEqual({ action: "suspend" });
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: COMPANY_LABEL,
+      action: "suspend",
+    });
   });
 
   /**
@@ -143,33 +149,38 @@ describe("Les actes du staff au journal", () => {
   it("sépare l'acte tracé de la pièce d'activation, qui reste best-effort", async () => {
     const events = new RecordingPublisher();
 
-    await new SaveBillingAddressByStaffHandler(addresses(), events, new DirectUnitOfWork()).execute(
-      new SaveBillingAddressByStaffCommand("c1", BILLING),
-    );
+    await new SaveBillingAddressByStaffHandler(
+      addresses(),
+      events,
+      new DirectUnitOfWork(),
+      journalNames(companies(), addresses()),
+    ).execute(new SaveBillingAddressByStaffCommand("c1", BILLING));
 
     expect(events.factTypes()).toEqual(["company.billing_address_saved"]);
     expect(events.published).toHaveLength(2);
   });
 
-  it("emporte le LIEU d'une adresse, jamais l'adresse entière", async () => {
+  it("emporte le LIEU d'une adresse et son nom, jamais l'adresse entière", async () => {
     const events = new RecordingPublisher();
+    const book = addresses();
 
     const addressId = await new AddDeliveryAddressByStaffHandler(
-      addresses(),
+      book,
       events,
       new FixedIdGenerator("addr"),
       new FixedClock(new Date("2026-02-03T10:00:00Z")),
       new DirectUnitOfWork(),
+      journalNames(companies(), book),
     ).execute(new AddDeliveryAddressByStaffCommand("c1", DELIVERY));
 
     // L'identifiant rendu est bien celui qui part au journal : sans lui, on
     // saurait qu'une adresse a été ajoutée sans savoir laquelle.
     expect(addressId).toBe("addr_000001");
     expect(events.traced[0]?.journalFact().payload).toEqual({
-      addressId: "addr_000001",
-      ville: "Paris",
-      codePostal: "75004",
+      subjectLabel: COMPANY_LABEL,
+      address: { id: "addr_000001", ville: "Paris", codePostal: "75004" },
     });
+    expect(JSON.stringify(events.traced[0]?.journalFact())).not.toContain("rue des Archives");
   });
 
   /**
@@ -180,11 +191,17 @@ describe("Les actes du staff au journal", () => {
   it("ne verse aucune coordonnée personnelle dans un fait de contact", async () => {
     const events = new RecordingPublisher();
 
-    await new RemoveContactByStaffHandler(contacts(), events, new DirectUnitOfWork()).execute(
-      new RemoveContactByStaffCommand("c1", "contact_9"),
-    );
+    await new RemoveContactByStaffHandler(
+      contacts(),
+      events,
+      new DirectUnitOfWork(),
+      journalNames(companies(), addresses()),
+    ).execute(new RemoveContactByStaffCommand("c1", "contact_9"));
 
     expect(events.factTypes()).toEqual(["company.contact_removed"]);
-    expect(events.traced[0]?.journalFact().payload).toEqual({ contactId: "contact_9" });
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: COMPANY_LABEL,
+      contact: { id: "contact_9" },
+    });
   });
 });

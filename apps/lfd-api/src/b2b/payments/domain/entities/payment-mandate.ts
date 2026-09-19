@@ -13,26 +13,13 @@ import {
 import { MandateProofRevisionStaleError } from "../errors/mandate-proof-errors.js";
 import { proofRevisionOf } from "../services/proof-revision.js";
 
-/** Ce que le prestataire rend une fois le mandat créé chez lui. */
-export interface RegisteredMandate {
-  readonly stripeCustomerId: string;
-  readonly paymentMethodId: string;
-  /** Référence opposable (RUM) rendue par Stripe. */
-  readonly reference: string;
-  readonly last4: string;
-  readonly bankCode: string;
-  readonly country: string;
-  readonly status: MandateStatus;
-}
-
 /**
  * L'état complet d'un mandat, tel qu'il vit en base. Aucun type Prisma ici.
  *
- * 🔴 **Il n'hérite plus de `RegisteredMandate` depuis le 2026-09-12**, et ce
- * n'est pas un détail de typage. `RegisteredMandate` décrit ce qu'un
- * PRESTATAIRE rend ; un mandat que nous frappons n'a pas de prestataire. Tant
- * que le snapshot héritait de cette forme, la seule façon d'écrire un mandat
- * maison était de mentir sur trois champs.
+ * Ni client ni moyen de paiement chez un prestataire : le mandat est frappé
+ * chez nous et traité directement avec la banque. Les deux champs Stripe en
+ * sont sortis le 2026-09-19 — aucun mandat Stripe en production (Hugo) ; leurs
+ * colonnes restent en base, ni lues ni écrites, jusqu'à leur migration.
  *
  * `acceptedAt` est `null` tant que le papier n'est pas revenu signé, et c'est
  * l'invariant central : la date du consentement est celle de la SIGNATURE, pas
@@ -42,10 +29,7 @@ export interface RegisteredMandate {
 export interface MandateSnapshot {
   readonly id: string;
   readonly companyId: string;
-  /** `null` pour un mandat maison : il n'y a pas de client chez un tiers. */
-  readonly stripeCustomerId: string | null;
-  readonly paymentMethodId: string | null;
-  /** La RUM. Frappée par nous, ou rendue par le prestataire. */
+  /** La RUM. Frappée par nous, ou reprise d'un portefeuille existant. */
   readonly reference: string;
   readonly last4: string;
   readonly bankCode: string;
@@ -56,7 +40,11 @@ export interface MandateSnapshot {
   readonly revokedAt: Date | null;
   readonly proofStorageKey: string | null;
   readonly proofFileName: string | null;
-  /** Laquelle de NOS entités a émis. `null` pour l'ère Stripe. */
+  /**
+   * Laquelle de NOS entités a émis. `null` reste admis par la colonne — une
+   * reprise de portefeuille n'a pas d'émetteur connu —, mais toute frappe
+   * d'ici le renseigne.
+   */
   readonly creditorId: string | null;
   /**
    * 🔴 Le schéma et le type de paiement FIGÉS à la frappe. Le papier et le lot
@@ -70,52 +58,13 @@ export interface MandateSnapshot {
 export type MandateToCreate = Omit<MandateSnapshot, "id">;
 
 /**
- * Prépare un mandat fraîchement enregistré chez le prestataire.
- *
- * Fonction plutôt que fabrique de l'agrégat : tant que la base n'a pas donné son
- * identité, il n'y a pas d'entité — seulement un état à écrire. C'est la même
- * séparation que pour la commande (`Order.draft` → `toPlace`), et elle évite le
- * faux identifiant vide qu'on traînerait sinon jusqu'au `create`.
- *
- * L'invariant reste ici, dans le domaine : `acceptedAt` est la date du **papier
- * signé** — souvent bien antérieure à la saisie, puisqu'on reprend un
- * portefeuille existant, mais jamais à venir. C'est la date qu'on opposera en
- * contestation ; une faute de frappe s'y voit tout de suite, ou jamais.
- */
-export function draftMandate(input: {
-  readonly companyId: string;
-  readonly registration: RegisteredMandate;
-  readonly acceptedAt: Date;
-  readonly now: Date;
-}): MandateToCreate {
-  if (input.acceptedAt.getTime() > input.now.getTime()) {
-    throw new MandateAcceptanceInFutureError();
-  }
-  return {
-    ...input.registration,
-    companyId: input.companyId,
-    acceptedAt: input.acceptedAt,
-    revokedAt: null,
-    proofStorageKey: null,
-    proofFileName: null,
-    creditorId: null,
-    // Un mandat enregistré chez Stripe est un SEPA CORE récurrent : c'est le
-    // seul prélèvement que Stripe propose.
-    scheme: "CORE",
-    paymentType: "recurrent",
-  };
-}
-
-/**
  * Frappe un mandat **maison** : la RUM existe, le papier est prêt à imprimer,
  * personne n'a encore signé.
  *
- * C'est le pendant de {@link draftMandate}, et les deux ne se ressemblent qu'en
- * surface. Là, un tiers avait déjà enregistré un mandat signé et on le recopie ;
- * ici, on crée l'autorisation AVANT qu'elle soit donnée — d'où `acceptedAt`
- * à `null`, qui n'est pas une donnée manquante mais l'état même du brouillon.
+ * On crée l'autorisation AVANT qu'elle soit donnée — d'où `acceptedAt` à
+ * `null`, qui n'est pas une donnée manquante mais l'état même du brouillon.
  *
- * 🔴 **`creditorId` est obligatoire, contrairement au chemin Stripe.** Un mandat
+ * 🔴 **`creditorId` est obligatoire.** Un mandat
  * que nous émettons nomme l'entité sous l'ICS de laquelle il est émis : c'est
  * elle que le débiteur opposera à sa banque avec la RUM. Un brouillon sans
  * émetteur serait un papier qu'on ne pourrait pas imprimer.
@@ -143,8 +92,6 @@ export function mintMandate(input: {
     scheme: input.scheme,
     paymentType: input.paymentType,
     status: "draft",
-    stripeCustomerId: null,
-    paymentMethodId: null,
     last4: "",
     bankCode: "",
     country: "",
@@ -157,7 +104,7 @@ export function mintMandate(input: {
 
 /**
  * Ce qui NE change pas au cours de la vie d'un mandat : sa référence, son
- * émetteur, le compte qu'il désigne, son rattachement chez le prestataire.
+ * émetteur, le compte qu'il désigne.
  *
  * Séparé des champs mutables — statut, dates, pièce — pour que la relecture de
  * l'agrégat dise d'un coup d'œil ce qui peut bouger. Une RUM qui se réécrirait
@@ -177,14 +124,13 @@ export interface MandateProof {
 /**
  * Le **mandat de prélèvement SEPA** d'une société : l'autorisation de débiter.
  *
- * L'agrégat ne détient **aucune coordonnée bancaire** — l'IBAN vit chez Stripe,
- * et ce qu'on garde (`last4`, `bankCode`) sert à reconnaître le compte à l'écran,
- * pas à le débiter.
+ * L'agrégat ne détient **aucune coordonnée bancaire** — l'IBAN vit sur le RIB
+ * de la société (`company_bank_accounts`), et ce qu'on garde ici (`last4`,
+ * `bankCode`) sert à reconnaître le compte à l'écran, pas à le débiter.
  *
  * L'invariant porté ici plutôt que dans un handler : **un mandat déjà révoqué
  * ne se révoque pas deux fois** — repasser dessus écraserait la date qui fait
- * foi. Celui de la date de signature vit dans {@link draftMandate}, avant que
- * l'entité n'existe.
+ * foi. Celui de la date de signature vit dans {@link PaymentMandate.sign}.
  *
  * L'unicité du mandat *actif* par société, elle, n'est pas ici : deux
  * enregistrements concurrents passeraient tous deux un contrôle applicatif. Elle
@@ -218,7 +164,7 @@ export class PaymentMandate {
     );
   }
 
-  /** La RUM — frappée par nous, ou rendue par le prestataire. Ne bouge jamais. */
+  /** La RUM — frappée par nous, ou reprise d'un portefeuille. Ne bouge jamais. */
   get reference(): string {
     return this.identity.reference;
   }
@@ -228,21 +174,9 @@ export class PaymentMandate {
     return this.acceptedAtValue;
   }
 
-  /** L'entité émettrice, ou `null` pour un mandat de l'ère Stripe. */
+  /** L'entité émettrice, ou `null` pour un mandat repris sans émetteur connu. */
   get creditorId(): string | null {
     return this.identity.creditorId;
-  }
-
-  /**
-   * L'identifiant du moyen de paiement chez le prestataire, **s'il y en a un**.
-   *
-   * 🔴 Nullable, et les appelants doivent le tester. `RevokeMandateHandler`
-   * l'appelait sans condition jusqu'au 2026-09-12 : un mandat maison n'a pas de
-   * moyen de paiement chez un tiers, et le révoquer déclenchait un `detach()`
-   * sur du vide — un aller-retour réseau pour rien, dans le meilleur des cas.
-   */
-  get paymentMethodId(): string | null {
-    return this.identity.paymentMethodId;
   }
 
   get status(): MandateStatus {
@@ -275,7 +209,8 @@ export class PaymentMandate {
    *
    * `at` est la date portée par le PAPIER, pas celle de la saisie — c'est elle
    * qu'on oppose en contestation, et elle est souvent antérieure de plusieurs
-   * jours. L'invariant de {@link draftMandate} vaut ici aussi : jamais à venir.
+   * jours. Jamais à venir : c'est la date qu'on opposera en contestation, et
+   * une faute de frappe s'y voit tout de suite, ou jamais.
    *
    * 🔴 **Ne révoque pas l'ancien mandat, et c'est délibéré.** L'unicité de
    * l'actif est tenue par un index partiel ; passer un second mandat en `active`
@@ -394,9 +329,8 @@ export class PaymentMandate {
   }
 
   /**
-   * Ce que le back-office montre. Ni l'identifiant du moyen de paiement ni celui
-   * du client Stripe n'en font partie : ils servent à débiter, pas à afficher, et
-   * ce qui ne sort pas ne fuit pas.
+   * Ce que le back-office montre : de quoi reconnaître le compte, jamais de quoi
+   * le débiter — ce qui ne sort pas ne fuit pas.
    */
   toView(): PaymentMandateView {
     return {

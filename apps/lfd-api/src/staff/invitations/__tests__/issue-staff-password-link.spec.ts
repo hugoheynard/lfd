@@ -3,10 +3,8 @@ import { FixedClock } from "../../../platform/time/fixed-clock.js";
 import { TrackingUnitOfWork } from "../../directory/application/__tests__/staff-doubles.js";
 import { STAFF_FACTS } from "../../directory/domain/staff-facts.js";
 import { StaffUserNotFoundError } from "../../directory/domain/staff-user-errors.js";
-import {
-  IssueStaffPasswordLinkCommand,
-  IssueStaffPasswordLinkHandler,
-} from "../pending-staff-access.js";
+import { IssueStaffPasswordLinkCommand } from "../issue-staff-password-link.command.js";
+import { IssueStaffPasswordLinkHandler } from "../issue-staff-password-link.handler.js";
 import {
   PendingStaffAccessReader,
   type PendingStaffAccessView,
@@ -79,7 +77,10 @@ describe("IssueStaffPasswordLinkHandler — le lien à remettre à la main", () 
         type: STAFF_FACTS.passwordLinkIssued,
         subjectType: "staff_user",
         subjectId: "s1",
-        payload: { person: { firstName: "Sophie", lastName: "Martin" } },
+        payload: {
+          subjectLabel: "Sophie Martin",
+          person: { firstName: "Sophie", lastName: "Martin" },
+        },
       },
     ]);
   });

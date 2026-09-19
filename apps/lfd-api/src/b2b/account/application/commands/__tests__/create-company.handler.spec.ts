@@ -87,7 +87,9 @@ describe("CreateCompanyHandler", () => {
     const declared = event as CompanyDeclaredEvent;
     expect(declared.companyId).toBe("company_new");
     expect(declared.via).toBe("self");
-    expect(declared.ownerUserId).toBe("user_1");
+    // Les noms du moment, que l'abonné du journal fige (lot B du plan des phrases).
+    expect(declared.companyName).toBe("Le Pain Quotidien");
+    expect(declared.owner).toEqual({ id: "user_1", name: "Camille Rousseau" });
   });
 
   it("ne publie rien si le SIRET est déjà pris (échec avant persistance)", async () => {

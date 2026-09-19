@@ -157,7 +157,7 @@ export function ruleStateFromRow(row: RuleRow): PricingRuleState {
 /**
  * La même ligne, telle que l'écran la lit — avec sa provenance. `authors` nomme
  * ses trois auteurs, résolus d'un coup pour toute la lecture par l'appelant
- * (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ * (`architecture-journalisation.md` §12, D3).
  */
 export function ruleViewFromRow(row: RuleRow, authors: StaffAuthors): PriceRuleView {
   const rule = ruleFromRow(row);

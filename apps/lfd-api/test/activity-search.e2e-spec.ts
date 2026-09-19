@@ -72,6 +72,13 @@ async function createColleague(firstName: string, lastName: string): Promise<str
   return jsonBody<CreatedStaffUserResponse>(response).id;
 }
 
+/**
+ * Le type témoin, pris au catalogue des faits : le journal est strict sous le
+ * harnais, et un type inventé y serait refusé. Il vit hors de l'équipe
+ * (module `commercial`), et porte le nom cherché dans une valeur de sa charge.
+ */
+const WITNESS = "lead.captured";
+
 /** Cécile (téléphone modifié), Paul, et un fait d'un autre module qui cite « Martin ». */
 async function seedJournal(): Promise<{ cecile: string; paul: string }> {
   const cecile = await createColleague("Cécile", "Martin");
@@ -89,14 +96,27 @@ async function seedJournal(): Promise<{ cecile: string; paul: string }> {
     })
     .expect(204);
   await ctx.app.get(ActivityRecorder).record({
-    type: "company.search_witness",
-    subjectType: "company",
+    type: WITNESS,
+    subjectType: "lead",
     subjectId: "company_witness",
-    idempotencyKey: "company.search_witness:1",
-    payload: { contactName: "Boulangerie Martin" },
+    idempotencyKey: `${WITNESS}:1`,
+    payload: { subjectLabel: "Boulangerie Martin", businessName: "Boulangerie Martin" },
   });
   await ctx.drain();
   return { cecile, paul };
+}
+
+/** Un fait témoin, hors équipe : un lead qui porte le nom cherché. */
+let witnesses = 0;
+async function witness(businessName: string): Promise<void> {
+  witnesses += 1;
+  await ctx.app.get(ActivityRecorder).record({
+    type: WITNESS,
+    subjectType: "lead",
+    subjectId: `company_witness_${witnesses}`,
+    idempotencyKey: `${WITNESS}:w${witnesses}`,
+    payload: { subjectLabel: businessName, businessName },
+  });
 }
 
 async function search(query: Record<string, string>): Promise<readonly ActivityEventView[]> {
@@ -122,7 +142,7 @@ describe("la recherche du journal — un nom, un auteur, un numéro", () => {
 
     expect(events.length).toBeGreaterThan(0);
     expect(events.every((event) => event.actorName === "Opérateur E2E")).toBe(true);
-    expect(events.some((event) => event.type === "company.search_witness")).toBe(false);
+    expect(events.some((event) => event.type === WITNESS)).toBe(false);
   });
 
   it("par un morceau de numéro de téléphone : l'édition qui l'a posé", async () => {
@@ -208,6 +228,49 @@ describe("la recherche du journal — combinée, bornée, sans joker", () => {
     expect(await search({ q: "06%44" })).toEqual([]);
     expect(await search({ q: "061_223" })).toEqual([]);
     expect(await search({ q: "%%" })).toEqual([]);
+  });
+
+  it("sans les accents : « cecile » trouve Cécile, en nom comme en charge", async () => {
+    const { cecile } = await seedJournal();
+
+    const subjects = new Set((await search({ q: "cecile" })).map((event) => event.subjectId));
+    expect(subjects).toContain(cecile);
+  });
+
+  it("une majuscule accentuée se trouve sans accent, et l'inverse", async () => {
+    await witness("Élan Boulanger");
+
+    expect(await search({ q: "elan" })).toHaveLength(1);
+    expect(await search({ q: "ÉLAN" })).toHaveLength(1);
+    expect(await search({ q: "élan" })).toHaveLength(1);
+  });
+
+  it("ne lit que les VALEURS de la charge : une clé ne répond pas", async () => {
+    await witness("Boulangerie Durand");
+
+    expect(await search({ q: "businessName" })).toEqual([]);
+    expect(await search({ q: "subjectLabel" })).toEqual([]);
+    expect(await search({ q: "Durand" })).toHaveLength(1);
+  });
+
+  it("une valeur numérique se trouve", async () => {
+    await ctx.app.get(ActivityRecorder).record({
+      type: "reco.shown",
+      subjectType: "lead",
+      subjectId: "company_witness_score",
+      idempotencyKey: "reco.shown:w-score",
+      payload: { play: "nurture", score: 4817 },
+    });
+
+    expect(await search({ q: "4817" })).toHaveLength(1);
+  });
+
+  it("un guillemet ou une barre oblique dans une valeur ne casse rien", async () => {
+    await witness('Le "Fournil" \\ Nord');
+
+    expect(await search({ q: "fournil" })).toHaveLength(1);
+    // Un guillemet cherché ne casse pas la requête — il part en paramètre.
+    expect(await search({ q: '"Fo' })).toBeDefined();
   });
 
   it("refuse une recherche d'un seul caractère", async () => {

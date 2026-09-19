@@ -53,7 +53,7 @@ export class UpdateSalesContextHandler implements ICommandHandler<UpdateSalesCon
               type: PIM_EVENTS.salesContextUpdated,
               subjectType: "sales_context",
               subjectId: key,
-              payload: { changes },
+              payload: { subjectLabel: context.snapshot().label, changes },
             })
           : this.journal.untraced("record without modification");
       await this.contexts.save(context, ticket);

@@ -19,12 +19,10 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  CreateOrderCutoffCommand,
-  ListOrderCutoffsQuery,
-  RemoveOrderCutoffCommand,
-  UpdateOrderCutoffCommand,
-} from "../application/order-cutoff.commands.js";
+import { CreateOrderCutoffCommand } from "../application/create-order-cutoff.command.js";
+import { ListOrderCutoffsQuery } from "../application/list-order-cutoffs.query.js";
+import { RemoveOrderCutoffCommand } from "../application/remove-order-cutoff.command.js";
+import { UpdateOrderCutoffCommand } from "../application/update-order-cutoff.command.js";
 
 /**
  * Gestion **staff** des heures limites de commande (page Réglages → Retraits &

@@ -33,6 +33,13 @@ import { PackOrderCommand } from "./pack-order.command.js";
  * ⚠️ Les deux autres refus, eux, **restent** : une journée pas encore arrêtée et
  * une référence hors du plan ne sont pas des retards de propagation, ce sont des
  * gestes qui n'ont pas de sens. `sheetToPack` les porte, et les porte seul.
+ *
+ * @sans-journal le colisage rend la commande prête chez le commerce
+ * (`OnOrderPacked` → `MarkOrderReadyCommand`), et `order.ready` est écrit par
+ * l'abonné de la croissance (`on-order-ready.handler.ts`), en best-effort comme
+ * les autres faits de commande — choix écrit du plan du journal, lot 1, et TODO
+ * « Les faits écrits par un abonné ne sont pas opposables » (2026-09-19). Un
+ * second fait ici doublerait l'écrivain d'`order.ready`.
  */
 @CommandHandler(PackOrderCommand)
 export class PackOrderHandler implements ICommandHandler<PackOrderCommand, ProductionPackingAck> {

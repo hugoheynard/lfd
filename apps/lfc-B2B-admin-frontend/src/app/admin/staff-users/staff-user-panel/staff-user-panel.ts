@@ -7,6 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { StaffOverride, StaffRole, StaffUserPayload, StaffUserView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -16,6 +17,7 @@ import {
   FoldSelectComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { ROLE_OPTIONS, toStaffRole } from '../staff-roles';
 import { OverridesGrid } from './overrides-grid/overrides-grid';
@@ -48,6 +50,7 @@ const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+$/u;
     FoldInputComponent,
     FoldSelectComponent,
     OverridesGrid,
+    RouterLink,
   ],
   templateUrl: './staff-user-panel.html',
   styleUrl: './staff-user-panel.scss',
@@ -56,6 +59,7 @@ export class StaffUserPanel {
   private readonly staff = inject(StaffUsersService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  private readonly permissions = inject(PermissionsStore);
 
   readonly data = input<StaffUserPanelData | undefined>(undefined);
 
@@ -98,6 +102,18 @@ export class StaffUserPanel {
       : "C'est son identifiant de connexion : la changer la met à jour chez le fournisseur d'identité, " +
         'qui lui enverra un mail de vérification à confirmer.',
   );
+
+  /**
+   * L'identifiant de fiche à passer au journal, ou `null` quand le lien ne
+   * doit pas s'offrir : à la création, il n'y a encore rien à lire ; sans
+   * `activity:read`, le journal rendrait `403` — une dérogation `staff_access`
+   * n'ouvre pas le journal. Le serveur résout l'id de fiche en tous les
+   * identifiants de la personne.
+   */
+  protected readonly activityActorId = computed(() => {
+    const user = this.data()?.user ?? null;
+    return user !== null && this.permissions.can('activity:read') ? user.id : null;
+  });
 
   protected readonly canSubmit = computed(
     () =>
@@ -160,6 +176,11 @@ export class StaffUserPanel {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  /** Le panneau ne suit pas la navigation : il se ferme sur le lien qui part. */
+  protected leave(): void {
+    this.ref.close();
   }
 
   protected cancel(): void {

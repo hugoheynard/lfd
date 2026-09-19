@@ -42,8 +42,8 @@ export abstract class StaffNoticeStore {
 
 /**
  * Une notification telle que la base la garde : la vue, sans le nom de qui l'a
- * lue — résolu par le handler auprès de l'annuaire (plan
- * `plan-l-auteur-est-la-fiche.md`, D3).
+ * lue — résolu par le handler auprès de l'annuaire (
+ * `architecture-journalisation.md` §12, D3).
  */
 export type StoredStaffNotification = Omit<StaffNotificationView, "readByName">;
 

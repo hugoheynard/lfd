@@ -1,4 +1,5 @@
 import { STAFF_RESOURCE_LABELS, type StaffOverride } from "@lfd/contracts";
+import { checkJournalFact } from "@lfd/contracts/journal-facts";
 
 import type { OverrideDiff } from "../override-diff.js";
 import {
@@ -77,9 +78,9 @@ describe("les faits de l'annuaire — un par changement réel", () => {
     const [fact] = staffUserEditFacts("s1", edit({ phone: "0600000000", jobTitle: "Vendeuse" }));
 
     expect(fact?.payload).toEqual({
+      subjectLabel: "Cécile Martin",
       person: { firstName: "Cécile", lastName: "Martin" },
       previous: null,
-      fields: ["téléphone", "fonction"],
       changes: [
         { field: "phone", label: "téléphone", from: "", to: "0600000000" },
         { field: "jobTitle", label: "fonction", from: "", to: "Vendeuse" },
@@ -96,7 +97,6 @@ describe("les faits de l'annuaire — un par changement réel", () => {
     });
 
     expect(fact?.payload).toMatchObject({
-      fields: ["téléphone"],
       changes: [{ field: "phone", label: "téléphone", from: "0600000000", to: "" }],
     });
   });
@@ -105,7 +105,6 @@ describe("les faits de l'annuaire — un par changement réel", () => {
     const [fact] = staffUserEditFacts("s1", edit({ jobTitle: "Vendeuse", firstName: "Cléa" }));
 
     expect(fact?.payload).toMatchObject({
-      fields: ["prénom", "fonction"],
       changes: [
         { field: "firstName", label: "prénom", from: "Cécile", to: "Cléa" },
         { field: "jobTitle", label: "fonction", from: "", to: "Vendeuse" },
@@ -117,9 +116,10 @@ describe("les faits de l'annuaire — un par changement réel", () => {
     const [fact] = staffUserEditFacts("s1", edit({ lastName: "Durand" }));
 
     expect(fact?.payload).toEqual({
+      // Le nom APRÈS le geste : c'est sous lui qu'on retrouve la fiche.
+      subjectLabel: "Cécile Durand",
       person: { firstName: "Cécile", lastName: "Durand" },
       previous: { firstName: "Cécile", lastName: "Martin" },
-      fields: ["nom"],
       changes: [{ field: "lastName", label: "nom", from: "Martin", to: "Durand" }],
     });
   });
@@ -132,7 +132,6 @@ describe("les faits de l'annuaire — un par changement réel", () => {
     const [fact] = staffUserEditFacts("s1", edit({ email: "c.martin@lfc.test" }));
 
     expect(fact?.payload).toMatchObject({
-      fields: ["e-mail"],
       changes: [
         { field: "email", label: "e-mail", from: "cecile@lfc.test", to: "c.martin@lfc.test" },
       ],
@@ -146,6 +145,7 @@ describe("les faits de l'annuaire — un par changement réel", () => {
     const [fact] = staffUserEditFacts("s1", edit({ role: "comptabilite" }));
 
     expect(fact?.payload).toEqual({
+      subjectLabel: "Cécile Martin",
       person: { firstName: "Cécile", lastName: "Martin" },
       fromLabel: "Commercial",
       toLabel: "Comptabilité",
@@ -163,6 +163,7 @@ describe("les faits de l'annuaire — un par changement réel", () => {
 
     expect(fact?.type).toBe(STAFF_FACTS.overridesChanged);
     expect(fact?.payload).toEqual({
+      subjectLabel: "Cécile Martin",
       person: { firstName: "Cécile", lastName: "Martin" },
       added: [],
       removed: [
@@ -197,7 +198,11 @@ describe("les faits de l'annuaire — les gestes à un seul fait", () => {
       type: STAFF_FACTS.created,
       subjectType: "staff_user",
       subjectId: "s1",
-      payload: { person: { firstName: "Cécile", lastName: "Martin" }, roleLabel: "Support" },
+      payload: {
+        subjectLabel: "Cécile Martin",
+        person: { firstName: "Cécile", lastName: "Martin" },
+        roleLabel: "Support",
+      },
     });
   });
 
@@ -205,6 +210,7 @@ describe("les faits de l'annuaire — les gestes à un seul fait", () => {
     const fact = staffUserInvitedFact("s1", BEFORE, "password_reset");
 
     expect(fact.payload).toEqual({
+      subjectLabel: "Cécile Martin",
       person: { firstName: "Cécile", lastName: "Martin" },
       kind: "password_reset",
     });
@@ -215,7 +221,10 @@ describe("les faits de l'annuaire — les gestes à un seul fait", () => {
     const fact = staffPasswordLinkIssuedFact("s1", BEFORE);
 
     expect(fact.type).toBe(STAFF_FACTS.passwordLinkIssued);
-    expect(fact.payload).toEqual({ person: { firstName: "Cécile", lastName: "Martin" } });
+    expect(fact.payload).toEqual({
+      subjectLabel: "Cécile Martin",
+      person: { firstName: "Cécile", lastName: "Martin" },
+    });
   });
 
   it("supprime : fige qui elle était et son rôle", () => {
@@ -230,5 +239,41 @@ describe("les faits de l'annuaire — les gestes à un seul fait", () => {
     expect(staffStatusFact("s1", BEFORE, "suspended", "active")?.type).toBe(STAFF_FACTS.reinstated);
     expect(staffStatusFact("s1", BEFORE, "suspended", "suspended")).toBeNull();
     expect(staffStatusFact("s1", BEFORE, "active", "active")).toBeNull();
+  });
+
+  /**
+   * Régression (D7 du plan des phrases) : la première activation d'une fiche
+   * en attente s'écrivait `reinstated`, et l'écran disait « a rétabli
+   * l'accès » d'une personne qui n'en avait jamais eu.
+   */
+  it("une PREMIÈRE activation s'écrit `activated`, pas `reinstated`", () => {
+    expect(staffStatusFact("s1", BEFORE, "pending", "active")?.type).toBe(STAFF_FACTS.activated);
+    expect(staffStatusFact("s1", BEFORE, "invited", "active")?.type).toBe(STAFF_FACTS.activated);
+    expect(staffStatusFact("s1", BEFORE, "pending", "suspended")?.type).toBe(STAFF_FACTS.suspended);
+  });
+
+  it("chaque fait écrit suit la forme courante du catalogue, libellé du sujet compris", () => {
+    const written = [
+      staffUserCreatedFact("s1", BEFORE),
+      staffUserInvitedFact("s1", BEFORE, "invitation"),
+      staffPasswordLinkIssuedFact("s1", BEFORE),
+      staffStatusFact("s1", BEFORE, "pending", "active"),
+      staffStatusFact("s1", BEFORE, "suspended", "active"),
+      staffStatusFact("s1", BEFORE, "active", "suspended"),
+      ...staffUserEditFacts(
+        "s1",
+        edit(
+          { lastName: "Durand", role: "support" },
+          {
+            ...NO_OVERRIDE_CHANGE,
+            removed: [{ resource: "b2b_orders", action: "read", effect: "deny" }],
+          },
+        ),
+      ),
+    ];
+
+    for (const fact of written) {
+      expect(fact === null ? "absent" : checkJournalFact(fact.type, fact.payload)).toBeNull();
+    }
   });
 });

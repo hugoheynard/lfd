@@ -136,9 +136,14 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
     expect(facts[0]).toMatchObject({
       subjectType: "staff_user",
       actorRole: "Administrateur",
-      payload: { person: { firstName: "Cécile", lastName: "Martin" }, roleLabel: "Commercial" },
+      payload: {
+        subjectLabel: "Cécile Martin",
+        person: { firstName: "Cécile", lastName: "Martin" },
+        roleLabel: "Commercial",
+      },
     });
     expect(facts[1]?.payload).toEqual({
+      subjectLabel: "Cécile Martin",
       person: { firstName: "Cécile", lastName: "Martin" },
       kind: "invitation",
     });
@@ -187,15 +192,15 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
     );
     expect(edits.map((fact) => fact.payload)).toEqual([
       {
+        subjectLabel: "Cécile Martin",
         person: { firstName: "Cécile", lastName: "Martin" },
         previous: null,
-        fields: ["téléphone"],
         changes: [{ field: "phone", label: "téléphone", from: "", to: "0600000000" }],
       },
       {
+        subjectLabel: "Cécile Martin",
         person: { firstName: "Cécile", lastName: "Martin" },
         previous: null,
-        fields: ["téléphone"],
         changes: [{ field: "phone", label: "téléphone", from: "0600000000", to: "0611223344" }],
       },
     ]);
@@ -223,7 +228,7 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
   });
 
   it("suppression refusée : aucun fait, la fiche reste", async () => {
-    // La suppression n'existe plus (plan `plan-l-auteur-est-la-fiche.md`,
+    // La suppression n'existe plus (`architecture-journalisation.md` §12,
     // étape 0) : un refus n'écrit rien au journal.
     const id = await createColleague();
 
@@ -257,6 +262,68 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
     expect(facts.every((fact) => fact.subjectType === "staff_role")).toBe(true);
     expect(facts.every((fact) => fact.actorName === OPERATOR_NAME)).toBe(true);
     expect(facts[1]?.payload).toMatchObject({ label: "Expédition", previousLabel: "Logistique" });
+    // Le libellé du MOMENT : renommé ensuite, le rôle garde son ancien nom sur
+    // la ligne de sa création (D6 du plan des phrases).
+    expect(facts.map((fact) => (fact.payload as { subjectLabel?: string }).subjectLabel)).toEqual([
+      "Logistique",
+      "Expédition",
+      "Expédition",
+      "Expédition",
+    ]);
+  });
+
+  it("une personne renommée garde son ancien nom sur les lignes d'avant", async () => {
+    const id = await createColleague();
+    await ctx.prisma.staffUser.update({ where: { id }, data: { status: "active" } });
+    await operator()
+      .patch(`/admin/staff-users/${id}/status`)
+      .send({ status: "suspended" })
+      .expect(204);
+
+    await operator()
+      .patch(`/admin/staff-users/${id}`)
+      .send({ ...EDIT, lastName: "Durand", overrides: [] })
+      .expect(204);
+
+    const labels = (await factsAbout(id)).map((fact) => [
+      fact.type,
+      (fact.payload as { subjectLabel?: string }).subjectLabel,
+    ]);
+    expect(labels).toEqual([
+      ["staff_user.created", "Cécile Martin"],
+      ["staff_user.invited", "Cécile Martin"],
+      ["staff_user.suspended", "Cécile Martin"],
+      ["staff_user.identity_edited", "Cécile Durand"],
+    ]);
+  });
+});
+
+describe("le journal de l'annuaire — activer n'est pas rétablir (D7)", () => {
+  /**
+   * Régression : toute entrée en `active` s'écrivait `reinstated`, et l'écran
+   * disait « a rétabli l'accès » d'une personne qui n'en avait jamais eu.
+   */
+  it("la première activation s'écrit `activated`, la reprise d'une fiche suspendue `reinstated`", async () => {
+    const id = await createColleague();
+    const status = (next: "active" | "suspended") =>
+      operator().patch(`/admin/staff-users/${id}/status`).send({ status: next }).expect(204);
+
+    await status("active");
+    await status("suspended");
+    await status("active");
+
+    const facts = await factsAbout(id);
+    expect(facts.map((fact) => fact.type)).toEqual([
+      "staff_user.created",
+      "staff_user.invited",
+      "staff_user.activated",
+      "staff_user.suspended",
+      "staff_user.reinstated",
+    ]);
+    expect(facts[2]?.payload).toEqual({
+      subjectLabel: "Cécile Martin",
+      person: { firstName: "Cécile", lastName: "Martin" },
+    });
   });
 });
 
@@ -316,5 +383,33 @@ describe("le journal de l'annuaire — une trace qui tombe annule le geste", () 
     const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id } });
     expect(row.status).toBe("active");
     expect(sent).toEqual([]);
+  });
+});
+
+/**
+ * D7 du plan des phrases : la première connexion passait la fiche à `active`
+ * sans rien écrire. L'invitation relie la fiche d'avance, donc c'est le chemin
+ * de toute personne invitée par l'écran.
+ */
+describe("le journal de l'annuaire — la première connexion d'une personne invitée", () => {
+  it("écrit un seul `activated`, la fiche pour auteur ; la seconde connexion n'écrit rien", async () => {
+    const id = await createColleague();
+    const cecile = (): ReturnType<E2eContext["asSub"]> => ctx.asSub("auth0|cecile@lfc.test");
+
+    await cecile().get("/admin/me").expect(200);
+    await cecile().get("/admin/me").expect(200);
+
+    const facts = await factsAbout(id);
+    expect(facts.map((fact) => fact.type)).toEqual([
+      "staff_user.created",
+      "staff_user.invited",
+      "staff_user.activated",
+    ]);
+    expect(facts[2]).toMatchObject({ actorName: "Cécile Martin" });
+    const author = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { subjectId: id, type: "staff_user.activated" },
+      select: { actorType: true, actorId: true },
+    });
+    expect(author).toEqual({ actorType: "staff", actorId: id });
   });
 });

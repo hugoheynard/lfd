@@ -8,6 +8,7 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { SupportRequestRepository } from "../../domain/ports/support-request.repository.js";
 import { ensureCompanyMember } from "../../domain/services/company-access.js";
 import { RequestActivationSupportCommand } from "./request-activation-support.command.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Enregistre une demande de support à l'activation.
@@ -15,6 +16,12 @@ import { RequestActivationSupportCommand } from "./request-activation-support.co
  * Le mur ne s'applique que si le client **désigne** une société : il faut en être
  * membre. Sans société, la demande porte sur la personne — c'est le cas d'un
  * prospect qui n'a rien encore déclaré, et c'est précisément qui on veut capter.
+ *
+ * `@sans-journal` le fait existe déjà, et il n'a qu'un seul auteur :
+ * `support.requested`, écrit par son abonné (`on-support-activity`) avec le
+ * canal demandé, jamais la coordonnée.
+ * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
+ * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
  */
 @CommandHandler(RequestActivationSupportCommand)
 export class RequestActivationSupportHandler implements ICommandHandler<
@@ -26,6 +33,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
     private readonly support: SupportRequestRepository,
     private readonly events: EventBus,
     private readonly clock: Clock,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: RequestActivationSupportCommand): Promise<string> {
@@ -43,6 +51,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
       throw new OpenSupportRequestExistsError(companyId ?? command.actorUserId);
     }
 
+    const subjectLabel = await this.names.supportSubject(companyId, command.actorUserId);
     const id = await this.support.record(command.actorUserId, command.payload);
     // Publié APRÈS l'écriture : le journal est une projection, jamais une
     // condition de la transaction métier.
@@ -51,6 +60,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
         id,
         companyId,
         command.actorUserId,
+        subjectLabel,
         command.payload.channel,
         this.clock.now(),
       ),

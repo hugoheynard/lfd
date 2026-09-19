@@ -45,7 +45,7 @@ describe("resolveGlobalRules", () => {
     };
 
     // L'annuaire nomme l'auteur : l'écran ne montre plus son identifiant
-    // (plan `plan-l-auteur-est-la-fiche.md`, D3).
+    // (`architecture-journalisation.md` §12, D3).
     const nameOf = (reference: string | null): string | null =>
       reference === "staff|hugo" ? "Hugo Heynard" : null;
     const drift = resolveGlobalRules([stored], nameOf).find(

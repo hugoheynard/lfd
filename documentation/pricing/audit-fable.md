@@ -180,7 +180,7 @@ route. Et la facturation elle-même, qui est un contexte, pas un lot.
 - `packages/contracts/src/{cart-adjustment,shop-quote,shop-cart,order,pricing}.ts` ;
 - `apps/lfd-api/src/b2b/pricing/domain/{resolve-price,price-rule,specificity,
 floor-policy,resolve-floor,volume-ladder,pricing-materials}.ts`,
-  `pricing/application/{pricing-context,commands/price-template.handlers}.ts`,
+  `pricing/domain/pricing-context.ts`, `commands/save-price-template.handler.ts` et `apply-price-template.handler.ts` (découpés le 2026-09-19),
   `pricing/infrastructure/{pricing-materials.cache,pricing-act.writer,
 prisma-price-rule.reader,prisma-volume-commitment.reader,
 prisma-price-template.repository}.ts` ;

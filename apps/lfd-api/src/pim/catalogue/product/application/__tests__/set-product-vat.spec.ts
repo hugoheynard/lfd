@@ -1,8 +1,11 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  KnownPointsOfSale,
+  KnownVatRates,
+} from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
-import { VatRate } from "../../../../vat-rates/domain/entities/vat-rate.js";
 import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
@@ -138,14 +141,17 @@ function familySelling(channels: SalesChannels): CategoryRepository {
 }
 
 function rates(): VatRateRepository {
-  const known = new Map([
-    ["tva_55", VatRate.open({ id: "tva_55", name: "Réduit", description: "", percent: 5.5 })],
-    ["tva_20", VatRate.open({ id: "tva_20", name: "Normal", description: "", percent: 20 })],
-  ]);
-  return {
-    findById: (id: string) => Promise.resolve(known.get(id) ?? null),
-  } as unknown as VatRateRepository;
+  return new KnownVatRates({
+    tva_55: { name: "Réduit", percent: 5.5 },
+    tva_20: { name: "Normal", percent: 20 },
+  });
 }
+
+/** Les points de vente que les matrices citent, nommés comme le journal les fige. */
+const POINTS_OF_SALE = new KnownPointsOfSale({
+  emp_1: "Boutique du Village",
+  pos_b2b: "Plateforme pro",
+});
 
 const SELLS_ALL: SalesChannels = [
   { pointOfSaleId: "emp_1", context: "takeaway" },
@@ -168,6 +174,11 @@ describe("SetProductVatHandler", () => {
 
     expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
     expect(journal.types()).toEqual(["product.vat_changed"]);
+    // Le taux et le contexte, chacun sous son nom du moment (D5, lot D).
+    expect(journal.entries[0]?.payload).toMatchObject({
+      vatByContext: { b2b: { from: null, to: { id: "tva_20" } } },
+      contextLabels: { b2b: "B2B" },
+    });
   });
 
   it("rend la fiche à sa famille sur une carte VIDE", async () => {
@@ -264,6 +275,8 @@ describe("SetProductChannelsHandler", () => {
       familySelling(SELLS_ALL),
       allPointsOfSaleOffer,
       registry,
+      POINTS_OF_SALE,
+      rates(),
       journal,
       new DirectUnitOfWork(),
     ).execute(
@@ -282,6 +295,8 @@ describe("SetProductChannelsHandler", () => {
       familySelling(SELLS_ALL),
       allPointsOfSaleOffer,
       registry,
+      POINTS_OF_SALE,
+      rates(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
     ).execute(new SetProductChannelsCommand("prd_1", null));
@@ -301,6 +316,8 @@ describe("SetProductChannelsHandler", () => {
         familySelling(SELLS_ALL),
         noPointOfSaleKnown,
         registry,
+        POINTS_OF_SALE,
+        rates(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
       ).execute(
@@ -323,6 +340,8 @@ describe("SetProductChannelsHandler", () => {
       familySelling(SELLS_ALL),
       allPointsOfSaleOffer,
       registry,
+      POINTS_OF_SALE,
+      rates(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
     ).execute(

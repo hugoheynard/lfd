@@ -57,3 +57,34 @@ describe("UserProfile", () => {
     expect(profile.emailChanged).toBe(true);
   });
 });
+
+describe("UserProfile.changedFieldsSince — ce que le journal en garde", () => {
+  const RECORDED: UserProfileInput = {
+    firstName: "Camille",
+    lastName: "Rousseau",
+    email: "camille@ancienne.fr",
+    phone: "",
+  };
+
+  it("nomme les champs changés, jamais leurs valeurs", () => {
+    const profile = UserProfile.revise(RECORDED.email, {
+      ...RECORDED,
+      email: "camille@nouvelle.fr",
+      phone: "0612345678",
+    });
+
+    const fields = profile.changedFieldsSince(RECORDED);
+
+    expect(fields).toEqual(["email", "phone"]);
+    expect(JSON.stringify(fields)).not.toContain("nouvelle");
+  });
+
+  it("une casse différente n'est pas une autre adresse", () => {
+    const profile = UserProfile.revise(RECORDED.email, {
+      ...RECORDED,
+      email: "CAMILLE@ancienne.fr",
+    });
+
+    expect(profile.changedFieldsSince(RECORDED)).toEqual([]);
+  });
+});

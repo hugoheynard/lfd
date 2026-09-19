@@ -3,7 +3,7 @@ import { IdentitySubjectUnknownError } from "../identity-errors.js";
 /**
  * Régression : le message portait le `sub` Auth0, et `AppErrorFilter` écrit le
  * message d'une erreur technique au journal de production — un identifiant
- * chez un tiers finissait dans nos logs (plan `plan-l-auteur-est-la-fiche.md`,
+ * chez un tiers finissait dans nos logs (`architecture-journalisation.md` §12,
  * §8, 2026-09-18).
  */
 describe("IdentitySubjectUnknownError", () => {

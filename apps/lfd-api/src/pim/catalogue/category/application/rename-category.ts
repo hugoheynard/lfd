@@ -47,7 +47,7 @@ export class RenameCategoryHandler implements ICommandHandler<RenameCategoryComm
               type: PIM_EVENTS.productCategoryRenamed,
               subjectType: "product_category",
               subjectId: category.id,
-              payload: { changes },
+              payload: { subjectLabel: category.name.fr, changes },
             })
           : this.journal.untraced("famille enregistrée sans changement de nom");
       await this.categories.save(category, ticket);

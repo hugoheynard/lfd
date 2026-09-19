@@ -3,7 +3,7 @@ import type { CatalogRevisionDiffView } from "@lfd/pim-contracts";
 
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
-import { GLOBAL_CAUSE_TYPES, causesOf } from "../domain/attribution.js";
+import { GLOBAL_CAUSE_TYPES, causesOf } from "../domain/global-causes.js";
 
 import { diffItem, headerDiff, planDiff } from "../domain/diff.js";
 import {

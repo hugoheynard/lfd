@@ -3,10 +3,13 @@ import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import { ResourceNotFoundError } from "../../../../platform/shared/errors/app-error.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import type { CatalogDelivery } from "../../domain/entities/catalog-delivery.js";
 import { CatalogVersion } from "../../domain/entities/catalog-version.js";
 import { UnknownExcludedSkuError } from "../../domain/errors/catalog-errors.js";
+import { CatalogDeliveryAcceptedEvent } from "../../domain/events/catalog-delivery.events.js";
 import { CatalogDeliveryRepository } from "../../domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
 import { CatalogVersionRepository } from "../../domain/ports/catalog-version.repository.js";
@@ -55,16 +58,21 @@ class DeliveryNotFoundError extends ResourceNotFoundError {
  * La photographie est prise sur le **miroir relu**, après application — jamais
  * sur le snapshot reçu, qui dirait changé un SKU qu'on vient d'écarter.
  *
- * ## Ce qui trace, et pourquoi il n'y a pas de journal ici
+ * ## Ce qui trace — et le fait au journal
  *
- * Trois traces existent déjà, et elles couvrent les questions qu'on posera un
- * jour : **qui a validé** vit sur l'arrivée (`accepted_at`, `accepted_by`, et
- * les SKU écartés), **ce qui a été accepté** dans la version, et **ce que ça a
- * changé aux prix** s'inscrit tout seul dans `catalog_price_history`, que
- * `saveMany` alimente dans la même transaction. L'absence de journal applicatif ici n'est donc pas un oubli : ce
- * contexte n'en a aucun, et en introduire un pour ce seul geste laisserait les
- * décisions voisines — un prix négocié, un article masqué — plus mal tracées
- * que celle-ci.
+ * Trois traces existent, et elles restent : **qui a validé** vit sur l'arrivée
+ * (`accepted_at`, `accepted_by`, et les SKU écartés), **ce qui a été accepté**
+ * dans la version, et **ce que ça a changé aux prix** s'inscrit tout seul dans
+ * `catalog_price_history`, que `saveMany` alimente dans la même transaction.
+ *
+ * Ce JSDoc justifiait l'absence de journal par « ce contexte n'en a aucun ».
+ * C'est faux depuis le 2026-09-19 : les décisions voisines — un prix négocié,
+ * un article masqué — y écrivent leurs faits (`catalog-decision.handlers.ts`,
+ * vérifié ce jour-là ; découpé en un fichier par geste le 2026-09-19, cf.
+ * `catalog-decision-support.ts`). La validation y écrit donc aussi le sien,
+ * `catalog_delivery.accepted`, dans la même transaction que la clôture : sans
+ * lui, elle serait la seule décision du catalogue qu'on ne lirait pas dans le
+ * journal. Il ne remplace aucune des trois traces ; il les nomme.
  */
 @CommandHandler(AcceptDeliveryCommand)
 export class AcceptDeliveryHandler implements ICommandHandler<AcceptDeliveryCommand, void> {
@@ -75,6 +83,7 @@ export class AcceptDeliveryHandler implements ICommandHandler<AcceptDeliveryComm
     private readonly ingest: IngestCatalogService,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -98,24 +107,47 @@ export class AcceptDeliveryHandler implements ICommandHandler<AcceptDeliveryComm
       await this.deliveries.close(delivery);
       await this.ingest.apply(delivery.snapshot, command.excludedSkus);
 
-      // La photographie est prise APRÈS l'application, et sur le miroir relu —
-      // pas sur le snapshot reçu. C'est ce qui la rend juste pour un SKU écarté,
-      // qui garde ses faits COURANTS : le snapshot le dirait changé, le miroir
-      // le dit inchangé. La relecture coûte une requête par validation, soit un
-      // geste humain par jour ; la déduire du snapshot coûterait la vérité.
-      await this.versions.append(
-        CatalogVersion.photograph({
-          id: this.ids.next(),
+      const versionId = await this.photograph(delivery, command, acceptedAt);
+
+      await this.events.publishTraced(
+        new CatalogDeliveryAcceptedEvent({
           deliveryId: delivery.id,
           revisionId: delivery.revisionId,
-          fingerprint: delivery.fingerprint,
+          versionId,
           excludedSkus: command.excludedSkus,
-          createdAt: acceptedAt,
-          createdBy: command.acceptedBy,
-          mirror: await this.items.loadAll(),
         }),
       );
     });
+  }
+
+  /**
+   * Pose la version et rend son identifiant.
+   *
+   * La photographie est prise APRÈS l'application, et sur le miroir relu —
+   * pas sur le snapshot reçu. C'est ce qui la rend juste pour un SKU écarté,
+   * qui garde ses faits COURANTS : le snapshot le dirait changé, le miroir
+   * le dit inchangé. La relecture coûte une requête par validation, soit un
+   * geste humain par jour ; la déduire du snapshot coûterait la vérité.
+   */
+  private async photograph(
+    delivery: CatalogDelivery,
+    command: AcceptDeliveryCommand,
+    acceptedAt: Date,
+  ): Promise<string> {
+    const versionId = this.ids.next();
+    await this.versions.append(
+      CatalogVersion.photograph({
+        id: versionId,
+        deliveryId: delivery.id,
+        revisionId: delivery.revisionId,
+        fingerprint: delivery.fingerprint,
+        excludedSkus: command.excludedSkus,
+        createdAt: acceptedAt,
+        createdBy: command.acceptedBy,
+        mirror: await this.items.loadAll(),
+      }),
+    );
+    return versionId;
   }
 
   /**

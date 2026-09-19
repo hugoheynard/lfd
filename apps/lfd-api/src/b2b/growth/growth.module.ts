@@ -24,10 +24,8 @@ import { OnOrderReady } from "./application/handlers/on-order-ready.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
 import { OnUserRegisteredLinkLead } from "./application/handlers/on-user-registered-link-lead.handler.js";
-import {
-  OnSupportHandled,
-  OnSupportRequested,
-} from "./application/handlers/on-support-activity.handler.js";
+import { OnSupportHandled } from "./application/handlers/on-support-handled.handler.js";
+import { OnSupportRequested } from "./application/handlers/on-support-requested.handler.js";
 import { GetAppointmentHandler } from "./application/queries/get-appointment.handler.js";
 import { GetAvailabilityHandler } from "./application/queries/get-availability.handler.js";
 import { GetCockpitHandler } from "./application/queries/get-cockpit.handler.js";
@@ -80,13 +78,21 @@ import { AdminProspectsController } from "./http/admin-prospects.controller.js";
 import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
+import { AppConfig } from "../../platform/config/app-config.js";
+import { JournalFactCheck } from "../../platform/journal/journal-fact-check.js";
 import { PrismaActorNamer } from "./infrastructure/prisma-actor-namer.js";
 import { CompanyNamer } from "./domain/ports/company-namer.js";
 import { PrismaCompanyNamer } from "./infrastructure/prisma-company-namer.js";
+import { CustomerNamer } from "./domain/ports/customer-namer.js";
+import { PrismaCustomerNamer } from "./infrastructure/prisma-customer-namer.js";
+import { CustomerEmailReader } from "./domain/ports/customer-email.reader.js";
+import { PrismaCustomerEmailReader } from "./infrastructure/prisma-customer-email.reader.js";
 import { ActivityJournalReader } from "./domain/ports/activity-journal.reader.js";
 import { PrismaActivityJournalReader } from "./infrastructure/prisma-activity-journal.reader.js";
 import { AdminActivityController } from "./http/admin-activity.controller.js";
 import { ReadActivityJournalHandler } from "./application/queries/read-activity-journal.handler.js";
+import { AdminTaxActivityController } from "./http/admin-tax-activity.controller.js";
+import { ReadTaxActivityJournalHandler } from "./application/queries/read-tax-activity-journal.handler.js";
 import { ActorNamer } from "./domain/ports/actor-namer.js";
 import { PrismaAppointmentReader } from "./infrastructure/prisma-appointment.reader.js";
 import { PrismaAppointmentRepository } from "./infrastructure/prisma-appointment.repository.js";
@@ -133,13 +139,26 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     // sa surface de lecture aussi, tant que le journal n'a pas été promu en
     // `platform/` (cf. `pim/journal/pim-journal.ts`).
     AdminActivityController,
+    // Sa tranche fiscale, sous `pim_tax:write` : la comptabilité relit ce
+    // qu'elle écrit sans recevoir le journal entier (lot 4, 2026-09-19).
+    AdminTaxActivityController,
   ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
+    // La vérification à l'écriture : stricte sous les harnais de test,
+    // indulgente en production (D2 du plan des phrases du journal).
+    {
+      provide: JournalFactCheck,
+      useFactory: (config: AppConfig) => new JournalFactCheck(config.journalFactsStrict()),
+      inject: [AppConfig],
+    },
     { provide: ActorNamer, useClass: PrismaActorNamer },
     { provide: CompanyNamer, useClass: PrismaCompanyNamer },
+    { provide: CustomerNamer, useClass: PrismaCustomerNamer },
+    { provide: CustomerEmailReader, useClass: PrismaCustomerEmailReader },
     { provide: ActivityJournalReader, useClass: PrismaActivityJournalReader },
     ReadActivityJournalHandler,
+    ReadTaxActivityJournalHandler,
     { provide: ProspectReader, useClass: PrismaProspectReader },
     { provide: ActivationReader, useClass: PrismaActivationReader },
     { provide: LeadEventSource, useClass: PrismaLeadEventSource },

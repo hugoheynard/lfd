@@ -1,29 +1,15 @@
 import { CompanyStepReachedEvent } from "../../../../account/domain/events/company-step-reached.event.js";
-import type { RecordActivityInput } from "../../../domain/activity-event.js";
-import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { OnCompanyStepReached } from "../on-company-step-reached.handler.js";
 import { BackgroundWork } from "../../../../../platform/events/background-work.js";
-
-/** Recorder doublé : capture les entrées (extension du port, sans cast). */
-class RecordingRecorder extends ActivityRecorder {
-  readonly records: RecordActivityInput[] = [];
-  record(input: RecordActivityInput): Promise<void> {
-    this.records.push(input);
-    return Promise.resolve();
-  }
-  /** Les deux garanties écrivent au même endroit — le double n'en distingue qu'une. */
-  recordOrFail(input: RecordActivityInput): Promise<void> {
-    return this.record(input);
-  }
-}
+import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 describe("OnCompanyStepReached", () => {
   const work = new BackgroundWork();
 
   it("journalise company.step_reached avec une clé PAR (société, étape)", async () => {
-    const recorder = new RecordingRecorder();
+    const recorder = new RecordingActivityRecorder();
     new OnCompanyStepReached(recorder, work).handle(
-      new CompanyStepReachedEvent("company_2", "kbis"),
+      new CompanyStepReachedEvent("company_2", "Le Pain Quotidien", "kbis"),
     );
     await work.whenIdle();
 
@@ -32,15 +18,15 @@ describe("OnCompanyStepReached", () => {
       subjectType: "company",
       subjectId: "company_2",
       idempotencyKey: "company.step_reached:kbis:company_2",
-      payload: { step: "kbis" },
+      payload: { subjectLabel: "Le Pain Quotidien", step: "kbis" },
     });
   });
 
   it("distingue deux étapes de la même société par la clé", async () => {
-    const recorder = new RecordingRecorder();
+    const recorder = new RecordingActivityRecorder();
     const handler = new OnCompanyStepReached(recorder, work);
-    handler.handle(new CompanyStepReachedEvent("company_2", "vat"));
-    handler.handle(new CompanyStepReachedEvent("company_2", "billing"));
+    handler.handle(new CompanyStepReachedEvent("company_2", "Le Pain Quotidien", "vat"));
+    handler.handle(new CompanyStepReachedEvent("company_2", "Le Pain Quotidien", "billing"));
     await work.whenIdle();
 
     expect(recorder.records.map((r) => r.idempotencyKey)).toEqual([

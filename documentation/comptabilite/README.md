@@ -69,11 +69,11 @@ juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 
 ### Le mandat SEPA — trois choses portent ce nom
 
-| Ce qui existe                   | Où                                               | État                                                                                                                                            |
-| ------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le mandat **Stripe**            | `src/b2b/payments/`                              | **gelé** — plus aucun n'est créé depuis le 2026-09-10                                                                                           |
-| Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                                                   |
-| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md) |
+| Ce qui existe                   | Où                                               | État                                                                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le mandat **Stripe**            | `src/b2b/payments/`                              | **supprimé** le 2026-09-19 — aucun mandat Stripe en production (Hugo) ; ses deux colonnes restent en base, ni lues ni écrites ([`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md)) |
+| Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                                                                                                              |
+| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md)                                                            |
 
 ### La RUM
 

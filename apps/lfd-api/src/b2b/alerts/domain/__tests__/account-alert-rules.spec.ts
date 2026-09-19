@@ -149,7 +149,7 @@ describe("l'auteur d'une dérogation", () => {
   });
 
   it("se nomme par l'annuaire, jamais par son identifiant", () => {
-    // Plan `plan-l-auteur-est-la-fiche.md`, D3 : l'écran affichait le `sub`.
+    // Plan `architecture-journalisation.md` §12, D3 : l'écran affichait le `sub`.
     const nameOf = (reference: string | null): string | null =>
       reference === "staff|hugo" ? "Hugo Heynard" : null;
     const drift = resolveAccountRules(GLOBALS, [stored(OWN_RULE)], nameOf).find(

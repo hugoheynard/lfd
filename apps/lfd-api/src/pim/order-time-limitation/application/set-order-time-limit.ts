@@ -6,7 +6,9 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
+import { LimitScopeNamer } from "../domain/ports/limit-scope.namer.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
+import { limitScopeLabel } from "../domain/services/limit-scope-label.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
 
 export class SetOrderTimeLimitCommand {
@@ -33,6 +35,7 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly scopes: LimitScopeNamer,
   ) {}
 
   async execute(command: SetOrderTimeLimitCommand): Promise<string> {
@@ -51,6 +54,8 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
       existing.reset(payload);
     }
 
+    // La portée en mots, figée au journal (lot B du plan des phrases, D6).
+    const subjectLabel = limitScopeLabel(limit.scope, await this.scopes.nameOf(limit.scope));
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.orderTimeLimitSet,
@@ -60,6 +65,7 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
         // ça » ne se répond qu'en sachant ce que ça valait. `null` y reste
         // `null` — « ce rang ne se prononce pas » est une décision, pas un vide.
         payload: {
+          subjectLabel,
           scope: limit.scope.key,
           daysBefore: limit.daysBefore,
           time: limit.time,

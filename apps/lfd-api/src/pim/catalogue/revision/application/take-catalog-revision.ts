@@ -114,7 +114,11 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
           type: PIM_EVENTS.catalogRevisionNamed,
           subjectType: "catalog_revision",
           subjectId: existing.id,
-          payload: { reference: existing.reference, label: command.label },
+          payload: {
+            subjectLabel: command.label,
+            reference: existing.reference,
+            label: command.label,
+          },
         });
       }
       return {
@@ -171,7 +175,15 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
         // l'écriture par construction. L'empreinte désigne la même chose et ne
         // dépend de personne.
         subjectId: revision.hash,
-        payload: { hash: revision.hash, label: command.label, note: command.note },
+        // `subjectLabel` : le nom qu'on lui donne, sinon son EMPREINTE — la
+        // référence lisible (`R-…`) n'existe qu'après l'écriture, et rien
+        // d'autre ne nomme l'ancre à cet instant.
+        payload: {
+          subjectLabel: command.label ?? revision.hash,
+          hash: revision.hash,
+          label: command.label,
+          note: command.note,
+        },
         // La portée d'une ancre : combien d'articles elle fige.
         blast: { articles: revision.items.length },
       });

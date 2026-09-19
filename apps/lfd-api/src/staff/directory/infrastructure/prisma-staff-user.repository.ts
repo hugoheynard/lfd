@@ -153,7 +153,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     }
     // La liaison et sa trace dans la table des `sub` partent ensemble : un
     // `sub` relié à une fiche ne doit plus pouvoir se perdre quand un suivant
-    // l'écrase dans `auth0_id` (plan `plan-l-auteur-est-la-fiche.md`, D5.1).
+    // l'écrase dans `auth0_id` (`architecture-journalisation.md` §12, D5.1).
     await this.prisma.$transaction([
       this.prisma.staffUser.update({
         where: { id },

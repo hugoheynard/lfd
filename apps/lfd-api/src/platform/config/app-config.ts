@@ -13,6 +13,7 @@ import {
   optionalPort,
   optionalPublicationEnabled,
   optionalDeliveryInboxEnabled,
+  optionalJournalStrictFacts,
   optionalMediaPublicBaseUrl,
   optionalR2Storage,
   optionalString,
@@ -65,6 +66,7 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly database: string;
   private readonly publicationValue: boolean;
   private readonly deliveryInboxValue: boolean;
+  private readonly journalStrictFactsValue: boolean;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly auth0ConnectionValue: string;
@@ -114,6 +116,7 @@ export class AppConfig implements ShopifyCredentialsSource {
     this.adminBypass = optionalAdminDevBypass();
     this.publicationValue = optionalPublicationEnabled();
     this.deliveryInboxValue = optionalDeliveryInboxEnabled();
+    this.journalStrictFactsValue = optionalJournalStrictFacts();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.shopifyTokenValue = optionalString("SHOPIFY_ADMIN_TOKEN");
@@ -406,6 +409,15 @@ export class AppConfig implements ShopifyCredentialsSource {
    */
   deliveryInboxEnabled(): boolean {
     return this.deliveryInboxValue;
+  }
+
+  /**
+   * Le journal lève-t-il sur un fait hors catalogue, ou le signale-t-il et
+   * l'écrit quand même ? Strict sous les harnais de test, jamais en production
+   * (cf. `optionalJournalStrictFacts`, et `JournalFactCheck`).
+   */
+  journalFactsStrict(): boolean {
+    return this.journalStrictFactsValue;
   }
 
   /**

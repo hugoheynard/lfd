@@ -6,18 +6,22 @@ import { ACTIVITY_TYPES } from "../domain/activity-event.js";
 import type { ProspectView } from "@lfd/contracts";
 
 import { deriveProspects, type ProspectEvent } from "../domain/prospect.js";
+import { CustomerEmailReader } from "../domain/ports/customer-email.reader.js";
 import { ProspectReader } from "../domain/ports/prospect.reader.js";
 
 /**
- * Adaptateur Prisma des prospects : lit le journal (`growth.activity_events`) —
- * et **rien d'autre** — puis délègue la dérivation à la fonction pure
- * `deriveProspects`. L'instant vient du `Clock` (récence déterministe en test).
+ * Adaptateur Prisma des prospects : lit le journal (`growth.activity_events`),
+ * demande l'adresse de chaque personne à sa fiche (`CustomerEmailReader` — le
+ * journal ne la porte plus depuis le lot B du plan des phrases, 2026-09-19),
+ * puis délègue la dérivation à la fonction pure `deriveProspects`. L'instant
+ * vient du `Clock` (récence déterministe en test).
  */
 @Injectable()
 export class PrismaProspectReader extends ProspectReader {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    private readonly emails: CustomerEmailReader,
   ) {
     super();
   }
@@ -38,7 +42,8 @@ export class PrismaProspectReader extends ProspectReader {
       payload: asRecord(row.payload),
     }));
 
-    return deriveProspects(events, this.clock.now());
+    const emails = await this.emails.emailsOf(events.map((event) => event.subjectId));
+    return deriveProspects(events, this.clock.now(), emails);
   }
 }
 

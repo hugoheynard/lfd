@@ -8,8 +8,8 @@
        divergé au premier ajout d'action. -->
   <ng-template #rowActions let-row>
     <!-- Pas de « Supprimer » : une fiche staff ne se supprime plus, le serveur
-         répond 409 (plan documentation/staff/plan-l-auteur-est-la-fiche.md,
-         §4 étape 0). Elle porte l'auteur de ce que la personne a fait ; on
+         répond 409 (documentation/journalisation/architecture-journalisation.md
+         §12). Elle porte l'auteur de ce que la personne a fait ; on
          suspend l'accès, on ne détruit pas la fiche. -->
     <fold-dropdown
       *appCan="'staff_access:write'"

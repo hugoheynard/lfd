@@ -10,13 +10,6 @@
   margin-bottom: var(--fold-space-lg);
 }
 
-.jr-loading {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  color: var(--fold-color-text-muted);
-}
-
 .jr-list {
   list-style: none;
   margin: 0;
@@ -73,8 +66,16 @@
   font-size: 0.8em;
 }
 
-.jr-more {
+.jr-pages {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
   padding-top: var(--fold-space-lg);
+}
+
+.jr-frozen {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
 }

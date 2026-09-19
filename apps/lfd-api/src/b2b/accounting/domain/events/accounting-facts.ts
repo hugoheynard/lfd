@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 /**
  * Les **faits de la comptabilité** — ce que le journal retient de notre propre
  * identité d'émetteur.
@@ -39,4 +41,4 @@ export const ACCOUNTING_FACTS = {
   /** L'entité n'émet plus rien ; ses documents passés restent. */
   legalEntityArchived: "legal_entity.archived",
   legalEntityRestored: "legal_entity.restored",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;

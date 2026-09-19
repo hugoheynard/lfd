@@ -93,7 +93,7 @@ describe('ce qui rattache le fichier à quelqu’un', () => {
   });
 
   it('écrit le nom de l’auteur, jamais son identifiant, quand il est connu', () => {
-    // Plan `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 : l'export
+    // Plan `documentation/journalisation/architecture-journalisation.md` §12, D3 : l'export
     // écrivait « établie par auth0|… » dans un fichier qui quitte la maison.
     const [first] = mercurialeCsv({ ...MERCURIALE, createdByName: 'Marie Curie' }, [row()]).split(
       '\r\n',

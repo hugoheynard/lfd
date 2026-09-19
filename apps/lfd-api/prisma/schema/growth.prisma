@@ -70,6 +70,10 @@ model ActivityEvent {
   @@index([subjectType, subjectId, occurredAt])
   @@index([type, occurredAt])
   @@index([establishmentId, occurredAt])
+  /// Le filtre par personne (« qu'a fait Cécile ? ») : `actor_id IN (…)`, le
+  /// seul filtre exposé que rien ne servait (plan du journal, lot 2,
+  /// 2026-09-19).
+  @@index([actorId])
   @@map("activity_events")
   @@schema("growth")
 }

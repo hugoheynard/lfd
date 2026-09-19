@@ -1,5 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { FulfillmentPreferenceSetByMemberEvent } from "../../domain/events/member-acts.event.js";
+import { companyNamed, type DeliveryAddressRef } from "../../domain/events/journal-names.js";
 import {
   CompanyAddressNotFoundError,
   CompanyNotFoundError,
@@ -19,6 +23,10 @@ import { PreferFulfillmentCommand } from "./company-settings-commands.js";
  * partagent la même règle de rattachement — l'adresse désignée doit être celle
  * de cette société — parce que c'est un invariant du modèle, pas une politique
  * d'écran.
+ *
+ * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
+ * sous le nom du geste staff jumeau, sans coordonnée.
  */
 @CommandHandler(PreferFulfillmentCommand)
 export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillmentCommand, void> {
@@ -26,6 +34,8 @@ export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillme
     private readonly memberships: MembershipReader,
     private readonly companies: CompanyRepository,
     private readonly addresses: CompanyAddressReader,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: PreferFulfillmentCommand): Promise<void> {
@@ -36,20 +46,41 @@ export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillme
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    await this.ensureOwnDeliveryAddress(command);
+    const deliveryAddress = await this.ownDeliveryAddress(command);
     company.preferFulfillment(command.preference);
-    await this.companies.save(company);
+    // La préférence telle que l'agrégat l'a retenue : l'adresse de l'autre mode
+    // y est remise à `null`, et le journal dit ce qui a été posé.
+    const kept = company.fulfillmentPreference;
+    await this.uow.run(async () => {
+      await this.companies.save(company);
+      await this.events.publishTraced(
+        new FulfillmentPreferenceSetByMemberEvent(companyNamed(command.companyId, company), {
+          method: kept.method,
+          pickupAddressId: kept.pickupAddressId,
+          deliveryAddress,
+          signatureRequired: kept.signatureRequired,
+        }),
+      );
+    });
   }
 
-  /** L'adresse préférée doit appartenir à la société — ou ne pas être désignée. */
-  private async ensureOwnDeliveryAddress(command: PreferFulfillmentCommand): Promise<void> {
+  /**
+   * L'adresse préférée doit appartenir à la société — ou ne pas être désignée.
+   * Rendue citée par son lieu (lot B du plan des phrases) : id, ville et code
+   * postal, jamais le libellé.
+   */
+  private async ownDeliveryAddress(
+    command: PreferFulfillmentCommand,
+  ): Promise<DeliveryAddressRef | null> {
     const wanted = command.preference.deliveryAddressId;
     if (command.preference.method !== "delivery" || wanted === null) {
-      return;
+      return null;
     }
     const { deliveries } = await this.addresses.read(command.companyId);
-    if (!deliveries.some((address) => address.id === wanted)) {
+    const address = deliveries.find((candidate) => candidate.id === wanted);
+    if (address === undefined) {
       throw new CompanyAddressNotFoundError(wanted);
     }
+    return { id: wanted, ville: address.ville, codePostal: address.codePostal };
   }
 }

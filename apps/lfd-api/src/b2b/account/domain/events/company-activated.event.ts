@@ -1,5 +1,6 @@
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
+import type { NamedRef } from "./journal-names.js";
 
 /**
  * Fait de domaine : **une société est passée cliente** (`pending → active`) par
@@ -12,7 +13,8 @@ import { ACCOUNT_FACTS } from "./account-facts.js";
  */
 export class CompanyActivatedEvent implements JournaledEvent {
   constructor(
-    readonly companyId: string,
+    /** La société, nommée comme au moment de l'activation. */
+    readonly company: NamedRef,
     /** Instant d'activation (temps métier, issu du `Clock`). */
     readonly activatedAt: Date,
   ) {}
@@ -21,9 +23,9 @@ export class CompanyActivatedEvent implements JournaledEvent {
     return {
       type: ACCOUNT_FACTS.companyActivated,
       subjectType: "company",
-      subjectId: this.companyId,
+      subjectId: this.company.id,
       occurredAt: this.activatedAt,
-      payload: { activatedAt: this.activatedAt.toISOString() },
+      payload: { subjectLabel: this.company.name, activatedAt: this.activatedAt.toISOString() },
     };
   }
 }

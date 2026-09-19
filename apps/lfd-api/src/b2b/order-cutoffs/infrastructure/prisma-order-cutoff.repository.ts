@@ -69,9 +69,18 @@ export class PrismaOrderCutoffRepository extends OrderCutoffRepository {
     }
   }
 
-  async remove(id: string): Promise<void> {
-    await this.ensureExists(id);
+  /**
+   * Lit la règle avant de la supprimer, pour la rendre au journal. Le nom du
+   * point n'est pas résolu ici : le handler le lit par le port des points,
+   * comme à la création.
+   */
+  async remove(id: string): Promise<OrderCutoffView> {
+    const row = await this.prisma.orderCutoff.findUnique({ where: { id } });
+    if (row === null) {
+      throw new OrderCutoffNotFoundError(id);
+    }
     await this.prisma.orderCutoff.delete({ where: { id } });
+    return toView(row, new Map());
   }
 
   private async ensureExists(id: string): Promise<void> {

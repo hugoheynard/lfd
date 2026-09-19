@@ -10,11 +10,12 @@ import { DeliveryProcedureLock } from "../../domain/ports/delivery-procedure.loc
 import { DeliveryProcedureRepository } from "../../domain/ports/delivery-procedure.repository.js";
 import { RemoveDeliveryStepByStaffCommand } from "./admin-delivery-procedure-commands.js";
 import { removeDeliveryStep, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Supprime définitivement une étape et sa photo, **par un agent** — sans mur membership, l'auth staff garde la route.
  *
- * Le fait `company.delivery_procedure_edited_by_staff` part **dans la transaction** de
+ * Le fait `company.delivery_procedure_edited` part **dans la transaction** de
  * l'écriture : une panne de journal annule le geste. Un livreur envoyé à la
  * mauvaise porte se remonte à qui a écrit la consigne.
  */
@@ -31,6 +32,7 @@ export class RemoveDeliveryStepByStaffHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: RemoveDeliveryStepByStaffCommand): Promise<void> {
@@ -38,11 +40,13 @@ export class RemoveDeliveryStepByStaffHandler implements ICommandHandler<
       this.ports(),
       { companyId: command.companyId, addressId: command.addressId },
       command.stepId,
-      () =>
+      async () =>
         this.events.publishTraced(
           new DeliveryProcedureEditedByStaffEvent(
-            command.companyId,
-            command.addressId,
+            // Lus DANS la transaction, après la vérification de l'adresse :
+            // un contenu refusé ne coûte toujours pas une lecture.
+            await this.names.company(command.companyId),
+            await this.names.deliveryAddress(command.companyId, command.addressId),
             "step_removed",
           ),
         ),

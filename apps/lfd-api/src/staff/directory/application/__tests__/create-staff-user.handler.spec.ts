@@ -68,7 +68,11 @@ describe("créer un membre de l’équipe", () => {
         type: STAFF_FACTS.created,
         subjectType: "staff_user",
         subjectId: "s1",
-        payload: { person: { firstName: "Camille", lastName: "Roy" }, roleLabel: "Commercial" },
+        payload: {
+          subjectLabel: "Camille Roy",
+          person: { firstName: "Camille", lastName: "Roy" },
+          roleLabel: "Commercial",
+        },
       },
     ]);
     // Auth0 et l'e-mail sont des appels réseau : jamais dans une transaction.

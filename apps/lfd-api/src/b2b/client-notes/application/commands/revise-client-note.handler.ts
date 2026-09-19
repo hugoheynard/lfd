@@ -10,6 +10,7 @@ import { ClientNotebookRepository } from "../../domain/ports/client-notebook.rep
 import { NotebookCompanies } from "../../domain/ports/notebook-companies.js";
 import { reviseClientNote } from "./client-notebook-editing.js";
 import { ReviseClientNoteCommand } from "./revise-client-note.command.js";
+import { namedNotebookCompany } from "../services/notebook-company-guard.js";
 
 /**
  * Refait une note du carnet d'un client. Une photo remplacée ou retirée quitte
@@ -49,9 +50,13 @@ export class ReviseClientNoteHandler implements ICommandHandler<ReviseClientNote
         photo: command.photo,
         thumbnail: command.thumbnail,
       },
-      () =>
+      async () =>
         this.events.publishTraced(
-          ClientNoteEditedByStaffEvent.onNote(command.companyId, command.noteId, "note_revised"),
+          ClientNoteEditedByStaffEvent.onNote(
+            await namedNotebookCompany(this.companies, command.companyId),
+            command.noteId,
+            "note_revised",
+          ),
         ),
     );
   }

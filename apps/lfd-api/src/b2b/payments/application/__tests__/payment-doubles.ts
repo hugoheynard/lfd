@@ -32,6 +32,7 @@ import {
 } from "../../domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { CustomerMandateGate } from "../../domain/ports/customer-mandate-gate.js";
+import { STRICT_JOURNAL_FACTS } from "../../../../platform/journal/__tests__/strict-journal-facts.js";
 
 /**
  * Doublés partagés des handlers du **mandat** et du **RIB**.
@@ -65,6 +66,7 @@ export const RIB_PAYLOAD: SetCompanyBankAccountPayload = {
 
 export const HOLDER: MandateHolder = {
   companyName: "Refuge du Col SARL",
+  displayName: "Le Refuge du Col",
   email: "compta@refuge.fr",
   reference: "C-9P2X4B",
   siren: "732829320",
@@ -98,8 +100,6 @@ export function mandate(overrides: Partial<MandateSnapshot> = {}): PaymentMandat
   return PaymentMandate.reconstitute({
     id: "mdt_1",
     companyId: "cmp_1",
-    stripeCustomerId: null,
-    paymentMethodId: null,
     reference: "LFC-9P2X4B-260914-K7M3QT",
     scheme: "B2B",
     paymentType: "recurrent",
@@ -230,10 +230,6 @@ export class InMemoryMandates extends PaymentMandateRepository {
   findHolder(): Promise<MandateHolder | null> {
     return Promise.resolve(this.holder);
   }
-
-  findStripeCustomerId(): Promise<string | null> {
-    return Promise.resolve(null);
-  }
 }
 
 /** Le RIB en mémoire. */
@@ -314,6 +310,8 @@ export class StepPublisher extends DomainEventPublisher {
   }
 
   publishTraced(event: JournaledEvent): Promise<void> {
+    const fact = event.journalFact();
+    STRICT_JOURNAL_FACTS.verify(fact.type, fact.payload);
     this.traced.push(event);
     this.steps.log.push(`journal:${event.journalFact().type}`);
     return Promise.resolve();

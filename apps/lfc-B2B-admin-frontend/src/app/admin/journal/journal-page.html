@@ -1,9 +1,18 @@
-<fold-page-layout icon="timeline" title="Journal d'activité">
-  <p description>
-    Qui a fait quoi, tous modules confondus. Le journal est
-    <strong>append-only</strong> : rien ne s'y modifie, rien ne s'y efface — ce qu'on lit est ce qui
-    s'est passé, avec le nom que portait l'auteur ce jour-là.
-  </p>
+<fold-page-layout icon="timeline" [title]="fiscal ? 'Journal fiscal' : 'Journal d\'activité'">
+  @if (fiscal) {
+    <p description>
+      Ce qui a touché à un taux de TVA : les taux eux-mêmes, celui d'une catégorie ou d'un produit
+      pour chaque contexte de vente — y compris celui qu'efface la fermeture d'un canal —, le
+      changement de catégorie d'un produit, les règles comptables, les contextes de vente et la
+      surtaxe de retard — qui l'a fait, et quand.
+    </p>
+  } @else {
+    <p description>
+      Qui a fait quoi, tous modules confondus. Le journal est
+      <strong>append-only</strong> : rien ne s'y modifie, rien ne s'y efface — ce qu'on lit est ce
+      qui s'est passé, avec le nom que portait l'auteur ce jour-là.
+    </p>
+  }
 
   <div class="jr-filters">
     <!-- Un seul champ pour tout ce qu'on sait d'un fait : le nom de l'auteur,
@@ -14,12 +23,16 @@
       placeholder="Nom, prénom, valeur, identifiant…"
       (searchChange)="onSearch($event)"
     />
-    <fold-listbox
-      label="Module"
-      [options]="modules"
-      [value]="module()"
-      (selectionChange)="onModule($event)"
-    />
+    <!-- Pas de module sur le journal fiscal : le serveur borne déjà la
+         tranche à ses types, et le contrat n'accepte pas la clé. -->
+    @if (!fiscal) {
+      <fold-listbox
+        label="Module"
+        [options]="modules"
+        [value]="module()"
+        (selectionChange)="onModule($event)"
+      />
+    }
     <fold-listbox
       label="Période"
       [options]="windows"
@@ -29,29 +42,61 @@
     <button foldButton emphasis="soft" size="sm" [disabled]="loading()" (click)="reload()">
       <fold-icon name="reload" [size]="14" /> Rafraîchir
     </button>
+    <!-- Les filtres venus de l'adresse qui n'ont pas de contrôle ici : sans
+         leur pastille, l'écran filtrerait sans le dire. Un clic les retire. -->
+    @if (actorChip(); as chip) {
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        iconTrailing="close"
+        [attr.aria-label]="'Retirer le filtre « ' + chip + ' »'"
+        (click)="clearActor()"
+      >
+        {{ chip }}
+      </button>
+    }
+    @if (subjectChip(); as chip) {
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        iconTrailing="close"
+        [attr.aria-label]="'Retirer le filtre « ' + chip + ' »'"
+        (click)="clearSubject()"
+      >
+        {{ chip }}
+      </button>
+    }
   </div>
 
-  @if (error(); as message) {
-    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
-  }
-
   @if (loading() && lines().length === 0) {
-    <div class="jr-loading"><fold-spinner /> Lecture du journal…</div>
+    <fold-loading message="Lecture du journal…" />
+  } @else if (error() && lines().length === 0) {
+    <fold-empty-state tone="alert" [title]="error() ?? ''">
+      <button foldButton (click)="reload()">Réessayer</button>
+    </fold-empty-state>
   } @else if (lines().length === 0 && query()) {
     <fold-empty-state
       [title]="'Aucun fait ne correspond à « ' + query() + ' »'"
-      subtitle="Vérifiez l’orthographe, élargissez la période, ou retirez le filtre de module."
+      subtitle="Vérifiez l’orthographe, élargissez la période, ou retirez un filtre."
     >
       <fold-icon empty-icon name="search" [size]="40" />
     </fold-empty-state>
   } @else if (lines().length === 0) {
     <fold-empty-state
       title="Rien sur cette période"
-      subtitle="Élargissez la fenêtre, ou retirez le filtre de module."
+      subtitle="Élargissez la fenêtre, ou retirez un filtre."
     >
       <fold-icon empty-icon name="timeline" [size]="40" />
     </fold-empty-state>
   } @else {
+    @if (error(); as message) {
+      <!-- Une page suivante n'a pas pu être lue : celle d'avant reste affichée. -->
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
     <ol class="jr-list">
       @for (line of lines(); track line.event.id) {
         <li class="jr-row">
@@ -61,14 +106,14 @@
             @if (line.title) {
               <span class="jr-title">{{ line.title }}</span>
             } @else {
-              <span class="jr-sentence">{{ line.sentence }}</span>
+              <app-fact-sentence class="jr-sentence" [segments]="line.segments" />
             }
             @if (line.moduleLabel) {
               <fold-badge [content]="line.moduleLabel" variant="neutral" />
             }
           </div>
           @if (line.title) {
-            <span class="jr-sentence">{{ line.sentence }}</span>
+            <app-fact-sentence class="jr-sentence" [segments]="line.segments" />
           }
           <!-- La seconde ligne : quand, par qui, pour qui. Elle se lit comme
                une phrase — « 21 août 2026 à 14:32, par Hugo Heynard
@@ -92,15 +137,31 @@
             }
             <code class="jr-type">{{ line.event.type }}</code>
           </p>
+          <!-- Ce que la phrase n'a pas dit : replié, ouvert d'un geste. -->
+          <app-fact-detail [rows]="line.detail" />
         </li>
       }
     </ol>
 
-    @if (hasMore()) {
-      <div class="jr-more">
-        <button foldButton emphasis="outline" [disabled]="loading()" (click)="loadMore()">
-          {{ loading() ? 'Lecture…' : 'Charger la suite' }}
-        </button>
+    @if (total() > pageSize) {
+      <div class="jr-pages">
+        <fold-paginator
+          [currentPage]="page()"
+          [totalItems]="total()"
+          [pageSize]="pageSize"
+          [pageSizeOptions]="[]"
+          [siblingCount]="1"
+          [labels]="paginatorLabels"
+          [disabled]="loading()"
+          (pageChange)="goTo($event)"
+        />
+        @if (page() > 1) {
+          <!-- Les pages suivantes lisent la vue figée par la page 1 : un fait
+               arrivé depuis ne s'y glisse pas. -->
+          <p class="jr-frozen">
+            Vue figée à {{ frozenAt() }} — revenir à la page 1 pour voir les faits arrivés depuis.
+          </p>
+        }
       </div>
     }
   }

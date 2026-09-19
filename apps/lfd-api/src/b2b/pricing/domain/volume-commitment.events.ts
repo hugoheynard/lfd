@@ -1,3 +1,5 @@
+import type { JournalFactType } from "@lfd/contracts/journal-facts";
+
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { VolumeCommitmentAggregate } from "./entities/volume-commitment.js";
 
@@ -16,10 +18,27 @@ import type { VolumeCommitmentAggregate } from "./entities/volume-commitment.js"
 export const VOLUME_COMMITMENT_FACTS = {
   signed: "volume_commitment.signed",
   closed: "volume_commitment.closed",
-} as const;
+} as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/**
+ * La société engagée, citée pour le journal : son nom du moment en
+ * `subjectLabel` et dans `company` — ou son seul id quand l'annuaire ne la
+ * nomme pas. Aucune clé étrangère n'attache un engagement à une société : le
+ * fait ne se perd pas pour un nom manquant, et il n'en invente pas (lot B du
+ * plan des phrases du journal, 2026-09-19).
+ */
+function engagedCompany(companyId: string, companyName: string | null): Record<string, unknown> {
+  return companyName === null
+    ? { company: companyId }
+    : { subjectLabel: companyName, company: { id: companyId, name: companyName } };
+}
 
 export class VolumeCommitmentSignedEvent implements JournaledEvent {
-  constructor(readonly commitment: VolumeCommitmentAggregate) {}
+  constructor(
+    readonly commitment: VolumeCommitmentAggregate,
+    /** Le nom du moment de la société engagée ; `null` si l'annuaire l'ignore. */
+    readonly companyName: string | null,
+  ) {}
 
   journalFact(): JournalFact {
     const { companyId, scope, promisedQuantity, validFrom, validTo } = this.commitment.asCommitment;
@@ -31,7 +50,7 @@ export class VolumeCommitmentSignedEvent implements JournaledEvent {
       // cinq champs. Le client visé en fait partie — un engagement sans société
       // n'engage personne.
       payload: {
-        companyId,
+        ...engagedCompany(companyId, this.companyName),
         scope: scope.type,
         scopeId: scope.id,
         promisedQuantity,
@@ -51,6 +70,9 @@ export class VolumeCommitmentClosedEvent implements JournaledEvent {
   constructor(
     readonly commitmentId: string,
     readonly reason: string | null,
+    readonly companyId: string,
+    /** Le nom du moment de la société engagée ; `null` si l'annuaire l'ignore. */
+    readonly companyName: string | null,
   ) {}
 
   journalFact(): JournalFact {
@@ -58,7 +80,7 @@ export class VolumeCommitmentClosedEvent implements JournaledEvent {
       type: VOLUME_COMMITMENT_FACTS.closed,
       subjectType: "volume_commitment",
       subjectId: this.commitmentId,
-      payload: { reason: this.reason },
+      payload: { ...engagedCompany(this.companyId, this.companyName), reason: this.reason },
     };
   }
 }

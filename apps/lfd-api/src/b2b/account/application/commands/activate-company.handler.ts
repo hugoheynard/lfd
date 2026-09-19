@@ -8,6 +8,7 @@ import {
   CompanyNotFoundError,
 } from "../../domain/errors/account-errors.js";
 import { CompanyActivatedEvent } from "../../domain/events/company-activated.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import {
   AdminCompanyReader,
   type AdminCompanyDetailView,
@@ -84,7 +85,9 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     // personne ne sait qui l'a ouvert n'est pas un état acceptable.
     await this.uow.run(async () => {
       await this.companies.save(company);
-      await this.events.publishTraced(new CompanyActivatedEvent(command.companyId, activatedAt));
+      await this.events.publishTraced(
+        new CompanyActivatedEvent(companyNamed(command.companyId, company), activatedAt),
+      );
     });
   }
 }

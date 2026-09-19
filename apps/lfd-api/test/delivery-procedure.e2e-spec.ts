@@ -305,14 +305,16 @@ describe("le staff tient la procédure d'un client", () => {
 
     await ctx.drain();
     const journal = await ctx.prisma.activityEvent.findMany({
-      where: { subjectId: companyId, type: "company.delivery_procedure_edited_by_staff" },
+      where: { subjectId: companyId, type: "company.delivery_procedure_edited" },
       orderBy: { occurredAt: "asc" },
       select: { actorId: true, payload: true },
     });
     expect(journal.map((entry) => entry.payload)).toEqual(
       ["step_added", "step_added", "step_revised", "reordered", "step_removed"].map((action) => ({
-        companyId,
-        addressId,
+        // La société est le sujet (nommée) ; l'adresse, citée par son id et son
+        // lieu — jamais son libellé (lot B du plan des phrases).
+        subjectLabel: "Boulangerie du Marais SAS",
+        address: { id: addressId, ville: DELIVERY.ville, codePostal: DELIVERY.codePostal },
         action,
       })),
     );
@@ -320,13 +322,29 @@ describe("le staff tient la procédure d'un client", () => {
     expect(journal.every((entry) => entry.actorId === E2E_STAFF_ID)).toBe(true);
   });
 
-  it("le gestionnaire ne laisse aucun fait staff au journal", async () => {
+  /**
+   * Le gestionnaire écrit le MÊME fait que l'agent, sous son id `users` : la
+   * règle « il n'engage que lui » est tombée le 2026-09-19 (plan du journal,
+   * lot 1, tranche (c)) — ce test disait l'inverse jusque-là.
+   */
+  it("le gestionnaire laisse le même fait au journal, sous son id `users`", async () => {
     await addStep(ctx.asSub(ADMIN), procedure("client"), "Portail", null);
     await ctx.drain();
-    expect(
-      await ctx.prisma.activityEvent.count({
-        where: { type: "company.delivery_procedure_edited_by_staff" },
-      }),
-    ).toBe(0);
+    const admin = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: ADMIN } });
+    const journal = await ctx.prisma.activityEvent.findMany({
+      where: { type: "company.delivery_procedure_edited" },
+      select: { actorType: true, actorId: true, payload: true },
+    });
+    expect(journal).toEqual([
+      {
+        actorType: "customer",
+        actorId: admin.id,
+        payload: {
+          subjectLabel: "Boulangerie du Marais SAS",
+          address: { id: addressId, ville: DELIVERY.ville, codePostal: DELIVERY.codePostal },
+          action: "step_added",
+        },
+      },
+    ]);
   });
 });

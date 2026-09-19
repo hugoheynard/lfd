@@ -47,11 +47,9 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
     const { payload } = command;
     const parentId = payload.parentId ?? null;
 
-    if (parentId !== null) {
-      const parent = await requireCategory(this.categories, parentId);
-      if (parent.isArchived) {
-        throw new CategoryArchivedParentError(parentId);
-      }
+    const parent = parentId === null ? null : await requireCategory(this.categories, parentId);
+    if (parent?.isArchived === true) {
+      throw new CategoryArchivedParentError(parent.id);
     }
 
     const category = Category.open({
@@ -66,7 +64,13 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
         type: PIM_EVENTS.productCategoryCreated,
         subjectType: "product_category",
         subjectId: category.id,
-        payload: { name: category.name, parentId },
+        // Le parent NOMMÉ : une famille renommée depuis se lit sous le nom
+        // qu'elle portait ce jour-là (D5 du plan des phrases du journal).
+        payload: {
+          subjectLabel: category.name.fr,
+          name: category.name,
+          parent: parent === null ? null : { id: parent.id, name: parent.name.fr },
+        },
       });
       await this.categories.add(category, ticket);
     });

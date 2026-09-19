@@ -3,61 +3,12 @@ import type { PickupAddressUpdatePayload, PickupAddressView } from "@lfd/contrac
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import {
-  PickupAddressRepository,
-  type PickupAddressWrite,
-} from "../../domain/pickup-address.repository.js";
-import {
   PickupAddressNotFoundError,
   PickupDiscountWithoutAudienceError,
 } from "../../domain/pickup-errors.js";
-import {
-  CreatePickupAddressCommand,
-  UpdatePickupAddressCommand,
-} from "../pickup-address.commands.js";
-import {
-  CreatePickupAddressHandler,
-  UpdatePickupAddressHandler,
-} from "../pickup-address.handlers.js";
-
-const FIELDS = {
-  label: "Laboratoire",
-  ligne1: "18 rue des Archives",
-  ligne2: "",
-  codePostal: "75004",
-  ville: "Paris",
-  pays: "France",
-  isDefault: false,
-  opening: { publicOpening: null, proPickup: null },
-} as const;
-
-/** Un point en base, et ce qu'on y écrit. */
-class StoredPoints extends PickupAddressRepository {
-  written: PickupAddressWrite | null = null;
-
-  constructor(private readonly stored: PickupAddressView | null) {
-    super();
-  }
-  list(): Promise<readonly PickupAddressView[]> {
-    return Promise.resolve(this.stored === null ? [] : [this.stored]);
-  }
-  resolve(): Promise<PickupAddressView | null> {
-    return Promise.resolve(this.stored);
-  }
-  create(point: PickupAddressWrite): Promise<string> {
-    this.written = point;
-    return Promise.resolve("pickup_9");
-  }
-  update(_id: string, point: PickupAddressWrite): Promise<void> {
-    this.written = point;
-    return Promise.resolve();
-  }
-  remove(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-  setDefault(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-}
+import { UpdatePickupAddressCommand } from "../update-pickup-address.command.js";
+import { UpdatePickupAddressHandler } from "../update-pickup-address.handler.js";
+import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
 
 /** Un point dont la remise est fermée au public — l'état que S2 ne doit pas rouvrir. */
 const PROS_ONLY: PickupAddressView = {
@@ -155,27 +106,5 @@ describe("UpdatePickupAddressHandler — les clientèles de la remise", () => {
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       discountAudiences: { b2b: true, b2c: false },
     });
-  });
-});
-
-describe("CreatePickupAddressHandler — les clientèles de la remise", () => {
-  it("refuse de créer un point dont la réduction ne vise personne", async () => {
-    const points = new StoredPoints(null);
-    const handler = new CreatePickupAddressHandler(
-      points,
-      new RecordingPublisher(),
-      new DirectUnitOfWork(),
-    );
-
-    await expect(
-      handler.execute(
-        new CreatePickupAddressCommand({
-          ...FIELDS,
-          discount: { mode: "percent", bp: 500 },
-          discountAudiences: { b2b: false, b2c: false },
-        }),
-      ),
-    ).rejects.toBeInstanceOf(PickupDiscountWithoutAudienceError);
-    expect(points.written).toBeNull();
   });
 });

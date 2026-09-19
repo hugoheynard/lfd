@@ -66,7 +66,10 @@ export class SetIngredientAllergensHandler implements ICommandHandler<
             type: PIM_EVENTS.ingredientAllergensSaved,
             subjectType: "ingredient",
             subjectId: key,
-            payload: { changes: { allergens: { from: [...before], to: [...after] } } },
+            payload: {
+              subjectLabel: ingredient.snapshot().name.fr,
+              changes: { allergens: { from: [...before], to: [...after] } },
+            },
           });
       await this.ingredients.save(ingredient, ticket);
     });

@@ -101,7 +101,10 @@ export class IssuerDraftVoiding extends IssuedDraftMandates {
       return;
     }
     if (reloaded !== null) {
-      await purgeVoidedDraftProof({ store: this.store, events: this.events }, reloaded);
+      await purgeVoidedDraftProof(
+        { store: this.store, events: this.events, mandates: this.mandates },
+        reloaded,
+      );
     }
   }
 }

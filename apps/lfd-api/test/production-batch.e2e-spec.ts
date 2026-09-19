@@ -415,11 +415,21 @@ describe("le colisage", () => {
     await eventuallyReady(reference);
     await ctx.drain();
 
+    // La fiche est renommée APRÈS le colisage : la ligne garde le nom du moment (D5).
+    await ctx.prisma.staffUser.update({
+      where: { id: E2E_STAFF_ID },
+      data: { lastName: "Renommé" },
+    });
+
     const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
       where: { type: "order.ready" },
       select: { payload: true },
     });
-    expect(fact.payload).toMatchObject({ readyBy: E2E_STAFF_ID });
+    expect(fact.payload).toMatchObject({
+      readyBy: { id: E2E_STAFF_ID, name: "Opérateur E2E" },
+      // Le client, sujet de la ligne, sous son nom du moment (D6).
+      subjectLabel: "Camille Durand",
+    });
   });
 
   it("RÉANNONCE au second scan, sans toucher à l'attestation", async () => {
@@ -716,8 +726,11 @@ describe("le journal d'une commande", () => {
       select: { payload: true, subjectType: true },
     });
     expect(fact?.subjectType).toBe("user");
-    // L'id de fiche, plus le `sub` (plan de l'auteur, étape 3).
-    expect(fact?.payload).toMatchObject({ handedOverBy: E2E_STAFF_ID });
+    // L'id de fiche, plus le `sub` (plan de l'auteur, étape 3) — et son nom du
+    // moment (D5 du plan des phrases).
+    expect(fact?.payload).toMatchObject({
+      handedOverBy: { id: E2E_STAFF_ID, name: "Opérateur E2E" },
+    });
     expect(JSON.stringify(fact?.payload)).toContain(reference);
   });
 

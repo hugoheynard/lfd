@@ -1,6 +1,6 @@
 /**
- * E2E : **la cloche et l'abonnement push écrivent l'id de fiche** — plan
- * `documentation/staff/plan-l-auteur-est-la-fiche.md`, étape 3 (D2, D9).
+ * E2E : **la cloche et l'abonnement push écrivent l'id de fiche** —
+ * `documentation/journalisation/architecture-journalisation.md` §12, étape 3 (D2, D9).
  *
  * Deux écritures qui passaient le `sub` à la main (`@StaffSub()`, retiré le
  * 2026-09-18) : `StaffNotification.readBy` et l'auteur d'un abonnement push. La colonne de

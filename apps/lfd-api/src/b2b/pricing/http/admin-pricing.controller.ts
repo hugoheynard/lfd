@@ -33,17 +33,15 @@ import { ProjectPriceQuery } from "../application/queries/project-price.query.js
 import { ReadPricingBoardQuery } from "../application/queries/read-pricing-board.query.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  ArchivePriceRuleCommand,
-  CreatePriceRuleCommand,
-  PausePriceRuleCommand,
-  RenamePriceRuleCommand,
-  ResumePriceRuleCommand,
-  SetVolumeLadderCommand,
-  PauseVolumeLadderCommand,
-  ResumeVolumeLadderCommand,
-  ArchiveVolumeLadderCommand,
-} from "../application/commands/pricing.commands.js";
+import { ArchivePriceRuleCommand } from "../application/commands/archive-price-rule.command.js";
+import { CreatePriceRuleCommand } from "../application/commands/create-price-rule.command.js";
+import { PausePriceRuleCommand } from "../application/commands/pause-price-rule.command.js";
+import { RenamePriceRuleCommand } from "../application/commands/rename-price-rule.command.js";
+import { ResumePriceRuleCommand } from "../application/commands/resume-price-rule.command.js";
+import { SetVolumeLadderCommand } from "../application/commands/set-volume-ladder.command.js";
+import { PauseVolumeLadderCommand } from "../application/commands/pause-volume-ladder.command.js";
+import { ResumeVolumeLadderCommand } from "../application/commands/resume-volume-ladder.command.js";
+import { ArchiveVolumeLadderCommand } from "../application/commands/archive-volume-ladder.command.js";
 import { InvalidPricingInstantError } from "../domain/pricing-errors.js";
 import type {
   CreatedIdResponse,

@@ -221,6 +221,18 @@ export class CatalogItem {
   }
 
   /**
+   * Le prix B2B **décidé**, ou `null` quand l'article suit le tarif du PIM.
+   *
+   * Distinct de {@link effectivePriceMillicents} : un prix B2B peut égaler le
+   * prix du PIM après un push, et seul ce getter dit alors qu'une décision
+   * existe — ce que le journal doit savoir pour ne pas annoncer un retour au
+   * PIM qui n'a rien retiré.
+   */
+  get b2bPriceMillicents(): number | null {
+    return this.decision.priceMillicents;
+  }
+
+  /**
    * Les faits **reçus** du référentiel, en lecture.
    *
    * Exposés parce qu'un diff d'arrivée les compare un par un — et il compare

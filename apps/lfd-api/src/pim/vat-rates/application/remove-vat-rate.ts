@@ -34,7 +34,7 @@ export class RemoveVatRateHandler implements ICommandHandler<RemoveVatRateComman
         type: PIM_EVENTS.vatRateDeleted,
         subjectType: "vat_rate",
         subjectId: command.id,
-        payload: { name, percent },
+        payload: { subjectLabel: name, name, percent },
       });
       await this.rates.remove(command.id, ticket);
     });

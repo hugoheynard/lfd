@@ -12,9 +12,9 @@ import { B2B_API_BASE } from '../../api/api-config';
  * Auth : rien ici, comme pour les autres services admin — le jeton staff est
  * attaché par `staffAuthInterceptor`.
  *
- * **Aucune coordonnée bancaire ne passe par ce service.** L'IBAN va du
- * navigateur directement chez Stripe (iframe), et ce qui remonte au backend
- * n'est qu'un identifiant de moyen de paiement.
+ * **Aucune coordonnée bancaire ne passe par ce service.** Le RIB a sa propre
+ * route, où l'IBAN est scellé à l'écriture ; le mandat, frappé chez nous, n'en
+ * porte que les quatre derniers chiffres.
  */
 @Injectable({ providedIn: 'root' })
 export class MandatesService {

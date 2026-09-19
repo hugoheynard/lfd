@@ -33,7 +33,7 @@ export class AdminAccessPendingController {
     );
   }
 
-  /** Fabrique un lien **frais** à remettre. Jamais journalisé. */
+  /** Fabrique un lien **frais** à remettre. Le lien n'est jamais journalisé ; le geste, si. */
   @Post(":userId/link")
   issueLink(@Param("userId") userId: string): Promise<IssuedPasswordLink> {
     return this.commands.execute<IssuePasswordLinkCommand, IssuedPasswordLink>(

@@ -1,7 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
-import { CreateIngredientCommand, CreateIngredientHandler } from "../ingredient-handlers.js";
+import { CreateIngredientCommand, CreateIngredientHandler } from "../create-ingredient.js";
 import {
   SetProductIngredientsCommand,
   SetProductIngredientsHandler,
@@ -102,7 +102,19 @@ describe("SetProductIngredientsHandler", () => {
       expect(journal.types()).toEqual(["product.ingredients_saved", "product.ingredients_saved"]);
       expect(journal.entries[1]).toMatchObject({
         payload: {
-          changes: { ingredients: { from: ["beurre", "farine"], to: ["farine", "beurre"] } },
+          // Chaque ingrédient NOMMÉ, sous sa clé (plan des phrases du journal, D5).
+          changes: {
+            ingredients: {
+              from: [
+                { id: "beurre", name: "beurre" },
+                { id: "farine", name: "farine" },
+              ],
+              to: [
+                { id: "farine", name: "farine" },
+                { id: "beurre", name: "beurre" },
+              ],
+            },
+          },
         },
       });
     });

@@ -6,6 +6,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
 import { PointOfSale } from "../domain/entities/point-of-sale.js";
 import { PointOfSaleRepository } from "../domain/ports/point-of-sale.repository.js";
+import { SalesContextRegistry } from "../../sales-contexts/domain/ports/sales-context.registry.js";
+import { namedContexts } from "./point-of-sale-support.js";
 
 export interface OpenPointOfSalePayload {
   readonly kind: "shop" | "platform";
@@ -32,6 +34,7 @@ export class OpenPointOfSaleHandler implements ICommandHandler<OpenPointOfSaleCo
   constructor(
     private readonly points: PointOfSaleRepository,
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}
@@ -49,9 +52,10 @@ export class OpenPointOfSaleHandler implements ICommandHandler<OpenPointOfSaleCo
         subjectType: "point_of_sale",
         subjectId: id,
         payload: {
+          subjectLabel: opened.label,
           kind: opened.kind,
           label: opened.label,
-          contexts: [...opened.contexts],
+          contexts: await namedContexts(opened.contexts, this.contexts),
           tableCount: opened.tables.length,
         },
       });

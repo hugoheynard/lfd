@@ -17,9 +17,23 @@ const ACCOUNTANT_EMAIL = "compta@lfc.test";
 /** Un porteur de jeton parfaitement valide, mais inconnu de l'annuaire. */
 const STRANGER_SUB = "staff-inconnu";
 
+/** Un jeton `verified|<adresse>` atteste une adresse VÉRIFIÉE : la première entrée par e-mail. */
+const VERIFIED = "verified|";
+
 const stubAdminVerifier = {
-  verify: (token: string): Promise<{ subject: string; email?: string; scopes: string[] }> =>
-    Promise.resolve({ subject: token, scopes: [] }),
+  verify: (
+    token: string,
+  ): Promise<{ subject: string; email?: string; emailVerified?: boolean; scopes: string[] }> =>
+    Promise.resolve(
+      token.startsWith(VERIFIED)
+        ? {
+            subject: `auth0|${token.slice(VERIFIED.length)}`,
+            email: token.slice(VERIFIED.length),
+            emailVerified: true,
+            scopes: [],
+          }
+        : { subject: token, scopes: [] },
+    ),
 };
 
 let ctx: E2eContext;
@@ -285,5 +299,45 @@ describe("le mur staff — le balayage des huit ressources", () => {
     const response = await accountant().get(path);
 
     expect(response.status).toBe(200);
+  });
+});
+
+/**
+ * D7 du plan des phrases : la première entrée d'une fiche la passait à
+ * `active` sans rien écrire au journal — la seule activation invisible.
+ */
+describe("le mur staff — la première entrée se journalise", () => {
+  const NEWCOMER_EMAIL = "paul@lfc.test";
+
+  it("écrit `staff_user.activated` à la première connexion, la fiche pour auteur ; la seconde n'écrit rien", async () => {
+    const fiche = await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Paul",
+        lastName: "Girard",
+        email: NEWCOMER_EMAIL,
+        role: "comptabilite",
+        status: "invited",
+      },
+    });
+
+    await ctx.asSub(`${VERIFIED}${NEWCOMER_EMAIL}`).get("/admin/me").expect(200);
+    await ctx.asSub(`${VERIFIED}${NEWCOMER_EMAIL}`).get("/admin/me").expect(200);
+    await ctx.drain();
+
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: fiche.id },
+      select: { type: true, actorType: true, actorId: true, actorName: true, payload: true },
+    });
+    expect(facts).toEqual([
+      {
+        type: "staff_user.activated",
+        actorType: "staff",
+        actorId: fiche.id,
+        actorName: "Paul Girard",
+        payload: { subjectLabel: "Paul Girard", person: { firstName: "Paul", lastName: "Girard" } },
+      },
+    ]);
+    const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id: fiche.id } });
+    expect(row).toMatchObject({ status: "active", auth0Id: `auth0|${NEWCOMER_EMAIL}` });
   });
 });

@@ -5,6 +5,7 @@ import { newTraceId } from "../../../platform/context/trace-context.js";
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { JournalFactCheck } from "../../../platform/journal/journal-fact-check.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { buildActivityEventRow, type RecordActivityInput } from "../domain/activity-event.js";
 import { ActivityRecorder } from "../domain/ports/activity-recorder.js";
@@ -18,9 +19,19 @@ import { ActorNamer, type ActorIdentity } from "../domain/ports/actor-namer.js";
  * l'ALS (fallback `system` + trace neuve hors requête, pour un émetteur cron).
  *
  * **Best-effort + idempotent**, comme l'exige le port : un doublon (même
- * `idempotencyKey`, émission rejouée) est un **no-op silencieux** ; toute autre
+ * `idempotencyKey`, émission rejouée) est un **no-op silencieux**, sans erreur
+ * Postgres — donc sans avorter la transaction qui l'englobe ; toute autre
  * panne est **journalisée puis avalée** — jamais propagée à l'appelant, pour ne
  * pas casser la transaction métier qui a déclenché l'événement.
+ *
+ * **Le point unique où tout fait est confronté au catalogue**
+ * (`@lfd/contracts/journal-facts`, D2 du plan des phrases du journal) : les
+ * deux garanties, donc tous les chemins — le référentiel, les actes nommés,
+ * l'annuaire, le miroir tarifaire (par `Journal.append`) et la croissance (en
+ * direct) — passent par ici, et c'est le seul écrivain de `activity_events`
+ * (vérifié le 2026-09-19). La vérification précède le `try` de `record` : en
+ * mode strict, un fait hors catalogue lève même sur le chemin best-effort, sans
+ * quoi un test ne verrait jamais l'écart.
  */
 @Injectable()
 export class PrismaActivityRecorder extends ActivityRecorder {
@@ -31,12 +42,17 @@ export class PrismaActivityRecorder extends ActivityRecorder {
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly actors: ActorNamer,
+    private readonly facts: JournalFactCheck,
   ) {
     super();
   }
 
-  /** Best-effort : la panne est journalisée puis avalée. */
+  /**
+   * Best-effort : la panne est journalisée puis avalée. Le fait hors catalogue,
+   * lui, lève en mode strict (tests) — voir la classe.
+   */
   async record(input: RecordActivityInput): Promise<void> {
+    this.facts.verify(input.type, input.payload);
     try {
       await this.append(input);
     } catch (error) {
@@ -53,6 +69,7 @@ export class PrismaActivityRecorder extends ActivityRecorder {
    * silence.
    */
   async recordOrFail(input: RecordActivityInput): Promise<void> {
+    this.facts.verify(input.type, input.payload);
     await this.append(input);
   }
 
@@ -76,16 +93,15 @@ export class PrismaActivityRecorder extends ActivityRecorder {
       actorName: actor.name,
       actorRole: actor.role,
     });
-    try {
-      await this.prisma.activityEvent.create({
-        data: { ...row, payload: row.payload as Prisma.InputJsonValue },
-      });
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        return; // déjà journalisé (émission rejouée) — idempotent, rien à faire.
-      }
-      throw error;
-    }
+    // `skipDuplicates` = `INSERT … ON CONFLICT DO NOTHING` : un fait rejoué
+    // (même `idempotency_key`) n'écrit rien, SANS erreur Postgres. Attraper le
+    // P2002 après coup ne suffisait pas : dans une `UnitOfWork`, l'`INSERT`
+    // refusé met la transaction en échec, et le geste qu'on voulait épargner
+    // était annulé au commit (TODO du doublon, corrigé le 2026-09-18).
+    await this.prisma.activityEvent.createMany({
+      data: [{ ...row, payload: row.payload as Prisma.InputJsonValue }],
+      skipDuplicates: true,
+    });
   }
 
   /**
@@ -103,16 +119,6 @@ export class PrismaActivityRecorder extends ActivityRecorder {
       return { name: null, role: null };
     }
   }
-}
-
-/** Vrai si l'erreur est une violation d'unicité Prisma (P2002), sans importer ses classes. */
-function isUniqueViolation(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) {
-    return false;
-  }
-  const name: unknown = Reflect.get(error, "name");
-  const code: unknown = Reflect.get(error, "code");
-  return name === "PrismaClientKnownRequestError" && code === "P2002";
 }
 
 /** Message lisible d'une erreur inconnue, sans exposer la stack. */

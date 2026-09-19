@@ -188,7 +188,12 @@ describe("DeclareMyEstablishmentHandler", () => {
 
     await handler.execute(command());
 
-    expect(events.published).toEqual([new CompanyDeclaredEvent("company_new", "self", "user_1")]);
+    expect(events.published).toEqual([
+      new CompanyDeclaredEvent("company_new", "Le Pain Quotidien du Marais", "self", {
+        id: "user_1",
+        name: "Camille Rousseau",
+      }),
+    ]);
   });
 
   it("garde l'adresse du compte : rien à propager à Auth0, preuve intacte", async () => {

@@ -109,6 +109,7 @@ describe("SavePublicPickupScheduleHandler", () => {
     expect(schedules.written?.ruleCount).toBe(1);
     expect(events.factTypes()).toEqual(["public_pickup_schedule.updated"]);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      subjectLabel: "Labo Paris",
       label: "Labo Paris",
       ruleCount: 1,
       closureCount: 0,

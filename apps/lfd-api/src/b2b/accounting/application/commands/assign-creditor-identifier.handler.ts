@@ -45,7 +45,11 @@ export class AssignCreditorIdentifierHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new CreditorIdentifierAssignedEvent(command.legalEntityId, at, ics.value),
+        new CreditorIdentifierAssignedEvent(
+          { id: command.legalEntityId, name: entity.name },
+          at,
+          ics.value,
+        ),
       );
     });
   }

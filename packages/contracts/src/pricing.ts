@@ -463,6 +463,62 @@ export interface PricingJournalEntryView {
   readonly summary: string;
 }
 
+/** Au-delà, une page du journal n'est plus une page mais un export. */
+const PRICING_JOURNAL_MAX_PAGE_SIZE = 100;
+const PRICING_JOURNAL_DEFAULT_PAGE_SIZE = 20;
+
+/**
+ * **La page demandée du journal d'un sujet** — paramètres de requête, donc des
+ * chaînes à l'arrivée : le schéma les convertit.
+ *
+ * Une pagination par NUMÉRO et non par curseur : l'écran pose un paginateur,
+ * qui saute à la page 3 et annonce « 45 actes ». Un numéro glisse sur un fil
+ * append-only lu par la tête — un acte écrit entre deux pages pousse tout d'un
+ * rang. D'où l'**ancre** `asOf` : la page 1 la reçoit, les suivantes la
+ * renvoient, et toutes lisent le même instantané.
+ *
+ * Une taille au-delà de 100 est un **refus**, pas une page ramenée à 100 : un
+ * appelant qui croit lire 500 actes et en reçoit 100 conclurait à tort qu'il a
+ * tout lu.
+ */
+export const pricingJournalPageQuerySchema = z.object({
+  /** À partir de 1. Une page au-delà du total rend une liste vide, pas un refus. */
+  page: z.coerce.number().int().min(1).default(1),
+  /**
+   * L'`id` de l'acte le plus récent de l'instantané — celui que la page 1 a
+   * rendu dans `asOf`. Absent : un instantané neuf, ancré sur l'acte le plus
+   * récent du sujet.
+   */
+  asOf: z.string().min(1).optional(),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(PRICING_JOURNAL_MAX_PAGE_SIZE)
+    .default(PRICING_JOURNAL_DEFAULT_PAGE_SIZE),
+});
+export type PricingJournalPageQuery = z.infer<typeof pricingJournalPageQuerySchema>;
+
+/**
+ * **Une page du journal d'un sujet**, du plus récent au plus ancien.
+ *
+ * `total` compte les actes de l'instantané, pas ceux de la page : c'est lui qui
+ * dit au paginateur combien de pages existent. `page` et `pageSize` renvoient
+ * ce qui a été lu — valeurs par défaut comprises —, pour que l'écran n'ait pas à
+ * les deviner.
+ */
+export interface PricingJournalPageView {
+  readonly entries: readonly PricingJournalEntryView[];
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+  /**
+   * L'ancre de l'instantané lu, à renvoyer pour les pages suivantes. `null`
+   * quand le sujet n'a encore aucun acte.
+   */
+  readonly asOf: string | null;
+}
+
 /**
  * **L'écart entre l'intention et le tarif d'aujourd'hui.**
  *

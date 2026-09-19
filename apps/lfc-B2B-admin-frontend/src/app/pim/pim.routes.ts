@@ -1,6 +1,7 @@
 import { type Routes } from '@angular/router';
 
 import { permissionGuard } from '../auth/permission.guard';
+import { JOURNAL_SOURCE_KEY, type JournalSource } from '../admin/journal/journal-source';
 import { publicationEnabledGuard } from './capabilities/publication.guard';
 import { pendingChangesGuard } from './catalogue/product-form/pending-changes.guard';
 
@@ -60,6 +61,22 @@ export const pimRoutes: Routes = [
           import('./accounting-rules/accounting-rules-page/accounting-rules-page').then(
             (m) => m.AccountingRulesPage,
           ),
+      },
+      {
+        // LE JOURNAL FISCAL — l'écran Journal de l'Admin, lu sur sa tranche
+        // fiscale (plan journal, lot 4). Rangé ici, à côté des taux et des
+        // règles comptables dont il raconte l'histoire : c'est là que la
+        // comptabilité travaille, et l'Admin ne lui est pas ouvert.
+        //
+        // `tax:write` et non le `tax:read` de ses deux voisins : c'est le droit
+        // que la route serveur exige (Hugo, 2026-09-19 — qui écrit les taux
+        // relit leur histoire). En `read`, un commercial ouvrirait un écran
+        // dont chaque appel rendrait 403.
+        path: 'journal-fiscal',
+        canActivate: [permissionGuard('pim_tax:write')],
+        title: 'Journal fiscal — LFC B2B admin',
+        data: { [JOURNAL_SOURCE_KEY]: 'tax' satisfies JournalSource },
+        loadComponent: () => import('../admin/journal/journal-page').then((m) => m.JournalPage),
       },
       {
         // Les ANCRES de publication : ce que le catalogue était, photographié et

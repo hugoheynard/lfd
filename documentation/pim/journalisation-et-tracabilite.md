@@ -1,10 +1,16 @@
 # Journalisation & traçabilité — qui écrit quoi, et ce qui l'y oblige
 
-> **État : ✅ pour le référentiel (PIM).** Le mécanisme (contexte de requête,
-> unité de travail, laissez-passer) vit dans `platform/` et pourra servir
-> ailleurs ; aujourd'hui **seul le PIM s'en sert**. Le B2B garde son journal
-> analytique, best-effort et non bloquant — c'est un arbitrage, pas un oubli
-> (cf. [§ Ce qui n'est PAS journalisé](#ce-qui-nest-pas-journalisé)).
+> **État : ✅ pour le référentiel (PIM).** Ce document décrit la mécanique vue
+> du référentiel, où elle est née.
+>
+> ⚠️ **Mis à jour le 2026-09-18** : ce bandeau disait que « seul le PIM » se
+> servait de l'écriture bloquante. Ce n'est plus vrai — les comptes clients
+> (`publishTraced`), la tarification et l'annuaire staff l'emploient aussi, par
+> le port `Journal` de la plateforme. La vue d'ensemble, tous émetteurs
+> confondus, est dans
+> [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md).
+> La croissance, elle, garde son écriture analytique, best-effort (cf.
+> [§ Ce qui n'est PAS journalisé](#ce-qui-nest-pas-journalisé)).
 
 ---
 
@@ -537,8 +543,10 @@ WHERE subject_type = 'product' AND subject_id = $1
 ORDER BY occurred_at DESC;
 ```
 
-> 🟡 **L'écran n'existe pas encore.** Les faits sont écrits et lisibles ; l'onglet
-> « Historique » de la fiche reste à faire.
+> 🟢 **L'onglet « Historique » de la fiche existe** depuis le 2026-09-19 (à
+> déployer) : `GET /pim/catalogue/products/:id/history`, tout ce qui a touché
+> la fiche en trois cercles —
+> [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §8.
 
 ---
 

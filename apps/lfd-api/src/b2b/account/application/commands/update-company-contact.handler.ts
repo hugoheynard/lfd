@@ -1,12 +1,23 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { ContactUpdatedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { CompanyContactBook } from "../services/company-contact-book.service.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { UpdateCompanyContactCommand } from "./contact-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { contactRef } from "../../domain/events/journal-names.js";
 
-/** Remplace un contact additionnel, réservé au gestionnaire de l'entreprise. */
+/**
+ * Remplace un contact additionnel, réservé au gestionnaire de l'entreprise.
+ *
+ * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
+ * sous le nom du geste staff jumeau, sans coordonnée.
+ */
 @CommandHandler(UpdateCompanyContactCommand)
 export class UpdateCompanyContactHandler implements ICommandHandler<
   UpdateCompanyContactCommand,
@@ -15,6 +26,9 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
   constructor(
     private readonly memberships: MembershipReader,
     private readonly book: CompanyContactBook,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: UpdateCompanyContactCommand): Promise<void> {
@@ -23,11 +37,17 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
 
     // Le repository filtre sur (id ET companyId) : un contact d'une autre
     // entreprise est traité comme absent, jamais modifié.
-    await this.book.replace(
-      command.companyId,
-      command.contactId,
-      ContactDetails.create(command.details),
-      command.role,
-    );
+    const details = ContactDetails.create(command.details);
+    const company = await this.names.company(command.companyId);
+    await this.uow.run(async () => {
+      await this.book.replace(command.companyId, command.contactId, details, command.role);
+      await this.events.publishTraced(
+        new ContactUpdatedByMemberEvent(
+          company,
+          contactRef(command.contactId, details),
+          command.role,
+        ),
+      );
+    });
   }
 }

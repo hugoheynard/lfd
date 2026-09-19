@@ -709,3 +709,40 @@ describe("la dérogation, seul chemin de sortie", () => {
     await ctx.asSub(STAFF).delete(`/admin/order-cutoff-waivers/${second}`).expect(404);
   });
 });
+
+describe("le retrait d'une règle au journal", () => {
+  /**
+   * Régression : `order_cutoff.removed` n'emportait que l'identifiant — « que
+   * disait la règle ce jour-là » n'avait plus de réponse une fois retirée.
+   * Le point est nommé comme il l'est AU MOMENT de chaque geste (D5).
+   */
+  it("garde la règle effacée, et le nom du point au moment de chaque geste", async () => {
+    const rule = { pickupAddressId: pickupId, weekday: "mon", daysBefore: 1, time: "17:00" };
+    const created = await ctx
+      .asSub(STAFF)
+      .post("/admin/order-cutoffs")
+      .send({ ...rule, graceMinutes: 30 })
+      .expect(201);
+    const { id } = created.body as { id: string };
+    await ctx.prisma.pickupAddress.update({ where: { id: pickupId }, data: { label: "Atelier" } });
+
+    await ctx.asSub(STAFF).delete(`/admin/order-cutoffs/${id}`).expect(204);
+
+    const payloads = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: id },
+      orderBy: { id: "asc" },
+      select: { type: true, payload: true },
+    });
+    const { pickupAddressId: _point, ...kept } = rule;
+    expect(payloads).toEqual([
+      {
+        type: "order_cutoff.created",
+        payload: { ...kept, pickupAddress: { id: pickupId, name: "Labo" }, graceMinutes: 30 },
+      },
+      {
+        type: "order_cutoff.removed",
+        payload: { ...kept, pickupAddress: { id: pickupId, name: "Atelier" }, graceMinutes: 30 },
+      },
+    ]);
+  });
+});

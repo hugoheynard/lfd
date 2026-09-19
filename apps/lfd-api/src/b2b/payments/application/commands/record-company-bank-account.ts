@@ -5,12 +5,17 @@ import { Iban } from "../../../accounting/domain/value-objects/iban.js";
 import { LegalAddress } from "../../../accounting/domain/value-objects/legal-address.js";
 import type { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CompanyBankAccount } from "../../domain/entities/company-bank-account.js";
+import {
+  bankAccountTraceOf,
+  CompanyBankAccountChangedEvent,
+} from "../../domain/events/company-bank-account.events.js";
 import type { MandateActorChannel } from "../../domain/events/payment-mandate-facts.js";
 import type { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { DebtorAccount } from "../../domain/value-objects/debtor-account.js";
 import { MandateOptions } from "../../domain/value-objects/mandate-options.js";
 import { writeVoidingDraft, type DraftVoidingDeps } from "../draft-mandate-voiding.js";
 import { ringDraftVoided, type MandateBellDeps } from "../mandate-staff-bell.js";
+import { mandateCompanyOf } from "../mandate-journal-names.js";
 
 /** Les ports du dépôt de RIB : le compte, et ce qu'il faut pour rendre caduc le brouillon. */
 export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps {
@@ -31,6 +36,15 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  * Tant qu'un brouillon existe, **toute** écriture du RIB le révoque, dans la
  * même unité de travail, fait au journal ; l'équipe est prévenue ensuite, hors
  * transaction (plan `documentation/comptabilite/plan-mandat-client.md` §9 #4).
+ *
+ * ## Le changement lui-même est au journal (depuis le 2026-09-19)
+ *
+ * `company.bank_account_changed` part à **chaque** écriture, dans la même unité
+ * de travail que le RIB, brouillon ou pas : un journal en panne n'écrit pas le
+ * RIB. Un seul fait par geste — celui du brouillon révoqué est un autre fait,
+ * sur le mandat. Le compte y entre par ses quatre derniers caractères et son
+ * titulaire, jamais par l'IBAN (plan
+ * `documentation/journalisation/plan-journal-d-activite.md`, lot 1).
  *
  * ## La forme juridique du titulaire se fusionne (depuis le 2026-09-15)
  *
@@ -61,30 +75,52 @@ export async function recordCompanyBankAccount(
   // refuse sans avoir touché la base.
   const submitted = debtorAccountFrom(payload);
   const existing = await deps.accounts.findByCompany(companyId);
+  // Lue AVANT la mutation : `replaceWith` écrase le compte en place.
+  const before = existing === null ? null : bankAccountTraceOf(existing.account);
   const account =
     payload.holderLegalForm === undefined
       ? submitted.withHolderLegalForm(existing?.account.holderLegalForm ?? "")
       : submitted;
-  // 🔴 Les zones facultatives d'un RIB remplacé ne sont PAS touchées : changer
-  // de banque ne change ni le contrat ni sa description. Vides à la création :
-  // elles ont leur propre route.
-  existing?.replaceWith(account);
-  const written =
-    existing ??
-    CompanyBankAccount.declare({
-      id: deps.ids.next(),
-      companyId,
-      account,
-      options: MandateOptions.empty(),
-    });
+  const written = replaceOrDeclare(existing, account, companyId, deps.ids);
 
   const trigger = { cause: "bank_account_changed", via } as const;
-  const voided = await writeVoidingDraft(deps, companyId, trigger, () =>
-    deps.accounts.save(written),
+  const changed = new CompanyBankAccountChangedEvent(
+    written.id,
+    await mandateCompanyOf(deps.mandates, companyId),
+    before,
+    bankAccountTraceOf(account),
+    via,
   );
+  const voided = await writeVoidingDraft(deps, companyId, trigger, async () => {
+    await deps.accounts.save(written);
+    await deps.events.publishTraced(changed);
+  });
   if (voided !== null) {
     await ringDraftVoided(deps, voided, "bank_account_changed");
   }
+}
+
+/**
+ * 🔴 Les zones facultatives d'un RIB remplacé ne sont PAS touchées : changer de
+ * banque ne change ni le contrat ni sa description. Vides à la création : elles
+ * ont leur propre route.
+ */
+function replaceOrDeclare(
+  existing: CompanyBankAccount | null,
+  account: DebtorAccount,
+  companyId: string,
+  ids: IdGenerator,
+): CompanyBankAccount {
+  if (existing !== null) {
+    existing.replaceWith(account);
+    return existing;
+  }
+  return CompanyBankAccount.declare({
+    id: ids.next(),
+    companyId,
+    account,
+    options: MandateOptions.empty(),
+  });
 }
 
 function debtorAccountFrom(payload: SetCompanyBankAccountPayload): DebtorAccount {

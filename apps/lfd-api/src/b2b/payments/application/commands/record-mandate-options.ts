@@ -10,6 +10,7 @@ import type { CompanyBankAccountRepository } from "../../domain/ports/company-ba
 import { MandateOptions } from "../../domain/value-objects/mandate-options.js";
 import { writeVoidingDraft, type DraftVoidingDeps } from "../draft-mandate-voiding.js";
 import { ringDraftVoided, type MandateBellDeps } from "../mandate-staff-bell.js";
+import { mandateCompanyOf } from "../mandate-journal-names.js";
 
 /** Les ports de l'écriture des zones : le RIB qui les porte, et de quoi rendre caduc le brouillon. */
 export interface RecordMandateOptionsDeps extends DraftVoidingDeps, MandateBellDeps {
@@ -65,13 +66,15 @@ export async function recordMandateOptions(
   const options = MandateOptions.create(payload);
   account.setOptions(options);
   const trigger = { cause: "mandate_options_changed", via, appliesTo: printsTheZones } as const;
+  const company = await mandateCompanyOf(deps.mandates, companyId);
   const voided = await writeVoidingDraft(deps, companyId, trigger, async () => {
     await deps.accounts.save(account);
     // Les valeurs NORMALISÉES : celles que la ligne porte, donc celles imprimées.
     await deps.events.publishTraced(
       new MandateOptionsChangedEvent(
         account.id,
-        companyId,
+        account.account.holder,
+        company,
         options.debtorReference,
         options.contractNumber,
         via,

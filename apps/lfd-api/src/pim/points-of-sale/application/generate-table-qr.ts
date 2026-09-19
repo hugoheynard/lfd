@@ -41,7 +41,7 @@ export class GenerateTableQrHandler implements ICommandHandler<GenerateTableQrCo
         subjectId: command.pointOfSaleId,
         // Le NUMÉRO de table, jamais le jeton : il vaut accès à la commande à
         // cette table, et un journal se relit plus largement que la table.
-        payload: { table: command.tableNumber },
+        payload: { subjectLabel: pointOfSale.snapshot().label, table: command.tableNumber },
       });
       await this.points.save(pointOfSale, ticket);
     });

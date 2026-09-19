@@ -32,9 +32,6 @@ export type InTransaction = () => Promise<void>;
  */
 export type InTransactionForNewCard = (cardId: string) => Promise<void>;
 
-/** La porte qui ne trace rien : quelqu'un qui agit sur son propre compte. */
-export const NOTHING_TO_TRACE: InTransaction = () => Promise.resolve();
-
 /** Qui porte les cartes, et comment on le vérifie, le verrouille et range ses photos. */
 export interface PhotoCardIdentity<T> {
   /** Refuse une cible absente ou close — AVANT tout geste de stockage. */

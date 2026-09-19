@@ -54,7 +54,7 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
         subjectId: category.id,
         // Le nom part avec le fait : une famille archivée disparaît des
         // écrans, et l'historique resterait illisible s'il ne portait qu'un id.
-        payload: { name: category.name },
+        payload: { subjectLabel: category.name.fr, name: category.name },
       });
       await this.categories.save(category, ticket);
     });

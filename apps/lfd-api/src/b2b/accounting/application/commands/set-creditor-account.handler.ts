@@ -69,7 +69,11 @@ export class SetCreditorAccountHandler implements ICommandHandler<SetCreditorAcc
     await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new CreditorAccountChangedEvent(command.legalEntityId, at, account.last4()),
+        new CreditorAccountChangedEvent(
+          { id: command.legalEntityId, name: entity.name },
+          at,
+          account.last4(),
+        ),
       );
     });
   }

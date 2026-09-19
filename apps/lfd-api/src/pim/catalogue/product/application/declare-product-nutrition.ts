@@ -7,7 +7,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { NutritionRepository } from "../domain/ports/nutrition.repository.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { validatedDeclaration, type DeclarationInput } from "./declaration-support.js";
-import { requireProduct } from "./product-support.js";
+import { namedVariant, requireProduct } from "./product-support.js";
 
 /** La fiche telle que le formulaire l'envoie — la forme partagée avec la création. */
 export type DeclareNutritionInput = DeclarationInput;
@@ -71,7 +71,11 @@ export class DeclareProductNutritionHandler implements ICommandHandler<
               type: PIM_EVENTS.productDeclarationSaved,
               subjectType: "product",
               subjectId: productId,
-              payload: { variantId, changes },
+              payload: {
+                subjectLabel: product.snapshot().name.fr,
+                variant: namedVariant(product.snapshot(), variantId),
+                changes,
+              },
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.nutrition.declare(variantId, declaration, ticket);

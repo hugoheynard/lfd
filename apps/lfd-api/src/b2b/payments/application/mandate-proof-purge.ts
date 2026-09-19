@@ -5,6 +5,8 @@ import type { DocumentStore } from "../../../platform/storage/document-store.js"
 import type { PaymentMandate } from "../domain/entities/payment-mandate.js";
 import type { ProofPurgeCause } from "../domain/events/payment-mandate-facts.js";
 import { MandateProofPurgedEvent } from "../domain/events/payment-mandate.events.js";
+import { mandateCompanyOf } from "./mandate-journal-names.js";
+import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 
 const LOGGER = new Logger("MandateProofPurge");
 
@@ -12,6 +14,8 @@ const LOGGER = new Logger("MandateProofPurge");
 export interface ProofPurgeDeps {
   readonly store: DocumentStore;
   readonly events: DomainEventPublisher;
+  /** Pour nommer la société dans le fait (lot B du plan des phrases). */
+  readonly mandates: PaymentMandateRepository;
 }
 
 /** Le mandat dont la pièce part, tel que le journal le nomme. */
@@ -55,7 +59,12 @@ export async function purgeProof(
   }
   try {
     await deps.events.publishTraced(
-      new MandateProofPurgedEvent(subject.id, subject.companyId, subject.reference, cause),
+      new MandateProofPurgedEvent(
+        subject.id,
+        await mandateCompanyOf(deps.mandates, subject.companyId),
+        subject.reference,
+        cause,
+      ),
     );
   } catch (error) {
     // La pièce est partie : seul le témoin manque. Le dire fort, sans défaire
