@@ -171,8 +171,9 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
  * donc rester contiguës ici.
  *
  * `needs` n'y figure que là où la vue ne se contente PAS de `catalog:read`, le
- * droit qui ouvre déjà l'espace : les deux seules sont le référentiel fiscal et
- * les règles comptables, qui partagent sa ressource. Répéter `catalog:read` sur
+ * droit qui ouvre déjà l'espace : le référentiel fiscal et les règles
+ * comptables, qui partagent sa ressource, et le journal fiscal, qui en exige
+ * l'écriture. Répéter `catalog:read` sur
  * les huit autres serait une condition toujours vraie, donc jamais relue.
  */
 export const PIM_VIEWS: readonly WorkspaceView[] = [
@@ -306,6 +307,16 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     link: '/pim/regles-comptables',
     icon: 'tax',
     needs: 'pim_tax:read',
+    section: 'Général',
+  },
+  // Juste après ce dont il raconte l'histoire. `tax:write`, comme la route
+  // serveur : un `tax:read` montrerait l'entrée au commercial, pour un 403.
+  {
+    key: 'tax-journal',
+    label: 'Journal fiscal',
+    link: '/pim/journal-fiscal',
+    icon: 'timeline',
+    needs: 'pim_tax:write',
     section: 'Général',
   },
   // L'URL reste `emplacements` : renommer un chemin casse les liens déjà

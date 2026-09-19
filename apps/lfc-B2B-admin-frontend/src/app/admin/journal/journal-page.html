@@ -1,9 +1,16 @@
-<fold-page-layout icon="timeline" title="Journal d'activité">
-  <p description>
-    Qui a fait quoi, tous modules confondus. Le journal est
-    <strong>append-only</strong> : rien ne s'y modifie, rien ne s'y efface — ce qu'on lit est ce qui
-    s'est passé, avec le nom que portait l'auteur ce jour-là.
-  </p>
+<fold-page-layout icon="timeline" [title]="fiscal ? 'Journal fiscal' : 'Journal d\'activité'">
+  @if (fiscal) {
+    <p description>
+      Les changements de taux de TVA, de TVA d'une catégorie ou d'un produit, et de règles
+      comptables : qui les a faits, et quand.
+    </p>
+  } @else {
+    <p description>
+      Qui a fait quoi, tous modules confondus. Le journal est
+      <strong>append-only</strong> : rien ne s'y modifie, rien ne s'y efface — ce qu'on lit est ce
+      qui s'est passé, avec le nom que portait l'auteur ce jour-là.
+    </p>
+  }
 
   <div class="jr-filters">
     <!-- Un seul champ pour tout ce qu'on sait d'un fait : le nom de l'auteur,
@@ -14,12 +21,16 @@
       placeholder="Nom, prénom, valeur, identifiant…"
       (searchChange)="onSearch($event)"
     />
-    <fold-listbox
-      label="Module"
-      [options]="modules"
-      [value]="module()"
-      (selectionChange)="onModule($event)"
-    />
+    <!-- Pas de module sur le journal fiscal : le serveur borne déjà la
+         tranche à ses types, et le contrat n'accepte pas la clé. -->
+    @if (!fiscal) {
+      <fold-listbox
+        label="Module"
+        [options]="modules"
+        [value]="module()"
+        (selectionChange)="onModule($event)"
+      />
+    }
     <fold-listbox
       label="Période"
       [options]="windows"

@@ -159,6 +159,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Même droit que les taux : décider ce que le professionnel paie par
   // rapport au particulier est une décision comptable.
   'pim/regles-comptables': 'pim_tax:read',
+  // L'ÉCRITURE, pas la lecture de ses voisins : la tranche fiscale du journal
+  // est servie sous `pim_tax:write` (plan journal, lot 4) — en `read`, le
+  // commercial ouvrirait un écran dont chaque appel rendrait 403.
+  'pim/journal-fiscal': 'pim_tax:write',
   'pim/catalogue': null,
   'pim/revisions': null,
   // Le diff vivant : même mur que les ancres elles-mêmes — c'est une LECTURE du

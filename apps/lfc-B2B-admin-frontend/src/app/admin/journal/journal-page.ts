@@ -18,8 +18,9 @@ import {
   type FoldSelectOption,
 } from 'fold-ng';
 
-import { JournalService, type JournalLine } from './journal.service';
+import { JournalService, type JournalLine, type TaxJournalFilters } from './journal.service';
 import { MODULE_LABELS, toLine } from './journal-line';
+import { readJournalSource } from './journal-source';
 import {
   isModule,
   NO_URL_FILTERS,
@@ -87,6 +88,12 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
  * filtrée, et l'adresse suit chaque changement sans empiler l'historique. Un
  * filtre sans contrôle à l'écran (l'auteur, le sujet) s'y montre en pastille
  * qu'on retire — sans elle, l'écran filtrerait sans le dire.
+ *
+ * **Deux sources, un écran** (lot 4) : la route qui déclare
+ * `journalSource: 'tax'` en fait le **journal fiscal** de la comptabilité —
+ * route `/admin/activity/tax`, pas de filtre par module, un `module` venu de
+ * l'adresse ignoré et retiré. Le reste est identique, et c'est pour ça qu'il
+ * n'est écrit qu'une fois (cf. `journal-source.ts`).
  */
 @Component({
   selector: 'app-journal-page',
@@ -110,6 +117,9 @@ export class JournalPage {
   private readonly journal = inject(JournalService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  /** Vrai sur le journal fiscal : pas de module, et la route de la tranche. */
+  protected readonly fiscal = readJournalSource(this.route.snapshot.data) === 'tax';
 
   protected readonly modules = MODULES;
   protected readonly windows = WINDOWS;
@@ -175,9 +185,10 @@ export class JournalPage {
       }
       opened = true;
       this.applyUrlFilters(filters);
-      if (params.has('q')) {
-        // Une adresse collée qui porterait une recherche : elle n'est pas lue,
-        // et elle ne reste pas dans la barre.
+      if (params.has('q') || (this.fiscal && params.has('module'))) {
+        // Une adresse collée qui porterait une recherche — ou un module, que
+        // la tranche fiscale n'a pas : elle n'est pas lue, et elle ne reste pas
+        // dans la barre.
         this.syncUrl();
       }
       void this.reload();
@@ -245,8 +256,7 @@ export class JournalPage {
       const { module, actorId, subjectType, subjectId } = this.urlFilters();
       const since = this.sinceFilter();
       const q = this.query();
-      const view = await this.journal.page({
-        ...(module === '' ? {} : { module }),
+      const filters: TaxJournalFilters = {
         ...(actorId === '' ? {} : { actorId }),
         ...(subjectType === '' ? {} : { subjectType }),
         ...(subjectId === '' ? {} : { subjectId }),
@@ -255,7 +265,10 @@ export class JournalPage {
         page,
         ...(asOf === undefined ? {} : { asOf }),
         limit: PAGE_SIZE,
-      });
+      };
+      const view = this.fiscal
+        ? await this.journal.taxPage(filters)
+        : await this.journal.page({ ...(module === '' ? {} : { module }), ...filters });
       if (seq !== this.requestSeq) {
         return;
       }
@@ -298,11 +311,12 @@ export class JournalPage {
     void this.reload();
   }
 
+  /** Sur le journal fiscal, le module de l'adresse ne compte pas : il n'y a rien à filtrer par là. */
   private applyUrlFilters(filters: JournalUrlFilters): void {
     if (filters.actorId !== this.urlFilters().actorId) {
       this.actorName.set(null);
     }
-    this.urlFilters.set(filters);
+    this.urlFilters.set(this.fiscal ? { ...filters, module: '' } : filters);
   }
 
   /**

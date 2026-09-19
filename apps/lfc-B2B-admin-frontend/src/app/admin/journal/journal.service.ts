@@ -31,17 +31,33 @@ export interface JournalFilters {
   readonly limit?: number;
 }
 
-/** Lecture du journal d'activité (`GET /admin/activity`). */
+/**
+ * Les filtres de la **tranche fiscale** : ceux du journal, sans `module`. Le
+ * serveur borne déjà la tranche à ses types et retire la clé de son contrat ;
+ * l'écarter du type rend son envoi inexprimable plutôt qu'ignoré.
+ */
+export type TaxJournalFilters = Omit<JournalFilters, 'module'>;
+
+/** Lecture du journal d'activité (`GET /admin/activity`) et de sa tranche fiscale. */
 @Injectable({ providedIn: 'root' })
 export class JournalService {
   private readonly http = inject(HttpClient);
 
   page(filters: JournalFilters): Promise<ActivityPageView> {
-    return firstValueFrom(
-      this.http.get<ActivityPageView>(`${B2B_API_BASE}/admin/activity`, {
-        params: paramsOf(filters),
-      }),
-    );
+    return this.read(`${B2B_API_BASE}/admin/activity`, filters);
+  }
+
+  /**
+   * `GET /admin/activity/tax` — taux de TVA, TVA d'une catégorie ou d'un
+   * produit, règles comptables. Exige `pim_tax:write` : la comptabilité n'a
+   * pas `activity:read`, et recevrait `403` sur le journal entier.
+   */
+  taxPage(filters: TaxJournalFilters): Promise<ActivityPageView> {
+    return this.read(`${B2B_API_BASE}/admin/activity/tax`, filters);
+  }
+
+  private read(url: string, filters: JournalFilters): Promise<ActivityPageView> {
+    return firstValueFrom(this.http.get<ActivityPageView>(url, { params: paramsOf(filters) }));
   }
 }
 
