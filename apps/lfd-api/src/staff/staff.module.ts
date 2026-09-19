@@ -21,12 +21,10 @@ import { Auth0StaffIdentity } from "./invitations/auth0-staff-identity.js";
 import { DevStaffIdentity } from "./invitations/dev-staff-identity.js";
 import { AdminMeController } from "./directory/http/admin-me.controller.js";
 import { AdminStaffAccessPendingController } from "./invitations/admin-staff-access-pending.controller.js";
+import { IssueStaffPasswordLinkHandler } from "./invitations/issue-staff-password-link.handler.js";
+import { ListPendingStaffAccessHandler } from "./invitations/list-pending-staff-access.handler.js";
 import { PendingStaffAccessReader } from "./invitations/pending-staff-access.reader.js";
 import { PrismaPendingStaffAccessReader } from "./invitations/prisma-pending-staff-access.reader.js";
-import {
-  IssueStaffPasswordLinkHandler,
-  ListPendingStaffAccessHandler,
-} from "./invitations/pending-staff-access.js";
 import { AdminStaffUsersController } from "./directory/http/admin-staff-users.controller.js";
 import { PrismaStaffUserRepository } from "./directory/infrastructure/prisma-staff-user.repository.js";
 import { AdminStaffRolesController } from "./permissions/http/admin-staff-roles.controller.js";
