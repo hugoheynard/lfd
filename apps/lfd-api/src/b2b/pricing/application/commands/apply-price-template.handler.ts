@@ -1,75 +1,11 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import type { ApplyPriceTemplatePayload, SavePriceTemplatePayload } from "@lfd/contracts";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
-import { PriceTemplate } from "../../domain/entities/price-template.js";
 import { PriceTemplateRepository } from "../../domain/ports/price-template.repository.js";
 import { PriceTemplateNotFoundError } from "../../domain/pricing-errors.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuriale.repository.js";
-
-/** Composer un gabarit, ou le réviser s'il en porte déjà un identifiant. */
-export class SavePriceTemplateCommand {
-  constructor(
-    readonly id: string | null,
-    readonly payload: SavePriceTemplatePayload,
-    readonly staffUserId: string,
-  ) {}
-}
-
-/** **Poser** un gabarit chez un client : il devient des règles de mercuriale. */
-export class ApplyPriceTemplateCommand {
-  constructor(
-    readonly id: string,
-    readonly payload: ApplyPriceTemplatePayload,
-    readonly staffUserId: string,
-  ) {}
-}
-
-@CommandHandler(SavePriceTemplateCommand)
-export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTemplateCommand, string> {
-  constructor(
-    private readonly templates: PriceTemplateRepository,
-    private readonly ids: IdGenerator,
-  ) {}
-
-  async execute(command: SavePriceTemplateCommand): Promise<string> {
-    const draft = {
-      kind: command.payload.kind,
-      label: command.payload.label,
-      lines: command.payload.lines.map((line) => ({
-        sku: line.sku,
-        tiers: line.tiers,
-        // Recopié tel quel : le volume prévu accompagne la grille, il ne change
-        // aucun prix — `templateToRules` ne le lit même pas.
-        plannedVolume: line.plannedVolume,
-      })),
-    };
-    const template = await this.resolve(command.id, draft, command.staffUserId);
-    await this.templates.save(template);
-    return template.id;
-  }
-
-  /**
-   * Réviser passe par l'agrégat chargé, jamais par un `compose` déguisé : c'est
-   * lui qui refuse de retoucher un gabarit archivé, et le contourner rendrait ce
-   * refus décoratif.
-   */
-  private async resolve(
-    id: string | null,
-    draft: Parameters<typeof PriceTemplate.compose>[1],
-    staffUserId: string,
-  ): Promise<PriceTemplate> {
-    if (id === null) {
-      return PriceTemplate.compose(this.ids.next(), draft, staffUserId);
-    }
-    const existing = await this.templates.load(id);
-    if (existing === null) {
-      throw new PriceTemplateNotFoundError(id);
-    }
-    return existing.revise(draft);
-  }
-}
+import { ApplyPriceTemplateCommand } from "./apply-price-template.command.js";
 
 @CommandHandler(ApplyPriceTemplateCommand)
 export class ApplyPriceTemplateHandler implements ICommandHandler<

@@ -35,7 +35,7 @@
 Poser une mercuriale écrit **N lignes indépendantes** dans `price_rules`, et
 aucune ne sait qu'elle appartient à une mercuriale. N vaut le nombre d'articles
 **fois le nombre de paliers** : la pose depuis la fiche force un palier unique
-(`company-mercuriale.handlers.ts`, JSDoc de `execute`), la pose par gabarit non
+(`pose-company-mercuriale.handler.ts`, découpé le 2026-09-19, JSDoc de `execute`), la pose par gabarit non
 — _« un gabarit de trente lignes à deux paliers en pose soixante »_.
 
 Ce que l'écran appelait « 2027 » n'existait pas : le regroupement le

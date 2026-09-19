@@ -24,10 +24,8 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  ApplyPriceTemplateCommand,
-  SavePriceTemplateCommand,
-} from "../application/commands/price-template.handlers.js";
+import { ApplyPriceTemplateCommand } from "../application/commands/apply-price-template.command.js";
+import { SavePriceTemplateCommand } from "../application/commands/save-price-template.command.js";
 import { GetPriceTemplateQuery } from "../application/queries/get-price-template.query.js";
 import { ListPriceTemplatesQuery } from "../application/queries/list-price-templates.query.js";
 import { ReadMercurialeBenchmarkQuery } from "../application/queries/read-mercuriale-benchmark.query.js";

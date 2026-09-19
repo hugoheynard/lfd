@@ -81,15 +81,15 @@ défaut ouvert de cet écran — suivi comme **R2** au registre.
 
 ### 2.2 Le back — `b2b/pricing/`
 
-| Élément                                               | Ce qu'il garantit                                                                                                                          |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `domain/entities/company-mercuriale.ts`               | **l'agrégat**. `pose()`, `rename()`, `close()`, et `asRuleFor` qui dérive la règle d'un article à la mesure du contexte                    |
-| `domain/entities/price-template.ts`                   | le **modèle**. Il refuse une grille qui monte, deux lignes sur un même SKU, une grille vide. Il trie les paliers plutôt que de les refuser |
-| `domain/pricing-grid.ts`                              | les invariants de grille **partagés** par les deux, avec des fabriques d'erreurs injectées : chacun refuse dans son propre vocabulaire     |
-| `application/commands/company-mercuriale.handlers.ts` | poser, renommer, clore — depuis la fiche                                                                                                   |
-| `application/commands/price-template.handlers.ts`     | composer, réviser, et **poser un gabarit** — qui écrit le même agrégat                                                                     |
-| `application/queries/mercuriale-benchmark.query.ts`   | **ce que le marché paie déjà** : médiane, bornes, nombre de clients. La médiane et non la moyenne                                          |
-| `domain/ports/company-mercuriale.reader.ts`           | **trois questions distinctes** : ce qui facture, ce qui a été décidé, ce que le marché paie                                                |
+| Élément                                                                         | Ce qu'il garantit                                                                                                                          |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `domain/entities/company-mercuriale.ts`                                         | **l'agrégat**. `pose()`, `rename()`, `close()`, et `asRuleFor` qui dérive la règle d'un article à la mesure du contexte                    |
+| `domain/entities/price-template.ts`                                             | le **modèle**. Il refuse une grille qui monte, deux lignes sur un même SKU, une grille vide. Il trie les paliers plutôt que de les refuser |
+| `domain/pricing-grid.ts`                                                        | les invariants de grille **partagés** par les deux, avec des fabriques d'erreurs injectées : chacun refuse dans son propre vocabulaire     |
+| `application/commands/*-company-mercuriale.handler.ts` (découpés le 2026-09-19) | poser, renommer, clore — depuis la fiche                                                                                                   |
+| `application/commands/*-price-template.handler.ts` (découpés le 2026-09-19)     | composer, réviser, et **poser un gabarit** — qui écrit le même agrégat                                                                     |
+| `application/queries/mercuriale-benchmark.query.ts`                             | **ce que le marché paie déjà** : médiane, bornes, nombre de clients. La médiane et non la moyenne                                          |
+| `domain/ports/company-mercuriale.reader.ts`                                     | **trois questions distinctes** : ce qui facture, ce qui a été décidé, ce que le marché paie                                                |
 
 ### 2.3 Le contrat — `packages/contracts/src/pricing.ts`
 

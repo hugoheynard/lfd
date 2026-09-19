@@ -28,11 +28,9 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  CloseCompanyMercurialeCommand,
-  PoseCompanyMercurialeCommand,
-  RenameCompanyMercurialeCommand,
-} from "../application/commands/company-mercuriale.handlers.js";
+import { CloseCompanyMercurialeCommand } from "../application/commands/close-company-mercuriale.command.js";
+import { PoseCompanyMercurialeCommand } from "../application/commands/pose-company-mercuriale.command.js";
+import { RenameCompanyMercurialeCommand } from "../application/commands/rename-company-mercuriale.command.js";
 import { DiscardMercurialeDraftCommand } from "../application/commands/discard-mercuriale-draft.command.js";
 import { SaveMercurialeDraftCommand } from "../application/commands/save-mercuriale-draft.command.js";
 import { ReadCompanyPricingQuery } from "../application/queries/read-company-pricing.query.js";

@@ -1,24 +1,18 @@
 import { Module } from "@nestjs/common";
 
 import { CatalogModule } from "../catalog/catalog.module.js";
-import {
-  ArchivePriceFloorHandler,
-  ConfirmPriceFloorHandler,
-  CreatePriceRuleHandler,
-  SetPriceFloorHandler,
-} from "./application/commands/pricing.handlers.js";
-import {
-  ArchiveVolumeLadderHandler,
-  PauseVolumeLadderHandler,
-  ResumeVolumeLadderHandler,
-  SetVolumeLadderHandler,
-} from "./application/commands/volume-ladder.handlers.js";
-import {
-  ArchivePriceRuleHandler,
-  PausePriceRuleHandler,
-  RenamePriceRuleHandler,
-  ResumePriceRuleHandler,
-} from "./application/commands/rule-lifecycle.handlers.js";
+import { ArchivePriceFloorHandler } from "./application/commands/archive-price-floor.handler.js";
+import { ConfirmPriceFloorHandler } from "./application/commands/confirm-price-floor.handler.js";
+import { CreatePriceRuleHandler } from "./application/commands/create-price-rule.handler.js";
+import { SetPriceFloorHandler } from "./application/commands/set-price-floor.handler.js";
+import { ArchiveVolumeLadderHandler } from "./application/commands/archive-volume-ladder.handler.js";
+import { PauseVolumeLadderHandler } from "./application/commands/pause-volume-ladder.handler.js";
+import { ResumeVolumeLadderHandler } from "./application/commands/resume-volume-ladder.handler.js";
+import { SetVolumeLadderHandler } from "./application/commands/set-volume-ladder.handler.js";
+import { ArchivePriceRuleHandler } from "./application/commands/archive-price-rule.handler.js";
+import { PausePriceRuleHandler } from "./application/commands/pause-price-rule.handler.js";
+import { RenamePriceRuleHandler } from "./application/commands/rename-price-rule.handler.js";
+import { ResumePriceRuleHandler } from "./application/commands/resume-price-rule.handler.js";
 import { BoardComparisonService } from "./application/board-comparison.service.js";
 import { BoardElasticityService } from "./application/board-elasticity.service.js";
 import { PricingBoardReader } from "./application/ports/pricing-board.reader.js";
@@ -45,10 +39,8 @@ import { VolumeCommitmentsQuery } from "./application/queries/volume-commitments
 import { PriceProjectionQuery } from "./application/queries/price-projection.query.js";
 import { MercurialeBenchmarkQuery } from "./application/queries/mercuriale-benchmark.query.js";
 import { PriceTemplatesQuery } from "./application/queries/price-templates.query.js";
-import {
-  ApplyPriceTemplateHandler,
-  SavePriceTemplateHandler,
-} from "./application/commands/price-template.handlers.js";
+import { ApplyPriceTemplateHandler } from "./application/commands/apply-price-template.handler.js";
+import { SavePriceTemplateHandler } from "./application/commands/save-price-template.handler.js";
 import { PriceTemplateRepository } from "./domain/ports/price-template.repository.js";
 import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-template.repository.js";
 import { AdminPriceTemplatesController } from "./http/admin-price-templates.controller.js";
@@ -60,15 +52,11 @@ import { PriceTemplatesReader } from "./application/ports/price-templates.reader
 import { PrismaPriceTemplatesReader } from "./infrastructure/prisma-price-templates.reader.js";
 import { VolumeCommitmentsReader } from "./application/ports/volume-commitments.reader.js";
 import { PrismaVolumeCommitmentsReader } from "./infrastructure/prisma-volume-commitments.reader.js";
-import {
-  CloseCompanyMercurialeHandler,
-  RenameCompanyMercurialeHandler,
-  PoseCompanyMercurialeHandler,
-} from "./application/commands/company-mercuriale.handlers.js";
-import {
-  CloseVolumeCommitmentHandler,
-  SignVolumeCommitmentHandler,
-} from "./application/commands/volume-commitment.handlers.js";
+import { CloseCompanyMercurialeHandler } from "./application/commands/close-company-mercuriale.handler.js";
+import { RenameCompanyMercurialeHandler } from "./application/commands/rename-company-mercuriale.handler.js";
+import { PoseCompanyMercurialeHandler } from "./application/commands/pose-company-mercuriale.handler.js";
+import { CloseVolumeCommitmentHandler } from "./application/commands/close-volume-commitment.handler.js";
+import { SignVolumeCommitmentHandler } from "./application/commands/sign-volume-commitment.handler.js";
 import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitments.controller.js";
 import { ReadPricingBoardHandler } from "./application/queries/read-pricing-board.handler.js";
 import { ComparePricingBoardHandler } from "./application/queries/compare-pricing-board.handler.js";

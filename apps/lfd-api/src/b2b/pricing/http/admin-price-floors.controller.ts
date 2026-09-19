@@ -11,11 +11,9 @@ import { CommandBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  ArchivePriceFloorCommand,
-  ConfirmPriceFloorCommand,
-  SetPriceFloorCommand,
-} from "../application/commands/pricing.commands.js";
+import { ArchivePriceFloorCommand } from "../application/commands/archive-price-floor.command.js";
+import { ConfirmPriceFloorCommand } from "../application/commands/confirm-price-floor.command.js";
+import { SetPriceFloorCommand } from "../application/commands/set-price-floor.command.js";
 import { UnknownPriceScopeError } from "../domain/pricing-errors.js";
 import type { PriceFloorPolicy } from "../domain/floor-policy.js";
 import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
