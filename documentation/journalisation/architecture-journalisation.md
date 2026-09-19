@@ -274,7 +274,12 @@ autres par la bande.
 
 Ailleurs, des lecteurs ciblés : l'attribution d'un diff de révision PIM
 (`PimJournalReader`, qui lit le journal d'un produit sur un intervalle), le
-journal tarifaire, le cockpit commercial.
+journal tarifaire, le cockpit commercial, et l'**historique d'une fiche
+produit** (`GET /pim/catalogue/products/:id/history`, port
+`ProductHistoryJournal`) qui tresse ses trois cercles — la fiche et ses
+déclinaisons, ce dont elle hérite (familles, taux appliqués, ingrédients,
+appellations), les révisions qui l'ont emportée — rattachés par ce que la fiche
+porte **aujourd'hui**.
 
 ---
 

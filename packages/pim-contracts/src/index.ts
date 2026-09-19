@@ -264,3 +264,13 @@ export type {
   LimitTarget,
   ResolvedField,
 } from "./order-time-limit-resolution.js";
+
+export { productHistoryQuerySchema } from "./product-history.js";
+export type {
+  ProductHistoryQuery,
+  ProductHistoryInheritedKind,
+  ProductHistoryInheritanceView,
+  ProductHistoryPlacementView,
+  ProductHistoryEntryView,
+  ProductHistoryPageView,
+} from "./product-history.js";

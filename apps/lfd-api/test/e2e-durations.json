@@ -71,6 +71,7 @@
   "test/pim-order-time-limits.e2e-spec.ts": 18229,
   "test/pim-points-of-sale.e2e-spec.ts": 8728,
   "test/pim-product-lifecycle.e2e-spec.ts": 14675,
+  "test/pim-product-history.e2e-spec.ts": 7000,
   "test/pim-publication-switch.e2e-spec.ts": 19110,
   "test/pim-readiness.e2e-spec.ts": 11652,
   "test/pim-sales-contexts.e2e-spec.ts": 18188,

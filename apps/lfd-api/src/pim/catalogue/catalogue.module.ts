@@ -78,6 +78,10 @@ import { PrismaEditorialRepository } from "./product/infrastructure/prisma-edito
 import { PrismaMediaLibrary } from "./product/infrastructure/prisma-media-library.js";
 import { PrismaNutritionRepository } from "./product/infrastructure/prisma-nutrition.repository.js";
 import { PrismaProductRepository } from "./product/infrastructure/prisma-product.repository.js";
+import { GetProductHistoryHandler } from "./history/application/get-product-history.js";
+import { ProductLineageReader } from "./history/domain/ports/product-lineage.reader.js";
+import { ProductHistoryController } from "./history/http/product-history.controller.js";
+import { PrismaProductLineageReader } from "./history/infrastructure/prisma-product-lineage.reader.js";
 import {
   PrismaSkuAvailability,
   SKU_AVAILABILITY,
@@ -107,6 +111,7 @@ import {
     MediaController,
     MediaSweepController,
     ProductController,
+    ProductHistoryController,
     ReferenceController,
   ],
   providers: [
@@ -144,6 +149,9 @@ import {
     PublishProductHandler,
     UnpublishProductHandler,
     GetProductDetailHandler,
+    // L'onglet « Historique » : la lignée ici, le journal par le port global.
+    GetProductHistoryHandler,
+    { provide: ProductLineageReader, useClass: PrismaProductLineageReader },
     { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
     // Deux LECTURES posées hors du dépôt des familles : le compte de fiches
