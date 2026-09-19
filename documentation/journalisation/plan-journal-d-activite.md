@@ -25,15 +25,15 @@
 
 ## 0. Résumé
 
-| Lot | Point du TODO | Ce qu'il livre                                                                                                                                                                                     | Coût   |
-| --- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1   | §1            | les **actes du staff** qui touchent l'argent ou la production entrent au journal ; la porte s'étend à leurs dossiers                                                                               | moyen  |
-| 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente                                                              | faible |
-| 3   | §5, §9        | ~~on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »~~ — **bâti le 2026-09-19** (`b12433c3`, `83589b95`, et le commit de l'onglet), déploiement en attente | moyen  |
-| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                                                                                  | moyen  |
-| 5   | §10           | ~~les deux journaux se lisent par pages numérotées, sur une vue figée (`fold-paginator`)~~ — **bâti le 2026-09-19** (`9f20a980` et le commit d'écran), déploiement en attente                      | faible |
-| —   | §3            | ~~le code reste en `growth`~~ — **fermé par Hugo le 2026-09-19** : ni la table ni le code ne bougent (`architecture-journalisation.md` §2)                                                         | —      |
-| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                                                                                        | —      |
+| Lot | Point du TODO | Ce qu'il livre                                                                                                                                                                                                              | Coût   |
+| --- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1   | §1            | ~~les gestes du staff et des clients qui touchent l'argent, le catalogue, le compte ou la production entrent au journal~~ — **bâti le 2026-09-19** (`bfed73cc`, `8fd41f16`, `d62134a8`, `c711b85f`), déploiement en attente | moyen  |
+| 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente                                                                                       | faible |
+| 3   | §5, §9        | ~~on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »~~ — **bâti le 2026-09-19** (`b12433c3`, `83589b95`, et le commit de l'onglet), déploiement en attente                          | moyen  |
+| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                                                                                                           | moyen  |
+| 5   | §10           | ~~les deux journaux se lisent par pages numérotées, sur une vue figée (`fold-paginator`)~~ — **bâti le 2026-09-19** (`9f20a980` et le commit d'écran), déploiement en attente                                               | faible |
+| —   | §3            | ~~le code reste en `growth`~~ — **fermé par Hugo le 2026-09-19** : ni la table ni le code ne bougent (`architecture-journalisation.md` §2)                                                                                  | —      |
+| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                                                                                                                 | —      |
 
 **Deux décisions reviennent à Hugo** (§3) : faut-il journaliser les gestes
 qu'un **client** fait sur son propre compte, et quelle **permission** ouvre la
