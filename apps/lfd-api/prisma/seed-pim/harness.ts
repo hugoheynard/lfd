@@ -11,6 +11,7 @@ import { CatalogDeliveryRepository } from "../../src/b2b/catalog/domain/ports/ca
 import { PrismaService } from "../../src/platform/database/prisma.service.js";
 import { DocumentStore } from "../../src/platform/storage/document-store.js";
 import { FakeDocumentStore } from "../seed-growth/fake-document-store.js";
+import { refuseNonLocalTarget } from "../local-target.js";
 
 /**
  * Harnais du seed du **référentiel** : l'application Nest réelle — vrais
@@ -62,6 +63,12 @@ export interface SeedHarness {
 export const SEED_STAFF: Actor = { type: "staff", id: "seed-pim" };
 
 export async function bootstrapHarness(): Promise<SeedHarness> {
+  // Le harnais amorce l'application ENTIÈRE devant `DATABASE_LFD_URL` : sans
+  // cette garde, un `.env` qui vise la production y sème un corpus inventé.
+  refuseNonLocalTarget(
+    process.env["DATABASE_LFD_URL"] ?? "",
+    "le seed écrit par les vrais handlers.",
+  );
   const module = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(DocumentStore)
     .useClass(FakeDocumentStore)

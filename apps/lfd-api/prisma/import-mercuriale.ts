@@ -37,6 +37,16 @@
  * 🔴 **Il n'annule rien.** Un prix B2B posé ailleurs et absent de la plaquette
  * est laissé tel quel : la plaquette est une grille, pas une remise à zéro.
  * Revenir au tarif du référentiel est un geste à part (`alignOnPim`).
+ *
+ * ## Sa cible se TAPE, elle ne s'hérite pas
+ *
+ * C'est le seul outil de `prisma/` destiné à la production. Il ne lit donc
+ * PAS `DATABASE_LFD_URL` — celle du `.env`, qui vise un Postgres local — mais
+ * `LFD_PRODUCTION_DATABASE_URL`, qu'il faut poser pour l'occasion, et qu'il
+ * refuse d'ignorer. Viser la production devient un geste, pas un état resté
+ * dans un fichier (`documentation/ops/plan-sortie-d-accelerate.md` §2.5).
+ * Le secret ne passe pas par la ligne de commande : il se pose dans
+ * l'environnement depuis le gestionnaire de mots de passe.
  */
 import "dotenv/config";
 import { CommandBus } from "@nestjs/cqrs";
@@ -61,7 +71,23 @@ function euros(millicents: number): string {
   return `${(millicents / 100_000).toFixed(2).replace(".", ",")} €`;
 }
 
+/**
+ * Pointe l'application vers la cible DÉCLARÉE, avant qu'`AppConfig` ne lise
+ * `DATABASE_LFD_URL` — sans quoi l'import partirait vers celle du `.env`.
+ */
+function targetDeclaredDatabase(): void {
+  const target = process.env["LFD_PRODUCTION_DATABASE_URL"] ?? "";
+  if (target === "") {
+    throw new Error(
+      "LFD_PRODUCTION_DATABASE_URL manquante : l'import vise la production, et sa " +
+        "cible se pose exprès — il ne retombe jamais sur DATABASE_LFD_URL du .env.",
+    );
+  }
+  process.env["DATABASE_LFD_URL"] = target;
+}
+
 async function main(): Promise<void> {
+  targetDeclaredDatabase();
   const module = await Test.createTestingModule({ imports: [AppModule] })
     // R2 n'est pas configuré hors production, et un import de prix n'a rien à
     // écrire dans un bucket. C'est la SEULE doublure : ni le domaine, ni la

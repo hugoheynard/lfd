@@ -56,3 +56,43 @@ describe("AppConfig — impersonation de dev", () => {
     expect(() => new AppConfig()).toThrow(/production/i);
   });
 });
+
+/**
+ * Le transport se lit au schéma de l'URL — et `/health` le publie, ce qui en
+ * fait la preuve de la sortie d'Accelerate au déploiement.
+ * La clé touchée est restaurée après chaque cas.
+ */
+describe("AppConfig — transport vers la base", () => {
+  let saved: string | undefined;
+
+  beforeEach(() => {
+    saved = process.env["DATABASE_LFD_URL"];
+  });
+
+  afterEach(() => {
+    if (saved === undefined) {
+      delete process.env["DATABASE_LFD_URL"];
+    } else {
+      process.env["DATABASE_LFD_URL"] = saved;
+    }
+  });
+
+  function transportOf(url: string): string {
+    process.env["DATABASE_LFD_URL"] = url;
+    return new AppConfig().databaseTransport();
+  }
+
+  it("le pooler mutualisé de Prisma Postgres passe par `pg`", () => {
+    expect(transportOf("postgres://u:p@pooled.db.prisma.io:5432/postgres")).toBe("pg");
+  });
+
+  it("un Postgres local (`postgresql://`) passe par `pg`", () => {
+    expect(transportOf("postgresql://lfc:lfc@localhost:5433/lfc_b2b_test")).toBe("pg");
+  });
+
+  it("l'URL Accelerate reste `accelerate`, pour le retour arrière", () => {
+    expect(transportOf("prisma+postgres://accelerate.prisma-data.net/?api_key=x")).toBe(
+      "accelerate",
+    );
+  });
+});

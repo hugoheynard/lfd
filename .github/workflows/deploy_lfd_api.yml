@@ -10,6 +10,8 @@ name: deploy_lfd_api
 # Secrets GitHub requis (Settings → Secrets and variables → Actions) :
 #   CLOUDFLARE_LFD_API_WORKER — token « Account · Workers Scripts · Edit » + « Containers · Edit ».
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé (injecté dans l'image au deploy).
+#   DATABASE_LFD_PROD_DIRECT_URL — l'URL DIRECTE de la base (`db.prisma.io`), pour
+#     `migrate deploy` seulement ; le container, lui, reçoit DATABASE_LFD_URL.
 #
 # Secrets RUNTIME (≠ GitHub) posés une fois via `wrangler secret put` :
 #   DATABASE_LFD_URL, Auth0, RESEND_MAILER_B2B_API_KEY, STRIPE_*, … — la liste
@@ -38,6 +40,14 @@ concurrency:
 permissions:
   contents: read
   actions: read # lire le verdict des autres workflows
+
+env:
+  # Le transport vers la base que l'image neuve DOIT servir (`/health` →
+  # `database`). C'est lui qui prouve la sortie d'Accelerate : un secret
+  # changé ne se relit pas, un transport servi si. On le passe à `pg` dans le
+  # commit qui accompagne la bascule de `DATABASE_LFD_URL` — jamais autrement
+  # (documentation/ops/plan-sortie-d-accelerate.md, gestes 6 et 7′).
+  EXPECTED_DATABASE_TRANSPORT: accelerate
 
 jobs:
   deploy_lfd_api:
@@ -300,11 +310,23 @@ jobs:
       #    mieux vaut l'ancienne version en ligne qu'une nouvelle sur un schéma
       #    à moitié migré. Le coût d'un échec ici est une image construite pour
       #    rien : du temps de CI, pas une indisponibilité.
+      #
+      #    🔴 Par l'URL DIRECTE (`db.prisma.io`), jamais par celle du container.
+      #    Celle-ci vise le pooler mutualisé une fois sorti d'Accelerate, et une
+      #    migration ne passe pas par un pooler : elle tient des verrous et
+      #    enchaîne des instructions sur une même session. Le secret est passé
+      #    SANS repli — un nom mal saisi fait échouer la migration, ce qu'on
+      #    veut voir, plutôt que de retomber en silence sur l'URL du container.
       - name: Migrer la base
         working-directory: apps/lfd-api
         env:
-          DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_URL }}
-        run: pnpm exec prisma migrate deploy
+          DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_PROD_DIRECT_URL }}
+        run: |
+          if [ -z "${DATABASE_LFD_URL}" ]; then
+            echo "::error::DATABASE_LFD_PROD_DIRECT_URL absent des secrets GitHub — la migration n'a pas de cible."
+            exit 1
+          fi
+          pnpm exec prisma migrate deploy
 
       # 4) Injecte l'account id dans l'`image` du wrangler (jamais commité), puis déploie
       #    le Worker qui référence l'image poussée.
@@ -350,14 +372,24 @@ jobs:
         run: |
           set -uo pipefail
           expected="${GITHUB_SHA:0:7}"
-          echo "Révision attendue : ${expected}"
+          echo "Révision attendue : ${expected} — transport attendu : ${EXPECTED_DATABASE_TRANSPORT}"
 
           for attempt in $(seq 1 40); do
-            served=$(curl --silent --max-time 20 "${API_BASE_URL}/health" \
+            health=$(curl --silent --max-time 20 "${API_BASE_URL}/health" || echo "")
+            served=$(printf '%s' "${health}" \
                      | python3 -c "import json,sys; print(json.load(sys.stdin).get('revision',''))" 2>/dev/null || echo "")
 
             if [ "${served}" = "${expected}" ]; then
               echo "L'image ${expected} répond (tentative ${attempt})."
+              # La bonne image sert : son transport est désormais un FAIT, pas
+              # une attente. Un écart ne se rattrape pas en réessayant.
+              transport=$(printf '%s' "${health}" \
+                          | python3 -c "import json,sys; print(json.load(sys.stdin).get('database',''))" 2>/dev/null || echo "")
+              if [ "${transport}" != "${EXPECTED_DATABASE_TRANSPORT}" ]; then
+                echo "::error::L'image ${expected} joint la base par « ${transport:-inconnu} », « ${EXPECTED_DATABASE_TRANSPORT} » attendu. Vérifier DATABASE_LFD_URL, ou EXPECTED_DATABASE_TRANSPORT dans ce workflow."
+                exit 1
+              fi
+              echo "Transport vers la base : ${transport}."
               exit 0
             fi
             echo "Tentative ${attempt}/40 — révision servie : « ${served:-aucune réponse} »."

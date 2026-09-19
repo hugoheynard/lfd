@@ -82,8 +82,44 @@ function prismaShapeOf(error: unknown): PrismaErrorShape | null {
   return { name, code: typeof code === "string" ? code : null };
 }
 
-/** Codes Prisma d'indisponibilité (connexion / initialisation). */
-const UNAVAILABLE_CODES = new Set(["P1000", "P1001", "P1002", "P1008", "P1010", "P1011", "P1017"]);
+/**
+ * Codes Prisma d'indisponibilité (connexion / initialisation).
+ *
+ * `P2037` (trop de connexions) y est depuis la sortie d'Accelerate : derrière
+ * le pooler mutualisé, une saturation est une base momentanément injoignable,
+ * pas une requête refusée — le client doit lire « réessayez », pas un bug.
+ */
+const UNAVAILABLE_CODES = new Set([
+  "P1000",
+  "P1001",
+  "P1002",
+  "P1008",
+  "P1010",
+  "P1011",
+  "P1017",
+  "P2037",
+]);
+
+/**
+ * Le message de `pg-pool` quand aucune connexion ne se libère dans
+ * `connectionTimeoutMillis` (cf. `prisma.service.ts`).
+ */
+const POOL_ACQUISITION_TIMEOUT = "timeout exceeded when trying to connect";
+
+/**
+ * Vrai pour l'expiration de l'attente d'une connexion du pool `pg`.
+ *
+ * Ce n'est PAS une erreur Prisma : `@prisma/adapter-pg` 7.8 ne reconnaît que
+ * les erreurs de socket, de TLS et du serveur, et relance telle quelle une
+ * `Error` nue de `pg-pool` — sans nom, sans code (vérifié le 2026-09-19, en
+ * reproduisant la saturation contre le Postgres local). Sans ce test, une
+ * saturation du pool finissait en `internal.unexpected`, là où l'on attend
+ * « base indisponible, réessayez ». Le message est le seul signal : il est
+ * comparé EN ENTIER, pour ne rien attraper d'autre.
+ */
+function isPoolAcquisitionTimeout(error: unknown): boolean {
+  return error instanceof Error && error.message === POOL_ACQUISITION_TIMEOUT;
+}
 
 /** Codes Prisma de schéma désynchronisé (table / colonne absente). */
 const SCHEMA_CODES = new Set(["P2021", "P2022"]);
@@ -93,6 +129,9 @@ const SCHEMA_CODES = new Set(["P2021", "P2022"]);
  * si ce n'en est pas une (le filtre décidera alors du filet générique).
  */
 export function mapPersistenceError(error: unknown): AppError | null {
+  if (isPoolAcquisitionTimeout(error)) {
+    return new DatabaseUnavailableError(error);
+  }
   const shape = prismaShapeOf(error);
   if (shape === null) {
     return null;
