@@ -79,17 +79,7 @@ est une migration à part — **déclenchée par la mesure**.
 
 ### Les phrases
 
-Mis de côté par Hugo le 2026-09-19 (« tout sauf les phrases »).
-
-- **La plupart des faits du référentiel n'ont pas de phrase** : seuls
-  `product.published` / `.unpublished` et `product_category.vat_changed` en ont.
-  L'écran Journal et l'onglet Historique affichent le type brut
-  (`product.identity_saved`…) pour les autres.
-- **Une fiche en attente ou invitée passée à « active » à la main** écrit
-  `staff_user.reinstated` : l'écran dit « a rétabli l'accès », approximatif pour
-  une première activation.
-- **La fonction de l'auteur n'apparaît pas** sur une ligne de l'équipe.
-- **Les noms ne sont pas en gras** : la phrase est une chaîne simple.
+→ pris par [`plan-phrases-du-journal.md`](plan-phrases-du-journal.md) (2026-09-19).
 
 ### Le journal tarifaire
 
