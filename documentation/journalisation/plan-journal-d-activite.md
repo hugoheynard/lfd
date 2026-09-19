@@ -14,7 +14,7 @@
 > État : 🚧 **lots 2, 3 et 5 bâtis le 2026-09-19** (le 2 en premier, à la
 > demande de Hugo), à déployer après la sortie d'Accelerate. **Lot 1 bâti le
 > 2026-09-19** (tranches a à d) ; la forme d'une adresse au journal a été
-> tranchée le 2026-09-19. Lot 4 : attend la décision de la permission.
+> tranchée le 2026-09-19. Lot 4 : en cours, permission tranchée le 2026-09-19.
 > **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§8) qui a cassé l'inventaire, la porte étendue,
 > la colonne de recherche et le déménagement du code.
@@ -245,10 +245,11 @@ ici ne suffisait pas.
    **avant** la transaction : ce geste est déclaré `@hors-transaction` avec sa
    raison, et son fait s'écrit après la réussite d'Auth0. Ces gestes
    **élargissent le lot 1**.
-2. **La permission de la tranche fiscale** : `pim_tax:write` (qui écrit les
-   taux relit leur histoire — rien à ajouter à l'écran des rôles), ou une
-   permission nouvelle, attribuée au rôle `comptabilite`. Ouvrir un accès se
-   reprend mal : la seconde est plus explicite.
+2. **La permission de la tranche fiscale** — **tranchée par Hugo le
+   2026-09-19 : `pim_tax:write`** (qui écrit les taux relit leur histoire —
+   rien à ajouter à l'écran des rôles ; aujourd'hui `admin` et
+   `comptabilite`). L'autre option, une permission nouvelle, n'aurait servi
+   qu'à ouvrir la vue à quelqu'un qui ne modifie pas les taux.
 
 ## 4. Ce qui n'est pas proposé, et pourquoi
 
