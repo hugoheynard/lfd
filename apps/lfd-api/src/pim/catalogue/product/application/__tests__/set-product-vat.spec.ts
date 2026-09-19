@@ -174,6 +174,11 @@ describe("SetProductVatHandler", () => {
 
     expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
     expect(journal.types()).toEqual(["product.vat_changed"]);
+    // Le taux et le contexte, chacun sous son nom du moment (D5, lot D).
+    expect(journal.entries[0]?.payload).toMatchObject({
+      vatByContext: { b2b: { from: null, to: { id: "tva_20" } } },
+      contextLabels: { b2b: "B2B" },
+    });
   });
 
   it("rend la fiche à sa famille sur une carte VIDE", async () => {

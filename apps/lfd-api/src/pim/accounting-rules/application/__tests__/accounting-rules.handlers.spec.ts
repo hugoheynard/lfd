@@ -1,3 +1,6 @@
+import { checkJournalFact } from "@lfd/contracts/journal-facts";
+import { PRO_PRICE_METHODS } from "@lfd/pim-contracts";
+
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
 import { AccountingRules } from "../../domain/entities/accounting-rules.js";
@@ -142,5 +145,33 @@ describe("SetProPriceRatioHandler", () => {
     );
     expect(repo.at()).toBe(9_000);
     expect(journal.types()).toEqual([]);
+  });
+});
+
+/**
+ * Le catalogue des faits recopie les méthodes (il ne dépend que de zod) : cette
+ * suite tient les deux listes ensemble. Régression (lot D du plan des phrases,
+ * 2026-09-19) : la méthode était décrite `z.string()`, et n'importe quel texte
+ * passait l'écriture stricte.
+ */
+describe("accounting_rules.method_changed — les méthodes du référentiel", () => {
+  it.each(PRO_PRICE_METHODS)("le catalogue des faits accepte la méthode %s", (method) => {
+    expect(
+      checkJournalFact("accounting_rules.method_changed", {
+        subjectLabel: "Règles comptables",
+        from: method,
+        to: method,
+      }),
+    ).toBeNull();
+  });
+
+  it("refuse une méthode que le référentiel ne connaît pas", () => {
+    expect(
+      checkJournalFact("accounting_rules.method_changed", {
+        subjectLabel: "Règles comptables",
+        from: "Méthode inventée",
+        to: "ratio_ttc",
+      }),
+    ).toMatchObject({ kind: "invalid_payload" });
   });
 });

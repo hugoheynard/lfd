@@ -2,6 +2,8 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../journal/pim-journal.js";
+import { contextLabelsOf } from "../../sales-contexts/application/context-labels.js";
+import { SalesContextRegistry } from "../../sales-contexts/domain/ports/sales-context.registry.js";
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 import type { VatRatePayload } from "./create-vat-rate.js";
 import { ensureRateFree, requireRate } from "./vat-support.js";
@@ -17,6 +19,7 @@ export class UpdateVatRateCommand {
 export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateCommand, void> {
   constructor(
     private readonly rates: VatRateRepository,
+    private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}
@@ -62,7 +65,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
     const tickets: WriteTicket[] = [];
     if (before.percent !== after.percent) {
       // La portée : ce que ce taux touchait à l'instant du changement.
-      const usage = (await this.rates.usageByRegime()).get(after.id);
+      const families = { ...((await this.rates.usageByRegime()).get(after.id) ?? {}) };
       tickets.push(
         await this.journal.trace({
           type: PIM_EVENTS.vatRateRateChanged,
@@ -73,13 +76,16 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
             name: after.name,
             from: before.percent,
             to: after.percent,
+            // Le libellé du moment de chaque contexte que la portée compte
+            // par sa clé (lot D du plan des phrases, 2026-09-19).
+            contextLabels: await contextLabelsOf(this.contexts, Object.keys(families)),
           },
           // TOUS les contextes, nommés par leur clé. Le journal en listait
           // trois, fixes : un taux que seules les familles B2B visaient
           // changeait sous une portée annoncée « 0 / 0 » — sous la promesse que
           // ça ne touchait personne. Un contexte ajouté demain y sera sans
           // qu'on y pense.
-          blast: { families: { ...(usage ?? {}) } },
+          blast: { families },
         }),
       );
     }

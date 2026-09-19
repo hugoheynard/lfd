@@ -5,7 +5,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { changesBetween } from "../../../journal/changes.js";
 import { PointOfSaleReader } from "../../../points-of-sale/domain/ports/point-of-sale.reader.js";
 import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
-import { channelNamer, namedVatChange } from "../../shared/application/journal-names.js";
+import { channelNamer, vatChangePayload } from "../../shared/application/journal-names.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-offer.reader.js";
@@ -85,7 +85,7 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
             subjectId: category.id,
             payload: {
               subjectLabel: category.name.fr,
-              vatByContext: await namedVatChange(erased, this.rates),
+              ...(await vatChangePayload(erased, this.rates, this.contexts)),
             },
           })
         : null;

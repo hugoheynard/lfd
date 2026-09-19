@@ -6,10 +6,12 @@ import type { RuleNames } from "./pricing-act-summary.js";
 import type { PriceRule } from "./price-rule.js";
 
 export {
+  describeArticleCount,
   describeFloorPolicy,
   describeLadder,
   describeRule,
   describeScope,
+  describeWindowOf,
   type RuleNames,
 } from "./pricing-act-summary.js";
 

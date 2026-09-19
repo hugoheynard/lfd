@@ -1,6 +1,8 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
+import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
+import type { SalesContext } from "../../../sales-contexts/domain/value-objects/sales-context.js";
 import { VatRate, type VatRateSnapshot } from "../../domain/entities/vat-rate.js";
 import { VatRateNotFoundError, VatRateConflictError } from "../../domain/errors/vat-rate-errors.js";
 import { VatRateRepository, type VatRateUsage } from "../../domain/ports/vat-rate.repository.js";
@@ -47,6 +49,43 @@ class InMemoryRepo extends VatRateRepository {
   at(id: string): VatRateSnapshot | undefined {
     return this.stored.get(id);
   }
+}
+
+/**
+ * Le registre des contextes : les trois d'origine, un contexte créé à l'écran
+ * (`brunch`), et un contexte hors service — tous se nomment.
+ */
+class KnownContexts extends SalesContextRegistry {
+  private readonly contexts: readonly SalesContext[] = [
+    context("takeaway", "À emporter", true),
+    context("eatIn", "Sur place", true),
+    context("b2b", "Professionnels", true),
+    context("brunch", "Brunch du dimanche", false),
+  ];
+  active(): Promise<readonly SalesContext[]> {
+    return Promise.resolve(this.contexts.filter((entry) => entry.active));
+  }
+  all(): Promise<readonly SalesContext[]> {
+    return Promise.resolve(this.contexts);
+  }
+  ensureRootContext(): Promise<void> {
+    return Promise.resolve();
+  }
+  offeredByLocations(): Promise<ReadonlyMap<string, number>> {
+    return Promise.resolve(new Map());
+  }
+}
+
+function context(key: string, label: string, active: boolean): SalesContext {
+  return {
+    id: `ctx_${key}`,
+    key,
+    label,
+    handleSuffix: "",
+    active,
+    shopifyProjected: false,
+    position: 0,
+  };
 }
 
 class StubIds extends PimIdGenerator {
@@ -97,6 +136,7 @@ describe("UpdateVatRateHandler", () => {
     await expect(
       new UpdateVatRateHandler(
         new InMemoryRepo(),
+        new KnownContexts(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
       ).execute(new UpdateVatRateCommand("absent", { name: "X", percent: 20 })),
@@ -112,9 +152,12 @@ describe("UpdateVatRateHandler", () => {
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new UpdateVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-      new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }),
-    );
+    await new UpdateVatRateHandler(
+      repo,
+      new KnownContexts(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }));
 
     expect(repo.at(id)).toEqual({
       id,
@@ -137,9 +180,12 @@ describe("UpdateVatRateHandler", () => {
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new UpdateVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-      new UpdateVatRateCommand(id, { name: "Réduit alimentaire", percent: 5.5 }),
-    );
+    await new UpdateVatRateHandler(
+      repo,
+      new KnownContexts(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    ).execute(new UpdateVatRateCommand(id, { name: "Réduit alimentaire", percent: 5.5 }));
 
     expect(repo.at(id)?.name).toBe("Réduit alimentaire");
   });
@@ -156,9 +202,12 @@ describe("UpdateVatRateHandler", () => {
     await create.execute(new CreateVatRateCommand({ name: "B", percent: 20 }));
 
     await expect(
-      new UpdateVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-        new UpdateVatRateCommand(first, { name: "A", percent: 20 }),
-      ),
+      new UpdateVatRateHandler(
+        repo,
+        new KnownContexts(),
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+      ).execute(new UpdateVatRateCommand(first, { name: "A", percent: 20 })),
     ).rejects.toBeInstanceOf(VatRateConflictError);
   });
 });
@@ -221,9 +270,12 @@ describe("Le journal du référentiel", () => {
     // Ce que ce taux touchait à l'instant du changement.
     repo.usage.set(id, { takeaway: 3, eatIn: 1, b2b: 2 });
 
-    await new UpdateVatRateHandler(repo, journal, new DirectUnitOfWork()).execute(
-      new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }),
-    );
+    await new UpdateVatRateHandler(
+      repo,
+      new KnownContexts(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }));
 
     expect(journal.types()).toEqual([
       "vat_rate.created",
@@ -241,6 +293,37 @@ describe("Le journal du référentiel", () => {
     });
   });
 
+  /**
+   * Régression (lot D du plan des phrases, 2026-09-19) : la portée comptait
+   * les contextes par leur seule clé, et un contexte créé à l'écran s'affichait
+   * « brunch ». Le libellé est figé à l'écriture — un contexte hors service
+   * compris, un contexte que le registre ignore omis plutôt qu'inventé.
+   */
+  it("fige le libellé du moment de chaque contexte que la portée compte", async () => {
+    const repo = new InMemoryRepo();
+    const journal = new RecordingJournal();
+    const id = await new CreateVatRateHandler(
+      repo,
+      new StubIds(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
+    repo.usage.set(id, { takeaway: 3, brunch: 1, disparu: 2 });
+
+    await new UpdateVatRateHandler(
+      repo,
+      new KnownContexts(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new UpdateVatRateCommand(id, { name: "Réduit", percent: 10 }));
+
+    expect(journal.entries[1]?.payload).toMatchObject({
+      contextLabels: { takeaway: "À emporter", brunch: "Brunch du dimanche" },
+    });
+    expect(journal.entries[1]?.payload["contextLabels"]).not.toHaveProperty("disparu");
+    expect(journal.entries[1]?.blast).toEqual({ families: { takeaway: 3, brunch: 1, disparu: 2 } });
+  });
+
   it("reste muet quand rien n’a changé", async () => {
     const repo = new InMemoryRepo();
     const journal = new RecordingJournal();
@@ -251,9 +334,12 @@ describe("Le journal du référentiel", () => {
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new UpdateVatRateHandler(repo, journal, new DirectUnitOfWork()).execute(
-      new UpdateVatRateCommand(id, { name: "Réduit", percent: 5.5 }),
-    );
+    await new UpdateVatRateHandler(
+      repo,
+      new KnownContexts(),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new UpdateVatRateCommand(id, { name: "Réduit", percent: 5.5 }));
 
     // Un formulaire réenregistré à l'identique n'est pas un fait.
     expect(journal.types()).toEqual(["vat_rate.created"]);
@@ -275,7 +361,7 @@ describe("l’unicité de la valeur du taux", () => {
     ).rejects.toBeInstanceOf(VatRateConflictError);
 
     await expect(
-      new UpdateVatRateHandler(repo, journal, new DirectUnitOfWork()).execute(
+      new UpdateVatRateHandler(repo, new KnownContexts(), journal, new DirectUnitOfWork()).execute(
         new UpdateVatRateCommand(other, { name: "Normal", percent: 5.5 }),
       ),
     ).rejects.toBeInstanceOf(VatRateConflictError);

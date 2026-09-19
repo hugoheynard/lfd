@@ -1,4 +1,5 @@
 import { PointOfSaleReader } from "../../../points-of-sale/domain/ports/point-of-sale.reader.js";
+import { contextLabelsOf } from "../../../sales-contexts/application/context-labels.js";
 import { SalesContextNotFoundError } from "../../../sales-contexts/domain/errors/sales-context-errors.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import { VatRateNotFoundError } from "../../../vat-rates/domain/errors/vat-rate-errors.js";
@@ -43,7 +44,7 @@ export type NamedVatChange = Readonly<
  *
  * @throws {VatRateNotFoundError} un taux cité n'existe pas.
  */
-export async function namedVatChange(
+async function namedVatChange(
   change: VatChange,
   rates: VatRateRepository,
 ): Promise<NamedVatChange> {
@@ -66,6 +67,32 @@ export async function namedVatChange(
       { from: nameOf(from), to: nameOf(to) },
     ]),
   );
+}
+
+/**
+ * **La charge d'un fait `*.vat_changed`**, hors sujet : chaque taux nommé, et
+ * le libellé du moment de chaque contexte cité (`contextLabels`, lot D du plan
+ * des phrases, 2026-09-19) — sans lui, un contexte créé à l'écran se lisait
+ * sous sa clé.
+ *
+ * Partagée par les quatre écrivains (taux et canaux, famille et fiche) : un
+ * écrivain qui oublierait la table écrirait une charge que le catalogue refuse
+ * sous le harnais.
+ *
+ * @throws {VatRateNotFoundError} un taux cité n'existe pas.
+ */
+export async function vatChangePayload(
+  change: VatChange,
+  rates: VatRateRepository,
+  contexts: SalesContextRegistry,
+): Promise<{
+  readonly vatByContext: NamedVatChange;
+  readonly contextLabels: Readonly<Record<string, string>>;
+}> {
+  return {
+    vatByContext: await namedVatChange(change, rates),
+    contextLabels: await contextLabelsOf(contexts, Object.keys(change)),
+  };
 }
 
 /** Une ligne de la matrice des canaux, nommée. */

@@ -197,6 +197,9 @@ describe("SetProductChannelsHandler — les dérogations qu'une fermeture efface
       payload: {
         subjectLabel: "Tarte",
         vatByContext: { b2b: { from: { id: "tva_20", name: "Normal" }, to: null } },
+        // Le contexte aussi, sous son libellé du moment (lot D) : un contexte
+        // créé à l'écran ne se lirait sinon que par sa clé.
+        contextLabels: { b2b: "B2B" },
       },
     });
     // La matrice, nommée : « hérité » d'un côté, les lignes de l'autre.

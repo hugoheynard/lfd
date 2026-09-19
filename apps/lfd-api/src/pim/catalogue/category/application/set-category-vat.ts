@@ -6,7 +6,7 @@ import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repo
 import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/context-vat.js";
-import { namedVatChange } from "../../shared/application/journal-names.js";
+import { vatChangePayload } from "../../shared/application/journal-names.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
@@ -74,16 +74,17 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
       type: PIM_EVENTS.productCategoryVatChanged,
       subjectType: "product_category",
       subjectId: category.id,
-      // Chaque taux NOMMÉ (D5 du plan des phrases) : un taux renommé depuis se
-      // relit sous le nom qu'il portait ce jour-là.
+      // Chaque taux et chaque contexte NOMMÉS (D5 du plan des phrases) : un
+      // taux renommé depuis se relit sous le nom qu'il portait ce jour-là.
       payload: {
         subjectLabel: category.name.fr,
-        vatByContext: await namedVatChange(
+        ...(await vatChangePayload(
           Object.fromEntries(
             changed.map((key) => [key, { from: before[key] ?? null, to: after[key] ?? null }]),
           ),
           this.rates,
-        ),
+          this.contexts,
+        )),
       },
     });
   }

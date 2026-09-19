@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { PriceTemplateRepository } from "../../domain/ports/price-template.repository.js";
+import { describeArticleCount } from "../../domain/pricing-act.js";
 import { PriceTemplateNotFoundError } from "../../domain/pricing-errors.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuriale.repository.js";
@@ -81,7 +82,7 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
       // Le gabarit par son NOM du moment, plus par son identifiant (lot B du
       // plan des phrases, 2026-09-19) : c'est sous ce nom qu'on en parle.
       reason: `Posée par le gabarit « ${state.label} »`,
-      summary: `Mercuriale « ${state.label} » — ${String(mercuriale.lines.length)} article(s), posée par gabarit`,
+      summary: `Mercuriale « ${state.label} » — ${describeArticleCount(mercuriale.lines.length)}, posée par gabarit`,
       subjectLabel: mercuriale.label,
     });
     return mercuriale.lines.length;

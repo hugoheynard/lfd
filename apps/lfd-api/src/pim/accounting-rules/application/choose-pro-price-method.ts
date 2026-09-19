@@ -80,7 +80,7 @@ export class ChooseProPriceMethodHandler implements ICommandHandler<
    * seul événement que quelqu'un cherchera : celui où le catalogue
    * professionnel a changé de tarif.
    */
-  private async journalize(before: string, after: string): Promise<WriteTicket> {
+  private async journalize(before: ProPriceMethod, after: ProPriceMethod): Promise<WriteTicket> {
     if (before === after) {
       return this.journal.untraced("méthode rechoisie à l'identique");
     }

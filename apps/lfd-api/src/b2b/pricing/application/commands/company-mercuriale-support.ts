@@ -1,5 +1,6 @@
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
+import { describeArticleCount, describeWindowOf } from "../../domain/pricing-act.js";
 import { PosedMercurialeNotFoundError } from "../../domain/pricing-errors.js";
 
 /**
@@ -94,6 +95,8 @@ function matchesLegacyKey(
  */
 export function describeMercuriale(mercuriale: CompanyMercuriale): string {
   const state = mercuriale.toPersistence();
-  const to = state.validTo === null ? "sans terme" : state.validTo.toISOString().slice(0, 10);
-  return `Mercuriale « ${state.label} » — ${String(state.lines.length)} article(s), du ${state.validFrom.toISOString().slice(0, 10)} au ${to}`;
+  // Elle écrivait « du 2026-09-01 au sans terme » : les dates en ISO, et une
+  // fenêtre ouverte qui cassait la phrase. Les mots de la fenêtre sont ceux
+  // des règles et des barèmes (plan des phrases du journal, lot D).
+  return `Mercuriale « ${state.label} » — ${describeArticleCount(state.lines.length)}, ${describeWindowOf(state.validFrom, state.validTo)}`;
 }

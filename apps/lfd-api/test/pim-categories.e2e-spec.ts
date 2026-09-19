@@ -260,6 +260,7 @@ describe("fermer un canal journalise le taux qu'il efface", () => {
     expect(facts[1]?.payload).toEqual({
       subjectLabel: "Viennoiseries",
       vatByContext: { b2b: { from: { id: rate, name: "Réduit" }, to: null } },
+      contextLabels: { b2b: "B2B" },
     });
   });
 

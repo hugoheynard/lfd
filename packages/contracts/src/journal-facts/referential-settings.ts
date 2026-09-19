@@ -6,6 +6,7 @@ import {
   blastByNamedContexts,
   changes,
   clockTime,
+  contextLabels,
   count,
   days,
   fact,
@@ -49,6 +50,15 @@ const orderTimeLimit = () =>
     graceMinutes: minutes().nullable(),
   });
 
+/**
+ * Les méthodes de calcul du prix professionnel — recopiées de
+ * `@lfd/pim-contracts` (`PRO_PRICE_METHODS`) plutôt qu'importées : ce paquet ne
+ * dépend que de zod. Les deux listes ne peuvent pas diverger en silence : la
+ * suite des handlers des règles comptables écrit chaque méthode du référentiel
+ * contre ce catalogue (`accounting-rules.handlers.spec.ts`).
+ */
+const PRO_PRICE_METHODS = ["ratio_ttc"] as const;
+
 // ─── Les formes du lot A (9c3c2d35), encore en base ────────────────────────
 
 const vatRateSnapshot = payload({ name: z.string(), percent: percent() });
@@ -68,6 +78,8 @@ const vatRateChangedAugust = payload({
   to: percent(),
   blast: blastByNamedContexts(),
 });
+/** La forme du lot B (`cb67bb63`) : le sujet nommé, les contextes de la portée par leur seule clé. */
+const vatRateChangedLotB = vatRateChanged.extend({ subjectLabel: subjectLabel() });
 const proRatioChanged = payload({ from: basisPoints().nullable(), to: basisPoints() });
 
 const pointOfSaleCreatedV1 = payload({
@@ -166,7 +178,13 @@ const allergenEntryState = () => payload({ code: z.string(), name: localizedText
 
 export const REFERENTIAL_SETTINGS_FACTS = {
   "vat_rate.created": labelled(vatRateSnapshot),
-  "vat_rate.rate_changed": fact(vatRateChanged.extend({ subjectLabel: subjectLabel() }), [
+  /**
+   * `contextLabels` : le libellé du moment de chaque contexte que la portée
+   * (`blast.families`) compte par sa clé (lot D, 2026-09-19). La forme du lot B,
+   * sans lui, reste dans l'histoire.
+   */
+  "vat_rate.rate_changed": fact(vatRateChangedLotB.extend({ contextLabels: contextLabels() }), [
+    vatRateChangedLotB,
     vatRateChanged,
     vatRateChangedAugust,
   ]),
@@ -177,8 +195,17 @@ export const REFERENTIAL_SETTINGS_FACTS = {
   /**
    * La méthode de calcul du prix professionnel. Le sujet est unique (les
    * règles comptables du référentiel) : son libellé est constant.
+   *
+   * La méthode est une valeur FERMÉE (lot D, 2026-09-19) : elle était décrite
+   * `z.string()`, ce qui laissait écrire n'importe quel texte — et l'écran ne
+   * peut dire par son mot qu'une valeur qu'il connaît. La forme ouverte reste
+   * dans l'histoire : `remise_apres_tva_max` a pu s'écrire le 2026-09-13 entre
+   * `7278ca63` et `a055b4f9`.
    */
-  "accounting_rules.method_changed": labelled(fromTo(z.string())),
+  "accounting_rules.method_changed": fact(
+    fromTo(z.enum(PRO_PRICE_METHODS)).extend({ subjectLabel: subjectLabel() }),
+    [fromTo(z.string()).extend({ subjectLabel: subjectLabel() }), fromTo(z.string())],
+  ),
   /** Le rapport prix pro / prix public ; `null` avant le premier réglage. */
   "accounting_rules.pro_ratio_changed": labelled(proRatioChanged),
 

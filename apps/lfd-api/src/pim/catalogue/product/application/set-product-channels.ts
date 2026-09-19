@@ -11,7 +11,7 @@ import type { SalesChannels } from "../../shared/domain/value-objects/sales-chan
 import { erasedVat, type ContextVat } from "../../shared/domain/value-objects/context-vat.js";
 import { PointOfSaleReader } from "../../../points-of-sale/domain/ports/point-of-sale.reader.js";
 import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
-import { channelNamer, namedVatChange } from "../../shared/application/journal-names.js";
+import { channelNamer, vatChangePayload } from "../../shared/application/journal-names.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
@@ -115,7 +115,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
       subjectId: product.id,
       payload: {
         subjectLabel: product.snapshot().name.fr,
-        vatByContext: await namedVatChange(erased, this.rates),
+        ...(await vatChangePayload(erased, this.rates, this.contexts)),
       },
     });
   }

@@ -174,9 +174,26 @@ function describeWindow(rule: PriceRule): string {
   return describeWindowOf(rule.validFrom, rule.validTo);
 }
 
-function describeWindowOf(validFrom: Date, validTo: Date | null): string {
-  const from = day(validFrom);
-  return validTo === null ? `à partir du ${from}` : `du ${from} au ${day(validTo)}`;
+/**
+ * **Une fenêtre de validité, en mots** : « du 1er septembre 2026 au
+ * 30 septembre 2026 », « du 1er septembre 2026, sans date de fin ».
+ *
+ * Partagée par toutes les phrases figées de la tarification — règle, barème,
+ * mercuriale : la mercuriale écrivait « du 2026-09-01 au sans terme », et un
+ * même journal ne doit dire une fenêtre que d'une façon. Les bornes sont
+ * écrites telles qu'elles sont stockées : aucun jour n'est recalculé.
+ */
+export function describeWindowOf(validFrom: Date, validTo: Date | null): string {
+  const from = `du ${day(validFrom)}`;
+  return validTo === null ? `${from}, sans date de fin` : `${from} au ${day(validTo)}`;
+}
+
+/**
+ * **Un nombre d'articles, accordé** : « 1 article », « 12 articles ».
+ * La phrase figée écrivait « article(s) », que personne ne dit.
+ */
+export function describeArticleCount(count: number): string {
+  return `${String(count)} ${count > 1 ? "articles" : "article"}`;
 }
 
 /**
@@ -197,7 +214,27 @@ function percent(bp: number): string {
   return String(bp / 100).replace(".", ",");
 }
 
-/** `fr-FR` explicite : le journal ne doit pas dépendre du fuseau du serveur. */
+const LONG_DAY = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Paris",
+});
+
+/** Le seul quantième qui s'écrit en ordinal en français. */
+const FIRST_OF_MONTH = "1";
+
+/**
+ * Le jour civil **à Paris**, en toutes lettres : « 1er septembre 2026 ».
+ *
+ * Le fuseau est explicite — le journal ne doit pas dépendre de celui du
+ * serveur. Elle rendait « 01/09/2026 », qu'un lecteur habitué à l'ordre
+ * anglais lit à l'envers ; le mois en lettres ne se lit que d'une façon.
+ */
 function day(date: Date): string {
-  return date.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+  const parts = LONG_DAY.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((entry) => entry.type === type)?.value ?? "";
+  const dayOfMonth = part("day");
+  return `${dayOfMonth === FIRST_OF_MONTH ? "1er" : dayOfMonth} ${part("month")} ${part("year")}`;
 }

@@ -4,6 +4,7 @@ import {
   blast,
   cents,
   changes,
+  contextLabels,
   fact,
   fromTo,
   grams,
@@ -187,13 +188,23 @@ const soldChannel = () =>
   payload({ pointOfSale: named("point_of_sale"), context: named("sales_context") });
 const salesChannels = () => z.array(soldChannel());
 
-/** Le taux par contexte de vente, chaque taux cité avec son nom du moment. */
-const vatChanged = () =>
+/**
+ * Le taux par contexte de vente, chaque taux cité avec son nom du moment — la
+ * forme du lot B (`cb67bb63`), encore en base : les contextes n'y sont que des
+ * clés, et un contexte créé à l'écran (`brunch`) s'y lit sous sa clé.
+ */
+const vatChangedLotB = () =>
   payload({
     subjectLabel: subjectLabel(),
     /** Clé : celle du contexte de vente ; valeur : le taux avant et après. */
     vatByContext: z.record(z.string(), fromTo(named("vat_rate").nullable())),
   });
+
+/**
+ * La forme courante : la même, et le libellé du moment de chaque contexte cité
+ * (`contextLabels`, lot D).
+ */
+const vatChanged = () => vatChangedLotB().extend({ contextLabels: contextLabels() });
 
 export const REFERENTIAL_CATALOGUE_FACTS = {
   "product.created": fact(
@@ -260,7 +271,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     }),
     [productChannelsV1],
   ),
-  "product.vat_changed": fact(vatChanged(), [vatByContextV1()]),
+  "product.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product.declared_ready": labelled(skuAndName()),
   "product.published": labelled(productOnSale()),
   "product.unpublished": labelled(productOnSale()),
@@ -325,7 +336,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     payload({ subjectLabel: subjectLabel(), changes: changes({ channels: salesChannels() }) }),
     [categoryChannelsV1],
   ),
-  "product_category.vat_changed": fact(vatChanged(), [vatByContextV1()]),
+  "product_category.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product_category.editorial_saved": labelled(categoryEditorial),
   "product_category.media_saved": labelled(mediaSaved()),
 

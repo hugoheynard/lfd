@@ -1,4 +1,10 @@
-import { describeRule, describeScope } from "../pricing-act.js";
+import {
+  describeArticleCount,
+  describeLadder,
+  describeRule,
+  describeScope,
+  describeWindowOf,
+} from "../pricing-act.js";
 import type { PriceAudience, PriceRule, PriceScope } from "../price-rule.js";
 
 /**
@@ -62,7 +68,7 @@ describe("describeRule — la portée, nommée", () => {
 
   it("ne change rien au reste de la phrase", () => {
     expect(describeRule(rule({ type: "global", id: null }), NO_NAMES)).toMatch(
-      /^Promotion « Rentrée » · −10 % · tout le catalogue, tous clients · à partir du /u,
+      /^Promotion « Rentrée » · −10 % · tout le catalogue, tous clients · du /u,
     );
   });
 });
@@ -106,5 +112,75 @@ describe("describeScope — le nom du sujet d'une limite", () => {
     expect(describeScope({ type: "variant", id: "VIE-001" }, "Croissant")).toBe(
       "déclinaison « Croissant »",
     );
+  });
+});
+
+/**
+ * Régression (lot D, 2026-09-19) : la phrase figée écrivait ses dates en ISO
+ * (« du 2026-09-01 au sans terme » pour une mercuriale) ou en chiffres
+ * (« 01/09/2026 »). Seul le TEXTE change : les bornes restent celles stockées.
+ *
+ * Les dates ne sont comparées à aucune horloge — elles ne sont que mises en
+ * mots —, d'où leur écriture absolue.
+ */
+describe("describeWindowOf — une fenêtre, en français", () => {
+  const firstOfSeptember = new Date("2026-09-01T00:00:00+02:00");
+  const endOfSeptember = new Date("2026-09-30T00:00:00+02:00");
+
+  it("dit un jour en toutes lettres, « 1er » compris", () => {
+    expect(describeWindowOf(firstOfSeptember, endOfSeptember)).toBe(
+      "du 1er septembre 2026 au 30 septembre 2026",
+    );
+  });
+
+  it("dit une fenêtre ouverte « sans date de fin », sans casser la phrase", () => {
+    const window = describeWindowOf(firstOfSeptember, null);
+
+    expect(window).toBe("du 1er septembre 2026, sans date de fin");
+    expect(window).not.toContain("sans terme");
+  });
+
+  it("lit le jour à Paris, pas dans le fuseau du serveur", () => {
+    // 22 h 30 UTC le 31 août = 0 h 30 à Paris le 1er septembre.
+    expect(describeWindowOf(new Date("2026-08-31T22:30:00Z"), null)).toMatch(/^du 1er septembre/u);
+  });
+
+  it("ne réécrit ni ISO ni chiffres dans une règle", () => {
+    const summary = describeRule(
+      {
+        ...rule({ type: "global", id: null }),
+        validFrom: firstOfSeptember,
+        validTo: endOfSeptember,
+      },
+      NO_NAMES,
+    );
+
+    expect(summary).toContain("du 1er septembre 2026 au 30 septembre 2026");
+    expect(summary).not.toMatch(/\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}/u);
+  });
+
+  it("dit la fenêtre d'un barème avec les mêmes mots", () => {
+    const summary = describeLadder({
+      id: "ladder_1",
+      label: "Gros volumes",
+      scope: { type: "global", id: null },
+      audience: { type: "all", id: null },
+      unit: "percent",
+      tiers: [{ minQuantity: 50, value: 500 }],
+      validFrom: firstOfSeptember,
+      validTo: null,
+      suspendedFrom: null,
+    });
+
+    expect(summary).toBe(
+      "Barème « Gros volumes » · 50+ à −5 % · du 1er septembre 2026, sans date de fin",
+    );
+  });
+});
+
+describe("describeArticleCount — un compte accordé", () => {
+  it("écrit « article » au singulier et « articles » au pluriel, jamais « article(s) »", () => {
+    expect(describeArticleCount(1)).toBe("1 article");
+    expect(describeArticleCount(12)).toBe("12 articles");
   });
 });

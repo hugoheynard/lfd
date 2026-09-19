@@ -182,6 +182,26 @@ export const blast = () =>
     .optional();
 
 /**
+ * **Les libellés des contextes de vente qu'une charge cite par leur clé**,
+ * figés à l'écriture (D5, lot D du plan des phrases — 2026-09-19) :
+ * `{ brunch: "Brunch" }`.
+ *
+ * Une table au niveau de la charge, plutôt qu'un objet nommé par entrée, parce
+ * que la clé d'un contexte est déjà la **clé d'un record** là où elle apparaît
+ * (`vatByContext`, `blast.families`) : nommer chaque entrée aurait changé la
+ * forme de ces records, que l'attribution des révisions et l'écran lisent tels
+ * quels. La table s'ajoute à côté ; un lecteur qui l'ignore lit ce qu'il lisait.
+ *
+ * Un contexte que le registre ne connaissait plus à l'écriture en est
+ * **absent** : le lecteur retombe sur la clé, jamais sur un nom inventé.
+ *
+ * Nommée `contextLabels` et non `contexts` : `contexts` est déjà, sur les faits
+ * d'un point de vente, la liste des contextes OFFERTS — une donnée, pas un
+ * dictionnaire.
+ */
+export const contextLabels = () => z.record(z.string(), z.string().min(1));
+
+/**
  * La portée sous sa forme **d'août 2026** : trois comptes nommés par contexte,
  * écrits par le changement de taux du 2026-08-21 (`6959131d`, à emporter et
  * sur place) au 2026-08-24 (`5d526662`, qui les a remplacés par

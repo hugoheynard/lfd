@@ -105,24 +105,22 @@ async function rateWrittenByAccountant(name: string, percent: number): Promise<s
  * charge **conforme au catalogue des faits** (le journal est strict sous le
  * harnais), qui porte le mot cherché dans une de ses valeurs.
  *
- * Sauf la surtaxe : sa charge ne dit qu'un montant et un taux, aucun texte
- * libre ne peut y porter le mot. Elle compte dans la tranche, pas dans la
- * recherche.
+ * Sauf la surtaxe et la méthode de prix pro : l'une ne dit qu'un montant et un
+ * taux, l'autre une valeur fermée (`ratio_ttc`) sous un sujet au libellé
+ * constant — aucun texte libre ne peut y porter le mot. Elles comptent dans la
+ * tranche, pas dans la recherche.
  */
 const APPLIED_RATE = { id: "vat_applied", name: `Taux ${WORD} appliqué` } as const;
 const FISCAL_SEARCHABLE = {
   "product_category.vat_changed": {
     subjectLabel: "Rayon fiscal",
     vatByContext: { b2b: { from: null, to: APPLIED_RATE } },
+    contextLabels: { b2b: "B2B" },
   },
   "product.vat_changed": {
     subjectLabel: "Fiche fiscale",
     vatByContext: { b2b: { from: APPLIED_RATE, to: null } },
-  },
-  "accounting_rules.method_changed": {
-    subjectLabel: "Règles comptables",
-    from: `Méthode ${WORD}`,
-    to: "ratio_ttc",
+    contextLabels: { b2b: "B2B" },
   },
   "sales_context.created": {
     subjectLabel: `Contexte ${WORD}`,
@@ -132,10 +130,23 @@ const FISCAL_SEARCHABLE = {
     shopifyProjected: false,
   },
 } as const;
-const FISCAL_BY_RECORDER = [...keysOf(FISCAL_SEARCHABLE), "order_late_fee.cleared"] as const;
-const LATE_FEE_CLEARED = {
-  before: { fee: { mode: "percent", bp: 500 }, vatRatePercent: 20 },
+/**
+ * Les faits fiscaux sans texte libre. La méthode portait « Méthode réduit » :
+ * un texte que le catalogue décrivait `z.string()`, et que l'écrivain réel
+ * n'écrit jamais — la méthode est une valeur fermée (lot D du plan des
+ * phrases, 2026-09-19).
+ */
+const FISCAL_UNSEARCHABLE = {
+  "order_late_fee.cleared": {
+    before: { fee: { mode: "percent", bp: 500 }, vatRatePercent: 20 },
+  },
+  "accounting_rules.method_changed": {
+    subjectLabel: "Règles comptables",
+    from: "ratio_ttc",
+    to: "ratio_ttc",
+  },
 } as const;
+const FISCAL_BY_RECORDER = [...keysOf(FISCAL_SEARCHABLE), ...keysOf(FISCAL_UNSEARCHABLE)] as const;
 const OUTSIDE = {
   "product_category.renamed": {
     subjectLabel: "Rayon",
@@ -164,7 +175,9 @@ const OUTSIDE = {
     fulfillmentDate: serviceDay(),
     reason: `Rayon ${WORD}`,
   },
-  "company.identity_edited": { subjectLabel: `Rayon ${WORD}`, fields: [`Rayon ${WORD}`] },
+  // `fields` est une liste FERMÉE de champs depuis `96bff571` : le mot cherché
+  // est porté par le nom du sujet, comme le ferait une vraie société.
+  "company.identity_edited": { subjectLabel: `Rayon ${WORD}`, fields: ["enseigne"] },
 } as const;
 
 /** Les clés d'un objet de fixture, typées par lui. */
@@ -183,7 +196,9 @@ async function seedJournal(): Promise<{ readonly rateId: string }> {
   for (const type of keysOf(FISCAL_SEARCHABLE)) {
     await fact(type, "vat_subject", FISCAL_SEARCHABLE[type]);
   }
-  await fact("order_late_fee.cleared", "vat_subject", LATE_FEE_CLEARED);
+  for (const type of keysOf(FISCAL_UNSEARCHABLE)) {
+    await fact(type, "vat_subject", FISCAL_UNSEARCHABLE[type]);
+  }
   for (const type of keysOf(OUTSIDE)) {
     await fact(type, "other_subject", OUTSIDE[type]);
   }
@@ -320,6 +335,7 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
     expect(page.events[0]?.payload).toEqual({
       subjectLabel: "Viennoiseries",
       vatByContext: { b2b: { from: null, to: { id: rate, name: "Réduit" } } },
+      contextLabels: { b2b: "B2B" },
     });
   });
 
@@ -348,6 +364,41 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
     expect(page.events[0]?.payload).toEqual({
       subjectLabel: "Viennoiseries",
       vatByContext: { b2b: { from: null, to: { id: rate, name: "Réduit" } } },
+      contextLabels: { b2b: "B2B" },
+    });
+  });
+
+  /**
+   * Plan des phrases du journal, lot D (D5) : un contexte de vente cité par sa
+   * clé porte son libellé du MOMENT — renommé depuis, la ligne ne bouge pas.
+   * Sans lui, un contexte créé à l'écran se lisait sous sa clé.
+   */
+  it("garde le libellé du contexte du MOMENT, sur le taux posé comme sur sa portée", async () => {
+    const category = await familySoldToProfessionals();
+    const rate = await rateWrittenByAccountant("Réduit", 5.5);
+    await as("staff-e2e")
+      .put(`${CATEGORIES}/${category}/vat`)
+      .send({ vatByContext: { b2b: rate } })
+      .expect(200);
+    await accountant().put(`${RATES}/${rate}`).send({ name: "Réduit", percent: 7.5 }).expect(200);
+
+    await as("staff-e2e")
+      .put(`${CONTEXTS}/b2b`)
+      .send({
+        label: "Vente pro renommée",
+        handleSuffix: "",
+        active: true,
+        shopifyProjected: false,
+        position: 3,
+      })
+      .expect(200);
+
+    const vat = await readTax({ subjectType: "product_category", subjectId: category });
+    const scope = await readTax({ subjectType: "vat_rate", subjectId: rate });
+    expect(vat.events[0]?.payload).toMatchObject({ contextLabels: { b2b: "B2B" } });
+    expect(scope.events[0]).toMatchObject({
+      type: "vat_rate.rate_changed",
+      payload: { blast: { families: { b2b: 1 } }, contextLabels: { b2b: "B2B" } },
     });
   });
 
@@ -373,6 +424,7 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
     expect(page.events[0]?.payload).toEqual({
       subjectLabel: "Viennoiseries",
       vatByContext: { b2b: { from: { id: rate, name: "Réduit" }, to: null } },
+      contextLabels: { b2b: "B2B" },
     });
   });
 
