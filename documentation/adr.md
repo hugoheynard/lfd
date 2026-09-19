@@ -47,6 +47,10 @@ flowchart LR
 Les deux fronts sont servis en statique par Cloudflare Pages. La passerelle est
 le seul chemin public vers l'API (`gateway/`, `CLAUDE.md` en tête).
 
+Le maillon Accelerate est **en sursis** : Prisma le retire le 1er décembre 2026. La production y passe jusqu'à la bascule du week-end du 2026-09-19 ; le
+code sait déjà joindre à sa place le pooler mutualisé, en TCP
+([`ops/plan-sortie-d-accelerate.md`](ops/plan-sortie-d-accelerate.md)).
+
 ---
 
 ## ADR-01 — Monolithe modulaire, pas de microservices
@@ -173,6 +177,17 @@ ce qui a dicté la forme de `prisma/clone-dev.ts`. Le client généré vit dans
 (« TCP + pool, cohérent avec le long-running »), et un dossier
 `src/infra/database/client/` qui n'a jamais existé.
 
+**2026-09-19** — sortie d'Accelerate
+([`ops/plan-sortie-d-accelerate.md`](ops/plan-sortie-d-accelerate.md)). Le
+schéma choisit toujours le transport, mais le schéma de gauche est déjà faux
+sur deux points : le développement n'est **pas** sur Accelerate (le `.env` vise
+un Postgres local, confirmé par Hugo ce jour-là), et la production passera en
+`postgresql://` vers le pooler mutualisé `pooled.db.prisma.io`, par
+l'adaptateur `pg` au pool réglé. Elle reste sur Accelerate jusqu'à la bascule ;
+`/health` publie le transport servi (`database`). Conséquence : le schéma de
+l'URL **ne distingue plus** la production du poste — les outils qui écrivent
+lisent l'hôte (`prisma/local-target.ts`).
+
 ## ADR-05 — PostgreSQL pour tout, catalogue compris
 
 **Décision.** **Une seule base PostgreSQL**, découpée en **schémas**, avec
@@ -209,6 +224,12 @@ dépôt, la base de production n'est joignable **que par Accelerate** : un
 **Historique.** La première version citait `pg_dump` comme geste de
 portabilité à portée de commande ; Accelerate l'a rendu faux depuis ce dépôt.
 
+**2026-09-19** — la sortie d'Accelerate fait entrer l'URL **directe**
+(`db.prisma.io`) dans le déploiement, en secret GitHub
+(`DATABASE_LFD_PROD_DIRECT_URL`), pour `migrate deploy` seulement. Elle reste hors
+du dépôt et du poste : `pg_dump` n'est toujours pas à portée de commande
+depuis ici.
+
 ## ADR-08 — Monorepo pnpm + Turborepo, pas Nx
 
 **Décision.** **pnpm workspaces + Turborepo.** Les applications sont
@@ -241,6 +262,12 @@ tolère. Prisma parlant à n'importe quel Postgres, la bascule reste ouverte.
 
 **À faire.** Nommer l'hébergeur ici, ou écrire qu'on ne le documente pas dans
 le dépôt.
+
+**2026-09-19** — les URL qui remplacent Accelerate (`pooled.db.prisma.io`,
+`db.prisma.io`) désignent **Prisma Postgres**, et le déploiement les manipule
+désormais (`deploy_lfd_api.yml`, étape « Migrer la base »). La raison écrite
+plus haut — une URL qui masque l'hébergeur — tombe à la bascule ; la décision,
+elle, reste à écrire.
 
 ## ADR-10 — Backend en ESM, flags TypeScript stricts partagés
 

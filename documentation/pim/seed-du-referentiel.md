@@ -68,6 +68,11 @@ Accelerate, ou un hôte qui n'est ni `localhost` ni `127.0.0.1`, arrête le scri
 avant la première écriture. Il pose des allergènes inventés : une donnée
 réglementaire fausse en production n'est pas une gêne de développement.
 
+C'est l'**hôte** qui tient la ligne, pas le schéma : une fois sortie
+d'Accelerate, la production s'écrit elle aussi `postgres://`
+(`pooled.db.prisma.io`, [`../ops/plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md)),
+et seul son hôte la distingue du poste (`prisma/local-target.ts`).
+
 **Aucun outil ne lit une base pour fabriquer la donnée.** Le catalogue est du
 **code** — relu en revue, modifié à la main. Un extracteur qui irait le chercher
 dans une base d'exploitation ouvrirait une porte vers la production à chaque

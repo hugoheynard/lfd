@@ -59,6 +59,12 @@ gh run view <run-id> --log | grep -i "Migrer la base" | grep -iE "Applying|No pe
 faire, ce qui est normal — **sauf** juste après un changement de base, où ce
 message signifie qu'on tape encore sur l'ancienne.
 
+Depuis la sortie d'Accelerate (code du 2026-09-19), la migration passe par le
+secret **`DATABASE_LFD_PROD_DIRECT_URL`**, pas par celui du container ; absent, elle
+échoue en le nommant. Et l'étape « Attendre que l'image neuve serve » échoue si
+`/health` ne publie pas, dans `database`, le transport écrit en tête du workflow
+(`EXPECTED_DATABASE_TRANSPORT`) — cf. « Sortir d'Accelerate » plus bas.
+
 ## Après avoir changé une variable GitHub
 
 Rien ne se déclenche : les variables ne sont lues qu'au build.
@@ -208,6 +214,60 @@ Pour une **migration de base**, il n'y a pas de retour arrière automatique. Un
 déplacement de données se fait en trois déploiements — étendre, basculer,
 resserrer — précisément pour que chaque étape soit réversible seule.
 
+## Sortir d'Accelerate — la bascule, et son retour arrière
+
+📐 **Pas encore jouée.** Au 2026-09-19, la production est **sur Accelerate**
+(`prisma+postgres://`) jusqu'à la bascule du week-end ; le code sait déjà servir
+le pooler mutualisé (`postgres://…@pooled.db.prisma.io`, adaptateur `pg`). Le
+plan et ses raisons : [`plan-sortie-d-accelerate.md`](plan-sortie-d-accelerate.md)
+(gestes 6, 7, 7′). Accelerate cesse de répondre le **1er décembre 2026**.
+
+**Avant** (gestes 2 à 4) : le secret `DATABASE_LFD_PROD_DIRECT_URL` existe ; la
+valeur **actuelle** de `DATABASE_LFD_URL` est copiée dans le gestionnaire de
+mots de passe — un secret GitHub ne se relit pas, et c'est la seule voie de
+retour ; le code de la sortie est en ligne et `/health` publie
+`"database":"accelerate"`.
+
+⚠️ **D'ici la bascule, ne pas toucher `DATABASE_LFD_URL`** : tout push sur `main`
+qui touche `apps/lfd-api/**` ou `packages/**` resynchronise ce secret vers le
+container.
+
+**La bascule** — deux mains, un seul push :
+
+1. Hugo remplace `DATABASE_LFD_URL` dans GitHub (par l'interface, jamais par une
+   ligne de commande) par l'URL **mutualisée** ;
+2. un commit passe `EXPECTED_DATABASE_TRANSPORT: accelerate` à `pg` en tête de
+   `.github/workflows/deploy_lfd_api.yml`, et part sur `main`.
+
+Par un **commit**, jamais par un `gh workflow run` : une révision neuve fait une
+instance neuve, qui relit ses `envVars` ; relancer la même image ne prouve rien
+(cf. « Après avoir changé une variable GitHub » : les `envVars` ne sont lues
+qu'au démarrage).
+
+**Contrôle** — le déploiement échoue de lui-même si le transport servi n'est pas
+`pg`. Puis, à la main :
+
+```bash
+curl -s https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/health
+```
+
+Attendu : `"database":"pg"` et la révision du commit poussé. Ensuite : le
+contrôle du mur (plus haut), le nœud `postgres-b2b` de l'écran santé du
+back-office (`GET /admin/ops/health`), un écran admin, une connexion client, une
+commande de test, les vitals avant / après, et **plus aucun trafic Accelerate**
+dans la console Prisma.
+
+**Retour arrière** (geste 7′) — les deux mêmes mains, à l'envers :
+
+1. Hugo recolle dans `DATABASE_LFD_URL` la valeur Accelerate gardée dans le
+   gestionnaire de mots de passe ;
+2. un commit repasse `EXPECTED_DATABASE_TRANSPORT` à `accelerate`, et part sur
+   `main`.
+
+Contrôle : `/health` publie `"database":"accelerate"`. Ce retour n'est possible
+que **tant que la clé Accelerate n'est pas révoquée** (geste 8), et au plus tard
+le 1er décembre 2026.
+
 ## Savoir ce que l'instance en ligne sait faire
 
 Un réglage absent n'est pas une erreur : c'est une **capacité éteinte**, et
@@ -352,7 +412,8 @@ pnpm --filter lfd-api exec prisma migrate deploy
 En déployé, ce message ne devrait jamais apparaître : l'étape « Migrer la base »
 précède la mise en ligne de l'image. S'il apparaît, c'est que le déploiement a
 sauté cette étape ou visé une autre base — vérifier `DATABASE_LFD_URL` avant
-toute chose.
+toute chose, et, depuis la sortie d'Accelerate, que `DATABASE_LFD_PROD_DIRECT_URL`
+(celle de la migration) désigne **la même base** que lui.
 
 ⚠️ Le contrôle ne s'alarme **que de ce qui manque**. Une base plus avancée que
 le code démarre sans broncher : c'est l'état normal d'un retour en arrière
@@ -736,11 +797,13 @@ La latence seule ne prouve rien : c'est `instances` qui donne l'emplacement.
 
 ## Symptômes fréquents
 
-| Ce qu'on voit                                                    | Cause probable                                        |
-| ---------------------------------------------------------------- | ----------------------------------------------------- |
-| `500 Container suddenly disconnected` juste après un déploiement | démarrage à froid — réessayer                         |
-| `502 upstream injoignable` par la passerelle                     | idem, ou binding absent                               |
-| `503 backend non relié`                                          | service binding non déclaré — erreur de configuration |
-| CI rouge sur MinIO / Docker Hub                                  | aléa externe — relancer                               |
-| Déploiement vert, panne à la 1ʳᵉ requête                         | connexion Prisma paresseuse : le boot ne teste rien   |
-| Front qui appelle une vieille URL                                | variable changée sans redéploiement                   |
+| Ce qu'on voit                                                    | Cause probable                                                                                                                                                                                 |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `500 Container suddenly disconnected` juste après un déploiement | démarrage à froid — réessayer                                                                                                                                                                  |
+| `502 upstream injoignable` par la passerelle                     | idem, ou binding absent                                                                                                                                                                        |
+| `503 backend non relié`                                          | service binding non déclaré — erreur de configuration                                                                                                                                          |
+| CI rouge sur MinIO / Docker Hub                                  | aléa externe — relancer                                                                                                                                                                        |
+| Déploiement vert, panne à la 1ʳᵉ requête                         | connexion Prisma paresseuse : le boot ne teste rien                                                                                                                                            |
+| Déploiement rouge « joint la base par … »                        | `DATABASE_LFD_URL` et `EXPECTED_DATABASE_TRANSPORT` ne disent pas le même transport — cf. « Sortir d'Accelerate »                                                                              |
+| `persistence.database_unavailable` en rafale, sans panne franche | après la bascule : pool `pg` saturé — `P2037` (le pooler refuse), ou 5 s sans connexion libre dans l'instance ; ce que le pooler distant renvoie à saturation n'a pas été éprouvé (2026-09-19) |
+| Front qui appelle une vieille URL                                | variable changée sans redéploiement                                                                                                                                                            |

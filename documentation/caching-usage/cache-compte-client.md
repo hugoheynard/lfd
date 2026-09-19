@@ -7,6 +7,14 @@
 > 🔴 **Ce document a été contredit avant d'être soumis, et six de ses
 > affirmations sont tombées.** Ce qu'elles ont changé est au §9 — c'est la
 > section à lire si on a connu la première version.
+>
+> **2026-09-19** — **le cache d'Accelerate disparaît**, sans remplacement :
+> Prisma retire Accelerate le 1er décembre 2026, et la production en sort
+> ([`ops/plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md)).
+> Elle y reste jusqu'à la bascule du week-end ; le code sait déjà servir le
+> pooler mutualisé, qui ne cache rien. Le **lot 4** (`cacheStrategy`) devient
+> donc sans objet, et la comparaison du §5 se tranche d'elle-même : il ne reste
+> que la mémoire. Le reste du document ne dépendait pas d'Accelerate.
 
 Périmètre : l'onglet **Comptes clients** (`/commercial/comptes-clients`), la
 **fiche** d'un compte, et les lectures serveur qui les servent. La tarification
@@ -53,7 +61,9 @@ généré (vérifié le 2026-09-09) : il vient de `@prisma/extension-accelerate`
 n'est pas installé. L'argument n'est donc pas inutilisé, il est indisponible.
 
 ⚠️ **Non vérifié** : que cette extension supporte Prisma 7.8 en `accelerateUrl`.
-Tout le lot 4 en dépend.
+Tout le lot 4 en dépend. **Sans objet depuis le 2026-09-19** : la production
+quitte Accelerate pour le pooler mutualisé, joint par l'adaptateur `pg`, et ce
+cache n'a pas de successeur (bandeau en tête).
 
 ### 2.2 Une clé par milliseconde — et le remède évident est un piège
 
@@ -334,7 +344,8 @@ qui fige.** C'est un lot de tarification, pas un lot de cache.
 ## 8. Ce que ce document n'a pas vérifié
 
 - que `@prisma/extension-accelerate` fonctionne avec Prisma 7.8 en
-  `accelerateUrl` (§2.1) ;
+  `accelerateUrl` (§2.1) — sans objet depuis la sortie d'Accelerate
+  (2026-09-19) ;
 - les **volumes réels** de lecture et d'écriture : le §6 raisonne sur un ordre
   de grandeur, pas sur une mesure ;
 - le compte exact de requêtes par relation Prisma (comportement par défaut,
