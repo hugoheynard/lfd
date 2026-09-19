@@ -79,8 +79,8 @@ export class PrismaActivityRecorder extends ActivityRecorder {
    */
   private async append(input: RecordActivityInput): Promise<void> {
     const context = currentRequestContext();
-    const actorType = context?.actor.type ?? "system";
-    const actorId = context?.actor.id ?? null;
+    const actorType = input.bySystem === true ? "system" : (context?.actor.type ?? "system");
+    const actorId = input.bySystem === true ? null : (context?.actor.id ?? null);
     const actor = await this.describeOrNothing(actorType, actorId);
     const row = buildActivityEventRow(input, {
       id: this.ids.next(),

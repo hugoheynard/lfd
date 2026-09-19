@@ -167,6 +167,19 @@ export interface RecordActivityInput {
   readonly occurredAt?: Date;
   /** Version du payload (défaut 1) — le payload évolue, on versionne. */
   readonly schemaVersion?: number;
+  /**
+   * Le fait est l'œuvre du **système**, même si une personne l'a déclenché.
+   *
+   * C'est le cas de `reco.shown` : c'est le cockpit qui recommande, et la
+   * personne qui l'ouvre n'en est pas l'auteur. Pire, la clé d'idempotence du
+   * fait ne dépend pas d'elle : seul le PREMIER lecteur d'une fenêtre de calcul
+   * était inscrit, et la ligne disait « Hugo » là où elle voulait dire « le
+   * cockpit » (Hugo, 2026-09-19, en relisant l'écran Journal).
+   *
+   * Étroit à dessein : on peut RETIRER la personne, jamais en nommer une autre
+   * — l'auteur d'un geste reste la fiche qui l'a fait.
+   */
+  readonly bySystem?: true;
 }
 
 /** Ce que le recorder dérive du contexte pour compléter une ligne de journal. */

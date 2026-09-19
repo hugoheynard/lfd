@@ -126,6 +126,15 @@ est une migration à part — **déclenchée par la mesure**.
 - **La route des 50 derniers actes** (`GET /admin/pricing/journal`) n'a aucun
   appelant : à retirer ou à brancher.
 
+### `reco.shown` est écrit par une lecture
+
+Ouvrir le cockpit (`GET /admin/cockpit`, `get-cockpit.handler.ts`) écrit un
+fait par coup affiché — une requête de lecture qui écrit, contraire au CQRS du
+dépôt (CLAUDE.md §4). Son auteur est le système depuis le 2026-09-19 (la clé ne
+dépendait pas du lecteur : seul le premier était inscrit). La place juste est
+le **recalcul** du cockpit, qui produit la fenêtre : un changement de la
+croissance, à écrire comme un choix. Relevé par Hugo en relisant l'écran.
+
 ### Petits restes, relevés en bâtissant
 
 - **Une heure limite posée sur un produit** n'apparaît pas dans son historique :

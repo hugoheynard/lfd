@@ -95,6 +95,23 @@ describe("GET /admin/cockpit", () => {
     expect(shown[0]).toMatchObject({ subjectType: "user", subjectId: "u_hot" });
   });
 
+  /**
+   * Régression : l'auteur de `reco.shown` était la personne qui ouvrait le
+   * cockpit — et seulement la PREMIÈRE de la fenêtre, la clé ne dépendant pas
+   * d'elle. La ligne lisait « Hugo » là où c'est le cockpit qui recommande
+   * (relevé par Hugo le 2026-09-19 sur l'écran Journal).
+   */
+  it("inscrit reco.shown au nom du système, pas de la personne qui ouvre le cockpit", async () => {
+    await seed("order.placed", "u_hot", daysAgo(3), { totalCents: 5000, companyId: null });
+    await recompute();
+
+    await staff().get("/admin/cockpit").expect(200);
+
+    const shown = await ctx.prisma.activityEvent.findMany({ where: { type: "reco.shown" } });
+    expect(shown).toHaveLength(1);
+    expect(shown[0]).toMatchObject({ actorType: "system", actorId: null, actorName: null });
+  });
+
   it("reste idempotent : rouvrir le cockpit dans la même fenêtre ne recompte pas reco.shown", async () => {
     await seed("order.placed", "u_hot", daysAgo(3), {
       totalCents: 5000,

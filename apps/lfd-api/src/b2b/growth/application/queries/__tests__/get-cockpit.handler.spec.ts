@@ -68,6 +68,7 @@ describe("GetCockpitHandler", () => {
       subjectId: "u1",
       idempotencyKey: "reco.shown:user:u1:2026-08-20T04:00:00.000Z",
       payload: { play: "lock_in", score: 42 },
+      bySystem: true,
     });
     expect(recorder.records[1]?.subjectType).toBe("company");
   });
