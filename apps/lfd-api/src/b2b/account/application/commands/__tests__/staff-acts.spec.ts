@@ -10,18 +10,14 @@ import { CompanyAddressRepository } from "../../../domain/ports/company-address.
 import { CompanyContactRepository } from "../../../domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
-import {
-  AddDeliveryAddressByStaffCommand,
-  GrantTermsCommand,
-  SaveBillingAddressByStaffCommand,
-} from "../admin-company-commands.js";
-import {
-  AddDeliveryAddressByStaffHandler,
-  SaveBillingAddressByStaffHandler,
-} from "../admin-address.handlers.js";
-import { GrantTermsHandler } from "../admin-company.handlers.js";
-import { RemoveContactByStaffCommand } from "../admin-contact-commands.js";
-import { RemoveContactByStaffHandler } from "../admin-contact.handlers.js";
+import { AddDeliveryAddressByStaffCommand } from "../add-delivery-address-by-staff.command.js";
+import { GrantTermsCommand } from "../grant-terms.command.js";
+import { SaveBillingAddressByStaffCommand } from "../save-billing-address-by-staff.command.js";
+import { AddDeliveryAddressByStaffHandler } from "../add-delivery-address-by-staff.handler.js";
+import { SaveBillingAddressByStaffHandler } from "../save-billing-address-by-staff.handler.js";
+import { GrantTermsHandler } from "../grant-terms.handler.js";
+import { RemoveContactByStaffCommand } from "../remove-contact-by-staff.command.js";
+import { RemoveContactByStaffHandler } from "../remove-contact-by-staff.handler.js";
 import { ChangeCompanyStatusCommand } from "../change-company-status.command.js";
 import { ChangeCompanyStatusHandler } from "../change-company-status.handler.js";
 

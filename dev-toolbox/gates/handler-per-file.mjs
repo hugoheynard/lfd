@@ -72,10 +72,6 @@ const DECORATOR = /^[^\S\n]*@(?:CommandHandler|QueryHandler|EventsHandler)\s*\(/
  * En baisse seulement.
  */
 const KNOWN_MULTI = new Set([
-  "b2b/account/application/commands/admin-address.handlers.ts",
-  "b2b/account/application/commands/admin-company.handlers.ts",
-  "b2b/account/application/commands/admin-contact.handlers.ts",
-  "b2b/account/application/commands/certify-kbis.handler.ts",
   "b2b/catalog/application/commands/catalog-decision.handlers.ts",
   "b2b/delivery-zones/application/delivery-zone.handlers.ts",
   "b2b/order-cutoffs/application/order-cutoff.handlers.ts",

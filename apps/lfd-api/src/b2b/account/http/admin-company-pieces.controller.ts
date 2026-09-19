@@ -39,23 +39,19 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ChangeCompanyStatusCommand } from "../application/commands/change-company-status.command.js";
 import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
-import {
-  CertifyKbisCommand,
-  RevokeKbisCertificationCommand,
-} from "../application/commands/certify-kbis.command.js";
+import { CertifyKbisCommand } from "../application/commands/certify-kbis.command.js";
+import { RevokeKbisCertificationCommand } from "../application/commands/revoke-kbis-certification.command.js";
 import { DownloadKbisForStaffQuery } from "../application/queries/download-kbis-for-staff.query.js";
 import { type KbisDownload } from "../application/queries/download-kbis.query.js";
-import {
-  AddDeliveryAddressByStaffCommand,
-  SaveBillingAddressByStaffCommand,
-  GrantTermsCommand,
-  PreferFulfillmentByStaffCommand,
-  RemoveDeliveryAddressByStaffCommand,
-  SetDefaultDeliveryByStaffCommand,
-  UpdateDeliveryAddressByStaffCommand,
-  UpdateIdentityByStaffCommand,
-  UploadKbisByStaffCommand,
-} from "../application/commands/admin-company-commands.js";
+import { AddDeliveryAddressByStaffCommand } from "../application/commands/add-delivery-address-by-staff.command.js";
+import { SaveBillingAddressByStaffCommand } from "../application/commands/save-billing-address-by-staff.command.js";
+import { GrantTermsCommand } from "../application/commands/grant-terms.command.js";
+import { PreferFulfillmentByStaffCommand } from "../application/commands/prefer-fulfillment-by-staff.command.js";
+import { RemoveDeliveryAddressByStaffCommand } from "../application/commands/remove-delivery-address-by-staff.command.js";
+import { SetDefaultDeliveryByStaffCommand } from "../application/commands/set-default-delivery-by-staff.command.js";
+import { UpdateDeliveryAddressByStaffCommand } from "../application/commands/update-delivery-address-by-staff.command.js";
+import { UpdateIdentityByStaffCommand } from "../application/commands/update-identity-by-staff.command.js";
+import { UploadKbisByStaffCommand } from "../application/commands/upload-kbis-by-staff.command.js";
 import { InvalidKbisFileError } from "../domain/errors/account-errors.js";
 
 /** Backstop DoS du multipart, aligné sur le dépôt client (le domaine tranche à 10 Mo). */

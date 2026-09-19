@@ -1,0 +1,15 @@
+/**
+ * Mutation de **contacts par le staff** (Porte B — « le commercial complète à
+ * la place du client »).
+ *
+ * Jumelle assumée de la commande cliente, moins l'`actorUserId` : le staff
+ * n'est membre d'aucune société, sa porte est le guard admin. Les fusionner
+ * demanderait un acteur nullable et un `if` dans chaque handler — c'est-à-dire
+ * un mur qui se désarme, exactement ce qu'un mur ne doit pas savoir faire.
+ */
+export class RemoveContactByStaffCommand {
+  constructor(
+    readonly companyId: string,
+    readonly contactId: string,
+  ) {}
+}

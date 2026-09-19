@@ -3,12 +3,10 @@ import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } fr
 import { CommandBus } from "@nestjs/cqrs";
 
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  AddContactByStaffCommand,
-  RemoveContactByStaffCommand,
-  UpdateContactByStaffCommand,
-  UpdatePrimaryContactByStaffCommand,
-} from "../application/commands/admin-contact-commands.js";
+import { AddContactByStaffCommand } from "../application/commands/add-contact-by-staff.command.js";
+import { RemoveContactByStaffCommand } from "../application/commands/remove-contact-by-staff.command.js";
+import { UpdateContactByStaffCommand } from "../application/commands/update-contact-by-staff.command.js";
+import { UpdatePrimaryContactByStaffCommand } from "../application/commands/update-primary-contact-by-staff.command.js";
 import type { CreatedContactResponse } from "./company-contacts.controller.js";
 import {
   additionalContactPayload,

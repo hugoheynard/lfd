@@ -25,19 +25,15 @@ import { CompanyDeliveryProcedureController } from "./http/company-delivery-proc
 
 import { ActivateCompanyByStaffHandler } from "./application/commands/activate-company.handler.js";
 import { AddCompanyContactHandler } from "./application/commands/add-company-contact.handler.js";
-import {
-  AddDeliveryAddressByStaffHandler,
-  SaveBillingAddressByStaffHandler,
-  PreferFulfillmentByStaffHandler,
-  RemoveDeliveryAddressByStaffHandler,
-  SetDefaultDeliveryByStaffHandler,
-  UpdateDeliveryAddressByStaffHandler,
-} from "./application/commands/admin-address.handlers.js";
-import {
-  GrantTermsHandler,
-  UpdateIdentityByStaffHandler,
-  UploadKbisByStaffHandler,
-} from "./application/commands/admin-company.handlers.js";
+import { AddDeliveryAddressByStaffHandler } from "./application/commands/add-delivery-address-by-staff.handler.js";
+import { SaveBillingAddressByStaffHandler } from "./application/commands/save-billing-address-by-staff.handler.js";
+import { PreferFulfillmentByStaffHandler } from "./application/commands/prefer-fulfillment-by-staff.handler.js";
+import { RemoveDeliveryAddressByStaffHandler } from "./application/commands/remove-delivery-address-by-staff.handler.js";
+import { SetDefaultDeliveryByStaffHandler } from "./application/commands/set-default-delivery-by-staff.handler.js";
+import { UpdateDeliveryAddressByStaffHandler } from "./application/commands/update-delivery-address-by-staff.handler.js";
+import { GrantTermsHandler } from "./application/commands/grant-terms.handler.js";
+import { UpdateIdentityByStaffHandler } from "./application/commands/update-identity-by-staff.handler.js";
+import { UploadKbisByStaffHandler } from "./application/commands/upload-kbis-by-staff.handler.js";
 import { PreferFulfillmentHandler } from "./application/commands/prefer-fulfillment.handler.js";
 import { AddDeliveryAddressHandler } from "./application/commands/add-delivery-address.handler.js";
 import { AttachAccountHolderHandler } from "./application/commands/attach-account-holder.handler.js";
@@ -86,12 +82,10 @@ import {
 import { CompanyContactBook } from "./application/services/company-contact-book.service.js";
 import { ListCompanyMembersHandler } from "./application/queries/list-company-members.handler.js";
 import { InviteCompanyMemberHandler } from "./application/commands/invite-company-member.handler.js";
-import {
-  AddContactByStaffHandler,
-  RemoveContactByStaffHandler,
-  UpdateContactByStaffHandler,
-  UpdatePrimaryContactByStaffHandler,
-} from "./application/commands/admin-contact.handlers.js";
+import { AddContactByStaffHandler } from "./application/commands/add-contact-by-staff.handler.js";
+import { RemoveContactByStaffHandler } from "./application/commands/remove-contact-by-staff.handler.js";
+import { UpdateContactByStaffHandler } from "./application/commands/update-contact-by-staff.handler.js";
+import { UpdatePrimaryContactByStaffHandler } from "./application/commands/update-primary-contact-by-staff.handler.js";
 import { EstablishmentDirectory } from "./domain/ports/establishment-directory.js";
 import { OnCompanyDeclaredResolveNaf } from "./application/handlers/on-company-declared-resolve-naf.handler.js";
 import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/recherche-entreprises-establishment.directory.js";
@@ -116,10 +110,8 @@ import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-
 import { PrismaCompanyRepository } from "./infrastructure/prisma-company.repository.js";
 import { StaffBlockDirectory } from "./infrastructure/staff-block-directory.js";
 import { StaffDirectory } from "./domain/ports/staff-directory.js";
-import {
-  CertifyKbisHandler,
-  RevokeKbisCertificationHandler,
-} from "./application/commands/certify-kbis.handler.js";
+import { CertifyKbisHandler } from "./application/commands/certify-kbis.handler.js";
+import { RevokeKbisCertificationHandler } from "./application/commands/revoke-kbis-certification.handler.js";
 import { PrismaMembershipReader } from "./infrastructure/prisma-membership.reader.js";
 import { PrismaNavPreferencesRepository } from "./infrastructure/prisma-nav-preferences.repository.js";
 import { PrismaUserProfileRepository } from "./infrastructure/prisma-user-profile.repository.js";
