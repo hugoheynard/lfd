@@ -4,7 +4,7 @@
 > toute phrase du journal devrait être humainement compréhensible ». Il prend
 > la section « Les phrases » de [`todo-journal-activite.md`](todo-journal-activite.md).
 >
-> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lot A en cours.** Le fonctionnement actuel du journal est
+> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lot A bâti, lot B à venir.** Le fonctionnement actuel du journal est
 > dans [`architecture-journalisation.md`](architecture-journalisation.md).
 
 ## 0. Ce qu'on veut, en une phrase par exigence
@@ -130,7 +130,16 @@ ce qui est vrai des deux.
 
 ## 3. Les lots
 
-### Lot A — Le catalogue et sa vérification (API + contrats)
+### Lot A — ~~Le catalogue et sa vérification (API + contrats)~~ — fait le 2026-09-19 (`9c3c2d35`)
+
+> 190 types (186 actifs, 4 retirés), par famille : référentiel-catalogue
+> 30/1, référentiel-réglages 32/0, commerce 17/0, comptes-paniers 38/2,
+> commandes-production 23/0, tarification 18/0, comptabilité 16/0, équipe
+> 12/1. Sept types ne sont écrits par **aucun** test (`variant.aligned`,
+> `appointment.honored`, `appointment.no_show`, `delivery_zone.removed`,
+> `order_cutoff.updated`, `volume_commitment.closed`,
+> `legal_entity.pre_notification_changed`) : leurs schémas viennent de la
+> lecture du code. Reste : le déployer.
 
 - `JOURNAL_FACTS` dans `@lfd/contracts`, rempli **par le code** : chaque
   classe d'événement et chaque constante référence son entrée.
@@ -145,6 +154,21 @@ ce qui est vrai des deux.
 C'est le lot qui rend l'inventaire exact. Il ne change rien à l'écran.
 
 ### Lot B — Les noms figés (API)
+
+> **Relevé par le lot A, à traiter ici** :
+>
+> - **des e-mails en clair** dans `user.registered`, `lead.captured` et
+>   `feature_access.exemption_*` — contraire à la règle « jamais de
+>   coordonnées » ;
+> - des clés ambiguës : `delivery_zone.postalPrefixes` est un nombre ;
+>   `appointment.honored/no_show.reason` recopie le motif d'annulation ;
+>   `point_of_sale.updated.contexts` est une chaîne là où la création a un
+>   tableau ; `ingredient.created.appellation` (un code) contre
+>   `updated.appellationId` (un id), même écart pour `allergen_entry` ;
+> - le `summary` tarifaire fige des ids bruts (« famille cat_… »,
+>   l'audience) ;
+> - `feature_access.*` et `company_mercuriale.*` n'ont pas de module à
+>   l'écran.
 
 - D5 sur chaque fait qui ne cite que des ids (liste produite par le lot A :
   les schémas disent quelles clés sont des ids nus).
