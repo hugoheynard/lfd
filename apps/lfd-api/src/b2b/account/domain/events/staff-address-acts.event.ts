@@ -1,6 +1,7 @@
 import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
 
 import { ACCOUNT_FACTS } from "./account-facts.js";
+import { placeOf } from "./address-place.js";
 import { CompanyStaffAct } from "./staff-acts.event.js";
 
 /**
@@ -12,13 +13,8 @@ import { CompanyStaffAct } from "./staff-acts.event.js";
  * quand — pas à l'état courant, qui ne dit rien de la veille.
  *
  * La charge porte **où**, jamais toute l'adresse : ville et code postal
- * suffisent à reconnaître le lieu dans un historique, et recopier une fiche
- * entière ferait du journal une seconde base — désynchronisée par construction.
+ * (`placeOf`, partagé avec les faits du client depuis le 2026-09-19).
  */
-function placeOf(payload: BillingAddressPayload): Record<string, unknown> {
-  return { ville: payload.ville, codePostal: payload.codePostal };
-}
-
 export class BillingAddressSavedByStaffEvent extends CompanyStaffAct {
   constructor(
     companyId: string,

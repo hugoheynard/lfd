@@ -13,8 +13,8 @@
 >
 > État : 🚧 **lots 2, 3 et 5 bâtis le 2026-09-19** (le 2 en premier, à la
 > demande de Hugo), à déployer après la sortie d'Accelerate. **Lot 1 bâti le
-> 2026-09-19** (tranches a à d), sauf la forme d'une adresse au journal, à
-> trancher par Hugo. Lot 4 : attend la décision de la permission.
+> 2026-09-19** (tranches a à d) ; la forme d'une adresse au journal a été
+> tranchée le 2026-09-19. Lot 4 : attend la décision de la permission.
 > **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§8) qui a cassé l'inventaire, la porte étendue,
 > la colonne de recherche et le déménagement du code.
@@ -92,8 +92,8 @@ membres.
 > récurrents et les autres gestes du client sur son compte~~ — **fait le
 > 2026-09-19** (`d62134a8`) ; les faits écrits par un abonné (création d'un
 > panier, déclaration, support) restent best-effort, renvoyés au TODO ; reste :
-> le déployer, et la forme d'une adresse au journal (ville et code postal, à
-> trancher par Hugo) ; ~~(d) la journée de
+> le déployer ; la forme d'une adresse au journal (ville et code postal) a été
+> tranchée le 2026-09-19 ; ~~(d) la journée de
 > production~~ — **fait le 2026-09-19** (`c711b85f`), avec le contenant d'un
 > produit sur la fiche et un module « production » à l'écran ; reste : le
 > déployer.
@@ -240,8 +240,8 @@ ici ne suffisait pas.
    la règle « le premier n'engage que lui » de `journal-tracked.mjs` est
    réécrite en conséquence. **Jamais leurs coordonnées** : un fait dit **quels
    champs** ont changé (« adresse e-mail », « téléphone »), pas leurs valeurs ;
-   un RIB par ses quatre derniers chiffres ; une adresse par son libellé ; un
-   membre par son id. Le changement d'adresse de connexion part chez Auth0
+   un RIB par ses quatre derniers chiffres ; une adresse par sa ville et son
+   code postal, comme le staff (Hugo, 2026-09-19) ; un membre par son id. Le changement d'adresse de connexion part chez Auth0
    **avant** la transaction : ce geste est déclaré `@hors-transaction` avec sa
    raison, et son fait s'écrit après la réussite d'Auth0. Ces gestes
    **élargissent le lot 1**.

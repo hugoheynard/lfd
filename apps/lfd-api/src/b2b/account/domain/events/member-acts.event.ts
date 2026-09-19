@@ -1,7 +1,8 @@
-import type { DeferredTerm } from "@lfd/contracts";
+import type { BillingAddressPayload, DeferredTerm, DeliveryAddressPayload } from "@lfd/contracts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
+import { placeOf } from "./address-place.js";
 import type { DeliveryProcedureStaffAction } from "./staff-address-acts.event.js";
 
 /**
@@ -18,10 +19,13 @@ import type { DeliveryProcedureStaffAction } from "./staff-address-acts.event.js
  * l'auteur de la ligne — l'id `users` du client, ou la fiche staff — suffit à
  * les distinguer.
  *
- * **Jamais de coordonnées** : une adresse se désigne par son identifiant et son
- * libellé, un contact par son identifiant. C'est plus strict que les faits du
- * staff sur les adresses, qui portent ville et code postal ; la décision du
- * 2026-09-19 vise nommément les gestes du client.
+ * **Jamais de coordonnées de personne** : un contact se désigne par son
+ * identifiant ; une adresse porte **la charge du staff pour le même type** —
+ * ville et code postal (`placeOf`), plus l'identifiant pour une adresse de
+ * livraison, jamais le numéro ni la rue. Aligné sur le staff le 2026-09-19,
+ * décision de Hugo : ville et code postal reconnaissent le lieu sans être une
+ * coordonnée de personne. Un type, une forme : le libellé, que le staff
+ * n'écrit pas, n'y figure plus.
  */
 export abstract class CompanyMemberAct implements JournaledEvent {
   protected constructor(readonly companyId: string) {}
@@ -43,11 +47,11 @@ export abstract class CompanyMemberAct implements JournaledEvent {
   }
 }
 
-/** Le client a écrit son adresse de facturation — désignée par son libellé. */
+/** Le client a écrit son adresse de facturation — la charge du fait staff jumeau. */
 export class BillingAddressSavedByMemberEvent extends CompanyMemberAct {
   constructor(
     companyId: string,
-    readonly label: string,
+    readonly payload: BillingAddressPayload,
   ) {
     super(companyId);
   }
@@ -55,36 +59,36 @@ export class BillingAddressSavedByMemberEvent extends CompanyMemberAct {
     return ACCOUNT_FACTS.billingAddressSaved;
   }
   protected override details(): Record<string, unknown> {
-    return { label: this.label };
+    return placeOf(this.payload);
   }
 }
 
-/** Une adresse de livraison désignée par son identifiant et son libellé. */
-abstract class DeliveryAddressLabelledAct extends CompanyMemberAct {
+/** Une adresse de livraison désignée par son identifiant, sa ville et son code postal. */
+abstract class DeliveryAddressPlacedAct extends CompanyMemberAct {
   protected constructor(
     companyId: string,
     readonly addressId: string,
-    readonly label: string,
+    readonly payload: DeliveryAddressPayload,
   ) {
     super(companyId);
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId, label: this.label };
+    return { addressId: this.addressId, ...placeOf(this.payload) };
   }
 }
 
-export class DeliveryAddressAddedByMemberEvent extends DeliveryAddressLabelledAct {
-  constructor(companyId: string, addressId: string, label: string) {
-    super(companyId, addressId, label);
+export class DeliveryAddressAddedByMemberEvent extends DeliveryAddressPlacedAct {
+  constructor(companyId: string, addressId: string, payload: DeliveryAddressPayload) {
+    super(companyId, addressId, payload);
   }
   protected type(): string {
     return ACCOUNT_FACTS.deliveryAddressAdded;
   }
 }
 
-export class DeliveryAddressUpdatedByMemberEvent extends DeliveryAddressLabelledAct {
-  constructor(companyId: string, addressId: string, label: string) {
-    super(companyId, addressId, label);
+export class DeliveryAddressUpdatedByMemberEvent extends DeliveryAddressPlacedAct {
+  constructor(companyId: string, addressId: string, payload: DeliveryAddressPayload) {
+    super(companyId, addressId, payload);
   }
   protected type(): string {
     return ACCOUNT_FACTS.deliveryAddressUpdated;

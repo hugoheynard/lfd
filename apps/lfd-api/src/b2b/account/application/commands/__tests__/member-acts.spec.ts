@@ -51,7 +51,8 @@ import {
  * **Ce que le client inscrit quand il touche au compte de sa société** (plan
  * `documentation/journalisation/plan-journal-d-activite.md`, lot 1, tranche
  * (c), 2026-09-19) : le même nom de fait que le geste staff jumeau, et jamais
- * une coordonnée — une adresse par son id et son libellé, un contact par son id.
+ * une coordonnée de personne — une adresse par la charge du staff (id, ville,
+ * code postal ; alignée le 2026-09-19, décision de Hugo), un contact par son id.
  */
 function build() {
   const events = new RecordingPublisher();
@@ -65,16 +66,19 @@ function build() {
   return { events, uow, member, addresses, companies, contacts, book, clock };
 }
 
-/** Aucune coordonnée semée n'apparaît dans les faits écrits. */
+/** Aucune coordonnée semée — ni la rue et son numéro, ni l'e-mail, ni le téléphone — n'apparaît dans les faits écrits. */
 function expectNoContactDetails(events: RecordingPublisher): void {
   const written = JSON.stringify(events.traced.map((event) => event.journalFact()));
-  for (const secret of [STREET, EMAIL, PHONE, BILLING.ville, BILLING.codePostal]) {
+  for (const secret of [STREET, EMAIL, PHONE]) {
     expect(written).not.toContain(secret);
   }
 }
 
+/** Ce que le journal garde d'une adresse semée : où, pas à quel numéro de quelle rue. */
+const PLACE = { ville: BILLING.ville, codePostal: BILLING.codePostal };
+
 describe("les adresses, par le client", () => {
-  it("facturation, ajout, correction, défaut, archivage : un fait chacun, sans l'adresse", async () => {
+  it("facturation, ajout, correction, défaut, archivage : un fait chacun, la ville et le code postal sans la rue", async () => {
     const { events, uow, member, addresses, companies, clock } = build();
 
     await new SaveBillingAddressHandler(member, addresses, events, uow).execute(
@@ -104,9 +108,9 @@ describe("les adresses, par le client", () => {
     ).execute(new RemoveDeliveryAddressCommand("u1", "c1", "a1"));
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
-      fact("company.billing_address_saved", { label: "Siège" }),
-      fact("company.delivery_address_added", { addressId: added, label: "Boutique" }),
-      fact("company.delivery_address_updated", { addressId: added, label: "Boutique" }),
+      fact("company.billing_address_saved", PLACE),
+      fact("company.delivery_address_added", { addressId: added, ...PLACE }),
+      fact("company.delivery_address_updated", { addressId: added, ...PLACE }),
       fact("company.default_delivery_set", { addressId: added }),
       fact("company.delivery_address_removed", { addressId: "a1" }),
     ]);

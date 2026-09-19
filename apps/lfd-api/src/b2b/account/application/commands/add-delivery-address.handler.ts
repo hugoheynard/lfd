@@ -46,7 +46,7 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
-        new DeliveryAddressAddedByMemberEvent(command.companyId, addressId, command.payload.label),
+        new DeliveryAddressAddedByMemberEvent(command.companyId, addressId, command.payload),
       );
     });
 

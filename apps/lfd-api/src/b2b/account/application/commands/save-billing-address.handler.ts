@@ -32,7 +32,7 @@ export class SaveBillingAddressHandler implements ICommandHandler<SaveBillingAdd
     await this.uow.run(async () => {
       await this.addresses.saveBilling(command.companyId, command.payload);
       await this.events.publishTraced(
-        new BillingAddressSavedByMemberEvent(command.companyId, command.payload.label),
+        new BillingAddressSavedByMemberEvent(command.companyId, command.payload),
       );
     });
     // Pièce d'activation « facturation » franchie (journal idempotent par étape).

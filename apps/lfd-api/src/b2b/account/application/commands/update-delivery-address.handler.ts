@@ -43,7 +43,7 @@ export class UpdateDeliveryAddressHandler implements ICommandHandler<
         new DeliveryAddressUpdatedByMemberEvent(
           command.companyId,
           command.addressId,
-          command.payload.label,
+          command.payload,
         ),
       );
     });

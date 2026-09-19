@@ -6,7 +6,8 @@
  *
  * Ce que seule cette suite prouve : le fait est écrit dans la VRAIE table, sous
  * le VRAI auteur — l'id `users` du client, ou la fiche staff, jamais un `sub` —,
- * aucune ligne du journal ne porte l'e-mail, le téléphone ni la rue semés, et
+ * aucune ligne du journal ne porte l'e-mail, le téléphone ni la rue semés — une
+ * adresse y est sa ville et son code postal, comme chez le staff —, et
  * un journal qui refuse d'écrire annule le geste. La panne est posée comme dans
  * `order-waivers-journal` : une contrainte SQL qui refuse le fait attendu.
  *
@@ -154,7 +155,7 @@ async function addAddress(label: string): Promise<string> {
 }
 
 describe("le client, sur le compte de sa société", () => {
-  it("ses adresses : un fait par geste, sous son id `users`, par id et libellé", async () => {
+  it("ses adresses : un fait par geste, sous son id `users`, par id, ville et code postal", async () => {
     const addressId = await addAddress("Boutique");
     await owner()
       .patch(`/companies/${companyId}/delivery-addresses/${addressId}`)
@@ -171,10 +172,10 @@ describe("le client, sur le compte de sa société", () => {
       actorId: ownerId,
     };
     expect(await facts("company.delivery_address_added")).toEqual([
-      { ...byClient, payload: { addressId, label: "Boutique" } },
+      { ...byClient, payload: { addressId, ville: "Paris", codePostal: "75011" } },
     ]);
     expect(await facts("company.delivery_address_updated")).toEqual([
-      { ...byClient, payload: { addressId, label: "Atelier" } },
+      { ...byClient, payload: { addressId, ville: "Paris", codePostal: "75011" } },
     ]);
     expect(await facts("company.default_delivery_set")).toEqual([
       { ...byClient, payload: { addressId } },
@@ -238,7 +239,7 @@ describe("le client, sur le compte de sa société", () => {
     ]);
   });
 
-  it("aucune ligne du journal ne porte l'e-mail, le téléphone, la rue ni le sub", async () => {
+  it("aucune ligne du journal ne porte l'e-mail, le téléphone, la rue ni le sub — la ville et le code postal, si", async () => {
     await addAddress("Boutique");
     await owner()
       .patch(`/companies/${companyId}/billing-address`)
@@ -264,7 +265,11 @@ describe("le client, sur le compte de sa société", () => {
 
     const text = await journalText();
     expect(text).toContain("company.billing_address_saved");
-    for (const secret of [EMAIL, NEW_EMAIL, PHONE, STREET, OWNER]) {
+    expect((await facts("company.billing_address_saved"))[0]?.payload).toEqual({
+      ville: "Paris",
+      codePostal: "75011",
+    });
+    for (const secret of [EMAIL, NEW_EMAIL, PHONE, STREET, "Roquette", OWNER]) {
       expect(text).not.toContain(secret);
     }
   });
