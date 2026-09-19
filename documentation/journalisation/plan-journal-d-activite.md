@@ -12,8 +12,9 @@
 > TODO n'en garde qu'une ligne de renvoi, et l'efface quand le lot est livré.
 >
 > État : 🚧 **lots 2, 3 et 5 bâtis le 2026-09-19** (le 2 en premier, à la
-> demande de Hugo), à déployer après la sortie d'Accelerate. **Lot 1 en
-> cours.** Lot 4 : attend la décision de la permission.
+> demande de Hugo), à déployer après la sortie d'Accelerate. **Lot 1 bâti le
+> 2026-09-19** (tranches a à d), sauf la forme d'une adresse au journal, à
+> trancher par Hugo. Lot 4 : attend la décision de la permission.
 > **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§8) qui a cassé l'inventaire, la porte étendue,
 > la colonne de recherche et le déménagement du code.
@@ -63,7 +64,7 @@ staff** qui touchent ce qui est vendu, facturé ou produit :
 | ~~accorder, retirer une **dérogation d'heure limite**~~ — fait (`bfed73cc`)     | `b2b/order-waivers/application/order-cutoff-waiver.handlers.ts`                                                                |
 | ~~changer le **RIB** d'une société~~ — fait (`bfed73cc`)                        | `b2b/payments/`, `set-company-bank-account`                                                                                    |
 | ~~les **décisions de catalogue**~~ — fait (`8fd41f16`)                          | `b2b/catalog/application/commands/catalog-decision.handlers.ts`                                                                |
-| **clore**, **reprendre** une journée de production                              | `production/application/commands/`                                                                                             |
+| ~~**clore**, **reprendre** une journée de production~~ — fait (`c711b85f`)      | `production/application/commands/`                                                                                             |
 | cocher, décocher une ligne **fabriquée** ou **emballée** ; compter les **bacs** | `production/application/commands/` — le JSDoc de `step-packing-containers` dit déjà « qui a appuyé se lirait dans le journal » |
 
 Et **parmi les gestes du client sur son propre compte** — hors journal par une
@@ -92,8 +93,10 @@ membres.
 > 2026-09-19** (`d62134a8`) ; les faits écrits par un abonné (création d'un
 > panier, déclaration, support) restent best-effort, renvoyés au TODO ; reste :
 > le déployer, et la forme d'une adresse au journal (ville et code postal, à
-> trancher par Hugo) ; (d) la journée de
-> production.
+> trancher par Hugo) ; ~~(d) la journée de
+> production~~ — **fait le 2026-09-19** (`c711b85f`), avec le contenant d'un
+> produit sur la fiche et un module « production » à l'écran ; reste : le
+> déployer.
 
 - **Journaliser** les gestes du tableau ci-dessus, dans la transaction du
   geste (`Journal.append` ou `publishTraced`, sous `UnitOfWork`) : un fait par
