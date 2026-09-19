@@ -1,4 +1,20 @@
-<fold-panel-header [title]="heading()" subtitle="Identité et rôle dans le back-office." />
+<fold-panel-header [title]="heading()" subtitle="Identité et rôle dans le back-office.">
+  @if (activityActorId(); as actorId) {
+    <a
+      actions
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      size="sm"
+      icon="timeline"
+      routerLink="/admin/journal"
+      [queryParams]="{ actorId }"
+      (click)="leave()"
+    >
+      Voir son activité
+    </a>
+  }
+</fold-panel-header>
 
 <div class="body">
   <!-- Trois blocs, dans l'ordre où on y pense : QUI, puis CE QU'ELLE PEUT, puis

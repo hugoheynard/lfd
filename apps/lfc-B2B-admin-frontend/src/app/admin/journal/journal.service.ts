@@ -10,6 +10,9 @@ export interface JournalFilters {
   readonly module?: ActivityModule;
   readonly type?: string;
   readonly actorId?: string;
+  /** Ce dont on veut l'histoire — un produit, une société… — posé par une fiche. */
+  readonly subjectType?: string;
+  readonly subjectId?: string;
   readonly since?: string;
   /**
    * Recherche libre — nom de l'auteur, texte de la charge, identifiant du

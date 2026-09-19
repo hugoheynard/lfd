@@ -29,6 +29,34 @@
     <button foldButton emphasis="soft" size="sm" [disabled]="loading()" (click)="reload()">
       <fold-icon name="reload" [size]="14" /> Rafraîchir
     </button>
+    <!-- Les filtres venus de l'adresse qui n'ont pas de contrôle ici : sans
+         leur pastille, l'écran filtrerait sans le dire. Un clic les retire. -->
+    @if (actorChip(); as chip) {
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        iconTrailing="close"
+        [attr.aria-label]="'Retirer le filtre « ' + chip + ' »'"
+        (click)="clearActor()"
+      >
+        {{ chip }}
+      </button>
+    }
+    @if (subjectChip(); as chip) {
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        iconTrailing="close"
+        [attr.aria-label]="'Retirer le filtre « ' + chip + ' »'"
+        (click)="clearSubject()"
+      >
+        {{ chip }}
+      </button>
+    }
   </div>
 
   @if (loading() && lines().length === 0) {
@@ -40,14 +68,14 @@
   } @else if (lines().length === 0 && query()) {
     <fold-empty-state
       [title]="'Aucun fait ne correspond à « ' + query() + ' »'"
-      subtitle="Vérifiez l’orthographe, élargissez la période, ou retirez le filtre de module."
+      subtitle="Vérifiez l’orthographe, élargissez la période, ou retirez un filtre."
     >
       <fold-icon empty-icon name="search" [size]="40" />
     </fold-empty-state>
   } @else if (lines().length === 0) {
     <fold-empty-state
       title="Rien sur cette période"
-      subtitle="Élargissez la fenêtre, ou retirez le filtre de module."
+      subtitle="Élargissez la fenêtre, ou retirez un filtre."
     >
       <fold-icon empty-icon name="timeline" [size]="40" />
     </fold-empty-state>

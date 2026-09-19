@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import type { ActivityModule, ActivityPageView } from '@lfd/contracts';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import type { ActivityPageView } from '@lfd/contracts';
 
 import {
   FoldBadgeComponent,
@@ -18,6 +20,14 @@ import {
 
 import { JournalService, type JournalLine } from './journal.service';
 import { MODULE_LABELS, toLine } from './journal-line';
+import {
+  isModule,
+  NO_URL_FILTERS,
+  readUrlFilters,
+  sameUrlFilters,
+  toQueryParams,
+  type JournalUrlFilters,
+} from './journal-url';
 
 /**
  * Les modules qui écrivent au journal, plus « tous ». Dérivés des libellés du
@@ -71,6 +81,12 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
  * Un fait arrivé depuis n'apparaît donc qu'en revenant à la page 1, ou en
  * changeant de filtre ou de recherche : chacun de ces gestes ouvre une vue
  * neuve. L'écran le dit sous la liste dès qu'on a quitté la page 1.
+ *
+ * **Les filtres d'identifiant vivent dans l'adresse** (`module`, `actorId`,
+ * `subjectType`, `subjectId` — cf. `journal-url.ts`) : une fiche y mène déjà
+ * filtrée, et l'adresse suit chaque changement sans empiler l'historique. Un
+ * filtre sans contrôle à l'écran (l'auteur, le sujet) s'y montre en pastille
+ * qu'on retire — sans elle, l'écran filtrerait sans le dire.
  */
 @Component({
   selector: 'app-journal-page',
@@ -92,11 +108,33 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
 })
 export class JournalPage {
   private readonly journal = inject(JournalService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly modules = MODULES;
   protected readonly windows = WINDOWS;
 
-  protected readonly module = signal('');
+  /** Les filtres que porte l'adresse. */
+  private readonly urlFilters = signal<JournalUrlFilters>(NO_URL_FILTERS);
+  protected readonly module = computed(() => this.urlFilters().module);
+  /**
+   * Le nom de l'auteur filtré, lu sur un fait qu'il a signé : l'adresse ne
+   * porte que son identifiant. `null` tant qu'aucun fait ne l'a nommé.
+   */
+  private readonly actorName = signal<string | null>(null);
+
+  /** « Auteur : Hugo Heynard » — `null` sans filtre d'auteur. */
+  protected readonly actorChip = computed(() => {
+    const actorId = this.urlFilters().actorId;
+    return actorId === '' ? null : `Auteur : ${this.actorName() ?? actorId}`;
+  });
+
+  /** « Sujet : product · prd_42 » — `null` sans filtre de sujet. */
+  protected readonly subjectChip = computed(() => {
+    const { subjectType, subjectId } = this.urlFilters();
+    const parts = [subjectType, subjectId].filter((part) => part !== '');
+    return parts.length === 0 ? null : `Sujet : ${parts.join(' · ')}`;
+  });
   protected readonly windowDays = signal('7');
   /** Le terme effectivement envoyé — vide tant qu'il fait moins de deux caractères. */
   protected readonly query = signal('');
@@ -125,13 +163,39 @@ export class JournalPage {
   private requestSeq = 0;
 
   constructor() {
-    void this.reload();
+    // La première émission ouvre l'écran ; les suivantes ne relisent que si
+    // l'adresse dit autre chose que l'écran — un clic sur l'entrée du menu
+    // depuis un journal filtré, par exemple. Celles que l'écran provoque
+    // lui-même disent la même chose, et ne relisent pas une seconde fois.
+    let opened = false;
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const filters = readUrlFilters(params);
+      if (opened && sameUrlFilters(filters, this.urlFilters())) {
+        return;
+      }
+      opened = true;
+      this.applyUrlFilters(filters);
+      if (params.has('q')) {
+        // Une adresse collée qui porterait une recherche : elle n'est pas lue,
+        // et elle ne reste pas dans la barre.
+        this.syncUrl();
+      }
+      void this.reload();
+    });
   }
 
   /** Un filtre change → vue neuve, page 1 sans ancre : l'ancienne ne répondait pas à ces filtres. */
   protected onModule(value: string | null): void {
-    this.module.set(value ?? '');
-    void this.reload();
+    const module = value ?? '';
+    this.setUrlFilters({ module: isModule(module) ? module : '' });
+  }
+
+  protected clearActor(): void {
+    this.setUrlFilters({ actorId: '' });
+  }
+
+  protected clearSubject(): void {
+    this.setUrlFilters({ subjectType: '', subjectId: '' });
   }
 
   protected onWindow(value: string | null): void {
@@ -178,11 +242,14 @@ export class JournalPage {
       // Des variables locales, et non les appels répétés dans le ternaire :
       // sous `exactOptionalPropertyTypes`, TS ne narrow pas à travers un second
       // appel, et la clé repart avec un `| undefined` que la cible refuse.
-      const module = this.moduleFilter();
+      const { module, actorId, subjectType, subjectId } = this.urlFilters();
       const since = this.sinceFilter();
       const q = this.query();
       const view = await this.journal.page({
-        ...(module === undefined ? {} : { module }),
+        ...(module === '' ? {} : { module }),
+        ...(actorId === '' ? {} : { actorId }),
+        ...(subjectType === '' ? {} : { subjectType }),
+        ...(subjectId === '' ? {} : { subjectId }),
         ...(since === undefined ? {} : { since }),
         ...(q === '' ? {} : { q }),
         page,
@@ -213,6 +280,10 @@ export class JournalPage {
     this.page.set(view.page ?? requested);
     this.total.set(view.total);
     this.asOf = view.asOf;
+    if (this.urlFilters().actorId !== '' && this.actorName() === null) {
+      // Tous les faits rendus sont les siens : le premier qui le nomme suffit.
+      this.actorName.set(view.events.find((event) => event.actorName !== null)?.actorName ?? null);
+    }
     if (fresh) {
       this.frozenAt.set(
         new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
@@ -220,9 +291,31 @@ export class JournalPage {
     }
   }
 
-  private moduleFilter(): ActivityModule | undefined {
-    const value = this.module();
-    return value === '' ? undefined : asModule(value);
+  /** Change un filtre d'adresse : l'écran relit, l'adresse suit. */
+  private setUrlFilters(change: Partial<JournalUrlFilters>): void {
+    this.applyUrlFilters({ ...this.urlFilters(), ...change });
+    this.syncUrl();
+    void this.reload();
+  }
+
+  private applyUrlFilters(filters: JournalUrlFilters): void {
+    if (filters.actorId !== this.urlFilters().actorId) {
+      this.actorName.set(null);
+    }
+    this.urlFilters.set(filters);
+  }
+
+  /**
+   * `replaceUrl` : un filtre qu'on essaie n'est pas une page qu'on visite, et
+   * « Précédent » doit ramener d'où l'on vient, pas au module d'avant.
+   */
+  private syncUrl(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: toQueryParams(this.urlFilters()),
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   /** La borne basse, calculée depuis la fenêtre choisie. `0` = pas de borne. */
@@ -233,13 +326,4 @@ export class JournalPage {
     }
     return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   }
-}
-
-/** La liste rend une chaîne ; seules les clés de `MODULE_LABELS` sont des modules. */
-function asModule(value: string): ActivityModule | undefined {
-  return isModule(value) ? value : undefined;
-}
-
-function isModule(value: string): value is ActivityModule {
-  return Object.hasOwn(MODULE_LABELS, value);
 }
