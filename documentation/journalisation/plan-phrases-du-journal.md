@@ -4,7 +4,7 @@
 > toute phrase du journal devrait être humainement compréhensible ». Il prend
 > la section « Les phrases » de [`todo-journal-activite.md`](todo-journal-activite.md).
 >
-> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lots A et B bâtis, lot C à venir.** Le fonctionnement actuel du journal est
+> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lots A, B et C bâtis, lot D à venir.** Le fonctionnement actuel du journal est
 > dans [`architecture-journalisation.md`](architecture-journalisation.md).
 
 ## 0. Ce qu'on veut, en une phrase par exigence
@@ -184,7 +184,15 @@ C'est le lot qui rend l'inventaire exact. Il ne change rien à l'écran.
 - e2e : pour chaque fait touché, le libellé est celui **du moment** (renommer
   l'objet après coup ne change pas la ligne).
 
-### Lot C — Le moteur de phrases (back-office)
+### Lot C — ~~Le moteur de phrases (back-office)~~ — fait le 2026-09-19 (`f66cb8bb`)
+
+> 51 types sur 191 ont une phrase ; les 140 autres sont figés dans
+> `phrase-registry.spec.ts` pour le lot D. Le panneau tarifaire garde ses
+> résumés figés (§4) : il n'est pas branché, contrairement à ce que disait
+> la première version de ce lot. Relevé pour le lot D : les **valeurs**
+> d'énumération s'affichent brutes (`write`, `takeaway`) — il faut un
+> dictionnaire de valeurs ; la portée d'un fait (`blast.families`) n'est plus
+> lue par la méta de la ligne. Reste : le déployer, et un passage à l'écran.
 
 - `Phrase` en segments, le `Record` exhaustif, le détail automatique D4, le
   dictionnaire de libellés et les formateurs d'unités.
