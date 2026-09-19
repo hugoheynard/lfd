@@ -87,8 +87,12 @@ membres.
 > (staff et client)~~ — **fait le 2026-09-19** (`bfed73cc`), avec la
 > révocation d'un mandat par le staff, que l'inventaire ne citait pas ; reste :
 > le déployer ; ~~(b) les décisions de catalogue~~ — **fait le 2026-09-19**
-> (`8fd41f16`), validation d'une arrivée comprise ; reste : le déployer ; (c) les paniers
-> récurrents et les autres gestes du client sur son compte ; (d) la journée de
+> (`8fd41f16`), validation d'une arrivée comprise ; reste : le déployer ; ~~(c) les paniers
+> récurrents et les autres gestes du client sur son compte~~ — **fait le
+> 2026-09-19** (`d62134a8`) ; les faits écrits par un abonné (création d'un
+> panier, déclaration, support) restent best-effort, renvoyés au TODO ; reste :
+> le déployer, et la forme d'une adresse au journal (ville et code postal, à
+> trancher par Hugo) ; (d) la journée de
 > production.
 
 - **Journaliser** les gestes du tableau ci-dessus, dans la transaction du
