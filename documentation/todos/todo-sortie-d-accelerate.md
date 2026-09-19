@@ -25,8 +25,8 @@
       publie le transport ; workflow : migration par l'URL directe, contrôle du
       transport ; JSDoc, `.env.example` et docs.
 - [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe — ✅
-      générées le 2026-09-19 ; reste à relever la **région** et la **limite de
-      connexions** du plan.
+      générées le 2026-09-19 ; offre **Pro**, 250 connexions mutualisées ; reste
+      à relever la **région**.
 - [x] **GitHub** (Hugo, geste 3, par l'interface) : créer
       `DATABASE_LFD_PROD_DIRECT_URL` et `DATABASE_LFD_PROD_URL` (URL
       mutualisée) — ✅ créés le 2026-09-19 ; copier la valeur actuelle de `DATABASE_LFD_URL`

@@ -54,8 +54,10 @@ export class PrismaService extends PrismaClient {
  *
  * - `max: 5` — deux instances coexistent une à deux minutes à chaque
  *   déploiement (l'ancienne répond encore, cf. `deploy_lfd_api.yml`) : dix
- *   connexions au pire. Valeur du plan, à confronter à la limite du plan
- *   Prisma relevée dans la console avant la bascule (geste 2).
+ *   connexions au pire. L'offre Prisma est **Pro** : 250 connexions
+ *   mutualisées (Hugo, 2026-09-19), donc 2 à 4 % d'occupées. Relever ce
+ *   plafond ne se justifie que si des requêtes ATTENDENT une connexion —
+ *   elles finissent alors en « base indisponible » sous charge.
  * - `connectionTimeoutMillis` — une requête qui n'obtient pas de connexion
  *   ÉCHOUE, en « base indisponible », au lieu de pendre. Le défaut est
  *   l'attente infinie, et un pooler muet bloquerait jusqu'au boot.
