@@ -4,6 +4,8 @@ import type { ActivityEventView, ActivityModule, ActivityPageView } from '@lfd/c
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import type { DetailRow } from '../../shared/journal/detail-rows';
+import type { Segment } from '../../shared/journal/phrase';
 
 /** Ce que l'écran demande au journal. Tout est facultatif. */
 export interface JournalFilters {
@@ -83,8 +85,12 @@ export interface JournalLine {
   readonly event: ActivityEventView;
   /** « Création d'un membre de l'équipe » — le geste ; vide quand la phrase suffit. */
   readonly title: string;
-  /** « Commande ORD-142 passée » — la phrase, dérivée du type et du payload. */
+  /** La phrase en segments — les noms en gras, le sujet lié à sa fiche. */
+  readonly segments: readonly Segment[];
+  /** « Commande ORD-142 passée » — la même phrase, en texte suivi. */
   readonly sentence: string;
+  /** Tout ce que la phrase n'a pas dit de la charge, clé par clé (replié à l'écran). */
+  readonly detail: readonly DetailRow[];
   /** Vrai quand la phrase nomme déjà l'auteur : la méta ne répète pas « par … ». */
   readonly sentenceNamesActor: boolean;
   /** « Comptes clients » — le libellé du module, jamais sa clé ; vide sans module. */

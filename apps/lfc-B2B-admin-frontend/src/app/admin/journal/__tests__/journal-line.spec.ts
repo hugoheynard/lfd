@@ -67,12 +67,39 @@ describe('toLine', () => {
     expect(line.moduleLabel).toBe('Comptabilité');
   });
 
-  it('rend le type tel quel pour un fait qu’il ne connaît pas encore', () => {
-    // Le journal est ouvert : un module peut émettre un type que cet écran
-    // ignore. Afficher le type reste vrai ; inventer une phrase, non.
-    const line = toLine(event({ type: 'commande.avenant_signe', payload: {} }));
+  /**
+   * Régression : un type sans phrase s'affichait sous son seul code
+   * (`product.identity_saved` nu à l'écran) — plan des phrases, exigence 1.
+   * Le repli dit ce qu'il sait sans inventer ; le type reste dans la méta.
+   */
+  it('ne rend jamais le type brut pour un fait qu’il ne connaît pas encore', () => {
+    const line = toLine(event({ type: 'commande.avenant_signe', payload: { motif: 'Remise' } }));
 
-    expect(line.sentence).toBe('commande.avenant_signe');
+    expect(line.sentence).toBe('Fait enregistré sur le taux de TVA');
+    expect(line.sentence).not.toContain('commande.avenant_signe');
+    expect(line.detail).toEqual([{ label: 'motif', value: 'Remise' }]);
+  });
+
+  it('range sous la phrase tout ce qu’elle n’a pas dit, et pas le client déjà en méta', () => {
+    const line = toLine(
+      event({
+        type: 'order.placed',
+        module: 'commandes',
+        subjectType: 'user',
+        payload: {
+          subjectLabel: 'Jean Dupont',
+          orderId: 'ord_9',
+          orderNumber: 'ORD-142',
+          companyId: 'co_1',
+          clientName: 'Boulangerie Martin',
+          clientLegalName: 'SARL MARTIN',
+          totalCents: 1_250,
+        },
+      }),
+    );
+
+    expect(line.sentence).toBe('Commande ORD-142 passée — Jean Dupont');
+    expect(line.detail.map((row) => row.label)).toEqual(['Commande', 'Client', 'Total']);
   });
 });
 

@@ -25,8 +25,8 @@
 
 | Fait                                                                                                                                                                                                                                              | Où                                                                                                       |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Les phrases vivent dans un `switch` de **dix cas** (taux de TVA, `order.placed`, publication d'un produit, note client), plus deux replis (tarification, réglages) ; sinon l'écran rend **le type lui-même**                                      | `apps/lfc-B2B-admin-frontend/src/app/shared/journal-fact.ts` (`factSentence`)                            |
-| Les faits de l'équipe ont leur propre rendu (titre + phrase à la voix active)                                                                                                                                                                     | `admin/journal/staff-line.ts`, appelé par `journal-line.ts`                                              |
+| Les phrases vivent dans un `switch` de **dix cas** (taux de TVA, `order.placed`, publication d'un produit, note client), plus deux replis (tarification, réglages) ; sinon l'écran rend **le type lui-même**                                      | apps/lfc-B2B-admin-frontend/src/app/shared/journal-fact.ts (`factSentence`)                              |
+| Les faits de l'équipe ont leur propre rendu (titre + phrase à la voix active)                                                                                                                                                                     | admin/journal/staff-line.ts, appelé par `journal-line.ts`                                                |
 | Trois écrans lisent ces phrases : le Journal, l'onglet Historique d'une fiche produit, et (par ses propres résumés) le panneau tarifaire                                                                                                          | `journal-line.ts`, `product-history.ts`, `b2b/tarification/journal-panel/` (qui affiche `entry.summary`) |
 | La ligne servie porte `actorName` et `actorRole` figés, `subjectType`, `subjectId` et la **charge brute** — **aucun libellé du sujet**                                                                                                            | `packages/contracts/src/activity-journal.ts` (`ActivityEventView`)                                       |
 | La fonction de l'auteur est **déjà** affichée à côté de son nom (« Cécile (Commercial) ») : le point du TODO est clos                                                                                                                             | `journal-line.ts` (`actorOf`)                                                                            |
@@ -190,7 +190,7 @@ C'est le lot qui rend l'inventaire exact. Il ne change rien à l'écran.
   dictionnaire de libellés et les formateurs d'unités.
 - Le rendu (gras, montants, lien vers le sujet) dans les trois écrans :
   Journal, Historique produit, panneau tarifaire.
-- Les phrases de l'équipe (`staff-line.ts`) passent dans le même moteur.
+- Les phrases de l'équipe (staff-line.ts) passent dans le même moteur.
 
 ### Lot D — Les phrases, famille par famille (back-office)
 

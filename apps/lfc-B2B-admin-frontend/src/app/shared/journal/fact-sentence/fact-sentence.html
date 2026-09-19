@@ -1,0 +1,22 @@
+@for (segment of segments(); track $index) {
+  @switch (segment.kind) {
+    @case ('name') {
+      <strong>{{ segment.text }}</strong>
+    }
+    @case ('value') {
+      <span class="fs-value">{{ segment.text }}</span>
+    }
+    @case ('subject') {
+      @if (segment.route; as route) {
+        <fold-link (clicked)="open(route)"
+          ><strong>{{ segment.text }}</strong></fold-link
+        >
+      } @else {
+        <strong>{{ segment.text }}</strong>
+      }
+    }
+    @default {
+      <span>{{ segment.text }}</span>
+    }
+  }
+}

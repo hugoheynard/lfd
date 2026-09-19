@@ -106,14 +106,14 @@
             @if (line.title) {
               <span class="jr-title">{{ line.title }}</span>
             } @else {
-              <span class="jr-sentence">{{ line.sentence }}</span>
+              <app-fact-sentence class="jr-sentence" [segments]="line.segments" />
             }
             @if (line.moduleLabel) {
               <fold-badge [content]="line.moduleLabel" variant="neutral" />
             }
           </div>
           @if (line.title) {
-            <span class="jr-sentence">{{ line.sentence }}</span>
+            <app-fact-sentence class="jr-sentence" [segments]="line.segments" />
           }
           <!-- La seconde ligne : quand, par qui, pour qui. Elle se lit comme
                une phrase — « 21 août 2026 à 14:32, par Hugo Heynard
@@ -137,6 +137,8 @@
             }
             <code class="jr-type">{{ line.event.type }}</code>
           </p>
+          <!-- Ce que la phrase n'a pas dit : replié, ouvert d'un geste. -->
+          <app-fact-detail [rows]="line.detail" />
         </li>
       }
     </ol>

@@ -27,7 +27,12 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../../auth/permissions.store';
-import { factSentence, factWhen } from '../../../../shared/journal-fact';
+import type { DetailRow } from '../../../../shared/journal/detail-rows';
+import { FactDetail } from '../../../../shared/journal/fact-detail/fact-detail';
+import { FactSentence } from '../../../../shared/journal/fact-sentence/fact-sentence';
+import { actorBy, type Segment } from '../../../../shared/journal/phrase';
+import { renderFact } from '../../../../shared/journal/render-fact';
+import { factWhen } from '../../../../shared/journal/units';
 import { ProductHistoryHttpApi } from '../../product-history-http-api';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -68,11 +73,15 @@ export interface CircleMark {
 /** Une ligne de l'historique, telle que l'onglet la lit. */
 export interface HistoryLine {
   readonly id: string;
-  /** « Taux de « Réduit » passé de 5,5 % à 10 % » — la phrase du journal. */
-  readonly sentence: string;
+  /** « Taux de « Réduit » passé de 5,5 % à 10 % » — la phrase du journal, en segments. */
+  readonly segments: readonly Segment[];
+  /** Tout ce que la phrase n'a pas dit de la charge (replié à l'écran). */
+  readonly detail: readonly DetailRow[];
   /** « 21 août 2026 à 14:32 ». */
   readonly when: string;
   readonly actor: string;
+  /** Vrai quand la phrase nomme déjà l'auteur : la méta ne répète pas « par … ». */
+  readonly namesActor: boolean;
   /** `null` pour un fait de la fiche : c'est le cas courant, il ne se marque pas. */
   readonly mark: CircleMark | null;
   readonly type: string;
@@ -97,29 +106,19 @@ export function circleMark(entry: ProductHistoryEntryView): CircleMark | null {
 }
 
 /**
- * Qui a agi : le nom figé à l'acte, sinon la NATURE de l'auteur — un nom
- * absent n'est pas toujours le système (un membre que l'annuaire n'a pas su
- * nommer ce jour-là). Mêmes mots que l'écran Journal (`staff-line.ts`).
+ * La phrase vient du moteur du journal (`shared/journal/render-fact.ts`) : le
+ * Journal et cet onglet racontent un même fait avec les mêmes mots. L'auteur
+ * sans nom se dit par sa NATURE — un nom absent n'est pas toujours le système.
  */
-function actorOf(entry: ProductHistoryEntryView): string {
-  if (entry.actorName !== null) {
-    return entry.actorName;
-  }
-  return ACTOR_FALLBACK[entry.actorType];
-}
-
-const ACTOR_FALLBACK: Readonly<Record<ProductHistoryEntryView['actorType'], string>> = {
-  staff: 'un membre de l’équipe',
-  customer: 'un client',
-  system: 'le système',
-};
-
 function toLine(entry: ProductHistoryEntryView): HistoryLine {
+  const fact = renderFact(entry);
   return {
     id: entry.id,
-    sentence: factSentence(entry),
+    segments: fact.segments,
+    detail: fact.detail,
     when: factWhen(entry.occurredAt),
-    actor: actorOf(entry),
+    actor: actorBy(entry.actorName, null, entry.actorType),
+    namesActor: fact.namesActor,
     mark: circleMark(entry),
     type: entry.type,
   };
@@ -148,6 +147,8 @@ function toLine(entry: ProductHistoryEntryView): HistoryLine {
   selector: 'app-product-history',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FactDetail,
+    FactSentence,
     RouterLink,
     FoldBadgeComponent,
     FoldButtonComponent,

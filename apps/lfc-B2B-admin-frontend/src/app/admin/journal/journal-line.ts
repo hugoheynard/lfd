@@ -1,9 +1,11 @@
 import type { ActivityEventView, ActivityModule } from '@lfd/contracts';
 
-import { count, factSentence, factWhen, optional } from '../../shared/journal-fact';
+import { count, optional } from '../../shared/journal/payload-read';
+import { actorBy } from '../../shared/journal/phrase';
+import { renderFact } from '../../shared/journal/render-fact';
+import { factWhen } from '../../shared/journal/units';
 
 import type { JournalLine } from './journal.service';
-import { staffLineOf } from './staff-line';
 
 /**
  * Le nom lisible de chaque module. Le badge affichait la clé brute (`comptes`,
@@ -21,31 +23,35 @@ export const MODULE_LABELS: Readonly<Record<ActivityModule, string>> = {
   comptabilite: 'Comptabilité',
 };
 
+/** Les clés que la ligne affiche hors de la phrase : le client d'une commande. */
+const CLIENT_KEYS = ['clientName', 'clientLegalName'];
+
 /**
- * Traduit un fait du journal en **phrase**.
+ * Traduit un fait du journal en **ligne** : la phrase du moteur
+ * (`shared/journal/render-fact.ts`), son détail, et la méta — quand, par qui,
+ * pour qui.
  *
  * Le journal stocke des types et des payloads ; un écran qui les affiche tels
  * quels oblige son lecteur à faire la traduction de tête, à chaque ligne. Le
  * type reste visible à côté — c'est lui qui sert à filtrer — mais ce qu'on lit
- * d'abord est ce qui s'est passé.
- *
- * Un type inconnu n'est pas une erreur : le journal est ouvert, un module peut
- * en émettre un que cet écran ne connaît pas encore. On rend alors le type
- * lui-même, ce qui reste vrai.
+ * d'abord est ce qui s'est passé. Un type que l'écran ne connaît pas encore a
+ * le repli du moteur, jamais son code seul.
  */
 export function toLine(event: ActivityEventView): JournalLine {
-  // Les faits de l'équipe se lisent en titre + phrase à la voix active, qui
-  // nomme déjà l'auteur : la méta ne le répète pas.
-  const staff = staffLineOf(event);
+  const forWhom = forWhomOf(event);
+  const fact = renderFact(event, forWhom === '' ? [] : CLIENT_KEYS);
   return {
     event,
-    title: staff?.title ?? '',
-    sentence: staff?.sentence ?? factSentence(event),
-    sentenceNamesActor: staff !== null,
+    title: fact.title ?? '',
+    segments: fact.segments,
+    sentence: fact.sentence,
+    detail: fact.detail,
+    // Une phrase à la voix active nomme déjà l'auteur : la méta ne le répète pas.
+    sentenceNamesActor: fact.namesActor,
     moduleLabel: event.module === null ? '' : MODULE_LABELS[event.module],
     when: factWhen(event.occurredAt),
-    actor: actorOf(event),
-    forWhom: forWhomOf(event),
+    actor: actorBy(event.actorName, event.actorRole, event.actorType),
+    forWhom,
     blast: blastOf(event),
   };
 }
@@ -89,27 +95,4 @@ function blastOf(event: ActivityEventView): string {
     parts.push(`${variants} article(s)`);
   }
   return parts.join(' · ');
-}
-
-/**
- * Qui a agi. Le nom a été figé au moment de l'acte ; quand l'annuaire ne le
- * connaissait pas, on rend sa **nature** — ce qui reste vrai — plutôt qu'un
- * identifiant technique au milieu d'une phrase.
- */
-function actorOf(event: ActivityEventView): string {
-  const name = optional(event.actorName);
-  if (name !== null) {
-    // La fonction entre parenthèses : « qui a fait ça, et à quel titre » est la
-    // question qu'on pose à un journal.
-    const role = optional(event.actorRole);
-    return role === null ? name : `${name} (${role})`;
-  }
-  switch (event.actorType) {
-    case 'staff':
-      return 'un membre de l’équipe';
-    case 'customer':
-      return 'un client';
-    default:
-      return 'le système';
-  }
 }

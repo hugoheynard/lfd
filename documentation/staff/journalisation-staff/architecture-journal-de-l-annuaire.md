@@ -160,7 +160,7 @@ pour la fiche, et **de la base** pour un rôle défini à l'écran — « Logist
 n'existe pas dans le contrat.
 
 La charge n'est pas un type partagé : l'API la construit, l'écran la relit
-défensivement (`admin/journal/staff-line.ts`). Ce tableau est le seul contrat
+défensivement (`shared/journal/phrases/team-phrases.ts`). Ce tableau est le seul contrat
 écrit entre les deux.
 
 ---
@@ -196,7 +196,7 @@ défensivement (`admin/journal/staff-line.ts`). Ce tableau est le seul contrat
 Une ligne de l'équipe se compose d'un **titre**, d'une **phrase à la voix
 active** qui nomme l'auteur et la personne, et de la **date lisible** (« 18
 septembre 2026 à 14:32 ») ; la méta ne répète pas « par … » quand la phrase
-nomme déjà l'auteur (`admin/journal/staff-line.ts`).
+nomme déjà l'auteur (`shared/journal/phrases/team-phrases.ts`).
 
 | Type                                | Titre                            | Phrase                                                                                                                                |
 | ----------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |

@@ -48,15 +48,22 @@
           @for (line of lines(); track line.id) {
             <li class="ph-row">
               <div class="ph-line">
-                <span class="ph-sentence">{{ line.sentence }}</span>
+                <app-fact-sentence class="ph-sentence" [segments]="line.segments" />
                 @if (line.mark; as mark) {
                   <fold-badge [content]="mark.label" [variant]="mark.variant" />
                 }
               </div>
               <p class="ph-meta">
-                {{ line.when }}, par <span class="ph-actor">{{ line.actor }}</span>
+                <span>{{ line.when }}</span>
+                @if (!line.namesActor) {
+                  <span
+                    >, par <span class="ph-actor">{{ line.actor }}</span></span
+                  >
+                }
                 <code class="ph-type">{{ line.type }}</code>
               </p>
+              <!-- Ce que la phrase n'a pas dit : replié, ouvert d'un geste. -->
+              <app-fact-detail [rows]="line.detail" />
             </li>
           }
         </ol>

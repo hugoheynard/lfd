@@ -18,6 +18,9 @@ import {
   type FoldSelectOption,
 } from 'fold-ng';
 
+import { FactDetail } from '../../shared/journal/fact-detail/fact-detail';
+import { FactSentence } from '../../shared/journal/fact-sentence/fact-sentence';
+
 import { JournalService, type JournalLine, type TaxJournalFilters } from './journal.service';
 import { MODULE_LABELS, toLine } from './journal-line';
 import { readJournalSource } from './journal-source';
@@ -99,6 +102,8 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
   selector: 'app-journal-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FactDetail,
+    FactSentence,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
