@@ -20,6 +20,7 @@ import {
   subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
+import { TAX_REGIME_FACTS } from "./tax-regime-retired.js";
 
 /**
  * **Le référentiel — ce qui règle le catalogue** : taux de TVA, règles
@@ -177,6 +178,8 @@ const allergenEntryUpdatedV1 = payload({
 const allergenEntryState = () => payload({ code: z.string(), name: localizedText() });
 
 export const REFERENTIAL_SETTINGS_FACTS = {
+  /** Les taux quand ils s'appelaient « régimes » : retirés, encore en base de dev. */
+  ...TAX_REGIME_FACTS,
   "vat_rate.created": labelled(vatRateSnapshot),
   /**
    * `contextLabels` : le libellé du moment de chaque contexte que la portée

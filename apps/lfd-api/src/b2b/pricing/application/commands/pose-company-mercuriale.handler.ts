@@ -106,7 +106,11 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
       kind: "posed",
       actor: staffUserId,
       at: mercuriale.toPersistence().validFrom,
-      reason: `Mercuriale « ${payload.label} » posée sur la fiche du compte`,
+      // Aucun motif : l'écran n'en demande pas pour ce geste. La paraphrase
+      // que l'API écrivait ici (« Mercuriale « X » posée… ») n'en était pas un —
+      // elle redisait l'acte, que le type et la phrase disent déjà (TODO des
+      // phrases du journal, 2026-09-19). Les lignes d'avant la gardent.
+      reason: null,
       summary: describeMercuriale(mercuriale),
       subjectLabel: mercuriale.label,
     });

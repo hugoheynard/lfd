@@ -1,6 +1,6 @@
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { PriceRuleNotFoundError } from "../../domain/pricing-errors.js";
-import { citedAudience, describeRule } from "../../domain/pricing-act.js";
+import { describeRule, ruleCitations } from "../../domain/pricing-act.js";
 import type { PricingRule } from "../../domain/entities/pricing-rule.js";
 import type { PricingAct, PricingActKind, RuleNames } from "../../domain/pricing-act.js";
 
@@ -61,6 +61,6 @@ export function actOf(
     reason,
     summary: describeRule(rule.asPriceRule, names),
     subjectLabel,
-    ...citedAudience(rule.asPriceRule, names),
+    ...ruleCitations(rule.asPriceRule, names),
   };
 }

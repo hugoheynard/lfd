@@ -3,7 +3,7 @@ import type { ActiveJournalFactType } from "@lfd/contracts/journal-facts";
 import { PricingActNotJournaledError } from "./errors/shared-errors.js";
 
 import type { RuleNames } from "./pricing-act-summary.js";
-import type { PriceRule } from "./price-rule.js";
+import type { PriceRule, PriceStage } from "./price-rule.js";
 
 export {
   describeArticleCount,
@@ -86,22 +86,37 @@ export interface PricingAct {
    * phrases, 2026-09-19).
    */
   readonly audience?: { readonly id: string; readonly name: string } | undefined;
+  /**
+   * **L'étage d'une règle** — présent sur un acte de règle, et seulement là.
+   * Il ne va qu'au journal général, en donnée structurée : la table du domaine
+   * le dit déjà au début de sa phrase figée, et c'est là qu'un écran devait
+   * le découper (TODO des phrases du journal, 2026-09-19).
+   */
+  readonly stage?: PriceStage | undefined;
 }
 
 /**
- * La société qu'une règle vise, citée nommée dans l'acte — ou rien : une
+ * Ce qu'un acte de **règle** cite d'elle en plus de sa phrase : son étage,
+ * toujours, et la société qu'elle vise, nommée — ou rien pour celle-ci : une
  * audience qui n'est pas une société, ou une société que l'annuaire ne nomme
  * pas (la phrase garde alors son identifiant).
+ *
+ * Un seul point d'entrée pour les deux écrivains d'actes de règle (la pose et
+ * le cycle de vie) : un acte de règle sans étage serait refusé par le
+ * catalogue des faits en test, et passerait en production avec une erreur.
  */
-export function citedAudience(
+export function ruleCitations(
   rule: PriceRule,
   names: RuleNames,
-): { readonly audience?: { readonly id: string; readonly name: string } } {
-  const { audience } = rule;
+): {
+  readonly stage: PriceStage;
+  readonly audience?: { readonly id: string; readonly name: string };
+} {
+  const { audience, stage } = rule;
   if (audience.type !== "company" || audience.id === null || names.audienceName === null) {
-    return {};
+    return { stage };
   }
-  return { audience: { id: audience.id, name: names.audienceName } };
+  return { stage, audience: { id: audience.id, name: names.audienceName } };
 }
 
 /**
@@ -206,6 +221,7 @@ export function pricingFactOf(act: PricingAct): {
       summary: act.summary,
       reason: act.reason,
       ...(act.audience === undefined ? {} : { audience: { ...act.audience } }),
+      ...(act.stage === undefined ? {} : { stage: act.stage }),
     },
     occurredAt: act.at,
   };

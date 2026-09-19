@@ -35,6 +35,10 @@ describe("le catalogue des faits", () => {
       "company.delivery_procedure_edited_by_staff",
       "company.kbis_uploaded_by_staff",
       "staff_user.deleted",
+      "tax_regime.created",
+      "tax_regime.deleted",
+      "tax_regime.rate_changed",
+      "tax_regime.renamed",
       "variant.regulatory_aligned",
     ]);
   });

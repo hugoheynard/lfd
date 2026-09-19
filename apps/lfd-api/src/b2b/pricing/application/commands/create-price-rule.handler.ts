@@ -6,7 +6,7 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { PricingRule } from "../../domain/entities/pricing-rule.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { citedAudience, describeRule } from "../../domain/pricing-act.js";
+import { describeRule, ruleCitations } from "../../domain/pricing-act.js";
 import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ruleNamesOf } from "../rule-names.js";
@@ -60,7 +60,7 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
       reason: null,
       summary: describeRule(rule.asPriceRule, names),
       subjectLabel: rule.label,
-      ...citedAudience(rule.asPriceRule, names),
+      ...ruleCitations(rule.asPriceRule, names),
     });
     return rule.id;
   }

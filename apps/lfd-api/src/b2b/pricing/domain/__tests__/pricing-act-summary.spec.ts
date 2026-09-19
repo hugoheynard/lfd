@@ -4,6 +4,7 @@ import {
   describeRule,
   describeScope,
   describeWindowOf,
+  ruleCitations,
 } from "../pricing-act.js";
 import type { PriceAudience, PriceRule, PriceScope } from "../price-rule.js";
 
@@ -182,5 +183,28 @@ describe("describeArticleCount — un compte accordé", () => {
   it("écrit « article » au singulier et « articles » au pluriel, jamais « article(s) »", () => {
     expect(describeArticleCount(1)).toBe("1 article");
     expect(describeArticleCount(12)).toBe("12 articles");
+  });
+});
+
+describe("ruleCitations — ce qu'un acte de règle cite d'elle", () => {
+  const scope: PriceScope = { type: "global", id: null };
+
+  it("cite toujours l'étage, même sans société à nommer", () => {
+    expect(ruleCitations(rule(scope), NO_NAMES)).toEqual({ stage: "promotion" });
+  });
+
+  it("cite la société visée, nommée au moment de l'acte", () => {
+    expect(
+      ruleCitations(rule(scope, { type: "company", id: "cmp_1" }), {
+        scopeName: null,
+        audienceName: "Club Med",
+      }),
+    ).toEqual({ stage: "promotion", audience: { id: "cmp_1", name: "Club Med" } });
+  });
+
+  it("tait une société que l'annuaire ne nomme pas", () => {
+    expect(ruleCitations(rule(scope, { type: "company", id: "cmp_1" }), NO_NAMES)).toEqual({
+      stage: "promotion",
+    });
   });
 });

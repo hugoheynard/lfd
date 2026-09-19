@@ -10,7 +10,8 @@ import type {
   StaffAuthors,
 } from "../../../../staff/directory/domain/staff-author-directory.js";
 import type { PimJournalReader } from "../../../journal/pim-journal-reader.js";
-import { attributeFields, coveredBy, type GlobalCause } from "../domain/attribution.js";
+import { attributeFields } from "../domain/attribution.js";
+import { coveredBy, type GlobalCause } from "../domain/global-causes.js";
 import type { ItemDiff } from "../domain/diff.js";
 import type { RevisionRecord } from "../domain/ports/catalog-revision.repository.js";
 
@@ -106,6 +107,7 @@ export function causeViews(causes: readonly GlobalCause[]): readonly CatalogRevi
     at: cause.at.toISOString(),
     explains: cause.explains,
     blast: cause.blast,
+    contextLabels: cause.contextLabels,
   }));
 }
 

@@ -59,6 +59,23 @@ describe("pricingFactOf", () => {
   });
 
   /**
+   * L'étage d'une règle, en donnée structurée à côté de la phrase figée (TODO
+   * des phrases du journal, 2026-09-19) : l'écran le nommait en découpant le
+   * début du `summary`.
+   */
+  it("porte l'étage d'une règle, et la société qu'elle vise", () => {
+    const payload = pricingFactOf(
+      act({ stage: "geste", audience: { id: "cmp_1", name: "Club Med" } }),
+    ).payload;
+
+    expect(payload).toMatchObject({ stage: "geste", audience: { id: "cmp_1", name: "Club Med" } });
+  });
+
+  it("n'invente pas d'étage à un acte qui n'en a pas", () => {
+    expect(pricingFactOf(act({ subjectType: "floor" })).payload).not.toHaveProperty("stage");
+  });
+
+  /**
    * Le type se lit dans une table sujet × geste typée par le catalogue des
    * faits : un geste qu'aucun écran n'écrit sur ce sujet n'a pas de fait, et
    * le dire vaut mieux que composer un type que le journal refuserait.

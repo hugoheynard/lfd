@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { priceStageSchema } from "../pricing.js";
 import {
   count,
   fact,
@@ -40,15 +41,26 @@ const actV1 = payload({
 const act = () => fact(actV1.extend({ subjectLabel: subjectLabel() }), [actV1]);
 
 /**
- * Un acte sur une **règle** : celui d'un acte, plus la société qu'elle vise,
- * nommée au moment de l'acte — présente seulement quand l'audience est une
- * société que l'annuaire nomme. Une règle pour tous ou pour un segment n'a
- * pas de société à citer ; la phrase (`summary`) dit alors laquelle.
+ * Un acte sur une **règle**, tel que le lot B l'écrivait (`cb67bb63`) : celui
+ * d'un acte, plus la société qu'elle vise, nommée au moment de l'acte —
+ * présente seulement quand l'audience est une société que l'annuaire nomme.
+ * Une règle pour tous ou pour un segment n'a pas de société à citer ; la
+ * phrase (`summary`) dit alors laquelle.
  */
-const ruleAct = () =>
-  fact(actV1.extend({ subjectLabel: subjectLabel(), audience: named("company").optional() }), [
-    actV1,
-  ]);
+const ruleActLotB = actV1.extend({
+  subjectLabel: subjectLabel(),
+  audience: named("company").optional(),
+});
+
+/**
+ * La forme courante (2026-09-19, TODO des phrases) : la même, plus **l'étage**
+ * de la règle — une valeur fermée, celle des étages du calcul. Il n'était dit
+ * qu'au début de la phrase figée (« Geste « … » · … »), et un écran qui
+ * voulait le nommer devait découper un texte. Tous les étages, pas seulement
+ * ceux qu'on saisit aujourd'hui : une règle `mercuriale` ou `volume` posée
+ * avant le 2026-09-08 peut encore s'archiver.
+ */
+const ruleAct = () => fact(ruleActLotB.extend({ stage: priceStageSchema }), [ruleActLotB, actV1]);
 
 /** Les termes d'un engagement, tels que le lot A les écrivait (9c3c2d35). */
 const commitmentTermsV1 = {

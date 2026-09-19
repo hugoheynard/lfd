@@ -20,6 +20,9 @@ import type { ActivityModule } from "@lfd/contracts";
 const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   pim: [
     "vat_rate.",
+    // Les taux quand ils s'appelaient « régimes » : retirés, encore en base de
+    // dev (21 août). Sans ce préfixe, le filtre par module les perdrait.
+    "tax_regime.",
     "product.",
     "product_category.",
     // Le rapport et la méthode du prix pro s'écrivent au référentiel, sous le

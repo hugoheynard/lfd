@@ -1665,6 +1665,12 @@ describe("renommer une règle", () => {
     // La phrase nomme le rayon plutôt que son code.
     expect(JSON.stringify(facts[0]?.payload)).toContain("famille « Viennoiseries »");
     expect(facts[1]?.payload).toMatchObject({ subjectLabel: "Après" });
+    // L'étage, en donnée structurée, sur chaque acte (TODO des phrases,
+    // 2026-09-19) : il n'était dit qu'au début de la phrase figée.
+    expect(facts.map((fact) => fact.payload)).toEqual([
+      expect.objectContaining({ stage: "promotion" }),
+      expect.objectContaining({ stage: "promotion" }),
+    ]);
   });
 
   it("refuse de renommer une règle archivée", async () => {

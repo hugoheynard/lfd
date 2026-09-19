@@ -43,7 +43,11 @@ export class RenameCompanyMercurialeHandler implements ICommandHandler<
       kind: "renamed",
       actor: staffUserId,
       at: this.clock.now(),
-      reason: `Mercuriale « ${mercuriale.label} » renommée « ${label} »`,
+      // Aucun motif : l'écran n'en demande pas pour ce geste. La paraphrase
+      // que l'API écrivait ici (« Mercuriale « X » posée… ») n'en était pas un —
+      // elle redisait l'acte, que le type et la phrase disent déjà (TODO des
+      // phrases du journal, 2026-09-19). Les lignes d'avant la gardent.
+      reason: null,
       summary: describeMercuriale(mercuriale),
       // Le NOUVEAU nom : c'est celui qu'elle porte depuis.
       subjectLabel: label,

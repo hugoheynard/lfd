@@ -5,7 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
-import { GLOBAL_CAUSE_TYPES, causesOf } from "../domain/attribution.js";
+import { GLOBAL_CAUSE_TYPES, causesOf } from "../domain/global-causes.js";
 import { diffItem, headerDiff, planDiff } from "../domain/diff.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";

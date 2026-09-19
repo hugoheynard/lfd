@@ -432,6 +432,38 @@ describe("renommer", () => {
     expect(itemOf(view, SKU)?.finalMillicents).toBe(NEGOTIATED_MILLICENTS);
   });
 
+  /**
+   * Régression (TODO des phrases du journal, 2026-09-19) : la pose et le
+   * renommage écrivaient au motif une paraphrase de l'acte (« Mercuriale « X »
+   * posée sur la fiche du compte ») — que le panneau tarifaire affichait comme
+   * si l'auteur l'avait écrite. Aucun motif n'est demandé pour ces gestes.
+   */
+  it("n'écrit aucun motif inventé, ni à la pose ni au renommage", async () => {
+    const company = await createCompany(ctx.prisma);
+    await poseOn(company.id);
+    await rename(company.id).expect(200);
+
+    const acts = await ctx.prisma.pricingEvent.findMany({
+      where: { subjectType: "mercuriale" },
+      select: { act: true, reason: true },
+    });
+    expect(acts).toHaveLength(2);
+    expect(acts).toEqual(
+      expect.arrayContaining([
+        { act: "posed", reason: null },
+        { act: "renamed", reason: null },
+      ]),
+    );
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { type: { in: ["company_mercuriale.posed", "company_mercuriale.renamed"] } },
+      select: { payload: true },
+    });
+    expect(facts).toHaveLength(2);
+    for (const fact of facts) {
+      expect(fact.payload).toMatchObject({ reason: null });
+    }
+  });
+
   it("🔴 renomme TOUTES ses règles, jamais une partie", async () => {
     // Le cas qui justifie la transaction : une mercuriale à moitié renommée se
     // couperait en DEUX lignes à la lecture suivante — deux grilles partielles,
