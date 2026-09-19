@@ -5,6 +5,9 @@
 > Il couvre [`todo-journal-activite.md`](todo-journal-activite.md) §1 à §7, §9
 > et §10 ; le §8 (les phrases de l'équipe) en est exclu.
 >
+> **Convention (Hugo, 2026-09-19)** : un point se **raye** ici et dans le TODO
+> au moment où il est fait, avec sa date et son commit.
+>
 > État : 🚧 **lot 2 bâti le 2026-09-19**, en premier à la demande de Hugo
 > (« on devrait faire le lot 2 d'abord ») — la recherche normalisée, puis
 > l'index, à déployer après la sortie d'Accelerate. Les autres lots : plan.
@@ -18,15 +21,15 @@
 
 ## 0. Résumé
 
-| Lot | Point du TODO | Ce qu'il livre                                                                                                          | Coût   |
-| --- | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1   | §1            | les **actes du staff** qui touchent l'argent ou la production entrent au journal ; la porte s'étend à leurs dossiers    | moyen  |
-| 2   | §4, §7        | le filtre par personne a son index ; la recherche ignore les clés et les accents — **sans colonne ni migration lourde** | faible |
-| 3   | §5, §9        | on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »                              | moyen  |
-| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                       | moyen  |
-| 5   | §10           | le journal tarifaire se pagine, sans changer la forme de sa réponse                                                     | faible |
-| —   | §3            | **le code reste en `growth`** : la promotion du port suffit — décision, pas un lot                                      | —      |
-| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                             | —      |
+| Lot | Point du TODO | Ce qu'il livre                                                                                                                        | Coût   |
+| --- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1   | §1            | les **actes du staff** qui touchent l'argent ou la production entrent au journal ; la porte s'étend à leurs dossiers                  | moyen  |
+| 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente | faible |
+| 3   | §5, §9        | on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »                                            | moyen  |
+| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                     | moyen  |
+| 5   | §10           | le journal tarifaire se pagine, sans changer la forme de sa réponse                                                                   | faible |
+| —   | §3            | **le code reste en `growth`** : la promotion du port suffit — décision, pas un lot                                                    | —      |
+| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                           | —      |
 
 **Deux décisions reviennent à Hugo** (§3) : faut-il journaliser les gestes
 qu'un **client** fait sur son propre compte, et quelle **permission** ouvre la
@@ -93,18 +96,18 @@ supprimer), son profil, son RIB, ses adresses, ses membres.
 
 ### Lot 2 — L'index de la personne, et une recherche qui ignore clés et accents (§4, §7)
 
-- **Un index sur `actor_id`**, par migration additive. La table a un mois
-  (remise à blanc le 2026-08-16) : le verrou de construction est bref, mais
-  **chaque geste opposable écrit dans cette table**, donc la migration part
-  hors des heures d'usage, et son volume est compté juste avant.
-- **La recherche, sans colonne ni migration** : la normalisation se fait **à
-  la lecture**, des deux côtés de la comparaison, par **une seule expression
-  SQL** (`lower()` puis `translate()`, dans cet ordre — l'inverse laisse
-  « Élan » accentué) appliquée aux **valeurs** de la charge
-  (`jsonb_path_query_array(payload, 'strict $.** ? (@.type() == "string")')`)
-  et au nom de l'auteur. La table de correspondance vit à un seul endroit : la
-  requête. Chercher « person » ne ramène plus les clés ; « cecile » trouve
-  « Cécile ».
+- ~~**Un index sur `actor_id`**, par migration additive.~~ — **bâti le
+  2026-09-19** (`f94471d9`, `20260919100000_index_de_l_auteur_du_journal`).
+  **Reste : le déployer** hors des heures d'usage, après la sortie
+  d'Accelerate, en comptant le volume juste avant — chaque geste opposable
+  écrit dans cette table, et la construction bloque ses écritures.
+- ~~**La recherche, sans colonne ni migration** : normalisée à la lecture, des
+  deux côtés, sur les **valeurs** de la charge et le nom de l'auteur.~~ —
+  **fait le 2026-09-19** (`4c9c95c6`). Corrigé en bâtissant : `translate()`
+  **puis** `lower()`, majuscules accentuées dans la table — sous une locale
+  `C`, `lower()` ne touche que l'ASCII, et l'ordre écrit ici plus haut
+  laissait « É » intact. Les nombres sont lus aussi, pas seulement les
+  chaînes.
 - **Pas de colonne générée** : sa construction réécrirait la table sous un
   verrou qui bloque toutes les écritures opposables, et Prisma, qui ne la
   déclarerait pas, proposerait de la supprimer au prochain `migrate dev`.

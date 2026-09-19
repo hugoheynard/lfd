@@ -86,9 +86,9 @@ Prévu à la pose du journal, toujours pas fait : **partitionnement mensuel** et
 politique de rétention, en SQL brut (non exprimable en Prisma déclaratif). Sans
 volume réel, tout choix de fenêtre serait arbitraire.
 
-L'index sur `actor_id`, que le filtre par personne attendait, est posé par
-`20260919100000_index_de_l_auteur_du_journal` (plan, lot 2) — à déployer hors
-des heures d'usage, et pas pendant la sortie d'Accelerate.
+~~L'index sur `actor_id`, que le filtre par personne attendait~~ — **bâti le
+2026-09-19** (`f94471d9`, plan lot 2) ; reste à le déployer hors des heures
+d'usage, pas pendant la sortie d'Accelerate.
 
 ### 5. Filtres non exposés à l'écran
 
@@ -114,7 +114,7 @@ non un filtre d'écran — sinon c'est le journal entier qui s'ouvre.
 _Venu de [`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`](../staff/journalisation-staff/architecture-journal-de-l-annuaire.md) §9, le 2026-09-18._
 
 - ~~**Sensible aux accents**~~ et ~~**elle lit aussi les clés de la charge**~~
-  — **réglés le 2026-09-19** (plan, lot 2) : la recherche ne lit que les
+  — **réglés le 2026-09-19** (`4c9c95c6`, plan lot 2) : la recherche ne lit que les
   valeurs, sans casse ni accents
   ([`architecture-journalisation.md`](architecture-journalisation.md) §8).
 - **Aucun index ne la sert** : chaque recherche parcourt la table, paginée.
