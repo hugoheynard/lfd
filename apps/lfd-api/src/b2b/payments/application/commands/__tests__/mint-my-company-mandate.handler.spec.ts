@@ -84,7 +84,8 @@ describe("MintMyCompanyMandateHandler — le client génère son mandat", () => 
       ]);
       expect(h.ledger.noted).toEqual([{ creditorId: "ent_1", at: NOW }]);
       expect(h.events.traced[0]?.journalFact().payload).toEqual({
-        companyId: "cmp_1",
+        subjectLabel: h.mandates.created[0]?.reference,
+        company: { id: "cmp_1", name: "Le Refuge du Col" },
         reference: h.mandates.created[0]?.reference,
         via: "customer",
       });
@@ -146,6 +147,7 @@ describe("MintMyCompanyMandateHandler — le client génère son mandat", () => 
     const h = harness();
     h.mandates.holder = {
       companyName: "Refuge du Col SARL",
+      displayName: "Le Refuge du Col",
       email: "",
       reference: "C-9P2X4B",
       siren: "",

@@ -5,7 +5,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { CategoryArchivedParentError } from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { assertNoCycle } from "../domain/services/category-tree.js";
-import { requireCategory } from "./category-support.js";
+import { namedCategory, requireCategory } from "./category-support.js";
 
 export class MoveCategoryCommand {
   constructor(
@@ -37,16 +37,20 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
   async execute(command: MoveCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
 
-    if (command.parentId !== null) {
-      const parent = await requireCategory(this.categories, command.parentId);
+    const parent =
+      command.parentId === null ? null : await requireCategory(this.categories, command.parentId);
+    if (parent !== null) {
       if (parent.isArchived) {
-        throw new CategoryArchivedParentError(command.parentId);
+        throw new CategoryArchivedParentError(parent.id);
       }
       const tree = await this.categories.listAll();
-      assertNoCycle(tree, command.id, command.parentId);
+      assertNoCycle(tree, command.id, parent.id);
     }
 
-    const from = category.parentId;
+    // L'ancien parent, lu pour son NOM : la ligne doit dire d'où la famille
+    // venait sous le nom qu'il portait ce jour-là.
+    const from =
+      category.parentId === null ? null : await requireCategory(this.categories, category.parentId);
     category.moveUnder(command.parentId, await this.categories.nextPosition(command.parentId));
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
@@ -58,7 +62,10 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
         // la famille directe d'une fiche, et les canaux se lisent sur son seul
         // `channelPreset` (vérifié le 2026-09-19 ; ce commentaire affirmait
         // l'inverse). Déplacer une famille ne change donc aucun taux.
-        payload: { parentId: { from, to: command.parentId } },
+        payload: {
+          subjectLabel: category.name.fr,
+          parent: { from: namedCategory(from), to: namedCategory(parent) },
+        },
       });
       await this.categories.save(category, ticket);
     });

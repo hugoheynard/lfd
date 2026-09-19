@@ -101,8 +101,17 @@ async function putRib(body: object): Promise<void> {
 
 beforeEach(async () => {
   await ctx.reset();
-  // Une société ouverte sans papiers : ni raison sociale, ni SIRET, ni SIREN.
-  companyId = (await createCompany(ctx.prisma, { raisonSociale: "", siret: "", siren: "" })).id;
+  // Une société ouverte sans papiers : ni raison sociale, ni SIRET, ni SIREN —
+  // mais une enseigne, que la déclaration exige et sous laquelle le journal la
+  // nomme (lot B du plan des phrases).
+  companyId = (
+    await createCompany(ctx.prisma, {
+      raisonSociale: "",
+      enseigne: "Le Refuge",
+      siret: "",
+      siren: "",
+    })
+  ).id;
   entityId = await declareIssuer();
   await putRib(RIB);
 });

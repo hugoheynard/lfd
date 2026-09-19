@@ -7,6 +7,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { SetDefaultDeliveryAddressCommand } from "./address-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Désigne l'adresse de livraison par défaut, réservé au gestionnaire.
@@ -25,6 +27,7 @@ export class SetDefaultDeliveryAddressHandler implements ICommandHandler<
     private readonly addresses: CompanyAddressRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: SetDefaultDeliveryAddressCommand): Promise<void> {
@@ -33,10 +36,11 @@ export class SetDefaultDeliveryAddressHandler implements ICommandHandler<
 
     const book = await this.addresses.loadDeliveryBook(command.companyId);
     book.makeDefault(command.addressId);
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
-        new DefaultDeliverySetByMemberEvent(command.companyId, command.addressId),
+        new DefaultDeliverySetByMemberEvent(company, deliveryAddressOf(book, command.addressId)),
       );
     });
   }

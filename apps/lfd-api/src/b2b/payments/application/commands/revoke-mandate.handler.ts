@@ -7,6 +7,7 @@ import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
 import { MandateRevokedEvent } from "../../domain/events/payment-mandate.events.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { RevokeMandateCommand } from "./revoke-mandate.command.js";
+import { mandateCompanyOf } from "../mandate-journal-names.js";
 
 /**
  * Révoque le mandat courant — actif ou brouillon — depuis la fiche.
@@ -35,10 +36,11 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
     }
     const previousStatus = mandate.status;
     mandate.revoke(this.clock.now());
+    const company = await mandateCompanyOf(this.mandates, mandate.companyId);
     await this.uow.run(async () => {
       await this.mandates.save(mandate);
       await this.events.publishTraced(
-        new MandateRevokedEvent(mandate.id, mandate.companyId, mandate.reference, previousStatus),
+        new MandateRevokedEvent(mandate.id, company, mandate.reference, previousStatus),
       );
     });
   }

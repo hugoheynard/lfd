@@ -190,7 +190,10 @@ Le **nom et la fonction** sont résolus par `ActorNamer`
 (`b2b/growth/infrastructure/prisma-actor-namer.ts`) **au moment de l'acte**, et
 figés dans `actor_name` / `actor_role` : le journal dit qui a agi ce jour-là et
 à quel titre, pas qui porte ce nom aujourd'hui. Une panne de résolution n'empêche
-pas d'écrire — un fait anonyme vaut mieux qu'un fait perdu.
+pas d'écrire — un fait anonyme vaut mieux qu'un fait perdu. Un client sans nom
+saisi reste **sans nom** (`actor_name` nul, l'écran dit « un client ») : son
+e-mail en tenait lieu jusqu'au 2026-09-19, et une coordonnée n'entre pas au
+journal ([§13](#s13)).
 
 **Le `sub` Auth0 n'est plus un auteur nulle part** depuis le 2026-09-18 : il est
 sorti du type après l'authentification, l'historique a été converti, et deux
@@ -556,3 +559,66 @@ vérification stricte.
 ⚠️ **Sur le chemin best-effort des abonnés** (croissance), un écart en mode
 strict lève dans le travail de fond, que `BackgroundWork` journalise et avale :
 le test ne le voit que s'il attend le fait.
+
+### Les noms figés (lot B, 2026-09-19)
+
+> Lot B du plan [`plan-phrases-du-journal.md`](plan-phrases-du-journal.md)
+> (D5, D6, D7), 2026-09-19.
+
+**Un fait cite ce dont il parle avec son nom du moment.** Un objet cité l'est
+en `{ id, name }` (`named` dans `fact.ts`) : l'id pour les liens et les
+filtres, le nom pour la lecture. Une famille renommée depuis se lit, sur les
+lignes d'avant, sous son ancien nom — le journal dit ce qui était vrai quand
+c'est arrivé, comme il le fait déjà pour l'auteur. La résolution à la lecture
+est écartée : elle mentirait sur le passé et traverserait les frontières.
+
+- **Une personne** se cite `{ id, name? }` : le nom est facultatif dans le
+  domaine, et l'e-mail n'en tient jamais lieu.
+- **Une adresse de livraison** se cite `{ id, ville, codePostal }` — par son
+  lieu, comme le staff la journalise (décision de Hugo du 2026-09-19,
+  `a151ccee`) —, jamais par son libellé, texte libre du client.
+- **Un objet que l'annuaire ne nomme pas** (une fiche staff illisible, un
+  point de retrait disparu, une société qu'aucune clé étrangère n'exige) se
+  cite par son seul id (`namedOrBare`) : le fait ne se perd pas pour un nom
+  manquant, et il n'en invente pas.
+
+**Le sujet de la ligne a un nom**, dans la clé conventionnelle `subjectLabel`
+de la charge (D6) — pas de colonne : la recherche lit déjà la charge. Il est
+**facultatif** là où le sujet peut ne pas en avoir (une personne sans nom
+saisi, une inscription), et absent par construction de quelques types, chacun
+avec sa raison écrite (un panier récurrent, une règle d'heure limite, un
+réglage unique, une arrivée de catalogue, les ingrédients d'une fiche — le
+contexte des ingrédients ne lit pas les fiches, et ne doit pas les lire).
+
+**Les formes anciennes restent lisibles.** Le journal ne se réécrit pas : une
+charge qui gagne un nom ou perd une coordonnée garde sa forme d'avant dans
+`history` (`fact(payload, [formes anciennes])`). L'écriture ne vérifie que la
+forme courante ; le lecteur les essaie toutes (`journalPayloadShapes`). Une
+ligne d'avant qui ne porte qu'un id se dit « une famille (identifiant …) »,
+jamais par un nom résolu aujourd'hui (§6.2 du plan).
+
+🔴 **Jamais de coordonnées au journal.** Aucune forme courante ne porte de clé
+`email`, à aucune profondeur. Trois chemins en écrivaient une jusqu'au
+2026-09-19 et n'en écrivent plus :
+
+| Chemin                                                 | Avant                                                 | Depuis                                                                                        |
+| ------------------------------------------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `user.registered` (`OnUserRegistered`)                 | `{ email }`                                           | `{ subjectLabel? }` — le nom de la fiche s'il y en a un                                       |
+| `reco.shown` (`GetCockpitHandler`)                     | sans libellé, parce que celui du cockpit EST l'e-mail | `subjectLabel` : le nom de la fiche d'une personne, l'enseigne d'une société ou d'un prospect |
+| `actor_name` d'un client sans nom (`PrismaActorNamer`) | son e-mail                                            | `null`                                                                                        |
+
+La file des prospects, qui lisait l'e-mail dans la charge de
+`user.registered`, le lit désormais sur la fiche de la personne
+(`CustomerEmailReader`) ; la charge d'une ligne ancienne n'est plus qu'un
+repli pour une personne que la fiche ne connaît plus.
+
+⚠️ **La seule exception** : `feature_access.exemption_added` / `_removed`
+portent encore l'adresse exemptée — mise de côté par Hugo le 2026-09-19,
+[`todo-derogations-d-acces.md`](todo-derogations-d-acces.md).
+
+**Ce qui le tient.** `packages/contracts/src/journal-facts/__tests__/closure.spec.ts`, sur le
+catalogue entier : chaque type actif porte `subjectLabel` (obligatoire ou
+facultatif), aucune clé ne cite un objet par son seul id, aucune forme
+courante ne porte d'`email` — chaque règle avec sa liste d'exemptions, **et
+la raison de chacune**. Un type neuf qui n'y satisfait pas échoue ; l'exempter
+demande d'écrire pourquoi. Les listes se vident, elles ne grandissent pas.

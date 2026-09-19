@@ -1,7 +1,7 @@
 import type { CatalogItem } from "../../../domain/entities/catalog-item.js";
 import { AlignOnPimPriceCommand } from "../align-on-pim-price.command.js";
 import { AlignOnPimPriceHandler } from "../align-on-pim-price.handler.js";
-import { build, facts, NEGOTIATED, SKU } from "./catalog-decision-doubles.js";
+import { build, facts, NEGOTIATED, SKU, NAME } from "./catalog-decision-doubles.js";
 
 /** Le handler sous test, branché sur les doubles de `build`. */
 function setup(seed?: (item: CatalogItem) => void) {
@@ -25,7 +25,7 @@ describe("AlignOnPimPriceHandler", () => {
         type: "catalog_item.b2b_price_cleared",
         subjectType: "catalog_item",
         subjectId: SKU,
-        payload: { sku: SKU, before: { priceMillicents: NEGOTIATED } },
+        payload: { subjectLabel: NAME, sku: SKU, before: { priceMillicents: NEGOTIATED } },
       },
     ]);
   });

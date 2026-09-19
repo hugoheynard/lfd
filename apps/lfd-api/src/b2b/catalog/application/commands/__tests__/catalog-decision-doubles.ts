@@ -13,13 +13,15 @@ import { CatalogItemRepository } from "../../../domain/ports/catalog-item.reposi
 export const SKU = "VIE-001-1";
 export const PIM_PRICE = 210_000;
 export const NEGOTIATED = 190_000;
+/** Le nom de l'article, que chaque fait fige en `subjectLabel` (lot B du plan des phrases). */
+export const NAME = "Croissant";
 
 function article(): CatalogItem {
   const facts: PimFacts = {
     sku: SKU,
     productId: "p_VIE-001",
     productSku: "VIE-001",
-    name: "Croissant",
+    name: NAME,
     kind: "daily",
     categoryId: "c",
     priceMillicents: PIM_PRICE,

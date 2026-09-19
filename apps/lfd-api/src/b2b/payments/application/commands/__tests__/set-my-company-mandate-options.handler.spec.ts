@@ -88,7 +88,8 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
       "uow:end",
     ]);
     expect(h.events.traced[0]?.journalFact().payload).toEqual({
-      companyId: "cmp_1",
+      subjectLabel: "Refuge du Col SARL",
+      company: { id: "cmp_1", name: "Le Refuge du Col" },
       ...OPTIONS,
       via: "customer",
     });
@@ -164,7 +165,8 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
       "bell",
     ]);
     expect(h.events.traced[1]?.journalFact().payload).toEqual({
-      companyId: "cmp_1",
+      subjectLabel: "LFC-9P2X4B-260914-K7M3QT",
+      company: { id: "cmp_1", name: "Le Refuge du Col" },
       reference: "LFC-9P2X4B-260914-K7M3QT",
       cause: "mandate_options_changed",
       via: "customer",

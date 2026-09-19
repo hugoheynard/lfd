@@ -273,7 +273,8 @@ describe("POST /companies", () => {
     expect(event!.subjectId).toBe(companyId);
     expect(event!.actorType).toBe("customer");
     expect(event!.idempotencyKey).toBe(`company.declared:${companyId}`);
-    expect(event!.payload).toMatchObject({ via: "self", ownerUserId: userId });
+    // Le détenteur, cité avec son nom du moment (lot B du plan des phrases).
+    expect(event!.payload).toMatchObject({ via: "self", owner: { id: userId } });
   });
 
   it("la fait apparaître dans le compte du créateur, et de personne d'autre", async () => {

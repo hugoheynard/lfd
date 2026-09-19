@@ -1,7 +1,7 @@
 import type { CatalogItem } from "../../../domain/entities/catalog-item.js";
 import { SetCatalogVisibilityCommand } from "../set-catalog-visibility.command.js";
 import { SetCatalogVisibilityHandler } from "../set-catalog-visibility.handler.js";
-import { build, facts, SKU } from "./catalog-decision-doubles.js";
+import { build, facts, SKU, NAME } from "./catalog-decision-doubles.js";
 
 /** Le handler sous test, branché sur les doubles de `build`. */
 function setup(seed?: (item: CatalogItem) => void) {
@@ -24,7 +24,7 @@ describe("SetCatalogVisibilityHandler", () => {
         type: "catalog_item.hidden",
         subjectType: "catalog_item",
         subjectId: SKU,
-        payload: { sku: SKU },
+        payload: { subjectLabel: NAME, sku: SKU },
       },
     ]);
   });

@@ -8,6 +8,7 @@ import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { AccountAccessGranter } from "../services/grant-account-access.service.js";
 import { AttachAccountHolderCommand } from "./attach-account-holder.command.js";
+import { companyNamed, contactRef } from "../../domain/events/journal-names.js";
 
 /** Ce que le rattachement rapporte : seulement ce que l'écran ne peut pas deviner. */
 export interface HolderAttached {
@@ -75,7 +76,11 @@ export class AttachAccountHolderHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new CompanyAccessOpenedEvent(command.companyId, granted.userId, "owner"),
+        new CompanyAccessOpenedEvent(
+          companyNamed(command.companyId, company),
+          contactRef(granted.userId, contact),
+          "owner",
+        ),
       );
     });
     return { mailSent: granted.mailSent };

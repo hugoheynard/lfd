@@ -17,6 +17,7 @@ import type request from "supertest";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bodyWithoutRequestId,
+  DELIVERY,
   GHOST_STEP,
   jpegOf,
   OVER_UPLOAD_LIMIT,
@@ -300,8 +301,10 @@ describe("le journal des gestes staff", () => {
     });
     expect(journal.map((entry) => entry.payload)).toEqual(
       ["step_added", "step_revised", "step_revised"].map((action) => ({
-        companyId,
-        addressId,
+        // La société est le sujet (nommée) ; l'adresse, citée par son id et son
+        // lieu — jamais son libellé (lot B du plan des phrases).
+        subjectLabel: "Boulangerie du Marais SAS",
+        address: { id: addressId, ville: DELIVERY.ville, codePostal: DELIVERY.codePostal },
         action,
       })),
     );

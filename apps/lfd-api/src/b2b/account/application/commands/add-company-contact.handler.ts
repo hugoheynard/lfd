@@ -8,6 +8,8 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { AddCompanyContactCommand } from "./contact-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { contactRef } from "../../domain/events/journal-names.js";
 
 /**
  * Ajoute un contact additionnel à une entreprise, réservé à son gestionnaire.
@@ -23,6 +25,7 @@ export class AddCompanyContactHandler implements ICommandHandler<AddCompanyConta
     private readonly book: CompanyContactBook,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: AddCompanyContactCommand): Promise<string> {
@@ -30,10 +33,11 @@ export class AddCompanyContactHandler implements ICommandHandler<AddCompanyConta
     ensureCompanyAdmin(role, command.companyId);
 
     const details = ContactDetails.create(command.details);
+    const company = await this.names.company(command.companyId);
     return this.uow.run(async () => {
       const contactId = await this.book.add(command.companyId, details, command.role);
       await this.events.publishTraced(
-        new ContactAddedByMemberEvent(command.companyId, contactId, command.role),
+        new ContactAddedByMemberEvent(company, contactRef(contactId, details), command.role),
       );
       return contactId;
     });

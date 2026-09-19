@@ -6,7 +6,12 @@ import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recor
 describe("OnUserRegistered", () => {
   const work = new BackgroundWork();
 
-  it("journalise user.registered sur la personne, clé déterministe, e-mail en payload", async () => {
+  /**
+   * Régression (lot B du plan des phrases, 2026-09-19) : la charge recopiait
+   * l'e-mail de l'inscription, contre la règle « jamais de coordonnées au
+   * journal ». La file des prospects le lit désormais sur la fiche.
+   */
+  it("journalise user.registered sur la personne, clé déterministe, sans e-mail", async () => {
     const recorder = new RecordingActivityRecorder();
     new OnUserRegistered(recorder, work).handle(new UserRegisteredEvent("user_8", "chef@resto.fr"));
     await work.whenIdle();
@@ -16,7 +21,8 @@ describe("OnUserRegistered", () => {
       subjectType: "user",
       subjectId: "user_8",
       idempotencyKey: "user.registered:user_8",
-      payload: { email: "chef@resto.fr" },
+      payload: {},
     });
+    expect(JSON.stringify(recorder.records)).not.toContain("chef@resto.fr");
   });
 });

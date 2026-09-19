@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { PaymentTermRequestedEvent } from "../../domain/events/member-acts.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
@@ -41,7 +42,11 @@ export class RequestPaymentTermHandler implements ICommandHandler<RequestPayment
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new PaymentTermRequestedEvent(command.companyId, before, company.requestedTerm),
+        new PaymentTermRequestedEvent(
+          companyNamed(command.companyId, company),
+          before,
+          company.requestedTerm,
+        ),
       );
     });
   }

@@ -277,7 +277,9 @@ describe("l’historique d’une fiche", () => {
     const entry = journal.entries[0];
     expect(entry?.subjectType).toBe("product");
     expect(entry?.subjectId).toBe(PRODUCT_ID);
-    expect(entry?.payload["variantId"]).toBe(VARIANT_ID);
+    // …et la nomme : l'identifiant ET son nom du moment (plan des phrases, D5).
+    expect(entry?.payload["variant"]).toEqual({ id: VARIANT_ID, name: "Café" });
+    expect(entry?.payload["subjectLabel"]).toBe("Café");
   });
 });
 

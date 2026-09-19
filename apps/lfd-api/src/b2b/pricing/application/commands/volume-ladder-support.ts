@@ -51,5 +51,6 @@ export function ladderAct(
     at,
     reason,
     summary: describeLadder(ladder.asLadder),
+    subjectLabel: ladder.asLadder.label,
   };
 }

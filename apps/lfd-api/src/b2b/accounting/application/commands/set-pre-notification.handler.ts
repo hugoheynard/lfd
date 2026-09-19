@@ -36,7 +36,11 @@ export class SetPreNotificationHandler implements ICommandHandler<SetPreNotifica
     await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new PreNotificationChangedEvent(command.legalEntityId, at, command.days),
+        new PreNotificationChangedEvent(
+          { id: command.legalEntityId, name: entity.name },
+          at,
+          command.days,
+        ),
       );
     });
   }

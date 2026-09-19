@@ -9,7 +9,7 @@ describe("OnCompanyStepReached", () => {
   it("journalise company.step_reached avec une clé PAR (société, étape)", async () => {
     const recorder = new RecordingActivityRecorder();
     new OnCompanyStepReached(recorder, work).handle(
-      new CompanyStepReachedEvent("company_2", "kbis"),
+      new CompanyStepReachedEvent("company_2", "Le Pain Quotidien", "kbis"),
     );
     await work.whenIdle();
 
@@ -18,15 +18,15 @@ describe("OnCompanyStepReached", () => {
       subjectType: "company",
       subjectId: "company_2",
       idempotencyKey: "company.step_reached:kbis:company_2",
-      payload: { step: "kbis" },
+      payload: { subjectLabel: "Le Pain Quotidien", step: "kbis" },
     });
   });
 
   it("distingue deux étapes de la même société par la clé", async () => {
     const recorder = new RecordingActivityRecorder();
     const handler = new OnCompanyStepReached(recorder, work);
-    handler.handle(new CompanyStepReachedEvent("company_2", "vat"));
-    handler.handle(new CompanyStepReachedEvent("company_2", "billing"));
+    handler.handle(new CompanyStepReachedEvent("company_2", "Le Pain Quotidien", "vat"));
+    handler.handle(new CompanyStepReachedEvent("company_2", "Le Pain Quotidien", "billing"));
     await work.whenIdle();
 
     expect(recorder.records.map((r) => r.idempotencyKey)).toEqual([

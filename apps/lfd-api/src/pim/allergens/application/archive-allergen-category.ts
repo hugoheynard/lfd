@@ -53,7 +53,7 @@ export class ArchiveAllergenCategoryHandler implements ICommandHandler<
         // La clé et le libellé voyagent avec le fait : une catégorie archivée
         // sort des écrans, et l'historique ne doit pas se réduire à un
         // identifiant qu'on ne peut plus résoudre nulle part.
-        payload: { key: archived.key, name: archived.name },
+        payload: { subjectLabel: archived.name.fr, key: archived.key, name: archived.name },
       });
       await this.categories.save(category, ticket);
     });

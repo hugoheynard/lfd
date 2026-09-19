@@ -11,6 +11,7 @@ import {
   InvalidOrderTimeLimitScopeError,
   OrderTimeLimitNotFoundError,
 } from "../../domain/errors/order-time-limit-errors.js";
+import { LimitScopeNamer } from "../../domain/ports/limit-scope.namer.js";
 import { OrderTimeLimitRepository } from "../../domain/ports/order-time-limit.repository.js";
 import type { LimitScope } from "../../domain/value-objects/limit-scope.js";
 import {
@@ -41,6 +42,13 @@ interface Doubles {
  * `jest.mock` de module : c'est le contrat qu'on veut éprouver, et un module
  * moqué laisserait dériver le double du port qu'il prétend jouer.
  */
+/** Les cibles que le référentiel nomme — une famille ici, le reste inconnu. */
+class TableScopeNamer extends LimitScopeNamer {
+  nameOf(scope: LimitScope): Promise<string | null> {
+    return Promise.resolve(scope.id === "cat_1" ? "Tartes" : null);
+  }
+}
+
 function doubles(existing: OrderTimeLimit | null): Doubles {
   const saved: OrderTimeLimit[] = [];
   const minted: string[] = [];
@@ -62,7 +70,13 @@ function doubles(existing: OrderTimeLimit | null): Doubles {
   };
   const journal = new RecordingJournal();
   return {
-    handler: new SetOrderTimeLimitHandler(limits, ids, journal, new DirectUnitOfWork()),
+    handler: new SetOrderTimeLimitHandler(
+      limits,
+      ids,
+      journal,
+      new DirectUnitOfWork(),
+      new TableScopeNamer(),
+    ),
     saved,
     minted,
     journal,
@@ -86,6 +100,17 @@ describe("SetOrderTimeLimitHandler", () => {
    * changé ça » ne se répond qu'en sachant ce que ça valait, et « ce rang ne se
    * prononce pas » est une décision, pas un vide.
    */
+  /** Lot B du plan des phrases (2026-09-19) : la portée se fige en mots, nommée. */
+  it("nomme la cible de la portée au journal, sous son nom du moment", async () => {
+    const { handler, journal } = doubles(null);
+
+    await handler.execute(
+      new SetOrderTimeLimitCommand(payload({ scope: { type: "category", id: "cat_1" } })),
+    );
+
+    expect(journal.entries[0]?.payload).toMatchObject({ subjectLabel: "Famille « Tartes »" });
+  });
+
   it("journalise la portée et les trois valeurs", async () => {
     const { handler, journal } = doubles(null);
 
@@ -93,6 +118,7 @@ describe("SetOrderTimeLimitHandler", () => {
 
     expect(journal.types()).toEqual(["order_time_limit.set"]);
     expect(journal.entries[0]?.payload).toEqual({
+      subjectLabel: "Toute la production",
       scope: "global:",
       daysBefore: 1,
       time: "18:00",
@@ -238,6 +264,7 @@ describe("RemoveOrderTimeLimitHandler", () => {
       view({
         id: "id_1",
         scope: { type: "category", id: "cat_1" },
+        scopeLabel: "Tartes",
         time: "16:00",
         graceMinutes: 30,
       }),
@@ -246,6 +273,7 @@ describe("RemoveOrderTimeLimitHandler", () => {
     await handler.execute(new RemoveOrderTimeLimitCommand("id_1"));
 
     expect(journal.entries[0]?.payload).toEqual({
+      subjectLabel: "Famille « Tartes »",
       scope: "category:cat_1",
       daysBefore: 1,
       time: "16:00",

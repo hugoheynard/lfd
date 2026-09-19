@@ -1,7 +1,13 @@
 import type { PricingAct, PricingSubjectType } from "../pricing-act.js";
 
-/** Un acte tel qu'il ressort du journal : ce qui a été écrit, plus son rang. */
-export interface JournalEntry extends PricingAct {
+/**
+ * Un acte tel qu'il ressort du journal : ce qui a été écrit, plus son rang.
+ *
+ * Sans `subjectLabel` : il n'est versé qu'au journal général (plan des
+ * phrases du journal, lot B) — la table du domaine a déjà sa phrase figée, et
+ * lui ajouter une colonne demanderait une migration pour un gain nul.
+ */
+export interface JournalEntry extends Omit<PricingAct, "subjectLabel"> {
   readonly id: string;
 }
 

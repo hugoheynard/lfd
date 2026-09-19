@@ -7,7 +7,7 @@ import {
   CatalogItemUnfeaturedEvent,
 } from "../../domain/events/catalog-item.events.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
-import { loadOrFail } from "./catalog-decision-support.js";
+import { loadOrFail, subjectOf } from "./catalog-decision-support.js";
 import { SetCatalogFeaturedCommand } from "./set-catalog-featured.command.js";
 
 /**
@@ -38,8 +38,8 @@ export class SetCatalogFeaturedHandler implements ICommandHandler<SetCatalogFeat
       if (item.isFeatured !== wasFeatured) {
         await this.events.publishTraced(
           item.isFeatured
-            ? new CatalogItemFeaturedEvent(item.sku)
-            : new CatalogItemUnfeaturedEvent(item.sku),
+            ? new CatalogItemFeaturedEvent(subjectOf(item))
+            : new CatalogItemUnfeaturedEvent(subjectOf(item)),
         );
       }
     });

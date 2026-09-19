@@ -48,16 +48,21 @@ describe("le catalogue des faits", () => {
     expect(JOURNAL_UNITS).toContain("basisPoints");
   });
 
-  it("marque un identifiant nu par ce qu'il désigne — la liste de travail du lot B", () => {
-    const reclassified = JOURNAL_FACTS["product.reclassified"].payload;
+  it("marque un identifiant par ce qu'il désigne — nu au lot A, nommé depuis le lot B", () => {
+    const reclassified = JOURNAL_FACTS["product.reclassified"];
 
-    expect(metaOf(reclassified.shape.from)).toEqual({ ref: "product_category" });
+    expect(metaOf(reclassified.payload.shape.from.shape.id)).toEqual({ ref: "product_category" });
   });
 });
 
 describe("checkJournalFact — la confrontation à l'écriture", () => {
   it("laisse passer un fait conforme", () => {
-    expect(checkJournalFact("company.kbis_uploaded", { fileName: "kbis.pdf" })).toBeNull();
+    expect(
+      checkJournalFact("company.kbis_uploaded", {
+        subjectLabel: "Le Pain Quotidien",
+        fileName: "kbis.pdf",
+      }),
+    ).toBeNull();
     expect(isJournalFactType("company.kbis_uploaded")).toBe(true);
   });
 

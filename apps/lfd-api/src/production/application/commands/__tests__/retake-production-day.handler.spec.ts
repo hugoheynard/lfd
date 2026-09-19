@@ -123,7 +123,7 @@ describe("RetakeProductionDayHandler", () => {
         type: "production_day.retaken",
         subjectType: "production_day",
         subjectId: DAY,
-        payload: { serviceDay: DAY, absorbed: 1 },
+        payload: { subjectLabel: DAY, serviceDay: DAY, absorbed: 1 },
       },
     ]);
   });

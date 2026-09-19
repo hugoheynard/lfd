@@ -89,6 +89,43 @@ describe("poser une limite", () => {
     expect(await list()).toHaveLength(2);
   });
 
+  /**
+   * Lot B du plan des phrases (2026-09-19) : le fait ne citait la portée que
+   * par sa clé (`category:<id>`). Il la dit en mots, sous le nom QUE LA
+   * FAMILLE PORTAIT — renommée après coup, la ligne ne bouge pas.
+   */
+  it("fige au journal la portée en mots, sous le nom du moment de sa famille", async () => {
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post("/pim/catalogue/categories")
+        .send({ name: { fr: "Tartes" } })
+        .expect(201),
+    );
+    await staff()
+      .put(LIMITS)
+      .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
+      .expect(200);
+    await staff()
+      .put(LIMITS)
+      .send({ scope: { type: "category", id: category.id }, time: "16:00" })
+      .expect(200);
+    await ctx.prisma.category.update({
+      where: { id: category.id },
+      data: { name: { fr: "Tartes fines" } },
+    });
+
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { type: "order_time_limit.set" },
+      orderBy: { occurredAt: "asc" },
+      select: { payload: true },
+    });
+
+    expect(facts.map((fact) => fact.payload)).toEqual([
+      expect.objectContaining({ subjectLabel: "Toute la production" }),
+      expect.objectContaining({ subjectLabel: "Famille « Tartes »" }),
+    ]);
+  });
+
   it("refuse une portée qui se contredit", async () => {
     await staff()
       .put(LIMITS)

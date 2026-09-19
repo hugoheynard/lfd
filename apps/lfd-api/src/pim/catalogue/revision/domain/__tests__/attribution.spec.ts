@@ -4,6 +4,7 @@ import {
   ATTRIBUTED_FACT_TYPES,
   PRODUCT_FACT_TYPES,
   attributeFields,
+  causesOf,
   fieldsTouchedBy,
 } from "../attribution.js";
 
@@ -139,5 +140,54 @@ describe("attributeFields", () => {
     );
 
     expect([...authors.keys()].sort()).toEqual(["name", "priceCents"]);
+  });
+});
+
+describe("causesOf — la phrase d'une cause globale", () => {
+  /**
+   * Régression (lot B du plan des phrases, 2026-09-19) : l'écran de diff des
+   * révisions affichait l'identifiant de la famille pour `product_category.moved`,
+   * faute de lire le nom que le fait porte depuis.
+   */
+  it("dit une famille déplacée par son nom et ceux de ses parents", () => {
+    const [cause] = causesOf([
+      fact({
+        type: PIM_EVENTS.productCategoryMoved,
+        subjectType: "product_category",
+        subjectId: "cat_tartes",
+        payload: {
+          subjectLabel: "Tartes",
+          parent: { from: { id: "cat_sucre", name: "Sucré" }, to: null },
+        },
+      }),
+    ]);
+
+    expect(cause?.label).toBe("Tartes : Sucré → aucune");
+  });
+
+  it("dit un taux par son nom et ses deux valeurs, comme avant le lot B", () => {
+    const [cause] = causesOf([
+      fact({
+        type: PIM_EVENTS.vatRateRateChanged,
+        subjectType: "vat_rate",
+        subjectId: "vat_1",
+        payload: { subjectLabel: "Taux réduit", name: "Taux réduit", from: 5.5, to: 10 },
+      }),
+    ]);
+
+    expect(cause?.label).toBe("Taux réduit : 5.5 → 10");
+  });
+
+  it("se rabat sur l'identifiant d'une ligne ancienne qui n'a pas de nom", () => {
+    const [cause] = causesOf([
+      fact({
+        type: PIM_EVENTS.productCategoryMoved,
+        subjectType: "product_category",
+        subjectId: "cat_tartes",
+        payload: { parentId: { from: "cat_sucre", to: null } },
+      }),
+    ]);
+
+    expect(cause?.label).toBe("cat_tartes : cat_sucre → aucune");
   });
 });

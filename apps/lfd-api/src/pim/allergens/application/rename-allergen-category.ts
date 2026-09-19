@@ -45,7 +45,7 @@ export class RenameAllergenCategoryHandler implements ICommandHandler<
         type: PIM_EVENTS.allergenCategoryRenamed,
         subjectType: "allergen_category",
         subjectId: after.id,
-        payload: { key: after.key, from: before, to: after.name },
+        payload: { subjectLabel: after.name.fr, key: after.key, from: before, to: after.name },
       });
       await this.categories.save(category, ticket);
     });

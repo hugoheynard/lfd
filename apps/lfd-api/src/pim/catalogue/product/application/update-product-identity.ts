@@ -8,6 +8,8 @@ import {
   CategoryArchivedError,
   CategoryNotFoundError,
 } from "../../category/domain/errors/category-errors.js";
+import { namedCategory, requireCategory } from "../../category/application/category-support.js";
+import type { Category } from "../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";
 import {
@@ -71,7 +73,12 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     }
 
     const before = UpdateProductIdentityHandler.identityOf(product.snapshot());
-    const previousCategoryId = product.categoryId;
+    // L'ancienne famille, lue pour son NOM : la ligne doit dire d'où la fiche
+    // venait sous le nom que sa famille portait ce jour-là.
+    const previous =
+      product.categoryId === category.id
+        ? category
+        : await requireCategory(this.categories, product.categoryId);
     product.rename(localizedText("nom", input.name));
     product.changeKind(input.kind);
     product.reclassify(input.categoryId);
@@ -84,7 +91,10 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     // de sens ici. Enregistrer une section sans rien y changer n'écrit aucun
     // fait — sinon l'historique se remplit de gestes sans effet.
     await this.uow.run(async () => {
-      const ticket = await this.journalize(id, changes, previousCategoryId, product.categoryId);
+      const ticket = await this.journalize(product.snapshot().name.fr, id, changes, {
+        from: previous,
+        to: category,
+      });
       await this.products.save(product, ticket);
     });
   }
@@ -100,26 +110,35 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
    * `categoryId` — les lecteurs d'avant le lisent là.
    */
   private async journalize(
+    subjectLabel: string,
     productId: string,
     changes: FieldChanges,
-    fromCategoryId: string,
-    toCategoryId: string,
+    family: { readonly from: Category; readonly to: Category },
   ): Promise<WriteTicket> {
     if (Object.keys(changes).length === 0) {
       return this.journal.untraced("section enregistrée sans modification");
     }
+    const from = namedCategory(family.from);
+    const to = namedCategory(family.to);
     const ticket = await this.journal.trace({
       type: PIM_EVENTS.productIdentitySaved,
       subjectType: "product",
       subjectId: productId,
-      payload: { changes },
+      // La famille du diff, NOMMÉE (D5 du plan des phrases). La clé reste
+      // `categoryId` : l'attribution d'une révision lit les clés du diff comme
+      // des champs de révision (`revision/domain/attribution.ts`).
+      payload: {
+        subjectLabel,
+        changes:
+          changes["categoryId"] === undefined ? changes : { ...changes, categoryId: { from, to } },
+      },
     });
-    if (fromCategoryId !== toCategoryId) {
+    if (family.from.id !== family.to.id) {
       await this.journal.trace({
         type: PIM_EVENTS.productReclassified,
         subjectType: "product",
         subjectId: productId,
-        payload: { from: fromCategoryId, to: toCategoryId },
+        payload: { subjectLabel, from, to },
       });
     }
     return ticket;

@@ -51,6 +51,7 @@ export class SetVolumeLadderHandler implements ICommandHandler<SetVolumeLadderCo
       at: this.clock.now(),
       reason: null,
       summary: describeLadder(ladder.asLadder),
+      subjectLabel: ladder.asLadder.label,
     });
     return ladder.id;
   }

@@ -3,11 +3,12 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import type { PointOfSale } from "../domain/entities/point-of-sale.js";
-import { changesBetween } from "../../journal/changes.js";
+import { changesBetween, type FieldChanges } from "../../journal/changes.js";
 import { PointOfSaleRepository } from "../domain/ports/point-of-sale.repository.js";
 import { PointOfSaleUsageReader } from "../domain/ports/point-of-sale-usage.reader.js";
 import { ContextStillSoldHereError } from "../domain/errors/points-of-sale-errors.js";
-import { requirePointOfSale } from "./point-of-sale-support.js";
+import { SalesContextRegistry } from "../../sales-contexts/domain/ports/sales-context.registry.js";
+import { namedContexts, requirePointOfSale } from "./point-of-sale-support.js";
 
 export interface UpdatePointOfSalePatch {
   readonly label?: string | undefined;
@@ -36,6 +37,7 @@ export class UpdatePointOfSaleHandler implements ICommandHandler<UpdatePointOfSa
   constructor(
     private readonly points: PointOfSaleRepository,
     private readonly usage: PointOfSaleUsageReader,
+    private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}
@@ -100,12 +102,39 @@ export class UpdatePointOfSaleHandler implements ICommandHandler<UpdatePointOfSa
               type: PIM_EVENTS.pointOfSaleUpdated,
               subjectType: "point_of_sale",
               subjectId: id,
-              payload: { changes },
+              payload: {
+                subjectLabel: pointOfSale.snapshot().label,
+                changes: await this.namedChanges(changes),
+              },
             })
           : this.journal.untraced("point de vente enregistré sans modification");
       await this.points.save(pointOfSale, ticket);
     });
   }
+
+  /**
+   * Les contextes du diff, NOMMÉS et en tableau — comme à la création. Ils
+   * étaient ici une chaîne de clés jointes par une espace, et un lecteur
+   * devait connaître les deux formes (plan des phrases du journal, lot B).
+   */
+  private async namedChanges(changes: FieldChanges): Promise<FieldChanges> {
+    const offer = changes["contexts"];
+    if (offer === undefined) {
+      return changes;
+    }
+    return {
+      ...changes,
+      contexts: {
+        from: await namedContexts(keysOf(offer.from), this.contexts),
+        to: await namedContexts(keysOf(offer.to), this.contexts),
+      },
+    };
+  }
+}
+
+/** Les clés d'une offre telle que `traced` la compare. */
+function keysOf(value: unknown): readonly string[] {
+  return Array.isArray(value) ? value.filter((key) => typeof key === "string") : [];
 }
 
 /**
@@ -119,5 +148,5 @@ export class UpdatePointOfSaleHandler implements ICommandHandler<UpdatePointOfSa
  */
 function traced(pointOfSale: PointOfSale): Record<string, unknown> {
   const { label, baseUrl, contexts, tables } = pointOfSale.snapshot();
-  return { label, baseUrl, contexts: [...contexts].join(" "), tableCount: tables.length };
+  return { label, baseUrl, contexts: [...contexts], tableCount: tables.length };
 }

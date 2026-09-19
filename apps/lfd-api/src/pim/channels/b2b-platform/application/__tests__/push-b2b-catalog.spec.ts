@@ -21,6 +21,8 @@ function summary(over: Partial<B2bPushSummary> = {}): B2bPushSummary {
     excluded: [],
     fingerprint: "empreinte-A",
     revisionId: "rev_1",
+    revisionName: "Rentrée",
+    revisionReference: "R-7WT4NA",
     ...over,
   };
 }
@@ -87,6 +89,18 @@ describe("PushB2bCatalogHandler", () => {
   });
 
   /**
+   * Lot B du plan des phrases (2026-09-19) : le fait citait l'ancre par son
+   * seul identifiant. Il la nomme — son nom, à défaut sa référence.
+   */
+  it("nomme l'ancre envoyée, et garde sa référence", async () => {
+    const { handler, traced } = await make(summary());
+
+    await handler.execute(new PushB2bCatalogCommand(false, undefined));
+
+    expect(traced[0]?.payload).toMatchObject({ subjectLabel: "Rentrée", reference: "R-7WT4NA" });
+  });
+
+  /**
    * Le mode vit dans le payload plutôt que dans deux faits séparés : une
    * simulation laisse elle aussi une ligne de publication en base, et un
    * journal qui la tairait laisserait des ancres sans explication.
@@ -101,7 +115,9 @@ describe("PushB2bCatalogHandler", () => {
 
   /** Rien n'est parti, rien n'a été figé : il n'y a pas d'acte à inscrire. */
   it("ne trace RIEN quand il n’y avait rien à envoyer", async () => {
-    const { handler, traced } = await make(summary({ candidates: 0, revisionId: null }));
+    const { handler, traced } = await make(
+      summary({ candidates: 0, revisionId: null, revisionName: null, revisionReference: null }),
+    );
 
     const result = await handler.execute(new PushB2bCatalogCommand(false, undefined));
 

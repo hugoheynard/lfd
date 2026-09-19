@@ -82,7 +82,12 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
       type: "payment_mandate.sent",
       subjectType: "payment_mandate",
       subjectId: "mdt_1",
-      payload: { companyId: "cmp_1", reference: "LFC-9P2X4B-260914-K7M3QT", providerId: "re_1" },
+      payload: {
+        subjectLabel: "LFC-9P2X4B-260914-K7M3QT",
+        company: { id: "cmp_1", name: "Le Refuge du Col" },
+        reference: "LFC-9P2X4B-260914-K7M3QT",
+        providerId: "re_1",
+      },
     });
   });
 

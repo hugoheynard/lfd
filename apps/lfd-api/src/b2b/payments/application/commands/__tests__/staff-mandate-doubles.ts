@@ -62,6 +62,7 @@ export function doubles(options: {
         options.holder === undefined
           ? {
               companyName: "Café des Halles SAS",
+              displayName: "Café des Halles",
               email: "camille@halles.fr",
               reference: "C-7K2M4P",
               siren: "",

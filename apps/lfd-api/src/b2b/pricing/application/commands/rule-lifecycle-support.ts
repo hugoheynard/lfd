@@ -1,8 +1,8 @@
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { PriceRuleNotFoundError } from "../../domain/pricing-errors.js";
-import { describeRule } from "../../domain/pricing-act.js";
+import { citedAudience, describeRule } from "../../domain/pricing-act.js";
 import type { PricingRule } from "../../domain/entities/pricing-rule.js";
-import type { PricingAct, PricingActKind } from "../../domain/pricing-act.js";
+import type { PricingAct, PricingActKind, RuleNames } from "../../domain/pricing-act.js";
 
 /**
  * **Les trois gestes qui arrêtent, reprennent et rangent une règle** — plus le
@@ -37,6 +37,11 @@ export async function mustLoad(rules: PricingRuleRepository, id: string): Promis
  *
  * C'est ce qu'on cherche en relisant : « qu'est-ce qui a été suspendu », pas
  * « quel état a-t-elle pris ». L'état, le verbe le dit déjà.
+ *
+ * @param names les noms du moment de ce que la règle vise et de la société
+ *   qu'elle vise (`ruleNamesOf`).
+ * @param subjectLabel le nom de la règle au journal — son libellé, sauf quand
+ *   le geste le change (`renamed` passe le nouveau).
  */
 export function actOf(
   rule: PricingRule,
@@ -44,6 +49,8 @@ export function actOf(
   actor: string,
   at: Date,
   reason: string | null,
+  names: RuleNames,
+  subjectLabel: string = rule.label,
 ): PricingAct {
   return {
     subjectType: "rule",
@@ -52,6 +59,8 @@ export function actOf(
     actor,
     at,
     reason,
-    summary: describeRule(rule.asPriceRule),
+    summary: describeRule(rule.asPriceRule, names),
+    subjectLabel,
+    ...citedAudience(rule.asPriceRule, names),
   };
 }

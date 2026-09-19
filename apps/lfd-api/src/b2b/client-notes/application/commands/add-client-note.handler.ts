@@ -12,6 +12,7 @@ import { NotebookCompanies } from "../../domain/ports/notebook-companies.js";
 import { AddClientNoteCommand } from "./add-client-note.command.js";
 import { addClientNote } from "./client-notebook-editing.js";
 import { noteAuthorOf } from "./note-author.js";
+import { namedNotebookCompany } from "../services/notebook-company-guard.js";
 
 /**
  * Ajoute une note **en tête** du carnet d'un client, avec son auteur figé.
@@ -46,9 +47,13 @@ export class AddClientNoteHandler implements ICommandHandler<AddClientNoteComman
       ports,
       command.companyId,
       { fields: command.fields, photo: command.photo, thumbnail: command.thumbnail, author },
-      (noteId) =>
+      async (noteId) =>
         this.events.publishTraced(
-          ClientNoteEditedByStaffEvent.onNote(command.companyId, noteId, "note_added"),
+          ClientNoteEditedByStaffEvent.onNote(
+            await namedNotebookCompany(this.companies, command.companyId),
+            noteId,
+            "note_added",
+          ),
         ),
     );
   }

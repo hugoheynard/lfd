@@ -1,3 +1,5 @@
+import { JOURNAL_FACT_TYPES } from "@lfd/contracts/journal-facts";
+
 import { moduleOf, prefixesOf } from "../activity-module.js";
 
 /**
@@ -137,5 +139,31 @@ describe("moduleOf — la comptabilité", () => {
 
   it("garde les règles comptables au référentiel", () => {
     expect(moduleOf("accounting_rules.method_changed")).toBe("pim");
+  });
+});
+
+/**
+ * Régression : `feature_access.*` et `company_mercuriale.*` s'écrivaient sans
+ * module — introuvables autrement qu'en fouillant « tous les modules » (relevé
+ * au lot A du plan des phrases, rangés au lot B, 2026-09-19).
+ */
+describe("moduleOf — aucun type du catalogue sans module", () => {
+  it.each([
+    ["feature_access.override_set", "comptes"],
+    ["feature_access.exemption_removed", "comptes"],
+    ["company_mercuriale.posed", "commercial"],
+    ["company_mercuriale.renamed", "commercial"],
+  ])("%s se range sous %s", (type, module) => {
+    expect(moduleOf(type)).toBe(module);
+  });
+
+  it("range chaque type du catalogue des faits, retirés compris", () => {
+    expect(JOURNAL_FACT_TYPES.filter((type) => moduleOf(type) === null)).toEqual([]);
+  });
+
+  /** `company.` ne doit pas capter `company_mercuriale.` : le point fait partie du préfixe. */
+  it("ne confond pas la mercuriale d'un client avec son compte", () => {
+    expect(moduleOf("company.declared")).toBe("comptes");
+    expect(moduleOf("company_mercuriale.archived")).toBe("commercial");
   });
 });

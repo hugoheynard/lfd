@@ -244,7 +244,11 @@ describe("OpenStaffAccess — la trace de l'invitation", () => {
         subjectType: "staff_user",
         subjectId: "s1",
         // Ni l'adresse, ni le lien : le lien vaut prise de contrôle du compte.
-        payload: { person: { firstName: "Sophie", lastName: "Martin" }, kind: "invitation" },
+        payload: {
+          subjectLabel: "Sophie Martin",
+          person: { firstName: "Sophie", lastName: "Martin" },
+          kind: "invitation",
+        },
       },
     ]);
     expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);

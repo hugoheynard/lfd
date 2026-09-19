@@ -175,7 +175,7 @@ describe("clore une journée", () => {
         type: "production_day.closed",
         subjectType: "production_day",
         subjectId: DAY,
-        payload: { serviceDay: DAY, absorbed: 2 },
+        payload: { subjectLabel: DAY, serviceDay: DAY, absorbed: 2 },
       },
     ]);
   });

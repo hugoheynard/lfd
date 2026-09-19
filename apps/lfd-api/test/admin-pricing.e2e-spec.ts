@@ -414,6 +414,33 @@ describe("suspendre, reprendre, archiver", () => {
   });
 
   /**
+   * Lot B du plan des phrases (2026-09-19) : l'audience d'une règle se disait
+   * par l'identifiant brut de la société. La phrase et la charge la nomment,
+   * sous le nom qu'elle portait — renommée après coup, la ligne ne bouge pas.
+   */
+  it("nomme la société visée au journal, sous son nom du moment", async () => {
+    const company = await createCompany(ctx.prisma, { enseigne: "Le Comptoir" });
+    const { id } = jsonBody<{ id: string }>(
+      await postRule({ audience: { type: "company", id: company.id } }).expect(201),
+    );
+    await ctx.prisma.company.update({ where: { id: company.id }, data: { enseigne: "Chez Paul" } });
+    await pause(id);
+
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: id },
+      orderBy: { occurredAt: "asc" },
+      select: { payload: true },
+    });
+
+    expect(facts).toHaveLength(2);
+    expect(facts[0]?.payload).toMatchObject({ audience: { id: company.id, name: "Le Comptoir" } });
+    expect(JSON.stringify(facts[0]?.payload)).toContain("client « Le Comptoir »");
+    expect(facts[1]?.payload).toMatchObject({ audience: { id: company.id, name: "Chez Paul" } });
+    expect(JSON.stringify(facts[1]?.payload)).toContain("client « Chez Paul »");
+    expect(JSON.stringify(facts)).not.toContain(`, ${company.id}`);
+  });
+
+  /**
    * La phrase est FIGÉE à l'écriture : elle doit rester lisible après que la
    * règle a quitté l'écran, sans quoi le journal renverrait à un vide.
    */
@@ -1613,6 +1640,31 @@ describe("renommer une règle", () => {
       await staff().get(`/admin/pricing/journal/rule/${id}`).expect(200),
     );
     expect(entries[0]?.act).toBe("renamed");
+  });
+
+  /**
+   * Plan des phrases du journal, lot B (D5, D6) : le journal général nomme la
+   * règle telle qu'elle s'appelait au moment de chaque acte, et sa phrase nomme
+   * la famille visée plutôt que son code. Renommer après coup ne réécrit pas
+   * la ligne de la pose.
+   */
+  it("fige au journal le nom du MOMENT, et nomme la famille visée", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await postRule({ label: "Avant", scope: { type: "category", id: FAMILY } }).expect(201),
+    );
+
+    await staff().patch(`/admin/pricing/rules/${id}/label`).send({ label: "Après" }).expect(204);
+
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { subjectType: "price_rule", subjectId: id },
+      orderBy: { id: "asc" },
+      select: { type: true, payload: true },
+    });
+    expect(facts.map((fact) => fact.type)).toEqual(["price_rule.posed", "price_rule.renamed"]);
+    expect(facts[0]?.payload).toMatchObject({ subjectLabel: "Avant" });
+    // La phrase nomme le rayon plutôt que son code.
+    expect(JSON.stringify(facts[0]?.payload)).toContain("famille « Viennoiseries »");
+    expect(facts[1]?.payload).toMatchObject({ subjectLabel: "Après" });
   });
 
   it("refuse de renommer une règle archivée", async () => {

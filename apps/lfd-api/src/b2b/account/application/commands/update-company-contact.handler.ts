@@ -8,6 +8,8 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { UpdateCompanyContactCommand } from "./contact-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { contactRef } from "../../domain/events/journal-names.js";
 
 /**
  * Remplace un contact additionnel, réservé au gestionnaire de l'entreprise.
@@ -26,6 +28,7 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
     private readonly book: CompanyContactBook,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: UpdateCompanyContactCommand): Promise<void> {
@@ -35,10 +38,15 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
     // Le repository filtre sur (id ET companyId) : un contact d'une autre
     // entreprise est traité comme absent, jamais modifié.
     const details = ContactDetails.create(command.details);
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.book.replace(command.companyId, command.contactId, details, command.role);
       await this.events.publishTraced(
-        new ContactUpdatedByMemberEvent(command.companyId, command.contactId, command.role),
+        new ContactUpdatedByMemberEvent(
+          company,
+          contactRef(command.contactId, details),
+          command.role,
+        ),
       );
     });
   }

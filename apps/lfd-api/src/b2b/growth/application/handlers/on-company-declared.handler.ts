@@ -10,6 +10,9 @@ import { BackgroundWork } from "../../../../platform/events/background-work.js";
  * Le canal (`self`/`staff`) est porté dans le payload : c'est lui qui distinguera
  * plus tard **adoption+** (self, zéro interaction staff) d'une déclaration en
  * démarchage. Clé d'idempotence déterministe par société.
+ *
+ * Les noms du moment — la société, son détenteur — arrivent avec l'événement
+ * (lot B du plan des phrases) : l'abonné les fige sans relire les comptes.
  */
 @EventsHandler(CompanyDeclaredEvent)
 export class OnCompanyDeclared implements IEventHandler<CompanyDeclaredEvent> {
@@ -30,7 +33,11 @@ export class OnCompanyDeclared implements IEventHandler<CompanyDeclaredEvent> {
       subjectType: "company",
       subjectId: event.companyId,
       idempotencyKey: `${ACTIVITY_TYPES.companyDeclared}:${event.companyId}`,
-      payload: { via: event.via, ownerUserId: event.ownerUserId },
+      payload: {
+        subjectLabel: event.companyName,
+        via: event.via,
+        owner: event.owner === null ? null : { ...event.owner },
+      },
     });
   }
 }

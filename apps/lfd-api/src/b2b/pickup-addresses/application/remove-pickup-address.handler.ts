@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { PickupAddressRemovedEvent } from "../domain/pickup-address.events.js";
 import { PickupAddressRepository } from "../domain/pickup-address.repository.js";
+import { pickupLabel } from "./pickup-label.js";
 import { RemovePickupAddressCommand } from "./remove-pickup-address.command.js";
 
 /**
@@ -24,8 +25,9 @@ export class RemovePickupAddressHandler implements ICommandHandler<
 
   async execute(command: RemovePickupAddressCommand): Promise<void> {
     await this.uow.run(async () => {
+      const label = await pickupLabel(this.pickups, command.id);
       await this.pickups.remove(command.id);
-      await this.events.publishTraced(new PickupAddressRemovedEvent(command.id));
+      await this.events.publishTraced(new PickupAddressRemovedEvent(command.id, label));
     });
   }
 }

@@ -55,6 +55,8 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
       subjectType: "company",
       subjectId: "cmp_1",
       payload: {
+        // La société nommée au moment du geste (lot B du plan des phrases).
+        subjectLabel: "Le Refuge du Col",
         bankAccountId: "cba_000001",
         before: null,
         after: { last4: "2606", holder: RIB_PAYLOAD.holder },
@@ -75,6 +77,7 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
     );
 
     expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: "Le Refuge du Col",
       bankAccountId: "cba_1",
       before: { last4: "2606", holder: RIB_PAYLOAD.holder },
       after: { last4: "3000", holder: "Refuge du Col SAS" },

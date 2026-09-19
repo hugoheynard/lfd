@@ -399,7 +399,13 @@ describe("le brouillon devient caduc quand son papier change", () => {
       where: { type: "payment_mandate.options_changed" },
     });
     expect(rewrites.map((row) => row.payload)).toEqual([
-      { companyId, debtorReference: "C-9P2X4B", contractNumber: "CT-42", via: "staff" },
+      {
+        subjectLabel: "Refuge du Col SARL",
+        company: { id: companyId, name: "Café de Test SAS" },
+        debtorReference: "C-9P2X4B",
+        contractNumber: "CT-42",
+        via: "staff",
+      },
     ]);
   });
 });

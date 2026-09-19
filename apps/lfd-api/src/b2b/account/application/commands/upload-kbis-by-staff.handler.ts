@@ -33,7 +33,7 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
   ) {}
 
   async execute(command: UploadKbisByStaffCommand): Promise<void> {
-    await ingestKbis(
+    const company = await ingestKbis(
       command.companyId,
       command.fileName,
       command.bytes,
@@ -47,8 +47,6 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
     // enfermer cet aller-retour réseau dans celle de la base serait pire que le
     // trou qu'on refermerait. Une panne de journal échoue donc la requête sans
     // annuler le dépôt — l'agent le voit, et le fichier se redépose.
-    await this.events.publishTraced(
-      new KbisUploadedByStaffEvent(command.companyId, command.fileName),
-    );
+    await this.events.publishTraced(new KbisUploadedByStaffEvent(company, command.fileName));
   }
 }

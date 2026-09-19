@@ -6,6 +6,7 @@ import type { Company } from "../../domain/entities/company.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyIdentityEditedEvent } from "../../domain/events/member-acts.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { changedFields } from "../../domain/services/changed-fields.js";
@@ -59,14 +60,18 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.companies.save(company);
       if (fields.length > 0) {
-        await this.events.publishTraced(new CompanyIdentityEditedEvent(command.companyId, fields));
+        await this.events.publishTraced(
+          new CompanyIdentityEditedEvent(companyNamed(command.companyId, company), fields),
+        );
       }
     });
 
     // Pièce d'activation « TVA » franchie dès qu'un numéro est présent. Le journal
     // dédoublonne par (société, étape) : seule la 1re fois compte.
     if (command.payload.vatNumber.trim() !== "") {
-      this.events.publish(new CompanyStepReachedEvent(command.companyId, "vat"));
+      this.events.publish(
+        new CompanyStepReachedEvent(command.companyId, company.displayName(), "vat"),
+      );
     }
   }
 }

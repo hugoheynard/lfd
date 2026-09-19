@@ -6,7 +6,8 @@ import { PricingFloorRepository } from "../../domain/ports/pricing-floor.reposit
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../floor-reference.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { describeFloorPolicy } from "../../domain/pricing-act.js";
+import { describeFloorPolicy, describeScope } from "../../domain/pricing-act.js";
+import { scopeNameOf } from "../scope-names.js";
 import { SetPriceFloorCommand } from "./set-price-floor.command.js";
 import type { PriceScope } from "../../domain/price-rule.js";
 import type { PriceFloorPolicy } from "../../domain/floor-policy.js";
@@ -72,6 +73,8 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
       at,
       reason: null,
       summary: describeFloorPolicy(policy),
+      // Le sujet d'une limite est sa PORTÉE : c'est elle qu'on nomme.
+      subjectLabel: describeScope(scope, await scopeNameOf(scope, this.catalog)),
     });
   }
 }

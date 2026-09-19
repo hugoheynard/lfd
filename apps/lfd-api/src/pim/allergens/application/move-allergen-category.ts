@@ -47,7 +47,7 @@ export class MoveAllergenCategoryHandler implements ICommandHandler<
         type: PIM_EVENTS.allergenCategoryReordered,
         subjectType: "allergen_category",
         subjectId: after.id,
-        payload: { key: after.key, from: before, to: after.position },
+        payload: { subjectLabel: after.name.fr, key: after.key, from: before, to: after.position },
       });
       await this.categories.save(category, ticket);
     });

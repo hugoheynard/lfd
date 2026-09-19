@@ -78,6 +78,29 @@ describe("POST /admin/leads", () => {
     expect(journal).toHaveLength(1);
     expect(journal[0]).toMatchObject({ subjectType: "lead", subjectId: created.id });
   });
+
+  /**
+   * Régression : `lead.captured` portait l'e-mail du prospect en clair, contre
+   * la règle « jamais de coordonnées au journal » (relevé au lot A du plan des
+   * phrases, retiré au lot B, 2026-09-19). Le lead le garde sur SA ligne.
+   */
+  it("nomme le prospect au journal, sans son e-mail ni son téléphone", async () => {
+    await staff()
+      .post("/admin/leads")
+      .send({ businessName: "Bistrot du Coin", email: "Marie@Bistrot.FR", phone: "06 12 34 56 78" })
+      .expect(201);
+
+    const [captured] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "lead.captured" },
+    });
+    expect(captured?.payload).toEqual({
+      subjectLabel: "Bistrot du Coin",
+      businessName: "Bistrot du Coin",
+    });
+    const text = JSON.stringify(captured).toLowerCase();
+    expect(text).not.toContain("marie@bistrot.fr");
+    expect(text).not.toContain("06 12 34 56 78");
+  });
 });
 
 describe("GET /admin/leads", () => {

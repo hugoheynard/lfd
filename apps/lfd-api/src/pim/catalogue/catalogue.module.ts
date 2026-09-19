@@ -42,6 +42,7 @@ import { UpdateProductIdentityHandler } from "./product/application/update-produ
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
+import { PointsOfSaleModule } from "../points-of-sale/points-of-sale.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "./shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
@@ -104,6 +105,7 @@ import {
     VatRatesModule,
     SalesContextsModule,
     AccountingRulesModule,
+    PointsOfSaleModule,
   ],
   controllers: [
     CatalogRevisionController,

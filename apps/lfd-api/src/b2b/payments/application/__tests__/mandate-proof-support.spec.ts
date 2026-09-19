@@ -74,7 +74,7 @@ describe("attachProofToDraft — le scan remplacé d'un brouillon est purgé", (
     expect(purged).toMatchObject({
       type: "payment_mandate.proof_purged",
       subjectId: "mdt_1",
-      payload: { companyId: "cmp_1", cause: "proof_replaced" },
+      payload: { company: { id: "cmp_1", name: "Le Refuge du Col" }, cause: "proof_replaced" },
     });
     expect(JSON.stringify(purged)).not.toContain("companies/");
   });

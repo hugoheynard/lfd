@@ -5,6 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { KbisCertifiedEvent } from "../../domain/events/kbis-certification.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { CertifyKbisCommand } from "./certify-kbis.command.js";
@@ -55,7 +56,9 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
     });
     await this.uow.run(async () => {
       await this.companies.save(company);
-      await this.events.publishTraced(new KbisCertifiedEvent(command.companyId, at));
+      await this.events.publishTraced(
+        new KbisCertifiedEvent(companyNamed(command.companyId, company), at),
+      );
     });
   }
 }

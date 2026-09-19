@@ -4,6 +4,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { PaymentTermsGrantedEvent } from "../../domain/events/staff-acts.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { GrantTermsCommand } from "./grant-terms.command.js";
 
@@ -33,7 +34,10 @@ export class GrantTermsHandler implements ICommandHandler<GrantTermsCommand, voi
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new PaymentTermsGrantedEvent(command.companyId, command.grantedTerms),
+        new PaymentTermsGrantedEvent(
+          companyNamed(command.companyId, company),
+          command.grantedTerms,
+        ),
       );
     });
   }

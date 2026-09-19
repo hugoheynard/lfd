@@ -1,6 +1,7 @@
 import { Logger, Module, type OnModuleInit } from "@nestjs/common";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
+import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
 import { StartupReport } from "../../platform/startup/startup-report.service.js";
 import { CloseShopHandler } from "./application/close-shop.js";
@@ -29,7 +30,9 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
  * « boutique » (`documentation/pim/contextes-et-points-de-vente.md`).
  */
 @Module({
-  imports: [PimDatabaseModule],
+  // Le registre des contextes, pour NOMMER ceux qu'un point de vente offre dans
+  // ses faits de journal (plan des phrases, lot B). Lecture seule.
+  imports: [PimDatabaseModule, SalesContextsModule],
   controllers: [PointOfSaleController],
   providers: [
     OpenPointOfSaleHandler,
@@ -44,6 +47,10 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
     { provide: PointOfSaleReader, useClass: PrismaPointOfSaleReader },
     { provide: PointOfSaleUsageReader, useClass: PrismaPointOfSaleUsageReader },
   ],
+  // Le lecteur, pour que le catalogue NOMME les points de vente que ses faits
+  // de canaux citent (plan des phrases du journal, lot B). Lecture seule : le
+  // catalogue ne décide rien d'un point de vente.
+  exports: [PointOfSaleReader],
 })
 export class PointsOfSaleModule implements OnModuleInit {
   private readonly logger = new Logger(PointsOfSaleModule.name);

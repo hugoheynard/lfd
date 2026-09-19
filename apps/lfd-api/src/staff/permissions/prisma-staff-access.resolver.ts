@@ -1,11 +1,19 @@
-import { resolveStaffPermissions, type StaffOverride } from "@lfd/contracts";
-import { Injectable } from "@nestjs/common";
+import { resolveStaffPermissions, type StaffOverride, type StaffStatus } from "@lfd/contracts";
+import { Injectable, Logger } from "@nestjs/common";
 
+import {
+  currentRequestContext,
+  runWithRequestContext,
+} from "../../platform/context/request-context.store.js";
+import { newTraceId } from "../../platform/context/trace-context.js";
 import { PrismaService } from "../../platform/database/prisma.service.js";
+import { JournalFactNotCataloguedError } from "../../platform/journal/journal-fact-check.js";
+import { Journal } from "../../platform/journal/journal.js";
 import { Clock } from "../../platform/time/clock.js";
 import { isOutsideDatabaseConnection } from "../../platform/auth/auth0-claims.js";
 import { StaffAccessResolver } from "../../platform/auth/staff-access.resolver.js";
 import type { StaffAccess, StaffPrincipal } from "../../platform/auth/staff-principal.js";
+import { staffStatusFact } from "../directory/domain/staff-facts.js";
 import { linkedSubject } from "../directory/infrastructure/staff-subject-aliases.js";
 
 /** Durée de vie d'une entrée de cache, en millisecondes. */
@@ -18,6 +26,10 @@ interface CacheEntry {
 
 const STAFF_SELECT = {
   id: true,
+  // Le nom : la première entrée s'écrit au journal, et une personne s'y cite
+  // par son nom figé (D6 du plan des phrases).
+  firstName: true,
+  lastName: true,
   role: true,
   status: true,
   auth0Id: true,
@@ -67,10 +79,12 @@ const STAFF_SELECT = {
 @Injectable()
 export class PrismaStaffAccessResolver extends StaffAccessResolver {
   private readonly cache = new Map<string, CacheEntry>();
+  private readonly logger = new Logger(PrismaStaffAccessResolver.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    private readonly journal: Journal,
   ) {
     super();
   }
@@ -155,19 +169,25 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
    * La liaison est **conditionnée en base** à une fiche encore sans lien : deux
    * premières connexions simultanées ne se la disputent pas, la seconde est
    * refusée. Rend `false` quand elle a perdu.
+   *
+   * Une fiche qui passe ici de `pending`/`invited` à `active` laisse ensuite
+   * `staff_user.activated` au journal, par l'un ou l'autre chemin — voir
+   * {@link recordActivation}.
    */
-  private async recordEntry(
-    row: { id: string; status: string; auth0Id: string | null },
-    subject: string,
-  ): Promise<boolean> {
+  private async recordEntry(row: EnteringStaff, subject: string): Promise<boolean> {
     if (row.auth0Id === null) {
-      return this.link(row.id, subject);
+      const won = await this.link(row.id, subject);
+      if (won) {
+        await this.recordActivation(row);
+      }
+      return won;
     }
     if (row.status !== "active") {
       await this.prisma.staffUser.update({
         where: { id: row.id },
         data: { status: "active" },
       });
+      await this.recordActivation(row);
     }
     return true;
   }
@@ -193,4 +213,69 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
       return true;
     });
   }
+
+  /**
+   * La **première activation** au journal (D7 du plan des phrases), la fiche
+   * pour auteur — seulement si elle était `pending` ou `invited`.
+   *
+   * 🔴 **Best-effort, APRÈS l'écriture, et c'est l'inverse des gestes**
+   * (décision du 2026-09-19). Un geste du staff est opposable : sa trace est
+   * dans sa transaction, et une trace qui tombe l'annule. Ici il n'y a pas de
+   * geste — c'est le système qui constate qu'une personne est entrée — et
+   * l'accès prime : une panne du journal qui refuserait la connexion serait
+   * pire que le fait perdu, et se répéterait à chaque requête tant que la
+   * fiche resterait `invited`. L'échec part donc en erreur au log, et la
+   * personne entre.
+   *
+   * Seule exception : l'écart au catalogue en mode strict (tests) remonte,
+   * comme sur le chemin best-effort de la croissance — sinon aucun test ne
+   * verrait une charge mal décrite.
+   */
+  private async recordActivation(row: EnteringStaff): Promise<void> {
+    const activated = staffStatusFact(row.id, row, row.status, "active");
+    if (activated === null) {
+      return;
+    }
+    try {
+      await this.asTheFiche(row.id, () => this.journal.append(activated));
+    } catch (error) {
+      if (error instanceof JournalFactNotCataloguedError) {
+        throw error;
+      }
+      this.reportLostActivation(row.id, error);
+    }
+  }
+
+  /** Où part une première activation perdue : le log applicatif, en erreur. */
+  protected reportLostActivation(staffUserId: string, error: unknown): void {
+    this.logger.error(`Première activation non journalisée (fiche ${staffUserId}).`, error);
+  }
+
+  /**
+   * Fait de la fiche l'**auteur** de ce qui s'écrit dans `work` : c'est elle
+   * qui entre, et personne d'autre n'a agi. Le guard ne l'attache au contexte
+   * qu'APRÈS la décision d'accès ; on ne l'y attache pas plus tôt — la
+   * requête garde son acteur, seul ce fait-là voit la fiche. Même instant et
+   * même trace que la requête.
+   */
+  private asTheFiche<T>(staffUserId: string, work: () => Promise<T>): Promise<T> {
+    const context = currentRequestContext();
+    return runWithRequestContext(
+      {
+        now: context?.now ?? this.clock.now(),
+        traceId: context?.traceId ?? newTraceId(),
+        actor: { type: "staff", id: staffUserId },
+      },
+      work,
+    );
+  }
+}
+
+/** Ce que l'entrée d'une fiche lit d'elle. */
+interface EnteringStaff {
+  readonly id: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly status: StaffStatus;
+  readonly auth0Id: string | null;
 }

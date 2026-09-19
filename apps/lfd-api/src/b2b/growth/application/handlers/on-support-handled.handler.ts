@@ -4,7 +4,7 @@ import { SupportHandledEvent } from "../../../account/domain/events/support-hand
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { SUPPORT_ACTIVITY_WORK, subjectOf } from "./on-support-activity-support.js";
+import { labelOf, SUPPORT_ACTIVITY_WORK, subjectOf } from "./on-support-activity-support.js";
 
 /**
  * Journalise la **clôture** d'une demande de contact — le second des deux
@@ -30,7 +30,7 @@ export class OnSupportHandled implements IEventHandler<SupportHandledEvent> {
       ...subjectOf(event.companyId, event.requestedByUserId),
       occurredAt: event.handledAt,
       idempotencyKey: `${ACTIVITY_TYPES.supportHandled}:${event.supportRequestId}`,
-      payload: { supportRequestId: event.supportRequestId },
+      payload: { ...labelOf(event.subjectLabel), supportRequestId: event.supportRequestId },
     });
   }
 }

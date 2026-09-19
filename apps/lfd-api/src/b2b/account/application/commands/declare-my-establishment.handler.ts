@@ -13,6 +13,7 @@ import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { PersonAttachmentLock } from "../../domain/ports/person-attachment.lock.js";
 import { UserProfileRepository } from "../../domain/ports/user-profile.repository.js";
 import { DeclareMyEstablishmentCommand } from "./declare-my-establishment.command.js";
+import { personName, personRef } from "../../domain/events/journal-names.js";
 
 /**
  * La porte pro : profil, puis société `pending` dont la personne devient le
@@ -83,7 +84,14 @@ export class DeclareMyEstablishmentHandler implements ICommandHandler<
       return this.companies.declareOwnedBy(company, command.userId);
     });
 
-    this.events.publish(new CompanyDeclaredEvent(companyId, "self", command.userId));
+    this.events.publish(
+      new CompanyDeclaredEvent(
+        companyId,
+        company.displayName(),
+        "self",
+        personRef(command.userId, personName(profile.firstName.value, profile.lastName.value)),
+      ),
+    );
     return companyId;
   }
 }

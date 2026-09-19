@@ -101,12 +101,19 @@ const MOMENTUM_LABEL: Record<MomentumTrajectory, string> = {
  * dans `lead_score.label` et relu tel quel par l'écran : sans annuaire ici, une
  * résolution côté front laisserait la valeur fausse en base, et le prochain
  * lecteur la réafficherait.
+ *
+ * `prospectEmails` donne son adresse à chaque personne, lue sur sa fiche
+ * (`CustomerEmailReader`) : le journal ne la porte plus depuis le lot B du
+ * plan des phrases (2026-09-19). Le libellé d'un prospect sans nom reste son
+ * adresse — ce read-model n'est pas le journal, et l'écran s'en sert pour le
+ * rappeler.
  */
 export function deriveLeadScores(
   events: readonly LeadEvent[],
   now: Date,
   coldLeads: readonly LeadView[] = [],
   companyNames: ReadonlyMap<string, CompanyIdentity> = new Map(),
+  prospectEmails: ReadonlyMap<string, string> = new Map(),
 ): LeadScoreView[] {
   const computedAt = now.toISOString();
   const subscribers = subscriberUserIds(events);
@@ -114,7 +121,7 @@ export function deriveLeadScores(
   const companyEvents = events.filter((event) => event.subjectType === "company");
 
   const leads: LeadScoreView[] = [];
-  for (const prospect of deriveProspects(userEvents, now)) {
+  for (const prospect of deriveProspects(userEvents, now, prospectEmails)) {
     if (prospect.temperature === "hot") {
       leads.push(scoreProspect(prospect, subscribers.has(prospect.subjectId), computedAt));
     }

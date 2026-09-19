@@ -8,7 +8,7 @@ import { IngredientAggregate } from "../domain/entities/ingredient.entity.js";
 import { IngredientKeyTakenError } from "../domain/errors/ingredient-errors.js";
 import { AppellationRepository } from "../domain/ports/appellation.repository.js";
 import { IngredientRepository } from "../domain/ports/ingredient.repository.js";
-import { resolveAppellation } from "./ingredient-support.js";
+import { namedAppellation, resolveAppellation } from "./ingredient-support.js";
 
 export class CreateIngredientCommand {
   constructor(readonly payload: CreateIngredientPayload) {}
@@ -48,11 +48,14 @@ export class CreateIngredientHandler implements ICommandHandler<CreateIngredient
         type: PIM_EVENTS.ingredientCreated,
         subjectType: "ingredient",
         subjectId: created.key,
+        // L'appellation NOMMÉE, sous la même clé qu'à la modification (lot B
+        // du plan des phrases : c'était un code ici, un identifiant là-bas).
         payload: {
+          subjectLabel: created.name.fr,
           key: created.key,
           name: created.name,
           origin: created.origin,
-          appellation: payload.appellationCode ?? null,
+          appellation: await namedAppellation(this.appellations, created.appellationId),
         },
       });
       await this.ingredients.add(ingredient, ticket);

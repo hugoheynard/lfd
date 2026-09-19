@@ -2,7 +2,14 @@ import type { MandateToCreate, PaymentMandate } from "./entities/payment-mandate
 
 /** L'identité de la société, telle qu'un mandat la demande. */
 export interface MandateHolder {
+  /** La raison sociale — le nom du débiteur, celui que le mandat imprime. */
   readonly companyName: string;
+  /**
+   * Le nom qu'affichent les écrans — l'enseigne, à défaut la raison sociale —,
+   * celui sous lequel le journal cite la société (lot B du plan des phrases).
+   * Jamais imprimé : le papier porte la raison sociale.
+   */
+  readonly displayName: string;
   readonly email: string;
   /**
    * La référence lisible du client — `C-9P2X4B`.

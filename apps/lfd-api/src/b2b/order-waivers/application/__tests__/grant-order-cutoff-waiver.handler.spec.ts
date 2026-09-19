@@ -3,7 +3,7 @@ import { RecordingPublisher } from "../../../../platform/events/__tests__/record
 import { OpenWaiverAlreadyExistsError } from "../../domain/order-cutoff-waiver-errors.js";
 import { GrantOrderCutoffWaiverCommand } from "../grant-order-cutoff-waiver.command.js";
 import { GrantOrderCutoffWaiverHandler } from "../grant-order-cutoff-waiver.handler.js";
-import { InMemoryWaivers, PAYLOAD } from "./order-cutoff-waiver-doubles.js";
+import { COMPANY_NAME, InMemoryWaivers, PAYLOAD } from "./order-cutoff-waiver-doubles.js";
 
 function build() {
   const waivers = new InMemoryWaivers();
@@ -25,7 +25,9 @@ describe("GrantOrderCutoffWaiverHandler", () => {
         subjectType: "order_cutoff_waiver",
         subjectId: "wvr_1",
         payload: {
-          companyId: "cmp_1",
+          // Le client sous son nom DU MOMENT (D5) : une enseigne change, la
+          // dérogation d'hier doit garder le nom d'hier.
+          company: { id: "cmp_1", name: COMPANY_NAME },
           fulfillmentDate: "2026-09-21",
           reason: "Client bloqué en tournée",
         },

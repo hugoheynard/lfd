@@ -79,6 +79,7 @@ import {
   AccountAccessGranter,
   GrantAccountAccess,
 } from "./application/services/grant-account-access.service.js";
+import { AccountJournalNames } from "./application/services/account-journal-names.service.js";
 import { CompanyContactBook } from "./application/services/company-contact-book.service.js";
 import { ListCompanyMembersHandler } from "./application/queries/list-company-members.handler.js";
 import { InviteCompanyMemberHandler } from "./application/commands/invite-company-member.handler.js";
@@ -185,6 +186,8 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     // Le carnet d'interlocuteurs : ses deux règles (une adresse, un rôle) valent
     // pour les deux portes, elles ne vivent donc pas dans les handlers.
     CompanyContactBook,
+    // Les noms qu'un fait fige au moment du geste (lot B du plan des phrases).
+    AccountJournalNames,
     { provide: CompanyMemberReader, useClass: PrismaCompanyMemberReader },
     { provide: CompanyMemberRepository, useClass: PrismaCompanyMemberRepository },
     GetMyAccountHandler,

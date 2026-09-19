@@ -77,7 +77,10 @@ describe("IssueStaffPasswordLinkHandler — le lien à remettre à la main", () 
         type: STAFF_FACTS.passwordLinkIssued,
         subjectType: "staff_user",
         subjectId: "s1",
-        payload: { person: { firstName: "Sophie", lastName: "Martin" } },
+        payload: {
+          subjectLabel: "Sophie Martin",
+          person: { firstName: "Sophie", lastName: "Martin" },
+        },
       },
     ]);
   });

@@ -4,6 +4,8 @@ import { OrderPlacedEvent } from "../../../orders/domain/events/order-placed.eve
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { CompanyNamer } from "../../domain/ports/company-namer.js";
+import { CustomerNamer } from "../../domain/ports/customer-namer.js";
+import { customerLabel } from "./order-fact-names.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 
 /**
@@ -18,6 +20,7 @@ export class OnOrderPlaced implements IEventHandler<OrderPlacedEvent> {
   constructor(
     private readonly recorder: ActivityRecorder,
     private readonly companies: CompanyNamer,
+    private readonly customers: CustomerNamer,
     private readonly work: BackgroundWork,
   ) {}
 
@@ -39,15 +42,21 @@ export class OnOrderPlaced implements IEventHandler<OrderPlacedEvent> {
    *
    * ⚠️ Ce n'est PAS le seul appelant de `CompanyNamer` dans le contexte : le
    * tunnel d'activation le lit aussi, par lot et sans rien figer.
+   *
+   * Le nom de la PERSONNE (le sujet de la ligne) est figé de la même façon,
+   * en `subjectLabel` (D6 du plan des phrases, 2026-09-19) — c'est une seconde
+   * lecture, et le prix d'une ligne qui se nomme.
    */
   private async run(event: OrderPlacedEvent): Promise<void> {
     const client = event.companyId === null ? null : await this.nameOrNull(event.companyId);
+    const subject = await customerLabel(this.customers, event.placedByUserId);
     await this.recorder.record({
       type: ACTIVITY_TYPES.orderPlaced,
       subjectType: "user",
       subjectId: event.placedByUserId,
       idempotencyKey: `${ACTIVITY_TYPES.orderPlaced}:${event.orderId}`,
       payload: {
+        ...subject,
         orderId: event.orderId,
         orderNumber: event.orderNumber,
         companyId: event.companyId,

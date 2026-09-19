@@ -206,12 +206,20 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   async findHolder(companyId: string): Promise<MandateHolder | null> {
     const row = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { raisonSociale: true, contactEmail: true, reference: true, siren: true },
+      select: {
+        raisonSociale: true,
+        enseigne: true,
+        contactEmail: true,
+        reference: true,
+        siren: true,
+      },
     });
     return row === null
       ? null
       : {
           companyName: row.raisonSociale,
+          // La règle de `Company.displayName()` : l'enseigne, à défaut la raison sociale.
+          displayName: row.enseigne === "" ? row.raisonSociale : row.enseigne,
           email: row.contactEmail,
           reference: row.reference,
           siren: row.siren,

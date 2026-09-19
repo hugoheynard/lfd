@@ -15,6 +15,7 @@ import { DebtorAccount } from "../../domain/value-objects/debtor-account.js";
 import { MandateOptions } from "../../domain/value-objects/mandate-options.js";
 import { writeVoidingDraft, type DraftVoidingDeps } from "../draft-mandate-voiding.js";
 import { ringDraftVoided, type MandateBellDeps } from "../mandate-staff-bell.js";
+import { mandateCompanyOf } from "../mandate-journal-names.js";
 
 /** Les ports du dépôt de RIB : le compte, et ce qu'il faut pour rendre caduc le brouillon. */
 export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps {
@@ -85,7 +86,7 @@ export async function recordCompanyBankAccount(
   const trigger = { cause: "bank_account_changed", via } as const;
   const changed = new CompanyBankAccountChangedEvent(
     written.id,
-    companyId,
+    await mandateCompanyOf(deps.mandates, companyId),
     before,
     bankAccountTraceOf(account),
     via,

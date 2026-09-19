@@ -49,4 +49,29 @@ describe("CaptureLeadHandler", () => {
       idempotencyKey: "lead.captured:lead_001",
     });
   });
+
+  /**
+   * Régression : `lead.captured` portait l'e-mail du prospect en clair, contre
+   * la règle « jamais de coordonnées au journal » (relevé au lot A du plan des
+   * phrases, retiré au lot B, 2026-09-19). Le lead le garde sur sa ligne.
+   */
+  it("nomme le prospect par son enseigne, et ne verse pas son e-mail au journal", async () => {
+    const recorder = new RecordingActivityRecorder();
+    await new CaptureLeadHandler(new FakeRepo(), recorder).execute(
+      new CaptureLeadCommand({
+        businessName: "Bistrot du Coin",
+        contactName: "Marie",
+        email: "hello@bistrot.fr",
+        phone: "06 12 34 56 78",
+        siret: "",
+        notes: "",
+      }),
+    );
+
+    expect(recorder.records[0]?.payload).toEqual({
+      subjectLabel: "Bistrot du Coin",
+      businessName: "Bistrot du Coin",
+    });
+    expect(JSON.stringify(recorder.records[0])).not.toContain("hello@bistrot.fr");
+  });
 });

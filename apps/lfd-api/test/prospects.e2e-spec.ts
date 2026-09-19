@@ -10,6 +10,7 @@ import type { ProspectView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { createUser } from "./factories.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -84,6 +85,9 @@ describe("GET /admin/prospects", () => {
     await ctx.http().get("/admin/prospects").expect(401);
   });
 
+  // Des lignes d'AVANT le lot B du plan des phrases : `user.registered` y
+  // recopiait l'e-mail, que la file relit encore pour une personne que la
+  // table ne connaît pas (le journal ne se réécrit pas).
   it("dérive hot/mid du journal et exclut qui transacte pour une société", async () => {
     await seed("user.registered", "u_mid", MID_REGISTERED, { email: "mid@resto.fr" });
     await seed("user.registered", "u_hot", HOT_REGISTERED, { email: "hot@resto.fr" });
@@ -113,6 +117,29 @@ describe("GET /admin/prospects", () => {
       email: "mid@resto.fr",
       orderCount: 0,
     });
+  });
+
+  /**
+   * Lot B du plan des phrases (2026-09-19) : `user.registered` ne porte plus
+   * l'e-mail — une coordonnée n'entre pas au journal. La file le lit sur la
+   * fiche de la personne, et la préfère à celui d'une ligne ancienne.
+   */
+  it("lit l'e-mail d'un prospect sur sa fiche, plus dans le journal", async () => {
+    const fresh = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|prospect-fresh",
+      email: "fiche@resto.fr",
+    });
+    const moved = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|prospect-moved",
+      email: "nouvelle@resto.fr",
+    });
+    await seed("user.registered", fresh.id, MID_REGISTERED, {});
+    await seed("user.registered", moved.id, MID_REGISTERED, { email: "ancienne@resto.fr" });
+
+    const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
+
+    expect(prospects.find((p) => p.subjectId === fresh.id)?.email).toBe("fiche@resto.fr");
+    expect(prospects.find((p) => p.subjectId === moved.id)?.email).toBe("nouvelle@resto.fr");
   });
 
   it("unifie les leads cold (agrégat) avec la projection entrante, hot → mid → cold", async () => {

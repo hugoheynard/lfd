@@ -13,6 +13,7 @@ import { SupportRequestRepository } from "../../../domain/ports/support-request.
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { RequestActivationSupportCommand } from "../request-activation-support.command.js";
 import { RequestActivationSupportHandler } from "../request-activation-support.handler.js";
+import { journalNames } from "./member-acts-doubles.js";
 
 const PAYLOAD: ActivationSupportPayload = {
   companyId: "company_1",
@@ -59,6 +60,7 @@ describe("RequestActivationSupportHandler", () => {
       supportRepo(false, recorder),
       eventBus(published),
       CLOCK,
+      journalNames(),
     );
 
     const id = await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD));
@@ -68,7 +70,15 @@ describe("RequestActivationSupportHandler", () => {
     // Le journal capte le dépôt : c'est lui qui, avec la clôture, donnera le
     // délai de traitement de la file.
     expect(published).toEqual([
-      new SupportRequestedEvent("support_1", "company_1", "user_1", "email", CLOCK.now()),
+      new SupportRequestedEvent(
+        "support_1",
+        "company_1",
+        "user_1",
+        // Le nom de la société au moment de la demande (lot B du plan des phrases).
+        "Le Pain Quotidien",
+        "email",
+        CLOCK.now(),
+      ),
     ]);
   });
 
@@ -79,6 +89,7 @@ describe("RequestActivationSupportHandler", () => {
       supportRepo(true, recorder),
       eventBus([]),
       CLOCK,
+      journalNames(),
     );
 
     await expect(
@@ -93,6 +104,7 @@ describe("RequestActivationSupportHandler", () => {
       supportRepo(false),
       eventBus([]),
       CLOCK,
+      journalNames(),
     );
 
     await expect(
@@ -112,16 +124,18 @@ describe("RequestActivationSupportHandler", () => {
       supportRepo(false),
       eventBus(published),
       CLOCK,
+      journalNames(),
     );
 
     const id = await handler.execute(
-      new RequestActivationSupportCommand("user_1", { ...PAYLOAD, companyId: null }),
+      new RequestActivationSupportCommand("u1", { ...PAYLOAD, companyId: null }),
     );
 
     expect(id).toBe("support_1");
-    // Le journal porte alors sur la PERSONNE — le sujet suit la demande.
+    // Le journal porte alors sur la PERSONNE — le sujet suit la demande, et
+    // c'est elle qu'il nomme.
     expect(published).toEqual([
-      new SupportRequestedEvent("support_1", null, "user_1", "email", CLOCK.now()),
+      new SupportRequestedEvent("support_1", null, "u1", "Camille Rousseau", "email", CLOCK.now()),
     ]);
   });
 });

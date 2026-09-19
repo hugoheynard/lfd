@@ -5,9 +5,16 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { assertCompleteOrder } from "../domain/services/category-tree.js";
+import { requireCategory } from "./category-support.js";
 
 /** L'identifiant conventionnel du premier niveau, qui n'a pas de famille parente. */
 const ROOT_LEVEL = "root";
+
+/**
+ * Le nom du premier niveau au journal (`subjectLabel`) : il n'a pas de famille
+ * qui le nomme, et c'est ainsi que l'écran de l'arbre en parle.
+ */
+const ROOT_LEVEL_LABEL = "Premier niveau du catalogue";
 
 export class ReorderCategoriesCommand {
   constructor(
@@ -47,6 +54,11 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
       command.parentId,
     );
 
+    // Le niveau réordonné, nommé : son parent, ou la racine.
+    const level =
+      command.parentId === null
+        ? ROOT_LEVEL_LABEL
+        : (await requireCategory(this.categories, command.parentId)).name.fr;
     const byId = new Map(living.map((category) => [category.id, category]));
     const ranked: Category[] = [];
     command.orderedIds.forEach((id, rank) => {
@@ -65,7 +77,12 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
         // quoi tous les réordonnancements de premier niveau seraient orphelins
         // et introuvables à la lecture.
         subjectId: command.parentId ?? ROOT_LEVEL,
-        payload: { order: command.orderedIds },
+        // Les sœurs NOMMÉES, dans l'ordre retenu : `assertCompleteOrder` a
+        // garanti que chaque identifiant est une famille vivante du niveau.
+        payload: {
+          subjectLabel: level,
+          order: ranked.map((category) => ({ id: category.id, name: category.name.fr })),
+        },
       });
       await this.categories.saveAll(ranked, ticket);
     });

@@ -3,6 +3,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import { ACCOUNT_FACTS } from "./account-facts.js";
 import { placeOf } from "./address-place.js";
+import type { DeliveryAddressRef, NamedRef } from "./journal-names.js";
 import { CompanyStaffAct } from "./staff-acts.event.js";
 
 /**
@@ -14,14 +15,17 @@ import { CompanyStaffAct } from "./staff-acts.event.js";
  * quand — pas à l'état courant, qui ne dit rien de la veille.
  *
  * La charge porte **où**, jamais toute l'adresse : ville et code postal
- * (`placeOf`, partagé avec les faits du client depuis le 2026-09-19).
+ * (`placeOf`, partagé avec les faits du client depuis le 2026-09-19). Une
+ * adresse de livraison y est citée par son id et ce même lieu
+ * (`DeliveryAddressRef`, lot B du plan des phrases) — jamais par son
+ * libellé, texte libre qui peut porter une coordonnée.
  */
 export class BillingAddressSavedByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly payload: BillingAddressPayload,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.billingAddressSaved;
@@ -33,33 +37,37 @@ export class BillingAddressSavedByStaffEvent extends CompanyStaffAct {
 
 export class DeliveryAddressAddedByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
     readonly payload: DeliveryAddressPayload,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressAdded;
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId, ...placeOf(this.payload) };
+    // Le lieu ÉCRIT par ce geste, dans l'adresse citée : une seule place
+    // pour la ville et le code postal (lot B, 2026-09-19).
+    return { address: { id: this.address.id, ...placeOf(this.payload) } };
   }
 }
 
 export class DeliveryAddressUpdatedByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
     readonly payload: DeliveryAddressPayload,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressUpdated;
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId, ...placeOf(this.payload) };
+    // Le lieu ÉCRIT par ce geste, dans l'adresse citée : une seule place
+    // pour la ville et le code postal (lot B, 2026-09-19).
+    return { address: { id: this.address.id, ...placeOf(this.payload) } };
   }
 }
 
@@ -69,31 +77,31 @@ export class DeliveryAddressUpdatedByStaffEvent extends CompanyStaffAct {
  */
 export class DeliveryAddressRemovedByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressRemoved;
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId };
+    return { address: { ...this.address } };
   }
 }
 
 export class DefaultDeliverySetByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.defaultDeliverySet;
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId };
+    return { address: { ...this.address } };
   }
 }
 
@@ -103,15 +111,15 @@ export class DefaultDeliverySetByStaffEvent extends CompanyStaffAct {
  */
 export class FulfillmentPreferenceSetByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly preference: {
       readonly method: string | null;
       readonly pickupAddressId: string | null;
-      readonly deliveryAddressId: string | null;
+      readonly deliveryAddress: DeliveryAddressRef | null;
       readonly signatureRequired: boolean;
     },
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.fulfillmentPreferenceSet;
@@ -134,16 +142,17 @@ export type DeliveryProcedureStaffAction =
  */
 export class DeliveryProcedureEditedByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
     readonly action: DeliveryProcedureStaffAction,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryProcedureEdited;
   }
   protected override details(): Record<string, unknown> {
-    return { companyId: this.companyId, addressId: this.addressId, action: this.action };
+    // La société est le sujet de la ligne : la charge ne la répète plus (lot B).
+    return { address: { ...this.address }, action: this.action };
   }
 }

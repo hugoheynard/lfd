@@ -2,11 +2,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { ReviseAllergenEntryPayload } from "@lfd/pim-contracts";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { changesBetween } from "../../journal/changes.js";
+import { changesBetween, type FieldChanges } from "../../journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AllergenCategoryRepository } from "../domain/ports/allergen-category.repository.js";
 import { AllergenEntryRepository } from "../domain/ports/allergen-entry.repository.js";
-import { requireEntry, requireLivingCategory } from "./allergen-support.js";
+import { requireCategory, requireEntry, requireLivingCategory } from "./allergen-support.js";
 
 export class ReviseAllergenEntryCommand {
   constructor(
@@ -44,6 +44,7 @@ export class ReviseAllergenEntryHandler implements ICommandHandler<
       await requireLivingCategory(this.categories, payload.categoryId);
     }
     const before = traced(entry.snapshot());
+    const fromCategory = entry.snapshot().categoryId;
     entry.revise(payload);
     const after = entry.snapshot();
     const changes = changesBetween(before, traced(after));
@@ -60,10 +61,46 @@ export class ReviseAllergenEntryHandler implements ICommandHandler<
         type: PIM_EVENTS.allergenEntryUpdated,
         subjectType: "allergen_entry",
         subjectId: after.id,
-        payload: { code: after.code, changes },
+        payload: {
+          subjectLabel: after.name.fr,
+          code: after.code,
+          changes: await this.namedChanges(changes, fromCategory, after.categoryId),
+        },
       });
       await this.entries.save(entry, ticket);
     });
+  }
+
+  /**
+   * Le diff, la catégorie NOMMÉE sous la même clé qu'à la création
+   * (`category`) — elle y était une clé, ici un identifiant, et un lecteur
+   * devait connaître les deux (plan des phrases du journal, lot B).
+   *
+   * L'ancienne catégorie peut être archivée depuis : elle se lit quand même,
+   * sous le nom qu'elle portait.
+   */
+  private async namedChanges(
+    changes: FieldChanges,
+    fromId: string,
+    toId: string,
+  ): Promise<FieldChanges> {
+    if (changes["categoryId"] === undefined) {
+      return changes;
+    }
+    const category = {
+      from: await this.namedCategory(fromId),
+      to: await this.namedCategory(toId),
+    };
+    return Object.fromEntries(
+      Object.entries(changes).map(([key, change]) =>
+        key === "categoryId" ? ["category", category] : [key, change],
+      ),
+    );
+  }
+
+  private async namedCategory(id: string): Promise<{ readonly id: string; readonly name: string }> {
+    const category = await requireCategory(this.categories, id);
+    return { id: category.id, name: category.snapshot().name.fr };
   }
 }
 

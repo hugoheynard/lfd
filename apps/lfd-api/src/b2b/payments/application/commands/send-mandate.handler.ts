@@ -110,7 +110,12 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
       idempotencyKey: `mandate-to-sign:${mandate.id}`,
     });
     await this.events.publishTraced(
-      new MandateSentEvent(mandate.id, mandate.companyId, snapshot.reference, receipt.providerId),
+      new MandateSentEvent(
+        mandate.id,
+        { id: mandate.companyId, name: holder.displayName },
+        snapshot.reference,
+        receipt.providerId,
+      ),
     );
   }
 }

@@ -45,7 +45,12 @@ export class CreateAppellationHandler implements ICommandHandler<CreateAppellati
         type: PIM_EVENTS.appellationCreated,
         subjectType: "appellation",
         subjectId: created.code,
-        payload: { code: created.code, label: created.label, scheme: created.scheme },
+        payload: {
+          subjectLabel: created.label.fr,
+          code: created.code,
+          label: created.label,
+          scheme: created.scheme,
+        },
       });
       await this.appellations.add(appellation, ticket);
     });

@@ -84,10 +84,17 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
       'Hugo Heynard a suspendu l’accès de Cécile Martin',
     ],
     [
+      'staff_user.activated',
+      { subjectLabel: 'Cécile Martin', person: CECILE },
+      'Accès activé',
+      'Hugo Heynard a activé l’accès de Cécile Martin',
+    ],
+    // Les lignes d'avant le 2026-09-19 couvrent aussi la première activation (D7).
+    [
       'staff_user.reinstated',
       { person: CECILE },
-      'Accès rétabli',
-      'Hugo Heynard a rétabli l’accès de Cécile Martin',
+      'Accès activé ou rétabli',
+      'Hugo Heynard a activé ou rétabli l’accès de Cécile Martin',
     ],
     [
       'staff_user.deleted',

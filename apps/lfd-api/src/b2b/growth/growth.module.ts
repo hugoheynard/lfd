@@ -83,6 +83,10 @@ import { JournalFactCheck } from "../../platform/journal/journal-fact-check.js";
 import { PrismaActorNamer } from "./infrastructure/prisma-actor-namer.js";
 import { CompanyNamer } from "./domain/ports/company-namer.js";
 import { PrismaCompanyNamer } from "./infrastructure/prisma-company-namer.js";
+import { CustomerNamer } from "./domain/ports/customer-namer.js";
+import { PrismaCustomerNamer } from "./infrastructure/prisma-customer-namer.js";
+import { CustomerEmailReader } from "./domain/ports/customer-email.reader.js";
+import { PrismaCustomerEmailReader } from "./infrastructure/prisma-customer-email.reader.js";
 import { ActivityJournalReader } from "./domain/ports/activity-journal.reader.js";
 import { PrismaActivityJournalReader } from "./infrastructure/prisma-activity-journal.reader.js";
 import { AdminActivityController } from "./http/admin-activity.controller.js";
@@ -150,6 +154,8 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     },
     { provide: ActorNamer, useClass: PrismaActorNamer },
     { provide: CompanyNamer, useClass: PrismaCompanyNamer },
+    { provide: CustomerNamer, useClass: PrismaCustomerNamer },
+    { provide: CustomerEmailReader, useClass: PrismaCustomerEmailReader },
     { provide: ActivityJournalReader, useClass: PrismaActivityJournalReader },
     ReadActivityJournalHandler,
     ReadTaxActivityJournalHandler,

@@ -6,7 +6,10 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { PricingRule } from "../../domain/entities/pricing-rule.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { describeRule } from "../../domain/pricing-act.js";
+import { citedAudience, describeRule } from "../../domain/pricing-act.js";
+import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import { ruleNamesOf } from "../rule-names.js";
 import { CreatePriceRuleCommand } from "./create-price-rule.command.js";
 
 /**
@@ -26,6 +29,8 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly priced: PricedDecisionsReader,
+    private readonly catalog: ProductCatalogReader,
+    private readonly companies: PricedCompanyNamer,
   ) {}
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
@@ -45,6 +50,7 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
       throw new PricedPeriodIsSealedError("règle", rule.toPersistence().validFrom);
     }
 
+    const names = await ruleNamesOf(rule.asPriceRule, this.catalog, this.companies);
     await this.rules.save(rule, {
       subjectType: "rule",
       subjectId: rule.id,
@@ -52,7 +58,9 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
       actor: command.staffUserId,
       at: this.clock.now(),
       reason: null,
-      summary: describeRule(rule.asPriceRule),
+      summary: describeRule(rule.asPriceRule, names),
+      subjectLabel: rule.label,
+      ...citedAudience(rule.asPriceRule, names),
     });
     return rule.id;
   }

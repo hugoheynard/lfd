@@ -2,7 +2,11 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { changesBetween, type FieldChanges } from "../../../journal/changes.js";
+import { changesBetween } from "../../../journal/changes.js";
+import { PointOfSaleReader } from "../../../points-of-sale/domain/ports/point-of-sale.reader.js";
+import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
+import { channelNamer, namedVatChange } from "../../shared/application/journal-names.js";
+import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { refuseUnsellableChannels } from "../../shared/application/sellable-channels.js";
@@ -36,6 +40,8 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
     private readonly categories: CategoryRepository,
     private readonly offers: PointOfSaleOfferReader,
     private readonly contexts: SalesContextRegistry,
+    private readonly points: PointOfSaleReader,
+    private readonly rates: VatRateRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}
@@ -48,9 +54,8 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
     // Le registre décide quels taux tombent avec le canal qu'on ferme : c'est
     // lui qui sait quel contexte s'appuie sur quel canal.
     category.setChannels(command.channels, await this.contexts.active());
-    const changes = changesBetween({ channels: before }, { channels: category.channelPreset });
     await this.uow.run(async () => {
-      const ticket = await this.journalize(category.id, changes, vatBefore, category.vatByContext);
+      const ticket = await this.journalize(category, before, vatBefore);
       await this.categories.save(category, ticket);
     });
   }
@@ -60,36 +65,28 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
    * canaux, et les taux que leur fermeture a effacés.
    *
    * Le second est le fait de TVA ordinaire (`product_category.vat_changed`,
-   * `{ contexte: { from, to: null } }`) : la comptabilité relit tout ce qui
+   * `vatByContext: { contexte: { from, to: null } }`, taux nommés) : la comptabilité relit tout ce qui
    * touche au taux (Hugo, 2026-09-19), et un taux effacé par une fermeture de
    * canal n'en disait rien — `channels_changed` ne porte que les canaux.
    * Il n'est écrit que si un taux a réellement disparu.
    */
   private async journalize(
-    categoryId: string,
-    changes: FieldChanges,
+    category: Category,
+    before: SalesChannels,
     vatBefore: ContextVat,
-    vatAfter: ContextVat,
   ): Promise<WriteTicket> {
-    // Régler une grille sur elle-même n'affirme rien — et l'écran renvoie la
-    // grille entière à chaque enregistrement, y compris inchangée.
-    const channelsTicket =
-      Object.keys(changes).length > 0
-        ? await this.journal.trace({
-            type: PIM_EVENTS.productCategoryChannelsChanged,
-            subjectType: "product_category",
-            subjectId: categoryId,
-            payload: { changes },
-          })
-        : null;
-    const erased = erasedVat(vatBefore, vatAfter);
+    const channelsTicket = await this.journalizeChannels(category, before);
+    const erased = erasedVat(vatBefore, category.vatByContext);
     const vatTicket =
       Object.keys(erased).length > 0
         ? await this.journal.trace({
             type: PIM_EVENTS.productCategoryVatChanged,
             subjectType: "product_category",
-            subjectId: categoryId,
-            payload: erased,
+            subjectId: category.id,
+            payload: {
+              subjectLabel: category.name.fr,
+              vatByContext: await namedVatChange(erased, this.rates),
+            },
           })
         : null;
     return (
@@ -97,5 +94,33 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
       channelsTicket ??
       this.journal.untraced("canaux de famille enregistrés sans modification")
     );
+  }
+
+  /**
+   * Les canaux, NOMMÉS (D5 du plan des phrases) — `null` quand rien n'a bougé.
+   *
+   * Le diff se calcule sur les identifiants : régler une grille sur elle-même
+   * n'affirme rien, et l'écran renvoie la grille entière à chaque
+   * enregistrement, y compris inchangée. Les noms ne viennent qu'après, pour
+   * la charge.
+   */
+  private async journalizeChannels(
+    category: Category,
+    before: SalesChannels,
+  ): Promise<WriteTicket | null> {
+    const changes = changesBetween({ channels: before }, { channels: category.channelPreset });
+    if (Object.keys(changes).length === 0) {
+      return null;
+    }
+    const name = await channelNamer(this.points, this.contexts);
+    return this.journal.trace({
+      type: PIM_EVENTS.productCategoryChannelsChanged,
+      subjectType: "product_category",
+      subjectId: category.id,
+      payload: {
+        subjectLabel: category.name.fr,
+        changes: { channels: { from: name(before), to: name(category.channelPreset) } },
+      },
+    });
   }
 }

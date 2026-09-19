@@ -64,6 +64,8 @@ const acceptingMailer = {
 
 let ctx: E2eContext;
 let companyId: string;
+/** La société semée, nommée par sa raison sociale faute d'enseigne (lot B du plan des phrases). */
+const COMPANY_NAME = "Café de Test SAS";
 let ownerId: string;
 
 beforeAll(async () => {
@@ -210,6 +212,7 @@ describe("le RIB changé par le CLIENT (décision du 2026-09-19)", () => {
         actorType: "customer",
         actorId: ownerId,
         payload: {
+          subjectLabel: COMPANY_NAME,
           bankAccountId: expect.any(String) as string,
           before: null,
           after: { last4: "2606", holder: "Refuge du Col SARL" },
@@ -249,7 +252,13 @@ describe("la révocation du mandat par le staff", () => {
         subjectId: mandateId,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { companyId, reference: "RUM-E2E", previousStatus: "active", via: "staff" },
+        payload: {
+          subjectLabel: "RUM-E2E",
+          company: { id: companyId, name: COMPANY_NAME },
+          reference: "RUM-E2E",
+          previousStatus: "active",
+          via: "staff",
+        },
       },
     ]);
   });
@@ -320,7 +329,12 @@ describe("l'envoi du mandat au client par le staff", () => {
         subjectId: mandateId,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { companyId, reference, providerId: PROVIDER_ID },
+        payload: {
+          subjectLabel: reference,
+          company: { id: companyId, name: COMPANY_NAME },
+          reference,
+          providerId: PROVIDER_ID,
+        },
       },
     ]);
     const { contactEmail } = await ctx.prisma.company.findUniqueOrThrow({

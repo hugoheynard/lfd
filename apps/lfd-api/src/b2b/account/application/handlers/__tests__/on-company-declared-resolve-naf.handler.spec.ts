@@ -81,7 +81,7 @@ class FakeDirectory extends EstablishmentDirectory {
   }
 }
 
-const EVENT = new CompanyDeclaredEvent("company_1", "self", "user_1");
+const EVENT = new CompanyDeclaredEvent("company_1", "Le Pain Quotidien", "self", { id: "user_1" });
 
 describe("OnCompanyDeclaredResolveNaf", () => {
   const work = new BackgroundWork();

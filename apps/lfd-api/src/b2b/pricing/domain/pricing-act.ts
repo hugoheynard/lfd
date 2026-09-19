@@ -1,9 +1,17 @@
 import type { ActiveJournalFactType } from "@lfd/contracts/journal-facts";
 
 import { PricingActNotJournaledError } from "./errors/shared-errors.js";
-import type { PriceFloorPolicy } from "./floor-policy.js";
-import type { VolumeLadder } from "./volume-ladder.js";
-import type { PriceFloor, PriceRule, PriceScopeType, PriceStage } from "./price-rule.js";
+
+import type { RuleNames } from "./pricing-act-summary.js";
+import type { PriceRule } from "./price-rule.js";
+
+export {
+  describeFloorPolicy,
+  describeLadder,
+  describeRule,
+  describeScope,
+  type RuleNames,
+} from "./pricing-act-summary.js";
 
 /**
  * **Un acte sur la tarification** — l'unité du journal.
@@ -62,140 +70,36 @@ export interface PricingAct {
    * à l'envers.
    */
   readonly summary: string;
+  /**
+   * **Le nom du sujet** au moment de l'acte (D6 du plan des phrases du
+   * journal) : le libellé de la règle, du barème, de la mercuriale — la portée
+   * nommée pour une limite, dont elle est le sujet. Il ne va qu'au journal
+   * général : la table du domaine a déjà sa phrase figée.
+   */
+  readonly subjectLabel: string;
+  /**
+   * La société qu'une **règle** vise, nommée au moment de l'acte — absente
+   * quand l'audience n'est pas une société, ou que l'annuaire ne la nomme pas.
+   * Comme `subjectLabel`, elle ne va qu'au journal général (lot B du plan des
+   * phrases, 2026-09-19).
+   */
+  readonly audience?: { readonly id: string; readonly name: string } | undefined;
 }
 
 /**
- * Les mots du journal, **à lui**.
- *
- * Redéclarés plutôt qu'importés du contrat de fil, et pour une fois la
- * duplication est le but : la phrase est figée à l'écriture, donc elle doit
- * survivre au jour où l'écran renommera « geste » en autre chose. Un journal qui
- * suivrait le vocabulaire courant réécrirait le passé à chaque renommage.
+ * La société qu'une règle vise, citée nommée dans l'acte — ou rien : une
+ * audience qui n'est pas une société, ou une société que l'annuaire ne nomme
+ * pas (la phrase garde alors son identifiant).
  */
-const STAGE_WORDS: Readonly<Record<PriceStage, string>> = {
-  mercuriale: "Mercuriale",
-  volume: "Volume",
-  promotion: "Promotion",
-  geste: "Geste",
-};
-
-const SCOPE_WORDS: Readonly<Record<PriceScopeType, string>> = {
-  global: "tout le catalogue",
-  category: "famille",
-  product: "produit",
-  variant: "déclinaison",
-};
-
-/**
- * La phrase que le journal gardera d'une règle.
- *
- * Elle nomme les quatre choses qu'on cherche en relisant : ce qu'elle fait, ce
- * qu'elle vise, qui elle vise, et jusqu'à quand. Le libellé commercial y figure
- * parce que c'est sous ce nom que le staff en parle au téléphone.
- */
-export function describeRule(rule: PriceRule): string {
-  return [
-    `${STAGE_WORDS[rule.stage]} « ${rule.label} »`,
-    describeEffect(rule),
-    describeTarget(rule),
-    describeWindow(rule),
-  ].join(" · ");
-}
-
-/**
- * La phrase que le journal gardera d'un barème de volume.
- *
- * Les paliers y figurent **tous**, dans l'ordre : c'est l'échelle entière qui a
- * été décidée, et relire « 50+ à −5 % » sans savoir ce qui suivait ne dirait
- * rien de ce qu'on avait accordé.
- */
-export function describeLadder(ladder: VolumeLadder): string {
-  const tiers = ladder.tiers
-    .map(
-      (tier) =>
-        `${String(tier.minQuantity)}+ à −${ladder.unit === "percent" ? `${percent(tier.value)} %` : euros(tier.value)}`,
-    )
-    .join(", ");
-  return `Barème « ${ladder.label} » · ${tiers} · ${describeWindowOf(ladder.validFrom, ladder.validTo)}`;
-}
-
-/**
- * La phrase que le journal gardera d'une limite.
- *
- * Le mur d'abord, la porte ensuite et seulement si elle existe : c'est l'ordre
- * dans lequel on relit une limite, et l'ordre dans lequel elle mord.
- */
-export function describeFloorPolicy(policy: PriceFloorPolicy): string {
-  const wall = `mur à ${floorAmount(policy.hard)}`;
-  if (policy.dynamic === null) {
-    return wall;
+export function citedAudience(
+  rule: PriceRule,
+  names: RuleNames,
+): { readonly audience?: { readonly id: string; readonly name: string } } {
+  const { audience } = rule;
+  if (audience.type !== "company" || audience.id === null || names.audienceName === null) {
+    return {};
   }
-  const { floor, unlock } = policy.dynamic;
-  const keys = [
-    unlock.minQuantity === null ? null : `dès ${String(unlock.minQuantity)} pièces`,
-    unlock.minVolumeRatioBp === null ? null : `volume ×${ratio(unlock.minVolumeRatioBp)}`,
-  ].filter((part) => part !== null);
-  return `${wall} · porte à ${floorAmount(floor)} (${keys.join(" et ")})`;
-}
-
-function floorAmount(floor: PriceFloor): string {
-  return floor.mode === "amount" ? euros(floor.millicents) : `${percent(floor.bp)} % du tarif`;
-}
-
-function ratio(bp: number): string {
-  return (bp / 10_000).toFixed(2).replace(".", ",");
-}
-
-function describeEffect(rule: PriceRule): string {
-  if (rule.nature === "replace") {
-    return `prix posé à ${euros(rule.amountMillicents)}`;
-  }
-  const sign = rule.alteration.direction === "decrease" ? "−" : "+";
-  return rule.alteration.mode === "percent"
-    ? `${sign}${percent(rule.alteration.bp)} %`
-    : `${sign}${euros(rule.alteration.millicents)}`;
-}
-
-function describeTarget(rule: PriceRule): string {
-  const scope =
-    rule.scope.id === null
-      ? SCOPE_WORDS[rule.scope.type]
-      : `${SCOPE_WORDS[rule.scope.type]} ${rule.scope.id}`;
-  const audience = rule.audience.id === null ? "tous clients" : rule.audience.id;
-  const quantity = rule.minQuantity === null ? null : `dès ${String(rule.minQuantity)}`;
-  return [scope, audience, quantity].filter((part) => part !== null).join(", ");
-}
-
-function describeWindow(rule: PriceRule): string {
-  return describeWindowOf(rule.validFrom, rule.validTo);
-}
-
-function describeWindowOf(validFrom: Date, validTo: Date | null): string {
-  const from = day(validFrom);
-  return validTo === null ? `à partir du ${from}` : `du ${from} au ${day(validTo)}`;
-}
-
-/**
- * Les prix sont en **millicentimes** entiers et le restent : la division ne sert
- * qu'à l'affichage, dans une phrase qui ne sera jamais recalculée.
- *
- * Elle divisait par 100. Les trois valeurs qu'elle reçoit — le prix posé d'une
- * mercuriale, un plancher en montant, une altération en euros — sont des PRIX
- * UNITAIRES, donc en millicentimes depuis toujours : le journal annonçait
- * « 1800,00 € » pour une mercuriale posée à 1,80 €. Personne ne l'avait vu parce
- * qu'on relit un journal après coup, jamais pendant qu'on saisit.
- */
-function euros(millicents: number): string {
-  return `${(millicents / 100_000).toFixed(2).replace(".", ",")} €`;
-}
-
-function percent(bp: number): string {
-  return String(bp / 100).replace(".", ",");
-}
-
-/** `fr-FR` explicite : le journal ne doit pas dépendre du fuseau du serveur. */
-function day(date: Date): string {
-  return date.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+  return { audience: { id: audience.id, name: names.audienceName } };
 }
 
 /**
@@ -295,7 +199,12 @@ export function pricingFactOf(act: PricingAct): {
     // La phrase figée et le motif : c'est tout ce que le journal général a à
     // dire d'un acte tarifaire. Le détail de la règle vit dans sa table, et
     // l'y recopier ferait du journal une seconde base.
-    payload: { summary: act.summary, reason: act.reason },
+    payload: {
+      subjectLabel: act.subjectLabel,
+      summary: act.summary,
+      reason: act.reason,
+      ...(act.audience === undefined ? {} : { audience: { ...act.audience } }),
+    },
     occurredAt: act.at,
   };
 }

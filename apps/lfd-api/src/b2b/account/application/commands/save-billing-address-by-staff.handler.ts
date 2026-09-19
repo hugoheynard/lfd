@@ -6,6 +6,7 @@ import { CompanyStepReachedEvent } from "../../domain/events/company-step-reache
 import { BillingAddressSavedByStaffEvent } from "../../domain/events/staff-address-acts.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { SaveBillingAddressByStaffCommand } from "./save-billing-address-by-staff.command.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Geste du staff sur les **adresses** d'un client : l'adresse de facturation.
@@ -22,17 +23,19 @@ export class SaveBillingAddressByStaffHandler implements ICommandHandler<
     private readonly addresses: CompanyAddressRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: SaveBillingAddressByStaffCommand): Promise<void> {
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveBilling(command.companyId, command.payload);
       await this.events.publishTraced(
-        new BillingAddressSavedByStaffEvent(command.companyId, command.payload),
+        new BillingAddressSavedByStaffEvent(company, command.payload),
       );
     });
     // Pièce « facturation » franchie : fait d'ENTONNOIR, best-effort et hors
     // transaction — le perdre fausse une statistique, pas une responsabilité.
-    this.events.publish(new CompanyStepReachedEvent(command.companyId, "billing"));
+    this.events.publish(new CompanyStepReachedEvent(company.id, company.name, "billing"));
   }
 }

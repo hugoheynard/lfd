@@ -5,7 +5,7 @@ import { GrantOrderCutoffWaiverCommand } from "../grant-order-cutoff-waiver.comm
 import { GrantOrderCutoffWaiverHandler } from "../grant-order-cutoff-waiver.handler.js";
 import { RevokeOrderCutoffWaiverCommand } from "../revoke-order-cutoff-waiver.command.js";
 import { RevokeOrderCutoffWaiverHandler } from "../revoke-order-cutoff-waiver.handler.js";
-import { InMemoryWaivers, PAYLOAD } from "./order-cutoff-waiver-doubles.js";
+import { COMPANY_NAME, InMemoryWaivers, PAYLOAD } from "./order-cutoff-waiver-doubles.js";
 
 /** L'accord passe par son vrai handler : le retrait doit relire ce qu'il a ouvert. */
 function build() {
@@ -33,7 +33,7 @@ describe("RevokeOrderCutoffWaiverHandler", () => {
     ]);
     expect(events.traced[1]?.journalFact()).toMatchObject({
       subjectId: id,
-      payload: { companyId: "cmp_1", fulfillmentDate: "2026-09-21" },
+      payload: { company: { id: "cmp_1", name: COMPANY_NAME }, fulfillmentDate: "2026-09-21" },
     });
   });
 

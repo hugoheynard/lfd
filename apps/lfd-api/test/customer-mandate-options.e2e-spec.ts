@@ -215,7 +215,15 @@ describe("les zones — drapeau ouvert", () => {
       mintBlockers: ["issuer_missing"],
     });
     // Plan §10 (2026-09-14) : journalisé même sans brouillon, avec qui et quoi.
-    expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
+    expect(await optionsFacts()).toEqual([
+      {
+        // Le RIB nommé par son titulaire, la société par son nom du moment (lot B).
+        subjectLabel: "Refuge du Col SARL",
+        company: { id: companyId, name: "Café de Test SAS" },
+        ...OPTIONS,
+        via: "customer",
+      },
+    ]);
   });
 
   it("révoque le brouillon CORE existant, trace la cause et sonne l'équipe", async () => {
@@ -240,7 +248,15 @@ describe("les zones — drapeau ouvert", () => {
         via: "customer",
       }),
     ]);
-    expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
+    expect(await optionsFacts()).toEqual([
+      {
+        // Le RIB nommé par son titulaire, la société par son nom du moment (lot B).
+        subjectLabel: "Refuge du Col SARL",
+        company: { id: companyId, name: "Café de Test SAS" },
+        ...OPTIONS,
+        via: "customer",
+      },
+    ]);
     expect(
       await ctx.prisma.staffNotification.count({ where: { kind: "payment_mandate.draft_voided" } }),
     ).toBe(1);
@@ -267,7 +283,15 @@ describe("les zones — drapeau ouvert", () => {
       issuerScheme: "B2B",
       mintBlockers: [],
     });
-    expect(await optionsFacts()).toEqual([{ companyId, ...OPTIONS, via: "customer" }]);
+    expect(await optionsFacts()).toEqual([
+      {
+        // Le RIB nommé par son titulaire, la société par son nom du moment (lot B).
+        subjectLabel: "Refuge du Col SARL",
+        company: { id: companyId, name: "Café de Test SAS" },
+        ...OPTIONS,
+        via: "customer",
+      },
+    ]);
     expect(
       await ctx.prisma.activityEvent.count({ where: { type: "payment_mandate.draft_voided" } }),
     ).toBe(0);

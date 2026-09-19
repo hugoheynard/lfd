@@ -48,7 +48,8 @@ Ils se rangent dans le module **« Équipe »** du journal, par leurs préfixes
 | `staff_user.role_changed`           | le rôle change                                                                                                                  | `staff_user` / id  |
 | `staff_user.overrides_changed`      | les droits individuels changent                                                                                                 | `staff_user` / id  |
 | `staff_user.suspended`              | l'accès est suspendu                                                                                                            | `staff_user` / id  |
-| `staff_user.reinstated`             | l'accès est rétabli                                                                                                             | `staff_user` / id  |
+| `staff_user.activated`              | l'accès est ouvert pour la **première** fois (de `pending`/`invited` vers `active`) — depuis le 2026-09-19                      | `staff_user` / id  |
+| `staff_user.reinstated`             | l'accès est rétabli (de `suspended` vers `active`) ; avant le 2026-09-19, couvrait aussi la première activation                 | `staff_user` / id  |
 | `staff_user.deleted`                | la fiche est supprimée — **plus écrit depuis le 2026-09-18** : la suppression n'existe plus ; les faits passés restent lisibles | `staff_user` / id  |
 | `staff_role.created`                | un rôle est créé à l'écran                                                                                                      | `staff_role` / clé |
 | `staff_role.updated`                | ses droits ou son libellé changent                                                                                              | `staff_role` / clé |
@@ -126,19 +127,26 @@ Des **libellés figés**, pas des clés : une fiche supprimée ou un rôle renom
 demain ne change pas la phrase d'hier. `Person = { firstName, lastName }` ;
 `Grant = { resource, resourceLabel, action }` ; `Override = Grant & { effect }`.
 
-| Type                                   | Charge utile                                                                                                                                                                                                               |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `staff_user.created`                   | `{ person, roleLabel }`                                                                                                                                                                                                    |
-| `staff_user.invited`                   | `{ person, kind: "invitation" \| "password_reset" }`                                                                                                                                                                       |
-| `staff_user.password_link_issued`      | `{ person }` — **jamais le lien**                                                                                                                                                                                          |
-| `staff_user.identity_edited`           | `{ person, previous: Person \| null, fields: string[], changes: { field, label, from, to }[] }` — chaque champ modifié avec sa valeur avant et après ; `fields` et `previous` restent pour les faits d'avant le 2026-09-18 |
-| `staff_user.role_changed`              | `{ person, fromLabel, toLabel }`                                                                                                                                                                                           |
-| `staff_user.overrides_changed`         | `{ person, added: Override[], removed: Override[], changed: Override[] }`                                                                                                                                                  |
-| `staff_user.suspended` / `.reinstated` | `{ person }`                                                                                                                                                                                                               |
-| `staff_user.deleted`                   | `{ person, roleLabel }` — la seule trace qui survit à la fiche                                                                                                                                                             |
-| `staff_role.created`                   | `{ label, grants: Grant[] }`                                                                                                                                                                                               |
-| `staff_role.updated`                   | `{ label, previousLabel: string \| null, added, removed, changed }`                                                                                                                                                        |
-| `staff_role.archived` / `.restored`    | `{ label }`                                                                                                                                                                                                                |
+Depuis le 2026-09-19 (lot B de
+[`plan-phrases-du-journal.md`](../../journalisation/plan-phrases-du-journal.md)),
+**chaque charge ci-dessous porte aussi `subjectLabel`** : « Prénom Nom » de la
+fiche après le geste, ou le libellé du rôle après le geste. Les lignes d'avant
+ne l'ont pas ; leurs formes sont dans l'`history` du catalogue
+(`@lfd/contracts/journal-facts`, `team.ts`).
+
+| Type                                                  | Charge utile                                                                                                                                                                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `staff_user.created`                                  | `{ person, roleLabel }`                                                                                                                                                                                                                 |
+| `staff_user.invited`                                  | `{ person, kind: "invitation" \| "password_reset" }`                                                                                                                                                                                    |
+| `staff_user.password_link_issued`                     | `{ person }` — **jamais le lien**                                                                                                                                                                                                       |
+| `staff_user.identity_edited`                          | `{ person, previous: Person \| null, changes: { field, label, from, to }[] }` — chaque champ modifié avec sa valeur avant et après ; `fields` (les seuls libellés) n'est plus écrit depuis le 2026-09-19, les lignes d'avant le portent |
+| `staff_user.role_changed`                             | `{ person, fromLabel, toLabel }`                                                                                                                                                                                                        |
+| `staff_user.overrides_changed`                        | `{ person, added: Override[], removed: Override[], changed: Override[] }`                                                                                                                                                               |
+| `staff_user.suspended` / `.activated` / `.reinstated` | `{ person }`                                                                                                                                                                                                                            |
+| `staff_user.deleted`                                  | `{ person, roleLabel }` — la seule trace qui survit à la fiche                                                                                                                                                                          |
+| `staff_role.created`                                  | `{ label, grants: Grant[] }`                                                                                                                                                                                                            |
+| `staff_role.updated`                                  | `{ label, previousLabel: string \| null, added, removed, changed }`                                                                                                                                                                     |
+| `staff_role.archived` / `.restored`                   | `{ label }`                                                                                                                                                                                                                             |
 
 **L'avant/après est complet, e-mail compris** (Hugo, 2026-09-18 : « c'est
 important qu'on ait la trace complète sur les events »). C'est une entorse
@@ -200,7 +208,8 @@ nomme déjà l'auteur (`admin/journal/staff-line.ts`).
 | `staff_user.role_changed`           | Changement de rôle               | Hugo Heynard a fait passer Cécile Martin de Commercial à Comptabilité                                                                 |
 | `staff_user.overrides_changed`      | Droits individuels               | Hugo Heynard a changé les droits individuels de Cécile Martin — accordé : Tarification (écriture) — rendu au rôle : Alertes (lecture) |
 | `staff_user.suspended`              | Accès suspendu                   | Hugo Heynard a suspendu l'accès de Cécile Martin                                                                                      |
-| `staff_user.reinstated`             | Accès rétabli                    | Hugo Heynard a rétabli l'accès de Cécile Martin                                                                                       |
+| `staff_user.activated`              | Accès activé                     | Hugo Heynard a activé l'accès de Cécile Martin                                                                                        |
+| `staff_user.reinstated`             | Accès activé ou rétabli          | Hugo Heynard a activé ou rétabli l'accès de Cécile Martin — vrai des lignes d'avant le 2026-09-19 comme d'après                       |
 | `staff_user.deleted`                | Suppression d'un membre          | Hugo Heynard a supprimé la fiche de Cécile Martin (Commercial)                                                                        |
 | `staff_role.created`                | Nouveau rôle                     | Hugo Heynard a créé le rôle Logistique                                                                                                |
 | `staff_role.updated`                | Rôle modifié                     | Hugo Heynard a modifié le rôle Commercial : + Alertes (écriture)                                                                      |

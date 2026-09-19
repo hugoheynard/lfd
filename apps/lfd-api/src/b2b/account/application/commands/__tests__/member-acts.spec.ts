@@ -36,6 +36,7 @@ import { UpdatePrimaryContactHandler } from "../update-primary-contact.handler.j
 import {
   AddressReaderWithA1,
   BILLING,
+  COMPANY_LABEL,
   DELIVERY,
   EMAIL,
   InMemoryAddresses,
@@ -43,6 +44,7 @@ import {
   InMemoryContacts,
   NoKnownMembers,
   OwnerMembership,
+  journalNames,
   PHONE,
   STREET,
 } from "./member-acts-doubles.js";
@@ -53,6 +55,9 @@ import {
  * (c), 2026-09-19) : le même nom de fait que le geste staff jumeau, et jamais
  * une coordonnée de personne — une adresse par la charge du staff (id, ville,
  * code postal ; alignée le 2026-09-19, décision de Hugo), un contact par son id.
+ *
+ * Lot B du plan des phrases (même jour) : chaque fait nomme la société au
+ * moment du geste, et cite l'adresse ou le contact avec son nom du moment.
  */
 function build() {
   const events = new RecordingPublisher();
@@ -63,7 +68,8 @@ function build() {
   const contacts = new InMemoryContacts();
   const book = new CompanyContactBook(companies, contacts, new NoKnownMembers());
   const clock = new FixedClock(new Date("2026-02-03T10:00:00Z"));
-  return { events, uow, member, addresses, companies, contacts, book, clock };
+  const names = journalNames(companies, addresses);
+  return { events, uow, member, addresses, companies, contacts, book, clock, names };
 }
 
 /** Aucune coordonnée semée — ni la rue et son numéro, ni l'e-mail, ni le téléphone — n'apparaît dans les faits écrits. */
@@ -79,9 +85,9 @@ const PLACE = { ville: BILLING.ville, codePostal: BILLING.codePostal };
 
 describe("les adresses, par le client", () => {
   it("facturation, ajout, correction, défaut, archivage : un fait chacun, la ville et le code postal sans la rue", async () => {
-    const { events, uow, member, addresses, companies, clock } = build();
+    const { events, uow, member, addresses, companies, clock, names } = build();
 
-    await new SaveBillingAddressHandler(member, addresses, events, uow).execute(
+    await new SaveBillingAddressHandler(member, addresses, events, uow, names).execute(
       new SaveBillingAddressCommand("u1", "c1", BILLING),
     );
     const added = await new AddDeliveryAddressHandler(
@@ -91,11 +97,12 @@ describe("les adresses, par le client", () => {
       new FixedIdGenerator("addr"),
       clock,
       uow,
+      names,
     ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
-    await new UpdateDeliveryAddressHandler(member, addresses, events, uow).execute(
+    await new UpdateDeliveryAddressHandler(member, addresses, events, uow, names).execute(
       new UpdateDeliveryAddressCommand("u1", "c1", added, DELIVERY),
     );
-    await new SetDefaultDeliveryAddressHandler(member, addresses, events, uow).execute(
+    await new SetDefaultDeliveryAddressHandler(member, addresses, events, uow, names).execute(
       new SetDefaultDeliveryAddressCommand("u1", "c1", added),
     );
     await new RemoveDeliveryAddressHandler(
@@ -109,12 +116,19 @@ describe("les adresses, par le client", () => {
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       fact("company.billing_address_saved", PLACE),
-      fact("company.delivery_address_added", { addressId: added, ...PLACE }),
-      fact("company.delivery_address_updated", { addressId: added, ...PLACE }),
-      fact("company.default_delivery_set", { addressId: added }),
-      fact("company.delivery_address_removed", { addressId: "a1" }),
+      fact("company.delivery_address_added", { address: placed(added) }),
+      fact("company.delivery_address_updated", { address: placed(added) }),
+      fact("company.default_delivery_set", { address: placed(added) }),
+      // Lue AVANT l'archivage : après, le carnet ne la porte plus.
+      fact("company.delivery_address_removed", { address: placed("a1") }),
     ]);
     expectNoContactDetails(events);
+    // Régression (lot B, 2026-09-19) : l'adresse était citée par son LIBELLÉ,
+    // texte libre du client ; Hugo avait tranché pour la ville et le code
+    // postal, comme le staff (`a151ccee`).
+    const addressFacts = JSON.stringify(events.traced.slice(1).map((e) => e.journalFact()));
+    expect(addressFacts).not.toContain(DELIVERY.label);
+    expect(addressFacts).not.toContain(BILLING.label);
   });
 
   it("la préférence d'acheminement garde les champs du staff — aucun n'est une coordonnée", async () => {
@@ -135,14 +149,19 @@ describe("les adresses, par le client", () => {
     ).execute(new PreferFulfillmentCommand("u1", "c1", preference));
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
-      fact("company.fulfillment_preference_set", preference),
+      fact("company.fulfillment_preference_set", {
+        method: "delivery",
+        pickupAddressId: null,
+        deliveryAddress: placed("a1"),
+        signatureRequired: false,
+      }),
     ]);
   });
 });
 
 describe("les contacts, par le client", () => {
-  it("ajout, correction, retrait, principal : l'id et le rôle, jamais l'e-mail ni le téléphone", async () => {
-    const { events, uow, member, companies, contacts, book } = build();
+  it("ajout, correction, retrait, principal : l'id, le nom et le rôle, jamais l'e-mail ni le téléphone", async () => {
+    const { events, uow, member, companies, contacts, book, names } = build();
     const details = {
       firstName: "Karim",
       lastName: "Benali",
@@ -151,13 +170,13 @@ describe("les contacts, par le client", () => {
       phone: PHONE,
     };
 
-    const contactId = await new AddCompanyContactHandler(member, book, events, uow).execute(
+    const contactId = await new AddCompanyContactHandler(member, book, events, uow, names).execute(
       new AddCompanyContactCommand("u1", "c1", details, "orders"),
     );
-    await new UpdateCompanyContactHandler(member, book, events, uow).execute(
+    await new UpdateCompanyContactHandler(member, book, events, uow, names).execute(
       new UpdateCompanyContactCommand("u1", "c1", contactId, details, "admin"),
     );
-    await new RemoveCompanyContactHandler(member, contacts, events, uow).execute(
+    await new RemoveCompanyContactHandler(member, contacts, events, uow, names).execute(
       new RemoveCompanyContactCommand("u1", "c1", contactId),
     );
     await new UpdatePrimaryContactHandler(member, companies, events, uow).execute(
@@ -165,9 +184,10 @@ describe("les contacts, par le client", () => {
     );
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
-      fact("company.contact_added", { contactId, role: "orders" }),
-      fact("company.contact_updated", { contactId, role: "admin" }),
-      fact("company.contact_removed", { contactId }),
+      fact("company.contact_added", { contact: karim(contactId), role: "orders" }),
+      fact("company.contact_updated", { contact: karim(contactId), role: "admin" }),
+      // Le retrait ne relit pas la fiche qu'il efface : l'id seul.
+      fact("company.contact_removed", { contact: { id: contactId } }),
       fact("company.primary_contact_changed", {}),
     ]);
     expectNoContactDetails(events);
@@ -193,6 +213,7 @@ describe("l'identité et le délai, par le client", () => {
 
     expect(events.factTypes()).toEqual(["company.identity_edited"]);
     expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: COMPANY_LABEL,
       fields: ["vatNumber", "formeJuridique"],
     });
     expect(JSON.stringify(events.traced[0]?.journalFact())).not.toContain("FR40812456789");
@@ -221,6 +242,22 @@ describe("l'identité et le délai, par le client", () => {
   });
 });
 
+/** Un fait sur la société témoin : son nom du moment d'abord, puis la charge du geste. */
 function fact(type: string, payload: Record<string, unknown>) {
-  return { type, subjectType: "company", subjectId: "c1", payload };
+  return {
+    type,
+    subjectType: "company",
+    subjectId: "c1",
+    payload: { subjectLabel: COMPANY_LABEL, ...payload },
+  };
+}
+
+/** Une adresse de livraison semée, citée par son lieu — jamais par son libellé. */
+function placed(id: string) {
+  return { id, ...PLACE };
+}
+
+/** Le contact semé, nommé — son nom n'est pas une coordonnée. */
+function karim(id: string) {
+  return { id, name: "Karim Benali" };
 }

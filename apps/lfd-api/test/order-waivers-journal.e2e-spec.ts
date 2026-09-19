@@ -30,6 +30,8 @@ const LATE_FEE = "/admin/order-late-fee";
 const WAIVERS = "/admin/order-cutoff-waivers";
 const FIVE_EUROS = { fee: { mode: "amount", cents: 500 }, vatRatePercent: 20 };
 const REASON = "Client bloqué en tournée";
+/** La raison sociale de `createCompany`, sans enseigne : c'est donc elle qui nomme le client. */
+const COMPANY_NAME = "Café de Test SAS";
 /** Une journée à venir, calculée UNE fois : fixture et assertion visent la même. */
 const DAY = serviceDay(3);
 
@@ -155,7 +157,11 @@ describe("les dérogations d'heure limite", () => {
         subjectId: waiverId,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { companyId, fulfillmentDate: DAY, reason: REASON },
+        payload: {
+          company: { id: companyId, name: COMPANY_NAME },
+          fulfillmentDate: DAY,
+          reason: REASON,
+        },
       },
     ]);
   });
@@ -173,9 +179,28 @@ describe("les dérogations d'heure limite", () => {
         subjectId: waiverId,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { companyId, fulfillmentDate: DAY, reason: REASON },
+        payload: {
+          company: { id: companyId, name: COMPANY_NAME },
+          fulfillmentDate: DAY,
+          reason: REASON,
+        },
       },
     ]);
+  });
+
+  it("fige le nom du client : renommé ensuite, la ligne de l'accord garde l'ancien (D5)", async () => {
+    const waiverId = await grantWaiver();
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { enseigne: "Le Nouveau Nom" },
+    });
+
+    await staff().delete(`${WAIVERS}/${waiverId}`).expect(204);
+
+    const [granted] = await facts("order_cutoff_waiver.granted");
+    const [revoked] = await facts("order_cutoff_waiver.revoked");
+    expect(granted?.payload).toMatchObject({ company: { id: companyId, name: COMPANY_NAME } });
+    expect(revoked?.payload).toMatchObject({ company: { id: companyId, name: "Le Nouveau Nom" } });
   });
 
   it("ANNULE l'accord quand le journal refuse d'écrire", async () => {

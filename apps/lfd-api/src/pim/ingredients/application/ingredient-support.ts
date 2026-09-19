@@ -45,6 +45,28 @@ export function toIngredientView(record: IngredientRecord): IngredientView {
  * `null` reçu vaut « retirer le signe » ; `undefined` vaut « ne touche pas ».
  * Les confondre rendrait impossible d'annuler une appellation posée par erreur.
  */
+/**
+ * Une appellation citée au journal, avec son libellé français **du moment**
+ * (D5 du plan des phrases du journal). Son `id` est son CODE : c'est sous lui
+ * qu'elle écrit ses propres faits, et c'est par lui que l'écran la désigne.
+ * `null` = aucune appellation revendiquée.
+ *
+ * @throws {AppellationNotFoundError} l'identifiant ne désigne aucune appellation.
+ */
+export async function namedAppellation(
+  appellations: AppellationRepository,
+  appellationId: string | null,
+): Promise<{ readonly id: string; readonly name: string } | null> {
+  if (appellationId === null) {
+    return null;
+  }
+  const found = (await appellations.list()).find((record) => record.id === appellationId);
+  if (found === undefined) {
+    throw new AppellationNotFoundError(appellationId);
+  }
+  return { id: found.code, name: found.label.fr };
+}
+
 export async function resolveAppellation(
   appellations: AppellationRepository,
   code: string | null | undefined,

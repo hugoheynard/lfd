@@ -56,7 +56,7 @@ describe("OnUserRegisteredLinkLead", () => {
     expect(recorder.records[0]).toMatchObject({
       type: "lead.converted",
       subjectId: "lead_1",
-      payload: { via: "registration", linkedUserId: "user_42" },
+      payload: { subjectLabel: "Bistrot", via: "registration", linkedUserId: "user_42" },
     });
   });
 

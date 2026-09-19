@@ -12,6 +12,25 @@ import {
 const SUBJECT_TYPE = "payment_mandate";
 
 /**
+ * La société qu'un mandat engage, citée avec son nom **du moment** (lot B du
+ * plan des phrases, D5, 2026-09-19) : une enseigne changée depuis se lit sous
+ * l'ancienne sur les lignes d'avant.
+ */
+export interface MandateCompany {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * Ce que tout fait du mandat commence par dire : son nom — la RUM, celui que le
+ * débiteur a sur son papier (`subjectLabel`, D6) —, la société engagée, et la
+ * RUM encore sous sa clé d'origine.
+ */
+function mandateHead(company: MandateCompany, reference: string): Record<string, unknown> {
+  return { subjectLabel: reference, company: { id: company.id, name: company.name }, reference };
+}
+
+/**
  * Fait : **une RUM est frappée**. La référence entre au payload — c'est elle
  * que le débiteur oppose, et le seul moyen de relier une ligne du journal au
  * papier qu'il a dans son classeur.
@@ -19,7 +38,7 @@ const SUBJECT_TYPE = "payment_mandate";
 export class MandateMintedEvent implements JournaledEvent {
   constructor(
     readonly mandateId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     readonly reference: string,
     readonly via: MandateActorChannel,
   ) {}
@@ -29,7 +48,7 @@ export class MandateMintedEvent implements JournaledEvent {
       type: PAYMENT_MANDATE_FACTS.minted,
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
-      payload: { companyId: this.companyId, reference: this.reference, via: this.via },
+      payload: { ...mandateHead(this.company, this.reference), via: this.via },
     };
   }
 }
@@ -42,7 +61,7 @@ export class MandateMintedEvent implements JournaledEvent {
 export class MandateProofAttachedEvent implements JournaledEvent {
   constructor(
     readonly mandateId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     readonly reference: string,
     readonly fileName: string,
     readonly via: MandateActorChannel,
@@ -54,8 +73,7 @@ export class MandateProofAttachedEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
       payload: {
-        companyId: this.companyId,
-        reference: this.reference,
+        ...mandateHead(this.company, this.reference),
         fileName: this.fileName,
         via: this.via,
       },
@@ -71,11 +89,11 @@ export class MandateProofAttachedEvent implements JournaledEvent {
 export class MandateSignedEvent implements JournaledEvent {
   constructor(
     readonly mandateId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     readonly reference: string,
     readonly signedAt: string,
-    /** Le mandat actif révoqué dans la même transaction, s'il y en avait un. */
-    readonly replacedMandateId: string | null,
+    /** Le mandat actif révoqué dans la même transaction, s'il y en avait un — nommé par sa RUM. */
+    readonly replacedMandate: { readonly id: string; readonly name: string } | null,
   ) {}
 
   journalFact(): JournalFact {
@@ -84,10 +102,12 @@ export class MandateSignedEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
       payload: {
-        companyId: this.companyId,
-        reference: this.reference,
+        ...mandateHead(this.company, this.reference),
         signedAt: this.signedAt,
-        replacedMandateId: this.replacedMandateId,
+        replacedMandate:
+          this.replacedMandate === null
+            ? null
+            : { id: this.replacedMandate.id, name: this.replacedMandate.name },
       },
     };
   }
@@ -104,7 +124,7 @@ export class MandateSignedEvent implements JournaledEvent {
 export class MandateSentEvent implements JournaledEvent {
   constructor(
     readonly mandateId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     readonly reference: string,
     readonly providerId: string | null,
   ) {}
@@ -115,8 +135,7 @@ export class MandateSentEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
       payload: {
-        companyId: this.companyId,
-        reference: this.reference,
+        ...mandateHead(this.company, this.reference),
         providerId: this.providerId,
       },
     };
@@ -131,7 +150,7 @@ export class MandateSentEvent implements JournaledEvent {
 export class MandateRevokedEvent implements JournaledEvent {
   constructor(
     readonly mandateId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     readonly reference: string,
     readonly previousStatus: MandateStatus,
   ) {}
@@ -142,8 +161,7 @@ export class MandateRevokedEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
       payload: {
-        companyId: this.companyId,
-        reference: this.reference,
+        ...mandateHead(this.company, this.reference),
         previousStatus: this.previousStatus,
         via: "staff",
       },
@@ -162,7 +180,7 @@ export class MandateRevokedEvent implements JournaledEvent {
 export class MandateDraftVoidedEvent implements JournaledEvent {
   constructor(
     readonly mandateId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     readonly reference: string,
     readonly cause: DraftVoidingCause,
     readonly via: MandateActorChannel,
@@ -174,8 +192,7 @@ export class MandateDraftVoidedEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
       payload: {
-        companyId: this.companyId,
-        reference: this.reference,
+        ...mandateHead(this.company, this.reference),
         cause: this.cause,
         via: this.via,
       },
@@ -195,7 +212,9 @@ export class MandateDraftVoidedEvent implements JournaledEvent {
 export class MandateOptionsChangedEvent implements JournaledEvent {
   constructor(
     readonly bankAccountId: string,
-    readonly companyId: string,
+    /** Le titulaire du RIB — le nom sous lequel l'écran le montre. */
+    readonly holder: string,
+    readonly company: MandateCompany,
     readonly debtorReference: string,
     readonly contractNumber: string,
     readonly via: MandateActorChannel,
@@ -207,7 +226,8 @@ export class MandateOptionsChangedEvent implements JournaledEvent {
       subjectType: "company_bank_account",
       subjectId: this.bankAccountId,
       payload: {
-        companyId: this.companyId,
+        subjectLabel: this.holder,
+        company: { id: this.company.id, name: this.company.name },
         debtorReference: this.debtorReference,
         contractNumber: this.contractNumber,
         via: this.via,
@@ -226,7 +246,7 @@ export class MandateOptionsChangedEvent implements JournaledEvent {
 export class MandateProofPurgedEvent implements JournaledEvent {
   constructor(
     readonly mandateId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     readonly reference: string,
     readonly cause: ProofPurgeCause,
   ) {}
@@ -236,7 +256,7 @@ export class MandateProofPurgedEvent implements JournaledEvent {
       type: PAYMENT_MANDATE_FACTS.proofPurged,
       subjectType: SUBJECT_TYPE,
       subjectId: this.mandateId,
-      payload: { companyId: this.companyId, reference: this.reference, cause: this.cause },
+      payload: { ...mandateHead(this.company, this.reference), cause: this.cause },
     };
   }
 }

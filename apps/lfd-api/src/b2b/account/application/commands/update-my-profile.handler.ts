@@ -11,6 +11,7 @@ import { UserProfileUpdatedEvent } from "../../domain/events/person-acts.event.j
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { UserProfileRepository } from "../../domain/ports/user-profile.repository.js";
 import { UpdateMyProfileCommand } from "./update-my-profile.command.js";
+import { personName } from "../../domain/events/journal-names.js";
 
 /**
  * Enregistre le profil, et **propage l'e-mail à Auth0 avant** de l'écrire chez
@@ -58,7 +59,13 @@ export class UpdateMyProfileHandler implements ICommandHandler<UpdateMyProfileCo
       await this.profiles.save(command.userId, profile);
       // Un envoi sans changement réel n'affirme rien : pas de fait.
       if (fields.length > 0) {
-        await this.events.publishTraced(new UserProfileUpdatedEvent(command.userId, fields));
+        await this.events.publishTraced(
+          new UserProfileUpdatedEvent(
+            command.userId,
+            personName(profile.firstName.value, profile.lastName.value),
+            fields,
+          ),
+        );
       }
     });
   }

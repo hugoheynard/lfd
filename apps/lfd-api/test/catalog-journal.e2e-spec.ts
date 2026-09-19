@@ -150,6 +150,34 @@ function decision() {
 }
 
 const byStaff = { subjectType: "catalog_item", subjectId: SKU, actorType: "staff" } as const;
+/** Le nom de l'article livré par le référentiel, que chaque fait fige (lot B). */
+const ARTICLE = "Article VIE-001";
+
+/**
+ * D5 et D6 du plan des phrases : le fait dit le nom de l'article AU MOMENT du
+ * geste. Un article que le référentiel renomme ensuite garde son ancien nom
+ * sur la ligne déjà écrite.
+ */
+describe("le nom du moment", () => {
+  it("un article renommé depuis se lit sous l'ancien nom sur la ligne d'avant", async () => {
+    await staff().put(`${ITEM}/price`).send({ priceMillicents: NEGOTIATED }).expect(204);
+
+    const renamed = snapshot(["VIE-001"]);
+    await sell({
+      ...renamed,
+      products: renamed.products.map((product) => ({
+        ...product,
+        variants: product.variants.map((variant) => ({ ...variant, name: "Croissant pur beurre" })),
+      })),
+    });
+    await staff().put(`${ITEM}/price`).send({ priceMillicents: 180_000 }).expect(204);
+
+    expect((await facts("catalog_item.b2b_price_set")).map((fact) => fact.payload)).toMatchObject([
+      { subjectLabel: ARTICLE },
+      { subjectLabel: "Croissant pur beurre" },
+    ]);
+  });
+});
 
 describe("le prix B2B", () => {
   it("poser puis remplacer : l'avant et l'après en millicentimes, sous la fiche staff", async () => {
@@ -160,12 +188,18 @@ describe("le prix B2B", () => {
       {
         ...byStaff,
         actorId: E2E_STAFF_ID,
-        payload: { sku: SKU, before: null, after: { priceMillicents: NEGOTIATED } },
+        payload: {
+          subjectLabel: ARTICLE,
+          sku: SKU,
+          before: null,
+          after: { priceMillicents: NEGOTIATED },
+        },
       },
       {
         ...byStaff,
         actorId: E2E_STAFF_ID,
         payload: {
+          subjectLabel: ARTICLE,
           sku: SKU,
           before: { priceMillicents: NEGOTIATED },
           after: { priceMillicents: 180_000 },
@@ -183,7 +217,7 @@ describe("le prix B2B", () => {
       {
         ...byStaff,
         actorId: E2E_STAFF_ID,
-        payload: { sku: SKU, before: { priceMillicents: NEGOTIATED } },
+        payload: { subjectLabel: ARTICLE, sku: SKU, before: { priceMillicents: NEGOTIATED } },
       },
     ]);
   });
@@ -219,7 +253,11 @@ describe("la visibilité et la mise en avant", () => {
     await staff().put(`${ITEM}/visibility`).send({ hidden: true }).expect(204);
     await staff().put(`${ITEM}/visibility`).send({ hidden: false }).expect(204);
 
-    const expected = { ...byStaff, actorId: E2E_STAFF_ID, payload: { sku: SKU } };
+    const expected = {
+      ...byStaff,
+      actorId: E2E_STAFF_ID,
+      payload: { subjectLabel: ARTICLE, sku: SKU },
+    };
     expect(await facts("catalog_item.hidden")).toEqual([expected]);
     expect(await facts("catalog_item.shown")).toEqual([expected]);
   });
@@ -236,7 +274,11 @@ describe("la visibilité et la mise en avant", () => {
     await staff().put(`${ITEM}/featured`).send({ featured: true }).expect(204);
     await staff().put(`${ITEM}/featured`).send({ featured: false }).expect(204);
 
-    const expected = { ...byStaff, actorId: E2E_STAFF_ID, payload: { sku: SKU } };
+    const expected = {
+      ...byStaff,
+      actorId: E2E_STAFF_ID,
+      payload: { subjectLabel: ARTICLE, sku: SKU },
+    };
     expect(await facts("catalog_item.featured")).toEqual([expected]);
     expect(await facts("catalog_item.unfeatured")).toEqual([expected]);
   });

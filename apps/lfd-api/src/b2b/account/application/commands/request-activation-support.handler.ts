@@ -8,6 +8,7 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { SupportRequestRepository } from "../../domain/ports/support-request.repository.js";
 import { ensureCompanyMember } from "../../domain/services/company-access.js";
 import { RequestActivationSupportCommand } from "./request-activation-support.command.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Enregistre une demande de support à l'activation.
@@ -32,6 +33,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
     private readonly support: SupportRequestRepository,
     private readonly events: EventBus,
     private readonly clock: Clock,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: RequestActivationSupportCommand): Promise<string> {
@@ -49,6 +51,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
       throw new OpenSupportRequestExistsError(companyId ?? command.actorUserId);
     }
 
+    const subjectLabel = await this.names.supportSubject(companyId, command.actorUserId);
     const id = await this.support.record(command.actorUserId, command.payload);
     // Publié APRÈS l'écriture : le journal est une projection, jamais une
     // condition de la transaction métier.
@@ -57,6 +60,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
         id,
         companyId,
         command.actorUserId,
+        subjectLabel,
         command.payload.channel,
         this.clock.now(),
       ),

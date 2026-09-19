@@ -1,5 +1,6 @@
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
+import type { NamedRef, PersonRef } from "./journal-names.js";
 
 /**
  * Les faits qui touchent une **personne** plutôt qu'une société : son profil,
@@ -9,7 +10,16 @@ import { ACCOUNT_FACTS } from "./account-facts.js";
  * Aucun ne porte de coordonnée — ni l'e-mail, ni le téléphone, ni le lien de
  * mot de passe. Le journal se relit largement et se garde longtemps : il dit
  * **qui a agi, sur qui, quand**, et la fiche dit le reste.
+ *
+ * La personne y est nommée (`subjectLabel`, lot B du plan des phrases) quand
+ * son profil porte un nom ; sinon la charge n'en porte pas — son adresse n'en
+ * tient jamais lieu.
  */
+
+/** Le libellé du sujet, omis plutôt qu'inventé quand la personne n'a pas de nom. */
+function labelOf(name: string | null): Record<string, unknown> {
+  return name === null ? {} : { subjectLabel: name };
+}
 
 /**
  * La personne a modifié son profil. La charge nomme **les champs** changés
@@ -23,6 +33,8 @@ import { ACCOUNT_FACTS } from "./account-facts.js";
 export class UserProfileUpdatedEvent implements JournaledEvent {
   constructor(
     readonly userId: string,
+    /** Le nom APRÈS le geste, ou `null` si le profil n'en porte pas. */
+    readonly name: string | null,
     readonly fields: readonly string[],
   ) {}
 
@@ -31,7 +43,7 @@ export class UserProfileUpdatedEvent implements JournaledEvent {
       type: ACCOUNT_FACTS.profileUpdated,
       subjectType: "user",
       subjectId: this.userId,
-      payload: { fields: [...this.fields] },
+      payload: { ...labelOf(this.name), fields: [...this.fields] },
     };
   }
 }
@@ -43,14 +55,18 @@ export class UserProfileUpdatedEvent implements JournaledEvent {
  * réponse.
  */
 export class PasswordLinkIssuedEvent implements JournaledEvent {
-  constructor(readonly userId: string) {}
+  constructor(
+    readonly userId: string,
+    /** Le nom de la personne, ou `null` si son profil n'en porte pas. */
+    readonly name: string | null,
+  ) {}
 
   journalFact(): JournalFact {
     return {
       type: ACCOUNT_FACTS.passwordLinkIssued,
       subjectType: "user",
       subjectId: this.userId,
-      payload: {},
+      payload: labelOf(this.name),
     };
   }
 }
@@ -58,12 +74,13 @@ export class PasswordLinkIssuedEvent implements JournaledEvent {
 /**
  * Un accès à l'espace d'une société est ouvert à une personne — invitation d'un
  * membre, ou rattachement du détenteur d'un compte ouvert sans lui. La personne
- * est désignée par son id `users` et son rôle, jamais par son adresse.
+ * est désignée par son id `users`, son nom saisi s'il y en a un, et son rôle —
+ * jamais par son adresse.
  */
 export class CompanyAccessOpenedEvent implements JournaledEvent {
   constructor(
-    readonly companyId: string,
-    readonly userId: string,
+    readonly company: NamedRef,
+    readonly person: PersonRef,
     readonly role: string,
   ) {}
 
@@ -71,8 +88,8 @@ export class CompanyAccessOpenedEvent implements JournaledEvent {
     return {
       type: ACCOUNT_FACTS.accessOpened,
       subjectType: "company",
-      subjectId: this.companyId,
-      payload: { userId: this.userId, role: this.role },
+      subjectId: this.company.id,
+      payload: { subjectLabel: this.company.name, person: { ...this.person }, role: this.role },
     };
   }
 }

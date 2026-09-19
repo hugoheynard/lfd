@@ -29,6 +29,8 @@ import { PrismaPricingDecisionsReader } from "./infrastructure/prisma-pricing-de
 import { PrismaPricedCompanyReader } from "./infrastructure/prisma-priced-company.reader.js";
 import { PricingDecisionsReader } from "./application/ports/pricing-decisions.reader.js";
 import { PricedCompanyReader } from "./domain/ports/priced-company.reader.js";
+import { PricedCompanyNamer } from "./domain/ports/priced-company-namer.js";
+import { PrismaPricedCompanyNamer } from "./infrastructure/prisma-priced-company-namer.js";
 import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-floor.repository.js";
 import { PrismaPricingJournalReader } from "./infrastructure/prisma-pricing-journal.reader.js";
 import { PricingActWriter } from "./infrastructure/pricing-act.writer.js";
@@ -179,6 +181,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // côté, avec deux clauses `where` — et elles avaient déjà divergé (R21).
     { provide: PricingDecisionsReader, useClass: PrismaPricingDecisionsReader },
     { provide: PricedCompanyReader, useClass: PrismaPricedCompanyReader },
+    { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },
   ],
   /**

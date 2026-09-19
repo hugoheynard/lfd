@@ -68,7 +68,12 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
           type: PIM_EVENTS.vatRateRateChanged,
           subjectType: "vat_rate",
           subjectId: after.id,
-          payload: { name: after.name, from: before.percent, to: after.percent },
+          payload: {
+            subjectLabel: after.name,
+            name: after.name,
+            from: before.percent,
+            to: after.percent,
+          },
           // TOUS les contextes, nommés par leur clé. Le journal en listait
           // trois, fixes : un taux que seules les familles B2B visaient
           // changeait sous une portée annoncée « 0 / 0 » — sous la promesse que
@@ -84,7 +89,8 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
           type: PIM_EVENTS.vatRateRenamed,
           subjectType: "vat_rate",
           subjectId: after.id,
-          payload: { from: before.name, to: after.name },
+          // `subjectLabel` : le nom APRÈS, celui que le taux porte depuis.
+          payload: { subjectLabel: after.name, from: before.name, to: after.name },
         }),
       );
     }

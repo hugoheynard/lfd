@@ -12,6 +12,7 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { RemoveDeliveryStepCommand } from "./delivery-procedure-commands.js";
 import { removeDeliveryStep, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Supprime définitivement une étape et sa photo, réservé au **gestionnaire** (`ensureCompanyAdmin`).
@@ -34,6 +35,7 @@ export class RemoveDeliveryStepHandler implements ICommandHandler<RemoveDelivery
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: RemoveDeliveryStepCommand): Promise<void> {
@@ -44,11 +46,13 @@ export class RemoveDeliveryStepHandler implements ICommandHandler<RemoveDelivery
       this.ports(),
       { companyId: command.companyId, addressId: command.addressId },
       command.stepId,
-      () =>
+      async () =>
         this.events.publishTraced(
           new DeliveryProcedureEditedByMemberEvent(
-            command.companyId,
-            command.addressId,
+            // Lus DANS la transaction, après la vérification de l'adresse :
+            // un contenu refusé ne coûte toujours pas une lecture.
+            await this.names.company(command.companyId),
+            await this.names.deliveryAddress(command.companyId, command.addressId),
             "step_removed",
           ),
         ),

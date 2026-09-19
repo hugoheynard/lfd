@@ -13,6 +13,10 @@
  *
  * Frontières doublées : la signature du jeton staff et le fournisseur
  * d'identité (Auth0). Tout le reste — gardes, bus, domaine, SQL — est réel.
+ *
+ * Lot B du plan des phrases (2026-09-19) : chaque fait nomme la société ou la
+ * personne au moment du geste, et cite l'adresse ou le contact avec son nom du
+ * moment — un renommage après coup ne réécrit pas la ligne.
  */
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -34,6 +38,8 @@ const EMAIL = "karim.benali@exemple.fr";
 const PHONE = "06 12 34 56 78";
 const NEW_EMAIL = "camille.nouvelle@exemple.fr";
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
+/** Le nom de la société semée — sa raison sociale, faute d'enseigne. */
+const COMPANY_NAME = "Café de Test SAS";
 
 /** Le fournisseur d'identité : il accepte tout, sauf quand un test l'arme pour refuser. */
 class IdentityDouble extends CustomerIdentityPort {
@@ -90,13 +96,19 @@ beforeEach(async () => {
 const owner = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(OWNER);
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
-function delivery(label: string): Record<string, unknown> {
+/** Le lieu d'une adresse, tel que le journal le retient : ni rue, ni numéro, ni libellé. */
+const PARIS = { ville: "Paris", codePostal: "75011" };
+
+function delivery(
+  label: string,
+  place: { readonly ville: string; readonly codePostal: string } = PARIS,
+): Record<string, unknown> {
   return {
     label,
     ligne1: STREET,
     ligne2: "",
-    codePostal: "75011",
-    ville: "Paris",
+    codePostal: place.codePostal,
+    ville: place.ville,
     pays: "France",
     isDefault: false,
     specs: {
@@ -155,7 +167,7 @@ async function addAddress(label: string): Promise<string> {
 }
 
 describe("le client, sur le compte de sa société", () => {
-  it("ses adresses : un fait par geste, sous son id `users`, par id, ville et code postal", async () => {
+  it("ses adresses : un fait par geste, sous son id `users`, citées par ville et code postal", async () => {
     const addressId = await addAddress("Boutique");
     await owner()
       .patch(`/companies/${companyId}/delivery-addresses/${addressId}`)
@@ -171,18 +183,19 @@ describe("le client, sur le compte de sa société", () => {
       actorType: "customer",
       actorId: ownerId,
     };
+    // Jamais le libellé (« Boutique », « Atelier ») : un texte libre du
+    // client (lot B, décision de Hugo du 2026-09-19, `a151ccee`).
+    const cited = { subjectLabel: COMPANY_NAME, address: { id: addressId, ...PARIS } };
     expect(await facts("company.delivery_address_added")).toEqual([
-      { ...byClient, payload: { addressId, ville: "Paris", codePostal: "75011" } },
+      { ...byClient, payload: cited },
     ]);
     expect(await facts("company.delivery_address_updated")).toEqual([
-      { ...byClient, payload: { addressId, ville: "Paris", codePostal: "75011" } },
+      { ...byClient, payload: cited },
     ]);
-    expect(await facts("company.default_delivery_set")).toEqual([
-      { ...byClient, payload: { addressId } },
-    ]);
+    expect(await facts("company.default_delivery_set")).toEqual([{ ...byClient, payload: cited }]);
   });
 
-  it("ses contacts : l'id et le rôle, jamais l'e-mail ni le téléphone", async () => {
+  it("ses contacts : l'id, le nom et le rôle, jamais l'e-mail ni le téléphone", async () => {
     const created = await owner()
       .post(`/companies/${companyId}/contacts`)
       .send({ ...CONTACT, role: "orders" })
@@ -196,10 +209,17 @@ describe("le client, sur le compte de sa société", () => {
         subjectId: companyId,
         actorType: "customer",
         actorId: ownerId,
-        payload: { contactId, role: "orders" },
+        payload: {
+          subjectLabel: COMPANY_NAME,
+          contact: { id: contactId, name: "Karim Benali" },
+          role: "orders",
+        },
       },
     ]);
-    expect((await facts("company.contact_removed"))[0]?.payload).toEqual({ contactId });
+    expect((await facts("company.contact_removed"))[0]?.payload).toEqual({
+      subjectLabel: COMPANY_NAME,
+      contact: { id: contactId },
+    });
   });
 
   it("son identité et le délai demandé : les champs changés, la demande d'avant et d'après", async () => {
@@ -212,11 +232,13 @@ describe("le client, sur le compte de sa société", () => {
       .send({ paymentTerm: "monthly" })
       .expect(204);
 
+    // Le nom APRÈS le geste : la nouvelle enseigne est celle du moment.
     expect((await facts("company.identity_edited"))[0]).toMatchObject({
       actorId: ownerId,
-      payload: { fields: ["enseigne", "vatNumber"] },
+      payload: { subjectLabel: "Le Comptoir", fields: ["enseigne", "vatNumber"] },
     });
     expect((await facts("company.payment_term_requested"))[0]?.payload).toEqual({
+      subjectLabel: "Le Comptoir",
       before: null,
       after: "monthly",
     });
@@ -234,7 +256,7 @@ describe("le client, sur le compte de sa société", () => {
         subjectId: ownerId,
         actorType: "customer",
         actorId: ownerId,
-        payload: { fields: ["email", "phone"] },
+        payload: { subjectLabel: "Camille Durand", fields: ["email", "phone"] },
       },
     ]);
   });
@@ -266,12 +288,44 @@ describe("le client, sur le compte de sa société", () => {
     const text = await journalText();
     expect(text).toContain("company.billing_address_saved");
     expect((await facts("company.billing_address_saved"))[0]?.payload).toEqual({
+      subjectLabel: COMPANY_NAME,
       ville: "Paris",
       codePostal: "75011",
     });
     for (const secret of [EMAIL, NEW_EMAIL, PHONE, STREET, "Roquette", OWNER]) {
       expect(text).not.toContain(secret);
     }
+  });
+});
+
+/**
+ * D5 et D6 du plan des phrases : le journal dit ce qui était vrai QUAND c'est
+ * arrivé. Renommer l'adresse et la société après coup ne réécrit pas la ligne.
+ */
+describe("les noms du moment", () => {
+  it("une adresse déplacée et une société renommée depuis se lisent comme elles étaient", async () => {
+    const addressId = await addAddress("Boutique");
+
+    await owner()
+      .patch(`/companies/${companyId}/delivery-addresses/${addressId}`)
+      .send(delivery("Atelier", { ville: "Lyon", codePostal: "69001" }))
+      .expect(204);
+    await owner()
+      .patch(`/companies/${companyId}/identity`)
+      .send({ enseigne: "Le Comptoir", vatNumber: "" })
+      .expect(204);
+
+    expect((await facts("company.delivery_address_added"))[0]?.payload).toMatchObject({
+      subjectLabel: COMPANY_NAME,
+      address: { id: addressId, ...PARIS },
+    });
+    expect((await facts("company.delivery_address_updated"))[0]?.payload).toMatchObject({
+      subjectLabel: COMPANY_NAME,
+      address: { id: addressId, ville: "Lyon", codePostal: "69001" },
+    });
+    expect((await facts("company.identity_edited"))[0]?.payload).toMatchObject({
+      subjectLabel: "Le Comptoir",
+    });
   });
 });
 
@@ -290,7 +344,7 @@ describe("le client, sur ses pièces et ses consignes", () => {
         subjectId: companyId,
         actorType: "customer",
         actorId: ownerId,
-        payload: { fileName: "kbis.pdf" },
+        payload: { subjectLabel: COMPANY_NAME, fileName: "kbis.pdf" },
       },
     ]);
   });
@@ -323,7 +377,11 @@ describe("le staff, sur l'accès d'un client", () => {
         subjectId: companyId,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { userId: invited.id, role: "orders" },
+        payload: {
+          subjectLabel: COMPANY_NAME,
+          person: { id: invited.id, name: "Karim Benali" },
+          role: "orders",
+        },
       },
     ]);
     expect(await journalText()).not.toContain(EMAIL);
@@ -343,7 +401,7 @@ describe("le staff, sur l'accès d'un client", () => {
         subjectId: waiting.id,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: {},
+        payload: { subjectLabel: "Camille Durand" },
       },
     ]);
     expect(await journalText()).not.toContain("lien-secret");

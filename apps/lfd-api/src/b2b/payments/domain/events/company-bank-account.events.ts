@@ -3,6 +3,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import type { DebtorAccount } from "../value-objects/debtor-account.js";
 import type { MandateActorChannel } from "./payment-mandate-facts.js";
+import type { MandateCompany } from "./payment-mandate.events.js";
 
 /**
  * Fait : **le RIB d'une société est posé ou remplacé** —
@@ -26,6 +27,9 @@ import type { MandateActorChannel } from "./payment-mandate-facts.js";
  * et une coordonnée bancaire n'a rien à y faire. ⚠️ Les faits du MANDAT, eux,
  * ne portent même pas `last4` (`payment-mandate-facts.ts`) : ils n'en ont pas
  * besoin, leur référence (RUM) suffit à les relier au papier.
+ *
+ * La société y est nommée comme au moment du geste (`subjectLabel`, lot B du
+ * plan des phrases, 2026-09-19).
  */
 export const COMPANY_BANK_ACCOUNT_CHANGED =
   "company.bank_account_changed" satisfies JournalFactType;
@@ -49,7 +53,7 @@ function traceOf(trace: BankAccountTrace): Record<string, unknown> {
 export class CompanyBankAccountChangedEvent implements JournaledEvent {
   constructor(
     readonly bankAccountId: string,
-    readonly companyId: string,
+    readonly company: MandateCompany,
     /** `null` sur un premier dépôt. */
     readonly before: BankAccountTrace | null,
     readonly after: BankAccountTrace,
@@ -60,8 +64,9 @@ export class CompanyBankAccountChangedEvent implements JournaledEvent {
     return {
       type: COMPANY_BANK_ACCOUNT_CHANGED,
       subjectType: "company",
-      subjectId: this.companyId,
+      subjectId: this.company.id,
       payload: {
+        subjectLabel: this.company.name,
         bankAccountId: this.bankAccountId,
         before: this.before === null ? null : traceOf(this.before),
         after: traceOf(this.after),

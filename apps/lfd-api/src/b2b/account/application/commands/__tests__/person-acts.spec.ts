@@ -31,7 +31,7 @@ import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
 import { IssuePasswordLinkHandler } from "../issue-password-link.handler.js";
 import { UpdateMyProfileCommand } from "../update-my-profile.command.js";
 import { UpdateMyProfileHandler } from "../update-my-profile.handler.js";
-import { EMAIL, InMemoryCompanies, PHONE } from "./member-acts-doubles.js";
+import { EMAIL, InMemoryCompanies, journalNames, PHONE } from "./member-acts-doubles.js";
 
 /**
  * **Ce qu'un geste sur une personne laisse au journal** (plan
@@ -39,6 +39,10 @@ import { EMAIL, InMemoryCompanies, PHONE } from "./member-acts-doubles.js";
  * (c), 2026-09-19) — profil, accès, lien de mot de passe. Chacun passe par un
  * tiers (le fournisseur d'identité) : le fait s'écrit APRÈS lui, et jamais
  * quand il a refusé.
+ *
+ * Lot B du plan des phrases (même jour) : la personne est nommée — son nom
+ * n'est pas une coordonnée —, la société aussi ; et l'absence de nom reste une
+ * absence, jamais une adresse à sa place.
  */
 const RECORDED: UserProfileRecord = {
   userId: "user_1",
@@ -169,7 +173,7 @@ describe("le profil", () => {
         type: "user.profile_updated",
         subjectType: "user",
         subjectId: "user_1",
-        payload: { fields: ["email", "phone"] },
+        payload: { subjectLabel: "Camille Rousseau", fields: ["email", "phone"] },
       },
     ]);
     const written = JSON.stringify(events.traced[0]?.journalFact());
@@ -229,7 +233,11 @@ describe("l'accès à une société", () => {
         type: "company.access_opened",
         subjectType: "company",
         subjectId: "c1",
-        payload: { userId: "user_9", role: "orders" },
+        payload: {
+          subjectLabel: "Le Pain Quotidien",
+          person: { id: "user_9", name: "Karim Benali" },
+          role: "orders",
+        },
       },
     ]);
   });
@@ -271,25 +279,51 @@ describe("l'accès à une société", () => {
 
     expect(companies.saved).toHaveLength(1);
     expect(events.factTypes()).toEqual(["company.access_opened"]);
-    expect(events.traced[0]?.journalFact().payload).toEqual({ userId: "user_9", role: "owner" });
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: "Café des Halles",
+      person: { id: "user_9", name: "Camille Rousseau" },
+      role: "owner",
+    });
   });
 });
 
 describe("le lien de mot de passe", () => {
-  it("journalise le geste, jamais le lien", async () => {
+  it("journalise le geste et le nom de la personne, jamais le lien", async () => {
     const events = new RecordingPublisher();
     const handler = new IssuePasswordLinkHandler(
       new PendingUser(),
       new Identity(),
       new FixedClock(new Date("2026-02-03T10:00:00Z")),
       events,
+      journalNames(),
     );
 
-    const link = await handler.execute(new IssuePasswordLinkCommand("user_1"));
+    const link = await handler.execute(new IssuePasswordLinkCommand("u1"));
 
     expect(link.url).toBe("https://auth/ticket-secret");
     expect(events.traced.map((event) => event.journalFact())).toEqual([
-      { type: "user.password_link_issued", subjectType: "user", subjectId: "user_1", payload: {} },
+      {
+        type: "user.password_link_issued",
+        subjectType: "user",
+        subjectId: "u1",
+        payload: { subjectLabel: "Camille Rousseau" },
+      },
     ]);
+    expect(JSON.stringify(events.traced[0]?.journalFact())).not.toContain("camille@");
+  });
+
+  it("une personne sans nom est citée sans libellé — son adresse n'en tient pas lieu", async () => {
+    const events = new RecordingPublisher();
+    const handler = new IssuePasswordLinkHandler(
+      new PendingUser(),
+      new Identity(),
+      new FixedClock(new Date("2026-02-03T10:00:00Z")),
+      events,
+      journalNames(),
+    );
+
+    await handler.execute(new IssuePasswordLinkCommand("user_sans_fiche"));
+
+    expect(events.traced[0]?.journalFact().payload).toEqual({});
   });
 });

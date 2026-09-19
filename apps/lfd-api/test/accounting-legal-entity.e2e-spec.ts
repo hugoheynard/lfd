@@ -798,6 +798,29 @@ describe("Entité juridique — archivage et corrections", () => {
       siren: SIREN,
       ics: ICS,
     });
+
+    // D5 et D6 du plan des phrases : chaque fait nomme l'entité comme elle
+    // s'appelait AU MOMENT du geste — la correction ne réécrit pas l'ICS
+    // attribué sous l'ancien nom.
+    const journal = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: id },
+      orderBy: { id: "asc" },
+      select: { type: true, payload: true },
+    });
+    expect(journal).toEqual([
+      expect.objectContaining({
+        type: "legal_entity.declared",
+        payload: { subjectLabel: "La Folie Douce", name: "La Folie Douce", siren: SIREN },
+      }),
+      expect.objectContaining({
+        type: "legal_entity.creditor_identifier_assigned",
+        payload: { subjectLabel: "La Folie Douce", ics: ICS },
+      }),
+      expect.objectContaining({
+        type: "legal_entity.corrected",
+        payload: { subjectLabel: "La Folie Douce Fournil", name: "La Folie Douce Fournil" },
+      }),
+    ]);
   });
 
   it("404 sur une entité inconnue, plutôt qu'un corps vide à interpréter", async () => {

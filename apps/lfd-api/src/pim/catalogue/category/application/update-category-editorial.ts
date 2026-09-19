@@ -41,7 +41,7 @@ export class UpdateCategoryEditorialHandler implements ICommandHandler<
   ) {}
 
   async execute(command: UpdateCategoryEditorialCommand): Promise<void> {
-    await requireCategory(this.categories, command.id);
+    const category = await requireCategory(this.categories, command.id);
     // Une lecture de plus, assumée : les textes ne sont pas portés par
     // l'agrégat déjà chargé. Sans elle, la trace dirait « Communication
     // enregistrée » sans dire quoi — exactement le grain qu'on veut.
@@ -56,7 +56,7 @@ export class UpdateCategoryEditorialHandler implements ICommandHandler<
               type: PIM_EVENTS.productCategoryEditorialSaved,
               subjectType: "product_category",
               subjectId: command.id,
-              payload: { changes },
+              payload: { subjectLabel: category.name.fr, changes },
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.saveTexts(command.id, after, ticket);

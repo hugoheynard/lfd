@@ -58,7 +58,14 @@ export class CreateAllergenEntryHandler implements ICommandHandler<
         type: PIM_EVENTS.allergenEntryCreated,
         subjectType: "allergen_entry",
         subjectId: created.id,
-        payload: { code: created.code, name: created.name, category: category.key },
+        // La catégorie NOMMÉE, sous la même clé qu'à la modification (lot B
+        // du plan des phrases : c'était sa clé ici, son identifiant là-bas).
+        payload: {
+          subjectLabel: created.name.fr,
+          code: created.code,
+          name: created.name,
+          category: { id: category.id, name: category.snapshot().name.fr },
+        },
       });
       await this.entries.add(entry, ticket);
     });

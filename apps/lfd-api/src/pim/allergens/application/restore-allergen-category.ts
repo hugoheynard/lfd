@@ -37,7 +37,7 @@ export class RestoreAllergenCategoryHandler implements ICommandHandler<
         type: PIM_EVENTS.allergenCategoryRestored,
         subjectType: "allergen_category",
         subjectId: restored.id,
-        payload: { key: restored.key, name: restored.name },
+        payload: { subjectLabel: restored.name.fr, key: restored.key, name: restored.name },
       });
       await this.categories.save(category, ticket);
     });

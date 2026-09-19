@@ -11,7 +11,8 @@ function lenient(): { readonly check: JournalFactCheck; readonly reported: strin
   return { check: new JournalFactCheck(false, (message) => reported.push(message)), reported };
 }
 
-const CONFORM = { fileName: "kbis.pdf" };
+// La forme courante depuis le lot B du plan des phrases : le nom de la société figé.
+const CONFORM = { subjectLabel: "Le Pain Quotidien", fileName: "kbis.pdf" };
 
 describe("JournalFactCheck — strict", () => {
   const strict = new JournalFactCheck(true, () => {

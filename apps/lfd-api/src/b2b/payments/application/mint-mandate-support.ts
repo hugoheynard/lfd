@@ -15,6 +15,7 @@ import type { PaymentMandateRepository } from "../domain/payment-mandate.reposit
 import type { CompanyBankAccountRepository } from "../domain/ports/company-bank-account.repository.js";
 import { Rum } from "../domain/value-objects/rum.js";
 import { readMintReadiness } from "./mint-readiness.js";
+import { mandateCompanyOf } from "./mandate-journal-names.js";
 
 /** Les ports de la frappe — partagés par le staff et le client. */
 export interface MintMandateDeps {
@@ -144,7 +145,14 @@ async function writeMinted(
       }),
     );
     await deps.ledger.note(issuer.creditorId, mintedAt);
-    await deps.events.publishTraced(new MandateMintedEvent(mandateId, companyId, rum.value, via));
+    await deps.events.publishTraced(
+      new MandateMintedEvent(
+        mandateId,
+        await mandateCompanyOf(deps.mandates, companyId),
+        rum.value,
+        via,
+      ),
+    );
     return mandateId;
   });
 }

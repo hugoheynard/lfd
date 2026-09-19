@@ -8,6 +8,7 @@ import {
   OrderTimeLimitNotFoundError,
 } from "../domain/errors/order-time-limit-errors.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
+import { limitScopeLabel } from "../domain/services/limit-scope-label.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
 
 export class RemoveOrderTimeLimitCommand {
@@ -84,6 +85,8 @@ export class RemoveOrderTimeLimitHandler implements ICommandHandler<
         // celle de `orderTimeLimitSet` : les deux faits se relisent ensemble
         // quand un client conteste, et deux formes obligeraient à les traduire.
         payload: {
+          // La portée en mots, lue dans la vue qu'on vient de relire (lot B).
+          subjectLabel: limitScopeLabel(doomed.scope, doomed.scopeLabel),
           scope: LimitScope.of(doomed.scope).key,
           daysBefore: doomed.daysBefore,
           time: doomed.time,

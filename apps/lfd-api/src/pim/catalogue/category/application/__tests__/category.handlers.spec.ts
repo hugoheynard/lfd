@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { KnownPointsOfSale } from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRate } from "../../../../vat-rates/domain/entities/vat-rate.js";
@@ -213,6 +214,9 @@ class InMemoryRegimes extends VatRateRepository {
 const byPair = (a: SoldChannel, b: SoldChannel): number =>
   `${a.pointOfSaleId} ${a.context}`.localeCompare(`${b.pointOfSaleId} ${b.context}`);
 
+/** Les points de vente que les matrices citent, nommés comme le journal les fige. */
+const POINTS_OF_SALE = new KnownPointsOfSale({ emp_village: "Le Village", emp_val: "Le Val" });
+
 /** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
 const ALL_OPEN: SalesChannels = [
   { pointOfSaleId: "emp_village", context: "takeaway" },
@@ -315,6 +319,8 @@ function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
     repo,
     allPointsOfSaleOffer(),
     registry,
+    POINTS_OF_SALE,
+    new InMemoryRegimes(),
     new RecordingJournal(),
 
     new DirectUnitOfWork(),
@@ -465,6 +471,8 @@ describe("SetCategoryChannelsHandler", () => {
         repo,
         noPointOfSaleKnown(),
         registry,
+        POINTS_OF_SALE,
+        new InMemoryRegimes(),
         new RecordingJournal(),
 
         new DirectUnitOfWork(),
@@ -483,6 +491,8 @@ describe("SetCategoryChannelsHandler", () => {
         repo,
         noPointOfSaleKnown(),
         registry,
+        POINTS_OF_SALE,
+        new InMemoryRegimes(),
         new RecordingJournal(),
 
         new DirectUnitOfWork(),
@@ -841,6 +851,8 @@ describe("Ce que les familles inscrivent au journal", () => {
       repo,
       allPointsOfSaleOffer(),
       registry,
+      POINTS_OF_SALE,
+      new InMemoryRegimes(),
       journal,
       uow,
     ).execute(new SetCategoryChannelsCommand(child, ALL_OPEN));
@@ -877,8 +889,15 @@ describe("Ce que les familles inscrivent au journal", () => {
 
     expect(journal.entries).toHaveLength(1);
     expect(journal.entries[0]?.subjectId).toBe("root");
+    // Les sœurs NOMMÉES dans l'ordre retenu, et le niveau sous son nom
+    // (plan des phrases du journal, D5 et D6).
     expect(journal.entries[0]?.payload).toEqual({
-      order: [roots[2], roots[0], roots[1]],
+      subjectLabel: "Premier niveau du catalogue",
+      order: [
+        { id: roots[2], name: "Famille 2" },
+        { id: roots[0], name: "Famille 0" },
+        { id: roots[1], name: "Famille 1" },
+      ],
     });
   });
 
@@ -894,8 +913,8 @@ describe("Ce que les familles inscrivent au journal", () => {
     expect(journal.types()).toEqual([]);
   });
 
-  /** Le parent d'AVANT est ce qu'on vient chercher : c'est de lui que la
-   *  famille tenait sa TVA et ses canaux. */
+  /** Le parent d'AVANT est ce qu'on vient chercher : c'est d'où la famille
+   *  venait dans l'arbre — nommé, sous le nom qu'il portait ce jour-là. */
   it("emporte le parent d’avant ET d’après dans un déplacement", async () => {
     const repo = new InMemoryCategories();
     const journal = new RecordingJournal();
@@ -905,6 +924,9 @@ describe("Ce que les familles inscrivent au journal", () => {
       new MoveCategoryCommand(child!, parent!),
     );
 
-    expect(journal.entries[0]?.payload).toEqual({ parentId: { from: null, to: parent } });
+    expect(journal.entries[0]?.payload).toEqual({
+      subjectLabel: "Famille 1",
+      parent: { from: null, to: { id: parent, name: "Famille 0" } },
+    });
   });
 });

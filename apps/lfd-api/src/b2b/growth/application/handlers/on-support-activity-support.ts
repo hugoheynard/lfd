@@ -24,3 +24,11 @@ export function subjectOf(
     ? { subjectType: "user", subjectId: userId }
     : { subjectType: "company", subjectId: companyId };
 }
+
+/**
+ * Le nom du sujet, figé tel que l'émetteur l'a lu (lot B du plan des phrases) —
+ * omis plutôt qu'inventé quand la personne n'a pas de nom.
+ */
+export function labelOf(subjectLabel: string | null): { subjectLabel?: string } {
+  return subjectLabel === null ? {} : { subjectLabel };
+}

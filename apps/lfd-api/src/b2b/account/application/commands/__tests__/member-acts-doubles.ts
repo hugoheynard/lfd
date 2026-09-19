@@ -11,6 +11,11 @@ import {
   type KnownAccount,
 } from "../../../domain/ports/company-member.repository.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
+import {
+  UserProfileRepository,
+  type UserProfileRecord,
+} from "../../../domain/ports/user-profile.repository.js";
+import { AccountJournalNames } from "../../services/account-journal-names.service.js";
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
@@ -195,3 +200,40 @@ export class NoKnownMembers extends CompanyMemberRepository {
     return Promise.resolve(null);
   }
 }
+
+/** Une seule personne connue : Camille Rousseau, sous l'id `u1`. */
+export class OneProfile extends UserProfileRepository {
+  findById(userId: string): Promise<UserProfileRecord | null> {
+    return Promise.resolve(
+      userId === "u1"
+        ? {
+            userId,
+            firstName: "Camille",
+            lastName: "Rousseau",
+            email: "camille@pqmarais.fr",
+            phone: "",
+          }
+        : null,
+    );
+  }
+  findIdByEmail(): Promise<string | null> {
+    return Promise.resolve(null);
+  }
+  save(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
+/**
+ * Les noms que les faits figent, lus dans les mêmes doubles que les gestes :
+ * la société témoin (« Le Pain Quotidien ») et son carnet (`a1`, « Siège »).
+ */
+export function journalNames(
+  companies: CompanyRepository = new InMemoryCompanies(),
+  addresses: CompanyAddressRepository = new InMemoryAddresses(),
+): AccountJournalNames {
+  return new AccountJournalNames(companies, addresses, new OneProfile());
+}
+
+/** Le nom de la société témoin, tel que les faits le figent. */
+export const COMPANY_LABEL = "Le Pain Quotidien";

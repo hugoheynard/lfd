@@ -311,8 +311,10 @@ describe("le staff tient la procédure d'un client", () => {
     });
     expect(journal.map((entry) => entry.payload)).toEqual(
       ["step_added", "step_added", "step_revised", "reordered", "step_removed"].map((action) => ({
-        companyId,
-        addressId,
+        // La société est le sujet (nommée) ; l'adresse, citée par son id et son
+        // lieu — jamais son libellé (lot B du plan des phrases).
+        subjectLabel: "Boulangerie du Marais SAS",
+        address: { id: addressId, ville: DELIVERY.ville, codePostal: DELIVERY.codePostal },
         action,
       })),
     );
@@ -337,7 +339,11 @@ describe("le staff tient la procédure d'un client", () => {
       {
         actorType: "customer",
         actorId: admin.id,
-        payload: { companyId, addressId, action: "step_added" },
+        payload: {
+          subjectLabel: "Boulangerie du Marais SAS",
+          address: { id: addressId, ville: DELIVERY.ville, codePostal: DELIVERY.codePostal },
+          action: "step_added",
+        },
       },
     ]);
   });

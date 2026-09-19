@@ -3,6 +3,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
+import type { NamedRef } from "./journal-names.js";
 
 /**
  * Les **actes du staff sur le compte d'un client**.
@@ -21,9 +22,19 @@ import { ACCOUNT_FACTS } from "./account-facts.js";
  * Chaque événement porte son propre `journalFact()` plutôt qu'une charge
  * générique : c'est ce qui permet au handler de rester à une ligne, et à la
  * charge d'être ce qu'il faut pour relire — jamais une copie de la fiche.
+ *
+ * La société est reçue **nommée** : son nom du moment part en `subjectLabel`
+ * (lot B du plan des phrases, D6), pour qu'une enseigne changée depuis se lise
+ * encore sous l'ancienne sur les lignes d'avant.
  */
 export abstract class CompanyStaffAct implements JournaledEvent {
-  protected constructor(readonly companyId: string) {}
+  readonly companyId: string;
+  readonly companyName: string;
+
+  protected constructor(company: NamedRef) {
+    this.companyId = company.id;
+    this.companyName = company.name;
+  }
 
   protected abstract type(): JournalFactType;
 
@@ -37,7 +48,7 @@ export abstract class CompanyStaffAct implements JournaledEvent {
       type: this.type(),
       subjectType: "company",
       subjectId: this.companyId,
-      payload: this.details(),
+      payload: { subjectLabel: this.companyName, ...this.details() },
     };
   }
 }
@@ -45,10 +56,10 @@ export abstract class CompanyStaffAct implements JournaledEvent {
 /** Un agent a déposé l'extrait KBIS à la place du client. */
 export class KbisUploadedByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly fileName: string,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.kbisUploaded;
@@ -68,7 +79,7 @@ export class KbisUploadedByStaffEvent extends CompanyStaffAct {
  */
 export class CompanyIdentityCorrectedEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly identity: {
       readonly raisonSociale: string;
       readonly formeJuridique: string;
@@ -77,7 +88,7 @@ export class CompanyIdentityCorrectedEvent extends CompanyStaffAct {
       readonly siren: string;
     },
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.identityCorrected;
@@ -96,10 +107,10 @@ export class CompanyIdentityCorrectedEvent extends CompanyStaffAct {
  */
 export class PaymentTermsGrantedEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly terms: readonly DeferredTerm[],
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.paymentTermsGranted;
@@ -112,10 +123,10 @@ export class PaymentTermsGrantedEvent extends CompanyStaffAct {
 /** Un agent a suspendu, réactivé ou résilié le compte. */
 export class CompanyStatusChangedByStaffEvent extends CompanyStaffAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly action: "suspend" | "reactivate" | "terminate",
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.statusChanged;

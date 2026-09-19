@@ -11,6 +11,7 @@ import {
 import { PendingAccessReader } from "../../domain/ports/pending-access.reader.js";
 import { PendingAccessNotFoundError } from "../../domain/errors/account-errors.js";
 import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Le lien, et **jusqu'à quand il ouvre**.
@@ -54,6 +55,7 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
     private readonly identity: CustomerIdentityPort,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: IssuePasswordLinkCommand): Promise<IssuedPasswordLink> {
@@ -62,7 +64,9 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
       throw new PendingAccessNotFoundError(command.userId);
     }
     const url = await this.identity.issuePasswordLink(subject);
-    await this.events.publishTraced(new PasswordLinkIssuedEvent(command.userId));
+    await this.events.publishTraced(
+      new PasswordLinkIssuedEvent(command.userId, await this.names.person(command.userId)),
+    );
     // Calculée ici et non devinée par l'écran : c'est le serveur qui demande le
     // TTL au fournisseur, lui seul sait combien de temps le ticket ouvre.
     return { url, expiresAt: expiryFrom(this.clock.now()) };

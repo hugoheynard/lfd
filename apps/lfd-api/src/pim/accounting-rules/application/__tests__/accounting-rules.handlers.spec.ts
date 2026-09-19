@@ -95,7 +95,11 @@ describe("SetProPriceRatioHandler", () => {
 
     expect(repo.at()).toBe(9_000);
     expect(journal.types()).toEqual(["accounting_rules.pro_ratio_changed"]);
-    expect(journal.entries[0]?.payload).toEqual({ from: null, to: 9_000 });
+    expect(journal.entries[0]?.payload).toEqual({
+      subjectLabel: "Règles comptables",
+      from: null,
+      to: 9_000,
+    });
   });
 
   it("révise un rapport existant et trace le avant → après", async () => {
@@ -106,7 +110,11 @@ describe("SetProPriceRatioHandler", () => {
     await handler.execute(new SetProPriceRatioCommand(8_500));
 
     expect(repo.at()).toBe(8_500);
-    expect(journal.entries[0]?.payload).toEqual({ from: 9_000, to: 8_500 });
+    expect(journal.entries[0]?.payload).toEqual({
+      subjectLabel: "Règles comptables",
+      from: 9_000,
+      to: 8_500,
+    });
   });
 
   /**

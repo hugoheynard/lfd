@@ -31,6 +31,7 @@ describe("les faits des rôles", () => {
       subjectType: "staff_role",
       subjectId: "logistique",
       payload: {
+        subjectLabel: "Logistique",
         label: "Logistique",
         grants: [
           {
@@ -62,6 +63,7 @@ describe("les faits des rôles", () => {
     };
 
     expect(roleUpdatedFact(LOGISTICS, after)?.payload).toEqual({
+      subjectLabel: "Logistique",
       label: "Logistique",
       previousLabel: null,
       added: [
@@ -83,13 +85,21 @@ describe("les faits des rôles", () => {
   it("fige l'ancien libellé d'un rôle renommé", () => {
     const fact = roleUpdatedFact(LOGISTICS, { ...LOGISTICS, label: "Expédition" });
 
-    expect(fact?.payload).toMatchObject({ label: "Expédition", previousLabel: "Logistique" });
+    // Le sujet se nomme sous son libellé APRÈS le geste : c'est lui qu'on cherche.
+    expect(fact?.payload).toMatchObject({
+      subjectLabel: "Expédition",
+      label: "Expédition",
+      previousLabel: "Logistique",
+    });
   });
 
   it("archive et restaure, et se tait quand l'état ne bouge pas", () => {
     const archived = { ...LOGISTICS, archivedAt: ARCHIVED_AT };
 
-    expect(roleArchivedFact(LOGISTICS)?.payload).toEqual({ label: "Logistique" });
+    expect(roleArchivedFact(LOGISTICS)?.payload).toEqual({
+      subjectLabel: "Logistique",
+      label: "Logistique",
+    });
     expect(roleArchivedFact(archived)).toBeNull();
     expect(roleRestoredFact(archived)?.type).toBe(STAFF_ROLE_FACTS.restored);
     expect(roleRestoredFact(LOGISTICS)).toBeNull();

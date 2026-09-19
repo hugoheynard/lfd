@@ -4,7 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { CatalogItemB2bPriceSetEvent } from "../../domain/events/catalog-item.events.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
-import { loadOrFail } from "./catalog-decision-support.js";
+import { loadOrFail, subjectOf } from "./catalog-decision-support.js";
 import { SetB2bPriceCommand } from "./set-b2b-price.command.js";
 
 /**
@@ -29,7 +29,7 @@ export class SetB2bPriceHandler implements ICommandHandler<SetB2bPriceCommand, v
       await this.items.saveMany([item]);
       if (before !== command.priceMillicents) {
         await this.events.publishTraced(
-          new CatalogItemB2bPriceSetEvent(item.sku, before, command.priceMillicents),
+          new CatalogItemB2bPriceSetEvent(subjectOf(item), before, command.priceMillicents),
         );
       }
     });

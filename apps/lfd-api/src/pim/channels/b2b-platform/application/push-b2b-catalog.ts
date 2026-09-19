@@ -78,7 +78,11 @@ export class PushB2bCatalogHandler implements ICommandHandler<
 
     // Rien n'est parti, rien n'a été figé : il n'y a pas de fait à inscrire.
     // Un « push de zéro article » raconterait une intention, pas un acte.
-    if (summary.revisionId === null) {
+    if (
+      summary.revisionId === null ||
+      summary.revisionName === null ||
+      summary.revisionReference === null
+    ) {
       return summary;
     }
 
@@ -87,6 +91,9 @@ export class PushB2bCatalogHandler implements ICommandHandler<
       subjectType: "catalog_revision",
       subjectId: summary.revisionId,
       payload: {
+        // L'ancre par son nom, à défaut sa référence (lot B du plan des phrases).
+        subjectLabel: summary.revisionName,
+        reference: summary.revisionReference,
         channel: "b2b",
         mode: summary.mode,
         candidates: summary.candidates,

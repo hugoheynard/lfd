@@ -58,7 +58,14 @@ function build(options: {
       saved.push(mandate);
       return Promise.resolve();
     },
-    findHolder: () => Promise.resolve(null),
+    findHolder: () =>
+      Promise.resolve({
+        companyName: "Café des Halles SAS",
+        displayName: "Café des Halles",
+        email: "",
+        reference: "C-7K2M4P",
+        siren: "",
+      }),
     depositProof: () => Promise.resolve(),
   };
   const clock: Clock = { now: () => NOW };
@@ -110,7 +117,12 @@ describe("SignMandateHandler", () => {
     expect(events.factTypes()).toEqual(["payment_mandate.signed"]);
     expect(events.traced[0]?.journalFact()).toMatchObject({
       subjectId: "mdt_draft",
-      payload: { signedAt: ON_PAPER, replacedMandateId: "mdt_vieux" },
+      // Le mandat remplacé, cité par sa RUM ; la société, par son nom du moment.
+      payload: {
+        company: { id: "cmp_1", name: "Café des Halles" },
+        signedAt: ON_PAPER,
+        replacedMandate: { id: "mdt_vieux", name: active.reference },
+      },
     });
   });
 

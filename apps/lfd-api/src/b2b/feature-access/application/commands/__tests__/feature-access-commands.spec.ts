@@ -70,7 +70,8 @@ describe("SetFeatureOverrideHandler", () => {
     expect(h.events.traced[0]?.journalFact()).toMatchObject({
       subjectType: "feature_access",
       subjectId: "shop",
-      payload: { value: "browse", previousValue: null },
+      // Le nom de la fonctionnalité, figé depuis le catalogue fermé (lot B).
+      payload: { subjectLabel: "Boutique", value: "browse", previousValue: null },
     });
   });
 
@@ -107,6 +108,7 @@ describe("SetFeatureOverrideHandler", () => {
     await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_admin"));
 
     expect(h.events.traced[1]?.journalFact().payload).toEqual({
+      subjectLabel: "Boutique",
       value: "closed",
       previousValue: "browse",
     });
@@ -148,7 +150,10 @@ describe("ClearFeatureOverrideHandler", () => {
       "journal:feature_access.override_cleared",
       "uow:end",
     ]);
-    expect(h.events.traced[1]?.journalFact().payload).toEqual({ previousValue: "closed" });
+    expect(h.events.traced[1]?.journalFact().payload).toEqual({
+      subjectLabel: "Boutique",
+      previousValue: "closed",
+    });
   });
 
   it("refuse en 404 quand la clé est déjà sur le défaut, sans trace", async () => {
@@ -235,7 +240,7 @@ describe("RemoveFeatureExemptionHandler", () => {
     expect(h.exemptions.rows).toEqual([]);
     expect(h.events.traced[1]?.journalFact()).toMatchObject({
       type: "feature_access.exemption_removed",
-      payload: { exemptionId: id, email: "testeur@exemple.fr" },
+      payload: { subjectLabel: "Boutique", exemptionId: id, email: "testeur@exemple.fr" },
     });
   });
 

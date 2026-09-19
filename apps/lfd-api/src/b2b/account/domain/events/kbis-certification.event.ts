@@ -1,5 +1,6 @@
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
+import type { NamedRef } from "./journal-names.js";
 
 /**
  * Fait de domaine : **un extrait KBIS a été vérifié** par un agent.
@@ -12,7 +13,8 @@ import { ACCOUNT_FACTS } from "./account-facts.js";
  */
 export class KbisCertifiedEvent implements JournaledEvent {
   constructor(
-    readonly companyId: string,
+    /** La société, nommée comme au moment de la vérification. */
+    readonly company: NamedRef,
     /** Instant de la vérification (temps métier, issu du `Clock`). */
     readonly at: Date,
   ) {}
@@ -21,9 +23,9 @@ export class KbisCertifiedEvent implements JournaledEvent {
     return {
       type: ACCOUNT_FACTS.kbisCertified,
       subjectType: "company",
-      subjectId: this.companyId,
+      subjectId: this.company.id,
       occurredAt: this.at,
-      payload: { at: this.at.toISOString() },
+      payload: { subjectLabel: this.company.name, at: this.at.toISOString() },
     };
   }
 }
@@ -38,7 +40,7 @@ export class KbisCertifiedEvent implements JournaledEvent {
  */
 export class KbisCertificationRevokedEvent implements JournaledEvent {
   constructor(
-    readonly companyId: string,
+    readonly company: NamedRef,
     readonly at: Date,
     /** Le compte était-il actif ? Alors il vient d'être suspendu. */
     readonly suspended: boolean,
@@ -48,9 +50,13 @@ export class KbisCertificationRevokedEvent implements JournaledEvent {
     return {
       type: ACCOUNT_FACTS.kbisRevoked,
       subjectType: "company",
-      subjectId: this.companyId,
+      subjectId: this.company.id,
       occurredAt: this.at,
-      payload: { at: this.at.toISOString(), suspended: this.suspended },
+      payload: {
+        subjectLabel: this.company.name,
+        at: this.at.toISOString(),
+        suspended: this.suspended,
+      },
     };
   }
 }

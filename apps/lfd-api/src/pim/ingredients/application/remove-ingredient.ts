@@ -29,7 +29,10 @@ export class RemoveIngredientHandler implements ICommandHandler<RemoveIngredient
         type: PIM_EVENTS.ingredientDeleted,
         subjectType: "ingredient",
         subjectId: key,
-        payload: { name: ingredient.snapshot().name },
+        payload: {
+          subjectLabel: ingredient.snapshot().name.fr,
+          name: ingredient.snapshot().name,
+        },
       });
       await this.ingredients.remove(key, ticket);
     });

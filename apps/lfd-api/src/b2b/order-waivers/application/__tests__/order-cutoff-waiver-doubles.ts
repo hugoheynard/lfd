@@ -5,7 +5,10 @@ import {
   OrderCutoffWaiverNotFoundError,
 } from "../../domain/order-cutoff-waiver-errors.js";
 import type { CutoffWaiverDecision } from "../../domain/order-cutoff-waiver.events.js";
-import { OrderCutoffWaiverRepository } from "../../domain/order-cutoff-waiver.repository.js";
+import {
+  OrderCutoffWaiverRepository,
+  type GrantedCutoffWaiver,
+} from "../../domain/order-cutoff-waiver.repository.js";
 
 /**
  * Les faits des dérogations d'heure limite (plan
@@ -19,6 +22,9 @@ export const PAYLOAD: OrderCutoffWaiverPayload = {
   reason: "Client bloqué en tournée",
 };
 
+/** Le nom sous lequel le client de {@link PAYLOAD} se présente. */
+export const COMPANY_NAME = "Boulangerie Martin";
+
 /** Les dérogations en mémoire : ouvertes, et refusées en double comme en base. */
 export class InMemoryWaivers extends OrderCutoffWaiverRepository {
   readonly open = new Map<string, CutoffWaiverDecision>();
@@ -28,18 +34,23 @@ export class InMemoryWaivers extends OrderCutoffWaiverRepository {
     return Promise.resolve([]);
   }
 
-  grant(payload: OrderCutoffWaiverPayload): Promise<string> {
+  grant(payload: OrderCutoffWaiverPayload): Promise<GrantedCutoffWaiver> {
     const taken = [...this.open.values()].some(
       (open) =>
-        open.companyId === payload.companyId && open.fulfillmentDate === payload.fulfillmentDate,
+        open.company.id === payload.companyId && open.fulfillmentDate === payload.fulfillmentDate,
     );
     if (taken) {
       return Promise.reject(new OpenWaiverAlreadyExistsError(payload.companyId));
     }
     this.count += 1;
     const id = `wvr_${String(this.count)}`;
-    this.open.set(id, { ...payload });
-    return Promise.resolve(id);
+    const decision: CutoffWaiverDecision = {
+      company: { id: payload.companyId, name: COMPANY_NAME },
+      fulfillmentDate: payload.fulfillmentDate,
+      reason: payload.reason,
+    };
+    this.open.set(id, decision);
+    return Promise.resolve({ id, decision });
   }
 
   revoke(id: string): Promise<CutoffWaiverDecision> {

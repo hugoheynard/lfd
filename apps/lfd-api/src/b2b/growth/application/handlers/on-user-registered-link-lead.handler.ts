@@ -50,7 +50,13 @@ export class OnUserRegisteredLinkLead implements IEventHandler<UserRegisteredEve
       subjectType: "lead",
       subjectId: leadId,
       idempotencyKey: `${ACTIVITY_TYPES.leadConverted}:${leadId}`,
-      payload: { via: "registration", linkedUserId: event.userId },
+      payload: {
+        subjectLabel: lead.businessName,
+        via: "registration",
+        // L'id seul : à l'inscription, la personne n'a pas d'autre nom que son
+        // e-mail, et une coordonnée n'entre pas au journal (lot B).
+        linkedUserId: event.userId,
+      },
     });
   }
 }

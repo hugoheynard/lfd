@@ -13,6 +13,10 @@ import type { PickupAddressWrite } from "./pickup-address.repository.js";
  *
  * Le défaut aussi compte : c'est le point que la plateforme propose quand le
  * client n'a rien choisi, donc celui où finira le colis de qui n'a rien dit.
+ *
+ * Chaque fait porte le nom du point en `subjectLabel` (D6 du plan des phrases,
+ * 2026-09-19) — la suppression et la désignation du défaut comprises, qui
+ * n'emportaient jusque-là que l'identifiant.
  */
 export const PICKUP_ADDRESS_FACTS = {
   created: "pickup_address.created",
@@ -30,6 +34,7 @@ export const PICKUP_ADDRESS_FACTS = {
 function placeAndDiscount(point: PickupAddressWrite): Record<string, unknown> {
   const { adjustment, audiences } = point.discount;
   return {
+    subjectLabel: point.label,
     label: point.label,
     ville: point.ville,
     codePostal: point.codePostal,
@@ -76,27 +81,35 @@ export class PickupAddressUpdatedEvent implements JournaledEvent {
 }
 
 export class PickupAddressRemovedEvent implements JournaledEvent {
-  constructor(readonly pickupId: string) {}
+  constructor(
+    readonly pickupId: string,
+    /** Le nom du point au moment de le retirer. */
+    readonly label: string,
+  ) {}
 
   journalFact(): JournalFact {
     return {
       type: PICKUP_ADDRESS_FACTS.removed,
       subjectType: "pickup_address",
       subjectId: this.pickupId,
-      payload: {},
+      payload: { subjectLabel: this.label },
     };
   }
 }
 
 export class DefaultPickupAddressSetEvent implements JournaledEvent {
-  constructor(readonly pickupId: string) {}
+  constructor(
+    readonly pickupId: string,
+    /** Le nom du point désigné. */
+    readonly label: string,
+  ) {}
 
   journalFact(): JournalFact {
     return {
       type: PICKUP_ADDRESS_FACTS.defaultSet,
       subjectType: "pickup_address",
       subjectId: this.pickupId,
-      payload: {},
+      payload: { subjectLabel: this.label },
     };
   }
 }
@@ -140,6 +153,7 @@ export class PublicPickupScheduleUpdatedEvent implements JournaledEvent {
       subjectType: "public_pickup_schedule",
       subjectId: this.pickupId,
       payload: {
+        subjectLabel: this.label,
         label: this.label,
         ruleCount: this.ruleCount,
         closureCount: this.closureCount,

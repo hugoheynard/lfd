@@ -5,6 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { KbisCertificationRevokedEvent } from "../../domain/events/kbis-certification.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { RevokeKbisCertificationCommand } from "./revoke-kbis-certification.command.js";
 
@@ -50,7 +51,11 @@ export class RevokeKbisCertificationHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new KbisCertificationRevokedEvent(command.companyId, this.clock.now(), false),
+        new KbisCertificationRevokedEvent(
+          companyNamed(command.companyId, company),
+          this.clock.now(),
+          false,
+        ),
       );
     });
   }

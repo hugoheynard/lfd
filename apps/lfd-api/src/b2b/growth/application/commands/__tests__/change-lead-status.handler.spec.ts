@@ -7,11 +7,12 @@ import { ChangeLeadStatusHandler } from "../change-lead-status.handler.js";
 import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
+const BUSINESS = "Bistrot";
 
 function newLead(): Lead {
   return Lead.reconstitute({
     id: "lead_1",
-    businessName: "Bistrot",
+    businessName: BUSINESS,
     contactName: "",
     email: "",
     phone: "",
@@ -66,7 +67,8 @@ describe("ChangeLeadStatusHandler", () => {
       type: "lead.stage_changed",
       subjectId: "lead_1",
       idempotencyKey: "lead.stage_changed:lead_1:contacted",
-      payload: { status: "contacted" },
+      // L'enseigne du lead au moment du geste (lot B du plan des phrases).
+      payload: { subjectLabel: BUSINESS, status: "contacted" },
     });
   });
 
@@ -75,14 +77,17 @@ describe("ChangeLeadStatusHandler", () => {
     await handler.execute(new ChangeLeadStatusCommand("lead_1", "converted"));
     expect(recorder.records[0]).toMatchObject({
       type: "lead.converted",
-      payload: { via: "manual" },
+      payload: { subjectLabel: BUSINESS, via: "manual" },
     });
   });
 
   it("journalise lead.lost lors d'une perte", async () => {
     const { handler, recorder } = handlerFor(newLead());
     await handler.execute(new ChangeLeadStatusCommand("lead_1", "lost"));
-    expect(recorder.records[0]?.type).toBe("lead.lost");
+    expect(recorder.records[0]).toMatchObject({
+      type: "lead.lost",
+      payload: { subjectLabel: BUSINESS },
+    });
   });
 
   it("404 quand le lead n'existe pas", async () => {

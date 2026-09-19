@@ -7,6 +7,7 @@ import {
   CompanyNotFoundError,
 } from "../../domain/errors/account-errors.js";
 import { FulfillmentPreferenceSetByStaffEvent } from "../../domain/events/staff-address-acts.event.js";
+import { companyNamed, type DeliveryAddressRef } from "../../domain/events/journal-names.js";
 import { CompanyAddressReader } from "../../domain/ports/company-address.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { PreferFulfillmentByStaffCommand } from "./prefer-fulfillment-by-staff.command.js";
@@ -38,30 +39,41 @@ export class PreferFulfillmentByStaffHandler implements ICommandHandler<
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    await this.ensureOwnDeliveryAddress(command);
+    const deliveryAddress = await this.ownDeliveryAddress(command);
     company.preferFulfillment(command.preference);
+    // La préférence telle que l'agrégat l'a retenue : l'adresse de l'autre mode
+    // y est remise à `null`, et le journal dit ce qui a été posé.
+    const kept = company.fulfillmentPreference;
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new FulfillmentPreferenceSetByStaffEvent(command.companyId, {
-          method: command.preference.method,
-          pickupAddressId: command.preference.pickupAddressId,
-          deliveryAddressId: command.preference.deliveryAddressId,
-          signatureRequired: command.preference.signatureRequired,
+        new FulfillmentPreferenceSetByStaffEvent(companyNamed(command.companyId, company), {
+          method: kept.method,
+          pickupAddressId: kept.pickupAddressId,
+          deliveryAddress,
+          signatureRequired: kept.signatureRequired,
         }),
       );
     });
   }
 
-  /** L'adresse préférée doit appartenir à la société — ou ne pas être désignée. */
-  private async ensureOwnDeliveryAddress(command: PreferFulfillmentByStaffCommand): Promise<void> {
+  /**
+   * L'adresse préférée doit appartenir à la société — ou ne pas être désignée.
+   * Rendue citée par son lieu (lot B du plan des phrases) : id, ville et code
+   * postal, jamais le libellé.
+   */
+  private async ownDeliveryAddress(
+    command: PreferFulfillmentByStaffCommand,
+  ): Promise<DeliveryAddressRef | null> {
     const wanted = command.preference.deliveryAddressId;
     if (command.preference.method !== "delivery" || wanted === null) {
-      return;
+      return null;
     }
     const { deliveries } = await this.addresses.read(command.companyId);
-    if (!deliveries.some((address) => address.id === wanted)) {
+    const address = deliveries.find((candidate) => candidate.id === wanted);
+    if (address === undefined) {
       throw new CompanyAddressNotFoundError(wanted);
     }
+    return { id: wanted, ville: address.ville, codePostal: address.codePostal };
   }
 }

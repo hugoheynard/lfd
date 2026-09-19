@@ -46,6 +46,9 @@ export const STAFF_FACTS = {
   roleChanged: "staff_user.role_changed",
   overridesChanged: "staff_user.overrides_changed",
   suspended: "staff_user.suspended",
+  /** La PREMIÈRE activation — de `pending` ou `invited` vers `active` (D7). */
+  activated: "staff_user.activated",
+  /** Le rétablissement d'une fiche SUSPENDUE. */
   reinstated: "staff_user.reinstated",
   deleted: "staff_user.deleted",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
@@ -113,20 +116,27 @@ export function staffPasswordLinkIssuedFact(id: string, person: StaffPerson): Jo
   return fact(STAFF_FACTS.passwordLinkIssued, id, { person: personOf(person) });
 }
 
+/**
+ * Type retiré (le catalogue le refuse à l'écriture) : sa charge garde la forme
+ * sous laquelle il a été écrit, sans le `subjectLabel` venu après lui.
+ */
 export function staffUserDeletedFact(id: string, deleted: StaffPersonWithRole): JournalFact {
-  return fact(STAFF_FACTS.deleted, id, {
-    person: personOf(deleted),
-    roleLabel: STAFF_ROLE_LABELS[deleted.role],
-  });
+  return {
+    type: STAFF_FACTS.deleted,
+    subjectType: STAFF_USER_SUBJECT,
+    subjectId: id,
+    payload: { person: personOf(deleted), roleLabel: STAFF_ROLE_LABELS[deleted.role] },
+  };
 }
 
 /**
- * La suspension ou la réintégration, ou `null` si l'état ne bouge pas —
- * suspendre quelqu'un de déjà suspendu n'est pas un fait.
+ * La suspension, la première activation ou le rétablissement, ou `null` si
+ * l'état ne bouge pas — suspendre quelqu'un de déjà suspendu n'est pas un fait.
  *
- * ⚠️ Tout passage vers `active` s'écrit `reinstated`, y compris depuis
- * `pending` ou `invited` : la route le permet, et le plan ne nomme pas d'autre
- * fait pour ce cas (remonté le 2026-09-18).
+ * Un passage vers `active` se dit selon d'où il part (D7 du plan des phrases,
+ * 2026-09-19) : depuis `suspended`, c'est un accès **rétabli** ; depuis
+ * `pending` ou `invited`, c'est une **première** activation. Jusqu'à ce jour
+ * les deux s'écrivaient `reinstated`, et ces lignes-là restent telles quelles.
  */
 export function staffStatusFact(
   id: string,
@@ -137,8 +147,14 @@ export function staffStatusFact(
   if (from === to) {
     return null;
   }
-  const type = to === "suspended" ? STAFF_FACTS.suspended : STAFF_FACTS.reinstated;
-  return fact(type, id, { person: personOf(person) });
+  return fact(statusFactType(from, to), id, { person: personOf(person) });
+}
+
+function statusFactType(from: StaffStatus, to: "active" | "suspended"): JournalFactType {
+  if (to === "suspended") {
+    return STAFF_FACTS.suspended;
+  }
+  return from === "suspended" ? STAFF_FACTS.reinstated : STAFF_FACTS.activated;
 }
 
 /**
@@ -170,9 +186,10 @@ function identityEditedFact(
   return fact(STAFF_FACTS.identityEdited, id, {
     person,
     previous: renamed ? personOf(edit.before) : null,
-    // `fields` et `previous` restent : les faits déjà écrits les portent, et
-    // `staff-line.ts` (écran Journal) les lit (vérifié le 2026-09-18).
-    fields: fields.map((field) => IDENTITY_FIELD_LABELS[field]),
+    // `changes` est la seule source des champs modifiés depuis le lot B du plan
+    // des phrases (2026-09-19) : `fields` n'en était que les libellés. Les
+    // lignes d'avant le portent encore, et `staff-line.ts` ne le lit qu'à
+    // défaut de `changes` (vérifié le 2026-09-19).
     changes: fields.map((field): StaffIdentityChange => ({
       field,
       label: IDENTITY_FIELD_LABELS[field],
@@ -217,6 +234,25 @@ function overrideEntry(override: StaffOverride): StaffOverrideEntry {
   return { ...grantEntry(override.resource, override.action), effect: override.effect };
 }
 
-function fact(type: JournalFactType, id: string, payload: Record<string, unknown>): JournalFact {
-  return { type, subjectType: STAFF_USER_SUBJECT, subjectId: id, payload };
+/**
+ * Chaque fait d'une fiche porte son `subjectLabel` (D6 du plan des phrases) :
+ * le nom de la personne tel qu'il est dans la charge, c'est-à-dire APRÈS le
+ * geste.
+ */
+function fact(
+  type: JournalFactType,
+  id: string,
+  payload: Record<string, unknown> & { readonly person: StaffPerson },
+): JournalFact {
+  return {
+    type,
+    subjectType: STAFF_USER_SUBJECT,
+    subjectId: id,
+    payload: { subjectLabel: staffPersonLabel(payload.person), ...payload },
+  };
+}
+
+/** « Cécile Martin » — le nom d'une fiche tel qu'une phrase le dit. */
+export function staffPersonLabel(person: StaffPerson): string {
+  return `${person.firstName} ${person.lastName}`.trim();
 }

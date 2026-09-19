@@ -4,6 +4,9 @@ import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { OrderHandedOverEvent } from "../../../orders/domain/events/order-handed-over.event.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
+import { ActorNamer } from "../../domain/ports/actor-namer.js";
+import { CustomerNamer } from "../../domain/ports/customer-namer.js";
+import { customerLabel, staffCitation } from "./order-fact-names.js";
 
 /**
  * Abonné du journal : `order.handed_over` → **le témoin immuable d'une remise**.
@@ -41,11 +44,17 @@ import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
  * l'affichage. Un journal doit dire ce qui était vrai ce jour-là ; aller les
  * chercher plus tard donnerait ce qui est vrai aujourd'hui, c'est-à-dire
  * exactement ce qu'on veut pouvoir contredire.
+ *
+ * Depuis le lot B du plan des phrases (2026-09-19), `handedOverBy` cite la
+ * fiche avec son nom du moment (`{ id, name }`, D5), et la ligne porte le nom
+ * du client en `subjectLabel` (D6) — lus ici, une fois, au moment du fait.
  */
 @EventsHandler(OrderHandedOverEvent)
 export class OnOrderHandedOver implements IEventHandler<OrderHandedOverEvent> {
   constructor(
     private readonly recorder: ActivityRecorder,
+    private readonly customers: CustomerNamer,
+    private readonly actors: ActorNamer,
     private readonly work: BackgroundWork,
   ) {}
 
@@ -54,6 +63,8 @@ export class OnOrderHandedOver implements IEventHandler<OrderHandedOverEvent> {
   }
 
   private async run(event: OrderHandedOverEvent): Promise<void> {
+    const subject = await customerLabel(this.customers, event.placedByUserId);
+    const by = await staffCitation(this.actors, event.handedOverBy);
     await this.recorder.record({
       type: ACTIVITY_TYPES.orderHandedOver,
       subjectType: "user",
@@ -62,9 +73,10 @@ export class OnOrderHandedOver implements IEventHandler<OrderHandedOverEvent> {
       // fait rejoué ne doit pas fabriquer un second témoin de la même chose.
       idempotencyKey: `${ACTIVITY_TYPES.orderHandedOver}:${event.orderId}`,
       payload: {
+        ...subject,
         orderId: event.orderId,
         orderNumber: event.orderNumber,
-        handedOverBy: event.handedOverBy,
+        handedOverBy: by,
         handedOverAt: event.handedOverAt.toISOString(),
         // Scannée ou saisie : le témoin doit garder LAQUELLE, pas ce que la
         // ligne dira demain. Les deux n'ont pas la même force.

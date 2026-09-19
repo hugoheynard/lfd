@@ -13,6 +13,7 @@ import {
 } from "../../../domain/errors/client-notebook-errors.js";
 import {
   COMPANY,
+  COMPANY_NAME,
   FixedStaffDirectory,
   InMemoryNotebooks,
   InMemoryStore,
@@ -227,11 +228,11 @@ describe("le journal", () => {
 
     const facts = current.events.traced.map((event) => event.journalFact());
     expect(facts.map((fact) => fact.payload)).toEqual([
-      { companyId: COMPANY, noteId: first, action: "note_added" },
-      { companyId: COMPANY, noteId: second, action: "note_added" },
-      { companyId: COMPANY, noteId: first, action: "note_revised" },
-      { companyId: COMPANY, action: "notes_reordered" },
-      { companyId: COMPANY, noteId: first, action: "note_removed" },
+      { subjectLabel: COMPANY_NAME, noteId: first, action: "note_added" },
+      { subjectLabel: COMPANY_NAME, noteId: second, action: "note_added" },
+      { subjectLabel: COMPANY_NAME, noteId: first, action: "note_revised" },
+      { subjectLabel: COMPANY_NAME, action: "notes_reordered" },
+      { subjectLabel: COMPANY_NAME, noteId: first, action: "note_removed" },
     ]);
     expect(new Set(facts.map((fact) => fact.type))).toEqual(
       new Set(["company.client_note_edited_by_staff"]),

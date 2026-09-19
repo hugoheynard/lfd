@@ -1177,6 +1177,47 @@ describe("les engagements de volume, signés par la route staff", () => {
    * écrit en attendant 409, il a échoué, et c'est ainsi que la ligne du registre
    * est devenue un fait (fix 2026-09-09).
    */
+  /**
+   * Lot B du plan des phrases (2026-09-19) : le fait citait la société par son
+   * seul identifiant. Il la nomme, sous le nom QU'ELLE PORTAIT — renommée
+   * après coup, la ligne ne bouge pas.
+   */
+  it("fige au journal le nom du moment de la société engagée, à la signature et à la clôture", async () => {
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { enseigne: "Le Comptoir" },
+    });
+    const signed = jsonBody<{ id: string }>(
+      await sign({ type: "product", id: SKU }, 6_000).expect(201),
+    );
+    await ctx.prisma.company.update({ where: { id: companyId }, data: { enseigne: "Chez Paul" } });
+    await staff()
+      .post(`/admin/pricing/commitments/${signed.id}/close`)
+      .send({ reason: "fin de saison" })
+      .expect(204);
+    await ctx.prisma.company.update({ where: { id: companyId }, data: { enseigne: "Autre nom" } });
+
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: signed.id },
+      orderBy: { occurredAt: "asc" },
+      select: { type: true, payload: true },
+    });
+
+    expect(facts.map((fact) => fact.type)).toEqual([
+      "volume_commitment.signed",
+      "volume_commitment.closed",
+    ]);
+    expect(facts[0]?.payload).toMatchObject({
+      subjectLabel: "Le Comptoir",
+      company: { id: companyId, name: "Le Comptoir" },
+    });
+    expect(facts[1]?.payload).toEqual({
+      subjectLabel: "Chez Paul",
+      company: { id: companyId, name: "Chez Paul" },
+      reason: "fin de saison",
+    });
+  });
+
   it("refuse deux engagements qui se recouvrent sur la même cible", async () => {
     await sign({ type: "product", id: SKU }, 6_000).expect(201);
     await sign({ type: "category", id: "viennoiserie" }, 6_000).expect(201);

@@ -16,3 +16,25 @@ export async function ensureNotebookCompany(
     throw new ClientNotebookCompanyNotFoundError(companyId);
   }
 }
+
+/** La société d'un carnet, telle qu'un fait la cite : son id et son nom du moment. */
+export interface NotebookCompany {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * La société, **nommée** pour le journal (lot B du plan des phrases).
+ *
+ * @throws {ClientNotebookCompanyNotFoundError} aucune société sous cet identifiant.
+ */
+export async function namedNotebookCompany(
+  companies: NotebookCompanies,
+  companyId: string,
+): Promise<NotebookCompany> {
+  const name = await companies.nameOf(companyId);
+  if (name === null) {
+    throw new ClientNotebookCompanyNotFoundError(companyId);
+  }
+  return { id: companyId, name };
+}

@@ -109,11 +109,23 @@ async function rateWrittenByAccountant(name: string, percent: number): Promise<s
  * libre ne peut y porter le mot. Elle compte dans la tranche, pas dans la
  * recherche.
  */
+const APPLIED_RATE = { id: "vat_applied", name: `Taux ${WORD} appliqué` } as const;
 const FISCAL_SEARCHABLE = {
-  "product_category.vat_changed": { b2b: { from: null, to: `Taux ${WORD} appliqué` } },
-  "product.vat_changed": { b2b: { from: `Taux ${WORD} appliqué`, to: null } },
-  "accounting_rules.method_changed": { from: `Méthode ${WORD}`, to: "ratio_ttc" },
+  "product_category.vat_changed": {
+    subjectLabel: "Rayon fiscal",
+    vatByContext: { b2b: { from: null, to: APPLIED_RATE } },
+  },
+  "product.vat_changed": {
+    subjectLabel: "Fiche fiscale",
+    vatByContext: { b2b: { from: APPLIED_RATE, to: null } },
+  },
+  "accounting_rules.method_changed": {
+    subjectLabel: "Règles comptables",
+    from: `Méthode ${WORD}`,
+    to: "ratio_ttc",
+  },
   "sales_context.created": {
+    subjectLabel: `Contexte ${WORD}`,
     key: "vat_subject",
     label: `Contexte ${WORD}`,
     active: true,
@@ -126,20 +138,33 @@ const LATE_FEE_CLEARED = {
 } as const;
 const OUTSIDE = {
   "product_category.renamed": {
+    subjectLabel: "Rayon",
     changes: { name: { from: { fr: "Rayon" }, to: { fr: `Rayon ${WORD}` } } },
   },
   "product.identity_saved": {
+    subjectLabel: "Fiche",
     changes: { name: { from: { fr: "Fiche" }, to: { fr: `Rayon ${WORD}` } } },
   },
   "product_category.channels_changed": {
-    changes: { channels: { from: [], to: [{ pointOfSaleId: `Rayon ${WORD}`, context: "b2b" }] } },
+    subjectLabel: "Rayon",
+    changes: {
+      channels: {
+        from: [],
+        to: [
+          {
+            pointOfSale: { id: "pos_outside", name: `Rayon ${WORD}` },
+            context: { id: "b2b", name: "B2B" },
+          },
+        ],
+      },
+    },
   },
   "order_cutoff_waiver.granted": {
-    companyId: "company_outside",
+    company: { id: "company_outside", name: "Client hors tranche" },
     fulfillmentDate: serviceDay(),
     reason: `Rayon ${WORD}`,
   },
-  "company.identity_edited": { fields: [`Rayon ${WORD}`] },
+  "company.identity_edited": { subjectLabel: `Rayon ${WORD}`, fields: [`Rayon ${WORD}`] },
 } as const;
 
 /** Les clés d'un objet de fixture, typées par lui. */
@@ -239,7 +264,11 @@ describe("la tranche fiscale — ce que la comptabilité relit", () => {
     const all = (await readTax({ limit: "200" })).events.map((event) => event.id);
 
     const first = await readTax({ limit: "3", page: "1" });
-    await fact("vat_rate.renamed", "vat_rate", { from: "Taux", to: "Arrivé pendant la lecture" });
+    await fact("vat_rate.renamed", "vat_rate", {
+      subjectLabel: "Arrivé pendant la lecture",
+      from: "Taux",
+      to: "Arrivé pendant la lecture",
+    });
     await ctx.drain();
     const asOf = first.asOf ?? "";
     const second = await readTax({ limit: "3", page: "2", asOf });
@@ -288,7 +317,38 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
     const page = await readTax({ subjectType: "product_category", subjectId: category });
 
     expect(typesOf(page.events)).toEqual(["product_category.vat_changed"]);
-    expect(page.events[0]?.payload).toEqual({ b2b: { from: null, to: rate } });
+    expect(page.events[0]?.payload).toEqual({
+      subjectLabel: "Viennoiseries",
+      vatByContext: { b2b: { from: null, to: { id: rate, name: "Réduit" } } },
+    });
+  });
+
+  /**
+   * Plan des phrases du journal, lot B (D5) : un taux renommé APRÈS le fait se
+   * relit sous le nom qu'il portait ce jour-là. Le journal ne se réécrit pas.
+   */
+  it("garde le nom du taux du MOMENT, même renommé depuis", async () => {
+    const category = await familySoldToProfessionals();
+    const rate = await rateWrittenByAccountant("Réduit", 5.5);
+    await as("staff-e2e")
+      .put(`${CATEGORIES}/${category}/vat`)
+      .send({ vatByContext: { b2b: rate } })
+      .expect(200);
+
+    await accountant()
+      .put(`${RATES}/${rate}`)
+      .send({ name: "Réduit alimentaire", percent: 6.5 })
+      .expect(200);
+    await as("staff-e2e")
+      .put(`${CATEGORIES}/${category}/name`)
+      .send({ name: { fr: "Viennoiseries fines" } })
+      .expect(200);
+
+    const page = await readTax({ subjectType: "product_category", subjectId: category });
+    expect(page.events[0]?.payload).toEqual({
+      subjectLabel: "Viennoiseries",
+      vatByContext: { b2b: { from: null, to: { id: rate, name: "Réduit" } } },
+    });
   });
 
   /**
@@ -310,7 +370,10 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
       "product_category.vat_changed",
       "product_category.vat_changed",
     ]);
-    expect(page.events[0]?.payload).toEqual({ b2b: { from: rate, to: null } });
+    expect(page.events[0]?.payload).toEqual({
+      subjectLabel: "Viennoiseries",
+      vatByContext: { b2b: { from: { id: rate, name: "Réduit" }, to: null } },
+    });
   });
 
   /** Une fiche de la famille, créée par la route réelle. */
@@ -343,7 +406,11 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
 
     const page = await readTax({ subjectType: "product", subjectId: product });
     expect(typesOf(page.events)).toEqual(["product.reclassified"]);
-    expect(page.events[0]?.payload).toEqual({ from, to });
+    expect(page.events[0]?.payload).toEqual({
+      subjectLabel: "Tarte",
+      from: { id: from, name: "Viennoiseries" },
+      to: { id: to, name: "Gâteaux" },
+    });
   });
 
   it("ne rend pas une fiche renommée sans être reclassée", async () => {

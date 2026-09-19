@@ -86,13 +86,13 @@ describe("SetProductionContainerHandler", () => {
         type: "production_container.set",
         subjectType: "production_container",
         subjectId: "PAI-BAG",
-        payload: { before: null, after: TOURNEUSE },
+        payload: { subjectLabel: "PAI-BAG", before: null, after: TOURNEUSE },
       },
       {
         type: "production_container.set",
         subjectType: "production_container",
         subjectId: "PAI-BAG",
-        payload: { before: TOURNEUSE, after: PLAQUE },
+        payload: { subjectLabel: "PAI-BAG", before: TOURNEUSE, after: PLAQUE },
       },
     ]);
   });
@@ -120,7 +120,7 @@ describe("RemoveProductionContainerHandler", () => {
       type: "production_container.removed",
       subjectType: "production_container",
       subjectId: "PAI-BAG",
-      payload: { before: TOURNEUSE },
+      payload: { subjectLabel: "PAI-BAG", before: TOURNEUSE },
     });
   });
 

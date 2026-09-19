@@ -244,7 +244,7 @@ describe("l'historique d'une fiche — les trois cercles", () => {
       subjectType: "product",
       subjectId: scene.productId,
       idempotencyKey: `${FOREIGN}:${scene.productId}`,
-      payload: { sku: "TARTE-CITRON" },
+      payload: { subjectLabel: "Tarte au citron", sku: "TARTE-CITRON" },
     });
     await ctx.drain();
 
@@ -287,7 +287,34 @@ describe("l'historique d'une fiche — les trois cercles", () => {
     const reclassified = entries.filter((entry) => entry.type === "product.reclassified");
 
     expect(reclassified.map((entry) => entry.circle)).toEqual(["product"]);
-    expect(reclassified[0]?.payload).toEqual({ from: scene.familyId, to: scene.ancestorId });
+    expect(reclassified[0]?.payload).toEqual({
+      subjectLabel: "Tarte au citron",
+      from: { id: scene.familyId, name: "Tartes" },
+      to: { id: scene.ancestorId, name: "Pâtisserie" },
+    });
+  });
+
+  /**
+   * Plan des phrases du journal, lot B (D5, D6) : les familles et la fiche se
+   * relisent sous le nom qu'elles portaient ce jour-là — renommer après coup
+   * ne réécrit pas la ligne.
+   */
+  it("garde les noms du MOMENT d'un reclassement, même renommés depuis", async () => {
+    const scene = await aScene();
+    await renameProduct(scene.productId, scene.ancestorId, "Tarte au citron");
+
+    await renameCategory(scene.familyId, "Tartes du jour");
+    await renameCategory(scene.ancestorId, "Pâtisseries fines");
+    await renameProduct(scene.productId, scene.ancestorId, "Tarte au citron meringuée");
+
+    const { entries } = await read(scene.productId);
+    const reclassified = entries.filter((entry) => entry.type === "product.reclassified");
+    expect(reclassified).toHaveLength(1);
+    expect(reclassified[0]?.payload).toEqual({
+      subjectLabel: "Tarte au citron",
+      from: { id: scene.familyId, name: "Tartes" },
+      to: { id: scene.ancestorId, name: "Pâtisserie" },
+    });
   });
 });
 

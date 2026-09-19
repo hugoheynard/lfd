@@ -42,7 +42,7 @@ export class RestoreAllergenEntryHandler implements ICommandHandler<
         type: PIM_EVENTS.allergenEntryRestored,
         subjectType: "allergen_entry",
         subjectId: restored.id,
-        payload: { code: restored.code, name: restored.name },
+        payload: { subjectLabel: restored.name.fr, code: restored.code, name: restored.name },
       });
       await this.entries.save(entry, ticket);
     });

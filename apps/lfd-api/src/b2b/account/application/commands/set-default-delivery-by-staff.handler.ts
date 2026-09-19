@@ -5,6 +5,8 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { DefaultDeliverySetByStaffEvent } from "../../domain/events/staff-address-acts.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { SetDefaultDeliveryByStaffCommand } from "./set-default-delivery-by-staff.command.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Désigne l'adresse de livraison par défaut, à la place du client.
@@ -27,15 +29,17 @@ export class SetDefaultDeliveryByStaffHandler implements ICommandHandler<
     private readonly addresses: CompanyAddressRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: SetDefaultDeliveryByStaffCommand): Promise<void> {
     const book = await this.addresses.loadDeliveryBook(command.companyId);
     book.makeDefault(command.addressId);
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
-        new DefaultDeliverySetByStaffEvent(command.companyId, command.addressId),
+        new DefaultDeliverySetByStaffEvent(company, deliveryAddressOf(book, command.addressId)),
       );
     });
   }

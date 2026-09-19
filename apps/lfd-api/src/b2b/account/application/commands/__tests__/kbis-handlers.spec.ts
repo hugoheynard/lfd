@@ -168,7 +168,8 @@ describe("UploadKbisHandler", () => {
         type: "company.kbis_uploaded",
         subjectType: "company",
         subjectId: "c1",
-        payload: { fileName: "kbis.pdf" },
+        // La société nommée au moment du dépôt (lot B du plan des phrases).
+        payload: { subjectLabel: "Le Pain Quotidien", fileName: "kbis.pdf" },
       },
     ]);
   });

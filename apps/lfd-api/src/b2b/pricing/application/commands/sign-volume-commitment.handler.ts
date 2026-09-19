@@ -8,6 +8,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { VolumeCommitmentSignedEvent } from "../../domain/volume-commitment.events.js";
 import { VolumeCommitmentAggregate } from "../../domain/entities/volume-commitment.js";
 import { VolumeCommitmentRepository } from "../../domain/ports/volume-commitment.repository.js";
+import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { SignVolumeCommitmentCommand } from "./sign-volume-commitment.command.js";
 
 @CommandHandler(SignVolumeCommitmentCommand)
@@ -21,6 +22,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly priced: PricedDecisionsReader,
+    private readonly companies: PricedCompanyNamer,
   ) {}
 
   async execute(command: SignVolumeCommitmentCommand): Promise<string> {
@@ -50,9 +52,10 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
       throw new PricedPeriodIsSealedError("engagement", commitment.toPersistence().validFrom);
     }
 
+    const companyName = await this.companies.nameOf(payload.companyId);
     await this.uow.run(async () => {
       await this.commitments.sign(commitment);
-      await this.events.publishTraced(new VolumeCommitmentSignedEvent(commitment));
+      await this.events.publishTraced(new VolumeCommitmentSignedEvent(commitment, companyName));
     });
     return commitment.id;
   }

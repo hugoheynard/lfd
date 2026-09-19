@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DefaultPickupAddressSetEvent } from "../domain/pickup-address.events.js";
 import { PickupAddressRepository } from "../domain/pickup-address.repository.js";
+import { pickupLabel } from "./pickup-label.js";
 import { SetDefaultPickupAddressCommand } from "./set-default-pickup-address.command.js";
 
 /**
@@ -24,8 +25,9 @@ export class SetDefaultPickupAddressHandler implements ICommandHandler<
 
   async execute(command: SetDefaultPickupAddressCommand): Promise<void> {
     await this.uow.run(async () => {
+      const label = await pickupLabel(this.pickups, command.id);
       await this.pickups.setDefault(command.id);
-      await this.events.publishTraced(new DefaultPickupAddressSetEvent(command.id));
+      await this.events.publishTraced(new DefaultPickupAddressSetEvent(command.id, label));
     });
   }
 }

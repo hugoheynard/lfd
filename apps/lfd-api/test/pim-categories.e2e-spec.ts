@@ -257,7 +257,10 @@ describe("fermer un canal journalise le taux qu'il efface", () => {
       "product_category.channels_changed",
       VAT_CHANGED,
     ]);
-    expect(facts[1]?.payload).toEqual({ b2b: { from: rate, to: null } });
+    expect(facts[1]?.payload).toEqual({
+      subjectLabel: "Viennoiseries",
+      vatByContext: { b2b: { from: { id: rate, name: "Réduit" }, to: null } },
+    });
   });
 
   it("ANNULE la fermeture quand le fait de TVA ne s'écrit pas", async () => {

@@ -9,6 +9,7 @@ import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { toMemberView } from "../queries/company-member.view.js";
 import { AccountAccessGranter } from "../services/grant-account-access.service.js";
 import { InviteCompanyMemberCommand } from "./invite-company-member.command.js";
+import { companyNamed, personName, personRef } from "../../domain/events/journal-names.js";
 
 /**
  * Ouvre un accès, et rend **le membre tel qu'il est ensuite**.
@@ -59,7 +60,11 @@ export class InviteCompanyMemberHandler implements ICommandHandler<
     });
 
     await this.events.publishTraced(
-      new CompanyAccessOpenedEvent(command.companyId, granted.userId, command.role),
+      new CompanyAccessOpenedEvent(
+        companyNamed(command.companyId, company),
+        personRef(granted.userId, personName(command.firstName, command.lastName)),
+        command.role,
+      ),
     );
 
     // Relu depuis la liste : c'est la même source que l'écran, donc pas de

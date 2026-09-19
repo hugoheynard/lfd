@@ -108,6 +108,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
       at: mercuriale.toPersistence().validFrom,
       reason: `Mercuriale « ${payload.label} » posée sur la fiche du compte`,
       summary: describeMercuriale(mercuriale),
+      subjectLabel: mercuriale.label,
     });
 
     // Le brouillon a servi : il est devenu une décision. APRÈS l'écriture,

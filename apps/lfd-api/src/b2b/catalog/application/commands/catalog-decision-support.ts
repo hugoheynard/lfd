@@ -1,4 +1,5 @@
 import type { CatalogItem } from "../../domain/entities/catalog-item.js";
+import type { CatalogItemSubject } from "../../domain/events/catalog-item.events.js";
 import { CatalogItemNotFoundError } from "../../domain/errors/catalog-not-found.error.js";
 import type { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
 
@@ -42,4 +43,9 @@ export async function loadOrFail(items: CatalogItemRepository, sku: string): Pro
     throw new CatalogItemNotFoundError(sku);
   }
   return item;
+}
+
+/** L'article tel qu'un fait le cite : son SKU et son nom du moment (lot B du plan des phrases). */
+export function subjectOf(item: CatalogItem): CatalogItemSubject {
+  return { sku: item.sku, name: item.name };
 }

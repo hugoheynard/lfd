@@ -11,6 +11,7 @@ import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
 import { OrderTimeLimitNotFoundError } from "../domain/errors/order-time-limit-errors.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
+import { targetLabels } from "./target-labels.js";
 
 /** Une ligne telle que Prisma la rend. */
 interface LimitRow {
@@ -38,7 +39,7 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
    */
   async list(): Promise<readonly OrderTimeLimitView[]> {
     const rows = await this.prisma.orderTimeLimit.findMany();
-    const labels = await this.labelsFor(rows);
+    const labels = await targetLabels(this.prisma, rows);
     return rows.flatMap((row) => {
       const view = toView(row, labels);
       return view === null ? [] : [view];
@@ -80,51 +81,6 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
     }
     await this.prisma.orderTimeLimit.delete({ where: { id } });
   }
-
-  /** Les noms des cibles visées, par identifiant — familles, produits, déclinaisons. */
-  private async labelsFor(rows: readonly LimitRow[]): Promise<ReadonlyMap<string, string>> {
-    const idsOf = (type: OrderTimeLimitScopeType): string[] =>
-      rows.flatMap((row) => (row.scopeType === type && row.scopeId !== null ? [row.scopeId] : []));
-
-    const [categories, products, variants] = await Promise.all([
-      this.prisma.category.findMany({ where: { id: { in: idsOf("category") } } }),
-      this.prisma.product.findMany({
-        where: { id: { in: idsOf("product") } },
-        select: { id: true, sku: true },
-      }),
-      this.prisma.productVariant.findMany({
-        where: { id: { in: idsOf("variant") } },
-        select: { id: true, sku: true },
-      }),
-    ]);
-
-    const labels = new Map<string, string>();
-    for (const category of categories) {
-      labels.set(category.id, readName(category.name));
-    }
-    for (const product of products) {
-      labels.set(product.id, product.sku);
-    }
-    for (const variant of variants) {
-      labels.set(variant.id, variant.sku);
-    }
-    return labels;
-  }
-}
-
-/**
- * Le nom localisé d'une famille, réduit à quelque chose d'affichable.
- *
- * La colonne est un `jsonb` : on la **lit défensivement** plutôt que de la
- * caster. Une valeur écrite à la main ne doit pas faire tomber l'écran de
- * réglages — elle doit juste ne pas avoir de nom.
- */
-function readName(value: unknown): string {
-  if (typeof value === "object" && value !== null && "fr" in value) {
-    const french: unknown = Reflect.get(value, "fr");
-    return typeof french === "string" ? french : "";
-  }
-  return "";
 }
 
 function toView(row: LimitRow, labels: ReadonlyMap<string, string>): OrderTimeLimitView | null {

@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { PrimaryContactChangedByStaffEvent } from "../../domain/events/staff-contact-acts.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { UpdatePrimaryContactByStaffCommand } from "./update-primary-contact-by-staff.command.js";
@@ -33,7 +34,9 @@ export class UpdatePrimaryContactByStaffHandler implements ICommandHandler<
     company.changePrimaryContact(ContactDetails.create(command.details));
     await this.uow.run(async () => {
       await this.companies.save(company);
-      await this.events.publishTraced(new PrimaryContactChangedByStaffEvent(command.companyId));
+      await this.events.publishTraced(
+        new PrimaryContactChangedByStaffEvent(companyNamed(command.companyId, company)),
+      );
     });
   }
 }

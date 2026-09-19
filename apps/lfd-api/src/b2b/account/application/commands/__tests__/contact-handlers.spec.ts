@@ -22,6 +22,12 @@ import {
 import { RemoveCompanyContactHandler } from "../remove-company-contact.handler.js";
 import { UpdateCompanyContactHandler } from "../update-company-contact.handler.js";
 import { UpdatePrimaryContactHandler } from "../update-primary-contact.handler.js";
+import { journalNames } from "./member-acts-doubles.js";
+
+/** Les noms que les faits figent : lus dans une société témoin, sans rien écrire. */
+function names() {
+  return journalNames(companiesRecorder({ writes: [] }));
+}
 
 /** Un interlocuteur du carnet — distinct du détenteur de la société témoin. */
 const DETAILS = {
@@ -156,6 +162,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
       bookRecorder(recorder),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      names(),
     );
 
     await expect(
@@ -171,6 +178,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
       bookRecorder(recorder),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      names(),
     );
 
     await expect(
@@ -186,15 +194,19 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const events = new RecordingPublisher();
     const uow = new DirectUnitOfWork();
 
-    await new AddCompanyContactHandler(admin, book, events, uow).execute(
+    await new AddCompanyContactHandler(admin, book, events, uow, names()).execute(
       new AddCompanyContactCommand("u1", "c1", DETAILS, "orders"),
     );
-    await new UpdateCompanyContactHandler(admin, book, events, uow).execute(
+    await new UpdateCompanyContactHandler(admin, book, events, uow, names()).execute(
       new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS, "orders"),
     );
-    await new RemoveCompanyContactHandler(admin, contactsRecorder(recorder), events, uow).execute(
-      new RemoveCompanyContactCommand("u1", "c1", "ct1"),
-    );
+    await new RemoveCompanyContactHandler(
+      admin,
+      contactsRecorder(recorder),
+      events,
+      uow,
+      names(),
+    ).execute(new RemoveCompanyContactCommand("u1", "c1", "ct1"));
 
     expect(recorder.writes).toEqual(["add", "update", "remove"]);
   });

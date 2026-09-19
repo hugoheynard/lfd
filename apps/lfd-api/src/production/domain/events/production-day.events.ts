@@ -31,6 +31,15 @@ export const PRODUCTION_DAY_FACTS = {
 /** Le sujet : la journée, désignée par sa date de service — sa clé en base. */
 const SUBJECT_TYPE = "production_day";
 
+/**
+ * La charge d'un fait de journée. Son libellé (D6 du plan des phrases) est la
+ * date de service elle-même : une journée n'a pas d'autre nom, et c'est
+ * l'écran qui la dit en français.
+ */
+function dayPayload(serviceDay: string, absorbed: number): Record<string, unknown> {
+  return { subjectLabel: serviceDay, serviceDay, absorbed };
+}
+
 /** Fait : **la journée est arrêtée** — `absorbed` commandes inscrites au plan. */
 export class ProductionDayClosedJournalEvent implements JournaledEvent {
   constructor(
@@ -44,7 +53,7 @@ export class ProductionDayClosedJournalEvent implements JournaledEvent {
       type: PRODUCTION_DAY_FACTS.closed,
       subjectType: SUBJECT_TYPE,
       subjectId: this.serviceDay,
-      payload: { serviceDay: this.serviceDay, absorbed: this.absorbed },
+      payload: dayPayload(this.serviceDay, this.absorbed),
     };
   }
 }
@@ -66,7 +75,7 @@ export class ProductionDayRetakenJournalEvent implements JournaledEvent {
       type: PRODUCTION_DAY_FACTS.retaken,
       subjectType: SUBJECT_TYPE,
       subjectId: this.serviceDay,
-      payload: { serviceDay: this.serviceDay, absorbed: this.absorbed },
+      payload: dayPayload(this.serviceDay, this.absorbed),
     };
   }
 }

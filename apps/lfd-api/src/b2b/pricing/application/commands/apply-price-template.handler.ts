@@ -78,8 +78,11 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
       // Le journal dit d'OÙ elle vient : six mois plus tard, « pourquoi ce
       // prix ? » se répond mieux par « le gabarit Club Med » que par une
       // décision dont personne ne sait avec quelles autres elle a été prise.
-      reason: `Posée par le gabarit ${command.id}`,
+      // Le gabarit par son NOM du moment, plus par son identifiant (lot B du
+      // plan des phrases, 2026-09-19) : c'est sous ce nom qu'on en parle.
+      reason: `Posée par le gabarit « ${state.label} »`,
       summary: `Mercuriale « ${state.label} » — ${String(mercuriale.lines.length)} article(s), posée par gabarit`,
+      subjectLabel: mercuriale.label,
     });
     return mercuriale.lines.length;
   }

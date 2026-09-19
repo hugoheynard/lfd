@@ -43,7 +43,7 @@ export class UpdateAppellationHandler implements ICommandHandler<UpdateAppellati
               type: PIM_EVENTS.appellationUpdated,
               subjectType: "appellation",
               subjectId: code,
-              payload: { changes },
+              payload: { subjectLabel: appellation.snapshot().label.fr, changes },
             })
           : this.journal.untraced("record without modification");
       await this.appellations.save(appellation, ticket);

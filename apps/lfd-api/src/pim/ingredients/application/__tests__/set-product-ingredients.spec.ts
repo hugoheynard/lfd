@@ -102,7 +102,19 @@ describe("SetProductIngredientsHandler", () => {
       expect(journal.types()).toEqual(["product.ingredients_saved", "product.ingredients_saved"]);
       expect(journal.entries[1]).toMatchObject({
         payload: {
-          changes: { ingredients: { from: ["beurre", "farine"], to: ["farine", "beurre"] } },
+          // Chaque ingrédient NOMMÉ, sous sa clé (plan des phrases du journal, D5).
+          changes: {
+            ingredients: {
+              from: [
+                { id: "beurre", name: "beurre" },
+                { id: "farine", name: "farine" },
+              ],
+              to: [
+                { id: "farine", name: "farine" },
+                { id: "beurre", name: "beurre" },
+              ],
+            },
+          },
         },
       });
     });

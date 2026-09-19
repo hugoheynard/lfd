@@ -3,7 +3,7 @@ import { RedundantB2bPriceError } from "../../../domain/errors/catalog-errors.js
 import { CatalogItemNotFoundError } from "../../../domain/errors/catalog-not-found.error.js";
 import { SetB2bPriceCommand } from "../set-b2b-price.command.js";
 import { SetB2bPriceHandler } from "../set-b2b-price.handler.js";
-import { build, facts, NEGOTIATED, PIM_PRICE, SKU } from "./catalog-decision-doubles.js";
+import { build, facts, NEGOTIATED, PIM_PRICE, SKU, NAME } from "./catalog-decision-doubles.js";
 
 /** Le handler sous test, branché sur les doubles de `build`. */
 function setup(seed?: (item: CatalogItem) => void) {
@@ -26,7 +26,12 @@ describe("SetB2bPriceHandler", () => {
         type: "catalog_item.b2b_price_set",
         subjectType: "catalog_item",
         subjectId: SKU,
-        payload: { sku: SKU, before: null, after: { priceMillicents: NEGOTIATED } },
+        payload: {
+          subjectLabel: NAME,
+          sku: SKU,
+          before: null,
+          after: { priceMillicents: NEGOTIATED },
+        },
       },
     ]);
   });
@@ -37,6 +42,7 @@ describe("SetB2bPriceHandler", () => {
     await setPrice.execute(new SetB2bPriceCommand(SKU, 180_000, "fiche-1"));
 
     expect(facts(events)[0]?.payload).toEqual({
+      subjectLabel: NAME,
       sku: SKU,
       before: { priceMillicents: NEGOTIATED },
       after: { priceMillicents: 180_000 },

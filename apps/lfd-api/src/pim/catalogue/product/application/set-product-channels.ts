@@ -9,6 +9,10 @@ import { refuseUnsellableChannels } from "../../shared/application/sellable-chan
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 import { erasedVat, type ContextVat } from "../../shared/domain/value-objects/context-vat.js";
+import { PointOfSaleReader } from "../../../points-of-sale/domain/ports/point-of-sale.reader.js";
+import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
+import { channelNamer, namedVatChange } from "../../shared/application/journal-names.js";
+import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
@@ -39,6 +43,8 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
     private readonly categories: CategoryRepository,
     private readonly offers: PointOfSaleOfferReader,
     private readonly contexts: SalesContextRegistry,
+    private readonly points: PointOfSaleReader,
+    private readonly rates: VatRateRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}
@@ -54,8 +60,8 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
     const vatBefore = product.vatByContext;
     product.setChannels(command.channels, await this.contexts.active(), category.channelPreset);
     await this.uow.run(async () => {
-      const channelsTicket = await this.journalize(product.id, before, product.channelOverride);
-      const vatTicket = await this.journalizeErasedVat(product.id, vatBefore, product.vatByContext);
+      const channelsTicket = await this.journalize(product, before);
+      const vatTicket = await this.journalizeErasedVat(product, vatBefore);
       await this.products.save(product, vatTicket ?? channelsTicket);
     });
   }
@@ -64,30 +70,31 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
    * Ce qui se relit six mois après : « depuis quand cette fiche ne se vend plus
    * au comptoir ». Silencieux quand rien n'a bougé.
    */
-  private async journalize(
-    productId: string,
-    before: SalesChannels | null,
-    after: SalesChannels | null,
-  ): Promise<WriteTicket> {
+  private async journalize(product: Product, before: SalesChannels | null): Promise<WriteTicket> {
+    const after = product.channelOverride;
     if (JSON.stringify(before) === JSON.stringify(after)) {
       return this.journal.untraced("aucune dérogation de canaux modifiée");
     }
+    // Chaque ligne NOMMÉE (D5 du plan des phrases) : le point de vente et le
+    // contexte sous le nom qu'ils portaient ce jour-là.
+    const name = await channelNamer(this.points, this.contexts);
     return this.journal.trace({
       type: PIM_EVENTS.productChannelsChanged,
       subjectType: "product",
-      subjectId: productId,
+      subjectId: product.id,
       // `inherited` plutôt qu'un `null` nu : à la relecture, « hérité » est une
       // information, « null » est une case vide qu'il faut interpréter.
       payload: {
-        from: before === null ? "inherited" : before,
-        to: after === null ? "inherited" : after,
+        subjectLabel: product.snapshot().name.fr,
+        from: before === null ? "inherited" : name(before),
+        to: after === null ? "inherited" : name(after),
       },
     });
   }
 
   /**
    * Les dérogations de taux que le geste a effacées, en fait de TVA ordinaire
-   * (`product.vat_changed`, `{ contexte: { from, to: null } }`) — `null` si
+   * (`product.vat_changed`, `vatByContext: { contexte: { from, to: null } }`, taux nommés) — `null` si
    * aucune n'a disparu.
    *
    * `channels_changed` ne porte que la matrice : sans ce second fait, un taux
@@ -95,19 +102,21 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
    * tout ce qui touche au taux (Hugo, 2026-09-19).
    */
   private async journalizeErasedVat(
-    productId: string,
+    product: Product,
     before: ContextVat,
-    after: ContextVat,
   ): Promise<WriteTicket | null> {
-    const erased = erasedVat(before, after);
+    const erased = erasedVat(before, product.vatByContext);
     if (Object.keys(erased).length === 0) {
       return null;
     }
     return this.journal.trace({
       type: PIM_EVENTS.productVatChanged,
       subjectType: "product",
-      subjectId: productId,
-      payload: erased,
+      subjectId: product.id,
+      payload: {
+        subjectLabel: product.snapshot().name.fr,
+        vatByContext: await namedVatChange(erased, this.rates),
+      },
     });
   }
 }

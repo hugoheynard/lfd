@@ -30,9 +30,11 @@ export class GrantOrderCutoffWaiverHandler implements ICommandHandler<
 
   async execute({ payload, grantedByStaffId }: GrantOrderCutoffWaiverCommand): Promise<string> {
     return this.uow.run(async () => {
-      const waiverId = await this.waivers.grant(payload, grantedByStaffId);
-      await this.events.publishTraced(new OrderCutoffWaiverGrantedEvent(waiverId, payload));
-      return waiverId;
+      const granted = await this.waivers.grant(payload, grantedByStaffId);
+      await this.events.publishTraced(
+        new OrderCutoffWaiverGrantedEvent(granted.id, granted.decision),
+      );
+      return granted.id;
     });
   }
 }

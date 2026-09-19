@@ -35,7 +35,7 @@ export class PublishProductHandler implements ICommandHandler<PublishProductComm
         type: PIM_EVENTS.productPublished,
         subjectType: "product",
         subjectId: command.id,
-        payload: { sku, name },
+        payload: { subjectLabel: name.fr, sku, name },
         // La portée d'une mise en vente : les articles qui partent avec.
         blast: { variants: variants.length },
       });

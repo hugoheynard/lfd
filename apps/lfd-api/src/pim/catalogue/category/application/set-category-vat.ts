@@ -6,6 +6,8 @@ import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repo
 import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/context-vat.js";
+import { namedVatChange } from "../../shared/application/journal-names.js";
+import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
 
@@ -43,7 +45,7 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     const before = category.vatByContext;
     category.setVat(command.vat, await this.contexts.active());
     await this.uow.run(async () => {
-      const ticket = await this.journalize(category.id, before, category.vatByContext);
+      const ticket = await this.journalize(category, before, category.vatByContext);
       await this.categories.save(category, ticket);
     });
   }
@@ -59,7 +61,7 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
    * quand un comptable demande depuis quand.
    */
   private async journalize(
-    categoryId: string,
+    category: Category,
     before: ContextVat,
     after: ContextVat,
   ): Promise<WriteTicket> {
@@ -71,10 +73,18 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     return this.journal.trace({
       type: PIM_EVENTS.productCategoryVatChanged,
       subjectType: "product_category",
-      subjectId: categoryId,
-      payload: Object.fromEntries(
-        changed.map((key) => [key, { from: before[key] ?? null, to: after[key] ?? null }]),
-      ),
+      subjectId: category.id,
+      // Chaque taux NOMMÉ (D5 du plan des phrases) : un taux renommé depuis se
+      // relit sous le nom qu'il portait ce jour-là.
+      payload: {
+        subjectLabel: category.name.fr,
+        vatByContext: await namedVatChange(
+          Object.fromEntries(
+            changed.map((key) => [key, { from: before[key] ?? null, to: after[key] ?? null }]),
+          ),
+          this.rates,
+        ),
+      },
     });
   }
 }

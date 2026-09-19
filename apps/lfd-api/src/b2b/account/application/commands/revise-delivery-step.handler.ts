@@ -12,6 +12,7 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ReviseDeliveryStepCommand } from "./delivery-procedure-commands.js";
 import { reviseDeliveryStep, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Refait une étape — titre, texte, photo, réservé au **gestionnaire** (`ensureCompanyAdmin`).
@@ -34,6 +35,7 @@ export class ReviseDeliveryStepHandler implements ICommandHandler<ReviseDelivery
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: ReviseDeliveryStepCommand): Promise<void> {
@@ -49,11 +51,13 @@ export class ReviseDeliveryStepHandler implements ICommandHandler<ReviseDelivery
         removePhoto: command.removePhoto,
         photo: command.photo,
       },
-      () =>
+      async () =>
         this.events.publishTraced(
           new DeliveryProcedureEditedByMemberEvent(
-            command.companyId,
-            command.addressId,
+            // Lus DANS la transaction, après la vérification de l'adresse :
+            // un contenu refusé ne coûte toujours pas une lecture.
+            await this.names.company(command.companyId),
+            await this.names.deliveryAddress(command.companyId, command.addressId),
             "step_revised",
           ),
         ),

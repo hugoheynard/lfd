@@ -11,9 +11,11 @@ import {
   fromTo,
   localizedText,
   minutes,
+  named,
   payload,
   percent,
   ref,
+  subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
 
@@ -22,7 +24,19 @@ import {
  * comptables, points et contextes de vente, provenance (appellations,
  * ingrédients), allergènes, heures limites de commande. Écrits par les
  * handlers du PIM, par `PimJournal.trace()`.
+ *
+ * ## Lot B du plan des phrases (2026-09-19)
+ *
+ * Chaque fait porte `subjectLabel` (D6) et cite les objets avec leur nom du
+ * moment (D5) ; les formes d'avant restent dans `history`. L'`id` d'un objet
+ * cité est son `subjectId` au journal : la clé d'un contexte de vente, le
+ * CODE d'une appellation, l'identifiant d'une catégorie d'allergènes.
  */
+
+/** Ajoute `subjectLabel` à une charge du lot A, et garde celle-ci pour les lignes d'avant. */
+function labelled<S extends z.core.$ZodLooseShape>(before: z.ZodObject<S, z.core.$strict>) {
+  return fact(before.extend({ subjectLabel: subjectLabel() }), [before]);
+}
 
 /** Une heure limite de commande : la portée et ses trois valeurs, `null` = « ne se prononce pas ». */
 const orderTimeLimit = () =>
@@ -34,130 +48,224 @@ const orderTimeLimit = () =>
     graceMinutes: minutes().nullable(),
   });
 
-export const REFERENTIAL_SETTINGS_FACTS = {
-  "vat_rate.created": fact(payload({ name: z.string(), percent: percent() })),
-  "vat_rate.rate_changed": fact(
-    payload({ name: z.string(), from: percent(), to: percent(), blast: blast() }),
-  ),
-  "vat_rate.renamed": fact(fromTo(z.string())),
-  "vat_rate.deleted": fact(payload({ name: z.string(), percent: percent() })),
+// ─── Les formes du lot A (9c3c2d35), encore en base ────────────────────────
 
-  /** La méthode de calcul du prix professionnel. */
-  "accounting_rules.method_changed": fact(fromTo(z.string())),
+const vatRateSnapshot = payload({ name: z.string(), percent: percent() });
+const vatRateChanged = payload({
+  name: z.string(),
+  from: percent(),
+  to: percent(),
+  blast: blast(),
+});
+const proRatioChanged = payload({ from: basisPoints().nullable(), to: basisPoints() });
+
+const pointOfSaleCreatedV1 = payload({
+  kind: z.enum(["shop", "platform"]),
+  label: z.string(),
+  /** Les contextes de vente qu'il OFFRE, par clé. */
+  contexts: z.array(ref("sales_context")),
+  tableCount: count(),
+});
+const pointOfSaleUpdatedV1 = payload({
+  changes: changes({
+    label: z.string(),
+    baseUrl: z.string().nullable(),
+    /** Les clés de contexte, jointes par une espace. */
+    contexts: z.string(),
+    tableCount: count(),
+  }),
+});
+const pointOfSaleDeleted = payload({ label: z.string(), tableCount: count() });
+/** Le jeton n'y est jamais : il vaut accès à la commande à table. */
+const tableQr = payload({ table: z.number().int() });
+
+const salesContextCreated = payload({
+  key: z.string(),
+  label: z.string(),
+  active: z.boolean(),
+  shopifyProjected: z.boolean(),
+});
+const salesContextUpdated = payload({
+  changes: changes({
+    label: z.string(),
+    handleSuffix: z.string(),
+    active: z.boolean(),
+    shopifyProjected: z.boolean(),
+    position: z.number().int(),
+  }),
+});
+const salesContextDeleted = payload({ key: z.string(), label: z.string() });
+
+const appellationCreated = payload({
+  code: z.string(),
+  label: localizedText(),
+  scheme: z.string(),
+});
+const appellationUpdated = payload({
+  changes: changes({ label: localizedText(), scheme: z.string(), active: z.boolean() }),
+});
+const appellationDeleted = payload({ label: localizedText() });
+
+const ingredientCreatedV1 = payload({
+  key: z.string(),
+  name: localizedText(),
+  origin: z.string(),
+  /** Le CODE de l'appellation revendiquée. */
+  appellation: z.string().nullable(),
+});
+const ingredientUpdatedV1 = payload({
+  changes: changes({
+    name: localizedText(),
+    description: localizedText().nullable(),
+    origin: z.string(),
+    appellationId: ref("appellation").nullable(),
+  }),
+});
+const ingredientDeleted = payload({ name: localizedText() });
+/** Ce que la matière contient : l'avant et l'après, en codes d'allergènes. */
+const ingredientAllergens = payload({ changes: changes({ allergens: z.array(z.string()) }) });
+
+const allergenCategoryCreated = payload({
+  key: z.string(),
+  name: localizedText(),
+  position: z.number().int(),
+});
+const allergenCategoryRenamed = payload({
+  key: z.string(),
+  from: localizedText(),
+  to: localizedText(),
+});
+const allergenCategoryReordered = payload({
+  key: z.string(),
+  from: z.number().int(),
+  to: z.number().int(),
+});
+const allergenCategoryState = () => payload({ key: z.string(), name: localizedText() });
+const allergenEntryCreatedV1 = payload({
+  code: z.string(),
+  name: localizedText(),
+  /** La CLÉ de la catégorie de rattachement. */
+  category: z.string(),
+});
+const allergenEntryUpdatedV1 = payload({
+  code: z.string(),
+  changes: changes({ name: localizedText(), categoryId: ref("allergen_category") }),
+});
+const allergenEntryState = () => payload({ code: z.string(), name: localizedText() });
+
+export const REFERENTIAL_SETTINGS_FACTS = {
+  "vat_rate.created": labelled(vatRateSnapshot),
+  "vat_rate.rate_changed": labelled(vatRateChanged),
+  /** `subjectLabel` = le nom APRÈS : c'est celui que le taux porte depuis. */
+  "vat_rate.renamed": labelled(fromTo(z.string())),
+  "vat_rate.deleted": labelled(vatRateSnapshot),
+
+  /**
+   * La méthode de calcul du prix professionnel. Le sujet est unique (les
+   * règles comptables du référentiel) : son libellé est constant.
+   */
+  "accounting_rules.method_changed": labelled(fromTo(z.string())),
   /** Le rapport prix pro / prix public ; `null` avant le premier réglage. */
-  "accounting_rules.pro_ratio_changed": fact(
-    payload({ from: basisPoints().nullable(), to: basisPoints() }),
-  ),
+  "accounting_rules.pro_ratio_changed": labelled(proRatioChanged),
 
   "point_of_sale.created": fact(
     payload({
+      subjectLabel: subjectLabel(),
       kind: z.enum(["shop", "platform"]),
       label: z.string(),
-      /** Les contextes de vente qu'il OFFRE, par clé. */
-      contexts: z.array(ref("sales_context")),
+      /** Les contextes de vente qu'il OFFRE, nommés. */
+      contexts: z.array(named("sales_context")),
       tableCount: count(),
     }),
+    [pointOfSaleCreatedV1],
   ),
+  /** Les contextes offerts : un tableau, comme à la création — c'était une chaîne. */
   "point_of_sale.updated": fact(
     payload({
+      subjectLabel: subjectLabel(),
       changes: changes({
         label: z.string(),
         baseUrl: z.string().nullable(),
-        /** Les clés de contexte, jointes par une espace. */
-        contexts: z.string(),
+        contexts: z.array(named("sales_context")),
         tableCount: count(),
       }),
     }),
+    [pointOfSaleUpdatedV1],
   ),
-  "point_of_sale.deleted": fact(payload({ label: z.string(), tableCount: count() })),
-  /** Le jeton n'y est jamais : il vaut accès à la commande à table. */
-  "point_of_sale.table_qr_generated": fact(payload({ table: z.number().int() })),
-  "point_of_sale.table_qr_removed": fact(payload({ table: z.number().int() })),
+  "point_of_sale.deleted": labelled(pointOfSaleDeleted),
+  "point_of_sale.table_qr_generated": labelled(tableQr),
+  "point_of_sale.table_qr_removed": labelled(tableQr),
 
-  "sales_context.created": fact(
-    payload({
-      key: z.string(),
-      label: z.string(),
-      active: z.boolean(),
-      shopifyProjected: z.boolean(),
-    }),
-  ),
-  "sales_context.updated": fact(
-    payload({
-      changes: changes({
-        label: z.string(),
-        handleSuffix: z.string(),
-        active: z.boolean(),
-        shopifyProjected: z.boolean(),
-        position: z.number().int(),
-      }),
-    }),
-  ),
-  "sales_context.deleted": fact(payload({ key: z.string(), label: z.string() })),
+  "sales_context.created": labelled(salesContextCreated),
+  "sales_context.updated": labelled(salesContextUpdated),
+  "sales_context.deleted": labelled(salesContextDeleted),
 
-  "appellation.created": fact(
-    payload({ code: z.string(), label: localizedText(), scheme: z.string() }),
-  ),
-  "appellation.updated": fact(
-    payload({
-      changes: changes({ label: localizedText(), scheme: z.string(), active: z.boolean() }),
-    }),
-  ),
-  "appellation.deleted": fact(payload({ label: localizedText() })),
+  "appellation.created": labelled(appellationCreated),
+  "appellation.updated": labelled(appellationUpdated),
+  "appellation.deleted": labelled(appellationDeleted),
 
+  /** L'appellation revendiquée, nommée — la même clé qu'à la modification. */
   "ingredient.created": fact(
     payload({
+      subjectLabel: subjectLabel(),
       key: z.string(),
       name: localizedText(),
       origin: z.string(),
-      /** Le CODE de l'appellation revendiquée. */
-      appellation: z.string().nullable(),
+      appellation: named("appellation").nullable(),
     }),
+    [ingredientCreatedV1],
   ),
   "ingredient.updated": fact(
     payload({
+      subjectLabel: subjectLabel(),
       changes: changes({
         name: localizedText(),
         description: localizedText().nullable(),
         origin: z.string(),
-        appellationId: ref("appellation").nullable(),
+        appellation: named("appellation").nullable(),
       }),
     }),
+    [ingredientUpdatedV1],
   ),
-  "ingredient.deleted": fact(payload({ name: localizedText() })),
-  /** Ce que la matière contient : l'avant et l'après, en codes d'allergènes. */
-  "ingredient.allergens_saved": fact(
-    payload({ changes: changes({ allergens: z.array(z.string()) }) }),
-  ),
+  "ingredient.deleted": labelled(ingredientDeleted),
+  "ingredient.allergens_saved": labelled(ingredientAllergens),
 
-  "allergen_category.created": fact(
-    payload({ key: z.string(), name: localizedText(), position: z.number().int() }),
-  ),
-  "allergen_category.renamed": fact(
-    payload({ key: z.string(), from: localizedText(), to: localizedText() }),
-  ),
-  "allergen_category.reordered": fact(
-    payload({ key: z.string(), from: z.number().int(), to: z.number().int() }),
-  ),
-  "allergen_category.archived": fact(payload({ key: z.string(), name: localizedText() })),
-  "allergen_category.restored": fact(payload({ key: z.string(), name: localizedText() })),
+  "allergen_category.created": labelled(allergenCategoryCreated),
+  "allergen_category.renamed": labelled(allergenCategoryRenamed),
+  "allergen_category.reordered": labelled(allergenCategoryReordered),
+  "allergen_category.archived": labelled(allergenCategoryState()),
+  "allergen_category.restored": labelled(allergenCategoryState()),
+  /** La catégorie de rattachement, nommée — la même clé qu'à la modification. */
   "allergen_entry.created": fact(
     payload({
+      subjectLabel: subjectLabel(),
       code: z.string(),
       name: localizedText(),
-      /** La CLÉ de la catégorie de rattachement. */
-      category: z.string(),
+      category: named("allergen_category"),
     }),
+    [allergenEntryCreatedV1],
   ),
   "allergen_entry.updated": fact(
     payload({
+      subjectLabel: subjectLabel(),
       code: z.string(),
-      changes: changes({ name: localizedText(), categoryId: ref("allergen_category") }),
+      changes: changes({ name: localizedText(), category: named("allergen_category") }),
     }),
+    [allergenEntryUpdatedV1],
   ),
-  "allergen_entry.archived": fact(payload({ code: z.string(), name: localizedText() })),
-  "allergen_entry.restored": fact(payload({ code: z.string(), name: localizedText() })),
+  "allergen_entry.archived": labelled(allergenEntryState()),
+  "allergen_entry.restored": labelled(allergenEntryState()),
 
-  "order_time_limit.set": fact(orderTimeLimit()),
-  "order_time_limit.removed": fact(orderTimeLimit()),
+  /**
+   * ⚠️ Sans `subjectLabel` (lot B, 2026-09-19) : une règle NEUVE ne se nomme
+   * par aucun port de son contexte — voir le rapport du lot B.
+   */
+  /**
+   * `subjectLabel` : la PORTÉE en mots, comme l'écran des réglages la dit —
+   * « Toute la production », « Famille « Tartes » », « Produit « VIE-001 » » (un
+   * article s'y nomme par son SKU). Une cible que le référentiel ne nomme plus
+   * s'y dit par son identifiant, jamais par un nom inventé (lot B, 2026-09-19).
+   */
+  "order_time_limit.set": labelled(orderTimeLimit()),
+  "order_time_limit.removed": labelled(orderTimeLimit()),
 } as const satisfies JournalFactFamily;

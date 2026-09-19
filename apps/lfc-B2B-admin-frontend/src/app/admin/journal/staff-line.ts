@@ -73,8 +73,16 @@ function userLine(type: string, who: string, p: Payload): StaffLine | null {
       return { title: 'Droits individuels', sentence: overridesSentence(who, person, p) };
     case 'staff_user.suspended':
       return { title: 'Accès suspendu', sentence: `${who} a suspendu l’accès de ${person}` };
+    case 'staff_user.activated':
+      return { title: 'Accès activé', sentence: `${who} a activé l’accès de ${person}` };
     case 'staff_user.reinstated':
-      return { title: 'Accès rétabli', sentence: `${who} a rétabli l’accès de ${person}` };
+      // Jusqu'au 2026-09-19, ce type couvrait AUSSI la première activation
+      // d'une fiche en attente (D7 du plan des phrases) : la phrase dit ce qui
+      // est vrai des deux, puisque les lignes anciennes ne se réécrivent pas.
+      return {
+        title: 'Accès activé ou rétabli',
+        sentence: `${who} a activé ou rétabli l’accès de ${person}`,
+      };
     case 'staff_user.deleted':
       return {
         title: 'Suppression d’un membre',

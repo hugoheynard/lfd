@@ -8,6 +8,7 @@ import { DeliveryAddressRemovedByStaffEvent } from "../../domain/events/staff-ad
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { RemoveDeliveryAddressByStaffCommand } from "./remove-delivery-address-by-staff.command.js";
+import { companyNamed, deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Archive une adresse de livraison, à la place du client.
@@ -36,6 +37,8 @@ export class RemoveDeliveryAddressByStaffHandler implements ICommandHandler<
 
   async execute(command: RemoveDeliveryAddressByStaffCommand): Promise<void> {
     const book = await this.addresses.loadDeliveryBook(command.companyId);
+    // Nommée AVANT l'archivage : après, le carnet ne la porte plus.
+    const address = deliveryAddressOf(book, command.addressId);
     book.archive(command.addressId, this.clock.now());
 
     const company = await this.companies.load(command.companyId);
@@ -55,7 +58,7 @@ export class RemoveDeliveryAddressByStaffHandler implements ICommandHandler<
         await this.companies.save(company);
       }
       await this.events.publishTraced(
-        new DeliveryAddressRemovedByStaffEvent(command.companyId, command.addressId),
+        new DeliveryAddressRemovedByStaffEvent(companyNamed(command.companyId, company), address),
       );
     });
   }

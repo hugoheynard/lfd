@@ -41,7 +41,7 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
   ) {}
 
   async execute(command: SetProductMediaCommand): Promise<void> {
-    await requireProduct(this.products, command.id);
+    const product = await requireProduct(this.products, command.id);
     const before = await this.readers.mediaOf(command.id);
     const after = mediaItems(command.media);
     // UNE seule entrée `media`, la liste entière : c'est un remplacement, et
@@ -56,7 +56,7 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
               type: PIM_EVENTS.productMediaSaved,
               subjectType: "product",
               subjectId: command.id,
-              payload: { changes },
+              payload: { subjectLabel: product.snapshot().name.fr, changes },
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.replaceMedia(command.id, after, ticket);

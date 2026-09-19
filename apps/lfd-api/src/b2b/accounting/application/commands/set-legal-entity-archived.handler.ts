@@ -67,7 +67,11 @@ export class SetLegalEntityArchivedHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new LegalEntityArchivalChangedEvent(command.legalEntityId, at, command.archived),
+        new LegalEntityArchivalChangedEvent(
+          { id: command.legalEntityId, name: entity.name },
+          at,
+          command.archived,
+        ),
       );
     });
   }

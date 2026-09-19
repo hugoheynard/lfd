@@ -4,7 +4,7 @@ import { SupportRequestedEvent } from "../../../account/domain/events/support-re
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { SUPPORT_ACTIVITY_WORK, subjectOf } from "./on-support-activity-support.js";
+import { labelOf, SUPPORT_ACTIVITY_WORK, subjectOf } from "./on-support-activity-support.js";
 
 /**
  * Journalise le **dépôt** d'une demande de contact — le premier des deux
@@ -30,7 +30,11 @@ export class OnSupportRequested implements IEventHandler<SupportRequestedEvent> 
       ...subjectOf(event.companyId, event.requestedByUserId),
       occurredAt: event.requestedAt,
       idempotencyKey: `${ACTIVITY_TYPES.supportRequested}:${event.supportRequestId}`,
-      payload: { supportRequestId: event.supportRequestId, channel: event.channel },
+      payload: {
+        ...labelOf(event.subjectLabel),
+        supportRequestId: event.supportRequestId,
+        channel: event.channel,
+      },
     });
   }
 }

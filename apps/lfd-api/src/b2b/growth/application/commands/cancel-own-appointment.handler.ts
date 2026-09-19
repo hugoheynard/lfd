@@ -11,6 +11,8 @@ import { AppointmentRepository } from "../../domain/ports/appointment.repository
 import { AvailabilityStore } from "../../domain/ports/availability.store.js";
 import { ownsAppointment } from "../appointment-booking.js";
 import { CancelOwnAppointmentCommand } from "./cancel-own-appointment.command.js";
+import { appointmentSubjectLabel } from "../appointment-subject-label.js";
+import { CompanyNamer } from "../../domain/ports/company-namer.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -34,6 +36,7 @@ export class CancelOwnAppointmentHandler implements ICommandHandler<
     private readonly availability: AvailabilityStore,
     private readonly recorder: ActivityRecorder,
     private readonly clock: Clock,
+    private readonly companies: CompanyNamer,
   ) {}
 
   async execute(command: CancelOwnAppointmentCommand): Promise<void> {
@@ -66,7 +69,11 @@ export class CancelOwnAppointmentHandler implements ICommandHandler<
       subjectType: appointment.subjectType === "company" ? "company" : "user",
       subjectId: appointment.subjectId,
       idempotencyKey: `${ACTIVITY_TYPES.appointmentCancelled}:${appointmentId}`,
-      payload: { appointmentId, via: "customer" },
+      payload: {
+        ...(await appointmentSubjectLabel(appointment, { companies: this.companies })),
+        appointmentId,
+        via: "customer",
+      },
     });
   }
 }

@@ -30,6 +30,7 @@ import { createCompany } from "./factories.js";
 
 let ctx: E2eContext;
 let companyId: string;
+const COMPANY = "Boulangerie du Marais SAS";
 let otherCompanyId: string;
 let notes: string;
 
@@ -43,7 +44,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  companyId = (await createCompany(ctx.prisma, { raisonSociale: "Boulangerie du Marais SAS" })).id;
+  companyId = (await createCompany(ctx.prisma, { raisonSociale: COMPANY })).id;
   otherCompanyId = (await createCompany(ctx.prisma, { raisonSociale: "Autre Maison SAS" })).id;
   notes = notesOf(companyId);
 });
@@ -114,11 +115,12 @@ describe("le journal", () => {
       select: { actorId: true, payload: true },
     });
     expect(journal.map((entry) => entry.payload)).toEqual([
-      { companyId, noteId: first, action: "note_added" },
-      { companyId, noteId: second, action: "note_added" },
-      { companyId, noteId: second, action: "note_revised" },
-      { companyId, action: "notes_reordered" },
-      { companyId, noteId: first, action: "note_removed" },
+      // La société, sujet de la ligne, nommée — plus répétée en `companyId` (lot B).
+      { subjectLabel: COMPANY, noteId: first, action: "note_added" },
+      { subjectLabel: COMPANY, noteId: second, action: "note_added" },
+      { subjectLabel: COMPANY, noteId: second, action: "note_revised" },
+      { subjectLabel: COMPANY, action: "notes_reordered" },
+      { subjectLabel: COMPANY, noteId: first, action: "note_removed" },
     ]);
     // Nominatif par la FICHE, plus par le `sub` du jeton (plan de l'auteur, D1).
     expect(journal.every((entry) => entry.actorId === E2E_STAFF_ID)).toBe(true);

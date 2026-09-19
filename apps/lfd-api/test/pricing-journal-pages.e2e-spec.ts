@@ -67,6 +67,7 @@ function act(subjectType: PricingSubjectType, subjectId: string, at: Date): Pric
     at,
     reason: null,
     summary: `Acte du ${at.toISOString()}`,
+    subjectLabel: "Règle paginée",
   };
 }
 

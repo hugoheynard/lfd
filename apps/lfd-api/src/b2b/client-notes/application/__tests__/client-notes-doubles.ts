@@ -23,6 +23,9 @@ import { NotebookCompanies } from "../../domain/ports/notebook-companies.js";
 
 export const COMPANY = "c1";
 
+/** Le nom de la société connue, tel que les faits le figent. */
+export const COMPANY_NAME = "Le Pain Quotidien";
+
 /** Les sociétés connues de la suite. */
 export class KnownCompanies extends NotebookCompanies {
   constructor(private readonly known: readonly string[] = [COMPANY]) {
@@ -31,6 +34,10 @@ export class KnownCompanies extends NotebookCompanies {
 
   exists(companyId: string): Promise<boolean> {
     return Promise.resolve(this.known.includes(companyId));
+  }
+
+  nameOf(companyId: string): Promise<string | null> {
+    return Promise.resolve(this.known.includes(companyId) ? COMPANY_NAME : null);
   }
 }
 

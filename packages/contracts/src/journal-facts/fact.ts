@@ -145,6 +145,14 @@ export const named = (target: string) =>
  */
 export const subjectLabel = () => z.string().min(1);
 
+/**
+ * Un objet cité avec son nom du moment — ou par son seul id, quand l'annuaire
+ * qui devait le nommer ne le connaissait pas (une fiche staff illisible, un
+ * point de retrait disparu, une société qu'aucune clé étrangère n'exige). Le
+ * fait ne se perd pas pour un nom manquant, et il n'en invente pas.
+ */
+export const namedOrBare = (target: string) => z.union([named(target), ref(target)]);
+
 export const localizedText = () =>
   z.strictObject({ fr: z.string(), en: z.string().optional(), it: z.string().optional() });
 

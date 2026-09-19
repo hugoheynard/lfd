@@ -199,7 +199,7 @@ describe("PUT mandate-scheme — la bascule", () => {
     expect(facts).toEqual([
       expect.objectContaining({
         subjectId: entityId,
-        payload: { from: "B2B", to: "CORE" },
+        payload: { subjectLabel: "Crazeativity", from: "B2B", to: "CORE" },
         actorType: "staff",
       }),
     ]);

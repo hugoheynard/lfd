@@ -150,7 +150,7 @@ describe("clore une journée", () => {
         subjectId: DAY,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { serviceDay: DAY, absorbed: 2 },
+        payload: { subjectLabel: DAY, serviceDay: DAY, absorbed: 2 },
       },
     ]);
     // L'événement du canal est toujours parti, après la transaction.
@@ -195,7 +195,7 @@ describe("reprendre le tirage", () => {
         subjectId: DAY,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { serviceDay: DAY, absorbed: 1 },
+        payload: { subjectLabel: DAY, serviceDay: DAY, absorbed: 1 },
       },
     ]);
   });
@@ -231,13 +231,13 @@ describe("le contenant d'un article", () => {
         ...fact,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { before: null, after: PLAQUE },
+        payload: { subjectLabel: CROISSANT, before: null, after: PLAQUE },
       },
       {
         ...fact,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { before: PLAQUE, after: GRANDE_PLAQUE },
+        payload: { subjectLabel: CROISSANT, before: PLAQUE, after: GRANDE_PLAQUE },
       },
     ]);
   });
@@ -250,7 +250,10 @@ describe("le contenant d'un article", () => {
 
     const written = await facts("production_container.removed");
     expect(written).toHaveLength(1);
-    expect(written[0]).toMatchObject({ actorId: E2E_STAFF_ID, payload: { before: PLAQUE } });
+    expect(written[0]).toMatchObject({
+      actorId: E2E_STAFF_ID,
+      payload: { subjectLabel: CROISSANT, before: PLAQUE },
+    });
   });
 
   it("ANNULE la pose quand le journal refuse d'écrire", async () => {

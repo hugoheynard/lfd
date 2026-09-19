@@ -62,7 +62,8 @@ describe("SetMandateSchemeHandler — la bascule CORE ↔ interentreprises", () 
       subjectType: "legal_entity",
       subjectId: "le1",
       occurredAt: NOW,
-      payload: { from: "B2B", to: "CORE" },
+      // L'entité nommée au moment de la bascule (lot B du plan des phrases).
+      payload: { subjectLabel: "La Folie Douce", from: "B2B", to: "CORE" },
     });
     expect(h.drafts.calls).toEqual([
       { creditorId: "le1", cause: "mandate_scheme_changed", via: "staff" },
@@ -85,8 +86,8 @@ describe("SetMandateSchemeHandler — la bascule CORE ↔ interentreprises", () 
     await h.handler.execute(new SetMandateSchemeCommand("le1", "B2B"));
 
     expect(h.events.traced.map((event) => event.journalFact().payload)).toEqual([
-      { from: "B2B", to: "CORE" },
-      { from: "CORE", to: "B2B" },
+      { subjectLabel: "La Folie Douce", from: "B2B", to: "CORE" },
+      { subjectLabel: "La Folie Douce", from: "CORE", to: "B2B" },
     ]);
   });
 

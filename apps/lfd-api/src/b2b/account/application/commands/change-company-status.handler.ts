@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStatusChangedByStaffEvent } from "../../domain/events/staff-acts.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import type { Company } from "../../domain/entities/company.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ChangeCompanyStatusCommand } from "./change-company-status.command.js";
@@ -40,7 +41,10 @@ export class ChangeCompanyStatusHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new CompanyStatusChangedByStaffEvent(command.companyId, command.action),
+        new CompanyStatusChangedByStaffEvent(
+          companyNamed(command.companyId, company),
+          command.action,
+        ),
       );
     });
   }

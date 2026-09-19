@@ -72,6 +72,50 @@ describe("UpdateIngredientHandler — les trois états de l'appellation", () => 
     expect(ingredients.at(key)?.appellationId).toBe("app_2");
   });
 
+  /**
+   * Régression (plan des phrases du journal, lot B) : la création citait le
+   * CODE de l'appellation sous `appellation`, la modification son IDENTIFIANT
+   * sous `appellationId` — deux formes pour une même citation, et aucune ne
+   * disait son nom.
+   */
+  it("cite l'appellation NOMMÉE, sous la même clé qu'à la création", async () => {
+    const appellations = new InMemoryAppellationRepository();
+    const ingredients = new InMemoryIngredientRepository();
+    await seedAppellation(appellations, "aop-beaufort", "app_1");
+    await seedAppellation(appellations, "igp-savoie", "app_2");
+    const journal = new RecordingJournal();
+    const key = await new CreateIngredientHandler(
+      ingredients,
+      appellations,
+      journal,
+      new FixedIdGenerator(),
+      new DirectUnitOfWork(),
+    ).execute(
+      new CreateIngredientCommand({ ...INGREDIENT_PAYLOAD, appellationCode: "aop-beaufort" }),
+    );
+
+    await new UpdateIngredientHandler(
+      ingredients,
+      appellations,
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(new UpdateIngredientCommand(key, { appellationCode: "igp-savoie" }));
+
+    expect(journal.entries[0]?.payload).toMatchObject({
+      subjectLabel: "Beurre de Savoie",
+      appellation: { id: "aop-beaufort", name: "Beaufort" },
+    });
+    expect(journal.entries[1]?.payload).toEqual({
+      subjectLabel: "Beurre de Savoie",
+      changes: {
+        appellation: {
+          from: { id: "aop-beaufort", name: "Beaufort" },
+          to: { id: "igp-savoie", name: "Beaufort" },
+        },
+      },
+    });
+  });
+
   // Le refus doit laisser l'appellation précédente INTACTE : sans ce test, un
   // renommage raté vers un code fautif pourrait effacer le signe en place.
   it("refuse une appellation introuvable et laisse l'ancien signe en place", async () => {

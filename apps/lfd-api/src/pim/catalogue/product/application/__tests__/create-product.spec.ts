@@ -252,8 +252,9 @@ describe("CreateProductHandler — ce qu'il inscrit au journal", () => {
     expect(journal.types()).toEqual(["product.created"]);
     expect(journal.entries[0]?.subjectId).toBe(id);
     expect(journal.entries[0]?.payload).toMatchObject({
+      subjectLabel: "Croissant au beurre",
       kind: "daily",
-      categoryId: "cat_active",
+      category: { id: "cat_active", name: "Viennoiseries" },
       declared: true,
     });
   });

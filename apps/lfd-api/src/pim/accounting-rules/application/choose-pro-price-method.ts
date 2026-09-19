@@ -9,6 +9,12 @@ import { AccountingRulesRepository } from "../domain/ports/accounting-rules.repo
 /** Le sujet du fait : le singleton lui-même — il n'y en a qu'un à nommer. */
 const ACCOUNTING_RULES_SUBJECT = "accounting";
 
+/**
+ * Le nom du sujet au journal (`subjectLabel`, plan des phrases, lot B) : les
+ * règles comptables sont UNIQUES, leur nom ne dépend de rien.
+ */
+const ACCOUNTING_RULES_LABEL = "Règles comptables";
+
 export class ChooseProPriceMethodCommand {
   constructor(readonly method: ProPriceMethod) {}
 }
@@ -82,7 +88,7 @@ export class ChooseProPriceMethodHandler implements ICommandHandler<
       type: PIM_EVENTS.accountingRulesMethodChanged,
       subjectType: "accounting_rules",
       subjectId: ACCOUNTING_RULES_SUBJECT,
-      payload: { from: before, to: after },
+      payload: { subjectLabel: ACCOUNTING_RULES_LABEL, from: before, to: after },
     });
   }
 }

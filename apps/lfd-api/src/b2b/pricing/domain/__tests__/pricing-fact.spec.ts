@@ -21,6 +21,7 @@ function act(over: Partial<PricingAct> = {}): PricingAct {
     at: new Date("2026-08-25T09:30:00Z"),
     reason: null,
     summary: "−10 % sur la gamme viennoiserie",
+    subjectLabel: "Remise viennoiserie",
     ...over,
   };
 }
@@ -49,8 +50,9 @@ describe("pricingFactOf", () => {
    * dans sa table, et l'y recopier ferait du journal une seconde base —
    * désynchronisée par construction.
    */
-  it("ne porte que la phrase figée et le motif", () => {
+  it("ne porte que le nom du sujet, la phrase figée et le motif", () => {
     expect(pricingFactOf(act({ reason: "fin de promotion" })).payload).toEqual({
+      subjectLabel: "Remise viennoiserie",
       summary: "−10 % sur la gamme viennoiserie",
       reason: "fin de promotion",
     });

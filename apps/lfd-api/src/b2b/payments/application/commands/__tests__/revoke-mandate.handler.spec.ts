@@ -7,6 +7,9 @@ import { RevokeMandateCommand } from "../revoke-mandate.command.js";
 import { RevokeMandateHandler } from "../revoke-mandate.handler.js";
 import { activeMandate, doubles, NOW, type Trace } from "./staff-mandate-doubles.js";
 
+/** La société engagée, nommée comme le double la rend (lot B du plan des phrases). */
+const COMPANY_CITED = { id: "cmp_1", name: "Café des Halles" };
+
 /** L'unité de travail, tracée dans le même fil que les autres gestes. */
 class TracingUnitOfWork extends UnitOfWork {
   constructor(private readonly trace: Trace) {
@@ -58,7 +61,13 @@ describe("RevokeMandateHandler", () => {
     expect(events.traced[0]?.journalFact()).toMatchObject({
       subjectType: "payment_mandate",
       subjectId: "mdt_1",
-      payload: { companyId: "cmp_1", reference: "RUM-123", previousStatus: "active", via: "staff" },
+      payload: {
+        subjectLabel: "RUM-123",
+        company: COMPANY_CITED,
+        reference: "RUM-123",
+        previousStatus: "active",
+        via: "staff",
+      },
     });
   });
 

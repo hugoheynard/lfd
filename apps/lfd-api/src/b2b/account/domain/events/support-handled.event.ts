@@ -9,6 +9,11 @@ export class SupportHandledEvent {
     /** Société concernée, ou `null` — la demande portait alors sur la personne. */
     readonly companyId: string | null,
     readonly requestedByUserId: string,
+    /**
+     * Le nom du sujet au moment du fait (lot B du plan des phrases) : celui de
+     * la société, sinon celui de la personne — `null` si elle n'en porte pas.
+     */
+    readonly subjectLabel: string | null,
     /** Instant du traitement (temps métier, issu du `Clock`). */
     readonly handledAt: Date,
   ) {}

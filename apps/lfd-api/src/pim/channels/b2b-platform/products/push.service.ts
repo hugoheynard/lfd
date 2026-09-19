@@ -41,6 +41,15 @@ export interface B2bPushSummary {
    * R est partie vers b2b » se relit, « un push a eu lieu » ne se relit pas.
    */
   readonly revisionId: string | null;
+  /**
+   * Le nom de cette ancre — son nom si elle en porte un, sinon sa référence
+   * lisible (`R-7WT4NA`) —, `null` avec `revisionId`. Rendu pour la même
+   * raison : le fait de journal la cite par son nom (`subjectLabel`, lot B du
+   * plan des phrases, 2026-09-19), et le service vient de la poser.
+   */
+  readonly revisionName: string | null;
+  /** La référence lisible de l'ancre, `null` avec `revisionId`. */
+  readonly revisionReference: string | null;
 }
 
 @Injectable()
@@ -125,6 +134,8 @@ export class B2bCatalogPushService {
         excluded,
         fingerprint,
         revisionId: null,
+        revisionName: null,
+        revisionReference: null,
       };
     }
 
@@ -136,6 +147,8 @@ export class B2bCatalogPushService {
         excluded: [],
         fingerprint,
         revisionId: null,
+        revisionName: null,
+        revisionReference: null,
       };
     }
 
@@ -177,6 +190,8 @@ export class B2bCatalogPushService {
       excluded,
       fingerprint,
       revisionId: revision.id,
+      revisionName: revision.label ?? revision.reference,
+      revisionReference: revision.reference,
     };
   }
 

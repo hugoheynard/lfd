@@ -34,7 +34,7 @@ export class RestoreProductHandler implements ICommandHandler<RestoreProductComm
         // Le SKU et le nom voyagent avec le fait : une fiche archivée sort des
         // écrans, et l'historique ne doit pas se réduire à un identifiant qu'on
         // ne peut plus résoudre nulle part.
-        payload: { sku, name },
+        payload: { subjectLabel: name.fr, sku, name },
       });
       await this.products.save(product, ticket);
     });

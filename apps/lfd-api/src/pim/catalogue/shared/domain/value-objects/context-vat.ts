@@ -37,7 +37,7 @@ export function effectiveVat<T>(
   return { ...family, ...product };
 }
 
-/** Un taux effacé, dans la forme des faits `*.vat_changed` : il était, il n'est plus. */
+/** Un taux effacé — il était, il n'est plus. Les faits `*.vat_changed` le nomment. */
 export interface ErasedVat {
   readonly from: string;
   readonly to: null;
@@ -46,8 +46,9 @@ export interface ErasedVat {
 /**
  * Les taux qu'un geste a **effacés** — clé de contexte → `{ from, to: null }`.
  *
- * La forme est celle que `product_category.vat_changed` et
- * `product.vat_changed` portent déjà (`set-category-vat`, `set-product-vat`) :
+ * La forme est celle des changements que `product_category.vat_changed` et
+ * `product.vat_changed` portent déjà (`set-category-vat`, `set-product-vat`,
+ * qui les nomment sous `vatByContext`) :
  * fermer un canal efface le taux du contexte fermé, et la comptabilité doit le
  * relire comme n'importe quel autre changement de taux, sans apprendre une
  * seconde charge. Clés triées, comme chez les deux voisins.

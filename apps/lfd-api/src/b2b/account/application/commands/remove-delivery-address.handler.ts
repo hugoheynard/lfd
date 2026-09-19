@@ -10,6 +10,7 @@ import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { RemoveDeliveryAddressCommand } from "./address-commands.js";
+import { companyNamed, deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Archive une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -49,6 +50,8 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
     ensureCompanyAdmin(role, command.companyId);
 
     const book = await this.addresses.loadDeliveryBook(command.companyId);
+    // Nommée AVANT l'archivage : après, le carnet ne la porte plus.
+    const address = deliveryAddressOf(book, command.addressId);
     book.archive(command.addressId, this.clock.now());
 
     const company = await this.companies.load(command.companyId);
@@ -68,7 +71,7 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
         await this.companies.save(company);
       }
       await this.events.publishTraced(
-        new DeliveryAddressRemovedByMemberEvent(command.companyId, command.addressId),
+        new DeliveryAddressRemovedByMemberEvent(companyNamed(command.companyId, company), address),
       );
     });
   }

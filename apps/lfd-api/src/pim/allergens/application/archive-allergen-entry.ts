@@ -47,7 +47,7 @@ export class ArchiveAllergenEntryHandler implements ICommandHandler<
         // Le code et le libellé voyagent avec le fait : une entrée archivée sort
         // des écrans, et l'historique ne doit pas se réduire à un identifiant
         // qu'on ne peut plus résoudre nulle part.
-        payload: { code: archived.code, name: archived.name },
+        payload: { subjectLabel: archived.name.fr, code: archived.code, name: archived.name },
       });
       await this.entries.save(entry, ticket);
     });

@@ -12,6 +12,7 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ReorderDeliveryStepsCommand } from "./delivery-procedure-commands.js";
 import { reorderDeliverySteps, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Range les étapes dans un nouvel ordre, réservé au **gestionnaire** (`ensureCompanyAdmin`).
@@ -37,6 +38,7 @@ export class ReorderDeliveryStepsHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: ReorderDeliveryStepsCommand): Promise<void> {
@@ -47,11 +49,13 @@ export class ReorderDeliveryStepsHandler implements ICommandHandler<
       this.ports(),
       { companyId: command.companyId, addressId: command.addressId },
       command.stepIds,
-      () =>
+      async () =>
         this.events.publishTraced(
           new DeliveryProcedureEditedByMemberEvent(
-            command.companyId,
-            command.addressId,
+            // Lus DANS la transaction, après la vérification de l'adresse :
+            // un contenu refusé ne coûte toujours pas une lecture.
+            await this.names.company(command.companyId),
+            await this.names.deliveryAddress(command.companyId, command.addressId),
             "reordered",
           ),
         ),

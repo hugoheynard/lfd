@@ -8,6 +8,7 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { SaveBillingAddressCommand } from "./address-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Enregistre l'adresse de facturation, réservé au gestionnaire de l'entreprise.
@@ -23,19 +24,21 @@ export class SaveBillingAddressHandler implements ICommandHandler<SaveBillingAdd
     private readonly addresses: CompanyAddressRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: SaveBillingAddressCommand): Promise<void> {
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveBilling(command.companyId, command.payload);
       await this.events.publishTraced(
-        new BillingAddressSavedByMemberEvent(command.companyId, command.payload),
+        new BillingAddressSavedByMemberEvent(company, command.payload),
       );
     });
     // Pièce d'activation « facturation » franchie (journal idempotent par étape).
-    this.events.publish(new CompanyStepReachedEvent(command.companyId, "billing"));
+    this.events.publish(new CompanyStepReachedEvent(company.id, company.name, "billing"));
   }
 }

@@ -13,6 +13,7 @@ import { EmailAddress } from "../../domain/value-objects/email-address.js";
 import { PersonName } from "../../domain/value-objects/person-name.js";
 import { PhoneNumber } from "../../domain/value-objects/phone-number.js";
 import { CreateCompanyCommand } from "./create-company.command.js";
+import { personName, personRef } from "../../domain/events/journal-names.js";
 
 /**
  * Déclare l'entreprise et en fait, d'un même geste, celle de son créateur.
@@ -65,7 +66,14 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
 
     const companyId = await this.companies.declareOwnedBy(company, command.ownerUserId);
     // Déclarée par le client lui-même : signal `self` (candidat adoption+).
-    this.events.publish(new CompanyDeclaredEvent(companyId, "self", command.ownerUserId));
+    this.events.publish(
+      new CompanyDeclaredEvent(
+        companyId,
+        company.displayName(),
+        "self",
+        personRef(command.ownerUserId, personName(owner.firstName, owner.lastName)),
+      ),
+    );
     return companyId;
   }
 }

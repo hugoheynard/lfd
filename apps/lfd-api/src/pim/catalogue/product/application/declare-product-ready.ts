@@ -62,7 +62,7 @@ export class DeclareProductReadyHandler implements ICommandHandler<
         type: PIM_EVENTS.productDeclaredReady,
         subjectType: "product",
         subjectId: command.id,
-        payload: { sku, name },
+        payload: { subjectLabel: name.fr, sku, name },
       });
       await this.readiness.declare(command.id, {
         // L'horloge de la requête, pas `new Date()` : la déclaration se compare

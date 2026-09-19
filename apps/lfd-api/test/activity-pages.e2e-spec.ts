@@ -60,8 +60,8 @@ async function fact(type: typeof WITNESS | typeof OTHER, name: string): Promise<
     idempotencyKey: `${type}:${String(written)}`,
     payload:
       type === WITNESS
-        ? { businessName: `Boulangerie ${name}`, email: "" }
-        : { name: `Boulangerie ${name}` },
+        ? { subjectLabel: `Boulangerie ${name}`, businessName: `Boulangerie ${name}` }
+        : { subjectLabel: `Boulangerie ${name}`, name: `Boulangerie ${name}` },
   });
 }
 

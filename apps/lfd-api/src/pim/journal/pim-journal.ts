@@ -193,8 +193,8 @@ export const PIM_EVENTS = {
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**
-   * **La fiche change de famille** — `{ from, to }`, deux identifiants de
-   * famille.
+   * **La fiche change de famille** — `{ from, to }`, les deux familles avec
+   * leur nom du moment (`{ id, name }`, lot B du plan des phrases du journal).
    *
    * Distinct de `identity_saved`, qui porte déjà `categoryId` dans son diff et
    * le garde : ce fait-ci existe parce que changer de famille change les taux
@@ -203,9 +203,9 @@ export const PIM_EVENTS = {
    * touche au taux »). Y verser `identity_saved` entier l'inonderait de chaque
    * nom retouché.
    *
-   * Sans libellé, comme toute référence à une famille dans les charges du
-   * référentiel (`product.created`, `product_category.moved`,
-   * `identity_saved` : l'identifiant seul, vérifié le 2026-09-19).
+   * Les lignes écrites avant le 2026-09-19 (lot B) ne portent que les deux
+   * identifiants : elles se relisent telles quelles, le journal ne se
+   * réécrit pas.
    */
   productReclassified: "product.reclassified",
   /**

@@ -57,7 +57,7 @@ export class DeclareLegalEntityHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new LegalEntityDeclaredEvent(id, at, payload.name, payload.siren),
+        new LegalEntityDeclaredEvent({ id, name: entity.name }, at, payload.name, payload.siren),
       );
     });
     return id;

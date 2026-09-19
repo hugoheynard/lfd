@@ -6,7 +6,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 
 import type { VariantPricing } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
-import { requireProduct } from "./product-support.js";
+import { namedVariant, requireProduct } from "./product-support.js";
 
 /**
  * Ce que la section « Tarif & TVA » envoie. L'assiette voyage AVEC le prix :
@@ -56,7 +56,11 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
               // La déclinaison est DANS la charge, pas dans le sujet :
               // l'historique se lit par fiche, et un sujet « variante » le
               // couperait en autant de fils qu'il y a de déclinaisons.
-              payload: { variantId, changes },
+              payload: {
+                subjectLabel: product.snapshot().name.fr,
+                variant: namedVariant(product.snapshot(), variantId),
+                changes,
+              },
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.products.save(product, ticket);

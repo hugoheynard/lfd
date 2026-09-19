@@ -45,6 +45,7 @@ export class CloseCompanyMercurialeHandler implements ICommandHandler<
       // Le résumé décrit la mercuriale d'AVANT, comme partout dans ce journal :
       // ce qu'on relit est ce qui a été clos.
       summary: describeMercuriale(mercuriale),
+      subjectLabel: mercuriale.label,
     });
     return mercuriale.lines.length;
   }

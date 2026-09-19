@@ -10,6 +10,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { AddDeliveryAddressCommand } from "./address-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Ajoute une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -34,6 +36,7 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: AddDeliveryAddressCommand): Promise<string> {
@@ -43,15 +46,20 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     const book = await this.addresses.loadDeliveryBook(command.companyId);
     const addressId = this.ids.next();
     book.add(addressId, command.payload, this.clock.now());
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
-        new DeliveryAddressAddedByMemberEvent(command.companyId, addressId, command.payload),
+        new DeliveryAddressAddedByMemberEvent(
+          company,
+          deliveryAddressOf(book, addressId),
+          command.payload,
+        ),
       );
     });
 
     // Pièce d'activation « livraison » franchie (journal idempotent par étape).
-    this.events.publish(new CompanyStepReachedEvent(command.companyId, "delivery"));
+    this.events.publish(new CompanyStepReachedEvent(company.id, company.name, "delivery"));
     return addressId;
   }
 }

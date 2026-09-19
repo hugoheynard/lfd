@@ -66,6 +66,7 @@ export const RIB_PAYLOAD: SetCompanyBankAccountPayload = {
 
 export const HOLDER: MandateHolder = {
   companyName: "Refuge du Col SARL",
+  displayName: "Le Refuge du Col",
   email: "compta@refuge.fr",
   reference: "C-9P2X4B",
   siren: "732829320",

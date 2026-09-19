@@ -64,6 +64,29 @@ describe("deriveProspects", () => {
     expect(prospects).toEqual([]);
   });
 
+  /**
+   * Lot B du plan des phrases (2026-09-19) : `user.registered` ne porte plus
+   * l'e-mail. L'adresse se lit sur la fiche ; la charge d'une ligne ANCIENNE
+   * n'est qu'un repli, pour une personne que la fiche ne connaît plus.
+   */
+  it("lit l'e-mail sur la fiche, avant celui qu'une inscription ancienne recopiait", () => {
+    const [prospect] = deriveProspects(
+      [registered("u1", "2026-08-18T09:00:00.000Z", "ancien@resto.fr")],
+      NOW,
+      new Map([["u1", "chef@resto.fr"]]),
+    );
+    expect(prospect).toMatchObject({ email: "chef@resto.fr", label: "chef@resto.fr" });
+  });
+
+  it("lit l'e-mail d'une personne inscrite depuis le lot B sur sa seule fiche", () => {
+    const [prospect] = deriveProspects(
+      [{ type: "user.registered", subjectId: "u1", occurredAt: NOW, payload: {} }],
+      NOW,
+      new Map([["u1", "chef@resto.fr"]]),
+    );
+    expect(prospect?.email).toBe("chef@resto.fr");
+  });
+
   it("un hot sans inscription connue au journal a un e-mail vide", () => {
     const [prospect] = deriveProspects([ordered("u1", "2026-08-19T09:00:00.000Z", 400)], NOW);
     expect(prospect!.email).toBe("");

@@ -4,6 +4,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
 import { placeOf } from "./address-place.js";
+import type { DeliveryAddressRef, NamedRef, PersonRef } from "./journal-names.js";
 import type { DeliveryProcedureStaffAction } from "./staff-address-acts.event.js";
 
 /**
@@ -27,9 +28,19 @@ import type { DeliveryProcedureStaffAction } from "./staff-address-acts.event.js
  * décision de Hugo : ville et code postal reconnaissent le lieu sans être une
  * coordonnée de personne. Un type, une forme : le libellé, que le staff
  * n'écrit pas, n'y figure plus.
+ *
+ * Lot B du plan des phrases (2026-09-19) : la société part nommée en
+ * `subjectLabel` ; un contact cité l'est avec son nom du moment, une adresse
+ * par son id, sa ville et son code postal — la même forme que chez le staff.
  */
 export abstract class CompanyMemberAct implements JournaledEvent {
-  protected constructor(readonly companyId: string) {}
+  readonly companyId: string;
+  readonly companyName: string;
+
+  protected constructor(company: NamedRef) {
+    this.companyId = company.id;
+    this.companyName = company.name;
+  }
 
   protected abstract type(): JournalFactType;
 
@@ -43,7 +54,7 @@ export abstract class CompanyMemberAct implements JournaledEvent {
       type: this.type(),
       subjectType: "company",
       subjectId: this.companyId,
-      payload: this.details(),
+      payload: { subjectLabel: this.companyName, ...this.details() },
     };
   }
 }
@@ -51,10 +62,10 @@ export abstract class CompanyMemberAct implements JournaledEvent {
 /** Le client a écrit son adresse de facturation — la charge du fait staff jumeau. */
 export class BillingAddressSavedByMemberEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly payload: BillingAddressPayload,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.billingAddressSaved;
@@ -64,23 +75,25 @@ export class BillingAddressSavedByMemberEvent extends CompanyMemberAct {
   }
 }
 
-/** Une adresse de livraison désignée par son identifiant, sa ville et son code postal. */
+/** Une adresse de livraison désignée par son id, et le lieu que ce geste écrit. */
 abstract class DeliveryAddressPlacedAct extends CompanyMemberAct {
   protected constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
     readonly payload: DeliveryAddressPayload,
   ) {
-    super(companyId);
+    super(company);
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId, ...placeOf(this.payload) };
+    // Le lieu ÉCRIT par ce geste, dans l'adresse citée : une seule place
+    // pour la ville et le code postal (lot B, 2026-09-19).
+    return { address: { id: this.address.id, ...placeOf(this.payload) } };
   }
 }
 
 export class DeliveryAddressAddedByMemberEvent extends DeliveryAddressPlacedAct {
-  constructor(companyId: string, addressId: string, payload: DeliveryAddressPayload) {
-    super(companyId, addressId, payload);
+  constructor(company: NamedRef, address: DeliveryAddressRef, payload: DeliveryAddressPayload) {
+    super(company, address, payload);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressAdded;
@@ -88,8 +101,8 @@ export class DeliveryAddressAddedByMemberEvent extends DeliveryAddressPlacedAct 
 }
 
 export class DeliveryAddressUpdatedByMemberEvent extends DeliveryAddressPlacedAct {
-  constructor(companyId: string, addressId: string, payload: DeliveryAddressPayload) {
-    super(companyId, addressId, payload);
+  constructor(company: NamedRef, address: DeliveryAddressRef, payload: DeliveryAddressPayload) {
+    super(company, address, payload);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressUpdated;
@@ -99,46 +112,46 @@ export class DeliveryAddressUpdatedByMemberEvent extends DeliveryAddressPlacedAc
 /** Archivage : l'identifiant suffit — le fait d'ajout, toujours dans le flux, dit le reste. */
 export class DeliveryAddressRemovedByMemberEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryAddressRemoved;
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId };
+    return { address: { ...this.address } };
   }
 }
 
 export class DefaultDeliverySetByMemberEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.defaultDeliverySet;
   }
   protected override details(): Record<string, unknown> {
-    return { addressId: this.addressId };
+    return { address: { ...this.address } };
   }
 }
 
 /** Retrait ou livraison par défaut — les mêmes champs que chez le staff, aucun n'est une coordonnée. */
 export class FulfillmentPreferenceSetByMemberEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly preference: {
       readonly method: string | null;
       readonly pickupAddressId: string | null;
-      readonly deliveryAddressId: string | null;
+      readonly deliveryAddress: DeliveryAddressRef | null;
       readonly signatureRequired: boolean;
     },
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.fulfillmentPreferenceSet;
@@ -148,23 +161,23 @@ export class FulfillmentPreferenceSetByMemberEvent extends CompanyMemberAct {
   }
 }
 
-/** Un contact additionnel : son identifiant et son rôle, rien de lui. */
+/** Un contact additionnel : son identifiant, son nom s'il en a un, et son rôle — rien d'autre de lui. */
 abstract class ContactRoleAct extends CompanyMemberAct {
   protected constructor(
-    companyId: string,
-    readonly contactId: string,
+    company: NamedRef,
+    readonly contact: PersonRef,
     readonly role: string,
   ) {
-    super(companyId);
+    super(company);
   }
   protected override details(): Record<string, unknown> {
-    return { contactId: this.contactId, role: this.role };
+    return { contact: { ...this.contact }, role: this.role };
   }
 }
 
 export class ContactAddedByMemberEvent extends ContactRoleAct {
-  constructor(companyId: string, contactId: string, role: string) {
-    super(companyId, contactId, role);
+  constructor(company: NamedRef, contact: PersonRef, role: string) {
+    super(company, contact, role);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactAdded;
@@ -172,8 +185,8 @@ export class ContactAddedByMemberEvent extends ContactRoleAct {
 }
 
 export class ContactUpdatedByMemberEvent extends ContactRoleAct {
-  constructor(companyId: string, contactId: string, role: string) {
-    super(companyId, contactId, role);
+  constructor(company: NamedRef, contact: PersonRef, role: string) {
+    super(company, contact, role);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactUpdated;
@@ -182,23 +195,23 @@ export class ContactUpdatedByMemberEvent extends ContactRoleAct {
 
 export class ContactRemovedByMemberEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
-    readonly contactId: string,
+    company: NamedRef,
+    readonly contact: PersonRef,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.contactRemoved;
   }
   protected override details(): Record<string, unknown> {
-    return { contactId: this.contactId };
+    return { contact: { ...this.contact } };
   }
 }
 
 /** L'interlocuteur principal change — la charge est vide, comme chez le staff. */
 export class PrimaryContactChangedByMemberEvent extends CompanyMemberAct {
-  constructor(companyId: string) {
-    super(companyId);
+  constructor(company: NamedRef) {
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.primaryContactChanged;
@@ -213,10 +226,10 @@ export class PrimaryContactChangedByMemberEvent extends CompanyMemberAct {
  */
 export class CompanyIdentityEditedEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly fields: readonly string[],
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.identityEdited;
@@ -233,11 +246,11 @@ export class CompanyIdentityEditedEvent extends CompanyMemberAct {
  */
 export class PaymentTermRequestedEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly before: DeferredTerm | null,
     readonly after: DeferredTerm | null,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.paymentTermRequested;
@@ -254,27 +267,28 @@ export class PaymentTermRequestedEvent extends CompanyMemberAct {
  */
 export class DeliveryProcedureEditedByMemberEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
-    readonly addressId: string,
+    company: NamedRef,
+    readonly address: DeliveryAddressRef,
     readonly action: DeliveryProcedureStaffAction,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.deliveryProcedureEdited;
   }
   protected override details(): Record<string, unknown> {
-    return { companyId: this.companyId, addressId: this.addressId, action: this.action };
+    // La société est le sujet de la ligne : la charge ne la répète plus (lot B).
+    return { address: { ...this.address }, action: this.action };
   }
 }
 
 /** Le gestionnaire a déposé l'extrait KBIS — le nom du fichier, comme chez le staff. */
 export class KbisUploadedByMemberEvent extends CompanyMemberAct {
   constructor(
-    companyId: string,
+    company: NamedRef,
     readonly fileName: string,
   ) {
-    super(companyId);
+    super(company);
   }
   protected type(): JournalFactType {
     return ACCOUNT_FACTS.kbisUploaded;

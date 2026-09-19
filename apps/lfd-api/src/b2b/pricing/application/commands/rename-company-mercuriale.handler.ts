@@ -45,6 +45,8 @@ export class RenameCompanyMercurialeHandler implements ICommandHandler<
       at: this.clock.now(),
       reason: `Mercuriale « ${mercuriale.label} » renommée « ${label} »`,
       summary: describeMercuriale(mercuriale),
+      // Le NOUVEAU nom : c'est celui qu'elle porte depuis.
+      subjectLabel: label,
     });
     return mercuriale.lines.length;
   }

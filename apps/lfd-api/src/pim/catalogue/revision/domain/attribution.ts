@@ -215,21 +215,48 @@ export function coveredBy(field: string, causes: readonly GlobalCause[]): Global
  * La phrase d'un fait global.
  *
  * Elle se construit sur ce que le payload PORTE, pas sur ce qu'on aimerait
- * qu'il porte : `vat_rate.rate_changed` a un nom et deux valeurs, les autres
- * n'ont souvent qu'un identifiant. Inventer une jointure pour embellir la
- * phrase ferait dépendre un historique d'une table qui, elle, continue de
- * changer — et un taux supprimé n'aurait plus de nom du tout.
+ * qu'il porte. Depuis le lot B du plan des phrases (2026-09-19), un fait porte
+ * le nom de son sujet (`subjectLabel`) et cite les objets avec leur nom du
+ * moment (`{ id, name }`) : la phrase les lit en premier. Une ligne d'avant
+ * n'a souvent qu'un `name`, voire que des identifiants : elle se dit avec ce
+ * qu'elle a. Inventer une jointure pour l'embellir ferait dépendre un
+ * historique d'une table qui, elle, continue de changer — et un taux supprimé
+ * n'aurait plus de nom du tout.
  */
 function labelOf(fact: PimJournalFact): string {
   const payload = fact.payload;
-  const name = readScalar(payload, "name");
-  const from = readScalar(payload, "from");
-  const to = readScalar(payload, "to");
-  const subject = name ?? fact.subjectId;
+  const subject =
+    readScalar(payload, "subjectLabel") ?? readScalar(payload, "name") ?? fact.subjectId;
+  // `parent` depuis le lot B, `parentId` avant (un déplacement de famille) ;
+  // à plat pour un taux.
+  const move =
+    readObject(payload, "parent") ??
+    readObject(payload, "parentId") ??
+    (isRecord(payload) ? payload : null);
+  const from = move === null ? null : citedOf(move["from"]);
+  const to = move === null ? null : citedOf(move["to"]);
   if (from !== null && to !== null) {
     return `${subject} : ${from} → ${to}`;
   }
   return subject;
+}
+
+/**
+ * Une valeur d'un « avant → après », dite : un scalaire tel quel, un objet cité
+ * par son nom, `null` pour « aucune » — une famille déplacée à la racine n'a
+ * plus de parent, et c'est une valeur. `null` en retour : rien de lisible.
+ */
+function citedOf(value: unknown): string | null {
+  if (value === null) {
+    return "aucune";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return readScalar(value, "name");
 }
 
 /**

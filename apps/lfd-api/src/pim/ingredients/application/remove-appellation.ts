@@ -34,7 +34,10 @@ export class RemoveAppellationHandler implements ICommandHandler<RemoveAppellati
         type: PIM_EVENTS.appellationDeleted,
         subjectType: "appellation",
         subjectId: code,
-        payload: { label: appellation.snapshot().label },
+        payload: {
+          subjectLabel: appellation.snapshot().label.fr,
+          label: appellation.snapshot().label,
+        },
       });
       await this.appellations.remove(code, ticket);
     });

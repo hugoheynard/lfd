@@ -102,6 +102,19 @@ function byResource(grants: readonly RoleGrant[]): ReadonlyMap<StaffResource, St
   return new Map(grants.map((grant) => [grant.resource, grant.action]));
 }
 
-function fact(type: JournalFactType, key: string, payload: Record<string, unknown>): JournalFact {
-  return { type, subjectType: ROLE_SUBJECT, subjectId: key, payload };
+/**
+ * Chaque fait d'un rôle porte son `subjectLabel` (D6 du plan des phrases) : le
+ * libellé du rôle APRÈS le geste — le sujet est la clé, que personne ne lit.
+ */
+function fact(
+  type: JournalFactType,
+  key: string,
+  payload: Record<string, unknown> & { readonly label: string },
+): JournalFact {
+  return {
+    type,
+    subjectType: ROLE_SUBJECT,
+    subjectId: key,
+    payload: { subjectLabel: payload.label, ...payload },
+  };
 }

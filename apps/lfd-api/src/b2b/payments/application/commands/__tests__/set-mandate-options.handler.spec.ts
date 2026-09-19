@@ -73,7 +73,13 @@ describe("SetMandateOptionsHandler — les zones 14 et 19", () => {
       type: "payment_mandate.options_changed",
       subjectType: "company_bank_account",
       subjectId: "cba_1",
-      payload: { companyId: "cmp_1", ...OPTIONS, via: "staff" },
+      payload: {
+        // Le RIB nommé par son titulaire, la société par son nom du moment (lot B).
+        subjectLabel: "Refuge du Col SARL",
+        company: { id: "cmp_1", name: "Le Refuge du Col" },
+        ...OPTIONS,
+        via: "staff",
+      },
     });
   });
 
@@ -110,7 +116,8 @@ describe("SetMandateOptionsHandler — les zones 14 et 19", () => {
       "bell",
     ]);
     expect(h.events.traced[1]?.journalFact().payload).toEqual({
-      companyId: "cmp_1",
+      subjectLabel: "LFC-9P2X4B-260914-K7M3QT",
+      company: { id: "cmp_1", name: "Le Refuge du Col" },
       reference: "LFC-9P2X4B-260914-K7M3QT",
       cause: "mandate_options_changed",
       via: "staff",

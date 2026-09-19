@@ -5,6 +5,7 @@ import { SupportHandledEvent } from "../../domain/events/support-handled.event.j
 import { SupportRequestNotFoundError } from "../../domain/errors/support-errors.js";
 import { SupportRequestRepository } from "../../domain/ports/support-request.repository.js";
 import { HandleSupportRequestCommand } from "./handle-support-request.command.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Clôt une demande de contact. C'est **le geste qui manquait** : `handled_at`
@@ -25,6 +26,7 @@ export class HandleSupportRequestHandler implements ICommandHandler<
     private readonly support: SupportRequestRepository,
     private readonly events: EventBus,
     private readonly clock: Clock,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: HandleSupportRequestCommand): Promise<void> {
@@ -38,6 +40,7 @@ export class HandleSupportRequestHandler implements ICommandHandler<
         command.supportRequestId,
         handled.companyId,
         handled.requestedByUserId,
+        await this.names.supportSubject(handled.companyId, handled.requestedByUserId),
         handledAt,
       ),
     );

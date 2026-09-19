@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyIdentityCorrectedEvent } from "../../domain/events/staff-acts.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { UpdateIdentityByStaffCommand } from "./update-identity-by-staff.command.js";
 
@@ -47,13 +48,15 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new CompanyIdentityCorrectedEvent(command.companyId, identity),
+        new CompanyIdentityCorrectedEvent(companyNamed(command.companyId, company), identity),
       );
     });
 
     // Pièce « TVA » franchie dès qu'un numéro est présent (idempotent par étape).
     if (command.payload.vatNumber.trim() !== "") {
-      this.events.publish(new CompanyStepReachedEvent(command.companyId, "vat"));
+      this.events.publish(
+        new CompanyStepReachedEvent(command.companyId, company.displayName(), "vat"),
+      );
     }
   }
 }

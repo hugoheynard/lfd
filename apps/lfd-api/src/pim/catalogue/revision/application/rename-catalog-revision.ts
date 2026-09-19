@@ -78,7 +78,12 @@ export class RenameCatalogRevisionHandler implements ICommandHandler<
         // ancre sans dire comment, et il faudrait relire la ligne pour le
         // savoir — donc lire l'état d'aujourd'hui pour comprendre un geste
         // d'hier.
-        payload: { reference: revision.reference, label: command.label, note: command.note },
+        payload: {
+          subjectLabel: command.label,
+          reference: revision.reference,
+          label: command.label,
+          note: command.note,
+        },
       });
       await this.revisions.rename(revision.id, command.label, command.note);
     });

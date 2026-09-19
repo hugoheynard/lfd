@@ -5,10 +5,20 @@ import { ACCOUNTING_FACTS } from "./accounting-facts.js";
 /** Le sujet, écrit une fois : tous ces faits parlent de la même chose. */
 const SUBJECT = "legal_entity";
 
+/**
+ * L'entité dont parle un fait : son id, et son nom **au moment du fait**
+ * (`subjectLabel`, lot B du plan des phrases, 2026-09-19) — une raison sociale
+ * corrigée depuis se lit sous l'ancienne sur les lignes d'avant.
+ */
+export interface LegalEntitySubject {
+  readonly id: string;
+  readonly name: string;
+}
+
 /** Une entité émettrice vient d'être déclarée. */
 export class LegalEntityDeclaredEvent implements JournaledEvent {
   constructor(
-    readonly legalEntityId: string,
+    readonly entity: LegalEntitySubject,
     readonly at: Date,
     readonly name: string,
     readonly siren: string,
@@ -18,9 +28,9 @@ export class LegalEntityDeclaredEvent implements JournaledEvent {
     return {
       type: ACCOUNTING_FACTS.legalEntityDeclared,
       subjectType: SUBJECT,
-      subjectId: this.legalEntityId,
+      subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: { name: this.name, siren: this.siren },
+      payload: { subjectLabel: this.entity.name, name: this.name, siren: this.siren },
     };
   }
 }
@@ -35,7 +45,7 @@ export class LegalEntityDeclaredEvent implements JournaledEvent {
  */
 export class LegalEntityCorrectedEvent implements JournaledEvent {
   constructor(
-    readonly legalEntityId: string,
+    readonly entity: LegalEntitySubject,
     readonly at: Date,
     readonly name: string,
   ) {}
@@ -44,9 +54,9 @@ export class LegalEntityCorrectedEvent implements JournaledEvent {
     return {
       type: ACCOUNTING_FACTS.legalEntityCorrected,
       subjectType: SUBJECT,
-      subjectId: this.legalEntityId,
+      subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: { name: this.name },
+      payload: { subjectLabel: this.entity.name, name: this.name },
     };
   }
 }
@@ -62,7 +72,7 @@ export class LegalEntityCorrectedEvent implements JournaledEvent {
  */
 export class CreditorIdentifierAssignedEvent implements JournaledEvent {
   constructor(
-    readonly legalEntityId: string,
+    readonly entity: LegalEntitySubject,
     readonly at: Date,
     readonly ics: string,
   ) {}
@@ -71,9 +81,9 @@ export class CreditorIdentifierAssignedEvent implements JournaledEvent {
     return {
       type: ACCOUNTING_FACTS.creditorIdentifierAssigned,
       subjectType: SUBJECT,
-      subjectId: this.legalEntityId,
+      subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: { ics: this.ics },
+      payload: { subjectLabel: this.entity.name, ics: this.ics },
     };
   }
 }
@@ -89,7 +99,7 @@ export class CreditorIdentifierAssignedEvent implements JournaledEvent {
  */
 export class CreditorAccountChangedEvent implements JournaledEvent {
   constructor(
-    readonly legalEntityId: string,
+    readonly entity: LegalEntitySubject,
     readonly at: Date,
     readonly last4: string,
   ) {}
@@ -98,9 +108,9 @@ export class CreditorAccountChangedEvent implements JournaledEvent {
     return {
       type: ACCOUNTING_FACTS.creditorAccountChanged,
       subjectType: SUBJECT,
-      subjectId: this.legalEntityId,
+      subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: { last4: this.last4 },
+      payload: { subjectLabel: this.entity.name, last4: this.last4 },
     };
   }
 }
@@ -108,7 +118,7 @@ export class CreditorAccountChangedEvent implements JournaledEvent {
 /** Le délai annoncé au débiteur a été renégocié avec la banque. */
 export class PreNotificationChangedEvent implements JournaledEvent {
   constructor(
-    readonly legalEntityId: string,
+    readonly entity: LegalEntitySubject,
     readonly at: Date,
     readonly days: number,
   ) {}
@@ -117,9 +127,9 @@ export class PreNotificationChangedEvent implements JournaledEvent {
     return {
       type: ACCOUNTING_FACTS.preNotificationChanged,
       subjectType: SUBJECT,
-      subjectId: this.legalEntityId,
+      subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: { days: this.days },
+      payload: { subjectLabel: this.entity.name, days: this.days },
     };
   }
 }
@@ -135,7 +145,7 @@ export class PreNotificationChangedEvent implements JournaledEvent {
  */
 export class MandateSchemeChangedEvent implements JournaledEvent {
   constructor(
-    readonly legalEntityId: string,
+    readonly entity: LegalEntitySubject,
     readonly at: Date,
     readonly from: SepaScheme,
     readonly to: SepaScheme,
@@ -145,9 +155,9 @@ export class MandateSchemeChangedEvent implements JournaledEvent {
     return {
       type: ACCOUNTING_FACTS.mandateSchemeChanged,
       subjectType: SUBJECT,
-      subjectId: this.legalEntityId,
+      subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: { from: this.from, to: this.to },
+      payload: { subjectLabel: this.entity.name, from: this.from, to: this.to },
     };
   }
 }
@@ -155,7 +165,7 @@ export class MandateSchemeChangedEvent implements JournaledEvent {
 /** L'entité n'émet plus, ou réémet. Un seul fait, un drapeau : c'est la même bascule. */
 export class LegalEntityArchivalChangedEvent implements JournaledEvent {
   constructor(
-    readonly legalEntityId: string,
+    readonly entity: LegalEntitySubject,
     readonly at: Date,
     readonly archived: boolean,
   ) {}
@@ -166,9 +176,9 @@ export class LegalEntityArchivalChangedEvent implements JournaledEvent {
         ? ACCOUNTING_FACTS.legalEntityArchived
         : ACCOUNTING_FACTS.legalEntityRestored,
       subjectType: SUBJECT,
-      subjectId: this.legalEntityId,
+      subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: {},
+      payload: { subjectLabel: this.entity.name },
     };
   }
 }

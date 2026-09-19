@@ -30,7 +30,7 @@ export class OnCompanyStepReached implements IEventHandler<CompanyStepReachedEve
       subjectType: "company",
       subjectId: event.companyId,
       idempotencyKey: `${ACTIVITY_TYPES.companyStepReached}:${event.step}:${event.companyId}`,
-      payload: { step: event.step },
+      payload: { subjectLabel: event.companyName, step: event.step },
     });
   }
 }

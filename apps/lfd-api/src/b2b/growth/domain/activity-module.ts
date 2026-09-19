@@ -12,6 +12,10 @@ import type { ActivityModule } from "@lfd/contracts";
  * `legal_entity.` a été sans module jusqu'au 2026-09-19 : notre propre entité
  * émettrice n'est ni un compte client, ni une commande, ni le référentiel. Elle
  * a désormais le sien, `comptabilite` (Hugo, 2026-09-19).
+ *
+ * `feature_access.` et `company_mercuriale.` étaient sans module jusqu'au lot B
+ * du plan des phrases (2026-09-19) ; depuis, un test confronte chaque type du
+ * catalogue des faits à cette table, et un orphelin ne passe plus.
  */
 const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   pim: [
@@ -45,6 +49,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "price_floor.",
     "volume_ladder.",
     "volume_commitment.",
+    // La mercuriale d'un client est une tarification négociée comme les autres :
+    // posée, renommée, archivée par le même commercial (2026-09-19).
+    "company_mercuriale.",
     // Le catalogue B2B — prix négocié, vitrine, arrivée validée — décide ce
     // qu'on vend et à quel prix : le même métier que la tarification
     // (2026-09-19).
@@ -74,7 +81,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   ],
   // Le RIB d'une société s'écrit `company.bank_account_changed` : il se range
   // ici par son préfixe, sans entrée propre.
-  comptes: ["user.", "company.", "subscription.", "support."],
+  //
+  // L'accès aux fonctionnalités ouvre ou ferme l'espace client — boutique,
+  // commandes, factures, mandat — pour tous les comptes ou une adresse : il se
+  // lit avec les comptes qu'il touche (2026-09-19).
+  comptes: ["user.", "company.", "subscription.", "support.", "feature_access."],
   // L'annuaire staff et ses rôles : qui entre, avec quels droits, et qui l'a décidé.
   equipe: ["staff_user.", "staff_role."],
   // Le fournil : arrêter et reprendre une journée, régler le contenant d'un

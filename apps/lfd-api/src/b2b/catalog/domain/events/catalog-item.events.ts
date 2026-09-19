@@ -16,7 +16,17 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
  * Le sujet est l'**article** (`catalog_item`, par son SKU) : c'est lui qu'on
  * cherche quand on se pose la question. Les prix sont en **millicentimes**,
  * l'unité des prix unitaires, et le nom du champ le dit.
+ *
+ * Chaque fait porte le **nom** de l'article au moment du geste (`subjectLabel`,
+ * lot B du plan des phrases) — celui que le référentiel avait livré : un
+ * article renommé depuis se lit sous l'ancien nom sur les lignes d'avant.
  */
+
+/** L'article dont parle un fait : son SKU, et son nom du moment. */
+export interface CatalogItemSubject {
+  readonly sku: string;
+  readonly name: string;
+}
 export const CATALOG_ITEM_FACTS = {
   b2bPriceSet: "catalog_item.b2b_price_set",
   b2bPriceCleared: "catalog_item.b2b_price_cleared",
@@ -39,7 +49,7 @@ function priceOf(priceMillicents: number): Record<string, unknown> {
  */
 export class CatalogItemB2bPriceSetEvent implements JournaledEvent {
   constructor(
-    readonly sku: string,
+    readonly item: CatalogItemSubject,
     readonly beforeMillicents: number | null,
     readonly afterMillicents: number,
   ) {}
@@ -48,9 +58,10 @@ export class CatalogItemB2bPriceSetEvent implements JournaledEvent {
     return {
       type: CATALOG_ITEM_FACTS.b2bPriceSet,
       subjectType: SUBJECT_TYPE,
-      subjectId: this.sku,
+      subjectId: this.item.sku,
       payload: {
-        sku: this.sku,
+        subjectLabel: this.item.name,
+        sku: this.item.sku,
         before: this.beforeMillicents === null ? null : priceOf(this.beforeMillicents),
         after: priceOf(this.afterMillicents),
       },
@@ -64,7 +75,7 @@ export class CatalogItemB2bPriceSetEvent implements JournaledEvent {
  */
 export class CatalogItemB2bPriceClearedEvent implements JournaledEvent {
   constructor(
-    readonly sku: string,
+    readonly item: CatalogItemSubject,
     readonly beforeMillicents: number,
   ) {}
 
@@ -72,8 +83,12 @@ export class CatalogItemB2bPriceClearedEvent implements JournaledEvent {
     return {
       type: CATALOG_ITEM_FACTS.b2bPriceCleared,
       subjectType: SUBJECT_TYPE,
-      subjectId: this.sku,
-      payload: { sku: this.sku, before: priceOf(this.beforeMillicents) },
+      subjectId: this.item.sku,
+      payload: {
+        subjectLabel: this.item.name,
+        sku: this.item.sku,
+        before: priceOf(this.beforeMillicents),
+      },
     };
   }
 }
@@ -82,14 +97,14 @@ export class CatalogItemB2bPriceClearedEvent implements JournaledEvent {
 abstract class CatalogItemFlagEvent implements JournaledEvent {
   protected abstract readonly type: JournalFactType;
 
-  constructor(readonly sku: string) {}
+  constructor(readonly item: CatalogItemSubject) {}
 
   journalFact(): JournalFact {
     return {
       type: this.type,
       subjectType: SUBJECT_TYPE,
-      subjectId: this.sku,
-      payload: { sku: this.sku },
+      subjectId: this.item.sku,
+      payload: { subjectLabel: this.item.name, sku: this.item.sku },
     };
   }
 }

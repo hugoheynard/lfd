@@ -7,6 +7,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { UpdateDeliveryAddressCommand } from "./address-commands.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Remplace une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -29,6 +31,7 @@ export class UpdateDeliveryAddressHandler implements ICommandHandler<
     private readonly addresses: CompanyAddressRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: UpdateDeliveryAddressCommand): Promise<void> {
@@ -37,12 +40,13 @@ export class UpdateDeliveryAddressHandler implements ICommandHandler<
 
     const book = await this.addresses.loadDeliveryBook(command.companyId);
     book.edit(command.addressId, command.payload);
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
         new DeliveryAddressUpdatedByMemberEvent(
-          command.companyId,
-          command.addressId,
+          company,
+          deliveryAddressOf(book, command.addressId),
           command.payload,
         ),
       );

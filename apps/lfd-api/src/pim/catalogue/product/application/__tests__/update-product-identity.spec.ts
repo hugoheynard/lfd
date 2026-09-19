@@ -15,6 +15,12 @@ import {
  * SEULEMENT quand la famille change réellement.
  */
 
+/** Leurs noms — ceux que le journal doit figer à côté de l'identifiant. */
+const FAMILY_NAMES: Readonly<Record<string, string>> = {
+  cat_tartes: "Tartes",
+  cat_gateaux: "Gâteaux",
+};
+
 /** Deux familles vivantes : celle de la fiche, et celle où on la range. */
 class TwoFamilies extends CategoryRepository {
   findById(id: string): Promise<Category | null> {
@@ -24,7 +30,7 @@ class TwoFamilies extends CategoryRepository {
     return Promise.resolve(
       Category.reconstitute({
         id,
-        name: { fr: id },
+        name: { fr: FAMILY_NAMES[id] ?? id },
         slug: { fr: id },
         parentId: null,
         position: 0,
@@ -139,14 +145,24 @@ describe("UpdateProductIdentityHandler — le reclassement", () => {
 
     expect(products.stored.categoryId).toBe("cat_gateaux");
     expect(journal.types()).toEqual(["product.identity_saved", "product.reclassified"]);
+    // Les deux familles NOMMÉES, sous leur nom de ce jour-là (plan des
+    // phrases du journal, D5), et la fiche sous le sien (D6).
     expect(journal.entries[1]).toMatchObject({
       subjectType: "product",
       subjectId: "prd_1",
-      payload: { from: "cat_tartes", to: "cat_gateaux" },
+      payload: {
+        subjectLabel: "Tarte",
+        from: { id: "cat_tartes", name: "Tartes" },
+        to: { id: "cat_gateaux", name: "Gâteaux" },
+      },
     });
-    // Le diff d'identité garde sa famille : les lecteurs d'avant la lisent là.
+    // Le diff d'identité garde sa famille sous la clé `categoryId` : c'est un
+    // champ de révision, que l'attribution lit là.
     expect(journal.entries[0]?.payload["changes"]).toMatchObject({
-      categoryId: { from: "cat_tartes", to: "cat_gateaux" },
+      categoryId: {
+        from: { id: "cat_tartes", name: "Tartes" },
+        to: { id: "cat_gateaux", name: "Gâteaux" },
+      },
     });
   });
 

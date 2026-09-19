@@ -13,6 +13,7 @@ import type { MandateActorChannel } from "../domain/events/payment-mandate-facts
 import { MandateProofAttachedEvent } from "../domain/events/payment-mandate.events.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { discardUnrecordedProof, purgeProof } from "./mandate-proof-purge.js";
+import { mandateCompanyOf } from "./mandate-journal-names.js";
 
 /** Les ports du dépôt de scan — partagés par le staff et le client. */
 export interface MandateProofDeps {
@@ -105,7 +106,7 @@ async function recordDeposit(
       await deps.events.publishTraced(
         new MandateProofAttachedEvent(
           mandate.id,
-          upload.companyId,
+          await mandateCompanyOf(deps.mandates, upload.companyId),
           mandate.reference,
           mandate.toView().proofFileName,
           upload.via,

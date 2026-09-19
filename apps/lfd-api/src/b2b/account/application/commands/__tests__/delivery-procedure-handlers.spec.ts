@@ -35,6 +35,7 @@ import {
 import { RemoveDeliveryStepHandler } from "../remove-delivery-step.handler.js";
 import { ReorderDeliveryStepsHandler } from "../reorder-delivery-steps.handler.js";
 import { ReviseDeliveryStepHandler } from "../revise-delivery-step.handler.js";
+import { COMPANY_LABEL, InMemoryCompanies, journalNames } from "./member-acts-doubles.js";
 
 /**
  * **Les gestes du gestionnaire sur la procédure de livraison.**
@@ -54,15 +55,17 @@ function scene(role: CompanyRole | null = "owner", archived: readonly string[] =
   const procedures = new InMemoryProcedures(log, sequence);
   const store = new InMemoryStore(log);
   const events = new RecordingPublisher();
+  const book = addressBook(archived.includes(ADDRESS) ? [] : [ADDRESS], archived);
   const deps = [
     membership(role),
-    addressBook(archived.includes(ADDRESS) ? [] : [ADDRESS], archived),
+    book,
     procedures,
     new RecordingLock(sequence),
     store,
     new FixedIdGenerator(),
     new DirectUnitOfWork(),
     events,
+    journalNames(new InMemoryCompanies(), book),
   ] as const;
   return {
     events,
@@ -328,8 +331,10 @@ describe("le journal des gestes du gestionnaire", () => {
 
     expect(current.events.traced.map((event) => event.journalFact().payload)).toEqual(
       ["step_added", "step_added", "step_revised", "reordered", "step_removed"].map((action) => ({
-        companyId: COMPANY,
-        addressId: ADDRESS,
+        // La société est le sujet (nommée), l'adresse citée par son id et son
+        // lieu — jamais son libellé (lot B du plan des phrases).
+        subjectLabel: COMPANY_LABEL,
+        address: { id: ADDRESS, ville: "Paris", codePostal: "75001" },
         action,
       })),
     );

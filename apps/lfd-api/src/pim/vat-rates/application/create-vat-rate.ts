@@ -50,7 +50,11 @@ export class CreateVatRateHandler implements ICommandHandler<CreateVatRateComman
         type: PIM_EVENTS.vatRateCreated,
         subjectType: "vat_rate",
         subjectId: rate.id,
-        payload: { name: payload.name, percent: payload.percent },
+        payload: {
+          subjectLabel: rate.snapshot().name,
+          name: payload.name,
+          percent: payload.percent,
+        },
       });
       await this.rates.add(rate, ticket);
     });

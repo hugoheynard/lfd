@@ -7,7 +7,7 @@ import {
   CatalogItemShownEvent,
 } from "../../domain/events/catalog-item.events.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
-import { loadOrFail } from "./catalog-decision-support.js";
+import { loadOrFail, subjectOf } from "./catalog-decision-support.js";
 import { SetCatalogVisibilityCommand } from "./set-catalog-visibility.command.js";
 
 /**
@@ -41,8 +41,8 @@ export class SetCatalogVisibilityHandler implements ICommandHandler<
       if (item.isHidden !== wasHidden) {
         await this.events.publishTraced(
           item.isHidden
-            ? new CatalogItemHiddenEvent(item.sku)
-            : new CatalogItemShownEvent(item.sku),
+            ? new CatalogItemHiddenEvent(subjectOf(item))
+            : new CatalogItemShownEvent(subjectOf(item)),
         );
       }
     });

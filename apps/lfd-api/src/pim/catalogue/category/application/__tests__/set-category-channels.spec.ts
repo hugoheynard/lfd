@@ -1,4 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  KnownPointsOfSale,
+  KnownVatRates,
+} from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
@@ -126,6 +130,11 @@ async function setChannels(
     repo,
     new OffersEverything(),
     new ActiveContexts(),
+    new KnownPointsOfSale({ emp_1: "Boutique du Village", pos_b2b: "Plateforme pro" }),
+    new KnownVatRates({
+      tva_20: { name: "Normal", percent: 20 },
+      tva_55: { name: "Réduit", percent: 5.5 },
+    }),
     journal,
     new DirectUnitOfWork(),
   ).execute(new SetCategoryChannelsCommand("cat_1", channels));
@@ -143,10 +152,37 @@ describe("SetCategoryChannelsHandler — les taux qu'une fermeture efface", () =
       "product_category.channels_changed",
       "product_category.vat_changed",
     ]);
+    // Chaque objet cité l'est avec son nom du moment (plan des phrases, D5).
     expect(journal.entries[1]).toMatchObject({
       subjectType: "product_category",
       subjectId: "cat_1",
-      payload: { b2b: { from: "tva_20", to: null } },
+      payload: {
+        subjectLabel: "Viennoiseries",
+        vatByContext: { b2b: { from: { id: "tva_20", name: "Normal" }, to: null } },
+      },
+    });
+    expect(journal.entries[0]?.payload).toEqual({
+      subjectLabel: "Viennoiseries",
+      changes: {
+        channels: {
+          from: [
+            {
+              pointOfSale: { id: "emp_1", name: "Boutique du Village" },
+              context: { id: "takeaway", name: "À emporter" },
+            },
+            {
+              pointOfSale: { id: "pos_b2b", name: "Plateforme pro" },
+              context: { id: "b2b", name: "B2B" },
+            },
+          ],
+          to: [
+            {
+              pointOfSale: { id: "emp_1", name: "Boutique du Village" },
+              context: { id: "takeaway", name: "À emporter" },
+            },
+          ],
+        },
+      },
     });
   });
 

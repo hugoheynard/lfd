@@ -10,6 +10,7 @@ import { DeliveryProcedureLock } from "../../domain/ports/delivery-procedure.loc
 import { DeliveryProcedureRepository } from "../../domain/ports/delivery-procedure.repository.js";
 import { AddDeliveryStepByStaffCommand } from "./admin-delivery-procedure-commands.js";
 import { addDeliveryStep, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
 /**
  * Ajoute une étape à la procédure d'une adresse de la société, **par un agent** — sans mur membership, l'auth staff garde la route.
@@ -31,6 +32,7 @@ export class AddDeliveryStepByStaffHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: AddDeliveryStepByStaffCommand): Promise<string> {
@@ -39,11 +41,13 @@ export class AddDeliveryStepByStaffHandler implements ICommandHandler<
       { companyId: command.companyId, addressId: command.addressId },
       command.fields,
       command.photo,
-      () =>
+      async () =>
         this.events.publishTraced(
           new DeliveryProcedureEditedByStaffEvent(
-            command.companyId,
-            command.addressId,
+            // Lus DANS la transaction, après la vérification de l'adresse :
+            // un contenu refusé ne coûte toujours pas une lecture.
+            await this.names.company(command.companyId),
+            await this.names.deliveryAddress(command.companyId, command.addressId),
             "step_added",
           ),
         ),

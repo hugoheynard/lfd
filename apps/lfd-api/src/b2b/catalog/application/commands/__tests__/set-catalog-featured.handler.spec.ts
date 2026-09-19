@@ -2,7 +2,7 @@ import type { CatalogItem } from "../../../domain/entities/catalog-item.js";
 import { CannotFeatureHiddenItemError } from "../../../domain/errors/catalog-errors.js";
 import { SetCatalogFeaturedCommand } from "../set-catalog-featured.command.js";
 import { SetCatalogFeaturedHandler } from "../set-catalog-featured.handler.js";
-import { build, facts, SKU } from "./catalog-decision-doubles.js";
+import { build, facts, SKU, NAME } from "./catalog-decision-doubles.js";
 
 /** Le handler sous test, branché sur les doubles de `build`. */
 function setup(seed?: (item: CatalogItem) => void) {
@@ -25,7 +25,7 @@ describe("SetCatalogFeaturedHandler", () => {
         type: "catalog_item.featured",
         subjectType: "catalog_item",
         subjectId: SKU,
-        payload: { sku: SKU },
+        payload: { subjectLabel: NAME, sku: SKU },
       },
     ]);
   });

@@ -34,7 +34,7 @@ export class UploadKbisHandler implements ICommandHandler<UploadKbisCommand, voi
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
-    await ingestKbis(
+    const company = await ingestKbis(
       command.companyId,
       command.fileName,
       command.bytes,
@@ -43,8 +43,6 @@ export class UploadKbisHandler implements ICommandHandler<UploadKbisCommand, voi
       this.events,
       this.clock,
     );
-    await this.events.publishTraced(
-      new KbisUploadedByMemberEvent(command.companyId, command.fileName),
-    );
+    await this.events.publishTraced(new KbisUploadedByMemberEvent(company, command.fileName));
   }
 }

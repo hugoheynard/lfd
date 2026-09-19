@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { PrimaryContactChangedByMemberEvent } from "../../domain/events/member-acts.event.js";
+import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
@@ -44,7 +45,9 @@ export class UpdatePrimaryContactHandler implements ICommandHandler<
     company.changePrimaryContact(ContactDetails.create(command.details));
     await this.uow.run(async () => {
       await this.companies.save(company);
-      await this.events.publishTraced(new PrimaryContactChangedByMemberEvent(command.companyId));
+      await this.events.publishTraced(
+        new PrimaryContactChangedByMemberEvent(companyNamed(command.companyId, company)),
+      );
     });
   }
 }

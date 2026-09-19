@@ -18,7 +18,14 @@ export const PRODUCTION_CONTAINER_FACTS = {
   removed: "production_container.removed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
-/** Le sujet : le réglage d'un article, désigné par son SKU — sa clé en base. */
+/**
+ * Le sujet : le réglage d'un article, désigné par son SKU — sa clé en base.
+ *
+ * Le SKU est aussi son libellé (D6 du plan des phrases) : la production ne lit
+ * pas le référentiel, et aucun de ses ports ne nomme un article hors d'une
+ * commande (vérifié le 2026-09-19). Le nom du produit serait plus lisible ; il
+ * n'est pas à sa portée.
+ */
 const SUBJECT_TYPE = "production_container";
 
 /** Un réglage tel que le journal le relit — la forme du contrat HTTP. */
@@ -54,6 +61,7 @@ export class ProductionContainerSetEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.sku,
       payload: {
+        subjectLabel: this.sku,
         before: this.before === null ? null : ruleOf(this.before),
         after: ruleOf(this.after),
       },
@@ -73,7 +81,7 @@ export class ProductionContainerRemovedEvent implements JournaledEvent {
       type: PRODUCTION_CONTAINER_FACTS.removed,
       subjectType: SUBJECT_TYPE,
       subjectId: this.sku,
-      payload: { before: ruleOf(this.before) },
+      payload: { subjectLabel: this.sku, before: ruleOf(this.before) },
     };
   }
 }

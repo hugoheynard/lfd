@@ -100,7 +100,7 @@ async function seedJournal(): Promise<{ cecile: string; paul: string }> {
     subjectType: "lead",
     subjectId: "company_witness",
     idempotencyKey: `${WITNESS}:1`,
-    payload: { businessName: "Boulangerie Martin", email: "" },
+    payload: { subjectLabel: "Boulangerie Martin", businessName: "Boulangerie Martin" },
   });
   await ctx.drain();
   return { cecile, paul };
@@ -115,7 +115,7 @@ async function witness(businessName: string): Promise<void> {
     subjectType: "lead",
     subjectId: `company_witness_${witnesses}`,
     idempotencyKey: `${WITNESS}:w${witnesses}`,
-    payload: { businessName, email: "" },
+    payload: { subjectLabel: businessName, businessName },
   });
 }
 
@@ -249,6 +249,7 @@ describe("la recherche du journal — combinée, bornée, sans joker", () => {
     await witness("Boulangerie Durand");
 
     expect(await search({ q: "businessName" })).toEqual([]);
+    expect(await search({ q: "subjectLabel" })).toEqual([]);
     expect(await search({ q: "Durand" })).toHaveLength(1);
   });
 

@@ -8,6 +8,7 @@ import type {
 } from "@lfd/contracts";
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
+import { declaredOwnerOf } from "./declared-owner.js";
 import { weekStart, type GrowthStatsEvent } from "./growth-week.js";
 
 /**
@@ -24,7 +25,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /**
  * Flux inscrit → (a commandé / sans commande) → (a déclaré / sans société) →
  * (activé / en cours). Les sociétés se rattachent à leur propriétaire via le
- * `ownerUserId` du `company.declared`.
+ * détenteur du `company.declared` (`declaredOwnerOf`).
  */
 export function lifecycleFlow(events: readonly GrowthStatsEvent[]): LifecycleFlow {
   const registered = subjectsOf(events, ACTIVITY_TYPES.userRegistered, "user");
@@ -35,7 +36,7 @@ export function lifecycleFlow(events: readonly GrowthStatsEvent[]): LifecycleFlo
   );
   for (const e of events) {
     if (e.type === ACTIVITY_TYPES.companyDeclared) {
-      const owner = stringOrNull(e.payload["ownerUserId"]);
+      const owner = declaredOwnerOf(e.payload);
       if (owner !== null) {
         declaredByOwner.set(owner, e.subjectId);
       }

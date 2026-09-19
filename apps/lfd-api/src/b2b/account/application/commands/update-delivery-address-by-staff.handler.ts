@@ -5,6 +5,8 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { DeliveryAddressUpdatedByStaffEvent } from "../../domain/events/staff-address-acts.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { UpdateDeliveryAddressByStaffCommand } from "./update-delivery-address-by-staff.command.js";
+import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { deliveryAddressOf } from "../../domain/events/journal-names.js";
 
 /**
  * Corrige une adresse de livraison, à la place du client.
@@ -27,17 +29,19 @@ export class UpdateDeliveryAddressByStaffHandler implements ICommandHandler<
     private readonly addresses: CompanyAddressRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly names: AccountJournalNames,
   ) {}
 
   async execute(command: UpdateDeliveryAddressByStaffCommand): Promise<void> {
     const book = await this.addresses.loadDeliveryBook(command.companyId);
     book.edit(command.addressId, command.payload);
+    const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
       await this.events.publishTraced(
         new DeliveryAddressUpdatedByStaffEvent(
-          command.companyId,
-          command.addressId,
+          company,
+          deliveryAddressOf(book, command.addressId),
           command.payload,
         ),
       );

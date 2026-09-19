@@ -202,6 +202,26 @@ describe("ReviseAllergenEntryHandler", () => {
     await h.revise.execute(new ReviseAllergenEntryCommand(id, { categoryId: target }));
 
     expect(h.store.entries.get(id)).toMatchObject({ categoryId: target, name: { fr: "Souchet" } });
+    // Régression (plan des phrases du journal, lot B) : la création citait la
+    // CLÉ de la catégorie sous `category`, la modification son IDENTIFIANT sous
+    // `categoryId`. Une seule clé désormais, et la catégorie y est nommée.
+    const [created, revised] = h.journal.entries.filter((entry) =>
+      entry.type.startsWith("allergen_entry."),
+    );
+    expect(created?.payload).toMatchObject({
+      subjectLabel: "Souchet",
+      category: { id: categoryId, name: "Exotiques" },
+    });
+    expect(revised?.payload).toEqual({
+      subjectLabel: "Souchet",
+      code: "X-SOUCHET",
+      changes: {
+        category: {
+          from: { id: categoryId, name: "Exotiques" },
+          to: { id: target, name: "Exotiques" },
+        },
+      },
+    });
   });
 
   it("refuse de déplacer une entrée vers une catégorie archivée", async () => {
