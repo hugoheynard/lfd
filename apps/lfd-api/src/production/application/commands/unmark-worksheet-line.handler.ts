@@ -13,6 +13,10 @@ import { UnmarkWorksheetLineCommand } from "./unmark-worksheet-line.command.js";
  *
  * Aucune horloge ici : on n'écrit pas d'instant, on en retire un. C'est la seule
  * commande du lot qui ne dépende pas du `Clock`.
+ *
+ * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
+ * 2026-09-19 (une ligne par coche ou un fait par journée : à trancher —
+ * `documentation/journalisation/todo-journal-activite.md`).
  */
 @CommandHandler(UnmarkWorksheetLineCommand)
 export class UnmarkWorksheetLineHandler implements ICommandHandler<

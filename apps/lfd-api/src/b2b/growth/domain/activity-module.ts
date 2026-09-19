@@ -51,6 +51,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   comptes: ["user.", "company.", "subscription.", "support."],
   // L'annuaire staff et ses rôles : qui entre, avec quels droits, et qui l'a décidé.
   equipe: ["staff_user.", "staff_role."],
+  // Le fournil : arrêter et reprendre une journée, régler le contenant d'un
+  // article (2026-09-19). Les coches d'atelier n'y écrivent rien encore.
+  production: ["production_day.", "production_container."],
 };
 
 /** Les préfixes d'un module — l'entrée du filtre côté base. */
@@ -59,7 +62,14 @@ export function prefixesOf(module: ActivityModule): readonly string[] {
 }
 
 /** Les modules, dans l'ordre où on les essaie. Typé, donc `moduleOf` n'a rien à transtyper. */
-const MODULES: readonly ActivityModule[] = ["pim", "commercial", "commandes", "comptes", "equipe"];
+const MODULES: readonly ActivityModule[] = [
+  "pim",
+  "commercial",
+  "commandes",
+  "comptes",
+  "equipe",
+  "production",
+];
 
 /** Le module d'un type, ou `null` si son préfixe n'est rattaché à aucun. */
 export function moduleOf(type: string): ActivityModule | null {

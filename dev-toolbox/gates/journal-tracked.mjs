@@ -60,6 +60,10 @@
  * **Les paniers récurrents** (`b2b/subscriptions/**`, depuis le 2026-09-19) :
  * même discipline — cf. `SUBSCRIPTIONS_ZONE` plus bas.
  *
+ * **Le fournil** (`production/**`, depuis le 2026-09-19) : tout
+ * `@CommandHandler` doit APPELER `publishTraced` sous `UnitOfWork` — cf.
+ * `PRODUCTION_ZONE` plus bas.
+ *
  * Usage : `pnpm lint:journal-tracked` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -206,6 +210,15 @@ const CATALOG_ZONE = "catalog";
  * qu'une commande soit repassée.
  */
 const SUBSCRIPTIONS_ZONE = "subscriptions";
+
+/**
+ * **Le fournil** (lot 1 du plan du journal, tranche (d), 2026-09-19) : arrêter,
+ * reprendre une journée, régler le contenant d'un article. Un BLOC entier, pas
+ * un dossier de `b2b/` — d'où sa racine à part. Tous ses handlers, sans tri par
+ * nom. Les gestes d'atelier (coches, bacs) et le colisage déclarent
+ * `@sans-journal` avec leur raison (vérifié le 2026-09-19, onze handlers).
+ */
+const PRODUCTION_ZONE = "production";
 
 /** Ce qui ouvre l'unité de travail pour une délégation — sans journaliser pour elle. */
 const TRANSACTION_OPENERS = new Map([
@@ -380,6 +393,10 @@ const ZONES = [
   },
   {
     root: join(SRC, "b2b", SUBSCRIPTIONS_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
+  {
+    root: join(SRC, PRODUCTION_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {

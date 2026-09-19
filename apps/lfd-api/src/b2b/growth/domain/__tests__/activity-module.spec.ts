@@ -1,4 +1,4 @@
-import { moduleOf } from "../activity-module.js";
+import { moduleOf, prefixesOf } from "../activity-module.js";
 
 /**
  * Le rangement des faits de l'argent (lot 1 du plan du journal, 2026-09-19).
@@ -52,5 +52,21 @@ describe("moduleOf — les gestes du client sur son compte", () => {
     ["user.password_link_issued", "comptes"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
+  });
+});
+
+/** La journée de production et ses contenants (tranche (d) du lot 1, 2026-09-19). */
+describe("moduleOf — le fournil", () => {
+  it.each([
+    ["production_day.closed", "production"],
+    ["production_day.retaken", "production"],
+    ["production_container.set", "production"],
+    ["production_container.removed", "production"],
+  ])("%s se range sous %s", (type, module) => {
+    expect(moduleOf(type)).toBe(module);
+  });
+
+  it("le filtre du module production ne ramène que ses deux préfixes", () => {
+    expect(prefixesOf("production")).toEqual(["production_day.", "production_container."]);
   });
 });

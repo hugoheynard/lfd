@@ -12,8 +12,20 @@ import { z } from "zod";
 /**
  * `equipe` — l'annuaire staff et ses rôles (2026-09-18). Un module à lui : sous
  * `comptes`, le filtre aurait mêlé l'équipe et les clients.
+ *
+ * `production` — la journée du fournil et le réglage de ses contenants
+ * (2026-09-19). Ordre de déploiement libre : le back-office déjà servi lit la
+ * réponse sans la parser (`http.get<T>`) et masque la pastille d'un module qu'il
+ * ne connaît pas (`@if (line.moduleLabel)`), vérifié le 2026-09-19.
  */
-export const activityModuleSchema = z.enum(["pim", "commercial", "commandes", "comptes", "equipe"]);
+export const activityModuleSchema = z.enum([
+  "pim",
+  "commercial",
+  "commandes",
+  "comptes",
+  "equipe",
+  "production",
+]);
 export type ActivityModule = z.infer<typeof activityModuleSchema>;
 
 /**

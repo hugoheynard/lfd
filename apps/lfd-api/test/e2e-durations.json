@@ -90,6 +90,7 @@
   "test/pricing-journal-pages.e2e-spec.ts": 9130,
   "test/production-batch.e2e-spec.ts": 15002,
   "test/production-forecast.e2e-spec.ts": 9468,
+  "test/production-journal.e2e-spec.ts": 7104,
   "test/production-packing.e2e-spec.ts": 8441,
   "test/production-worksheet.e2e-spec.ts": 12799,
   "test/prospects.e2e-spec.ts": 8391,

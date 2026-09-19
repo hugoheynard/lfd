@@ -107,6 +107,10 @@ Mis de côté par Hugo le 2026-09-19 (« tout sauf les phrases »).
   l'erreur, l'onglet Historique rouvre la page 1 — à aligner.
 - **`catalog_revision_item` n'a pas d'index sur `sku`** : trouver les révisions
   d'une fiche parcourt la table — à mesurer.
+- **Deux clôtures simultanées d'une journée de production** chargent toutes
+  deux une journée ouverte et enregistrent chacune : course antérieure au
+  journal, qui y écrit désormais deux `production_day.closed` (relevé le
+  2026-09-19, tranche (d) du lot 1).
 - **La suppression d'un panier récurrent est physique** : interdite par
   CLAUDE.md §3 sur un agrégat, et son handler lève une `NotFoundException`
   depuis l'application — dette des paniers récurrents, à traiter chez eux.

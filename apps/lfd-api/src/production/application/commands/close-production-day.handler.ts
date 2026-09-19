@@ -1,10 +1,12 @@
 import type { ProductionPlanClosure } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
+import { ProductionDayClosedJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
@@ -41,6 +43,19 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  *
  * La réponse dit laquelle des deux choses vient d'arriver, plutôt que de rendre
  * deux fois le même nombre sans dire pourquoi.
+ *
+ * ## Le journal, et pourquoi il n'est pas l'événement du canal
+ *
+ * Depuis le 2026-09-19, la clôture écrit `production_day.closed` dans la
+ * transaction de `save` : un journal en panne annule la clôture. La réannonce
+ * n'écrit AUCUN fait — rien n'a changé, et un second « arrêtée » mentirait sur
+ * l'heure et l'auteur du geste.
+ *
+ * `ProductionDayClosedEvent` reste publié à part, APRÈS la transaction, et à
+ * chaque réannonce comme avant. En faire le fait journalisé (`publishTraced`)
+ * le publierait DEPUIS la transaction : l'abonné du commerce hériterait du
+ * contexte de transaction (`AsyncLocalStorage`) et écrirait
+ * `absorbIntoPlan` sur une transaction déjà validée, ou avant qu'elle le soit.
  */
 @CommandHandler(CloseProductionDayCommand)
 export class CloseProductionDayHandler implements ICommandHandler<
@@ -52,6 +67,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
     private readonly orders: DayOrdersReader,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
@@ -67,12 +83,20 @@ export class CloseProductionDayHandler implements ICommandHandler<
     // surtout aucun risque de croire qu'on a lu ce qu'on va écrire.
     const producible = await this.orders.producibleFor(day);
     current.close(producible, this.clock.now());
-    await this.days.save(current);
+    await this.uow.run(async () => {
+      await this.days.save(current);
+      await this.events.publishTraced(
+        new ProductionDayClosedJournalEvent(day.value, current.orders.length),
+      );
+    });
 
     return this.announce(day, current.closedAt, current.orders.length, false);
   }
 
-  /** Publie le fait et rend le compte rendu. L'instant est celui du SNAPSHOT. */
+  /**
+   * Publie l'événement du canal et rend le compte rendu. L'instant est celui du
+   * SNAPSHOT. Toujours appelé HORS de l'unité de travail — cf. la classe.
+   */
   private announce(
     day: ServiceDay,
     closedAt: Date | null,

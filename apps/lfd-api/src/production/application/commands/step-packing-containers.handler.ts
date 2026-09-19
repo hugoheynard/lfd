@@ -28,6 +28,10 @@ import { StepPackingContainersCommand } from "./step-packing-containers.command.
  * garderait son auteur. Qui a appuyé se lirait dans le journal.
  *
  * Rend `void` : le client relit le poste — §4.
+ *
+ * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
+ * 2026-09-19 (une ligne par coche ou un fait par journée : à trancher —
+ * `documentation/journalisation/todo-journal-activite.md`).
  */
 @CommandHandler(StepPackingContainersCommand)
 export class StepPackingContainersHandler implements ICommandHandler<
