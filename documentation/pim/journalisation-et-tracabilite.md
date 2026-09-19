@@ -543,9 +543,10 @@ WHERE subject_type = 'product' AND subject_id = $1
 ORDER BY occurred_at DESC;
 ```
 
-> 🟡 **L'écran n'existe pas encore.** Les faits sont écrits et lisibles ; l'onglet
-> « Historique » de la fiche reste à faire — suivi dans
-> [`../journalisation/todo-journal-activite.md`](../journalisation/todo-journal-activite.md) §9.
+> 🟢 **L'onglet « Historique » de la fiche existe** depuis le 2026-09-19 (à
+> déployer) : `GET /pim/catalogue/products/:id/history`, tout ce qui a touché
+> la fiche en trois cercles —
+> [`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §8.
 
 ---
 

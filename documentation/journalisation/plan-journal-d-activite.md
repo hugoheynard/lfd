@@ -2,15 +2,18 @@
 
 > **Ouvert le 2026-09-18** à la demande de Hugo : « regarde le todo de journal
 > d'activité et propose-moi un plan pour tout sauf les phrases formulation ».
-> Il couvre [`todo-journal-activite.md`](todo-journal-activite.md) §1 à §7, §9
-> et §10 ; le §8 (les phrases de l'équipe) en est exclu.
+> Il couvre les points de [`todo-journal-activite.md`](todo-journal-activite.md)
+> sauf les phrases. Les numéros « §1 » à « §10 » cités ci-dessous sont ceux du
+> TODO **avant son ménage du 2026-09-19** ; le TODO ne garde plus qu'un renvoi
+> par lot.
 >
-> **Convention (Hugo, 2026-09-19)** : un point se **raye** ici et dans le TODO
-> au moment où il est fait, avec sa date et son commit.
+> **Convention (Hugo, 2026-09-19)** : **ce plan seul suit l'avancement**. Un
+> point se raye ici au moment où il est fait, avec sa date et son commit ; le
+> TODO n'en garde qu'une ligne de renvoi, et l'efface quand le lot est livré.
 >
-> État : 🚧 **lots 2, 3 et 5 bâtis le 2026-09-19**, en premier à la demande de Hugo
-> (« on devrait faire le lot 2 d'abord ») — la recherche normalisée, puis
-> l'index, à déployer après la sortie d'Accelerate. Les autres lots : plan.
+> État : 🚧 **lots 2, 3 et 5 bâtis le 2026-09-19** (le 2 en premier, à la
+> demande de Hugo), à déployer après la sortie d'Accelerate. **Lot 1 en
+> cours.** Lot 4 : attend la décision de la permission.
 > **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§8) qui a cassé l'inventaire, la porte étendue,
 > la colonne de recherche et le déménagement du code.
@@ -64,12 +67,26 @@ staff** qui touchent ce qui est vendu, facturé ou produit :
 | cocher, décocher une ligne **fabriquée** ou **emballée** ; compter les **bacs** | `production/application/commands/` — le JSDoc de `step-packing-containers` dit déjà « qui a appuyé se lirait dans le journal » |
 
 Et **parmi les gestes du client sur son propre compte** — hors journal par une
-règle écrite : ses paniers récurrents (créer, suspendre, modifier une échéance,
-supprimer), son profil, son RIB, ses adresses, ses membres.
+règle écrite jusqu'au 2026-09-19 : ses paniers récurrents (créer, suspendre,
+modifier une échéance, supprimer), son profil, son RIB, ses adresses, ses
+membres.
 
 ## 2. Les lots
 
-### Lot 1 — Les actes du staff qui échappent (§1)
+### Lot 1 — Les gestes qui échappent au journal, staff et clients (§1)
+
+> **Décidé par Hugo le 2026-09-19** : les gestes du **client** sur son propre
+> compte entrent aussi (§3, décision 1) ; les **brouillons** de commande et le
+> **panier** restent hors journal (`@sans-journal` : ils ne vendent rien, la
+> commande passée laisse sa trace) ; les **gestes d'atelier** (coches de ligne,
+> bacs) sortent du lot et **restent au TODO**. La clôture et la reprise d'une
+> journée de production, elles, restent dans le lot.
+>
+> **Tranches**, dans cet ordre, chacune avec ses faits, ses e2e et son entrée
+> dans la porte : (a) l'argent — surtaxe, dérogations d'heure limite, RIB
+> (staff et client) ; (b) les décisions de catalogue ; (c) les paniers
+> récurrents et les autres gestes du client sur son compte ; (d) la journée de
+> production.
 
 - **Journaliser** les gestes du tableau ci-dessus, dans la transaction du
   geste (`Journal.append` ou `publishTraced`, sous `UnitOfWork`) : un fait par
@@ -79,9 +96,9 @@ supprimer), son profil, son RIB, ses adresses, ses membres.
 - **Jamais de coordonnées** dans une charge : le RIB se journalise par ses
   **quatre derniers chiffres** et son titulaire, comme l'écran l'affiche — pas
   l'IBAN.
-- **Les gestes d'atelier sont nombreux** (une coche par ligne) : leurs faits
-  sont écrits, et l'écran ne les montre qu'**en filtrant sur le module
-  `production`** — ils ne noient pas le journal par défaut.
+- ~~**Les gestes d'atelier**~~ — **sortis du lot** par Hugo le 2026-09-19,
+  laissés au TODO (une ligne par coche en écrirait des centaines par
+  journée).
 - **La porte s'étend dossier par dossier, pas au bloc entier** :
   `b2b/order-waivers/`, `b2b/catalog/`, `b2b/payments/`, `production/`,
   `handover/` — chaque dossier entre quand **tous** ses handlers journalisent

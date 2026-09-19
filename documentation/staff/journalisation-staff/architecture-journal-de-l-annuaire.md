@@ -300,10 +300,11 @@ le commit ; la porte `journal-tracked` couvre `staff/`.
 
 ### Les points ouverts
 
-Les limites de la recherche (accents, clés de la charge, pas d'index) et les
-phrases à relire ont été rangées le 2026-09-18 avec tous les points de
-journalisation :
-[`../../journalisation/todo-journal-activite.md`](../../journalisation/todo-journal-activite.md) §7 et §8.
+Les phrases à relire et l'index de la recherche sont rangés avec tous les
+points de journalisation :
+[`../../journalisation/todo-journal-activite.md`](../../journalisation/todo-journal-activite.md).
+La recherche ne voit plus les accents ni les clés de la charge depuis le
+2026-09-19.
 
 Le doublon du journal dans une transaction, qui figurait ici, est corrigé
 depuis le 2026-09-18

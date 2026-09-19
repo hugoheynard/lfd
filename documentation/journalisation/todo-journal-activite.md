@@ -1,167 +1,109 @@
 # TODO — le journal d'activité
 
-> **Rangé dans `journalisation/` le 2026-09-18** (Hugo : « tous les points en
-> rapport avec la journalisation dans `documentation/journalisation` »). Ce
-> fichier réunit désormais les points ouverts sur **tous** les journaux — le
-> journal d'activité, celui de l'annuaire staff, celui du référentiel, le
-> journal tarifaire —, chacun avec un renvoi vers le doc d'où il vient. Le
-> bug de l'idempotence — un doublon qui annulait la transaction qu'il devait
-> épargner — avait son propre fichier ; il est **corrigé le 2026-09-18**, et
-> le fichier supprimé.
-
-> **État au 2026-08-21** : le journal **existe et se lit**. Le référentiel y
-> écrit sept faits avec leur portée, `GET /admin/activity` l'expose filtré et
-> paginé, et l'écran Admin › Journal le rend en phrases françaises.
+> **Ce fichier liste les problèmes connus sur les journaux** — journal
+> d'activité, journal de l'annuaire, journal du référentiel, journal
+> tarifaire — **que personne n'a encore pris en charge**. Il dit ce qui ne va
+> pas et pourquoi ; il ne décide pas comment le régler.
 >
-> Le modèle et les décisions : [`../b2b/architecture-journal-activite.md`](../b2b/architecture-journal-activite.md).
+> **Dès qu'un point est pris par un plan, il se réduit ici à une ligne de
+> renvoi**, et c'est le plan seul qui suit l'avancement et se raye (Hugo,
+> 2026-09-19 : « fais le ménage »). Un point livré disparaît de ce fichier ; le
+> plan et l'historique git en gardent la trace.
+>
+> Le fonctionnement actuel : [`architecture-journalisation.md`](architecture-journalisation.md).
 
-## Pourquoi on y reviendra
+## La règle en ajoutant un émetteur
 
-La tranche livrée prouve la chaîne de bout en bout — émettre, figer, filtrer,
-lire — sur un seul module. **Elle ne la généralise pas**, et c'est délibéré :
-étendre un journal à tous les modules avant d'avoir vu le premier se lire en
-vrai, c'est figer un vocabulaire et un budget de lectures sur des suppositions.
+Un fait mérite le journal quand il change ce qui est vendu, facturé, ou ce que
+quelqu'un a le droit de voir — **y compris quand c'est un client qui agit sur
+son propre compte** (Hugo, 2026-09-19 : « tout doit être journalisé »). Jamais
+de coordonnées dans la charge : les champs qui ont changé, pas leurs valeurs.
+Un brouillon ou un panier ne vend rien : hors journal.
 
-Ce qui suit attend donc un usage réel, pas un créneau.
+## Pris en charge par le plan
 
-## Ce qui reste
+[`plan-journal-d-activite.md`](plan-journal-d-activite.md) — c'est là que se lit
+l'avancement.
 
-### 1. Les modules qui n'écrivent rien
+- Les gestes qui échappent au journal (staff et clients) → **lot 1**.
+- L'index du filtre par personne, la recherche sans casse ni accents → **lot 2**.
+- Arriver au journal depuis une fiche, l'historique d'une fiche produit → **lot 3**.
+- La tranche fiscale pour la comptabilité (le mur) → **lot 4**.
+- La pagination des deux journaux → **lot 5**.
+- La promotion du code du journal en `platform/` → **fermeture proposée** (plan §4) : le port y est depuis le 2026-08-25, déplacer l'implémentation coûterait plus qu'il ne corrige.
 
-⚠️ **Cette liste en comptait cinq et n'en vaut qu'un.** Vérifiée le 2026-09-03,
-handler par handler, contre `publishTraced` / `ActivityRecorder` :
+## Ouvert, et pris par personne
 
-| ce qui était listé            | état réel                                                                                                                            |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| la tarification               | **écrit** — `volume-commitment.handlers`. Et les règles et planchers ont leur PROPRE journal, servi par `GET /admin/pricing/journal` |
-| les emplacements              | **écrit** — `pickup-address.handlers`                                                                                                |
-| les réglages de plateforme    | **le contexte n'existe plus** — c'est la route morte que le runbook visait encore                                                    |
-| les avenants de commande      | **aucun contexte de ce nom**                                                                                                         |
-| les dérogations de permission | **écrit depuis le 2026-09-18** — `staff_user.overrides_changed`, avec l'avant et l'après (journal de l'annuaire)                     |
+### Les gestes de l'atelier
 
-Écrire une liste de cinq où un seul item tient a un coût précis : le point qui
-compte s'y noie. Celui-ci était même annoncé « le plus gênant » à la ligne
-suivante, sous quatre items dont deux nomment du code disparu.
+Cocher, décocher une ligne fabriquée ou emballée, compter les bacs
+(`production/application/commands/`) ne laissent aucune trace. Une ligne de
+journal par coche est le plus fidèle — le JSDoc de `step-packing-containers`
+l'annonçait déjà : « qui a appuyé se lirait dans le journal » — mais une
+journée de production en écrirait des centaines. **Laissé ici par Hugo le
+2026-09-19**, hors du lot 1 : à trancher avant de le bâtir (une ligne par
+coche, ou un fait par journée qui résume).
 
-**Plus aucun, au 2026-09-18.** Le dernier — « qui a ouvert la compta à Marc, et
-quand », répondable seulement pour l'écart **actuel** — est fermé par le journal
-de l'annuaire
-([`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`](../staff/journalisation-staff/architecture-journal-de-l-annuaire.md)) :
-un droit retiré laisse désormais sa trace. Ce point reste ouvert pour une seule
-raison, la règle ci-dessous, à appliquer au prochain module.
+### Les faits de commande ne sont pas opposables
 
-**Règle en ajoutant un émetteur** : un fait mérite le journal quand il change ce
-qui est vendu, facturé, ou ce que quelqu'un a le droit de voir. Le reste est du
-bruit qu'il faudra filtrer plus tard.
+`order.placed`, `order.ready`, `order.handed_over` sont écrits par les abonnés
+de la croissance en **best-effort**, hors de la transaction du geste
+(`b2b/growth/application/handlers/on-order-*.handler.ts`) : une panne du
+journal les perd en silence. Les rendre opposables demande de les écrire dans
+la transaction de la commande — un changement de la croissance, écrit comme un
+choix.
 
-### 2. La profondeur à la lecture
+### La profondeur à la lecture
 
 Le journal fige des **comptes directs** (`familiesEmporter`, `variants`) et
-refuse le rayon transitif — cf. §3 du doc d'architecture, la décision ne se
-rejoue pas. Ce qui manque est l'autre moitié : ouvrir un événement et demander
-« **et aujourd'hui, ça touche quoi ?** », qui est une requête, pas un nombre
-stocké.
+refuse le rayon transitif — décision de
+[`../b2b/architecture-journal-activite.md`](../b2b/architecture-journal-activite.md) §3.
+Ce qui manque : ouvrir un fait et demander « **et aujourd'hui, ça touche
+quoi ?** ». **Déclencheur** : la première contestation d'un changement de taux.
 
-L'écran affiche pour l'instant la portée figée, sans savoir répondre à la
-seconde question.
+### Rétention et volume
 
-### 3. La promotion du journal en `platform/`
+Partitionnement mensuel et politique de rétention, en SQL brut. **Seuil** : un
+million de lignes, ou une page du journal au-delà de 500 ms — le comptage entre
+au runbook. Chaque page fait désormais une lecture d'ancre et un `count(*)` en
+plus (pagination du 2026-09-19).
 
-**Le port est promu depuis le 2026-08-25** (`9785f834`) : `Journal` vit dans
-`platform/journal/`, et les blocs métier n'écrivent plus qu'à lui (vérifié le
-2026-09-18). **Ce qui reste en `b2b/growth`** : l'implémentation
-(`ActivityRecorder`, `PrismaActivityRecorder`, `ActorNamer`), la lecture de
-l'écran, et la table dans le schéma `growth` — que quatre blocs écrivent
-désormais (`b2b/`, `pim/`, `staff/`, la tarification). À deux, un port et un binding de racine coûtaient moins
-qu'un déménagement de quarante-trois fichiers ; à trois, la fiction « la
-croissance possède le journal » ne tient plus — et le schéma Postgres `growth`
-devient un nom trompeur pour une table que tout le monde écrit.
+### Un index pour la recherche
 
-Le renommage du schéma est une migration à part, plus coûteuse que le
-déménagement du code : à décider séparément.
+La recherche parcourt la table, paginée. Un index trigramme (`pg_trgm` est
+plausible : Prisma Postgres accepte `btree_gist`) sur l'expression normalisée
+est une migration à part — **déclenchée par la mesure**.
 
-### 4. Rétention et volume
+### Les phrases
 
-Prévu à la pose du journal, toujours pas fait : **partitionnement mensuel** et
-politique de rétention, en SQL brut (non exprimable en Prisma déclaratif). Sans
-volume réel, tout choix de fenêtre serait arbitraire.
+Mis de côté par Hugo le 2026-09-19 (« tout sauf les phrases »).
 
-~~L'index sur `actor_id`, que le filtre par personne attendait~~ — **bâti le
-2026-09-19** (`f94471d9`, plan lot 2) ; reste à le déployer hors des heures
-d'usage, pas pendant la sortie d'Accelerate.
-
-### 5. Filtres non exposés à l'écran
-
-L'API accepte `type`, `subjectType`, `subjectId`, `actorId` et `until` ; l'écran
-n'offre que le module et la période. Les deux qui manqueront en premier :
-
-- ~~**par sujet**~~ et ~~**par acteur**~~ — **bâtis le 2026-09-19**
-  (`b12433c3`, plan lot 3) : le journal lit `actorId`, `subjectType` +
-  `subjectId` et `module` dans l'URL, en pastilles retirables ; la fiche d'un
-  membre offre « Voir son activité ». Reste : déployer.
-
-Les deux sont des **liens entrants** vers le journal, pas des champs de plus
-dans sa barre de filtres. C'est ce qui décidera de leur forme.
-
-### 6. Le mur, à réexaminer
-
-`activity:read` est réservé à `admin`. La question qui reviendra : ouvrir la
-**tranche fiscale** à `comptabilite`, qui écrit les taux sans pouvoir relire
-qui les a changés. Ça suppose un filtrage par module **côté serveur imposé**, et
-non un filtre d'écran — sinon c'est le journal entier qui s'ouvre.
-
-### 7. La recherche du journal
-
-_Venu de [`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`](../staff/journalisation-staff/architecture-journal-de-l-annuaire.md) §9, le 2026-09-18._
-
-- ~~**Sensible aux accents**~~ et ~~**elle lit aussi les clés de la charge**~~
-  — **réglés le 2026-09-19** (`4c9c95c6`, plan lot 2) : la recherche ne lit que les
-  valeurs, sans casse ni accents
-  ([`architecture-journalisation.md`](architecture-journalisation.md) §8).
-- **Aucun index ne la sert** : chaque recherche parcourt la table, paginée.
-  Un index trigramme demanderait une migration — à faire le jour où le journal
-  grossit assez pour que ça se sente.
-
-### 8. Les phrases de l'équipe, à relire
-
-_Venu du même §9._
-
+- **La plupart des faits du référentiel n'ont pas de phrase** : seuls
+  `product.published` / `.unpublished` et `product_category.vat_changed` en ont.
+  L'écran Journal et l'onglet Historique affichent le type brut
+  (`product.identity_saved`…) pour les autres.
 - **Une fiche en attente ou invitée passée à « active » à la main** écrit
   `staff_user.reinstated` : l'écran dit « a rétabli l'accès », approximatif pour
-  une première activation manuelle.
-- **La fonction de l'auteur n'apparaît pas** sur une ligne de l'équipe : la
-  phrase nomme l'auteur, la méta ne répète plus « par Hugo Heynard
-  (Administrateur) ».
+  une première activation.
+- **La fonction de l'auteur n'apparaît pas** sur une ligne de l'équipe.
 - **Les noms ne sont pas en gras** : la phrase est une chaîne simple.
 
-### 9. L'historique d'une fiche produit
+### Le journal tarifaire
 
-_Venu de [`../pim/journalisation-et-tracabilite.md`](../pim/journalisation-et-tracabilite.md) §13._
-
-~~**L'onglet « Historique » de la fiche produit n'existe pas**~~ — **bâti le
-2026-09-19** (`83589b95` et le commit de l'onglet, plan lot 3) : tout ce qui a
-touché la fiche, en trois cercles. Reste : déployer. Et, noté en le bâtissant :
-
-- **une heure limite posée sur un produit** n'y figure pas : son sujet est la
-  limite, pas le produit ;
-- **la plupart des faits du référentiel n'ont pas de phrase** (seuls
-  `product.published` / `.unpublished` et `product_category.vat_changed` en
-  ont) : l'onglet et le journal affichent leur type brut — relève du §8 ;
-- **l'écran Journal et le panneau tarifaire** affichent l'erreur sur une ancre
-  refusée, là où l'onglet rouvre la page 1 : à aligner ;
-- **`catalog_revision_item` n'a pas d'index sur `sku`** : trouver les
-  révisions d'une fiche parcourt la table — à mesurer.
-
-### 10. Le journal tarifaire
-
-_Venu de [`../pricing/architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md), « Reste ouvert »._
-
-- ~~**Il n'est pas paginé**~~ — **bâti le 2026-09-19** (`9f20a980`, plan lot 5) : pages numérotées sur une vue figée, avec le journal d'activité. Reste :
-  déployer, puis retirer l'ancienne route. La route des 50 derniers actes, sans
-  appelant, reste à retirer ou à brancher.
 - **Une règle ne se modifie pas** : poser, suspendre, reprendre, archiver.
   Corriger une faute de frappe oblige à archiver et reposer, ce qui salit le
-  journal pour rien.
-- ~~L'auteur s'affiche par son `sub`~~ — **réglé le 2026-09-18** : le journal
-  tarifaire sert le nom de l'auteur, et son `actor` est l'id de la fiche
-  ([`architecture-journalisation.md`](architecture-journalisation.md) §12).
+  journal. C'est une écriture sur l'argent : **plan à part dans `pricing/`**.
+- **La route des 50 derniers actes** (`GET /admin/pricing/journal`) n'a aucun
+  appelant : à retirer ou à brancher.
+
+### Petits restes, relevés en bâtissant
+
+- **Une heure limite posée sur un produit** n'apparaît pas dans son historique :
+  son sujet est la limite, pas le produit.
+- **Une ancre refusée** : l'écran Journal et le panneau tarifaire affichent
+  l'erreur, l'onglet Historique rouvre la page 1 — à aligner.
+- **`catalog_revision_item` n'a pas d'index sur `sku`** : trouver les révisions
+  d'une fiche parcourt la table — à mesurer.
+- **La suppression d'un panier récurrent est physique** : interdite par
+  CLAUDE.md §3 sur un agrégat, et son handler lève une `NotFoundException`
+  depuis l'application — dette des paniers récurrents, à traiter chez eux.
