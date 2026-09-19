@@ -70,7 +70,7 @@ En `postgres://`, le schéma ne dit plus rien.
    au geste 2, **tranche la valeur de `max`** avant la bascule.
 3. **Deux URL, deux secrets, aucun repli** :
    - `DATABASE_LFD_URL` → URL **mutualisée**, pour le container ;
-   - `DATABASE_LFD_DIRECT_URL` → URL **directe**, pour `migrate deploy`. Le
+   - `DATABASE_LFD_PROD_DIRECT_URL` → URL **directe**, pour `migrate deploy`. Le
      workflow la passe **inconditionnellement** à l'étape de migration. Le secret
      est donc **créé avant** le merge du code (geste 3 avant geste 4) : un nom mal
      saisi fait échouer la migration, ce qu'on veut voir.
@@ -116,7 +116,7 @@ En `postgres://`, le schéma ne dit plus rien.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- | ---------------------------------- |
 | 1   | **Code** : outils (§2.5), pool réglé (§2.2), `P2037`, `/health` publie le transport (§2.4), workflow (migration par l'URL directe, contrôle du transport), JSDoc et docs (§5)                    | Claude        | aucun tant que non mergé           |
 | 2   | Console Prisma : URL mutualisée, URL directe ; **région** et **limite de connexions** ; option A du §2.6 si retenue                                                                              | Hugo          | aucun                              |
-| 3   | GitHub : **créer `DATABASE_LFD_DIRECT_URL`** ; copier la valeur actuelle de `DATABASE_LFD_URL` dans le gestionnaire de mots de passe                                                             | Hugo          | aucun                              |
+| 3   | GitHub : **créer `DATABASE_LFD_PROD_DIRECT_URL`** ; copier la valeur actuelle de `DATABASE_LFD_URL` dans le gestionnaire de mots de passe                                                        | Hugo          | aucun                              |
 | 4   | Merger le geste 1 : l'API se redéploie **encore sur Accelerate**, migration par l'URL directe, `/health` doit publier `accelerate`                                                               | Claude        | nouveau pool réglé, même transport |
 | 5   | (option A) répétition sur la seconde base                                                                                                                                                        | Claude + Hugo | aucun                              |
 | 6   | **La bascule** : Hugo remplace `DATABASE_LFD_URL` par l'URL mutualisée ; Claude pousse un commit (le passage du contrôle attendu à `pg`) ; le déploiement échoue si `/health` ne publie pas `pg` | Hugo + Claude | **le container passe en TCP**      |

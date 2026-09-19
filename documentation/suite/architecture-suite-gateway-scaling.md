@@ -316,6 +316,12 @@ JWT, cold start, WS futur) sont **bornés et assumés**, pas ignorés.
   gateway→backend en HTTP via l'origine stable, Invariant A) — coût acceptable
   vu l'enjeu de shipper sans toucher au backend.
 
+  ⚠️ **2026-09-19** — « Prisma Accelerate inchangé » cesse d'être vrai :
+  Prisma retire Accelerate le 1er décembre 2026. La production y reste jusqu'à
+  la bascule du week-end ; le code sait déjà joindre le pooler mutualisé en TCP,
+  ce que le choix de Containers (vrai process Node, TCP sortant) rend possible
+  ([`../ops/plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md)).
+
   **Coût (tarifs Cloudflare, cf. §11).** CPU facturé **à l'usage réel** ; seuls
   **mémoire + disque** courent tant que le conteneur est **réveillé** ; **endormi
   = $0** (mais cold start au réveil). Instance réaliste NestJS+Prisma =

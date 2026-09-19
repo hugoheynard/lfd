@@ -26,7 +26,7 @@
 - [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe, **région**
       et **limite de connexions** du plan.
 - [ ] **GitHub** (Hugo, geste 3, par l'interface) : créer
-      `DATABASE_LFD_DIRECT_URL` ; copier la valeur actuelle de `DATABASE_LFD_URL`
+      `DATABASE_LFD_PROD_DIRECT_URL` ; copier la valeur actuelle de `DATABASE_LFD_URL`
       dans le gestionnaire de mots de passe.
 - [ ] **Merge** (Claude, geste 4) : batterie verte ; l'API se redéploie **encore
       sur Accelerate**, `/health` doit publier `accelerate`.

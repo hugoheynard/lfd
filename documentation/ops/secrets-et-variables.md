@@ -14,6 +14,13 @@
 > passé en schéma `pim` de la base commune (B4), il n'a plus de base à lui. Les entrées sont écrites
 > contre le code et le workflow ; l'inventaire complet n'a **pas** été rerelu
 > contre GitHub à cette date.
+>
+> **2026-09-19** — sortie d'Accelerate
+> ([`plan-sortie-d-accelerate.md`](plan-sortie-d-accelerate.md)) : nouveau
+> secret **`DATABASE_LFD_PROD_DIRECT_URL`** (§3), et `LFD_PRODUCTION_DATABASE_URL`,
+> qui n'est **pas** un secret GitHub (§3). La production est **encore** sur
+> Accelerate jusqu'à la bascule du week-end ; le code sait déjà servir le
+> pooler. Écrit contre le code et le workflow, pas relu contre GitHub.
 
 ## 1. La règle
 
@@ -96,21 +103,45 @@ la production.
 
 ## 3. Les secrets, par destination
 
-| Secret                                                                            | Va vers                        | Notes                                                                              |
-| --------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
-| `DATABASE_LFD_URL`                                                                | backend B2B                    | forme `prisma+postgres://` (Accelerate)                                            |
-| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY`          | backend B2B                    | mode démo                                                                          |
-| `RESEND_MAILER_B2B_API_KEY`                                                       | backend B2B                    | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)           |
-| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                                 | backend B2B                    | Management API                                                                     |
-| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                             | backend B2B                    | pièces (KBIS) — bucket et endpoint sont des Variables                              |
-| `R2_MEDIA_ACCESS_KEY_ID` · `R2_MEDIA_SECRET_ACCESS_KEY`                           | backend B2B                    | visuels du catalogue — **jeton restreint au seul bucket média** (cf. ci-dessous)   |
-| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                                        | backend PIM                    | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                            |
-| `B2B_CATALOG_PUSH_SECRET`                                                         | backend PIM **et** backend B2B | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**     |
-| `RECOMPUTE_TOKEN`                                                                 | Worker B2B **et** container    | comparé par `RecomputeGuard`                                                       |
-| `CLOUDFLARE_ACCOUNT_ID`                                                           | tous les déploiements          | injecté dans l'image au deploy                                                     |
-| `CLOUDFLARE_LFD_API_WORKER` · `CLOUDFLARE_LFD_GATEWAY` · `CLOUDFLARE_LFC_*_PAGES` | déploiements                   | jetons Cloudflare, un par app — préfixe `LFC_` → `LFD_` le 2026-08-20              |
-| `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                          | backend B2B                    | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable |
-| `FIELD_ENCRYPTION_KEY`                                                            | backend B2B                    | scelle les IBAN des clients au repos — **le backend refuse de démarrer sans elle** |
+| Secret                                                                            | Va vers                             | Notes                                                                                                                   |
+| --------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_LFD_URL`                                                                | backend B2B                         | `prisma+postgres://` (Accelerate) jusqu'à la bascule, puis `postgres://…@pooled.db.prisma.io` (pooler) — cf. ci-dessous |
+| `DATABASE_LFD_PROD_DIRECT_URL`                                                    | `migrate deploy` (CI) **seulement** | URL **directe** `db.prisma.io` — jamais relayée au container ; **aucun repli** : absente, la migration échoue           |
+| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY`          | backend B2B                         | mode démo                                                                                                               |
+| `RESEND_MAILER_B2B_API_KEY`                                                       | backend B2B                         | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)                                                |
+| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                                 | backend B2B                         | Management API                                                                                                          |
+| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                             | backend B2B                         | pièces (KBIS) — bucket et endpoint sont des Variables                                                                   |
+| `R2_MEDIA_ACCESS_KEY_ID` · `R2_MEDIA_SECRET_ACCESS_KEY`                           | backend B2B                         | visuels du catalogue — **jeton restreint au seul bucket média** (cf. ci-dessous)                                        |
+| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                                        | backend PIM                         | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                                                                 |
+| `B2B_CATALOG_PUSH_SECRET`                                                         | backend PIM **et** backend B2B      | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**                                          |
+| `RECOMPUTE_TOKEN`                                                                 | Worker B2B **et** container         | comparé par `RecomputeGuard`                                                                                            |
+| `CLOUDFLARE_ACCOUNT_ID`                                                           | tous les déploiements               | injecté dans l'image au deploy                                                                                          |
+| `CLOUDFLARE_LFD_API_WORKER` · `CLOUDFLARE_LFD_GATEWAY` · `CLOUDFLARE_LFC_*_PAGES` | déploiements                        | jetons Cloudflare, un par app — préfixe `LFC_` → `LFD_` le 2026-08-20                                                   |
+| `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                          | backend B2B                         | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable                                      |
+| `FIELD_ENCRYPTION_KEY`                                                            | backend B2B                         | scelle les IBAN des clients au repos — **le backend refuse de démarrer sans elle**                                      |
+
+**La base a deux URL, et c'est voulu** (sortie d'Accelerate, 2026-09-19). Le
+container joint le **pooler mutualisé** ; une migration tient des verrous et
+enchaîne des instructions sur une même session, et ne passe donc **pas** par un
+pooler : `deploy_lfd_api.yml` (« Migrer la base ») la lance par
+`DATABASE_LFD_PROD_DIRECT_URL`. Tant que la production est sur Accelerate, cette URL
+directe vise déjà la même base.
+
+- **Le transport servi se lit, le secret non.** `GET /health` publie
+  `database: "pg" | "accelerate"` (un mot, ni hôte ni utilisateur), et le
+  déploiement **échoue** si ce n'est pas `EXPECTED_DATABASE_TRANSPORT`, écrit
+  en tête du workflow (`accelerate` aujourd'hui). Changer `DATABASE_LFD_URL`
+  sans changer cette ligne dans le même push fait donc échouer le déploiement —
+  c'est le but. Geste de bascule et de retour arrière : [`runbook.md`](runbook.md).
+- ⚠️ **Un secret GitHub ne se relit pas** : la valeur Accelerate de
+  `DATABASE_LFD_URL` est gardée dans le gestionnaire de mots de passe de Hugo,
+  seule voie de retour arrière jusqu'à la révocation de la clé.
+- **`LFD_PRODUCTION_DATABASE_URL` n'est ni un secret GitHub ni une ligne du
+  `.env`.** Seul `prisma/import-mercuriale.ts` la lit — l'unique outil de
+  `prisma/` destiné à la production, qui ne lit jamais `DATABASE_LFD_URL`. Elle
+  se pose dans l'environnement du terminal pour l'occasion, depuis le
+  gestionnaire de mots de passe, jamais sur la ligne de commande. Les autres
+  outils de `prisma/` refusent toute cible dont l'**hôte** n'est pas local.
 
 **Le PIM ne reçoit aucun webhook** — zéro occurrence de « webhook » dans son
 code source. Le seul endpoint entrant de tiers est `POST /payments/webhook`
