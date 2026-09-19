@@ -14,7 +14,7 @@
 > État : 🚧 **lots 2, 3 et 5 bâtis le 2026-09-19** (le 2 en premier, à la
 > demande de Hugo), à déployer après la sortie d'Accelerate. **Lot 1 bâti le
 > 2026-09-19** (tranches a à d) ; la forme d'une adresse au journal a été
-> tranchée le 2026-09-19. Lot 4 : en cours, permission tranchée le 2026-09-19.
+> tranchée le 2026-09-19. **Lot 4 bâti le 2026-09-19.** Tous les lots sont bâtis ; aucun n'est déployé.
 > **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§8) qui a cassé l'inventaire, la porte étendue,
 > la colonne de recherche et le déménagement du code.
@@ -30,7 +30,7 @@
 | 1   | §1            | ~~les gestes du staff et des clients qui touchent l'argent, le catalogue, le compte ou la production entrent au journal~~ — **bâti le 2026-09-19** (`bfed73cc`, `8fd41f16`, `d62134a8`, `c711b85f`), déploiement en attente | moyen  |
 | 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente                                                                                       | faible |
 | 3   | §5, §9        | ~~on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »~~ — **bâti le 2026-09-19** (`b12433c3`, `83589b95`, et le commit de l'onglet), déploiement en attente                          | moyen  |
-| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                                                                                                           | moyen  |
+| 4   | §6            | ~~la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre~~ — **bâti le 2026-09-19** (`6259f9ef`, `e57919b2`), déploiement en attente                                                             | moyen  |
 | 5   | §10           | ~~les deux journaux se lisent par pages numérotées, sur une vue figée (`fold-paginator`)~~ — **bâti le 2026-09-19** (`9f20a980` et le commit d'écran), déploiement en attente                                               | faible |
 | —   | §3            | ~~le code reste en `growth`~~ — **fermé par Hugo le 2026-09-19** : ni la table ni le code ne bougent (`architecture-journalisation.md` §2)                                                                                  | —      |
 | —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                                                                                                                 | —      |
@@ -184,7 +184,13 @@ membres.
   Un fait d'un autre bloc qui porterait un sujet `product` ne s'y montre
   jamais : la lecture filtre par **préfixe** de type, pas seulement par sujet.
 
-### Lot 4 — La tranche fiscale pour la comptabilité (§6)
+### Lot 4 — ~~La tranche fiscale pour la comptabilité~~ (§6) — bâti le 2026-09-19
+
+> Serveur `6259f9ef` (`GET /admin/activity/tax`, `pim_tax:write`), écran
+> `e57919b2` (`/pim/journal-fiscal`), préfixes orphelins `6259f9ef` et
+> `34ea0e97`. Reste : le déployer. Ouvert : `sales_context.*` (un taux par
+> contexte, écrit sous `pim_settings`) hors de la tranche, et `legal_entity.`
+> sans module — deux questions posées à Hugo le 2026-09-19.
 
 - **Une seconde lecture**, bornée **au serveur** par une clause `AND` sur une
   **liste de types** — pas sur un module, qui ouvrirait tout le référentiel :
