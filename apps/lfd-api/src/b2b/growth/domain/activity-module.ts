@@ -26,6 +26,16 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les points de vente sont du référentiel : ses familles les citent dans
     // leur matrice de canaux (2026-09-19).
     "point_of_sale.",
+    // Le reste du référentiel, orphelin jusqu'au 2026-09-19 : déclinaisons,
+    // révisions poussées aux canaux, contextes de vente, appellations,
+    // ingrédients et allergènes s'écrivent tous sous les droits du PIM.
+    "variant.",
+    "catalog_revision.",
+    "sales_context.",
+    "appellation.",
+    "ingredient.",
+    "allergen_category.",
+    "allergen_entry.",
   ],
   // La tarification négociée est du COMMERCIAL : c'est le même métier que le
   // lead et le rendez-vous — ce qu'on consent à un client pour qu'il achète.
@@ -61,6 +71,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "order_cutoff_waiver.",
     "order_late_fee.",
     "delivery_availability.",
+    // L'heure limite posée sur un produit : même famille que celle d'un point.
+    "order_time_limit.",
   ],
   // Le RIB d'une société s'écrit `company.bank_account_changed` : il se range
   // ici par son préfixe, sans entrée propre.

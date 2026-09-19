@@ -53,7 +53,8 @@ const activityFiltersSchema = z.object({
    * Recherche libre (2026-09-18) : un nom, un prénom, un morceau de numéro, un
    * identifiant. Retient le fait dont le nom figé de l'auteur OU la charge
    * utile contient le texte (casse ignorée), ou dont le sujet EST ce texte.
-   * Les accents comptent : « cecile » ne trouve pas « Cécile ».
+   * Ni la casse ni les accents ne comptent (depuis le 2026-09-19) : « cecile »
+   * trouve « Cécile ».
    *
    * Deux caractères au moins : un seul ramènerait presque tout le journal.
    */

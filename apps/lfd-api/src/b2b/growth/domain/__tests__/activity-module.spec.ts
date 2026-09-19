@@ -98,3 +98,19 @@ describe("moduleOf — les préfixes qui n'étaient rangés nulle part", () => {
     expect(moduleOf("production_day.closed")).toBe("production");
   });
 });
+
+/** Les préfixes orphelins jusqu'au 2026-09-19 : le référentiel et l'heure limite d'un produit. */
+describe("moduleOf — les orphelins rangés", () => {
+  it.each([
+    ["variant.added", "pim"],
+    ["catalog_revision.pushed", "pim"],
+    ["sales_context.updated", "pim"],
+    ["appellation.created", "pim"],
+    ["ingredient.allergens_saved", "pim"],
+    ["allergen_category.renamed", "pim"],
+    ["allergen_entry.updated", "pim"],
+    ["order_time_limit.set", "commandes"],
+  ])("%s se range sous %s", (type, module) => {
+    expect(moduleOf(type)).toBe(module);
+  });
+});
