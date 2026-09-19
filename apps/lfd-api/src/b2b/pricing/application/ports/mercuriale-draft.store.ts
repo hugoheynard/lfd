@@ -46,7 +46,7 @@ export abstract class MercurialeDraftStore {
 
 /**
  * Le brouillon tel que la base le garde : la vue, sans le nom de son dernier
- * auteur — résolu par le handler de lecture, pas par la persistance (plan
- * `plan-l-auteur-est-la-fiche.md`, D3).
+ * auteur — résolu par le handler de lecture, pas par la persistance (
+ * `architecture-journalisation.md` §12, D3).
  */
 export type StoredMercurialeDraft = Omit<MercurialeDraftView, "updatedByName">;

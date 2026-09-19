@@ -61,8 +61,8 @@ export class PrismaPricingDecisionsReader extends PricingDecisionsReader {
       }),
     ]);
 
-    // Les auteurs de toute la lecture, en une résolution (plan
-    // `plan-l-auteur-est-la-fiche.md`, D3) — pas une par ligne.
+    // Les auteurs de toute la lecture, en une résolution (
+    // `architecture-journalisation.md` §12, D3) — pas une par ligne.
     const authors = await this.staffAuthors.identify([
       ...ruleRows.flatMap((row) => [row.createdBy, row.pausedBy, row.archivedBy]),
       ...floorRows.map((row) => row.createdBy),

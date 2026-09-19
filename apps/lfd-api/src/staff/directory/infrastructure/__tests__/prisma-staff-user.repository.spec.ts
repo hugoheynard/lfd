@@ -72,8 +72,8 @@ describe("PrismaStaffUserRepository — les faits que la politique attend", () =
 
 describe("PrismaStaffUserRepository — la table des `sub`", () => {
   it("inscrit le `sub` d'une invitation, dans la même écriture que la liaison", async () => {
-    // `auth0_id` ne garde que le dernier `sub` ; la table les garde tous (plan
-    // `plan-l-auteur-est-la-fiche.md`, D5.1).
+    // `auth0_id` ne garde que le dernier `sub` ; la table les garde tous (
+    // `architecture-journalisation.md` §12, D5.1).
     const { prisma, updated, aliases } = fakePrisma(row({ status: "pending" }));
     const repo = await buildRepo(prisma);
 

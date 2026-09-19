@@ -7,8 +7,8 @@
  * le même identifiant une fois RANGÉ : `staff_users.auth0_id`, `users.auth0_sub`
  * et la table des `sub` de chaque fiche (`staff_subject_aliases`). Relu depuis
  * la base, il peut fuir sans jamais toucher un principal — servi dans une vue,
- * recopié comme auteur, ou écrit dans un log (plan
- * `documentation/staff/plan-l-auteur-est-la-fiche.md`, §8).
+ * recopié comme auteur, ou écrit dans un log (
+ * `documentation/journalisation/architecture-journalisation.md` §12, §8).
  *
  * Deux règles :
  *

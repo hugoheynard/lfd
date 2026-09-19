@@ -9,8 +9,8 @@ import { ActorNamer, type ActorIdentity } from "../domain/ports/actor-namer.js";
 
 /**
  * Résout le nom d'un acteur au moment de l'acte : la fiche staff par le port
- * d'auteurs du bloc staff — id de fiche, `sub` actuel ou `sub` ancien (plan
- * `plan-l-auteur-est-la-fiche.md`, D4) —, le profil pour un client.
+ * d'auteurs du bloc staff — id de fiche, `sub` actuel ou `sub` ancien (
+ * `architecture-journalisation.md` §12, D4) —, le profil pour un client.
  *
  * Une lecture par événement journalisé, et c'est assumé : la remplacer par une
  * jointure à l'affichage supposerait que le nom d'aujourd'hui vaut pour l'acte

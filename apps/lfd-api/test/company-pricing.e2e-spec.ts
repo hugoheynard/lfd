@@ -629,8 +629,8 @@ describe("qui a établi la mercuriale", () => {
     const view = await read(company.id);
 
     expect(view.mercuriales[0]?.createdBy).toBe(E2E_STAFF_ID);
-    // Et son NOM — c'est lui que l'écran et l'export CSV doivent écrire (plan
-    // `plan-l-auteur-est-la-fiche.md`, D3).
+    // Et son NOM — c'est lui que l'écran et l'export CSV doivent écrire (
+    // `architecture-journalisation.md` §12, D3).
     expect(view.mercuriales[0]?.createdByName).toBe("Opérateur E2E");
   });
 });

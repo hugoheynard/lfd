@@ -1,6 +1,6 @@
 /**
- * E2E de l'**auteur staff sous toutes ses formes** — plan
- * `documentation/staff/plan-l-auteur-est-la-fiche.md`, étape 1 (D4, D5.1).
+ * E2E de l'**auteur staff sous toutes ses formes** —
+ * `documentation/journalisation/architecture-journalisation.md` §12, étape 1 (D4, D5.1).
  *
  * Seul le vrai Postgres le prouve : la table des `sub` est remplie par les
  * deux gestes qui relient un `sub` à une fiche (l'invitation, la première

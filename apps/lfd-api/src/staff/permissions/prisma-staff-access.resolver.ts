@@ -174,7 +174,7 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
 
   /**
    * Relie la fiche à ce `sub` et l'inscrit dans la table des `sub`, dans la
-   * même transaction (plan `plan-l-auteur-est-la-fiche.md`, D5.1).
+   * même transaction (`architecture-journalisation.md` §12, D5.1).
    *
    * L'inscription n'a lieu que si la liaison a GAGNÉ : un `sub` qui a perdu la
    * course n'est pas celui de cette fiche, et l'inscrire lui attribuerait des

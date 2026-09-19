@@ -223,7 +223,7 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
   });
 
   it("suppression refusée : aucun fait, la fiche reste", async () => {
-    // La suppression n'existe plus (plan `plan-l-auteur-est-la-fiche.md`,
+    // La suppression n'existe plus (`architecture-journalisation.md` §12,
     // étape 0) : un refus n'écrit rien au journal.
     const id = await createColleague();
 

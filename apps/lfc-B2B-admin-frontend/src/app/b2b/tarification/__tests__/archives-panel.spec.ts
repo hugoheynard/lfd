@@ -90,7 +90,7 @@ describe('les archives', () => {
     expect(text).toContain('02/09/2026');
   });
 
-  /** Plan `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3 : le nom, plus le `sub`. */
+  /** Plan `documentation/journalisation/architecture-journalisation.md` §12, D3 : le nom, plus le `sub`. */
   it('nomme la personne quand le serveur la connaît, sans montrer son identifiant', async () => {
     const text = await settled(mount([archived({ archivedByName: 'Marc Dupont' })]));
 

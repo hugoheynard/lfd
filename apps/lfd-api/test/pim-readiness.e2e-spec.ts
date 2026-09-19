@@ -105,8 +105,8 @@ describe("Déclaration publiable", () => {
     const readyAt = await declareReady(id);
     const view = await detail(id);
 
-    // L'id de fiche, posé comme acteur par `StaffAccessGuard` (plan
-    // `plan-l-auteur-est-la-fiche.md`, D1), et le nom résolu par l'annuaire :
+    // L'id de fiche, posé comme acteur par `StaffAccessGuard` (
+    // `architecture-journalisation.md` §12, D1), et le nom résolu par l'annuaire :
     // l'écran ne montre plus l'identifiant (D3).
     expect(view.readiness).toEqual({
       readyAt,

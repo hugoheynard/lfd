@@ -10,8 +10,7 @@
 >   [`../pim/journalisation-et-tracabilite.md`](../pim/journalisation-et-tracabilite.md) ;
 > - l'annuaire staff —
 >   [`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`](../staff/journalisation-staff/architecture-journal-de-l-annuaire.md) ;
-> - l'auteur d'un acte —
->   [`../staff/plan-l-auteur-est-la-fiche.md`](../staff/plan-l-auteur-est-la-fiche.md).
+> - l'auteur d'un acte — au [§12](#s12) de ce document.
 >
 > Ce qui reste à faire est dans [`todo-journal-activite.md`](todo-journal-activite.md),
 > et nulle part ailleurs.
@@ -29,6 +28,7 @@
 9. [Ce qui empêche d'oublier](#s9)
 10. [Ce qui s'appelle « journal » sans en être un](#s10)
 11. [Où est le code](#s11)
+12. [L'auteur est la fiche, jamais le `sub`](#s12)
 
 ---
 
@@ -182,7 +182,8 @@ sorti du type après l'authentification, l'historique a été converti, et deux
 portes (`lint:subject-readers`, `lint:auth0-id-readers`) tiennent la liste de
 ceux qui le lisent encore — pour l'identité seulement. Les faits écrits sous un
 `sub` que la base n'a jamais relié à une fiche restent tels quels, et se
-nomment quand même par leur `actor_name` figé.
+nomment quand même par leur `actor_name` figé. Tout le mécanisme, règle par
+règle : [§12](#s12).
 
 ---
 
@@ -320,3 +321,92 @@ Pour ne pas les confondre :
 | La lecture                       | `apps/lfd-api/src/b2b/growth/http/admin-activity.controller.ts`, `infrastructure/activity-journal.where.ts`, `domain/activity-module.ts` |
 | Le contrat                       | `packages/contracts/src/activity-journal.ts`                                                                                             |
 | La table                         | `apps/lfd-api/prisma/schema/growth.prisma` (`ActivityEvent`)                                                                             |
+
+---
+
+<a id="s12"></a>
+
+## 12. L'auteur est la fiche, jamais le `sub`
+
+L'auteur de tout acte staff — colonne d'auteur, journal, charge utile — est
+l'**id de la fiche** (`staff_users.id`). Le `sub` Auth0 est un identifiant
+**chez un tiers** : il ne vit plus qu'à côté de chaque compte, pour la
+connexion. Livré le 2026-09-18 en six déploiements ; le plan qui l'a conduit,
+supprimé une fois livré, reste lisible dans l'historique git. Le code cite ces règles par leur étiquette — **D1** à **D9**,
+**§8** — gardée ici telle quelle.
+
+**D1 — Une seule porte pose l'auteur : `StaffAccessGuard`.** Il résout la fiche
+et attache `{ type: "staff", id: access.staffUserId }` au contexte de requête ;
+une requête refusée n'attache rien. `AdminAuthGuard` n'attache aucun acteur.
+`@AdminSurface` monte toujours les deux gardes : aucune route staff n'y échappe.
+Le contournement de développement se lie à la fiche racine et reçoit son id.
+
+**D2 — Le `sub` est sorti du type.** `AdminAuthGuard` vérifie le jeton et remet
+l'identité à `StaffAccessGuard` par un canal interne à `platform/auth/`
+(`verified-staff-identity.ts`) ; après la résolution, la requête ne porte plus
+que `access`. `@StaffSub()` n'existe plus : `@StaffUserId()` est le seul moyen
+de nommer l'auteur. Côté client, `lint:subject-readers` tient la liste des deux
+seuls lecteurs du `sub` du jeton.
+
+**D3 — Le front et les exports reçoivent un nom.** Chaque vue qui sert un auteur
+sert aussi `…ByName`, résolu au serveur. Le champ d'identifiant reste servi : il
+porte l'id de la fiche ou un **marqueur** qui ne désigne personne (`system`,
+`seed-pim`, `sonde`…), et l'écran l'affiche quand le nom manque
+(`lfc-B2B-admin-frontend/src/app/shared/staff-author.ts`). L'export CSV des
+mercuriales écrit le nom. `actorId` du journal reste servi : le filtre par
+personne en a besoin.
+
+**D4 — Les lecteurs acceptent toutes les formes.** Le port `StaffAuthorDirectory`
+(`staff/directory/domain/staff-author-directory.ts`) nomme un auteur écrit par
+id de fiche, par `sub` actuel, ou par un `sub` ancien de la table des `sub` ; le
+port `StaffAuthorReferences` rend tous les identifiants d'une personne, et le
+filtre par acteur du journal devient `actor_id IN (…)` — l'histoire d'une
+personne ne se coupe pas. `b2b` n'y lit pas `staff_users` : il passe par ces
+ports (`b2b/account/infrastructure/staff-block-directory.ts`, `ActorNamer`).
+
+**D5 — La table des `sub`.** `staff_subject_aliases (sub, staff_user_id, source,
+recorded_at)` garde **chaque** `sub` qu'une fiche a porté : semée des
+`auth0_id` actuels (`source = 'current'`), puis écrite par toute liaison
+(`markInvited`, le rapprochement du résolveur, `source = 'linked'`) dans la même
+écriture. L'historique a été converti en joignant sur elle, et seulement sur
+elle (`20260918190000_conversion_des_auteurs_staff`) ; ce qu'elle ne connaissait
+pas est resté tel quel. Elle ne contient que des liens que la base a établis
+elle-même.
+
+**D6 — La signature d'une fiche produit reste dans la photo du catalogue.**
+`readyBy` fait partie du contenu figé d'une révision : il dit qui avait validé
+l'article **au moment de la publication**. Il porte l'id de fiche depuis la
+conversion ; les contenus figés **avant** gardent leur `sub` — on ne réécrit pas
+une ancre adressée par son empreinte —, et le diff de révision les nomme par D4
+(`nameSignatories`, `revision-diff-support.ts`). La révision qui a suivi la
+conversion a vu chaque article signé changer d'empreinte une fois.
+
+**D7 — Les journaux ont été traduits, une fois.** `activity_events.actor_id`
+(faits staff), les clés `readyBy` / `handedOverBy` des charges utiles, et
+`pricing_events.actor` : un identifiant de la même personne en a remplacé un
+autre — ni le fait, ni son sujet, ni son instant n'ont bougé. Exception accordée
+par Hugo pour le journal tarifaire, écrite dans le JSDoc du modèle, et qui ne
+vaut pas précédent (§7).
+
+**D8 — Les noms ne mentent plus.** Les colonnes `*_by_sub` et `staff_sub` sont
+devenues `*_by_staff_id` et `staff_user_id`, en trois déploiements (étendre,
+basculer, resserrer : 5A, 5B, 5C) ; `StaffTrace.sub` et les champs `sub` des
+contrats ont disparu.
+
+**D9 — Un abonnement push appartient à une fiche** (`staff_user_id`). Il reste
+une trace, pas un ciblage : toute notification part à tous les abonnements —
+point repris par le plan de départ d'un membre.
+
+**Une fiche ne se supprime plus** (étape 0) : `DELETE /admin/staff-users/:id`
+répond `409` ; la fiche porte l'auteur de tout ce que la personne a fait.
+
+**§8 — Les clients.** L'acteur d'une requête client est l'id de `users`, jamais
+le `sub` (`AuthGuard`, depuis le 2026-08-07) ; le seul `sub` client en base est
+`users.auth0_sub`. `ProfileView.subject` a été retiré ; ni les logs ni les
+messages d'erreur (`IdentitySubjectUnknownError`) ne portent de `sub`.
+
+**Ce qui le tient** : le type (D2), et deux portes — `lint:subject-readers` (le
+`sub` du jeton) et `lint:auth0-id-readers` (le même identifiant rangé en base :
+seize lecteurs admis, chacun avec sa raison, et jamais interpolé dans un
+message). La requête de contrôle, en lecture seule, compte ce qui reste écrit
+sous un `sub` : [`../staff/requetes/inventaire-des-auteurs-staff.sql`](../staff/requetes/inventaire-des-auteurs-staff.sql).

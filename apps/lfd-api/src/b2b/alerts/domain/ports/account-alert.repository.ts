@@ -12,8 +12,8 @@ export interface AlertToRecord extends AlertDraft {
 
 /**
  * Une alerte telle que le journal la garde : la vue, sans le nom de qui l'a
- * acquittée — résolu par le handler de lecture auprès de l'annuaire (plan
- * `plan-l-auteur-est-la-fiche.md`, D3).
+ * acquittée — résolu par le handler de lecture auprès de l'annuaire (
+ * `architecture-journalisation.md` §12, D3).
  */
 export type StoredAccountAlert = Omit<AccountAlertView, "acknowledgedByName">;
 

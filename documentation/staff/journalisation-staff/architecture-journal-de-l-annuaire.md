@@ -167,7 +167,7 @@ défensivement (`admin/journal/staff-line.ts`). Ce tableau est le seul contrat
   `actor_id` est **l'id de la fiche** de l'auteur, posé par `StaffAccessGuard`
   depuis le 2026-09-18 ; les faits antérieurs, écrits sous un `sub`, ont été
   traduits par `20260918190000_conversion_des_auteurs_staff` (plan
-  [`../plan-l-auteur-est-la-fiche.md`](../plan-l-auteur-est-la-fiche.md)).
+  [`../../journalisation/architecture-journalisation.md`](../../journalisation/architecture-journalisation.md) §12).
   Le filtre par acteur suit une personne sous tous ses identifiants.
 - **Sur un droit individuel**, l'auteur est `granted_by_staff_id` — l'id de la
   **fiche** de l'auteur, lu par `@StaffUserId()`, **sans clé étrangère** (la
@@ -294,7 +294,7 @@ le commit ; la porte `journal-tracked` couvre `staff/`.
   [`plan-reprise-du-journal-de-l-annuaire.md`](plan-reprise-du-journal-de-l-annuaire.md).
 - **L'auteur est la fiche, plus le `sub`** — journal et colonnes d'auteur,
   déployé le 2026-09-18 (fusions `58b9c80e` et `bd11ff78`) :
-  [`../plan-l-auteur-est-la-fiche.md`](../plan-l-auteur-est-la-fiche.md).
+  [`../../journalisation/architecture-journalisation.md`](../../journalisation/architecture-journalisation.md) §12.
 - **Le départ d'un membre et les adresses de fonction** sont en plan :
   [`../plan-depart-et-adresses-de-fonction.md`](../plan-depart-et-adresses-de-fonction.md).
 

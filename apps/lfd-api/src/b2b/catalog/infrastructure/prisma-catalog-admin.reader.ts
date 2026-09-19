@@ -64,8 +64,8 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
       // égalités n'est pas un tri.
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
     });
-    // Les auteurs des décisions, en une résolution pour toute la liste (plan
-    // `plan-l-auteur-est-la-fiche.md`, D3).
+    // Les auteurs des décisions, en une résolution pour toute la liste (
+    // `architecture-journalisation.md` §12, D3).
     const authors = await this.staffAuthors.identify(
       rows.map((row) => row.override?.decidedBy ?? null),
     );

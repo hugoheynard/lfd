@@ -38,7 +38,7 @@ export interface PackingSources {
   readonly now: Date;
   /**
    * Le nom de qui a fermé un bac, résolu par le handler auprès de l'annuaire
-   * (plan `plan-l-auteur-est-la-fiche.md`, D3). Une fonction et non un port :
+   * (`architecture-journalisation.md` §12, D3). Une fonction et non un port :
    * la fonction reste pure, et ne sait pas qu'un annuaire existe.
    */
   readonly authorName: (reference: string | null) => string | null;

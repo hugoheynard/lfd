@@ -5,7 +5,7 @@
  * Le `sub` est l'identifiant d'une personne **chez un tiers** — le fournisseur
  * de connexion. Il a servi d'auteur pendant des mois : une cinquantaine de
  * colonnes, deux journaux, des écrans qui l'affichaient brut, un export CSV qui
- * l'écrivait (plan `documentation/staff/plan-l-auteur-est-la-fiche.md`, §0).
+ * l'écrivait (`documentation/journalisation/architecture-journalisation.md` §12, §0).
  *
  * **Côté staff**, le plan l'a rendu inexprimable (D2, 2026-09-18) : après
  * `StaffAccessGuard`, la requête ne porte plus que l'accès, et le `sub` vérifié

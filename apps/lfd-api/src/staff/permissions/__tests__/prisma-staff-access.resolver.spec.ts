@@ -189,7 +189,7 @@ describe("PrismaStaffAccessResolver — 🔴 une adresse ne vole pas une fiche",
 
     expect(access).toBeNull();
     // Le `sub` perdant n'est pas celui de cette fiche : l'inscrire lui
-    // attribuerait les actes d'un autre (plan `plan-l-auteur-est-la-fiche.md`, D5).
+    // attribuerait les actes d'un autre (`architecture-journalisation.md` §12, D5).
     expect(aliases).toEqual([]);
   });
 

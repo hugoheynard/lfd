@@ -7,7 +7,7 @@ import { ListAccountAlertsQuery } from "./list-account-alerts.query.js";
 
 /**
  * Sert le journal d'un compte, du plus récent au plus ancien — avec le NOM de
- * qui a acquitté chaque alerte (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ * qui a acquitté chaque alerte (`architecture-journalisation.md` §12, D3).
  * Lecture pure.
  */
 @QueryHandler(ListAccountAlertsQuery)

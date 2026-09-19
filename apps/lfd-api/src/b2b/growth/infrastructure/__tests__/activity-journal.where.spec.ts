@@ -48,7 +48,7 @@ describe("activityWhereOf — le filtre par acteur ne coupe pas une histoire", (
   });
 
   it("vise l'id de fiche ET tous les `sub` que la personne a portés", () => {
-    // Plan `plan-l-auteur-est-la-fiche.md`, D4 : pendant la bascule, un même
+    // Plan `architecture-journalisation.md` §12, D4 : pendant la bascule, un même
     // membre du staff a écrit sous son `sub` puis sous l'id de sa fiche.
     const where = activityWhereOf({ limit: 50, actorId: "auth0|ancien" }, [
       "auth0|ancien",

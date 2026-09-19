@@ -36,7 +36,7 @@ personne d'avant, et tout ce qui sera fait ensuite à la nouvelle.
   individuel accordé avant la passation et un droit accordé après pointent vers
   le même identifiant. Seule la date les sépare.
 - ~~**`actor_id` du journal est le `sub` Auth0**~~ — réglé le 2026-09-18 :
-  c'est l'id de la fiche ([`../plan-l-auteur-est-la-fiche.md`](../plan-l-auteur-est-la-fiche.md)).
+  c'est l'id de la fiche ([`../../journalisation/architecture-journalisation.md`](../../journalisation/architecture-journalisation.md) §12).
   Le reste de ce point ne vaut plus que pour l'histoire : si la
   nouvelle personne garde la même identité Auth0 — même boîte, nouveau mot de
   passe —, le `sub` ne change pas, et le filtre par acteur mélange les deux.

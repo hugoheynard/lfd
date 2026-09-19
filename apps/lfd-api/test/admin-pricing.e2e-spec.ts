@@ -407,8 +407,8 @@ describe("suspendre, reprendre, archiver", () => {
 
     // L'id de fiche, plus le `sub` (plan de l'auteur, étape 3).
     expect(entry?.actor).toBe(E2E_STAFF_ID);
-    // Le nom, résolu par l'annuaire : le journal affichait le `sub` (plan
-    // `plan-l-auteur-est-la-fiche.md`, D3).
+    // Le nom, résolu par l'annuaire : le journal affichait le `sub` (
+    // `architecture-journalisation.md` §12, D3).
     expect(entry?.actorName).toBe("Opérateur E2E");
     expect(entry?.reason).toBe("Four en panne");
   });

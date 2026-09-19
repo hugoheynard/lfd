@@ -155,4 +155,4 @@ _Venu de [`../pricing/architecture-resolution-de-prix.md`](../pricing/architectu
   journal pour rien.
 - ~~L'auteur s'affiche par son `sub`~~ — **réglé le 2026-09-18** : le journal
   tarifaire sert le nom de l'auteur, et son `actor` est l'id de la fiche
-  ([`../staff/plan-l-auteur-est-la-fiche.md`](../staff/plan-l-auteur-est-la-fiche.md)).
+  ([`architecture-journalisation.md`](architecture-journalisation.md) §12).

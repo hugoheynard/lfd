@@ -5,7 +5,7 @@ import { RemoveStaffUserCommand } from "../staff-user.commands.js";
 /**
  * Régression : `DELETE /admin/staff-users/:id` supprimait la fiche, et avec
  * elle l'auteur de tout ce que la personne avait fait — et la seule trace de
- * ses `sub` avant leur conversion (plan `plan-l-auteur-est-la-fiche.md`,
+ * ses `sub` avant leur conversion (`architecture-journalisation.md` §12,
  * étape 0, 2026-09-18).
  */
 describe("RemoveStaffUserHandler", () => {

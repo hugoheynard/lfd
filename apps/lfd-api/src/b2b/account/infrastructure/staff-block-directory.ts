@@ -10,7 +10,7 @@ import { StaffDirectory, type StaffIdentity } from "../domain/ports/staff-direct
  * dérogation de `lint:prisma-model-ownership` (2026-09-09) qui attendait un
  * port côté staff. Ce port existe : l'adaptateur le traduit, et reconnaît
  * désormais les trois formes d'un auteur — id de fiche, `sub` actuel, `sub`
- * ancien (plan `plan-l-auteur-est-la-fiche.md`, D4).
+ * ancien (`architecture-journalisation.md` §12, D4).
  *
  * `null` rendu sans bruit pour tout le reste (marqueur, `sub` de
  * développement, fiche inconnue) : l'appelant garde l'identifiant, qui reste

@@ -116,7 +116,7 @@ describe("annuaire staff", () => {
 
   /**
    * Régression : la suppression effaçait l'auteur de tout ce que la personne
-   * avait fait (plan `plan-l-auteur-est-la-fiche.md`, étape 0, 2026-09-18).
+   * avait fait (`architecture-journalisation.md` §12, étape 0, 2026-09-18).
    */
   it("refuse de supprimer une fiche (409), qui reste dans l'annuaire", async () => {
     const id = await create();

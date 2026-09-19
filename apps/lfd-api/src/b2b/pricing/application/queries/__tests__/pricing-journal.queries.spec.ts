@@ -103,7 +103,7 @@ describe("ReadPricingJournalHandler", () => {
         act: "posed",
         actor: "auth0|staff",
         // Le nom, résolu par l'annuaire — l'écran ne montre plus le `sub`
-        // (plan `plan-l-auteur-est-la-fiche.md`, D3).
+        // (`architecture-journalisation.md` §12, D3).
         actorName: "Camille Durand",
         occurredAt: POSED_AT.toISOString(),
         reason: "fin de promo",

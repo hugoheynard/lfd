@@ -210,7 +210,7 @@ describe("Ancre de publication du catalogue", () => {
   });
 
   it("nomme qui a posé chaque ancre — l'identifiant reste servi, déprécié", async () => {
-    // Plan `plan-l-auteur-est-la-fiche.md`, D3 : l'écran affichait `takenBy`
+    // Plan `architecture-journalisation.md` §12, D3 : l'écran affichait `takenBy`
     // brut, c'est-à-dire un identifiant chez Auth0.
     await aProduct("Croissant");
     await take("première");

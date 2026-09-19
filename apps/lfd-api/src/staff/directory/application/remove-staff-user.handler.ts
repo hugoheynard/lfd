@@ -7,8 +7,8 @@ import { RemoveStaffUserCommand } from "./staff-user.commands.js";
  * La suppression d'une fiche **n'existe plus** : ce handler refuse, toujours.
  *
  * Une fiche est l'auteur de ce que la personne a fait, et la table des `sub`
- * qui convertira l'histoire en ids de fiche s'appuie sur elle (plan
- * `plan-l-auteur-est-la-fiche.md`, étape 0). Une fiche supprimée entre deux
+ * qui convertira l'histoire en ids de fiche s'appuie sur elle (
+ * `architecture-journalisation.md` §12, étape 0). Une fiche supprimée entre deux
  * étapes de ce plan emporterait la seule trace de ses identifiants.
  *
  * La route reste servie — elle répond `409` en nommant le geste de sortie —

@@ -375,7 +375,7 @@ jeton et remet l'identité à `StaffAccessGuard` par un canal interne à
 `platform/auth/` (`verified-staff-identity.ts`) ; une fois la fiche résolue, la
 requête ne porte plus que `access`, et **l'acteur de la requête est l'id de la
 fiche** — c'est lui que le journal et toutes les colonnes d'auteur écrivent
-(plan [`plan-l-auteur-est-la-fiche.md`](plan-l-auteur-est-la-fiche.md), déployé
+([`../journalisation/architecture-journalisation.md`](../journalisation/architecture-journalisation.md) §12, déployé
 le 2026-09-18). Aucun contrôleur ne peut lire un `sub` : `@StaffSub()` n'existe
 plus, et `@StaffUserId()` est le seul moyen de nommer l'auteur. Une requête
 refusée n'attache aucun acteur.

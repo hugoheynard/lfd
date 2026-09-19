@@ -83,7 +83,7 @@ function linesOf(
  *   l'article : la mercuriale garde sa ligne, et l'écran doit pouvoir dire
  *   qu'elle ne vise plus rien.
  * @param authors nomme qui l'a établie — résolu d'un coup pour toutes les
- *   mercuriales de la lecture (plan `plan-l-auteur-est-la-fiche.md`, D3).
+ *   mercuriales de la lecture (`architecture-journalisation.md` §12, D3).
  */
 export function posedMercurialeView(
   mercuriale: CompanyMercuriale,

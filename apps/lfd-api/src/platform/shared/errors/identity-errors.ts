@@ -49,7 +49,7 @@ export class IdentitySubjectUnknownError extends TechnicalError {
   /**
    * `subject` reste porté par l'objet, pour l'appelant qui répare ; il n'entre
    * plus dans le MESSAGE, que `AppErrorFilter` écrit au journal de production
-   * (plan `plan-l-auteur-est-la-fiche.md`, §8 — un identifiant chez un tiers
+   * (`architecture-journalisation.md` §12, §8 — un identifiant chez un tiers
    * n'a rien à faire dans nos logs).
    */
   constructor(readonly subject: string) {

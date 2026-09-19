@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { staffAuthor } from '../staff-author';
 
 /**
- * Le nom quand le serveur en a résolu un, la valeur brute sinon — plan
- * `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3. Le cas qui compte
+ * Le nom quand le serveur en a résolu un, la valeur brute sinon —
+ * `documentation/journalisation/architecture-journalisation.md` §12, D3. Le cas qui compte
  * est le premier : un `sub` Auth0 ne doit plus apparaître quand un nom existe.
  */
 describe('l’auteur staff affiché', () => {

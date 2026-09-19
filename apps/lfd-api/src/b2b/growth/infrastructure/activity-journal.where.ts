@@ -16,8 +16,8 @@ import { prefixesOf } from "../domain/activity-module.js";
  * Toute valeur passe en **paramètre** lié, jamais concaténée.
  *
  * `actorIds` : toutes les références sous lesquelles l'acteur filtré a pu
- * écrire — son id de fiche et ses `sub`, actuel et anciens (plan
- * `plan-l-auteur-est-la-fiche.md`, D4). Sans elles, le filtre retombe sur la
+ * écrire — son id de fiche et ses `sub`, actuel et anciens (
+ * `architecture-journalisation.md` §12, D4). Sans elles, le filtre retombe sur la
  * seule égalité à `query.actorId`, et l'histoire d'une personne se coupe
  * entre ses identifiants.
  */

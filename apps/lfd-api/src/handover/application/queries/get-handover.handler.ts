@@ -48,7 +48,7 @@ export class GetHandoverHandler implements IQueryHandler<GetHandoverQuery, Order
 
 /**
  * Les auteurs d'une attestation — celui qui a remis le sac, s'il y en a un
- * (plan `plan-l-auteur-est-la-fiche.md`, D3). Partagé par les trois lectures
+ * (`architecture-journalisation.md` §12, D3). Partagé par les trois lectures
  * qui projettent la vue de comptoir.
  */
 export function authorsOf(

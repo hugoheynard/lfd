@@ -4,7 +4,7 @@
  * Chaque vue qui sert un auteur staff porte deux champs : l'identifiant tel
  * qu'écrit (`createdBy`, `takenBy`… — un `sub` Auth0 ou un id de fiche) et son
  * nom résolu au serveur (`createdByName`…). Plan :
- * `documentation/staff/plan-l-auteur-est-la-fiche.md`, D3.
+ * `documentation/journalisation/architecture-journalisation.md` §12, D3.
  *
  * Le nom vaut `null` quand la valeur ne désigne **aucune fiche** : un marqueur
  * (`seed-pim`, `sonde`, `system`) ou un `sub` jamais lié. On affiche alors la

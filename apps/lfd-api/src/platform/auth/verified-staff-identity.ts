@@ -9,7 +9,7 @@ import type { StaffPrincipal } from "./staff-principal.js";
  * requête ne porte plus que `access` : un contrôleur ne peut plus lire un `sub`,
  * ni par un champ, ni par un décorateur, ni par une déstructuration — le moyen
  * a disparu, là où une règle aurait dû surveiller l'usage
- * (`documentation/staff/plan-l-auteur-est-la-fiche.md`, D2).
+ * (`documentation/journalisation/architecture-journalisation.md` §12, D2).
  *
  * Une `WeakMap` indexée par la requête plutôt qu'un champ caché : elle n'est
  * atteignable que par ces deux fonctions, et elle ne retient rien après la

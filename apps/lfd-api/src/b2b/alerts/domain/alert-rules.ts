@@ -36,7 +36,7 @@ export type StoredAlertRule =
 
 /**
  * Le nom d'un auteur staff, résolu par l'appelant auprès de l'annuaire — `null`
- * s'il ne désigne personne (plan `plan-l-auteur-est-la-fiche.md`, D3). Une
+ * s'il ne désigne personne (`architecture-journalisation.md` §12, D3). Une
  * fonction et non un port : ces résolutions restent pures.
  */
 export type AuthorNamer = (reference: string | null) => string | null;
