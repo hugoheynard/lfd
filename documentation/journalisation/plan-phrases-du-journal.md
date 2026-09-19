@@ -4,7 +4,7 @@
 > toute phrase du journal devrait être humainement compréhensible ». Il prend
 > la section « Les phrases » de [`todo-journal-activite.md`](todo-journal-activite.md).
 >
-> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lot A bâti, lot B à venir.** Le fonctionnement actuel du journal est
+> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lots A et B bâtis, lot C à venir.** Le fonctionnement actuel du journal est
 > dans [`architecture-journalisation.md`](architecture-journalisation.md).
 
 ## 0. Ce qu'on veut, en une phrase par exigence
@@ -153,7 +153,14 @@ ce qui est vrai des deux.
 
 C'est le lot qui rend l'inventaire exact. Il ne change rien à l'écran.
 
-### Lot B — Les noms figés (API)
+### Lot B — ~~Les noms figés (API)~~ — fait le 2026-09-19 (`cb67bb63`)
+
+> Reste : le déployer. Écarts assumés : `product.ingredients_saved` ne nomme pas
+> la fiche (les ingrédients ne lisent pas le catalogue) ; les dérogations
+> d'accès gardent leur e-mail ([`todo-derogations-d-acces.md`](todo-derogations-d-acces.md)) ;
+> `staff_user.identity_edited` garde l'avant/après complet, e-mail et téléphone
+> du staff compris — décision de Hugo du 2026-09-18
+> (`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`).
 
 > **Relevé par le lot A, à traiter ici** :
 >
