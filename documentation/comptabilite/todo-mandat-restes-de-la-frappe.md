@@ -47,3 +47,11 @@ Ce qui reste : les supprimer par migration, **dans un déploiement à part** —
 retrait des deux champs du modèle `PaymentMandate` et `DROP COLUMN` dans le
 même passage, après qu'une version sans lecture a été en ligne. C'est une
 migration de données : `vitruve` puis `lecteur-de-migrations` avant.
+
+## Retirer `publishableKey` de la vue du mandat
+
+`MandateSectionView.publishableKey` servait à monter l'IBAN Element des mandats
+Stripe. Depuis `f9e4e15f` (2026-09-19), le back-office ne le lit plus, et le
+champ est `@deprecated`. **Déclencheur** : ce back-office déployé. Alors
+seulement, `admin-mandates.controller.ts` cesse de le servir et le contrat le
+perd. Les clés Stripe restent : elles servent la carte (Hugo, 2026-09-19).
