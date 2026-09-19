@@ -1,0 +1,24 @@
+-- ───────────────────────────────────────────────────────────────────────────
+-- UN INDEX POUR LE FILTRE PAR PERSONNE DU JOURNAL.
+--
+-- Cf. documentation/journalisation/plan-journal-d-activite.md — lot 2.
+--
+-- L'écran Journal filtre par auteur (`actor_id IN (<id de fiche>, <ses sub>)`),
+-- et c'était le seul filtre exposé qu'aucun index ne servait : chaque requête
+-- parcourait la table.
+--
+-- ADDITIVE — un index, rien d'autre. L'instance d'avant l'ignore.
+--
+-- ⚠️ VERROU : sans `CONCURRENTLY` (Prisma joue la migration dans une
+-- transaction), la construction bloque les ÉCRITURES sur `activity_events` —
+-- donc tout geste qui journalise dans sa transaction attend. La table a un
+-- mois (remise à blanc le 2026-08-16) : la construction se compte en
+-- millisecondes. À déployer hors des heures d'usage, et JAMAIS pendant la
+-- sortie d'Accelerate (week-end du 19–20 septembre 2026).
+--
+-- RETOUR ARRIÈRE :
+--
+--   DROP INDEX "growth"."activity_events_actor_id_idx";
+-- ───────────────────────────────────────────────────────────────────────────
+
+CREATE INDEX "activity_events_actor_id_idx" ON "growth"."activity_events"("actor_id");
