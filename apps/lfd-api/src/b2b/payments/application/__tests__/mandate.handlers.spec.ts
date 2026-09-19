@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { DocumentStore, type StoredDocument } from "../../../../platform/storage/document-store.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -139,26 +140,71 @@ function activeMandate(): PaymentMandate {
  */
 const CIPHER = new AesGcmFieldCipher(Buffer.alloc(32, 5));
 
+/** L'unité de travail, tracée dans le même fil que les autres gestes. */
+class TracingUnitOfWork extends UnitOfWork {
+  constructor(private readonly trace: Trace) {
+    super();
+  }
+
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    this.trace.steps.push("uow:begin");
+    const result = await work();
+    this.trace.steps.push("uow:end");
+    return result;
+  }
+}
+
+function revokeHandler(
+  current: PaymentMandate | null,
+  events = new RecordingPublisher(),
+): { readonly handler: RevokeMandateHandler; readonly trace: Trace } {
+  const { repo, gateway, trace } = doubles({ current });
+  const handler = new RevokeMandateHandler(
+    repo,
+    gateway,
+    new FixedClock(NOW),
+    events,
+    new TracingUnitOfWork(trace),
+  );
+  return { handler, trace };
+}
+
 describe("RevokeMandateHandler", () => {
   it("détache chez le PRESTATAIRE avant de marquer révoqué", async () => {
     // Ordre inverse de l'enregistrement, même raison : tant que le moyen est
-    // attaché chez Stripe, un prélèvement peut partir.
-    const { repo, gateway, trace } = doubles({ current: activeMandate() });
-    const handler = new RevokeMandateHandler(repo, gateway, new FixedClock(NOW));
+    // attaché chez Stripe, un prélèvement peut partir. L'appel réseau reste
+    // HORS de l'unité de travail, qui ne tient que l'écriture et sa trace.
+    const { handler, trace } = revokeHandler(activeMandate());
 
     await handler.execute(new RevokeMandateCommand("cmp_1"));
 
-    expect(trace.steps).toEqual(["gateway", "save"]);
+    expect(trace.steps).toEqual(["gateway", "uow:begin", "save", "uow:end"]);
     expect(trace.saved?.status).toBe("revoked");
   });
 
-  it("refuse quand la société n'a jamais eu de mandat", async () => {
-    const { repo, gateway } = doubles({ current: null });
-    const handler = new RevokeMandateHandler(repo, gateway, new FixedClock(NOW));
+  /** Lot 1 du plan du journal (2026-09-19) : le geste qui arrête les prélèvements a sa trace. */
+  it("journalise la révocation avec la RUM et l'état d'avant", async () => {
+    const events = new RecordingPublisher();
+    const { handler } = revokeHandler(activeMandate(), events);
+
+    await handler.execute(new RevokeMandateCommand("cmp_1"));
+
+    expect(events.factTypes()).toEqual(["payment_mandate.revoked"]);
+    expect(events.traced[0]?.journalFact()).toMatchObject({
+      subjectType: "payment_mandate",
+      subjectId: "mdt_1",
+      payload: { companyId: "cmp_1", reference: "RUM-123", previousStatus: "active", via: "staff" },
+    });
+  });
+
+  it("refuse quand la société n'a jamais eu de mandat, sans rien journaliser", async () => {
+    const events = new RecordingPublisher();
+    const { handler } = revokeHandler(null, events);
 
     await expect(handler.execute(new RevokeMandateCommand("cmp_1"))).rejects.toBeInstanceOf(
       MandateNotFoundError,
     );
+    expect(events.traced).toHaveLength(0);
   });
 });
 

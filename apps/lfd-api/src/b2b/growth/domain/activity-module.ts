@@ -33,8 +33,16 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // ils décident de l'heure à laquelle une commande change de mains.
     "public_pickup_schedule.",
     "order_cutoff.",
+    // Une dérogation laisse passer une commande en retard, la surtaxe dit ce
+    // que ce retard coûte : deux gestes sur la même commande (2026-09-19).
+    // ⚠️ `order_cutoff_waiver.` ne tombe PAS sous `order_cutoff.` — le point
+    // fait partie du préfixe —, d'où son entrée propre.
+    "order_cutoff_waiver.",
+    "order_late_fee.",
     "delivery_availability.",
   ],
+  // Le RIB d'une société s'écrit `company.bank_account_changed` : il se range
+  // ici par son préfixe, sans entrée propre.
   comptes: ["user.", "company.", "subscription.", "support."],
   // L'annuaire staff et ses rôles : qui entre, avec quels droits, et qui l'a décidé.
   equipe: ["staff_user.", "staff_role."],

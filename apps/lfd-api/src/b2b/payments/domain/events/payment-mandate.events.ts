@@ -1,3 +1,5 @@
+import type { MandateStatus } from "@lfd/contracts";
+
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import {
   PAYMENT_MANDATE_FACTS,
@@ -86,6 +88,34 @@ export class MandateSignedEvent implements JournaledEvent {
         reference: this.reference,
         signedAt: this.signedAt,
         replacedMandateId: this.replacedMandateId,
+      },
+    };
+  }
+}
+
+/**
+ * Fait : **le staff révoque le mandat courant**. `previousStatus` dit ce qui a été
+ * révoqué — un mandat qui autorisait un débit, ou un brouillon jamais signé :
+ * les deux n'appellent pas la même question du client.
+ */
+export class MandateRevokedEvent implements JournaledEvent {
+  constructor(
+    readonly mandateId: string,
+    readonly companyId: string,
+    readonly reference: string,
+    readonly previousStatus: MandateStatus,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PAYMENT_MANDATE_FACTS.revoked,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.mandateId,
+      payload: {
+        companyId: this.companyId,
+        reference: this.reference,
+        previousStatus: this.previousStatus,
+        via: "staff",
       },
     };
   }

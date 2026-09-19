@@ -194,11 +194,14 @@ describe("SetMyCompanyBankAccountHandler", () => {
 
     expect(repo.saved).toHaveLength(1);
     expect(mandates.saved.map((saved) => saved.status)).toEqual(["revoked"]);
+    // Deux faits, deux sujets : le RIB changé (la société, depuis le
+    // 2026-09-19), puis le brouillon qu'il rend caduc (le mandat).
     expect(events.traced.map((event) => event.journalFact().type)).toEqual([
+      "company.bank_account_changed",
       "payment_mandate.draft_voided",
     ]);
     // Plan §10 (2026-09-14) : le fait dit que c'est le client qui a réécrit.
-    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+    expect(events.traced[1]?.journalFact().payload).toMatchObject({
       cause: "bank_account_changed",
       via: "customer",
     });

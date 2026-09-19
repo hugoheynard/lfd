@@ -6,6 +6,7 @@ import {
   OpenWaiverAlreadyExistsError,
   OrderCutoffWaiverNotFoundError,
 } from "../domain/order-cutoff-waiver-errors.js";
+import type { CutoffWaiverDecision } from "../domain/order-cutoff-waiver.events.js";
 import { OrderCutoffWaiverRepository } from "../domain/order-cutoff-waiver.repository.js";
 
 /** Code Postgres d'une violation de contrainte d'unicité. */
@@ -70,14 +71,20 @@ export class PrismaOrderCutoffWaiverRepository extends OrderCutoffWaiverReposito
    * pas trouvée, donc pas retirable. Elle atteste ce qui s'est passé, et une
    * commande passée ne se dépasse pas — le refus vient donc de la requête, pas
    * d'un test qu'un second chemin d'écriture pourrait oublier.
+   *
+   * La lecture qui précède ne sert qu'à dire au journal ce qui part ; c'est
+   * toujours le `deleteMany` conditionnel qui tranche. Une consommation glissée
+   * entre les deux ne touche aucune ligne, et le retrait est refusé.
    */
-  async revoke(id: string): Promise<void> {
-    const deleted = await this.prisma.orderCutoffWaiver.deleteMany({
-      where: { id, usedByOrderId: null },
-    });
-    if (deleted.count === 0) {
+  async revoke(id: string): Promise<CutoffWaiverDecision> {
+    const open = { id, usedByOrderId: null };
+    const row = await this.prisma.orderCutoffWaiver.findFirst({ where: open });
+    const deleted = await this.prisma.orderCutoffWaiver.deleteMany({ where: open });
+    if (row === null || deleted.count === 0) {
       throw new OrderCutoffWaiverNotFoundError(id);
     }
+    const { companyId, fulfillmentDate, reason } = toView(row);
+    return { companyId, fulfillmentDate, reason };
   }
 }
 

@@ -12,6 +12,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { MandateNotFoundError } from "../domain/errors/mandate-errors.js";
+import { MandateRevokedEvent } from "../domain/events/payment-mandate.events.js";
 import { MandateGateway } from "../domain/mandate-gateway.js";
 import { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { AttachMandateProofCommand, RevokeMandateCommand } from "./mandate-commands.js";
@@ -25,6 +26,11 @@ import { attachProofToDraft } from "./mandate-proof-support.js";
  * paiement est attaché chez Stripe, un prélèvement peut partir. Marquer
  * « révoqué » chez nous en premier nous ferait croire l'autorisation retirée
  * alors qu'elle ne l'est pas.
+ *
+ * Journalisé depuis le 2026-09-19 (`payment_mandate.revoked`), dans la
+ * transaction de l'écriture locale. L'appel au prestataire reste AVANT et
+ * dehors : une transaction ne s'ouvre pas sur un aller-retour réseau
+ * (`UnitOfWork`), et c'est déjà l'ordre qui protège le client.
  */
 @CommandHandler(RevokeMandateCommand)
 export class RevokeMandateHandler implements ICommandHandler<RevokeMandateCommand, void> {
@@ -32,6 +38,8 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
     private readonly mandates: PaymentMandateRepository,
     private readonly gateway: MandateGateway,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: RevokeMandateCommand): Promise<void> {
@@ -52,8 +60,14 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
     if (paymentMethodId !== null) {
       await this.gateway.revokeMandate(paymentMethodId);
     }
+    const previousStatus = mandate.status;
     mandate.revoke(this.clock.now());
-    await this.mandates.save(mandate);
+    await this.uow.run(async () => {
+      await this.mandates.save(mandate);
+      await this.events.publishTraced(
+        new MandateRevokedEvent(mandate.id, mandate.companyId, mandate.reference, previousStatus),
+      );
+    });
   }
 }
 

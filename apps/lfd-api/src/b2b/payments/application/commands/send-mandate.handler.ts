@@ -40,6 +40,12 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  * La clé porte l'identifiant du mandat : deux clics rapides ne font pas partir
  * deux courriels. Elle ne porte PAS d'horodatage — un renvoi délibéré passe par
  * le refus ci-dessus, pas par une clé qui changerait toute seule.
+ *
+ * @sans-journal il n'écrit aucune donnée métier : il envoie le papier dont la
+ * frappe est déjà au journal (`payment_mandate.minted`), et l'envoi est consigné
+ * par le journal du courrier (`ops.mail_send`, best-effort) — vérifié le
+ * 2026-09-19. Faut-il en plus un fait d'activité « mandat envoyé » : question
+ * laissée à Hugo, pas tranchée ici.
  */
 @CommandHandler(SendMandateCommand)
 export class SendMandateHandler implements ICommandHandler<SendMandateCommand, void> {

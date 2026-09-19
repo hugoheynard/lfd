@@ -48,6 +48,11 @@
  * `journal.append` sous `UnitOfWork`, ou déléguer à `OpenStaffAccess` qui le
  * fait — cf. `STAFF_ZONE` plus bas.
  *
+ * **L'argent** (`b2b/order-waivers/**`, `b2b/payments/**`, depuis le
+ * 2026-09-19) : tout `@CommandHandler`, staff ou client, doit APPELER
+ * `publishTraced` sous `UnitOfWork`, ou déléguer à une séquence partagée qui
+ * le fait — cf. `MONEY_ZONES` plus bas.
+ *
  * Usage : `pnpm lint:journal-tracked` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -58,13 +63,25 @@ const SRC = join(ROOT, "apps", "lfd-api", "src");
 const SKIP_DIRS = new Set(["__tests__", "node_modules", "dist", "client"]);
 
 /**
- * Un handler dont le NOM dit qu'un agent agit sur le compte d'un tiers.
+ * Dans `b2b/account`, les handlers dont le NOM dit qu'un agent agit sur le
+ * compte d'un tiers — et eux seuls, **pour l'instant**.
  *
- * Par le nom, faute de mieux : rien dans le type ne distingue « le client
- * modifie son adresse » de « un agent modifie l'adresse du client », et c'est
- * pourtant toute la différence — le premier n'engage que lui. La convention
- * `…ByStaff` porte déjà cette distinction dans les commandes ; les cinq gestes
- * qui n'ont pas de jumeau client (certifier, activer, changer le statut,
+ * ⚠️ Cette liste s'appuyait sur une règle : « le client qui modifie son adresse
+ * n'engage que lui », donc ses gestes restaient hors journal. **La règle est
+ * tombée le 2026-09-19** (Hugo : « tout doit être journalisé », plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) :
+ * un geste du client sur son propre compte journalise aussi — sans ses
+ * coordonnées. Le RIB client est tenu depuis ce jour par la zone `payments`.
+ *
+ * Le filtre par nom reste donc la FRONTIÈRE DE LA ZONE, pas une dispense : les
+ * gestes du client dans `b2b/account` (profil, adresses, membres) entrent au
+ * journal avec la tranche (c) du lot 1, et c'est alors cette zone qui passera
+ * à « tous les handlers », comme `order-waivers` et `payments`. Jusque-là, un
+ * handler client de `b2b/account` qui ne journalise pas est une dette connue,
+ * pas un choix.
+ *
+ * La convention `…ByStaff` porte la distinction dans les commandes ; les cinq
+ * gestes qui n'ont pas de jumeau client (certifier, activer, changer le statut,
  * accorder un délai) sont nommés en clair.
  */
 const STAFF_ACT =
@@ -133,6 +150,50 @@ const CLIENT_NOTES_ZONE = "client-notes";
 const STAFF_ZONE = "staff";
 const STAFF_DELEGATES = new Map([
   ["OpenStaffAccess", join("staff", "invitations", "open-staff-access.service.ts")],
+]);
+
+/**
+ * **L'argent** (lot 1 du plan du journal, tranche (a), 2026-09-19) : la
+ * surtaxe de retard, les dérogations d'heure limite, le RIB et le mandat.
+ * Tous leurs handlers, sans tri par nom — et dans `payments`, ceux du client
+ * comme ceux du staff : le client qui change son RIB change le compte que nous
+ * débitons, et depuis la décision du 2026-09-19 son geste journalise aussi.
+ *
+ * La discipline est celle des actes nommés (`publishTraced` sous
+ * `UnitOfWork`), avec une nuance : `payments` partage ses séquences entre le
+ * chemin client et le chemin staff, et le handler y DÉLÈGUE (cf.
+ * `MONEY_DELEGATES`).
+ */
+const MONEY_ZONES = ["order-waivers", "payments"];
+
+/**
+ * Les séquences partagées de `payments` qui journalisent elles-mêmes, et le
+ * fichier où la porte le VÉRIFIE — même geste que `STAFF_DELEGATES` : un nom
+ * reconnu n'est pas un chèque en blanc. Le fichier doit appeler
+ * `publishTraced(`, et ouvrir une unité de travail (`uow.run(`) ou appeler
+ * l'une des `TRANSACTION_OPENERS`.
+ *
+ * ⚠️ `writeVoidingDraft` n'y est PAS, et c'est le cas qui a fait écrire cette
+ * table : elle ne journalise que la révocation d'un brouillon, quand il y en a
+ * un. Sans brouillon, un RIB changé par elle seule ne laissait aucune trace
+ * (constaté le 2026-09-19). Elle ouvre la transaction ; elle ne vaut pas fait.
+ */
+const MONEY_DELEGATES = new Map([
+  [
+    "recordCompanyBankAccount",
+    join("b2b", "payments", "application", "commands", "record-company-bank-account.ts"),
+  ],
+  [
+    "recordMandateOptions",
+    join("b2b", "payments", "application", "commands", "record-mandate-options.ts"),
+  ],
+  ["mintDraftMandate", join("b2b", "payments", "application", "mint-mandate-support.ts")],
+  ["attachProofToDraft", join("b2b", "payments", "application", "mandate-proof-support.ts")],
+]);
+
+/** Ce qui ouvre l'unité de travail pour une délégation — sans journaliser pour elle. */
+const TRANSACTION_OPENERS = new Map([
+  ["writeVoidingDraft", join("b2b", "payments", "application", "draft-mandate-voiding.ts")],
 ]);
 
 /**
@@ -263,6 +324,38 @@ function auditStaff(source, index, params, handler) {
   return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
 }
 
+/** Une délégation de `MONEY_DELEGATES` journalise-t-elle vraiment, sous unité de travail ? */
+function delegateJournals(name) {
+  const service = readFileSync(join(SRC, MONEY_DELEGATES.get(name)), "utf8");
+  const opensTransaction =
+    service.includes("uow.run(") ||
+    [...TRANSACTION_OPENERS].some(
+      ([opener, file]) =>
+        service.includes(`${opener}(`) &&
+        readFileSync(join(SRC, file), "utf8").includes("uow.run("),
+    );
+  return service.includes("publishTraced(") && opensTransaction;
+}
+
+/**
+ * Zone de l'argent : APPELER `publishTraced` sous unité de travail — ou
+ * déléguer à une séquence de `MONEY_DELEGATES` qui le fait.
+ */
+function auditMoney(source, index, params, handler) {
+  const body = handlerBody(source, index);
+  const delegate = [...MONEY_DELEGATES.keys()].find((name) => body.includes(`${name}(`));
+  if (delegate === undefined) {
+    return auditTraced(source, index, params, handler);
+  }
+  checked += 1;
+  const head = source.slice(Math.max(0, index - 1200), index);
+  const missing = [
+    delegateJournals(delegate) ? null : `un ${delegate} qui appelle publishTraced sous UnitOfWork`,
+    params.includes("UnitOfWork") || head.includes("@hors-transaction") ? null : "UnitOfWork",
+  ].filter(Boolean);
+  return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
+}
+
 const ZONES = [
   { root: join(SRC, STAFF_ZONE), audit: auditStaff },
   { root: join(SRC, "pim"), audit: auditPim },
@@ -279,6 +372,7 @@ const ZONES = [
     root: join(SRC, "b2b", CLIENT_NOTES_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
+  ...MONEY_ZONES.map((zone) => ({ root: join(SRC, "b2b", zone), audit: auditMoney })),
   {
     root: join(SRC, "b2b", "pricing"),
     audit: (source, index, params, handler) =>
@@ -325,7 +419,8 @@ if (offenders.length > 0) {
       "les tests passent, l'écran fonctionne. Ça se découvre le jour où l'on\n" +
       "demande « qui a changé ça » — et ce jour-là, le blanc ne se comble plus.\n\n" +
       "Soit il journalise — `PimJournal` + `UnitOfWork` au référentiel,\n" +
-      "`publishTraced` sous unité de travail pour un acte du staff,\n" +
+      "`publishTraced` sous unité de travail pour un acte du staff ou un\n" +
+      "geste d'argent (ou une séquence de `MONEY_DELEGATES`),\n" +
       "`journal.append` sous unité de travail dans l'équipe — soit il\n" +
       "déclare `@sans-journal <raison>` dans son commentaire : visible,\n" +
       "motivée, relisible.\n",

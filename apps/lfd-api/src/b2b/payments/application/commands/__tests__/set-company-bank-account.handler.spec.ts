@@ -226,12 +226,13 @@ describe("SetCompanyBankAccountHandler", () => {
       "mandate:find-draft",
       "uow:begin",
       "account:save",
+      "journal:company.bank_account_changed",
       "mandate:save:revoked",
       "journal:payment_mandate.draft_voided",
       "uow:end",
       "bell",
     ]);
-    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+    expect(events.traced[1]?.journalFact().payload).toMatchObject({
       cause: "bank_account_changed",
       via: "staff",
     });
@@ -256,13 +257,19 @@ describe("SetCompanyBankAccountHandler", () => {
     expect(repo.stored?.account.iban.value).toBe(IBAN);
   });
 
-  it("ne révoque ni ne sonne quand aucun brouillon n'existe", async () => {
+  /**
+   * ⚠️ Ce cas affirmait « aucun fait » jusqu'au 2026-09-19 : sans brouillon, un
+   * RIB changé ne laissait aucune trace. Il en laisse une, et une seule.
+   */
+  it("ne révoque ni ne sonne quand aucun brouillon n'existe — et journalise le RIB seul", async () => {
     const { handler, mandates, events, notifier } = build();
 
     await handler.execute(new SetCompanyBankAccountCommand("cmp_1", PAYLOAD));
 
     expect(mandates.saved).toHaveLength(0);
-    expect(events.traced).toHaveLength(0);
+    expect(events.traced.map((event) => event.journalFact().type)).toEqual([
+      "company.bank_account_changed",
+    ]);
     expect(notifier.notices).toHaveLength(0);
   });
 

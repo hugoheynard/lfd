@@ -22,6 +22,13 @@ export const PAYMENT_MANDATE_FACTS = {
   proofAttached: "payment_mandate.proof_attached",
   /** Le staff déclare le papier signé : le mandat autorise désormais un débit. */
   signed: "payment_mandate.signed",
+  /**
+   * Le staff révoque le mandat courant — actif ou brouillon — depuis la fiche
+   * (depuis le 2026-09-19, plan `documentation/journalisation/plan-journal-d-activite.md`
+   * lot 1) : c'est le geste qui arrête les prélèvements, et il n'avait aucune
+   * trace hors de la colonne `revoked_at`.
+   */
+  revoked: "payment_mandate.revoked",
   /** Le brouillon est révoqué parce que ce qu'il imprime a changé. */
   draftVoided: "payment_mandate.draft_voided",
   /**
