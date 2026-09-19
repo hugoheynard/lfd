@@ -22,8 +22,7 @@ import {
 import { formatCount, formatUnit } from '../units';
 
 /**
- * **La vie d'une commande et la journée du fournil** — la passation, reprise de
- * `factSentence` (plan des phrases, lot C, 2026-09-19), le colisage et le
+ * **La vie d'une commande et la journée du fournil** — la passation, le colisage et le
  * retrait, les dérogations d'heure limite et la surtaxe qu'elles déclenchent,
  * le plan d'une journée et le contenant d'un article (lot D).
  */
@@ -197,14 +196,28 @@ function productionDay(verb: string, singular: string, plural: string): Phrase {
   };
 }
 
+/**
+ * « Jean Dupont a passé la commande ORD-142 » — le NUMÉRO, jamais
+ * l'identifiant : c'est par lui qu'on retrouve une commande. Le sujet de la
+ * ligne est le client qui l'a passée (`customerLabel` au catalogue) : quand
+ * c'est l'auteur lui-même, la phrase ne le répète pas ; quand l'équipe commande
+ * pour lui, « … pour Jean Dupont ».
+ */
+const orderPlaced: Phrase = (fact) => {
+  const client = subjectLabelOf(fact);
+  return byActor(
+    fact,
+    [
+      text('a passé la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+      ...(client === null || client === fact.actor ? [] : [text(' pour '), subject(fact, client)]),
+    ],
+    ['subjectLabel', 'orderNumber'],
+  );
+};
+
 export const ORDERS_PHRASES = {
-  // Le NUMÉRO d'abord : c'est par lui qu'on retrouve une commande, pas par son
-  // identifiant technique.
-  'order.placed': (fact) =>
-    said(
-      [text('Commande '), name(orDash(fact.payload['orderNumber'])), text(' passée')],
-      ['orderNumber'],
-    ),
+  'order.placed': orderPlaced,
   'order.ready': orderReady,
   'order.handed_over': orderHandedOver,
 

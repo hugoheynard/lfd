@@ -330,6 +330,9 @@ describe('les allergènes', () => {
       'Colette Martin a créé l’allergène « Lait » dans une catégorie (identifiant laitiers)',
     );
     expect(sentence(updated)).toBe('Colette Martin a modifié un allergène : catégorie');
+    // `categoryId` se dit « Famille » partout ailleurs : ici, une catégorie d'allergènes.
+    expect(labels(updated)).toContain('Catégorie');
+    expect(labels(updated)).not.toContain('Famille');
     expect(sentence(archived)).toBe('Colette Martin a archivé l’allergène « Lait »');
     expect(sentence(restored)).toBe('Colette Martin a restauré l’allergène « Lait »');
   });

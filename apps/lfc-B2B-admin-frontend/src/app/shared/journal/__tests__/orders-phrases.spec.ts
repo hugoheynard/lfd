@@ -30,6 +30,86 @@ function row(input: FactInput, label: string): string | undefined {
     ?.value.replace(/\s/gu, ' ');
 }
 
+describe('la passation d’une commande (order.placed)', () => {
+  const placed = (actorName: string, subjectLabel?: string): FactInput =>
+    fact({
+      type: 'order.placed',
+      subjectType: 'user',
+      actorName,
+      actorType: 'customer',
+      payload: {
+        ...(subjectLabel === undefined ? {} : { subjectLabel }),
+        orderId: 'ord_1',
+        orderNumber: 'ORD-142',
+        companyId: null,
+        totalCents: 1_250,
+      },
+    });
+
+  it('met l’auteur en sujet, et ne répète pas le client quand c’est lui', () => {
+    expect(sentence(placed('Jean Dupont', 'Jean Dupont'))).toBe(
+      'Jean Dupont a passé la commande ORD-142',
+    );
+    expect(renderFact(placed('Jean Dupont', 'Jean Dupont')).namesActor).toBe(true);
+  });
+
+  it('nomme le client quand l’équipe commande pour lui', () => {
+    expect(sentence({ ...placed('Colette Martin', 'Jean Dupont'), actorType: 'staff' })).toBe(
+      'Colette Martin a passé la commande ORD-142 pour Jean Dupont',
+    );
+  });
+});
+
+describe('les réglages du retrait, de la livraison et des heures limites', () => {
+  it('met l’auteur en sujet d’une zone, d’un point de retrait, de ses créneaux', () => {
+    expect(
+      sentence(
+        fact({ type: 'delivery_zone.created', payload: { subjectLabel: 'Paris', label: 'Paris' } }),
+      ),
+    ).toBe('Colette Martin a créé la zone de livraison « Paris »');
+    expect(sentence(fact({ type: 'delivery_zone.removed', payload: {} }))).toBe(
+      'Colette Martin a supprimé une zone de livraison',
+    );
+    expect(
+      sentence(fact({ type: 'pickup_address.default_set', payload: { subjectLabel: 'Halles' } })),
+    ).toBe('Colette Martin a désigné le point de retrait « Halles » comme point par défaut');
+    expect(
+      sentence(
+        fact({
+          type: 'public_pickup_schedule.updated',
+          payload: {
+            subjectLabel: 'Halles',
+            label: 'Halles',
+            ruleCount: 1,
+            closureCount: 0,
+            configured: true,
+          },
+        }),
+      ),
+    ).toBe('Colette Martin a réglé les créneaux publics du point de retrait « Halles » (1 plage)');
+  });
+
+  it('dit l’heure limite posée, portée, supprimée', () => {
+    const rule = {
+      pickupAddress: null,
+      weekday: null,
+      daysBefore: 1,
+      time: '17:30',
+      graceMinutes: 0,
+    };
+
+    expect(sentence(fact({ type: 'order_cutoff.created', payload: rule }))).toBe(
+      'Colette Martin a posé une heure limite à 17:30',
+    );
+    expect(sentence(fact({ type: 'order_cutoff.removed', payload: rule }))).toBe(
+      'Colette Martin a supprimé l’heure limite de 17:30',
+    );
+    expect(sentence(fact({ type: 'order_cutoff.removed', payload: {} }))).toBe(
+      'Colette Martin a supprimé une heure limite',
+    );
+  });
+});
+
 describe('le retrait d’une commande (order.handed_over)', () => {
   const current = fact({
     type: 'order.handed_over',
@@ -45,7 +125,7 @@ describe('le retrait d’une commande (order.handed_over)', () => {
     },
   });
 
-  it('nomme la fiche qui a remis la commande, et comment', () => {
+  it('nomme la fiche qui a validé le retrait, et comment', () => {
     expect(sentence(current)).toBe(
       'Cécile Martin a validé le retrait de la commande ORD-7 en scannant le QR du client — Jean Dupont',
     );
@@ -79,7 +159,9 @@ describe('le retrait d’une commande (order.handed_over)', () => {
       'Cécile Martin a validé le retrait de la commande ORD-7 en scannant le QR du client',
     );
     expect(renderFact(old).namesActor).toBe(true);
-    expect(row(old, 'Remise par')).toBe('(identifiant stf_1)');
+    // « Retrait », jamais « remise » : ce mot ne désigne que la réduction de prix.
+    expect(row(old, 'Retrait validé par')).toBe('(identifiant stf_1)');
+    expect(row(old, 'Retirée le')).toBeDefined();
   });
 });
 

@@ -16,12 +16,11 @@ import { TEAM_PHRASES } from './team-phrases';
  * **Le registre des phrases** : une par type du catalogue (D3 du plan
  * `documentation/journalisation/plan-phrases-du-journal.md`).
  *
- * 🚧 `Partial` pendant le lot C, et c'est provisoire : le lot D écrit les
- * phrases famille par famille, puis passe ce type en `Record` complet — un
- * type ajouté au catalogue ne compilera plus tant qu'il n'aura pas sa phrase.
- * D'ici là, un type sans phrase a le repli du moteur (`fallback-phrase.ts`),
- * et `__tests__/phrase-registry.spec.ts` tient la liste de ceux qui manquent :
- * elle ne peut que décroître.
+ * Un `Record` COMPLET (lot D, 2026-09-19) : un type ajouté au catalogue ne
+ * compile pas tant qu'il n'a pas sa phrase — le même mécanisme que
+ * `MODULE_LABELS`. Le repli du moteur (`fallback-phrase.ts`) ne sert plus
+ * qu'aux types que ce front ne connaît pas : une ligne écrite par une version
+ * plus récente de l'API.
  *
  * # Guide de style des phrases (lot D, 2026-09-19)
  *
@@ -47,8 +46,7 @@ import { TEAM_PHRASES } from './team-phrases';
  * | `accounting`          | `accounting-phrases.ts`           | `values/accounting-values.ts`    |
  * | `team`                | `team-phrases.ts` (complet)       | `values/team-values.ts`          |
  *
- * Ni ce registre, ni `phrase.ts`, ni `values/index.ts` n'ont à bouger : tout
- * ce qu'une phrase demande y est déjà. Une valeur d'ensemble fermé qui manque
+ * Une valeur d'ensemble fermé qui manque
  * s'ajoute au fichier de valeurs de SA famille — le test de clôture dira
  * laquelle.
  *
@@ -134,7 +132,7 @@ import { TEAM_PHRASES } from './team-phrases';
  * `companyId`). `via` n'apprend rien que l'auteur
  * ne dise déjà : la phrase le consomme.
  */
-export const PHRASES: Partial<Record<JournalFactType, Phrase>> = {
+export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...REFERENTIAL_PHRASES,
   ...REFERENTIAL_SETTINGS_PHRASES,
   ...SETTINGS_PHRASES,

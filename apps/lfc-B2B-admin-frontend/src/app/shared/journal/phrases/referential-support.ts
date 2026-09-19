@@ -123,7 +123,11 @@ export function onSubjectChanges(noun: Noun): Phrase {
   return (fact) =>
     byActor(
       fact,
-      [text('a modifié '), ...theSubject(fact, noun), ...whatChanged(fact.payload['changes'])],
+      [
+        text('a modifié '),
+        ...theSubject(fact, noun),
+        ...whatChanged(fact.payload['changes'], fact.type),
+      ],
       ['subjectLabel'],
     );
 }

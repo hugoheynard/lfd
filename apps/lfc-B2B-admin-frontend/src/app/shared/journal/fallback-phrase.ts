@@ -1,7 +1,12 @@
 import { subject, subjectLabelOf, text, type PhraseFact, type Said, type Segment } from './phrase';
 
 /**
- * **Le repli d'un type sans phrase** — jamais le type brut seul.
+ * **Le repli d'un type que ce front ne connaît pas** — jamais le type brut seul.
+ *
+ * Tout type du catalogue a sa phrase, et le typage du registre le garantit
+ * (`phrases/phrase-registry.ts`, lot D, 2026-09-19). Ne passent donc ici que
+ * les lignes d'un type HORS catalogue : écrites par une version de l'API plus
+ * récente que ce front.
  *
  * Il ne dit que ce qu'il sait sans risque de mentir, et laisse le reste au
  * détail (D4), qui rend toute la charge :
@@ -13,7 +18,7 @@ import { subject, subjectLabelOf, text, type PhraseFact, type Said, type Segment
  *   composé (`delivery_address_added`) agit sur AUTRE CHOSE que le sujet :
  *   « a ajouté le client « Café » » serait faux, et le détail dira quoi.
  *
- * C'est un filet, pas une phrase : le lot D en écrit une par type.
+ * C'est un filet, pas une phrase : un type connu n'y tombe jamais.
  */
 
 /** Le verbe d'un suffixe d'un seul mot, au passé composé, après l'auteur. */

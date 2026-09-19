@@ -56,7 +56,7 @@ function sectionSaved(section: string, fields: 'names' | 'none'): Phrase {
         text(`a modifié ${section} `),
         ...theSubject(fact, OF_FAMILY),
         ...(fields === 'names'
-          ? whatChanged(fact.payload['changes'])
+          ? whatChanged(fact.payload['changes'], fact.type)
           : unchanged(fact.payload['changes'])),
       ],
       ['subjectLabel'],

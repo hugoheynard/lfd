@@ -177,7 +177,7 @@ describe('l’historique d’une fiche, par pages', () => {
     const text = await goTo(fixture, 2);
 
     expect(text).toContain('Cette page n’a pas pu être lue');
-    expect(text).toContain('Produit « Croissant » publié au catalogue (P-000042)');
+    expect(text).toContain('Hugo Heynard a publié la fiche « Croissant » (P-000042) au catalogue');
   });
 
   it('ne pose pas de paginateur quand tout tient sur une page', async () => {
@@ -188,12 +188,13 @@ describe('l’historique d’une fiche, par pages', () => {
 });
 
 describe('les lignes de l’historique', () => {
-  it('raconte le fait avec la phrase du journal, son auteur et sa date', async () => {
+  it('raconte le fait avec la phrase du journal, son auteur en sujet et sa date', async () => {
     const { fixture } = await mount();
     const text = await settled(fixture);
 
-    expect(text).toContain('Produit « Croissant » publié au catalogue (P-000042)');
-    expect(text).toContain('par Hugo Heynard');
+    expect(text).toContain('Hugo Heynard a publié la fiche « Croissant » (P-000042) au catalogue');
+    // La phrase nomme l'auteur : la ligne ne le répète pas en « par … ».
+    expect(text).not.toContain('par Hugo Heynard');
     expect(text).toContain('2026');
   });
 
@@ -202,7 +203,7 @@ describe('les lignes de l’historique', () => {
       entries: [entry('e1', { actorName: null, actorType: 'system' })],
     });
 
-    expect(await settled(fixture)).toContain('par le système');
+    expect(await settled(fixture)).toContain('Le système a publié la fiche');
   });
 
   /**
@@ -215,8 +216,8 @@ describe('les lignes de l’historique', () => {
     });
 
     const text = await settled(fixture);
-    expect(text).toContain('par un membre de l’équipe');
-    expect(text).not.toContain('par le système');
+    expect(text).toContain('Un membre de l’équipe a publié la fiche');
+    expect(text).not.toContain('Le système');
   });
 
   it('marque ce qui est hérité, et la révision, mais pas la fiche elle-même', async () => {
@@ -233,7 +234,7 @@ describe('les lignes de l’historique', () => {
     });
     const text = await settled(fixture);
 
-    expect(text).toContain('Taux de « Réduit » passé de 5,5 % à 10 %');
+    expect(text).toContain('Hugo Heynard a passé le taux de TVA « Réduit » de 5,5 % à 10 %');
     expect(text).toContain('Hérité du taux Réduit');
     expect(text).toContain('Révision');
     const badges = fixture.debugElement.queryAll(By.css('fold-badge'));
@@ -303,6 +304,6 @@ describe('les états de l’onglet', () => {
     const text = await settled(fixture);
 
     expect(requests.at(-1)).toEqual({ page: 1, pageSize: 20 });
-    expect(text).toContain('Produit « Croissant »');
+    expect(text).toContain('a publié la fiche « Croissant »');
   });
 });

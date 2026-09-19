@@ -1,13 +1,12 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { nameOf, optional, recordOf, text as orDash } from '../payload-read';
+import { nameOf, optional, recordOf } from '../payload-read';
 import {
   byActor,
   cite,
   citedName,
   fromTo,
   NO_CHANGE,
-  said,
   subject,
   text,
   valueIn,
@@ -30,10 +29,8 @@ import { joined, saidName, shift, skuAside, theSubject, unchanged } from './refe
  * des faits). Les taux de TVA, les déclinaisons, les familles et les révisions
  * ont chacun leur fichier, réuni ici : le registre n'en connaît qu'un.
  *
- * La mise en vente garde la phrase reprise de `shared/journal-fact.ts` (lot C),
- * à la tournure passive : l'historique d'une fiche la cite mot pour mot
- * (`product-history.spec.ts`). Toutes les autres sont à la voix active (lot D,
- * 2026-09-19).
+ * Toutes à la voix active, l'auteur en sujet (lot D, 2026-09-19) — la mise en
+ * vente comprise, reprise au passif de `shared/journal-fact.ts` au lot C.
  */
 
 /**
@@ -44,14 +41,20 @@ function productName(payload: Readonly<Record<string, unknown>>): string {
   return nameOf(payload['subjectLabel']) ?? nameOf(payload['name']) ?? '—';
 }
 
-/** Mis en vente, ou retiré : la fiche en sujet (liée), et son SKU. */
-function onSale(verb: string): Phrase {
+/**
+ * « a publié la fiche « Tarte citron » (TAR-001) au catalogue », « a retiré de
+ * la vente la fiche … » : la fiche en sujet (liée), et son SKU à côté.
+ */
+function onSale(verb: string, end: string): Phrase {
   return (fact) =>
-    said(
+    byActor(
+      fact,
       [
-        text('Produit « '),
+        text(`${verb} la fiche « `),
         subject(fact, productName(fact.payload)),
-        text(` » ${verb} (${orDash(fact.payload['sku'])})`),
+        text(' »'),
+        ...skuAside(fact.payload['sku']),
+        text(end),
       ],
       ['subjectLabel', 'name', 'sku'],
     );
@@ -93,7 +96,7 @@ function sectionSaved(section: string, noun: Noun, fields: 'names' | 'none'): Ph
         text(`a modifié ${section} `),
         ...theSubject(fact, noun),
         ...(fields === 'names'
-          ? whatChanged(fact.payload['changes'])
+          ? whatChanged(fact.payload['changes'], fact.type)
           : unchanged(fact.payload['changes'])),
       ],
       ['subjectLabel'],
@@ -201,7 +204,7 @@ function declarationSaved(fact: PhraseFact): Said {
       text('a modifié la fiche réglementaire '),
       ...theSubject(fact, OF_PRODUCT),
       ...variant.segments,
-      ...whatChanged(fact.payload['changes']),
+      ...whatChanged(fact.payload['changes'], fact.type),
     ],
     ['subjectLabel', variant.key],
   );
@@ -263,8 +266,8 @@ export const REFERENTIAL_PHRASES = {
   'product.media_saved': sectionSaved('les visuels', OF_PRODUCT, 'none'),
   'product.channels_changed': channelsChanged,
   'product.declared_ready': onProduct('a déclaré', ' prête à publier'),
-  'product.published': onSale('publié au catalogue'),
-  'product.unpublished': onSale('retiré de la vente'),
+  'product.published': onSale('a publié', ' au catalogue'),
+  'product.unpublished': onSale('a retiré de la vente', ''),
   'product.archived': onProduct('a archivé'),
   'product.restored': onProduct('a restauré'),
   'product.ingredients_saved': ingredientsSaved,

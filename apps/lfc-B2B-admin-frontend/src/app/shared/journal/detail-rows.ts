@@ -1,3 +1,4 @@
+import { contextWord } from './context-word';
 import { keyLabel } from './key-labels';
 import { recordOf, type Payload } from './payload-read';
 import { payloadNode, resolve, type SchemaNode } from './schema-node';
@@ -11,6 +12,8 @@ import {
   type Field,
 } from './detail-values';
 import { formatUnit } from './units';
+import { recordKeysOf } from './values';
+import { SALES_CONTEXT } from './values/referential-values';
 
 /**
  * **Le détail sous une phrase : tout ce qu'elle n'a pas dit** (D4 du plan
@@ -71,6 +74,10 @@ export interface DetailOptions {
 const TRANSPARENT = new Set(['changes']);
 
 interface Walk {
+  /** Le type du fait : une clé peut y porter un autre nom qu'ailleurs (`KEY_LABELS_BY_TYPE`). */
+  readonly type: string;
+  /** La charge entière : ses `contextLabels` nomment les contextes de vente où qu'ils paraissent. */
+  readonly payload: Payload;
   readonly unlabelled: Set<string>;
   readonly unlabelledValues: Set<string>;
 }
@@ -85,7 +92,7 @@ export function factDetail(
   said: ReadonlySet<string>,
   options: DetailOptions = { raw: true },
 ): DetailOfFact {
-  const walk: Walk = { unlabelled: new Set(), unlabelledValues: new Set() };
+  const walk: Walk = { type, payload, unlabelled: new Set(), unlabelledValues: new Set() };
   const node = payloadNode(type, payload);
   const resolved = node === null ? null : resolve(node, payload);
   const rows =
@@ -94,7 +101,7 @@ export function factDetail(
       : resolved?.kind === 'record'
         ? rootRecordRows(resolved, payload, walk, said)
         : options.raw
-          ? rawRows(payload, said)
+          ? rawRows(type, payload, said)
           : [];
   return {
     rows,
@@ -156,13 +163,7 @@ function rows(
         return [{ label, value: record === null ? raw(value) : NONE }];
       }
       return Object.entries(record).flatMap(([key, item]) =>
-        rows(
-          `${label} › ${recordKeyText(field, key, walk.unlabelledValues)}`,
-          resolved.value,
-          item,
-          walk,
-          field,
-        ),
+        rows(`${label} › ${keyText(field, key, walk)}`, resolved.value, item, walk, field),
       );
     }
     default:
@@ -203,7 +204,7 @@ function inline(node: SchemaNode, value: unknown, walk: Walk, field: Field): str
       }
       const parts = Object.entries(record).map(
         ([key, item]) =>
-          `${recordKeyText(field, key, walk.unlabelledValues)} : ${inline(resolved.value, item, walk, field)}`,
+          `${keyText(field, key, walk)} : ${inline(resolved.value, item, walk, field)}`,
       );
       return parts.length === 0 ? NONE : parts.join(' · ');
     }
@@ -321,20 +322,28 @@ function rootRecordRows(
 ): DetailRow[] {
   return Object.entries(payload)
     .filter(([key]) => !said.has(key))
-    .flatMap(([key, item]) =>
-      rows(recordKeyText(null, key, walk.unlabelledValues), node.value, item, walk, null),
-    );
+    .flatMap(([key, item]) => rows(keyText(null, key, walk), node.value, item, walk, null));
 }
 
 /** Une charge qu'aucune forme n'accepte : clé par clé, sous le libellé qu'on connaît. */
-function rawRows(payload: Payload, said: ReadonlySet<string>): DetailRow[] {
+function rawRows(type: string, payload: Payload, said: ReadonlySet<string>): DetailRow[] {
   return Object.entries(payload)
     .filter(([key, value]) => !said.has(key) && value !== undefined)
-    .map(([key, value]) => ({ label: keyLabel(key) ?? key, value: raw(value) }));
+    .map(([key, value]) => ({ label: keyLabel(key, type) ?? key, value: raw(value) }));
+}
+
+/**
+ * Le mot d'une clé de record. Un contexte de vente se dit d'abord par le
+ * libellé que la charge a figé (`contextWord`) : c'est le nom qu'il portait
+ * quand c'est arrivé, et le seul qu'ait un contexte créé à l'écran.
+ */
+function keyText(field: string | null, key: string, walk: Walk): string {
+  const context = recordKeysOf(field) === SALES_CONTEXT ? contextWord(walk.payload, key) : null;
+  return context ?? recordKeyText(field, key, walk.unlabelledValues);
 }
 
 function labelOf(key: string, walk: Walk): string {
-  const label = keyLabel(key);
+  const label = keyLabel(key, walk.type);
   if (label === null) {
     walk.unlabelled.add(key);
     return key;

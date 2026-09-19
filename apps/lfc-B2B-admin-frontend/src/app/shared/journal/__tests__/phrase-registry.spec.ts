@@ -1,30 +1,22 @@
-import { isJournalFactType, JOURNAL_FACT_TYPES } from '@lfd/contracts/journal-facts';
+import { isJournalFactType } from '@lfd/contracts/journal-facts';
 import { describe, expect, it } from 'vitest';
 
 import { PHRASES } from '../phrases/phrase-registry';
 
 /**
- * **Les types sans phrase — une liste qui ne peut que décroître** (plan des
- * phrases du journal, lot C, 2026-09-19).
+ * **Le registre des phrases** (plan des phrases du journal, lot D,
+ * 2026-09-19).
  *
- * Le registre est un `Partial` pendant le lot C ; le lot D écrit les phrases
- * famille par famille et le passe en `Record` complet, ce qui rendra ce test
- * inutile — on le supprimera alors avec cette liste vide.
+ * Qu'aucun type du catalogue ne manque, c'est le TYPAGE qui le dit : le
+ * registre est un `Record<JournalFactType, Phrase>`, et un type ajouté au
+ * catalogue ne compile pas tant qu'il n'a pas sa phrase. La liste figée des
+ * types sans phrase qu'on tenait ici pendant le lot C a disparu avec elle.
  *
- * D'ici là, la liste est FIGÉE : un type ajouté au catalogue sans phrase la
- * fait échouer (il faut l'écrire, ou l'inscrire ici en connaissance de cause),
- * et une phrase écrite sans retirer son type d'ici aussi — la liste reste le
- * relevé exact de ce qui manque.
+ * Reste ce que le typage ne voit pas : une clé de trop. Les familles de
+ * phrases s'assemblent par étalement, et une entrée hors catalogue n'y
+ * lèverait rien.
  */
-const WITHOUT_PHRASE: readonly string[] = [];
-
-describe('le registre des phrases (lot C)', () => {
-  it('ne laisse sans phrase que les types de la liste figée — ni plus, ni moins', () => {
-    const without = JOURNAL_FACT_TYPES.filter((type) => PHRASES[type] === undefined);
-
-    expect([...without].sort()).toEqual([...WITHOUT_PHRASE].sort());
-  });
-
+describe('le registre des phrases', () => {
   it('ne donne de phrase qu’à des types du catalogue', () => {
     const unknown = Object.keys(PHRASES).filter((type) => !isJournalFactType(type));
 

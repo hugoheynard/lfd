@@ -63,21 +63,35 @@ export const PUSH_CHANNEL = domain('canal de diffusion', {
 });
 
 /**
- * La méthode du prix professionnel (`accounting_rules.method_changed`, typé
- * `z.string()`). `remise_apres_tva_max` a existé du 2026-09-13 (`7278ca63`)
- * à son retrait le même jour (`a055b4f9`) : une ligne peut la citer. Libellés
- * de l'écran des règles comptables, à chacune de ces dates.
- *
- * Pas dans `strings` : ses clés sont `from` et `to`, que tout le catalogue
- * emploie. C'est à la phrase de la dire.
+ * La méthode du prix professionnel (`accounting_rules.method_changed`) —
+ * l'énumération que le catalogue déclare depuis le lot D (2026-09-19,
+ * `z.enum(["ratio_ttc"])`). Une énumération se reconnaît à l'ensemble EXACT de
+ * ses valeurs : celui-ci ne porte donc que les méthodes qui s'écrivent.
  */
-export const PRO_PRICE_METHOD = domain('méthode du prix professionnel', {
+export const PRO_PRICE_METHOD_WRITTEN = domain('méthode du prix professionnel', {
   ratio_ttc: 'Ratio TTC pré-remise',
+});
+
+/**
+ * Toutes celles qu'une ligne peut citer, pour la phrase : la forme ouverte
+ * (`z.string()`) reste en base, et `remise_apres_tva_max` a existé du
+ * 2026-09-13 (`7278ca63`) à son retrait le même jour (`a055b4f9`). Libellés de
+ * l'écran des règles comptables, à chacune de ces dates.
+ */
+export const PRO_PRICE_METHOD = domain('méthode du prix professionnel (toutes)', {
+  ...PRO_PRICE_METHOD_WRITTEN.labels,
   remise_apres_tva_max: 'Remise après plus haute TVA possible',
 });
 
 export const REFERENTIAL_VALUES: ValueFamily = {
-  enums: [PRODUCT_KIND, VARIANT_ASPECT, PUSH_MODE, POINT_OF_SALE_KIND, PUSH_CHANNEL],
+  enums: [
+    PRODUCT_KIND,
+    VARIANT_ASPECT,
+    PUSH_MODE,
+    POINT_OF_SALE_KIND,
+    PUSH_CHANNEL,
+    PRO_PRICE_METHOD_WRITTEN,
+  ],
   literals: {
     // Une fiche qui n'a pas sa propre matrice de canaux suit celle de sa famille.
     inherited: 'Ceux de la famille',
@@ -87,6 +101,9 @@ export const REFERENTIAL_VALUES: ValueFamily = {
     // Le même, quand il était la charge entière (lot A, `vatByContextV1`).
     [ROOT_RECORD]: SALES_CONTEXT,
     families: SALES_CONTEXT,
+    // Le libellé du moment de chaque contexte, par sa clé (lot D) : un
+    // dictionnaire figé à l'écriture, dont les clés sont des données.
+    contextLabels: 'free',
     // Le nom d'une option de déclinaison (« Taille ») : saisi à l'écran.
     options: 'free',
   },

@@ -308,14 +308,17 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     expect(line.sentence).toBe('Hugo Heynard a créé —');
   });
 
+  // Une recommandation que le cockpit a affichée : l'auteur de la ligne n'a
+  // pas fait ce geste, la phrase reste au passif et la méta dit « par … ».
   it('garde « par … » dans la méta pour un fait qui n’est pas de l’équipe', () => {
     const line = toLine({
-      ...event('order.placed', { orderNumber: 'ORD-1' }),
-      module: 'commandes',
+      ...event('reco.shown', { play: 'nurture', score: 12 }),
+      module: 'commercial',
+      subjectType: 'user',
     });
 
     expect(line.title).toBe('');
-    expect(line.sentence).toBe('Commande ORD-1 passée');
+    expect(line.sentence).toBe('Coup « Démarchage » recommandé (score : 12 sur 100)');
     expect(line.sentenceNamesActor).toBe(false);
   });
 });

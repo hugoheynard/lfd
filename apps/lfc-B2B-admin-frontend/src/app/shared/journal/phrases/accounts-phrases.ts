@@ -1,6 +1,6 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { isKnownFeatureKey, levelLabel } from '../../../admin/feature-access/feature-access-labels';
+import { isKnownFeatureKey, levelLabel } from '../../feature-levels';
 import { entries, optional, recordOf, strings, type Payload } from '../payload-read';
 import {
   byActor,
@@ -10,6 +10,7 @@ import {
   fromTo,
   inUnit,
   name,
+  plain,
   subject,
   subjectLabelOf,
   text,
@@ -185,7 +186,9 @@ function forWhom(fact: PhraseFact): Segment[] {
 /**
  * « Jean Dupont a déclaré sa société « Café des Halles » » (le client, seul) ou
  * « Colette Martin a ouvert le compte du client « Café des Halles » » (l'équipe),
- * puis le détenteur — « sans détenteur » quand l'équipe ouvre sans lui.
+ * puis le détenteur — « sans détenteur » quand l'équipe ouvre sans lui. Le
+ * détenteur qui est l'auteur lui-même ne se répète pas : « Jean Dupont a
+ * déclaré sa société », c'est déjà dire qu'il la détient.
  */
 const companyDeclared: Phrase = (fact) => {
   const p = fact.payload;
@@ -196,10 +199,13 @@ const companyDeclared: Phrase = (fact) => {
     ? [text('a déclaré sa société'), ...own]
     : [text('a ouvert le compte '), ...client(fact, 'of')];
   const owner = p['owner'] ?? p['ownerUserId'];
+  const cited = owner === null || owner === undefined ? null : citePerson(owner);
   const holder =
-    owner === null || owner === undefined
+    cited === null
       ? [text(', sans détenteur')]
-      : [text(', détenteur : '), ...citePerson(owner)];
+      : plain(cited) === fact.actor
+        ? []
+        : [text(', détenteur : '), ...cited];
   return byActor(fact, [...head, ...holder], ['subjectLabel', 'via', 'owner', 'ownerUserId']);
 };
 

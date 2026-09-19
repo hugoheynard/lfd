@@ -1,3 +1,5 @@
+import type { JournalFactType } from '@lfd/contracts/journal-facts';
+
 /**
  * **Le nom français de chaque clé de charge** — ce que le détail sous une
  * phrase affiche à gauche de la valeur (D4 du plan
@@ -110,8 +112,10 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   glycemicIndex: 'Index glycémique',
   graceMinutes: 'Tolérance',
   grants: 'Droits',
-  handedOverAt: 'Remise le',
-  handedOverBy: 'Remise par',
+  // Un RETRAIT, au comptoir ou chez le client : « remise » ne désigne que la
+  // réduction de prix (CLAUDE.md racine, §8, décidé le 2026-09-12).
+  handedOverAt: 'Retirée le',
+  handedOverBy: 'Retrait validé par',
   handleSuffix: 'Suffixe de collection',
   hash: 'Empreinte',
   holder: 'Titulaire',
@@ -235,7 +239,33 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   weightGrams: 'Poids',
 };
 
-/** Le libellé d'une clé, ou `null` : c'est au détail de décider quoi faire d'une clé sans nom. */
-export function keyLabel(key: string): string | null {
+/**
+ * **Les exceptions par type** : là où le mot commun serait faux. Une clé
+ * s'appelle d'un seul nom dans tout le catalogue, sauf quand un type l'emploie
+ * dans un autre sens — `categoryId` désigne une FAMILLE de fiches partout,
+ * mais une catégorie d'allergènes sur la forme d'avant le lot B de
+ * `allergen_entry.updated`.
+ *
+ * Une surcharge, pas une copie : un type n'y porte que les clés qu'il dit
+ * autrement. Tenue par le test de clôture comme le dictionnaire commun.
+ */
+export const KEY_LABELS_BY_TYPE: Readonly<
+  Partial<Record<JournalFactType, Readonly<Record<string, string>>>>
+> = {
+  'allergen_entry.updated': { categoryId: 'Catégorie' },
+};
+
+/**
+ * Le libellé d'une clé — celui de son type d'abord, s'il en a un, puis le
+ * commun —, ou `null` : c'est au détail de décider quoi faire d'une clé sans nom.
+ */
+export function keyLabel(key: string, type: string | null = null): string | null {
+  // Import de TYPE seulement : le catalogue (et zod) n'a rien à faire ici.
+  const byType: Readonly<Record<string, Readonly<Record<string, string>> | undefined>> =
+    KEY_LABELS_BY_TYPE;
+  const own = type !== null && Object.hasOwn(byType, type) ? byType[type] : undefined;
+  if (own !== undefined && Object.hasOwn(own, key)) {
+    return own[key] ?? null;
+  }
   return Object.hasOwn(KEY_LABELS, key) ? (KEY_LABELS[key] ?? null) : null;
 }

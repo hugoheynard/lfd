@@ -1,11 +1,10 @@
 import type { ActivityEventView, ActivityModule } from '@lfd/contracts';
 
+import { contextWord } from '../../shared/journal/context-word';
 import { count, optional, recordOf, type Payload } from '../../shared/journal/payload-read';
 import { actorBy, inSentence } from '../../shared/journal/phrase';
 import { renderFact } from '../../shared/journal/render-fact';
 import { factWhen, formatCount, formatNumber } from '../../shared/journal/units';
-import { labelIn } from '../../shared/journal/values';
-import { SALES_CONTEXT } from '../../shared/journal/values/referential-values';
 
 import type { JournalLine } from './journal.service';
 
@@ -102,7 +101,7 @@ function blastOf(payload: Payload): string {
   }
   const families = familyCounts(blast).map(
     ([context, n], index) =>
-      `${index === 0 ? formatCount(n, 'famille', 'familles') : formatNumber(n)} ${contextOf(context)}`,
+      `${index === 0 ? formatCount(n, 'famille', 'familles') : formatNumber(n)} ${contextOf(payload, context)}`,
   );
   const articles = [count(blast['variants']), count(blast['articles'])]
     .filter((n): n is number => n !== null)
@@ -129,7 +128,10 @@ function familyCounts(blast: Payload): readonly (readonly [string, number])[] {
   });
 }
 
-/** « à emporter » — un contexte créé à l'écran, que le dictionnaire ignore, garde sa clé. */
-function contextOf(key: string): string {
-  return inSentence(labelIn(SALES_CONTEXT, key) ?? key);
+/**
+ * « à emporter » — par le libellé figé dans la charge, puis le dictionnaire
+ * (`contextWord`) ; un contexte créé à l'écran avant `contextLabels` garde sa clé.
+ */
+function contextOf(payload: Payload, key: string): string {
+  return inSentence(contextWord(payload, key) ?? key);
 }

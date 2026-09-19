@@ -183,13 +183,19 @@ export function countOf(raw: unknown, singular: string, plural: string): Segment
  * Une valeur d'ensemble fermé, par son mot (`values/`) : `write` → « Écriture ».
  * Une valeur que l'ensemble ne connaît pas se dit telle quelle, `—` si elle
  * manque. `inSentence: true` en milieu de phrase : « à emporter », « actif ».
+ *
+ * `inSentence` ne baisse que NOS mots : une valeur libre (le rôle qu'un client
+ * a saisi, « Gérant ») garde la casse de celui qui l'a écrite.
  */
 export function valueIn(
   set: ValueDomain,
   raw: unknown,
   options: { readonly inSentence: boolean } = { inSentence: false },
 ): Segment {
-  const word = labelIn(set, raw) ?? optional(raw) ?? '—';
+  const word = labelIn(set, raw);
+  if (word === null) {
+    return value(optional(raw) ?? '—');
+  }
   return value(options.inSentence ? inSentence(word) : word);
 }
 
@@ -210,9 +216,9 @@ export const NO_CHANGE = 'aucun changement';
  * catalogue), dans leur ordre ; « (aucun changement) » quand il est vide. Les
  * valeurs, elles, restent au détail : une phrase ne récite pas un formulaire.
  */
-export function whatChanged(changes: unknown): Segment[] {
+export function whatChanged(changes: unknown, type: string | null = null): Segment[] {
   const keys = changedKeys(changes);
-  return [text(keys.length === 0 ? ` (${NO_CHANGE})` : ` : ${fieldList(keys)}`)];
+  return [text(keys.length === 0 ? ` (${NO_CHANGE})` : ` : ${fieldList(keys, type)}`)];
 }
 
 /** Les clés présentes d'un diff : chaque clé changée porte son avant et son après, les autres sont absentes. */
@@ -225,15 +231,16 @@ export function changedKeys(changes: unknown): readonly string[] {
 
 /**
  * « nom, description courte, SIRET » — des noms de champs, dits en mots : par
- * le dictionnaire des clés d'abord (`categoryId` → « famille »), par celui des
- * champs modifiés ensuite (`fields` d'une fiche client : `vatNumber` →
- * « numéro de TVA »), tels quels en dernier recours.
+ * le dictionnaire des clés d'abord (`categoryId` → « famille », ou le mot
+ * propre au `type` quand il en a un), par celui des champs modifiés ensuite
+ * (`fields` d'une fiche client : `vatNumber` → « numéro de TVA »), tels quels
+ * en dernier recours (une ligne ancienne y écrivait déjà nos mots).
  */
-export function fieldList(keys: readonly string[]): string {
+export function fieldList(keys: readonly string[], type: string | null = null): string {
   const fields = stringDomain('fields');
   return keys
     .map((key) =>
-      inSentence(keyLabel(key) ?? (fields === null ? null : labelIn(fields, key)) ?? key),
+      inSentence(keyLabel(key, type) ?? (fields === null ? null : labelIn(fields, key)) ?? key),
     )
     .join(', ');
 }

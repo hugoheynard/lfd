@@ -1,73 +1,134 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { count, optional, text as orDash } from '../payload-read';
-import { name, said, text, value, type Phrase } from '../phrase';
+import { optional } from '../payload-read';
+import {
+  byActor,
+  cite,
+  countOf,
+  subject,
+  subjectLabelOf,
+  text,
+  value,
+  type Noun,
+  type Phrase,
+  type PhraseFact,
+  type Segment,
+} from '../phrase';
 
 /**
  * **Les réglages qui décident du prix de livraison, du retrait et des heures
- * limites** — repris de `factSentence` (`settingSentence`, plan des phrases,
- * lot C, 2026-09-19) : mêmes mots, en segments.
+ * limites**, et les engagements de volume — à la voix active, l'auteur en
+ * sujet (lot D du plan des phrases, 2026-09-19). Ils étaient repris tels quels
+ * de `factSentence` au lot C, au passif et sans auteur.
  */
 
-/** « <Nom> « <libellé> » <participe> » — le libellé figé de la charge. */
-function labelled(noun: string, participle: string): Phrase {
-  return (fact) =>
-    said(
-      [text(`${noun} « `), name(orDash(fact.payload['label'])), text(` » ${participle}`)],
-      ['subjectLabel', 'label'],
-    );
+const ZONE: Noun = { the: 'la zone de livraison', a: 'une zone de livraison' };
+const PICKUP: Noun = { the: 'le point de retrait', a: 'un point de retrait' };
+const OF_PICKUP: Noun = { the: 'du point de retrait', a: 'd’un point de retrait' };
+const WITH_CLIENT: Noun = { the: 'avec le client', a: 'avec un client' };
+const OF_CLIENT: Noun = { the: 'du client', a: 'd’un client' };
+
+/**
+ * « la zone de livraison « Paris » » — le sujet sous son libellé figé (D6),
+ * sinon sous le `label` de la charge (forme d'avant le lot B), sinon « une
+ * zone de livraison ».
+ */
+function setting(fact: PhraseFact, noun: Noun): Segment[] {
+  const label = subjectLabelOf(fact) ?? optional(fact.payload['label']);
+  return label === null
+    ? [text(noun.a)]
+    : [text(`${noun.the} « `), subject(fact, label), text(' »')];
 }
 
-/** Une phrase fixe : le nom du sujet, s'il existe, est ajouté par le moteur. */
-function fixed(sentence: string): Phrase {
-  return () => said([text(sentence)], []);
+/** « … a <verbe> la zone de livraison « Paris » ». */
+function onSetting(verb: string, noun: Noun): Phrase {
+  return (fact) =>
+    byActor(fact, [text(`${verb} `), ...setting(fact, noun)], ['subjectLabel', 'label']);
 }
+
+/** « 17:30 », ou rien si la charge ne porte pas d'heure. */
+function cutoffTime(fact: PhraseFact): Segment[] {
+  const time = optional(fact.payload['time']);
+  return time === null ? [] : [value(time)];
+}
+
+/** Le client engagé : cité nommé, ou par son seul id sur la forme d'avant le lot B. */
+function engaged(fact: PhraseFact, noun: Noun): Segment[] {
+  return cite(noun, fact.payload['company'] ?? fact.payload['companyId']);
+}
+
+const COMMITMENT_CLIENT_KEYS = ['subjectLabel', 'company', 'companyId'];
 
 export const SETTINGS_PHRASES = {
-  'delivery_zone.created': labelled('Zone de livraison', 'créée'),
-  'delivery_zone.updated': labelled('Zone de livraison', 'modifiée'),
-  'delivery_zone.removed': fixed('Zone de livraison supprimée'),
-  'pickup_address.created': labelled('Point de retrait', 'créé'),
-  'pickup_address.updated': labelled('Point de retrait', 'modifié'),
-  'pickup_address.removed': fixed('Point de retrait supprimé'),
-  'pickup_address.default_set': fixed('Point de retrait par défaut changé'),
+  'delivery_zone.created': onSetting('a créé', ZONE),
+  'delivery_zone.updated': onSetting('a modifié', ZONE),
+  'delivery_zone.removed': onSetting('a supprimé', ZONE),
+  'pickup_address.created': onSetting('a créé', PICKUP),
+  'pickup_address.updated': onSetting('a modifié', PICKUP),
+  'pickup_address.removed': onSetting('a supprimé', PICKUP),
+  'pickup_address.default_set': (fact) =>
+    byActor(
+      fact,
+      [text('a désigné '), ...setting(fact, PICKUP), text(' comme point par défaut')],
+      ['subjectLabel'],
+    ),
   // Le nombre de plages dit l'essentiel : passer de zéro à une ouvre les
   // créneaux publics du point, et c'est ce qu'un visiteur verra changer.
   'public_pickup_schedule.updated': (fact) => {
-    const rules = count(fact.payload['ruleCount']);
-    return said(
+    const rules = countOf(fact.payload['ruleCount'], 'plage', 'plages');
+    return byActor(
+      fact,
       [
-        text('Créneaux publics de « '),
-        name(orDash(fact.payload['label'])),
-        text(' » réglés'),
-        ...(rules === null ? [] : [text(' ('), value(`${rules} plage(s)`), text(')')]),
+        text('a réglé les créneaux publics '),
+        ...setting(fact, OF_PICKUP),
+        ...(rules === null ? [] : [text(' ('), rules, text(')')]),
       ],
       ['subjectLabel', 'label', 'ruleCount'],
     );
   },
-  'delivery_availability.updated': fixed('Livraison par clientèle réglée'),
+  'delivery_availability.updated': (fact) =>
+    byActor(fact, [text('a réglé l’ouverture de la livraison par clientèle')], []),
   'order_cutoff.created': (fact) =>
-    said([text('Heure limite posée à '), value(orDash(fact.payload['time']))], ['time']),
+    byActor(fact, [text('a posé une heure limite à '), ...cutoffTime(fact)], ['time']),
   'order_cutoff.updated': (fact) =>
-    said([text('Heure limite portée à '), value(orDash(fact.payload['time']))], ['time']),
-  'order_cutoff.removed': fixed('Heure limite supprimée'),
+    byActor(fact, [text('a porté une heure limite à '), ...cutoffTime(fact)], ['time']),
+  // La forme courante emporte la règle effacée ; celle d'avant, rien.
+  'order_cutoff.removed': (fact) => {
+    const time = cutoffTime(fact);
+    return byActor(
+      fact,
+      time.length === 0
+        ? [text('a supprimé une heure limite')]
+        : [text('a supprimé l’heure limite de '), ...time],
+      ['time'],
+    );
+  },
   // Une quantité est un NOMBRE : la lire comme une chaîne la rendrait « — », et
   // un engagement sans volume promis ne veut rien dire.
   'volume_commitment.signed': (fact) => {
-    const promised = count(fact.payload['promisedQuantity']);
-    return said(
+    const promised = fact.payload['promisedQuantity'];
+    return byActor(
+      fact,
       [
-        text('Engagement de volume signé'),
-        ...(promised === null ? [] : [text(' ('), value(promised.toString()), text(')')]),
+        text('a signé un engagement de volume '),
+        ...engaged(fact, WITH_CLIENT),
+        ...(typeof promised === 'number'
+          ? [text(' (quantité promise : '), value(promised.toString()), text(')')]
+          : []),
       ],
-      ['promisedQuantity'],
+      [...COMMITMENT_CLIENT_KEYS, 'promisedQuantity'],
     );
   },
   'volume_commitment.closed': (fact) => {
     const reason = optional(fact.payload['reason']);
-    return said(
-      [text('Engagement de volume clos'), ...(reason === null ? [] : [text(` (${reason})`)])],
-      ['reason'],
+    return byActor(
+      fact,
+      [
+        text('a clos l’engagement de volume '),
+        ...engaged(fact, OF_CLIENT),
+        ...(reason === null ? [] : [text(` — motif : ${reason}`)]),
+      ],
+      [...COMMITMENT_CLIENT_KEYS, 'reason'],
     );
   },
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

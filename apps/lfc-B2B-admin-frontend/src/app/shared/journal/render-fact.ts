@@ -78,8 +78,10 @@ export function renderFact(fact: FactInput, shownElsewhere: readonly string[] = 
     subjectId: fact.subjectId,
     actor: actorSubject(fact.actorName, fact.actorType),
   };
-  const phrase = isJournalFactType(fact.type) ? PHRASES[fact.type] : undefined;
-  const said = (phrase ?? fallbackPhrase)(phraseFact);
+  // Un type hors catalogue est une ligne écrite par une version plus récente
+  // de l'API : le repli la dit sans inventer. Tout type connu a sa phrase.
+  const phrase = isJournalFactType(fact.type) ? PHRASES[fact.type] : fallbackPhrase;
+  const said = phrase(phraseFact);
   const named = withSubject(phraseFact, said.segments, said.consumed);
   const detail = factDetail(
     fact.type,

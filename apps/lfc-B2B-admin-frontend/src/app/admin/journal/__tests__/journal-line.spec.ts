@@ -35,7 +35,7 @@ describe('toLine', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Taux de « Réduit » passé de 5,5 % à 10 %');
+    expect(line.sentence).toBe('Hugo Heynard a passé le taux de TVA « Réduit » de 5,5 % à 10 %');
     expect(line.blast).toBe('touche 12 familles à emporter, 3 sur place, 2 B2B');
     expect(line.actor).toBe('Hugo Heynard (Commercial)');
   });
@@ -87,11 +87,29 @@ describe('toLine', () => {
     expect(line.blast).toBe('touche 2 familles brunch');
   });
 
+  it('nomme un contexte par le libellé que la charge a figé, avant le dictionnaire', () => {
+    const line = toLine(
+      event({
+        payload: {
+          subjectLabel: 'Réduit',
+          name: 'Réduit',
+          from: 5.5,
+          to: 10,
+          blast: { families: { brunch: 2, takeaway: 1 } },
+          contextLabels: { brunch: 'Brunch du dimanche', takeaway: 'Vente à emporter' },
+        },
+      }),
+    );
+
+    expect(line.blast).toBe('touche 2 familles brunch du dimanche, 1 vente à emporter');
+    expect(line.detail).toEqual([]);
+  });
+
   it('ne rend pas de portée quand le fait n’en avait pas', () => {
     // Une portée absente n'est pas un zéro : c'est un fait sans aval.
     const line = toLine(event({ type: 'vat_rate.renamed', payload: { from: 'A', to: 'B' } }));
 
-    expect(line.sentence).toBe('Taux « A » renommé « B »');
+    expect(line.sentence).toBe('Hugo Heynard a renommé le taux de TVA « A » en « B »');
     expect(line.blast).toBe('');
   });
 
@@ -146,7 +164,7 @@ describe('toLine', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Commande ORD-142 passée — Jean Dupont');
+    expect(line.sentence).toBe('Hugo Heynard a passé la commande ORD-142 pour Jean Dupont');
     expect(line.detail.map((row) => row.label)).toEqual(['Commande', 'Client', 'Total']);
   });
 });
@@ -167,7 +185,7 @@ describe('toLine — une commande, telle qu’un humain la lit', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Commande ORD-142 passée');
+    expect(line.sentence).toBe('Hugo Heynard a passé la commande ORD-142');
     expect(line.forWhom).toBe('Boulangerie Martin (SARL MARTIN)');
     expect(line.actor).toBe('Hugo Heynard (Commercial)');
     // Une date lisible, pas l'ISO brut.

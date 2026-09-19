@@ -137,6 +137,43 @@ describe('le détail dit les valeurs d’ensemble fermé par leur mot', () => {
     expect(detail.unlabelledValues).toEqual(['vatByContext=brunch']);
   });
 
+  it('nomme un contexte par le libellé que la charge a figé, dans la phrase comme au détail', () => {
+    const rendered = renderFact(
+      fact({
+        type: 'product_category.vat_changed',
+        payload: {
+          subjectLabel: 'Tartes',
+          vatByContext: {
+            brunch: { from: null, to: { id: 'tva_1', name: 'Réduit' } },
+            takeaway: { from: null, to: { id: 'tva_1', name: 'Réduit' } },
+          },
+          contextLabels: { brunch: 'Brunch' },
+        },
+      }),
+    );
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a passé le taux brunch de la famille « Tartes » d’aucun taux à « Réduit » et le taux à emporter d’aucun taux à « Réduit »',
+    );
+    expect(rendered.consumed).toContain('contextLabels');
+    expect(rendered.unlabelledValues).toEqual([]);
+
+    const detail = factDetail(
+      'product.vat_changed',
+      {
+        subjectLabel: 'Tarte citron',
+        vatByContext: { brunch: { from: null, to: { id: 'tva_1', name: 'Réduit' } } },
+        contextLabels: { brunch: 'Brunch' },
+      },
+      new Set(['subjectLabel', 'contextLabels']),
+    );
+
+    expect(detail.rows).toEqual([
+      { label: 'Taux de TVA par contexte de vente › Brunch', value: 'aucun → Réduit' },
+    ]);
+    expect(detail.unlabelledValues).toEqual([]);
+  });
+
   it('laisse telles quelles les clés de donnée d’un record libre', () => {
     const rendered = renderFact(
       fact({

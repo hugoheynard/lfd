@@ -71,6 +71,26 @@ describe('la déclaration et l’activation d’un client', () => {
     });
   });
 
+  /**
+   * Régression : le client qui déclare sa société en est le détenteur, et la
+   * phrase le disait deux fois (« Jean Dupont a déclaré sa société « X »,
+   * détenteur : Jean Dupont », relevé le 2026-09-19).
+   */
+  it('ne répète pas le détenteur quand c’est l’auteur lui-même', () => {
+    const own = renderFact({
+      ...company('company.declared', {
+        subjectLabel: CAFE,
+        via: 'self',
+        owner: { id: 'usr_1', name: 'Jean Dupont' },
+      }),
+      actorName: 'Jean Dupont',
+      actorType: 'customer',
+    });
+
+    expect(own.sentence).toBe('Jean Dupont a déclaré sa société « Café des Halles »');
+    expect(own.detail).toEqual([]);
+  });
+
   it('lit la forme d’avant le lot B, le détenteur par son seul identifiant', () => {
     const old = company('company.declared', { via: 'staff', ownerUserId: 'usr_9' });
 
@@ -332,9 +352,11 @@ describe('les personnes d’un client', () => {
     ).toBe(
       'Colette Martin a ajouté le contact Jean Dupont au client « Café des Halles », rôle : administrateur',
     );
+    // Régression : une valeur LIBRE (un rôle saisi, hors de l'ensemble) était
+    // mise en minuscule comme un mot du dictionnaire (relevé le 2026-09-19).
     expect(
       sentence(company('company.contact_updated', { contactId: 'cc_1', role: 'Gérant' })),
-    ).toBe('Colette Martin a modifié un contact (identifiant cc_1) d’un client, rôle : gérant');
+    ).toBe('Colette Martin a modifié un contact (identifiant cc_1) d’un client, rôle : Gérant');
     expect(
       sentence(company('company.contact_removed', { subjectLabel: CAFE, contact: { id: 'cc_1' } })),
     ).toBe('Colette Martin a retiré un contact (identifiant cc_1) du client « Café des Halles »');

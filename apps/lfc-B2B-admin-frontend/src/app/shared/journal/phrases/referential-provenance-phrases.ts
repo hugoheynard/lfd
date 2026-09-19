@@ -3,15 +3,13 @@ import type { JournalFactType } from '@lfd/contracts/journal-facts';
 import { nameOf, optional } from '../payload-read';
 import {
   byActor,
-  changedKeys,
   cite,
-  fieldList,
   name,
-  NO_CHANGE,
   subject,
   subjectLabelOf,
   text,
   value,
+  whatChanged,
   type Noun,
   type Phrase,
   type PhraseFact,
@@ -177,18 +175,17 @@ function allergenEntryCreated(fact: PhraseFact): Said {
 
 /**
  * « a modifié l'allergène « Lait » : nom, catégorie ». D'avant le lot B, la
- * catégorie s'appelait `categoryId` — que le dictionnaire des clés dit
- * « famille », le mot des fiches : ici, c'est une catégorie d'allergènes.
+ * catégorie s'appelait `categoryId` — que le dictionnaire commun dit
+ * « famille », le mot des fiches : ce type le surcharge (`KEY_LABELS_BY_TYPE`),
+ * et la phrase comme le détail disent « catégorie ».
  */
 function allergenEntryUpdated(fact: PhraseFact): Said {
-  const keys = changedKeys(fact.payload['changes']);
-  const fields = keys.map((key) => (key === 'categoryId' ? 'catégorie' : fieldList([key])));
   return byActor(
     fact,
     [
       text('a modifié '),
       ...theSubject(fact, ALLERGEN),
-      text(keys.length === 0 ? ` (${NO_CHANGE})` : ` : ${fields.join(', ')}`),
+      ...whatChanged(fact.payload['changes'], fact.type),
     ],
     ['subjectLabel'],
   );

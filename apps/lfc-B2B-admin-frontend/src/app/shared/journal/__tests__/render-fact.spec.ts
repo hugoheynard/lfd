@@ -178,7 +178,7 @@ describe('le détail, d’après le schéma qui valide la charge', () => {
       }),
     );
 
-    expect(rendered.sentence).toBe('Taux de TVA « Réduit » créé à —');
+    expect(rendered.sentence).toBe('Colette Martin a créé le taux de TVA « Réduit » à —');
     expect(rendered.detail).toEqual([{ label: 'extra', value: '1, 2' }]);
   });
 
@@ -223,20 +223,20 @@ describe('le sujet de la ligne', () => {
   it('s’ajoute en gras quand la phrase ne l’a pas nommé', () => {
     const rendered = renderFact(
       fact({
-        type: 'order.placed',
+        type: 'order.ready',
         subjectType: 'user',
         subjectId: 'usr_1',
         payload: {
           subjectLabel: 'Jean Dupont',
           orderId: 'ord_1',
           orderNumber: 'ORD-1',
-          companyId: null,
-          totalCents: 100,
+          readyBy: { id: 'stf_1', name: 'Cécile Martin' },
+          readyAt: '2026-09-19T08:00:00.000Z',
         },
       }),
     );
 
-    expect(rendered.sentence).toBe('Commande ORD-1 passée — Jean Dupont');
+    expect(rendered.sentence).toBe('Cécile Martin a déclaré la commande ORD-1 prête — Jean Dupont');
     expect(rendered.segments.at(-1)).toEqual({ kind: 'subject', text: 'Jean Dupont', route: null });
   });
 });
