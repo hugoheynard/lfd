@@ -59,9 +59,9 @@ staff** qui touchent ce qui est vendu, facturé ou produit :
 
 | Geste                                                                           | Où                                                                                                                             |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| poser, retirer la **surtaxe de retard**                                         | `b2b/order-waivers/application/order-late-fee.handlers.ts`                                                                     |
-| accorder, retirer une **dérogation d'heure limite**                             | `b2b/order-waivers/application/order-cutoff-waiver.handlers.ts`                                                                |
-| changer le **RIB** d'une société (hors révocation d'un brouillon de mandat)     | `b2b/payments/`, `set-company-bank-account`                                                                                    |
+| ~~poser, retirer la **surtaxe de retard**~~ — fait (`bfed73cc`)                 | `b2b/order-waivers/application/order-late-fee.handlers.ts`                                                                     |
+| ~~accorder, retirer une **dérogation d'heure limite**~~ — fait (`bfed73cc`)     | `b2b/order-waivers/application/order-cutoff-waiver.handlers.ts`                                                                |
+| ~~changer le **RIB** d'une société~~ — fait (`bfed73cc`)                        | `b2b/payments/`, `set-company-bank-account`                                                                                    |
 | les **décisions de catalogue** : visibilité, mise en avant, prix B2B            | `b2b/catalog/application/commands/catalog-decision.handlers.ts`                                                                |
 | **clore**, **reprendre** une journée de production                              | `production/application/commands/`                                                                                             |
 | cocher, décocher une ligne **fabriquée** ou **emballée** ; compter les **bacs** | `production/application/commands/` — le JSDoc de `step-packing-containers` dit déjà « qui a appuyé se lirait dans le journal » |
@@ -83,8 +83,10 @@ membres.
 > journée de production, elles, restent dans le lot.
 >
 > **Tranches**, dans cet ordre, chacune avec ses faits, ses e2e et son entrée
-> dans la porte : (a) l'argent — surtaxe, dérogations d'heure limite, RIB
-> (staff et client) ; (b) les décisions de catalogue ; (c) les paniers
+> dans la porte : ~~(a) l'argent — surtaxe, dérogations d'heure limite, RIB
+> (staff et client)~~ — **fait le 2026-09-19** (`bfed73cc`), avec la
+> révocation d'un mandat par le staff, que l'inventaire ne citait pas ; reste :
+> le déployer ; (b) les décisions de catalogue ; (c) les paniers
 > récurrents et les autres gestes du client sur son compte ; (d) la journée de
 > production.
 
