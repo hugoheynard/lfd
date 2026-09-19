@@ -301,22 +301,19 @@ model CompanyBankAccount {
 /// pouvoir répondre, deux ans plus tard, « sur quelle autorisation avez-vous
 /// prélevé le 12 mars ? ». Un mandat révoqué reste donc en base, daté.
 ///
-/// **Aucune coordonnée bancaire ici.** L'IBAN est saisi dans l'iframe Stripe et
-/// ne traverse jamais ce backend : on ne garde que des identifiants Stripe, la
-/// référence opposable (RUM) et de quoi *reconnaître* le compte (4 derniers
-/// chiffres, code banque). Ce qu'on achète à Stripe, c'est précisément de ne pas
-/// détenir la donnée bancaire.
+/// **Aucune coordonnée bancaire ici.** L'IBAN vit dans `company_bank_accounts`,
+/// scellé ; le mandat ne garde que la référence opposable (RUM) et de quoi
+/// *reconnaître* le compte (4 derniers chiffres, code banque).
 model PaymentMandate {
   id String @id @default(cuid())
 
   companyId String  @map("company_id")
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  // Rattachement Stripe. Le `customerId` est réutilisé d'un mandat au suivant
-  // pour la même société : un client Stripe par société, pas par autorisation.
-  // Nullable depuis le 2026-09-12 : un mandat que NOUS frappons n'a pas de
-  // client Stripe. Un lecteur qui suppose ces champs pleins est un appelant à
-  // corriger, pas un `!` à poser.
+  // Colonnes MORTES depuis le 2026-09-19 : vestiges des mandats Stripe, qui
+  // n'existent plus (aucun en production). Ni lues ni écrites ; leur
+  // suppression est une migration à part
+  // (documentation/comptabilite/todo-mandat-restes-de-la-frappe.md).
   stripeCustomerId String? @map("stripe_customer_id")
   paymentMethodId  String? @map("payment_method_id")
 
