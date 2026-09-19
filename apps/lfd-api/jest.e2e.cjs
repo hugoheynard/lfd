@@ -40,4 +40,14 @@ module.exports = {
   // remonter ce plafond — c'est ce que fait `e2e:rebalance`. Sans ça, Node
   // meurt d'un « heap out of memory » qui n'accuse aucune suite en particulier.
   maxWorkers: Number(process.env.E2E_WORKERS ?? "4"),
+  // Un worker qui enchaîne les suites GARDE ce qu'elles ont alloué (l'app Nest
+  // de chaque suite, ses modules, ses clients) : le tas monte de suite en
+  // suite. Le 2026-09-19, les suites du journal l'ont fait passer au-dessus
+  // des 2048 Mo du script, et deux shards de CI sont morts en « heap out of
+  // memory » sur des suites différentes à chaque passage — 384 tests verts
+  // sur 384, une suite tuée. Au-delà de ce seuil, Jest recycle le worker
+  // ENTRE deux suites : le tas repart de zéro, sans toucher au plafond ni à
+  // la mémoire du runner (7 Go pour deux workers, Postgres et MinIO).
+  // Sans effet quand Jest tourne en un seul process (`E2E_WORKERS=1`).
+  workerIdleMemoryLimit: "1024MB",
 };
