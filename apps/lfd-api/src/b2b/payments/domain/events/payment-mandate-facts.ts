@@ -29,6 +29,17 @@ export const PAYMENT_MANDATE_FACTS = {
    * trace hors de la colonne `revoked_at`.
    */
   revoked: "payment_mandate.revoked",
+  /**
+   * Le staff a envoyé le mandat frappé au client, par courriel (décidé par
+   * Hugo le 2026-09-19 : « je dois savoir mandat envoyé par mail »).
+   *
+   * 🔴 Écrit **après** l'envoi, hors transaction : un courriel parti ne se
+   * rattrape pas, et un fait écrit avant dirait envoyé un papier que le
+   * fournisseur a refusé. La charge porte l'identifiant du fournisseur
+   * (`null` en mode à blanc), **jamais l'adresse** : le journal se relit des
+   * années après, et l'identifiant suffit à retrouver l'envoi chez Resend.
+   */
+  sent: "payment_mandate.sent",
   /** Le brouillon est révoqué parce que ce qu'il imprime a changé. */
   draftVoided: "payment_mandate.draft_voided",
   /**

@@ -59,21 +59,21 @@ signer**, et ce n'est pas un oubli : c'est un refus, qui tombera avec la RUM.
 
 ### Ce qui tourne
 
-| Quoi                                                                                          | Où                                                                  | Note                                                                                           |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **L'entité juridique émettrice** — ICS, compte créancier, mentions, délai de pré-notification | `src/b2b/accounting/`, écran Comptabilité › Entités juridiques      | Ouvert à l'écran le 2026-09-12 : une entité, ICS posé, « Peut encaisser »                      |
-| **La fiche de mandat vierge** au modèle EPC/CFONB                                             | `accounting/domain/services/sepa-mandate-pdf.ts`                    | Déterministe, préremplie du bloc créancier, marquée EXEMPLE                                    |
-| **Le brouillon `pain.008` + son audit CSV**                                                   | `accounting/domain/services/pain008.ts`, `pain008-audit.ts`         | Sortis le 2026-09-12 : XML 2 ko, CSV dont la somme des lignes égale le `CtrlSum`               |
-| **Le RIB du client**, scellé au champ                                                         | `payments/infrastructure/`, écran Fiche client › Moyens de paiement | Posé le 2026-09-12 : AES-256-GCM, l'IBAN monte et ne redescend jamais                          |
-| **L'aperçu nominatif du mandat** — les deux blocs remplis                                     | `GET /admin/companies/:id/mandate/preview.pdf`                      | Posé le 2026-09-12 ; toujours marqué EXEMPLE — voir le TODO                                    |
-| **La frappe d'un mandat** — RUM sous notre ICS, état brouillon                                | `POST /admin/companies/:id/mandate`, bouton en fiche client         | Posée le 2026-09-12 au soir. `MintMandateHandler` appelle `Rum.mint`                           |
-| **La signature d'un brouillon** — `draft` → `active`                                          | `PaymentMandate.sign()`                                             | Porte la date du PAPIER, refuse une date à venir et une seconde signature                      |
-| **Le scan du mandat signé** — dépôt, scellement, relecture                                    | `PUT` et `GET /admin/companies/:id/mandate/proof`                   | Scellé AES-256-GCM en binaire ; le bouton « Récupérer » le ressort descellé                    |
-| **Le `pain.008` alimenté** — RUM, IBAN du débiteur, BIC créancier                             | `pain008.ts` + port `DebtorMandateReader`                           | Le bandeau BROUILLON tombe quand chaque ligne porte son mandat, et pas avant                   |
-| **Notre IBAN créancier, scellé**                                                              | `legal_entities.creditor_iban_sealed`                               | Palier 1 sur 3 ; la colonne claire subsiste comme retour arrière                               |
-| **Les réglages de mandat de l'entité** — description du contrat, type de paiement             | `LegalEntity`, écran Entités juridiques                             | Zones 20 et 12 du modèle EPC, posées une fois pour tous les mandats qu'elle émet               |
-| **Le logo imprimé sur les mandats**                                                           | `POST /admin/accounting/legal-entities/:id/logo`                    | Import à l'écran posé le 2026-09-12 ; sans lui la cellule reste vide et le mandat reste valide |
-| **Le mandat Stripe** — enregistrer, prouver, révoquer                                         | `src/b2b/payments/`                                                 | **Gelé** : c'est le mécanisme qu'on quitte                                                     |
+| Quoi                                                                                          | Où                                                                  | Note                                                                                                            |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **L'entité juridique émettrice** — ICS, compte créancier, mentions, délai de pré-notification | `src/b2b/accounting/`, écran Comptabilité › Entités juridiques      | Ouvert à l'écran le 2026-09-12 : une entité, ICS posé, « Peut encaisser »                                       |
+| **La fiche de mandat vierge** au modèle EPC/CFONB                                             | `accounting/domain/services/sepa-mandate-pdf.ts`                    | Déterministe, préremplie du bloc créancier, marquée EXEMPLE                                                     |
+| **Le brouillon `pain.008` + son audit CSV**                                                   | `accounting/domain/services/pain008.ts`, `pain008-audit.ts`         | Sortis le 2026-09-12 : XML 2 ko, CSV dont la somme des lignes égale le `CtrlSum`                                |
+| **Le RIB du client**, scellé au champ                                                         | `payments/infrastructure/`, écran Fiche client › Moyens de paiement | Posé le 2026-09-12 : AES-256-GCM, l'IBAN monte et ne redescend jamais                                           |
+| **L'aperçu nominatif du mandat** — les deux blocs remplis                                     | `GET /admin/companies/:id/mandate/preview.pdf`                      | Posé le 2026-09-12 ; toujours marqué EXEMPLE — voir le TODO                                                     |
+| **La frappe d'un mandat** — RUM sous notre ICS, état brouillon                                | `POST /admin/companies/:id/mandate`, bouton en fiche client         | Posée le 2026-09-12 au soir. `MintMandateHandler` appelle `Rum.mint`                                            |
+| **La signature d'un brouillon** — `draft` → `active`                                          | `PaymentMandate.sign()`                                             | Porte la date du PAPIER, refuse une date à venir et une seconde signature                                       |
+| **Le scan du mandat signé** — dépôt, scellement, relecture                                    | `PUT` et `GET /admin/companies/:id/mandate/proof`                   | Scellé AES-256-GCM en binaire ; le bouton « Récupérer » le ressort descellé                                     |
+| **Le `pain.008` alimenté** — RUM, IBAN du débiteur, BIC créancier                             | `pain008.ts` + port `DebtorMandateReader`                           | Le bandeau BROUILLON tombe quand chaque ligne porte son mandat, et pas avant                                    |
+| **Notre IBAN créancier, scellé**                                                              | `legal_entities.creditor_iban_sealed`                               | Palier 1 sur 3 ; la colonne claire subsiste comme retour arrière                                                |
+| **Les réglages de mandat de l'entité** — description du contrat, type de paiement             | `LegalEntity`, écran Entités juridiques                             | Zones 20 et 12 du modèle EPC, posées une fois pour tous les mandats qu'elle émet                                |
+| **Le logo imprimé sur les mandats**                                                           | `POST /admin/accounting/legal-entities/:id/logo`                    | Import à l'écran posé le 2026-09-12 ; sans lui la cellule reste vide et le mandat reste valide                  |
+| **Le mandat Stripe** — enregistrer, prouver, révoquer                                         | `src/b2b/payments/`                                                 | **Gelé** : c'est le mécanisme qu'on quitte — _supprimé le 2026-09-19, aucun mandat Stripe en production (Hugo)_ |
 
 ### Ce qui a été branché le 2026-09-12 au soir
 
@@ -91,7 +91,9 @@ schéma (2026-09-15) : une société sans mandat prélevable sort des deux fichi
 et le bandeau la nomme (`pain008.ts`, vérifié le 2026-09-15).
 
 ✅ **Les quatre blocages du cycle de vie sont levés** : `accepted_at`,
-`stripe_customer_id` et `payment_method_id` sont nullable ; `save()` écrit
+`stripe_customer_id` et `payment_method_id` sont nullable — et ni lues ni
+écrites depuis le 2026-09-19, où le code du mandat Stripe a été supprimé, aucun
+mandat Stripe en production (Hugo) ; `save()` écrit
 toutes les colonnes mutables ; trois index partiels tiennent l'unicité de
 l'actif par (société, créancier), du brouillon par société, et de la RUM par
 créancier _(vérifié en base)_.
@@ -145,7 +147,8 @@ dans le `pain.008`**. Le prix de ce retournement est la §6.
 l'acquisition carte demanderait PCI DSS.
 
 **Les mandats Stripe ne sont pas repris de force** : ils sont gelés, et le
-discriminant `origin` prévu au modèle existe pour ça.
+discriminant `origin` prévu au modèle existe pour ça. _Le code du mandat Stripe
+a été supprimé le 2026-09-19, aucun mandat Stripe en production (Hugo)._
 
 ⚠️ **Le portefeuille Stripe est inexploitable pour un `pain.008`**, quel qu'en
 soit le format : un mandat Stripe ne porte que `last4`, `bankCode` et `country`
@@ -561,7 +564,8 @@ est posé sur notre entité — vérifié à l'écran le 2026-09-12.)_
 _(vérifié le 2026-09-12)_. Un mandat que nous émettons n'a ni l'un ni l'autre —
 la table ne peut pas le stocker.
 
-**Ce qu'on ne touche pas** : le code Stripe reste, gelé — pas de `switch`, deux
+**Ce qu'on ne touche pas** : le code Stripe reste, gelé _(code du mandat Stripe
+supprimé le 2026-09-19, aucun mandat Stripe en production (Hugo))_ — pas de `switch`, deux
 intentions nommées, et le moteur de lot ne lira que les mandats directs. Et
 `reference` ne devient pas `rum`, `bank_code` ne devient pas `bic` : deux
 colonnes servies par un contrat que deux fronts lisent, un renommage se paierait

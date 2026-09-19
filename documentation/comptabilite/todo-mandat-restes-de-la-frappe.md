@@ -29,3 +29,21 @@ mandat actif, enregistrer le nouveau RIB, et frapper un nouveau mandat.
    XML déposé téléversé) — sans quoi l'annonce s'éteint sur un recalcul.
 
 Le modèle envisagé et ses objections sont aux §5 et §7 (#1, #2, #4, #12) du plan.
+
+## Supprimer les deux colonnes Stripe du mandat
+
+> Ouvert le 2026-09-19. Le code du mandat Stripe a été supprimé ce jour-là —
+> aucun mandat Stripe en production (Hugo) : port `MandateGateway`, adaptateur,
+> champs du domaine, lecture et écriture des colonnes.
+
+`payment_mandates.stripe_customer_id` et `payment_mandates.payment_method_id`
+restent en base, nullable, **ni lues ni écrites** : l'adaptateur Prisma les
+écarte par `omit` à chaque lecture, pour que le code en ligne ne les
+sélectionne déjà plus le jour où elles disparaissent. Aucun index ni
+contrainte ne les cite (les trois index partiels du 2026-09-12 portent sur
+`company_id`, `creditor_id`, `reference` et `status` — vérifié le 2026-09-19).
+
+Ce qui reste : les supprimer par migration, **dans un déploiement à part** —
+retrait des deux champs du modèle `PaymentMandate` et `DROP COLUMN` dans le
+même passage, après qu'une version sans lecture a été en ligne. C'est une
+migration de données : `vitruve` puis `lecteur-de-migrations` avant.

@@ -18,6 +18,18 @@ import {
 const UNIQUE_VIOLATION = "P2002";
 
 /**
+ * Les deux colonnes Stripe du mandat, **ni lues ni écrites** depuis le
+ * 2026-09-19 : aucun mandat Stripe en production (Hugo). Elles restent en base
+ * jusqu'à la migration qui les supprimera, dans un déploiement à part — et
+ * c'est ce déploiement que l'`omit` protège : le code en ligne ne les
+ * sélectionne déjà plus quand elles disparaissent.
+ */
+const RETIRED_STRIPE_COLUMNS = { stripeCustomerId: true, paymentMethodId: true } as const;
+
+/** La ligne telle qu'on la lit : sans les colonnes retirées. */
+type MandateRow = Omit<PaymentMandateRow, keyof typeof RETIRED_STRIPE_COLUMNS>;
+
+/**
  * Adaptateur Prisma des mandats.
  *
  * `findCurrent` rend l'**actif** s'il existe, sinon le plus récent : une fiche
@@ -50,21 +62,29 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   async findCurrent(companyId: string): Promise<PaymentMandate | null> {
     const active = await this.prisma.paymentMandate.findFirst({
       where: { companyId, status: "active" },
+      omit: RETIRED_STRIPE_COLUMNS,
     });
     const shown =
       active ??
-      (await this.prisma.paymentMandate.findFirst({ where: { companyId, status: "draft" } }));
+      (await this.prisma.paymentMandate.findFirst({
+        where: { companyId, status: "draft" },
+        omit: RETIRED_STRIPE_COLUMNS,
+      }));
     const row =
       shown ??
       (await this.prisma.paymentMandate.findFirst({
         where: { companyId },
         orderBy: { createdAt: "desc" },
+        omit: RETIRED_STRIPE_COLUMNS,
       }));
     return row === null ? null : PaymentMandate.reconstitute(toSnapshot(row));
   }
 
   async findById(mandateId: string): Promise<PaymentMandate | null> {
-    const row = await this.prisma.paymentMandate.findUnique({ where: { id: mandateId } });
+    const row = await this.prisma.paymentMandate.findUnique({
+      where: { id: mandateId },
+      omit: RETIRED_STRIPE_COLUMNS,
+    });
     return row === null ? null : PaymentMandate.reconstitute(toSnapshot(row));
   }
 
@@ -75,6 +95,7 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
   async findDraft(companyId: string): Promise<PaymentMandate | null> {
     const row = await this.prisma.paymentMandate.findFirst({
       where: { companyId, status: "draft" },
+      omit: RETIRED_STRIPE_COLUMNS,
     });
     return row === null ? null : PaymentMandate.reconstitute(toSnapshot(row));
   }
@@ -104,8 +125,6 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
     const created = await this.prisma.paymentMandate.create({
       data: {
         companyId: snapshot.companyId,
-        stripeCustomerId: snapshot.stripeCustomerId,
-        paymentMethodId: snapshot.paymentMethodId,
         reference: snapshot.reference,
         last4: snapshot.last4,
         bankCode: snapshot.bankCode,
@@ -144,7 +163,7 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
    * sur la clé chargée fait échouer l'un des deux gestes, jamais les deux à
    * moitié : Postgres réévalue la condition après le verrou de ligne.
    *
-   * L'identité — référence, émetteur, rattachement au prestataire — n'y est
+   * L'identité — référence, émetteur, schéma — n'y est
    * pas : elle ne bouge pas, et une RUM qui se réécrirait invaliderait le
    * papier qui la porte.
    */
@@ -198,24 +217,13 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
           siren: row.siren,
         };
   }
-
-  async findStripeCustomerId(companyId: string): Promise<string | null> {
-    const row = await this.prisma.paymentMandate.findFirst({
-      where: { companyId },
-      orderBy: { createdAt: "desc" },
-      select: { stripeCustomerId: true },
-    });
-    return row?.stripeCustomerId ?? null;
-  }
 }
 
 /** Ligne Prisma → état de domaine. Le type Prisma s'arrête ici. */
-function toSnapshot(row: PaymentMandateRow): MandateSnapshot {
+function toSnapshot(row: MandateRow): MandateSnapshot {
   return {
     id: row.id,
     companyId: row.companyId,
-    stripeCustomerId: row.stripeCustomerId,
-    paymentMethodId: row.paymentMethodId,
     reference: row.reference,
     last4: row.last4,
     bankCode: row.bankCode,

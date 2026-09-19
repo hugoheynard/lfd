@@ -13,30 +13,26 @@ import { DocumentStore } from "../../../platform/storage/document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { MandateNotFoundError } from "../domain/errors/mandate-errors.js";
 import { MandateRevokedEvent } from "../domain/events/payment-mandate.events.js";
-import { MandateGateway } from "../domain/mandate-gateway.js";
 import { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import { AttachMandateProofCommand, RevokeMandateCommand } from "./mandate-commands.js";
 import { GetCompanyMandateQuery } from "./mandate-queries.js";
 import { attachProofToDraft } from "./mandate-proof-support.js";
 
 /**
- * Révoque le mandat courant — **chez le prestataire d'abord**, ici ensuite.
+ * Révoque le mandat courant — actif ou brouillon — depuis la fiche.
  *
- * Ordre inverse du précédent, et pour la même raison : tant que le moyen de
- * paiement est attaché chez Stripe, un prélèvement peut partir. Marquer
- * « révoqué » chez nous en premier nous ferait croire l'autorisation retirée
- * alors qu'elle ne l'est pas.
+ * Une seule écriture, locale : le mandat est frappé et rangé chez nous, et
+ * traité directement avec la banque. Il n'y a rien à détacher chez un
+ * prestataire — le chemin Stripe qui le faisait a été supprimé le 2026-09-19,
+ * aucun mandat Stripe n'existant en production (Hugo).
  *
  * Journalisé depuis le 2026-09-19 (`payment_mandate.revoked`), dans la
- * transaction de l'écriture locale. L'appel au prestataire reste AVANT et
- * dehors : une transaction ne s'ouvre pas sur un aller-retour réseau
- * (`UnitOfWork`), et c'est déjà l'ordre qui protège le client.
+ * transaction de l'écriture.
  */
 @CommandHandler(RevokeMandateCommand)
 export class RevokeMandateHandler implements ICommandHandler<RevokeMandateCommand, void> {
   constructor(
     private readonly mandates: PaymentMandateRepository,
-    private readonly gateway: MandateGateway,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -46,19 +42,6 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
     const mandate = await this.mandates.findCurrent(command.companyId);
     if (mandate === null) {
       throw new MandateNotFoundError(command.companyId);
-    }
-    // 🔴 Conditionnel depuis le 2026-09-12. L'appel était inconditionnel, et
-    // c'était tenable tant que TOUT mandat venait de Stripe. Un mandat que nous
-    // frappons n'a pas de moyen de paiement chez un tiers : le détacher
-    // reviendrait à demander à Stripe d'oublier quelque chose qu'il n'a jamais
-    // eu — au mieux un aller-retour réseau pour rien, au pire une erreur du
-    // prestataire qui ferait échouer une révocation parfaitement légitime.
-    //
-    // L'ordre, lui, ne change pas : tant que le moyen de paiement est attaché,
-    // un prélèvement peut partir. On détache d'abord quand il y a de quoi.
-    const paymentMethodId = mandate.paymentMethodId;
-    if (paymentMethodId !== null) {
-      await this.gateway.revokeMandate(paymentMethodId);
     }
     const previousStatus = mandate.status;
     mandate.revoke(this.clock.now());

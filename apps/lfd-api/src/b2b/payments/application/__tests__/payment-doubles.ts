@@ -98,8 +98,6 @@ export function mandate(overrides: Partial<MandateSnapshot> = {}): PaymentMandat
   return PaymentMandate.reconstitute({
     id: "mdt_1",
     companyId: "cmp_1",
-    stripeCustomerId: null,
-    paymentMethodId: null,
     reference: "LFC-9P2X4B-260914-K7M3QT",
     scheme: "B2B",
     paymentType: "recurrent",
@@ -229,10 +227,6 @@ export class InMemoryMandates extends PaymentMandateRepository {
 
   findHolder(): Promise<MandateHolder | null> {
     return Promise.resolve(this.holder);
-  }
-
-  findStripeCustomerId(): Promise<string | null> {
-    return Promise.resolve(null);
   }
 }
 

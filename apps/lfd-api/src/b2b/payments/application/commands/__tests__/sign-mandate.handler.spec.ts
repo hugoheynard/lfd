@@ -27,8 +27,6 @@ function snapshot(overrides: Partial<MandateSnapshot>): MandateSnapshot {
     paymentType: "recurrent",
     id: "mdt_draft",
     companyId: "cmp_1",
-    stripeCustomerId: null,
-    paymentMethodId: null,
     reference: "LFC-9P2X4B-260912-K7M3QT",
     last4: "",
     bankCode: "",
@@ -61,7 +59,6 @@ function build(options: {
       return Promise.resolve();
     },
     findHolder: () => Promise.resolve(null),
-    findStripeCustomerId: () => Promise.resolve(null),
     depositProof: () => Promise.resolve(),
   };
   const clock: Clock = { now: () => NOW };

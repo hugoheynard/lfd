@@ -115,17 +115,12 @@ export abstract class PaymentMandateRepository {
   abstract depositProof(mandate: PaymentMandate, previousProofKey: string | null): Promise<void>;
 
   /**
-   * L'identité de la société pour le prestataire, ou `null` si l'id est inconnu.
+   * L'identité de la société qu'un mandat imprime ou à qui on l'envoie, ou `null`
+   * si l'id est inconnu.
    *
    * Ici plutôt que par un import du contexte `account` : le paiement n'a besoin
    * que de quelques chaînes, et dépendre de tout l'agrégat société pour les obtenir
    * couplerait deux contextes pour rien (ISP).
    */
   abstract findHolder(companyId: string): Promise<MandateHolder | null>;
-
-  /**
-   * L'id du client Stripe déjà utilisé pour cette société, tous mandats
-   * confondus — un client par société, pas par autorisation. `null` si aucun.
-   */
-  abstract findStripeCustomerId(companyId: string): Promise<string | null>;
 }

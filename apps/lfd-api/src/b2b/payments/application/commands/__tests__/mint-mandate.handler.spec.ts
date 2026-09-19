@@ -97,7 +97,6 @@ function build(
       return Promise.resolve("mdt_neuf");
     },
     save: () => Promise.resolve(),
-    findStripeCustomerId: () => Promise.resolve(null),
     depositProof: () => Promise.resolve(),
   };
 

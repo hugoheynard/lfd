@@ -94,6 +94,36 @@ export class MandateSignedEvent implements JournaledEvent {
 }
 
 /**
+ * Fait : **le mandat frappé est parti chez le client**, par courriel.
+ *
+ * `providerId` est l'identifiant que le fournisseur a rendu en acceptant
+ * l'envoi — `null` en mode à blanc, où rien ne part : il n'y a alors rien à
+ * rapprocher, et un identifiant inventé ne correspondrait à rien. L'adresse
+ * n'entre pas au payload.
+ */
+export class MandateSentEvent implements JournaledEvent {
+  constructor(
+    readonly mandateId: string,
+    readonly companyId: string,
+    readonly reference: string,
+    readonly providerId: string | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PAYMENT_MANDATE_FACTS.sent,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.mandateId,
+      payload: {
+        companyId: this.companyId,
+        reference: this.reference,
+        providerId: this.providerId,
+      },
+    };
+  }
+}
+
+/**
  * Fait : **le staff révoque le mandat courant**. `previousStatus` dit ce qui a été
  * révoqué — un mandat qui autorisait un débit, ou un brouillon jamais signé :
  * les deux n'appellent pas la même question du client.

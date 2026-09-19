@@ -13,16 +13,22 @@
  * - un seul fait par changement de RIB, brouillon de mandat ou non — le
  *   brouillon révoqué garde son propre fait, sur le mandat ;
  * - un journal qui refuse d'écrire annule le geste (panne posée en SQL, comme
- *   dans `pim-journal-atomicity`).
+ *   dans `pim-journal-atomicity`) ;
+ * - l'envoi du mandat au client laisse `payment_mandate.sent`, sous la fiche
+ *   staff, avec le reçu du fournisseur et **sans l'adresse** — cherchée, elle
+ *   aussi, dans la ligne SQL (décision de Hugo, 2026-09-19).
  */
+import type { MailReceipt } from "@lfd/mailer";
+
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { MandateGateway } from "../src/b2b/payments/domain/mandate-gateway.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
+import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import {
   bootstrapE2e,
   daysAgo,
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
+  jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -49,12 +55,12 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-/** Prestataire doublé : aucun appel réseau. */
-class FakeMandateGateway extends MandateGateway {
-  revokeMandate(): Promise<void> {
-    return Promise.resolve();
-  }
-}
+/** Le reçu que le fournisseur rend : c'est lui, et non l'adresse, que le fait retient. */
+const PROVIDER_ID = "re_e2e_mandat";
+const acceptingMailer = {
+  enabled: true,
+  send: (): Promise<MailReceipt> => Promise.resolve({ providerId: PROVIDER_ID }),
+};
 
 let ctx: E2eContext;
 let companyId: string;
@@ -64,7 +70,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: MandateGateway, value: new FakeMandateGateway() },
+      { token: MAILER, value: acceptingMailer },
     ],
   });
 });
@@ -116,8 +122,6 @@ async function seedMandate(status: "active" | "draft"): Promise<string> {
       scheme: "B2B",
       paymentType: "recurrent",
       companyId,
-      stripeCustomerId: "cus_e2e",
-      paymentMethodId: "pm_e2e",
       reference: "RUM-E2E",
       last4: "3000",
       bankCode: "BNPA",
@@ -259,5 +263,72 @@ describe("la révocation du mandat par le staff", () => {
     expect(response.status).toBeGreaterThanOrEqual(500);
     const row = await ctx.prisma.paymentMandate.findUniqueOrThrow({ where: { id: mandateId } });
     expect(row.status).toBe("active");
+  });
+});
+
+/** Un émetteur complet — identité, ICS, compte créancier : la frappe l'exige. */
+async function declareIssuer(): Promise<void> {
+  const staff = ctx.asSub(E2E_STAFF_SUB);
+  const created = await staff
+    .post("/admin/accounting/legal-entities")
+    .send({
+      name: "Crazeativity",
+      legalForm: "SAS",
+      siren: "900000001",
+      rcs: "Chambéry",
+      shareCapitalCents: 1_000_000,
+      vatNumber: "",
+      address: {
+        line1: "Route de la Balme",
+        line2: "",
+        postalCode: "73150",
+        city: "Val d'Isère",
+        countryCode: "FR",
+      },
+    })
+    .expect(201);
+  const id = jsonBody<{ id: string }>(created).id;
+  const entity = `/admin/accounting/legal-entities/${id}`;
+  await staff.put(`${entity}/creditor-identifier`).send({ ics: "FR00ZZZ900001" }).expect(204);
+  await staff
+    .put(`${entity}/creditor-account`)
+    .send({ ...RIB, iban: "FR7630006000011234567890189", holder: "Crazeativity" })
+    .expect(204);
+}
+
+describe("l'envoi du mandat au client par le staff", () => {
+  it("écrit un fait sur le mandat, sous la fiche staff, avec le reçu et sans l'adresse", async () => {
+    await declareIssuer();
+    await staffPut({ ...RIB, holderLegalForm: "SARL" }).expect(204);
+    const minted = await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post(`/admin/companies/${companyId}/mandate`)
+      .expect(201);
+    const mandateId = jsonBody<{ id: string }>(minted).id;
+
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post(`/admin/companies/${companyId}/mandate/${mandateId}/send`)
+      .expect(204);
+
+    const { reference } = await ctx.prisma.paymentMandate.findUniqueOrThrow({
+      where: { id: mandateId },
+    });
+    expect(await facts("payment_mandate.sent")).toEqual([
+      {
+        subjectType: "payment_mandate",
+        subjectId: mandateId,
+        actorType: "staff",
+        actorId: E2E_STAFF_ID,
+        payload: { companyId, reference, providerId: PROVIDER_ID },
+      },
+    ]);
+    const { contactEmail } = await ctx.prisma.company.findUniqueOrThrow({
+      where: { id: companyId },
+    });
+    const rows = await ctx.prisma.activityEvent.findMany({
+      where: { type: "payment_mandate.sent" },
+    });
+    expect(JSON.stringify(rows)).not.toContain(contactEmail);
   });
 });

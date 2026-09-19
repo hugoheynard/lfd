@@ -5,15 +5,14 @@ import { DocumentStore, type StoredDocument } from "../../../../platform/storage
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   PaymentMandate,
+  type MandateSnapshot,
   type MandateToCreate,
-  type RegisteredMandate,
 } from "../../domain/entities/payment-mandate.js";
 import { AesGcmFieldCipher } from "../../../../platform/crypto/aes-gcm-field-cipher.js";
 import {
   MandateNotFoundError,
   MandateNotProvableError,
 } from "../../domain/errors/mandate-errors.js";
-import { MandateGateway, type MandateToRegister } from "../../domain/mandate-gateway.js";
 import {
   PaymentMandateRepository,
   type MandateHolder,
@@ -24,9 +23,8 @@ import { AttachMandateProofHandler, RevokeMandateHandler } from "../mandate.hand
 const NOW = new Date("2026-08-11T10:00:00.000Z");
 const PDF = Buffer.from("%PDF-1.4\nmandat", "latin1");
 
-const REGISTRATION: RegisteredMandate = {
-  stripeCustomerId: "cus_1",
-  paymentMethodId: "pm_1",
+/** Ce que les deux mandats de ces cas partagent : la RUM et le compte reconnu. */
+const IDENTITY: Pick<MandateSnapshot, "reference" | "last4" | "bankCode" | "country" | "status"> = {
   reference: "RUM-123",
   last4: "3000",
   bankCode: "BNPA",
@@ -38,7 +36,6 @@ const REGISTRATION: RegisteredMandate = {
 interface Trace {
   readonly steps: string[];
   written: MandateToCreate | null;
-  registered: MandateToRegister | null;
   saved: PaymentMandate | null;
   stored: { key: string; document: StoredDocument } | null;
 }
@@ -47,13 +44,11 @@ function doubles(options: {
   readonly current?: PaymentMandate | null;
   readonly draft?: PaymentMandate | null;
   readonly holder?: MandateHolder | null;
-  readonly customerId?: string | null;
 }): {
   readonly repo: PaymentMandateRepository;
-  readonly gateway: MandateGateway;
   readonly trace: Trace;
 } {
-  const trace: Trace = { steps: [], written: null, registered: null, saved: null, stored: null };
+  const trace: Trace = { steps: [], written: null, saved: null, stored: null };
 
   const repo: PaymentMandateRepository = {
     findCurrent: () => Promise.resolve(options.current ?? null),
@@ -81,7 +76,6 @@ function doubles(options: {
             }
           : options.holder,
       ),
-    findStripeCustomerId: () => Promise.resolve(options.customerId ?? null),
     depositProof: (mandate) => {
       trace.steps.push("deposit");
       trace.saved = mandate;
@@ -89,14 +83,7 @@ function doubles(options: {
     },
   };
 
-  const gateway: MandateGateway = {
-    revokeMandate: () => {
-      trace.steps.push("gateway");
-      return Promise.resolve();
-    },
-  };
-
-  return { repo, gateway, trace };
+  return { repo, trace };
 }
 
 /** Le brouillon frappé qui attend son scan — le seul mandat qui en reçoit un. */
@@ -104,11 +91,9 @@ function draftMandate(): PaymentMandate {
   return PaymentMandate.reconstitute({
     scheme: "B2B",
     paymentType: "recurrent",
-    ...REGISTRATION,
+    ...IDENTITY,
     id: "mdt_1",
     companyId: "cmp_1",
-    stripeCustomerId: null,
-    paymentMethodId: null,
     status: "draft",
     acceptedAt: null,
     revokedAt: null,
@@ -122,7 +107,7 @@ function activeMandate(): PaymentMandate {
   return PaymentMandate.reconstitute({
     scheme: "B2B",
     paymentType: "recurrent",
-    ...REGISTRATION,
+    ...IDENTITY,
     id: "mdt_1",
     companyId: "cmp_1",
     acceptedAt: new Date("2024-03-12T00:00:00.000Z"),
@@ -158,10 +143,9 @@ function revokeHandler(
   current: PaymentMandate | null,
   events = new RecordingPublisher(),
 ): { readonly handler: RevokeMandateHandler; readonly trace: Trace } {
-  const { repo, gateway, trace } = doubles({ current });
+  const { repo, trace } = doubles({ current });
   const handler = new RevokeMandateHandler(
     repo,
-    gateway,
     new FixedClock(NOW),
     events,
     new TracingUnitOfWork(trace),
@@ -170,15 +154,14 @@ function revokeHandler(
 }
 
 describe("RevokeMandateHandler", () => {
-  it("détache chez le PRESTATAIRE avant de marquer révoqué", async () => {
-    // Ordre inverse de l'enregistrement, même raison : tant que le moyen est
-    // attaché chez Stripe, un prélèvement peut partir. L'appel réseau reste
-    // HORS de l'unité de travail, qui ne tient que l'écriture et sa trace.
+  it("marque révoqué dans l'unité de travail, sans autre geste", async () => {
+    // Plus aucun prestataire à prévenir depuis le 2026-09-19 : le mandat est
+    // traité avec la banque, et la révocation est une écriture locale.
     const { handler, trace } = revokeHandler(activeMandate());
 
     await handler.execute(new RevokeMandateCommand("cmp_1"));
 
-    expect(trace.steps).toEqual(["gateway", "uow:begin", "save", "uow:end"]);
+    expect(trace.steps).toEqual(["uow:begin", "save", "uow:end"]);
     expect(trace.saved?.status).toBe("revoked");
   });
 

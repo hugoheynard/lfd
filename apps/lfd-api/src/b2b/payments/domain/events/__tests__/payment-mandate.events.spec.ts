@@ -3,6 +3,7 @@ import {
   MandateMintedEvent,
   MandateOptionsChangedEvent,
   MandateProofAttachedEvent,
+  MandateSentEvent,
   MandateSignedEvent,
 } from "../payment-mandate.events.js";
 
@@ -13,6 +14,7 @@ describe("les faits du mandat — ce que le journal retient", () => {
       new MandateProofAttachedEvent("mdt_1", "cmp_1", "RUM-1", "scan.pdf", "staff"),
       new MandateSignedEvent("mdt_1", "cmp_1", "RUM-1", "2026-09-10", "mdt_0"),
       new MandateDraftVoidedEvent("mdt_1", "cmp_1", "RUM-1", "bank_account_changed", "staff"),
+      new MandateSentEvent("mdt_1", "cmp_1", "RUM-1", "re_1"),
     ].map((event) => event.journalFact());
 
     expect(facts.map((fact) => fact.type)).toEqual([
@@ -20,6 +22,7 @@ describe("les faits du mandat — ce que le journal retient", () => {
       "payment_mandate.proof_attached",
       "payment_mandate.signed",
       "payment_mandate.draft_voided",
+      "payment_mandate.sent",
     ]);
     for (const fact of facts) {
       expect(fact).toMatchObject({ subjectType: "payment_mandate", subjectId: "mdt_1" });
@@ -41,6 +44,13 @@ describe("les faits du mandat — ce que le journal retient", () => {
       expect(keys).not.toEqual(expect.arrayContaining(["iban"]));
       expect(keys).not.toEqual(expect.arrayContaining(["last4"]));
     }
+  });
+
+  /** Décision de Hugo (2026-09-19) : l'envoi se relit par son reçu, jamais par l'adresse. */
+  it("porte le reçu du fournisseur de l'envoi, et aucune adresse", () => {
+    const fact = new MandateSentEvent("mdt_1", "cmp_1", "RUM-1", null).journalFact();
+
+    expect(fact.payload).toEqual({ companyId: "cmp_1", reference: "RUM-1", providerId: null });
   });
 
   /** Plan §10 (2026-09-14) : `draft_voided` ne disait pas qui avait réécrit. */

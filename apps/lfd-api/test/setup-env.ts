@@ -166,8 +166,9 @@ export function testStorageConfig(): typeof TEST_STORAGE {
  *
  * Aucun appel réseau n'en découle : le SDK ne se connecte qu'à l'appel d'une
  * API, et les suites qui en font une doublent `PaymentGateway` (orders,
- * admin-orders, account-alerts). Celle du mandat ne double que `MandateGateway`
- * et traverse donc le vrai adaptateur — voulu : elle éprouve le vrai contrôleur.
+ * admin-orders, account-alerts). Celle du mandat ne double rien du paiement —
+ * son port Stripe (`MandateGateway`) a été supprimé le 2026-09-19 — et
+ * traverse donc le vrai adaptateur : voulu, elle éprouve le vrai contrôleur.
  */
 process.env["STRIPE_SECRET_KEY"] = "sk_test_e2e";
 process.env["STRIPE_WEBHOOK_SECRET"] = "whsec_e2e";
