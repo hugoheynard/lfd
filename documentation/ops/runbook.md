@@ -222,22 +222,23 @@ le pooler mutualisé (`postgres://…@pooled.db.prisma.io`, adaptateur `pg`). Le
 plan et ses raisons : [`plan-sortie-d-accelerate.md`](plan-sortie-d-accelerate.md)
 (gestes 6, 7, 7′). Accelerate cesse de répondre le **1er décembre 2026**.
 
-**Avant** (gestes 2 à 4) : le secret `DATABASE_LFD_PROD_DIRECT_URL` existe ; la
-valeur **actuelle** de `DATABASE_LFD_URL` est copiée dans le gestionnaire de
-mots de passe — un secret GitHub ne se relit pas, et c'est la seule voie de
-retour ; le code de la sortie est en ligne et `/health` publie
-`"database":"accelerate"`.
+**Avant** (gestes 2 à 4) : les secrets `DATABASE_LFD_PROD_DIRECT_URL` (URL
+directe) et `DATABASE_LFD_PROD_URL` (URL **mutualisée**) existent — le second
+n'est lu par aucun workflow avant la bascule ; le code de la sortie est en
+ligne et `/health` publie `"database":"accelerate"`.
 
-⚠️ **D'ici la bascule, ne pas toucher `DATABASE_LFD_URL`** : tout push sur `main`
-qui touche `apps/lfd-api/**` ou `packages/**` resynchronise ce secret vers le
-container.
+`DATABASE_LFD_URL` **garde la valeur Accelerate** jusqu'au resserrement : c'est
+elle, restée dans GitHub, qui fait le retour arrière (décidé par Hugo le
+2026-09-19, à la place d'écraser le secret). La copie au gestionnaire de mots
+de passe n'est plus qu'une ceinture.
 
-**La bascule** — deux mains, un seul push :
+**La bascule** — un seul commit, poussé sur `main`. Dans
+`.github/workflows/deploy_lfd_api.yml` :
 
-1. Hugo remplace `DATABASE_LFD_URL` dans GitHub (par l'interface, jamais par une
-   ligne de commande) par l'URL **mutualisée** ;
-2. un commit passe `EXPECTED_DATABASE_TRANSPORT: accelerate` à `pg` en tête de
-   `.github/workflows/deploy_lfd_api.yml`, et part sur `main`.
+1. l'étape « Sync runtime secrets » alimente la variable `DATABASE_LFD_URL` du
+   container depuis `secrets.DATABASE_LFD_PROD_URL` au lieu de
+   `secrets.DATABASE_LFD_URL` — le NOM vu par le container ne change pas ;
+2. `EXPECTED_DATABASE_TRANSPORT` passe de `accelerate` à `pg`.
 
 Par un **commit**, jamais par un `gh workflow run` : une révision neuve fait une
 instance neuve, qui relit ses `envVars` ; relancer la même image ne prouve rien
@@ -257,12 +258,9 @@ back-office (`GET /admin/ops/health`), un écran admin, une connexion client, un
 commande de test, les vitals avant / après, et **plus aucun trafic Accelerate**
 dans la console Prisma.
 
-**Retour arrière** (geste 7′) — les deux mêmes mains, à l'envers :
-
-1. Hugo recolle dans `DATABASE_LFD_URL` la valeur Accelerate gardée dans le
-   gestionnaire de mots de passe ;
-2. un commit repasse `EXPECTED_DATABASE_TRANSPORT` à `accelerate`, et part sur
-   `main`.
+**Retour arrière** (geste 7′) — `git revert` du commit de bascule, poussé sur
+`main` : la synchro relit `secrets.DATABASE_LFD_URL` (Accelerate) et le contrôle
+attend de nouveau `accelerate`. Aucun geste dans GitHub.
 
 Contrôle : `/health` publie `"database":"accelerate"`. Ce retour n'est possible
 que **tant que la clé Accelerate n'est pas révoquée** (geste 8), et au plus tard
