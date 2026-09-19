@@ -20,6 +20,46 @@ son propre compte** (Hugo, 2026-09-19 : « tout doit être journalisé »). Jama
 de coordonnées dans la charge : les champs qui ont changé, pas leurs valeurs.
 Un brouillon ou un panier ne vend rien : hors journal.
 
+## Le bilan du 2026-09-19 — 7/10 bâti, 4/10 en production
+
+Note donnée à la demande de Hugo, le soir où les plans du journal et des
+phrases ont été bâtis. **Tout est commité en local, rien n'est déployé** : la
+production tourne encore avec l'ancien journal (types bruts, gestes non
+tracés).
+
+**Solide** : les gestes qui comptent (argent, catalogue, compte client,
+production, fiscalité) s'écrivent dans la transaction du geste ; l'auteur est
+la fiche, deux portes l'empêchent de régresser ; le catalogue des faits
+(191 types) interdit la dérive ; chaque ligne est une phrase sans perte, testée
+sur toutes les formes ; la recherche, les pages, l'historique produit et la
+vue fiscale sont en place.
+
+**Pour atteindre 9**, dans cet ordre :
+
+1. **Déployer**, après la sortie d'Accelerate — API puis back-office, l'index
+   du journal hors des heures d'usage.
+2. **Relire l'écran Journal avec de vraies lignes**, un quart d'heure : aucune
+   phrase n'a encore été lue dans un navigateur, alors que c'est leur seul
+   rôle.
+3. **Rendre opposables les faits de commande** (§ « Les faits écrits par un
+   abonné » ci-dessous).
+4. **Trancher l'atelier** (§ « Les gestes de l'atelier »).
+
+**Ce qui retient aussi la note**, sans urgence :
+
+- **Sept types ne sont écrits par aucun test** (`variant.aligned`,
+  `appointment.honored`, `appointment.no_show`, `delivery_zone.removed`,
+  `order_cutoff.updated`, `volume_commitment.closed`,
+  `legal_entity.pre_notification_changed`) : leur forme au catalogue vient de
+  la lecture du code, pas d'une écriture éprouvée.
+- **Le code n'a été relu que par des agents** : les lots B et D du plan des
+  phrases font des centaines de fichiers.
+- Les coordonnées encore écrites, par exception décidée :
+  l'e-mail et le téléphone du staff (Hugo, 2026-09-18), l'e-mail d'une
+  dérogation d'accès ([`todo-derogations-d-acces.md`](todo-derogations-d-acces.md)).
+- Le volume (§ « Rétention et volume », § « Un index pour la recherche ») :
+  tient aujourd'hui, pas sans y revenir.
+
 ## Pris en charge par le plan
 
 [`plan-journal-d-activite.md`](plan-journal-d-activite.md) — c'est là que se lit
