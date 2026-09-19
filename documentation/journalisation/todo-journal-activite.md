@@ -30,7 +30,6 @@ l'avancement.
 - Arriver au journal depuis une fiche, l'historique d'une fiche produit → **lot 3**.
 - La tranche fiscale pour la comptabilité (le mur) → **lot 4**.
 - La pagination des deux journaux → **lot 5**.
-- La promotion du code du journal en `platform/` → **fermeture proposée** (plan §4) : le port y est depuis le 2026-08-25, déplacer l'implémentation coûterait plus qu'il ne corrige.
 
 ## Ouvert, et pris par personne
 

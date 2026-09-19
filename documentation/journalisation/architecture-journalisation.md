@@ -64,6 +64,20 @@ Mais tous les faits ne coûtent pas la même chose s'ils se perdent. Le port
 | Pourquoi      | perdre la trace dégrade une statistique ; casser le geste dégraderait le service | une trace manquée en silence laisse croire que rien n'a changé |
 | Qui l'emploie | les abonnés de `b2b/growth/application/handlers/` et commandes de croissance     | tout ce qui passe par le port `Journal` (§3)                   |
 
+**Pourquoi la table vit dans le schéma `growth`.** Le journal est né comme un
+journal d'événements **analytiques** de la croissance (lead capté, commande
+passée, étape franchie) : le cockpit commercial, le score des leads et les
+indicateurs d'acquisition le lisent encore. Il est devenu ensuite la trace de
+« qui a fait quoi ». Les deux usages lisent **les mêmes faits** — `order.placed`
+est une statistique et une trace — et c'est pourquoi ils partagent une table.
+Le nom du schéma est historique. **Décidé par Hugo le 2026-09-19** : on ne
+déplace ni la table ni le code qui l'écrit. Le port `Journal`, lui, est en
+`platform/` depuis le 2026-08-25 : les blocs métier ne dépendent pas de la
+croissance pour écrire. Déplacer l'implémentation ferait de `platform` le
+propriétaire de la table (`lint:prisma-model-ownership`) — six lecteurs de la
+croissance en deviendraient des intrus — et y ferait entrer le vocabulaire
+métier des modules.
+
 Les deux passent par le **même** append (`prisma-activity-recorder.ts`) : seul
 le `catch` diffère. Deux chemins d'écriture auraient divergé, et c'est le
 rare — celui qui doit être fiable — qui aurait pourri en silence.

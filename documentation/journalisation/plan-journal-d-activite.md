@@ -31,7 +31,7 @@
 | 3   | §5, §9        | ~~on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »~~ — **bâti le 2026-09-19** (`b12433c3`, `83589b95`, et le commit de l'onglet), déploiement en attente | moyen  |
 | 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                                                                                  | moyen  |
 | 5   | §10           | ~~les deux journaux se lisent par pages numérotées, sur une vue figée (`fold-paginator`)~~ — **bâti le 2026-09-19** (`9f20a980` et le commit d'écran), déploiement en attente                      | faible |
-| —   | §3            | **le code reste en `growth`** : la promotion du port suffit — décision, pas un lot                                                                                                                 | —      |
+| —   | §3            | ~~le code reste en `growth`~~ — **fermé par Hugo le 2026-09-19** : ni la table ni le code ne bougent (`architecture-journalisation.md` §2)                                                         | —      |
 | —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                                                                                        | —      |
 
 **Deux décisions reviennent à Hugo** (§3) : faut-il journaliser les gestes
@@ -242,7 +242,9 @@ ici ne suffisait pas.
 
 ## 4. Ce qui n'est pas proposé, et pourquoi
 
-- **Déplacer le code du journal en `platform/`** (§3 du TODO). Le port y est
+- ~~**Déplacer le code du journal en `platform/`**~~ — **fermé par Hugo le
+  2026-09-19** (option 1 : ne rien changer ; l'explication est dans
+  [`architecture-journalisation.md`](architecture-journalisation.md) §2). (§3 du TODO.) Le port y est
   depuis le 2026-08-25. Déplacer l'implémentation ferait de `platform` le
   propriétaire de la table (`lint:prisma-model-ownership`), et six lecteurs de
   `b2b` en deviendraient des intrus ; les préfixes de module, qui nomment le
