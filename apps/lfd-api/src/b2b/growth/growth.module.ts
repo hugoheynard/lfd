@@ -24,10 +24,8 @@ import { OnOrderReady } from "./application/handlers/on-order-ready.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
 import { OnUserRegisteredLinkLead } from "./application/handlers/on-user-registered-link-lead.handler.js";
-import {
-  OnSupportHandled,
-  OnSupportRequested,
-} from "./application/handlers/on-support-activity.handler.js";
+import { OnSupportHandled } from "./application/handlers/on-support-handled.handler.js";
+import { OnSupportRequested } from "./application/handlers/on-support-requested.handler.js";
 import { GetAppointmentHandler } from "./application/queries/get-appointment.handler.js";
 import { GetAvailabilityHandler } from "./application/queries/get-availability.handler.js";
 import { GetCockpitHandler } from "./application/queries/get-cockpit.handler.js";

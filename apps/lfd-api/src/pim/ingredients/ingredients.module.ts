@@ -2,22 +2,18 @@ import { Module } from "@nestjs/common";
 
 import { AllergensModule } from "../allergens/allergens.module.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
-import {
-  CreateAppellationHandler,
-  RemoveAppellationHandler,
-  UpdateAppellationHandler,
-} from "./application/appellation-handlers.js";
-import {
-  CreateIngredientHandler,
-  RemoveIngredientHandler,
-  UpdateIngredientHandler,
-} from "./application/ingredient-handlers.js";
+import { CreateAppellationHandler } from "./application/create-appellation.js";
+import { CreateIngredientHandler } from "./application/create-ingredient.js";
 import { ListAppellationsHandler } from "./application/list-appellations.js";
 import { ListIngredientsHandler } from "./application/list-ingredients.js";
 import { ReadProductIngredientAllergensHandler } from "./application/read-product-ingredient-allergens.js";
 import { ReadProductIngredientsHandler } from "./application/read-product-ingredients.js";
+import { RemoveAppellationHandler } from "./application/remove-appellation.js";
+import { RemoveIngredientHandler } from "./application/remove-ingredient.js";
 import { SetIngredientAllergensHandler } from "./application/set-ingredient-allergens.js";
 import { SetProductIngredientsHandler } from "./application/set-product-ingredients.js";
+import { UpdateAppellationHandler } from "./application/update-appellation.js";
+import { UpdateIngredientHandler } from "./application/update-ingredient.js";
 import { AppellationRepository } from "./domain/ports/appellation.repository.js";
 import { IngredientRepository } from "./domain/ports/ingredient.repository.js";
 import { VariantDeclarationReader } from "./domain/ports/variant-declaration.reader.js";

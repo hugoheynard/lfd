@@ -1,7 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
-import { CreateIngredientCommand, CreateIngredientHandler } from "../ingredient-handlers.js";
+import { CreateIngredientCommand, CreateIngredientHandler } from "../create-ingredient.js";
 import {
   SetProductIngredientsCommand,
   SetProductIngredientsHandler,

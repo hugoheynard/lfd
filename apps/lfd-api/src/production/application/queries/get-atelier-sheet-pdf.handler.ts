@@ -1,31 +1,13 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { ProductionDayNotClosedError } from "../../domain/errors/production-errors.js";
+import {
+  AtelierSheetNotFoundError,
+  ProductionDayNotClosedError,
+} from "../../domain/errors/production-errors.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { ProductionPapers, type ProductionPaper } from "../services/production-paper.service.js";
-import {
-  GetAtelierSheetPdfQuery,
-  GetProductionCountPdfQuery,
-} from "./get-production-paper.query.js";
-import { AtelierSheetNotFoundError } from "../../domain/errors/production-errors.js";
-
-/** Le compte à produire du jour — refusé tant que la journée n'est pas arrêtée. */
-@QueryHandler(GetProductionCountPdfQuery)
-export class GetProductionCountPdfHandler implements IQueryHandler<
-  GetProductionCountPdfQuery,
-  ProductionPaper
-> {
-  constructor(
-    private readonly days: ProductionDayRepository,
-    private readonly papers: ProductionPapers,
-  ) {}
-
-  async execute(query: GetProductionCountPdfQuery): Promise<ProductionPaper> {
-    const day = await this.days.load(ServiceDay.of(query.serviceDay));
-    return this.papers.countOf(day);
-  }
-}
+import { GetAtelierSheetPdfQuery } from "./get-atelier-sheet-pdf.query.js";
 
 /**
  * La feuille d'atelier d'une commande.

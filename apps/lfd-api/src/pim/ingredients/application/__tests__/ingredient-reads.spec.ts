@@ -1,8 +1,8 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
-import { CreateAppellationCommand, CreateAppellationHandler } from "../appellation-handlers.js";
-import { CreateIngredientCommand, CreateIngredientHandler } from "../ingredient-handlers.js";
+import { CreateAppellationCommand, CreateAppellationHandler } from "../create-appellation.js";
+import { CreateIngredientCommand, CreateIngredientHandler } from "../create-ingredient.js";
 import { ListIngredientsHandler } from "../list-ingredients.js";
 import {
   ReadProductIngredientsHandler,

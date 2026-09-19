@@ -2,10 +2,8 @@ import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { Controller, Get, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import {
-  IssueStaffPasswordLinkCommand,
-  ListPendingStaffAccessQuery,
-} from "./pending-staff-access.js";
+import { IssueStaffPasswordLinkCommand } from "./issue-staff-password-link.command.js";
+import { ListPendingStaffAccessQuery } from "./list-pending-staff-access.query.js";
 import type { PendingStaffAccessView } from "./pending-staff-access.reader.js";
 import type { IssuedPasswordLink } from "../../platform/identity/password-link.js";
 

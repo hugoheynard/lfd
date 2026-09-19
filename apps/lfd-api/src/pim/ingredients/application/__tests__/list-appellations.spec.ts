@@ -1,13 +1,9 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
-import {
-  CreateAppellationCommand,
-  CreateAppellationHandler,
-  UpdateAppellationCommand,
-  UpdateAppellationHandler,
-} from "../appellation-handlers.js";
+import { CreateAppellationCommand, CreateAppellationHandler } from "../create-appellation.js";
 import { ListAppellationsHandler } from "../list-appellations.js";
+import { UpdateAppellationCommand, UpdateAppellationHandler } from "../update-appellation.js";
 import { InMemoryAppellationRepository } from "./in-memory-repositories.js";
 
 /**

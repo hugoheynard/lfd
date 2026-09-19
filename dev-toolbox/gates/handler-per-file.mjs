@@ -78,7 +78,6 @@ const KNOWN_MULTI = new Set([
   "b2b/account/application/commands/certify-kbis.handler.ts",
   "b2b/catalog/application/commands/catalog-decision.handlers.ts",
   "b2b/delivery-zones/application/delivery-zone.handlers.ts",
-  "b2b/growth/application/handlers/on-support-activity.handler.ts",
   "b2b/order-cutoffs/application/order-cutoff.handlers.ts",
   "b2b/order-waivers/application/order-cutoff-waiver.handlers.ts",
   "b2b/order-waivers/application/order-late-fee.handlers.ts",
@@ -90,10 +89,6 @@ const KNOWN_MULTI = new Set([
   "b2b/pricing/application/commands/rule-lifecycle.handlers.ts",
   "b2b/pricing/application/commands/volume-commitment.handlers.ts",
   "b2b/pricing/application/commands/volume-ladder.handlers.ts",
-  "pim/ingredients/application/appellation-handlers.ts",
-  "pim/ingredients/application/ingredient-handlers.ts",
-  "production/application/queries/get-production-paper.handler.ts",
-  "staff/invitations/pending-staff-access.ts",
 ]);
 
 /** Tous les `.ts` de production sous `src`, les `__tests__/` exclus. */

@@ -5,7 +5,7 @@ import {
   InMemoryAllergenCatalogueReader,
 } from "../../../allergens/application/__tests__/in-memory-allergens.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
-import { CreateIngredientCommand, CreateIngredientHandler } from "../ingredient-handlers.js";
+import { CreateIngredientCommand, CreateIngredientHandler } from "../create-ingredient.js";
 import {
   ReadProductIngredientAllergensHandler,
   ReadProductIngredientAllergensQuery,

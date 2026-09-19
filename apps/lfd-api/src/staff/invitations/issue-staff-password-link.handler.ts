@@ -1,14 +1,7 @@
-import {
-  CommandHandler,
-  QueryHandler,
-  type ICommandHandler,
-  type IQueryHandler,
-} from "@nestjs/cqrs";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import {
-  PendingStaffAccessReader,
-  type PendingStaffAccessView,
-} from "./pending-staff-access.reader.js";
+import { IssueStaffPasswordLinkCommand } from "./issue-staff-password-link.command.js";
+import { PendingStaffAccessReader } from "./pending-staff-access.reader.js";
 import { StaffIdentityPort } from "./staff-identity.port.js";
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { Journal } from "../../platform/journal/journal.js";
@@ -16,26 +9,6 @@ import { Clock } from "../../platform/time/clock.js";
 import { staffPasswordLinkIssuedFact } from "../directory/domain/staff-facts.js";
 import { expiryFrom, type IssuedPasswordLink } from "../../platform/identity/password-link.js";
 import { StaffUserNotFoundError } from "../directory/domain/staff-user-errors.js";
-
-/** La file des accès staff à remettre. Aucun paramètre : elle est entière. */
-export class ListPendingStaffAccessQuery {}
-
-/** Fabrique un lien de mot de passe **frais** pour un invité de l'équipe. */
-export class IssueStaffPasswordLinkCommand {
-  constructor(readonly staffUserId: string) {}
-}
-
-@QueryHandler(ListPendingStaffAccessQuery)
-export class ListPendingStaffAccessHandler implements IQueryHandler<
-  ListPendingStaffAccessQuery,
-  readonly PendingStaffAccessView[]
-> {
-  constructor(private readonly pending: PendingStaffAccessReader) {}
-
-  execute(): Promise<readonly PendingStaffAccessView[]> {
-    return this.pending.list();
-  }
-}
 
 /**
  * Le jumeau staff de `IssuePasswordLinkHandler` — mêmes précautions, autre
