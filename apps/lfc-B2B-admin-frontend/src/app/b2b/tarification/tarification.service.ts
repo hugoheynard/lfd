@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -11,7 +11,7 @@ import type {
   PriceScopePayload,
   PricingBoardView,
   PricingComparisonView,
-  PricingJournalEntryView,
+  PricingJournalPageView,
   SetPriceFloorPayload,
   SetVolumeLadderPayload,
 } from '@lfd/contracts';
@@ -120,11 +120,26 @@ export class TarificationService {
     await this.act(id, 'archive', reason);
   }
 
-  /** Ce qui est arrivé à cette règle ou à cette limite, du plus récent au plus ancien. */
-  journalFor(subjectType: 'rule' | 'floor', subjectId: string): Promise<PricingJournalEntryView[]> {
+  /**
+   * Une page de ce qui est arrivé à cette règle ou à cette limite, du plus
+   * récent au plus ancien.
+   *
+   * `asOf` absent ouvre un instantané neuf, dont la réponse rend l'ancre ; la
+   * renvoyer pour les pages suivantes les fait lire le même instantané.
+   */
+  journalPage(
+    subjectType: 'rule' | 'floor',
+    subjectId: string,
+    request: { readonly page: number; readonly pageSize: number; readonly asOf?: string },
+  ): Promise<PricingJournalPageView> {
+    let params = new HttpParams().set('page', request.page).set('pageSize', request.pageSize);
+    if (request.asOf !== undefined) {
+      params = params.set('asOf', request.asOf);
+    }
     return firstValueFrom(
-      this.http.get<PricingJournalEntryView[]>(
-        `${B2B_API_BASE}/admin/pricing/journal/${subjectType}/${encodeURIComponent(subjectId)}`,
+      this.http.get<PricingJournalPageView>(
+        `${B2B_API_BASE}/admin/pricing/journal/${subjectType}/${encodeURIComponent(subjectId)}/pages`,
+        { params },
       ),
     );
   }

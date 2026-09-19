@@ -17,8 +17,15 @@ export interface JournalFilters {
    * paramètre de requête, et l'écran n'en dépend pas pour compiler.
    */
   readonly q?: string;
-  /** Curseur : l'`id` de la dernière ligne déjà affichée. */
-  readonly before?: string;
+  /** La page demandée, à partir de 1. */
+  readonly page?: number;
+  /**
+   * L'ancre de l'instantané, rendue par la page 1 et renvoyée par les
+   * suivantes. Absente : la réponse en fixe une neuve.
+   */
+  readonly asOf?: string;
+  /** La taille d'une page. */
+  readonly limit?: number;
 }
 
 /** Lecture du journal d'activité (`GET /admin/activity`). */
@@ -40,7 +47,7 @@ function paramsOf(filters: JournalFilters): HttpParams {
   let params = new HttpParams();
   for (const [key, value] of Object.entries(filters)) {
     if (value !== undefined && value !== '') {
-      params = params.set(key, value);
+      params = params.set(key, String(value));
     }
   }
   return params;

@@ -8,7 +8,7 @@
 > **Convention (Hugo, 2026-09-19)** : un point se **raye** ici et dans le TODO
 > au moment où il est fait, avec sa date et son commit.
 >
-> État : 🚧 **lot 2 bâti le 2026-09-19**, en premier à la demande de Hugo
+> État : 🚧 **lots 2 et 5 bâtis le 2026-09-19**, en premier à la demande de Hugo
 > (« on devrait faire le lot 2 d'abord ») — la recherche normalisée, puis
 > l'index, à déployer après la sortie d'Accelerate. Les autres lots : plan.
 > **Deuxième version**, réécrite après une
@@ -21,15 +21,15 @@
 
 ## 0. Résumé
 
-| Lot | Point du TODO | Ce qu'il livre                                                                                                                        | Coût   |
-| --- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1   | §1            | les **actes du staff** qui touchent l'argent ou la production entrent au journal ; la porte s'étend à leurs dossiers                  | moyen  |
-| 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente | faible |
-| 3   | §5, §9        | on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »                                            | moyen  |
-| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                     | moyen  |
-| 5   | §10           | le journal tarifaire se pagine, sans changer la forme de sa réponse                                                                   | faible |
-| —   | §3            | **le code reste en `growth`** : la promotion du port suffit — décision, pas un lot                                                    | —      |
-| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                           | —      |
+| Lot | Point du TODO | Ce qu'il livre                                                                                                                                                                | Coût   |
+| --- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1   | §1            | les **actes du staff** qui touchent l'argent ou la production entrent au journal ; la porte s'étend à leurs dossiers                                                          | moyen  |
+| 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente                                         | faible |
+| 3   | §5, §9        | on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »                                                                                    | moyen  |
+| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                                                             | moyen  |
+| 5   | §10           | ~~les deux journaux se lisent par pages numérotées, sur une vue figée (`fold-paginator`)~~ — **bâti le 2026-09-19** (`9f20a980` et le commit d'écran), déploiement en attente | faible |
+| —   | §3            | **le code reste en `growth`** : la promotion du port suffit — décision, pas un lot                                                                                            | —      |
+| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                                                                   | —      |
 
 **Deux décisions reviennent à Hugo** (§3) : faut-il journaliser les gestes
 qu'un **client** fait sur son propre compte, et quelle **permission** ouvre la
@@ -149,16 +149,38 @@ supprimer), son profil, son RIB, ses adresses, ses membres.
   `accounting_rules.`, `point_of_sale.`) sous un module de l'écran, dans le
   même lot.
 
-### Lot 5 — Le journal tarifaire se pagine (§10)
+### Lot 5 — ~~Les deux journaux se lisent par pages numérotées~~ (§10) — bâti le 2026-09-19
 
-- **Sans changer la forme de la réponse** : la route par sujet garde son
-  tableau et gagne un paramètre facultatif `before` (l'`id` de la dernière
-  ligne reçue). Un front qui ne l'envoie pas reçoit ce qu'il reçoit
-  aujourd'hui. Il y a une suite tant qu'une page est pleine.
-- **L'ordre** reste `occurred_at`, départagé par l'`id` : le curseur porte les
-  deux.
-- **La route des 50 derniers actes**, sans appelant, n'est pas paginée : elle
-  est à retirer ou à brancher — question posée au TODO, pas ici.
+> ✅ **Bâti le 2026-09-19** : serveur `9f20a980`, écrans dans le commit
+> suivant (`fold-paginator` sur l'écran Journal et le panneau du journal
+> tarifaire, « Charger la suite » retiré). **Reste** : déployer (API d'abord,
+> puis le back-office), puis **retirer l'ancienne route** au tableau nu au
+> déploiement d'après. L'heure « Vue figée à hh:mm » est celle du navigateur à
+> la réception de la page 1 : le contrat ne rend pas la date de l'ancre.
+
+**Amendé le 2026-09-19 à la demande de Hugo** : « utilise un fold paginator »,
+puis « il faut paginer le journal d'activité aussi ». Un `fold-paginator` exige
+un **total** et un **numéro de page** : le curseur « charger la suite » prévu
+ici ne suffisait pas.
+
+- **Une vue figée** : sur un flux où les faits arrivent en tête, une page 2
+  changerait entre deux clics — c'est pour ça que l'écran Journal paginait par
+  curseur. La page 1 fixe donc une **ancre** (`asOf`, le fait le plus récent
+  qui répond aux filtres) ; pages et total se comptent jusqu'à elle. Un fait
+  arrivé depuis apparaît en revenant en page 1 ou en changeant de filtre.
+- **Journal tarifaire** : route neuve `…/:subjectType/:subjectId/pages`
+  (`PricingJournalPageView`, 20 par page) ; l'ancre est le couple
+  (`occurred_at`, `id`) — l'`id` vient de l'horloge applicative, la date de la
+  base. L'ancienne route au tableau nu reste, **dépréciée**, tant que le front
+  en ligne la lit — **à retirer** au déploiement suivant celui du nouveau
+  front.
+- **Journal d'activité** : `page`, `total` et `asOf` s'ajoutent au contrat ; le
+  curseur `before` reste servi pour la même raison. `page` et `before`
+  ensemble : `400`.
+- **Coût** : chaque page du journal d'activité fait une lecture d'ancre et un
+  `count(*)` en plus — sous le seuil du lot 2 (500 ms) à surveiller.
+- **La route des 50 derniers actes tarifaires**, sans appelant, n'est pas
+  paginée : à retirer ou à brancher — question posée au TODO, pas ici.
 
 ## 3. Les décisions qui reviennent à Hugo
 

@@ -6,10 +6,12 @@
 <div class="body">
   @switch (state()) {
     @case ('loading') {
-      <p class="muted">Lecture du journal…</p>
+      <fold-loading message="Lecture du journal…" />
     }
     @case ('error') {
-      <p class="muted">Le journal n'a pas pu être lu.</p>
+      <fold-empty-state tone="alert" title="Le journal n'a pas pu être lu.">
+        <button foldButton (click)="retry()">Réessayer</button>
+      </fold-empty-state>
     }
     @default {
       @if (entries().length === 0) {
@@ -21,6 +23,11 @@
           subtitle="Cette décision est antérieure au journal, ou personne n'y a touché depuis."
         />
       } @else {
+        @if (pageError()) {
+          <fold-callout appearance="inset" variant="alert" announce>
+            Cette page n'a pas pu être lue : la précédente reste affichée.
+          </fold-callout>
+        }
         <ol class="acts">
           @for (entry of entries(); track entry.id) {
             <li class="act" [class.is-terminal]="entry.act === 'archived'">
@@ -38,6 +45,20 @@
             </li>
           }
         </ol>
+        @if (total() > pageSize) {
+          <!-- Les pages suivantes lisent l'instantané ouvert par la page 1 ;
+               revenir à la page 1 en ouvre un neuf. -->
+          <fold-paginator
+            [currentPage]="page()"
+            [totalItems]="total()"
+            [pageSize]="pageSize"
+            [pageSizeOptions]="[]"
+            [siblingCount]="1"
+            [labels]="paginatorLabels"
+            [disabled]="paging()"
+            (pageChange)="goTo($event)"
+          />
+        }
       }
     }
   }

@@ -146,9 +146,9 @@ du §5.
 
 _Venu de [`../pricing/architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md), « Reste ouvert »._
 
-- **Il n'est pas paginé** : il rend les 200 derniers actes d'un sujet et les 50
-  derniers tous sujets confondus (`prisma-pricing-journal.reader.ts`,
-  `read-pricing-journal.handler.ts`, vérifié le 2026-09-18).
+- ~~**Il n'est pas paginé**~~ — **bâti le 2026-09-19** (`9f20a980`, plan lot 5) : pages numérotées sur une vue figée, avec le journal d'activité. Reste :
+  déployer, puis retirer l'ancienne route. La route des 50 derniers actes, sans
+  appelant, reste à retirer ou à brancher.
 - **Une règle ne se modifie pas** : poser, suspendre, reprendre, archiver.
   Corriger une faute de frappe oblige à archiver et reposer, ce qui salit le
   journal pour rien.

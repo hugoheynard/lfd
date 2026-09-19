@@ -261,7 +261,13 @@ autres par la bande.
   locale de la base. Rien n'est stocké pour la servir. Les montants, en
   centimes, ne se trouvent pas en tapant « 12,50 » ; les ligatures (œ, æ) ne
   se déplient pas.
-- **Pagination** par l'`id` ULID, donc par le temps.
+- **Pagination** par pages numérotées (`fold-paginator`), sur une **vue
+  figée** : la page 1 fixe une ancre (`asOf`, le fait le plus récent qui répond
+  aux filtres) et pages comme total se comptent jusqu'à elle — sans quoi, les
+  faits arrivant en tête, une page 2 changerait entre deux clics. Un fait
+  arrivé depuis apparaît en revenant en page 1. Le curseur `before` reste
+  servi pour les lecteurs d'avant. Le journal tarifaire se lit de la même
+  façon (`…/pages`).
 - **Le rendu** en phrases françaises vit au front
   (`lfc-B2B-admin-frontend/src/app/admin/journal/`) : `journal-line.ts` pour
   tous les faits, `staff-line.ts` pour ceux de l'équipe.

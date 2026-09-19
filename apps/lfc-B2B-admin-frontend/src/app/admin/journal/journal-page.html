@@ -31,12 +31,12 @@
     </button>
   </div>
 
-  @if (error(); as message) {
-    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
-  }
-
   @if (loading() && lines().length === 0) {
-    <div class="jr-loading"><fold-spinner /> Lecture du journal…</div>
+    <fold-loading message="Lecture du journal…" />
+  } @else if (error() && lines().length === 0) {
+    <fold-empty-state tone="alert" [title]="error() ?? ''">
+      <button foldButton (click)="reload()">Réessayer</button>
+    </fold-empty-state>
   } @else if (lines().length === 0 && query()) {
     <fold-empty-state
       [title]="'Aucun fait ne correspond à « ' + query() + ' »'"
@@ -52,6 +52,10 @@
       <fold-icon empty-icon name="timeline" [size]="40" />
     </fold-empty-state>
   } @else {
+    @if (error(); as message) {
+      <!-- Une page suivante n'a pas pu être lue : celle d'avant reste affichée. -->
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
     <ol class="jr-list">
       @for (line of lines(); track line.event.id) {
         <li class="jr-row">
@@ -96,11 +100,25 @@
       }
     </ol>
 
-    @if (hasMore()) {
-      <div class="jr-more">
-        <button foldButton emphasis="outline" [disabled]="loading()" (click)="loadMore()">
-          {{ loading() ? 'Lecture…' : 'Charger la suite' }}
-        </button>
+    @if (total() > pageSize) {
+      <div class="jr-pages">
+        <fold-paginator
+          [currentPage]="page()"
+          [totalItems]="total()"
+          [pageSize]="pageSize"
+          [pageSizeOptions]="[]"
+          [siblingCount]="1"
+          [labels]="paginatorLabels"
+          [disabled]="loading()"
+          (pageChange)="goTo($event)"
+        />
+        @if (page() > 1) {
+          <!-- Les pages suivantes lisent la vue figée par la page 1 : un fait
+               arrivé depuis ne s'y glisse pas. -->
+          <p class="jr-frozen">
+            Vue figée à {{ frozenAt() }} — revenir à la page 1 pour voir les faits arrivés depuis.
+          </p>
+        }
       </div>
     }
   }
