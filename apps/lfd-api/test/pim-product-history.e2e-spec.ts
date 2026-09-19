@@ -192,7 +192,9 @@ describe("l'historique d'une fiche — les trois cercles", () => {
     const { entries } = await read(scene.productId);
 
     expect(ofType(entries, "variant.added", scene.productId)).toEqual([
-      expect.objectContaining({ circle: "product", subjectType: "product" }),
+      // L'auteur est un membre de l'équipe, et le contrat le DIT : un nom
+      // absent ne se lira pas « le système » par défaut.
+      expect.objectContaining({ circle: "product", subjectType: "product", actorType: "staff" }),
     ]);
   });
 

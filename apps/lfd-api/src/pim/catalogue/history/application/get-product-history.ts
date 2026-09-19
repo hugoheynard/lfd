@@ -69,6 +69,7 @@ function entryOf(fact: HistoryFact, map: ProductHistoryMap): ProductHistoryEntry
     type: fact.type,
     occurredAt: fact.occurredAt.toISOString(),
     actorName: fact.actorName,
+    actorType: fact.actorType,
     payload: payloadOf(fact.payload),
     subjectType: fact.subjectType,
     subjectId: fact.subjectId,

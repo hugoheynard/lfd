@@ -58,6 +58,7 @@ function fact(id: string, subjectType: string, subjectId: string, payload: unkno
     subjectId,
     occurredAt: AT,
     actorName: "Colette Bréal",
+    actorType: "staff",
     payload,
   };
 }

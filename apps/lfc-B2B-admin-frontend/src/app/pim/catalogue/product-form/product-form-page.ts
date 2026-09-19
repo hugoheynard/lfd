@@ -6,6 +6,7 @@ import {
   signal,
   type WritableSignal,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
@@ -17,8 +18,12 @@ import {
   FoldEmptyStateComponent,
   FoldAsideLayoutComponent,
   FoldLoadingStateComponent,
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
 } from 'fold-ng';
 
 import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
@@ -34,6 +39,7 @@ import { RegulatoryForm } from './form-sections/regulatory/regulatory-form';
 import { VisualsForm } from './form-sections/visuals/visuals-form';
 import type { HasPendingChanges } from './pending-changes.guard';
 import { ProductFormStore, type FormSection } from './product-form-store';
+import { ProductHistory } from './product-history/product-history';
 import { PublishRail } from './publish-rail/publish-rail';
 import { SECTION_EDITING } from '../section-state/section-editing';
 import { SectionAlignment } from './section-alignment/section-alignment';
@@ -43,6 +49,14 @@ import { SectionState } from '../section-state/section-state';
 /** L'espace de noms des plis de CET écran — une fiche produit se replie comme
  *  une autre, donc la préférence est celle de l'écran, pas celle du produit. */
 const FOLD_SCOPE = 'pim.product-form';
+
+/** Les onglets d'une fiche existante. */
+type ProductTab = 'sheet' | 'history';
+
+const TAB_ITEMS: readonly FoldTabItem<ProductTab>[] = [
+  { key: 'sheet', label: 'Fiche' },
+  { key: 'history', label: 'Historique', icon: 'timeline' },
+];
 
 interface PageSection {
   readonly key: FormSection;
@@ -74,6 +88,11 @@ interface PageSection {
     FoldEmptyStateComponent,
     FoldAsideLayoutComponent,
     FoldPageSectionComponent,
+    FoldNavLayoutComponent,
+    FoldTabsComponent,
+    FoldTabPanelComponent,
+    NgTemplateOutlet,
+    ProductHistory,
     SectionState,
     SectionAlignment,
     VariantBar,
@@ -124,6 +143,21 @@ export class ProductFormPage implements HasPendingChanges {
   protected setSectionOpen(key: string, open: boolean): void {
     this.sectionOpen(key).set(open);
     this.uiPrefs.setOpen(FOLD_SCOPE, key, open);
+  }
+
+  protected readonly tabItems = TAB_ITEMS;
+  protected readonly activeTab = signal<ProductTab>('sheet');
+  /**
+   * Vrai dès le premier passage sur « Historique », et le reste : revenir à
+   * l'onglet retrouve la page qu'on lisait, au lieu de relire le journal.
+   */
+  protected readonly historyOpened = signal(false);
+
+  protected onTab(tab: ProductTab): void {
+    this.activeTab.set(tab);
+    if (tab === 'history') {
+      this.historyOpened.set(true);
+    }
   }
 
   protected readonly statusLabel = computed(() => productStatusLabel(this.store.status()));

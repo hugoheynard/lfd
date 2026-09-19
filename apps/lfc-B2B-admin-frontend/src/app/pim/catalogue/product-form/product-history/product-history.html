@@ -1,0 +1,88 @@
+<div class="ph">
+  <div class="ph-head">
+    <!-- La limite du rattachement, dite plutôt que tue : l'héritage se lit
+         d'après ce que la fiche porte AUJOURD'HUI. -->
+    <p class="ph-note">
+      Ce qui est hérité est rattaché par ce que la fiche porte aujourd’hui : un taux qu’elle
+      n’applique plus, une famille qu’elle a quittée n’y figurent pas.
+    </p>
+    @if (journalParams(); as params) {
+      <a
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        icon="timeline"
+        routerLink="/admin/journal"
+        [queryParams]="params"
+      >
+        Voir aussi dans le journal
+      </a>
+    }
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l’historique…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="L’historique n’a pas pu être lu.">
+        <button foldButton (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (lines().length === 0) {
+        <fold-empty-state
+          title="Aucun fait enregistré pour cette fiche"
+          subtitle="Rien ne l’a touchée depuis que le journal existe."
+        >
+          <fold-icon empty-icon name="timeline" [size]="40" />
+        </fold-empty-state>
+      } @else {
+        @if (pageError()) {
+          <fold-callout appearance="inset" variant="alert" announce>
+            Cette page n’a pas pu être lue : la précédente reste affichée.
+          </fold-callout>
+        }
+        <ol class="ph-list">
+          @for (line of lines(); track line.id) {
+            <li class="ph-row">
+              <div class="ph-line">
+                <span class="ph-sentence">{{ line.sentence }}</span>
+                @if (line.mark; as mark) {
+                  <fold-badge [content]="mark.label" [variant]="mark.variant" />
+                }
+              </div>
+              <p class="ph-meta">
+                {{ line.when }}, par <span class="ph-actor">{{ line.actor }}</span>
+                <code class="ph-type">{{ line.type }}</code>
+              </p>
+            </li>
+          }
+        </ol>
+        @if (total() > pageSize) {
+          <div class="ph-pages">
+            <fold-paginator
+              [currentPage]="page()"
+              [totalItems]="total()"
+              [pageSize]="pageSize"
+              [pageSizeOptions]="[]"
+              [siblingCount]="1"
+              [labels]="paginatorLabels"
+              [disabled]="paging()"
+              (pageChange)="goTo($event)"
+            />
+            @if (page() > 1) {
+              <!-- Les pages suivantes lisent la vue figée par la page 1 : un fait
+                   arrivé depuis ne s'y glisse pas. -->
+              <p class="ph-frozen">
+                Vue figée à {{ frozenAt() }} — revenir à la page 1 pour voir les faits arrivés
+                depuis.
+              </p>
+            }
+          </div>
+        }
+      }
+    }
+  }
+</div>

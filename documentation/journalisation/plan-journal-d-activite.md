@@ -8,7 +8,7 @@
 > **Convention (Hugo, 2026-09-19)** : un point se **raye** ici et dans le TODO
 > au moment où il est fait, avec sa date et son commit.
 >
-> État : 🚧 **lots 2 et 5 bâtis le 2026-09-19**, en premier à la demande de Hugo
+> État : 🚧 **lots 2, 3 et 5 bâtis le 2026-09-19**, en premier à la demande de Hugo
 > (« on devrait faire le lot 2 d'abord ») — la recherche normalisée, puis
 > l'index, à déployer après la sortie d'Accelerate. Les autres lots : plan.
 > **Deuxième version**, réécrite après une
@@ -21,15 +21,15 @@
 
 ## 0. Résumé
 
-| Lot | Point du TODO | Ce qu'il livre                                                                                                                                                                | Coût   |
-| --- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1   | §1            | les **actes du staff** qui touchent l'argent ou la production entrent au journal ; la porte s'étend à leurs dossiers                                                          | moyen  |
-| 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente                                         | faible |
-| 3   | §5, §9        | on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »                                                                                    | moyen  |
-| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                                                             | moyen  |
-| 5   | §10           | ~~les deux journaux se lisent par pages numérotées, sur une vue figée (`fold-paginator`)~~ — **bâti le 2026-09-19** (`9f20a980` et le commit d'écran), déploiement en attente | faible |
-| —   | §3            | **le code reste en `growth`** : la promotion du port suffit — décision, pas un lot                                                                                            | —      |
-| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                                                                   | —      |
+| Lot | Point du TODO | Ce qu'il livre                                                                                                                                                                                     | Coût   |
+| --- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1   | §1            | les **actes du staff** qui touchent l'argent ou la production entrent au journal ; la porte s'étend à leurs dossiers                                                                               | moyen  |
+| 2   | §4, §7        | ~~le filtre par personne a son index ; la recherche ignore les clés et les accents~~ — **bâti le 2026-09-19**, déploiement en attente                                                              | faible |
+| 3   | §5, §9        | ~~on arrive au journal depuis une fiche staff ; la fiche produit a son onglet « Historique »~~ — **bâti le 2026-09-19** (`b12433c3`, `83589b95`, et le commit de l'onglet), déploiement en attente | moyen  |
+| 4   | §6            | la comptabilité relit **tout ce qu'elle écrit** sur la fiscalité, et rien d'autre                                                                                                                  | moyen  |
+| 5   | §10           | ~~les deux journaux se lisent par pages numérotées, sur une vue figée (`fold-paginator`)~~ — **bâti le 2026-09-19** (`9f20a980` et le commit d'écran), déploiement en attente                      | faible |
+| —   | §3            | **le code reste en `growth`** : la promotion du port suffit — décision, pas un lot                                                                                                                 | —      |
+| —   | §2            | « et aujourd'hui, ça touche quoi ? » — laissé au TODO, avec son déclencheur                                                                                                                        | —      |
 
 **Deux décisions reviennent à Hugo** (§3) : faut-il journaliser les gestes
 qu'un **client** fait sur son propre compte, et quelle **permission** ouvre la
@@ -120,7 +120,15 @@ supprimer), son profil, son RIB, ses adresses, ses membres.
   million de lignes, ou une page du journal au-delà de 500 ms. La requête de
   comptage entre au runbook.
 
-### Lot 3 — Arriver au journal depuis une fiche (§5, §9)
+### Lot 3 — ~~Arriver au journal depuis une fiche~~ (§5, §9) — bâti le 2026-09-19
+
+> ✅ **Bâti le 2026-09-19** : filtres d'identifiants dans l'URL et « Voir son
+> activité » (`b12433c3`) ; serveur de l'historique produit (`83589b95`) —
+> route `GET /pim/catalogue/products/:id/history`, déclinaisons (`variant.*`)
+> incluses sur décision de Hugo ; l'onglet dans le commit suivant, avec la
+> nature de l'auteur (`actorType`) ajoutée au contrat pour qu'un nom absent ne
+> se lise pas « le système ». **Reste** : déployer. Hors de l'onglet : une
+> heure limite posée sur un produit (son sujet est la limite) — noté au TODO.
 
 - **L'écran Journal lit ses filtres dans l'URL** — les **identifiants**
   seulement (`actorId`, `subjectType` + `subjectId`, `module`). **Pas `q`** :
@@ -252,8 +260,8 @@ merger dans `main` déploie, quel que soit le lot.
 - **Lot 2** : « cecile » trouve « Cécile » ; « Élan » trouve « élan » ;
   « person » ne ramène pas un fait pour sa seule clé ; un `"` ou un `\` dans une
   valeur ne casse pas la recherche.
-- **Lot 3** : l'onglet Historique ne montre que des faits `product.*` du
-  produit ; le lien « Voir son activité » n'apparaît pas sans `activity:read`.
+- **Lot 3** : l'onglet Historique montre les trois cercles et rien d'autre —
+  un fait d'un autre bloc de sujet `product` n'y entre pas ; le lien « Voir son activité » n'apparaît pas sans `activity:read`.
 - **Lot 4** : le lecteur fiscal ne reçoit **jamais** un fait hors de sa liste,
   même avec `module`, `q`, `subjectId` ou un curseur choisis ; `commercial`,
   qui a `pim_tax:read`, reçoit `403`.

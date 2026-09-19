@@ -133,6 +133,7 @@ const COLUMNS = {
   subjectId: true,
   occurredAt: true,
   actorName: true,
+  actorType: true,
   payload: true,
 } as const;
 
@@ -143,6 +144,7 @@ function toFact(row: {
   subjectId: string;
   occurredAt: Date;
   actorName: string | null;
+  actorType: string;
   payload: unknown;
 }): HistoryFact {
   return {
@@ -152,6 +154,16 @@ function toFact(row: {
     subjectId: row.subjectId,
     occurredAt: row.occurredAt,
     actorName: row.actorName,
+    actorType: actorTypeOf(row.actorType),
     payload: row.payload,
   };
+}
+
+/**
+ * La colonne est un texte libre en base ; le contrat en connaît trois. Une
+ * valeur inattendue se lit `system` — c'est ce qu'écrit le recorder hors
+ * requête —, jamais un membre ou un client qu'on inventerait.
+ */
+function actorTypeOf(value: string): HistoryFact["actorType"] {
+  return value === "staff" || value === "customer" ? value : "system";
 }

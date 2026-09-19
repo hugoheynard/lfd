@@ -60,7 +60,39 @@
       title="Produit introuvable"
       subtitle="Ce produit n'existe pas ou a été supprimé."
     />
+  } @else if (store.isEdit()) {
+    <!-- Deux onglets, et pas une carte de plus sous les sections : l'historique
+         ne s'enregistre pas, ne se replie pas avec la fiche, et se lit à part.
+         Il n'est monté qu'une fois ouvert — le journal n'est pas lu pour qui
+         ne vient qu'éditer. -->
+    <fold-nav-layout>
+      <fold-tabs
+        tabNav
+        #tabs="foldTabs"
+        [tabs]="tabItems"
+        [activeKey]="activeTab()"
+        (activeKeyChange)="onTab($event)"
+        direction="horizontal"
+        size="compact"
+        justify="stretch"
+        background="surface"
+        activeStyle="fill"
+      />
+      <fold-tab-panel [tabs]="tabs" key="sheet">
+        <ng-container [ngTemplateOutlet]="sheet" />
+      </fold-tab-panel>
+      <fold-tab-panel [tabs]="tabs" key="history">
+        @if (historyOpened()) {
+          <app-product-history [productId]="store.productId()" />
+        }
+      </fold-tab-panel>
+    </fold-nav-layout>
   } @else {
+    <ng-container [ngTemplateOutlet]="sheet" />
+  }
+
+  <!-- La fiche elle-même : seule à la création, premier onglet à l'édition. -->
+  <ng-template #sheet>
     <fold-aside-layout asideRightLabel="Publication">
       <!-- UNE carte PAR section. La carte unique tenait sur l'argument que le
            filet d'en-tête suffit à séparer deux sujets ; à l'usage, non : il
@@ -206,5 +238,5 @@
         (restore)="restore()"
       />
     </fold-aside-layout>
-  }
+  </ng-template>
 </fold-page-layout>

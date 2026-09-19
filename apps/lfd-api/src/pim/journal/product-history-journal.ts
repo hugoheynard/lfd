@@ -27,6 +27,8 @@ export interface HistoryThread {
 /** Un fait relu, avec son identifiant au journal — l'ancre en a besoin. */
 export interface HistoryFact extends PimJournalFact {
   readonly id: string;
+  /** Qui agissait — départage un `actorName` nul (système, ou auteur non nommé). */
+  readonly actorType: "staff" | "customer" | "system";
 }
 
 export interface HistoryPageRequest {

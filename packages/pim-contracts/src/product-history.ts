@@ -73,8 +73,14 @@ export type ProductHistoryEntryView = ProductHistoryPlacementView & {
   readonly id: string;
   readonly type: string;
   readonly occurredAt: string;
-  /** Le nom figé au moment de l'acte ; `null` = un acte du système. */
+  /**
+   * Le nom figé au moment de l'acte, ou `null` : un acte du système, OU un
+   * auteur que l'annuaire n'a pas su nommer ce jour-là. `actorType` les
+   * départage — l'écran ne devine pas.
+   */
   readonly actorName: string | null;
+  /** Qui agissait : un membre de l'équipe, un client, ou le système. */
+  readonly actorType: "staff" | "customer" | "system";
   readonly payload: Record<string, unknown>;
   readonly subjectType: string;
   readonly subjectId: string;

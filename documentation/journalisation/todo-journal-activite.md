@@ -95,9 +95,10 @@ d'usage, pas pendant la sortie d'Accelerate.
 L'API accepte `type`, `subjectType`, `subjectId`, `actorId` et `until` ; l'écran
 n'offre que le module et la période. Les deux qui manqueront en premier :
 
-- **par sujet** — « l'histoire de ce taux », depuis la fiche elle-même plutôt
-  que depuis le journal ;
-- **par acteur** — « qu'a fait cette personne », depuis l'annuaire staff.
+- ~~**par sujet**~~ et ~~**par acteur**~~ — **bâtis le 2026-09-19**
+  (`b12433c3`, plan lot 3) : le journal lit `actorId`, `subjectType` +
+  `subjectId` et `module` dans l'URL, en pastilles retirables ; la fiche d'un
+  membre offre « Voir son activité ». Reste : déployer.
 
 Les deux sont des **liens entrants** vers le journal, pas des champs de plus
 dans sa barre de filtres. C'est ce qui décidera de leur forme.
@@ -137,10 +138,19 @@ _Venu du même §9._
 
 _Venu de [`../pim/journalisation-et-tracabilite.md`](../pim/journalisation-et-tracabilite.md) §13._
 
-Les faits du référentiel sont écrits et lisibles (index
-`[subject_type, subject_id, occurred_at]`), mais **l'onglet « Historique » de la
-fiche produit n'existe pas**. C'est aussi le premier « lien entrant par sujet »
-du §5.
+~~**L'onglet « Historique » de la fiche produit n'existe pas**~~ — **bâti le
+2026-09-19** (`83589b95` et le commit de l'onglet, plan lot 3) : tout ce qui a
+touché la fiche, en trois cercles. Reste : déployer. Et, noté en le bâtissant :
+
+- **une heure limite posée sur un produit** n'y figure pas : son sujet est la
+  limite, pas le produit ;
+- **la plupart des faits du référentiel n'ont pas de phrase** (seuls
+  `product.published` / `.unpublished` et `product_category.vat_changed` en
+  ont) : l'onglet et le journal affichent leur type brut — relève du §8 ;
+- **l'écran Journal et le panneau tarifaire** affichent l'erreur sur une ancre
+  refusée, là où l'onglet rouvre la page 1 : à aligner ;
+- **`catalog_revision_item` n'a pas d'index sur `sku`** : trouver les
+  révisions d'une fiche parcourt la table — à mesurer.
 
 ### 10. Le journal tarifaire
 

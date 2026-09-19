@@ -25,6 +25,7 @@ function fact(subjectType: string, subjectId: string): HistoryFact {
     subjectId,
     occurredAt: new Date(0),
     actorName: null,
+    actorType: "staff",
     payload: {},
   };
 }
