@@ -16,17 +16,19 @@
 
 ## Avant le week-end (sans effet en production)
 
-- [ ] **Code** (Claude, geste 1) : outils locaux verrouillés (`clone-dev`,
+- [x] **Code** (Claude, geste 1) — fait le 2026-09-19 (`529414d3`, docs
+      `703df520`) : outils locaux verrouillés (`clone-dev`,
       `reset-growth`, `seed-fiche`, `seed:growth`, `seed:delivery`,
       `backfill-naf`), `import-mercuriale` sur une variable de production
       dédiée ; pool `pg` réglé (`max`, délai d'acquisition) et
       `enableShutdownHooks` ; `P2037` classé « base indisponible » ; `/health`
       publie le transport ; workflow : migration par l'URL directe, contrôle du
       transport ; JSDoc, `.env.example` et docs.
-- [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe, **région**
-      et **limite de connexions** du plan.
+- [ ] **Console Prisma** (Hugo, geste 2) : URL mutualisée, URL directe — ✅
+      générées le 2026-09-19 ; reste à relever la **région** et la **limite de
+      connexions** du plan.
 - [ ] **GitHub** (Hugo, geste 3, par l'interface) : créer
-      `DATABASE_LFD_PROD_DIRECT_URL` ; copier la valeur actuelle de `DATABASE_LFD_URL`
+      `DATABASE_LFD_PROD_DIRECT_URL` — ✅ créé le 2026-09-19 ; copier la valeur actuelle de `DATABASE_LFD_URL`
       dans le gestionnaire de mots de passe.
 - [ ] **Merge** (Claude, geste 4) : batterie verte ; l'API se redéploie **encore
       sur Accelerate**, `/health` doit publier `accelerate`.
