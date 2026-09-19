@@ -1,20 +1,40 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { nameOf, text as orDash } from '../payload-read';
-import { name, said, subject, text, value, type Phrase } from '../phrase';
-import { formatUnit } from '../units';
+import { nameOf, optional, recordOf, text as orDash } from '../payload-read';
+import {
+  byActor,
+  cite,
+  citedName,
+  fromTo,
+  NO_CHANGE,
+  said,
+  subject,
+  text,
+  valueIn,
+  whatChanged,
+  type Noun,
+  type Phrase,
+  type PhraseFact,
+  type Said,
+  type Segment,
+} from '../phrase';
+import { PRODUCT_KIND } from '../values/referential-values';
+
+import { REFERENTIAL_CATEGORY_PHRASES } from './referential-category-phrases';
+import { REFERENTIAL_VARIANT_PHRASES } from './referential-variant-phrases';
+import { REFERENTIAL_VAT_PHRASES } from './referential-vat-phrases';
+import { joined, saidName, shift, skuAside, theSubject, unchanged } from './referential-support';
 
 /**
- * **Le référentiel** — les phrases reprises de `shared/journal-fact.ts`
- * (`factSentence`, plan des phrases, lot C, 2026-09-19) : mêmes mots, en
- * segments. Les autres types du référentiel ont le repli honnête du moteur
- * jusqu'au lot D.
+ * **Le référentiel — les fiches** (famille `referentialCatalogue` du catalogue
+ * des faits). Les taux de TVA, les déclinaisons, les familles et les révisions
+ * ont chacun leur fichier, réuni ici : le registre n'en connaît qu'un.
+ *
+ * La mise en vente garde la phrase reprise de `shared/journal-fact.ts` (lot C),
+ * à la tournure passive : l'historique d'une fiche la cite mot pour mot
+ * (`product-history.spec.ts`). Toutes les autres sont à la voix active (lot D,
+ * 2026-09-19).
  */
-
-/** « 5,5 % ». Un taux absent rend `—` plutôt qu'un `NaN %`. */
-function percent(raw: unknown): string {
-  return formatUnit('percent', raw) ?? '—';
-}
 
 /**
  * Le nom de la fiche : son libellé figé (D6) quand la ligne en porte un, sinon
@@ -37,54 +57,218 @@ function onSale(verb: string): Phrase {
     );
 }
 
+/** La fiche en complément : « « Tarte citron » », sinon « une fiche ». */
+const PRODUCT: Noun = { the: 'la fiche', a: 'une fiche' };
+const OF_PRODUCT: Noun = { the: 'de', a: 'd’une fiche' };
+const TO_PRODUCT: Noun = { the: 'à', a: 'à une fiche' };
+const IN_FAMILY: Noun = { the: 'dans la famille', a: 'dans une famille' };
+const FAMILY: Noun = { the: 'la famille', a: 'une famille' };
+
+/** La fiche d'une ligne d'avant le lot B se nomme par son nom français, s'il y est. */
+function theProduct(fact: PhraseFact, noun: Noun): Segment[] {
+  return theSubject(fact, noun, nameOf(fact.payload['name']));
+}
+
+/** « a <verbe> la fiche « Tarte citron » (TAR-001) » : cycle de vie d'une fiche. */
+function onProduct(verb: string, end = ''): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...theProduct(fact, PRODUCT),
+        ...skuAside(fact.payload['sku']),
+        ...(end === '' ? [] : [text(end)]),
+      ],
+      ['subjectLabel', 'sku', ...saidName(fact.payload, 'name')],
+    );
+}
+
+/** « a modifié <section> de « Tarte citron » : description courte, accord ». */
+function sectionSaved(section: string, noun: Noun, fields: 'names' | 'none'): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`a modifié ${section} `),
+        ...theSubject(fact, noun),
+        ...(fields === 'names'
+          ? whatChanged(fact.payload['changes'])
+          : unchanged(fact.payload['changes'])),
+      ],
+      ['subjectLabel'],
+    );
+}
+
+function productCreated(fact: PhraseFact): Said {
+  const p = fact.payload;
+  const categoryKey = p['category'] === undefined ? 'categoryId' : 'category';
+  const kind = optional(p['kind']);
+  const declared = p['declared'];
+  const declaration =
+    typeof declared === 'boolean'
+      ? [text(declared ? ', avec sa fiche réglementaire' : ', sans fiche réglementaire')]
+      : [];
+  return byActor(
+    fact,
+    [
+      text('a créé '),
+      ...theProduct(fact, PRODUCT),
+      ...skuAside(p['sku']),
+      ...(kind === null ? [] : [text(', '), valueIn(PRODUCT_KIND, kind, { inSentence: true })]),
+      ...(p[categoryKey] === undefined ? [] : [text(', '), ...cite(IN_FAMILY, p[categoryKey])]),
+      ...declaration,
+    ],
+    ['subjectLabel', 'sku', 'kind', categoryKey, 'declared', ...saidName(p, 'name')],
+  );
+}
+
+/**
+ * « a fait passer « Tarte citron » de la famille « Tartes » à la famille
+ * « Entremets » ». Une ligne d'avant le lot B ne cite les familles que par leur
+ * id : la phrase ne récite pas deux identifiants, le détail les dit (D5).
+ */
+function productReclassified(fact: PhraseFact): Said {
+  const p = fact.payload;
+  if (citedName(p['from']) === null || citedName(p['to']) === null) {
+    return byActor(
+      fact,
+      [text('a changé la famille '), ...theSubject(fact, OF_PRODUCT)],
+      ['subjectLabel'],
+    );
+  }
+  return byActor(
+    fact,
+    [
+      text('a fait passer '),
+      ...theSubject(fact, PRODUCT),
+      text(' '),
+      ...fromTo(cite(FAMILY, p['from']), cite(FAMILY, p['to'])),
+    ],
+    ['subjectLabel', 'from', 'to'],
+  );
+}
+
+/** La déclinaison que cite un geste sur une fiche : `variant` (nommée), ou `variantId` d'avant. */
+function variantOf(payload: Readonly<Record<string, unknown>>): {
+  readonly key: string;
+  readonly segments: Segment[];
+} {
+  const key = payload['variant'] === undefined ? 'variantId' : 'variant';
+  return {
+    key,
+    segments:
+      payload[key] === undefined
+        ? []
+        : cite({ the: ', déclinaison', a: ', une déclinaison' }, payload[key]),
+  };
+}
+
+/** Les prix et poids qu'un diff de tarif sait dire, avec leur unité au catalogue. */
+const PRICING_FIELDS = [
+  ['priceCents', 'prix TTC', 'cents'],
+  ['weightGrams', 'poids', 'grams'],
+] as const;
+
+/**
+ * « a modifié le tarif de « Tarte citron », déclinaison « 6 parts » : prix TTC
+ * de 12,00 € à 13,50 €, poids fixé à 450 g ». Le diff est dit en entier : il
+ * n'a que ces deux champs.
+ */
+function pricingSaved(fact: PhraseFact): Said {
+  const p = fact.payload;
+  const variant = variantOf(p);
+  const changes = recordOf(p['changes']) ?? {};
+  const shifts = PRICING_FIELDS.map(([key, label, unit]) =>
+    shift(label, unit, changes[key]),
+  ).filter((segments): segments is Segment[] => segments !== null);
+  const known = new Set<string>(PRICING_FIELDS.map(([key]) => key));
+  const complete = Object.keys(changes).every((key) => known.has(key));
+  const told = shifts.length === 0 ? [text(` (${NO_CHANGE})`)] : [text(' : '), ...joined(shifts)];
+  return byActor(
+    fact,
+    [text('a modifié le tarif '), ...theSubject(fact, OF_PRODUCT), ...variant.segments, ...told],
+    ['subjectLabel', variant.key, ...(complete ? ['changes'] : [])],
+  );
+}
+
+/** « a modifié la fiche réglementaire de « Tarte citron », déclinaison « 6 parts » : allergènes ». */
+function declarationSaved(fact: PhraseFact): Said {
+  const variant = variantOf(fact.payload);
+  return byActor(
+    fact,
+    [
+      text('a modifié la fiche réglementaire '),
+      ...theSubject(fact, OF_PRODUCT),
+      ...variant.segments,
+      ...whatChanged(fact.payload['changes']),
+    ],
+    ['subjectLabel', variant.key],
+  );
+}
+
+/**
+ * Où la fiche se vend. Le côté `inherited` se dit (« sur les canaux de sa
+ * famille ») et se consomme ; une matrice propre reste au détail, point de
+ * vente par point de vente.
+ */
+function channelsChanged(fact: PhraseFact): Said {
+  const p = fact.payload;
+  if (p['to'] === 'inherited') {
+    return byActor(
+      fact,
+      [
+        text('a remis '),
+        ...theSubject(fact, PRODUCT),
+        text(' sur les canaux de vente de sa famille'),
+      ],
+      ['subjectLabel', 'to'],
+    );
+  }
+  if (p['from'] === 'inherited') {
+    return byActor(
+      fact,
+      [text('a donné '), ...theSubject(fact, TO_PRODUCT), text(' ses propres canaux de vente')],
+      ['subjectLabel', 'from'],
+    );
+  }
+  return byActor(
+    fact,
+    [text('a modifié les canaux de vente '), ...theSubject(fact, OF_PRODUCT)],
+    ['subjectLabel'],
+  );
+}
+
+/** Les ingrédients d'une fiche : ils ne nomment jamais la fiche (lot B), la phrase la lie. */
+function ingredientsSaved(fact: PhraseFact): Said {
+  return byActor(
+    fact,
+    [
+      text('a modifié les ingrédients d’'),
+      subject(fact, 'une fiche'),
+      ...unchanged(fact.payload['changes']),
+    ],
+    [],
+  );
+}
+
 export const REFERENTIAL_PHRASES = {
-  'vat_rate.created': (fact) =>
-    said(
-      [
-        text('Taux de TVA « '),
-        name(orDash(fact.payload['name'])),
-        text(' » créé à '),
-        value(percent(fact.payload['percent'])),
-      ],
-      ['subjectLabel', 'name', 'percent'],
-    ),
-  'vat_rate.rate_changed': (fact) =>
-    said(
-      [
-        text('Taux de « '),
-        name(orDash(fact.payload['name'])),
-        text(' » passé de '),
-        value(percent(fact.payload['from'])),
-        text(' à '),
-        value(percent(fact.payload['to'])),
-      ],
-      ['subjectLabel', 'name', 'from', 'to'],
-    ),
-  'vat_rate.renamed': (fact) =>
-    said(
-      [
-        text('Taux « '),
-        name(orDash(fact.payload['from'])),
-        text(' » renommé « '),
-        name(orDash(fact.payload['to'])),
-        text(' »'),
-      ],
-      ['subjectLabel', 'from', 'to'],
-    ),
-  'vat_rate.deleted': (fact) =>
-    said(
-      [
-        text('Taux de TVA « '),
-        name(orDash(fact.payload['name'])),
-        text(' » supprimé ('),
-        value(percent(fact.payload['percent'])),
-        text(')'),
-      ],
-      ['subjectLabel', 'name', 'percent'],
-    ),
-  // La famille se nomme par le repli du moteur (« — Tartes ») : la phrase de
-  // `factSentence` ne la nommait pas, et le lot D la réécrira entière.
-  'product_category.vat_changed': () => said([text('Taux de TVA d’une famille modifiés')], []),
+  ...REFERENTIAL_VAT_PHRASES,
+  'product.created': productCreated,
+  'product.identity_saved': sectionSaved('l’identité', OF_PRODUCT, 'names'),
+  'product.reclassified': productReclassified,
+  'product.pricing_saved': pricingSaved,
+  'product.declaration_saved': declarationSaved,
+  'product.editorial_saved': sectionSaved('les textes', OF_PRODUCT, 'names'),
+  'product.media_saved': sectionSaved('les visuels', OF_PRODUCT, 'none'),
+  'product.channels_changed': channelsChanged,
+  'product.declared_ready': onProduct('a déclaré', ' prête à publier'),
   'product.published': onSale('publié au catalogue'),
   'product.unpublished': onSale('retiré de la vente'),
+  'product.archived': onProduct('a archivé'),
+  'product.restored': onProduct('a restauré'),
+  'product.ingredients_saved': ingredientsSaved,
+
+  ...REFERENTIAL_VARIANT_PHRASES,
+  ...REFERENTIAL_CATEGORY_PHRASES,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

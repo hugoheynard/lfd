@@ -91,6 +91,10 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   excludedSkus: 'Articles écartés',
   exemptionId: 'Dérogation',
   families: 'Familles',
+  // La portée d'un changement de taux du 2026-08-21 au 2026-08-24 (`blastByNamedContexts`).
+  familiesB2b: 'Familles B2B',
+  familiesEmporter: 'Familles à emporter',
+  familiesSurPlace: 'Familles sur place',
   fatG: 'Matières grasses',
   fee: 'Frais',
   field: 'Champ',

@@ -14,7 +14,7 @@ export const WEEKDAY = domain(
   Object.fromEntries(WEEKDAYS.map((day) => [day.value, day.label])),
 );
 
-/** Comment une commande a été remise : le QR du client, ou une saisie au comptoir. */
+/** Comment le retrait d'une commande a été validé : le QR du client, ou une saisie au comptoir. */
 export const HANDOVER_VIA = domain('manière de remettre une commande', {
   scan: 'QR scanné',
   manual: 'Saisie à la main',

@@ -54,9 +54,9 @@ export const POINT_OF_SALE_KIND = domain('genre de point de vente', {
 });
 
 /**
- * Le canal vers lequel une révision part (`catalog_revision.pushed`). Typé
- * `z.string()` au catalogue ; seul `b2b` a jamais été écrit (`push-b2b-catalog.ts`,
- * depuis `2c6a0988`, vérifié le 2026-09-19).
+ * Le canal vers lequel une révision part (`catalog_revision.pushed`) — une
+ * énumération au catalogue depuis le lot D (2026-09-19) : seul `b2b` a jamais
+ * été écrit (`push-b2b-catalog.ts`, depuis `2c6a0988`).
  */
 export const PUSH_CHANNEL = domain('canal de diffusion', {
   b2b: 'Plateforme professionnelle',
@@ -77,7 +77,7 @@ export const PRO_PRICE_METHOD = domain('méthode du prix professionnel', {
 });
 
 export const REFERENTIAL_VALUES: ValueFamily = {
-  enums: [PRODUCT_KIND, VARIANT_ASPECT, PUSH_MODE, POINT_OF_SALE_KIND],
+  enums: [PRODUCT_KIND, VARIANT_ASPECT, PUSH_MODE, POINT_OF_SALE_KIND, PUSH_CHANNEL],
   literals: {
     // Une fiche qui n'a pas sa propre matrice de canaux suit celle de sa famille.
     inherited: 'Ceux de la famille',
@@ -90,5 +90,4 @@ export const REFERENTIAL_VALUES: ValueFamily = {
     // Le nom d'une option de déclinaison (« Taille ») : saisi à l'écran.
     options: 'free',
   },
-  strings: { channel: PUSH_CHANNEL },
 };

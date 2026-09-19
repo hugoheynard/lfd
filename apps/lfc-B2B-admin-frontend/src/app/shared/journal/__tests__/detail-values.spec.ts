@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { factDetail } from '../detail-rows';
 import { renderFact, type FactInput } from '../render-fact';
 
 /**
@@ -29,20 +30,17 @@ function row(rendered: ReturnType<typeof renderFact>, label: string): string | u
 
 describe('le détail dit les valeurs d’ensemble fermé par leur mot', () => {
   it('nomme une énumération, même sous une clé `from` / `to`', () => {
-    const rendered = renderFact(
-      fact({
-        type: 'legal_entity.mandate_scheme_changed',
-        subjectType: 'legal_entity',
-        payload: { subjectLabel: 'La Folie Douce SAS', from: 'CORE', to: 'B2B' },
-      }),
+    // Le détail seul : la phrase du schéma SEPA dit déjà l'avant et l'après
+    // (lot D), et c'est le mot du dictionnaire qu'on éprouve ici.
+    const detail = factDetail(
+      'legal_entity.mandate_scheme_changed',
+      { subjectLabel: 'La Folie Douce SAS', from: 'CORE', to: 'B2B' },
+      new Set(['subjectLabel']),
     );
 
-    expect(rendered.detail).toContainEqual({
-      label: 'Avant',
-      value: 'SEPA CORE',
-    });
-    expect(row(rendered, 'Après')).toBe('SEPA interentreprises (B2B)');
-    expect(rendered.unlabelledValues).toEqual([]);
+    expect(detail.rows).toContainEqual({ label: 'Avant', value: 'SEPA CORE' });
+    expect(detail.rows).toContainEqual({ label: 'Après', value: 'SEPA interentreprises (B2B)' });
+    expect(detail.unlabelledValues).toEqual([]);
   });
 
   it('nomme une énumération dans un objet imbriqué d’une liste', () => {
@@ -64,42 +62,44 @@ describe('le détail dit les valeurs d’ensemble fermé par leur mot', () => {
     expect(rendered.unlabelledValues).toEqual([]);
   });
 
-  it('nomme la manière dont une commande a été remise', () => {
-    const rendered = renderFact(
-      fact({
-        type: 'order.handed_over',
-        subjectType: 'user',
-        payload: {
-          orderId: 'ord_1',
-          orderNumber: 'ORD-142',
-          handedOverBy: { id: 'stf_1', name: 'Cécile Martin' },
-          handedOverAt: '2026-09-19T08:00:00.000Z',
-          via: 'scan',
-        },
-      }),
+  it('nomme la manière dont le retrait d’une commande a été validé', () => {
+    // Le détail seul : la phrase du retrait dit déjà `via` (lot D), et c'est le
+    // mot du dictionnaire qu'on éprouve ici.
+    const detail = factDetail(
+      'order.handed_over',
+      {
+        orderId: 'ord_1',
+        orderNumber: 'ORD-142',
+        handedOverBy: { id: 'stf_1', name: 'Cécile Martin' },
+        handedOverAt: '2026-09-19T08:00:00.000Z',
+        via: 'scan',
+      },
+      new Set(),
     );
 
-    expect(row(rendered, 'Par')).toBe('QR scanné');
-    expect(rendered.unlabelledValues).toEqual([]);
+    expect(detail.rows).toContainEqual({ label: 'Par', value: 'QR scanné' });
+    expect(detail.unlabelledValues).toEqual([]);
   });
 
   it('nomme les clés d’un record de contextes de vente — y compris celles d’avant le renommage', () => {
-    const rendered = renderFact(
-      fact({
-        type: 'product.vat_changed',
-        payload: {
-          subjectLabel: 'Tarte citron',
-          vatByContext: {
-            takeaway: { from: null, to: { id: 'tva_1', name: 'Réduit' } },
-            surPlace: { from: { id: 'tva_2', name: 'Normal' }, to: null },
-          },
+    // Le détail seul : la phrase du taux dit déjà chaque contexte (lot D).
+    const detail = factDetail(
+      'product.vat_changed',
+      {
+        subjectLabel: 'Tarte citron',
+        vatByContext: {
+          takeaway: { from: null, to: { id: 'tva_1', name: 'Réduit' } },
+          surPlace: { from: { id: 'tva_2', name: 'Normal' }, to: null },
         },
-      }),
+      },
+      new Set(['subjectLabel']),
     );
 
-    expect(row(rendered, 'Taux de TVA par contexte de vente › À emporter')).toBe('aucun → Réduit');
-    expect(row(rendered, 'Taux de TVA par contexte de vente › Sur place')).toBe('Normal → aucun');
-    expect(rendered.unlabelledValues).toEqual([]);
+    expect(detail.rows).toEqual([
+      { label: 'Taux de TVA par contexte de vente › À emporter', value: 'aucun → Réduit' },
+      { label: 'Taux de TVA par contexte de vente › Sur place', value: 'Normal → aucun' },
+    ]);
+    expect(detail.unlabelledValues).toEqual([]);
   });
 
   it('lit une charge qui EST un record de contextes — le taux par contexte d’avant le lot B', () => {
@@ -121,18 +121,20 @@ describe('le détail dit les valeurs d’ensemble fermé par leur mot', () => {
 
   it('laisse un contexte créé à l’écran sous sa clé, et le signale', () => {
     // Sa clé est une donnée : aucun dictionnaire ne peut la connaître d'avance.
-    const rendered = renderFact(
-      fact({
-        type: 'product.vat_changed',
-        payload: {
-          subjectLabel: 'Tarte citron',
-          vatByContext: { brunch: { from: null, to: { id: 'tva_1', name: 'Réduit' } } },
-        },
-      }),
+    // Le détail seul : la phrase du taux la dit déjà, telle quelle (lot D).
+    const detail = factDetail(
+      'product.vat_changed',
+      {
+        subjectLabel: 'Tarte citron',
+        vatByContext: { brunch: { from: null, to: { id: 'tva_1', name: 'Réduit' } } },
+      },
+      new Set(['subjectLabel']),
     );
 
-    expect(row(rendered, 'Taux de TVA par contexte de vente › brunch')).toBe('aucun → Réduit');
-    expect(rendered.unlabelledValues).toEqual(['vatByContext=brunch']);
+    expect(detail.rows).toEqual([
+      { label: 'Taux de TVA par contexte de vente › brunch', value: 'aucun → Réduit' },
+    ]);
+    expect(detail.unlabelledValues).toEqual(['vatByContext=brunch']);
   });
 
   it('laisse telles quelles les clés de donnée d’un record libre', () => {
@@ -152,70 +154,70 @@ describe('le détail dit les valeurs d’ensemble fermé par leur mot', () => {
     expect(rendered.unlabelledValues).toEqual([]);
   });
 
+  // Le détail seul dans les trois cas suivants : leurs phrases disent déjà
+  // `via` et les champs modifiés (lot D), et c'est le dictionnaire qu'on
+  // éprouve ici.
   it('nomme un littéral', () => {
-    const rendered = renderFact(
-      fact({
-        type: 'lead.converted',
-        subjectType: 'lead',
-        payload: { subjectLabel: 'Café des Halles', via: 'manual' },
-      }),
+    const detail = factDetail(
+      'lead.converted',
+      { subjectLabel: 'Café des Halles', via: 'manual' },
+      new Set(['subjectLabel']),
     );
 
-    expect(row(rendered, 'Par')).toBe('À la main');
+    expect(detail.rows).toContainEqual({ label: 'Par', value: 'À la main' });
   });
 
-  it('nomme les champs d’une modification que le catalogue type en chaîne libre', () => {
-    const rendered = renderFact(
-      fact({
-        type: 'company.identity_edited',
-        subjectType: 'company',
-        payload: { subjectLabel: 'Café des Halles', fields: ['enseigne', 'vatNumber'] },
-      }),
+  it('nomme les champs d’une modification, une énumération au catalogue', () => {
+    const detail = factDetail(
+      'company.identity_edited',
+      { subjectLabel: 'Café des Halles', fields: ['enseigne', 'vatNumber'] },
+      new Set(['subjectLabel']),
     );
 
-    expect(row(rendered, 'Champs modifiés')).toBe('Enseigne, Numéro de TVA');
+    expect(detail.rows).toContainEqual({
+      label: 'Champs modifiés',
+      value: 'Enseigne, Numéro de TVA',
+    });
   });
 
   it('garde telle quelle une chaîne libre hors de son ensemble — une ligne ancienne', () => {
     // Avant le 2026-09-18, l'équipe figeait les LIBELLÉS des champs, pas leurs clés.
-    const rendered = renderFact(
-      fact({
-        type: 'company.identity_edited',
-        subjectType: 'company',
-        payload: { subjectLabel: 'Café des Halles', fields: ['Enseigne commerciale'] },
-      }),
+    const detail = factDetail(
+      'company.identity_edited',
+      { subjectLabel: 'Café des Halles', fields: ['Enseigne commerciale'] },
+      new Set(['subjectLabel']),
     );
 
-    expect(row(rendered, 'Champs modifiés')).toBe('Enseigne commerciale');
-    expect(rendered.unlabelledValues).toEqual([]);
+    expect(detail.rows).toContainEqual({ label: 'Champs modifiés', value: 'Enseigne commerciale' });
+    expect(detail.unlabelledValues).toEqual([]);
   });
 
   it('fusionne les ensembles d’un même champ venus de deux familles', () => {
     // `channel` : la diffusion d'une révision ET le canal d'une demande de contact.
-    const support = renderFact(
-      fact({
-        type: 'support.requested',
-        subjectType: 'company',
-        payload: { supportRequestId: 'sr_1', channel: 'phone' },
-      }),
+    // Le détail seul : la phrase de la demande dit déjà le canal (lot D).
+    const support = factDetail(
+      'support.requested',
+      { supportRequestId: 'sr_1', channel: 'phone' },
+      new Set(),
     );
-    const push = renderFact(
-      fact({
-        type: 'catalog_revision.pushed',
-        subjectType: 'catalog_revision',
-        payload: {
-          subjectLabel: 'Rentrée',
-          reference: 'R-7WT4NA',
-          channel: 'b2b',
-          mode: 'dry-run',
-          candidates: 12,
-          excluded: 1,
-        },
-      }),
+    // Le détail seul : la phrase de l'envoi dit déjà le canal et le mode (lot D).
+    // Le canal d'une révision est une énumération au catalogue depuis le lot D :
+    // il n'emprunte plus la fusion, mais son mot doit rester le même.
+    const push = factDetail(
+      'catalog_revision.pushed',
+      {
+        subjectLabel: 'Rentrée',
+        reference: 'R-7WT4NA',
+        channel: 'b2b',
+        mode: 'dry-run',
+        candidates: 12,
+        excluded: 1,
+      },
+      new Set(['subjectLabel']),
     );
 
-    expect(row(support, 'Canal')).toBe('Téléphone');
-    expect(row(push, 'Canal')).toBe('Plateforme professionnelle');
-    expect(row(push, 'Mode')).toBe('Simulation');
+    expect(support.rows).toContainEqual({ label: 'Canal', value: 'Téléphone' });
+    expect(push.rows).toContainEqual({ label: 'Canal', value: 'Plateforme professionnelle' });
+    expect(push.rows).toContainEqual({ label: 'Mode', value: 'Simulation' });
   });
 });

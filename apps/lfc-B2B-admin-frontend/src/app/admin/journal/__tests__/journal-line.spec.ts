@@ -200,11 +200,15 @@ describe('toLine — une commande, telle qu’un humain la lit', () => {
 });
 
 describe('toLine — les notes du commercial', () => {
+  // Le geste se dit par le dictionnaire des valeurs depuis le lot D des
+  // phrases (2026-09-19), l'auteur en sujet.
+  const NOTES = 'Hugo Heynard a modifié les notes du commercial d’un client';
+
   it.each([
-    ['note_added', 'Note du commercial ajoutée'],
-    ['note_revised', 'Note du commercial modifiée'],
-    ['note_removed', 'Note du commercial supprimée définitivement'],
-    ['notes_reordered', 'Notes du commercial reclassées'],
+    ['note_added', `${NOTES} : note ajoutée`],
+    ['note_revised', `${NOTES} : note modifiée`],
+    ['note_removed', `${NOTES} : note supprimée définitivement`],
+    ['notes_reordered', `${NOTES} : notes reclassées`],
   ])('nomme le geste « %s »', (action, sentence) => {
     const line = toLine(
       event({
@@ -225,7 +229,7 @@ describe('toLine — les notes du commercial', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Note du commercial ajoutée');
+    expect(line.sentence).toBe(`${NOTES} : note ajoutée`);
   });
 
   it('une action inconnue reste une phrase, pas un type brut', () => {
@@ -233,6 +237,6 @@ describe('toLine — les notes du commercial', () => {
       event({ type: 'company.client_note_edited_by_staff', payload: { action: 'note_archived' } }),
     );
 
-    expect(line.sentence).toBe('Notes du commercial modifiées');
+    expect(line.sentence).toBe(NOTES);
   });
 });

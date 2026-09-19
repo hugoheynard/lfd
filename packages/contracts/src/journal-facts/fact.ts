@@ -180,3 +180,21 @@ export const blast = () =>
       articles: count().optional(),
     })
     .optional();
+
+/**
+ * La portée sous sa forme **d'août 2026** : trois comptes nommés par contexte,
+ * écrits par le changement de taux du 2026-08-21 (`6959131d`, à emporter et
+ * sur place) au 2026-08-24 (`5d526662`, qui les a remplacés par
+ * `families: { <contexte>: n }`) — le B2B depuis le 2026-08-22 (`aff4e2f8`).
+ * Le journal ne se réécrit pas : ces lignes gardent leur forme, et une charge
+ * qui la porte doit se lire au lieu de sortir brute. Pour les formes
+ * anciennes (`history`) seulement — elle ne s'écrit plus.
+ */
+export const blastByNamedContexts = () =>
+  z
+    .strictObject({
+      familiesEmporter: count().optional(),
+      familiesSurPlace: count().optional(),
+      familiesB2b: count().optional(),
+    })
+    .optional();

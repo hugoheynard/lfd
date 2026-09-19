@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 import { deferredTermSchema } from "../company.js";
+import { companyMemberRoleSchema } from "../company-member.js";
 import { fulfillmentMethodSchema } from "../order.js";
 import { recurrenceSchema, subscriptionStatusSchema } from "../subscription.js";
+import { supportChannelSchema } from "../support.js";
 import {
   count,
   day,
@@ -87,6 +89,33 @@ function contactCited<S extends z.ZodRawShape>(rest: S) {
   );
 }
 
+/**
+ * Un geste sur un contact qui porte son rôle. Le rôle est un `CompanyMemberRole`
+ * depuis le lot D (2026-09-19) ; il était typé `z.string()` avant, et les deux
+ * formes d'alors restent lisibles en `history`. Les écrivains n'ont jamais
+ * passé qu'un rôle du domaine (`AssignableRole`, `ContactAdded*Event`, vérifié
+ * le 2026-09-19) — l'histoire n'est gardée que parce que le schéma, lui,
+ * admettait plus.
+ */
+function contactWithRole() {
+  const loose = contactCited({ role: z.string() });
+  return fact(contactCited({ role: companyMemberRoleSchema }).payload, [
+    loose.payload,
+    ...loose.history,
+  ]);
+}
+
+/**
+ * Les champs d'identité qu'une société édite elle-même
+ * (`update-company-identity.handler.ts`, `IDENTITY_FIELDS`, vérifié le
+ * 2026-09-19).
+ */
+const companyIdentityField = () =>
+  z.enum(["enseigne", "vatNumber", "raisonSociale", "formeJuridique", "siret", "siren"]);
+
+/** Les champs d'un profil (`UserProfile.changedFieldsSince`, vérifié le 2026-09-19). */
+const profileField = () => z.enum(["firstName", "lastName", "email", "phone"]);
+
 /** Le geste fait sur le carnet de notes d'un client — jamais son contenu. */
 const clientNoteAction = () =>
   z.enum(["note_added", "note_revised", "note_removed", "notes_reordered"]);
@@ -128,7 +157,18 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     siret: z.string(),
     siren: z.string(),
   }),
-  "company.identity_edited": labelled({ fields: z.array(z.string()) }),
+  /**
+   * Les champs, jamais leurs valeurs. Resserrés en énumération au lot D
+   * (2026-09-19) : les formes où `fields` était une chaîne libre restent en
+   * `history` — l'équipe y a figé des LIBELLÉS avant le 2026-09-18.
+   */
+  "company.identity_edited": fact(
+    payload({ subjectLabel: subjectLabel(), fields: z.array(companyIdentityField()) }),
+    [
+      payload({ subjectLabel: subjectLabel(), fields: z.array(z.string()) }),
+      payload({ fields: z.array(z.string()) }),
+    ],
+  ),
   "company.payment_terms_granted": labelled({ terms: z.array(deferredTermSchema) }),
   "company.payment_term_requested": labelled({
     before: deferredTermSchema.nullable(),
@@ -189,14 +229,22 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
       }),
     ],
   ),
-  "company.contact_added": contactCited({ role: z.string() }),
-  "company.contact_updated": contactCited({ role: z.string() }),
+  "company.contact_added": contactWithRole(),
+  "company.contact_updated": contactWithRole(),
   /** Le retrait ne relit pas la fiche qu'il efface : le contact y est cité par son seul id. */
   "company.contact_removed": contactCited({}),
   "company.primary_contact_changed": labelled({}),
+  /** Le rôle resserré au lot D (2026-09-19) : les formes à chaîne libre restent en `history`. */
   "company.access_opened": fact(
-    payload({ subjectLabel: subjectLabel(), person: person("user"), role: z.string() }),
-    [payload({ userId: ref("user"), role: z.string() })],
+    payload({
+      subjectLabel: subjectLabel(),
+      person: person("user"),
+      role: companyMemberRoleSchema,
+    }),
+    [
+      payload({ subjectLabel: subjectLabel(), person: person("user"), role: z.string() }),
+      payload({ userId: ref("user"), role: z.string() }),
+    ],
   ),
   "company.bank_account_changed": labelled({
     bankAccountId: ref("company_bank_account"),
@@ -243,8 +291,11 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
    * personne APRÈS le geste, absent si son profil n'en porte pas.
    */
   "user.profile_updated": fact(
-    payload({ subjectLabel: subjectLabel().optional(), fields: z.array(z.string()) }),
-    [payload({ fields: z.array(z.string()) })],
+    payload({ subjectLabel: subjectLabel().optional(), fields: z.array(profileField()) }),
+    [
+      payload({ subjectLabel: subjectLabel().optional(), fields: z.array(z.string()) }),
+      payload({ fields: z.array(z.string()) }),
+    ],
   ),
   /** `subjectLabel` absent si le profil de la personne ne porte pas de nom. */
   "user.password_link_issued": fact(payload({ subjectLabel: subjectLabel().optional() }), [
@@ -299,9 +350,16 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     payload({
       subjectLabel: subjectLabel().optional(),
       supportRequestId: ref("support_request"),
-      channel: z.string(),
+      channel: supportChannelSchema,
     }),
-    [payload({ supportRequestId: ref("support_request"), channel: z.string() })],
+    [
+      payload({
+        subjectLabel: subjectLabel().optional(),
+        supportRequestId: ref("support_request"),
+        channel: z.string(),
+      }),
+      payload({ supportRequestId: ref("support_request"), channel: z.string() }),
+    ],
   ),
   "support.handled": fact(
     payload({ subjectLabel: subjectLabel().optional(), supportRequestId: ref("support_request") }),

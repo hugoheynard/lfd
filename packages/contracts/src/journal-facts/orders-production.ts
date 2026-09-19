@@ -39,11 +39,11 @@ import {
  * charge.
  */
 
-/** Une réduction ou un frais : en points de base, ou en centimes. */
+/** Une réduction ou un frais : en points de base, ou en centimes HT (`cartAdjustmentSchema`). */
 const percentOrAmount = () =>
   z.union([payload({ bp: basisPoints() }), payload({ cents: cents() })]);
 
-/** Le même, avec son mode explicite (`CartAdjustment`). */
+/** Le même, avec son mode explicite (`CartAdjustment`) : un montant fixe est en centimes HT. */
 const adjustment = () =>
   z.discriminatedUnion("mode", [
     payload({ mode: z.literal("percent"), bp: basisPoints() }),

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { factDetail, type DetailOfFact } from '../detail-rows';
+import { fallbackPhrase } from '../fallback-phrase';
+import { plain } from '../phrase';
 import { renderFact, type FactInput } from '../render-fact';
 
 /**
@@ -21,6 +24,10 @@ function fact(overrides: Partial<FactInput> & Pick<FactInput, 'type'>): FactInpu
 
 function row(rendered: ReturnType<typeof renderFact>, label: string): string | undefined {
   return rendered.detail.find((candidate) => candidate.label === label)?.value;
+}
+
+function detailRow(detail: DetailOfFact, label: string): string | undefined {
+  return detail.rows.find((candidate) => candidate.label === label)?.value;
 }
 
 describe('le repli d’un type sans phrase', () => {
@@ -50,21 +57,20 @@ describe('le repli d’un type sans phrase', () => {
 
   it('ne prête pas au sujet un geste qui porte sur autre chose', () => {
     // `delivery_address_added` ajoute une ADRESSE : « a ajouté le client » serait faux.
-    const rendered = renderFact(
-      fact({
-        type: 'company.delivery_address_added',
-        subjectType: 'company',
-        subjectId: 'co_1',
-        payload: {
-          subjectLabel: 'Café des Halles',
-          address: { id: 'adr_1', ville: 'Paris', codePostal: '75011' },
-        },
-      }),
-    );
+    // Le repli seul : le type a sa phrase depuis le lot D (2026-09-19).
+    const said = fallbackPhrase({
+      type: 'company.delivery_address_added',
+      subjectType: 'company',
+      subjectId: 'co_1',
+      actor: 'Colette Martin',
+      payload: {
+        subjectLabel: 'Café des Halles',
+        address: { id: 'adr_1', ville: 'Paris', codePostal: '75011' },
+      },
+    });
 
-    expect(rendered.sentence).toBe('Fait enregistré sur le client « Café des Halles »');
-    expect(rendered.namesActor).toBe(false);
-    expect(row(rendered, 'Adresse')).toBe('75011 Paris');
+    expect(plain(said.segments)).toBe('Fait enregistré sur le client « Café des Halles »');
+    expect(said.namesActor).toBe(false);
   });
 
   it('ne rend jamais le type brut, même hors catalogue, et garde la charge lisible', () => {
@@ -112,17 +118,17 @@ describe('le détail, d’après le schéma qui valide la charge', () => {
   });
 
   it('met chaque unité en forme : millicentimes, points de base, jours, instants, booléens', () => {
-    const price = renderFact(
-      fact({
-        type: 'catalog_item.b2b_price_set',
-        subjectType: 'catalog_item',
-        payload: {
-          subjectLabel: 'Croissant',
-          sku: 'VIE-001',
-          before: null,
-          after: { priceMillicents: 818_182 },
-        },
-      }),
+    // Le détail seul : la phrase du prix professionnel dit déjà l'avant et
+    // l'après (lot D), et c'est leur mise en forme qu'on éprouve ici.
+    const price = factDetail(
+      'catalog_item.b2b_price_set',
+      {
+        subjectLabel: 'Croissant',
+        sku: 'VIE-001',
+        before: null,
+        after: { priceMillicents: 818_182 },
+      },
+      new Set(['subjectLabel']),
     );
     const zone = renderFact(
       fact({
@@ -131,16 +137,16 @@ describe('le détail, d’après le schéma qui valide la charge', () => {
         payload: { subjectLabel: 'Est', label: 'Est', postalPrefixCount: 12, fee: { bp: 550 } },
       }),
     );
-    const waiver = renderFact(
-      fact({
-        type: 'order_cutoff_waiver.granted',
-        subjectType: 'order_cutoff_waiver',
-        payload: {
-          company: { id: 'co_1', name: 'Café des Halles' },
-          fulfillmentDate: '2026-09-19',
-          reason: 'Livraison exceptionnelle',
-        },
-      }),
+    // Le détail seul, sans phrase : celle de la dérogation dit déjà le client
+    // et la journée (lot D), et c'est leur mise en forme qu'on éprouve ici.
+    const waiver = factDetail(
+      'order_cutoff_waiver.granted',
+      {
+        company: { id: 'co_1', name: 'Café des Halles' },
+        fulfillmentDate: '2026-09-19',
+        reason: 'Livraison exceptionnelle',
+      },
+      new Set(),
     );
     const schedule = renderFact(
       fact({
@@ -156,11 +162,11 @@ describe('le détail, d’après le schéma qui valide la charge', () => {
       }),
     );
 
-    expect(row(price, 'Avant')).toBe('aucun');
-    expect(row(price, 'Après › Prix HT')).toMatch(/^8,18182\s€$/u);
+    expect(detailRow(price, 'Avant')).toBe('aucun');
+    expect(detailRow(price, 'Après › Prix HT')).toMatch(/^8,18182\s€$/u);
     expect(row(zone, 'Frais › Taux')).toBe('5,5 %');
-    expect(row(waiver, 'Jour de retrait ou de livraison')).toBe('19 septembre 2026');
-    expect(row(waiver, 'Client')).toBe('Café des Halles');
+    expect(detailRow(waiver, 'Jour de retrait ou de livraison')).toBe('19 septembre 2026');
+    expect(detailRow(waiver, 'Client')).toBe('Café des Halles');
     expect(row(schedule, 'Configuré')).toBe('oui');
   });
 
@@ -186,7 +192,9 @@ describe('le détail, d’après le schéma qui valide la charge', () => {
       }),
     );
 
-    expect(rendered.sentence).toBe('Note du commercial ajoutée');
+    expect(rendered.sentence).toBe(
+      'Colette Martin a modifié les notes du commercial d’un client : note ajoutée',
+    );
     expect(rendered.detail).toEqual([]);
   });
 

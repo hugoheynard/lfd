@@ -73,10 +73,12 @@ export const CLIENT_NOTE_ACTION = domain('geste sur les notes du commercial', {
 
 /**
  * Les champs qu'une modification nomme sans leurs valeurs (`fields` de
- * `company.identity_edited` et `user.profile_updated`). Typés `z.string()` au
- * catalogue ; ce sont les `IDENTITY_FIELDS` de `update-company-identity.handler.ts`
- * et les champs de `UserProfile.changedFieldsSince` (vérifié le 2026-09-19).
- * Mots de la fiche client (`activation-steps.ts`).
+ * `company.identity_edited` et `user.profile_updated`) : les `IDENTITY_FIELDS`
+ * de `update-company-identity.handler.ts` et les champs de
+ * `UserProfile.changedFieldsSince` (vérifié le 2026-09-19). Mots de la fiche
+ * client (`activation-steps.ts`). Énumérations au catalogue depuis le lot D
+ * (2026-09-19) ; cet ensemble nomme encore la chaîne libre des formes d'avant,
+ * et sert à `fieldList` dans les phrases.
  */
 export const CHANGED_FIELD = domain('champ modifié', {
   enseigne: 'Enseigne',
@@ -91,14 +93,51 @@ export const CHANGED_FIELD = domain('champ modifié', {
   phone: 'Téléphone',
 });
 
-/** Le rôle d'un contact ou d'un accès ouvert — typé `z.string()` au catalogue. */
+/**
+ * Les mêmes mots, réduits aux champs qu'une société édite elle-même : c'est
+ * l'énumération que le catalogue déclare depuis le lot D (2026-09-19). La
+ * chaîne libre des formes d'avant garde {@link CHANGED_FIELD}.
+ */
+export const COMPANY_IDENTITY_FIELD = domain(
+  'champ d’identité d’un client',
+  pick(CHANGED_FIELD, [
+    'enseigne',
+    'vatNumber',
+    'raisonSociale',
+    'formeJuridique',
+    'siret',
+    'siren',
+  ]),
+);
+
+/** Les champs d'un profil, en énumération depuis le lot D (2026-09-19). */
+export const PROFILE_FIELD = domain(
+  'champ d’un profil',
+  pick(CHANGED_FIELD, ['firstName', 'lastName', 'email', 'phone']),
+);
+
+/**
+ * Le rôle d'un contact ou d'un accès ouvert — une énumération au catalogue
+ * depuis le lot D (2026-09-19), une chaîne libre dans les formes d'avant.
+ */
 export const COMPANY_ROLE = domain('rôle dans le compte client', COMPANY_ROLE_LABELS);
 
-/** Le canal d'une demande de contact (`supportChannelSchema`), typé `z.string()` au catalogue. */
+/**
+ * Le canal d'une demande de contact (`supportChannelSchema`) — une énumération
+ * au catalogue depuis le lot D (2026-09-19), une chaîne libre avant.
+ */
 export const SUPPORT_CHANNEL = domain('canal d’une demande de contact', {
   phone: 'Téléphone',
   email: 'E-mail',
 });
+
+/** Les mots de quelques valeurs d'un ensemble déjà nommé. */
+function pick(
+  set: { readonly labels: Readonly<Record<string, string>> },
+  values: readonly string[],
+): Readonly<Record<string, string>> {
+  return Object.fromEntries(values.map((value) => [value, set.labels[value] ?? value]));
+}
 
 export const ACCOUNTS_VALUES: ValueFamily = {
   enums: [
@@ -111,6 +150,10 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     SUBSCRIPTION_STATUS,
     PROCEDURE_ACTION,
     CLIENT_NOTE_ACTION,
+    COMPANY_IDENTITY_FIELD,
+    PROFILE_FIELD,
+    COMPANY_ROLE,
+    SUPPORT_CHANNEL,
   ],
   strings: { fields: CHANGED_FIELD, role: COMPANY_ROLE, channel: SUPPORT_CHANNEL },
 };

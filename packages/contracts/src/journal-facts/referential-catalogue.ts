@@ -160,7 +160,12 @@ const revisionTaken = payload({
   blast: blast(),
 });
 const revisionPushed = payload({
-  channel: z.string(),
+  /**
+   * Le canal d'arrivée. Seul `b2b` a jamais été écrit (`push-b2b-catalog.ts`,
+   * depuis `2c6a0988`, vérifié le 2026-09-19) : un canal de plus s'ajoute ici,
+   * et la vérification à l'écriture le rappelle en test (D2).
+   */
+  channel: z.enum(["b2b"]),
   mode: z.enum(["live", "dry-run"]),
   /** Articles candidats à l'envoi. */
   candidates: z.number().int().min(0),

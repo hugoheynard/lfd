@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   basisPoints,
   blast,
+  blastByNamedContexts,
   changes,
   clockTime,
   count,
@@ -56,6 +57,16 @@ const vatRateChanged = payload({
   from: percent(),
   to: percent(),
   blast: blast(),
+});
+/**
+ * Le changement de taux d'avant `5d526662` (2026-08-24) : la même charge, la
+ * portée en trois comptes nommés (`blastByNamedContexts`).
+ */
+const vatRateChangedAugust = payload({
+  name: z.string(),
+  from: percent(),
+  to: percent(),
+  blast: blastByNamedContexts(),
 });
 const proRatioChanged = payload({ from: basisPoints().nullable(), to: basisPoints() });
 
@@ -155,7 +166,10 @@ const allergenEntryState = () => payload({ code: z.string(), name: localizedText
 
 export const REFERENTIAL_SETTINGS_FACTS = {
   "vat_rate.created": labelled(vatRateSnapshot),
-  "vat_rate.rate_changed": labelled(vatRateChanged),
+  "vat_rate.rate_changed": fact(vatRateChanged.extend({ subjectLabel: subjectLabel() }), [
+    vatRateChanged,
+    vatRateChangedAugust,
+  ]),
   /** `subjectLabel` = le nom APRÈS : c'est celui que le taux porte depuis. */
   "vat_rate.renamed": labelled(fromTo(z.string())),
   "vat_rate.deleted": labelled(vatRateSnapshot),
