@@ -297,3 +297,58 @@ describe('le contenant d’un article', () => {
     );
   });
 });
+
+describe('l’ouverture de la livraison par clientèle', () => {
+  const updated = (
+    openToB2b: boolean,
+    openToB2c: boolean,
+    previous: { openToB2b: boolean; openToB2c: boolean },
+  ): FactInput =>
+    fact({ type: 'delivery_availability.updated', payload: { openToB2b, openToB2c, previous } });
+
+  /** Régression : la phrase disait « a réglé l’ouverture… » et laissait au détail ce qui avait bougé. */
+  it('dit ce qui a été ouvert et ce qui a été fermé', () => {
+    const input = updated(false, true, { openToB2b: true, openToB2c: false });
+
+    expect(sentence(input)).toBe(
+      'Colette Martin a ouvert la livraison aux particuliers et l’a fermée aux professionnels',
+    );
+    expect(renderFact(input).detail).toEqual([]);
+  });
+
+  it('dit ce qui a changé, puis ce qui reste', () => {
+    expect(sentence(updated(true, true, { openToB2b: false, openToB2c: true }))).toBe(
+      'Colette Martin a ouvert la livraison aux professionnels ; elle reste ouverte aux particuliers',
+    );
+    expect(sentence(updated(true, false, { openToB2b: true, openToB2c: true }))).toBe(
+      'Colette Martin a fermé la livraison aux particuliers ; elle reste ouverte aux professionnels',
+    );
+  });
+
+  it('dit les deux clientèles ensemble quand elles bougent dans le même sens', () => {
+    expect(sentence(updated(true, true, { openToB2b: false, openToB2c: false }))).toBe(
+      'Colette Martin a ouvert la livraison aux professionnels et aux particuliers',
+    );
+    expect(sentence(updated(false, false, { openToB2b: true, openToB2c: true }))).toBe(
+      'Colette Martin a fermé la livraison aux professionnels et aux particuliers',
+    );
+  });
+
+  it('dit un réglage enregistré sans changement, avec l’état de chacune', () => {
+    expect(sentence(updated(true, false, { openToB2b: true, openToB2c: false }))).toBe(
+      'Colette Martin a réglé la livraison sans la changer : ouverte aux professionnels, fermée aux particuliers',
+    );
+  });
+
+  it('retombe sur la phrase générale, le détail disant tout, si la charge est incomplète', () => {
+    const partial = fact({
+      type: 'delivery_availability.updated',
+      payload: { openToB2b: true, openToB2c: false },
+    });
+
+    expect(sentence(partial)).toBe(
+      'Colette Martin a réglé l’ouverture de la livraison par clientèle',
+    );
+    expect(row(partial, 'Ouverte aux professionnels')).toBeDefined();
+  });
+});

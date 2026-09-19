@@ -6,6 +6,7 @@ import type {
 } from '@lfd/pim-contracts';
 import { FoldCalloutComponent, FoldElementTitleComponent } from 'fold-ng';
 
+import { causeScope } from './cause-scope';
 import { fieldLabel } from './field-label';
 
 /**
@@ -89,16 +90,8 @@ export class RevisionDiff {
     return `${entry.by ?? 'le système'}${when}`;
   }
 
-  /**
-   * La portée d'un réglage, en une ligne — « b2b : 1 · eatIn : 1 ».
-   *
-   * `''` quand elle n'a pas été enregistrée : rien ne s'affiche alors, plutôt
-   * qu'un « 0 » qui affirmerait que ça n'a rien touché.
-   */
-  protected blast(cause: CatalogRevisionCauseView): string {
-    const entries = Object.entries(cause.blast);
-    return entries.map(([key, count]) => `${key} : ${String(count)}`).join(' · ');
-  }
+  /** La portée d'un réglage, en une ligne — « Brunch : 1 · À emporter : 2 », `''` sans portée. */
+  protected readonly blast = causeScope;
 }
 
 /** La date d'un changement : le jour et l'heure, comme celle d'une ancre. */

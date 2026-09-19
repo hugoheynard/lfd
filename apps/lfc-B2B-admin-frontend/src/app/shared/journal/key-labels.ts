@@ -215,6 +215,9 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   supportRequestId: 'Demande de contact',
   suspended: 'Compte suspendu',
   table: 'Table',
+  // Le handle de la collection Shopify d'un taux, dérivé de son pourcentage
+  // (`tva-5-5`) : `tax_regime.*`, 2026-08-21 seulement.
+  tag: 'Collection Shopify',
   tableCount: 'Tables',
   terms: 'Conditions de règlement',
   time: 'Heure',

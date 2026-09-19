@@ -27,7 +27,8 @@ import { theSubject } from './referential-support';
  *
  * Toutes à la voix active, l'auteur en sujet (lot D, 2026-09-19) : les faits
  * d'un taux, repris au lot C de `shared/journal-fact.ts` au passif, y sont
- * passés à leur tour.
+ * passés à leur tour. Les anciens noms d'un taux (`tax_regime.*`, retirés)
+ * se disent comme lui.
  */
 
 const RATE: Noun = { the: '', a: 'un taux' };
@@ -110,57 +111,77 @@ function vatChanged(of: Noun): Phrase {
   };
 }
 
+/**
+ * Les phrases d'un taux, partagées par `vat_rate.*` et par ses anciens noms
+ * `tax_regime.*` (2026-08-21, retirés) : c'est le même geste sur le même
+ * objet, il se dit de la même façon. `tax_regime.*` n'a jamais porté de
+ * `subjectLabel` — le déclarer consommé n'y coûte rien.
+ */
+const rateCreated: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a créé le taux de TVA « '),
+      bold(fact.payload['name']),
+      text(' » à '),
+      value(percent(fact.payload['percent'])),
+    ],
+    ['subjectLabel', 'name', 'percent'],
+  );
+
+const rateChanged: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a passé le taux de TVA « '),
+      bold(fact.payload['name']),
+      text(' » de '),
+      value(percent(fact.payload['from'])),
+      text(' à '),
+      value(percent(fact.payload['to'])),
+    ],
+    // `contextLabels` ne sert qu'à nommer les contextes de la portée : la méta
+    // et le détail de `blast` le lisent, il n'apprend rien par lui-même.
+    ['subjectLabel', 'name', 'from', 'to', 'contextLabels'],
+  );
+
+const rateRenamed: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a renommé le taux de TVA « '),
+      bold(fact.payload['from']),
+      text(' » en « '),
+      bold(fact.payload['to']),
+      text(' »'),
+    ],
+    ['subjectLabel', 'from', 'to'],
+  );
+
+const rateDeleted: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a supprimé le taux de TVA « '),
+      bold(fact.payload['name']),
+      text(' » ('),
+      value(percent(fact.payload['percent'])),
+      text(')'),
+    ],
+    ['subjectLabel', 'name', 'percent'],
+  );
+
 export const REFERENTIAL_VAT_PHRASES = {
-  'vat_rate.created': (fact) =>
-    byActor(
-      fact,
-      [
-        text('a créé le taux de TVA « '),
-        bold(fact.payload['name']),
-        text(' » à '),
-        value(percent(fact.payload['percent'])),
-      ],
-      ['subjectLabel', 'name', 'percent'],
-    ),
-  'vat_rate.rate_changed': (fact) =>
-    byActor(
-      fact,
-      [
-        text('a passé le taux de TVA « '),
-        bold(fact.payload['name']),
-        text(' » de '),
-        value(percent(fact.payload['from'])),
-        text(' à '),
-        value(percent(fact.payload['to'])),
-      ],
-      // `contextLabels` ne sert qu'à nommer les contextes de la portée : la méta
-      // et le détail de `blast` le lisent, il n'apprend rien par lui-même.
-      ['subjectLabel', 'name', 'from', 'to', 'contextLabels'],
-    ),
-  'vat_rate.renamed': (fact) =>
-    byActor(
-      fact,
-      [
-        text('a renommé le taux de TVA « '),
-        bold(fact.payload['from']),
-        text(' » en « '),
-        bold(fact.payload['to']),
-        text(' »'),
-      ],
-      ['subjectLabel', 'from', 'to'],
-    ),
-  'vat_rate.deleted': (fact) =>
-    byActor(
-      fact,
-      [
-        text('a supprimé le taux de TVA « '),
-        bold(fact.payload['name']),
-        text(' » ('),
-        value(percent(fact.payload['percent'])),
-        text(')'),
-      ],
-      ['subjectLabel', 'name', 'percent'],
-    ),
+  'vat_rate.created': rateCreated,
+  'vat_rate.rate_changed': rateChanged,
+  'vat_rate.renamed': rateRenamed,
+  'vat_rate.deleted': rateDeleted,
+  // Les taux quand ils s'appelaient « régimes » (le 2026-08-21, base de dev) :
+  // le `tag` (collection Shopify) et la portée d'août restent au détail.
+  'tax_regime.created': rateCreated,
+  'tax_regime.rate_changed': rateChanged,
+  'tax_regime.renamed': rateRenamed,
+  'tax_regime.deleted': rateDeleted,
 
   'product.vat_changed': vatChanged(OF_PRODUCT),
   'product_category.vat_changed': vatChanged(OF_FAMILY),

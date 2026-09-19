@@ -1,6 +1,6 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { optional } from '../payload-read';
+import { optional, recordOf } from '../payload-read';
 import {
   byActor,
   cite,
@@ -59,6 +59,85 @@ function engaged(fact: PhraseFact, noun: Noun): Segment[] {
 
 const COMMITMENT_CLIENT_KEYS = ['subjectLabel', 'company', 'companyId'];
 
+/** Une clientèle de la livraison : sa case dans la charge, et comment elle se dit. */
+interface Clientele {
+  readonly key: 'openToB2b' | 'openToB2c';
+  readonly to: string;
+}
+
+const CLIENTELES: readonly Clientele[] = [
+  { key: 'openToB2b', to: 'aux professionnels' },
+  { key: 'openToB2c', to: 'aux particuliers' },
+];
+
+/** Une clientèle, son état d'avant et d'après. */
+interface Opening {
+  readonly to: string;
+  readonly before: boolean;
+  readonly after: boolean;
+}
+
+/** L'avant et l'après de chaque clientèle, ou `null` si la charge ne les porte pas tous. */
+function openings(fact: PhraseFact): readonly Opening[] | null {
+  const previous = recordOf(fact.payload['previous']);
+  const read = CLIENTELES.map(({ key, to }) => ({
+    to,
+    before: previous?.[key],
+    after: fact.payload[key],
+  }));
+  return read.every(
+    (entry) => typeof entry.before === 'boolean' && typeof entry.after === 'boolean',
+  )
+    ? read.map(({ to, before, after }) => ({ to, before: before === true, after: after === true }))
+    : null;
+}
+
+/** « aux professionnels et aux particuliers ». */
+function toAll(entries: readonly Opening[]): string {
+  return entries.map((entry) => entry.to).join(' et ');
+}
+
+/** « ouverte aux professionnels, fermée aux particuliers » — l'état de chacune. */
+function states(entries: readonly Opening[]): string {
+  const open = entries.filter((entry) => entry.after);
+  const closed = entries.filter((entry) => !entry.after);
+  return [
+    ...(open.length === 0 ? [] : [`ouverte ${toAll(open)}`]),
+    ...(closed.length === 0 ? [] : [`fermée ${toAll(closed)}`]),
+  ].join(', ');
+}
+
+/**
+ * « a ouvert la livraison aux particuliers et l’a fermée aux professionnels »,
+ * « a fermé la livraison aux professionnels ; elle reste ouverte aux
+ * particuliers » — ce qui a changé d'abord, ce qui n'a pas bougé ensuite : la
+ * charge porte l'avant et l'après de chaque clientèle, la phrase dit les deux
+ * et le détail n'a plus rien à ajouter.
+ */
+function deliveryAvailability(fact: PhraseFact): Segment[] {
+  const entries = openings(fact);
+  if (entries === null) {
+    return [text('a réglé l’ouverture de la livraison par clientèle')];
+  }
+  const opened = entries.filter((entry) => !entry.before && entry.after);
+  const closed = entries.filter((entry) => entry.before && !entry.after);
+  const kept = entries.filter((entry) => entry.before === entry.after);
+  if (opened.length === 0 && closed.length === 0) {
+    return [text(`a réglé la livraison sans la changer : ${states(entries)}`)];
+  }
+  const changes = [
+    ...(opened.length === 0 ? [] : [`a ouvert la livraison ${toAll(opened)}`]),
+    ...(closed.length === 0
+      ? []
+      : [
+          opened.length === 0
+            ? `a fermé la livraison ${toAll(closed)}`
+            : `l’a fermée ${toAll(closed)}`,
+        ]),
+  ].join(' et ');
+  return [text(kept.length === 0 ? changes : `${changes} ; elle reste ${states(kept)}`)];
+}
+
 export const SETTINGS_PHRASES = {
   'delivery_zone.created': onSetting('a créé', ZONE),
   'delivery_zone.updated': onSetting('a modifié', ZONE),
@@ -87,7 +166,11 @@ export const SETTINGS_PHRASES = {
     );
   },
   'delivery_availability.updated': (fact) =>
-    byActor(fact, [text('a réglé l’ouverture de la livraison par clientèle')], []),
+    byActor(
+      fact,
+      deliveryAvailability(fact),
+      openings(fact) === null ? [] : ['openToB2b', 'openToB2c', 'previous'],
+    ),
   'order_cutoff.created': (fact) =>
     byActor(fact, [text('a posé une heure limite à '), ...cutoffTime(fact)], ['time']),
   'order_cutoff.updated': (fact) =>

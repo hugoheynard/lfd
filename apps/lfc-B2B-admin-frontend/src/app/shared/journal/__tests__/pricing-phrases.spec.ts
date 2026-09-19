@@ -134,16 +134,48 @@ describe('les actes sur une mercuriale', () => {
   const summary = 'Mercuriale « Été » — 12 articles, du 1er septembre 2026, sans date de fin';
   const tail = '12 articles, du 1er septembre 2026, sans date de fin';
 
-  it('dit la pose, et le gabarit qui l’a posée', () => {
+  /**
+   * Régression : la provenance qu'`apply-price-template` écrit dans `reason`
+   * se lisait « motif : Posée par le gabarit « Club » » — un motif que
+   * personne n'a donné.
+   */
+  it('dit le gabarit qui l’a posée comme une provenance, pas comme un motif', () => {
+    const posed = fact({
+      type: 'company_mercuriale.posed',
+      payload: { subjectLabel: 'Été', summary, reason: 'Posée par le gabarit « Club »' },
+    });
+
+    expect(renderFact(posed).sentence).toBe(
+      `Colette Martin a posé la mercuriale « Été » par le gabarit « Club » : ${tail}`,
+    );
+    expect(row(posed, 'Motif')).toBeUndefined();
+  });
+
+  it('ne répète pas « posée par gabarit » de la phrase figée, qui le dit sans le nom', () => {
     expect(
       renderFact(
         fact({
           type: 'company_mercuriale.posed',
-          payload: { subjectLabel: 'Été', summary, reason: 'Posée par le gabarit « Club »' },
+          payload: {
+            subjectLabel: 'Club',
+            summary: 'Mercuriale « Club » — 12 articles, posée par gabarit',
+            reason: 'Posée par le gabarit « Club »',
+          },
+        }),
+      ).sentence,
+    ).toBe('Colette Martin a posé la mercuriale « Club » par le gabarit « Club » : 12 articles');
+  });
+
+  it('dit comme un motif ce qui ressemble à un gabarit sans en avoir la forme exacte', () => {
+    expect(
+      renderFact(
+        fact({
+          type: 'company_mercuriale.posed',
+          payload: { subjectLabel: 'Été', summary, reason: 'Posée par le gabarit « Club », revue' },
         }),
       ).sentence,
     ).toBe(
-      `Colette Martin a posé la mercuriale « Été » : ${tail} — motif : Posée par le gabarit « Club »`,
+      `Colette Martin a posé la mercuriale « Été » : ${tail} — motif : Posée par le gabarit « Club », revue`,
     );
   });
 
@@ -222,5 +254,69 @@ describe('les engagements de volume', () => {
     expect(
       renderFact(fact({ type: 'volume_commitment.closed', payload: { reason: null } })).sentence,
     ).toBe('Colette Martin a clos l’engagement de volume d’un client');
+  });
+});
+
+describe('l’étage d’une règle, en donnée (forme du 2026-09-19)', () => {
+  const current = (type: FactInput['type'], payload: Record<string, unknown>): FactInput =>
+    fact({
+      type,
+      payload: {
+        subjectLabel: 'Été',
+        summary: RULE_SUMMARY,
+        reason: 'Fidélité',
+        audience: { id: 'co_1', name: 'Café des Halles' },
+        stage: 'geste',
+        ...payload,
+      },
+    });
+  /** La phrase figée une fois son nom ET son étage dits. */
+  const REST =
+    '−10 % · famille « Tartes », client « Café des Halles » · du 1er septembre 2026 au 30 septembre 2026';
+
+  it('nomme l’étage derrière la règle, et ne le répète pas en tête de la phrase figée', () => {
+    const posed = current('price_rule.posed', {});
+
+    expect(renderFact(posed).sentence).toBe(
+      `Colette Martin a posé la règle de prix « Été » (geste) : ${REST} — motif : Fidélité`,
+    );
+    expect(row(posed, 'Étage')).toBeUndefined();
+    expect(renderFact(posed).detail).toEqual([]);
+  });
+
+  it('dit l’étage d’un renommage derrière le nouveau nom', () => {
+    expect(
+      renderFact(current('price_rule.renamed', { subjectLabel: 'Automne', reason: null })).sentence,
+    ).toBe(`Colette Martin a renommé la règle de prix « Été » en « Automne » (geste) : ${REST}`);
+  });
+
+  it('dit chaque étage par le mot du panneau tarifaire', () => {
+    expect(
+      renderFact(
+        current('price_rule.archived', {
+          stage: 'promotion',
+          summary: 'Promotion « Été » · −10 %',
+          reason: null,
+        }),
+      ).sentence,
+    ).toBe('Colette Martin a archivé la règle de prix « Été » (promotion) : −10 %');
+  });
+
+  it('ne dit pas l’étage deux fois quand la phrase figée, citée entière, l’ouvre', () => {
+    expect(
+      renderFact(current('price_rule.paused', { summary: 'Geste « Autre » · −10 %', reason: null }))
+        .sentence,
+    ).toBe('Colette Martin a suspendu la règle de prix « Été » : Geste « Autre » · −10 %');
+  });
+
+  it('garde la phrase d’aujourd’hui sur une ligne qui ne porte pas l’étage', () => {
+    const lotB = fact({
+      type: 'price_rule.posed',
+      payload: { subjectLabel: 'Été', summary: RULE_SUMMARY, reason: null },
+    });
+
+    expect(renderFact(lotB).sentence).toBe(
+      `Colette Martin a posé la règle de prix « Été » : ${RULE_TAIL}`,
+    );
   });
 });

@@ -7,10 +7,13 @@ import {
   subject,
   subjectLabelOf,
   text,
+  valueIn,
   type Phrase,
   type PhraseFact,
   type Segment,
 } from '../phrase';
+import { labelIn } from '../values';
+import { PRICE_STAGE } from '../values/pricing-values';
 
 /**
  * **Les actes de tarification** — règles, limites, barèmes, mercuriales (lot D
@@ -25,7 +28,13 @@ import {
  * tête quand la phrase vient de le dire.
  *
  * Le motif (`reason`) est dit en fin de phrase : c'est ce que l'humain a écrit
- * pour expliquer son geste.
+ * pour expliquer son geste — sauf quand le serveur y a écrit une provenance
+ * (un gabarit), dite alors comme telle.
+ *
+ * L'étage d'une règle (`stage`, depuis le 2026-09-19) se dit entre parenthèses
+ * derrière son nom, et tombe de la tête de la phrase figée qui le disait
+ * aussi : « a posé la règle de prix « Été » (geste) : −10 % · … ». Une ligne
+ * d'avant ne le porte pas ; la phrase figée le dit alors seule, en tête.
  *
  * Seules les combinaisons sujet × verbe que le catalogue déclare ont une
  * entrée : ce sont les seules qui s'écrivent.
@@ -41,7 +50,8 @@ interface ActSubject {
    * Le mot par lequel la phrase figée ouvre sur le nom (« Barème « Gros
    * volumes » · … ») : il ne dit que ce que la phrase vient de dire, et tombe
    * avec le nom. `null` quand ce mot apprend autre chose — l'étage d'une règle
-   * (« Geste « Été » »), qui reste.
+   * (« Geste « Été » »), qui reste, sauf si la charge porte l'étage : la
+   * phrase le dit alors elle-même (`stageOf`).
    */
   readonly lead: string | null;
 }
@@ -77,11 +87,40 @@ function leadOf(summary: string): Lead | null {
   return { head: head.trim(), name: called, rest: rest.trim() };
 }
 
-/** Ce qui reste de la phrase figée une fois son nom dit : l'étage d'une règle, puis le reste. */
-function tailOf(lead: Lead, noun: ActSubject): string {
-  const head =
-    noun.lead !== null && lead.head.toLowerCase() === noun.lead.toLowerCase() ? '' : lead.head;
+/**
+ * Ce qui reste de la phrase figée une fois son nom dit : l'étage d'une règle,
+ * puis le reste. La tête tombe quand elle ne dit que le mot du sujet, ou
+ * l'étage que la phrase vient de dire (`stage`).
+ */
+function tailOf(lead: Lead, noun: ActSubject, stage: string | null): string {
+  const said = [noun.lead, stage].filter((word): word is string => word !== null);
+  const head = said.some((word) => sameWord(lead.head, word)) ? '' : lead.head;
   return [head, lead.rest].filter((part) => part !== '').join(' · ');
+}
+
+function sameWord(left: string, right: string): boolean {
+  return left.toLowerCase() === right.toLowerCase();
+}
+
+/**
+ * L'étage d'une règle, par son mot (« Geste ») — `null` sur une ligne d'avant
+ * le 2026-09-19, qui ne le porte pas, et sur tout acte qui n'est pas une règle.
+ */
+function stageOf(fact: PhraseFact): string | null {
+  return labelIn(PRICE_STAGE, fact.payload['stage']);
+}
+
+/**
+ * « (geste) » derrière le nom de la règle — sauf quand ce qu'on cite de la
+ * phrase figée ouvre déjà sur l'étage : une phrase citée entière, dont le nom
+ * n'est pas celui du sujet, le dit en tête, et il ne se dit pas deux fois.
+ */
+function stageAside(fact: PhraseFact, cited: string | null): Segment[] {
+  const stage = stageOf(fact);
+  if (stage === null || (cited !== null && cited.toLowerCase().startsWith(stage.toLowerCase()))) {
+    return [];
+  }
+  return [text(' ('), valueIn(PRICE_STAGE, fact.payload['stage'], { inSentence: true }), text(')')];
 }
 
 /** « la règle de prix « Été » », ou « une règle de prix » sans libellé. */
@@ -93,14 +132,47 @@ function named(fact: PhraseFact, noun: ActSubject): Segment[] {
 }
 
 /**
+ * La provenance qu'`apply-price-template` écrit dans `reason` — « Posée par le
+ * gabarit « Club » » (lu le 2026-09-19) : ce n'est pas un motif, c'est d'où
+ * vient la mercuriale. Reconnue à sa forme EXACTE seulement : un motif humain
+ * qui lui ressemblerait se dit comme un motif.
+ */
+const FROM_TEMPLATE = /^Posée par le gabarit « ([^«»]+) »$/u;
+
+/** Le nom du gabarit dont vient l'acte, ou `null`. */
+function templateOf(fact: PhraseFact): string | null {
+  const reason = optional(fact.payload['reason']);
+  return reason === null ? null : (FROM_TEMPLATE.exec(reason)?.[1] ?? null);
+}
+
+/** « par le gabarit « Club » », ou rien. */
+function provenance(template: string | null): Segment[] {
+  return template === null ? [] : [text(' par le gabarit « '), name(template), text(' »')];
+}
+
+/**
+ * La fin de la phrase figée d'une mercuriale posée par gabarit (« …, posée par
+ * gabarit », `apply-price-template`, lu le 2026-09-19) : la provenance vient de
+ * la dire, avec le nom du gabarit en plus.
+ */
+const TEMPLATE_ECHO = ', posée par gabarit';
+
+function withoutTemplateEcho(cited: string | null, template: string | null): string | null {
+  return template !== null && cited?.endsWith(TEMPLATE_ECHO) === true
+    ? cited.slice(0, -TEMPLATE_ECHO.length)
+    : cited;
+}
+
+/**
  * Le motif — sauf quand le serveur y a écrit sa propre paraphrase du geste
  * (`rename-company-mercuriale`, `pose-company-mercuriale`, lus le 2026-09-19) :
- * la phrase vient de le dire, mot pour mot. Un motif écrit par un humain,
- * ou par un gabarit (« Posée par le gabarit « Club » »), se dit toujours.
+ * la phrase vient de le dire, mot pour mot ; et sauf la provenance d'un
+ * gabarit, que `provenance` dit à sa place. Un motif écrit par un humain se
+ * dit toujours.
  */
 function motive(fact: PhraseFact, previous: string | null): Segment[] {
   const reason = optional(fact.payload['reason']);
-  if (reason === null) {
+  if (reason === null || templateOf(fact) !== null) {
     return [];
   }
   const label = subjectLabelOf(fact);
@@ -111,17 +183,28 @@ function motive(fact: PhraseFact, previous: string | null): Segment[] {
   return label !== null && echoes.includes(reason) ? [] : [text(` — motif : ${reason}`)];
 }
 
-/** Les clés qu'un acte a dites : la phrase figée nomme le client visé (`describeRule`). */
-function actConsumed(summary: string | null): string[] {
+/**
+ * Les clés qu'un acte a dites : la phrase figée nomme le client visé
+ * (`describeRule`), et l'étage est dit derrière le nom ou en tête de la phrase
+ * figée — jamais laissé au détail.
+ */
+function actConsumed(fact: PhraseFact, summary: string | null): string[] {
+  const stage = stageOf(fact) === null ? [] : ['stage'];
   return summary === null
-    ? ['subjectLabel', 'reason']
-    : ['subjectLabel', 'summary', 'audience', 'reason'];
+    ? ['subjectLabel', 'reason', ...stage]
+    : ['subjectLabel', 'summary', 'audience', 'reason', ...stage];
+}
+
+/** « : −10 % · … », ou rien. */
+function cited(said: string | null): Segment[] {
+  return said === null || said === '' ? [] : [text(` : ${said}`)];
 }
 
 /**
- * « Colette Martin a posé la règle de prix « Été » : Geste · −10 % · famille
+ * « Colette Martin a posé la règle de prix « Été » (geste) : −10 % · famille
  * « Tartes », client « Café des Halles » · du 01/09/2026 au 30/09/2026 — motif :
- * Fidélité ».
+ * Fidélité ». « Colette Martin a posé la mercuriale « Club » par le gabarit
+ * « Club » : 12 articles ».
  *
  * La phrase figée nomme déjà le client visé quand il y en a un (`describeRule`,
  * « client « Café des Halles » ») : `audience` y est dite, elle ne se répète
@@ -132,23 +215,31 @@ function act(verb: string, noun: ActSubject): Phrase {
   return (fact) => {
     const summary = optional(fact.payload['summary']);
     const lead = summary === null ? null : leadOf(summary);
-    const said = lead !== null && lead.name === subjectLabelOf(fact) ? tailOf(lead, noun) : summary;
+    const template = templateOf(fact);
+    // La phrase figée ouvre sur le nom du sujet : on n'en cite que la suite.
+    const matched = lead !== null && lead.name === subjectLabelOf(fact);
+    const said = withoutTemplateEcho(
+      matched ? tailOf(lead, noun, stageOf(fact)) : summary,
+      template,
+    );
     return byActor(
       fact,
       [
         text(`${verb} `),
         ...named(fact, noun),
-        ...(said === null || said === '' ? [] : [text(` : ${said}`)]),
+        ...stageAside(fact, matched ? null : summary),
+        ...provenance(template),
+        ...cited(said),
         ...motive(fact, null),
       ],
-      actConsumed(summary),
+      actConsumed(fact, summary),
     );
   };
 }
 
 /**
- * Un renommage : « a renommé la règle de prix « Été » en « Automne » : Geste
- * · … ». Le libellé porté est le NOUVEAU, et la phrase figée décrit la
+ * Un renommage : « a renommé la règle de prix « Été » en « Automne » (geste)
+ * : −10 % · … ». Le libellé porté est le NOUVEAU, et la phrase figée décrit la
  * décision d'AVANT le renommage — c'est elle qui dit l'ancien nom
  * (`rename-price-rule`, `rename-company-mercuriale`, lus le 2026-09-19).
  */
@@ -164,13 +255,13 @@ function renamed(noun: ActSubject): Phrase {
         [
           text(`a renommé ${noun.a}`),
           ...to,
-          ...(summary === null ? [] : [text(` : ${summary}`)]),
+          ...stageAside(fact, summary),
+          ...cited(summary),
           ...motive(fact, null),
         ],
-        actConsumed(summary),
+        actConsumed(fact, summary),
       );
     }
-    const tail = tailOf(lead, noun);
     return byActor(
       fact,
       [
@@ -178,10 +269,11 @@ function renamed(noun: ActSubject): Phrase {
         name(lead.name),
         text(' »'),
         ...to,
-        ...(tail === '' ? [] : [text(` : ${tail}`)]),
+        ...stageAside(fact, null),
+        ...cited(tailOf(lead, noun, stageOf(fact))),
         ...motive(fact, lead.name),
       ],
-      actConsumed(summary),
+      actConsumed(fact, summary),
     );
   };
 }
@@ -204,10 +296,10 @@ function floorAct(verb: string): Phrase {
         ...(label === null
           ? [text('une limite de prix')]
           : [text('la limite de prix (portée : '), subject(fact, label), text(')')]),
-        ...(summary === null ? [] : [text(` : ${summary}`)]),
+        ...cited(summary),
         ...motive(fact, null),
       ],
-      actConsumed(summary),
+      actConsumed(fact, summary),
     );
   };
 }

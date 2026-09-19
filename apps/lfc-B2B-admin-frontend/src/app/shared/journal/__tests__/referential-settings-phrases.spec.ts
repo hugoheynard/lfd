@@ -411,3 +411,51 @@ describe('la portée d’un changement de taux, sous sa forme d’août 2026', (
     expect(render(fact).unlabelled).toEqual([]);
   });
 });
+
+/**
+ * Régression : deux lignes `tax_regime.rate_changed` du 2026-08-21, en base de
+ * dev, s'affichaient comme un fait inconnu — les taux s'appelaient « régimes »
+ * ce jour-là, et le type a été renommé sans migration.
+ */
+describe('les taux de TVA quand ils s’appelaient « régimes »', () => {
+  const tagged = { name: 'Réduit', percent: 5.5, tag: 'tva-5-5' };
+
+  it('dit la création et la suppression comme celles d’un taux, le tag au détail', () => {
+    const created = on('tva_regime', 'tax_regime.created', tagged);
+    const deleted = on('tva_regime', 'tax_regime.deleted', { name: 'Réduit', percent: 5.5 });
+
+    expect(sentence(created).replace(/\s/gu, ' ')).toBe(
+      'Colette Martin a créé le taux de TVA « Réduit » à 5,5 %',
+    );
+    expect(render(created).detail).toEqual([{ label: 'Collection Shopify', value: 'tva-5-5' }]);
+    expect(sentence(deleted).replace(/\s/gu, ' ')).toBe(
+      'Colette Martin a supprimé le taux de TVA « Réduit » (5,5 %)',
+    );
+    expect(render(deleted).detail).toEqual([]);
+  });
+
+  it('dit un changement de taux, et laisse au détail sa portée d’août', () => {
+    const changed = on('tva_regime', 'tax_regime.rate_changed', {
+      name: 'Réduit',
+      from: 5.5,
+      to: 10,
+      blast: { familiesEmporter: 2, familiesSurPlace: 0 },
+      tag: 'tva-10',
+    });
+
+    expect(sentence(changed).replace(/\s/gu, ' ')).toBe(
+      'Colette Martin a passé le taux de TVA « Réduit » de 5,5 % à 10 %',
+    );
+    expect(labels(changed)).toEqual([
+      'Portée › Familles à emporter',
+      'Portée › Familles sur place',
+      'Collection Shopify',
+    ]);
+  });
+
+  it('dit un renommage', () => {
+    expect(
+      sentence(on('tva_regime', 'tax_regime.renamed', { from: 'Réduit', to: 'Taux réduit' })),
+    ).toBe('Colette Martin a renommé le taux de TVA « Réduit » en « Taux réduit »');
+  });
+});
