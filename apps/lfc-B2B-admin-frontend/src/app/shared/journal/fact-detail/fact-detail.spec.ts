@@ -27,6 +27,7 @@ describe('FactDetail', () => {
 
     expect(toggle?.textContent).toContain('Détail (2)');
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(host.textContent).not.toContain('Prix HT');
 
     toggle?.click();
     fixture.detectChanges();
@@ -40,6 +41,6 @@ describe('FactDetail', () => {
   it('ne rend rien quand la phrase a tout dit', () => {
     const fixture = mount([]);
 
-    expect(fixture.nativeElement.querySelector('fold-disclosure')).toBeNull();
+    expect(fixture.nativeElement.querySelector('button')).toBeNull();
   });
 });
