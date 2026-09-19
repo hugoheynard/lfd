@@ -21,7 +21,18 @@ describe("activityWhereOf — un seul jeu de filtres, en paramètres liés", () 
     const where = activityWhereOf({ limit: 50, q: "50%'; --" });
 
     expect(where.sql).not.toContain("50%");
-    expect(where.values).toEqual(["%50\\%'; --%", "%50\\%'; --%", "50%'; --"]);
+    // Le motif (jokers échappés) et le sujet exact partent en paramètres, comme
+    // la table des accents — rien du texte cherché n'entre dans le SQL.
+    expect(where.values).toContain("%50\\%'; --%");
+    expect(where.values).toContain("50%'; --");
+  });
+
+  it("compare sans accents ni casse, et ne lit que les valeurs de la charge", () => {
+    const where = activityWhereOf({ limit: 50, q: "Cécile" });
+
+    expect(where.sql).toContain("lower(translate(");
+    expect(where.sql).toContain("jsonb_path_query_array(payload");
+    expect(where.sql).not.toContain("payload::text");
   });
 
   it("combine la recherche aux autres filtres, curseur compris", () => {
@@ -33,7 +44,7 @@ describe("activityWhereOf — un seul jeu de filtres, en paramètres liés", () 
     });
 
     expect(where.sql).toContain("starts_with(type,");
-    expect(where.sql).toContain("ILIKE");
+    expect(where.sql).toContain("LIKE");
     expect(where.sql).toContain("id < ?");
     expect(where.sql.match(/ AND /g)).toHaveLength(2);
   });

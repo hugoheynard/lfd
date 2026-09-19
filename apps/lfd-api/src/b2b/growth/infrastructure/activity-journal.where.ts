@@ -70,22 +70,46 @@ function moduleClause(query: ActivityQuery): Prisma.Sql | null {
 }
 
 /**
- * La recherche libre : le nom figé de l'auteur ou la charge utile en texte
- * CONTIENNENT `q` (casse ignorée, accents non), ou le sujet EST `q`.
+ * La recherche libre : le nom figé de l'auteur ou une **valeur** de la charge
+ * utile CONTIENNENT `q` — sans la casse ni les accents —, ou le sujet EST `q`.
  *
- * La charge utile se lit en entier, clés comprises : chercher « téléphone »
- * trouve les éditions qui ont touché un téléphone, et chercher « person »
- * trouverait presque tout — le prix d'un filtre qui ne connaît pas la forme de
- * chaque fait.
+ * **Les valeurs, jamais les clés** : `jsonb_path_query_array` ne rend que les
+ * chaînes et les nombres, à toute profondeur. Chercher « person » trouvait
+ * presque tout le journal quand la charge se lisait en entier (jusqu'au
+ * 2026-09-19) ; chercher « téléphone » trouve toujours une édition du
+ * téléphone, parce que son libellé est une valeur.
+ *
+ * **Sans les accents, sans extension, sans dépendre de la locale** : la même
+ * expression `lower(translate(…))` s'applique aux deux côtés de la comparaison,
+ * avec UNE table de correspondance, ci-dessous. `translate` d'abord, et avec
+ * les majuscules accentuées : `lower()` ne met en minuscules que l'ASCII sous
+ * une locale `C`, et « É » y survivrait. Les ligatures (œ, æ) ne se déplient
+ * pas — `translate` va d'un caractère à un caractère.
+ *
+ * Rien n'est stocké : une colonne générée aurait réécrit la table sous un
+ * verrou bloquant toute écriture opposable (plan du journal, lot 2).
  */
 function searchClause(q: string | undefined): Prisma.Sql | null {
   if (q === undefined) {
     return null;
   }
   const pattern = `%${escapeLike(q)}%`;
-  return Prisma.sql`(actor_name ILIKE ${pattern} ESCAPE '\\'
-    OR payload::text ILIKE ${pattern} ESCAPE '\\'
+  const needle = folded(Prisma.sql`${pattern}`);
+  return Prisma.sql`(${folded(Prisma.sql`coalesce(actor_name, '')`)} LIKE ${needle} ESCAPE '\\'
+    OR ${folded(PAYLOAD_VALUES)} LIKE ${needle} ESCAPE '\\'
     OR subject_id = ${q})`;
+}
+
+/** Les accents qu'on retire, et leur lettre nue — alignées caractère par caractère. */
+const ACCENTED = "ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑñÒÓÔÕÖòóôõöÙÚÛÜùúûüÝŸýÿ";
+const PLAIN = "AAAAAAaaaaaaCcEEEEeeeeIIIIiiiiNnOOOOOoooooUUUUuuuuYYyy";
+
+/** Les chaînes et les nombres de la charge, à toute profondeur, en un texte. */
+const PAYLOAD_VALUES = Prisma.sql`jsonb_path_query_array(payload, 'strict $.** ? (@.type() == "string" || @.type() == "number")')::text`;
+
+/** Sans accents puis sans casse — l'ordre compte, cf. `searchClause`. */
+function folded(expression: Prisma.Sql): Prisma.Sql {
+  return Prisma.sql`lower(translate(${expression}, ${ACCENTED}, ${PLAIN}))`;
 }
 
 /**

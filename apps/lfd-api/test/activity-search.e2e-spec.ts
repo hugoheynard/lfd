@@ -99,6 +99,19 @@ async function seedJournal(): Promise<{ cecile: string; paul: string }> {
   return { cecile, paul };
 }
 
+/** Un fait témoin, hors équipe, avec la charge qu'on veut éprouver. */
+let witnesses = 0;
+async function witness(payload: Record<string, unknown>): Promise<void> {
+  witnesses += 1;
+  await ctx.app.get(ActivityRecorder).record({
+    type: "company.search_witness",
+    subjectType: "company",
+    subjectId: `company_witness_${witnesses}`,
+    idempotencyKey: `company.search_witness:w${witnesses}`,
+    payload,
+  });
+}
+
 async function search(query: Record<string, string>): Promise<readonly ActivityEventView[]> {
   const response = await operator().get("/admin/activity").query(query).expect(200);
   return jsonBody<ActivityPageView>(response).events;
@@ -208,6 +221,42 @@ describe("la recherche du journal — combinée, bornée, sans joker", () => {
     expect(await search({ q: "06%44" })).toEqual([]);
     expect(await search({ q: "061_223" })).toEqual([]);
     expect(await search({ q: "%%" })).toEqual([]);
+  });
+
+  it("sans les accents : « cecile » trouve Cécile, en nom comme en charge", async () => {
+    const { cecile } = await seedJournal();
+
+    const subjects = new Set((await search({ q: "cecile" })).map((event) => event.subjectId));
+    expect(subjects).toContain(cecile);
+  });
+
+  it("une majuscule accentuée se trouve sans accent, et l'inverse", async () => {
+    await witness({ contactName: "Élan Boulanger" });
+
+    expect(await search({ q: "elan" })).toHaveLength(1);
+    expect(await search({ q: "ÉLAN" })).toHaveLength(1);
+    expect(await search({ q: "élan" })).toHaveLength(1);
+  });
+
+  it("ne lit que les VALEURS de la charge : une clé ne répond pas", async () => {
+    await witness({ contactName: "Boulangerie Durand" });
+
+    expect(await search({ q: "contactName" })).toEqual([]);
+    expect(await search({ q: "Durand" })).toHaveLength(1);
+  });
+
+  it("une valeur numérique se trouve", async () => {
+    await witness({ quantity: 4817 });
+
+    expect(await search({ q: "4817" })).toHaveLength(1);
+  });
+
+  it("un guillemet ou une barre oblique dans une valeur ne casse rien", async () => {
+    await witness({ contactName: 'Le "Fournil" \\ Nord' });
+
+    expect(await search({ q: "fournil" })).toHaveLength(1);
+    // Un guillemet cherché ne casse pas la requête — il part en paramètre.
+    expect(await search({ q: '"Fo' })).toBeDefined();
   });
 
   it("refuse une recherche d'un seul caractère", async () => {

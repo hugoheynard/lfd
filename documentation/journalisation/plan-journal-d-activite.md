@@ -5,7 +5,10 @@
 > Il couvre [`todo-journal-activite.md`](todo-journal-activite.md) §1 à §7, §9
 > et §10 ; le §8 (les phrases de l'équipe) en est exclu.
 >
-> État : 📐 plan, rien n'est codé. **Deuxième version**, réécrite après une
+> État : 🚧 **lot 2 bâti le 2026-09-19**, en premier à la demande de Hugo
+> (« on devrait faire le lot 2 d'abord ») — la recherche normalisée, puis
+> l'index, à déployer après la sortie d'Accelerate. Les autres lots : plan.
+> **Deuxième version**, réécrite après une
 > contradiction de `vitruve` (§8) qui a cassé l'inventaire, la porte étendue,
 > la colonne de recherche et le déménagement du code.
 >

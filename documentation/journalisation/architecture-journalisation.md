@@ -254,8 +254,13 @@ autres par la bande.
   période ; un seul constructeur SQL (`activity-journal.where.ts`). Le filtre par
   acteur suit une personne sous **tous** ses identifiants (id de fiche et `sub`
   successifs, table `staff_subject_aliases`).
-- **Recherche** `q` — 2 à 100 caractères, sur le nom de l'auteur, la charge
-  utile, ou l'identifiant exact du sujet.
+- **Recherche** `q` — 2 à 100 caractères, sur le nom de l'auteur, les
+  **valeurs** de la charge utile (jamais ses clés), ou l'identifiant exact du
+  sujet ; **sans casse ni accents**, par une même expression
+  `lower(translate(…))` des deux côtés — sans extension, et sans dépendre de la
+  locale de la base. Rien n'est stocké pour la servir. Les montants, en
+  centimes, ne se trouvent pas en tapant « 12,50 » ; les ligatures (œ, æ) ne
+  se déplient pas.
 - **Pagination** par l'`id` ULID, donc par le temps.
 - **Le rendu** en phrases françaises vit au front
   (`lfc-B2B-admin-frontend/src/app/admin/journal/`) : `journal-line.ts` pour

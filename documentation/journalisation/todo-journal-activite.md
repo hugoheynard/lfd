@@ -86,9 +86,9 @@ Prévu à la pose du journal, toujours pas fait : **partitionnement mensuel** et
 politique de rétention, en SQL brut (non exprimable en Prisma déclaratif). Sans
 volume réel, tout choix de fenêtre serait arbitraire.
 
-À surveiller d'abord : la table n'a pas d'index sur `actor_id`, alors que le
-filtre par acteur est exposé par l'API. Tant que le volume est faible, le scan
-passe ; c'est le premier index à poser quand il ne passera plus.
+L'index sur `actor_id`, que le filtre par personne attendait, est posé par
+`20260919100000_index_de_l_auteur_du_journal` (plan, lot 2) — à déployer hors
+des heures d'usage, et pas pendant la sortie d'Accelerate.
 
 ### 5. Filtres non exposés à l'écran
 
@@ -113,11 +113,10 @@ non un filtre d'écran — sinon c'est le journal entier qui s'ouvre.
 
 _Venu de [`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`](../staff/journalisation-staff/architecture-journal-de-l-annuaire.md) §9, le 2026-09-18._
 
-- **Sensible aux accents** : l'extension `unaccent` n'est pas installée, et
-  « cecile » ne trouve pas « Cécile ».
-- **Elle lit aussi les clés de la charge** : chercher « person », « label » ou
-  « changes » ramène presque tout le journal. Chercher un nom, un numéro ou un
-  libellé n'a pas ce défaut.
+- ~~**Sensible aux accents**~~ et ~~**elle lit aussi les clés de la charge**~~
+  — **réglés le 2026-09-19** (plan, lot 2) : la recherche ne lit que les
+  valeurs, sans casse ni accents
+  ([`architecture-journalisation.md`](architecture-journalisation.md) §8).
 - **Aucun index ne la sert** : chaque recherche parcourt la table, paginée.
   Un index trigramme demanderait une migration — à faire le jour où le journal
   grossit assez pour que ça se sente.
