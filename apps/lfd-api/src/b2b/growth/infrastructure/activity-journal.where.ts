@@ -24,8 +24,36 @@ import { prefixesOf } from "../domain/activity-module.js";
 export function activityWhereOf(
   query: ActivityQuery,
   actorIds: readonly string[] | null = null,
+  asOf: string | null = null,
 ): Prisma.Sql {
-  const clauses = [
+  return joined([
+    ...filterClauses(query, actorIds),
+    anchorClause(asOf),
+    // Le curseur : strictement AVANT la dernière ligne rendue (ULID décroissant).
+    query.before === undefined ? null : Prisma.sql`id < ${query.before}`,
+  ]);
+}
+
+/**
+ * Le même `WHERE` que {@link activityWhereOf}, **sans le curseur** : celui du
+ * `total` d'une page, et de la recherche de l'ancre.
+ *
+ * Écrit ici et pas recomposé par l'appelant : un filtre ajouté aux pages mais
+ * pas au compte ferait annoncer au paginateur des pages qui n'existent pas.
+ */
+export function activitySnapshotWhereOf(
+  query: ActivityQuery,
+  actorIds: readonly string[] | null = null,
+  asOf: string | null = null,
+): Prisma.Sql {
+  return joined([...filterClauses(query, actorIds), anchorClause(asOf)]);
+}
+
+function filterClauses(
+  query: ActivityQuery,
+  actorIds: readonly string[] | null,
+): (Prisma.Sql | null)[] {
+  return [
     moduleClause(query),
     query.type === undefined ? null : Prisma.sql`type = ${query.type}`,
     query.subjectType === undefined ? null : Prisma.sql`subject_type = ${query.subjectType}`,
@@ -36,11 +64,21 @@ export function activityWhereOf(
     query.since === undefined ? null : Prisma.sql`occurred_at >= ${utc(query.since)}`,
     query.until === undefined ? null : Prisma.sql`occurred_at < ${utc(query.until)}`,
     searchClause(query.q),
-    // Le curseur : strictement AVANT la dernière ligne rendue (ULID décroissant).
-    query.before === undefined ? null : Prisma.sql`id < ${query.before}`,
-  ].filter((clause): clause is Prisma.Sql => clause !== null);
+  ];
+}
 
-  return clauses.length === 0 ? Prisma.sql`TRUE` : Prisma.join(clauses, " AND ");
+/**
+ * L'instantané : l'ancre et tout ce qui la précède. Par l'`id` seul, et c'est
+ * juste ICI — l'ordre de lecture du journal d'activité EST l'`id` décroissant,
+ * donc la borne découpe exactement ce que la première page a vu.
+ */
+function anchorClause(asOf: string | null): Prisma.Sql | null {
+  return asOf === null ? null : Prisma.sql`id <= ${asOf}`;
+}
+
+function joined(clauses: readonly (Prisma.Sql | null)[]): Prisma.Sql {
+  const kept = clauses.filter((clause): clause is Prisma.Sql => clause !== null);
+  return kept.length === 0 ? Prisma.sql`TRUE` : Prisma.join(kept, " AND ");
 }
 
 /** L'acteur, sous TOUTES ses références connues — l'id demandé toujours compris. */

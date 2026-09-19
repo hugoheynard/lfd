@@ -1,4 +1,4 @@
-import { activityWhereOf, escapeLike } from "../activity-journal.where.js";
+import { activitySnapshotWhereOf, activityWhereOf, escapeLike } from "../activity-journal.where.js";
 
 describe("escapeLike — un joker tapé dans la recherche reste un caractère", () => {
   it("échappe `%`, `_` et l'échappement lui-même", () => {
@@ -75,5 +75,68 @@ describe("activityWhereOf — le filtre par acteur ne coupe pas une histoire", (
     const where = activityWhereOf({ limit: 50, actorId: "staff_1" }, ["auth0|actuel"]);
 
     expect(where.values).toEqual(["staff_1", "auth0|actuel"]);
+  });
+});
+
+describe("activityWhereOf — l'instantané d'une pagination numérotée", () => {
+  const ANCHOR = "01K00000000000000000000009";
+
+  it("borne à l'ancre et à ce qui la précède, en paramètre lié", () => {
+    const where = activityWhereOf({ limit: 50 }, null, ANCHOR);
+
+    expect(where.sql).toBe("id <= ?");
+    expect(where.values).toEqual([ANCHOR]);
+  });
+
+  it("combine l'ancre aux filtres, à la recherche et au curseur", () => {
+    const where = activityWhereOf(
+      { limit: 50, module: "equipe", q: "Cécile", before: "01K00000000000000000000005" },
+      null,
+      ANCHOR,
+    );
+
+    expect(where.sql).toContain("id <= ?");
+    expect(where.sql).toContain("id < ?");
+    expect(where.sql).toContain("LIKE");
+    expect(where.sql.match(/ AND /g)).toHaveLength(3);
+  });
+});
+
+/**
+ * Le `WHERE` du total : les mêmes filtres que la page, l'ancre comprise, le
+ * curseur NON — un total qui dépendrait du curseur rétrécirait à chaque page.
+ */
+describe("activitySnapshotWhereOf — le total compte l'instantané, pas la page", () => {
+  const ANCHOR = "01K00000000000000000000009";
+
+  it("garde filtres, recherche et ancre, et ignore le curseur", () => {
+    const query = {
+      limit: 50,
+      module: "equipe" as const,
+      q: "Cécile",
+      before: "01K00000000000000000000005",
+    };
+
+    const snapshot = activitySnapshotWhereOf(query, null, ANCHOR);
+
+    expect(snapshot.sql).toContain("starts_with(type,");
+    expect(snapshot.sql).toContain("LIKE");
+    expect(snapshot.sql).toContain("id <= ?");
+    expect(snapshot.sql).not.toContain("id < ?");
+    expect(snapshot.values).not.toContain("01K00000000000000000000005");
+  });
+
+  it("partage les filtres de la page, acteur élargi compris", () => {
+    const query = { limit: 50, actorId: "staff_1" };
+
+    const page = activityWhereOf(query, ["auth0|actuel"], ANCHOR);
+    const snapshot = activitySnapshotWhereOf(query, ["auth0|actuel"], ANCHOR);
+
+    expect(snapshot.sql).toBe(page.sql);
+    expect(snapshot.values).toEqual(page.values);
+  });
+
+  it("sans ancre ni filtre, ne restreint rien — c'est la recherche de l'ancre", () => {
+    expect(activitySnapshotWhereOf({ limit: 50 }).sql).toBe("TRUE");
   });
 });

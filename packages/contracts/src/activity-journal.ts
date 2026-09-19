@@ -24,32 +24,56 @@ export type ActivityModule = z.infer<typeof activityModuleSchema>;
  * schéma les convertit, et c'est lui qui décide qu'une limite de 500 est un
  * refus plutôt qu'une page géante.
  */
-export const activityQuerySchema = z.object({
-  /** Module émetteur (`pim`, `commercial`…). */
-  module: activityModuleSchema.optional(),
-  /** Type exact (`tax_regime.rate_changed`) — le filtre le plus précis. */
-  type: z.string().min(1).optional(),
-  /** Ce dont on veut l'histoire : un régime, un produit, une société… */
-  subjectType: z.string().min(1).optional(),
-  subjectId: z.string().min(1).optional(),
-  /** Qui a agi — l'id de fiche staff (ou l'un de ses anciens `sub`) ou l'id client. */
-  actorId: z.string().min(1).optional(),
-  /** Bornes de temps, en ISO. `since` incluse, `until` exclue. */
-  since: z.string().datetime().optional(),
-  until: z.string().datetime().optional(),
-  /**
-   * Recherche libre (2026-09-18) : un nom, un prénom, un morceau de numéro, un
-   * identifiant. Retient le fait dont le nom figé de l'auteur OU la charge
-   * utile contient le texte (casse ignorée), ou dont le sujet EST ce texte.
-   * Les accents comptent : « cecile » ne trouve pas « Cécile ».
-   *
-   * Deux caractères au moins : un seul ramènerait presque tout le journal.
-   */
-  q: z.string().trim().min(2).max(100).optional(),
-  /** Pagination par curseur : l'`id` ULID de la dernière ligne rendue. */
-  before: z.string().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-});
+export const activityQuerySchema = z
+  .object({
+    /** Module émetteur (`pim`, `commercial`…). */
+    module: activityModuleSchema.optional(),
+    /** Type exact (`tax_regime.rate_changed`) — le filtre le plus précis. */
+    type: z.string().min(1).optional(),
+    /** Ce dont on veut l'histoire : un régime, un produit, une société… */
+    subjectType: z.string().min(1).optional(),
+    subjectId: z.string().min(1).optional(),
+    /** Qui a agi — l'id de fiche staff (ou l'un de ses anciens `sub`) ou l'id client. */
+    actorId: z.string().min(1).optional(),
+    /** Bornes de temps, en ISO. `since` incluse, `until` exclue. */
+    since: z.string().datetime().optional(),
+    until: z.string().datetime().optional(),
+    /**
+     * Recherche libre (2026-09-18) : un nom, un prénom, un morceau de numéro, un
+     * identifiant. Retient le fait dont le nom figé de l'auteur OU la charge
+     * utile contient le texte (casse ignorée), ou dont le sujet EST ce texte.
+     * Les accents comptent : « cecile » ne trouve pas « Cécile ».
+     *
+     * Deux caractères au moins : un seul ramènerait presque tout le journal.
+     */
+    q: z.string().trim().min(2).max(100).optional(),
+    /**
+     * Pagination par curseur : l'`id` ULID de la dernière ligne rendue.
+     *
+     * Servi pour le front en ligne, qui le lit encore ; les pages numérotées
+     * (`page`) sont l'autre façon de lire, et les deux ne se combinent pas.
+     */
+    before: z.string().min(1).optional(),
+    /**
+     * Pagination NUMÉROTÉE (2026-09-19), à partir de 1 — pour un paginateur qui
+     * saute à la page 3 et annonce un total. `limit` en est la taille.
+     */
+    page: z.coerce.number().int().min(1).optional(),
+    /**
+     * L'**ancre** de l'instantané parcouru : l'`id` du fait le plus récent que la
+     * première page a vu, rendu par elle dans `asOf`. Sans elle, un numéro de
+     * page glisse d'un rang à chaque fait écrit pendant la lecture. Absente, la
+     * réponse en fixe une.
+     */
+    asOf: z.string().min(1).optional(),
+    limit: z.coerce.number().int().min(1).max(200).default(50),
+  })
+  .refine((query) => query.page === undefined || query.before === undefined, {
+    // Refusé plutôt que départagé : une règle de priorité silencieuse ferait lire
+    // une autre page que celle que l'écran croit demander.
+    message: "`page` et `before` ne se combinent pas : lisez par numéro de page OU par curseur.",
+    path: ["page"],
+  });
 export type ActivityQuery = z.infer<typeof activityQuerySchema>;
 
 /** Un fait du journal, tel que l'écran le reçoit. */
@@ -78,8 +102,26 @@ export interface ActivityEventView {
   readonly payload: Record<string, unknown>;
 }
 
-/** Une page du flux. `nextBefore` est `null` quand on a atteint le fond. */
+/**
+ * Une page du flux. `nextBefore` est `null` quand on a atteint le fond.
+ *
+ * `total`, `page` et `asOf` sont venus le 2026-09-19, en AJOUT : le front en
+ * ligne ne lit que `events` et `nextBefore`, qui ne changent pas.
+ */
 export interface ActivityPageView {
   readonly events: readonly ActivityEventView[];
   readonly nextBefore: string | null;
+  /** Les faits de l'instantané qui répondent aux filtres — curseur exclu. */
+  readonly total: number;
+  /**
+   * Le numéro de la page rendue. `null` quand elle a été lue par curseur
+   * (`before`) : sa position n'est alors pas calculée, et un numéro inventé
+   * mentirait au paginateur.
+   */
+  readonly page: number | null;
+  /**
+   * L'ancre de l'instantané lu, à renvoyer pour les pages suivantes. `null`
+   * quand aucun fait ne répond aux filtres.
+   */
+  readonly asOf: string | null;
 }

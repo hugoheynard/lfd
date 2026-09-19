@@ -78,6 +78,7 @@ import { ReadCompanyPricingHandler } from "./application/queries/read-company-pr
 import { ReadMercurialeDraftHandler } from "./application/queries/read-mercuriale-draft.handler.js";
 import { ReadPricingJournalHandler } from "./application/queries/read-pricing-journal.handler.js";
 import { ReadSubjectJournalHandler } from "./application/queries/read-subject-journal.handler.js";
+import { ReadSubjectJournalPageHandler } from "./application/queries/read-subject-journal-page.handler.js";
 import { ReadMercurialeBenchmarkHandler } from "./application/queries/read-mercuriale-benchmark.handler.js";
 import { ListPriceTemplatesHandler } from "./application/queries/list-price-templates.handler.js";
 import { GetPriceTemplateHandler } from "./application/queries/get-price-template.handler.js";
@@ -152,6 +153,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     ReadMercurialeDraftHandler,
     ReadPricingJournalHandler,
     ReadSubjectJournalHandler,
+    ReadSubjectJournalPageHandler,
     ReadMercurialeBenchmarkHandler,
     ListPriceTemplatesHandler,
     GetPriceTemplateHandler,

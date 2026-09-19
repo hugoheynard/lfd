@@ -11,7 +11,7 @@ class RecordingJournalReader extends ActivityJournalReader {
 
   page(query: ActivityQuery, actorIds: readonly string[] | null): Promise<ActivityPageView> {
     this.calls.push({ query, actorIds });
-    return Promise.resolve({ events: [], nextBefore: null });
+    return Promise.resolve({ events: [], nextBefore: null, total: 0, page: 1, asOf: null });
   }
 }
 

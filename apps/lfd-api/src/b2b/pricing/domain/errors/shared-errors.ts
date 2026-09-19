@@ -120,6 +120,22 @@ export class UnknownPricingSubjectError extends DomainError {
 }
 
 /**
+ * **L'ancre d'une pagination ne désigne aucun acte de ce sujet.**
+ *
+ * Refusée plutôt qu'ignorée : ignorée, elle ferait lire le journal d'aujourd'hui
+ * à un écran qui croit parcourir un instantané, et les pages glisseraient sans
+ * que rien ne le dise.
+ */
+export class UnknownJournalAnchorError extends DomainError {
+  constructor(readonly asOf: string) {
+    super(
+      "pricing.journal.anchor_unknown",
+      `L'ancre « ${asOf} » ne désigne aucun acte de ce journal : rouvrez-le à la première page.`,
+    );
+  }
+}
+
+/**
  * **La société visée n'existe pas.**
  *
  * Un 404 et non un tableau vide, et c'est ce qui compte : la tarification d'un
