@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DeliveryAddressRemovedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
@@ -23,6 +25,10 @@ import { RemoveDeliveryAddressCommand } from "./address-commands.js";
  *
  * Les deux écritures partent ensemble : une préférence qui survivrait à
  * l'archivage recréerait exactement le trou qu'on ferme.
+ *
+ * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
+ * sous le nom du geste staff jumeau, sans coordonnée.
  */
 @CommandHandler(RemoveDeliveryAddressCommand)
 export class RemoveDeliveryAddressHandler implements ICommandHandler<
@@ -34,6 +40,7 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
     private readonly addresses: CompanyAddressRepository,
     private readonly companies: CompanyRepository,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -60,6 +67,9 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
       if (orphaned) {
         await this.companies.save(company);
       }
+      await this.events.publishTraced(
+        new DeliveryAddressRemovedByMemberEvent(command.companyId, command.addressId),
+      );
     });
   }
 }

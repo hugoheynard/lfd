@@ -43,14 +43,18 @@ journée de production en écrirait des centaines. **Laissé ici par Hugo le
 2026-09-19**, hors du lot 1 : à trancher avant de le bâtir (une ligne par
 coche, ou un fait par journée qui résume).
 
-### Les faits de commande ne sont pas opposables
+### Les faits écrits par un abonné ne sont pas opposables
 
-`order.placed`, `order.ready`, `order.handed_over` sont écrits par les abonnés
-de la croissance en **best-effort**, hors de la transaction du geste
-(`b2b/growth/application/handlers/on-order-*.handler.ts`) : une panne du
-journal les perd en silence. Les rendre opposables demande de les écrire dans
-la transaction de la commande — un changement de la croissance, écrit comme un
-choix.
+`order.placed`, `order.ready`, `order.handed_over` — et, relevés le 2026-09-19
+en bâtissant la tranche (c) du lot 1, `subscription.created` (sur le sujet
+`user`, lu tel quel par le score des leads), `company.declared`,
+`support.requested`, `support.handled` — sont écrits par des abonnés en
+**best-effort**, hors de la transaction du geste
+(`b2b/growth/application/handlers/`) : une panne du journal les perd en
+silence. Leurs handlers déclarent `@sans-journal` en renvoyant à l'abonné.
+Les rendre opposables demande de les écrire dans la transaction du geste, avec
+**un seul écrivain** par fait (retirer l'abonné, ou changer ce que lit la
+croissance) — un changement de la croissance, écrit comme un choix.
 
 ### La profondeur à la lecture
 

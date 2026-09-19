@@ -226,3 +226,47 @@ describe("Subscription.overrideOccurrence", () => {
     expect(overrides[0]?.skipped).toBe(false);
   });
 });
+
+describe("Subscription — ce que le journal en relit", () => {
+  const inWindow = IsoDate.fromString("2026-09-01");
+
+  it("currentStatus suit les transitions", () => {
+    const sub = Subscription.open(openInput());
+    expect(sub.currentStatus).toBe("active");
+    sub.pause();
+    expect(sub.currentStatus).toBe("paused");
+  });
+
+  it("overrideOn rend la dérogation posée sur une date, null sinon", () => {
+    const sub = Subscription.open(openInput());
+    expect(sub.overrideOn(inWindow)).toBeNull();
+
+    const posed = sub.overrideOccurrence(inWindow, { skipped: true, lines: [], note: "" });
+
+    expect(sub.overrideOn(inWindow)).toBe(posed);
+    expect(posed.skipped).toBe(true);
+  });
+
+  it("decision() dit ce que le panier décide, sans son adresse ni sa note", () => {
+    const sub = Subscription.open(
+      openInput({
+        routing: { method: "delivery", deliveryAddress: ADDRESS, pickupAddressId: null },
+        note: "Code portail 1234",
+      }),
+    );
+
+    const decision = sub.decision();
+
+    expect(decision).toEqual({
+      recurrence: "weekly",
+      status: "active",
+      startDate: "2026-08-10",
+      endDate: "2026-12-10",
+      fulfillmentMethod: "delivery",
+      pickupAddressId: null,
+      lines: [{ sku: "SKU-1", quantity: 2 }],
+    });
+    expect(JSON.stringify(decision)).not.toContain(ADDRESS.ligne1);
+    expect(JSON.stringify(decision)).not.toContain("1234");
+  });
+});

@@ -10,6 +10,11 @@ import { HandleSupportRequestCommand } from "./handle-support-request.command.js
  * Clôt une demande de contact. C'est **le geste qui manquait** : `handled_at`
  * n'était écrit nulle part, donc la file ne se purgeait jamais et le client
  * restait verrouillé par `OpenSupportRequestExistsError`.
+ *
+ * `@sans-journal` le fait existe déjà, et il n'a qu'un seul auteur :
+ * `support.handled`, écrit par son abonné (`on-support-activity`).
+ * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
+ * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
  */
 @CommandHandler(HandleSupportRequestCommand)
 export class HandleSupportRequestHandler implements ICommandHandler<

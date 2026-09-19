@@ -50,7 +50,7 @@ export class KbisUploadedByStaffEvent extends CompanyStaffAct {
     super(companyId);
   }
   protected type(): string {
-    return ACCOUNT_FACTS.kbisUploadedByStaff;
+    return ACCOUNT_FACTS.kbisUploaded;
   }
   protected override details(): Record<string, unknown> {
     return { fileName: this.fileName };

@@ -1,5 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { PrimaryContactChangedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
@@ -11,6 +14,10 @@ import { UpdatePrimaryContactCommand } from "./contact-commands.js";
  * Édite le contact **principal** d'une entreprise, réservé à son gestionnaire. Le
  * mur d'abord ; puis on charge l'agrégat et on le mute (`changePrimaryContact`) —
  * le contact est validé par le VO `ContactDetails`, l'écriture passe par `save`.
+ *
+ * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
+ * sous le nom du geste staff jumeau, sans coordonnée.
  */
 @CommandHandler(UpdatePrimaryContactCommand)
 export class UpdatePrimaryContactHandler implements ICommandHandler<
@@ -20,6 +27,8 @@ export class UpdatePrimaryContactHandler implements ICommandHandler<
   constructor(
     private readonly memberships: MembershipReader,
     private readonly companies: CompanyRepository,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: UpdatePrimaryContactCommand): Promise<void> {
@@ -33,6 +42,9 @@ export class UpdatePrimaryContactHandler implements ICommandHandler<
       throw new CompanyNotFoundError(command.companyId);
     }
     company.changePrimaryContact(ContactDetails.create(command.details));
-    await this.companies.save(company);
+    await this.uow.run(async () => {
+      await this.companies.save(company);
+      await this.events.publishTraced(new PrimaryContactChangedByMemberEvent(command.companyId));
+    });
   }
 }

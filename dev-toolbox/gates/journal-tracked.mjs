@@ -22,9 +22,9 @@
  * — mais le laissez-passer (`WriteTicket`), lui, l'oblige, et il est tenu par le
  * compilateur.
  *
- * **Les actes du staff sur un compte client** (`src/b2b/account/**`) : tout
- * handler dont le nom dit qu'un agent agit sur le dossier de quelqu'un d'autre
- * doit APPELER `publishTraced` — pas seulement injecter quelque chose. La
+ * **Les comptes clients** (`src/b2b/account/**`) : tout handler — acte du
+ * staff ou geste du client sur son propre compte, depuis le 2026-09-19 — doit
+ * APPELER `publishTraced` — pas seulement injecter quelque chose. La
  * discipline y est différente parce que le besoin l'est : les faits des comptes
  * sont des actes nommés que l'événement porte déjà, là où ceux du référentiel
  * portent des diffs que seul le handler sait calculer. Le handler garde donc sa
@@ -32,10 +32,10 @@
  *
  * Et parce qu'une trace hors transaction n'engage à rien, ces handlers doivent
  * aussi injecter `UnitOfWork` — sauf à déclarer `@hors-transaction <raison>`,
- * qui se grep comme le reste. Un seul le fait aujourd'hui, et pour une raison
- * qui tient : il range d'abord un fichier au stockage objet, et enfermer cet
- * aller-retour réseau dans une transaction de base serait pire que le trou qu'on
- * refermerait.
+ * qui se grep comme le reste. Ceux qui le font appellent un tiers d'abord — le
+ * stockage objet, le fournisseur d'identité — et enfermer cet aller-retour
+ * réseau dans une transaction de base serait pire que le trou qu'on
+ * refermerait : le fait s'écrit après la réussite du tiers.
  *
  * ## L'échappatoire, et pourquoi elle est visible
  *
@@ -57,6 +57,9 @@
  * `@CommandHandler` doit APPELER `publishTraced` sous `UnitOfWork` — cf.
  * `CATALOG_ZONE` plus bas.
  *
+ * **Les paniers récurrents** (`b2b/subscriptions/**`, depuis le 2026-09-19) :
+ * même discipline — cf. `SUBSCRIPTIONS_ZONE` plus bas.
+ *
  * Usage : `pnpm lint:journal-tracked` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -67,29 +70,21 @@ const SRC = join(ROOT, "apps", "lfd-api", "src");
 const SKIP_DIRS = new Set(["__tests__", "node_modules", "dist", "client"]);
 
 /**
- * Dans `b2b/account`, les handlers dont le NOM dit qu'un agent agit sur le
- * compte d'un tiers — et eux seuls, **pour l'instant**.
+ * **Les comptes clients** : TOUS les handlers de `b2b/account`, depuis le
+ * 2026-09-19 (lot 1 du plan du journal, tranche (c)).
  *
- * ⚠️ Cette liste s'appuyait sur une règle : « le client qui modifie son adresse
- * n'engage que lui », donc ses gestes restaient hors journal. **La règle est
- * tombée le 2026-09-19** (Hugo : « tout doit être journalisé », plan
- * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) :
- * un geste du client sur son propre compte journalise aussi — sans ses
- * coordonnées. Le RIB client est tenu depuis ce jour par la zone `payments`.
+ * La zone a été bornée, jusque-là, aux handlers dont le NOM disait qu'un agent
+ * agit sur le compte d'un tiers (`…ByStaff`, plus cinq gestes nommés en clair).
+ * Ce filtre reposait sur une règle — « le client qui modifie son adresse
+ * n'engage que lui » — que Hugo a levée ce jour-là (« tout doit être
+ * journalisé », plan `documentation/journalisation/plan-journal-d-activite.md`
+ * §3, décision 1) : un geste du client sur son propre compte journalise aussi,
+ * **sans ses coordonnées**, sous le même nom que le geste staff jumeau.
  *
- * Le filtre par nom reste donc la FRONTIÈRE DE LA ZONE, pas une dispense : les
- * gestes du client dans `b2b/account` (profil, adresses, membres) entrent au
- * journal avec la tranche (c) du lot 1, et c'est alors cette zone qui passera
- * à « tous les handlers », comme `order-waivers` et `payments`. Jusque-là, un
- * handler client de `b2b/account` qui ne journalise pas est une dette connue,
- * pas un choix.
- *
- * La convention `…ByStaff` porte la distinction dans les commandes ; les cinq
- * gestes qui n'ont pas de jumeau client (certifier, activer, changer le statut,
- * accorder un délai) sont nommés en clair.
+ * Sans tri par nom, un handler neuf de ce dossier — client ou staff — ne peut
+ * plus y entrer sans journal : il journalise, ou il le déclare.
  */
-const STAFF_ACT =
-  /(ByStaffHandler|GrantTermsHandler|CertifyKbisHandler|RevokeKbisCertificationHandler|ChangeCompanyStatusHandler)$/;
+const ACCOUNT_ZONE = "account";
 
 /**
  * Les **réglages commerciaux** : ce qu'un client paie pour être livré, ce que
@@ -204,27 +199,27 @@ const MONEY_DELEGATES = new Map([
  */
 const CATALOG_ZONE = "catalog";
 
+/**
+ * **Les paniers récurrents** (lot 1 du plan du journal, tranche (c),
+ * 2026-09-19) : suspendre, reprendre, déroger à une échéance, supprimer. Tous
+ * des gestes du client, qui décident de ce qu'on fabriquera et facturera sans
+ * qu'une commande soit repassée.
+ */
+const SUBSCRIPTIONS_ZONE = "subscriptions";
+
 /** Ce qui ouvre l'unité de travail pour une délégation — sans journaliser pour elle. */
 const TRANSACTION_OPENERS = new Map([
   ["writeVoidingDraft", join("b2b", "payments", "application", "draft-mandate-voiding.ts")],
 ]);
 
-/**
- * La dette déclarée — **vide depuis le 2026-08-25**.
- *
- * Elle a compté quatorze handlers : ceux qui écrivaient déjà sans tracer le
- * jour où cette porte a été posée. Chacun demandait une décision propre — quel
- * fait nommer, quelle charge utile — et les traiter à la chaîne aurait produit
- * quatorze événements que personne n'aurait pensés. Ils ont été nommés un par
- * un ; la liste a fait ce pour quoi elle existait, elle a RÉTRÉCI jusqu'à
- * disparaître.
- *
- * On la garde vide plutôt que de la supprimer : c'est le mécanisme qui rend
- * une dette future visible et bornée, et le supprimer obligerait à le
- * réinventer sous pression, le jour où l'on voudra livrer un handler avant de
- * savoir ce qu'il affirme.
+/*
+ * Il n'y a plus de dette déclarée. La liste `BACKLOG` a compté quatorze
+ * handlers à la pose de la porte, vidée le 2026-08-25 ; elle a resservi le
+ * 2026-09-19 pour six gestes du client dont le nom de fait n'était pas tranché,
+ * vidée le jour même. Gardée vide, elle n'était plus qu'un mécanisme sans
+ * objet : retirée ce jour-là. Un handler qu'on voudrait livrer avant de savoir
+ * ce qu'il affirme se déclare `@sans-journal <raison>`, qui se relit.
  */
-const BACKLOG = new Set([]);
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
@@ -261,10 +256,8 @@ function constructorParams(source, from) {
 }
 
 const offenders = [];
-const settled = [];
 let checked = 0;
 let excused = 0;
-let owed = 0;
 
 /** Le corps d'un handler : de son décorateur au décorateur suivant. */
 function handlerBody(source, index) {
@@ -290,14 +283,6 @@ function auditPim(source, index, params, handler) {
     ].filter(Boolean),
     handler,
   };
-}
-
-/** Zone 2 — les actes du staff : APPELER `publishTraced`, dans une transaction. */
-function auditStaffAct(source, index, params, handler) {
-  if (!STAFF_ACT.test(handler)) {
-    return null;
-  }
-  return auditTraced(source, index, params, handler);
 }
 
 /** La vérification commune : le fait est inscrit, et il l'est dans une transaction. */
@@ -372,7 +357,10 @@ function auditMoney(source, index, params, handler) {
 const ZONES = [
   { root: join(SRC, STAFF_ZONE), audit: auditStaff },
   { root: join(SRC, "pim"), audit: auditPim },
-  { root: join(SRC, "b2b", "account"), audit: auditStaffAct },
+  {
+    root: join(SRC, "b2b", ACCOUNT_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
   ...SETTINGS_ZONES.map((zone) => ({
     root: join(SRC, "b2b", zone),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
@@ -388,6 +376,10 @@ const ZONES = [
   ...MONEY_ZONES.map((zone) => ({ root: join(SRC, "b2b", zone), audit: auditMoney })),
   {
     root: join(SRC, "b2b", CATALOG_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
+  {
+    root: join(SRC, "b2b", SUBSCRIPTIONS_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
@@ -410,13 +402,7 @@ for (const zone of ZONES) {
         const head = source.slice(Math.max(0, index - 1200), index);
         if (head.includes("@sans-journal")) {
           excused += 1;
-        } else if (verdict.traced) {
-          if (BACKLOG.has(handler)) {
-            settled.push(handler);
-          }
-        } else if (BACKLOG.has(handler)) {
-          owed += 1;
-        } else {
+        } else if (!verdict.traced) {
           offenders.push({ file: relative(ROOT, file), handler, missing: verdict.missing });
         }
       }
@@ -436,8 +422,8 @@ if (offenders.length > 0) {
       "les tests passent, l'écran fonctionne. Ça se découvre le jour où l'on\n" +
       "demande « qui a changé ça » — et ce jour-là, le blanc ne se comble plus.\n\n" +
       "Soit il journalise — `PimJournal` + `UnitOfWork` au référentiel,\n" +
-      "`publishTraced` sous unité de travail pour un acte du staff ou un\n" +
-      "geste d'argent (ou une séquence de `MONEY_DELEGATES`),\n" +
+      "`publishTraced` sous unité de travail pour un acte nommé (compte,\n" +
+      "panier, catalogue, argent — ou une séquence de `MONEY_DELEGATES`),\n" +
       "`journal.append` sous unité de travail dans l'équipe — soit il\n" +
       "déclare `@sans-journal <raison>` dans son commentaire : visible,\n" +
       "motivée, relisible.\n",
@@ -445,21 +431,7 @@ if (offenders.length > 0) {
   process.exit(1);
 }
 
-if (settled.length > 0) {
-  console.error("\n✖ Handlers tracés mais toujours inscrits à la dette :\n");
-  for (const handler of settled) {
-    console.error(`  ${handler}`);
-  }
-  console.error(
-    "\nRetire-les de `BACKLOG` dans dev-toolbox/gates/journal-tracked.mjs.\n" +
-      "Une dette qui ne rétrécit pas cesse d'être une dette : elle devient un\n" +
-      "décor, et le chiffre qu'elle affiche ne veut plus rien dire.\n",
-  );
-  process.exit(1);
-}
-
 console.log(
-  `✓ journal-tracked : ${checked - owed - excused}/${checked} handler(s) écrivant sont tracés.` +
-    (owed > 0 ? `\n  Dette : ${owed} restants — comptés, pas ignorés.` : "") +
+  `✓ journal-tracked : ${checked - excused}/${checked} handler(s) écrivant sont tracés.` +
     (excused > 0 ? `\n  Dispensés : ${excused}, motif déclaré.` : ""),
 );

@@ -17,8 +17,13 @@
  * opposable — sinon « qui a accordé ce délai de paiement » finit par n'avoir
  * aucune réponse le jour où on la pose.
  *
- * **Les faits du parcours** (`declared`, `step_reached`) décrivent ce que le
- * client fait chez lui. Ils restent best-effort, via leurs abonnés : les perdre
+ * **Les gestes du client sur son propre compte** (adresses, contacts, identité,
+ * profil) partent AUSSI par `publishTraced`, sous les mêmes noms, depuis le
+ * 2026-09-19 (plan `documentation/journalisation/plan-journal-d-activite.md`
+ * §3, décision 1) — sans coordonnées (`member-acts.event.ts`).
+ *
+ * **Les faits du parcours** (`declared`, `step_reached`) décrivent l'entonnoir
+ * d'inscription. Ils restent best-effort, via leurs abonnés : les perdre
  * dégrade une statistique d'entonnoir, bloquer une inscription sur un hoquet
  * d'`INSERT` dégraderait le service.
  */
@@ -33,8 +38,16 @@ export const ACCOUNT_FACTS = {
   /** Vérification **retirée** — et accès coupé si le compte était actif. */
   kbisRevoked: "company.kbis_revoked",
 
-  /** Un agent dépose l'extrait à la place du client. */
-  kbisUploadedByStaff: "company.kbis_uploaded_by_staff",
+  /**
+   * L'extrait KBIS est déposé — par le client ou par un agent à sa place.
+   *
+   * S'écrivait `company.kbis_uploaded_by_staff` jusqu'au 2026-09-19 : le fait
+   * nommait son auteur, alors que la ligne le porte déjà. Un geste, un nom,
+   * auteur quelconque (lot 1 du plan du journal, tranche (c)). Les lignes
+   * écrites avant gardent l'ancien nom — aucune migration : ni contrat ni écran
+   * ne le lisait (vérifié le 2026-09-19).
+   */
+  kbisUploaded: "company.kbis_uploaded",
   /** Un agent corrige l'identité légale ou commerciale. */
   identityCorrected: "company.identity_corrected",
   /** Un agent accorde (ou retire) des délais de paiement. */
@@ -49,15 +62,21 @@ export const ACCOUNT_FACTS = {
   /** Où l'on livre par défaut — donc où partira la prochaine commande. */
   defaultDeliverySet: "company.default_delivery_set",
   /**
-   * Un agent a modifié la procédure de livraison d'une adresse — ajouté,
+   * La procédure de livraison d'une adresse a été modifiée — ajouté,
    * refait, supprimé ou réordonné une étape. Un livreur envoyé à la mauvaise
    * porte se remonte à qui a écrit la consigne. Préfixé `company.` comme les
    * autres : le journal range un fait dans son module PAR SON PRÉFIXE
    * (`growth/domain/activity-module.ts`), et un `delivery_procedure.` n'aurait
    * appartenu à aucun — invisible dans le filtre « comptes » (vérifié le
    * 2026-09-15).
+   *
+   * S'écrivait `company.delivery_procedure_edited_by_staff` jusqu'au
+   * 2026-09-19, quand seul le staff était journalisé : le client écrit
+   * désormais le même fait, l'auteur de la ligne les distingue. Les lignes
+   * écrites avant gardent l'ancien nom — aucune migration : ni contrat ni écran
+   * ne le lisait (vérifié le 2026-09-19).
    */
-  deliveryProcedureEdited: "company.delivery_procedure_edited_by_staff",
+  deliveryProcedureEdited: "company.delivery_procedure_edited",
   /** Retrait ou livraison par défaut, réglé par un agent. */
   fulfillmentPreferenceSet: "company.fulfillment_preference_set",
   contactAdded: "company.contact_added",
@@ -65,4 +84,19 @@ export const ACCOUNT_FACTS = {
   contactRemoved: "company.contact_removed",
   /** L'interlocuteur principal change — c'est lui qui reçoit les courriers. */
   primaryContactChanged: "company.primary_contact_changed",
+  /**
+   * Le client édite l'identité de sa société (enseigne, TVA) et COMPLÈTE
+   * l'identité légale — distinct de `identity_corrected`, que seul le staff
+   * pose parce qu'il réécrit un SIRET.
+   */
+  identityEdited: "company.identity_edited",
+  /** Le client demande un délai de paiement (ou retire sa demande). */
+  paymentTermRequested: "company.payment_term_requested",
+  /** Un accès à l'espace de la société est ouvert à une personne. */
+  accessOpened: "company.access_opened",
+
+  /** La personne modifie son profil — les champs, pas leurs valeurs. */
+  profileUpdated: "user.profile_updated",
+  /** Un agent fabrique un lien de mot de passe à remettre — le geste, pas le lien. */
+  passwordLinkIssued: "user.password_link_issued",
 } as const;

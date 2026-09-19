@@ -1,5 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { CompanyAccessOpenedEvent } from "../../domain/events/person-acts.event.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
@@ -25,6 +28,12 @@ export interface HolderAttached {
  * Un échec du fournisseur **remonte**, contrairement à l'ouverture de compte :
  * là-bas la société valait d'être gardée même sans accès, ici l'accès EST
  * l'appel. L'avaler annoncerait un rattachement qui n'a pas eu lieu.
+ *
+ * `@hors-transaction` l'ouverture d'accès passe par le fournisseur d'identité
+ * et le mailer, hors de toute transaction. Le fait `company.access_opened`
+ * (rôle `owner`) part après elle, dans la transaction qui range le détenteur
+ * sur la fiche (depuis le 2026-09-19) : les deux tombent ensemble, et une
+ * reprise repasse par le même chemin que ci-dessus.
  */
 @CommandHandler(AttachAccountHolderCommand)
 export class AttachAccountHolderHandler implements ICommandHandler<
@@ -34,6 +43,8 @@ export class AttachAccountHolderHandler implements ICommandHandler<
   constructor(
     private readonly companies: CompanyRepository,
     private readonly access: AccountAccessGranter,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: AttachAccountHolderCommand): Promise<HolderAttached> {
@@ -61,7 +72,12 @@ export class AttachAccountHolderHandler implements ICommandHandler<
       invitedBy: command.invitedBy,
     });
 
-    await this.companies.save(company);
+    await this.uow.run(async () => {
+      await this.companies.save(company);
+      await this.events.publishTraced(
+        new CompanyAccessOpenedEvent(command.companyId, granted.userId, "owner"),
+      );
+    });
     return { mailSent: granted.mailSent };
   }
 }

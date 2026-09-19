@@ -1,3 +1,5 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { Company } from "../../../domain/entities/company.js";
 import {
   CompanyAlreadyHasOwnerError,
@@ -84,7 +86,16 @@ function doubles(
   const access = new FakeAccess(
     options.access ?? { userId: "user_1", outcome: "identity_created", mailSent: true },
   );
-  return { handler: new AttachAccountHolderHandler(companies, access), access, saved };
+  return {
+    handler: new AttachAccountHolderHandler(
+      companies,
+      access,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+    ),
+    access,
+    saved,
+  };
 }
 
 function command(): AttachAccountHolderCommand {

@@ -134,6 +134,12 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
    */
   it("une photo au-delà du backstop multipart est coupée, en ajout comme en révision", async () => {
     const stepId = await addStep("client", "Portail");
+    // L'ajout de mise en place écrit son fait depuis le 2026-09-19 (le client
+    // est journalisé aussi) : ce qu'on vérifie, c'est que les REFUS n'en
+    // ajoutent aucun.
+    const facts = { type: "company.delivery_procedure_edited" };
+    await ctx.drain();
+    const before = await ctx.prisma.activityEvent.count({ where: facts });
     const refusals = [
       await postPhoto(side, OVER_UPLOAD_LIMIT).expect(413),
       await agentOf(side)
@@ -151,8 +157,7 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
     );
     expect(await storageKeys()).toEqual([]);
     await ctx.drain();
-    const facts = { type: "company.delivery_procedure_edited_by_staff" };
-    expect(await ctx.prisma.activityEvent.count({ where: facts })).toBe(0);
+    expect(await ctx.prisma.activityEvent.count({ where: facts })).toBe(before);
   });
 
   it("une photo vide est refusée (400)", async () => {
@@ -289,7 +294,7 @@ describe("le journal des gestes staff", () => {
 
     await ctx.drain();
     const journal = await ctx.prisma.activityEvent.findMany({
-      where: { subjectId: companyId, type: "company.delivery_procedure_edited_by_staff" },
+      where: { subjectId: companyId, type: "company.delivery_procedure_edited" },
       orderBy: { occurredAt: "asc" },
       select: { payload: true },
     });

@@ -19,6 +19,13 @@ import { CreateCompanyCommand } from "./create-company.command.js";
  *
  * Retourne l'**identifiant** et rien d'autre : une commande ne renvoie pas de
  * modèle de lecture, le client relit son compte ensuite (cf. CLAUDE.md §4).
+ *
+ * `@sans-journal` le fait existe déjà, et il n'a qu'un seul auteur :
+ * `company.declared` (`via: "self"`), écrit par son abonné — même motif que
+ * `CreateCompanyByStaffHandler`. Le tracer ici en ferait un fait à deux
+ * écrivains, que les lecteurs d'entonnoir compteraient deux fois.
+ * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
+ * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
  */
 @CommandHandler(CreateCompanyCommand)
 export class CreateCompanyHandler implements ICommandHandler<CreateCompanyCommand, string> {

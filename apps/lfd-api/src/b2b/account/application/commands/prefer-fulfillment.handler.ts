@@ -1,5 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { FulfillmentPreferenceSetByMemberEvent } from "../../domain/events/member-acts.event.js";
 import {
   CompanyAddressNotFoundError,
   CompanyNotFoundError,
@@ -19,6 +22,10 @@ import { PreferFulfillmentCommand } from "./company-settings-commands.js";
  * partagent la même règle de rattachement — l'adresse désignée doit être celle
  * de cette société — parce que c'est un invariant du modèle, pas une politique
  * d'écran.
+ *
+ * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
+ * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
+ * sous le nom du geste staff jumeau, sans coordonnée.
  */
 @CommandHandler(PreferFulfillmentCommand)
 export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillmentCommand, void> {
@@ -26,6 +33,8 @@ export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillme
     private readonly memberships: MembershipReader,
     private readonly companies: CompanyRepository,
     private readonly addresses: CompanyAddressReader,
+    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: PreferFulfillmentCommand): Promise<void> {
@@ -38,7 +47,17 @@ export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillme
     }
     await this.ensureOwnDeliveryAddress(command);
     company.preferFulfillment(command.preference);
-    await this.companies.save(company);
+    await this.uow.run(async () => {
+      await this.companies.save(company);
+      await this.events.publishTraced(
+        new FulfillmentPreferenceSetByMemberEvent(command.companyId, {
+          method: command.preference.method,
+          pickupAddressId: command.preference.pickupAddressId,
+          deliveryAddressId: command.preference.deliveryAddressId,
+          signatureRequired: command.preference.signatureRequired,
+        }),
+      );
+    });
   }
 
   /** L'adresse préférée doit appartenir à la société — ou ne pas être désignée. */

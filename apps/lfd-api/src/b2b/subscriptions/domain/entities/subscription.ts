@@ -82,6 +82,23 @@ export interface SubscriptionState {
   readonly overrides: readonly PersistedOverride[];
 }
 
+/**
+ * Ce qu'un panier **décide** : la cadence, la fenêtre, l'acheminement, les
+ * lignes. Ni l'adresse de livraison — une coordonnée postale —, ni la note —
+ * du texte libre, qui peut en porter une : c'est la forme que le journal en
+ * garde, et il se relit largement et longtemps.
+ */
+export interface SubscriptionDecision {
+  readonly recurrence: Recurrence;
+  readonly status: SubscriptionStatus;
+  /** `AAAA-MM-JJ` : un jour, jamais un instant. */
+  readonly startDate: string;
+  readonly endDate: string | null;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly pickupAddressId: string | null;
+  readonly lines: readonly PersistedLine[];
+}
+
 /** Ce qu'une dérogation reçoit du cas d'usage (lignes déjà en value-objects). */
 export interface OverrideInput {
   readonly skipped: boolean;
@@ -177,21 +194,46 @@ export class Subscription {
   /**
    * Déroge à une échéance précise. La date doit tomber **dans la fenêtre** de
    * l'abonnement. Sautée ⇒ aucune ligne ; sinon au moins une ligne (sinon ce
-   * n'est ni une modification ni un saut).
+   * n'est ni une modification ni un saut). Rend la dérogation posée.
    */
-  overrideOccurrence(date: IsoDate, input: OverrideInput): void {
+  overrideOccurrence(date: IsoDate, input: OverrideInput): OccurrenceOverride {
     if (date.isBefore(this.startDate) || (this.endDate !== null && date.isAfter(this.endDate))) {
       throw new OccurrenceOutsideWindowError(date.toString());
     }
     if (!input.skipped && input.lines.length === 0) {
       throw new EmptyOverrideError();
     }
-    this.overrides.set(date.toString(), {
+    const override: OccurrenceOverride = {
       date,
       skipped: input.skipped,
       lines: input.skipped ? [] : input.lines,
       note: input.note,
-    });
+    };
+    this.overrides.set(date.toString(), override);
+    return override;
+  }
+
+  /** L'état du panier : actif ou en pause. */
+  get currentStatus(): SubscriptionStatus {
+    return this.status;
+  }
+
+  /** La dérogation posée sur cette échéance, ou `null` s'il n'y en a pas. */
+  overrideOn(date: IsoDate): OccurrenceOverride | null {
+    return this.overrides.get(date.toString()) ?? null;
+  }
+
+  /** Ce que le panier décide, sans coordonnée ni texte libre (cf. `SubscriptionDecision`). */
+  decision(): SubscriptionDecision {
+    return {
+      recurrence: this.recurrence,
+      status: this.status,
+      startDate: this.startDate.toString(),
+      endDate: this.endDate === null ? null : this.endDate.toString(),
+      fulfillmentMethod: this.routing.method,
+      pickupAddressId: this.routing.pickupAddressId,
+      lines: this.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+    };
   }
 
   /** Sérialise l'agrégat pour l'adaptateur de persistance (aucun type Prisma). */

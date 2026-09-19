@@ -17,6 +17,12 @@ import { CreateSubscriptionCommand } from "./create-subscription.command.js";
  * adresse, retrait ⇒ pas d'adresse), fin postérieure au début — puis on le confie
  * au port. Aucun prix ici : le gabarit ne facture rien tant que le planificateur
  * ne le déclenche pas.
+ *
+ * `@sans-journal` le fait existe déjà, et il n'a qu'un seul auteur :
+ * `subscription.created`, écrit par l'abonné de la croissance sur la PERSONNE,
+ * que le score des leads lit sous cette forme — même motif que
+ * `CreateCompanyHandler`. Il reste best-effort, comme les faits de commande
+ * (plan du journal, lot 1 ; décidé le 2026-09-19).
  */
 @CommandHandler(CreateSubscriptionCommand)
 export class CreateSubscriptionHandler implements ICommandHandler<

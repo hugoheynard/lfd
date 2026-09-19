@@ -15,6 +15,12 @@ import { RequestActivationSupportCommand } from "./request-activation-support.co
  * Le mur ne s'applique que si le client **désigne** une société : il faut en être
  * membre. Sans société, la demande porte sur la personne — c'est le cas d'un
  * prospect qui n'a rien encore déclaré, et c'est précisément qui on veut capter.
+ *
+ * `@sans-journal` le fait existe déjà, et il n'a qu'un seul auteur :
+ * `support.requested`, écrit par son abonné (`on-support-activity`) avec le
+ * canal demandé, jamais la coordonnée.
+ * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
+ * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
  */
 @CommandHandler(RequestActivationSupportCommand)
 export class RequestActivationSupportHandler implements ICommandHandler<

@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { PasswordLinkIssuedEvent } from "../../domain/events/person-acts.event.js";
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
@@ -26,15 +28,21 @@ import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
  * plus tard rendrait un lien mort, et le stocker ferait dormir en base de quoi
  * prendre un compte. Chaque remise en produit un neuf.
  *
- * ⚠️ **Le lien ne va nulle part ailleurs que dans la réponse.** Pas de journal,
- * pas de log : le journal d'activité est lu par plus de monde que celui qui a
+ * ⚠️ **Le lien ne va nulle part ailleurs que dans la réponse.** Pas au journal,
+ * pas au log : le journal d'activité est lu par plus de monde que celui qui a
  * demandé le lien, et un porteur de droits qui traîne dans une ligne de log est
- * un porteur de droits perdu.
+ * un porteur de droits perdu. Le **geste**, lui, y entre depuis le 2026-09-19
+ * (`user.password_link_issued`, charge vide) : « qui a remis de quoi ouvrir ce
+ * compte » doit avoir une réponse.
  *
  * Le statut est revalidé par le reader (`subjectOf` ne rend que les `invited`) :
  * entre l'affichage de la file et le clic, la personne a pu poser son mot de
  * passe, et lui fabriquer un lien reviendrait alors à offrir de quoi le
  * réinitialiser sans qu'elle ait rien demandé.
+ *
+ * `@hors-transaction` le lien est fabriqué chez le fournisseur d'identité, et
+ * rien ne s'écrit chez nous : le fait part après, seul. Un journal en panne
+ * échoue la requête — le lien n'est pas rendu, donc pas remis.
  */
 @CommandHandler(IssuePasswordLinkCommand)
 export class IssuePasswordLinkHandler implements ICommandHandler<
@@ -45,6 +53,7 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
     private readonly pending: PendingAccessReader,
     private readonly identity: CustomerIdentityPort,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: IssuePasswordLinkCommand): Promise<IssuedPasswordLink> {
@@ -53,6 +62,7 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
       throw new PendingAccessNotFoundError(command.userId);
     }
     const url = await this.identity.issuePasswordLink(subject);
+    await this.events.publishTraced(new PasswordLinkIssuedEvent(command.userId));
     // Calculée ici et non devinée par l'écran : c'est le serveur qui demande le
     // TTL au fournisseur, lui seul sait combien de temps le ticket ouvre.
     return { url, expiresAt: expiryFrom(this.clock.now()) };

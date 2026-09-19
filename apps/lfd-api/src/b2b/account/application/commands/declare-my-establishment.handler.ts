@@ -35,6 +35,13 @@ import { DeclareMyEstablishmentCommand } from "./declare-my-establishment.comman
  * Journal : même traitement que `CreateCompanyHandler`, l'autre déclaration par
  * le client lui-même — un `CompanyDeclaredEvent` best-effort, publié APRÈS le
  * commit pour qu'aucun abonné ne lise une société qui n'existe pas encore.
+ *
+ * `@sans-journal` le fait existe déjà : le même `company.declared` que
+ * `CreateCompanyHandler`, pour le même motif. Le profil révisé dans la même
+ * transaction n'a pas de fait propre : il est la déclaration elle-même, et
+ * l'adresse — seule coordonnée qui compte chez le fournisseur — n'y bouge pas.
+ * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
+ * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
  */
 @CommandHandler(DeclareMyEstablishmentCommand)
 export class DeclareMyEstablishmentHandler implements ICommandHandler<

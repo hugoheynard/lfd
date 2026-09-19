@@ -14,7 +14,7 @@ import { reorderDeliverySteps, type ProcedureEditingPorts } from "./delivery-pro
 /**
  * Range les étapes dans un nouvel ordre, **par un agent** — sans mur membership, l'auth staff garde la route.
  *
- * Le fait `company.delivery_procedure_edited_by_staff` part **dans la transaction** de
+ * Le fait `company.delivery_procedure_edited` part **dans la transaction** de
  * l'écriture : une panne de journal annule le geste. Un livreur envoyé à la
  * mauvaise porte se remonte à qui a écrit la consigne.
  */

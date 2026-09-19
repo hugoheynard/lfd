@@ -457,7 +457,7 @@ describe("certification du KBIS", () => {
     // Le DÉPÔT par un agent est tracé lui aussi : c'est un acte du staff sur le
     // dossier d'un tiers, au même titre que la vérification qui suit.
     expect(journal.map((entry) => entry.type)).toEqual([
-      "company.kbis_uploaded_by_staff",
+      "company.kbis_uploaded",
       "company.kbis_certified",
       "company.kbis_revoked",
     ]);

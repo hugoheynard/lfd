@@ -1,5 +1,6 @@
 {
   "test/account-alerts.e2e-spec.ts": 13239,
+  "test/account-journal.e2e-spec.ts": 5472,
   "test/account.e2e-spec.ts": 8953,
   "test/accounting-legal-entity.e2e-spec.ts": 9736,
   "test/activations.e2e-spec.ts": 15226,
@@ -113,6 +114,7 @@
   "test/staff-notification-authors.e2e-spec.ts": 5200,
   "test/staff-roles.e2e-spec.ts": 12533,
   "test/staff-users.e2e-spec.ts": 11560,
+  "test/subscriptions-journal.e2e-spec.ts": 5408,
   "test/subscriptions.e2e-spec.ts": 8669,
   "test/support-requests.e2e-spec.ts": 10663
 }

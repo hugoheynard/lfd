@@ -167,6 +167,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
       membershipReturning("owner"),
       addressesRecorder(recorder),
       events(),
+      new DirectUnitOfWork(),
     ).execute(new SaveBillingAddressCommand("u1", "c1", BILLING));
     expect(recorder.writes).toEqual(["billing"]);
   });
@@ -180,6 +181,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
         events(),
         new FixedIdGenerator("addr"),
         clock(),
+        new DirectUnitOfWork(),
       ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
@@ -191,6 +193,8 @@ describe("handlers d'adresses — les murs member / admin", () => {
       new UpdateDeliveryAddressHandler(
         membershipReturning("orders"),
         addressesRecorder(recorder),
+        events(),
+        new DirectUnitOfWork(),
       ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
     expect(recorder.writes).toEqual([]);
@@ -207,18 +211,23 @@ describe("handlers d'adresses — les murs member / admin", () => {
       events(),
       new FixedIdGenerator("addr"),
       clock(),
+      new DirectUnitOfWork(),
     ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
-    await new UpdateDeliveryAddressHandler(admin, repo).execute(
+    await new UpdateDeliveryAddressHandler(admin, repo, events(), new DirectUnitOfWork()).execute(
       new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY),
     );
-    await new SetDefaultDeliveryAddressHandler(admin, repo).execute(
-      new SetDefaultDeliveryAddressCommand("u1", "c1", "a1"),
-    );
+    await new SetDefaultDeliveryAddressHandler(
+      admin,
+      repo,
+      events(),
+      new DirectUnitOfWork(),
+    ).execute(new SetDefaultDeliveryAddressCommand("u1", "c1", "a1"));
     await new RemoveDeliveryAddressHandler(
       admin,
       repo,
       companiesReturningSample(),
       clock(),
+      events(),
       new DirectUnitOfWork(),
     ).execute(new RemoveDeliveryAddressCommand("u1", "c1", "a1"));
 

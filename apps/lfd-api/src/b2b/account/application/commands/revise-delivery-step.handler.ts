@@ -1,9 +1,10 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { NOTHING_TO_TRACE } from "../../../shared/photo-cards/application/photo-card-usage.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
+import { DeliveryProcedureEditedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { DeliveryProcedureLock } from "../../domain/ports/delivery-procedure.lock.js";
 import { DeliveryProcedureRepository } from "../../domain/ports/delivery-procedure.repository.js";
@@ -17,8 +18,10 @@ import { reviseDeliveryStep, type ProcedureEditingPorts } from "./delivery-proce
  *
  * Le handler ne porte que le mur : la séquence (valider, ranger, écrire, puis
  * nettoyer le stockage) est celle de `delivery-procedure-editing.ts`, partagée
- * avec la porte staff. Rien n'est inscrit au journal : le gestionnaire agit sur
- * le compte de sa propre société.
+ * avec la porte staff. Le fait
+ * `company.delivery_procedure_edited` part **dans la transaction** de
+ * l'écriture, sous le même nom que chez le staff (depuis le 2026-09-19 : un
+ * geste, un nom, l'auteur de la ligne les distingue).
  */
 @CommandHandler(ReviseDeliveryStepCommand)
 export class ReviseDeliveryStepHandler implements ICommandHandler<ReviseDeliveryStepCommand, void> {
@@ -30,6 +33,7 @@ export class ReviseDeliveryStepHandler implements ICommandHandler<ReviseDelivery
     private readonly store: DocumentStore,
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: ReviseDeliveryStepCommand): Promise<void> {
@@ -45,7 +49,14 @@ export class ReviseDeliveryStepHandler implements ICommandHandler<ReviseDelivery
         removePhoto: command.removePhoto,
         photo: command.photo,
       },
-      NOTHING_TO_TRACE,
+      () =>
+        this.events.publishTraced(
+          new DeliveryProcedureEditedByMemberEvent(
+            command.companyId,
+            command.addressId,
+            "step_revised",
+          ),
+        ),
     );
   }
 

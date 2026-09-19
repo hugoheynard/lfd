@@ -28,7 +28,7 @@ import { ReviseDeliveryStepByStaffHandler } from "../revise-delivery-step-by-sta
  * **Les gestes d'un agent sur la procédure de livraison d'un client.**
  *
  * Ce qu'on tient ici : aucun mur membership (l'agent n'est membre de rien), un
- * fait `company.delivery_procedure_edited_by_staff` par geste, qui nomme le geste et
+ * fait `company.delivery_procedure_edited` par geste, qui nomme le geste et
  * part DANS la transaction — et, s'il ne part pas, le geste n'a pas eu lieu.
  */
 
