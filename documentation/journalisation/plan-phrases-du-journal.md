@@ -4,7 +4,7 @@
 > toute phrase du journal devrait être humainement compréhensible ». Il prend
 > la section « Les phrases » de [`todo-journal-activite.md`](todo-journal-activite.md).
 >
-> État : 📝 **plan, rien n'est bâti.** Le fonctionnement actuel du journal est
+> État : 🚧 **plan validé par Hugo le 2026-09-19 ; lot A en cours.** Le fonctionnement actuel du journal est
 > dans [`architecture-journalisation.md`](architecture-journalisation.md).
 
 ## 0. Ce qu'on veut, en une phrase par exigence
@@ -192,11 +192,10 @@ ne manque rien.
   les specs des trois écrans, le build AOT, et un passage à l'écran sur un
   jeu de faits de chaque famille.
 
-## 6. Questions à Hugo
+## 6. Décisions de Hugo (2026-09-19)
 
-1. **D2** — en production, un fait mal décrit s'écrit quand même, avec une
-   erreur au journal applicatif. D'accord pour ne jamais bloquer un geste
-   pour un défaut de description ?
-2. **D5** — les lignes anciennes qui ne portent qu'un identifiant affichent
-   « une famille (identifiant …) » plutôt qu'un nom résolu aujourd'hui.
-   D'accord ?
+1. **D2 — oui** : en production, un fait mal décrit s'écrit quand même, avec
+   une erreur au journal applicatif ; jamais un geste bloqué pour un défaut
+   de description.
+2. **D5 — oui** : les lignes anciennes qui ne portent qu'un identifiant
+   affichent « une famille (identifiant …) », pas un nom résolu aujourd'hui.
