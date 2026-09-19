@@ -53,6 +53,10 @@
  * `publishTraced` sous `UnitOfWork`, ou déléguer à une séquence partagée qui
  * le fait — cf. `MONEY_ZONES` plus bas.
  *
+ * **Le catalogue B2B** (`b2b/catalog/**`, depuis le 2026-09-19) : tout
+ * `@CommandHandler` doit APPELER `publishTraced` sous `UnitOfWork` — cf.
+ * `CATALOG_ZONE` plus bas.
+ *
  * Usage : `pnpm lint:journal-tracked` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -190,6 +194,15 @@ const MONEY_DELEGATES = new Map([
   ["mintDraftMandate", join("b2b", "payments", "application", "mint-mandate-support.ts")],
   ["attachProofToDraft", join("b2b", "payments", "application", "mandate-proof-support.ts")],
 ]);
+
+/**
+ * **Le catalogue B2B** (lot 1 du plan du journal, tranche (b), 2026-09-19) :
+ * prix négocié, visibilité, mise en avant, validation d'une arrivée. Tous ses
+ * handlers, sans tri par nom — ce sont tous des gestes du staff sur ce qui est
+ * vendu, et à quel prix. Aucune délégation : chacun appelle `publishTraced`
+ * lui-même (vérifié le 2026-09-19, cinq handlers).
+ */
+const CATALOG_ZONE = "catalog";
 
 /** Ce qui ouvre l'unité de travail pour une délégation — sans journaliser pour elle. */
 const TRANSACTION_OPENERS = new Map([
@@ -373,6 +386,10 @@ const ZONES = [
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...MONEY_ZONES.map((zone) => ({ root: join(SRC, "b2b", zone), audit: auditMoney })),
+  {
+    root: join(SRC, "b2b", CATALOG_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
   {
     root: join(SRC, "b2b", "pricing"),
     audit: (source, index, params, handler) =>

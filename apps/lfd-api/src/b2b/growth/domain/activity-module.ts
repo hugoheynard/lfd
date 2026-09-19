@@ -21,6 +21,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "price_floor.",
     "volume_ladder.",
     "volume_commitment.",
+    // Le catalogue B2B — prix négocié, vitrine, arrivée validée — décide ce
+    // qu'on vend et à quel prix : le même métier que la tarification
+    // (2026-09-19).
+    "catalog_item.",
+    "catalog_delivery.",
   ],
   // Zones, points de retrait, heures limites et ouverture de la livraison
   // décident où et quand une commande part : ils se lisent avec les commandes,

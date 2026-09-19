@@ -22,6 +22,7 @@
   "test/catalog-delivery.e2e-spec.ts": 16238,
   "test/catalog-ingest-facts.e2e-spec.ts": 8314,
   "test/catalog-ingest.e2e-spec.ts": 18748,
+  "test/catalog-journal.e2e-spec.ts": 7754,
   "test/catalog-parity.e2e-spec.ts": 10141,
   "test/client-notes-wall.e2e-spec.ts": 8631,
   "test/client-notes.e2e-spec.ts": 14325,

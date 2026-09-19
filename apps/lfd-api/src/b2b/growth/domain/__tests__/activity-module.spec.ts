@@ -20,3 +20,18 @@ describe("moduleOf — les faits de l'argent", () => {
     expect(moduleOf("order_cutoff.created")).toBe("commandes");
   });
 });
+
+/** Les décisions de catalogue (tranche (b) du lot 1, 2026-09-19). */
+describe("moduleOf — les décisions de catalogue", () => {
+  it.each([
+    ["catalog_item.b2b_price_set", "commercial"],
+    ["catalog_item.b2b_price_cleared", "commercial"],
+    ["catalog_item.hidden", "commercial"],
+    ["catalog_item.shown", "commercial"],
+    ["catalog_item.featured", "commercial"],
+    ["catalog_item.unfeatured", "commercial"],
+    ["catalog_delivery.accepted", "commercial"],
+  ])("%s se range sous %s", (type, module) => {
+    expect(moduleOf(type)).toBe(module);
+  });
+});

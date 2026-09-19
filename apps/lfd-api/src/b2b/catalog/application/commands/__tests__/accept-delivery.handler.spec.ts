@@ -3,6 +3,9 @@ import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-syn
 
 import { IdGenerator } from "../../../../../platform/id/id-generator.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import type { JournaledEvent } from "../../../../../platform/journal/journal-fact.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import { CatalogDelivery } from "../../../domain/entities/catalog-delivery.js";
 import { CatalogItem, type PimFacts } from "../../../domain/entities/catalog-item.js";
@@ -57,6 +60,18 @@ interface Journal {
   readonly steps: string[];
   readonly applied: { skus: readonly string[] }[];
   readonly archived: CatalogVersion[];
+}
+
+/** Le publieur partagé, qui note aussi QUAND le fait part parmi les écritures. */
+class StepRecordingPublisher extends RecordingPublisher {
+  constructor(private readonly steps: string[]) {
+    super();
+  }
+
+  override publishTraced(event: JournaledEvent): Promise<void> {
+    this.steps.push("journal");
+    return super.publishTraced(event);
+  }
 }
 
 /**
@@ -136,6 +151,8 @@ async function build(options: {
     },
   };
 
+  const events = new StepRecordingPublisher(journal.steps);
+
   const moduleRef = await Test.createTestingModule({
     providers: [
       AcceptDeliveryHandler,
@@ -145,11 +162,12 @@ async function build(options: {
       { provide: IngestCatalogService, useValue: ingest },
       { provide: Clock, useValue: { now: () => new Date("2026-01-02T00:00:00.000Z") } },
       { provide: IdGenerator, useValue: { next: () => "cver_1" } },
+      { provide: DomainEventPublisher, useValue: events },
       { provide: UnitOfWork, useValue: { run: (work: () => Promise<unknown>) => work() } },
     ],
   }).compile();
 
-  return { handler: moduleRef.get(AcceptDeliveryHandler), journal, delivery };
+  return { handler: moduleRef.get(AcceptDeliveryHandler), journal, delivery, events };
 }
 
 describe("AcceptDeliveryHandler", () => {
@@ -157,12 +175,12 @@ describe("AcceptDeliveryHandler", () => {
    * 🔴 `close()` est le VERROU : il porte `status = 'pending'` dans son `where`.
    * Appliquer d'abord appliquerait deux fois avant de s'en apercevoir.
    */
-  it("clôt, PUIS applique, PUIS archive", async () => {
+  it("clôt, PUIS applique, PUIS archive, PUIS journalise", async () => {
     const { handler, journal } = await build({});
 
     await handler.execute(new AcceptDeliveryCommand("d_1", [], "staff_1"));
 
-    expect(journal.steps).toEqual(["close", "apply", "version"]);
+    expect(journal.steps).toEqual(["close", "apply", "version", "journal"]);
   });
 
   it("n'applique RIEN si la clôture est refusée", async () => {
@@ -291,5 +309,38 @@ describe("AcceptDeliveryHandler", () => {
       /échoué/,
     );
     expect(journal.archived).toEqual([]);
+  });
+
+  /**
+   * Le fait du journal (lot 1, tranche (b), 2026-09-19) : il relie l'arrivée,
+   * la révision et la version qu'elle a posée, écartés compris.
+   */
+  it("journalise la validation : arrivée, révision, version, écartés", async () => {
+    const { handler, events } = await build({ delivered: ["VIE-001"], mirror: ["VIE-001-1"] });
+
+    await handler.execute(new AcceptDeliveryCommand("d_1", ["VIE-001-1"], "staff_1"));
+
+    expect(events.traced.map((event) => event.journalFact())).toEqual([
+      {
+        type: "catalog_delivery.accepted",
+        subjectType: "catalog_delivery",
+        subjectId: "d_1",
+        payload: {
+          deliveryId: "d_1",
+          revisionId: "rev_1",
+          versionId: "cver_1",
+          excludedSkus: ["VIE-001-1"],
+        },
+      },
+    ]);
+  });
+
+  it("n'écrit aucun fait quand la clôture est refusée", async () => {
+    const { handler, events } = await build({ closeFails: true });
+
+    await expect(
+      handler.execute(new AcceptDeliveryCommand("d_1", [], "staff_1")),
+    ).rejects.toBeInstanceOf(DeliveryAlreadyClosedError);
+    expect(events.traced).toHaveLength(0);
   });
 });
