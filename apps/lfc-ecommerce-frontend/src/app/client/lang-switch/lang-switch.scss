@@ -55,24 +55,42 @@
    condition était le client reconnu — un proxy, et il s'est désaccordé de ce
    qu'il représentait dès que la boutique s'est ouverte aux visiteurs.
 
-   Au-delà du pli (900 px, celui de la barre), les segments reviennent — sauf
-   si `compact` les refuse encore, c'est-à-dire quand la barre d'un client
-   reconnu porte déjà son menu. */
+   🔴 AU-DELÀ DU PLI, LES TROIS SEGMENTS, SANS CONDITION (Hugo, 2026-09-20 :
+   « en desktop le switch de langue devrait être complet »).
+
+   Ils étaient encore refusés par une entrée `compact`, que le shell branchait
+   sur `chrome.menu()` — « la barre d'un client reconnu porte déjà son menu,
+   plus la place pour trois segments ». Cette place existe : la sous-barre est
+   partie, ses destinations sont dans le popover d'identité, et la rangée s'est
+   vidée d'autant. L'entrée a donc été SUPPRIMÉE plutôt que mise à `false` —
+   une entrée qu'on ne passe plus jamais est une branche morte qui attend de
+   revenir.
+
+   C'est la troisième fois que cette barre conditionne un bloc à un PROXY —
+   la langue au menu, la langue à la cloche, le panier au menu. Le pli est une
+   affaire de LARGEUR : le CSS la connaît, et il est le seul à la connaître. */
 .segments {
   display: none;
 }
 
 @media (min-width: 900px) {
-  :host(:not(.is-compact)) .globe {
+  /* 🔴 `:host` EN TÊTE, et ce n'est pas décoratif : `.globe` est déclaré PLUS
+     BAS dans ce fichier, et à spécificité égale c'est la dernière règle qui
+     gagne — le globe restait donc affiché au bureau, à côté des trois segments.
+     La version précédente y échappait par accident, parce que son sélecteur
+     portait `:not(.is-compact)`. En le simplifiant, on a perdu le cran avec.
+     C'est la deuxième fois que ce fichier-ci se fait avoir de la même façon
+     (cf. `.mark` dans `client-shell.scss`), et seul l'écran pouvait le dire. */
+  :host .globe {
     display: none;
   }
 
-  :host(:not(.is-compact)) .segments {
+  :host .segments {
     display: block;
   }
 }
 
-/* ── Le mode compact : un globe qui porte sa langue ───────────────────────── */
+/* ── En pile : un globe qui porte sa langue ──────────────────────────────── */
 
 /* Le gabarit de la rangée, LU et non recopié : voir `--lfc-bar-slot-height`
    dans `client-shell.scss`. Le globe l'a porté en dur à 40 px, deux pixels qui

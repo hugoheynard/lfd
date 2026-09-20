@@ -53,28 +53,42 @@
       <span class="brand-name">La Folie Coffee</span>
       <span class="brand-kicker">{{ t().chrome.brandLine }}</span>
     </span>
-    <!-- La barre d'un client reconnu porte déjà le menu et le panier : le
-         sélecteur s'y réduit à un globe, faute de place pour trois segments.
-         ⚠️ La condition est le CLIENT RECONNU, pas la cloche. Elle l'a été, du
-         temps où la cloche était le seul autre occupant — et le jour où un
-         écran a cessé d'en poser une, les trois segments sont revenus manger la
-         place du panier. Un proxy finit toujours par se désaccorder de ce qu'il
-         représentait. -->
-    <app-lang-switch [compact]="chrome.menu()" />
+    <!-- 🔴 PLUS AUCUNE CONDITION : le sélecteur choisit sa forme sur la seule
+         LARGEUR, dans son propre CSS (Hugo, 2026-09-20 : « en desktop le switch
+         de langue devrait être complet »).
 
-    <!-- 🔴 La cloche exige le CLIENT RECONNU, en plus de la demande d'écran.
-         `chrome.bell()` dit qu'un écran en pose une ; il ne dit pas qu'il y a
-         quelqu'un à notifier. Un visiteur voyait donc une cloche qui ne
-         pouvait rien lui annoncer — et dont le geste mène à un espace où il
-         n'est pas. Ce qui se notifie appartient à un compte. -->
-    <!-- 🔴 `chrome.bell()` ne dit plus QUE FAIRE, il dit QUE L'ÉCRAN EN POSE UNE
-         (2026-09-20). La cloche ouvre désormais son propre popover — c'est elle
-         qui sait ce qu'elle montre, et aucun écran n'a plus à le lui apprendre.
-         ⚠️ La fonction qu'un écran y range n'est donc plus appelée : à trancher
-         avec Hugo, soit `bell` devient un booléen comme `menu`, soit un écran
-         retrouve le droit de détourner le geste. On ne l'a pas fait ici pour ne
-         pas changer un contrat de chrome dans un lot qui ne le demandait pas. -->
-    @if (chrome.bell() && recognised()) {
+         Il a été conditionné à la cloche, puis au menu, et les deux fois pour
+         la même raison — faire de la place dans une barre trop pleine. Elle ne
+         l'est plus : la sous-barre est partie et ses destinations vivent dans
+         le popover d'identité. Les deux conditions étaient des PROXYS de la
+         largeur disponible, et un proxy finit toujours par se désaccorder de ce
+         qu'il représente. -->
+    <app-lang-switch />
+
+    <!-- 🔴 LA CLOCHE APPARTIENT AU COMPTE, PLUS À L'ÉCRAN (Hugo, 2026-09-20 :
+         « je suis connecté en perso, je n'ai pas l'icône notif »).
+
+         C'est la question que le commentaire précédent laissait ouverte, et le
+         symptôme l'a tranchée. Elle exigeait `chrome.bell()` — qu'un écran en
+         POSE une — en plus du client reconnu. Or un seul écran le faisait
+         encore, et les cinq autres la retiraient explicitement : un client
+         connecté n'avait donc de cloche nulle part, sauf sur la page de
+         commande. Ce qui se notifie appartient à quelqu'un, pas à l'endroit où
+         il se trouve quand ça lui arrive.
+
+         C'est exactement la faute déjà commise deux fois dans cette barre, et
+         écrite deux fois juste au-dessus : le sélecteur de langue conditionné à
+         la cloche, le panier conditionné au menu. Un proxy finit toujours par
+         se désaccorder de ce qu'il représentait. `recognised()` est la
+         condition réelle, et elle est seule.
+
+         La cloche ouvre son propre popover et calcule son propre compte — plus
+         rien du chrome ne la concerne.
+
+         ⚠️ `ClientChrome.bell` et `bellCount` perdent ici leur dernier lecteur,
+         et six écrans les règlent encore pour personne. Signalé à Hugo ; leur
+         retrait est un geste à part, comme celui de `kicker`. -->
+    @if (recognised()) {
       <app-notifications-menu />
     }
 

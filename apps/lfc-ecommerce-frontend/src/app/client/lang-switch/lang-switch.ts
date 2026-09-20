@@ -40,9 +40,6 @@ function isLocale(value: string): value is LocaleCode {
 @Component({
   selector: 'app-lang-switch',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // Le mode compact passe en CLASSE : c'est le CSS qui choisit la forme, et il
-  // a besoin de connaître ce refus au-delà du pli (cf. le gabarit).
-  host: { '[class.is-compact]': 'compact()' },
   imports: [FoldIconComponent, FoldViewToggleComponent],
   templateUrl: './lang-switch.html',
   styleUrl: './lang-switch.scss',
@@ -50,9 +47,6 @@ function isLocale(value: string): value is LocaleCode {
 export class LangSwitch {
   /** `sm` dans la barre du téléphone, `md` dans la colonne de bureau. */
   readonly size = input<'sm' | 'md'>('sm');
-
-  /** Un seul bouton au lieu des trois segments. */
-  readonly compact = input(false);
 
   protected readonly locale = inject(ClientLocale);
   protected readonly t = inject(ClientCopyService).t;

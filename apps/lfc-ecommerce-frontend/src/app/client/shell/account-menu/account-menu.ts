@@ -30,6 +30,15 @@ interface SpaceCard {
   readonly initials: string;
   /** PRO ou PERSO — la nature de l'espace, pas son état. */
   readonly kind: string;
+  /**
+   * La même nature, en booléen.
+   *
+   * ⚠️ Le LIBELLÉ ne peut pas en tenir lieu : la maquette peint la pastille
+   * pro en encre pleine et la perso en beige, et comparer `kind` au mot
+   * « Pro » ferait dépendre une couleur d'une traduction. Le jour où
+   * l'italien dit « Azienda », la pastille change de couleur.
+   */
+  readonly pro: boolean;
   /** La ligne grise sous le nom : la raison sociale, ou ce qu'est un espace perso. */
   readonly note: string;
 }
@@ -134,6 +143,7 @@ export class AccountMenu {
           ...entry,
           initials: workspaceInitials(entry.label),
           kind: company === null ? copy.workspaceKindPersonal : copy.workspaceKindPro,
+          pro: company !== null,
           note: company === null ? copy.workspacePersonalNote : company.raisonSociale,
         };
       },

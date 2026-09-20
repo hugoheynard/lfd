@@ -164,6 +164,15 @@
      dans le même bandeau, et un écart de densité entre deux filets voisins se
      lit comme un défaut plutôt que comme une intention. */
   --lfc-color-on-primary-hairline: rgb(250 245 236 / 16%);
+  /* L'ARÊTE D'UN CONTRÔLE sur l'encre. Troisième et dernier cran de la famille,
+     et les trois disent trois choses : `-wash` (8 %) REMPLIT une surface,
+     `-hairline` (16 %) SÉPARE, celui-ci DÉLIMITE UNE CIBLE.
+
+     Un séparateur doit s'effacer, le bord d'un bouton doit se voir : c'est lui
+     qui dit où l'on clique. Les confondre revenait à rendre la seule action
+     d'une bande aussi discrète que les traits qui la découpent (Hugo,
+     2026-09-20 : « border plus marquées »). */
+  --lfc-color-on-primary-edge: rgb(250 245 236 / 42%);
   /* LE LAVIS — le fond d'une tuile QUI A DÉJÀ UN BORD. Deux fois plus discret
      que `-tile`, et c'est le filet qui rend ça possible : tant qu'une surface
      n'avait que son remplissage pour exister, il fallait l'appuyer ; dès
@@ -519,6 +528,15 @@
      dans le même bandeau, et un écart de densité entre deux filets voisins se
      lit comme un défaut plutôt que comme une intention. */
   --lfc-color-on-primary-hairline: rgb(250 245 236 / 16%);
+  /* L'ARÊTE D'UN CONTRÔLE sur l'encre. Troisième et dernier cran de la famille,
+     et les trois disent trois choses : `-wash` (8 %) REMPLIT une surface,
+     `-hairline` (16 %) SÉPARE, celui-ci DÉLIMITE UNE CIBLE.
+
+     Un séparateur doit s'effacer, le bord d'un bouton doit se voir : c'est lui
+     qui dit où l'on clique. Les confondre revenait à rendre la seule action
+     d'une bande aussi discrète que les traits qui la découpent (Hugo,
+     2026-09-20 : « border plus marquées »). */
+  --lfc-color-on-primary-edge: rgb(250 245 236 / 42%);
   /* LE LAVIS — le fond d'une tuile QUI A DÉJÀ UN BORD. Deux fois plus discret
      que `-tile`, et c'est le filet qui rend ça possible : tant qu'une surface
      n'avait que son remplissage pour exister, il fallait l'appuyer ; dès

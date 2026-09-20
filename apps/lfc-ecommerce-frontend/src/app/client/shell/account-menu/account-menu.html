@@ -43,7 +43,7 @@
                 <span class="space-titles">
                   <span class="space-line">
                     <span class="space-name">{{ space.label }}</span>
-                    <span class="space-kind">{{ space.kind }}</span>
+                    <span class="space-kind" [class.is-pro]="space.pro">{{ space.kind }}</span>
                   </span>
                   <span class="space-note">{{ space.note }}</span>
                 </span>

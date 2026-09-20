@@ -20,8 +20,8 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 2.375rem;
-  height: 2.375rem;
+  width: var(--lfc-bar-slot-height);
+  height: var(--lfc-bar-slot-height);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-hover);
@@ -47,12 +47,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 900px) {
-  :host .bell {
-    width: 44px;
-    height: 44px;
-  }
-}
+/* 🔴 LA SURCHARGE DE BUREAU EST PARTIE (2026-09-20). Elle portait la cloche à
+   44 px, et c'était un héritage du temps où elle venait du shell, à côté du
+   bouton de menu qui fait bien 44. Mais la cloche n'est pas dans cette
+   famille-là : ses voisines sont le sélecteur de langue et le panier, qui
+   tiennent `--lfc-bar-slot-height`. À 44 entre deux blocs de 38, la rangée se
+   lisait mal alignée sans qu'on voie lequel était en cause — c'est le
+   troisième écart de ce genre dans cette barre, et le gabarit nommé existe
+   précisément pour qu'il n'y en ait pas de quatrième. */
 
 /* ── LE PANNEAU ───────────────────────────────────────────────────────────── */
 

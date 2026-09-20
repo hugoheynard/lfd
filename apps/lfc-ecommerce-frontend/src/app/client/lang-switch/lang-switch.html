@@ -4,10 +4,9 @@
      seul composant ferait vivre le pli à deux endroits qui finiraient par
      diverger.
 
-     Au téléphone : le globe, toujours, quel que soit l'état de connexion. Trois
-     segments plus le panier et l'entrée du visiteur ne tiennent pas sur 390 px,
-     et ça ne dépend pas de qui regarde. Au-delà du pli : les segments, sauf si
-     `compact` les refuse encore (barre déjà pleine d'un client reconnu). -->
+     Au téléphone : le globe, toujours. Au-delà du pli : les trois segments,
+     toujours. Le CSS choisit sur la seule largeur, et rien d'autre ne le
+     commande — voir le SCSS. -->
 <button
   class="globe"
   type="button"
