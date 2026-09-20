@@ -1,5 +1,6 @@
 import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { PERSONAL_WORKSPACE, type CompanyView, type ProfileView } from '@lfd/contracts';
 import { afterEach, vi } from 'vitest';
 
@@ -14,6 +15,7 @@ import {
 import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { FR } from '../../copy/fr';
 import { PROFILE, TOMMEUSES } from '../../mon-compte/account.fixture';
+import { ClientNav, type NavItem } from '../../nav/client-nav.service';
 import { ProfilePanel } from '../../profile/profile-panel/profile-panel';
 import { AccountMenu } from './account-menu';
 
@@ -21,13 +23,36 @@ interface Wire {
   recognised: WritableSignal<boolean>;
   profile: WritableSignal<ProfileView | null>;
   workspace: WorkspaceDouble;
+  items: WritableSignal<readonly NavItem[]>;
   logouts: number;
 }
 
 let wire: Wire;
 
-const MAISON_A: CompanyView = { ...TOMMEUSES, id: 'cmp_a', enseigne: 'Maison A' };
+const MAISON_A: CompanyView = {
+  ...TOMMEUSES,
+  id: 'cmp_a',
+  enseigne: 'Chalet Marmotte',
+  raisonSociale: 'SAS Marmotte',
+};
 const MAISON_B: CompanyView = { ...TOMMEUSES, id: 'cmp_b', enseigne: '', raisonSociale: 'SAS B' };
+
+/** Une destination, dans la forme que `ClientNav` rend au menu. */
+function item(partial: Partial<NavItem> & Pick<NavItem, 'id' | 'label' | 'route'>): NavItem {
+  return { ready: true, count: '', countShort: '', warn: false, ...partial };
+}
+
+const DESTINATIONS: readonly NavItem[] = [
+  item({ id: 'espace', label: 'Mon espace', route: '/mon-espace' }),
+  item({
+    id: 'orders',
+    label: 'Commandes',
+    route: '/mes-commandes',
+    count: '3',
+    countShort: '3',
+  }),
+  item({ id: 'baskets', label: 'Paniers récurrents', route: '/paniers-recurrents', ready: false }),
+];
 
 function boot(
   recognised = true,
@@ -39,12 +64,14 @@ function boot(
     recognised: signal(recognised),
     profile: signal(profile),
     workspace: workspaceDouble(current, companies),
+    items: signal(DESTINATIONS),
     logouts: 0,
   };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [AccountMenu],
     providers: [
+      provideRouter([]),
       {
         provide: AuthFacade,
         useValue: {
@@ -55,7 +82,15 @@ function boot(
         },
       },
       { provide: AccountService, useValue: { profile: wire.profile } },
-      { provide: ClientIdentity, useValue: { firstName: signal('Hugo') } },
+      {
+        provide: ClientIdentity,
+        useValue: {
+          firstName: signal('Camille'),
+          fullName: signal('Camille Roux'),
+          email: signal('camille@chaletmarmotte.fr'),
+        },
+      },
+      { provide: ClientNav, useValue: { items: wire.items, current: signal('/mon-espace') } },
       provideWorkspace(wire.workspace),
       // La navigation de la bascule a sa propre suite : ici, on vérifie que le
       // menu la déclenche, et le choix arrive à l'espace par elle.
@@ -78,53 +113,172 @@ function boot(
 const host = (fixture: ComponentFixture<AccountMenu>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
-/** Ouvre le menu par son déclencheur, et rend les entrées dans l'ordre. */
-function openMenu(fixture: ComponentFixture<AccountMenu>): HTMLElement[] {
-  host(fixture).querySelector<HTMLButtonElement>('button.who')?.click();
+/**
+ * Ouvre le panneau par son déclencheur.
+ *
+ * ⚠️ Le panneau est TOUJOURS dans le DOM — `fold-popover` le montre par l'API
+ * `popover`, il ne le construit pas au clic. Son ouverture se lit donc sur
+ * `aria-expanded`, que la directive de déclenchement pose, et jamais sur la
+ * présence de l'élément.
+ */
+function openPanel(fixture: ComponentFixture<AccountMenu>): HTMLElement {
+  trigger(fixture)?.click();
   fixture.detectChanges();
-  return Array.from(document.querySelectorAll<HTMLElement>('fold-dropdown-item'));
+  const panel = host(fixture).querySelector<HTMLElement>('.panel');
+  if (panel === null) {
+    throw new Error('Pas de panneau.');
+  }
+  return panel;
 }
 
-/** Ouvre le menu, et rend l'entrée dont le texte est `text`. */
-function openAndFind(fixture: ComponentFixture<AccountMenu>, text: string): HTMLButtonElement {
-  const item = openMenu(fixture)
-    .map((row) => row.querySelector<HTMLButtonElement>('button'))
-    .find((b) => b?.textContent?.trim() === text);
-  if (!item) {
-    throw new Error(`Pas d'entrée « ${text} ».`);
-  }
-  return item;
-}
+const trigger = (fixture: ComponentFixture<AccountMenu>): HTMLButtonElement | null =>
+  host(fixture).querySelector<HTMLButtonElement>('button.who');
+
+const expanded = (fixture: ComponentFixture<AccountMenu>): string | null =>
+  trigger(fixture)?.getAttribute('aria-expanded') ?? null;
+
+/** Le texte de chaque élément retenu, détassé. */
+const texts = (root: ParentNode, selector: string): string[] =>
+  Array.from(root.querySelectorAll<HTMLElement>(selector)).map(
+    (el) => el.textContent?.trim() ?? '',
+  );
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('AccountMenu', () => {
-  it('le déclencheur est un vrai bouton, nommé, qui annonce un menu', () => {
-    const trigger = host(boot()).querySelector<HTMLButtonElement>('button.who');
+describe('AccountMenu — le déclencheur', () => {
+  it('est un vrai bouton, nommé, qui annonce un menu', () => {
+    const button = trigger(boot());
 
-    expect(trigger?.getAttribute('aria-label')).toBe(`${FR.chrome.accountMenu} — Hugo`);
-    expect(trigger?.getAttribute('aria-haspopup')).toBe('menu');
-    expect(trigger?.querySelector('.who-chip')?.textContent?.trim()).toBe('H');
+    expect(button?.getAttribute('aria-label')).toBe(`${FR.chrome.accountMenu} — Camille`);
+    expect(button?.getAttribute('aria-haspopup')).toBe('menu');
   });
 
-  it('le déclencheur ouvre le menu', () => {
-    const fixture = boot();
-    const menu = fixture.debugElement.children[0]?.componentInstance as { open: () => boolean };
-    expect(menu.open()).toBe(false);
+  /** La pastille porte l'ESPACE, pas la personne : c'est pour lui qu'on commande. */
+  it('porte les initiales de l’espace, et le rôle sous son nom', () => {
+    const fixture = boot(true, PROFILE, [MAISON_A], 'cmp_a');
 
-    host(fixture).querySelector<HTMLButtonElement>('button.who')?.click();
+    expect(host(fixture).querySelector('.who-chip')?.textContent?.trim()).toBe('CM');
+    expect(host(fixture).querySelector('.who-space')?.textContent?.trim()).toBe('Chalet Marmotte');
+    expect(host(fixture).querySelector('.who-person')?.textContent?.trim()).toBe(
+      `Camille · ${FR.chrome.workspaceRolePro}`,
+    );
+  });
+
+  it('en perso, la seconde ligne dit le compte perso', () => {
+    expect(host(boot()).querySelector('.who-person')?.textContent?.trim()).toBe(
+      `Camille · ${FR.chrome.workspaceCurrentPersonal}`,
+    );
+  });
+
+  it('ouvre le panneau', () => {
+    const fixture = boot();
+    expect(expanded(fixture)).toBe('false');
+
+    openPanel(fixture);
+
+    expect(expanded(fixture)).toBe('true');
+  });
+
+  it('un visiteur non reconnu ne voit pas le bloc', () => {
+    const fixture = boot(false);
+    expect(host(fixture).querySelector('button.who')).toBeNull();
+    expect(host(fixture).querySelector('fold-popover')).toBeNull();
+  });
+});
+
+describe('AccountMenu — la bande de tête', () => {
+  it('nomme la PERSONNE et son adresse, initiales comprises', () => {
+    const panel = openPanel(boot());
+
+    expect(panel.querySelector('.head-avatar')?.textContent?.trim()).toBe('CR');
+    expect(panel.querySelector('.head-title')?.textContent?.trim()).toBe('Camille Roux');
+    expect(panel.querySelector('.head-note')?.textContent?.trim()).toBe(
+      'camille@chaletmarmotte.fr',
+    );
+  });
+});
+
+/** Plan espace de travail, D8 (Hugo, 2026-09-15). */
+describe('AccountMenu — les espaces', () => {
+  it('sans société, la section n’existe pas', () => {
+    expect(openPanel(boot()).querySelector('.spaces')).toBeNull();
+  });
+
+  it('une carte par espace : le perso en tête, puis les sociétés', () => {
+    const panel = openPanel(boot(true, PROFILE, [MAISON_A, MAISON_B]));
+
+    expect(texts(panel, '.space-name')).toEqual([
+      FR.chrome.workspacePersonal,
+      'Chalet Marmotte',
+      'SAS B',
+    ]);
+    expect(texts(panel, '.space-kind')).toEqual([
+      FR.chrome.workspaceKindPersonal,
+      FR.chrome.workspaceKindPro,
+      FR.chrome.workspaceKindPro,
+    ]);
+    expect(texts(panel, '.space-note')).toEqual([
+      FR.chrome.workspacePersonalNote,
+      'SAS Marmotte',
+      'SAS B',
+    ]);
+  });
+
+  it('marque l’espace courant, et lui seul', () => {
+    const panel = openPanel(boot(true, PROFILE, [MAISON_A, MAISON_B], 'cmp_a'));
+
+    expect(
+      Array.from(panel.querySelectorAll('.space')).map((el) => el.getAttribute('aria-pressed')),
+    ).toEqual(['false', 'true', 'false']);
+  });
+
+  it('choisir une société bascule l’espace, et referme le panneau', () => {
+    const fixture = boot(true, PROFILE, [MAISON_A, MAISON_B]);
+    const panel = openPanel(fixture);
+
+    panel.querySelectorAll<HTMLButtonElement>('.space')[2]?.click();
     fixture.detectChanges();
 
-    expect(menu.open()).toBe(true);
+    expect(wire.workspace.chosen).toEqual(['cmp_b']);
+    expect(expanded(fixture)).toBe('false');
+  });
+});
+
+describe('AccountMenu — les destinations', () => {
+  it('les rend dans l’ordre de `ClientNav`, sans en réordonner aucune', () => {
+    const panel = openPanel(boot());
+
+    expect(texts(panel, '.row-label')).toEqual(['Mon espace', 'Commandes', 'Paniers récurrents']);
   });
 
+  it('un compteur devient une note ET un badge', () => {
+    const panel = openPanel(boot());
+    const rows = Array.from(panel.querySelectorAll<HTMLElement>('.row'));
+
+    expect(rows[1]?.querySelector('.row-note')?.textContent?.trim()).toBe('3');
+    expect(rows[1]?.querySelector('.row-badge')?.textContent?.trim()).toBe('3');
+  });
+
+  /** L'écran n'existe pas encore : la place reste, le clic non. */
+  it('une destination sans écran est désactivée et porte le mot d’attente', () => {
+    const panel = openPanel(boot());
+    const soon = panel.querySelectorAll<HTMLElement>('.row')[2];
+
+    expect(soon?.tagName).toBe('BUTTON');
+    expect((soon as HTMLButtonElement | undefined)?.disabled).toBe(true);
+    expect(soon?.querySelector('.row-badge')?.textContent?.trim()).toBe(FR.nav.soon);
+  });
+});
+
+describe('AccountMenu — le pied', () => {
   it('« Mon profil » ouvre le dialogue du profil, sur le profil relu', () => {
     const fixture = boot();
     const open = vi.spyOn(ProfilePanel, 'open').mockReturnValue(undefined);
+    const panel = openPanel(fixture);
 
-    openAndFind(fixture, FR.chrome.myProfile).click();
+    panel.querySelectorAll<HTMLButtonElement>('.foot-action')[0]?.click();
 
     expect(open).toHaveBeenCalledTimes(1);
     expect(open.mock.calls[0]?.[1]).toEqual(PROFILE);
@@ -133,88 +287,21 @@ describe('AccountMenu', () => {
   it('« Mon profil » attend le profil : désactivé tant que `/me` n’a pas répondu', () => {
     const fixture = boot(true, null);
     const open = vi.spyOn(ProfilePanel, 'open').mockReturnValue(undefined);
+    const panel = openPanel(fixture);
+    const profile = panel.querySelectorAll<HTMLButtonElement>('.foot-action')[0];
 
-    const item = openAndFind(fixture, FR.chrome.myProfile);
-    expect(item.disabled).toBe(true);
-    item.click();
+    expect(profile?.disabled).toBe(true);
+    profile?.click();
+
     expect(open).not.toHaveBeenCalled();
   });
 
   it('« Se déconnecter » appelle la même sortie que le menu de poche', () => {
     const fixture = boot();
+    const panel = openPanel(fixture);
 
-    openAndFind(fixture, FR.nav.logout).click();
+    panel.querySelectorAll<HTMLButtonElement>('.foot-action')[1]?.click();
 
     expect(wire.logouts).toBe(1);
-  });
-
-  it('un visiteur non reconnu ne voit pas le bloc', () => {
-    const fixture = boot(false);
-    expect(host(fixture).querySelector('button.who')).toBeNull();
-    expect(host(fixture).querySelector('fold-dropdown')).toBeNull();
-  });
-});
-
-/** Plan espace de travail, D8 (Hugo, 2026-09-15). */
-describe('AccountMenu — le sélecteur d’espace', () => {
-  const labels = (rows: HTMLElement[]): string[] => rows.map((r) => r.textContent?.trim() ?? '');
-
-  it('sans société, le menu reste tel qu’il était', () => {
-    const rows = openMenu(boot());
-
-    expect(labels(rows)).toEqual([FR.chrome.myProfile, FR.nav.logout]);
-    expect(document.querySelector('.space-current')).toBeNull();
-  });
-
-  it('« Perso » en tête, puis une entrée par société — enseigne, raison sociale à défaut', () => {
-    const rows = openMenu(boot(true, PROFILE, [MAISON_A, MAISON_B]));
-
-    expect(labels(rows)).toEqual([
-      FR.chrome.workspacePersonal,
-      'Maison A',
-      'SAS B',
-      FR.chrome.myProfile,
-      FR.nav.logout,
-    ]);
-  });
-
-  it('marque l’espace courant, et lui seul', () => {
-    const rows = openMenu(boot(true, PROFILE, [MAISON_A, MAISON_B], 'cmp_a'));
-
-    expect(rows.slice(0, 3).map((row) => row.querySelector('fold-icon') !== null)).toEqual([
-      false,
-      true,
-      false,
-    ]);
-  });
-
-  it('sous le sélecteur, l’enseigne en cours — ou « Compte perso »', () => {
-    const fixture = boot(true, PROFILE, [MAISON_A]);
-    openMenu(fixture);
-    expect(document.querySelector('.space-current')?.textContent?.trim()).toBe(
-      FR.chrome.workspaceCurrentPersonal,
-    );
-
-    wire.workspace.current.set('cmp_a');
-    fixture.detectChanges();
-
-    expect(document.querySelector('.space-current')?.textContent?.trim()).toBe('Maison A');
-  });
-
-  it('choisir une société bascule l’espace', () => {
-    const fixture = boot(true, PROFILE, [MAISON_A, MAISON_B]);
-
-    openAndFind(fixture, 'SAS B').click();
-
-    expect(wire.workspace.chosen).toEqual(['cmp_b']);
-  });
-
-  /** La ligne d'espace n'est pas une entrée : le nom du déclencheur la porte pour qui ne la voit pas. */
-  it('le déclencheur dit l’espace en cours quand il y a un choix', () => {
-    const fixture = boot(true, PROFILE, [MAISON_A], 'cmp_a');
-
-    expect(host(fixture).querySelector('button.who')?.getAttribute('aria-label')).toBe(
-      `${FR.chrome.accountMenu} — Hugo · ${FR.chrome.workspaceCurrentFor} Maison A`,
-    );
   });
 });

@@ -9,45 +9,31 @@ import {
 
 import { ClientBanner } from '../client-banner';
 import { ClientChrome } from '../../client-chrome.service';
-import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
-import { ClientNavBar } from '../client-nav-bar/client-nav-bar';
 
 /**
  * LA DESCENTE — ce qui relie la barre d'app au crème de la page.
  *
- * Deux étages dans une seule région, et c'est délibéré :
+ * Elle porte le **bandeau**, qui change avec l'écran (un titre, une action), et
+ * le dégradé qui descend de l'encre de la barre jusqu'au bord de la feuille.
+ * Vide, elle se replie : la bande n'a alors aucune hauteur.
  *
- * - le **bandeau**, qui change avec l'écran (un titre, une action), et dont le
- *   dégradé descend de l'encre de la barre jusqu'à celle de la sous-barre ;
- * - la **sous-barre**, qui ne change jamais — mêmes six destinations, même
- *   ordre, partout.
- *
- * Ils sont ensemble parce que la couture est à zéro : la fin du dégradé doit
- * valoir EXACTEMENT le fond de la sous-barre. Un seul composant qui peint la
- * descente le garantit ; deux régions qui négocient un dégradé de part et
- * d'autre d'une frontière, non. Le menu n'est alors plus posé sur le bleu : il
- * est le bas de la descente.
- *
- * C'est aussi ce qui garde la navigation hors de portée des écrans. Si le
- * bandeau ET la sous-barre étaient du contenu de page, chaque écran
- * re-déclarerait les six destinations — et la règle qui compte (leur ordre ne
- * change jamais) ne serait plus tenue que par la relecture.
+ * 🔴 **La sous-barre du bureau en est partie le 2026-09-20** (maquette
+ * `handoff-accueil-pro`). Les six destinations vivent dans le popover
+ * d'identité, qui les lit sur la même source — `ClientNav` — et dans le même
+ * ordre. Ce qui reste ici est la peinture du raccord, et rien d'autre : c'est
+ * pour elle que la descente et la lèvre sont dans un seul composant, la fin du
+ * dégradé devant valoir exactement le haut de ce qui suit.
  */
 @Component({
   selector: 'app-client-band',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.narrow-in-page]': '!chrome.bandNarrow()' },
-  imports: [ClientNavBar],
   templateUrl: './client-band.html',
   styleUrl: './client-band.scss',
 })
 export class ClientBand {
-  /**
-   * La sous-barre suit le MENU, pas la bande : un visiteur n'a nulle part où
-   * aller depuis ici, mais il a droit au bandeau — la boutique lui est ouverte.
-   */
+  /** La lèvre et le repli se lisent sur le chrome de l'écran courant. */
   protected readonly chrome = inject(ClientChrome);
-  protected readonly access = inject(ClientFeatureAccess);
 
   /** ⚠️ `read: ViewContainerRef` — sans lui on récupérerait l'élément, pas le
    *  conteneur, et l'insertion n'aurait nulle part où aller. */

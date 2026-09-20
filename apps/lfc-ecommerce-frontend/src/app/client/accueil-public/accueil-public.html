@@ -16,6 +16,13 @@
          cartes à icônes : il a été essayé puis retiré. -->
     <h1 class="screen-title">{{ c().screenTitle }}</h1>
 
+    <!-- LE CHAPÔ. Il vient APRÈS le titre et AVANT le rail, et l'ordre est le
+         sujet : le titre promet trois verbes, le chapô dit comment, le rail
+         montre où l'on en est. Inséré entre les deux, il répond à la question
+         que le titre vient de poser ; posé après le rail, il expliquerait une
+         mécanique déjà dessinée. -->
+    <p class="screen-lede">{{ c().lede }}</p>
+
     <!-- LE RAIL DES TROIS ÉTAPES, en ligne et pleine largeur sous le titre,
          comme la référence. Il a été projeté un moment à côté du titre, pour
          contourner le centrage automatique du bandeau de page : c'était
@@ -119,7 +126,7 @@
                       </span>
 
                       <span class="house-tail">
-                        <span class="house-offer" [class.is-plain]="!house.offer.hasOffer">
+                        <span class="house-offer">
                           {{ house.offer.label }}
                         </span>
 

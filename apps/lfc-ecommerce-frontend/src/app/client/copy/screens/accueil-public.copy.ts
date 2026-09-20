@@ -32,6 +32,19 @@ export interface AccueilPublicCopy {
    */
   readonly screenTitle: string;
 
+  /**
+   * Le CHAPÔ, sous le titre et au-dessus du rail.
+   *
+   * Il dit en une phrase ce que le titre promet en trois verbes, et lève les
+   * deux objections du visiteur avant qu'il les formule : il n'a pas de compte
+   * à créer, et il ne fera pas la queue. C'est la seule prose de cet étage —
+   * le reste de l'écran est fait de libellés.
+   *
+   * ⚠️ À ne pas confondre avec `hero.intro`, qui est la ligne du BANDEAU de
+   * retrait, plus bas et sur un autre sujet.
+   */
+  readonly lede: string;
+
   readonly hero: {
     /** La pastille du bandeau. */
     readonly tag: string;
@@ -115,8 +128,9 @@ export interface AccueilPublicCopy {
 export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
   kicker: 'Bienvenue',
   screenTitle: 'Commander.\nRetirer.\nDéguster.',
+  lede: 'Vous choisissez la maison et l’heure, on sort la fournée pour vous. Pas de compte à créer, pas de file le matin.',
   hero: {
-    tag: 'Retrait en boutique',
+    tag: 'Nouvelle commande',
     title: 'Je passe la prendre',
     intro:
       'Choisissez votre maison — l’heure se choisit juste après, et la remise du retrait s’applique toute seule.',
@@ -155,8 +169,9 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
 export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
   kicker: 'Welcome',
   screenTitle: 'Order.\nCollect.\nEnjoy.',
+  lede: 'You pick the shop and the time, we pull the batch for you. No account to create, no queue in the morning.',
   hero: {
-    tag: 'Shop pickup',
+    tag: 'New order',
     title: 'I’ll come and get it',
     intro:
       'Pick your bakery — the time comes right after, and the pickup discount applies on its own.',
@@ -195,8 +210,9 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
 export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
   kicker: 'Benvenuti',
   screenTitle: 'Ordinare.\nRitirare.\nGustare.',
+  lede: 'Scegliete la bottega e l’ora, noi sforniamo per voi. Nessun account da creare, nessuna fila al mattino.',
   hero: {
-    tag: 'Ritiro in bottega',
+    tag: 'Nuovo ordine',
     title: 'Passo a prenderlo',
     intro:
       'Scegliete la vostra bottega — l’orario si sceglie subito dopo, e lo sconto del ritiro si applica da sé.',

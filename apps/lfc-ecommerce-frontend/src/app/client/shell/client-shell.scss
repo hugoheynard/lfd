@@ -23,6 +23,19 @@
      `max()` fait les deux d'un coup : la gouttière tant que la fenêtre est
      plus étroite que la colonne, et le centrage de la colonne au-delà — la
      même valeur pour tout le monde, à toutes les largeurs. */
+  /* ── LE GABARIT DE LA RANGÉE ────────────────────────────────────────────
+     La hauteur commune des blocs de la barre : le sélecteur de langue, le
+     panier, l'entrée du visiteur. Elle valait 38 px dans les trois fichiers, et
+     TROIS COMMENTAIRES séparés se chargeaient de rappeler qu'ils devaient
+     rester d'accord — dont deux racontaient une correction déjà faite après
+     coup, l'un pour le globe qui était à 40, l'autre pour le boîtier de langue
+     qui était à 32. Un accord que trois fichiers doivent se souvenir de tenir
+     finit toujours par se rompre : on le NOMME, et il tient tout seul.
+
+     Publié par le shell parce que c'est lui qui possède la barre ; les blocs
+     qui l'occupent le lisent sans avoir à connaître les autres. */
+  --lfc-bar-slot-height: 2.375rem;
+
   --lfc-gutter: var(--fold-space-lg);
   /* La borne est la largeur LOGIQUE d'un MacBook Pro 14 pouces — la machine sur
      laquelle l'app est regardée. En deçà, rien ne borne : la page occupe la
@@ -71,6 +84,22 @@
   gap: var(--fold-space-sm);
   height: 100%;
   padding: env(safe-area-inset-top, 0px) var(--lfc-inset) 0;
+
+  /* 🔴 LA BARRE EST LE PREMIER ÉTAGE DE LA DESCENTE, et plus un aplat
+     (2026-09-20). Elle portait `bg-header`, soit `ink-800` — exactement la
+     couleur sur laquelle le dégradé de l'accroche DÉMARRE. Les deux se
+     touchaient donc sans transition, et le haut de la descente ne se lisait pas
+     comme un haut : l'œil voyait un bloc plat de 96 px, puis un assombrissement
+     qui commençait plus bas. Le ton le plus clair de la page n'était nulle
+     part.
+
+     Elle finit toujours sur `ink-800`, et c'est ce qui compte pour le raccord :
+     ce qui la suit — la bande, puis l'accroche — part de cette valeur-là, et la
+     couture reste invisible. Seul le HAUT change.
+
+     ⚠️ La règle est posée sur `.bar` et non sur la région `[header]` du shell :
+     la barre remplit sa rangée, et peindre la région appartient à fold. */
+  background: linear-gradient(to bottom, var(--lfc-ink-700), var(--lfc-ink-800));
 }
 
 .brand {
@@ -82,9 +111,9 @@
    marque à 52 px et les commandes à 44. À 64 px de barre, tout y était
    compressé d'un tiers et l'en-tête se lisait comme une bande d'outils.
 
-   ⚠️ L'entrée du visiteur n'est PAS dans cette liste : elle tient le gabarit
-   des blocs de la rangée — 38 px, comme le panier et le sélecteur de langue —
-   parce qu'elle doit s'aligner sur eux, pas sur la référence.
+   ⚠️ L'entrée du visiteur n'est PAS dans cette liste : elle tient
+   `--lfc-bar-slot-height`, comme le panier et le sélecteur de langue, parce
+   qu'elle doit s'aligner sur eux et non sur la référence.
 
    🔴 En pile, RIEN ne change. Un téléphone n'a pas 32 px à donner au chrome —
    c'est l'écran où la barre doit s'effacer devant le contenu, et la hauteur est
@@ -94,17 +123,17 @@
     --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 96px);
   }
 
-  /* 🔴 `:host` en tête, et ce n'est pas décoratif : `.mark`, `.menu` et `.bell`
-     sont déclarés PLUS BAS dans ce fichier, et à spécificité égale c'est la
-     dernière règle qui gagne. Sans ce cran, la marque restait à 44 px — mesuré
-     à l'écran le 2026-09-17, alors que le reste de la barre avait bien grandi. */
+  /* 🔴 `:host` en tête, et ce n'est pas décoratif : `.mark` et `.menu` sont
+     déclarés PLUS BAS dans ce fichier, et à spécificité égale c'est la dernière
+     règle qui gagne. Sans ce cran, la marque restait à 44 px — mesuré à l'écran
+     le 2026-09-17, alors que le reste de la barre avait bien grandi. */
   :host .mark {
     width: 52px;
     height: 52px;
   }
 
-  :host .menu,
-  :host .bell {
+  /* La cloche a rejoint son composant, qui porte le même cran chez lui. */
+  :host .menu {
     width: 44px;
     height: 44px;
   }
@@ -127,19 +156,25 @@
    l'œil y cherche. Hauteur et rayon écrits ici et non lus sur `--fold-button-*`,
    qui sont des crochets que le thème POSE pour fold — les lire marcherait par
    accident, et `lint:fold-tokens` a raison de le refuser. */
-/* 38 px : le gabarit commun des blocs de la barre — celui que le panier tient
-   déjà, et que le sélecteur de langue rejoint. Trois hauteurs différentes sur
-   une même rangée se voyaient comme un défaut d'alignement. */
+/* Le gabarit commun des blocs de la barre (`--lfc-bar-slot-height`, plus haut
+   dans ce fichier) : trois hauteurs différentes sur une même rangée se voyaient
+   comme un défaut d'alignement. */
 .sign-cta {
-  display: inline-flex;
+  /* Une GRILLE À UNE CELLULE, et non plus une rangée flex : les trois
+     traductions s'y superposent, donc la colonne prend la largeur de la plus
+     longue et le mot visible s'y centre. C'est ce qui fige la largeur du bouton
+     d'une langue à l'autre — voir `signInLabels` dans le composant. */
+  display: inline-grid;
+  grid-template-areas: 'label';
   align-items: center;
-  block-size: 2.375rem;
+  justify-items: center;
+  block-size: var(--lfc-bar-slot-height);
   padding: 0 var(--fold-space-lg);
   border: 0;
   border-radius: var(--fold-radius-md);
   background: var(--lfc-paper-0);
   color: var(--lfc-ink-800);
-  font-family: var(--fold-font-label);
+  font-family: var(--lfc-font-caps);
   font-size: var(--fold-text-xs);
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-label);
@@ -151,6 +186,22 @@
 
 .sign-cta:active {
   transform: scale(0.985);
+}
+
+/* Le mot ET ses doublures occupent la MÊME cellule : c'est la superposition qui
+   fait la réserve, pas une largeur écrite quelque part. */
+.sign-word,
+.sign-ghost {
+  grid-area: label;
+  white-space: nowrap;
+}
+
+/* `visibility: hidden` et NON `display: none` : c'est toute l'astuce. Une
+   doublure masquée par `display` ne mesurerait rien et ne réserverait donc
+   aucune place ; masquée par `visibility`, elle occupe sa largeur sans rien
+   peindre. */
+.sign-ghost {
+  visibility: hidden;
 }
 
 /* La phrase : un LIEN, pas un bouton — elle mène ailleurs, et la hiérarchie doit
@@ -238,46 +289,6 @@
   background: var(--lfc-color-accent);
 }
 
-/* La cloche partage le gabarit du menu — même trou dans la barre, de l'autre
-   côté. Sa pastille DÉBORDE, et son liseré reprend le fond de la barre : c'est
-   ce qui la détache de l'encre sans lui donner d'ombre. */
-/* 38 px, comme tout ce qui occupe cette rangée — le panier, l'entrée du
-   visiteur, le sélecteur de langue. Elle était à 40, deux pixels au-dessus du
-   gabarit que le commentaire de `.sign-cta` déclare juste plus haut : assez
-   pour que la rangée se lise comme mal alignée, pas assez pour qu'on voie
-   pourquoi. */
-.bell {
-  position: relative;
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 2.375rem;
-  height: 2.375rem;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-hover);
-  color: var(--fold-color-text);
-  cursor: pointer;
-}
-
-.badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  display: grid;
-  place-items: center;
-  min-width: 19px;
-  height: 19px;
-  padding: 0 5px;
-  border: 2px solid var(--fold-color-bg-header);
-  border-radius: var(--fold-radius-pill);
-  background: var(--lfc-color-accent);
-  color: var(--lfc-color-on-accent);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-extrabold);
-  font-variant-numeric: tabular-nums;
-}
-
 /* Masquée quand le menu la remplace en pile — la règle du pli la rend. */
 .mark.wide-only {
   display: none;
@@ -334,7 +345,7 @@
 }
 
 .brand-kicker {
-  font-family: var(--fold-font-label);
+  font-family: var(--lfc-font-caps);
   font-size: var(--lfc-text-kicker);
   font-weight: var(--fold-weight-extrabold);
   letter-spacing: var(--lfc-tracking-kicker);
@@ -366,8 +377,14 @@
    d'en-tête à zéro plutôt que de la masquer : le shell est une grille, une
    rangée cachée garderait sa hauteur. */
 @media (min-width: 900px) {
+  /* 40 px, la gouttière de la maquette du 2026-09-20 (`handoff-accueil-pro`,
+     `padding:22px 40px` sur la rangée de l'en-tête et sur le héros).
+     Elle valait 26, et c'est la mesure qui manquait le plus : la marque, le
+     titre et les cartes touchaient presque le bord, et toute la colonne se
+     lisait serrée alors qu'aucun objet n'était trop petit. Une gouttière est ce
+     qui donne sa taille apparente à ce qu'elle encadre. */
   :host {
-    --lfc-gutter: 26px;
+    --lfc-gutter: 40px;
   }
 
   :host(.bar-narrow-only) {

@@ -14,6 +14,7 @@ import { ClientChrome } from '../client-chrome.service';
 import { AccountMenu } from './account-menu/account-menu';
 import { ClientFoot } from '../foot/client-foot';
 import { ClientMenu } from '../nav/client-menu/client-menu';
+import { NotificationsMenu } from './notifications-menu/notifications-menu';
 import { ClientBand } from '../nav/client-band/client-band';
 import { ClientCartPill } from '../cart/client-cart-pill/client-cart-pill';
 import { ClientOnboarding } from '../client-onboarding.service';
@@ -49,6 +50,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
     FoldIconComponent,
     FoldPanelHostComponent,
     LangSwitch,
+    NotificationsMenu,
     RouterLink,
     RouterOutlet,
   ],
@@ -57,7 +59,23 @@ import { LangSwitch } from '../lang-switch/lang-switch';
 })
 export class ClientShell {
   protected readonly chrome = inject(ClientChrome);
-  protected readonly t = inject(ClientCopyService).t;
+  private readonly copy = inject(ClientCopyService);
+  protected readonly t = this.copy.t;
+
+  /**
+   * « Se connecter » dans les trois langues — pour RÉSERVER la largeur de la
+   * plus longue, pas pour l'afficher.
+   *
+   * Le bouton ferme la rangée : sa largeur pousse la marque, le panier et le
+   * sélecteur de langue. En changeant de langue on change donc la mise en page
+   * de toute la barre, et le geste qu'on vient de faire — cliquer sur `IT` —
+   * déplace le bouton sous le curseur qui vient de le quitter.
+   *
+   * Une liste et non un nombre : le jour où une traduction s'allonge, la
+   * réserve s'allonge avec elle. Un `min-width` en rem serait juste jusqu'à la
+   * première retouche du dictionnaire, et faux en silence ensuite.
+   */
+  protected readonly signInLabels = this.copy.everyLocale((copy) => copy.chrome.signIn);
   protected readonly access = inject(ClientFeatureAccess);
   protected readonly identityConflict = inject(IdentityConflictNotice);
   private readonly auth = inject(AuthFacade);
@@ -90,16 +108,5 @@ export class ClientShell {
 
   protected openMenu(): void {
     this.menuOpen.set(true);
-  }
-
-  /** Le compte fait partie du NOM du bouton : sans lui, la pastille est muette. */
-  protected readonly bellLabel = computed(() => {
-    const count = this.chrome.bellCount();
-    const label = this.t().chrome.notifications;
-    return count > 0 ? `${label} — ${count}` : label;
-  });
-
-  protected openBell(): void {
-    this.chrome.bell()?.();
   }
 }

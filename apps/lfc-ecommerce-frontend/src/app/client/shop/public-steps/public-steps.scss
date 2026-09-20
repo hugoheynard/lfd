@@ -18,10 +18,28 @@
   display: flex;
   align-items: center;
   gap: var(--fold-space-md);
-  padding: var(--fold-space-md) var(--fold-space-lg);
-  border: 1px solid transparent;
+  /* 18 px sur les quatre côtés, la mesure de la maquette du 2026-09-20 (qui
+     pose `18px 20px`, et 20 n'est pas un cran de l'échelle). Le vertical valait
+     12 : la tuile serrait ses deux lignes alors que le sous-texte venait de
+     passer à 17 px, et l'air au-dessus et en dessous ne suivait pas. Le
+     rembourrage d'une carte se règle avec ce qu'elle contient, jamais seul. */
+  padding: var(--fold-space-lg);
+  /* 🔴 LE FILET (Hugo, 2026-09-20 : « les étapes non full bg devraient avoir un
+     border fin comme dans la ref »). Il était `transparent`, et la tuile ne
+     tenait donc que par son remplissage à 16 % — assez pour teinter l'encre,
+     pas pour lui donner un BORD. Sur un dégradé qui s'assombrit vers le bas,
+     une surface sans arête ne se lit plus comme un objet posé : elle se lit
+     comme une variation du fond, et les deux étapes à venir se dissolvaient à
+     mesure que l'encre descendait.
+     La courante n'en a pas besoin — le crème plein fait l'arête tout seul —
+     et c'est précisément la distinction que la maquette dessine. */
+  border: 1px solid var(--lfc-color-on-primary-hairline);
   border-radius: var(--lfc-radius-xl);
-  background: var(--lfc-color-on-primary-tile);
+  /* LE LAVIS, et non le remplissage de tuile — 8 % au lieu de 16. Les deux
+     réglages du jour vont ENSEMBLE et dans cet ordre : le filet donne l'arête,
+     donc le fond n'a plus à la porter. Alléger sans le bord aurait effacé la
+     tuile ; garder le fond avec le bord la rendait lourde. */
+  background: var(--lfc-color-on-primary-wash);
   color: var(--lfc-ink-300);
 }
 
@@ -77,17 +95,55 @@
   color: var(--lfc-color-accent-text);
 }
 
+/* Le libellé de l'étape : un cran sous le chapô, parce qu'il reste un LIBELLÉ —
+   on le saisit, on ne le lit pas. Il portait 12 px et suivait le sous-texte
+   dans sa chute ; à 14 il redevient ce qu'il est, le nom de la question posée.
+
+   ⚠️ Il garde Chunk, contrairement aux pastilles de l'écran : à 14 px la face
+   de display tient encore, et c'est ici le seul mot que l'œil accroche en
+   balayant les trois cartes. */
 .step-label {
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
+  font-size: var(--lfc-text-block);
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
 }
 
-/* Le sous-texte : ce que l'étape promet. Il suit le fond, pas l'inverse. */
+/* 🔴 LE SOUS-TEXTE EST ALIGNÉ SUR LE CHAPÔ, et c'est une décision de rôle, pas
+   une taille choisie au jugé (Hugo, 2026-09-20 : « plus grandes alignées sur la
+   phrase du dessus »).
+
+   Ce sont les deux seules PHRASES de l'étage sombre — « Vous choisissez la
+   maison et l'heure… » et « La maison qui vous arrange » — et elles se suivent
+   à 80 px d'intervalle. L'une à 19 px et l'autre à 11,5 ne se lisaient pas
+   comme deux membres du même propos : la seconde passait pour une légende de
+   la première. Même cran, même face, même graisse : le rail répond au chapô
+   au lieu de le commenter.
+
+   ⚠️ Elles partagent donc `--lfc-text-lede`. Qui le règle règle les deux — et
+   c'est voulu : le jour où le chapô change de taille, le rail doit suivre, sans
+   quoi le rapport qu'on vient d'établir se défait en silence. */
+/* 🔴 LE SOUS-TEXTE VISE L'ÉGALITÉ PERÇUE AVEC LE CHAPÔ, pas l'égalité des
+   nombres — et c'est toute l'histoire de ce réglage (2026-09-20).
+
+   Il est parti de 11,5 px, est monté aux 19 px du chapô sur demande, et
+   redescend à 17. Deux choses l'expliquent, et aucune n'est la taille :
+
+   - l'INTERLIGNE. Il valait 1,35 contre 1,55 au chapô, et des lignes plus
+     serrées se lisent comme des lettres plus grosses. Les deux partagent
+     maintenant `--lfc-leading-body` ;
+   - la POLARITÉ, qu'on ne peut pas corriger et qu'il faut donc compenser : la
+     tuile de l'étape courante est CRÈME, le chapô est sur l'encre. À corps
+     égal, du sombre sur clair paraît plus grand que du clair sur sombre. C'est
+     mesuré, pas supposé — les deux textes rendaient la même chaîne à la même
+     largeur au centième, et l'un paraissait quand même plus gros.
+
+   D'où un cran propre (`--lfc-text-lede-tile`) plutôt que le token du chapô :
+   les deux valeurs DOIVENT différer pour que les deux textes se ressemblent. */
 .step-hint {
-  font-size: var(--fold-text-xs);
+  font-size: var(--lfc-text-lede-tile);
+  line-height: var(--lfc-leading-body);
   color: var(--lfc-ink-300);
 }
 

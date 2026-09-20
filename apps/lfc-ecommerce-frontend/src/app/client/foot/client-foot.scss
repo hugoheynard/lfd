@@ -9,9 +9,18 @@
 @media (min-width: 900px) {
   :host {
     display: block;
-    /* La MÊME teinte que la barre — règle de région du handoff navi 2. C'est ce
-       qui fait qu'il ferme la page au lieu d'y ajouter un bloc. */
-    background: var(--fold-color-bg-header);
+    /* L'ENCRE LA PLUS PROFONDE, et non celle de la barre (Hugo, 2026-09-20 :
+       « le footer devrait être en bleu sombre comme dans la ref »).
+
+       ⚠️ Il a porté `bg-header` — la teinte de la barre — au nom du handoff
+       navi 2 : « la même teinte ferme la page au lieu d'y ajouter un bloc ».
+       La règle de région tient toujours, mais elle désignait le mauvais bout.
+       Entre la barre et le pied, la descente descend déjà de `ink-800` vers
+       `ink-950` : reprendre `ink-800` tout en bas faisait REMONTER l'encre, et
+       le pied se lisait comme un second en-tête collé sous la page au lieu de
+       la fermer. La maquette du 2026-09-20 finit sur `#081437`, à un cheveu
+       d'`ink-950` — c'est la fin de la même descente, pas une couleur de plus. */
+    background: var(--lfc-ink-950);
   }
 }
 

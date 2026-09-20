@@ -1,0 +1,172 @@
+@use '../popover' as pop;
+
+:host {
+  display: block;
+  flex: none;
+}
+
+/* ⚠️ Le popover se peint lui-même ; sans ce mixin, sa boîte à lui perce aux
+   quatre coins. Voir `_popover.scss`. */
+.pop {
+  @include pop.host;
+}
+
+/* ── LA CLOCHE ─────────────────────────────────────────────────────────────
+   38 px, comme tout ce qui occupe la rangée — le panier, l'entrée du visiteur,
+   le sélecteur de langue. Sa pastille DÉBORDE, et son liseré reprend le fond de
+   la barre : c'est ce qui la détache de l'encre sans lui donner d'ombre. */
+.bell {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.375rem;
+  height: 2.375rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border: 2px solid var(--fold-color-bg-header);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 900px) {
+  :host .bell {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ── LE PANNEAU ───────────────────────────────────────────────────────────── */
+
+.panel {
+  @include pop.panel;
+}
+
+/* La bande de tête porte sa sortie à droite : le titre et le compte à gauche,
+   « Fermer » au bout — c'est la maquette, et c'est aussi là que le pouce revient. */
+.head {
+  @include pop.head;
+
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.head-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.head-title {
+  @include pop.head-title;
+}
+
+.head-note {
+  @include pop.head-note;
+}
+
+.foot-action {
+  @include pop.foot-action;
+
+  flex: none;
+}
+
+/* « Tout marquer comme lu » : une action de LISTE, donc au-dessus de la liste et
+   non dans le pied — le pied d'un fil qui défile n'est jamais sous les yeux. */
+.mark-row {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-sm);
+}
+
+.mark-all {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  color: var(--fold-color-primary);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.scroller {
+  @include pop.scroller;
+
+  margin: 0;
+  list-style: none;
+}
+
+/* Une ligne n'est pas un contrôle : pas de survol, pas de curseur — elle ne
+   mène nulle part (cf. le gabarit). */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-radius: var(--fold-radius-lg);
+  /* Le liséré existe TOUJOURS, transparent quand la ligne est lue : sans lui,
+     marquer comme lu décalerait tout le texte de trois pixels. */
+  border-left: 3px solid transparent;
+}
+
+/* 🔴 LA NON-LUE SE PORTE PAR DEUX SIGNES, jamais par la couleur seule : le
+   liséré or ET la graisse du sujet. Une teinte s'efface au soleil, sur un écran
+   mal réglé ou en contraste forcé ; une barre et une graisse, non. */
+.note.is-unread {
+  border-left-color: var(--lfc-color-accent);
+  background: var(--lfc-paper-100);
+}
+
+.note-subject {
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-medium);
+  line-height: 1.25;
+}
+
+.note.is-unread .note-subject {
+  font-weight: var(--lfc-weight-black);
+}
+
+.note-body {
+  font-size: var(--lfc-text-note);
+  line-height: 1.4;
+  color: var(--fold-color-text-secondary);
+}
+
+.note-when {
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.note-empty {
+  padding: var(--fold-space-lg) var(--fold-space-md) var(--fold-space-xl);
+  list-style: none;
+}

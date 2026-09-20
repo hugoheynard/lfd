@@ -76,6 +76,25 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   color: var(--lfc-color-on-primary-muted);
 }
 
+/* Le chapô : la seule PROSE de l'étage sombre, et donc le seul endroit de cet
+   écran qui a besoin d'une mesure. 36 em est celle de la maquette — au-delà,
+   l'œil perd le début de la ligne suivante, et l'accroche fait 1440 px de
+   large.
+
+   ⚠️ Il garde Pogonia en graisse courante : c'est un texte qu'on LIT. Le
+   registre des petites capitales (`--lfc-font-caps`) est fait pour les
+   libellés, et l'appliquer ici rendrait la phrase criarde. */
+.screen-lede {
+  margin: 0;
+  max-width: 36em;
+  font-size: var(--lfc-text-lede);
+  /* Le token, et non le littéral `1.55` qu'il valait : le rail des étapes lit
+     le même, et deux phrases alignées sur la même taille doivent l'être aussi
+     sur la même densité. Voir `public-steps.scss`. */
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-color-on-primary-lede);
+}
+
 .screen-title {
   margin: 0;
   font-size: var(--lfc-text-screen);
@@ -90,41 +109,40 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
    Le registre de la maison, déclaré UNE fois pour tous ceux qui le portent —
    comme le thème déclare celui des boutons. */
 
-.screen-kicker,
+/* CHUNK — et seulement ce qui est GRAND. La face de display porte les titres,
+   la valeur chiffrée et le jeton carré : au-dessus de 14 px, ses pleins sont ce
+   qui donne sa voix à la maison. */
 .screen-title,
-.banner-tag,
 .banner-title,
 .proof-value,
+.house-name,
+.empty-title,
+.browse-mark,
+.events-title {
+  font-family: var(--fold-font-label);
+  font-weight: var(--lfc-weight-black);
+}
+
+/* POGONIA GRASSE — tout ce qui se lit en capitales sous 12 px : le sur-titre, la
+   pastille du bandeau, le drapeau et l'offre d'une maison, l'état, la note, le
+   bouton secondaire. Voir `--lfc-font-caps` dans le thème : Chunk s'y refermait
+   sur elle-même, et ces mots-là sont précisément ceux qu'on lit de loin et en
+   diagonale. */
+.screen-kicker,
+.banner-tag,
 .proof-label,
 .house-flag,
-.house-name,
 .house-offer,
 .house-state,
 .houses-note,
-.empty-title,
-.browse-mark,
-.browse-cta,
-.events-title {
-  font-family: var(--fold-font-label);
+.browse-cta {
+  font-family: var(--lfc-font-caps);
+  font-weight: var(--lfc-weight-caps);
 }
 
-/* Le noir de la face. `.proof-label` et `.houses-note` en sont exclus : ce sont
-   des sous-titres, et les mettre en noir les ferait rivaliser avec la valeur
-   qu'ils qualifient. */
-.screen-title,
-.banner-tag,
-.banner-title,
-.proof-value,
-.house-flag,
-.house-name,
-.house-offer,
-.house-state,
-.empty-title,
-.browse-mark,
-.browse-cta,
-.events-title {
-  font-weight: var(--lfc-weight-black);
-}
+/* ⚠️ `.proof-label` et `.houses-note` gardent la graisse du registre et ne
+   montent pas plus haut : ce sont des sous-titres, et les pousser au maximum
+   les ferait rivaliser avec la valeur qu'ils qualifient. */
 
 .screen-kicker,
 .screen-title,
@@ -225,7 +243,19 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   overflow: hidden;
   background: var(--lfc-ink-950);
   color: var(--lfc-paper-0);
-  box-shadow: var(--lfc-shadow-promo);
+  /* Le relief à trois couches — voir `--lfc-shadow-lifted`. Il portait
+     `-promo`, une portée unique qui décolle bien une petite carte du papier
+     mais se dilue sous 1360 px de large.
+
+     Le LISERÉ INTÉRIEUR HAUT va avec, et c'est lui qui fait le plus de travail
+     pour le moins de pixels : une arête claire sur le bord supérieur, comme si
+     la lumière de la page s'y accrochait. Une ombre seule creuse le dessous ;
+     il faut l'arête pour que le bloc ait une ÉPAISSEUR et pas seulement un
+     dessous. Il est indispensable ici parce que le haut du bandeau mord la
+     descente bleue : sans lui, encre sur encre, le bord disparaît. */
+  box-shadow:
+    var(--lfc-shadow-lifted),
+    inset 0 1px 0 var(--lfc-color-on-primary-hairline);
 }
 
 .banner-photo {
@@ -249,11 +279,26 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
    hauteur du titre. La pastille occupe sa propre rangée, le texte et le rail
    partagent la suivante — l'alignement est alors CALCULÉ, là où un
    `padding-top` sur le rail aurait recopié la hauteur de la pastille en dur. */
+/* 🔴 L'AIR SUR LES CÔTÉS (Hugo, 2026-09-20 : « le padding horizontal des
+   éléments de la carte devrait être plus important », « pour recentrer un peu
+   plus tout »). Il valait 22 px pour 32 en haut et en bas : la carte respirait
+   verticalement et serrait horizontalement, ce qui poussait son contenu vers
+   les bords au lieu de le poser au centre.
+
+   48 px — le cran `5xl` de l'échelle, et la mesure de la maquette du
+   2026-09-20, qui rembourre sa bande à `18px 48px`. Il a valu 22, puis 32 le
+   temps d'un essai : à 32 la carte respirait encore moins que verticalement,
+   et c'est bien l'horizontale qui manquait.
+
+   ⚠️ `.browse` — le pied de la carte — porte la MÊME valeur horizontale, et
+   c'est ce qui compte : les deux sont des bandes superposées dans le même
+   cadre, et un décalage entre elles ferait un ressaut vertical sur le bord
+   gauche, à l'endroit exact où l'œil descend. */
 .banner-inner {
   position: relative;
   display: grid;
   gap: var(--fold-space-lg);
-  padding: var(--fold-space-2xl) var(--fold-space-xl);
+  padding: var(--fold-space-2xl) var(--fold-space-5xl);
 }
 
 .pitch {
@@ -266,9 +311,23 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
    une cellule de grille, et c'est l'axe INLINE qui décide de sa largeur.
    `align-self` la laissait s'étirer sur toute la colonne — 431 px au bureau,
    295 px en pile (mesuré le 2026-09-17). En flex, c'était l'inverse. */
+/* ⚠️ Les trois pastilles de cet écran ont GAGNÉ DE L'AIR VERTICAL le 2026-09-20
+   (Hugo : « plus de padding vertical dans les pastilles »). Elles étaient
+   dessinées autour de Chunk, dont les capitales sont hautes et pleines : le peu
+   de blanc qui restait au-dessus et en dessous suffisait à peine. Pogonia
+   grasse a des capitales plus courtes — à padding égal, la pastille se serait
+   mise à flotter autour d'un mot rapetissé. La face et l'air se règlent donc
+   ENSEMBLE, et c'est pourquoi les deux changements sont du même jour. */
 .banner-tag {
   justify-self: start;
-  padding: 0.35rem 0.875rem;
+  /* Un cran au-dessus du registre des petites capitales (Hugo, 2026-09-20).
+     C'est la seule pastille de l'écran posée sur du PAPIER PLEIN au milieu
+     d'une photo sombre : ses voisines vivent sur l'encre, où le contraste fait
+     déjà la moitié du travail. Ici le blanc l'emporte sur les lettres, et 700
+     s'y creusait. Pogonia a son 800 en fichier réel — c'est un gras dessiné,
+     pas un épaississement du 700 par le navigateur. */
+  font-weight: var(--fold-weight-extrabold);
+  padding: 0.5rem 0.875rem;
   background: var(--lfc-paper-0);
   color: var(--lfc-ink-800);
 }
@@ -282,7 +341,17 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 
 .banner-intro {
   margin: 0;
-  max-width: 24em;
+  /* 🔴 SANS CE CRAN, ÉLARGIR LA COLONNE N'AURAIT RIEN FAIT — et c'est le piège
+     de ce réglage. La phrase était plafonnée à 24 em, soit 324 px : elle tenait
+     donc en trois lignes quelle que soit la place qu'on lui donnait à côté.
+     Pousser les cartes vers la droite aurait élargi une colonne dont le texte
+     n'aurait pas profité, et on aurait conclu que le réglage ne servait à rien.
+
+     32 em, pas davantage : c'est une MESURE de lecture, pas un ajustement. Au
+     delà d'une soixantaine de signes par ligne, l'œil perd le début de la
+     suivante — et la colonne fait maintenant 513 px, donc rien n'empêcherait
+     cette phrase de les prendre tous. */
+  max-width: 32em;
   color: var(--lfc-ink-100);
   font-size: var(--fold-text-base);
   line-height: var(--lfc-leading-body);
@@ -295,7 +364,22 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   align-items: center;
   gap: var(--fold-space-lg);
   padding-top: var(--fold-space-lg);
-  border-top: 1px solid var(--lfc-color-border-strong);
+  /* 🔴 LE MÊME FILET QUE LES CARTES D'ÉTAPE (Hugo, 2026-09-20 : « le trait
+     horizontal après le texte devrait être fin et de la teinte bleu clair des
+     borders »).
+
+     Il portait `border-strong`, qui vaut `paper-400` — un beige OPAQUE. C'est
+     un rôle de bord sur PAPIER, et posé sur l'encre il faisait exactement ce
+     qu'un rôle déplacé fait toujours : il marchait, en disant autre chose. À
+     côté des filets translucides du rail, il se lisait plus épais et plus
+     chaud, alors qu'il fait le même pixel.
+
+     ⚠️ Et c'est là qu'est la leçon : `-hairline` n'est PAS bleu. C'est la même
+     crème, à 26 % — le bleu qu'on y voit est celui du fond qui remonte au
+     travers. Un filet sur l'encre se fait avec de la transparence, jamais avec
+     une teinte choisie : sur un dégradé qui s'assombrit, une couleur fixe
+     s'écarte du fond à mesure qu'on descend, une transparence le suit. */
+  border-top: 1px solid var(--lfc-color-on-primary-hairline);
 }
 
 .proof-item {
@@ -303,10 +387,15 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   gap: 0.1875rem;
 }
 
+/* Le séparateur VERTICAL entre deux preuves — le même filet que l'horizontal
+   qui les surplombe, à deux centimètres de là. Il portait `border-strong` comme
+   lui, et n'a pas été corrigé parce qu'on l'aurait demandé : les laisser
+   diverger aurait été pire que l'état de départ, puisqu'on aurait alors un
+   trait froid et un trait chaud côte à côte sur la même encre. */
 .proof-rule {
   inline-size: 1px;
   block-size: 2.125rem;
-  background: var(--lfc-color-border-strong);
+  background: var(--lfc-color-on-primary-hairline);
 }
 
 .proof-value {
@@ -387,6 +476,24 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   transition: var(--lfc-motion-tap);
 }
 
+/* 🔴 LE SURVOL SOULÈVE LA CARTE (Hugo, 2026-09-20). Un `scale` UNIFORME et
+   minuscule — jamais une translation : la carte est dans un rail qui défile, et
+   un objet qui se déplace au survol fait rater la cible qu'on visait.
+   1,012 est la valeur de la maquette, et elle est petite à dessein : sur 352 px
+   elle ne gagne que deux pixels de chaque côté. C'est assez pour que l'objet
+   réponde, trop peu pour qu'il bouscule ses voisins.
+
+   ⚠️ `:focus-visible` porte le même geste : ce qui se voit à la souris doit se
+   voir au clavier, sinon la carte parcourue au Tab est la seule du rail à ne
+   rien dire. */
+.house:hover,
+.house:focus-visible {
+  transform: scale(1.012);
+}
+
+/* L'appui reprend la main sur le survol — une règle plus bas, donc elle gagne à
+   spécificité égale. Sans ça, le doigt posé sur une carte survolée ne verrait
+   rien s'enfoncer. */
 .house:active {
   transform: scale(0.985);
 }
@@ -409,7 +516,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 
 .house-flag {
   align-self: start;
-  padding: 0.2rem 0.65rem;
+  padding: 0.35rem 0.65rem;
   background: var(--lfc-butter-300);
   color: var(--lfc-butter-900);
 }
@@ -434,15 +541,10 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
    et le panier. Un point sans remise dit son tarif, jamais rien. */
 .house-offer {
   align-self: start;
-  padding: 0.35rem 0.9rem;
+  padding: 0.5rem 0.9rem;
   background: var(--lfc-ink-800);
   color: var(--lfc-paper-0);
   font-size: var(--fold-text-xs);
-}
-
-.house-offer.is-plain {
-  background: var(--lfc-paper-200);
-  color: var(--lfc-soot-700);
 }
 
 .house-foot {
@@ -536,7 +638,15 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-lg);
-  padding: var(--fold-space-lg) var(--fold-space-xl);
+  /* L'horizontale est celle de `.banner-inner` juste au-dessus — voir son
+     commentaire : deux bandes du même cadre alignent leur bord gauche. */
+  padding: var(--fold-space-lg) var(--fold-space-5xl);
+  /* LE SÉPARATEUR DU PIED DE CARTE (Hugo, 2026-09-20). Il n'en avait aucun : la
+     bande ne se détachait que par son encre plus profonde, et au-dessus d'elle
+     il y a une PHOTO — dont le bas est sombre par endroits et clair à d'autres.
+     La séparation existait donc là où la photo était claire, et disparaissait
+     ailleurs. Un filet ne dépend pas de ce qu'il y a au-dessus. */
+  border-top: 1px solid var(--lfc-color-on-primary-hairline);
   background: var(--lfc-ink-950);
   color: var(--lfc-ink-100);
 }
@@ -551,7 +661,10 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 .browse-mark {
   inline-size: 2.125rem;
   block-size: 2.125rem;
-  border: 1px solid var(--lfc-color-border-strong);
+  /* Le même filet que le trait des preuves et que le pied de la carte : c'est
+     le dernier objet de l'écran qui portait `border-strong`, un rôle de bord
+     sur PAPIER posé sur de l'encre. Les trois parlent maintenant d'une voix. */
+  border: 1px solid var(--lfc-color-on-primary-hairline);
   background: var(--lfc-color-on-primary-tile);
   color: var(--lfc-ink-300);
 }
@@ -581,7 +694,17 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   align-items: center;
   block-size: 2.75rem;
   padding: 0 var(--fold-space-xl);
-  border: 1.5px solid var(--lfc-color-border-strong);
+  /* 🔴 LA TEINTE EST CELLE DES FILETS, L'ÉPAISSEUR NE L'EST PAS — et c'est une
+     correction de ma part (Hugo, 2026-09-20 : « même teinte claire », puis
+     « rends le trait de je visite la boutique gras »).
+
+     Il portait 1,5 px de beige opaque. J'ai rallié la teinte, ce qui était
+     demandé, ET aminci le trait à 1 px, ce qui ne l'était pas : j'ai pris
+     « affiner les traits » — qui visait les SÉPARATEURS — pour une consigne
+     valant aussi les bords. Les deux ne font pas le même travail. Un
+     séparateur divise et doit s'effacer ; le bord d'un bouton dit où l'on
+     clique, et c'est la seule cible de cette bande. Il reprend donc 2 px. */
+  border: 2px solid var(--lfc-color-on-primary-hairline);
   border-radius: var(--fold-radius-md);
   background: transparent;
   color: var(--lfc-paper-0);
@@ -648,8 +771,18 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   /* LE CHEVAUCHEMENT. L'accroche se creuse d'autant pour que le bandeau remonte
      dessus SANS manger le rail : c'est ce qui fait du bandeau l'objet le plus
      lourd de la page, celui qu'on lit avant le reste. */
+  /* 🔴 L'ÉCART SOUS LE RAIL EST UNE SOUSTRACTION, et c'est le piège de ce bloc :
+     ce qu'on voit entre la troisième étape et le haut du bandeau ne vaut pas
+     `7,5rem`, il vaut `7,5rem − 6rem` de chevauchement, soit 24 px. Qui
+     règlerait l'un sans lire l'autre déplacerait le bandeau au lieu d'aérer le
+     rail.
+
+     Il valait 16 px ; Hugo en a demandé « 50 % de plus » le 2026-09-20. C'est
+     donc le PADDING qui monte d'un demi-rem, et le chevauchement qui ne bouge
+     pas : les −6 rem sont une décision de la maquette — le bandeau mord l'encre
+     et c'est ce qui en fait l'objet le plus lourd de la page. */
   .intro {
-    padding-bottom: 7rem;
+    padding-bottom: 7.5rem;
   }
 
   .sheet {
@@ -662,8 +795,10 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
     margin-top: -6rem;
   }
 
+  /* L'horizontale suit la base (48 px) ; seule la verticale se règle ici.
+     Voir le commentaire de `.banner-inner`. */
   .banner-inner {
-    padding: var(--fold-space-2xl);
+    padding: var(--fold-space-2xl) var(--fold-space-5xl);
   }
 
   .events-grid {
@@ -678,9 +813,33 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
    elle déborderait. Le seuil n'est donc pas nouveau, il est écrit. */
 @media (min-width: 1100px) {
   .banner-inner {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    /* 🔴 LA COLONNE DE TEXTE S'ÉLARGIT, ET LES CARTES RECULENT (Hugo,
+       2026-09-20 : « j'ai juste en français, ça m'a fait 3 lignes… décaler
+       l'espace des cartes un peu plus sur la droite »).
+
+       Le repère est le RAIL du dessus : les cartes doivent commencer un peu
+       avant la fin du premier tiers de l'étape 2. À 1440 px, ce tiers finit à
+       645 ; `1fr 1.4fr` pose la colonne à 633, soit douze pixels avant. Elle
+       partait de 531 sous l'ancien `1fr 2fr`.
+
+       ⚠️ La mesure du RAIL, et non un tiers de la carte : le bandeau et le rail
+       ont la même gouttière mais pas le même rembourrage interne, donc une
+       fraction de l'un ne tombe jamais sur une fraction de l'autre. C'est un
+       alignement qu'on CALE, et qui ne tient qu'aux largeurs où les deux
+       existent — d'où sa place dans ce bloc, et pas dans la règle de base. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
     column-gap: var(--fold-space-2xl);
-    row-gap: var(--fold-space-md);
+    /* 🔴 L'ÉCART SOUS LA PASTILLE (Hugo, 2026-09-20 : « augmenter l'écart avec
+       la ligne du dessous »). Il valait 12 px, le cran le plus serré de
+       l'échelle, dans un bandeau dont tout le reste respire à 18 ou 32 — la
+       pastille se lisait collée au titre, comme une étiquette posée dessus
+       plutôt que comme le sur-titre qu'elle est.
+
+       ⚠️ La rangée 1 ne porte QUE la pastille : la colonne de texte et le rail
+       des maisons sont tous deux en rangée 2. Relever cet écart les fait donc
+       descendre ENSEMBLE, sans décaler les cartes par rapport au titre —
+       c'était la raison de les mettre sur la même rangée. */
+    row-gap: var(--fold-space-xl);
   }
 
   .banner-tag,
@@ -721,7 +880,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
      valeur intermédiaire : une taille inventée ici se désaccorderait du reste
      de la page au premier changement de thème. */
   .banner-inner {
-    padding: var(--fold-space-3xl);
+    padding: var(--fold-space-3xl) var(--fold-space-5xl);
   }
 
   .banner-title {
@@ -737,9 +896,23 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
     font-size: var(--fold-text-2xl);
   }
 
-  /* La carte de retrait passe de 20 à 25 rem — le quart demandé, exactement. */
+  /* 🔴 22 rem, et le nombre n'est pas esthétique : c'est la largeur à laquelle
+     LES DEUX MAISONS TIENNENT SANS DÉFILEMENT (Hugo, 2026-09-20 : « avoir les
+     cartes de point de retrait moins large »).
+
+     Elles faisaient 25 rem — 400 px — dans une colonne qui en mesure 719 depuis
+     que le texte a repris de la place : 400 + 12 + 400 = 812, donc la seconde
+     était coupée et le rail se mettait à défiler. On ne voyait jamais les deux
+     maisons ensemble alors qu'il n'y en a que deux.
+     352 × 2 + 12 = 716, soit trois pixels sous la colonne. Le rail ne défile
+     plus ici, et son voile de bord s'efface tout seul — il ne paraît que
+     lorsqu'il reste quelque chose à droite.
+
+     ⚠️ Le calcul vaut pour CETTE colonne. Plus étroit, le rail redéfile, et
+     c'est très bien : c'est ce pour quoi il est fait. Ce qu'on a corrigé, c'est
+     qu'il défilait là où il y avait la place. */
   .houses > li {
-    flex-basis: 25rem;
+    flex-basis: 22rem;
   }
 
   .house {

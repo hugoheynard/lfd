@@ -1,12 +1,23 @@
-/* Le bloc de l'identité, en fin de rangée : un vrai bouton, qui garde l'allure
-   de l'étiquette qu'il était. */
+@use '../popover' as pop;
+
+/* ⚠️ Le popover se peint lui-même ; sans ce mixin, sa boîte à lui perce aux
+   quatre coins. Voir `_popover.scss`. */
+.pop {
+  @include pop.host;
+}
+
+/* ── LE DÉCLENCHEUR ────────────────────────────────────────────────────────
+   Pastille + deux lignes + chevron, 42 px de haut — le gabarit de la rangée de
+   la maquette du 2026-09-20. En dessous du pli, il se réduit à la pastille : la
+   barre d'un téléphone n'a pas la place de nommer un espace, et le menu de
+   poche le dit déjà. */
 .who {
   display: flex;
   flex: none;
   align-items: center;
   gap: var(--fold-space-sm);
-  height: 40px;
-  padding: 0 var(--fold-space-xs) 0 var(--fold-space-md);
+  height: 42px;
+  padding: 0 var(--fold-space-xs);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-hover);
@@ -15,34 +26,287 @@
   cursor: pointer;
 }
 
-.who-name {
-  font-size: var(--fold-text-base);
-  color: var(--fold-color-text);
-  white-space: nowrap;
-}
-
-/* La pastille d'initiales prend le papier : sur l'encre, c'est le contraste qui
-   la détache, pas une bordure de plus. */
+/* La pastille prend le papier : sur l'encre, c'est le contraste qui la détache,
+   pas une bordure de plus. */
 .who-chip {
   flex: none;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--fold-radius-sm);
   background: var(--lfc-paper-50);
   color: var(--lfc-ink-800);
-  font-family: var(--fold-font-label);
+  font-family: var(--lfc-font-caps);
   font-size: var(--fold-text-sm);
   font-weight: var(--lfc-weight-black);
 }
 
-/* L'espace en cours, sous le sélecteur : une ligne qu'on lit, pas une entrée. Le
-   filet la sépare des gestes de la personne qui suivent. */
-.space-current {
-  margin: 0;
-  padding: var(--fold-space-xs) var(--fold-space-md) var(--fold-space-sm);
-  border-bottom: 1px solid var(--fold-color-border);
+.who-titles,
+.who-caret {
+  display: none;
+}
+
+.who-space {
+  font-family: var(--lfc-font-caps);
   font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.who-person {
+  font-size: var(--lfc-text-kicker);
+  line-height: 1;
+  color: var(--lfc-color-on-primary-muted);
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .who {
+    padding: 0 var(--fold-space-sm) 0 var(--fold-space-xs);
+  }
+
+  .who-titles {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .who-caret {
+    display: block;
+    flex: none;
+    color: var(--lfc-color-on-primary-muted);
+  }
+}
+
+/* ── LE PANNEAU ───────────────────────────────────────────────────────────── */
+
+.panel {
+  @include pop.panel;
+}
+
+.head {
+  @include pop.head;
+}
+
+/* L'avatar de la PERSONNE : l'encre douce, pour ne pas répéter la pastille bleue
+   du déclencheur à trois centimètres de là. */
+.head-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-soot-700);
+  color: var(--lfc-paper-0);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+}
+
+.head-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.head-title {
+  @include pop.head-title;
+
+  font-size: var(--fold-text-lg);
+}
+
+.head-note {
+  @include pop.head-note;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section {
+  @include pop.section;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.section-label {
+  @include pop.section-label;
+}
+
+/* ── LES CARTES D'ESPACE ───────────────────────────────────────────────────
+   Des CARTES et non des lignes : choisir pour qui l'on travaille change les
+   prix, la facturation et les écrans disponibles. Un bord visible dit qu'on
+   désigne un objet, là où une ligne survolée dit qu'on va quelque part. */
+.spaces {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.space {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-paper-0);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 200ms ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--lfc-color-border-strong);
+  }
+}
+
+/* L'espace en cours : le bord de marque et le papier chaud. Jamais la seule
+   couleur — la coche de droite dit la même chose en forme. */
+.space.is-on {
+  border-color: var(--fold-color-primary);
+  background: var(--lfc-paper-100);
+}
+
+.space-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-50);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+}
+
+.space-titles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.space-line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.space-name {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.space-kind {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.space-note {
+  font-size: var(--lfc-text-note);
+  line-height: 1.3;
   color: var(--fold-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La flèche dit « on y va », la coche dit « on y est » : deux formes, deux
+   poids. */
+.space-sign {
+  flex: none;
+  color: var(--fold-color-text-faded);
+}
+
+.space-sign.is-on {
+  color: var(--fold-color-primary);
+}
+
+/* ── LES DESTINATIONS ─────────────────────────────────────────────────────── */
+
+.scroller {
+  @include pop.scroller;
+}
+
+.row {
+  @include pop.row;
+}
+
+.row-mark {
+  @include pop.row-mark;
+}
+
+.row-titles {
+  @include pop.row-titles;
+}
+
+.row-label {
+  @include pop.row-label;
+}
+
+.row-note {
+  @include pop.row-note;
+}
+
+.row-badge {
+  @include pop.row-badge;
+}
+
+/* Ce qui appelle une action plutôt qu'il n'informe — la même règle que la
+   sous-barre qui portait ces compteurs avant elle. */
+.row-badge.is-warn {
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+}
+
+/* ── LE PIED ──────────────────────────────────────────────────────────────── */
+
+.foot {
+  @include pop.foot;
+}
+
+.foot-action {
+  @include pop.foot-action;
+
+  &:disabled {
+    color: var(--fold-color-text-faded);
+    cursor: not-allowed;
+  }
+}
+
+/* Sortir n'est pas naviguer : la seule couleur d'alerte du panneau. */
+.foot-action.is-exit {
+  color: var(--lfc-brick-700);
 }

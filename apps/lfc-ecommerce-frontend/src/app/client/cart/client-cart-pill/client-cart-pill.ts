@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldIconComponent, FoldPopoverComponent, FoldPopoverTriggerDirective } from 'fold-ng';
 
 import { formatCents } from '../../format-money';
+import { CartSummary } from '../cart-summary/cart-summary';
 import { ClientCart } from '../client-cart.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 
@@ -17,11 +19,33 @@ import { ClientCopyService } from '../../copy/client-copy.service';
  * au repos il ne montre que sa pastille et son total ; vide, il se réduit au
  * glyphe. Pas de « 0 · 0,00 € » — la maison n'affiche pas de pastille à zéro,
  * et un panier vide n'a rien à annoncer, seulement à s'ouvrir.
+ *
+ * ## 🔴 Deux gestes, et le pli tranche (2026-09-20)
+ *
+ * Au **bureau**, c'est un popover : la même grammaire que la cloche et le menu
+ * d'espaces (`_popover.scss`), avec le décompte dedans et le règlement en pied.
+ * On relit son panier sans quitter le rayon — ce qui est tout l'intérêt.
+ *
+ * **En dessous du pli, il reste le lien qu'il était.** Un panneau de 372 px sur
+ * un téléphone n'est pas un panneau, c'est la page entière en plus petit — et
+ * la page panier existe déjà, avec la place d'y ajuster des quantités.
+ *
+ * Les deux vivent dans le DOM et le CSS choisit, comme le menu de poche et la
+ * marque de la barre : le pli est une affaire de largeur, que le rendu serveur
+ * ne connaît pas. Ce que les deux montrent — la pastille, le total — est un
+ * `<ng-template>` unique : deux copies seraient deux occasions de diverger.
  */
 @Component({
   selector: 'app-client-cart-pill',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, RouterLink],
+  imports: [
+    CartSummary,
+    FoldIconComponent,
+    FoldPopoverComponent,
+    FoldPopoverTriggerDirective,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
   host: { '[class.is-full]': '!cart.isEmpty()' },
   templateUrl: './client-cart-pill.html',
   styleUrl: './client-cart-pill.scss',
@@ -29,6 +53,8 @@ import { ClientCopyService } from '../../copy/client-copy.service';
 export class ClientCartPill {
   protected readonly cart = inject(ClientCart);
   protected readonly t = inject(ClientCopyService).t;
+
+  protected readonly open = signal(false);
 
   protected readonly total = computed(() => formatCents(this.cart.totals().totalCents));
 
@@ -38,4 +64,9 @@ export class ClientCartPill {
     const pieces = this.cart.count();
     return pieces === 0 ? name : `${name} — ${pieces}`;
   });
+
+  /** Partir régler referme le panneau : le lien a fait son travail. */
+  protected close(): void {
+    this.open.set(false);
+  }
 }

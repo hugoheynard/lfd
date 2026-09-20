@@ -23,18 +23,28 @@
      sur 390 px sinon — et c'est le nom qui se faisait tronquer. */
   --fold-text-xs: var(--fold-text-2xs);
 
-  font-family: var(--fold-font-label);
+  /* POGONIA GRASSE, et plus Chunk (Hugo, 2026-09-20). Trois codes de langue de
+     deux lettres en 10,5 px sont le cas le plus dur du registre : ce sont des
+     capitales isolées, sans mot autour pour les rattraper, et les contreformes
+     de Chunk s'y referment complètement — `EN` et `FR` s'y distinguaient par
+     leur silhouette plus que par leurs lettres. Même registre que les pastilles
+     de l'accueil, pour la même raison. Voir `--lfc-font-caps` dans le thème. */
+  font-family: var(--lfc-font-caps);
   font-weight: var(--fold-weight-extrabold);
   letter-spacing: 0.05em;
   /* La hauteur des segments, sans toucher à leur largeur : fold fixe leur
      rembourrage en rem, mais `all: unset` leur fait hériter l'interligne. C'est
-     donc lui qui commande la hauteur du boîtier.
-     🔴 Relevé de 1,85 à 2,30 le 2026-09-17 : le boîtier mesurait 32 px dans une
-     barre où le panier en fait 38, et les deux se lisaient comme un défaut
-     d'alignement. La largeur des segments, elle, ne bouge pas — c'est bien
-     l'interligne qu'on règle, pas le rembourrage.
-     La valeur est CALÉE sur une mesure et non déduite : 1,85 donnait 32 px et
-     2,45 en donnait 40, soit 1 px par 0,075 — d'où 2,30 pour les 38 visés. */
+     donc lui qui commande la hauteur du boîtier — on ne peut pas lui écrire une
+     `height`, il n'y a pas d'élément à qui la donner.
+
+     ⚠️ CETTE VALEUR EST CALÉE SUR UNE MESURE, pas déduite d'un calcul : 1,85
+     donnait 32 px et 2,45 en donnait 40, soit 1 px par 0,075 — d'où 2,30 pour
+     les 38 px de `--lfc-bar-slot-height`, que le panier et le globe obtiennent,
+     eux, en l'écrivant directement. C'est le seul bloc de la rangée qui vise le
+     gabarit au lieu de le lire, et c'est donc le seul qui puisse en dériver
+     sans que rien ne le dise : à vérifier À L'ÉCRAN si le gabarit change, ou si
+     la face change — la graisse et la famille ne déplacent pas l'interligne,
+     mais le rembourrage que fold calcule, lui, suit ses propres crans. */
   line-height: 2.3;
 }
 
@@ -64,16 +74,16 @@
 
 /* ── Le mode compact : un globe qui porte sa langue ───────────────────────── */
 
-/* 38 px, le gabarit commun de la rangée — celui que le panier tient, que
-   l'entrée du visiteur tient, et que l'interligne ci-dessus vise pour les trois
-   segments. Le globe était à 40 : deux pixels qui faisaient lire la barre comme
-   mal alignée sans qu'on voie lequel des blocs était en cause. */
+/* Le gabarit de la rangée, LU et non recopié : voir `--lfc-bar-slot-height`
+   dans `client-shell.scss`. Le globe l'a porté en dur à 40 px, deux pixels qui
+   faisaient lire la barre comme mal alignée sans qu'on voie lequel des blocs
+   était en cause — c'est ce genre d'écart que le token supprime. */
 .globe {
   position: relative;
   display: grid;
   place-items: center;
-  width: 2.375rem;
-  height: 2.375rem;
+  width: var(--lfc-bar-slot-height);
+  height: var(--lfc-bar-slot-height);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-hover);
@@ -96,7 +106,7 @@
   border-radius: var(--fold-radius-pill);
   background: var(--fold-color-text);
   color: var(--fold-color-bg-header);
-  font-family: var(--fold-font-label);
+  font-family: var(--lfc-font-caps);
   font-size: 0.53125rem;
   font-weight: var(--lfc-weight-black);
   letter-spacing: 0.06em;

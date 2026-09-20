@@ -29,6 +29,7 @@ export const EN: ClientCopy = {
     kickerQr: 'Collection',
     kickerDone: 'Confirmed',
     deskKicker: 'Val d’Isère · order online',
+    brandLine: 'Bakery · Val d’Isère',
     featureAccessFailed:
       'We couldn’t check what the shop offers right now, so some pages stay closed. Reload the page to try again.',
     accountMenu: 'My personal account',
@@ -37,6 +38,16 @@ export const EN: ClientCopy = {
     workspacePersonal: 'Personal',
     workspaceCurrentPersonal: 'Personal account',
     workspaceCurrentFor: 'Working for',
+    workspaceSection: 'My workspaces',
+    workspaceKindPro: 'Pro',
+    workspaceKindPersonal: 'Personal',
+    workspacePersonalNote: 'Orders in your own name',
+    workspaceRolePro: 'Pro account',
+    notificationsClose: 'Close',
+    notificationsCount: '{unread} unread · {total} in total',
+    notificationsMarkAll: 'Mark all as read',
+    notificationsEmpty: 'Nothing to report.',
+    cartOpen: 'View my basket',
   },
 
   nav: {

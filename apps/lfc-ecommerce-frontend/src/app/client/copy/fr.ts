@@ -24,6 +24,7 @@ export const FR: ClientCopy = {
     kickerQr: 'Retrait',
     kickerDone: 'Confirmée',
     deskKicker: 'Val d’Isère · commande en ligne',
+    brandLine: 'Boulangerie · Val d’Isère',
     featureAccessFailed:
       'Nous n’avons pas pu vérifier ce que la boutique propose en ce moment : certaines pages restent fermées. Rechargez la page pour réessayer.',
     accountMenu: 'Mon compte personnel',
@@ -32,6 +33,16 @@ export const FR: ClientCopy = {
     workspacePersonal: 'Perso',
     workspaceCurrentPersonal: 'Compte perso',
     workspaceCurrentFor: 'Vous travaillez pour',
+    workspaceSection: 'Mes espaces',
+    workspaceKindPro: 'Pro',
+    workspaceKindPersonal: 'Perso',
+    workspacePersonalNote: 'Vos commandes à votre nom',
+    workspaceRolePro: 'Compte pro',
+    notificationsClose: 'Fermer',
+    notificationsCount: '{unread} non lues · {total} au total',
+    notificationsMarkAll: 'Tout marquer comme lu',
+    notificationsEmpty: 'Rien à signaler.',
+    cartOpen: 'Voir mon panier',
   },
 
   nav: {

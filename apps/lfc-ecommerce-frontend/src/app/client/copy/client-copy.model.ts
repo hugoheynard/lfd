@@ -43,6 +43,8 @@ export interface ClientCopy {
     readonly kickerQr: string;
     readonly kickerDone: string;
     readonly deskKicker: string;
+    /** La ligne sous la marque, dans la barre : ce qu'est la maison, sur tous les écrans. */
+    readonly brandLine: string;
     /**
      * Ce que dit l'app quand elle n'a pas pu lire ce que la boutique permet.
      * Elle se comporte alors comme fermée : la phrase dit pourquoi des écrans
@@ -61,6 +63,45 @@ export interface ClientCopy {
     readonly workspaceCurrentPersonal: string;
     /** Ce qui précède, pour un lecteur d'écran, l'enseigne en cours sous le sélecteur. */
     readonly workspaceCurrentFor: string;
+
+    /**
+     * ── LES TROIS POPOVERS DE LA BARRE (maquette du 2026-09-20) ──────────────
+     *
+     * Le menu d'espaces, la cloche et le panier partagent une grammaire — une
+     * bande de tête, des sections, un pied — et donc un voisinage de libellés.
+     */
+
+    /** Le sur-titre de la section des espaces, dans le popover d'identité. */
+    readonly workspaceSection: string;
+    /** La nature d'un espace, en pastille sur sa carte. */
+    readonly workspaceKindPro: string;
+    readonly workspaceKindPersonal: string;
+    /**
+     * La note d'une carte d'espace PERSO. Les cartes de société portent leur
+     * raison sociale ; le perso n'en a pas, et une carte sans note se lirait
+     * comme un espace incomplet.
+     */
+    readonly workspacePersonalNote: string;
+    /** La seconde ligne du déclencheur d'identité, quand on travaille pour une société. */
+    readonly workspaceRolePro: string;
+
+    /** La sortie du popover de notifications — « Fermer », pas « Fermer le menu ». */
+    readonly notificationsClose: string;
+    /**
+     * Le compte du fil : `{unread}` non lues, `{total}` en tout.
+     *
+     * ⚠️ Une seule forme, au pluriel : le fil est une MAQUETTE (cf.
+     * `notifications.fixture.ts`), et accorder un compteur qu'aucun serveur
+     * n'alimente serait de la mécanique sans sujet. À reprendre avec le vrai fil.
+     */
+    readonly notificationsCount: string;
+    /** Ne paraît que s'il reste des non-lues. */
+    readonly notificationsMarkAll: string;
+    /** Le fil est vide — l'état, pas une erreur. */
+    readonly notificationsEmpty: string;
+
+    /** Le pied du popover du panier : il mène à la page où l'on règle. */
+    readonly cartOpen: string;
   };
 
   readonly nav: {

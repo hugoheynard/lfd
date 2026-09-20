@@ -21,6 +21,16 @@
   --lfc-ink-950: #081842;
   --lfc-ink-900: #0d2464;
   --lfc-ink-800: #12307f;
+  /* Le cran qui manquait à la rampe, et il manquait pour une raison visible :
+     la descente bleue commençait sur `ink-800`, c'est-à-dire sur la couleur que
+     la barre porte déjà en aplat sur 96 px. Son « bleu le plus clair » n'était
+     donc clair par rapport à rien (Hugo, 2026-09-20 : « j'ai l'impression que
+     le bleu le plus clair du dégradé ne se voit pas » — il ne se voyait pas
+     parce qu'il n'existait pas).
+     Valeur de la maquette du 2026-09-20, au chiffre près.
+     ⚠️ À ne pas confondre avec `--lfc-ink-700-text`, qui est un rôle de TEXTE
+     sur papier et n'a rien à faire dans un fond. */
+  --lfc-ink-700: #1b3f9e;
   --lfc-ink-600: #1b4bc4;
   --lfc-ink-300: #a9bfe8;
   --lfc-ink-100: #c3d0ee;
@@ -128,7 +138,41 @@
   /* Sur fond de marque : le second niveau de texte, et la tuile d'icône. La réf
      les nomme (« texte secondaire sur fond bleu ») ; fold n'a que `on-primary`. */
   --lfc-color-on-primary-muted: var(--lfc-ink-300);
+  /* Le ton d'une PHRASE sur l'encre, un cran plus clair que `-muted`.
+     Les deux ne font pas le même travail : `-muted` habille un sur-titre qu'on
+     SAISIT, celui-ci une prose qu'on LIT sur plusieurs lignes, et le second
+     demande plus de contraste que le premier — c'est la longueur qui fatigue,
+     pas la taille. La maquette du 2026-09-20 les distingue déjà de la même
+     façon, kicker contre chapô. */
+  --lfc-color-on-primary-lede: var(--lfc-ink-100);
   --lfc-color-on-primary-tile: rgb(250 245 236 / 16%);
+  /* LE FILET SUR L'ENCRE. `-tile` REMPLIT une surface, celui-ci la BORDE.
+
+     ⚠️ CE N'EST PAS UN BLEU, et c'est ce qui le rend juste partout : c'est la
+     crème du papier, posée à 16 %. Le bleu qu'on y voit est celui du fond qui
+     remonte au travers. Sur un dégradé qui s'assombrit vers le bas, une couleur
+     fixe s'écarte du fond à mesure qu'on descend ; une transparence le suit.
+
+     🔴 AFFINER UN TRAIT SE RÈGLE ICI, PAS SUR SON ÉPAISSEUR (Hugo, 2026-09-20 :
+     « possible d'affiner les traits ? »). Un pixel est le plancher du CSS :
+     `0.5px` rend bien un demi-pixel physique sur un écran 2×, mais s'arrondit à
+     zéro ou à un sur un écran 1× — et le filet disparaît chez qui branche un
+     moniteur externe. C'est donc l'opacité qui baisse ; elle a valu 26 %.
+
+     La maquette tient DEUX valeurs — .26 pour ses pastilles, .14 pour ses
+     séparateurs — et nous n'en gardons qu'une : ici les deux rôles se côtoient
+     dans le même bandeau, et un écart de densité entre deux filets voisins se
+     lit comme un défaut plutôt que comme une intention. */
+  --lfc-color-on-primary-hairline: rgb(250 245 236 / 16%);
+  /* LE LAVIS — le fond d'une tuile QUI A DÉJÀ UN BORD. Deux fois plus discret
+     que `-tile`, et c'est le filet qui rend ça possible : tant qu'une surface
+     n'avait que son remplissage pour exister, il fallait l'appuyer ; dès
+     qu'une arête la délimite, le fond n'a plus qu'à la teinter, et l'appuyer
+     la ferait lourde (Hugo, 2026-09-20 : « sur les cartes non actives, alléger
+     le background »).
+     ⚠️ Un token à part plutôt qu'un `-tile` allégé : ses six autres lecteurs
+     n'ont PAS de bord, et s'éteindraient sur l'encre. */
+  --lfc-color-on-primary-wash: rgb(250 245 236 / 8%);
   --lfc-color-accent: var(--lfc-butter-500);
   --lfc-color-on-accent: var(--lfc-butter-900);
   /* Le beurre de l'ACTION, d'un cran sous celui des pastilles : il porte du
@@ -161,6 +205,37 @@
   --fold-font-sans: 'Pogonia', system-ui, sans-serif;
   --fold-font-label: 'Chunk', system-ui, sans-serif;
 
+  /* ── LE REGISTRE DES PETITES CAPITALES ────────────────────────────────────
+     Les sur-titres, les pastilles et les badges : tout ce qui se lit en
+     capitales sous 12 px. Ils portaient Chunk, et c'était une erreur de rôle
+     (Hugo, 2026-09-20 : « les sous-titres, pastilles etc. devraient utiliser
+     une version grasse de pogonia »).
+
+     Chunk est une face de DISPLAY : ses pleins sont énormes et ses contreformes
+     minuscules. À 52 px elle donne sa voix à la maison ; à 10,5 px, en
+     capitales et interlettrée, les contreformes se referment et le mot se
+     devine plutôt qu'il ne se lit. Pogonia en 700 tient le même gras apparent
+     avec des blancs qui survivent à la réduction.
+
+     ⚠️ La maquette le disait déjà, et personne ne l'avait lu comme une règle :
+     sa table de typographie (`SPEC.md` §9) donne Chunk aux TITRES, et Archivo
+     — sa face utilitaire — aux « petites capitales, pastilles, chiffres
+     tabulaires ». Nous n'avons pas Archivo ; la face courante en gras occupe
+     exactement ce rôle. Le handoff avait raison avant nous.
+
+     Une PAIRE et non une seule variable : une face sans sa graisse ne dit rien.
+     Pogonia a ses neuf graisses en fichiers réels (`_lfc-fonts.scss`), donc 700
+     est un vrai gras dessiné, pas un faux gras synthétisé par le navigateur.
+
+     ⚠️ La GRAISSE ne suit pas toujours la face, et ce n'est pas un oubli. Les
+     règles du chrome qui ont basculé gardent la leur — `--lfc-weight-black`
+     pour une pastille posée sur de l'encre, `--fold-weight-extrabold` pour un
+     sur-titre sur du papier —, parce qu'un même mot n'a pas besoin du même
+     poids sur fond sombre et sur fond clair. `--lfc-weight-caps` est le défaut
+     de ceux qui n'ont pas de raison d'en choisir un autre. */
+  --lfc-font-caps: var(--fold-font-sans);
+  --lfc-weight-caps: 700;
+
   /* ── Tailles : l'échelle fold recalée sur la réf ──
      Les huit crans de fold prennent les valeurs de la réf ; les rôles que la
      réf nomme et que l'échelle ne porte pas (le sur-titre du chrome, le CTA, un
@@ -174,13 +249,39 @@
   --fold-text-lg: 0.9375rem; /* 15px — valeur d'un champ */
   --fold-text-xl: 1.3125rem; /* 21px — titre de marque */
   --fold-text-2xl: 1.875rem; /* 30px — titre d'écran */
-  --lfc-text-kicker: 0.59375rem; /* 9.5px — sur-titre du chrome */
+  /* 11px, et non plus 9,5 (Hugo, 2026-09-20). C'est la mesure de la maquette
+     pour ce rôle, et 9,5 px en capitales interlettrées à 0,2 em était sous le
+     seuil où un mot se lit d'un coup d'œil — or un sur-titre ne sert qu'à ça :
+     être saisi sans être lu. Relevé sur le token PARTAGÉ, donc pour ses treize
+     lecteurs à la fois : ils occupent tous le même rôle, et n'en relever qu'un
+     aurait fait des douze autres un défaut d'alignement. */
+  --lfc-text-kicker: 0.6875rem; /* 11px — sur-titre du chrome */
   --lfc-text-note: 0.78125rem; /* 12.5px — argument d'encart */
   --lfc-text-block: 0.875rem; /* 14px — titre de bloc, CTA */
   --lfc-text-cta: 0.90625rem; /* 14.5px — CTA pleine largeur */
   --lfc-text-heading: 1rem; /* 16px — titre d'état */
+  /* 19px — le CHAPÔ sous un titre d'écran. La seule prose du registre sombre,
+     et le seul cran de l'échelle qui serve à LIRE une phrase entière plutôt
+     qu'à saisir un libellé : 15 px l'aurait rangé avec les valeurs de champ,
+     21 px en aurait fait un titre de marque. Mesure de la maquette. */
+  --lfc-text-lede: 1.1875rem;
+  /* 17px — le chapô à l'échelle d'une TUILE.
+     Le rail des étapes a porté les 19 px du chapô pendant une heure, et c'était
+     trop : posé en sombre sur une tuile crème, un même corps paraît plus gros
+     qu'en clair sur l'encre — les pleins gardent toute leur épaisseur au lieu
+     d'être rongés par le fond. Ce cran-ci est celui qui les fait paraître
+     ÉGAUX, ce qui était la demande (Hugo, 2026-09-20 : d'abord « alignées sur
+     la phrase du dessus », puis « ça me parait plus grand », puis « réduire la
+     taille »). Les trois se suivent : c'est l'égalité perçue qu'on cherchait,
+     pas l'égalité des nombres. */
+  --lfc-text-lede-tile: 1.0625rem;
   --lfc-text-screen-sm: 1.75rem; /* 28px — titre d'écran secondaire */
   --lfc-text-screen: 2.375rem; /* 38px — titre d'écran sur le registre sombre */
+  /* ⚠️ Ce cran-là GRANDIT AU BUREAU, plus bas dans ce fichier. La valeur
+     ci-dessus est celle du TÉLÉPHONE, et c'est la seule que la maquette de 390
+     px porte ; au-delà du pli, la même chaîne de 38 px flottait au milieu d'une
+     bande de 1440. Un titre d'écran est le seul cran dont la bonne taille
+     dépend de la largeur de ce qui l'entoure. */
   --lfc-text-banner-cta: 1.0625rem; /* 17px — titre du CTA du bandeau */
 
   /* ── Graisses : la réf ne connaît que 800 et 900 en display ── */
@@ -249,7 +350,34 @@
   /* ── Ombres de l'app client ── */
   --lfc-shadow-card: 0 2px 10px -6px rgb(35 32 26 / 18%);
   --lfc-shadow-promo: 0 10px 26px -14px rgb(35 32 26 / 50%);
+  /* LE RELIEF DU BANDEAU — trois couches, et chacune fait un travail que les
+     deux autres ne font pas (Hugo, 2026-09-20 : « améliorer l'effet relief de
+     cette grande carte »).
+
+     Une ombre UNIQUE ne donne pas de relief, elle donne du flou : `-promo` est
+     une seule portée douce, ce qui suffit à décoller une petite carte du papier
+     mais se dilue sous un bloc de 1360 px.
+
+     1. le CONTACT — un pixel net, sans diffusion : c'est lui qui dit que
+        l'objet POSE sur la page, et sans lui le reste flotte ;
+     2. la PORTÉE — l'ombre qu'on voit, décalée vers le bas ;
+     3. l'AMBIANTE — très large, très diluée : elle assombrit la feuille autour
+        du bloc, et c'est ce qui lui donne sa masse.
+
+     Teintée d'ENCRE (8 24 66) et non de suie : le bandeau chevauche la descente
+     bleue autant que la feuille crème, et une ombre chaude y virerait au brun
+     sur la moitié de sa course. */
+  --lfc-shadow-lifted:
+    0 1px 2px rgb(8 24 66 / 22%), 0 14px 28px -14px rgb(8 24 66 / 45%),
+    0 36px 64px -32px rgb(8 24 66 / 50%);
   --lfc-shadow-logo: 0 2px 8px -4px rgb(10 20 50 / 40%);
+  /* L'ombre des POPOVERS de la barre (maquette du 2026-09-20). Deux couches, et
+     les deux comptent : une portée large et profonde qui décolle le panneau de
+     l'encre, et un filet d'un pixel qui lui rend un bord là où l'ombre seule
+     laisserait la crème du panneau se confondre avec la crème de la page. Les
+     trois autres ombres du thème tombent sur du papier ; celle-ci tombe sur du
+     bleu foncé, et c'est pourquoi elle est la seule aussi dense. */
+  --lfc-shadow-popover: 0 26px 60px rgb(6 16 46 / 34%), 0 0 0 1px rgb(35 32 26 / 7%);
 
   /* ── Mouvement ── */
   --lfc-motion-tap: transform 130ms cubic-bezier(0.4, 0, 1, 1);
@@ -279,6 +407,23 @@
 
 [data-theme='lfc-app'] :where(button, input, select, textarea) {
   font-family: inherit;
+}
+
+/* ── LE TITRE D'ÉCRAN AU BUREAU ─────────────────────────────────────────────
+   52 px, la mesure de la maquette du 2026-09-20 (`handoff-accueil-pro`, héros
+   du connecté ; le héros du visiteur y monte même à 58, sur deux lignes plus
+   courtes — on prend la plus basse des deux, qui tient les trois états).
+
+   Le cran est recalé ICI plutôt que dans chaque écran parce que TOUS ceux qui
+   le lisent sont sur le registre sombre, et qu'ils grandissent donc ensemble ou
+   pas du tout : le titre d'accueil, la confirmation, le règlement, les
+   factures, le retrait, le bandeau d'évènement et les deux dialogues de choix.
+   Un écran qui l'aurait pris seul aurait fait de la chaîne de 38 px un défaut
+   au lieu d'une valeur — c'est le voisin qui rend une taille juste ou petite. */
+@media (min-width: 900px) {
+  [data-theme='lfc-app'] {
+    --lfc-text-screen: 3.25rem; /* 52px */
+  }
 }
 
 [data-theme='lfc-app'] [data-surface='chrome'] {
@@ -348,7 +493,41 @@
   /* ── Rôles hors catalogue : clos ici aussi ── */
   --lfc-color-primary-vivid: var(--lfc-paper-50);
   --lfc-color-on-primary-muted: var(--lfc-ink-300);
+  /* Le ton d'une PHRASE sur l'encre, un cran plus clair que `-muted`.
+     Les deux ne font pas le même travail : `-muted` habille un sur-titre qu'on
+     SAISIT, celui-ci une prose qu'on LIT sur plusieurs lignes, et le second
+     demande plus de contraste que le premier — c'est la longueur qui fatigue,
+     pas la taille. La maquette du 2026-09-20 les distingue déjà de la même
+     façon, kicker contre chapô. */
+  --lfc-color-on-primary-lede: var(--lfc-ink-100);
   --lfc-color-on-primary-tile: rgb(250 245 236 / 16%);
+  /* LE FILET SUR L'ENCRE. `-tile` REMPLIT une surface, celui-ci la BORDE.
+
+     ⚠️ CE N'EST PAS UN BLEU, et c'est ce qui le rend juste partout : c'est la
+     crème du papier, posée à 16 %. Le bleu qu'on y voit est celui du fond qui
+     remonte au travers. Sur un dégradé qui s'assombrit vers le bas, une couleur
+     fixe s'écarte du fond à mesure qu'on descend ; une transparence le suit.
+
+     🔴 AFFINER UN TRAIT SE RÈGLE ICI, PAS SUR SON ÉPAISSEUR (Hugo, 2026-09-20 :
+     « possible d'affiner les traits ? »). Un pixel est le plancher du CSS :
+     `0.5px` rend bien un demi-pixel physique sur un écran 2×, mais s'arrondit à
+     zéro ou à un sur un écran 1× — et le filet disparaît chez qui branche un
+     moniteur externe. C'est donc l'opacité qui baisse ; elle a valu 26 %.
+
+     La maquette tient DEUX valeurs — .26 pour ses pastilles, .14 pour ses
+     séparateurs — et nous n'en gardons qu'une : ici les deux rôles se côtoient
+     dans le même bandeau, et un écart de densité entre deux filets voisins se
+     lit comme un défaut plutôt que comme une intention. */
+  --lfc-color-on-primary-hairline: rgb(250 245 236 / 16%);
+  /* LE LAVIS — le fond d'une tuile QUI A DÉJÀ UN BORD. Deux fois plus discret
+     que `-tile`, et c'est le filet qui rend ça possible : tant qu'une surface
+     n'avait que son remplissage pour exister, il fallait l'appuyer ; dès
+     qu'une arête la délimite, le fond n'a plus qu'à la teinter, et l'appuyer
+     la ferait lourde (Hugo, 2026-09-20 : « sur les cartes non actives, alléger
+     le background »).
+     ⚠️ Un token à part plutôt qu'un `-tile` allégé : ses six autres lecteurs
+     n'ont PAS de bord, et s'éteindraient sur l'encre. */
+  --lfc-color-on-primary-wash: rgb(250 245 236 / 8%);
   --lfc-color-accent: var(--lfc-butter-500);
   --lfc-color-on-accent: var(--lfc-butter-900);
   /* Le beurre de l'ACTION, d'un cran sous celui des pastilles : il porte du

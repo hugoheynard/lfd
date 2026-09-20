@@ -32,6 +32,7 @@ export const IT: ClientCopy = {
     kickerQr: 'Ritiro',
     kickerDone: 'Confermato',
     deskKicker: 'Val d’Isère · ordina online',
+    brandLine: 'Panetteria · Val d’Isère',
     featureAccessFailed:
       'Non siamo riusciti a verificare cosa offre il negozio in questo momento: alcune pagine restano chiuse. Ricarica la pagina per riprovare.',
     accountMenu: 'Il mio account personale',
@@ -40,6 +41,16 @@ export const IT: ClientCopy = {
     workspacePersonal: 'Personale',
     workspaceCurrentPersonal: 'Account personale',
     workspaceCurrentFor: 'Lavori per',
+    workspaceSection: 'I miei spazi',
+    workspaceKindPro: 'Pro',
+    workspaceKindPersonal: 'Personale',
+    workspacePersonalNote: 'Ordini a suo nome',
+    workspaceRolePro: 'Account pro',
+    notificationsClose: 'Chiudi',
+    notificationsCount: '{unread} non lette · {total} in totale',
+    notificationsMarkAll: 'Segna tutto come letto',
+    notificationsEmpty: 'Nulla da segnalare.',
+    cartOpen: 'Vedi il mio carrello',
   },
 
   nav: {

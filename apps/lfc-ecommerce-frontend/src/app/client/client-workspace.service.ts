@@ -103,6 +103,27 @@ export function companyName(company: Pick<CompanyView, 'enseigne' | 'raisonSocia
   return company.enseigne.trim() === '' ? company.raisonSociale : company.enseigne;
 }
 
+/**
+ * Les initiales d'un espace, pour sa pastille : deux lettres au plus.
+ *
+ * Elles se prennent sur les deux PREMIERS mots, et non sur le premier et le
+ * dernier : « Chalet Marmotte de la Daille » doit rendre `CM`, comme la
+ * maquette — le dernier mot d'une enseigne est souvent un lieu.
+ *
+ * Vide en entrée, vide en sortie : on n'invente pas un signe pour un nom qu'on
+ * n'a pas encore lu.
+ */
+export function workspaceInitials(label: string): string {
+  const words = label.split(/\s+/u).filter((word) => word !== '');
+  if (words.length === 0) {
+    return '';
+  }
+  if (words.length === 1) {
+    return (words[0] ?? '').slice(0, 2).toUpperCase();
+  }
+  return `${(words[0] ?? '').charAt(0)}${(words[1] ?? '').charAt(0)}`.toUpperCase();
+}
+
 /** Une entrée du sélecteur d'espace, telle qu'un menu l'affiche. */
 export interface WorkspaceEntry {
   readonly value: string;
