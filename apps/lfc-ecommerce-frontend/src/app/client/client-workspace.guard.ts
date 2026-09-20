@@ -6,7 +6,11 @@ import { filter, firstValueFrom, of, timeout, catchError } from 'rxjs';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
 import { ClientWorkspace } from './client-workspace.service';
-import { COMPANY_HOME, PERSONAL_HOME } from './client-workspace-switch.service';
+import {
+  COMPANY_HOME,
+  PERSONAL_HOME,
+  WORKSPACE_UNKNOWN_HOME,
+} from './client-workspace-switch.service';
 
 /** Où va qui est en perso : l'accueil, ouvert dès que la boutique se visite. */
 const PERSONAL_FALLBACK = '/mon-espace';
@@ -16,7 +20,12 @@ const PERSONAL_FALLBACK = '/mon-espace';
  * passer : l'écran sait dire qu'il n'a pas pu lire le compte, une garde qui
  * pendrait ne dirait rien.
  */
-const WORKSPACE_WAIT_MS = 8_000;
+/**
+ * Exportée pour que son SPEC puisse s'accorder le temps qu'elle prend : le cas
+ * du repli attend vraiment `/me`, et le délai par défaut d'une suite est plus
+ * court. Le recopier dans le test ferait deux nombres à tenir d'accord.
+ */
+export const WORKSPACE_WAIT_MS = 8_000;
 
 /**
  * **Les écrans d'une SOCIÉTÉ se ferment en perso** — Mon compte (le dossier) et
@@ -58,9 +67,10 @@ export const companyWorkspaceGuard: CanActivateFn = async () => {
  *
  * La connexion part vers Auth0 avant qu'on sache dans quel espace la personne
  * reviendra : l'espace se lit sur `/me`, au retour. La cible ne peut donc pas
- * être écrite au départ ; elle se décide ici, une fois l'espace connu —
- * `/bienvenue` en perso, `/nouvelle-commande` dans une société, les mêmes
- * accueils que la bascule d'espace.
+ * être écrite au départ ; elle se décide ici, une fois l'espace connu.
+ * Depuis le 2026-09-20 c'est `/bienvenue` DANS LES DEUX CAS : l'écran sert les
+ * trois états, et le pro y trouve ses deux portes. Les mêmes accueils que la
+ * bascule d'espace.
  *
  * Si `/me` ne répond pas à temps, on retombe sur la prise de commande : c'était
  * la cible de la connexion jusqu'ici, et son écran sait dire qu'il n'a pas pu
@@ -77,7 +87,7 @@ export const workspaceHomeGuard: CanActivateFn = async () => {
   }
   await workspaceKnown(workspace, injector);
   if (workspace.current() === null) {
-    return router.parseUrl(COMPANY_HOME);
+    return router.parseUrl(WORKSPACE_UNKNOWN_HOME);
   }
   return router.parseUrl(workspace.isPersonal() ? PERSONAL_HOME : COMPANY_HOME);
 };

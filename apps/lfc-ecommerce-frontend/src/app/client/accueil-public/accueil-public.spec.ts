@@ -4,7 +4,10 @@ import { provideRouter } from '@angular/router';
 import type { PickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { AuthFacade } from '../../auth/auth.facade';
 import { ClientAudience } from '../client-audience.service';
+import { ClientIdentity } from '../client-identity.service';
+import { ClientWorkspace } from '../client-workspace.service';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { AccueilPublic } from './accueil-public';
@@ -44,9 +47,42 @@ class FakePoints {
   }
 }
 
+/**
+ * 🔴 QUI REGARDE — et il se DÉCLARE, il ne se subit plus.
+ *
+ * Ces montages ne posaient ni la session ni l'espace : les vrais services
+ * répondaient, et l'écran s'est mis à rendre la page d'un PRO le jour où
+ * `/bienvenue` a appris à en servir une (2026-09-20). Trois tests qui
+ * parlaient des maisons ont échoué sans qu'aucun ne parle de qui les regarde
+ * — c'est le signe qu'ils reposaient sur un état non dit.
+ */
+type Regard = 'visiteur' | 'perso' | 'pro';
+
+function whoProviders(who: Regard): readonly unknown[] {
+  const company = who === 'pro' ? { raisonSociale: 'Tommeuses SAS' } : null;
+  // ⚠️ La doublure de l'espace porte TOUTE sa surface de lecture, pas seulement
+  // ce que l'écran regarde : d'autres services du même arbre lisent `current`,
+  // et une doublure partielle échoue à l'exécution, pas à la compilation.
+  return [
+    { provide: AuthFacade, useValue: { isAuthenticated: signal(who !== 'visiteur') } },
+    {
+      provide: ClientWorkspace,
+      useValue: {
+        current: signal(who === 'pro' ? 'c1' : null),
+        company: signal(company),
+        isPersonal: signal(who !== 'pro'),
+        hasChoice: signal(who === 'pro'),
+        options: signal([]),
+      },
+    },
+    { provide: ClientIdentity, useValue: { firstName: signal(null) } },
+  ];
+}
+
 async function mount(
   points: readonly PickupAddressView[],
   shop: 'order' | 'browse' | 'closed' = 'order',
+  who: Regard = 'visiteur',
 ): Promise<ComponentFixture<AccueilPublic>> {
   const store = new FakePoints();
   store.pickups.set(points);
@@ -57,6 +93,7 @@ async function mount(
       { provide: ServicePoints, useValue: store },
       { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
       { provide: ClientFeatureAccess, useValue: { shop: signal(shop) } },
+      ...whoProviders(who),
     ],
   });
   const fixture = TestBed.createComponent(AccueilPublic);
@@ -144,6 +181,7 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
         { provide: ServicePoints, useValue: store },
         { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
         { provide: ClientFeatureAccess, useValue: { shop: signal('order' as const) } },
+        ...whoProviders('visiteur'),
       ],
     });
     const fixture = TestBed.createComponent(AccueilPublic);
@@ -186,5 +224,108 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
     expect(fixture.componentInstance['canOrder']()).toBe(false);
     const button: HTMLButtonElement | null = fixture.nativeElement.querySelector('button.house');
     expect(button?.disabled).toBe(true);
+  });
+});
+
+describe('AccueilPublic — les trois états', () => {
+  const POINTS = [point({ id: 'a' }), point({ id: 'b', label: 'Le Village' })];
+
+  it('accueille un VISITEUR par les trois verbes, et lui garde le bandeau', async () => {
+    const fixture = await mount(POINTS, 'order', 'visiteur');
+
+    expect(fixture.nativeElement.textContent).toContain('Bienvenue');
+    expect(fixture.nativeElement.querySelector('.banner')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-service-doors')).toBeNull();
+  });
+
+  /**
+   * 🔴 LE PERSO SUIT LE PARCOURS DU VISITEUR. Il n'a qu'un mode de service,
+   * donc rien à arbitrer : seule son ACCROCHE le reconnaît.
+   */
+  it('reconnaît un PERSO sans rien changer d’autre', async () => {
+    const fixture = await mount(POINTS, 'order', 'perso');
+
+    expect(fixture.nativeElement.textContent).toContain('Nouvelle commande');
+    expect(fixture.nativeElement.querySelector('.banner')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-service-doors')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.pro-pill')).toBeNull();
+  });
+
+  /**
+   * 🔴 UN PRO EST QUELQU'UN QUI A UNE SOCIÉTÉ, VALIDÉE OU NON. La clientèle
+   * reste `b2c` ici — le dossier n'est pas validé — et les deux portes
+   * paraissent quand même : c'est exactement le cas que la règle du
+   * 2026-09-20 a ouvert.
+   */
+  /**
+   * 🔴 LA MENTION DE LA PORTE EST LA REMISE RÉELLE, et « jusqu'à » parce que
+   * c'est un MAXIMUM : les maisons n'ont pas toutes la même. Elle vient de la
+   * fonction que lisent aussi le rail et le panier — un second calcul serait
+   * une seconde occasion d'annoncer un autre pourcentage.
+   */
+  it('annonce sur la porte la MEILLEURE remise de retrait', async () => {
+    const fixture = await mount(
+      [point({ id: 'a' }), point({ id: 'b', label: 'Le Village', discount: DIX })],
+      'order',
+      'pro',
+    );
+
+    expect(
+      fixture.nativeElement.querySelector('.door-pickup .door-note')?.textContent?.trim(),
+    ).toBe('Jusqu’à −10 %');
+  });
+
+  /**
+   * ⚠️ Sans remise déclarée, la mention DISPARAÎT — elle n'annonce pas
+   * « jusqu'à −0 % ». C'est la règle des preuves de cet écran, et la porte n'y
+   * échappe pas.
+   */
+  it('ne met AUCUNE mention sur la porte quand il n’y a pas de remise', async () => {
+    const fixture = await mount(POINTS, 'order', 'pro');
+
+    expect(fixture.nativeElement.querySelector('.door-pickup .door-note')).toBeNull();
+  });
+
+  it('dit les trois étapes dans la voix d’un PRO', async () => {
+    const fixture = await mount(POINTS, 'order', 'pro');
+    const labels = [...fixture.nativeElement.querySelectorAll('.step-label')].map((node: Element) =>
+      node.textContent?.trim(),
+    );
+
+    expect(labels).toEqual([
+      'Je choisis mon acheminement',
+      'Je choisis l’heure',
+      'Je compose mon panier',
+    ]);
+  });
+
+  it('donne ses deux portes à un PRO même non validé, à la place du bandeau', async () => {
+    const fixture = await mount(POINTS, 'order', 'pro');
+
+    expect(fixture.nativeElement.querySelector('app-service-doors')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.banner')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.pro-pill')).toHaveLength(3);
+  });
+
+  /**
+   * 🔴 « ON RÉPOND » DANS LES TROIS ÉTATS (Hugo, 2026-09-20 : « on répond
+   * toujours »), là où la maquette réservait la bande au pro. Le sur-titre ne
+   * bouge pas — c'est un fait sur la maison — et c'est le TEXTE qui suppose une
+   * question différente selon qui lit.
+   *
+   * Les trois assertions tiennent ensemble : une seule d'entre elles laisserait
+   * passer une bande qui parle à tout le monde de la même chose, ce qui est
+   * exactement ce qu'on ne veut pas.
+   */
+  it.each([
+    ['visiteur', 'Un buffet, un gros volume'],
+    ['perso', 'Changer l’heure, ajouter une pièce'],
+    ['pro', 'Un ajout passe encore par téléphone'],
+  ] as const)('répond à un %s dans ses mots', async (who, fragment) => {
+    const fixture = await mount(POINTS, 'order', who);
+    const band = fixture.nativeElement.querySelector('app-contact-band');
+
+    expect(band?.querySelector('.kicker')?.textContent?.trim()).toBe('On répond');
+    expect(band?.querySelector('.who')?.textContent).toContain(fragment);
   });
 });

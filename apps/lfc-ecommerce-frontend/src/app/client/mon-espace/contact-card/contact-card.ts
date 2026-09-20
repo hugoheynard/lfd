@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { CONTACT_MAIL_HREF, CONTACT_PHONE_HREF } from '../../shop/contact-details';
 
 /**
  * « On répond » — la carte de contact, bloc de PREMIER niveau.
@@ -21,4 +22,7 @@ import { ClientCopyService } from '../../copy/client-copy.service';
 })
 export class ContactCard {
   protected readonly t = inject(ClientCopyService).t;
+
+  protected readonly phoneHref = CONTACT_PHONE_HREF;
+  protected readonly mailHref = CONTACT_MAIL_HREF;
 }

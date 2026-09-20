@@ -14,20 +14,29 @@ import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lf
 import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
+import { ClientIdentity } from '../client-identity.service';
+import { ClientWorkspace } from '../client-workspace.service';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientChrome } from '../client-chrome.service';
 import { EventCard } from '../event-card/event-card';
 import { EventBanner } from '../mon-espace/event-banner/event-banner';
 import { ClientLocale } from '../client-locale.service';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
-import { accueilPublicCopy } from '../copy/screens/accueil-public.copy';
+import {
+  accueilPublicCopy,
+  type ContactBandCopy,
+  type DoorCopy,
+} from '../copy/screens/accueil-public.copy';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { OrderContextStore } from '../order-context.store';
 import { formatHour } from '../format-hour';
 import { MOCK_EVENT } from '../mock-event';
 import { bestPickupDiscount, discountLabel, pickupOffer } from '../shop/pickup-discount';
 import { ServicePoints } from '../shop/pickup-points.store';
+import { PublicHousePickerDialog } from '../shop/public-house-picker-dialog/public-house-picker-dialog';
+import { ContactBand } from '../shop/contact-band/contact-band';
 import { PublicSteps } from '../shop/public-steps/public-steps';
+import { ServiceDoors } from '../shop/service-doors/service-doors';
 import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog';
 
 /**
@@ -80,7 +89,7 @@ interface House {
 @Component({
   selector: 'app-accueil-public',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EventBanner, EventCard, PublicSteps],
+  imports: [ContactBand, EventBanner, EventCard, PublicSteps, ServiceDoors],
   templateUrl: './accueil-public.html',
   styleUrl: './accueil-public.scss',
 })
@@ -98,6 +107,116 @@ export class AccueilPublic {
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly audience = inject(ClientAudience).shown;
+
+  private readonly auth = inject(AuthFacade);
+  private readonly identity = inject(ClientIdentity);
+
+  /**
+   * TROIS ÉTATS, UN SEUL ÉCRAN (`SPEC.md` §1 du handoff du 2026-09-20).
+   *
+   * Le visiteur apprend ce que fait cette maison ; le client reconnu le sait
+   * déjà, et la seule question qui lui reste est ce qu'il veut aujourd'hui.
+   *
+   * 🔴 LE PERSO CONNECTÉ SUIT LE PARCOURS DU VISITEUR, et c'est la décision
+   * qui structure tout le reste : il n'a qu'un mode de service, donc rien à
+   * arbitrer. Seule son ACCROCHE le reconnaît. Les deux portes et leur
+   * arbitrage sont réservés au pro, qui en a deux.
+   */
+  protected readonly recognised = computed(() => this.auth.isAuthenticated());
+
+  /**
+   * 🔴 UN PRO EST QUELQU'UN QUI A UNE SOCIÉTÉ, VALIDÉE OU NON (Hugo,
+   * 2026-09-20 : « compte pro toujours 2 cartes, validé ou pas »).
+   *
+   * Il a d'abord été défini par la CLIENTÈLE (`audience() === 'b2b'`), qui ne
+   * bascule qu'à la validation du dossier. Deux défauts, et le second est le
+   * plus coûteux :
+   *
+   * - un pro en cours de validation voyait la page d'un particulier, sans
+   *   qu'aucun mot ne lui dise ce qui lui manquait ;
+   * - la mise en page d'un pro dépendait d'un statut serveur, donc elle
+   *   n'était pas observable sans un compte validé sous la main. Elle l'est
+   *   maintenant dès qu'il y a une société.
+   *
+   * La clientèle garde son rôle, et il n'a pas changé : elle décide des PRIX et
+   * de l'état de la porte du coursier. Elle ne décide plus de la mise en page.
+   */
+  private readonly workspace = inject(ClientWorkspace);
+
+  protected readonly pro = computed(() => this.recognised() && this.workspace.company() !== null);
+
+  /**
+   * La porte du coursier est-elle ouverte, ou en attente ?
+   *
+   * Les deux conditions comptent, et pour des raisons différentes : la
+   * CLIENTÈLE dit que le dossier est validé, la boutique dit qu'on peut
+   * commander. Une porte ouverte sur l'une mais pas l'autre mènerait à une
+   * garde.
+   */
+  /**
+   * LA PORTE DU RETRAIT, AVEC SA REMISE.
+   *
+   * La mention vient de `bestPickupDiscount` — la MÊME fonction que le rail des
+   * maisons, la pastille d'offre et le panier. Un second calcul serait une
+   * seconde occasion d'annoncer un autre pourcentage.
+   *
+   * ⚠️ Sans remise, la mention est VIDE et la porte ne la dessine pas : cet
+   * écran fait disparaître une preuve plutôt que d'annoncer un zéro, et une
+   * porte n'y échappe pas.
+   */
+  protected readonly pickupDoor = computed<DoorCopy>(() => {
+    const door = this.c().doors.pickup;
+    const best = this.bestLabel();
+    return best === null
+      ? door
+      : { ...door, note: fill(this.c().doors.pickupUpTo, { value: best }) };
+  });
+
+  protected readonly courierState = computed<'open' | 'pending'>(() =>
+    this.audience() === 'b2b' && this.canOrder() ? 'open' : 'pending',
+  );
+
+  /** Le salut nomme, ou ne nomme pas — jamais le prénom de quelqu'un d'autre. */
+  protected readonly heroTitle = computed(() => {
+    const hello = this.c().hello;
+    if (!this.recognised()) {
+      return this.c().screenTitle;
+    }
+    const name = this.identity.firstName();
+    return name === null ? hello.titleAnonymous : fill(hello.title, { name });
+  });
+
+  protected readonly heroKicker = computed(() =>
+    this.recognised() ? this.c().hello.kicker : this.c().kicker,
+  );
+
+  protected readonly heroLede = computed(() =>
+    this.recognised() ? this.c().hello.lede : this.c().lede,
+  );
+
+  /**
+   * CE QUE DIT LA BANDE DE CONTACT, selon à qui elle parle.
+   *
+   * Trois variantes, un seul composant : le sur-titre, les boutons et l'heure
+   * creuse sont des faits sur la maison et ne bougent pas ; la question qu'on
+   * suppose au lecteur, elle, change avec lui. Le tri suit celui de la page —
+   * un pro d'abord, puis le reconnu, puis le visiteur.
+   */
+  protected readonly contact = computed<ContactBandCopy>(() => {
+    const contact = this.c().contact;
+    const variant = this.pro()
+      ? contact.pro
+      : this.recognised()
+        ? contact.personal
+        : contact.visitor;
+    return {
+      kicker: contact.kicker,
+      call: contact.call,
+      write: contact.write,
+      note: contact.note,
+      ...variant,
+    };
+  });
 
   protected readonly event = signal(MOCK_EVENT);
 
@@ -315,6 +434,44 @@ export class AccueilPublic {
     });
 
     void this.router.navigate([SHOP]);
+  }
+
+  /**
+   * LA PORTE DU RETRAIT — « Choisir un point de retrait ».
+   *
+   * Elle rouvre le sélecteur de maisons qui existe déjà, puis retombe dans
+   * `chooseHouse` : le choix voyage donc par le MÊME chemin que depuis le rail,
+   * et il n'y a qu'un endroit où il s'écrit.
+   *
+   * ⚠️ La maquette dessine un dialogue à DEUX VOLETS (où, puis quand) ;
+   * ici ce sont deux dialogues successifs, parce que ce sont ceux qui existent.
+   * L'écart est assumé et signalé, pas masqué — l'enchaînement est le même pour
+   * qui l'utilise.
+   */
+  protected async openPickupDoor(): Promise<void> {
+    if (!this.canOrder()) {
+      return;
+    }
+    const point = await PublicHousePickerDialog.open(this.panels, { currentId: null }).closed;
+    if (point === undefined) {
+      return;
+    }
+    const house = this.houses().find((candidate) => candidate.point.id === point.id);
+    if (house === undefined) {
+      return;
+    }
+    await this.chooseHouse(house);
+  }
+
+  /**
+   * LA PORTE DU COURSIER — « Choisir une adresse ».
+   *
+   * Elle mène à `/nouvelle-commande`, qui porte déjà le carnet d'adresses, les
+   * zones et leurs frais. Rien n'est réécrit ici : une seconde saisie d'adresse
+   * serait une seconde occasion d'annoncer d'autres frais.
+   */
+  protected openCourierDoor(): void {
+    void this.router.navigate(['/nouvelle-commande']);
   }
 
   protected browse(): void {

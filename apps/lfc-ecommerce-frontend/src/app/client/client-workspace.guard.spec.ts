@@ -10,7 +10,11 @@ import { PERSONAL_WORKSPACE, type ShopLevel } from '@lfd/contracts';
 import { of } from 'rxjs';
 
 import { AuthFacade } from '../auth/auth.facade';
-import { companyWorkspaceGuard, workspaceHomeGuard } from './client-workspace.guard';
+import {
+  companyWorkspaceGuard,
+  workspaceHomeGuard,
+  WORKSPACE_WAIT_MS,
+} from './client-workspace.guard';
 import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
 import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
 import { DEFAULT_SURFACES } from './feature-access/feature-access.fixture';
@@ -104,9 +108,33 @@ describe('workspaceHomeGuard — la cible de la connexion', () => {
     expect(await land({ current: PERSONAL_WORKSPACE, companies: false })).toBe('/bienvenue');
   });
 
-  it('envoie une connexion dans une société sur la prise de commande', async () => {
-    expect(await land({ current: TOMMEUSES.id, companies: true })).toBe('/nouvelle-commande');
+  /**
+   * 🔴 LES DEUX ESPACES ATTERRISSENT AU MÊME ENDROIT depuis le 2026-09-20.
+   *
+   * Ce test attendait `/nouvelle-commande`, et il avait raison de le faire
+   * jusque-là. Le jour où `/bienvenue` a appris à servir les trois états, y
+   * envoyer une société a cessé d'être un choix : le pro ne voyait jamais ses
+   * deux portes, puisqu'il n'atterrissait pas sur l'écran qui les porte.
+   */
+  it('envoie une connexion dans une société sur le MÊME accueil que le perso', async () => {
+    expect(await land({ current: TOMMEUSES.id, companies: true })).toBe('/bienvenue');
   });
+
+  /**
+   * ⚠️ LE REPLI N'A PAS SUIVI, ET C'EST VOULU. Sa raison n'a jamais été « c'est
+   * l'accueil d'une société » mais « cet écran-là sait dire qu'il n'a pas pu
+   * lire le compte ». Les deux valeurs étaient égales par accident ; ce test
+   * existe pour qu'elles ne se remettent pas à l'être en silence.
+   */
+  it(
+    'envoie sur la prise de commande quand /me n’a pas dit l’espace',
+    async () => {
+      expect(await land({ current: null, companies: true })).toBe('/nouvelle-commande');
+    },
+    // La garde ATTEND `/me` — c'est tout son objet. Ce cas paie donc l'attente
+    // complète, et lui seul : le délai par défaut de la suite est plus court.
+    WORKSPACE_WAIT_MS + 5_000,
+  );
 
   it('envoie qui n’est pas connecté sur l’accueil public', async () => {
     expect(await land({ signedIn: false, current: null, companies: false })).toBe('/bienvenue');

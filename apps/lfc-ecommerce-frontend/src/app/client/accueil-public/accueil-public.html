@@ -11,17 +11,35 @@
      dépôt. -->
 <div class="page">
   <header class="intro">
-    <p class="screen-kicker">{{ c().kicker }}</p>
+    <!-- 🔴 TROIS ÉTATS, UNE SEULE ACCROCHE (`SPEC.md` §1 du handoff du
+         2026-09-20). Le visiteur lit « Bienvenue » et les trois verbes ; le
+         client reconnu lit « Nouvelle commande » et son prénom. La différence
+         n'est pas de politesse : un visiteur doit apprendre ce que fait cette
+         maison, quelqu'un qui revient le sait, et la seule chose qu'on ait à
+         lui demander est ce qu'il veut aujourd'hui. -->
+    <p class="screen-kicker">{{ heroKicker() }}</p>
     <!-- Les trois verbes vivent ICI et dans le rail, jamais en triptyque de
          cartes à icônes : il a été essayé puis retiré. -->
-    <h1 class="screen-title">{{ c().screenTitle }}</h1>
+    <h1 class="screen-title">{{ heroTitle() }}</h1>
 
     <!-- LE CHAPÔ. Il vient APRÈS le titre et AVANT le rail, et l'ordre est le
          sujet : le titre promet trois verbes, le chapô dit comment, le rail
          montre où l'on en est. Inséré entre les deux, il répond à la question
          que le titre vient de poser ; posé après le rail, il expliquerait une
          mécanique déjà dessinée. -->
-    <p class="screen-lede">{{ c().lede }}</p>
+    <p class="screen-lede">{{ heroLede() }}</p>
+
+    <!-- LES TROIS PASTILLES D'UN PRO, et d'aucun autre. Elles ne vendent rien :
+         elles rappellent ce que son contrat a DÉJÀ changé pour lui — les prix
+         qu'il voit, où on le livre, comment on le facture. Un perso n'a rien
+         de tout ça à se faire rappeler. -->
+    @if (pro()) {
+      <ul class="pro-pills">
+        @for (pill of c().hello.proPills; track pill) {
+          <li class="pro-pill">{{ pill }}</li>
+        }
+      </ul>
+    }
 
     <!-- LE RAIL DES TROIS ÉTAPES, en ligne et pleine largeur sous le titre,
          comme la référence. Il a été projeté un moment à côté du titre, pour
@@ -35,162 +53,201 @@
     <!-- 🔴 `1` et RIEN de franchi : le visiteur qui arrive n'a encore rien
          choisi. Une coche sur un choix qui n'a pas eu lieu serait un mensonge —
          c'est l'écran qui déclare où l'on en est, jamais le composant. -->
-    <app-public-steps [current]="1" />
+    <app-public-steps [current]="1" [pro]="pro()" />
   </header>
 
   <!-- LA FEUILLE crème. Le bandeau de retrait y remonte : le chevauchement est
      délibéré, c'est ce qui fait de lui l'objet le plus lourd de la page. -->
   <div class="sheet">
-    <section class="banner">
-      <!-- La photo du fournil, FONDUE dans l'encre par un seul dégradé diagonal :
+    <!-- 🔴 LE PRO A DEUX PORTES, ET ELLES REMPLACENT LE BANDEAU (`SPEC.md` §1
+         et §2). Un compte perso n'a qu'un mode de service : rien à arbitrer,
+         donc il garde le parcours du visiteur — le bandeau et le rail des
+         maisons. Le pro, lui, doit choisir avant tout le reste, et c'est ce
+         choix qui devient le premier objet de sa page.
+
+         ⚠️ LA CARTE COURSIER EST CONDITIONNÉE, pas décorative : elle n'a de
+         sens que là où la livraison est offerte. Un pro à qui on montrerait une
+         porte fermée découvrirait le refus après l'effort.
+
+         ⚠️ ÉCART ASSUMÉ AVEC LA MAQUETTE : elle dessine une GALLERY de trois
+         vues (les deux portes, puis Noël, puis Traiteur) avec puces et flèches.
+         Ici, les deux portes seules — les deux bandes pleine largeur attendent
+         leur lot. Le reste de la page ne change pas pour autant : « En ce
+         moment » demeure, là où la SPEC le fait disparaître au profit de la
+         gallery. -->
+    @if (pro()) {
+      <app-service-doors
+        [pickupCopy]="pickupDoor()"
+        [courierCopy]="c().doors.courier"
+        [courierState]="courierState()"
+        (pickupChosen)="openPickupDoor()"
+        (courierChosen)="openCourierDoor()"
+      />
+    }
+
+    @if (!pro()) {
+      <section class="banner">
+        <!-- La photo du fournil, FONDUE dans l'encre par un seul dégradé diagonal :
          opaque à gauche, où vit le texte, presque claire à droite, où l'on veut
          voir la vitrine. -->
-      <span class="banner-photo" aria-hidden="true"></span>
-      <span class="banner-veil" aria-hidden="true"></span>
+        <span class="banner-photo" aria-hidden="true"></span>
+        <span class="banner-veil" aria-hidden="true"></span>
 
-      <!-- 🔴 La pastille est SŒUR du bloc de texte, pas son premier enfant : c'est
+        <!-- 🔴 La pastille est SŒUR du bloc de texte, pas son premier enfant : c'est
          ce qui met les cartes de maison à hauteur du titre (« Je passe la
          prendre »). Dans le pitch, elle poussait le titre de sa propre hauteur,
          et la colonne de droite — calée en bas — commençait 34 px plus bas
          (mesuré le 2026-09-17). La grille du bandeau lui donne sa rangée. -->
-      <div class="banner-inner">
-        <span class="banner-tag">{{ c().hero.tag }}</span>
+        <div class="banner-inner">
+          <span class="banner-tag">{{ c().hero.tag }}</span>
 
-        <div class="pitch">
-          <h2 class="banner-title">{{ c().hero.title }}</h2>
-          <p class="banner-intro">{{ c().hero.intro }}</p>
+          <div class="pitch">
+            <h2 class="banner-title">{{ c().hero.title }}</h2>
+            <p class="banner-intro">{{ c().hero.intro }}</p>
 
-          <!-- Les preuves, sous un filet. Chacune DISPARAÎT faute de donnée
+            <!-- Les preuves, sous un filet. Chacune DISPARAÎT faute de donnée
              plutôt que d'annoncer un zéro : « −0 % au retrait » serait une
              promesse vide écrite en gros. -->
-          <div class="proof">
-            @if (bestLabel(); as label) {
-              <span class="proof-item">
-                <span class="proof-value">{{ label }}</span>
-                <span class="proof-label">{{ c().proof.discountLabel }}</span>
-              </span>
-            }
+            <div class="proof">
+              @if (bestLabel(); as label) {
+                <span class="proof-item">
+                  <span class="proof-value">{{ label }}</span>
+                  <span class="proof-label">{{ c().proof.discountLabel }}</span>
+                </span>
+              }
 
-            <!-- 🔴 Le filet sépare DEUX preuves : il ne suit pas la première.
+              <!-- 🔴 Le filet sépare DEUX preuves : il ne suit pas la première.
                  Il suivait chacune, du temps où une troisième fermait toujours
                  la rangée — celle-ci partie, le dernier filet pendait dans le
                  vide. Un séparateur n'a de sens qu'entre deux choses. -->
-            @if (bestLabel() && opensAt()) {
-              <span class="proof-rule" aria-hidden="true"></span>
-            }
+              @if (bestLabel() && opensAt()) {
+                <span class="proof-rule" aria-hidden="true"></span>
+              }
 
-            @if (opensAt(); as opens) {
-              <span class="proof-item">
-                <span class="proof-value">{{ opens }}</span>
-                <span class="proof-label">{{ c().proof.opensLabel }}</span>
-              </span>
-            }
+              @if (opensAt(); as opens) {
+                <span class="proof-item">
+                  <span class="proof-value">{{ opens }}</span>
+                  <span class="proof-label">{{ c().proof.opensLabel }}</span>
+                </span>
+              }
+            </div>
           </div>
-        </div>
 
-        <div class="picker">
-          @if (!ready()) {
-            <p class="houses-note">…</p>
-          } @else if (houses().length === 0) {
-            <!-- Aucune maison : on le dit. Le magasin laisse ses listes vides
+          <div class="picker">
+            @if (!ready()) {
+              <p class="houses-note">…</p>
+            } @else if (houses().length === 0) {
+              <!-- Aucune maison : on le dit. Le magasin laisse ses listes vides
                quand la lecture échoue, « plutôt qu'une station de
                démonstration ». -->
-            <div class="empty">
-              <span class="empty-title">{{ c().empty.title }}</span>
-              <span class="empty-text">{{ c().empty.subtitle }}</span>
-            </div>
-          } @else {
-            <div class="rail">
-              <ul class="houses" #rail (scroll)="onRailScroll()">
-                @for (house of houses(); track house.point.id) {
-                  <li>
-                    <!-- 🔴 Une maison fermée est grisée et NON CLIQUABLE dès ici :
+              <div class="empty">
+                <span class="empty-title">{{ c().empty.title }}</span>
+                <span class="empty-text">{{ c().empty.subtitle }}</span>
+              </div>
+            } @else {
+              <div class="rail">
+                <ul class="houses" #rail (scroll)="onRailScroll()">
+                  @for (house of houses(); track house.point.id) {
+                    <li>
+                      <!-- 🔴 Une maison fermée est grisée et NON CLIQUABLE dès ici :
                        faire choisir une heure pour une boutique fermée ferait
                        arriver le refus après l'effort. Le refus précède
                        l'effort. -->
-                    <button
-                      class="house"
-                      type="button"
-                      [disabled]="!canOrder()"
-                      (click)="chooseHouse(house)"
-                    >
-                      <span class="house-head">
-                        @if (house.best) {
-                          <span class="house-flag">{{ c().houses.best }}</span>
-                        } @else if (!canOrder()) {
-                          <span class="house-flag is-off">{{ c().houses.closed }}</span>
-                        }
+                      <button
+                        class="house"
+                        type="button"
+                        [disabled]="!canOrder()"
+                        (click)="chooseHouse(house)"
+                      >
+                        <span class="house-head">
+                          @if (house.best) {
+                            <span class="house-flag">{{ c().houses.best }}</span>
+                          } @else if (!canOrder()) {
+                            <span class="house-flag is-off">{{ c().houses.closed }}</span>
+                          }
 
-                        <span class="house-name">{{ house.name }}</span>
-                        <span class="house-place">{{ house.place }}</span>
-                      </span>
-
-                      <span class="house-tail">
-                        <span class="house-offer">
-                          {{ house.offer.label }}
+                          <span class="house-name">{{ house.name }}</span>
+                          <span class="house-place">{{ house.place }}</span>
                         </span>
 
-                        <span class="house-foot">
-                          <span class="house-state">
-                            @if (canOrder()) {
-                              {{ c().houses.choose }}
-                            } @else {
-                              {{ c().houses.closedHint }}
-                            }
+                        <span class="house-tail">
+                          <span class="house-offer">
+                            {{ house.offer.label }}
                           </span>
-                          <span class="house-chevron" aria-hidden="true">→</span>
+
+                          <span class="house-foot">
+                            <span class="house-state">
+                              @if (canOrder()) {
+                                {{ c().houses.choose }}
+                              } @else {
+                                {{ c().houses.closedHint }}
+                              }
+                            </span>
+                            <span class="house-chevron" aria-hidden="true">→</span>
+                          </span>
                         </span>
-                      </span>
-                    </button>
-                  </li>
-                }
-              </ul>
-              <!-- Le voile de bord : il dit qu'il reste quelque chose à droite, là
+                      </button>
+                    </li>
+                  }
+                </ul>
+                <!-- Le voile de bord : il dit qu'il reste quelque chose à droite, là
                  où une carte coupée net donnerait une liste finie. Il disparaît
                  avec le débordement, pour la même raison. -->
-              @if (railOverflows()) {
-                <span class="rail-edge" aria-hidden="true"></span>
-              }
-            </div>
+                @if (railOverflows()) {
+                  <span class="rail-edge" aria-hidden="true"></span>
+                }
+              </div>
 
-            <p class="houses-note">
-              <!-- 🔴 Puces et consigne n'apparaissent QUE si le rail déborde
+              <p class="houses-note">
+                <!-- 🔴 Puces et consigne n'apparaissent QUE si le rail déborde
                  vraiment : tout ce qui tient à l'écran n'a rien à faire défiler,
                  et demander le geste serait faux. Les puces, elles, SUIVENT le
                  défilement — figées, elles annonceraient une position qu'elles
                  ne tiennent pas. -->
-              @if (railOverflows()) {
-                <span class="dots" aria-hidden="true">
-                  @for (house of houses(); track house.point.id; let i = $index) {
-                    <span class="dot" [class.is-here]="i === railIndex()"></span>
-                  }
-                </span>
-              }
-              <span>{{ houseCount() }}</span>
-              @if (railOverflows()) {
-                <!-- Le point médian est un séparateur DESSINÉ : le `gap` le sépare
+                @if (railOverflows()) {
+                  <span class="dots" aria-hidden="true">
+                    @for (house of houses(); track house.point.id; let i = $index) {
+                      <span class="dot" [class.is-here]="i === railIndex()"></span>
+                    }
+                  </span>
+                }
+                <span>{{ houseCount() }}</span>
+                @if (railOverflows()) {
+                  <!-- Le point médian est un séparateur DESSINÉ : le `gap` le sépare
                    à l'œil, mais un lecteur d'écran enchaînait « 2 maisons·
                    faites défiler » d'un trait. -->
-                <span aria-hidden="true">·</span>
-                <span>{{ c().houses.scroll }}</span>
-              }
-            </p>
-          }
+                  <span aria-hidden="true">·</span>
+                  <span>{{ c().houses.scroll }}</span>
+                }
+              </p>
+            }
+          </div>
         </div>
-      </div>
 
-      <!-- LA SORTIE, dans le bas du bandeau. Demander la maison avant d'avoir
+        <!-- LA SORTIE, dans le bas du bandeau. Demander la maison avant d'avoir
          montré un croissant est un péage : on laisse une porte vers le rayon. -->
-      <div class="browse">
-        <span class="browse-said">
-          <span class="browse-mark" [attr.aria-label]="c().browse.helpLabel">?</span>
-          <span class="browse-text">
-            {{ c().browse.lead }} <strong>{{ c().browse.strong }}</strong> {{ c().browse.tail }}
+        <div class="browse">
+          <span class="browse-said">
+            <span class="browse-mark" [attr.aria-label]="c().browse.helpLabel">?</span>
+            <span class="browse-text">
+              {{ c().browse.lead }} <strong>{{ c().browse.strong }}</strong> {{ c().browse.tail }}
+            </span>
           </span>
-        </span>
-        <button class="browse-cta" type="button" (click)="browse()">{{ c().browse.cta }}</button>
-      </div>
-    </section>
+          <button class="browse-cta" type="button" (click)="browse()">{{ c().browse.cta }}</button>
+        </div>
+      </section>
+    }
+
+    <!-- 🔴 « ON RÉPOND », DANS LES TROIS ÉTATS (Hugo, 2026-09-20 : « on répond
+         toujours »), là où la maquette réservait cette bande au pro. Le
+         visiteur est celui qui a le plus de raisons d'appeler : il ne sait pas
+         encore si ce qu'il veut est faisable. Seul son TEXTE change, et c'est
+         l'écran qui choisit — la bande, elle, ne sait pas à qui elle parle.
+
+         Sa place est celle de la référence : après les portes (ou le bandeau),
+         avant tout ce qui vend. Un numéro de téléphone posé après une promo se
+         lirait comme un recours ; posé ici, il est une option de plus. -->
+    <app-contact-band [copy]="contact()" />
 
     <!-- EN CE MOMENT. `null` est un état de PREMIÈRE CLASSE : hors période, le
        bloc n'existe pas — pas de carte vide, pas de « bientôt ». L'or est

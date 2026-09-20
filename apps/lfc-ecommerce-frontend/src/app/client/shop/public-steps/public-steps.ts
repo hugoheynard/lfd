@@ -66,10 +66,24 @@ export class PublicSteps {
    */
   readonly answers = input<readonly (string | null)[]>([]);
 
+  /**
+   * Le rail parle-t-il à un PRO ?
+   *
+   * 🔴 Ce ne sont pas d'autres étapes : c'est le même parcours, dans le même
+   * ORDRE, dit autrement — un pro arbitre entre deux acheminements là où un
+   * particulier choisit une maison. Voir `StepsCopy.pro`.
+   *
+   * ⚠️ Entrée et non déduction : ce composant ne connaît ni la session ni
+   * l'espace, et c'est ce qui lui permet de servir aussi la boutique.
+   */
+  readonly pro = input(false);
+
   private readonly locale = inject(ClientLocale);
 
   protected readonly steps = computed<readonly Step[]>(() => {
-    const copy = stepsCopy(this.locale.current());
+    const dictionary = stepsCopy(this.locale.current());
+    // Les trois étapes du registre demandé — mêmes rangs, mêmes rôles.
+    const copy = this.pro() ? dictionary.pro : dictionary;
     const here = this.current();
     const answers = this.answers();
     return [

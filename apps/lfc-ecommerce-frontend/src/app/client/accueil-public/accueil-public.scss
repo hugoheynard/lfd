@@ -422,9 +422,28 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 .houses {
   display: flex;
   gap: var(--fold-space-md);
-  margin: 0;
-  padding: 0 0 var(--fold-space-xs);
   list-style: none;
+
+  /* 🔴 DU JEU AUTOUR DE LA PISTE, repris par une marge négative (Hugo,
+     2026-09-20 : « le hover sur les cartes crop un peu »).
+
+     Un conteneur qui défile CLIPPE : `overflow-x: auto` force l'axe vertical à
+     `auto` lui aussi, et les cartes touchaient le rail au nord et à l'ouest.
+     Le `scale(1.012)` du survol dépassait donc d'un pixel et demi en haut et de
+     deux à gauche — assez pour qu'on voie la carte se faire raboter, pas assez
+     pour qu'on comprenne pourquoi.
+
+     Le rembourrage ouvre la zone de clip, la marge négative lui reprend la
+     place : rien ne bouge à l'écran, et la carte a de quoi grandir.
+
+     ⚠️ LE PRIX, et il est assumé : la zone de rembourrage appartient à la boîte
+     défilante, donc quand le rail défile — au-delà de deux maisons, ou sur un
+     écran étroit — la carte suivante peut affleurer de ces 4 px avant d'être
+     coupée. La maquette interdit qu'elle APPARAISSE ; quatre pixels ne sont pas
+     une apparition, et l'alternative était de renoncer au survol. Le vertical
+     est plus généreux parce qu'il ne coûte rien : rien ne défile sur cet axe. */
+  margin: -8px -4px calc(-8px + var(--fold-space-xs));
+  padding: 8px 4px calc(8px + var(--fold-space-xs));
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -703,8 +722,16 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
      « affiner les traits » — qui visait les SÉPARATEURS — pour une consigne
      valant aussi les bords. Les deux ne font pas le même travail. Un
      séparateur divise et doit s'effacer ; le bord d'un bouton dit où l'on
-     clique, et c'est la seule cible de cette bande. Il reprend donc 2 px. */
-  border: 2px solid var(--lfc-color-on-primary-hairline);
+     clique, et c'est la seule cible de cette bande. Il reprend donc 2 px — et
+     sa propre densité : `-edge` plutôt que `-hairline`, parce que la teinte
+     d'un séparateur reste trop discrète pour délimiter une cible, même à deux
+     pixels. Voir la famille des trois crans dans le thème.
+
+     La GRAISSE monte au noir par la même logique : le registre des petites
+     capitales est calé pour des libellés qu'on survole, et ce mot-ci est le
+     seul de la bande sur lequel on agit. */
+  border: 2px solid var(--lfc-color-on-primary-edge);
+  font-weight: var(--lfc-weight-black);
   border-radius: var(--fold-radius-md);
   background: transparent;
   color: var(--lfc-paper-0);
@@ -926,5 +953,53 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   .house-offer,
   .house-state {
     font-size: var(--fold-text-sm);
+  }
+}
+
+/* ══ LES PASTILLES D'UN PRO ════════════════════════════════════════════════
+   Sur l'encre, creuses : un voile de crème et un filet. Elles RAPPELLENT ce
+   que le contrat a déjà changé — elles n'annoncent rien de nouveau, donc rien
+   ne doit s'y lire comme une offre. Le beurre leur est interdit pour la même
+   raison qu'à la pastille de régime du menu : il dit l'argent. */
+.pro-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pro-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 13px;
+  border: 1px solid var(--lfc-color-on-primary-edge);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-color-on-primary-tile);
+  color: var(--lfc-paper-0);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+/* Les portes d'un pro mordent l'encre comme le bandeau qu'elles remplacent :
+   c'est ce chevauchement qui en fait le premier objet de la page. Il vit ICI et
+   non dans le composant — c'est la mise en page de l'écran, pas la leur. */
+/* L'écran donne leurs images aux portes — la photo du fournil est celle qu'il
+   sert déjà au bandeau. ⚠️ Celle du COURSIER est provisoire : voir
+   `service-doors.scss`, qui porte la raison.
+   (Le pourquoi vit là-bas et pas ici : cette feuille a un budget de 10 kB, et
+   les commentaires y comptent — dépassement constaté le 2026-09-20.) */
+app-service-doors {
+  --door-photo-pickup: #{$fournil};
+}
+
+@media (min-width: 900px) {
+  app-service-doors {
+    margin-top: -6rem;
   }
 }
