@@ -39,14 +39,18 @@ function parseDotenv(text) {
   return out;
 }
 
-const fileVars = existsSync(envPath)
-  ? parseDotenv(readFileSync(envPath, 'utf8'))
-  : {};
+const fileVars = existsSync(envPath) ? parseDotenv(readFileSync(envPath, 'utf8')) : {};
 
 // process.env (CI/shell) gagne sur le fichier .env.
 const read = (key) => (process.env[key] ?? fileVars[key] ?? '').trim();
 
-const KEYS = ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_AUDIENCE', 'API_BASE_URL', 'ADMIN_BASE_URL'];
+const KEYS = [
+  'AUTH0_DOMAIN',
+  'AUTH0_CLIENT_ID',
+  'AUTH0_AUDIENCE',
+  'API_BASE_URL',
+  'ADMIN_BASE_URL',
+];
 
 // Réglages FACULTATIFS : leur absence éteint une fonction, elle ne casse rien.
 // Ils ne figurent donc pas dans l'avertissement — une alerte qui sonne à chaque
@@ -63,13 +67,13 @@ if (missing.length > 0) {
   );
 }
 
-
 // La révision du dépôt — l'identité du BUILD, celle par laquelle Sentry
 // rapproche une pile minifiée de ses source maps. Même variable que le
 // backend (`APP_REVISION`), posée par la CI au SHA du commit. Absente en
 // local : « inconnue » est plus honnête qu'une valeur qui ferait croire à un
 // build tracé.
-const appRevision = (process.env['APP_REVISION'] ?? fileVars['APP_REVISION'] ?? '').trim() || 'inconnue';
+const appRevision =
+  (process.env['APP_REVISION'] ?? fileVars['APP_REVISION'] ?? '').trim() || 'inconnue';
 
 const banner =
   '// ⚠️ GÉNÉRÉ — ne pas éditer, ne pas committer (git-ignored).\n' +

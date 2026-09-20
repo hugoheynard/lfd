@@ -40,9 +40,7 @@ function parseDotenv(text) {
   return out;
 }
 
-const fileVars = existsSync(envPath)
-  ? parseDotenv(readFileSync(envPath, 'utf8'))
-  : {};
+const fileVars = existsSync(envPath) ? parseDotenv(readFileSync(envPath, 'utf8')) : {};
 
 const apiBaseUrl = (
   process.env['B2B_ADMIN_API_BASE_URL'] ??
@@ -58,13 +56,13 @@ if (apiBaseUrl === '') {
   );
 }
 
-
 // La révision du dépôt — l'identité du BUILD, celle par laquelle Sentry
 // rapproche une pile minifiée de ses source maps. Même variable que le
 // backend (`APP_REVISION`), posée par la CI au SHA du commit. Absente en
 // local : « inconnue » est plus honnête qu'une valeur qui ferait croire à un
 // build tracé.
-const appRevision = (process.env['APP_REVISION'] ?? fileVars['APP_REVISION'] ?? '').trim() || 'inconnue';
+const appRevision =
+  (process.env['APP_REVISION'] ?? fileVars['APP_REVISION'] ?? '').trim() || 'inconnue';
 
 const banner =
   '// ⚠️ GÉNÉRÉ — ne pas éditer, ne pas committer (git-ignored).\n' +

@@ -26,7 +26,7 @@ de deux champs — tu le tranches en suivant le voisinage.
 ## Les conventions front
 
 **La source de vérité est
-[`apps/lfc-B2B-platform-frontend/CLAUDE.md`](../../apps/lfc-B2B-platform-frontend/CLAUDE.md)**,
+[`apps/lfc-ecommerce-frontend/CLAUDE.md`](../../apps/lfc-ecommerce-frontend/CLAUDE.md)**,
 et le back-office n'ajoute que ce qui lui est propre dans son propre
 `CLAUDE.md`. **Lis les deux avant de coder.** Ce qui suit est l'aide-mémoire des
 règles qu'on enfreint le plus, pas un substitut.

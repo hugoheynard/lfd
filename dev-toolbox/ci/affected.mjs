@@ -36,8 +36,8 @@ const AREAS = {
   // Les deux fronts SÉPARÉMENT : ils ont chacun leur job, donc un commit qui ne
   // touche que la boutique n'a aucune raison de relancer l'admin — ni ses 745
   // tests, ni sa compilation AOT.
-  front_admin: (name) => name === "lfc-b2b-admin-frontend",
-  front_platform: (name) => name === "lfc-b2b-platform-frontend",
+  front_admin: (name) => name === "lfd-backoffice-frontend",
+  front_platform: (name) => name === "lfc-ecommerce-frontend",
   gateway: (name) => name === "lfd-gateway",
 };
 

@@ -201,7 +201,7 @@ lui-même — il faut un geste pour basculer.
   taux max : `projection.ts` pousse un HT, mais le chemin d'affichage côté
   client n'a pas été relu ;
 - s'il existe des commandes en cours dont le total bougerait à la bascule ;
-- ce que `lfc-B2B-platform-frontend` affiche du prix reçu (HT + TVA, ou TTC
+- ce que `lfc-ecommerce-frontend` affiche du prix reçu (HT + TVA, ou TTC
   recomposé) — l'écart **perçu par le client pro** dépend de ce chemin ;
 - que `pim/channels/b2b-platform/` puisse importer `pim/vat-rates/domain/ports/`
   — la matrice du §3 est au niveau des blocs, donc `pim → pim` devrait passer,

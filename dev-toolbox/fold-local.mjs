@@ -130,7 +130,7 @@ function freshDeps() {
 
 /** L'app qui héberge la copie canonique — celle sur laquelle on travaille.
  *  `FOLD_HOST` pour en désigner une autre. */
-const HOST = process.env.FOLD_HOST ?? "apps/lfc-B2B-admin-frontend";
+const HOST = process.env.FOLD_HOST ?? "apps/lfd-backoffice-frontend";
 
 /** Une copie chez l'hôte, un lien chez les autres. */
 function spread() {

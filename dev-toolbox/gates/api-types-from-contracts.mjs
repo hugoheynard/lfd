@@ -72,7 +72,7 @@ function frontFiles() {
   return (
     execFileSync(
       "git",
-      ["ls-files", "apps/lfc-B2B-admin-frontend/src", "apps/lfc-B2B-platform-frontend/src"],
+      ["ls-files", "apps/lfd-backoffice-frontend/src", "apps/lfc-ecommerce-frontend/src"],
       { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
     )
       .split("\n")

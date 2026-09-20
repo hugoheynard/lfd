@@ -292,15 +292,15 @@ en laissant chacun libre d'y appliquer un taux différent.
 
 ## Les fichiers, si on veut lire le code
 
-| Étape         | Fichier                                                                |
-| ------------- | ---------------------------------------------------------------------- |
-| Contrat       | `packages/catalog-sync/src/snapshot.ts`                                |
-| Projection    | `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts`    |
-| Push          | `…/b2b-platform/products/push.service.ts` · `push.controller.ts`       |
-| Port          | `…/b2b-platform/products/driver.ts` · `feed-preview.ts`                |
-| Branchement   | `apps/lfd-api/src/appBootstrap/catalog-feed.module.ts`                 |
-| Ingestion     | `apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts`   |
-| Agrégat reçu  | `…/b2b/catalog/domain/entities/catalog-item.ts`                        |
-| Lecture vente | `…/b2b/catalog/infrastructure/prisma-catalog.reader.ts`                |
-| Parité        | `…/b2b/catalog/domain/catalog-parity.ts`                               |
-| Écran         | `apps/lfc-B2B-admin-frontend/src/app/pim/publication/publication-b2b/` |
+| Étape         | Fichier                                                                 |
+| ------------- | ----------------------------------------------------------------------- |
+| Contrat       | `packages/catalog-sync/src/snapshot.ts`                                 |
+| Projection    | `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts`     |
+| Push          | `…/b2b-platform/products/push.service.ts` · `push.controller.ts`        |
+| Port          | `…/b2b-platform/products/driver.ts` · `feed-preview.ts`                 |
+| Branchement   | `apps/lfd-api/src/appBootstrap/catalog-feed.module.ts`                  |
+| Ingestion     | `apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts`    |
+| Agrégat reçu  | `…/b2b/catalog/domain/entities/catalog-item.ts`                         |
+| Lecture vente | `…/b2b/catalog/infrastructure/prisma-catalog.reader.ts`                 |
+| Parité        | `…/b2b/catalog/domain/catalog-parity.ts`                                |
+| Écran         | `apps/lfd-backoffice-frontend/src/app/pim/publication/publication-b2b/` |

@@ -374,5 +374,5 @@ couvrir les modifications de tout le monde par l'intention du premier qui a
 | Le diff entre deux ancres  | `apps/lfd-api/src/pim/catalogue/revision/application/diff-catalog-revisions.ts` |
 | Le push (et son ancre)     | `apps/lfd-api/src/pim/channels/b2b-platform/products/push.service.ts`           |
 | La projection et ses refus | `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts`             |
-| L'écran Révisions          | `apps/lfc-B2B-admin-frontend/src/app/pim/revisions/`                            |
-| La fiche produit           | `apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/product-form/`               |
+| L'écran Révisions          | `apps/lfd-backoffice-frontend/src/app/pim/revisions/`                           |
+| La fiche produit           | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`              |

@@ -44,7 +44,7 @@ const config: CapacitorConfig = {
   // Sortie du builder `@angular/build:application` (sous-dossier `browser/`).
   // Inutilisé tant que `server.url` est défini, mais `cap sync` exige que le
   // chemin existe — et c'est lui qui servira au basculement en mode embarqué.
-  webDir: 'dist/lfc-b2b-admin-frontend/browser',
+  webDir: 'dist/lfd-backoffice-frontend/browser',
   server: {
     url: PROD_FRONT_ORIGINS.b2bAdminFront,
     // Pas de HTTP en clair : la WebView doit refuser un downgrade, comme le

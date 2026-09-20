@@ -353,4 +353,4 @@ chacune renvoie ici pour ses points ouverts.
 
 - [`../CLAUDE.md`](../CLAUDE.md) — les conventions : architecture, qualité, commits, langue.
 - `apps/*/CLAUDE.md` — les conventions **propres à une app** (elles priment localement).
-- [`../apps/lfc-B2B-platform-frontend/DEPLOYMENT-CLOUDFLARE.md`](../apps/lfc-B2B-platform-frontend/DEPLOYMENT-CLOUDFLARE.md) — déploiement du front client.
+- [`../apps/lfc-ecommerce-frontend/DEPLOYMENT-CLOUDFLARE.md`](../apps/lfc-ecommerce-frontend/DEPLOYMENT-CLOUDFLARE.md) — déploiement du front client.

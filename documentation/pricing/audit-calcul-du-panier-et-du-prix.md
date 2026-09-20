@@ -576,7 +576,7 @@ de danger.
 ### D1 🔴 Le sous-total du panier staff est mille fois trop grand
 
 ```
-apps/lfc-B2B-admin-frontend/src/app/commandes/nouvelle-commande/cart.store.ts:99
+apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/cart.store.ts:99
   readonly subtotalCents = computed(() =>
     this.pricedLines().reduce((total, line) => total + line.unitPriceMillicents * line.quantity, 0),
   );
@@ -1079,12 +1079,12 @@ specificity.ts, floor-policy.ts, volume-ladder.ts, scope-index.ts}`,
 - `apps/lfd-api/src/b2b/catalog/{application/queries/read-shop-catalogue.ts,
 infrastructure/prisma-catalog.reader.ts, domain/ports/catalog.reader.ts}`
 - `apps/lfd-api/prisma/schema/public/orders.prisma` (colonnes `price_millicents`)
-- `apps/lfc-B2B-platform-frontend/src/app/client/{cart/cart-total.ts,
+- `apps/lfc-ecommerce-frontend/src/app/client/{cart/cart-total.ts,
 cart/client-cart.service.ts, order-context.store.ts, mock-station.ts,
 shop/mock-order.ts}`, `legacy/data/{vat.ts,cart.service.ts}`
-- `apps/lfc-B2B-admin-frontend/src/app/commandes/nouvelle-commande/{cart.store.ts,
+- `apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/{cart.store.ts,
 barre-panier/…, panier-commande/…, source-produits/…, __tests__/cart.store.spec.ts}`
-- `apps/lfc-B2B-admin-frontend/src/app/b2b/tarification/simulateur/{quote-bench.ts,
+- `apps/lfd-backoffice-frontend/src/app/b2b/tarification/simulateur/{quote-bench.ts,
 commitment-bench.ts, simulateur-page.{ts,html}}`
 - les onze documents du **B.5**, plus `documentation/README.md`
 

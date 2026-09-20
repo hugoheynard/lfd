@@ -32,7 +32,7 @@ vers une instance de container et **transférer les secrets** au process Node.
 ```mermaid
 flowchart LR
     subgraph client["Navigateur / Front B2B"]
-        FE["lfc-B2B-platform-frontend<br/>(Cloudflare Pages)"]
+        FE["lfc-ecommerce-frontend<br/>(Cloudflare Pages)"]
     end
 
     subgraph edge["Cloudflare Edge"]

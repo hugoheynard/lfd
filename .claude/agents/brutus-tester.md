@@ -141,7 +141,7 @@ pnpm --filter lfd-api test:e2e <motif>          # nécessite Postgres sur 5433
 pnpm --filter @lfd/<paquet> test
 
 # fronts (vitest, via ng test)
-pnpm --filter lfc-b2b-admin-frontend exec ng test --include "<glob>"
+pnpm --filter lfd-backoffice-frontend exec ng test --include "<glob>"
 ```
 
 Une suite e2e **nouvelle** fait échouer `lint:e2e-durations` tant que

@@ -96,7 +96,7 @@ Ce qui reste vrai, et qui coûte :
   technique (le format que son logiciel importe) :
   [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md) ;
 - **« Mes factures » affiche toujours les factures de personne.**
-  [`factures-page.ts:10`](../../apps/lfc-B2B-platform-frontend/src/app/client/mes-factures/factures-page/factures-page.ts)
+  [`factures-page.ts:10`](../../apps/lfc-ecommerce-frontend/src/app/client/mes-factures/factures-page/factures-page.ts)
   importe `MOCK_LEDGER` et `MOCK_STATEMENT_SUM`, et la route est servie
   (`app.routes.ts`, `mes-factures`). Des montants inventés, à côté de commandes
   réelles. Tant que l'export n'existe pas, l'écran n'a rien de vrai à lire : le

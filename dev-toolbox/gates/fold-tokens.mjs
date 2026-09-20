@@ -35,7 +35,7 @@ const ROOT = process.cwd();
  * les apps pointent la même version — le `catalog:` de `pnpm-workspace.yaml`
  * l'épingle une fois pour toutes.
  */
-const FOLD_HOST = "apps/lfc-B2B-admin-frontend/package.json";
+const FOLD_HOST = "apps/lfd-backoffice-frontend/package.json";
 
 /** Les tokens déclarés par la version de fold-ng réellement installée. */
 function declaredTokens() {

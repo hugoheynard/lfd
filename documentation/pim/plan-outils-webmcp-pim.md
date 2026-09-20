@@ -199,7 +199,7 @@ WebMCP ne change pas l'autorité, il change le coût et la fiabilité.
 
 ## 11. Ce que le bâti a constaté
 
-La tranche vit dans `apps/lfc-B2B-admin-frontend/src/app/agent/` :
+La tranche vit dans `apps/lfd-backoffice-frontend/src/app/agent/` :
 `pim-agent-tools.ts` déclare les outils, `agent-tools-page/` est l'écran, et
 `app.routes.ts` porte la route `outils-agent` sous `permissionGuard('pim_catalog:write')`
 — l'écriture, pas la lecture, puisque ces outils écrivent.

@@ -1,4 +1,4 @@
-# lfc-B2B-platform-frontend
+# lfc-ecommerce-frontend
 
 Espace **B2B** de La Folie Coffee — commandes, clients pro et catalogue.
 Angular 22 (zoneless, SSR), design system `fold-ng`. Calqué sur `lfc-PIM-frontend`.
@@ -6,9 +6,9 @@ Angular 22 (zoneless, SSR), design system `fold-ng`. Calqué sur `lfc-PIM-fronte
 ## Dév
 
 ```bash
-pnpm --filter lfc-b2b-platform-frontend dev     # ng serve → http://localhost:7316
-pnpm --filter lfc-b2b-platform-frontend build   # build AOT (défaut = SSR, outputMode server)
-pnpm --filter lfc-b2b-platform-frontend test     # Vitest (ng test)
+pnpm --filter lfc-ecommerce-frontend dev     # ng serve → http://localhost:7316
+pnpm --filter lfc-ecommerce-frontend build   # build AOT (défaut = SSR, outputMode server)
+pnpm --filter lfc-ecommerce-frontend test     # Vitest (ng test)
 ```
 
 ## Déploiement — Cloudflare Pages (statique)
@@ -23,7 +23,7 @@ build (gate `tsc` + `build:cloudflare`) et pousse à Cloudflare Pages (Direct
 Upload, projet `lfc-b2b`) à chaque push sur `main`. Build local pour vérifier :
 
 ```bash
-pnpm --filter lfc-b2b-platform-frontend build:cloudflare
+pnpm --filter lfc-ecommerce-frontend build:cloudflare
 ```
 
 👉 **Pas à pas complet** (créer le projet, où trouver l'API token + l'Account ID,

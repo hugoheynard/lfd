@@ -65,7 +65,7 @@ qui se cumulent, du plus visible au plus grave.
 
 ### 3.1 Le lien de réservation client est un placeholder
 
-[`contact-panel.ts:38`](../../apps/lfc-B2B-platform-frontend/src/app/legacy/contact/contact-panel/contact-panel.ts) :
+[`contact-panel.ts:38`](../../apps/lfc-ecommerce-frontend/src/app/legacy/contact/contact-panel/contact-panel.ts) :
 
 ```ts
 /** Lien de prise de rendez-vous — TODO : URL de réservation réelle. */
@@ -131,13 +131,13 @@ C'est un **bug fonctionnel**, pas un manque de feature.
 ### 3.4 Le calendrier n'affiche pas des RDV
 
 Ce que l'onglet Acquisition appelle « RDV » n'en est pas un
-([`calendrier-page.ts`](../../apps/lfc-B2B-admin-frontend/src/app/commercial/calendrier/calendrier-page.ts)) :
+([`calendrier-page.ts`](../../apps/lfd-backoffice-frontend/src/app/commercial/calendrier/calendrier-page.ts)) :
 c'est une **bande ouverte** allant de `createdAt` à aujourd'hui, teintée en rouge
 parce que `hasOpenSupportRequest` est vrai. Elle n'est **pas posée au jour demandé
 par le client**, et son intitulé (« Rappel demandé ») est tout ce qu'elle porte.
 
 Et cliquer dessus ne fait rien —
-[`calendrier-page.ts`](../../apps/lfc-B2B-admin-frontend/src/app/commercial/calendrier/calendrier-page.ts) :
+[`calendrier-page.ts`](../../apps/lfd-backoffice-frontend/src/app/commercial/calendrier/calendrier-page.ts) :
 
 ```ts
 /** Ouvre le dossier de la société depuis un événement — fiche à venir (side-panel). */

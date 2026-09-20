@@ -2,7 +2,7 @@
 
 Code : `apps/lfd-api/src/pim/catalogue/revision/`,
 `apps/lfd-api/src/pim/channels/`, `apps/lfd-api/src/b2b/catalog/`,
-`apps/lfd-api/src/b2b/orders/`, `apps/lfc-B2B-admin-frontend/src/app/pim/`.
+`apps/lfd-api/src/b2b/orders/`, `apps/lfd-backoffice-frontend/src/app/pim/`.
 
 > **Ce que ce document est.** Une description de **ce que le code fait
 > aujourd'hui**, avec les raisons qui ont façonné chaque mécanisme — celles qui

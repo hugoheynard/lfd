@@ -58,8 +58,8 @@ Monorepo `lfd` (pnpm + turbo), branche de travail **`dev`**.
 ```
 apps/lfd-api/                    NestJS · UN processus, DEUX bases Prisma  ← ce document
                                    src/pim/ = le référentiel (db PIM, routes /pim)
-apps/lfc-B2B-platform-frontend/  Angular 22 zoneless SSR · fold-ng      ─┐ frontends :
-apps/lfc-B2B-admin-frontend/     Angular 22 · back-office staff         ─┘ CLAUDE.md de l'app
+apps/lfc-ecommerce-frontend/  Angular 22 zoneless SSR · fold-ng      ─┐ frontends :
+apps/lfd-backoffice-frontend/     Angular 22 · back-office staff         ─┘ CLAUDE.md de l'app
                                    src/app/pim/ = le référentiel (greffé)
 gateway/                         frontière de confiance : SEUL chemin public vers les backends
 packages/                        contracts · b2b-ui · endpoints · mailer · storage · …
@@ -77,7 +77,7 @@ seulement quand la tâche courante le demande.
 
 ## 0. 🔴 Le back-office est EN SERVICE depuis le 2026-08-17
 
-Le back-office staff (`lfc-B2B-admin-frontend` + `/admin/*` du backend B2B) est
+Le back-office staff (`lfd-backoffice-frontend` + `/admin/*` du backend B2B) est
 **ouvert à l'usage commercial réel**. Ce n'est plus une maquette qu'on itère : des
 comptes clients y sont créés, des accès y sont ouverts, des e-mails en partent.
 

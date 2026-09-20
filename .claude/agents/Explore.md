@@ -21,8 +21,8 @@ est la première façon de ne rien trouver.
 ```
 apps/
   lfd-api/                     backend NestJS — TOUT le serveur, plusieurs blocs
-  lfc-B2B-admin-frontend/      back-office Angular (le staff)
-  lfc-B2B-platform-frontend/   boutique Angular (le client pro)
+  lfd-backoffice-frontend/      back-office Angular (le staff)
+  lfc-ecommerce-frontend/   boutique Angular (le client pro)
 packages/                      13 paquets locaux, cf. plus bas
 gateway/                       Worker Cloudflare — la frontière de confiance
 dev-toolbox/gates/             les portes de qualité : les INVARIANTS du dépôt
@@ -103,7 +103,8 @@ pas dans le contrôleur.** Le gate `api-types-from-contracts.mjs` l'impose.
 
 ## Les fronts Angular
 
-`apps/lfc-B2B-*/src/app/<domaine>/<composant>/` — un dossier par composant, avec
+`apps/lfc-ecommerce-frontend/` et `apps/lfd-backoffice-frontend/`, en
+`src/app/<domaine>/<composant>/` — un dossier par composant, avec
 son `.ts`, son `.html`, son `.scss`. Signaux partout (`signal`, `computed`,
 `inject`), composants `standalone`, design system **fold-ng**. Les magasins sont
 des `*.store.ts` ; les routes vivent dans `<domaine>/<domaine>.routes.ts`.

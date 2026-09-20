@@ -210,7 +210,7 @@ d'une convention à deux valeurs.
 
 `lateFeeCents` existe dans le domaine, `computeVatCents` refuse de la taxer sans
 taux réglé, et le mot n'apparaît **nulle part** dans le front de la plateforme
-(zéro occurrence de `lateFee` dans `apps/lfc-B2B-platform-frontend/src`).
+(zéro occurrence de `lateFee` dans `apps/lfc-ecommerce-frontend/src`).
 
 À vérifier avant d'en faire un lot : dans quelles conditions elle s'applique
 réellement à une commande client, et si le parcours actuel peut la déclencher.
@@ -351,7 +351,7 @@ Les affirmations sur l'existant viennent de ces fichiers, relus le 2026-09-05 :
 - `apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts`
 - `packages/contracts/src/shop-catalogue.ts`
 - `packages/money/src/millicents.ts`, `packages/money/package.json`
-- `apps/lfc-B2B-platform-frontend/src/app/client/cart/cart-total.ts`,
+- `apps/lfc-ecommerce-frontend/src/app/client/cart/cart-total.ts`,
   `cart-summary/cart-summary.{ts,html}`, `client-cart.service.ts`
 - .../client/shop/vat-rates.ts (supprimé), `product-tile/product-tile.{ts,html}`,
   `product-sheet/product-sheet.html`, `format-money.ts`

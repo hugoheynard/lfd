@@ -43,12 +43,12 @@ import { join, relative } from "node:path";
 const ROOT = process.cwd();
 
 /** Les dossiers dont la dette est purgée. En ajouter un = l'avoir drainé. */
-const SCOPE = ["apps/lfc-B2B-admin-frontend/src/app/pim"];
+const SCOPE = ["apps/lfd-backoffice-frontend/src/app/pim"];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */
 const WATCHED = [
-  "apps/lfc-B2B-admin-frontend/src/app",
-  "apps/lfc-B2B-platform-frontend/src",
+  "apps/lfd-backoffice-frontend/src/app",
+  "apps/lfc-ecommerce-frontend/src",
   "packages/b2b-ui/src",
 ];
 

@@ -682,7 +682,7 @@ provenance.
 `OrderHandoverView.orderId` existe déjà pour ça — son JSDoc dit « Pour ouvrir la
 fiche complète quand le comptoir ne suffit pas ». Le bon se sert en PDF sur
 `GET /admin/orders/:id/bon.pdf`, et le front l'appelle déjà
-([`orders.service.ts:84`](../../apps/lfc-B2B-admin-frontend/src/app/commandes/orders.service.ts)).
+([`orders.service.ts:84`](../../apps/lfd-backoffice-frontend/src/app/commandes/orders.service.ts)).
 **Rien à ajouter côté API** : c'est un lien.
 
 ## 9. Les tranches

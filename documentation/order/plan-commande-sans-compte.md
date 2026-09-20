@@ -445,7 +445,7 @@ Ce que **je** n'ai pas ouvert :
   portée, comme l'analyse le note en §5.5.
 
 Ce que la **contradiction** a signalé ne pas avoir ouvert : aucun fichier du
-front (`apps/lfc-B2B-platform-frontend`) — le §8 bis ci-dessus comble ce trou,
+front (`apps/lfc-ecommerce-frontend`) — le §8 bis ci-dessus comble ce trou,
 par des lectures faites après son passage.
 
 ## 11. Les précédents du dépôt, pour qui bâtira

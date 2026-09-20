@@ -319,21 +319,21 @@ Le post-mortem de D10, dans `audit-calcul-du-panier-et-du-prix.md` : « le
 commentaire disait _centimes_ ; trois panneaux de saisie l'ont cru ». Le même
 vecteur est vivant, sur des champs `*Millicents` :
 
-| Où                                                                                        | Ce qui est écrit                                        | Ce que le champ porte       |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------- |
-| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                    | `amountMillicents` — « le prix posé, HT en centimes »   | millicentimes               |
-| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                    | `value` — « cents si amount »                           | millicentimes               |
-| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                    | `floorValue` — « ou cents »                             | colonne morte (B.10)        |
-| `apps/lfd-api/prisma/schema/public/pricing.prisma:17`                                     | `PriceFloor.value` — « une limite absolue en centimes » | millicentimes               |
-| `apps/lfd-api/prisma/schema/public/pricing.prisma:275`                                    | `PriceTemplate.lines` — `unitPriceCents`                | `unitPriceMillicents`       |
-| `packages/contracts/src/pricing.ts:140` et `:1202`                                        | « Le prix posé, HT en centimes »                        | `amountMillicents`          |
-| `packages/contracts/src/pricing.ts:467`                                                   | « ramené en centimes sur cet article »                  | `floorMillicents`           |
-| `packages/contracts/src/pricing.ts:670` et `:672`                                         | `NegotiationRoom` — « en centimes »                     | `*Millicents`               |
-| `packages/contracts/src/pricing.ts:1033`                                                  | « HT, en centimes »                                     | millicentimes               |
-| `apps/lfd-api/src/b2b/pricing/domain/resolve-floor.ts:65`                                 | « Un plancher, **en centimes** »                        | rend des millicentimes      |
-| `apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts:83`                       | « prix unitaire en centimes ≥ 0 attendu »               | **message lu par le staff** |
-| `apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts:172`                      | « la trace aboutit à … centimes »                       | **message lu par le staff** |
-| `apps/lfc-B2B-admin-frontend/src/app/commercial/tarification/grille/mercuriale-row.ts:49` | « La limite d'un article, en centimes »                 | millicentimes               |
+| Où                                                                                         | Ce qui est écrit                                        | Ce que le champ porte       |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------- | --------------------------- |
+| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                     | `amountMillicents` — « le prix posé, HT en centimes »   | millicentimes               |
+| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                     | `value` — « cents si amount »                           | millicentimes               |
+| `apps/lfd-api/prisma/schema/public/catalog.prisma:343`                                     | `floorValue` — « ou cents »                             | colonne morte (B.10)        |
+| `apps/lfd-api/prisma/schema/public/pricing.prisma:17`                                      | `PriceFloor.value` — « une limite absolue en centimes » | millicentimes               |
+| `apps/lfd-api/prisma/schema/public/pricing.prisma:275`                                     | `PriceTemplate.lines` — `unitPriceCents`                | `unitPriceMillicents`       |
+| `packages/contracts/src/pricing.ts:140` et `:1202`                                         | « Le prix posé, HT en centimes »                        | `amountMillicents`          |
+| `packages/contracts/src/pricing.ts:467`                                                    | « ramené en centimes sur cet article »                  | `floorMillicents`           |
+| `packages/contracts/src/pricing.ts:670` et `:672`                                          | `NegotiationRoom` — « en centimes »                     | `*Millicents`               |
+| `packages/contracts/src/pricing.ts:1033`                                                   | « HT, en centimes »                                     | millicentimes               |
+| `apps/lfd-api/src/b2b/pricing/domain/resolve-floor.ts:65`                                  | « Un plancher, **en centimes** »                        | rend des millicentimes      |
+| `apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts:83`                        | « prix unitaire en centimes ≥ 0 attendu »               | **message lu par le staff** |
+| `apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts:172`                       | « la trace aboutit à … centimes »                       | **message lu par le staff** |
+| `apps/lfd-backoffice-frontend/src/app/commercial/tarification/grille/mercuriale-row.ts:49` | « La limite d'un article, en centimes »                 | millicentimes               |
 
 `lint:money-units` lit les **noms**, pas les commentaires — et le dit dans son
 en-tête. Le type nominal `Millicents` / `Cents` que `audit-fable.md` nomme comme
@@ -453,7 +453,7 @@ vendre** : c'est un trou commercial, pas seulement une divergence d'écran.
 **Le fait.** `apps/lfd-api/src/b2b/pricing/domain/resolve-floor.ts:67` :
 « pas par un `Math.round(canonical * bp / 10000)` qui aurait l'air identique.
 Les deux divergeraient d'un centime sur certaines valeurs ».
-`apps/lfc-B2B-admin-frontend/src/app/commercial/tarification/grille/mercuriale-row.ts:50` :
+`apps/lfd-backoffice-frontend/src/app/commercial/tarification/grille/mercuriale-row.ts:50` :
 `Math.round((canonicalMillicents * floor.value) / 10_000)`.
 
 Et `mercuriale-row.ts:61` réimplémente l'écart au catalogue en points de base,

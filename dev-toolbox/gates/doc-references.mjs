@@ -147,8 +147,8 @@ const SCOPE = [
   // fichiers, et un renommage les périme comme il périme un document. Le vide,
   // lui, demande une autre porte, et elle reste à écrire.
   "CLAUDE.md",
-  "apps/lfc-B2B-platform-frontend/CLAUDE.md",
-  "apps/lfc-B2B-admin-frontend/CLAUDE.md",
+  "apps/lfc-ecommerce-frontend/CLAUDE.md",
+  "apps/lfd-backoffice-frontend/CLAUDE.md",
 ];
 
 /**
@@ -160,8 +160,8 @@ const SCOPE = [
 const WATCHED = [
   "documentation",
   "CLAUDE.md",
-  "apps/lfc-B2B-platform-frontend/CLAUDE.md",
-  "apps/lfc-B2B-admin-frontend/CLAUDE.md",
+  "apps/lfc-ecommerce-frontend/CLAUDE.md",
+  "apps/lfd-backoffice-frontend/CLAUDE.md",
 ];
 
 /**

@@ -298,7 +298,7 @@ seulement absent »). Elle rend la boutique honnête avant de la rendre belle.
 | Le front porte des prix flottants en dur    | `mock-shop.ts:86-140`, `catalogue-seed.ts:1029`             |
 | Le front calcule le total et la TVA         | `cart-total.ts` — « tous les montants sont en euros »       |
 | Le serveur re-résout à la passation         | `order-line-pricing.service.ts:211-267`                     |
-| Aucun appel HTTP catalogue dans la boutique | recherche sur tout `apps/lfc-B2B-platform-frontend/src`     |
+| Aucun appel HTTP catalogue dans la boutique | recherche sur tout `apps/lfc-ecommerce-frontend/src`        |
 | Aucune route catalogue client               | recensement des `@Controller` de `b2b/*/http/`              |
 | `POST /orders/quote` existe et est muré     | `orders.controller.ts:72-81`                                |
 | L'instantané ne porte pas d'éditorial       | clés lues dans `catalog_delivery.snapshot`, en base         |

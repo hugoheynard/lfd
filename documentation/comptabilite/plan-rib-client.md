@@ -11,7 +11,7 @@ client du back-office : le client **voit et saisit** le RIB de sa société.
 
 ## 1. Ce qui existe (relevé du 2026-09-14)
 
-- Back-office : `apps/lfc-B2B-admin-frontend/src/app/fiche-client/bank-account-section/`
+- Back-office : `apps/lfd-backoffice-frontend/src/app/fiche-client/bank-account-section/`
   — titulaire, adresse (ligne 1, complément, code postal, ville, pays), IBAN,
   BIC. L'IBAN n'est jamais réaffiché : `•••• last4`.
 - API staff : `GET|PUT /admin/companies/:companyId/bank-account`
@@ -49,7 +49,7 @@ client du back-office : le client **voit et saisit** le RIB de sa société.
    (`owner` et `billing` lisent et écrivent ; `admin`/`orders` 403 ; autre
    société 404 ; la réponse ne contient jamais l'IBAN entier).
 
-**Lot B — app cliente** (`apps/lfc-B2B-platform-frontend`)
+**Lot B — app cliente** (`apps/lfc-ecommerce-frontend`)
 
 1. Un composant `client/mon-compte/bank-card/` (+ spec) : le compte enregistré
    (`•••• last4 · BIC · titulaire`) ou « Aucun RIB », puis le formulaire du

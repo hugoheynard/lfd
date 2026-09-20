@@ -138,7 +138,7 @@ la suivante.
 
 ## 2. Les quatre apps Angular n'ont aucun ESLint
 
-`lfc-B2B-admin-frontend`, `lfc-B2B-platform-frontend`, `lfc-PIM-frontend` et
+`lfd-backoffice-frontend`, `lfc-ecommerce-frontend`, `lfc-PIM-frontend` et
 `lfc-suite-shell` n'ont **ni configuration ESLint, ni script `lint`**. La CI ne
 peut donc rien y lancer ; elles sont couvertes par le typecheck, les tests et le
 build de production.

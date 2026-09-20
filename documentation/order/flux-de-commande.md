@@ -19,7 +19,7 @@ fabrique les parcours :
 | La question                       | Qui y répond                 | Où                                                                               |
 | --------------------------------- | ---------------------------- | -------------------------------------------------------------------------------- |
 | Y a-t-il un jeton ?               | Auth0, puis le guard global  | `apps/lfd-api/src/platform/auth/auth.guard.ts`                                   |
-| Y a-t-il un espace de travail ?   | le front, après `/me`        | `apps/lfc-B2B-platform-frontend/src/app/client/client-workspace.service.ts`      |
+| Y a-t-il un espace de travail ?   | le front, après `/me`        | `apps/lfc-ecommerce-frontend/src/app/client/client-workspace.service.ts`         |
 | Y a-t-il une société **active** ? | le serveur, à chaque requête | `apps/lfd-api/src/b2b/orders/application/services/customer-audiences.service.ts` |
 
 La troisième décide la **clientèle** (`b2b` / `b2c`), et donc la remise et le
@@ -80,7 +80,7 @@ C'est contre-intuitif : les deux routes portent un garde.
 - `/nouvelle-commande/boutique` → `featureAccessGuard('shop', 'browse')`
 - `/nouvelle-commande/panier` → `featureAccessGuard('shop', 'order')`
 
-Le garde (`apps/lfc-B2B-platform-frontend/src/app/client/feature-access/feature-access.guard.ts`)
+Le garde (`apps/lfc-ecommerce-frontend/src/app/client/feature-access/feature-access.guard.ts`)
 n'est pas une protection — son propre JSDoc le dit : « Ce n'est pas une
 protection — l'API refuse d'elle-même ». Il lit un niveau servi par le serveur,
 et **la route qui le sert est publique** :
@@ -155,11 +155,11 @@ flowchart TD
 ```
 
 Deux sorties `null`, dans
-`apps/lfc-B2B-platform-frontend/src/app/client/client-orders.service.ts` :
+`apps/lfc-ecommerce-frontend/src/app/client/client-orders.service.ts` :
 l'absence d'espace de travail, puis l'absence de jeton.
 
 Et le commentaire de `proceed()`
-(`apps/lfc-B2B-platform-frontend/src/app/client/cart/panier-page/panier-page.ts`)
+(`apps/lfc-ecommerce-frontend/src/app/client/cart/panier-page/panier-page.ts`)
 affirme : « Le refus a déjà été dit, et le panier est intact ». **C'est vrai
 d'un refus serveur, et faux de ces deux-là** — personne ne les a dits. Le
 visiteur clique, et rien ne bouge.
@@ -218,7 +218,7 @@ vérification :
 - **le mode de règlement** (`settlement: 'due' | 'later' | 'paid'`) — je sais
   d'où il vient au front, pas quelle règle serveur le décide ;
 - **la synchronisation du panier au serveur**
-  (`apps/lfc-B2B-platform-frontend/src/app/client/cart/shop-cart-sync.service.ts`) :
+  (`apps/lfc-ecommerce-frontend/src/app/client/cart/shop-cart-sync.service.ts`) :
   son brouillon exige un espace de travail non nul, donc elle ne part pas pour
   un visiteur — mais je n'ai pas lu ce qu'elle fait au moment où il se connecte ;
 - **la reprise après connexion** : `AuthFacade.login(target)` restaure une

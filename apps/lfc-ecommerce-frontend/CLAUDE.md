@@ -1,4 +1,4 @@
-# lfc-B2B-platform-frontend — conventions
+# lfc-ecommerce-frontend — conventions
 
 Espace **B2B** de La Folie Coffee : commandes, clients pro (jusqu'à ~200) et
 catalogue. Calqué sur `lfc-PIM-frontend` (même stack Angular 22 zoneless SSR,
@@ -212,7 +212,7 @@ SyntaxError: The requested module '…' does not provide an export named 'X'
 et **ne démarre plus du tout** — page blanche, pas un écran dégradé.
 
 ```bash
-rm -rf apps/lfc-B2B-platform-frontend/.angular/cache   # puis relancer ng serve
+rm -rf apps/lfc-ecommerce-frontend/.angular/cache   # puis relancer ng serve
 ```
 
 Deux choses à savoir, parce qu'elles font chercher au mauvais endroit :

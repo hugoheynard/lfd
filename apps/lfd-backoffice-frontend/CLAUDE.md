@@ -1,10 +1,10 @@
-# lfc-B2B-admin-frontend — conventions
+# lfd-backoffice-frontend — conventions
 
 Back-office **staff** de La Folie Coffee : comptes clients, commercial,
-commandes, réglages. Même stack que `lfc-B2B-platform-frontend` (Angular 22
+commandes, réglages. Même stack que `lfc-ecommerce-frontend` (Angular 22
 zoneless, signals, fold-ng, Vitest), et **les mêmes conventions** :
 
-👉 [`../lfc-B2B-platform-frontend/CLAUDE.md`](../lfc-B2B-platform-frontend/CLAUDE.md)
+👉 [`../lfc-ecommerce-frontend/CLAUDE.md`](../lfc-ecommerce-frontend/CLAUDE.md)
 est la source de vérité — un dossier par composant, fold d'abord, tokens fold
 uniquement, zéro CSS morte, un composant ne pose jamais sa marge, toute page
 routée dans un `fold-page-layout`.

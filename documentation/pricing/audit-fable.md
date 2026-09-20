@@ -195,9 +195,9 @@ commands/place-order.handler,commands/place-order-for-customer.handler}.ts`,
 infrastructure/prisma-catalog.reader}.ts`,
   `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts` ;
 - `apps/lfd-api/prisma/schema/public/pricing.prisma` (les colonnes d'argent) ;
-- `apps/lfc-B2B-platform-frontend/src/app/client/cart/{client-cart.service,
+- `apps/lfc-ecommerce-frontend/src/app/client/cart/{client-cart.service,
 shop-quote.service}.ts`,
-  `apps/lfc-B2B-admin-frontend/src/app/commandes/nouvelle-commande/cart.store.ts` ;
+  `apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/cart.store.ts` ;
 - `dev-toolbox/gates/{money-units,clock-port,doc-references}.mjs`,
   `documentation/ci-cd/architecture-deploiement.md` §4.
 

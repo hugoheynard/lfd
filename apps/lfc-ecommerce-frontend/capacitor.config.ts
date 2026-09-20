@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
  * Coque native de l'app CLIENT — même parti pris que l'admin staff
- * (`apps/lfc-B2B-admin-frontend/capacitor.config.ts`), et pour les mêmes
+ * (`apps/lfd-backoffice-frontend/capacitor.config.ts`), et pour les mêmes
  * raisons : **coque distante** (`server.url`), la WebView charge le site déjà
  * déployé au lieu d'embarquer une copie.
  *
@@ -30,7 +30,7 @@ const config: CapacitorConfig = {
   // Sortie du builder `@angular/build:application` (sous-dossier `browser/`).
   // Inutilisée tant que `server.url` est défini, mais `cap sync` exige que le
   // chemin existe — et c'est elle qui servira au basculement en mode embarqué.
-  webDir: 'dist/lfc-b2b-platform-frontend/browser',
+  webDir: 'dist/lfc-ecommerce-frontend/browser',
   server: {
     // ⚠️ `lfc-b2b-eu7`, PAS `lfc-b2b` : Cloudflare a suffixé le sous-domaine du
     // projet Pages en silence, et `lfc-b2b.pages.dev` rend une build PLUS

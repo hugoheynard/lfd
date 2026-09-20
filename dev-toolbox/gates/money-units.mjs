@@ -85,8 +85,8 @@ const ROOT = process.cwd();
 const WATCHED = [
   "apps/lfd-api/src",
   "apps/lfd-api/test",
-  "apps/lfc-B2B-admin-frontend/src",
-  "apps/lfc-B2B-platform-frontend/src",
+  "apps/lfd-backoffice-frontend/src",
+  "apps/lfc-ecommerce-frontend/src",
   "packages",
 ];
 

@@ -135,7 +135,7 @@ lignes qu'on ne peut plus vérifier.
 ### R2 🔴 La simulation rejoue les paliers dans le navigateur
 
 **Le fait, vérifié le 2026-09-09.**
-`apps/lfc-B2B-admin-frontend/src/app/commercial/tarification/simulation/` résout
+`apps/lfd-backoffice-frontend/src/app/commercial/tarification/simulation/` résout
 un prix **côté client**, sans jamais appeler le serveur :
 
 - `revenue-model.ts` expose `unitPriceMillicentsAt(...)`, et sa ligne 234 fait
@@ -331,7 +331,7 @@ mutation rougit désormais.
 
 ### R6 🟠 L'engagement de volume n'a aucun écran
 
-**Le fait, vérifié le 2026-09-09.** `apps/lfc-B2B-admin-frontend/.../tarification/`
+**Le fait, vérifié le 2026-09-09.** `apps/lfd-backoffice-frontend/.../tarification/`
 contient `gabarits`, `grille`, `pose-bar`, `simulation` — **pas d'engagement**.
 Le backend a pourtant tout : agrégat, dépôt, routes, `retainedQuantity`.
 

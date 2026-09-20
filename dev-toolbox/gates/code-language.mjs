@@ -45,8 +45,8 @@ const ROOT = process.cwd();
 const SCOPE = [
   "apps/lfd-api/src/pim/commerce",
   "apps/lfd-api/src/pim/locations",
-  "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/vat-rates",
-  "apps/lfc-B2B-admin-frontend/src/app/pim/locations",
+  "apps/lfd-backoffice-frontend/src/app/pim/catalogue/vat-rates",
+  "apps/lfd-backoffice-frontend/src/app/pim/locations",
   // Les paquets partagés, drainés le 2026-08-25. Ce sont les plus petits et les
   // plus lus : une dérive y voyage dans les trois apps à la fois.
   "packages",
@@ -62,8 +62,8 @@ const SCOPE = [
  */
 const WATCHED = [
   "apps/lfd-api/src",
-  "apps/lfc-B2B-admin-frontend/src/app",
-  "apps/lfc-B2B-platform-frontend/src",
+  "apps/lfd-backoffice-frontend/src/app",
+  "apps/lfc-ecommerce-frontend/src",
   "packages",
 ];
 

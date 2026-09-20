@@ -92,8 +92,8 @@ const ROOT = process.cwd();
 const SCOPE = [
   "documentation",
   "CLAUDE.md",
-  "apps/lfc-B2B-platform-frontend/CLAUDE.md",
-  "apps/lfc-B2B-admin-frontend/CLAUDE.md",
+  "apps/lfc-ecommerce-frontend/CLAUDE.md",
+  "apps/lfd-backoffice-frontend/CLAUDE.md",
 ];
 
 /**

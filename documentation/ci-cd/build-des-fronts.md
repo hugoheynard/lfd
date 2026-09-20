@@ -76,12 +76,12 @@ La règle retenue : **le seuil part de la vérité du jour**, pas d'un idéal.
 
 Valeurs posées le 2026-08-15, après le passage des tokens dans le bundle :
 
-| App                         | Mesuré | Avertissement | Erreur  |
-| --------------------------- | ------ | ------------- | ------- |
-| `lfc-B2B-admin-frontend`    | 970 ko | 1050 ko       | 1300 ko |
-| `lfc-B2B-platform-frontend` | 994 ko | 1050 ko       | 1300 ko |
-| `lfc-PIM-frontend`          | 573 ko | 625 ko        | 800 ko  |
-| `lfc-suite-shell`           | 629 ko | 675 ko        | 850 ko  |
+| App                       | Mesuré | Avertissement | Erreur  |
+| ------------------------- | ------ | ------------- | ------- |
+| `lfd-backoffice-frontend` | 970 ko | 1050 ko       | 1300 ko |
+| `lfc-ecommerce-frontend`  | 994 ko | 1050 ko       | 1300 ko |
+| `lfc-PIM-frontend`        | 573 ko | 625 ko        | 800 ko  |
+| `lfc-suite-shell`         | 629 ko | 675 ko        | 850 ko  |
 
 `anyComponentStyle` est uniforme : **7 ko** d'avertissement, **10 ko** d'erreur.
 La plus grosse feuille du dépôt (`order-detail.scss`, 6,4 ko) passe donc, et une

@@ -1,6 +1,6 @@
 name: deploy_lfc_boutique
 
-# Builds the browser-only static bundle of lfc-B2B-platform-frontend and pushes
+# Builds the browser-only static bundle of lfc-ecommerce-frontend and pushes
 # it to Cloudflare Pages on every push to main. No SSR (the B2B space needs no
 # SEO), so the output is plain files served straight from Pages.
 #
@@ -37,7 +37,7 @@ on:
     # dépendance redéploierait la boutique pour rien. Cette raison-là tient
     # toujours.
     paths:
-      - "apps/lfc-B2B-platform-frontend/**"
+      - "apps/lfc-ecommerce-frontend/**"
       - "packages/**"
       - "pnpm-workspace.yaml"
       - ".github/workflows/deploy_lfc_boutique.yml"
@@ -100,7 +100,7 @@ jobs:
       # `auth.env.generated.ts` depuis les *Variables* du repo — avant typecheck ET
       # build, pour que les deux voient les vraies valeurs. Rien de secret ici.
       - name: Generate Auth0 config (public build vars)
-        working-directory: apps/lfc-B2B-platform-frontend
+        working-directory: apps/lfc-ecommerce-frontend
         env:
           # L'identité du BUILD, pour Sentry : c'est par elle qu'il rapproche une
           # pile minifiée de ses source maps. Le SHA court, comme `APP_REVISION`
@@ -121,10 +121,10 @@ jobs:
       # Gate: a red typecheck must never reach Pages. The AOT build below also
       # type-checks the app + templates, so together they fail fast on any error.
       - name: Typecheck
-        run: pnpm --filter lfc-b2b-platform-frontend exec tsc --noEmit
+        run: pnpm --filter lfc-ecommerce-frontend exec tsc --noEmit
 
       - name: Build (static, browser-only)
-        run: pnpm --filter lfc-b2b-platform-frontend exec ng build --configuration cloudflare
+        run: pnpm --filter lfc-ecommerce-frontend exec ng build --configuration cloudflare
 
       # Crée le projet Pages au premier run s'il n'existe pas (idempotent : le
       # `|| true` avale le "already exists" des runs suivants). Évite toute étape
@@ -147,6 +147,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
           pnpm dlx wrangler pages deploy
-          apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser
+          apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-frontend/browser
           --project-name=lfc-b2b
           --branch=main

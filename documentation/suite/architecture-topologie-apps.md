@@ -692,7 +692,7 @@ dossiers ; sa frontière est une convention, donc elle doit être écrite pour
 exister.
 
 ```
-apps/lfd-admin/                        ← ex lfc-B2B-admin-frontend
+apps/lfd-admin/                        ← ex lfd-backoffice-frontend
 └── src/app/
     ├── auth/                          UN bootstrap Auth0 (celui de l'admin)
     ├── api/                           client HTTP, UNE base d'URL

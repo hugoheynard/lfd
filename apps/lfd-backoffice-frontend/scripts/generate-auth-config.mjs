@@ -57,7 +57,7 @@ const fileVars = existsSync(envPath) ? parseDotenv(readFileSync(envPath, 'utf8')
 const bypass = (fileVars.DEV_BYPASS_AUTH ?? '').trim().toLowerCase() === 'true';
 if (bypass && process.env.NODE_ENV === 'production') {
   throw new Error(
-    "[auth-config] DEV_BYPASS_AUTH=true avec NODE_ENV=production : refusé. " +
+    '[auth-config] DEV_BYPASS_AUTH=true avec NODE_ENV=production : refusé. ' +
       "Ce drapeau éteint la connexion staff ; il n'a de sens que sur un poste local " +
       'dont le backend tourne en AUTH_ADMIN_DEV_BYPASS.',
   );

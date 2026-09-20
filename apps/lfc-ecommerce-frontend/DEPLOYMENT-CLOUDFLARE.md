@@ -69,7 +69,7 @@ GitHub → repo **`hugoheynard/lfd`** → **Settings** → **Secrets and variabl
 ### Déclencher un déploiement
 
 - **Auto** : un push sur **`main`** lance le workflow **uniquement** s'il touche
-  `apps/lfc-B2B-platform-frontend/**` ou `pnpm-workspace.yaml` (le pin `catalog:`
+  `apps/lfc-ecommerce-frontend/**` ou `pnpm-workspace.yaml` (le pin `catalog:`
   fold-ng). Bosser sur le **PIM ne redéploie pas** le B2B — même si tu installes
   une dépendance PIM (le lockfile n'est **pas** dans le trigger).
 - **Manuel** : onglet **Actions** du repo → workflow **deploy_lfc_boutique**
@@ -112,16 +112,16 @@ Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 
 ## Récapitulatif express
 
-|                |                                                                         |
-| -------------- | ----------------------------------------------------------------------- |
-| Méthode        | CI GitHub Actions → Direct Upload                                       |
-| Workflow       | `.github/workflows/deploy_lfc_boutique.yml`                             |
-| Projet Pages   | `lfc-b2b` (Direct Upload)                                               |
-| Secrets repo   | `CLOUDFLARE_API_TOKEN_B2B_PLATFORM`, `CLOUDFLARE_ACCOUNT_ID`            |
-| Build interne  | `ng build --configuration cloudflare`                                   |
-| Sortie publiée | `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser` |
-| Déploie sur    | push `main` (ou Run workflow)                                           |
-| SPA routing    | `public/_redirects` (déjà là)                                           |
+|                |                                                                   |
+| -------------- | ----------------------------------------------------------------- |
+| Méthode        | CI GitHub Actions → Direct Upload                                 |
+| Workflow       | `.github/workflows/deploy_lfc_boutique.yml`                       |
+| Projet Pages   | `lfc-b2b` (Direct Upload)                                         |
+| Secrets repo   | `CLOUDFLARE_API_TOKEN_B2B_PLATFORM`, `CLOUDFLARE_ACCOUNT_ID`      |
+| Build interne  | `ng build --configuration cloudflare`                             |
+| Sortie publiée | `apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-frontend/browser` |
+| Déploie sur    | push `main` (ou Run workflow)                                     |
+| SPA routing    | `public/_redirects` (déjà là)                                     |
 
 ---
 
@@ -149,13 +149,13 @@ tu perds le gate et le contrôle du toolchain monorepo.
 
 Workers & Pages → **Create** → **Pages** → **Connect to Git** → repo `lfd`, puis :
 
-| Champ Cloudflare            | Valeur                                                                  |
-| --------------------------- | ----------------------------------------------------------------------- |
-| Framework preset            | `None`                                                                  |
-| Build command               | `pnpm --filter lfc-b2b-platform-frontend build:cloudflare`              |
-| Build output directory      | `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser` |
-| Root directory _(advanced)_ | `/` (racine — sinon le `catalog:` fold-ng ne se résout pas)             |
-| Env var `NODE_VERSION`      | `22` (Angular 22 exige Node ≥ 20.19)                                    |
+| Champ Cloudflare            | Valeur                                                            |
+| --------------------------- | ----------------------------------------------------------------- |
+| Framework preset            | `None`                                                            |
+| Build command               | `pnpm --filter lfc-ecommerce-frontend build:cloudflare`           |
+| Build output directory      | `apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-frontend/browser` |
+| Root directory _(advanced)_ | `/` (racine — sinon le `catalog:` fold-ng ne se résout pas)       |
+| Env var `NODE_VERSION`      | `22` (Angular 22 exige Node ≥ 20.19)                              |
 
 Production branch = `main` (les autres branches → preview `*.pages.dev`).
 **Ne pas** combiner les deux méthodes sur le même projet (elles se marcheraient

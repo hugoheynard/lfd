@@ -18,7 +18,7 @@ vers le Worker de l'API.
 flowchart LR
     subgraph src["Ce qui change"]
         A["apps/lfd-api/**<br/>(plateforme + référentiel)"]
-        C["apps/lfc-B2B-admin-frontend/**"]
+        C["apps/lfd-backoffice-frontend/**"]
         D["packages/**"]
         E["gateway/**"]
     end

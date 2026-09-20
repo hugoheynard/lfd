@@ -60,7 +60,7 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
  * **Un point de retrait**, en page plutôt qu'en panneau.
  *
  * 🔴 **Pourquoi une page, alors que la règle « Saisir » dit un panneau.** La
- * convention du 2026-09-14 (`lfc-B2B-platform-frontend/CLAUDE.md`) veut que
+ * convention du 2026-09-14 (`lfc-ecommerce-frontend/CLAUDE.md`) veut que
  * toute saisie s'ouvre dans un panneau fold, et elle nomme « une adresse ».
  * Elle a été écrite pour la BOUTIQUE (commit `6902e7a8`, `feat(boutique)`), où
  * ce qu'on saisit tient en un formulaire.

@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "lfc-b2b-admin-frontend": {
+    "lfc-ecommerce-frontend": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -29,20 +29,23 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": ["src/styles.scss"],
+            "security": {
+              "allowedHosts": []
+            }
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1050kB",
-                  "maximumError": "1300kB"
+                  "maximumWarning": "1350kB",
+                  "maximumError": "1600kB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "7kB",
-                  "maximumError": "10kB"
+                  "maximumWarning": "10kB",
+                  "maximumError": "14kB"
                 }
               ],
               "outputHashing": "all"
@@ -53,12 +56,8 @@
               "sourceMap": true,
               "fileReplacements": [
                 {
-                  "replace": "src/app/api/api-config.ts",
-                  "with": "src/app/api/api-config.dev.ts"
-                },
-                {
-                  "replace": "src/app/dev/dev-tools.ts",
-                  "with": "src/app/dev/dev-tools.dev.ts"
+                  "replace": "src/app/auth/dev-flags.ts",
+                  "with": "src/app/auth/dev-flags.dev.ts"
                 }
               ]
             },
@@ -78,26 +77,27 @@
                   "maximumWarning": "7kB",
                   "maximumError": "10kB"
                 }
-              ]
+              ],
+              "baseHref": "/"
             },
-            "e2e": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true,
-              "fileReplacements": [
+            "capacitor": {
+              "outputMode": "static",
+              "ssr": false,
+              "server": false,
+              "outputHashing": "all",
+              "budgets": [
                 {
-                  "replace": "src/app/api/api-config.ts",
-                  "with": "src/app/api/api-config.dev.ts"
+                  "type": "initial",
+                  "maximumWarning": "1050kB",
+                  "maximumError": "1300kB"
                 },
                 {
-                  "replace": "src/app/auth/auth.env.generated.ts",
-                  "with": "src/app/auth/auth.env.e2e.ts"
-                },
-                {
-                  "replace": "src/app/dev/dev-tools.ts",
-                  "with": "src/app/dev/dev-tools.dev.ts"
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "7kB",
+                  "maximumError": "10kB"
                 }
-              ]
+              ],
+              "baseHref": "/"
             }
           },
           "defaultConfiguration": "production"
@@ -105,18 +105,15 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 7317,
+            "port": 7316,
             "host": "127.0.0.1"
           },
           "configurations": {
             "production": {
-              "buildTarget": "lfc-b2b-admin-frontend:build:production"
+              "buildTarget": "lfc-ecommerce-frontend:build:production"
             },
             "development": {
-              "buildTarget": "lfc-b2b-admin-frontend:build:development"
-            },
-            "e2e": {
-              "buildTarget": "lfc-b2b-admin-frontend:build:e2e"
+              "buildTarget": "lfc-ecommerce-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"

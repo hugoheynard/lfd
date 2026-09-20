@@ -1,6 +1,6 @@
 # Audit de la fiche produit — flux, statuts, publication
 
-**Date** : 2026-09-01 · **Portée** : `apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/`
+**Date** : 2026-09-01 · **Portée** : `apps/lfd-backoffice-frontend/src/app/pim/catalogue/`
 (fiche produit, liste, rail de publication) et `apps/lfd-api/src/pim/catalogue/`
 (produit, révision) · **Nature** : audit de l'existant, à charge.
 
@@ -162,7 +162,7 @@ Le backend fait pourtant exactement ce qu'il faut :
 
 **Consommateurs côté front : zéro.** Vérifié par recherche sur les trois noms
 (`ingredient-allergens`, `ingredientAllergens`, `ProductIngredientAllergensView`)
-dans tout `apps/lfc-B2B-admin-frontend/src`. Le store des ingrédients
+dans tout `apps/lfd-backoffice-frontend/src`. Le store des ingrédients
 (`product-ingredients.store.ts`) ne contient pas une fois la chaîne `allergen` ;
 la section réglementaire (`regulatory-form.html`, 103 lignes) ne contient pas une
 fois la chaîne `ingredient`.
@@ -463,7 +463,7 @@ tranches 6 à 8 attendent §15.
 
 ## Références
 
-Code : `apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/product-form/`,
+Code : `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`,
 `.../products-page/`, `apps/lfd-api/src/pim/catalogue/product/`,
 `.../catalogue/revision/`, `apps/lfd-api/src/pim/ingredients/`,
 `packages/pim-contracts/src/ingredient.ts`.

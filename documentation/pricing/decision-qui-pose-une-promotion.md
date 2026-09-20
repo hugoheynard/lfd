@@ -246,13 +246,13 @@ client sous mercuriale la voit.
 | La non-superposition est une contrainte d'exclusion GiST | `prisma/schema/public/pricing.prisma`, modèle `PriceRule` (`price_rules_no_overlap`) |
 | `stacksOverMercuriale` existe et vaut `false` par défaut | `prisma/schema/public/pricing.prisma`, modèle `PriceRule`                            |
 | La route de création existe                              | `pricing/http/admin-pricing.controller.ts:221`                                       |
-| L'écran de saisie existe                                 | `lfc-B2B-admin-frontend/src/app/b2b/tarification/rule-panel/`                        |
+| L'écran de saisie existe                                 | `lfd-backoffice-frontend/src/app/b2b/tarification/rule-panel/`                       |
 | Le prix poussé est pré-altération                        | `packages/catalog-sync/src/snapshot.ts`, `syncVariantSchema`                         |
 | Le référentiel ne connaît pas les sociétés               | `CLAUDE.md` §3, matrice `pim → b2b` = ✗                                              |
 | Cinq rôles, aucun « communication »                      | `packages/contracts/src/staff-access.ts:170-174`                                     |
 | `commercial` = `b2b_pricing: write`, `pim_catalog: read` | `packages/contracts/src/staff-access.ts:275-303`                                     |
 | `isFeatured` existe déjà sur le miroir                   | `prisma/schema/public/catalog.prisma`, modèle `CatalogItemOverride`                  |
-| Le back-office est une seule app                         | `lfc-B2B-admin-frontend/src/app/{pim,b2b}/`                                          |
+| Le back-office est une seule app                         | `lfd-backoffice-frontend/src/app/{pim,b2b}/`                                         |
 | `PriceRule` n'a **aucune** dimension canal               | `pricing/domain/price-rule.ts` — aucune occurrence de `channel`                      |
 | `PricingContext` non plus                                | `pricing/domain/price-rule.ts:184-209`                                               |
 | Le canal Shopify pousse des prix (canonique seul)        | `pim/channels/shopify/products/projection.ts:119`                                    |

@@ -63,7 +63,7 @@ const ROOT = process.cwd();
  * dépendance des apps, pas du dépôt. Toutes pointent la même version — le
  * `catalog:` de `pnpm-workspace.yaml` l'épingle une fois pour toutes.
  */
-const FOLD_HOST = "apps/lfc-B2B-admin-frontend/package.json";
+const FOLD_HOST = "apps/lfd-backoffice-frontend/package.json";
 
 /**
  * **La dette du 2026-09-10**, six familles, chacune vérifiée contre les entrées
@@ -80,34 +80,34 @@ const DEBT = new Map([
   // (c'est `variant`). Le titre devient du contenu projeté : une décision par
   // site, pas une substitution.
   [
-    "apps/lfc-B2B-admin-frontend/src/app/commandes/nouvelle-commande/nouvelle-commande-page.html",
+    "apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/nouvelle-commande-page.html",
     3,
   ],
   [
-    "apps/lfc-B2B-admin-frontend/src/app/commandes/nouvelle-commande/panier-commande/panier-commande.html",
+    "apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/panier-commande/panier-commande.html",
     1,
   ],
-  ["apps/lfc-B2B-admin-frontend/src/app/dev/seed-page/seed-page.html", 1],
-  ["apps/lfc-B2B-admin-frontend/src/app/fiche-client/commandes/commandes-page.html", 1],
-  ["apps/lfc-B2B-admin-frontend/src/app/fiche-client/tarifs/tarifs-page.html", 2],
-  ["apps/lfc-B2B-platform-frontend/src/app/legacy/commandes/reglement-page/reglement-page.html", 1],
+  ["apps/lfd-backoffice-frontend/src/app/dev/seed-page/seed-page.html", 1],
+  ["apps/lfd-backoffice-frontend/src/app/fiche-client/commandes/commandes-page.html", 1],
+  ["apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs/tarifs-page.html", 2],
+  ["apps/lfc-ecommerce-frontend/src/app/legacy/commandes/reglement-page/reglement-page.html", 1],
 
   // `fold-input` ne déclare pas `inputmode` : l'indication de clavier mobile
   // reste sur l'élément hôte et n'atteint jamais le champ. C'est une limite de
   // fold, pas une faute de frappe — la sortie demande une entrée chez fold, ou
   // un aveu écrit. `readonly`, en revanche, est une faute de casse : `readOnly`.
-  ["apps/lfc-B2B-admin-frontend/src/app/b2b/tarification/floor-panel/floor-panel.html", 1],
-  ["apps/lfc-B2B-admin-frontend/src/app/b2b/tarification/ladder-panel/ladder-panel.html", 2],
-  ["apps/lfc-B2B-admin-frontend/src/app/b2b/tarification/rule-panel/rule-panel.html", 1],
-  ["apps/lfc-B2B-admin-frontend/src/app/b2b/tarification/simulateur/simulateur-page.html", 3],
+  ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/floor-panel/floor-panel.html", 1],
+  ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/ladder-panel/ladder-panel.html", 2],
+  ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/rule-panel/rule-panel.html", 1],
+  ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/simulateur/simulateur-page.html", 3],
   [
-    "apps/lfc-B2B-platform-frontend/src/app/client/nouvelle-commande/commande-page/address-dialog/address-dialog.html",
+    "apps/lfc-ecommerce-frontend/src/app/client/nouvelle-commande/commande-page/address-dialog/address-dialog.html",
     2,
   ],
 
   // `fold-inline-confirm` : c'est `labels` (un objet partiel) et `intent`.
   [
-    "apps/lfc-B2B-admin-frontend/src/app/commercial/calendrier/customer-sheet/customer-sheet.html",
+    "apps/lfd-backoffice-frontend/src/app/commercial/calendrier/customer-sheet/customer-sheet.html",
     5,
   ],
   // (`cutoffs-section.html` est sorti de cette liste le 2026-09-16 : son
@@ -116,14 +116,14 @@ const DEBT = new Map([
 
   // `fold-badge` ne déclare que content/radius/variant.
   [
-    "apps/lfc-B2B-admin-frontend/src/app/commercial/cockpit/pinned-accounts/pinned-accounts.html",
+    "apps/lfd-backoffice-frontend/src/app/commercial/cockpit/pinned-accounts/pinned-accounts.html",
     1,
   ],
-  ["apps/lfc-B2B-admin-frontend/src/app/commercial/cockpit/play-queue/play-queue.html", 1],
+  ["apps/lfd-backoffice-frontend/src/app/commercial/cockpit/play-queue/play-queue.html", 1],
 
   // `fold-element-title` : c'est `variant="eyebrow"`.
   [
-    "apps/lfc-B2B-admin-frontend/src/app/commercial/calendrier/rendez-vous/rendez-vous-page.html",
+    "apps/lfd-backoffice-frontend/src/app/commercial/calendrier/rendez-vous/rendez-vous-page.html",
     1,
   ],
 ]);

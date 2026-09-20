@@ -55,9 +55,9 @@ const ROOT = process.cwd();
  * laquelle le critère « se compare-t-il à l'horloge ? » répond oui à coup sûr.
  */
 const SCAN_ROOTS = [
-  "apps/lfc-B2B-admin-frontend/src/app/b2b/tarification",
-  "apps/lfc-B2B-admin-frontend/src/app/commercial/tarification",
-  "apps/lfc-B2B-admin-frontend/src/app/fiche-client/tarifs",
+  "apps/lfd-backoffice-frontend/src/app/b2b/tarification",
+  "apps/lfd-backoffice-frontend/src/app/commercial/tarification",
+  "apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs",
   "apps/lfd-api/src/b2b/pricing",
 ];
 const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo"]);
