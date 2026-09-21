@@ -288,7 +288,7 @@ export class ShopPage {
     // propriétaire. Le panier survit à l'aller-retour — il vit en base pour qui
     // a déjà un compte, dans le navigateur pour les autres.
     if (!this.auth.isAuthenticated()) {
-      this.auth.login('/nouvelle-commande/boutique');
+      this.auth.login('/commande/boutique');
       return;
     }
     const placed = await this.orders.place();
@@ -298,9 +298,7 @@ export class ShopPage {
     // Une carte à présenter mène au règlement ; tout le reste — compte, total
     // nul — à la confirmation. La décision vient du serveur, pas de l'écran.
     void this.router.navigate(
-      placed.settlement === 'due'
-        ? ['/nouvelle-commande/reglement', placed.id]
-        : ['/nouvelle-commande/confirmee'],
+      placed.settlement === 'due' ? ['/commande/reglement', placed.id] : ['/commande/confirmee'],
     );
   }
 }

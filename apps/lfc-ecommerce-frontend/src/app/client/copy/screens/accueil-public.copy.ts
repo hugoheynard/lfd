@@ -191,6 +191,49 @@ export interface AccueilPublicCopy {
   };
 
   /**
+   * LES DEUX RACCOURCIS, sous les portes — « Ou reprenez » et « Je visite la
+   * boutique » (maquette du 2026-09-20).
+   *
+   * 🔴 « REPRENEZ » NE PARAÎT QUE S'IL Y A UNE COMMANDE À REPRENDRE, et son
+   * contenu est celui de la VRAIE dernière commande : ses lignes, son mode, son
+   * point de retrait. La même carte existe sur `/nouvelle-commande` avec « 2
+   * traditions, 4 croissants, 1 ski praliné · retrait au Labo » écrit en dur, et
+   * un bouton qui ne fait rien — elle montre la commande de personne. C'est ce
+   * qu'on ne refait pas ici.
+   */
+  readonly shortcuts: {
+    readonly browseTitle: string;
+    readonly browseSub: string;
+    readonly againLead: string;
+    /** `{day}` — le jour de la semaine, quand la commande a moins d'une semaine. */
+    readonly againRecent: string;
+    /** Le même, plus ancienne : aucun jour n'est nommé plutôt qu'un jour faux. */
+    readonly againOlder: string;
+    readonly againAction: string;
+    /**
+     * `{place}` — le point de retrait tel que la COMMANDE l'a gardé, jamais le
+     * carnet d'aujourd'hui : c'est là qu'elle a été retirée, même si la maison
+     * a fermé depuis.
+     *
+     * ⚠️ Deux points et non « au » : le nom d'une maison peut être féminin, et
+     * la même dette d'article est déjà portée ailleurs (`chooseHouse`). Une de
+     * plus serait une de trop.
+     */
+    readonly againPickup: string;
+    readonly againDelivery: string;
+    /** `{count}` — les lignes que la liste ne nomme pas, faute de place. */
+    readonly againMore: string;
+    /**
+     * `{count}` — ce que le rayon ne vend plus.
+     *
+     * 🔴 Une référence retirée ne se laisse PAS tomber en silence : un panier
+     * refait plus court qu'annoncé se découvre à la caisse. La carte le dit
+     * avant qu'on clique.
+     */
+    readonly againGone: string;
+  };
+
+  /**
    * LA BANDE DE CONTACT — « On répond » (maquette du 2026-09-20, §8).
    *
    * 🔴 ELLE PARAÎT DANS LES TROIS ÉTATS (Hugo, 2026-09-20 : « on répond
@@ -294,6 +337,19 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
     tail: '— vous choisirez la maison et l’heure au moment du panier.',
     cta: 'Je visite la boutique',
   },
+  shortcuts: {
+    browseTitle: 'Je visite la boutique',
+    browseSub: 'Pour voir les produits et décider ensuite',
+    againLead: 'Ou reprenez',
+    againRecent: 'Comme {day} dernier ?',
+    againOlder: 'Comme votre dernière commande ?',
+    againAction: 'Refaire',
+    againPickup: 'retrait : {place}',
+    againDelivery: 'en livraison',
+    againMore: '+{count}',
+    againGone:
+      '{count} article(s) de cette commande ne sont plus au rayon. Le reste est dans votre panier.',
+  },
   contact: {
     kicker: 'On répond',
     call: 'Appeler',
@@ -381,6 +437,19 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
     tail: '— you’ll pick the bakery and the time at checkout.',
     cta: 'Browse the shop',
   },
+  shortcuts: {
+    browseTitle: 'Browse the shop',
+    browseSub: 'To see the products and decide afterwards',
+    againLead: 'Or start again from',
+    againRecent: 'Same as last {day}?',
+    againOlder: 'Same as your last order?',
+    againAction: 'Reorder',
+    againPickup: 'pickup: {place}',
+    againDelivery: 'delivered',
+    againMore: '+{count}',
+    againGone:
+      '{count} item(s) from that order are no longer on the shelf. The rest is in your basket.',
+  },
   contact: {
     kicker: 'We answer',
     call: 'Call',
@@ -467,6 +536,19 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
     strong: 'Guardate prima le infornate',
     tail: '— sceglierete bottega e orario al momento del carrello.',
     cta: 'Visito la bottega',
+  },
+  shortcuts: {
+    browseTitle: 'Visito la bottega',
+    browseSub: 'Per vedere i prodotti e decidere dopo',
+    againLead: 'Oppure riprenda',
+    againRecent: 'Come {day} scorso ?',
+    againOlder: 'Come il suo ultimo ordine ?',
+    againAction: 'Rifare',
+    againPickup: 'ritiro : {place}',
+    againDelivery: 'in consegna',
+    againMore: '+{count}',
+    againGone:
+      '{count} articolo/i di quest’ordine non sono più in vendita. Il resto è nel suo carrello.',
   },
   contact: {
     kicker: 'Rispondiamo',

@@ -132,6 +132,84 @@ describe('SlotPickerDialog — les créneaux', () => {
     expect(text(fixture)).toContain('7 h 15');
   });
 
+  /**
+   * 🔴 LA CARTE NE DIT QUE L'HEURE DE DÉBUT (Hugo, 2026-09-20 : « au niveau des
+   * horaires on ne donne que la première heure »).
+   *
+   * Elle a porté l'intervalle quelques heures — les deux bornes sont dans le
+   * contrat — mais ce point découpe au quart d'heure : la seconde borne se
+   * déduisait de la tuile suivante, et douze cartes répétaient deux fois la
+   * même information. On choisit une heure, pas une fenêtre.
+   */
+  it('ne donne que l’heure de début', async () => {
+    const { fixture, slots } = await mount();
+    slots.serve([slot({ time: '07:00', endAt: `${DAY}T06:00:00.000Z` })]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // L'espace avant le `h` est INSÉCABLE — c'est l'écriture française que
+    // `formatHour` pose.
+    expect((fixture.nativeElement as HTMLElement).querySelector('.hour')?.textContent?.trim()).toBe(
+      '7\u00a0h',
+    );
+  });
+
+  /**
+   * 🔴 LE BADGE TITRE SA FOURNÉE, il n'est plus une pastille par carte. Il
+   * désigne une PLAGE, pas une heure : répété sur les quatre cartes d'une même
+   * fournée, il se lisait comme un attribut du créneau.
+   *
+   * Deux plages distantes qui portent le même badge restent deux groupes — ce
+   * sont deux moments de la journée, et les fondre en inventerait un troisième.
+   */
+  it('groupe les créneaux par fournée, et ne fond pas deux plages distantes', async () => {
+    const { fixture, slots } = await mount();
+    slots.serve([
+      slot({ time: '07:00', badge: 'Première fournée' }),
+      slot({ time: '07:30', badge: 'Première fournée' }),
+      slot({ time: '16:00', badge: 'Tout est chaud' }),
+      slot({ time: '17:00', badge: 'Première fournée' }),
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.batch-label')].map(
+      (node) => node.textContent?.trim(),
+    );
+    const grilles = (fixture.nativeElement as HTMLElement).querySelectorAll('.slots');
+
+    expect(labels).toEqual(['Première fournée', 'Tout est chaud', 'Première fournée']);
+    expect(grilles).toHaveLength(3);
+    expect(grilles[0]?.querySelectorAll('.slot')).toHaveLength(2);
+  });
+
+  /**
+   * Des créneaux sans badge gardent leur grille SANS sur-titre : un groupe
+   * nommé « Autres » serait un nom qu'on aurait inventé.
+   */
+  it('ne titre pas un groupe que le vendeur n’a pas nommé', async () => {
+    const { fixture, slots } = await mount();
+    slots.serve([slot({ time: '07:00' }), slot({ time: '07:30' })]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.batch-label')).toHaveLength(0);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.slot')).toHaveLength(2);
+  });
+
+  it('dit sous chaque heure ce qu’elle vaut', async () => {
+    const { fixture, slots } = await mount();
+    slots.serve([slot({ time: '07:00' }), slot({ time: '08:00', open: false })]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const etats = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.state')].map(
+      (node) => node.textContent?.trim(),
+    );
+
+    expect(etats).toEqual(['Ouvert', 'Complet']);
+  });
+
   it('🔴 laisse un créneau COMPLET visible, fermé, et dit où il reste de la place', async () => {
     // Le faire disparaître serait un refus muet ; ceci est une orientation.
     const { fixture, slots } = await mount();
@@ -154,7 +232,7 @@ describe('SlotPickerDialog — les créneaux', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance['ctaLabel']()).toBe('Choisissez une heure');
+    expect(fixture.componentInstance['ctaLabel']()).toBe('Choisissez un créneau');
 
     fixture.componentInstance['pick'](slot({ time: '06:30' }));
     fixture.detectChanges();

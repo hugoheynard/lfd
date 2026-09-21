@@ -238,6 +238,37 @@
       </section>
     }
 
+    <!-- LES DEUX RACCOURCIS de la référence, sous les portes.
+
+         🔴 « OU REPRENEZ » NE PARAÎT QUE S'IL Y A UNE COMMANDE À REPRENDRE, et
+         il dit la VRAIE : ses lignes, son mode, son point de retrait. La même
+         carte existe sur `/nouvelle-commande` avec « 2 traditions, 4 croissants,
+         1 ski praliné · retrait au Labo » écrit en dur et un bouton qui ne fait
+         rien — elle montre la commande de personne. Signalé à Hugo ; la retirer
+         est un geste à part.
+
+         ⚠️ « Je visite la boutique » n'est là QUE pour un pro, parce que le
+         bandeau — que le pro n'a pas — porte déjà la sienne en pied. Une sortie
+         par écran, pas deux. -->
+    @if (again() || pro()) {
+      <app-shop-shortcuts
+        [again]="again()"
+        [againLead]="c().shortcuts.againLead"
+        [againAction]="c().shortcuts.againAction"
+        [browseCard]="pro() ? browseCard() : null"
+        (reordered)="reorder()"
+        (browsed)="browse()"
+      />
+    }
+
+    <!-- 🔴 ON RESTE SUR L'ÉCRAN quand une référence a disparu du rayon. Le
+         panier l'aurait laissée tomber sans un mot, et le manque se serait
+         découvert à la caisse. Le catalogue n'étant lu qu'au clic, le refus ne
+         peut pas précéder l'effort : il le suit immédiatement. -->
+    @if (reorderGone() > 0) {
+      <fold-callout variant="warning">{{ reorderGoneMessage() }}</fold-callout>
+    }
+
     <!-- 🔴 « ON RÉPOND », DANS LES TROIS ÉTATS (Hugo, 2026-09-20 : « on répond
          toujours »), là où la maquette réservait cette bande au pro. Le
          visiteur est celui qui a le plus de raisons d'appeler : il ne sait pas
@@ -248,6 +279,30 @@
          avant tout ce qui vend. Un numéro de téléphone posé après une promo se
          lirait comme un recours ; posé ici, il est une option de plus. -->
     <app-contact-band [copy]="contact()" />
+
+    <!-- MES SUIVIS — le puits des commandes vivantes, à la place que la
+         maquette lui donne (`captures/12-suivis.png`), juste après la bande de
+         contact.
+
+         🔴 IL NE PARAÎT QUE S'IL Y A QUELQUE CHOSE À SUIVRE. « Mes commandes »
+         a, lui, un état vide, et c'est juste : là-bas, l'absence de commande
+         est la réponse à la question posée. Ici, ce serait un bloc qui occupe
+         la page pour dire qu'il n'a rien à dire.
+
+         ⚠️ La CARTE est celle de « Mes commandes », sans une ligne de
+         différence : deux dessins du même fait finissent par annoncer deux
+         étapes différentes pour une seule commande. -->
+    @if (tracked().length > 0) {
+      <app-live-orders-well
+        [orders]="tracked()"
+        [title]="t().orders.wellHead"
+        [subtitle]="trackedCount()"
+        [allLabel]="t().orders.wellAll"
+        [dotLabel]="t().orders.wellDot"
+        (qrAsked)="showQr($event)"
+        (allAsked)="allOrders()"
+      />
+    }
 
     <!-- EN CE MOMENT. `null` est un état de PREMIÈRE CLASSE : hors période, le
        bloc n'existe pas — pas de carte vide, pas de « bientôt ». L'or est

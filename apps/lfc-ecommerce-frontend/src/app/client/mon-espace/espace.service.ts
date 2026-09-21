@@ -69,7 +69,7 @@ export class ClientEspace {
         icon: '',
         lines: [formatCents(this.cart.totals().totalCents), copy.cartWhen],
         action: copy.cartAction,
-        route: '/nouvelle-commande/panier',
+        route: '/commande/panier',
         badge: copy.cartBadge,
         primary: false,
       });

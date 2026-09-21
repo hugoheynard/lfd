@@ -157,3 +157,68 @@ summary,
     right: var(--lfc-inset, var(--fold-space-lg)) !important;
   }
 }
+
+/* 🔴 LE FOND SE FLOUTE DERRIÈRE UN DIALOGUE, À TOUTES LES LARGEURS (Hugo,
+   2026-09-20 : « l'ouverture des dialog devrait blur légèrement le
+   background »).
+
+   fold ne le fait QUE sous 640 px — sa règle vit dans une requête de média, et
+   au bureau le voile reste un simple aplat. La maquette, elle, floute le fond
+   sur les quatre dialogues qu'elle montre ; c'est ce qui fait qu'un dialogue de
+   640 px posé sur une page pleine se lit comme une boîte devant, et non comme
+   un rectangle dedans.
+
+   Ici et non dans un composant : le quai des panneaux appartient à
+   `fold-panel-host`, que le shell monte — aucun écran ne peut l'atteindre.
+   Pas de `!important` : au-delà de 640 px, fold ne déclare rien sur cette
+   propriété, donc il n'y a personne à battre.
+
+   🔴 4 px, ET NON LES 20 DE `--fold-blur-glass` (Hugo, 2026-09-20 : « un petit
+   peu moins de blur »). Ce jeton-là sert au VERRE d'un panneau — une surface
+   translucide de quelques centimètres, qu'on veut opaque au texte qui passe
+   dessous. Ici il s'applique à la page entière, derrière un voile d'encre à
+   45 % qui fait déjà la moitié du travail : à 20 px la page devenait une
+   bouillie, et on perdait le repère de l'endroit d'où le dialogue est sorti.
+   Une valeur en dur plutôt qu'un jeton : le dépôt n'en a aucun à ce cran, et en
+   inventer un pour un seul lecteur n'alignerait rien. */
+.panel-dock[data-side='center'] {
+  backdrop-filter: blur(4px);
+}
+
+/* 🔴 « FERMER » EN TOUTES LETTRES, PAS UNE CROIX (Hugo, 2026-09-20), sur les
+   deux dialogues de commande — la maquette écrit le mot.
+
+   Ici et non dans les composants : le bouton de fermeture vit dans `.ph__close`,
+   à l'intérieur de `fold-panel-header`, encapsulé. Trois routes ont été
+   essayées et mesurées avant celle-ci (2026-09-20) :
+   — le slot `[actions]` de l'en-tête N'EST PAS RENDU en variante `eyebrow` :
+     ce qu'on y projette reste orphelin à côté de `.ph` ;
+   — `--fold-icon-size-sm` ne réduit pas la croix : le bouton garde ses 28 px ;
+   — se passer de `fold-panel-header` coûte le NOM ACCESSIBLE du dialogue —
+     `aria-labelledby` est posé par le panneau, reste en place quand l'en-tête
+     s'en va, et pointe alors vers un id qui n'existe plus.
+
+   Le mot vient de `attr(aria-label)`, que fold remplit déjà avec notre
+   traduction : rien à écrire en dur, et il suit la langue tout seul.
+
+   La portée est tenue par `:has()` — les autres panneaux de l'app gardent leur
+   croix, qui est la bonne affordance là où l'en-tête porte un vrai titre. */
+.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close {
+  width: auto;
+  height: 28px;
+  padding: 0 2px;
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close fold-icon {
+  display: none;
+}
+
+.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close::after {
+  content: attr(aria-label);
+}

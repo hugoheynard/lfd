@@ -26,6 +26,7 @@ import { slotPickerCopy } from '../../copy/screens/slot-picker.copy';
 import { formatHour } from '../../format-hour';
 import { serviceDayLabel } from '../../format-day';
 import { dialogSide } from '../../panel-side';
+import { ORDER_DIALOG } from '../order-dialog';
 import { PublicSlots } from '../public-slots.gateway';
 
 /**
@@ -57,6 +58,27 @@ export interface SlotPickerData {
    * et le dialogue le dit au lieu d'en inventer une.
    */
   readonly firstDay: string | null;
+}
+
+/**
+ * UNE FOURNÉE, et les créneaux qu'elle sert.
+ *
+ * 🔴 Le regroupement suit le BADGE, qui est la seule chose sourcée : le vendeur
+ * le saisit par plage en back-office (« Première fournée », « Tout est chaud »),
+ * donc des créneaux consécutifs qui partagent un badge partagent une fournée.
+ *
+ * ⚠️ La maquette titre ses groupes en deux temps — « MATIN · SORTIE DE
+ * FOURNÉE ». La seconde moitié est le badge ; la PREMIÈRE — le moment de la
+ * journée — n'a aucune source, et la déduire de l'heure ferait appeler
+ * « après-ski » un créneau de 16 h en plein mois d'août. On n'écrit donc que la
+ * moitié qu'on sait vraie.
+ *
+ * `label: null` = des créneaux sans badge. Ils gardent leur grille, sans
+ * sur-titre : un groupe nommé « Autres » serait un nom qu'on a inventé.
+ */
+interface SlotBatch {
+  readonly label: string | null;
+  readonly slots: readonly PublicPickupSlot[];
 }
 
 /** Un jour, tel que l'onglet le nomme. */
@@ -107,8 +129,8 @@ interface DayTab {
   styleUrl: './slot-picker-dialog.scss',
 })
 export class SlotPickerDialog {
-  /** `lg` : les créneaux d'une journée tiennent sur deux colonnes sans se serrer. */
-  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'lg', surface: 'solid' };
+  /** Le gabarit PARTAGÉ avec le sélecteur de maison — voir `order-dialog.ts`. */
+  static readonly foldPanel: FoldPanelDefaults = ORDER_DIALOG;
 
   /**
    * Ouvre le sélecteur. Rend le créneau retenu, ou `undefined` si l'on ferme
@@ -176,6 +198,26 @@ export class SlotPickerDialog {
     });
   });
 
+  /**
+   * Les créneaux du jour, groupés par fournée.
+   *
+   * Les groupes suivent l'ORDRE des créneaux et ne se rassemblent que s'ils se
+   * SUIVENT : deux plages distantes qui portent par hasard le même badge
+   * restent deux groupes, parce qu'elles sont deux moments de la journée.
+   */
+  protected readonly batches = computed<readonly SlotBatch[]>(() => {
+    const batches: { label: string | null; slots: PublicPickupSlot[] }[] = [];
+    for (const slot of this.slots()) {
+      const last = batches.at(-1);
+      if (last !== undefined && last.label === slot.badge) {
+        last.slots.push(slot);
+      } else {
+        batches.push({ label: slot.badge, slots: [slot] });
+      }
+    }
+    return batches;
+  });
+
   /** Le sur-titre : où l'on en est, et dans quelle maison. */
   protected readonly kicker = computed(() => fill(this.c().kicker, { place: this.data().place }));
 
@@ -231,6 +273,12 @@ export class SlotPickerDialog {
   /** L'heure telle qu'elle se lit — « 6 h 30 ». */
   protected hourOf(slot: PublicPickupSlot): string {
     return formatHour(slot.time);
+  }
+
+  /** Ce que le créneau dit de lui-même, sous son heure. */
+  protected stateOf(slot: PublicPickupSlot): string {
+    const state = this.c().state;
+    return slot.open ? state.open : state.full;
   }
 
   /**

@@ -13,7 +13,7 @@
 </ng-template>
 
 <!-- EN PILE : le lien vers la page panier, tel qu'il a toujours été. -->
-<a class="pill in-pocket" routerLink="/nouvelle-commande/panier" [attr.aria-label]="label()">
+<a class="pill in-pocket" routerLink="/commande/panier" [attr.aria-label]="label()">
   <ng-container [ngTemplateOutlet]="guts" />
 </a>
 
@@ -38,7 +38,7 @@
     </div>
 
     <div class="foot">
-      <a class="foot-cta" routerLink="/nouvelle-commande/panier" (click)="close()">
+      <a class="foot-cta" routerLink="/commande/panier" (click)="close()">
         {{ t().chrome.cartOpen }}
       </a>
     </div>

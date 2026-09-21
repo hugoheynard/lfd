@@ -126,6 +126,8 @@ export const IT: ClientCopy = {
     address: 'Le Labo · Route de la Balme — aperto dalle 7 alle 19.',
   },
   signup: {
+    facebook: 'Continua con Facebook',
+    orEmail: 'oppure via e-mail',
     google: 'Continua con Google',
     eyebrow: 'Prima volta ? 3 informazioni e si parte',
     alreadyLead: 'Sei già cliente ?',
@@ -135,7 +137,6 @@ export const IT: ClientCopy = {
     firstNamePlaceholder: 'Il tuo nome',
     tel: 'Telefono',
     telPlaceholder: '06 00 00 00 00',
-    telHint: 'Perché un corriere che cerca la porta possa chiamarti.',
     email: 'E-mail',
     emailPlaceholder: 'tu@esempio.it',
     open: 'Iscriviti',
@@ -143,7 +144,7 @@ export const IT: ClientCopy = {
     fine: 'Una password per aprire, poi il suo dispositivo la riconosce.',
     fineInline: 'Una password per aprire, poi il suo dispositivo la riconosce.',
     legal:
-      'Creando un account accetti le nostre condizioni di vendita. All’iscrizione non chiediamo alcun documento aziendale.',
+      'Continuando, accettate le condizioni generali di vendita e la nostra politica sui dati. Nessun pagamento è richiesto all’iscrizione.',
   },
   rappel: {
     asapGroup: 'Prima possibile',
@@ -165,6 +166,14 @@ export const IT: ClientCopy = {
     alreadySub: 'Password, o il suo dispositivo',
     firstTitle: 'Prima volta ?',
     firstSub: 'Nome, e-mail, telefono',
+    switchLabel: 'Tipo di account',
+    persoLabel: 'Privato',
+    persoSub: 'Ordino per me',
+    proLabel: 'Professionista',
+    proSub: 'Ordino per il mio locale',
+    toPersoLead: 'Ordina per sé ?',
+    toPersoLink: 'Creare un account privato',
+    toProLead: 'Ordina per un locale ?',
   },
   event: {
     badge: 'Catering',

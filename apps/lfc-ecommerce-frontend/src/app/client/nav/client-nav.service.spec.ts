@@ -26,8 +26,8 @@ import { TOMMEUSES } from '../mon-compte/account.fixture';
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
   { path: 'mon-espace', children: [] },
-  { path: 'nouvelle-commande/boutique', children: [] },
-  { path: 'nouvelle-commande/panier', children: [] },
+  { path: 'commande/boutique', children: [] },
+  { path: 'commande/panier', children: [] },
 ];
 
 /** L'ordre que la réf FIGE, et qu'aucune surface n'a le droit de réarranger. */
@@ -126,8 +126,8 @@ describe('Les destinations du menu', () => {
     // ⚠️ Le vrai piège : `Router.url` est une propriété nue. Une dérivation qui
     // la lit sans dépendre des événements ne se recalcule jamais, et rien dans
     // un rendu isolé ne le montre — il faut naviguer pour le voir.
-    await router.navigateByUrl('/nouvelle-commande/panier');
-    expect(nav.current()).toBe('/nouvelle-commande/panier');
+    await router.navigateByUrl('/commande/panier');
+    expect(nav.current()).toBe('/commande/panier');
 
     await router.navigateByUrl('/mon-espace');
     expect(nav.current()).toBe('/mon-espace');
@@ -143,13 +143,13 @@ describe('Les destinations du menu', () => {
   it('mène AU RAYON, pas à la question du mode de service', async () => {
     const nav = TestBed.inject(ClientNav);
     const shop = nav.items().find((i) => i.id === 'shop');
-    expect(shop?.route).toBe('/nouvelle-commande/boutique');
+    expect(shop?.route).toBe('/commande/boutique');
     expect(shop?.ready).toBe(true);
     // Aucun compteur : un rayon ne se compte pas, il se parcourt.
     expect(shop?.countShort).toBe('');
 
-    await TestBed.inject(Router).navigateByUrl('/nouvelle-commande/boutique');
-    expect(nav.current()).toBe('/nouvelle-commande/boutique');
+    await TestBed.inject(Router).navigateByUrl('/commande/boutique');
+    expect(nav.current()).toBe('/commande/boutique');
   });
 
   it('déclare inertes les destinations dont l’écran n’existe pas encore', () => {

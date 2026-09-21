@@ -53,9 +53,9 @@ describe('Le chrome de l’app', () => {
       '/inscription',
       '/connexion',
       '/nouvelle-commande',
-      '/nouvelle-commande/boutique',
-      '/nouvelle-commande/panier',
-      '/nouvelle-commande/confirmee',
+      '/commande/boutique',
+      '/commande/panier',
+      '/commande/confirmee',
     ]) {
       expect(await at(url), url).toBe(true);
     }

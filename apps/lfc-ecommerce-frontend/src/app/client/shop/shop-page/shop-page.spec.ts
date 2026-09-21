@@ -80,7 +80,7 @@ describe('ShopPage', () => {
   /**
    * 🔴 La barre du bas OUVRE LE TIROIR, elle ne change plus d'écran : on n'a
    * pas fini de choisir quand on vérifie ce qu'on a pris. Elle menait à
-   * `/nouvelle-commande/panier`, ce qui faisait perdre le rayon — et le
+   * `/commande/panier`, ce qui faisait perdre le rayon — et le
    * défilement — pour relire trois lignes.
    *
    * ⚠️ L'ouverture elle-même ne s'observe pas ici : `client-dialog` appelle

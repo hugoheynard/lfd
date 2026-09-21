@@ -8,8 +8,15 @@ import { FoldIconComponent, type FoldIconName } from 'fold-ng';
  * `draft` rappelle (le trait pointillé, parce qu'il parle d'une commande déjà
  * passée). La réf donne le ton chaud à « je visite la boutique » et non l'encre :
  * sous un puits d'encre, un second bloc d'encre se serait lu comme sa suite.
+ *
+ * `soft` est le quatrième, ajouté le 2026-09-20 pour l'accueil : le beurre
+ * PÂLE. Il propose comme `card`, mais sur la feuille crème — où une carte crème
+ * sur fond crème n'aurait plus de bord. Sur le puits d'encre de
+ * `/nouvelle-commande`, c'est `warm` qui tient ce rôle ; le même mot n'a pas le
+ * même poids selon le fond qui le porte, et c'est pourquoi ce sont deux
+ * registres et non un `background` passé en entrée.
  */
-export type ShortcutTone = 'warm' | 'card' | 'draft';
+export type ShortcutTone = 'warm' | 'card' | 'draft' | 'soft';
 
 /**
  * La forme AU-DELÀ DU PLI. `row` reste une ligne de carte ; `bar` se fond dans

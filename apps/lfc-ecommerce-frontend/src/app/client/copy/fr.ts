@@ -118,6 +118,8 @@ export const FR: ClientCopy = {
     address: 'Le Labo · Route de la Balme — ouvert de 7 h à 19 h.',
   },
   signup: {
+    facebook: 'Continuer avec Facebook',
+    orEmail: 'ou par e-mail',
     google: 'Continuer avec Google',
     eyebrow: 'Première visite ? 3 infos et c’est parti',
     alreadyLead: 'Déjà client ?',
@@ -128,7 +130,6 @@ export const FR: ClientCopy = {
     firstNamePlaceholder: 'Votre prénom',
     tel: 'Téléphone',
     telPlaceholder: '06 00 00 00 00',
-    telHint: 'Pour qu’un coursier qui cherche la porte puisse appeler.',
     email: 'E-mail',
     emailPlaceholder: 'vous@exemple.fr',
     open: 'S’inscrire',
@@ -136,7 +137,7 @@ export const FR: ClientCopy = {
     fine: 'Un mot de passe pour ouvrir, puis votre appareil vous reconnaît.',
     fineInline: 'Un mot de passe pour ouvrir, puis votre appareil vous reconnaît.',
     legal:
-      'En créant un compte, vous acceptez nos conditions de vente. Aucun document d’entreprise n’est demandé à l’inscription.',
+      'En continuant, vous acceptez les conditions générales de vente et notre politique de données. Aucun paiement n’est demandé à l’inscription.',
   },
   rappel: {
     asapGroup: 'Dès que possible',
@@ -158,6 +159,14 @@ export const FR: ClientCopy = {
     alreadySub: 'Mot de passe, ou votre appareil',
     firstTitle: 'Première visite ?',
     firstSub: 'Prénom, e-mail, téléphone',
+    switchLabel: 'Type de compte',
+    persoLabel: 'Particulier',
+    persoSub: 'Je commande pour moi',
+    proLabel: 'Professionnel',
+    proSub: 'Je commande pour mon établissement',
+    toPersoLead: 'Vous commandez pour vous ?',
+    toPersoLink: 'Créer un compte particulier',
+    toProLead: 'Vous commandez pour un établissement ?',
   },
   event: {
     badge: 'Traiteur',

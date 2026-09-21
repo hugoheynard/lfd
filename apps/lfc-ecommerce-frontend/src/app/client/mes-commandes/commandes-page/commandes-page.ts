@@ -22,7 +22,14 @@ import { ClientCompany } from '../../client-company.service';
 import { ClientOrderHistory } from '../client-order-history.service';
 import { OrderSheetService } from '../order-sheet.service';
 import { downloadBlob } from '../download-blob';
-import { historyRowOf, isLive, trackedOf, type HistoryOrder, type RowCopy } from '../order-rows';
+import {
+  historyRowOf,
+  isLive,
+  rowCopyOf,
+  trackedOf,
+  type HistoryOrder,
+  type RowCopy,
+} from '../order-rows';
 import { HistoryTable } from '../history-table/history-table';
 import { NotifyService } from '../../../notify.service';
 import { ReportSheet } from '../report-sheet/report-sheet';
@@ -82,20 +89,7 @@ export class CommandesPage {
   private readonly client = inject(ClientCompany);
 
   /** Les mots de l'écran, que les modèles de vue ne portent pas. */
-  private readonly rowCopy = computed<RowCopy>(() => {
-    const copy = this.t().orders;
-    return {
-      pickup: copy.modePickup,
-      delivery: copy.modeDelivery,
-      stepPlaced: copy.stepPlaced,
-      stepBakery: copy.stepBakery,
-      stepReady: copy.stepReady,
-      stepHandedPickup: copy.stepHandedPickup,
-      stepHandedDelivery: copy.stepHandedDelivery,
-      qrReady: copy.qrReady,
-      noWindow: copy.noWindow,
-    };
-  });
+  private readonly rowCopy = computed<RowCopy>(() => rowCopyOf(this.t().orders));
 
   /** Ce qui VIT : ni remis, ni annulé. Le suivi ne montre que celles-là. */
   protected readonly tracked = computed(() =>

@@ -2,6 +2,17 @@
   display: block;
 }
 
+/* 🔴 EN CARTE, LE BOUTON REMPLIT SON HÔTE (Hugo, 2026-09-20 : « les deux cartes
+   devraient faire la même hauteur »).
+   Les rangées côte à côte s'étirent déjà à la hauteur de la plus haute — c'est
+   le `stretch` du conteneur — mais l'hôte était un `block` et le bouton, lui,
+   se taillait sur son contenu : deux cartes de textes inégaux laissaient donc
+   un vide crème sous la plus courte, et l'écart se lisait comme un défaut
+   d'alignement. En flex, le bouton devient l'élément qui s'étire. */
+:host([data-shape='row']) {
+  display: flex;
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -36,10 +47,25 @@
   min-width: 0;
 }
 
-/* Le mot d'amorce n'existe qu'en barre : au doigt, le raccourci est un bloc et
-   n'a rien à amorcer. */
+/* Le mot d'amorce ne paraît pas par défaut : au doigt, le raccourci est un bloc
+   et n'a rien à amorcer. Les deux formes le rallument — la barre en tête de
+   phrase, la carte en sur-titre — et chacune à sa façon. */
 .lead {
   display: none;
+}
+
+/* 🔴 EN CARTE, L'AMORCE EST UN SUR-TITRE (« OU REPRENEZ » de la maquette du
+   2026-09-20). Gardée sous `[data-shape='row']` et non rallumée dans la base :
+   `/nouvelle-commande` passe la même amorce en forme BARRE, et la montrer
+   partout lui ajouterait une ligne que personne n'a demandée. */
+:host([data-shape='row']) .lead {
+  display: block;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
 }
 
 .title {
@@ -123,6 +149,32 @@
 
   .chevron {
     color: var(--fold-color-text-faded);
+  }
+}
+
+/* ── La proposition, sur la crème : le beurre PÂLE ────────────────────────── */
+
+/* Une carte crème sur la feuille crème n'aurait pas de bord ; le beurre intense
+   de `warm`, lui, est fait pour un puits d'encre et brûlerait ici. */
+:host([data-tone='soft']) {
+  .row {
+    border-color: var(--lfc-butter-300);
+    background: var(--lfc-butter-100);
+  }
+
+  .tile {
+    background: var(--lfc-paper-0);
+    color: var(--lfc-ink-800);
+  }
+
+  .title {
+    font-size: var(--lfc-text-block);
+    font-weight: var(--lfc-weight-black);
+  }
+
+  .sub,
+  .chevron {
+    color: var(--lfc-butter-800);
   }
 }
 
@@ -232,5 +284,71 @@
       text-transform: uppercase;
       color: var(--lfc-color-on-well);
     }
+  }
+}
+
+/* ── LA PAIRE DE L'ACCUEIL : la forme `row` ───────────────────────────────── */
+
+/* Les mesures de la maquette du 2026-09-20 : `padding:16px 18px; gap:15px;
+   border-radius:18px`, tuile de 40, titre à 16. Elles vivent ici et non dans la
+   base parce que `/nouvelle-commande` sert les mêmes raccourcis en forme BARRE,
+   où le châssis disparaît : les lui donner ne changerait rien chez lui, mais
+   l'exposerait au prochain réglage fait pour l'accueil.
+
+   ⚠️ CE BLOC VIENT APRÈS LES REGISTRES, et l'ordre est porteur : `soft` règle
+   lui aussi la taille du titre, à la MÊME spécificité. Déclaré plus haut, il
+   aurait gagné — et une seule des deux cartes aurait grandi. */
+:host([data-shape='row']) {
+  .row {
+    gap: 15px;
+    padding: 16px 18px;
+    border-radius: var(--lfc-radius-2xl);
+  }
+
+  .tile {
+    width: 40px;
+    height: 40px;
+  }
+
+  .title {
+    font-size: var(--lfc-text-heading);
+  }
+}
+
+/* ── « OU REPRENEZ », exactement comme la maquette ────────────────────────── */
+
+/* 🔴 EN CARTE, LE RAPPEL PERD SON POINTILLÉ ET GAGNE UN BOUTON (Hugo,
+   2026-09-20 : « exactement comme la ref — bouton refaire, icône grey bg »).
+
+   La maquette le dessine en carte crème à filet PLEIN, tuile beige pâle à
+   glyphe d'encre, et « REFAIRE » en pastille d'encre pleine. Le pointillé et
+   le lien-texte restent en forme BARRE, qui est celle de
+   `/nouvelle-commande` : là-bas le raccourci est une phrase dans un puits, et
+   un bouton plein y pèserait plus que la commande dont il parle. Ici, il EST
+   l'action de la carte. */
+:host([data-shape='row'][data-tone='draft']) {
+  .row {
+    border: 1px solid var(--lfc-paper-400);
+    background: var(--lfc-paper-0);
+    box-shadow: var(--lfc-shadow-card);
+  }
+
+  /* Le beurre le plus pâle, et le glyphe en encre : la tuile NOMME le geste,
+     elle ne le vend pas. Un aplat d'encre ici aurait fait deux pleins dans la
+     même carte, à côté du bouton. */
+  .tile {
+    background: var(--lfc-paper-100);
+    color: var(--lfc-ink-800);
+  }
+
+  .action {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: var(--fold-radius-md);
+    background: var(--lfc-ink-800);
+    color: var(--lfc-paper-50);
+    font-size: var(--fold-text-xs);
   }
 }

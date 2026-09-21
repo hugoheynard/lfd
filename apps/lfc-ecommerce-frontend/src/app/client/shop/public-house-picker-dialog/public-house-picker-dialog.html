@@ -4,25 +4,74 @@
 <fold-panel-header variant="eyebrow" [title]="c().kicker" [closeLabel]="c().close" />
 
 <fold-panel-body>
-  <h2 class="screen">{{ c().title }}</h2>
-  <p class="lead">{{ c().lead }}</p>
+  <!-- La question et son chapô forment un bloc ; le filet vient après, au-dessus
+       de la liste — il sépare ce que le dialogue DIT de ce qu'il DEMANDE. -->
+  <div class="intro">
+    <h2 class="screen">{{ c().title }}</h2>
+    <p class="lead">{{ c().lead }}</p>
+  </div>
 
-  <ul class="houses">
+  <!-- 🔴 DES RADIOS, comme la maquette (`captures/06-retrait-ou.png`). Ce n'est
+       pas une décoration : on choisit UNE maison parmi plusieurs, et le cercle
+       le dit avant qu'on ait lu quoi que ce soit. Une liste de cartes sans
+       marque de sélection laissait la maison retenue se signaler par un seul
+       filet, que rien ne nommait. -->
+  <ul class="houses" role="radiogroup" [attr.aria-label]="c().title">
     @for (house of houses(); track house.point.id) {
       <li>
-        <button class="house" type="button" [class.on]="house.current" (click)="pick(house)">
-          <span class="head">
-            <span class="name">{{ house.name }}</span>
-            @if (house.current) {
-              <span class="tag">{{ c().current }}</span>
+        <button
+          class="house"
+          type="button"
+          role="radio"
+          [class.on]="house.selected"
+          [attr.aria-checked]="house.selected"
+          (click)="pick(house)"
+        >
+          <span class="mark" aria-hidden="true"></span>
+
+          <span class="said">
+            <span class="head">
+              <span class="name">{{ house.name }}</span>
+              @if (house.current) {
+                <span class="tag">{{ c().current }}</span>
+              }
+            </span>
+            <span class="place">{{ house.place }}</span>
+            <!-- ⚠️ L'heure DISPARAÎT pour un point qui ne reçoit pas de public.
+                 La maquette met ici un temps d'accès (« 4 min à pied du
+                 téléphérique ») que rien dans le système ne porte. -->
+            @if (house.ready) {
+              <span class="ready">{{ house.ready }}</span>
             }
           </span>
-          <span class="place">{{ house.place }}</span>
-          <span class="offer" [class.is-plain]="!house.offer.hasOffer">{{
-            house.offer.label
-          }}</span>
+
+          <span class="offer" [class.is-plain]="!house.offer.hasOffer">
+            {{ house.offer.label }}
+          </span>
         </button>
       </li>
     }
   </ul>
 </fold-panel-body>
+
+<!-- 🔴 UN PIED, COMME LE VOLET SUIVANT (Hugo, 2026-09-20). Choisir une maison
+     ne referme plus le dialogue : la rangée SÉLECTIONNE, le pied confirme. On
+     peut donc comparer deux maisons avant de trancher — la première touchée
+     n'est plus la bonne d'office — et les deux volets du parcours répondent
+     enfin au même geste.
+     L'action NOMME la suite : on sait ce qu'on ouvre avant de l'ouvrir. -->
+<fold-panel-footer>
+  <button
+    class="cta"
+    foldButton
+    emphasis="solid"
+    intent="primary"
+    size="lg"
+    type="button"
+    [disabled]="chosen() === null"
+    (click)="confirm()"
+  >
+    {{ ctaLabel() }}
+    <span aria-hidden="true">→</span>
+  </button>
+</fold-panel-footer>

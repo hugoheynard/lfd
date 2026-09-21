@@ -45,9 +45,7 @@ describe('routeAfterSwitch — où l’on va après avoir changé d’espace', (
     expect(routeAfterSwitch('/mes-commandes?filtre=en-cours', true)).toBe(
       '/mes-commandes?filtre=en-cours',
     );
-    expect(routeAfterSwitch('/nouvelle-commande/boutique', false)).toBe(
-      '/nouvelle-commande/boutique',
-    );
+    expect(routeAfterSwitch('/commande/boutique', false)).toBe('/commande/boutique');
   });
 });
 

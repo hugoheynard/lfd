@@ -99,15 +99,50 @@ describe('PublicHousePickerDialog', () => {
   });
 
   /**
-   * 🔴 Le dialogue rend le POINT, il ne décide pas de la suite : changer de
-   * maison périme l'heure, et c'est l'appelant qui enchaîne sur le sélecteur.
+   * 🔴 SÉLECTIONNER N'EST PAS CONFIRMER (2026-09-20). Toucher une rangée
+   * fermait tout et enchaînait sur l'heure : on ne pouvait pas comparer deux
+   * maisons — la première touchée était la bonne — et le geste n'avait pas de
+   * retour en arrière, alors que le volet suivant en a un.
    */
-  it('rend le point choisi en se fermant', () => {
+  it('ne ferme RIEN quand on touche une rangée', () => {
     const { fixture, closed } = boot();
 
     houses(fixture)[1]?.click();
+    fixture.detectChanges();
+
+    expect(closed.results).toEqual([]);
+    expect(houses(fixture)[1]?.getAttribute('aria-checked')).toBe('true');
+    expect(houses(fixture)[0]?.getAttribute('aria-checked')).toBe('false');
+  });
+
+  /**
+   * 🔴 Le dialogue rend le POINT, il ne décide pas de la suite : changer de
+   * maison périme l'heure, et c'est l'appelant qui enchaîne sur le sélecteur.
+   */
+  it('rend le point retenu quand le pied confirme', () => {
+    const { fixture, closed } = boot();
+
+    houses(fixture)[1]?.click();
+    fixture.detectChanges();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.cta')?.click();
 
     expect(closed.results).toEqual([VILLAGE]);
+  });
+
+  /**
+   * L'action est FERMÉE tant qu'aucune maison n'est retenue — le refus précède
+   * l'effort, comme partout ailleurs dans ce parcours.
+   */
+  it('garde l’action fermée tant que rien n’est retenu', () => {
+    const { fixture } = boot();
+    const cta = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.cta');
+
+    expect(cta?.disabled).toBe(true);
+
+    houses(fixture)[0]?.click();
+    fixture.detectChanges();
+
+    expect(cta?.disabled).toBe(false);
   });
 
   /**

@@ -23,7 +23,7 @@ import { RETURN_TO_CART } from '../../nouvelle-commande/commande-page/return-to-
  * Le panier vit dans le stockage local et survit à la redirection — on revient
  * donc sur la commande composée, pas sur un rayon vide.
  */
-const CART = '/nouvelle-commande/panier';
+const CART = '/commande/panier';
 
 /**
  * Le panier, en pile — ce que le bureau montre dans sa colonne de droite.
@@ -175,9 +175,7 @@ export class PanierPage {
       return;
     }
     void this.router.navigate(
-      placed.settlement === 'due'
-        ? ['/nouvelle-commande/reglement', placed.id]
-        : ['/nouvelle-commande/confirmee'],
+      placed.settlement === 'due' ? ['/commande/reglement', placed.id] : ['/commande/confirmee'],
     );
   }
 
@@ -191,7 +189,7 @@ export class PanierPage {
   }
 
   protected backToShop(): void {
-    void this.router.navigate(['/nouvelle-commande/boutique']);
+    void this.router.navigate(['/commande/boutique']);
   }
 
   /**
@@ -224,9 +222,7 @@ export class PanierPage {
       return;
     }
     void this.router.navigate(
-      placed.settlement === 'due'
-        ? ['/nouvelle-commande/reglement', placed.id]
-        : ['/nouvelle-commande/confirmee'],
+      placed.settlement === 'due' ? ['/commande/reglement', placed.id] : ['/commande/confirmee'],
     );
   }
 }

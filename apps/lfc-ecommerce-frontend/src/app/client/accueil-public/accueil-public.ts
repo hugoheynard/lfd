@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
-import { FoldPanelHostService } from 'fold-ng';
+import { FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
@@ -34,7 +34,15 @@ import { MOCK_EVENT } from '../mock-event';
 import { bestPickupDiscount, discountLabel, pickupOffer } from '../shop/pickup-discount';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { PublicHousePickerDialog } from '../shop/public-house-picker-dialog/public-house-picker-dialog';
+import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
+import { LiveOrdersWell } from '../mes-commandes/live-orders-well/live-orders-well';
+import { isLive, rowCopyOf, trackedOf } from '../mes-commandes/order-rows';
+import { ClientCart } from '../cart/client-cart.service';
 import { ContactBand } from '../shop/contact-band/contact-band';
+import { DeliveryAddressDialog } from '../shop/delivery-address-dialog/delivery-address-dialog';
+import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
+import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
 import { PublicSteps } from '../shop/public-steps/public-steps';
 import { ServiceDoors } from '../shop/service-doors/service-doors';
 import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog';
@@ -48,7 +56,7 @@ import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog'
  * n'est plus traversé — les deux questions qu'il pose, la maison et l'heure,
  * viennent d'être posées ici.
  */
-const SHOP = '/nouvelle-commande/boutique';
+const SHOP = '/commande/boutique';
 
 /** Une maison, telle que la carte l'affiche. */
 interface House {
@@ -89,7 +97,16 @@ interface House {
 @Component({
   selector: 'app-accueil-public',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ContactBand, EventBanner, EventCard, PublicSteps, ServiceDoors],
+  imports: [
+    ContactBand,
+    EventBanner,
+    EventCard,
+    FoldCalloutComponent,
+    LiveOrdersWell,
+    PublicSteps,
+    ServiceDoors,
+    ShopShortcuts,
+  ],
   templateUrl: './accueil-public.html',
   styleUrl: './accueil-public.scss',
 })
@@ -217,6 +234,113 @@ export class AccueilPublic {
       ...variant,
     };
   });
+
+  private readonly history = inject(ClientOrderHistory);
+  private readonly catalogue = inject(ShopCatalogue);
+  private readonly cart = inject(ClientCart);
+
+  /**
+   * LA DERNIÈRE COMMANDE, ou `null`.
+   *
+   * 🔴 Elle vient de l'historique RÉEL (`ClientOrderHistory`, le plus récent en
+   * tête), ET SEULEMENT POUR QUI EST RECONNU (Hugo, 2026-09-20 : « sur un
+   * compte non connecté il ne peut pas y avoir comme jeudi dernier ni mes
+   * suivis »).
+   *
+   * 🔴 La condition est `recognised()`, pas « la liste est vide ». Le magasin
+   * ne se vide PAS à la déconnexion — il est `providedIn: 'root'`, et son effet
+   * de lecture se contente de ne pas relire quand personne n'est connecté. Les
+   * commandes du compte précédent restaient donc en mémoire, et un visiteur
+   * lisait « Comme jeudi dernier » sur la commande de quelqu'un d'autre.
+   *
+   * C'est la faute que cette app a déjà commise trois fois, et qui est écrite
+   * trois fois dans la barre du shell : se fier à un PROXY — ici une liste vide
+   * — plutôt qu'à la condition réelle. Un proxy finit toujours par se
+   * désaccorder de ce qu'il représente.
+   *
+   * ⚠️ Ceci ne dispense pas de vider le magasin à la déconnexion : cet écran
+   * est protégé, les autres lecteurs de `ClientOrderHistory` ne le sont pas.
+   * Signalé à Hugo.
+   *
+   * La même carte existe sur `/nouvelle-commande` avec « 2 traditions,
+   * 4 croissants, 1 ski praliné · retrait au Labo » écrit en dur et un bouton
+   * qui ne fait rien : elle montre la commande de personne. Ici, pas de
+   * commande, pas de carte — un visiteur et un client de son premier jour n'ont
+   * rien à reprendre, et leur proposer de le faire serait une invitation vide.
+   */
+  protected readonly lastOrder = computed(() =>
+    this.recognised() ? (this.history.orders()[0] ?? null) : null,
+  );
+
+  /**
+   * CE QUE DIT LA CARTE « OU REPRENEZ » — titre, sous-ligne, et rien d'inventé.
+   *
+   * Le titre ne nomme un JOUR que si la commande a moins d'une semaine : au-delà,
+   * « comme mardi dernier » désignerait un mardi que le client n'a pas vécu.
+   */
+  /** La sortie vers le rayon, en carte — les mots viennent du dictionnaire. */
+  protected readonly browseCard = computed<ShortcutCard>(() => ({
+    title: this.c().shortcuts.browseTitle,
+    sub: this.c().shortcuts.browseSub,
+  }));
+
+  protected readonly again = computed<ShortcutCard | null>(() => {
+    const order = this.lastOrder();
+    if (order === null) {
+      return null;
+    }
+    const copy = this.c().shortcuts;
+    const day = orderWeekday(order.placedAt, new Date(), this.locale.current());
+    const lines = orderLinesSummary(order.lines, (count) =>
+      fill(copy.againMore, { count: String(count) }),
+    );
+    const place = orderPlaceLabel(
+      order,
+      (value) => fill(copy.againPickup, { place: value }),
+      copy.againDelivery,
+    );
+    return {
+      title: day === null ? copy.againOlder : fill(copy.againRecent, { day }),
+      sub: place === '' ? lines : `${lines} · ${place}`,
+    };
+  });
+
+  /**
+   * Combien de lignes de la dernière commande le rayon ne vend plus.
+   *
+   * `0` = rien à dire, et c'est l'état de départ comme celui d'un panier refait
+   * en entier. Il ne se remet jamais à zéro tout seul : le message reste sous
+   * les yeux tant qu'on n'a pas quitté l'écran.
+   */
+  protected readonly reorderGone = signal(0);
+
+  protected readonly reorderGoneMessage = computed(() =>
+    fill(this.c().shortcuts.againGone, { count: String(this.reorderGone()) }),
+  );
+
+  /**
+   * CE QUI VIT : ni remis, ni annulé. Le suivi ne montre que celles-là.
+   *
+   * 🔴 Le filtre et la mise en forme viennent de `order-rows`, les MÊMES que
+   * « Mes commandes ». Deux dérivations du même fait finissent par annoncer
+   * deux étapes différentes pour une seule commande — et c'est le client qui
+   * arbitre, devant un comptoir.
+   */
+  protected readonly tracked = computed(() => {
+    // Même règle que `lastOrder` : la reconnaissance, jamais la liste.
+    if (!this.recognised()) {
+      return [];
+    }
+    const copy = rowCopyOf(this.t().orders);
+    return this.history
+      .orders()
+      .filter((order) => isLive(order))
+      .map((order) => trackedOf(order, copy));
+  });
+
+  protected readonly trackedCount = computed(() =>
+    this.t().orders.wellHint.replace('{n}', String(this.tracked().length)),
+  );
 
   protected readonly event = signal(MOCK_EVENT);
 
@@ -466,16 +590,77 @@ export class AccueilPublic {
   /**
    * LA PORTE DU COURSIER — « Choisir une adresse ».
    *
-   * Elle mène à `/nouvelle-commande`, qui porte déjà le carnet d'adresses, les
-   * zones et leurs frais. Rien n'est réécrit ici : une seconde saisie d'adresse
-   * serait une seconde occasion d'annoncer d'autres frais.
+   * 🔴 Elle OUVRE UN DIALOGUE depuis le 2026-09-20, là où elle menait à
+   * `/nouvelle-commande` « qui porte déjà le carnet d'adresses, les zones et
+   * leurs frais ». C'était vrai, et c'est précisément ce qu'on a déplacé : le
+   * carnet, les zones et leurs frais vivent maintenant dans un dialogue,
+   * symétrique de la porte du retrait. Les deux portes de cette page répondent
+   * donc au même geste, et aucune ne quitte l'écran pour poser sa question.
+   *
+   * Le choix voyage par le MÊME magasin que le retrait, et mène au même rayon.
    */
-  protected openCourierDoor(): void {
-    void this.router.navigate(['/nouvelle-commande']);
+  protected async openCourierDoor(): Promise<void> {
+    if (!this.canOrder()) {
+      return;
+    }
+    const choice = await DeliveryAddressDialog.open(this.panels, { currentId: null }).closed;
+    if (choice === undefined) {
+      return;
+    }
+    this.order.choice.set(choice);
+    void this.router.navigate([SHOP]);
   }
 
   protected browse(): void {
     void this.router.navigate([SHOP]);
+  }
+
+  /** Le QR de retrait — le MÊME écran que depuis « Mes commandes ». */
+  protected showQr(orderId: string): void {
+    void this.router.navigate(['/mes-commandes/retrait', orderId]);
+  }
+
+  protected allOrders(): void {
+    void this.router.navigate(['/mes-commandes']);
+  }
+
+  /**
+   * REFAIRE la dernière commande : son panier, puis la boutique.
+   *
+   * 🔴 Le catalogue est RELU AVANT de poser les lignes. `itemOf` rend `null`
+   * aussi bien pour une référence retirée que pour un catalogue pas encore
+   * arrivé, et le panier refuse les deux de la même façon — sans la relecture,
+   * un panier refait depuis un écran qui n'a jamais ouvert la boutique serait
+   * VIDE, en silence.
+   *
+   * ⚠️ On pose des QUANTITÉS, on n'ajoute pas : reprendre deux fois la même
+   * commande doit donner le même panier, pas le double.
+   *
+   * 🔴 CE QUE LE RAYON NE VEND PLUS SE DIT, et l'écran NE PART PAS. Le panier
+   * l'aurait laissé tomber tout seul — `setQuantity` refuse une référence
+   * inconnue sans un mot — et le manque se serait découvert à la caisse. Le
+   * refus ne peut pas précéder l'effort ici (le catalogue n'est lu qu'au clic),
+   * alors il suit immédiatement : on reste, et on compte.
+   */
+  protected async reorder(): Promise<void> {
+    const order = this.lastOrder();
+    if (order === null) {
+      return;
+    }
+    await this.catalogue.hydrate();
+    this.cart.clear();
+    let gone = 0;
+    for (const line of order.lines) {
+      if (this.catalogue.itemOf(line.sku) === null) {
+        gone += 1;
+        continue;
+      }
+      this.cart.setQuantity(line.sku, line.quantity);
+    }
+    this.reorderGone.set(gone);
+    if (gone === 0) {
+      void this.router.navigate([SHOP]);
+    }
   }
 }
 

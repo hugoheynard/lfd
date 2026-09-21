@@ -1,0 +1,73 @@
+<fold-panel-header variant="eyebrow" [title]="c().kicker" [closeLabel]="c().close" />
+
+<fold-panel-body>
+  <div class="intro">
+    <h2 class="screen">{{ c().title }}</h2>
+    <p class="lead">{{ c().lead }}</p>
+  </div>
+
+  @if (entries().length === 0) {
+    <!-- Carnet vide : on dit OÙ il se remplit, on n'ouvre pas un formulaire.
+         Les adresses appartiennent à la société, pas à la commande. -->
+    <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
+  } @else {
+    <ul class="entries" role="radiogroup" [attr.aria-label]="c().title">
+      @for (entry of entries(); track entry.address.id) {
+        <li>
+          <button
+            class="entry"
+            type="button"
+            role="radio"
+            [class.on]="entry.selected"
+            [class.is-out]="entry.outOfZone"
+            [attr.aria-checked]="entry.selected"
+            (click)="pick(entry)"
+          >
+            <span class="mark" aria-hidden="true"></span>
+
+            <span class="said">
+              <span class="head">
+                <span class="name">{{ entry.name }}</span>
+                @if (entry.isDefault) {
+                  <span class="tag">{{ c().defaultTag }}</span>
+                }
+              </span>
+              <span class="place">{{ entry.place }}</span>
+              <!-- ⚠️ La fenêtre DISPARAÎT quand le carnet n'en déclare pas :
+                   l'adresse se livre alors dans la tournée, et annoncer une
+                   heure serait la promesse que ce parcours refuse d'écrire. -->
+              @if (entry.window) {
+                <span class="window">{{ entry.window }}</span>
+              }
+            </span>
+
+            <!-- Le tarif de la zone, à droite. Hors zone, il laisse place au
+                 refus — qui NOMME la sortie plutôt que de griser en silence. -->
+            @if (entry.outOfZone) {
+              <span class="out">{{ c().outOfZone }}</span>
+            } @else {
+              <span class="fee">{{ entry.fee }}</span>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</fold-panel-body>
+
+<!-- L'action PORTE le montant : on sait ce qu'on paie avant d'avoir composé. -->
+<fold-panel-footer>
+  <button
+    class="cta"
+    foldButton
+    emphasis="solid"
+    intent="primary"
+    size="lg"
+    type="button"
+    [disabled]="chosen() === null"
+    (click)="confirm()"
+  >
+    {{ ctaLabel() }}
+    <span aria-hidden="true">→</span>
+  </button>
+</fold-panel-footer>

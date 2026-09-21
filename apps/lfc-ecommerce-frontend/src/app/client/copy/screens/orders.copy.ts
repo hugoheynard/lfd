@@ -26,6 +26,13 @@ export interface OrdersCopy {
   readonly wellHint: string;
   /** Le libellé d'un point de défilement — `{n}` est le rang du suivi. */
   readonly wellDot: string;
+  /**
+   * La sortie du puits vers l'historique, sur l'ACCUEIL.
+   *
+   * Elle n'existe pas sur « Mes commandes » : on y est déjà, et un bouton qui
+   * mène là où l'on se trouve est une impasse dessinée.
+   */
+  readonly wellAll: string;
   readonly wellNone: string;
   readonly wellNoneHint: string;
   /** `{n}` est remplacé par l'avancement en pour-cent. */
@@ -134,6 +141,7 @@ export const ORDERS_FR: OrdersCopy = {
   wellHead: 'Mes suivis',
   wellHint: '{n} en cours',
   wellDot: 'Aller au suivi {n}',
+  wellAll: 'Toutes mes commandes',
   wellNone: 'Rien en cours',
   wellNoneHint: 'Vos commandes vivantes s’affichent ici, du panier à la remise.',
   progress: 'Avancement : {n} %',
@@ -219,6 +227,7 @@ export const ORDERS_EN: OrdersCopy = {
   wellHead: 'My tracking',
   wellHint: '{n} in progress',
   wellDot: 'Go to tracking {n}',
+  wellAll: 'All my orders',
   wellNone: 'Nothing in progress',
   wellNoneHint: 'Live orders show up here, from basket to handover.',
   progress: 'Progress: {n}%',
@@ -304,6 +313,7 @@ export const ORDERS_IT: OrdersCopy = {
   wellHead: 'I miei tracciamenti',
   wellHint: '{n} in corso',
   wellDot: 'Andare al tracciamento {n}',
+  wellAll: 'Tutti i miei ordini',
   wellNone: 'Niente in corso',
   wellNoneHint: 'Gli ordini in corso compaiono qui, dal carrello alla consegna.',
   progress: 'Avanzamento: {n} %',

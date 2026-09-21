@@ -33,6 +33,12 @@ export interface SlotPickerCopy {
     readonly none: string;
   };
 
+  /** Ce qu'un créneau dit de lui-même, sous son heure. */
+  readonly state: {
+    readonly open: string;
+    readonly full: string;
+  };
+
   /** Un créneau complet — visible, fermé, et qui ORIENTE plutôt que de refuser. */
   readonly full: {
     readonly tag: string;
@@ -65,6 +71,10 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
     tomorrow: 'Demain',
     none: 'Aucune journée ouverte',
   },
+  state: {
+    open: 'Ouvert',
+    full: 'Complet',
+  },
   full: {
     tag: 'Complet',
     nextOpen: 'Complet — il reste de la place à {time}.',
@@ -75,7 +85,7 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
     subtitle: 'Cette maison ne propose pas de retrait ce jour. Essayez une autre journée.',
   },
   cta: 'Je prends {time}',
-  ctaIdle: 'Choisissez une heure',
+  ctaIdle: 'Choisissez un créneau',
   back: 'Retour',
   close: 'Fermer',
 };
@@ -90,6 +100,10 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
     tomorrow: 'Tomorrow',
     none: 'No day open',
   },
+  state: {
+    open: 'Open',
+    full: 'Full',
+  },
   full: {
     tag: 'Full',
     nextOpen: 'Full — there is room at {time}.',
@@ -100,7 +114,7 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
     subtitle: 'This bakery offers no pickup that day. Try another one.',
   },
   cta: 'I’ll take {time}',
-  ctaIdle: 'Pick a time',
+  ctaIdle: 'Pick a slot',
   back: 'Back',
   close: 'Close',
 };
@@ -115,6 +129,10 @@ export const SLOT_PICKER_IT: SlotPickerCopy = {
     tomorrow: 'Domani',
     none: 'Nessuna giornata aperta',
   },
+  state: {
+    open: 'Aperto',
+    full: 'Esaurito',
+  },
   full: {
     tag: 'Esaurito',
     nextOpen: 'Esaurito — c’è ancora posto alle {time}.',
@@ -125,7 +143,7 @@ export const SLOT_PICKER_IT: SlotPickerCopy = {
     subtitle: 'Questa bottega non propone il ritiro quel giorno. Provate un’altra giornata.',
   },
   cta: 'Prendo le {time}',
-  ctaIdle: 'Scegliete un orario',
+  ctaIdle: 'Scegliete una fascia',
   back: 'Indietro',
   close: 'Chiudi',
 };

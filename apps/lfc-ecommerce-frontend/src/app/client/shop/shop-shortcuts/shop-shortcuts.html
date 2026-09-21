@@ -1,0 +1,26 @@
+<!-- 🔴 « REPRENEZ » D'ABORD : reprendre est le geste le plus court, et la
+     référence le met à gauche pour ça. « Visiter » est la sortie de qui n'a
+     rien à reprendre — ou qui ne veut pas. -->
+@if (again(); as card) {
+  <app-shortcut-row
+    tone="draft"
+    shape="row"
+    icon="reload"
+    [lead]="againLead()"
+    [title]="card.title"
+    [sub]="card.sub"
+    [action]="againAction()"
+    (opened)="reordered.emit()"
+  />
+}
+
+@if (browseCard(); as card) {
+  <app-shortcut-row
+    tone="soft"
+    shape="row"
+    icon="search"
+    [title]="card.title"
+    [sub]="card.sub"
+    (opened)="browsed.emit()"
+  />
+}

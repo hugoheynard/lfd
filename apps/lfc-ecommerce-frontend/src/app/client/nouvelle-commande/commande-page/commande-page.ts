@@ -33,7 +33,7 @@ import { PickupDialog } from './pickup-dialog/pickup-dialog';
 import { PickupPointCard } from './pickup-point-card/pickup-point-card';
 import { returnsToCart } from './return-to-cart';
 import { SectionPanel } from './section-panel/section-panel';
-import { ShortcutRow } from './shortcut-row/shortcut-row';
+import { ShortcutRow } from '../../shop/shortcut-row/shortcut-row';
 
 /**
  * L'écran d'un client reconnu : UNE question, deux portes.
@@ -221,8 +221,8 @@ export class CommandePage {
     this.order.choice.set(choice);
     this.dialog.set(null);
     const next = returnsToCart(this.route.snapshot.queryParamMap)
-      ? '/nouvelle-commande/panier'
-      : '/nouvelle-commande/boutique';
+      ? '/commande/panier'
+      : '/commande/boutique';
     void this.router.navigate([next]);
   }
 
@@ -232,7 +232,7 @@ export class CommandePage {
    * — regarder d'abord, décider ensuite.
    */
   protected browse(): void {
-    void this.router.navigate(['/nouvelle-commande/boutique']);
+    void this.router.navigate(['/commande/boutique']);
   }
 
   protected openPanel(): void {

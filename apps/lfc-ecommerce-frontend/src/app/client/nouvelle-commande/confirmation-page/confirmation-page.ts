@@ -163,11 +163,11 @@ export class ConfirmationPage {
   protected settle(): void {
     const order = this.order();
     if (order !== null) {
-      void this.router.navigate(['/nouvelle-commande/reglement', order.id]);
+      void this.router.navigate(['/commande/reglement', order.id]);
     }
   }
 
   protected backToShop(): void {
-    void this.router.navigate(['/nouvelle-commande/boutique']);
+    void this.router.navigate(['/commande/boutique']);
   }
 }

@@ -171,12 +171,20 @@ export const routes: Routes = [
         // `plan-inscription-pro-seule.md` §3). Sans garde : on ouvre son compte
         // à tous les niveaux de la boutique, c'est même tout l'intérêt quand
         // elle est fermée.
+        //
+        // 🔴 CE N'EST PLUS UN ÉCRAN À ELLE depuis le 2026-09-21 (handoff
+        // `handoff-inscription`, §1) : l'inscription porte les DEUX portes sur
+        // une page, et cette adresse ouvre la même, du côté pro. L'adresse
+        // reste — la commerciale l'a distribuée — mais elle ne mène plus à un
+        // second formulaire qui aurait à rester d'accord avec le premier.
+        //
+        // ⚠️ Pas une redirection : une redirection vers `/inscription` perdrait
+        // justement ce que cette adresse dit, à savoir QUELLE porte ouvrir. Le
+        // `data` le dit sans qu'aucun paramètre d'URL ait à le porter.
         path: 'ouverture-compte-pro',
         title: 'Ouverture de compte pro — La Folie Coffee',
-        loadComponent: () =>
-          import('./login/ouverture-compte-pro-page/ouverture-compte-pro-page').then(
-            (m) => m.OuvertureCompteProPage,
-          ),
+        data: { door: 'pro' },
+        loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
         // L'ACCUEIL DU CLIENT RECONNU. Il répond à une seule question — qu'est-ce
@@ -236,18 +244,23 @@ export const routes: Routes = [
           ),
       },
       {
-        // LA BOUTIQUE CLIENTE et ses rayons. Elle vit sous `nouvelle-commande/`
-        // et pas à la racine parce qu'elle est la SUITE d'une commande en cours :
-        // sans mode de service, elle n'a rien à montrer et renvoie à la question.
-        // `/boutique` reste la boutique PRO — deux produits, deux catalogues,
-        // deux adresses.
-        path: 'nouvelle-commande/boutique',
+        // LA BOUTIQUE CLIENTE et ses rayons.
+        //
+        // 🔴 Elle a vécu sous `nouvelle-commande/` — « parce qu'elle est la
+        // SUITE d'une commande en cours ». Elle l'est toujours ; ce qui a
+        // changé, c'est que `nouvelle-commande` était aussi un ÉCRAN, celui du
+        // mode de service, et que l'accueil pose désormais les deux questions
+        // sur place. Le tunnel garde donc son préfixe, sous le nom de ce qu'il
+        // est — une commande — et non sous celui d'un écran en sursis.
+        //
+        // ⚠️ Pas à la racine : `/boutique` est prise par la boutique PRO.
+        path: 'commande/boutique',
         canActivate: [featureAccessGuard('shop', 'browse')],
         title: 'Boutique — La Folie Coffee',
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
       },
       {
-        path: 'nouvelle-commande/panier',
+        path: 'commande/panier',
         canActivate: [featureAccessGuard('shop', 'order')],
         title: 'Mon panier — La Folie Coffee',
         loadComponent: () =>
@@ -258,7 +271,7 @@ export const routes: Routes = [
         // déjà quand on arrive ici : l'adresse doit donc survivre à un
         // rechargement, et se rouvrir plus tard sur une commande restée à payer.
         // Un panneau dans le panier n'aurait tenu ni l'un ni l'autre.
-        path: 'nouvelle-commande/reglement/:id',
+        path: 'commande/reglement/:id',
         title: 'Régler ma commande — La Folie Coffee',
         loadComponent: () =>
           import('./client/nouvelle-commande/reglement-page/reglement-page').then(
@@ -267,7 +280,7 @@ export const routes: Routes = [
       },
       {
         // LE QR DE RETRAIT, par son identifiant de commande. Il vit sous
-        // `mes-commandes/` et pas sous `nouvelle-commande/` : on le rouvre le
+        // `mes-commandes/` et pas sous `commande/` : on le rouvre le
         // lendemain matin, depuis l'historique ou un signet, longtemps après
         // que la commande a cessé d'être « nouvelle ».
         path: 'mes-commandes/retrait/:id',
@@ -276,7 +289,7 @@ export const routes: Routes = [
           import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
       },
       {
-        path: 'nouvelle-commande/confirmee',
+        path: 'commande/confirmee',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>
           import('./client/nouvelle-commande/confirmation-page/confirmation-page').then(
@@ -306,12 +319,20 @@ export const routes: Routes = [
       // l'accueil public. Y envoyer qui clique « se connecter » l'aurait déposé
       // devant un bandeau de retrait.
       { path: 'connexion', pathMatch: 'full', redirectTo: 'inscription' },
-      // Les anciennes adresses restent valides : un lien partagé ou un signet
-      // pris avant le renommage doit continuer d'ouvrir le même écran.
-      { path: 'commande', pathMatch: 'full', redirectTo: 'nouvelle-commande' },
-      { path: 'commande/boutique', redirectTo: 'nouvelle-commande/boutique' },
-      { path: 'commande/panier', redirectTo: 'nouvelle-commande/panier' },
-      { path: 'commande/confirmee', redirectTo: 'nouvelle-commande/confirmee' },
+      // 🔴 LES ANCIENNES ADRESSES RESTENT VALIDES, et le sens des redirections
+      // s'est INVERSÉ le 2026-09-20 : `commande/*` était la vieille adresse et
+      // renvoyait vers `nouvelle-commande/*` ; c'est maintenant l'inverse. Un
+      // lien partagé, un signet, un e-mail de confirmation parti la semaine
+      // dernière — tous pointent encore sur `nouvelle-commande/*`, et doivent
+      // continuer d'ouvrir le même écran.
+      //
+      // ⚠️ Elles ne se retirent pas avec l'écran : une adresse servie une fois
+      // est servie pour toujours. C'est la même règle que le §0 du CLAUDE.md
+      // pour un champ de contrat.
+      { path: 'nouvelle-commande/boutique', redirectTo: 'commande/boutique' },
+      { path: 'nouvelle-commande/panier', redirectTo: 'commande/panier' },
+      { path: 'nouvelle-commande/reglement/:id', redirectTo: 'commande/reglement/:id' },
+      { path: 'nouvelle-commande/confirmee', redirectTo: 'commande/confirmee' },
     ],
   },
   ...proRoutes,

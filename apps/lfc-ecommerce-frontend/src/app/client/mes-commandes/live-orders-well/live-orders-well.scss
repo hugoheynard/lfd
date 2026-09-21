@@ -1,0 +1,67 @@
+/* Le contrat du puits, celui de « Mes commandes » — mêmes jetons, mêmes
+   mesures : les deux écrans montrent le même objet, ils ne doivent pas le
+   peindre différemment.
+   Les cartes de suivi sont des OBJETS, pas les items d'une liste : elles
+   veulent l'air d'une gouttière et non celui d'un interligne. */
+:host {
+  display: block;
+}
+
+.well {
+  --lfc-well-bg: var(--lfc-color-surface-well);
+  --lfc-well-color: var(--lfc-color-on-well);
+  --lfc-well-color-muted: var(--lfc-color-on-well-muted);
+  --lfc-well-radius: var(--lfc-radius-2xl);
+  --lfc-well-padding: var(--fold-space-lg);
+  --lfc-well-gap: var(--fold-space-lg);
+}
+
+/* L'indicateur hérite du même contrat : il ne sait pas qu'il est sur du bleu
+   nuit, on le lui dit. */
+.dots {
+  --fold-color-text-faded: var(--lfc-color-on-well-faded);
+  --fold-color-primary: var(--lfc-color-on-well);
+}
+
+.well-glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-on-well-tile);
+}
+
+/* La sortie est CLAIRE sur le puits sombre : c'est la seule action de la tête,
+   et un bouton creux s'y serait lu comme un cadre vide. */
+.all {
+  flex: none;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-on-well);
+  color: var(--lfc-color-surface-well);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Les cartes portent leur largeur : c'est ici qu'on décide de la tranche
+   laissée à la suivante, et c'est elle qui dit qu'il y en a une. */
+.rail-card {
+  flex: none;
+  width: min(340px, 86%);
+  scroll-snap-align: start;
+}
+
+@media (min-width: 900px) {
+  .rail-card {
+    width: calc(50% - var(--fold-space-lg) / 2 - 44px);
+  }
+}

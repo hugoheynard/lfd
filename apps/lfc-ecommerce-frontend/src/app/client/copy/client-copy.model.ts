@@ -198,6 +198,14 @@ export interface ClientCopy {
   readonly signup: {
     /** Le bouton du fournisseur — le libellé qu'imposent ses règles de marque. */
     readonly google: string;
+    /** Le second fournisseur — cf. `FACEBOOK_CONNECTION` pour ce qu'il exige du tenant. */
+    readonly facebook: string;
+    /**
+     * Le filet qui sépare les fournisseurs de la saisie — « ou par e-mail », et
+     * non un « ou » seul : ce qui suit n'est pas une autre façon de faire la
+     * même chose, c'est l'autre moyen d'entrer.
+     */
+    readonly orEmail: string;
     readonly eyebrow: string;
     readonly alreadyLead: string;
     readonly alreadyLink: string;
@@ -206,10 +214,20 @@ export interface ClientCopy {
     readonly firstNamePlaceholder: string;
     readonly tel: string;
     readonly telPlaceholder: string;
-    readonly telHint: string;
     readonly email: string;
     readonly emailPlaceholder: string;
+    /**
+     * L'ACTION du formulaire.
+     *
+     * ⚠️ Elle a d'abord été le bouton qui DÉPLIAIT les champs en pile, quand
+     * ils étaient repliés. Le pli a disparu le 2026-09-21 avec la raison qui le
+     * tenait (cf. le composant) ; le libellé, lui, valait déjà pour une action
+     * finale, et sert donc de CTA. {@link submit} est devenu le TITRE de la
+     * carte — la réf y met « Créer mon compte », qui est exactement ce qu'il
+     * disait.
+     */
     readonly open: string;
+    /** Le titre de la carte. */
     readonly submit: string;
     readonly fine: string;
     readonly fineInline: string;
@@ -237,6 +255,40 @@ export interface ClientCopy {
     readonly alreadySub: string;
     readonly firstTitle: string;
     readonly firstSub: string;
+
+    /**
+     * **Le segmenté des deux portes** — particulier / professionnel, en tête de
+     * l'inscription (handoff `handoff-inscription`, §1).
+     *
+     * Les deux sous-lignes ne sont pas décoratives : elles sont le SEUL moyen
+     * pour qui hésite de savoir laquelle est la sienne. « Professionnel » tout
+     * seul se lit aussi bien comme « je travaille » que comme « je commande
+     * pour un établissement » — d'où « Je commande pour… », qui tranche sur
+     * l'usage et non sur le statut.
+     */
+    readonly switchLabel: string;
+    readonly persoLabel: string;
+    readonly persoSub: string;
+    readonly proLabel: string;
+    readonly proSub: string;
+
+    /**
+     * Le pied de la porte PRO, qui propose l'autre (§1 : « le pied de chaque
+     * formulaire propose l'autre porte en toutes lettres »).
+     *
+     * ⚠️ Le pied de la porte PERSO, lui, n'a rien à recevoir ici : il l'a déjà
+     * sous le rappel commercial, en `pro.openAccount` (vérifié le 2026-09-21).
+     * Un second libellé pour le même geste finirait par diverger du premier.
+     */
+    readonly toPersoLead: string;
+    readonly toPersoLink: string;
+
+    /**
+     * Et le pied de la porte PARTICULIER, qui propose la pro (§1). Son LIEN est
+     * `pro.openAccount`, qui existait déjà — deux libellés pour le même geste
+     * finiraient par diverger.
+     */
+    readonly toProLead: string;
   };
   readonly event: {
     readonly badge: string;

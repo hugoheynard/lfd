@@ -285,7 +285,7 @@ describe('CommandePage', () => {
 
     click(FR.commande.browseTitle);
 
-    expect(gone).toEqual([['/nouvelle-commande/boutique']]);
+    expect(gone).toEqual([['/commande/boutique']]);
   });
 
   it("l'urgence propose le rappel ET l'appel direct", () => {
@@ -360,10 +360,10 @@ describe('CommandePage — venue du panier', () => {
   };
 
   it('retourne au panier quand on en vient', () => {
-    expect(chooseFrom({ retour: 'panier' })).toEqual([['/nouvelle-commande/panier']]);
+    expect(chooseFrom({ retour: 'panier' })).toEqual([['/commande/panier']]);
   });
 
   it('mène au rayon sinon', () => {
-    expect(chooseFrom({})).toEqual([['/nouvelle-commande/boutique']]);
+    expect(chooseFrom({})).toEqual([['/commande/boutique']]);
   });
 });

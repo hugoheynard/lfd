@@ -19,6 +19,12 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 
 :host {
   display: block;
+  /* 🔴 L'URL DE LA PHOTO EST ÉMISE UNE FOIS. Écrite en `$fournil` Sass, elle se
+     recopiait en entier à chaque usage — 112 octets × 2 — et cette feuille a un
+     budget qui est une ERREUR à 10 kB : les deux copies en mangeaient 2 %. La
+     même faute a déjà coûté un build le 2026-09-20, dans `service-doors`, et
+     elle se corrige de la même façon. */
+  --lfc-photo-fournil: #{$fournil};
 }
 
 /* ══ LA CHARPENTE ══════════════════════════════════════════════════════════
@@ -259,7 +265,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 }
 
 .banner-photo {
-  background: var(--lfc-ink-950) $fournil center / cover;
+  background: var(--lfc-ink-950) var(--lfc-photo-fournil) center / cover;
 }
 
 /* UN SEUL dégradé diagonal : opaque là où vit le texte, presque clair là où
@@ -992,10 +998,12 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 /* L'écran donne leurs images aux portes — la photo du fournil est celle qu'il
    sert déjà au bandeau. ⚠️ Celle du COURSIER est provisoire : voir
    `service-doors.scss`, qui porte la raison.
-   (Le pourquoi vit là-bas et pas ici : cette feuille a un budget de 10 kB, et
-   les commentaires y comptent — dépassement constaté le 2026-09-20.) */
+   ⚠️ Une version de ce commentaire disait que les COMMENTAIRES comptaient dans
+   le budget. C'est faux : ils sont minifiés. Ce qui compte, ce sont les
+   littéraux recopiés — vérifié le 2026-09-20 en sortant 600 octets de prose
+   sans que le dépassement bouge d'un octet. */
 app-service-doors {
-  --door-photo-pickup: #{$fournil};
+  --door-photo-pickup: var(--lfc-photo-fournil);
 }
 
 @media (min-width: 900px) {

@@ -29,7 +29,7 @@ fold-panel-body {
   @include dlg.intro;
 }
 
-.houses {
+.entries {
   @include dlg.rule-above;
 
   display: flex;
@@ -44,7 +44,7 @@ fold-panel-body {
    PAPIER, non sur le beurre : trois aplats de beurre à la suite dans un
    dialogue crème se lisaient comme une seule masse, et la maison retenue ne s'y
    détachait que par un filet. */
-.house {
+.entry {
   inline-size: 100%;
   box-sizing: border-box;
   display: flex;
@@ -61,7 +61,7 @@ fold-panel-body {
   transition: var(--lfc-motion-tap);
 }
 
-.house:hover {
+.entry:hover {
   border-color: var(--lfc-color-border-strong);
 }
 
@@ -73,13 +73,13 @@ fold-panel-body {
    posent le même geste — on désigne une chose parmi plusieurs — et il se
    peignait en bleu pâle ici, en beurre pâle là. Deux couleurs pour un seul
    sens obligent à réapprendre d'un écran à l'autre ce qu'on vient de comprendre. */
-.house.on {
+.entry.on {
   border-color: var(--lfc-ink-800);
   border-width: 2px;
   background: var(--lfc-color-accent-surface);
 }
 
-.house:active {
+.entry:active {
   transform: scale(0.99);
 }
 
@@ -95,7 +95,7 @@ fold-panel-body {
   border-radius: var(--fold-radius-pill);
 }
 
-.house.on .mark {
+.entry.on .mark {
   border-color: var(--lfc-ink-800);
   /* Le disque intérieur, par une ombre portée vers l'intérieur : un enfant de
      plus pour un point de 10 px ne vaut pas le balisage. */
@@ -191,6 +191,61 @@ fold-panel-footer {
 
 /* L'action s'éteint tant qu'aucune maison n'est retenue — en BEIGE et non par
    une opacité, qui aurait délavé le texte : c'est lui qui dit ce qui manque. */
+.cta:disabled {
+  background: var(--lfc-paper-300);
+  color: var(--fold-color-text-muted);
+  cursor: not-allowed;
+}
+
+/* ── Ce qui est propre à la livraison ────────────────────────────────────── */
+
+.window {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+}
+
+/* Le tarif de la zone : une mention, pas une pastille — ce n'est ni un gain ni
+   un état, c'est un prix. */
+.fee {
+  flex: none;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+  white-space: nowrap;
+}
+
+/* 🔴 HORS ZONE : la rangée reste LISIBLE et dit pourquoi, au lieu d'être grisée
+   en silence. Elle se touche — et ne se retient pas : `chosen()` l'écarte, et
+   l'action reste fermée. Le refus précède l'effort, il ne l'attend pas. */
+.entry.is-out {
+  background: var(--fold-color-surface-sunken);
+}
+
+.entry.is-out .name,
+.entry.is-out .place {
+  color: var(--fold-color-text-muted);
+}
+
+.out {
+  flex: none;
+  max-width: 11em;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-tight);
+  color: var(--lfc-brick-700);
+}
+
+/* ── Le pied ─────────────────────────────────────────────────────────────── */
+
+fold-panel-footer {
+  --fold-button-font: var(--fold-font-sans);
+  --fold-space-md: var(--lfc-dialog-pad-y);
+  --fold-space-lg: var(--lfc-dialog-gutter);
+}
+
 .cta:disabled {
   background: var(--lfc-paper-300);
   color: var(--fold-color-text-muted);

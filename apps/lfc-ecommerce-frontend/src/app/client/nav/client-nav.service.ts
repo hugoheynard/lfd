@@ -71,7 +71,7 @@ interface Destination {
  */
 const DESTINATIONS: readonly Destination[] = [
   { id: 'espace', route: '/mon-espace', ready: true, shop: 'browse' },
-  { id: 'shop', route: '/nouvelle-commande/boutique', ready: true, shop: 'browse' },
+  { id: 'shop', route: '/commande/boutique', ready: true, shop: 'browse' },
   { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
   {
     id: 'invoices',

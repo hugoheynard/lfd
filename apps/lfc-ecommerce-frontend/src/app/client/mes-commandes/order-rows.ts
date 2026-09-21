@@ -146,6 +146,44 @@ export interface RowCopy {
 }
 
 /**
+ * Les mots de `ClientCopy.orders` en {@link RowCopy}.
+ *
+ * 🔴 La table de correspondance vivait dans `commandes-page`, et l'accueil en
+ * aurait fait une seconde copie le jour où il a montré les mêmes cartes
+ * (2026-09-20). Neuf champs recopiés à la main dans deux écrans dérivent : un
+ * libellé d'étape renommé d'un côté laisse l'autre dire l'ancien mot, et rien
+ * ne le signale — ni le typecheck, ni un test, seulement deux écrans côte à
+ * côte.
+ *
+ * ⚠️ Le paramètre est décrit par sa FORME et non par `ClientCopy` : ce fichier
+ * ne dépend que des contrats, et lui faire connaître le dictionnaire de l'app
+ * le rendrait inutilisable ailleurs pour un gain nul.
+ */
+export function rowCopyOf(copy: {
+  readonly modePickup: string;
+  readonly modeDelivery: string;
+  readonly stepPlaced: string;
+  readonly stepBakery: string;
+  readonly stepReady: string;
+  readonly stepHandedPickup: string;
+  readonly stepHandedDelivery: string;
+  readonly qrReady: string;
+  readonly noWindow: string;
+}): RowCopy {
+  return {
+    pickup: copy.modePickup,
+    delivery: copy.modeDelivery,
+    stepPlaced: copy.stepPlaced,
+    stepBakery: copy.stepBakery,
+    stepReady: copy.stepReady,
+    stepHandedPickup: copy.stepHandedPickup,
+    stepHandedDelivery: copy.stepHandedDelivery,
+    qrReady: copy.qrReady,
+    noWindow: copy.noWindow,
+  };
+}
+
+/**
  * Les quatre étapes, dans l'ordre où le pain les franchit.
  *
  * 🔴 **`ready` y manquait**, et le défaut se voyait à l'écran : une commande

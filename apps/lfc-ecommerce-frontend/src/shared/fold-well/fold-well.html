@@ -7,10 +7,18 @@
       [subtitle]="subtitle()"
       [variant]="titleVariant()"
     >
-      <!-- Re-projected under the SAME name fold uses. A slot renamed on the
-           way through would never match: the inner component selects on the
-           attribute the caller wrote, not on the one we forwarded it with. -->
-      <ng-content select="[titleAction]" />
+      <!-- 🔴 `ngProjectAs` IS LOAD-BEARING, and the comment that stood here was
+           wrong: it claimed the inner component "selects on the attribute the
+           caller wrote". It does not. Angular matches a child's slots against
+           the `<ng-content>` ELEMENT itself, never against what flows through
+           it — and this one carries no `titleAction` attribute, so it fell into
+           `fold-element-title`'s default slot, which does not exist. The action
+           was silently dropped: no error, no warning, nothing in the DOM.
+           Nobody had noticed because every `[titleAction]` in the repo is
+           written straight onto a `fold-element-title` (checked 2026-09-20);
+           this wrapper's own slot had never carried anything until the
+           accueil's tracking well used it. -->
+      <ng-content select="[titleAction]" ngProjectAs="[titleAction]" />
     </fold-element-title>
   </header>
 }

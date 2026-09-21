@@ -8,8 +8,13 @@
 <fold-panel-header variant="eyebrow" [title]="kicker()" [closeLabel]="c().close" />
 
 <fold-panel-body>
-  <h2 class="screen">{{ c().title }}</h2>
-  <p class="lead">{{ c().lead }}</p>
+  <!-- La question et son chapô forment un bloc, séparé du corps par un filet :
+       sans lui, la première rangée de créneaux se lit comme la suite du
+       paragraphe. -->
+  <div class="intro">
+    <h2 class="screen">{{ c().title }}</h2>
+    <p class="lead">{{ c().lead }}</p>
+  </div>
 
   @if (days().length === 0) {
     <!-- Aucune journée accordée par le serveur : on le dit, on n'en invente
@@ -41,36 +46,56 @@
     } @else if (slots().length === 0) {
       <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
     } @else {
-      <div class="slots" role="radiogroup" [attr.aria-label]="c().title">
-        @for (slot of slots(); track slot.startAt) {
-          <!-- 🔴 Un créneau complet reste VISIBLE et fermé : on ne fait pas
-               disparaître une heure, on dit qu'elle est prise et on nomme la
-               suivante. Une absence serait un refus muet. -->
-          <button
-            class="slot"
-            type="button"
-            role="radio"
-            [class.on]="picked()?.startAt === slot.startAt"
-            [class.full]="!slot.open"
-            [disabled]="!slot.open"
-            [attr.aria-checked]="picked()?.startAt === slot.startAt"
-            (click)="pick(slot)"
-          >
-            <span class="head">
-              <span class="hour">{{ hourOf(slot) }}</span>
-              @if (!slot.open) {
-                <span class="tag is-full">{{ c().full.tag }}</span>
-              } @else if (slot.badge) {
-                <!-- Le badge vient du VENDEUR, saisi par plage en back-office.
-                     C'est la seule phrase de cette carte qui ait une source. -->
-                <span class="tag">{{ slot.badge }}</span>
-              }
-            </span>
+      <!-- 🔴 LES CRÉNEAUX SONT GROUPÉS PAR FOURNÉE, comme la maquette
+           (`captures/09-adresse-quand.png`). Le badge quitte la carte pour
+           devenir le SUR-TITRE de son groupe : il désignait une plage, pas une
+           heure, et le répéter sur chacune des quatre cartes d'une même fournée
+           le faisait lire comme un attribut du créneau.
 
-            @if (!slot.open) {
-              <span class="note">{{ fullNote(slot) }}</span>
+           ⚠️ La maquette titre en deux temps — « MATIN · SORTIE DE FOURNÉE ».
+           Seule la seconde moitié a une source ; le moment de la journée n'en a
+           aucune, et le déduire de l'heure ferait appeler « après-ski » un
+           créneau de 16 h en plein août. -->
+      <div class="batches" role="radiogroup" [attr.aria-label]="c().title">
+        @for (batch of batches(); track $index) {
+          @if (batch.label) {
+            <p class="batch-label">{{ batch.label }}</p>
+          }
+
+          <div class="slots">
+            @for (slot of batch.slots; track slot.startAt) {
+              <!-- 🔴 Un créneau complet reste VISIBLE et fermé : on ne fait pas
+                   disparaître une heure, on dit qu'elle est prise et on nomme
+                   la suivante. Une absence serait un refus muet. -->
+              <button
+                class="slot"
+                type="button"
+                role="radio"
+                [class.on]="picked()?.startAt === slot.startAt"
+                [class.full]="!slot.open"
+                [disabled]="!slot.open"
+                [attr.aria-checked]="picked()?.startAt === slot.startAt"
+                (click)="pick(slot)"
+              >
+                <!-- 🔴 L'HEURE DE DÉBUT SEULE (Hugo, 2026-09-20 : « au niveau
+                     des horaires on ne donne que la première heure »).
+                     La tuile a porté l'intervalle quelques heures — « 7 h –
+                     7 h 15 » — parce que les deux bornes sont dans le contrat.
+                     Mais ce point découpe au quart d'heure : la seconde borne
+                     se déduisait de la suivante, et douze tuiles répétaient
+                     deux fois la même information. On choisit une heure, pas
+                     une fenêtre. -->
+                <span class="hour">{{ hourOf(slot) }}</span>
+                <span class="state">{{ stateOf(slot) }}</span>
+
+                <!-- Là où il n'y a plus de place, la carte ORIENTE : elle nomme
+                     la prochaine heure libre. -->
+                @if (!slot.open) {
+                  <span class="note">{{ fullNote(slot) }}</span>
+                }
+              </button>
             }
-          </button>
+          </div>
         }
       </div>
     }
@@ -78,18 +103,23 @@
 </fold-panel-body>
 
 <!-- `between` : « Retour » au bord gauche, l'action au droit — la répartition
-     de la référence. ⚠️ Son « Retour » est un texte NU ; l'échelle de fold va
-     de `solid` à `soft` et n'a pas de degré sans fond. `soft`/`neutral` en est
-     le cran le plus discret, et je préfère cet écart à un bouton maison qui
-     perdrait l'état de focus et la hauteur tactile. -->
+     de la référence.
+
+     🔴 « RETOUR » N'EST PAS UN BOUTON (Hugo, 2026-09-20). Il portait le cran le
+     plus discret de fold — `soft`/`neutral` —, faute de degré sans fond dans
+     son échelle, et cet écart était assumé « pour garder l'état de focus et la
+     hauteur tactile ». Les deux se gardent sans lui : le texte nu ci-dessous a
+     sa gouttière, sa hauteur de 44 px et son anneau de focus, écrits dans le
+     SCSS. Ce qu'on gagne, c'est qu'il ne se lit plus comme une seconde action —
+     un pied qui offre deux boutons demande de choisir entre eux, alors qu'il
+     n'y en a qu'un à faire. -->
 <fold-panel-footer align="between">
-  <button foldButton emphasis="soft" intent="neutral" size="lg" type="button" (click)="back()">
-    {{ c().back }}
-  </button>
+  <button class="back" type="button" (click)="back()">{{ c().back }}</button>
 
   <!-- L'action NOMME l'heure : « Je prends 6 h 30 ». Un bouton qui dirait
        seulement « Continuer » obligerait à remonter pour vérifier. -->
   <button
+    class="cta"
     foldButton
     emphasis="solid"
     intent="primary"

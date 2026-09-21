@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { CustomerOrderLineView, CustomerOrderView, PickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
@@ -9,7 +9,11 @@ import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { ClientCart } from '../cart/client-cart.service';
+import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
+import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
+import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { AccueilPublic } from './accueil-public';
 
 /**
@@ -79,13 +83,56 @@ function whoProviders(who: Regard): readonly unknown[] {
   ];
 }
 
+/**
+ * Le panier et la vitrine, doublés ensemble : « refaire » les traverse tous les
+ * deux, et c'est leur ACCORD qu'on éprouve — ce que la vitrine ne connaît plus
+ * ne doit pas entrer dans le panier.
+ *
+ * `sold` est la liste des SKU encore au rayon ; tout le reste est retiré.
+ */
+class FakeShop {
+  constructor(private readonly sold: readonly string[]) {}
+  readonly posed = new Map<string, number>();
+  hydrate(): Promise<void> {
+    return Promise.resolve();
+  }
+  itemOf(sku: string): { readonly sku: string } | null {
+    return this.sold.includes(sku) ? { sku } : null;
+  }
+  clear(): void {
+    this.posed.clear();
+  }
+  setQuantity(sku: string, quantity: number): void {
+    this.posed.set(sku, quantity);
+  }
+}
+
+/**
+ * La dernière commande. Écrite depuis le fixture PARTAGÉ et non castée depuis
+ * un objet partiel : un champ ajouté demain à `CustomerOrderView` doit faire
+ * rougir le fixture, pas passer sous un `as`.
+ */
+function order(over: Partial<CustomerOrderView> = {}): CustomerOrderView {
+  // 🔴 `placedAt` dit une INTENTION relative à maintenant. Une date du
+  // calendrier ferait virer ce test au rouge tout seul le jour où elle sort de
+  // la fenêtre d'une semaine — sans qu'une ligne de code ait bougé.
+  return { ...LIVE_PICKUP, placedAt: new Date().toISOString(), ...over };
+}
+
+function line(productName: string, quantity: number, sku = productName): CustomerOrderLineView {
+  return { ...LIVE_PICKUP.lines[0]!, sku, productName, quantity };
+}
+
 async function mount(
   points: readonly PickupAddressView[],
   shop: 'order' | 'browse' | 'closed' = 'order',
   who: Regard = 'visiteur',
+  orders: readonly CustomerOrderView[] = [],
+  sold: readonly string[] = [],
 ): Promise<ComponentFixture<AccueilPublic>> {
   const store = new FakePoints();
   store.pickups.set(points);
+  const boutique = new FakeShop(sold);
   TestBed.configureTestingModule({
     imports: [AccueilPublic],
     providers: [
@@ -93,6 +140,9 @@ async function mount(
       { provide: ServicePoints, useValue: store },
       { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
       { provide: ClientFeatureAccess, useValue: { shop: signal(shop) } },
+      { provide: ClientOrderHistory, useValue: { orders: signal(orders) } },
+      { provide: ShopCatalogue, useValue: boutique },
+      { provide: ClientCart, useValue: boutique },
       ...whoProviders(who),
     ],
   });
@@ -181,6 +231,9 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
         { provide: ServicePoints, useValue: store },
         { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
         { provide: ClientFeatureAccess, useValue: { shop: signal('order' as const) } },
+        { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
+        { provide: ShopCatalogue, useValue: new FakeShop([]) },
+        { provide: ClientCart, useValue: new FakeShop([]) },
         ...whoProviders('visiteur'),
       ],
     });
@@ -317,6 +370,81 @@ describe('AccueilPublic — les trois états', () => {
    * passer une bande qui parle à tout le monde de la même chose, ce qui est
    * exactement ce qu'on ne veut pas.
    */
+  /**
+   * 🔴 PAS DE COMMANDE, PAS DE CARTE. La même carte existe sur
+   * `/nouvelle-commande` avec ses articles écrits en dur : elle montre la
+   * commande de personne, et propose de refaire ce qu'on n'a jamais commandé.
+   */
+  it('ne propose PAS de reprendre quand il n’y a rien à reprendre', async () => {
+    const fixture = await mount(POINTS, 'order', 'perso');
+
+    expect(fixture.nativeElement.querySelector('app-shop-shortcuts')).toBeNull();
+  });
+
+  it('dit la VRAIE dernière commande — ses articles et son lieu', async () => {
+    const fixture = await mount(POINTS, 'order', 'perso', [
+      order({ lines: [line('traditions', 2), line('croissants', 4)] }),
+    ]);
+
+    expect(fixture.nativeElement.querySelector('.sub')?.textContent?.trim()).toBe(
+      '2 traditions, 4 croissants · retrait : Le Labo',
+    );
+  });
+
+  /**
+   * 🔴 Au-delà d'une semaine, AUCUN JOUR N'EST NOMMÉ : « comme mardi dernier »
+   * pour une commande d'il y a trois semaines désigne un mardi que le client
+   * n'a pas vécu. La fixture dit une intention relative, jamais une date.
+   */
+  it('ne nomme pas de jour pour une commande trop ancienne', async () => {
+    const vieille = new Date(Date.now() - 20 * 86_400_000).toISOString();
+    const fixture = await mount(POINTS, 'order', 'perso', [order({ placedAt: vieille })]);
+
+    expect(fixture.nativeElement.querySelector('.title')?.textContent?.trim()).toBe(
+      'Comme votre dernière commande ?',
+    );
+  });
+
+  /**
+   * 🔴 CE QUE LE RAYON NE VEND PLUS SE DIT, et l'écran NE PART PAS. Le panier
+   * laisse tomber une référence inconnue sans un mot ; le manque se serait
+   * découvert à la caisse.
+   */
+  it('refait le panier et retient l’écran quand un article a disparu', async () => {
+    const fixture = await mount(
+      POINTS,
+      'order',
+      'perso',
+      [order({ lines: [line('tradition', 2, 'TRAD'), line('éclair', 1, 'ECLAIR')] })],
+      ['TRAD'],
+    );
+
+    await fixture.componentInstance['reorder']();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['reorderGone']()).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('ne sont plus au rayon');
+  });
+
+  /**
+   * 🔴 UN VISITEUR NE VOIT NI LA REPRISE NI LES SUIVIS (Hugo, 2026-09-20), même
+   * quand le magasin porte encore les commandes du compte précédent.
+   *
+   * Le magasin est `providedIn: 'root'` et ne se vide pas à la déconnexion :
+   * se fier à « la liste est vide » faisait lire « Comme jeudi dernier » sur la
+   * commande de quelqu'un d'autre. La condition est la RECONNAISSANCE.
+   *
+   * La fixture pose donc exprès un historique NON vide sur un visiteur — c'est
+   * le seul montage qui prouve quelque chose.
+   */
+  it('🔴 ne montre ni reprise ni suivis à un VISITEUR, même avec un historique en mémoire', async () => {
+    const fixture = await mount(POINTS, 'order', 'visiteur', [order({ lines: [line('a', 1)] })]);
+
+    expect(fixture.nativeElement.querySelector('app-shop-shortcuts')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-live-orders-well')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Comme');
+  });
+
   it.each([
     ['visiteur', 'Un buffet, un gros volume'],
     ['perso', 'Changer l’heure, ajouter une pièce'],

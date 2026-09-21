@@ -131,7 +131,7 @@ describe('ReglementPage', () => {
     fixture.detectChanges();
 
     expect(paid).toHaveBeenCalledWith('ord_9');
-    expect(gone).toEqual([['/nouvelle-commande/confirmee']]);
+    expect(gone).toEqual([['/commande/confirmee']]);
   });
 
   /**
@@ -171,7 +171,7 @@ describe('ReglementPage', () => {
   it('file à la confirmation quand rien n’est à encaisser', async () => {
     const { gone } = await boot(stripeThatAnswers({}), 'ord_reglee', null);
 
-    expect(gone).toEqual([['/nouvelle-commande/confirmee']]);
+    expect(gone).toEqual([['/commande/confirmee']]);
   });
 
   /**
@@ -192,6 +192,6 @@ describe('ReglementPage', () => {
 
     button(fixture, FR.pay.later).click();
 
-    expect(gone).toEqual([['/nouvelle-commande/confirmee']]);
+    expect(gone).toEqual([['/commande/confirmee']]);
   });
 });

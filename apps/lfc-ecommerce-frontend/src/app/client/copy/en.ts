@@ -123,6 +123,8 @@ export const EN: ClientCopy = {
     address: 'Le Labo · Route de la Balme — open 7am to 7pm.',
   },
   signup: {
+    facebook: 'Continue with Facebook',
+    orEmail: 'or by e-mail',
     google: 'Continue with Google',
     eyebrow: 'First time ? 3 details and you’re in',
     alreadyLead: 'Already a customer ?',
@@ -132,7 +134,6 @@ export const EN: ClientCopy = {
     firstNamePlaceholder: 'Your first name',
     tel: 'Phone',
     telPlaceholder: '06 00 00 00 00',
-    telHint: 'So a courier looking for your door can call you.',
     email: 'Email',
     emailPlaceholder: 'you@example.com',
     open: 'Sign up',
@@ -140,7 +141,7 @@ export const EN: ClientCopy = {
     fine: 'A password to open the door, then your device recognises you.',
     fineInline: 'A password to open the door, then your device recognises you.',
     legal:
-      'By creating an account you accept our terms of sale. No company paperwork is required to sign up.',
+      'By continuing, you accept the terms of sale and our data policy. No payment is asked for at sign-up.',
   },
   rappel: {
     asapGroup: 'As soon as possible',
@@ -162,6 +163,14 @@ export const EN: ClientCopy = {
     alreadySub: 'Password, or your device',
     firstTitle: 'First time ?',
     firstSub: 'First name, email, phone',
+    switchLabel: 'Account type',
+    persoLabel: 'Individual',
+    persoSub: 'I order for myself',
+    proLabel: 'Trade',
+    proSub: 'I order for my venue',
+    toPersoLead: 'Ordering for yourself ?',
+    toPersoLink: 'Create a personal account',
+    toProLead: 'Ordering for a venue ?',
   },
   event: {
     badge: 'Catering',
