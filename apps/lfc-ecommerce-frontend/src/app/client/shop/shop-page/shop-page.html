@@ -82,11 +82,9 @@
     [label]="cartLabel()"
     [where]="whereLabel()"
     [total]="totalLabel()"
-    (opened)="cartOpen.set(true)"
+    (opened)="void pay()"
   />
 }
-
-<app-cart-panel [open]="cartOpen()" (closed)="cartOpen.set(false)" (paid)="pay()" />
 
 <app-product-sheet
   [product]="piece()"

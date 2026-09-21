@@ -355,6 +355,18 @@ export interface ClientCopy {
     readonly addAria: string;
     readonly removeAria: string;
     /** `{count}` est remplacé par le nombre de pièces au panier. */
+    /**
+     * Le titre de la barre du bas, en pile.
+     *
+     * 🔴 Elle disait « {count} pièces au panier » et OUVRAIT un panneau (Hugo,
+     * 2026-09-21 : « celui du bas doit emmener à règlement »). Elle nomme
+     * désormais le geste qu'elle fait — régler — et porte le montant à côté :
+     * une barre collante est la dernière chose qu'on lit avant de payer, pas un
+     * compteur.
+     *
+     * ⚠️ Le COMPTE n'est pas perdu : il est sur la pastille de la barre du
+     * haut, qui ouvre le panier entier. Deux surfaces, deux gestes.
+     */
     readonly cartBar: string;
     readonly cartTitle: string;
     readonly cartEmpty: string;
@@ -411,6 +423,23 @@ export interface ClientCopy {
     /** `{total}` est remplacé par le montant dû. */
     readonly pay: string;
     readonly payHint: string;
+
+    /**
+     * **Le choix du règlement, au panier** — et il n'apparaît qu'à qui l'a
+     * (Hugo, 2026-09-21).
+     *
+     * 🔴 Réservé aux sociétés à qui le mensuel a été ACCORDÉ (`grantedTerms`).
+     * Un particulier n'a pas de société, donc pas de compte à débiter : lui
+     * montrer ce choix serait lui proposer ce que le serveur refuserait, et le
+     * contrat le dit — « le crédit se négocie, il ne se demande pas au panier ».
+     *
+     * ⚠️ Payer comptant reste TOUJOURS possible, y compris au mensuel : c'est
+     * une facilité, pas une obligation, et régler tout de suite avec son propre
+     * tarif est un droit. D'où deux actions et non un interrupteur.
+     */
+    readonly settleTitle: string;
+    readonly settleCard: string;
+    readonly settleAccount: string;
     readonly browse: string;
     readonly back: string;
     /**
@@ -474,6 +503,19 @@ export interface ClientCopy {
     /** `{total}` est remplacé par le montant dû. */
     readonly submit: string;
     readonly submitting: string;
+    /**
+     * **La sortie sans payer.**
+     *
+     * 🔴 Elle s'appelait « Régler plus tard » jusqu'au 2026-09-21 (Hugo : « ça
+     * n'arrive jamais »), et c'était une promesse fausse. On n'atteint cet
+     * écran que quand le serveur a répondu `due`, c'est-à-dire quand la CARTE
+     * est requise : rien n'a été différé. Le vrai différé, c'est « au compte »,
+     * et il ne passe jamais par ici.
+     *
+     * ⚠️ Le geste, lui, reste bon : la commande est écrite, son adresse de
+     * règlement se rouvre. Le libellé dit donc D'OÙ on revient la payer, au
+     * lieu de laisser croire à un délai accordé.
+     */
     readonly later: string;
     /** Le module de paiement ne s'est pas chargé — la commande, elle, existe. */
     readonly unavailable: string;

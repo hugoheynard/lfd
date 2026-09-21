@@ -30,7 +30,6 @@ import { PublicCommandTermsSummary } from '../public-command-terms-summary/publi
 import { PublicHousePickerDialog } from '../public-house-picker-dialog/public-house-picker-dialog';
 import { PublicSteps } from '../public-steps/public-steps';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
-import { CartPanel } from '../../cart/cart-panel/cart-panel';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductSheet } from '../product-sheet/product-sheet';
@@ -67,7 +66,6 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
     CartBar,
     PublicCommandTermsSummary,
     PublicSteps,
-    CartPanel,
     ClientBannerBlock,
     ClientBannerOutlet,
     FoldButtonComponent,
@@ -115,13 +113,17 @@ export class ShopPage {
   protected readonly openStory = signal<string | null>(null);
 
   /** Le tiroir du panier. Fermé en arrivant : on vient voir le rayon. */
-  protected readonly cartOpen = signal(false);
 
   protected readonly choice = this.order.choice;
 
-  protected readonly cartLabel = computed(() =>
-    fill(this.t().shop.cartBar, { count: String(this.cart.count()) }),
-  );
+  /**
+   * Le titre de la barre du bas : le GESTE, pas le compte.
+   *
+   * 🔴 Elle ouvrait un panneau et annonçait « N pièces au panier ». Elle mène
+   * maintenant au règlement (Hugo, 2026-09-21) — et une barre qui nomme un
+   * décompte pour faire tout autre chose ment sur ce qui va se passer.
+   */
+  protected readonly cartLabel = computed(() => this.t().shop.cartBar);
 
   protected readonly payLabel = computed(() =>
     fill(this.t().cart.pay, { total: formatCents(this.cart.totals().totalCents) }),

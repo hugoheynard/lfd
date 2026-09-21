@@ -218,7 +218,7 @@ export const IT: ClientCopy = {
     htSuffix: 'IVA escl.',
     addAria: 'Aggiungi {name}',
     removeAria: 'Togli {name}',
-    cartBar: '{count} pezzi nel carrello',
+    cartBar: 'Pagare',
     cartTitle: 'Il suo carrello',
     cartEmpty:
       'Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.',
@@ -256,6 +256,9 @@ export const IT: ClientCopy = {
     dropAria: 'Rimuovi {name} dal carrello',
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
+    settleTitle: 'Come pagate ?',
+    settleCard: 'Pagamento diretto',
+    settleAccount: 'Aggiungi al conto',
     browse: 'Vedi il banco',
     whoTitle: 'Chi effettua questo ordine?',
     whoHint: 'Ci servono un nome e un indirizzo per inviarle il QR di ritiro.',
@@ -291,7 +294,7 @@ export const IT: ClientCopy = {
     loading: 'Caricamento del pagamento sicuro…',
     submit: 'Paga {total}',
     submitting: 'Pagamento…',
-    later: 'Pago più tardi',
+    later: 'Pago da « I miei ordini »',
     unavailable:
       'Il pagamento non è disponibile al momento. Il suo ordine è registrato: potrà pagarlo da « I miei ordini ».',
     refused: 'Il pagamento è stato rifiutato.',

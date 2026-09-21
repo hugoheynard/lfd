@@ -214,7 +214,7 @@ export const EN: ClientCopy = {
     htSuffix: 'excl. VAT',
     addAria: 'Add {name}',
     removeAria: 'Remove {name}',
-    cartBar: '{count} items in the basket',
+    cartBar: 'Pay',
     cartTitle: 'Your basket',
     cartEmpty:
       'Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.',
@@ -252,6 +252,9 @@ export const EN: ClientCopy = {
     dropAria: 'Remove {name} from the basket',
     pay: 'Pay for my order · {total}',
     payHint: 'Paid online. You show your QR at the counter, nothing to settle there.',
+    settleTitle: 'How are you paying?',
+    settleCard: 'Pay now',
+    settleAccount: 'Add to the account',
     browse: 'See the counter',
     whoTitle: 'Who is placing this order?',
     whoHint: 'We need a name and an address to send you your pickup QR.',
@@ -287,7 +290,7 @@ export const EN: ClientCopy = {
     loading: 'Loading secure payment…',
     submit: 'Pay {total}',
     submitting: 'Paying…',
-    later: 'Pay later',
+    later: 'I will pay from “My orders”',
     unavailable:
       'Payment is unavailable right now. Your order is on file: you can pay it from “My orders”.',
     refused: 'The payment was declined.',

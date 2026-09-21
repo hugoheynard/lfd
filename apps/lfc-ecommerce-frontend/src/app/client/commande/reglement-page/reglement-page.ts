@@ -45,11 +45,23 @@ type Phase = 'loading' | 'ready' | 'paying' | 'unavailable';
  * et c'est le **webhook** serveur qui écrit `paid` dans notre base. Un
  * `succeeded` obtenu ici donne le droit d'afficher « réglé », rien de plus.
  *
- * ## Quitter sans payer est une SORTIE, pas un échec
+ * ## Quitter sans payer est une SORTIE, pas un délai accordé
  *
- * « Régler plus tard » mène à la confirmation, qui dira alors la vérité — la
- * commande est enregistrée, le règlement reste dû. Bloquer la sortie retiendrait
- * quelqu'un devant un formulaire de carte pour une commande déjà écrite.
+ * 🔴 Le bouton disait « Régler plus tard » jusqu'au 2026-09-21 (Hugo : « ça
+ * n'arrive jamais »). C'était faux : on n'atteint cet écran que si le serveur a
+ * répondu `due`, c'est-à-dire si la CARTE est requise. Rien n'a été différé, et
+ * le comptoir ne rattrape pas — la boutique promet « rien à régler sur place ».
+ * Un libellé qui sonne comme un délai laissait donc partir avec une commande
+ * que personne ne recouvre.
+ *
+ * Le GESTE reste bon : la commande est écrite, et l'adresse de cet écran se
+ * rouvre. Le libellé dit désormais d'OÙ on revient la payer. Bloquer la sortie
+ * retiendrait quelqu'un devant un formulaire de carte pour une commande déjà
+ * écrite.
+ *
+ * ⚠️ Le vrai différé s'appelle **« au compte »** (`OrderSettlement.account`),
+ * il se décide AU PANIER, et il ne passe jamais par ici : une commande au
+ * compte revient avec `settlement: 'later'` et file à la confirmation.
  */
 @Component({
   selector: 'app-reglement-page',
@@ -177,7 +189,12 @@ export class ReglementPage {
     void this.toConfirmation();
   }
 
-  /** Sortie assumée : la commande reste, le règlement aussi. */
+  /**
+   * Sortie assumée : la commande reste, le règlement aussi.
+   *
+   * ⚠️ Elle ne MARQUE rien — ni payé, ni différé. L'état de la commande est
+   * celui que le serveur tient ; cet écran ne fait que cesser de demander.
+   */
   protected later(): void {
     void this.toConfirmation();
   }

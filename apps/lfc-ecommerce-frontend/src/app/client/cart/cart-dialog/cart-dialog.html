@@ -57,8 +57,35 @@
   <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir.
        Le bouton ne se grise donc QUE faute de savoir qui commande — le seul cas
        où il n'a nulle part où mener. -->
-  <button class="pay" type="button" [disabled]="identityNeeded()" (click)="proceed()">
-    {{ ctaLabel() }}
-  </button>
+  @if (mayUseAccount()) {
+    <!-- 🔴 DEUX ACTIONS, et non un interrupteur (Hugo, 2026-09-21). Payer
+         comptant reste TOUJOURS possible, y compris au mensuel : régler tout de
+         suite avec son propre tarif est un droit, pas une exception — c'est
+         écrit dans le contrat (`orderSettlementSchema`). Un interrupteur aurait
+         fait du crédit un défaut dont il faut sortir. -->
+    <p class="settle-title">{{ t().cart.settleTitle }}</p>
+    <div class="settle">
+      <button
+        class="pay"
+        type="button"
+        [disabled]="identityNeeded()"
+        (click)="void proceedOnAccount()"
+      >
+        {{ t().cart.settleAccount }}
+      </button>
+      <button
+        class="pay is-quiet"
+        type="button"
+        [disabled]="identityNeeded()"
+        (click)="void proceedByCard()"
+      >
+        {{ t().cart.settleCard }}
+      </button>
+    </div>
+  } @else {
+    <button class="pay" type="button" [disabled]="identityNeeded()" (click)="void proceed()">
+      {{ ctaLabel() }}
+    </button>
+  }
   <p class="hint">{{ t().cart.payHint }}</p>
 </fold-panel-footer>

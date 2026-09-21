@@ -12,7 +12,10 @@ import {
 
 import { GuestIdentityDialog } from '../guest-identity-dialog/guest-identity-dialog';
 
+import type { OrderSettlement } from '@lfd/contracts';
+
 import { AuthFacade } from '../../../auth/auth.facade';
+import { ClientCompany } from '../../client-company.service';
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
 import { ClientLocale } from '../../client-locale.service';
@@ -103,6 +106,20 @@ export class CartDialog {
 
   /** Les portes du mode de service — les mêmes que l'accueil ouvre. */
   private readonly doors = inject(OrderDoors);
+
+  private readonly firm = inject(ClientCompany);
+
+  /**
+   * **Le compte est-il une option ?** — seulement si le mensuel a été ACCORDÉ.
+   *
+   * 🔴 `grantedTerms`, et non le terme SOUHAITÉ : le contrat distingue les deux
+   * (`company.ts`), et confondre une demande avec un droit acquis proposerait
+   * un règlement que le serveur refuse par `TermsNotGrantedError`. Un
+   * particulier n'a pas de société, donc jamais.
+   */
+  protected readonly mayUseAccount = computed(
+    () => this.firm.company()?.grantedTerms.includes('monthly') === true,
+  );
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
@@ -275,7 +292,23 @@ export class CartDialog {
    * La suite dépend de ce que le serveur a décidé du règlement : une carte à
    * présenter mène au règlement, tout le reste à la confirmation.
    */
-  protected async proceed(): Promise<void> {
+  /**
+   * **Ajouter au compte** — le vrai différé, et il se décide ICI.
+   *
+   * ⚠️ Il ne passe jamais par l'écran de règlement : le serveur rend alors
+   * `settlement: 'later'`, et la commande file à la confirmation. C'est ce que
+   * « Régler plus tard » laissait croire là-bas, sans que ce soit vrai.
+   */
+  protected proceedOnAccount(): Promise<void> {
+    return this.proceed('account');
+  }
+
+  /** Payer comptant : toujours possible, y compris au mensuel. */
+  protected proceedByCard(): Promise<void> {
+    return this.proceed('card');
+  }
+
+  protected async proceed(settlement: OrderSettlement | null = null): Promise<void> {
     if (this.cart.isEmpty()) {
       this.backToShop();
       return;
@@ -289,7 +322,7 @@ export class CartDialog {
         return;
       }
     }
-    const placed = await this.orders.place();
+    const placed = await this.orders.place(settlement);
     if (placed === null) {
       // Le refus a déjà été dit, et le panier est intact : on ne bouge pas de
       // l'écran où la correction est possible.

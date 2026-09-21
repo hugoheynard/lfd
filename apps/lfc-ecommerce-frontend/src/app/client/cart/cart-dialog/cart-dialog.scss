@@ -231,3 +231,36 @@
   line-height: var(--lfc-leading-note);
   color: var(--lfc-color-text-subtle);
 }
+
+/* ── Le choix du règlement, pour qui l'a ─────────────────────────────────── */
+
+/* La question, au-dessus des deux actions : sans elle, deux boutons côte à côte
+   se lisent comme un principal et un secondaire, alors qu'ils sont deux
+   réponses à la même question. */
+.settle-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.settle {
+  display: grid;
+  gap: var(--fold-space-sm);
+}
+
+/* Le comptant est la seconde réponse, pas une action mineure : même hauteur,
+   même voix, un remplissage plus discret. */
+.pay.is-quiet {
+  background: var(--lfc-color-accent-surface);
+  color: var(--fold-color-text);
+}
+
+@media (min-width: 900px) {
+  .settle {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -211,7 +211,7 @@ export const FR: ClientCopy = {
     htSuffix: 'HT',
     addAria: 'Ajouter {name}',
     removeAria: 'Retirer {name}',
-    cartBar: '{count} pièces au panier',
+    cartBar: 'Régler',
     cartTitle: 'Votre panier',
     cartEmpty:
       'Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi.',
@@ -249,6 +249,9 @@ export const FR: ClientCopy = {
     dropAria: 'Retirer {name} du panier',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
+    settleTitle: 'Comment réglez-vous ?',
+    settleCard: 'Paiement direct',
+    settleAccount: 'Ajouter au compte',
     browse: 'Voir le rayon',
     whoTitle: 'Qui passe cette commande ?',
     whoHint: 'Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait.',
@@ -284,7 +287,7 @@ export const FR: ClientCopy = {
     loading: 'Chargement du paiement sécurisé…',
     submit: 'Payer {total}',
     submitting: 'Paiement…',
-    later: 'Régler plus tard',
+    later: 'Je règle depuis « Mes commandes »',
     unavailable:
       'Le paiement est indisponible pour l’instant. Votre commande est enregistrée : vous pourrez la régler depuis « Mes commandes ».',
     refused: 'Le paiement a été refusé.',

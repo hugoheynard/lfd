@@ -78,26 +78,31 @@ describe('ShopPage', () => {
   });
 
   /**
-   * 🔴 La barre du bas OUVRE LE TIROIR, elle ne change plus d'écran : on n'a
-   * pas fini de choisir quand on vérifie ce qu'on a pris. Elle menait à
-   * `/commande/panier`, ce qui faisait perdre le rayon — et le
-   * défilement — pour relire trois lignes.
+   * 🔴 **LA BARRE DU BAS MÈNE AU RÈGLEMENT** (Hugo, 2026-09-21 : « celui du bas
+   * doit emmener à règlement »).
    *
-   * ⚠️ L'ouverture elle-même ne s'observe pas ici : `client-dialog` appelle
-   * `showModal()`, que jsdom n'implémente pas et que le composant saute
-   * exprès (même garde qu'au rendu serveur). Ce qui se vérifie, c'est qu'on
-   * reste sur la boutique.
+   * Elle a mené à la page panier, puis ouvert un tiroir. Ni l'un ni l'autre :
+   * une barre collante au bas d'un rayon est la dernière chose qu'on lit avant
+   * de payer. Relire son panier se fait désormais par la pastille de la barre
+   * du HAUT — popover au bureau, panneau entier en pile.
+   *
+   * ⚠️ Ce qui est éprouvé ici est le GESTE demandé, pas son aboutissement :
+   * `pay()` exige un mode de service et une identité, et ce cas n'en a pas. Il
+   * vérifie donc qu'on part de la boutique — ce qu'un tiroir ne faisait pas.
    */
-  it('la barre du bas ne quitte plus la boutique', () => {
+  it('🔴 la barre du bas emmène régler, elle n’ouvre plus de tiroir', () => {
     cart.add('VIE-001');
     fixture.detectChanges();
-    const before = TestBed.inject(Router).url;
+
+    expect(el().querySelector('app-cart-panel')).toBeNull();
+    expect(el().querySelector('app-cart-bar')?.textContent).toContain(FR.shop.cartBar);
 
     el().querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
     fixture.detectChanges();
 
-    expect(TestBed.inject(Router).url).toBe(before);
-    expect(el().querySelector('app-cart-panel')).not.toBeNull();
+    // Sans mode de service, `pay()` renvoie à l'accueil pour le demander : la
+    // barre a donc bien déclenché le PARCOURS de règlement, pas un panneau.
+    expect(TestBed.inject(Router).url).not.toBe('/boutique');
   });
 
   it('un rayon filtre la vitrine sans toucher au reste', () => {

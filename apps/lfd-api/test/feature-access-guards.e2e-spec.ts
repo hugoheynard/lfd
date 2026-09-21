@@ -39,11 +39,15 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
-/** Toutes les clés sauf la boutique, à leur défaut : le mandat client est fermé (2026-09-14). */
+/**
+ * Toutes les clés sauf la boutique, à leur défaut : le mandat client est fermé
+ * (2026-09-14), et la livraison aux particuliers l'est aussi (2026-09-21).
+ */
 const OTHER_DEFAULTS = {
   orders: "visible",
   invoices: "visible",
   desktopMenu: "visible",
+  publicDelivery: "closed",
   customerMandate: "closed",
 } as const;
 
