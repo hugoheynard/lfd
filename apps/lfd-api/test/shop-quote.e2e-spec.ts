@@ -10,7 +10,7 @@
  * champ ajouté par mégarde — un libellé de règle, un plancher, donc une marge —
  * serait public le jour du déploiement. D'où un test qui énumère les clés.
  */
-import type { ShopQuotePayload, ShopQuoteView } from "@lfd/contracts";
+import type { ShopCatalogueView, ShopQuotePayload, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
@@ -145,9 +145,37 @@ describe("le devis de la vitrine", () => {
         quantity: 12,
         unitPriceMillicents: 100_000,
         lineTotalCents: 1_200,
+        lineTotalTtcCents: 1_266,
         vatRatePercent: 5.5,
       },
     ]);
+  });
+
+  /**
+   * 🔴 **Le panier d'un particulier doit dire le MÊME nombre que le rayon** (R2,
+   * 2026-09-21).
+   *
+   * Le rayon affiche `unitPriceTtcCents` ; la ligne de panier d'une pièce
+   * affiche `lineTotalTtcCents`. Les deux passent par `ttcCentsOf`, donc par
+   * `ventilateVat` — et c'est ce cas qui l'atteste, parce que rien dans les
+   * types ne relie les deux champs.
+   *
+   * Sans lui, une seule des deux chaînes pourrait changer d'arrondi et le client
+   * lirait deux prix pour le même croissant, à un centime près : l'écart qu'on
+   * ne croit jamais être un bug d'affichage.
+   */
+  it("🔴 dit la pièce au MÊME centime que le rayon", async () => {
+    await seedCatalogue();
+
+    const view = jsonBody<ShopQuoteView>(
+      await quote({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null }).expect(200),
+    );
+    const shelf = jsonBody<ShopCatalogueView>(
+      await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
+    );
+    const piece = shelf.items.find((item) => item.sku === "VIE-001");
+
+    expect(view.lines[0]?.lineTotalTtcCents).toBe(piece?.unitPriceTtcCents);
   });
 
   it("retranche la remise du point de retrait AU PRORATA de chaque taux", async () => {
@@ -299,6 +327,11 @@ describe("le devis de la vitrine", () => {
     for (const line of view.lines) {
       expect(Object.keys(line).sort()).toEqual([
         "lineTotalCents",
+        // Ajouté le 2026-09-21 (R2) et admis DÉLIBÉRÉMENT : c'est le même
+        // montant que la ligne d'à côté, dit dans l'autre assiette. Il ne dit
+        // rien de plus sur la façon dont le prix a été fabriqué — c'est la
+        // règle de tri, et elle est la raison d'être de ce cas.
+        "lineTotalTtcCents",
         "quantity",
         "sku",
         "unitPriceMillicents",

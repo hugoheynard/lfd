@@ -1,5 +1,8 @@
+import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import type { CompanyView } from '@lfd/contracts';
 
+import { ClientCompany } from '../../client-company.service';
 import { type CartLine } from '../cart-total';
 import { TEST_ITEMS } from '../../shop/shop-catalogue.fixture';
 import { CartProductLine } from './cart-product-line';
@@ -15,13 +18,24 @@ describe('CartProductLine', () => {
   const text = (selector: string): string =>
     (fixture.nativeElement as HTMLElement).querySelector(selector)?.textContent?.trim() ?? '';
 
-  function render(quantity: number, totalCents: number | null = null): void {
-    // 1,40 € HT à 5,5 % — le premier article de la vitrine de test.
+  /**
+   * @param htCents le total hors taxe rendu par le serveur, `null` = pas encore su.
+   * @param ttcCents le même total taxe comprise — les deux entrent, la ligne choisit.
+   */
+  function render(
+    quantity: number,
+    htCents: number | null = null,
+    ttcCents: number | null = null,
+  ): void {
+    // 1,40 € HT / 1,48 € TTC à 5,5 % — le premier article de la vitrine de test.
     const line: CartLine = { product: TEST_ITEMS[0]!, quantity };
     fixture = TestBed.createComponent(CartProductLine);
     fixture.componentRef.setInput('line', line);
-    if (totalCents !== null) {
-      fixture.componentRef.setInput('totalCents', totalCents);
+    if (htCents !== null) {
+      fixture.componentRef.setInput('totalHtCents', htCents);
+    }
+    if (ttcCents !== null) {
+      fixture.componentRef.setInput('totalTtcCents', ttcCents);
     }
     fixture.detectChanges();
   }
@@ -31,12 +45,47 @@ describe('CartProductLine', () => {
     TestBed.configureTestingModule({ imports: [CartProductLine] });
   });
 
-  it('porte la quantité, le nom et le prix unitaire hors taxe', () => {
+  /**
+   * 🔴 **La ligne d'un PARTICULIER parle TTC, comme le rayon** (R2, 2026-09-21).
+   *
+   * Ce cas attendait « 1,40 € HT ». C'était cohérent avec le décompte et faux
+   * pour le client : il venait de lire « 1,48 € TTC » sur la vignette, et le
+   * panier lui répondait un autre nombre pour le même croissant. L'écart était
+   * en sa faveur, donc personne ne réclamait — et personne ne finissait
+   * d'acheter non plus.
+   *
+   * Le montant est celui du rayon, `unitPriceTtcCents`, au centime près : c'est
+   * le même champ, pas un recalcul qui lui ressemble.
+   */
+  it('porte la quantité, le nom et le prix unitaire TTC à un particulier', () => {
     render(1);
 
     expect(field()?.value).toBe('1');
     expect(text('.name')).toBe('Croissant au beurre');
+    expect(text('.unit')).toBe('1,48 € TTC');
+  });
+
+  /**
+   * 🔴 **Un PROFESSIONNEL garde le hors taxe**, ligne comprise — la même règle
+   * qu'au rayon, tirée du même fait : sans société, on achète en particulier.
+   *
+   * Sans ce cas, basculer tout le panier en TTC passerait au vert.
+   */
+  it('🔴 garde le HORS TAXE pour un professionnel, unité et total', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartProductLine],
+      providers: [
+        {
+          provide: ClientCompany,
+          useValue: { company: signal<Partial<CompanyView>>({ status: 'active' }) },
+        },
+      ],
+    });
+    render(3, 420, 443);
+
     expect(text('.unit')).toBe('1,40 € HT');
+    expect(text('.sum')).toBe('4,20 €');
   });
 
   /**
@@ -46,10 +95,12 @@ describe('CartProductLine', () => {
    * où un palier de volume existe (`D2`, fix 2026-09-06).
    */
   it('affiche le total de ligne que le serveur a rendu', () => {
-    render(3, 420);
+    render(3, 420, 443);
 
-    expect(text('.unit')).toBe('1,40 € HT');
-    expect(text('.sum')).toBe('4,20 €');
+    expect(text('.unit')).toBe('1,48 € TTC');
+    // 4,43 € et non 4,20 € × 1,055 arrondi à la main : la ventilation du
+    // serveur est la seule règle d'arrondi, et elle a déjà tranché.
+    expect(text('.sum')).toBe('4,43 €');
   });
 
   /**

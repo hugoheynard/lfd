@@ -66,10 +66,23 @@ export class CartSummary {
    * un tiret, pas un nombre inventé.
    */
   protected readonly lineTotals = computed(
-    () => new Map(this.totals().lines.map((line) => [line.sku, line.lineTotalCents])),
+    () =>
+      new Map(
+        this.totals().lines.map((line) => [
+          line.sku,
+          { ht: line.lineTotalCents, ttc: line.lineTotalTtcCents },
+        ]),
+      ),
   );
 
-  protected totalOf(sku: string): number | null {
+  /**
+   * Les DEUX assiettes, passées telles quelles : c'est la ligne qui choisit.
+   *
+   * Un décompte qui trancherait ici pourrait passer un hors taxe à une ligne qui
+   * écrit « TTC », et rien ne le lui dirait — exactement ce que le préformatage
+   * des chaînes coûtait avant lui.
+   */
+  protected totalOf(sku: string): { readonly ht: number; readonly ttc: number } | null {
     return this.lineTotals().get(sku) ?? null;
   }
 

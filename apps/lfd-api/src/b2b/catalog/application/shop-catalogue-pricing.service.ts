@@ -1,5 +1,5 @@
 import type { CatalogCategory, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
-import { lineTotalCents } from "@lfd/money";
+import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
@@ -7,7 +7,7 @@ import { CatalogReader } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { UnknownCatalogShelfError } from "../domain/errors/unknown-catalog-shelf.error.js";
 import { shelfOfCategory } from "../domain/shelf-of-category.js";
-import { shopCatalogueOf, ttcCentsOf } from "./shop-catalogue-view.js";
+import { shopCatalogueOf } from "./shop-catalogue-view.js";
 
 /**
  * **La vitrine à son prix — la même logique pour le visiteur et pour le client.**

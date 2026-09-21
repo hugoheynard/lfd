@@ -12,10 +12,15 @@ import { ClientCompany } from '../client-company.service';
  * d'un seul fait, pas deux règles.
  *
  * ⚠️ **Ce service ne calcule aucun montant, et c'est délibéré.** Le TTC arrive
- * du serveur (`unitPriceTtcCents`), passé par la ventilation de la caisse. Le
- * dériver ici du hors taxe et du taux l'aurait fait diverger d'un centime sur
- * la moitié des prix à 20 % — l'étiquette du rayon aurait cessé de valoir ce
- * que le panier facture.
+ * du serveur — `unitPriceTtcCents` au rayon, `lineTotalTtcCents` au panier —,
+ * passé par la ventilation de la caisse. Le dériver ici du hors taxe et du taux
+ * l'aurait fait diverger d'un centime sur la moitié des prix à 20 % —
+ * l'étiquette du rayon aurait cessé de valoir ce que le panier facture.
+ *
+ * Trois écrans le lisent (vérifié le 2026-09-21) : la vignette, la fiche
+ * produit et la ligne de panier. Chacun décide **seul**, parce qu'un parent qui
+ * choisirait l'assiette pourrait passer un montant hors taxe à un enfant qui
+ * écrit « TTC », et rien ne le lui dirait.
  *
  * Pourquoi un professionnel garde le hors taxe : il récupère la taxe, raisonne
  * sa marge dessus, et la retrouve telle quelle sur sa facture. Lui montrer un

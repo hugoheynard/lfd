@@ -7,7 +7,8 @@
         <li
           app-cart-product-line
           [line]="line"
-          [totalCents]="totalOf(line.product.sku)"
+          [totalHtCents]="totalOf(line.product.sku)?.ht ?? null"
+          [totalTtcCents]="totalOf(line.product.sku)?.ttc ?? null"
           (quantityChange)="cart.setQuantity(line.product.sku, $event)"
           (dropped)="cart.drop(line.product.sku)"
         ></li>

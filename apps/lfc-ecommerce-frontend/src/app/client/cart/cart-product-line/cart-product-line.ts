@@ -4,6 +4,7 @@ import { FoldIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
 import { formatCents } from '../../format-money';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { ShopPriceBasis } from '../../shop/shop-price-basis.service';
 import { type CartLine } from '../cart-total';
 
 /**
@@ -17,9 +18,9 @@ import { type CartLine } from '../cart-total';
  * L'attribut règle le problème au lieu de le déplacer.
  *
  * Elle formate ses propres montants plutôt que de recevoir des chaînes : c'est
- * la seule façon que la mention `HT` soit posée là où le prix s'affiche. Un
- * parent qui préformate est un parent qui peut oublier la mention, et rien ne
- * le lui dirait.
+ * la seule façon que la mention `HT` ou `TTC` soit posée là où le prix s'affiche.
+ * Un parent qui préformate est un parent qui peut oublier la mention — ou la
+ * poser sur l'autre assiette —, et rien ne le lui dirait.
  *
  * Elle règle sa quantité par `fold-number-input`, boutons **empilés dans le
  * champ**. Le rail du rayon (« − 3 + ») aurait fait un troisième contrôle à
@@ -53,36 +54,61 @@ export class CartProductLine {
 
   private readonly t = inject(ClientCopyService).t;
 
+  /**
+   * **Dans quelle assiette cette ligne parle** — la même que le rayon, par le
+   * même service et donc par le même fait : sans société, on achète comme un
+   * particulier.
+   *
+   * 🔴 **La ligne le décide elle-même plutôt que de le recevoir.** Un parent qui
+   * choisirait l'unité pourrait passer un montant hors taxe sous une mention
+   * « TTC » sans que rien ne le lui dise — c'est la raison même pour laquelle ce
+   * composant formate ses propres montants.
+   */
+  private readonly basis = inject(ShopPriceBasis);
+
   protected readonly name = computed(() => this.line().product.name);
 
   protected readonly quantity = computed(() => this.line().quantity);
 
-  /** Le prix d'UNE pièce, hors taxe, mention comprise. */
-  protected readonly unit = computed(() =>
-    fill(this.t().shop.priceHt, {
-      price: formatCents(unitPriceCents(this.line().product.unitPriceMillicents)),
-    }),
-  );
+  /**
+   * Le prix d'UNE pièce, dans l'assiette de qui regarde, mention comprise.
+   *
+   * 🔴 **Le taxe compris vient du rayon, au centime près** : c'est
+   * `unitPriceTtcCents`, le champ même que la vignette affiche. Le dériver ici du
+   * hors taxe aurait fait dire au panier un centime de moins que l'étiquette sur
+   * la moitié des prix à 20 % — l'écart exact qu'un client voit et qu'il appelle
+   * une erreur de caisse.
+   */
+  protected readonly unit = computed(() => {
+    const product = this.line().product;
+    return this.basis.showsTtc()
+      ? fill(this.t().shop.priceTtc, { price: formatCents(product.unitPriceTtcCents) })
+      : fill(this.t().shop.priceHt, {
+          price: formatCents(unitPriceCents(product.unitPriceMillicents)),
+        });
+  });
 
   /**
-   * Le total de la ligne, hors taxe.
-   *
-   * L'arrondi a lieu ICI, sur la quantité entière — jamais sur l'unité
-   * multipliée : deux fois « 1,40 € » ne font pas forcément le total de deux
-   * pièces, et c'est tout ce que le millicentime existe pour tenir.
-   */
-  /**
-   * Le total de la ligne, **tel que le serveur l'a arrondi**.
+   * Le total de la ligne **hors taxe**, tel que le serveur l'a arrondi.
    *
    * Il se calculait ici (`prix × quantité`). C'est un MONTANT : l'arrondir à
    * l'écran donnait une seconde règle d'arrondi, et une multiplication devient
    * fausse en silence dès qu'un palier de volume existe. `null` tant que le
    * décompte n'est pas revenu — un tiret vaut mieux qu'un nombre inventé.
    */
-  readonly totalCents = input<number | null>(null);
+  readonly totalHtCents = input<number | null>(null);
+
+  /**
+   * Le même total **taxe comprise**, et lui aussi rendu par le serveur.
+   *
+   * Deux entrées plutôt qu'une convertie : la conversion est une ventilation, pas
+   * une multiplication, et elle n'appartient pas à un composant d'affichage. La
+   * ligne reçoit les deux montants et n'en choisit qu'un.
+   */
+  readonly totalTtcCents = input<number | null>(null);
 
   protected readonly sum = computed(() => {
-    const cents = this.totalCents();
+    const cents = this.basis.showsTtc() ? this.totalTtcCents() : this.totalHtCents();
     return cents === null ? '—' : formatCents(cents);
   });
 
