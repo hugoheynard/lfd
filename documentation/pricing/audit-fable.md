@@ -1,5 +1,11 @@
 # Le prix, relu de bout en bout — audit du 2026-09-06
 
+> 🔴 **Sa note est périmée depuis le 2026-09-21.** Les trois audits du dossier
+> ont été relus contre le code ce jour-là ; le verdict à jour — **8/10**, axe
+> par axe — est au §0 de
+> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md). Ce document garde son
+> **raisonnement**, qui est ce qui vaut chez lui.
+
 **Ouvert le 2026-09-06, au soir de la semaine de corrections.** Un second
 regard, après [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md)
 qui a ouvert, suivi et refermé dix défauts en trois jours. Celui-ci ne le

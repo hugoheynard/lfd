@@ -1,5 +1,11 @@
 # Le prix, du moteur à la façade — troisième regard
 
+> 🔴 **Sa note est périmée depuis le 2026-09-21.** Les trois audits du dossier
+> ont été relus contre le code ce jour-là ; le verdict à jour — **8/10**, axe
+> par axe — est au §0 de
+> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md). Ce document garde son
+> **raisonnement**, qui est ce qui vaut chez lui.
+
 **Ouvert le 2026-09-08.** Après
 [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md)
 (2026-09-05, dix défauts, tous refermés) et [`audit-fable.md`](audit-fable.md)

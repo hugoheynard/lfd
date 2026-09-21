@@ -30,6 +30,72 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 
 ---
 
+## 0. La revérification du 2026-09-21 — et la note
+
+> **Les trois audits du dossier ont été relus contre le code**, douze jours
+> après ce registre. Aucun quatrième document n'a été créé : en écrire un
+> reproduirait exactement ce que celui-ci soigne — « le travail restant vivait
+> dans quatre endroits, et trois annonçaient comme ouvert ce qu'un autre avait
+> refermé ».
+
+### La note : **8/10** (7/10 le 2026-09-08)
+
+| Axe                        | 08-09 | Aujourd'hui | Ce qui a bougé                                                                               |
+| -------------------------- | :---: | :---------: | -------------------------------------------------------------------------------------------- |
+| Le moteur pur              |   9   |    **9**    | B.1 fermé **par construction** : `resolve(measured)` + un test qui rougit à la mutation      |
+| L'argent                   |   8   |    **8**    | `@lfd/money` a absorbé `ttcCentsOf` et `htMillicentsOf` ; **R29 intacte**                    |
+| Les garde-fous structurels |   8   |    **8**    | 29 portes → **38** ; mais R16 et R24 n'ont pas bougé — le compte monte, le trou reste        |
+| La façade et l'application |   6   |   **7** ⬆   | `PricedLot` est bâtie **et empruntée** ; deux séquences de chargement coexistent toujours    |
+| La lecture datée           |   4   |  **8** ⬆⬆   | `at` est honnête chez les trois lecteurs — c'est le plus gros gain du dossier                |
+| Les écrans                 |   5   |   **6** ⬆   | la grille lit le plancher **figé** ; la simulation rejoue toujours les paliers au navigateur |
+| La documentation           |   6   |   **7** ⬆   | la contradiction de référence est rayée et datée ; deux phrases périmées subsistent          |
+
+### Pourquoi 8, et pas 9
+
+Le reproche de 2026-09-08 était : **« le moteur est meilleur que le système »**.
+Il ne l'est plus. La façade est empruntée, la lecture datée ne ment plus, l'écran
+a cessé de recalculer un plancher avec la formule que le domaine interdit
+nommément. Quatre des sept axes montent ; aucun ne descend.
+
+🔴 **Ce qui plafonne la note tient en deux lignes, et les deux se paient en
+euros :**
+
+- **R16** — un engagement de portée **famille** est mesuré **par SKU**
+  (`loaded-pricer.ts:366`). Un article ne voit que ses propres ventes, pas
+  celles de ses sœurs : le client n'atteint pas le palier qu'on lui a vendu.
+  Ouverte depuis le 2026-09-08, **inchangée**.
+- **R4** — `expectedTotalCents` **n'existe nulle part** dans le contrat de
+  passation (vérifié : zéro occurrence). Rien n'oppose ce que le client a vu à
+  ce qu'on lui débite.
+
+Fermer ces deux-là vaut **9**. Le reste — R2, R6, R9 à R11, R24, R29 — est de
+l'hygiène, du confort ou des décisions, et aucun ne fausse un montant.
+
+### Ce que la revérification a corrigé dans ce registre
+
+| Entrée                   | Statut au 09-09 | Vérifié au 21-09                                                      |
+| ------------------------ | --------------- | --------------------------------------------------------------------- |
+| R15                      | 🟠 à moitié     | ✅ **la moitié dangereuse est fermée** par `measured`, test à l'appui |
+| R24                      | 🟡 ouverte      | 🟡 **partielle** — deux traces mortes ; le 3ᵉ cas était clos depuis   |
+| R9                       | 🟡 ouverte      | 🟡 **partielle** — 3 cas conformes, 7 questions, 1 non examiné        |
+| R2 R4 R6 R10 R11 R16 R29 | ouvertes        | **toutes confirmées ouvertes**, fichier et ligne à l'appui            |
+
+⚠️ **R29 mérite d'être lue deux fois** : c'est la **porte elle-même** qui écrit
+qu'elle ne couvre pas trois colonnes — `price_rules.value`, `floor_value`,
+`price_floors.value` —, parce qu'elle lie les **noms** et pas la prose. « Les
+trois ont été corrigées à la main le 2026-09-09 ; rien ne les tient. » Un
+garde-fou qui nomme son propre angle mort vaut mieux qu'un garde-fou muet ; il
+ne vaut pas un type nominal.
+
+✅ **Les douze derniers jours n'ont ajouté aucune dette de tarification.** Le
+chantier « un seul canal, deux prix », le panier public en TTC et le TTC scellé
+sur la ligne de commande ont été livrés sans toucher au moteur — vérifié.
+
+⚠️ **La note est un jugement, pas un fait.** Ce qui se conteste, ce sont les
+verdicts ci-dessus : chacun porte son fichier et sa ligne.
+
+---
+
 ## 1. Le tableau, en un écran
 
 | #       | Ce que c'est                                                                   | Gravité | Coût                     |

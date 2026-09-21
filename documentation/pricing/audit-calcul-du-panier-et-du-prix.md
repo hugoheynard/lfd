@@ -1,5 +1,11 @@
 # Le calcul du panier et du prix — audit de l'existant
 
+> 🔴 **Sa note est périmée depuis le 2026-09-21.** Les trois audits du dossier
+> ont été relus contre le code ce jour-là ; le verdict à jour — **8/10**, axe
+> par axe — est au §0 de
+> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md). Ce document garde son
+> **raisonnement**, qui est ce qui vaut chez lui.
+
 **Ouvert le 2026-09-05. Relu et découpé le 2026-09-06, revérifié le 2026-09-09.**
 
 > ✅ **Ses dix défauts et ses treize lots sont tous refermés.** Ce document est
