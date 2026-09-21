@@ -17,6 +17,14 @@ l'élargissent :
 1. **Une facture pour toute vente**, pas seulement pour le terme différé. Une
    vente B2B appelle une facture ; celles payées par carte n'en avaient aucune,
    et ce trou-là est plus large que celui du mensuel.
+
+   ⚠️ **« Toute vente » oppose la carte au terme, À L'INTÉRIEUR DU B2B** — jamais
+   le pro au public. La phrase a été lue comme universelle une fois
+   (`analyse-boutique-publique.md` § 1, qui y voyait une contradiction) ; la
+   portée est donc écrite plutôt que sous-entendue. **Le public ne reçoit pas de
+   facture : il reçoit un bon de commande chiffré** (Hugo, 2026-09-21,
+   [`plan-un-seul-canal-deux-prix.md`](../pim/plan-un-seul-canal-deux-prix.md)).
+
 2. **Factur-X dès le départ.** Le document cible n'est pas un PDF, c'est un
    **PDF/A-3 porteur d'un XML structuré**. Concevoir un PDF maison en 2026 puis
    le refaire pour la réforme reviendrait à écrire deux fois le même document —

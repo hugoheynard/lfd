@@ -38,6 +38,9 @@ la crée pas.
 | **D4** | La e-boutique ne vend **que de l'à-emporter** aujourd'hui. Le sur place **viendra, par son propre chemin**.                        |
 | **D5** | 🔴 Le fil porte **tous** les taux réglés, en **carte** `{contextKey: percent}` — pas des champs nommés.                            |
 | **D6** | 🔴 **Le HT fait foi pour le total.** Pas de TVA par soustraction : on accepte la dérive au centime, **rattrapée en comptabilité**. |
+| **D7** | 🔴 **La boutique publique expose `takeaway`** — pour le moment. Le sur place viendra par son chemin (D4).                          |
+| **D8** | La boutique Shopify **n'a pas été indexée** : aucune redirection à poser.                                                          |
+| **D9** | 🔴 **Pas de facture pour le public** — un **bon de commande chiffré**.                                                             |
 
 _(Hugo, 2026-09-21.)_
 
@@ -164,6 +167,7 @@ pas (D5 le porte déjà), la commande ne bouge pas, la facture ne bouge pas.
 | **A1** | **v9 du fil** — HT public, TTC public, taux par contexte                                                                             | les empreintes de projection ; un aperçu pris avant le déploiement         |
 | **A2** | **L'audience et le contexte à la lecture** — `ShopItemView` sert le prix de qui regarde ; le contexte se dérive du chemin de service | ⚠️ un e2e **énumère les clés** de cette vue                                |
 | **A3** | 🔴 **L'audience sur la commande** — la ligne écrit le taux de son audience                                                           | `quote-order-parity` : les deux chemins apprennent l'audience **ensemble** |
+| **A4** | **Le bon de commande public en TTC** — `order-sheet-pdf.ts` titre « PU HT » / « Total HT » (D9)                                      | le PDF est archivé à sa PREMIÈRE lecture : un ancien reste en HT           |
 
 ⚠️ **A2 élargit une surface anonyme.** `packages/contracts/src/shop-catalogue.ts:15` :
 « 🔴 Un ÉLARGISSEMENT de cette vue est une décision de sécurité. Elle est servie
@@ -329,7 +333,7 @@ Toutes rouvertes et confirmées le 2026-09-21.
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | ✅ **Le contrat du canal ne se supprimait pas tel quel.** `FieldDiffView` y était **défini**, et `catalog-revision.ts` l'importait — comme le domaine des révisions et l'écran qui les compare. Le type a déménagé d'abord (`00f5891d4`), le contrat est parti ensuite.                |
 | 2   | ✅ **`products-page` importait `ShopifyApi`** — un écran du catalogue qui **reste**, et le seul import hors des dossiers condamnés. Traité à part (`a339a1617`) : la colonne, la pastille de santé et le ton `alert` d'une ligne sont partis avec.                                     |
-| 3   | ⏳ **Le fait de journal `sales_context.*` est VIVANT** et exige `shopifyProjected` (`referential-settings.ts:110,117`). Intact, et il le reste tant que D7 n'est pas tranchée. → annexe A.1.                                                                                           |
+| 3   | ⏳ **Le fait de journal `sales_context.*` est VIVANT** et exige `shopifyProjected` (`referential-settings.ts:110,117`). Il se versionne quand la colonne tombe (B.5) — et il faut abandonner `labelled()` pour ces faits, cf. annexe A.1.                                              |
 | 4   | 🔴 **`lint:doc-references` est bidirectionnel, zéro tolérance.** **Et le piège s'est refermé** : `e626f50a3` est parti sans que cette porte soit lancée, l'arbre est resté rouge jusqu'à `1c1e28ea2`. Le second lot a corrigé la méthode — 18 références réparées dans le même commit. |
 | 5   | ✅ **Dispersés, jamais nommés** : le relais du container, `probeKindSchema`, `documentation/pim/shopify-page/` + sa route, six specs d'`ops`. ⏳ Restent `pim/data/models.ts` (`ShopifySettings`) et la section « Intégrations » du formulaire produit → B.5.                          |
 
@@ -382,8 +386,21 @@ l'objection : _ce contexte donne-t-il lieu à un objet vendable à part ?_ Shopi
 y répondait par un produit par contexte. Avec un récepteur unique, elle devient :
 **quels contextes la boutique publique expose-t-elle, donc quels taux voyagent ?**
 
-**La colonne n'est donc pas supprimée. Son successeur se définit au lot A1, et
-l'ancienne ne tombe qu'après** (→ **D7**).
+✅ **Et D7 a répondu : la boutique publique expose `takeaway`, point.** Ce qui
+fait que la colonne n'a **pas de successeur — sa question se DISSOUT**, elle ne
+se transfère pas :
+
+- _quels contextes une boutique expose_ se lit désormais sur le **point de
+  vente**, qui déclare déjà « ce qu'il OFFRE » (`PointOfSale.contexts`) ;
+- _quel contexte s'applique à CETTE commande_ se dérive du **chemin de service**
+  (§ A.2), et rend `takeaway` aujourd'hui.
+
+Shopify avait besoin du drapeau parce qu'il lui fallait **un produit par
+contexte**. Un récepteur unique, dont le snapshot porte tous les taux (D5),
+choisit à la lecture — il n'a rien à projeter en double.
+
+**La colonne part donc avec le schéma**, en trois déploiements (B.5), sans que
+rien n'ait à la remplacer.
 
 ⚠️ Et son retrait ne sera **pas un `DROP`** : les deux champs sont **obligatoires**
 dans `createSalesContextPayloadSchema` / `updateSalesContextPayloadSchema`
@@ -413,7 +430,8 @@ devient rouge :
 
 ⚠️ Et **ni `handle_suffix` ni `shopify_projected` ne tombent avec eux** : ce sont
 des champs **obligatoires** d'un contrat servi à un back-office en service (B.4).
-Trois déploiements, et pas avant que **D7** ait nommé leur successeur.
+Trois déploiements. ✅ **Plus de préalable** : D7 a dissous la question que
+`shopify_projected` posait (B.4), et rien ne vient à sa place.
 
 ### Les pages de documentation internes
 
@@ -452,17 +470,36 @@ réel.**
 
 # Décisions ouvertes
 
-| #       | Décision                                                                                                        | Poids      |
-| ------- | --------------------------------------------------------------------------------------------------------------- | ---------- |
-| **D7**  | 🔴 Le successeur de `shopifyProjected` : quels contextes la boutique publique expose-t-elle ? (B.4, lot A1)     | contrat    |
-| **D8**  | ⏳ Les 94 déclarations : préalable à l'ouverture, ou on ouvre sur ce qui est déclaré ?                          | calendrier |
-| **D9**  | La boutique Shopify a-t-elle été publique assez longtemps pour être indexée ? Si oui, des redirections.         | SEO        |
-| **D10** | `analyse-boutique-publique.md` §1 : « une facture pour toute vente » contre « pas de factures pour le public ». | métier     |
+**Une seule reste, et ce n'est pas du code :**
 
-Plus les trois questions de portée technique du § A.5.
+| #       | Décision                                                                               | Poids      |
+| ------- | -------------------------------------------------------------------------------------- | ---------- |
+| **D10** | ⏳ Les 94 déclarations : préalable à l'ouverture, ou on ouvre sur ce qui est déclaré ? | calendrier |
 
-✅ **Les clés des contextes sont `takeaway`, `eatIn` et `b2b`** (vérifié le
-2026-09-21 : semis, entités, contrats et tests).
+Plus les trois questions de portée technique du § A.5, dont une seule pèse —
+`quote-order-parity` doit tenir pour les deux audiences.
+
+## Ce que D9 entraîne, et qui n'était pas dans le plan
+
+> « pas de facture pour le public, un bon de commande chiffré » — Hugo,
+> 2026-09-21.
+
+⚠️ **La « contradiction » signalée par `analyse-boutique-publique.md` § 1 était
+une sur-lecture**, et elle est levée : `architecture-facturation.md` écrit « une
+facture pour **toute vente**, pas seulement pour le terme différé » — mais la
+phrase suivante borne la portée, « une vente **B2B** appelle une facture ». Le
+« toute » opposait la carte au terme **à l'intérieur du B2B**, jamais le pro au
+public. D9 ne renverse donc rien : elle **nomme** ce que l'autre document n'avait
+pas eu à dire.
+
+🔴 **Mais elle ouvre un travail réel** : le bon de commande est **en HT**.
+`order-sheet-pdf.ts` titre ses colonnes « PU HT » et « Total HT », et ne porte le
+TTC qu'en ligne de total. Servi à un particulier, il doit montrer des prix
+**unitaires TTC** — c'est la même exigence que la vignette (§ A.3, lot A2), au
+même titre et pour la même raison.
+
+Ce lot appartient au chantier A, il n'existait pas, et il est daté :
+**bon de commande public en TTC**.
 
 ---
 
