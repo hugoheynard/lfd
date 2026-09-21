@@ -668,6 +668,156 @@ première ligne.
 
 ---
 
+# D12 — poser un prix public TTC sur la plateforme
+
+> « Maintenant fais le prix public TTC, colonne modifiable. » — Hugo,
+> 2026-09-21.
+
+## Le périmètre, et ce qui en est EXCLU
+
+Ce lot pose et retire un **prix public**. Il ne touche **pas** au masquage.
+
+🔴 **C'est ce découplage qui le rend faisable.** L'œil par colonne demandé plus
+haut exige le masquage par audience ; tant qu'il n'existe pas, le bouton
+« Masquer » unique reste — il dit déjà la vérité (« des DEUX boutiques »), là où
+deux yeux sur un seul booléen mentiraient. Le prix, lui, se décide par audience
+sans rien devoir au masquage.
+
+## 🔴 L'ancre — tranchée le 2026-09-21, après mesure
+
+> « Pas de soustraction, j'assume la différence. Et honnêtement, si on arrive à
+> le dire au staff, on devrait pouvoir marquer ce prix 1,06 au public non ? »
+> — Hugo.
+
+**Mesuré avec le code réel**
+([`ancrage-du-ttc-pose.mjs`](../../dev-toolbox/analyses/ancrage-du-ttc-pose.mjs),
+rejouable) : un TTC mis hors taxe puis refacturé ne revient pas toujours sur
+lui-même, **à taux parfaitement fixe** — ce n'est pas le taux qui dérive, c'est
+l'aller-retour.
+
+| Taux  | Prix non préservés sur 2 000 | Sens           | Écart |
+| ----- | ---------------------------- | -------------- | ----- |
+| 5,5 % | 104                          | ↑ 56 · ↓ 48    | 1 c   |
+| 10 %  | 182                          | **↑ toujours** | 1 c   |
+| 20 %  | 333                          | **↑ toujours** | 1 c   |
+
+**La décision : le prix posé est une ENTRÉE, pas un affichage.** Ce qui se
+montre — à l'écran du staff comme au rayon public — est le **TTC réellement
+encaissé**, recalculé depuis le hors taxe servi. Un seul nombre, une seule
+façon de le produire, le même partout.
+
+Ce que ça épargne, et c'est la raison de trancher ainsi :
+
+- **le client voit ce qu'il paie** — la seule propriété qui compte vraiment ;
+- **le staff voit ce que le client verra** au moment où il pose le prix, donc la
+  surprise n'existe pas ;
+- **rayon et panier restent d'accord par construction**, les deux partant du
+  hors taxe. Afficher l'étiquette POSÉE au rayon les aurait fait diverger d'un
+  centime — et c'est l'e2e « annonce au rayon le prix que le devis chiffre » qui
+  serait tombé.
+
+⚠️ **La TVA par soustraction est écartée**, pas oubliée. Le script D6 la prouve
+exacte par construction ; elle coûte une jumelle de `ventilateVat`, et la
+décision ci-dessus rend son gain nul — ce que le client voit est déjà ce qu'il
+paie.
+
+## D13 — le rayon public affiche le TTC
+
+> « Je veux que la boutique publique affiche le TTC en rayon. » — Hugo,
+> 2026-09-21.
+
+**Aujourd'hui elle affiche le HT** : `product-tile.ts:64` et
+`product-sheet.ts:87` formatent `unitPriceCents(unitPriceMillicents)` sans
+ajouter la taxe (vérifié le 2026-09-21). Pour un particulier, c'est un prix qui
+n'est pas celui qu'il paiera.
+
+Aucun changement de contrat : `ShopItemView` porte déjà le hors taxe **et** le
+taux. C'est un lot de **boutique**, indépendant de D12, et il hérite de la
+décision d'ancre ci-dessus.
+
+## Ce que le référentiel impose, et que rien d'autre ne dit
+
+| Fait vérifié le 2026-09-21                                            | Ce qu'il force                                                               |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `servedPriceOf` rend un `htMillicents` + un taux                      | un TTC posé doit être **converti** pour être servi                           |
+| le taux public vit dans `public_by_context.<contexte>.vatRatePercent` | la conversion se fait **à ce taux-là**, pas au taux pro                      |
+| la vitrine écarte un article sans entrée sous la clé `takeaway`       | le refus se formule sur **l'entrée de contexte**, pas sur « un taux public » |
+| `toPersistence()` supprime l'override quand plus rien n'est décidé    | le nouveau champ doit entrer dans le test `untouched`                        |
+| `listSellable` exige le taux **PRO** avant de regarder l'audience     | un article sans taux pro reste invendable **même** avec un prix public posé  |
+
+🔴 **La conversion aura DEUX sites** — la projection à l'émission, la plateforme
+à la **lecture** (`servedPriceOf`, pas à la pose). Deux sites qui arrondissent
+de l'argent ne sont tolérables que s'ils appellent la **même fonction**, d'où le
+déplacement de `htFromTtc` / `htMillicentsOf` vers `@lfd/money`.
+
+⚠️ **La raison du déplacement n'est PAS une frontière.** Ce plan a écrit « la
+plateforme ne peut pas l'appeler (matrice § 3) » : c'est **faux**.
+`context-boundaries.mjs` exclut explicitement les imports `@lfd/…` — « la
+frontière qu'on tient ici est interne à l'application » — et `src/b2b/catalog`
+importe déjà `@lfd/catalog-sync`. La vraie raison est « une seule fonction pour
+deux sites », et elle suffit.
+
+## Les points de contact, corrigés après contradiction
+
+| #   | Où                                      | Quoi                                                                               |
+| --- | --------------------------------------- | ---------------------------------------------------------------------------------- |
+| 1   | migration                               | une colonne **additive** et réversible sur `catalog_item_overrides`                |
+| 2   | `CatalogItem`                           | `LocalDecision`, `setPublicPrice()`, `alignPublicOnPim()`, test `untouched` élargi |
+| 3   | **`prisma-catalog-item.repository.ts`** | `ItemRow.override`, `toDomain`, et **l'objet de `saveMany`**                       |
+| 4   | `servedPriceOf`                         | branche publique : l'override l'emporte, converti au taux du contexte              |
+| 5   | commandes + routes                      | sur le modèle exact des quatre gestes existants                                    |
+| 6   | journal                                 | `commerce.ts`, `commerce-phrases.ts`, leurs specs, l'e2e du journal                |
+| 7   | contrat + écran                         | une colonne, et `PriceEditor` **paramétré** plutôt qu'un second composant          |
+| 8   | export CSV                              | `catalog-csv.ts` promet « les trois prix » et n'en porte que des pro               |
+
+🔴 **Le point 3 est le plus dangereux, et il manquait.** Un champ oublié dans
+l'objet littéral de `saveMany` **compile** — les champs d'un `create`/`update`
+Prisma sont optionnels — et le prix posé n'est **jamais écrit**. Aucun type ne
+le dit, seul un test le dit.
+
+⚠️ **Le point 6 était faux dans les deux sens.** Le module d'activité ne bouge
+pas : il range par préfixe `catalog_item.`. Et un fait sans phrase ne s'affiche
+pas « en brut » — `PHRASES` est un `Record<JournalFactType, Phrase>` **total**,
+donc l'oubli **casse la compilation du back-office**. C'est une bonne nouvelle :
+la porte existe déjà, elle est dans le type.
+
+## Les refus de l'agrégat
+
+Un prix **nul ou négatif** ; un prix **identique à l'étiquette du PIM** (le
+geste voulu est alors « revenir au PIM ») ; et un prix posé sur un article dont
+le miroir ne porte **aucune entrée pour le contexte public**, parce qu'on ne
+saurait pas le servir.
+
+⚠️ Le troisième est un **contrôle à la pose, pas un invariant** : un push
+ultérieur qui retire l'entrée laisse un prix posé inservable, et
+`refreshFromPim` conserve la décision par construction. Vérifié n'est pas
+interdit — et le rendre interdit demanderait que le push relise les décisions,
+ce qui est un autre lot.
+
+## Ce qui reste à nommer, et qui doit l'être AVANT le merge
+
+`catalog_items.public_ttc_cents` existe déjà, et désigne **l'étiquette reçue**.
+Une colonne d'override du même nom mettrait deux homonymes dans deux tables
+systématiquement jointes (`include: { override: true }`). Après un merge,
+corriger serait une migration en trois déploiements (§ 0).
+
+Proposition : la colonne s'appelle `decided_public_ttc_cents`, et le champ de
+vue `decidedPublicTtcCents`.
+
+⚠️ Et une décision que la branche publique de `servedPriceOf` impose : elle rend
+aujourd'hui `pimPriceMillicents = price.htMillicents`. Si seul
+`unitPriceMillicents` devient l'override, la vitrine publique affichera un
+**prix barré que personne n'a décidé**. Les deux doivent bouger ensemble.
+
+## Ce qu'une première démonstration montrera
+
+Rien. `public_by_context` est **nul sur les 94 lignes** de la base de dev
+(mesuré le 2026-09-21) : tant que le référentiel n'a pas republié, l'écran
+refusera tout le catalogue. À dire avant la démo, sinon elle passe pour une
+panne.
+
+---
+
 # Annexe A — les pièges du retrait
 
 Cinq choses qui **ressemblent** à du Shopify sans en être.
