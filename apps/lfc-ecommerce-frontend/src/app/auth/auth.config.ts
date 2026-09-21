@@ -83,6 +83,17 @@ export const CUSTOMER_CONNECTION = 'lfc-b2b-customers';
  */
 export const GOOGLE_CONNECTION = 'google-oauth2';
 
+/**
+ * La connexion Auth0 de **Facebook** — son nom par défaut dans le tenant.
+ *
+ * ⚠️ **Le bouton ne suffit pas.** Ce nom n'est qu'une adresse : la connexion
+ * doit être ACTIVÉE dans le tenant et branchée à l'application, sinon Auth0
+ * répond « connection not found » au lieu d'ouvrir Facebook. C'est un réglage
+ * de console, hors du dépôt — signalé à Hugo le 2026-09-21, jour où le bouton
+ * a été demandé.
+ */
+export const FACEBOOK_CONNECTION = 'facebook';
+
 export const AUTH_CONFIG: AuthConfig = {
   domain: AUTH_ENV.domain,
   clientId: AUTH_ENV.clientId,

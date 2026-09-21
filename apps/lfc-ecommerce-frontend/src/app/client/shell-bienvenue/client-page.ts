@@ -39,6 +39,17 @@ export class ClientPage {
   /** La ligne qui le suit. */
   readonly intro = input.required<string>();
 
+  /**
+   * Le SUR-TITRE, au-dessus du titre, dans la colonne d'encre.
+   *
+   * ⚠️ Il double celui de la barre du shell, et c'est voulu : la barre s'éteint
+   * au-delà du pli (`barOnDesktop`), où la marque remonte dans cette colonne.
+   * Sans ce rappel, le sur-titre n'existerait plus du tout au bureau — la réf,
+   * elle, le montre là (handoff `handoff-inscription`, captures 01 et 02).
+   * Vide : rien n'est rendu.
+   */
+  readonly kicker = input('');
+
   /** Le cran haut du titre — réservé à l'écran d'entrée, le plus long. */
   readonly big = input(false);
 

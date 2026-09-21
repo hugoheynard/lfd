@@ -1,0 +1,65 @@
+:host {
+  display: block;
+}
+
+/* Le rail est un cadre de papier ; le segment coché s'en détache en encre. La
+   réf montre les deux segments à ÉGALE largeur — un onglet plus large que
+   l'autre laisserait croire qu'il est le principal. */
+.rail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-xs);
+  border-radius: var(--lfc-radius-2xl);
+  background: var(--lfc-paper-300);
+}
+
+.segment {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px var(--fold-space-md);
+  border: 0;
+  border-radius: var(--lfc-radius-xl);
+  background: transparent;
+  color: var(--fold-color-text);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* 🔴 POGONIA EN GRAS, pas Chunk (Hugo, 2026-09-21). Chunk est la voix des
+   titres et des actions ; ces deux mots ne titrent rien et ne font rien — ils
+   NOMMENT celui qui lit. Le gras suffit à les distinguer de leur sous-ligne,
+   qui est du même alphabet. */
+.label {
+  font-family: var(--fold-font-sans);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--lfc-leading-title);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+}
+
+.sub {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--lfc-color-text-subtle);
+  /* Deux lignes au téléphone plutôt qu'une coupure : « Je commande pour mon
+     établissement » ne tient pas sur une demi-largeur de 390 px. */
+  text-wrap: balance;
+}
+
+.segment.on {
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+
+  .sub {
+    color: var(--lfc-color-on-primary-muted);
+  }
+}

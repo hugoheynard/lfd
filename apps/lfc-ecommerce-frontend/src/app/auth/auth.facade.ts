@@ -9,7 +9,7 @@ import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
 import { appBaseUrl } from './app-base-url';
-import { CUSTOMER_CONNECTION, GOOGLE_CONNECTION } from './auth.config';
+import { CUSTOMER_CONNECTION, FACEBOOK_CONNECTION, GOOGLE_CONNECTION } from './auth.config';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
 /**
@@ -246,15 +246,36 @@ export class AuthFacade {
    * {@link login} — il n'y a pas de Google à ouvrir.
    */
   continueWithGoogle(target: string): void {
+    this.continueWith(GOOGLE_CONNECTION, target);
+  }
+
+  /**
+   * **Entrer par Facebook** — même geste que {@link continueWithGoogle}, même
+   * règle : le premier passage crée le compte, aucun profil ne voyage, et
+   * l'API refuse un second compte sous une adresse déjà connue.
+   *
+   * ⚠️ Dépend d'un réglage de la console Auth0 que ce dépôt ne porte pas :
+   * voir {@link FACEBOOK_CONNECTION}.
+   */
+  continueWithFacebook(target: string): void {
+    this.continueWith(FACEBOOK_CONNECTION, target);
+  }
+
+  /**
+   * Le geste commun aux deux fournisseurs : on part droit chez lui, sans passer
+   * par l'écran d'Auth0.
+   *
+   * ⚠️ Un seul corps pour les deux, parce qu'ils ne diffèrent QUE par le nom de
+   * la connexion. Deux copies auraient dérivé au premier paramètre ajouté — et
+   * un `screen_hint` posé d'un seul côté ne se voit qu'à l'écran.
+   */
+  private continueWith(connection: string, target: string): void {
     if (DEV_BYPASS_AUTH && this.isBrowser) {
       this.login(target);
       return;
     }
     void this.auth0
-      ?.loginWithRedirect({
-        appState: { target },
-        authorizationParams: { connection: GOOGLE_CONNECTION },
-      })
+      ?.loginWithRedirect({ appState: { target }, authorizationParams: { connection } })
       .subscribe();
   }
 

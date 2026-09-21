@@ -1,0 +1,28 @@
+:host {
+  display: contents;
+}
+
+/* La question et son chapô, séparés des créneaux par leur seul écart : le
+   corps du panneau pose déjà la gouttière et le rythme. */
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.screen {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--lfc-weight-black);
+  line-height: var(--lfc-leading-title);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}

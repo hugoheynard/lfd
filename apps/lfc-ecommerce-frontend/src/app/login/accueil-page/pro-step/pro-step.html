@@ -1,0 +1,117 @@
+<!-- La même carte que la porte particulier : titre, promesse, champs, action,
+     puis l'autre porte au pied (handoff `handoff-inscription`, capture 05).
+     Les deux portes se ressemblent parce qu'elles font la même chose — ce qui
+     change, ce sont les questions. -->
+<fold-card class="signup">
+  <form class="form" (submit)="$event.preventDefault(); submit()">
+    <div class="head">
+      <h2 class="title">{{ copy().door.eyebrow }}</h2>
+      <p class="pitch">{{ copy().door.pitch }}</p>
+    </div>
+
+    <!-- La promesse « la boutique ouvre bientôt », sous le titre (plan §3.1). -->
+    @if (shopLevel(); as level) {
+      <app-shop-promise [level]="level" />
+    }
+
+    <!-- 🔴 L'ENSEIGNE D'ABORD. C'est ce qui distingue cette porte de l'autre :
+         on n'ouvre pas le compte d'une personne, on ouvre celui d'un
+         établissement, et le demander en dernier laissait croire l'inverse
+         pendant tout le formulaire (réf, capture 05). -->
+    <div class="fields">
+      <fold-input
+        class="wide"
+        size="lg"
+        [label]="copy().fields.enseigne"
+        autocomplete="organization"
+        [placeholder]="copy().fields.enseignePlaceholder"
+        [(value)]="enseigne"
+      />
+      <fold-input
+        size="lg"
+        [label]="copy().fields.firstName"
+        autocomplete="given-name"
+        [(value)]="firstName"
+      />
+      <fold-input
+        size="lg"
+        [label]="copy().fields.lastName"
+        autocomplete="family-name"
+        [(value)]="lastName"
+      />
+      <fold-input
+        size="lg"
+        type="tel"
+        [label]="copy().fields.phone"
+        autocomplete="tel"
+        [placeholder]="copy().fields.phonePlaceholder"
+        [(value)]="phone"
+      />
+      <fold-input
+        size="lg"
+        type="email"
+        [label]="copy().fields.email"
+        autocomplete="email"
+        [placeholder]="copy().fields.emailPlaceholder"
+        [(value)]="email"
+      />
+    </div>
+
+    <div class="submit">
+      <button
+        foldButton
+        class="cta"
+        emphasis="solid"
+        intent="primary"
+        size="lg"
+        type="submit"
+        [disabled]="!complete()"
+      >
+        {{ copy().door.submit }}
+      </button>
+      <p class="fine">{{ copy().door.fine }}</p>
+    </div>
+
+    <p class="other-door">
+      {{ t().doors.toPersoLead }}
+      <button class="link" type="button" (click)="wantsPerso.emit()">
+        {{ t().doors.toPersoLink }}
+      </button>
+    </p>
+  </form>
+</fold-card>
+
+<!-- 🔴 L'ENCART DE RAPPEL, SOUS LE FORMULAIRE PRO (handoff §4 ; Hugo,
+     2026-09-21). Il était sous le formulaire PARTICULIER, où il vendait
+     l'espace pro à quelqu'un qui n'en voulait pas ; ici il s'adresse à
+     quelqu'un qui est déjà en train d'ouvrir le sien, et ne lui propose donc
+     pas de le découvrir mais d'être aidé.
+
+     ⚠️ Il ne conditionne rien : le formulaire s'envoie sans lui. -->
+<app-callback-block
+  [title]="copy().door.callbackTitle"
+  [pitch]="copy().door.callbackPitch"
+  [cta]="t().pro.cta"
+  [phone]="callbackPhone()"
+  [bookedSlot]="bookedSlot()"
+  [showPhone]="true"
+  (wantsCallback)="wantsCallback.emit()"
+  (cancelled)="cancelledCallback.emit()"
+/>
+
+<!-- 🔴 EN PILE SEULEMENT (cf. le SCSS) : au-delà du pli, la colonne d'encre
+     porte la porte de connexion, en bas. -->
+<p class="already">
+  {{ copy().door.alreadyLead }}
+  <button
+    foldButton
+    class="sign-in"
+    emphasis="soft"
+    intent="neutral"
+    size="sm"
+    type="button"
+    (click)="wantsLogin.emit(email().trim())"
+  >
+    {{ copy().door.alreadyLink }}
+  </button>
+</p>

@@ -20,12 +20,47 @@ export interface ProAccountCopy {
     readonly kicker: string;
     readonly heading: string;
     readonly intro: string;
+    /**
+     * Le TITRE de la carte — « Ouvrir mon compte pro » (Hugo, 2026-09-21).
+     *
+     * ⚠️ Le nom de la clé dit encore `eyebrow`, et c'est volontaire : le
+     * renommer toucherait les trois dictionnaires et tous ses lecteurs pour un
+     * gain nul. Il a été SUR-TITRE jusqu'à ce que la carte prenne la forme de
+     * la réf ; son rôle a changé, pas sa place dans le dictionnaire.
+     */
     readonly eyebrow: string;
     readonly pitch: string;
     readonly submit: string;
     readonly alreadyLead: string;
     readonly alreadyLink: string;
     readonly fine: string;
+
+    /**
+     * Les trois preuves de la colonne d'encre, quand la porte PRO est ouverte.
+     *
+     * ⚠️ Elles ne se confondent pas avec `ClientCopy.aside.proof`, qui est
+     * celle du PARTICULIER : le même bandeau sert les deux portes, et c'est
+     * justement ce qu'il dit qui doit changer avec elle (handoff
+     * `handoff-inscription`, §1). Trois, parce que la colonne en rend trois —
+     * le tuple l'impose plutôt que de l'espérer.
+     */
+    readonly proof: readonly [string, string, string];
+
+    /**
+     * **L'encart de rappel, sous le formulaire pro** (handoff
+     * `handoff-inscription`, §4 ; Hugo, 2026-09-21).
+     *
+     * ⚠️ Il ne réutilise PAS `ClientCopy.pro`, qui vend l'espace pro à un
+     * particulier (« Tarifs négociés… On vous explique en deux minutes »). Ici,
+     * la personne est déjà devant le formulaire pro : lui vendre ce qu'elle est
+     * en train d'ouvrir serait parler à quelqu'un d'autre. Ce qu'elle peut
+     * avoir, c'est un doute — et une voix au bout du fil.
+     *
+     * 🔴 Le rappel ne conditionne rien (§4) : c'est une porte de sortie
+     * humaine, pas une étape. Le formulaire s'envoie sans lui.
+     */
+    readonly callbackTitle: string;
+    readonly callbackPitch: string;
   };
   /** Les champs, partagés par la porte et la carte : ils disent la même chose. */
   readonly fields: {
@@ -61,13 +96,21 @@ export const PRO_ACCOUNT_FR: ProAccountCopy = {
     kicker: 'Espace pro',
     heading: 'Ouvrez le compte de votre établissement.',
     intro: 'Cinq informations, un mot de passe, et votre espace est prêt.',
-    eyebrow: 'Ouverture de compte professionnel',
+    eyebrow: 'Ouvrir mon compte pro',
     pitch:
       'Qui vous êtes, et le nom de votre établissement. Le reste du dossier se complète ensuite, depuis Mon compte.',
     submit: 'Créer mon compte pro',
     alreadyLead: 'Déjà client ?',
     alreadyLink: 'Se connecter',
     fine: 'Aucun document n’est demandé à l’ouverture : le KBIS se dépose ensuite depuis Mon compte.',
+    proof: [
+      'Des remises dès la première commande.',
+      'Vos paniers récurrents, retrouvés d’une fois sur l’autre.',
+      'Facturation mensuelle sur demande.',
+    ],
+    callbackTitle: 'Une question sur le compte pro ?',
+    callbackPitch:
+      'On vous rappelle depuis le fournil et on ouvre le dossier avec vous. Ça ne retarde rien : vous pouvez envoyer le formulaire sans attendre.',
   },
   fields: {
     firstName: 'Prénom',
@@ -99,13 +142,21 @@ export const PRO_ACCOUNT_EN: ProAccountCopy = {
     kicker: 'Trade account',
     heading: 'Open your venue’s account.',
     intro: 'Five details, a password, and your space is ready.',
-    eyebrow: 'Trade account opening',
+    eyebrow: 'Open my trade account',
     pitch:
       'Who you are, and your venue’s name. The rest of the file can be completed later, from My account.',
     submit: 'Create my trade account',
     alreadyLead: 'Already a customer?',
     alreadyLink: 'Sign in',
     fine: 'No documents are needed to open the account: the company registration can be uploaded later from My account.',
+    proof: [
+      'Trade rates from your very first order.',
+      'Your recurring baskets, found again next time.',
+      'Monthly invoicing on request.',
+    ],
+    callbackTitle: 'A question about the trade account ?',
+    callbackPitch:
+      'We call you back from the bakery and open the file with you. It delays nothing: you can send the form without waiting.',
   },
   fields: {
     firstName: 'First name',
@@ -136,13 +187,21 @@ export const PRO_ACCOUNT_IT: ProAccountCopy = {
     kicker: 'Area professionisti',
     heading: 'Aprite l’account del vostro locale.',
     intro: 'Cinque informazioni, una password, e il vostro spazio è pronto.',
-    eyebrow: 'Apertura account professionale',
+    eyebrow: 'Aprire il mio account pro',
     pitch:
       'Chi siete e il nome del vostro locale. Il resto della pratica si completa dopo, da Il mio account.',
     submit: 'Crea il mio account pro',
     alreadyLead: 'Già cliente?',
     alreadyLink: 'Accedi',
     fine: 'Nessun documento richiesto all’apertura: la visura si carica dopo, da Il mio account.',
+    proof: [
+      'Sconti fin dal primo ordine.',
+      'I vostri carrelli ricorrenti, ritrovati ogni volta.',
+      'Fatturazione mensile su richiesta.',
+    ],
+    callbackTitle: 'Una domanda sull’account pro ?',
+    callbackPitch:
+      'Vi richiamiamo dal forno e apriamo la pratica con voi. Non ritarda nulla: potete inviare il modulo senza aspettare.',
   },
   fields: {
     firstName: 'Nome',

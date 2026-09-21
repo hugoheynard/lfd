@@ -5,8 +5,8 @@
    que la réf ne montre pas.
 
    Le pli est à 900 px. En deçà : une pile, la porte « Déjà client ? » en carte
-   bleue. Au-delà : le formulaire s'étale, et la porte redevient un lien dans la
-   ligne de titre — elle n'a plus à crier, elle est à côté. */
+   bleue sous le formulaire. Au-delà : la carte s'étale, et cette porte remonte
+   dans la colonne d'encre — d'où elle disparaît d'ici. */
 
 /* L'étape remplit la scène de `app-client-page` : c'est ce qui permet à un
    dernier bloc d'aller se poser en bas (`margin-top: auto`) plutôt que de
@@ -26,50 +26,51 @@
   gap: var(--fold-space-sm);
 }
 
+/* 🔴 EN POGONIA, pas en Chunk (Hugo, 2026-09-21). `--fold-button-font` vaut
+   Chunk pour toute l'app — c'est la voix des ACTIONS de la maison. Entrer par
+   un fournisseur n'en est pas une : c'est un chemin d'accès, et le prendre au
+   même volume que « Créer mon compte » mettait les deux au même rang. */
+.social-button {
+  font-family: var(--fold-font-sans);
+  text-transform: none;
+}
+
 /* Le logo garde ses proportions et sa taille : la charte Google les impose. */
 .social-logo {
   inline-size: 1.25rem;
   block-size: 1.25rem;
 }
 
+/* Le titre de la carte et sa promesse, serrés : c'est une seule adresse au
+   lecteur, pas deux blocs. */
 .head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 20px;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
 }
 
-.eyebrow {
+/* Le titre de la réf : display en capitales, comme les titres d'écran. */
+.title {
   margin: 0;
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-eyebrow);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  line-height: var(--lfc-leading-title);
+  letter-spacing: var(--lfc-tracking-display);
   text-transform: uppercase;
-  color: var(--lfc-color-text-subtle);
 }
 
-/* Le rappel « déjà client » de la ligne de titre n'existe qu'au-delà du pli :
-   en deçà, c'est la carte bleue qui porte la porte. */
-.already {
-  display: none;
-  margin: 0;
-  font-size: var(--fold-text-md);
-  color: var(--fold-color-text-muted);
-}
-
-.link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--lfc-color-primary-vivid);
-  font: inherit;
-  font-weight: var(--fold-weight-semibold);
-  cursor: pointer;
-}
-
+/* 🔴 EN RELIEF (Hugo, 2026-09-21). `-promo` et non `-lifted` : le thème dit
+   lui-même pourquoi — `-promo` est « une seule portée douce, ce qui suffit à
+   décoller une petite carte du papier », là où `-lifted` est une pile de trois
+   couches teintée d'ENCRE, faite pour un bandeau qui chevauche la descente
+   bleue. Cette carte-ci tombe sur de la crème, et une ombre bleue y virerait
+   au froid. */
 .signup {
   --fold-card-padding: var(--fold-space-lg);
+
+  box-shadow: var(--lfc-shadow-promo);
+  border-radius: var(--lfc-radius-3xl);
 }
 
 .form {
@@ -102,16 +103,13 @@ fold-input {
   gap: var(--fold-space-lg);
 }
 
-/* Le bouton qui déplie n'existe qu'en pile ; celui qui valide, qu'une fois
-   déplié. En deçà de `display: none`, aucun des deux ne prend la tabulation. */
-.cta-open {
-  display: none;
-}
-
+/* L'action et la ligne qui l'explique — la seconde SOUS la première, comme la
+   réf : elle dit ce qui se passe après le clic, elle ne le commente pas de
+   côté. */
 .submit {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-lg);
+  gap: var(--fold-space-md);
 }
 
 /* Le CTA de l'app cliente : 50 px, display en capitales. `foldButton` porte la
@@ -126,16 +124,6 @@ fold-input {
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-cta);
   text-transform: uppercase;
-}
-
-/* La même phrase, deux places : sous la carte en pile, à côté du bouton une fois
-   qu'il y a de la largeur. Une seule des deux est visible à la fois. */
-.fine-inline {
-  display: none;
-  max-width: 22em;
-  font-size: var(--lfc-text-note);
-  line-height: 1.5;
-  color: var(--lfc-color-text-subtle);
 }
 
 .fine {
@@ -153,40 +141,36 @@ fold-input {
   color: var(--fold-color-text-faded);
 }
 
-/* ── L'encart pro ─────────────────────────────────────────────────────────── */
+/* Le pied de la carte : l'autre porte, détachée par un filet. */
+.other-door {
+  margin: 0;
+  padding-top: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-primary-vivid);
+  font: inherit;
+  font-weight: var(--fold-weight-semibold);
+  cursor: pointer;
+}
 
 /* ── Au-delà du pli ───────────────────────────────────────────────────────── */
-
-@media (max-width: 899px) {
-  .folded .fields,
-  .folded .cta-submit {
-    display: none;
-  }
-
-  .folded .cta-open {
-    display: inline-flex;
-  }
-}
 
 @media (min-width: 900px) {
   :host {
     gap: 22px;
   }
 
-  .head {
-    display: flex;
-  }
-
-  .already {
-    display: block;
-  }
-
-  .only-narrow,
-  .fine {
+  .only-narrow {
     display: none;
   }
 
-  .fine-inline,
   .legal {
     display: block;
   }
@@ -216,67 +200,20 @@ fold-input {
     grid-column: 1 / -1;
   }
 
-  .submit {
-    flex-direction: row;
-    align-items: center;
-    gap: 16px;
-  }
-
+  /* 🔴 L'ACTION GARDE TOUTE LA LARGEUR, la phrase reste SOUS elle (réf,
+     capture 04). Elle se rangeait à gauche avec l'explication à côté : ça
+     mettait la promesse de ce qui se passe après le clic à la hauteur du clic,
+     et non sur son chemin. */
   .cta {
-    flex: none;
-    width: auto;
     min-height: 52px;
-    padding-inline: 30px;
     font-size: var(--lfc-text-cta);
   }
 
-  .pro {
-    flex-direction: row;
-    align-items: center;
-    gap: 18px;
-    padding: 20px 24px;
-    border-radius: var(--lfc-radius-2xl);
-  }
-
-  .pro-head {
-    flex: 1;
-    gap: 5px;
-  }
-
-  .pro-title {
-    font-size: var(--fold-text-md);
-  }
-
-  .pro-pitch {
-    font-size: var(--fold-text-md);
-    line-height: var(--lfc-leading-body);
-  }
-
-  .pro-cta {
-    min-height: 42px;
-    padding-inline: 20px;
+  .title {
+    font-size: var(--fold-text-2xl);
   }
 
   .legal {
     margin-top: auto;
   }
-}
-
-/* La porte pro, sous le rappel : qui a déjà le lien de la commerciale, ou
-   préfère ouvrir son compte sans attendre d'être rappelé. */
-.pro-door {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--fold-space-xs);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  color: var(--fold-color-primary);
-  text-decoration: none;
-}
-
-.pro-door:hover {
-  text-decoration: underline;
 }

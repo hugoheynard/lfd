@@ -84,7 +84,7 @@ describe('AccueilPage', () => {
   });
 
   it("ouvre sur l'accueil visiteur, sans retour possible", () => {
-    expect(text()).toContain(FR.signup.eyebrow);
+    expect(text()).toContain(FR.signup.submit);
     // Le sur-titre et le retour vivent dans l'en-tête du shell : l'écran les
     // PUBLIE, il ne les dessine plus.
     expect(chrome.kicker()).toBe(FR.chrome.kickerWelcome);
@@ -96,38 +96,34 @@ describe('AccueilPage', () => {
     expect(chrome.bell()).toBeNull();
   });
 
-  it("le formulaire est replié, et « S'inscrire » l'ouvre", () => {
-    // Le pli lui-même est une affaire de largeur, donc de CSS — ce que le test
-    // vérifie, c'est le CONTRAT que le CSS suit : l'état annoncé aux
-    // technologies d'assistance, et le champ qui prend le curseur.
-    const open = button(FR.signup.open);
-    expect(open.getAttribute('aria-expanded')).toBe('false');
-    expect(open.getAttribute('aria-controls')).toBe(
-      el().querySelector('.fields')?.getAttribute('id'),
-    );
-
-    open.click();
-    fixture.detectChanges();
-
-    expect(button(FR.signup.open).getAttribute('aria-expanded')).toBe('true');
+  /**
+   * 🔴 Les champs sont là D'ENTRÉE. Ils étaient repliés derrière un bouton, pour
+   * garder « Déjà client ? » au-dessus de la ligne de flottaison ; cette porte
+   * a quitté le formulaire le 2026-09-21, et le pli ne protégeait plus que
+   * lui-même — au prix d'un clic pour tout le monde (réf, capture 03).
+   */
+  it('🔴 montre les trois champs sans qu’on ait à déplier', () => {
+    expect(el().querySelectorAll('.fields input')).toHaveLength(3);
+    // Et plus rien n'annonce un pli aux technologies d'assistance.
+    expect(el().querySelector('[aria-expanded]')).toBeNull();
   });
 
   it("refuse la création tant que les trois champs n'y sont pas", () => {
-    expect(button(FR.signup.submit).disabled).toBe(true);
+    expect(button(FR.signup.open).disabled).toBe(true);
 
     type(FIRST, 'Pierre');
     type(TEL, '06 12 44 09 87');
-    expect(button(FR.signup.submit).disabled).toBe(true);
+    expect(button(FR.signup.open).disabled).toBe(true);
 
     type(MAIL, 'pierre@brasserie-marchand.fr');
-    expect(button(FR.signup.submit).disabled).toBe(false);
+    expect(button(FR.signup.open).disabled).toBe(false);
   });
 
   it('les trois champs partent chez Auth0, avec la personne', () => {
     // Prénom et téléphone n'existent nulle part chez Auth0 : ils voyagent avec
     // elle, et se poseront sur le compte au retour.
     fillSignup();
-    click(FR.signup.submit);
+    click(FR.signup.open);
 
     expect(asked).toEqual([
       {
@@ -182,28 +178,28 @@ describe('AccueilPage', () => {
     ]);
   });
 
-  it('le créneau « au four » reste affiché, et refuse le doigt', () => {
-    click(FR.pro.cta);
-
-    const closed = Array.from(el().querySelectorAll('button.slot')).find((b) =>
-      (b.textContent ?? '').includes('12 h – 14 h'),
-    ) as HTMLButtonElement | undefined;
-
-    expect(closed).toBeDefined();
-    expect(closed?.textContent).toContain(FR.rappel.slotOven);
-    expect(closed?.disabled).toBe(true);
+  /**
+   * 🔴 NI DEVIS TRAITEUR, NI RAPPEL COMMERCIAL sur l'inscription (Hugo,
+   * 2026-09-21 : « tu en profites pour enlever un event et intéressé par
+   * l'espace pro de l'inscription »).
+   *
+   * ⚠️ Les deux composants VIVENT toujours — la carte d'événement sur l'accueil
+   * public, le bloc de rappel et son panneau sur l'écran de commande. Ce qui
+   * est retiré, c'est leur présence ICI : on n'argumente pas auprès de
+   * quelqu'un qui est en train d'ouvrir son compte.
+   */
+  it('🔴 ne vend rien : ni devis traiteur, ni rappel commercial', () => {
+    expect(el().querySelector('app-event-card')).toBeNull();
+    expect(el().querySelector('app-callback-block')).toBeNull();
+    expect(text()).not.toContain(FR.pro.title);
+    expect(text()).not.toContain(FR.event.badge);
   });
 
-  it("un créneau confirmé remonte dans l'encart pro, et s'annule", () => {
-    click(FR.pro.cta);
-    expect(button(FR.rappel.ctaIdle).disabled).toBe(true);
+  /** Le pied de la carte propose l'autre porte, sur place (handoff §1). */
+  it('bascule vers la porte pro depuis le pied de la carte', () => {
+    click(FR.pro.openAccount);
 
-    click('14 h – 15 h');
-    click(FR.rappel.ctaReady);
-
-    expect(text()).toContain(fill(FR.pro.booked, { slot: '14 h – 15 h' }));
-
-    click(FR.pro.cancel);
-    expect(text()).toContain(FR.pro.title);
+    expect(el().querySelector('app-pro-step')).not.toBeNull();
+    expect(el().querySelector('app-welcome-step')).toBeNull();
   });
 });

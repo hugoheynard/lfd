@@ -4,26 +4,33 @@
   flex-direction: column;
 }
 
-/* Les preuves et l'adresse n'existent qu'au-delà du pli : en pile, elles
-   repousseraient le formulaire sous la ligne de flottaison. */
+/* Le segmenté et le formulaire qu'il commande, en colonne. L'écart vit ICI —
+   c'est le conteneur qui espace, jamais l'un des deux qui se pousse. */
+.doors {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+}
+
+/* Les preuves et le bas de colonne n'existent qu'au-delà du pli : en pile, ils
+   repousseraient le formulaire sous la ligne de flottaison — et la barre du
+   shell y porte déjà « Se connecter ». */
+.proof,
 .aside-foot {
   display: none;
 }
 
 @media (min-width: 900px) {
-  /* Le pied de colonne prend toute la hauteur restante : c'est ce qui permet à
-     l'adresse d'aller se poser tout en bas. */
-  .aside-foot {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-  }
-
+  /* Les preuves étayent l'accroche : elles vivent dans SON bloc, et l'écart
+     qui les en sépare est celui de la réf. La marge plutôt qu'un `gap` parce
+     que les trois écarts du bloc d'accroche sont tous différents — 16, 20,
+     30 — et qu'un `gap` les rendrait égaux. */
   .proof {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    margin: 0;
+    gap: 13px;
+    margin: 30px 0 0;
     padding: 0;
     list-style: none;
   }
@@ -32,27 +39,80 @@
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    font-size: var(--lfc-text-block);
-    line-height: 1.5;
+    font-size: 0.96875rem;
+    line-height: 1.45;
     color: var(--lfc-color-on-primary-muted);
   }
 
+  /* La pastille de la réf : un carré aux angles adoucis, pas une pilule. */
   .proof-tick {
     flex: none;
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: var(--fold-radius-pill);
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
     background: var(--lfc-color-on-primary-tile);
     color: var(--fold-color-text);
+    font-family: var(--fold-font-label);
+    font-size: var(--lfc-text-kicker);
+    font-weight: var(--lfc-weight-black);
+  }
+
+  /* Le bas de colonne : la porte de connexion, puis l'adresse du fournil. */
+  .aside-foot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fold-space-md);
+  }
+
+  /* Les trois voiles de crème de la réf, chacun par le token qui le porte
+     déjà : le fond au huitième (`wash`, 8 %), le filet au sixième
+     (`hairline`, 16 %) et la pastille au même sixième. Les recopier en `rgba`
+     aurait figé une crème que le thème peut encore déplacer. */
+  .sign-in {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin: 0;
+    padding: 15px 17px;
+    border: 1px solid var(--lfc-color-on-primary-hairline);
+    border-radius: var(--fold-radius-lg);
+    background: var(--lfc-color-on-primary-wash);
     font-size: var(--fold-text-sm);
+    line-height: 1.45;
+    color: var(--lfc-color-on-primary-lede);
+  }
+
+  .sign-in-mark {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--lfc-color-on-primary-tile);
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-sm);
+    font-weight: var(--lfc-weight-black);
+    color: var(--fold-color-text);
+  }
+
+  /* Le lien de la réf : souligné d'un filet clair, pas d'un trait plein — et
+     en crème pleine, pour qu'il se détache de la ligne qui le porte. */
+  .sign-in-link {
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--lfc-color-on-primary-edge);
+    background: none;
+    font: inherit;
+    color: var(--fold-color-text);
+    cursor: pointer;
   }
 
   .address {
     display: block;
-    margin: auto 0 0;
-    padding-top: 34px;
+    margin: 0;
     font-size: var(--lfc-text-note);
     color: var(--lfc-color-on-primary-muted);
   }

@@ -1,41 +1,59 @@
-<div class="head">
-  <p class="eyebrow">{{ t().signup.eyebrow }}</p>
-  <p class="already">
-    {{ t().signup.alreadyLead }}
-    <button class="link" type="button" (click)="wantsLogin.emit(email())">
-      {{ t().signup.alreadyLink }}
-    </button>
-  </p>
-</div>
-
-<!-- 🔴 LE PANNEAU D'ENTRÉE (Hugo, 2026-09-17 : « le même panel que Sushi
-     Shop »). Le fournisseur d'abord, l'e-mail ensuite : un clic suffit à qui a
-     un compte Google, et le formulaire reste là pour les autres.
-     Aucun rattachement : une adresse Google déjà portée par un compte est
-     refusée par l'API, pas doublée (plan `plan-connexion-sociale.md`). -->
-<div class="social">
-  <button
-    foldButton
-    class="social-button"
-    emphasis="outline"
-    intent="neutral"
-    size="lg"
-    type="button"
-    [block]="true"
-    (click)="wantsGoogle.emit()"
-  >
-    <img class="social-logo" src="brand/google-g.svg" alt="" width="20" height="20" />
-    {{ t().signup.google }}
-  </button>
-</div>
-
-<app-rule-ou />
-
+<!-- 🔴 TOUT DANS LA CARTE (handoff `handoff-inscription`, captures 03 et 04) :
+     titre, promesse, fournisseur, filet, champs, action. Le bouton Google et le
+     filet vivaient DEHORS, au-dessus d'elle : on lisait deux blocs, donc deux
+     décisions, alors qu'il n'y en a qu'une — ouvrir un compte — avec deux
+     chemins pour la prendre. -->
 <fold-card class="signup">
-  <form class="form" [class.folded]="!expanded()" (submit)="$event.preventDefault(); submit()">
-    <p class="pitch">{{ t().signup.pitch }}</p>
+  <form class="form" (submit)="$event.preventDefault(); submit()">
+    <div class="head">
+      <h2 class="title">{{ t().signup.submit }}</h2>
+      <p class="pitch">{{ t().signup.pitch }}</p>
+    </div>
 
-    <div #fields class="fields" [id]="fieldsId">
+    <!-- Le fournisseur d'abord, l'e-mail ensuite (Hugo, 2026-09-17 : « le même
+         panel que Sushi Shop ») : un clic suffit à qui a un compte Google, et le
+         formulaire reste là pour les autres.
+         Aucun rattachement : une adresse Google déjà portée par un compte est
+         refusée par l'API, pas doublée (plan `plan-connexion-sociale.md`).
+
+         🔴 Facebook est arrivé le 2026-09-21 (Hugo), et il est CÂBLÉ : la
+         façade porte `continueWithFacebook`, qui part droit chez le
+         fournisseur comme celui de Google. Ce qu'il exige en plus ne vit pas
+         ici — la connexion doit être activée dans le tenant Auth0, faute de
+         quoi le bouton se heurte à « connection not found » (cf.
+         `FACEBOOK_CONNECTION`). -->
+    <div class="social">
+      <button
+        foldButton
+        class="social-button"
+        emphasis="outline"
+        intent="neutral"
+        size="lg"
+        type="button"
+        [block]="true"
+        (click)="wantsGoogle.emit()"
+      >
+        <img class="social-logo" src="brand/google-g.svg" alt="" width="20" height="20" />
+        {{ t().signup.google }}
+      </button>
+      <button
+        foldButton
+        class="social-button"
+        emphasis="outline"
+        intent="neutral"
+        size="lg"
+        type="button"
+        [block]="true"
+        (click)="wantsFacebook.emit()"
+      >
+        <img class="social-logo" src="brand/facebook-f.svg" alt="" width="20" height="20" />
+        {{ t().signup.facebook }}
+      </button>
+    </div>
+
+    <app-rule-ou [label]="t().signup.orEmail" />
+
+    <div class="fields">
       <fold-input
         class="f-first"
         size="lg"
@@ -51,7 +69,6 @@
         [label]="t().signup.tel"
         autocomplete="tel"
         [placeholder]="t().signup.telPlaceholder"
-        [hint]="t().signup.telHint"
         [(value)]="tel"
       />
       <fold-input
@@ -66,39 +83,31 @@
     </div>
 
     <div class="submit">
-      <!-- Deux boutons, un seul montré à la fois : le pli est une affaire de
-           largeur, et seul le CSS la connaît sans risquer de se tromper au rendu
-           serveur. Celui qui est caché sort aussi de l'ordre de tabulation. -->
       <button
         foldButton
-        class="cta cta-open"
-        emphasis="solid"
-        intent="primary"
-        size="lg"
-        type="button"
-        [attr.aria-expanded]="expanded()"
-        [attr.aria-controls]="fieldsId"
-        (click)="expand()"
-      >
-        {{ t().signup.open }}
-      </button>
-      <button
-        foldButton
-        class="cta cta-submit"
+        class="cta"
         emphasis="solid"
         intent="primary"
         size="lg"
         type="submit"
         [disabled]="!complete()"
       >
-        {{ t().signup.submit }}
+        {{ t().signup.open }}
       </button>
-      <span class="fine-inline">{{ t().signup.fineInline }}</span>
+      <p class="fine">{{ t().signup.fine }}</p>
     </div>
+
+    <!-- Le pied de la carte propose l'AUTRE porte, sous un filet : c'est la
+         dernière chose qu'on lit, et elle rattrape qui s'est trompé de porte
+         après avoir vu ce que celle-ci demande. -->
+    <p class="other-door">
+      {{ t().doors.toProLead }}
+      <button class="link" type="button" (click)="wantsPro.emit()">
+        {{ t().pro.openAccount }}
+      </button>
+    </p>
   </form>
 </fold-card>
-
-<p class="fine">{{ t().signup.fine }}</p>
 
 <app-rule-ou class="only-narrow" />
 
@@ -110,26 +119,5 @@
   [sub]="t().doors.alreadySub"
   (opened)="wantsLogin.emit(email())"
 />
-
-<app-event-card (opened)="wantsQuote.emit()" />
-
-@if (quotePending()) {
-  <fold-callout variant="info">{{ t().event.pending }}</fold-callout>
-}
-
-<app-callback-block
-  [title]="t().pro.title"
-  [pitch]="t().pro.pitch"
-  [cta]="t().pro.cta"
-  [phone]="phone()"
-  [bookedSlot]="bookedSlot()"
-  (wantsCallback)="wantsCallback.emit()"
-  (cancelled)="cancelledCallback.emit()"
->
-  <a class="pro-door" routerLink="/ouverture-compte-pro">
-    {{ t().pro.openAccount }}
-    <fold-icon name="arrow-right" aria-hidden="true" />
-  </a>
-</app-callback-block>
 
 <p class="legal">{{ t().signup.legal }}</p>
