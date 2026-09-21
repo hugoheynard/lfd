@@ -4,10 +4,20 @@ import type { SalesContext } from "./sales-context.js";
  * La clé du contexte **racine** — celui sans lequel la plateforme
  * professionnelle cesse de fonctionner.
  *
- * Français en valeur, et c'est assumé : `key` est une DONNÉE en base, pas un
- * identifiant de code. Sa traduction (`b2b` n'en a pas besoin, `emporter` et
- * `surPlace` si) part avec la tranche d-3, en un `UPDATE` cascadé — cf.
- * `documentation/pim/contextes-et-points-de-vente.md` § 2.
+ * `key` est une DONNÉE en base, pas un identifiant de code — d'où la séparation
+ * clé / libellé, et d'où le fait qu'une clé se renomme par migration quand un
+ * libellé se change à l'écran.
+ *
+ * ⚠️ **Ce commentaire a annoncé jusqu'au 2026-09-21 une traduction « à venir »
+ * des deux autres clés, de `emporter` / `surPlace` vers l'anglais, « avec la
+ * tranche d-3 ».** Elle a déjà eu lieu : les clés sont `takeaway` et `eatIn`
+ * partout — semis (`prisma/seed-pim/catalogue.ts:40,47`), entités, contrats et
+ * tests, et aucune occurrence des formes françaises ne subsiste comme clé
+ * (vérifié le 2026-09-21). Une consigne qui annonce un travail déjà fait coûte
+ * un aller-retour à qui la lit, et fait douter des clés que trois clés
+ * étrangères citent — cf.
+ * `documentation/pim/contextes-et-points-de-vente.md` § 2, qui donne la liste
+ * exacte.
  */
 export const ROOT_CONTEXT_KEY = "b2b";
 

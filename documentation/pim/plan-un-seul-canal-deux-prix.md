@@ -307,11 +307,11 @@ réel.**
 | **D9**  | La boutique Shopify a-t-elle été publique assez longtemps pour être indexée ? Si oui, des redirections.                           | SEO        |
 | **D10** | `analyse-boutique-publique.md` §1, toujours ouverte : « une facture pour toute vente » contre « pas de factures pour le public ». | métier     |
 
-⚠️ **Un point à VÉRIFIER avant d'écrire une ligne** : les clés des contextes.
-`contextes-et-points-de-vente.md` (2026-08-26) donne `takeaway` / `eatIn` ;
-le JSDoc de `bootstrap-contexts.ts` parle de `emporter` et `surPlace` « à
-traduire avec la tranche d-3 ». Les deux ne peuvent pas être vrais, et une clé
-est citée par **trois clés étrangères**. À lire en base, pas à déduire.
+✅ **Les clés des contextes sont `takeaway`, `eatIn` et `b2b`** (Hugo, et
+vérifié le 2026-09-21 : semis, entités, contrats et tests, aucune occurrence des
+formes françaises comme clé). Le JSDoc de `bootstrap-contexts.ts` annonçait leur
+traduction « à venir avec la tranche d-3 » alors qu'elle avait déjà eu lieu — il
+a été corrigé le même jour.
 
 ---
 
