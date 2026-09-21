@@ -217,6 +217,8 @@ export const clientSheetLineSchema = z.object({
   unitPriceMillicents: z.number().int(),
   vatRate: z.number(),
   lineTotalCents: z.number().int(),
+  unitPriceTtcCents: z.number().int().nullable(),
+  lineTotalTtcCents: z.number().int().nullable(),
   priceLabels: z.array(z.string().min(1)),
 });
 export interface ClientSheetLine {
@@ -236,6 +238,19 @@ export interface ClientSheetLine {
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
   readonly lineTotalCents: number;
+  /**
+   * Le prix d'UNE pièce **taxe comprise** — ou `null` quand il n'y en a pas à
+   * montrer (commande professionnelle, ou antérieure à R3).
+   *
+   * 🔴 **Doublé, jamais substitué.** Le hors taxe reste à sa place : ce contrat
+   * est déjà servi (`GET /orders/:id/bon`), et réécrire le sens d'un champ
+   * qu'un front en ligne lit casserait un contrat en service (CLAUDE.md § 0).
+   * C'est le geste de R2, repris tel quel — le document reçoit les deux
+   * assiettes et n'en imprime qu'une.
+   */
+  readonly unitPriceTtcCents: number | null;
+  /** Le total de la ligne taxe comprise — `null` aux mêmes deux conditions. */
+  readonly lineTotalTtcCents: number | null;
   readonly priceLabels: readonly string[];
 }
 

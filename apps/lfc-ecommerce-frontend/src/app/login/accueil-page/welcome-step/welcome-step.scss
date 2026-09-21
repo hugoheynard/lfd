@@ -1,0 +1,219 @@
+/* Deux familles de contrôles sur cet écran, et la règle qui les départage :
+   ce qui a un CHÂSSIS (le CTA, le bouton de rappel) est un `foldButton` ; ce que
+   la réf dessine en TEXTE NU (« Annuler », « Se connecter en un lien ») reste un
+   `<button>` habillé de tokens — l'enrober de fold lui donnerait une pastille
+   que la réf ne montre pas.
+
+   Le pli est à 900 px. En deçà : une pile, la porte « Déjà client ? » en carte
+   bleue sous le formulaire. Au-delà : la carte s'étale, et cette porte remonte
+   dans la colonne d'encre — d'où elle disparaît d'ici. */
+
+/* L'étape remplit la scène de `app-client-page` : c'est ce qui permet à un
+   dernier bloc d'aller se poser en bas (`margin-top: auto`) plutôt que de
+   flotter sous l'avant-dernier. */
+:host {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+}
+
+/* Les fournisseurs, en colonne : un bouton par ligne, pleine largeur, comme
+   la référence — ajouter Facebook ou Apple ne changera pas la mise en page. */
+.social {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* 🔴 EN POGONIA, pas en Chunk (Hugo, 2026-09-21). `--fold-button-font` vaut
+   Chunk pour toute l'app — c'est la voix des ACTIONS de la maison. Entrer par
+   un fournisseur n'en est pas une : c'est un chemin d'accès, et le prendre au
+   même volume que « Créer mon compte » mettait les deux au même rang. */
+.social-button {
+  font-family: var(--fold-font-sans);
+  text-transform: none;
+}
+
+/* Le logo garde ses proportions et sa taille : la charte Google les impose. */
+.social-logo {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* Le titre de la carte et sa promesse, serrés : c'est une seule adresse au
+   lecteur, pas deux blocs. */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Le titre de la réf : display en capitales, comme les titres d'écran. */
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  line-height: var(--lfc-leading-title);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+}
+
+/* 🔴 EN RELIEF (Hugo, 2026-09-21). `-promo` et non `-lifted` : le thème dit
+   lui-même pourquoi — `-promo` est « une seule portée douce, ce qui suffit à
+   décoller une petite carte du papier », là où `-lifted` est une pile de trois
+   couches teintée d'ENCRE, faite pour un bandeau qui chevauche la descente
+   bleue. Cette carte-ci tombe sur de la crème, et une ombre bleue y virerait
+   au froid. */
+.signup {
+  --fold-card-padding: var(--fold-space-lg);
+
+  box-shadow: var(--lfc-shadow-promo);
+  border-radius: var(--lfc-radius-3xl);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.pitch {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
+/* Le libellé d'un champ nomme, il n'insiste pas : la réf le pose en gris moyen
+   et en graisse normale. `fold-label` le rend en `weight-semibold` /
+   `text-secondary`, et n'expose pas d'entrée pour ça — on redéclare donc les
+   deux tokens sur `fold-input`, d'où ils descendent jusqu'au libellé.
+
+   ⚠️ Détourner un CRAN d'échelle (`semibold`) plutôt qu'un rôle est un pis-aller
+   assumé : à proposer à fold sous la forme d'un rôle propre au libellé. */
+fold-input {
+  --fold-weight-semibold: var(--fold-weight-regular);
+  --fold-color-text-secondary: var(--fold-color-text-muted);
+}
+
+.fields {
+  display: grid;
+  gap: var(--fold-space-lg);
+}
+
+/* L'action et la ligne qui l'explique — la seconde SOUS la première, comme la
+   réf : elle dit ce qui se passe après le clic, elle ne le commente pas de
+   côté. */
+.submit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Le CTA de l'app cliente : 50 px, display en capitales. `foldButton` porte la
+   couleur, l'état et le focus ; on n'ajoute que la voix. */
+.cta {
+  /* Pas de `block` sur le bouton : sa largeur change avec le pli, et c'est la
+     page qui la décide — `block` la figerait à 100 % des deux côtés. */
+  width: 100%;
+  min-height: 50px;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}
+
+.fine {
+  margin: 0;
+  padding-inline: 2px;
+  font-size: var(--fold-text-xs);
+  line-height: 1.5;
+  color: var(--lfc-color-text-subtle);
+}
+
+.legal {
+  display: none;
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-faded);
+}
+
+/* Le pied de la carte : l'autre porte, détachée par un filet. */
+.other-door {
+  margin: 0;
+  padding-top: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-primary-vivid);
+  font: inherit;
+  font-weight: var(--fold-weight-semibold);
+  cursor: pointer;
+}
+
+/* ── Au-delà du pli ───────────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  :host {
+    gap: 22px;
+  }
+
+  .only-narrow {
+    display: none;
+  }
+
+  .legal {
+    display: block;
+  }
+
+  .signup {
+    --fold-card-padding: 28px 30px;
+  }
+
+  .form {
+    gap: 22px;
+  }
+
+  .pitch {
+    font-size: var(--lfc-text-block);
+    line-height: 1.6;
+  }
+
+  /* Prénom et téléphone tiennent la même ligne, l'e-mail prend toute la largeur.
+     L'ordre du DOM est déjà celui-là : la grille ne réordonne rien, donc l'œil
+     et la tabulation suivent le même chemin. */
+  .fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .f-mail {
+    grid-column: 1 / -1;
+  }
+
+  /* 🔴 L'ACTION GARDE TOUTE LA LARGEUR, la phrase reste SOUS elle (réf,
+     capture 04). Elle se rangeait à gauche avec l'explication à côté : ça
+     mettait la promesse de ce qui se passe après le clic à la hauteur du clic,
+     et non sur son chemin. */
+  .cta {
+    min-height: 52px;
+    font-size: var(--lfc-text-cta);
+  }
+
+  .title {
+    font-size: var(--fold-text-2xl);
+  }
+
+  .legal {
+    margin-top: auto;
+  }
+}

@@ -303,5 +303,5 @@ heure.
 ### Ce qui bouge le jour où ça répond
 
 Une seule ligne côté app : `server.url` dans
-`apps/lfc-B2B-platform-frontend/capacitor.config.ts`, qui pointe encore sur
+`apps/lfc-ecommerce-frontend/capacitor.config.ts`, qui pointe encore sur
 `https://lfc-b2b.pages.dev`. La note l'attend déjà sur place.

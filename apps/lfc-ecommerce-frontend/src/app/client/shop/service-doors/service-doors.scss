@@ -1,0 +1,317 @@
+/* Les deux portes d'un pro. L'hôte EST la rangée : le chevauchement de l'encre,
+   lui, reste à l'écran qui les monte — c'est sa mise en page, pas la leur. */
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+}
+
+/* 🔴 L'ENCRE ET LE BEURRE, dans cet ordre, et ce n'est pas décoratif : les deux
+   portes ne sont pas symétriques. Le retrait est le geste par défaut — c'est
+   lui qui porte la remise, et la maquette lui donne l'encre pleine. Le
+   coursier est le service en plus, sur le crème chaud. Les peindre pareil
+   aurait fait de l'arbitrage un tirage au sort. */
+.door {
+  flex: 1 1 270px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  min-height: 308px;
+  justify-content: flex-end;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--lfc-radius-sheet);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  box-shadow: var(--lfc-shadow-lifted);
+  transition: var(--lfc-motion-tap);
+}
+
+.door:hover,
+.door:focus-visible {
+  transform: scale(1.012);
+}
+
+.door:active {
+  transform: scale(0.985);
+}
+
+.door-pickup {
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+}
+
+.door-courier {
+  background: var(--lfc-butter-100);
+  color: var(--lfc-soot-900);
+}
+
+.door-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 13px;
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.door-pickup .door-tag {
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+}
+
+.door-courier .door-tag {
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}
+
+/* La COUPE vient du dictionnaire, comme celle du titre d'écran : une traduction
+   n'a pas à connaître le HTML. */
+.door-title {
+  font-family: var(--fold-font-label);
+  font-size: clamp(2rem, 3.4vw, 2.75rem);
+  font-weight: var(--lfc-weight-black);
+  line-height: 0.94;
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  white-space: pre-line;
+}
+
+.door-intro {
+  max-width: 22em;
+  font-size: var(--lfc-text-lede-tile);
+  line-height: 1.45;
+}
+
+.door-pickup .door-intro {
+  color: var(--lfc-color-on-primary-lede);
+}
+
+.door-courier .door-intro {
+  color: var(--lfc-soot-700);
+}
+
+.door-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+
+/* Le bouton de chaque porte prend la couleur de L'AUTRE : sur l'encre il est
+   crème, sur le crème il est encre. C'est ce qui en fait le seul objet plein de
+   sa carte, donc le seul que l'œil y cherche. */
+.door-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 13px;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}
+
+.door-pickup .door-cta {
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+}
+
+.door-courier .door-cta {
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+}
+
+.door-note {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}
+
+.door-pickup .door-note {
+  background: var(--lfc-butter-300);
+  color: var(--lfc-butter-900);
+}
+
+.door-courier .door-note {
+  background: var(--lfc-paper-0);
+  border: 1px solid var(--fold-color-border);
+  color: var(--lfc-butter-800);
+}
+
+/* ── LA PORTE EN ATTENTE ─────────────────────────────────────────────────────
+   Elle recule sans disparaître : le crème s'éteint d'un cran, le curseur dit
+   qu'on ne l'ouvre pas, et le survol ne la soulève plus — promettre un geste
+   qui n'aboutit pas est pire que ne rien promettre. Le TEXTE, lui, garde son
+   contraste : c'est précisément ce qu'on veut faire lire. */
+.door.is-pending {
+  background: var(--lfc-paper-100);
+  cursor: not-allowed;
+  box-shadow: var(--lfc-shadow-card);
+}
+
+.door.is-pending:hover,
+.door.is-pending:focus-visible,
+.door.is-pending:active {
+  transform: none;
+}
+
+/* La pastille d'attente prend le beurre CLAIR et non le plein : elle annonce un
+   délai, pas une offre. */
+.door-tag.is-pending {
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+}
+
+/* Ce qu'on attend, et qui l'ouvre — à la place du bouton. Même mesure que
+   l'accroche de la carte, pour se lire comme sa suite et non comme une note. */
+.door-wait {
+  max-width: 24em;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-soot-700);
+}
+
+/* ══ LA PHOTO ET SON VOILE ═════════════════════════════════════════════════
+   Deux calques en pseudo-éléments plutôt qu'en balises : la carte est un
+   BOUTON, et deux `<span>` décoratifs de plus dans son nom accessible n'y
+   apportent rien.
+
+   🔴 LE CONTENU A BESOIN D'UN `z-index`, ET J'AI CRU LE CONTRAIRE. Le voile est
+   `::after`, c'est-à-dire le DERNIER ENFANT dans l'ordre du document : parmi
+   des éléments positionnés de même plan, c'est cet ordre qui décide, et il se
+   peignait donc PAR-DESSUS le texte et les boutons. `position: relative` seul
+   ne les sauvait pas — il les mettait sur le même plan, pas devant (Hugo,
+   2026-09-20 : « les boutons et textes sont coincés en dessous le dégradé »).
+
+   ⚠️ Et le défaut était INVISIBLE au clic : les deux calques portent
+   `pointer-events: none`, donc tout restait cliquable pendant que plus rien ne
+   se lisait. Aucune mesure de géométrie ne pouvait le dire — seul l'œil.
+
+   🔴 LA SOURCE VIENT DE L'ÉCRAN, par variable. Les portes ne connaissent pas
+   les images de la maison : l'URL du fournil vit dans `accueil-public.scss`,
+   qui la sert déjà au bandeau. La recopier ici ferait deux endroits à corriger
+   le jour où elle change.
+
+   ⚠️ SANS SOURCE, PAS DE CALQUE : `--door-photo-*` n'a pas de valeur de repli.
+   Une carte sans photo garde son voile, qui tient seul comme aplat.
+
+   🔴 LA PHOTO DU COURSIER EST PROVISOIRE (Hugo, 2026-09-20 : « une photo pour
+   voir »). Le dépôt n'a AUCUNE photographie de livraison — les fichiers de
+   `public/banners/` sont des SVG décoratifs de 1,3 ko. L'écran lui passe donc
+   celle du FOURNIL, pour juger de l'effet : derrière « On vous l'apporte »,
+   elle montre une vitrine.
+
+   ⚠️ À REMPLACER DÈS QU'UNE VRAIE IMAGE EXISTE — une ligne, dans
+   `accueil-public.scss`. Laissée en place, elle deviendrait une de ces valeurs
+   de démonstration que personne ne remarque plus. */
+.door::before,
+.door::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.door::before {
+  background-position: center;
+  background-size: cover;
+}
+
+.door-pickup::before {
+  background-image: var(--door-photo-pickup, none);
+}
+
+/* 🔴 LE REPLI EST LA PHOTO DU RETRAIT, et ce n'est pas qu'une commodité : la
+   recopier côté écran coûtait 112 OCTETS — l'URL est longue — et faisait
+   franchir à `accueil-public.scss` son budget de 10 kB, qui est une ERREUR
+   dans la configuration de déploiement. Une valeur écrite deux fois se paie
+   deux fois.
+   Poser `--door-photo-courier` le jour où une vraie image existe suffit à
+   reprendre la main : le repli s'efface tout seul. */
+.door-courier::before {
+  background-image: var(--door-photo-courier, var(--door-photo-pickup, none));
+}
+
+/* Le voile DESCEND VERS L'ENCRE LA PLUS PROFONDE : transparent en haut, où l'on
+   veut voir la vitrine, opaque en bas, où vit le texte. La diagonale est celle
+   de la maquette (168°) — elle suit la lecture, du coin haut-droit vers le pied
+   de la carte. */
+.door-pickup::after {
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--lfc-ink-900) 48%, transparent) 0%,
+    color-mix(in srgb, var(--lfc-ink-900) 88%, transparent) 52%,
+    color-mix(in srgb, var(--lfc-ink-950) 97%, transparent) 100%
+  );
+}
+
+/* La porte du coursier garde SON registre : le voile est de beurre, pas
+   d'encre. Les deux portes ne sont pas symétriques, et leur fond le dit avant
+   leur texte. */
+.door-courier::after {
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--lfc-butter-100) 40%, transparent) 0%,
+    color-mix(in srgb, var(--lfc-butter-100) 90%, transparent) 48%,
+    color-mix(in srgb, var(--lfc-butter-200) 98%, transparent) 100%
+  );
+}
+
+/* 🔴 EN ATTENTE, LA CARTE GARDE SA PHOTO ET SON VOILE (Hugo, 2026-09-20 : « on
+   peut assombrir la carte de droite ? »).
+
+   Je les lui avais retirés — « une image derrière une porte fermée promet ce
+   qu'elle ne tient pas » — et l'effet à l'écran contredisait le raisonnement :
+   posée à côté d'une carte d'encre profonde, un aplat de papier pâle ne se
+   lisait pas comme une porte en attente, mais comme un TROU dans la page.
+
+   Ce qui dit l'attente, ce n'est pas l'absence d'image : c'est le voile plus
+   sourd, le curseur, et surtout les MOTS — « Bientôt », et la phrase qui dit
+   qui l'ouvre. Une porte fermée reste une porte. */
+.door.is-pending {
+  background: var(--lfc-soot-700);
+  color: var(--lfc-paper-0);
+}
+
+/* Le voile de l'attente : la suie, pas le beurre. Il est plus dense que celui
+   d'une porte ouverte — c'est ce qui l'éteint d'un cran sans la vider. */
+.door.is-pending::after {
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--lfc-soot-900) 55%, transparent) 0%,
+    color-mix(in srgb, var(--lfc-soot-900) 88%, transparent) 52%,
+    color-mix(in srgb, var(--lfc-soot-900) 97%, transparent) 100%
+  );
+}
+
+/* Sur ce fond sombre, la phrase d'attente reprend le papier — elle était en
+   suie, pour un fond clair qui n'existe plus. */
+.door.is-pending .door-wait {
+  color: var(--lfc-color-on-primary-lede);
+}
+
+/* Le contenu repasse devant les deux calques — voir le commentaire du haut :
+   l'ordre du document mettrait `::after` devant lui. */
+.door > * {
+  position: relative;
+  z-index: 1;
+}

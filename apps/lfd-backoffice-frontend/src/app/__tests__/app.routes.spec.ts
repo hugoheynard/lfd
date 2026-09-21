@@ -1,0 +1,342 @@
+import type { Route } from '@angular/router';
+import type { StaffPermission } from '@lfd/contracts';
+import { describe, expect, it } from 'vitest';
+
+import { routes } from '../app.routes';
+import type { PermissionGuard } from '../auth/permission.guard';
+
+/**
+ * **Quel droit ouvre quel écran** — la table entière, écrite une fois.
+ *
+ * Ce n'est pas une paraphrase des routes : c'est la décision, et les tests plus
+ * bas vérifient que le routeur s'y conforme. Ajouter un écran sans l'inscrire
+ * ici fait échouer la suite — c'est tout l'intérêt, parce qu'un écran non gardé
+ * ne se voit pas à la relecture. Il se voit le jour où quelqu'un l'ouvre et
+ * récolte des 403 partout, ce qui ressemble à une panne bien plus qu'à un refus.
+ *
+ * `null` = hérite du garde de son parent, et c'est **correct** parce que
+ * l'écran parle de la même ressource. « Admin → Utilisateurs » est
+ * précisément le cas où ça ne l'est pas : l'annuaire de l'équipe exige
+ * `staff:read`, la seule ressource que le catalogue réserve aux
+ * administrateurs, alors que son parent s'ouvre sur `companies:read`. Hériter
+ * y ouvrait la page à un commercial, dont chaque appel rendait ensuite 403.
+ */
+const OPEN = 'open';
+
+/**
+ * `null` = hérite d'un ancêtre gardé. `OPEN` = personne ne le garde, et c'est
+ * VOULU. Les distinguer est tout l'intérêt : sans ce mot, un écran oublié et un
+ * écran ouvert exprès s'écrivent pareil, et le test qui traque les orphelins ne
+ * peut plus rien dire.
+ */
+type ScreenAccess = StaffPermission | null | typeof OPEN;
+
+const SCREENS: Readonly<Record<string, ScreenAccess>> = {
+  // CONTENU PLATEFORME — sous le B2B, dont il partage le contexte et le droit.
+  // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
+  // groupement, et la table n'inventorie que ce qui s'affiche.
+  'b2b/contenu/app-footer': null,
+  // UN écran pour les cinq mentions : ce qui les distingue est leur clé, pas
+  // leur forme. Le segment est validé par le composant, qui n'appelle rien
+  // quand il ne désigne aucune mention du vocabulaire.
+  'b2b/contenu/mentions/:mention': null,
+  'commercial/comptes-clients': 'b2b_companies:read',
+  'comptes-clients/nouveau': 'b2b_companies:write',
+  'commandes/:orderId': 'b2b_orders:read',
+  'comptes-clients/:id/nouvelle-commande': 'b2b_orders:write',
+  // Cible du QR de colisage imprimé sur la fiche d'atelier — c'est une VALEUR
+  // encodée dans du papier en circulation, pas un choix d'arborescence, d'où le
+  // premier niveau.
+  //
+  // `:write` et non le `:read` de ses voisines du fournil, et ce n'est pas une
+  // incohérence à lisser : le poste ÉCRIT — il coche des lignes, il compte des
+  // containers, il déclare une commande prête. En `:read`, on serait entré dans
+  // un écran dont chaque appel aurait répondu non.
+  'colisage/:reference': 'b2b_orders:write',
+  'retrait/:token': 'b2b_orders:write',
+
+  // COMPTABILITÉ — l'entité qui ÉMET : notre ICS, notre compte créancier. Le
+  // droit lui est propre et n'est PAS `b2b_settings` : un commercial a
+  // `b2b_settings: "read"`, et cet écran décide de la destination des virements.
+  // La coquille porte le mur ; la vue hérite, comme dans l'espace B2B.
+  comptabilite: 'b2b_accounting:read',
+  'comptabilite/tableau-de-bord': null,
+  'comptabilite/entites-juridiques': null,
+  'comptabilite/entites-juridiques/:id': null,
+
+  'comptes-clients/:id': 'b2b_companies:read',
+  'comptes-clients/:id/dashboard': null,
+  'comptes-clients/:id/informations': null,
+  // Les notes de la commerciale : ni la comptabilité ni le support, qui lisent pourtant la fiche.
+  'comptes-clients/:id/notes': 'b2b_client_notes:read',
+  'comptes-clients/:id/commandes': null,
+  // La MÊME commande que `commandes/:orderId`, sous le bandeau de son compte, et
+  // derrière le MÊME droit : la coquille n'ouvre que `b2b_companies:read`, et
+  // hériter ici laisserait lire les commandes à qui ne le peut pas ailleurs.
+  'comptes-clients/:id/commandes/:orderId': 'b2b_orders:read',
+  // Le seul onglet de la fiche qui ne suit PAS le droit du parent : voir ce
+  // qu'un client a négocié n'est pas voir sa fiche.
+  'comptes-clients/:id/tarifs': 'b2b_pricing:read',
+  'comptes-clients/:id/facturation': null,
+  'comptes-clients/:id/stats': null,
+  'comptes-clients/:id/paniers-recurrents': null,
+  'comptes-clients/:id/alertes': null,
+  'comptes-clients/:id/data': null,
+
+  // ADMIN — ce qui se règle sur les GENS. Le parent s'ouvre sur le plus faible
+  // des deux droits, et chaque vue porte le sien : `null` aurait donné à
+  // l'annuaire de l'équipe le mur des sociétés, qui n'est pas le sien.
+  admin: 'b2b_companies:read',
+  'admin/acces-en-attente': 'b2b_companies:read',
+  'admin/utilisateurs': 'staff_access:read',
+  // Le MÊME droit que l'annuaire, délibérément : définir un rôle et
+  // l'attribuer sont le même pouvoir. Un mur plus faible ici laisserait
+  // fabriquer des droits à qui n'a pas celui de les donner.
+  'admin/roles': 'staff_access:read',
+  // L'éditeur exige `staff:write`, pas `staff:read` : voir un rôle et le
+  // définir ne sont pas le même geste, et l'URL d'un formulaire se tape.
+  'admin/roles/nouveau': 'staff_access:write',
+  'admin/roles/:key': 'staff_access:write',
+  // Sa propre ressource (plan inscription pro §2.4) : le parent s'ouvre sur les
+  // sociétés, et couper la vente en ligne n'est pas lire une fiche client.
+  'admin/feature-access': 'b2b_feature_access:read',
+  // Le journal traverse les modules : il a sa propre ressource, et n'hérite
+  // donc pas du `companies:read` de son parent.
+  'admin/journal': 'activity:read',
+
+  // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
+  // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison
+  // de suivre — et un écran qui expose la topologie interne mérite sa décision.
+  sante: 'ops_health:read',
+
+  reglages: 'b2b_settings:read',
+  // Hérite du mur de `reglages` (`b2b_settings:read`) : ce que coûte une
+  // dérogation est une politique tarifaire de la maison, au même rang que le
+  // frais d'une zone. Décider COMBIEN n'est pas décider QUI peut en accorder
+  // une — ce second droit-là est `b2b_order_waivers`, et il vit au comptoir.
+  'reglages/surtaxe-de-retard': null,
+  // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
+  // Même mur que l'onglet qu'elle commente.
+  'reglages/facturation': null,
+  'reglages/commercial': 'b2b_growth:read',
+
+  // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
+  // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
+  // du paramétrage, pas une ressource à part.
+  b2b: 'b2b_settings:read',
+  // La RÉCEPTION porte son propre droit, et pas celui de l'espace : valider ce
+  // qui entre en vente est le métier du commercial, régler la plateforme ne
+  // l'est pas. C'est la séparation que le découpage des droits par outil a
+  // rendue exprimable — la ranger sous `b2b_settings` la lui reprendrait.
+  'b2b/reception': 'b2b_catalog:read',
+  'b2b/catalogue': null,
+  'b2b/tarification': null,
+  // La frise LIT la même chose que la grille, à d'autres dates : même mur.
+  'b2b/tarification/frise': null,
+  'b2b/tarification/simulateur': null,
+  // Les réglages de l'e-commerce, venus de l'onglet « Retraits & livraisons »
+  // des Réglages : même mur que celui qu'ils quittent, hérité de l'espace.
+  'b2b/reglages/points-de-retrait': null,
+  // Le détail d'un point, et sa création : même ressource que la liste, donc
+  // même mur. `nouveau` est déclaré AVANT `:id` dans les routes, sans quoi il
+  // s'y lirait comme un identifiant.
+  'b2b/reglages/points-de-retrait/nouveau': null,
+  'b2b/reglages/points-de-retrait/:id': null,
+  'b2b/reglages/livraison': null,
+  'b2b/reglages/heures-limites': null,
+
+  // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
+  // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
+  // ne peut donc pas hériter, sinon un lecteur du catalogue armerait des outils
+  // d'écriture et récolterait des 403 — ce que la table existe pour empêcher.
+  'outils-agent': 'pim_catalog:write',
+
+  pim: 'pim_catalog:read',
+  // La SEULE vue du PIM à ne pas hériter : poser un taux de TVA est une
+  // décision comptable, et `catalog:write` est réservé à l'admin. La ressource
+  // `tax` existe pour ça — sans retirer de lecture à qui l'avait.
+  'pim/tva': 'pim_tax:read',
+  // Même droit que les taux : décider ce que le professionnel paie par
+  // rapport au particulier est une décision comptable.
+  'pim/regles-comptables': 'pim_tax:read',
+  // L'ÉCRITURE, pas la lecture de ses voisins : la tranche fiscale du journal
+  // est servie sous `pim_tax:write` (plan journal, lot 4) — en `read`, le
+  // commercial ouvrirait un écran dont chaque appel rendrait 403.
+  'pim/journal-fiscal': 'pim_tax:write',
+  'pim/catalogue': null,
+  'pim/revisions': null,
+  // Le diff vivant : même mur que les ancres elles-mêmes — c'est une LECTURE du
+  // catalogue, elle ne pose rien et ne publie rien.
+  'pim/revisions/en-attente': null,
+  'pim/publication': null,
+  // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle
+  // n'ouvre rien de plus — le référentiel garde chaque écriture de son côté.
+  'pim/categories/nouveau': null,
+  'pim/categories/:id': null,
+  'pim/categories': null,
+  'pim/emplacements': null,
+  // Le registre décide de ce qu'on peut VENDRE, mais ne porte aucun taux :
+  // `catalog:read` suffit, et `tax:read` serait un mur pour rien.
+  'pim/contextes': null,
+  // La PROVENANCE ne touche à aucun prix : `catalog:read` suffit, et `tax:read`
+  // serait un mur pour rien.
+  'pim/ingredients': null,
+  'pim/appellations': null,
+  'pim/allergenes': null,
+  'pim/conditionnements': null,
+  'pim/limites-de-commande': null,
+  'pim/integration': null,
+  'pim/produits/nouveau': null,
+  'pim/produits/:id': null,
+  'pim/produits': null,
+  // LA PRODUCTION est un ESPACE : la coquille porte le garde, ses trois vues en
+  // héritent. C'est la même donnée — le lot du jour, le mur qui arrive, les bacs
+  // qu'on remplit —, et lui poser trois fois le même droit serait une condition
+  // toujours vraie.
+  production: 'b2b_orders:read',
+  'production/journee': null,
+  'production/previsionnel': null,
+  'production/colisage': null,
+  // La file du comptoir : la MÊME commande, vue au moment où on la remet. En
+  // lecture — attester une remise passe par `retrait/:token`, qui exige
+  // l'écriture.
+  remises: 'b2b_orders:read',
+  livraison: 'b2b_orders:read',
+  // Un QR de sa propre origine et un mode d'emploi : rien à garder.
+  'app-mobile': OPEN,
+  // 🔴 **L'outillage de développement**, et son absence de garde est le point.
+  //
+  // Le mur qui compte est côté SERVEUR : la route est murée par `b2b_settings`
+  // et refuse toute base qui n'est pas locale. Un `permissionGuard` ici
+  // donnerait l'illusion que c'est lui qui protège, et masquerait le vrai —
+  // celui qui rend le geste inexprimable en production.
+  //
+  // Et cet écran n'existe PAS dans un build de production : `dev-tools.ts` n'y
+  // déclare aucune route, donc il n'est pas émis. Il n'est ici que parce que la
+  // suite tourne, comme `ng serve`, en configuration de développement.
+  dev: OPEN,
+  // AUCUN garde, et c'est voulu : de la prose sur le fonctionnement du
+  // catalogue, pas une donnée. Elle n'a pas de parent dont hériter — d'où
+  // `OPEN` plutôt que `null`.
+  documentation: OPEN,
+  // Ses sections héritent de l'absence de garde, mais `null` est réservé à
+  // l'héritage d'un parent GARDÉ : sans garde au-dessus, elles sont ouvertes
+  // pour la même raison que leur parent, et le disent chacune.
+  'documentation/parametrage-general': OPEN,
+  'documentation/parametrage-produit': OPEN,
+  'documentation/remplir-une-fiche-produit': OPEN,
+  'documentation/vue-d-ensemble': OPEN,
+  'documentation/briques': OPEN,
+  'documentation/flux-des-collections': OPEN,
+  'documentation/segmentation-web': OPEN,
+
+  commercial: 'b2b_companies:read',
+  'commercial/cockpit': 'b2b_growth:read',
+  'commercial/prospects': 'b2b_growth:read',
+  analytics: 'b2b_growth:read',
+  'commercial/calendrier': 'b2b_growth:read',
+  // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
+  // portent des prix négociés, et la même personne qui voit les prospects
+  // négocie leurs tarifs.
+  'commercial/tarification/mercuriales-templates': null,
+  'commercial/tarification/devis-templates': null,
+  'commercial/tarification/mercuriales-templates/:id': null,
+  'commercial/tarification/devis-templates/:id': null,
+
+  'rendez-vous/:appointmentId': 'b2b_appointments:read',
+};
+
+/** Toutes les routes de l'arbre, avec leur chemin complet. */
+function flatten(tree: readonly Route[], prefix = ''): { path: string; route: Route }[] {
+  return tree.flatMap((route) => {
+    const path = [prefix, route.path ?? ''].filter((part) => part !== '').join('/');
+    return [{ path, route }, ...flatten(route.children ?? [], path)];
+  });
+}
+
+/** Les routes qui rendent un écran — une redirection n'en rend aucun. */
+function screens(): { path: string; route: Route }[] {
+  return flatten(routes).filter(
+    ({ route }) => route.loadComponent !== undefined || route.component !== undefined,
+  );
+}
+
+/**
+ * Ce garde porte-t-il sa permission ? Prédicat vérifié plutôt que conversion :
+ * `canActivate` accepte aussi les gardes historiques (une classe, voire une
+ * chaîne), et `in` seul ne compile pas sur cette union.
+ */
+function carriesPermission(guard: unknown): guard is PermissionGuard {
+  return typeof guard === 'function' && 'permission' in guard;
+}
+
+/** La permission déclarée par cette route, ou `null` si elle n'en déclare pas. */
+function declaredPermission(route: Route): StaffPermission | null {
+  return (route.canActivate ?? []).filter(carriesPermission)[0]?.permission ?? null;
+}
+
+describe("l'arbre de routes du back-office", () => {
+  it("n'a aucun écran absent de la table", () => {
+    const missing = screens()
+      .map(({ path }) => path)
+      .filter((path) => !(path in SCREENS));
+
+    expect(missing).toEqual([]);
+  });
+
+  it('ne garde aucun écran que la table ne connaît plus', () => {
+    const live = new Set(screens().map(({ path }) => path));
+    const stale = Object.keys(SCREENS).filter((path) => !live.has(path));
+
+    expect(stale).toEqual([]);
+  });
+
+  it('ferme chaque écran derrière EXACTEMENT le droit annoncé', () => {
+    const wrong = screens()
+      .map(({ path, route }) => ({ path, declared: declaredPermission(route) }))
+      // Un écran `OPEN` ne déclare rien — c'est exactement ce qu'on attend de lui.
+      .filter(({ path, declared }) => declared !== (SCREENS[path] === OPEN ? null : SCREENS[path]));
+
+    expect(wrong).toEqual([]);
+  });
+
+  it('garde les anciennes adresses des écrans déménagés', () => {
+    // Catalogue et Tarification ont quitté les Réglages pour l'espace B2B, puis
+    // « Retraits & livraisons », découpé en trois pages de ses réglages.
+    // Leurs URL vivent dans des favoris et des liens collés : un rangement qui
+    // rend 404 se paie par celui qui ne l'a pas fait.
+    const reglages = routes.find((route) => route.path === 'reglages');
+    const moved = (reglages?.children ?? [])
+      .filter((child) => typeof child.redirectTo === 'string')
+      .map((child) => [child.path, child.redirectTo]);
+
+    expect(moved).toEqual([
+      ['', 'surtaxe-de-retard'],
+      ['catalogue', '/b2b/catalogue'],
+      ['tarification', '/b2b/tarification'],
+      ['tarification/frise', '/b2b/tarification/frise'],
+      ['tarification/simulateur', '/b2b/tarification/simulateur'],
+      ['retraits-livraisons', '/b2b/reglages/points-de-retrait'],
+    ]);
+  });
+
+  it('ne laisse hériter que les écrans dont le parent est gardé', () => {
+    const guarded = new Set(
+      screens()
+        .filter(({ route }) => declaredPermission(route) !== null)
+        .map(({ path }) => path),
+    );
+    const orphans = Object.entries(SCREENS)
+      .filter(([, permission]) => permission === null)
+      .map(([path]) => path)
+      .filter((path) => !ancestorsOf(path).some((ancestor) => guarded.has(ancestor)));
+
+    expect(orphans).toEqual([]);
+  });
+});
+
+/** Les chemins parents de celui-ci, du plus proche au plus lointain. */
+function ancestorsOf(path: string): string[] {
+  const segments = path.split('/');
+  return segments.slice(0, -1).map((_, index) => segments.slice(0, index + 1).join('/'));
+}

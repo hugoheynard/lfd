@@ -1,6 +1,6 @@
 name: deploy_lfd_backoffice
 
-# Build browser-only du B2B admin front (lfc-B2B-admin-frontend) → Cloudflare Pages, à
+# Build browser-only du B2B admin front (lfd-backoffice-frontend) → Cloudflare Pages, à
 # chaque push sur main. Pas de SSR. wrangler ne fait qu'uploader le statique déjà buildé.
 #
 # Secrets requis :
@@ -31,7 +31,7 @@ on:
     # PAS `pnpm-lock.yaml` : n'importe quelle autre app installant une dépendance
     # redéploierait celle-ci pour rien.
     paths:
-      - "apps/lfc-B2B-admin-frontend/**"
+      - "apps/lfd-backoffice-frontend/**"
       - "packages/**"
       - "pnpm-workspace.yaml"
       - ".github/workflows/deploy_lfd_backoffice.yml"
@@ -96,7 +96,7 @@ jobs:
       # un front parle à une URL morte sans rien dire de plus que « l'app ne
       # marche pas ». Le nom d'env local reste celui qu'attend le script.
       - name: Generate API config (public build var)
-        working-directory: apps/lfc-B2B-admin-frontend
+        working-directory: apps/lfd-backoffice-frontend
         env:
           # L'identité du BUILD, pour Sentry : c'est par elle qu'il rapproche une
           # pile minifiée de ses source maps. Le SHA court, comme `APP_REVISION`
@@ -108,7 +108,7 @@ jobs:
         run: node scripts/generate-api-config.mjs
 
       - name: Generate Auth0 config (public build vars)
-        working-directory: apps/lfc-B2B-admin-frontend
+        working-directory: apps/lfd-backoffice-frontend
         env:
           B2B_ADMIN_AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
           B2B_ADMIN_AUTH0_CLIENT_ID: ${{ vars.AUTH0_LFD_BACKOFFICE_CLIENT_ID }}
@@ -116,10 +116,10 @@ jobs:
         run: node scripts/generate-auth-config.mjs
 
       - name: Typecheck
-        run: pnpm --filter lfc-b2b-admin-frontend exec tsc --noEmit
+        run: pnpm --filter lfd-backoffice-frontend exec tsc --noEmit
 
       - name: Build (static, browser-only)
-        run: pnpm --filter lfc-b2b-admin-frontend exec ng build --configuration cloudflare
+        run: pnpm --filter lfd-backoffice-frontend exec ng build --configuration cloudflare
 
       # 🔴 `lfd-backoffice` depuis le 2026-08-20 : le projet s'appelait
       #    `lfc-b2b-admin`. Cloudflare ne renomme PAS un projet Pages — celui-ci
@@ -148,6 +148,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
           pnpm dlx wrangler pages deploy
-          apps/lfc-B2B-admin-frontend/dist/lfc-b2b-admin-frontend/browser
+          apps/lfd-backoffice-frontend/dist/lfd-backoffice-frontend/browser
           --project-name=lfd-backoffice
           --branch=main

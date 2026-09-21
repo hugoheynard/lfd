@@ -4,7 +4,13 @@ import type {
   ShopQuotePayload,
   ShopQuoteView,
 } from "@lfd/contracts";
-import { DELIVERY_VAT_RATE, lineTotalCents, ventilateVat, type VatLine } from "@lfd/money";
+import {
+  DELIVERY_VAT_RATE,
+  lineTotalCents,
+  ttcCentsOf,
+  ventilateVat,
+  type VatLine,
+} from "@lfd/money";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CartAdjustments } from "../services/cart-adjustments.service.js";
@@ -178,11 +184,16 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
  */
 function toQuoteLine(resolved: { line: OrderLineOf }): ShopQuoteLineView {
   const { line } = resolved;
+  // L'arrondi au centime a lieu UNE fois, ici, et le taxe compris se dérive de
+  // ce total-là — pas du prix unitaire remultiplié. C'est ce qui fait qu'une
+  // ligne de douze pièces dit la même chose que la caisse.
+  const htCents = lineTotalCents(line.unitPriceMillicents, line.quantity);
   return {
     sku: line.sku,
     quantity: line.quantity,
     unitPriceMillicents: line.unitPriceMillicents,
-    lineTotalCents: lineTotalCents(line.unitPriceMillicents, line.quantity),
+    lineTotalCents: htCents,
+    lineTotalTtcCents: ttcCentsOf(htCents, line.vatRate),
     vatRatePercent: line.vatRate,
   };
 }

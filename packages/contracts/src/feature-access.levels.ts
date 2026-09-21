@@ -98,6 +98,21 @@ export const FEATURE_CATALOGUE = {
     defaultLevel: "visible",
     exemptible: true,
   },
+  publicDelivery: {
+    label: "Livraison aux particuliers",
+    description:
+      "La livraison par coursier pour les particuliers et les visiteurs. Fermée, la porte du coursier ne leur est pas montrée et `POST /shop/orders` refuse une commande en livraison. Les PROS gardent la leur : elle tient à leur contrat, pas à ce réglage.",
+    levels: GATE_LEVELS,
+    // 🔴 FERMÉE PAR DÉFAUT (Hugo, 2026-09-21). Ouvrir la livraison à qui n'a pas
+    // de compte est une décision commerciale — une tournée à faire, une adresse
+    // qu'aucun carnet ne vérifie — et un défaut ouvert l'aurait prise à la
+    // place de celui qui déploie.
+    defaultLevel: "closed",
+    // Exemptible : c'est justement ainsi qu'on l'essaie sur une adresse avant
+    // de l'ouvrir à tous. Rien de ce qu'elle ouvre n'est opposable — le
+    // paiement précède la livraison, il n'y a pas de crédit accordé.
+    exemptible: true,
+  },
   customerMandate: {
     label: "Mandat SEPA client",
     description:
@@ -121,6 +136,7 @@ export const FEATURE_KEYS: readonly FeatureKey[] = [
   "orders",
   "invoices",
   "desktopMenu",
+  "publicDelivery",
   "customerMandate",
 ];
 

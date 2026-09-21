@@ -1,0 +1,638 @@
+import { Injectable, computed, inject, type Signal } from '@angular/core';
+import type { StaffPermission } from '@lfd/contracts';
+import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
+import type { FoldIconName } from 'fold-ng';
+
+import { PermissionsStore } from '../../auth/permissions.store';
+import { PimCapabilitiesStore } from '../../pim/capabilities/pim-capabilities.store';
+import type { WorkspaceRail, WorkspaceRailItem } from './workspace-rail.store';
+
+/** Une vue d'espace de travail, et le droit qui l'ouvre s'il lui est propre. */
+export interface WorkspaceView extends WorkspaceRailItem {
+  readonly needs?: StaffPermission;
+  /**
+   * La vue n'existe que si le déploiement OUVRE la publication.
+   *
+   * Distinct de `needs`, et pas par symétrie : `needs` parle de la personne,
+   * ceci parle de l'installation. Une vue fermée par le drapeau l'est pour tout
+   * le monde, administrateur compris — il n'y a pas de droit qui la rouvre.
+   */
+  readonly needsPublication?: boolean;
+}
+
+/**
+ * Les vues du Commercial portent en plus ce que sa page doit DIRE : son titre
+ * et son intro suivent la vue affichée. Une seule table, donc, plutôt qu'une
+ * pour la navigation et une pour l'en-tête — c'est ce qui rend impossible qu'un
+ * titre et son entrée de rail divergent.
+ */
+export interface CommercialView extends WorkspaceView {
+  /**
+   * Le préfixe d'URL qui désigne cette vue, quand il est plus large que le lien.
+   * Il pilote l'EN-TÊTE, pas l'état actif : `routerLinkActive` compare au lien
+   * et n'offre aucune dérogation, ni dans le rail ni dans le lanceur.
+   */
+  readonly match?: string;
+  readonly description: string;
+}
+
+/** Un espace de travail : un contexte borné, et les vues qu'il contient. */
+export interface Workspace {
+  readonly key: string;
+  readonly title: string;
+  readonly icon: FoldIconName;
+  readonly views: readonly WorkspaceView[];
+}
+
+/**
+ * Les vues du **Commercial**. Chemins ABSOLUS : ces tables alimentent le rail
+ * de la coquille ET le lanceur mobile, tous deux rendus par la racine.
+ */
+/** La vue par défaut du Commercial — `/commercial` y redirige, et c'est le
+ *  repli quand l'URL ne désigne aucune vue. Nommée plutôt qu'indexée : un
+ *  `COMMERCIAL_VIEWS[0]` se déplace en silence le jour où l'ordre change. */
+export const COMMERCIAL_COCKPIT: CommercialView = {
+  key: 'cockpit',
+  label: 'Tableau de bord',
+  link: '/commercial/cockpit',
+  icon: 'dashboard',
+  description: 'La journée, ceux qui attendent, et les coups à jouer.',
+};
+
+export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
+  COMMERCIAL_COCKPIT,
+  {
+    // En DEUXIÈME, juste après le tableau de bord : c'est la destination la
+    // plus ouverte de l'app.
+    key: 'comptes-clients',
+    label: 'Comptes clients',
+    link: '/commercial/comptes-clients',
+    icon: 'customer-account',
+    description: 'Le parc, ceux qui commandent et ceux qui dorment.',
+  },
+  {
+    key: 'prospects',
+    label: 'Prospects',
+    link: '/commercial/prospects',
+    icon: 'team',
+    description:
+      "Le parcours entier, d'un nom sur une liste à un compte qui commande — froid, tiède, chaud, puis l'activation du dossier.",
+  },
+  {
+    key: 'calendrier',
+    label: 'Calendrier',
+    link: '/commercial/calendrier',
+    icon: 'calendar',
+    description: 'Les rendez-vous posés — cliquez-en un pour ouvrir son dossier.',
+  },
+  {
+    key: 'tarification',
+    label: 'Tarification',
+    // Le lien mène à la première des deux listes ; l'en-tête reste sur la vue,
+    // parce que `match` couvre les deux.
+    link: '/commercial/tarification/mercuriales-templates',
+    match: '/commercial/tarification',
+    icon: 'tag',
+    description:
+      "Les grilles de prix qu'on prépare une fois : un prix fixe, ou des paliers. On les repose chez autant de clients qu'on veut.",
+  },
+];
+
+/**
+ * Les vues de la **Production**.
+ *
+ * Trois vues, et ce sont trois QUESTIONS, pas trois niveaux de détail : le
+ * prévisionnel dit **quand ça tombe**, la fournée du jour dit ce qu'on sort du
+ * four maintenant, le colisage dit **dans quel bac ça va**. Aucune ne se déduit
+ * d'une autre lue autrement : la fournée arbitre entre un plan arrêté et une
+ * demande qui bouge, et le colisage pèse ce qui est sorti contre ce qui est dû.
+ *
+ * ⚠️ **Ce commentaire disait « deux vues » jusqu'au 2026-09-13**, et il était
+ * juste quand il a été écrit. La fournée et le colisage ont pour clés le RAYON
+ * et la COMMANDE : les ranger l'une sous l'autre aurait enseigné qu'elles sont
+ * deux distances d'un même écran, ce qu'elles ne sont pas.
+ *
+ * ⚠️ **Le prévisionnel est passé DEVANT le 2026-09-13**, et ce commentaire
+ * disait l'inverse — « en premier : c'est la vue qu'on ouvre à la clôture, et
+ * celle dont on imprime le dossier ». L'ordre suit désormais le rythme : on
+ * regarde la semaine avant de lancer la journée, et la fournée du jour se
+ * prend dans le fournil, sur un téléphone, pas depuis le rail.
+ *
+ * ⚠️ **L'adresse par défaut de `/production` n'a PAS suivi** : elle mène
+ * toujours à la fournée. C'est le favori d'un poste de labo, et le premier
+ * item d'un menu n'est pas la même question que la page qu'ouvre un raccourci
+ * posé sur un écran de fournil.
+ *
+ * Aucune ne porte de `needs` : `b2b_orders:read` ouvre déjà l'espace, et le
+ * répéter sur les deux serait une condition toujours vraie, donc jamais relue.
+ */
+export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'previsionnel',
+    label: 'Prévisionnel',
+    link: '/production/previsionnel',
+    icon: 'calendar',
+  },
+  {
+    // L'adresse reste `journee`, alors que le libellé dit « Fournée du jour ».
+    // Renommer le chemin casserait les favoris des postes de labo pour gagner
+    // une cohérence que personne ne lit : une URL n'est pas un libellé.
+    key: 'journee',
+    label: 'Fournée du jour',
+    link: '/production/journee',
+    icon: 'production',
+  },
+  {
+    // APRÈS la fournée, parce que c'est l'ordre du fournil : on sort du four,
+    // puis on répartit. Le poste s'atteint aussi par le QR d'une feuille
+    // d'atelier (`/colisage/:reference`) — l'entrée de rail est la porte de
+    // celui qui n'a pas de papier sous la main.
+    key: 'colisage',
+    label: 'Colisage',
+    link: '/production/colisage',
+    // `package` : le jeu d'icônes de fold ne porte pas de `box` (vérifié le
+    // 2026-09-13, 0.27.2), et `package` EST le carton. `basket` disait le
+    // panier d'achat, c'est-à-dire le geste du client, pas celui du fournil.
+    icon: 'package',
+  },
+];
+
+/**
+ * Les vues du **PIM**, en trois sections.
+ *
+ * Elles ne sont pas décoratives : elles disent trois natures de travail qui
+ * n'ont pas le même rythme. On édite des fiches tous les jours, on diffuse
+ * quand on a décidé, on règle un taux trois fois par an — et la liste à plat de
+ * dix entrées mettait « Taux de TVA » entre « Catégories » et « Révisions ».
+ *
+ * Le groupement suit l'ORDRE de déclaration : le rail ouvre un groupe à chaque
+ * changement de section, et une section qui reviendrait plus bas rouvrirait un
+ * second groupe au lieu de fusionner. Les entrées d'une même section doivent
+ * donc rester contiguës ici.
+ *
+ * `needs` n'y figure que là où la vue ne se contente PAS de `catalog:read`, le
+ * droit qui ouvre déjà l'espace : le référentiel fiscal et les règles
+ * comptables, qui partagent sa ressource, et le journal fiscal, qui en exige
+ * l'écriture. Répéter `catalog:read` sur
+ * les huit autres serait une condition toujours vraie, donc jamais relue.
+ */
+export const PIM_VIEWS: readonly WorkspaceView[] = [
+  // CATALOGUE — ce qu'on vend, et ce qu'on en a figé. Les révisions y sont
+  // parce qu'une ancre photographie ce catalogue-là ; les ranger sous
+  // « Diffusion » laisserait croire qu'elles publient quelque chose.
+  //
+  // La synthèse ouvre la section : elle répond à « où on en est », les autres à
+  // « lequel ».
+  {
+    key: 'overview',
+    label: "Vue d'ensemble",
+    link: '/pim/catalogue',
+    icon: 'grid',
+    section: 'Catalogue',
+  },
+  {
+    key: 'produits',
+    label: 'Produits',
+    link: '/pim/produits',
+    icon: 'product',
+    section: 'Catalogue',
+  },
+  {
+    key: 'categories',
+    label: 'Catégories',
+    link: '/pim/categories',
+    icon: 'category',
+    section: 'Catalogue',
+  },
+  {
+    key: 'revisions',
+    label: 'Révisions',
+    link: '/pim/revisions',
+    icon: 'timeline',
+    section: 'Catalogue',
+  },
+
+  // DIFFUSION — ce qui sort d'ici, et par où. Ces trois-là n'avaient pas été
+  // citées dans le regroupement demandé ; les laisser sans section les aurait
+  // fait flotter sous des groupes titrés, ce qui se lit comme un oubli.
+  {
+    key: 'collections',
+    needsPublication: true,
+    label: 'Collections',
+    link: '/pim/collections',
+    icon: 'collections',
+    section: 'Diffusion',
+  },
+  {
+    key: 'publication',
+    needsPublication: true,
+    label: 'Publication',
+    link: '/pim/publication',
+    icon: 'publish',
+    section: 'Diffusion',
+  },
+  {
+    key: 'integration',
+    needsPublication: true,
+    label: 'Intégrations',
+    link: '/pim/integration',
+    icon: 'integrations',
+    section: 'Diffusion',
+  },
+
+  // PARAMÉTRAGE PRODUIT — le vocabulaire dans lequel une FICHE se remplit :
+  // ce qu'elle contient, ce qui la conditionne, ce qu'elle déclare. On y
+  // revient en saisissant, ce qui le sépare du paramétrage général plus bas —
+  // celui-là se règle trois fois par an.
+  //
+  // C'est la même distinction que le rail fait déjà entre Catalogue et
+  // Diffusion : par NATURE de ce qu'on y fait, pas par ordre d'arrivée.
+  {
+    key: 'ingredients',
+    label: 'Ingrédients',
+    link: '/pim/ingredients',
+    icon: 'library',
+    section: 'Paramétrage produit',
+  },
+  {
+    key: 'appellations',
+    label: 'Appellations',
+    link: '/pim/appellations',
+    icon: 'award',
+    section: 'Paramétrage produit',
+  },
+  {
+    key: 'allergenes',
+    label: 'Allergènes',
+    link: '/pim/allergenes',
+    icon: 'alert',
+    section: 'Paramétrage produit',
+  },
+  {
+    key: 'conditionnements',
+    label: 'Conditionnements',
+    link: '/pim/conditionnements',
+    icon: 'package',
+    section: 'Paramétrage produit',
+  },
+
+  // GÉNÉRAL — ce qu'on règle une fois et qui vaut pour tout le reste. En
+  // DERNIER, à l'inverse de l'ordre où on y touche : on ouvre le référentiel
+  // pour éditer des fiches tous les jours, et ceci trois fois par an.
+  // « Jusqu'à quand on prend commande » est un sujet en soi, pas un sous-titre
+  // sous les zones de livraison : un point de retrait n'est ni un lieu de
+  // production ni un lieu de livraison, et le ranger là a enseigné le mauvais
+  // modèle pendant des mois.
+  {
+    key: 'order-time-limits',
+    label: 'Limites de commande',
+    link: '/pim/limites-de-commande',
+    icon: 'clock',
+    section: 'Général',
+  },
+  {
+    key: 'vat',
+    label: 'Taux de TVA',
+    link: '/pim/tva',
+    icon: 'tax',
+    needs: 'pim_tax:read',
+    section: 'Général',
+  },
+  // Même icône que les taux, et c'est voulu : les deux répondent à « ce
+  // qu'on facture ». Ce qui les sépare tient au libellé — l'un est imposé
+  // de l'extérieur, l'autre décidé par la maison.
+  {
+    key: 'accounting',
+    label: 'Règles comptables',
+    link: '/pim/regles-comptables',
+    icon: 'tax',
+    needs: 'pim_tax:read',
+    section: 'Général',
+  },
+  // Juste après ce dont il raconte l'histoire. `tax:write`, comme la route
+  // serveur : un `tax:read` montrerait l'entrée au commercial, pour un 403.
+  {
+    key: 'tax-journal',
+    label: 'Journal fiscal',
+    link: '/pim/journal-fiscal',
+    icon: 'timeline',
+    needs: 'pim_tax:write',
+    section: 'Général',
+  },
+  // L'URL reste `emplacements` : renommer un chemin casse les liens déjà
+  // partagés, et le mot d'interface n'a pas à traîner l'espace d'URL avec lui.
+  {
+    key: 'locations',
+    label: 'Points de vente',
+    link: '/pim/emplacements',
+    icon: 'places',
+    section: 'Général',
+  },
+  {
+    key: 'contexts',
+    label: 'Contextes de vente',
+    link: '/pim/contextes',
+    icon: 'places',
+    section: 'Général',
+  },
+];
+
+/**
+ * Les vues de l'**espace B2B** — ce que la plateforme client vend, et à quel
+ * prix. Toutes deux sous `settings:read`, le droit qui ouvre déjà l'espace :
+ * le répéter serait une condition toujours vraie, donc jamais relue.
+ */
+/**
+ * Les vues du **B2B**, rangées par SECTION.
+ *
+ * Le contenu de plateforme y entre plutôt que d'ouvrir un espace à lui : ce
+ * qu'on édite ici, ce sont les textes de la VITRINE B2B — le même contexte que
+ * son catalogue et sa tarification. Un espace séparé aurait fait deux portes
+ * pour une seule maison.
+ *
+ * Quatre sections. Elles ne sont pas décoratives : elles disent les natures de
+ * ce qu'on règle ici — ce qu'on vend, à quel prix, ce qu'on en dit, et comment
+ * on le remet — et chacune grandira de son côté.
+ */
+export const B2B_VIEWS: readonly WorkspaceView[] = [
+  {
+    // En TÊTE de la section catalogue : ce qui attend une décision passe avant
+    // ce qui est déjà en vente. Une arrivée non validée ne coûte rien tant
+    // qu'on la voit ; c'est de ne pas la voir qui coûte.
+    key: 'reception',
+    label: 'Réception',
+    link: '/b2b/reception',
+    icon: 'inbox',
+    section: 'Catalogue',
+    needs: 'b2b_catalog:read',
+  },
+  {
+    // 🔴 « Catalogue » tout court ne disait plus rien de vrai (2026-09-21) :
+    // l'entrée juste au-dessus s'appelle « Réception », et les deux montrent le
+    // MÊME catalogue à deux instants. La paire dit enfin ce qu'elle est — ce
+    // qui attend une décision, puis ce qui est déjà en vente.
+    key: 'catalogue',
+    label: 'Catalogue actuel en ligne',
+    link: '/b2b/catalogue',
+    icon: 'package',
+    section: 'Catalogue',
+  },
+  {
+    key: 'tarification',
+    label: 'Tarification B2B',
+    link: '/b2b/tarification',
+    icon: 'tag',
+    section: 'Tarification',
+  },
+  {
+    key: 'app-footer',
+    label: 'App footer',
+    link: '/b2b/contenu/app-footer',
+    icon: 'grid',
+    section: 'Contenu',
+  },
+  // LES CINQ MENTIONS LÉGALES, une entrée chacune et non une page d'index : on
+  // vient corriger une mention précise, et un index n'aurait ajouté qu'un clic
+  // entre le menu et le texte. Elles sont DÉRIVÉES du vocabulaire — leur ordre
+  // et leurs mots viennent du contrat, jamais d'une liste recopiée ici qui
+  // aurait divergé à la première mention ajoutée.
+  ...legalMentionOrder.map((mention): WorkspaceView => ({
+    key: `mention-${mention}`,
+    label: legalMentionLabels.fr[mention],
+    link: `/b2b/contenu/mentions/${mention}`,
+    icon: 'contracts',
+    section: 'Contenu',
+  })),
+  // LES RÉGLAGES DE L'E-COMMERCE — où retirer, à qui livrer, jusqu'à quand
+  // commander. Ils étaient un onglet des Réglages ; sous le droit qui ouvre
+  // déjà l'espace, donc sans `needs` (plan « remise et livraison par
+  // clientèle », D6).
+  {
+    key: 'points-de-retrait',
+    label: 'Points de retrait',
+    link: '/b2b/reglages/points-de-retrait',
+    icon: 'map-pin',
+    section: 'Réglages',
+  },
+  {
+    key: 'livraison',
+    label: 'Livraison',
+    link: '/b2b/reglages/livraison',
+    icon: 'truck',
+    section: 'Réglages',
+  },
+  {
+    key: 'heures-limites',
+    label: 'Heures limites de commande',
+    link: '/b2b/reglages/heures-limites',
+    icon: 'clock',
+    section: 'Réglages',
+  },
+];
+
+/**
+ * Les vues de l'**Admin**. Chacune porte le droit qui l'ouvre : ranger deux
+ * écrans sous un même titre ne leur donne pas le même mur. Montrée sans le
+ * droit, l'entrée offrait une porte fermée à clé — on cliquait, la page
+ * s'ouvrait, et chaque appel rendait 403.
+ */
+export const ADMIN_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'acces-en-attente',
+    label: 'Accès à remettre',
+    link: '/admin/acces-en-attente',
+    icon: 'shield',
+    needs: 'b2b_companies:read',
+  },
+  {
+    key: 'utilisateurs',
+    label: 'Utilisateurs',
+    link: '/admin/utilisateurs',
+    icon: 'user',
+    needs: 'staff_access:read',
+  },
+  {
+    // Juste après « Utilisateurs », et sous le même droit : on vient de voir
+    // qu'une personne porte un rôle, la question suivante est ce que ce rôle
+    // ouvre. Les séparer ferait chercher.
+    key: 'roles',
+    label: 'Rôles',
+    link: '/admin/roles',
+    icon: 'shield',
+    needs: 'staff_access:read',
+  },
+  {
+    key: 'feature-access',
+    label: 'Accès aux fonctionnalités',
+    link: '/admin/feature-access',
+    icon: 'sliders',
+    needs: 'b2b_feature_access:read',
+  },
+  {
+    key: 'journal',
+    label: 'Journal',
+    link: '/admin/journal',
+    icon: 'timeline',
+    needs: 'activity:read',
+  },
+];
+
+/**
+ * Les vues de la **Comptabilité**.
+ *
+ * Une seule pour l'instant, et elle porte quand même son droit : le jour où les
+ * factures et les lots de prélèvement arrivent, ils ne relèveront pas forcément
+ * du même mur — émettre une facture et déposer un lot à la banque ne sont pas
+ * le même geste. Le déclarer maintenant coûte une ligne ; le rattraper après
+ * coup demande de rouvrir chaque entrée.
+ */
+export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
+  {
+    // En TÊTE : c'est la vue qu'on ouvre tous les jours, quand les entités
+    // juridiques se règlent trois fois dans une vie.
+    key: 'tableau-de-bord',
+    label: 'Tableau de bord',
+    link: '/comptabilite/tableau-de-bord',
+    icon: 'dashboard',
+    needs: 'b2b_accounting:read',
+  },
+  {
+    key: 'entites-juridiques',
+    label: 'Entités juridiques',
+    link: '/comptabilite/entites-juridiques',
+    icon: 'company',
+    needs: 'b2b_accounting:read',
+  },
+];
+
+/**
+ * Les vues de la **documentation**, en sections.
+ *
+ * C'est le seul espace dont les vues ne portent AUCUN droit, et ce n'est pas un
+ * oubli : ce sont des explications du fonctionnement, pas des données. Le mur
+ * est sur les écrans qu'elles commentent, pas sur la prose qui les commente.
+ *
+ * Une seule section pour l'instant — « PIM ». La déclarer quand même, plutôt
+ * que de laisser les vues sans titre, est ce qui rend la suivante gratuite : le
+ * jour où l'on documente le commerce ou la production, on ajoute des lignes,
+ * pas un regroupement rétroactif où chaque lecteur devra retrouver ses repères.
+ *
+ * L'ordre est celui de la lecture, pas celui de l'écriture : le paramétrage
+ * général ouvre, parce que rien du reste ne se comprend sans le contexte de
+ * vente et le point de vente — et qu'ils viennent, eux, de la loi.
+ */
+export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'general',
+    label: 'Paramétrage général',
+    link: '/documentation/parametrage-general',
+    icon: 'sliders',
+    section: 'PIM',
+  },
+  {
+    key: 'product-settings',
+    label: 'Paramétrage produit',
+    link: '/documentation/parametrage-produit',
+    icon: 'library',
+    section: 'PIM',
+  },
+  {
+    key: 'product-sheet',
+    label: 'Remplir une fiche produit',
+    link: '/documentation/remplir-une-fiche-produit',
+    icon: 'product',
+    section: 'PIM',
+  },
+  {
+    key: 'overview',
+    label: "Vue d'ensemble",
+    link: '/documentation/vue-d-ensemble',
+    icon: 'info',
+    section: 'PIM',
+  },
+  {
+    key: 'bricks',
+    label: 'Les briques',
+    link: '/documentation/briques',
+    icon: 'grid',
+    section: 'PIM',
+  },
+  {
+    key: 'flow',
+    label: 'Flux des collections',
+    link: '/documentation/flux-des-collections',
+    icon: 'sliders',
+    section: 'PIM',
+  },
+  {
+    key: 'web',
+    label: 'Segmentation web',
+    link: '/documentation/segmentation-web',
+    icon: 'globe',
+    section: 'PIM',
+  },
+];
+
+/** Le catalogue, par clé. */
+export const WORKSPACES = {
+  commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
+  production: {
+    key: 'production',
+    title: 'Production',
+    icon: 'production',
+    views: PRODUCTION_VIEWS,
+  },
+  pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
+  // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`
+  // restent — elles vivent dans des favoris (précédent `journee`).
+  b2b: { key: 'b2b', title: 'E-commerce LFC', icon: 'store', views: B2B_VIEWS },
+  comptabilite: {
+    key: 'comptabilite',
+    title: 'Comptabilité',
+    icon: 'receipt',
+    views: COMPTABILITE_VIEWS,
+  },
+  admin: { key: 'admin', title: 'Admin', icon: 'shield', views: ADMIN_VIEWS },
+  documentation: {
+    key: 'documentation',
+    title: 'Documentation',
+    icon: 'library',
+    views: DOCUMENTATION_VIEWS,
+  },
+} as const satisfies Record<string, Workspace>;
+
+/** Une clé d'espace de travail — fermée, donc une faute de frappe ne compile pas. */
+export type WorkspaceKey = keyof typeof WORKSPACES;
+
+/**
+ * Le catalogue des espaces, résolu contre les droits.
+ *
+ * Deux consommateurs, une table : le **rail secondaire** de la coquille, qui ne
+ * montre que l'espace ouvert, et le **lanceur mobile**, qui les montre tous.
+ * Le lanceur avait besoin des vues d'un espace où l'on n'est pas — ce que le
+ * store, qui publie à l'entrée et efface à la sortie, ne peut pas donner. Les
+ * recopier dans la racine en aurait fait une seconde source de vérité, et la
+ * première vue ajoutée d'un seul côté aurait fait diverger les deux.
+ */
+@Injectable({ providedIn: 'root' })
+export class WorkspaceCatalogue {
+  private readonly permissions = inject(PermissionsStore);
+  private readonly capabilities = inject(PimCapabilitiesStore);
+
+  /** Les vues d'un espace que la route laissera ouvrir. */
+  views(key: WorkspaceKey): Signal<WorkspaceRailItem[]> {
+    return computed(() =>
+      WORKSPACES[key].views
+        .filter((view) => view.needs === undefined || this.permissions.can(view.needs))
+        .filter((view) => view.needsPublication !== true || this.capabilities.publication())
+        .map(({ needs, needsPublication, ...view }) => view),
+    );
+  }
+
+  /** Le même espace, sous la forme que publie `provideWorkspaceRail`. */
+  rail(key: WorkspaceKey): Signal<WorkspaceRail> {
+    const views = this.views(key);
+    const { title, icon } = WORKSPACES[key];
+    return computed(() => ({ title, icon, items: views() }));
+  }
+}

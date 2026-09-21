@@ -997,7 +997,7 @@ Deux écarts subsistent, et ils sont assumés :
 | Résolution en quatre rangs, 12 tests                                         | `packages/contracts/src/order-cutoff.ts`, `__tests__/order-cutoff.spec.ts`                        |
 | **Aucun appelant** hors spec                                                 | grep `resolveOrderCutoff\|orderCutoffInstant`, hors client généré                                 |
 | `PlaceOrderHandler` ne vérifie que l'appartenance                            | `src/b2b/orders/application/commands/place-order.handler.ts`                                      |
-| La page réglages porte déjà retraits + limites + zones                       | `apps/lfc-B2B-admin-frontend/src/app/b2b/reglages/`                                               |
+| La page réglages porte déjà retraits + limites + zones                       | `apps/lfd-backoffice-frontend/src/app/b2b/reglages/`                                              |
 | `PickupAddress` (public) et `PointOfSale` (pim) sans lien                    | `public/orders.prisma:250` et `:3124` ; grep `PointOfSale` dans `src/b2b` : vide                  |
 | `PriceScopeType` = global/category/product/variant                           | `packages/contracts/src/pricing.ts:83`                                                            |
 | `Category.parentId` auto-relation                                            | `public/pricing.prisma:118-2845`                                                                  |
@@ -1027,7 +1027,7 @@ Deux écarts subsistent, et ils sont assumés :
 | Une consommée ne rouvre rien et ne se retire pas                             | idem                                                                                              |
 | L'écran a sa propre entrée, section « Général »                              | `src/app/shared/workspace-rail/workspaces.ts` ; `pim.routes.ts`                                   |
 | `Hérité` distinct d'un rattrapage nul explicite                              | `src/app/pim/order-time-limits/__tests__/limit-format.spec.ts`                                    |
-| La boutique lit un mock, pas une route catalogue — **plus vrai depuis `P7`** | apps/lfc-B2B-platform-frontend/src/app/client/mock-shop.ts (supprimé)                             |
+| La boutique lit un mock, pas une route catalogue — **plus vrai depuis `P7`** | apps/lfc-ecommerce-frontend/src/app/client/mock-shop.ts (supprimé)                                |
 | La surtaxe s'ajoute APRÈS la remise, et n'est pas remisée                    | `src/b2b/orders/domain/entities/__tests__/order.spec.ts`                                          |
 | Une surtaxe sans taux **lève** au lieu de retomber sur un défaut             | `MissingLateFeeVatRateError` ; `src/b2b/orders/domain/services/__tests__/vat.spec.ts`             |
 | Un seul réglage de surtaxe, tenu par la base                                 | `CHECK "id" = 'singleton'` ; `20260904190000_surtaxe_de_commande_tardive`                         |

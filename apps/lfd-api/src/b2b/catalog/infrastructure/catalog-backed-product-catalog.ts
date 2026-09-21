@@ -1,7 +1,11 @@
 import { CATALOG_CATEGORY_ORDER } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import {
+  CatalogReader,
+  type ResolvedCatalogItem,
+  type ShopAudience,
+} from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { shelfOfCategory } from "../domain/shelf-of-category.js";
 import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-catalog.reader.js";
@@ -32,13 +36,16 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
     super();
   }
 
-  async resolve(sku: string): Promise<CatalogItem | null> {
-    const item = await this.catalog.findDefaultByProductSku(sku);
+  async resolve(sku: string, audience: ShopAudience): Promise<CatalogItem | null> {
+    const item = await this.catalog.findDefaultByProductSku(sku, audience);
     return item === null ? null : toCatalogItem(item);
   }
 
-  async resolveMany(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogItem>> {
-    const items = await this.catalog.listDefaultsByProductSkus(skus);
+  async resolveMany(
+    skus: readonly string[],
+    audience: ShopAudience,
+  ): Promise<ReadonlyMap<string, CatalogItem>> {
+    const items = await this.catalog.listDefaultsByProductSkus(skus, audience);
     const found = new Map<string, CatalogItem>();
     for (const [productSku, item] of items) {
       found.set(productSku, toCatalogItem(item));
@@ -52,7 +59,8 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
    * l'écran de tarification ne se réorganise pas le jour de la bascule.
    */
   async all(): Promise<readonly CatalogItem[]> {
-    const items = await this.catalog.listSellable();
+    // `pro` : ce lecteur sert le canal professionnel, pas la vitrine publique.
+    const items = await this.catalog.listSellable("pro");
     return items
       .filter((item) => item.isDefault)
       .map(toCatalogItem)

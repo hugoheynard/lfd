@@ -46,6 +46,16 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         levels: ["hidden", "visible"],
         effectiveLevel: "visible",
       }),
+      // 🔴 FERMÉE PAR DÉFAUT (2026-09-21) : ouvrir la livraison à qui n'a pas de
+      // compte est une décision commerciale, et un défaut ouvert l'aurait prise
+      // à la place de celui qui déploie.
+      expect.objectContaining({
+        key: "publicDelivery",
+        levels: ["closed", "open"],
+        defaultLevel: "closed",
+        effectiveLevel: "closed",
+        exemptible: true,
+      }),
       // 2026-09-14 : l'écran ne propose pas d'exemption sur cette clé.
       expect.objectContaining({
         key: "customerMandate",

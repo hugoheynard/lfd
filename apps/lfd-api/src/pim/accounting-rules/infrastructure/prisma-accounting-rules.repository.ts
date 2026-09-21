@@ -8,7 +8,7 @@ import {
 } from "../domain/ports/accounting-rules.repository.js";
 
 /**
- * L'identité du singleton. Une constante, comme `ShopifySettings` : c'est elle
+ * L'identité du singleton. Une constante, comme `BookingPolicySettings` : c'est elle
  * qui garantit l'unicité, la clé primaire faisant le mur.
  */
 const SINGLETON_ID = "accounting";

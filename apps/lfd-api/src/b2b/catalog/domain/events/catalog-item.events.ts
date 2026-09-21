@@ -30,8 +30,12 @@ export interface CatalogItemSubject {
 export const CATALOG_ITEM_FACTS = {
   b2bPriceSet: "catalog_item.b2b_price_set",
   b2bPriceCleared: "catalog_item.b2b_price_cleared",
+  publicPriceSet: "catalog_item.public_price_set",
+  publicPriceCleared: "catalog_item.public_price_cleared",
   hidden: "catalog_item.hidden",
   shown: "catalog_item.shown",
+  hiddenPublic: "catalog_item.hidden_public",
+  shownPublic: "catalog_item.shown_public",
   featured: "catalog_item.featured",
   unfeatured: "catalog_item.unfeatured",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
@@ -93,6 +97,67 @@ export class CatalogItemB2bPriceClearedEvent implements JournaledEvent {
   }
 }
 
+/**
+ * Un prix **public** tel que le journal le relit — en centimes **TTC**.
+ *
+ * ⚠️ Jumeau de {@link priceOf} et volontairement DISTINCT : l'unité est dans le
+ * nom du champ parce qu'elle diffère. Un journal qui relirait 299 comme des
+ * millicentimes afficherait « 0,00299 € » sur un croissant à 2,99 €.
+ */
+function publicPriceOf(ttcCents: number): Record<string, unknown> {
+  return { ttcCents };
+}
+
+/**
+ * Fait : **un prix public est posé ou remplacé**. `before` est `null` quand
+ * l'article suivait jusque-là l'étiquette du référentiel.
+ */
+export class CatalogItemPublicPriceSetEvent implements JournaledEvent {
+  constructor(
+    readonly item: CatalogItemSubject,
+    readonly beforeTtcCents: number | null,
+    readonly afterTtcCents: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: CATALOG_ITEM_FACTS.publicPriceSet,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.item.sku,
+      payload: {
+        subjectLabel: this.item.name,
+        sku: this.item.sku,
+        before: this.beforeTtcCents === null ? null : publicPriceOf(this.beforeTtcCents),
+        after: publicPriceOf(this.afterTtcCents),
+      },
+    };
+  }
+}
+
+/**
+ * Fait : **l'article revient à l'étiquette du PIM**. `before` dit le prix
+ * public retiré — c'est tout ce que le retour efface.
+ */
+export class CatalogItemPublicPriceClearedEvent implements JournaledEvent {
+  constructor(
+    readonly item: CatalogItemSubject,
+    readonly beforeTtcCents: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: CATALOG_ITEM_FACTS.publicPriceCleared,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.item.sku,
+      payload: {
+        subjectLabel: this.item.name,
+        sku: this.item.sku,
+        before: publicPriceOf(this.beforeTtcCents),
+      },
+    };
+  }
+}
+
 /** Un fait qui ne porte que l'article : le type dit tout le geste. */
 abstract class CatalogItemFlagEvent implements JournaledEvent {
   protected abstract readonly type: JournalFactType;
@@ -113,6 +178,15 @@ abstract class CatalogItemFlagEvent implements JournaledEvent {
  * Fait : **l'article sort de la vitrine B2B**. Masquer éteint aussi la mise en
  * avant (`CatalogItem.hide`) : ce fait-là la dit, sans second fait.
  */
+/**
+ * ⚠️ **`catalog_item.hidden` a changé de portée le 2026-09-21**, et les faits
+ * déjà écrits ne le savent pas : ils masquaient des DEUX boutiques, faute d'en
+ * avoir deux. Sa phrase disait pourtant déjà « du catalogue professionnel ».
+ *
+ * Le type n'est pas renommé — un fait est immuable, et un renommage de valeur
+ * est une migration de données, pas un geste de confort. Ce qui est ajouté est
+ * son jumeau PUBLIC ; l'ancien devient ce que sa phrase disait déjà.
+ */
 export class CatalogItemHiddenEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.hidden;
 }
@@ -123,6 +197,14 @@ export class CatalogItemShownEvent extends CatalogItemFlagEvent {
 }
 
 /** Fait : **l'article est mis en avant** dans la boutique. */
+export class CatalogItemHiddenPublicEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.hiddenPublic;
+}
+
+export class CatalogItemShownPublicEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.shownPublic;
+}
+
 export class CatalogItemFeaturedEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.featured;
 }

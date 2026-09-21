@@ -44,7 +44,8 @@ export class PriceTemplatesQuery {
     const states = stored.map((entry) => entry.state);
     const skus = [...new Set(states.flatMap((state) => state.lines.map((line) => line.sku)))];
     const [catalogue, authors] = await Promise.all([
-      this.catalog.resolveMany(skus),
+      // `pro` : un gabarit de prix vise le canal professionnel.
+      this.catalog.resolveMany(skus, "pro"),
       this.staffAuthors.identify(states.map((state) => state.createdBy)),
     ]);
 

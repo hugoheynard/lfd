@@ -1,0 +1,51 @@
+<!-- 🔴 L'ENCRE ET LE BEURRE, dans cet ordre, et les deux portes ne sont PAS
+     symétriques : le retrait est le geste par défaut — c'est lui qui porte la
+     remise — et le coursier le service en plus. Les peindre pareil ferait de
+     l'arbitrage un tirage au sort. -->
+<button class="door door-pickup" type="button" (click)="pickupChosen.emit()">
+  <span class="door-tag">{{ pickupCopy().tag }}</span>
+  <span class="door-title">{{ pickupCopy().title }}</span>
+  <span class="door-intro">{{ pickupCopy().intro }}</span>
+  <span class="door-foot">
+    <span class="door-cta">{{ pickupCopy().cta }}</span>
+    <!-- ⚠️ La mention DISPARAÎT quand elle est vide — cet écran ne dit pas
+         « jusqu'à −0 % ». Voir `pickupDoor()` dans l'accueil. -->
+    @if (pickupCopy().note) {
+      <span class="door-note">{{ pickupCopy().note }}</span>
+    }
+  </span>
+</button>
+
+<!-- 🔴 EN ATTENTE, ELLE RESTE ENTIÈRE : même carte, même titre, même promesse.
+     Seul son PIED change — la mention de la porte laisse place à ce qu'on
+     attend et à qui l'ouvre. Une porte qu'on effacerait laisserait un pro
+     devant une page amputée sans savoir qu'il lui manque quelque chose, et une
+     porte grisée sans un mot ferait chercher la raison ailleurs.
+     `disabled` la ferme vraiment : le refus PRÉCÈDE l'effort, il n'attend pas
+     le clic. -->
+<button
+  class="door door-courier"
+  type="button"
+  [class.is-pending]="courierState() === 'pending'"
+  [disabled]="courierState() === 'pending'"
+  (click)="courierChosen.emit()"
+>
+  @if (courierState() === 'pending' && courierCopy().pending; as pending) {
+    <span class="door-tag is-pending">{{ pending.tag }}</span>
+  } @else {
+    <span class="door-tag">{{ courierCopy().tag }}</span>
+  }
+  <span class="door-title">{{ courierCopy().title }}</span>
+  <span class="door-intro">{{ courierCopy().intro }}</span>
+
+  @if (courierState() === 'pending' && courierCopy().pending; as pending) {
+    <span class="door-wait">{{ pending.hint }}</span>
+  } @else {
+    <span class="door-foot">
+      <span class="door-cta">{{ courierCopy().cta }}</span>
+      @if (courierCopy().note) {
+        <span class="door-note">{{ courierCopy().note }}</span>
+      }
+    </span>
+  }
+</button>

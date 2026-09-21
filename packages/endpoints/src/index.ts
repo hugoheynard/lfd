@@ -18,9 +18,9 @@
 
 /** Bloc de ports alloué en dev. Le seul endroit où ces nombres sont écrits. */
 export const DEV_PORTS = {
-  /** Front B2B (`lfc-B2B-platform-frontend`). */
+  /** Front B2B (`lfc-ecommerce-frontend`). */
   b2bFront: 7316,
-  /** Front B2B admin (`lfc-B2B-admin-frontend`). */
+  /** Front B2B admin (`lfd-backoffice-frontend`). */
   b2bAdminFront: 7317,
   /**
    * L'API — **une seule**, depuis que le référentiel produit a rejoint le

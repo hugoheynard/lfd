@@ -1,5 +1,5 @@
-import type { OrderLineAllergens, OrderLinePricingTrace } from "@lfd/contracts";
-import { lineTotalCents } from "@lfd/money";
+import type { OrderClientele, OrderLineAllergens, OrderLinePricingTrace } from "@lfd/contracts";
+import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 
 import { InvalidOrderLineError } from "../errors/order-errors.js";
 
@@ -44,6 +44,21 @@ export interface OrderLineSnapshot extends OrderLineInput {
    */
   readonly lineTotalCents: number;
   /**
+   * Le prix d'UNE pièce **taxe comprise**, en centimes — ou `null`.
+   *
+   * 🔴 **Scellé, jamais dérivé au rendu** (R3, 2026-09-21). Un bon de commande
+   * est archivé sous une clé qui ne bouge pas : le recalculer à l'affichage
+   * changerait une pièce déjà remise au client. Ce que la vitrine a montré est
+   * donc figé ici, au moment où c'est encore vrai.
+   *
+   * `null` dit **deux** choses — une commande professionnelle, ou une commande
+   * antérieure à R3 —, et les deux se rendent pareil : en hors taxe. Le
+   * document n'a qu'une question à poser, « ai-je un TTC à montrer ? ».
+   */
+  readonly unitPriceTtcCents: number | null;
+  /** Le total de la ligne taxe comprise, `null` aux mêmes deux conditions. */
+  readonly lineTotalTtcCents: number | null;
+  /**
    * Requis ici alors qu'il est facultatif à l'entrée : l'appelant peut ne pas
    * savoir, l'adaptateur doit décider quoi écrire. `null` est un choix, pas un
    * oubli — et le type l'oblige à le poser.
@@ -71,11 +86,21 @@ export class OrderLine {
     readonly vatRate: number,
     readonly quantity: number,
     readonly lineTotalCents: number,
+    readonly unitPriceTtcCents: number | null,
+    readonly lineTotalTtcCents: number | null,
     readonly pricing: OrderLinePricingTrace | null,
     readonly allergens: OrderLineAllergens | null,
   ) {}
 
-  static create(input: OrderLineInput): OrderLine {
+  /**
+   * @param clientele **qui achète**, et donc dans quelle assiette la ligne sera
+   * lue. `"public"` scelle le taxe compris ; `"pro"` ne le scelle pas, parce
+   * qu'un professionnel récupère la taxe et ne lit jamais que le hors taxe.
+   *
+   * Il est **obligatoire** plutôt que défaillant à `"pro"` : un défaut se
+   * trompe en silence, et il se tromperait exactement sur le cas neuf.
+   */
+  static create(input: OrderLineInput, clientele: OrderClientele): OrderLine {
     if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
       throw new InvalidOrderLineError(input.sku, "quantité entière strictement positive attendue");
     }
@@ -90,17 +115,27 @@ export class OrderLine {
         "prix unitaire entier ≥ 0 attendu, en millicentimes (10⁻⁵ €)",
       );
     }
+    // **L'unique arrondi de la ligne**, nommé ici pour que le taxe compris s'en
+    // dérive plutôt que de refaire sa propre multiplication.
+    const htCents = lineTotalCents(input.unitPriceMillicents, input.quantity);
+    // Le prix d'une pièce passe par le MÊME chemin que la vitrine —
+    // `ttcCentsOf(lineTotalCents(prix, 1), taux)` — et rend donc le nombre que
+    // le client a lu sur la vignette, au centime près. Un second arrondi a lieu
+    // ici, sur la pièce, et c'est voulu : c'est celui de l'étiquette.
+    const seals = clientele === "public";
     return new OrderLine(
       input.sku,
       input.productName,
       input.unitPriceMillicents,
       input.vatRate,
       input.quantity,
-      // **L'unique arrondi de la ligne.** Il est ici, et nulle part avant :
-      // arrondir le prix unitaire d'abord revenait à multiplier l'erreur par la
-      // quantité — douze articles à 9,00 € TTC facturaient 107,98 € au lieu de
-      // 108,00. Le prix unitaire garde ses décimales jusqu'à ce point.
-      lineTotalCents(input.unitPriceMillicents, input.quantity),
+      // Il est calculé plus haut, et nulle part avant : arrondir le prix
+      // unitaire d'abord revenait à multiplier l'erreur par la quantité — douze
+      // articles à 9,00 € TTC facturaient 107,98 € au lieu de 108,00. Le prix
+      // unitaire garde ses décimales jusqu'à ce point.
+      htCents,
+      seals ? ttcCentsOf(lineTotalCents(input.unitPriceMillicents, 1), input.vatRate) : null,
+      seals ? ttcCentsOf(htCents, input.vatRate) : null,
       assertConsistent(input),
       // `?? null` et jamais `?? { codes: [] }` : l'absence de déclaration reste
       // une absence. La fabriquer transformerait une ignorance en affirmation,
@@ -117,6 +152,8 @@ export class OrderLine {
       vatRate: this.vatRate,
       quantity: this.quantity,
       lineTotalCents: this.lineTotalCents,
+      unitPriceTtcCents: this.unitPriceTtcCents,
+      lineTotalTtcCents: this.lineTotalTtcCents,
       pricing: this.pricing,
       allergens: this.allergens,
     };

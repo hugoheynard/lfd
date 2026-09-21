@@ -66,6 +66,22 @@ const STRANGER = "auth0|etranger";
 const SKU = "VIE-001";
 const CANONICAL_MILLICENTS = 200_000;
 const NEGOTIATED_MILLICENTS = 150_000;
+/**
+ * **Ce que lit qui n'a PAS de société** — l'étiquette publique, mise hors taxe.
+ *
+ * 🔴 **Ce n'était pas le cas jusqu'au 2026-09-21** : le « perso » et le visiteur
+ * lisaient `CANONICAL_MILLICENTS`, c'est-à-dire le **tarif du canal
+ * professionnel**. Personne ne le voyait tant qu'un seul prix circulait, et ces
+ * tests l'écrivaient comme une règle.
+ *
+ * Le perso reste « hors mercuriale » — c'est bien ce que ces cas tiennent. Ce
+ * qui change, c'est le prix auquel il retombe : l'étiquette du rayon, pas le
+ * tarif d'un client pro sans remise.
+ *
+ * La valeur suit `seedE2eCatalog` : VIE-001 à 2,00 € pro, donc 2,64 € TTC
+ * d'étiquette, donc 250 237 millicentimes hors taxe à 5,5 %.
+ */
+const PUBLIC_MILLICENTS = 250_237;
 
 let companyId = "";
 /** Un panier a besoin d'un acheminement pour exister. */
@@ -126,7 +142,7 @@ describe("le mur", () => {
       await ctx.asSub(STRANGER).get("/shop/catalogue/mine").expect(200),
     );
 
-    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
+    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
     expect(itemOf(seen, SKU)?.catalogPriceMillicents).toBeUndefined();
   });
 
@@ -144,13 +160,17 @@ describe("le mur", () => {
         .expect(200),
     );
 
-    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
+    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
   });
 
-  it("🔴 sert le tarif catalogue en « perso », même à qui a UNE société négociée", async () => {
+  it("🔴 sert l'étiquette PUBLIQUE en « perso », même à qui a UNE société négociée", async () => {
     // Sans la valeur réservée, une seule société était servie quoi qu'on
-    // déclare : le perso était inexprimable. Il ouvre le tarif catalogue, hors
-    // mercuriale — par décision (plan-espace-de-travail, Q1).
+    // déclare : le perso était inexprimable. Il ouvre le tarif hors mercuriale —
+    // par décision (plan-espace-de-travail, Q1).
+    //
+    // 🔴 Et ce tarif est l'ÉTIQUETTE, pas le prix du canal pro : se déclarer en
+    // perso, c'est acheter comme un particulier. Ce cas nommait le prix pro
+    // « tarif catalogue » jusqu'au 2026-09-21, faute d'en avoir deux.
     await poseMercuriale();
 
     const seen = jsonBody<ShopCatalogueView>(
@@ -161,7 +181,7 @@ describe("le mur", () => {
         .expect(200),
     );
 
-    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
+    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
     expect(itemOf(seen, SKU)?.catalogPriceMillicents).toBeUndefined();
   });
 
@@ -216,7 +236,7 @@ describe("la vitrine publique", () => {
     );
 
     const item = itemOf(publique, SKU);
-    expect(item?.unitPriceMillicents).toBe(CANONICAL_MILLICENTS);
+    expect(item?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
     // ABSENT du fil, pas nul : la surface publique reste étroite, et un e2e
     // voisin énumère ses clés pour que ça le reste.
     expect(item).not.toHaveProperty("catalogPriceMillicents");

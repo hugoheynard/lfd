@@ -1,0 +1,289 @@
+// La GRAMMAIRE DES POPOVERS DE LA BARRE, déclarée une fois pour les trois qui
+// la portent : le menu d'espaces, la cloche et le panier.
+//
+// Elle vient de la maquette du 2026-09-20 (`handoff-accueil-pro`), qui dessine
+// les trois sur le même gabarit — 372 px, coin à 20, crème sur l'encre, une
+// bande de tête plus chaude, des sections séparées d'un filet, et un pied.
+// C'est ce qui fait qu'ils se lisent comme trois vues d'un même objet et non
+// comme trois panneaux d'auteurs différents.
+//
+// Des MIXINS seulement, comme `_account-card.scss` : un composant Angular isole
+// ses styles, donc une classe déclarée ici ne s'appliquerait à personne — et
+// une règle qui ne s'applique à personne est une règle morte qu'aucun outil ne
+// signale.
+//
+// ⚠️ La largeur est écrite EN DUR dans le mixin et pas lue sur le déclencheur :
+// `--fold-popover-anchor-width` donnerait 372 px au menu d'espaces par accident
+// (son bouton en fait à peu près autant) et 44 px à la cloche. Les trois
+// panneaux ont la même largeur parce qu'ils tiennent la même colonne, pas parce
+// que leurs boutons se ressemblent.
+
+/**
+ * 🔴 LE PANNEAU EST CRÈME DANS UNE BARRE D'ENCRE, et rien ne le sait.
+ *
+ * Les trois popovers sont projetés depuis la rangée d'en-tête, que le shell
+ * marque `data-surface="chrome"`. Le thème y remappe les rôles fold pour le
+ * registre sombre : `--fold-color-text` vaut le PAPIER, `--fold-color-border`
+ * un voile crème, `--fold-color-surface-card` le bleu. Un panneau crème qui
+ * hérite de tout ça affiche du texte crème sur du crème — invisible, et sans
+ * qu'aucun outil ne le dise, puisque chaque `var()` désigne bien quelque chose.
+ *
+ * Le panneau referme donc les rôles qu'il rouvre, aux VALEURS DU THÈME CLAIR
+ * (`_lfc-app-theme.scss`, bloc `[data-theme='lfc-app']`). `foldSurface="page"`
+ * ne suffirait pas : le thème ne déclare ses valeurs claires qu'à la racine, et
+ * une région imbriquée n'y revient pas toute seule.
+ */
+@mixin paper-surface {
+  --fold-color-text: var(--lfc-soot-900);
+  --fold-color-text-secondary: var(--lfc-soot-700);
+  --fold-color-text-muted: var(--lfc-soot-600);
+  --fold-color-text-faded: var(--lfc-soot-400);
+  --fold-color-border: var(--lfc-paper-300);
+  --fold-color-border-subtle: #ebe3d2;
+  --fold-color-surface-card: var(--lfc-paper-0);
+  --fold-color-surface-raised: var(--lfc-paper-0);
+  --fold-color-surface-subtle: var(--lfc-paper-100);
+  --fold-color-surface-sunken: var(--lfc-paper-100);
+  --fold-color-surface-hover: var(--lfc-paper-100);
+  --fold-color-primary: var(--lfc-ink-800);
+  --fold-color-on-primary: var(--lfc-paper-50);
+  --fold-color-primary-surface: var(--lfc-ink-50);
+  --fold-color-primary-border: var(--lfc-ink-100);
+  --fold-color-primary-text: var(--lfc-ink-700-text);
+  --fold-color-alert: var(--lfc-brick-700);
+  --fold-color-on-alert: var(--lfc-paper-50);
+  --fold-color-alert-surface: #fbeae7;
+  --fold-color-alert-border: #eccac3;
+  --fold-color-alert-text: var(--lfc-brick-700);
+  --lfc-color-accent-surface: var(--lfc-butter-100);
+  --lfc-color-accent-text: var(--lfc-butter-800);
+  --lfc-color-text-subtle: var(--lfc-soot-500);
+  --lfc-color-border-strong: var(--lfc-paper-400);
+}
+
+/**
+ * À poser sur l'élément `<fold-popover>` lui-même.
+ *
+ * ⚠️ `fold-popover` PEINT SA PROPRE BOÎTE autour de ce qu'on lui projette :
+ * fond `surface-card`, contour `border-subtle`, rayon `--fold-radius-md`,
+ * ombre `--fold-shadow-lg`. Nos panneaux ont un rayon de 20 et leur ombre à
+ * eux : sans ce mixin, un croissant de bleu dépasse aux quatre coins et un
+ * filet clair court tout autour. Ses styles sont encapsulés — on ne peut pas
+ * atteindre `.fpop-panel`, seulement lui couper les vivres par les variables.
+ *
+ * Ce qu'il éteint, `panel` le rallume pour le CONTENU : les deux vont donc
+ * toujours ensemble. Seul `--fold-shadow-lg` reste éteint plus bas — rien dans
+ * un panneau de 372 px n'a à porter une ombre d'incrustation.
+ */
+@mixin host {
+  --fold-color-surface-card: transparent;
+  --fold-color-surface-raised: transparent;
+  --fold-color-border-subtle: transparent;
+  --fold-shadow-lg: none;
+}
+
+/** Le panneau lui-même — à poser sur l'élément qui porte `[foldPopoverPanel]`. */
+@mixin panel {
+  @include paper-surface;
+
+  width: 372px;
+  // Le pli : sous 420 px de fenêtre, 372 déborderait. On ne bascule pas en
+  // feuille montante ici — c'est au composant de le décider, lui seul sait ce
+  // qu'il a à montrer en pile.
+  max-width: calc(100vw - 2 * var(--fold-space-md));
+  // 110 px = la barre du bureau (96) plus le jeu que la maquette laisse sous
+  // elle. Au-delà, le panneau défile ; il ne pousse jamais la fenêtre.
+  max-height: calc(100dvh - 110px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--lfc-radius-3xl);
+  background: var(--lfc-paper-0);
+  color: var(--fold-color-text);
+  box-shadow: var(--lfc-shadow-popover);
+  text-align: start;
+}
+
+/** La bande de tête : le papier le plus chaud, pour que le panneau commence par nommer son sujet. */
+@mixin head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg) var(--fold-space-lg) var(--fold-space-md);
+  background: var(--lfc-paper-100);
+}
+
+/**
+ * Le titre de la bande de tête — la voix de la maison, en capitales serrées.
+ *
+ * ⚠️ LE SEUL MIXIN DE CE FICHIER QUI GARDE CHUNK, et c'est délibéré : à 21 px
+ * la face de display est lisible et c'est elle qui nomme le panneau. Tout le
+ * reste du popover — sur-titre de section, pastille, badge, action de pied —
+ * est passé à Pogonia grasse le 2026-09-20, parce qu'en dessous de 12 px les
+ * contreformes de Chunk se referment. Voir `--lfc-font-caps` dans le thème.
+ */
+@mixin head-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/** La ligne grise sous un titre : l'adresse du compte, le compte des non-lues, la promesse du panier. */
+@mixin head-note {
+  margin: 0;
+  font-size: var(--lfc-text-note);
+  line-height: 1.3;
+  color: var(--fold-color-text-muted);
+}
+
+/** Le sur-titre d'une section interne (« Mes espaces »). */
+@mixin section-label {
+  margin: 0;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/** Une section séparée de la suivante par un filet. */
+@mixin section {
+  flex: none;
+  padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-lg);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+/** La zone qui DÉFILE quand le contenu dépasse — la liste, et elle seule. */
+@mixin scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--fold-space-sm);
+}
+
+/**
+ * Une ligne cliquable de la liste : pastille, deux lignes de texte, un signe à
+ * droite. Le survol PEINT LE FOND et ne déplace rien — une ligne qui bouge sous
+ * le curseur dans un panneau de 372 px fait perdre la cible qu'on visait.
+ */
+@mixin row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+  /* Les mesures de la maquette : `padding:10px 10px; border-radius:13px`. */
+  padding: 10px;
+  border: 0;
+  border-radius: 13px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 200ms ease;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--lfc-paper-100);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    // Pas d'opacité globale : elle éteindrait aussi la pastille et le badge, et
+    // une ligne à venir doit rester LISIBLE — c'est même tout ce qu'elle a à
+    // faire. Seule la couleur du texte recule.
+    color: var(--fold-color-text-faded);
+  }
+}
+
+/** La pastille carrée en tête de ligne. */
+@mixin row-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-paper-100);
+  color: var(--lfc-ink-800);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-md);
+  font-weight: var(--lfc-weight-black);
+}
+
+/** Les deux lignes de texte d'une ligne : le nom, puis sa note. */
+@mixin row-titles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@mixin row-label {
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--fold-weight-semibold);
+  line-height: 1.2;
+}
+
+@mixin row-note {
+  font-size: var(--lfc-text-note);
+  line-height: 1.3;
+  color: var(--fold-color-text-muted);
+}
+
+/** Le badge de fin de ligne : un compte, un état, un mot. */
+@mixin row-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-100);
+  color: var(--fold-color-text-secondary);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  /* La maquette desserre ces badges à `.08em` — le cran du sur-titre, pas
+     celui du libellé : un compte de deux ou trois signes a besoin d'air pour ne
+     pas se lire comme un mot. */
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/** Le pied du panneau : une action à gauche, une mention à droite. */
+@mixin foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+/** Le bouton texte d'un pied ou d'une bande de tête — « Fermer », « Se déconnecter ». */
+@mixin foot-action {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+  cursor: pointer;
+}

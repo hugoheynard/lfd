@@ -1,0 +1,51 @@
+<!-- Ce que les deux formes montrent, déclaré une fois. -->
+<ng-template #guts>
+  <!-- `shopping-cart` et non `basket` (Hugo, 2026-09-20). Le panier à anse de
+       fold est le glyphe des boutiques en ligne génériques ; la maquette dessine
+       un CADDIE — corbeille sur deux roues, exactement le tracé de fold sous ce
+       nom-là. Deux icônes possibles pour un seul mot français : c'est le dessin
+       qu'on choisit, pas le nom. -->
+  <fold-icon class="glyph" name="shopping-cart" />
+  @if (!cart.isEmpty()) {
+    <span class="count" aria-hidden="true">{{ cart.count() }}</span>
+    <span class="total wide-only" aria-hidden="true">{{ total() }}</span>
+  }
+</ng-template>
+
+<!-- EN PILE : le panier ENTIER, en feuille du bas. C'était un lien vers la page
+     panier, qui n'existe plus — elle est devenue un panneau, et `dialogSide()`
+     le pose en bas sous le pli. -->
+<button class="pill in-pocket" type="button" [attr.aria-label]="label()" (click)="void openCart()">
+  <ng-container [ngTemplateOutlet]="guts" />
+</button>
+
+<!-- AU BUREAU : le popover — on relit son panier sans quitter le rayon. -->
+<fold-popover class="pop at-desk" placement="bottom-end" [(open)]="open">
+  <button class="pill" type="button" foldPopoverTrigger="dialog" [attr.aria-label]="label()">
+    <ng-container [ngTemplateOutlet]="guts" />
+  </button>
+
+  <div foldPopoverPanel class="panel">
+    <div class="head">
+      <span class="head-titles">
+        <span class="head-title">{{ t().nav.cart }}</span>
+        <span class="head-note">{{ t().cart.intro }}</span>
+      </span>
+    </div>
+
+    <!-- Le décompte est celui de la page panier, au caractère près : un second
+         calcul serait une seconde occasion de dire un autre total. -->
+    <div class="scroller">
+      <app-cart-summary />
+    </div>
+
+    <div class="foot">
+      <!-- Le pied mène au panier ENTIER : le popover se lit, il ne se remplit
+           pas — ni l'identité de qui commande, ni le rappel du service, ni le
+           bouton qui porte le montant n'y tiennent. -->
+      <button class="foot-cta" type="button" (click)="openFromPopover()">
+        {{ t().chrome.cartOpen }}
+      </button>
+    </div>
+  </div>
+</fold-popover>

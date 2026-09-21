@@ -1,12 +1,56 @@
 # Les parcours de commande — schéma de l'existant
 
-> **État : description du code au 2026-09-17.** Ce document ne propose rien et
-> ne décide rien. Il dessine ce qui EXISTE, pour que le plan
+> **État : description du code au 2026-09-17, ADRESSES rouvertes le
+> 2026-09-21.** Ce document ne propose rien et ne décide rien. Il dessine ce qui
+> EXISTE, pour que le plan
 > [`plan-commande-sans-compte.md`](plan-commande-sans-compte.md) se décide sur
 > une carte plutôt que de mémoire.
 >
 > Chaque affirmation porte le fichier qui la prouve. Ce qui n'a pas été ouvert est
 > dit comme tel, au §7.
+>
+> ⚠️ **Deux dates, et il faut les distinguer.** Le 2026-09-21, les pages du
+> front ont été réorganisées ; j'ai rouvert **les adresses et les entrées**
+> (§1 bis, §2, §3, §5) et rien d'autre. Ce qui décrit le SERVEUR — les routes
+> publiques du §4, le mur du §5 côté API, la résolution de prix du §6 — date
+> toujours du 2026-09-17 et n'a pas été revérifié. Dire « la doc est à jour »
+> serait faux de la moitié.
+
+---
+
+## 1 bis. Ce qui a changé le 2026-09-21
+
+| Avant                                  | Maintenant                               | Preuve                           |
+| -------------------------------------- | ---------------------------------------- | -------------------------------- |
+| tunnel sous `/nouvelle-commande/*`     | tunnel sous **`/commande/*`**            | `app.routes.ts:246-281`          |
+| —                                      | les anciennes adresses **redirigent**    | `app.routes.ts:331-334`          |
+| inscription perso et pro à deux URLs   | **une page, deux portes**                | `app.routes.ts:165` et `:184`    |
+| `/mon-espace`, l'accueil du reconnu    | **supprimé**, redirige vers `/bienvenue` | `app.routes.ts:320`              |
+| `/bienvenue` menait au mode de service | il **pose les deux questions sur place** | `accueil-public.ts:59, 560, 662` |
+
+🔴 **IL NE RESTE QUE TROIS ADRESSES** (Hugo, 2026-09-21) : `/boutique`,
+`/reglement/:id`, `/confirmation-de-commande`. Le panier est devenu un dialogue
+— il s'ouvre par-dessus le rayon, depuis la pastille de la barre — et l'écran du
+mode de service a disparu : ses deux questions sont des dialogues, servis par
+`OrderDoors`, appelé par l'accueil comme par le panier.
+
+Les deux qui restent des écrans le sont pour la MÊME raison, écrite dans les
+routes : une commande **existe déjà** quand on y arrive, leur adresse doit
+survivre à un rechargement, et la confirmation part dans des e-mails.
+
+🔴 **Et la boutique a quitté le préfixe de commande le même jour.** Le rayon se
+VISITE sans avoir rien choisi — c'est ce que promet « je visite la boutique », et
+c'est pourquoi son garde est `browse` et non `order`. Le préfixe affirmait donc
+le contraire de ce que l'écran permet. Le panier, le règlement et la
+confirmation le gardent : eux SONT une commande en cours.
+
+⚠️ La raison écrite dans `app.routes.ts` pour ce préfixe — « `/boutique` est
+prise par la boutique PRO » — était **fausse depuis le 2026-09-06**, date à
+laquelle cette route est partie avec le panier hérité. Elle a fait garder un
+détour pendant quinze jours pour un conflit qui n'existait plus.
+
+⚠️ Ce que ça ne change pas : **les guards, les niveaux et le mur sont les
+mêmes**. Une adresse qui change ne déplace aucune frontière.
 
 ---
 
@@ -19,7 +63,7 @@ fabrique les parcours :
 | La question                       | Qui y répond                 | Où                                                                               |
 | --------------------------------- | ---------------------------- | -------------------------------------------------------------------------------- |
 | Y a-t-il un jeton ?               | Auth0, puis le guard global  | `apps/lfd-api/src/platform/auth/auth.guard.ts`                                   |
-| Y a-t-il un espace de travail ?   | le front, après `/me`        | `apps/lfc-B2B-platform-frontend/src/app/client/client-workspace.service.ts`      |
+| Y a-t-il un espace de travail ?   | le front, après `/me`        | `apps/lfc-ecommerce-frontend/src/app/client/client-workspace.service.ts`         |
 | Y a-t-il une société **active** ? | le serveur, à chaque requête | `apps/lfd-api/src/b2b/orders/application/services/customer-audiences.service.ts` |
 
 La troisième décide la **clientèle** (`b2b` / `b2c`), et donc la remise et le
@@ -46,19 +90,59 @@ dossier d'entreprise à l'écran.
 
 ## 2. Le tunnel, et où chaque branche s'arrête
 
-Les six écrans sont les mêmes pour tout le monde. Ce qui change est **le point
-où l'on bute**.
+**TROIS adresses, et QUATRE dialogues** (2026-09-21) — où, quand, on livre où,
+et le panier. Le parcours est le même
+pour tout le monde ; ce qui change est **le point où l'on bute**.
+
+La distinction qui porte tout le reste : une ADRESSE se partage, se met en
+signet, survit à un rechargement — un DIALOGUE non. Ce qui est un écran l'est
+donc pour une raison, et elle est écrite dans `app.routes.ts` : une commande
+**existe déjà** quand on arrive au règlement ou à la confirmation, et cette
+dernière part dans des e-mails.
 
 ```mermaid
 flowchart LR
-    B["/bienvenue<br/>accueil public"] --> S["/nouvelle-commande<br/>mode de service"]
-    B -.->|"choix d'un créneau"| K["/nouvelle-commande/boutique"]
-    S --> K
-    K --> PA["/nouvelle-commande/panier"]
-    PA -->|"place()"| R["/nouvelle-commande/reglement/:id"]
-    PA -->|"rien à régler"| CF["/nouvelle-commande/confirmee"]
+    B["/bienvenue<br/>accueil"]
+    K["/boutique"]
+    R["/reglement/:id"]
+    CF["/confirmation-de-commande"]
+
+    OU(["où je la prends ?"])
+    QD(["à quelle heure ?"])
+    LI(["on livre où ?"])
+    PA(["le panier"])
+
+    B -->|"retrait"| OU --> QD --> K
+    B -->|"coursier"| LI --> K
+    K -->|"pastille de la barre"| PA
+    PA -.->|"aucun mode : on redemande ici"| OU
+    PA -->|"place()"| R
+    PA -->|"rien à régler"| CF
     R --> CF
+
+    classDef ecran fill:#12307f,color:#faf5ec,stroke:#081842;
+    classDef dialogue fill:#f6e8cd,color:#23201a,stroke:#e5dcc9;
+    class B,K,R,CF ecran;
+    class OU,QD,LI,PA dialogue;
 ```
+
+En bleu les ADRESSES, en beige les DIALOGUES — ils s'ouvrent par-dessus l'écran
+où l'on est, et le referment en partant.
+
+🔴 **Le panier ne quitte plus le rayon**, et la question du lieu non plus. On
+composait un panier, on partait répondre à « où », et il fallait un paramètre
+d'URL pour revenir — ce paramètre était la preuve que le détour n'avait pas
+lieu d'être.
+
+⚠️ **La porte du coursier n'est pas ouverte à tout le monde.** Un PRO l'a par son
+contrat ; pour un particulier ou un visiteur, elle dépend de la clé d'admin
+`publicDelivery`, **fermée par défaut**, et `POST /shop/orders` refuse la même
+chose en 409 (`client/shop/order-doors.ts`,
+`b2b/feature-access/domain/public-delivery-closed.error.ts`).
+
+⚠️ **Et l'accueil ne montre ses deux portes qu'aux pros** (`@if (pro())`) :
+ouvrir la clé ne donne pas encore au visiteur une porte sur l'accueil — il
+passe par le panier. Dit ici plutôt que tu.
 
 | Écran                      | Visiteur            | Particulier | Pro          |
 | -------------------------- | ------------------- | ----------- | ------------ |
@@ -77,10 +161,10 @@ fonctionne déjà pour un visiteur.
 
 C'est contre-intuitif : les deux routes portent un garde.
 
-- `/nouvelle-commande/boutique` → `featureAccessGuard('shop', 'browse')`
-- `/nouvelle-commande/panier` → `featureAccessGuard('shop', 'order')`
+- `/boutique` → `featureAccessGuard('shop', 'browse')`
+- `/commande/panier` → `featureAccessGuard('shop', 'order')`
 
-Le garde (`apps/lfc-B2B-platform-frontend/src/app/client/feature-access/feature-access.guard.ts`)
+Le garde (`apps/lfc-ecommerce-frontend/src/app/client/feature-access/feature-access.guard.ts`)
 n'est pas une protection — son propre JSDoc le dit : « Ce n'est pas une
 protection — l'API refuse d'elle-même ». Il lit un niveau servi par le serveur,
 et **la route qui le sert est publique** :
@@ -102,7 +186,7 @@ sequenceDiagram
     participant N as Navigateur (anonyme)
     participant G as featureAccessGuard
     participant API as GET /feature-access (@Public)
-    N->>G: /nouvelle-commande/boutique
+    N->>G: /boutique
     G->>API: lecture des niveaux globaux
     API-->>G: { shop: "order", ... }
     G-->>N: autorisé
@@ -143,7 +227,7 @@ service de commandes du navigateur.
 flowchart TD
     C["Clic « Régler ma commande »"] --> P["panier-page.proceed()"]
     P --> E{"panier vide ?"} -->|oui| RB["retour boutique"]
-    P --> M{"mode de service ?"} -->|absent| NC["/nouvelle-commande"]
+    P --> M{"mode de service ?"} -->|absent| NC["dialogue : où je la prends"]
     P --> PL["ClientOrders.place()"]
     PL --> W{"workspace ≠ null ?"}
     W -->|"null — VISITEUR"| N1["return null"]
@@ -155,11 +239,17 @@ flowchart TD
 ```
 
 Deux sorties `null`, dans
-`apps/lfc-B2B-platform-frontend/src/app/client/client-orders.service.ts` :
+`apps/lfc-ecommerce-frontend/src/app/client/client-orders.service.ts` :
 l'absence d'espace de travail, puis l'absence de jeton.
 
+🔴 **CE SCHÉMA A VIEILLI D'UNE JOURNÉE** : `/nouvelle-commande` n'existe plus,
+et le panier n'est plus un écran. Sans mode de service, le panier **ouvre la
+porte sur place** au lieu d'y envoyer, et si elle se referme sans choix il ne va
+nulle part. Le reste du schéma — les deux sorties `null` et leur silence — est
+inchangé, et c'est lui qui compte ici.
+
 Et le commentaire de `proceed()`
-(`apps/lfc-B2B-platform-frontend/src/app/client/cart/panier-page/panier-page.ts`)
+(`apps/lfc-ecommerce-frontend/src/app/client/cart/cart-dialog/cart-dialog.ts`)
 affirme : « Le refus a déjà été dit, et le panier est intact ». **C'est vrai
 d'un refus serveur, et faux de ces deux-là** — personne ne les a dits. Le
 visiteur clique, et rien ne bouge.
@@ -218,7 +308,7 @@ vérification :
 - **le mode de règlement** (`settlement: 'due' | 'later' | 'paid'`) — je sais
   d'où il vient au front, pas quelle règle serveur le décide ;
 - **la synchronisation du panier au serveur**
-  (`apps/lfc-B2B-platform-frontend/src/app/client/cart/shop-cart-sync.service.ts`) :
+  (`apps/lfc-ecommerce-frontend/src/app/client/cart/shop-cart-sync.service.ts`) :
   son brouillon exige un espace de travail non nul, donc elle ne part pas pour
   un visiteur — mais je n'ai pas lu ce qu'elle fait au moment où il se connecte ;
 - **la reprise après connexion** : `AuthFacade.login(target)` restaure une

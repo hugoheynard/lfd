@@ -1,3 +1,4 @@
+import type { CatalogAdminItemView } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 /**
  * E2E du **paramétrage du catalogue** — sur un vrai Postgres.
@@ -10,6 +11,7 @@ import { millicentsFromCents } from "@lfd/money";
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { Prisma } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 
@@ -81,6 +83,8 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
             isDefault: true,
             position: 0,
             vatRatePercent: 5.5,
+            publicTtcCents: 250,
+            publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
           },
         ],
         note: null,
@@ -109,17 +113,23 @@ function asStaff() {
   return ctx.http().set("Authorization", "Bearer staff");
 }
 
-async function listOne() {
+/**
+ * Le premier article de la liste d'administration, **typé par le contrat**.
+ *
+ * 🔴 Il l'était par une forme recopiée à la main, derrière un
+ * `as unknown as` — donc par un sous-ensemble arbitraire des champs, qui se
+ * périmait en silence à chaque champ ajouté. Le 2026-09-21, le prix public
+ * décidé y a été lu sans que la forme le connaisse : le test passait à
+ * l'exécution et la porte `lint:spec-types` l'a refusé, ce qui est exactement
+ * son rôle.
+ *
+ * Lire `CatalogAdminItemView` coûte le même effort et fait l'inverse : un champ
+ * renommé au contrat casse ici, au lieu de laisser le doublé dériver de ce
+ * qu'il prétend jouer.
+ */
+async function listOne(): Promise<CatalogAdminItemView | undefined> {
   const response = await asStaff().get("/admin/catalog");
-  const [item] = jsonBody<{ length: number }[]>(response) as unknown as {
-    b2bPriceMillicents: number | null;
-    effectivePriceMillicents: number;
-    pimPriceMillicents: number;
-    isHidden: boolean;
-    isFeatured: boolean;
-    decidedBy: string | null;
-    vatRatePercent: number | null;
-  }[];
+  const [item] = jsonBody<CatalogAdminItemView[]>(response);
   return item;
 }
 
@@ -319,6 +329,166 @@ describe("DELETE /admin/catalog/:sku/price", () => {
   });
 });
 
+/**
+ * **Le prix PUBLIC**, et ce qui le distingue de son voisin professionnel.
+ *
+ * Ces cas traversent le vrai SQL parce que c'est là que se joue le piège du
+ * lot : l'objet d'écriture de `saveMany` est le seul endroit du dépôt où un
+ * champ oublié COMPILE et perd la donnée. Un test de handler l'aurait raté.
+ */
+describe("PUT /admin/catalog/:sku/public-price", () => {
+  it("pose l'étiquette publique, en centimes TTC, sans toucher au prix pro", async () => {
+    await asStaff().put(`/admin/catalog/${SKU}/public-price`).send({ ttcCents: 299 }).expect(204);
+
+    const item = await listOne();
+    expect(item?.decidedPublicTtcCents).toBe(299);
+    // 🔴 Le canal professionnel n'a pas bougé : deux audiences, deux décisions.
+    expect(item?.b2bPriceMillicents).toBeNull();
+    expect(item?.decidedBy).toBe(E2E_STAFF_ID);
+  });
+
+  /**
+   * 🔴 **Le cas qui prouve que la donnée est bien ÉCRITE**, et pas seulement
+   * acceptée. Une décision réduite au seul prix public doit retenir la ligne
+   * d'override : si `untouched` l'ignorait, elle serait supprimée et le prix
+   * disparaîtrait — pas au geste, mais au prochain push du PIM.
+   */
+  it("🔴 survit à une relecture quand le prix public est la SEULE décision", async () => {
+    await asStaff().put(`/admin/catalog/${SKU}/public-price`).send({ ttcCents: 299 }).expect(204);
+
+    // On repasse par le miroir, pas par un cache : c'est la base qu'on éprouve.
+    const stored = await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } });
+    expect(stored?.decidedPublicTtcCents).toBe(299);
+    expect(stored?.priceMillicents).toBeNull();
+  });
+
+  it("refuse un prix nul — le refus de l'agrégat ressort en 400", async () => {
+    const response = await asStaff()
+      .put(`/admin/catalog/${SKU}/public-price`)
+      .send({ ttcCents: 0 });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("refuse l'étiquette du PIM recopiée — 409, et le geste correct est de revenir", async () => {
+    const response = await asStaff()
+      .put(`/admin/catalog/${SKU}/public-price`)
+      .send({ ttcCents: 250 });
+
+    expect(response.status).toBe(409);
+  });
+
+  /**
+   * 🔴 **Le refus sans équivalent professionnel.** La vitrine publique écarte
+   * déjà un article dont le miroir ne porte pas le contexte servi : accepter le
+   * prix l'écrirait, l'afficherait comme une décision prise, et ne le servirait
+   * jamais.
+   */
+  it("🔴 refuse un prix sur un article que la vitrine publique n'expose pas", async () => {
+    await ctx.prisma.catalogItem.update({
+      where: { sku: SKU },
+      data: { publicByContext: Prisma.DbNull },
+    });
+
+    const response = await asStaff()
+      .put(`/admin/catalog/${SKU}/public-price`)
+      .send({ ttcCents: 299 });
+
+    expect(response.status).toBe(409);
+  });
+});
+
+describe("DELETE /admin/catalog/:sku/public-price", () => {
+  it("ramène l'article à l'étiquette du PIM", async () => {
+    await asStaff().put(`/admin/catalog/${SKU}/public-price`).send({ ttcCents: 299 }).expect(204);
+
+    await asStaff().delete(`/admin/catalog/${SKU}/public-price`).expect(204);
+
+    const item = await listOne();
+    expect(item?.decidedPublicTtcCents).toBeNull();
+    // Plus aucune décision : la ligne d'override est retirée, pas neutralisée.
+    expect(await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } })).toBeNull();
+  });
+});
+
+/**
+ * **Le masquage par audience**, et la divergence qu'il ferme.
+ *
+ * 🔴 Ces cas traversent le vrai SQL parce que le filtre de visibilité vivait à
+ * QUATRE endroits — le rayon, la fiche, le lot de SKU, la commande — et qu'un
+ * seul rendu conscient de l'audience aurait fait diverger le rayon et la
+ * caisse : un article masqué au pro se serait affiché au public et aurait
+ * échoué au panier, un article masqué au public serait resté achetable. Un
+ * test de handler n'aurait vu ni l'un ni l'autre.
+ */
+describe("masquage par audience", () => {
+  it("🔴 masquer au PRO laisse l'article en vitrine publique", async () => {
+    await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);
+
+    const item = await listOne();
+    expect(item?.isHidden).toBe(true);
+    expect(item?.isHiddenPublic).toBe(false);
+
+    // La vitrine publique, servie sans jeton : elle le montre encore.
+    const shop = jsonBody<{ items: { sku: string }[] }>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+    expect(shop.items.map((entry) => entry.sku)).toContain("VIE-001");
+  });
+
+  it("🔴 masquer au PUBLIC le retire de la vitrine, sans toucher au pro", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: true })
+      .expect(204);
+
+    const item = await listOne();
+    expect(item?.isHiddenPublic).toBe(true);
+    expect(item?.isHidden).toBe(false);
+
+    const shop = jsonBody<{ items: { sku: string }[] }>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+    expect(shop.items.map((entry) => entry.sku)).not.toContain("VIE-001");
+  });
+
+  /**
+   * 🔴 **Le devis est le second des quatre sites.** Un article masqué au public
+   * ne doit pas seulement disparaître du rayon : il doit cesser d'être
+   * achetable. C'est là que la divergence se serait vue, en caisse.
+   */
+  it("🔴 masqué au public, il n'est plus achetable par la route publique", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: true })
+      .expect(204);
+
+    const response = await ctx
+      .http()
+      .post("/shop/quote")
+      .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("revient en vitrine publique sans rien changer au canal pro", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: true })
+      .expect(204);
+
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: false })
+      .expect(204);
+
+    const item = await listOne();
+    expect(item?.isHiddenPublic).toBe(false);
+    // Plus aucune décision : la ligne d'override est retirée, pas neutralisée.
+    expect(await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } })).toBeNull();
+  });
+});
+
 describe("visibilité et mise en avant", () => {
   it("masque puis réaffiche", async () => {
     await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);
@@ -493,6 +663,8 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
               sku: `${sku}-1`,
               name: sku,
               priceMillicents: millicentsFromCents(200 + index),
+              publicTtcCents: 250,
+              publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
               weightGrams: null,
               isDefault: true,
               // Le point du test : tous à la MÊME position, comme en vrai.

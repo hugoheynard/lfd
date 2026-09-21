@@ -18,10 +18,10 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasStorage: true,
   hasMediaStorage: true,
   hasCustomerStorage: true,
+  hasProductionStorage: true,
   hasStripe: true,
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,
-  hasShopifyCredentials: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {
@@ -136,6 +136,27 @@ describe("inventaire — aucun réglage optionnel oublié", () => {
     );
 
     expect(forgotten).toEqual([]);
+  });
+
+  /**
+   * 🔴 **Le quatrième bucket n'était annoncé nulle part** (trouvé le
+   * 2026-09-21, en vérifiant `R2_CUSTOMERS_EU_*`).
+   *
+   * Trois usages de stockage avaient leur ligne — KBIS, pièces client, visuels
+   * — et le quatrième, les papiers du fournil, n'en avait aucune. Résultat :
+   * `R2_PRODUCTION_*` était absent de la production sans que rien ne le dise,
+   * et c'est exactement l'usage dont personne ne remarquait le manque.
+   *
+   * Ce cas existe pour qu'un cinquième usage ne puisse pas s'ajouter en
+   * silence : un audit qui couvre trois réglages sur quatre apprend à faire
+   * confiance à son propre silence.
+   */
+  it("🔴 annonce le stockage des papiers du fournil quand il manque", () => {
+    const lines = auditCapabilities(without("hasProductionStorage"));
+    const found = lines.find((line) => line.capability.includes("papiers du fournil"));
+
+    expect(found?.severity).toBe("degraded");
+    expect(found?.setting).toContain("R2_PRODUCTION_BUCKET");
   });
 });
 

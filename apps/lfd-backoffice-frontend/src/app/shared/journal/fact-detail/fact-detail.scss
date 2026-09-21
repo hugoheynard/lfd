@@ -1,0 +1,51 @@
+/* Replié, le détail est un mot : il ne doit pas peser plus que la phrase. */
+:host {
+  display: block;
+}
+
+.fd-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+
+.fd-toggle:hover {
+  color: var(--fold-color-text);
+}
+
+.fd-toggle:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--fold-radius-sm);
+}
+
+.fd-chevron {
+  transition: transform 0.2s ease;
+}
+
+.fd-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+/* Ouvert : un filet à gauche le rattache à sa ligne, sans l'encadrer. */
+.fd-panel {
+  margin-top: var(--fold-space-xs);
+  padding-left: var(--fold-space-md);
+  border-left: 2px solid var(--fold-color-border-subtle);
+  --fold-field-list-label-width: 120px;
+  --fold-field-list-col-gap: var(--fold-space-md);
+  --fold-field-list-row-gap: var(--fold-space-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-chevron {
+    transition: none;
+  }
+}

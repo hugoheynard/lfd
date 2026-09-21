@@ -23,9 +23,8 @@ Un brouillon ou un panier ne vend rien : hors journal.
 ## Le bilan du 2026-09-19 — 7/10 bâti, 4/10 en production
 
 Note donnée à la demande de Hugo, le soir où les plans du journal et des
-phrases ont été bâtis. **Tout est commité en local, rien n'est déployé** : la
-production tourne encore avec l'ancien journal (types bruts, gestes non
-tracés).
+phrases ont été bâtis. Tout était alors en local ; **déployé le soir même**,
+après la sortie d'Accelerate (point 1 ci-dessous).
 
 **Solide** : les gestes qui comptent (argent, catalogue, compte client,
 production, fiscalité) s'écrivent dans la transaction du geste ; l'auteur est
@@ -36,8 +35,10 @@ vue fiscale sont en place.
 
 **Pour atteindre 9**, dans cet ordre :
 
-1. **Déployer**, après la sortie d'Accelerate — API puis back-office, l'index
-   du journal hors des heures d'usage.
+1. ~~**Déployer**, après la sortie d'Accelerate — API puis back-office, l'index
+   du journal hors des heures d'usage.~~ — fait le 2026-09-19 au soir
+   (`b565f0a1`, `a1bee3a6`) : API, back-office et boutique en ligne, index
+   appliqué par l'URL directe.
 2. **Relire l'écran Journal avec de vraies lignes**, un quart d'heure : aucune
    phrase n'a encore été lue dans un navigateur, alors que c'est leur seul
    rôle.
@@ -124,6 +125,15 @@ est une migration à part — **déclenchée par la mesure**.
   journal. C'est une écriture sur l'argent : **plan à part dans `pricing/`**.
 - **La route des 50 derniers actes** (`GET /admin/pricing/journal`) n'a aucun
   appelant : à retirer ou à brancher.
+
+### `reco.shown` est écrit par une lecture
+
+Ouvrir le cockpit (`GET /admin/cockpit`, `get-cockpit.handler.ts`) écrit un
+fait par coup affiché — une requête de lecture qui écrit, contraire au CQRS du
+dépôt (CLAUDE.md §4). Son auteur est le système depuis le 2026-09-19 (la clé ne
+dépendait pas du lecteur : seul le premier était inscrit). La place juste est
+le **recalcul** du cockpit, qui produit la fenêtre : un changement de la
+croissance, à écrire comme un choix. Relevé par Hugo en relisant l'écran.
 
 ### Petits restes, relevés en bâtissant
 

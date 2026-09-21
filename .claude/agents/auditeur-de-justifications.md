@@ -108,7 +108,7 @@ FAUX  .github/workflows/deploy_lfc_boutique.yml:29
   Constaté : la boutique déclare 5 paquets locaux dans son package.json
              (@lfd/b2b-ui, @lfd/contracts, @lfd/endpoints, @lfd/front-ops,
              @lfd/ops-contract) et en importe 4 dans src/.
-  Vérifié par : grep -E '"@lfd/' apps/lfc-B2B-platform-frontend/package.json
+  Vérifié par : grep -E '"@lfd/' apps/lfc-ecommerce-frontend/package.json
   Conséquence : le filtre `paths:` n'inclut pas packages/**, donc un correctif
                 dans @lfd/b2b-ui ne redéploie pas la boutique qui l'embarque.
 ```

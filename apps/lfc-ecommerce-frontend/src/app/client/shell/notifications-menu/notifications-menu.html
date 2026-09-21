@@ -1,0 +1,47 @@
+<fold-popover class="pop" placement="bottom-end" [(open)]="open">
+  <button class="bell" type="button" foldPopoverTrigger="dialog" [attr.aria-label]="bellLabel()">
+    <fold-icon name="bell" />
+    @if (unread(); as count) {
+      <span class="badge" aria-hidden="true">{{ count }}</span>
+    }
+  </button>
+
+  <div foldPopoverPanel class="panel">
+    <div class="head">
+      <span class="head-titles">
+        <span class="head-title">{{ t().chrome.notifications }}</span>
+        <span class="head-note">{{ countLine() }}</span>
+      </span>
+      <button class="foot-action" type="button" (click)="close()">
+        {{ t().chrome.notificationsClose }}
+      </button>
+    </div>
+
+    <!-- Il n'apparaît QUE s'il y a des non-lues : un bouton qui ne ferait rien
+         est pire qu'un bouton absent. -->
+    @if (unread() > 0) {
+      <div class="mark-row">
+        <button class="mark-all" type="button" (click)="markAll()">
+          {{ t().chrome.notificationsMarkAll }}
+        </button>
+      </div>
+    }
+
+    <!-- Les lignes ne mènent NULLE PART, et c'est délibéré : ce sont des faits
+         inventés (cf. `notifications.fixture.ts`). Un clic qui s'ouvrirait sur
+         une page inexistante serait une promesse de plus à retirer. -->
+    <ul class="scroller">
+      @for (row of rows(); track row.id) {
+        <li class="note" [class.is-unread]="!row.read">
+          <span class="note-subject">{{ row.subject }}</span>
+          <span class="note-body">{{ row.body }}</span>
+          <span class="note-when">{{ row.when }}</span>
+        </li>
+      } @empty {
+        <li class="note-empty">
+          <fold-empty-state [title]="t().chrome.notificationsEmpty" icon="bell" iconSize="lg" />
+        </li>
+      }
+    </ul>
+  </div>
+</fold-popover>

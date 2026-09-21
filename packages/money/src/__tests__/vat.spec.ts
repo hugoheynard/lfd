@@ -1,4 +1,4 @@
-import { DELIVERY_VAT_RATE, ventilateVat, type VatLine } from "../vat.js";
+import { DELIVERY_VAT_RATE, ttcCentsOf, ventilateVat, type VatLine } from "../vat.js";
 
 const CROISSANT: VatLine = { htCents: 1000, vatRate: 5.5 };
 const QUICHE: VatLine = { htCents: 1000, vatRate: 10 };
@@ -182,5 +182,36 @@ describe("un taux à deux décimales", () => {
     const odd = plain([{ htCents: 100_000, vatRate: 4.85 }]);
 
     expect(odd.vat).toEqual([{ rate: 4.85, amountCents: 4850 }]);
+  });
+});
+
+describe("ttcCentsOf", () => {
+  it("rend le hors taxe augmenté de sa taxe, arrondi au centime", () => {
+    expect(ttcCentsOf(1_000, 5.5)).toBe(1_055);
+    expect(ttcCentsOf(1_200, 5.5)).toBe(1_266);
+  });
+
+  /**
+   * 🔴 **La somme des lignes taxe comprise n'est PAS le total taxe comprise**, et
+   * c'est la propriété qu'un écran doit connaître avant d'afficher les deux.
+   *
+   * `ventilateVat` arrondit **une fois par taux** sur l'assiette entière — ce
+   * qu'une facture exige. Trois lignes à 3,33 € portent chacune 18 centimes de
+   * taxe arrondie, soit 54 ; l'assiette de 9,99 € en porte 55. Un centime, et
+   * c'est exactement celui qu'un client compte.
+   *
+   * Sans ce cas, quelqu'un « réparerait » un jour le panier en additionnant ses
+   * lignes pour retrouver le total, et la caisse le contredirait.
+   */
+  it("🔴 ne s'additionne PAS en le total d'un panier — un arrondi par taux, pas par ligne", () => {
+    const lines: readonly VatLine[] = [
+      { htCents: 333, vatRate: 5.5 },
+      { htCents: 333, vatRate: 5.5 },
+      { htCents: 333, vatRate: 5.5 },
+    ];
+    const parLigne = lines.reduce((sum, line) => sum + ttcCentsOf(line.htCents, line.vatRate), 0);
+
+    expect(parLigne).not.toBe(plain(lines).totalCents);
+    expect(plain(lines).totalCents - parLigne).toBe(1);
   });
 });

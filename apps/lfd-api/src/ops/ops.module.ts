@@ -7,7 +7,7 @@ import { MailReadingsReader } from "./health/mail-readings.reader.js";
 import { VitalsController } from "./vitals/vitals.controller.js";
 import { VitalsStore } from "./vitals/vitals.store.js";
 import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
-import { Auth0Probe, ResendProbe, ShopifyProbe, StripeProbe } from "./probes/external.probes.js";
+import { Auth0Probe, ResendProbe, StripeProbe } from "./probes/external.probes.js";
 import { FrontendProbe } from "./probes/frontend.probe.js";
 import { PrismaStatusJournal } from "./journal/prisma-status-journal.js";
 import { StatusJournal } from "./journal/status-journal.port.js";
@@ -66,14 +66,13 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     Auth0Probe,
     ResendProbe,
     StripeProbe,
-    ShopifyProbe,
     {
       // Le registre. Une sonde ajoutée s'inscrit ICI et nulle part ailleurs :
       // le lanceur ne connaît que le port, la dérivation ne connaît que des
       // verdicts. C'est ce qui permettra d'en brancher une sur R2 ou sur un
       // worker sans toucher à une ligne de règle.
       provide: NODE_PROBES,
-      inject: [PostgresB2bProbe, Auth0Probe, ResendProbe, StripeProbe, ShopifyProbe],
+      inject: [PostgresB2bProbe, Auth0Probe, ResendProbe, StripeProbe],
       useFactory: (...probes: NodeProbe[]): readonly NodeProbe[] => [...probes, ...FRONTEND_PROBES],
     },
     AnalyticsEngineTrafficReader,

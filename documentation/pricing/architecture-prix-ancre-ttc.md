@@ -98,14 +98,19 @@ sens, pas deux. Cf. **C.5**.
 
 ## B.1 Où ça vit
 
-| Quoi                           | Où                                                                                           |
-| ------------------------------ | -------------------------------------------------------------------------------------------- |
-| Le rapport pro                 | `pim.accounting_rules` — **singleton** (`id = "accounting"`), colonne `pro_price_ratio_bp`   |
-| Le VO et ses bornes            | `ProPriceRatio`, plus la contrainte `accounting_rules_pro_ratio_bounds` en base              |
-| La traduction remise ↔ rapport | `pro-discount.ts` — un seul endroit, et il refuse plutôt que de corriger en silence          |
-| Le calcul partagé              | `proPriceFromPublic`, `htFromTtc`, `htMillicentsOf` dans `packages/pim-contracts/src/tax.ts` |
-| La conversion vers le B2B      | `B2bCatalogFeedProjection` — le dernier endroit qui connaît encore un TTC                    |
-| L'écran                        | `/pim/regles-comptables`, mur `tax:read` / `tax:write`                                       |
+| Quoi                           | Où                                                                                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Le rapport pro                 | `pim.accounting_rules` — **singleton** (`id = "accounting"`), colonne `pro_price_ratio_bp`                                                                         |
+| Le VO et ses bornes            | `ProPriceRatio`, plus la contrainte `accounting_rules_pro_ratio_bounds` en base                                                                                    |
+| La traduction remise ↔ rapport | `pro-discount.ts` — un seul endroit, et il refuse plutôt que de corriger en silence                                                                                |
+| Le calcul partagé              | `proPriceFromPublic` dans `packages/pim-contracts/src/accounting-rules.ts` ; `htFromTtc` et `htMillicentsOf` dans `packages/money/src/tax.ts` depuis le 2026-09-21 |
+| La conversion vers le B2B      | `B2bCatalogFeedProjection` — le dernier endroit qui connaît encore un TTC                                                                                          |
+| L'écran                        | `/pim/regles-comptables`, mur `tax:read` / `tax:write`                                                                                                             |
+
+⚠️ **`tax.ts` a quitté `pim-contracts` le 2026-09-21** pour `@lfd/money` : la
+plateforme B2B a eu besoin de la même déduction, et deux sites qui arrondissent
+de l'argent doivent appeler la même fonction. `pim-contracts` le réexporte —
+les appelants du référentiel n'ont pas bougé.
 
 ## B.2 Les invariants, et ce que leur violation coûte
 
@@ -339,14 +344,14 @@ c'est un cas légitime ou une ligne oubliée.
 
 ### Ce qui a été retiré
 
-| Retiré                               | Remplacé par                                                         |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| `pim.price_basis` (enum + colonne)   | rien : `price_cents` EST un prix public TTC                          |
-| `PRICE_BASES`, `priceBasisSchema`    | rien                                                                 |
-| `ttcFromHt`, `htPriceOf`             | rien — le sens inverse n'existe plus                                 |
-| price-basis.ts (supprimé)            | `packages/pim-contracts/src/tax.ts` : `htFromTtc` + `htMillicentsOf` |
-| `variant_ttc_sans_taux`              | `variant_sans_taux` — il n'y a plus d'ancrage à préciser             |
-| le sélecteur d'assiette sur la fiche | l'étiquette fixe « Prix public TTC »                                 |
+| Retiré                               | Remplacé par                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| `pim.price_basis` (enum + colonne)   | rien : `price_cents` EST un prix public TTC                                  |
+| `PRICE_BASES`, `priceBasisSchema`    | rien                                                                         |
+| `ttcFromHt`, `htPriceOf`             | rien — le sens inverse n'existe plus                                         |
+| price-basis.ts (supprimé)            | `htFromTtc` + `htMillicentsOf`, aujourd'hui dans `packages/money/src/tax.ts` |
+| `variant_ttc_sans_taux`              | `variant_sans_taux` — il n'y a plus d'ancrage à préciser                     |
+| le sélecteur d'assiette sur la fiche | l'étiquette fixe « Prix public TTC »                                         |
 
 **Aucune conversion de données.** Les 92 déclinaisons `ht` étaient du seed, rien
 en production — la question a été posée avant d'écrire la migration, parce qu'une

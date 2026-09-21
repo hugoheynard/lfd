@@ -1,0 +1,103 @@
+/* Les mesures de la maquette du 2026-09-20 : `padding:26px; border-radius:22px;
+   background:#eaeffb; border:1.5px solid #a9bde8`. Les trois valeurs de couleur
+   ont leur token — `ink-50` et `ink-300` sont à un cheveu des siennes — et c'est
+   par le token qu'elles passent : une pâle de plus dans la rampe bleue serait
+   une pâle que personne ne saurait choisir.
+
+   🔴 LE FILET FAIT 1,5 px, et c'est le seul de la page. Un pixel se perdait sur
+   le crème : la bande flottait sans bord, et son coin arrondi se lisait comme
+   un aplat mal découpé plutôt que comme une carte. */
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-2xl);
+  padding: var(--fold-space-xl);
+  border: 1.5px solid var(--lfc-ink-300);
+  border-radius: var(--lfc-radius-3xl);
+  background: var(--lfc-ink-50);
+  box-shadow: var(--lfc-shadow-promo);
+}
+
+/* Les deux colonnes se replient TOUTES SEULES sous ~660 px : les bases sont
+   déclarées, la largeur décide. Aucune requête de média ici — il n'y a qu'une
+   seule mise en page, et elle se plie. */
+.said {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.acts {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.kicker {
+  margin: 0;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-ink-800);
+}
+
+.title {
+  margin: var(--fold-space-sm) 0 0;
+  font-family: var(--fold-font-label);
+  /* 30 px, la mesure de la maquette, et le cran que fold nomme déjà. */
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  line-height: 1.12;
+  text-transform: uppercase;
+  white-space: pre-line;
+  color: var(--lfc-ink-900);
+}
+
+.who {
+  margin: var(--fold-space-md) 0 0;
+  max-width: 34em;
+  font-size: var(--fold-text-lg);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-muted);
+}
+
+.call,
+.write {
+  display: grid;
+  place-items: center;
+  border-radius: var(--fold-radius-lg);
+  font-family: var(--lfc-font-caps);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.call {
+  height: 48px;
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+  font-size: var(--lfc-text-block);
+}
+
+/* Le crème, et non une transparence : la bande est déjà bleue, et un bouton
+   « creux » y disparaîtrait au lieu de se lire comme le second choix. */
+.write {
+  height: 42px;
+  border: 1px solid var(--lfc-ink-100);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+  font-size: var(--lfc-text-note);
+}
+
+.note {
+  margin: 2px 0 0;
+  font-size: var(--lfc-text-note);
+  line-height: 1.4;
+  color: var(--lfc-ink-700-text);
+}

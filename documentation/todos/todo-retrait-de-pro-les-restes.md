@@ -31,7 +31,7 @@ tableau de bord Auth0, pas dans le dépôt.
 le déploiement, ou une coque native pointée sur l'ancienne adresse, enverrait
 encore `redirect_uri=…/pro` — refusé par Auth0 dès l'adresse retirée.
 
-**Vérifier avant** : la coque Capacitor (`apps/lfc-B2B-platform-frontend/capacitor.config.ts`,
+**Vérifier avant** : la coque Capacitor (`apps/lfc-ecommerce-frontend/capacitor.config.ts`,
 `server.url`) pointe encore sur `lfc-b2b-eu7.pages.dev` et non sur la zone ;
 elle n'est donc pas concernée tant qu'elle n'a pas basculé (§3).
 

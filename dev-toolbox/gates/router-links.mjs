@@ -40,8 +40,8 @@ const ROOT = process.cwd();
  * complets, donc l'union des fichiers redonne l'arbre.
  */
 const APPS = [
-  { name: "lfc-b2b-admin-frontend", root: "apps/lfc-B2B-admin-frontend/src/app" },
-  { name: "lfc-b2b-platform-frontend", root: "apps/lfc-B2B-platform-frontend/src/app" },
+  { name: "lfd-backoffice-frontend", root: "apps/lfd-backoffice-frontend/src/app" },
+  { name: "lfc-ecommerce-frontend", root: "apps/lfc-ecommerce-frontend/src/app" },
 ];
 
 /**

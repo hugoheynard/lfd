@@ -1,7 +1,7 @@
 # L'état côté front : promesses, signaux, et le vide qui ment
 
 ✅ **Décrit l'état réel au 2026-08-22.** Les chiffres viennent d'un comptage sur
-`apps/lfc-B2B-admin-frontend`, pas d'une impression.
+`apps/lfd-backoffice-frontend`, pas d'une impression.
 
 ## 1. Ce qui est en place, et pourquoi
 

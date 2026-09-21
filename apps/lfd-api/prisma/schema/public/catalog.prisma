@@ -148,6 +148,32 @@ model CatalogItem {
   /// `CatalogReader` l'écarte plutôt que d'inventer 5,5 %.
   vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
 
+  /// **L'étiquette** en centimes — ce qu'un particulier paie, taxe comprise,
+  /// tel que le référentiel le saisit.
+  ///
+  /// `NULL` sur une ligne d'avant le fil **v9** : le prix public ne traversait
+  /// pas, seul son dérivé professionnel arrivait. ⚠️ `NULL` ne dit donc PAS
+  /// « gratuit » ni « sans prix » — il dit « on ne sait pas encore ce qu'un
+  /// particulier paierait », et un push complet le remplit.
+  publicTtcCents Int? @map("public_ttc_cents")
+
+  /// **Le prix public par contexte de vente**, résolu par le PIM :
+  /// `{ "takeaway": { "vatRatePercent": 5.5, "htMillicents": 189573 }, … }`.
+  ///
+  /// 🔴 **Ce n'est PAS `price_millicents`.** Celui-ci porte le prix
+  /// PROFESSIONNEL — l'étiquette diminuée du rapport ; les entrées d'ici
+  /// portent l'étiquette ELLE-MÊME, mise hors taxe au taux de chaque contexte.
+  /// Les confondre facturerait un particulier au tarif pro.
+  ///
+  /// `Json` et non une table liée, et la raison est dure : une table voudrait
+  /// une clé étrangère vers `pim.sales_context`, et une FK inter-schémas est
+  /// **interdite** (CLAUDE.md § 1). La clé de contexte est donc rangée telle
+  /// que reçue, comme `allergens` juste en dessous — le miroir range ce qu'on
+  /// lui envoie, il ne possède pas ce vocabulaire.
+  ///
+  /// `NULL` avant la v9, même lecture que ci-dessus.
+  publicByContext Json? @map("public_by_context")
+
   /// Les **codes allergènes GS1** déclarés par le PIM pour cet article.
   ///
   /// `Json` et non `String[]`, pour une raison précise : une liste scalaire
@@ -385,8 +411,30 @@ model CatalogItemOverride {
   /// mercuriale, dégressif et promotions viendront par-dessus.
   priceMillicents Int? @map("price_millicents")
 
-  /// Retiré du catalogue B2B sans être retiré du PIM.
+  /// Prix **public** décidé ici, en centimes **TTC**. `NULL` = on garde l'étiquette du PIM.
+  ///
+  /// En centimes parce qu'un humain le POSE — les millicentimes sont réservés aux prix
+  /// dérivés (`millicents.ts`). Il est converti en hors taxe **à la lecture**, au taux du
+  /// contexte public de l'article, exactement comme l'étiquette du référentiel.
+  ///
+  /// Comme son voisin professionnel, c'est une ENTRÉE du pipeline : promotions et paliers
+  /// ouverts à tous s'appliquent ensuite par-dessus, et le prix affiché au rayon est le TTC
+  /// qui en RESSORT — pas ce nombre-ci (plan un-seul-canal-deux-prix, D12).
+  decidedPublicTtcCents Int? @map("decided_public_ttc_cents")
+
+  /// Retiré de la boutique **PROFESSIONNELLE** sans être retiré du PIM.
+  ///
+  /// ⚠️ Le nom ne dit pas « pro », et c'est un reste : la colonne a masqué des DEUX
+  /// boutiques jusqu'au 2026-09-21, faute d'en avoir deux. La renommer coûterait un
+  /// déploiement de plus pour un gain de lecture seule.
   isHidden   Boolean @default(false) @map("is_hidden")
+
+  /// Retiré de la boutique **PUBLIQUE**, indépendamment de la précédente.
+  ///
+  /// Deux décisions et non une : un conditionnement de quarante pièces n'a rien à
+  /// faire en vitrine publique, une pièce à l'unité n'intéresse pas un pro. Le
+  /// backfill a recopié `is_hidden` pour que rien ne change au passage.
+  isHiddenPublic Boolean @default(false) @map("is_hidden_public")
   /// Mis en avant dans la boutique.
   isFeatured Boolean @default(false) @map("is_featured")
 

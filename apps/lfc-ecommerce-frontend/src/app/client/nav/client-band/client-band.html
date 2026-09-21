@@ -1,0 +1,14 @@
+<!-- L'ancre du bandeau. Vide, elle ne laisse qu'un commentaire dans le DOM —
+     donc `.descent` reste `:empty` et la bande se replie tout entière. -->
+<div class="descent"><ng-container #slot /></div>
+<!-- 🔴 LA SOUS-BARRE EST PARTIE (2026-09-20, maquette `handoff-accueil-pro`).
+     Ses six destinations vivent désormais dans le popover d'identité
+     (`shell/account-menu/`), qui les porte dans le même ordre et depuis la même
+     source — `ClientNav`. La descente n'a donc plus qu'un étage : le bandeau. -->
+
+<!-- La LÈVRE : le bord haut de la feuille crème, qui remonte sur l'encre. Elle
+     appartient au chrome et pas aux écrans — sinon chaque nouvel écran devrait
+     y penser, et le premier qui l'oublie casse le raccord. -->
+@if (chrome.bandLip()) {
+  <span class="lip" aria-hidden="true"></span>
+}

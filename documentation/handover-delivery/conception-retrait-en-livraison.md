@@ -39,7 +39,7 @@
   qui écarte (`atTheCounter`). 🔴 Le premier jet affirmait le contraire et en
   tirait que la tournée était sur le chemin critique — voir §3.
 - **La route `livraison` est réservée et vide exprès**
-  ([`livraison-page.ts`](../../apps/lfc-B2B-admin-frontend/src/app/livraison/livraison-page/livraison-page.ts)).
+  ([`livraison-page.ts`](../../apps/lfd-backoffice-frontend/src/app/livraison/livraison-page/livraison-page.ts)).
 - **Cinq rôles staff**, et aucun n'est un livreur
   ([`staff-access.ts`](../../packages/contracts/src/staff-access.ts)) : `admin`,
   `commercial`, `comptabilite`, `support`, `dev`.
@@ -160,7 +160,7 @@ la traçabilité.
 ### 🔴 Deux obstacles techniques, tous deux vérifiés
 
 1. **Le lecteur refuse le code de la feuille.**
-   [`tokenOf`](../../apps/lfc-B2B-admin-frontend/src/app/handover-shop/scan-dialog/qr-reader.ts)
+   [`tokenOf`](../../apps/lfd-backoffice-frontend/src/app/handover-shop/scan-dialog/qr-reader.ts)
    n'accepte que `/retrait/<jeton>` ou un jeton nu. Le QR d'atelier encode
    `/colisage/{référence}` : il rend `null`, et le dialogue **refuse**. Ce refus
    est délibéré et il est bon (« ce qui n'a pas la forme d'un jeton n'atteint
@@ -277,7 +277,7 @@ en a une.
   chantier entier. Un coursier ne doit pas plus voir un prix négocié qu'un
   opérateur de comptoir ;
 - `stillRemittable` et `isLate` — deux fonctions pures de
-  [`handover-queue.ts`](../../apps/lfc-B2B-admin-frontend/src/app/handover-shop/handover-queue.ts).
+  [`handover-queue.ts`](../../apps/lfd-backoffice-frontend/src/app/handover-shop/handover-queue.ts).
 
 ⚠️ **Correction du premier jet** : il rangeait `handover-queue.ts` en bloc du
 côté non-mutualisable **tout en citant `stillRemittable` comme réutilisable** —

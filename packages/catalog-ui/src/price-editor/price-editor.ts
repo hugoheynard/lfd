@@ -20,7 +20,7 @@ import { formatEuros } from "../price-origin/format-euros";
  *
  * 🔴 **Le contrôle était INVISIBLE.** Ses deux boutons portaient
  * `--fold-color-on-primary` — l'encre qu'on pose sur un aplat de marque, donc
- * du blanc — sur la carte blanche du catalogue. « Prix B2B » existait dans le
+ * du blanc — sur la carte blanche du catalogue. « Prix pro » existait dans le
  * DOM, mesurait 61 px, répondait au clic, et personne ne pouvait le voir. Un
  * token existant vaut toujours une couleur valide : ni `tsc`, ni ESLint, ni les
  * tests ne pouvaient le dire. Seul le rendu le disait.
@@ -44,7 +44,7 @@ import { formatEuros } from "../price-origin/format-euros";
              quoi ? », et la réponse doit être sous les yeux. -->
         <fold-number-input
           size="sm"
-          label="Prix B2B (€)"
+          [label]="words().field"
           [hint]="originHint()"
           [min]="0.01"
           [step]="0.01"
@@ -57,7 +57,7 @@ import { formatEuros } from "../price-origin/format-euros";
             size="sm"
             type="button"
             [disabled]="!isValid()"
-            [attr.aria-label]="'Enregistrer le prix B2B de ' + label()"
+            [attr.aria-label]="'Enregistrer le ' + words().noun + ' de ' + label()"
             (click)="submit()"
           >
             Enregistrer
@@ -83,7 +83,9 @@ import { formatEuros } from "../price-origin/format-euros";
           emphasis="outline"
           [intent]="hasDecision() ? 'neutral' : 'primary'"
           [attr.aria-label]="
-            (hasDecision() ? 'Modifier le prix B2B de ' : 'Poser un prix B2B sur ') + label()
+            hasDecision()
+              ? 'Modifier le ' + words().noun + ' de ' + label()
+              : 'Poser un ' + words().noun + ' sur ' + label()
           "
           (click)="open()"
         >
@@ -96,7 +98,7 @@ import { formatEuros } from "../price-origin/format-euros";
             type="button"
             emphasis="outline"
             intent="neutral"
-            [attr.aria-label]="'Revenir au tarif du PIM pour ' + label()"
+            [attr.aria-label]="'Revenir ' + words().back + ' pour ' + label()"
             (click)="reset.emit()"
           >
             Revenir au PIM
@@ -120,9 +122,19 @@ import { formatEuros } from "../price-origin/format-euros";
   `,
 })
 export class PriceEditor {
-  /** Le tarif d'origine, en millicentimes — ce vers quoi « revenir » ramène. */
+  /**
+   * **De quel prix on parle**, et c'est le seul interrupteur du composant.
+   *
+   * 🔴 Il ne change pas que des mots : il change l'**unité**. Le prix
+   * professionnel est un hors taxe DÉRIVÉ, donc en millicentimes ; l'étiquette
+   * publique est un TTC qu'un humain pose, donc en centimes. Deux composants
+   * auraient divergé ; deux entrées séparées (`kind` et `unit`) auraient permis
+   * de les accorder de travers. Une seule, et les deux suivent.
+   */
+  readonly kind = input<PriceKind>("pro");
+  /** Le tarif d'origine, **dans l'unité de `kind`** — ce vers quoi « revenir » ramène. */
   readonly originMillicents = input.required<number>();
-  /** La décision en place, en millicentimes. `null` = aucune. */
+  /** La décision en place, dans la même unité. `null` = aucune. */
   readonly alteredMillicents = input<number | null>(null);
   /**
    * Le nom de l'article — pour le nom accessible des boutons.
@@ -143,8 +155,16 @@ export class PriceEditor {
 
   protected readonly hasDecision = computed(() => this.alteredMillicents() !== null);
 
+  protected readonly words = computed(() => WORDS[this.kind()]);
+
+  /** L'unité dans laquelle l'hôte compte — celle de `kind`, jamais devinée. */
+  private readonly perEuro = computed(() =>
+    this.kind() === "pro" ? MILLICENTS_PER_EUR : CENTS_PER_EUR,
+  );
+
   protected readonly originHint = computed(
-    () => `Tarif PIM : ${formatEuros(this.originMillicents())}`,
+    () =>
+      `${this.words().origin} : ${formatEuros(this.originMillicents() * (MILLICENTS_PER_EUR / this.perEuro()))}`,
   );
 
   /**
@@ -153,12 +173,12 @@ export class PriceEditor {
    * apprendre une règle que l'écran connaissait déjà.
    */
   protected readonly isValid = computed(() => {
-    const millicents = toMillicents(this.draft());
-    return millicents !== null && millicents > 0 && millicents !== this.originMillicents();
+    const amount = toUnit(this.draft(), this.perEuro());
+    return amount !== null && amount > 0 && amount !== this.originMillicents();
   });
 
   protected open(): void {
-    this.draft.set((this.alteredMillicents() ?? this.originMillicents()) / MILLICENTS_PER_EUR);
+    this.draft.set((this.alteredMillicents() ?? this.originMillicents()) / this.perEuro());
     this.editing.set(true);
   }
 
@@ -167,24 +187,52 @@ export class PriceEditor {
   }
 
   protected submit(): void {
-    const millicents = toMillicents(this.draft());
-    if (millicents === null || !this.isValid()) {
+    const amount = toUnit(this.draft(), this.perEuro());
+    if (amount === null || !this.isValid()) {
       return;
     }
-    this.save.emit(millicents);
+    this.save.emit(amount);
     this.editing.set(false);
   }
 }
 
-/** D'euros saisis à millicentimes entiers — l'unité d'un prix unitaire. */
+/** D'euros saisis à millicentimes entiers — l'unité d'un prix unitaire DÉRIVÉ. */
 const MILLICENTS_PER_EUR = 100_000;
+/** L'unité d'un prix qu'un humain POSE. */
+const CENTS_PER_EUR = 100;
+
+/** Les deux prix que cet éditeur sait poser. */
+export type PriceKind = "pro" | "public";
 
 /**
- * Euros → **millicentimes** entiers.
+ * Les mots de chaque prix, en un seul endroit.
+ *
+ * Ils sont ici et non en entrées séparées pour qu'on ne puisse pas composer un
+ * éditeur qui dirait « prix public » au-dessus d'un champ en millicentimes.
+ */
+const WORDS: Readonly<
+  Record<PriceKind, { field: string; noun: string; origin: string; back: string }>
+> = {
+  pro: {
+    field: "Prix pro (€ HT)",
+    noun: "prix pro",
+    origin: "Tarif PIM",
+    back: "au tarif du PIM",
+  },
+  public: {
+    field: "Prix public (€ TTC)",
+    noun: "prix public",
+    origin: "Étiquette PIM",
+    back: "à l'étiquette du PIM",
+  },
+};
+
+/**
+ * Euros → entiers de l'unité demandée.
  *
  * `Math.round` et non une troncature : `2.99 * 100000` vaut `298999.9999…` en
  * flottant, et tronquer facturerait un millicentime de moins à chaque ligne.
  */
-function toMillicents(euros: number | null): number | null {
-  return euros !== null && Number.isFinite(euros) ? Math.round(euros * MILLICENTS_PER_EUR) : null;
+function toUnit(euros: number | null, perEuro: number): number | null {
+  return euros !== null && Number.isFinite(euros) ? Math.round(euros * perEuro) : null;
 }

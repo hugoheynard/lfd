@@ -38,7 +38,7 @@ export class CatalogWorkshopShelvesReader extends WorkshopShelvesReader {
   }
 
   async shelvesOf(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogCategory>> {
-    const items = await this.catalog.listDefaultsByProductSkus(skus);
+    const items = await this.catalog.listDefaultsByProductSkus(skus, "pro");
     const shelves = new Map<string, CatalogCategory>();
     for (const [productSku, item] of items) {
       const shelf = shelfOrNull(productSku, item.categoryId);

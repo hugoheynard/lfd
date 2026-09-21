@@ -47,10 +47,6 @@ export abstract class PimPrismaService {
   abstract readonly productContextVat: PrismaService["productContextVat"];
   abstract readonly product: PrismaService["product"];
   abstract readonly productVariant: PrismaService["productVariant"];
-  abstract readonly shopifySettings: PrismaService["shopifySettings"];
-  abstract readonly shopifyProductBinding: PrismaService["shopifyProductBinding"];
-  abstract readonly shopifyPushSnapshot: PrismaService["shopifyPushSnapshot"];
-  abstract readonly shopifyVariantBinding: PrismaService["shopifyVariantBinding"];
   abstract readonly nutritionDeclaration: PrismaService["nutritionDeclaration"];
   abstract readonly productEditorial: PrismaService["productEditorial"];
   abstract readonly productReadiness: PrismaService["productReadiness"];

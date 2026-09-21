@@ -97,7 +97,15 @@ async function lotOf(
   companyId: string | null,
   at?: Date,
 ): Promise<PricedLot> {
-  const resolved = await catalog.resolveMany(lines.map((line) => line.sku));
+  // 🔴 **L'audience se déduit de la société, exactement comme en production.**
+  // La pinner à `pro` ferait comparer la façade professionnelle à une caisse
+  // publique dès qu'un cas passe `companyId: null` — deux audiences, et un
+  // désaccord qui n'accuserait pas le bon coupable. Ce harnais emprunte le même
+  // chemin que la caisse, cette déduction comprise.
+  const resolved = await catalog.resolveMany(
+    lines.map((line) => line.sku),
+    companyId === null ? "public" : "pro",
+  );
   const articles = lines.map((line) => {
     const found = resolved.get(line.sku);
     if (found === undefined) {
@@ -416,7 +424,7 @@ describe("le mur, et la fenêtre", () => {
 describe("les refus", () => {
   it("refuse le même article demandé deux fois", async () => {
     const { companyId } = await customerOf("auth0|pricer_dup");
-    const found = await catalog.resolve(SKU);
+    const found = await catalog.resolve(SKU, "pro");
     const article = found?.article;
     if (article === undefined) {
       throw new Error(`Le catalogue e2e ne connaît pas « ${SKU} ».`);

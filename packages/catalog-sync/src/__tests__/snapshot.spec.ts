@@ -22,6 +22,15 @@ const variant = {
   isDefault: true,
   position: 0,
   vatRatePercent: 5.5,
+  // ⚠️ `publicTtcCents` n'est PAS le TTC de `priceMillicents` : celui-ci est le
+  // prix PRO (l'étiquette diminuée du rapport), celui-là l'étiquette elle-même.
+  // La fixture les fait volontairement diverger — deux valeurs égales auraient
+  // laissé passer une confusion entre les deux.
+  publicTtcCents: 250,
+  publicByContext: {
+    takeaway: { vatRatePercent: 5.5, htMillicents: 23_697 },
+    eatIn: { vatRatePercent: 10, htMillicents: 22_727 },
+  },
   allergens: ["AW"],
   allergenLabels: { labels: [{ category: "milk", label: "Lait" }], incomplete: false },
 };

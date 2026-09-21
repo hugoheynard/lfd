@@ -1,4 +1,5 @@
 import type { ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
+import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 
 import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
 
@@ -36,6 +37,7 @@ function toItem(item: ResolvedCatalogItem): ShopItemView {
     // appliquera : les deux viennent de la même composition, faite une fois
     // dans le lecteur.
     unitPriceMillicents: item.unitPriceMillicents,
+    unitPriceTtcCents: ttcCentsOf(lineTotalCents(item.unitPriceMillicents, 1), item.vatRate),
     vatRatePercent: item.vatRate,
     shelfId: item.categoryId,
     isFeatured: item.isFeatured,

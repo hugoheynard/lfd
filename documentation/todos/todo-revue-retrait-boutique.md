@@ -9,7 +9,7 @@ commentaires du périmètre : il a rendu **trois justifications fausses, écrite
 dans la journée**. Elles sont corrigées (commit `1c605441`) et ne figurent ici
 que pour ce qu'elles apprennent — dernière section.
 
-Périmètre relu : `apps/lfc-B2B-admin-frontend/src/app/handover-shop/`,
+Périmètre relu : `apps/lfd-backoffice-frontend/src/app/handover-shop/`,
 `apps/lfd-api/src/handover/`, la part de `apps/lfd-api/src/b2b/orders/` qui sert
 la remise, `packages/contracts/src/order-handover.ts`.
 

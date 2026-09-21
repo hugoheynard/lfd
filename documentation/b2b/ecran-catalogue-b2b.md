@@ -2,7 +2,7 @@
 
 **État : 🟢 implémenté.** Date : 2026-09-10. Écran
 `/b2b/catalogue` du back-office staff
-(`apps/lfc-B2B-admin-frontend/src/app/b2b/catalogue/`).
+(`apps/lfd-backoffice-frontend/src/app/b2b/catalogue/`).
 
 > Ce document ne redécrit pas le mécanisme du prix B2B — il vit dans
 > [`architecture-catalogue-synchronise.md`](architecture-catalogue-synchronise.md)

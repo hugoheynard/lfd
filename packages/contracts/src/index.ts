@@ -587,6 +587,8 @@ export type { CatalogCategory, CatalogItemView } from "./catalog.js";
 
 export {
   setB2bPricePayloadSchema,
+  setPublicPricePayloadSchema,
+  setPublicVisibilityPayloadSchema,
   setCatalogVisibilityPayloadSchema,
   setCatalogFeaturedPayloadSchema,
   acceptDeliveryPayloadSchema,
@@ -595,6 +597,8 @@ export type {
   CatalogAdminItemView,
   CatalogAllergenView,
   SetB2bPricePayload,
+  SetPublicPricePayload,
+  SetPublicVisibilityPayload,
   SetCatalogVisibilityPayload,
   SetCatalogFeaturedPayload,
   AcceptDeliveryPayload,

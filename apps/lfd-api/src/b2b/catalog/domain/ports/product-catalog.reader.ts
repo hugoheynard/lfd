@@ -1,6 +1,7 @@
 import type { CatalogCategory, OrderLimitSpec, OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogArticle } from "../catalogue-article.js";
+import type { ShopAudience } from "./catalog.reader.js";
 
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en millicentimes. */
 export interface PricedSku {
@@ -77,7 +78,7 @@ export abstract class ProductCatalogReader {
    * facturer un prix périmé dès qu'un autre pod reçoit une poussée du PIM. Sur
    * l'autorité de prix du checkout, c'était le mauvais compromis.
    */
-  abstract resolve(sku: string): Promise<CatalogItem | null>;
+  abstract resolve(sku: string, audience: ShopAudience): Promise<CatalogItem | null>;
 
   /**
    * Le catalogue entier, dans l'ordre où il se parcourt.
@@ -98,5 +99,8 @@ export abstract class ProductCatalogReader {
    * base, c'est une requête par ligne. Un SKU inconnu est **absent** de la table
    * rendue, jamais présent à `null`.
    */
-  abstract resolveMany(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogItem>>;
+  abstract resolveMany(
+    skus: readonly string[],
+    audience: ShopAudience,
+  ): Promise<ReadonlyMap<string, CatalogItem>>;
 }

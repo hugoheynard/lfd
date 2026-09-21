@@ -1,0 +1,74 @@
+<!-- `centred` : la colonne de contenu se centre dans sa moitié au lieu de se
+     ranger à gauche (Hugo, 2026-09-21). Le châssis le sait faire depuis
+     toujours — c'est une entrée, pas une exception à écrire ici. -->
+<app-client-page
+  [kicker]="kicker()"
+  [heading]="heading()"
+  [intro]="intro()"
+  [big]="true"
+  [centred]="true"
+>
+  <!-- Les preuves se tiennent SOUS l'accroche, dans le même bloc : ce sont
+       elles qui l'étayent, et les en séparer par l'espacement de colonne les
+       ferait lire comme un pied de page. -->
+  <ul aside-proof class="proof">
+    @for (point of proof(); track point) {
+      <li class="proof-item">
+        <span class="proof-tick" aria-hidden="true">✓</span>
+        <span>{{ point }}</span>
+      </li>
+    }
+  </ul>
+
+  <!-- 🔴 LE BAS DE LA COLONNE : la porte de qui a déjà un compte (Hugo,
+       2026-09-21 : « avec le se connecter en bas, variante particulier pro sur
+       les textes »).
+       Elle est ICI et pas dans le formulaire parce qu'elle ne s'adresse pas à
+       qui le remplit : quelqu'un qui a déjà un compte n'a rien à lire d'un
+       formulaire d'inscription, et le lui proposer au bout aurait voulu dire
+       qu'il faut tout parcourir pour s'apercevoir qu'on n'était pas concerné. -->
+  <div aside-foot class="aside-foot">
+    <p class="sign-in">
+      <span class="sign-in-mark" aria-hidden="true">?</span>
+      <span>
+        {{ signInLead() }}
+        <button class="sign-in-link" type="button" (click)="signIn('')">
+          {{ signInLink() }}
+        </button>
+      </span>
+    </p>
+    <p class="address">{{ t().aside.address }}</p>
+  </div>
+
+  <!-- Le segmenté en TÊTE du formulaire, et non dans le bandeau : c'est le
+         formulaire qui change, et une commande se tient près de ce qu'elle
+         commande.
+
+         L'enveloppe existe pour l'ÉCART : l'étage de `app-client-page` est une
+         colonne sans `gap` — elle n'a longtemps eu qu'un enfant — et ni le
+         segmenté ni le formulaire n'a le droit de poser sa propre marge. -->
+  <div class="doors">
+    <app-door-switch [door]="door()" (picked)="openDoor($event)" />
+
+    @if (door() === 'pro') {
+      <app-pro-step
+        [shopLevel]="shopLevel()"
+        [callbackPhone]="phone() ?? ''"
+        [bookedSlot]="bookedSlot()"
+        (signedUp)="signUpPro($event)"
+        (wantsLogin)="signIn($event)"
+        (wantsPerso)="openDoor('perso')"
+        (wantsCallback)="void openRappel()"
+        (cancelledCallback)="bookedSlot.set(null)"
+      />
+    } @else {
+      <app-welcome-step
+        (signedUp)="signUp($event)"
+        (wantsLogin)="signIn($event)"
+        (wantsGoogle)="continueWithGoogle()"
+        (wantsFacebook)="continueWithFacebook()"
+        (wantsPro)="openDoor('pro')"
+      />
+    }
+  </div>
+</app-client-page>

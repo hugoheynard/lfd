@@ -52,7 +52,7 @@ async function main(): Promise<void> {
     );
 
     const buckets = await clearSeededBuckets([
-      bucketConfig("R2_CUSTOMERS_BUCKET"),
+      bucketConfig("R2_CUSTOMERS_EU_BUCKET"),
       bucketConfig("R2_PRODUCTION_BUCKET"),
     ]);
     for (const bucket of buckets) {

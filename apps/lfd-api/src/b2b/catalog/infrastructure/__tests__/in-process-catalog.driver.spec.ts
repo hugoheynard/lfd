@@ -39,6 +39,8 @@ const snapshot: CatalogSnapshot = {
           isDefault: true,
           position: 0,
           vatRatePercent: 5.5,
+          publicTtcCents: 250,
+          publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
           allergens: null,
           allergenLabels: null,
         },

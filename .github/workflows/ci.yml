@@ -483,21 +483,21 @@ jobs:
       - name: Construire les paquets
         run: pnpm --filter "./packages/**" build
       - name: Lint
-        run: pnpm --filter lfc-b2b-admin-frontend lint:ci
+        run: pnpm --filter lfd-backoffice-frontend lint:ci
       # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de ces
       # apps est une config « solution », qui ne porte que des `references` et
       # aucun `include`. `tsc --noEmit` dessus ne compile donc RIEN — il rendait
       # vert sans rien lire. Vérifié le 2026-08-18 en y glissant un appel de
       # méthode inexistante : aucune erreur.
       - name: Typecheck
-        run: pnpm --filter lfc-b2b-admin-frontend exec tsc -p tsconfig.app.json --noEmit
+        run: pnpm --filter lfd-backoffice-frontend exec tsc -p tsconfig.app.json --noEmit
       - name: Tests
-        run: pnpm --filter lfc-b2b-admin-frontend test
+        run: pnpm --filter lfd-backoffice-frontend test
       # Le build de production est le seul endroit qui exerce la compilation AOT
       # des templates : un typecheck vert ne dit rien d'un binding cassé dans un
       # `.html`.
       - name: Build de production (compilation AOT)
-        run: pnpm --filter lfc-b2b-admin-frontend build
+        run: pnpm --filter lfd-backoffice-frontend build
 
   front-platform:
     name: Front boutique
@@ -518,11 +518,11 @@ jobs:
       # fabriquer une à l'aveugle poserait une porte sans savoir ce qu'elle
       # laisse passer. Il est couvert par le typecheck, les tests et le build.
       - name: Typecheck
-        run: pnpm --filter lfc-b2b-platform-frontend exec tsc -p tsconfig.app.json --noEmit
+        run: pnpm --filter lfc-ecommerce-frontend exec tsc -p tsconfig.app.json --noEmit
       - name: Tests
-        run: pnpm --filter lfc-b2b-platform-frontend test
+        run: pnpm --filter lfc-ecommerce-frontend test
       - name: Build de production (compilation AOT)
-        run: pnpm --filter lfc-b2b-platform-frontend build
+        run: pnpm --filter lfc-ecommerce-frontend build
 
   # ── La porte ────────────────────────────────────────────────────────────────
   # Le SEUL statut à exiger sur la branche. `always()` + le test explicite sur

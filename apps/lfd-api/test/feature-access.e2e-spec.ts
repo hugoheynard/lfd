@@ -65,11 +65,16 @@ async function board(): Promise<AdminFeatureAccessView> {
   return jsonBody<AdminFeatureAccessView>(await admin().get("/admin/feature-access").expect(200));
 }
 
-/** Toutes les clés sauf la boutique, à leur défaut : le mandat client est fermé (2026-09-14). */
+/**
+ * Toutes les clés sauf la boutique, à leur défaut : le mandat client est fermé
+ * (2026-09-14), et la livraison aux particuliers l'est aussi (2026-09-21) —
+ * ouvrir une tournée à qui n'a pas de compte est une décision commerciale.
+ */
 const OTHER_DEFAULTS = {
   orders: "visible",
   invoices: "visible",
   desktopMenu: "visible",
+  publicDelivery: "closed",
   customerMandate: "closed",
 } as const;
 
@@ -86,6 +91,14 @@ describe("la dérogation — posée, puis retirée", () => {
       expect.objectContaining({ key: "orders", effectiveLevel: "visible", override: null }),
       expect.objectContaining({ key: "invoices", effectiveLevel: "visible", override: null }),
       expect.objectContaining({ key: "desktopMenu", effectiveLevel: "visible", override: null }),
+      // 2026-09-21 : fermée par défaut, mais EXEMPTIBLE — c'est ainsi qu'on
+      // l'essaie sur une adresse avant de l'ouvrir à tous.
+      expect.objectContaining({
+        key: "publicDelivery",
+        effectiveLevel: "closed",
+        exemptible: true,
+        override: null,
+      }),
       // 2026-09-14 : fermé par défaut, et aucune exemption ne l'ouvre.
       expect.objectContaining({
         key: "customerMandate",

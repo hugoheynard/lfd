@@ -17,7 +17,7 @@
 
 ## Périmètre & fichiers concernés
 
-Front B2B (`apps/lfc-B2B-platform-frontend`) :
+Front B2B (`apps/lfc-ecommerce-frontend`) :
 
 - `src/shared/fold-product-card/` — la carte produit (`fold-product-card.{ts,html,scss}`) + son modèle `fold-product.model.ts` (`FoldProduct`). Écrite aux conventions fold → candidate à remonter dans `fold-ng`.
 - `src/app/catalogue/product-catalogue/` — le navigateur (filtres, recherche, favoris, pagination, grille).

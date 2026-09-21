@@ -1,0 +1,198 @@
+@use '../dialog' as dlg;
+
+/* Le sélecteur de maison public. Son CHÂSSIS — en-tête, corps, titre, chapô,
+   filet — vient de `_dialog.scss`, partagé avec le sélecteur d'heure : ce sont
+   les deux volets d'un même parcours dans la maquette, et séparés ils ont déjà
+   divergé une fois. */
+
+:host {
+  @include dlg.gutters;
+}
+
+fold-panel-header {
+  @include dlg.header;
+}
+
+fold-panel-body {
+  @include dlg.body;
+}
+
+.screen {
+  @include dlg.screen;
+}
+
+.lead {
+  @include dlg.lead;
+}
+
+.intro {
+  @include dlg.intro;
+}
+
+.houses {
+  @include dlg.rule-above;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-block: 0;
+  list-style: none;
+}
+
+/* 🔴 LA RANGÉE EST UNE LIGNE, PAS UNE CARTE EMPILÉE (maquette du 2026-09-20).
+   Le cercle à gauche, le dit au milieu, l'offre à droite — et le tout sur le
+   PAPIER, non sur le beurre : trois aplats de beurre à la suite dans un
+   dialogue crème se lisaient comme une seule masse, et la maison retenue ne s'y
+   détachait que par un filet. */
+.house {
+  inline-size: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: 14px 16px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-2xl);
+  background: var(--lfc-paper-0);
+  color: var(--fold-color-text);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+.house:hover {
+  border-color: var(--lfc-color-border-strong);
+}
+
+/* La maison DÉJÀ retenue se signale sans se fermer : on doit pouvoir la
+   reprendre — c'est la façon de refermer sans rien changer.
+   ⚠️ Le filet passe à 2 px SANS déplacer le contenu : la bordure est comptée
+   dans la boîte, la rangée ne sursaute donc pas au clic. */
+/* 🔴 LE MÊME FOND QU'UN CRÉNEAU RETENU (Hugo, 2026-09-20). Les deux volets
+   posent le même geste — on désigne une chose parmi plusieurs — et il se
+   peignait en bleu pâle ici, en beurre pâle là. Deux couleurs pour un seul
+   sens obligent à réapprendre d'un écran à l'autre ce qu'on vient de comprendre. */
+.house.on {
+  border-color: var(--lfc-ink-800);
+  border-width: 2px;
+  background: var(--lfc-color-accent-surface);
+}
+
+.house:active {
+  transform: scale(0.99);
+}
+
+/* Le cercle de choix. Dessiné plutôt que natif : un `<input type=radio>` dans
+   un bouton serait deux contrôles pour un seul geste, et le bouton porte déjà
+   `role="radio"` et son état. */
+.mark {
+  flex: none;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--lfc-color-border-strong);
+  border-radius: var(--fold-radius-pill);
+}
+
+.house.on .mark {
+  border-color: var(--lfc-ink-800);
+  /* Le disque intérieur, par une ombre portée vers l'intérieur : un enfant de
+     plus pour un point de 10 px ne vaut pas le balisage. */
+  box-shadow:
+    inset 0 0 0 4px var(--lfc-paper-0),
+    inset 0 0 0 11px var(--lfc-ink-800);
+}
+
+.said {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.place {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-tight);
+}
+
+.ready {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+}
+
+/* Les deux pastilles : l'offre, à droite et centrée sur la rangée, et le rappel
+   du choix courant, contre le nom. */
+.offer,
+.tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.offer {
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+}
+
+/* Un point sans remise dit son TARIF, jamais rien — mais en beige : ce n'est
+   pas un gain, et la maquette peint ainsi « PRIX PRO » à côté d'un « −10 % »
+   d'encre. */
+.offer.is-plain {
+  background: var(--lfc-paper-200);
+  color: var(--fold-color-text-secondary);
+}
+
+.tag {
+  height: 22px;
+  padding: 0 10px;
+  background: var(--lfc-butter-300);
+  color: var(--lfc-butter-900);
+}
+
+/* ── Le pied ─────────────────────────────────────────────────────────────── */
+
+/* Pogonia, comme au volet suivant : les boutons du dépôt portent la face de
+   display par défaut, et elle se referme sous 12 px. */
+fold-panel-footer {
+  --fold-button-font: var(--fold-font-sans);
+  --fold-space-md: var(--lfc-dialog-pad-y);
+  --fold-space-lg: var(--lfc-dialog-gutter);
+}
+
+/* L'action s'éteint tant qu'aucune maison n'est retenue — en BEIGE et non par
+   une opacité, qui aurait délavé le texte : c'est lui qui dit ce qui manque. */
+.cta:disabled {
+  background: var(--lfc-paper-300);
+  color: var(--fold-color-text-muted);
+  cursor: not-allowed;
+}

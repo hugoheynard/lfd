@@ -1,0 +1,166 @@
+@use '../../shell/popover' as pop;
+
+:host {
+  display: block;
+}
+
+/* ⚠️ Le popover se peint lui-même ; sans ce mixin, sa boîte à lui perce aux
+   quatre coins. Voir `_popover.scss`. */
+.pop {
+  @include pop.host;
+}
+
+/* ── LE PLI ────────────────────────────────────────────────────────────────
+   Les deux formes vivent dans le DOM, le CSS choisit : le rendu serveur ne
+   connaît pas la largeur de la fenêtre.
+
+   ⚠️ `at-desk` / `in-pocket` et PAS `wide-only` : ce fichier porte déjà un
+   `.total.wide-only`, qui parle d'un autre seuil (1100 px, la place du
+   montant). Deux plis dans un fichier demandent deux noms, sinon le prochain
+   qui déplace l'un déplace l'autre sans le savoir.
+
+   🔴 `:host` en tête, et ce n'est pas décoratif : `.pill` est déclaré PLUS BAS
+   et pose `display: inline-flex` à spécificité ÉGALE — sans ce cran, le lien de
+   poche restait affiché à côté du popover, et la barre portait DEUX paniers
+   (mesuré à l'écran à 1440 px le 2026-09-20). */
+.at-desk {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  :host .in-pocket {
+    display: none;
+  }
+
+  /* `contents` et non `block` : `fold-popover` ne rend rien lui-même, il place
+     son panneau dans la couche du dessus. */
+  :host .at-desk {
+    display: contents;
+  }
+}
+
+/* Vide, le panier tient le gabarit de la rangée (`--lfc-bar-slot-height`).
+   Plein, il s'élargit de sa pastille et de son total — la HAUTEUR, elle, ne
+   bouge jamais : c'est elle qui l'aligne sur la langue et sur l'entrée du
+   visiteur. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  height: var(--lfc-bar-slot-height);
+  padding: 0 var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.glyph {
+  flex: none;
+}
+
+/* La pastille est CRÈME, pas caramel : le caramel de la barre est réservé à ce
+   qui réclame une action, et un panier en cours n'en réclame pas encore une. */
+.count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-50);
+  color: var(--lfc-ink-800);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  display: none;
+  flex: none;
+  padding-right: var(--fold-space-xs);
+  font-size: var(--fold-text-md);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Le total ne paraît qu'où il y a la place. En deçà, la pastille suffit : le
+   montant se lit dans le panier, qui est à une touche. */
+@media (min-width: 1100px) {
+  .total {
+    display: inline;
+  }
+}
+
+/* ── LE PANNEAU ───────────────────────────────────────────────────────────── */
+
+.panel {
+  @include pop.panel;
+}
+
+.head {
+  @include pop.head;
+
+  align-items: flex-start;
+}
+
+.head-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.head-title {
+  @include pop.head-title;
+}
+
+.head-note {
+  @include pop.head-note;
+}
+
+/* Le décompte peut être long : c'est lui qui défile, jamais la bande de tête ni
+   le bouton qui règle. */
+.scroller {
+  @include pop.scroller;
+
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+}
+
+.foot {
+  @include pop.foot;
+
+  justify-content: stretch;
+}
+
+/* Le seul objet plein du panneau : ce qu'on vient y faire. Il tient la voix des
+   CTA de la maison — capitales de Chunk sur l'encre. */
+.foot-cta {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 var(--fold-space-lg);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+.foot-cta:active {
+  transform: scale(0.985);
+}

@@ -5,7 +5,6 @@ import { AccountingRulesModule } from "./accounting-rules/accounting-rules.modul
 import { AllergensModule } from "./allergens/allergens.module.js";
 import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
-import { ShopifyModule } from "./channels/shopify/shopify.module.js";
 import { IngredientsModule } from "./ingredients/ingredients.module.js";
 import { OrderTimeLimitationModule } from "./order-time-limitation/order-time-limitation.module.js";
 import { PublicationModule } from "./publication/publication.module.js";
@@ -27,9 +26,13 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
  * sortie, la TVA et les points de vente. Ils gardent **leur** base, par
  * `PimDatabaseModule` (non global, importé module par module).
  *
- * Le préfixe de routes (`pim`, et `channels/shopify` · `channels/b2b` en
- * dessous) est monté par `AppModule` : les contrôleurs ne déclarent que leur
- * sous-chemin.
+ * Le préfixe de routes (`pim`, et `channels/b2b` en dessous) est monté par
+ * `AppModule` : les contrôleurs ne déclarent que leur sous-chemin.
+ *
+ * ⚠️ `channels/` garde son niveau alors qu'il n'abrite plus qu'un canal : c'est
+ * la forme qui dit qu'un canal est UN canal et pas le référentiel. L'aplatir
+ * ferait de `b2b` un sous-module comme les autres, et le prochain canal
+ * rouvrirait le débat (Shopify sorti le 2026-09-21).
  */
 @Module({
   imports: [
@@ -42,7 +45,6 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
     IngredientsModule,
     OrderTimeLimitationModule,
     PublicationModule,
-    ShopifyModule,
     B2bPlatformModule,
     // La hiérarchie de routes du référentiel, déclarée ici plutôt qu'à la
     // racine : c'est la disposition **interne** du PIM, et la racine n'a pas à
@@ -64,10 +66,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
           PublicationModule,
           {
             path: "channels",
-            children: [
-              { path: "shopify", module: ShopifyModule },
-              { path: "b2b", module: B2bPlatformModule },
-            ],
+            children: [{ path: "b2b", module: B2bPlatformModule }],
           },
         ],
       },

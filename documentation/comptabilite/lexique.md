@@ -45,8 +45,9 @@ client.** Il ne peut pas se faire rembourser sur simple demande — mais sa banq
 RUM. Voir [`prelevement-sepa.md`](prelevement-sepa.md).
 
 ⚠️ **« B2B » veut dire deux choses dans ce dépôt**, et elles n'ont aucun
-rapport : la plateforme de vente aux professionnels (`apps/lfc-B2B-*`,
-`src/b2b/`), et le schéma de prélèvement entre professionnels. Le contexte
+rapport : la plateforme de vente aux professionnels
+(`apps/lfc-ecommerce-frontend`, `src/b2b/`), et le schéma de prélèvement entre
+professionnels. Le contexte
 tranche toujours, mais il faut le savoir une fois.
 
 ---

@@ -1,0 +1,217 @@
+import { computed, inject, Injectable, Injector, untracked } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import type { ShopLevel, VisibilityFeatureKey } from '@lfd/contracts';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, map } from 'rxjs';
+
+import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
+import { ClientSubscriptions } from '../client-subscriptions.service';
+import { ClientCopyService } from '../copy/client-copy.service';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { ClientWorkspace } from '../client-workspace.service';
+
+/** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
+interface Destination {
+  readonly id: 'shop' | 'orders' | 'invoices' | 'baskets' | 'account';
+  readonly route: string;
+  /**
+   * L'écran existe-t-il ?
+   *
+   * Faux ne retire pas la destination : la réf pose que **l'ordre des six ne
+   * change jamais** entre le menu mobile, la sous-barre et le rail. Une
+   * destination qui disparaîtrait le temps qu'on écrive son écran ferait bouger
+   * les quatre autres, et l'habitude du pouce avec.
+   */
+  readonly ready: boolean;
+  /**
+   * Le niveau de boutique à partir duquel la destination paraît (plan
+   * `plan-inscription-pro-seule.md` §4). `closed` = à tous les niveaux.
+   *
+   * ⚠️ Ici, et contrairement à `ready`, la destination DISPARAÎT : un écran qui
+   * existe mais que la garde refuse n'a pas à s'annoncer. Ce qui reste garde
+   * son ordre relatif — on retire, on ne réordonne jamais.
+   */
+  readonly shop: ShopLevel;
+  /** La surface masquable en admin qui la porte, s'il y en a une. Masquée, elle disparaît. */
+  readonly surface?: VisibilityFeatureKey;
+  /**
+   * Un écran de SOCIÉTÉ : retiré en perso pour qui en a une (Hugo, 2026-09-15) —
+   * le dossier, le relevé, les paniers récurrents. `companyWorkspaceGuard` ferme
+   * les adresses qui ont une route.
+   */
+  readonly companyOnly?: true;
+}
+
+/**
+ * L'ordre, et il est le même partout. Voir `07-accueil-connecte.md`.
+ *
+ * Le PANIER n'en fait pas partie : il vit dans la barre d'app, où il est
+ * atteignable depuis n'importe quel écran sans ouvrir de menu. Un panier a une
+ * quantité qui change en permanence — il appartient au chrome permanent, pas à
+ * une liste de destinations qu'on parcourt.
+ *
+ * ⚠️ Ce commentaire écartait aussi la BOUTIQUE — « on n'y va pas, on y arrive
+ * par une commande ». Le rayon a cessé de le justifier : il se VISITE sans
+ * qu'aucun mode de service ait été choisi, et c'est écrit dans `rayon-page`
+ * (« c'est ce que "je visite la boutique" promet » ; le mode n'est exigé que
+ * pour régler). Une destination atteignable sans préalable et qu'aucun menu
+ * n'annonce n'est pas une décision de parcours, c'est une porte cachée : il
+ * fallait passer par « Nouvelle commande » et répondre à une question pour
+ * voir le catalogue, alors que le regarder ne demande rien.
+ *
+ * Elle vient EN TÊTE depuis le 2026-09-21. Elle était deuxième, derrière
+ * « Mon espace », qui était l'ancre — l'écran où l'on atterrissait en se
+ * connectant. Cet écran a disparu dans `/bienvenue`, qui n'est pas une
+ * destination du menu mais l'accueil : le menu commence donc par ce qu'on
+ * FAIT, puis vient ce qu'on CONSULTE (commandes, factures, paniers, compte).
+ *
+ * ⚠️ Elle ne fait pas double emploi avec la tuile « Nouvelle commande » du haut
+ * du menu : celle-là OUVRE une commande — mode de service d'abord —, celle-ci
+ * mène au rayon. Deux intentions, deux adresses.
+ */
+const DESTINATIONS: readonly Destination[] = [
+  { id: 'shop', route: '/boutique', ready: true, shop: 'browse' },
+  { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
+  {
+    id: 'invoices',
+    route: '/mes-factures',
+    ready: true,
+    shop: 'closed',
+    surface: 'invoices',
+    companyOnly: true,
+  },
+  { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order', companyOnly: true },
+  { id: 'account', route: '/mon-compte', ready: true, shop: 'closed', companyOnly: true },
+];
+
+/**
+ * Les adresses des écrans de SOCIÉTÉ — lues sur la même liste que le menu, pour
+ * que la bascule d'espace (`ClientWorkspaceSwitch`) quitte exactement ce que le
+ * menu retire en perso.
+ */
+export const COMPANY_ONLY_ROUTES: readonly string[] = DESTINATIONS.filter(
+  (destination) => destination.companyOnly === true,
+).map((destination) => destination.route);
+
+/** Une destination prête à être dessinée, dans l'une ou l'autre des deux formes. */
+export interface NavItem {
+  readonly id: string;
+  readonly label: string;
+  readonly route: string;
+  readonly ready: boolean;
+  /**
+   * Le compteur LONG (`7 · 13,70 €`, `1 à régler`) — seul le menu mobile pleine
+   * page a la largeur de l'écrire.
+   */
+  readonly count: string;
+  /** Le compteur COURT (`7`, `14`, `1`) — celui des deux bandes horizontales. */
+  readonly countShort: string;
+  /** Ce qui appelle une action plutôt qu'il n'informe : la pastille passe au beurre. */
+  readonly warn: boolean;
+}
+
+/**
+ * Les six destinations de l'app cliente, comptées.
+ *
+ * Un seul endroit les déclare, et les trois surfaces qui les affichent (menu
+ * mobile, sous-barre desktop, et le rail le jour où il existera) le lisent : la
+ * réf exige que leur ORDRE ne varie jamais d'une surface à l'autre, ce qu'aucune
+ * relecture ne garantit si chacune tient sa propre liste.
+ *
+ * Les compteurs viennent des mêmes sources que les écrans — les commandes
+ * réellement passées, les gabarits récurrents réellement enregistrés.
+ *
+ * 🔴 **Les FACTURES n'en ont plus.** Elles annonçaient « 1 à régler », une
+ * constante, sur une destination qui n'a aucun modèle derrière elle : aucune
+ * facture n'est émise nulle part dans ce système. Une pastille d'alerte devant
+ * un écran vide est la pire des maquettes — elle fait ouvrir l'écran.
+ */
+@Injectable({ providedIn: 'root' })
+export class ClientNav {
+  private readonly orders = inject(ClientOrderHistory);
+  private readonly access = inject(ClientFeatureAccess);
+  private readonly workspace = inject(ClientWorkspace);
+  private readonly injector = inject(Injector);
+  private readonly t = inject(ClientCopyService).t;
+  private readonly router = inject(Router);
+
+  /**
+   * L'adresse courante, en SIGNAL.
+   *
+   * `Router.url` est une propriété nue : un `computed()` qui la lirait ne se
+   * recalculerait jamais, et l'onglet actif resterait figé sur celui de la
+   * première page — un défaut qui ne se voit qu'en naviguant, donc jamais dans
+   * un rendu isolé.
+   *
+   * Elle vit ici et pas dans les deux composants : le menu et la sous-barre
+   * doivent souligner LA MÊME destination, et deux dérivations séparées sont
+   * deux occasions de diverger.
+   */
+  readonly current = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects.split('?')[0] ?? ''),
+    ),
+    { initialValue: this.router.url.split('?')[0] ?? '' },
+  );
+
+  readonly items = computed<readonly NavItem[]>(() =>
+    DESTINATIONS.filter(
+      (d) =>
+        this.access.atLeast(d.shop) &&
+        (d.surface === undefined || this.access.visible(d.surface)) &&
+        !(d.companyOnly === true && this.companyScreensClosed()),
+    ).map((d) => ({
+      id: d.id,
+      route: d.route,
+      ready: d.ready,
+      label: this.t().nav.destinations[d.id],
+      ...this.counts(d.id),
+    })),
+  );
+
+  /** Le nombre d'items porteurs d'un compteur — ce que la cloche du menu annonce. */
+  /**
+   * En perso, pour qui a une société : ses écrans de société n'ont rien à
+   * montrer. Sans aucune société, Mon compte reste — c'est la porte pro.
+   */
+  private readonly companyScreensClosed = computed(
+    () => this.workspace.isPersonal() && this.workspace.hasChoice(),
+  );
+
+  readonly pending = computed(() => this.items().filter((i) => i.countShort !== '').length);
+
+  private counts(id: Destination['id']): Pick<NavItem, 'count' | 'countShort' | 'warn'> {
+    if (id === 'orders') {
+      // 🔴 Ce compteur lisait le `localStorage`, pendant que l'écran qu'il
+      // annonce lit le serveur : le badge pouvait dire « 0 » devant une liste
+      // pleine. Même source des deux côtés, désormais.
+      const placed = this.orders.orders().length;
+      return placed === 0
+        ? EMPTY
+        : { count: String(placed), countShort: String(placed), warn: false };
+    }
+    // ⚠️ `invoices` n'a AUCUN compteur, et c'est délibéré : rien n'émet de
+    // facture. Le jour où la facturation existe, c'est ici que son compte se
+    // branche — pas avant.
+    if (id === 'baskets') {
+      // Le service n'est construit QUE si la destination paraît : il lit
+      // `/subscriptions/mine` dès sa construction, et un menu réduit ne lit pas
+      // ce qu'il ne montre pas (plan §9). `untracked` parce qu'il pose un effet,
+      // ce qu'Angular refuse depuis un contexte réactif.
+      const subscriptions = untracked(() => this.injector.get(ClientSubscriptions));
+      const models = subscriptions.all().length;
+      return models === 0
+        ? EMPTY
+        : {
+            count: this.t().nav.basketsCount.replace('{n}', String(models)),
+            countShort: String(models),
+            warn: false,
+          };
+    }
+    return EMPTY;
+  }
+}
+
+/** Pas de compteur : la pastille n'existe pas, elle n'est pas à zéro. */
+const EMPTY = { count: '', countShort: '', warn: false } as const;

@@ -1,0 +1,131 @@
+/* `fold-view-toggle` n'expose pas de variables à lui : il lit les TOKENS. Les
+   redéclarer sur cet hôte suffit donc à lui donner la forme de la réf, et ça
+   n'affecte que ce composant — les propriétés personnalisées descendent, elles
+   ne remontent pas.
+
+   Ce qu'on change et pourquoi :
+   - la pastille interne passe de 3 px (`radius-xs`, le cran des micro-éléments)
+     à 7 px : la réf dessine des pastilles, pas des rectangles ;
+   - le boîtier prend le voile de survol plutôt que le creux. `surface-hover`
+     vaut un lavis de crème sur l'encre et un beige sur le papier — donc le
+     contrôle reste juste des DEUX côtés du chrome, sans le savoir ;
+   - la voix est celle du display : `all: unset` sur les segments les fait
+     hériter de la famille, de la graisse et de l'interlettrage posés ici. */
+
+:host {
+  flex: none;
+  display: block;
+
+  --fold-radius-xs: 7px;
+  --fold-color-surface-sunken: var(--fold-color-surface-hover);
+  /* `sm` lit `--fold-text-xs` pour ses segments. On descend d'un cran : trois
+     langues, une pastille de marque et un nom en 21 px ne tiennent pas ensemble
+     sur 390 px sinon — et c'est le nom qui se faisait tronquer. */
+  --fold-text-xs: var(--fold-text-2xs);
+
+  /* POGONIA GRASSE, et plus Chunk (Hugo, 2026-09-20). Trois codes de langue de
+     deux lettres en 10,5 px sont le cas le plus dur du registre : ce sont des
+     capitales isolées, sans mot autour pour les rattraper, et les contreformes
+     de Chunk s'y referment complètement — `EN` et `FR` s'y distinguaient par
+     leur silhouette plus que par leurs lettres. Même registre que les pastilles
+     de l'accueil, pour la même raison. Voir `--lfc-font-caps` dans le thème. */
+  font-family: var(--lfc-font-caps);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: 0.05em;
+  /* La hauteur des segments, sans toucher à leur largeur : fold fixe leur
+     rembourrage en rem, mais `all: unset` leur fait hériter l'interligne. C'est
+     donc lui qui commande la hauteur du boîtier — on ne peut pas lui écrire une
+     `height`, il n'y a pas d'élément à qui la donner.
+
+     ⚠️ CETTE VALEUR EST CALÉE SUR UNE MESURE, pas déduite d'un calcul : 1,85
+     donnait 32 px et 2,45 en donnait 40, soit 1 px par 0,075 — d'où 2,30 pour
+     les 38 px de `--lfc-bar-slot-height`, que le panier et le globe obtiennent,
+     eux, en l'écrivant directement. C'est le seul bloc de la rangée qui vise le
+     gabarit au lieu de le lire, et c'est donc le seul qui puisse en dériver
+     sans que rien ne le dise : à vérifier À L'ÉCRAN si le gabarit change, ou si
+     la face change — la graisse et la famille ne déplacent pas l'interligne,
+     mais le rembourrage que fold calcule, lui, suit ses propres crans. */
+  line-height: 2.3;
+}
+
+/* ── Quelle forme paraît, et quand ────────────────────────────────────────────
+   🔴 **Au téléphone, TOUJOURS le globe** (2026-09-17, Hugo). Il ne dépend plus
+   de l'état de connexion : trois segments plus le panier et l'entrée du
+   visiteur ne tiennent pas sur 390 px, et ça ne dépend pas de qui regarde. La
+   condition était le client reconnu — un proxy, et il s'est désaccordé de ce
+   qu'il représentait dès que la boutique s'est ouverte aux visiteurs.
+
+   🔴 AU-DELÀ DU PLI, LES TROIS SEGMENTS, SANS CONDITION (Hugo, 2026-09-20 :
+   « en desktop le switch de langue devrait être complet »).
+
+   Ils étaient encore refusés par une entrée `compact`, que le shell branchait
+   sur `chrome.menu()` — « la barre d'un client reconnu porte déjà son menu,
+   plus la place pour trois segments ». Cette place existe : la sous-barre est
+   partie, ses destinations sont dans le popover d'identité, et la rangée s'est
+   vidée d'autant. L'entrée a donc été SUPPRIMÉE plutôt que mise à `false` —
+   une entrée qu'on ne passe plus jamais est une branche morte qui attend de
+   revenir.
+
+   C'est la troisième fois que cette barre conditionne un bloc à un PROXY —
+   la langue au menu, la langue à la cloche, le panier au menu. Le pli est une
+   affaire de LARGEUR : le CSS la connaît, et il est le seul à la connaître. */
+.segments {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  /* 🔴 `:host` EN TÊTE, et ce n'est pas décoratif : `.globe` est déclaré PLUS
+     BAS dans ce fichier, et à spécificité égale c'est la dernière règle qui
+     gagne — le globe restait donc affiché au bureau, à côté des trois segments.
+     La version précédente y échappait par accident, parce que son sélecteur
+     portait `:not(.is-compact)`. En le simplifiant, on a perdu le cran avec.
+     C'est la deuxième fois que ce fichier-ci se fait avoir de la même façon
+     (cf. `.mark` dans `client-shell.scss`), et seul l'écran pouvait le dire. */
+  :host .globe {
+    display: none;
+  }
+
+  :host .segments {
+    display: block;
+  }
+}
+
+/* ── En pile : un globe qui porte sa langue ──────────────────────────────── */
+
+/* Le gabarit de la rangée, LU et non recopié : voir `--lfc-bar-slot-height`
+   dans `client-shell.scss`. Le globe l'a porté en dur à 40 px, deux pixels qui
+   faisaient lire la barre comme mal alignée sans qu'on voie lequel des blocs
+   était en cause — c'est ce genre d'écart que le token supprime. */
+.globe {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--lfc-bar-slot-height);
+  height: var(--lfc-bar-slot-height);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+/* Le code déborde du bouton, en bas à droite : il se lit comme une étiquette
+   POSÉE sur le globe, pas comme un second glyphe à l'intérieur. Le liseré
+   reprend le fond de la barre pour le détacher proprement. */
+.code {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  height: 15px;
+  padding: 0 4px;
+  border: 2px solid var(--fold-color-bg-header);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-text);
+  color: var(--fold-color-bg-header);
+  font-family: var(--lfc-font-caps);
+  font-size: 0.53125rem;
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: 0.06em;
+}

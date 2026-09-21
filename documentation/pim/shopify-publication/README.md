@@ -1,5 +1,16 @@
 # La chaîne de publication Shopify
 
+> 🔴 **CE CANAL N'EXISTE PLUS.** La chaîne de publication Shopify — écrans,
+> canal serveur, paquet de transport, contrats — a été retirée du dépôt le
+> **2026-09-21**
+> ([`plan-un-seul-canal-deux-prix.md`](../plan-un-seul-canal-deux-prix.md)).
+>
+> Ces documents sont **archivés, pas supprimés** : ils portent des décisions qui
+> ont survécu à leur canal — le modèle des contextes de vente, la protection des
+> URL indexées, la mécanique des révisions — et un doc supprimé fait réinventer
+> ce qu'il savait. Ce qu'ils décrivent du code, en revanche, n'est plus vrai :
+> les chemins qu'ils citaient vivent dans l'histoire git.
+
 > Sept documents regroupés ici le **2026-09-13**. Ils vivaient à la racine de
 > `documentation/pim/`, mêlés au reste du référentiel, alors qu'ils se citent
 > l'un l'autre en permanence et ne parlent que d'une seule chose : **comment le

@@ -1,0 +1,221 @@
+<fold-page-section [title]="shelf().name" titleVariant="heading" separator>
+  <div class="tool" sectionActions>
+    <fold-badge [content]="items().length + ' articles'" variant="neutral" />
+    @if (shelf().untaxed) {
+      <fold-badge content="famille sans TVA" variant="warning" />
+    }
+  </div>
+
+  <fold-data-table
+    [caption]="'Catalogue actuel en ligne — ' + shelf().name"
+    hover
+    stickyFirst
+    density="compact"
+    mobileLayout="auto-cards"
+    [columns]="columns"
+    [rows]="items()"
+    [rowKey]="rowKey"
+    [rowTone]="rowTone"
+    [empty]="empty"
+  >
+    <!--
+      🔴 **« Sans taux » a emménagé ici le 2026-09-21**, quand la colonne TVA
+      est partie. Ce n'est pas un déplacement décoratif : la ligne d'un article
+      invendable est TEINTÉE, et une couleur ne dit jamais rien seule — c'est la
+      règle que `rowTone` énonce et qui s'appuyait sur la cellule du taux.
+      Retirer la colonne sans rapatrier le mot aurait laissé quarante lignes
+      orangées sans une phrase pour dire pourquoi.
+    -->
+    <ng-template foldCell="article" let-row>
+      <span class="identity" [class.is-hidden]="row.isHidden">
+        <span class="name">{{ row.name }}</span>
+        <span class="sku">{{ row.sku }}</span>
+        @if (row.vatRatePercent === null) {
+          <fold-badge content="sans taux — invendable" variant="warning" />
+        }
+      </span>
+    </ng-template>
+
+    <!--
+      Ce que le référentiel a envoyé — **ses DEUX prix**. Ils ne se modifient
+      pas ici : c'est le socle, et la colonne d'à côté est ce qu'on en fait.
+
+      🔴 **L'unité est écrite sur chaque ligne, et ce n'est pas décoratif.** Le
+      pro est un HT dérivé par un rapport, le public l'étiquette TTC qu'un
+      humain a tapée. Deux montants nus l'un sous l'autre se liraient comme deux
+      versions du même prix, et l'écart entre eux passerait pour une remise.
+
+      Le prix public manquant n'est pas un zéro : c'est un article que la
+      vitrine publique ÉCARTE. Le dire par un mot, pas par un tiret.
+    -->
+    <ng-template foldCell="pim" let-row>
+      <div class="pim">
+        <span class="pim-line">
+          <span class="pim-audience">pro</span>
+          <span class="pim-amount">{{ euros(row.pimPriceMillicents) }} HT</span>
+        </span>
+        <span class="pim-line">
+          <span class="pim-audience">public</span>
+          @if (publicEuros(row); as ttc) {
+            <span class="pim-amount">{{ ttc }} TTC</span>
+          } @else {
+            <fold-badge content="non poussé" variant="warning" />
+          }
+        </span>
+      </div>
+    </ng-template>
+
+    <!--
+      **La colonne qui écrit.** Le prix effectif y est affiché avec sa
+      provenance — le tarif du PIM barré quand on l'a remplacé —, et le geste
+      est juste en dessous.
+
+      Elle est à DROITE du tarif reçu et pas ailleurs : c'est l'ordre dans
+      lequel le prix se fabrique, et c'est aussi la seule disposition où le
+      remplacement se lit d'un coup d'œil.
+    -->
+    <ng-template foldCell="b2b" let-row>
+      <div class="decision">
+        @if (row.b2bPriceMillicents !== null) {
+          <lfd-price-origin
+            [originMillicents]="row.pimPriceMillicents"
+            [alteredMillicents]="row.b2bPriceMillicents"
+          />
+          @if (decidedOn(row); as day) {
+            <span class="decided">posé le {{ day }}</span>
+          }
+        } @else {
+          <span class="follows">suit le PIM</span>
+        }
+        <lfd-price-editor
+          [originMillicents]="row.pimPriceMillicents"
+          [alteredMillicents]="row.b2bPriceMillicents"
+          [label]="row.name"
+          (save)="priceSet.emit({ item: row, priceMillicents: $event })"
+          (reset)="priceAligned.emit(row)"
+        />
+      </div>
+    </ng-template>
+
+    <!--
+      **L'étiquette publique, et ce qu'elle produit vraiment.**
+
+      🔴 Deux nombres, et le second n'est pas décoratif : le prix posé est une
+      ENTRÉE, le prix encaissé est ce que le client paiera. L'aller-retour hors
+      taxe peut ajouter un centime — jamais en retirer à 10 % ou 20 %. On assume
+      l'écart (Hugo, 2026-09-21), donc on le DIT ici plutôt que de le laisser
+      découvrir en caisse.
+
+      Quand les deux coïncident, la seconde ligne ne s'affiche pas : répéter le
+      même montant apprendrait à ne plus le lire, et c'est exactement le jour où
+      il diffère qu'on a besoin qu'il saute aux yeux.
+    -->
+    <ng-template foldCell="public" let-row>
+      <div class="decision">
+        @if (row.publicTtcCents === null) {
+          <fold-badge content="pas d’étiquette reçue" variant="warning" />
+        } @else {
+          @if (row.decidedPublicTtcCents !== null) {
+            <lfd-price-origin
+              [originMillicents]="row.publicTtcCents * 1000"
+              [alteredMillicents]="row.decidedPublicTtcCents * 1000"
+            />
+          } @else {
+            <span class="follows">suit le PIM</span>
+          }
+          @if (chargedEuros(row); as charged) {
+            @if (charged !== publicEuros(row)) {
+              <span class="charged">encaissé {{ charged }}</span>
+            }
+          }
+          <lfd-price-editor
+            kind="public"
+            [originMillicents]="row.publicTtcCents"
+            [alteredMillicents]="row.decidedPublicTtcCents"
+            [label]="row.name"
+            (save)="publicPriceSet.emit({ item: row, ttcCents: $event })"
+            (reset)="publicPriceAligned.emit(row)"
+          />
+        }
+      </div>
+    </ng-template>
+
+    <!--
+      **L'affichage en boutique, une audience à la fois.**
+
+      🔴 Deux boutons parce qu'il y a deux décisions (2026-09-21). Un seul
+      valait pour les deux vitrines : un conditionnement de quarante pièces
+      n'avait rien à faire en vitrine publique, une pièce à l'unité
+      n'intéressait pas un pro, et il n'y avait qu'un geste pour les deux.
+
+      La confirmation s'ouvre DANS la cellule, comme la pose d'un prix : rien ne
+      saute, rien ne recouvre l'écran, et on ne perd pas de vue la ligne dont il
+      est question. Les DEUX sens se confirment — masquer coupe la commande,
+      réafficher la rouvre, et les deux se voient depuis la boutique par un
+      client.
+    -->
+    <ng-template foldCell="shop" let-row>
+      <div class="shop">
+        <div class="audience">
+          @if (row.isHidden) {
+            <fold-badge content="pro masqué" variant="neutral" />
+          }
+          <fold-inline-confirm
+            size="sm"
+            [intent]="row.isHidden ? 'primary' : 'warning'"
+            [message]="
+              row.isHidden
+                ? 'L’article revient dans la boutique PROFESSIONNELLE, au prix pro de cette ligne. La vitrine publique n’est pas touchée.'
+                : 'L’article disparaît de la boutique PROFESSIONNELLE. La vitrine publique n’est pas touchée, et son prix pro est conservé.'
+            "
+            [labels]="{ confirm: row.isHidden ? 'Réafficher' : 'Masquer' }"
+            (confirmed)="visibilityToggled.emit(row)"
+          >
+            <button
+              foldButton
+              size="sm"
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              [attr.aria-label]="
+                (row.isHidden ? 'Réafficher ' : 'Masquer ') + row.name + ' pour les pros'
+              "
+            >
+              {{ row.isHidden ? 'Réafficher pro' : 'Masquer pro' }}
+            </button>
+          </fold-inline-confirm>
+        </div>
+
+        <div class="audience">
+          @if (row.isHiddenPublic) {
+            <fold-badge content="public masqué" variant="neutral" />
+          }
+          <fold-inline-confirm
+            size="sm"
+            [intent]="row.isHiddenPublic ? 'primary' : 'warning'"
+            [message]="
+              row.isHiddenPublic
+                ? 'L’article revient en vitrine PUBLIQUE, au prix public de cette ligne. La boutique professionnelle n’est pas touchée.'
+                : 'L’article disparaît de la vitrine PUBLIQUE. La boutique professionnelle n’est pas touchée.'
+            "
+            [labels]="{ confirm: row.isHiddenPublic ? 'Réafficher' : 'Masquer' }"
+            (confirmed)="publicVisibilityToggled.emit(row)"
+          >
+            <button
+              foldButton
+              size="sm"
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              [attr.aria-label]="
+                (row.isHiddenPublic ? 'Réafficher ' : 'Masquer ') + row.name + ' au public'
+              "
+            >
+              {{ row.isHiddenPublic ? 'Réafficher public' : 'Masquer public' }}
+            </button>
+          </fold-inline-confirm>
+        </div>
+      </div>
+    </ng-template>
+  </fold-data-table>
+</fold-page-section>

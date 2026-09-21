@@ -1,4 +1,5 @@
 import type { CatalogCategory, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
+import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
@@ -89,7 +90,12 @@ export class ShopCataloguePricing {
    * pour un article.
    */
   async priced(companyId: string | null): Promise<ShopCatalogueView> {
-    const sellable = await this.catalog.listSellable();
+    // 🔴 **L'audience se déduit ICI, et c'est le seul endroit.** « Sans société »
+    // veut dire « sans rien de négocié » : ni mercuriale, ni tarif de canal — et
+    // donc le prix d'étiquette. La déduction est la même que celle qui pilotait
+    // déjà la mercuriale ; elle nomme simplement ce qu'elle voulait dire.
+    const audience = companyId === null ? "public" : "pro";
+    const sellable = await this.catalog.listSellable(audience);
     const catalogue = shopCatalogueOf(sellable);
     if (catalogue.items.length === 0) {
       return catalogue;
@@ -164,16 +170,19 @@ function struck(item: ShopItemView, prices: ReadonlyMap<string, number>): ShopIt
   // barré le prix le plus BAS et présenté une référence mensongère sur une page
   // publique. Le prix servi reste celui qui sera facturé, dans les deux sens ;
   // c'est la rature qui exige une baisse (2026-09-09).
-  if (resolved >= item.unitPriceMillicents) {
-    return resolved === item.unitPriceMillicents
-      ? item
-      : { ...item, unitPriceMillicents: resolved };
-  }
-  return {
+  // 🔴 **Le TTC suit le prix résolu, toujours.** Il est dérivé à la
+  // construction, avant que la résolution n'ait joué : le laisser derrière
+  // ferait afficher au rayon la taxe du tarif et le montant de la promotion —
+  // deux nombres qui ne vont pas ensemble, sur une page publique.
+  const priced = {
     ...item,
     unitPriceMillicents: resolved,
-    catalogPriceMillicents: item.unitPriceMillicents,
+    unitPriceTtcCents: ttcCentsOf(lineTotalCents(resolved, 1), item.vatRatePercent),
   };
+  if (resolved >= item.unitPriceMillicents) {
+    return resolved === item.unitPriceMillicents ? item : priced;
+  }
+  return { ...priced, catalogPriceMillicents: item.unitPriceMillicents };
 }
 
 /**

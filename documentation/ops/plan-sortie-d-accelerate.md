@@ -67,7 +67,9 @@ En `postgres://`, le schéma ne dit plus rien.
    de connexion échoue au lieu de pendre), `idleTimeoutMillis` explicite ;
    `enableShutdownHooks` pour vider le pool au SIGTERM ; `P2037` rejoint les
    codes « base indisponible ». La limite de connexions du plan Prisma, relevée
-   au geste 2, **tranche la valeur de `max`** avant la bascule.
+   au geste 2, **tranche la valeur de `max`** avant la bascule. ✅ **Offre Pro,
+   250 connexions mutualisées** (Hugo, 2026-09-19) : `max: 5` gardé, soit 10
+   au pire pendant un déploiement.
 3. **Deux URL, deux secrets, aucun repli** :
    - `DATABASE_LFD_URL` → URL **mutualisée**, pour le container ;
    - `DATABASE_LFD_PROD_DIRECT_URL` → URL **directe**, pour `migrate deploy`. Le
@@ -133,7 +135,8 @@ geste 8, `DATABASE_LFD_URL` se supprime de GitHub.
 
 ## 4. Ce qui reste à vérifier, et où
 
-- **La limite de connexions** du plan Prisma (geste 2) → valeur de `max`.
+- ~~**La limite de connexions** du plan Prisma (geste 2) → valeur de `max`.~~
+  — Pro, 250 mutualisées (2026-09-19) ; `max: 5` gardé.
 - **La latence** WEUR → région de la base (geste 2), vitals comparés au geste 7.
 - **Le `sslmode`** : `pg-connection-string` lit `require` comme `verify-full` et
   émet un avertissement ; écrire `sslmode=verify-full` dans l'URL, si le

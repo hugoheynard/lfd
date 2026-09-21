@@ -101,6 +101,11 @@ export class PrismaOrderRepository extends OrderRepository {
             vatRate: line.vatRate,
             quantity: line.quantity,
             lineTotalCents: line.lineTotalCents,
+            // 🔴 Écrits tels que l'agrégat les a scellés, `null` compris : c'est
+            // LUI qui sait si l'acheteur était un particulier, et cette
+            // question ne se repose plus jamais après (R3, 2026-09-21).
+            unitPriceTtcCents: line.unitPriceTtcCents,
+            lineTotalTtcCents: line.lineTotalTtcCents,
             basePriceMillicents: line.pricing?.basePriceMillicents ?? null,
             // `Prisma.DbNull` et non `null` : sur une colonne JSON nullable,
             // `null` désigne le *littéral* JSON `null`, pas l'absence de valeur.

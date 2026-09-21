@@ -1,0 +1,29 @@
+<!-- 🔴 Les DEUX formes sont rendues, et c'est le CSS qui n'en montre qu'une.
+     Ce shell n'a aucun signal de largeur — il tranche son responsive en CSS
+     (`wide-only`, `narrow-only`), et introduire un `matchMedia` ici pour un
+     seul composant ferait vivre le pli à deux endroits qui finiraient par
+     diverger.
+
+     Au téléphone : le globe, toujours. Au-delà du pli : les trois segments,
+     toujours. Le CSS choisit sur la seule largeur, et rien d'autre ne le
+     commande — voir le SCSS. -->
+<button
+  class="globe"
+  type="button"
+  [title]="name()"
+  [attr.aria-label]="t().chrome.lang + ' — ' + name()"
+  (click)="cycle()"
+>
+  <fold-icon name="globe" />
+  <span class="code" aria-hidden="true">{{ code() }}</span>
+</button>
+
+<fold-view-toggle
+  class="segments"
+  [ariaLabel]="t().chrome.lang"
+  activeStyle="solid"
+  [size]="size()"
+  [options]="options"
+  [value]="locale.current()"
+  (valueChange)="pick($event)"
+/>

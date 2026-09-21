@@ -1,0 +1,63 @@
+<!-- Une seule structure, deux mises en page. En pile : l'accroche sur le bleu,
+     puis la feuille crème qui monte dessus. Au-delà du pli : deux colonnes, la
+     marque et l'argument à gauche sur le bleu, la feuille à droite. -->
+<div class="frame">
+  <div class="aside" foldSurface="chrome">
+    <!-- Le voile : le dégradé radial de la réf, qui éclaire l'angle haut-gauche
+         et assombrit le bas. Un élément à part plutôt qu'un fond composé, parce
+         que `foldSurface` possède déjà le `background` de la colonne. -->
+    <span class="veil" aria-hidden="true"></span>
+
+    <!-- La marque n'apparaît ici qu'au-delà du pli : en deçà, c'est la barre du
+         shell qui la porte, et la répéter ferait doublon. -->
+    <div class="brand-row">
+      <span class="mark" aria-hidden="true">
+        <img src="brand/lfc-mark.png" alt="" />
+      </span>
+      <span class="brand">
+        <span class="brand-name">La Folie Coffee</span>
+        <span class="brand-kicker">{{ t().chrome.deskKicker }}</span>
+      </span>
+      <app-lang-switch size="md" />
+    </div>
+
+    <!-- Les trois blocs de la colonne sont espacés par `space-between` : la
+         marque en haut, l'accroche au milieu, la porte de connexion en bas.
+         L'accroche est donc UN bloc — sans quoi son sur-titre, son titre et ses
+         preuves s'écarteraient les uns des autres au lieu de se tenir. -->
+    <div class="hero">
+      @if (kicker(); as kick) {
+        <p class="hero-kicker">{{ kick }}</p>
+      }
+      <h1 class="hero-title" [class.big]="big()">{{ heading() }}</h1>
+      <p class="hero-intro">{{ intro() }}</p>
+
+      <!-- L'hôte doit être STATIQUE : un `@if` autour de lui enverrait son
+           contenu dans l'étage, la projection se décidant à la compilation. Ce
+           qui varie se décide donc à l'intérieur. -->
+      <ng-content select="[aside-proof]" />
+    </div>
+
+    <!-- L'enveloppe existe pour le VOILE : le dégradé est un élément à part,
+         posé sur toute la colonne, et ce qui n'est pas explicitement au-dessus
+         passe dessous. L'accroche et la marque sont des éléments de CE
+         gabarit, donc directement relevés ; le pied, lui, arrive par
+         projection — il porte l'encapsulation de l'écran qui le fournit, et
+         aucune règle d'ici ne peut l'atteindre. C'est donc son hôte qu'on
+         relève. -->
+    <div class="aside-bottom">
+      <ng-content select="[aside-foot]" />
+    </div>
+  </div>
+
+  <main class="sheet">
+    <!-- La lèvre : le bord haut de la feuille, qui s'amarre sous la barre quand
+         l'accroche est passée. C'est elle qui garde les coins et le liseré
+         d'encre, à n'importe quelle position de défilement. -->
+    <span class="lip" aria-hidden="true"></span>
+
+    <div class="stage" [class.centred]="centred()">
+      <ng-content />
+    </div>
+  </main>
+</div>

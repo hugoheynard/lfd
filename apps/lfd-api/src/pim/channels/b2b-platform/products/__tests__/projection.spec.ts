@@ -671,3 +671,87 @@ describe("projectCatalog — les allergènes", () => {
     });
   });
 });
+
+/**
+ * 🔴 **Le prix PUBLIC traverse depuis la v9** (lot A1,
+ * [`plan-un-seul-canal-deux-prix.md`](../../../../../../../documentation/pim/plan-un-seul-canal-deux-prix.md)).
+ *
+ * Il arrivait jusqu'ici et s'y arrêtait : seul son dérivé professionnel partait
+ * sur le fil, si bien qu'un particulier servi par la boutique payait le tarif
+ * pro au taux de TVA pro. Câbler ce prix n'était pas aller chercher une donnée
+ * — c'était **cesser de la jeter**.
+ */
+describe("le prix public sur le fil — v9", () => {
+  const publicOf = (percents: Record<string, number>, priceCents = 200) =>
+    projectCatalog(
+      [product({ variants: [variant({ priceCents })] })],
+      [category()],
+      vat(percents),
+      sold(),
+      NO_DISCOUNT,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      AT,
+    ).snapshot.products[0]?.variants[0];
+
+  it("porte l'ÉTIQUETTE en centimes, telle qu'elle est saisie", () => {
+    // 2,00 € : ce qu'un humain a tapé. Pas de conversion, pas de rapport pro —
+    // c'est le nombre qu'un client lira.
+    expect(publicOf({ takeaway: 5.5, b2b: 5.5 })?.publicTtcCents).toBe(200);
+  });
+
+  it("porte UNE ENTRÉE PAR CONTEXTE RÉGLÉ, avec son taux et son hors taxe", () => {
+    const v = publicOf({ takeaway: 5.5, eatIn: 10, b2b: 5.5 });
+
+    // 2,00 € à 5,5 % → 189 573 millicentimes ; à 10 % → 181 818.
+    expect(v?.publicByContext).toEqual({
+      takeaway: { vatRatePercent: 5.5, htMillicents: 189_573 },
+      eatIn: { vatRatePercent: 10, htMillicents: 181_818 },
+      b2b: { vatRatePercent: 5.5, htMillicents: 189_573 },
+    });
+  });
+
+  /**
+   * 🔴 **La confusion qui coûterait de l'argent.**
+   *
+   * `priceMillicents` et `publicByContext.b2b.htMillicents` sont tous deux des
+   * hors taxe, au même taux, sur le même article — et ils ne valent pas la même
+   * chose : le premier est le prix PRO (l'étiquette diminuée du rapport), le
+   * second l'étiquette elle-même. Les confondre facturerait un particulier au
+   * tarif professionnel, ou l'inverse.
+   *
+   * Le test le prouve avec un rapport qui REMISE : à rapport neutre les deux
+   * seraient égaux, et l'assertion ne dirait rien.
+   */
+  it("🔴 ne confond pas le prix PRO et le prix PUBLIC au même taux", () => {
+    const v = projectCatalog(
+      [product()],
+      [category()],
+      vat({ takeaway: 5.5, b2b: 5.5 }),
+      sold(),
+      // 80 % : le pro paie 1,60 € là où le public paie 2,00 €.
+      ratioTtc(8_000),
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      AT,
+    ).snapshot.products[0]?.variants[0];
+
+    expect(v?.priceMillicents).toBe(151_659); // 1,60 € TTC pro → HT
+    expect(v?.publicByContext["b2b"]?.htMillicents).toBe(189_573); // 2,00 € → HT
+    expect(v?.priceMillicents).not.toBe(v?.publicByContext["b2b"]?.htMillicents);
+  });
+
+  /**
+   * Le même refus que `variant_sans_taux` un cran plus haut, et il vaut aussi
+   * pour le public : un montant plausible que personne n'a décidé est
+   * exactement ce qu'on ne veut pas facturer.
+   */
+  it("n'invente AUCUN taux : un contexte non réglé n'a pas d'entrée", () => {
+    const v = publicOf({ b2b: 5.5 });
+
+    expect(Object.keys(v?.publicByContext ?? {})).toEqual(["b2b"]);
+    expect(v?.publicByContext["eatIn"]).toBeUndefined();
+  });
+});

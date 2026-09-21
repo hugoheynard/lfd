@@ -30,5 +30,7 @@ export async function scopeNameOf(
     const shelf = Object.entries(CATALOG_CATEGORY_LABELS).find(([code]) => code === scope.id);
     return shelf?.[1] ?? null;
   }
-  return (await catalog.resolve(scope.id))?.name ?? null;
+  // `pro` : on ne cherche QU'UN NOM ici — l'audience ne le change pas, et
+  // l'écran qui l'affiche est celui de la tarification professionnelle.
+  return (await catalog.resolve(scope.id, "pro"))?.name ?? null;
 }

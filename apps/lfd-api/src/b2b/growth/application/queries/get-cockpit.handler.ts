@@ -47,6 +47,9 @@ export class GetCockpitHandler implements IQueryHandler<GetCockpitQuery, LeadSco
       subjectType: lead.subjectType,
       subjectId: lead.subjectId,
       idempotencyKey: `${ACTIVITY_TYPES.recoShown}:${lead.subjectType}:${lead.subjectId}:${lead.computedAt}`,
+      // Le cockpit recommande, pas celui qui l'ouvre — et la clé ne dépend pas
+      // de lui : seul le premier lecteur de la fenêtre aurait été inscrit.
+      bySystem: true,
       payload: {
         ...label,
         play: lead.play,

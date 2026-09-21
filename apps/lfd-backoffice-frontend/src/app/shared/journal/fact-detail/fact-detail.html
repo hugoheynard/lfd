@@ -1,0 +1,21 @@
+@if (rows().length > 0) {
+  <button
+    type="button"
+    class="fd-toggle"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="panelId"
+    (click)="toggle()"
+  >
+    Détail ({{ rows().length }})
+    <fold-icon class="fd-chevron" [class.is-open]="open()" name="chevron-down" size="sm" />
+  </button>
+  @if (open()) {
+    <div class="fd-panel" [id]="panelId" role="region">
+      <fold-field-list>
+        @for (row of rows(); track $index) {
+          <fold-field [label]="row.label">{{ row.value }}</fold-field>
+        }
+      </fold-field-list>
+    </div>
+  }
+}

@@ -1,5 +1,16 @@
 # Connexion Shopify — mise en place (runbook)
 
+> 🔴 **CE CANAL N'EXISTE PLUS.** La chaîne de publication Shopify — écrans,
+> canal serveur, paquet de transport, contrats — a été retirée du dépôt le
+> **2026-09-21**
+> ([`plan-un-seul-canal-deux-prix.md`](../plan-un-seul-canal-deux-prix.md)).
+>
+> Ces documents sont **archivés, pas supprimés** : ils portent des décisions qui
+> ont survécu à leur canal — le modèle des contextes de vente, la protection des
+> URL indexées, la mécanique des révisions — et un doc supprimé fait réinventer
+> ce qu'il savait. Ce qu'ils décrivent du code, en revanche, n'est plus vrai :
+> les chemins qu'ils citaient vivent dans l'histoire git.
+
 > **But.** Brancher le PIM sur une vraie boutique Shopify pour l'API Admin, en
 > **server-to-server** (le backend appelle Shopify, aucune UI embarquée). Ce doc
 > retrace **les étapes qui ont effectivement marché**, dans l'ordre, avec les
@@ -46,8 +57,7 @@ et rafraîchi. Pas de redirect interactif, pas d'hébergement.
 | Version d'API              | réglages en base             | défaut `2026-07`                        |
 | Jeton legacy (alternative) | env `SHOPIFY_ADMIN_TOKEN`    | seulement si legacy custom app pré-2026 |
 
-Le cœur est le **`ShopifyTokenProvider`**
-([`token-provider.ts`](../../../packages/shopify-admin/src/index.ts)) :
+Le cœur était le **`ShopifyTokenProvider`**, dans le paquet de transport :
 
 1. si `SHOPIFY_ADMIN_TOKEN` est présent → rendu tel quel (aucun échange) ;
 2. sinon `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` → **échange client credentials**

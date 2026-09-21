@@ -87,10 +87,10 @@ typecheck_if_touched "apps/lfd-api/" "backend (app)" \
   pnpm --filter lfd-api exec tsc --noEmit
 typecheck_if_touched "apps/lfd-api/" "backend (specs)" \
   pnpm --filter lfd-api exec tsc --noEmit -p tsconfig.test.json
-typecheck_if_touched "apps/lfc-B2B-admin-frontend/" "front admin" \
-  pnpm --filter lfc-b2b-admin-frontend exec tsc -p tsconfig.app.json --noEmit
-typecheck_if_touched "apps/lfc-B2B-platform-frontend/" "front boutique" \
-  pnpm --filter lfc-b2b-platform-frontend exec tsc -p tsconfig.app.json --noEmit
+typecheck_if_touched "apps/lfd-backoffice-frontend/" "front admin" \
+  pnpm --filter lfd-backoffice-frontend exec tsc -p tsconfig.app.json --noEmit
+typecheck_if_touched "apps/lfc-ecommerce-frontend/" "front boutique" \
+  pnpm --filter lfc-ecommerce-frontend exec tsc -p tsconfig.app.json --noEmit
 
 if [ -z "$promotion" ]; then
   exit 0

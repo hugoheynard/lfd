@@ -305,6 +305,28 @@ model OrderLine {
   quantity       Int
   lineTotalCents Int @map("line_total_cents")
 
+  /// Le prix d'UNE pièce **taxe comprise**, en centimes — ou `NULL`.
+  ///
+  /// 🔴 **Scellé à la passation, jamais dérivé au rendu** (R3, 2026-09-21). Le
+  /// bon de commande d'un particulier l'imprime ; le recalculer à l'affichage
+  /// ferait changer une pièce déjà remise au client au premier déploiement qui
+  /// touche le rendu — et à ce jour **rien n'est archivé** (`R2_CUSTOMERS_*`
+  /// n'existe ni en secret ni en variable, vérifié le 2026-09-21), donc chaque
+  /// téléchargement refabrique le document.
+  ///
+  /// ⚠️ **`NULL` dit DEUX choses**, et les deux se rendent en hors taxe : la
+  /// commande est professionnelle — un pro récupère la taxe et ne lit que le
+  /// hors taxe —, ou elle est antérieure à R3. **Aucune reprise de données ne
+  /// le comble** : c'est ce qui garantit qu'un bon ancien se rend à l'octet
+  /// près comme avant.
+  unitPriceTtcCents Int? @map("unit_price_ttc_cents")
+
+  /// Le total de la ligne taxe comprise — `NULL` aux mêmes deux conditions.
+  ///
+  /// Dérivé de `line_total_cents` DÉJÀ arrondi, jamais du prix unitaire
+  /// remultiplié : c'est la même règle d'un arrondi unique, un cran plus haut.
+  lineTotalTtcCents Int? @map("line_total_ttc_cents")
+
   /// **La trace de résolution**, figée à la passation — cf.
   /// `documentation/pricing/architecture-resolution-de-prix.md`.
   ///

@@ -434,12 +434,12 @@ Un écran Ops « état des canaux » (identité : configurée / e-mail : pas de 
 
 ## 11. Où est le code
 
-| Quoi                  | Où                                                                      |
-| --------------------- | ----------------------------------------------------------------------- |
-| Domaine + CQRS        | `apps/lfd-api/src/b2b/account/`                                         |
-| Verdict d'activation  | `.../account/domain/services/activation-gate.ts`                        |
-| Échéance d'invitation | `.../platform/shared/invitation/invitation-expiry.ts`                   |
-| Ouverture d'accès     | `.../account/application/services/grant-account-access.service.ts`      |
-| Fiche staff           | `apps/lfc-B2B-admin-frontend/src/app/fiche-client/`                     |
-| Cartes partagées      | `packages/b2b-ui/src/company/`                                          |
-| Espace client         | `apps/lfc-B2B-platform-frontend/src/app/account/` et `.../entreprises/` |
+| Quoi                  | Où                                                                   |
+| --------------------- | -------------------------------------------------------------------- |
+| Domaine + CQRS        | `apps/lfd-api/src/b2b/account/`                                      |
+| Verdict d'activation  | `.../account/domain/services/activation-gate.ts`                     |
+| Échéance d'invitation | `.../platform/shared/invitation/invitation-expiry.ts`                |
+| Ouverture d'accès     | `.../account/application/services/grant-account-access.service.ts`   |
+| Fiche staff           | `apps/lfd-backoffice-frontend/src/app/fiche-client/`                 |
+| Cartes partagées      | `packages/b2b-ui/src/company/`                                       |
+| Espace client         | `apps/lfc-ecommerce-frontend/src/app/account/` et `.../entreprises/` |

@@ -165,13 +165,28 @@ export const CATALOGUE: CatalogueCorpus = {
       // restantes portaient une matrice VIDE, donc leurs 54 fiches n'étaient
       // candidates à aucun canal — le miroir B2B n'en montrait que 38 sur 94,
       // et le reste tombait en « canal fermé » sans que rien ne dise pourquoi.
+      //
+      // 🔴 **Ouverte au COMPTOIR le 2026-09-21**, et c'est la moitié qui
+      // manquait. Le geste de 2026-09-13 n'avait ouvert que le canal pro ; la
+      // vitrine publique ne montrait donc que 37 des 92 articles du corpus,
+      // sans que rien ne le dise non plus. Une famille de pâtisseries qu'une
+      // boulangerie ne vendrait pas à son comptoir n'existe pas.
       channels: [
         {
           pointOfSaleLabel: "B2B",
           context: "b2b",
         },
+        {
+          pointOfSaleLabel: "Village",
+          context: "takeaway",
+        },
+        {
+          pointOfSaleLabel: "Labo",
+          context: "takeaway",
+        },
       ],
       vat: {
+        takeaway: "Réduit",
         b2b: "Réduit",
       },
     },
@@ -180,14 +195,24 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Salé & traiteur",
       },
       parentName: null,
-      // Ouverte aux pros le 2026-09-13 — même geste que « Pâtisseries ».
+      // Ouverte aux pros le 2026-09-13, au comptoir le 2026-09-21 — même geste
+      // que « Pâtisseries », et pour la même raison.
       channels: [
         {
           pointOfSaleLabel: "B2B",
           context: "b2b",
         },
+        {
+          pointOfSaleLabel: "Village",
+          context: "takeaway",
+        },
+        {
+          pointOfSaleLabel: "Labo",
+          context: "takeaway",
+        },
       ],
       vat: {
+        takeaway: "Réduit",
         b2b: "Réduit",
       },
     },
@@ -208,8 +233,21 @@ export const CATALOGUE: CatalogueCorpus = {
           pointOfSaleLabel: "B2B",
           context: "b2b",
         },
+        {
+          pointOfSaleLabel: "Village",
+          context: "takeaway",
+        },
+        {
+          pointOfSaleLabel: "Labo",
+          context: "takeaway",
+        },
       ],
       vat: {
+        // Le MÊME taux qu'au canal pro, et pas 5,5 % : l'arbitrage ci-dessus
+        // porte sur la nature du produit, pas sur le canal par lequel il part.
+        // Poser un taux réduit ici parce que « c'est à emporter » aurait
+        // contredit en silence la note qu'on vient de lire.
+        takeaway: "Normal",
         b2b: "Normal",
       },
     },

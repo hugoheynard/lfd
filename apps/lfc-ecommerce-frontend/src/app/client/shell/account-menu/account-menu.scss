@@ -1,0 +1,356 @@
+@use '../popover' as pop;
+
+/* ⚠️ Le popover se peint lui-même ; sans ce mixin, sa boîte à lui perce aux
+   quatre coins. Voir `_popover.scss`. */
+.pop {
+  @include pop.host;
+}
+
+/* ── LE DÉCLENCHEUR ────────────────────────────────────────────────────────
+   Pastille + deux lignes + chevron, 42 px de haut — le gabarit de la rangée de
+   la maquette du 2026-09-20. En dessous du pli, il se réduit à la pastille : la
+   barre d'un téléphone n'a pas la place de nommer un espace, et le menu de
+   poche le dit déjà. */
+.who {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  height: 42px;
+  padding: 0 var(--fold-space-xs);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* La pastille prend le papier : sur l'encre, c'est le contraste qui la détache,
+   pas une bordure de plus. */
+.who-chip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-paper-50);
+  color: var(--lfc-ink-800);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+}
+
+.who-titles,
+.who-caret {
+  display: none;
+}
+
+.who-space {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.who-person {
+  font-size: var(--lfc-text-kicker);
+  line-height: 1;
+  color: var(--lfc-color-on-primary-muted);
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .who {
+    padding: 0 var(--fold-space-sm) 0 var(--fold-space-xs);
+  }
+
+  .who-titles {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .who-caret {
+    display: block;
+    flex: none;
+    color: var(--lfc-color-on-primary-muted);
+  }
+}
+
+/* ── LE PANNEAU ───────────────────────────────────────────────────────────── */
+
+.panel {
+  @include pop.panel;
+}
+
+.head {
+  @include pop.head;
+}
+
+/* L'avatar de la PERSONNE : l'encre douce, pour ne pas répéter la pastille bleue
+   du déclencheur à trois centimètres de là. */
+.head-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-lg);
+  /* `#3c3527` dans la maquette : entre les deux suies du thème, et sensiblement
+     plus sombre que `soot-700` seule — c'est ce qui en fait le point le plus
+     dense de la bande de tête. */
+  background: color-mix(in srgb, var(--lfc-soot-900) 60%, var(--lfc-soot-700));
+  color: var(--lfc-paper-0);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+}
+
+.head-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.head-title {
+  @include pop.head-title;
+
+  font-size: var(--fold-text-lg);
+}
+
+.head-note {
+  @include pop.head-note;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section {
+  @include pop.section;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.section-label {
+  @include pop.section-label;
+}
+
+/* ── LES CARTES D'ESPACE ───────────────────────────────────────────────────
+   Des CARTES et non des lignes : choisir pour qui l'on travaille change les
+   prix, la facturation et les écrans disponibles. Un bord visible dit qu'on
+   désigne un objet, là où une ligne survolée dit qu'on va quelque part. */
+.spaces {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.space {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 11px;
+  /* 🔴 « PLUS MARQUÉ » EST UNE ÉPAISSEUR, PAS UNE TEINTE — relu sur la
+     maquette le 2026-09-20, après l'avoir d'abord deviné. Elle pose
+     `border:1.5px solid #e6dcc6` : le filet ORDINAIRE du thème (`paper-300`,
+     à un point près), mais à un pixel et demi. J'avais foncé la teinte et
+     gardé l'épaisseur — ce qui donne un bord sale plutôt qu'un bord franc. */
+  border: 1.5px solid var(--fold-color-border);
+  border-radius: 14px;
+  background: var(--lfc-paper-0);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 200ms ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--lfc-color-border-strong);
+  }
+}
+
+/* L'espace en cours : le bord de marque et le papier chaud. Jamais la seule
+   couleur — la coche de droite dit la même chose en forme. */
+/* 🔴 LE BEURRE, et c'est la maquette qui le veut (`#fce9c0`).
+   Je l'avais peinte à l'encre douce en me fondant sur une règle du thème — le
+   beurre est la couleur de l'ARGENT — et la règle ne s'applique pas ici : ce
+   beurre-là ne chiffre rien, il SURLIGNE, comme on surligne une ligne dans une
+   liste. La règle vaut pour une pastille qui annonce une valeur, pas pour un
+   fond de sélection.
+   ⚠️ La carte courante retourne aussi sa pastille (encre pleine, plus bas) :
+   c'est ce qui l'empêche de se fondre dans ce fond chaud. */
+.space.is-on {
+  border-color: var(--fold-color-primary);
+  background: var(--lfc-butter-100);
+}
+
+.space-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  /* Claire, comme les jetons d'icône des destinations juste en dessous — même
+     fond exactement, dans la maquette comme ici.
+     ⚠️ Mais PAS la même encre : la maquette écrit les initiales d'un espace en
+     SUIE et les glyphes des destinations en BLEU. C'est cohérent — une
+     destination est une action, un espace est un objet qu'on désigne. Je les
+     avais alignés tous les deux sur le bleu. */
+  background: var(--lfc-paper-100);
+  color: var(--lfc-soot-700);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+}
+
+/* La carte courante RETOURNE sa pastille : encre pleine sur crème. Sans ça,
+   une pastille `paper-100` posée sur le beurre de la sélection s'y dissout. */
+.space.is-on .space-mark {
+  background: var(--fold-color-primary);
+  color: var(--lfc-paper-50);
+}
+
+.space-titles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.space-line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.space-name {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.space-kind {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  /* 🔴 LE DÉFAUT EST LE BEIGE, ET SEUL LE PRO PREND L'ENCRE. J'avais peint les
+     DEUX en bleu : la pastille ne distinguait donc plus rien, alors que c'est
+     sa seule raison d'être sur deux lignes par ailleurs identiques. La
+     maquette met `#12307f` au pro et `#e6dcc6` au perso. */
+  background: var(--fold-color-border);
+  color: var(--lfc-soot-700);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.space-kind.is-pro {
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+
+.space-note {
+  font-size: var(--lfc-text-note);
+  line-height: 1.3;
+  color: var(--fold-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La flèche dit « on y va », la coche dit « on y est » : deux formes, deux
+   poids. */
+/* La flèche dit « on y va », la coche dit « on y est ». La maquette leur donne
+   `#8a8070` — la suie MOYENNE, pas la plus pâle : à ce corps-là, `text-faded`
+   les faisait disparaître. */
+.space-sign {
+  flex: none;
+  color: var(--lfc-soot-500);
+}
+
+.space-sign.is-on {
+  color: var(--fold-color-primary);
+}
+
+/* ── LES DESTINATIONS ─────────────────────────────────────────────────────── */
+
+.scroller {
+  @include pop.scroller;
+}
+
+.row {
+  @include pop.row;
+}
+
+.row-mark {
+  @include pop.row-mark;
+}
+
+.row-titles {
+  @include pop.row-titles;
+}
+
+.row-label {
+  @include pop.row-label;
+}
+
+.row-note {
+  @include pop.row-note;
+}
+
+.row-badge {
+  @include pop.row-badge;
+}
+
+/* Ce qui appelle une action plutôt qu'il n'informe — la même règle que la
+   sous-barre qui portait ces compteurs avant elle.
+   🔴 LA BRIQUE, ET NON LE BEURRE : la maquette donne `#f0dccd` / `#7a2417` au
+   badge « À régler ». Le beurre dit l'argent en général ; ce badge-là dit une
+   somme EN RETARD, ce qui n'est pas la même nouvelle. */
+.row-badge.is-warn {
+  background: var(--fold-color-alert-surface);
+  color: var(--lfc-brick-700);
+}
+
+/* ── LE PIED ──────────────────────────────────────────────────────────────── */
+
+.foot {
+  @include pop.foot;
+}
+
+.foot-action {
+  @include pop.foot-action;
+
+  &:disabled {
+    color: var(--fold-color-text-faded);
+    cursor: not-allowed;
+  }
+}
+
+/* Sortir n'est pas naviguer : la seule couleur d'alerte du panneau. */
+.foot-action.is-exit {
+  color: var(--lfc-brick-700);
+}

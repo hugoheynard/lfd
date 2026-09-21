@@ -130,6 +130,11 @@ function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] 
       isDefault: variant.isDefault,
       position: variant.position,
       vatRatePercent: variant.vatRatePercent,
+      // Depuis la v9 du fil. `?? null` couvre une arrivée d'avant — elle ne
+      // portait pas le prix public, et `null` dit « on ne sait pas », jamais
+      // « gratuit ».
+      publicTtcCents: variant.publicTtcCents ?? null,
+      publicByContext: variant.publicByContext ?? null,
       allergens: variant.allergens,
       // Projetées par le PIM (D6) : la plateforme n'a plus le référentiel
       // réglementaire, elle range ce qu'on lui envoie.

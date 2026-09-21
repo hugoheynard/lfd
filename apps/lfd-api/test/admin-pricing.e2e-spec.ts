@@ -23,7 +23,7 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
-import { createCompany } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -1747,12 +1747,21 @@ describe("POST /admin/pricing/projection", () => {
   it("rend le MÊME prix que la commande réelle au même niveau", async () => {
     await seedLadder();
 
+    // 🔴 **L'acheteur est un PRO**, et depuis le 2026-09-21 il faut le poser.
+    // `/admin/pricing/projection` est l'écran du canal professionnel : il
+    // projette le tarif pro même quand aucune société n'est visée. Lui opposer
+    // une commande passée sans société comparait deux audiences, et ce cas
+    // existe précisément pour interdire une divergence — pas pour en créer une.
+    const acheteur = await createUser(ctx.prisma, { auth0Sub: "auth0|projection" });
+    const societe = await createCompany(ctx.prisma);
+    await attachTo(ctx.prisma, acheteur.id, societe.id, "orders");
+
     const projected = jsonBody<{ points: { unitPriceMillicents: number }[] }>(
       await project([600]).expect(200),
     ).points[0]?.unitPriceMillicents;
 
     const placed = await ctx
-      .asSub("auth0|solo")
+      .asSub("auth0|projection")
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),

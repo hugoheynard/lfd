@@ -1,7 +1,7 @@
 # @lfd/b2b-ui
 
 Composants de **présentation** partagés entre les frontends B2B — la plateforme
-client (`lfc-B2B-platform-frontend`) et l'admin staff (`lfc-B2B-admin-frontend`).
+client (`lfc-ecommerce-frontend`) et l'admin staff (`lfd-backoffice-frontend`).
 Les deux affichent les mêmes entités (société, contacts, commandes…) ; leur
 apparence vit ici, une seule fois.
 

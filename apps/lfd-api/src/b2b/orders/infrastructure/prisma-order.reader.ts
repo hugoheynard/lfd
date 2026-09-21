@@ -49,6 +49,8 @@ interface OrderLineRow {
   readonly vatRate: { toNumber(): number };
   readonly quantity: number;
   readonly lineTotalCents: number;
+  readonly unitPriceTtcCents: number | null;
+  readonly lineTotalTtcCents: number | null;
   readonly basePriceMillicents: number | null;
   readonly pricingSteps: Prisma.JsonValue | null;
   readonly pricingFloored: boolean | null;
@@ -146,6 +148,8 @@ const ORDER_SELECT = {
       vatRate: true,
       quantity: true,
       lineTotalCents: true,
+      unitPriceTtcCents: true,
+      lineTotalTtcCents: true,
       basePriceMillicents: true,
       pricingSteps: true,
       pricingFloored: true,
@@ -650,6 +654,8 @@ function toLineView(line: OrderLineRow): OrderLineView {
     vatRate: line.vatRate.toNumber(),
     quantity: line.quantity,
     lineTotalCents: line.lineTotalCents,
+    unitPriceTtcCents: line.unitPriceTtcCents,
+    lineTotalTtcCents: line.lineTotalTtcCents,
     pricing: parseTrace(line),
     allergens: parseAllergens(line.allergens),
   };

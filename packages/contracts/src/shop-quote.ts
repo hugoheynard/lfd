@@ -100,6 +100,21 @@ export interface ShopQuoteLineView {
    * recalculer à l'écran redonnerait deux règles d'arrondi pour un même nombre.
    */
   readonly lineTotalCents: number;
+  /**
+   * Le même total, **taxe comprise**, en centimes.
+   *
+   * 🔴 **Il ne se déduit pas à l'écran.** Un front qui ferait `HT × (1 + taux)`
+   * poserait une seconde règle d'arrondi, et la ligne du panier cesserait de
+   * valoir l'étiquette du rayon — qui, elle, passe par `ventilateVat`. Ce champ
+   * EST cette ventilation, appliquée à la ligne seule.
+   *
+   * ⚠️ **La somme de ces montants ne fait PAS {@link ShopQuoteView.totalCents}**, et
+   * ce n'est pas un défaut : la ventilation arrondit **une fois par taux** sur
+   * l'assiette entière, comme une facture l'exige, et la remise comme le coursier
+   * n'appartiennent à aucune ligne. Un écran qui additionnerait les lignes pour
+   * retrouver le total afficherait un nombre que la caisse contredirait.
+   */
+  readonly lineTotalTtcCents: number;
   readonly vatRatePercent: number;
 }
 

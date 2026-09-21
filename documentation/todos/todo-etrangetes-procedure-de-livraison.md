@@ -50,7 +50,7 @@ expected array to have >=1 items`.
 12. **`@lfd/b2b-ui` ne peut pas tester ses propres composants** : son Jest
     tourne en CommonJS sans jsdom et `@angular/core` n'y charge pas. Ses
     composants sont éprouvés dans les apps qui les montent (l'éditeur et le
-    formulaire, dans `apps/lfc-B2B-admin-frontend/src/app/fiche-client/__tests__/`).
+    formulaire, dans `apps/lfd-backoffice-frontend/src/app/fiche-client/__tests__/`).
 13. **Une suite e2e unique en `--runInBand` sature la mémoire du poste** vers la
     80e suite sur 98 : la batterie complète ne se prouve d'un seul tenant qu'en
     parallèle borné.
@@ -68,7 +68,7 @@ expected array to have >=1 items`.
 17. **Avertissements de budget** aux builds des deux fronts (bundle initial ;
     `packages/b2b-ui/src/order/order-detail/order-detail.scss` pour l'admin) — non comparés à l'état d'avant.
 18. **Le journal n'a pas de phrase pour `company.delivery_procedure_edited_by_staff`**
-    (`apps/lfc-B2B-admin-frontend/src/app/admin/journal/journal-line.ts`) : les
+    (`apps/lfd-backoffice-frontend/src/app/admin/journal/journal-line.ts`) : les
     gestes du staff sur une procédure de livraison s'y affichent sans libellé. Les
     notes, elles, ont reçu les leurs au lot 4.
 19. **Le README de `@lfd/b2b-ui` dit « n'ouvre aucun panneau »** : faux depuis le
@@ -88,7 +88,7 @@ expected array to have >=1 items`.
     production).
 23. **`admin-delivery-procedure-commands.ts` regroupe quatre commandes dans un
     seul fichier**, alors que le B2B sépare commande et handler par fichier.
-24. **La boutique (`apps/lfc-B2B-platform-frontend`) n'a pas de script `lint`** :
+24. **La boutique (`apps/lfc-ecommerce-frontend`) n'a pas de script `lint`** :
     `turbo run lint` la liste sans rien exécuter. Un front qui n'entre jamais dans
     `pnpm lint` ne peut pas le faire échouer — relevé par `cerberus`.
 25. **Le bulletin de démarrage ignore le stockage `production`** :

@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.line {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+/* Le mot du filet est une INDICATION, pas un titre : il se lit en Pogonia
+   (Hugo, 2026-09-21). En Chunk, il pesait autant que le titre de la carte pour
+   ne dire que « ou ». */
+.label {
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fold-color-text-faded);
+}

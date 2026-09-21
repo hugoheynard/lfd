@@ -1,7 +1,7 @@
 # Le parcours client — écrans et textes
 
 **Écrit le 2026-09-07.** L'état **réel** du code au 2026-09-07, pas une cible.
-Chaque texte cité est une clé de `apps/lfc-B2B-platform-frontend/src/app/client/copy/`
+Chaque texte cité est une clé de `apps/lfc-ecommerce-frontend/src/app/client/copy/`
 et chaque route existe dans `app.routes.ts`.
 
 Il couvre la route **sans friction** (aucune société — la carte) et la route

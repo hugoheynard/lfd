@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { appointmentChannelSchema } from "../appointment.js";
 import {
+  cents,
   fact,
   instant,
   millicents,
@@ -32,6 +33,8 @@ function labelled<S extends z.ZodRawShape>(shape: S) {
 
 /** Un prix B2B unitaire, en millicentimes. */
 const price = () => payload({ priceMillicents: millicents() });
+/** L'étiquette publique — en CENTIMES TTC, l'unité d'un prix qu'un humain pose. */
+const publicPrice = () => payload({ ttcCents: cents() });
 
 /** L'article dont on parle — le sujet est son SKU, la charge le répète. */
 const skuOnly = () => payload({ sku: z.string() });
@@ -47,8 +50,22 @@ export const COMMERCE_FACTS = {
     after: price(),
   }),
   "catalog_item.b2b_price_cleared": labelled({ sku: z.string(), before: price() }),
+  /**
+   * ⚠️ **En centimes TTC, et c'est une autre charge que sa voisine.** Le prix
+   * professionnel est un hors taxe DÉRIVÉ, donc en millicentimes ; celui-ci est
+   * l'étiquette qu'un humain a posée. Partager `price()` aurait fait relire
+   * 299 comme des millicentimes — « 0,00299 € » sur un croissant à 2,99 €.
+   */
+  "catalog_item.public_price_set": labelled({
+    sku: z.string(),
+    before: publicPrice().nullable(),
+    after: publicPrice(),
+  }),
+  "catalog_item.public_price_cleared": labelled({ sku: z.string(), before: publicPrice() }),
   "catalog_item.hidden": labelled(skuOnly().shape),
   "catalog_item.shown": labelled(skuOnly().shape),
+  "catalog_item.hidden_public": labelled(skuOnly().shape),
+  "catalog_item.shown_public": labelled(skuOnly().shape),
   "catalog_item.featured": labelled(skuOnly().shape),
   "catalog_item.unfeatured": labelled(skuOnly().shape),
   /**

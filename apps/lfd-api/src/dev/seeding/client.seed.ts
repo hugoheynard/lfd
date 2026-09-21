@@ -303,7 +303,8 @@ export async function seedPendingCompany(
  * c'est celui dont l'adresse a ouvert le compte, et le dépôt refuse un second
  * détenteur. `AssignableRole` l'exclut d'ailleurs par construction.
  *
- * ⚠️ **Sans effet sur un poste qui n'a pas ce compte**, et idempotent :
+ * ⚠️ **Sans effet sur un poste qui n'a pas ce compte** — mais il le DIT plutôt
+ * que de s'arrêter en silence. Idempotent par ailleurs :
  * `@@unique([userId, companyId])` garantit qu'un rattachement existant n'est ni
  * dupliqué ni réécrit.
  */
@@ -316,6 +317,15 @@ export async function seedImpersonatedAccess(
     select: { id: true },
   });
   if (impersonated === null) {
+    // 🔴 **Il le DIT, depuis le 2026-09-21.** Ce retour était muet, et son
+    // silence coûtait la chose même que la fonction existe pour donner : le
+    // compte se crée par l'écran d'inscription de développement, donc souvent
+    // APRÈS un semis. Ce jour-là, rien ne l'a rattaché et rien ne l'a signalé —
+    // on cherche ensuite pourquoi le sélecteur d'espace n'a que deux entrées, et
+    // la réponse est dans un `return` sans mot.
+    console.log(
+      `· ${IMPERSONATED_EMAIL} n'existe pas encore — aucun accès donné. Créez le compte, puis rejouez ce semis.`,
+    );
     return;
   }
   for (const companyId of companyIds) {

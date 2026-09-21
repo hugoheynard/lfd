@@ -3,8 +3,8 @@
  *
  * Troisième et dernière source d'OPS, à côté du battement (ce qu'un nœud dit de
  * lui-même) et du trafic (ce que la gateway a vu passer). Elle est la seule qui
- * parle des tiers : Auth0, Stripe, Resend, Shopify n'émettront jamais vers
- * nous, et la gateway ne les voit pas.
+ * parle des tiers : Auth0, Stripe, Resend n'émettront jamais vers nous, et la
+ * gateway ne les voit pas.
  *
  * Trois règles, et chacune vient d'une façon connue de se tromper :
  *

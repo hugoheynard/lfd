@@ -1,0 +1,354 @@
+:host {
+  display: block;
+}
+
+/* 🔴 EN CARTE, LE BOUTON REMPLIT SON HÔTE (Hugo, 2026-09-20 : « les deux cartes
+   devraient faire la même hauteur »).
+   Les rangées côte à côte s'étirent déjà à la hauteur de la plus haute — c'est
+   le `stretch` du conteneur — mais l'hôte était un `block` et le bouton, lui,
+   se taillait sur son contenu : deux cartes de textes inégaux laissaient donc
+   un vide crème sous la plus courte, et l'écart se lisait comme un défaut
+   d'alignement. En flex, le bouton devient l'élément qui s'étire. */
+:host([data-shape='row']) {
+  display: flex;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-lg);
+  text-align: start;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+
+  &:active {
+    transform: scale(0.975);
+  }
+}
+
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--fold-radius-md);
+}
+
+.text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Le mot d'amorce ne paraît pas par défaut : au doigt, le raccourci est un bloc
+   et n'a rien à amorcer. Les deux formes le rallument — la barre en tête de
+   phrase, la carte en sur-titre — et chacune à sa façon. */
+.lead {
+  display: none;
+}
+
+/* 🔴 EN CARTE, L'AMORCE EST UN SUR-TITRE (« OU REPRENEZ » de la maquette du
+   2026-09-20). Gardée sous `[data-shape='row']` et non rallumée dans la base :
+   `/nouvelle-commande` passe la même amorce en forme BARRE, et la montrer
+   partout lui ajouterait une ligne que personne n'a demandée. */
+:host([data-shape='row']) .lead {
+  display: block;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.title {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}
+
+.sub {
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  /* Le numéro de commande vit dans cette ligne : les chiffres s'y alignent. */
+  font-variant-numeric: tabular-nums;
+}
+
+.action {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--lfc-color-primary-vivid);
+}
+
+.chevron {
+  flex: none;
+}
+
+/* ── L'appel : le beurre intense ──────────────────────────────────────────── */
+
+:host([data-tone='warm']) {
+  .row {
+    padding: 14px 16px;
+    border-radius: var(--lfc-radius-xl);
+    background: var(--lfc-color-accent-deep);
+    color: var(--lfc-color-on-accent-deep);
+    box-shadow: 0 6px 18px -10px rgb(90 61 7 / 60%);
+  }
+
+  .tile {
+    width: 34px;
+    height: 34px;
+    background: var(--lfc-color-accent);
+    color: var(--lfc-color-on-accent);
+  }
+
+  .title {
+    font-size: var(--lfc-text-block);
+    font-weight: var(--lfc-weight-black);
+  }
+
+  .sub {
+    color: var(--lfc-color-on-accent-deep-muted);
+  }
+
+  .chevron {
+    color: var(--lfc-color-on-accent-deep-faded);
+  }
+}
+
+/* ── La proposition : la carte crème ──────────────────────────────────────── */
+
+:host([data-tone='card']) {
+  .row {
+    border-color: var(--fold-color-border);
+    background: var(--fold-color-surface-card);
+    box-shadow: var(--lfc-shadow-card);
+  }
+
+  .tile {
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+  }
+
+  .sub {
+    color: var(--lfc-color-text-subtle);
+  }
+
+  .chevron {
+    color: var(--fold-color-text-faded);
+  }
+}
+
+/* ── La proposition, sur la crème : le beurre PÂLE ────────────────────────── */
+
+/* Une carte crème sur la feuille crème n'aurait pas de bord ; le beurre intense
+   de `warm`, lui, est fait pour un puits d'encre et brûlerait ici. */
+:host([data-tone='soft']) {
+  .row {
+    border-color: var(--lfc-butter-300);
+    background: var(--lfc-butter-100);
+  }
+
+  .tile {
+    background: var(--lfc-paper-0);
+    color: var(--lfc-ink-800);
+  }
+
+  .title {
+    font-size: var(--lfc-text-block);
+    font-weight: var(--lfc-weight-black);
+  }
+
+  .sub,
+  .chevron {
+    color: var(--lfc-butter-800);
+  }
+}
+
+/* ── Le rappel : le trait pointillé ───────────────────────────────────────── */
+
+/* Le pointillé n'est pas une décoration : il dit que ce bloc parle d'une
+   commande DÉJÀ passée, pas d'une nouvelle à composer. */
+:host([data-tone='draft']) {
+  .row {
+    border: 1px dashed var(--lfc-color-border-strong);
+    background: var(--fold-color-surface-card);
+  }
+
+  .tile {
+    background: var(--fold-color-primary-surface);
+    color: var(--lfc-color-primary-vivid);
+  }
+
+  .sub {
+    color: var(--lfc-color-text-subtle);
+  }
+
+  .chevron {
+    color: var(--fold-color-text-faded);
+  }
+}
+
+/* ── Au-delà du pli : la forme `bar` ──────────────────────────────────────── */
+
+/* Le raccourci cesse d'être un bloc pour devenir une PHRASE dans une barre. Il
+   perd donc son châssis : c'est la barre qui porte le fond, lui ne porte plus
+   que ses mots. */
+@media (min-width: 900px) {
+  :host([data-shape='bar']) {
+    display: flex;
+    align-items: center;
+
+    .row {
+      gap: 11px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+    }
+
+    .text {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .lead,
+    .sub {
+      display: inline;
+      font-size: var(--fold-text-md);
+      font-weight: var(--fold-weight-regular);
+      letter-spacing: normal;
+      text-transform: none;
+      color: var(--lfc-color-on-well-muted);
+    }
+
+    .title {
+      font-family: var(--fold-font-sans);
+      font-size: var(--fold-text-md);
+      font-weight: var(--fold-weight-bold);
+      letter-spacing: normal;
+      text-transform: none;
+      color: var(--lfc-color-on-well);
+    }
+
+    .action,
+    .chevron {
+      display: none;
+    }
+  }
+
+  /* La reprise : une pastille ronde, et la phrase à côté. */
+  :host([data-shape='bar'][data-tone='draft']) .tile {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--fold-radius-pill);
+    background: var(--lfc-color-on-well-tile);
+    color: var(--lfc-color-on-well);
+  }
+
+  /* La boutique redevient un BOUTON : c'est la seule action de la barre, et sur
+     le puits un aplat de beurre écraserait la phrase d'à côté. */
+  :host([data-shape='bar'][data-tone='warm']) {
+    .row {
+      height: 42px;
+      padding: 0 20px;
+      border: 1px solid var(--fold-color-border);
+      border-radius: var(--fold-radius-md);
+    }
+
+    .tile,
+    .sub {
+      display: none;
+    }
+
+    .title {
+      font-family: var(--fold-font-label);
+      font-size: var(--fold-text-xs);
+      font-weight: var(--fold-weight-extrabold);
+      letter-spacing: var(--lfc-tracking-label);
+      text-transform: uppercase;
+      color: var(--lfc-color-on-well);
+    }
+  }
+}
+
+/* ── LA PAIRE DE L'ACCUEIL : la forme `row` ───────────────────────────────── */
+
+/* Les mesures de la maquette du 2026-09-20 : `padding:16px 18px; gap:15px;
+   border-radius:18px`, tuile de 40, titre à 16. Elles vivent ici et non dans la
+   base parce que `/nouvelle-commande` sert les mêmes raccourcis en forme BARRE,
+   où le châssis disparaît : les lui donner ne changerait rien chez lui, mais
+   l'exposerait au prochain réglage fait pour l'accueil.
+
+   ⚠️ CE BLOC VIENT APRÈS LES REGISTRES, et l'ordre est porteur : `soft` règle
+   lui aussi la taille du titre, à la MÊME spécificité. Déclaré plus haut, il
+   aurait gagné — et une seule des deux cartes aurait grandi. */
+:host([data-shape='row']) {
+  .row {
+    gap: 15px;
+    padding: 16px 18px;
+    border-radius: var(--lfc-radius-2xl);
+  }
+
+  .tile {
+    width: 40px;
+    height: 40px;
+  }
+
+  .title {
+    font-size: var(--lfc-text-heading);
+  }
+}
+
+/* ── « OU REPRENEZ », exactement comme la maquette ────────────────────────── */
+
+/* 🔴 EN CARTE, LE RAPPEL PERD SON POINTILLÉ ET GAGNE UN BOUTON (Hugo,
+   2026-09-20 : « exactement comme la ref — bouton refaire, icône grey bg »).
+
+   La maquette le dessine en carte crème à filet PLEIN, tuile beige pâle à
+   glyphe d'encre, et « REFAIRE » en pastille d'encre pleine. Le pointillé et
+   le lien-texte restent en forme BARRE, qui est celle de
+   `/nouvelle-commande` : là-bas le raccourci est une phrase dans un puits, et
+   un bouton plein y pèserait plus que la commande dont il parle. Ici, il EST
+   l'action de la carte. */
+:host([data-shape='row'][data-tone='draft']) {
+  .row {
+    border: 1px solid var(--lfc-paper-400);
+    background: var(--lfc-paper-0);
+    box-shadow: var(--lfc-shadow-card);
+  }
+
+  /* Le beurre le plus pâle, et le glyphe en encre : la tuile NOMME le geste,
+     elle ne le vend pas. Un aplat d'encre ici aurait fait deux pleins dans la
+     même carte, à côté du bouton. */
+  .tile {
+    background: var(--lfc-paper-100);
+    color: var(--lfc-ink-800);
+  }
+
+  .action {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: var(--fold-radius-md);
+    background: var(--lfc-ink-800);
+    color: var(--lfc-paper-50);
+    font-size: var(--fold-text-xs);
+  }
+}

@@ -89,15 +89,15 @@ vérification AOT des gabarits**. Une erreur dans un `.html` ne se voit que là.
 Lance-les dans cet ordre — du plus rapide au plus lent, pour rendre la main tôt
 sur un échec évident. Chaque commande écrit dans un log que tu relis ensuite.
 
-| #   | Ce que ça vérifie    | Commande (depuis la racine du dépôt)                                               |
-| --- | -------------------- | ---------------------------------------------------------------------------------- |
-| 1   | Lint de tout         | `pnpm lint`                                                                        |
-| 2   | Types du backend     | `cd apps/lfd-api && pnpm exec tsc --noEmit`                                        |
-| 3   | Types du back-office | `cd apps/lfc-B2B-admin-frontend && pnpm exec tsc -p tsconfig.app.json --noEmit`    |
-| 4   | Types de la boutique | `cd apps/lfc-B2B-platform-frontend && pnpm exec tsc -p tsconfig.app.json --noEmit` |
-| 5   | **Tous** les tests   | `pnpm test` — apps ET paquets                                                      |
-| 6   | Les 17 portes        | la boucle ci-dessus, une par une                                                   |
-| 7   | Gabarits AOT         | `pnpm exec ng build` dans chaque front                                             |
+| #   | Ce que ça vérifie    | Commande (depuis la racine du dépôt)                                             |
+| --- | -------------------- | -------------------------------------------------------------------------------- |
+| 1   | Lint de tout         | `pnpm lint`                                                                      |
+| 2   | Types du backend     | `cd apps/lfd-api && pnpm exec tsc --noEmit`                                      |
+| 3   | Types du back-office | `cd apps/lfd-backoffice-frontend && pnpm exec tsc -p tsconfig.app.json --noEmit` |
+| 4   | Types de la boutique | `cd apps/lfc-ecommerce-frontend && pnpm exec tsc -p tsconfig.app.json --noEmit`  |
+| 5   | **Tous** les tests   | `pnpm test` — apps ET paquets                                                    |
+| 6   | Les 17 portes        | la boucle ci-dessus, une par une                                                 |
+| 7   | Gabarits AOT         | `pnpm exec ng build` dans chaque front                                           |
 
 Le point 5 est celui qu'on saute par accident. `pnpm test` à la **racine**
 couvre `packages/**` ; `pnpm --filter lfd-api test` ne les couvre pas.

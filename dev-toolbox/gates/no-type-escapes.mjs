@@ -45,8 +45,8 @@ const ROOT = process.cwd();
 
 /** Les arbres écrits à la main. Le client Prisma est généré, il ne compte pas. */
 const SCOPES = [
-  "apps/lfc-B2B-admin-frontend/src",
-  "apps/lfc-B2B-platform-frontend/src",
+  "apps/lfd-backoffice-frontend/src",
+  "apps/lfc-ecommerce-frontend/src",
   "apps/lfd-api/src",
   "apps/lfd-api/test",
   "packages",
@@ -63,11 +63,11 @@ const SKIP = new Set(["node_modules", "dist", "client", "coverage", "out-tsc", "
  * dette éteinte au tableau.
  */
 const KNOWN_CASTS = new Set([
-  "apps/lfc-B2B-admin-frontend/src/app/b2b/tarification/__tests__/timeline-axis.spec.ts",
-  "apps/lfc-B2B-admin-frontend/src/app/commercial/tarification/simulation/__tests__/piercing-rules.spec.ts",
-  "apps/lfc-B2B-admin-frontend/src/app/fiche-client/__tests__/fiche-client.facade.spec.ts",
-  "apps/lfc-B2B-admin-frontend/src/app/pim/catalogue/__tests__/sold-contexts.spec.ts",
-  "apps/lfc-B2B-admin-frontend/src/app/shared/notifications/__tests__/notifications-panel.spec.ts",
+  "apps/lfd-backoffice-frontend/src/app/b2b/tarification/__tests__/timeline-axis.spec.ts",
+  "apps/lfd-backoffice-frontend/src/app/commercial/tarification/simulation/__tests__/piercing-rules.spec.ts",
+  "apps/lfd-backoffice-frontend/src/app/fiche-client/__tests__/fiche-client.facade.spec.ts",
+  "apps/lfd-backoffice-frontend/src/app/pim/catalogue/__tests__/sold-contexts.spec.ts",
+  "apps/lfd-backoffice-frontend/src/app/shared/notifications/__tests__/notifications-panel.spec.ts",
   "apps/lfd-api/src/b2b/account/application/commands/__tests__/issue-password-link.handler.spec.ts",
   "apps/lfd-api/src/b2b/account/application/commands/__tests__/request-activation-support.handler.spec.ts",
   "apps/lfd-api/src/b2b/orders/application/queries/__tests__/get-order-payment.handler.spec.ts",
@@ -75,7 +75,6 @@ const KNOWN_CASTS = new Set([
   "apps/lfd-api/src/pim/catalogue/product/application/__tests__/set-product-vat.spec.ts",
   "apps/lfd-api/src/platform/context/__tests__/request-context.middleware.spec.ts",
   "apps/lfd-api/src/platform/shared/http/__tests__/app-error.filter.spec.ts",
-  "apps/lfd-api/test/admin-catalog.e2e-spec.ts",
   "packages/b2b-ui/src/company/__tests__/fulfillment-preference.model.spec.ts",
   "packages/storage/src/__tests__/s3-storage-service.spec.ts",
 ]);

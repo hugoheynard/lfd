@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
-import type { ShopifyCredentialsSource, ShopifyOAuthCredentials } from "@lfd/shopify-admin";
 
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 
@@ -54,15 +53,11 @@ const DEFAULT_AUTH0_CUSTOMER_CONNECTION = "lfc-b2b-customers";
  */
 const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
 
-// Le type des identifiants Shopify vit dans `@lfd/shopify-admin` (le transport).
-// Ré-exporté ici pour les consommateurs qui passent par `AppConfig`.
-export type { ShopifyOAuthCredentials };
-
 /** Le transport vers la base — cf. {@link AppConfig.databaseTransport}. */
 export type DatabaseTransport = "pg" | "accelerate";
 
 @Injectable()
-export class AppConfig implements ShopifyCredentialsSource {
+export class AppConfig {
   private readonly database: string;
   private readonly publicationValue: boolean;
   private readonly deliveryInboxValue: boolean;
@@ -85,9 +80,6 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly adminBypass: boolean;
   private readonly recomputeTokenValue: string | null;
   private readonly adminBaseUrlValue: string | null;
-  private readonly shopifyTokenValue: string | null;
-  private readonly shopifyClientIdValue: string | null;
-  private readonly shopifyClientSecretValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
   private readonly fieldKey: Buffer;
@@ -119,9 +111,6 @@ export class AppConfig implements ShopifyCredentialsSource {
     this.journalStrictFactsValue = optionalJournalStrictFacts();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
-    this.shopifyTokenValue = optionalString("SHOPIFY_ADMIN_TOKEN");
-    this.shopifyClientIdValue = optionalString("SHOPIFY_CLIENT_ID");
-    this.shopifyClientSecretValue = optionalString("SHOPIFY_CLIENT_SECRET");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
@@ -456,47 +445,6 @@ export class AppConfig implements ShopifyCredentialsSource {
    */
   recomputeToken(): string | null {
     return this.recomputeTokenValue;
-  }
-
-  /**
-   * Jeton d'API Shopify — **secret**, donc dans l'environnement et **pas en base**.
-   *
-   * Les réglages non sensibles de l'intégration (domaine de la boutique,
-   * activation) vivent en base et se pilotent depuis l'écran Réglages. Le jeton,
-   * non : un secret en base fuite par les sauvegardes, les exports et les logs,
-   * et se retrouve lisible par quiconque ouvre l'admin. L'écran affiche
-   * seulement s'il est **présent**.
-   */
-  shopifyAdminToken(): string | null {
-    return this.shopifyTokenValue;
-  }
-
-  /**
-   * Identifiants d'app **Dev Dashboard** — l'unique manière d'obtenir un jeton
-   * depuis le 01/01/2026 (plus aucun token statique n'y est affiché). Échangés
-   * server-to-server via le *client credentials grant*. Deux secrets, jamais en
-   * base. `null` tant que l'un des deux manque : une moitié d'identifiant est
-   * inutile, et `null` dit « canal éteint » d'une seule voix plutôt que de
-   * laisser l'appelant recomposer la condition à chaque fois.
-   */
-  shopifyOAuthCredentials(): ShopifyOAuthCredentials | null {
-    if (this.shopifyClientIdValue === null || this.shopifyClientSecretValue === null) {
-      return null;
-    }
-    return {
-      clientId: this.shopifyClientIdValue,
-      clientSecret: this.shopifyClientSecretValue,
-    };
-  }
-
-  /**
-   * L'intégration peut passer en mode réel dès qu'**un** chemin
-   * d'authentification est approvisionné : soit le jeton legacy statique, soit
-   * la paire client credentials. L'écran n'affiche que cette présence, jamais
-   * les secrets eux-mêmes.
-   */
-  hasShopifyCredentials(): boolean {
-    return this.shopifyTokenValue !== null || this.shopifyOAuthCredentials() !== null;
   }
 
   /**

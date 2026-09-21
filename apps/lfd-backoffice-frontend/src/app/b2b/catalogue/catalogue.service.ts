@@ -1,0 +1,113 @@
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+
+import type { CatalogAdminItemView } from '@lfd/contracts';
+
+import { B2B_API_BASE } from '../../api/api-config';
+
+/**
+ * Le catalogue **du paramétrage** : ce que le PIM a poussé, plus ce qu'on décide
+ * ici.
+ *
+ * Écriture par geste nommé, comme côté serveur — `setPrice` / `alignOnPim` /
+ * `setVisibility` / `setFeatured`. Un `update(sku, patch)` unique aurait été plus court et
+ * aurait perdu la seule chose qui compte : ce que l'utilisateur croyait faire.
+ */
+@Injectable({ providedIn: 'root' })
+export class CatalogueService {
+  private readonly http = inject(HttpClient);
+
+  /** Tout le catalogue, masqués compris — le back-office doit les voir pour les rouvrir. */
+  list(): Promise<readonly CatalogAdminItemView[]> {
+    return firstValueFrom(
+      this.http.get<readonly CatalogAdminItemView[]>(`${B2B_API_BASE}/admin/catalog`),
+    );
+  }
+
+  /** Pose le tarif de vente PRO. Le serveur refuse un prix égal à celui du PIM. */
+  async setPrice(sku: string, priceMillicents: number): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/price`, {
+        priceMillicents,
+      }),
+    );
+  }
+
+  /**
+   * Retire le tarif PRO : l'article repasse au prix du PIM et suivra ses hausses.
+   *
+   * Un `DELETE`, pas un `PUT { priceMillicents: null }` — on supprime une décision, on
+   * n'en pose pas une qui vaudrait « rien ».
+   */
+  async alignOnPim(sku: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/price`),
+    );
+  }
+
+  /**
+   * Met l'article en avant dans la boutique, ou l'en retire.
+   *
+   * Le serveur **refuse** de mettre en avant un article masqué : les deux états
+   * ensemble diraient « ne pas le montrer » et « le montrer en premier ».
+   * L'appelant désactive donc le geste plutôt que de laisser partir un 409.
+   *
+   * ⚠️ **Sans aucun appelant depuis le 2026-09-21** (vérifié ce jour-là) : la
+   * colonne « mise en avant » a quitté le catalogue, et l'écran qui la réglera
+   * n'existe pas encore (Hugo : « ça sera ailleurs »). La méthode est GARDÉE
+   * parce que la route, elle, vit — la supprimer ferait réécrire dans huit
+   * jours ce que ces six lignes disent déjà, et le serveur continuerait
+   * d'exposer un geste que plus aucun client ne sait formuler.
+   */
+  async setFeatured(sku: string, featured: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/featured`, {
+        featured,
+      }),
+    );
+  }
+
+  /**
+   * Pose l'étiquette **publique**, en centimes TTC.
+   *
+   * Route distincte de celle du prix pro : deux intentions, deux audiences,
+   * deux refus. Le serveur en oppose un que le pro ne connaît pas — un article
+   * que la vitrine publique n'expose pas.
+   */
+  async setPublicPrice(sku: string, ttcCents: number): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-price`, {
+        ttcCents,
+      }),
+    );
+  }
+
+  /** Retire l'étiquette publique : l'article repasse à celle du PIM. */
+  async alignPublicOnPim(sku: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-price`,
+      ),
+    );
+  }
+
+  /** Masque ou réaffiche l'article dans la vitrine **publique**. */
+  async setPublicVisibility(sku: string, hidden: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-visibility`,
+        { hidden },
+      ),
+    );
+  }
+
+  /** Masque ou réaffiche l'article dans la boutique **professionnelle**. */
+  async setVisibility(sku: string, hidden: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/visibility`, {
+        hidden,
+      }),
+    );
+  }
+}

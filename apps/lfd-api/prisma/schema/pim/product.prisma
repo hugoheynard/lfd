@@ -126,9 +126,8 @@ model Product {
   /// d-2 ; la colonne `jsonb` qui la précédait est tombée en d-3.
   channelOverrideRows ProductChannelOverride?
 
-  /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).
-  shopifyBinding ShopifyProductBinding?
-  b2bBinding     B2bChannelBinding?
+  /// Relation virtuelle — la clé étrangère est portée par le binding (ADR-13).
+  b2bBinding B2bChannelBinding?
 
   @@index([categoryId])
   @@map("product")
@@ -223,12 +222,6 @@ model ProductVariant {
   /// création, donc affirmerait « aucun allergène » sans vérification. La garde
   /// est ailleurs : pas de publication sans fiche (doc 03).
   nutrition NutritionDeclaration?
-
-  /// Relation **virtuelle** : aucune colonne n'est ajoutée ici. La clé étrangère
-  /// physique est portée par `shopify_variant_binding` — le sens imposé par ADR-13
-  /// (le socle ne pointe jamais vers un canal). Prisma exige seulement de déclarer
-  /// l'autre extrémité.
-  shopifyBinding ShopifyVariantBinding?
 
   @@index([productId])
   @@map("product_variant")

@@ -62,7 +62,8 @@ export class PriceProjectionQuery {
 
   /** @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas. */
   async project(payload: PriceProjectionPayload, at: Date): Promise<PriceProjectionView> {
-    const found = await this.catalog.resolve(payload.sku);
+    // `pro` : l'écran de tarification projette le prix du canal professionnel.
+    const found = await this.catalog.resolve(payload.sku, "pro");
     if (found === null) {
       throw new UnknownSkuError(payload.sku);
     }

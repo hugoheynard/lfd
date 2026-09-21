@@ -195,8 +195,8 @@ déploiements — étendre, basculer, resserrer (`documentation/ci-cd/pipelines.
 
 ⚠️ **Ce paragraphe affirmait le contraire, et c'était faux.** Il disait « le statut
 ne sert qu'à peindre une pastille » et « un brouillon part en boutique ». Un
-`grep status` sur la projection Shopify le contredit
-([`projection.ts:101`](../../apps/lfd-api/src/pim/channels/shopify/products/projection.ts)) :
+`grep status` sur la projection du canal Shopify le contredisait — ce canal est
+sorti du dépôt le 2026-09-21, le code cité vit désormais dans l'histoire git :
 
 ```ts
 // Un brouillon reste un brouillon : on ne met jamais en ligne par inadvertance.

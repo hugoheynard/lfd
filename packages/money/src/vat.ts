@@ -149,3 +149,31 @@ function add(byRate: Map<number, bigint>, rate: number, numerator: bigint): void
 function taxOf(base: Exact, rate: number): number {
   return roundToCents(fractionByBasisPoints(base, Math.round(rate * 100)));
 }
+
+/**
+ * **Un montant hors taxe → son taxe comprise**, par la chaîne de la CAISSE.
+ *
+ * 🔴 Ni une multiplication, ni un arrondi maison : {@link ventilateVat}, exactement
+ * ce que le devis et la commande font. Un TTC calculé autrement serait plus juste
+ * ou plus faux, peu importe — il serait **différent**, et l'étiquette du rayon
+ * cesserait de valoir ce qu'on encaisse.
+ *
+ * ⚠️ **Elle prend des CENTIMES, pas des millicentimes**, et l'appelant passe donc
+ * par `lineTotalCents` sous les yeux du lecteur. C'est `lint:money-units` qui l'a
+ * exigé, et elle avait raison : l'arrondi au centime du total de ligne fait partie
+ * du résultat, et une fonction qui l'avalait en cachait la moitié.
+ *
+ * ⚠️ **Appliquée ligne par ligne, la somme des TTC ne fait PAS le total TTC du
+ * panier** — et ce n'est pas un défaut : `ventilateVat` arrondit **une fois par
+ * taux** sur l'assiette entière, ce qu'une facture exige. Un écran qui affiche des
+ * lignes TTC ne peut donc pas les additionner pour retrouver le total ; c'est le
+ * serveur qui dit le total, et lui seul.
+ *
+ * Arrivée de `b2b/catalog/application/shop-catalogue-view.ts` le 2026-09-21, quand
+ * le devis de la boutique en a eu besoin pour dire ses lignes en TTC : deux
+ * définitions de « combien ça coûte taxe comprise » auraient divergé d'un centime
+ * entre le rayon et le panier, ce qui est exactement l'écart qu'on répare.
+ */
+export function ttcCentsOf(htCents: number, vatRate: number): number {
+  return ventilateVat({ lines: [{ htCents, vatRate }], discountCents: 0, extras: [] }).totalCents;
+}

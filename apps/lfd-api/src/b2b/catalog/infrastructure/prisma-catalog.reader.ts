@@ -1,9 +1,28 @@
 import { Injectable } from "@nestjs/common";
 import type { OrderLineAllergens } from "@lfd/contracts";
+import { htMillicentsOf } from "@lfd/money";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import {
+  CatalogReader,
+  type ResolvedCatalogItem,
+  type ShopAudience,
+} from "../domain/ports/catalog.reader.js";
+import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
+import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+
+/**
+ * ⚠️ **`findSku` reste au tarif `pro`, et c'est écrit plutôt que laissé par
+ * défaut.**
+ *
+ * Il prend le SKU d'une DÉCLINAISON, là où le devis et la commande passent par
+ * le SKU produit (`listDefaultsByProductSkus`), qui porte l'audience depuis le
+ * lot A3. Aucun chemin public ne l'atteint aujourd'hui (2026-09-21).
+ *
+ * Un `"pro"` qu'on voit est une décision ; un défaut de signature est un oubli
+ * en devenir — et sur un prix, un oubli se facture.
+ */
 
 /** La forme que Prisma rend, article + famille + décision locale éventuelle. */
 interface ItemRow {
@@ -11,6 +30,7 @@ interface ItemRow {
   readonly productSku: string;
   readonly name: string;
   readonly priceMillicents: number;
+  readonly publicByContext: unknown;
   readonly isDefault: boolean;
   readonly position: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
@@ -34,7 +54,9 @@ interface ItemRow {
   };
   readonly override: {
     readonly priceMillicents: number | null;
+    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
+    readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
   } | null;
 }
@@ -57,28 +79,32 @@ export class PrismaCatalogReader extends CatalogReader {
       where: { sku, ...STILL_SOLD },
       include: { category: true, override: true },
     });
-    if (row === null || row.override?.isHidden === true) {
+    if (row === null || hiddenFrom(row, "pro")) {
       return null;
     }
-    const vatRate = billableRate(row);
-    return vatRate === null ? null : resolve(row, vatRate);
+    const served = servedPriceOf(row, "pro");
+    return served === null ? null : resolve(row, served);
   }
 
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
-  async findDefaultByProductSku(productSku: string): Promise<ResolvedCatalogItem | null> {
+  async findDefaultByProductSku(
+    productSku: string,
+    audience: ShopAudience,
+  ): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findFirst({
       where: { productSku, isDefault: true, ...STILL_SOLD },
       include: { category: true, override: true },
     });
-    if (row === null || row.override?.isHidden === true) {
+    if (row === null || hiddenFrom(row, audience)) {
       return null;
     }
-    const vatRate = billableRate(row);
-    return vatRate === null ? null : resolve(row, vatRate);
+    const served = servedPriceOf(row, audience);
+    return served === null ? null : resolve(row, served);
   }
 
   async listDefaultsByProductSkus(
     productSkus: readonly string[],
+    audience: ShopAudience,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     if (productSkus.length === 0) {
       return new Map();
@@ -89,23 +115,35 @@ export class PrismaCatalogReader extends CatalogReader {
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
     for (const row of rows) {
-      const vatRate = billableRate(row);
-      if (row.override?.isHidden === true || vatRate === null) {
+      const served = servedPriceOf(row, audience);
+      if (hiddenFrom(row, audience) || served === null) {
         continue;
       }
-      resolved.set(row.productSku, resolve(row, vatRate));
+      resolved.set(row.productSku, resolve(row, served));
     }
     return resolved;
   }
 
-  async listSellable(): Promise<ResolvedCatalogItem[]> {
+  async listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
         ...STILL_SOLD,
         // Deux conditions indépendantes, donc un `AND` explicite : deux clés
         // `OR` dans le même objet se seraient écrasées en silence.
         AND: [
-          { OR: [{ override: null }, { override: { isHidden: false } }] },
+          // 🔴 **Le masquage de CETTE audience.** La condition lisait `isHidden`
+          // quel que soit le demandeur, donc masquer un article le retirait des
+          // deux boutiques — le défaut que ce lot ferme (2026-09-21).
+          {
+            OR: [
+              { override: null },
+              audience === "pro"
+                ? { override: { isHidden: false } }
+                : {
+                    override: { isHiddenPublic: false },
+                  },
+            ],
+          },
           // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste
           // au catalogue et se voit dans le paramétrage ; il ne se vend pas.
           //
@@ -127,10 +165,100 @@ export class PrismaCatalogReader extends CatalogReader {
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
     });
     return rows.flatMap((row) => {
-      const vatRate = billableRate(row);
-      return vatRate === null ? [] : [resolve(row, vatRate)];
+      const served = servedPriceOf(row, audience);
+      return served === null ? [] : [resolve(row, served)];
     });
   }
+}
+
+/**
+ * **L'article est-il masqué POUR CETTE AUDIENCE ?**
+ *
+ * 🔴 **Quatre sites posaient cette question, et aucun ne la posait ainsi.** Ils
+ * lisaient `isHidden` quel que soit le demandeur — le rayon, la fiche, le lot de
+ * SKU, la commande. Rendre le seul `listSellable` conscient de l'audience aurait
+ * fait diverger le rayon et la caisse : un article masqué au pro se serait
+ * affiché au public et aurait échoué au panier ; un article masqué au public
+ * serait resté achetable. Deux bugs de vente, dans les deux sens (relevé par
+ * `vitruve` le 2026-09-21, avant qu'une ligne soit écrite).
+ *
+ * Elle est donc UNE fonction, et les quatre l'appellent.
+ */
+function hiddenFrom(row: ItemRow, audience: ShopAudience): boolean {
+  const override = row.override;
+  if (override === null || override === undefined) {
+    return false;
+  }
+  return audience === "pro" ? override.isHidden : override.isHiddenPublic;
+}
+
+/** L'entrée du pipeline de prix, et le taux qui l'accompagne. */
+interface ServedPrice {
+  readonly unitPriceMillicents: number;
+  readonly pimPriceMillicents: number;
+  readonly vatRate: number;
+}
+
+/**
+ * **Ce qu'on sert à qui regarde** — l'unique endroit où l'audience change le
+ * prix, et c'est tout ce qu'elle change.
+ *
+ * Au `pro` : le tarif de son canal. La décision locale gagne quand elle existe,
+ * sinon le prix du référentiel. Les deux sont rendus — un écran qui ne verrait
+ * que le prix final ne pourrait pas dire « prix PIM 2,40 € · prix B2B 2,10 € »,
+ * et un prix sans provenance ne se défend pas devant un client qui le conteste.
+ *
+ * Au `public` : **l'étiquette**, mise hors taxe au taux de son contexte — celle
+ * décidée ici quand il y en a une, celle du référentiel sinon. Et surtout **pas
+ * le prix PRO** : il naît d'une négociation, et le servir à un particulier lui
+ * appliquerait une décision qui n'est pas la sienne.
+ *
+ * 🔴 **Les deux audiences ont chacune leur décision, et elles ne se touchent
+ * pas.** `priceMillicents` est l'entrée du canal professionnel,
+ * `decidedPublicTtcCents` celle du public. Lire l'une pour l'autre est
+ * exactement le défaut que ce chantier ferme.
+ *
+ * ⚠️ **La conversion a lieu ICI, à la lecture, et pas à la pose.** Le taux
+ * appliqué est donc celui que le miroir porte AU MOMENT DE SERVIR — un push qui
+ * change le taux d'un contexte change le hors taxe servi, sans qu'on ait à
+ * retoucher le prix posé. C'est ce qu'on veut : le prix posé est un TTC, et un
+ * TTC ne bouge pas quand la taxe bouge.
+ *
+ * 🔴 **`null` = pas vendable à cette audience, et on n'invente rien.** Un
+ * article sans taux ne se facture pas ; un article dont le référentiel n'a pas
+ * encore poussé le prix public ne se vend pas au public — le servir au tarif
+ * pro serait exactement le défaut que ce chantier ferme. Un push complet du
+ * référentiel remplit les deux.
+ */
+function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null {
+  const pimPriceMillicents = row.priceMillicents;
+  if (audience === "pro") {
+    const vatRate = billableRate(row);
+    return vatRate === null
+      ? null
+      : {
+          unitPriceMillicents: row.override?.priceMillicents ?? pimPriceMillicents,
+          pimPriceMillicents,
+          vatRate,
+        };
+  }
+  const price = publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT];
+  if (price === undefined) {
+    return null;
+  }
+  const decided = row.override?.decidedPublicTtcCents ?? null;
+  const decidedMillicents = decided === null ? null : htMillicentsOf(decided, price.vatRatePercent);
+  return {
+    unitPriceMillicents: decidedMillicents ?? price.htMillicents,
+    // 🔴 **Le tarif de référence suit le prix servi, il ne reste pas en
+    // arrière.** Si seul `unitPriceMillicents` devenait la décision, la vitrine
+    // publique barrerait l'étiquette du PIM — c'est-à-dire annoncerait une
+    // remise que personne n'a accordée, sur une page servie sans jeton. Le
+    // « prix barré » n'apparaît que lorsque la RÉSOLUTION baisse le prix, et
+    // c'est son seul cas légitime.
+    pimPriceMillicents: decidedMillicents ?? price.htMillicents,
+    vatRate: price.vatRatePercent,
+  };
 }
 
 /**
@@ -168,15 +296,14 @@ function billableRate(row: ItemRow): number | null {
  * pas dire « prix PIM 2,40 € · prix B2B 2,10 € », et un prix sans provenance ne
  * se défend pas devant un client qui le conteste.
  */
-function resolve(row: ItemRow, vatRate: number): ResolvedCatalogItem {
-  const localPrice = row.override?.priceMillicents ?? null;
+function resolve(row: ItemRow, served: ServedPrice): ResolvedCatalogItem {
   return {
     sku: row.sku,
     productSku: row.productSku,
     name: row.name,
-    unitPriceMillicents: localPrice ?? row.priceMillicents,
-    pimPriceMillicents: row.priceMillicents,
-    vatRate,
+    unitPriceMillicents: served.unitPriceMillicents,
+    pimPriceMillicents: served.pimPriceMillicents,
+    vatRate: served.vatRate,
     categoryId: row.category.id,
     categoryName: row.category.name,
     isDefault: row.isDefault,

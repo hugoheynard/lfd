@@ -4,7 +4,7 @@
 > du **code**, pas des documents. Chaque constat porte sa preuve — un fichier, une
 > ligne, ou l'absence d'un fichier. Périmètre : tout ce qu'une commande
 > traverse, du rayon au retrait. Le **prix** est hors périmètre : il a son propre
-> dossier et son propre audit ([`../pricing/audit-fable.md`](../pricing/audit-fable.md)).
+> dossier et son propre audit ([`../pricing/ce-qui-reste-a-faire.md`](../pricing/ce-qui-reste-a-faire.md)).
 >
 > Ce que cet audit cherche : les endroits où **un écran affirme quelque chose
 > que le système ne fait pas**. Pas les imperfections — les promesses non
@@ -96,7 +96,7 @@ Ce qui reste vrai, et qui coûte :
   technique (le format que son logiciel importe) :
   [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md) ;
 - **« Mes factures » affiche toujours les factures de personne.**
-  [`factures-page.ts:10`](../../apps/lfc-B2B-platform-frontend/src/app/client/mes-factures/factures-page/factures-page.ts)
+  [`factures-page.ts:10`](../../apps/lfc-ecommerce-frontend/src/app/client/mes-factures/factures-page/factures-page.ts)
   importe `MOCK_LEDGER` et `MOCK_STATEMENT_SUM`, et la route est servie
   (`app.routes.ts`, `mes-factures`). Des montants inventés, à côté de commandes
   réelles. Tant que l'export n'existe pas, l'écran n'a rien de vrai à lire : le
@@ -300,7 +300,7 @@ Relu le 2026-09-18.
 - **L'arbre de travail est compté, pas seulement `dev`.** Ce qui n'est pas
   commité est signalé là où ça compte (§3, T3).
 - **Le prix n'a pas été réaudité** : les défauts de
-  [`../pricing/audit-fable.md`](../pricing/audit-fable.md) ne sont pas repris ici.
+  [`../pricing/ce-qui-reste-a-faire.md`](../pricing/ce-qui-reste-a-faire.md) ne sont pas repris ici.
 - **La topologie de `architecture-flux-commande-prod.md` n'a pas été
   revérifiée.**
 - **Le « chemin » par lots de la version d'origine est retiré.** Ses lots 1 à 7

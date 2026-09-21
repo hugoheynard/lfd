@@ -135,7 +135,7 @@ fait les N réactions.
 > n'anticipait pas : ce n'est **pas** une union du panier appareil dans celui de
 > la personne, mais un dernier-écrit-gagne **daté**. Une union ne sait pas
 > représenter un retrait, et vider son panier sur son téléphone doit atteindre
-> son ordinateur. Cf. `audit-calcul-du-panier-et-du-prix.md` §7.
+> son ordinateur. Cf. `documentation/pricing/ce-qui-reste-a-faire.md`.
 >
 > La note d'origine est conservée telle quelle ci-dessous : elle dit ce qui était
 > pensé avant, et sa lecture reste utile le jour où le volume changera.

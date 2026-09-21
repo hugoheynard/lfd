@@ -1,0 +1,119 @@
+<fold-panel-header variant="eyebrow" [title]="c().kicker" [closeLabel]="c().close" />
+
+<fold-panel-body>
+  <div class="intro">
+    <h2 class="screen">{{ c().title }}</h2>
+    <p class="lead">{{ c().lead }}</p>
+  </div>
+
+  @if (freeEntry()) {
+    <!-- 🔴 LA SAISIE LIBRE, pour qui n'a PAS de carnet (Hugo, 2026-09-21).
+         Rien n'est enregistré : ces champs servent cette commande-là, et un
+         visiteur n'a pas de compte où ranger une adresse. -->
+    <div class="free">
+      <p class="free-lead">{{ c().free.lead }}</p>
+      <div class="free-fields">
+        <fold-input
+          class="wide"
+          size="lg"
+          [label]="c().free.ligne1"
+          autocomplete="address-line1"
+          [placeholder]="c().free.ligne1Placeholder"
+          [(value)]="ligne1"
+        />
+        <fold-input
+          class="wide"
+          size="lg"
+          [label]="c().free.ligne2"
+          autocomplete="address-line2"
+          [placeholder]="c().free.ligne2Placeholder"
+          [(value)]="ligne2"
+        />
+        <fold-input
+          size="lg"
+          inputmode="numeric"
+          [label]="c().free.codePostal"
+          autocomplete="postal-code"
+          [placeholder]="c().free.codePostalPlaceholder"
+          [(value)]="codePostal"
+        />
+        <fold-input
+          size="lg"
+          [label]="c().free.ville"
+          autocomplete="address-level2"
+          [placeholder]="c().free.villePlaceholder"
+          [(value)]="ville"
+        />
+      </div>
+      <!-- Le refus NOMME la sortie plutôt que de griser en silence — et il
+           attend un code postal complet, parce qu'un code inachevé n'est pas
+           hors zone. -->
+      @if (typedOutOfZone()) {
+        <fold-callout variant="alert">{{ c().free.noZone }}</fold-callout>
+      }
+    </div>
+  } @else if (entries().length === 0) {
+    <!-- Carnet vide et saisie fermée : on dit OÙ il se remplit. Les adresses
+         d'un PRO appartiennent à sa société, pas à la commande. -->
+    <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
+  } @else {
+    <ul class="entries" role="radiogroup" [attr.aria-label]="c().title">
+      @for (entry of entries(); track entry.address.id) {
+        <li>
+          <button
+            class="entry"
+            type="button"
+            role="radio"
+            [class.on]="entry.selected"
+            [class.is-out]="entry.outOfZone"
+            [attr.aria-checked]="entry.selected"
+            (click)="pick(entry)"
+          >
+            <span class="mark" aria-hidden="true"></span>
+
+            <span class="said">
+              <span class="head">
+                <span class="name">{{ entry.name }}</span>
+                @if (entry.isDefault) {
+                  <span class="tag">{{ c().defaultTag }}</span>
+                }
+              </span>
+              <span class="place">{{ entry.place }}</span>
+              <!-- ⚠️ La fenêtre DISPARAÎT quand le carnet n'en déclare pas :
+                   l'adresse se livre alors dans la tournée, et annoncer une
+                   heure serait la promesse que ce parcours refuse d'écrire. -->
+              @if (entry.window) {
+                <span class="window">{{ entry.window }}</span>
+              }
+            </span>
+
+            <!-- Le tarif de la zone, à droite. Hors zone, il laisse place au
+                 refus — qui NOMME la sortie plutôt que de griser en silence. -->
+            @if (entry.outOfZone) {
+              <span class="out">{{ c().outOfZone }}</span>
+            } @else {
+              <span class="fee">{{ entry.fee }}</span>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</fold-panel-body>
+
+<!-- L'action PORTE le montant : on sait ce qu'on paie avant d'avoir composé. -->
+<fold-panel-footer>
+  <button
+    class="cta"
+    foldButton
+    emphasis="solid"
+    intent="primary"
+    size="lg"
+    type="button"
+    [disabled]="!ready()"
+    (click)="confirm()"
+  >
+    {{ ctaLabel() }}
+    <span aria-hidden="true">→</span>
+  </button>
+</fold-panel-footer>

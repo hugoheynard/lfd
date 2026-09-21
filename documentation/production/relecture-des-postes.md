@@ -15,7 +15,7 @@ fois — ou qu'on répartit deux fois la même marchandise.
 
 Chaque poste **se relit toutes les 15 secondes tant que son onglet est
 visible**, et **tout de suite** quand on revient dessus.
-Code : `apps/lfc-B2B-admin-frontend/src/app/production/periodic-refresh.ts`.
+Code : `apps/lfd-backoffice-frontend/src/app/production/periodic-refresh.ts`.
 
 | Règle                            | Pourquoi                                                                                                                                    |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |

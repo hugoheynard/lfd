@@ -83,10 +83,10 @@ const RUNTIME_KEYS = [
   // son propre bucket et son propre jeton. Aucune adresse publique ici, et c'est
   // la différence qui compte avec les médias : ces pièces ne sont servies que
   // par l'API, derrière le mur de la société.
-  "R2_CUSTOMERS_ENDPOINT",
-  "R2_CUSTOMERS_BUCKET",
-  "R2_CUSTOMERS_ACCESS_KEY_ID",
-  "R2_CUSTOMERS_SECRET_ACCESS_KEY",
+  "R2_CUSTOMERS_EU_ENDPOINT",
+  "R2_CUSTOMERS_EU_BUCKET",
+  "R2_CUSTOMERS_EU_ACCESS_KEY_ID",
+  "R2_CUSTOMERS_EU_SECRET_ACCESS_KEY",
   "R2_PRODUCTION_ENDPOINT",
   "R2_PRODUCTION_BUCKET",
   "R2_PRODUCTION_ACCESS_KEY_ID",
@@ -97,12 +97,6 @@ const RUNTIME_KEYS = [
   // Jeton interne du recompute : forwardé au container (le guard le compare) ET
   // lu ici par le handler `scheduled` (le Cron Trigger le présente à l'endpoint).
   "RECOMPUTE_TOKEN",
-  // Identifiants Shopify du référentiel : un seul des deux chemins suffit
-  // (jeton statique, ou paire client credentials). Absents, le canal de
-  // publication est éteint — l'écran Réglages le dit.
-  "SHOPIFY_ADMIN_TOKEN",
-  "SHOPIFY_CLIENT_ID",
-  "SHOPIFY_CLIENT_SECRET",
   // Lecture d'Analytics Engine par OPS. L'ÉCRITURE, elle, se fait dans la
   // passerelle par un binding et n'a besoin d'aucun secret : seul le lecteur
   // s'authentifie. Absents, OPS rend une fenêtre de répétition — et le dit.

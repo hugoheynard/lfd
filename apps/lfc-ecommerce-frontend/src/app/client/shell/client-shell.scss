@@ -1,0 +1,421 @@
+:host {
+  display: block;
+  height: 100dvh;
+
+  /* La rangée d'en-tête du shell est un nombre fixe : on la lui donne en CSS
+     plutôt qu'en entrée, pour pouvoir y ajouter l'encoche du téléphone. 44 px de
+     pastille + 14 px de respiration, et la barre d'état par-dessus quand le
+     navigateur la déclare (app installée). */
+  /* La hauteur de la barre, nommée UNE fois et publiée sous un nom applicatif :
+     les deux crans de fold en dérivent, et les écrans la lisent sans avoir à
+     connaître les rouages du shell. */
+  --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 64px);
+  --fold-shell-header-height: var(--lfc-header-height);
+  --fold-shell-header-height-mobile: var(--lfc-header-height);
+
+  /* ── LA GOUTTIÈRE, et il n'y en a qu'une ───────────────────────────────
+     Quatre surfaces portent du contenu — la barre, le bandeau, la sous-barre,
+     la page (et le pied) — et elles avaient trois bords gauches différents :
+     la barre collée au bord, la page centrée dans une colonne de 1180. En
+     dessous de 1180 ça ne se voyait pas ; au-delà, la page se décalait toute
+     seule et l'écran avait l'air centré.
+
+     `max()` fait les deux d'un coup : la gouttière tant que la fenêtre est
+     plus étroite que la colonne, et le centrage de la colonne au-delà — la
+     même valeur pour tout le monde, à toutes les largeurs. */
+  /* ── LE GABARIT DE LA RANGÉE ────────────────────────────────────────────
+     La hauteur commune des blocs de la barre : le sélecteur de langue, le
+     panier, l'entrée du visiteur. Elle valait 38 px dans les trois fichiers, et
+     TROIS COMMENTAIRES séparés se chargeaient de rappeler qu'ils devaient
+     rester d'accord — dont deux racontaient une correction déjà faite après
+     coup, l'un pour le globe qui était à 40, l'autre pour le boîtier de langue
+     qui était à 32. Un accord que trois fichiers doivent se souvenir de tenir
+     finit toujours par se rompre : on le NOMME, et il tient tout seul.
+
+     Publié par le shell parce que c'est lui qui possède la barre ; les blocs
+     qui l'occupent le lisent sans avoir à connaître les autres. */
+  --lfc-bar-slot-height: 2.375rem;
+
+  --lfc-gutter: var(--fold-space-lg);
+  /* La borne est la largeur LOGIQUE d'un MacBook Pro 14 pouces — la machine sur
+     laquelle l'app est regardée. En deçà, rien ne borne : la page occupe la
+     fenêtre entière moins la gouttière. Au-delà (16 pouces, écran externe), la
+     colonne se centre plutôt que de laisser une ligne de texte traverser un
+     27 pouces. La réf est dessinée à 1180, mais 1180 est la largeur de sa
+     FENÊTRE de démonstration, pas une décision de mise en page. */
+  --lfc-column: 1512px;
+  --lfc-inset: max(var(--lfc-gutter), calc((100% - var(--lfc-column)) / 2 + var(--lfc-gutter)));
+
+  /* La bande est dimensionnée par son CONTENU, pas par un nombre : elle porte
+     un bandeau qui change d'un écran à l'autre, et la sous-barre qui n'existe
+     qu'au-delà du pli. `auto` est une taille de piste valide, et la variable de
+     fold est interpolée telle quelle dans `grid-template-rows` — la rangée se
+     comporte donc comme celle du pied, qui se replie quand elle est vide. */
+  --fold-shell-subheader-height: auto;
+  --fold-shell-subheader-height-mobile: auto;
+}
+
+/* Le fond que découvre le REBOND ÉLASTIQUE du contenu — la zone au-delà du
+   défilement montre l'arrière-plan du conteneur, pas celui de la page.
+
+   Il vaut la CRÈME, et il l'a valu, puis l'encre, puis la crème à nouveau : ce
+   fond doit être celui de ce qui commence juste en dessous de la bande, et ce
+   qui commence là a changé. Du temps où le contenu démarrait sous la barre
+   bleue, l'encre prolongeait la barre ; depuis que la lèvre a posé la feuille
+   crème par-dessus, l'encre perce un trou bleu en plein milieu de la feuille dès
+   qu'on tire vers le haut.
+
+   ⚠️ Le rebond du DOCUMENT est une autre affaire, et il reste à l'encre : c'est
+   celui de l'encoche, réglé sur `body` dans `styles.scss`. Deux rebonds, deux
+   fonds, et les confondre en casse toujours un.
+
+   Le sélecteur est volontairement `:host fold-app-shell` : le composant se peint
+   lui-même en `:host`, à égale spécificité — il faut donc un cran de plus pour
+   le reprendre depuis le parent, sans `!important`. */
+:host fold-app-shell {
+  background: var(--lfc-paper-50);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  /* Serré à dessein : la pastille, le nom en 21 px et trois langues doivent
+     tenir sur 390 px sans que le nom soit rogné. */
+  gap: var(--fold-space-sm);
+  height: 100%;
+  padding: env(safe-area-inset-top, 0px) var(--lfc-inset) 0;
+
+  /* 🔴 LA BARRE EST LE PREMIER ÉTAGE DE LA DESCENTE, et plus un aplat
+     (2026-09-20). Elle portait `bg-header`, soit `ink-800` — exactement la
+     couleur sur laquelle le dégradé de l'accroche DÉMARRE. Les deux se
+     touchaient donc sans transition, et le haut de la descente ne se lisait pas
+     comme un haut : l'œil voyait un bloc plat de 96 px, puis un assombrissement
+     qui commençait plus bas. Le ton le plus clair de la page n'était nulle
+     part.
+
+     Elle finit toujours sur `ink-800`, et c'est ce qui compte pour le raccord :
+     ce qui la suit — la bande, puis l'accroche — part de cette valeur-là, et la
+     couture reste invisible. Seul le HAUT change.
+
+     ⚠️ La règle est posée sur `.bar` et non sur la région `[header]` du shell :
+     la barre remplit sa rangée, et peindre la région appartient à fold. */
+  background: linear-gradient(to bottom, var(--lfc-ink-700), var(--lfc-ink-800));
+}
+
+.brand {
+  flex: 1;
+}
+
+/* ── LA BARRE DU BUREAU ────────────────────────────────────────────────────
+   Plus haute, pour que ses objets portent les tailles de la référence : la
+   marque à 52 px et les commandes à 44. À 64 px de barre, tout y était
+   compressé d'un tiers et l'en-tête se lisait comme une bande d'outils.
+
+   ⚠️ L'entrée du visiteur n'est PAS dans cette liste : elle tient
+   `--lfc-bar-slot-height`, comme le panier et le sélecteur de langue, parce
+   qu'elle doit s'aligner sur eux et non sur la référence.
+
+   🔴 En pile, RIEN ne change. Un téléphone n'a pas 32 px à donner au chrome —
+   c'est l'écran où la barre doit s'effacer devant le contenu, et la hauteur est
+   la seule chose qu'on ne peut pas lui reprendre ailleurs. */
+@media (min-width: 900px) {
+  :host {
+    --lfc-header-height: calc(env(safe-area-inset-top, 0px) + 96px);
+  }
+
+  /* 🔴 `:host` en tête, et ce n'est pas décoratif : `.mark` et `.menu` sont
+     déclarés PLUS BAS dans ce fichier, et à spécificité égale c'est la dernière
+     règle qui gagne. Sans ce cran, la marque restait à 44 px — mesuré à l'écran
+     le 2026-09-17, alors que le reste de la barre avait bien grandi. */
+  :host .mark {
+    width: 52px;
+    height: 52px;
+  }
+
+  /* La cloche a rejoint son composant, qui porte le même cran chez lui. */
+  :host .menu {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ── L'ENTRÉE DU VISITEUR ──────────────────────────────────────────────────
+   Le bouton crème de la référence, et sous lui la porte d'à côté.
+
+   🔴 SEUL LE BOUTON EST DANS LE FLUX, et c'est ce qui l'aligne sur le panier.
+   Empilés, le bouton et la phrase faisaient un bloc de 51 px, et c'est ce BLOC
+   qui se centrait dans la barre : le bouton partait 6 px plus haut que le
+   panier (mesuré le 2026-09-17). La phrase est donc posée SOUS lui, hors flux —
+   elle pend du bouton au lieu de le pousser. */
+.sign {
+  position: relative;
+  flex: none;
+}
+
+/* Fond clair sur l'encre : le seul objet plein de la barre, donc le seul que
+   l'œil y cherche. Hauteur et rayon écrits ici et non lus sur `--fold-button-*`,
+   qui sont des crochets que le thème POSE pour fold — les lire marcherait par
+   accident, et `lint:fold-tokens` a raison de le refuser. */
+/* Le gabarit commun des blocs de la barre (`--lfc-bar-slot-height`, plus haut
+   dans ce fichier) : trois hauteurs différentes sur une même rangée se voyaient
+   comme un défaut d'alignement. */
+.sign-cta {
+  /* Une GRILLE À UNE CELLULE, et non plus une rangée flex : les trois
+     traductions s'y superposent, donc la colonne prend la largeur de la plus
+     longue et le mot visible s'y centre. C'est ce qui fige la largeur du bouton
+     d'une langue à l'autre — voir `signInLabels` dans le composant. */
+  display: inline-grid;
+  grid-template-areas: 'label';
+  align-items: center;
+  justify-items: center;
+  block-size: var(--lfc-bar-slot-height);
+  padding: 0 var(--fold-space-lg);
+  border: 0;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+.sign-cta:active {
+  transform: scale(0.985);
+}
+
+/* Le mot ET ses doublures occupent la MÊME cellule : c'est la superposition qui
+   fait la réserve, pas une largeur écrite quelque part. */
+.sign-word,
+.sign-ghost {
+  grid-area: label;
+  white-space: nowrap;
+}
+
+/* `visibility: hidden` et NON `display: none` : c'est toute l'astuce. Une
+   doublure masquée par `display` ne mesurerait rien et ne réserverait donc
+   aucune place ; masquée par `visibility`, elle occupe sa largeur sans rien
+   peindre. */
+.sign-ghost {
+  visibility: hidden;
+}
+
+/* La phrase : un LIEN, pas un bouton — elle mène ailleurs, et la hiérarchie doit
+   se voir sans lire. La flèche est décorative ; elle est donc cachée du lecteur
+   d'écran, qui entendrait « flèche vers la droite » au milieu de la phrase. */
+.sign-link {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lfc-color-on-primary-muted);
+  font-family: inherit;
+  font-size: var(--fold-text-2xs);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sign-link:hover {
+  color: var(--lfc-paper-0);
+}
+
+/* L'échec de lecture des niveaux : aligné sur la gouttière de la page, pour se
+   lire comme le haut de l'écran et non comme un débordement du bandeau. */
+.feature-access-failed,
+.shell-notice {
+  padding: var(--fold-space-md) var(--lfc-inset) 0;
+}
+
+.back {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+/* Le bouton de menu prend la place de la pastille de marque, et son gabarit :
+   c'est le même trou dans la barre, occupé par autre chose. */
+.menu {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  /* ⚠️ Le navigateur donne `1px 6px` à tout `<button>`. Personne ne l'avait
+     remis à zéro parce que le glyphe était centré et que ça ne se voyait pas :
+     depuis que le troisième trait se range sur un bord, la boîte de contenu ne
+     fait plus 38 px mais 26, et les mesures de la réf tombent à côté. */
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+  cursor: pointer;
+}
+
+.menu span {
+  display: block;
+  width: 19px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--fold-color-text);
+}
+
+/* Le troisième trait est plus court et porte le beurre. Il s'aligne À GAUCHE
+   sur les deux autres — 9,5 px, la moitié de ce qui reste quand un trait de
+   19 px se centre dans les 38 px du bouton. Le bord partagé est ce qui en fait
+   un accent et non un trait raté : c'est la longueur qui varie, pas la marge. */
+.menu span:last-child {
+  width: 12px;
+  align-self: flex-start;
+  margin-left: 9.5px;
+  background: var(--lfc-color-accent);
+}
+
+/* Masquée quand le menu la remplace en pile — la règle du pli la rend. */
+.mark.wide-only {
+  display: none;
+}
+
+.mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--fold-radius-md);
+  padding: 5px;
+  overflow: hidden;
+  background: var(--lfc-paper-0);
+  box-shadow: var(--lfc-shadow-logo);
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  line-height: var(--lfc-leading-display);
+}
+
+.brand-name {
+  font-family: var(--fold-font-label);
+  /* Le nom ne se laisse PAS rogner : il rétrécit d'abord.
+     Ce qui reste pour lui, c'est la largeur moins le fixe de la barre — et ce
+     fixe a grandi depuis que le panier y vit : 2 × 18 px de marge, 40 px de
+     menu, 40 px de langue, 40 px de cloche, 66 px de panier et leurs écarts,
+     soit ~260 px — le budget vise l'écran le PLUS chargé (celui qui porte la
+     cloche), sinon le nom s'y coupe de deux pixels. « LA
+     FOLIE COFFEE » en Chunk mesure 8,6 px de large par pixel de corps à
+     l'interlettrage `display` de +0,01 em (7,95 dans le fichier de la face,
+     plus 15 × 0,04 em de desserrage — mesuré le 2026-09-15 ; Archivo 900 en
+     mesurait 9), d'où `(100vw - 260px) / 8,6`, plafonné au cran de la réf. Le plancher
+     descend d'un cran pour la même raison : à 375 px, quatre commandes et un
+     nom entier ne tiennent pas ensemble à 16 px. */
+  font-size: clamp(0.75rem, calc(11.63vw - 30.2px), var(--fold-text-xl));
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-kicker {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* ── L'identité, en fin de rangée ────────────────────────────────────────── */
+
+/* 🔴 VISIBLE PAR DÉFAUT depuis le 2026-09-17, et c'est le motif de `.mark` :
+   c'est la variante `wide-only` qui se masque, pas le bloc lui-même.
+
+   Il valait `display: none` et ne s'allumait qu'en `.account.wide-only` au-delà
+   de 1100 px — or le gabarit posait `wide-only` en DUR. Rendre la condition
+   dynamique sans toucher à ce bloc aurait donc laissé l'identité invisible
+   partout : la règle qui l'allumait exigeait la classe qu'on venait de retirer. */
+.account {
+  display: block;
+  flex: none;
+}
+
+/* Là où un menu de poche existe, il porte déjà le salut et l'identité en pile. */
+.account.wide-only {
+  display: none;
+}
+
+/* Un écran peut demander que la barre s'efface au-delà du pli — l'accueil le
+   fait, parce que sa colonne bleue porte déjà la marque. On replie la rangée
+   d'en-tête à zéro plutôt que de la masquer : le shell est une grille, une
+   rangée cachée garderait sa hauteur. */
+@media (min-width: 900px) {
+  /* 40 px, la gouttière de la maquette du 2026-09-20 (`handoff-accueil-pro`,
+     `padding:22px 40px` sur la rangée de l'en-tête et sur le héros).
+     Elle valait 26, et c'est la mesure qui manquait le plus : la marque, le
+     titre et les cartes touchaient presque le bord, et toute la colonne se
+     lisait serrée alors qu'aucun objet n'était trop petit. Une gouttière est ce
+     qui donne sa taille apparente à ce qu'elle encadre. */
+  :host {
+    --lfc-gutter: 40px;
+  }
+
+  :host(.bar-narrow-only) {
+    --lfc-header-height: 0px;
+  }
+
+  /* ⚠️ Scopé à l'écran qui le DEMANDE. Sans le `:host(...)`, la règle valait
+     pour tout le monde et la barre était toujours absente au-delà du pli —
+     `barOnDesktop` n'y réglait plus que la hauteur de la rangée, jamais la
+     visibilité. Aucun écran ne l'avait vu parce que les deux disaient non. */
+  :host(.bar-narrow-only) .bar {
+    display: none;
+  }
+}
+
+/* Le pli de la NAVIGATION, et il n'est pas celui de la mise en page : la réf le
+   pose à 1100 px, la largeur en dessous de laquelle les cinq onglets ne tiennent
+   plus dans la bande. Entre 900 et 1100, la page est déjà en deux colonnes mais
+   la navigation reste au pouce — d'où deux seuils, et pas un. */
+@media (min-width: 1100px) {
+  .menu.narrow-only {
+    display: none;
+  }
+
+  .mark.wide-only {
+    display: grid;
+  }
+
+  /* Le nom ne paraît qu'ici. En deçà, le menu pleine page porte déjà le salut
+     et l'identité : le répéter dans la barre coûterait la place du panier. */
+  .account.wide-only {
+    display: block;
+  }
+}

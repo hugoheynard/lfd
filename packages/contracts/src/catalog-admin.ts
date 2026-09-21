@@ -38,6 +38,40 @@ export interface CatalogAdminItemView {
   readonly effectivePriceMillicents: number;
 
   /**
+   * **L'étiquette publique reçue du référentiel**, en centimes **TTC**.
+   * `null` = le référentiel n'en a pas poussé — l'article n'est alors pas
+   * vendable à la vitrine publique, et l'écran doit le dire.
+   *
+   * 🔴 **En TTC, et c'est une unité différente de ses voisines.** Le prix pro
+   * est un HT en millicentimes parce qu'il est DÉRIVÉ ; celui-ci est le nombre
+   * qu'un humain a tapé sur une étiquette (D1, et `@lfd/money` : les
+   * millicentimes sont réservés aux dérivés). Les afficher côte à côte sans
+   * écrire « HT » et « TTC » ferait comparer deux choses qui ne se comparent
+   * pas.
+   */
+  readonly publicTtcCents: number | null;
+  /**
+   * Le taux de TVA du contexte **public** (« à emporter », D7). `null` = aucun.
+   *
+   * ⚠️ Distinct de `vatRatePercent`, qui est celui du contexte
+   * **professionnel** : le même article peut être à 5,5 % au comptoir et à 10 %
+   * sur place, et rien n'oblige les deux canaux à porter le même.
+   */
+  readonly publicVatRatePercent: number | null;
+  /**
+   * L'étiquette publique **décidée ici**, en centimes TTC. `null` = on suit
+   * celle du référentiel.
+   *
+   * ⚠️ Ce n'est **pas** ce que le rayon affiche. Ce nombre est une ENTRÉE : il
+   * est mis hors taxe au taux du contexte public, traverse le pipeline de
+   * résolution, et le TTC qui en ressort peut différer d'un centime —
+   * l'aller-retour hors taxe ne revient pas toujours sur lui-même (mesuré,
+   * `dev-toolbox/analyses/ancrage-du-ttc-pose.mjs`). L'écran doit donc montrer
+   * le prix ENCAISSÉ à côté de celui qu'on pose, pas ce champ seul.
+   */
+  readonly decidedPublicTtcCents: number | null;
+
+  /**
    * `null` = la famille n'a pas de régime de TVA dans le PIM. L'article est
    * alors visible ici mais **pas vendable** : l'écran doit le dire, plutôt que
    * de laisser croire à un catalogue en ligne.
@@ -68,7 +102,16 @@ export interface CatalogAdminItemView {
    */
   readonly allergensIncomplete: boolean;
 
+  /** Masqué de la boutique **professionnelle**. */
   readonly isHidden: boolean;
+  /**
+   * Masqué de la boutique **publique** — une décision distincte.
+   *
+   * ⚠️ `isHidden` valait pour les deux jusqu'au 2026-09-21. Son nom ne dit
+   * toujours pas « pro » : la colonne est citée par du code servi, et la
+   * renommer coûterait un déploiement pour un gain de lecture seule.
+   */
+  readonly isHiddenPublic: boolean;
   readonly isFeatured: boolean;
 
   /**
@@ -104,10 +147,38 @@ export const setB2bPricePayloadSchema = z.object({
 });
 export type SetB2bPricePayload = z.infer<typeof setB2bPricePayloadSchema>;
 
-/** Masquer ou réafficher un article dans la boutique B2B. */
+/**
+ * Poser le **prix public**, en centimes **TTC**.
+ *
+ * 🔴 **L'unité n'est pas celle de son voisin**, et le nom du champ est la seule
+ * chose qui le dise : le prix professionnel est un hors taxe DÉRIVÉ, en
+ * millicentimes ; celui-ci est l'étiquette qu'un humain tape.
+ *
+ * Mêmes refus que le prix professionnel — un montant nul, ou l'étiquette du PIM
+ * recopiée — plus un qui n'a pas d'équivalent : un article que la vitrine
+ * publique n'expose pas. Le prix y serait écrit et jamais servi.
+ */
+export const setPublicPricePayloadSchema = z.object({
+  ttcCents: z.number().int().positive(),
+});
+export type SetPublicPricePayload = z.infer<typeof setPublicPricePayloadSchema>;
+
+/** Masquer ou réafficher un article dans la boutique **professionnelle**. */
 export const setCatalogVisibilityPayloadSchema = z.object({
   hidden: z.boolean(),
 });
+
+/**
+ * Masquer ou réafficher un article dans la boutique **publique**.
+ *
+ * ⚠️ Une route et un schéma à part, plutôt qu'une audience ajoutée au payload
+ * voisin : celui-ci est **déjà servi** à un back-office en service, et lui
+ * ajouter un champ obligatoire casserait l'écran d'avant le déploiement.
+ */
+export const setPublicVisibilityPayloadSchema = z.object({
+  hidden: z.boolean(),
+});
+export type SetPublicVisibilityPayload = z.infer<typeof setPublicVisibilityPayloadSchema>;
 export type SetCatalogVisibilityPayload = z.infer<typeof setCatalogVisibilityPayloadSchema>;
 
 /**
@@ -155,6 +226,21 @@ export interface PendingDeliveryView {
    * d'allergène qui dormirait.
    */
   readonly carriesAllergenChange: boolean;
+  /**
+   * 🔴 L'arrivée touche-t-elle un **taux de TVA PUBLIC** ?
+   *
+   * Le second motif qui fait sonner la cloche, et il a la même forme que le
+   * premier : une arrivée peut attendre indéfiniment sans que rien ne casse,
+   * sauf quand ce qu'elle porte a un effet qu'on ne veut pas laisser dormir.
+   *
+   * Un allergène qui dort est un risque pour quelqu'un ; un taux qui dort est
+   * de l'argent facturé au mauvais taux, sur chaque vente publique d'ici la
+   * validation.
+   *
+   * ⚠️ Distinct du champ `vatRate` d'un changement, qui porte le taux
+   * **professionnel** — le seul qui traversait le fil avant la v9.
+   */
+  readonly carriesPublicVatChange: boolean;
 }
 
 /**

@@ -72,6 +72,26 @@ export interface ShopItemView {
    */
   readonly unitPriceMillicents: number;
   /**
+   * **Le prix d'UNE pièce, taxe comprise, en centimes** — ce que la caisse
+   * encaissera pour cet article seul.
+   *
+   * 🔴 **Il est calculé par le SERVEUR, et c'est tout l'objet du champ.** Le
+   * front pourrait le dériver du hors taxe et du taux ; il le dériverait alors
+   * avec ses propres arrondis, et l'étiquette du rayon cesserait de valoir ce
+   * que le panier facture — d'un centime, sur la moitié des prix à 20 %. Ce
+   * nombre passe par la MÊME ventilation que la caisse.
+   *
+   * ⚠️ **À quantité UN.** `ventilateVat` arrondit une fois par groupe de taux
+   * sur un panier entier : deux pièces ne coûtent pas toujours exactement le
+   * double. C'est la limite normale d'un prix unitaire affiché, et elle est la
+   * même que celle de `unitPriceMillicents` juste au-dessus.
+   *
+   * Servi aux DEUX audiences. C'est l'écran qui choisit lequel des deux prix il
+   * montre — hors taxe à un professionnel, taxe comprise à un particulier —,
+   * parce que c'est lui qui sait devant qui il est.
+   */
+  readonly unitPriceTtcCents: number;
+  /**
    * **Le tarif catalogue pro, à barrer** — **absent** quand il n'y a rien à
    * barrer.
    *

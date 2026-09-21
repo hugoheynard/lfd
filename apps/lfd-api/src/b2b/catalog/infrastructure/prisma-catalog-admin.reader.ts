@@ -7,6 +7,8 @@ import {
   type StaffAuthors,
 } from "../../../staff/directory/domain/staff-author-directory.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
+import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
+import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
 
@@ -16,6 +18,8 @@ interface AdminRow {
   readonly productSku: string;
   readonly name: string;
   readonly priceMillicents: number;
+  readonly publicTtcCents: number | null;
+  readonly publicByContext: unknown;
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
@@ -29,7 +33,9 @@ interface AdminRow {
   };
   readonly override: {
     readonly priceMillicents: number | null;
+    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
+    readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
     readonly decidedBy: string | null;
     readonly decidedAt: Date;
@@ -106,8 +112,17 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     // l'écran, et son compteur « des articles ne sont pas vendables » cesse
     // d'être aveugle aux lignes que le repli couvrait.
     vatRatePercent: row.vatRatePercent?.toNumber() ?? null,
+    // L'ÉTIQUETTE publique et le taux de son contexte, lus tels que le miroir
+    // les range. Rien n'est dérivé ici : cet écran montre ce que le référentiel
+    // a envoyé, et dériver un hors taxe pour l'afficher donnerait un troisième
+    // nombre qui ne figure sur aucune étiquette.
+    publicTtcCents: row.publicTtcCents,
+    publicVatRatePercent:
+      publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT]?.vatRatePercent ?? null,
+    decidedPublicTtcCents: row.override?.decidedPublicTtcCents ?? null,
     ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
+    isHiddenPublic: row.override?.isHiddenPublic ?? false,
     isFeatured: row.override?.isFeatured ?? false,
     decidedBy: row.override?.decidedBy ?? null,
     decidedByName: authors.nameOf(row.override?.decidedBy ?? null),

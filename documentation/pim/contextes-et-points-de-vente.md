@@ -1,5 +1,13 @@
 # Contextes de vente, points de vente et TVA
 
+> 🔴 **Shopify est sorti du dépôt le 2026-09-21**
+> ([`plan-un-seul-canal-deux-prix.md`](plan-un-seul-canal-deux-prix.md)).
+> Ce document décrit le modèle des **contextes de vente**, qui ne bouge pas et
+> devient au contraire plus central — c'est lui qui portera la TVA par contexte
+> sur le fil. Les passages qui décrivaient la projection vers la boutique en
+> ligne sont passés au **passé** et ne nomment plus ses fichiers ; le canal qui
+> reste est la plateforme professionnelle.
+
 > **Le doc unique du sujet.** Ce qu'est un contexte de vente, ce qui en crée un,
 > où vit le taux de TVA, qui décide de ce qu'on vend et où, comment ça sort vers
 > Shopify et vers la plateforme professionnelle, ce que coûte chaque évolution,
@@ -441,33 +449,32 @@ C'est vérifiable dans le code, la séparation est physique :
 
 | Cible          | Adaptateur (pur)                               | Intégration (transport)                    |
 | -------------- | ---------------------------------------------- | ------------------------------------------ |
-| Shopify        | `channels/shopify/products/projection.ts`      | `channels/shopify/products/driver.ts`      |
 | Plateforme pro | `channels/b2b-platform/products/projection.ts` | `channels/b2b-platform/products/driver.ts` |
 
 L'adaptateur est la pièce qui a de la valeur : le transport changera, ce que
-_signifie_ « ce produit chez Shopify » ne changera pas.
+_signifie_ « ce produit, sur ce canal » ne changera pas.
 
-### Shopify — elle range par collection
+### Ce que le canal sorti apprenait sur le modèle
 
-Shopify n'accepte **qu'un traitement de TVA par produit** : l'override se pose
-par appartenance à **une** collection `tva-*`. Le référentiel ne rend donc pas un
-taux à Shopify — il en dérive un **handle** (`5.5` → `tva-5-5`, dans
-`channels/shopify/collections/vat-handle.ts`, chez le canal et nulle part
-ailleurs) et range le produit après le `productSet`, par
-`collectionAddProductsV2`.
+La boutique en ligne n'acceptait **qu'un traitement de TVA par produit** :
+l'override se posait par appartenance à **une** collection `tva-*`. Le
+référentiel ne lui rendait donc pas un taux mais un **handle** (`5.5` →
+`tva-5-5`), dérivé **chez le canal et nulle part ailleurs**.
 
-Un produit qui déroge **change de collection**, et il **quitte l'ancienne**.
+⚠️ **C'est ce placement qui a rendu son retrait indolore**, et c'est la leçon à
+garder : le catalogue rend la donnée, jamais le mot d'un canal. Il avait porté
+ce handle lui-même, sur le value object du taux ; l'en sortir a été le geste qui
+a permis, plus tard, de retirer le canal sans toucher au référentiel.
+
+Un produit qui dérogeait **changeait de collection**, et **quittait l'ancienne**.
 Rejoindre ne suffisait pas : un article dont le taux changeait restait membre de
 sa collection précédente, la boutique le taxait encore selon elle, et rien ne le
-signalait. Les collections hors `tva-*` (« Noël », « Nouveautés ») appartiennent
-au marchand et ne sont jamais touchées.
+signalait.
 
-Seules les cartes marquées `shopify_projected` sont projetées — aujourd'hui
-`takeaway` seule. Une fiche qui ne se vend dans **aucune** carte projetée part en
-**brouillon** : hors vitrine, toujours dans l'administration, avec ce que le
-marchand y a ajouté. En cas d'échec de lecture de la matrice, la fiche reste
-publiée : dépublier par accident coûte un chiffre d'affaires, garder en ligne une
-fiche à retirer coûte un push.
+⚠️ **`shopify_projected` marquait les cartes effectivement projetées** — la seule
+`takeaway`. La colonne existe encore : sa QUESTION survit à son canal (_ce
+contexte donne-t-il lieu à un objet vendable à part ?_) et son successeur est une
+décision ouverte du plan, pas un reliquat à supprimer.
 
 ### Plateforme pro — elle facture
 
@@ -635,8 +642,8 @@ Ce qui le remplace aujourd'hui : `sales_context.shopify_projected` et
 `sales_context.handle_suffix` — le vocabulaire d'**une** intégration, rangé dans
 la table centrale du catalogue. C'est la dernière entorse au principe « le
 référentiel ne connaît pas le vocabulaire des plateformes ». Trois lecteurs
-seulement : `channels/shopify/products/push.service.ts` (deux fois),
-`channels/shopify/products/reconciliation.service.ts`, et l'écran des contextes.
+seulement, à l'époque : deux services du canal sorti, et l'écran des contextes.
+Depuis le 2026-09-21, **l'écran des contextes est le seul**.
 `handle_suffix`, lui, n'est lu par **aucun canal** — seulement par l'invariant
 d'unicité entre cartes projetées ; il attend des handles suffixés qui n'existent
 pas encore.
@@ -658,9 +665,7 @@ façon ; `channel_key`, lui, bloquait l'ajout d'une simple ligne de donnée.
 | Le mur « offert ici ? »                          | `pim/catalogue/shared/application/sellable-channels.ts`              |
 | La résolution du taux (fiche par-dessus famille) | `pim/catalogue/shared/domain/value-objects/context-vat.ts`           |
 | Les invariants de la famille                     | `pim/catalogue/category/domain/entities/category.ts`                 |
-| Adaptateur Shopify (pur) / transport             | `pim/channels/shopify/products/projection.ts` · `driver.ts`          |
 | Adaptateur plateforme pro (pur) / transport      | `pim/channels/b2b-platform/products/projection.ts` · `driver.ts`     |
-| Le handle de collection `tva-*`                  | `pim/channels/shopify/collections/vat-handle.ts`                     |
 | Taux facturé côté boutique pro                   | `b2b/catalog/infrastructure/prisma-catalog.reader.ts`                |
 | TVA d'une commande, livraison comprise           | `b2b/orders/domain/services/vat.ts`                                  |
 

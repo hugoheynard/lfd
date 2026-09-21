@@ -1,0 +1,157 @@
+import { TestBed } from '@angular/core/testing';
+import {
+  provideRouter,
+  Router,
+  UrlTree,
+  type ActivatedRouteSnapshot,
+  type RouterStateSnapshot,
+} from '@angular/router';
+import { PERSONAL_WORKSPACE, type ShopLevel } from '@lfd/contracts';
+import { of } from 'rxjs';
+
+import { AuthFacade } from '../auth/auth.facade';
+import {
+  companyWorkspaceGuard,
+  workspaceHomeGuard,
+  WORKSPACE_WAIT_MS,
+} from './client-workspace.guard';
+import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
+import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
+import { DEFAULT_SURFACES } from './feature-access/feature-access.fixture';
+import { TOMMEUSES } from './mon-compte/account.fixture';
+
+/** La garde ne lit ni la route ni l'état : seulement l'espace et la boutique. */
+const ROUTE = {} as ActivatedRouteSnapshot;
+const STATE = {} as RouterStateSnapshot;
+
+interface Case {
+  readonly signedIn?: boolean;
+  readonly current: string | null;
+  readonly companies: boolean;
+  readonly shop?: ShopLevel;
+}
+
+/** Où la garde envoie : `true`, ou l'adresse de renvoi. */
+async function run({ signedIn = true, current, companies, shop = 'order' }: Case) {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([]),
+      { provide: AuthFacade, useValue: { authGate$: () => of(signedIn) } },
+      provideWorkspace(workspaceDouble(current, companies ? [TOMMEUSES] : [])),
+      {
+        provide: ClientFeatureAccess,
+        useFactory: () => {
+          const access = new ClientFeatureAccess();
+          access.load = () => Promise.resolve();
+          return access;
+        },
+      },
+    ],
+  });
+  TestBed.inject(ClientFeatureAccess).receive({ shop, ...DEFAULT_SURFACES });
+  const result = await TestBed.runInInjectionContext(() => companyWorkspaceGuard(ROUTE, STATE));
+  return result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : result;
+}
+
+describe('companyWorkspaceGuard', () => {
+  it('ferme les écrans de société en perso, pour qui en a une', async () => {
+    expect(await run({ current: PERSONAL_WORKSPACE, companies: true })).toBe('/bienvenue');
+  });
+
+  it('les ouvre dans l’espace de la société', async () => {
+    expect(await run({ current: TOMMEUSES.id, companies: true })).toBe(true);
+  });
+
+  /** Sans société, Mon compte est la porte pro : le retour d'inscription y atterrit. */
+  it('les laisse ouverts à qui n’a aucune société', async () => {
+    expect(await run({ current: PERSONAL_WORKSPACE, companies: false })).toBe(true);
+  });
+
+  it('laisse passer qui n’est pas connecté — l’écran sait l’accueillir', async () => {
+    expect(await run({ signedIn: false, current: null, companies: false })).toBe(true);
+  });
+
+  /**
+   * 🔴 LE RENVOI NE DÉPEND PLUS DE LA BOUTIQUE (2026-09-21). Il l'a fait, et
+   * pour une seule raison : le repli était `/mon-espace`, que
+   * `featureAccessGuard` renvoyait vers `/mon-compte` quand la boutique était
+   * fermée — les deux gardes se seraient renvoyé la personne sans fin. Le repli
+   * est `/bienvenue`, qui n'a aucune garde : la boucle est impossible, et la
+   * condition qui l'évitait laissait passer exactement ce cas-ci.
+   *
+   * Ce test disait `true` — l'adresse RESTAIT ouverte. Il dit maintenant
+   * qu'elle se ferme, et c'est le correctif, pas un ajustement.
+   */
+  it('🔴 ferme l’adresse même quand la boutique est fermée', async () => {
+    expect(await run({ current: PERSONAL_WORKSPACE, companies: true, shop: 'closed' })).toBe(
+      '/bienvenue',
+    );
+  });
+});
+
+/** Où l'entrée envoie : toujours une adresse. */
+async function land({ signedIn = true, current, companies }: Omit<Case, 'shop'>) {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([]),
+      { provide: AuthFacade, useValue: { authGate$: () => of(signedIn) } },
+      provideWorkspace(workspaceDouble(current, companies ? [TOMMEUSES] : [])),
+    ],
+  });
+  const result = await TestBed.runInInjectionContext(() => workspaceHomeGuard(ROUTE, STATE));
+  return result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : result;
+}
+
+describe('workspaceHomeGuard — la cible de la connexion', () => {
+  /**
+   * Régression : la connexion envoyait tout le monde sur `/nouvelle-commande`,
+   * y compris en perso, dont l'accueil est `/bienvenue` (Hugo, 2026-09-17).
+   */
+  it('🔴 envoie une connexion en perso sur l’accueil public', async () => {
+    expect(await land({ current: PERSONAL_WORKSPACE, companies: true })).toBe('/bienvenue');
+  });
+
+  it('envoie aussi sur l’accueil public qui n’a aucune société', async () => {
+    expect(await land({ current: PERSONAL_WORKSPACE, companies: false })).toBe('/bienvenue');
+  });
+
+  /**
+   * 🔴 LES DEUX ESPACES ATTERRISSENT AU MÊME ENDROIT depuis le 2026-09-20.
+   *
+   * Ce test attendait `/nouvelle-commande`, et il avait raison de le faire
+   * jusque-là. Le jour où `/bienvenue` a appris à servir les trois états, y
+   * envoyer une société a cessé d'être un choix : le pro ne voyait jamais ses
+   * deux portes, puisqu'il n'atterrissait pas sur l'écran qui les porte.
+   */
+  it('envoie une connexion dans une société sur le MÊME accueil que le perso', async () => {
+    expect(await land({ current: TOMMEUSES.id, companies: true })).toBe('/bienvenue');
+  });
+
+  /**
+   * 🔴 LE REPLI POINTAIT AILLEURS, POUR UNE RAISON FAUSSE. Il menait à
+   * `/nouvelle-commande` au motif que « cet écran-là sait dire qu'il n'a pas pu
+   * lire le compte ». Il ne le disait pas : c'est le SHELL qui rend cet avis,
+   * sur tous les écrans à la fois, et son propre commentaire explique pourquoi.
+   * L'écran a disparu le 2026-09-21 ; le repli rejoint donc les deux accueils.
+   *
+   * ⚠️ Ce que ce test garde n'est plus une adresse DIFFÉRENTE, c'est la
+   * troisième QUESTION : « on ne sait pas encore » n'est ni « perso » ni
+   * « société ». La constante reste distincte pour cette raison-là, et ce cas
+   * doit continuer d'avoir sa réponse même le jour où les trois divergent.
+   */
+  it(
+    'répond quand même quand /me n’a pas dit l’espace',
+    async () => {
+      expect(await land({ current: null, companies: true })).toBe('/bienvenue');
+    },
+    // La garde ATTEND `/me` — c'est tout son objet. Ce cas paie donc l'attente
+    // complète, et lui seul : le délai par défaut de la suite est plus court.
+    WORKSPACE_WAIT_MS + 5_000,
+  );
+
+  it('envoie qui n’est pas connecté sur l’accueil public', async () => {
+    expect(await land({ signedIn: false, current: null, companies: false })).toBe('/bienvenue');
+  });
+});

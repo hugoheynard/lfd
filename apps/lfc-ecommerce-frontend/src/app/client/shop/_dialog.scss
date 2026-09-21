@@ -1,0 +1,142 @@
+// LE CHÂSSIS DES DIALOGUES DE COMMANDE, déclaré une fois pour les deux qui le
+// portent : « où je la prends » et « à quelle heure ».
+//
+// Ce sont les DEUX VOLETS D'UN MÊME PARCOURS dans la maquette du 2026-09-20
+// (`captures/06` et `09`) — même sur-titre, même grand titre, même filet, même
+// gouttière. Séparés, ils ont déjà divergé une fois : le réglage du titre, de
+// l'en-tête et de la gouttière a été fait sur l'un, et l'autre est resté aux
+// valeurs d'avant.
+//
+// Des MIXINS seulement, comme `_popover.scss` : un composant Angular isole ses
+// styles, donc une classe déclarée ici ne s'appliquerait à personne.
+
+/**
+ * 🔴 L'AIR DE L'EN-TÊTE EST EN HAUT, ET RIEN EN BAS.
+ *
+ * `.ph--eyebrow` est réglé `padding: var(--fold-space-md) var(--fold-space-lg)`
+ * — une verticale SYMÉTRIQUE, qu'un jeton unique ne sait pas casser. On la met
+ * donc à zéro et l'air du haut est posé par l'HÔTE, qui est l'élément du
+ * composant : un sélecteur écrit chez lui porte.
+ *
+ * Sans ça, le titre du corps se retrouve à une trentaine de pixels de son
+ * sur-titre, alors que les deux forment une seule phrase.
+ *
+ * ⚠️ Le filet de fold vit dans `.ph`, encapsulé : on ne peut pas l'atteindre
+ * par un sélecteur, seulement lui couper la couleur. La variable est
+ * `--fold-color-glass-border` — LUE DANS LA RÈGLE RENDUE, pas devinée :
+ * `--fold-color-border`, `-subtle` et `-strong` ont été éteintes tour à tour
+ * sans que le trait bouge d'un pixel (2026-09-20).
+ */
+@mixin header {
+  /* Le sur-titre de la référence est en NOIR ; fold rend son `eyebrow` en
+     `semibold`, soit 600 — mesuré à l'écran le 2026-09-17. */
+  --fold-weight-semibold: var(--lfc-weight-black);
+  --fold-color-glass-border: transparent;
+  --fold-space-md: 0;
+  --fold-space-lg: var(--lfc-dialog-gutter);
+
+  padding-top: var(--lfc-dialog-pad-y);
+  /* Opaque et au-dessus : le corps monte dans sa gouttière, et sans ça le
+     contenu qui défile passerait sous le sur-titre. La valeur est celle du
+     panneau lui-même, relevée à l'écran. */
+  position: relative;
+  z-index: 1;
+  background: var(--lfc-paper-0);
+}
+
+/**
+ * Les alias de gouttière, à poser sur `:host`.
+ *
+ * Ils sont résolus LÀ, où les jetons valent encore leur valeur de thème : une
+ * propriété personnalisée est substituée sur l'élément qui la DÉCLARE, pas sur
+ * celui qui la lit. Sans ce détour, `--fold-space-md: var(--fold-space-lg)`
+ * écrit sur l'en-tête lirait le `lg` déjà remplacé.
+ */
+@mixin gutters {
+  --lfc-dialog-gutter: var(--fold-space-2xl);
+  --lfc-dialog-pad-y: var(--fold-space-lg);
+}
+
+/**
+ * Le corps pose sa gouttière LUI-MÊME, et pas par un jeton.
+ *
+ * Elle a d'abord été réglée en remplaçant `--fold-space-md`, que fold lit pour
+ * le `padding` du corps — mais il le lit AUSSI pour l'écart entre ses blocs, et
+ * une gouttière de 32 px donnait 32 px d'air entre le chapô et la suite.
+ *
+ * Le haut est court à dessein : c'est lui qui rapproche le grand titre de son
+ * sur-titre.
+ */
+@mixin body {
+  padding: var(--fold-space-sm) var(--lfc-dialog-gutter) var(--lfc-dialog-gutter);
+}
+
+/**
+ * Le grand titre, qui OUVRE LE CORPS.
+ *
+ * `fold-panel-header` rend son sous-titre APRÈS le titre et n'offre aucun slot
+ * avant lui : le sur-titre de la référence — premier élément, gras, capitales —
+ * ne peut pas y passer en tête. L'en-tête garde donc le sur-titre seul, en
+ * variante `eyebrow`, et le grand titre ouvre le corps juste dessous. On garde
+ * ainsi la fermeture, le piège de focus et le nom accessible du dialogue.
+ *
+ * ⚠️ IL NE LIT PAS `--lfc-text-screen`. Il l'a fait, et ce cran a GRANDI le
+ * 2026-09-20 — de 38 à 52 px au bureau — pour l'accroche de l'accueil, qui
+ * tient une bande de 1440 : un dialogue de 640 recevait donc une chaîne de
+ * 52 px sans qu'une ligne de son fichier ait bougé. Un titre de dialogue nomme
+ * une question posée dans une boîte ; sa taille ne dépend pas de la largeur de
+ * la page derrière.
+ */
+@mixin screen {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+@mixin lead {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-base);
+  line-height: var(--lfc-leading-body);
+}
+
+/** La question et son chapô forment un bloc ; le filet vient après. */
+@mixin intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/**
+ * LE FILET QUI SÉPARE CE QUE LE DIALOGUE DIT DE CE QU'IL DEMANDE, d'un bord à
+ * l'autre — à poser sur le premier bloc de la réponse.
+ *
+ * La marge négative vaut la gouttière du corps et la gouttière la compense : le
+ * contenu ne bouge pas, seul le trait va au bord.
+ */
+@mixin rule-above {
+  margin-inline: calc(-1 * var(--lfc-dialog-gutter));
+  padding-inline: var(--lfc-dialog-gutter);
+  padding-top: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+/** Le bouton texte d'un pied — « Retour ». Pas une seconde action. */
+@mixin foot-link {
+  min-height: 44px;
+  padding: 0 var(--fold-space-sm);
+  border: 0;
+  border-radius: var(--fold-radius-md);
+  background: none;
+  color: var(--fold-color-text-secondary);
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}

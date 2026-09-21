@@ -1,5 +1,24 @@
 # Projection Shopify — emporter / sur place, TVA, boutiques
 
+> 🔴 **CE CANAL N'EXISTE PLUS.** La chaîne de publication Shopify — écrans,
+> canal serveur, paquet de transport, contrats — a été retirée du dépôt le
+> **2026-09-21**
+> ([`plan-un-seul-canal-deux-prix.md`](../plan-un-seul-canal-deux-prix.md)).
+>
+> Ces documents sont **archivés, pas supprimés** : ils portent des décisions qui
+> ont survécu à leur canal — le modèle des contextes de vente, la protection des
+> URL indexées, la mécanique des révisions — et un doc supprimé fait réinventer
+> ce qu'il savait. Ce qu'ils décrivent du code, en revanche, n'est plus vrai :
+> les chemins qu'ils citaient vivent dans l'histoire git.
+
+> 🔴 **Les ÉCRANS de ce canal ont été supprimés le 2026-09-21**, premier lot de
+> [`plan-un-seul-canal-deux-prix.md`](../plan-un-seul-canal-deux-prix.md).
+> Ce que ce document décrit du côté SERVEUR existe encore. En revanche, les deux
+> fichiers du back-office qu'il citait comme le lieu où « le générateur de fiches
+> et les tags existent déjà » ont disparu avec les écrans. Les phrases concernées
+> le disent désormais au passé — et ne les nomment plus, parce qu'un nom de
+> fichier mort envoie chercher là où il n'y a plus rien.
+
 > Comment le catalogue **canonique** se projette sur Shopify quand un même article se vend
 > **à emporter** (rayon public, click & collect) **et** **sur place** (commande à la table via QR),
 > à des **TVA différentes**, dans **plusieurs boutiques**. Application directe du principe maison :
@@ -47,8 +66,8 @@ Ces quatre forces se composent proprement **à condition de respecter les invari
 
 ## 3. Le modèle : la **fiche** = `produit × mode` → un produit Shopify
 
-L'unité de projection n'est pas le produit PIM, c'est la **fiche** (déjà le vocabulaire de
-`collections.ts`) :
+L'unité de projection n'est pas le produit PIM, c'est la **fiche** — le vocabulaire
+venait du générateur de fiches du back-office, supprimé le 2026-09-21 :
 
 ```
 produit PIM  ──(× mode)──►  fiche emporter  ──►  produit Shopify (tva-5-5, rayon public)
@@ -133,7 +152,8 @@ Le stub actuel (1 produit PIM → 1 produit Shopify) ne peut pas porter deux TVA
 - ses tags **`sur-place-boutique-X`** (dispo, depuis la matrice de canaux — Famille C) ;
 - le **même SKU** que le produit PIM sur toutes ses fiches (§6).
 
-Le générateur de fiches et les tags existent déjà côté `collections.ts` ; le chantier est le **push**.
+Le générateur de fiches et les tags existaient côté back-office, dans des écrans
+supprimés le 2026-09-21 ; le chantier décrit ici était le **push**.
 
 ### 8.2 Le binding gagne le grain **mode** (affine R4)
 

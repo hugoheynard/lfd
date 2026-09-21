@@ -1,0 +1,16 @@
+<fold-panel-header
+  variant="eyebrow"
+  [title]="t().chrome.kickerRappel"
+  [closeLabel]="t().nav.close"
+/>
+
+<fold-panel-body>
+  <!-- La question et sa ligne forment un bloc : elles disent QUI rappelle, ce
+       qu'aucun créneau ne dit. -->
+  <div class="intro">
+    <h2 class="screen">{{ t().hero.rappelTitle }}</h2>
+    <p class="lead">{{ t().hero.rappelIntro }}</p>
+  </div>
+
+  <app-rappel-panel [phone]="phone()" (booked)="book($event)" />
+</fold-panel-body>

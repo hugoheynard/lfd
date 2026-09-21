@@ -21,12 +21,78 @@ ouvert ailleurs — audits, feuille de route, état des lieux — a été rapatr
 > qui ne fait que grandir n'est pas un registre, c'est un cimetière.
 >
 > **R15 à R26 ont été ajoutées le 2026-09-08** par le troisième regard,
-> [`audit-du-moteur-a-la-facade.md`](audit-du-moteur-a-la-facade.md), qui tient
+> le **troisième regard** du 2026-09-08 (supprimé, cf. §6), qui tenait
 > le raisonnement. Ce registre ne tient que le fait, la preuve et le remède.
 >
 > ⚠️ **Sur les dates.** Les entrées R1 à R14 se datent du 2026-09-09 ; les
 > commits qui les portent sont du 2026-09-08 (`git log`). L'écart est nommé
 > plutôt qu'hérité : ce qui est ajouté depuis porte la date de git.
+
+---
+
+## 0. La revérification du 2026-09-21 — et la note
+
+> **Les trois audits du dossier ont été relus contre le code**, douze jours
+> après ce registre. Aucun quatrième document n'a été créé : en écrire un
+> reproduirait exactement ce que celui-ci soigne — « le travail restant vivait
+> dans quatre endroits, et trois annonçaient comme ouvert ce qu'un autre avait
+> refermé ».
+
+### La note : **8/10** (7/10 le 2026-09-08)
+
+| Axe                        | 08-09 | Aujourd'hui | Ce qui a bougé                                                                               |
+| -------------------------- | :---: | :---------: | -------------------------------------------------------------------------------------------- |
+| Le moteur pur              |   9   |    **9**    | B.1 fermé **par construction** : `resolve(measured)` + un test qui rougit à la mutation      |
+| L'argent                   |   8   |    **8**    | `@lfd/money` a absorbé `ttcCentsOf` et `htMillicentsOf` ; **R29 intacte**                    |
+| Les garde-fous structurels |   8   |    **8**    | 29 portes → **38** ; mais R16 et R24 n'ont pas bougé — le compte monte, le trou reste        |
+| La façade et l'application |   6   |   **7** ⬆   | `PricedLot` est bâtie **et empruntée** ; deux séquences de chargement coexistent toujours    |
+| La lecture datée           |   4   |  **8** ⬆⬆   | `at` est honnête chez les trois lecteurs — c'est le plus gros gain du dossier                |
+| Les écrans                 |   5   |   **6** ⬆   | la grille lit le plancher **figé** ; la simulation rejoue toujours les paliers au navigateur |
+| La documentation           |   6   |   **7** ⬆   | la contradiction de référence est rayée et datée ; deux phrases périmées subsistent          |
+
+### Pourquoi 8, et pas 9
+
+Le reproche de 2026-09-08 était : **« le moteur est meilleur que le système »**.
+Il ne l'est plus. La façade est empruntée, la lecture datée ne ment plus, l'écran
+a cessé de recalculer un plancher avec la formule que le domaine interdit
+nommément. Quatre des sept axes montent ; aucun ne descend.
+
+🔴 **Ce qui plafonne la note tient en deux lignes, et les deux se paient en
+euros :**
+
+- **R16** — un engagement de portée **famille** est mesuré **par SKU**
+  (`loaded-pricer.ts:366`). Un article ne voit que ses propres ventes, pas
+  celles de ses sœurs : le client n'atteint pas le palier qu'on lui a vendu.
+  Ouverte depuis le 2026-09-08, **inchangée**.
+- **R4** — `expectedTotalCents` **n'existe nulle part** dans le contrat de
+  passation (vérifié : zéro occurrence). Rien n'oppose ce que le client a vu à
+  ce qu'on lui débite.
+
+Fermer ces deux-là vaut **9**. Le reste — R2, R6, R9 à R11, R24, R29 — est de
+l'hygiène, du confort ou des décisions, et aucun ne fausse un montant.
+
+### Ce que la revérification a corrigé dans ce registre
+
+| Entrée                   | Statut au 09-09 | Vérifié au 21-09                                                      |
+| ------------------------ | --------------- | --------------------------------------------------------------------- |
+| R15                      | 🟠 à moitié     | ✅ **la moitié dangereuse est fermée** par `measured`, test à l'appui |
+| R24                      | 🟡 ouverte      | 🟡 **partielle** — deux traces mortes ; le 3ᵉ cas était clos depuis   |
+| R9                       | 🟡 ouverte      | 🟡 **partielle** — 3 cas conformes, 7 questions, 1 non examiné        |
+| R2 R4 R6 R10 R11 R16 R29 | ouvertes        | **toutes confirmées ouvertes**, fichier et ligne à l'appui            |
+
+⚠️ **R29 mérite d'être lue deux fois** : c'est la **porte elle-même** qui écrit
+qu'elle ne couvre pas trois colonnes — `price_rules.value`, `floor_value`,
+`price_floors.value` —, parce qu'elle lie les **noms** et pas la prose. « Les
+trois ont été corrigées à la main le 2026-09-09 ; rien ne les tient. » Un
+garde-fou qui nomme son propre angle mort vaut mieux qu'un garde-fou muet ; il
+ne vaut pas un type nominal.
+
+✅ **Les douze derniers jours n'ont ajouté aucune dette de tarification.** Le
+chantier « un seul canal, deux prix », le panier public en TTC et le TTC scellé
+sur la ligne de commande ont été livrés sans toucher au moteur — vérifié.
+
+⚠️ **La note est un jugement, pas un fait.** Ce qui se conteste, ce sont les
+verdicts ci-dessus : chacun porte son fichier et sa ligne.
 
 ---
 
@@ -135,7 +201,7 @@ lignes qu'on ne peut plus vérifier.
 ### R2 🔴 La simulation rejoue les paliers dans le navigateur
 
 **Le fait, vérifié le 2026-09-09.**
-`apps/lfc-B2B-admin-frontend/src/app/commercial/tarification/simulation/` résout
+`apps/lfd-backoffice-frontend/src/app/commercial/tarification/simulation/` résout
 un prix **côté client**, sans jamais appeler le serveur :
 
 - `revenue-model.ts` expose `unitPriceMillicentsAt(...)`, et sa ligne 234 fait
@@ -237,7 +303,7 @@ avec `orderQuantityAt`. Deux méthodes du même objet, deux règles.
 **Le remède.** Un test qui échoue, puis la porte se juge sur la quantité de
 commande — ou ne s'ouvre jamais en projection, comme la doc le promet. La forme
 structurelle est la lentille de **R26**, bâtie depuis. Détail :
-[`audit-du-moteur-a-la-facade.md`](audit-du-moteur-a-la-facade.md) B.1.
+le troisième regard, à son constat B.1 (supprimé le 2026-09-21).
 
 ### R16 🔴 Un engagement de portée famille est mesuré par SKU
 
@@ -331,7 +397,7 @@ mutation rougit désormais.
 
 ### R6 🟠 L'engagement de volume n'a aucun écran
 
-**Le fait, vérifié le 2026-09-09.** `apps/lfc-B2B-admin-frontend/.../tarification/`
+**Le fait, vérifié le 2026-09-09.** `apps/lfd-backoffice-frontend/.../tarification/`
 contient `gabarits`, `grille`, `pose-bar`, `simulation` — **pas d'engagement**.
 Le backend a pourtant tout : agrégat, dépôt, routes, `retainedQuantity`.
 
@@ -773,7 +839,7 @@ ferme. Détail : audit B.5.
 | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **R10**                                                                                                                     | 🟡 **Deux traces mortes**, vérifiées par `grep` le 2026-09-09. `PriceTemplate.archive()` n'est appelé de nulle part — du code mort qui a l'air vivant. Et `MercurialeNameTakenError` n'est plus levée depuis que la mercuriale porte son identifiant : son JSDoc annonçait sa fin — « le jour où la pose portera son propre identifiant, ce refus n'aura plus de raison d'être ». **Conséquence métier** : rien n'interdit plus à un client deux grilles homonymes ; c'était notre modèle de lecture qui l'interdisait                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Supprimer l'erreur. Pour `archive()` : le supprimer, ou lui donner sa route — pas les deux.                                                                                                                                          |
 | **R11**                                                                                                                     | 🟡 `plannedVolume` est stocké dans la **grille**. Un gabarit posé chez trois clients porte une seule hypothèse de saison — toute la simulation décrit alors le gabarit, jamais le client qu'on a en face                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Le volume prévu devient une donnée **du client**. La base le connaît déjà (`prisma-customer-volume.reader.ts`). Voisin de R2.                                                                                                        |
-| **R12**                                                                                                                     | 🟡 Trois requêtes de production **jamais lancées**, en lecture seule, détaillées au §A.1 de [`audit-calcul-du-panier-et-du-prix.md`](audit-calcul-du-panier-et-du-prix.md) : les paliers sous le centime (`D10`), les articles qui quittent la vitrine (`D8`), les remises qui dépassent le panier (`P4`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Le `.env` local pointe `localhost` ; elles demandent un accès prod.                                                                                                                                                                  |
+| **R12**                                                                                                                     | 🟡 Trois requêtes de production **jamais lancées**, en lecture seule, détaillées par le registre du calcul (supprimé le 2026-09-21) : les paliers sous le centime (`D10`), les articles qui quittent la vitrine (`D8`), les remises qui dépassent le panier (`P4`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Le `.env` local pointe `localhost` ; elles demandent un accès prod.                                                                                                                                                                  |
 | **R13**                                                                                                                     | 🔵 **Prix vivant / prix bloqué** — [le document](architecture-prix-vivant-prix-bloque.md) pose la question « qui porte le risque d'un prix qui bouge », et **zéro code** en découle. R4 en dépend                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Une décision de Hugo, pas un lot.                                                                                                                                                                                                    |
 | **R14**                                                                                                                     | 🔵 **Les conditionnements** — [le document](architecture-conditionnements-pricing.md) date du 2026-08-04 et affirme que « le PIM ne porte AUJOURD'HUI ni prix ni `unitsPerPack` ». **C'est faux depuis le 2026-08-31** : `ProductVariant.priceCents` existe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | À réécrire sur l'existant, ou à archiver. En l'état il ferait construire contre le modèle en place.                                                                                                                                  |
 | ~~R20~~                                                                                                                     | ✅ **Clos le 2026-09-09** — seize items, chacun rouvert dans le code avant correction, plus deux que l'audit n'avait pas vus : une septième ligne périmée dans l'index global, et un document qui se comptait mal lui-même. Détail et méthode : [journal de remédiation](journal-de-remediation.md) §R20. Le constat d'origine suit. 🟠 **La doc de référence contredit le code.** [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md) ligne 713 : « la promesse ne calcule rien » — le code fait `max(promis, livré)`, et le même document le dit ligne 1096 ; sa partie B est en centimes ; « `supersededIn` a disparu » alors qu'il tourne (`board-item.ts:186`). [`ecrans-de-tarification.md`](ecrans-de-tarification.md) : une observation par client (le code : par palier, `mercuriale-benchmark.query.ts:60`), une mercuriale « en `alter` », un gabarit qui « fabrique des règles ». L'index global ([`../README.md`](../README.md)) : six lignes périmées. Et les dates du 09-09 sur des commits du 08                                                                                                                                                                            | Un lot doc, partie B d'abord. Détail : audit B.6                                                                                                                                                                                     |
@@ -792,9 +858,9 @@ plus**. Elles sont ici avec leur preuve, pour que personne ne reparte les faire.
 
 | Portée comme ouverte par                                           | En fait                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `audit-fable.md` §1 — « `lint:gates` échoue »                      | ✅ `clock-port` est verte : « les 1263 fichiers de production lisent le temps par le port ».                                                                                                                                                                                                                                                                            |
-| `audit-fable.md` B3 — « un gabarit se pose à moitié »              | ✅ Fermé le 2026-09-08, **sans transaction** : une mercuriale est UNE ligne, donc atomique par construction.                                                                                                                                                                                                                                                            |
-| `audit-fable.md` P1 — « rien ne borne la quantité »                | ✅ `MAX_LINE_QUANTITY`, `MAX_ORDER_LINES`, et `lines` plafonné à 100 sur `/shop/quote`.                                                                                                                                                                                                                                                                                 |
+| Le second regard, §1 — « `lint:gates` échoue »                     | ✅ `clock-port` est verte : « les 1263 fichiers de production lisent le temps par le port ».                                                                                                                                                                                                                                                                            |
+| Le second regard, B3 — « un gabarit se pose à moitié »             | ✅ Fermé le 2026-09-08, **sans transaction** : une mercuriale est UNE ligne, donc atomique par construction.                                                                                                                                                                                                                                                            |
+| Le second regard, P1 — « rien ne borne la quantité »               | ✅ `MAX_LINE_QUANTITY`, `MAX_ORDER_LINES`, et `lines` plafonné à 100 sur `/shop/quote`.                                                                                                                                                                                                                                                                                 |
 | `durcir-le-calcul-des-prix.md` chantier 1                          | ✅ Livré le 2026-09-09. Cinq appelants de `resolvePrice` → **un**, et `lint:price-pipeline` est à **1 entrée**.                                                                                                                                                                                                                                                         |
 | `durcir-le-calcul-des-prix.md` chantiers 2 et 5                    | ✅ `lint:business-day` sur les fenêtres tarifaires, et `pricing-budget.e2e-spec.ts` qui compte les opérations ORM.                                                                                                                                                                                                                                                      |
 | `etat-des-lieux-mercuriale-client.md` T7                           | ✅ Les bornes de fenêtre passent par `businessDayStart` ; la porte le tient.                                                                                                                                                                                                                                                                                            |
@@ -848,3 +914,159 @@ d'exclusion qui rendent le chevauchement impossible, et 49 tests neufs qui
 mordent — vérifié par mutation le 2026-09-09. ⚠️ **R15 et R16 ne sont pas dans
 le moteur : ils sont dans `LoadedPricer`, sa porte** — et c'est cette porte que
 R26 a redessinée.
+
+---
+
+# 6. Le POURQUOI — ce que les trois audits avaient établi
+
+> **Rapatrié le 2026-09-21**, quand les trois audits du dossier — le registre du
+> calcul (2026-09-05), le second regard (2026-09-06) et le troisième, du moteur à
+> la façade (2026-09-08) — ont été supprimés. Leur texte est dans l'historique
+> git ; leur raisonnement est ici.
+>
+> 🔴 **Ce registre tenait le QUOI et le OÙ ; eux tenaient le POURQUOI.** Un
+> lecteur qui n'a que la liste des trous croit que tout est à refaire, et
+> relance les détours qu'on a déjà refusés. Cette partie est le mur ; le reste
+> du document est la liste des brèches.
+>
+> ⚠️ **Les chiffres des audits n'ont PAS été recopiés.** Remesurés le
+> 2026-09-21, plusieurs avaient dérivé — `loaded-pricer.ts` était annoncé à 425
+> lignes et en fait 456, `packages/contracts/src/pricing.ts` à 1 609 et en fait 1 937. Un
+> nombre recopié d'un document de trois semaines est un nombre faux qui a l'air
+> vérifié. Ce qui suit dit le fait ; les comptes se refont.
+
+## 6.1 🔴 Ce qu'il faut REFUSER si on le propose
+
+Cinq idées séduisantes, et pourquoi chacune casse plus qu'elle ne range. Elles
+reviennent, parce qu'elles ressemblent à du bon goût.
+
+| Proposition                                            | Pourquoi c'est pire                                                                                             |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Des **handlers injectés** à la place de `PRICE_STAGES` | **L'ordre EST la sémantique.** Un tableau le rend lisible à un seul endroit ; un graphe d'injection le disperse |
+| Faire du **plancher un étage**                         | Il gagnerait une **fenêtre de validité** qu'il n'a **délibérément pas**                                         |
+| Un **moteur de règles** configurable (DSL, table)      | Perte du compilateur, et d'une trace nommée **dans le langage du métier**                                       |
+| **Séparer** le calcul de la trace                      | C'est la propriété n°3 ci-dessous. La casser est le moyen **sûr** de faire mentir un écran                      |
+| **Formaliser** un _Specification pattern_              | Il l'est déjà en substance : de la cérémonie qui ne ferme rien                                                  |
+
+## 6.2 Les quatre propriétés qui rendent le moteur fiable
+
+Ce sont elles qu'il faut vérifier avant de lui faire confiance — et elles qu'on
+casse en premier quand on « range ».
+
+1. **`resolvePrice` est PURE.** `(canonique, matériaux, contexte, plancher) →
+(prix, trace)`. Ni base, ni horloge, ni réseau : **l'instant est dans le
+   contexte**. Elle s'éprouve en énumérant des cas, pas en montant un
+   environnement.
+2. **Un seul arrondi, en fin de chaîne.** Le calcul reste rationnel jusque-là.
+   `PriceStep.resultMillicents` est marqué « pour l'affichage seulement ».
+3. 🔴 **La trace est PRODUITE par la passe qui calcule** — pas tenue à côté.
+   Elle ne peut donc pas diverger du prix. Pas deux passes.
+4. **`compareSpecificity` et `winnerOf` sont exportés et réutilisés par
+   l'écran.** C'est le geste anti-divergence : la frise des recouvrements
+   désigne le gagnant **avec l'arbitrage qui facture**, au lieu d'en
+   réimplémenter un second.
+
+## 6.3 Les murs — ce qui porte le système
+
+Un audit qui ne liste que des défauts laisse croire que tout est à refaire.
+
+- **`@lfd/money`** — rationnels en `bigint`, arrondi commercial, **un** arrondi
+  par ligne et **un** par taux, remise au prorata. Il a absorbé depuis
+  `htMillicentsOf` (2026-09-21) et `ttcCentsOf` (2026-09-21), chaque fois parce
+  qu'un **second** appelant apparaissait — jamais par rangement.
+- **Une seule définition du TTC** (`computeOrderTotals`) ; `CartAdjustments`
+  partagé entre le devis et la caisse ; la remise bornée **à la source et**
+  revérifiée par l'agrégat.
+- **Le devis public énumère ses clés en e2e** — rien de la marge ne fuit. Ce
+  test a refusé un champ neuf le 2026-09-21 : il travaille encore.
+- **Le front ne calcule plus rien** dans le panier. `cart-total.ts` est un type.
+
+## 6.4 La carte de l'argent, et la racine qu'elle nomme
+
+🔴 **Un seul endroit compose le décompte complet — et il n'existe qu'APRÈS la
+commande.** Aucune route ne rendait un décompte HT → TVA → TTC avant la
+passation.
+
+**C'est la racine de la moitié de ce qui a été corrigé** : c'est pour ça que le
+panier et l'écran recalculaient. `POST /shop/quote` a fermé le cas de la
+boutique ; le principe reste — dès qu'un écran a besoin d'un total avant la
+commande, la bonne réponse est **une route**, jamais une multiplication.
+
+## 6.5 L'unité — la règle, et pourquoi D10 était structurel
+
+La règle-mère :
+
+- un **prix unitaire dérivé** est en **millicentimes** (10⁻⁵ €) ;
+- un **montant** est en **centimes entiers** ;
+- la traversée se fait par `lineTotalCents(unitMillicents, quantity)`, qui
+  arrondit **une fois**.
+
+⚠️ **D10 n'était pas un accident, et c'est ce qu'il faut retenir.** Trois sites
+écrivaient `unitPriceMillicents × quantity` et **nommaient le résultat
+`*Cents`**. Deux tombaient sur un formateur juste, le troisième sur un
+formateur faux. **Le même idiome fautif, écrit trois fois, qui n'attendait
+qu'un site pour atterrir du mauvais côté.** La porte `lint:money-units` en a
+trouvé dix-huit, pas trois.
+
+🔴 **Et la porte a une limite qu'il faut connaître** : `roundToCents` est un
+convertisseur admis, et `resolve-price.ts` écrit `fromCents(canonicalMillicents)`
+parce que **`Exact` n'a pas d'unité**. La porte croit les **noms** ; elle ne
+peut pas voir un `Exact` qui change d'unité en cours de route. C'est la même
+racine que **R29**, vue par l'autre bout — et le seul cran qui la fermerait est
+un type nominal `Millicents` / `Cents`.
+
+## 6.6 Ce qui rend l'extension coûteuse
+
+- **La lecture n'est pas sur le bus.** L'écriture est CQRS, la lecture ne l'est
+  pas — un demi-contexte. Ajouter une lecture coûte donc plus qu'ajouter une
+  écriture, ce qui est l'inverse du bon sens.
+- **Les fichiers où l'on cherche le plus souvent dépassent la règle des ≲ 300
+  lignes** — et ils ont GROSSI depuis l'audit (vérifié le 2026-09-21).
+- **Le mapping `{ sku, name, category, canonicalMillicents }` est recopié
+  partout.** `Pricer` a ramené la _résolution_ de cinq recettes à une ; il a
+  laissé la **chorégraphie d'entrée** en plusieurs exemplaires.
+- **Deux dimensions du modèle sont mortes** : l'audience `segment` existe dans
+  les types et les lignes de base, sans chemin pour en créer une ; `variant`
+  vaut `product`. La spécificité arbitre sur des axes **sans donnée**.
+
+## 6.7 Où ça se situe — par catégorie d'outil, pas par nom
+
+| Face à…                                                         | Ce que ce dépôt fait **mieux**                                                                                               | Ce qu'il **n'a pas**                                                                  |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| une **plateforme B2B sur étagère**                              | l'arithmétique **exacte** à un seul arrondi ; la trace **figée avec ses décisions** ; le recouvrement **impossible en base** | les groupes de clients, les devises, les canaux                                       |
+| un **CPQ d'entreprise**                                         | la même rigueur, plus une **honnêteté** : aucune marge inventée, un plancher qui est une **intention datée**                 | la **largeur** — coût de revient, approbation, cycle de vie                           |
+| ce qu'une maison de cette taille a d'ordinaire — **un tableur** | tout                                                                                                                         | rien : ce moteur est **plus rigoureux que quelques dizaines d'articles ne l'exigent** |
+
+**En une phrase.** Sur la **rigueur**, au-dessus de la plupart des plateformes
+B2B. Sur la **largeur**, en dessous de tout CPQ — et c'est normal, ce sont des
+contextes qu'on n'a pas ouverts.
+
+⚠️ **Ce qui ferait la différence** n'est pas une fonctionnalité de plus : c'est
+qu'un **second consommateur** vienne demander un prix et n'ait **rien à
+apprendre**.
+
+## 6.8 Les leçons, écrites à côté du défaut qui les a produites
+
+- **D1 — un test vert et faux est pire qu'aucun test.** La fixture mettait 200
+  centimes dans un champ de millicentimes.
+- **D8 — un repli porteur dans une fixture rend vertes les suites qui auraient
+  dû le contredire.** Cent quarante tests passaient grâce à lui.
+- **D9 — renommer n'aurait rien réglé.** L'écran devait **afficher la mesure à
+  côté du seuil**, parce que c'est le même champ : un nom ne change que dans le
+  code.
+- 🔴 **D10 — une phrase de justification qui ment ne se démasque jamais.** Elle
+  décrit du code **voisin**, donc la relire ne suffit pas. C'est l'origine de la
+  règle « une justification qui parle d'AILLEURS porte sa date » (CLAUDE.md §8),
+  et elle s'est vérifiée deux fois encore le 2026-09-21.
+- 🔴 **Un `pnpm test` racine sur un arbre propre n'est pas une preuve** : c'est
+  un **rejeu de cache**, donc l'état du dernier commit et non une exécution.
+  Chercher `cache miss, executing` sur le paquet touché avant de conclure.
+
+## 6.9 Ce qu'un audit doit dire de lui-même
+
+Les trois supprimés faisaient chacun la liste de ce qu'ils **n'affirmaient
+pas** — une commande lancée avec un filtre qui n'avait pas pris, un cache pris
+pour une exécution, une note présentée comme un jugement et non comme un fait.
+
+**C'est la partie à copier si on en réécrit un.** Un audit qui ne dit pas où il
+a arrêté de regarder se lit comme s'il avait tout vu.

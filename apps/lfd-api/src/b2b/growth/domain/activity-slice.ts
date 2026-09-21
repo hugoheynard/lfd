@@ -40,7 +40,7 @@ export interface ActivitySlice {
  *   droit que les taux ;
  * - `sales_context.*` — le contexte est l'axe du traitement fiscal. Il ne porte
  *   aucun taux, mais l'ouvrir crée un traitement ; le mettre hors service le
- *   retire de ce qu'on peut régler et de ce que Shopify projette ; le supprimer
+ *   retire de ce qu'on peut régler et de ce qui est projeté ; le supprimer
  *   efface en cascade les lignes de taux restées sur lui (`onDelete: Cascade`).
  *   Le type ENTIER : `updated` mêle la bascule `active` au libellé et au rang,
  *   et n'a pas de fait dédié ;

@@ -1,6 +1,9 @@
 import {
   CannotFeatureHiddenItemError,
   InvalidB2bPriceError,
+  InvalidPublicPriceError,
+  PublicPriceWithoutContextError,
+  RedundantPublicPriceError,
   RedundantB2bPriceError,
 } from "../errors/catalog-errors.js";
 
@@ -60,6 +63,34 @@ export interface PimFacts {
    * vendable — cf. `CatalogReader`.
    */
   readonly vatRatePercent: number | null;
+  /**
+   * **L'étiquette**, en centimes — ce qu'un particulier lit et paie, taxe
+   * comprise, tel que le référentiel le saisit.
+   *
+   * `null` sur une ligne d'avant le fil **v9** : le prix public ne traversait
+   * pas, et seul son dérivé professionnel arrivait. ⚠️ `null` ne veut donc pas
+   * dire « gratuit » ni « pas de prix » — il veut dire **on ne sait pas encore
+   * ce qu'un particulier paierait**, et un push complet le remplit.
+   */
+  readonly publicTtcCents: number | null;
+  /**
+   * **Le prix public par contexte de vente**, tel que le PIM l'a résolu — une
+   * entrée par contexte réglé, indexée par sa clé (`takeaway`, `eatIn`, `b2b`).
+   *
+   * 🔴 **Ce n'est PAS `priceMillicents`.** Celui-ci porte le prix
+   * PROFESSIONNEL — l'étiquette diminuée du rapport, puis mise hors taxe ; les
+   * entrées d'ici portent l'étiquette ELLE-MÊME mise hors taxe au taux de
+   * chaque contexte. Les deux sont des hors taxe et c'est tout ce qu'ils
+   * partagent ; les confondre facturerait un particulier au tarif pro.
+   *
+   * Une CARTE et non des champs nommés : ajouter un contexte est une ligne de
+   * données côté référentiel, et la plateforme n'a pas à connaître les clés
+   * pour les ranger. Elle ne les invente pas non plus — un contexte sans taux
+   * réglé n'a pas d'entrée.
+   *
+   * `null` sur une ligne d'avant la v9, pour la même raison que ci-dessus.
+   */
+  readonly publicByContext: Readonly<Record<string, PimContextPrice>> | null;
   /**
    * Les codes allergènes GS1 déclarés par le PIM. **Trois états**, tous
    * significatifs : `null` = aucune fiche réglementaire, `[]` = fiche déclarée
@@ -139,10 +170,44 @@ export interface PimAllergenLabels {
   readonly incomplete: boolean;
 }
 
+/**
+ * **Ce que le public paie dans UN contexte de vente**, et à quel taux.
+ *
+ * Déclaré ICI plutôt qu'importé du contrat de fil, comme {@link
+ * PimAllergenLabels} juste au-dessus : le domaine décrit ce qu'il SAIT, il
+ * n'emprunte pas la forme de celui qui le lui a dit. Le jour où le fil change
+ * de forme, c'est le mapper qui traduit — pas l'agrégat qui suit.
+ */
+export interface PimContextPrice {
+  /** Le taux de CE contexte, en pourcentage. */
+  readonly vatRatePercent: number;
+  /** L'étiquette mise hors taxe à ce taux, en millicentimes (10⁻⁵ €). */
+  readonly htMillicents: number;
+}
+
 /** La décision de la plateforme. `null` partout = aucune décision prise. */
 export interface LocalDecision {
   readonly priceMillicents: number | null;
+  /**
+   * Le prix **public** décidé ici, en centimes **TTC**. `null` = on garde
+   * l'étiquette du PIM.
+   *
+   * ⚠️ **Une unité différente de sa voisine**, et c'est voulu : celui-ci est un
+   * prix qu'un humain POSE, l'autre un hors taxe DÉRIVÉ. `millicents.ts` tient
+   * la règle.
+   */
+  readonly decidedPublicTtcCents: number | null;
+  /** Masqué de la boutique **professionnelle**. */
   readonly isHidden: boolean;
+  /**
+   * Masqué de la boutique **publique** — une décision distincte de la
+   * précédente.
+   *
+   * ⚠️ Jusqu'au 2026-09-21, `isHidden` valait pour les deux : masquer un article
+   * le retirait de partout. Le backfill a recopié la valeur, de sorte que ce qui
+   * était masqué le reste des deux côtés.
+   */
+  readonly isHiddenPublic: boolean;
   readonly isFeatured: boolean;
   readonly decidedBy: string | null;
 }
@@ -150,7 +215,9 @@ export interface LocalDecision {
 /** Aucune décision : l'état d'un article que personne n'a encore touché. */
 const NO_DECISION: LocalDecision = {
   priceMillicents: null,
+  decidedPublicTtcCents: null,
   isHidden: false,
+  isHiddenPublic: false,
   isFeatured: false,
   decidedBy: null,
 };
@@ -269,6 +336,16 @@ export class CatalogItem {
     return this.facts.vatRatePercent;
   }
 
+  /** L'étiquette reçue du référentiel. `null` avant le fil v9. */
+  get publicTtcCents(): number | null {
+    return this.facts.publicTtcCents;
+  }
+
+  /** Le prix public par contexte, reçu du référentiel. `null` avant le fil v9. */
+  get publicByContext(): Readonly<Record<string, PimContextPrice>> | null {
+    return this.facts.publicByContext;
+  }
+
   get weightGrams(): number | null {
     return this.facts.weightGrams;
   }
@@ -296,6 +373,11 @@ export class CatalogItem {
 
   get isHidden(): boolean {
     return this.decision.isHidden;
+  }
+
+  /** Masqué de la boutique publique. Indépendant de {@link isHidden}. */
+  get isHiddenPublic(): boolean {
+    return this.decision.isHiddenPublic;
   }
 
   get isFeatured(): boolean {
@@ -377,6 +459,52 @@ export class CatalogItem {
     this.decision = { ...this.decision, priceMillicents: null };
   }
 
+  /** Le prix public décidé ici, en centimes TTC. `null` = on suit l'étiquette. */
+  get decidedPublicTtcCents(): number | null {
+    return this.decision.decidedPublicTtcCents;
+  }
+
+  /**
+   * Pose le **prix public**, en centimes TTC — l'étiquette que la maison
+   * substitue à celle du référentiel.
+   *
+   * 🔴 **Ce nombre est une ENTRÉE, pas un affichage.** Il est mis hors taxe à la
+   * lecture, au taux du contexte public, puis traverse le même pipeline que le
+   * prix professionnel — promotions et paliers ouverts à tous s'appliquent
+   * par-dessus. Ce que le rayon montre est le TTC qui en RESSORT, et il peut
+   * différer d'un centime de celui-ci : l'aller-retour hors taxe ne revient pas
+   * toujours sur lui-même (mesuré, `ancrage-du-ttc-pose.mjs`, et assumé —
+   * Hugo, 2026-09-21).
+   *
+   * @throws {InvalidPublicPriceError} prix nul, négatif ou non entier.
+   * @throws {RedundantPublicPriceError} prix identique à l'étiquette du PIM —
+   *   le geste voulu est alors {@link alignPublicOnPim}.
+   * @throws {PublicPriceWithoutContextError} le miroir ne porte aucune entrée
+   *   pour ce contexte : la vitrine n'expose pas l'article, et le prix serait
+   *   écrit sans jamais être servi.
+   */
+  setPublicPrice(ttcCents: number, publicContext: string, decidedBy: string | null): void {
+    if (!Number.isInteger(ttcCents) || ttcCents <= 0) {
+      throw new InvalidPublicPriceError(ttcCents);
+    }
+    if (this.facts.publicByContext?.[publicContext] === undefined) {
+      throw new PublicPriceWithoutContextError(this.facts.sku, publicContext);
+    }
+    if (ttcCents === this.facts.publicTtcCents) {
+      throw new RedundantPublicPriceError(ttcCents);
+    }
+    this.decision = { ...this.decision, decidedPublicTtcCents: ttcCents, decidedBy };
+  }
+
+  /**
+   * Retire le prix public : l'article **repasse à l'étiquette du PIM**.
+   * L'inverse de {@link setPublicPrice}, et sans effet sur le prix
+   * professionnel — les deux audiences se décident séparément.
+   */
+  alignPublicOnPim(): void {
+    this.decision = { ...this.decision, decidedPublicTtcCents: null };
+  }
+
   /**
    * **Retire l'article de la vitrine B2B**, sans le retirer du PIM.
    *
@@ -389,9 +517,27 @@ export class CatalogItem {
     this.decision = { ...this.decision, isHidden: true, isFeatured: false, decidedBy };
   }
 
-  /** Remet l'article en vente. */
+  /** Remet l'article en vente **chez les pros**. */
   show(decidedBy: string | null): void {
     this.decision = { ...this.decision, isHidden: false, decidedBy };
+  }
+
+  /**
+   * **Retire l'article de la vitrine PUBLIQUE**, sans toucher au canal pro.
+   *
+   * ⚠️ **Il n'éteint PAS la mise en avant**, à la différence de son voisin, et
+   * ce n'est pas un oubli : `isFeatured` n'a plus d'écran de réglage et son
+   * audience n'est pas tranchée. L'éteindre ici trancherait par effet de bord
+   * une question que personne n'a posée. Son voisin garde le couplage parce
+   * qu'il l'avait déjà — on ne l'étend pas, on ne le retire pas.
+   */
+  hidePublic(decidedBy: string | null): void {
+    this.decision = { ...this.decision, isHiddenPublic: true, decidedBy };
+  }
+
+  /** Remet l'article en vitrine publique. */
+  showPublic(decidedBy: string | null): void {
+    this.decision = { ...this.decision, isHiddenPublic: false, decidedBy };
   }
 
   /**
@@ -421,9 +567,16 @@ export class CatalogItem {
    * plus.
    */
   toPersistence(): CatalogItemState {
+    // 🔴 **Toute décision doit figurer ici.** Un champ oublié rendrait
+    // `untouched` vrai alors qu'une décision existe : l'adaptateur supprimerait
+    // la ligne, et le prix disparaîtrait AU PROCHAIN PUSH du PIM — loin du
+    // geste, donc loin de sa cause. C'est le mode de panne le plus coûteux de
+    // cet agrégat, et aucun type ne le voit.
     const untouched =
       this.decision.priceMillicents === null &&
+      this.decision.decidedPublicTtcCents === null &&
       !this.decision.isHidden &&
+      !this.decision.isHiddenPublic &&
       !this.decision.isFeatured;
     return {
       facts: this.facts,

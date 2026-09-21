@@ -71,8 +71,8 @@ plateforme, pas mesurés. À contrôler au premier lancement.
    `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
    Installer CocoaPods (`brew install cocoapods`). Les deux sont indispensables :
    `cap add ios` lance `pod install`.
-2. `pnpm --filter lfc-b2b-admin-frontend build` puis `pnpm … ios:add` — génère
-   `apps/lfc-B2B-admin-frontend/ios/` (à commiter, comme le recommande Capacitor).
+2. `pnpm --filter lfd-backoffice-frontend build` puis `pnpm … ios:add` — génère
+   `apps/lfd-backoffice-frontend/ios/` (à commiter, comme le recommande Capacitor).
 3. `pnpm … ios:open` ouvre Xcode. Dans **Signing & Capabilities**, choisir son
    équipe (un Apple ID gratuit suffit), puis lancer sur l'iPhone branché.
 4. Sur le téléphone : Réglages → Général → VPN et gestion de l'appareil → faire
@@ -94,7 +94,7 @@ abandonnée.
 
 ## Fichiers
 
-- `apps/lfc-B2B-admin-frontend/capacitor.config.ts`
-- `apps/lfc-B2B-admin-frontend/package.json` — scripts `ios:add`, `ios:sync`, `ios:open`
-- `apps/lfc-B2B-admin-frontend/src/index.html` — viewport + métas iOS
-- `apps/lfc-B2B-admin-frontend/src/styles.scss` — marges de sécurité
+- `apps/lfd-backoffice-frontend/capacitor.config.ts`
+- `apps/lfd-backoffice-frontend/package.json` — scripts `ios:add`, `ios:sync`, `ios:open`
+- `apps/lfd-backoffice-frontend/src/index.html` — viewport + métas iOS
+- `apps/lfd-backoffice-frontend/src/styles.scss` — marges de sécurité

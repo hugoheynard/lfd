@@ -295,7 +295,7 @@ autres par la bande.
   servi pour les lecteurs d'avant. Le journal tarifaire se lit de la même
   façon (`…/pages`).
 - **Le rendu** en phrases françaises vit au front, dans le moteur de phrases
-  (`lfc-B2B-admin-frontend/src/app/shared/journal/`, lot C du plan des
+  (`lfd-backoffice-frontend/src/app/shared/journal/`, lot C du plan des
   phrases, 2026-09-19) : `render-fact.ts` pour tous les faits, une phrase par
   type dans le dossier `phrases` (celles de l'équipe dans `team-phrases.ts`),
   le détail de ce que la phrase ne dit pas dans `detail-rows.ts`.
@@ -457,7 +457,7 @@ seuls lecteurs du `sub` du jeton.
 sert aussi `…ByName`, résolu au serveur. Le champ d'identifiant reste servi : il
 porte l'id de la fiche ou un **marqueur** qui ne désigne personne (`system`,
 `seed-pim`, `sonde`…), et l'écran l'affiche quand le nom manque
-(`lfc-B2B-admin-frontend/src/app/shared/staff-author.ts`). L'export CSV des
+(`lfd-backoffice-frontend/src/app/shared/staff-author.ts`). L'export CSV des
 mercuriales écrit le nom. `actorId` du journal reste servi : le filtre par
 personne en a besoin.
 

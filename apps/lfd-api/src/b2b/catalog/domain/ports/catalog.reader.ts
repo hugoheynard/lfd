@@ -74,11 +74,34 @@ export interface ResolvedCatalogItem {
  * composition est faite ici une seule fois — la laisser fuir donnerait autant de
  * versions de « quel prix s'applique » qu'il y a d'écrans.
  */
+/**
+ * **À QUI l'on sert** — et c'est la seule chose qui change le prix d'entrée.
+ *
+ * 🔴 Un `pro` achète au tarif de son canal : le prix du référentiel, ou celui
+ * que la plateforme a posé par-dessus. Un `public` achète **l'étiquette** — le
+ * prix saisi au référentiel, mis hors taxe au taux de son contexte de vente.
+ * Les deux sont des hors taxe et c'est tout ce qu'ils partagent ; servir l'un
+ * pour l'autre facture au mauvais tarif, dans un sens ou dans l'autre.
+ *
+ * Nommée plutôt que déduite d'un `companyId === null` chez chaque lecteur : la
+ * déduction est juste, mais elle appartient à UN endroit (`ShopCataloguePricing`),
+ * et la recopier ferait qu'un jour l'un des lecteurs l'oublierait.
+ */
+export type ShopAudience = "pro" | "public";
+
 export abstract class CatalogReader {
   /** Un SKU, ou `null` s'il est inconnu **ou masqué**. */
   abstract findSku(sku: string): Promise<ResolvedCatalogItem | null>;
-  /** Tout ce qui est vendable, masqués exclus, dans l'ordre d'affichage. */
-  abstract listSellable(): Promise<ResolvedCatalogItem[]>;
+  /**
+   * Tout ce qui est vendable **pour cette audience**, masqués exclus, dans
+   * l'ordre d'affichage.
+   *
+   * ⚠️ « Vendable » dépend de qui regarde : un article dont le référentiel n'a
+   * pas encore poussé le prix public n'est pas vendable au `public`, alors
+   * qu'il l'est au `pro`. Il est ÉCARTÉ plutôt que servi au tarif pro — le même
+   * refus que pour un article sans taux de TVA, et pour la même raison.
+   */
+  abstract listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]>;
 
   /**
    * L'unité **par défaut** d'un produit, par le SKU du PRODUIT.
@@ -93,7 +116,10 @@ export abstract class CatalogReader {
    * `null` si le produit est inconnu, masqué, ou sans taux de TVA — un article
    * qu'on ne sait pas facturer ne se vend pas.
    */
-  abstract findDefaultByProductSku(productSku: string): Promise<ResolvedCatalogItem | null>;
+  abstract findDefaultByProductSku(
+    productSku: string,
+    audience: ShopAudience,
+  ): Promise<ResolvedCatalogItem | null>;
 
   /**
    * Les unités par défaut de **plusieurs** produits, en une lecture.
@@ -106,5 +132,6 @@ export abstract class CatalogReader {
    */
   abstract listDefaultsByProductSkus(
     productSkus: readonly string[],
+    audience: ShopAudience,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>>;
 }

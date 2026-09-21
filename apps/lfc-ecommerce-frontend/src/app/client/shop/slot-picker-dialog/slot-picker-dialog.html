@@ -1,0 +1,136 @@
+<!-- 🔴 LE SUR-TITRE EST LE PREMIER ÉLÉMENT, comme la référence — c'est tout
+     l'objet de cette découpe. `fold-panel-header` rend son `subtitle` APRÈS le
+     titre et n'a pas de slot avant lui ; le sur-titre y était donc relégué en
+     second rang. Il prend désormais l'en-tête à lui seul, en variante
+     `eyebrow` — fold le rend petit, gras, en capitales desserrées, ce que la
+     maquette écrit à la main (Archivo 900, tracking .2em). Le grand titre ouvre
+     le corps, juste dessous. -->
+<fold-panel-header variant="eyebrow" [title]="kicker()" [closeLabel]="c().close" />
+
+<fold-panel-body>
+  <!-- La question et son chapô forment un bloc, séparé du corps par un filet :
+       sans lui, la première rangée de créneaux se lit comme la suite du
+       paragraphe. -->
+  <div class="intro">
+    <h2 class="screen">{{ c().title }}</h2>
+    <p class="lead">{{ c().lead }}</p>
+  </div>
+
+  @if (days().length === 0) {
+    <!-- Aucune journée accordée par le serveur : on le dit, on n'en invente
+         pas une. -->
+    <fold-empty-state [title]="c().days.none" [subtitle]="c().empty.subtitle" />
+  } @else {
+    <div class="days" role="tablist" [attr.aria-label]="c().title">
+      @for (tab of days(); track tab.day) {
+        <button
+          class="day"
+          type="button"
+          role="tab"
+          [class.on]="day() === tab.day"
+          [attr.aria-selected]="day() === tab.day"
+          (click)="showDay(tab.day)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    @if (loading()) {
+      <!-- Pendant la lecture, l'écran ne dit RIEN d'autre : annoncer « aucun
+           créneau » ici serait une affirmation fausse. -->
+      <!-- ⚠️ `fold-loading` et non `fold-loading-state` : le second est le nom
+           de la CLASSE, et un élément inconnu ne rend rien sans que le
+           typecheck s'en aperçoive — il ne lit pas les gabarits. -->
+      <fold-loading [message]="c().loading" />
+    } @else if (slots().length === 0) {
+      <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
+    } @else {
+      <!-- 🔴 LES CRÉNEAUX SONT GROUPÉS PAR FOURNÉE, comme la maquette
+           (`captures/09-adresse-quand.png`). Le badge quitte la carte pour
+           devenir le SUR-TITRE de son groupe : il désignait une plage, pas une
+           heure, et le répéter sur chacune des quatre cartes d'une même fournée
+           le faisait lire comme un attribut du créneau.
+
+           ⚠️ La maquette titre en deux temps — « MATIN · SORTIE DE FOURNÉE ».
+           Seule la seconde moitié a une source ; le moment de la journée n'en a
+           aucune, et le déduire de l'heure ferait appeler « après-ski » un
+           créneau de 16 h en plein août. -->
+      <div class="batches" role="radiogroup" [attr.aria-label]="c().title">
+        @for (batch of batches(); track $index) {
+          @if (batch.label) {
+            <p class="batch-label">{{ batch.label }}</p>
+          }
+
+          <div class="slots">
+            @for (slot of batch.slots; track slot.startAt) {
+              <!-- 🔴 Un créneau complet reste VISIBLE et fermé : on ne fait pas
+                   disparaître une heure, on dit qu'elle est prise et on nomme
+                   la suivante. Une absence serait un refus muet. -->
+              <button
+                class="slot"
+                type="button"
+                role="radio"
+                [class.on]="picked()?.startAt === slot.startAt"
+                [class.full]="!slot.open"
+                [disabled]="!slot.open"
+                [attr.aria-checked]="picked()?.startAt === slot.startAt"
+                (click)="pick(slot)"
+              >
+                <!-- 🔴 L'HEURE DE DÉBUT SEULE (Hugo, 2026-09-20 : « au niveau
+                     des horaires on ne donne que la première heure »).
+                     La tuile a porté l'intervalle quelques heures — « 7 h –
+                     7 h 15 » — parce que les deux bornes sont dans le contrat.
+                     Mais ce point découpe au quart d'heure : la seconde borne
+                     se déduisait de la suivante, et douze tuiles répétaient
+                     deux fois la même information. On choisit une heure, pas
+                     une fenêtre. -->
+                <span class="hour">{{ hourOf(slot) }}</span>
+                <span class="state">{{ stateOf(slot) }}</span>
+
+                <!-- Là où il n'y a plus de place, la carte ORIENTE : elle nomme
+                     la prochaine heure libre. -->
+                @if (!slot.open) {
+                  <span class="note">{{ fullNote(slot) }}</span>
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</fold-panel-body>
+
+<!-- `between` : « Retour » au bord gauche, l'action au droit — la répartition
+     de la référence.
+
+     🔴 « RETOUR » N'EST PAS UN BOUTON (Hugo, 2026-09-20). Il portait le cran le
+     plus discret de fold — `soft`/`neutral` —, faute de degré sans fond dans
+     son échelle, et cet écart était assumé « pour garder l'état de focus et la
+     hauteur tactile ». Les deux se gardent sans lui : le texte nu ci-dessous a
+     sa gouttière, sa hauteur de 44 px et son anneau de focus, écrits dans le
+     SCSS. Ce qu'on gagne, c'est qu'il ne se lit plus comme une seconde action —
+     un pied qui offre deux boutons demande de choisir entre eux, alors qu'il
+     n'y en a qu'un à faire. -->
+<fold-panel-footer align="between">
+  <button class="back" type="button" (click)="back()">{{ c().back }}</button>
+
+  <!-- L'action NOMME l'heure : « Je prends 6 h 30 ». Un bouton qui dirait
+       seulement « Continuer » obligerait à remonter pour vérifier. -->
+  <button
+    class="cta"
+    foldButton
+    emphasis="solid"
+    intent="primary"
+    size="lg"
+    type="button"
+    [disabled]="picked() === null"
+    (click)="confirm()"
+  >
+    {{ ctaLabel() }}
+    <!-- La flèche de la référence. Décorative : un lecteur d'écran qui lirait
+         « flèche vers la droite » après l'heure n'apprendrait rien de plus. -->
+    <span aria-hidden="true">→</span>
+  </button>
+</fold-panel-footer>

@@ -1,10 +1,14 @@
 import {
   setB2bPricePayloadSchema,
+  setPublicPricePayloadSchema,
+  setPublicVisibilityPayloadSchema,
   setCatalogFeaturedPayloadSchema,
   setCatalogVisibilityPayloadSchema,
   type CatalogAdminItemView,
   type CatalogSummaryView,
   type SetB2bPricePayload,
+  type SetPublicPricePayload,
+  type SetPublicVisibilityPayload,
   type SetCatalogFeaturedPayload,
   type SetCatalogVisibilityPayload,
 } from "@lfd/contracts";
@@ -25,7 +29,10 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AlignOnPimPriceCommand } from "../application/commands/align-on-pim-price.command.js";
+import { AlignPublicOnPimCommand } from "../application/commands/align-public-on-pim.command.js";
 import { SetB2bPriceCommand } from "../application/commands/set-b2b-price.command.js";
+import { SetPublicPriceCommand } from "../application/commands/set-public-price.command.js";
+import { SetPublicVisibilityCommand } from "../application/commands/set-public-visibility.command.js";
 import { SetCatalogFeaturedCommand } from "../application/commands/set-catalog-featured.command.js";
 import { SetCatalogVisibilityCommand } from "../application/commands/set-catalog-visibility.command.js";
 import { ExportCatalogCsvQuery } from "../application/queries/export-catalog-csv.query.js";
@@ -114,6 +121,33 @@ export class AdminCatalogController {
     await this.commands.execute<AlignOnPimPriceCommand, void>(new AlignOnPimPriceCommand(sku));
   }
 
+  /**
+   * Poser le **prix public**, en centimes TTC.
+   *
+   * ⚠️ Route distincte de `:sku/price` et non un champ de plus sur celle-ci :
+   * ce sont deux intentions, sur deux audiences, avec deux refus différents.
+   * Une route unique aurait forcé le handler à deviner laquelle depuis les
+   * champs présents — et le journal à porter un fait ambigu.
+   */
+  @Put(":sku/public-price")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setPublicPrice(
+    @Param("sku") sku: string,
+    @Body(new ZodBody(setPublicPricePayloadSchema)) payload: SetPublicPricePayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<SetPublicPriceCommand, void>(
+      new SetPublicPriceCommand(sku, payload.ttcCents, staffUserId),
+    );
+  }
+
+  /** Revenir à l'étiquette publique du PIM — et la suivre à nouveau. */
+  @Delete(":sku/public-price")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async alignPublicOnPim(@Param("sku") sku: string): Promise<void> {
+    await this.commands.execute<AlignPublicOnPimCommand, void>(new AlignPublicOnPimCommand(sku));
+  }
+
   @Put(":sku/visibility")
   @HttpCode(HttpStatus.NO_CONTENT)
   async setVisibility(
@@ -123,6 +157,25 @@ export class AdminCatalogController {
   ): Promise<void> {
     await this.commands.execute<SetCatalogVisibilityCommand, void>(
       new SetCatalogVisibilityCommand(sku, payload.hidden, staffUserId),
+    );
+  }
+
+  /**
+   * Masquer de la vitrine **publique**, ou l'y remettre.
+   *
+   * Route distincte de `:sku/visibility`, et non une audience ajoutée à son
+   * payload : celui-ci est servi à un back-office en service, et un champ
+   * obligatoire de plus casserait l'écran d'avant le déploiement.
+   */
+  @Put(":sku/public-visibility")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setPublicVisibility(
+    @Param("sku") sku: string,
+    @Body(new ZodBody(setPublicVisibilityPayloadSchema)) payload: SetPublicVisibilityPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<SetPublicVisibilityCommand, void>(
+      new SetPublicVisibilityCommand(sku, payload.hidden, staffUserId),
     );
   }
 

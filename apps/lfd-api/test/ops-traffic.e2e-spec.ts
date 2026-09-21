@@ -38,7 +38,7 @@ beforeAll(async () => {
       // 🔴 SANS CES DEUX-LÀ, cette suite appelle l'internet réel.
       //
       // `/admin/ops/health` déclenche toutes les sondes — Auth0, Stripe,
-      // Shopify, Resend, et les trois fronts Pages — plus le décompte Auth0.
+      // Resend, et les trois fronts Pages — plus le décompte Auth0.
       // Une douzaine d'appels sortants depuis la CI, à chaque exécution : lent,
       // dépendant du réseau de quelqu'un d'autre, et capable de faire échouer
       // un test pour une panne qui n'est pas la nôtre.

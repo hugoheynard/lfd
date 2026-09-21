@@ -1,0 +1,111 @@
+@if (recognised()) {
+  <fold-popover class="pop" placement="bottom-end" [(open)]="open">
+    <!-- Un VRAI bouton : la pastille seule n'est pas un nom, le déclencheur en
+         porte un. Tout ce qu'il montre est `aria-hidden` — son nom accessible
+         dit déjà l'espace et la personne, et l'entendre deux fois est pire que
+         de ne pas le voir. -->
+    <button class="who" type="button" foldPopoverTrigger="menu" [attr.aria-label]="triggerLabel()">
+      <span class="who-chip" aria-hidden="true">{{ spaceInitials() }}</span>
+      <span class="who-titles" aria-hidden="true">
+        <span class="who-space">{{ currentSpace() }}</span>
+        <span class="who-person">{{ whoLine() }}</span>
+      </span>
+      <fold-icon class="who-caret" name="chevron-down" />
+    </button>
+
+    <div foldPopoverPanel class="panel">
+      <!-- La bande de tête nomme la PERSONNE, pas l'espace : le déclencheur
+           porte déjà l'espace, et le panneau commence par dire à qui il est. -->
+      <div class="head">
+        <span class="head-avatar" aria-hidden="true">{{ personInitials() }}</span>
+        <span class="head-titles">
+          <span class="head-title">{{ identity.fullName() }}</span>
+          @if (identity.email(); as email) {
+            <span class="head-note">{{ email }}</span>
+          }
+        </span>
+      </div>
+
+      <!-- Le sélecteur d'espace n'existe qu'à partir d'une société (plan D8). -->
+      @if (workspace.hasChoice()) {
+        <div class="section">
+          <p class="section-label">{{ t().chrome.workspaceSection }}</p>
+          <div class="spaces" role="group" [attr.aria-label]="t().chrome.workspaceChoice">
+            @for (space of spaces(); track space.value) {
+              <button
+                class="space"
+                type="button"
+                [class.is-on]="space.current"
+                [attr.aria-pressed]="space.current"
+                (click)="choose(space.value)"
+              >
+                <span class="space-mark" aria-hidden="true">{{ space.initials }}</span>
+                <span class="space-titles">
+                  <span class="space-line">
+                    <span class="space-name">{{ space.label }}</span>
+                    <span class="space-kind" [class.is-pro]="space.pro">{{ space.kind }}</span>
+                  </span>
+                  <span class="space-note">{{ space.note }}</span>
+                </span>
+                <fold-icon
+                  class="space-sign"
+                  [name]="space.current ? 'check' : 'arrow-right'"
+                  [class.is-on]="space.current"
+                />
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- LES DESTINATIONS, dans l'ordre de `ClientNav` et dans aucun autre :
+           c'est la même liste que le menu de poche. Celle dont l'écran n'existe
+           pas garde sa place, ne se clique pas, et se dit telle qu'elle est. -->
+      <nav class="scroller" [attr.aria-label]="t().chrome.menu">
+        @for (item of nav.items(); track item.id) {
+          @if (item.ready) {
+            <a
+              class="row"
+              [routerLink]="item.route"
+              [attr.aria-current]="nav.current() === item.route ? 'page' : null"
+              (click)="close()"
+            >
+              <span class="row-mark" aria-hidden="true"><fold-icon [name]="icon(item)" /></span>
+              <span class="row-titles">
+                <span class="row-label">{{ item.label }}</span>
+                @if (item.count) {
+                  <span class="row-note">{{ item.count }}</span>
+                }
+              </span>
+              @if (item.countShort) {
+                <span class="row-badge" [class.is-warn]="item.warn">{{ item.countShort }}</span>
+              }
+            </a>
+          } @else {
+            <button class="row" type="button" disabled>
+              <span class="row-mark" aria-hidden="true"><fold-icon [name]="icon(item)" /></span>
+              <span class="row-titles">
+                <span class="row-label">{{ item.label }}</span>
+              </span>
+              <span class="row-badge">{{ t().nav.soon }}</span>
+            </button>
+          }
+        }
+      </nav>
+
+      <div class="foot">
+        <button
+          class="foot-action"
+          type="button"
+          [disabled]="!hasProfile()"
+          (click)="openProfile()"
+        >
+          {{ t().chrome.myProfile }}
+        </button>
+        <button class="foot-action is-exit" type="button" (click)="logout()">
+          {{ t().nav.logout }}
+        </button>
+      </div>
+    </div>
+  </fold-popover>
+}

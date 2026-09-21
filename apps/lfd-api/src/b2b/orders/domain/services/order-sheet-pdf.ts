@@ -3,6 +3,8 @@ import { Buffer } from "node:buffer";
 import type { ClientSheet, OrderSheet, PricedSheet, SheetFulfillment } from "@lfd/contracts";
 import PDFDocument from "pdfkit";
 
+import { sheetShowsTtc } from "./order-sheet.js";
+
 /**
  * **Le bon de commande en PDF** — l'exemplaire qu'on tend au client.
  *
@@ -330,15 +332,24 @@ function tableHead(doc: Doc, sheet: ClientSheet, top: number, withHeading: boole
   putCaps(doc, "Qté", CONTENT_LEFT, y);
   putCaps(doc, "Article", X_NAME, y);
   putRight(doc, "SKU", X_SKU_RIGHT, y, 9);
-  putRight(doc, "PU HT", X_UNIT_RIGHT, y, 9);
-  putRight(doc, "Total HT", CONTENT_RIGHT, y, 9);
+  // 🔴 **Les titres suivent les montants, dans le même geste.** Les écrire
+  // en dur au-dessus d'une colonne qui bascule est le seul défaut de ce
+  // document que personne ne remarque avant un client (R3, 2026-09-21).
+  const ttc = sheetShowsTtc(sheet);
+  putRight(doc, ttc ? "PU TTC" : "PU HT", X_UNIT_RIGHT, y, 9);
+  putRight(doc, ttc ? "Total TTC" : "Total HT", CONTENT_RIGHT, y, 9);
   const bottom = y + 4 * MM;
   rule(doc, bottom, 1);
   return bottom + 1;
 }
 
 /** Une ligne d'article, filet compris. Rend le bas de la ligne. */
-function articleRow(doc: Doc, line: ClientSheet["lines"][number], top: number): number {
+function articleRow(
+  doc: Doc,
+  line: ClientSheet["lines"][number],
+  top: number,
+  ttc: boolean,
+): number {
   const labels = line.priceLabels.join(" · ");
   const y = top + 4.6 * MM;
   put(doc, String(line.quantity), CONTENT_LEFT, y - 1.2 * MM, { size: 14, bold: true });
@@ -349,8 +360,26 @@ function articleRow(doc: Doc, line: ClientSheet["lines"][number], top: number): 
     width: X_SKU_RIGHT - COL_SKU - X_NAME,
   });
   putRight(doc, line.sku, X_SKU_RIGHT, y + 0.8 * MM, 8.5);
-  putRight(doc, unitPrice(line.unitPriceMillicents), X_UNIT_RIGHT, y, 10.5);
-  putRight(doc, money(line.lineTotalCents), CONTENT_RIGHT, y, 10.5, true);
+  // Le prix d'une pièce change d'UNITÉ en même temps que d'assiette : le hors
+  // taxe est en millicentimes et garde ses décimales, le taxe compris est en
+  // centimes parce que c'est un montant que la vitrine a déjà arrêté.
+  putRight(
+    doc,
+    ttc && line.unitPriceTtcCents !== null
+      ? money(line.unitPriceTtcCents)
+      : unitPrice(line.unitPriceMillicents),
+    X_UNIT_RIGHT,
+    y,
+    10.5,
+  );
+  putRight(
+    doc,
+    money(ttc && line.lineTotalTtcCents !== null ? line.lineTotalTtcCents : line.lineTotalCents),
+    CONTENT_RIGHT,
+    y,
+    10.5,
+    true,
+  );
 
   let bottom = y + 4.6 * MM;
   if (labels !== "") {
@@ -373,7 +402,12 @@ function totalRows(
   const totals = sheet.money;
   const net = Math.max(0, totals.subtotalCents - totals.discountCents);
   return [
-    { label: "Sous-total", value: money(totals.subtotalCents) },
+    // 🔴 **« HT » est écrit, il n'est plus sous-entendu.** La colonne des
+    // articles peut désormais être en TTC ; un pied qui dirait « Sous-total »
+    // au-dessous inviterait à une addition qui ne tombe pas — et l'écart n'est
+    // pas un arrondi, c'est la TVA entière. Le panier dit déjà « Sous-total HT »
+    // puis « Total TTC », et pour la même raison (R3, 2026-09-21).
+    { label: "Sous-total HT", value: money(totals.subtotalCents) },
     ...(totals.discountCents === 0
       ? []
       : [{ label: "Remise", value: money(-totals.discountCents) }]),
@@ -481,6 +515,7 @@ const ROW_SPACE = 12 * MM;
  * et son filet, ni juste avant les totaux.
  */
 function draw(doc: Doc, sheet: ClientSheet): void {
+  const showsTtc = sheetShowsTtc(sheet);
   let y = tableHead(doc, sheet, parties(doc, sheet, header(doc, sheet)), true);
 
   for (const line of sheet.lines) {
@@ -488,7 +523,7 @@ function draw(doc: Doc, sheet: ClientSheet): void {
       doc.addPage();
       y = tableHead(doc, sheet, MARGIN_Y - 5 * MM, false);
     }
-    y = articleRow(doc, line, y);
+    y = articleRow(doc, line, y, showsTtc);
   }
 
   if (y > PAGE_HEIGHT - MARGIN_Y - TAIL_SPACE) {

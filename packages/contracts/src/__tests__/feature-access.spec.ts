@@ -11,7 +11,19 @@ import {
 describe("le catalogue de l'accès aux fonctionnalités", () => {
   it("porte la boutique, fermée < voir < commander, ouverte par défaut", () => {
     // Le défaut est l'état d'avant le module : rien ne se ferme au déploiement.
-    expect(FEATURE_KEYS).toEqual(["shop", "orders", "invoices", "desktopMenu", "customerMandate"]);
+    expect(FEATURE_KEYS).toEqual([
+      "shop",
+      "orders",
+      "invoices",
+      "desktopMenu",
+      // Ajoutée le 2026-09-21 : la livraison au public est une porte de service
+      // que l'admin ouvre, et `POST /shop/orders` refuse en 409 quand elle est
+      // fermée. Elle a manqué à cette liste une demi-journée — la clé est
+      // partie avec ses e2e côté API, sans que la suite de CE paquet soit
+      // relancée. Le déclencheur est le diff, pas le moment de conclure.
+      "publicDelivery",
+      "customerMandate",
+    ]);
     expect(FEATURE_CATALOGUE.shop.levels).toEqual(["closed", "browse", "order"]);
     expect(FEATURE_CATALOGUE.shop.defaultLevel).toBe("order");
     expect(FEATURE_CATALOGUE.shop.label).toBe("Boutique");

@@ -18,6 +18,24 @@ export class InvalidB2bPriceError extends DomainError {
   }
 }
 
+/**
+ * Un prix public à zéro ou négatif.
+ *
+ * Jumeau d'{@link InvalidB2bPriceError}, et distinct parce que l'unité l'est :
+ * celui-ci se compte en **centimes TTC** — un prix qu'un humain pose —, l'autre
+ * en millicentimes hors taxe. Un message qui dirait « centimes » pour les deux
+ * enverrait le staff chercher une erreur de saisie à côté de celle qu'il a
+ * faite.
+ */
+export class InvalidPublicPriceError extends DomainError {
+  constructor(readonly ttcCents: number) {
+    super(
+      "catalog.public_price.invalid",
+      `Un prix public doit être strictement positif (reçu : ${String(ttcCents)} centimes TTC).`,
+    );
+  }
+}
+
 // ─── Refus métier : la demande est bien formée mais impossible ici (409) ─────
 
 /**
@@ -35,6 +53,48 @@ export class RedundantB2bPriceError extends BusinessError {
     super(
       "catalog.price.redundant",
       "Ce prix est déjà celui du PIM : retirez la décision plutôt que de la recopier.",
+    );
+  }
+}
+
+/**
+ * On a posé un prix public **identique** à l'étiquette du PIM.
+ *
+ * Même raison que son jumeau professionnel : la ligne annoncerait une décision
+ * qui n'en est pas une, et elle empêcherait la prochaine étiquette du
+ * référentiel de passer.
+ */
+export class RedundantPublicPriceError extends BusinessError {
+  constructor(readonly ttcCents: number) {
+    super(
+      "catalog.public_price.redundant",
+      "Ce prix est déjà l'étiquette du PIM : retirez la décision plutôt que de la recopier.",
+    );
+  }
+}
+
+/**
+ * On a posé un prix public sur un article que la vitrine publique **n'expose
+ * pas** — son miroir ne porte aucune entrée pour le contexte public.
+ *
+ * 🔴 **Sans ce refus, le geste serait sans effet et personne ne le saurait.**
+ * `servedPriceOf` écarte déjà ces articles : le prix serait écrit, affiché au
+ * back-office comme une décision prise, et jamais servi à quiconque. Un prix
+ * qu'on croit posé est pire qu'un prix refusé.
+ *
+ * ⚠️ **C'est un contrôle à la POSE, pas un invariant.** Un push ultérieur qui
+ * retire l'entrée de contexte laisse la décision en place et inservable —
+ * `refreshFromPim` conserve les décisions par construction. Vérifié n'est pas
+ * interdit, et le rendre interdit demanderait que le push relise les décisions.
+ */
+export class PublicPriceWithoutContextError extends BusinessError {
+  constructor(
+    readonly sku: string,
+    readonly context: string,
+  ) {
+    super(
+      "catalog.public_price.no_public_context",
+      `Cet article n'a pas de prix public « ${context} » reçu du PIM : la vitrine publique ne le vend pas, un prix posé ici resterait sans effet.`,
     );
   }
 }

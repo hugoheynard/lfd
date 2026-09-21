@@ -1,0 +1,28 @@
+<!-- Un seul `tabindex="0"` dans le groupe — celui de la porte cochée. C'est le
+     tabindex mobile d'un `radiogroup` : la tabulation entre dans le groupe une
+     fois, et les flèches y circulent. Deux boutons tabulables feraient du
+     segmenté deux arrêts de plus dans la page. -->
+<div
+  class="rail"
+  role="radiogroup"
+  [attr.aria-label]="t().doors.switchLabel"
+  (keydown)="onKey($event)"
+>
+  @for (candidate of doors; track candidate) {
+    <button
+      #segment
+      class="segment"
+      type="button"
+      role="radio"
+      [class.on]="candidate === door()"
+      [attr.aria-checked]="candidate === door()"
+      [attr.tabindex]="candidate === door() ? 0 : -1"
+      (click)="pick(candidate)"
+    >
+      <span class="label">{{
+        candidate === 'perso' ? t().doors.persoLabel : t().doors.proLabel
+      }}</span>
+      <span class="sub">{{ candidate === 'perso' ? t().doors.persoSub : t().doors.proSub }}</span>
+    </button>
+  }
+</div>

@@ -1,5 +1,3 @@
-import type { FieldDiffView } from "./shopify.js";
-
 /**
  * **Les points d'ancrage de publication du catalogue**, tels qu'un écran les
  * lit.
@@ -7,13 +5,27 @@ import type { FieldDiffView } from "./shopify.js";
  * Une ancre est une photographie nommée : ce que le catalogue était à un
  * instant, en entier. Le diff entre deux ancres répond à la seule question qui
  * compte devant un client — « qu'est-ce qui a changé depuis la dernière fois ».
- *
- * `FieldDiffView` est **réutilisé** depuis la réconciliation Shopify plutôt que
- * redéclaré : un champ qui bouge se rend de la même façon, qu'il ait bougé entre
- * deux révisions ou entre nous et une boutique. Deux déclarations du même
- * ensemble finiraient par diverger — c'est déjà arrivé sur les motifs
- * d'exclusion B2B.
  */
+
+/**
+ * **Un champ qui diffère entre deux états.**
+ *
+ * ⚠️ Il vivait dans `shopify.ts`, et ce fichier l'importait de là avec cette
+ * raison : « réutilisé depuis la réconciliation Shopify plutôt que redéclaré —
+ * deux déclarations du même ensemble finiraient par diverger ». La raison était
+ * juste, la DIRECTION ne l'était pas : la réconciliation d'un canal est partie
+ * avec ce canal, les révisions restent, et un type que le socle lit ne peut pas
+ * vivre chez un consommateur (déplacé le 2026-09-21,
+ * [`plan-un-seul-canal-deux-prix.md`](../../../documentation/pim/plan-un-seul-canal-deux-prix.md)
+ * § B.2).
+ *
+ * Rien dedans n'est propre à un canal : trois chaînes, un avant, un après.
+ */
+export interface FieldDiffView {
+  readonly field: string;
+  readonly before: string;
+  readonly after: string;
+}
 
 /** Une ancre, en une ligne de liste. */
 export interface CatalogRevisionSummaryView {

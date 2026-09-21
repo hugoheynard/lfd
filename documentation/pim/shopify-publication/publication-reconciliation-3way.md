@@ -1,12 +1,22 @@
 # Réconciliation de publication — le trois-voies « git du catalogue »
 
+> 🔴 **CE CANAL N'EXISTE PLUS.** La chaîne de publication Shopify — écrans,
+> canal serveur, paquet de transport, contrats — a été retirée du dépôt le
+> **2026-09-21**
+> ([`plan-un-seul-canal-deux-prix.md`](../plan-un-seul-canal-deux-prix.md)).
+>
+> Ces documents sont **archivés, pas supprimés** : ils portent des décisions qui
+> ont survécu à leur canal — le modèle des contextes de vente, la protection des
+> URL indexées, la mécanique des révisions — et un doc supprimé fait réinventer
+> ce qu'il savait. Ce qu'ils décrivent du code, en revanche, n'est plus vrai :
+> les chemins qu'ils citaient vivent dans l'histoire git.
+
 > Ce que le PIM **veut** pousser, ce qu'il a **déjà** poussé, ce que la boutique **montre
 > aujourd'hui** : trois états, réconciliés comme un `git` à trois voies. On en tire tout ce
 > qui compte pour publier sans casse — _à pousser_, _modifié en boutique_, _conflit_, le
 > **diff par champ** avant d'envoyer, et le **retour arrière** par snapshot versionné.
 >
-> Statut : **design cible.** Le push actuel ([`push.service.ts`](../../../apps/lfd-api/src/pim/channels/shopify/products/push.service.ts))
-> ne garde qu'un _hash_ de la dernière poussée — assez pour « ne pas repousser l'identique »,
+> Statut : **design cible, jamais bâti.** Le push qui a existé ne gardait qu'un _hash_ de la dernière poussée — assez pour « ne pas repousser l'identique »,
 > pas assez pour diffuser, détecter une main étrangère, ou revenir en arrière. Ce doc décrit
 > le socle qui manque.
 

@@ -1,0 +1,260 @@
+@use '../dialog' as dlg;
+
+/* Le sélecteur d'heure public. Tokens du thème `lfc-app` uniquement — le
+   dialogue s'ouvre au-dessus de la feuille crème, dans le même registre.
+   Son CHÂSSIS — en-tête, corps, titre, chapô, filet — vient de `_dialog.scss`,
+   partagé avec le sélecteur de maison : ce sont les deux volets d'un même
+   parcours, et séparés ils ont déjà divergé. */
+
+:host {
+  @include dlg.gutters;
+}
+
+fold-panel-header {
+  @include dlg.header;
+}
+
+fold-panel-body {
+  @include dlg.body;
+}
+
+.screen {
+  @include dlg.screen;
+}
+
+.lead {
+  @include dlg.lead;
+}
+
+.intro {
+  @include dlg.intro;
+}
+
+/* ── Les journées, en onglets ────────────────────────────────────────────── */
+
+/* 🔴 La rangée DÉFILE, elle ne se replie plus (2026-09-17). À trois journées,
+   `wrap` tenait sur une ligne ; à sept, il en faisait trois et poussait les
+   créneaux hors de vue — c'est-à-dire ce qu'on est venu choisir.
+
+   Le défilement est horizontal et le reste : `nowrap` empêche les pastilles de
+   se comprimer, `flex: none` sur chacune les garde à leur largeur de texte, et
+   l'accroche par jour fait qu'on s'arrête sur une journée entière plutôt
+   qu'entre deux. */
+.days {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--fold-space-sm);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  /* 🔴 LE FILET EST AU-DESSUS DU CHOIX DE DATE (Hugo, 2026-09-20 : « le trait
+     sur toute la largeur devrait être au dessus du choix de date »). Il sépare
+     ce que le dialogue DIT de ce qu'il DEMANDE — et ce qu'il demande commence à
+     la date, pas aux créneaux.
+
+     Porté par la rangée elle-même : une pseudo-boîte y serait devenue un
+     ÉLÉMENT DE LA RANGÉE, donc une pastille vide en tête de file.
+
+     Les 2 px du bas : sans eux, l'anneau de focus d'une pastille est rogné par
+     le conteneur qui défile. */
+  @include dlg.rule-above;
+
+  padding-bottom: 2px;
+  /* 🔴 L'ACCROCHE DOIT CONNAÎTRE LA GOUTTIÈRE (Hugo, 2026-09-20 : « si la
+     première date pouvait aussi respecter ce padding »).
+     `scroll-snap-align: start` colle la pastille au bord du SCROLLPORT, qui
+     ignore le `padding` du conteneur : au chargement, la rangée se trouvait
+     défilée de 22 px toute seule — mesuré — et la première date touchait le
+     bord du dialogue pendant que tout le reste respectait la marge. Rien ne le
+     disait, parce que rien n'était faux : le conteneur avait bien sa gouttière,
+     c'est le défilement qui la mangeait. */
+  scroll-padding-inline: var(--lfc-dialog-gutter);
+  border-top: 1px solid var(--fold-color-border);
+  /* La barre reste disponible au trackpad et à la souris, mais discrète : c'est
+     une rangée de sept pastilles, pas une zone de texte. */
+  scrollbar-width: thin;
+}
+
+.days > .day {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.day {
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  border: 0;
+  /* 🔴 ANGULEUSES, PAS RONDES (Hugo, 2026-09-20 : « un peu plus anguleuses »).
+     La référence ne connaît le rayon plein que pour les PASTILLES d'état — un
+     mot, une couleur. Ce qui se choisit y porte un coin franc, entre 11 et
+     13 px, et la rangée se lit alors comme une série de touches plutôt que
+     comme une file de gélules. */
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-accent-surface);
+  color: var(--lfc-color-accent-text);
+  /* 🔴 POGONIA ET NON CHUNK (Hugo, 2026-09-20 : « on devrait avoir les dates en
+     pogonia pour la lisibilité »). Une date porte des CHIFFRES et un nom de
+     jour abrégé ; sous 12 px, les contreformes de la face de display se
+     referment et « jeu. 25 » se devine plutôt qu'il ne se lit. C'est la même
+     raison, et la même bascule, que les sur-titres du popover. */
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.day.on {
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+}
+
+/* ── Les créneaux, en tuiles ─────────────────────────────────────────────── */
+
+/* Les fournées se suivent dans une seule colonne ; chacune ouvre sa grille. */
+.batches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* Le sur-titre d'une fournée — le badge du vendeur, rendu à la PLAGE qu'il
+   décrit. Même registre que les sur-titres de section du reste de l'app. */
+.batch-label {
+  margin: 0;
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+/* 🔴 QUATRE TUILES PAR RANGÉE, et non deux cartes larges (maquette du
+   2026-09-20). Une journée tient alors d'un regard : à `minmax(15rem, …)`, six
+   créneaux faisaient trois rangées et il fallait défiler pour comparer des
+   heures — c'est-à-dire pour faire la seule chose qu'on est venu faire. */
+.slots {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  /* Les mesures de la maquette : `padding:14px 16px; border-radius:14px`. */
+  padding: 14px 16px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  transition: var(--lfc-motion-tap);
+}
+
+.slot:active {
+  transform: scale(0.985);
+}
+
+/* Le créneau retenu : l'encre de la marque, et le beurre pâle dessous — c'est
+   la carte que la référence remplit.
+   ⚠️ Le filet passe à 2 px SANS déplacer le contenu : la bordure est comptée
+   dans la boîte (`box-sizing: border-box` global), donc la tuile ne grandit pas
+   et la rangée ne sursaute pas au clic. */
+.slot.on {
+  border-color: var(--lfc-ink-800);
+  border-width: 2px;
+  background: var(--lfc-color-accent-surface);
+}
+
+/* 🔴 Complet : visible, éteint, non cliquable. Le refus précède l'effort. */
+.slot.full {
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+  cursor: not-allowed;
+}
+
+/* L'intervalle, en chiffres alignés : c'est ce qu'on compare d'une tuile à
+   l'autre, et des chiffres qui dansent se comparent mal. */
+.hour {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-heading);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--lfc-tracking-block);
+  white-space: nowrap;
+}
+
+.slot.full .hour {
+  /* Barré : l'heure existe, elle n'est plus à prendre. */
+  text-decoration: line-through;
+}
+
+/* L'état, SOUS l'heure et en petites capitales — la maquette le pose là, et
+   non en pastille à côté : une pastille se lit comme une offre, un mot sous
+   l'heure se lit comme son état. */
+.state {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.note {
+  margin-top: 3px;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-note);
+}
+
+/* ── Le pied ─────────────────────────────────────────────────────────────── */
+
+/* 🔴 POGONIA AU PIED (Hugo, 2026-09-20). Les boutons du dépôt portent la face
+   de display par défaut (`--fold-button-font`) ; ici l'action nomme une HEURE
+   — « Je prends 7 h 15 » — et les chiffres de Chunk se referment. C'est la même
+   bascule que les dates juste au-dessus, et pour la même raison.
+   Le jeton est redéfini sur le PIED seul : une variable CSS traverse
+   l'encapsulation, là où un sélecteur écrit ici ne porterait sur rien. */
+fold-panel-footer {
+  --fold-button-font: var(--fold-font-sans);
+  /* La même respiration qu'en tête, par les mêmes alias et pour la même raison.
+     L'écart entre « Retour » et l'action tient à `--fold-space-sm` et ne bouge
+     donc pas (mesuré le 2026-09-20). */
+  --fold-space-md: var(--lfc-dialog-pad-y);
+  --fold-space-lg: var(--lfc-dialog-gutter);
+}
+
+/* « Retour », en texte nu — pas une seconde action. Il garde ce qu'un bouton
+   apporte et qu'on ne veut pas perdre : la hauteur tactile et l'anneau de
+   focus. */
+.back {
+  @include dlg.foot-link;
+}
+
+.back:hover {
+  color: var(--fold-color-text);
+}
+
+/* 🔴 L'ACTION S'ÉTEINT TANT QU'AUCUN CRÉNEAU N'EST PRIS (Hugo, 2026-09-20 :
+   « faded si pas de créneau selectionné », puis « muted en beige comme dans la
+   démo »). `disabled` la fermait déjà pour de bon, mais elle gardait l'aplat
+   d'encre plein : elle se lisait donc comme cliquable, et le refus n'arrivait
+   qu'au clic. Ici le refus PRÉCÈDE l'effort, comme partout ailleurs.
+
+   Le BEIGE plutôt qu'une opacité, et c'est mieux pour deux raisons : la démo
+   peint ses états muets en beige chaud (`#e6dcc6`, à un cheveu de
+   `--lfc-paper-300`) sur un texte sourd ; et une opacité aurait délavé le
+   texte lui-même, qui doit rester lisible — c'est même tout ce qu'il a à faire
+   tant qu'on n'a pas choisi.
+   `foldButton` est une DIRECTIVE posée sur notre propre `<button>` : ce
+   sélecteur porte, là où il ne porterait sur rien dans un composant fold. */
+.cta:disabled {
+  background: var(--lfc-paper-300);
+  color: var(--fold-color-text-muted);
+  cursor: not-allowed;
+}

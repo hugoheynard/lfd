@@ -52,9 +52,23 @@ décrirait dans le runbook, sans outil.
   (`mandate-proof-purge.ts`), les photos de notes et de cartes. Aucune règle de
   cycle de vie n'est déclarée dans le dépôt ; la configuration du bucket côté
   Cloudflare n'est pas vérifiable d'ici.
-- ⚠️ Un commentaire d'`OrderSheetArchive` (non daté) dit que `R2_CUSTOMERS_*`
-  est **absent en production**. Si c'est encore vrai, aucun bon n'y est archivé
-  du tout : chaque téléchargement le rend à nouveau. Non vérifié ici.
+- 🔴 **VÉRIFIÉ le 2026-09-21 : `R2_CUSTOMERS_EU_*` n'existe nulle part.** Ni
+  secret, ni variable de dépôt — les quatre noms sont absents (22 secrets et 18
+  variables listés ; `R2_KBIS_*` et `R2_MEDIA_*`, eux, sont bien là). La boucle
+  de synchronisation du déploiement ne pousse un nom que **s'il est non vide**
+  (`if [ -n "$value" ]`, `deploy_lfd_api.yml`) : les quatre n'ont donc jamais
+  atteint Cloudflare.
+
+  **Conséquence, de bout en bout** : `readIfPresent` lève,
+  `OrderSheetArchive.readArchived` rattrape l'indisponibilité et rend `null`,
+  `archive()` échoue en silence — **aucun bon n'a jamais été archivé en
+  production, et chaque téléchargement le rend à nouveau**.
+
+  ⚠️ **Ce n'est pas rassurant, c'est l'inverse.** Tant que rien n'est figé, la
+  promesse « deux rendus de la même révision produisent les mêmes octets » ne
+  tient que **tant que le code ne change pas**. Un client qui retélécharge son
+  bon après un déploiement qui touche le rendu reçoit un autre document que
+  celui qu'il a dans la poche — et rien ne le dit.
 
 ## 3. L'ordre de grandeur, pour mémoire
 
@@ -74,7 +88,19 @@ très au-dessus du réel. La décision ne coûte rien de mesurable.
    peut nous opposer.
 2. **Vérifier la configuration du bucket** dans le tableau de bord Cloudflare :
    aucune règle de cycle de vie sur `orders/`. Geste de Hugo.
-3. **Vérifier `R2_CUSTOMERS_*` en production** (§2, dernier point) : sans lui,
-   la décision protège un stockage vide.
+3. ~~**Vérifier `R2_CUSTOMERS_EU_*` en production.**~~ **Fait le 2026-09-21 :
+   les quatre noms sont ABSENTS.** La décision du §1 protège donc, à ce jour, un
+   stockage vide — elle reste juste, et elle n'a encore rien à garder.
+
+   **Ce qu'il faut décider** : brancher le bucket `customers` (créer les quatre
+   entrées, la moitié en variables, la moitié en secrets), ou assumer que le bon
+   se refabrique à chaque demande. Les deux se défendent ; ce qui ne se défend
+   pas, c'est de croire qu'on archive alors qu'on ne le fait pas.
+
+   ⚠️ **Tant que ce n'est pas branché, tout changement du RENDU réécrit
+   rétroactivement tous les bons passés.** C'est la raison pour laquelle R3 a
+   choisi de **sceller** le taxe compris plutôt que de le dériver
+   ([`plan-bon-de-commande-public-en-ttc.md`](plan-bon-de-commande-public-en-ttc.md)).
+
 4. **Le jour où le courriel joindra le bon**, l'archiver au même moment : le
    document envoyé doit être celui qui est gardé.

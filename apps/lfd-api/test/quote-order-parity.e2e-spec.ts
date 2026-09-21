@@ -29,7 +29,6 @@
 import { randomUUID } from "node:crypto";
 
 import type { BillingAddressPayload, ShopQuotePayload, ShopQuoteView } from "@lfd/contracts";
-import { millicentsFromCents } from "@lfd/money";
 import request from "supertest";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
@@ -61,6 +60,16 @@ beforeEach(async () => {
 
 const SERVICE_DAY = serviceDay();
 const BUYER = "auth0|parite";
+
+/**
+ * **Le prix catalogue de la vitrine publique** pour VIE-001 — l'étiquette du
+ * semis (2,64 € TTC) mise hors taxe à 5,5 %.
+ *
+ * Il n'est utilisé que comme REPÈRE : ce fichier éprouve un accord entre deux
+ * chemins, pas une valeur. Le repère sert à vérifier que le barème a mordu —
+ * sans lui, un devis qui ne remiserait rien passerait pour un devis remisé.
+ */
+const PUBLIC_CATALOGUE_MILLICENTS = 250_237;
 
 /**
  * Un panier à **deux taux** et deux quantités — c'est la forme qui casse.
@@ -242,8 +251,14 @@ describe("le devis de la vitrine et la facture", () => {
     );
 
     // Le barème a bien mordu : sans lui, le devis rendrait le prix catalogue.
+    //
+    // 🔴 Le prix catalogue de CETTE audience. La vitrine se visite sans jeton,
+    // donc elle sert l'étiquette publique — 2,50237 € hors taxe pour VIE-001,
+    // et non les 2,00 € du canal professionnel que ce cas citait jusqu'au
+    // 2026-09-21. La référence était fausse, pas le barème : le comparatif
+    // passait par chance, les deux audiences lisant alors le même prix.
     const croissant = view.lines.find((line) => line.sku === "VIE-001");
-    expect(croissant?.unitPriceMillicents).toBeLessThan(millicentsFromCents(200));
+    expect(croissant?.unitPriceMillicents).toBeLessThan(PUBLIC_CATALOGUE_MILLICENTS);
 
     await expectParity(
       {

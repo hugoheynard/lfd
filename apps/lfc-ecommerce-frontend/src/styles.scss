@@ -1,0 +1,224 @@
+/* `sass:meta` pour `load-css` : les feuilles de l'app se chargent À LEUR PLACE
+   dans l'ordre du fichier, ce qu'un `@use` ne sait pas faire (Sass l'exige en
+   tête). `@import` le faisait, et il est déprécié — Dart Sass 3 le retire
+   (remplacé le 2026-09-15). */
+@use 'sass:meta';
+
+/* fold-ng design tokens — the single source of truth (primitives + scales +
+   semantic). The `navi` theme is selected via `data-theme="navi"` on <html>;
+   the app-shell paints the navy chrome + ivory page from these. Imported in the
+   SCSS graph so package edits hot-reload. */
+@import 'fold-ng/tokens.css';
+
+/* Thème de l'app CLIENT (encre bleue + papier chaud). Défini globalement, mais
+   posé écran par écran via `data-theme="lfc-app"` sur l'hôte routé, tant que la
+   refonte n'a pas remplacé l'espace pro.
+
+   ⚠️ IMPÉRATIVEMENT APRÈS les tokens fold, et chargé en place pour cette raison :
+   le sous-bloc `[data-theme="lfc-app"] [data-surface="chrome"]` a EXACTEMENT la
+   même spécificité que le `[data-theme="navi"] [data-surface="chrome"]` de fold,
+   et les deux matchent le même élément (l'app tourne sous `<html
+   data-theme="navi">`). À égalité, c'est l'ordre du fichier qui tranche — placé
+   avant, le thème client perdait sa bande de marque au profit de navi. Un `@use`
+   ne peut pas descendre ici : Sass l'exige en tête de fichier — d'où
+   `meta.load-css`, qui charge la feuille à cet endroit précis. */
+@include meta.load-css('./styles/lfc-app-theme');
+
+/* Les faces de la marque, auto-hébergées (cf. le fichier pour le pourquoi). */
+@include meta.load-css('./styles/lfc-fonts');
+
+/* Tokens applicatifs LFD, dérivés des tokens fold (donc théma-agnostiques).
+   `--lfd-backdrop-navi` : lavis bleu pâle de l'accent de marque, posé derrière
+   une section pour la mettre en avant sans l'inverser. */
+:root {
+  --lfd-backdrop-navi: color-mix(in srgb, var(--fold-color-primary) 5%, var(--fold-color-bg-page));
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  /* L'ENCRE, et pas la couleur de page. Ce fond ne se voit que là où l'app ne
+     peint pas : la bande de sécurité sous l'encoche, et le rebond élastique en
+     haut comme en bas. Le crème est posé par les écrans eux-mêmes, qui occupent
+     toute la hauteur. Une page blanche au-dessus d'une barre bleue se lit comme
+     un bug d'affichage, pas comme une marge. */
+  background: var(--fold-color-primary);
+  color: var(--fold-color-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scroll + footer : depuis fold-ng 0.9, le shell possède le scroll du contenu
+   par défaut, `fold-page-layout` coule dedans, et le shell fait grossir lui-même
+   le porte-page (`.content-flow { flex:1 0 auto }`) pour pousser le footer
+   `footerBehavior="scroll"` en bas d'une page courte. L'ancien duo (rendre la
+   page routée flex-grow + neutraliser `margin-top:auto` du footer avec un
+   `!important` contre une règle scopée du shell) est supprimé. Reste à donner un
+   `display:block` à l'hôte routé — un custom element Angular est inline sinon. */
+router-outlet + * {
+  display: block;
+}
+
+/* ── Le tactile : ce que le navigateur fait DE SON PROPRE CHEF ─────────────────
+   Trois gestes d'iOS que rien ne demandait, et qui se lisent tous comme un bug
+   de l'app plutôt que comme un comportement du navigateur. */
+
+html {
+  /* iOS grossit le texte de lui-même quand on tourne le téléphone. La mise en
+     page est alors juste au portrait, fausse au paysage, et rien dans le code
+     n'explique l'écart. */
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  /* Le rebond VERTICAL du document. Les écrans possèdent déjà leur défilement
+     (le shell) ; celui-ci ne fait que décoller toute l'app du haut de l'écran
+     quand un geste dépasse, et rend l'encoche visible une fraction de seconde.
+     `none` et non `contain` : il n'y a rien au-dessus à protéger, c'est le
+     rebond lui-même qui n'a pas lieu d'être. */
+  overscroll-behavior-y: none;
+}
+
+/* LE DOUBLE-TAPE POUR ZOOMER. C'est lui, le « des fois ça zoome ».
+   Sur iOS, tout élément cliquable attend ~300 ms après un appui pour voir si un
+   second arrive : deux appuis rapprochés — sur deux boutons voisins, ou sur le
+   même par impatience — sont alors lus comme un double-tape, et la page grossit.
+   `manipulation` garde le défilement et le pincement (donc le zoom reste
+   accessible à qui le demande) et ne retire QUE ce double-tape.
+
+   ⚠️ Volontairement PAS de `user-scalable=no` ni de `maximum-scale=1` dans la
+   balise viewport : Safari les ignore depuis iOS 10, et là où ils sont honorés
+   ils retirent le zoom à qui en a besoin pour lire. On désarme le geste
+   accidentel, jamais le geste voulu. */
+a,
+button,
+label,
+summary,
+[role='button'],
+[role='tab'],
+[role='option'] {
+  touch-action: manipulation;
+}
+
+/* LE ZOOM À LA MISE AU POINT D'UN CHAMP. Safari agrandit la page dès qu'un
+   champ porte moins de 16 px — et l'échelle de l'app plafonne à 15 px, même
+   pour la taille la plus grande. Tous les champs déclenchaient donc le zoom, et
+   la page restait grossie après la saisie : c'est le « déplacement non voulu ».
+   Le plancher ne vaut qu'au doigt ; à la souris, l'échelle du thème est intacte. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* ── LES TROIS POPOVERS DE LA BARRE SE CALENT SUR LA GOUTTIÈRE ────────────────
+   Hugo, 2026-09-20 : « est-ce que c'est possible que tous les popovers soient
+   alignés à droite de l'écran comme sur la démo ? »
+
+   Oui, mais pas par `placement`. `bottom-end` colle le bord droit du panneau
+   au bord droit de SON déclencheur : le menu d'identité ferme la rangée, donc
+   il tombe déjà sur la gouttière — la cloche et le panier, eux, sont plus à
+   gauche, et leurs panneaux s'échelonnaient avec leurs boutons. La maquette
+   les pose tous les trois sur le même bord, celui de la page.
+
+   🔴 `!important`, ET C'EST LE SEUL OUTIL DISPONIBLE. fold calcule la position
+   à l'ouverture et l'écrit en style INLINE (`position: fixed; left: …px`). Une
+   déclaration de feuille, si spécifique soit-elle, perd contre l'inline ; il
+   n'y a pas de version « propre » de cette reprise. Le dépôt n'en comptait
+   aucun autre, et celui-ci est nommé, borné à trois panneaux et daté.
+
+   ⚠️ CE QU'ON ABANDONNE : le repli de fold. Il sait retourner un panneau qui
+   déborderait ; épinglé à la gouttière, il ne le fera plus horizontalement.
+   C'est sans risque ici — le bord visé EST le bord de la fenêtre moins la
+   gouttière, donc le panneau ne peut pas déborder par là. `top` reste à fold,
+   qui garde donc son repli vertical.
+
+   Borné au BUREAU : en pile, un panneau de 372 px n'a pas de gouttière à viser,
+   et fold le recentre très bien tout seul. */
+@media (min-width: 900px) {
+  .fold-popover.pop > .fpop-panel {
+    left: auto !important;
+    right: var(--lfc-inset, var(--fold-space-lg)) !important;
+  }
+}
+
+/* 🔴 LE FOND SE FLOUTE DERRIÈRE UN DIALOGUE, À TOUTES LES LARGEURS (Hugo,
+   2026-09-20 : « l'ouverture des dialog devrait blur légèrement le
+   background »).
+
+   fold ne le fait QUE sous 640 px — sa règle vit dans une requête de média, et
+   au bureau le voile reste un simple aplat. La maquette, elle, floute le fond
+   sur les quatre dialogues qu'elle montre ; c'est ce qui fait qu'un dialogue de
+   640 px posé sur une page pleine se lit comme une boîte devant, et non comme
+   un rectangle dedans.
+
+   Ici et non dans un composant : le quai des panneaux appartient à
+   `fold-panel-host`, que le shell monte — aucun écran ne peut l'atteindre.
+   Pas de `!important` : au-delà de 640 px, fold ne déclare rien sur cette
+   propriété, donc il n'y a personne à battre.
+
+   🔴 4 px, ET NON LES 20 DE `--fold-blur-glass` (Hugo, 2026-09-20 : « un petit
+   peu moins de blur »). Ce jeton-là sert au VERRE d'un panneau — une surface
+   translucide de quelques centimètres, qu'on veut opaque au texte qui passe
+   dessous. Ici il s'applique à la page entière, derrière un voile d'encre à
+   45 % qui fait déjà la moitié du travail : à 20 px la page devenait une
+   bouillie, et on perdait le repère de l'endroit d'où le dialogue est sorti.
+   Une valeur en dur plutôt qu'un jeton : le dépôt n'en a aucun à ce cran, et en
+   inventer un pour un seul lecteur n'alignerait rien. */
+.panel-dock[data-side='center'] {
+  backdrop-filter: blur(4px);
+}
+
+/* 🔴 « FERMER » EN TOUTES LETTRES, PAS UNE CROIX (Hugo, 2026-09-20), sur les
+   deux dialogues de commande — la maquette écrit le mot.
+
+   Ici et non dans les composants : le bouton de fermeture vit dans `.ph__close`,
+   à l'intérieur de `fold-panel-header`, encapsulé. Trois routes ont été
+   essayées et mesurées avant celle-ci (2026-09-20) :
+   — le slot `[actions]` de l'en-tête N'EST PAS RENDU en variante `eyebrow` :
+     ce qu'on y projette reste orphelin à côté de `.ph` ;
+   — `--fold-icon-size-sm` ne réduit pas la croix : le bouton garde ses 28 px ;
+   — se passer de `fold-panel-header` coûte le NOM ACCESSIBLE du dialogue —
+     `aria-labelledby` est posé par le panneau, reste en place quand l'en-tête
+     s'en va, et pointe alors vers un id qui n'existe plus.
+
+   Le mot vient de `attr(aria-label)`, que fold remplit déjà avec notre
+   traduction : rien à écrire en dur, et il suit la langue tout seul.
+
+   La portée est tenue par `:has()` — les autres panneaux de l'app gardent leur
+   croix, qui est la bonne affordance là où l'en-tête porte un vrai titre. */
+.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close {
+  width: auto;
+  height: 28px;
+  padding: 0 2px;
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close fold-icon {
+  display: none;
+}
+
+.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close::after {
+  content: attr(aria-label);
+}

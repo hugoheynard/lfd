@@ -74,6 +74,10 @@ const LINE = {
   unitPriceMillicents: 74_000,
   vatRate: 5.5,
   lineTotalCents: 11_840,
+  // Une commande PROFESSIONNELLE par défaut : rien de scellé, donc le bon reste
+  // hors taxe — l'état de tous les cas écrits avant R3.
+  unitPriceTtcCents: null as number | null,
+  lineTotalTtcCents: null as number | null,
   priceLabels: [] as readonly string[],
 };
 
@@ -245,5 +249,63 @@ describe("le rangement", () => {
 
   it("propose un nom lisible sur un bureau, pas une clé opaque", () => {
     expect(orderSheetPdfFileName(sheet())).toBe("bon-de-commande-CMD-4812.pdf");
+  });
+});
+
+/**
+ * 🔴 **R3 (2026-09-21) — le bon d'un particulier parle sa langue.**
+ *
+ * Le rayon (D13) et le panier (R2) disent le TTC ; ce document disait encore le
+ * hors taxe. Un client qui a lu 2,00 € partout recevait un bon à 1,90 €.
+ */
+describe("l'assiette du document", () => {
+  /** 118,40 € HT → 124,91 € TTC à 5,5 %, et 0,74 € la pièce → 0,78 €. */
+  const SCELLE = { ...LINE, unitPriceTtcCents: 78, lineTotalTtcCents: 12_491 };
+
+  const rendu = async (sheetToDraw: ClientSheet): Promise<string> =>
+    pdfText(await renderOrderSheetPdf(sheetToDraw));
+
+  it("garde le HORS TAXE quand rien n'est scellé — un pro, ou un bon d'avant R3", async () => {
+    const text = await rendu(sheet());
+
+    expect(text).toContain("PU HT");
+    expect(text).toContain("Total HT");
+    expect(text).not.toContain("PU TTC");
+  });
+
+  it("🔴 bascule les DEUX colonnes ET leurs titres dès que le TTC est scellé", async () => {
+    const text = await rendu(sheet({ lines: [SCELLE] }));
+
+    expect(text).toContain("PU TTC");
+    expect(text).toContain("Total TTC");
+    // Le montant scellé, pas le hors taxe — c'est ce que le titre promet.
+    expect(text).toContain("124,91");
+    expect(text).not.toContain("PU HT");
+  });
+
+  /**
+   * 🔴 **Le pied DIT « HT », il ne le sous-entend plus.**
+   *
+   * Avec une colonne en TTC au-dessus, un pied qui disait « Sous-total »
+   * invitait à une addition qui ne tombe pas — et l'écart n'est pas un arrondi,
+   * c'est la TVA entière : 124,91 € face à 118,40 €. Deux registres nommés ne
+   * mentent pas ; un registre muet, si.
+   */
+  it("🔴 nomme son sous-total « HT », quelle que soit l'assiette des lignes", async () => {
+    expect(await rendu(sheet())).toContain("Sous-total HT");
+    expect(await rendu(sheet({ lines: [SCELLE] }))).toContain("Sous-total HT");
+  });
+
+  /**
+   * ⚠️ Une feuille dont UNE SEULE ligne porte un TTC n'est pas un document
+   * mixte : c'est un état qui ne devrait pas exister. Le rendu retombe alors
+   * entièrement en hors taxe plutôt que de titrer « TTC » au-dessus d'une
+   * colonne dont une case dirait autre chose.
+   */
+  it("retombe en hors taxe si UNE ligne seulement porte un TTC", async () => {
+    const text = await rendu(sheet({ lines: [SCELLE, { ...LINE }] }));
+
+    expect(text).toContain("PU HT");
+    expect(text).not.toContain("PU TTC");
   });
 });

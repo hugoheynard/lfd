@@ -428,6 +428,19 @@ export interface OrderLineView {
   readonly quantity: number;
   readonly lineTotalCents: number;
   /**
+   * Le prix d'UNE pièce **taxe comprise**, en centimes — **scellé** à la
+   * passation, jamais dérivé ensuite (R3, 2026-09-21).
+   *
+   * `null` dit deux choses, et les deux se rendent en hors taxe : la commande
+   * est **professionnelle** — un pro récupère la taxe et ne lit que le hors
+   * taxe —, ou elle est **antérieure à R3**. Aucune reprise de données ne
+   * comble ce `null` : un bon de commande est archivé sous une clé qui ne bouge
+   * pas, et le remplir changerait le rendu d'une pièce déjà remise au client.
+   */
+  readonly unitPriceTtcCents: number | null;
+  /** Le total de la ligne taxe comprise — `null` aux mêmes deux conditions. */
+  readonly lineTotalTtcCents: number | null;
+  /**
    * **Pourquoi ce prix** — la trace figée à la passation.
    *
    * `null` sur une commande passée avant que la trace n'existe. L'écran doit

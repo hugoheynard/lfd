@@ -1,0 +1,18 @@
+/* Une rangée qui se plie. Les mesures de la maquette : `gap:14px`, et deux
+   bases inégales — « reprenez » porte une phrase (les articles, le lieu), la
+   sortie ne porte qu'un libellé. Sous ~740 px, les deux passent en pile
+   d'elles-mêmes : c'est la largeur qui décide, pas une requête de média. */
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+
+app-shortcut-row {
+  flex: 1 1 400px;
+  min-width: 0;
+}
+
+app-shortcut-row + app-shortcut-row {
+  flex-basis: 300px;
+}
