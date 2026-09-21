@@ -1,4 +1,5 @@
 import { millicentsFromCents } from "@lfd/money";
+import { htMillicentsOf } from "@lfd/pim-contracts";
 import { CATALOG_SEED } from "./catalog-seed.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";
 
@@ -45,6 +46,59 @@ const PIM_CATEGORY_BY_PREFIX: Readonly<Record<string, { id: string; name: string
  * (`effectiveVat`) et le pose sur chaque déclinaison.
  */
 const FOOD_VAT_RATE = 5.5;
+
+/**
+ * **Le contexte de vente que la boutique publique expose** (Hugo, 2026-09-21,
+ * D7 : « à emporter pour le moment »).
+ *
+ * C'est une VALEUR de donnée, pas un nom de code : elle est ici en clair parce
+ * que le semis joue un push du référentiel, et qu'un push écrit la clé telle que
+ * le lecteur la cherchera.
+ */
+const PUBLIC_CONTEXT_KEY = "takeaway";
+
+/**
+ * **L'étiquette publique vaut 125 % du prix pro TTC**, et ce n'est pas un
+ * chiffre décoratif.
+ *
+ * 🔴 **Le semis doit poser DEUX prix distincts, sinon il ne prouve plus rien.**
+ * Une fixture où le public et le pro coïncident passe au vert que le lecteur
+ * serve l'un ou l'autre : elle rendrait muettes exactement les suites qui
+ * doivent tenir la distinction. C'est le même piège que le repli de
+ * `billableRate` documenté ci-dessus — un harnais complaisant.
+ *
+ * Le rapport est l'INVERSE de celui de la projection : le pro paie 80 % de
+ * l'étiquette, donc l'étiquette vaut 1 / 0,8 du prix pro. La fixture raconte
+ * ainsi la vraie chaîne — l'étiquette est l'ancre, le prix pro en dérive —
+ * plutôt qu'un écart inventé.
+ *
+ * ⚠️ Elle **n'appelle pas** `proPriceOf` pour autant : le semis part du prix pro
+ * (que 140 suites nomment) et remonte, là où la production part de l'étiquette
+ * et descend. Remonter une projection arrondie ne rend pas la valeur de départ,
+ * et prétendre le contraire ferait dépendre les tests d'un aller-retour qui
+ * n'existe nulle part.
+ */
+const PUBLIC_LABEL_RATIO = 1.25;
+
+/** L'étiquette TTC que le référentiel aurait saisie pour ce prix pro HT. */
+function publicLabelCentsOf(proHtCents: number): number {
+  return Math.round(proHtCents * (1 + FOOD_VAT_RATE / 100) * PUBLIC_LABEL_RATIO);
+}
+
+/**
+ * La carte de prix publics telle qu'un push la range — dérivée par la MÊME
+ * fonction que la projection (`htMillicentsOf`), pour que la fixture ne puisse
+ * pas dériver de ce qu'elle prétend imiter.
+ */
+function publicByContextOf(
+  publicTtcCents: number,
+): Record<string, { vatRatePercent: number; htMillicents: number }> {
+  const htMillicents = htMillicentsOf(publicTtcCents, FOOD_VAT_RATE);
+  if (htMillicents === null) {
+    throw new Error(`Fixture catalogue : étiquette « ${publicTtcCents} » sans hors taxe.`);
+  }
+  return { [PUBLIC_CONTEXT_KEY]: { vatRatePercent: FOOD_VAT_RATE, htMillicents } };
+}
 
 export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
   const receivedAt = new Date("2026-01-01T00:00:00.000Z");
@@ -108,6 +162,7 @@ export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
       if (category === undefined) {
         throw new Error(`Fixture catalogue : SKU « ${item.sku} » sans famille.`);
       }
+      const publicTtcCents = publicLabelCentsOf(item.unitPriceCents);
       return {
         // Le PIM dérive le SKU de la déclinaison de celui du produit.
         sku: `${item.sku}-1`,
@@ -122,6 +177,12 @@ export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
         priceMillicents: millicentsFromCents(item.unitPriceCents),
         // Sur l'ARTICLE, comme un push le fait : c'est lui qu'on facture.
         vatRatePercent: FOOD_VAT_RATE,
+        // 🔴 L'étiquette ET sa carte de contextes, dans la même écriture que
+        // l'article : un push v9 les pose ensemble, et un article sans prix
+        // public est ÉCARTÉ de la boutique publique plutôt que servi au tarif
+        // pro. Les semer à part fabriquerait un catalogue à moitié poussé.
+        publicTtcCents,
+        publicByContext: publicByContextOf(publicTtcCents),
         isDefault: true,
         position: index,
         receivedAt,

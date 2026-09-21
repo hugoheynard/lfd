@@ -272,7 +272,8 @@ export class OrderDrafting {
     const skus = content.lines.map((line) => line.sku);
     const [fallback, items, waiver] = await Promise.all([
       this.cutoffs.list(),
-      this.catalog.resolveMany(skus),
+      // `pro` : la saisie par le staff exige une société (cf. `place-order-for-customer`).
+      this.catalog.resolveMany(skus, "pro"),
       // Une commande sans entreprise n'a pas de dérogation possible : elle
       // n'appartient à personne à qui on aurait pu en accorder une.
       parties.companyId === null

@@ -3,9 +3,10 @@
 > **2026-09-21.** Décrit le code des lots **A1** et **A2** de
 > [`plan-un-seul-canal-deux-prix.md`](../pim/plan-un-seul-canal-deux-prix.md).
 >
-> ⚠️ **A3 — la commande — n'est pas encore là.** Ce qui suit décrit le rayon et
-> le devis. Ce que la ligne de commande FIGE suit le devis, mais le § 6 dit ce
-> qui reste à éprouver.
+> ✅ **A3 est là depuis le 2026-09-21** : le devis et la passation déduisent
+> l'audience comme le rayon, et les e2e le tiennent. Le § 6 garde ce qui reste
+> ouvert — au premier rang, ce que la ligne de commande fige et que **plus rien
+> ne rafraîchit ensuite**.
 
 ## 1. La question à laquelle ce document répond
 
@@ -137,8 +138,34 @@ Cinq, et chacun porte l'argument dans le code plutôt qu'un défaut de signature
   `order_late_fee`, la surtaxe de retard, pas la ligne de commande. Un numéro de
   ligne recopié d'un rapport sans ouvrir le fichier, sur de l'argent.
 
-- **Dix e2e** encodaient le prix PRO comme attente du rayon public. Ils ne sont
-  pas cassés — ils décrivaient le défaut.
+- ✅ **Les e2e sont à jour** (2026-09-21). Ils étaient **quarante-deux**, pas
+  dix : la racine n'était pas dans les attentes mais dans le **semis** —
+  `catalog-fixture.ts` ne posait aucun prix public, donc tout chemin public
+  écartait tous les articles. Corrigé là, il n'en restait que dix-sept à relire,
+  et le tri entre les deux familles est le seul travail qui comptait :
+
+  |                                                    | Ce qui a changé                               |
+  | -------------------------------------------------- | --------------------------------------------- |
+  | Le cas décrivait un chemin **pro** sans le dire    | on lui donne la société que son sujet suppose |
+  | Le cas décrit vraiment l'acheteur **sans société** | l'attente passe à l'étiquette publique        |
+
+  🔴 **Deux cas disaient l'inverse de la règle**, et aucun ne se voyait tant
+  qu'un seul prix circulait : « la vitrine sert le prix décidé ici » — c'est le
+  tarif **négocié** du canal pro — et la parité écran/caisse de
+  `pricing-budget`, qui comparait le tableau professionnel à un devis anonyme.
+
+  ⚠️ Et le semis pose désormais **deux prix distincts**. Une fixture où le
+  public et le pro coïncident passe au vert que le lecteur serve l'un ou
+  l'autre : elle rendrait muettes exactement les suites qui tiennent la
+  distinction.
+
+- ⚠️ **Un article sans taux de TVA PRO ne se vend à personne**, y compris au
+  public. `listSellable` exige `vatRatePercent NOT NULL` sur l'article — le taux
+  du canal professionnel — avant même de regarder l'audience. Un article qui
+  n'aurait qu'un prix public disparaîtrait donc de la boutique publique sans
+  qu'on sache pourquoi. Le cas n'existe pas aujourd'hui (le référentiel pousse
+  les deux ou aucun), mais la condition dit une chose qu'elle ne veut pas dire
+  (constaté le 2026-09-21).
 - **Aucun article n'a de prix public** tant que le référentiel n'a pas
   republié : `public_by_context` est `NULL` sur les 94 lignes de la base de dev
   (mesuré le 2026-09-21). Un article sans prix public est **écarté** de la

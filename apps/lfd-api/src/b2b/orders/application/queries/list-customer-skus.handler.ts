@@ -32,7 +32,10 @@ export class ListCustomerSkusHandler implements IQueryHandler<
     // Résolus EN UN LOT : une liste d'habitudes compte des dizaines d'articles,
     // et depuis que le catalogue vient de la base, un par un serait une requête
     // par ligne.
-    const items = await this.catalog.resolveMany(tallies.map((tally) => tally.sku));
+    const items = await this.catalog.resolveMany(
+      tallies.map((tally) => tally.sku),
+      "pro",
+    );
     return tallies.map((tally) => {
       const item = items.get(tally.sku) ?? null;
       return {

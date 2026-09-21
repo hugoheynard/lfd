@@ -56,23 +56,23 @@ describe("le catalogue du checkout, branché sur la base", () => {
   it("vend l'article sous le SKU de son PRODUIT, pas celui de sa déclinaison", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const item = await catalog.resolve("VIE-001");
+    const item = await catalog.resolve("VIE-001", "pro");
 
     expect(item?.sku).toBe("VIE-001");
-    expect(await catalog.resolve("VIE-001-1")).toBeNull();
+    expect(await catalog.resolve("VIE-001-1", "pro")).toBeNull();
   });
 
   /** La décision B2B a déjà gagné en amont : l'adaptateur ne rejoue pas l'arbitrage. */
   it("rend le prix résolu, pas celui du PIM", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    expect((await catalog.resolve("VIE-001"))?.unitPriceMillicents).toBe(200_000);
+    expect((await catalog.resolve("VIE-001", "pro"))?.unitPriceMillicents).toBe(200_000);
   });
 
   it("traduit la famille du PIM en rayon de la boutique", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    expect((await catalog.resolve("VIE-001"))?.category).toBe("viennoiserie");
+    expect((await catalog.resolve("VIE-001", "pro"))?.category).toBe("viennoiserie");
   });
 
   /**
@@ -84,7 +84,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const orphan = { ...CROISSANT, categoryId: "cat_inconnue" };
     const catalog = new CatalogBackedProductCatalog(reader([orphan]));
 
-    await expect(catalog.resolve("VIE-001")).rejects.toThrow(UnknownCatalogShelfError);
+    await expect(catalog.resolve("VIE-001", "pro")).rejects.toThrow(UnknownCatalogShelfError);
   });
 
   /** Les autres conditionnements n'existaient pas pour la boutique : ils n'entrent pas. */
@@ -116,7 +116,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
   it("résout plusieurs SKU en une fois, et omet les inconnus", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const found = await catalog.resolveMany(["VIE-001", "ZZZ-999"]);
+    const found = await catalog.resolveMany(["VIE-001", "ZZZ-999"], "pro");
 
     expect([...found.keys()]).toEqual(["VIE-001"]);
   });

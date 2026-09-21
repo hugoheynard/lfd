@@ -10,7 +10,7 @@ import type { ShopCatalogueView, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
-import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
+import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
@@ -80,8 +80,10 @@ describe("la vitrine publique", () => {
       name: "Produit VIE-001",
       note: "Tourage patient",
       image: SHOT,
-      unitPriceMillicents: 140_000,
-      vatRatePercent: 5.5,
+      // 🔴 L'étiquette publique, PAS le prix pro poussé juste au-dessus. Les
+      // deux sont dans le miroir ; la vitrine sans jeton ne sert que le premier.
+      unitPriceMillicents: PUBLIC_LABEL.htMillicents,
+      vatRatePercent: PUBLIC_LABEL.vatRatePercent,
       shelfId: CATEGORY.id,
       isFeatured: false,
     });
@@ -127,15 +129,29 @@ describe("la vitrine publique", () => {
     expect(Object.keys(body.shelves[0] ?? {}).sort()).toEqual(["id", "name", "position"]);
   });
 
-  it("sert le prix DÉCIDÉ ici quand il y en a un, pas celui du référentiel", async () => {
+  /**
+   * 🔴 **Régression inversée le 2026-09-21.** Ce test exigeait le contraire :
+   * la vitrine servait le prix décidé ici, « pas celui du référentiel ». Il
+   * décrivait un défaut plutôt qu'une règle, et personne ne le voyait tant
+   * qu'un seul prix circulait.
+   *
+   * Le prix posé sur la plateforme est le tarif du **canal professionnel** — il
+   * naît d'une négociation, d'une mercuriale, d'un geste commercial. Le servir à
+   * un visiteur anonyme lui applique une décision qui n'est pas la sienne, et
+   * fait fuir vers le public un écart qui est précisément ce que la vitrine ne
+   * doit pas laisser voir.
+   */
+  it("🔴 IGNORE le prix décidé pour le pro — il n'est pas l'étiquette publique", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
     await ctx.prisma.catalogItemOverride.create({
       data: { sku: "VIE-001-1", priceMillicents: 120_000, decidedBy: "cecile" },
     });
 
     const body = await catalogue();
-    expect(body.items[0]?.unitPriceMillicents).toBe(120_000);
-    // Et le prix du référentiel ne suit pas : l'écart est la négociation.
+    expect(body.items[0]?.unitPriceMillicents).toBe(PUBLIC_LABEL.htMillicents);
+    // Ni le tarif négocié, ni le prix pro du référentiel : l'écart entre les
+    // deux EST la négociation, et rien de tout ça ne franchit la frontière.
+    expect(JSON.stringify(body)).not.toContain("120000");
     expect(JSON.stringify(body)).not.toContain("140000");
   });
 
@@ -262,8 +278,10 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
 
     const body = await catalogue();
 
-    expect(body.items[0]?.unitPriceMillicents).toBe(180_000);
-    expect(body.items[0]?.catalogPriceMillicents).toBe(200_000);
+    // -10 % sur l'ÉTIQUETTE publique — 236 967 mc, pas les 200 000 du prix pro
+    // poussé au-dessus : la promotion s'applique à ce que la vitrine sert.
+    expect(body.items[0]?.unitPriceMillicents).toBe(213_270);
+    expect(body.items[0]?.catalogPriceMillicents).toBe(PUBLIC_LABEL.htMillicents);
   });
 
   /**
@@ -281,7 +299,7 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
 
     const body = await catalogue();
 
-    expect(body.items[0]?.unitPriceMillicents).toBe(220_000);
+    expect(body.items[0]?.unitPriceMillicents).toBe(260_664);
     expect(body.items[0]?.catalogPriceMillicents).toBeUndefined();
   });
 
@@ -302,7 +320,7 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
         .expect(200),
     );
 
-    expect(rayon).toBe(180_000);
+    expect(rayon).toBe(213_270);
     expect(devis.lines[0]?.unitPriceMillicents).toBe(rayon);
   });
 });

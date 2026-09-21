@@ -180,8 +180,11 @@ describe("zéro friction — commande sans entreprise", () => {
 
     const response = await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(null)).expect(201);
     const placed = jsonBody<PlacedOrderResponse>(response);
-    // 600 HT + TVA 5,5 % (33) = 633 TTC : c'est le TTC qu'on encaisse par carte.
-    expect(placed.payment?.amountCents).toBe(633);
+    // 🔴 **Au prix PUBLIC**, depuis le 2026-09-21 : sans société, ce client
+    // achète comme un particulier. 3 × 2,50237 € = 7,51 € HT, + TVA 5,5 % (41)
+    // = 7,92 € TTC. Ce cas citait 6,00 € HT — le tarif du canal professionnel,
+    // servi faute d'en avoir un second.
+    expect(placed.payment?.amountCents).toBe(792);
 
     const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: placed.id } });
     expect(stored.companyId).toBeNull();
@@ -379,12 +382,13 @@ describe("checkout → Order", () => {
     expect(stored.deliveryZoneId).toBe(zoneId);
     expect(stored.deliveryAddressSnapshot).toEqual(COURIER_ADDR);
     expect(stored.pickupAddress).toBeNull();
-    // 2 × 200 = 400 HT ; frais 20 € = 2000 HT. TVA = 5,5 % × 400 (22) + 20 % × 2000
-    // (400) = 422. Total TTC = 400 + 2000 + 422 = 2822.
-    expect(stored.subtotalCents).toBe(400);
+    // 2 × 2,50237 € = 500 HT (prix public : ce client n'a pas de société) ;
+    // frais 20 € = 2000 HT. TVA = 5,5 % × 500 (28) + 20 % × 2000 (400) = 428.
+    // Total TTC = 500 + 2000 + 428 = 2928.
+    expect(stored.subtotalCents).toBe(500);
     expect(stored.deliveryFeeCents).toBe(2000);
-    expect(stored.vatCents).toBe(422);
-    expect(stored.totalCents).toBe(2822);
+    expect(stored.vatCents).toBe(428);
+    expect(stored.totalCents).toBe(2928);
   });
 
   it("REFUSE le coursier vers un code postal qu'aucune zone ne dessert", async () => {
@@ -490,7 +494,7 @@ describe("émission du journal (order.placed)", () => {
       orderId: placed.id,
       orderNumber: placed.orderNumber,
       companyId: null,
-      totalCents: 633,
+      totalCents: 792,
     });
   });
 });
@@ -690,7 +694,9 @@ describe("POST /orders/quote", () => {
         .expect(200),
     );
 
-    expect(body.lines[0]?.unitPriceMillicents).toBe(200_000);
+    // L'étiquette publique du semis, pas le tarif pro : « de passage » veut
+    // dire « sans rien de négocié », et c'est exactement ce que sert le rayon.
+    expect(body.lines[0]?.unitPriceMillicents).toBe(250_237);
   });
 });
 

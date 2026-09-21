@@ -2,8 +2,25 @@ import { Injectable } from "@nestjs/common";
 import type { OrderLineAllergens } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import {
+  CatalogReader,
+  type ResolvedCatalogItem,
+  type ShopAudience,
+} from "../domain/ports/catalog.reader.js";
+import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+
+/**
+ * ⚠️ **`findSku` reste au tarif `pro`, et c'est écrit plutôt que laissé par
+ * défaut.**
+ *
+ * Il prend le SKU d'une DÉCLINAISON, là où le devis et la commande passent par
+ * le SKU produit (`listDefaultsByProductSkus`), qui porte l'audience depuis le
+ * lot A3. Aucun chemin public ne l'atteint aujourd'hui (2026-09-21).
+ *
+ * Un `"pro"` qu'on voit est une décision ; un défaut de signature est un oubli
+ * en devenir — et sur un prix, un oubli se facture.
+ */
 
 /** La forme que Prisma rend, article + famille + décision locale éventuelle. */
 interface ItemRow {
@@ -11,6 +28,7 @@ interface ItemRow {
   readonly productSku: string;
   readonly name: string;
   readonly priceMillicents: number;
+  readonly publicByContext: unknown;
   readonly isDefault: boolean;
   readonly position: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
@@ -60,12 +78,15 @@ export class PrismaCatalogReader extends CatalogReader {
     if (row === null || row.override?.isHidden === true) {
       return null;
     }
-    const vatRate = billableRate(row);
-    return vatRate === null ? null : resolve(row, vatRate);
+    const served = servedPriceOf(row, "pro");
+    return served === null ? null : resolve(row, served);
   }
 
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
-  async findDefaultByProductSku(productSku: string): Promise<ResolvedCatalogItem | null> {
+  async findDefaultByProductSku(
+    productSku: string,
+    audience: ShopAudience,
+  ): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findFirst({
       where: { productSku, isDefault: true, ...STILL_SOLD },
       include: { category: true, override: true },
@@ -73,12 +94,13 @@ export class PrismaCatalogReader extends CatalogReader {
     if (row === null || row.override?.isHidden === true) {
       return null;
     }
-    const vatRate = billableRate(row);
-    return vatRate === null ? null : resolve(row, vatRate);
+    const served = servedPriceOf(row, audience);
+    return served === null ? null : resolve(row, served);
   }
 
   async listDefaultsByProductSkus(
     productSkus: readonly string[],
+    audience: ShopAudience,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     if (productSkus.length === 0) {
       return new Map();
@@ -89,16 +111,16 @@ export class PrismaCatalogReader extends CatalogReader {
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
     for (const row of rows) {
-      const vatRate = billableRate(row);
-      if (row.override?.isHidden === true || vatRate === null) {
+      const served = servedPriceOf(row, audience);
+      if (row.override?.isHidden === true || served === null) {
         continue;
       }
-      resolved.set(row.productSku, resolve(row, vatRate));
+      resolved.set(row.productSku, resolve(row, served));
     }
     return resolved;
   }
 
-  async listSellable(): Promise<ResolvedCatalogItem[]> {
+  async listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
         ...STILL_SOLD,
@@ -127,10 +149,75 @@ export class PrismaCatalogReader extends CatalogReader {
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
     });
     return rows.flatMap((row) => {
-      const vatRate = billableRate(row);
-      return vatRate === null ? [] : [resolve(row, vatRate)];
+      const served = servedPriceOf(row, audience);
+      return served === null ? [] : [resolve(row, served)];
     });
   }
+}
+
+/**
+ * **Le contexte de vente de la boutique publique.**
+ *
+ * `takeaway`, et une constante nommée plutôt qu'une chaîne en ligne (Hugo,
+ * 2026-09-21 : « la boutique publique expose à emporter pour le moment », D7).
+ *
+ * ⚠️ **Le jour où le sur place arrive, il arrive par SON PROPRE CHEMIN** — une
+ * troisième porte de service, pas une question greffée sur le retrait. C'est
+ * alors le chemin choisi qui dira le contexte, et cette constante deviendra une
+ * fonction du mode de service. Elle est ici pour qu'il n'y ait qu'un endroit à
+ * changer ce jour-là.
+ */
+const PUBLIC_CONTEXT_KEY = "takeaway";
+
+/** L'entrée du pipeline de prix, et le taux qui l'accompagne. */
+interface ServedPrice {
+  readonly unitPriceMillicents: number;
+  readonly pimPriceMillicents: number;
+  readonly vatRate: number;
+}
+
+/**
+ * **Ce qu'on sert à qui regarde** — l'unique endroit où l'audience change le
+ * prix, et c'est tout ce qu'elle change.
+ *
+ * Au `pro` : le tarif de son canal. La décision locale gagne quand elle existe,
+ * sinon le prix du référentiel. Les deux sont rendus — un écran qui ne verrait
+ * que le prix final ne pourrait pas dire « prix PIM 2,40 € · prix B2B 2,10 € »,
+ * et un prix sans provenance ne se défend pas devant un client qui le conteste.
+ *
+ * Au `public` : **l'étiquette**, mise hors taxe au taux de son contexte. Et
+ * surtout **PAS la décision locale** : le prix posé par la plateforme est le
+ * tarif du canal professionnel, et le servir à un particulier lui appliquerait
+ * une négociation qui n'est pas la sienne.
+ *
+ * 🔴 **`null` = pas vendable à cette audience, et on n'invente rien.** Un
+ * article sans taux ne se facture pas ; un article dont le référentiel n'a pas
+ * encore poussé le prix public ne se vend pas au public — le servir au tarif
+ * pro serait exactement le défaut que ce chantier ferme. Un push complet du
+ * référentiel remplit les deux.
+ */
+function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null {
+  const pimPriceMillicents = row.priceMillicents;
+  if (audience === "pro") {
+    const vatRate = billableRate(row);
+    return vatRate === null
+      ? null
+      : {
+          unitPriceMillicents: row.override?.priceMillicents ?? pimPriceMillicents,
+          pimPriceMillicents,
+          vatRate,
+        };
+  }
+  const price = publicByContextOf(row.publicByContext)?.[PUBLIC_CONTEXT_KEY];
+  return price === undefined
+    ? null
+    : {
+        unitPriceMillicents: price.htMillicents,
+        // Le tarif de référence de CETTE audience : l'étiquette elle-même. Le
+        // prix pro n'a rien à faire dans un « prix barré » montré au public.
+        pimPriceMillicents: price.htMillicents,
+        vatRate: price.vatRatePercent,
+      };
 }
 
 /**
@@ -168,15 +255,14 @@ function billableRate(row: ItemRow): number | null {
  * pas dire « prix PIM 2,40 € · prix B2B 2,10 € », et un prix sans provenance ne
  * se défend pas devant un client qui le conteste.
  */
-function resolve(row: ItemRow, vatRate: number): ResolvedCatalogItem {
-  const localPrice = row.override?.priceMillicents ?? null;
+function resolve(row: ItemRow, served: ServedPrice): ResolvedCatalogItem {
   return {
     sku: row.sku,
     productSku: row.productSku,
     name: row.name,
-    unitPriceMillicents: localPrice ?? row.priceMillicents,
-    pimPriceMillicents: row.priceMillicents,
-    vatRate,
+    unitPriceMillicents: served.unitPriceMillicents,
+    pimPriceMillicents: served.pimPriceMillicents,
+    vatRate: served.vatRate,
     categoryId: row.category.id,
     categoryName: row.category.name,
     isDefault: row.isDefault,

@@ -29,10 +29,12 @@
  */
 import { millicentsFromCents } from "@lfd/money";
 
+import { CustomerRole } from "../src/platform/database/client/client.js";
+
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
  * Le `sub` doit être celui que le harnais sème dans l'annuaire — porter un jeton
@@ -403,10 +405,19 @@ describe("l'écran et la caisse", () => {
       .flatMap((category) => category.items)
       .find((item) => item.sku === "VIE-001")?.finalMillicents;
 
+    // 🔴 **Le devis est passé PAR UN PRO**, et depuis le 2026-09-21 il faut le
+    // dire. `/admin/pricing` est l'écran du canal professionnel ; la caisse d'un
+    // visiteur anonyme sert l'étiquette publique. Les comparer revenait à
+    // vérifier que deux audiences lisent le même prix — ce que ce chantier
+    // interdit. Le cas était vert parce qu'il n'y avait qu'un prix.
+    const acheteur = await createUser(ctx.prisma, { auth0Sub: "auth0|parite" });
+    const societe = await createCompany(ctx.prisma);
+    await attachTo(ctx.prisma, acheteur.id, societe.id, CustomerRole.orders);
+
     const quoted = jsonBody<{ lines: readonly { unitPriceMillicents: number }[] }>(
       await ctx
-        .http()
-        .post("/shop/quote")
+        .asSub("auth0|parite")
+        .post("/shop/quote/mine")
         .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
         .expect(200),
     ).lines[0]?.unitPriceMillicents;

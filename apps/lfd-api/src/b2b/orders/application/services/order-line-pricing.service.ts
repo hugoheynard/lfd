@@ -120,7 +120,14 @@ export class OrderLinePricing {
     // Le catalogue est résolu EN UN LOT, avant tout le reste : depuis qu'il vient
     // de la base, le résoudre ligne à ligne ferait une requête par ligne de
     // panier sur le chemin qui facture.
-    const catalogue = await this.catalog.resolveMany([...quantities.keys()]);
+    //
+    // 🔴 **L'audience décide de l'entrée**, et c'est la même déduction qu'au
+    // rayon : « sans société » veut dire « sans rien de négocié », donc le prix
+    // d'étiquette. La faire ici ET au rayon n'est pas une duplication, c'est
+    // l'exigence que les deux s'accordent — `quote-order-parity` le tient, et
+    // un e2e du rayon vérifie qu'il annonce ce que le devis chiffre.
+    const audience = parties.companyId === null ? "public" : "pro";
+    const catalogue = await this.catalog.resolveMany([...quantities.keys()], audience);
     // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
     // d'abord ferait payer des lectures pour un panier qu'on va refuser.
     const lines = [...quantities].map(([sku, quantity]) => {

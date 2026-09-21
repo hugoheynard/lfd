@@ -89,7 +89,12 @@ export class ShopCataloguePricing {
    * pour un article.
    */
   async priced(companyId: string | null): Promise<ShopCatalogueView> {
-    const sellable = await this.catalog.listSellable();
+    // 🔴 **L'audience se déduit ICI, et c'est le seul endroit.** « Sans société »
+    // veut dire « sans rien de négocié » : ni mercuriale, ni tarif de canal — et
+    // donc le prix d'étiquette. La déduction est la même que celle qui pilotait
+    // déjà la mercuriale ; elle nomme simplement ce qu'elle voulait dire.
+    const audience = companyId === null ? "public" : "pro";
+    const sellable = await this.catalog.listSellable(audience);
     const catalogue = shopCatalogueOf(sellable);
     if (catalogue.items.length === 0) {
       return catalogue;

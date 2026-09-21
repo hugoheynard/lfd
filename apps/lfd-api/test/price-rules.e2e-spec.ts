@@ -25,6 +25,21 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 
 const SERVICE_DAY = serviceDay();
 let pickupId = "pickup_absent";
+/**
+ * **La société de l'acheteur témoin**, et pourquoi elle est apparue le
+ * 2026-09-21.
+ *
+ * `auth0|solo` commandait SANS société. Tant qu'un seul prix circulait, ça ne se
+ * voyait pas : le catalogue servait le tarif professionnel à tout le monde.
+ * Depuis que l'audience décide du prix servi, un acheteur sans société lit
+ * l'ÉTIQUETTE PUBLIQUE — et cette suite, qui éprouve mercuriale, planchers,
+ * paliers et engagements, décrit le canal **professionnel** de bout en bout.
+ *
+ * Elle lui donne donc la société que son sujet suppose, plutôt que de recopier
+ * partout les nombres de l'autre audience. Les cas qui visent réellement
+ * l'acheteur sans société sont ailleurs (`pricer`, `orders`, `shop-quote`).
+ */
+let soloCompanyId = "company_absente";
 
 /**
  * Passerelle de paiement doublée : l'intention change à chaque appel, la colonne
@@ -80,6 +95,10 @@ beforeEach(async () => {
     select: { id: true },
   });
   pickupId = point.id;
+  const solo = await createUser(ctx.prisma, { auth0Sub: "auth0|solo" });
+  const company = await createCompany(ctx.prisma);
+  soloCompanyId = company.id;
+  await attachTo(ctx.prisma, solo.id, soloCompanyId, "orders");
 });
 
 /** L'acheminement minimal d'une commande valide : un jour de service et un point. */
@@ -514,7 +533,11 @@ describe("une règle change le prix facturé", () => {
     await expect(seedFloor("category", "viennoiserie", 100)).resolves.toBeDefined();
   });
 
-  it("une règle visant une entreprise n'atteint pas une commande sans entreprise", async () => {
+  it("une règle visant une entreprise n'atteint pas l'acheteur d'une AUTRE", async () => {
+    // Le titre disait « sans entreprise » jusqu'au 2026-09-21 : l'acheteur
+    // témoin n'en avait pas. Une mercuriale qui vise quelqu'un d'autre ne doit
+    // pas l'atteindre — c'est la même garantie, énoncée sur le cas qui la
+    // rendra fausse en premier (deux clients pro, pas un client et un passant).
     const company = await createCompany(ctx.prisma, {});
     await seedRule({
       id: "merc",
@@ -732,7 +755,7 @@ describe("POST /orders/quote — la grille et le scellement", () => {
     ctx
       .asSub("auth0|solo")
       .post("/orders/quote")
-      .send({ companyId: null, lines: [{ sku: SKU, quantity }] });
+      .send({ companyId: soloCompanyId, lines: [{ sku: SKU, quantity }] });
 
   it("rend le barème palier par palier, résolu", async () => {
     await ctx.prisma.volumeLadder.create({
@@ -820,7 +843,7 @@ describe("POST /admin/orders/quote — le scellement, côté comptoir", () => {
       await ctx
         .asSub(E2E_STAFF_SUB)
         .post("/admin/orders/quote")
-        .send({ companyId: null, lines: [{ sku: SKU, quantity: 1 }] })
+        .send({ companyId: soloCompanyId, lines: [{ sku: SKU, quantity: 1 }] })
         .expect(200),
     );
 

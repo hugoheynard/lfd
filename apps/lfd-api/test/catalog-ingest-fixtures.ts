@@ -26,6 +26,25 @@ export const CATEGORY = {
   vatRatePercent: 5.5,
 };
 
+/**
+ * **L'étiquette publique que ce jeu de fixtures pousse sur TOUS ses articles.**
+ *
+ * Une suite qui décrit la vitrine publique a besoin de nommer ce qu'elle
+ * attend : sans ça, `236_967` traîne en littéral dans une dizaine de fichiers,
+ * et le jour où l'étiquette change, il faut deviner lesquels parlent d'elle.
+ *
+ * 🔴 **`htMillicents` n'est PAS recalculé ici**, et c'est volontaire : une
+ * fixture qui dérive avec la même fonction que le code testé ne peut plus le
+ * contredire. Le nombre est posé ; `pim-contracts` a ses propres tests pour
+ * prouver que 2,50 € à 5,5 % font bien 236 967 millicentimes.
+ */
+export const PUBLIC_LABEL = {
+  contextKey: "takeaway",
+  ttcCents: 250,
+  vatRatePercent: 5.5,
+  htMillicents: 236_967,
+} as const;
+
 /** Ce qu'une suite décrit d'un article — le reste a des défauts qui ne surprennent pas. */
 export interface IngestedSku {
   readonly sku: string;
@@ -37,6 +56,19 @@ export interface IngestedSku {
     labels: { category: string; label: string }[];
     incomplete: boolean;
   } | null;
+  /**
+   * **L'étiquette publique de cet article** — par défaut `PUBLIC_LABEL`.
+   *
+   * Une suite la pose quand ses nombres doivent être lisibles (un devis public
+   * dont on relit la TVA à la main) ou quand elle a besoin de DEUX taux
+   * publics : le défaut est unique, et un catalogue à un seul taux ne compose
+   * pas de facture.
+   */
+  readonly publicPrice?: {
+    ttcCents: number;
+    vatRatePercent: number;
+    htMillicents: number;
+  };
   /** La vitrine (v8) — absente par défaut, comme sur une fiche sans éditorial. */
   readonly note?: string | null;
   readonly image?: {
@@ -71,6 +103,7 @@ export function snapshotOf(
         allergenLabels = null,
         note = null,
         image = null,
+        publicPrice = PUBLIC_LABEL,
       }) => ({
         id: `prd_${sku}`,
         sku,
@@ -93,8 +126,13 @@ export function snapshotOf(
             // celui-ci est le prix PRO, celui-là l'étiquette publique. Une
             // fixture où les deux se déduiraient l'un de l'autre laisserait
             // passer une confusion entre les deux.
-            publicTtcCents: 250,
-            publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
+            publicTtcCents: publicPrice.ttcCents,
+            publicByContext: {
+              [PUBLIC_LABEL.contextKey]: {
+                vatRatePercent: publicPrice.vatRatePercent,
+                htMillicents: publicPrice.htMillicents,
+              },
+            },
             allergens: allergens === null ? null : [...allergens],
             allergenLabels,
           },

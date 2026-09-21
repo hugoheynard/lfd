@@ -50,7 +50,8 @@ export class MercurialeBenchmarkQuery {
     const skus = [
       ...new Set(mercuriales.flatMap((mercuriale) => mercuriale.lines.map((line) => line.sku))),
     ];
-    const catalogue = await this.catalog.resolveMany(skus);
+    // `pro` : une mercuriale est un tarif négocié — elle n'existe pas au public.
+    const catalogue = await this.catalog.resolveMany(skus, "pro");
 
     return benchmarkByProduct(
       mercuriales.flatMap((mercuriale) => this.observationsOf(mercuriale, catalogue, at)),

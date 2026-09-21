@@ -34,12 +34,34 @@ beforeEach(async () => {
   await ctx.prisma.catalogCategory.deleteMany();
 });
 
-/** 1,00 € HT à 5,5 % et 3,00 € HT à 10 % — deux taux, comme une vraie facture. */
+/**
+ * 1,00 € HT à 5,5 % et 3,00 € HT à 10 % — deux taux, comme une vraie facture.
+ *
+ * 🔴 **Ce sont les étiquettes PUBLIQUES**, et le prix pro poussé à côté est
+ * volontairement absurde (9,99 € et 99,99 €). Cette route est servie sans jeton :
+ * elle doit lire la première colonne et jamais la seconde. Un prix pro
+ * vraisemblable aurait laissé une confusion entre les deux passer inaperçue —
+ * c'est exactement ce qui est arrivé jusqu'au 2026-09-21, où un seul prix
+ * circulait et où cette suite chiffrait le tarif professionnel sans le savoir.
+ *
+ * ⚠️ L'étiquette TTC de VIE-001 (1,06 €) ne redonne pas exactement 1,00 € HT :
+ * 1,055 € n'existe pas en centimes. C'est la vraie vie d'un prix posé en TTC, et
+ * c'est `htMillicents` — ce que le fil transporte — qui fait foi.
+ */
 async function seedCatalogue(): Promise<void> {
   await ctx.app.get(B2bCatalogDriver).send(
     snapshotOf([
-      { sku: "VIE-001", priceMillicents: 100_000 },
-      { sku: "TRA-001", priceMillicents: 300_000, vatRatePercent: 10 },
+      {
+        sku: "VIE-001",
+        priceMillicents: 999_000,
+        publicPrice: { ttcCents: 106, vatRatePercent: 5.5, htMillicents: 100_000 },
+      },
+      {
+        sku: "TRA-001",
+        priceMillicents: 9_999_000,
+        vatRatePercent: 10,
+        publicPrice: { ttcCents: 330, vatRatePercent: 10, htMillicents: 300_000 },
+      },
     ]),
     { revisionId: "rev_quote", fingerprint: "empreinte-quote" },
   );

@@ -169,13 +169,23 @@ pas (D5 le porte déjà), la commande ne bouge pas, la facture ne bouge pas.
 
 ## A.3 Les lots
 
-| Lot    | Contenu                                                                                                                              | Ce qu'il casse en chemin                                                   |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| **A0** | 🛑 **Approfondir** — les dix questions du § A.5, et écrire C dans `@lfd/money`                                                       | rien : c'est ce lot qui dit ce que les suivants cassent                    |
-| **A1** | **v9 du fil** — HT public, TTC public, taux par contexte                                                                             | les empreintes de projection ; un aperçu pris avant le déploiement         |
-| **A2** | **L'audience et le contexte à la lecture** — `ShopItemView` sert le prix de qui regarde ; le contexte se dérive du chemin de service | ⚠️ un e2e **énumère les clés** de cette vue                                |
-| **A3** | 🔴 **L'audience sur la commande** — la ligne écrit le taux de son audience                                                           | `quote-order-parity` : les deux chemins apprennent l'audience **ensemble** |
-| **A4** | **Le bon de commande public en TTC** — `order-sheet-pdf.ts` titre « PU HT » / « Total HT » (D9)                                      | le PDF est archivé à sa PREMIÈRE lecture : un ancien reste en HT           |
+| Lot        | Contenu                                                                                               | Ce qu'il casse en chemin                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **A0**     | 🛑 **Approfondir** — les dix questions du § A.5, et écrire C dans `@lfd/money`                        | rien : c'est ce lot qui dit ce que les suivants cassent                    |
+| ~~**A1**~~ | ✅ **v9 du fil** — HT public, TTC public, taux par contexte (2026-09-21, `d05954551`)                 | les empreintes de projection ; un aperçu pris avant le déploiement         |
+| ~~**A2**~~ | ✅ **L'audience et le contexte à la lecture** (2026-09-21, `5ee7d31ee`)                               | ⚠️ un e2e **énumère les clés** de cette vue                                |
+| ~~**A3**~~ | ✅ **L'audience sur la commande** — le devis et la passation la déduisent comme le rayon (2026-09-21) | `quote-order-parity` : les deux chemins apprennent l'audience **ensemble** |
+| **A4**     | **Le bon de commande public en TTC** — `order-sheet-pdf.ts` titre « PU HT » / « Total HT » (D9)       | le PDF est archivé à sa PREMIÈRE lecture : un ancien reste en HT           |
+
+🔴 **A2 et A3 se sont révélés INSÉPARABLES**, et c'est un e2e qui l'a dit :
+« annonce au rayon le prix que le devis chiffre » échouait sous A2 seul. Deux
+lots au plan, un seul dans l'arbre.
+
+⚠️ **Le prix de leur arrivée : quarante-deux e2e**, pas les dix annoncés. La
+racine n'était pas dans les attentes mais dans le **semis** — aucun prix public,
+donc tout chemin public écartait tout. Le détail et les deux cas qui disaient
+l'inverse de la règle sont dans
+[`chemin-du-prix-public.md`](../pricing/chemin-du-prix-public.md) § 6.
 
 ⚠️ **A2 élargit une surface anonyme.** `packages/contracts/src/shop-catalogue.ts:15` :
 « 🔴 Un ÉLARGISSEMENT de cette vue est une décision de sécurité. Elle est servie
