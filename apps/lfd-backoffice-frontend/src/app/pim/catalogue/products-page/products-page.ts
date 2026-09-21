@@ -27,7 +27,6 @@ import { NO_CHANNELS, pointsOfSaleSelling, resolveChannels } from '../../data/ch
 import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { soldContexts, type SoldContext } from '../sold-contexts';
-import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 import { B2bChannelApi, type B2bMembershipView } from '../../channels/b2b-channel-api';
 import {
   blockersOf,
@@ -46,20 +45,6 @@ import {
 } from '../catalogue-api';
 import { productStatusLabel, productStatusVariant } from '../product-status';
 import type { ProductStatus } from '../../data/models';
-
-const SYNC_LABELS: Record<SyncStatus, string> = {
-  never_pushed: 'jamais poussé',
-  up_to_date: 'à jour',
-  drifted: 'en écart',
-  failed: 'échec',
-};
-
-const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
-  never_pushed: 'neutral',
-  up_to_date: 'success',
-  drifted: 'warning',
-  failed: 'alert',
-};
 
 /**
  * **Où en est une fiche sur la boutique professionnelle**, vue de la liste.
@@ -160,7 +145,6 @@ export class ProductsPage {
   protected readonly pointsOfSale = this.pointStore.items;
   /** Le registre des contextes — même raison : la colonne « Canaux » les lit tous. */
   private readonly contexts = inject(SalesContextStore);
-  private readonly shopify = inject(ShopifyApi);
   private readonly b2b = inject(B2bChannelApi);
   private readonly router = inject(Router);
 
@@ -168,7 +152,6 @@ export class ProductsPage {
   protected readonly categories = signal<Category[]>([]);
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
-  protected readonly bindings = signal<ProductBinding[]>([]);
   protected readonly memberships = signal<B2bMembershipView[]>([]);
   /**
    * Ce que l'envoi B2B écarterait, par SKU — la source des notes de ligne.
@@ -216,47 +199,12 @@ export class ProductsPage {
     return this.visibleProducts().slice(start, start + this.pageSize());
   });
 
-  /** Santé de synchro du catalogue — le statut de la barre de titre. */
-  protected readonly catalogueStatus = computed<{
-    label: string;
-    variant: FoldBadgeVariant;
-  }>(() => {
-    const products = this.products();
-    if (products.length === 0) {
-      return { label: 'vide', variant: 'neutral' };
-    }
-    let failed = 0;
-    let drifted = 0;
-    let pending = 0;
-    for (const product of products) {
-      const status = this.syncStatus(product.id);
-      if (status === 'failed') {
-        failed += 1;
-      } else if (status === 'drifted') {
-        drifted += 1;
-      } else if (status === 'never_pushed') {
-        pending += 1;
-      }
-    }
-    if (failed > 0) {
-      return { label: `${failed} en échec`, variant: 'alert' };
-    }
-    if (drifted > 0) {
-      return { label: `${drifted} en écart`, variant: 'warning' };
-    }
-    if (pending > 0) {
-      return { label: `${pending} à pousser`, variant: 'info' };
-    }
-    return { label: 'à jour', variant: 'success' };
-  });
-
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'sku', label: 'Référence', width: '9rem' },
     { key: 'name', label: 'Nom' },
     { key: 'category', label: 'Famille' },
     { key: 'channels', label: 'Canaux', width: '12rem' },
     { key: 'status', label: 'État' },
-    { key: 'sync', label: 'Shopify' },
     // Deux canaux, deux colonnes. Celui qui FACTURE n'en avait aucune : la seule
     // information sur la plateforme professionnelle était son absence.
     { key: 'b2b', label: 'Boutique B2B' },
@@ -307,19 +255,13 @@ export class ProductsPage {
   protected readonly hasFaults = (product: Product): boolean => this.rowFaults(product).length > 0;
 
   /**
-   * L'échec de synchro Shopify garde la priorité : c'est une panne, alors qu'un
-   * refus de projection est un état connu du catalogue.
+   * ⚠️ Le ton `alert` était réservé à l'échec de synchro Shopify, « une panne,
+   * alors qu'un refus de projection est un état connu du catalogue ». Le canal
+   * parti, il ne reste que l'état connu — et une ligne en panne n'existe plus
+   * sur cet écran (2026-09-21).
    */
-  protected readonly rowTone = (product: Product): FoldTableTone => {
-    if (this.syncStatus(product.id) === 'failed') {
-      return 'alert';
-    }
-    return this.hasFaults(product) ? 'warning' : null;
-  };
-
-  private readonly bindingById = computed(
-    () => new Map(this.bindings().map((binding) => [binding.productId, binding])),
-  );
+  protected readonly rowTone = (product: Product): FoldTableTone =>
+    this.hasFaults(product) ? 'warning' : null;
 
   private readonly byId = computed(
     () => new Map(this.categories().map((category) => [category.id, category])),
@@ -350,14 +292,6 @@ export class ProductsPage {
   protected onPageSize(size: number): void {
     this.pageSize.set(size);
     this.page.set(1);
-  }
-
-  protected syncStatus(productId: string): SyncStatus {
-    return this.bindingById().get(productId)?.syncStatus ?? 'never_pushed';
-  }
-
-  protected syncLabel(productId: string): string {
-    return SYNC_LABELS[this.syncStatus(productId)];
   }
 
   private readonly membershipById = computed(
@@ -419,10 +353,6 @@ export class ProductsPage {
     } finally {
       this.busy.set(false);
     }
-  }
-
-  protected syncVariant(productId: string): FoldBadgeVariant {
-    return SYNC_VARIANTS[this.syncStatus(productId)];
   }
 
   /**
@@ -538,15 +468,13 @@ export class ProductsPage {
 
   private async reload(): Promise<void> {
     try {
-      const [products, categories, bindings, memberships, rates] = await Promise.all([
+      const [products, categories, memberships, rates] = await Promise.all([
         this.api.listProducts(),
         this.api.listCategories(),
-        this.shopify.listBindings(),
         this.b2b.memberships(),
         this.api.listVatRates(),
       ]);
       this.products.set(products);
-      this.bindings.set(bindings);
       this.memberships.set(memberships);
       this.rates.set(rates);
       this.categories.set(categories.filter((category) => !category.isArchived));

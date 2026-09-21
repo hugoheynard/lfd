@@ -10,11 +10,11 @@
         Créer un produit
       </button>
     }
-    <!-- 🔴 « Tout pousser sur Shopify » vivait ici, et envoyait EN RÉEL sans
-         relecture : `push(ids)` part avec `dryRun = false` et aucune empreinte.
-         Il existait donc deux portes vers le même envoi, et celle-ci
-         contournait entièrement la garde de dérive. Envoyer est un geste de la
-         page Publication — on y simule, puis on envoie ce qu'on a relu. -->
+    <!-- 🔴 Un « Tout pousser » a vécu ici, et envoyait EN RÉEL sans relecture :
+         deux portes vers le même envoi, dont une qui contournait la garde de
+         dérive. Envoyer reste un geste de la page Publication — on y simule,
+         puis on envoie ce qu'on a relu. La leçon vaut pour le canal qui reste
+         (note conservée au retrait de Shopify, 2026-09-21). -->
     <button foldButton emphasis="outline" intent="neutral" routerLink="/pim/publication">
       Publier vers les canaux
     </button>
@@ -97,8 +97,6 @@
           Archiver la sélection
         </fold-dropdown-item>
       </fold-dropdown>
-
-      <fold-badge [content]="catalogueStatus().label" [variant]="catalogueStatus().variant" />
     </div>
 
     <ng-template foldCell="sku" let-p>
@@ -144,10 +142,6 @@
          produit en ligne. -->
     <ng-template foldCell="status" let-p>
       <fold-badge [content]="statusLabel(p.status)" [variant]="statusVariant(p.status)" />
-    </ng-template>
-
-    <ng-template foldCell="sync" let-p>
-      <fold-badge [content]="syncLabel(p.id)" [variant]="syncVariant(p.id)" />
     </ng-template>
 
     <!-- « hors canal » n'est pas une panne : c'est le défaut d'une fiche neuve.
