@@ -102,33 +102,3 @@ export class StripeProbe extends NodeProbe {
     );
   }
 }
-
-/**
- * **Shopify** — par le point d'entrée de la boutique.
- *
- * Sans identifiants, le canal de publication est éteint et la carte le dit :
- * `unknown`, pas `down`. Une vitrine qu'on n'a pas branchée n'est pas une
- * vitrine en panne.
- */
-@Injectable()
-export class ShopifyProbe extends NodeProbe {
-  readonly id = "shopify";
-
-  constructor(private readonly config: AppConfig) {
-    super();
-  }
-
-  check(): Promise<ProbeOutcome> {
-    if (!this.config.hasShopifyCredentials()) {
-      return Promise.resolve(notConfigured("Shopify"));
-    }
-    return probeHttp(
-      () =>
-        fetch("https://shopify.com/", {
-          method: "HEAD",
-          signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
-        }),
-      Date.now(),
-    );
-  }
-}

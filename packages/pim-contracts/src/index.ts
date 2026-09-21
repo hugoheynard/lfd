@@ -1,18 +1,4 @@
 export type {
-  ShopifySettingsView,
-  ShopifySettingsInput,
-  VerifyResult,
-  CatalogueInspection,
-  InspectResult,
-  PushResult,
-  ShopifyCollection,
-  DesiredCollection,
-  ReconcileRow,
-  Reconciliation,
-  ShopifyVariantSnapshot,
-  ShopifyProductSnapshot,
-} from "./shopify-channel.js";
-export type {
   LocalizedText,
   Locale,
   TranslatedLocale,
@@ -180,25 +166,6 @@ export type {
   B2bDeliveryFactsView,
   B2bProductDeliveryView,
 } from "./b2b-channel.js";
-
-export { pushPayloadSchema, rollbackPayloadSchema } from "./shopify.js";
-export type {
-  PushPayload,
-  RollbackPayload,
-  ChannelMode,
-  SyncStatus,
-  PushOutcome,
-  ProductBindingView,
-  PushReport,
-  PushSummary,
-  TaxCollectionsPass,
-  SnapshotView,
-  ReconciliationStatus,
-  ComparableView,
-  ReconciliationRowView,
-  ReconciliationBoardView,
-  ReconciliationDetailView,
-} from "./shopify.js";
 
 export type {
   FieldDiffView,

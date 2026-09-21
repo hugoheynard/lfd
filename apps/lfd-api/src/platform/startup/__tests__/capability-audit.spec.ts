@@ -21,7 +21,6 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasStripe: true,
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,
-  hasShopifyCredentials: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {

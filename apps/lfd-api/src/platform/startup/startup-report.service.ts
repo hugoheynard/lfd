@@ -115,7 +115,6 @@ export class StartupReport implements OnApplicationBootstrap {
       hasCustomerStorage: customers.config !== null,
       hasStripe: this.config.stripeConfig() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
-      hasShopifyCredentials: this.config.hasShopifyCredentials(),
       hasAdminBaseUrl: this.config.adminBaseUrl() !== null,
     };
   }

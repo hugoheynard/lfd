@@ -466,8 +466,11 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       id: "ctx_b2b",
       key: "b2b",
       label: "B2B",
-      // Vide : le B2B n'est pas projeté vers Shopify, et `handleSuffix` est du
-      // vocabulaire de ce canal.
+      // Vide, et les deux champs survivent à leur canal : `handleSuffix` et
+      // `shopifyProjected` étaient le vocabulaire de la boutique en ligne,
+      // sortie le 2026-09-21. Le contrat les exige encore — leur successeur est
+      // une décision ouverte, pas un reliquat (plan « un seul canal, deux
+      // prix », D7).
       handleSuffix: "",
       active: true,
       shopifyProjected: false,

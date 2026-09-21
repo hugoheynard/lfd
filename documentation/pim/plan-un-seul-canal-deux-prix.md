@@ -23,8 +23,8 @@ recommandation qu'il portait, et ouvert **dix questions** (§ A.5) dont deux se
 tranchent avec un comptable. **Approfondir d'abord** — c'est un lot en soi, et
 il n'est pas écrit. Le chantier B, lui, ne dépend d'aucune de ces questions.
 
-⚠️ **La mort de Shopify n'oblige à rien.** Shopify portait bien le prix public
-(`channels/shopify/products/projection.ts:22`), mais vers une vitrine qui ne vend
+⚠️ **La mort de Shopify n'oblige à rien.** Sa projection portait bien le prix
+public — elle sérialisait le TTC tel quel — mais vers une vitrine qui ne vend
 pas : il ne le servait à personne. Sa mort **rend visible** une absence, elle ne
 la crée pas.
 
@@ -280,7 +280,7 @@ Toutes rouvertes et confirmées le 2026-09-21.
 
 | #   | Le piège                                                                                                                                                                                                                                                                                                  |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **`pim-contracts/src/shopify.ts` ne se supprime pas.** `FieldDiffView` y est **défini** (l. 79) et `catalog-revision.ts:1` l'importe, comme le domaine des révisions et `revision-diff`. **Le type déménage d'abord.**                                                                                    |
+| 1   | ✅ **Le contrat du canal ne se supprimait pas tel quel.** `FieldDiffView` y était **défini**, et `catalog-revision.ts` l'importait — comme le domaine des révisions et l'écran qui les compare. Le type a déménagé d'abord (`00f5891d4`), le contrat est parti ensuite.                                   |
 | 2   | **`products-page.ts:29` importe `ShopifyApi`** — un écran du catalogue qui **reste**. Seul import hors des dossiers condamnés.                                                                                                                                                                            |
 | 3   | **Le fait de journal `sales_context.*` est VIVANT** et exige `shopifyProjected` (`referential-settings.ts:110,117`). → annexe A.1.                                                                                                                                                                        |
 | 4   | **`lint:doc-references` est bidirectionnel, zéro tolérance** sur `documentation/`. **Le lot documentaire part dans le MÊME commit**, pas après.                                                                                                                                                           |
@@ -321,9 +321,9 @@ dépôt le dit lui-même :
   `shopifyProjected` sont le vocabulaire d'**UNE intégration** » ;
 - `bootstrap-contexts.ts:60` : « `handleSuffix` est du vocabulaire Shopify ».
 
-Leurs seuls lecteurs non-plomberie : le canal Shopify
-(`reconciliation.service.ts:168`, `push.service.ts:316,349`) et **la garde
-d'unicité du handle** (`sales-context-support.ts:52,55`,
+Leurs seuls lecteurs non-plomberie étaient : deux services du canal Shopify —
+parti le 2026-09-21 — et **la garde d'unicité du handle**
+(`sales-context-support.ts:52,55`,
 `prisma-sales-context.repository.ts:59`). Aucun taux, aucune assiette.
 
 🔴 **Mais la QUESTION de `shopifyProjected` survit**, et c'est le fond de

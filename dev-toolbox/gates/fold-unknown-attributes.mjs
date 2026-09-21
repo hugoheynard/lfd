@@ -100,9 +100,14 @@ const DEBT = new Map([
   ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/ladder-panel/ladder-panel.html", 2],
   ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/rule-panel/rule-panel.html", 1],
   ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/simulateur/simulateur-page.html", 3],
+  // ⚠️ La dette a DÉMÉNAGÉ, elle n'a pas été payée. `address-dialog.html` a été
+  // supprimé le 2026-09-21 avec `/nouvelle-commande`, et le dialogue d'adresse
+  // qui le remplace a repris son `inputmode` sans que cette liste suive — la
+  // porte l'a vu le jour même. Un code postal reste la seule saisie du dépôt
+  // qui gagne vraiment à un pavé numérique sur mobile.
   [
-    "apps/lfc-ecommerce-frontend/src/app/client/nouvelle-commande/commande-page/address-dialog/address-dialog.html",
-    2,
+    "apps/lfc-ecommerce-frontend/src/app/client/shop/delivery-address-dialog/delivery-address-dialog.html",
+    1,
   ],
 
   // `fold-inline-confirm` : c'est `labels` (un objet partiel) et `intent`.

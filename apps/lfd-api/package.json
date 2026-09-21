@@ -53,7 +53,6 @@
     "@lfd/money": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
-    "@lfd/shopify-admin": "workspace:*",
     "@lfd/storage": "workspace:*",
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",

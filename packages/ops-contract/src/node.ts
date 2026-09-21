@@ -40,7 +40,6 @@ export type HealthStatus = z.infer<typeof healthStatusSchema>;
  */
 export const probeKindSchema = z.enum([
   "http",
-  "shopify",
   "auth0",
   "postgres",
   // Une Page statique : `target` porte son origine publique, et la sonde y

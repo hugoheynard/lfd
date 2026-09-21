@@ -21,8 +21,8 @@ import { runInTransaction, currentTransaction } from "./transaction.store.js";
  * transaction tient en plus, tout le temps qu'elle dure, l'une des cinq
  * connexions du pool de l'instance (`prisma.service.ts`, vérifié le
  * 2026-09-19). On n'enveloppe donc que l'écriture et sa trace — jamais un appel
- * réseau tiers (Shopify, mailer), qui tiendrait la transaction ouverte le temps
- * d'un aller-retour hors de notre contrôle.
+ * réseau tiers (le mailer, un canal de publication), qui tiendrait la
+ * transaction ouverte le temps d'un aller-retour hors de notre contrôle.
  *
  * Abstraite : les handlers en dépendent, l'adaptateur Prisma l'implémente. Un
  * handler qui injecterait le client concret ne pourrait plus se tester sans

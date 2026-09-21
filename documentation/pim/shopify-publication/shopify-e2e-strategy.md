@@ -1,5 +1,16 @@
 # Tests e2e Shopify en conditions réelles — stratégie
 
+> 🔴 **CE CANAL N'EXISTE PLUS.** La chaîne de publication Shopify — écrans,
+> canal serveur, paquet de transport, contrats — a été retirée du dépôt le
+> **2026-09-21**
+> ([`plan-un-seul-canal-deux-prix.md`](../plan-un-seul-canal-deux-prix.md)).
+>
+> Ces documents sont **archivés, pas supprimés** : ils portent des décisions qui
+> ont survécu à leur canal — le modèle des contextes de vente, la protection des
+> URL indexées, la mécanique des révisions — et un doc supprimé fait réinventer
+> ce qu'il savait. Ce qu'ils décrivent du code, en revanche, n'est plus vrai :
+> les chemins qu'ils citaient vivent dans l'histoire git.
+
 > **But.** Avant de redéployer le PIM, valider **chaque fonction de l'API Admin
 > Shopify réellement utilisée** par un test e2e en conditions réelles (vrai réseau,
 > vraie boutique). Ce doc fixe : sur quelle boutique, comment est fait le harness, et
@@ -59,10 +70,9 @@ prétendre le contraire.
 
 ### Le lint PEUT (invariants falsifiables)
 
-1. **Couverture** — _chaque méthode publique « live » de l'`admin-client` a un e2e
-   réel associé._ Un gate repo (comme `lint:feature-access`) parse les méthodes de
-   [`admin-client.ts`](../../../packages/shopify-admin/src/index.ts)
-   et vérifie que chacune est référencée par un `*.shopify-live.e2e.ts`, via
+1. **Couverture** — _chaque méthode publique « live » du client Admin a un e2e
+   réel associé._ Un gate repo (comme `lint:feature-access`) devait parser les
+   méthodes du client et vérifier que chacune est référencée par un `*.shopify-live.e2e.ts`, via
    l'annotation `@verified-by`. Une méthode sans e2e ⇒ **build rouge**.
 2. **Isolation** — _aucun e2e live n'est dans le glob unitaire_ (sinon la CI taperait
    Shopify). Un fichier `*.shopify-live.e2e` importé par le run unitaire ⇒ **rouge**.

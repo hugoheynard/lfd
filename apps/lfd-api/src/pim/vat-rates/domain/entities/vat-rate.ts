@@ -6,7 +6,8 @@ import { VatPercent } from "../value-objects/vat-percent.js";
  *
  * Référence commerciale partagée : les familles pointent dessus
  * (`emporterTvaId` / `surPlaceTvaId`), et les canaux en dérivent ce dont ils
- * ont besoin — une collection pour Shopify, un nombre pour la boutique B2B.
+ * ont besoin. Il en reste UN depuis le 2026-09-21, et il lit un nombre : le
+ * second en dérivait une collection `tva-*`, qui est partie avec lui.
  *
  * Ce qu'il garantit : le **taux est valide** (VO `VatPercent`) et le **nom n'est
  * jamais vide**. Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun

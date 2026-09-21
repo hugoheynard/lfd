@@ -10,7 +10,7 @@ import { RemoveVatRateCommand } from "../application/remove-vat-rate.js";
 import { UpdateVatRateCommand } from "../application/update-vat-rate.js";
 
 /**
- * Taux de **TVA** — référence commerciale partagée (catégories + Shopify). Le
+ * Taux de **TVA** — référence commerciale partagée (familles, fiches, canal). Le
  * contrôleur ne fait que **dispatcher** sur les bus CQRS : commandes qui mutent,
  * requête qui lit.
  *

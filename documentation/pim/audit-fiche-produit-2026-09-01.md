@@ -188,9 +188,10 @@ dans tout `src/pim` — sa définition, son émission, et sa table d'attribution
 **Aucun abonné, aucun `@OnEvent`, aucun déclenchement de push.**
 
 La diffusion réelle est un geste séparé, manuel, sur un autre écran :
-`shopify/products/products.controller.ts` et `b2b-platform/products/push.controller.ts`.
-Elle respecte le statut — `projection.ts:101` mappe un brouillon sur `DRAFT`
-Shopify, le feed B2B lit `membership.publishedProductIds()` — mais elle ne part
+`b2b-platform/products/push.controller.ts` (et, à la date de cet audit, le
+contrôleur du canal Shopify, sorti du dépôt le 2026-09-21). Elle respecte le
+statut — un brouillon partait en `DRAFT` côté boutique, le feed B2B lit
+`membership.publishedProductIds()` — mais elle ne part
 pas toute seule.
 
 Donc, en pratique :

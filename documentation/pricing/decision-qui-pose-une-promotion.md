@@ -255,7 +255,7 @@ client sous mercuriale la voit.
 | Le back-office est une seule app                         | `lfd-backoffice-frontend/src/app/{pim,b2b}/`                                         |
 | `PriceRule` n'a **aucune** dimension canal               | `pricing/domain/price-rule.ts` — aucune occurrence de `channel`                      |
 | `PricingContext` non plus                                | `pricing/domain/price-rule.ts:184-209`                                               |
-| Le canal Shopify pousse des prix (canonique seul)        | `pim/channels/shopify/products/projection.ts:119`                                    |
+| Le canal sorti poussait des prix (canonique seul)        | canal Shopify, retiré le 2026-09-21 — voir l'histoire git                            |
 | Le noyau de résolution est pur                           | `pricing/domain/{resolve-price,specificity,floor-policy}.ts`                         |
 | `PricingContext` porte du commerce                       | `companyId`, `segmentId`, `cumulativeQuantity` (mêmes lignes)                        |
 

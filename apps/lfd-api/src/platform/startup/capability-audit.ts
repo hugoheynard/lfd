@@ -36,7 +36,6 @@ export interface CapabilitySnapshot {
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
-  readonly hasShopifyCredentials: boolean;
 }
 
 /**
@@ -195,14 +194,6 @@ const CHECKS: readonly Check[] = [
     consequence: "même chose pour l'équipe, côté back-office",
     severity: "degraded",
     present: (s) => s.hasAdminBaseUrl,
-  },
-  {
-    capability: "Publication vers Shopify",
-    setting: "SHOPIFY_ADMIN_TOKEN (ou SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET)",
-    consequence:
-      "le référentiel ne peut plus publier la vitrine : l'écran Réglages annonce le canal éteint, et une publication demandée échoue au lieu de partir",
-    severity: "degraded",
-    present: (s) => s.hasShopifyCredentials,
   },
 ];
 

@@ -97,12 +97,6 @@ const RUNTIME_KEYS = [
   // Jeton interne du recompute : forwardé au container (le guard le compare) ET
   // lu ici par le handler `scheduled` (le Cron Trigger le présente à l'endpoint).
   "RECOMPUTE_TOKEN",
-  // Identifiants Shopify du référentiel : un seul des deux chemins suffit
-  // (jeton statique, ou paire client credentials). Absents, le canal de
-  // publication est éteint — l'écran Réglages le dit.
-  "SHOPIFY_ADMIN_TOKEN",
-  "SHOPIFY_CLIENT_ID",
-  "SHOPIFY_CLIENT_SECRET",
   // Lecture d'Analytics Engine par OPS. L'ÉCRITURE, elle, se fait dans la
   // passerelle par un binding et n'a besoin d'aucun secret : seul le lecteur
   // s'authentifie. Absents, OPS rend une fenêtre de répétition — et le dit.

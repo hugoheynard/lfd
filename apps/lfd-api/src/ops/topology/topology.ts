@@ -59,7 +59,7 @@ export const TOPOLOGY: readonly NodeManifest[] = [
     id: "b2b",
     kind: "service",
     label: "API",
-    dependsOn: ["postgres-b2b", "r2", "auth0", "stripe", "resend", "shopify"],
+    dependsOn: ["postgres-b2b", "r2", "auth0", "stripe", "resend"],
   },
   {
     id: "postgres-b2b",
@@ -69,13 +69,6 @@ export const TOPOLOGY: readonly NodeManifest[] = [
     probe: { kind: "postgres" },
   },
   { id: "auth0", kind: "external-api", label: "Auth0", dependsOn: [], probe: { kind: "auth0" } },
-  {
-    id: "shopify",
-    kind: "external-api",
-    label: "Shopify",
-    dependsOn: [],
-    probe: { kind: "shopify" },
-  },
   { id: "stripe", kind: "external-api", label: "Stripe", dependsOn: [], probe: { kind: "http" } },
   { id: "resend", kind: "external-api", label: "Resend", dependsOn: [], probe: { kind: "http" } },
   {
