@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
+import { FeatureAccessModule } from "../feature-access/feature-access.module.js";
 import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repository.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
@@ -112,6 +113,12 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     DeliveryZonesModule,
     // À qui la livraison est proposée : `CartAdjustments` le refuse au serveur.
     DeliveryAvailabilityModule,
+    // 🔴 La clé `publicDelivery` : `PlaceShopOrderHandler` refuse une livraison
+    // SANS COMPTE quand l'admin ne l'a pas ouverte. Le module est ici et pas
+    // seulement dans la racine parce qu'un handler résout ses dépendances dans
+    // SON module — l'oublier compile, passe les 4 247 tests unitaires, et
+    // empêche l'application de démarrer (constaté le 2026-09-21).
+    FeatureAccessModule,
     OrderCutoffsModule,
     OrderWaiversModule,
     PaymentsModule,
