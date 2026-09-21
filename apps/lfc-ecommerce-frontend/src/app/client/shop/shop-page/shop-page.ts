@@ -283,6 +283,16 @@ export class ShopPage {
   }
 
   /**
+   * Ouvre le panier entier — chargé à la demande, comme la pastille de la barre
+   * le fait : c'est le même panneau, et le sortir du chunk du rayon évite de le
+   * charger à qui ne règle pas.
+   */
+  private async openCart(): Promise<void> {
+    const { CartDialog } = await import('../../cart/cart-dialog/cart-dialog');
+    await CartDialog.open(this.panels).closed;
+  }
+
+  /**
    * Le panier est SOUS les yeux en permanence — trois nombres dans le bandeau,
    * le détail à un geste : régler d'ici n'est pas sauter une étape, c'est ne
    * pas en inventer une.
@@ -292,12 +302,20 @@ export class ShopPage {
       this.backToService();
       return;
     }
-    // 🔴 Se connecter n'est PAS un échec, c'est l'étape suivante. La boutique se
-    // visite sans compte ; commander non, parce qu'une commande a un
-    // propriétaire. Le panier survit à l'aller-retour — il vit en base pour qui
-    // a déjà un compte, dans le navigateur pour les autres.
+    // 🔴 **ON PEUT COMMANDER SANS COMPTE** (Hugo, 2026-09-21), et cette barre
+    // ne doit donc plus pousser vers Auth0. Elle poussait : « se connecter est
+    // l'étape suivante, une commande a un propriétaire ». Ce n'est plus vrai —
+    // `POST /shop/orders` existe, et un visiteur repart avec sa commande.
+    //
+    // ⚠️ **Mais on n'ouvre pas la saisie d'invité d'ici.** Le dialogue
+    // d'identité ne propose QUE la saisie ; l'ouvrir en direct retirerait le
+    // second chemin — se connecter — à qui a déjà un compte et ne l'a pas dit.
+    // Le panier pose les deux portes côte à côte, et montre au passage ce
+    // qu'on s'apprête à payer. C'est donc là qu'on envoie, et c'est la seule
+    // surface qui porte cette question : deux copies finiraient par n'en
+    // proposer qu'une.
     if (!this.auth.isAuthenticated()) {
-      this.auth.login('/boutique');
+      await this.openCart();
       return;
     }
     const placed = await this.orders.place();

@@ -7,6 +7,7 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { ClientCart } from '../../cart/client-cart.service';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { FR } from '../../../client/copy/fr';
+import { AuthFacade } from '../../../auth/auth.facade';
 import { ShopPage } from './shop-page';
 
 describe('ShopPage', () => {
@@ -184,5 +185,67 @@ describe('ShopPage', () => {
     fixture.detectChanges();
 
     expect(el().querySelector('app-cart-bar')).not.toBeNull();
+  });
+});
+
+/**
+ * 🔴 **ON PEUT COMMANDER SANS COMPTE DEPUIS LA BARRE** (Hugo, 2026-09-21).
+ *
+ * Elle poussait vers Auth0 dès qu'on n'était pas connecté, au motif qu'« une
+ * commande a un propriétaire ». Ce n'est plus vrai : `POST /shop/orders`
+ * existe, et un visiteur repart avec sa commande.
+ *
+ * ⚠️ Elle n'ouvre pas pour autant la saisie d'invité : ce dialogue ne propose
+ * QUE la saisie, et l'ouvrir en direct retirerait le second chemin — se
+ * connecter — à qui a un compte et ne l'a pas dit. Le panier pose les deux
+ * portes côte à côte, et c'est la seule surface qui porte cette question.
+ */
+describe('ShopPage — la barre du bas, sans compte', () => {
+  let fixture: ComponentFixture<ShopPage>;
+  let asked: string[];
+
+  beforeEach(() => {
+    localStorage.clear();
+    asked = [];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ShopPage],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        {
+          provide: AuthFacade,
+          useValue: {
+            isLoading: (): boolean => false,
+            isAuthenticated: (): boolean => false,
+            login: (target: string): void => asked.push(`login:${target}`),
+          },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(OrderContextStore).choice.set({
+      mode: 'pickup',
+      place: 'Le Labo',
+      at: 'au Labo',
+      address: 'Route de la Balme, Val d’Isère',
+      pickupAddressId: 'pick_labo',
+      slot: '7 h – 8 h',
+      window: { start: '07:00', end: '08:00' },
+      date: '2026-09-07',
+    });
+    TestBed.inject(ClientCart).clear();
+    TestBed.inject(ClientCart).add(TEST_ITEMS[0]?.sku ?? '');
+    fixture = TestBed.createComponent(ShopPage);
+    fixture.detectChanges();
+  });
+
+  it('🔴 ne pousse PLUS vers Auth0 quand personne n’est connecté', async () => {
+    const el = fixture.nativeElement as HTMLElement;
+
+    el.querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
+    await Promise.resolve();
+
+    expect(asked).toEqual([]);
   });
 });
