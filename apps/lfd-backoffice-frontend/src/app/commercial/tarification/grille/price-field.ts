@@ -13,8 +13,9 @@ import { MILLICENTS_PER_CENT } from '@lfd/money';
  * qu'un prix tapé à 2,10 € entrait en base à 0,0021 € et qu'une mercuriale
  * enregistrée avant la migration du 2026-08-31 se rouvrait à 3000,00 €. Le
  * défaut venait d'un renommage qui avait changé les noms sans convertir les
- * valeurs (`0e2e2dd2`) ; il est décrit sous `D10` dans
- * `documentation/pricing/audit-calcul-du-panier-et-du-prix.md`.
+ * valeurs (`0e2e2dd2`) ; il est décrit sous `D10` au § 6.5 de
+ * `documentation/pricing/ce-qui-reste-a-faire.md`, qui garde aussi la leçon —
+ * le même idiome fautif écrit à trois endroits, dont deux tombaient juste.
  *
  * L'unité de ce fichier est désormais le **millicentime**, comme le reste de la
  * famille et comme la base.

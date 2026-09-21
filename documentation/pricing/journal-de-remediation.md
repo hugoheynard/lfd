@@ -2,7 +2,7 @@
 
 > **Ce que ce document est.** Le registre
 > [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md) dit ce qui **reste** ;
-> l'audit [`audit-du-moteur-a-la-facade.md`](audit-du-moteur-a-la-facade.md) dit
+> son § 6 dit
 > ce qui **ne va pas**. Ni l'un ni l'autre ne garde trace de **ce qu'on a
 > décidé, et pourquoi on a écarté l'autre branche**.
 >
@@ -29,7 +29,7 @@
 
 ## R15 · 2026-09-09
 
-**Constat** : [B.1](audit-du-moteur-a-la-facade.md) · **Registre** :
+**Constat** : `B.1` (troisième regard, supprimé) · **Registre** :
 [R15](ce-qui-reste-a-faire.md) · **Gravité** : 🔴 produit un prix faux à
 l'écran.
 
@@ -245,7 +245,7 @@ n'est pas un correctif, c'est une tranche, et elle appartient à Hugo.
 
 ## R16 · 2026-09-09
 
-**Constat** : [B.2](audit-du-moteur-a-la-facade.md) · **Registre** :
+**Constat** : `B.2` (troisième regard, supprimé) · **Registre** :
 [R16](ce-qui-reste-a-faire.md) · **Gravité** : ~~🔴 prix faux à la caisse~~ —
 **voir le §7 : le sens du défaut est inversé, et la question est commerciale
 avant d'être technique.**
@@ -499,7 +499,7 @@ que je n'avais pas vérifiée.
 
 ## R20 · 2026-09-09
 
-**Constat** : [B.6](audit-du-moteur-a-la-facade.md) · **Registre** :
+**Constat** : `B.6` (troisième regard, supprimé) · **Registre** :
 [R20](ce-qui-reste-a-faire.md) · **Gravité** : 🟠 aucune ligne de code, et c'est
 ce qui la rend traître.
 
@@ -584,7 +584,7 @@ cet ordre :
 
 ## R22 · 2026-09-09
 
-**Constat** : [B.8](audit-du-moteur-a-la-facade.md) · **Registre** :
+**Constat** : `B.8` (troisième regard, supprimé) · **Registre** :
 [R22](ce-qui-reste-a-faire.md) · **Gravité** : 🟠 un trou **commercial** — une
 promotion que personne ne voit ne fait pas vendre.
 
@@ -784,7 +784,7 @@ Toutes datées.
 
 ## R23 · 2026-09-09
 
-**Constat** : [B.9](audit-du-moteur-a-la-facade.md) · **Registre** :
+**Constat** : `B.9` (troisième regard, supprimé) · **Registre** :
 [R23](ce-qui-reste-a-faire.md) · **Gravité** : 🟠 un nombre faux sur l'écran où
 l'on décide de signer.
 
@@ -860,7 +860,7 @@ appelaient la même fonction, pas parce que leur sujet est réglé.
 
 ## R25 · 2026-09-09
 
-**Constat** : [B.11](audit-du-moteur-a-la-facade.md) · **Registre** :
+**Constat** : `B.11` (troisième regard, supprimé) · **Registre** :
 [R25](ce-qui-reste-a-faire.md) · **Gravité** : 🟡 un trou dans la promesse
 centrale du système — « un prix qu'on peut défendre six mois plus tard ».
 
