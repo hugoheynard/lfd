@@ -222,7 +222,7 @@ export class CommandePage {
     this.dialog.set(null);
     const next = returnsToCart(this.route.snapshot.queryParamMap)
       ? '/commande/panier'
-      : '/commande/boutique';
+      : '/boutique';
     void this.router.navigate([next]);
   }
 
@@ -232,7 +232,7 @@ export class CommandePage {
    * — regarder d'abord, décider ensuite.
    */
   protected browse(): void {
-    void this.router.navigate(['/commande/boutique']);
+    void this.router.navigate(['/boutique']);
   }
 
   protected openPanel(): void {

@@ -168,6 +168,6 @@ export class ConfirmationPage {
   }
 
   protected backToShop(): void {
-    void this.router.navigate(['/commande/boutique']);
+    void this.router.navigate(['/boutique']);
   }
 }

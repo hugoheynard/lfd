@@ -56,7 +56,7 @@ import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog'
  * n'est plus traversé — les deux questions qu'il pose, la maison et l'heure,
  * viennent d'être posées ici.
  */
-const SHOP = '/commande/boutique';
+const SHOP = '/boutique';
 
 /** Une maison, telle que la carte l'affiche. */
 interface House {

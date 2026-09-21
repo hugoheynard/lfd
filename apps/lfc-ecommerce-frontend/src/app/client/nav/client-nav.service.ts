@@ -70,7 +70,7 @@ interface Destination {
  * mène au rayon. Deux intentions, deux adresses.
  */
 const DESTINATIONS: readonly Destination[] = [
-  { id: 'shop', route: '/commande/boutique', ready: true, shop: 'browse' },
+  { id: 'shop', route: '/boutique', ready: true, shop: 'browse' },
   { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
   {
     id: 'invoices',

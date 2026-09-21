@@ -34,5 +34,5 @@ export const MOCK_EVENT: DatedEvent | null = {
   teaser: 'Neuf pièces coulées à la main, dont deux qu’on ne refait pas.',
   image:
     'https://images.unsplash.com/photo-1515192337774-033dac0ed561?fm=jpg&q=70&w=1100&auto=format&fit=crop',
-  route: '/commande/boutique',
+  route: '/boutique',
 };

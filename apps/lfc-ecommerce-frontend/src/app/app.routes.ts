@@ -235,15 +235,26 @@ export const routes: Routes = [
       {
         // LA BOUTIQUE CLIENTE et ses rayons.
         //
-        // 🔴 Elle a vécu sous `nouvelle-commande/` — « parce qu'elle est la
-        // SUITE d'une commande en cours ». Elle l'est toujours ; ce qui a
-        // changé, c'est que `nouvelle-commande` était aussi un ÉCRAN, celui du
-        // mode de service, et que l'accueil pose désormais les deux questions
-        // sur place. Le tunnel garde donc son préfixe, sous le nom de ce qu'il
-        // est — une commande — et non sous celui d'un écran en sursis.
+        // 🔴 À LA RACINE depuis le 2026-09-21 (Hugo : « pourquoi passer par
+        // commande ? »). Elle a vécu sous `nouvelle-commande/`, puis sous
+        // `commande/`, au motif qu'elle est « la SUITE d'une commande en
+        // cours ». Elle ne l'est pas : le rayon se VISITE sans avoir rien
+        // choisi — c'est ce que promet « je visite la boutique », et c'est la
+        // raison pour laquelle son garde est `browse` et non `order`. Le
+        // préfixe affirmait donc le contraire de ce que l'écran permet.
         //
-        // ⚠️ Pas à la racine : `/boutique` est prise par la boutique PRO.
-        path: 'commande/boutique',
+        // ⚠️ Le reste du tunnel garde `commande/` : le panier, le règlement et
+        // la confirmation sont, eux, une commande en cours. La boutique était
+        // la seule des quatre à ne pas l'être.
+        //
+        // 🔴 LA RAISON ÉCRITE ICI ÉTAIT FAUSSE. Elle disait « `/boutique` est
+        // prise par la boutique PRO » — or cette route est partie avec le
+        // panier hérité le 2026-09-06, ce que le commentaire de `proRoutes`
+        // dit lui-même vingt lignes plus haut. Vérifié le 2026-09-21 : aucun
+        // `path: 'boutique'` dans ce fichier. Une justification qui parle
+        // d'ailleurs survit à ce qui la rendait vraie, et fait garder un
+        // détour pour une raison qui n'existe plus.
+        path: 'boutique',
         canActivate: [featureAccessGuard('shop', 'browse')],
         title: 'Boutique — La Folie Coffee',
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
@@ -328,7 +339,8 @@ export const routes: Routes = [
       // ⚠️ Elles ne se retirent pas avec l'écran : une adresse servie une fois
       // est servie pour toujours. C'est la même règle que le §0 du CLAUDE.md
       // pour un champ de contrat.
-      { path: 'nouvelle-commande/boutique', redirectTo: 'commande/boutique' },
+      { path: 'nouvelle-commande/boutique', redirectTo: 'boutique' },
+      { path: 'commande/boutique', redirectTo: 'boutique' },
       { path: 'nouvelle-commande/panier', redirectTo: 'commande/panier' },
       { path: 'nouvelle-commande/reglement/:id', redirectTo: 'commande/reglement/:id' },
       { path: 'nouvelle-commande/confirmee', redirectTo: 'commande/confirmee' },

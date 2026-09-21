@@ -25,7 +25,7 @@ import { TOMMEUSES } from '../mon-compte/account.fixture';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
-  { path: 'commande/boutique', children: [] },
+  { path: 'boutique', children: [] },
   { path: 'commande/panier', children: [] },
   { path: 'mes-commandes', children: [] },
 ];
@@ -148,13 +148,13 @@ describe('Les destinations du menu', () => {
   it('mène AU RAYON, pas à la question du mode de service', async () => {
     const nav = TestBed.inject(ClientNav);
     const shop = nav.items().find((i) => i.id === 'shop');
-    expect(shop?.route).toBe('/commande/boutique');
+    expect(shop?.route).toBe('/boutique');
     expect(shop?.ready).toBe(true);
     // Aucun compteur : un rayon ne se compte pas, il se parcourt.
     expect(shop?.countShort).toBe('');
 
-    await TestBed.inject(Router).navigateByUrl('/commande/boutique');
-    expect(nav.current()).toBe('/commande/boutique');
+    await TestBed.inject(Router).navigateByUrl('/boutique');
+    expect(nav.current()).toBe('/boutique');
   });
 
   it('déclare inertes les destinations dont l’écran n’existe pas encore', () => {

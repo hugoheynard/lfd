@@ -43,7 +43,7 @@ function item(partial: Partial<NavItem> & Pick<NavItem, 'id' | 'label' | 'route'
 }
 
 const DESTINATIONS: readonly NavItem[] = [
-  item({ id: 'shop', label: 'Boutique', route: '/commande/boutique' }),
+  item({ id: 'shop', label: 'Boutique', route: '/boutique' }),
   item({
     id: 'orders',
     label: 'Commandes',
@@ -92,7 +92,7 @@ function boot(
       },
       {
         provide: ClientNav,
-        useValue: { items: wire.items, current: signal('/commande/boutique') },
+        useValue: { items: wire.items, current: signal('/boutique') },
       },
       provideWorkspace(wire.workspace),
       // La navigation de la bascule a sa propre suite : ici, on vérifie que le

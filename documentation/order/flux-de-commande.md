@@ -35,6 +35,17 @@ rayon, la confirmation, et le repli d'espace inconnu. Le démontage est commenc�
 pas fini : confondre les deux ferait croire à un écran mort, alors qu'il est
 encore sur le chemin de tout le monde.
 
+🔴 **Et la boutique a quitté le préfixe de commande le même jour.** Le rayon se
+VISITE sans avoir rien choisi — c'est ce que promet « je visite la boutique », et
+c'est pourquoi son garde est `browse` et non `order`. Le préfixe affirmait donc
+le contraire de ce que l'écran permet. Le panier, le règlement et la
+confirmation le gardent : eux SONT une commande en cours.
+
+⚠️ La raison écrite dans `app.routes.ts` pour ce préfixe — « `/boutique` est
+prise par la boutique PRO » — était **fausse depuis le 2026-09-06**, date à
+laquelle cette route est partie avec le panier hérité. Elle a fait garder un
+détour pendant quinze jours pour un conflit qui n'existait plus.
+
 ⚠️ Ce que ça ne change pas : **les guards, les niveaux et le mur sont les
 mêmes**. Une adresse qui change ne déplace aucune frontière.
 
@@ -81,7 +92,7 @@ où l'on bute**.
 
 ```mermaid
 flowchart LR
-    B["/bienvenue<br/>accueil public"] -->|"porte + heure,<br/>en dialogues"| K["/commande/boutique"]
+    B["/bienvenue<br/>accueil public"] -->|"porte + heure,<br/>en dialogues"| K["/boutique"]
     B -.->|"repli : aucun mode"| S["/nouvelle-commande<br/>mode de service"]
     S --> K
     K --> PA["/commande/panier"]
@@ -107,7 +118,7 @@ fonctionne déjà pour un visiteur.
 
 C'est contre-intuitif : les deux routes portent un garde.
 
-- `/commande/boutique` → `featureAccessGuard('shop', 'browse')`
+- `/boutique` → `featureAccessGuard('shop', 'browse')`
 - `/commande/panier` → `featureAccessGuard('shop', 'order')`
 
 Le garde (`apps/lfc-ecommerce-frontend/src/app/client/feature-access/feature-access.guard.ts`)
@@ -132,7 +143,7 @@ sequenceDiagram
     participant N as Navigateur (anonyme)
     participant G as featureAccessGuard
     participant API as GET /feature-access (@Public)
-    N->>G: /commande/boutique
+    N->>G: /boutique
     G->>API: lecture des niveaux globaux
     API-->>G: { shop: "order", ... }
     G-->>N: autorisé

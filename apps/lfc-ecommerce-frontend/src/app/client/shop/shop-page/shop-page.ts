@@ -288,7 +288,7 @@ export class ShopPage {
     // propriétaire. Le panier survit à l'aller-retour — il vit en base pour qui
     // a déjà un compte, dans le navigateur pour les autres.
     if (!this.auth.isAuthenticated()) {
-      this.auth.login('/commande/boutique');
+      this.auth.login('/boutique');
       return;
     }
     const placed = await this.orders.place();

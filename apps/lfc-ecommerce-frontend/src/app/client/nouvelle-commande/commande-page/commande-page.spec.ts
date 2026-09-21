@@ -285,7 +285,7 @@ describe('CommandePage', () => {
 
     click(FR.commande.browseTitle);
 
-    expect(gone).toEqual([['/commande/boutique']]);
+    expect(gone).toEqual([['/boutique']]);
   });
 
   it("l'urgence propose le rappel ET l'appel direct", () => {
@@ -364,6 +364,6 @@ describe('CommandePage — venue du panier', () => {
   });
 
   it('mène au rayon sinon', () => {
-    expect(chooseFrom({})).toEqual([['/commande/boutique']]);
+    expect(chooseFrom({})).toEqual([['/boutique']]);
   });
 });

@@ -53,11 +53,27 @@ describe('Le chrome de l’app', () => {
       '/inscription',
       '/connexion',
       '/nouvelle-commande',
-      '/commande/boutique',
+      '/boutique',
       '/commande/panier',
       '/commande/confirmee',
     ]) {
       expect(await at(url), url).toBe(true);
+    }
+  });
+
+  /**
+   * 🔴 UNE ADRESSE SERVIE UNE FOIS EST SERVIE POUR TOUJOURS. La boutique a
+   * changé de place deux fois — `nouvelle-commande/boutique`, puis
+   * `commande/boutique`, puis la racine le 2026-09-21. Les deux premières ont
+   * été distribuées : un signet, un lien partagé, un e-mail de confirmation.
+   *
+   * ⚠️ Le test vise la CIBLE, pas seulement le fait que ça passe : une
+   * redirection vers le mauvais écran répond `true` aussi.
+   */
+  it('🔴 sert encore les deux anciennes adresses de la boutique', async () => {
+    for (const old of ['/nouvelle-commande/boutique', '/commande/boutique']) {
+      expect(await at(old), old).toBe(true);
+      expect(router.url, old).toBe('/boutique');
     }
   });
 
