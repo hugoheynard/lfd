@@ -312,6 +312,16 @@ export class CatalogItem {
     return this.facts.vatRatePercent;
   }
 
+  /** L'étiquette reçue du référentiel. `null` avant le fil v9. */
+  get publicTtcCents(): number | null {
+    return this.facts.publicTtcCents;
+  }
+
+  /** Le prix public par contexte, reçu du référentiel. `null` avant le fil v9. */
+  get publicByContext(): Readonly<Record<string, PimContextPrice>> | null {
+    return this.facts.publicByContext;
+  }
+
   get weightGrams(): number | null {
     return this.facts.weightGrams;
   }

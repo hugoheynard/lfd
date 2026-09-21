@@ -17,7 +17,12 @@ import { ReceptionService } from './reception.service';
 const FIELDS: Readonly<Record<string, string>> = {
   name: 'nom',
   price: 'prix',
-  vatRate: 'taux de TVA',
+  vatRate: 'taux de TVA pro',
+  // Nommés séparément du prix et du taux PRO, et c'est tout l'intérêt : « prix »
+  // seul laisserait croire qu'il n'y en a qu'un, et le relecteur ne saurait pas
+  // lequel a bougé.
+  publicPrice: 'prix public',
+  publicVatRate: 'taux de TVA public',
   weight: 'poids',
   category: 'famille',
   allergens: 'allergènes',

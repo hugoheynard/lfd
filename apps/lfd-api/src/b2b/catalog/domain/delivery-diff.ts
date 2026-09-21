@@ -1,3 +1,5 @@
+import type { PimContextPrice } from "./entities/catalog-item.js";
+
 /**
  * **Qu'est-ce que cette arrivée change ?**
  *
@@ -30,6 +32,10 @@ export interface DeliveredItem {
   /** Prix **reçu** du référentiel, jamais le prix négocié : celui-ci n'arrive pas. */
   readonly priceMillicents: number;
   readonly vatRatePercent: number | null;
+  /** L'étiquette TTC en centimes. `null` = arrivée ou ligne d'avant le fil v9. */
+  readonly publicTtcCents: number | null;
+  /** Le prix public par contexte. `null` = arrivée ou ligne d'avant le fil v9. */
+  readonly publicByContext: Readonly<Record<string, PimContextPrice>> | null;
   readonly weightGrams: number | null;
   readonly categoryId: string;
   /**
@@ -86,7 +92,26 @@ export type ChangedField =
   | "allergens"
   | "orderLimit"
   | "note"
-  | "image";
+  | "image"
+  /**
+   * **L'étiquette a bougé** — ce qu'un particulier paie, taxe comprise.
+   *
+   * Distinct de `price`, qui porte le prix PROFESSIONNEL. Les deux bougent
+   * souvent ensemble — le pro se dérive de l'étiquette — mais pas toujours :
+   * changer le rapport pro déplace `price` seul.
+   */
+  | "publicPrice"
+  /**
+   * 🔴 **Un taux de TVA PUBLIC a bougé**, ou un contexte de vente est apparu
+   * ou disparu.
+   *
+   * C'est le cas que rien ne voyait. `vatRate` porte le taux du contexte
+   * **`b2b`** — le seul qui traversait le fil avant la v9. Passer le taux « à
+   * emporter » de 5,5 % à 10 % ne le touche pas, et ne déplace pas non plus
+   * l'étiquette : **l'arrivée aurait dit « rien n'a changé »** alors que ce
+   * qu'un consommateur paie venait de bouger.
+   */
+  | "publicVatRate";
 
 /** Ce qui arrive à UN sku. */
 export interface SkuChange {
@@ -174,6 +199,12 @@ function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly
   if (incoming.vatRatePercent !== mirror.vatRatePercent) {
     fields.push("vatRate");
   }
+  if (incoming.publicTtcCents !== mirror.publicTtcCents) {
+    fields.push("publicPrice");
+  }
+  if (!samePublicRates(incoming.publicByContext, mirror.publicByContext)) {
+    fields.push("publicVatRate");
+  }
   if (incoming.weightGrams !== mirror.weightGrams) {
     fields.push("weight");
   }
@@ -235,6 +266,55 @@ export function diffDelivery(
   }
 
   return changes.sort((left, right) => (left.sku < right.sku ? -1 : left.sku > right.sku ? 1 : 0));
+}
+
+/**
+ * **Les taux publics sont-ils les mêmes ?** — contexte par contexte.
+ *
+ * Compare les TAUX, jamais les hors taxe : ces derniers se dérivent des
+ * premiers, et les comparer aussi ferait sonner deux fois pour un seul
+ * changement. Un contexte gagné ou perdu compte comme un changement de taux —
+ * c'est une manière de vendre qui s'ouvre ou se ferme, et elle a son
+ * traitement fiscal.
+ *
+ * Deux `null` sont égaux : deux lignes d'avant la v9 n'ont rien à se dire. Un
+ * `null` contre une carte ne l'est pas — c'est le premier push qui apporte le
+ * prix public, et il mérite d'être vu.
+ */
+function samePublicRates(
+  incoming: Readonly<Record<string, PimContextPrice>> | null,
+  mirror: Readonly<Record<string, PimContextPrice>> | null,
+): boolean {
+  if (incoming === null || mirror === null) {
+    return incoming === mirror;
+  }
+  const keys = new Set([...Object.keys(incoming), ...Object.keys(mirror)]);
+  for (const key of keys) {
+    if (incoming[key]?.vatRatePercent !== mirror[key]?.vatRatePercent) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * 🔴 **L'arrivée touche-t-elle un taux de TVA PUBLIC ?**
+ *
+ * Le second motif qui fait sonner la cloche à la réception, et il a la même
+ * forme que le premier pour la même raison : une arrivée peut attendre
+ * indéfiniment sans que rien ne casse, **sauf** quand ce qu'elle porte a un
+ * effet qu'on ne veut pas laisser dormir.
+ *
+ * Un allergène qui dort est un risque pour quelqu'un. Un taux de TVA qui dort
+ * est de l'argent facturé au mauvais taux — dans un sens ou dans l'autre, et
+ * sur chaque vente publique d'ici la validation.
+ *
+ * ⚠️ Un article qui ENTRE ne compte PAS ici, contrairement aux allergènes. Sa
+ * déclaration d'allergène est nouvelle et personne ne l'a relue ; son taux,
+ * lui, ne remplace rien — il n'y a pas de vente en cours à mal facturer.
+ */
+export function carriesPublicVatChange(changes: readonly SkuChange[]): boolean {
+  return changes.some((change) => change.fields.includes("publicVatRate"));
 }
 
 /**

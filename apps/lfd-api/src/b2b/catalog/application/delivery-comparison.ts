@@ -24,6 +24,11 @@ export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[]
       name: variant.name,
       priceMillicents: variant.priceMillicents,
       vatRatePercent: variant.vatRatePercent,
+      // `?? null` couvre une arrivée d'avant la v9 : elle ne portait pas le
+      // prix public. Les deux côtés de la comparaison doivent lire la même
+      // absence, sinon le premier push v9 signalerait un changement sur tout.
+      publicTtcCents: variant.publicTtcCents ?? null,
+      publicByContext: variant.publicByContext ?? null,
       weightGrams: variant.weightGrams,
       categoryId: product.categoryId,
       allergens: variant.allergens,
@@ -50,6 +55,8 @@ export function mirrorItems(items: readonly CatalogItem[]): DeliveredItem[] {
     name: item.name,
     priceMillicents: item.pimPriceMillicents,
     vatRatePercent: item.vatRatePercent,
+    publicTtcCents: item.publicTtcCents,
+    publicByContext: item.publicByContext,
     weightGrams: item.weightGrams,
     categoryId: item.categoryId,
     allergens: item.allergens,

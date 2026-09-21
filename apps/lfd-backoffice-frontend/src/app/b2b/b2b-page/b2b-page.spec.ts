@@ -28,6 +28,7 @@ function view(over: Partial<PendingDeliveryView> = {}): PendingDeliveryView {
     revisionId: 'rev_1',
     receivedAt: '2026-01-02T09:00:00.000Z',
     carriesAllergenChange: false,
+    carriesPublicVatChange: false,
     changes: [{ sku: 'VIE-001-1', kind: 'changed', fields: ['price'], name: 'Croissant' }],
     ...over,
   };

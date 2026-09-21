@@ -119,6 +119,7 @@ describe('B2bIntegration — les trois lignes', () => {
         revisionId: 'rev_2',
         receivedAt: '2026-01-03T09:00:00.000Z',
         carriesAllergenChange: false,
+        carriesPublicVatChange: false,
         changes: [{ sku: 'VIE-001-1', kind: 'changed', fields: ['price'], name: 'Croissant' }],
       },
     });

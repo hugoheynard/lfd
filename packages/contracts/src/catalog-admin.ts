@@ -155,6 +155,21 @@ export interface PendingDeliveryView {
    * d'allergène qui dormirait.
    */
   readonly carriesAllergenChange: boolean;
+  /**
+   * 🔴 L'arrivée touche-t-elle un **taux de TVA PUBLIC** ?
+   *
+   * Le second motif qui fait sonner la cloche, et il a la même forme que le
+   * premier : une arrivée peut attendre indéfiniment sans que rien ne casse,
+   * sauf quand ce qu'elle porte a un effet qu'on ne veut pas laisser dormir.
+   *
+   * Un allergène qui dort est un risque pour quelqu'un ; un taux qui dort est
+   * de l'argent facturé au mauvais taux, sur chaque vente publique d'ici la
+   * validation.
+   *
+   * ⚠️ Distinct du champ `vatRate` d'un changement, qui porte le taux
+   * **professionnel** — le seul qui traversait le fil avant la v9.
+   */
+  readonly carriesPublicVatChange: boolean;
 }
 
 /**

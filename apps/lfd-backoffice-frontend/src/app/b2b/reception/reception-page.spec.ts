@@ -20,6 +20,7 @@ function view(over: Partial<PendingDeliveryView> = {}): PendingDeliveryView {
     revisionId: 'rev_1',
     receivedAt: '2026-01-02T09:00:00.000Z',
     carriesAllergenChange: false,
+    carriesPublicVatChange: false,
     changes: [
       { sku: 'VIE-001-1', kind: 'changed', fields: ['price'], name: 'Croissant' },
       { sku: 'PAT-002-1', kind: 'removed', fields: [], name: 'Pain au chocolat' },
@@ -143,6 +144,31 @@ describe('ReceptionPage', () => {
     const { fixture } = await render(new FakeReception());
 
     expect(text(fixture)).not.toContain("déclaration d'allergènes");
+  });
+
+  /**
+   * 🔴 **Le second motif, ajouté le 2026-09-21.**
+   *
+   * Le gabarit portait « c'est le SEUL motif qui presse » et « une bannière qui
+   * sonnerait pour un PRIX cesserait d'être lue ». La règle est gardée — un
+   * prix qui bouge est l'ordinaire du référentiel, il ne sonne pas.
+   *
+   * Un TAUX n'est pas un prix : il change rarement, il est imposé du dehors, et
+   * tant qu'il dort chaque vente publique part au mauvais taux.
+   */
+  it('🔴 alerte quand un TAUX DE TVA PUBLIC bouge', async () => {
+    const api = new FakeReception();
+    api.pendingValue = view({ carriesPublicVatChange: true });
+
+    const { fixture } = await render(api);
+
+    expect(text(fixture)).toContain('taux de TVA public');
+  });
+
+  it('ne sonne pas pour un prix qui bouge — la règle du gabarit est gardée', async () => {
+    const { fixture } = await render(new FakeReception());
+
+    expect(text(fixture)).not.toContain('taux de TVA public');
   });
 
   /** Rien à valider est l'état NORMAL : un vide serein, pas une panne. */

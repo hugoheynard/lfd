@@ -58,17 +58,29 @@ export class B2bPage {
   });
 
   /**
-   * **Une correction d'allergène ne se dit pas en bleu.**
+   * **Ni une correction d'allergène ni un taux de TVA public ne se disent en
+   * bleu.**
    *
-   * `carriesAllergenChange` est décrit par le contrat comme « le seul motif qui
-   * fasse sonner la cloche : une arrivée peut attendre indéfiniment sans que
-   * rien ne casse, sauf une correction d'allergène qui dormirait ». L'écran de
-   * réception l'affiche déjà en `alert` ; un bandeau calme sur le chemin qui y
-   * mène contredirait la même doctrine à deux écrans d'écart.
+   * Le contrat décrit les deux de la même façon : une arrivée peut attendre
+   * indéfiniment sans que rien ne casse, **sauf** quand ce qu'elle porte a un
+   * effet qu'on ne veut pas laisser dormir. Un allergène qui dort est un risque
+   * pour quelqu'un ; un taux qui dort est de l'argent facturé au mauvais taux,
+   * sur chaque vente publique d'ici la validation.
+   *
+   * ⚠️ `carriesPublicVatChange` est arrivé le 2026-09-21 avec le prix public sur
+   * le fil. Il était invisible avant : le seul taux qui traversait était celui
+   * du contexte `b2b`, et passer l'à-emporter de 5,5 % à 10 % ne le touchait pas
+   * — l'arrivée disait « rien n'a changé ».
+   *
+   * L'écran de réception les affiche déjà en `alert` ; un bandeau calme sur le
+   * chemin qui y mène contredirait la même doctrine à deux écrans d'écart.
    */
-  protected readonly variant = computed(() =>
-    this.pending()?.carriesAllergenChange === true ? 'alert' : 'info',
-  );
+  protected readonly variant = computed(() => {
+    const pending = this.pending();
+    return pending?.carriesAllergenChange === true || pending?.carriesPublicVatChange === true
+      ? 'alert'
+      : 'info';
+  });
 
   constructor() {
     provideWorkspaceRail(this.catalogue.rail('b2b'));

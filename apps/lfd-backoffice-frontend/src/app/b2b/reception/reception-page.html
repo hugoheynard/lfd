@@ -10,15 +10,31 @@
   @case ('ready') {
     @if (delivery(); as pending) {
       <!--
-        L'ALERTE D'ABORD, et une seule. Une arrivée peut attendre indéfiniment
-        sans que rien ne casse — sauf une correction d'allergène qui dormirait.
-        C'est le seul motif qui presse, donc le seul qui s'affiche ainsi : une
-        bannière qui sonnerait pour un prix cesserait d'être lue avant celle-ci.
+        LES ALERTES D'ABORD, et il n'y en a que DEUX. Une arrivée peut attendre
+        indéfiniment sans que rien ne casse — sauf quand ce qu'elle porte a un
+        effet qu'on ne veut pas laisser dormir.
+
+        ⚠️ Cette note disait « c'est le SEUL motif qui presse » et ajoutait
+        qu'« une bannière qui sonnerait pour un PRIX cesserait d'être lue avant
+        celle-ci ». La règle est juste et elle est gardée : un prix qui bouge est
+        l'ordinaire du référentiel, il ne sonne pas.
+
+        Un TAUX DE TVA n'est pas un prix. Il change rarement, il est imposé du
+        dehors, et tant qu'il dort chaque vente publique part au mauvais taux.
+        Second motif ajouté le 2026-09-21, avec le prix public sur le fil — il
+        était invisible avant, le seul taux qui traversait étant celui du
+        contexte b2b.
       -->
       @if (pending.carriesAllergenChange) {
         <fold-callout variant="alert">
           Cette livraison touche une <strong>déclaration d'allergènes</strong>. Rien n'est en vente
           tant qu'elle n'est pas validée&nbsp;: relisez-la en priorité.
+        </fold-callout>
+      }
+      @if (pending.carriesPublicVatChange) {
+        <fold-callout variant="alert">
+          Cette livraison change un <strong>taux de TVA public</strong>. Tant qu'elle n'est pas
+          validée, la boutique facture à l'ancien taux&nbsp;: relisez-la en priorité.
         </fold-callout>
       }
 

@@ -1,4 +1,5 @@
 import {
+  carriesPublicVatChange,
   carriesAllergenChange,
   diffDelivery,
   type DeliveredItem,
@@ -28,6 +29,8 @@ const item = (sku: string, over: Partial<DeliveredItem> = {}): DeliveredItem => 
   name: `Article ${sku}`,
   priceMillicents: 210_000,
   vatRatePercent: 5.5,
+  publicTtcCents: 250,
+  publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
   weightGrams: 80,
   categoryId: "c_vie",
   allergens: ["AU"],
@@ -296,5 +299,105 @@ describe("le diff d'une arrivée › la vitrine", () => {
     expect(diffDelivery([after], [before])).toEqual([
       { sku: "VIE-001", kind: "changed", fields: ["note", "image"] },
     ]);
+  });
+});
+
+/**
+ * 🔴 **LE CAS QUE RIEN NE VOYAIT** (2026-09-21).
+ *
+ * `vatRate` porte le taux du contexte `b2b` — le seul qui traversait le fil
+ * avant la v9. Passer l'à-emporter de 5,5 % à 10 % ne le touche pas, et ne
+ * déplace pas l'étiquette non plus : **la relecture disait « rien n'a
+ * changé »** alors que ce qu'un consommateur paie venait de bouger.
+ */
+describe("le prix public dans une arrivée", () => {
+  const PUBLIC_55 = { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } };
+
+  it("🔴 voit un TAUX PUBLIC bouger — que rien d'autre ne trahit", () => {
+    const changes = diffDelivery(
+      [
+        item("VIE-001", {
+          publicByContext: { takeaway: { vatRatePercent: 10, htMillicents: 227_273 } },
+        }),
+      ],
+      [item("VIE-001", { publicByContext: PUBLIC_55 })],
+    );
+
+    expect(changes[0]?.fields).toEqual(["publicVatRate"]);
+    expect(carriesPublicVatChange(changes)).toBe(true);
+  });
+
+  it("voit l'ÉTIQUETTE bouger, et ne la confond pas avec le prix pro", () => {
+    const changes = diffDelivery(
+      [item("VIE-001", { publicTtcCents: 270 })],
+      [item("VIE-001", { publicTtcCents: 250 })],
+    );
+
+    // `price` porte le prix PRO : il n'a pas bougé ici, et ne doit pas mentir.
+    expect(changes[0]?.fields).toEqual(["publicPrice"]);
+    expect(carriesPublicVatChange(changes)).toBe(false);
+  });
+
+  /**
+   * Un contexte de vente qui s'ouvre est une manière de vendre de plus, avec
+   * son traitement fiscal. Elle compte comme un changement de taux — sinon le
+   * jour où le sur place arrive, il arriverait en silence.
+   */
+  it("compte un CONTEXTE gagné comme un changement de taux", () => {
+    const changes = diffDelivery(
+      [
+        item("VIE-001", {
+          publicByContext: { ...PUBLIC_55, eatIn: { vatRatePercent: 10, htMillicents: 227_273 } },
+        }),
+      ],
+      [item("VIE-001", { publicByContext: PUBLIC_55 })],
+    );
+
+    expect(changes[0]?.fields).toEqual(["publicVatRate"]);
+  });
+
+  /**
+   * Le hors taxe se DÉRIVE du taux. Le comparer aussi ferait sonner deux fois
+   * pour un seul changement — et un écran qui sonne deux fois pour la même
+   * nouvelle est un écran qu'on cesse de lire.
+   */
+  it("ne sonne PAS deux fois : seul le taux est comparé, pas son dérivé", () => {
+    const changes = diffDelivery(
+      [
+        item("VIE-001", {
+          publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 1 } },
+        }),
+      ],
+      [item("VIE-001", { publicByContext: PUBLIC_55 })],
+    );
+
+    expect(changes).toEqual([]);
+  });
+
+  /**
+   * Deux lignes d'avant la v9 n'ont rien à se dire. Un `null` contre une carte,
+   * si : c'est le premier push qui apporte le prix public, et il se voit.
+   */
+  it("distingue deux absences d'une absence qui se remplit", () => {
+    const sansPrix = { publicTtcCents: null, publicByContext: null };
+
+    expect(diffDelivery([item("VIE-001", sansPrix)], [item("VIE-001", sansPrix)])).toEqual([]);
+    expect(diffDelivery([item("VIE-001")], [item("VIE-001", sansPrix)])[0]?.fields).toEqual([
+      "publicPrice",
+      "publicVatRate",
+    ]);
+  });
+
+  /**
+   * ⚠️ Contrairement aux allergènes, un article qui ENTRE ne fait pas sonner.
+   * Sa déclaration d'allergène est nouvelle et personne ne l'a relue ; son
+   * taux, lui, ne remplace rien — il n'y a aucune vente en cours à mal
+   * facturer.
+   */
+  it("ne sonne pas pour un article qui ENTRE", () => {
+    const changes = diffDelivery([item("VIE-002")], [item("VIE-001")]);
+
+    expect(changes.some((change) => change.kind === "added")).toBe(true);
+    expect(carriesPublicVatChange(changes)).toBe(false);
   });
 });

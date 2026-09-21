@@ -1,7 +1,11 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { DeliveryChangeView, PendingDeliveryView } from "@lfd/contracts";
 
-import { carriesAllergenChange, diffDelivery } from "../../domain/delivery-diff.js";
+import {
+  carriesAllergenChange,
+  carriesPublicVatChange,
+  diffDelivery,
+} from "../../domain/delivery-diff.js";
 import { CatalogDeliveryRepository } from "../../domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
 import { deliveredItems, mirrorItems } from "../delivery-comparison.js";
@@ -55,6 +59,7 @@ export class GetPendingDeliveryHandler implements IQueryHandler<
         name: nameBySku.get(change.sku) ?? null,
       })),
       carriesAllergenChange: carriesAllergenChange(changes),
+      carriesPublicVatChange: carriesPublicVatChange(changes),
     };
   }
 }
