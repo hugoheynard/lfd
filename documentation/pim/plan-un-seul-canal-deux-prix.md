@@ -9,19 +9,18 @@
 **On sort de Shopify, et on câble le prix public.** Ce sont **deux chantiers
 indépendants**, plus un troisième qui ne dépend d'aucun code.
 
-| Chantier                    | Ce que c'est                                                          | Nature       |
-| --------------------------- | --------------------------------------------------------------------- | ------------ |
-| **A — le prix public**      | le fil transporte le prix du particulier, et la TVA de son contexte   | 🔴 argent    |
-| **B — Shopify sort**        | ~11 250 lignes, 4 modèles, 3 secrets                                  | ✅ mécanique |
-| **C — les 94 déclarations** | 94 jeux d'allergènes à saisir, sans quoi la boutique montre 1 article | ⏳ humain    |
+| Chantier                 | Ce que c'est                                                                                                    | État                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| **B — Shopify sort**     | ~11 250 lignes, 2 contrats, 3 secrets, la sonde et le nœud d'OPS                                                | ✅ **fait**, sauf le schéma |
+| **A — le prix public**   | le fil transporte le prix du particulier, et la TVA de **son** contexte                                         | 🔴 argent — prêt à bâtir    |
+| **C — les déclarations** | 94 jeux d'allergènes à saisir. **Ne bloque rien** (D10), mais tant qu'ils manquent la boutique montre 1 article | ⏳ humain                   |
 
-**Ils ne s'attendent pas.** A et B peuvent partir en parallèle ; C est du travail
-de saisie que ni l'un ni l'autre ne débloque — et c'est le chemin critique réel.
+**Ils ne s'attendent pas.** B est derrière nous ; A et C avancent en parallèle,
+et C n'est pas du code.
 
-🛑 **Mais le chantier A ne commence pas.** La mesure du § A.4 a renversé la
-recommandation qu'il portait, et ouvert **dix questions** (§ A.5) dont deux se
-tranchent avec un comptable. **Approfondir d'abord** — c'est un lot en soi, et
-il n'est pas écrit. Le chantier B, lui, ne dépend d'aucune de ces questions.
+✅ **Les dix décisions sont tranchées**, D6 comprise — celle qui avait arrêté le
+chantier A le temps d'une mesure. Il reste trois questions de portée technique
+(§ A.5), dont une seule pèse.
 
 ⚠️ **La mort de Shopify n'oblige à rien.** Sa projection portait bien le prix
 public — elle sérialisait le TTC tel quel — mais vers une vitrine qui ne vend
@@ -30,17 +29,18 @@ la crée pas.
 
 ## 2. Décisions déjà prises
 
-| #      | Décision                                                                                                                           |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **D1** | 🔴 Le fil porte **les deux prix** : le **HT** pour calculer, le **TTC** pour afficher.                                             |
-| **D2** | Les contextes de vente **restent** — ils portent les règles fiscales.                                                              |
-| **D3** | Rien ne vend sur Shopify aujourd'hui.                                                                                              |
-| **D4** | La e-boutique ne vend **que de l'à-emporter** aujourd'hui. Le sur place **viendra, par son propre chemin**.                        |
-| **D5** | 🔴 Le fil porte **tous** les taux réglés, en **carte** `{contextKey: percent}` — pas des champs nommés.                            |
-| **D6** | 🔴 **Le HT fait foi pour le total.** Pas de TVA par soustraction : on accepte la dérive au centime, **rattrapée en comptabilité**. |
-| **D7** | 🔴 **La boutique publique expose `takeaway`** — pour le moment. Le sur place viendra par son chemin (D4).                          |
-| **D8** | La boutique Shopify **n'a pas été indexée** : aucune redirection à poser.                                                          |
-| **D9** | 🔴 **Pas de facture pour le public** — un **bon de commande chiffré**.                                                             |
+| #       | Décision                                                                                                                           |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **D1**  | 🔴 Le fil porte **les deux prix** : le **HT** pour calculer, le **TTC** pour afficher.                                             |
+| **D2**  | Les contextes de vente **restent** — ils portent les règles fiscales.                                                              |
+| **D3**  | Rien ne vend sur Shopify aujourd'hui.                                                                                              |
+| **D4**  | La e-boutique ne vend **que de l'à-emporter** aujourd'hui. Le sur place **viendra, par son propre chemin**.                        |
+| **D5**  | 🔴 Le fil porte **tous** les taux réglés, en **carte** `{contextKey: percent}` — pas des champs nommés.                            |
+| **D6**  | 🔴 **Le HT fait foi pour le total.** Pas de TVA par soustraction : on accepte la dérive au centime, **rattrapée en comptabilité**. |
+| **D7**  | 🔴 **La boutique publique expose `takeaway`** — pour le moment. Le sur place viendra par son chemin (D4).                          |
+| **D8**  | La boutique Shopify **n'a pas été indexée** : aucune redirection à poser.                                                          |
+| **D9**  | 🔴 **Pas de facture pour le public** — un **bon de commande chiffré**.                                                             |
+| **D10** | **On ouvre sur ce qui est déclaré** — les 94 déclarations ne sont pas un préalable.                                                |
 
 _(Hugo, 2026-09-21.)_
 
@@ -447,37 +447,51 @@ qui ne fait jamais mal assez pour être payée — d'où sa ligne ici.
 
 ---
 
-# ⏳ Chantier C — les 94 déclarations
+# ⏳ Chantier C — les déclarations d'allergènes
 
-`ecrans-du-cycle-catalogue.md` §4 recompte : **95 déclinaisons actives, 1 portant
-une déclaration réglementaire, 1 fiche publiable.**
+> ✅ **D10 : on ouvre sur ce qui est déclaré.** Ce n'est pas un préalable.
 
-⚠️ **Le verrou existe déjà** : `Product.publish()` refuse une fiche dont une
-déclinaison active n'a pas de fiche réglementaire (invariant 7, `product.ts:268`).
-Il n'y a **rien à bâtir**.
+## Ce que cette décision signifie — et ce qu'elle épargne
 
-**Ce qui manque n'est pas du code : ce sont 94 déclarations à saisir.** Tant
-qu'elles manquent, la boutique publique n'a **qu'un article** à montrer — quels
-que soient les chantiers A et B.
+🔴 **C'est une décision de NE RIEN BÂTIR**, et c'est ce qui la rend bonne.
 
-🔴 **C'est le seul lot que ni A ni B ne débloque, et donc le chemin critique
-réel.**
+La porte existe déjà et elle est la bonne : `Product.publish()` refuse une fiche
+dont une déclinaison active n'a pas de fiche réglementaire (invariant 7,
+`product.ts:268`), et la boutique ne montre que ce qui est publié. « Ouvrir sur
+ce qui est déclaré » **est déjà le comportement du code**. Il n'y a ni garde à
+poser, ni seuil à régler, ni écran d'attente à dessiner.
 
-⚠️ Chiffres mesurés « sur la base de dev le 2026-09-02 » par le document source.
-**La production peut dire autre chose — à recompter avant d'engager.**
+L'alternative — attendre les 94 — aurait fait du remplissage d'un tableur le
+**bloquant d'un déploiement**, ce qui est le meilleur moyen de faire vieillir du
+code fini dans une branche.
+
+## La contrepartie, et il faut la voir
+
+`ecrans-du-cycle-catalogue.md` § 4 recompte : **95 déclinaisons actives, 1
+portant une déclaration réglementaire.** Une boutique publique ouverte
+aujourd'hui montrerait donc **un article**.
+
+Deux conséquences, qui ne sont pas techniques :
+
+- **Ouvrir n'est pas annoncer.** Le code peut ouvrir ; dire au public que la
+  boutique existe est un geste séparé, et il attend un rayon crédible.
+- **L'ORDRE de saisie devient une décision commerciale.** Les meilleures ventes
+  d'abord : la courbe de remplissage est désormais ce qui pilote le chiffre
+  d'affaires de la boutique publique, pas un jalon technique.
+
+⚠️ **Et ces chiffres sont à recompter.** Ils ont été mesurés « sur la base de dev
+le 2026-09-02 » par le document source. **La production peut dire autre chose** —
+c'est la première chose à vérifier avant de se fier à « un article ».
 
 ---
 
 # Décisions ouvertes
 
-**Une seule reste, et ce n'est pas du code :**
+✅ **Aucune.** Les dix sont tranchées.
 
-| #       | Décision                                                                               | Poids      |
-| ------- | -------------------------------------------------------------------------------------- | ---------- |
-| **D10** | ⏳ Les 94 déclarations : préalable à l'ouverture, ou on ouvre sur ce qui est déclaré ? | calendrier |
-
-Plus les trois questions de portée technique du § A.5, dont une seule pèse —
-`quote-order-parity` doit tenir pour les deux audiences.
+Restent **trois questions de portée technique** (§ A.5), dont une seule pèse :
+`quote-order-parity` doit tenir pour les deux audiences — une parité verte ne
+prouve pas qu'un montant est juste, seulement que deux chemins s'accordent.
 
 ## Ce que D9 entraîne, et qui n'était pas dans le plan
 
@@ -499,7 +513,7 @@ TTC qu'en ligne de total. Servi à un particulier, il doit montrer des prix
 même titre et pour la même raison.
 
 Ce lot appartient au chantier A, il n'existait pas, et il est daté :
-**bon de commande public en TTC**.
+**bon de commande public en TTC** (lot A4).
 
 ---
 
