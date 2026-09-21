@@ -25,13 +25,18 @@ import { TOMMEUSES } from '../mon-compte/account.fixture';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
-  { path: 'mon-espace', children: [] },
   { path: 'commande/boutique', children: [] },
   { path: 'commande/panier', children: [] },
+  { path: 'mes-commandes', children: [] },
 ];
 
 /** L'ordre que la réf FIGE, et qu'aucune surface n'a le droit de réarranger. */
-const ORDER = ['espace', 'shop', 'orders', 'invoices', 'baskets', 'account'];
+/**
+ * L'ordre du menu — CINQ destinations depuis le 2026-09-21. « Mon espace » en
+ * était l'ancre ; son écran a disparu dans `/bienvenue`, qui est l'accueil et
+ * non une destination du menu.
+ */
+const ORDER = ['shop', 'orders', 'invoices', 'baskets', 'account'];
 
 describe('Les destinations du menu', () => {
   beforeEach(() => {
@@ -71,7 +76,7 @@ describe('Les destinations du menu', () => {
       TestBed.inject(ClientNav)
         .items()
         .map((i) => i.id),
-    ).toEqual(['espace', 'shop', 'baskets', 'account']);
+    ).toEqual(['shop', 'baskets', 'account']);
   });
 
   it('ne porte PAS le panier — il vit dans la barre, pas dans le menu', () => {
@@ -129,8 +134,8 @@ describe('Les destinations du menu', () => {
     await router.navigateByUrl('/commande/panier');
     expect(nav.current()).toBe('/commande/panier');
 
-    await router.navigateByUrl('/mon-espace');
-    expect(nav.current()).toBe('/mon-espace');
+    await router.navigateByUrl('/mes-commandes');
+    expect(nav.current()).toBe('/mes-commandes');
   });
 
   /**
@@ -154,7 +159,7 @@ describe('Les destinations du menu', () => {
 
   it('déclare inertes les destinations dont l’écran n’existe pas encore', () => {
     const nav = TestBed.inject(ClientNav);
-    expect(nav.items().find((i) => i.id === 'espace')?.ready).toBe(true);
+    expect(nav.items().find((i) => i.id === 'shop')?.ready).toBe(true);
     // Les paniers récurrents sont la dernière destination sans écran. Le drapeau
     // ne retire PAS l'entrée : l'ordre des six ne bouge jamais d'une surface à
     // l'autre, et l'habitude du pouce avec.
@@ -179,7 +184,7 @@ describe('Les destinations du menu, selon la boutique', () => {
 
   const SHOWN: Readonly<Record<ShopLevel, readonly string[]>> = {
     closed: ['orders', 'invoices', 'account'],
-    browse: ['espace', 'shop', 'orders', 'invoices', 'account'],
+    browse: ['shop', 'orders', 'invoices', 'account'],
     order: ORDER,
   };
 
@@ -258,7 +263,7 @@ describe('Les destinations du menu, selon l’espace', () => {
   };
 
   it('retire Mon compte, Mes factures et les paniers récurrents en perso, pour qui a une société', () => {
-    expect(idsIn(PERSONAL_WORKSPACE, [TOMMEUSES])).toEqual(['espace', 'shop', 'orders']);
+    expect(idsIn(PERSONAL_WORKSPACE, [TOMMEUSES])).toEqual(['shop', 'orders']);
   });
 
   it('les rend dans l’espace de la société', () => {

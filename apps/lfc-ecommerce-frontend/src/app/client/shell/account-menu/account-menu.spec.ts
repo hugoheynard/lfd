@@ -43,7 +43,7 @@ function item(partial: Partial<NavItem> & Pick<NavItem, 'id' | 'label' | 'route'
 }
 
 const DESTINATIONS: readonly NavItem[] = [
-  item({ id: 'espace', label: 'Mon espace', route: '/mon-espace' }),
+  item({ id: 'shop', label: 'Boutique', route: '/commande/boutique' }),
   item({
     id: 'orders',
     label: 'Commandes',
@@ -90,7 +90,10 @@ function boot(
           email: signal('camille@chaletmarmotte.fr'),
         },
       },
-      { provide: ClientNav, useValue: { items: wire.items, current: signal('/mon-espace') } },
+      {
+        provide: ClientNav,
+        useValue: { items: wire.items, current: signal('/commande/boutique') },
+      },
       provideWorkspace(wire.workspace),
       // La navigation de la bascule a sa propre suite : ici, on vérifie que le
       // menu la déclenche, et le choix arrive à l'espace par elle.
@@ -250,7 +253,7 @@ describe('AccountMenu — les destinations', () => {
   it('les rend dans l’ordre de `ClientNav`, sans en réordonner aucune', () => {
     const panel = openPanel(boot());
 
-    expect(texts(panel, '.row-label')).toEqual(['Mon espace', 'Commandes', 'Paniers récurrents']);
+    expect(texts(panel, '.row-label')).toEqual(['Boutique', 'Commandes', 'Paniers récurrents']);
   });
 
   it('un compteur devient une note ET un badge', () => {

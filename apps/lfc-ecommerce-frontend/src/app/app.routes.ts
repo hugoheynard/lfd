@@ -187,17 +187,6 @@ export const routes: Routes = [
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
-        // L'ACCUEIL DU CLIENT RECONNU. Il répond à une seule question — qu'est-ce
-        // qui m'attend aujourd'hui ? — et c'est là qu'on atterrit après la
-        // connexion, sauf pendant le parcours de première commande, qui a sa
-        // propre suite d'écrans.
-        path: 'mon-espace',
-        canActivate: [featureAccessGuard('shop', 'browse')],
-        title: 'Mon espace — La Folie Coffee',
-        loadComponent: () =>
-          import('./client/mon-espace/espace-page/espace-page').then((m) => m.EspacePage),
-      },
-      {
         // LE SUIVI, PUIS LA MÉMOIRE. Deux registres et l'ordre n'est pas
         // négociable : ce qui est en route d'abord, ce qui est passé ensuite.
         path: 'mes-commandes',
@@ -319,6 +308,16 @@ export const routes: Routes = [
       // l'accueil public. Y envoyer qui clique « se connecter » l'aurait déposé
       // devant un bandeau de retrait.
       { path: 'connexion', pathMatch: 'full', redirectTo: 'inscription' },
+      // 🔴 `/mon-espace` A ÉTÉ RETIRÉE le 2026-09-21 (Hugo : « bienvenue
+      // centralise tout »). Son écran répondait « qu'est-ce qui m'attend
+      // aujourd'hui ? », ce que `/bienvenue` fait désormais pour les trois
+      // états. Son puits « Prêt pour vous » n'a plus d'objet : une commande en
+      // suivi y RESTE tant qu'elle n'est pas retirée, et c'est le suivi qui
+      // répond.
+      //
+      // ⚠️ L'adresse, elle, reste servie — elle a été le point d'arrivée de la
+      // connexion en perso, et des signets la portent.
+      { path: 'mon-espace', pathMatch: 'full', redirectTo: 'bienvenue' },
       // 🔴 LES ANCIENNES ADRESSES RESTENT VALIDES, et le sens des redirections
       // s'est INVERSÉ le 2026-09-20 : `commande/*` était la vieille adresse et
       // renvoyait vers `nouvelle-commande/*` ; c'est maintenant l'inverse. Un

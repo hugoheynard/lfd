@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { type DatedEvent } from '../../mock-event';
+import { type DatedEvent } from '../mock-event';
 
 /**
  * L'OPÉRATION DATÉE, en tête de l'accueil.

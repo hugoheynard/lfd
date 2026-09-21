@@ -12,12 +12,11 @@ import { CONTACT_MAIL_HREF, CONTACT_PHONE_HREF } from '../contact-details';
  * plutôt que par une place dans la colonne lui évite de se lire comme une
  * quatrième carte à choisir.
  *
- * ⚠️ **Ce n'est pas `mon-espace/contact-card`, et les deux restent.** La carte
- * de l'espace est une colonne de 274 px que son bouton pousse à la hauteur du
- * puits voisin ; celle-ci est une bande large à deux colonnes, dont le texte et
- * les boutons se répartissent la largeur. Même contenu, deux géométries qui
- * n'ont aucune règle commune — les fondre demanderait un composant qui sait
- * déjà lequel des deux il est.
+ * ⚠️ Elle a eu une jumelle, `mon-espace/contact-card` — une colonne de 274 px,
+ * là où celle-ci est une bande large à deux colonnes. Les deux ont coexisté
+ * parce que leurs géométries n'avaient aucune règle commune ; l'écran qui
+ * portait l'autre a disparu le 2026-09-21 et elle avec. Il n'y a donc plus
+ * qu'une façon de dire ceci, et c'est celle-là.
  *
  * Elle ne décide rien : tout ce qu'elle dit lui est passé, y compris le
  * sur-titre. C'est l'écran qui sait à qui il parle.

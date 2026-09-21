@@ -107,7 +107,6 @@ export interface ClientCopy {
   readonly nav: {
     /** Les six destinations, dans l'ordre — cf. `ClientNav`. */
     readonly destinations: {
-      readonly espace: string;
       readonly shop: string;
       readonly orders: string;
       readonly invoices: string;
@@ -138,52 +137,6 @@ export interface ClientCopy {
     readonly hello: string;
     /** Le même, quand le compte ne porte pas encore de prénom. */
     readonly helloAnonymous: string;
-  };
-  readonly espace: {
-    /** La seconde ligne du titre, indexée par le NOMBRE d'actions (1, 2, 3). */
-    readonly today: readonly [string, string, string];
-    /** Quand rien n'attend — le titre ne compte plus, il accueille. */
-    readonly todayNone: string;
-    /** Ce que sont ces choses, en une ligne. */
-    readonly lead: string;
-    readonly leadNone: string;
-    /** L'action de la carte d'opération datée. */
-    readonly eventCta: string;
-    readonly wellTitle: string;
-    readonly wellNote: string;
-    readonly pickupTitle: string;
-    /** `{ref}` est remplacé par le numéro de commande. */
-    readonly pickupRef: string;
-    /**
-     * `{at}` le LIEU tel que la commande l'a figé, `{slot}` la tranche.
-     *
-     * 🔴 `{at}` portait une forme prépositionnelle — « au Labo » — que seul le
-     * choix de service local savait fabriquer. La carte lit désormais la
-     * commande du SERVEUR, qui ne connaît que « Le Labo » : la préposition est
-     * passée dans la phrase, où elle est traduisible.
-     */
-    readonly pickupWhen: string;
-    readonly pickupAction: string;
-    readonly cartTitle: string;
-    readonly cartBadge: string;
-    readonly cartWhen: string;
-    readonly cartAction: string;
-    readonly invoiceTitle: string;
-    readonly invoiceDue: string;
-    readonly invoiceAction: string;
-    readonly contactKicker: string;
-    readonly contactTitle: string;
-    readonly contactWho: string;
-    readonly call: string;
-    readonly write: string;
-    readonly habitsHead: string;
-    readonly proHead: string;
-    /** `{place}` = le point de retrait remisé : une ligne par point. */
-    readonly proDiscount: string;
-    /** Affiché seulement quand la société règle sur terme : sans terme, rien n'est en compte. */
-    readonly proMonth: string;
-    /** L'état se lit dans les libellés de « Mon compte » : un seul mot par état. */
-    readonly proKbis: string;
   };
   readonly hero: {
     readonly welcomeTitle: string;

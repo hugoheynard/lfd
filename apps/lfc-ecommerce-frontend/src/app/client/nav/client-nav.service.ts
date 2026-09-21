@@ -12,7 +12,7 @@ import { ClientWorkspace } from '../client-workspace.service';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
-  readonly id: 'espace' | 'shop' | 'orders' | 'invoices' | 'baskets' | 'account';
+  readonly id: 'shop' | 'orders' | 'invoices' | 'baskets' | 'account';
   readonly route: string;
   /**
    * L'écran existe-t-il ?
@@ -59,18 +59,17 @@ interface Destination {
  * fallait passer par « Nouvelle commande » et répondre à une question pour
  * voir le catalogue, alors que le regarder ne demande rien.
  *
- * Elle vient en DEUXIÈME, et pas en tête : `espace` est l'ancre — c'est là
- * qu'on atterrit en se connectant, et le déplacer changerait l'habitude du
- * pouce sur toutes les surfaces à la fois. La boutique se range donc juste
- * après, avec ce qu'on FAIT, devant ce qu'on CONSULTE (commandes, factures,
- * paniers, compte).
+ * Elle vient EN TÊTE depuis le 2026-09-21. Elle était deuxième, derrière
+ * « Mon espace », qui était l'ancre — l'écran où l'on atterrissait en se
+ * connectant. Cet écran a disparu dans `/bienvenue`, qui n'est pas une
+ * destination du menu mais l'accueil : le menu commence donc par ce qu'on
+ * FAIT, puis vient ce qu'on CONSULTE (commandes, factures, paniers, compte).
  *
  * ⚠️ Elle ne fait pas double emploi avec la tuile « Nouvelle commande » du haut
  * du menu : celle-là OUVRE une commande — mode de service d'abord —, celle-ci
  * mène au rayon. Deux intentions, deux adresses.
  */
 const DESTINATIONS: readonly Destination[] = [
-  { id: 'espace', route: '/mon-espace', ready: true, shop: 'browse' },
   { id: 'shop', route: '/commande/boutique', ready: true, shop: 'browse' },
   { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
   {

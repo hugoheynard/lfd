@@ -56,7 +56,7 @@ async function run({ signedIn = true, current, companies, shop = 'order' }: Case
 
 describe('companyWorkspaceGuard', () => {
   it('ferme les écrans de société en perso, pour qui en a une', async () => {
-    expect(await run({ current: PERSONAL_WORKSPACE, companies: true })).toBe('/mon-espace');
+    expect(await run({ current: PERSONAL_WORKSPACE, companies: true })).toBe('/bienvenue');
   });
 
   it('les ouvre dans l’espace de la société', async () => {
@@ -73,11 +73,20 @@ describe('companyWorkspaceGuard', () => {
   });
 
   /**
-   * Boutique fermée : `/mon-espace` renverrait vers `/mon-compte`, et les deux
-   * gardes se renverraient la personne sans fin.
+   * 🔴 LE RENVOI NE DÉPEND PLUS DE LA BOUTIQUE (2026-09-21). Il l'a fait, et
+   * pour une seule raison : le repli était `/mon-espace`, que
+   * `featureAccessGuard` renvoyait vers `/mon-compte` quand la boutique était
+   * fermée — les deux gardes se seraient renvoyé la personne sans fin. Le repli
+   * est `/bienvenue`, qui n'a aucune garde : la boucle est impossible, et la
+   * condition qui l'évitait laissait passer exactement ce cas-ci.
+   *
+   * Ce test disait `true` — l'adresse RESTAIT ouverte. Il dit maintenant
+   * qu'elle se ferme, et c'est le correctif, pas un ajustement.
    */
-  it('ne renvoie pas vers un accueil fermé', async () => {
-    expect(await run({ current: PERSONAL_WORKSPACE, companies: true, shop: 'closed' })).toBe(true);
+  it('🔴 ferme l’adresse même quand la boutique est fermée', async () => {
+    expect(await run({ current: PERSONAL_WORKSPACE, companies: true, shop: 'closed' })).toBe(
+      '/bienvenue',
+    );
   });
 });
 

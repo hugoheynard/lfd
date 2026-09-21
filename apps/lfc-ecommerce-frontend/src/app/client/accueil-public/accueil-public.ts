@@ -19,7 +19,7 @@ import { ClientWorkspace } from '../client-workspace.service';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientChrome } from '../client-chrome.service';
 import { EventCard } from '../event-card/event-card';
-import { EventBanner } from '../mon-espace/event-banner/event-banner';
+import { EventBanner } from '../event-banner/event-banner';
 import { ClientLocale } from '../client-locale.service';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
 import {

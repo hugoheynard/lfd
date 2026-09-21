@@ -4,7 +4,6 @@ import { Router, type CanActivateFn } from '@angular/router';
 import { filter, firstValueFrom, of, timeout, catchError } from 'rxjs';
 
 import { AuthFacade } from '../auth/auth.facade';
-import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
 import { ClientWorkspace } from './client-workspace.service';
 import {
   COMPANY_HOME,
@@ -12,8 +11,17 @@ import {
   WORKSPACE_UNKNOWN_HOME,
 } from './client-workspace-switch.service';
 
-/** Où va qui est en perso : l'accueil, ouvert dès que la boutique se visite. */
-const PERSONAL_FALLBACK = '/mon-espace';
+/**
+ * Où va qui est en perso.
+ *
+ * 🔴 `/bienvenue` depuis le 2026-09-21 (Hugo : « bienvenue devient le
+ * fallback »), et ce n'est pas qu'un renommage : c'était `/mon-espace`, qui
+ * portait une GARDE de boutique. Le repli pouvait donc rebondir — voir la
+ * remarque de `companyWorkspaceGuard`, qui n'a plus d'objet. `/bienvenue` n'a
+ * aucune garde : un repli qui ne peut pas rebondir n'a plus besoin qu'on
+ * vérifie où il tombe.
+ */
+const PERSONAL_FALLBACK = PERSONAL_HOME;
 
 /**
  * Le délai au bout duquel on cesse d'attendre `/me`. Passé, la garde laisse
@@ -37,14 +45,18 @@ export const WORKSPACE_WAIT_MS = 8_000;
  * société, `/mon-compte` reste ouvert : c'est là que revient la porte pro
  * (`ProOnboarding`, cf. `client-shell.ts`), avant que la société existe.
  *
- * ⚠️ Pas de renvoi quand la boutique est fermée : `/mon-espace` renverrait
- * alors vers `/mon-compte` (le repli de `featureAccessGuard`), et les deux
- * gardes se renverraient la personne sans fin.
+ * ⚠️ **Le renvoi est INCONDITIONNEL depuis le 2026-09-21.** Il attendait que
+ * la boutique soit au moins visitable, pour une seule raison : le repli était
+ * `/mon-espace`, que `featureAccessGuard` renvoyait vers `/mon-compte` quand la
+ * boutique était fermée — les deux gardes se seraient renvoyé la personne sans
+ * fin. Le repli est maintenant `/bienvenue`, qui n'a aucune garde : la boucle
+ * est devenue impossible, et la condition qui l'évitait, du décor. La retirer
+ * ferme enfin l'adresse dans le cas qu'elle laissait passer — boutique fermée,
+ * société, bascule en perso.
  */
 export const companyWorkspaceGuard: CanActivateFn = async () => {
   // Tout ce qui s'injecte l'est AVANT le premier `await`.
   const workspace = inject(ClientWorkspace);
-  const access = inject(ClientFeatureAccess);
   const auth = inject(AuthFacade);
   const router = inject(Router);
   const injector = inject(Injector);
@@ -56,9 +68,7 @@ export const companyWorkspaceGuard: CanActivateFn = async () => {
   if (!workspace.isPersonal() || !workspace.hasChoice()) {
     return true;
   }
-  void access.load();
-  await access.settled();
-  return access.atLeast('browse') ? router.parseUrl(PERSONAL_FALLBACK) : true;
+  return router.parseUrl(PERSONAL_FALLBACK);
 };
 
 /**
