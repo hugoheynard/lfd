@@ -12,7 +12,7 @@
  * jour où quelqu'un doute, ou le jour où `ventilateVat` change.
  *
  * ```bash
- * pnpm --filter @lfd/money --filter @lfd/pim-contracts build
+ * pnpm --filter @lfd/money build
  * node dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs
  * ```
  *
@@ -40,8 +40,14 @@
  * l'APPROCHE est exacte — il reste à en faire une jumelle de `ventilateVat`
  * dans `@lfd/money`, tenue par ses propres tests.
  */
-import { htFromTtc, htMillicentsOf } from "../../packages/pim-contracts/dist/tax.js";
-import { lineTotalCents, ventilateVat } from "../../packages/money/dist/index.js";
+// `htFromTtc` / `htMillicentsOf` ont rejoint `@lfd/money` le 2026-09-21 : un
+// second site en avait besoin, et deux arrondis ne se dupliquent pas.
+import {
+  htFromTtc,
+  htMillicentsOf,
+  lineTotalCents,
+  ventilateVat,
+} from "../../packages/money/dist/index.js";
 
 /** Les trois taux de la carte française qui nous concernent. */
 const RATES = [5.5, 10, 20];

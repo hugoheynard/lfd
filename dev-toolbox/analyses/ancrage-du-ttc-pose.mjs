@@ -7,7 +7,7 @@
  * § D12, quand le lot a proposé une colonne « prix public TTC » modifiable.
  *
  * ```bash
- * pnpm --filter @lfd/money --filter @lfd/pim-contracts build
+ * pnpm --filter @lfd/money build
  * node dev-toolbox/analyses/ancrage-du-ttc-pose.mjs
  * ```
  *
@@ -30,8 +30,7 @@
  * mieux et celui que le staff a sous les yeux quand il tape un prix. Une remise
  * ou des frais passent par la même ventilation et ne l'annulent pas.
  */
-import { htMillicentsOf } from "../../packages/pim-contracts/dist/tax.js";
-import { lineTotalCents, ventilateVat } from "../../packages/money/dist/index.js";
+import { htMillicentsOf, lineTotalCents, ventilateVat } from "../../packages/money/dist/index.js";
 
 const RATES = [5.5, 10, 20];
 const MAX = 2000;

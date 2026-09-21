@@ -64,7 +64,17 @@ export type {
   AccountingRulesView,
 } from "./accounting-rules.js";
 
-export { htFromTtc, htMillicentsOf } from "./tax.js";
+/**
+ * 🔴 **Réexport, plus une définition** (2026-09-21). `tax.ts` a rejoint
+ * `@lfd/money` le jour où la plateforme B2B a eu besoin de la même déduction
+ * pour convertir un prix public posé à la main : deux sites qui arrondissent de
+ * l'argent doivent appeler la MÊME fonction.
+ *
+ * La ligne reste pour que les appelants du référentiel ne bougent pas — et
+ * parce qu'un prix d'étiquette mis hors taxe reste une opération que le
+ * vocabulaire du PIM nomme.
+ */
+export { htFromTtc, htMillicentsOf } from "@lfd/money";
 
 export {
   createCategoryPayloadSchema,

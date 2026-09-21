@@ -1,7 +1,26 @@
-import { divideByBasisPoints, fromCents, roundToCents, roundToMillicents } from "@lfd/money";
+import { divideByBasisPoints, fromCents, roundToCents } from "./exact.js";
+import { roundToMillicents } from "./millicents.js";
 
 /**
  * **Le hors taxe se déduit du prix d'étiquette.** Ce module ne fait que ça.
+ *
+ * 🔴 **Il a vécu dans `@lfd/pim-contracts` jusqu'au 2026-09-21**, et il en est
+ * sorti le jour où un SECOND site a eu besoin de la même déduction : la
+ * plateforme B2B, qui convertit en hors taxe un prix public posé à la main
+ * (plan `plan-un-seul-canal-deux-prix.md`, D12).
+ *
+ * Deux sites qui arrondissent de l'argent ne sont tolérables que s'ils
+ * appellent la **même fonction** ; deux copies d'une formule divergent le jour
+ * où l'une est corrigée. Et il n'y avait aucune raison de le garder là-bas : il
+ * n'a jamais porté de vocabulaire de référentiel, seulement de l'arithmétique
+ * d'argent, et il importait déjà tout de `@lfd/money`.
+ *
+ * ⚠️ Ce n'est **pas** une frontière qui l'a fait bouger. `lint:context-boundaries`
+ * exclut explicitement les imports `@lfd/…` — rien n'interdisait à la
+ * plateforme d'appeler `pim-contracts`. C'est l'unicité de l'arrondi, et elle
+ * suffit.
+ *
+ * `pim-contracts` le **réexporte**, donc aucun de ses appelants ne bouge.
  *
  * Il portait aussi l'assiette (`ht` | `ttc`), et le choix entre les deux. Un
  * seul système est valide depuis : un prix public TTC, dont le TTC
