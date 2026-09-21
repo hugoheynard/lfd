@@ -38,6 +38,28 @@ export interface CatalogAdminItemView {
   readonly effectivePriceMillicents: number;
 
   /**
+   * **L'étiquette publique reçue du référentiel**, en centimes **TTC**.
+   * `null` = le référentiel n'en a pas poussé — l'article n'est alors pas
+   * vendable à la vitrine publique, et l'écran doit le dire.
+   *
+   * 🔴 **En TTC, et c'est une unité différente de ses voisines.** Le prix pro
+   * est un HT en millicentimes parce qu'il est DÉRIVÉ ; celui-ci est le nombre
+   * qu'un humain a tapé sur une étiquette (D1, et `@lfd/money` : les
+   * millicentimes sont réservés aux dérivés). Les afficher côte à côte sans
+   * écrire « HT » et « TTC » ferait comparer deux choses qui ne se comparent
+   * pas.
+   */
+  readonly publicTtcCents: number | null;
+  /**
+   * Le taux de TVA du contexte **public** (« à emporter », D7). `null` = aucun.
+   *
+   * ⚠️ Distinct de `vatRatePercent`, qui est celui du contexte
+   * **professionnel** : le même article peut être à 5,5 % au comptoir et à 10 %
+   * sur place, et rien n'oblige les deux canaux à porter le même.
+   */
+  readonly publicVatRatePercent: number | null;
+
+  /**
    * `null` = la famille n'a pas de régime de TVA dans le PIM. L'article est
    * alors visible ici mais **pas vendable** : l'écran doit le dire, plutôt que
    * de laisser croire à un catalogue en ligne.

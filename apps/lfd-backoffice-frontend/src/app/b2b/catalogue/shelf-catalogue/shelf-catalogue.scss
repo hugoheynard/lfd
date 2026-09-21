@@ -24,7 +24,7 @@
 .sku,
 .decided,
 .follows,
-.allergens {
+.pim-audience {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
@@ -52,4 +52,37 @@
      ici en porte une : sans ce retour à la ligne, elle poussait la colonne à
      cinq cents pixels et déformait toute la table (mesuré le 2026-09-10). */
   white-space: normal;
+}
+
+/* **Les deux prix du référentiel**, l'un sous l'autre.
+
+   L'audience à gauche en gris, le montant à droite : c'est l'audience qui se
+   parcourt à la verticale quand on descend la table, et le montant qu'on lit
+   une ligne à la fois. L'inverse ferait chercher « public » ligne après ligne.
+
+   `white-space: normal` parce que la pastille « non poussé » tient deux mots :
+   la table pose `nowrap` sur ses cellules, et elle sortait de la colonne. */
+.pim {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  white-space: normal;
+}
+
+.pim-line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.pim-audience {
+  /* Assez pour que « pro » et « public » alignent leurs montants sans grille :
+     deux colonnes de table pour deux mots coûteraient plus qu'elles ne rendent. */
+  min-width: 3.25rem;
+}
+
+/* Les chiffres s'alignent d'une ligne à l'autre — un HT et un TTC ne se
+   soustraient pas, mais ils se LISENT en colonne. */
+.pim-amount {
+  font-variant-numeric: tabular-nums;
 }

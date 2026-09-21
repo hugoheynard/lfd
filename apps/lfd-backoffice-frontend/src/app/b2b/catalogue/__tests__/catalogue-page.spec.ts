@@ -34,6 +34,12 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     b2bPriceMillicents: null,
     effectivePriceMillicents: 170_616,
     vatRatePercent: 5.5,
+    // L'étiquette publique, en centimes TTC — 2,25 €, volontairement SANS
+    // rapport arithmétique avec le prix pro juste au-dessus : la colonne montre
+    // deux prix de deux canaux, et une fixture où l'un se déduirait de l'autre
+    // laisserait passer une confusion entre les deux.
+    publicTtcCents: 225,
+    publicVatRatePercent: 5.5,
     allergens: [],
     allergensIncomplete: false,
     isHidden: false,
@@ -62,12 +68,6 @@ class FakeCatalogue {
     this.aligned.push(sku);
     return Promise.resolve();
   }
-  readonly featured: { sku: string; featured: boolean }[] = [];
-  setFeatured(sku: string, featured: boolean): Promise<void> {
-    this.featured.push({ sku, featured });
-    return Promise.resolve();
-  }
-
   readonly visibility: { sku: string; hidden: boolean }[] = [];
   setVisibility(sku: string, hidden: boolean): Promise<void> {
     this.visibility.push({ sku, hidden });
@@ -259,60 +259,63 @@ function confirmNamed(fixture: ComponentFixture<CataloguePage>, label: string): 
   found.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 }
 
-describe('CataloguePage — la mise en avant', () => {
-  /** Rien n'est retiré : le second clic défait le premier, donc pas de garde. */
-  it('bascule sans demander confirmation', async () => {
+/**
+ * **La colonne du référentiel porte DEUX prix**, et deux unités (Hugo,
+ * 2026-09-21).
+ *
+ * 🔴 Ce que ces cas tiennent et qu'aucun autre ne peut tenir : les mots « HT »
+ * et « TTC » sont à l'écran. Un HT pro et un TTC public l'un sous l'autre, sans
+ * leur unité, se lisent comme deux versions du même prix — et l'écart entre eux
+ * passe pour une remise. C'est une confusion sur de l'argent, dans un écran où
+ * l'on pose des prix.
+ */
+describe('CataloguePage — les deux prix du référentiel', () => {
+  it('montre le pro en HT et le public en TTC, chacun avec son unité', async () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
-    star(fixture).click();
-    await fixture.whenStable();
-
-    expect(api.featured).toEqual([{ sku: 'VIE-001-1', featured: true }]);
-  });
-
-  it('retire la mise en avant du même geste', async () => {
-    const api = new FakeCatalogue();
-    api.items = [item({ isFeatured: true })];
-    const fixture = await render(api);
-
-    star(fixture).click();
-    await fixture.whenStable();
-
-    expect(api.featured).toEqual([{ sku: 'VIE-001-1', featured: false }]);
+    const pim = cell(fixture, '.pim');
+    // ⚠️ **Les deux précisions diffèrent, et c'est juste.** Le pro est un HT
+    // DÉRIVÉ : il porte ses millicentimes jusqu'au bout (`1,70616 €`), parce
+    // que les tronquer ici donnerait un prix que la caisse ne facture pas. Le
+    // public est l'étiquette TTC qu'un humain a tapée — elle n'a que des
+    // centimes à montrer. Une colonne qui les arrondirait pareil effacerait
+    // précisément la différence que cette colonne existe pour dire.
+    expect(pim).toContain('1,70616 € HT');
+    expect(pim).toContain('2,25 € TTC');
   });
 
   /**
-   * 🔴 L'agrégat REFUSE de mettre en avant un article masqué : les deux états
-   * ensemble diraient « ne pas le montrer » et « le montrer en premier ». Le
-   * front désamorce plutôt que de laisser partir un 409 qu'on découvre après.
-   *
-   * Le bouton éteint porte SA RAISON : un bouton éteint sans raison écrite se
-   * lit comme une panne.
+   * Un article sans étiquette publique n'est pas un article à zéro euro : c'est
+   * un article que la vitrine publique ÉCARTE. Un tiret le dirait comme une
+   * absence de donnée ; le mot dit une conséquence.
    */
-  it('éteint le geste sur un article masqué, et dit pourquoi', async () => {
+  it('dit « non poussé » plutôt que rien quand le référentiel n’a pas d’étiquette', async () => {
     const api = new FakeCatalogue();
-    api.items = [item({ isHidden: true })];
+    api.items = [item({ publicTtcCents: null, publicVatRatePercent: null })];
     const fixture = await render(api);
 
-    const control = star(fixture);
-    expect(control.disabled).toBe(true);
-    expect(control.getAttribute('aria-label')).toContain("qu'on ne montre pas");
-
-    control.click();
-    await fixture.whenStable();
-
-    expect(api.featured).toEqual([]);
+    const pim = cell(fixture, '.pim');
+    expect(pim).toContain('non poussé');
+    expect(pim).not.toContain('TTC');
   });
 });
 
-/** L'étoile de mise en avant de la première ligne. */
-function star(fixture: ComponentFixture<CataloguePage>): HTMLButtonElement {
-  const found = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-    'fold-toggle-icon button',
-  );
+/**
+ * Le texte de la première cellule qui porte cette classe, **espaces
+ * normalisés**.
+ *
+ * ⚠️ `Intl.NumberFormat` en français sépare le montant de son symbole par une
+ * **fine insécable** (U+202F), pas par une espace. Une assertion écrite au
+ * clavier ne peut donc pas correspondre, et le test échoue sur une différence
+ * invisible à la lecture. Normaliser ici vaut mieux que de découper l'attente
+ * en morceaux : « 1,70616 » et « HT » présents séparément ne diraient pas
+ * qu'ils sont sur la MÊME ligne.
+ */
+function cell(fixture: ComponentFixture<CataloguePage>, selector: string): string {
+  const found = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(selector);
   if (found === null) {
-    throw new Error("l'étoile de mise en avant est absente de la ligne");
+    throw new Error(`cellule « ${selector} » absente de la ligne`);
   }
-  return found;
+  return (found.textContent ?? '').replace(/\s/gu, ' ');
 }

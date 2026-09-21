@@ -8,7 +8,6 @@ import {
   FoldDataTableComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
-  FoldToggleIconComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldTableTone,
@@ -27,8 +26,15 @@ export interface CatalogueShelf {
  * **Un rayon du catalogue vendu, en table.**
  *
  * Les colonnes se lisent de gauche à droite comme le prix se construit : ce que
- * le référentiel a envoyé, ce que la maison en a décidé, puis ce qui conditionne
- * la vente — le taux, la fiche, la vitrine.
+ * le référentiel a envoyé — **ses deux prix**, le pro hors taxe et l'étiquette
+ * publique TTC —, ce que la maison en a décidé, puis ce qui conditionne la
+ * vente.
+ *
+ * ⚠️ **La fiche réglementaire et la mise en avant ont quitté cette table le
+ * 2026-09-21** (Hugo). Ni l'une ni l'autre ne parle de prix, et elles prenaient
+ * trente et un `rem` au milieu de colonnes qui, elles, se comparent d'une ligne
+ * à l'autre. Les allergènes restent au contrat : c'est l'écran qui ne les
+ * montre plus, pas le serveur qui ne les envoie plus.
  *
  * ## Pourquoi une table, et pas la ligne d'avant
  *
@@ -57,7 +63,6 @@ export interface CatalogueShelf {
     FoldDataTableCellDirective,
     FoldInlineConfirmComponent,
     FoldPageSectionComponent,
-    FoldToggleIconComponent,
     PriceEditor,
     PriceOrigin,
   ],
@@ -70,7 +75,6 @@ export class ShelfCatalogue {
   readonly priceSet = output<{ item: CatalogAdminItemView; priceMillicents: number }>();
   readonly priceAligned = output<CatalogAdminItemView>();
   readonly visibilityToggled = output<CatalogAdminItemView>();
-  readonly featuredToggled = output<CatalogAdminItemView>();
 
   protected readonly euros = formatEuros;
 
@@ -88,12 +92,19 @@ export class ShelfCatalogue {
    */
   protected readonly columns: readonly FoldTableColumn<CatalogAdminItemView>[] = [
     { key: 'article', label: 'Article' },
-    { key: 'pim', label: 'Tarif PIM', width: '8rem', numeric: true },
+    // 🔴 **Deux lignes, et deux UNITÉS** (Hugo, 2026-09-21). Le référentiel
+    // envoie les deux prix ; n'en montrer qu'un faisait passer le tarif du
+    // canal professionnel pour « le » tarif du PIM.
+    //
+    // ⚠️ Plus `numeric` : un alignement à droite oppose des nombres
+    // comparables, et un HT pro n'est pas comparable à un TTC public. Les
+    // mettre en colonne d'un même chiffrier inviterait à en faire la
+    // différence, qui ne veut rien dire.
+    { key: 'pim', label: 'Tarif PIM', width: '11rem' },
     // ⚠️ La CLÉ reste `b2b` : elle relie la colonne à son `ng-template`, et
     // c'est du code, pas un libellé. Seul le mot affiché devient « pro ».
-    { key: 'b2b', label: 'Prix pro', width: '15rem' },
+    { key: 'b2b', label: 'Prix pro HT', width: '15rem' },
     { key: 'vat', label: 'TVA', width: '6rem', numeric: true },
-    { key: 'sheet', label: 'Fiche', width: '13rem' },
     // Assez large pour tenir la confirmation qui s'y ouvre. À `9rem`, la
     // phrase qui dit ce que « Masquer » va faire tombait sur cinq lignes.
     { key: 'shop', label: 'Boutique', width: '18rem' },
@@ -122,29 +133,16 @@ export class ShelfCatalogue {
     item.vatRatePercent === null ? 'warning' : null;
 
   /**
-   * Les allergènes d'un article, en une ligne : « Gluten · Lait ».
+   * **L'étiquette publique, en euros TTC** — ou `null` quand le référentiel n'en
+   * a pas poussé.
    *
-   * Ce sont les catégories INCO — les mots d'une étiquette —, pas les codes GS1
-   * du stockage. Le serveur a fait la projection ; l'écran ne fait que les
-   * joindre.
+   * Les centimes passent par le même formateur que les millicentimes, en les y
+   * ramenant : deux chemins de mise en forme pour deux unités finiraient par
+   * arrondir différemment, et sur la même ligne.
    */
-  protected allergenLabels(item: CatalogAdminItemView): string {
-    return (item.allergens ?? []).map((allergen) => allergen.label).join(' · ');
-  }
-
-  /**
-   * Ce que l'étoile fera, dit en toutes lettres — c'est son seul libellé.
-   *
-   * Trois phrases et non deux : sur un article masqué, le bouton est éteint, et
-   * un bouton éteint sans raison écrite se lit comme une panne.
-   */
-  protected featureTooltip(item: CatalogAdminItemView): string {
-    if (item.isHidden) {
-      return `${item.name} est masqué : un article qu'on ne montre pas ne se met pas en avant.`;
-    }
-    return item.isFeatured
-      ? `Retirer ${item.name} de la mise en avant`
-      : `Mettre ${item.name} en avant dans la boutique`;
+  protected publicEuros(item: CatalogAdminItemView): string | null {
+    const cents = item.publicTtcCents;
+    return cents === null ? null : formatEuros(cents * MILLICENTS_PER_CENT);
   }
 
   /**
@@ -163,3 +161,6 @@ export class ShelfCatalogue {
         );
   }
 }
+
+/** Un centime vaut mille millicentimes — `@lfd/money`, la seule conversion d'ici. */
+const MILLICENTS_PER_CENT = 1_000;

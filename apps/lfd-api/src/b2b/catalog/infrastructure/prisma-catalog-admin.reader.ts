@@ -7,8 +7,22 @@ import {
   type StaffAuthors,
 } from "../../../staff/directory/domain/staff-author-directory.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
+import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
+
+/**
+ * **Le contexte de vente de la boutique publique** — « à emporter » (D7).
+ *
+ * ⚠️ Le MÊME que celui du lecteur de vente (`prisma-catalog.reader.ts`), et
+ * c'est une duplication assumée plutôt qu'un partage : ces deux fichiers
+ * répondent à deux questions différentes — ce qu'on FACTURE, ce qu'on MONTRE au
+ * paramétrage — et les relier par une constante commune ferait croire qu'ils
+ * bougeront ensemble. Le jour où le sur place arrive, c'est le chemin de
+ * service qui dira le contexte, et ces deux-là ne l'apprendront pas de la même
+ * façon.
+ */
+const PUBLIC_CONTEXT_KEY = "takeaway";
 
 /** La ligne rendue par Prisma, famille et décision jointes. */
 interface AdminRow {
@@ -16,6 +30,8 @@ interface AdminRow {
   readonly productSku: string;
   readonly name: string;
   readonly priceMillicents: number;
+  readonly publicTtcCents: number | null;
+  readonly publicByContext: unknown;
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
@@ -106,6 +122,13 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     // l'écran, et son compteur « des articles ne sont pas vendables » cesse
     // d'être aveugle aux lignes que le repli couvrait.
     vatRatePercent: row.vatRatePercent?.toNumber() ?? null,
+    // L'ÉTIQUETTE publique et le taux de son contexte, lus tels que le miroir
+    // les range. Rien n'est dérivé ici : cet écran montre ce que le référentiel
+    // a envoyé, et dériver un hors taxe pour l'afficher donnerait un troisième
+    // nombre qui ne figure sur aucune étiquette.
+    publicTtcCents: row.publicTtcCents,
+    publicVatRatePercent:
+      publicByContextOf(row.publicByContext)?.[PUBLIC_CONTEXT_KEY]?.vatRatePercent ?? null,
     ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
     isFeatured: row.override?.isFeatured ?? false,

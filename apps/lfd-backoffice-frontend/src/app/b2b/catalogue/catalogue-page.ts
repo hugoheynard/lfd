@@ -127,7 +127,16 @@ export class CataloguePage {
     () => this.items().filter((item) => item.isHidden).length,
   );
 
-  /** Combien passent devant les autres dans la boutique. */
+  /**
+   * Combien passent devant les autres dans la boutique.
+   *
+   * ⚠️ **Le compte reste, le CONTRÔLE est parti** (Hugo, 2026-09-21 : « on
+   * enlève aussi la colonne mise en avant, ça sera ailleurs »). Le segment est
+   * donc une LECTURE seule, et c'est volontaire : tant que l'écran qui la
+   * réglera n'existe pas, retirer aussi le compte laisserait un état de la
+   * boutique que plus rien ne montre. On voit ce qui est en avant ; on le règle
+   * ailleurs, bientôt.
+   */
   protected readonly featuredCount = computed(
     () => this.items().filter((item) => item.isFeatured).length,
   );
@@ -223,29 +232,6 @@ export class CataloguePage {
       await this.load();
     } catch (error) {
       this.notify.error(error, "La décision n'a pas pu être retirée.");
-    }
-  }
-
-  /**
-   * **Met en avant, ou retire la mise en avant.**
-   *
-   * Pas de confirmation : rien n'est retiré de la vente, et le second clic
-   * défait le premier. Le refus possible reste celui du serveur — un article
-   * masqué —, et l'écran l'a déjà désamorcé en éteignant le bouton.
-   */
-  protected async toggleFeatured(item: CatalogAdminItemView): Promise<void> {
-    try {
-      await this.catalogue.setFeatured(item.sku, !item.isFeatured);
-      this.notify.success(
-        item.isFeatured
-          ? `${item.name} n'est plus mis en avant.`
-          : `${item.name} passe en avant dans la boutique.`,
-      );
-      await this.load();
-    } catch (error) {
-      // `refused` : le seul échec attendu est « l'article est masqué », une
-      // règle qui se comprend en une lecture.
-      this.notify.refused(error, "La mise en avant n'a pas pu être changée.");
     }
   }
 

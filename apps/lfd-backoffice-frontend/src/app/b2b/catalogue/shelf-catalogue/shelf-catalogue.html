@@ -25,10 +25,33 @@
       </span>
     </ng-template>
 
-    <!-- Ce que le référentiel a envoyé. Il ne se modifie pas ici : c'est le
-         socle, et la colonne d'à côté est ce qu'on en fait. -->
+    <!--
+      Ce que le référentiel a envoyé — **ses DEUX prix**. Ils ne se modifient
+      pas ici : c'est le socle, et la colonne d'à côté est ce qu'on en fait.
+
+      🔴 **L'unité est écrite sur chaque ligne, et ce n'est pas décoratif.** Le
+      pro est un HT dérivé par un rapport, le public l'étiquette TTC qu'un
+      humain a tapée. Deux montants nus l'un sous l'autre se liraient comme deux
+      versions du même prix, et l'écart entre eux passerait pour une remise.
+
+      Le prix public manquant n'est pas un zéro : c'est un article que la
+      vitrine publique ÉCARTE. Le dire par un mot, pas par un tiret.
+    -->
     <ng-template foldCell="pim" let-row>
-      {{ euros(row.pimPriceMillicents) }}
+      <div class="pim">
+        <span class="pim-line">
+          <span class="pim-audience">pro</span>
+          <span class="pim-amount">{{ euros(row.pimPriceMillicents) }} HT</span>
+        </span>
+        <span class="pim-line">
+          <span class="pim-audience">public</span>
+          @if (publicEuros(row); as ttc) {
+            <span class="pim-amount">{{ ttc }} TTC</span>
+          } @else {
+            <fold-badge content="non poussé" variant="warning" />
+          }
+        </span>
+      </div>
     </ng-template>
 
     <!--
@@ -73,22 +96,6 @@
       }
     </ng-template>
 
-    <!-- La fiche réglementaire, telle que la BOUTIQUE la connaît. Trois états
-         distincts : rien de déclaré, déclaré sans allergène, ou la liste — le
-         premier n'est pas le second. -->
-    <ng-template foldCell="sheet" let-row>
-      @if (row.allergens === null) {
-        <fold-badge content="sans fiche" variant="warning" />
-      } @else if (row.allergens.length > 0) {
-        <span class="allergens" [attr.title]="allergenLabels(row)">{{ allergenLabels(row) }}</span>
-      } @else if (!row.allergensIncomplete) {
-        <span class="allergens">Sans allergène</span>
-      }
-      @if (row.allergensIncomplete) {
-        <fold-badge content="incomplète" variant="alert" />
-      }
-    </ng-template>
-
     <!--
       **La visibilité se confirme sur place**, exactement comme la pose d'un
       prix : le contrôle s'ouvre DANS la cellule, dit ce qu'il va faire, et se
@@ -113,26 +120,6 @@
         @if (row.isHidden) {
           <fold-badge content="masqué" variant="neutral" />
         }
-        <!--
-          **La mise en avant est une bascule, pas une confirmation.** Elle ne
-          retire rien : au pire elle met en tête un article qui n'y avait rien à
-          faire, et le second clic le range. Lui demander de confirmer
-          apprendrait à confirmer sans lire, ce qui coûterait au voisin — qui,
-          lui, coupe la commande.
-
-          Désactivée sur un article masqué : l'agrégat REFUSE d'y poser la mise
-          en avant, parce que « ne pas le montrer » et « le montrer en premier »
-          ne se disent pas ensemble. Le front désamorce, le serveur refuse — le
-          geste n'est donc jamais un 409 qu'on découvre après coup.
-        -->
-        <fold-toggle-icon
-          icon="star"
-          size="sm"
-          [active]="row.isFeatured"
-          [disabled]="row.isHidden"
-          [tooltip]="featureTooltip(row)"
-          (toggled)="featuredToggled.emit(row)"
-        />
         <fold-inline-confirm
           size="sm"
           [intent]="row.isHidden ? 'primary' : 'warning'"

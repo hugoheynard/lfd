@@ -51,7 +51,14 @@ export class CatalogueService {
    *
    * Le serveur **refuse** de mettre en avant un article masqué : les deux états
    * ensemble diraient « ne pas le montrer » et « le montrer en premier ».
-   * L'écran désactive donc le geste plutôt que de laisser partir un 409.
+   * L'appelant désactive donc le geste plutôt que de laisser partir un 409.
+   *
+   * ⚠️ **Sans aucun appelant depuis le 2026-09-21** (vérifié ce jour-là) : la
+   * colonne « mise en avant » a quitté le catalogue, et l'écran qui la réglera
+   * n'existe pas encore (Hugo : « ça sera ailleurs »). La méthode est GARDÉE
+   * parce que la route, elle, vit — la supprimer ferait réécrire dans huit
+   * jours ce que ces six lignes disent déjà, et le serveur continuerait
+   * d'exposer un geste que plus aucun client ne sait formuler.
    */
   async setFeatured(sku: string, featured: boolean): Promise<void> {
     await firstValueFrom(
