@@ -210,10 +210,66 @@ montre. L'écart est entre **la vignette et le total** — deux nombres justes q
 l'arithmétique mentale ne réconcilie pas, visible à la quantité 1, invisible à
 la quantité 12.
 
-### Ce que ça épargne
+### La dérive, mesurée : bornée, mais ORIENTÉE
 
-**Rien ne change dans la chaîne de calcul.** Remise de retrait, frais,
-ventilation, invariant `ensureDiscountMatches` : tous restent en HT, tels quels.
+Deux questions distinctes, et c'est la seconde qui décide de ce que le comptable
+rattrape.
+
+**Elle ne s'accumule pas avec la quantité.** À 0,67 € et 5,5 %, les quantités 1
+à 12 donnent `[+1 0 +1 0 0 0 0 0 0 0 0 0]`, et le pire écart **jusqu'à la
+quantité 1 000 reste 1 centime**.
+
+⚠️ **C'est une propriété de la chaîne, pas un hasard** : il y a **un seul
+arrondi**, au total de ligne, et le prix unitaire est gardé en millicentimes en
+amont pour ça. `millicents.ts` le dit : « l'arrondir ici multiplierait l'erreur
+par la quantité commandée ». Sans cette précaution, la dérive croîtrait avec le
+panier.
+
+🔴 **Mais elle est BIAISÉE**, et c'est le vrai sujet :
+
+| Taux  | −1 c   | juste   | +1 c    |
+| ----- | ------ | ------- | ------- |
+| 5,5 % | 2,27 % | 94,79 % | 2,94 %  |
+| 10 %  | 0,00 % | 91,67 % | 8,33 %  |
+| 20 %  | 2,77 % | 86,11 % | 11,11 % |
+
+À 10 %, la dérive n'est **jamais** en faveur du client. L'accumulation est donc
+**entre les commandes**, pas dans une commande : ~0,08 centime par ligne aux
+taux 10 et 20.
+
+**D'où vient le biais** — mesuré, pour ne pas chercher au mauvais endroit : de
+l'**arrondi de la TVA**, pas de celui du total de ligne. À 10 %, la ligne
+arrondit symétriquement (↑ 41,7 % / ↓ 41,7 %) tandis que la TVA monte 50 % du
+temps et ne descend que 33 %.
+
+### Les deux portes fermées, et pourquoi
+
+Il n'existe que trois sorties :
+
+| Sortie                                         | Effet             | Sort                                                                                                                    |
+| ---------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Déduire la TVA par soustraction**            | zéro dérive       | ❌ écartée (D6) — la TVA se calcule                                                                                     |
+| **Arrondir au demi-pair** au lieu de demi-haut | supprime le biais | ❌ `roundToCents` arrondit **tout l'argent du dépôt**, factures B2B comprises, et le demi-haut est la convention en TVA |
+| **Accepter**                                   | ~9 % à +1 c       | ✅ retenue                                                                                                              |
+
+### Ce que ça épargne — 🔴 UN SEUL CALCUL POUR LES DEUX
+
+**Rien ne change dans la chaîne.** `lineTotalCents`, la remise de retrait, les
+frais, `ventilateVat`, l'invariant `ensureDiscountMatches` : tous restent en HT,
+identiques, **quelle que soit l'audience**. Il n'y a pas une chaîne publique et
+une chaîne pro.
+
+La différence n'est plus dans le calcul, elle est dans les **entrées** :
+
+|            | Pro               | Public                           |
+| ---------- | ----------------- | -------------------------------- |
+| le prix HT | `priceMillicents` | le HT public _(nouveau, lot A1)_ |
+| le taux    | contexte `b2b`    | contexte du chemin de service    |
+
+⚠️ **C'est là qu'est tout l'intérêt de D6.** L'option C aurait imposé **deux
+ventilations** — une qui multiplie, une qui soustrait — donc deux façons de faire
+une facture, avec la garantie qu'un jour l'une dérive de l'autre.
+
 Le TTC voyage (D1) pour être **affiché** — une boutique grand public doit montrer
 un prix TTC — et pour rien d'autre.
 
@@ -228,11 +284,11 @@ de la facture. Toutes supposaient qu'on change de base. On n'en change pas.
 
 **Il en reste trois, et elles sont petites :**
 
-| #      | Question                                                                                                                                                                             |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Q1** | La ligne de commande **stocke-t-elle** le TTC public, ou le recalcule-t-on à chaque relecture d'une commande passée ? (`orders.prisma` est tout HT.)                                 |
-| **Q2** | **Où vit la branche** « quel prix, quel taux pour cette audience » ? Une porte nommée, comme `proPriceOf` l'est pour le prix — sinon elle se duplique entre le devis et la commande. |
-| **Q3** | `quote-order-parity` doit tenir **pour les deux audiences**.                                                                                                                         |
+| #      | Question                                                                                                                                                                                                                                                                                             |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Q1** | La ligne de commande **stocke-t-elle** le TTC public, ou le recalcule-t-on à chaque relecture d'une commande passée ? (`orders.prisma` est tout HT.)                                                                                                                                                 |
+| **Q2** | **Où vit la fonction qui lit les deux entrées** (quel prix, quel taux pour cette audience) ? D6 l'a réduite : ce n'est plus une branche de CALCUL, c'est une lecture de deux champs. Une porte nommée, comme `proPriceOf` l'est pour le prix — sinon elle se duplique entre le devis et la commande. |
+| **Q3** | `quote-order-parity` doit tenir **pour les deux audiences**.                                                                                                                                                                                                                                         |
 
 ⚠️ **Q3 est la seule qui puisse coûter cher**, et pour une raison qui n'a pas
 changé : une parité verte ne prouve pas qu'un montant est juste, seulement que

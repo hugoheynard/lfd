@@ -223,3 +223,89 @@ const row = (label, bad, n, worst) =>
       "     arrondi.",
   );
 }
+
+// ===========================================================================
+// LA DÉRIVE ACCEPTÉE (D6) — s'accumule-t-elle, et est-elle orientée ?
+//
+// Deux questions distinctes une fois D6 tranchée, et c'est la seconde qui
+// décide de ce que le comptable rattrape.
+// ===========================================================================
+
+const driftOf = (ttcCents, rate, qty) =>
+  totalOf([{ htCents: lineTotalCents(htMillicentsOf(ttcCents, rate), qty), vatRate: rate }]) -
+  ttcCents * qty;
+
+console.log("\n═══ D6 — la dérive s'accumule-t-elle avec la quantité ? ═══\n");
+
+for (const [ttc, rate] of [
+  [67, 5.5],
+  [120, 5.5],
+  [250, 10],
+  [199, 20],
+]) {
+  let worst = 0;
+  const first12 = [];
+  for (let qty = 1; qty <= 1000; qty++) {
+    const d = driftOf(ttc, rate, qty);
+    if (Math.abs(d) > Math.abs(worst)) worst = d;
+    if (qty <= 12) first12.push(d > 0 ? `+${d}` : String(d));
+  }
+  console.log(
+    `  ${(ttc / 100).toFixed(2)} € à ${String(rate).padStart(4)} %  ·  q1→q12 : [${first12.join(" ")}]` +
+      `  ·  pire jusqu'à q=1000 : ${worst > 0 ? "+" : ""}${worst} c`,
+  );
+}
+
+console.log(
+  "\n  → NON. Elle oscille entre -1, 0 et +1 et reste bornée à 1 centime même à\n" +
+    "    la quantité 1000. C'est une propriété de la chaîne : UN SEUL arrondi, au\n" +
+    "    total de ligne, avec le prix unitaire gardé en millicentimes en amont.\n" +
+    "    `millicents.ts` le dit — « l'arrondir ici multiplierait l'erreur par la\n" +
+    "    quantité commandée ».",
+);
+
+console.log("\n═══ D6 — mais est-elle ORIENTÉE ? (oui, et c'est le vrai sujet) ═══\n");
+
+for (const rate of RATES) {
+  const counts = { "-1": 0, 0: 0, "+1": 0 };
+  let sum = 0;
+  let n = 0;
+  // Et d'où vient le biais : de l'arrondi du TOTAL DE LIGNE, ou de la TVA ?
+  let lineUp = 0;
+  let lineDown = 0;
+  let vatUp = 0;
+  let vatDown = 0;
+  for (let ttc = 50; ttc <= 3000; ttc++) {
+    for (let qty = 1; qty <= 24; qty++) {
+      const d = driftOf(ttc, rate, qty);
+      counts[d > 0 ? "+1" : d < 0 ? "-1" : "0"] += 1;
+      sum += d;
+      n += 1;
+
+      const exactHt = (ttc * qty) / (1 + rate / 100);
+      const ht = lineTotalCents(htMillicentsOf(ttc, rate), qty);
+      if (ht > exactHt + 1e-9) lineUp += 1;
+      else if (ht < exactHt - 1e-9) lineDown += 1;
+      const exactVat = ht * (rate / 100);
+      const vat = Math.round(exactVat);
+      if (vat > exactVat + 1e-9) vatUp += 1;
+      else if (vat < exactVat - 1e-9) vatDown += 1;
+    }
+  }
+  const p = (x) => `${((x / n) * 100).toFixed(2).padStart(5)} %`;
+  console.log(
+    `  ${String(rate).padStart(5)} %  ·  -1 c : ${p(counts["-1"])}   juste : ${p(counts["0"])}   ` +
+      `+1 c : ${p(counts["+1"])}   ·  ${(sum / n).toFixed(4)} c/ligne`,
+  );
+  console.log(
+    `            source du biais → total de ligne ↑ ${p(lineUp)} / ↓ ${p(lineDown)}` +
+      `   ·   TVA ↑ ${p(vatUp)} / ↓ ${p(vatDown)}`,
+  );
+}
+
+console.log(
+  "\n  → Le biais vient de l'arrondi de la TVA, PAS de celui du total de ligne.\n" +
+    "    À 10 %, la ligne arrondit symétriquement et la TVA monte une fois sur\n" +
+    "    deux. Le supprimer demanderait un arrondi au demi-pair — qui changerait\n" +
+    "    la façon dont TOUT l'argent du dépôt arrondit, factures B2B comprises.",
+);
