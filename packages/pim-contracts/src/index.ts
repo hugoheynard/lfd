@@ -194,7 +194,6 @@ export type {
   TaxCollectionsPass,
   SnapshotView,
   ReconciliationStatus,
-  FieldDiffView,
   ComparableView,
   ReconciliationRowView,
   ReconciliationBoardView,
@@ -202,6 +201,7 @@ export type {
 } from "./shopify.js";
 
 export type {
+  FieldDiffView,
   CatalogRevisionSummaryView,
   CatalogRevisionRowView,
   CatalogRevisionItemDiffView,

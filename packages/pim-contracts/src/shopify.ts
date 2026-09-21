@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { FieldDiffView } from "./catalog-revision.js";
+
 /**
  * Contrat de fil du canal **Shopify** côté produits : l'état de synchro
  * (bindings) et le push. Le push est réel en mode `live`, simulé en `dry-run`
@@ -74,13 +76,6 @@ export type ReconciliationStatus =
   | "conflict"
   | "to_remove"
   | "unknown";
-
-/** Un champ qui diffère entre deux états (paire de la réconciliation). */
-export interface FieldDiffView {
-  readonly field: string;
-  readonly before: string;
-  readonly after: string;
-}
 
 /**
  * Forme de comparaison d'un produit — le dénominateur commun aux trois états. La
