@@ -111,14 +111,21 @@ facturé.
 
 ### Et la commande doit suivre, sinon le trou se déplace
 
-`prisma/schema/public/orders.prisma:473` :
+`OrderLine` (`prisma/schema/public/orders.prisma`) :
 
 ```prisma
-vatRatePercent Decimal @map("vat_rate_percent")
+vatRate Decimal @default(0) @map("vat_rate") @db.Decimal(5, 2)
 ```
 
-**Un seul taux, snapshoté sur la ligne de commande**, alimenté par
-`CatalogItem.vatRatePercent` (`catalog.prisma:105`) — donc par le taux `b2b`.
+Sa note dit ce qui compte : « snapshots au moment de la commande — le prix/nom/
+TVA du PIM peut changer, la commande garde ce qu'elle a facturé ». Le serveur
+**résout** à la passation, puis **scelle** : rien ne rafraîchit ce taux ensuite.
+
+⚠️ Ce passage a cité `orders.prisma:473` jusqu'au 2026-09-21, en le présentant
+comme la ligne de commande. C'est `order_late_fee` — la surtaxe de retard. Le
+numéro venait d'un rapport de contradiction, recopié sans ouvrir le fichier, et
+il a traversé deux documents. **Sur de l'argent, un numéro de ligne se vérifie
+ou ne s'écrit pas.**
 
 Une fois le fil porteur de N taux, la passation doit en choisir **un**, et rien
 ne le lui dit. ⚠️ **`quote-order-parity` ne le verrait pas** : il compare le devis
