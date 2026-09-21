@@ -216,6 +216,8 @@ export const IT: ClientCopy = {
     add: 'Aggiungi',
     priceHt: '{price} IVA escl.',
     htSuffix: 'IVA escl.',
+    priceTtc: '{price} IVA incl.',
+    ttcSuffix: 'IVA incl.',
     addAria: 'Aggiungi {name}',
     removeAria: 'Togli {name}',
     cartBar: 'Pagare',

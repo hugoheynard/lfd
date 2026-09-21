@@ -1,4 +1,5 @@
 import type { ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
+import { lineTotalCents, ventilateVat } from "@lfd/money";
 
 import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
 
@@ -19,6 +20,25 @@ import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
  * d'écart qu'on ne découvre qu'au téléphone.
  */
 
+/**
+ * **Le prix d'une pièce, taxe comprise**, par la chaîne de la CAISSE.
+ *
+ * 🔴 Ni une multiplication, ni un arrondi maison : `ventilateVat`, exactement ce
+ * que le devis et la commande font. Un TTC calculé autrement serait plus juste
+ * ou plus faux, peu importe — il serait **différent**, et l'étiquette du rayon
+ * cesserait de valoir ce qu'on encaisse.
+ *
+ * ⚠️ **Elle prend des CENTIMES, pas des millicentimes**, et l'appelant passe
+ * donc par `lineTotalCents` sous les yeux du lecteur. C'est `lint:money-units`
+ * qui l'a exigé, et elle avait raison : l'arrondi au centime du total de ligne
+ * fait partie du résultat, et une fonction qui l'avalait en cachait la moitié.
+ *
+ * Quantité 1, comme le reste de la vitrine.
+ */
+export function ttcCentsOf(htCents: number, vatRate: number): number {
+  return ventilateVat({ lines: [{ htCents, vatRate }], discountCents: 0, extras: [] }).totalCents;
+}
+
 /** Les articles vendables et leurs rayons, au **tarif** — le prix vient après. */
 export function shopCatalogueOf(sellable: readonly ResolvedCatalogItem[]): ShopCatalogueView {
   const items = sellable.filter((item) => item.isDefault).map(toItem);
@@ -36,6 +56,7 @@ function toItem(item: ResolvedCatalogItem): ShopItemView {
     // appliquera : les deux viennent de la même composition, faite une fois
     // dans le lecteur.
     unitPriceMillicents: item.unitPriceMillicents,
+    unitPriceTtcCents: ttcCentsOf(lineTotalCents(item.unitPriceMillicents, 1), item.vatRate),
     vatRatePercent: item.vatRate,
     shelfId: item.categoryId,
     isFeatured: item.isFeatured,

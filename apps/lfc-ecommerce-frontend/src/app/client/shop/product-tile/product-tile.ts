@@ -7,6 +7,7 @@ import type { ShopItemView } from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
 
 import { artOf } from '../shelf-display';
+import { ShopPriceBasis } from '../shop-price-basis.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 
 /**
@@ -52,16 +53,29 @@ export class ProductTile {
   protected readonly t = inject(ClientCopyService).t;
 
   /**
-   * Le prix **hors taxe**, sans sa mention — le gabarit la pose à côté.
+   * Le prix **dans l'assiette de qui regarde**, sans sa mention — le gabarit la
+   * pose à côté.
    *
    * Un prix alimentaire affiché sans mention se lit TTC en France : `1,00 €` sur
    * une vignette qui pense HT ment à son lecteur. Elle est donc obligatoire.
    * Mais elle QUALIFIE le prix, elle n'en fait pas partie : écrite du même
    * corps et de la même graisse, elle pesait autant que le montant qu'on vient
    * lire. D'où deux fragments plutôt qu'une chaîne.
+   *
+   * 🔴 **Le hors taxe était servi à TOUT LE MONDE jusqu'au 2026-09-21**, mention
+   * comprise. C'était honnête et ce n'était pas juste : un particulier ne
+   * récupère pas la taxe, et lui demander d'ajouter 5,5 % de tête devant un
+   * rayon est une façon de ne pas vendre. Le TTC arrive du serveur — le dériver
+   * ici l'aurait fait diverger du panier d'un centime.
    */
+  private readonly basis = inject(ShopPriceBasis);
+
+  protected readonly showsTtc = this.basis.showsTtc;
+
   protected readonly price = computed(() =>
-    formatCents(unitPriceCents(this.product().unitPriceMillicents)),
+    this.showsTtc()
+      ? formatCents(this.product().unitPriceTtcCents)
+      : formatCents(unitPriceCents(this.product().unitPriceMillicents)),
   );
 
   /**

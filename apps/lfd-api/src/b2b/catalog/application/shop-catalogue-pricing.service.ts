@@ -1,4 +1,5 @@
 import type { CatalogCategory, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
+import { lineTotalCents } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
@@ -6,7 +7,7 @@ import { CatalogReader } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { UnknownCatalogShelfError } from "../domain/errors/unknown-catalog-shelf.error.js";
 import { shelfOfCategory } from "../domain/shelf-of-category.js";
-import { shopCatalogueOf } from "./shop-catalogue-view.js";
+import { shopCatalogueOf, ttcCentsOf } from "./shop-catalogue-view.js";
 
 /**
  * **La vitrine à son prix — la même logique pour le visiteur et pour le client.**
@@ -169,16 +170,19 @@ function struck(item: ShopItemView, prices: ReadonlyMap<string, number>): ShopIt
   // barré le prix le plus BAS et présenté une référence mensongère sur une page
   // publique. Le prix servi reste celui qui sera facturé, dans les deux sens ;
   // c'est la rature qui exige une baisse (2026-09-09).
-  if (resolved >= item.unitPriceMillicents) {
-    return resolved === item.unitPriceMillicents
-      ? item
-      : { ...item, unitPriceMillicents: resolved };
-  }
-  return {
+  // 🔴 **Le TTC suit le prix résolu, toujours.** Il est dérivé à la
+  // construction, avant que la résolution n'ait joué : le laisser derrière
+  // ferait afficher au rayon la taxe du tarif et le montant de la promotion —
+  // deux nombres qui ne vont pas ensemble, sur une page publique.
+  const priced = {
     ...item,
     unitPriceMillicents: resolved,
-    catalogPriceMillicents: item.unitPriceMillicents,
+    unitPriceTtcCents: ttcCentsOf(lineTotalCents(resolved, 1), item.vatRatePercent),
   };
+  if (resolved >= item.unitPriceMillicents) {
+    return resolved === item.unitPriceMillicents ? item : priced;
+  }
+  return { ...priced, catalogPriceMillicents: item.unitPriceMillicents };
 }
 
 /**

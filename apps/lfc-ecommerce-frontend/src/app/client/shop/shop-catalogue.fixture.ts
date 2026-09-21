@@ -31,6 +31,7 @@ function item(over: Partial<ShopItemView> & Pick<ShopItemView, 'sku' | 'name'>):
     note: null,
     image: null,
     unitPriceMillicents: 140_000,
+    unitPriceTtcCents: 148,
     vatRatePercent: 5.5,
     shelfId: 'cat_vien',
     isFeatured: false,
@@ -46,18 +47,21 @@ export const TEST_ITEMS: readonly ShopItemView[] = [
     name: 'Pain de campagne',
     shelfId: 'cat_pains',
     unitPriceMillicents: 480_000,
+    unitPriceTtcCents: 506,
   }),
   item({
     sku: 'PAI-002',
     name: 'Baguette de tradition',
     shelfId: 'cat_pains',
     unitPriceMillicents: 130_000,
+    unitPriceTtcCents: 137,
   }),
   item({
     sku: 'PAT-001',
     name: 'Éclair',
     shelfId: 'cat_patis',
     unitPriceMillicents: 350_000,
+    unitPriceTtcCents: 369,
     isFeatured: true,
   }),
   // Le salé porte l'AUTRE taux : c'est lui qui fait exister deux lignes de TVA.
@@ -66,6 +70,7 @@ export const TEST_ITEMS: readonly ShopItemView[] = [
     name: 'Quiche du jour',
     shelfId: 'cat_sale',
     unitPriceMillicents: 450_000,
+    unitPriceTtcCents: 475,
     vatRatePercent: 10,
   }),
   item({
@@ -73,6 +78,7 @@ export const TEST_ITEMS: readonly ShopItemView[] = [
     name: 'Tablette 70 %',
     shelfId: 'cat_choco',
     unitPriceMillicents: 590_000,
+    unitPriceTtcCents: 622,
   }),
 ];
 

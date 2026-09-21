@@ -209,6 +209,11 @@ export const FR: ClientCopy = {
     add: 'Ajouter',
     priceHt: '{price} HT',
     htSuffix: 'HT',
+    // Le rayon d'un particulier affiche le TTC (D13) : un prix alimentaire sans
+    // mention se lit taxe comprise en France, et la mention qualifie le montant
+    // au lieu d'en faire partie — d'où un suffixe, comme son voisin.
+    priceTtc: '{price} TTC',
+    ttcSuffix: 'TTC',
     addAria: 'Ajouter {name}',
     removeAria: 'Retirer {name}',
     cartBar: 'Régler',

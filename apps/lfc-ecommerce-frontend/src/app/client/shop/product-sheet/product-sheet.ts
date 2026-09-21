@@ -9,6 +9,7 @@ import { lineTotalCents, unitPriceCents } from '@lfd/money';
 
 import { artOf, ovenHoursOf } from '../shelf-display';
 import { ShopCatalogue } from '../shop-catalogue.store';
+import { ShopPriceBasis } from '../shop-price-basis.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 
 /**
@@ -45,6 +46,7 @@ export class ProductSheet {
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly order = inject(OrderContextStore);
+  private readonly basis = inject(ShopPriceBasis);
 
   private readonly catalogue = inject(ShopCatalogue);
 
@@ -83,9 +85,13 @@ export class ProductSheet {
     return [
       {
         key: c.unitPrice,
-        value: fill(this.t().shop.priceHt, {
-          price: formatCents(unitPriceCents(product.unitPriceMillicents)),
-        }),
+        // La fiche suit la vignette : même assiette, même mention. Les voir
+        // différer d'un écran à l'autre ferait douter du prix lui-même.
+        value: this.basis.showsTtc()
+          ? fill(this.t().shop.priceTtc, { price: formatCents(product.unitPriceTtcCents) })
+          : fill(this.t().shop.priceHt, {
+              price: formatCents(unitPriceCents(product.unitPriceMillicents)),
+            }),
       },
       { key: c.oven, value: ovenHoursOf(product.shelfId) },
       where,

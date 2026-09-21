@@ -351,6 +351,9 @@ export interface ClientCopy {
      * les trois langues.
      */
     readonly htSuffix: string;
+    /** Le rayon d'un particulier affiche le TTC (D13) — même forme que son voisin. */
+    readonly priceTtc: string;
+    readonly ttcSuffix: string;
     /** `{name}` est remplacé par le nom de la pièce. */
     readonly addAria: string;
     readonly removeAria: string;

@@ -124,6 +124,12 @@ describe("la vitrine publique", () => {
       "shelfId",
       "sku",
       "unitPriceMillicents",
+      // ⚠️ **Un élargissement ASSUMÉ** (2026-09-21, D13) : le rayon public
+      // affiche le TTC, et le calculer au front l'aurait fait diverger du
+      // panier d'un centime. Ce qui franchit n'est pas un secret — c'est le
+      // prix de l'étiquette —, et cette liste est ce qui a rendu la décision
+      // visible au lieu de la laisser passer.
+      "unitPriceTtcCents",
       "vatRatePercent",
     ]);
     expect(Object.keys(body.shelves[0] ?? {}).sort()).toEqual(["id", "name", "position"]);

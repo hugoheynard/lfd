@@ -212,6 +212,8 @@ export const EN: ClientCopy = {
     add: 'Add',
     priceHt: '{price} excl. VAT',
     htSuffix: 'excl. VAT',
+    priceTtc: '{price} incl. VAT',
+    ttcSuffix: 'incl. VAT',
     addAria: 'Add {name}',
     removeAria: 'Remove {name}',
     cartBar: 'Pay',

@@ -45,7 +45,7 @@
         <s class="price-was">{{ catalogue }}</s>
       }
       {{ price() }}
-      <span class="price-ht">{{ t().shop.htSuffix }}</span>
+      <span class="price-ht">{{ showsTtc() ? t().shop.ttcSuffix : t().shop.htSuffix }}</span>
     </span>
 
     @if (orderable()) {
