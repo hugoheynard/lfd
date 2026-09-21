@@ -30,6 +30,8 @@ export interface CatalogItemSubject {
 export const CATALOG_ITEM_FACTS = {
   b2bPriceSet: "catalog_item.b2b_price_set",
   b2bPriceCleared: "catalog_item.b2b_price_cleared",
+  publicPriceSet: "catalog_item.public_price_set",
+  publicPriceCleared: "catalog_item.public_price_cleared",
   hidden: "catalog_item.hidden",
   shown: "catalog_item.shown",
   featured: "catalog_item.featured",
@@ -88,6 +90,67 @@ export class CatalogItemB2bPriceClearedEvent implements JournaledEvent {
         subjectLabel: this.item.name,
         sku: this.item.sku,
         before: priceOf(this.beforeMillicents),
+      },
+    };
+  }
+}
+
+/**
+ * Un prix **public** tel que le journal le relit — en centimes **TTC**.
+ *
+ * ⚠️ Jumeau de {@link priceOf} et volontairement DISTINCT : l'unité est dans le
+ * nom du champ parce qu'elle diffère. Un journal qui relirait 299 comme des
+ * millicentimes afficherait « 0,00299 € » sur un croissant à 2,99 €.
+ */
+function publicPriceOf(ttcCents: number): Record<string, unknown> {
+  return { ttcCents };
+}
+
+/**
+ * Fait : **un prix public est posé ou remplacé**. `before` est `null` quand
+ * l'article suivait jusque-là l'étiquette du référentiel.
+ */
+export class CatalogItemPublicPriceSetEvent implements JournaledEvent {
+  constructor(
+    readonly item: CatalogItemSubject,
+    readonly beforeTtcCents: number | null,
+    readonly afterTtcCents: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: CATALOG_ITEM_FACTS.publicPriceSet,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.item.sku,
+      payload: {
+        subjectLabel: this.item.name,
+        sku: this.item.sku,
+        before: this.beforeTtcCents === null ? null : publicPriceOf(this.beforeTtcCents),
+        after: publicPriceOf(this.afterTtcCents),
+      },
+    };
+  }
+}
+
+/**
+ * Fait : **l'article revient à l'étiquette du PIM**. `before` dit le prix
+ * public retiré — c'est tout ce que le retour efface.
+ */
+export class CatalogItemPublicPriceClearedEvent implements JournaledEvent {
+  constructor(
+    readonly item: CatalogItemSubject,
+    readonly beforeTtcCents: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: CATALOG_ITEM_FACTS.publicPriceCleared,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.item.sku,
+      payload: {
+        subjectLabel: this.item.name,
+        sku: this.item.sku,
+        before: publicPriceOf(this.beforeTtcCents),
       },
     };
   }

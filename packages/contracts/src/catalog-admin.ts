@@ -58,6 +58,18 @@ export interface CatalogAdminItemView {
    * sur place, et rien n'oblige les deux canaux à porter le même.
    */
   readonly publicVatRatePercent: number | null;
+  /**
+   * L'étiquette publique **décidée ici**, en centimes TTC. `null` = on suit
+   * celle du référentiel.
+   *
+   * ⚠️ Ce n'est **pas** ce que le rayon affiche. Ce nombre est une ENTRÉE : il
+   * est mis hors taxe au taux du contexte public, traverse le pipeline de
+   * résolution, et le TTC qui en ressort peut différer d'un centime —
+   * l'aller-retour hors taxe ne revient pas toujours sur lui-même (mesuré,
+   * `dev-toolbox/analyses/ancrage-du-ttc-pose.mjs`). L'écran doit donc montrer
+   * le prix ENCAISSÉ à côté de celui qu'on pose, pas ce champ seul.
+   */
+  readonly decidedPublicTtcCents: number | null;
 
   /**
    * `null` = la famille n'a pas de régime de TVA dans le PIM. L'article est
@@ -125,6 +137,22 @@ export const setB2bPricePayloadSchema = z.object({
   priceMillicents: z.number().int().positive(),
 });
 export type SetB2bPricePayload = z.infer<typeof setB2bPricePayloadSchema>;
+
+/**
+ * Poser le **prix public**, en centimes **TTC**.
+ *
+ * 🔴 **L'unité n'est pas celle de son voisin**, et le nom du champ est la seule
+ * chose qui le dise : le prix professionnel est un hors taxe DÉRIVÉ, en
+ * millicentimes ; celui-ci est l'étiquette qu'un humain tape.
+ *
+ * Mêmes refus que le prix professionnel — un montant nul, ou l'étiquette du PIM
+ * recopiée — plus un qui n'a pas d'équivalent : un article que la vitrine
+ * publique n'expose pas. Le prix y serait écrit et jamais servi.
+ */
+export const setPublicPricePayloadSchema = z.object({
+  ttcCents: z.number().int().positive(),
+});
+export type SetPublicPricePayload = z.infer<typeof setPublicPricePayloadSchema>;
 
 /** Masquer ou réafficher un article dans la boutique B2B. */
 export const setCatalogVisibilityPayloadSchema = z.object({

@@ -7,22 +7,10 @@ import {
   type StaffAuthors,
 } from "../../../staff/directory/domain/staff-author-directory.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
+import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
-
-/**
- * **Le contexte de vente de la boutique publique** — « à emporter » (D7).
- *
- * ⚠️ Le MÊME que celui du lecteur de vente (`prisma-catalog.reader.ts`), et
- * c'est une duplication assumée plutôt qu'un partage : ces deux fichiers
- * répondent à deux questions différentes — ce qu'on FACTURE, ce qu'on MONTRE au
- * paramétrage — et les relier par une constante commune ferait croire qu'ils
- * bougeront ensemble. Le jour où le sur place arrive, c'est le chemin de
- * service qui dira le contexte, et ces deux-là ne l'apprendront pas de la même
- * façon.
- */
-const PUBLIC_CONTEXT_KEY = "takeaway";
 
 /** La ligne rendue par Prisma, famille et décision jointes. */
 interface AdminRow {
@@ -45,6 +33,7 @@ interface AdminRow {
   };
   readonly override: {
     readonly priceMillicents: number | null;
+    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
     readonly isFeatured: boolean;
     readonly decidedBy: string | null;
@@ -128,7 +117,8 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     // nombre qui ne figure sur aucune étiquette.
     publicTtcCents: row.publicTtcCents,
     publicVatRatePercent:
-      publicByContextOf(row.publicByContext)?.[PUBLIC_CONTEXT_KEY]?.vatRatePercent ?? null,
+      publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT]?.vatRatePercent ?? null,
+    decidedPublicTtcCents: row.override?.decidedPublicTtcCents ?? null,
     ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
     isFeatured: row.override?.isFeatured ?? false,

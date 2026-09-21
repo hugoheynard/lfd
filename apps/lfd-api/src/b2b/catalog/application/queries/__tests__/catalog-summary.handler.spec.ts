@@ -22,6 +22,8 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     // lit, et un article poussé en porte toujours.
     publicTtcCents: 150,
     publicVatRatePercent: 5.5,
+    // Aucune décision publique : l'article suit l'étiquette du référentiel.
+    decidedPublicTtcCents: null,
     allergens: [],
     allergensIncomplete: false,
     isHidden: false,

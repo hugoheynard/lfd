@@ -75,7 +75,6 @@ const KNOWN_CASTS = new Set([
   "apps/lfd-api/src/pim/catalogue/product/application/__tests__/set-product-vat.spec.ts",
   "apps/lfd-api/src/platform/context/__tests__/request-context.middleware.spec.ts",
   "apps/lfd-api/src/platform/shared/http/__tests__/app-error.filter.spec.ts",
-  "apps/lfd-api/test/admin-catalog.e2e-spec.ts",
   "packages/b2b-ui/src/company/__tests__/fulfillment-preference.model.spec.ts",
   "packages/storage/src/__tests__/s3-storage-service.spec.ts",
 ]);

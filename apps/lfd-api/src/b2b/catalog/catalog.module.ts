@@ -4,7 +4,9 @@ import { B2bPlatformModule } from "../../pim/channels/b2b-platform/b2b-platform.
 import { PricerModule } from "../pricing/pricer.module.js";
 
 import { AlignOnPimPriceHandler } from "./application/commands/align-on-pim-price.handler.js";
+import { AlignPublicOnPimHandler } from "./application/commands/align-public-on-pim.handler.js";
 import { SetB2bPriceHandler } from "./application/commands/set-b2b-price.handler.js";
+import { SetPublicPriceHandler } from "./application/commands/set-public-price.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
 import { SetCatalogVisibilityHandler } from "./application/commands/set-catalog-visibility.handler.js";
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
@@ -111,6 +113,8 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     ShopCataloguePricing,
     SetB2bPriceHandler,
     AlignOnPimPriceHandler,
+    SetPublicPriceHandler,
+    AlignPublicOnPimHandler,
     SetCatalogVisibilityHandler,
     SetCatalogFeaturedHandler,
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },

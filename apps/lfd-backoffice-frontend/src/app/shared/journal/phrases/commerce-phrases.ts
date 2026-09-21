@@ -55,6 +55,18 @@ function price(raw: unknown): Segment[] {
 }
 
 /**
+ * « 2,99 € TTC » — l'étiquette PUBLIQUE, figée en centimes.
+ *
+ * ⚠️ Jumelle de {@link price} et distincte à dessein : l'unité diffère, et
+ * réutiliser l'autre relirait 299 comme des millicentimes — « 0,00299 € » sur
+ * un croissant à 2,99 €. Et c'est bien « TTC » qui se dit, pas « HT » : c'est
+ * ce qui différencie les deux lignes quand elles se suivent au journal.
+ */
+function publicPrice(raw: unknown): Segment[] {
+  return [inUnit('cents', recordOf(raw)?.['ttcCents']), text(' TTC')];
+}
+
+/**
  * « … a fixé le prix professionnel de « Tarte citron » (TAR-001) de 8,18182 € HT
  * à 9,00 € HT » ; sans prix d'avant (le premier) : « … à 9,00 € HT ».
  */
@@ -244,8 +256,39 @@ const recoShown: Phrase = (fact) => {
   );
 };
 
+/**
+ * « … a fixé le prix public de « Tarte citron » (TAR-001) de 2,50 € TTC à
+ * 2,99 € TTC » ; sans prix d'avant : « … à 2,99 € TTC ».
+ */
+const publicPriceSet: Phrase = (fact) => {
+  const before = recordOf(fact.payload['before']);
+  return byActor(
+    fact,
+    [
+      text('a fixé le prix public de '),
+      ...article(fact),
+      ...(before === null ? [] : [text(' de '), ...publicPrice(before)]),
+      text(' à '),
+      ...publicPrice(fact.payload['after']),
+    ],
+    [...ARTICLE_KEYS, 'before', 'after'],
+  );
+};
+
 export const COMMERCE_PHRASES = {
   'catalog_item.b2b_price_set': priceSet,
+  'catalog_item.public_price_set': publicPriceSet,
+  'catalog_item.public_price_cleared': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a retiré le prix public de '),
+        ...article(fact),
+        text(', qui était de '),
+        ...publicPrice(fact.payload['before']),
+      ],
+      [...ARTICLE_KEYS, 'before'],
+    ),
   'catalog_item.b2b_price_cleared': (fact) =>
     byActor(
       fact,

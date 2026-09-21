@@ -8,6 +8,7 @@ import {
   type ResolvedCatalogItem,
   type ShopAudience,
 } from "../domain/ports/catalog.reader.js";
+import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 
@@ -157,31 +158,6 @@ export class PrismaCatalogReader extends CatalogReader {
   }
 }
 
-/**
- * **Le contexte de vente de la boutique publique.**
- *
- * `takeaway`, et une constante nommée plutôt qu'une chaîne en ligne (Hugo,
- * 2026-09-21 : « la boutique publique expose à emporter pour le moment », D7).
- *
- * ⚠️ **Le jour où le sur place arrive, il arrive par SON PROPRE CHEMIN** — une
- * troisième porte de service, pas une question greffée sur le retrait. C'est
- * alors le chemin choisi qui dira le contexte, et cette constante deviendra une
- * fonction du mode de service.
- *
- * 🔴 **Cette phrase a promis « un seul endroit à changer » pendant quelques
- * heures, le 2026-09-21, et c'était faux le soir même** : l'écran de
- * paramétrage en a besoin aussi, et `prisma-catalog-admin.reader.ts` porte
- * désormais la même constante. Il y en a **deux** (vérifié le 2026-09-21), et
- * la duplication est assumée là-bas — ces deux fichiers répondent à deux
- * questions, ce qu'on FACTURE et ce qu'on MONTRE.
- *
- * La promesse est retirée plutôt que réparée : une justification qui parle
- * d'ailleurs se démasque en ouvrant l'autre fichier, donc jamais. Celle-ci
- * aurait fait défendre l'idée qu'un seul site existe, le jour où quelqu'un en
- * ajoute un troisième.
- */
-const PUBLIC_CONTEXT_KEY = "takeaway";
-
 /** L'entrée du pipeline de prix, et le taux qui l'accompagne. */
 interface ServedPrice {
   readonly unitPriceMillicents: number;
@@ -232,7 +208,7 @@ function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null
           vatRate,
         };
   }
-  const price = publicByContextOf(row.publicByContext)?.[PUBLIC_CONTEXT_KEY];
+  const price = publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT];
   if (price === undefined) {
     return null;
   }

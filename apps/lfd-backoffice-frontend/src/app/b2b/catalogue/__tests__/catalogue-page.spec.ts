@@ -40,6 +40,8 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     // laisserait passer une confusion entre les deux.
     publicTtcCents: 225,
     publicVatRatePercent: 5.5,
+    // Aucune décision publique : l'article suit l'étiquette du référentiel.
+    decidedPublicTtcCents: null,
     allergens: [],
     allergensIncomplete: false,
     isHidden: false,
