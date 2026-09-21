@@ -92,6 +92,12 @@ describe("la feuille du client", () => {
     unitPriceMillicents: 210_000,
     vatRate: 0.055,
     lineTotalCents: 840,
+    // Commande PROFESSIONNELLE : rien de scellé côté taxe comprise, donc le bon
+    // se rend en hors taxe — l'état d'avant R3 (2026-09-21). `null` et non
+    // absent : le champ est nullable, pas facultatif, et c'est ce qui force
+    // chaque fabricant de feuille à dire laquelle des deux assiettes il tient.
+    unitPriceTtcCents: null,
+    lineTotalTtcCents: null,
     priceLabels: ["Promotion de rentrée"],
   };
 
@@ -153,6 +159,10 @@ describe("la feuille du staff", () => {
           unitPriceMillicents: 210_000,
           vatRate: 0.055,
           lineTotalCents: 840,
+          // Feuille STAFF d'une commande professionnelle : aucune assiette
+          // taxe comprise à montrer (R3, 2026-09-21).
+          unitPriceTtcCents: null,
+          lineTotalTtcCents: null,
           priceLabels: ["Promotion de rentrée"],
           entryPriceMillicents: 250_000,
           floored: false,
@@ -182,6 +192,8 @@ describe("la feuille du staff", () => {
           unitPriceMillicents: 120_000,
           vatRate: 0.055,
           lineTotalCents: 120,
+          unitPriceTtcCents: null,
+          lineTotalTtcCents: null,
           priceLabels: [],
           entryPriceMillicents: null,
           floored: false,

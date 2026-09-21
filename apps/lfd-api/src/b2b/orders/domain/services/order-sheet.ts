@@ -145,6 +145,8 @@ function clientLineOf(line: OrderLineView): ClientSheetLine {
     unitPriceMillicents: line.unitPriceMillicents,
     vatRate: line.vatRate,
     lineTotalCents: line.lineTotalCents,
+    unitPriceTtcCents: line.unitPriceTtcCents,
+    lineTotalTtcCents: line.lineTotalTtcCents,
     priceLabels: priceLabelsOf(line),
   };
 }
@@ -156,6 +158,38 @@ function staffLineOf(line: OrderLineView): StaffSheetLine {
     entryPriceMillicents: entryPriceOf(line),
     floored: line.pricing?.floored ?? false,
   };
+}
+
+/**
+ * **Le document parle-t-il taxe comprise ?**
+ *
+ * 🔴 **Une seule définition**, lue par le rendu PDF et par lui seul aujourd'hui.
+ * L'écrire deux fois — une par surface — donnerait un jour un document qui
+ * titre « PU HT » au-dessus de montants TTC, et c'est le défaut de cette pièce
+ * que personne ne remarque avant un client.
+ *
+ * La question n'est pas « qui commande » mais **« ai-je un TTC scellé à
+ * montrer »** : l'audience a été tranchée à la passation, une fois, par le seul
+ * endroit qui la connaisse. Un `null` couvre indifféremment une commande
+ * professionnelle et une commande antérieure à R3 — les deux se rendent en hors
+ * taxe, c'est-à-dire exactement comme avant R3.
+ *
+ * ⚠️ **`lines.length > 0` n'est pas une précaution de style** : `every` est vrai
+ * sur une liste vide, et une feuille sans ligne basculerait donc en TTC sans
+ * avoir un seul montant à montrer. La passation l'interdit — mais une lecture
+ * ne se repose pas sur l'invariant d'une écriture.
+ *
+ * ⚠️ **`renderOrderSheetText` de `@lfd/b2b-ui` n'en a PAS besoin**, et c'est une
+ * propriété de la décision A, pas un oubli (vérifié le 2026-09-21) : le hors
+ * taxe n'est jamais réécrit, donc ce bon texte continue d'imprimer du hors taxe
+ * sous des intitulés hors taxe. Dériver au rendu l'aurait piégé le jour où son
+ * drapeau remonte.
+ */
+export function sheetShowsTtc(sheet: { readonly lines: readonly ClientSheetLine[] }): boolean {
+  return (
+    sheet.lines.length > 0 &&
+    sheet.lines.every((line) => line.unitPriceTtcCents !== null && line.lineTotalTtcCents !== null)
+  );
 }
 
 /** Ce que toute feuille porte, quelle que soit son audience. */

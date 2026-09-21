@@ -636,6 +636,12 @@ describe("PlaceOrderHandler", () => {
         vatRate: 0,
         quantity: 3,
         lineTotalCents: 600,
+        // 🔴 Rien de scellé : cette commande porte une SOCIÉTÉ (`"c1"`), donc
+        // un professionnel — il récupère la taxe et ne lit que le hors taxe.
+        // Lui sceller un TTC créerait un montant que rien n'affiche et que
+        // tout pourrait un jour afficher par erreur (R3, 2026-09-21).
+        unitPriceTtcCents: null,
+        lineTotalTtcCents: null,
         // Aucune règle dans ces doubles : la trace existe et dit qu'aucun étage
         // n'a joué. C'est une affirmation, pas une absence.
         pricing: {

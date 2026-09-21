@@ -239,7 +239,12 @@ export class Order {
       throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
     }
     const fulfillment = normalizeFulfillment(input.fulfillment);
-    const lines = input.lines.map((line) => OrderLine.create(line));
+    // 🔴 **L'audience est décidée UNE fois, ici** — le seul endroit qui la
+    // connaisse au moment où elle est encore vraie. Chaque ligne scelle alors
+    // son taxe compris, ou ne le scelle pas ; le document, plus tard, n'a plus
+    // qu'à regarder ce qu'il a (R3, 2026-09-21).
+    const clientele = clienteleOf(input.companyId);
+    const lines = input.lines.map((line) => OrderLine.create(line, clientele));
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
     ensureDiscountMatches(input, subtotalCents);
     ensureLateFeeMatches(input, subtotalCents);

@@ -20,6 +20,10 @@ function line(overrides: Partial<OrderLineView> = {}): OrderLineView {
     vatRate: 0.055,
     quantity: 4,
     lineTotalCents: 840,
+    // Une commande PROFESSIONNELLE par défaut : rien de scellé côté taxe
+    // comprise, donc le bon reste hors taxe — l'état d'avant R3 (2026-09-21).
+    unitPriceTtcCents: null,
+    lineTotalTtcCents: null,
     pricing: {
       basePriceMillicents: 250_000,
       // Consigné depuis le 2026-09-09 : `false` dit « la chaîne n'est pas

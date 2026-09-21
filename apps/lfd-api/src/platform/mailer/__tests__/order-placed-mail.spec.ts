@@ -48,6 +48,8 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
         unitPriceMillicents: 120_000,
         vatRate: 0.055,
         lineTotalCents: 1_440,
+        unitPriceTtcCents: null,
+        lineTotalTtcCents: null,
         priceLabels: [],
       },
     ],

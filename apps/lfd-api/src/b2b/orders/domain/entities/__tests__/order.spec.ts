@@ -86,6 +86,11 @@ describe("Order.draft — calcul monétaire", () => {
         vatRate: 5.5,
         quantity: 3,
         lineTotalCents: 600,
+        // 🔴 Le taxe compris est SCELLÉ parce que cette commande n'a pas de
+        // société : c'est un particulier, et il lira son bon en TTC (R3,
+        // 2026-09-21). 2,00 € la pièce → 2,11 €, et 6,00 € la ligne → 6,33 €.
+        unitPriceTtcCents: 211,
+        lineTotalTtcCents: 633,
         // Ligne fabriquée à la main : sans résolution, il n'y a rien à tracer.
         pricing: null,
         allergens: null,
